@@ -1,0 +1,103 @@
+{
+  "name": "cross-wms",
+  "private": true,
+  "version": "1.0.2",
+  "type": "module",
+  "scripts": {
+    "dev:server": "tsx watch server/index.ts",
+    "server": "tsx server/index.ts",
+    "dev": "concurrently \"npm run dev:server\" \"vite\"",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "electron:build": "npm run build && electron-builder",
+    "bump": "node bump-version.cjs",
+    "bump:patch": "node bump-version.cjs patch",
+    "bump:minor": "node bump-version.cjs minor",
+    "bump:major": "node bump-version.cjs major",
+    "build:all": "npm run build && bash build-dmg-pywebview.sh",
+    "build:bump-patch": "bash build-dmg-pywebview.sh --bump-patch",
+    "build:bump-minor": "bash build-dmg-pywebview.sh --bump-minor",
+    "build:bump-major": "bash build-dmg-pywebview.sh --bump-major"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "@mui/icons-material": "^5.15.15",
+    "@mui/material": "^5.15.15",
+    "@tencent-ai/agent-sdk": "^0.3.43",
+    "better-sqlite3": "^12.6.2",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.10",
+    "express": "^5.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^6.22.3",
+    "recharts": "^2.12.3",
+    "remark-gfm": "^4.0.1",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@types/uuid": "^9.0.7",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.19",
+    "concurrently": "^8.2.2",
+    "electron": "^42.2.0",
+    "electron-builder": "^24.13.3",
+    "esbuild": "^0.28.0",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
+    "tsx": "^4.6.2",
+    "typescript": "^5.2.2",
+    "vite": "^7.1.11"
+  },
+  "build": {
+    "appId": "com.crosswms.desktop",
+    "productName": "CrossWMS",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.business",
+      "artifactName": "CrossWMS-${version}-mac.${ext}",
+      "electronLanguages": [
+        "zh-CN"
+      ],
+      "hardenedRuntime": true,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  },
+  "main": "electron/main.mjs"
+}
