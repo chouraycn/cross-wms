@@ -26,6 +26,8 @@ import {
   InputAdornment,
   Alert,
   Snackbar,
+  Paper,
+  LinearProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -33,8 +35,12 @@ import FactCheckIcon from '@mui/icons-material/FactCheck';
 import { mockInventory, mockWarehouses, getWarehouseById } from '../../data/mockData';
 import type { InventoryItem } from '../../types';
 import dayjs from 'dayjs';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 
 const InventoryList: React.FC = () => {
+  const { settings } = useAppSettings();
+  const ageWarningDays = settings.dashboard.ageWarningDays ?? 90;
+
   const [items, setItems] = useState<InventoryItem[]>(mockInventory);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
@@ -58,7 +64,26 @@ const InventoryList: React.FC = () => {
     return true;
   });
 
-  const paginatedItems = filteredItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  // 动态计算库龄警告（基于设置中的 ageWarningDays）
+  const enrichedItems = filteredItems.map((item) => {
+    const daysInStorage = dayjs().diff(dayjs(item.inboundDate), 'day');
+    return { ...item, daysInStorage, isAgeWarningDynamic: daysInStorage > ageWarningDays };
+  });
+
+  // 库龄分布统计
+  const agingBuckets = [
+    { label: '0-30天', min: 0, max: 30, color: '#4caf50' },
+    { label: '30-60天', min: 30, max: 60, color: '#ff9800' },
+    { label: '60-90天', min: 60, max: 90, color: '#f44336' },
+    { label: '90天+', min: 90, max: Infinity, color: '#b71c1c' },
+  ];
+  const agingStats = agingBuckets.map((bucket) => ({
+    ...bucket,
+    count: enrichedItems.filter((item) => item.daysInStorage >= bucket.min && item.daysInStorage < bucket.max).length,
+  }));
+  const maxBucketCount = Math.max(...agingStats.map((b) => b.count), 1);
+
+  const paginatedItems = enrichedItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -89,17 +114,17 @@ const InventoryList: React.FC = () => {
     setSelected([]);
   };
 
-  const ageWarningCount = filteredItems.filter((i) => i.isAgeWarning).length;
-  const totalValue = filteredItems.reduce((s, i) => s + i.totalValue, 0);
-  const totalVolume = filteredItems.reduce((s, i) => s + i.totalVolume, 0);
+  const ageWarningCount = enrichedItems.filter((i) => i.isAgeWarningDynamic).length;
+  const totalValue = enrichedItems.reduce((s, i) => s + i.totalValue, 0);
+  const totalVolume = enrichedItems.reduce((s, i) => s + i.totalVolume, 0);
 
   return (
     <Box>
-      {/* Summary */}
+      {/* Summary + Aging Distribution */}
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
         <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
           <Typography variant="caption" color="text.secondary">SKU总数</Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>{filteredItems.length}</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>{enrichedItems.length}</Typography>
         </Card>
         <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
           <Typography variant="caption" color="text.secondary">占用容积</Typography>
@@ -111,10 +136,51 @@ const InventoryList: React.FC = () => {
         </Card>
         {ageWarningCount > 0 && (
           <Card elevation={0} sx={{ border: '1px solid #ff9800', borderRadius: 2, px: 2, py: 1.5, minWidth: 160, backgroundColor: '#fff8e1' }}>
-            <Typography variant="caption" sx={{ color: '#e65100' }}>库龄警告</Typography>
+            <Typography variant="caption" sx={{ color: '#e65100' }}>库龄警告（&gt;{ageWarningDays}天）</Typography>
             <Typography variant="h6" sx={{ fontWeight: 700, color: '#e65100' }}>{ageWarningCount} 件</Typography>
           </Card>
         )}
+        {/* 库龄分布条 */}
+        <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, px: 2, py: 1.5, flex: 1, minWidth: 320 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>库龄分布</Typography>
+          <Box sx={{ display: 'flex', gap: 0, height: 32, borderRadius: 1.5, overflow: 'hidden' }}>
+            {agingStats.map((bucket) => (
+              bucket.count > 0 && (
+                <Box
+                  key={bucket.label}
+                  sx={{
+                    width: `${(bucket.count / enrichedItems.length) * 100}%`,
+                    minWidth: 4,
+                    backgroundColor: bucket.color,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    transition: 'width 0.3s ease',
+                    '&:hover': { opacity: 0.85 },
+                  }}
+                  title={`${bucket.label}: ${bucket.count} 件`}
+                >
+                  {(bucket.count / enrichedItems.length) > 0.12 && (
+                    <Typography variant="caption" sx={{ color: '#fff', fontWeight: 600, fontSize: '0.65rem', lineHeight: 1 }}>
+                      {bucket.count}
+                    </Typography>
+                  )}
+                </Box>
+              )
+            ))}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2, mt: 0.5, flexWrap: 'wrap' }}>
+            {agingStats.map((bucket) => (
+              <Box key={bucket.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: bucket.color, flexShrink: 0 }} />
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                  {bucket.label}: {bucket.count}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Card>
       </Box>
 
       {/* Filters & Actions */}
@@ -199,14 +265,13 @@ const InventoryList: React.FC = () => {
               {paginatedItems.map((item) => {
                 const warehouse = getWarehouseById(item.warehouseId);
                 const isSelected = selected.includes(item.id);
-                const daysInStorage = dayjs().diff(dayjs(item.inboundDate), 'day');
                 return (
                   <TableRow
                     key={item.id}
                     selected={isSelected}
                     sx={{
                       '&:last-child td': { borderBottom: 0 },
-                      backgroundColor: item.isAgeWarning ? '#fff8e1' : isSelected ? '#F3F4F6' : 'transparent',
+                      backgroundColor: item.isAgeWarningDynamic ? '#fff8e1' : isSelected ? '#F3F4F6' : 'transparent',
                     }}
                   >
                     <TableCell padding="checkbox">
@@ -220,8 +285,8 @@ const InventoryList: React.FC = () => {
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>{item.name}</Typography>
-                        {item.isAgeWarning && (
-                          <Chip label={`${daysInStorage}天`} size="small" color="error" sx={{ height: 18, fontSize: '0.65rem' }} />
+                        {item.isAgeWarningDynamic && (
+                          <Chip label={`${item.daysInStorage}天`} size="small" color="error" sx={{ height: 18, fontSize: '0.65rem' }} />
                         )}
                       </Box>
                     </TableCell>
@@ -241,7 +306,7 @@ const InventoryList: React.FC = () => {
                       <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>{item.totalVolume.toFixed(2)}</Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontSize: '0.8rem', color: item.isAgeWarning ? '#e65100' : 'inherit' }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.8rem', color: item.isAgeWarningDynamic ? '#e65100' : 'inherit' }}>
                         {item.inboundDate}
                       </Typography>
                     </TableCell>

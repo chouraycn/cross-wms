@@ -29,12 +29,17 @@ import {
   Collapse,
   IconButton,
   Tooltip,
+  InputAdornment,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import SearchIcon from '@mui/icons-material/Search';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { mockTransitOrders, mockWarehouses, getWarehouseById } from '../../data/mockData';
 import type { TransitOrder, TransitStatus, TransportMode } from '../../types';
+import dayjs from 'dayjs';
 
 const statusLabels: Record<TransitStatus, { label: string; color: 'default' | 'info' | 'warning' | 'success' }> = {
   dispatched: { label: '已发出', color: 'default' },
@@ -57,14 +62,17 @@ function getActiveStep(status: TransitStatus): number {
 
 interface RowProps {
   order: TransitOrder;
+  onEdit: (order: TransitOrder) => void;
+  onDelete: (id: string) => void;
 }
 
-const TransitRow: React.FC<RowProps> = ({ order }) => {
+const TransitRow: React.FC<RowProps> = ({ order, onEdit, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
   const fromWh = getWarehouseById(order.fromWarehouseId);
   const toWh = getWarehouseById(order.toWarehouseId);
   const { label: statusLabel, color: statusColor } = statusLabels[order.status];
   const { label: modeLabel, icon: modeIcon } = transportLabels[order.transportMode];
+  const delayed = order.status !== 'arrived' && order.estimatedArrival && dayjs().isAfter(dayjs(order.estimatedArrival), 'day');
 
   return (
     <>
@@ -106,15 +114,35 @@ const TransitRow: React.FC<RowProps> = ({ order }) => {
           <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>{order.estimatedArrival}</Typography>
         </TableCell>
         <TableCell>
+          {delayed ? (
+            <Chip label="已延误" color="error" size="small" />
+          ) : (
+            <Typography variant="body2" sx={{ fontSize: '0.75rem', color: '#9e9e9e' }}>-</Typography>
+          )}
+        </TableCell>
+        <TableCell>
           <Chip label={statusLabel} color={statusColor} size="small" />
+        </TableCell>
+        <TableCell>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); onEdit(order); }} sx={{ color: '#111827' }}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); onDelete(order.id); }} sx={{ color: '#d32f2f' }}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
         </TableCell>
       </TableRow>
 
       {/* Expanded timeline row */}
       <TableRow>
-        <TableCell colSpan={10} sx={{ py: 0, borderBottom: expanded ? '1px solid #e0e0e0' : 'none' }}>
+        <TableCell colSpan={12} sx={{ py: 0, borderBottom: expanded ? '1px solid #e0e0e0' : 'none' }}>
           <Collapse in={expanded} timeout="auto" unmountOnExit>
             <Box sx={{ py: 2, px: 4 }}>
+              {delayed && (
+                <Chip label="预计到达已超期" color="error" size="small" sx={{ mb: 1.5 }} />
+              )}
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
                 运输状态时间轴
               </Typography>
@@ -158,6 +186,14 @@ const TransitRow: React.FC<RowProps> = ({ order }) => {
                   <Typography variant="caption" sx={{ color: '#4caf50' }}>实际到达：{order.actualArrival}</Typography>
                 )}
               </Box>
+              <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+                <Button size="small" startIcon={<EditIcon />} onClick={(e) => { e.stopPropagation(); onEdit(order); }} sx={{ color: '#111827' }}>
+                  编辑
+                </Button>
+                <Button size="small" startIcon={<DeleteIcon />} color="error" onClick={(e) => { e.stopPropagation(); onDelete(order.id); }} sx={{ color: '#d32f2f' }}>
+                  删除
+                </Button>
+              </Box>
             </Box>
           </Collapse>
         </TableCell>
@@ -171,7 +207,9 @@ const TransitList: React.FC = () => {
   const [filterMode, setFilterMode] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterWarehouse, setFilterWarehouse] = useState<string>('all');
+  const [searchText, setSearchText] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<TransitOrder | null>(null);
   const [newOrder, setNewOrder] = useState({
     trackingNo: '',
     fromWarehouseId: '',
@@ -184,40 +222,133 @@ const TransitList: React.FC = () => {
     carrier: '',
     value: '',
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+
+  // ETA延迟检查（在 TransitRow 内部计算，此处保留工具函数）
+  const isEtaDelayed = (order: TransitOrder): boolean => {
+    if (order.status === 'arrived' || !order.estimatedArrival) return false;
+    return dayjs().isAfter(dayjs(order.estimatedArrival), 'day');
+  };
 
   const filteredOrders = orders.filter((o) => {
     if (filterMode !== 'all' && o.transportMode !== filterMode) return false;
     if (filterStatus !== 'all' && o.status !== filterStatus) return false;
     if (filterWarehouse !== 'all' && o.toWarehouseId !== filterWarehouse) return false;
+    if (searchText) {
+      const q = searchText.toLowerCase();
+      if (!o.trackingNo.toLowerCase().includes(q)) return false;
+    }
     return true;
   });
 
-  const handleAddOrder = () => {
-    const order: TransitOrder = {
-      id: `tr-${Date.now()}`,
-      trackingNo: newOrder.trackingNo,
-      fromWarehouseId: newOrder.fromWarehouseId,
-      toWarehouseId: newOrder.toWarehouseId,
-      category: newOrder.category,
-      weight: parseFloat(newOrder.weight) || 0,
-      volume: parseFloat(newOrder.volume) || 0,
-      transportMode: newOrder.transportMode,
-      estimatedArrival: newOrder.estimatedArrival,
-      status: 'dispatched',
-      createdAt: new Date().toISOString().split('T')[0],
-      carrier: newOrder.carrier,
-      value: parseFloat(newOrder.value) || 0,
-      statusHistory: [
-        {
-          status: 'dispatched',
-          time: new Date().toLocaleString('zh-CN'),
-          location: getWarehouseById(newOrder.fromWarehouseId)?.name ?? '发货仓',
-          remark: '运单已创建',
-        },
-      ],
-    };
-    setOrders((prev) => [order, ...prev]);
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!newOrder.trackingNo.trim()) errors.trackingNo = '请输入运单号';
+    if (!newOrder.fromWarehouseId) errors.fromWarehouseId = '请选择起始仓库';
+    if (!newOrder.toWarehouseId) errors.toWarehouseId = '请选择目标仓库';
+    if (!newOrder.category.trim()) errors.category = '请输入货物品类';
+    if (!newOrder.carrier.trim()) errors.carrier = '请输入承运商';
+    if (!newOrder.weight || parseFloat(newOrder.weight) <= 0) errors.weight = '请输入有效重量';
+    if (!newOrder.volume || parseFloat(newOrder.volume) <= 0) errors.volume = '请输入有效体积';
+    if (!newOrder.estimatedArrival) errors.estimatedArrival = '请选择预计到达日期';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const resetNewOrder = () => {
+    setNewOrder({
+      trackingNo: '',
+      fromWarehouseId: '',
+      toWarehouseId: '',
+      category: '',
+      weight: '',
+      volume: '',
+      transportMode: 'sea' as TransportMode,
+      estimatedArrival: '',
+      carrier: '',
+      value: '',
+    });
+    setFormErrors({});
+    setEditingOrder(null);
+  };
+
+  const handleSaveOrder = () => {
+    if (!validateForm()) return;
+    if (editingOrder) {
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === editingOrder.id
+            ? {
+                ...o,
+                trackingNo: newOrder.trackingNo,
+                fromWarehouseId: newOrder.fromWarehouseId,
+                toWarehouseId: newOrder.toWarehouseId,
+                category: newOrder.category,
+                weight: parseFloat(newOrder.weight) || 0,
+                volume: parseFloat(newOrder.volume) || 0,
+                transportMode: newOrder.transportMode,
+                estimatedArrival: newOrder.estimatedArrival,
+                carrier: newOrder.carrier,
+                value: parseFloat(newOrder.value) || 0,
+              }
+            : o
+        )
+      );
+    } else {
+      const order: TransitOrder = {
+        id: `tr-${Date.now()}`,
+        trackingNo: newOrder.trackingNo,
+        fromWarehouseId: newOrder.fromWarehouseId,
+        toWarehouseId: newOrder.toWarehouseId,
+        category: newOrder.category,
+        weight: parseFloat(newOrder.weight) || 0,
+        volume: parseFloat(newOrder.volume) || 0,
+        transportMode: newOrder.transportMode,
+        estimatedArrival: newOrder.estimatedArrival,
+        status: 'dispatched',
+        createdAt: new Date().toISOString().split('T')[0],
+        carrier: newOrder.carrier,
+        value: parseFloat(newOrder.value) || 0,
+        statusHistory: [
+          {
+            status: 'dispatched',
+            time: new Date().toLocaleString('zh-CN'),
+            location: getWarehouseById(newOrder.fromWarehouseId)?.name ?? '发货仓',
+            remark: '运单已创建',
+          },
+        ],
+      };
+      setOrders((prev) => [order, ...prev]);
+    }
     setOpenDialog(false);
+    resetNewOrder();
+  };
+
+  const handleEditOrder = (order: TransitOrder) => {
+    setEditingOrder(order);
+    setNewOrder({
+      trackingNo: order.trackingNo,
+      fromWarehouseId: order.fromWarehouseId,
+      toWarehouseId: order.toWarehouseId,
+      category: order.category,
+      weight: String(order.weight),
+      volume: String(order.volume),
+      transportMode: order.transportMode,
+      estimatedArrival: order.estimatedArrival,
+      carrier: order.carrier,
+      value: String(order.value),
+    });
+    setFormErrors({});
+    setOpenDialog(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!orderToDelete) return;
+    setOrders((prev) => prev.filter((o) => o.id !== orderToDelete));
+    setDeleteConfirmOpen(false);
+    setOrderToDelete(null);
   };
 
   return (
@@ -226,6 +357,16 @@ const TransitList: React.FC = () => {
       <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, mb: 2 }}>
         <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+            <TextField
+              size="small"
+              placeholder="搜索运单号..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              sx={{ minWidth: 180 }}
+              InputProps={{
+                startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
+              }}
+            />
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>运输方式</InputLabel>
               <Select value={filterMode} label="运输方式" onChange={(e) => setFilterMode(e.target.value)}>
@@ -258,7 +399,7 @@ const TransitList: React.FC = () => {
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
-                onClick={() => setOpenDialog(true)}
+                onClick={() => { resetNewOrder(); setOpenDialog(true); }}
                 sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' } }}
               >
                 新增运单
@@ -287,50 +428,71 @@ const TransitList: React.FC = () => {
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>体积</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>运输方式</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>预计到达</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>延误</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>状态</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>操作</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredOrders.map((order) => (
-                <TransitRow key={order.id} order={order} />
+                <TransitRow
+                  key={order.id}
+                  order={order}
+                  onEdit={handleEditOrder}
+                  onDelete={(id) => { setOrderToDelete(id); setDeleteConfirmOpen(true); }}
+                />
               ))}
             </TableBody>
           </Table>
         </TableContainer>
       </Card>
 
-      {/* Add Order Dialog */}
+      {/* Add/Edit Order Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>新增在途运单</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600 }}>{editingOrder ? '编辑在途运单' : '新增在途运单'}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid item xs={12} sm={6}>
-              <TextField label="运单号" value={newOrder.trackingNo} onChange={(e) => setNewOrder((p) => ({ ...p, trackingNo: e.target.value }))} fullWidth size="small" />
+              <TextField
+                label="运单号" value={newOrder.trackingNo} onChange={(e) => setNewOrder((p) => ({ ...p, trackingNo: e.target.value }))}
+                fullWidth size="small" error={!!formErrors.trackingNo} helperText={formErrors.trackingNo}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField label="货物品类" value={newOrder.category} onChange={(e) => setNewOrder((p) => ({ ...p, category: e.target.value }))} fullWidth size="small" />
+              <TextField
+                label="货物品类" value={newOrder.category} onChange={(e) => setNewOrder((p) => ({ ...p, category: e.target.value }))}
+                fullWidth size="small" error={!!formErrors.category} helperText={formErrors.category}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth size="small">
+              <FormControl fullWidth size="small" error={!!formErrors.fromWarehouseId}>
                 <InputLabel>起始仓库</InputLabel>
                 <Select value={newOrder.fromWarehouseId} label="起始仓库" onChange={(e) => setNewOrder((p) => ({ ...p, fromWarehouseId: e.target.value }))}>
                   {mockWarehouses.map((wh) => <MenuItem key={wh.id} value={wh.id}>{wh.name}</MenuItem>)}
                 </Select>
+                {formErrors.fromWarehouseId && <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>{formErrors.fromWarehouseId}</Typography>}
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth size="small">
+              <FormControl fullWidth size="small" error={!!formErrors.toWarehouseId}>
                 <InputLabel>目标仓库</InputLabel>
                 <Select value={newOrder.toWarehouseId} label="目标仓库" onChange={(e) => setNewOrder((p) => ({ ...p, toWarehouseId: e.target.value }))}>
                   {mockWarehouses.map((wh) => <MenuItem key={wh.id} value={wh.id}>{wh.name}</MenuItem>)}
                 </Select>
+                {formErrors.toWarehouseId && <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>{formErrors.toWarehouseId}</Typography>}
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField label="重量(kg)" value={newOrder.weight} onChange={(e) => setNewOrder((p) => ({ ...p, weight: e.target.value }))} fullWidth size="small" type="number" />
+              <TextField
+                label="重量(kg)" value={newOrder.weight} onChange={(e) => setNewOrder((p) => ({ ...p, weight: e.target.value }))}
+                fullWidth size="small" type="number" error={!!formErrors.weight} helperText={formErrors.weight}
+              />
             </Grid>
             <Grid item xs={12} sm={4}>
-              <TextField label="体积(m³)" value={newOrder.volume} onChange={(e) => setNewOrder((p) => ({ ...p, volume: e.target.value }))} fullWidth size="small" type="number" />
+              <TextField
+                label="体积(m³)" value={newOrder.volume} onChange={(e) => setNewOrder((p) => ({ ...p, volume: e.target.value }))}
+                fullWidth size="small" type="number" error={!!formErrors.volume} helperText={formErrors.volume}
+              />
             </Grid>
             <Grid item xs={12} sm={4}>
               <FormControl fullWidth size="small">
@@ -343,20 +505,46 @@ const TransitList: React.FC = () => {
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField label="承运商" value={newOrder.carrier} onChange={(e) => setNewOrder((p) => ({ ...p, carrier: e.target.value }))} fullWidth size="small" />
+              <TextField
+                label="承运商" value={newOrder.carrier} onChange={(e) => setNewOrder((p) => ({ ...p, carrier: e.target.value }))}
+                fullWidth size="small" error={!!formErrors.carrier} helperText={formErrors.carrier}
+              />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField label="货值(USD)" value={newOrder.value} onChange={(e) => setNewOrder((p) => ({ ...p, value: e.target.value }))} fullWidth size="small" type="number" />
+              <TextField
+                label="货值(USD)" value={newOrder.value} onChange={(e) => setNewOrder((p) => ({ ...p, value: e.target.value }))}
+                fullWidth size="small" type="number"
+              />
             </Grid>
             <Grid item xs={12}>
-              <TextField label="预计到达日期" value={newOrder.estimatedArrival} onChange={(e) => setNewOrder((p) => ({ ...p, estimatedArrival: e.target.value }))} fullWidth size="small" type="date" InputLabelProps={{ shrink: true }} />
+              <TextField
+                label="预计到达日期" value={newOrder.estimatedArrival} onChange={(e) => setNewOrder((p) => ({ ...p, estimatedArrival: e.target.value }))}
+                fullWidth size="small" type="date" InputLabelProps={{ shrink: true }}
+                error={!!formErrors.estimatedArrival} helperText={formErrors.estimatedArrival}
+              />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpenDialog(false)}>取消</Button>
-          <Button variant="contained" onClick={handleAddOrder} sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' } }}>
-            确认创建
+          <Button onClick={() => { setOpenDialog(false); resetNewOrder(); }}>取消</Button>
+          <Button variant="contained" onClick={handleSaveOrder} sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' } }}>
+            {editingOrder ? '保存修改' : '确认创建'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>确认删除</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            确定要删除该运单吗？此操作不可撤销。
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => { setDeleteConfirmOpen(false); setOrderToDelete(null); }}>取消</Button>
+          <Button variant="contained" color="error" onClick={handleDeleteConfirm}>
+            确认删除
           </Button>
         </DialogActions>
       </Dialog>
