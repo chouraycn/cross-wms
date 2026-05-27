@@ -62,7 +62,7 @@ fi
 # 导出版本号供后续使用
 export VERSION="$CURRENT_VERSION"
 DMG_NAME="CrossWMS-${VERSION}-mac.dmg"
-DMG_VOLUME="CrossWMS"
+DMG_VOLUME="CrossWMS v${VERSION}"
 
 # 生成 version.txt（供 pywebview_app.py 读取）
 echo "$VERSION" > "$VERSION_FILE"
