@@ -290,30 +290,11 @@ else
   echo "✅ 标签 v${VERSION} 已推送"
 fi
 
-# 尝试用 gh CLI 创建 release 并上传文件
+# 上传到 GitHub Releases（三步容错）
 UPLOAD_OK=false
 
-if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
-  echo "📦 gh CLI 可用，创建 Release..."
-
-  # 检查 release 是否已存在
-  if gh release view "v${VERSION}" &>/dev/null 2>&1; then
-    echo "  Release v${VERSION} 已存在，更新资源..."
-    gh release upload "v${VERSION}" \
-      "$PROJECT_DIR/release/$DMG_NAME#CrossWMS DMG" \
-      "$PROJECT_DIR/release/release.json#Release Info" \
-      --clobber
-  else
-    gh release create "v${VERSION}" \
-      "$PROJECT_DIR/release/$DMG_NAME#CrossWMS DMG" \
-      "$PROJECT_DIR/release/release.json#Release Info" \
-      --title "CrossWMS v${VERSION}" \
-      --notes "$(cat "$PROJECT_DIR/RELEASE_NOTES.md" 2>/dev/null || echo "CrossWMS v${VERSION} 发布")"
-  fi
-
-  UPLOAD_OK=true
-  echo "✅ Release v${VERSION} 已发布!"
-elif [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
+# ── 第一步：GITHUB_TOKEN API（最可靠，非交互环境首选）──
+if [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
   echo "📦 使用 GitHub API 上传（GITHUB_TOKEN 可用）..."
   TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}"
 
@@ -324,53 +305,71 @@ elif [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
 
   if [ -n "$RELEASE_ID" ]; then
     echo "  Release 已存在 (ID: $RELEASE_ID)，上传附件..."
-    # 上传 DMG
-    curl -s -H "Authorization: token $TOKEN" \
-      -H "Content-Type: application/x-apple-diskimage" \
-      --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
-      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=$DMG_NAME"
-    # 上传 release.json
-    curl -s -H "Authorization: token $TOKEN" \
-      -H "Content-Type: application/json" \
-      --data-binary @"$PROJECT_DIR/release/release.json" \
-      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=release.json"
   else
-    # 创建 release 并上传
     echo "  创建 Release v${VERSION}..."
+    NOTES=$(cat "$PROJECT_DIR/RELEASE_NOTES.md" 2>/dev/null || echo "CrossWMS v${VERSION} 发布")
     RELEASE_DATA=$(curl -s -X POST \
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
-      -d "$(python3 -c "
-import json
-notes = open('$PROJECT_DIR/RELEASE_NOTES.md', encoding='utf-8').read().strip() if __import__('os').path.isfile('$PROJECT_DIR/RELEASE_NOTES.md') else 'CrossWMS v${VERSION} 发布'
-print(json.dumps({'tag_name': 'v${VERSION}', 'name': 'CrossWMS v${VERSION}', 'body': notes}))
-")" \
+      -d "$(python3 -c "import json; print(json.dumps({'tag_name': 'v${VERSION}', 'name': 'CrossWMS v${VERSION}', 'body': '''$NOTES'''}))")" \
       "https://api.github.com/repos/chouraycn/cross-wms/releases")
-
     NEW_ID=$(echo "$RELEASE_DATA" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
     if [ -n "$NEW_ID" ]; then
-      curl -s -H "Authorization: token $TOKEN" \
-        -H "Content-Type: application/x-apple-diskimage" \
-        --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
-        "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$NEW_ID/assets?name=$DMG_NAME"
-      curl -s -H "Authorization: token $TOKEN" \
-        -H "Content-Type: application/json" \
-        --data-binary @"$PROJECT_DIR/release/release.json" \
-        "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$NEW_ID/assets?name=release.json"
+      RELEASE_ID="$NEW_ID"
+      echo "  Release 已创建 (ID: $RELEASE_ID)"
+    else
+      echo "  ⚠️  Release 创建失败，尝试 fallback..."
     fi
   fi
 
-  UPLOAD_OK=true
-  echo "✅ Release v${VERSION} 已发布!"
-else
-  echo "⚠️  未找到 gh CLI 或 GITHUB_TOKEN，跳过上传步骤"
-  echo "   安装 gh CLI 并认证:"
-  echo "     brew install gh && gh auth login"
-  echo "   或设置 GITHUB_TOKEN 环境变量"
-  echo ""
-  echo "   手动创建 Release:"
+  if [ -n "$RELEASE_ID" ]; then
+    # 上传 DMG
+    echo "  上传 DMG ($DMG_NAME)..."
+    curl -s -H "Authorization: token $TOKEN" \
+      -H "Content-Type: application/x-apple-diskimage" \
+      --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
+      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=$DMG_NAME" > /dev/null
+    # 上传 release.json
+    echo "  上传 release.json..."
+    curl -s -H "Authorization: token $TOKEN" \
+      -H "Content-Type: application/json" \
+      --data-binary @"$PROJECT_DIR/release/release.json" \
+      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=release.json" > /dev/null
+    UPLOAD_OK=true
+    echo "✅ Release v${VERSION} 已发布!"
+  fi
+fi
+
+# ── 第二步：gh CLI（GITHUB_TOKEN 方式失败时兜底）──
+if [ "$UPLOAD_OK" = false ] && command -v gh &>/dev/null; then
+  echo "📦 尝试 gh CLI 创建 Release..."
+  if gh auth status &>/dev/null 2>&1; then
+    if gh release view "v${VERSION}" &>/dev/null 2>&1; then
+      gh release upload "v${VERSION}" \
+        "$PROJECT_DIR/release/$DMG_NAME#CrossWMS DMG" \
+        "$PROJECT_DIR/release/release.json#Release Info" \
+        --clobber
+    else
+      gh release create "v${VERSION}" \
+        "$PROJECT_DIR/release/$DMG_NAME#CrossWMS DMG" \
+        "$PROJECT_DIR/release/release.json#Release Info" \
+        --title "CrossWMS v${VERSION}" \
+        --notes "$(cat "$PROJECT_DIR/RELEASE_NOTES.md" 2>/dev/null || echo "CrossWMS v${VERSION} 发布")"
+    fi
+    UPLOAD_OK=true
+    echo "✅ Release v${VERSION} 已发布!"
+  else
+    echo "  ⚠️  gh CLI 未登录，跳过..."
+  fi
+fi
+
+# ── 第三步：手动指引（所有自动方式都失败）──
+if [ "$UPLOAD_OK" = false ]; then
+  echo "⚠️  自动上传失败，手动创建 Release:"
   echo "     1. https://github.com/chouraycn/cross-wms/releases/new"
   echo "     2. Tag: v${VERSION}, 上传: release/$DMG_NAME + release/release.json"
+  echo ""
+  echo "   💡 后续自动上传需设置: export GITHUB_TOKEN=ghp_your_token"
 fi
 
 echo ""
