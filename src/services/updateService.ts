@@ -42,19 +42,48 @@ function compareVersions(v1: string, v2: string): number {
 
 /**
  * 检查更新
+ * - 浏览器 / Electron 环境：直接使用 fetch（无 CORS 问题）
+ * - pywebview 环境：调用 window.pywebview.api.get_release_info() 绕过 CORS
  */
 export async function checkForUpdates(currentVersion: string): Promise<UpdateStatus> {
   try {
-    const response = await fetch(RELEASE_URL, {
-      method: 'GET',
-      cache: 'no-cache',
-    });
+    let releaseInfo: ReleaseInfo;
 
-    if (!response.ok) {
-      throw new Error(`无法获取更新信息: ${response.status}`);
+    // pywebview 环境：通过 Python API 获取（绕过 CORS）
+    if (typeof window !== 'undefined' && window.pywebview?.api?.get_release_info) {
+      try {
+        const resultStr = await window.pywebview.api.get_release_info();
+        const parsed = JSON.parse(resultStr);
+
+        // 检查是否是 Python 侧返回的错误对象
+        if (parsed.error) {
+          throw new Error(parsed.error);
+        }
+
+        releaseInfo = parsed;
+      } catch (pywebviewError) {
+        // pywebview 调用失败，降级到 fetch（兼容旧版 pywebview 或未就绪情况）
+        console.warn('[updateService] pywebview API 失败，降级到 fetch:', pywebviewError);
+        const response = await fetch(RELEASE_URL, {
+          method: 'GET',
+          cache: 'no-cache',
+        });
+        if (!response.ok) {
+          throw new Error(`无法获取更新信息: ${response.status}`);
+        }
+        releaseInfo = await response.json();
+      }
+    } else {
+      // 浏览器 / Electron 环境：直接 fetch
+      const response = await fetch(RELEASE_URL, {
+        method: 'GET',
+        cache: 'no-cache',
+      });
+      if (!response.ok) {
+        throw new Error(`无法获取更新信息: ${response.status}`);
+      }
+      releaseInfo = await response.json();
     }
-
-    const releaseInfo: ReleaseInfo = await response.json();
 
     const hasUpdate = compareVersions(releaseInfo.version, currentVersion) > 0;
 

@@ -3,6 +3,7 @@ export { default as VolumeChart } from './VolumeChart';
 export { default as TransitPieChart } from './TransitPieChart';
 export { default as WarehouseBarChart } from './WarehouseBarChart';
 export { default as ShipmentHeatmap } from './ShipmentHeatmap';
+export { default as GitHubHeatmap } from './GitHubHeatmap';
 export { default as InventoryAlertList } from './InventoryAlertList';
 export { default as WarehouseKpiTable } from './WarehouseKpiTable';
 export { default as TransitTimeChart } from './TransitTimeChart';

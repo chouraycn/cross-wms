@@ -11,6 +11,11 @@
 
 set -e
 
+# 加载 ~/.zshrc 中的环境变量（如 GITHUB_TOKEN），确保非交互 shell 也能获取
+if [ -f "$HOME/.zshrc" ]; then
+  source "$HOME/.zshrc" 2>/dev/null || true
+fi
+
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 FRONTEND_DIST="$PROJECT_DIR/dist"
 BUILD_DIR="$PROJECT_DIR/build-pywebview"
@@ -323,20 +328,35 @@ if [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
   fi
 
   if [ -n "$RELEASE_ID" ]; then
+    UPLOAD_OK=true
     # 上传 DMG
     echo "  上传 DMG ($DMG_NAME)..."
-    curl -s -H "Authorization: token $TOKEN" \
+    UPLOAD_DMG=$(curl -s -w "%{http_code}" -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/x-apple-diskimage" \
       --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
-      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=$DMG_NAME" > /dev/null
+      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=$DMG_NAME")
+    DMG_HTTP_CODE="${UPLOAD_DMG: -3}"
+    if [ "$DMG_HTTP_CODE" != "201" ] && [ "$DMG_HTTP_CODE" != "200" ]; then
+      echo "  ⚠️  DMG 上传失败 (HTTP $DMG_HTTP_CODE)"
+      UPLOAD_OK=false
+    fi
     # 上传 release.json
     echo "  上传 release.json..."
-    curl -s -H "Authorization: token $TOKEN" \
+    UPLOAD_JSON=$(curl -s -w "%{http_code}" -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
       --data-binary @"$PROJECT_DIR/release/release.json" \
-      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=release.json" > /dev/null
-    UPLOAD_OK=true
-    echo "✅ Release v${VERSION} 已发布!"
+      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=release.json")
+    JSON_HTTP_CODE="${UPLOAD_JSON: -3}"
+    if [ "$JSON_HTTP_CODE" != "201" ] && [ "$JSON_HTTP_CODE" != "200" ]; then
+      echo "  ⚠️  release.json 上传失败 (HTTP $JSON_HTTP_CODE)"
+      UPLOAD_OK=false
+    fi
+    if [ "$UPLOAD_OK" = true ]; then
+      echo "✅ Release v${VERSION} 已发布!"
+    else
+      echo "⚠️  Release 上传未完全成功，请检查上述错误"
+      UPLOAD_OK=false
+    fi
   fi
 fi
 
@@ -348,16 +368,20 @@ if [ "$UPLOAD_OK" = false ] && command -v gh &>/dev/null; then
       gh release upload "v${VERSION}" \
         "$PROJECT_DIR/release/$DMG_NAME#CrossWMS DMG" \
         "$PROJECT_DIR/release/release.json#Release Info" \
-        --clobber
+        --clobber \
+        && UPLOAD_OK=true \
+        && echo "✅ Release v${VERSION} 已发布!" \
+        || echo "⚠️  Release 上传失败（gh release upload 返回错误）"
     else
       gh release create "v${VERSION}" \
         "$PROJECT_DIR/release/$DMG_NAME#CrossWMS DMG" \
         "$PROJECT_DIR/release/release.json#Release Info" \
         --title "CrossWMS v${VERSION}" \
-        --notes "$(cat "$PROJECT_DIR/RELEASE_NOTES.md" 2>/dev/null || echo "CrossWMS v${VERSION} 发布")"
+        --notes "$(cat "$PROJECT_DIR/RELEASE_NOTES.md" 2>/dev/null || echo "CrossWMS v${VERSION} 发布")" \
+        && UPLOAD_OK=true \
+        && echo "✅ Release v${VERSION} 已发布!" \
+        || echo "⚠️  Release 创建失败（gh release create 返回错误）"
     fi
-    UPLOAD_OK=true
-    echo "✅ Release v${VERSION} 已发布!"
   else
     echo "  ⚠️  gh CLI 未登录，跳过..."
   fi

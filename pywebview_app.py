@@ -711,6 +711,30 @@ class Api:
         webbrowser.open(url)
         return json.dumps({'ok': True})
 
+    def get_release_info(self):
+        """获取 GitHub Releases 上的 release.json（供前端检查更新，绕过 CORS）
+
+        pywebview 环境下，前端通过 window.pywebview.api.get_release_info() 调用。
+        Python 侧使用 urllib.request 直接请求，不受浏览器 CORS 限制。
+
+        返回：
+            release.json 的原文（JSON 字符串），或 {"error": "..."} 错误对象
+        """
+        RELEASE_URL = 'https://github.com/chouraycn/cross-wms/releases/latest/download/release.json'
+        try:
+            req = urllib.request.Request(
+                RELEASE_URL,
+                method='GET',
+                headers={'User-Agent': f'CrossWMS/{APP_VERSION}'}
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = resp.read().decode('utf-8')
+                # 验证是合法 JSON（避免返回非 JSON 内容）
+                json.loads(data)
+                return data  # 直接返回 release.json 内容
+        except Exception as e:
+            return json.dumps({'error': str(e)})
+
 
 def main():
     pw_index_path = None  # 预定义，确保 finally 块中可安全判断

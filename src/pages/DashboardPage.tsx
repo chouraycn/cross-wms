@@ -9,7 +9,7 @@ import KpiCards from '../components/Dashboard/KpiCards';
 import VolumeChart from '../components/Dashboard/VolumeChart';
 import TransitPieChart from '../components/Dashboard/TransitPieChart';
 import WarehouseBarChart from '../components/Dashboard/WarehouseBarChart';
-import ShipmentHeatmap from '../components/Dashboard/ShipmentHeatmap';
+import GitHubHeatmap from '../components/Dashboard/GitHubHeatmap';
 import InventoryAlertList from '../components/Dashboard/InventoryAlertList';
 import WarehouseKpiTable from '../components/Dashboard/WarehouseKpiTable';
 import TransitTimeChart from '../components/Dashboard/TransitTimeChart';
@@ -233,123 +233,6 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  return (
-    <Box key={refreshKey} className="page-fade-in">
-      {/* 标题行 */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827' }}>
-          仪表盘总览
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<AddTaskIcon sx={{ fontSize: 16 }} />}
-            onClick={() => setTaskDialogOpen(true)}
-            sx={{
-              borderColor: '#D1D5DB',
-              color: '#374151',
-              fontSize: '0.75rem',
-              textTransform: 'none',
-              borderRadius: 6,
-              '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
-            }}
-          >
-            新建任务
-          </Button>
-          {autoRefresh && (
-            <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', minWidth: '4rem', textAlign: 'right' }}>
-              {countdown}s 后刷新
-            </Typography>
-          )}
-          <FormControlLabel
-            control={
-              <Switch
-                size="small"
-                checked={autoRefresh}
-                onChange={(e) => {
-                  setAutoRefresh(e.target.checked);
-                  setCountdown(settings.dashboard.dataRefreshInterval);
-                }}
-                sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': { color: '#111827' },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#111827' },
-                }}
-              />
-            }
-            label={<Typography sx={{ fontSize: '0.8rem', color: '#6B7280' }}>自动刷新</Typography>}
-            sx={{ m: 0 }}
-          />
-        </Box>
-      </Box>
-
-      {/* 根据 componentOrder 动态渲染组件 */}
-      {settings.dashboard.componentOrder.map((comp) => {
-        switch (comp) {
-          case 'kpi-cards':
-            return hasKpiCards ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <KpiCards warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          case 'heatmap':
-            return vis.chartShipmentHeatmap ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <ShipmentHeatmap warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          case 'volume-trend':
-            return vis.chartVolumeTrend ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <VolumeChart warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          case 'transit-pie':
-            return vis.chartTransitPie ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <TransitPieChart />
-              </Box>
-            ) : null;
-          case 'warehouse-bar':
-            return vis.chartWarehouseBar ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <WarehouseBarChart warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          case 'inventory-alert':
-            return vis.chartInventoryAlert ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <InventoryAlertList warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          case 'kpi-comparison':
-            return vis.chartKpiComparison ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <WarehouseKpiTable warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          case 'transit-time':
-            return vis.chartTransitTime ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <TransitTimeChart warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          default:
-            return null;
-        }
-      })}
-
-      {/* All hidden message */}
-      {!hasKpiCards && !vis.chartShipmentHeatmap && !vis.chartVolumeTrend && !vis.chartTransitPie && !vis.chartWarehouseBar && !vis.chartInventoryAlert && !vis.chartKpiComparison && !vis.chartTransitTime && (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography sx={{ color: '#9CA3AF', fontSize: '0.95rem' }}>
-            所有指标已隐藏，请在设置中开启需要显示的指标
-          </Typography>
-        </Box>
-      )}
-    </Box>
-  );
-
   // 处理任务提交
   const handleTaskSubmit = useCallback((task: TaskFormData) => {
     console.log('新建任务:', task);
@@ -419,7 +302,7 @@ const DashboardPage: React.FC = () => {
           case 'heatmap':
             return vis.chartShipmentHeatmap ? (
               <Box key={comp} sx={{ mb: 4 }}>
-                <ShipmentHeatmap warehouseId={selectedWarehouse} />
+                <GitHubHeatmap warehouseId={selectedWarehouse} />
               </Box>
             ) : null;
           case 'volume-trend':

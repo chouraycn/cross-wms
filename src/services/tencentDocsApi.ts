@@ -84,6 +84,7 @@ interface PyWebViewApi {
   tdoc_sheet_content: (fileId: string, sheetId: string, rangeStr?: string) => Promise<string>;
   tdoc_sheet_info: (fileId: string) => Promise<string>;
   open_in_browser: (url: string) => Promise<string>;
+  get_release_info: () => Promise<string>;   // 获取 GitHub release.json（绕过 CORS）
   window_close: () => Promise<string>;
   window_minimize: () => Promise<string>;
   window_maximize: () => Promise<string>;
