@@ -3,11 +3,11 @@
 CrossWMS — pywebview 启动脚本
 用原生 macOS 窗口内嵌 WebView 渲染前端页面，不弹浏览器
 
-v3: 纯本地化方案
-- 不手动启动 HTTP 服务器
-- 传入本地路径，pywebview 内置 Bottle 服务器自动提供文件服务
-- 腾讯文档 API 通过 js_api 桥接（window.pywebview.api.xxx()）
-- 前端不需要显式配置 localhost
+v4: 稳定性修复
+- 添加启动日志文件（~/Library/Logs/CrossWMS/startup.log）
+- 移除 input() 调用，避免 macOS GUI 环境下崩溃
+- get_index_path() 改为抛异常，不再 sys.exit()
+- HTTP 服务器增加就绪检测
 """
 
 import os
@@ -20,8 +20,34 @@ import urllib.error
 import time
 import webbrowser
 import signal
+import tempfile
+import shutil
+import http.server
+import socketserver
+import threading
+import traceback
 
 import webview
+
+# ===================== 日志文件 =====================
+
+def get_log_path():
+    """获取日志文件路径 ~/Library/Logs/CrossWMS/startup.log"""
+    log_dir = os.path.expanduser("~/Library/Logs/CrossWMS")
+    os.makedirs(log_dir, exist_ok=True)
+    return os.path.join(log_dir, "startup.log")
+
+
+def log(msg):
+    """写入日志文件 + 控制台输出"""
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{timestamp}] {msg}"
+    print(line)
+    try:
+        with open(get_log_path(), "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
 
 
 # ===================== 配置 =====================
@@ -67,7 +93,7 @@ APP_VERSION = read_version()
 
 
 def get_index_path():
-    """获取前端 dist/index.html 的绝对路径"""
+    """获取前端 dist/index.html 的绝对路径，找不到时抛 FileNotFoundError"""
     candidates = []
 
     if getattr(sys, 'frozen', False):
@@ -92,14 +118,14 @@ def get_index_path():
         if os.path.isfile(f):
             return f
 
-    print(f"ERROR: index.html not found!")
-    print(f"  sys.frozen = {getattr(sys, 'frozen', False)}")
+    log(f"ERROR: index.html not found!")
+    log(f"  sys.frozen = {getattr(sys, 'frozen', False)}")
     if getattr(sys, 'frozen', False):
-        print(f"  sys._MEIPASS = {sys._MEIPASS}")
-        print(f"  sys.executable = {sys.executable}")
-    print(f"  __file__ = {__file__}")
-    print(f"  Candidates tried: {candidates}")
-    sys.exit(1)
+        log(f"  sys._MEIPASS = {sys._MEIPASS}")
+        log(f"  sys.executable = {sys.executable}")
+    log(f"  __file__ = {__file__}")
+    log(f"  Candidates tried: {candidates}")
+    raise FileNotFoundError(f"index.html not found. Candidates: {candidates}")
 
 
 # ===================== Node.js 后端管理 =====================
@@ -153,18 +179,18 @@ def get_server_script_path():
         exe_dir = os.path.dirname(sys.executable)
         resource_dir = os.path.join(os.path.dirname(exe_dir), 'Resources')
         candidates.extend([
-            os.path.join(resource_dir, 'server', 'index.js'),
-            os.path.join(resource_dir, 'server_dist', 'index.js'),
+            os.path.join(resource_dir, 'server_dist', 'index.cjs'),
+            os.path.join(resource_dir, 'server', 'index.cjs'),
         ])
         meipass = sys._MEIPASS
         candidates.extend([
-            os.path.join(meipass, 'server', 'index.js'),
-            os.path.join(meipass, 'server_dist', 'index.js'),
+            os.path.join(meipass, 'server_dist', 'index.cjs'),
+            os.path.join(meipass, 'server', 'index.cjs'),
         ])
 
     base = os.path.dirname(os.path.abspath(__file__))
     candidates.extend([
-        os.path.join(base, 'server_dist', 'index.js'),
+        os.path.join(base, 'server_dist', 'index.cjs'),
         os.path.join(base, 'server', 'index.ts'),
     ])
 
@@ -752,38 +778,136 @@ class Api:
             return json.dumps({'error': str(e)})
 
 
-def main():
-    try:
-        # 1. 启动 Node.js 后端服务器（AI 助手 + 静态文件服务）
-        server_proc = start_server()
+def inject_pw_css(html_path: str) -> str:
+    """
+    注入 --pw-top CSS 变量到 index.html，用于 pywebview frameless 模式下的原生红绿灯避让。
 
-        # 2. 等待后端就绪（前端由 Node.js 后端通过 express.static 服务，
-        #    加载 http://localhost:3001/ 完全避免 WKWebView file:// ES Module 白屏问题）
-        server_ready = False
-        if server_proc:
-            server_ready = wait_for_server()
-            if server_ready:
-                print("[Server] ✅ 后端就绪，前端将通过 http://localhost:3001/ 加载")
+    步骤：
+    1. 读取 index.html
+    2. 在 </head> 前注入 <style>:root { --pw-top: 28px; }</style>
+    3. 写入临时文件
+    4. 返回临时文件路径（调用方负责清理）
+    """
+    with open(html_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+
+    # 注入 CSS 变量（28px 为 macOS 红绿灯区域高度）
+    pw_css = '<style>:root { --pw-top: 28px; }</style>\n'
+    html_content = html_content.replace('</head>', pw_css + '</head>')
+
+    # 写入临时文件
+    fd, tmp_path = tempfile.mkstemp(suffix='.html', prefix='crosswms_')
+    with os.fdopen(fd, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+
+    print(f"[CSS Inject] 已注入 --pw-top: 28px 到临时文件: {tmp_path}")
+    return tmp_path
+
+
+# ===================== 本地 HTTP 服务器（替代 file:// 协议）=====================
+
+def start_http_server(dist_dir: str):
+    """
+    启动本地 HTTP 服务器，提供 dist 目录的静态文件服务。
+    替代 file:// 协议，彻底解决 WKWebView 不支持 ES Module 的问题。
+
+    返回：
+        (httpd, port): HTTP 服务器对象和端口号
+    """
+
+    class InjectCSSHandler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            # 关键：必须将 directory 传给父类，否则 SimpleHTTPRequestHandler
+            # 会默认使用 os.getcwd()，而不是我们期望的 dist_dir
+            super().__init__(*args, directory=dist_dir, **kwargs)
+
+        def do_GET(self):
+            # 对 index.html 注入 --pw-top CSS 变量
+            parsed = urllib.parse.urlparse(self.path)
+            path = parsed.path
+            if path == '/' or path == '/index.html':
+                index_path = os.path.join(self.directory, 'index.html')
+                try:
+                    with open(index_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    pw_css = '<style>:root { --pw-top: 28px; }</style>\n'
+                    content = content.replace('</head>', pw_css + '</head>')
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/html; charset=utf-8')
+                    self.end_headers()
+                    self.wfile.write(content.encode('utf-8'))
+                except Exception as e:
+                    self.send_error(500, f'Error: {e}')
             else:
-                print("[Server] ⚠️  后端未完全就绪，继续尝试加载...")
+                # 其他文件正常服务
+                super().do_GET()
 
-        # 确定加载 URL
-        if server_ready:
-            frontend_url = f"http://localhost:{SERVER_PORT}/"
+        def log_message(self, format, *args):
+            # 静默日志，避免控制台刷屏
+            pass
+
+    # 允许端口复用，便于快速重启
+    socketserver.TCPServer.allow_reuse_address = True
+
+    httpd = socketserver.TCPServer(("127.0.0.1", 0), InjectCSSHandler)
+    port = httpd.socket.getsockname()[1]
+
+    # 在后台守护线程中启动服务器
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+
+    print(f"[HTTP Server] 已启动 http://127.0.0.1:{port}/ (dist: {dist_dir})")
+    return httpd, port
+
+
+def main():
+    log("=== CrossWMS 启动 ===")
+    log(f"  sys.frozen = {getattr(sys, 'frozen', False)}")
+    log(f"  sys.executable = {getattr(sys, 'executable', 'N/A')}")
+    if getattr(sys, 'frozen', False):
+        log(f"  sys._MEIPASS = {sys._MEIPASS}")
+
+    httpd = None  # HTTP 服务器对象，finally 中清理
+    exit_code = 0
+
+    try:
+        # 1. 获取前端 dist 目录路径
+        frontend_path = get_index_path()
+        dist_dir = os.path.dirname(frontend_path)
+        log(f"[Frontend] index.html: {frontend_path}")
+        log(f"[Frontend] dist 目录: {dist_dir}")
+
+        # 2. 启动本地 HTTP 服务器（替代 file://，解决 WKWebView ES Module 白屏问题）
+        httpd, http_port = start_http_server(dist_dir)
+        frontend_url = f'http://127.0.0.1:{http_port}/'
+        log(f"[Frontend] 通过 HTTP 加载: {frontend_url}")
+
+        # 2.5 验证 HTTP 服务器已就绪（访问一次确认）
+        try:
+            health_req = urllib.request.Request(frontend_url, method='HEAD')
+            with urllib.request.urlopen(health_req, timeout=3) as resp:
+                log(f"[Frontend] HTTP 服务器就绪 (status={resp.status})")
+        except Exception as e:
+            log(f"[Frontend] ⚠️ HTTP 服务器健康检查失败: {e}")
+            # 不阻塞，继续尝试加载
+
+        # 3. 尝试启动 Node.js 后端（可选，仅用于 AI 助手功能）
+        server_proc = start_server()
+        if server_proc:
+            # 非阻塞：等待后端就绪，但不阻塞前端加载
+            import threading
+            def _wait_server():
+                wait_for_server()
+            threading.Thread(target=_wait_server, daemon=True).start()
+            log("[Server] AI 助手后端已启动（可选，不影响前端加载）")
         else:
-            # 兜底：尝试用 file:// 加载（可能白屏，但至少不崩溃）
-            print("[WARN] 后端未启动，尝试用 file:// 加载 index.html")
-            try:
-                frontend_url = get_index_path()
-            except SystemExit:
-                print("[ERROR] index.html 也未找到，无法启动")
-                return
+            log("[Server] ⚠️  Node.js 未找到，AI 助手将不可用")
 
-        # 3. 创建 pywebview 窗口，从 Node.js 后端加载前端（同源，无 ES Module 限制）
+        # 4. 创建 pywebview 窗口，通过 HTTP 加载前端
         api = Api()
         window = webview.create_window(
             title=APP_NAME,
-            url=frontend_url,      # http://localhost:3001/ — Node.js 服务静态文件 + API
+            url=frontend_url,       # http:// 协议，彻底解决 ES Module 白屏
             width=WIDTH,
             height=HEIGHT,
             min_size=MIN_SIZE,
@@ -796,18 +920,36 @@ def main():
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
-        # 4. 启动事件循环（阻塞直到窗口关闭）
+        log("[Main] pywebview 窗口已创建，启动事件循环...")
+
+        # 5. 启动事件循环（阻塞直到窗口关闭）
         webview.start(debug=False)
 
-        print("CrossWMS closed.")
+        log("[Main] CrossWMS 窗口已关闭，退出")
+    except FileNotFoundError as e:
+        log(f"[FATAL] {e}")
+        exit_code = 1
     except Exception as e:
-        print(f"FATAL ERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        input("Press Enter to exit...")
+        log(f"[FATAL] 未捕获异常: {e}")
+        log(traceback.format_exc())
+        exit_code = 1
     finally:
-        # 5. 确保后端服务器被停止
+        # 6. 清理 HTTP 服务器
+        if httpd:
+            try:
+                httpd.shutdown()
+                httpd.server_close()
+                log("[HTTP Server] 已停止")
+            except Exception as e:
+                log(f"[HTTP Server] 停止失败: {e}")
+        # 7. 确保后端服务器被停止
         stop_server()
+        log(f"=== CrossWMS 退出 (exit_code={exit_code}) ===")
+
+    # GUI 环境下不要用 sys.exit() / os._exit()，让进程自然退出
+    if exit_code != 0:
+        # 非零退出码用于脚本检测
+        raise SystemExit(exit_code)
 
 
 if __name__ == '__main__':

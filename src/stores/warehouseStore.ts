@@ -23,8 +23,8 @@ function loadFromStorage(): Warehouse[] {
           const { totalVolume: _tv, usedVolume: _uv, ...rest } = w as Record<string, unknown>;
           return {
             ...rest,
-            totalItems: w.totalItems ?? (w.totalVolume || 0),
-            usedItems: w.usedItems ?? (w.usedVolume || 0),
+            totalItems: Number.isFinite(w.totalItems) && w.totalItems! > 0 ? w.totalItems! : Math.max(1, w.totalVolume || 1),
+            usedItems: Number.isFinite(w.usedItems) && w.usedItems! >= 0 ? w.usedItems! : (w.usedVolume || 0),
           } as Warehouse;
         });
       }

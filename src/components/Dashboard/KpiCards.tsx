@@ -122,15 +122,22 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
   // 在途货物总量
   const transitVolume = filteredTransit.reduce((s, t) => s + t.volume, 0);
 
-  // 容积率（基于件数）
-  const volumeUtilization = filteredWarehouses.length === 0 ? 0 : parseFloat(
-    ((filteredWarehouses.reduce((s, w) => s + (w.usedItems || w.usedVolume), 0) /
-      (warehouseId === ALL_WAREHOUSES
-        ? filteredWarehouses.reduce((s, w) => s + (w.totalItems || w.totalVolume), 0)
-        : filteredWarehouses.reduce((s, w) => s + (w.totalItems || w.totalVolume), 0))) *
-      100
-    ).toFixed(1)
-  );
+  // 容积率（基于件数）— 防御性计算，避免 NaN / Infinity
+  const volumeUtilization = (() => {
+    if (filteredWarehouses.length === 0) return 0;
+    const totalItemsSum = filteredWarehouses.reduce(
+      (s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)),
+      0
+    );
+    const usedItemsSum = filteredWarehouses.reduce(
+      (s, w) => s + (Number.isFinite(w.usedItems) ? w.usedItems : (Number.isFinite(w.usedVolume) ? w.usedVolume : 0)),
+      0
+    );
+    if (totalItemsSum <= 0) return 0;
+    const ratio = usedItemsSum / totalItemsSum;
+    if (!Number.isFinite(ratio)) return 0;
+    return Math.round(ratio * 1000) / 10; // 保留1位小数，返回数字
+  })();
 
   // 待处理入库单 — 按仓库过滤
   const pendingInbound = warehouseId === ALL_WAREHOUSES
@@ -197,7 +204,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
       ['指标', '数值', '单位', '趋势'],
       [
         ...(vis.kpiTransitVolume ? [['在途货物总量', String(transitVolume), 'm³', `↑ 12.5% 较${compareDays}天前`]] : []),
-        ...(vis.kpiVolumeUtilization ? [['仓库总容积利用率', String(volumeUtilization), '%', `${filteredWarehouses.reduce((s, w) => s + (w.totalItems || w.totalVolume), 0).toLocaleString()} 件`]] : []),
+        ...(vis.kpiVolumeUtilization ? [['仓库总容积利用率', String(volumeUtilization), '%', `${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`]] : []),
         ...(vis.kpiPendingInbound ? [['待处理入库单', String(pendingInbound), '单', '需今日处理']] : []),
         ...(vis.kpiOutboundCount ? [['当日出库量', String(todayOutbound), '单', '↑ 较昨日 +2单']] : []),
         ...(vis.kpiInventoryDepth ? [['库存深度', String(inventoryDepth), '天', '按当前出库速率可支撑天数']] : []),
@@ -228,8 +235,8 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
         icon: <InventoryIcon />,
         theme: KPI_THEME.utilization,
         trend: warehouseId === ALL_WAREHOUSES
-          ? `基于总件数 ${filteredWarehouses.reduce((s, w) => s + (w.totalItems || w.totalVolume), 0).toLocaleString()} 件`
-          : `件数上限 ${filteredWarehouses.reduce((s, w) => s + (w.totalItems || w.totalVolume), 0).toLocaleString()} 件`,
+          ? `基于总件数 ${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`
+          : `件数上限 ${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`,
         trendColor: '#111827',
       },
     },

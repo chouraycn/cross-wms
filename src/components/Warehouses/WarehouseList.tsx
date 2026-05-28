@@ -93,14 +93,16 @@ const WarehouseList: React.FC = () => {
   };
 
   const handleSubmit = () => {
+    const totalVol = parseFloat(form.totalVolume);
+    const totalItms = parseInt(form.totalItems, 10);
     const newWh: Warehouse = {
       id: `wh-${Date.now()}`,
       name: form.name,
       country: form.country,
       city: form.city,
-      totalVolume: parseFloat(form.totalVolume) || 1000,
+      totalVolume: Number.isFinite(totalVol) ? totalVol : 0,
       usedVolume: 0,
-      totalItems: Math.max(1, parseInt(form.totalItems, 10) || 1),
+      totalItems: Number.isFinite(totalItms) && totalItms > 0 ? totalItms : 1,
       usedItems: 0,
       status: 'normal',
       address: form.address,
