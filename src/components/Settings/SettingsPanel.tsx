@@ -45,7 +45,8 @@ import { getAuthStatus, getAuthUrl, exchangeToken, refreshToken, isPyWebView, ge
 import { getWeComAuthStatus, getWeComDocContent, getWeComSmartPageContent, isWeComDocUrl, getWeComDocCategoryFromUrl, getWeComCategoryLabel, extractWeComDocIdFromUrl, type WeComAuthStatus } from '../../services/wecomDocsApi';
 import { getWarehouses } from '../../stores/warehouseStore';
 import type { Warehouse } from '../../types';
-import { checkForUpdates, openDownloadUrl, formatVersion, type UpdateStatus } from '../../services/updateService';
+import { openDownloadUrl, formatVersion, type UpdateStatus } from '../../services/updateService';
+import { useUpdateContext } from '../../contexts/UpdateContext';
 
 // ===================== Tab Definitions =====================
 
@@ -110,9 +111,13 @@ const SettingsPanel: React.FC = () => {
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkDataType, setNewLinkDataType] = useState<DocLinkItem['dataType']>('inventory');
 
-  // Update check state
-  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
+  // 使用全局更新上下文
+  const { checkForUpdates: globalCheckForUpdates, updateStatus, showUpdateNotification, hideUpdateNotification, downloadUpdate } = useUpdateContext();
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+
+  // Update check state（用于设置页内部状态展示）
+  const [localUpdateStatus, setLocalUpdateStatus] = useState<UpdateStatus | null>(null);
+  const effectiveUpdateStatus = showUpdateNotification ? updateStatus : localUpdateStatus;
 
   // Validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -1549,30 +1554,33 @@ const SettingsPanel: React.FC = () => {
 
   const handleCheckUpdate = useCallback(async () => {
     setCheckingUpdate(true);
-    setUpdateStatus(null);
+    setLocalUpdateStatus(null);
     try {
-      const result = await checkForUpdates(APP_VERSION);
-      setUpdateStatus(result);
+      const result = await globalCheckForUpdates();
+      // 如果全局通知已显示（有新版本），则不需要本地状态
+      if (!result.hasUpdate) {
+        setLocalUpdateStatus(result);
+      }
       if (result.error) {
         console.warn('检查更新失败:', result.error);
+        setLocalUpdateStatus(result);
       }
     } catch (err) {
-      setUpdateStatus({
+      const errorStatus: UpdateStatus = {
         hasUpdate: false,
         currentVersion: APP_VERSION,
         latestVersion: APP_VERSION,
         error: err instanceof Error ? err.message : '检查更新失败',
-      });
+      };
+      setLocalUpdateStatus(errorStatus);
     } finally {
       setCheckingUpdate(false);
     }
-  }, [APP_VERSION]);
+  }, [globalCheckForUpdates, APP_VERSION]);
 
   const handleDownloadUpdate = useCallback(() => {
-    if (updateStatus?.releaseInfo?.dmgUrl) {
-      openDownloadUrl(updateStatus.releaseInfo.dmgUrl);
-    }
-  }, [updateStatus]);
+    downloadUpdate();
+  }, [downloadUpdate]);
 
   const renderAbout = () => (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxWidth: 400 }}>
@@ -1618,21 +1626,21 @@ const SettingsPanel: React.FC = () => {
             '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
           }}
         >
-          {checkingUpdate ? '检查中...' : updateStatus ? '重新检查更新' : '检查更新'}
+          {checkingUpdate ? '检查中...' : effectiveUpdateStatus ? '重新检查更新' : '检查更新'}
         </Button>
 
-        {updateStatus && !updateStatus.error && (
-          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, backgroundColor: updateStatus.hasUpdate ? '#FFF7ED' : '#F9FAFB', border: `1px solid ${updateStatus.hasUpdate ? '#FDBA74' : '#E5E7EB'}` }}>
-            {updateStatus.hasUpdate && updateStatus.releaseInfo ? (
+        {effectiveUpdateStatus && !effectiveUpdateStatus.error && (
+          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, backgroundColor: effectiveUpdateStatus.hasUpdate ? '#FFF7ED' : '#F9FAFB', border: `1px solid ${effectiveUpdateStatus.hasUpdate ? '#FDBA74' : '#E5E7EB'}` }}>
+            {effectiveUpdateStatus.hasUpdate && effectiveUpdateStatus.releaseInfo ? (
               <Box>
                 <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#9A3412', mb: 0.5 }}>
-                  发现新版本 V{formatVersion(updateStatus.latestVersion)}
+                  发现新版本 V{formatVersion(effectiveUpdateStatus.latestVersion)}
                 </Typography>
                 <Typography sx={{ fontSize: '0.75rem', color: '#9A3412', mb: 1, whiteSpace: 'pre-wrap' }}>
-                  {updateStatus.releaseInfo.notes}
+                  {effectiveUpdateStatus.releaseInfo.notes}
                 </Typography>
                 <Typography sx={{ fontSize: '0.7rem', color: '#B45309', mb: 1 }}>
-                  发布时间：{updateStatus.releaseInfo.pubDate}
+                  发布时间：{effectiveUpdateStatus.releaseInfo.pubDate}
                 </Typography>
                 <Button
                   variant="contained"
@@ -1655,10 +1663,10 @@ const SettingsPanel: React.FC = () => {
           </Box>
         )}
 
-        {updateStatus?.error && (
+        {effectiveUpdateStatus?.error && (
           <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, backgroundColor: '#FEF2F2', border: '1px solid #FCA5A5' }}>
             <Typography sx={{ fontSize: '0.8rem', color: '#991B1B' }}>
-              检查更新失败：{updateStatus.error}
+              检查更新失败：{effectiveUpdateStatus.error}
             </Typography>
             <Typography sx={{ fontSize: '0.7rem', color: '#991B1B', mt: 0.5 }}>
               请确保应用可以访问互联网，或联系管理员获取最新版本

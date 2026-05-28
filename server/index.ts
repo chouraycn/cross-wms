@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 import { query, unstable_v2_createSession, unstable_v2_authenticate, PermissionResult, CanUseTool } from '@tencent-ai/agent-sdk';
 import { v4 as uuidv4 } from 'uuid';
 import * as db from './db.js';
@@ -35,6 +37,31 @@ interface LoginStatusResponse {
   };
 }
 
+// ============= Action 队列（供 AI 工具调用） =============
+
+/** Action 状态 */
+type ActionStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+/** Action 操作类型 */
+type ActionType = 'create_warehouse' | 'delete_warehouse' | 'update_warehouse' | 'create_shipment' | 'update_inventory';
+
+/** Action 数据结构 */
+interface Action {
+  id: string;
+  type: ActionType;
+  /** 操作参数 */
+  params: Record<string, unknown>;
+  status: ActionStatus;
+  result?: string;
+  error?: string;
+  createdAt: string;
+  updatedAt: string;
+  sessionId: string;
+}
+
+/** 待处理/已处理的 Action 存储 */
+const pendingActions = new Map<string, Action>();
+
 // ============= 全局状态 =============
 
 /** 待处理的权限请求映射表 */
@@ -57,11 +84,52 @@ const PORT = 3001;
 // 中间件：JSON 解析
 app.use(express.json());
 
-// 中间件：CORS，允许 Vite 前端和 file:// 协议访问
+// 中间件：CORS，允许 Vite 前端和本地后端访问
 app.use(cors({
-  origin: ['http://localhost:5173', 'file://'],
+  origin: ['http://localhost:5173', 'http://localhost:3001'],
   credentials: true,
 }));
+
+// 中间件：服务前端静态文件（生产环境兼容 PyInstaller 打包路径）
+const getFrontendDistPath = (): string => {
+  // 1. 环境变量优先（由 pywebview_app.py 启动时设置）
+  if (process.env.FRONTEND_DIST_PATH) {
+    return process.env.FRONTEND_DIST_PATH;
+  }
+  // 2. 相对路径（开发环境或 PyInstaller 打包后）
+  // 打包后 server_dist/ 在 Resources/，frontend_dist/ 也在 Resources/
+  const candidates = [
+    path.join(__dirname, '../frontend_dist'),   // 开发环境
+    path.join(__dirname, '../dist'),           // 开发环境（Vite 默认）
+    path.join(__dirname, '../../frontend_dist'), // 打包后 Resources/server_dist/ → Resources/frontend_dist
+    path.join(__dirname, '../../dist'),        // 备用
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  // 3. 兜底：当前工作目录
+  return path.join(process.cwd(), 'frontend_dist');
+};
+
+const frontendDistPath = getFrontendDistPath();
+console.log(`[Static] 前端静态文件目录: ${frontendDistPath}`);
+app.use(express.static(frontendDistPath, {
+  index: 'index.html',
+  maxAge: '1d',
+}));
+
+// SPA fallback：所有非 API 路由返回 index.html
+app.use((req, _res, next) => {
+  if (req.path.startsWith('/api/') || req.path.startsWith('/socket.io')) {
+    return next();
+  }
+  const indexPath = path.join(frontendDistPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    _res.sendFile(indexPath);
+  } else {
+    next();
+  }
+});
 
 // ============= 健康检查 API =============
 
@@ -375,6 +443,254 @@ app.post('/api/permission-response', (req, res) => {
   res.json({ success: true });
 });
 
+// ============= 上下文 API =============
+
+/** 存储由前端提交的当前系统上下文 */
+let currentSystemContext: Record<string, unknown> = {};
+
+/**
+ * 获取当前系统上下文（前端在每次发消息前提交最新数据）
+ * GET /api/context
+ */
+app.get('/api/context', (_req, res) => {
+  res.json({ context: currentSystemContext });
+});
+
+/**
+ * 更新当前系统上下文
+ * POST /api/context
+ */
+app.post('/api/context', (req, res) => {
+  const { context } = req.body;
+  if (context) {
+    currentSystemContext = context;
+  }
+  res.json({ success: true });
+});
+
+// ============= 仓库数据查询 API（供 AI 工具调用） =============
+
+/**
+ * 获取仓库列表
+ * GET /api/warehouses
+ * 返回：{ warehouses: Array<{ id, name, location, totalItems, usedItems, totalVolume, usedVolume }> }
+ * 数据来源：currentSystemContext（由前端通过 POST /api/context 提交）
+ */
+app.get('/api/warehouses', (_req, res) => {
+  try {
+    const warehouses = (currentSystemContext as Record<string, unknown>)?.warehouses as Array<Record<string, unknown>> || [];
+    res.json({ warehouses });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : '读取仓库数据失败';
+    console.error('[Warehouses] 错误:', errMsg);
+    res.status(500).json({ error: errMsg });
+  }
+});
+
+/**
+ * 获取单个仓库详情
+ * GET /api/warehouses/:id
+ */
+app.get('/api/warehouses/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const warehouses = (currentSystemContext as Record<string, unknown>)?.warehouses as Array<Record<string, unknown>> || [];
+    const warehouse = warehouses.find((w: any) => w.id === id || w.name === id);
+
+    if (!warehouse) {
+      return res.status(404).json({ error: '仓库不存在' });
+    }
+
+    res.json({ warehouse });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : '读取仓库数据失败';
+    console.error('[Warehouse] 错误:', errMsg);
+    res.status(500).json({ error: errMsg });
+  }
+});
+
+/**
+ * 获取库存列表（从 localStorage mock 数据）
+ * GET /api/inventory?warehouseId=xxx
+ */
+app.get('/api/inventory', (req, res) => {
+  try {
+    // 返回 mock 库存数据（与前端 InTransitPage 中 mockInboundRecords 结构一致）
+    const mockInventory = [
+      { id: 'SKU-001', name: '无线蓝牙耳机', category: '电子产品', warehouse: '深圳仓', warehouseId: 'sz', quantity: 1200, value: 240000, status: '正常' },
+      { id: 'SKU-002', name: '智能手表', category: '电子产品', warehouse: '深圳仓', warehouseId: 'sz', quantity: 850, value: 425000, status: '正常' },
+      { id: 'SKU-003', name: '运动跑鞋', category: '服装鞋帽', warehouse: '洛杉矶仓', warehouseId: 'lax', quantity: 600, value: 180000, status: '预警' },
+      { id: 'SKU-004', name: '保温杯', category: '日用品', warehouse: '法兰克福仓', warehouseId: 'fra', quantity: 2000, value: 160000, status: '正常' },
+      { id: 'SKU-005', name: '机械键盘', category: '电子产品', warehouse: '大阪仓', warehouseId: 'osa', quantity: 450, value: 315000, status: '预警' },
+      { id: 'SKU-006', name: 'USB-C 数据线', category: '电子产品', warehouse: '深圳仓', warehouseId: 'sz', quantity: 5000, value: 250000, status: '正常' },
+      { id: 'SKU-007', name: '瑜伽垫', category: '体育用品', warehouse: '伦敦仓', warehouseId: 'lhr', quantity: 300, value: 45000, status: '正常' },
+    ];
+
+    const { warehouseId } = req.query;
+    let filtered = mockInventory;
+    if (warehouseId && typeof warehouseId === 'string') {
+      filtered = mockInventory.filter(item => item.warehouseId === warehouseId);
+    }
+
+    res.json({ inventory: filtered });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : '读取库存数据失败';
+    console.error('[Inventory] 错误:', errMsg);
+    res.status(500).json({ error: errMsg });
+  }
+});
+
+/**
+ * 获取在途运单列表
+ * GET /api/shipments?status=pending&warehouseId=xxx
+ */
+app.get('/api/shipments', (req, res) => {
+  try {
+    const mockShipments = [
+      { id: 'SHP-001', trackingNo: 'SF1234567890', origin: '深圳', destination: '洛杉矶', warehouseId: 'lax', status: '在途', items: 500, value: 150000, departure: '2026-05-10', estimatedArrival: '2026-05-28' },
+      { id: 'SHP-002', trackingNo: 'SF0987654321', origin: '深圳', destination: '法兰克福', warehouseId: 'fra', items: 300, value: 90000, status: '在途', departure: '2026-05-15', estimatedArrival: '2026-06-05' },
+      { id: 'SHP-003', trackingNo: 'UPS5566778899', origin: '大阪', destination: '深圳', warehouseId: 'sz', items: 800, value: 240000, status: '已到达', departure: '2026-05-08', estimatedArrival: '2026-05-25' },
+      { id: 'SHP-004', trackingNo: 'DHL1122334455', origin: '深圳', destination: '伦敦', warehouseId: 'lhr', items: 450, value: 135000, status: '在途', departure: '2026-05-20', estimatedArrival: '2026-06-10' },
+    ];
+
+    const { status, warehouseId } = req.query;
+    let filtered = mockShipments;
+    if (status && typeof status === 'string') {
+      filtered = filtered.filter(s => s.status === status);
+    }
+    if (warehouseId && typeof warehouseId === 'string') {
+      filtered = filtered.filter(s => s.warehouseId === warehouseId);
+    }
+
+    res.json({ shipments: filtered });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : '读取运单数据失败';
+    console.error('[Shipments] 错误:', errMsg);
+    res.status(500).json({ error: errMsg });
+  }
+});
+
+/**
+ * 获取仪表盘 KPI 数据
+ * GET /api/dashboard/kpi
+ */
+app.get('/api/dashboard/kpi', (_req, res) => {
+  try {
+    const warehouses = (currentSystemContext as Record<string, unknown>)?.warehouses as Array<Record<string, unknown>> || [];
+
+    let totalItems = 0;
+    let warehouseCount = warehouses.length;
+
+    totalItems = warehouses.reduce((sum: number, w: any) => sum + (w.usedItems || 0), 0);
+
+    res.json({
+      totalInventory: totalItems,
+      totalValue: totalItems * 200, // 简化估算
+      warehouseCount,
+      inTransit: 2050,
+      activeShipments: 4,
+      lowStockAlerts: 2,
+    });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : '读取 KPI 数据失败';
+    console.error('[Dashboard KPI] 错误:', errMsg);
+    res.status(500).json({ error: errMsg });
+  }
+});
+
+// ============= Action 队列 API（供 AI 提交操作，前端执行） =============
+
+/**
+ * 提交一个操作指令
+ * POST /api/actions
+ * 请求体：{ type, params }
+ * AI 调用此接口提交操作，前端轮询执行
+ */
+app.post('/api/actions', (req, res) => {
+  try {
+    const { type, params, sessionId } = req.body;
+
+    if (!type || !['create_warehouse', 'delete_warehouse', 'update_warehouse', 'create_shipment', 'update_inventory'].includes(type)) {
+      return res.status(400).json({ error: `无效的操作类型: ${type}` });
+    }
+
+    const action: Action = {
+      id: uuidv4(),
+      type: type as ActionType,
+      params: params || {},
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      sessionId: sessionId || 'unknown',
+    };
+
+    pendingActions.set(action.id, action);
+    console.log(`[Actions] 创建操作: id=${action.id}, type=${action.type}`);
+
+    res.json({ action });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : '创建操作失败';
+    console.error('[Actions] POST 错误:', errMsg);
+    res.status(500).json({ error: errMsg });
+  }
+});
+
+/**
+ * 获取操作列表
+ * GET /api/actions?status=pending
+ * 前端轮询此接口获取待处理操作
+ */
+app.get('/api/actions', (req, res) => {
+  try {
+    const { status } = req.query;
+    let actions = Array.from(pendingActions.values());
+
+    if (status && typeof status === 'string') {
+      actions = actions.filter(a => a.status === status);
+    }
+
+    // 按创建时间排序（最新的在前）
+    actions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    res.json({ actions });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : '获取操作列表失败';
+    console.error('[Actions] GET 错误:', errMsg);
+    res.status(500).json({ error: errMsg });
+  }
+});
+
+/**
+ * 更新操作状态
+ * PATCH /api/actions/:id
+ * 前端执行操作后调用此接口更新状态
+ */
+app.patch('/api/actions/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, result, error } = req.body;
+
+    const action = pendingActions.get(id);
+    if (!action) {
+      return res.status(404).json({ error: '操作不存在' });
+    }
+
+    action.status = (status as ActionStatus) || action.status;
+    if (result !== undefined) action.result = result;
+    if (error !== undefined) action.error = error;
+    action.updatedAt = new Date().toISOString();
+
+    pendingActions.set(id, action);
+    console.log(`[Actions] 更新操作: id=${id}, status=${action.status}`);
+
+    res.json({ action });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : '更新操作失败';
+    console.error('[Actions] PATCH 错误:', errMsg);
+    res.status(500).json({ error: errMsg });
+  }
+});
+
 // ============= 聊天 API（SSE 流式响应） =============
 
 app.post('/api/chat', async (req, res) => {
@@ -442,8 +758,66 @@ app.post('/api/chat', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
-  // 默认系统提示词
-  const defaultSystemPrompt = '你是一个专业的 AI 助手，善于帮助用户解决各种问题。请用简洁清晰的方式回答问题。';
+  // 默认系统提示词 — CrossWMS 领域定制
+  const baseSystemPrompt = `你是 CrossWMS（跨境仓库管理系统）的 AI 助手。
+
+系统背景：
+- CrossWMS 是一个跨境仓库管理系统，管理多个海外仓库
+- 功能模块：仪表盘、仓库管理、在途管理、库存管理、统计报表、系统设置
+- 数据包括：仓库信息、运单跟踪、库存SKU、库龄预警
+
+你的能力：
+- 回答关于仓库管理、库存优化、跨境物流的问题
+- 帮助分析数据、生成报表摘要
+- 提供系统使用指导
+- 通过工具调用帮助用户在系统内执行操作（创建/删除/更新仓库等）
+
+## 可用 API 端点（用于工具调用）
+
+### 1. 数据查询 API（GET 请求，返回 JSON）
+- GET /api/warehouses → 获取仓库列表
+  返回：{ warehouses: [{ id, name, location, usedItems, totalItems, usedVolume, totalVolume }] }
+- GET /api/warehouses/:id → 获取单个仓库详情
+- GET /api/inventory?warehouseId=xxx → 获取库存列表
+- GET /api/shipments?status=pending&warehouseId=xxx → 获取在途运单
+- GET /api/dashboard/kpi → 获取仪表盘 KPI 数据
+  返回：{ totalInventory, totalValue, warehouseCount, inTransit, activeShipments, lowStockAlerts }
+
+### 2. 操作队列 API（用于执行写操作）
+- POST /api/actions → 提交操作指令
+  请求体：{ type: "create_warehouse"|"delete_warehouse"|"update_warehouse", params: {...} }
+  返回：{ action: { id, type, status } }
+  操作类型与参数：
+  - create_warehouse: { name, location, totalItems, usedItems, totalVolume, usedVolume }
+  - delete_warehouse: { id: "仓库ID" }
+  - update_warehouse: { id: "仓库ID", updates: { name?, location?, totalItems?, usedItems?, totalVolume?, usedVolume? } }
+- GET /api/actions?status=pending → 获取待处理操作列表
+- PATCH /api/actions/:id → 更新操作状态 { status: "completed"|"failed", result?: "...", error?: "..." }
+
+## 操作执行流程
+1. 当用户要求创建/删除/更新仓库时，调用 POST /api/actions 提交操作
+2. 前端会轮询 GET /api/actions?status=pending 获取待处理操作并执行
+3. 前端执行完后调用 PATCH /api/actions/:id 更新状态
+
+## 回答要求
+- 使用中文回答
+- 涉及数据时引用具体数值
+- 简洁专业，避免冗余
+- 如果不确定，明确说明而不是猜测
+- 提交操作后告诉用户"已提交操作，前端正在执行..."`;
+
+  // 构建系统提示词：基础 + 当前上下文数据
+  let finalSystemPrompt = baseSystemPrompt;
+
+  // 如果有上下文数据，追加到系统提示词
+  if (currentSystemContext && Object.keys(currentSystemContext).length > 0) {
+    const contextStr = Object.entries(currentSystemContext)
+      .map(([key, value]) => `- ${key}: ${JSON.stringify(value)}`)
+      .join('\n');
+    finalSystemPrompt += `\n\n当前系统数据：\n${contextStr}`;
+  }
+
+  const systemPromptToUse = systemPrompt || finalSystemPrompt;
 
   // 工作目录：优先使用请求中的 cwd，否则使用当前目录
   const workingDir = cwd || process.cwd();
@@ -518,7 +892,7 @@ app.post('/api/chat', async (req, res) => {
         cwd: workingDir,
         model: selectedModel,
         maxTurns: 10,
-        systemPrompt: systemPrompt || defaultSystemPrompt,
+        systemPrompt: systemPromptToUse,
         permissionMode: permissionMode || 'default',
         canUseTool,
         ...(sdkSessionId ? { resume: sdkSessionId } : {})

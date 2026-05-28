@@ -198,6 +198,22 @@ def start_server():
     env['PORT'] = str(SERVER_PORT)
     env['CROSSWMS_DATA_DIR'] = os.path.expanduser('~/.crosswms')
 
+    # 设置 NODE_PATH，让 esbuild 外部化的 require() 能找到 node_modules
+    if getattr(sys, 'frozen', False):
+        meipass = sys._MEIPASS
+        # server_dist 目录下的 node_modules
+        server_dist_dir = os.path.dirname(server_script)
+        nm_path = os.path.join(server_dist_dir, 'node_modules')
+        if os.path.isdir(nm_path):
+            env['NODE_PATH'] = nm_path
+            print(f"[Server] NODE_PATH={nm_path}")
+
+        # 设置前端静态文件路径
+        fe_dist = os.path.join(meipass, 'frontend_dist')
+        if os.path.isdir(fe_dist):
+            env['FRONTEND_DIST_PATH'] = fe_dist
+            print(f"[Server] FRONTEND_DIST_PATH={fe_dist}")
+
     # 如果是 .ts 文件，需要用 tsx 运行
     if server_script.endswith('.ts'):
         # 开发模式用 tsx
@@ -737,29 +753,37 @@ class Api:
 
 
 def main():
-    pw_index_path = None  # 预定义，确保 finally 块中可安全判断
     try:
-        index_path = get_index_path()
-
-        # CSS 注入已在构建时（build-dmg-pywebview.sh）完成，
-        # index.html 已包含 --pw-top: 28px，运行时不需要再写入。
-        # 直接使用原文件（DMG 只读文件系统也不影响）。
-        #
-        # 注意：development 模式（npm run dev）下没有注入，
-        # 浏览器中 --pw-top 默认为 0，不影响红绿灯（浏览器没有红绿灯）。
-        pw_index_path = index_path
-
-        # 1. 启动 Node.js 后端服务器（AI 助手）— 后台启动，不阻塞窗口显示
+        # 1. 启动 Node.js 后端服务器（AI 助手 + 静态文件服务）
         server_proc = start_server()
-        if server_proc:
-            print("[Server] 后端正在后台启动，窗口将先显示...")
 
-        # 2. 创建 pywebview 窗口
-        # 使用注入后的临时 index_pw.html（已含 --pw-top: 28px）
+        # 2. 等待后端就绪（前端由 Node.js 后端通过 express.static 服务，
+        #    加载 http://localhost:3001/ 完全避免 WKWebView file:// ES Module 白屏问题）
+        server_ready = False
+        if server_proc:
+            server_ready = wait_for_server()
+            if server_ready:
+                print("[Server] ✅ 后端就绪，前端将通过 http://localhost:3001/ 加载")
+            else:
+                print("[Server] ⚠️  后端未完全就绪，继续尝试加载...")
+
+        # 确定加载 URL
+        if server_ready:
+            frontend_url = f"http://localhost:{SERVER_PORT}/"
+        else:
+            # 兜底：尝试用 file:// 加载（可能白屏，但至少不崩溃）
+            print("[WARN] 后端未启动，尝试用 file:// 加载 index.html")
+            try:
+                frontend_url = get_index_path()
+            except SystemExit:
+                print("[ERROR] index.html 也未找到，无法启动")
+                return
+
+        # 3. 创建 pywebview 窗口，从 Node.js 后端加载前端（同源，无 ES Module 限制）
         api = Api()
         window = webview.create_window(
             title=APP_NAME,
-            url=pw_index_path,     # 加载注入后的 HTML，红绿灯区域已留白
+            url=frontend_url,      # http://localhost:3001/ — Node.js 服务静态文件 + API
             width=WIDTH,
             height=HEIGHT,
             min_size=MIN_SIZE,
@@ -772,7 +796,7 @@ def main():
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
-        # 3. 启动事件循环（阻塞直到窗口关闭）
+        # 4. 启动事件循环（阻塞直到窗口关闭）
         webview.start(debug=False)
 
         print("CrossWMS closed.")
@@ -782,7 +806,7 @@ def main():
         traceback.print_exc()
         input("Press Enter to exit...")
     finally:
-        # 4. 确保后端服务器被停止
+        # 5. 确保后端服务器被停止
         stop_server()
 
 

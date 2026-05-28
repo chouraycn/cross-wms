@@ -1,26 +1,27 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box, IconButton, Button, Tooltip, Snackbar, Alert } from '@mui/material';
+import { CssBaseline, Box, IconButton, Button, Tooltip, Typography } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import Sidebar, { SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from './components/Layout/Sidebar';
-import DashboardPage from './pages/DashboardPage';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
-import { useAutoUpdateCheck } from './hooks/useAutoUpdateCheck';
-import { openDownloadUrl, formatVersion, type UpdateStatus } from './services/updateService';
-import WarehousesPage from './pages/WarehousesPage';
-import InTransitPage from './pages/InTransitPage';
-import InventoryPage from './pages/InventoryPage';
-import TencentDocsPage from './pages/TencentDocsPage';
-import ReportsPage from './pages/ReportsPage';
-import SettingsPage from './pages/SettingsPage';
 import { AppSettingsProvider } from './contexts/AppSettingsContext';
 import { isPyWebView } from './services/tencentDocsApi';
 import { AIAssistantProvider, AIAssistantFab, AIAssistantPanel } from './components/AIAssistant/AIAssistantPanel';
+import { UpdateProvider } from './contexts/UpdateContext';
+import UpdateNotification from './components/UpdateNotification';
+
+// 路由级懒加载 — 每个页面组件独立 chunk，用户导航时按需下载
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const WarehousesPage = lazy(() => import('./pages/WarehousesPage'));
+const InTransitPage = lazy(() => import('./pages/InTransitPage'));
+const InventoryPage = lazy(() => import('./pages/InventoryPage'));
+const TencentDocsPage = lazy(() => import('./pages/TencentDocsPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 /** Global MUI Theme */
 const theme = createTheme({
@@ -226,24 +227,6 @@ const MainLayout: React.FC = () => {
     setSidebarCollapsed((prev) => !prev);
   }, []);
 
-  // ===================== 自动更新检查 =====================
-  const [autoUpdateStatus, setAutoUpdateStatus] = useState<UpdateStatus | null>(null);
-  const [autoUpdateSnackbar, setAutoUpdateSnackbar] = useState(false);
-
-  const handleAutoUpdateFound = useCallback((status: UpdateStatus) => {
-    setAutoUpdateStatus(status);
-    setAutoUpdateSnackbar(true);
-  }, []);
-
-  useAutoUpdateCheck(handleAutoUpdateFound, 3000);
-
-  const handleAutoDownload = useCallback(() => {
-    if (autoUpdateStatus?.releaseInfo?.dmgUrl) {
-      openDownloadUrl(autoUpdateStatus.releaseInfo.dmgUrl);
-    }
-    setAutoUpdateSnackbar(false);
-  }, [autoUpdateStatus]);
-
   // 自动隐藏滚动条：滚动时显示，停止 3 秒后隐藏
   const scrollRef = useAutoHideScrollbar();
 
@@ -388,6 +371,11 @@ const MainLayout: React.FC = () => {
               },
             }}
           >
+            <Suspense fallback={
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 12 }}>
+                <Typography sx={{ color: '#9CA3AF', fontSize: '0.9rem' }}>加载中…</Typography>
+              </Box>
+            }>
             <Routes>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/warehouses" element={<WarehousesPage />} />
@@ -398,6 +386,7 @@ const MainLayout: React.FC = () => {
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Routes>
+          </Suspense>
           </Box>
         </Box>
       </Box>
@@ -406,51 +395,8 @@ const MainLayout: React.FC = () => {
       <AIAssistantFab />
       <AIAssistantPanel />
 
-      {/* 启动自动更新 Snackbar — 有新版本时在右下角弹出 */}
-      <Snackbar
-        open={autoUpdateSnackbar}
-        autoHideDuration={15000}
-        onClose={() => setAutoUpdateSnackbar(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        sx={{ mb: 8 }}
-      >
-        <Alert
-          icon={<SystemUpdateIcon sx={{ fontSize: 20 }} />}
-          severity="warning"
-          variant="filled"
-          sx={{
-            width: '100%',
-            minWidth: 360,
-            backgroundColor: '#9A3412',
-            color: '#FFFFFF',
-            '& .MuiAlert-icon': { color: '#FDBA74' },
-          }}
-          action={
-            <Button
-              size="small"
-              variant="contained"
-              onClick={handleAutoDownload}
-              sx={{
-                backgroundColor: '#FFFFFF',
-                color: '#9A3412',
-                fontWeight: 600,
-                fontSize: '0.75rem',
-                boxShadow: 'none',
-                '&:hover': { backgroundColor: '#FEF3C7', boxShadow: 'none' },
-              }}
-            >
-              下载更新
-            </Button>
-          }
-        >
-          <Box sx={{ fontSize: '0.85rem', fontWeight: 600, mb: 0.25 }}>
-            发现新版本 V{autoUpdateStatus?.releaseInfo ? formatVersion(autoUpdateStatus.releaseInfo.version) : ''}
-          </Box>
-          <Box sx={{ fontSize: '0.75rem', opacity: 0.85 }}>
-            点击下载最新版本
-          </Box>
-        </Alert>
-      </Snackbar>
+      {/* 自动更新通知 — 左下角 */}
+      <UpdateNotification />
     </Box>
   );
 };
@@ -461,9 +407,11 @@ const App: React.FC = () => {
       <CssBaseline />
       <HashRouter>
         <AppSettingsProvider>
-          <AIAssistantProvider>
-            <MainLayout />
-          </AIAssistantProvider>
+          <UpdateProvider>
+            <AIAssistantProvider>
+              <MainLayout />
+            </AIAssistantProvider>
+          </UpdateProvider>
         </AppSettingsProvider>
       </HashRouter>
     </ThemeProvider>

@@ -177,9 +177,9 @@ interface GitHubHeatmapProps {
 }
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
-const CELL_SIZE = 13;
-const CELL_GAP = 3;
-const WEEKDAY_LABEL_WIDTH = 28;
+const CELL_SIZE = 14;          // 用户指定：GitHub 官方 heatmap rect 宽 14px
+const CELL_GAP = 3;           // 用户指定：gap 3px
+const WEEKDAY_LABEL_WIDTH = 36; // 用户指定：左侧月份/周几标签宽 36px
 const MONTH_LABEL_HEIGHT = 20;
 const LEGEND_LABELS = ['无', '少', '中', '多', '满'];
 

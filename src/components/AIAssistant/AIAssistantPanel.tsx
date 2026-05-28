@@ -28,9 +28,19 @@ import StopOutlinedIcon from '@mui/icons-material/StopOutlined';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
+import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
+import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
+import { useLocation } from 'react-router-dom';
+
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import { Message, Session, Model, PermissionRequest, PermissionMode, ToolCall, ContentBlock } from './types';
+import { getWarehouses, subscribeWarehouses, addWarehouse, updateWarehouse, removeWarehouse } from '../../stores/warehouseStore';
+import type { Warehouse } from '../../types';
 import * as api from './api';
+import type { Action } from './api';
 
 // ==================== Context ====================
 
@@ -82,16 +92,173 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [isConnected, setIsConnected] = useState(false);
   const [permissionRequest, setPermissionRequest] = useState<PermissionRequest | null>(null);
   const [permissionMode, setPermissionMode] = useState<PermissionMode>('default');
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'error' | 'warning' | 'info' }>({
     open: false,
     message: '',
     severity: 'error',
   });
 
-  // 保存当前 SSE 请求的 AbortController 引用
-  const abortControllerRef = useRef<AbortController | null>(null);
+  // 当前页面路径（从 react-router location 获取）
+  const location = useLocation();
+  const [currentPage, setCurrentPage] = useState(location.pathname);
 
-  const currentSession = sessions.find(s => s.id === currentSessionId);
+  // 选中仓库（从 localStorage 读取）
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(
+    () => localStorage.getItem('crosswms-selected-warehouse')
+  );
+
+  // 跟踪仓库列表变化
+  const [warehouses, setWarehouses] = useState<Warehouse[]>(getWarehouses);
+
+  // 监听路由变化
+  useEffect(() => {
+    setCurrentPage(location.pathname);
+  }, [location.pathname]);
+
+  // 监听仓库数据变化
+  useEffect(() => {
+    const unsubscribe = subscribeWarehouses((newWarehouses) => {
+      setWarehouses(newWarehouses);
+    });
+    return unsubscribe;
+  }, []);
+
+  // ============= Action 轮询和执行器 =============
+
+  /**
+   * 执行单个 Action
+   * 根据 Action.type 调用对应的 warehouseStore 函数
+   */
+  const executeAction = useCallback(async (action: Action) => {
+    console.log(`[Action Executor] 执行操作: ${action.id}, type=${action.type}`);
+
+    try {
+      // 标记为 processing
+      await api.updateActionStatus(action.id, { status: 'processing' });
+
+      let result = '';
+
+      switch (action.type) {
+        case 'create_warehouse': {
+          const params = action.params as Record<string, unknown>;
+          const now = new Date().toISOString();
+          const newWarehouse: Warehouse = {
+            id: params.id as string || crypto.randomUUID(),
+            name: params.name as string || '新仓库',
+            country: (params.country as string) || '',
+            city: (params.city as string) || '',
+            address: (params.address as string) || '',
+            status: (params.status as any) || 'normal',
+            manager: (params.manager as string) || '',
+            phone: (params.phone as string) || '',
+            totalItems: (params.totalItems as number) || 0,
+            usedItems: (params.usedItems as number) || 0,
+            totalVolume: (params.totalVolume as number) || 0,
+            usedVolume: (params.usedVolume as number) || 0,
+            createdAt: now,
+          };
+          addWarehouse(newWarehouse);
+          result = `仓库 "${newWarehouse.name}" 已创建（ID: ${newWarehouse.id}）`;
+          break;
+        }
+
+        case 'delete_warehouse': {
+          const params = action.params as Record<string, unknown>;
+          const warehouseId = params.id as string;
+          if (!warehouseId) throw new Error('缺少仓库 ID');
+          removeWarehouse(warehouseId);
+          result = `仓库（ID: ${warehouseId}）已删除`;
+          break;
+        }
+
+        case 'update_warehouse': {
+          const params = action.params as Record<string, unknown>;
+          const warehouseId = params.id as string;
+          const updates = params.updates as Record<string, unknown>;
+          if (!warehouseId) throw new Error('缺少仓库 ID');
+
+          const existing = getWarehouses().find(w => w.id === warehouseId);
+          if (!existing) throw new Error(`仓库不存在: ${warehouseId}`);
+
+          const updatedWarehouse = { ...existing, ...updates } as Warehouse;
+          updateWarehouse(updatedWarehouse);
+          result = `仓库 "${updatedWarehouse.name}" 已更新`;
+          break;
+        }
+
+        default:
+          throw new Error(`未知操作类型: ${action.type}`);
+      }
+
+      // 标记为完成
+      await api.updateActionStatus(action.id, { status: 'completed', result });
+      console.log(`[Action Executor] 操作完成: ${action.id}, result=${result}`);
+    } catch (error: any) {
+      const errMsg = error?.message || '执行失败';
+      console.error(`[Action Executor] 操作失败: ${action.id}, error=${errMsg}`);
+      await api.updateActionStatus(action.id, { status: 'failed', error: errMsg });
+    }
+  }, []);
+
+  // 轮询 Action 队列（每 3 秒检查一次待处理操作）
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const data = await api.getPendingActions('pending');
+        if (data.actions && data.actions.length > 0) {
+          console.log(`[Action Poller] 发现 ${data.actions.length} 个待处理操作`);
+          // 逐个执行（串行，避免并发问题）
+          for (const action of data.actions) {
+            await executeAction(action);
+          }
+        }
+      } catch (error) {
+        // 轮询失败静默处理
+        console.error('[Action Poller] 轮询失败:', error);
+      }
+    }, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [isConnected, executeAction]);
+
+  // 监听选中仓库变化（localStorage 事件）
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'crosswms-selected-warehouse') {
+        setSelectedWarehouseId(e.newValue);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // 构建并同步上下文到后端
+  const syncContext = useCallback(() => {
+    const ctx = {
+      currentPage,
+      selectedWarehouseId,
+      warehouseCount: warehouses.length,
+      warehouses: warehouses.map((w) => ({
+        id: w.id,
+        name: w.name,
+        location: [w.city, w.country].filter(Boolean).join(', '),
+        usedItems: w.usedItems,
+        totalItems: w.totalItems,
+        usedVolume: w.usedVolume,
+        totalVolume: w.totalVolume,
+      })),
+      timestamp: new Date().toISOString(),
+    };
+    api.updateContext(ctx).catch(() => {});
+  }, [currentPage, selectedWarehouseId, warehouses]);
+
+  // 页面/仓库变化时自动同步上下文
+  useEffect(() => {
+    syncContext();
+  }, [syncContext]);
 
   // 显示错误提示
   const showError = useCallback((message: string) => {
@@ -107,6 +274,13 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
     let cancelled = false;
     let attempts = 0;
     const MAX_ATTEMPTS = 10;
+
+    // 监听消息操作按钮的 snackbar 事件
+    const handleSnackbarEvent = (e: CustomEvent) => {
+      const { message, severity } = e.detail;
+      setSnackbar({ open: true, message, severity: severity || 'info' });
+    };
+    window.addEventListener('ai-snackbar', handleSnackbarEvent as EventListener);
 
     const tryConnect = async () => {
       while (!cancelled && attempts < MAX_ATTEMPTS) {
@@ -137,6 +311,9 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
             }));
             setSessions(loaded);
           }
+
+          // 初始同步上下文
+          syncContext();
           return; // 连接成功
         } catch {
           attempts++;
@@ -150,8 +327,11 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     };
     tryConnect();
-    return () => { cancelled = true; };
-  }, []);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('ai-snackbar', handleSnackbarEvent as EventListener);
+    };
+  }, [syncContext]);
 
   const togglePanel = useCallback(() => setIsOpen(prev => !prev), []);
   const openPanel = useCallback(() => setIsOpen(true), []);
@@ -216,6 +396,8 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
     let currentTextBlock = '';
     let realSessionId = sessionId;
     let realAssistantMessageId = assistantMessage.id;
+
+    // 同步最新上下文到后端（函数已在 useEffect 中自动调用，此处确保最新）
 
     try {
       await api.sendChatMessage(
@@ -461,7 +643,7 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
     isOpen,
     sessions,
     currentSessionId,
-    currentSession,
+    currentSession: sessions.find(s => s.id === currentSessionId) || undefined,
     models,
     selectedModel,
     isLoading,
@@ -854,10 +1036,59 @@ export const AIAssistantPanel: React.FC = () => {
                                     lineHeight: 1.6,
                                     color: '#1F2937',
                                     wordBreak: 'break-word',
-                                    whiteSpace: 'pre-wrap',
+                                    maxWidth: '100%',
+                                    overflow: 'hidden',
+                                    '& pre': {
+                                      backgroundColor: '#F9FAFB',
+                                      border: '1px solid #E5E7EB',
+                                      borderRadius: 1,
+                                      p: 1,
+                                      overflow: 'auto',
+                                      fontSize: '0.75rem',
+                                      fontFamily: 'monospace',
+                                      whiteSpace: 'pre-wrap',
+                                      wordBreak: 'break-all',
+                                    },
+                                    '& code': {
+                                      backgroundColor: '#F3F4F6',
+                                      px: 0.5,
+                                      py: 0.25,
+                                      borderRadius: 0.5,
+                                      fontSize: '0.75rem',
+                                      fontFamily: 'monospace',
+                                    },
+                                    '& table': {
+                                      borderCollapse: 'collapse',
+                                      width: '100%',
+                                      my: 1,
+                                      fontSize: '0.75rem',
+                                    },
+                                    '& th, & td': {
+                                      border: '1px solid #E5E7EB',
+                                      p: 0.5,
+                                      textAlign: 'left',
+                                    },
+                                    '& th': {
+                                      backgroundColor: '#F9FAFB',
+                                      fontWeight: 600,
+                                    },
+                                    '& blockquote': {
+                                      borderLeft: '3px solid #D1D5DB',
+                                      pl: 1,
+                                      my: 1,
+                                      color: '#6B7280',
+                                      fontStyle: 'italic',
+                                    },
+                                    '& ul, & ol': {
+                                      pl: 2,
+                                      my: 0.5,
+                                    },
+                                    '& p': {
+                                      my: 0.5,
+                                    },
                                   }}
                                 >
-                                  {block.text}
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.text}</ReactMarkdown>
                                   {message.isStreaming && i === (message.contentBlocks?.length ?? 0) - 1 && (
                                     <Box
                                       component="span"
@@ -942,6 +1173,73 @@ export const AIAssistantPanel: React.FC = () => {
                             </Typography>
                           </Box>
                         ) : null}
+
+                        {/* 消息操作按钮 - 仅助手消息且非流式 */}
+                        {!message.isStreaming && message.role === 'assistant' && (
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              gap: 0.5,
+                              mt: 0.5,
+                              opacity: { xs: 1, sm: 0.6 },
+                              transition: 'opacity 0.2s',
+                              '&:hover': { opacity: 1 },
+                            }}
+                          >
+                            <Tooltip title="复制内容" placement="top">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  const textToCopy = message.contentBlocks
+                                    ? message.contentBlocks
+                                        .filter(b => b.type === 'text')
+                                        .map(b => b.text)
+                                        .join('\n')
+                                    : message.content;
+                                  navigator.clipboard.writeText(textToCopy || '');
+                                  // 使用全局 snackbar — 通过事件或简单方式
+                                  const event = new CustomEvent('ai-snackbar', {
+                                    detail: { message: '已复制到剪贴板', severity: 'info' }
+                                  });
+                                  window.dispatchEvent(event);
+                                }}
+                                sx={{ p: 0.25, color: '#9CA3AF', '&:hover': { color: '#111827' } }}
+                              >
+                                <ContentCopyOutlinedIcon sx={{ fontSize: 14 }} />
+                              </IconButton>
+                            </Tooltip>
+
+                            <Tooltip title="有帮助" placement="top">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  const event = new CustomEvent('ai-snackbar', {
+                                    detail: { message: '感谢反馈！', severity: 'info' }
+                                  });
+                                  window.dispatchEvent(event);
+                                }}
+                                sx={{ p: 0.25, color: '#9CA3AF', '&:hover': { color: '#111827' } }}
+                              >
+                                <ThumbUpOutlinedIcon sx={{ fontSize: 14 }} />
+                              </IconButton>
+                            </Tooltip>
+
+                            <Tooltip title="无帮助" placement="top">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  const event = new CustomEvent('ai-snackbar', {
+                                    detail: { message: '感谢反馈，我们会改进', severity: 'info' }
+                                  });
+                                  window.dispatchEvent(event);
+                                }}
+                                sx={{ p: 0.25, color: '#9CA3AF', '&:hover': { color: '#111827' } }}
+                              >
+                                <ThumbDownOutlinedIcon sx={{ fontSize: 14 }} />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        )}
                       </>
                     )}
                   </Box>

@@ -379,3 +379,61 @@ export async function sendPermissionResponse(
     body: JSON.stringify({ requestId, behavior, message }),
   }, false);
 }
+
+// ==================== 上下文 API ====================
+
+/**
+ * 获取当前系统上下文
+ */
+export async function getContext(): Promise<{ context: Record<string, unknown> }> {
+  return apiFetch('/api/context', undefined, false);
+}
+
+/**
+ * 更新当前系统上下文（前端在发送消息前调用）
+ */
+export async function updateContext(context: Record<string, unknown>): Promise<{ success: boolean }> {
+  return apiFetch('/api/context', {
+    method: 'POST',
+    body: JSON.stringify({ context }),
+  }, false);
+}
+
+// ==================== Action 队列 API ====================
+
+/** Action 数据结构 */
+export interface Action {
+  id: string;
+  type: 'create_warehouse' | 'delete_warehouse' | 'update_warehouse' | 'create_shipment' | 'update_inventory';
+  params: Record<string, unknown>;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  result?: string;
+  error?: string;
+  createdAt: string;
+  updatedAt: string;
+  sessionId: string;
+}
+
+/**
+ * 获取操作列表
+ * GET /api/actions?status=pending
+ * @param status 可选，过滤状态
+ */
+export async function getPendingActions(status?: string): Promise<{ actions: Action[] }> {
+  const query = status ? `?status=${status}` : '';
+  return apiFetch(`/api/actions${query}`, undefined, false);
+}
+
+/**
+ * 更新操作状态
+ * PATCH /api/actions/:id
+ */
+export async function updateActionStatus(
+  actionId: string,
+  data: { status: 'pending' | 'processing' | 'completed' | 'failed'; result?: string; error?: string }
+): Promise<{ action: Action }> {
+  return apiFetch(`/api/actions/${actionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }, false);
+}

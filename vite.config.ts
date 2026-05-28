@@ -1,30 +1,13 @@
-import { defineConfig, Plugin } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { version } from './package.json'
-
-/**
- * Vite 插件：移除构建产物中的 crossorigin 属性
- * file:// 协议下 crossorigin 会触发 CORS 预检请求导致白屏
- */
-function removeCrossorigin(): Plugin {
-  return {
-    name: 'remove-crossorigin',
-    enforce: 'post',
-    transformIndexHtml(html: string) {
-      return html
-        .replace(/ crossorigin/g, '')
-        .replace(/ type="module"/g, ' defer');
-    },
-  };
-}
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    removeCrossorigin(),
   ],
-  base: './',
+  base: '/',
   resolve: {
     alias: {
       '@': '/src',
@@ -34,10 +17,22 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(version),
   },
-  // file:// 本地化：不需要 module preload
   build: {
-    modulePreload: {
-      resolveDependencies: () => [],
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-mui': [
+            '@mui/material',
+            '@mui/icons-material',
+            '@emotion/react',
+            '@emotion/styled',
+          ],
+          'vendor-recharts': ['recharts'],
+          'vendor-markdown': ['react-markdown', 'remark-gfm'],
+          'vendor-dayjs': ['dayjs'],
+        },
+      },
     },
   },
 })
