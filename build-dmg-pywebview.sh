@@ -132,14 +132,14 @@ if command -v npx &>/dev/null; then
     --bundle \
     --platform=node \
     --target=node18 \
-    --format=esm \
-    --outdir="$SERVER_BUILD_DIR" \
+    --format=cjs \
+    --outfile="$SERVER_BUILD_DIR/index.cjs" \
     --external:better-sqlite3 \
     --external:@tencent-ai/agent-sdk \
     --external:express \
     --external:cors \
     --external:uuid
-  echo "✅ 后端编译完成"
+  echo "✅ 后端编译完成 (index.cjs)"
 else
   echo "⚠️  esbuild 不可用，尝试手动复制..."
   # 回退：直接复制 .ts 文件，运行时用 tsx
@@ -192,6 +192,14 @@ fi
 echo "🔨 用 PyInstaller 构建 CrossWMS.app..."
 cd "$PROJECT_DIR"
 
+# 临时移走 node_modules，避免 PyInstaller 把 .node 文件当 Python 扩展处理
+SERVER_NODE_MODULES="$SERVER_BUILD_DIR/node_modules"
+SERVER_NODE_MODULES_BAK="$BUILD_DIR/server_dist_node_modules_bak"
+if [ -d "$SERVER_NODE_MODULES" ]; then
+  mv "$SERVER_NODE_MODULES" "$SERVER_NODE_MODULES_BAK"
+  echo "✅ 已临时移走 node_modules（避免 PyInstaller 处理 .node 文件）"
+fi
+
 "$PYINSTALLER" \
   --name "CrossWMS" \
   --windowed \
@@ -206,6 +214,15 @@ cd "$PROJECT_DIR"
   --workpath "$BUILD_DIR/work" \
   --specpath "$BUILD_DIR" \
   pywebview_app.py
+
+# 恢复 node_modules 到 .app 中
+APP_SERVER_DIST="$BUILD_DIR/dist/CrossWMS.app/Contents/Resources/server_dist"
+if [ -d "$SERVER_NODE_MODULES_BAK" ]; then
+  mkdir -p "$APP_SERVER_DIST"
+  cp -r "$SERVER_NODE_MODULES_BAK" "$APP_SERVER_DIST/node_modules"
+  rm -rf "$SERVER_NODE_MODULES_BAK"
+  echo "✅ node_modules 已复制到 .app/Contents/Resources/server_dist/"
+fi
 
 # 7. 修复 Info.plist（使用 $VERSION 变量，不再硬编码）
 APP_PATH="$BUILD_DIR/dist/CrossWMS.app"
@@ -312,12 +329,28 @@ if [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
     echo "  Release 已存在 (ID: $RELEASE_ID)，上传附件..."
   else
     echo "  创建 Release v${VERSION}..."
-    NOTES=$(cat "$PROJECT_DIR/RELEASE_NOTES.md" 2>/dev/null || echo "CrossWMS v${VERSION} 发布")
+    # 用 temp file 避免 shell 引号嵌套问题（Python -c 里的 '''$NOTES''' 会被 shell 误解析）
+    echo -n "$VERSION" > /tmp/crosswms_version.txt
+    if [ -f "$PROJECT_DIR/RELEASE_NOTES.md" ]; then
+      cat "$PROJECT_DIR/RELEASE_NOTES.md" > /tmp/crosswms_notes.txt
+    else
+      echo -n "CrossWMS v${VERSION} 发布" > /tmp/crosswms_notes.txt
+    fi
+    python3 << 'PYEOF' > /tmp/crosswms_release_data.json
+import json
+with open('/tmp/crosswms_version.txt') as f:
+    version = f.read().strip()
+with open('/tmp/crosswms_notes.txt') as f:
+    notes = f.read().strip()
+print(json.dumps({"tag_name": "v" + version, "name": "CrossWMS v" + version, "body": notes}))
+PYEOF
     RELEASE_DATA=$(curl -s -X POST \
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
-      -d "$(python3 -c "import json; print(json.dumps({'tag_name': 'v${VERSION}', 'name': 'CrossWMS v${VERSION}', 'body': '''$NOTES'''}))")" \
+      -d @/tmp/crosswms_release_data.json \
       "https://api.github.com/repos/chouraycn/cross-wms/releases")
+    # 清理 temp file
+    rm -f /tmp/crosswms_version.txt /tmp/crosswms_notes.txt /tmp/crosswms_release_data.json
     NEW_ID=$(echo "$RELEASE_DATA" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
     if [ -n "$NEW_ID" ]; then
       RELEASE_ID="$NEW_ID"

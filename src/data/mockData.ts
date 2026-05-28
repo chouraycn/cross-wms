@@ -598,12 +598,14 @@ export const mockOutboundRecords: OutboundRecord[] = [
 
 // ===================== Derived / Computed Data =====================
 
-/** 计算各仓库容积利用率（基于件数） */
+/** 计算各仓库容积利用率（基于件数）— 防御性计算，避免 NaN / Infinity */
 export function getWarehouseUtilization(wh: Warehouse): number {
-  const total = wh.totalItems || wh.totalVolume;
-  const used = wh.usedItems || wh.usedVolume;
-  if (total === 0) return 0;
-  return parseFloat(((used / total) * 100).toFixed(1));
+  const total = Number.isFinite(wh.totalItems) && wh.totalItems! > 0 ? wh.totalItems! : (Number.isFinite(wh.totalVolume) ? wh.totalVolume : 1);
+  const used = Number.isFinite(wh.usedItems) && wh.usedItems! >= 0 ? wh.usedItems! : (Number.isFinite(wh.usedVolume) ? wh.usedVolume : 0);
+  if (total <= 0) return 0;
+  const ratio = used / total;
+  if (!Number.isFinite(ratio)) return 0;
+  return parseFloat((ratio * 100).toFixed(1));
 }
 
 /** 获取容积率颜色（支持自定义阈值） */

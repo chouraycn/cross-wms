@@ -51,8 +51,8 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
 
     return filteredWarehouses.map((wh) => {
       // 容积使用率
-      const totalItems = wh.totalItems || wh.totalVolume;
-      const usedItems = wh.usedItems || wh.usedVolume;
+      const totalItems = Number.isFinite(wh.totalItems) && wh.totalItems! > 0 ? wh.totalItems! : (Number.isFinite(wh.totalVolume) ? wh.totalVolume : 1);
+      const usedItems = Number.isFinite(wh.usedItems) && wh.usedItems! >= 0 ? wh.usedItems! : (Number.isFinite(wh.usedVolume) ? wh.usedVolume : 0);
       const utilizationRate = totalItems > 0 ? (usedItems / totalItems) * 100 : 0;
 
       // 在途货物量（从 transitOrders 汇总目的地为该仓库的）

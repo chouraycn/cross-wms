@@ -54,8 +54,8 @@ function computeAlerts(
     : warehouses.filter((w) => w.id === selectedWarehouse);
 
   for (const wh of targetWarehouses) {
-    const totalItems = wh.totalItems || wh.totalVolume;
-    const usedItems = wh.usedItems || wh.usedVolume;
+    const totalItems = Number.isFinite(wh.totalItems) && wh.totalItems! > 0 ? wh.totalItems! : (Number.isFinite(wh.totalVolume) ? wh.totalVolume : 1);
+    const usedItems = Number.isFinite(wh.usedItems) && wh.usedItems! >= 0 ? wh.usedItems! : (Number.isFinite(wh.usedVolume) ? wh.usedVolume : 0);
     const rate = totalItems > 0 ? (usedItems / totalItems) * 100 : 0;
     if (rate >= fullThreshold) {
       alerts.push({
@@ -86,8 +86,8 @@ function computeAlerts(
     for (const wh of targetWarehouses) {
       const transitItems = transitByDest[wh.id] || 0;
       if (transitItems > 0) {
-        const totalItems = wh.totalItems || wh.totalVolume;
-        const usedItems = wh.usedItems || wh.usedVolume;
+        const totalItems = Number.isFinite(wh.totalItems) && wh.totalItems! > 0 ? wh.totalItems! : (Number.isFinite(wh.totalVolume) ? wh.totalVolume : 1);
+        const usedItems = Number.isFinite(wh.usedItems) && wh.usedItems! >= 0 ? wh.usedItems! : (Number.isFinite(wh.usedVolume) ? wh.usedVolume : 0);
         const afterRate = totalItems > 0 ? ((usedItems + transitItems) / totalItems) * 100 : 0;
         if (afterRate >= transitAlertThreshold) {
           alerts.push({
@@ -196,47 +196,9 @@ const DashboardPage: React.FC = () => {
   // Check if any KPI cards are visible
   const hasKpiCards = vis.kpiTransitVolume || vis.kpiVolumeUtilization || vis.kpiPendingInbound || vis.kpiOutboundCount || vis.kpiInventoryDepth;
 
-  // 没有仓库时显示引导
-  if (warehouses.length === 0) {
-    return (
-      <Box key={refreshKey} className="page-fade-in">
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827' }}>
-            仪表盘总览
-          </Typography>
-        </Box>
-        <Box sx={{ textAlign: 'center', py: 10 }}>
-          <WarehouseOutlinedIcon sx={{ fontSize: 56, color: '#D1D5DB', mb: 2 }} />
-          <Typography sx={{ fontSize: '1rem', fontWeight: 500, color: '#6B7280', mb: 0.5 }}>
-            暂无仓库数据
-          </Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF', mb: 3 }}>
-            添加您的第一个仓库，开始使用仪表盘
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddOutlinedIcon />}
-            onClick={handleAddWarehouse}
-            sx={{
-              backgroundColor: '#111827',
-              color: '#FFFFFF',
-              px: 3,
-              py: 0.75,
-              boxShadow: 'none',
-              '&:hover': { backgroundColor: '#374151', boxShadow: 'none' },
-            }}
-          >
-            添加仓库
-          </Button>
-        </Box>
-      </Box>
-    );
-  }
-
   // 处理任务提交
   const handleTaskSubmit = useCallback((task: TaskFormData) => {
     console.log('新建任务:', task);
-    // TODO: 这里可以接入实际的任务管理系统（如 TAPD、本地存储等）
     setTaskDialogOpen(false);
   }, []);
 
@@ -290,69 +252,99 @@ const DashboardPage: React.FC = () => {
         </Box>
       </Box>
 
-      {/* 根据 componentOrder 动态渲染组件 */}
-      {settings.dashboard.componentOrder.map((comp) => {
-        switch (comp) {
-          case 'kpi-cards':
-            return hasKpiCards ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <KpiCards warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          case 'heatmap':
-            return vis.chartShipmentHeatmap ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <GitHubHeatmap warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          case 'volume-trend':
-            return vis.chartVolumeTrend ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <VolumeChart warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          case 'transit-pie':
-            return vis.chartTransitPie ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <TransitPieChart />
-              </Box>
-            ) : null;
-          case 'warehouse-bar':
-            return vis.chartWarehouseBar ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <WarehouseBarChart warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          case 'inventory-alert':
-            return vis.chartInventoryAlert ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <InventoryAlertList warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          case 'kpi-comparison':
-            return vis.chartKpiComparison ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <WarehouseKpiTable warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          case 'transit-time':
-            return vis.chartTransitTime ? (
-              <Box key={comp} sx={{ mb: 4 }}>
-                <TransitTimeChart warehouseId={selectedWarehouse} />
-              </Box>
-            ) : null;
-          default:
-            return null;
-        }
-      })}
-
-      {/* All hidden message */}
-      {!hasKpiCards && !vis.chartShipmentHeatmap && !vis.chartVolumeTrend && !vis.chartTransitPie && !vis.chartWarehouseBar && !vis.chartInventoryAlert && !vis.chartKpiComparison && !vis.chartTransitTime && (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography sx={{ color: '#9CA3AF', fontSize: '0.95rem' }}>
-            所有指标已隐藏，请在设置中开启需要显示的指标
+      {/* 仓库为空时显示引导页 */}
+      {warehouses.length === 0 ? (
+        <Box sx={{ textAlign: 'center', py: 10 }}>
+          <WarehouseOutlinedIcon sx={{ fontSize: 56, color: '#D1D5DB', mb: 2 }} />
+          <Typography sx={{ fontSize: '1rem', fontWeight: 500, color: '#6B7280', mb: 0.5 }}>
+            暂无仓库数据
           </Typography>
+          <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF', mb: 3 }}>
+            添加您的第一个仓库，开始使用仪表盘
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddOutlinedIcon />}
+            onClick={handleAddWarehouse}
+            sx={{
+              backgroundColor: '#111827',
+              color: '#FFFFFF',
+              px: 3,
+              py: 0.75,
+              boxShadow: 'none',
+              '&:hover': { backgroundColor: '#374151', boxShadow: 'none' },
+            }}
+          >
+            添加仓库
+          </Button>
         </Box>
+      ) : (
+        <>
+          {/* 根据 componentOrder 动态渲染组件 */}
+          {settings.dashboard.componentOrder.map((comp) => {
+            switch (comp) {
+              case 'kpi-cards':
+                return hasKpiCards ? (
+                  <Box key={comp} sx={{ mb: 4 }}>
+                    <KpiCards warehouseId={selectedWarehouse} />
+                  </Box>
+                ) : null;
+              case 'heatmap':
+                return vis.chartShipmentHeatmap ? (
+                  <Box key={comp} sx={{ mb: 4 }}>
+                    <GitHubHeatmap warehouseId={selectedWarehouse} />
+                  </Box>
+                ) : null;
+              case 'volume-trend':
+                return vis.chartVolumeTrend ? (
+                  <Box key={comp} sx={{ mb: 4 }}>
+                    <VolumeChart warehouseId={selectedWarehouse} />
+                  </Box>
+                ) : null;
+              case 'transit-pie':
+                return vis.chartTransitPie ? (
+                  <Box key={comp} sx={{ mb: 4 }}>
+                    <TransitPieChart />
+                  </Box>
+                ) : null;
+              case 'warehouse-bar':
+                return vis.chartWarehouseBar ? (
+                  <Box key={comp} sx={{ mb: 4 }}>
+                    <WarehouseBarChart warehouseId={selectedWarehouse} />
+                  </Box>
+                ) : null;
+              case 'inventory-alert':
+                return vis.chartInventoryAlert ? (
+                  <Box key={comp} sx={{ mb: 4 }}>
+                    <InventoryAlertList warehouseId={selectedWarehouse} />
+                  </Box>
+                ) : null;
+              case 'kpi-comparison':
+                return vis.chartKpiComparison ? (
+                  <Box key={comp} sx={{ mb: 4 }}>
+                    <WarehouseKpiTable warehouseId={selectedWarehouse} />
+                  </Box>
+                ) : null;
+              case 'transit-time':
+                return vis.chartTransitTime ? (
+                  <Box key={comp} sx={{ mb: 4 }}>
+                    <TransitTimeChart warehouseId={selectedWarehouse} />
+                  </Box>
+                ) : null;
+              default:
+                return null;
+            }
+          })}
+
+          {/* 所有指标隐藏时的提示 */}
+          {!hasKpiCards && !vis.chartShipmentHeatmap && !vis.chartVolumeTrend && !vis.chartTransitPie && !vis.chartWarehouseBar && !vis.chartInventoryAlert && !vis.chartKpiComparison && !vis.chartTransitTime && (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <Typography sx={{ color: '#9CA3AF', fontSize: '0.95rem' }}>
+                所有指标已隐藏，请在设置中开启需要显示的指标
+              </Typography>
+            </Box>
+          )}
+        </>
       )}
 
       {/* 新建任务对话框 */}

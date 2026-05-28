@@ -27,8 +27,11 @@ const WarehouseBarChart: React.FC<WarehouseBarChartProps> = ({ warehouseId }) =>
 
   const data = filtered.map((wh) => ({
     name: wh.name.replace('仓', ''),
-    used: wh.usedItems || wh.usedVolume,
-    free: Math.max(0, (wh.totalItems || wh.totalVolume) - (wh.usedItems || wh.usedVolume)),
+    used: Number.isFinite(wh.usedItems) && wh.usedItems! >= 0 ? wh.usedItems! : (Number.isFinite(wh.usedVolume) ? wh.usedVolume : 0),
+    free: Math.max(0,
+      (Number.isFinite(wh.totalItems) && wh.totalItems! > 0 ? wh.totalItems! : (Number.isFinite(wh.totalVolume) ? wh.totalVolume : 1))
+      - (Number.isFinite(wh.usedItems) && wh.usedItems! >= 0 ? wh.usedItems! : (Number.isFinite(wh.usedVolume) ? wh.usedVolume : 0))
+    ),
     rate: getWarehouseUtilization(wh),
   }));
 

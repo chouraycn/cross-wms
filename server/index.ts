@@ -113,6 +113,11 @@ const getFrontendDistPath = (): string => {
 
 const frontendDistPath = getFrontendDistPath();
 console.log(`[Static] 前端静态文件目录: ${frontendDistPath}`);
+console.log(`[Static] 目录存在: ${fs.existsSync(frontendDistPath)}`);
+if (fs.existsSync(frontendDistPath)) {
+  const files = fs.readdirSync(frontendDistPath);
+  console.log(`[Static] 目录内容: ${files.join(', ')}`);
+}
 app.use(express.static(frontendDistPath, {
   index: 'index.html',
   maxAge: '1d',
@@ -120,14 +125,20 @@ app.use(express.static(frontendDistPath, {
 
 // SPA fallback：所有非 API 路由返回 index.html
 app.use((req, _res, next) => {
+  // 跳过 API 和 WebSocket 路由
   if (req.path.startsWith('/api/') || req.path.startsWith('/socket.io')) {
     return next();
   }
+
   const indexPath = path.join(frontendDistPath, 'index.html');
+  console.log(`[SPA Fallback] ${req.method} ${req.path} → ${indexPath}`);
+  console.log(`[SPA Fallback] index.html 存在: ${fs.existsSync(indexPath)}`);
+
   if (fs.existsSync(indexPath)) {
     _res.sendFile(indexPath);
   } else {
-    next();
+    console.error(`[SPA Fallback] index.html 未找到: ${indexPath}`);
+    _res.status(404).json({ error: 'cannot GET ' + req.path, path: req.path, frontendDistPath });
   }
 });
 
