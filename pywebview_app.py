@@ -215,7 +215,8 @@ def check_dependencies():
     # 2. 检查 PyWebView 是否可用
     try:
         import webview
-        log(f"[Check] ✅ pywebview: {webview.__version__}")
+        pywebview_version = getattr(webview, '__version__', None) or getattr(webview, 'version', 'unknown')
+        log(f"[Check] ✅ pywebview: {pywebview_version}")
     except Exception as e:
         errors.append(f"pywebview 不可用: {e}")
 
