@@ -448,9 +448,25 @@ const TransitList: React.FC = () => {
       </Card>
 
       {/* Add/Edit Order Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>{editingOrder ? '编辑在途运单' : '新增在途运单'}</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+            m: 0,
+          },
+        }}
+        BackdropProps={{
+          sx: { backgroundColor: 'rgba(0,0,0,0.3)' },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>{editingOrder ? '编辑在途运单' : '新增在途运单'}</DialogTitle>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid item xs={12} sm={6}>
               <TextField
@@ -525,7 +541,7 @@ const TransitList: React.FC = () => {
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
           <Button onClick={() => { setOpenDialog(false); resetNewOrder(); }}>取消</Button>
           <Button variant="contained" onClick={handleSaveOrder} sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' } }}>
             {editingOrder ? '保存修改' : '确认创建'}
@@ -534,14 +550,30 @@ const TransitList: React.FC = () => {
       </Dialog>
 
       {/* Delete Confirm Dialog */}
-      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>确认删除</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+            m: 0,
+          },
+        }}
+        BackdropProps={{
+          sx: { backgroundColor: 'rgba(0,0,0,0.3)' },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>确认删除</DialogTitle>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
           <Typography variant="body2" color="text.secondary">
             确定要删除该运单吗？此操作不可撤销。
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
           <Button onClick={() => { setDeleteConfirmOpen(false); setOrderToDelete(null); }}>取消</Button>
           <Button variant="contained" color="error" onClick={handleDeleteConfirm}>
             确认删除

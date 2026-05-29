@@ -157,7 +157,7 @@ const DEFAULT_SETTINGS: AppSettings = {
       chartTransitTime: true,
     },
     heatmap: {
-      days: 14,
+      days: 365,
       colorScheme: 'blue',
     },
     componentOrder: ['kpi-cards', 'heatmap', 'volume-trend', 'transit-pie', 'warehouse-bar', 'inventory-alert', 'kpi-comparison', 'transit-time'],

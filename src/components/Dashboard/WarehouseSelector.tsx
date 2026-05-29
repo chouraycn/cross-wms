@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { IconButton, Tooltip, Popover, List, ListItemButton, ListItemText, Typography, Box, Button } from '@mui/material';
+import { IconButton, Tooltip, Popover, List, ListItemButton, ListItemText, Typography, Box, Button, Grow } from '@mui/material';
 import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import CheckIcon from '@mui/icons-material/Check';
@@ -90,15 +90,21 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
         onClose={() => setOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        sx={{
-          '& .MuiPopover-paper': {
-            borderRadius: '8px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-            minWidth: 180,
-            mt: 0.5,
-            py: 0.5,
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: '12px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
+              border: '1px solid #E5E7EB',
+              minWidth: 180,
+              mt: 0.5,
+              py: 0.5,
+              overflow: 'hidden',
+            },
           },
         }}
+        TransitionComponent={Grow}
+        TransitionProps={{ timeout: 200 }}
       >
         <Box sx={{ px: 2, pt: 1.5, pb: 0.75 }}>
           <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>

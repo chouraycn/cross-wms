@@ -2,8 +2,21 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { UpdateStatus } from '../services/updateService';
 import { checkForUpdates as checkForUpdatesService, openDownloadUrl, formatVersion } from '../services/updateService';
 
-// 从 Vite 环境变量读取版本号
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
+// 从 Vite 环境变量读取版本号；pywebview 环境下优先用 Python 侧真实版本号
+let APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
+
+// pywebview 环境：通过 JS API 桥接获取真实版本号（避免 Vite 注入值与打包版本不一致）
+if (typeof window !== 'undefined' && window.pywebview?.api?.get_version) {
+  try {
+    // get_version() 返回的是同步值（pywebview 同步调用）
+    const pyVersion = window.pywebview.api.get_version();
+    if (pyVersion && typeof pyVersion === 'string' && pyVersion !== '0.0.0') {
+      APP_VERSION = pyVersion;
+    }
+  } catch {
+    // 桥接失败，降级到 Vite 注入的版本号
+  }
+}
 
 interface UpdateContextType {
   updateStatus: UpdateStatus | null;

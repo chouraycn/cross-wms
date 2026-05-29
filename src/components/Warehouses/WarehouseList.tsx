@@ -94,7 +94,7 @@ const WarehouseList: React.FC = () => {
 
   const handleSubmit = () => {
     const totalVol = parseFloat(form.totalVolume);
-    const totalItms = parseInt(form.totalItems, 10);
+    const totalItems = parseInt(form.totalItems, 10);
     const newWh: Warehouse = {
       id: `wh-${Date.now()}`,
       name: form.name,
@@ -102,7 +102,7 @@ const WarehouseList: React.FC = () => {
       city: form.city,
       totalVolume: Number.isFinite(totalVol) ? totalVol : 0,
       usedVolume: 0,
-      totalItems: Number.isFinite(totalItms) && totalItms > 0 ? totalItms : 1,
+      totalItems: Number.isFinite(totalItems) && totalItems > 0 ? totalItems : 1,
       usedItems: 0,
       status: 'normal',
       address: form.address,
@@ -359,10 +359,10 @@ const WarehouseList: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">{(wh.totalItems || wh.totalVolume).toLocaleString()}</Typography>
+                      <Typography variant="body2">{(Number.isFinite(wh.totalItems) ? wh.totalItems : (wh.totalVolume || 0)).toLocaleString()}</Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">{(wh.usedItems || wh.usedVolume).toLocaleString()}</Typography>
+                      <Typography variant="body2">{(Number.isFinite(wh.usedItems) ? wh.usedItems : (wh.usedVolume || 0)).toLocaleString()}</Typography>
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -413,9 +413,25 @@ const WarehouseList: React.FC = () => {
         )}
 
       {/* New Warehouse Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>新建仓库</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+            m: 0,
+          },
+        }}
+        BackdropProps={{
+          sx: { backgroundColor: 'rgba(0,0,0,0.3)' },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>新建仓库</DialogTitle>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid item xs={12} sm={6}>
               <TextField label="仓库名称" value={form.name} onChange={handleFormChange('name')} fullWidth size="small" required />
@@ -443,7 +459,7 @@ const WarehouseList: React.FC = () => {
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
           <Button onClick={handleCloseDialog}>取消</Button>
           <Button
             variant="contained"
@@ -457,14 +473,30 @@ const WarehouseList: React.FC = () => {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>确认删除</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+            m: 0,
+          },
+        }}
+        BackdropProps={{
+          sx: { backgroundColor: 'rgba(0,0,0,0.3)' },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>确认删除</DialogTitle>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
           <Typography sx={{ color: '#6B7280' }}>
             确定要删除仓库「{deleteTarget?.name}」吗？此操作不可撤销。
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
           <Button onClick={() => setDeleteTarget(null)}>取消</Button>
           <Button
             variant="contained"

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box, IconButton, Button, Tooltip, Typography } from '@mui/material';
@@ -14,14 +14,15 @@ import { AIAssistantProvider, AIAssistantFab, AIAssistantPanel } from './compone
 import { UpdateProvider } from './contexts/UpdateContext';
 import UpdateNotification from './components/UpdateNotification';
 
-// 路由级懒加载 — 每个页面组件独立 chunk，用户导航时按需下载
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-const WarehousesPage = lazy(() => import('./pages/WarehousesPage'));
-const InTransitPage = lazy(() => import('./pages/InTransitPage'));
-const InventoryPage = lazy(() => import('./pages/InventoryPage'));
-const TencentDocsPage = lazy(() => import('./pages/TencentDocsPage'));
-const ReportsPage = lazy(() => import('./pages/ReportsPage'));
-const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+// 静态导入 — file:// 协议下 WKWebView 不支持动态 import()
+// Vite 构建时 inlineDynamicImports 已将全部代码打包到单文件，无需代码分割
+import DashboardPage from './pages/DashboardPage';
+import WarehousesPage from './pages/WarehousesPage';
+import InTransitPage from './pages/InTransitPage';
+import InventoryPage from './pages/InventoryPage';
+import TencentDocsPage from './pages/TencentDocsPage';
+import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
 
 /** Global MUI Theme */
 const theme = createTheme({
@@ -371,11 +372,6 @@ const MainLayout: React.FC = () => {
               },
             }}
           >
-            <Suspense fallback={
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 12 }}>
-                <Typography sx={{ color: '#9CA3AF', fontSize: '0.9rem' }}>加载中…</Typography>
-              </Box>
-            }>
             <Routes>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/warehouses" element={<WarehousesPage />} />
@@ -386,7 +382,6 @@ const MainLayout: React.FC = () => {
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Routes>
-          </Suspense>
           </Box>
         </Box>
       </Box>

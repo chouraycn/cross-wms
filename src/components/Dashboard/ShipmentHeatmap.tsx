@@ -74,6 +74,9 @@ function generateHeatmapData(days: number, warehouses: Warehouse[]) {
 
   const agg: Record<string, Record<string, HeatCell>> = {};
 
+  // 标记哪些日期有真实数据
+  const hasRealData = new Set<string>();
+
   const addRecord = (whId: string, dateStr: string, qty: number, type: 'in' | 'out') => {
     const mappedDate = mapToCurrentYear(dateStr);
     if (!dateStrSet.has(mappedDate)) return;
@@ -81,10 +84,41 @@ function generateHeatmapData(days: number, warehouses: Warehouse[]) {
     const key = dateStrToKey[mappedDate];
     if (!agg[whId][key]) agg[whId][key] = { in: 0, out: 0 };
     agg[whId][key][type] += qty;
+    hasRealData.add(key);
   };
 
   mockInboundRecords.forEach((r) => addRecord(r.warehouseId, r.createdAt, r.quantity, 'in'));
   mockOutboundRecords.forEach((r) => addRecord(r.warehouseId, r.createdAt, r.quantity, 'out'));
+
+  // 为没有真实数据的日期生成模拟数据（仅当天数≥90时启用，避免小范围视图数据失真）
+  if (days >= 90) {
+    const rng = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const warehouseIds = whList.map((w) => w.id);
+
+    // 找出有真实数据的日期范围，只在该范围内填充模拟数据
+    const realDateKeys = [...hasRealData].sort();
+    if (realDateKeys.length > 0) {
+      const startDate = realDateKeys[0];
+      const endDate = realDateKeys[realDateKeys.length - 1];
+
+      dates.forEach((dateKey) => {
+        if (hasRealData.has(dateKey)) return; // 跳过已有真实数据的日期
+        // 只在真实数据日期范围内填充
+        if (dateKey >= startDate && dateKey <= endDate) {
+          warehouseIds.forEach((whId) => {
+            if (!agg[whId]) agg[whId] = {};
+            // 50% 概率该仓库当天有数据
+            if (Math.random() > 0.5) {
+              agg[whId][dateKey] = {
+                in: rng(10, 200),
+                out: rng(5, 150),
+              };
+            }
+          });
+        }
+      });
+    }
+  }
 
   const data: Record<string, Record<string, HeatCell | null>> = {};
   whList.forEach((w) => {
@@ -225,12 +259,14 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
   const labelWidth = maxLabelChars * 12 + 12; // 仓库名标签宽度
   const labelGap = 10;
 
-  // 自适应 cellSize：天数越多，格子越小，范围 20~28px
+  // 自适应 cellSize：天数越多，格子越小
   const cellSize = useMemo(() => {
     if (days <= 7) return 28;
     if (days <= 14) return 24;
     if (days <= 30) return 20;
-    return 18;
+    if (days <= 90) return 16;
+    if (days <= 180) return 14;
+    return 12; // 365 天用 12px
   }, [days]);
 
   const padding = { top: 48, right: 20, bottom: 12, left: 0 };
@@ -327,20 +363,25 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
               );
             })}
 
-            {/* 日期标签 */}
-            {dateLabels.map((label, i) => (
-              <text
-                key={dates[i]}
-                x={labelWidth + i * (cellSize + cellGap) + cellSize / 2}
-                y={padding.top - 8}
-                textAnchor="middle"
-                fontSize={9}
-                fill="#9CA3AF"
-                fontFamily="-apple-system, sans-serif"
-              >
-                {label}
-              </text>
-            ))}
+            {/* 日期标签 — 随天数自动调整密度 */}
+            {dateLabels.map((label, i) => {
+              // 天数越多，标签间隔越大
+              const labelInterval = days <= 30 ? 1 : days <= 90 ? 3 : days <= 180 ? 7 : 14;
+              if (i % labelInterval !== 0) return null;
+              return (
+                <text
+                  key={dates[i]}
+                  x={labelWidth + i * (cellSize + cellGap) + cellSize / 2}
+                  y={padding.top - 8}
+                  textAnchor="middle"
+                  fontSize={9}
+                  fill="#9CA3AF"
+                  fontFamily="-apple-system, sans-serif"
+                >
+                  {label}
+                </text>
+              );
+            })}
 
             {/* 热力图格子 */}
             {warehouses.map((wh, rowIdx) => {
@@ -379,11 +420,10 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
                           rx={4}
                           fill={color}
                           opacity={0.92}
-                          stroke={isHovered ? '#111827' : 'rgba(255,255,255,0.6)'}
-                          strokeWidth={isHovered ? 2 : 1}
-                          style={{ cursor: 'pointer', transition: 'all 0.15s ease' }}
+                          stroke={isHovered ? '#111827' : 'rgba(255,255,255,0)'}
+                          strokeWidth={2}
+                          style={{ cursor: 'pointer' }}
                           filter={isHovered ? 'url(#cell-hover-shadow)' : undefined}
-                          transform={isHovered ? `translate(${-1}, ${-1}) scale(1.08)` : undefined}
                           onMouseEnter={() => {
                             const total = cell ? cell.in + cell.out : null;
                             setHoveredCell({

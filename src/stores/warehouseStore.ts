@@ -69,6 +69,11 @@ export function getWarehouses(): Warehouse[] {
   return [...warehouses];
 }
 
+/** 按 id 获取单个仓库 */
+export function getWarehouseById(id: string): Warehouse | undefined {
+  return warehouses.find((w) => w.id === id);
+}
+
 /** 订阅仓库数据变化 */
 export function subscribeWarehouses(listener: WarehousesListener): () => void {
   listeners.add(listener);

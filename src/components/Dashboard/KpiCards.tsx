@@ -119,8 +119,9 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
     ? mockTransitOrders
     : mockTransitOrders.filter((t) => t.toWarehouseId === warehouseId);
 
-  // 在途货物总量
-  const transitVolume = filteredTransit.reduce((s, t) => s + t.volume, 0);
+  // 在途货物件数（volume / 0.05 估算，假设平均每件 0.05m³）
+  const VOLUME_PER_ITEM_ESTIMATE = 0.05;
+  const transitItems = filteredTransit.reduce((s, t) => s + Math.round(t.volume / VOLUME_PER_ITEM_ESTIMATE), 0);
 
   // 容积率（基于件数）— 防御性计算，避免 NaN / Infinity
   const volumeUtilization = (() => {
@@ -162,9 +163,6 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
   // 逻辑：对在途运单（未到达），计算到仓后容积率，看是否超过报警阈值
   const transitAlertThreshold = settings.dashboard.transitAlertThreshold;
 
-  // 估算在途货物的件数（运单没有件数字段，用 volume / 0.05 估算，假设平均每件 0.05m³）
-  const VOLUME_PER_ITEM_ESTIMATE = 0.05; // m³/件
-
   // 按目的仓分组统计在途件数
   const transitAlerts = useMemo(() => {
     const pendingTransit = filteredTransit.filter(t => t.status !== 'arrived');
@@ -203,7 +201,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
       'kpi_summary.csv',
       ['指标', '数值', '单位', '趋势'],
       [
-        ...(vis.kpiTransitVolume ? [['在途货物总量', String(transitVolume), 'm³', `↑ 12.5% 较${compareDays}天前`]] : []),
+        ...(vis.kpiTransitVolume ? [['在途件数', String(transitItems), '件', `↑ 12.5% 较${compareDays}天前`]] : []),
         ...(vis.kpiVolumeUtilization ? [['仓库总容积利用率', String(volumeUtilization), '%', `${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`]] : []),
         ...(vis.kpiPendingInbound ? [['待处理入库单', String(pendingInbound), '单', '需今日处理']] : []),
         ...(vis.kpiOutboundCount ? [['当日出库量', String(todayOutbound), '单', '↑ 较昨日 +2单']] : []),
@@ -214,18 +212,6 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
   };
 
   const allCards: { key: keyof typeof vis; card: KpiCardProps }[] = [
-    {
-      key: 'kpiTransitVolume',
-      card: {
-        title: warehouseName ? `在途至${warehouseName}` : '在途货物总量',
-        value: transitVolume,
-        unit: 'm³',
-        icon: <LocalShippingIcon />,
-        theme: KPI_THEME.transit,
-        trend: `↑ 12.5% 较${compareDays}天前`,
-        trendColor: '#059669',
-      },
-    },
     {
       key: 'kpiVolumeUtilization',
       card: {
@@ -238,6 +224,18 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
           ? `基于总件数 ${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`
           : `件数上限 ${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`,
         trendColor: '#111827',
+      },
+    },
+    {
+      key: 'kpiTransitVolume',
+      card: {
+        title: warehouseName ? `在途至${warehouseName}` : '在途件数',
+        value: transitItems,
+        unit: '件',
+        icon: <LocalShippingIcon />,
+        theme: KPI_THEME.transit,
+        trend: `↑ 12.5% 较${compareDays}天前`,
+        trendColor: '#059669',
       },
     },
     {

@@ -21,6 +21,7 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
 import { mockWarehouses, mockInboundRecords, mockOutboundRecords, mockInventory, getWarehouseUtilization } from '../../data/mockData';
+import { getWarehouseById } from '../../stores/warehouseStore';
 import type { Warehouse } from '../../types';
 
 interface TabPanelProps {
@@ -49,12 +50,27 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
 
-  const warehouse = mockWarehouses.find((w) => w.id === warehouseId);
+  // 防御性检查：warehouseId 是否有效
+  // ⚠️ 所有 Hooks 必须在任何条件返回之前调用完成
+
+  const warehouse = mockWarehouses.find((w) => w.id === warehouseId)
+    || getWarehouseById(warehouseId);
 
   if (!warehouse) {
+    console.error('[WarehouseDetail] 仓库未找到，warehouseId:', warehouseId);
     return (
       <Alert severity="error">
-        仓库不存在。<Button onClick={() => navigate('/warehouses')}>返回列表</Button>
+        仓库不存在（ID: {warehouseId || '未知'}）。<Button onClick={() => navigate('/warehouses')}>返回列表</Button>
+      </Alert>
+    );
+  }
+
+  // 防御性检查：确保仓库数据完整
+  if (!warehouse.id || !warehouse.name) {
+    console.error('[WarehouseDetail] 仓库数据不完整:', warehouse);
+    return (
+      <Alert severity="error">
+        仓库数据异常，请联系管理员。<Button onClick={() => navigate('/warehouses')}>返回列表</Button>
       </Alert>
     );
   }

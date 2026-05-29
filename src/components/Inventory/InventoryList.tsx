@@ -333,9 +333,25 @@ const InventoryList: React.FC = () => {
       </Card>
 
       {/* Move Dialog */}
-      <Dialog open={moveDialogOpen} onClose={() => setMoveDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>批量移库</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={moveDialogOpen}
+        onClose={() => setMoveDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+            m: 0,
+          },
+        }}
+        BackdropProps={{
+          sx: { backgroundColor: 'rgba(0,0,0,0.3)' },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>批量移库</DialogTitle>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             将选中的 {selected.length} 件商品移至：
           </Typography>
@@ -346,7 +362,7 @@ const InventoryList: React.FC = () => {
             </Select>
           </FormControl>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
           <Button onClick={() => setMoveDialogOpen(false)}>取消</Button>
           <Button variant="contained" onClick={handleMoveWarehouse} disabled={!targetWarehouseId} sx={{ backgroundColor: '#111827' }}>
             确认移库

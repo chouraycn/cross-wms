@@ -1422,7 +1422,7 @@ const SettingsPanel: React.FC = () => {
               时间范围
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              {[7, 14, 30].map((d) => (
+              {[7, 14, 30, 365].map((d) => (
                 <Chip
                   key={d}
                   label={`${d} 天`}
