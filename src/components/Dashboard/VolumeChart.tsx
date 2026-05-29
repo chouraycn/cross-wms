@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Card, CardContent, CardHeader, Typography, Box, IconButton, ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
@@ -6,7 +6,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
-import { mockVolumeHistory } from '../../data/mockData';
+import dayjs from 'dayjs';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { subscribeWarehouses } from '../../stores/warehouseStore';
@@ -36,6 +36,38 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
     return unsub;
   }, []);
 
+  // ==================== 动态生成 30 天容积率趋势数据 ====================
+  const volumeHistory = useMemo(() => {
+    // 确定当前使用的仓库集合
+    const activeWarehouses = warehouseId === ALL_WAREHOUSES
+      ? warehouses
+      : warehouses.filter((w) => w.id === warehouseId);
+
+    if (activeWarehouses.length === 0) return [];
+
+    // 计算当前基准容积率
+    const baseRate = calcMode === 'items'
+      ? calcOverallByItems(activeWarehouses)
+      : calcOverallByVolume(activeWarehouses);
+
+    // 以当前值为基准，向前模拟 30 天数据（容积率逐步攀升，加入±3%随机波动）
+    const days = 30;
+    const result: { date: string; utilizationRate: number }[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const date = dayjs().subtract(i, 'day').format('MM-DD');
+      // 越早的数据越低于当前值（模拟容积率增长趋势），并加入随机波动
+      const progressFactor = (days - 1 - i) / (days - 1); // 0 → 1，越接近当前值越大
+      const baseAtDay = baseRate * progressFactor;
+      const noise = (Math.random() - 0.5) * 6; // ±3%
+      const rate = Math.min(100, Math.max(0, baseAtDay + noise));
+      result.push({
+        date,
+        utilizationRate: parseFloat(rate.toFixed(1)),
+      });
+    }
+    return result;
+  }, [warehouses, warehouseId, calcMode]);
+
   const handleModeChange = (_: React.MouseEvent<HTMLElement>, newMode: CalcMode | null) => {
     if (newMode !== null) {
       setCalcMode(newMode);
@@ -52,7 +84,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
     exportToCsv(
       'volume_trend.csv',
       ['日期', `容积利用率(%)(基于${modeLabel})`],
-      mockVolumeHistory.map((p) => [p.date, String(p.utilizationRate)])
+      volumeHistory.map((p) => [p.date, String(p.utilizationRate)])
     );
   };
 
@@ -102,7 +134,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
       />
       <CardContent sx={{ pt: 0, pb: '16px !important' }}>
         <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={mockVolumeHistory} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+          <LineChart data={volumeHistory} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
             <XAxis
               dataKey="date"
