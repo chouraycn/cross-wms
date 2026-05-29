@@ -22,6 +22,7 @@ import WarehousesPage from './pages/WarehousesPage';
 import InTransitPage from './pages/InTransitPage';
 import InventoryPage from './pages/InventoryPage';
 import TencentDocsPage from './pages/TencentDocsPage';
+import SkillsPage from './pages/SkillsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 
@@ -381,6 +382,7 @@ const MainLayout: React.FC = () => {
                 <Route path="/in-transit" element={<InTransitPage />} />
                 <Route path="/inventory" element={<InventoryPage />} />
                 <Route path="/tencent-docs" element={<TencentDocsPage />} />
+                <Route path="/skills" element={<SkillsPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Routes>

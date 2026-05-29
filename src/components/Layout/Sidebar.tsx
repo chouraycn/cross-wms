@@ -35,6 +35,7 @@ import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SaveIcon from '@mui/icons-material/Save';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -538,6 +539,7 @@ const navItems: NavItem[] = [
   { label: '仓库管理', path: '/warehouses', icon: <WarehouseOutlinedIcon /> },
   { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon /> },
   { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon /> },
+  { label: '技能', path: '/skills', icon: <AutoFixHighIcon /> },
   { label: '腾讯文档', path: '/tencent-docs', icon: <DescriptionOutlinedIcon /> },
   { label: '统计报表', path: '/reports', icon: <AssessmentOutlinedIcon /> },
 ];
