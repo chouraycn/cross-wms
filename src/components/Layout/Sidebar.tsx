@@ -575,7 +575,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
       className="sidebar-drag-region"
       sx={{
         width,
-        // content-box: padding-top 向外扩展，不压缩内容区
+        // box-sizing: content-box 让 padding-top 向外扩展，不压缩内容区
         // height 用 calc 减去 padding-top，避免总高度溢出 100vh
         height: 'calc(100vh - var(--pw-top, 0px))',
         position: 'sticky',
@@ -589,9 +589,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
         transition: 'width 0.2s ease',
       }}
     >
-      {/* Logo 区域 — 外层已有 sidebar-drag-region，这里不需要重复 */}
+      {/* Logo 区域 — 仅此处可拖拽窗口（约 56px 高度） */}
       <Box
-        className="no-drag"
+        className="logo-drag-region"
         sx={{
           px: collapsed ? 0 : 2,
           height: 56,

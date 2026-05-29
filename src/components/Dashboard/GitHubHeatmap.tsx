@@ -138,6 +138,19 @@ function calcLevel(value: number, max: number): number {
   return 4;
 }
 
+/** 淡化十六进制颜色（增加亮度），amount 为 0-100 的亮度增量百分比 */
+function lightenColor(hex: string, amount: number): string {
+  const clean = hex.replace('#', '');
+  const num = parseInt(clean, 16);
+  let r = (num >> 16) & 0xff;
+  let g = (num >> 8) & 0xff;
+  let b = num & 0xff;
+  r = Math.min(255, r + Math.round((255 - r) * amount / 100));
+  g = Math.min(255, g + Math.round((255 - g) * amount / 100));
+  b = Math.min(255, b + Math.round((255 - b) * amount / 100));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
 /** 将 cells 按周分组，生成列数据 */
 function buildWeekColumns(cells: DayCell[]): WeekColumn[] {
   const weekMap: Record<number, DayCell[]> = {};
@@ -221,11 +234,11 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
 
   const weekColumns = useMemo(() => buildWeekColumns(cells), [cells]);
 
-  // 动态计算 cellSize：根据容器宽度自适应
+  // 动态计算 cellSize：耗尽容器可用宽度，让格子 100% 平铺
   const cellSize = useMemo(() => {
     if (weekColumns.length === 0) return MAX_CELL_SIZE;
-    const padding = 40;
-    const available = Math.max(containerWidth - WEEKDAY_LABEL_WIDTH - padding, 200);
+    // 可用宽度 = 容器宽度 - 左侧星期标签宽，全部用于格子
+    const available = Math.max(containerWidth - WEEKDAY_LABEL_WIDTH, 200);
     const computed = Math.floor(available / weekColumns.length) - CELL_GAP;
     return Math.min(Math.max(computed, MIN_CELL_SIZE), MAX_CELL_SIZE);
   }, [containerWidth, weekColumns.length]);
@@ -236,15 +249,9 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
   // 活跃天数
   const activeDays = useMemo(() => cells.filter(c => c.total > 0).length, [cells]);
 
+  // viewBox 宽度 = 内容实际渲染宽度，SVG width="100%" 自动拉伸填满容器
   const svgWidth = WEEKDAY_LABEL_WIDTH + weekColumns.length * (cellSize + CELL_GAP) + 20;
   const svgHeight = MONTH_LABEL_HEIGHT + 7 * (cellSize + CELL_GAP) + 20;
-
-  // 计算容器实际高度：基于 SVG viewBox 宽高比 + 容器宽度 计算缩放后的高度
-  const svgContainerHeight = useMemo(() => {
-    if (svgWidth === 0) return svgHeight;
-    const scale = containerWidth / svgWidth;
-    return Math.round(svgHeight * scale);
-  }, [containerWidth, svgWidth, svgHeight]);
 
   const getColor = (level: number): string => {
     if (level === -1) return colors.empty;
@@ -328,12 +335,10 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
           </Box>
         </Box>
 
-        <Box ref={containerRef} sx={{ width: '100%', height: svgContainerHeight, position: 'relative' }}>
+        <Box ref={containerRef} sx={{ width: '100%', position: 'relative' }}>
           <svg
             width="100%"
-            height="100%"
-            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-            preserveAspectRatio="xMinYMin meet"
+            height={svgHeight}
             style={{ display: 'block' }}
           >
             {/* 月份标签 */}
@@ -388,11 +393,10 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
                       width={cellSize}
                       height={cellSize}
                       rx={2}
-                      fill={color}
+                      fill={isHovered ? lightenColor(color, 30) : color}
                       stroke={isHovered ? '#111827' : 'rgba(255,255,255,0.6)'}
                       strokeWidth={isHovered ? 2 : 1}
-                      style={{ cursor: 'pointer', transition: 'all 0.15s ease' }}
-                      transform={isHovered ? `translate(${-1}, ${-1}) scale(1.15)` : undefined}
+                      style={{ cursor: 'pointer', transition: 'fill 0.12s ease, stroke 0.12s ease, strokeWidth 0.12s ease' }}
                       onMouseEnter={() => setHoveredCell(cell)}
                       onMouseLeave={() => setHoveredCell(null)}
                     />
