@@ -20,8 +20,9 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
-import { mockWarehouses, mockInboundRecords, mockOutboundRecords, mockInventory, getWarehouseUtilization } from '../../data/mockData';
-import { getWarehouseById } from '../../stores/warehouseStore';
+import { mockWarehouses, mockInboundRecords, mockOutboundRecords, mockInventory, getMockWarehouseById } from '../../data/mockData';
+import { getWarehouseById as getStoreWarehouseById } from '../../stores/warehouseStore';
+import { calcUtilizationByItems } from '../../utils/volumeCalculator';
 import type { Warehouse } from '../../types';
 
 interface TabPanelProps {
@@ -53,8 +54,10 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
   // 防御性检查：warehouseId 是否有效
   // ⚠️ 所有 Hooks 必须在任何条件返回之前调用完成
 
-  const warehouse = mockWarehouses.find((w) => w.id === warehouseId)
-    || getWarehouseById(warehouseId);
+  // 数据获取优先级：store（动态数据）→ mock（静态兜底）
+  const warehouse = getStoreWarehouseById(warehouseId)
+    || mockWarehouses.find((w) => w.id === warehouseId)
+    || getMockWarehouseById(warehouseId);
 
   if (!warehouse) {
     console.error('[WarehouseDetail] 仓库未找到，warehouseId:', warehouseId);
@@ -75,11 +78,16 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
     );
   }
 
-  const rate = getWarehouseUtilization(warehouse);
+  // 使用统一的件数基础容积率计算（来自 volumeCalculator）
+  const rate = calcUtilizationByItems(warehouse);
   const color = getProgressColor(rate);
 
+  // ⚠️ Mock 数据源：后续应替换为真实的 API 接口调用
+  // Suggested: fetch(`/api/warehouses/${warehouseId}/inbound-records`)
   const inboundRecords = mockInboundRecords.filter((r) => r.warehouseId === warehouseId);
+  // Suggested: fetch(`/api/warehouses/${warehouseId}/outbound-records`)
   const outboundRecords = mockOutboundRecords.filter((r) => r.warehouseId === warehouseId);
+  // Suggested: fetch(`/api/warehouses/${warehouseId}/inventory`)
   const inventory = mockInventory.filter((i) => i.warehouseId === warehouseId);
 
   return (
@@ -114,14 +122,14 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
               <Grid container spacing={2}>
                 <Grid item xs={4}>
                   <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700 }}>{(warehouse.totalItems || warehouse.totalVolume).toLocaleString()}</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 700 }}>{(warehouse.totalItems ?? warehouse.totalVolume).toLocaleString()}</Typography>
                     <Typography variant="caption" color="text.secondary">件数上限</Typography>
                   </Box>
                 </Grid>
                 <Grid item xs={4}>
                   <Box sx={{ textAlign: 'center' }}>
                     <Typography variant="h4" sx={{ fontWeight: 700, color: color === 'error' ? '#f44336' : color === 'warning' ? '#ff9800' : '#4caf50' }}>
-                      {(warehouse.usedItems || warehouse.usedVolume).toLocaleString()}
+                      {(warehouse.usedItems ?? warehouse.usedVolume).toLocaleString()}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">已用件数</Typography>
                   </Box>

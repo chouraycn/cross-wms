@@ -20,6 +20,7 @@ import type {
 } from '../types';
 import { dashboardApi } from '../services/dashboardApi';
 import { transitStatusDistribution as defaultTransitStatusDistribution } from '../data/mockData';
+import { calcOverallByVolume } from '../utils/volumeCalculator';
 
 export interface DashboardData {
   warehouses: Warehouse[];
@@ -153,15 +154,7 @@ export function useDashboardData(options: UseDashboardDataOptions = {}): Dashboa
         .toFixed(1)
     );
 
-    const totalVolumeUtilization = filteredWarehouses.length > 0
-      ? parseFloat(
-          (
-            (filteredWarehouses.reduce((s, w) => s + w.usedVolume, 0) /
-              filteredWarehouses.reduce((s, w) => s + w.totalVolume, 0)) *
-            100
-          ).toFixed(1)
-        )
-      : 0;
+    const totalVolumeUtilization = calcOverallByVolume(filteredWarehouses);
 
     const pendingInboundOrders = filteredInbound.filter(r => r.status === 'pending').length;
 

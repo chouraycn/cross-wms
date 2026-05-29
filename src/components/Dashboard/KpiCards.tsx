@@ -12,6 +12,7 @@ import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { subscribeWarehouses } from '../../stores/warehouseStore';
 import { exportToCsv } from '../../utils/exportCsv';
+import { calcOverallByItems } from '../../utils/volumeCalculator';
 import type { Warehouse, TransitOrder } from '../../types';
 
 /** KPI 卡片主题配置 */
@@ -123,22 +124,8 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
   const VOLUME_PER_ITEM_ESTIMATE = 0.05;
   const transitItems = filteredTransit.reduce((s, t) => s + Math.round(t.volume / VOLUME_PER_ITEM_ESTIMATE), 0);
 
-  // 容积率（基于件数）— 防御性计算，避免 NaN / Infinity
-  const volumeUtilization = (() => {
-    if (filteredWarehouses.length === 0) return 0;
-    const totalItemsSum = filteredWarehouses.reduce(
-      (s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)),
-      0
-    );
-    const usedItemsSum = filteredWarehouses.reduce(
-      (s, w) => s + (Number.isFinite(w.usedItems) ? w.usedItems : (Number.isFinite(w.usedVolume) ? w.usedVolume : 0)),
-      0
-    );
-    if (totalItemsSum <= 0) return 0;
-    const ratio = usedItemsSum / totalItemsSum;
-    if (!Number.isFinite(ratio)) return 0;
-    return Math.round(ratio * 1000) / 10; // 保留1位小数，返回数字
-  })();
+  // 容积率（基于件数）— 使用统一工具函数
+  const volumeUtilization = calcOverallByItems(filteredWarehouses);
 
   // 待处理入库单 — 按仓库过滤
   const pendingInbound = warehouseId === ALL_WAREHOUSES
@@ -221,8 +208,8 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
         icon: <InventoryIcon />,
         theme: KPI_THEME.utilization,
         trend: warehouseId === ALL_WAREHOUSES
-          ? `基于总件数 ${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`
-          : `件数上限 ${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`,
+          ? `基于件数 ${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`
+          : `基于件数 ${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`,
         trendColor: '#111827',
       },
     },

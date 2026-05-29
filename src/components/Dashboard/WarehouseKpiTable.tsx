@@ -20,6 +20,7 @@ import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { subscribeWarehouses } from '../../stores/warehouseStore';
 import type { Warehouse } from '../../types';
+import { calcUtilizationByItems } from '../../utils/volumeCalculator';
 import dayjs from 'dayjs';
 
 interface WarehouseKpiTableProps {
@@ -50,10 +51,8 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
       : today.format('YYYY-MM-DD');
 
     return filteredWarehouses.map((wh) => {
-      // 容积使用率
-      const totalItems = Number.isFinite(wh.totalItems) && wh.totalItems! > 0 ? wh.totalItems! : (Number.isFinite(wh.totalVolume) ? wh.totalVolume : 1);
-      const usedItems = Number.isFinite(wh.usedItems) && wh.usedItems! >= 0 ? wh.usedItems! : (Number.isFinite(wh.usedVolume) ? wh.usedVolume : 0);
-      const utilizationRate = totalItems > 0 ? (usedItems / totalItems) * 100 : 0;
+      // 容积使用率（基于件数）— 使用统一工具函数
+      const utilizationRate = calcUtilizationByItems(wh);
 
       // 在途货物量（从 transitOrders 汇总目的地为该仓库的）
       const transitVolume = mockTransitOrders
@@ -90,8 +89,6 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
         warehouseId: wh.id,
         warehouseName: wh.name,
         utilizationRate,
-        totalItems,
-        usedItems,
         transitVolume,
         inventoryCount,
         pendingInbound,

@@ -37,7 +37,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { mockTransitOrders, mockWarehouses, getWarehouseById } from '../../data/mockData';
+import { mockTransitOrders, mockWarehouses, getMockWarehouseById } from '../../data/mockData';
 import type { TransitOrder, TransitStatus, TransportMode } from '../../types';
 import dayjs from 'dayjs';
 
@@ -68,8 +68,8 @@ interface RowProps {
 
 const TransitRow: React.FC<RowProps> = ({ order, onEdit, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
-  const fromWh = getWarehouseById(order.fromWarehouseId);
-  const toWh = getWarehouseById(order.toWarehouseId);
+  const fromWh = getMockWarehouseById(order.fromWarehouseId);
+  const toWh = getMockWarehouseById(order.toWarehouseId);
   const { label: statusLabel, color: statusColor } = statusLabels[order.status];
   const { label: modeLabel, icon: modeIcon } = transportLabels[order.transportMode];
   const delayed = order.status !== 'arrived' && order.estimatedArrival && dayjs().isAfter(dayjs(order.estimatedArrival), 'day');
@@ -315,7 +315,7 @@ const TransitList: React.FC = () => {
           {
             status: 'dispatched',
             time: new Date().toLocaleString('zh-CN'),
-            location: getWarehouseById(newOrder.fromWarehouseId)?.name ?? '发货仓',
+            location: getMockWarehouseById(newOrder.fromWarehouseId)?.name ?? '发货仓',
             remark: '运单已创建',
           },
         ],
