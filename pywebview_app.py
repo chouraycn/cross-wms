@@ -806,10 +806,14 @@ def inject_pw_css(html_path: str) -> str:
 
 # ===================== 本地 HTTP 服务器（替代 file:// 协议）=====================
 
-def start_http_server(dist_dir: str):
+def start_http_server(dist_dir: str, port: int = 9988):
     """
     启动本地 HTTP 服务器，提供 dist 目录的静态文件服务。
     替代 file:// 协议，彻底解决 WKWebView 不支持 ES Module 的问题。
+
+    参数：
+        dist_dir: 静态文件目录
+        port: 监听端口（默认 9988，固定端口确保 localStorage origin 一致）
 
     返回：
         (httpd, port): HTTP 服务器对象和端口号
@@ -849,8 +853,29 @@ def start_http_server(dist_dir: str):
     # 允许端口复用，便于快速重启
     socketserver.TCPServer.allow_reuse_address = True
 
-    httpd = socketserver.TCPServer(("127.0.0.1", 0), InjectCSSHandler)
-    port = httpd.socket.getsockname()[1]
+    try:
+        httpd = socketserver.TCPServer(("127.0.0.1", port), InjectCSSHandler)
+    except OSError as e:
+        # 端口被占用时，kill 旧进程后重试（仅开发环境）
+        if getattr(sys, 'frozen', False):
+            # 打包环境：端口被占说明已有实例在运行，直接抛异常让调用方处理
+            raise
+        print(f"[HTTP Server] 端口 {port} 被占用 ({e})，尝试清理...")
+        import subprocess
+        # 查找占用端口的进程并终止
+        result = subprocess.run(['lsof', '-ti', f'tcp:{port}'], capture_output=True, text=True)
+        if result.stdout.strip():
+            pids = result.stdout.strip().split('\n')
+            for pid in pids:
+                try:
+                    os.kill(int(pid), signal.SIGKILL)
+                    print(f"[HTTP Server] 已终止旧进程 PID={pid}")
+                except Exception:
+                    pass
+            time.sleep(0.5)
+            httpd = socketserver.TCPServer(("127.0.0.1", port), InjectCSSHandler)
+        else:
+            raise
 
     # 在后台守护线程中启动服务器
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
@@ -878,7 +903,9 @@ def main():
         log(f"[Frontend] dist 目录: {dist_dir}")
 
         # 2. 启动本地 HTTP 服务器（替代 file://，解决 WKWebView ES Module 白屏问题）
-        httpd, http_port = start_http_server(dist_dir)
+        # 使用固定端口 9988，确保 WKWebView localStorage origin 一致（否则每次随机端口导致数据丢失）
+        HTTP_PORT = 9988
+        httpd, http_port = start_http_server(dist_dir, HTTP_PORT)
         frontend_url = f'http://127.0.0.1:{http_port}/'
         log(f"[Frontend] 通过 HTTP 加载: {frontend_url}")
 
@@ -923,7 +950,7 @@ def main():
         log("[Main] pywebview 窗口已创建，启动事件循环...")
 
         # 5. 启动事件循环（阻塞直到窗口关闭）
-        webview.start(debug=False)
+        webview.start(debug=False, private_mode=False)
 
         log("[Main] CrossWMS 窗口已关闭，退出")
     except FileNotFoundError as e:

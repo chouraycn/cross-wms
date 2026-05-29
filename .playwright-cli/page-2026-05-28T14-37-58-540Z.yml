@@ -1,0 +1,63 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7] [cursor=pointer]
+      - generic [ref=e11]:
+        - paragraph [ref=e12]: CDF Know CrossWMS
+        - paragraph [ref=e13]: v1.0.18
+    - list [ref=e14]:
+      - listitem [ref=e15]:
+        - button "仪表盘" [ref=e16] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e21]: 仪表盘
+      - listitem [ref=e22]:
+        - button "仓库管理" [ref=e23] [cursor=pointer]:
+          - img [ref=e25]
+          - generic [ref=e28]: 仓库管理
+      - listitem [ref=e29]:
+        - button "在途管理" [ref=e30] [cursor=pointer]:
+          - img [ref=e32]
+          - generic [ref=e35]: 在途管理
+      - listitem [ref=e36]:
+        - button "库存管理" [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e43]: 库存管理
+      - listitem [ref=e44]:
+        - button "腾讯文档" [ref=e45] [cursor=pointer]:
+          - img [ref=e47]
+          - generic [ref=e50]: 腾讯文档
+      - listitem [ref=e51]:
+        - button "统计报表" [ref=e52] [cursor=pointer]:
+          - img [ref=e54]
+          - generic [ref=e57]: 统计报表
+    - button "设置" [ref=e59] [cursor=pointer]:
+      - img [ref=e61]
+      - generic [ref=e64]: 设置
+  - main [ref=e65]:
+    - generic [ref=e66]:
+      - button [ref=e67] [cursor=pointer]:
+        - img [ref=e68]
+      - generic [ref=e70]:
+        - button "添加仓库" [ref=e71] [cursor=pointer]:
+          - img [ref=e72]
+        - button "刷新数据" [ref=e74] [cursor=pointer]:
+          - img [ref=e75]
+    - generic [ref=e79]:
+      - generic [ref=e80]:
+        - heading "仪表盘总览" [level=5] [ref=e81]
+        - generic [ref=e82]:
+          - button "新建任务" [ref=e83] [cursor=pointer]:
+            - img [ref=e85]
+            - text: 新建任务
+          - generic [ref=e87] [cursor=pointer]:
+            - checkbox "自动刷新" [ref=e90]
+            - paragraph [ref=e93]: 自动刷新
+      - generic [ref=e94]:
+        - img [ref=e95]
+        - paragraph [ref=e97]: 暂无仓库数据
+        - paragraph [ref=e98]: 添加您的第一个仓库，开始使用仪表盘
+        - button "添加仓库" [ref=e99] [cursor=pointer]:
+          - img [ref=e101]
+          - text: 添加仓库
+  - button "AI 助手" [ref=e103] [cursor=pointer]:
+    - img [ref=e104]

@@ -383,7 +383,7 @@ const SettingsPanel: React.FC = () => {
           <Box>
             <Typography sx={{ fontSize: '0.75rem', color: '#111827', mb: 0.5, fontWeight: 500 }}>时间范围</Typography>
             <Box sx={{ display: 'flex', gap: 0.75 }}>
-              {[7, 14, 30].map((d) => (
+              {[7, 14, 30, 365].map((d) => (
                 <Chip key={d} label={`${d} 天`} size="small" onClick={() => updateHeatmap('days', d)} sx={{ fontSize: '0.7rem', backgroundColor: draft.dashboard.heatmap.days === d ? '#111827' : '#F3F4F6', color: draft.dashboard.heatmap.days === d ? '#FFFFFF' : '#6B7280', '&:hover': { backgroundColor: draft.dashboard.heatmap.days === d ? '#374151' : '#E5E7EB' }, transition: 'all 0.15s ease' }} />
               ))}
             </Box>

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Typography, Card, CardHeader, CardContent, IconButton } from '@mui/material';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -177,11 +177,12 @@ interface GitHubHeatmapProps {
 }
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
-const CELL_SIZE = 14;          // 用户指定：GitHub 官方 heatmap rect 宽 14px
-const CELL_GAP = 3;           // 用户指定：gap 3px
-const WEEKDAY_LABEL_WIDTH = 36; // 用户指定：左侧月份/周几标签宽 36px
+const CELL_GAP = 3;           // 格子间距 3px
+const WEEKDAY_LABEL_WIDTH = 36; // 左侧星期标签宽 36px
 const MONTH_LABEL_HEIGHT = 20;
 const LEGEND_LABELS = ['无', '少', '中', '多', '满'];
+const MAX_CELL_SIZE = 18;     // 最大格子尺寸
+const MIN_CELL_SIZE = 8;      // 最小格子尺寸（防止挤成一条线）
 
 const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
   const { settings } = useAppSettings();
@@ -192,10 +193,25 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
 
   const [hoveredCell, setHoveredCell] = useState<DayCell | null>(null);
   const [allWarehouses, setAllWarehouses] = useState<Warehouse[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(600); // 默认值，ResizeObserver 会更新
 
   useEffect(() => {
     const unsub = subscribeWarehouses(setAllWarehouses);
     return unsub;
+  }, []);
+
+  // ResizeObserver 自适应容器宽度
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   const { cells, maxVal, whCount } = useMemo(
@@ -205,14 +221,23 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
 
   const weekColumns = useMemo(() => buildWeekColumns(cells), [cells]);
 
+  // 动态计算 cellSize：根据容器宽度自适应
+  const cellSize = useMemo(() => {
+    if (weekColumns.length === 0) return MAX_CELL_SIZE;
+    const padding = 40;
+    const available = Math.max(containerWidth - WEEKDAY_LABEL_WIDTH - padding, 200);
+    const computed = Math.floor(available / weekColumns.length) - CELL_GAP;
+    return Math.min(Math.max(computed, MIN_CELL_SIZE), MAX_CELL_SIZE);
+  }, [containerWidth, weekColumns.length]);
+
   // 总出货量
   const totalShipments = useMemo(() => cells.reduce((s, c) => s + c.total, 0), [cells]);
 
   // 活跃天数
   const activeDays = useMemo(() => cells.filter(c => c.total > 0).length, [cells]);
 
-  const svgWidth = WEEKDAY_LABEL_WIDTH + weekColumns.length * (CELL_SIZE + CELL_GAP) + 20;
-  const svgHeight = MONTH_LABEL_HEIGHT + 7 * (CELL_SIZE + CELL_GAP) + 20;
+  const svgWidth = WEEKDAY_LABEL_WIDTH + weekColumns.length * (cellSize + CELL_GAP) + 20;
+  const svgHeight = MONTH_LABEL_HEIGHT + 7 * (cellSize + CELL_GAP) + 20;
 
   const getColor = (level: number): string => {
     if (level === -1) return colors.empty;
@@ -296,7 +321,7 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
           </Box>
         </Box>
 
-        <Box sx={{ width: '100%', overflowX: 'auto', pb: 1 }}>
+        <Box ref={containerRef} sx={{ width: '100%', overflowX: 'auto', pb: 1 }}>
           <svg
             width="100%"
             height={svgHeight}
@@ -307,7 +332,7 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
             {/* 月份标签 */}
             {weekColumns.map(col => {
               if (!col.monthLabel) return null;
-              const x = WEEKDAY_LABEL_WIDTH + col.weekIndex * (CELL_SIZE + CELL_GAP);
+              const x = WEEKDAY_LABEL_WIDTH + col.weekIndex * (cellSize + CELL_GAP);
               return (
                 <text
                   key={`month-${col.weekIndex}`}
@@ -328,7 +353,7 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
               <text
                 key={`wd-${i}`}
                 x={WEEKDAY_LABEL_WIDTH - 4}
-                y={MONTH_LABEL_HEIGHT + i * (CELL_SIZE + CELL_GAP) + CELL_SIZE - 2}
+                y={MONTH_LABEL_HEIGHT + i * (cellSize + CELL_GAP) + cellSize - 2}
                 textAnchor="end"
                 fontSize={9}
                 fill="#9CA3AF"
@@ -343,8 +368,8 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
               <g key={`col-${col.weekIndex}`}>
                 {col.days.map((cell, dayIdx) => {
                   if (!cell) return null;
-                  const x = WEEKDAY_LABEL_WIDTH + col.weekIndex * (CELL_SIZE + CELL_GAP);
-                  const y = MONTH_LABEL_HEIGHT + dayIdx * (CELL_SIZE + CELL_GAP);
+                  const x = WEEKDAY_LABEL_WIDTH + col.weekIndex * (cellSize + CELL_GAP);
+                  const y = MONTH_LABEL_HEIGHT + dayIdx * (cellSize + CELL_GAP);
                   const color = getColor(cell.level);
                   const isHovered = hoveredCell?.date === cell.date;
 
@@ -353,8 +378,8 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
                       key={cell.date}
                       x={x}
                       y={y}
-                      width={CELL_SIZE}
-                      height={CELL_SIZE}
+                      width={cellSize}
+                      height={cellSize}
                       rx={2}
                       fill={color}
                       stroke={isHovered ? '#111827' : 'rgba(255,255,255,0.6)'}

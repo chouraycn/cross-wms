@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { query, unstable_v2_createSession, unstable_v2_authenticate, PermissionResult, CanUseTool } from '@tencent-ai/agent-sdk';
 import { v4 as uuidv4 } from 'uuid';
@@ -98,11 +99,13 @@ const getFrontendDistPath = (): string => {
   }
   // 2. 相对路径（开发环境或 PyInstaller 打包后）
   // 打包后 server_dist/ 在 Resources/，frontend_dist/ 也在 Resources/
+  // ES module 中使用 import.meta.url 获取当前文件目录
+  const currentDir = path.dirname(fileURLToPath(import.meta.url));
   const candidates = [
-    path.join(__dirname, '../frontend_dist'),   // 开发环境
-    path.join(__dirname, '../dist'),           // 开发环境（Vite 默认）
-    path.join(__dirname, '../../frontend_dist'), // 打包后 Resources/server_dist/ → Resources/frontend_dist
-    path.join(__dirname, '../../dist'),        // 备用
+    path.join(currentDir, '../frontend_dist'),   // 开发环境
+    path.join(currentDir, '../dist'),             // 开发环境（Vite 默认）
+    path.join(currentDir, '../../frontend_dist'), // 打包后 Resources/server_dist/ → Resources/frontend_dist
+    path.join(currentDir, '../../dist'),          // 备用
   ];
   for (const p of candidates) {
     if (fs.existsSync(p)) return p;
