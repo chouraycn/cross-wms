@@ -239,6 +239,13 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
   const svgWidth = WEEKDAY_LABEL_WIDTH + weekColumns.length * (cellSize + CELL_GAP) + 20;
   const svgHeight = MONTH_LABEL_HEIGHT + 7 * (cellSize + CELL_GAP) + 20;
 
+  // 计算容器实际高度：基于 SVG viewBox 宽高比 + 容器宽度 计算缩放后的高度
+  const svgContainerHeight = useMemo(() => {
+    if (svgWidth === 0) return svgHeight;
+    const scale = containerWidth / svgWidth;
+    return Math.round(svgHeight * scale);
+  }, [containerWidth, svgWidth, svgHeight]);
+
   const getColor = (level: number): string => {
     if (level === -1) return colors.empty;
     const map: Record<number, string> = {
@@ -321,13 +328,13 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
           </Box>
         </Box>
 
-        <Box ref={containerRef} sx={{ width: '100%', overflowX: 'auto', pb: 1 }}>
+        <Box ref={containerRef} sx={{ width: '100%', height: svgContainerHeight, position: 'relative' }}>
           <svg
             width="100%"
-            height={svgHeight}
+            height="100%"
             viewBox={`0 0 ${svgWidth} ${svgHeight}`}
             preserveAspectRatio="xMinYMin meet"
-            style={{ display: 'block', minWidth: svgWidth }}
+            style={{ display: 'block' }}
           >
             {/* 月份标签 */}
             {weekColumns.map(col => {

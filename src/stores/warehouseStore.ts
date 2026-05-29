@@ -6,6 +6,9 @@
 
 import type { Warehouse } from '../types';
 
+// 重新导出 Warehouse 类型，方便其他模块引用
+export type { Warehouse } from '../types';
+
 // ====== 持久化配置 ======
 
 const STORAGE_KEY = 'crosswms-warehouses';

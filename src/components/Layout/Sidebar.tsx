@@ -50,6 +50,7 @@ import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import WidgetsIcon from '@mui/icons-material/Widgets';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, SidebarConfig, HeatmapConfig } from '../../contexts/AppSettingsContext';
@@ -244,15 +245,17 @@ const SettingsPanel: React.FC = () => {
     setDraft({
       tencentDocs: { docLinks: [] },
       wecomDocs: { docLinks: [] },
+      volumeDocs: { docLinks: [] },
       dashboard: {
         warningThreshold: 70, fullThreshold: 90, ageWarningDays: 90, trendCompareDays: 30,
         dataRefreshInterval: 60, defaultTransitVolumeDays: 30, totalItems: 14300, transitAlertThreshold: 85,
         visibility: { kpiTransitVolume: true, kpiVolumeUtilization: true, kpiPendingInbound: true, kpiOutboundCount: true, kpiInventoryDepth: true, kpiTransitAlert: true, chartVolumeTrend: true, chartTransitPie: true, chartWarehouseBar: true, chartShipmentHeatmap: true, chartInventoryAlert: true, chartKpiComparison: true, chartTransitTime: true },
-        heatmap: { days: 14, colorScheme: 'blue' },
+        heatmap: { days: 14, colorScheme: 'ocean' },
         componentOrder: ['kpi-cards', 'heatmap', 'volume-trend', 'transit-pie', 'warehouse-bar', 'inventory-alert', 'kpi-comparison', 'transit-time'],
         dataSource: { mode: 'mock', apiBaseUrl: '/api/v1', docMappings: {} },
       },
       sidebar: { showVersion: true },
+      widget: { enabled: false },
     });
     setErrors({});
     setSnackbarMsg('已重置为默认值'); setSnackbarOpen(true);
@@ -393,9 +396,9 @@ const SettingsPanel: React.FC = () => {
             <Typography sx={{ fontSize: '0.75rem', color: '#111827', mb: 0.5, fontWeight: 500 }}>颜色方案</Typography>
             <Box sx={{ display: 'flex', gap: 0.75 }}>
               {([
-                { key: 'blue' as const, label: '蓝色', colors: ['#EFF6FF', '#60A5FA', '#1D4ED8'] },
-                { key: 'green' as const, label: '绿色', colors: ['#ECFDF5', '#34D399', '#059669'] },
-                { key: 'red' as const, label: '红色', colors: ['#FEF2F2', '#F87171', '#DC2626'] },
+                { key: 'ocean' as const, label: '海洋蓝', colors: ['#E0F2FE', '#0EA5E9', '#0369A1'] },
+                { key: 'forest' as const, label: '森林绿', colors: ['#DCFCE7', '#22C55E', '#15803D'] },
+                { key: 'sunset' as const, label: '日落橙', colors: ['#FED7AA', '#F97316', '#C2410C'] },
               ]).map((scheme) => (
                 <Chip key={scheme.key} label={scheme.label} size="small" onClick={() => updateHeatmap('colorScheme', scheme.key)} sx={{ fontSize: '0.7rem', backgroundColor: draft.dashboard.heatmap.colorScheme === scheme.key ? '#111827' : '#F3F4F6', color: draft.dashboard.heatmap.colorScheme === scheme.key ? '#FFFFFF' : '#6B7280', '&:hover': { backgroundColor: draft.dashboard.heatmap.colorScheme === scheme.key ? '#374151' : '#E5E7EB' }, transition: 'all 0.15s ease' }} icon={<Box sx={{ display: 'flex', gap: 0.25, ml: 0.5 }}>{scheme.colors.map((c, i) => (<Box key={i} sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: c, border: '1px solid rgba(0,0,0,0.1)' }} />))}</Box>} />
               ))}
@@ -556,6 +559,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
   // 设置 Popover 状态
   const settingsAnchorRef = useRef<HTMLDivElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Widget 相关状态
+  const [widgetSnackbarOpen, setWidgetSnackbarOpen] = useState(false);
+  const [widgetSnackbarMsg, setWidgetSnackbarMsg] = useState('');
 
   const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
@@ -728,6 +735,93 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
         })}
       </List>
 
+      {/* 底部 Widget 按钮 — 点击打开桌面 Widget */}
+      <Box sx={{ px: collapsed ? 0.5 : 1, pb: 0.5 }}>
+        {collapsed ? (
+          <Tooltip title="桌面 Widget" placement="right" arrow>
+            <ListItemButton
+              onClick={() => {
+                const api = (window.pywebview?.api as any);
+                if (api?.widget_show) {
+                  api.widget_show().catch(() => {
+                    setWidgetSnackbarMsg('打开 Widget 失败');
+                    setWidgetSnackbarOpen(true);
+                  });
+                } else {
+                  setWidgetSnackbarMsg('Widget 仅桌面端可用');
+                  setWidgetSnackbarOpen(true);
+                }
+              }}
+              sx={{
+                minHeight: 40,
+                justifyContent: 'center',
+                px: 0,
+                borderRadius: '6px',
+                '&:hover': {
+                  backgroundColor: 'rgba(0,0,0,0.06)',
+                },
+                transition: 'background-color 0.15s ease',
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  justifyContent: 'center',
+                  color: '#6B7280',
+                  '& .MuiSvgIcon-root': { fontSize: '20px' },
+                }}
+              >
+                <WidgetsIcon />
+              </ListItemIcon>
+            </ListItemButton>
+          </Tooltip>
+        ) : (
+          <ListItemButton
+            onClick={() => {
+              const api = (window.pywebview?.api as any);
+              if (api?.widget_show) {
+                api.widget_show().catch(() => {
+                  setWidgetSnackbarMsg('打开 Widget 失败');
+                  setWidgetSnackbarOpen(true);
+                });
+              } else {
+                setWidgetSnackbarMsg('Widget 仅桌面端可用');
+                setWidgetSnackbarOpen(true);
+              }
+            }}
+            sx={{
+              minHeight: 36,
+              px: 1.5,
+              borderRadius: '6px',
+              '&:hover': {
+                backgroundColor: 'rgba(0,0,0,0.06)',
+              },
+              transition: 'background-color 0.15s ease',
+            }}
+          >
+            <ListItemIcon
+              sx={{
+                minWidth: 0,
+                mr: 1.5,
+                justifyContent: 'center',
+                color: '#6B7280',
+                '& .MuiSvgIcon-root': { fontSize: '18px' },
+              }}
+            >
+              <WidgetsIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="桌面 Widget"
+              primaryTypographyProps={{
+                fontSize: '0.8125rem',
+                fontWeight: 400,
+                color: '#374151',
+              }}
+            />
+          </ListItemButton>
+        )}
+      </Box>
+
       {/* 底部设置按钮 — WorkBuddy 风格：点击弹出 Popover */}
       <Box sx={{ px: collapsed ? 0.5 : 1, pb: 1.5 }} ref={settingsAnchorRef}>
         {collapsed ? (
@@ -818,6 +912,18 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
       >
         <SettingsPanel />
       </Popover>
+
+      {/* Widget 提示 Snackbar */}
+      <Snackbar
+        open={widgetSnackbarOpen}
+        autoHideDuration={2000}
+        onClose={() => setWidgetSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setWidgetSnackbarOpen(false)} severity="info" sx={{ width: '100%' }}>
+          {widgetSnackbarMsg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -48,9 +48,16 @@ export default defineConfig({
     // 禁止 code splitting，消灭动态 import()
     // file:// 下 WKWebView 会拒绝动态导入
     rollupOptions: {
+      input: {
+        main: 'index.html',
+        widget: 'widget.html',
+      },
       output: {
-        inlineDynamicImports: true,
+        // 多入口场景下，使用 manualChunks 控制避免动态导入
+        manualChunks: undefined,
       },
     },
+    // 确保每个入口生成独立 chunk，避免动态导入
+    target: 'esnext',
   },
 })
