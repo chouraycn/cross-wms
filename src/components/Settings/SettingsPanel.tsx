@@ -39,8 +39,9 @@ import CloudOffIcon from '@mui/icons-material/CloudOff';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
-import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, WeComDocLinkItem, SidebarConfig, HeatmapConfig } from '../../contexts/AppSettingsContext';
+import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, WeComDocLinkItem, VolumeDocLinkItem, SidebarConfig, HeatmapConfig, WidgetConfig } from '../../contexts/AppSettingsContext';
 import { getAuthStatus, getAuthUrl, exchangeToken, refreshToken, isPyWebView, getDocContent, extractFileIdFromUrl, extractTextFromDoc, type TDocAuthStatus } from '../../services/tencentDocsApi';
 import { getWeComAuthStatus, getWeComDocContent, getWeComSmartPageContent, isWeComDocUrl, getWeComDocCategoryFromUrl, getWeComCategoryLabel, extractWeComDocIdFromUrl, type WeComAuthStatus } from '../../services/wecomDocsApi';
 import { getWarehouses } from '../../stores/warehouseStore';
@@ -154,6 +155,12 @@ const SettingsPanel: React.FC = () => {
   const [newWecomLinkTitle, setNewWecomLinkTitle] = useState('');
   const [newWecomLinkDataType, setNewWecomLinkDataType] = useState<WeComDocLinkItem['dataType']>('inventory');
   const [wecomLinkErrors, setWecomLinkErrors] = useState<Record<string, string>>({});
+
+  // 容积率文档链接状态
+  const [newVolumeDocUrl, setNewVolumeDocUrl] = useState('');
+  const [newVolumeDocTitle, setNewVolumeDocTitle] = useState('');
+  const [newVolumeDocDataType, setNewVolumeDocDataType] = useState<VolumeDocLinkItem['dataType']>('volume');
+  const [volumeDocErrors, setVolumeDocErrors] = useState<Record<string, string>>({});
 
   // 检查腾讯文档认证状态
   const checkTdocAuth = useCallback(async () => {
@@ -279,6 +286,60 @@ const SettingsPanel: React.FC = () => {
       ...prev,
       wecomDocs: {
         docLinks: (prev.wecomDocs?.docLinks ?? []).map((d) =>
+          d.id === id ? { ...d, [key]: value } : d
+        ),
+      },
+    }));
+  }, []);
+
+  /** 添加容积率文档链接 */
+  const handleAddVolumeDocLink = useCallback(() => {
+    const url = newVolumeDocUrl.trim();
+    if (!url) {
+      setVolumeDocErrors((e) => ({ ...e, 'volumeDoc.url': '请输入文档链接' }));
+      return;
+    }
+    if (draft.volumeDocs?.docLinks?.some((d) => d.url === url)) {
+      setVolumeDocErrors((e) => ({ ...e, 'volumeDoc.url': '该文档链接已存在' }));
+      return;
+    }
+
+    const newLink: VolumeDocLinkItem = {
+      id: `volume-doc-${Date.now()}`,
+      url,
+      title: newVolumeDocTitle.trim() || `容积率文档 ${new URL(url).hostname}`,
+      dataType: newVolumeDocDataType,
+    };
+
+    setDraft((prev) => ({
+      ...prev,
+      volumeDocs: {
+        docLinks: [...(prev.volumeDocs?.docLinks ?? []), newLink],
+      },
+    }));
+
+    setNewVolumeDocUrl('');
+    setNewVolumeDocTitle('');
+    setNewVolumeDocDataType('volume');
+    setVolumeDocErrors({});
+  }, [newVolumeDocUrl, newVolumeDocTitle, newVolumeDocDataType, draft.volumeDocs?.docLinks]);
+
+  /** 删除容积率文档链接 */
+  const handleRemoveVolumeDocLink = useCallback((id: string) => {
+    setDraft((prev) => ({
+      ...prev,
+      volumeDocs: {
+        docLinks: (prev.volumeDocs?.docLinks ?? []).filter((d) => d.id !== id),
+      },
+    }));
+  }, []);
+
+  /** Update a field on a specific volume doc link */
+  const updateVolumeDocLink = useCallback(<K extends keyof VolumeDocLinkItem>(id: string, key: K, value: VolumeDocLinkItem[K]) => {
+    setDraft((prev) => ({
+      ...prev,
+      volumeDocs: {
+        docLinks: (prev.volumeDocs?.docLinks ?? []).map((d) =>
           d.id === id ? { ...d, [key]: value } : d
         ),
       },
@@ -550,6 +611,13 @@ const SettingsPanel: React.FC = () => {
     }));
   }, []);
 
+  const updateWidget = useCallback(<K extends keyof WidgetConfig>(key: K, value: WidgetConfig[K]) => {
+    setDraft((prev) => ({
+      ...prev,
+      widget: { ...prev.widget, [key]: value },
+    }));
+  }, []);
+
   /** Save draft to the global settings store */
   const handleSave = () => {
     if (draft.dashboard.fullThreshold <= draft.dashboard.warningThreshold) {
@@ -558,8 +626,10 @@ const SettingsPanel: React.FC = () => {
     }
     updateSettings({ tencentDocs: draft.tencentDocs });
     updateSettings({ wecomDocs: draft.wecomDocs });
+    updateSettings({ volumeDocs: draft.volumeDocs });
     updateSettings({ dashboard: draft.dashboard });
     updateSettings({ sidebar: draft.sidebar });
+    updateSettings({ widget: { enabled: draft.widget.enabled } });
     setSnackbarMsg('设置已保存');
     setSnackbarOpen(true);
   };
@@ -572,6 +642,9 @@ const SettingsPanel: React.FC = () => {
         docLinks: [],
       },
       wecomDocs: {
+        docLinks: [],
+      },
+      volumeDocs: {
         docLinks: [],
       },
       dashboard: {
@@ -600,13 +673,16 @@ const SettingsPanel: React.FC = () => {
         },
         heatmap: {
           days: 14,
-          colorScheme: 'blue',
+          colorScheme: 'ocean',
         },
         componentOrder: ['kpi-cards', 'heatmap', 'volume-trend', 'transit-pie', 'warehouse-bar', 'inventory-alert', 'kpi-comparison', 'transit-time'],
         dataSource: { mode: 'mock', apiBaseUrl: '/api/v1', docMappings: {} },
       },
       sidebar: {
         showVersion: true,
+      },
+      widget: {
+        enabled: false,
       },
     });
     setErrors({});
@@ -1447,9 +1523,9 @@ const SettingsPanel: React.FC = () => {
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
               {[
-                { key: 'blue' as const, label: '蓝色', colors: ['#EFF6FF', '#60A5FA', '#1D4ED8'] },
-                { key: 'green' as const, label: '绿色', colors: ['#ECFDF5', '#34D399', '#059669'] },
-                { key: 'red' as const, label: '红色', colors: ['#FEF2F2', '#F87171', '#DC2626'] },
+                { key: 'ocean' as const, label: '海洋蓝', colors: ['#E0F2FE', '#0EA5E9', '#0369A1'] },
+                { key: 'forest' as const, label: '森林绿', colors: ['#DCFCE7', '#22C55E', '#15803D'] },
+                { key: 'sunset' as const, label: '日落橙', colors: ['#FED7AA', '#F97316', '#C2410C'] },
               ].map((scheme) => (
                 <Chip
                   key={scheme.key}
@@ -1476,6 +1552,186 @@ const SettingsPanel: React.FC = () => {
               ))}
             </Box>
           </Box>
+        </Box>
+      )}
+
+      <Divider sx={{ my: 1.5 }} />
+
+      {/* 容积率管理 */}
+      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', mt: 0.5, mb: 0.5 }}>
+        容积率管理
+      </Typography>
+      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', mb: 1 }}>
+        容积率基于件数计算（已用件数/总件数上限）。可在仓库管理页为每个仓库设置件数上限。预警线、满仓线在下方参数中配置。
+      </Typography>
+
+      <Box sx={{ display: 'flex', gap: 1.5, mb: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<DownloadOutlinedIcon />}
+          onClick={() => {
+            // 动态导入以避免 SSR 问题
+            import('../../utils/exportCsv').then((mod) => {
+              mod.downloadVolumeTemplate();
+            });
+          }}
+          sx={{ borderColor: '#111827', color: '#111827', fontSize: '0.8rem', '&:hover': { borderColor: '#374151', backgroundColor: '#F9FAFB' } }}
+        >
+          下载导入模板
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<LinkIcon />}
+          onClick={() => {
+            const docUrl = 'https://docs.qq.com/doc/volume-rate-guide';
+            openInBrowser(docUrl);
+          }}
+          sx={{ borderColor: '#111827', color: '#111827', fontSize: '0.8rem', '&:hover': { borderColor: '#374151', backgroundColor: '#F9FAFB' } }}
+        >
+          查看文档
+        </Button>
+      </Box>
+
+      {/* 容积率文档链接管理 */}
+      <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827', mb: 1 }}>
+        容积率文档链接
+      </Typography>
+
+      {/* 添加容积率文档链接表单 */}
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, p: 2, mb: 1.5 }}>
+        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#111827', mb: 1.5 }}>
+          添加文档链接
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <TextField
+            label="文档链接"
+            size="small"
+            fullWidth
+            placeholder="https://docs.qq.com/doc/..."
+            value={newVolumeDocUrl}
+            onChange={(e) => {
+              setNewVolumeDocUrl(e.target.value);
+              setVolumeDocErrors((prev) => { const n = { ...prev }; delete n['volumeDoc.url']; return n; });
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LinkIcon sx={{ fontSize: 18, color: '#9CA3AF' }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={textFieldSx}
+            error={Boolean(volumeDocErrors['volumeDoc.url'])}
+            helperText={volumeDocErrors['volumeDoc.url'] || '支持腾讯文档、企业微信文档等链接'}
+            FormHelperTextProps={{ sx: { fontSize: '0.75rem', color: '#9CA3AF' } }}
+          />
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+            <TextField
+              label="文档名称（选填）"
+              size="small"
+              sx={{ flex: 1, ...textFieldSx }}
+              value={newVolumeDocTitle}
+              onChange={(e) => setNewVolumeDocTitle(e.target.value)}
+              placeholder="容积率说明文档"
+            />
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel sx={{ fontSize: '0.875rem' }}>文档类型</InputLabel>
+              <Select
+                value={newVolumeDocDataType}
+                label="文档类型"
+                onChange={(e) => setNewVolumeDocDataType(e.target.value as VolumeDocLinkItem['dataType'])}
+                sx={{ fontSize: '0.875rem' }}
+              >
+                <MenuItem value="volume">容积率</MenuItem>
+                <MenuItem value="other">其他</MenuItem>
+              </Select>
+            </FormControl>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddVolumeDocLink}
+              sx={{
+                backgroundColor: '#111827',
+                '&:hover': { backgroundColor: '#374151' },
+                height: 40,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              添加
+            </Button>
+          </Box>
+        </Box>
+      </Card>
+
+      {/* 已添加的文档链接列表 */}
+      {(draft.volumeDocs?.docLinks ?? []).length === 0 ? (
+        <Box sx={{ textAlign: 'center', py: 3, border: '1px dashed #E5E7EB', borderRadius: 2 }}>
+          <DescriptionIcon sx={{ fontSize: 32, color: '#D1D5DB', mb: 1 }} />
+          <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>
+            暂无容积率文档链接，请在上方添加
+          </Typography>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {(draft.volumeDocs?.docLinks ?? []).map((doc) => (
+            <Card key={doc.id} elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+              <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 1,
+                      backgroundColor: '#6B7280',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <DescriptionIcon sx={{ color: '#fff', fontSize: 18 }} />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {doc.title}
+                      </Typography>
+                      <Chip
+                        label={doc.dataType === 'volume' ? '容积率' : '其他'}
+                        size="small"
+                        sx={{ height: 20, fontSize: '0.7rem', backgroundColor: '#F3F4F6', color: '#6B7280' }}
+                      />
+                    </Box>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {doc.url}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                    <Tooltip title="在浏览器中打开">
+                      <IconButton
+                        size="small"
+                        onClick={() => openInBrowser(doc.url)}
+                        sx={{ color: '#6B7280' }}
+                      >
+                        <OpenInNewIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="删除链接">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRemoveVolumeDocLink(doc.id)}
+                        sx={{ color: '#9CA3AF', '&:hover': { color: '#EF4444' } }}
+                      >
+                        <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
         </Box>
       )}
 
@@ -1696,6 +1952,28 @@ const SettingsPanel: React.FC = () => {
               在侧边栏 Logo 旁显示当前版本号（v{APP_VERSION}）
             </Typography>
           </Box>
+        }
+      />
+
+      <Divider sx={{ my: 1.5 }} />
+
+      <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827', mt: 0.5 }}>
+        桌面 Widget
+      </Typography>
+      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', mb: 1 }}>
+        配置桌面透明浮窗，在桌面上直接查看关键 KPI
+      </Typography>
+      <FormControlLabel
+        control={
+          <Switch
+            checked={draft.widget.enabled}
+            onChange={(e) => updateWidget('enabled', e.target.checked)}
+            size="small"
+            sx={switchSx}
+          />
+        }
+        label={
+          <Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>启用桌面 Widget 浮窗</Typography>
         }
       />
     </Box>

@@ -44,6 +44,25 @@ export interface WeComDocsConfig {
   docLinks: WeComDocLinkItem[];
 }
 
+// ===================== 容积率文档配置 =====================
+
+/** 容积率文档链接条目 */
+export interface VolumeDocLinkItem {
+  /** 唯一标识 */
+  id: string;
+  /** 文档链接 URL */
+  url: string;
+  /** 文档标题 */
+  title: string;
+  /** 数据类型 */
+  dataType: 'volume' | 'other';
+}
+
+export interface VolumeDocsConfig {
+  /** 已添加的文档链接列表 */
+  docLinks: VolumeDocLinkItem[];
+}
+
 // ===================== 仪表盘配置 =====================
 
 /** 仪表盘指标可见性配置 */
@@ -81,7 +100,7 @@ export interface HeatmapConfig {
   /** 时间范围（天） */
   days: number;
   /** 颜色方案 */
-  colorScheme: 'blue' | 'green' | 'red';
+  colorScheme: 'ocean' | 'forest' | 'sunset';
 }
 
 export interface DashboardConfig {
@@ -116,11 +135,19 @@ export interface SidebarConfig {
   showVersion: boolean;
 }
 
+/** 桌面 Widget 浮窗配置 */
+export interface WidgetConfig {
+  /** 是否启用桌面 Widget 浮窗 */
+  enabled: boolean;
+}
+
 export interface AppSettings {
   tencentDocs: TencentDocsConfig;
   wecomDocs: WeComDocsConfig;
+  volumeDocs: VolumeDocsConfig;
   dashboard: DashboardConfig;
   sidebar: SidebarConfig;
+  widget: WidgetConfig;
 }
 
 // ===================== Default Settings =====================
@@ -130,6 +157,9 @@ const DEFAULT_SETTINGS: AppSettings = {
     docLinks: [],
   },
   wecomDocs: {
+    docLinks: [],
+  },
+  volumeDocs: {
     docLinks: [],
   },
   dashboard: {
@@ -158,7 +188,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     },
     heatmap: {
       days: 365,
-      colorScheme: 'blue',
+      colorScheme: 'ocean',
     },
     componentOrder: ['kpi-cards', 'heatmap', 'volume-trend', 'transit-pie', 'warehouse-bar', 'inventory-alert', 'kpi-comparison', 'transit-time'],
     dataSource: {
@@ -169,6 +199,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   },
   sidebar: {
     showVersion: true,
+  },
+  widget: {
+    enabled: false,
   },
 };
 
@@ -246,9 +279,32 @@ function loadSettings(): AppSettings {
           : [];
       const wecomDocs = { docLinks: wecomDocLinks };
 
+      // 容积率文档链接迁移
+      const rawVolumeDocs = parsed.volumeDocs as { docLinks?: unknown[] } | undefined;
+      const volumeDocLinks: VolumeDocLinkItem[] =
+        rawVolumeDocs && Array.isArray(rawVolumeDocs.docLinks)
+          ? rawVolumeDocs.docLinks.map((link: unknown) => {
+              const record = link as Record<string, unknown>;
+              return {
+                id: String(record.id ?? ''),
+                url: String(record.url ?? ''),
+                title: String(record.title ?? ''),
+                dataType: String(record.dataType ?? 'other') as VolumeDocLinkItem['dataType'],
+              };
+            })
+          : [];
+      const volumeDocs = { docLinks: volumeDocLinks };
+
+      const widget = {
+        enabled: typeof parsed.widget?.enabled === 'boolean'
+          ? parsed.widget.enabled
+          : DEFAULT_SETTINGS.widget.enabled,
+      };
+
       return {
         tencentDocs,
         wecomDocs,
+        volumeDocs,
         dashboard: {
           ...DEFAULT_SETTINGS.dashboard,
           ...parsed.dashboard,
@@ -260,6 +316,7 @@ function loadSettings(): AppSettings {
           ...DEFAULT_SETTINGS.sidebar,
           ...parsed.sidebar,
         },
+        widget,
       };
     }
   } catch {
@@ -297,6 +354,9 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (partial.wecomDocs) {
         next.wecomDocs = { ...prev.wecomDocs, ...partial.wecomDocs };
       }
+      if (partial.volumeDocs) {
+        next.volumeDocs = { ...prev.volumeDocs, ...partial.volumeDocs };
+      }
       if (partial.dashboard) {
         next.dashboard = {
           ...prev.dashboard,
@@ -308,6 +368,9 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
       if (partial.sidebar) {
         next.sidebar = { ...prev.sidebar, ...partial.sidebar };
+      }
+      if (partial.widget) {
+        next.widget = { ...prev.widget, ...partial.widget };
       }
       return next;
     });

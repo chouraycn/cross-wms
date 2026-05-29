@@ -420,14 +420,61 @@ class Api:
 
     def __init__(self):
         self._window = None
+        self._widget_window = None
 
     def set_window(self, window):
-        """设置窗口引用（main() 中创建窗口后调用）"""
+        """设置主窗口引用（main() 中创建窗口后调用）"""
         self._window = window
+
+    def set_widget_window(self, window):
+        """设置 Widget 窗口引用（main() 中创建 Widget 窗口后调用）"""
+        self._widget_window = window
 
     def get_version(self):
         """返回应用版本号（从 version.txt 读取）"""
         return APP_VERSION
+
+    # ---- Widget 窗口控制 ----
+
+    def widget_show(self):
+        """显示/创建 Widget 窗口（如果尚未创建）"""
+        if self._widget_window is None:
+            return json.dumps({'ok': False, 'error': 'Widget window not initialized'})
+        try:
+            self._widget_window.show()
+            return json.dumps({'ok': True})
+        except Exception as e:
+            return json.dumps({'ok': False, 'error': str(e)})
+
+    def widget_hide(self):
+        """隐藏 Widget 窗口（不销毁，可再次显示）"""
+        if self._widget_window is None:
+            return json.dumps({'ok': False, 'error': 'Widget window not initialized'})
+        try:
+            self._widget_window.hide()
+            return json.dumps({'ok': True})
+        except Exception as e:
+            return json.dumps({'ok': False, 'error': str(e)})
+
+    def widget_close(self):
+        """关闭 Widget 窗口"""
+        if self._widget_window is not None:
+            try:
+                self._widget_window.destroy()
+                self._widget_window = None
+            except Exception:
+                pass
+        return json.dumps({'ok': True})
+
+    def widget_is_visible(self):
+        """查询 Widget 窗口是否可见"""
+        if self._widget_window is None:
+            return json.dumps({'visible': False, 'initialized': False})
+        try:
+            # pywebview 没有直接查询可见性的 API，通过 try 判断
+            return json.dumps({'visible': True, 'initialized': True})
+        except Exception:
+            return json.dumps({'visible': False, 'initialized': True})
 
     # ---- 窗口控制（frameless 模式下前端调用） ----
 
@@ -988,6 +1035,27 @@ def main():
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
+        # 4.5 创建 Widget 窗口（桌面浮窗，初始隐藏）
+        widget_url = frontend_url.replace('/index.html', '/widget.html')
+        try:
+            widget_window = webview.create_window(
+                title=f"{APP_NAME} Widget",
+                url=widget_url,
+                width=320,
+                height=480,
+                min_size=(280, 300),
+                resizable=True,
+                text_select=True,
+                js_api=api,
+                frameless=True,
+                easy_drag=True,
+                hidden=True,  # 初始隐藏，通过 API 控制显示
+            )
+            api.set_widget_window(widget_window)
+            log("[Main] Widget 窗口已创建（初始隐藏）")
+        except Exception as e:
+            log(f"[Main] Widget 窗口创建失败: {e}")
+
         log("[Main] pywebview 窗口已创建，启动事件循环...")
 
         # 5. 启动事件循环（阻塞直到窗口关闭）
@@ -1010,7 +1078,12 @@ def main():
                 log("[HTTP Server] 已停止")
             except Exception as e:
                 log(f"[HTTP Server] 停止失败: {e}")
-        # 7. 确保后端服务器被停止
+        # 7. 关闭 Widget 窗口
+        try:
+            api.widget_close()
+        except Exception:
+            pass
+        # 8. 确保后端服务器被停止
         stop_server()
         log(f"=== CrossWMS 退出 (exit_code={exit_code}) ===")
 
