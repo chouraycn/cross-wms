@@ -13,6 +13,7 @@ import { isPyWebView } from './services/tencentDocsApi';
 import { AIAssistantProvider, AIAssistantFab, AIAssistantPanel } from './components/AIAssistant/AIAssistantPanel';
 import { UpdateProvider } from './contexts/UpdateContext';
 import UpdateNotification from './components/UpdateNotification';
+import ErrorBoundary from './components/Common/ErrorBoundary';
 
 // 静态导入 — file:// 协议下 WKWebView 不支持动态 import()
 // Vite 构建时 inlineDynamicImports 已将全部代码打包到单文件，无需代码分割
@@ -372,16 +373,18 @@ const MainLayout: React.FC = () => {
               },
             }}
           >
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/warehouses" element={<WarehousesPage />} />
-              <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
-              <Route path="/in-transit" element={<InTransitPage />} />
-              <Route path="/inventory" element={<InventoryPage />} />
-              <Route path="/tencent-docs" element={<TencentDocsPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Routes>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/warehouses" element={<WarehousesPage />} />
+                <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
+                <Route path="/in-transit" element={<InTransitPage />} />
+                <Route path="/inventory" element={<InventoryPage />} />
+                <Route path="/tencent-docs" element={<TencentDocsPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Routes>
+            </ErrorBoundary>
           </Box>
         </Box>
       </Box>

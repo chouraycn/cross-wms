@@ -201,6 +201,43 @@ def get_server_script_path():
     return None
 
 
+def check_dependencies():
+    """启动前检查关键依赖是否存在，失败则抛 RuntimeError"""
+    errors = []
+
+    # 1. 检查前端 dist/index.html
+    try:
+        idx = get_index_path()
+        log(f"[Check] ✅ index.html: {idx}")
+    except FileNotFoundError as e:
+        errors.append(f"前端文件缺失: {e}")
+
+    # 2. 检查 PyWebView 是否可用
+    try:
+        import webview
+        log(f"[Check] ✅ pywebview: {webview.__version__}")
+    except Exception as e:
+        errors.append(f"pywebview 不可用: {e}")
+
+    # 3. 检查端口 9988 是否可用（仅开发模式）
+    if not getattr(sys, 'frozen', False):
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.bind(('127.0.0.1', 9988))
+            log("[Check] ✅ 端口 9988 可用")
+        except OSError as e:
+            errors.append(f"端口 9988 被占用: {e}")
+        finally:
+            s.close()
+
+    if errors:
+        for e in errors:
+            log(f"[Check] ❌ {e}")
+        raise RuntimeError("依赖检查失败:\n" + "\n".join(errors))
+    log("[Check] ✅ 所有依赖检查通过")
+
+
 def start_server():
     """启动 Node.js 后端服务器，返回进程对象"""
     global _server_process
@@ -896,6 +933,9 @@ def main():
     exit_code = 0
 
     try:
+        # 0. 启动前依赖检查
+        check_dependencies()
+
         # 1. 获取前端 dist 目录路径
         frontend_path = get_index_path()
         dist_dir = os.path.dirname(frontend_path)
