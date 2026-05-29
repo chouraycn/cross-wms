@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, Typography, Box, IconButton } from '@mui/material';
+import {
+  Card, CardContent, CardHeader, Typography, Box, IconButton, ToggleButton, ToggleButtonGroup,
+} from '@mui/material';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
@@ -9,21 +11,36 @@ import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { subscribeWarehouses } from '../../stores/warehouseStore';
 import { exportToCsv } from '../../utils/exportCsv';
+import { calcOverallByVolume, calcOverallByItems } from '../../utils/volumeCalculator';
 import type { Warehouse } from '../../types';
 
 interface VolumeChartProps {
   warehouseId: string;
 }
 
+type CalcMode = 'items' | 'volume';
+
+const CALC_MODE_LABEL: Record<CalcMode, string> = {
+  items: '按件数计算',
+  volume: '按体积计算',
+};
+
 const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
   const { settings } = useAppSettings();
   const { warningThreshold, fullThreshold } = settings.dashboard;
 
+  const [calcMode, setCalcMode] = useState<CalcMode>('items');
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   useEffect(() => {
     const unsub = subscribeWarehouses(setWarehouses);
     return unsub;
   }, []);
+
+  const handleModeChange = (_: React.MouseEvent<HTMLElement>, newMode: CalcMode | null) => {
+    if (newMode !== null) {
+      setCalcMode(newMode);
+    }
+  };
 
   const warehouseName = warehouseId !== ALL_WAREHOUSES
     ? warehouses.find((w) => w.id === warehouseId)?.name ?? ''
@@ -31,9 +48,10 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
 
   // ==================== 导出容积率趋势数据 ====================
   const handleExport = () => {
+    const modeLabel = calcMode === 'items' ? '件数' : '体积';
     exportToCsv(
       'volume_trend.csv',
-      ['日期', '容积利用率(%)'],
+      ['日期', `容积利用率(%)(基于${modeLabel})`],
       mockVolumeHistory.map((p) => [p.date, String(p.utilizationRate)])
     );
   };
@@ -47,9 +65,34 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
           </Typography>
         }
         subheader={
-          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.25 }}>
-            近 {settings.dashboard.trendCompareDays} 天 · 按件数计算
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.25 }}>
+            <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+              近 {settings.dashboard.trendCompareDays} 天 · {CALC_MODE_LABEL[calcMode]}
+            </Typography>
+            <ToggleButtonGroup
+              value={calcMode}
+              exclusive
+              onChange={handleModeChange}
+              size="small"
+              sx={{
+                '& .MuiToggleButton-root': {
+                  fontSize: '0.7rem',
+                  py: 0.25,
+                  px: 1,
+                  border: '1px solid #E5E7EB',
+                  color: '#9CA3AF',
+                  textTransform: 'none',
+                  '&.Mui-selected': {
+                    color: '#111827',
+                    backgroundColor: '#F3F4F6',
+                  },
+                },
+              }}
+            >
+              <ToggleButton value="items">件数</ToggleButton>
+              <ToggleButton value="volume">体积</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
         }
         action={
           <IconButton size="small" onClick={handleExport} title="导出CSV">
@@ -77,7 +120,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
               width={40}
             />
             <Tooltip
-              formatter={(value: number) => [`${value}%`, '容积利用率']}
+              formatter={(value: number) => [`${value}%`, CALC_MODE_LABEL[calcMode]]}
               contentStyle={{
                 fontSize: '0.8rem',
                 borderRadius: 8,
@@ -107,7 +150,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
             <Line
               type="monotone"
               dataKey="utilizationRate"
-              name="容积利用率"
+              name={CALC_MODE_LABEL[calcMode]}
               stroke="#111827"
               strokeWidth={2}
               dot={false}

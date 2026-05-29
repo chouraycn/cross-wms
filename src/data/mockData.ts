@@ -8,6 +8,7 @@ import type {
   InboundRecord,
   OutboundRecord,
 } from '../types';
+import { calcUtilizationByItems, calcOverallByVolume } from '../utils/volumeCalculator';
 
 // ===================== Warehouses =====================
 
@@ -598,14 +599,11 @@ export const mockOutboundRecords: OutboundRecord[] = [
 
 // ===================== Derived / Computed Data =====================
 
-/** 计算各仓库容积利用率（基于件数）— 防御性计算，避免 NaN / Infinity */
+/** 计算各仓库容积利用率（基于件数）— 防御性计算，避免 NaN / Infinity
+ * 向后兼容：内部调用 calcUtilizationByItems
+ */
 export function getWarehouseUtilization(wh: Warehouse): number {
-  const total = Number.isFinite(wh.totalItems) && wh.totalItems! > 0 ? wh.totalItems! : (Number.isFinite(wh.totalVolume) ? wh.totalVolume : 1);
-  const used = Number.isFinite(wh.usedItems) && wh.usedItems! >= 0 ? wh.usedItems! : (Number.isFinite(wh.usedVolume) ? wh.usedVolume : 0);
-  if (total <= 0) return 0;
-  const ratio = used / total;
-  if (!Number.isFinite(ratio)) return 0;
-  return parseFloat((ratio * 100).toFixed(1));
+  return calcUtilizationByItems(wh);
 }
 
 /** 获取容积率颜色（支持自定义阈值） */
@@ -615,8 +613,8 @@ export function getUtilizationColor(rate: number, warningThreshold: number = 70,
   return 'error';
 }
 
-/** 按仓库名称获取仓库 */
-export function getWarehouseById(id: string): Warehouse | undefined {
+/** 按仓库ID获取仓库（仅 mock 数据，用于 fallback） */
+export function getMockWarehouseById(id: string): Warehouse | undefined {
   return mockWarehouses.find((w) => w.id === id);
 }
 
@@ -628,13 +626,8 @@ export const kpiData = {
       .reduce((s, t) => s + t.volume, 0)
       .toFixed(1)
   ),
-  totalVolumeUtilization: parseFloat(
-    (
-      (mockWarehouses.reduce((s, w) => s + w.usedVolume, 0) /
-        mockWarehouses.reduce((s, w) => s + w.totalVolume, 0)) *
-      100
-    ).toFixed(1)
-  ),
+  /** 总体容积率 — 基于体积（用于总体 KPI 仪表盘） */
+  totalVolumeUtilization: calcOverallByVolume(mockWarehouses),
   pendingInboundOrders: mockInboundRecords.filter((r) => r.status === 'pending').length,
   todayOutboundCount: 6,
   /** 库存深度（天）= 当前库存总件数 / 日均出库件数 */

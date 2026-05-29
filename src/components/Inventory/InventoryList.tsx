@@ -32,7 +32,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
-import { mockInventory, mockWarehouses, getWarehouseById } from '../../data/mockData';
+import { mockInventory, mockWarehouses, getMockWarehouseById } from '../../data/mockData';
 import type { InventoryItem } from '../../types';
 import dayjs from 'dayjs';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -106,7 +106,7 @@ const InventoryList: React.FC = () => {
     );
     setSelected([]);
     setMoveDialogOpen(false);
-    setSnackbar({ open: true, message: `已将 ${selected.length} 件商品移库至 ${getWarehouseById(targetWarehouseId)?.name}`, severity: 'success' });
+    setSnackbar({ open: true, message: `已将 ${selected.length} 件商品移库至 ${getMockWarehouseById(targetWarehouseId)?.name}`, severity: 'success' });
   };
 
   const handleInventoryCheck = () => {
@@ -263,7 +263,7 @@ const InventoryList: React.FC = () => {
             </TableHead>
             <TableBody>
               {paginatedItems.map((item) => {
-                const warehouse = getWarehouseById(item.warehouseId);
+                const warehouse = getMockWarehouseById(item.warehouseId);
                 const isSelected = selected.includes(item.id);
                 return (
                   <TableRow

@@ -29,6 +29,7 @@ import {
   kpiData as mockKpiData,
   transitStatusDistribution as mockTransitStatusDistribution,
 } from '../data/mockData';
+import { calcOverallByVolume } from '../utils/volumeCalculator';
 
 import {
   isPyWebView,
@@ -462,13 +463,7 @@ export class DashboardApiService {
         .toFixed(1)
     );
 
-    const totalVolumeUtilization = parseFloat(
-      (
-        (warehouses.reduce((s, w) => s + w.usedVolume, 0) /
-          warehouses.reduce((s, w) => s + w.totalVolume, 0)) *
-        100
-      ).toFixed(1)
-    );
+    const totalVolumeUtilization = calcOverallByVolume(warehouses);
 
     const pendingInboundOrders = inboundRecords.filter(r => r.status === 'pending').length;
 
