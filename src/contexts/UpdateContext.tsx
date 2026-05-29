@@ -2,21 +2,12 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { UpdateStatus } from '../services/updateService';
 import { checkForUpdates as checkForUpdatesService, openDownloadUrl, formatVersion } from '../services/updateService';
 
-// 从 Vite 环境变量读取版本号；pywebview 环境下优先用 Python 侧真实版本号
-let APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
+// 从 Vite 环境变量读取版本号（编译时注入）
+const VITE_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
 
-// pywebview 环境：通过 JS API 桥接获取真实版本号（避免 Vite 注入值与打包版本不一致）
-if (typeof window !== 'undefined' && window.pywebview?.api?.get_version) {
-  try {
-    // get_version() 返回的是同步值（pywebview 同步调用）
-    const pyVersion = window.pywebview.api.get_version();
-    if (pyVersion && typeof pyVersion === 'string' && pyVersion !== '0.0.0') {
-      APP_VERSION = pyVersion;
-    }
-  } catch {
-    // 桥接失败，降级到 Vite 注入的版本号
-  }
-}
+// pywebview 环境：异步获取真实版本号
+// 在 UpdateProvider 内通过 useEffect 初始化，避免模块加载时 api 未就绪的问题
+let APP_VERSION = VITE_VERSION;
 
 interface UpdateContextType {
   updateStatus: UpdateStatus | null;
@@ -31,10 +22,63 @@ const UpdateContext = createContext<UpdateContextType | undefined>(undefined);
 export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+  const [currentVersion, setCurrentVersion] = useState(APP_VERSION);
   const ran = useRef(false);
 
+  // 初始化：检测 pywebview 环境并获取真实版本号
+  useEffect(() => {
+    let cancelled = false;
+
+    async function initVersion() {
+      // pywebview 环境：等待 api 就绪后获取版本号
+      if (typeof window !== 'undefined' && window.pywebview) {
+        try {
+          // 等待 api 对象就绪（最多 5 秒）
+          const waitForApi = (timeout = 5000): Promise<boolean> => {
+            if (window.pywebview?.api) return Promise.resolve(true);
+            return new Promise((resolve) => {
+              const start = Date.now();
+              const check = () => {
+                if (window.pywebview?.api) {
+                  resolve(true);
+                  return;
+                }
+                if (Date.now() - start > timeout) {
+                  resolve(false);
+                  return;
+                }
+                setTimeout(check, 50);
+              };
+              check();
+            });
+          };
+
+          const ready = await waitForApi();
+          if (!ready) {
+            console.warn('[UpdateContext] pywebview API 未在超时内就绪，使用 Vite 注入版本号');
+            return;
+          }
+
+          // api 就绪，调用 get_version（pywebview 同步调用）
+          const pyVersion = window.pywebview.api.get_version();
+          if (pyVersion && typeof pyVersion === 'string' && pyVersion !== '0.0.0') {
+            if (!cancelled) {
+              APP_VERSION = pyVersion;
+              setCurrentVersion(pyVersion);
+            }
+          }
+        } catch (e) {
+          console.warn('[UpdateContext] 获取 pywebview 版本号失败，使用 Vite 注入版本:', e);
+        }
+      }
+    }
+
+    initVersion();
+    return () => { cancelled = true; };
+  }, []);
+
   const checkForUpdates = useCallback(async () => {
-    const status = await checkForUpdatesService(APP_VERSION);
+    const status = await checkForUpdatesService(currentVersion);
     if (status.hasUpdate && status.releaseInfo) {
       setUpdateStatus(status);
       setShowUpdateNotification(true);
@@ -43,7 +87,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setShowUpdateNotification(false);
     }
     return status;
-  }, []);
+  }, [currentVersion]);
 
   const hideUpdateNotification = useCallback(() => {
     setShowUpdateNotification(false);
@@ -62,7 +106,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     ran.current = true;
     const timer = setTimeout(async () => {
       try {
-        const status = await checkForUpdatesService(APP_VERSION);
+        const status = await checkForUpdatesService(currentVersion);
         if (status.hasUpdate && status.releaseInfo) {
           setUpdateStatus(status);
           setShowUpdateNotification(true);
@@ -72,7 +116,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     }, 3000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [currentVersion]);
 
   return (
     <UpdateContext.Provider

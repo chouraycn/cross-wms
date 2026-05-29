@@ -50,13 +50,13 @@ class ErrorBoundary extends Component<Props, State> {
               <Stack direction="row" spacing={1} alignItems="center">
                 <ErrorOutlineIcon sx={{ color: '#f44336', fontSize: 28 }} />
                 <Typography variant="h6" sx={{ color: '#d32f2f', fontWeight: 600 }}>
-                  页面渲染出错
-                </Typography>
-              </Stack>
-
-              <Typography variant="body2" color="text.secondary">
-                仓库详情页发生了渲染错误，错误信息如下：
+              页面渲染异常
               </Typography>
+            </Stack>
+
+            <Typography variant="body2" color="text.secondary">
+              该页面发生了渲染错误，错误信息如下（已截获，不会导致应用完全白屏）：
+            </Typography>
 
               <Paper elevation={0} sx={{ p: 2, bgcolor: '#1e1e1e', borderRadius: 1, overflow: 'auto' }}>
                 <Typography
