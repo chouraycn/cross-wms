@@ -50,7 +50,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'index.html',
-        widget: 'widget.html',
       },
       output: {
         // 多入口场景下，使用 manualChunks 控制避免动态导入

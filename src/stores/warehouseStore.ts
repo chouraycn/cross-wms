@@ -95,86 +95,22 @@ export function setWarehouses(newWarehouses: Warehouse[]): void {
 export function addWarehouse(warehouse: Warehouse): void {
   warehouses = [...warehouses, warehouse];
   notifyAndPersist();
-  // 通知 pywebview 导出 Widget 数据
-  pushWidgetData();
 }
 
 /** 更新单个仓库（按 id 匹配） */
 export function updateWarehouse(updated: Warehouse): void {
   warehouses = warehouses.map((w) => (w.id === updated.id ? updated : w));
   notifyAndPersist();
-  // 通知 pywebview 导出 Widget 数据
-  pushWidgetData();
 }
 
 /** 删除单个仓库 */
 export function removeWarehouse(warehouseId: string): void {
   warehouses = warehouses.filter((w) => w.id !== warehouseId);
   notifyAndPersist();
-  // 通知 pywebview 导出 Widget 数据
-  pushWidgetData();
 }
 
 /** 重置为空 */
 export function resetWarehouses(): void {
   warehouses = [];
   notifyAndPersist();
-  // 通知 pywebview 导出 Widget 数据
-  pushWidgetData();
-}
-
-// ====== Widget 数据推送 ======
-
-/**
- * 读取应用设置（从 localStorage）
- * 这些设置影响 Widget 显示（警告阈值、颜色等）
- */
-function loadSettings(): Record<string, unknown> {
-  try {
-    const raw = localStorage.getItem('crosswms-settings');
-    if (raw) {
-      return JSON.parse(raw);
-    }
-  } catch {
-    // 静默失败
-  }
-  return {};
-}
-
-/**
- * 推送 Widget 数据到 pywebview（供 Swift Widget Extension 读取）
- * 仅在 pywebview 环境下调用，浏览器环境跳过
- */
-export function pushWidgetData(): void {
-  // 检测是否在 pywebview 环境中
-  if (typeof window === 'undefined' || !(window as any).pywebview) {
-    return;
-  }
-  
-  try {
-    const pywebview = (window as any).pywebview;
-    if (!pywebview.api || !pywebview.api.widget_push_data) {
-      return;
-    }
-    
-    const warehousesData = getWarehouses();
-    const settings = loadSettings();
-    
-    // 调用 pywebview API 导出数据
-    pywebview.api.widget_push_data(
-      JSON.stringify(warehousesData),
-      JSON.stringify(settings)
-    ).then((result: string) => {
-      const response = typeof result === 'string' ? JSON.parse(result) : result;
-      if (response.success) {
-        console.log('[Widget] 数据已推送到 pywebview');
-      } else {
-        console.warn('[Widget] 数据推送失败:', response.error);
-      }
-    }).catch((err: Error) => {
-      console.warn('[Widget] 数据推送错误:', err);
-    });
-  } catch (e) {
-    console.warn('[Widget] 推送 Widget 数据失败:', e);
-  }
 }

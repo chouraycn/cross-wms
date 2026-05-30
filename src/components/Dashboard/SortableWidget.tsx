@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 
 interface SortableWidgetProps {
@@ -35,14 +35,14 @@ const SortableWidget: React.FC<SortableWidgetProps> = ({ id, label, children }) 
       sx={{ mb: 4, position: 'relative' }}
       className="dashboard-widget"
     >
-      {/* 拖拽手柄 - hover 时显示 */}
+      {/* 拖拽手柄 - 左侧显示，避免与右侧下载按钮重叠 */}
       <Box
         {...listeners}
         {...attributes}
         sx={{
           position: 'absolute',
           top: 8,
-          right: 8,
+          left: 8,
           zIndex: 10,
           p: 0.5,
           borderRadius: 1,

@@ -9,24 +9,24 @@ import {
   Typography,
   Tooltip,
   IconButton,
-  Popover,
-  Divider,
-  Button,
-  Switch,
-  FormControlLabel,
-  Slider,
-  TextField,
-  Alert,
-  Snackbar,
-  Chip,
+  Dialog,
+  Grow,
   Card,
   CardContent,
+  Chip,
+  TextField,
+  Button,
+  Alert,
+  Divider,
+  FormControl,
+  FormControlLabel,
+  InputLabel,
   Select,
   MenuItem,
-  FormControl,
-  InputLabel,
+  Slider,
+  Switch,
   InputAdornment,
-  Grow,
+  Snackbar,
 } from '@mui/material';
 // 线性（Outlined）图标
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
@@ -50,7 +50,6 @@ import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import WidgetsIcon from '@mui/icons-material/Widgets';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, SidebarConfig, HeatmapConfig } from '../../contexts/AppSettingsContext';
@@ -61,7 +60,7 @@ const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '
 
 // ===================== Settings Panel Types & Data =====================
 
-type SettingsTab = 'menu' | 'tencentDocs' | 'dashboardCalc' | 'dashboardIndicators' | 'about';
+type SettingsTab = 'menu' | 'tencentDocs' | 'dashboardCalc' | 'volumeDocs' | 'dashboardIndicators' | 'about';
 
 interface SettingsMenuItem {
   key: Exclude<SettingsTab, 'menu'>;
@@ -73,6 +72,7 @@ interface SettingsMenuItem {
 const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   { key: 'tencentDocs', label: '腾讯文档', icon: <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />, description: 'API 授权与文档链接管理' },
   { key: 'dashboardCalc', label: '仪表盘参数', icon: <DashboardIcon sx={{ fontSize: 20 }} />, description: '计算阈值和参数调整' },
+  { key: 'volumeDocs', label: '容积率文档', icon: <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />, description: '容积率文档管理' },
   { key: 'dashboardIndicators', label: '指标控制', icon: <TuneIcon sx={{ fontSize: 20 }} />, description: '各模块显示与隐藏' },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本' },
 ];
@@ -255,7 +255,6 @@ const SettingsPanel: React.FC = () => {
         dataSource: { mode: 'mock', apiBaseUrl: '/api/v1', docMappings: {} },
       },
       sidebar: { showVersion: true },
-      widget: { enabled: false },
     });
     setErrors({});
     setSnackbarMsg('已重置为默认值'); setSnackbarOpen(true);
@@ -556,13 +555,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
   const location = useLocation();
   const { settings } = useAppSettings();
 
-  // 设置 Popover 状态
-  const settingsAnchorRef = useRef<HTMLDivElement>(null);
+  // 设置 Dialog 状态
   const [settingsOpen, setSettingsOpen] = useState(false);
-
-  // Widget 相关状态
-  const [widgetSnackbarOpen, setWidgetSnackbarOpen] = useState(false);
-  const [widgetSnackbarMsg, setWidgetSnackbarMsg] = useState('');
 
   const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
@@ -631,34 +625,42 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
           </svg>
         </Box>
 
-        {/* 名称 + 版本号 — 收起时隐藏 */}
-        {!collapsed && (
-          <Box sx={{ overflow: 'hidden' }}>
+        {/* 名称 + 版本号 — 收起时过渡隐藏 */}
+        <Box
+          sx={{
+            maxWidth: collapsed ? 0 : 200,
+            opacity: collapsed ? 0 : 1,
+            overflow: 'hidden',
+            transition: 'max-width 0.2s ease, opacity 0.15s ease',
+            transitionDelay: collapsed ? '0s' : '0.05s',
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              color: '#111827',
+              whiteSpace: 'nowrap',
+              lineHeight: 1.2,
+            }}
+          >
+            CDF Know CrossWMS
+          </Typography>
+          {settings.sidebar.showVersion && (
             <Typography
               sx={{
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-                color: '#111827',
-                whiteSpace: 'nowrap',
+                fontSize: '12px',
+                fontWeight: 400,
+                color: '#9CA3AF',
                 lineHeight: 1.2,
               }}
             >
-              CDF Know CrossWMS
+              v{APP_VERSION}
             </Typography>
-            {settings.sidebar.showVersion && (
-              <Typography
-                sx={{
-                  fontSize: '12px',
-                  fontWeight: 400,
-                  color: '#9CA3AF',
-                  lineHeight: 1.2,
-                }}
-              >
-                v{APP_VERSION}
-              </Typography>
-            )}
-          </Box>
-        )}
+          )}
+        </Box>
       </Box>
 
       {/* 导航列表 */}
@@ -667,263 +669,133 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
           const active = isActive(item.path);
           return (
             <ListItem key={item.path} disablePadding sx={{ display: 'block', mb: 0.25 }}>
-              {collapsed ? (
-                <Tooltip title={item.label} placement="right" arrow>
-                  <ListItemButton
-                    onClick={() => navigate(item.path)}
-                    sx={{
-                      minHeight: 40,
-                      justifyContent: 'center',
-                      px: 0,
-                      borderRadius: '6px',
-                      backgroundColor: active ? '#E0E0E0' : 'transparent',
-                      '&:hover': {
-                        backgroundColor: active ? '#D4D4D4' : 'rgba(0,0,0,0.06)',
-                      },
-                      transition: 'background-color 0.15s ease',
-                    }}
-                  >
-                    <ListItemIcon
-                      sx={{
-                        minWidth: 0,
-                        justifyContent: 'center',
-                        color: active ? '#111827' : '#6B7280',
-                        '& .MuiSvgIcon-root': { fontSize: '20px' },
-                      }}
-                    >
-                      {item.icon}
-                    </ListItemIcon>
-                  </ListItemButton>
-                </Tooltip>
-              ) : (
+              <Tooltip title={collapsed ? item.label : ''} placement="right" arrow>
                 <ListItemButton
                   onClick={() => navigate(item.path)}
                   sx={{
-                    minHeight: 36,
-                    px: 1.5,
+                    minHeight: collapsed ? 40 : 36,
+                    justifyContent: collapsed ? 'center' : 'flex-start',
+                    px: collapsed ? 0 : 1.5,
                     borderRadius: '6px',
                     backgroundColor: active ? '#E0E0E0' : 'transparent',
                     '&:hover': {
                       backgroundColor: active ? '#D4D4D4' : 'rgba(0,0,0,0.06)',
                     },
-                    transition: 'background-color 0.15s ease',
+                    transition: 'background-color 0.15s ease, padding 0.2s ease, justify-content 0.2s ease',
                   }}
                 >
                   <ListItemIcon
                     sx={{
                       minWidth: 0,
-                      mr: 1.5,
+                      mr: collapsed ? 0 : 1.5,
                       justifyContent: 'center',
                       color: active ? '#111827' : '#6B7280',
-                      '& .MuiSvgIcon-root': { fontSize: '18px' },
+                      '& .MuiSvgIcon-root': { fontSize: collapsed ? '20px' : '18px' },
+                      transition: 'margin 0.2s ease, font-size 0.2s ease',
                     }}
                   >
                     {item.icon}
                   </ListItemIcon>
-                  <ListItemText
-                    primary={item.label}
-                    primaryTypographyProps={{
-                      fontSize: '0.8125rem',
-                      fontWeight: active ? 500 : 400,
-                      color: active ? '#111827' : '#374151',
+                  <Box
+                    sx={{
+                      maxWidth: collapsed ? 0 : 120,
+                      opacity: collapsed ? 0 : 1,
+                      overflow: 'hidden',
+                      transition: 'max-width 0.2s ease, opacity 0.15s ease',
+                      transitionDelay: collapsed ? '0s' : '0.05s',
+                      whiteSpace: 'nowrap',
                     }}
-                  />
+                  >
+                    <Typography
+                      sx={{
+                        fontSize: '0.8125rem',
+                        fontWeight: active ? 500 : 400,
+                        color: active ? '#111827' : '#374151',
+                        lineHeight: '36px',
+                      }}
+                    >
+                      {item.label}
+                    </Typography>
+                  </Box>
                 </ListItemButton>
-              )}
+              </Tooltip>
             </ListItem>
           );
         })}
       </List>
 
-      {/* 底部 Widget 按钮 — 点击打开桌面 Widget */}
-      <Box sx={{ px: collapsed ? 0.5 : 1, pb: 0.5 }}>
-        {collapsed ? (
-          <Tooltip title="桌面 Widget" placement="right" arrow>
-            <ListItemButton
-              onClick={() => {
-                const api = (window.pywebview?.api as any);
-                if (api?.widget_show) {
-                  api.widget_show().catch(() => {
-                    setWidgetSnackbarMsg('打开 Widget 失败');
-                    setWidgetSnackbarOpen(true);
-                  });
-                } else {
-                  setWidgetSnackbarMsg('Widget 仅桌面端可用');
-                  setWidgetSnackbarOpen(true);
-                }
-              }}
-              sx={{
-                minHeight: 40,
-                justifyContent: 'center',
-                px: 0,
-                borderRadius: '6px',
-                '&:hover': {
-                  backgroundColor: 'rgba(0,0,0,0.06)',
-                },
-                transition: 'background-color 0.15s ease',
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 0,
-                  justifyContent: 'center',
-                  color: '#6B7280',
-                  '& .MuiSvgIcon-root': { fontSize: '20px' },
-                }}
-              >
-                <WidgetsIcon />
-              </ListItemIcon>
-            </ListItemButton>
-          </Tooltip>
-        ) : (
-          <ListItemButton
-            onClick={() => {
-              const api = (window.pywebview?.api as any);
-              if (api?.widget_show) {
-                api.widget_show().catch(() => {
-                  setWidgetSnackbarMsg('打开 Widget 失败');
-                  setWidgetSnackbarOpen(true);
-                });
-              } else {
-                setWidgetSnackbarMsg('Widget 仅桌面端可用');
-                setWidgetSnackbarOpen(true);
-              }
-            }}
+      {/* 底部设置按钮 — WorkBuddy 风格：点击弹出对话框 */}
+      <Box sx={{ px: collapsed ? 0.5 : 1, pb: 1.5 }}>
+        <ListItemButton
+          onClick={() => setSettingsOpen(true)}
+          sx={{
+            minHeight: collapsed ? 40 : 36,
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            px: collapsed ? 0 : 1.5,
+            borderRadius: '6px',
+            backgroundColor: settingsOpen ? '#E0E0E0' : 'transparent',
+            '&:hover': {
+              backgroundColor: settingsOpen ? '#D4D4D4' : 'rgba(0,0,0,0.06)',
+            },
+            transition: 'background-color 0.15s ease, padding 0.2s ease, justify-content 0.2s ease',
+          }}
+        >
+          <ListItemIcon
             sx={{
-              minHeight: 36,
-              px: 1.5,
-              borderRadius: '6px',
-              '&:hover': {
-                backgroundColor: 'rgba(0,0,0,0.06)',
-              },
-              transition: 'background-color 0.15s ease',
+              minWidth: 0,
+              mr: collapsed ? 0 : 1.5,
+              justifyContent: 'center',
+              color: settingsOpen ? '#111827' : '#6B7280',
+              '& .MuiSvgIcon-root': { fontSize: collapsed ? '20px' : '18px' },
+              transition: 'margin 0.2s ease, font-size 0.2s ease',
             }}
           >
-            <ListItemIcon
-              sx={{
-                minWidth: 0,
-                mr: 1.5,
-                justifyContent: 'center',
-                color: '#6B7280',
-                '& .MuiSvgIcon-root': { fontSize: '18px' },
-              }}
-            >
-              <WidgetsIcon />
-            </ListItemIcon>
-            <ListItemText
-              primary="桌面 Widget"
-              primaryTypographyProps={{
-                fontSize: '0.8125rem',
-                fontWeight: 400,
-                color: '#374151',
-              }}
-            />
-          </ListItemButton>
-        )}
-      </Box>
-
-      {/* 底部设置按钮 — WorkBuddy 风格：点击弹出 Popover */}
-      <Box sx={{ px: collapsed ? 0.5 : 1, pb: 1.5 }} ref={settingsAnchorRef}>
-        {collapsed ? (
-          <Tooltip title="设置" placement="right" arrow>
-            <ListItemButton
-              onClick={() => setSettingsOpen(true)}
-              sx={{
-                minHeight: 40,
-                justifyContent: 'center',
-                px: 0,
-                borderRadius: '6px',
-                backgroundColor: settingsOpen ? '#E0E0E0' : 'transparent',
-                '&:hover': {
-                  backgroundColor: settingsOpen ? '#D4D4D4' : 'rgba(0,0,0,0.06)',
-                },
-                transition: 'background-color 0.15s ease',
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  minWidth: 0,
-                  justifyContent: 'center',
-                  color: settingsOpen ? '#111827' : '#6B7280',
-                  '& .MuiSvgIcon-root': { fontSize: '20px' },
-                }}
-              >
-                <SettingsOutlinedIcon />
-              </ListItemIcon>
-            </ListItemButton>
-          </Tooltip>
-        ) : (
-          <ListItemButton
-            onClick={() => setSettingsOpen(true)}
+            <SettingsOutlinedIcon />
+          </ListItemIcon>
+          <Box
             sx={{
-              minHeight: 36,
-              px: 1.5,
-              borderRadius: '6px',
-              backgroundColor: settingsOpen ? '#E0E0E0' : 'transparent',
-              '&:hover': {
-                backgroundColor: settingsOpen ? '#D4D4D4' : 'rgba(0,0,0,0.06)',
-              },
-              transition: 'background-color 0.15s ease',
+              maxWidth: collapsed ? 0 : 120,
+              opacity: collapsed ? 0 : 1,
+              overflow: 'hidden',
+              transition: 'max-width 0.2s ease, opacity 0.15s ease',
+              transitionDelay: collapsed ? '0s' : '0.05s',
+              whiteSpace: 'nowrap',
             }}
           >
-            <ListItemIcon
+            <Typography
               sx={{
-                minWidth: 0,
-                mr: 1.5,
-                justifyContent: 'center',
-                color: settingsOpen ? '#111827' : '#6B7280',
-                '& .MuiSvgIcon-root': { fontSize: '18px' },
-              }}
-            >
-              <SettingsOutlinedIcon />
-            </ListItemIcon>
-            <ListItemText
-              primary="设置"
-              primaryTypographyProps={{
                 fontSize: '0.8125rem',
                 fontWeight: settingsOpen ? 500 : 400,
                 color: settingsOpen ? '#111827' : '#374151',
+                lineHeight: '36px',
               }}
-            />
-          </ListItemButton>
-        )}
+            >
+              设置
+            </Typography>
+          </Box>
+        </ListItemButton>
       </Box>
 
-      {/* 设置 Popover — 从侧边栏右侧弹出，带 Grow 动画 */}
-      <Popover
+      {/* 设置 Dialog — 居中显示 */}
+      <Dialog
         open={settingsOpen}
-        anchorEl={settingsAnchorRef.current}
         onClose={() => setSettingsOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        slotProps={{
-          paper: {
-            sx: {
-              borderRadius: '12px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
-              border: '1px solid #E5E7EB',
-              overflow: 'hidden',
-              mt: -1,
-            },
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
+            border: '1px solid #E5E7EB',
+            overflow: 'hidden',
+            maxHeight: '80vh',
           },
         }}
         TransitionComponent={Grow}
         TransitionProps={{ timeout: 200 }}
       >
         <SettingsPanel />
-      </Popover>
-
-      {/* Widget 提示 Snackbar */}
-      <Snackbar
-        open={widgetSnackbarOpen}
-        autoHideDuration={2000}
-        onClose={() => setWidgetSnackbarOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setWidgetSnackbarOpen(false)} severity="info" sx={{ width: '100%' }}>
-          {widgetSnackbarMsg}
-        </Alert>
-      </Snackbar>
+      </Dialog>
     </Box>
   );
 };
