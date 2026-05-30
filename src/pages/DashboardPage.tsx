@@ -293,121 +293,122 @@ const DashboardPage: React.FC = () => {
         </Box>
       ) : (
         <>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={settings.dashboard.componentOrder} strategy={verticalListSortingStrategy}>
-            {settings.dashboard.componentOrder.map((comp) => {
-              switch (comp) {
-                case 'kpi-cards':
-                  return hasKpiCards ? (
-                    <SortableWidget key={comp} id={comp} label="KPI">
-                      <KpiCards warehouseId={selectedWarehouse} />
-                    </SortableWidget>
-                  ) : null;
-                case 'heatmap':
-                  return vis.chartShipmentHeatmap ? (
-                    <SortableWidget key={comp} id={comp} label="热力图">
-                      <GitHubHeatmap warehouseId={selectedWarehouse} />
-                    </SortableWidget>
-                  ) : null;
-                case 'volume-trend':
-                  return vis.chartVolumeTrend ? (
-                    <SortableWidget key={comp} id={comp} label="容积趋势">
-                      <VolumeChart warehouseId={selectedWarehouse} />
-                    </SortableWidget>
-                  ) : null;
-                case 'transit-pie':
-                  return vis.chartTransitPie ? (
-                    <SortableWidget key={comp} id={comp} label="在途分布">
-                      <TransitPieChart />
-                    </SortableWidget>
-                  ) : null;
-                case 'warehouse-bar':
-                  return vis.chartWarehouseBar ? (
-                    <SortableWidget key={comp} id={comp} label="仓库对比">
-                      <WarehouseBarChart warehouseId={selectedWarehouse} />
-                    </SortableWidget>
-                  ) : null;
-                case 'inventory-alert':
-                  return vis.chartInventoryAlert ? (
-                    <SortableWidget key={comp} id={comp} label="库存预警">
-                      <InventoryAlertList warehouseId={selectedWarehouse} />
-                    </SortableWidget>
-                  ) : null;
-                case 'kpi-comparison':
-                  return vis.chartKpiComparison ? (
-                    <SortableWidget key={comp} id={comp} label="KPI对比">
-                      <WarehouseKpiTable warehouseId={selectedWarehouse} />
-                    </SortableWidget>
-                  ) : null;
-                case 'transit-time':
-                  return vis.chartTransitTime ? (
-                    <SortableWidget key={comp} id={comp} label="时效分析">
-                      <TransitTimeChart warehouseId={selectedWarehouse} />
-                    </SortableWidget>
-                  ) : null;
-              default:
-                return null;
-            }
-          })}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={settings.dashboard.componentOrder} strategy={verticalListSortingStrategy}>
+              {settings.dashboard.componentOrder.map((comp) => {
+                switch (comp) {
+                  case 'kpi-cards':
+                    return hasKpiCards ? (
+                      <SortableWidget key={comp} id={comp} label="KPI">
+                        <KpiCards warehouseId={selectedWarehouse} />
+                      </SortableWidget>
+                    ) : null;
+                  case 'heatmap':
+                    return vis.chartShipmentHeatmap ? (
+                      <SortableWidget key={comp} id={comp} label="热力图">
+                        <GitHubHeatmap warehouseId={selectedWarehouse} />
+                      </SortableWidget>
+                    ) : null;
+                  case 'volume-trend':
+                    return vis.chartVolumeTrend ? (
+                      <SortableWidget key={comp} id={comp} label="容积趋势">
+                        <VolumeChart warehouseId={selectedWarehouse} />
+                      </SortableWidget>
+                    ) : null;
+                  case 'transit-pie':
+                    return vis.chartTransitPie ? (
+                      <SortableWidget key={comp} id={comp} label="在途分布">
+                        <TransitPieChart />
+                      </SortableWidget>
+                    ) : null;
+                  case 'warehouse-bar':
+                    return vis.chartWarehouseBar ? (
+                      <SortableWidget key={comp} id={comp} label="仓库对比">
+                        <WarehouseBarChart warehouseId={selectedWarehouse} />
+                      </SortableWidget>
+                    ) : null;
+                  case 'inventory-alert':
+                    return vis.chartInventoryAlert ? (
+                      <SortableWidget key={comp} id={comp} label="库存预警">
+                        <InventoryAlertList warehouseId={selectedWarehouse} />
+                      </SortableWidget>
+                    ) : null;
+                  case 'kpi-comparison':
+                    return vis.chartKpiComparison ? (
+                      <SortableWidget key={comp} id={comp} label="KPI对比">
+                        <WarehouseKpiTable warehouseId={selectedWarehouse} />
+                      </SortableWidget>
+                    ) : null;
+                  case 'transit-time':
+                    return vis.chartTransitTime ? (
+                      <SortableWidget key={comp} id={comp} label="时效分析">
+                        <TransitTimeChart warehouseId={selectedWarehouse} />
+                      </SortableWidget>
+                    ) : null;
+                  default:
+                    return null;
+                }
+              })}
 
-          {/* 所有指标隐藏时的提示 */}
-          {!hasKpiCards && !vis.chartShipmentHeatmap && !vis.chartVolumeTrend && !vis.chartTransitPie && !vis.chartWarehouseBar && !vis.chartInventoryAlert && !vis.chartKpiComparison && !vis.chartTransitTime && (
-            <Box sx={{ textAlign: 'center', py: 8 }}>
-              <Typography sx={{ color: '#9CA3AF', fontSize: '0.95rem' }}>
-                所有指标已隐藏，请在设置中开启需要显示的指标
-              </Typography>
+              {/* 所有指标隐藏时的提示 */}
+              {!hasKpiCards && !vis.chartShipmentHeatmap && !vis.chartVolumeTrend && !vis.chartTransitPie && !vis.chartWarehouseBar && !vis.chartInventoryAlert && !vis.chartKpiComparison && !vis.chartTransitTime && (
+                <Box sx={{ textAlign: 'center', py: 8 }}>
+                  <Typography sx={{ color: '#9CA3AF', fontSize: '0.95rem' }}>
+                    所有指标已隐藏，请在设置中开启需要显示的指标
+                  </Typography>
+                </Box>
+              )}
+            </SortableContext>
+          </DndContext>
+
+          {/* 技能展示区 */}
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#111827', mb: 2, fontSize: '1rem' }}>
+              技能中心
+            </Typography>
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+              gap: 2
+            }}>
+              {[
+                { name: '仓库管理', desc: '仓储规划、库位优化、库存调配', icon: '🏭' },
+                { name: '在途跟踪', desc: '物流追踪、时效分析、异常预警', icon: '🚚' },
+                { name: '库龄分析', desc: '库龄预警、滞销处理、周转优化', icon: '⏱️' },
+                { name: '容积率优化', desc: '容积计算、预警设置、满仓方案', icon: '📊' },
+                { name: '报关助手', desc: 'HS编码查询、关税计算、单证生成', icon: '🛃' },
+                { name: '报表生成', desc: '自定义报表、数据导出、定时推送', icon: '📈' },
+                { name: '智能客服', desc: 'FAQ自动回复、工单分类、满意度分析', icon: '💬' },
+                { name: '数据分析', desc: '趋势预测、异常检测、决策建议', icon: '🧠' },
+              ].map((skill, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    border: '1px solid #E5E7EB',
+                    borderRadius: 2,
+                    p: 2,
+                    backgroundColor: '#FAFAFA',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      borderColor: '#111827',
+                      backgroundColor: '#fff',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    }
+                  }}
+                >
+                  <Box sx={{ fontSize: '1.5rem', mb: 1 }}>{skill.icon}</Box>
+                  <Typography sx={{ fontWeight: 600, color: '#111827', fontSize: '0.875rem', mb: 0.5 }}>
+                    {skill.name}
+                  </Typography>
+                  <Typography sx={{ color: '#6B7280', fontSize: '0.75rem', lineHeight: 1.5 }}>
+                    {skill.desc}
+                  </Typography>
+                </Box>
+              ))}
             </Box>
-          )}
-        </SortableContext>
-        </DndContext>
-
-        {/* 技能展示区 */}
-        <Box sx={{ mt: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: '#111827', mb: 2, fontSize: '1rem' }}>
-            技能中心
-          </Typography>
-          <Box sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-            gap: 2
-          }}>
-            {[
-              { name: '仓库管理', desc: '仓储规划、库位优化、库存调配', icon: '📦' },
-              { name: '在途跟踪', desc: '物流追踪、时效分析、异常预警', icon: '🚚' },
-              { name: '库龄分析', desc: '库龄预警、滞销处理、周转优化', icon: '⏱️' },
-              { name: '容积率优化', desc: '容积计算、预警设置、满仓方案', icon: '📊' },
-              { name: '报关助手', desc: 'HS编码查询、关税计算、单证生成', icon: '🛃' },
-              { name: '报表生成', desc: '自定义报表、数据导出、定时推送', icon: '📈' },
-              { name: '智能客服', desc: 'FAQ自动回复、工单分类、满意度分析', icon: '💬' },
-              { name: '数据分析', desc: '趋势预测、异常检测、决策建议', icon: '🧠' },
-            ].map((skill, index) => (
-              <Box
-                key={index}
-                sx={{
-                  border: '1px solid #E5E7EB',
-                  borderRadius: 2,
-                  p: 2,
-                  backgroundColor: '#FAFAFA',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    borderColor: '#111827',
-                    backgroundColor: '#fff',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                  }
-                }}
-              >
-                <Box sx={{ fontSize: '1.5rem', mb: 1 }}>{skill.icon}</Box>
-                <Typography sx={{ fontWeight: 600, color: '#111827', fontSize: '0.875rem', mb: 0.5 }}>
-                  {skill.name}
-                </Typography>
-                <Typography sx={{ color: '#6B7280', fontSize: '0.75rem', lineHeight: 1.5 }}>
-                  {skill.desc}
-                </Typography>
-              </Box>
-            ))}
           </Box>
-        </Box>
-      </>)}
+        </>
+      )}
 
       {/* 新建任务对话框 */}
       <NewTaskDialog
