@@ -254,15 +254,6 @@ echo "🔏 签名应用包..."
 xattr -cr "$APP_PATH" 2>/dev/null || true
 codesign --force --sign - "$APP_PATH" 2>&1 || true
 
-# 8.5 构建并嵌入 Widget Extension
-echo "📱 构建并嵌入 Widget Extension..."
-if [ -f "$PROJECT_DIR/build-widget.sh" ]; then
-    bash "$PROJECT_DIR/build-widget.sh" 2>&1
-    echo "✅ Widget Extension 已嵌入到 .app"
-else
-    echo "⚠️  build-widget.sh 不存在，跳过 Widget 构建"
-fi
-
 # 9. 创建 DMG
 echo "💿 创建 DMG 安装包..."
 mkdir -p "$PROJECT_DIR/release"

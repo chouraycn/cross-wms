@@ -1,7 +1,7 @@
 {
   "name": "cross-wms",
   "private": true,
-  "version": "1.0.26",
+  "version": "1.0.28",
   "type": "module",
   "scripts": {
     "dev:server": "tsx watch server/index.ts",
@@ -53,6 +53,7 @@
     "electron": "^42.2.0",
     "electron-builder": "^24.13.3",
     "esbuild": "^0.28.0",
+    "msw": "^2.14.6",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "tsx": "^4.6.2",
@@ -102,5 +103,10 @@
       ]
     }
   },
-  "main": "electron/main.mjs"
+  "main": "electron/main.mjs",
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  }
 }

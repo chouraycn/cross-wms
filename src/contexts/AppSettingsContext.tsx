@@ -135,22 +135,13 @@ export interface SidebarConfig {
   showVersion: boolean;
 }
 
-/** 桌面 Widget 浮窗配置 */
-export interface WidgetConfig {
-  /** 是否启用桌面 Widget 浮窗 */
-  enabled: boolean;
-}
-
 export interface AppSettings {
   tencentDocs: TencentDocsConfig;
   wecomDocs: WeComDocsConfig;
   volumeDocs: VolumeDocsConfig;
   dashboard: DashboardConfig;
   sidebar: SidebarConfig;
-  widget: WidgetConfig;
 }
-
-// ===================== Default Settings =====================
 
 const DEFAULT_SETTINGS: AppSettings = {
   tencentDocs: {
@@ -199,9 +190,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   },
   sidebar: {
     showVersion: true,
-  },
-  widget: {
-    enabled: false,
   },
 };
 
@@ -295,12 +283,6 @@ function loadSettings(): AppSettings {
           : [];
       const volumeDocs = { docLinks: volumeDocLinks };
 
-      const widget = {
-        enabled: typeof parsed.widget?.enabled === 'boolean'
-          ? parsed.widget.enabled
-          : DEFAULT_SETTINGS.widget.enabled,
-      };
-
       return {
         tencentDocs,
         wecomDocs,
@@ -316,7 +298,6 @@ function loadSettings(): AppSettings {
           ...DEFAULT_SETTINGS.sidebar,
           ...parsed.sidebar,
         },
-        widget,
       };
     }
   } catch {
@@ -368,9 +349,6 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
       if (partial.sidebar) {
         next.sidebar = { ...prev.sidebar, ...partial.sidebar };
-      }
-      if (partial.widget) {
-        next.widget = { ...prev.widget, ...partial.widget };
       }
       return next;
     });

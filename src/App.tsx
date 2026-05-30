@@ -292,10 +292,12 @@ const MainLayout: React.FC = () => {
             sx={{
               color: '#6B7280',
               borderRadius: '6px',
+              transform: sidebarCollapsed ? 'rotate(0deg)' : 'rotate(180deg)',
+              transition: 'transform 0.2s ease, background-color 0.15s ease',
               '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
             }}
           >
-            {sidebarCollapsed ? <ChevronRightIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
+            <ChevronLeftIcon fontSize="small" />
           </IconButton>
 
           {/* 右侧：功能按钮 */}

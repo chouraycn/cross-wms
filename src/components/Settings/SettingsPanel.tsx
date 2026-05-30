@@ -41,7 +41,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
-import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, WeComDocLinkItem, VolumeDocLinkItem, SidebarConfig, HeatmapConfig, WidgetConfig } from '../../contexts/AppSettingsContext';
+import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, WeComDocLinkItem, VolumeDocLinkItem, SidebarConfig, HeatmapConfig } from '../../contexts/AppSettingsContext';
 import { getAuthStatus, getAuthUrl, exchangeToken, refreshToken, isPyWebView, getDocContent, extractFileIdFromUrl, extractTextFromDoc, type TDocAuthStatus } from '../../services/tencentDocsApi';
 import { getWeComAuthStatus, getWeComDocContent, getWeComSmartPageContent, isWeComDocUrl, getWeComDocCategoryFromUrl, getWeComCategoryLabel, extractWeComDocIdFromUrl, type WeComAuthStatus } from '../../services/wecomDocsApi';
 import { getWarehouses } from '../../stores/warehouseStore';
@@ -611,13 +611,6 @@ const SettingsPanel: React.FC = () => {
     }));
   }, []);
 
-  const updateWidget = useCallback(<K extends keyof WidgetConfig>(key: K, value: WidgetConfig[K]) => {
-    setDraft((prev) => ({
-      ...prev,
-      widget: { ...prev.widget, [key]: value },
-    }));
-  }, []);
-
   /** Save draft to the global settings store */
   const handleSave = () => {
     if (draft.dashboard.fullThreshold <= draft.dashboard.warningThreshold) {
@@ -629,7 +622,6 @@ const SettingsPanel: React.FC = () => {
     updateSettings({ volumeDocs: draft.volumeDocs });
     updateSettings({ dashboard: draft.dashboard });
     updateSettings({ sidebar: draft.sidebar });
-    updateSettings({ widget: { enabled: draft.widget.enabled } });
     setSnackbarMsg('设置已保存');
     setSnackbarOpen(true);
   };
@@ -680,9 +672,6 @@ const SettingsPanel: React.FC = () => {
       },
       sidebar: {
         showVersion: true,
-      },
-      widget: {
-        enabled: false,
       },
     });
     setErrors({});
@@ -1957,25 +1946,6 @@ const SettingsPanel: React.FC = () => {
 
       <Divider sx={{ my: 1.5 }} />
 
-      <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827', mt: 0.5 }}>
-        桌面 Widget
-      </Typography>
-      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', mb: 1 }}>
-        配置桌面透明浮窗，在桌面上直接查看关键 KPI
-      </Typography>
-      <FormControlLabel
-        control={
-          <Switch
-            checked={draft.widget.enabled}
-            onChange={(e) => updateWidget('enabled', e.target.checked)}
-            size="small"
-            sx={switchSx}
-          />
-        }
-        label={
-          <Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>启用桌面 Widget 浮窗</Typography>
-        }
-      />
     </Box>
   );
 
