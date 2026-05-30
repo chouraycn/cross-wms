@@ -16,6 +16,7 @@ import ErrorBoundary from './components/Common/ErrorBoundary';
 // 静态导入 — file:// 协议下 WKWebView 不支持动态 import()
 // Vite 构建时 inlineDynamicImports 已将全部代码打包到单文件，无需代码分割
 import DashboardPage from './pages/DashboardPage';
+import SkillsPage from './pages/SkillsPage';
 import WarehousesPage from './pages/WarehousesPage';
 import InTransitPage from './pages/InTransitPage';
 import InventoryPage from './pages/InventoryPage';
@@ -349,6 +350,7 @@ const MainLayout: React.FC = () => {
             <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
+                <Route path="/skills" element={<SkillsPage />} />
                 <Route path="/warehouses" element={<WarehousesPage />} />
                 <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
                 <Route path="/in-transit" element={<InTransitPage />} />
