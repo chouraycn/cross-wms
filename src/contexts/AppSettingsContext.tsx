@@ -18,9 +18,24 @@ export interface DocLinkItem {
   warehouseId?: string;
 }
 
+export interface OnlineDataEntry {
+  /** 唯一标识 */
+  id: string;
+  /** 数据名称 */
+  name: string;
+  /** 数据类型 */
+  dataType: 'warehouses' | 'inventory' | 'transit' | 'other';
+  /** 在线输入的数据内容（JSON 字符串） */
+  data: string;
+  /** 最后更新时间 */
+  updatedAt: string;
+}
+
 export interface TencentDocsConfig {
   /** 已添加的文档链接列表 */
   docLinks: DocLinkItem[];
+  /** 在线数据录入 */
+  onlineData: OnlineDataEntry[];
 }
 
 // ===================== 企业微信文档配置 =====================
@@ -146,6 +161,7 @@ export interface AppSettings {
 const DEFAULT_SETTINGS: AppSettings = {
   tencentDocs: {
     docLinks: [],
+    onlineData: [],
   },
   wecomDocs: {
     docLinks: [],
@@ -233,7 +249,7 @@ function loadSettings(): AppSettings {
       const parsed = JSON.parse(raw) as Partial<AppSettings>;
       // Deep merge with defaults to ensure all fields exist even if storage is partial
       // Migrate from old API-based config and remove sync-related fields from docLinks
-      const rawDocs = parsed.tencentDocs as { docLinks?: unknown[] } | undefined;
+      const rawDocs = parsed.tencentDocs as { docLinks?: unknown[]; onlineData?: unknown[] } | undefined;
       const docLinks: DocLinkItem[] =
         rawDocs && Array.isArray(rawDocs.docLinks)
           ? rawDocs.docLinks.map((link: unknown) => {
@@ -249,7 +265,22 @@ function loadSettings(): AppSettings {
             })
           : [];
 
-      const tencentDocs = { docLinks };
+      // 在线数据加载
+      const onlineData: OnlineDataEntry[] =
+        rawDocs && Array.isArray(rawDocs.onlineData)
+          ? rawDocs.onlineData.map((entry: unknown) => {
+              const record = entry as Record<string, unknown>;
+              return {
+                id: String(record.id ?? ''),
+                name: String(record.name ?? ''),
+                dataType: String(record.dataType ?? 'other') as OnlineDataEntry['dataType'],
+                data: String(record.data ?? ''),
+                updatedAt: String(record.updatedAt ?? ''),
+              };
+            })
+          : [];
+
+      const tencentDocs = { docLinks, onlineData };
 
       // 企业文档链接迁移
       const rawWeComDocs = parsed.wecomDocs as { docLinks?: unknown[] } | undefined;
@@ -330,7 +361,12 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setSettings((prev) => {
       const next = { ...prev };
       if (partial.tencentDocs) {
-        next.tencentDocs = { ...prev.tencentDocs, ...partial.tencentDocs };
+        next.tencentDocs = {
+          ...prev.tencentDocs,
+          ...partial.tencentDocs,
+          docLinks: partial.tencentDocs.docLinks ?? prev.tencentDocs.docLinks,
+          onlineData: partial.tencentDocs.onlineData ?? prev.tencentDocs.onlineData,
+        };
       }
       if (partial.wecomDocs) {
         next.wecomDocs = { ...prev.wecomDocs, ...partial.wecomDocs };

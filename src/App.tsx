@@ -256,7 +256,7 @@ const MainLayout: React.FC = () => {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar — 单栏布局 */}
-      <Sidebar collapsed={sidebarCollapsed} />
+      <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
 
       {/* Main content area */}
       <Box
@@ -271,36 +271,21 @@ const MainLayout: React.FC = () => {
           overflow: 'hidden',
         }}
       >
-        {/* 顶部工具栏 — 左侧收起按钮，右侧功能按钮，与系统红黄绿平行 */}
+        {/* 顶部工具栏 — 右侧功能按钮，与系统红黄绿平行 */}
         <Box
           className="no-drag"
           sx={{
             display: 'flex',
-            alignItems: 'flex-end',  // 内容贴底部对齐（红绿灯在上方）
-            justifyContent: 'space-between',
+            alignItems: 'flex-end',
+            justifyContent: 'flex-end',
             px: 1,
-            // 与 Sidebar 统一使用 index.html 内联脚本设置的 CSS 变量 --pw-top
             height: 'calc(40px + var(--pw-top, 0px))',
             pb: '4px',
             flexShrink: 0,
           }}
         >
-          {/* 左侧：收起/展开侧边栏按钮 */}
-          <IconButton
-            onClick={toggleSidebar}
-            size="small"
-            sx={{
-              color: '#6B7280',
-              borderRadius: '6px',
-              transform: sidebarCollapsed ? 'rotate(0deg)' : 'rotate(180deg)',
-              transition: 'transform 0.2s ease, background-color 0.15s ease',
-              '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
-            }}
-          >
-            <ChevronLeftIcon fontSize="small" />
-          </IconButton>
-
           {/* 右侧：功能按钮 */}
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
             {actions.warehouseSwitch && (
               <WarehouseSelector selected={selectedWarehouse} onChange={handleWarehouseChange} />
@@ -320,30 +305,7 @@ const MainLayout: React.FC = () => {
                 </IconButton>
               </Tooltip>
             )}
-            {actions.newWarehouse && (
-              <Button
-                variant="contained"
-                startIcon={<AddOutlinedIcon />}
-                onClick={handleNewWarehouse}
-                sx={{
-                  backgroundColor: '#111827',
-                  color: '#FFFFFF',
-                  fontSize: '0.8125rem',
-                  px: 2,
-                  py: 0.5,
-                  boxShadow: 'none',
-                  '&:hover': {
-                    backgroundColor: '#374151',
-                    boxShadow: 'none',
-                  },
-                }}
-              >
-                新建仓库
-              </Button>
-            )}
           </Box>
-        </Box>
-
         {/* 可滚动的内容区域 */}
         <Box
           ref={scrollRef}
@@ -410,6 +372,7 @@ const MainLayout: React.FC = () => {
 
       {/* 自动更新通知 — 左下角 */}
       <UpdateNotification />
+    </Box>
     </Box>
   );
 };

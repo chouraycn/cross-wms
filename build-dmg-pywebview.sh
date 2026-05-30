@@ -74,10 +74,22 @@ echo "$VERSION" > "$VERSION_FILE"
 echo "📝 版本文件已生成: $VERSION_FILE → $VERSION"
 echo ""
 
-# pywebview venv 路径
-PYWEBVIEW_VENV="/Users/chouray/.workbuddy/binaries/python/envs/crosswms-pywebview"
-PYINSTALLER="$PYWEBVIEW_VENV/bin/pyinstaller"
-PYTHON="$PYWEBVIEW_VENV/bin/python3"
+# pywebview venv 路径（CI 环境自动检测）
+if [ -n "$CI" ]; then
+  # CI 环境：使用系统 Python 和 pip 安装的 pyinstaller
+  PYTHON="$(which python3)"
+  PYINSTALLER="$(which pyinstaller)"
+  if [ -z "$PYINSTALLER" ]; then
+    echo "Installing PyInstaller in CI..."
+    pip3 install pyinstaller pywebview Pillow
+    PYINSTALLER="$(which pyinstaller)"
+  fi
+else
+  # 本地环境：使用指定的 venv
+  PYWEBVIEW_VENV="/Users/chouray/.workbuddy/binaries/python/envs/crosswms-pywebview"
+  PYINSTALLER="$PYWEBVIEW_VENV/bin/pyinstaller"
+  PYTHON="$PYWEBVIEW_VENV/bin/python3"
+fi
 
 # Node.js 后端配置
 SERVER_DIR="$PROJECT_DIR/server"

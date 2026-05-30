@@ -50,9 +50,15 @@ import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import MenuIcon from '@mui/icons-material/Menu';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import CloseIcon from '@mui/icons-material/Close';
+import CodeIcon from '@mui/icons-material/Code';
+import EditIcon from '@mui/icons-material/Edit';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
-import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, SidebarConfig, HeatmapConfig } from '../../contexts/AppSettingsContext';
+import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, OnlineDataEntry, SidebarConfig, HeatmapConfig } from '../../contexts/AppSettingsContext';
 import { getAuthStatus, getAuthUrl, exchangeToken, refreshToken, isPyWebView, type TDocAuthStatus } from '../../services/tencentDocsApi';
 
 // 从 package.json 自动读取版本号（Vite 环境变量注入）
@@ -60,7 +66,7 @@ const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '
 
 // ===================== Settings Panel Types & Data =====================
 
-type SettingsTab = 'menu' | 'tencentDocs' | 'dashboardCalc' | 'volumeDocs' | 'dashboardIndicators' | 'about';
+type SettingsTab = 'menu' | 'tencentDocs' | 'tencentDocs_volumeDocs' | 'dashboardCalc' | 'dashboardIndicators' | 'about';
 
 interface SettingsMenuItem {
   key: Exclude<SettingsTab, 'menu'>;
@@ -72,7 +78,6 @@ interface SettingsMenuItem {
 const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   { key: 'tencentDocs', label: '腾讯文档', icon: <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />, description: 'API 授权与文档链接管理' },
   { key: 'dashboardCalc', label: '仪表盘参数', icon: <DashboardIcon sx={{ fontSize: 20 }} />, description: '计算阈值和参数调整' },
-  { key: 'volumeDocs', label: '容积率文档', icon: <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />, description: '容积率文档管理' },
   { key: 'dashboardIndicators', label: '指标控制', icon: <TuneIcon sx={{ fontSize: 20 }} />, description: '各模块显示与隐藏' },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本' },
 ];
@@ -94,7 +99,11 @@ const textFieldSx = {
 const POPOVER_WIDTH = 380;
 const POPOVER_MAX_HEIGHT = 520;
 
-const SettingsPanel: React.FC = () => {
+interface SettingsPanelProps {
+  onClose?: () => void;
+}
+
+const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
   const { settings, updateSettings, resetSettings } = useAppSettings();
 
   const openInBrowser = useCallback(async (url: string) => {
@@ -109,11 +118,28 @@ const SettingsPanel: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState('');
 
+  // 同步 settings → draft（当设置保存后，刷新界面显示）
+  useEffect(() => {
+    setDraft((prev) => {
+      // 仅当 tencentDocs 确实变化时才更新，避免无限循环
+      if (prev.tencentDocs !== settings.tencentDocs) {
+        return { ...prev, tencentDocs: { ...settings.tencentDocs } };
+      }
+      return prev;
+    });
+  }, [settings.tencentDocs]);
+
   // 新链接表单
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkDataType, setNewLinkDataType] = useState<DocLinkItem['dataType']>('inventory');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // 在线数据表单
+  const [newDataName, setNewDataName] = useState('');
+  const [newDataDataType, setNewDataDataType] = useState<OnlineDataEntry['dataType']>('warehouses');
+  const [newDataContent, setNewDataContent] = useState('');
+  const [editingDataId, setEditingDataId] = useState<string | null>(null);
 
   // 腾讯文档 OAuth 状态
   const [tdocAuth, setTdocAuth] = useState<TDocAuthStatus | null>(null);
@@ -191,17 +217,79 @@ const SettingsPanel: React.FC = () => {
     if (!isValidDocUrl(url)) { setErrors((e) => ({ ...e, 'docLink.url': '请输入有效的腾讯文档链接' })); return; }
     if (draft.tencentDocs.docLinks.some((d) => d.url === url)) { setErrors((e) => ({ ...e, 'docLink.url': '该文档链接已存在' })); return; }
     const newLink: DocLinkItem = { id: `link-${Date.now()}`, url, title: newLinkTitle.trim() || `腾讯文档 ${extractDocId(url).slice(0, 6)}`, dataType: newLinkDataType };
-    setDraft((prev) => ({ ...prev, tencentDocs: { docLinks: [...prev.tencentDocs.docLinks, newLink] } }));
+    setDraft((prev) => ({ ...prev, tencentDocs: { ...prev.tencentDocs, docLinks: [...prev.tencentDocs.docLinks, newLink] } }));
     setNewLinkUrl(''); setNewLinkTitle(''); setNewLinkDataType('inventory');
     setErrors((e) => { const n = { ...e }; delete n['docLink.url']; return n; });
   }, [newLinkUrl, newLinkTitle, newLinkDataType, draft.tencentDocs.docLinks]);
 
   const handleRemoveLink = useCallback((id: string) => {
-    setDraft((prev) => ({ ...prev, tencentDocs: { docLinks: prev.tencentDocs.docLinks.filter((d) => d.id !== id) } }));
+    setDraft((prev) => ({ ...prev, tencentDocs: { ...prev.tencentDocs, docLinks: prev.tencentDocs.docLinks.filter((d) => d.id !== id) } }));
+  }, []);
+
+  // ===================== 在线数据操作 =====================
+
+  const handleAddData = useCallback(() => {
+    if (!newDataName.trim()) { setErrors((e) => ({ ...e, 'onlineData.name': '请输入数据名称' })); return; }
+    if (!newDataContent.trim()) { setErrors((e) => ({ ...e, 'onlineData.data': '请输入数据内容' })); return; }
+    // 验证JSON格式
+    try { JSON.parse(newDataContent); } catch {
+      setErrors((e) => ({ ...e, 'onlineData.data': '数据内容必须是有效的JSON格式' })); return;
+    }
+    const newEntry: OnlineDataEntry = {
+      id: `data-${Date.now()}`,
+      name: newDataName.trim(),
+      dataType: newDataDataType,
+      data: newDataContent.trim(),
+      updatedAt: new Date().toISOString(),
+    };
+    setDraft((prev) => ({
+      ...prev,
+      tencentDocs: { ...prev.tencentDocs, onlineData: [...prev.tencentDocs.onlineData, newEntry] },
+    }));
+    setNewDataName(''); setNewDataContent(''); setNewDataDataType('warehouses');
+    setErrors((e) => { const n = { ...e }; delete n['onlineData.name']; delete n['onlineData.data']; return n; });
+  }, [newDataName, newDataContent, newDataDataType]);
+
+  const handleRemoveData = useCallback((id: string) => {
+    setDraft((prev) => ({
+      ...prev,
+      tencentDocs: { ...prev.tencentDocs, onlineData: prev.tencentDocs.onlineData.filter((d) => d.id !== id) },
+    }));
+  }, []);
+
+  const handleEditData = useCallback((entry: OnlineDataEntry) => {
+    setEditingDataId(entry.id);
+    setNewDataName(entry.name);
+    setNewDataDataType(entry.dataType);
+    setNewDataContent(entry.data);
+  }, []);
+
+  const handleSaveEdit = useCallback(() => {
+    if (!newDataName.trim()) { setErrors((e) => ({ ...e, 'onlineData.name': '请输入数据名称' })); return; }
+    if (!newDataContent.trim()) { setErrors((e) => ({ ...e, 'onlineData.data': '请输入数据内容' })); return; }
+    try { JSON.parse(newDataContent); } catch {
+      setErrors((e) => ({ ...e, 'onlineData.data': '数据内容必须是有效的JSON格式' })); return;
+    }
+    setDraft((prev) => ({
+      ...prev,
+      tencentDocs: {
+        ...prev.tencentDocs,
+        onlineData: prev.tencentDocs.onlineData.map((d) =>
+          d.id === editingDataId ? { ...d, name: newDataName.trim(), dataType: newDataDataType, data: newDataContent.trim(), updatedAt: new Date().toISOString() } : d
+        ),
+      },
+    }));
+    setEditingDataId(null); setNewDataName(''); setNewDataContent(''); setNewDataDataType('warehouses');
+    setErrors((e) => { const n = { ...e }; delete n['onlineData.name']; delete n['onlineData.data']; return n; });
+  }, [newDataName, newDataContent, newDataDataType, editingDataId]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingDataId(null); setNewDataName(''); setNewDataContent(''); setNewDataDataType('warehouses');
+    setErrors((e) => { const n = { ...e }; delete n['onlineData.name']; delete n['onlineData.data']; return n; });
   }, []);
 
   const updateDocLink = useCallback(<K extends keyof DocLinkItem>(id: string, key: K, value: DocLinkItem[K]) => {
-    setDraft((prev) => ({ ...prev, tencentDocs: { docLinks: prev.tencentDocs.docLinks.map((d) => d.id === id ? { ...d, [key]: value } : d) } }));
+    setDraft((prev) => ({ ...prev, tencentDocs: { ...prev.tencentDocs, docLinks: prev.tencentDocs.docLinks.map((d) => d.id === id ? { ...d, [key]: value } : d) } }));
   }, []);
 
   const updateDashboard = useCallback(<K extends keyof DashboardConfig>(key: K, value: DashboardConfig[K]) => {
@@ -243,7 +331,7 @@ const SettingsPanel: React.FC = () => {
   const handleReset = () => {
     resetSettings();
     setDraft({
-      tencentDocs: { docLinks: [] },
+      tencentDocs: { docLinks: [], onlineData: [] },
       wecomDocs: { docLinks: [] },
       volumeDocs: { docLinks: [] },
       dashboard: {
@@ -337,6 +425,200 @@ const SettingsPanel: React.FC = () => {
           ))}
         </Box>
       )}
+
+      <Divider />
+
+      {/* 在线数据输入 */}
+      <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827' }}>在线数据输入</Typography>
+      <Typography sx={{ fontSize: '0.7rem', color: '#6B7280', mb: 1 }}>支持直接输入 JSON 格式数据，用于仪表盘实时展示</Typography>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <TextField
+          label="数据名称"
+          size="small"
+          fullWidth
+          placeholder="例如：深圳仓库存数据"
+          value={newDataName}
+          onChange={(e) => { setNewDataName(e.target.value); setErrors((prev) => { const n = { ...prev }; delete n['onlineData.name']; return n; }); }}
+          sx={textFieldSx}
+          error={Boolean(errors['onlineData.name'])}
+          helperText={errors['onlineData.name']}
+        />
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+          <FormControl size="small" sx={{ minWidth: 100 }}>
+            <InputLabel sx={{ fontSize: '0.75rem' }}>数据类型</InputLabel>
+            <Select
+              value={newDataDataType}
+              label="数据类型"
+              onChange={(e) => setNewDataDataType(e.target.value as OnlineDataEntry['dataType'])}
+              sx={{ fontSize: '0.75rem' }}
+            >
+              <MenuItem value="warehouses">仓库</MenuItem>
+              <MenuItem value="inventory">库存</MenuItem>
+              <MenuItem value="transit">在途</MenuItem>
+              <MenuItem value="other">其他</MenuItem>
+            </Select>
+          </FormControl>
+          {editingDataId ? (
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={handleSaveEdit} sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' }, height: 36, whiteSpace: 'nowrap', fontSize: '0.75rem' }}>保存</Button>
+              <Button variant="outlined" size="small" onClick={handleCancelEdit} sx={{ height: 36, whiteSpace: 'nowrap', fontSize: '0.75rem' }}>取消</Button>
+            </Box>
+          ) : (
+            <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleAddData} sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' }, height: 36, whiteSpace: 'nowrap', fontSize: '0.75rem' }}>添加</Button>
+          )}
+        </Box>
+        <TextField
+          label="数据内容（JSON格式）"
+          size="small"
+          fullWidth
+          multiline
+          rows={4}
+          placeholder='例如：[{"id":"wh001","name":"深圳仓","usedItems":8500,"totalItems":10000}]'
+          value={newDataContent}
+          onChange={(e) => { setNewDataContent(e.target.value); setErrors((prev) => { const n = { ...prev }; delete n['onlineData.data']; return n; }); }}
+          sx={textFieldSx}
+          error={Boolean(errors['onlineData.data'])}
+          helperText={errors['onlineData.data']}
+        />
+      </Box>
+
+      {draft.tencentDocs.onlineData.length === 0 ? (
+        <Box sx={{ textAlign: 'center', py: 2, border: '1px dashed #E5E7EB', borderRadius: 2 }}>
+          <CodeIcon sx={{ fontSize: 28, color: '#D1D5DB', mb: 0.5 }} />
+          <Typography sx={{ color: '#9CA3AF', fontSize: '0.75rem' }}>暂无在线数据</Typography>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {draft.tencentDocs.onlineData.map((entry) => (
+            <Card key={entry.id} elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 1.5 }}>
+              <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 26, height: 26, borderRadius: 1, backgroundColor: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <CodeIcon sx={{ color: '#fff', fontSize: 14 }} />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</Typography>
+                    <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>更新：{new Date(entry.updatedAt).toLocaleDateString('zh-CN')}</Typography>
+                  </Box>
+                  <Chip label={entry.dataType === 'inventory' ? '库存' : entry.dataType === 'transit' ? '在途' : entry.dataType === 'warehouses' ? '仓库' : '其他'} size="small" sx={{ height: 18, fontSize: '0.6rem' }} />
+                  <Tooltip title="编辑"><IconButton size="small" onClick={() => handleEditData(entry)} sx={{ color: '#9CA3AF' }}><EditIcon sx={{ fontSize: 14 }} /></IconButton></Tooltip>
+                  <Tooltip title="删除"><IconButton size="small" onClick={() => handleRemoveData(entry.id)} sx={{ color: '#9CA3AF', '&:hover': { color: '#EF4444' } }}><DeleteOutlineIcon sx={{ fontSize: 14 }} /></IconButton></Tooltip>
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
+      )}
+      {/* 二级栏目：容积率文档 */}
+      <Divider sx={{ mt: 1 }} />
+      <Box
+        onClick={() => setActiveTab('tencentDocs_volumeDocs')}
+        sx={{
+          display: 'flex', alignItems: 'center', gap: 1,
+          px: 1.5, py: 1, cursor: 'pointer', borderRadius: '8px',
+          transition: 'background-color 0.15s ease',
+          '&:hover': { backgroundColor: '#F3F4F6' },
+        }}
+      >
+        <DescriptionOutlinedIcon sx={{ fontSize: 18, color: '#6B7280' }} />
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#111827' }}>容积率文档</Typography>
+          <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>容积率文档管理</Typography>
+        </Box>
+        <ChevronRightIcon sx={{ fontSize: 16, color: '#9CA3AF' }} />
+      </Box>
+    </Box>
+  );
+
+  const renderVolumeDocs = () => (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* 容积率标准模板 */}
+      <Box>
+        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827', mb: 0.5 }}>容积率标准模板</Typography>
+        <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', mb: 1 }}>供在线文档制作参考，符合跨境WMS仓库管理规范</Typography>
+        <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, p: 1.5 }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#111827', mb: 0.5 }}>仓库容积率标准模板（JSON）</Typography>
+          <Box
+            component="pre"
+            sx={{
+              fontSize: '0.7rem', lineHeight: 1.6, color: '#374151',
+              backgroundColor: '#F9FAFB', borderRadius: 1, p: 1.5,
+              overflow: 'auto', maxHeight: 200, whiteSpace: 'pre-wrap',
+              border: '1px solid #E5E7EB', fontFamily: 'monospace',
+            }}
+          >{`[
+  {
+    "warehouseId": "wh001",
+    "warehouseName": "深圳仓",
+    "totalItems": 10000,
+    "usedItems": 7500,
+    "utilizationRate": 75.0,
+    "standard": {
+      "low": 40,
+      "normal": 70,
+      "high": 85,
+      "full": 100
+    },
+    "alertLevel": "normal",
+    "updateTime": "2026-05-30T10:00:00Z"
+  },
+  {
+    "warehouseId": "wh002",
+    "warehouseName": "洛杉矶仓",
+    "totalItems": 8000,
+    "usedItems": 7200,
+    "utilizationRate": 90.0,
+    "standard": {
+      "low": 40,
+      "normal": 70,
+      "high": 85,
+      "full": 100
+    },
+    "alertLevel": "high",
+    "updateTime": "2026-05-30T10:00:00Z"
+  }
+]`}</Box>
+          <Button
+            variant="outlined" size="small" sx={{ mt: 1, fontSize: '0.7rem', borderColor: '#D1D5DB', color: '#374151' }}
+            onClick={() => { setNewDataName('容积率标准模板'); setNewDataDataType('other'); setNewDataContent('[\n  {\n    "warehouseId": "wh001",\n    "warehouseName": "深圳仓",\n    "totalItems": 10000,\n    "usedItems": 7500,\n    "utilizationRate": 75.0,\n    "standard": {\n      "low": 40,\n      "normal": 70,\n      "high": 85,\n      "full": 100\n    },\n    "alertLevel": "normal",\n    "updateTime": "' + new Date().toISOString() + '"\n  }\n]'); setActiveTab('tencentDocs'); }}
+          >
+            复制到在线数据输入
+          </Button>
+        </Card>
+      </Box>
+
+      <Divider />
+
+      {/* 容积率文档链接（如果有） */}
+      <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827' }}>关联文档</Typography>
+      {draft.tencentDocs.docLinks.filter(d => d.dataType === 'warehouses' || d.dataType === 'other').length === 0 ? (
+        <Box sx={{ textAlign: 'center', py: 2, border: '1px dashed #E5E7EB', borderRadius: 2 }}>
+          <DescriptionOutlinedIcon sx={{ fontSize: 28, color: '#D1D5DB', mb: 0.5 }} />
+          <Typography sx={{ color: '#9CA3AF', fontSize: '0.75rem' }}>暂无容积率相关文档</Typography>
+          <Typography sx={{ color: '#9CA3AF', fontSize: '0.7rem' }}>请在「腾讯文档」中先添加文档链接</Typography>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {draft.tencentDocs.docLinks
+            .filter(d => d.dataType === 'warehouses' || d.dataType === 'other')
+            .map((doc) => (
+              <Card key={doc.id} elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 1.5 }}>
+                <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ width: 26, height: 26, borderRadius: 1, backgroundColor: '#27A17C', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <DescriptionOutlinedIcon sx={{ color: '#fff', fontSize: 14 }} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.title}</Typography>
+                    </Box>
+                    <Tooltip title="在浏览器中打开"><IconButton size="small" onClick={() => openInBrowser(doc.url)} sx={{ color: '#6B7280' }}><OpenInNewIcon sx={{ fontSize: 14 }} /></IconButton></Tooltip>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))}
+        </Box>
+      )}
     </Box>
   );
 
@@ -384,14 +666,6 @@ const SettingsPanel: React.FC = () => {
       {draft.dashboard.visibility.chartShipmentHeatmap && (
         <Box sx={{ ml: 3, mt: 0.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
           <Box>
-            <Typography sx={{ fontSize: '0.75rem', color: '#111827', mb: 0.5, fontWeight: 500 }}>时间范围</Typography>
-            <Box sx={{ display: 'flex', gap: 0.75 }}>
-              {[7, 14, 30, 365].map((d) => (
-                <Chip key={d} label={`${d} 天`} size="small" onClick={() => updateHeatmap('days', d)} sx={{ fontSize: '0.7rem', backgroundColor: draft.dashboard.heatmap.days === d ? '#111827' : '#F3F4F6', color: draft.dashboard.heatmap.days === d ? '#FFFFFF' : '#6B7280', '&:hover': { backgroundColor: draft.dashboard.heatmap.days === d ? '#374151' : '#E5E7EB' }, transition: 'all 0.15s ease' }} />
-              ))}
-            </Box>
-          </Box>
-          <Box>
             <Typography sx={{ fontSize: '0.75rem', color: '#111827', mb: 0.5, fontWeight: 500 }}>颜色方案</Typography>
             <Box sx={{ display: 'flex', gap: 0.75 }}>
               {([
@@ -422,11 +696,13 @@ const SettingsPanel: React.FC = () => {
         <Typography sx={{ color: '#6B7280', fontSize: '0.8rem' }}>构建日期</Typography>
         <Typography sx={{ color: '#111827', fontSize: '0.8rem', fontWeight: 500 }}>{new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}</Typography>
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Typography sx={{ color: '#6B7280', fontSize: '0.8rem' }}>运行环境</Typography>
-        <Typography sx={{ color: '#111827', fontSize: '0.8rem', fontWeight: 500 }}>{isPyWebView() ? '桌面应用' : '浏览器'}</Typography>
-      </Box>
       <Divider sx={{ my: 0.5 }} />
+      <Box sx={{ mb: 1 }}>
+        <Typography sx={{ color: '#6B7280', fontSize: '0.8rem', mb: 0.5 }}>软件介绍</Typography>
+        <Typography sx={{ color: '#111827', fontSize: '0.75rem', lineHeight: 1.6 }}>
+          CrossWMS 仓储系统配套线上知识库 / 随查平台，简称「随知」，专仓管、柜组库管、运维查询 WMS 全流程操作规范、单据规则、主数据查询等软件系统。
+        </Typography>
+      </Box>
       <FormControlLabel control={<Switch checked={draft.sidebar.showVersion} onChange={(e) => updateSidebar('showVersion', e.target.checked)} size="small" sx={switchSx} />} label={<Box><Typography sx={{ fontSize: '0.8rem', color: '#111827' }}>显示版本号</Typography><Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>在侧边栏 Logo 旁显示 v{APP_VERSION}</Typography></Box>} />
     </Box>
   );
@@ -461,18 +737,22 @@ const SettingsPanel: React.FC = () => {
 
     return (
       <Box>
-        {/* 返回按钮 + 标题 */}
+        {/* 返回按钮 + 标题 + 关闭按钮 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           <IconButton size="small" onClick={() => setActiveTab('menu')} sx={{ color: '#6B7280' }}>
             <ArrowBackIcon sx={{ fontSize: 18 }} />
           </IconButton>
-          <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+          <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', flex: 1 }}>
             {SETTINGS_MENU_ITEMS.find((i) => i.key === activeTab)?.label}
           </Typography>
+          <IconButton size="small" onClick={() => onClose?.()} sx={{ color: '#9CA3AF', '&:hover': { color: '#111827' } }}>
+            <CloseIcon sx={{ fontSize: 18 }} />
+          </IconButton>
         </Box>
 
         {/* 内容区域 */}
         {activeTab === 'tencentDocs' && renderTencentDocs()}
+        {activeTab === 'tencentDocs_volumeDocs' && renderVolumeDocs()}
         {activeTab === 'dashboardCalc' && renderDashboardCalc()}
         {activeTab === 'dashboardIndicators' && renderDashboardIndicators()}
         {activeTab === 'about' && renderAbout()}
@@ -548,9 +828,10 @@ const navItems: NavItem[] = [
 
 interface SidebarProps {
   collapsed: boolean;
+  onToggle?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { settings } = useAppSettings();
@@ -608,7 +889,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
             justifyContent: 'center',
             cursor: 'pointer',
             borderRadius: '6px',
-            '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
           }}
           onClick={() => navigate('/')}
         >
@@ -724,8 +1004,54 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
         })}
       </List>
 
-      {/* 底部设置按钮 — WorkBuddy 风格：点击弹出对话框 */}
-      <Box sx={{ px: collapsed ? 0.5 : 1, pb: 1.5 }}>
+      {/* 底部：收起/展开按钮 + 设置按钮 */}
+      <Box sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+        {/* 收起/展开按钮 — 恢复到设置上方 */}
+        {onToggle && (
+          <ListItemButton
+            onClick={onToggle}
+            sx={{
+              minHeight: collapsed ? 40 : 36,
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              px: collapsed ? 0 : 1.5,
+              borderRadius: '6px',
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
+              transition: 'padding 0.2s ease, justify-content 0.2s ease',
+            }}
+          >
+            <ListItemIcon
+              sx={{
+                minWidth: 0,
+                mr: collapsed ? 0 : 1.5,
+                justifyContent: 'center',
+                color: '#6B7280',
+                '& .MuiSvgIcon-root': {
+                  fontSize: collapsed ? '20px' : '18px',
+                  transition: 'font-size 0.2s ease',
+                },
+                transition: 'margin 0.2s ease',
+              }}
+            >
+              {collapsed ? <MenuIcon /> : <MenuOpenIcon />}
+            </ListItemIcon>
+            <Box
+              sx={{
+                maxWidth: collapsed ? 0 : 120,
+                opacity: collapsed ? 0 : 1,
+                overflow: 'hidden',
+                transition: 'max-width 0.2s ease, opacity 0.15s ease',
+                transitionDelay: collapsed ? '0s' : '0.05s',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <Typography sx={{ fontSize: '0.8125rem', color: '#6B7280', lineHeight: '36px' }}>
+                {collapsed ? '展开' : '收起'}
+              </Typography>
+            </Box>
+          </ListItemButton>
+        )}
+
+        {/* 设置按钮 */}
         <ListItemButton
           onClick={() => setSettingsOpen(true)}
           sx={{
@@ -783,18 +1109,18 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
         maxWidth={false}
         PaperProps={{
           sx: {
-            width: 420,
+            width: 680,
             borderRadius: '12px',
             boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
             border: '1px solid #E5E7EB',
             overflow: 'hidden',
-            maxHeight: '80vh',
+            maxHeight: '85vh',
           },
         }}
         TransitionComponent={Grow}
         TransitionProps={{ timeout: 200 }}
       >
-        <SettingsPanel />
+        <SettingsPanel onClose={() => setSettingsOpen(false)} />
       </Dialog>
     </Box>
   );
