@@ -36,6 +36,7 @@ import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SaveIcon from '@mui/icons-material/Save';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -822,6 +823,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: '仪表盘', path: '/', icon: <DashboardOutlinedIcon /> },
+  { label: '技能', path: '/skills', icon: <AutoFixHighIcon /> },
   { label: '仓库管理', path: '/warehouses', icon: <WarehouseOutlinedIcon /> },
   { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon /> },
   { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon /> },
@@ -868,7 +870,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         borderRight: collapsed ? '1px solid #E5E7EB' : 'none',
       }}
     >
-      {/* Logo 区域 */}
+      {/* Logo 区域 — 在 pywebview 环境下下移 --pw-top 距离，避免与系统红黄绿重叠 */}
       <Box
         sx={{
           px: collapsed ? 0.5 : 2,
@@ -878,6 +880,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           justifyContent: collapsed ? 'center' : 'space-between',
           gap: 1.25,
           flexShrink: 0,
+          paddingTop: 'var(--pw-top, 0px)',
         }}
       >
         {/* Logo 图标 — 收起时单独居中，展开时与文字同行 */}
