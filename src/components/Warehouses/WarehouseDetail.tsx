@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -17,13 +17,14 @@ import {
   TableRow,
   Button,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
 import { mockWarehouses, mockInboundRecords, mockOutboundRecords, mockInventory, getMockWarehouseById } from '../../data/mockData';
 import { getWarehouseById as getStoreWarehouseById } from '../../stores/warehouseStore';
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';
-import type { Warehouse } from '../../types';
+import type { Warehouse, InboundRecord, OutboundRecord, InventoryItem } from '../../types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -50,14 +51,67 @@ function getProgressColor(rate: number): 'success' | 'warning' | 'error' {
 const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [warehouse, setWarehouse] = useState<Warehouse | null>(null);
+  const [inboundRecords, setInboundRecords] = useState<InboundRecord[]>([]);
+  const [outboundRecords, setOutboundRecords] = useState<OutboundRecord[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
 
-  // 防御性检查：warehouseId 是否有效
-  // ⚠️ 所有 Hooks 必须在任何条件返回之前调用完成
+  // 数据获取：优先 API → 降级 localStorage → 最后 mock
+  useEffect(() => {
+    let cancelled = false;
 
-  // 数据获取优先级：store（动态数据）→ mock（静态兜底）
-  const warehouse = getStoreWarehouseById(warehouseId)
-    || mockWarehouses.find((w) => w.id === warehouseId)
-    || getMockWarehouseById(warehouseId);
+    async function fetchData() {
+      setLoading(true);
+
+      // 1. 尝试从 API 获取仓库详情
+      let wh: Warehouse | null = null;
+      try {
+        const resp = await fetch(`/api/v1/warehouses/${warehouseId}`);
+        if (resp.ok) {
+          const json = await resp.json();
+          if (json.code === 0 && json.data) {
+            wh = json.data as Warehouse;
+          }
+        }
+      } catch {
+        // API 不可用，继续降级
+      }
+
+      // 2. 降级：从 localStorage store 获取
+      if (!wh) {
+        wh = getStoreWarehouseById(warehouseId) || null;
+      }
+
+      // 3. 再降级：从 mock 数据获取
+      if (!wh) {
+        wh = mockWarehouses.find((w) => w.id === warehouseId) || getMockWarehouseById(warehouseId) || null;
+      }
+
+      if (cancelled) return;
+      setWarehouse(wh);
+
+      // 获取关联数据（暂时用 mock，后续替换为 API）
+      if (wh) {
+        setInboundRecords(mockInboundRecords.filter((r) => r.warehouseId === warehouseId));
+        setOutboundRecords(mockOutboundRecords.filter((r) => r.warehouseId === warehouseId));
+        setInventory(mockInventory.filter((i) => i.warehouseId === warehouseId));
+      }
+
+      setLoading(false);
+    }
+
+    fetchData();
+    return () => { cancelled = true; };
+  }, [warehouseId]);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress size={32} sx={{ color: '#111827' }} />
+      </Box>
+    );
+  }
 
   if (!warehouse) {
     console.error('[WarehouseDetail] 仓库未找到，warehouseId:', warehouseId);
@@ -81,14 +135,6 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
   // 使用统一的件数基础容积率计算（来自 volumeCalculator）
   const rate = calcUtilizationByItems(warehouse);
   const color = getProgressColor(rate);
-
-  // ⚠️ Mock 数据源：后续应替换为真实的 API 接口调用
-  // Suggested: fetch(`/api/warehouses/${warehouseId}/inbound-records`)
-  const inboundRecords = mockInboundRecords.filter((r) => r.warehouseId === warehouseId);
-  // Suggested: fetch(`/api/warehouses/${warehouseId}/outbound-records`)
-  const outboundRecords = mockOutboundRecords.filter((r) => r.warehouseId === warehouseId);
-  // Suggested: fetch(`/api/warehouses/${warehouseId}/inventory`)
-  const inventory = mockInventory.filter((i) => i.warehouseId === warehouseId);
 
   return (
     <Box>
