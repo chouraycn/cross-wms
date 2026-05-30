@@ -524,6 +524,85 @@ app.get('/api/warehouses/:id', (req, res) => {
 });
 
 /**
+ * 新建仓库
+ * POST /api/warehouses
+ */
+app.post('/api/warehouses', (req, res) => {
+  try {
+    const { name, city, totalItems, usedItems, totalVolume, usedVolume } = req.body;
+    const newWarehouse = {
+      id: `wh-${Date.now()}`,
+      name,
+      location: city || name,
+      city: city || '',
+      totalItems: totalItems || 10000,
+      usedItems: usedItems || 0,
+      totalVolume: totalVolume || (totalItems || 10000) * 0.1,
+      usedVolume: usedVolume || 0,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+    };
+
+    // 添加到 currentSystemContext
+    const warehouses = (currentSystemContext as Record<string, unknown>)?.warehouses as Array<Record<string, unknown>> || [];
+    warehouses.push(newWarehouse);
+
+    res.json({ code: 0, message: 'success', data: newWarehouse, timestamp: Date.now() });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : '创建仓库失败';
+    console.error('[Warehouse] 创建错误:', errMsg);
+    res.status(500).json({ code: 500, message: errMsg, data: null, timestamp: Date.now() });
+  }
+});
+
+/**
+ * 更新仓库
+ * PUT /api/warehouses/:id
+ */
+app.put('/api/warehouses/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const warehouses = (currentSystemContext as Record<string, unknown>)?.warehouses as Array<Record<string, unknown>> || [];
+    const idx = warehouses.findIndex((w: any) => w.id === id);
+
+    if (idx === -1) {
+      return res.status(404).json({ code: 404, message: '仓库不存在', data: null, timestamp: Date.now() });
+    }
+
+    warehouses[idx] = { ...warehouses[idx], ...updates, id }; // 确保 id 不变
+    res.json({ code: 0, message: 'success', data: warehouses[idx], timestamp: Date.now() });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : '更新仓库失败';
+    console.error('[Warehouse] 更新错误:', errMsg);
+    res.status(500).json({ code: 500, message: errMsg, data: null, timestamp: Date.now() });
+  }
+});
+
+/**
+ * 删除仓库
+ * DELETE /api/warehouses/:id
+ */
+app.delete('/api/warehouses/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const warehouses = (currentSystemContext as Record<string, unknown>)?.warehouses as Array<Record<string, unknown>> || [];
+    const idx = warehouses.findIndex((w: any) => w.id === id);
+
+    if (idx === -1) {
+      return res.status(404).json({ code: 404, message: '仓库不存在', data: null, timestamp: Date.now() });
+    }
+
+    warehouses.splice(idx, 1);
+    res.json({ code: 0, message: 'success', data: null, timestamp: Date.now() });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : '删除仓库失败';
+    console.error('[Warehouse] 删除错误:', errMsg);
+    res.status(500).json({ code: 500, message: errMsg, data: null, timestamp: Date.now() });
+  }
+});
+
+/**
  * 获取库存列表（从 localStorage mock 数据）
  * GET /api/inventory?warehouseId=xxx
  */
