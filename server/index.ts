@@ -2,6 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import { initDb, getSessions, createSession, getSessionMessages, addMessage, deleteSession } from './db';
 import { v4 as uuidv4 } from 'uuid';
+import { Agent } from '@tencent-ai/agent-sdk';
+
+// 创建 Agent 实例
+const agent = new Agent({
+  model: process.env.MODEL || 'claude-sonnet-4',
+  systemPrompt: '你是一个专业的 CrossWMS 仓储管理系统智能助手，帮助用户管理仓库、库存、在途货物等。',
+});
 
 const app = express();
 app.use(cors());
@@ -39,24 +46,58 @@ app.delete('/api/sessions/:id', (req, res) => {
 app.post('/api/chat', async (req, res) => {
   const { sessionId, message, model = 'claude-sonnet-4' } = req.body;
 
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+  try {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
 
-  const userMsg = addMessage({ sessionId, role: 'user', content: message, model });
-  res.write(`data: ${JSON.stringify({ type: 'text', content: userMsg.content })}\n\n`);
+    // 保存用户消息
+    const userMsg = addMessage({ sessionId, role: 'user', content: message, model });
+    res.write(`data: ${JSON.stringify({ type: 'text', content: userMsg.content })}\n\n`);
 
-  // Assistant 回复（模拟，实际应调用 @tencent-ai/agent-sdk）
-  const assistantId = uuidv4();
-  res.write(`data: ${JSON.stringify({ type: 'init', sessionId, assistantMessageId: assistantId, model })}\n\n`);
+    // 发送初始化事件
+    const assistantId = uuidv4();
+    res.write(`data: ${JSON.stringify({ type: 'init', sessionId, assistantMessageId: assistantId, model })}\n\n`);
 
-  // 模拟流式回复
-  const reply = `收到你的消息：「${message}」\n\n我是 CrossWMS 智能助手，当前为 MVP 版本，完整 SDK 集成即将上线。`;
-  res.write(`data: ${JSON.stringify({ type: 'text', content: reply })}\n\n`);
-  addMessage({ sessionId, role: 'assistant', content: reply, model });
+    // 调用 Agent SDK 进行流式对话
+    let fullContent = '';
+    try {
+      const stream = await agent.chat({
+        message,
+        sessionId,
+        model,
+        stream: true,
+      });
 
-  res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
-  res.end();
+      // 处理流式响应
+      for await (const chunk of stream) {
+        if (chunk.type === 'text') {
+          fullContent += chunk.content;
+          res.write(`data: ${JSON.stringify({ type: 'text', content: chunk.content })}\n\n`);
+        }
+      }
+
+      // 保存完整的助手回复
+      addMessage({ sessionId, role: 'assistant', content: fullContent, model });
+    } catch (sdkError) {
+      console.error('Agent SDK error:', sdkError);
+      const errorMsg = `抱歉，AI 服务暂时不可用，请稍后重试。\n错误：${sdkError instanceof Error ? sdkError.message : '未知错误'}`;
+      res.write(`data: ${JSON.stringify({ type: 'text', content: errorMsg })}\n\n`);
+      addMessage({ sessionId, role: 'assistant', content: errorMsg, model });
+    }
+
+    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+    res.end();
+  } catch (error) {
+    console.error('Chat API error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    } else {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: '服务器内部错误' })}\n\n`);
+      res.end();
+    }
+  }
 });
 
 // 权限响应（占位）

@@ -35,7 +35,6 @@ import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SaveIcon from '@mui/icons-material/Save';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -826,7 +825,6 @@ const navItems: NavItem[] = [
   { label: '仓库管理', path: '/warehouses', icon: <WarehouseOutlinedIcon /> },
   { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon /> },
   { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon /> },
-  { label: '技能', path: '/skills', icon: <AutoFixHighIcon /> },
   { label: '腾讯文档', path: '/tencent-docs', icon: <DescriptionOutlinedIcon /> },
   { label: '统计报表', path: '/reports', icon: <AssessmentOutlinedIcon /> },
 ];
@@ -852,7 +850,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
   return (
     <Box
-      className="sidebar-drag-region"
       sx={{
         width,
         // box-sizing: content-box 让 padding-top 向外扩展，不压缩内容区
@@ -867,24 +864,24 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         display: 'flex',
         flexDirection: 'column',
         transition: 'width 0.2s ease',
+        // 收起状态下添加右侧边框，让用户能看见侧边栏
+        borderRight: collapsed ? '1px solid #E5E7EB' : 'none',
       }}
     >
-      {/* Logo 区域 — 仅此处可拖拽窗口（约 56px 高度） */}
+      {/* Logo 区域 */}
       <Box
-        className="logo-drag-region"
         sx={{
-          px: collapsed ? 0 : 2,
+          px: collapsed ? 0.5 : 2,
           height: 56,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: collapsed ? 'center' : 'flex-start',
+          justifyContent: collapsed ? 'center' : 'space-between',
           gap: 1.25,
           flexShrink: 0,
         }}
       >
-        {/* Logo 图标 */}
+        {/* Logo 图标 — 收起时单独居中，展开时与文字同行 */}
         <Box
-          className="no-drag"
           sx={{
             width: 40,
             height: 40,
@@ -910,80 +907,43 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           </svg>
         </Box>
 
-        {/* 名称 + 版本号 — 收起时过渡隐藏 */}
-        <Box
-          sx={{
-            maxWidth: collapsed ? 0 : 200,
-            opacity: collapsed ? 0 : 1,
-            overflow: 'hidden',
-            transition: 'max-width 0.2s ease, opacity 0.15s ease',
-            transitionDelay: collapsed ? '0s' : '0.05s',
-            flex: 1,
-            minWidth: 0,
-          }}
-        >
-          <Typography
+        {/* 名称 + 版本号 — 仅展开时显示 */}
+        {!collapsed && (
+          <Box
             sx={{
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              color: '#111827',
-              whiteSpace: 'nowrap',
-              lineHeight: 1.2,
+              maxWidth: 200,
+              opacity: 1,
+              overflow: 'hidden',
+              flex: 1,
+              minWidth: 0,
             }}
           >
-            CDF Know CrossWMS
-          </Typography>
-          {settings.sidebar.showVersion && (
             <Typography
               sx={{
-                fontSize: '12px',
-                fontWeight: 400,
-                color: '#9CA3AF',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                color: '#111827',
+                whiteSpace: 'nowrap',
                 lineHeight: 1.2,
               }}
             >
-              v{APP_VERSION}
+              CDF Know CrossWMS
             </Typography>
-          )}
-        </Box>
-
-        {/* 收起/展开按钮 — 展开时在 Logo 行右侧 */}
-        {!collapsed && onToggle && (
-          <IconButton
-            className="no-drag"
-            onClick={onToggle}
-            size="small"
-            sx={{
-              color: '#9CA3AF',
-              ml: 'auto',
-              '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)', color: '#6B7280' },
-            }}
-          >
-            <MenuOpenIcon sx={{ fontSize: 18 }} />
-          </IconButton>
+            {settings.sidebar.showVersion && (
+              <Typography
+                sx={{
+                  fontSize: '12px',
+                  fontWeight: 400,
+                  color: '#9CA3AF',
+                  lineHeight: 1.2,
+                }}
+              >
+                v{APP_VERSION}
+              </Typography>
+            )}
+          </Box>
         )}
       </Box>
-
-      {/* 收起状态下的收起/展开按钮 — 放在导航列表上方（白色可视区域内） */}
-      {collapsed && onToggle && (
-        <Box sx={{ px: 0.5, pb: 0.5, flexShrink: 0 }}>
-          <Tooltip title="展开侧边栏" placement="right" arrow>
-            <IconButton
-              onClick={onToggle}
-              size="small"
-              sx={{
-                color: '#6B7280',
-                borderRadius: '6px',
-                width: 40,
-                height: 40,
-                '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
-              }}
-            >
-              <MenuIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      )}
 
       {/* 导航列表 */}
       <List sx={{ pt: 0, px: collapsed ? 0.5 : 1, flex: 1 }}>
@@ -1046,7 +1006,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         })}
       </List>
 
-      {/* 底部：设置按钮 */}
+      {/* 底部：收起/展开按钮 + 设置按钮 */}
       <Box sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, flexShrink: 0 }}>
         <ListItemButton
           onClick={() => setSettingsOpen(true)}

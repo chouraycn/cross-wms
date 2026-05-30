@@ -17,38 +17,6 @@ body {
   min-height: 100vh;
 }
 
-/* pywebview frameless 窗口拖拽区域 — 仅 Sidebar Logo 顶部区域可拖拽移动窗口 */
-/* --pw-top 默认值 0px（浏览器环境）。pywebview 环境下由 pywebview_app.py 注入为 28px */
-.sidebar-drag-region {
-  box-sizing: content-box;
-  padding-top: var(--pw-top, 0px);
-}
-
-/* 仅 Logo 区域（顶部约 56px）可拖拽 */
-.sidebar-drag-region .logo-drag-region {
-  -webkit-app-region: drag;
-}
-
-/* 侧边栏内所有可交互元素禁止拖拽 */
-.sidebar-drag-region .no-drag,
-.sidebar-drag-region button,
-.sidebar-drag-region a,
-.sidebar-drag-region [role="button"],
-.sidebar-drag-region .MuiListItemButton-root,
-.sidebar-drag-region nav,
-.sidebar-drag-region ul,
-.sidebar-drag-region li {
-  -webkit-app-region: no-drag;
-}
-
-/* 主内容区域禁止拖拽（防止整个内容区被拖拽） */
-.main-content,
-main,
-[class*="main"],
-[class*="content"] {
-  -webkit-app-region: no-drag;
-}
-
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
