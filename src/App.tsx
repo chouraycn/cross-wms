@@ -105,12 +105,13 @@ const theme = createTheme({
   },
 });
 
-/** 自动隐藏滚动条 Hook：默认隐藏，滚动时显示，停止滚动 3 秒后隐藏 */
-function useAutoHideScrollbar() {
+/** 自动隐藏滚动条 Hook：默认隐藏，滚动时显示，停止滚动 3 秒后隐藏；enabled=false 时完全禁用 */
+function useAutoHideScrollbar(enabled: boolean = true) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
+    if (!enabled) return; // pywebview 环境下禁用
     const el = scrollRef.current;
     if (!el) return;
 
@@ -127,7 +128,7 @@ function useAutoHideScrollbar() {
       el.removeEventListener('scroll', handleScroll);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, []);
+  }, [enabled]);
 
   return scrollRef;
 }
@@ -230,8 +231,8 @@ const MainLayout: React.FC = () => {
     setSidebarCollapsed((prev) => !prev);
   }, []);
 
-  // 自动隐藏滚动条：滚动时显示，停止 3 秒后隐藏
-  const scrollRef = useAutoHideScrollbar();
+  // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
+  const scrollRef = useAutoHideScrollbar(!isPy);
 
   const actions = getToolbarActions(location.pathname);
   const pageKey = getPageRefreshKey(location.pathname);
@@ -341,29 +342,39 @@ const MainLayout: React.FC = () => {
           </Box>
         </Box>
 
-        {/* 可滚动的内容区域 — 滚动条默认隐藏，滚动时显示，停止后隐藏 */}
+        {/* 可滚动的内容区域 */}
         <Box
           ref={scrollRef}
-          className="auto-hide-scrollbar"
+          className={isPy ? undefined : "auto-hide-scrollbar"}
           sx={{
             flexGrow: 1,
             overflow: 'auto',
-            // 默认隐藏滚动条
-            '&::-webkit-scrollbar': { width: '6px' },
-            '&::-webkit-scrollbar-track': { background: 'transparent' },
-            '&::-webkit-scrollbar-thumb': {
-              background: 'transparent',
-              borderRadius: '3px',
-              transition: 'background-color 0.3s ease',
-            },
-            '&:hover::-webkit-scrollbar-thumb': {
-              background: 'rgba(0,0,0,0.15)',
-            },
-            // 滚动时通过 class 显示滚动条
-            '&.scrollbar-visible::-webkit-scrollbar-thumb': {
-              background: 'rgba(0,0,0,0.2)',
-              '&:hover': { background: 'rgba(0,0,0,0.35)' },
-            },
+            // pywebview 环境：始终显示宽滚动条，提升拖动体验
+            ...(isPy ? {
+              '&::-webkit-scrollbar': { width: '10px', height: '10px' },
+              '&::-webkit-scrollbar-track': { background: '#F3F4F6' },
+              '&::-webkit-scrollbar-thumb': {
+                background: 'rgba(0,0,0,0.25)',
+                borderRadius: '5px',
+                '&:hover': { background: 'rgba(0,0,0,0.45)' },
+              },
+            } : {
+              // 浏览器环境：默认隐藏滚动条，滚动时显示
+              '&::-webkit-scrollbar': { width: '6px' },
+              '&::-webkit-scrollbar-track': { background: 'transparent' },
+              '&::-webkit-scrollbar-thumb': {
+                background: 'transparent',
+                borderRadius: '3px',
+                transition: 'background-color 0.3s ease',
+              },
+              '&:hover::-webkit-scrollbar-thumb': {
+                background: 'rgba(0,0,0,0.15)',
+              },
+              '&.scrollbar-visible::-webkit-scrollbar-thumb': {
+                background: 'rgba(0,0,0,0.2)',
+                '&:hover': { background: 'rgba(0,0,0,0.35)' },
+              },
+            }),
           }}
         >
           <Box

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Typography, Card, CardHeader, CardContent, IconButton } from '@mui/material';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -184,6 +184,25 @@ function lerpColor(a: string, b: string, t: number): string {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${bl.toString(16).padStart(2, '0')}`;
 }
 
+/** 获取单元格图案 ID：null → 交叉线（无数据），<50% → 无图案，50%-90% → 斜线，≥90% → 点阵 */
+function getPatternId(cell: HeatCell | null, thresholds: number[]): string | null {
+  if (cell === null) return 'pattern-cross';
+  const total = cell.in + cell.out;
+  if (total === 0) return null;
+  if (total >= thresholds[3]) return 'pattern-dots';
+  if (total >= thresholds[1]) return 'pattern-diagonal';
+  return null;
+}
+
+/** 获取总值对应的分位数区间描述 */
+function getQuantileRangeLabel(total: number, thresholds: number[]): string {
+  if (total >= thresholds[3]) return '位于 90% 以上区间';
+  if (total >= thresholds[2]) return '位于 75%-90% 区间';
+  if (total >= thresholds[1]) return '位于 50%-75% 区间';
+  if (total >= thresholds[0]) return '位于 25%-50% 区间';
+  return '位于 25% 以下区间';
+}
+
 interface ShipmentHeatmapProps {
   warehouseId: string;
 }
@@ -254,22 +273,51 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
   };
 
   // ====== 自适应布局计算 ======
-  const cellGap = 3;
   const maxLabelChars = 8;
   const labelWidth = maxLabelChars * 12 + 12; // 仓库名标签宽度
   const labelGap = 10;
-
-  // 自适应 cellSize：天数越多，格子越小
-  const cellSize = useMemo(() => {
-    if (days <= 7) return 28;
-    if (days <= 14) return 24;
-    if (days <= 30) return 20;
-    if (days <= 90) return 16;
-    if (days <= 180) return 14;
-    return 12; // 365 天用 12px
-  }, [days]);
-
   const padding = { top: 48, right: 20, bottom: 12, left: 0 };
+
+  // 容器宽度监听 — 用于动态计算格子大小
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(800); // 默认值
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        if (w > 0) setContainerWidth(w);
+      }
+    });
+    ro.observe(el);
+    // 初始读取
+    setContainerWidth(el.clientWidth || 800);
+    return () => ro.disconnect();
+  }, []);
+
+  // 动态 gap：天数越大 gap 越小，避免总宽度溢出
+  const cellGap = useMemo(() => {
+    if (dates.length > 180) return 1;
+    if (dates.length > 90) return 2;
+    return 3;
+  }, [dates.length]);
+
+  // 动态 cellSize：根据容器可用宽度 + 天数自适应
+  // 正确公式：cellSize = (availableWidth - (N-1) * cellGap) / N
+  const cellSize = useMemo(() => {
+    const availableWidth = Math.max(containerWidth - labelWidth - padding.right, 100);
+    const n = Math.max(1, dates.length);
+    const totalGap = Math.max(0, n - 1) * cellGap;
+    const ideal = Math.floor((availableWidth - totalGap) / n);
+    // 最小 2px（365天也能大致放下），最大 28px
+    return Math.max(2, Math.min(28, ideal));
+  }, [containerWidth, dates.length, cellGap, labelWidth, padding.right]);
+
+  // 格子极小模式：cellSize < 6px 时，优化密集视图
+  const tinyMode = cellSize < 6;
+
   const svgContentWidth = labelWidth + dates.length * (cellSize + cellGap);
   const svgContentHeight = padding.top + warehouses.length * (cellSize + cellGap) + padding.bottom;
 
@@ -322,12 +370,13 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
       />
 
       <CardContent sx={{ pt: 0.5, pb: 1.5 }}>
-        <Box sx={{ width: '100%', overflowX: 'auto' }}>
+        <Box ref={containerRef} sx={{ width: '100%', overflowX: 'hidden', overflowY: 'auto', maxHeight: 420 }}>
           <svg
             width="100%"
+            height={svgContentHeight}
             viewBox={`0 0 ${svgContentWidth} ${svgContentHeight}`}
             preserveAspectRatio="xMinYMin meet"
-            style={{ display: 'block', minHeight: svgContentHeight }}
+            style={{ display: 'block' }}
           >
             <defs>
               {/* 渐变图例 */}
@@ -336,35 +385,52 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
                 <stop offset="50%" stopColor={schemeColors.mid} />
                 <stop offset="100%" stopColor={schemeColors.max} />
               </linearGradient>
-              {/* 悬停高亮滤镜 */}
-              <filter id="cell-hover-shadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000" floodOpacity="0.15" />
-              </filter>
+
+              {/* 色盲无障碍图案：斜线（中等数值） */}
+              <pattern id="pattern-diagonal" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#000" strokeWidth="0.8" strokeOpacity="0.25" />
+              </pattern>
+
+              {/* 色盲无障碍图案：点阵（高数值） */}
+              <pattern id="pattern-dots" patternUnits="userSpaceOnUse" width="6" height="6">
+                <circle cx="3" cy="3" r="1.2" fill="#000" fillOpacity="0.3" />
+              </pattern>
+
+              {/* 无数据格子：交叉线 */}
+              <pattern id="pattern-cross" patternUnits="userSpaceOnUse" width="8" height="8">
+                <line x1="0" y1="0" x2="8" y2="8" stroke="#D1D5DB" strokeWidth="0.7" />
+                <line x1="8" y1="0" x2="0" y2="8" stroke="#D1D5DB" strokeWidth="0.7" />
+              </pattern>
             </defs>
 
-            {/* 月份标签 */}
+            {/* 月份标签 — tinyMode 下只显示季度简标 */}
             {monthLabels.map((ml, idx) => {
               const nextStart = idx < monthLabels.length - 1 ? monthLabels[idx + 1].startIdx : dates.length;
               const midIdx = Math.floor((ml.startIdx + nextStart) / 2);
               const x = labelWidth + midIdx * (cellSize + cellGap) + cellSize / 2;
+              // tinyMode 下显示季度（Q1/Q2...）而非月份
+              const label = tinyMode
+                ? `Q${parseInt(ml.month.replace('月', '')) <= 3 ? 1 : parseInt(ml.month.replace('月', '')) <= 6 ? 2 : parseInt(ml.month.replace('月', '')) <= 9 ? 3 : 4}`
+                : ml.month;
+              const fontSize = tinyMode ? 8 : 11;
               return (
                 <text
                   key={ml.month}
                   x={x}
-                  y={14}
+                  y={tinyMode ? 10 : 14}
                   textAnchor="middle"
-                  fontSize={11}
-                  fontWeight={600}
+                  fontSize={fontSize}
+                  fontWeight={tinyMode ? 400 : 600}
                   fill="#6B7280"
                   fontFamily="-apple-system, sans-serif"
                 >
-                  {ml.month}
+                  {label}
                 </text>
               );
             })}
 
-            {/* 日期标签 — 随天数自动调整密度 */}
-            {dateLabels.map((label, i) => {
+            {/* 日期标签 — tinyMode 下隐藏，否则按密度显示 */}
+            {!tinyMode && dateLabels.map((label, i) => {
               // 天数越多，标签间隔越大
               const labelInterval = days <= 30 ? 1 : days <= 90 ? 3 : days <= 180 ? 7 : 14;
               if (i % labelInterval !== 0) return null;
@@ -402,7 +468,7 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
                     {wh.name.length > maxLabelChars ? wh.name.slice(0, maxLabelChars - 1) + '…' : wh.name}
                   </text>
 
-                  {/* 日期格子 */}
+                  {/* 日期格子 — 用 <g> 包裹，mouse events 绑在 g 上避免 rect 重绘抖动 */}
                   {dates.map((date, colIdx) => {
                     const cell = data[wh.id]?.[date] ?? null;
                     const color = getHeatColor(cell, thresholds, colorScheme);
@@ -411,32 +477,59 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
                       hoveredCell?.warehouse === wh.id && hoveredCell?.date === date;
 
                     return (
-                      <g key={`${wh.id}-${date}`}>
+                      <g
+                        key={`${wh.id}-${date}`}
+                        onMouseEnter={() => {
+                          if (tinyMode) return; // tinyMode 下不显示悬停
+                          const total = cell ? cell.in + cell.out : null;
+                          setHoveredCell({
+                            warehouse: wh.id,
+                            warehouseName: wh.name,
+                            date,
+                            dateDisplay: dateDisplays[colIdx],
+                            cell,
+                            total,
+                          });
+                        }}
+                        onMouseLeave={() => {
+                          if (tinyMode) return;
+                          setHoveredCell(null);
+                        }}
+                        style={{ cursor: tinyMode ? 'default' : 'pointer' }}
+                      >
+                        {/* tinyMode：无描边，纯色填充；正常模式：有描边 */}
                         <rect
                           x={x}
                           y={y}
                           width={cellSize}
                           height={cellSize}
-                          rx={4}
+                          rx={tinyMode ? 1 : 4}
                           fill={color}
-                          opacity={0.92}
-                          stroke={isHovered ? '#111827' : 'rgba(255,255,255,0)'}
-                          strokeWidth={2}
-                          style={{ cursor: 'pointer' }}
-                          filter={isHovered ? 'url(#cell-hover-shadow)' : undefined}
-                          onMouseEnter={() => {
-                            const total = cell ? cell.in + cell.out : null;
-                            setHoveredCell({
-                              warehouse: wh.id,
-                              warehouseName: wh.name,
-                              date,
-                              dateDisplay: dateDisplays[colIdx],
-                              cell,
-                              total,
-                            });
-                          }}
-                          onMouseLeave={() => setHoveredCell(null)}
+                          opacity={tinyMode ? 1 : 0.92}
+                          {...(tinyMode
+                            ? {} // tinyMode：无描边
+                            : {
+                                stroke: isHovered ? '#111827' : color,
+                                strokeWidth: isHovered ? 2 : 1,
+                                strokeOpacity: isHovered ? 1 : 0.3,
+                              })}
                         />
+                        {/* 色盲无障碍图案叠加层 */}
+                        {(() => {
+                          const patternId = getPatternId(cell, thresholds);
+                          if (!patternId) return null;
+                          return (
+                            <rect
+                              x={x}
+                              y={y}
+                              width={cellSize}
+                              height={cellSize}
+                              rx={tinyMode ? 1 : 4}
+                              fill={`url(#${patternId})`}
+                              pointerEvents="none"
+                            />
+                          );
+                        })()}
                       </g>
                     );
                   })}
@@ -446,60 +539,77 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
           </svg>
         </Box>
 
-        {/* 悬停提示 */}
-        {hoveredCell && (
-          <Box
-            sx={{
-              mt: 1.5,
-              px: 2,
-              py: 1,
-              backgroundColor: '#F9FAFB',
-              borderRadius: 1.5,
-              border: '1px solid #E5E7EB',
-              display: 'inline-flex',
-              flexDirection: 'column',
-              gap: 0.5,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827' }}>
-                {hoveredCell.warehouseName}
-              </Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>·</Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                {hoveredCell.dateDisplay}
-              </Typography>
-            </Box>
-            {hoveredCell.cell ? (
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: COLOR_SCHEMES[colorScheme].min }} />
-                  <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                    入库 {hoveredCell.cell.in} 件
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: COLOR_SCHEMES[colorScheme].max }} />
-                  <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                    出库 {hoveredCell.cell.out} 件
-                  </Typography>
-                </Box>
-                <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#111827' }}>
-                  共 {hoveredCell.total} 件
+        {/* 悬停提示 — 始终渲染，用 visibility + opacity 控制，避免挂载/卸载导致抖动 */}
+        <Box
+          sx={{
+            mt: 1.5,
+            px: 2,
+            py: 1,
+            backgroundColor: '#F9FAFB',
+            borderRadius: 1.5,
+            border: '1px solid #E5E7EB',
+            display: 'inline-flex',
+            flexDirection: 'column',
+            gap: 0.5,
+            visibility: hoveredCell ? 'visible' : 'hidden',
+            opacity: hoveredCell ? 1 : 0,
+            transition: 'opacity 0.12s ease',
+            minHeight: '36px', // 固定最小高度，避免显隐时布局跳动
+          }}
+        >
+          {hoveredCell ? (
+            <>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827' }}>
+                  {hoveredCell.warehouseName}
+                </Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>·</Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                  {hoveredCell.dateDisplay}
                 </Typography>
               </Box>
-            ) : (
-              <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
-                无数据
-              </Typography>
-            )}
-          </Box>
-        )}
+              {hoveredCell.cell ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: COLOR_SCHEMES[colorScheme].min }} />
+                      <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                        入库 {hoveredCell.cell.in} 件
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: COLOR_SCHEMES[colorScheme].max }} />
+                      <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                        出库 {hoveredCell.cell.out} 件
+                      </Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#111827' }}>
+                      共 {hoveredCell.total} 件
+                    </Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: '0.7rem', color: '#6366F1', fontWeight: 500 }}>
+                    {getQuantileRangeLabel(hoveredCell.total ?? 0, thresholds)}
+                  </Typography>
+                </Box>
+              ) : (
+                <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                  无数据
+                </Typography>
+              )}
+            </>
+          ) : (
+            // 占位，保持高度稳定
+            <Typography sx={{ fontSize: '0.75rem', color: 'transparent' }}>-</Typography>
+          )}
+        </Box>
 
         {/* 图例：渐变条 + 说明 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 12, height: 12, borderRadius: '3px', backgroundColor: '#F3F4F6', border: '1px solid #E5E7EB' }} />
+            <svg width={12} height={12} style={{ borderRadius: 3, border: '1px solid #D1D5DB', overflow: 'hidden' }}>
+              <rect x={0} y={0} width={12} height={12} fill="#F3F4F6" />
+              <rect x={0} y={0} width={12} height={12} fill="url(#pattern-cross)" />
+            </svg>
             <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>无数据</Typography>
           </Box>
           <Typography sx={{ fontSize: '0.7rem', color: '#D1D5DB' }}>|</Typography>
@@ -508,6 +618,9 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
             <rect width={72} height={12} rx={3} fill={`url(#heatmap-gradient-${colorScheme})`} />
           </svg>
           <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>多</Typography>
+          <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF', whiteSpace: 'nowrap' }}>
+            25%: {thresholds[0]}件 | 50%: {thresholds[1]}件 | 75%: {thresholds[2]}件 | 90%: {thresholds[3]}件
+          </Typography>
           <Typography sx={{ fontSize: '0.7rem', color: '#D1D5DB' }}>|</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

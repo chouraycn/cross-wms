@@ -1,6 +1,8 @@
 /**
  * 通用 CSV 导出工具函数
- * 生成 CSV 字符串并触发浏览器下载，支持中文（BOM + UTF-8）
+ * 生成 CSV 字符串并触发下载，支持中文（BOM + UTF-8）
+ * - pywebview 环境：调用 Python API 将文件保存到 ~/Downloads/
+ * - 浏览器环境：使用 blob URL + <a> 标签下载
  */
 
 /**
@@ -26,7 +28,33 @@ export function exportToCsv(filename: string, headers: string[], rows: string[][
   ];
 
   const csv = csvRows.join('\n');
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const bomCsv = '\uFEFF' + csv; // 带 BOM 的 CSV 内容
+
+  // 检测 pywebview 环境
+  const hasPywebviewApi =
+    typeof window !== 'undefined' &&
+    (window as any).pywebview?.api?.download_csv;
+
+  if (hasPywebviewApi) {
+    // pywebview 环境：通过 Python API 保存文件到 ~/Downloads/
+    try {
+      const resultJson = (window as any).pywebview.api.download_csv(filename, bomCsv);
+      const result = typeof resultJson === 'string' ? JSON.parse(resultJson) : resultJson;
+      if (result.ok) {
+        console.log(`[CSV Export] 已保存到: ${result.path}`);
+      } else {
+        console.error(`[CSV Export] 保存失败: ${result.error}`);
+        alert(`CSV 导出失败: ${result.error}`);
+      }
+    } catch (e: any) {
+      console.error('[CSV Export] pywebview API 调用失败:', e);
+      alert(`CSV 导出失败: ${e.message || e}`);
+    }
+    return;
+  }
+
+  // 浏览器环境：blob URL + <a> 标签下载
+  const blob = new Blob([bomCsv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

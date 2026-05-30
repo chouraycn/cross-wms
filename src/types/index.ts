@@ -130,3 +130,45 @@ export interface OutboundRecord {
   operator: string;
   destination: string;
 }
+
+// ===== Widget 数据导出类型 =====
+
+export interface WidgetWarehouseSummary {
+  id: string;
+  name: string;
+  city: string;
+  usedItems: number;
+  totalItems: number;
+  utilizationRate: number;
+  status: string;
+  inboundToday: number;
+  outboundToday: number;
+}
+
+export interface WidgetKpiHistoryPoint {
+  date: string;
+  utilizationRate: number;
+}
+
+export interface WidgetAppSettings {
+  warningThreshold: number;
+  fullThreshold: number;
+  refreshInterval: number;
+}
+
+export interface WidgetPayload {
+  version: number;
+  lastUpdated: string;
+  timestamp: number;
+  totalWarehouses: number;
+  totalUsedItems: number;
+  totalCapacity: number;
+  warningCount: number;
+  inboundCount: number;
+  outboundCount: number;
+  transitCount: number;
+  inventoryDepth: number;
+  warehouses: WidgetWarehouseSummary[];
+  history: WidgetKpiHistoryPoint[];
+  settings: WidgetAppSettings;
+}

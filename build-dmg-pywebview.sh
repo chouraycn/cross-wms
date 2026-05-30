@@ -200,6 +200,11 @@ if [ -d "$SERVER_NODE_MODULES" ]; then
   echo "✅ 已临时移走 node_modules（避免 PyInstaller 处理 .node 文件）"
 fi
 
+# PyInstaller 的 bincache 默认路径 (~/Library/Application Support/pyinstaller) 在沙箱中不可写
+# 解决：PYINSTALLER_CONFIG_DIR 环境变量让 PyInstaller 使用构建目录内的缓存
+export PYINSTALLER_CONFIG_DIR="$BUILD_DIR/pyinstaller-cache"
+mkdir -p "$PYINSTALLER_CONFIG_DIR"
+
 "$PYINSTALLER" \
   --name "CrossWMS" \
   --windowed \
@@ -248,6 +253,15 @@ fi
 echo "🔏 签名应用包..."
 xattr -cr "$APP_PATH" 2>/dev/null || true
 codesign --force --sign - "$APP_PATH" 2>&1 || true
+
+# 8.5 构建并嵌入 Widget Extension
+echo "📱 构建并嵌入 Widget Extension..."
+if [ -f "$PROJECT_DIR/build-widget.sh" ]; then
+    bash "$PROJECT_DIR/build-widget.sh" 2>&1
+    echo "✅ Widget Extension 已嵌入到 .app"
+else
+    echo "⚠️  build-widget.sh 不存在，跳过 Widget 构建"
+fi
 
 # 9. 创建 DMG
 echo "💿 创建 DMG 安装包..."
