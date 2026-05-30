@@ -1,18 +1,16 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box, IconButton, Button, Tooltip, Typography } from '@mui/material';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import { CssBaseline, Box, IconButton } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import Sidebar, { SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from './components/Layout/Sidebar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
 import { AppSettingsProvider } from './contexts/AppSettingsContext';
 import { isPyWebView } from './services/tencentDocsApi';
-import { AIAssistantProvider, AIAssistantFab, AIAssistantPanel } from './components/AIAssistant/AIAssistantPanel';
 import { UpdateProvider } from './contexts/UpdateContext';
 import UpdateNotification from './components/UpdateNotification';
+import { WorkBuddyChat } from './components/WorkBuddyChat';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 
 // 静态导入 — file:// 协议下 WKWebView 不支持动态 import()
@@ -188,9 +186,9 @@ function getToolbarActions(pathname: string) {
   if (pathname.startsWith('/warehouses')) {
     return { refresh: true, newWarehouse: true, warehouseSwitch: false };
   }
-  // 仪表盘：仓库切换 + 刷新
+  // 仪表盘：仅刷新（仓库切换由 DashboardPage 内部管理）
   if (pathname === '/') {
-    return { refresh: true, newWarehouse: false, warehouseSwitch: true };
+    return { refresh: true, newWarehouse: false, warehouseSwitch: false };
   }
   // 在途、库存、报表：仅刷新
   if (pathname.startsWith('/in-transit') || pathname.startsWith('/inventory') || pathname.startsWith('/reports')) {
@@ -271,47 +269,47 @@ const MainLayout: React.FC = () => {
           overflow: 'hidden',
         }}
       >
-        {/* 顶部工具栏 — 右侧功能按钮，与系统红黄绿平行 */}
+        {/* 顶部工具栏 — 与系统红黄绿平行 */}
         <Box
-          className="no-drag"
           sx={{
             display: 'flex',
             alignItems: 'flex-end',
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
             px: 1,
             height: 'calc(40px + var(--pw-top, 0px))',
             pb: '4px',
             flexShrink: 0,
           }}
         >
-          {/* 右侧：功能按钮 */}
+          {/* 左侧：收起/展开侧边栏按钮 — 与 logo 平行 */}
+          <IconButton
+            onClick={toggleSidebar}
+            size="small"
+            sx={{
+              color: '#6B7280',
+              borderRadius: '6px',
+              p: 0.5,
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
+            }}
+          >
+            {sidebarCollapsed ? <MenuIcon sx={{ fontSize: 18 }} /> : <MenuOpenIcon sx={{ fontSize: 18 }} />}
+          </IconButton>
 
+          {/* 右侧：功能按钮 */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
             {actions.warehouseSwitch && (
               <WarehouseSelector selected={selectedWarehouse} onChange={handleWarehouseChange} />
             )}
-            {actions.refresh && (
-              <Tooltip title="刷新数据" arrow>
-                <IconButton
-                  onClick={handleRefresh}
-                  size="small"
-                  sx={{
-                    color: '#6B7280',
-                    borderRadius: '6px',
-                    '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
-                  }}
-                >
-                  <RefreshOutlinedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
           </Box>
+        </Box>
+
         {/* 可滚动的内容区域 */}
         <Box
           ref={scrollRef}
           className={isPy ? undefined : "auto-hide-scrollbar"}
           sx={{
-            flexGrow: 1,
+            flex: 1,
+            minHeight: 0,
             overflow: 'auto',
             // pywebview 环境：始终显示宽滚动条，提升拖动体验
             ...(isPy ? {
@@ -366,13 +364,11 @@ const MainLayout: React.FC = () => {
         </Box>
       </Box>
 
-      {/* AI 助手浮动组件 */}
-      <AIAssistantFab />
-      <AIAssistantPanel />
-
       {/* 自动更新通知 — 左下角 */}
       <UpdateNotification />
-    </Box>
+
+      {/* WorkBuddy AI 助手 */}
+      <WorkBuddyChat />
     </Box>
   );
 };
@@ -384,9 +380,7 @@ const App: React.FC = () => {
       <HashRouter>
         <AppSettingsProvider>
           <UpdateProvider>
-            <AIAssistantProvider>
-              <MainLayout />
-            </AIAssistantProvider>
+            <MainLayout />
           </UpdateProvider>
         </AppSettingsProvider>
       </HashRouter>
