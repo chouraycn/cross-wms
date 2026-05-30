@@ -61,7 +61,7 @@ export class DashboardApiService {
   constructor(config?: Partial<DataSourceConfig>) {
     this.config = {
       mode: 'mock',
-      apiBaseUrl: '/api/v1',
+      apiBaseUrl: '/api',
       docMappings: {},
       ...config,
     };

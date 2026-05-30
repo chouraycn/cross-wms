@@ -21,10 +21,10 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
-import { mockWarehouses, mockInboundRecords, mockOutboundRecords, mockInventory, getMockWarehouseById } from '../../data/mockData';
 import { getWarehouseById as getStoreWarehouseById } from '../../stores/warehouseStore';
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';
 import type { Warehouse, InboundRecord, OutboundRecord, InventoryItem } from '../../types';
+import { warehouseApi } from '../../services/warehouseApi';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -67,13 +67,7 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
       // 1. 尝试从 API 获取仓库详情
       let wh: Warehouse | null = null;
       try {
-        const resp = await fetch(`/api/v1/warehouses/${warehouseId}`);
-        if (resp.ok) {
-          const json = await resp.json();
-          if (json.code === 0 && json.data) {
-            wh = json.data as Warehouse;
-          }
-        }
+        wh = await warehouseApi.getWarehouseById(warehouseId);
       } catch {
         // API 不可用，继续降级
       }
@@ -83,22 +77,36 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
         wh = getStoreWarehouseById(warehouseId) || null;
       }
 
-      // 3. 再降级：从 mock 数据获取
-      if (!wh) {
-        wh = mockWarehouses.find((w) => w.id === warehouseId) || getMockWarehouseById(warehouseId) || null;
-      }
-
       if (cancelled) return;
       setWarehouse(wh);
 
-      // 获取关联数据（暂时用 mock，后续替换为 API）
+      // 3. 获取关联数据（API 或 mock）
       if (wh) {
-        setInboundRecords(mockInboundRecords.filter((r) => r.warehouseId === warehouseId));
-        setOutboundRecords(mockOutboundRecords.filter((r) => r.warehouseId === warehouseId));
-        setInventory(mockInventory.filter((i) => i.warehouseId === warehouseId));
+        try {
+          const [inbound, outbound, inventory] = await Promise.all([
+            warehouseApi.getInboundRecords(warehouseId),
+            warehouseApi.getOutboundRecords(warehouseId),
+            warehouseApi.getInventory(warehouseId),
+          ]);
+          if (!cancelled) {
+            setInboundRecords(inbound);
+            setOutboundRecords(outbound);
+            setInventory(inventory);
+          }
+        } catch {
+          // 降级到 mock 数据
+          const { mockInboundRecords, mockOutboundRecords, mockInventory } = await import('../../data/mockData');
+          if (!cancelled) {
+            setInboundRecords(mockInboundRecords.filter((r: InboundRecord) => r.warehouseId === warehouseId));
+            setOutboundRecords(mockOutboundRecords.filter((r: OutboundRecord) => r.warehouseId === warehouseId));
+            setInventory(mockInventory.filter((i: InventoryItem) => i.warehouseId === warehouseId));
+          }
+        }
       }
 
-      setLoading(false);
+      if (!cancelled) {
+        setLoading(false);
+      }
     }
 
     fetchData();
