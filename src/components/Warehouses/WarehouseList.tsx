@@ -92,7 +92,7 @@ const WarehouseList: React.FC = () => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (continueAdding = false) => {
     const totalVol = parseFloat(form.totalVolume);
     const totalItems = parseInt(form.totalItems, 10);
     const newWh: Warehouse = {
@@ -111,7 +111,18 @@ const WarehouseList: React.FC = () => {
       createdAt: new Date().toISOString().split('T')[0],
     };
     addGlobalWarehouse(newWh); // 写入全局 store（自动持久化 + 通知订阅者）
-    handleCloseDialog();
+    if (continueAdding) {
+      // 继续添加：不清空表单，方便连续创建
+      setForm({ ...form, name: '', totalVolume: '', totalItems: '' });
+    } else {
+      handleCloseDialog();
+      // 跳转到新仓库详情页
+      navigate(`/warehouses/${newWh.id}`);
+    }
+  };
+
+  const handleContinueAdd = () => {
+    handleSubmit(true);
   };
 
   // 订阅全局仓库数据（持久化后从 store 同步回来）
@@ -462,8 +473,16 @@ const WarehouseList: React.FC = () => {
         <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
           <Button onClick={handleCloseDialog}>取消</Button>
           <Button
+            variant="outlined"
+            onClick={handleContinueAdd}
+            disabled={!form.name || !form.totalVolume || !form.totalItems}
+            sx={{ borderColor: '#D1D5DB', color: '#374151', '&:hover': { borderColor: '#9CA3AF' } }}
+          >
+            继续添加
+          </Button>
+          <Button
             variant="contained"
-            onClick={handleSubmit}
+            onClick={() => handleSubmit(false)}
             disabled={!form.name || !form.totalVolume || !form.totalItems}
             sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' } }}
           >
