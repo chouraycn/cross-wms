@@ -880,7 +880,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           justifyContent: collapsed ? 'center' : 'space-between',
           gap: 1.25,
           flexShrink: 0,
-          paddingTop: 'var(--pw-top, 0px)',
         }}
       >
         {/* Logo 图标 — 收起时单独居中，展开时与文字同行 */}
