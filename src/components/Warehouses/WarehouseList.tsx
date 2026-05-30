@@ -166,6 +166,21 @@ const WarehouseList: React.FC = () => {
         <Typography variant="h6" sx={{ fontWeight: 600, color: '#111827' }}>
           仓库列表（{warehouses.length} 个）
         </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddOutlinedIcon />}
+          onClick={handleOpenDialog}
+          sx={{
+            backgroundColor: '#111827',
+            color: '#FFFFFF',
+            fontWeight: 600,
+            fontSize: '0.8125rem',
+            px: 3, py: 1,
+            '&:hover': { backgroundColor: '#1F2937' },
+          }}
+        >
+          新建仓库
+        </Button>
       </Box>
 
       {warehouses.length === 0 ? (

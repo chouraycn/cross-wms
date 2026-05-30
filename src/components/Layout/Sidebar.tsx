@@ -488,7 +488,7 @@ const SettingsPanel: React.FC = () => {
   };
 
   return (
-    <Box sx={{ width: POPOVER_WIDTH }}>
+    <Box sx={{ width: '100%' }}>
       {/* 头部 — 应用信息 */}
       {activeTab === 'menu' && (
         <Box sx={{ px: 2.5, pt: 2, pb: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -780,10 +780,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
       <Dialog
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        maxWidth="md"
-        fullWidth
+        maxWidth={false}
         PaperProps={{
           sx: {
+            width: 420,
             borderRadius: '12px',
             boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
             border: '1px solid #E5E7EB',

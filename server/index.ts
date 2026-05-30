@@ -493,11 +493,11 @@ app.post('/api/context', (req, res) => {
 app.get('/api/warehouses', (_req, res) => {
   try {
     const warehouses = (currentSystemContext as Record<string, unknown>)?.warehouses as Array<Record<string, unknown>> || [];
-    res.json({ warehouses });
+    res.json({ code: 0, message: 'success', data: { warehouses }, timestamp: Date.now() });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : '读取仓库数据失败';
     console.error('[Warehouses] 错误:', errMsg);
-    res.status(500).json({ error: errMsg });
+    res.status(500).json({ code: 500, message: errMsg, data: null, timestamp: Date.now() });
   }
 });
 
@@ -512,14 +512,14 @@ app.get('/api/warehouses/:id', (req, res) => {
     const warehouse = warehouses.find((w: any) => w.id === id || w.name === id);
 
     if (!warehouse) {
-      return res.status(404).json({ error: '仓库不存在' });
+      return res.status(404).json({ code: 404, message: '仓库不存在', data: null, timestamp: Date.now() });
     }
 
-    res.json({ warehouse });
+    res.json({ code: 0, message: 'success', data: warehouse, timestamp: Date.now() });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : '读取仓库数据失败';
     console.error('[Warehouse] 错误:', errMsg);
-    res.status(500).json({ error: errMsg });
+    res.status(500).json({ code: 500, message: errMsg, data: null, timestamp: Date.now() });
   }
 });
 
@@ -546,11 +546,11 @@ app.get('/api/inventory', (req, res) => {
       filtered = mockInventory.filter(item => item.warehouseId === warehouseId);
     }
 
-    res.json({ inventory: filtered });
+    res.json({ code: 0, message: 'success', data: { inventory: filtered }, timestamp: Date.now() });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : '读取库存数据失败';
     console.error('[Inventory] 错误:', errMsg);
-    res.status(500).json({ error: errMsg });
+    res.status(500).json({ code: 500, message: errMsg, data: null, timestamp: Date.now() });
   }
 });
 
@@ -576,11 +576,11 @@ app.get('/api/shipments', (req, res) => {
       filtered = filtered.filter(s => s.warehouseId === warehouseId);
     }
 
-    res.json({ shipments: filtered });
+    res.json({ code: 0, message: 'success', data: { shipments: filtered }, timestamp: Date.now() });
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : '读取运单数据失败';
     console.error('[Shipments] 错误:', errMsg);
-    res.status(500).json({ error: errMsg });
+    res.status(500).json({ code: 500, message: errMsg, data: null, timestamp: Date.now() });
   }
 });
 
