@@ -235,8 +235,12 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
   // 活跃天数
   const activeDays = useMemo(() => cells.filter(c => c.total > 0).length, [cells]);
 
-  // SVG viewBox 尺寸 — 让格子铺满容器
-  const svgViewBoxWidth = WEEKDAY_LABEL_WIDTH + weekColumns.length * (cellSize + CELL_GAP);
+  // SVG viewBox 尺寸 — 精确计算内容宽度，避免右侧多余留白
+  const lastCol = weekColumns[weekColumns.length - 1];
+  const maxWeekIndex = lastCol ? lastCol.weekIndex : 0;
+  // 内容宽度 = 星期标签宽 + 最后列的起始位置 + 格子宽度
+  // 最后列起始位置 = maxWeekIndex * (cellSize + CELL_GAP)
+  const svgViewBoxWidth = WEEKDAY_LABEL_WIDTH + (maxWeekIndex + 1) * cellSize + maxWeekIndex * CELL_GAP;
   const svgViewBoxHeight = MONTH_LABEL_HEIGHT + 7 * (cellSize + CELL_GAP);
 
   // 容器高度 = SVG 内容高度 + 边距（tooltip 已在 SVG 内部，无需额外空间）
