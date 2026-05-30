@@ -476,6 +476,55 @@ class Api:
         except Exception:
             return json.dumps({'visible': False, 'initialized': True})
 
+    # ========== Widget 数据导出 API ==========
+
+    def widget_export_data(self):
+        """导出 Widget 数据（供前端调用）"""
+        try:
+            import sys
+            sys.path.insert(0, os.path.dirname(__file__))
+            from widget_exporter import export_widget_data
+            
+            # 这里先创建一个接口，具体数据由前端传入
+            log("[Widget] widget_export_data 被调用（需要前端传入仓库数据）")
+            return json.dumps({"success": True, "message": "API 就绪，等待数据"})
+        except Exception as e:
+            log(f"[Widget] 导出 API 错误: {e}")
+            return json.dumps({"success": False, "error": str(e)})
+    
+    def widget_push_data(self, warehouses_json, settings_json=None):
+        """
+        前端推送仓库数据和设置，导出到共享文件
+        
+        Args:
+            warehouses_json: JSON 字符串，仓库列表
+            settings_json: JSON 字符串，应用设置（可选）
+        """
+        try:
+            from widget_exporter import export_widget_data
+            
+            # 解析参数
+            if isinstance(warehouses_json, str):
+                warehouses = json.loads(warehouses_json)
+            else:
+                warehouses = warehouses_json
+                
+            settings = {}
+            if settings_json:
+                if isinstance(settings_json, str):
+                    settings = json.loads(settings_json)
+                else:
+                    settings = settings_json
+            
+            log(f"[Widget] 收到数据推送，仓库数: {len(warehouses)}")
+            success = export_widget_data(warehouses, settings)
+            return json.dumps({"success": success})
+        except Exception as e:
+            log(f"[Widget] widget_push_data 错误: {e}")
+            import traceback
+            traceback.print_exc()
+            return json.dumps({"success": False, "error": str(e)})
+
     # ---- 窗口控制（frameless 模式下前端调用） ----
 
     def window_close(self):
@@ -862,6 +911,32 @@ class Api:
         except Exception as e:
             return json.dumps({'error': str(e)})
 
+    # ---- 文件下载（替代 WKWebView blob URL 下载） ----
+
+    def download_csv(self, filename: str, bom_csv_content: str) -> str:
+        """
+        将 CSV 文件保存到用户的 ~/Downloads 目录。
+        前端通过 window.pywebview.api.download_csv(filename, csvContent) 调用。
+        返回 JSON 字符串：{'ok': True, 'path': '...'} 或 {'ok': False, 'error': '...'}
+
+        参数:
+            filename: 文件名（如 'kpi_summary.csv'）
+            bom_csv_content: 带 BOM 的 CSV 内容（已在 JS 端处理好）
+        """
+        try:
+            downloads_dir = os.path.expanduser("~/Downloads")
+            os.makedirs(downloads_dir, exist_ok=True)
+            filepath = os.path.join(downloads_dir, filename)
+
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(bom_csv_content)
+
+            log(f"[Download] CSV 已保存: {filepath}")
+            return json.dumps({'ok': True, 'path': filepath})
+        except Exception as e:
+            log(f"[Download] CSV 保存失败: {e}")
+            return json.dumps({'ok': False, 'error': str(e)})
+
 
 def inject_pw_css(html_path: str) -> str:
     """
@@ -1057,6 +1132,21 @@ def main():
             log(f"[Main] Widget 窗口创建失败: {e}")
 
         log("[Main] pywebview 窗口已创建，启动事件循环...")
+
+        # 4.6 启动时导出一次 Widget 数据（使用空数据作为初始值）
+        try:
+            from widget_exporter import export_widget_data
+            initial_warehouses = []  # 实际应从 localStorage 读取，这里先用空列表
+            initial_settings = {
+                "warningThreshold": 70,
+                "fullThreshold": 90,
+                "heatmapColor": "blue",
+                "showHeatmap": True
+            }
+            export_widget_data(initial_warehouses, initial_settings)
+            log("[Main] Widget 初始数据导出完成")
+        except Exception as e:
+            log(f"[Main] Widget 初始数据导出失败: {e}")
 
         # 5. 启动事件循环（阻塞直到窗口关闭）
         webview.start(debug=False, private_mode=False)

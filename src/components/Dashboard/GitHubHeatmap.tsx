@@ -194,8 +194,8 @@ const CELL_GAP = 3;           // 格子间距 3px
 const WEEKDAY_LABEL_WIDTH = 36; // 左侧星期标签宽 36px
 const MONTH_LABEL_HEIGHT = 20;
 const LEGEND_LABELS = ['无', '少', '中', '多', '满'];
-const MAX_CELL_SIZE = 18;     // 最大格子尺寸
-const MIN_CELL_SIZE = 8;      // 最小格子尺寸（防止挤成一条线）
+const MAX_CELL_SIZE = 100;    // 最大格子尺寸（不设上限，让格子铺满）
+const MIN_CELL_SIZE = 4;      // 最小格子尺寸
 
 const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
   const { settings } = useAppSettings();
@@ -205,26 +205,18 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
   const colors = COLOR_SCHEMES[colorScheme] || OCEAN;
 
   const [hoveredCell, setHoveredCell] = useState<DayCell | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{
+    x: number;          // tooltip 中心 X（SVG 坐标）
+    y: number;          // 格子顶部 Y（SVG 坐标）
+    showBelow: boolean;  // 是否显示在格子下方（空间不足时）
+  } | null>(null);
   const [allWarehouses, setAllWarehouses] = useState<Warehouse[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(600); // 默认值，ResizeObserver 会更新
+  const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     const unsub = subscribeWarehouses(setAllWarehouses);
     return unsub;
-  }, []);
-
-  // ResizeObserver 自适应容器宽度
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setContainerWidth(entry.contentRect.width);
-      }
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
   }, []);
 
   const { cells, maxVal, whCount } = useMemo(
@@ -234,14 +226,8 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
 
   const weekColumns = useMemo(() => buildWeekColumns(cells), [cells]);
 
-  // 动态计算 cellSize：耗尽容器可用宽度，让格子 100% 平铺
-  const cellSize = useMemo(() => {
-    if (weekColumns.length === 0) return MAX_CELL_SIZE;
-    // 可用宽度 = 容器宽度 - 左侧星期标签宽，全部用于格子
-    const available = Math.max(containerWidth - WEEKDAY_LABEL_WIDTH, 200);
-    const computed = Math.floor(available / weekColumns.length) - CELL_GAP;
-    return Math.min(Math.max(computed, MIN_CELL_SIZE), MAX_CELL_SIZE);
-  }, [containerWidth, weekColumns.length]);
+  // cellSize：固定 14px（紧凑风格，类似 GitHub 原版）
+  const cellSize = 14;
 
   // 总出货量
   const totalShipments = useMemo(() => cells.reduce((s, c) => s + c.total, 0), [cells]);
@@ -249,9 +235,14 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
   // 活跃天数
   const activeDays = useMemo(() => cells.filter(c => c.total > 0).length, [cells]);
 
-  // viewBox 宽度 = 内容实际渲染宽度，SVG width="100%" 自动拉伸填满容器
-  const svgWidth = WEEKDAY_LABEL_WIDTH + weekColumns.length * (cellSize + CELL_GAP) + 20;
-  const svgHeight = MONTH_LABEL_HEIGHT + 7 * (cellSize + CELL_GAP) + 20;
+  // SVG viewBox 尺寸 — 让格子铺满容器
+  const svgViewBoxWidth = WEEKDAY_LABEL_WIDTH + weekColumns.length * (cellSize + CELL_GAP);
+  const svgViewBoxHeight = MONTH_LABEL_HEIGHT + 7 * (cellSize + CELL_GAP);
+
+  // 容器高度 = SVG 内容高度 + 边距（tooltip 已在 SVG 内部，无需额外空间）
+  const containerHeightCalc = useMemo(() => {
+    return `${svgViewBoxHeight + 24}px`;
+  }, [svgViewBoxHeight]);
 
   const getColor = (level: number): string => {
     if (level === -1) return colors.empty;
@@ -335,11 +326,13 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
           </Box>
         </Box>
 
-        <Box ref={containerRef} sx={{ width: '100%', position: 'relative' }}>
+        <Box ref={containerRef} sx={{ width: '100%', height: containerHeightCalc, position: 'relative', overflowX: 'auto', overflowY: 'hidden' }}>
           <svg
             width="100%"
-            height={svgHeight}
-            style={{ display: 'block' }}
+            height="100%"
+            viewBox={`0 0 ${svgViewBoxWidth} ${svgViewBoxHeight}`}
+            preserveAspectRatio="xMinYMin meet"
+            style={{ display: 'block', minWidth: svgViewBoxWidth }}
           >
             {/* 月份标签 */}
             {weekColumns.map(col => {
@@ -397,41 +390,59 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
                       stroke={isHovered ? '#111827' : 'rgba(255,255,255,0.6)'}
                       strokeWidth={isHovered ? 2 : 1}
                       style={{ cursor: 'pointer', transition: 'fill 0.12s ease, stroke 0.12s ease, strokeWidth 0.12s ease' }}
-                      onMouseEnter={() => setHoveredCell(cell)}
-                      onMouseLeave={() => setHoveredCell(null)}
+                      onMouseEnter={() => {
+                        setHoveredCell(cell);
+                        // 判断 tooltip 上方空间是否足够（tooltip 高度约 40px）
+                        const spaceAbove = y - MONTH_LABEL_HEIGHT;
+                        setTooltipPos({
+                          x: x + cellSize / 2,
+                          y: y,
+                          showBelow: spaceAbove < 44,
+                        });
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredCell(null);
+                        setTooltipPos(null);
+                      }}
                     />
                   );
                 })}
               </g>
             ))}
+            {/* SVG 内悬浮提示 — 浮动在热力格子上方/下方 */}
+            {hoveredCell && tooltipPos && (() => {
+              const isBelow = tooltipPos.showBelow;
+              const offsetY = isBelow
+                ? tooltipPos.y + cellSize + 6      // 显示在格子下方
+                : tooltipPos.y - 42;               // 显示在格子上方
+              return (
+                <g transform={`translate(${tooltipPos.x}, ${offsetY})`}>
+                  <rect
+                    x={-60}
+                    y={-8}
+                    width={120}
+                    height={34}
+                    rx={6}
+                    fill="#1F2937"
+                  />
+                  {/* 小三角箭头 */}
+                  <path
+                    d={isBelow
+                      ? `M -4,${34} L 0,${38} L 4,${34}`
+                      : `M -4,${-8} L 0,${-12} L 4,${-8}`}
+                    fill="#1F2937"
+                  />
+                  <text x={0} y={6} textAnchor="middle" fontSize={11} fontWeight={600} fill="#FFFFFF" fontFamily="-apple-system, sans-serif">
+                    {hoveredCell.display}
+                  </text>
+                  <text x={0} y={20} textAnchor="middle" fontSize={10} fill={hoveredCell.total > 0 ? '#9CA3AF' : '#6B7280'} fontFamily="-apple-system, sans-serif">
+                    {hoveredCell.total > 0 ? `${hoveredCell.total} 件出库` : '无数据'}
+                  </text>
+                </g>
+              );
+            })()}
           </svg>
         </Box>
-
-        {/* 悬停提示 */}
-        {hoveredCell && (
-          <Box
-            sx={{
-              mt: 1.5,
-              px: 2,
-              py: 1,
-              backgroundColor: '#F9FAFB',
-              borderRadius: 1.5,
-              border: '1px solid #E5E7EB',
-              display: 'inline-flex',
-              flexDirection: 'column',
-              gap: 0.5,
-            }}
-          >
-            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827' }}>
-              {hoveredCell.display}
-            </Typography>
-            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
-              {hoveredCell.total > 0
-                ? `出货量: ${hoveredCell.total} 件`
-                : '无出货数据'}
-            </Typography>
-          </Box>
-        )}
 
         {/* 图例 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
