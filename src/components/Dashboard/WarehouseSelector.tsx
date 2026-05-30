@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { IconButton, Tooltip, Popover, List, ListItemButton, ListItemText, Typography, Box, Button, Grow } from '@mui/material';
-import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
+import { IconButton, Tooltip, Popover, List, ListItemButton, ListItemText, ListItemIcon, Typography, Box, Button, Grow, Divider } from '@mui/material';
+import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import { subscribeWarehouses } from '../../stores/warehouseStore';
@@ -80,7 +80,7 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
             '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
           }}
         >
-          <StorageOutlinedIcon fontSize="small" />
+          <WarehouseOutlinedIcon fontSize="small" />
         </IconButton>
       </Tooltip>
 
@@ -138,6 +138,27 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
               </ListItemButton>
             );
           })}
+          {/* 新建仓库入口 */}
+          <Box sx={{ px: 2, pt: 0.5, pb: 1 }}>
+            <Divider sx={{ mb: 1 }} />
+            <Button
+              fullWidth
+              size="small"
+              variant="outlined"
+              startIcon={<AddOutlinedIcon sx={{ fontSize: 16 }} />}
+              onClick={handleAddWarehouse}
+              sx={{
+                borderColor: '#D1D5DB',
+                color: '#374151',
+                fontSize: '0.75rem',
+                justifyContent: 'flex-start',
+                textTransform: 'none',
+                '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+              }}
+            >
+              新建仓库
+            </Button>
+          </Box>
         </List>
       </Popover>
     </>

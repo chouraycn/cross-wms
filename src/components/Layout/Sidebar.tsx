@@ -789,8 +789,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
 
       <Divider sx={{ mb: 1 }} />
 
-      {/* 内容区 */}
-      <Box sx={{ px: 2, pb: 2, maxHeight: POPOVER_MAX_HEIGHT - 120, overflow: 'auto' }}>
+      {/* 内容区 — 确保白色区域始终可见 */}
+      <Box sx={{
+        px: 2, pb: 2,
+        flex: 1,
+        overflow: 'auto',
+        minHeight: 0, // flex 子元素溢出滚动的关键
+      }}>
         {renderPanelContent()}
       </Box>
 
@@ -803,8 +808,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
 
 // ===================== Sidebar Component =====================
 
-/** 单栏侧边栏布局 */
-const SIDEBAR_WIDTH_EXPANDED = 240;
+/** 单栏侧边栏布局 — 加宽至 260 */
+const SIDEBAR_WIDTH_EXPANDED = 260;
 const SIDEBAR_WIDTH_COLLAPSED = 68;
 
 // 背景色
@@ -941,7 +946,44 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             </Typography>
           )}
         </Box>
+
+        {/* 收起/展开按钮 — 展开时在 Logo 行右侧 */}
+        {!collapsed && onToggle && (
+          <IconButton
+            className="no-drag"
+            onClick={onToggle}
+            size="small"
+            sx={{
+              color: '#9CA3AF',
+              ml: 'auto',
+              '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)', color: '#6B7280' },
+            }}
+          >
+            <MenuOpenIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        )}
       </Box>
+
+      {/* 收起状态下的收起/展开按钮 — 放在导航列表上方（白色可视区域内） */}
+      {collapsed && onToggle && (
+        <Box sx={{ px: 0.5, pb: 0.5, flexShrink: 0 }}>
+          <Tooltip title="展开侧边栏" placement="right" arrow>
+            <IconButton
+              onClick={onToggle}
+              size="small"
+              sx={{
+                color: '#6B7280',
+                borderRadius: '6px',
+                width: 40,
+                height: 40,
+                '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
+              }}
+            >
+              <MenuIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
 
       {/* 导航列表 */}
       <List sx={{ pt: 0, px: collapsed ? 0.5 : 1, flex: 1 }}>
@@ -1004,54 +1046,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         })}
       </List>
 
-      {/* 底部：收起/展开按钮 + 设置按钮 */}
-      <Box sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-        {/* 收起/展开按钮 — 恢复到设置上方 */}
-        {onToggle && (
-          <ListItemButton
-            onClick={onToggle}
-            sx={{
-              minHeight: collapsed ? 40 : 36,
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              px: collapsed ? 0 : 1.5,
-              borderRadius: '6px',
-              '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
-              transition: 'padding 0.2s ease, justify-content 0.2s ease',
-            }}
-          >
-            <ListItemIcon
-              sx={{
-                minWidth: 0,
-                mr: collapsed ? 0 : 1.5,
-                justifyContent: 'center',
-                color: '#6B7280',
-                '& .MuiSvgIcon-root': {
-                  fontSize: collapsed ? '20px' : '18px',
-                  transition: 'font-size 0.2s ease',
-                },
-                transition: 'margin 0.2s ease',
-              }}
-            >
-              {collapsed ? <MenuIcon /> : <MenuOpenIcon />}
-            </ListItemIcon>
-            <Box
-              sx={{
-                maxWidth: collapsed ? 0 : 120,
-                opacity: collapsed ? 0 : 1,
-                overflow: 'hidden',
-                transition: 'max-width 0.2s ease, opacity 0.15s ease',
-                transitionDelay: collapsed ? '0s' : '0.05s',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <Typography sx={{ fontSize: '0.8125rem', color: '#6B7280', lineHeight: '36px' }}>
-                {collapsed ? '展开' : '收起'}
-              </Typography>
-            </Box>
-          </ListItemButton>
-        )}
-
-        {/* 设置按钮 */}
+      {/* 底部：设置按钮 */}
+      <Box sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, flexShrink: 0 }}>
         <ListItemButton
           onClick={() => setSettingsOpen(true)}
           sx={{
