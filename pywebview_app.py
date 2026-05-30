@@ -857,8 +857,8 @@ def inject_pw_css(html_path: str) -> str:
     with open(html_path, 'r', encoding='utf-8') as f:
         html_content = f.read()
 
-    # 注入 CSS 变量（28px 为 macOS 红绿灯区域高度）
-    pw_css = '<style>:root { --pw-top: 28px; }</style>\n'
+    # 注入 CSS 变量（48px 为 macOS 红绿灯区域高度 + 间距）
+    pw_css = '<style>:root { --pw-top: 200px; }</style>\n'
     html_content = html_content.replace('</head>', pw_css + '</head>')
 
     # 写入临时文件

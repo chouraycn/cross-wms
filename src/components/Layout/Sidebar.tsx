@@ -858,7 +858,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         // height 用 calc 减去 padding-top，避免总高度溢出 100vh
         height: 'calc(100vh - var(--pw-top, 0px))',
         position: 'sticky',
-        top: 0,
+        top: 'var(--pw-top, 0px)',
         zIndex: 1200,
         flexShrink: 0,
         backgroundColor: SIDEBAR_BG,
