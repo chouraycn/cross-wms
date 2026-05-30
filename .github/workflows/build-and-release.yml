@@ -1,0 +1,133 @@
+name: Build and Release DMG
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type (patch/minor/major)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install pywebview pyinstaller Pillow
+      
+      - name: Install Node.js dependencies
+        run: npm ci
+      
+      - name: Bump version (manual dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          BUMP_TYPE="${{ github.event.inputs.version_bump }}"
+          node -e "
+            const fs = require('fs');
+            const path = './package.json';
+            const pkg = JSON.parse(fs.readFileSync(path, 'utf-8'));
+            const parts = pkg.version.split('.').map(Number);
+            if ('${BUMP_TYPE}' === 'major') {
+              parts[0]++;
+              parts[1] = 0;
+              parts[2] = 0;
+            } else if ('${BUMP_TYPE}' === 'minor') {
+              parts[1]++;
+              parts[2] = 0;
+            } else {
+              parts[2]++;
+            }
+            pkg.version = parts.join('.');
+            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
+            console.log('Version bumped to ' + pkg.version);
+          "
+          echo "VERSION=$(node -e "console.log(require('./package.json').version)")" >> $GITHUB_ENV
+      
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION="${{ github.ref }}"
+            VERSION="${VERSION#refs/tags/v}"
+          else
+            VERSION=$(node -e "console.log(require('./package.json').version)")
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+      
+      - name: Build frontend
+        run: npm run build
+      
+      - name: Build DMG
+        run: bash build-dmg-pywebview.sh
+      
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+            echo "## Changes since ${PREV_TAG}" >> $GITHUB_ENV
+            git log ${PREV_TAG}..HEAD --oneline --no-merges | sed 's/^/- /' >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          else
+            echo "RELEASE_NOTES=Initial release" >> $GITHUB_ENV
+          fi
+      
+      - name: Create Git Tag (manual dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "Bump version to ${{ env.VERSION }}" || true
+          git tag "v${{ env.VERSION }}"
+          git push origin "v${{ env.VERSION }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Create GitHub Release and Upload DMG
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: CrossWMS v${{ env.VERSION }}
+          body: ${{ env.RELEASE_NOTES }}
+          files: release/CrossWMS-${{ env.VERSION }}-mac.dmg
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload DMG as artifact (backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: CrossWMS-${{ env.VERSION }}-mac.dmg
+          path: release/CrossWMS-${{ env.VERSION }}-mac.dmg
+          retention-days: 90

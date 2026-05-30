@@ -15,11 +15,10 @@ import WarehouseKpiTable from '../components/Dashboard/WarehouseKpiTable';
 import TransitTimeChart from '../components/Dashboard/TransitTimeChart';
 import NewTaskDialog, { type TaskFormData } from '../components/Dashboard/NewTaskDialog';
 import SortableWidget from '../components/Dashboard/SortableWidget';
-import { ALL_WAREHOUSES } from '../components/Dashboard/WarehouseSelector';
+import WarehouseSelector, { ALL_WAREHOUSES } from '../components/Dashboard/WarehouseSelector';
 import { useAppSettings } from '../contexts/AppSettingsContext';
-import { subscribeRefresh, subscribeWarehouseChange, emitNewWarehouse } from '../App';
+import { subscribeRefresh, subscribeWarehouseChange } from '../App';
 import { subscribeWarehouses } from '../stores/warehouseStore';
-import { useNavigate } from 'react-router-dom';
 import type { Warehouse, TransitOrder, InventoryItem } from '../types';
 import {
   mockTransitOrders,
@@ -141,7 +140,6 @@ function computeAlerts(
 const DashboardPage: React.FC = () => {
   const { settings, updateSettings } = useAppSettings();
   const vis = settings.dashboard.visibility;
-  const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(ALL_WAREHOUSES);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -191,15 +189,6 @@ const DashboardPage: React.FC = () => {
     };
   }, []);
 
-  // 仪表盘空状态：点击「添加仓库」→ 先导航到仓库管理页，再延迟触发新建对话框
-  const handleAddWarehouse = useCallback(() => {
-    navigate('/warehouses');
-    // 等待 WarehouseList 组件挂载并注册 subscribeNewWarehouse 后再触发
-    requestAnimationFrame(() => {
-      emitNewWarehouse();
-    });
-  }, [navigate]);
-
   useEffect(() => {
     const unsubRefresh = subscribeRefresh('dashboard', handleRefresh);
     const unsubWarehouse = subscribeWarehouseChange(setSelectedWarehouse);
@@ -248,6 +237,7 @@ const DashboardPage: React.FC = () => {
           仪表盘总览
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <WarehouseSelector selected={selectedWarehouse} onChange={setSelectedWarehouse} />
           <Button
             size="small"
             variant="outlined"
@@ -298,23 +288,8 @@ const DashboardPage: React.FC = () => {
             暂无仓库数据
           </Typography>
           <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF', mb: 3 }}>
-            添加您的第一个仓库，开始使用仪表盘
+            点击左上角仓库切换按钮，添加您的第一个仓库
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddOutlinedIcon />}
-            onClick={handleAddWarehouse}
-            sx={{
-              backgroundColor: '#111827',
-              color: '#FFFFFF',
-              px: 3,
-              py: 0.75,
-              boxShadow: 'none',
-              '&:hover': { backgroundColor: '#374151', boxShadow: 'none' },
-            }}
-          >
-            添加仓库
-          </Button>
         </Box>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

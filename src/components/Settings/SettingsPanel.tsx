@@ -521,6 +521,7 @@ const SettingsPanel: React.FC = () => {
     setDraft((prev) => ({
       ...prev,
       tencentDocs: {
+        ...prev.tencentDocs,
         docLinks: [...prev.tencentDocs.docLinks, newLink],
       },
     }));
@@ -541,6 +542,7 @@ const SettingsPanel: React.FC = () => {
     setDraft((prev) => ({
       ...prev,
       tencentDocs: {
+        ...prev.tencentDocs,
         docLinks: prev.tencentDocs.docLinks.filter((d) => d.id !== id),
       },
     }));
@@ -551,6 +553,7 @@ const SettingsPanel: React.FC = () => {
     setDraft((prev) => ({
       ...prev,
       tencentDocs: {
+        ...prev.tencentDocs,
         docLinks: prev.tencentDocs.docLinks.map((d) =>
           d.id === id ? { ...d, [key]: value } : d
         ),
@@ -631,7 +634,9 @@ const SettingsPanel: React.FC = () => {
     resetSettings();
     setDraft({
       tencentDocs: {
+        ...settings.tencentDocs,
         docLinks: [],
+        onlineData: [],
       },
       wecomDocs: {
         docLinks: [],

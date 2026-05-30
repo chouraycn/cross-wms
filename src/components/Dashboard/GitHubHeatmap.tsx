@@ -392,12 +392,13 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
                       style={{ cursor: 'pointer', transition: 'fill 0.12s ease, stroke 0.12s ease, strokeWidth 0.12s ease' }}
                       onMouseEnter={() => {
                         setHoveredCell(cell);
-                        // 判断 tooltip 上方空间是否足够（tooltip 高度约 40px）
+                        // 判断 tooltip 上方空间是否足够（tooltip 总高度约 50px）
                         const spaceAbove = y - MONTH_LABEL_HEIGHT;
+                        const showBelow = spaceAbove < 50;
                         setTooltipPos({
                           x: x + cellSize / 2,
                           y: y,
-                          showBelow: spaceAbove < 44,
+                          showBelow,
                         });
                       }}
                       onMouseLeave={() => {
