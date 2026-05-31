@@ -1,14 +1,14 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Box } from '@mui/material';
-import { TopBarChatInput } from './TopBarChatInput';
+import { BottomChatInput } from './BottomChatInput';
 import { Message, Session } from '../../types/chat';
 
 export function WorkBuddyChat() {
   const [session, setSession] = useState<Session>({ id: '', title: '', model: 'claude-sonnet-4', messages: [] });
 
   return (
-    <Box sx={{ display: 'inline-flex', alignItems: 'center' }}>
-      <TopBarChatInput
+    <Box sx={{ width: '100%' }}>
+      <BottomChatInput
         session={session}
         onSessionUpdate={(s: Session) => setSession(s)}
       />

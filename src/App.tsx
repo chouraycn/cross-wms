@@ -311,74 +311,87 @@ const MainLayout: React.FC = () => {
 
           {/* 右侧：功能按钮 */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, marginLeft: 'auto' }}>
-            <WorkBuddyChat />
             {actions.warehouseSwitch && (
               <WarehouseSelector selected={selectedWarehouse} onChange={handleWarehouseChange} />
             )}
           </Box>
         </Box>
 
-        {/* 可滚动的内容区域 */}
+        {/* 主内容区：使用 flex column 布局，WorkBuddyChat 在底部 */}
         <Box
-          ref={scrollRef}
-          className={isPy ? undefined : "auto-hide-scrollbar"}
           sx={{
             flex: 1,
             minHeight: 0,
-            overflow: 'auto',
-            // pywebview 环境：始终显示宽滚动条，提升拖动体验
-            ...(isPy ? {
-              '&::-webkit-scrollbar': { width: '10px', height: '10px' },
-              '&::-webkit-scrollbar-track': { background: '#F3F4F6' },
-              '&::-webkit-scrollbar-thumb': {
-                background: 'rgba(0,0,0,0.25)',
-                borderRadius: '5px',
-                '&:hover': { background: 'rgba(0,0,0,0.45)' },
-              },
-            } : {
-              // 浏览器环境：默认隐藏滚动条，滚动时显示
-              '&::-webkit-scrollbar': { width: '6px' },
-              '&::-webkit-scrollbar-track': { background: 'transparent' },
-              '&::-webkit-scrollbar-thumb': {
-                background: 'transparent',
-                borderRadius: '3px',
-                transition: 'background-color 0.3s ease',
-              },
-              '&:hover::-webkit-scrollbar-thumb': {
-                background: 'rgba(0,0,0,0.15)',
-              },
-              '&.scrollbar-visible::-webkit-scrollbar-thumb': {
-                background: 'rgba(0,0,0,0.2)',
-                '&:hover': { background: 'rgba(0,0,0,0.35)' },
-              },
-            }),
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
           }}
         >
+          {/* 可滚动的内容区域 */}
           <Box
+            ref={scrollRef}
+            className={isPy ? undefined : "auto-hide-scrollbar"}
             sx={{
-              px: 2, // 与侧边栏 logo 的 px: 2 对齐（16px）
-              py: 3,
-              '& .full-width-page': {
-                mx: -2, // 抵消 px: 2，让全宽组件保持全宽
-                mt: -3, // 抵消 py: 3
-                mb: 3,
-              },
+              flex: 1,
+              minHeight: 0,
+              overflow: 'auto',
+              // pywebview 环境：始终显示宽滚动条，提升拖动体验
+              ...(isPy ? {
+                '&::-webkit-scrollbar': { width: '10px', height: '10px' },
+                '&::-webkit-scrollbar-track': { background: '#F3F4F6' },
+                '&::-webkit-scrollbar-thumb': {
+                  background: 'rgba(0,0,0,0.25)',
+                  borderRadius: '5px',
+                  '&:hover': { background: 'rgba(0,0,0,0.45)' },
+                },
+              } : {
+                // 浏览器环境：默认隐藏滚动条，滚动时显示
+                '&::-webkit-scrollbar': { width: '6px' },
+                '&::-webkit-scrollbar-track': { background: 'transparent' },
+                '&::-webkit-scrollbar-thumb': {
+                  background: 'transparent',
+                  borderRadius: '3px',
+                  transition: 'background-color 0.3s ease',
+                },
+                '&:hover::-webkit-scrollbar-thumb': {
+                  background: 'rgba(0,0,0,0.15)',
+                },
+                '&.scrollbar-visible::-webkit-scrollbar-thumb': {
+                  background: 'rgba(0,0,0,0.2)',
+                  '&:hover': { background: 'rgba(0,0,0,0.35)' },
+                },
+              }),
             }}
           >
-            <ErrorBoundary>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/skills" element={<SkillsPage />} />
-                <Route path="/warehouses" element={<WarehousesPage />} />
-                <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
-                <Route path="/in-transit" element={<InTransitPage />} />
-                <Route path="/inventory" element={<InventoryPage />} />
-                <Route path="/tencent-docs" element={<TencentDocsPage />} />
-                <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-              </Routes>
-            </ErrorBoundary>
+            <Box
+              sx={{
+                px: 2, // 与侧边栏 logo 的 px: 2 对齐（16px）
+                py: 3,
+                '& .full-width-page': {
+                  mx: -2, // 抵消 px: 2，让全宽组件保持全宽
+                  mt: -3, // 抵消 py: 3
+                  mb: 3,
+                },
+              }}
+            >
+              <ErrorBoundary>
+                <Routes>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/skills" element={<SkillsPage />} />
+                  <Route path="/warehouses" element={<WarehousesPage />} />
+                  <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
+                  <Route path="/in-transit" element={<InTransitPage />} />
+                  <Route path="/inventory" element={<InventoryPage />} />
+                  <Route path="/tencent-docs" element={<TencentDocsPage />} />
+                  <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Routes>
+              </ErrorBoundary>
+            </Box>
           </Box>
+
+          {/* AI 对话框 — 在内容区底部，不覆盖侧边栏 */}
+          <WorkBuddyChat />
         </Box>
       </Box>
 

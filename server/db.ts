@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import os from 'os';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
 const DB_PATH = path.join(os.homedir(), '.crosswms', 'chat.db');
 
@@ -27,7 +29,6 @@ let db: Database.Database | null = null;
 
 export function initDb(): Database.Database {
   if (db) return db;
-  const fs = require('fs');
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   db = new Database(DB_PATH);
@@ -79,7 +80,7 @@ export function getSessionMessages(sessionId: string): Message[] {
 }
 
 export function addMessage(msg: Omit<Message, 'id' | 'timestamp'> & { id?: string }): Message {
-  const id = msg.id || require('uuid').v4();
+  const id = msg.id || uuidv4();
   const now = new Date().toISOString();
   const db = initDb();
   db.prepare('INSERT INTO messages (id, sessionId, role, content, model, timestamp, toolCalls) VALUES (?,?,?,?,?,?,?)').run(

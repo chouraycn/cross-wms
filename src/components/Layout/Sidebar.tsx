@@ -797,6 +797,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
         flex: 1,
         overflow: 'auto',
         minHeight: 0, // flex 子元素溢出滚动的关键
+        overscrollBehavior: 'none', // 禁止 macOS 弹性滚动
+        WebkitOverflowScrolling: 'auto', // 禁用惯性滚动
       }}>
         {renderPanelContent()}
       </Box>
