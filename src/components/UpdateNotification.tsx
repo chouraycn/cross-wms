@@ -14,6 +14,35 @@ const UpdateNotification: React.FC = () => {
   const version = updateStatus.releaseInfo.version;
   const formattedVersion = version.replace(/^v/, '');
 
+  // 安全格式化发布日期，防止乱码
+  const formatPubDate = (pubDate: string): string => {
+    if (!pubDate) return '';
+    try {
+      const date = new Date(pubDate);
+      // 检查日期是否有效
+      if (isNaN(date.getTime())) {
+        return pubDate; // 返回原始字符串
+      }
+      // 格式化为本地日期字符串
+      return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      });
+    } catch {
+      return pubDate; // 解析失败返回原始字符串
+    }
+  };
+
+  const formattedPubDate = updateStatus.releaseInfo.pubDate
+    ? formatPubDate(updateStatus.releaseInfo.pubDate)
+    : '';
+
+  // 橙色主题色
+  const orangeMain = '#f97316';
+  const orangeLight = 'rgba(249, 115, 22, 0.15)';
+  const orangeDark = '#ea580c';
+
   return (
     <Box
       sx={{
@@ -22,10 +51,10 @@ const UpdateNotification: React.FC = () => {
         left: 16,
         zIndex: 9999,
         width: 320,
-        backgroundColor: '#1a1a2e',
+        backgroundColor: '#f8f8f8',
         borderRadius: 2,
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.24), 0 2px 8px rgba(0, 0, 0, 0.16)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
+        border: '1px solid #e5e7eb',
         overflow: 'hidden',
         animation: 'slideUp 0.3s ease-out',
         '@keyframes slideUp': {
@@ -38,9 +67,9 @@ const UpdateNotification: React.FC = () => {
       <LinearProgress
         sx={{
           height: 3,
-          backgroundColor: 'rgba(99, 102, 241, 0.2)',
+          backgroundColor: orangeLight,
           '& .MuiLinearProgress-bar': {
-            backgroundColor: '#6366f1',
+            backgroundColor: orangeMain,
           },
         }}
       />
@@ -53,7 +82,7 @@ const UpdateNotification: React.FC = () => {
               width: 36,
               height: 36,
               borderRadius: 1.5,
-              backgroundColor: 'rgba(99, 102, 241, 0.15)',
+              backgroundColor: orangeLight,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -61,7 +90,7 @@ const UpdateNotification: React.FC = () => {
               flexShrink: 0,
             }}
           >
-            <SystemUpdateIcon sx={{ fontSize: 20, color: '#818cf8' }} />
+            <SystemUpdateIcon sx={{ fontSize: 20, color: orangeMain }} />
           </Box>
 
           <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -69,7 +98,7 @@ const UpdateNotification: React.FC = () => {
               sx={{
                 fontSize: '0.875rem',
                 fontWeight: 600,
-                color: '#f1f5f9',
+                color: '#111827',
                 lineHeight: 1.4,
                 mb: 0.25,
               }}
@@ -79,7 +108,7 @@ const UpdateNotification: React.FC = () => {
             <Typography
               sx={{
                 fontSize: '0.75rem',
-                color: '#94a3b8',
+                color: '#6b7280',
                 lineHeight: 1.4,
               }}
             >
@@ -91,12 +120,12 @@ const UpdateNotification: React.FC = () => {
             size="small"
             onClick={hideUpdateNotification}
             sx={{
-              color: '#64748b',
+              color: '#9ca3af',
               p: 0.5,
               ml: 1,
               '&:hover': {
-                color: '#94a3b8',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                color: '#6b7280',
+                backgroundColor: 'rgba(0, 0, 0, 0.04)',
               },
             }}
           >
@@ -105,7 +134,7 @@ const UpdateNotification: React.FC = () => {
         </Box>
 
         {/* 版本信息 */}
-        {updateStatus.releaseInfo.pubDate && (
+        {formattedPubDate && (
           <Box
             sx={{
               display: 'flex',
@@ -114,8 +143,8 @@ const UpdateNotification: React.FC = () => {
               px: 1,
             }}
           >
-            <Typography sx={{ fontSize: '0.7rem', color: '#64748b' }}>
-              发布于 {updateStatus.releaseInfo.pubDate}
+            <Typography sx={{ fontSize: '0.7rem', color: '#9ca3af' }}>
+              发布于 {formattedPubDate}
             </Typography>
           </Box>
         )}
@@ -127,7 +156,7 @@ const UpdateNotification: React.FC = () => {
             variant="contained"
             onClick={downloadUpdate}
             sx={{
-              backgroundColor: '#6366f1',
+              backgroundColor: orangeMain,
               color: '#ffffff',
               fontWeight: 600,
               fontSize: '0.8rem',
@@ -136,8 +165,8 @@ const UpdateNotification: React.FC = () => {
               borderRadius: 1.5,
               boxShadow: 'none',
               '&:hover': {
-                backgroundColor: '#4f46e5',
-                boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)',
+                backgroundColor: orangeDark,
+                boxShadow: '0 2px 8px rgba(249, 115, 22, 0.4)',
               },
             }}
           >
@@ -147,16 +176,16 @@ const UpdateNotification: React.FC = () => {
             variant="outlined"
             onClick={hideUpdateNotification}
             sx={{
-              borderColor: 'rgba(255, 255, 255, 0.15)',
-              color: '#94a3b8',
+              borderColor: '#e5e7eb',
+              color: '#6b7280',
               fontWeight: 500,
               fontSize: '0.8rem',
               textTransform: 'none',
               py: 0.75,
               borderRadius: 1.5,
               '&:hover': {
-                borderColor: 'rgba(255, 255, 255, 0.25)',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                borderColor: '#d1d5db',
+                backgroundColor: 'rgba(0, 0, 0, 0.02)',
               },
             }}
           >
