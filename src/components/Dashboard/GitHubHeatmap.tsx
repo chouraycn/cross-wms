@@ -1,5 +1,5 @@
-import React, { useMemo, useRef } from 'react';
-import { Box, Typography, Card, CardHeader, CardContent, IconButton, CircularProgress, Alert } from '@mui/material';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
+import { Box, Typography, Card, CardHeader, CardContent, IconButton, CircularProgress, Alert, Paper } from '@mui/material';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
@@ -201,6 +201,24 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const [hoveredCell, setHoveredCell] = useState<DayCell | null>(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+  const handleCellMouseEnter = useCallback((cell: DayCell, event: React.MouseEvent) => {
+    setHoveredCell(cell);
+    const rect = (event.target as SVGRectElement).getBoundingClientRect();
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    if (containerRect) {
+      setTooltipPos({
+        x: rect.left - containerRect.left + rect.width / 2,
+        y: rect.top - containerRect.top - 8,
+      });
+    }
+  }, []);
+
+  const handleCellMouseLeave = useCallback(() => {
+    setHoveredCell(null);
+  }, []);
 
   const { cells, maxVal, whCount } = useMemo(
     () => generateCalendarData(days, warehouses, warehouseId, inboundRecords, outboundRecords),
@@ -397,14 +415,41 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
                       fill={color}
                       stroke="rgba(255,255,255,0.6)"
                       strokeWidth={1}
-                    >
-                      <title>{`${cell.display}：${cell.total} 件`}</title>
-                    </rect>
+                      onMouseEnter={(e) => handleCellMouseEnter(cell, e)}
+                      onMouseLeave={handleCellMouseLeave}
+                      style={{ cursor: 'pointer' }}
+                    />
                   );
                 })}
               </g>
             ))}
           </svg>
+
+          {/* 悬停 Tooltip */}
+          {hoveredCell && (
+            <Paper
+              elevation={3}
+              sx={{
+                position: 'absolute',
+                left: tooltipPos.x,
+                top: tooltipPos.y,
+                transform: 'translate(-50%, -100%)',
+                px: 1.5,
+                py: 0.75,
+                borderRadius: 1,
+                bgcolor: '#111827',
+                color: '#fff',
+                fontSize: '0.75rem',
+                whiteSpace: 'nowrap',
+                pointerEvents: 'none',
+                zIndex: 10,
+              }}
+            >
+              <Typography sx={{ fontSize: '0.75rem', color: '#fff', lineHeight: 1.4 }}>
+                {hoveredCell.display}：{hoveredCell.total} 件
+              </Typography>
+            </Paper>
+          )}
         </Box>
 
         {/* 图例 */}
