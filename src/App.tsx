@@ -309,12 +309,11 @@ const MainLayout: React.FC = () => {
             </IconButton>
           )}
 
-          {/* 右侧：功能按钮 + AI 助手输入框 */}
+          {/* 右侧：功能按钮 */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, marginLeft: 'auto' }}>
             {actions.warehouseSwitch && (
               <WarehouseSelector selected={selectedWarehouse} onChange={handleWarehouseChange} />
             )}
-            <WorkBuddyChat />
           </Box>
         </Box>
 
@@ -366,11 +365,13 @@ const MainLayout: React.FC = () => {
           >
             <Box
               sx={{
-                px: 2, // 与侧边栏 logo 的 px: 2 对齐（16px）
-                py: 3,
+                px: 3, // 与 logo 对齐，增加左右 padding
+                pt: 2, // 减少顶部 padding，与 logo 底部对齐
+                pb: 3,
+                paddingBottom: '120px', // 为底部固定的对话框留出空间
                 '& .full-width-page': {
-                  mx: -2, // 抵消 px: 2，让全宽组件保持全宽
-                  mt: -3, // 抵消 py: 3
+                  mx: -3, // 抵消 px: 3，让全宽组件保持全宽
+                  mt: -2, // 抵消 pt: 2
                   mb: 3,
                 },
               }}
@@ -387,14 +388,25 @@ const MainLayout: React.FC = () => {
                   <Route path="/tencent-docs" element={<TencentDocsPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/automation" element={<div>定时任务页面（待完善）</div>} />
                 </Routes>
               </ErrorBoundary>
             </Box>
-
-            {/* AI 对话框 — 在滚动容器内部，文档流中自然排列 */}
-            <WorkBuddyChat />
           </Box>
         </Box>
+      </Box>
+
+      {/* AI 对话框 — 固定在页面中下方，不随内容滚动 */}
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 20,
+          left: sidebarCollapsed ? '80px' : '280px',
+          right: 32,
+          zIndex: 1200,
+        }}
+      >
+        <WorkBuddyChat />
       </Box>
 
       {/* 自动更新通知 — 左下角 */}

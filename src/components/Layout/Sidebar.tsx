@@ -59,6 +59,7 @@ import ChevronRightOutlinedIcon from '@mui/icons-material/ChevronRightOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import CodeIcon from '@mui/icons-material/Code';
 import EditIcon from '@mui/icons-material/Edit';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, OnlineDataEntry, SidebarConfig, HeatmapConfig } from '../../contexts/AppSettingsContext';
@@ -520,8 +521,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
         sx={{
           display: 'flex', alignItems: 'center', gap: 1,
           px: 1.5, py: 1, cursor: 'pointer', borderRadius: '8px',
-          transition: 'background-color 0.15s ease',
-          '&:hover': { backgroundColor: '#F3F4F6' },
+          '&:hover': { backgroundColor: '#f5f5f5' },
         }}
       >
         <DescriptionOutlinedIcon sx={{ fontSize: 18, color: '#6B7280' }} />
@@ -676,7 +676,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
                 { key: 'forest' as const, label: '森林绿', colors: ['#DCFCE7', '#22C55E', '#15803D'] },
                 { key: 'sunset' as const, label: '日落橙', colors: ['#FED7AA', '#F97316', '#C2410C'] },
               ]).map((scheme) => (
-                <Chip key={scheme.key} label={scheme.label} size="small" onClick={() => updateHeatmap('colorScheme', scheme.key)} sx={{ fontSize: '0.7rem', backgroundColor: draft.dashboard.heatmap.colorScheme === scheme.key ? '#111827' : '#F3F4F6', color: draft.dashboard.heatmap.colorScheme === scheme.key ? '#FFFFFF' : '#6B7280', '&:hover': { backgroundColor: draft.dashboard.heatmap.colorScheme === scheme.key ? '#374151' : '#E5E7EB' }, transition: 'all 0.15s ease' }} icon={<Box sx={{ display: 'flex', gap: 0.25, ml: 0.5 }}>{scheme.colors.map((c, i) => (<Box key={i} sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: c, border: '1px solid rgba(0,0,0,0.1)' }} />))}</Box>} />
+                <Chip key={scheme.key} label={scheme.label} size="small" onClick={() => updateHeatmap('colorScheme', scheme.key)} sx={{ fontSize: '0.7rem', backgroundColor: draft.dashboard.heatmap.colorScheme === scheme.key ? '#111827' : '#F3F4F6', color: draft.dashboard.heatmap.colorScheme === scheme.key ? '#FFFFFF' : '#6B7280', '&:hover': { backgroundColor: draft.dashboard.heatmap.colorScheme === scheme.key ? '#374151' : '#f5f5f5' } }} icon={<Box sx={{ display: 'flex', gap: 0.25, ml: 0.5 }}>{scheme.colors.map((c, i) => (<Box key={i} sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: c, border: '1px solid rgba(0,0,0,0.1)' }} />))}</Box>} />
               ))}
             </Box>
           </Box>
@@ -723,8 +723,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
               sx={{
                 display: 'flex', alignItems: 'center', gap: 1.5,
                 px: 2, py: 1.5, cursor: 'pointer', borderRadius: '8px',
-                transition: 'background-color 0.15s ease',
-                '&:hover': { backgroundColor: '#F3F4F6' },
+                '&:hover': { backgroundColor: '#f5f5f5' },
               }}
             >
               <Box sx={{ color: '#6B7280', display: 'flex', alignItems: 'center' }}>{item.icon}</Box>
@@ -835,6 +834,7 @@ const navItems: NavItem[] = [
   { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon /> },
   { label: '腾讯文档', path: '/tencent-docs', icon: <DescriptionOutlinedIcon /> },
   { label: '统计报表', path: '/reports', icon: <AssessmentOutlinedIcon /> },
+  { label: '定时任务', path: '/automation', icon: <ScheduleIcon /> },
 ];
 
 interface SidebarProps {
@@ -871,7 +871,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         overflow: 'visible', // 允许收起按钮显示在 paddingTop 区域
         display: 'flex',
         flexDirection: 'column',
-        transition: 'width 0.2s ease',
         borderRight: collapsed ? '1px solid #E5E7EB' : 'none',
       }}
     >
@@ -892,7 +891,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             border: 'none',
             boxShadow: 'none',
             zIndex: 1,
-            '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
+            '&:hover': { backgroundColor: '#f5f5f5' },
             '&:focus': { outline: 'none' },
           }}
         >
@@ -982,7 +981,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         {navItems.map((item) => {
           const active = isActive(item.path);
           return (
-            <ListItem key={item.path} disablePadding sx={{ display: 'block', mb: 0.25 }}>
+            <ListItem key={item.path} disablePadding sx={{ display: 'block', mb: 0.5 }}>
               <Tooltip title={collapsed ? item.label : ''} placement="right" arrow>
                 <ListItemButton
                   onClick={() => navigate(item.path)}
@@ -990,12 +989,12 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
                     minHeight: collapsed ? 40 : 36,
                     justifyContent: collapsed ? 'center' : 'flex-start',
                     px: collapsed ? 0 : 1.5,
+                    py: 0.25,
                     borderRadius: '6px',
                     backgroundColor: active ? '#E0E0E0' : 'transparent',
                     '&:hover': {
-                      backgroundColor: active ? '#D4D4D4' : 'rgba(0,0,0,0.06)',
+                      backgroundColor: active ? '#D4D4D4' : '#f5f5f5',
                     },
-                    transition: 'background-color 0.15s ease, padding 0.2s ease, justify-content 0.2s ease',
                   }}
                 >
                   <ListItemIcon
@@ -1005,7 +1004,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
                       justifyContent: 'center',
                       color: active ? '#111827' : '#6B7280',
                       '& .MuiSvgIcon-root': { fontSize: collapsed ? '20px' : '18px' },
-                      transition: 'margin 0.2s ease, font-size 0.2s ease',
                     }}
                   >
                     {item.icon}
@@ -1015,8 +1013,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
                       maxWidth: collapsed ? 0 : 120,
                       opacity: collapsed ? 0 : 1,
                       overflow: 'hidden',
-                      transition: 'max-width 0.2s ease, opacity 0.15s ease',
-                      transitionDelay: collapsed ? '0s' : '0.05s',
                       whiteSpace: 'nowrap',
                     }}
                   >
@@ -1049,9 +1045,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             borderRadius: '6px',
             backgroundColor: settingsOpen ? '#E0E0E0' : 'transparent',
             '&:hover': {
-              backgroundColor: settingsOpen ? '#D4D4D4' : 'rgba(0,0,0,0.06)',
+              backgroundColor: settingsOpen ? '#D4D4D4' : '#f5f5f5',
             },
-            transition: 'background-color 0.15s ease, padding 0.2s ease, justify-content 0.2s ease',
           }}
         >
           <ListItemIcon
@@ -1061,7 +1056,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
               justifyContent: 'center',
               color: settingsOpen ? '#111827' : '#6B7280',
               '& .MuiSvgIcon-root': { fontSize: collapsed ? '20px' : '18px' },
-              transition: 'margin 0.2s ease, font-size 0.2s ease',
             }}
           >
             <SettingsOutlinedIcon />
@@ -1071,8 +1065,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
               maxWidth: collapsed ? 0 : 120,
               opacity: collapsed ? 0 : 1,
               overflow: 'hidden',
-              transition: 'max-width 0.2s ease, opacity 0.15s ease',
-              transitionDelay: collapsed ? '0s' : '0.05s',
               whiteSpace: 'nowrap',
             }}
           >
