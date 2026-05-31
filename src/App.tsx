@@ -10,7 +10,7 @@ import { AppSettingsProvider } from './contexts/AppSettingsContext';
 import { isPyWebView } from './services/tencentDocsApi';
 import { UpdateProvider } from './contexts/UpdateContext';
 import UpdateNotification from './components/UpdateNotification';
-import { WorkBuddyChat } from './components/WorkBuddyChat';
+import { CrossWmsChat } from './components/CrossWmsChat';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 
 // 从统一配色文件导入
@@ -397,18 +397,18 @@ const MainLayout: React.FC = () => {
         </Box>
       </Box>
 
-      {/* AI 对话框 — 固定在页面中下方，淡投影与页面区分 */}
+      {/* AI 对话框 — 固定在页面中下方，往右缩小10px，投影透明度25% */}
       <Box
         sx={{
           position: 'fixed',
           bottom: 20,
-          left: sidebarCollapsed ? '94px' : '294px',
+          left: sidebarCollapsed ? '104px' : '304px',
           right: 32,
           zIndex: 1200,
-          filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.06))',
+          filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.25))',
         }}
       >
-        <WorkBuddyChat />
+        <CrossWmsChat />
       </Box>
 
       {/* 自动更新通知 — 左下角 */}
