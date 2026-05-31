@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import type { Warehouse, TransitOrder, InventoryItem, VolumeHistoryPoint, InboundRecord, OutboundRecord, KpiData } from '../types';
 import { dashboardApi } from '../services/dashboardApi';
+import { useAppSettings } from './AppSettingsContext';
 
 interface DashboardDataContextValue {
   // 数据
@@ -54,6 +55,25 @@ export const DashboardDataProvider: React.FC<{ children: React.ReactNode }> = ({
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [refresh]);
+
+  // Auto-refresh timer - 根据设置中的 dataRefreshInterval 自动刷新数据
+  const { settings } = useAppSettings();
+  useEffect(() => {
+    const intervalSeconds = settings.dashboard.dataRefreshInterval;
+    
+    // 如果 interval 为 0 或负数，则禁用自动刷新
+    if (!intervalSeconds || intervalSeconds <= 0) {
+      return undefined;
+    }
+
+    const intervalMs = intervalSeconds * 1000;
+    
+    const timer = setInterval(() => {
+      refresh();
+    }, intervalMs);
+
+    return () => clearInterval(timer);
+  }, [settings.dashboard.dataRefreshInterval, refresh]);
 
   useEffect(() => {
     let cancelled = false;

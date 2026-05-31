@@ -397,7 +397,9 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
                       fill={color}
                       stroke="rgba(255,255,255,0.6)"
                       strokeWidth={1}
-                    />
+                    >
+                      <title>{`${cell.display}：${cell.total} 件`}</title>
+                    </rect>
                   );
                 })}
               </g>
