@@ -172,3 +172,9 @@ export interface WidgetPayload {
   history: WidgetKpiHistoryPoint[];
   settings: WidgetAppSettings;
 }
+
+export interface TransitStatusDistribution {
+  name: string;
+  value: number;
+  color: string;
+}

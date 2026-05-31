@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, Typography, Box, IconButton } from '@mui/material';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
-import { getWarehouseUtilization } from '../../data/mockData';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { subscribeWarehouses } from '../../stores/warehouseStore';
+import { dashboardApi } from '../../services/dashboardApi';
 import { exportToCsv } from '../../utils/exportCsv';
+import { calcUtilizationByItems, calcUtilizationByVolume } from '../../utils/volumeCalculator';
 import type { Warehouse } from '../../types';
 
 interface WarehouseBarChartProps {
@@ -16,26 +16,54 @@ interface WarehouseBarChartProps {
 
 const WarehouseBarChart: React.FC<WarehouseBarChartProps> = ({ warehouseId }) => {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    const unsub = subscribeWarehouses(setWarehouses);
-    return unsub;
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await dashboardApi.getWarehouses();
+        setWarehouses(data);
+      } catch (err) {
+        setError('获取仓库数据失败');
+        console.error('Failed to fetch warehouses:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const filtered = warehouseId === ALL_WAREHOUSES
     ? warehouses
     : warehouses.filter((w) => w.id === warehouseId);
 
-  const data = filtered.map((wh) => ({
-    name: wh.name.replace('仓', ''),
-    used: Number.isFinite(wh.usedItems) && wh.usedItems! >= 0 ? wh.usedItems! : (Number.isFinite(wh.usedVolume) ? wh.usedVolume : 0),
-    free: Math.max(0,
-      (Number.isFinite(wh.totalItems) && wh.totalItems! > 0 ? wh.totalItems! : (Number.isFinite(wh.totalVolume) ? wh.totalVolume : 1))
-      - (Number.isFinite(wh.usedItems) && wh.usedItems! >= 0 ? wh.usedItems! : (Number.isFinite(wh.usedVolume) ? wh.usedVolume : 0))
-    ),
-    rate: getWarehouseUtilization(wh),
-  }));
+  const data = useMemo(() => {
+    return filtered.map((wh) => {
+      const used = Number.isFinite(wh.usedItems) && wh.usedItems! >= 0
+        ? wh.usedItems!
+        : (Number.isFinite(wh.usedVolume) ? wh.usedVolume : 0);
 
-  // ==================== 导出仓库容积数据 ====================
+      const total = Number.isFinite(wh.totalItems) && wh.totalItems! > 0
+        ? wh.totalItems!
+        : (Number.isFinite(wh.totalVolume) ? wh.totalVolume : 1);
+
+      const free = Math.max(0, total - used);
+      const rate = calcUtilizationByItems(wh);
+
+      return {
+        name: wh.name.replace('仓', ''),
+        used,
+        free,
+        rate,
+      };
+    });
+  }, [filtered]);
+
+  // 导出仓库容积数据
   const handleExport = () => {
     exportToCsv(
       'warehouse_volume.csv',
@@ -43,6 +71,52 @@ const WarehouseBarChart: React.FC<WarehouseBarChartProps> = ({ warehouseId }) =>
       data.map((d) => [d.name, String(d.used), String(d.free), String(d.rate)])
     );
   };
+
+  // 加载状态
+  if (loading) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+        <CardHeader
+          title={
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+              仓库容积使用情况
+            </Typography>
+          }
+        />
+        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <div className="MuiCircularProgress-root MuiCircularProgress-indeterminate" style={{ width: 40, height: 40 }}>
+              <svg className="MuiCircularProgress-svg" viewBox="22 22 44 44">
+                <circle className="MuiCircularProgress-circle MuiCircularProgress-circleIndeterminate" cx="44" cy="44" r="20" fill="none" stroke="#111827" strokeWidth="4" />
+              </svg>
+            </div>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+        <CardHeader
+          title={
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+              仓库容积使用情况
+            </Typography>
+          }
+        />
+        <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '0.8125rem', color: '#EF4444' }}>
+              {error}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // 没有仓库时显示空状态
   if (filtered.length === 0) {

@@ -2,8 +2,8 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box, IconButton } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import MenuOpenIcon from '@mui/icons-material/MenuOpen';
+import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
+import MenuOpenOutlinedIcon from '@mui/icons-material/MenuOpenOutlined';
 import Sidebar, { SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from './components/Layout/Sidebar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
 import { AppSettingsProvider } from './contexts/AppSettingsContext';
@@ -12,6 +12,28 @@ import { UpdateProvider } from './contexts/UpdateContext';
 import UpdateNotification from './components/UpdateNotification';
 import { WorkBuddyChat } from './components/WorkBuddyChat';
 import ErrorBoundary from './components/Common/ErrorBoundary';
+
+/** 极简黑白灰配色方案（CrossWMS 全局统一） */
+export const PRIMARY = '#111827';    // 主色（文字/标题）
+export const SECONDARY = '#6B7280';  // 次要色（辅助文字）
+export const BORDER = '#E5E7EB';     // 边框/分割线
+export const BG_LIGHT = '#F3F4F6';   // 背景浅灰（面板背景）
+export const BG_PAGE = '#FAFAFA';     // 背景极浅（页面背景）
+export const WHITE = '#FFFFFF';        // 纯白（卡片/输入框背景）
+export const RADIUS = 6;              // 圆角统一（按钮、输入框、卡片）
+
+/** 极简黑白灰配色常量（兼容旧代码） */
+export const CHAT_COLORS = {
+  inputBg: BG_LIGHT,
+  inputBorder: BORDER,
+  chipBg: PRIMARY,
+  chipText: '#fff',
+  panelBg: WHITE,
+  panelBorder: BORDER,
+  textPrimary: PRIMARY,
+  textSecondary: SECONDARY,
+  hoverBg: '#F9FAFB',
+} as const;
 
 // 静态导入 — file:// 协议下 WKWebView 不支持动态 import()
 // Vite 构建时 inlineDynamicImports 已将全部代码打包到单文件，无需代码分割
@@ -269,7 +291,7 @@ const MainLayout: React.FC = () => {
           overflow: 'hidden',
         }}
       >
-        {/* 顶部工具栏 — 与系统红黄绿平行 */}
+        {/* 顶部工具栏 — 与系统红黄绿平行对齐 */}
         <Box
           sx={{
             display: 'flex',
@@ -279,24 +301,36 @@ const MainLayout: React.FC = () => {
             height: 'calc(40px + var(--pw-top, 0px))',
             pb: '4px',
             flexShrink: 0,
+            position: 'relative', // 为绝对定位的按钮提供参照
           }}
         >
-          {/* 左侧：收起/展开侧边栏按钮 — 与 logo 平行 */}
-          <IconButton
-            onClick={toggleSidebar}
-            size="small"
-            sx={{
-              color: '#6B7280',
-              borderRadius: '6px',
-              p: 0.5,
-              '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
-            }}
-          >
-            {sidebarCollapsed ? <MenuIcon sx={{ fontSize: 18 }} /> : <MenuOpenIcon sx={{ fontSize: 18 }} />}
-          </IconButton>
+          {/* 左侧：展开侧边栏按钮 — 仅收起时显示，与系统按钮平行对齐 */}
+          {sidebarCollapsed && (
+            <IconButton
+              onClick={toggleSidebar}
+              size="small"
+              sx={{
+                position: 'absolute',
+                // 按钮中心对齐到系统按钮区域中心（var(--pw-top) / 2）
+                top: 'calc(var(--pw-top, 0px) / 2 - 9px)',
+                left: 8,
+                color: '#6B7280',
+                borderRadius: '6px',
+                p: 0.5,
+                backgroundColor: 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+                '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
+                '&:focus': { outline: 'none' },
+              }}
+            >
+              <MenuOutlinedIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          )}
 
           {/* 右侧：功能按钮 */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, marginLeft: 'auto' }}>
+            <WorkBuddyChat />
             {actions.warehouseSwitch && (
               <WarehouseSelector selected={selectedWarehouse} onChange={handleWarehouseChange} />
             )}
@@ -341,9 +375,12 @@ const MainLayout: React.FC = () => {
         >
           <Box
             sx={{
-              p: 3,
+              px: 2, // 与侧边栏 logo 的 px: 2 对齐（16px）
+              py: 3,
               '& .full-width-page': {
-                m: -3,
+                mx: -2, // 抵消 px: 2，让全宽组件保持全宽
+                mt: -3, // 抵消 py: 3
+                mb: 3,
               },
             }}
           >
@@ -366,9 +403,6 @@ const MainLayout: React.FC = () => {
 
       {/* 自动更新通知 — 左下角 */}
       <UpdateNotification />
-
-      {/* WorkBuddy AI 助手 */}
-      <WorkBuddyChat />
     </Box>
   );
 };

@@ -6,13 +6,11 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
-import dayjs from 'dayjs';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { subscribeWarehouses } from '../../stores/warehouseStore';
+import { dashboardApi } from '../../services/dashboardApi';
 import { exportToCsv } from '../../utils/exportCsv';
-import { calcOverallByVolume, calcOverallByItems } from '../../utils/volumeCalculator';
-import type { Warehouse } from '../../types';
+import type { VolumeHistoryPoint } from '../../types';
 
 interface VolumeChartProps {
   warehouseId: string;
@@ -30,43 +28,27 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
   const { warningThreshold, fullThreshold } = settings.dashboard;
 
   const [calcMode, setCalcMode] = useState<CalcMode>('items');
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [volumeHistory, setVolumeHistory] = useState<VolumeHistoryPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    const unsub = subscribeWarehouses(setWarehouses);
-    return unsub;
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await dashboardApi.getVolumeHistory();
+        setVolumeHistory(data);
+      } catch (err) {
+        setError('获取容积率趋势数据失败');
+        console.error('Failed to fetch volume history:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
-
-  // ==================== 动态生成 30 天容积率趋势数据 ====================
-  const volumeHistory = useMemo(() => {
-    // 确定当前使用的仓库集合
-    const activeWarehouses = warehouseId === ALL_WAREHOUSES
-      ? warehouses
-      : warehouses.filter((w) => w.id === warehouseId);
-
-    if (activeWarehouses.length === 0) return [];
-
-    // 计算当前基准容积率
-    const baseRate = calcMode === 'items'
-      ? calcOverallByItems(activeWarehouses)
-      : calcOverallByVolume(activeWarehouses);
-
-    // 以当前值为基准，向前模拟 30 天数据（容积率逐步攀升，加入±3%随机波动）
-    const days = 30;
-    const result: { date: string; utilizationRate: number }[] = [];
-    for (let i = days - 1; i >= 0; i--) {
-      const date = dayjs().subtract(i, 'day').format('MM-DD');
-      // 越早的数据越低于当前值（模拟容积率增长趋势），并加入随机波动
-      const progressFactor = (days - 1 - i) / (days - 1); // 0 → 1，越接近当前值越大
-      const baseAtDay = baseRate * progressFactor;
-      const noise = (Math.random() - 0.5) * 6; // ±3%
-      const rate = Math.min(100, Math.max(0, baseAtDay + noise));
-      result.push({
-        date,
-        utilizationRate: parseFloat(rate.toFixed(1)),
-      });
-    }
-    return result;
-  }, [warehouses, warehouseId, calcMode]);
 
   const handleModeChange = (_: React.MouseEvent<HTMLElement>, newMode: CalcMode | null) => {
     if (newMode !== null) {
@@ -74,11 +56,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
     }
   };
 
-  const warehouseName = warehouseId !== ALL_WAREHOUSES
-    ? warehouses.find((w) => w.id === warehouseId)?.name ?? ''
-    : '';
-
-  // ==================== 导出容积率趋势数据 ====================
+  // 导出容积率趋势数据
   const handleExport = () => {
     const modeLabel = calcMode === 'items' ? '件数' : '体积';
     exportToCsv(
@@ -88,12 +66,90 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
     );
   };
 
+  // 加载状态
+  if (loading) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+        <CardHeader
+          title={
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+              容积率趋势
+            </Typography>
+          }
+        />
+        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <div className="MuiCircularProgress-root MuiCircularProgress-indeterminate" style={{ width: 40, height: 40 }}>
+              <svg className="MuiCircularProgress-svg" viewBox="22 22 44 44">
+                <circle className="MuiCircularProgress-circle MuiCircularProgress-circleIndeterminate" cx="44" cy="44" r="20" fill="none" stroke="#111827" strokeWidth="4" />
+              </svg>
+            </div>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+        <CardHeader
+          title={
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+              容积率趋势
+            </Typography>
+          }
+        />
+        <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '0.8125rem', color: '#EF4444' }}>
+              {error}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // 空数据状态
+  if (volumeHistory.length === 0) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+        <CardHeader
+          title={
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+              容积率趋势
+            </Typography>
+          }
+          subheader={
+            <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.25 }}>
+              近 {settings.dashboard.trendCompareDays} 天 · {CALC_MODE_LABEL[calcMode]}
+            </Typography>
+          }
+          action={
+            <IconButton size="small" onClick={handleExport} title="导出CSV" disabled>
+              <DownloadOutlinedIcon fontSize="small" />
+            </IconButton>
+          }
+        />
+        <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
+              暂无容积率趋势数据
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
       <CardHeader
         title={
           <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
-            {warehouseName ? `${warehouseName}容积率趋势` : '容积率趋势'}
+            容积率趋势
           </Typography>
         }
         subheader={

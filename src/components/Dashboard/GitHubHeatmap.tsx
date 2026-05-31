@@ -138,19 +138,6 @@ function calcLevel(value: number, max: number): number {
   return 4;
 }
 
-/** 淡化十六进制颜色（增加亮度），amount 为 0-100 的亮度增量百分比 */
-function lightenColor(hex: string, amount: number): string {
-  const clean = hex.replace('#', '');
-  const num = parseInt(clean, 16);
-  let r = (num >> 16) & 0xff;
-  let g = (num >> 8) & 0xff;
-  let b = num & 0xff;
-  r = Math.min(255, r + Math.round((255 - r) * amount / 100));
-  g = Math.min(255, g + Math.round((255 - g) * amount / 100));
-  b = Math.min(255, b + Math.round((255 - b) * amount / 100));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-}
-
 /** 将 cells 按周分组，生成列数据 */
 function buildWeekColumns(cells: DayCell[]): WeekColumn[] {
   const weekMap: Record<number, DayCell[]> = {};
@@ -204,12 +191,6 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
   const colorScheme = (heatmapSettings?.colorScheme as ColorScheme) ?? 'ocean';
   const colors = COLOR_SCHEMES[colorScheme] || OCEAN;
 
-  const [hoveredCell, setHoveredCell] = useState<DayCell | null>(null);
-  const [tooltipPos, setTooltipPos] = useState<{
-    x: number;          // tooltip 中心 X（SVG 坐标）
-    y: number;          // 格子顶部 Y（SVG 坐标）
-    showBelow: boolean;  // 是否显示在格子下方（空间不足时）
-  } | null>(null);
   const [allWarehouses, setAllWarehouses] = useState<Warehouse[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -307,7 +288,7 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
         }
         subheader={
           <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
-            近 {days} 天 · {activeDays} 天有出货 · 悬停查看详情
+            近 {days} 天 · {activeDays} 天有出货
           </Typography>
         }
         sx={{ pb: 0.5 }}
@@ -380,7 +361,6 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
                   const x = WEEKDAY_LABEL_WIDTH + col.weekIndex * (cellSize + CELL_GAP);
                   const y = MONTH_LABEL_HEIGHT + dayIdx * (cellSize + CELL_GAP);
                   const color = getColor(cell.level);
-                  const isHovered = hoveredCell?.date === cell.date;
 
                   return (
                     <rect
@@ -390,62 +370,14 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
                       width={cellSize}
                       height={cellSize}
                       rx={2}
-                      fill={isHovered ? lightenColor(color, 30) : color}
-                      stroke={isHovered ? '#111827' : 'rgba(255,255,255,0.6)'}
-                      strokeWidth={isHovered ? 2 : 1}
-                      style={{ cursor: 'pointer', transition: 'fill 0.12s ease, stroke 0.12s ease, strokeWidth 0.12s ease' }}
-                      onMouseEnter={() => {
-                        setHoveredCell(cell);
-                        // 判断 tooltip 上方空间是否足够（tooltip 总高度约 50px）
-                        const spaceAbove = y - MONTH_LABEL_HEIGHT;
-                        const showBelow = spaceAbove < 50;
-                        setTooltipPos({
-                          x: x + cellSize / 2,
-                          y: y,
-                          showBelow,
-                        });
-                      }}
-                      onMouseLeave={() => {
-                        setHoveredCell(null);
-                        setTooltipPos(null);
-                      }}
+                      fill={color}
+                      stroke="rgba(255,255,255,0.6)"
+                      strokeWidth={1}
                     />
                   );
                 })}
               </g>
             ))}
-            {/* SVG 内悬浮提示 — 浮动在热力格子上方/下方 */}
-            {hoveredCell && tooltipPos && (() => {
-              const isBelow = tooltipPos.showBelow;
-              const offsetY = isBelow
-                ? tooltipPos.y + cellSize + 6      // 显示在格子下方
-                : tooltipPos.y - 42;               // 显示在格子上方
-              return (
-                <g transform={`translate(${tooltipPos.x}, ${offsetY})`}>
-                  <rect
-                    x={-60}
-                    y={-8}
-                    width={120}
-                    height={34}
-                    rx={6}
-                    fill="#1F2937"
-                  />
-                  {/* 小三角箭头 */}
-                  <path
-                    d={isBelow
-                      ? `M -4,${34} L 0,${38} L 4,${34}`
-                      : `M -4,${-8} L 0,${-12} L 4,${-8}`}
-                    fill="#1F2937"
-                  />
-                  <text x={0} y={6} textAnchor="middle" fontSize={11} fontWeight={600} fill="#FFFFFF" fontFamily="-apple-system, sans-serif">
-                    {hoveredCell.display}
-                  </text>
-                  <text x={0} y={20} textAnchor="middle" fontSize={10} fill={hoveredCell.total > 0 ? '#9CA3AF' : '#6B7280'} fontFamily="-apple-system, sans-serif">
-                    {hoveredCell.total > 0 ? `${hoveredCell.total} 件出库` : '无数据'}
-                  </text>
-                </g>
-              );
-            })()}
           </svg>
         </Box>
 

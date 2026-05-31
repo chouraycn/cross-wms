@@ -7,13 +7,13 @@ import StorefrontIcon from '@mui/icons-material/Storefront';
 import LayersIcon from '@mui/icons-material/Layers';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
-import { kpiData, mockTransitOrders } from '../../data/mockData';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { subscribeWarehouses } from '../../stores/warehouseStore';
 import { exportToCsv } from '../../utils/exportCsv';
 import { calcOverallByItems } from '../../utils/volumeCalculator';
 import type { Warehouse, TransitOrder } from '../../types';
+import { dashboardApi } from '../../services/dashboardApi';
 
 /** KPI 卡片主题配置 */
 interface KpiTheme {
@@ -106,8 +106,19 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
 
   // 从全局 store 读取仓库数据
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [transitOrders, setTransitOrders] = useState<TransitOrder[]>([]);
+  const [kpiData, setKpiData] = useState({ totalTransitVolume: 0, totalVolumeUtilization: 0, pendingInboundOrders: 0, todayOutboundCount: 0, inventoryDepth: 0 });
+
   useEffect(() => {
     const unsub = subscribeWarehouses(setWarehouses);
+    // 获取在途订单和KPI数据
+    Promise.all([
+      dashboardApi.getTransitOrders(),
+      dashboardApi.getKpiData(),
+    ]).then(([orders, kpi]) => {
+      setTransitOrders(orders);
+      setKpiData(kpi);
+    }).catch(err => console.error('获取KPI数据失败:', err));
     return unsub;
   }, []);
 
@@ -117,8 +128,8 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
     : warehouses.filter((w) => w.id === warehouseId);
 
   const filteredTransit = warehouseId === ALL_WAREHOUSES
-    ? mockTransitOrders
-    : mockTransitOrders.filter((t) => t.toWarehouseId === warehouseId);
+    ? transitOrders
+    : transitOrders.filter((t) => t.toWarehouseId === warehouseId);
 
   // 在途货物件数（volume / 0.05 估算，假设平均每件 0.05m³）
   const VOLUME_PER_ITEM_ESTIMATE = 0.05;

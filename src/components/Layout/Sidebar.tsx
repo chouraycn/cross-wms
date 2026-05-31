@@ -53,6 +53,8 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ChevronLeftOutlinedIcon from '@mui/icons-material/ChevronLeftOutlined';
+import ChevronRightOutlinedIcon from '@mui/icons-material/ChevronRightOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import CodeIcon from '@mui/icons-material/Code';
 import EditIcon from '@mui/icons-material/Edit';
@@ -854,23 +856,47 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     <Box
       sx={{
         width,
-        // box-sizing: content-box 让 padding-top 向外扩展，不压缩内容区
-        // height 用 calc 减去 padding-top，避免总高度溢出 100vh
-        height: 'calc(100vh - var(--pw-top, 0px))',
+        height: '100vh',
+        boxSizing: 'border-box',
+        paddingTop: 'var(--pw-top, 0px)',
         position: 'sticky',
-        top: 'var(--pw-top, 0px)',
+        top: 0,
         zIndex: 1200,
         flexShrink: 0,
         backgroundColor: SIDEBAR_BG,
-        overflow: 'hidden',
+        overflow: 'visible', // 允许收起按钮显示在 paddingTop 区域
         display: 'flex',
         flexDirection: 'column',
         transition: 'width 0.2s ease',
-        // 收起状态下添加右侧边框，让用户能看见侧边栏
         borderRight: collapsed ? '1px solid #E5E7EB' : 'none',
       }}
     >
-      {/* Logo 区域 — 在 pywebview 环境下下移 --pw-top 距离，避免与系统红黄绿重叠 */}
+      {/* 收起按钮 — 仅展开时显示，绝对定位到 paddingTop 区域（与系统按钮平行对齐） */}
+      {!collapsed && onToggle && (
+        <IconButton
+          onClick={onToggle}
+          size="small"
+          sx={{
+            position: 'absolute',
+            // 按钮中心对齐到系统按钮区域中心（var(--pw-top) / 2）
+            top: 'calc(var(--pw-top, 0px) / 2 - 9px)',
+            right: 8,
+            color: '#6B7280',
+            borderRadius: '6px',
+            p: 0.5,
+            backgroundColor: 'transparent',
+            border: 'none',
+            boxShadow: 'none',
+            zIndex: 1,
+            '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
+            '&:focus': { outline: 'none' },
+          }}
+        >
+          <ChevronLeftOutlinedIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+      )}
+
+      {/* Logo 区域 */}
       <Box
         sx={{
           px: collapsed ? 0.5 : 2,

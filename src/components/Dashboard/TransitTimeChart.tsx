@@ -3,10 +3,9 @@ import { Card, CardContent, CardHeader, Typography, Box } from '@mui/material';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import { mockTransitOrders } from '../../data/mockData';
+import { dashboardApi } from '../../services/dashboardApi';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { subscribeWarehouses } from '../../stores/warehouseStore';
 import type { Warehouse, TransitOrder } from '../../types';
 
 interface TransitTimeChartProps {
@@ -17,19 +16,40 @@ const TransitTimeChart: React.FC<TransitTimeChartProps> = ({ warehouseId = ALL_W
   const { settings } = useAppSettings();
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [transitOrders, setTransitOrders] = useState<TransitOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    const unsub = subscribeWarehouses(setWarehouses);
-    return unsub;
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [warehousesData, transitOrdersData] = await Promise.all([
+          dashboardApi.getWarehouses(),
+          dashboardApi.getTransitOrders(),
+        ]);
+        setWarehouses(warehousesData);
+        setTransitOrders(transitOrdersData);
+      } catch (err) {
+        setError('获取运单数据失败');
+        console.error('Failed to fetch transit data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   // 过滤运单（按仓库）
   const filteredOrders = useMemo(() => {
     return warehouseId === ALL_WAREHOUSES
-      ? mockTransitOrders
-      : mockTransitOrders.filter(
+      ? transitOrders
+      : transitOrders.filter(
           (t) => t.fromWarehouseId === warehouseId || t.toWarehouseId === warehouseId
         );
-  }, [warehouseId]);
+  }, [transitOrders, warehouseId]);
 
   // 计算运输时长并分组
   const chartData = useMemo(() => {
@@ -72,6 +92,52 @@ const TransitTimeChart: React.FC<TransitTimeChartProps> = ({ warehouseId = ALL_W
   const warehouseName = warehouseId !== ALL_WAREHOUSES
     ? warehouses.find((w) => w.id === warehouseId)?.name ?? ''
     : '';
+
+  // 加载状态
+  if (loading) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+        <CardHeader
+          title={
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+              运单时效分析
+            </Typography>
+          }
+        />
+        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <div className="MuiCircularProgress-root MuiCircularProgress-indeterminate" style={{ width: 40, height: 40 }}>
+              <svg className="MuiCircularProgress-svg" viewBox="22 22 44 44">
+                <circle className="MuiCircularProgress-circle MuiCircularProgress-circleIndeterminate" cx="44" cy="44" r="20" fill="none" stroke="#111827" strokeWidth="4" />
+              </svg>
+            </div>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+        <CardHeader
+          title={
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+              {warehouseName ? `${warehouseName}运单时效分析` : '运单时效分析'}
+            </Typography>
+          }
+        />
+        <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '0.8125rem', color: '#EF4444' }}>
+              {error}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>

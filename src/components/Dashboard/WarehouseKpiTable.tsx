@@ -15,11 +15,10 @@ import {
   LinearProgress,
   Chip,
 } from '@mui/material';
-import { mockInventory, mockTransitOrders, mockInboundRecords, mockOutboundRecords } from '../../data/mockData';
+import { dashboardApi } from '../../services/dashboardApi';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { subscribeWarehouses } from '../../stores/warehouseStore';
-import type { Warehouse } from '../../types';
+import type { Warehouse, TransitOrder, InventoryItem, InboundRecord, OutboundRecord } from '../../types';
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';
 import dayjs from 'dayjs';
 
@@ -32,9 +31,39 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
   const { warningThreshold, fullThreshold } = settings.dashboard;
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [transitOrders, setTransitOrders] = useState<TransitOrder[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [inboundRecords, setInboundRecords] = useState<InboundRecord[]>([]);
+  const [outboundRecords, setOutboundRecords] = useState<OutboundRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    const unsub = subscribeWarehouses(setWarehouses);
-    return unsub;
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [warehousesData, transitOrdersData, inventoryData, inboundData, outboundData] = await Promise.all([
+          dashboardApi.getWarehouses(),
+          dashboardApi.getTransitOrders(),
+          dashboardApi.getInventory(),
+          dashboardApi.getInboundRecords(),
+          dashboardApi.getOutboundRecords(),
+        ]);
+        setWarehouses(warehousesData);
+        setTransitOrders(transitOrdersData);
+        setInventory(inventoryData);
+        setInboundRecords(inboundData);
+        setOutboundRecords(outboundData);
+      } catch (err) {
+        setError('获取KPI数据失败');
+        console.error('Failed to fetch KPI data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const filteredWarehouses = warehouseId === ALL_WAREHOUSES
@@ -44,10 +73,10 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
   const tableData = useMemo(() => {
     // 计算最近一天的出库量
     const today = dayjs();
-    const latestOutboundDate = mockOutboundRecords.length > 0
-      ? mockOutboundRecords.reduce((latest, r) => {
+    const latestOutboundDate = outboundRecords.length > 0
+      ? outboundRecords.reduce((latest, r) => {
           return r.createdAt > latest ? r.createdAt : latest;
-        }, mockOutboundRecords[0].createdAt)
+        }, outboundRecords[0].createdAt)
       : today.format('YYYY-MM-DD');
 
     return filteredWarehouses.map((wh) => {
@@ -55,21 +84,21 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
       const utilizationRate = calcUtilizationByItems(wh);
 
       // 在途货物量（从 transitOrders 汇总目的地为该仓库的）
-      const transitVolume = mockTransitOrders
+      const transitVolume = transitOrders
         .filter((t) => t.toWarehouseId === wh.id && t.status !== 'arrived')
         .reduce((s, t) => s + t.volume, 0);
 
       // 库存深度
-      const inventoryCount = mockInventory
+      const inventoryCount = inventory
         .filter((item) => item.warehouseId === wh.id)
         .reduce((s, item) => s + item.quantity, 0);
 
       // 待处理入库单
-      const pendingInbound = mockInboundRecords
+      const pendingInbound = inboundRecords
         .filter((r) => r.warehouseId === wh.id && r.status === 'pending').length;
 
       // 当日出库量（最近一天）
-      const todayOutbound = mockOutboundRecords
+      const todayOutbound = outboundRecords
         .filter((r) => r.warehouseId === wh.id && r.createdAt === latestOutboundDate).length;
 
       // 状态标签
@@ -96,7 +125,53 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
         statusChip,
       };
     });
-  }, [filteredWarehouses, warningThreshold, fullThreshold]);
+  }, [filteredWarehouses, transitOrders, inventory, inboundRecords, outboundRecords, warningThreshold, fullThreshold]);
+
+  // 加载状态
+  if (loading) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+        <CardHeader
+          title={
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+              各仓库KPI对比
+            </Typography>
+          }
+        />
+        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
+          <Box sx={{ textAlign: 'center' }}>
+            <div className="MuiCircularProgress-root MuiCircularProgress-indeterminate" style={{ width: 40, height: 40 }}>
+              <svg className="MuiCircularProgress-svg" viewBox="22 22 44 44">
+                <circle className="MuiCircularProgress-circle MuiCircularProgress-circleIndeterminate" cx="44" cy="44" r="20" fill="none" stroke="#111827" strokeWidth="4" />
+              </svg>
+            </div>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+        <CardHeader
+          title={
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+              各仓库KPI对比
+            </Typography>
+          }
+        />
+        <CardContent sx={{ pt: 0, pb: '16px !important' }}>
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '0.8125rem', color: '#EF4444' }}>
+              {error}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (filteredWarehouses.length === 0) {
     return (
