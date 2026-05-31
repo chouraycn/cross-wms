@@ -874,15 +874,15 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         borderRight: collapsed ? '1px solid #E5E7EB' : 'none',
       }}
     >
-      {/* 收起按钮 — 仅展开时显示，绝对定位固定在顶部系统按钮区域 */}
+      {/* 收起按钮 — 仅展开时显示，绝对定位到 paddingTop 区域（与系统按钮平行对齐） */}
       {!collapsed && onToggle && (
         <IconButton
           onClick={onToggle}
           size="small"
           sx={{
             position: 'absolute',
-            // 固定在顶部：paddingTop 区域下方 8px，始终可见可悬停
-            top: 'calc(var(--pw-top, 0px) + 8px)',
+            // 系统按钮区域中心对齐；max() 确保浏览器环境下至少可见（top >= 0px）
+            top: 'max(calc(var(--pw-top, 0px) / 2 - 9px), 0px)',
             right: 8,
             color: '#6B7280',
             borderRadius: '6px',

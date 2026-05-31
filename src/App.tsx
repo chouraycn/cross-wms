@@ -285,15 +285,15 @@ const MainLayout: React.FC = () => {
             position: 'relative', // 为绝对定位的按钮提供参照
           }}
         >
-          {/* 左侧：展开侧边栏按钮 — 仅收起时显示，固定在顶部系统按钮区域 */}
+          {/* 左侧：展开侧边栏按钮 — 仅收起时显示，与系统按钮平行对齐 */}
           {sidebarCollapsed && (
             <IconButton
               onClick={toggleSidebar}
               size="small"
               sx={{
                 position: 'absolute',
-                // 固定在顶部：paddingTop 区域下方 8px，始终可见可悬停
-                top: 'calc(var(--pw-top, 0px) + 8px)',
+                // 按钮中心对齐到系统按钮区域中心（var(--pw-top) / 2）
+                top: 'calc(var(--pw-top, 0px) / 2 - 9px)',
                 left: 8,
                 color: '#6B7280',
                 borderRadius: '6px',
