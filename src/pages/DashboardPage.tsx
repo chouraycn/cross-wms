@@ -17,7 +17,6 @@ import NewTaskDialog, { type TaskFormData } from '../components/Dashboard/NewTas
 import WarehouseSelector, { ALL_WAREHOUSES } from '../components/Dashboard/WarehouseSelector';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { subscribeRefresh, subscribeWarehouseChange } from '../App';
-import { subscribeWarehouses } from '../stores/warehouseStore';
 import type { Warehouse, TransitOrder, InventoryItem } from '../types';
 import { dashboardApi } from '../services/dashboardApi';
 

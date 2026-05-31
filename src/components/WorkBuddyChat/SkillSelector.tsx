@@ -4,14 +4,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import CloseIcon from '@mui/icons-material/Close';
 import { Skill, DEFAULT_SKILLS } from '../../types/skill';
-
-// 极简黑白灰配色（与 App.tsx 保持一致）
-const PRIMARY = '#111827';    // 主色（文字/标题）
-const SECONDARY = '#6B7280';  // 次要色（辅助文字）
-const BORDER = '#E5E7EB';     // 边框/分割线
-const BG_LIGHT = '#F3F4F6';   // 背景浅灰（面板背景）
-const WHITE = '#FFFFFF';        // 纯白（卡片/输入框背景）
-const RADIUS = 6;              // 圆角统一（按钮、输入框、卡片）
+import { PRIMARY, SECONDARY, BORDER, BG_LIGHT, WHITE, RADIUS } from '../../constants/theme';
 
 interface SkillSelectorProps {
   anchorEl: HTMLElement | null;
