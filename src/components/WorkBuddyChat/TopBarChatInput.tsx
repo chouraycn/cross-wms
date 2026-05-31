@@ -1,18 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Box, TextField, IconButton, Paper, Typography, Chip } from '@mui/material';
+import React, { useState, useRef } from 'react';
+import { Box, TextField, IconButton, Paper, Chip } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { useChat } from '../../hooks/useChat';
 import { ChatPanel } from './ChatPanel';
 import { Skill, DEFAULT_SKILLS } from '../../types/skill';
 import { SkillSelector } from './SkillSelector';
-
-// 极简黑白灰配色
-const PRIMARY = '#111827';
-const SECONDARY = '#6B7280';
-const BORDER = '#E5E7EB';
-const BG_LIGHT = '#F3F4F6';
-const RADIUS = 6;
+import { PRIMARY, SECONDARY, BORDER, BG_LIGHT, RADIUS } from '../../constants/theme';
 
 interface TopBarChatInputProps {
   session: { 
@@ -33,10 +27,9 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
   const [expanded, setExpanded] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
-  const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { isLoading, sendMessage } = useChat(
+  const { isLoading, inputValue, setInputValue, sendMessage } = useChat(
     session.id ? session : undefined,
     onSessionUpdate
   );
@@ -67,7 +60,6 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
   const handleSend = () => {
     if (!inputValue.trim() || isLoading) return;
     sendMessage(inputValue);
-    setInputValue('');
     setExpanded(true);
   };
 

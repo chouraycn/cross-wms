@@ -13,27 +13,8 @@ import UpdateNotification from './components/UpdateNotification';
 import { WorkBuddyChat } from './components/WorkBuddyChat';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 
-/** 极简黑白灰配色方案（CrossWMS 全局统一） */
-export const PRIMARY = '#111827';    // 主色（文字/标题）
-export const SECONDARY = '#6B7280';  // 次要色（辅助文字）
-export const BORDER = '#E5E7EB';     // 边框/分割线
-export const BG_LIGHT = '#F3F4F6';   // 背景浅灰（面板背景）
-export const BG_PAGE = '#FAFAFA';     // 背景极浅（页面背景）
-export const WHITE = '#FFFFFF';        // 纯白（卡片/输入框背景）
-export const RADIUS = 6;              // 圆角统一（按钮、输入框、卡片）
-
-/** 极简黑白灰配色常量（兼容旧代码） */
-export const CHAT_COLORS = {
-  inputBg: BG_LIGHT,
-  inputBorder: BORDER,
-  chipBg: PRIMARY,
-  chipText: '#fff',
-  panelBg: WHITE,
-  panelBorder: BORDER,
-  textPrimary: PRIMARY,
-  textSecondary: SECONDARY,
-  hoverBg: '#F9FAFB',
-} as const;
+// 从统一配色文件导入
+export { PRIMARY, SECONDARY, BORDER, BG_LIGHT, BG_PAGE, WHITE, RADIUS, CHAT_COLORS } from './constants/theme';
 
 // 静态导入 — file:// 协议下 WKWebView 不支持动态 import()
 // Vite 构建时 inlineDynamicImports 已将全部代码打包到单文件，无需代码分割
