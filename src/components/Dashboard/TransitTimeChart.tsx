@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, Typography, Box } from '@mui/material';
+import React, { useMemo } from 'react';
+import { Card, CardContent, CardHeader, Typography, Box, CircularProgress, Alert } from '@mui/material';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import { dashboardApi } from '../../services/dashboardApi';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import type { Warehouse, TransitOrder } from '../../types';
+import { useDashboardData } from '../../contexts/DashboardDataContext';
 
 interface TransitTimeChartProps {
   warehouseId?: string;
@@ -15,32 +14,8 @@ interface TransitTimeChartProps {
 const TransitTimeChart: React.FC<TransitTimeChartProps> = ({ warehouseId = ALL_WAREHOUSES }) => {
   const { settings } = useAppSettings();
 
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [transitOrders, setTransitOrders] = useState<TransitOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const [warehousesData, transitOrdersData] = await Promise.all([
-          dashboardApi.getWarehouses(),
-          dashboardApi.getTransitOrders(),
-        ]);
-        setWarehouses(warehousesData);
-        setTransitOrders(transitOrdersData);
-      } catch (err) {
-        setError('获取运单数据失败');
-        console.error('Failed to fetch transit data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // 从 Context 获取数据
+  const { warehouses, transitOrders, loading, error } = useDashboardData();
 
   // 过滤运单（按仓库）
   const filteredOrders = useMemo(() => {
@@ -105,13 +80,7 @@ const TransitTimeChart: React.FC<TransitTimeChartProps> = ({ warehouseId = ALL_W
           }
         />
         <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
-          <Box sx={{ textAlign: 'center' }}>
-            <div className="MuiCircularProgress-root MuiCircularProgress-indeterminate" style={{ width: 40, height: 40 }}>
-              <svg className="MuiCircularProgress-svg" viewBox="22 22 44 44">
-                <circle className="MuiCircularProgress-circle MuiCircularProgress-circleIndeterminate" cx="44" cy="44" r="20" fill="none" stroke="#111827" strokeWidth="4" />
-              </svg>
-            </div>
-          </Box>
+          <CircularProgress size={30} sx={{ color: '#111827' }} />
         </CardContent>
       </Card>
     );
@@ -129,11 +98,7 @@ const TransitTimeChart: React.FC<TransitTimeChartProps> = ({ warehouseId = ALL_W
           }
         />
         <CardContent sx={{ pt: 0, pb: '16px !important' }}>
-          <Box sx={{ py: 6, textAlign: 'center' }}>
-            <Typography sx={{ fontSize: '0.8125rem', color: '#EF4444' }}>
-              {error}
-            </Typography>
-          </Box>
+          <Alert severity="error">{error}</Alert>
         </CardContent>
       </Card>
     );

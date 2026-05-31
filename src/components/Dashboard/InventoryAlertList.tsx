@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -20,9 +20,8 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { subscribeWarehouses } from '../../stores/warehouseStore';
-import type { Warehouse, InventoryItem } from '../../types';
-import { dashboardApi } from '../../services/dashboardApi';
+import { useDashboardData } from '../../contexts/DashboardDataContext';
+import type { InventoryItem } from '../../types';
 
 interface InventoryAlertListProps {
   warehouseId?: string;
@@ -32,25 +31,8 @@ const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = A
   const { settings } = useAppSettings();
   const ageWarningDays = settings.dashboard.ageWarningDays;
 
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const unsub = subscribeWarehouses(setWarehouses);
-    // 获取库存数据
-    dashboardApi.getInventory()
-      .then((data) => {
-        setInventory(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message || '获取库存数据失败');
-        setLoading(false);
-      });
-    return unsub;
-  }, []);
+  // 从 Context 获取数据
+  const { warehouses, inventory, loading, error } = useDashboardData();
 
   const warehouseNameMap = useMemo(() => {
     const map: Record<string, string> = {};

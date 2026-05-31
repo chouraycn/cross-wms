@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -14,11 +14,12 @@ import {
   Paper,
   LinearProgress,
   Chip,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
-import { dashboardApi } from '../../services/dashboardApi';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import type { Warehouse, TransitOrder, InventoryItem, InboundRecord, OutboundRecord } from '../../types';
+import { useDashboardData } from '../../contexts/DashboardDataContext';
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';
 import dayjs from 'dayjs';
 
@@ -26,51 +27,34 @@ interface WarehouseKpiTableProps {
   warehouseId?: string;
 }
 
+interface TableRowData {
+  warehouseId: string;
+  warehouseName: string;
+  utilizationRate: number;
+  transitVolume: number;
+  inventoryCount: number;
+  pendingInbound: number;
+  todayOutbound: number;
+  statusChip: {
+    label: string;
+    color: 'error' | 'warning' | 'success';
+    textColor: string;
+    bgColor: string;
+  };
+}
+
 const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL_WAREHOUSES }) => {
   const { settings } = useAppSettings();
   const { warningThreshold, fullThreshold } = settings.dashboard;
 
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [transitOrders, setTransitOrders] = useState<TransitOrder[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [inboundRecords, setInboundRecords] = useState<InboundRecord[]>([]);
-  const [outboundRecords, setOutboundRecords] = useState<OutboundRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const [warehousesData, transitOrdersData, inventoryData, inboundData, outboundData] = await Promise.all([
-          dashboardApi.getWarehouses(),
-          dashboardApi.getTransitOrders(),
-          dashboardApi.getInventory(),
-          dashboardApi.getInboundRecords(),
-          dashboardApi.getOutboundRecords(),
-        ]);
-        setWarehouses(warehousesData);
-        setTransitOrders(transitOrdersData);
-        setInventory(inventoryData);
-        setInboundRecords(inboundData);
-        setOutboundRecords(outboundData);
-      } catch (err) {
-        setError('获取KPI数据失败');
-        console.error('Failed to fetch KPI data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // 从 Context 获取数据
+  const { warehouses, transitOrders, inventory, inboundRecords, outboundRecords, loading, error } = useDashboardData();
 
   const filteredWarehouses = warehouseId === ALL_WAREHOUSES
     ? warehouses
     : warehouses.filter((w) => w.id === warehouseId);
 
-  const tableData = useMemo(() => {
+  const tableData = useMemo<TableRowData[]>(() => {
     // 计算最近一天的出库量
     const today = dayjs();
     const latestOutboundDate = outboundRecords.length > 0
@@ -139,13 +123,7 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
           }
         />
         <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
-          <Box sx={{ textAlign: 'center' }}>
-            <div className="MuiCircularProgress-root MuiCircularProgress-indeterminate" style={{ width: 40, height: 40 }}>
-              <svg className="MuiCircularProgress-svg" viewBox="22 22 44 44">
-                <circle className="MuiCircularProgress-circle MuiCircularProgress-circleIndeterminate" cx="44" cy="44" r="20" fill="none" stroke="#111827" strokeWidth="4" />
-              </svg>
-            </div>
-          </Box>
+          <CircularProgress size={30} sx={{ color: '#111827' }} />
         </CardContent>
       </Card>
     );
@@ -163,11 +141,7 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
           }
         />
         <CardContent sx={{ pt: 0, pb: '16px !important' }}>
-          <Box sx={{ py: 6, textAlign: 'center' }}>
-            <Typography sx={{ fontSize: '0.8125rem', color: '#EF4444' }}>
-              {error}
-            </Typography>
-          </Box>
+          <Alert severity="error">{error}</Alert>
         </CardContent>
       </Card>
     );

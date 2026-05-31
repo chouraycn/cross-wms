@@ -1,34 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, Typography, Box, IconButton, CircularProgress, Alert } from '@mui/material';
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
-import { dashboardApi } from '../../services/dashboardApi';
+import { useDashboardData } from '../../contexts/DashboardDataContext';
 import { exportToCsv } from '../../utils/exportCsv';
-import type { TransitStatusDistribution } from '../../types';
 
 const TransitPieChart: React.FC = () => {
-  const [transitStatusDistribution, setTransitStatusDistribution] = useState<TransitStatusDistribution[]>([
-    { name: '已发出', value: 0, color: '#9CA3AF' },
-    { name: '运输中', value: 0, color: '#111827' },
-    { name: '清关中', value: 0, color: '#6B7280' },
-    { name: '已到达', value: 0, color: '#D1D5DB' },
-  ]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    dashboardApi.getTransitStatusDistribution()
-      .then((data) => {
-        setTransitStatusDistribution(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message || '获取数据失败');
-        setLoading(false);
-      });
-  }, []);
+  // 从 Context 获取数据
+  const { transitStatusDistribution, loading, error } = useDashboardData();
 
   const total = transitStatusDistribution.reduce((s, d) => s + d.value, 0);
 

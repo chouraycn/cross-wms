@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, Typography, Box, IconButton } from '@mui/material';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { dashboardApi } from '../../services/dashboardApi';
+import { useDashboardData } from '../../contexts/DashboardDataContext';
 import { exportToCsv } from '../../utils/exportCsv';
 import { calcUtilizationByItems, calcUtilizationByVolume } from '../../utils/volumeCalculator';
 import type { Warehouse } from '../../types';
@@ -15,27 +15,8 @@ interface WarehouseBarChartProps {
 }
 
 const WarehouseBarChart: React.FC<WarehouseBarChartProps> = ({ warehouseId }) => {
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await dashboardApi.getWarehouses();
-        setWarehouses(data);
-      } catch (err) {
-        setError('获取仓库数据失败');
-        console.error('Failed to fetch warehouses:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // 从 Context 获取数据
+  const { warehouses, loading, error } = useDashboardData();
 
   const filtered = warehouseId === ALL_WAREHOUSES
     ? warehouses

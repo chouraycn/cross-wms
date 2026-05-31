@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import dayjs from 'dayjs';
-import { Box, Typography, Divider, Button, Switch, FormControlLabel, Alert, Collapse, IconButton, Snackbar, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Switch, FormControlLabel, Alert, IconButton, CircularProgress } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
@@ -17,8 +17,9 @@ import NewTaskDialog, { type TaskFormData } from '../components/Dashboard/NewTas
 import WarehouseSelector, { ALL_WAREHOUSES } from '../components/Dashboard/WarehouseSelector';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { subscribeRefresh, subscribeWarehouseChange } from '../App';
+import { useDashboardData } from '../contexts/DashboardDataContext';
+import { DashboardDataProvider } from '../contexts/DashboardDataContext';
 import type { Warehouse, TransitOrder, InventoryItem } from '../types';
-import { dashboardApi } from '../services/dashboardApi';
 
 interface DashboardAlert {
   id: string;
@@ -31,7 +32,6 @@ function computeAlerts(
   warehouses: Warehouse[],
   settings: ReturnType<typeof useAppSettings>['settings'],
   selectedWarehouse: string,
-  prevAlerts: DashboardAlert[],
   transitOrders: TransitOrder[],
   inventory: InventoryItem[],
 ): DashboardAlert[] {
@@ -114,18 +114,14 @@ function computeAlerts(
   return alerts;
 }
 
-const DashboardPage: React.FC = () => {
+const DashboardPageContent: React.FC = () => {
   const { settings, updateSettings } = useAppSettings();
   const vis = settings.dashboard.visibility;
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [selectedWarehouse, setSelectedWarehouse] = useState<string>(ALL_WAREHOUSES);
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
 
-  // 数据状态
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [transitOrders, setTransitOrders] = useState<TransitOrder[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  // 从 Context 获取数据
+  const { warehouses, transitOrders, inventory, loading, error, refresh } = useDashboardData();
+
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string>(ALL_WAREHOUSES);
 
   // 自动刷新状态
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -139,15 +135,12 @@ const DashboardPage: React.FC = () => {
 
   // 计算告警列表
   const alerts = useMemo(() => {
-    return computeAlerts(warehouses, settings, selectedWarehouse, [], transitOrders, inventory);
-  }, [warehouses, settings, selectedWarehouse, transitOrders, inventory, refreshKey]);
+    if (loading) return [];
+    return computeAlerts(warehouses, settings, selectedWarehouse, transitOrders, inventory);
+  }, [warehouses, settings, selectedWarehouse, transitOrders, inventory, loading]);
 
   // 过滤掉已关闭的告警
   const visibleAlerts = alerts.filter((a) => !dismissedAlerts.has(a.id));
-
-  const handleRefresh = useCallback(() => {
-    setRefreshKey((k) => k + 1);
-  }, []);
 
   // 自动刷新定时器
   useEffect(() => {
@@ -156,49 +149,23 @@ const DashboardPage: React.FC = () => {
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          handleRefresh();
+          refresh();
           return settings.dashboard.dataRefreshInterval;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [autoRefresh, settings.dashboard.dataRefreshInterval, handleRefresh]);
-
-  // 组件卸载时清除定时器（额外保障）
-  useEffect(() => {
-    return () => {
-      // 定时器已在上面的 effect cleanup 中清除
-    };
-  }, []);
-
-  // 数据获取
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    Promise.all([
-      dashboardApi.getTransitOrders(),
-      dashboardApi.getInventory(),
-      dashboardApi.getWarehouses(),
-    ]).then(([orders, inv, whs]) => {
-      setTransitOrders(orders);
-      setInventory(inv);
-      setWarehouses(whs);
-      setLoading(false);
-    }).catch(err => {
-      setError(err.message || '数据加载失败');
-      setLoading(false);
-    });
-  }, [selectedWarehouse, refreshKey]);
+  }, [autoRefresh, settings.dashboard.dataRefreshInterval, refresh]);
 
   useEffect(() => {
-    const unsubRefresh = subscribeRefresh('dashboard', handleRefresh);
+    const unsubRefresh = subscribeRefresh('dashboard', refresh);
     const unsubWarehouse = subscribeWarehouseChange(setSelectedWarehouse);
     return () => {
       unsubRefresh();
       unsubWarehouse();
     };
-  }, [handleRefresh]);
+  }, [refresh]);
 
   // Check if any KPI cards are visible
   const hasKpiCards = vis.kpiTransitVolume || vis.kpiVolumeUtilization || vis.kpiPendingInbound || vis.kpiOutboundCount || vis.kpiInventoryDepth;
@@ -209,9 +176,8 @@ const DashboardPage: React.FC = () => {
     setTaskDialogOpen(false);
   }, []);
 
-
   return (
-    <Box key={refreshKey} className="page-fade-in">
+    <Box className="page-fade-in">
       {/* ProWeb 风格 Banner — 极简黑白、贴合 CrossWMS 功能 */}
       <Box
         sx={{
@@ -295,6 +261,36 @@ const DashboardPage: React.FC = () => {
           />
         </Box>
       </Box>
+
+      {/* 告警通知 */}
+      {visibleAlerts.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          {visibleAlerts.map((alert) => (
+            <Alert
+              key={alert.id}
+              severity={alert.severity}
+              sx={{ mb: 1, borderRadius: 2 }}
+              action={
+                <IconButton
+                  size="small"
+                  onClick={() =>
+                    setDismissedAlerts((prev) => {
+                      const next = new Set(prev);
+                      next.add(alert.id);
+                      return next;
+                    })
+                  }
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              }
+            >
+              <Typography sx={{ fontWeight: 600 }}>{alert.title}</Typography>
+              <Typography sx={{ fontSize: '0.8125rem' }}>{alert.message}</Typography>
+            </Alert>
+          ))}
+        </Box>
+      )}
 
       {/* 错误提示 */}
       {error && (
@@ -414,6 +410,14 @@ const DashboardPage: React.FC = () => {
         warehouses={warehouses}
       />
     </Box>
+  );
+};
+
+const DashboardPage: React.FC = () => {
+  return (
+    <DashboardDataProvider>
+      <DashboardPageContent />
+    </DashboardDataProvider>
   );
 };
 

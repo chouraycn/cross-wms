@@ -1,7 +1,7 @@
 {
   "name": "cross-wms",
   "private": true,
-  "version": "1.0.41",
+  "version": "1.0.42",
   "type": "module",
   "scripts": {
     "dev:server": "tsx watch server/index.ts",
