@@ -7,7 +7,7 @@ import KpiCards from '../components/Dashboard/KpiCards';
 import VolumeChart from '../components/Dashboard/VolumeChart';
 import TransitPieChart from '../components/Dashboard/TransitPieChart';
 import WarehouseBarChart from '../components/Dashboard/WarehouseBarChart';
-import GitHubHeatmap from '../components/Dashboard/GitHubHeatmap';
+import Heatmap from '../components/Dashboard/heatmap';
 import InventoryAlertList from '../components/Dashboard/InventoryAlertList';
 import WarehouseKpiTable from '../components/Dashboard/WarehouseKpiTable';
 import TransitTimeChart from '../components/Dashboard/TransitTimeChart';
@@ -296,7 +296,7 @@ const DashboardPageContent: React.FC = () => {
                   case 'heatmap':
                     return vis.chartShipmentHeatmap ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <GitHubHeatmap warehouseId={selectedWarehouse} />
+                        <Heatmap warehouseId={selectedWarehouse} />
                       </Box>
                     ) : null;
                   case 'volume-trend':

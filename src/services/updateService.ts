@@ -41,6 +41,22 @@ function compareVersions(v1: string, v2: string): number {
 }
 
 /**
+ * 带超时的 fetch 封装
+ */
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 8000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return resp;
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
+  }
+}
+
+/**
  * 检查更新
  * - 浏览器 / Electron 环境：直接使用 fetch（无 CORS 问题）
  * - pywebview 环境：调用 window.pywebview.api.get_release_info() 绕过 CORS
@@ -52,7 +68,10 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateSta
     // pywebview 环境：通过 Python API 获取（绕过 CORS）
     if (typeof window !== 'undefined' && window.pywebview?.api?.get_release_info) {
       try {
-        const resultStr = await window.pywebview.api.get_release_info();
+        const resultStr = await Promise.race([
+          window.pywebview.api.get_release_info(),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('pywebview API 超时')), 8000))
+        ]);
         const parsed = JSON.parse(resultStr);
 
         // 检查是否是 Python 侧返回的错误对象
@@ -64,25 +83,36 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateSta
       } catch (pywebviewError) {
         // pywebview 调用失败，降级到 fetch（兼容旧版 pywebview 或未就绪情况）
         console.warn('[updateService] pywebview API 失败，降级到 fetch:', pywebviewError);
-        const response = await fetch(RELEASE_URL, {
+        try {
+          const response = await fetchWithTimeout(RELEASE_URL, {
+            method: 'GET',
+            cache: 'no-cache',
+          }, 8000);
+          if (!response.ok) {
+            throw new Error(`无法获取更新信息: ${response.status}`);
+          }
+          releaseInfo = await response.json();
+        } catch (fetchError) {
+          // 两个方式都失败，返回详细错误
+          const pyErr = pywebviewError instanceof Error ? pywebviewError.message : String(pywebviewError);
+          const fErr = fetchError instanceof Error ? fetchError.message : String(fetchError);
+          throw new Error(`更新检查失败: Python API (${pyErr}) + fetch (${fErr})`);
+        }
+      }
+    } else {
+      // 浏览器 / Electron 环境：直接 fetch（带超时）
+      try {
+        const response = await fetchWithTimeout(RELEASE_URL, {
           method: 'GET',
           cache: 'no-cache',
-        });
+        }, 8000);
         if (!response.ok) {
           throw new Error(`无法获取更新信息: ${response.status}`);
         }
         releaseInfo = await response.json();
+      } catch (fetchError) {
+        throw new Error(`无法检查更新: ${fetchError instanceof Error ? fetchError.message : fetchError}`);
       }
-    } else {
-      // 浏览器 / Electron 环境：直接 fetch
-      const response = await fetch(RELEASE_URL, {
-        method: 'GET',
-        cache: 'no-cache',
-      });
-      if (!response.ok) {
-        throw new Error(`无法获取更新信息: ${response.status}`);
-      }
-      releaseInfo = await response.json();
     }
 
     const hasUpdate = compareVersions(releaseInfo.version, currentVersion) > 0;

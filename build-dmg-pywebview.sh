@@ -67,8 +67,8 @@ fi
 
 # 导出版本号供后续使用
 export VERSION="$CURRENT_VERSION"
-DMG_NAME="CrossWMS-${VERSION}-mac.dmg"
-DMG_VOLUME="CrossWMS v${VERSION}"
+DMG_NAME="CrossWMS.dmg"
+DMG_VOLUME="CrossWMS"
 
 # 生成 version.txt（供 pywebview_app.py 读取）
 echo "$VERSION" > "$VERSION_FILE"
@@ -333,6 +333,7 @@ fi
   --windowed \
   --onedir \
   --noconfirm \
+  --noupx \
   --exclude-module matplotlib \
   --exclude-module numpy \
   --exclude-module pandas \
@@ -342,6 +343,12 @@ fi
   --exclude-module PyQt6 \
   --exclude-module PySide2 \
   --exclude-module PySide6 \
+  --exclude-module tkinter \
+  --exclude-module pytest \
+  --exclude-module jupyter \
+  --exclude-module ipython \
+  --exclude-module PIL \
+  --exclude-module Pillow \
   $DATA_ARGS \
   --icon "$PROJECT_DIR/public/icon.png" \
   --distpath "$BUILD_DIR/dist" \
@@ -418,7 +425,7 @@ GITHUB_REPO = "cross-wms"
 
 version = os.environ.get("VERSION", "1.0.0")
 pub_date = datetime.now().strftime("%Y-%m-%d")
-dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/CrossWMS-{version}-mac.dmg"
+dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/CrossWMS.dmg"
 min_ver = "1.0.0"
 
 project_dir = os.environ.get("PROJECT_DIR", ".")
