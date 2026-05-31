@@ -20,6 +20,7 @@ export { PRIMARY, SECONDARY, BORDER, BG_LIGHT, BG_PAGE, WHITE, RADIUS, CHAT_COLO
 // Vite 构建时 inlineDynamicImports 已将全部代码打包到单文件，无需代码分割
 import DashboardPage from './pages/DashboardPage';
 import SkillsPage from './pages/SkillsPage';
+import AgentPage from './pages/AgentPage';
 import WarehousesPage from './pages/WarehousesPage';
 import InTransitPage from './pages/InTransitPage';
 import InventoryPage from './pages/InventoryPage';
@@ -269,7 +270,6 @@ const MainLayout: React.FC = () => {
           flexDirection: 'column',
           backgroundColor: '#FFFFFF',
           minHeight: '100vh',
-          overflow: 'hidden',
         }}
       >
         {/* 顶部工具栏 — 与系统红黄绿平行对齐 */}
@@ -309,32 +309,33 @@ const MainLayout: React.FC = () => {
             </IconButton>
           )}
 
-          {/* 右侧：功能按钮 */}
+          {/* 右侧：功能按钮 + AI 助手输入框 */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, marginLeft: 'auto' }}>
             {actions.warehouseSwitch && (
               <WarehouseSelector selected={selectedWarehouse} onChange={handleWarehouseChange} />
             )}
+            <WorkBuddyChat />
           </Box>
         </Box>
 
-        {/* 主内容区：使用 flex column 布局，WorkBuddyChat 在底部 */}
+        {/* 主内容区：高度由内容决定，不强制撑满视窗 */}
         <Box
           sx={{
-            flex: 1,
+            flex: '1 1 auto',
             minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
           }}
         >
-          {/* 可滚动的内容区域 */}
+          {/* 可滚动的内容区域 — min-height:100% 让内容少时撑满可视区域，内容多时自然扩展 */}
           <Box
             ref={scrollRef}
             className={isPy ? undefined : "auto-hide-scrollbar"}
             sx={{
-              flex: 1,
-              minHeight: 0,
+              minHeight: '100%',
               overflow: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
               // pywebview 环境：始终显示宽滚动条，提升拖动体验
               ...(isPy ? {
                 '&::-webkit-scrollbar': { width: '10px', height: '10px' },
@@ -378,6 +379,7 @@ const MainLayout: React.FC = () => {
                 <Routes>
                   <Route path="/" element={<DashboardPage />} />
                   <Route path="/skills" element={<SkillsPage />} />
+                  <Route path="/agent" element={<AgentPage />} />
                   <Route path="/warehouses" element={<WarehousesPage />} />
                   <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
                   <Route path="/in-transit" element={<InTransitPage />} />
@@ -388,10 +390,10 @@ const MainLayout: React.FC = () => {
                 </Routes>
               </ErrorBoundary>
             </Box>
-          </Box>
 
-          {/* AI 对话框 — 在内容区底部，不覆盖侧边栏 */}
-          <WorkBuddyChat />
+            {/* AI 对话框 — 在滚动容器内部，文档流中自然排列 */}
+            <WorkBuddyChat />
+          </Box>
         </Box>
       </Box>
 
