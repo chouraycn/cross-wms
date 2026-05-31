@@ -164,6 +164,7 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
+        pr: 1.25,
       }}
     >
       {/* 严格按 chat-input.html .chat-container 结构：始终渲染，toolbar 始终可见 */}
@@ -261,7 +262,7 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
         >
           {/* Left buttons: Craft, Model, Skills, Permission */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            {/* Craft button */}
+            {/* Craft button - 整体右移 10px */}
             <IconButton
               ref={craftBtnRef}
               size="small"
@@ -271,6 +272,7 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
                 height: 32,
                 borderRadius: '8px',
                 p: 0,
+                ml: 1.25,
                 color: SECONDARY,
                 bgcolor: 'transparent',
                 '&:hover': { bgcolor: '#f5f5f5' },
