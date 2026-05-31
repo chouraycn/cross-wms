@@ -83,16 +83,7 @@ export const DashboardDataProvider: React.FC<{ children: React.ReactNode }> = ({
       setError(null);
 
       try {
-        const [
-          whs,
-          orders,
-          inv,
-          volHist,
-          inRecs,
-          outRecs,
-          kpi,
-          statusDist,
-        ] = await Promise.all([
+        const results = await Promise.allSettled([
           dashboardApi.getWarehouses(),
           dashboardApi.getTransitOrders(),
           dashboardApi.getInventory(),
@@ -105,6 +96,24 @@ export const DashboardDataProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (cancelled) return;
 
+        // 处理 Promise.allSettled 结果，提供容错能力
+        const whs = results[0].status === 'fulfilled' ? results[0].value : [];
+        const orders = results[1].status === 'fulfilled' ? results[1].value : [];
+        const inv = results[2].status === 'fulfilled' ? results[2].value : [];
+        const volHist = results[3].status === 'fulfilled' ? results[3].value : [];
+        const inRecs = results[4].status === 'fulfilled' ? results[4].value : [];
+        const outRecs = results[5].status === 'fulfilled' ? results[5].value : [];
+        const kpi = results[6].status === 'fulfilled' ? results[6].value : null;
+        const statusDist = results[7].status === 'fulfilled' ? results[7].value : [];
+
+        // 打印失败警告
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const apiNames = ['getWarehouses', 'getTransitOrders', 'getInventory', 'getVolumeHistory', 'getInboundRecords', 'getOutboundRecords', 'getKpiData', 'getTransitStatusDistribution'];
+            console.warn(`数据获取失败 [${apiNames[index]}]:`, result.reason);
+          }
+        });
+
         setWarehouses(whs);
         setTransitOrders(orders);
         setInventory(inv);
@@ -114,7 +123,9 @@ export const DashboardDataProvider: React.FC<{ children: React.ReactNode }> = ({
         setKpiData(kpi);
         setTransitStatusDistribution(statusDist);
       } catch (err) {
+        // 这里的 catch 主要捕获 Promise.allSettled 之外的异常（理论上不应该发生）
         if (cancelled) return;
+        console.error('数据获取过程发生未知错误:', err);
         setError(err instanceof Error ? err.message : '数据加载失败');
       } finally {
         if (!cancelled) setLoading(false);
