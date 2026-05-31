@@ -285,13 +285,13 @@ const MainLayout: React.FC = () => {
             position: 'relative', // 为绝对定位的按钮提供参照
           }}
         >
-          {/* 左侧：展开侧边栏按钮 — 仅收起时显示，与系统按钮平行对齐 */}
+          {/* 左侧：展开侧边栏按钮 — 仅收起时显示，fixed 定位不被内容顶出 */}
           {sidebarCollapsed && (
             <IconButton
               onClick={toggleSidebar}
               size="small"
               sx={{
-                position: 'absolute',
+                position: 'fixed',
                 // 按钮中心对齐到系统按钮区域中心（var(--pw-top) / 2）
                 top: 'calc(var(--pw-top, 0px) / 2 - 9px)',
                 left: 8,
@@ -301,6 +301,7 @@ const MainLayout: React.FC = () => {
                 backgroundColor: 'transparent',
                 border: 'none',
                 boxShadow: 'none',
+                zIndex: 1300,
                 '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
                 '&:focus': { outline: 'none' },
               }}
@@ -396,14 +397,15 @@ const MainLayout: React.FC = () => {
         </Box>
       </Box>
 
-      {/* AI 对话框 — 固定在页面中下方，不随内容滚动 */}
+      {/* AI 对话框 — 固定在页面中下方，淡投影与页面区分 */}
       <Box
         sx={{
           position: 'fixed',
           bottom: 20,
-          left: sidebarCollapsed ? '84px' : '284px',
+          left: sidebarCollapsed ? '94px' : '294px',
           right: 32,
           zIndex: 1200,
+          filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.06))',
         }}
       >
         <WorkBuddyChat />

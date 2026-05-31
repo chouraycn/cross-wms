@@ -18,8 +18,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
     };
 
     const userMsg: Message = { id: uuidv4(), role: 'user', content, timestamp: new Date() };
-    session.messages = [...session.messages, userMsg];
-    onSessionUpdate(session);
+    const updatedSession = { ...session, messages: [...session.messages, userMsg] };
+    onSessionUpdate(updatedSession);
 
     try {
       const res = await fetch('http://localhost:3001/api/chat', {
@@ -45,8 +45,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                 if (data.type === 'text') fullContent += data.content;
                 if (data.type === 'done') {
                   const assistantMsg: Message = { id: uuidv4(), role: 'assistant', content: fullContent, timestamp: new Date() };
-                  session.messages = [...session.messages, assistantMsg];
-                  onSessionUpdate({ ...session });
+                  const updatedSession = { ...session, messages: [...session.messages, assistantMsg] };
+                  onSessionUpdate(updatedSession);
                 }
               } catch {}
             }
