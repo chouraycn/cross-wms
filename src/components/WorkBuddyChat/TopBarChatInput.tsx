@@ -358,7 +358,7 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
               <MicIcon sx={{ fontSize: 20 }} />
             </IconButton>
 
-            {/* Send button - 严格按 chat-input.html .send-btn 样式 */}
+            {/* Send button - 橙色主题 */}
             <IconButton
               onClick={(e) => { e.stopPropagation(); handleSend(); }}
               disabled={!inputValue.trim() || isLoading}
@@ -367,11 +367,11 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
                 height: 32,
                 borderRadius: '50%',
                 p: 0,
-                bgcolor: '#333',
+                bgcolor: '#f97316',
                 color: '#fff',
                 flexShrink: 0,
                 border: 'none',
-                '&:hover': { bgcolor: '#555' },
+                '&:hover': { bgcolor: '#ea580c' },
                 '&.Mui-disabled': { bgcolor: '#eee', color: '#bbb' },
               }}
             >

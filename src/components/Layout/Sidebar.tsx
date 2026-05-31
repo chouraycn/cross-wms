@@ -874,15 +874,15 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         borderRight: collapsed ? '1px solid #E5E7EB' : 'none',
       }}
     >
-      {/* 收起按钮 — 仅展开时显示，绝对定位到 paddingTop 区域（与系统按钮平行对齐） */}
+      {/* 收起按钮 — 仅展开时显示，绝对定位固定在顶部系统按钮区域 */}
       {!collapsed && onToggle && (
         <IconButton
           onClick={onToggle}
           size="small"
           sx={{
             position: 'absolute',
-            // 按钮中心对齐到系统按钮区域中心（var(--pw-top) / 2）
-            top: 'calc(var(--pw-top, 0px) / 2 - 9px)',
+            // 固定在顶部：paddingTop 区域下方 8px，始终可见可悬停
+            top: 'calc(var(--pw-top, 0px) + 8px)',
             right: 8,
             color: '#6B7280',
             borderRadius: '6px',
@@ -976,8 +976,15 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         )}
       </Box>
 
-      {/* 导航列表 */}
-      <List sx={{ pt: 0, px: collapsed ? 0.5 : 1, flex: 1 }}>
+      {/* 导航列表 — 独立滚动，禁用上下缓动 */}
+      <List sx={{
+        pt: 0,
+        px: collapsed ? 0.5 : 1,
+        flex: 1,
+        overflow: 'auto',
+        overscrollBehaviorY: 'none',
+        WebkitOverflowScrolling: 'auto',
+      }}>
         {navItems.map((item) => {
           const active = isActive(item.path);
           return (
