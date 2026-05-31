@@ -1,14 +1,8 @@
 import express from 'express';
 import cors from 'cors';
-import { initDb, getSessions, createSession, getSessionMessages, addMessage, deleteSession } from './db';
+import { initDb, getSessions, createSession, getSessionMessages, addMessage, deleteSession } from './db.js';
 import { v4 as uuidv4 } from 'uuid';
-import { Agent } from '@tencent-ai/agent-sdk';
-
-// 创建 Agent 实例
-const agent = new Agent({
-  model: process.env.MODEL || 'claude-sonnet-4',
-  systemPrompt: '你是一个专业的 CrossWMS 仓储管理系统智能助手，帮助用户管理仓库、库存、在途货物等。',
-});
+import { query } from '@tencent-ai/agent-sdk';
 
 const app = express();
 app.use(cors());
@@ -63,18 +57,24 @@ app.post('/api/chat', async (req, res) => {
     // 调用 Agent SDK 进行流式对话
     let fullContent = '';
     try {
-      const stream = await agent.chat({
-        message,
-        sessionId,
-        model,
-        stream: true,
+      const stream = query({
+        prompt: message,
+        options: {
+          model,
+          permissionMode: 'bypassPermissions',
+          cwd: process.cwd(),
+        },
       });
 
       // 处理流式响应
-      for await (const chunk of stream) {
-        if (chunk.type === 'text') {
-          fullContent += chunk.content;
-          res.write(`data: ${JSON.stringify({ type: 'text', content: chunk.content })}\n\n`);
+      for await (const msg of stream) {
+        if (msg.type === 'assistant') {
+          for (const block of msg.message.content) {
+            if (block.type === 'text') {
+              fullContent += block.text;
+              res.write(`data: ${JSON.stringify({ type: 'text', content: block.text })}\n\n`);
+            }
+          }
         }
       }
 
