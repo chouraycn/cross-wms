@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 import type { DataSourceConfig } from '../services/dashboardApi';
+import type { ModelsConfig, ModelConfig } from '../types/models';
+
+export type { ModelConfig, ModelsConfig };
 
 // ===================== Settings Type Definitions =====================
 
@@ -160,6 +163,8 @@ export interface AppSettings {
   volumeDocs: VolumeDocsConfig;
   dashboard: DashboardConfig;
   sidebar: SidebarConfig;
+  /** 模型管理配置 */
+  models: ModelsConfig;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -218,6 +223,58 @@ const DEFAULT_SETTINGS: AppSettings = {
   },
   sidebar: {
     showVersion: true,
+  },
+  // 模型管理配置
+  models: {
+    models: [
+      {
+        id: 'gpt-4',
+        name: 'GPT-4',
+        provider: 'openai',
+        enabled: true,
+        isDefault: true,
+        description: 'OpenAI GPT-4 模型，强大的通用推理能力',
+        contextWindow: 128000,
+        maxTokens: 4096,
+      },
+      {
+        id: 'gpt-3.5-turbo',
+        name: 'GPT-3.5 Turbo',
+        provider: 'openai',
+        enabled: true,
+        description: 'OpenAI GPT-3.5 Turbo 模型，性价比高',
+        contextWindow: 16385,
+        maxTokens: 4096,
+      },
+      {
+        id: 'claude-3-opus',
+        name: 'Claude 3 Opus',
+        provider: 'anthropic',
+        enabled: false,
+        description: 'Anthropic Claude 3 Opus 模型，擅长复杂推理',
+        contextWindow: 200000,
+        maxTokens: 4096,
+      },
+      {
+        id: 'claude-3-sonnet',
+        name: 'Claude 3 Sonnet',
+        provider: 'anthropic',
+        enabled: true,
+        description: 'Anthropic Claude 3 Sonnet 模型，平衡性能与成本',
+        contextWindow: 200000,
+        maxTokens: 4096,
+      },
+      {
+        id: 'hunyuan-turbo',
+        name: '腾讯混元 Turbo',
+        provider: 'tencent',
+        enabled: false,
+        description: '腾讯混元 Turbo 模型，支持中文场景',
+        contextWindow: 65536,
+        maxTokens: 4096,
+      },
+    ],
+    defaultModelId: 'gpt-4',
   },
 };
 
@@ -350,6 +407,17 @@ function loadSettings(): AppSettings {
             ...DEFAULT_SETTINGS.sidebar,
             ...parsed.sidebar,
           },
+          // 模型配置（向后兼容）
+          models: parsed.models
+            ? {
+                models: (parsed.models as any).models?.map((m: any) => ({
+                  ...m,
+                  enabled: m.enabled ?? true,
+                  provider: m.provider ?? 'custom',
+                })) ?? DEFAULT_SETTINGS.models.models,
+                defaultModelId: (parsed.models as any).defaultModelId ?? DEFAULT_SETTINGS.models.defaultModelId,
+              }
+            : { ...DEFAULT_SETTINGS.models },
         };
     }
   } catch {
@@ -418,6 +486,13 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
       if (partial.sidebar) {
         next.sidebar = { ...prev.sidebar, ...partial.sidebar };
+      }
+      if (partial.models) {
+        next.models = {
+          ...prev.models,
+          ...partial.models,
+          models: partial.models.models ?? prev.models.models,
+        };
       }
       return next;
     });

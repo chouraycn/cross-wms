@@ -329,6 +329,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
     updateSettings({ tencentDocs: draft.tencentDocs });
     updateSettings({ dashboard: draft.dashboard });
     updateSettings({ sidebar: draft.sidebar });
+    updateSettings({ models: draft.models });
     setSnackbarMsg('设置已保存'); setSnackbarOpen(true);
   };
 
@@ -344,7 +345,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
         visibility: { kpiTransitVolume: true, kpiVolumeUtilization: true, kpiPendingInbound: true, kpiOutboundCount: true, kpiInventoryDepth: true, kpiTransitAlert: true, chartVolumeTrend: true, chartTransitPie: true, chartWarehouseBar: true, chartShipmentHeatmap: true, chartInventoryAlert: true, chartKpiComparison: true, chartTransitTime: true },
         heatmap: { days: 14, colorScheme: 'ocean' },
         componentOrder: ['kpi-cards', 'heatmap', 'volume-trend', 'transit-pie', 'warehouse-bar', 'inventory-alert', 'kpi-comparison', 'transit-time'],
-        // 数据源配置（平铺结构）
         dataSourceMode: 'mock',
         dataSourceApiBaseUrl: '/api/v1',
         dataSourceDocMappings: {
@@ -359,6 +359,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
         },
       },
       sidebar: { showVersion: true },
+      models: settings.models,
     });
     setErrors({});
     setSnackbarMsg('已重置为默认值'); setSnackbarOpen(true);
