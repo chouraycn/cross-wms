@@ -393,12 +393,13 @@ echo "📝 生成 release.json..."
 
 python3 << 'PYEOF2'
 import json, os
+from datetime import datetime
 
 GITHUB_OWNER = "chouraycn"
 GITHUB_REPO = "cross-wms"
 
 version = os.environ.get("VERSION", "1.0.0")
-pub_date = "$(date +%Y-%m-%d)"
+pub_date = datetime.now().strftime("%Y-%m-%d")
 dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/CrossWMS-{version}-mac.dmg"
 min_ver = "1.0.0"
 
