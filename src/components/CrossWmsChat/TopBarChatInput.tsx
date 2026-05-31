@@ -197,21 +197,25 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
         <Box
           onClick={handleInputClick}
           sx={{
-            padding: inputExpanded ? '12px 16px' : '10px 16px',
-            minHeight: inputExpanded ? 80 : 44,
+            padding: inputExpanded ? '12px 16px' : '8px 16px',
+            minHeight: inputExpanded ? 80 : 32,
             display: 'flex',
             flexDirection: 'column',
             cursor: 'text',
+            justifyContent: inputExpanded ? 'flex-start' : 'center',
           }}
         >
           {!inputExpanded ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%' }}>
-              <Typography sx={{ fontSize: 15, color: '#999', lineHeight: 1.4 }}>
-                今天帮你做些什么？
-              </Typography>
-              <Typography sx={{ fontSize: 13, color: '#bbb', lineHeight: 1.4 }}>
-                @ 引用对话文件，/ 调用技能与指令
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
+              {/* 左侧占位，与 toolbar 的 Craft 按钮对齐 */}
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography sx={{ fontSize: 15, color: '#999', lineHeight: 1.4 }}>
+                  今天帮你做些什么？
+                </Typography>
+                <Typography sx={{ fontSize: 13, color: '#bbb', lineHeight: 1.4 }}>
+                  @ 引用对话文件，/ 调用技能与指令
+                </Typography>
+              </Box>
             </Box>
           ) : (
             <>

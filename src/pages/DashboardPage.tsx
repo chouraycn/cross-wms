@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import dayjs from 'dayjs';
-import { Box, Typography, Switch, FormControlLabel, Alert, IconButton, CircularProgress, Button } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import { Box, Typography, Switch, FormControlLabel, Alert, CircularProgress, Button } from '@mui/material';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import KpiCards from '../components/Dashboard/KpiCards';
@@ -17,14 +16,8 @@ import { useAppSettings } from '../contexts/AppSettingsContext';
 import { subscribeRefresh, subscribeWarehouseChange } from '../App';
 import { useDashboardData } from '../contexts/DashboardDataContext';
 import { DashboardDataProvider } from '../contexts/DashboardDataContext';
+import { AlertCarousel, type DashboardAlert } from '../components/Dashboard/AlertCarousel';
 import type { Warehouse, TransitOrder, InventoryItem } from '../types';
-
-interface DashboardAlert {
-  id: string;
-  severity: 'error' | 'warning' | 'info';
-  title: string;
-  message: string;
-}
 
 function computeAlerts(
   warehouses: Warehouse[],
@@ -235,34 +228,18 @@ const DashboardPageContent: React.FC = () => {
         </Box>
       </Box>
 
-      {/* 告警通知 */}
+      {/* 告警通知 - 改为轮播显示 */}
       {visibleAlerts.length > 0 && (
-        <Box sx={{ mb: 2 }}>
-          {visibleAlerts.map((alert) => (
-            <Alert
-              key={alert.id}
-              severity={alert.severity}
-              sx={{ mb: 1, borderRadius: 2 }}
-              action={
-                <IconButton
-                  size="small"
-                  onClick={() =>
-                    setDismissedAlerts((prev) => {
-                      const next = new Set(prev);
-                      next.add(alert.id);
-                      return next;
-                    })
-                  }
-                >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              }
-            >
-              <Typography sx={{ fontWeight: 600 }}>{alert.title}</Typography>
-              <Typography sx={{ fontSize: '0.8125rem' }}>{alert.message}</Typography>
-            </Alert>
-          ))}
-        </Box>
+        <AlertCarousel
+          alerts={visibleAlerts}
+          onDismiss={(alertId) =>
+            setDismissedAlerts((prev) => {
+              const next = new Set(prev);
+              next.add(alertId);
+              return next;
+            })
+          }
+        />
       )}
 
       {/* 错误提示 */}
