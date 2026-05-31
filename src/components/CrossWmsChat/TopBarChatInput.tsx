@@ -238,13 +238,15 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
                   whiteSpace: 'pre-wrap',
                 }}
               />
-              <div style={{
-                fontSize: 13,
-                color: '#bbb',
-                lineHeight: 1.4,
-              }}>
-                @ 引用对话文件，/ 调用技能与指令
-              </div>
+              {!inputValue.trim() && (
+                <div style={{
+                  fontSize: 13,
+                  color: '#bbb',
+                  lineHeight: 1.4,
+                }}>
+                  @ 引用对话文件，/ 调用技能与指令
+                </div>
+              )}
             </>
           )}
         </Box>
