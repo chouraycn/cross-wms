@@ -51,7 +51,7 @@ export function ChatPanel({ messages, isLoading, inputValue, onInputChange, onSe
         <div ref={messagesEndRef} />
       </Box>
 
-      {/* 输入区 */}
+      {/* 输入区仅在非 compact 模式下显示 */}
       {!compact && (
         <Box sx={{ p: 1.5, borderTop: '1px solid #E5E7EB', bgcolor: '#FAFAFA' }}>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>

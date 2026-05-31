@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { Box, TextField, IconButton, Paper, Chip, Typography } from '@mui/material';
+import { Box, TextField, IconButton, Paper, Chip, Fade } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { useChat } from '../../hooks/useChat';
 import { ChatPanel } from './ChatPanel';
-import { Skill, DEFAULT_SKILLS } from '../../types/skill';
+import { Skill } from '../../types/skill';
 import { SkillSelector } from './SkillSelector';
-import { PRIMARY, SECONDARY, BORDER, BG_LIGHT, RADIUS } from '../../constants/theme';
+import { PRIMARY, SECONDARY, BORDER, BG_LIGHT } from '../../constants/theme';
 
 interface BottomChatInputProps {
   session: {
@@ -24,15 +24,17 @@ interface BottomChatInputProps {
 }
 
 export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputProps) {
-  const [expanded, setExpanded] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { isLoading, inputValue, setInputValue, sendMessage } = useChat(
-    session.id ? session : undefined,
+    session?.id ? session : undefined,
     onSessionUpdate
   );
+
+  const hasMessages = session.messages.length > 0;
 
   const handleInputChange = (value: string) => {
     setInputValue(value);
@@ -44,14 +46,13 @@ export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputPro
   const handleSkillSelect = (skill: Skill) => {
     setSelectedSkill(skill);
     setShowSkills(false);
-    setExpanded(true);
     setInputValue(prev => prev + `[${skill.name}] `);
+    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   const handleSend = () => {
     if (!inputValue.trim() || isLoading) return;
     sendMessage(inputValue);
-    // Keep expanded after sending to show response
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -61,50 +62,48 @@ export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputPro
     }
   };
 
-  const handleToggle = () => {
-    if (expanded) {
-      // Collapse if no messages
-      if (session.messages.length === 0) {
-        setExpanded(false);
-      }
-    } else {
-      setExpanded(true);
-    }
-  };
-
   return (
     <Paper
       elevation={0}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       sx={{
-        position: 'sticky',
-        bottom: 0,
+        // 在文档流中自然排列，由父容器 margin-top:auto 控制沉底
         width: '100%',
         borderTop: `1px solid ${BORDER}`,
         bgcolor: '#fff',
-        borderRadius: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        maxHeight: expanded ? '50vh' : 'auto',
-        transition: 'max-height 0.3s ease',
       }}
     >
-      {/* 消息区（展开时显示） */}
-      {expanded && session.messages.length > 0 && (
+      {/* 消息区 - 悬停时显示在输入栏上方（文档流内） */}
+      <Fade in={isHovered && hasMessages} timeout={180}>
         <Box
           sx={{
-            flex: 1,
+            maxHeight: 360,
             overflow: 'auto',
-            maxHeight: '35vh',
             borderBottom: `1px solid ${BORDER}`,
           }}
         >
-          <ChatPanel
-            messages={session.messages}
-            isLoading={isLoading}
-            inputValue={inputValue}
-            onInputChange={setInputValue}
-            onSend={handleSend}
-            compact
+          <Box sx={{ p: 1.5 }}>
+            <ChatPanel
+              messages={session.messages}
+              isLoading={isLoading}
+              inputValue={inputValue}
+              onInputChange={setInputValue}
+              onSend={handleSend}
+              compact
+            />
+          </Box>
+        </Box>
+      </Fade>
+
+      {/* 已选技能标签 */}
+      {selectedSkill && (
+        <Box sx={{ px: 2, py: 0.5, bgcolor: '#fff', borderBottom: `1px solid ${BORDER}` }}>
+          <Chip
+            label={selectedSkill.name}
+            onDelete={() => setSelectedSkill(null)}
+            size="small"
+            sx={{ height: 24, fontSize: 12 }}
           />
         </Box>
       )}
@@ -117,18 +116,19 @@ export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputPro
           gap: 1,
           px: 2,
           py: 1,
-          bgcolor: BG_LIGHT,
+          bgcolor: isHovered ? '#fff' : BG_LIGHT,
+          transition: 'background-color 0.2s ease',
         }}
       >
         {/* 技能选择按钮 */}
         <IconButton
           size="small"
-          onClick={() => setShowSkills(!showSkills)}
+          onClick={(e) => { e.stopPropagation(); setShowSkills(!showSkills); }}
           sx={{
             p: 0.5,
             color: selectedSkill ? PRIMARY : SECONDARY,
             bgcolor: selectedSkill ? 'rgba(17,24,39,0.08)' : 'transparent',
-            borderRadius: RADIUS,
+            borderRadius: 8,
             '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' },
           }}
         >
@@ -140,18 +140,18 @@ export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputPro
           inputRef={inputRef}
           size="small"
           fullWidth
-          placeholder="输入消息或 @ 选择技能..."
+          placeholder={hasMessages ? "继续提问..." : "输入消息或 @ 选择技能..."}
           value={inputValue}
           onChange={e => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
           InputProps={{
-            style: { fontSize: 13, height: 36, borderRadius: RADIUS },
+            style: { fontSize: 13, height: 36, borderRadius: 8 },
           }}
           sx={{
             '& .MuiInputBase-root': {
               bgcolor: '#fff',
               border: `1px solid ${BORDER}`,
-              borderRadius: RADIUS,
+              borderRadius: 8,
               '&:focus-within': { borderColor: PRIMARY },
             },
           }}
@@ -164,7 +164,7 @@ export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputPro
           sx={{
             bgcolor: PRIMARY,
             color: '#fff',
-            borderRadius: RADIUS,
+            borderRadius: 8,
             width: 36,
             height: 36,
             flexShrink: 0,
@@ -174,37 +174,7 @@ export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputPro
         >
           <SendIcon sx={{ fontSize: 18 }} />
         </IconButton>
-
-        {/* 展开/收起按钮 */}
-        {session.messages.length > 0 && (
-          <IconButton
-            size="small"
-            onClick={handleToggle}
-            sx={{
-              p: 0.5,
-              color: SECONDARY,
-              borderRadius: RADIUS,
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' },
-            }}
-          >
-            <Typography sx={{ fontSize: 11, fontWeight: 500 }}>
-              {expanded ? '收起' : '展开'}
-            </Typography>
-          </IconButton>
-        )}
       </Box>
-
-      {/* 已选技能标签 */}
-      {selectedSkill && (
-        <Box sx={{ px: 2, py: 0.5, bgcolor: '#fff' }}>
-          <Chip
-            label={selectedSkill.name}
-            onDelete={() => setSelectedSkill(null)}
-            size="small"
-            sx={{ height: 24, fontSize: 12 }}
-          />
-        </Box>
-      )}
 
       {/* 技能选择下拉 */}
       {showSkills && (

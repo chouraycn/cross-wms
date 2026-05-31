@@ -37,6 +37,7 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import SaveIcon from '@mui/icons-material/Save';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -828,6 +829,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: '仪表盘', path: '/', icon: <DashboardOutlinedIcon /> },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon /> },
+  { label: 'Agent 应用', path: '/agent', icon: <SmartToyOutlinedIcon /> },
   { label: '仓库管理', path: '/warehouses', icon: <WarehouseOutlinedIcon /> },
   { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon /> },
   { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon /> },

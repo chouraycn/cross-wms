@@ -3,11 +3,10 @@
 CrossWMS — pywebview 启动脚本
 用原生 macOS 窗口内嵌 WebView 渲染前端页面，不弹浏览器
 
-v4: 稳定性修复
-- 添加启动日志文件（~/Library/Logs/CrossWMS/startup.log）
-- 移除 input() 调用，避免 macOS GUI 环境下崩溃
-- get_index_path() 改为抛异常，不再 sys.exit()
-- HTTP 服务器增加就绪检测
+v5: 集成 Agent Web 应用
+- 添加 Agent Web 后端支持（端口 3002）
+- 添加 Agent Web 前端服务（端口 5174）
+- 修复多处语法错误
 """
 
 import os
@@ -62,10 +61,19 @@ TDOC_API_BASE = "https://docs.qq.com/openapi"
 TDOC_OAUTH_BASE = "https://docs.qq.com/oauth/v2"
 TDOC_TOKEN_FILE = os.path.expanduser("~/.crosswms/tdoc_token.json")
 
-# Node.js 后端服务器配置
+# Node.js 后端服务器配置（主后端）
 SERVER_PORT = 3001
 SERVER_HEALTH_URL = f"http://localhost:{SERVER_PORT}/api/health"
 SERVER_START_TIMEOUT = 30  # 等待后端启动的最长时间（秒）
+
+# Agent Web 后端配置
+AGENT_SERVER_PORT = 3002
+AGENT_SERVER_HEALTH_URL = f"http://localhost:{AGENT_SERVER_PORT}/api/health"
+AGENT_SERVER_START_TIMEOUT = 30
+
+# Agent Web 前端配置
+AGENT_FRONTEND_PORT = 5174
+AGENT_FRONTEND_URL = f"http://localhost:{AGENT_FRONTEND_PORT}"
 
 
 def read_version():
@@ -118,7 +126,7 @@ def get_index_path():
         if os.path.isfile(f):
             return f
 
-    log(f"ERROR: index.html not found!")
+    log("ERROR: index.html not found!")
     log(f"  sys.frozen = {getattr(sys, 'frozen', False)}")
     if getattr(sys, 'frozen', False):
         log(f"  sys._MEIPASS = {sys._MEIPASS}")
@@ -131,6 +139,7 @@ def get_index_path():
 # ===================== Node.js 后端管理 =====================
 
 _server_process = None
+_agent_server_process = None
 
 
 def get_node_path():
@@ -163,7 +172,6 @@ def get_node_path():
             return p
 
     # 尝试 PATH 中的 node
-    import shutil
     node_in_path = shutil.which('node')
     if node_in_path:
         return node_in_path
@@ -172,7 +180,7 @@ def get_node_path():
 
 
 def get_server_script_path():
-    """获取服务器入口文件路径"""
+    """获取主服务器入口文件路径"""
     candidates = []
 
     if getattr(sys, 'frozen', False):
@@ -192,6 +200,36 @@ def get_server_script_path():
     candidates.extend([
         os.path.join(base, 'server_dist', 'index.cjs'),
         os.path.join(base, 'server', 'index.ts'),
+    ])
+
+    for p in candidates:
+        if os.path.isfile(p):
+            return p
+
+    return None
+
+
+def get_agent_server_script_path():
+    """获取 Agent Web 服务器入口文件路径"""
+    candidates = []
+
+    if getattr(sys, 'frozen', False):
+        exe_dir = os.path.dirname(sys.executable)
+        resource_dir = os.path.join(os.path.dirname(exe_dir), 'Resources')
+        candidates.extend([
+            os.path.join(resource_dir, 'agent_server_dist', 'agent_index.cjs'),
+            os.path.join(resource_dir, 'agent_server_dist', 'index.cjs'),
+        ])
+        meipass = sys._MEIPASS
+        candidates.extend([
+            os.path.join(meipass, 'agent_server_dist', 'agent_index.cjs'),
+            os.path.join(meipass, 'agent_server_dist', 'index.cjs'),
+        ])
+
+    base = os.path.dirname(os.path.abspath(__file__))
+    candidates.extend([
+        os.path.join(base, 'agent_server_dist', 'agent_index.cjs'),
+        os.path.join(base, '..', 'cross-wms-agent-web', 'server', 'index.ts'),
     ])
 
     for p in candidates:
@@ -240,7 +278,7 @@ def check_dependencies():
 
 
 def start_server():
-    """启动 Node.js 后端服务器，返回进程对象"""
+    """启动 Node.js 主后端服务器，返回进程对象"""
     global _server_process
 
     node_path = get_node_path()
@@ -281,7 +319,6 @@ def start_server():
     # 如果是 .ts 文件，需要用 tsx 运行
     if server_script.endswith('.ts'):
         # 开发模式用 tsx
-        import shutil
         tsx_path = shutil.which('tsx')
         if tsx_path:
             cmd = [tsx_path, server_script]
@@ -314,8 +351,77 @@ def start_server():
         return None
 
 
+def start_agent_server():
+    """启动 Agent Web 后端服务器，返回进程对象"""
+    global _agent_server_process
+
+    node_path = get_node_path()
+    if not node_path:
+        print("[AgentServer] ⚠️  Node.js 未找到，Agent Web 将不可用")
+        return None
+
+    agent_server_script = get_agent_server_script_path()
+    if not agent_server_script:
+        print("[AgentServer] ⚠️  Agent Web 服务器脚本未找到，Agent Web 将不可用")
+        return None
+
+    print(f"[AgentServer] Node.js: {node_path}")
+    print(f"[AgentServer] 脚本: {agent_server_script}")
+
+    # 设置环境变量
+    env = os.environ.copy()
+    env['PORT'] = str(AGENT_SERVER_PORT)
+    env['CROSSWMS_DATA_DIR'] = os.path.expanduser('~/.crosswms')
+
+    # 设置 NODE_PATH
+    if getattr(sys, 'frozen', False):
+        agent_server_dist_dir = os.path.dirname(agent_server_script)
+        nm_path = os.path.join(agent_server_dist_dir, 'node_modules')
+        if os.path.isdir(nm_path):
+            env['NODE_PATH'] = nm_path
+            print(f"[AgentServer] NODE_PATH={nm_path}")
+
+        # Agent Web 前端路径
+        meipass = sys._MEIPASS
+        agent_dist = os.path.join(meipass, 'agent_dist')
+        if os.path.isdir(agent_dist):
+            env['AGENT_FRONTEND_DIST'] = agent_dist
+            print(f"[AgentServer] AGENT_FRONTEND_DIST={agent_dist}")
+
+    # 如果是 .ts 文件，需要用 tsx 运行
+    if agent_server_script.endswith('.ts'):
+        tsx_path = shutil.which('tsx')
+        if tsx_path:
+            cmd = [tsx_path, agent_server_script]
+        else:
+            base = os.path.dirname(os.path.abspath(__file__))
+            local_tsx = os.path.join(base, 'node_modules', '.bin', 'tsx')
+            if os.path.isfile(local_tsx):
+                cmd = [local_tsx, agent_server_script]
+            else:
+                print("[AgentServer] ⚠️  tsx 未找到，无法运行 TypeScript 服务器")
+                return None
+    else:
+        cmd = [node_path, agent_server_script]
+
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            start_new_session=True,
+        )
+        _agent_server_process = proc
+        print(f"[AgentServer] 进程已启动 (PID: {proc.pid})")
+        return proc
+    except Exception as e:
+        print(f"[AgentServer] ❌ 启动失败: {e}")
+        return None
+
+
 def wait_for_server():
-    """等待后端服务器就绪"""
+    """等待主后端服务器就绪"""
     print(f"[Server] 等待后端就绪 (最长 {SERVER_START_TIMEOUT}s)...")
     start_time = time.time()
 
@@ -336,8 +442,30 @@ def wait_for_server():
     return False
 
 
+def wait_for_agent_server():
+    """等待 Agent Web 后端服务器就绪"""
+    print(f"[AgentServer] 等待后端就绪 (最长 {AGENT_SERVER_START_TIMEOUT}s)...")
+    start_time = time.time()
+
+    while time.time() - start_time < AGENT_SERVER_START_TIMEOUT:
+        try:
+            req = urllib.request.Request(AGENT_SERVER_HEALTH_URL, method='GET')
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                if resp.status == 200:
+                    elapsed = time.time() - start_time
+                    print(f"[AgentServer] ✅ Agent Web 后端就绪 (耗时 {elapsed:.1f}s)")
+                    return True
+        except (urllib.error.URLError, ConnectionRefusedError, OSError):
+            pass
+
+        time.sleep(0.5)
+
+    print(f"[AgentServer] ⚠️  Agent Web 后端未在 {AGENT_SERVER_START_TIMEOUT}s 内就绪")
+    return False
+
+
 def stop_server():
-    """停止 Node.js 后端服务器"""
+    """停止 Node.js 主后端服务器"""
     global _server_process
     if _server_process and _server_process.poll() is None:
         print("[Server] 停止后端服务器...")
@@ -352,6 +480,23 @@ def stop_server():
                 pass
         _server_process = None
         print("[Server] 后端已停止")
+
+
+def stop_agent_server():
+    """停止 Agent Web 后端服务器"""
+    global _agent_server_process
+    if _agent_server_process and _agent_server_process.poll() is None:
+        print("[AgentServer] 停止 Agent Web 后端服务器...")
+        try:
+            os.killpg(os.getpgid(_agent_server_process.pid), signal.SIGTERM)
+            _agent_server_process.wait(timeout=5)
+        except Exception:
+            try:
+                _agent_server_process.kill()
+            except Exception:
+                pass
+        _agent_server_process = None
+        print("[AgentServer] Agent Web 后端已停止")
 
 
 # ===================== 腾讯文档 Token 管理 =====================
@@ -450,6 +595,26 @@ class Api:
         if self._window:
             self._window.toggle_fullscreen()
         return json.dumps({'ok': True})
+
+    # ---- Agent Web 控制 ----
+
+    def open_agent_web(self):
+        """在 pywebview 中打开 Agent Web 应用"""
+        agent_url = AGENT_FRONTEND_URL
+        if self._window:
+            self._window.load_url(agent_url)
+        return json.dumps({'ok': True, 'url': agent_url})
+
+    def get_agent_status(self):
+        """获取 Agent Web 后端状态"""
+        try:
+            req = urllib.request.Request(AGENT_SERVER_HEALTH_URL, method='GET')
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                if resp.status == 200:
+                    return json.dumps({'ok': True, 'running': True})
+        except Exception:
+            pass
+        return json.dumps({'ok': True, 'running': False})
 
     # ---- 腾讯文档 OAuth ----
 
@@ -603,7 +768,6 @@ class Api:
         返回:
             {'ok': True/False, 'data': {...}, 'error': '...'}
         """
-        import shutil
         cmd = [self.WECOM_CLI] + list(args)
         try:
             result = subprocess.run(
@@ -637,7 +801,6 @@ class Api:
 
     def wecom_check_auth(self):
         """检查企业微信 wecom-cli 认证状态"""
-        import shutil
         cli_path = shutil.which(self.WECOM_CLI)
         if not cli_path:
             return json.dumps({
@@ -715,7 +878,10 @@ class Api:
         sheets = sheets_data.get('sheet_list', sheets_data.get('data', []))
         if not sheets:
             # 兼容不同的返回格式
-            sheets = [sheets_data] if isinstance(sheets_data, dict) and 'sheet_id' in sheets_data else []
+            if isinstance(sheets_data, dict) and 'sheet_id' in sheets_data:
+                sheets = [sheets_data]
+            else:
+                sheets = []
 
         fields_map = {}
         for sheet in sheets:
@@ -927,7 +1093,6 @@ def start_http_server(dist_dir: str, port: int = 9988):
             # 打包环境：端口被占说明已有实例在运行，直接抛异常让调用方处理
             raise
         print(f"[HTTP Server] 端口 {port} 被占用 ({e})，尝试清理...")
-        import subprocess
         # 查找占用端口的进程并终止
         result = subprocess.run(['lsof', '-ti', f'tcp:{port}'], capture_output=True, text=True)
         if result.stdout.strip():
@@ -951,6 +1116,43 @@ def start_http_server(dist_dir: str, port: int = 9988):
     return httpd, port
 
 
+def start_agent_http_server(dist_dir: str, port: int = 5174):
+    """
+    启动 Agent Web 前端 HTTP 服务器。
+
+    参数：
+        dist_dir: Agent Web 静态文件目录
+        port: 监听端口（默认 5174）
+
+    返回：
+        (httpd, port): HTTP 服务器对象和端口号
+    """
+    if not os.path.isdir(dist_dir):
+        print(f"[Agent HTTP Server] ⚠️  目录不存在: {dist_dir}")
+        return None, None
+
+    class QuietHandler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=dist_dir, **kwargs)
+
+        def log_message(self, format, *args):
+            pass
+
+    socketserver.TCPServer.allow_reuse_address = True
+
+    try:
+        httpd = socketserver.TCPServer(("127.0.0.1", port), QuietHandler)
+    except OSError as e:
+        print(f"[Agent HTTP Server] ⚠️  端口 {port} 被占用: {e}")
+        return None, None
+
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+
+    print(f"[Agent HTTP Server] 已启动 http://127.0.0.1:{port}/ (dist: {dist_dir})")
+    return httpd, port
+
+
 def main():
     log("=== CrossWMS 启动 ===")
     log(f"  sys.frozen = {getattr(sys, 'frozen', False)}")
@@ -959,6 +1161,7 @@ def main():
         log(f"  sys._MEIPASS = {sys._MEIPASS}")
 
     httpd = None  # HTTP 服务器对象，finally 中清理
+    agent_httpd = None  # Agent Web HTTP 服务器对象
     exit_code = 0
 
     try:
@@ -984,20 +1187,44 @@ def main():
             with urllib.request.urlopen(health_req, timeout=3) as resp:
                 log(f"[Frontend] HTTP 服务器就绪 (status={resp.status})")
         except Exception as e:
-            log(f"[Frontend] ⚠️ HTTP 服务器健康检查失败: {e}")
+            log(f"[Frontend] ⚠️  HTTP 服务器健康检查失败: {e}")
             # 不阻塞，继续尝试加载
 
-        # 3. 尝试启动 Node.js 后端（可选，仅用于 AI 助手功能）
+        # 3. 尝试启动 Node.js 主后端（可选，仅用于 AI 助手功能）
         server_proc = start_server()
         if server_proc:
             # 非阻塞：等待后端就绪，但不阻塞前端加载
-            import threading
             def _wait_server():
                 wait_for_server()
             threading.Thread(target=_wait_server, daemon=True).start()
             log("[Server] AI 助手后端已启动（可选，不影响前端加载）")
         else:
             log("[Server] ⚠️  Node.js 未找到，AI 助手将不可用")
+
+        # 3.5 尝试启动 Agent Web 后端和前端服务器
+        agent_server_proc = start_agent_server()
+        if agent_server_proc:
+            def _wait_agent_server():
+                wait_for_agent_server()
+            threading.Thread(target=_wait_agent_server, daemon=True).start()
+            log("[AgentServer] Agent Web 后端已启动")
+
+            # 启动 Agent Web 前端 HTTP 服务器
+            agent_dist_dir = None
+            if getattr(sys, 'frozen', False):
+                meipass = sys._MEIPASS
+                agent_dist = os.path.join(meipass, 'agent_dist')
+                if os.path.isdir(agent_dist):
+                    agent_dist_dir = agent_dist
+
+            if agent_dist_dir:
+                agent_httpd, agent_port = start_agent_http_server(agent_dist_dir, AGENT_FRONTEND_PORT)
+                if agent_httpd:
+                    log(f"[Agent Frontend] Agent Web 前端已启动: http://127.0.0.1:{agent_port}/")
+            else:
+                log("[Agent Frontend] ⚠️  Agent Web 前端文件未找到")
+        else:
+            log("[AgentServer] ⚠️  Agent Web 后端未找到，Agent Web 将不可用")
 
         # 4. 创建 pywebview 窗口，通过 HTTP 加载前端
         api = Api()
@@ -1038,8 +1265,19 @@ def main():
                 log("[HTTP Server] 已停止")
             except Exception as e:
                 log(f"[HTTP Server] 停止失败: {e}")
+
+        # 6.5 清理 Agent Web HTTP 服务器
+        if agent_httpd:
+            try:
+                agent_httpd.shutdown()
+                agent_httpd.server_close()
+                log("[Agent HTTP Server] 已停止")
+            except Exception as e:
+                log(f"[Agent HTTP Server] 停止失败: {e}")
+
         # 7. 确保后端服务器被停止
         stop_server()
+        stop_agent_server()
         log(f"=== CrossWMS 退出 (exit_code={exit_code}) ===")
 
     # GUI 环境下不要用 sys.exit() / os._exit()，让进程自然退出

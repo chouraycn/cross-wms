@@ -50,7 +50,6 @@ app.post('/api/chat', async (req, res) => {
     const sessions = getSessions();
     const sessionExists = sessions.some(s => s.id === sessionId);
     if (!sessionExists) {
-      console.log(`[Chat API] Session ${sessionId} not found, creating new session`);
       createSession(sessionId, '新对话', model, undefined);
     }
 
@@ -65,7 +64,6 @@ app.post('/api/chat', async (req, res) => {
     // 调用 Agent SDK 进行流式对话
     let fullContent = '';
     try {
-      console.log('[Chat API] Calling query with:', { prompt: message, model, cwd: process.cwd() });
       const queryInstance = query({
         prompt: message,
         options: {
@@ -74,12 +72,9 @@ app.post('/api/chat', async (req, res) => {
           cwd: process.cwd(),
         },
       });
-      
-      console.log('[Chat API] Query instance created, starting iteration...');
-      
+
       // 处理流式响应
       for await (const msg of queryInstance) {
-        console.log('[Chat API] Received message:', msg.type, msg);
         if (msg.type === 'assistant') {
           for (const block of msg.message.content) {
             if (block.type === 'text') {
@@ -90,8 +85,6 @@ app.post('/api/chat', async (req, res) => {
         }
       }
 
-      console.log('[Chat API] Stream completed, full content length:', fullContent.length);
-      
       // 保存完整的助手回复
       addMessage({ sessionId, role: 'assistant', content: fullContent, model });
     } catch (sdkError) {

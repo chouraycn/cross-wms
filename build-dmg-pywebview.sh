@@ -1,7 +1,7 @@
 #!/bin/bash
 # CrossWMS — 构建 DMG 安装包（pywebview + PyInstaller + Node.js 后端）
 # 方案：Python + pywebview 创建原生 macOS 窗口，Node.js 运行 AI 助手后端
-# 优势：不弹浏览器，真正的桌面窗口体验 + AI 助手能力
+# 新增：Agent Web 应用集成（前端端口 5174，后端端口 3002）
 #
 # 用法：
 #   bash build-dmg-pywebview.sh           # 正常构建
@@ -20,6 +20,7 @@ PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 FRONTEND_DIST="$PROJECT_DIR/dist"
 BUILD_DIR="$PROJECT_DIR/build-pywebview"
 VERSION_FILE="$PROJECT_DIR/version.txt"
+AGENT_WEB_DIR="$PROJECT_DIR/../cross-wms-agent-web"
 
 # ===================== 版本管理 =====================
 
@@ -123,10 +124,8 @@ mkdir -p "$BUILD_DIR/frontend_dist"
 cp -r "$FRONTEND_DIST"/* "$BUILD_DIR/frontend_dist/"
 
 # 在构建时注入 pywebview CSS 变量（解决 DMG 只读文件系统无法运行时写入的问题）
-# index.html 是 copy，BUILD_DIR 可写
 INJECTED_HTML="$BUILD_DIR/frontend_dist/index.html"
 if [ -f "$INJECTED_HTML" ]; then
-  # 用 Python 注入 <style>:root { --pw-top: 28px; }</style>
   python3 -c "
 html = open('$INJECTED_HTML', 'r', encoding='utf-8').read()
 html = html.replace('</head>', '<style>:root { --pw-top: 28px; }</style>\n</head>', 1)
@@ -135,10 +134,35 @@ print('✅ pywebview CSS 变量已注入 index.html')
 "
 fi
 
+# 2.5 构建 Agent Web 前端（如果存在）
+AGENT_DIST="$BUILD_DIR/agent_dist"
+if [ -d "$AGENT_WEB_DIR" ]; then
+  echo "📦 构建 Agent Web 前端..."
+  cd "$AGENT_WEB_DIR"
+  if [ -f "package.json" ]; then
+    echo "   安装 Agent Web 依赖..."
+    npm install --legacy-peer-deps 2>&1 | tail -5
+    echo "   构建 Agent Web 前端（输出到 dist/）..."
+    npm run build 2>&1 | tail -10
+    if [ -d "dist" ]; then
+      mkdir -p "$AGENT_DIST"
+      cp -r dist/* "$AGENT_DIST/"
+      echo "   ✅ Agent Web 前端已构建并复制到 $AGENT_DIST"
+    else
+      echo "   ⚠️  Agent Web dist/ 目录不存在，跳过..."
+    fi
+  else
+    echo "   ⚠️  Agent Web package.json 不存在，跳过前端构建"
+  fi
+  cd "$PROJECT_DIR"
+else
+  echo "⚠️  Agent Web 目录不存在 ($AGENT_WEB_DIR)，跳过前端构建"
+fi
+echo ""
+
 # 3. 编译 Node.js 后端 TypeScript → JavaScript
 echo "⚙️  编译 Node.js 后端..."
 
-# 使用 esbuild 编译 server/ 目录
 if command -v npx &>/dev/null; then
   npx esbuild "$SERVER_DIR/index.ts" \
     --bundle \
@@ -154,21 +178,47 @@ if command -v npx &>/dev/null; then
   echo "✅ 后端编译完成 (index.cjs)"
 else
   echo "⚠️  esbuild 不可用，尝试手动复制..."
-  # 回退：直接复制 .ts 文件，运行时用 tsx
   mkdir -p "$SERVER_BUILD_DIR"
   cp -r "$SERVER_DIR"/* "$SERVER_BUILD_DIR/"
 fi
+
+# 3.5 编译 Agent Web 后端（使用 esbuild）
+AGENT_SERVER_SOURCE="$AGENT_WEB_DIR/server/index.ts"
+AGENT_SERVER_BUILD_DIR="$BUILD_DIR/agent_server_dist"
+if [ -f "$AGENT_SERVER_SOURCE" ]; then
+  echo "⚙️  编译 Agent Web 后端..."
+  mkdir -p "$AGENT_SERVER_BUILD_DIR"
+  if command -v npx &>/dev/null; then
+    npx esbuild "$AGENT_SERVER_SOURCE" \
+      --bundle \
+      --platform=node \
+      --target=node18 \
+      --format=cjs \
+      --outfile="$AGENT_SERVER_BUILD_DIR/agent_index.cjs" \
+      --external:@tencent-ai/agent-sdk \
+      --external:express \
+      --external:cors \
+      --external:uuid \
+      --external:better-sqlite3
+    echo "✅ Agent Web 后端编译完成 (agent_index.cjs)"
+  else
+    echo "⚠️  esbuild 不可用，尝试手动复制..."
+    cp -r "$AGENT_WEB_DIR/server"/* "$AGENT_SERVER_BUILD_DIR/"
+  fi
+else
+  echo "⚠️  Agent Web 后端源码不存在 ($AGENT_SERVER_SOURCE)，跳过编译"
+fi
+echo ""
 
 # 4. 安装后端生产依赖到独立目录
 echo "📦 安装后端生产依赖..."
 mkdir -p "$SERVER_BUILD_DIR/node_modules"
 cd "$SERVER_BUILD_DIR"
 
-# 创建最小 package.json 用于 npm install（版本号与项目同步）
-cat > package.json << PKGJSON
+cat > package.json << 'PKGJSON'
 {
   "name": "crosswms-server",
-  "version": "${VERSION}",
+  "version": "1.0.0",
   "type": "module",
   "dependencies": {
     "@tencent-ai/agent-sdk": "^0.3.43",
@@ -180,8 +230,40 @@ cat > package.json << PKGJSON
 }
 PKGJSON
 
+# 更新版本号
+sed -i '' "s/\\\"version\\\": \\\"1.0.0\\\"/\\\"version\\\": \\\"${VERSION}\\\"/" package.json
+
 npm install --production --no-optional 2>&1 | tail -5
 echo "✅ 后端依赖安装完成"
+
+# 4.5 安装 Agent Web 后端生产依赖
+if [ -d "$AGENT_SERVER_BUILD_DIR" ]; then
+  echo "📦 安装 Agent Web 后端生产依赖..."
+  mkdir -p "$AGENT_SERVER_BUILD_DIR/node_modules"
+  cd "$AGENT_SERVER_BUILD_DIR"
+
+  cat > package.json << 'AGENTPKGJSON'
+{
+  "name": "crosswms-agent-server",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@tencent-ai/agent-sdk": "^0.3.43",
+    "express": "^5.2.0",
+    "cors": "^2.8.5",
+    "uuid": "^9.0.0",
+    "better-sqlite3": "^12.6.2"
+  }
+}
+AGENTPKGJSON
+
+  # 更新版本号
+  sed -i '' "s/\\\"version\\\": \\\"1.0.0\\\"/\\\"version\\\": \\\"${VERSION}\\\"/" package.json
+
+  npm install --production --no-optional 2>&1 | tail -5
+  echo "✅ Agent Web 后端依赖安装完成"
+  cd "$PROJECT_DIR"
+fi
 
 cd "$PROJECT_DIR"
 
@@ -191,13 +273,11 @@ mkdir -p "$NODE_RUNTIME_DIR/bin"
 SYSTEM_NODE="$(which node 2>/dev/null || echo '')"
 
 if [ -n "$SYSTEM_NODE" ] && [ -x "$SYSTEM_NODE" ]; then
-  # 复制 Node.js 二进制
   cp "$SYSTEM_NODE" "$NODE_RUNTIME_DIR/bin/node"
   NODE_SIZE=$(du -sh "$NODE_RUNTIME_DIR/bin/node" | cut -f1)
   echo "✅ Node.js: $SYSTEM_NODE ($NODE_SIZE)"
 else
   echo "⚠️  系统未找到 Node.js，AI 助手将不可用"
-  echo "   安装 Node.js 后重新构建以启用 AI 助手"
 fi
 
 # 6. 用 PyInstaller 构建 .app
@@ -209,23 +289,42 @@ SERVER_NODE_MODULES="$SERVER_BUILD_DIR/node_modules"
 SERVER_NODE_MODULES_BAK="$BUILD_DIR/server_dist_node_modules_bak"
 if [ -d "$SERVER_NODE_MODULES" ]; then
   mv "$SERVER_NODE_MODULES" "$SERVER_NODE_MODULES_BAK"
-  echo "✅ 已临时移走 node_modules（避免 PyInstaller 处理 .node 文件）"
+  echo "✅ 已临时移走 server_dist/node_modules"
 fi
 
-# PyInstaller 的 bincache 默认路径 (~/Library/Application Support/pyinstaller) 在沙箱中不可写
-# 解决：PYINSTALLER_CONFIG_DIR 环境变量让 PyInstaller 使用构建目录内的缓存
+# 临时移走 agent_server_dist/node_modules
+AGENT_SERVER_NODE_MODULES="$AGENT_SERVER_BUILD_DIR/node_modules"
+AGENT_SERVER_NODE_MODULES_BAK="$BUILD_DIR/agent_server_dist_node_modules_bak"
+if [ -d "$AGENT_SERVER_BUILD_DIR" ] && [ -d "$AGENT_SERVER_NODE_MODULES" ]; then
+  mv "$AGENT_SERVER_NODE_MODULES" "$AGENT_SERVER_NODE_MODULES_BAK"
+  echo "✅ 已临时移走 agent_server_dist/node_modules"
+fi
+
 export PYINSTALLER_CONFIG_DIR="$BUILD_DIR/pyinstaller-cache"
 mkdir -p "$PYINSTALLER_CONFIG_DIR"
+
+# 构建数据文件参数
+DATA_ARGS="--add-data $BUILD_DIR/frontend_dist:frontend_dist "
+DATA_ARGS="$DATA_ARGS --add-data $SERVER_BUILD_DIR:server_dist "
+DATA_ARGS="$DATA_ARGS --add-data $NODE_RUNTIME_DIR:node "
+DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:version.txt "
+
+if [ -d "$AGENT_DIST" ]; then
+  DATA_ARGS="$DATA_ARGS --add-data $AGENT_DIST:agent_dist "
+  echo "✅ 添加 Agent Web 前端到打包"
+fi
+
+if [ -d "$AGENT_SERVER_BUILD_DIR" ]; then
+  DATA_ARGS="$DATA_ARGS --add-data $AGENT_SERVER_BUILD_DIR:agent_server_dist "
+  echo "✅ 添加 Agent Web 后端到打包"
+fi
 
 "$PYINSTALLER" \
   --name "CrossWMS" \
   --windowed \
   --onedir \
   --noconfirm \
-  --add-data "$BUILD_DIR/frontend_dist:frontend_dist" \
-  --add-data "$SERVER_BUILD_DIR:server_dist" \
-  --add-data "$NODE_RUNTIME_DIR:node" \
-  --add-data "$VERSION_FILE:version.txt" \
+  $DATA_ARGS \
   --icon "$PROJECT_DIR/public/icon.png" \
   --distpath "$BUILD_DIR/dist" \
   --workpath "$BUILD_DIR/work" \
@@ -241,7 +340,15 @@ if [ -d "$SERVER_NODE_MODULES_BAK" ]; then
   echo "✅ node_modules 已复制到 .app/Contents/Resources/server_dist/"
 fi
 
-# 7. 修复 Info.plist（使用 $VERSION 变量，不再硬编码）
+APP_AGENT_SERVER_DIST="$BUILD_DIR/dist/CrossWMS.app/Contents/Resources/agent_server_dist"
+if [ -d "$AGENT_SERVER_NODE_MODULES_BAK" ]; then
+  mkdir -p "$APP_AGENT_SERVER_DIST"
+  cp -r "$AGENT_SERVER_NODE_MODULES_BAK" "$APP_AGENT_SERVER_DIST/node_modules"
+  rm -rf "$AGENT_SERVER_NODE_MODULES_BAK"
+  echo "✅ Agent Web node_modules 已复制到 .app/Contents/Resources/agent_server_dist/"
+fi
+
+# 7. 修复 Info.plist
 APP_PATH="$BUILD_DIR/dist/CrossWMS.app"
 PLIST_PATH="$APP_PATH/Contents/Info.plist"
 
@@ -281,21 +388,22 @@ echo "✅ DMG 构建完成！"
 ls -lh "$PROJECT_DIR/release/$DMG_NAME"
 echo ""
 
-# 10. 生成 release.json（用于自动更新检测）
+# 10. 生成 release.json
 echo "📝 生成 release.json..."
 
-python3 << PYEOF
-import json, os, sys
+python3 << 'PYEOF2'
+import json, os
 
 GITHUB_OWNER = "chouraycn"
 GITHUB_REPO = "cross-wms"
 
-version = "${VERSION}"
+version = os.environ.get("VERSION", "1.0.0")
 pub_date = "$(date +%Y-%m-%d)"
 dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/CrossWMS-{version}-mac.dmg"
 min_ver = "1.0.0"
 
-notes_file = os.path.join("${PROJECT_DIR}", "RELEASE_NOTES.md")
+project_dir = os.environ.get("PROJECT_DIR", ".")
+notes_file = os.path.join(project_dir, "RELEASE_NOTES.md")
 if os.path.isfile(notes_file):
     with open(notes_file, 'r', encoding='utf-8') as f:
         notes = f.read().strip()
@@ -310,17 +418,18 @@ data = {
     'minVersion': min_ver,
 }
 
-with open(os.path.join("${PROJECT_DIR}", "release", 'release.json'), 'w', encoding='utf-8') as f:
+release_path = os.path.join(project_dir, "release", 'release.json')
+with open(release_path, 'w', encoding='utf-8') as f:
     json.dump(data, f, ensure_ascii=False, indent=2)
 
 print(f"✅ release.json 已生成 — dmgUrl: {dmg_url}")
-PYEOF
+PYEOF2
+
 echo ""
 
 # 11. 上传到 GitHub Releases
 echo "🚀 上传到 GitHub Releases..."
 
-# 先用 git tag 打版本标签
 if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
   echo "  标签 v${VERSION} 已存在，跳过创建"
 else
@@ -329,147 +438,74 @@ else
   echo "✅ 标签 v${VERSION} 已推送"
 fi
 
-# 上传到 GitHub Releases（三步容错）
 UPLOAD_OK=false
 
-# ── 第一步：GITHUB_TOKEN API（最可靠，非交互环境首选）──
 if [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
-  echo "📦 使用 GitHub API 上传（GITHUB_TOKEN 可用）..."
+  echo "📦 使用 GitHub API 上传..."
   TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}"
 
-  # 检查 release 是否已存在
   RELEASE_ID=$(curl -s -H "Authorization: token $TOKEN" \
     "https://api.github.com/repos/chouraycn/cross-wms/releases/tags/v${VERSION}" \
     | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || echo "")
 
-  if [ -n "$RELEASE_ID" ]; then
-    echo "  Release 已存在 (ID: $RELEASE_ID)，上传附件..."
-  else
-    echo "  创建 Release v${VERSION}..."
-    # 用 temp file 避免 shell 引号嵌套问题（Python -c 里的 '''$NOTES''' 会被 shell 误解析）
-    echo -n "$VERSION" > /tmp/crosswms_version.txt
-    if [ -f "$PROJECT_DIR/RELEASE_NOTES.md" ]; then
-      cat "$PROJECT_DIR/RELEASE_NOTES.md" > /tmp/crosswms_notes.txt
-    else
-      echo -n "CrossWMS v${VERSION} 发布" > /tmp/crosswms_notes.txt
-    fi
-    python3 << 'PYEOF' > /tmp/crosswms_release_data.json
-import json
-with open('/tmp/crosswms_version.txt') as f:
-    version = f.read().strip()
-with open('/tmp/crosswms_notes.txt') as f:
-    notes = f.read().strip()
+  if [ -z "$RELEASE_ID" ]; then
+    python3 << 'PYEOF3' > /tmp/crosswms_release_data.json
+import json, os
+version = os.environ.get("VERSION", "1.0.0")
+project_dir = os.environ.get("PROJECT_DIR", ".")
+notes_file = os.path.join(project_dir, "RELEASE_NOTES.md")
+if os.path.isfile(notes_file):
+    with open(notes_file, 'r', encoding='utf-8') as f:
+        notes = f.read().strip()
+else:
+    notes = f"CrossWMS v{version} 发布"
 print(json.dumps({"tag_name": "v" + version, "name": "CrossWMS v" + version, "body": notes}))
-PYEOF
+PYEOF3
     RELEASE_DATA=$(curl -s -X POST \
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
       -d @/tmp/crosswms_release_data.json \
       "https://api.github.com/repos/chouraycn/cross-wms/releases")
-    # 清理 temp file
-    rm -f /tmp/crosswms_version.txt /tmp/crosswms_notes.txt /tmp/crosswms_release_data.json
-    NEW_ID=$(echo "$RELEASE_DATA" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
-    if [ -n "$NEW_ID" ]; then
-      RELEASE_ID="$NEW_ID"
-      echo "  Release 已创建 (ID: $RELEASE_ID)"
-    else
-      echo "  ⚠️  Release 创建失败，尝试 fallback..."
-    fi
+    rm -f /tmp/crosswms_release_data.json
+    RELEASE_ID=$(echo "$RELEASE_DATA" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
   fi
 
   if [ -n "$RELEASE_ID" ]; then
     UPLOAD_OK=true
-    # 上传 DMG
-    echo "  上传 DMG ($DMG_NAME)..."
-    UPLOAD_DMG=$(curl -s -w "%{http_code}" -H "Authorization: token $TOKEN" \
-      -H "Content-Type: application/x-apple-diskimage" \
+    echo "  上传 DMG..."
+    curl -s -X POST \
+      -H "Authorization: token $TOKEN" \
+      -H "Content-Type: application/octet-stream" \
       --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
-      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=$DMG_NAME")
-    DMG_HTTP_CODE="${UPLOAD_DMG: -3}"
-    if [ "$DMG_HTTP_CODE" != "201" ] && [ "$DMG_HTTP_CODE" != "200" ]; then
-      echo "  ⚠️  DMG 上传失败 (HTTP $DMG_HTTP_CODE)"
-      UPLOAD_OK=false
-    fi
-    # 上传 release.json
+      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=$DMG_NAME" \
+      && echo "  ✅ DMG 上传成功" || { echo "  ⚠️  DMG 上传失败"; UPLOAD_OK=false; }
+
     echo "  上传 release.json..."
-    UPLOAD_JSON=$(curl -s -w "%{http_code}" -H "Authorization: token $TOKEN" \
+    curl -s -X POST \
+      -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
       --data-binary @"$PROJECT_DIR/release/release.json" \
-      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=release.json")
-    JSON_HTTP_CODE="${UPLOAD_JSON: -3}"
-    if [ "$JSON_HTTP_CODE" != "201" ] && [ "$JSON_HTTP_CODE" != "200" ]; then
-      echo "  ⚠️  release.json 上传失败 (HTTP $JSON_HTTP_CODE)"
-      UPLOAD_OK=false
-    fi
-    if [ "$UPLOAD_OK" = true ]; then
-      echo "✅ Release v${VERSION} 已发布!"
-    else
-      echo "⚠️  Release 上传未完全成功，请检查上述错误"
-      UPLOAD_OK=false
-    fi
+      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=release.json" \
+      && echo "  ✅ release.json 上传成功" || { echo "  ⚠️  release.json 上传失败"; UPLOAD_OK=false; }
+
+    [ "$UPLOAD_OK" = true ] && echo "✅ Release v${VERSION} 已发布!"
   fi
 fi
 
-# ── 第二步：gh CLI（GITHUB_TOKEN 方式失败时兜底）──
 if [ "$UPLOAD_OK" = false ] && command -v gh &>/dev/null; then
-  echo "📦 尝试 gh CLI 创建 Release..."
+  echo "📦 尝试 gh CLI..."
   if gh auth status &>/dev/null 2>&1; then
-    if gh release view "v${VERSION}" &>/dev/null 2>&1; then
-      gh release upload "v${VERSION}" \
-        "$PROJECT_DIR/release/$DMG_NAME#CrossWMS DMG" \
-        "$PROJECT_DIR/release/release.json#Release Info" \
-        --clobber \
-        && UPLOAD_OK=true \
-        && echo "✅ Release v${VERSION} 已发布!" \
-        || echo "⚠️  Release 上传失败（gh release upload 返回错误）"
-    else
-      gh release create "v${VERSION}" \
-        "$PROJECT_DIR/release/$DMG_NAME#CrossWMS DMG" \
-        "$PROJECT_DIR/release/release.json#Release Info" \
-        --title "CrossWMS v${VERSION}" \
-        --notes "$(cat "$PROJECT_DIR/RELEASE_NOTES.md" 2>/dev/null || echo "CrossWMS v${VERSION} 发布")" \
-        && UPLOAD_OK=true \
-        && echo "✅ Release v${VERSION} 已发布!" \
-        || echo "⚠️  Release 创建失败（gh release create 返回错误）"
-    fi
-  else
-    echo "  ⚠️  gh CLI 未登录，跳过..."
+    gh release create "v${VERSION}" \
+      "$PROJECT_DIR/release/$DMG_NAME#CrossWMS DMG" \
+      "$PROJECT_DIR/release/release.json#Release Info" \
+      --title "CrossWMS v${VERSION}" \
+      --notes "$(cat "$PROJECT_DIR/RELEASE_NOTES.md" 2>/dev/null || echo "CrossWMS v${VERSION} 发布")" \
+      && echo "✅ Release v${VERSION} 已发布!" || echo "⚠️  上传失败"
   fi
 fi
-
-# ── 第三步：手动指引（所有自动方式都失败）──
-if [ "$UPLOAD_OK" = false ]; then
-  echo "⚠️  自动上传失败，手动创建 Release:"
-  echo "     1. https://github.com/chouraycn/cross-wms/releases/new"
-  echo "     2. Tag: v${VERSION}, 上传: release/$DMG_NAME + release/release.json"
-  echo ""
-  echo "   💡 后续自动上传需设置: export GITHUB_TOKEN=ghp_your_token"
-fi
-
-echo ""
-
-# 12. 清理临时文件（保留 .app 以便调试）
-echo "🧹 清理构建缓存..."
-rm -rf "$BUILD_DIR/work" "$BUILD_DIR/CrossWMS.spec"
 
 echo ""
 echo "=== 完成 ==="
 echo "版本: $VERSION"
 echo "DMG 路径: $PROJECT_DIR/release/$DMG_NAME"
 echo "Release: https://github.com/chouraycn/cross-wms/releases/tag/v${VERSION}"
-echo ""
-echo "📋 使用说明："
-echo "   1. 将 DMG 发给对方"
-echo "   2. 双击 DMG → 拖拽 CrossWMS.app 到 Applications"
-echo "   3. 首次打开：右键 CrossWMS.app → 打开（绕过 Gatekeeper）"
-echo "   4. 或在终端运行: xattr -cr /Applications/CrossWMS.app"
-echo "   5. 启动后会打开原生 macOS 窗口 + AI 助手"
-echo ""
-echo "🚀 快捷命令："
-echo "   bash build-dmg-pywebview.sh --bump-patch   # patch 版本 + 构建 + 上传"
-echo "   bash build-dmg-pywebview.sh --bump-minor   # minor 版本 + 构建 + 上传"
-echo "   bash build-dmg-pywebview.sh --bump-major   # major 版本 + 构建 + 上传"
-echo ""
-echo "💡 上传前提："
-echo "   - 安装 gh CLI: brew install gh && gh auth login"
-echo "   - 或设置环境变量: export GITHUB_TOKEN=ghp_your_token"

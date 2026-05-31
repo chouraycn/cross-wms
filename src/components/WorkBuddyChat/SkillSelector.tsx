@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Paper, Typography, TextField, List, ListItem, ListItemText, InputAdornment, IconButton } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import CloseIcon from '@mui/icons-material/Close';
-import { Skill, DEFAULT_SKILLS } from '../../types/skill';
-import { PRIMARY, SECONDARY, BORDER, BG_LIGHT, WHITE, RADIUS } from '../../constants/theme';
+import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box, CircularProgress } from '@mui/material';
+import { Skill } from '../../types/skill';
+import { DEFAULT_SKILLS } from '../../types/skill';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import InputIcon from '@mui/icons-material/Input';
+import OutputIcon from '@mui/icons-material/Output';
+import BarChartIcon from '@mui/icons-material/BarChart';
 
 interface SkillSelectorProps {
   anchorEl: HTMLElement | null;
@@ -12,21 +14,22 @@ interface SkillSelectorProps {
   onClose: () => void;
 }
 
+const ICON_MAP: Record<string, React.ReactNode> = {
+  'Analytics': <AnalyticsIcon sx={{ fontSize: 20, color: '#6B7280' }} />,
+  'LocalShipping': <LocalShippingIcon sx={{ fontSize: 20, color: '#6B7280' }} />,
+  'Input': <InputIcon sx={{ fontSize: 20, color: '#6B7280' }} />,
+  'Output': <OutputIcon sx={{ fontSize: 20, color: '#6B7280' }} />,
+  'BarChart': <BarChartIcon sx={{ fontSize: 20, color: '#6B7280' }} />,
+};
+
 export function SkillSelector({ anchorEl, onSelect, onClose }: SkillSelectorProps) {
-  const [search, setSearch] = useState('');
-  const [filtered, setFiltered] = useState<Skill[]>(DEFAULT_SKILLS);
-  const ref = useRef<HTMLDivElement>(null);
+  const [filterText, setFilterText] = useState('');
+  const listRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const filtered = DEFAULT_SKILLS.filter(s =>
-      s.name.includes(search) || s.description.includes(search)
-    );
-    setFiltered(filtered);
-  }, [search]);
-
+  // Close on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node) && !anchorEl?.contains(e.target as Node)) {
+      if (anchorEl && !anchorEl.contains(e.target as Node) && listRef.current && !listRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
@@ -34,73 +37,86 @@ export function SkillSelector({ anchorEl, onSelect, onClose }: SkillSelectorProp
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [anchorEl, onClose]);
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  const filteredSkills = DEFAULT_SKILLS.filter(skill =>
+    skill.name.toLowerCase().includes(filterText.toLowerCase()) ||
+    skill.description.toLowerCase().includes(filterText.toLowerCase()) ||
+    skill.category.toLowerCase().includes(filterText.toLowerCase())
+  );
+
   if (!anchorEl) return null;
 
-  const rect = anchorEl.getBoundingClientRect();
+  const anchorRect = anchorEl.getBoundingClientRect();
 
   return (
     <Paper
-      ref={ref}
+      ref={listRef}
+      elevation={4}
       sx={{
-        position: 'fixed',
-        top: rect.bottom + 4,
-        left: rect.left,
+        position: 'absolute',
+        top: anchorRect.bottom + 8,
+        left: anchorRect.left,
         width: 320,
         maxHeight: 360,
         overflow: 'auto',
         zIndex: 1400,
-        borderRadius: RADIUS,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-        bgcolor: WHITE,
+        borderRadius: '8px',
+        border: '1px solid #E5E7EB',
+        bgcolor: '#FFFFFF',
+        boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.1)',
       }}
     >
-      <Box sx={{ p: 1, borderBottom: `1px solid ${BORDER}` }}>
-        <TextField
-          size="small"
-          fullWidth
-          placeholder="搜索技能..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ fontSize: 18, color: SECONDARY }} />
-              </InputAdornment>
-            ),
-            endAdornment: search && (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setSearch('')}>
-                  <CloseIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </InputAdornment>
-            ),
-            style: { fontSize: 13 }
-          }}
-          sx={{ '& .MuiInputBase-root': { height: 36 } }}
-        />
-      </Box>
-      <List sx={{ py: 0.5 }}>
-        {filtered.map(skill => (
-          <ListItem
-            key={skill.id}
-            button
-            onClick={() => { onSelect(skill); setSearch(''); }}
-            sx={{ py: 1, px: 2, '&:hover': { bgcolor: BG_LIGHT } }}
-          >
-            <ListItemText
-              primary={skill.name}
-              secondary={skill.description}
-              primaryTypographyProps={{ fontSize: 14, fontWeight: 500, color: PRIMARY }}
-              secondaryTypographyProps={{ fontSize: 12, color: SECONDARY }}
-            />
-          </ListItem>
-        ))}
-        {filtered.length === 0 && (
-          <Typography sx={{ p: 2, textAlign: 'center', color: SECONDARY, fontSize: 13 }}>
-            未找到匹配的技能
-          </Typography>
-        )}
-      </List>
+      {filteredSkills.length === 0 ? (
+        <Box sx={{ p: 2, textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 13, color: '#9CA3AF' }}>未找到匹配的技能</Typography>
+        </Box>
+      ) : (
+        <List sx={{ py: 0.5, px: 0 }}>
+          {filteredSkills.map((skill) => (
+            <ListItem
+              key={skill.id}
+              button
+              onClick={() => {
+                onSelect(skill);
+              }}
+              sx={{
+                py: 1,
+                px: 1.5,
+                cursor: 'pointer',
+                '&:hover': {
+                  bgcolor: '#F3F4F6',
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                {ICON_MAP[skill.icon] || <AnalyticsIcon sx={{ fontSize: 20, color: '#6B7280' }} />}
+              </ListItemIcon>
+              <ListItemText
+                primary={
+                  <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#111827' }}>
+                    {skill.name}
+                  </Typography>
+                }
+                secondary={
+                  <Typography sx={{ fontSize: 11, color: '#9CA3AF', mt: 0.25 }}>
+                    {skill.description}
+                  </Typography>
+                }
+              />
+            </ListItem>
+          ))}
+        </List>
+      )}
     </Paper>
   );
 }
