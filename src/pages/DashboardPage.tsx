@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import dayjs from 'dayjs';
-import { Box, Typography, Button, Switch, FormControlLabel, Alert, IconButton, CircularProgress } from '@mui/material';
+import { Box, Typography, Switch, FormControlLabel, Alert, IconButton, CircularProgress, Button } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import AddTaskIcon from '@mui/icons-material/AddTask';
 import KpiCards from '../components/Dashboard/KpiCards';
 import VolumeChart from '../components/Dashboard/VolumeChart';
 import TransitPieChart from '../components/Dashboard/TransitPieChart';
@@ -13,7 +12,6 @@ import GitHubHeatmap from '../components/Dashboard/GitHubHeatmap';
 import InventoryAlertList from '../components/Dashboard/InventoryAlertList';
 import WarehouseKpiTable from '../components/Dashboard/WarehouseKpiTable';
 import TransitTimeChart from '../components/Dashboard/TransitTimeChart';
-import NewTaskDialog, { type TaskFormData } from '../components/Dashboard/NewTaskDialog';
 import WarehouseSelector, { ALL_WAREHOUSES } from '../components/Dashboard/WarehouseSelector';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { subscribeRefresh, subscribeWarehouseChange } from '../App';
@@ -115,7 +113,7 @@ function computeAlerts(
 }
 
 const DashboardPageContent: React.FC = () => {
-  const { settings, updateSettings } = useAppSettings();
+  const { settings } = useAppSettings();
   const vis = settings.dashboard.visibility;
 
   // 从 Context 获取数据
@@ -126,9 +124,6 @@ const DashboardPageContent: React.FC = () => {
   // 自动刷新状态
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [countdown, setCountdown] = useState(settings.dashboard.dataRefreshInterval);
-
-  // 新建任务对话框状态
-  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
 
   // 告警通知状态
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
@@ -169,12 +164,6 @@ const DashboardPageContent: React.FC = () => {
 
   // Check if any KPI cards are visible
   const hasKpiCards = vis.kpiTransitVolume || vis.kpiVolumeUtilization || vis.kpiPendingInbound || vis.kpiOutboundCount || vis.kpiInventoryDepth;
-
-  // 处理任务提交
-  const handleTaskSubmit = useCallback((task: TaskFormData) => {
-    console.log('新建任务:', task);
-    setTaskDialogOpen(false);
-  }, []);
 
   return (
     <Box className="page-fade-in">
@@ -220,22 +209,6 @@ const DashboardPageContent: React.FC = () => {
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: -0.25 }}>
           <WarehouseSelector selected={selectedWarehouse} onChange={setSelectedWarehouse} />
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<AddTaskIcon sx={{ fontSize: 16 }} />}
-            onClick={() => setTaskDialogOpen(true)}
-            sx={{
-              borderColor: '#D1D5DB',
-              color: '#374151',
-              fontSize: '0.75rem',
-              textTransform: 'none',
-              borderRadius: 6,
-              '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
-            }}
-          >
-            新建任务
-          </Button>
           {autoRefresh && (
             <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', minWidth: '4rem', textAlign: 'right' }}>
               {countdown}s 后刷新
@@ -400,15 +373,6 @@ const DashboardPageContent: React.FC = () => {
               )}
         </>
       )}
-
-      {/* 新建任务对话框 */}
-      <NewTaskDialog
-        open={taskDialogOpen}
-        onClose={() => setTaskDialogOpen(false)}
-        onSubmit={handleTaskSubmit}
-        selectedWarehouse={selectedWarehouse}
-        warehouses={warehouses}
-      />
     </Box>
   );
 };

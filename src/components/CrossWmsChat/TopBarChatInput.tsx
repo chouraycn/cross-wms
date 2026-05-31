@@ -10,6 +10,7 @@ import MicIcon from '@mui/icons-material/Mic';
 import { useChat } from '../../hooks/useChat';
 import { Skill } from '../../types/skill';
 import { SkillSelector } from './SkillSelector';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { SECONDARY, BORDER } from '../../constants/theme';
 
 interface TopBarChatInputProps {
@@ -30,16 +31,26 @@ interface TopBarChatInputProps {
 type DropdownType = 'craft' | 'model' | 'skills' | 'permission' | null;
 
 const CRAFT_OPTIONS = ['创建文档', '创建表格', '创建演示'];
-const MODEL_OPTIONS = ['Hy3 preview', 'GPT-4', 'Claude 3'];
 const PERMISSION_OPTIONS = ['公开', '仅自己', '团队成员'];
 
 export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputProps) {
+  const { settings } = useAppSettings();
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<DropdownType>(null);
-  const [selectedModel, setSelectedModel] = useState('Hy3 preview');
+
+  // 从 settings 中读取模型列表（仅启用的模型）
+  const MODEL_OPTIONS = settings.models.models
+    .filter((m) => m.enabled)
+    .map((m) => m.name);
+
+  // 初始化选中的模型（优先使用默认模型）
+  const [selectedModel, setSelectedModel] = useState(() => {
+    const defaultModel = settings.models.models.find((m) => m.id === settings.models.defaultModelId);
+    return defaultModel?.name || MODEL_OPTIONS[0] || 'GPT-4';
+  });
   const [selectedPermission, setSelectedPermission] = useState('默认权限');
 
   const editableRef = useRef<HTMLDivElement>(null);
@@ -241,7 +252,6 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
             justifyContent: 'space-between',
             padding: '8px 16px',
             bgcolor: '#fff',
-            borderTop: '1px solid #eee',
             flexShrink: 0,
           }}
         >
