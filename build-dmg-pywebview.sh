@@ -126,12 +126,10 @@ cp -r "$FRONTEND_DIST"/* "$BUILD_DIR/frontend_dist/"
 # 在构建时注入 pywebview CSS 变量（解决 DMG 只读文件系统无法运行时写入的问题）
 INJECTED_HTML="$BUILD_DIR/frontend_dist/index.html"
 if [ -f "$INJECTED_HTML" ]; then
-  python3 -c "
-html = open('$INJECTED_HTML', 'r', encoding='utf-8').read()
-html = html.replace('</head>', '<style>:root { --pw-top: 28px; }</style>\n</head>', 1)
-open('$INJECTED_HTML', 'w', encoding='utf-8').write(html)
-print('✅ pywebview CSS 变量已注入 index.html')
-"
+  # 使用 sed 注入 CSS，避免 Python 内存问题
+  sed -i '' 's|</head>|<style>:root { --pw-top: 28px; }</style>\
+</head>|' "$INJECTED_HTML"
+  echo "✅ pywebview CSS 变量已注入 index.html"
 fi
 
 # 2.5 构建 Agent Web 前端（如果存在）
@@ -303,6 +301,11 @@ fi
 export PYINSTALLER_CONFIG_DIR="$BUILD_DIR/pyinstaller-cache"
 mkdir -p "$PYINSTALLER_CONFIG_DIR"
 
+# 设置内存优化环境变量
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONOPTIMIZE=1
+export PYTHONMALLOC=malloc
+
 # 移除 Python 可执行文件的签名（避免 PyInstaller fix_exe_for_code_signing 断言失败）
 echo "🔧 检查并移除 Python 可执行文件签名..."
 codesign --remove-signature "$PYTHON" 2>/dev/null && echo "✅ 已移除 $PYTHON 的签名" || echo "⚠️  无需移除签名或移除失败（继续执行）"
@@ -330,6 +333,15 @@ fi
   --windowed \
   --onedir \
   --noconfirm \
+  --exclude-module matplotlib \
+  --exclude-module numpy \
+  --exclude-module pandas \
+  --exclude-module scipy \
+  --exclude-module tkinter \
+  --exclude-module PyQt5 \
+  --exclude-module PyQt6 \
+  --exclude-module PySide2 \
+  --exclude-module PySide6 \
   $DATA_ARGS \
   --icon "$PROJECT_DIR/public/icon.png" \
   --distpath "$BUILD_DIR/dist" \
