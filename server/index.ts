@@ -46,6 +46,14 @@ app.post('/api/chat', async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
 
+    // 确保会话存在，如果不存在则自动创建
+    const sessions = getSessions();
+    const sessionExists = sessions.some(s => s.id === sessionId);
+    if (!sessionExists) {
+      console.log(`[Chat API] Session ${sessionId} not found, creating new session`);
+      createSession(sessionId, '新对话', model, undefined);
+    }
+
     // 保存用户消息
     const userMsg = addMessage({ sessionId, role: 'user', content: message, model });
     res.write(`data: ${JSON.stringify({ type: 'text', content: userMsg.content })}\n\n`);
@@ -57,7 +65,8 @@ app.post('/api/chat', async (req, res) => {
     // 调用 Agent SDK 进行流式对话
     let fullContent = '';
     try {
-      const stream = query({
+      console.log('[Chat API] Calling query with:', { prompt: message, model, cwd: process.cwd() });
+      const queryInstance = query({
         prompt: message,
         options: {
           model,
@@ -65,9 +74,12 @@ app.post('/api/chat', async (req, res) => {
           cwd: process.cwd(),
         },
       });
-
+      
+      console.log('[Chat API] Query instance created, starting iteration...');
+      
       // 处理流式响应
-      for await (const msg of stream) {
+      for await (const msg of queryInstance) {
+        console.log('[Chat API] Received message:', msg.type, msg);
         if (msg.type === 'assistant') {
           for (const block of msg.message.content) {
             if (block.type === 'text') {
@@ -78,10 +90,13 @@ app.post('/api/chat', async (req, res) => {
         }
       }
 
+      console.log('[Chat API] Stream completed, full content length:', fullContent.length);
+      
       // 保存完整的助手回复
       addMessage({ sessionId, role: 'assistant', content: fullContent, model });
     } catch (sdkError) {
-      console.error('Agent SDK error:', sdkError);
+      console.error('[Chat API] Agent SDK error:', sdkError);
+      console.error('[Chat API] Stack trace:', sdkError instanceof Error ? sdkError.stack : 'N/A');
       const errorMsg = `抱歉，AI 服务暂时不可用，请稍后重试。\n错误：${sdkError instanceof Error ? sdkError.message : '未知错误'}`;
       res.write(`data: ${JSON.stringify({ type: 'text', content: errorMsg })}\n\n`);
       addMessage({ sessionId, role: 'assistant', content: errorMsg, model });
