@@ -3,7 +3,7 @@ import { Box, Typography, CircularProgress, Paper } from '@mui/material';
 import { TopBarChatInput } from './TopBarChatInput';
 import { Message, Session } from '../../types/chat';
 
-export function WorkBuddyChat() {
+export function CrossWmsChat() {
   const [session, setSession] = useState<Session>({
     id: '',
     title: '',
