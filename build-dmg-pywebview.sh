@@ -303,6 +303,12 @@ fi
 export PYINSTALLER_CONFIG_DIR="$BUILD_DIR/pyinstaller-cache"
 mkdir -p "$PYINSTALLER_CONFIG_DIR"
 
+# 移除 Python 可执行文件的签名（避免 PyInstaller fix_exe_for_code_signing 断言失败）
+echo "🔧 检查并移除 Python 可执行文件签名..."
+codesign --remove-signature "$PYTHON" 2>/dev/null && echo "✅ 已移除 $PYTHON 的签名" || echo "⚠️  无需移除签名或移除失败（继续执行）"
+# 同时也检查并移除 PyInstaller 本身的签名（如果存在）
+codesign --remove-signature "$PYINSTALLER" 2>/dev/null && echo "✅ 已移除 $PYINSTALLER 的签名" || true
+
 # 构建数据文件参数
 DATA_ARGS="--add-data $BUILD_DIR/frontend_dist:frontend_dist "
 DATA_ARGS="$DATA_ARGS --add-data $SERVER_BUILD_DIR:server_dist "
