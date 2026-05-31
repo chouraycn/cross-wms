@@ -80,7 +80,7 @@ function generateCalendarData(
     : warehouses.filter(w => w.id === targetWhId);
 
   const today = dayjs().endOf('day');
-  const startDate = today.subtract(days - 1, 'day').startOf('day');
+  const startDate = today.subtract(days, 'day').startOf('day');
 
   // 初始化每日数据
   const dayMap: Record<string, number> = {};
@@ -206,12 +206,14 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
 
   const handleCellMouseEnter = useCallback((cell: DayCell, event: React.MouseEvent) => {
     setHoveredCell(cell);
-    // 使用 clientX/clientY（相对于视口坐标）+ position: fixed
-    // 这样在 pywebview 和普通浏览器中都能正确定位
-    setTooltipPos({
-      x: event.clientX,
-      y: event.clientY - 8,
-    });
+    const rect = (event.currentTarget as SVGRectElement).getBoundingClientRect();
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    if (containerRect) {
+      setTooltipPos({
+        x: rect.left - containerRect.left + rect.width / 2,
+        y: rect.top - containerRect.top - 8,
+      });
+    }
   }, []);
 
   const handleCellMouseLeave = useCallback(() => {
@@ -428,7 +430,7 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
             <Paper
               elevation={3}
               sx={{
-                position: 'fixed',  // 改用 fixed，配合 clientX/clientY
+                position: 'absolute',
                 left: tooltipPos.x,
                 top: tooltipPos.y,
                 transform: 'translate(-50%, -100%)',
@@ -440,7 +442,7 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
                 fontSize: '0.75rem',
                 whiteSpace: 'nowrap',
                 pointerEvents: 'none',
-                zIndex: 9999,  // 提高 z-index 确保在最上层
+                zIndex: 9999,
               }}
             >
               <Typography sx={{ fontSize: '0.75rem', color: '#fff', lineHeight: 1.4 }}>
