@@ -51,6 +51,32 @@ export interface DocMapping {
   volumeHistory?: string;    // 容积历史文档 ID
   inboundRecords?: string;   // 入库记录文档 ID
   outboundRecords?: string;  // 出库记录文档 ID
+  inboundTrend?: string;     // 入库趋势文档 ID
+  outboundTrend?: string;    // 出库趋势文档 ID
+}
+
+// ===================== LocalStorage 持久化 =====================
+
+const STORAGE_KEY = 'crosswms_datasource_config';
+
+function loadConfigFromStorage(): Partial<DataSourceConfig> | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored) as Partial<DataSourceConfig>;
+    }
+  } catch (error) {
+    console.warn('读取数据源配置失败:', error);
+  }
+  return null;
+}
+
+function saveConfigToStorage(config: DataSourceConfig): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  } catch (error) {
+    console.warn('保存数据源配置失败:', error);
+  }
 }
 
 // ===================== API 服务类 =====================
@@ -59,19 +85,24 @@ export class DashboardApiService {
   private config: DataSourceConfig;
 
   constructor(config?: Partial<DataSourceConfig>) {
+    // 优先从 localStorage 加载配置
+    const storedConfig = loadConfigFromStorage();
+
     this.config = {
       mode: 'mock',
       apiBaseUrl: '/api',
       docMappings: {},
       ...config,
+      ...storedConfig,  // localStorage 配置优先
     };
   }
 
   /**
-   * 更新数据源配置
+   * 更新数据源配置并持久化到 localStorage
    */
   setConfig(config: Partial<DataSourceConfig>) {
     this.config = { ...this.config, ...config };
+    saveConfigToStorage(this.config);
   }
 
   getConfig(): DataSourceConfig {

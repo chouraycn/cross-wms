@@ -141,8 +141,12 @@ export interface DashboardConfig {
   heatmap: HeatmapConfig;
   /** 组件顺序 */
   componentOrder: string[];
-  /** 数据源配置 */
-  dataSource: DataSourceConfig;
+  /** 数据源模式：mock / api / tencent-docs */
+  dataSourceMode: 'mock' | 'api' | 'tencent-docs';
+  /** API 基础地址（仅 api 模式） */
+  dataSourceApiBaseUrl: string;
+  /** 腾讯文档 ID 映射（仅 tencent-docs 模式） */
+  dataSourceDocMappings: DataSourceConfig['docMappings'];
 }
 
 export interface SidebarConfig {
@@ -198,10 +202,18 @@ const DEFAULT_SETTINGS: AppSettings = {
       colorScheme: 'ocean',
     },
     componentOrder: ['kpi-cards', 'heatmap', 'volume-trend', 'transit-pie', 'warehouse-bar', 'inventory-alert', 'kpi-comparison', 'transit-time'],
-    dataSource: {
-      mode: 'mock',
-      apiBaseUrl: '/api/v1',
-      docMappings: {},
+    // 数据源配置（平铺结构）
+    dataSourceMode: 'mock',
+    dataSourceApiBaseUrl: '/api/v1',
+    dataSourceDocMappings: {
+      warehouses: 'warehouses',
+      transitOrders: 'transitOrders',
+      inventory: 'inventory',
+      inboundRecords: 'inboundRecords',
+      outboundRecords: 'outboundRecords',
+      volumeHistory: 'volumeHistory',
+      inboundTrend: 'inboundTrend',
+      outboundTrend: 'outboundTrend',
     },
   },
   sidebar: {
@@ -314,22 +326,31 @@ function loadSettings(): AppSettings {
           : [];
       const volumeDocs = { docLinks: volumeDocLinks };
 
-      return {
-        tencentDocs,
-        wecomDocs,
-        volumeDocs,
-        dashboard: {
-          ...DEFAULT_SETTINGS.dashboard,
-          ...parsed.dashboard,
-          visibility: { ...DEFAULT_SETTINGS.dashboard.visibility, ...(parsed.dashboard?.visibility ?? {}) },
-          heatmap: { ...DEFAULT_SETTINGS.dashboard.heatmap, ...(parsed.dashboard?.heatmap ?? {}) },
-          dataSource: { ...DEFAULT_SETTINGS.dashboard.dataSource, ...(parsed.dashboard?.dataSource ?? {}) },
-        },
-        sidebar: {
-          ...DEFAULT_SETTINGS.sidebar,
-          ...parsed.sidebar,
-        },
-      };
+        return {
+          tencentDocs,
+          wecomDocs,
+          volumeDocs,
+          dashboard: {
+            ...DEFAULT_SETTINGS.dashboard,
+            ...parsed.dashboard,
+            visibility: { ...DEFAULT_SETTINGS.dashboard.visibility, ...(parsed.dashboard?.visibility ?? {}) },
+            heatmap: { ...DEFAULT_SETTINGS.dashboard.heatmap, ...(parsed.dashboard?.heatmap ?? {}) },
+            // 处理数据源字段（平铺结构，向后兼容旧版 dataSource 对象）
+            dataSourceMode: parsed.dashboard?.dataSourceMode
+              ?? (parsed.dashboard as any)?.dataSource?.mode
+              ?? DEFAULT_SETTINGS.dashboard.dataSourceMode,
+            dataSourceApiBaseUrl: parsed.dashboard?.dataSourceApiBaseUrl
+              ?? (parsed.dashboard as any)?.dataSource?.apiBaseUrl
+              ?? DEFAULT_SETTINGS.dashboard.dataSourceApiBaseUrl,
+            dataSourceDocMappings: parsed.dashboard?.dataSourceDocMappings
+              ?? (parsed.dashboard as any)?.dataSource?.docMappings
+              ?? DEFAULT_SETTINGS.dashboard.dataSourceDocMappings,
+          },
+          sidebar: {
+            ...DEFAULT_SETTINGS.sidebar,
+            ...parsed.sidebar,
+          },
+        };
     }
   } catch {
     // Ignore parse errors, fall back to defaults
@@ -375,12 +396,24 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         next.volumeDocs = { ...prev.volumeDocs, ...partial.volumeDocs };
       }
       if (partial.dashboard) {
+        const prevDashboard = prev.dashboard;
+        const partialDashboard = partial.dashboard;
+
         next.dashboard = {
-          ...prev.dashboard,
-          ...partial.dashboard,
-          visibility: { ...prev.dashboard.visibility, ...(partial.dashboard.visibility ?? {}) },
-          heatmap: { ...prev.dashboard.heatmap, ...(partial.dashboard.heatmap ?? {}) },
-          dataSource: { ...prev.dashboard.dataSource, ...(partial.dashboard.dataSource ?? {}) },
+          ...prevDashboard,
+          ...partialDashboard,
+          visibility: { ...prevDashboard.visibility, ...(partialDashboard.visibility ?? {}) },
+          heatmap: { ...prevDashboard.heatmap, ...(partialDashboard.heatmap ?? {}) },
+          // 数据源字段（平铺结构，向后兼容旧版 dataSource 对象）
+          dataSourceMode: partialDashboard.dataSourceMode
+            ?? (partialDashboard as any)?.dataSource?.mode
+            ?? prevDashboard.dataSourceMode,
+          dataSourceApiBaseUrl: partialDashboard.dataSourceApiBaseUrl
+            ?? (partialDashboard as any)?.dataSource?.apiBaseUrl
+            ?? prevDashboard.dataSourceApiBaseUrl,
+          dataSourceDocMappings: partialDashboard.dataSourceDocMappings
+            ?? (partialDashboard as any)?.dataSource?.docMappings
+            ?? prevDashboard.dataSourceDocMappings,
         };
       }
       if (partial.sidebar) {

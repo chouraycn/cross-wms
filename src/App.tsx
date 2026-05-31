@@ -298,7 +298,7 @@ const MainLayout: React.FC = () => {
                 color: '#6B7280',
                 borderRadius: '6px',
                 p: 0.5,
-                backgroundColor: 'transparent',
+                backgroundColor: '#F0F0F0',
                 border: 'none',
                 boxShadow: 'none',
                 zIndex: 1300,
@@ -405,7 +405,7 @@ const MainLayout: React.FC = () => {
           left: sidebarCollapsed ? '104px' : '304px',
           right: 32,
           zIndex: 1200,
-          filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.25))',
+          filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.12))',
         }}
       >
         <CrossWmsChat />

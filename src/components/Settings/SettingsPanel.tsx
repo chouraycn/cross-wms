@@ -48,6 +48,7 @@ import { getWarehouses } from '../../stores/warehouseStore';
 import type { Warehouse } from '../../types';
 import { openDownloadUrl, formatVersion, type UpdateStatus } from '../../services/updateService';
 import { useUpdateContext } from '../../contexts/UpdateContext';
+import { dashboardApi } from '../../services/dashboardApi';
 
 // ===================== Tab Definitions =====================
 
@@ -673,7 +674,19 @@ const SettingsPanel: React.FC = () => {
           colorScheme: 'ocean',
         },
         componentOrder: ['kpi-cards', 'heatmap', 'volume-trend', 'transit-pie', 'warehouse-bar', 'inventory-alert', 'kpi-comparison', 'transit-time'],
-        dataSource: { mode: 'mock', apiBaseUrl: '/api/v1', docMappings: {} },
+        // 数据源配置（平铺结构）
+        dataSourceMode: 'mock',
+        dataSourceApiBaseUrl: '/api/v1',
+        dataSourceDocMappings: {
+          warehouses: 'warehouses',
+          transitOrders: 'transitOrders',
+          inventory: 'inventory',
+          inboundRecords: 'inboundRecords',
+          outboundRecords: 'outboundRecords',
+          volumeHistory: 'volumeHistory',
+          inboundTrend: 'inboundTrend',
+          outboundTrend: 'outboundTrend',
+        },
       },
       sidebar: {
         showVersion: true,
@@ -1405,6 +1418,168 @@ const SettingsPanel: React.FC = () => {
         helperText="总容积利用率 = 已用容积件数 / 总件数 × 100%"
         sx={textFieldSx}
       />
+
+      <Divider sx={{ my: 2 }} />
+
+      {/* ========== 数据源配置 ========== */}
+      <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', mb: 1 }}>
+        数据源配置
+      </Typography>
+      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', mb: 2 }}>
+        选择仪表盘数据来源：本地 Mock、后端 API 或腾讯文档
+      </Typography>
+
+      {/* 数据源模式选择 */}
+      <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+        <InputLabel>数据源模式</InputLabel>
+        <Select
+          value={draft.dashboard.dataSourceMode || 'mock'}
+          label="数据源模式"
+          onChange={(e) => updateDashboard('dataSourceMode', e.target.value as 'mock' | 'api' | 'tencent-docs')}
+        >
+          <MenuItem value="mock">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10B981' }} />
+              Mock 数据（本地演示）
+            </Box>
+          </MenuItem>
+          <MenuItem value="api">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#3B82F6' }} />
+              API 接口（后端服务）
+            </Box>
+          </MenuItem>
+          <MenuItem value="tencent-docs">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#F59E0B' }} />
+              腾讯文档（在线表格）
+            </Box>
+          </MenuItem>
+        </Select>
+      </FormControl>
+
+      {/* API Base URL - 仅 API 模式显示 */}
+      {draft.dashboard.dataSourceMode === 'api' && (
+        <TextField
+          label="API 基础地址"
+          type="url"
+          size="small"
+          fullWidth
+          value={draft.dashboard.dataSourceApiBaseUrl || ''}
+          onChange={(e) => updateDashboard('dataSourceApiBaseUrl', e.target.value)}
+          placeholder="例如：https://api.example.com"
+          helperText="后端 API 服务的基础 URL 地址"
+          sx={{ ...textFieldSx, mb: 2 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <LinkIcon sx={{ fontSize: 18, color: '#9CA3AF' }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+      )}
+
+      {/* 腾讯文档映射 - 仅腾讯文档模式显示 */}
+      {draft.dashboard.dataSourceMode === 'tencent-docs' && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
+          <Alert severity="info" sx={{ fontSize: '0.8rem' }}>
+            请确保已在"腾讯文档"标签页完成授权，并填写以下文档 ID
+          </Alert>
+          <TextField
+            label="仓库数据文档 ID"
+            size="small"
+            fullWidth
+            value={draft.dashboard.dataSourceDocMappings?.warehouses || ''}
+            onChange={(e) => updateDashboard('dataSourceDocMappings', {
+              ...draft.dashboard.dataSourceDocMappings,
+              warehouses: e.target.value,
+            })}
+            placeholder="文档 ID 或 URL"
+            sx={textFieldSx}
+          />
+          <TextField
+            label="在途订单文档 ID"
+            size="small"
+            fullWidth
+            value={draft.dashboard.dataSourceDocMappings?.transitOrders || ''}
+            onChange={(e) => updateDashboard('dataSourceDocMappings', {
+              ...draft.dashboard.dataSourceDocMappings,
+              transitOrders: e.target.value,
+            })}
+            placeholder="文档 ID 或 URL"
+            sx={textFieldSx}
+          />
+          <TextField
+            label="库存数据文档 ID"
+            size="small"
+            fullWidth
+            value={draft.dashboard.dataSourceDocMappings?.inventory || ''}
+            onChange={(e) => updateDashboard('dataSourceDocMappings', {
+              ...draft.dashboard.dataSourceDocMappings,
+              inventory: e.target.value,
+            })}
+            placeholder="文档 ID 或 URL"
+            sx={textFieldSx}
+          />
+        </Box>
+      )}
+
+      {/* 状态提示 */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 1, bgcolor: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+        {draft.dashboard.dataSourceMode === 'mock' ? (
+          <>
+            <CloudOffIcon sx={{ fontSize: 20, color: '#9CA3AF' }} />
+            <Typography sx={{ fontSize: '0.8rem', color: '#6B7280' }}>
+              使用本地 Mock 数据，刷新页面后生效
+            </Typography>
+          </>
+        ) : draft.dashboard.dataSourceMode === 'api' ? (
+          <>
+            <CloudDoneIcon sx={{ fontSize: 20, color: '#3B82F6' }} />
+            <Typography sx={{ fontSize: '0.8rem', color: '#6B7280' }}>
+              从 API 获取数据：{draft.dashboard.dataSourceApiBaseUrl || '未配置'}
+            </Typography>
+          </>
+        ) : (
+          <>
+            <DescriptionIcon sx={{ fontSize: 20, color: '#F59E0B' }} />
+            <Typography sx={{ fontSize: '0.8rem', color: '#6B7280' }}>
+              从腾讯文档获取数据
+            </Typography>
+          </>
+        )}
+      </Box>
+
+      {/* 应用配置按钮 */}
+      <Button
+        variant="contained"
+        fullWidth
+        onClick={() => {
+          // 保存数据源配置到 dashboardApi
+          const { dashboard } = draft;
+          const dataSourceConfig = {
+            mode: (dashboard.dataSourceMode || 'mock') as 'mock' | 'api' | 'tencent-docs',
+            apiBaseUrl: dashboard.dataSourceApiBaseUrl || '/api',
+            docMappings: dashboard.dataSourceDocMappings || {},
+          };
+          // 调用 dashboardApi.setConfig 持久化配置
+          dashboardApi.setConfig(dataSourceConfig);
+
+          // 显示成功消息
+          setSnackbarMsg('数据源配置已保存，正在刷新数据...');
+          setSnackbarOpen(true);
+        }}
+        sx={{
+          mt: 1,
+          bgcolor: '#111827',
+          '&:hover': { bgcolor: '#1F2937' },
+          height: 42,
+          borderRadius: 1,
+        }}
+      >
+        应用数据源配置
+      </Button>
     </Box>
   );
 

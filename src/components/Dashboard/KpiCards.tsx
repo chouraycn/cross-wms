@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Grid, Card, CardContent, Typography, Box, IconButton } from '@mui/material';
+import { Grid, Card, CardContent, Typography, Box, IconButton, CircularProgress, Alert } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
@@ -9,11 +9,10 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { subscribeWarehouses } from '../../stores/warehouseStore';
 import { exportToCsv } from '../../utils/exportCsv';
 import { calcOverallByItems } from '../../utils/volumeCalculator';
 import type { Warehouse, TransitOrder } from '../../types';
-import { dashboardApi } from '../../services/dashboardApi';
+import { useDashboardData } from '../../contexts/DashboardDataContext';
 
 /** KPI 卡片主题配置 */
 interface KpiTheme {
@@ -104,23 +103,33 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
   const compareDays = settings.dashboard.trendCompareDays;
   const vis = settings.dashboard.visibility;
 
-  // 从全局 store 读取仓库数据
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [transitOrders, setTransitOrders] = useState<TransitOrder[]>([]);
-  const [kpiData, setKpiData] = useState({ totalTransitVolume: 0, totalVolumeUtilization: 0, pendingInboundOrders: 0, todayOutboundCount: 0, inventoryDepth: 0 });
+  // 从 Context 获取数据
+  const { warehouses, transitOrders, kpiData, loading, error } = useDashboardData();
 
-  useEffect(() => {
-    const unsub = subscribeWarehouses(setWarehouses);
-    // 获取在途订单和KPI数据
-    Promise.all([
-      dashboardApi.getTransitOrders(),
-      dashboardApi.getKpiData(),
-    ]).then(([orders, kpi]) => {
-      setTransitOrders(orders);
-      setKpiData(kpi);
-    }).catch(err => console.error('获取KPI数据失败:', err));
-    return unsub;
-  }, []);
+  // 加载状态
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress size={30} sx={{ color: '#111827' }} />
+      </Box>
+    );
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <Box sx={{ py: 2 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
+  // kpiData 为空时使用默认值
+  const safeKpiData = kpiData || {
+    pendingInboundOrders: 0,
+    todayOutboundCount: 0,
+    inventoryDepth: 0,
+  };
 
   // 根据选中仓库过滤
   const filteredWarehouses = warehouseId === ALL_WAREHOUSES
@@ -140,22 +149,22 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
 
   // 待处理入库单 — 按仓库过滤
   const pendingInbound = warehouseId === ALL_WAREHOUSES
-    ? kpiData.pendingInboundOrders
+    ? safeKpiData.pendingInboundOrders
     : warehouses.length > 0
-      ? Math.max(1, Math.round(kpiData.pendingInboundOrders / warehouses.length))
+      ? Math.max(1, Math.round(safeKpiData.pendingInboundOrders / warehouses.length))
       : 0;
 
   // 当日出库量 — 按仓库过滤
   const todayOutbound = warehouseId === ALL_WAREHOUSES
-    ? kpiData.todayOutboundCount
+    ? safeKpiData.todayOutboundCount
     : warehouses.length > 0
-      ? Math.max(1, Math.round(kpiData.todayOutboundCount / warehouses.length))
+      ? Math.max(1, Math.round(safeKpiData.todayOutboundCount / warehouses.length))
       : 0;
 
   // 库存深度 — 按仓库容量比例
   const inventoryDepth = warehouseId === ALL_WAREHOUSES
-    ? kpiData.inventoryDepth
-    : kpiData.inventoryDepth;
+    ? safeKpiData.inventoryDepth
+    : safeKpiData.inventoryDepth;
 
   // ==================== 在途报警 ====================
   // 逻辑：对在途运单（未到达），计算到仓后容积率，看是否超过报警阈值

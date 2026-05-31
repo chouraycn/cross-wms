@@ -1,12 +1,11 @@
-import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { Box, Typography, Card, CardHeader, CardContent, IconButton } from '@mui/material';
+import React, { useMemo, useRef } from 'react';
+import { Box, Typography, Card, CardHeader, CardContent, IconButton, CircularProgress, Alert } from '@mui/material';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { subscribeWarehouses } from '../../stores/warehouseStore';
-import { mockInboundRecords, mockOutboundRecords } from '../../data/mockData';
+import { useDashboardData } from '../../contexts/DashboardDataContext';
 import { exportToCsv } from '../../utils/exportCsv';
-import type { Warehouse } from '../../types';
+import type { Warehouse, InboundRecord, OutboundRecord } from '../../types';
 import dayjs from 'dayjs';
 
 /**
@@ -69,7 +68,13 @@ function mapToCurrentYear(dateStr: string): string {
 }
 
 /** 聚合指定时间范围内的每日出货量 */
-function generateCalendarData(days: number, warehouses: Warehouse[], targetWhId: string) {
+function generateCalendarData(
+  days: number,
+  warehouses: Warehouse[],
+  targetWhId: string,
+  inboundRecords: InboundRecord[],
+  outboundRecords: OutboundRecord[]
+) {
   const whList = targetWhId === ALL_WAREHOUSES
     ? warehouses
     : warehouses.filter(w => w.id === targetWhId);
@@ -84,7 +89,7 @@ function generateCalendarData(days: number, warehouses: Warehouse[], targetWhId:
     dayMap[d.format('YYYY-MM-DD')] = 0;
   }
 
-  // 聚合 mock 数据
+  // 聚合入库记录
   const addRecord = (dateStr: string, qty: number) => {
     const mapped = mapToCurrentYear(dateStr);
     if (mapped && mapped in dayMap) {
@@ -92,12 +97,12 @@ function generateCalendarData(days: number, warehouses: Warehouse[], targetWhId:
     }
   };
 
-  mockInboundRecords.forEach(r => {
+  inboundRecords.forEach(r => {
     if (targetWhId !== ALL_WAREHOUSES && r.warehouseId !== targetWhId) return;
     if (targetWhId === ALL_WAREHOUSES && !whList.find(w => w.id === r.warehouseId)) return;
     addRecord(r.createdAt, r.quantity);
   });
-  mockOutboundRecords.forEach(r => {
+  outboundRecords.forEach(r => {
     if (targetWhId !== ALL_WAREHOUSES && r.warehouseId !== targetWhId) return;
     if (targetWhId === ALL_WAREHOUSES && !whList.find(w => w.id === r.warehouseId)) return;
     addRecord(r.createdAt, r.quantity);
@@ -191,19 +196,38 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
   const colorScheme = (heatmapSettings?.colorScheme as ColorScheme) ?? 'ocean';
   const colors = COLOR_SCHEMES[colorScheme] || OCEAN;
 
-  const [allWarehouses, setAllWarehouses] = useState<Warehouse[]>([]);
+  // 从 Context 获取数据
+  const { warehouses, inboundRecords, outboundRecords, loading, error } = useDashboardData();
+
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  useEffect(() => {
-    const unsub = subscribeWarehouses(setAllWarehouses);
-    return unsub;
-  }, []);
-
   const { cells, maxVal, whCount } = useMemo(
-    () => generateCalendarData(days, allWarehouses, warehouseId),
-    [days, allWarehouses, warehouseId]
+    () => generateCalendarData(days, warehouses, warehouseId, inboundRecords, outboundRecords),
+    [days, warehouses, warehouseId, inboundRecords, outboundRecords]
   );
+
+  // 加载状态
+  if (loading) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+          <CircularProgress size={30} sx={{ color: '#111827' }} />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+        <CardContent>
+          <Alert severity="error">{error}</Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const weekColumns = useMemo(() => buildWeekColumns(cells), [cells]);
 
@@ -242,7 +266,7 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
   };
 
   // 没有仓库时显示空状态
-  if (allWarehouses.length === 0) {
+  if (warehouses.length === 0) {
     return (
       <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
         <CardHeader
@@ -282,7 +306,7 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
             <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
               {warehouseId === ALL_WAREHOUSES
                 ? `全部 ${whCount} 个仓库 · 共 ${totalShipments} 件`
-                : `${allWarehouses.find(w => w.id === warehouseId)?.name ?? ''} · 共 ${totalShipments} 件`}
+                : `${warehouses.find(w => w.id === warehouseId)?.name ?? ''} · 共 ${totalShipments} 件`}
             </Typography>
           </Box>
         }

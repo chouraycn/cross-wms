@@ -344,7 +344,19 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
         visibility: { kpiTransitVolume: true, kpiVolumeUtilization: true, kpiPendingInbound: true, kpiOutboundCount: true, kpiInventoryDepth: true, kpiTransitAlert: true, chartVolumeTrend: true, chartTransitPie: true, chartWarehouseBar: true, chartShipmentHeatmap: true, chartInventoryAlert: true, chartKpiComparison: true, chartTransitTime: true },
         heatmap: { days: 14, colorScheme: 'ocean' },
         componentOrder: ['kpi-cards', 'heatmap', 'volume-trend', 'transit-pie', 'warehouse-bar', 'inventory-alert', 'kpi-comparison', 'transit-time'],
-        dataSource: { mode: 'mock', apiBaseUrl: '/api/v1', docMappings: {} },
+        // 数据源配置（平铺结构）
+        dataSourceMode: 'mock',
+        dataSourceApiBaseUrl: '/api/v1',
+        dataSourceDocMappings: {
+          warehouses: 'warehouses',
+          transitOrders: 'transitOrders',
+          inventory: 'inventory',
+          inboundRecords: 'inboundRecords',
+          outboundRecords: 'outboundRecords',
+          volumeHistory: 'volumeHistory',
+          inboundTrend: 'inboundTrend',
+          outboundTrend: 'outboundTrend',
+        },
       },
       sidebar: { showVersion: true },
     });
