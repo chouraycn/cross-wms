@@ -13,14 +13,16 @@ import {
   TableRow,
   Chip,
   Paper,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import { mockInventory } from '../../data/mockData';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { subscribeWarehouses } from '../../stores/warehouseStore';
 import type { Warehouse, InventoryItem } from '../../types';
+import { dashboardApi } from '../../services/dashboardApi';
 
 interface InventoryAlertListProps {
   warehouseId?: string;
@@ -31,8 +33,22 @@ const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = A
   const ageWarningDays = settings.dashboard.ageWarningDays;
 
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const unsub = subscribeWarehouses(setWarehouses);
+    // 获取库存数据
+    dashboardApi.getInventory()
+      .then((data) => {
+        setInventory(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message || '获取库存数据失败');
+        setLoading(false);
+      });
     return unsub;
   }, []);
 
@@ -46,7 +62,7 @@ const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = A
 
   // 过滤出库龄 >= ageWarningDays 的 SKU
   const filteredItems = useMemo(() => {
-    const filtered = mockInventory.filter((item) => {
+    const filtered = inventory.filter((item) => {
       // 计算库龄天数
       const inboundDate = new Date(item.inboundDate);
       const today = new Date();
@@ -66,7 +82,7 @@ const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = A
       const dateB = new Date(b.inboundDate);
       return dateA.getTime() - dateB.getTime();
     });
-  }, [warehouseId, ageWarningDays]);
+  }, [warehouseId, ageWarningDays, inventory]);
 
   // 获取预警等级
   const getAlertLevel = (inboundDate: string): { label: string; color: 'warning' | 'error'; bgColor: string } => {
@@ -84,6 +100,26 @@ const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = A
 
   const displayItems = filteredItems.slice(0, 20);
   const totalCount = filteredItems.length;
+
+  if (loading) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+        <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+          <CircularProgress size={30} sx={{ color: '#111827' }} />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+        <CardContent>
+          <Alert severity="error">{error}</Alert>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>

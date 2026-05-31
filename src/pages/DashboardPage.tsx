@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import dayjs from 'dayjs';
-import { Box, Typography, Divider, Button, Switch, FormControlLabel, Alert, Collapse, IconButton, Snackbar } from '@mui/material';
+import { Box, Typography, Divider, Button, Switch, FormControlLabel, Alert, Collapse, IconButton, Snackbar, CircularProgress } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
@@ -14,36 +14,12 @@ import InventoryAlertList from '../components/Dashboard/InventoryAlertList';
 import WarehouseKpiTable from '../components/Dashboard/WarehouseKpiTable';
 import TransitTimeChart from '../components/Dashboard/TransitTimeChart';
 import NewTaskDialog, { type TaskFormData } from '../components/Dashboard/NewTaskDialog';
-import SortableWidget from '../components/Dashboard/SortableWidget';
 import WarehouseSelector, { ALL_WAREHOUSES } from '../components/Dashboard/WarehouseSelector';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { subscribeRefresh, subscribeWarehouseChange } from '../App';
 import { subscribeWarehouses } from '../stores/warehouseStore';
 import type { Warehouse, TransitOrder, InventoryItem } from '../types';
-import {
-  mockTransitOrders,
-  mockInventory,
-  mockWarehouses,
-} from '../data/mockData';
-import type { DashboardConfig } from '../contexts/AppSettingsContext';
-
-// @dnd-kit 拖拽排序
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  arrayMove,
-} from '@dnd-kit/sortable';
-
-// ===================== 告警计算 =====================
+import { dashboardApi } from '../services/dashboardApi';
 
 interface DashboardAlert {
   id: string;
@@ -57,6 +33,8 @@ function computeAlerts(
   settings: ReturnType<typeof useAppSettings>['settings'],
   selectedWarehouse: string,
   prevAlerts: DashboardAlert[],
+  transitOrders: TransitOrder[],
+  inventory: InventoryItem[],
 ): DashboardAlert[] {
   const alerts: DashboardAlert[] = [];
   const alertThreshold = settings.dashboard.warningThreshold;
@@ -92,7 +70,7 @@ function computeAlerts(
   }
 
   // 2. 在途报警（到仓后容积率可能超标）
-  const pendingTransit = mockTransitOrders.filter((t) => t.status !== 'arrived');
+  const pendingTransit = transitOrders.filter((t) => t.status !== 'arrived');
   if (pendingTransit.length > 0) {
     const transitByDest: Record<string, number> = {};
     for (const t of pendingTransit) {
@@ -120,8 +98,8 @@ function computeAlerts(
 
   // 3. 库龄预警
   const filteredInventory = selectedWarehouse === ALL_WAREHOUSES
-    ? mockInventory
-    : mockInventory.filter((item) => item.warehouseId === selectedWarehouse);
+    ? inventory
+    : inventory.filter((item) => item.warehouseId === selectedWarehouse);
   const agedItems = filteredInventory.filter(
     (item) => item.isAgeWarning || (item.inboundDate && dayjs().diff(dayjs(item.inboundDate), 'day') >= ageWarningDays),
   );
@@ -144,6 +122,12 @@ const DashboardPage: React.FC = () => {
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(ALL_WAREHOUSES);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
 
+  // 数据状态
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [transitOrders, setTransitOrders] = useState<TransitOrder[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+
   // 自动刷新状态
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [countdown, setCountdown] = useState(settings.dashboard.dataRefreshInterval);
@@ -156,8 +140,8 @@ const DashboardPage: React.FC = () => {
 
   // 计算告警列表
   const alerts = useMemo(() => {
-    return computeAlerts(warehouses, settings, selectedWarehouse, []);
-  }, [warehouses, settings, selectedWarehouse, refreshKey]);
+    return computeAlerts(warehouses, settings, selectedWarehouse, [], transitOrders, inventory);
+  }, [warehouses, settings, selectedWarehouse, transitOrders, inventory, refreshKey]);
 
   // 过滤掉已关闭的告警
   const visibleAlerts = alerts.filter((a) => !dismissedAlerts.has(a.id));
@@ -189,14 +173,31 @@ const DashboardPage: React.FC = () => {
     };
   }, []);
 
+  // 数据获取
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      dashboardApi.getTransitOrders(),
+      dashboardApi.getInventory(),
+      dashboardApi.getWarehouses(),
+    ]).then(([orders, inv, whs]) => {
+      setTransitOrders(orders);
+      setInventory(inv);
+      setWarehouses(whs);
+      setLoading(false);
+    }).catch(err => {
+      setError(err.message || '数据加载失败');
+      setLoading(false);
+    });
+  }, [selectedWarehouse, refreshKey]);
+
   useEffect(() => {
     const unsubRefresh = subscribeRefresh('dashboard', handleRefresh);
     const unsubWarehouse = subscribeWarehouseChange(setSelectedWarehouse);
-    const unsubWarehouseStore = subscribeWarehouses(setWarehouses);
     return () => {
       unsubRefresh();
       unsubWarehouse();
-      unsubWarehouseStore();
     };
   }, [handleRefresh]);
 
@@ -209,34 +210,50 @@ const DashboardPage: React.FC = () => {
     setTaskDialogOpen(false);
   }, []);
 
-  // @dnd-kit 传感器配置：Pointer + Keyboard
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor),
-  );
-
-  // 拖拽结束事件处理
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = settings.dashboard.componentOrder.indexOf(String(active.id));
-    const newIndex = settings.dashboard.componentOrder.indexOf(String(over.id));
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    const newOrder = arrayMove(settings.dashboard.componentOrder, oldIndex, newIndex);
-    // 只更新 componentOrder，避免覆盖其他 dashboard 设置
-    updateSettings({ dashboard: { ...settings.dashboard, componentOrder: newOrder } as DashboardConfig });
-  }, [settings.dashboard.componentOrder, updateSettings]);
 
   return (
     <Box key={refreshKey} className="page-fade-in">
-      {/* 标题行 */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827' }}>
+      {/* ProWeb 风格 Banner — 极简黑白、贴合 CrossWMS 功能 */}
+      <Box
+        sx={{
+          mb: 3,
+          pb: 3,
+          borderBottom: '1px solid #E5E7EB',
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: { xs: '1.75rem', md: '2.25rem' },
+            fontWeight: 800,
+            color: '#111827',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            lineHeight: 1.15,
+            mb: 1,
+          }}
+        >
+          Driven by Warehouse Data
+        </Typography>
+        <Typography
+          sx={{
+            fontSize: { xs: '0.8125rem', md: '0.875rem' },
+            fontWeight: 500,
+            color: '#6B7280',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            lineHeight: 1.5,
+          }}
+        >
+          Inbound · Transit · Inventory · Outbound · Insights
+        </Typography>
+      </Box>
+
+      {/* 标题行 — 与侧边栏 logo 垂直居中对齐 */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827', mb: 0 }}>
           仪表盘总览
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: -0.25 }}>
           <WarehouseSelector selected={selectedWarehouse} onChange={setSelectedWarehouse} />
           <Button
             size="small"
@@ -280,8 +297,25 @@ const DashboardPage: React.FC = () => {
         </Box>
       </Box>
 
+      {/* 错误提示 */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* 加载状态 */}
+      {loading && (
+        <Box sx={{ textAlign: 'center', py: 10 }}>
+          <CircularProgress size={40} sx={{ color: '#111827' }} />
+          <Typography sx={{ mt: 2, color: '#6B7280', fontSize: '0.875rem' }}>
+            数据加载中...
+          </Typography>
+        </Box>
+      )}
+
       {/* 仓库为空时显示引导页 */}
-      {warehouses.length === 0 ? (
+      {!loading && !error && warehouses.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 10 }}>
           <WarehouseOutlinedIcon sx={{ fontSize: 56, color: '#D1D5DB', mb: 2 }} />
           <Typography sx={{ fontSize: '1rem', fontWeight: 500, color: '#6B7280', mb: 0.5 }}>
@@ -290,60 +324,71 @@ const DashboardPage: React.FC = () => {
           <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF', mb: 3 }}>
             点击左上角仓库切换按钮，添加您的第一个仓库
           </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddOutlinedIcon />}
+            sx={{
+              bgcolor: '#111827',
+              color: '#fff',
+              textTransform: 'none',
+              borderRadius: 6,
+              '&:hover': { bgcolor: '#374151' },
+            }}
+          >
+            添加仓库
+          </Button>
         </Box>
-      ) : (
+      ) : !loading && !error && (
         <>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={settings.dashboard.componentOrder} strategy={verticalListSortingStrategy}>
-              {settings.dashboard.componentOrder.map((comp) => {
+          {settings.dashboard.componentOrder.map((comp) => {
                 switch (comp) {
                   case 'kpi-cards':
                     return hasKpiCards ? (
-                      <SortableWidget key={comp} id={comp} label="KPI">
+                      <Box key={comp} sx={{ mb: 3 }}>
                         <KpiCards warehouseId={selectedWarehouse} />
-                      </SortableWidget>
+                      </Box>
                     ) : null;
                   case 'heatmap':
                     return vis.chartShipmentHeatmap ? (
-                      <SortableWidget key={comp} id={comp} label="热力图">
+                      <Box key={comp} sx={{ mb: 3 }}>
                         <GitHubHeatmap warehouseId={selectedWarehouse} />
-                      </SortableWidget>
+                      </Box>
                     ) : null;
                   case 'volume-trend':
                     return vis.chartVolumeTrend ? (
-                      <SortableWidget key={comp} id={comp} label="容积趋势">
+                      <Box key={comp} sx={{ mb: 3 }}>
                         <VolumeChart warehouseId={selectedWarehouse} />
-                      </SortableWidget>
+                      </Box>
                     ) : null;
                   case 'transit-pie':
                     return vis.chartTransitPie ? (
-                      <SortableWidget key={comp} id={comp} label="在途分布">
+                      <Box key={comp} sx={{ mb: 3 }}>
                         <TransitPieChart />
-                      </SortableWidget>
+                      </Box>
                     ) : null;
                   case 'warehouse-bar':
                     return vis.chartWarehouseBar ? (
-                      <SortableWidget key={comp} id={comp} label="仓库对比">
+                      <Box key={comp} sx={{ mb: 3 }}>
                         <WarehouseBarChart warehouseId={selectedWarehouse} />
-                      </SortableWidget>
+                      </Box>
                     ) : null;
                   case 'inventory-alert':
                     return vis.chartInventoryAlert ? (
-                      <SortableWidget key={comp} id={comp} label="库存预警">
+                      <Box key={comp} sx={{ mb: 3 }}>
                         <InventoryAlertList warehouseId={selectedWarehouse} />
-                      </SortableWidget>
+                      </Box>
                     ) : null;
                   case 'kpi-comparison':
                     return vis.chartKpiComparison ? (
-                      <SortableWidget key={comp} id={comp} label="KPI对比">
+                      <Box key={comp} sx={{ mb: 3 }}>
                         <WarehouseKpiTable warehouseId={selectedWarehouse} />
-                      </SortableWidget>
+                      </Box>
                     ) : null;
                   case 'transit-time':
                     return vis.chartTransitTime ? (
-                      <SortableWidget key={comp} id={comp} label="时效分析">
+                      <Box key={comp} sx={{ mb: 3 }}>
                         <TransitTimeChart warehouseId={selectedWarehouse} />
-                      </SortableWidget>
+                      </Box>
                     ) : null;
                   default:
                     return null;
@@ -358,8 +403,6 @@ const DashboardPage: React.FC = () => {
                   </Typography>
                 </Box>
               )}
-            </SortableContext>
-          </DndContext>
         </>
       )}
 
