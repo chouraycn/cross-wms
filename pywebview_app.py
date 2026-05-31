@@ -969,19 +969,27 @@ class Api:
             release.json 的原文（JSON 字符串），或 {"error": "..."} 错误对象
         """
         RELEASE_URL = 'https://github.com/chouraycn/cross-wms/releases/latest/download/release.json'
-        try:
-            req = urllib.request.Request(
-                RELEASE_URL,
-                method='GET',
-                headers={'User-Agent': f'CrossWMS/{APP_VERSION}'}
-            )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = resp.read().decode('utf-8')
-                # 验证是合法 JSON（避免返回非 JSON 内容）
-                json.loads(data)
-                return data  # 直接返回 release.json 内容
-        except Exception as e:
-            return json.dumps({'error': str(e)})
+        last_error = None
+        # 重试 2 次，每次超时 5 秒（加快失败速度，避免前端长时间等待）
+        for attempt in range(3):
+            try:
+                req = urllib.request.Request(
+                    RELEASE_URL,
+                    method='GET',
+                    headers={'User-Agent': f'CrossWMS/{APP_VERSION}'}
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = resp.read().decode('utf-8')
+                    # 验证是合法 JSON（避免返回非 JSON 内容）
+                    json.loads(data)
+                    print(f"[update] release.json 获取成功 (attempt {attempt + 1})")
+                    return data  # 直接返回 release.json 内容
+            except Exception as e:
+                last_error = str(e)
+                print(f"[update] 获取 release.json 失败 (attempt {attempt + 1}/3): {last_error}")
+                if attempt < 2:
+                    time.sleep(1)  # 重试前等待 1 秒
+        return json.dumps({'error': last_error or 'unknown error'})
 
     # ---- 文件下载（替代 WKWebView blob URL 下载） ----
 

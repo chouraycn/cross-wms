@@ -58,6 +58,9 @@ build-dmg/
 bump-version.cjs
 CrossWMS.spec
 
+# Manual .app assembly (pywebview OOM workaround)
+CrossWMS.app/
+
 # Docs (generated)
 docs/
 

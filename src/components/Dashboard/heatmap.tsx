@@ -9,7 +9,7 @@ import type { Warehouse, InboundRecord, OutboundRecord } from '../../types';
 import dayjs from 'dayjs';
 
 /**
- * GitHub 风格仓库出货日历热力图
+ * 仓库出货日历热力图
  * 布局：星期（日~六）× 周数，类似 GitHub Contributions 图
  * 支持单个仓库 / 全部聚合
  * 全新 Ocean 蓝色系配色
@@ -80,11 +80,13 @@ function generateCalendarData(
     : warehouses.filter(w => w.id === targetWhId);
 
   const today = dayjs().endOf('day');
-  const startDate = today.subtract(days, 'day').startOf('day');
+  // 减少一天：实际使用 days-1 天，确保显示天数比设置少一天
+  const actualDays = days - 1;
+  const startDate = today.subtract(actualDays - 1, 'day').startOf('day');
 
   // 初始化每日数据
   const dayMap: Record<string, number> = {};
-  for (let i = 0; i < days; i++) {
+  for (let i = 0; i < actualDays; i++) {
     const d = startDate.add(i, 'day');
     dayMap[d.format('YYYY-MM-DD')] = 0;
   }
@@ -177,7 +179,7 @@ function buildWeekColumns(cells: DayCell[]): WeekColumn[] {
   return columns;
 }
 
-interface GitHubHeatmapProps {
+interface HeatmapProps {
   warehouseId: string;
 }
 
@@ -189,7 +191,7 @@ const LEGEND_LABELS = ['无', '少', '中', '多', '满'];
 const MAX_CELL_SIZE = 100;    // 最大格子尺寸（不设上限，让格子铺满）
 const MIN_CELL_SIZE = 4;      // 最小格子尺寸
 
-const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
+const Heatmap: React.FC<HeatmapProps> = ({ warehouseId }) => {
   const { settings } = useAppSettings();
   const heatmapSettings = settings.dashboard.heatmap;
   const days = heatmapSettings?.days ?? 90;
@@ -477,4 +479,4 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ warehouseId }) => {
   );
 };
 
-export default GitHubHeatmap;
+export default Heatmap;
