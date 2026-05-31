@@ -285,16 +285,16 @@ const MainLayout: React.FC = () => {
             position: 'relative', // 为绝对定位的按钮提供参照
           }}
         >
-          {/* 左侧：展开侧边栏按钮 — 仅收起时显示，fixed 定位不被内容顶出 */}
+          {/* 展开侧边栏按钮 — 仅收起时显示，fixed定位在白色内容区域，不被内容顶出 */}
           {sidebarCollapsed && (
             <IconButton
               onClick={toggleSidebar}
               size="small"
               sx={{
                 position: 'fixed',
-                // 按钮中心对齐到系统按钮区域中心（var(--pw-top) / 2）
                 top: 'calc(var(--pw-top, 0px) / 2 - 9px)',
-                left: 8,
+                // 白色内容区域：侧边栏收起宽度 68px + 间距 8px
+                left: '76px',
                 color: '#6B7280',
                 borderRadius: '6px',
                 p: 0.5,
