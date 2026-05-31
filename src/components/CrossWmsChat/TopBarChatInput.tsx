@@ -183,7 +183,7 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
       >
         {/* Selected skill tag */}
         {selectedSkill && (
-          <Box sx={{ px: 1.5, py: 0.5, bgcolor: 'transparent', borderBottom: `1px solid #eee` }}>
+          <Box sx={{ px: 1.5, py: 0.5, bgcolor: '#fff', borderBottom: `1px solid #eee` }}>
             <Chip
               label={selectedSkill.name}
               onDelete={() => setSelectedSkill(null)}
