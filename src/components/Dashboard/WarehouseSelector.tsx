@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { IconButton, Tooltip, Popover, List, ListItemButton, ListItemText, ListItemIcon, Typography, Box, Button, Grow, Divider } from '@mui/material';
+import { IconButton, Popover, List, ListItemButton, ListItemText, ListItemIcon, Typography, Box, Button, Grow, Divider } from '@mui/material';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import CheckIcon from '@mui/icons-material/Check';
@@ -51,38 +51,34 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
   // 没有仓库时，切换按钮变为「添加仓库」按钮
   if (!hasWarehouses) {
     return (
-      <Tooltip title="添加仓库" arrow>
-        <IconButton
-          onClick={handleAddWarehouse}
-          size="small"
-          sx={{
-            color: '#6B7280',
-            borderRadius: '6px',
-            '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
-          }}
-        >
-          <AddOutlinedIcon fontSize="small" />
-        </IconButton>
-      </Tooltip>
+      <IconButton
+        onClick={handleAddWarehouse}
+        size="small"
+        sx={{
+          color: '#6B7280',
+          borderRadius: '6px',
+          '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
+        }}
+      >
+        <AddOutlinedIcon fontSize="small" />
+      </IconButton>
     );
   }
 
   return (
     <>
-      <Tooltip title={`当前: ${selectedName} — 切换仓库`} arrow>
-        <IconButton
-          ref={anchorRef}
-          onClick={() => setOpen(true)}
-          size="small"
-          sx={{
-            color: '#6B7280',
-            borderRadius: '6px',
-            '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
-          }}
-        >
-          <WarehouseOutlinedIcon fontSize="small" />
-        </IconButton>
-      </Tooltip>
+      <IconButton
+        ref={anchorRef}
+        onClick={() => setOpen(true)}
+        size="small"
+        sx={{
+          color: '#6B7280',
+          borderRadius: '6px',
+          '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
+        }}
+      >
+        <WarehouseOutlinedIcon fontSize="small" />
+      </IconButton>
 
       <Popover
         open={open}

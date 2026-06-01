@@ -27,6 +27,7 @@ import InventoryPage from './pages/InventoryPage';
 import TencentDocsPage from './pages/TencentDocsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import AutomationPage from './pages/AutomationPage';
 
 /** Global MUI Theme */
 const theme = createTheme({
@@ -214,7 +215,11 @@ function getPageRefreshKey(pathname: string): string {
 
 /** 主布局（需要在 Router 内部以使用 useLocation / useNavigate） */
 const MainLayout: React.FC = () => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('crosswms-sidebar-collapsed') === 'true';
+    } catch { return false; }
+  });
   // pywebview 检测 — pywebview_app.py 在 HTML 中注入 --pw-top: 28px，
   // 这里的 isPy 状态用于非布局场景（API / AI 助手连接等）
   const [isPy, setIsPy] = useState(() => isPyWebView());
@@ -230,7 +235,11 @@ const MainLayout: React.FC = () => {
     return () => clearInterval(id);
   }, [isPy]);
   const toggleSidebar = useCallback(() => {
-    setSidebarCollapsed((prev) => !prev);
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem('crosswms-sidebar-collapsed', String(next)); } catch { /* ignore */ }
+      return next;
+    });
   }, []);
 
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
@@ -286,31 +295,7 @@ const MainLayout: React.FC = () => {
             position: 'relative', // 为绝对定位的按钮提供参照
           }}
         >
-          {/* 展开侧边栏按钮 — 仅收起时显示，fixed定位在白色内容区域，不被内容顶出 */}
-          {sidebarCollapsed && (
-            <IconButton
-              onClick={toggleSidebar}
-              size="small"
-              sx={{
-                position: 'fixed',
-                // pywebview 原生标题栏下，按钮与标题栏垂直居中
-                top: isPy ? 'calc(40px / 2 - 9px)' : 'calc(40px / 2 - 9px)',
-                // 白色内容区域：侧边栏收起宽度 68px + 间距 8px
-                left: '76px',
-                color: '#6B7280',
-                borderRadius: '6px',
-                p: 0.5,
-                backgroundColor: '#F0F0F0',
-                border: 'none',
-                boxShadow: 'none',
-                zIndex: 1300,
-                '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
-                '&:focus': { outline: 'none' },
-              }}
-            >
-              <MenuOutlinedIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          )}
+          {/* 展开侧边栏按钮已移入 Sidebar 组件内部 */}
 
           {/* 右侧：功能按钮 */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, marginLeft: 'auto' }}>
@@ -391,7 +376,7 @@ const MainLayout: React.FC = () => {
                   <Route path="/tencent-docs" element={<TencentDocsPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/automation" element={<div>定时任务页面（待完善）</div>} />
+                  <Route path="/automation" element={<AutomationPage />} />
                 </Routes>
               </ErrorBoundary>
             </Box>
