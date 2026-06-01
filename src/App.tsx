@@ -215,6 +215,8 @@ function getPageRefreshKey(pathname: string): string {
 
 /** 主布局（需要在 Router 内部以使用 useLocation / useNavigate） */
 const MainLayout: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
       return localStorage.getItem('crosswms-sidebar-collapsed') === 'true';
@@ -281,6 +283,9 @@ const MainLayout: React.FC = () => {
 
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
   const scrollRef = useAutoHideScrollbar(!isPy);
+
+  // AI 对话框可见性：自动化和 Agent 页面隐藏
+  const showChatBar = !location.pathname.startsWith('/automation') && !location.pathname.startsWith('/agent') && !location.pathname.startsWith('/skills');
 
   const actions = getToolbarActions(location.pathname);
   const pageKey = getPageRefreshKey(location.pathname);
@@ -401,7 +406,7 @@ const MainLayout: React.FC = () => {
                 px: 3, // 与 logo 对齐，增加左右 padding
                 pt: 2, // 减少顶部 padding，与 logo 底部对齐
                 pb: 3,
-                paddingBottom: '120px', // 为底部固定的对话框留出空间
+                paddingBottom: showChatBar ? '120px' : 3, // 为底部固定的对话框留出空间
                 '& .full-width-page': {
                   mx: -3, // 抵消 px: 3，让全宽组件保持全宽
                   mt: -2, // 抵消 pt: 2
@@ -429,19 +434,21 @@ const MainLayout: React.FC = () => {
         </Box>
       </Box>
 
-      {/* AI 对话框 — 固定在页面中下方，往右缩小10px，投影透明度25% */}
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 20,
-          left: sidebarCollapsed ? '104px' : '304px',
-          right: 32,
-          zIndex: 1200,
-          filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.12))',
-        }}
-      >
-        <CrossWmsChat />
-      </Box>
+      {/* AI 对话框 — 固定在页面中下方，自动化和 Agent 页面隐藏 */}
+      {!location.pathname.startsWith('/automation') && !location.pathname.startsWith('/agent') && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 20,
+            left: sidebarCollapsed ? '104px' : '304px',
+            right: 32,
+            zIndex: 1200,
+            filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.12))',
+          }}
+        >
+          <CrossWmsChat />
+        </Box>
+      )}
 
       {/* 自动更新通知 — 左下角 */}
       <UpdateNotification />
