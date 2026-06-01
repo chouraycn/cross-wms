@@ -88,6 +88,8 @@ interface PyWebViewApi {
   window_close: () => Promise<string>;
   window_minimize: () => Promise<string>;
   window_maximize: () => Promise<string>;
+  get_traffic_light_offset: () => Promise<string>;
+  set_traffic_light_offset: (x: number, y: number) => Promise<string>;
 
   // ---- 企业微信文档 ----
   wecom_check_auth: () => Promise<string>;

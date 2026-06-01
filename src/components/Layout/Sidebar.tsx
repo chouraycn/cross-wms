@@ -875,7 +875,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         width,
         height: '100vh',
         boxSizing: 'border-box',
-        paddingTop: 'var(--pw-top, 0px)',
+        // frameless=False 使用原生标题栏，无需 --pw-top 避让
+        paddingTop: 0,
         position: 'sticky',
         top: 0,
         zIndex: 1200,
@@ -894,8 +895,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           size="small"
           sx={{
             position: 'absolute',
-            // 系统按钮区域中心对齐；max() 确保浏览器环境下至少可见（top >= 0px）
-            top: 'max(calc(var(--pw-top, 0px) / 2 - 9px), 0px)',
+            // 展开按钮在侧边栏顶部居中（相对于侧边栏，非系统按钮区域）
+            top: 'calc(40px / 2 - 9px)',
             right: 8,
             color: '#6B7280',
             borderRadius: '6px',

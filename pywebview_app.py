@@ -28,6 +28,108 @@ import traceback
 
 import webview
 
+# ===================== Cocoa 支持（macOS 红黄绿按钮控制）=====================
+try:
+    from Cocoa import NSApp
+    from objc import lookUpClass
+    COCOA_AVAILABLE = True
+except ImportError:
+    COCOA_AVAILABLE = False
+    print("[Warning] Cocoa/pyobjc not available, traffic light offset will be disabled")
+
+# ===================== 配置持久化 =====================
+
+CONFIG_DIR = os.path.expanduser("~/.crosswms")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
+
+
+def load_config():
+    """加载配置文件，返回 dict"""
+    default_config = {
+        "traffic_light_offset_x": 0,
+        "traffic_light_offset_y": 0,
+    }
+    if not os.path.isfile(CONFIG_FILE):
+        return default_config
+    try:
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, dict):
+                return {**default_config, **data}
+    except Exception as e:
+        print(f"[Config] 读取失败: {e}")
+    return default_config
+
+
+def save_config(config):
+    """保存配置到文件"""
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print(f"[Config] 保存失败: {e}")
+        return False
+
+
+def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
+    """
+    应用红黄绿按钮偏移量（macOS only）
+    通过 Cocoa API 调整窗口标题栏按钮位置
+    """
+    if not COCOA_AVAILABLE:
+        return False
+    if not window:
+        return False
+
+    try:
+        # 通过 NSApp.windows() 查找我们的窗口
+        target_window = None
+        for w in NSApp.windows():
+            try:
+                if w.isVisible() and w.title() == APP_NAME:
+                    target_window = w
+                    break
+            except Exception:
+                continue
+
+        if target_window is None:
+            print("[TrafficLight] 未找到匹配的 NSWindow")
+            return False
+
+        # 按钮类型常量
+        NSWindowCloseButton = 0
+        NSWindowMiniaturizeButton = 1
+        NSWindowZoomButton = 2
+
+        # 获取标准窗口按钮
+        close_btn = target_window.standardWindowButton_(NSWindowCloseButton)
+        min_btn = target_window.standardWindowButton_(NSWindowMiniaturizeButton)
+        zoom_btn = target_window.standardWindowButton_(NSWindowZoomButton)
+
+        buttons = [b for b in [close_btn, min_btn, zoom_btn] if b is not None]
+
+        if not buttons:
+            print("[TrafficLight] 未找到标准窗口按钮")
+            return False
+
+        # 调整每个按钮的位置
+        for btn in buttons:
+            frame = btn.frame()
+            new_x = frame.origin.x + offset_x
+            new_y = frame.origin.y + offset_y
+            btn.setFrameOrigin_((new_x, new_y))
+
+        print(f"[TrafficLight] 已应用偏移 ({offset_x}, {offset_y})")
+        return True
+    except Exception as e:
+        print(f"[TrafficLight] 应用偏移失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 # ===================== 日志文件 =====================
 
 def get_log_path():
@@ -104,12 +206,20 @@ def get_index_path():
     """获取前端 dist/index.html 的绝对路径，找不到时抛 FileNotFoundError"""
     candidates = []
 
+    # 优先使用环境变量（手动 .app 包场景）
+    resources_env = os.environ.get('CROSSWMS_RESOURCES')
+    if resources_env:
+        candidates.extend([
+            os.path.join(resources_env, 'frontend_dist', 'index.html'),
+            os.path.join(resources_env, 'dist', 'index.html'),
+        ])
+
     if getattr(sys, 'frozen', False):
         meipass = sys._MEIPASS
-        candidates = [
+        candidates.extend([
             os.path.join(meipass, 'frontend_dist', 'index.html'),
             os.path.join(meipass, 'dist', 'index.html'),
-        ]
+        ])
         exe_dir = os.path.dirname(sys.executable)
         resource_dir = os.path.join(os.path.dirname(exe_dir), 'Resources')
         candidates.extend([
@@ -120,6 +230,7 @@ def get_index_path():
     base = os.path.dirname(os.path.abspath(__file__))
     candidates.extend([
         os.path.join(base, 'dist', 'index.html'),
+        os.path.join(base, 'frontend_dist', 'index.html'),
     ])
 
     for f in candidates:
@@ -145,6 +256,14 @@ _agent_server_process = None
 def get_node_path():
     """获取 Node.js 可执行文件路径"""
     candidates = []
+
+    # 优先使用环境变量（手动 .app 包场景）
+    resources_env = os.environ.get('CROSSWMS_RESOURCES')
+    if resources_env:
+        candidates.extend([
+            os.path.join(resources_env, 'node', 'node'),
+            os.path.join(resources_env, 'node', 'bin', 'node'),
+        ])
 
     if getattr(sys, 'frozen', False):
         # PyInstaller 打包模式：Node.js 嵌入在 Resources/node/ 目录
@@ -183,6 +302,14 @@ def get_server_script_path():
     """获取主服务器入口文件路径"""
     candidates = []
 
+    # 优先使用环境变量（手动 .app 包场景）
+    resources_env = os.environ.get('CROSSWMS_RESOURCES')
+    if resources_env:
+        candidates.extend([
+            os.path.join(resources_env, 'server_dist', 'index.cjs'),
+            os.path.join(resources_env, 'server', 'index.cjs'),
+        ])
+
     if getattr(sys, 'frozen', False):
         exe_dir = os.path.dirname(sys.executable)
         resource_dir = os.path.join(os.path.dirname(exe_dir), 'Resources')
@@ -212,6 +339,14 @@ def get_server_script_path():
 def get_agent_server_script_path():
     """获取 Agent Web 服务器入口文件路径"""
     candidates = []
+
+    # 优先使用环境变量（手动 .app 包场景）
+    resources_env = os.environ.get('CROSSWMS_RESOURCES')
+    if resources_env:
+        candidates.extend([
+            os.path.join(resources_env, 'agent_server_dist', 'agent_index.cjs'),
+            os.path.join(resources_env, 'agent_server_dist', 'index.cjs'),
+        ])
 
     if getattr(sys, 'frozen', False):
         exe_dir = os.path.dirname(sys.executable)
@@ -1018,30 +1153,68 @@ class Api:
             return json.dumps({'ok': False, 'error': str(e)})
 
 
-def inject_pw_css(html_path: str) -> str:
-    """
-    注入 --pw-top CSS 变量到 index.html，用于 pywebview frameless 模式下的原生红绿灯避让。
 
-    步骤：
-    1. 读取 index.html
-    2. 在 </head> 前注入 <style>:root { --pw-top: 28px; }</style>
-    3. 写入临时文件
-    4. 返回临时文件路径（调用方负责清理）
-    """
-    with open(html_path, 'r', encoding='utf-8') as f:
-        html_content = f.read()
 
-    # 注入 CSS 变量（48px 为 macOS 红绿灯区域高度 + 间距）
-    pw_css = '<style>:root { --pw-top: 64px; }</style>\n'
-    html_content = html_content.replace('</head>', pw_css + '</head>')
+# ---- 红黄绿按钮控制 ----
 
-    # 写入临时文件
-    fd, tmp_path = tempfile.mkstemp(suffix='.html', prefix='crosswms_')
-    with os.fdopen(fd, 'w', encoding='utf-8') as f:
-        f.write(html_content)
+    def set_traffic_light_offset(self, offset_x: int, offset_y: int):
+        """
+        设置红黄绿按钮的偏移量（macOS only）
 
-    print(f"[CSS Inject] 已注入 --pw-top: 28px 到临时文件: {tmp_path}")
-    return tmp_path
+        前端通过 window.pywebview.api.set_traffic_light_offset(x, y) 调用。
+        参数:
+            offset_x: 水平偏移量（正值向右，负值向左）
+            offset_y: 垂直偏移量（正值向下，负值向上）
+        返回:
+            JSON 字符串: {'ok': True} 或 {'ok': False, 'error': '...'}
+        """
+        try:
+            offset_x = int(offset_x)
+            offset_y = int(offset_y)
+        except (ValueError, TypeError):
+            return json.dumps({'ok': False, 'error': 'offset_x and offset_y must be integers'})
+
+        if not COCOA_AVAILABLE:
+            return json.dumps({'ok': False, 'error': 'Cocoa/pyobjc not available'})
+
+        # 应用偏移
+        success = apply_traffic_light_offset(self._window, offset_x, offset_y)
+
+        # 持久化配置
+        if success:
+            config = load_config()
+            config['traffic_light_offset_x'] = offset_x
+            config['traffic_light_offset_y'] = offset_y
+            save_config(config)
+
+        return json.dumps({'ok': success, 'offset_x': offset_x, 'offset_y': offset_y})
+
+    def get_traffic_light_offset(self):
+        """
+        获取当前红黄绿按钮偏移量
+        前端通过 window.pywebview.api.get_traffic_light_offset() 调用。
+        """
+        config = load_config()
+        return json.dumps({
+            'ok': True,
+            'offset_x': config.get('traffic_light_offset_x', 0),
+            'offset_y': config.get('traffic_light_offset_y', 0),
+        })
+
+    # ---- 红黄绿按钮控制 ----
+
+    def get_traffic_light_offset(self):
+        """
+        获取当前红黄绿按钮偏移量
+        前端通过 window.pywebview.api.get_traffic_light_offset() 调用。
+        """
+        config = load_config()
+        return json.dumps({
+            'ok': True,
+            'offset_x': config.get('traffic_light_offset_x', 0),
+            'offset_y': config.get('traffic_light_offset_y', 0),
+        })
+
 
 
 # ===================== 本地 HTTP 服务器（替代 file:// 协议）=====================
@@ -1059,32 +1232,11 @@ def start_http_server(dist_dir: str, port: int = 9988):
         (httpd, port): HTTP 服务器对象和端口号
     """
 
-    class InjectCSSHandler(http.server.SimpleHTTPRequestHandler):
+    class QuietHandler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             # 关键：必须将 directory 传给父类，否则 SimpleHTTPRequestHandler
             # 会默认使用 os.getcwd()，而不是我们期望的 dist_dir
             super().__init__(*args, directory=dist_dir, **kwargs)
-
-        def do_GET(self):
-            # 对 index.html 注入 --pw-top CSS 变量
-            parsed = urllib.parse.urlparse(self.path)
-            path = parsed.path
-            if path == '/' or path == '/index.html':
-                index_path = os.path.join(self.directory, 'index.html')
-                try:
-                    with open(index_path, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                    pw_css = '<style>:root { --pw-top: 28px; }</style>\n'
-                    content = content.replace('</head>', pw_css + '</head>')
-                    self.send_response(200)
-                    self.send_header('Content-type', 'text/html; charset=utf-8')
-                    self.end_headers()
-                    self.wfile.write(content.encode('utf-8'))
-                except Exception as e:
-                    self.send_error(500, f'Error: {e}')
-            else:
-                # 其他文件正常服务
-                super().do_GET()
 
         def log_message(self, format, *args):
             # 静默日志，避免控制台刷屏
@@ -1094,7 +1246,7 @@ def start_http_server(dist_dir: str, port: int = 9988):
     socketserver.TCPServer.allow_reuse_address = True
 
     try:
-        httpd = socketserver.TCPServer(("127.0.0.1", port), InjectCSSHandler)
+        httpd = socketserver.TCPServer(("127.0.0.1", port), QuietHandler)
     except OSError as e:
         # 端口被占用时，kill 旧进程后重试（仅开发环境）
         if getattr(sys, 'frozen', False):
@@ -1112,7 +1264,7 @@ def start_http_server(dist_dir: str, port: int = 9988):
                 except Exception:
                     pass
             time.sleep(0.5)
-            httpd = socketserver.TCPServer(("127.0.0.1", port), InjectCSSHandler)
+            httpd = socketserver.TCPServer(("127.0.0.1", port), QuietHandler)
         else:
             raise
 
@@ -1245,11 +1397,19 @@ def main():
             resizable=True,
             text_select=True,
             js_api=api,
-            frameless=True,
+            frameless=False,  # 显示原生标题栏和红黄绿按钮
             easy_drag=True,
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
+
+        # 应用已保存的红黄绿按钮偏移量
+        config = load_config()
+        saved_offset_x = config.get('traffic_light_offset_x', 0)
+        saved_offset_y = config.get('traffic_light_offset_y', 0)
+        if saved_offset_x != 0 or saved_offset_y != 0:
+            log(f"[Main] 应用已保存的红黄绿按钮偏移: ({saved_offset_x}, {saved_offset_y})")
+            apply_traffic_light_offset(window, saved_offset_x, saved_offset_y)
 
         log("[Main] pywebview 窗口已创建，启动事件循环...")
 
