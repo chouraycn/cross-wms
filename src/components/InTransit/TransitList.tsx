@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -30,6 +30,8 @@ import {
   IconButton,
   Tooltip,
   InputAdornment,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -37,7 +39,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { mockTransitOrders, mockWarehouses, getMockWarehouseById } from '../../data/mockData';
+import { useTransitData } from '../../hooks/useTransitData';
 import type { TransitOrder, TransitStatus, TransportMode } from '../../types';
 import dayjs from 'dayjs';
 
@@ -62,14 +64,15 @@ function getActiveStep(status: TransitStatus): number {
 
 interface RowProps {
   order: TransitOrder;
+  getWarehouseById: (id: string) => import('../../types').Warehouse | undefined;
   onEdit: (order: TransitOrder) => void;
   onDelete: (id: string) => void;
 }
 
-const TransitRow: React.FC<RowProps> = ({ order, onEdit, onDelete }) => {
+const TransitRow: React.FC<RowProps> = ({ order, getWarehouseById, onEdit, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
-  const fromWh = getMockWarehouseById(order.fromWarehouseId);
-  const toWh = getMockWarehouseById(order.toWarehouseId);
+  const fromWh = getWarehouseById(order.fromWarehouseId);
+  const toWh = getWarehouseById(order.toWarehouseId);
   const { label: statusLabel, color: statusColor } = statusLabels[order.status];
   const { label: modeLabel, icon: modeIcon } = transportLabels[order.transportMode];
   const delayed = order.status !== 'arrived' && order.estimatedArrival && dayjs().isAfter(dayjs(order.estimatedArrival), 'day');
@@ -203,7 +206,15 @@ const TransitRow: React.FC<RowProps> = ({ order, onEdit, onDelete }) => {
 };
 
 const TransitList: React.FC = () => {
-  const [orders, setOrders] = useState<TransitOrder[]>(mockTransitOrders);
+  const { transitOrders: initialOrders, warehouses, loading, error, getWarehouseById } = useTransitData();
+  const [orders, setOrders] = useState<TransitOrder[]>([]);
+
+  // 当异步数据加载后同步到本地状态
+  useEffect(() => {
+    if (initialOrders.length > 0) {
+      setOrders(initialOrders);
+    }
+  }, [initialOrders]);
   const [filterMode, setFilterMode] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterWarehouse, setFilterWarehouse] = useState<string>('all');
@@ -315,7 +326,7 @@ const TransitList: React.FC = () => {
           {
             status: 'dispatched',
             time: new Date().toLocaleString('zh-CN'),
-            location: getMockWarehouseById(newOrder.fromWarehouseId)?.name ?? '发货仓',
+            location: getWarehouseById(newOrder.fromWarehouseId)?.name ?? '发货仓',
             remark: '运单已创建',
           },
         ],
@@ -353,6 +364,20 @@ const TransitList: React.FC = () => {
 
   return (
     <Box>
+      {/* Loading State */}
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Typography variant="body2" color="text.secondary">正在加载数据...</Typography>
+        </Box>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       {/* Filters */}
       <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, mb: 2 }}>
         <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -390,7 +415,7 @@ const TransitList: React.FC = () => {
               <InputLabel>目标仓库</InputLabel>
               <Select value={filterWarehouse} label="目标仓库" onChange={(e) => setFilterWarehouse(e.target.value)}>
                 <MenuItem value="all">全部</MenuItem>
-                {mockWarehouses.map((wh) => (
+                {warehouses.map((wh) => (
                   <MenuItem key={wh.id} value={wh.id}>{wh.name}</MenuItem>
                 ))}
               </Select>
@@ -438,6 +463,7 @@ const TransitList: React.FC = () => {
                 <TransitRow
                   key={order.id}
                   order={order}
+                  getWarehouseById={getWarehouseById}
                   onEdit={handleEditOrder}
                   onDelete={(id) => { setOrderToDelete(id); setDeleteConfirmOpen(true); }}
                 />
@@ -484,7 +510,7 @@ const TransitList: React.FC = () => {
               <FormControl fullWidth size="small" error={!!formErrors.fromWarehouseId}>
                 <InputLabel>起始仓库</InputLabel>
                 <Select value={newOrder.fromWarehouseId} label="起始仓库" onChange={(e) => setNewOrder((p) => ({ ...p, fromWarehouseId: e.target.value }))}>
-                  {mockWarehouses.map((wh) => <MenuItem key={wh.id} value={wh.id}>{wh.name}</MenuItem>)}
+                  {warehouses.map((wh) => <MenuItem key={wh.id} value={wh.id}>{wh.name}</MenuItem>)}
                 </Select>
                 {formErrors.fromWarehouseId && <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>{formErrors.fromWarehouseId}</Typography>}
               </FormControl>
@@ -493,7 +519,7 @@ const TransitList: React.FC = () => {
               <FormControl fullWidth size="small" error={!!formErrors.toWarehouseId}>
                 <InputLabel>目标仓库</InputLabel>
                 <Select value={newOrder.toWarehouseId} label="目标仓库" onChange={(e) => setNewOrder((p) => ({ ...p, toWarehouseId: e.target.value }))}>
-                  {mockWarehouses.map((wh) => <MenuItem key={wh.id} value={wh.id}>{wh.name}</MenuItem>)}
+                  {warehouses.map((wh) => <MenuItem key={wh.id} value={wh.id}>{wh.name}</MenuItem>)}
                 </Select>
                 {formErrors.toWarehouseId && <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>{formErrors.toWarehouseId}</Typography>}
               </FormControl>

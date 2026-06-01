@@ -26,7 +26,7 @@ import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import { mockWarehouses, getWarehouseUtilization } from '../../data/mockData';
+import { calcUtilizationByItems } from '../../utils/volumeCalculator';
 import type { Warehouse, WarehouseStatus } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { subscribeRefresh, subscribeNewWarehouse } from '../../App';
@@ -366,7 +366,7 @@ const WarehouseList: React.FC = () => {
             </TableHead>
             <TableBody>
               {warehouses.map((wh) => {
-                const rate = getWarehouseUtilization(wh);
+                const rate = calcUtilizationByItems(wh);
                 const color = getProgressColor(rate);
                 return (
                   <TableRow

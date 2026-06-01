@@ -1781,6 +1781,68 @@ const SettingsPanel: React.FC = () => {
             placeholder="文档 ID 或 URL"
             sx={textFieldSx}
           />
+          <TextField
+            label="容积历史文档 ID"
+            size="small"
+            fullWidth
+            value={draft.dashboard.dataSourceDocMappings?.volumeHistory || ''}
+            onChange={(e) => updateDashboard('dataSourceDocMappings', {
+              ...draft.dashboard.dataSourceDocMappings,
+              volumeHistory: e.target.value,
+            })}
+            placeholder="文档 ID 或 URL"
+            sx={textFieldSx}
+          />
+          <TextField
+            label="入库记录文档 ID"
+            size="small"
+            fullWidth
+            value={draft.dashboard.dataSourceDocMappings?.inboundRecords || ''}
+            onChange={(e) => updateDashboard('dataSourceDocMappings', {
+              ...draft.dashboard.dataSourceDocMappings,
+              inboundRecords: e.target.value,
+            })}
+            placeholder="文档 ID 或 URL"
+            sx={textFieldSx}
+          />
+          <TextField
+            label="出库记录文档 ID"
+            size="small"
+            fullWidth
+            value={draft.dashboard.dataSourceDocMappings?.outboundRecords || ''}
+            onChange={(e) => updateDashboard('dataSourceDocMappings', {
+              ...draft.dashboard.dataSourceDocMappings,
+              outboundRecords: e.target.value,
+            })}
+            placeholder="文档 ID 或 URL"
+            sx={textFieldSx}
+          />
+        </Box>
+      )}
+
+      {/* 同步间隔配置 - 仅非 mock 模式显示 */}
+      {draft.dashboard.dataSourceMode !== 'mock' && (
+        <Box sx={{ mb: 2 }}>
+          <Typography sx={{ fontSize: '0.85rem', fontWeight: 500, color: '#374151', mb: 1 }}>
+            数据同步间隔
+          </Typography>
+          <FormControl fullWidth size="small">
+            <InputLabel>同步间隔</InputLabel>
+            <Select
+              value={String(draft.dashboard.dataRefreshInterval || 300)}
+              label="同步间隔"
+              onChange={(e) => updateDashboard('dataRefreshInterval', parseInt(e.target.value, 10))}
+            >
+              <MenuItem value="60">1 分钟</MenuItem>
+              <MenuItem value="300">5 分钟（推荐）</MenuItem>
+              <MenuItem value="600">10 分钟</MenuItem>
+              <MenuItem value="1800">30 分钟</MenuItem>
+              <MenuItem value="3600">1 小时</MenuItem>
+            </Select>
+          </FormControl>
+          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.5 }}>
+            自动从远程数据源刷新数据的频率
+          </Typography>
         </Box>
       )}
 
@@ -1810,35 +1872,69 @@ const SettingsPanel: React.FC = () => {
         )}
       </Box>
 
-      {/* 应用配置按钮 */}
-      <Button
-        variant="contained"
-        fullWidth
-        onClick={() => {
-          // 保存数据源配置到 dashboardApi
-          const { dashboard } = draft;
-          const dataSourceConfig = {
-            mode: (dashboard.dataSourceMode || 'mock') as 'mock' | 'api' | 'tencent-docs',
-            apiBaseUrl: dashboard.dataSourceApiBaseUrl || '/api',
-            docMappings: dashboard.dataSourceDocMappings || {},
-          };
-          // 调用 dashboardApi.setConfig 持久化配置
-          dashboardApi.setConfig(dataSourceConfig);
+      {/* 应用配置 + 立即同步按钮 */}
+      <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+        <Button
+          variant="contained"
+          fullWidth
+          onClick={() => {
+            // 保存数据源配置到 dashboardApi
+            const { dashboard } = draft;
+            const dataSourceConfig = {
+              mode: (dashboard.dataSourceMode || 'mock') as 'mock' | 'api' | 'tencent-docs',
+              apiBaseUrl: dashboard.dataSourceApiBaseUrl || '/api',
+              docMappings: dashboard.dataSourceDocMappings || {},
+            };
+            // 调用 dashboardApi.setConfig 持久化配置
+            dashboardApi.setConfig(dataSourceConfig);
 
-          // 显示成功消息
-          setSnackbarMsg('数据源配置已保存，正在刷新数据...');
-          setSnackbarOpen(true);
-        }}
-        sx={{
-          mt: 1,
-          bgcolor: '#111827',
-          '&:hover': { bgcolor: '#1F2937' },
-          height: 42,
-          borderRadius: 1,
-        }}
-      >
-        应用数据源配置
-      </Button>
+            // 显示成功消息
+            setSnackbarMsg('数据源配置已保存，正在刷新数据...');
+            setSnackbarOpen(true);
+          }}
+          sx={{
+            bgcolor: '#111827',
+            '&:hover': { bgcolor: '#1F2937' },
+            height: 42,
+            borderRadius: 1,
+          }}
+        >
+          应用数据源配置
+        </Button>
+        {draft.dashboard.dataSourceMode !== 'mock' && (
+          <Button
+            variant="outlined"
+            onClick={async () => {
+              try {
+                await Promise.all([
+                  dashboardApi.getWarehouses(),
+                  dashboardApi.getTransitOrders(),
+                  dashboardApi.getInventory(),
+                  dashboardApi.getInboundRecords(),
+                  dashboardApi.getOutboundRecords(),
+                  dashboardApi.getVolumeHistory(),
+                  dashboardApi.getKpiData(),
+                ]);
+                setSnackbarMsg('数据同步成功');
+                setSnackbarOpen(true);
+              } catch (err) {
+                setSnackbarMsg(`同步失败: ${err instanceof Error ? err.message : '未知错误'}`);
+                setSnackbarOpen(true);
+              }
+            }}
+            sx={{
+              borderColor: '#111827',
+              color: '#111827',
+              height: 42,
+              borderRadius: 1,
+              minWidth: 100,
+              '&:hover': { borderColor: '#374151' },
+            }}
+          >
+            立即同步
+          </Button>
+        )}
+      </Box>
     </Box>
   );
 

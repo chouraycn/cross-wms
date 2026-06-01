@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -32,7 +32,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
-import { mockInventory, mockWarehouses, getMockWarehouseById } from '../../data/mockData';
+import { useInventoryData } from '../../hooks/useInventoryData';
 import type { InventoryItem } from '../../types';
 import dayjs from 'dayjs';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -40,8 +40,16 @@ import { useAppSettings } from '../../contexts/AppSettingsContext';
 const InventoryList: React.FC = () => {
   const { settings } = useAppSettings();
   const ageWarningDays = settings.dashboard.ageWarningDays ?? 90;
+  const { inventory: initialInventory, warehouses, loading, error, getWarehouseById } = useInventoryData();
 
-  const [items, setItems] = useState<InventoryItem[]>(mockInventory);
+  const [items, setItems] = useState<InventoryItem[]>([]);
+
+  // 当异步数据加载后同步到本地状态
+  useEffect(() => {
+    if (initialInventory.length > 0) {
+      setItems(initialInventory);
+    }
+  }, [initialInventory]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [selected, setSelected] = useState<string[]>([]);
@@ -106,7 +114,7 @@ const InventoryList: React.FC = () => {
     );
     setSelected([]);
     setMoveDialogOpen(false);
-    setSnackbar({ open: true, message: `已将 ${selected.length} 件商品移库至 ${getMockWarehouseById(targetWarehouseId)?.name}`, severity: 'success' });
+    setSnackbar({ open: true, message: `已将 ${selected.length} 件商品移库至 ${getWarehouseById(targetWarehouseId)?.name}`, severity: 'success' });
   };
 
   const handleInventoryCheck = () => {
@@ -120,6 +128,20 @@ const InventoryList: React.FC = () => {
 
   return (
     <Box>
+      {/* Loading State */}
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Typography variant="body2" color="text.secondary">正在加载数据...</Typography>
+        </Box>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       {/* Summary + Aging Distribution */}
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
         <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
@@ -201,7 +223,7 @@ const InventoryList: React.FC = () => {
               <InputLabel>仓库</InputLabel>
               <Select value={filterWarehouse} label="仓库" onChange={(e) => setFilterWarehouse(e.target.value)}>
                 <MenuItem value="all">全部仓库</MenuItem>
-                {mockWarehouses.map((wh) => <MenuItem key={wh.id} value={wh.id}>{wh.name}</MenuItem>)}
+                {warehouses.map((wh) => <MenuItem key={wh.id} value={wh.id}>{wh.name}</MenuItem>)}
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 140 }}>
@@ -263,7 +285,7 @@ const InventoryList: React.FC = () => {
             </TableHead>
             <TableBody>
               {paginatedItems.map((item) => {
-                const warehouse = getMockWarehouseById(item.warehouseId);
+                const warehouse = getWarehouseById(item.warehouseId);
                 const isSelected = selected.includes(item.id);
                 return (
                   <TableRow
@@ -358,7 +380,7 @@ const InventoryList: React.FC = () => {
           <FormControl fullWidth size="small">
             <InputLabel>目标仓库</InputLabel>
             <Select value={targetWarehouseId} label="目标仓库" onChange={(e) => setTargetWarehouseId(e.target.value)}>
-              {mockWarehouses.map((wh) => <MenuItem key={wh.id} value={wh.id}>{wh.name}</MenuItem>)}
+              {warehouses.map((wh) => <MenuItem key={wh.id} value={wh.id}>{wh.name}</MenuItem>)}
             </Select>
           </FormControl>
         </DialogContent>
