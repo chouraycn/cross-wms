@@ -227,6 +227,24 @@ const MainLayout: React.FC = () => {
     if (isPy) {
       // pywebview 环境立即注入 CSS 变量，避免布局闪烁
       document.documentElement.style.setProperty('--pw-top', '33px');
+      // 红黄绿按钮偏移：通过 Cocoa API 移动（必须在窗口完全加载后调用）
+      const applyTrafficLightOffset = async () => {
+        try {
+          const api = (window as any).pywebview?.api;
+          if (api?.set_traffic_light_offset) {
+            // 读取保存的偏移量（或使用默认值）
+            const saved = await api.get_traffic_light_offset();
+            const offset = typeof saved === 'string' ? JSON.parse(saved) : saved;
+            if (offset?.ok !== false) {
+              const x = offset?.offset_x ?? 0;
+              const y = offset?.offset_y ?? 5;
+              await api.set_traffic_light_offset(x, y);
+            }
+          }
+        } catch { /* 非关键功能，静默失败 */ }
+      };
+      // 延迟 500ms 确保 NSWindow 完全初始化
+      setTimeout(applyTrafficLightOffset, 500);
       return;
     }
     const id = setInterval(() => {
