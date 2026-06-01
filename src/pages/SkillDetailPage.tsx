@@ -43,6 +43,14 @@ const categoryColors: Record<string, { bg: string; color: string }> = {
   tool: { bg: '#FFF7ED', color: '#EA580C' },
 };
 
+/** 技能图标区渐变色（卡片风格） */
+const iconGradients: Record<string, string> = {
+  core: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+  data: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+  auto: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+  tool: 'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
+};
+
 // ===================== 辅助函数 =====================
 
 /** 更新最近使用技能列表 */
@@ -332,14 +340,15 @@ const SkillDetailPage: React.FC = () => {
       {/* 顶部：图标 + 名称 + 状态 + 分类 + 版本 */}
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 3 }}>
         <Box sx={{
-          width: 48, height: 48, borderRadius: 2,
-          backgroundColor: categoryColors[skill.category].bg,
+          width: 56, height: 56, borderRadius: '12px',
+          background: iconGradients[skill.category],
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: categoryColors[skill.category].color,
           flexShrink: 0,
           position: 'relative',
         }}>
-          {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 24 }} />}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', '& .MuiSvgIcon-root': { fontSize: 28, color: '#fff' } }}>
+            {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 28 }} />}
+          </Box>
           {hasAutomation && (
             <Box sx={{
               position: 'absolute', top: -4, right: -4,
