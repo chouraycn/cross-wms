@@ -46,8 +46,8 @@ CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 def load_config():
     """加载配置文件，返回 dict"""
     default_config = {
-        "traffic_light_offset_x": 0,
-        "traffic_light_offset_y": 5,  # 红黄绿按钮默认下移 5px
+        "traffic_light_offset_x": 5,   # 红黄绿按钮默认右移 5px
+        "traffic_light_offset_y": 5,   # 红黄绿按钮默认下移 5px
     }
     if not os.path.isfile(CONFIG_FILE):
         return default_config
@@ -115,10 +115,12 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
             return False
 
         # 调整每个按钮的位置
+        # 注意：Cocoa 坐标系 Y 轴朝上，而用户接口约定 Y 正值=向下
+        # 因此 Y 方向需要取反
         for btn in buttons:
             frame = btn.frame()
             new_x = frame.origin.x + offset_x
-            new_y = frame.origin.y + offset_y
+            new_y = frame.origin.y - offset_y  # Y 轴反转：用户正值=向下，Cocoa 正值=向上
             btn.setFrameOrigin_((new_x, new_y))
 
         print(f"[TrafficLight] 已应用偏移 ({offset_x}, {offset_y})")

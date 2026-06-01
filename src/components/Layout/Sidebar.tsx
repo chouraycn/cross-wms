@@ -56,6 +56,7 @@ import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftOutlinedIcon from '@mui/icons-material/ChevronLeftOutlined';
 import ChevronRightOutlinedIcon from '@mui/icons-material/ChevronRightOutlined';
+import MenuOpenOutlinedIcon from '@mui/icons-material/MenuOpenOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import CodeIcon from '@mui/icons-material/Code';
 import EditIcon from '@mui/icons-material/Edit';
@@ -875,8 +876,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         width,
         height: 'calc(100vh - var(--pw-top, 0px))',
         boxSizing: 'content-box', // padding-top 向外扩展，不压缩内容
-        // frameless 模式下 --pw-top: 33px 避让红黄绿按钮区域（含5px下移）
-        paddingTop: 'var(--pw-top, 0px)',
+        // 收起时：减小 paddingTop 让内容和红黄绿对齐（红黄绿中心约 y≈21px，留 7px 上边距）
+        // 展开时：完整避让红黄绿按钮区域（33px）
+        paddingTop: collapsed ? '7px' : 'var(--pw-top, 0px)',
         position: 'sticky',
         top: 0,
         zIndex: 1200,
@@ -888,23 +890,33 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         borderRight: 'none',
       }}
     >
-      {/* 收起/展开按钮 — 展开状态在 Sidebar 内右上角；收起状态在 App.tsx fixed 定位 */}
-      {!collapsed && onToggle && (
+      {/* 侧边栏切换按钮 — 始终显示在 Sidebar 右上角（MiniMax 风格） */}
+      {onToggle && (
         <IconButton
           onClick={onToggle}
           size="small"
           sx={{
             position: 'absolute',
-            top: 'calc(56px / 2 - 9px)',
-            right: 8,
+            // 收起时：与红黄绿按钮对齐（y≈12px）
+            // 展开时：在 Logo 区域右侧垂直居中
+            top: collapsed ? '12px' : 'calc(56px / 2 - 9px + var(--pw-top, 0px))',
+            right: collapsed ? 'auto' : 8,
+            left: collapsed ? '50%' : 'auto',
+            transform: collapsed ? 'translateX(-50%)' : 'none',
             color: '#6B7280',
-            borderRadius: '6px',
+            borderRadius: '8px',
             p: 0.5,
+            width: 32,
+            height: 32,
             '&:hover': { backgroundColor: '#e0e0e0' },
             '&:focus': { outline: 'none' },
           }}
         >
-          <ChevronLeftOutlinedIcon sx={{ fontSize: 18 }} />
+          {collapsed ? (
+            <MenuOpenOutlinedIcon sx={{ fontSize: 20 }} />
+          ) : (
+            <ChevronLeftOutlinedIcon sx={{ fontSize: 18 }} />
+          )}
         </IconButton>
       )}
 
@@ -912,7 +924,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       <Box
         sx={{
           px: collapsed ? 0.5 : 2,
-          height: 56,
+          // 收起时：与红黄绿按钮对齐（高度仅容纳图标，居中对齐）
+          // 展开时：正常高度显示图标+文字
+          height: collapsed ? 40 : 56,
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'space-between',
@@ -989,7 +1003,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
       {/* 导航列表 — 独立滚动，禁用上下缓动 */}
       <List sx={{
-        pt: 0,
+        pt: collapsed ? 0.5 : 0,
         px: collapsed ? 0.5 : 1,
         flex: 1,
         overflow: 'auto',
