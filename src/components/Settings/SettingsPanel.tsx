@@ -41,8 +41,10 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import CodeIcon from '@mui/icons-material/Code';
+import EditIcon from '@mui/icons-material/Edit';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
-import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, WeComDocLinkItem, VolumeDocLinkItem, SidebarConfig, HeatmapConfig, ModelConfig, ModelsConfig } from '../../contexts/AppSettingsContext';
+import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, WeComDocLinkItem, VolumeDocLinkItem, SidebarConfig, HeatmapConfig, ModelConfig, ModelsConfig, OnlineDataEntry } from '../../contexts/AppSettingsContext';
 import { getAuthStatus, getAuthUrl, exchangeToken, refreshToken, isPyWebView, getDocContent, extractFileIdFromUrl, extractTextFromDoc, type TDocAuthStatus } from '../../services/tencentDocsApi';
 import { getWeComAuthStatus, getWeComDocContent, getWeComSmartPageContent, isWeComDocUrl, getWeComDocCategoryFromUrl, getWeComCategoryLabel, extractWeComDocIdFromUrl, type WeComAuthStatus } from '../../services/wecomDocsApi';
 import { getWarehouses } from '../../stores/warehouseStore';
@@ -164,6 +166,12 @@ const SettingsPanel: React.FC = () => {
   const [newVolumeDocTitle, setNewVolumeDocTitle] = useState('');
   const [newVolumeDocDataType, setNewVolumeDocDataType] = useState<VolumeDocLinkItem['dataType']>('volume');
   const [volumeDocErrors, setVolumeDocErrors] = useState<Record<string, string>>({});
+
+  // 在线数据输入状态
+  const [newDataName, setNewDataName] = useState('');
+  const [newDataContent, setNewDataContent] = useState('');
+  const [newDataDataType, setNewDataDataType] = useState<OnlineDataEntry['dataType']>('warehouses');
+  const [editingDataId, setEditingDataId] = useState<string | null>(null);
 
   // ===================== 模型管理状态 =====================
 
@@ -646,6 +654,67 @@ const SettingsPanel: React.FC = () => {
     }));
   }, []);
 
+  // ===================== 在线数据操作 =====================
+
+  const handleAddData = useCallback(() => {
+    if (!newDataName.trim()) { setErrors((e) => ({ ...e, 'onlineData.name': '请输入数据名称' })); return; }
+    if (!newDataContent.trim()) { setErrors((e) => ({ ...e, 'onlineData.data': '请输入数据内容' })); return; }
+    try { JSON.parse(newDataContent); } catch {
+      setErrors((e) => ({ ...e, 'onlineData.data': '数据内容必须是有效的JSON格式' })); return;
+    }
+    const newEntry: OnlineDataEntry = {
+      id: `data-${Date.now()}`,
+      name: newDataName.trim(),
+      dataType: newDataDataType,
+      data: newDataContent.trim(),
+      updatedAt: new Date().toISOString(),
+    };
+    setDraft((prev) => ({
+      ...prev,
+      tencentDocs: { ...prev.tencentDocs, onlineData: [...prev.tencentDocs.onlineData, newEntry] },
+    }));
+    setNewDataName(''); setNewDataContent(''); setNewDataDataType('warehouses');
+    setErrors((e) => { const n = { ...e }; delete n['onlineData.name']; delete n['onlineData.data']; return n; });
+  }, [newDataName, newDataContent, newDataDataType]);
+
+  const handleRemoveData = useCallback((id: string) => {
+    setDraft((prev) => ({
+      ...prev,
+      tencentDocs: { ...prev.tencentDocs, onlineData: prev.tencentDocs.onlineData.filter((d) => d.id !== id) },
+    }));
+  }, []);
+
+  const handleEditData = useCallback((entry: OnlineDataEntry) => {
+    setEditingDataId(entry.id);
+    setNewDataName(entry.name);
+    setNewDataDataType(entry.dataType);
+    setNewDataContent(entry.data);
+  }, []);
+
+  const handleSaveEdit = useCallback(() => {
+    if (!newDataName.trim()) { setErrors((e) => ({ ...e, 'onlineData.name': '请输入数据名称' })); return; }
+    if (!newDataContent.trim()) { setErrors((e) => ({ ...e, 'onlineData.data': '请输入数据内容' })); return; }
+    try { JSON.parse(newDataContent); } catch {
+      setErrors((e) => ({ ...e, 'onlineData.data': '数据内容必须是有效的JSON格式' })); return;
+    }
+    setDraft((prev) => ({
+      ...prev,
+      tencentDocs: {
+        ...prev.tencentDocs,
+        onlineData: prev.tencentDocs.onlineData.map((d) =>
+          d.id === editingDataId ? { ...d, name: newDataName.trim(), dataType: newDataDataType, data: newDataContent.trim(), updatedAt: new Date().toISOString() } : d
+        ),
+      },
+    }));
+    setEditingDataId(null); setNewDataName(''); setNewDataContent(''); setNewDataDataType('warehouses');
+    setErrors((e) => { const n = { ...e }; delete n['onlineData.name']; delete n['onlineData.data']; return n; });
+  }, [newDataName, newDataContent, newDataDataType, editingDataId]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingDataId(null); setNewDataName(''); setNewDataContent(''); setNewDataDataType('warehouses');
+    setErrors((e) => { const n = { ...e }; delete n['onlineData.name']; delete n['onlineData.data']; return n; });
+  }, []);
+
   /** Save draft to the global settings store */
   const handleSave = () => {
     if (draft.dashboard.fullThreshold <= draft.dashboard.warningThreshold) {
@@ -1065,6 +1134,164 @@ const SettingsPanel: React.FC = () => {
       <Alert severity="info" sx={{ mt: 1 }}>
         完成 API 授权后，点击文档即可在应用内读取内容（本地渲染，不嵌入网页）。也可点击浏览器图标在默认浏览器中编辑。
       </Alert>
+
+      <Divider sx={{ my: 3 }} />
+
+      {/* ===== 在线数据输入 ===== */}
+      <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', mb: 0.5 }}>
+        在线数据输入
+      </Typography>
+      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', mb: 2 }}>
+        支持直接输入 JSON 格式数据，用于仪表盘实时展示。无需腾讯文档 API 授权即可使用。
+      </Typography>
+
+      {/* 添加/编辑表单 */}
+      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, p: 2 }}>
+        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#111827', mb: 1.5 }}>
+          {editingDataId ? '编辑数据' : '添加数据'}
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <TextField
+            label="数据名称"
+            size="small"
+            fullWidth
+            placeholder="例如：深圳仓库存数据"
+            value={newDataName}
+            onChange={(e) => { setNewDataName(e.target.value); setErrors((prev) => { const n = { ...prev }; delete n['onlineData.name']; return n; }); }}
+            sx={textFieldSx}
+            error={Boolean(errors['onlineData.name'])}
+            helperText={errors['onlineData.name']}
+          />
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel sx={{ fontSize: '0.875rem' }}>数据类型</InputLabel>
+              <Select
+                value={newDataDataType}
+                label="数据类型"
+                onChange={(e) => setNewDataDataType(e.target.value as OnlineDataEntry['dataType'])}
+                sx={{ fontSize: '0.875rem' }}
+              >
+                <MenuItem value="warehouses">仓库信息</MenuItem>
+                <MenuItem value="inventory">库存数据</MenuItem>
+                <MenuItem value="transit">在途运单</MenuItem>
+                <MenuItem value="other">其他</MenuItem>
+              </Select>
+            </FormControl>
+            {editingDataId ? (
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="contained"
+                  startIcon={<SaveIcon />}
+                  onClick={handleSaveEdit}
+                  sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' }, height: 40, whiteSpace: 'nowrap' }}
+                >
+                  保存
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={handleCancelEdit}
+                  sx={{ height: 40, whiteSpace: 'nowrap' }}
+                >
+                  取消
+                </Button>
+              </Box>
+            ) : (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleAddData}
+                sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' }, height: 40, whiteSpace: 'nowrap' }}
+              >
+                添加
+              </Button>
+            )}
+          </Box>
+          <TextField
+            label="数据内容（JSON格式）"
+            size="small"
+            fullWidth
+            multiline
+            rows={6}
+            placeholder='例如：[{"id":"wh001","name":"深圳仓","usedItems":8500,"totalItems":10000}]'
+            value={newDataContent}
+            onChange={(e) => { setNewDataContent(e.target.value); setErrors((prev) => { const n = { ...prev }; delete n['onlineData.data']; return n; }); }}
+            sx={{ ...textFieldSx, '& .MuiOutlinedInput-root': { fontFamily: 'monospace', fontSize: '0.8rem' } }}
+            error={Boolean(errors['onlineData.data'])}
+            helperText={errors['onlineData.data']}
+          />
+        </Box>
+      </Card>
+
+      {/* 已录入数据列表 */}
+      {draft.tencentDocs.onlineData.length === 0 ? (
+        <Box sx={{ textAlign: 'center', py: 4, border: '1px dashed #E5E7EB', borderRadius: 2 }}>
+          <CodeIcon sx={{ fontSize: 36, color: '#D1D5DB', mb: 1 }} />
+          <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem' }}>
+            暂无在线数据，请在上方添加
+          </Typography>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {draft.tencentDocs.onlineData.map((entry) => (
+            <Card key={entry.id} elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+              <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 1,
+                      backgroundColor: '#3B82F6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <CodeIcon sx={{ color: '#fff', fontSize: 18 }} />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {entry.name}
+                      </Typography>
+                      <Chip
+                        label={entry.dataType === 'inventory' ? '库存' : entry.dataType === 'transit' ? '在途' : entry.dataType === 'warehouses' ? '仓库' : '其他'}
+                        size="small"
+                        sx={{ height: 20, fontSize: '0.7rem', backgroundColor: '#F3F4F6', color: '#6B7280' }}
+                      />
+                    </Box>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                      更新：{new Date(entry.updatedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {' · '}{(() => { try { const p = JSON.parse(entry.data); return Array.isArray(p) ? p.length : 1; } catch { return 0; } })()} 条记录
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                    <Tooltip title="编辑">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEditData(entry)}
+                        sx={{ color: '#6B7280' }}
+                      >
+                        <EditIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="删除">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRemoveData(entry.id)}
+                        sx={{ color: '#9CA3AF', '&:hover': { color: '#EF4444' } }}
+                      >
+                        <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
+      )}
 
       <Divider sx={{ my: 3 }} />
 
