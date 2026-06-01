@@ -29,13 +29,13 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: '仪表盘', path: '/', icon: <DashboardOutlinedIcon /> },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon /> },
+  { label: '定时任务', path: '/automation', icon: <ScheduleIcon /> },
   { label: 'Agent 应用', path: '/agent', icon: <SmartToyOutlinedIcon /> },
   { label: '仓库管理', path: '/warehouses', icon: <WarehouseOutlinedIcon /> },
   { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon /> },
   { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon /> },
   { label: '腾讯文档', path: '/tencent-docs', icon: <DescriptionOutlinedIcon /> },
   { label: '统计报表', path: '/reports', icon: <AssessmentOutlinedIcon /> },
-  { label: '定时任务', path: '/automation', icon: <ScheduleIcon /> },
 ];
 
 // ===================== Props =====================
@@ -76,9 +76,9 @@ const NavList: React.FC<NavListProps> = ({ collapsed, activePath, onNavigate }) 
                   px: collapsed ? 0 : 1.5,
                   py: 0.25,
                   borderRadius: '6px',
-                  backgroundColor: active ? '#E0E0E0' : 'transparent',
+                  backgroundColor: active ? '#FFFFFF' : 'transparent',
                   '&:hover': {
-                    backgroundColor: active ? '#D4D4D4' : '#f5f5f5',
+                    backgroundColor: active ? '#F9FAFB' : '#f5f5f5',
                   },
                 }}
               >

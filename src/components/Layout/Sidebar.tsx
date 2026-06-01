@@ -83,9 +83,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             justifyContent: collapsed ? 'center' : 'flex-start',
             px: collapsed ? 0 : 1.5,
             borderRadius: '6px',
-            backgroundColor: settingsOpen ? '#E0E0E0' : 'transparent',
+            backgroundColor: settingsOpen ? '#FFFFFF' : 'transparent',
             '&:hover': {
-              backgroundColor: settingsOpen ? '#D4D4D4' : '#f5f5f5',
+              backgroundColor: settingsOpen ? '#F9FAFB' : '#f5f5f5',
             },
           }}
         >
