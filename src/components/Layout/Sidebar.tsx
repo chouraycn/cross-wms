@@ -828,7 +828,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
 
 /** 单栏侧边栏布局 — 加宽至 260 */
 const SIDEBAR_WIDTH_EXPANDED = 260;
-const SIDEBAR_WIDTH_COLLAPSED = 68;
+const SIDEBAR_WIDTH_COLLAPSED = 73;
 
 // 背景色
 const SIDEBAR_BG = '#F0F0F0';
@@ -876,9 +876,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         width,
         height: 'calc(100vh - var(--pw-top, 0px))',
         boxSizing: 'content-box', // padding-top 向外扩展，不压缩内容
-        // 收起时：减小 paddingTop 让内容和红黄绿对齐（红黄绿中心约 y≈21px，留 7px 上边距）
+        // 收起时：红黄绿按钮下移5px后Y中心≈21px，Logo需避让到红黄绿下方
+        // 红黄绿高度约12px，底部约 y=21+6=27px，Logo从 32px 开始
         // 展开时：完整避让红黄绿按钮区域（33px）
-        paddingTop: collapsed ? '7px' : 'var(--pw-top, 0px)',
+        paddingTop: collapsed ? '0px' : 'var(--pw-top, 0px)',
         position: 'sticky',
         top: 0,
         zIndex: 1200,
@@ -890,16 +891,17 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         borderRight: 'none',
       }}
     >
-      {/* 侧边栏切换按钮 — 始终显示在 Sidebar 右上角（MiniMax 风格） */}
+      {/* 侧边栏切换按钮 — 始终显示（MiniMax 风格） */}
       {onToggle && (
         <IconButton
           onClick={onToggle}
           size="small"
           sx={{
             position: 'absolute',
-            // 收起时：与红黄绿按钮对齐（y≈12px）
-            // 展开时：在 Logo 区域右侧垂直居中
-            top: collapsed ? '12px' : 'calc(56px / 2 - 9px + var(--pw-top, 0px))',
+            // 收起时：与红黄绿按钮对齐（红黄绿右移5px后 x≈12, Y中心≈21px）
+            // 按钮中心 = top + 16(半高) ≈ 21px → top ≈ 5px
+            // 展开时：在 Logo 区域右侧垂直居中（paddingTop 之后 56px 区域的中间）
+            top: collapsed ? '5px' : 'calc(var(--pw-top, 0px) + 56px / 2 - 9px)',
             right: collapsed ? 'auto' : 8,
             left: collapsed ? '50%' : 'auto',
             transform: collapsed ? 'translateX(-50%)' : 'none',
@@ -924,9 +926,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       <Box
         sx={{
           px: collapsed ? 0.5 : 2,
-          // 收起时：与红黄绿按钮对齐（高度仅容纳图标，居中对齐）
+          // 收起时：Logo 在红黄绿按钮下方（红黄绿区域约0~28px，Logo从32px开始）
           // 展开时：正常高度显示图标+文字
-          height: collapsed ? 40 : 56,
+          height: collapsed ? 32 : 56,
+          mt: collapsed ? '32px' : 0,  // 收起时留出红黄绿空间
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'space-between',
