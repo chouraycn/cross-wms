@@ -107,7 +107,7 @@ const TencentDocsTab: React.FC<TencentDocsTabProps> = ({
     }
   }, []);
 
-  useState(() => { checkTdocAuth(); });
+  useEffect(() => { checkTdocAuth(); }, [checkTdocAuth]);
 
   const handleTdocAuth = useCallback(async () => {
     if (!tdocClientId || !tdocClientSecret) {
