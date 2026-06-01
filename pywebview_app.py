@@ -184,6 +184,8 @@ def read_version():
 
     if getattr(sys, 'frozen', False):
         meipass = sys._MEIPASS
+        # PyInstaller --add-data version.txt:version.txt 会创建 version.txt/ 目录
+        candidates.append(os.path.join(meipass, 'version.txt', 'version.txt'))
         candidates.append(os.path.join(meipass, 'version.txt'))
 
     base = os.path.dirname(os.path.abspath(__file__))
