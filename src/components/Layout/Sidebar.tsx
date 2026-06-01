@@ -875,7 +875,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         width,
         height: 'calc(100vh - var(--pw-top, 0px))',
         boxSizing: 'content-box', // padding-top 向外扩展，不压缩内容
-        // frameless 模式下 --pw-top: 28px 避让红黄绿按钮区域
+        // frameless 模式下 --pw-top: 33px 避让红黄绿按钮区域（含5px下移）
         paddingTop: 'var(--pw-top, 0px)',
         position: 'sticky',
         top: 0,
@@ -888,34 +888,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         borderRight: 'none',
       }}
     >
-      {/* 收起/展开按钮 — WorkBuddy 风格，始终在 Sidebar 内部 */}
-      {collapsed && onToggle && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 'calc(56px / 2 - 12px)',
-            left: 0,
-            right: 0,
-            display: 'flex',
-            justifyContent: 'center',
-            zIndex: 1,
-          }}
-        >
-          <IconButton
-            onClick={onToggle}
-            size="small"
-            sx={{
-              color: '#6B7280',
-              borderRadius: '6px',
-              p: 0.5,
-              '&:hover': { backgroundColor: '#e0e0e0' },
-              '&:focus': { outline: 'none' },
-            }}
-          >
-            <MenuOpenIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-        </Box>
-      )}
+      {/* 收起/展开按钮 — 展开状态在 Sidebar 内右上角；收起状态在 App.tsx fixed 定位 */}
       {!collapsed && onToggle && (
         <IconButton
           onClick={onToggle}
