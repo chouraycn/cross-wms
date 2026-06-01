@@ -1405,12 +1405,8 @@ def main():
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
-        # 应用红黄绿按钮偏移量（始终调用，确保默认偏移生效）
-        config = load_config()
-        saved_offset_x = config.get('traffic_light_offset_x', 0)
-        saved_offset_y = config.get('traffic_light_offset_y', 5)
-        log(f"[Main] 应用红黄绿按钮偏移: ({saved_offset_x}, {saved_offset_y})")
-        apply_traffic_light_offset(window, saved_offset_x, saved_offset_y)
+        # 红黄绿按钮偏移不在启动时设置（此时 NSWindow 未完全初始化，Cocoa API 无法获取按钮）
+        # 改由前端页面加载完成后通过 JS API pywebview.api.set_traffic_light_offset() 调用
 
         log("[Main] pywebview 窗口已创建，启动事件循环...")
 
