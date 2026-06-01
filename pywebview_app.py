@@ -47,7 +47,7 @@ def load_config():
     """加载配置文件，返回 dict"""
     default_config = {
         "traffic_light_offset_x": 0,
-        "traffic_light_offset_y": 0,
+        "traffic_light_offset_y": 5,  # 红黄绿按钮默认下移 5px
     }
     if not os.path.isfile(CONFIG_FILE):
         return default_config
@@ -1405,13 +1405,12 @@ def main():
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
-        # 应用已保存的红黄绿按钮偏移量
+        # 应用红黄绿按钮偏移量（始终调用，确保默认偏移生效）
         config = load_config()
         saved_offset_x = config.get('traffic_light_offset_x', 0)
-        saved_offset_y = config.get('traffic_light_offset_y', 0)
-        if saved_offset_x != 0 or saved_offset_y != 0:
-            log(f"[Main] 应用已保存的红黄绿按钮偏移: ({saved_offset_x}, {saved_offset_y})")
-            apply_traffic_light_offset(window, saved_offset_x, saved_offset_y)
+        saved_offset_y = config.get('traffic_light_offset_y', 5)
+        log(f"[Main] 应用红黄绿按钮偏移: ({saved_offset_x}, {saved_offset_y})")
+        apply_traffic_light_offset(window, saved_offset_x, saved_offset_y)
 
         log("[Main] pywebview 窗口已创建，启动事件循环...")
 
