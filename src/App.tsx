@@ -220,18 +220,19 @@ const MainLayout: React.FC = () => {
       return localStorage.getItem('crosswms-sidebar-collapsed') === 'true';
     } catch { return false; }
   });
-  // pywebview 检测 — frameless 模式下需要 --pw-top: 28px 避让红黄绿按钮
+  // pywebview 检测 — frameless 模式下需要 --pw-top 避让红黄绿按钮
+  // 红黄绿按钮下移5px，总避让高度 = 28(默认) + 5 = 33px
   const [isPy, setIsPy] = useState(() => isPyWebView());
   useEffect(() => {
     if (isPy) {
       // pywebview 环境立即注入 CSS 变量，避免布局闪烁
-      document.documentElement.style.setProperty('--pw-top', '28px');
+      document.documentElement.style.setProperty('--pw-top', '33px');
       return;
     }
     const id = setInterval(() => {
       if (isPyWebView()) {
         setIsPy(true);
-        document.documentElement.style.setProperty('--pw-top', '28px');
+        document.documentElement.style.setProperty('--pw-top', '33px');
         clearInterval(id);
       }
     }, 100);
@@ -266,7 +267,7 @@ const MainLayout: React.FC = () => {
     emitWarehouseChange(warehouseId);
   }, []);
 
-  // 系统红黄绿按钮区域高度由 CSS 变量 --pw-top 控制（frameless 模式下 JS 注入 28px）
+  // 系统红黄绿按钮区域高度由 CSS 变量 --pw-top 控制（frameless 模式下 JS 注入 33px）
   // 两侧（Sidebar + 工具栏）均使用 calc(40px + var(--pw-top, 0px)) 统一高度
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -292,14 +293,30 @@ const MainLayout: React.FC = () => {
             alignItems: 'flex-end',
             justifyContent: 'space-between',
             px: 1,
-            // frameless 模式下 --pw-top: 28px 避让红黄绿按钮区域
+            // frameless 模式下 --pw-top: 33px 避让红黄绿按钮区域（含5px下移）
             height: 'calc(40px + var(--pw-top, 0px))',
             pb: '4px',
             flexShrink: 0,
             position: 'relative', // 为绝对定位的按钮提供参照
           }}
         >
-          {/* 展开侧边栏按钮已移入 Sidebar 组件内部 */}
+          {/* 收起状态下的展开按钮 — fixed 定位在白色内容区域，与红黄绿按钮平行 */}
+          {sidebarCollapsed && (
+            <IconButton
+              onClick={toggleSidebar}
+              size="small"
+              sx={{
+                backgroundColor: '#F0F0F0',
+                color: '#6B7280',
+                borderRadius: '6px',
+                p: 0.5,
+                '&:hover': { backgroundColor: '#e0e0e0' },
+                '&:focus': { outline: 'none' },
+              }}
+            >
+              <MenuOutlinedIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          )}
 
           {/* 右侧：功能按钮 */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, marginLeft: 'auto' }}>
