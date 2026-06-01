@@ -101,11 +101,10 @@ echo "=== CrossWMS DMG Builder (pywebview + PyInstaller + Node.js) ==="
 echo "版本: $VERSION"
 echo ""
 
-# 1. 检查前置条件
-if [ ! -d "$FRONTEND_DIST" ]; then
-  echo "❌ 前端 dist 目录不存在，先构建前端..."
-  cd "$PROJECT_DIR" && npm run build
-fi
+# 1. 构建前端（始终重新构建，确保版本号是最新的）
+echo "🔨 构建前端（版本: $VERSION）..."
+cd "$PROJECT_DIR" && npm run build
+echo "✅ 前端构建完成"
 
 if [ ! -x "$PYINSTALLER" ]; then
   echo "❌ PyInstaller 未找到: $PYINSTALLER"
