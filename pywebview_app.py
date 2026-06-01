@@ -73,10 +73,15 @@ def save_config(config):
         return False
 
 
+# 记录红黄绿按钮的原始位置（避免重复调用时累加偏移）
+_traffic_light_original_frames = {}
+
+
 def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
     """
     应用红黄绿按钮偏移量（macOS only）
-    通过 Cocoa API 调整窗口标题栏按钮位置
+    通过 Cocoa API 整体平移红黄绿三个按钮的位置。
+    基于按钮的原始位置计算，不会因重复调用而累加偏移。
     """
     if not COCOA_AVAILABLE:
         return False
@@ -114,16 +119,67 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
             print("[TrafficLight] 未找到标准窗口按钮")
             return False
 
-        # 调整每个按钮的位置
-        # 注意：Cocoa 坐标系 Y 轴朝上，而用户接口约定 Y 正值=向下
-        # 因此 Y 方向需要取反
-        for btn in buttons:
-            frame = btn.frame()
-            new_x = frame.origin.x + offset_x
-            new_y = frame.origin.y - offset_y  # Y 轴反转：用户正值=向下，Cocoa 正值=向上
-            btn.setFrameOrigin_((new_x, new_y))
+        # 打印每个按钮的当前位置（调试）
+        for i, btn in enumerate(buttons):
+            f = btn.frame()
+            print(f"[TrafficLight] 按钮 {i} 当前位置: x={f.origin.x:.1f}, y={f.origin.y:.1f}, w={f.size.width:.1f}, h={f.size.height:.1f}")
 
-        print(f"[TrafficLight] 已应用偏移 ({offset_x}, {offset_y})")
+        # 首次调用时记录按钮的原始位置（用于避免累加偏移）
+        btn_ids = [id(b) for b in buttons]
+        first_call = not _traffic_light_original_frames
+        if first_call:
+            for i, btn in enumerate(buttons):
+                f = btn.frame()
+                _traffic_light_original_frames[id(btn)] = (f.origin.x, f.origin.y)
+            print(f"[TrafficLight] 已记录 {len(_traffic_light_original_frames)} 个按钮的原始位置")
+
+        # Cocoa 坐标系 Y 轴朝上，而用户接口约定 Y 正值=向下
+        # 因此 Y 方向需要取反
+        cocoa_offset_x = offset_x
+        cocoa_offset_y = -offset_y  # 用户正值=向下 → Cocoa 负值
+
+        # 基于原始位置计算目标位置（避免累加偏移）
+        moved_count = 0
+        for btn in buttons:
+            try:
+                btn_id = id(btn)
+                orig = _traffic_light_original_frames.get(btn_id)
+                if orig:
+                    # 基于原始位置 + 偏移量
+                    new_x = orig[0] + cocoa_offset_x
+                    new_y = orig[1] + cocoa_offset_y
+                else:
+                    # 没有原始位置记录（不应该发生），基于当前位置
+                    frame = btn.frame()
+                    new_x = frame.origin.x + cocoa_offset_x
+                    new_y = frame.origin.y + cocoa_offset_y
+                btn.setFrameOrigin_((new_x, new_y))
+                # 验证
+                verify = btn.frame()
+                if abs(verify.origin.x - new_x) < 1 and abs(verify.origin.y - new_y) < 1:
+                    moved_count += 1
+                    print(f"[TrafficLight] 按钮 {moved_count} 移动成功: → ({verify.origin.x:.1f},{verify.origin.y:.1f})")
+                else:
+                    print(f"[TrafficLight] 按钮 {moved_count+1} 移动验证失败: 期望({new_x:.1f},{new_y:.1f}) 实际({verify.origin.x:.1f},{verify.origin.y:.1f})")
+            except Exception as e:
+                print(f"[TrafficLight] 按钮移动异常: {e}")
+
+        # 方案2: 如果方案1部分失败，尝试通过父视图整体偏移
+        if moved_count < len(buttons):
+            print("[TrafficLight] 方案1部分失败，尝试方案2（父视图偏移）...")
+            try:
+                # 找到按钮的公共父视图
+                parent = close_btn.superview() if close_btn else None
+                if parent:
+                    pf = parent.frame()
+                    parent.setFrameOrigin_((pf.origin.x + cocoa_offset_x, pf.origin.y + cocoa_offset_y))
+                    print(f"[TrafficLight] 父视图偏移成功: ({pf.origin.x:.1f},{pf.origin.y:.1f}) → ({pf.origin.x + cocoa_offset_x:.1f},{pf.origin.y + cocoa_offset_y:.1f})")
+                    moved_count = len(buttons)  # 假设父视图偏移成功
+            except Exception as e:
+                print(f"[TrafficLight] 父视图偏移失败: {e}")
+
+        print(f"[TrafficLight] 最终结果: 成功移动 {moved_count}/{len(buttons)} 个按钮, 偏移量({offset_x}, {offset_y})")
+        return moved_count > 0
         return True
     except Exception as e:
         print(f"[TrafficLight] 应用偏移失败: {e}")
@@ -1201,23 +1257,11 @@ class Api:
         config = load_config()
         return json.dumps({
             'ok': True,
-            'offset_x': config.get('traffic_light_offset_x', 0),
-            'offset_y': config.get('traffic_light_offset_y', 0),
+            'offset_x': config.get('traffic_light_offset_x', 5),
+            'offset_y': config.get('traffic_light_offset_y', 5),
         })
 
     # ---- 红黄绿按钮控制 ----
-
-    def get_traffic_light_offset(self):
-        """
-        获取当前红黄绿按钮偏移量
-        前端通过 window.pywebview.api.get_traffic_light_offset() 调用。
-        """
-        config = load_config()
-        return json.dumps({
-            'ok': True,
-            'offset_x': config.get('traffic_light_offset_x', 0),
-            'offset_y': config.get('traffic_light_offset_y', 0),
-        })
 
 
 
