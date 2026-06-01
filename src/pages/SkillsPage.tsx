@@ -23,31 +23,7 @@ import { getAllSkills, addSkill, removeSkill, onSkillsChange, setSkillStatus } f
 import { ICON_MAP, AVAILABLE_ICON_NAMES } from '../types/skill';
 import type { Skill } from '../types/skill';
 
-// ===================== 常量 =====================
-
-const categoryLabels: Record<string, string> = {
-  core: '核心功能',
-  data: '数据管理',
-  auto: '自动化',
-  tool: '工具',
-};
-
-const categoryOrder = ['core', 'data', 'auto', 'tool'];
-
-const categoryColors: Record<string, { bg: string; color: string }> = {
-  core: { bg: '#EFF6FF', color: '#2563EB' },
-  data: { bg: '#FAF5FF', color: '#7C3AED' },
-  auto: { bg: '#ECFDF5', color: '#059669' },
-  tool: { bg: '#FFF7ED', color: '#EA580C' },
-};
-
-/** 技能图标区渐变色（卡片风格） */
-const iconGradients: Record<string, string> = {
-  core: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-  data: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
-  auto: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-  tool: 'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
-};
+import { CATEGORY_LABELS, CATEGORY_ORDER, CATEGORY_COLORS, ICON_GRADIENTS } from '../constants/skillCategories';
 
 // ===================== 组件 =====================
 
@@ -217,7 +193,7 @@ const SkillsPage: React.FC = () => {
   // 按 category 分组（全部 Tab 下）
   const grouped = useMemo(() => {
     const result: [string, Skill[]][] = [];
-    for (const cat of categoryOrder) {
+    for (const cat of CATEGORY_ORDER) {
       const items = filteredSkills.filter(s => s.category === cat);
       if (items.length > 0) result.push([cat, items]);
     }
@@ -293,7 +269,7 @@ const SkillsPage: React.FC = () => {
           width: 44,
           height: 44,
           borderRadius: '10px',
-          background: iconGradients[skill.category],
+          background: ICON_GRADIENTS[skill.category],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -599,9 +575,9 @@ const SkillsPage: React.FC = () => {
 
       {/* 分类标签行 */}
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
-        {['all', ...categoryOrder].map((key) => {
+        {['all', ...CATEGORY_ORDER].map((key) => {
           const isActive = selectedCategory === key;
-          const label = key === 'all' ? '全部' : categoryLabels[key];
+          const label = key === 'all' ? '全部' : CATEGORY_LABELS[key];
           return (
             <Box
               key={key}
@@ -635,10 +611,10 @@ const SkillsPage: React.FC = () => {
                 width: 3,
                 height: 14,
                 borderRadius: 0.5,
-                backgroundColor: categoryColors[category].color,
+                backgroundColor: CATEGORY_COLORS[category].color,
               }} />
               <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: '#1A1A1A' }}>
-                {categoryLabels[category]}
+                {CATEGORY_LABELS[category]}
               </Typography>
               <Typography sx={{ fontSize: '0.75rem', color: '#D1D5DB' }}>
                 {items.length}

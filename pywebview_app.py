@@ -311,6 +311,34 @@ def get_index_path():
 _server_process = None
 _agent_server_process = None
 
+# P0-3: 全局关闭标志，窗口关闭时设为 True，阻止进程重启
+shutting_down = False
+
+
+def _watch_process(proc, start_fn, name):
+    """监控子进程：意外退出时自动重启（P0-3 后端进程崩溃自动恢复）
+
+    参数:
+        proc: 当前 subprocess.Popen 进程对象
+        start_fn: 启动函数（如 start_server / start_agent_server），返回新进程
+        name: 日志标签（如 'Server' / 'AgentServer'）
+    """
+    def watcher():
+        proc.wait()
+        if shutting_down:
+            return
+        log(f"[{name}] 进程意外退出 (code={proc.returncode})，3 秒后重启...")
+        time.sleep(3)
+        if shutting_down:
+            return
+        new_proc = start_fn()
+        if new_proc:
+            log(f"[{name}] 已重启 (PID: {new_proc.pid})")
+            _watch_process(new_proc, start_fn, name)
+        else:
+            log(f"[{name}] 重启失败")
+    threading.Thread(target=watcher, daemon=True).start()
+
 
 def get_node_path():
     """获取 Node.js 可执行文件路径"""
@@ -536,6 +564,8 @@ def start_server():
         )
         _server_process = proc
         print(f"[Server] 进程已启动 (PID: {proc.pid})")
+        # P0-3: 启动进程监控，意外退出时自动重启
+        _watch_process(proc, start_server, 'Server')
         return proc
     except Exception as e:
         print(f"[Server] ❌ 启动失败: {e}")
@@ -612,6 +642,8 @@ def start_agent_server():
         )
         _agent_server_process = proc
         print(f"[AgentServer] 进程已启动 (PID: {proc.pid})")
+        # P0-3: 启动进程监控，意外退出时自动重启
+        _watch_process(proc, start_agent_server, 'AgentServer')
         return proc
     except Exception as e:
         print(f"[AgentServer] ❌ 启动失败: {e}")
@@ -664,7 +696,8 @@ def wait_for_agent_server():
 
 def stop_server():
     """停止 Node.js 主后端服务器"""
-    global _server_process
+    global _server_process, shutting_down
+    shutting_down = True  # 阻止进程重启
     if _server_process and _server_process.poll() is None:
         print("[Server] 停止后端服务器...")
         try:
@@ -682,7 +715,8 @@ def stop_server():
 
 def stop_agent_server():
     """停止 Agent Web 后端服务器"""
-    global _agent_server_process
+    global _agent_server_process, shutting_down
+    shutting_down = True  # 阻止进程重启
     if _agent_server_process and _agent_server_process.poll() is None:
         print("[AgentServer] 停止 Agent Web 后端服务器...")
         try:
@@ -1312,6 +1346,16 @@ def start_http_server(dist_dir: str, port: int = 9988):
         def log_message(self, format, *args):
             # 静默日志，避免控制台刷屏
             pass
+
+        def do_GET(self):
+            """P0-3: 添加 /api/health 端点，供前端健康检查"""
+            if self.path == '/api/health':
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'status': 'ok'}).encode('utf-8'))
+                return
+            super().do_GET()
 
     # 允许端口复用，便于快速重启
     socketserver.TCPServer.allow_reuse_address = True

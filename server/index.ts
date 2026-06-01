@@ -4,6 +4,37 @@ import { initDb, getSessions, createSession, getSessionMessages, addMessage, del
 import { v4 as uuidv4 } from 'uuid';
 import { query } from '@tencent-ai/agent-sdk';
 import path from 'path';
+import fs from 'fs';
+import os from 'os';
+
+// MEMORY.md 路径
+const CROSSWMS_DIR = path.join(os.homedir(), '.crosswms');
+const MEMORY_MD_PATH = path.join(CROSSWMS_DIR, 'MEMORY.md');
+
+/** 读取 MEMORY.md 内容，不存在则返回空字符串 */
+function readMemoryMd(): string {
+  try {
+    if (fs.existsSync(MEMORY_MD_PATH)) {
+      return fs.readFileSync(MEMORY_MD_PATH, 'utf-8');
+    }
+  } catch (e) {
+    console.error('[Memory] 读取失败:', e);
+  }
+  return '';
+}
+
+/** 写入 MEMORY.md 内容 */
+function writeMemoryMd(content: string): void {
+  try {
+    if (!fs.existsSync(CROSSWMS_DIR)) {
+      fs.mkdirSync(CROSSWMS_DIR, { recursive: true });
+    }
+    fs.writeFileSync(MEMORY_MD_PATH, content, 'utf-8');
+  } catch (e) {
+    console.error('[Memory] 写入失败:', e);
+    throw e;
+  }
+}
 
 /**
  * 获取 Node.js 可执行路径，用于 agent-sdk 内部 spawn。
@@ -27,6 +58,29 @@ app.use(express.json());
 
 // 健康检查
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+
+// ========== MEMORY.md API ==========
+
+// 读取 MEMORY.md
+app.get('/api/memory', (_req, res) => {
+  const content = readMemoryMd();
+  res.json({ content });
+});
+
+// 更新 MEMORY.md
+app.post('/api/memory', (req, res) => {
+  const { content } = req.body;
+  if (typeof content !== 'string') {
+    res.status(400).json({ error: 'content must be a string' });
+    return;
+  }
+  try {
+    writeMemoryMd(content);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: '写入失败' });
+  }
+});
 
 // 获取会话列表
 app.get('/api/sessions', (_req, res) => {
@@ -97,8 +151,15 @@ app.post('/api/chat', async (req, res) => {
         }
       }
 
+      // 注入 MEMORY.md 上下文到 prompt
+      const memoryContent = readMemoryMd();
+      let finalPrompt = message;
+      if (memoryContent.trim()) {
+        finalPrompt = `<memory>\n${memoryContent.trim()}\n</memory>\n\n${message}`;
+      }
+
       const queryInstance = query({
-        prompt: message,
+        prompt: finalPrompt,
         options: queryOptions,
       });
 

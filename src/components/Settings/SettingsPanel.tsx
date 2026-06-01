@@ -22,11 +22,12 @@ import TencentDocsTab from './tabs/TencentDocsTab';
 import DashboardParamsTab from './tabs/DashboardParamsTab';
 import MetricsControlTab from './tabs/MetricsControlTab';
 import VolumeDocTab from './tabs/VolumeDocTab';
+import ModelManagement from './tabs/ModelManagement';
 import AboutTab from './tabs/AboutTab';
 
 // ===================== Tab Definitions =====================
 
-type SettingsTab = 'tencentDocs' | 'dashboardParams' | 'metricsControl' | 'volumeDoc' | 'about';
+type SettingsTab = 'tencentDocs' | 'dashboardParams' | 'metricsControl' | 'volumeDoc' | 'modelManagement' | 'about';
 
 interface TabItem {
   key: SettingsTab;
@@ -39,6 +40,7 @@ const TABS: TabItem[] = [
   { key: 'dashboardParams', label: '仪表盘参数', icon: <DashboardIcon sx={{ fontSize: 20 }} /> },
   { key: 'metricsControl', label: '指标控制', icon: <TuneIcon sx={{ fontSize: 20 }} /> },
   { key: 'volumeDoc', label: '容积率文档', icon: <ViewTimelineIcon sx={{ fontSize: 20 }} /> },
+  { key: 'modelManagement', label: '模型管理', icon: <SmartToyIcon sx={{ fontSize: 20 }} /> },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} /> },
 ];
 
@@ -173,6 +175,8 @@ const SettingsPanel: React.FC = () => {
         return <MetricsControlTab draft={draft} setDraft={setDraft} errors={errors} setErrors={setErrors} />;
       case 'volumeDoc':
         return <VolumeDocTab draft={draft} setDraft={setDraft} openInBrowser={openInBrowser} />;
+      case 'modelManagement':
+        return <ModelManagement draft={draft} setDraft={setDraft} />;
       case 'about':
         return <AboutTab draft={draft} setDraft={setDraft} errors={errors} setErrors={setErrors} />;
     }

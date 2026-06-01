@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, IconButton, Paper, Chip, CircularProgress, Typography,
-  Menu, MenuItem, Divider, ListItemIcon
+  Menu, MenuItem, Divider, ListItemIcon, Dialog, DialogTitle, DialogContent,
+  DialogActions, Button, TextField, Tooltip, Snackbar, Alert
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
@@ -10,6 +11,7 @@ import AddIcon from '@mui/icons-material/Add';
 import MicIcon from '@mui/icons-material/Mic';
 import AppsIcon from '@mui/icons-material/Apps';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 import { useChat } from '../../hooks/useChat';
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
@@ -38,8 +40,7 @@ type DropdownType = 'craft' | 'model' | 'skills' | 'permission' | null;
 const CRAFT_OPTIONS = ['创建文档', '创建表格', '创建演示'];
 const PERMISSION_OPTIONS = ['公开', '仅自己', '团队成员'];
 
-const categoryLabels: Record<string, string> = { core: '核心功能', data: '数据管理', auto: '自动化', tool: '工具' };
-const categoryOrder = ['core', 'data', 'auto', 'tool'];
+import { CATEGORY_LABELS, CATEGORY_ORDER } from '../../constants/skillCategories';
 
 export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputProps) {
   const { settings } = useAppSettings();
@@ -63,6 +64,48 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
     return defaultModel?.name || MODEL_OPTIONS[0] || 'GPT-4';
   });
   const [selectedPermission, setSelectedPermission] = useState('默认权限');
+
+  // MEMORY.md 状态
+  const [memoryOpen, setMemoryOpen] = useState(false);
+  const [memoryContent, setMemoryContent] = useState('');
+  const [memorySaving, setMemorySaving] = useState(false);
+  const [memoryToast, setMemoryToast] = useState<{ open: boolean; severity: 'success' | 'error'; msg: string }>({ open: false, severity: 'success', msg: '' });
+
+  const MEMORY_API = 'http://localhost:3001/api/memory';
+
+  /** 打开 MEMORY.md 编辑弹窗 */
+  const handleOpenMemory = useCallback(async () => {
+    try {
+      const res = await fetch(MEMORY_API);
+      const data = await res.json();
+      setMemoryContent(data.content || '');
+    } catch {
+      setMemoryContent('');
+    }
+    setMemoryOpen(true);
+  }, []);
+
+  /** 保存 MEMORY.md */
+  const handleSaveMemory = useCallback(async () => {
+    setMemorySaving(true);
+    try {
+      const res = await fetch(MEMORY_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: memoryContent }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setMemoryToast({ open: true, severity: 'success', msg: '记忆已保存' });
+        setMemoryOpen(false);
+      } else {
+        setMemoryToast({ open: true, severity: 'error', msg: '保存失败' });
+      }
+    } catch {
+      setMemoryToast({ open: true, severity: 'error', msg: '保存失败' });
+    }
+    setMemorySaving(false);
+  }, [memoryContent]);
 
   const editableRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -371,8 +414,27 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
             </IconButton>
           </Box>
 
-          {/* Right buttons: Add, Voice, Send */}
+          {/* Right buttons: Memory, Add, Voice, Send */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Memory button */}
+            <Tooltip title="记忆 (MEMORY.md)">
+              <IconButton
+                size="small"
+                onClick={(e) => { e.stopPropagation(); handleOpenMemory(); }}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '8px',
+                  p: 0,
+                  color: SECONDARY,
+                  bgcolor: 'transparent',
+                  '&:hover': { bgcolor: '#f5f5f5' },
+                }}
+              >
+                <PsychologyIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            </Tooltip>
+
             {/* Add button */}
             <IconButton
               size="small"
@@ -487,12 +549,12 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
               grouped[s.category].push(s);
             }
             const result: React.ReactNode[] = [];
-            for (const cat of categoryOrder) {
+            for (const cat of CATEGORY_ORDER) {
               const items = grouped[cat];
               if (!items || items.length === 0) continue;
               result.push(
                 <Typography key={`cat-${cat}`} sx={{ px: 2, py: 0.5, fontSize: '0.65rem', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase' }}>
-                  {categoryLabels[cat]}
+                  {CATEGORY_LABELS[cat]}
                 </Typography>
               );
               for (const skill of items.slice(0, 4)) {
@@ -548,6 +610,78 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
           initialFilter={slashQuery}
         />
       )}
+
+      {/* MEMORY.md 编辑弹窗 */}
+      <Dialog
+        open={memoryOpen}
+        onClose={() => setMemoryOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3, minHeight: 420 } }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1 }}>
+          <PsychologyIcon sx={{ fontSize: 20, color: '#7C3AED' }} />
+          <Typography sx={{ fontWeight: 600, fontSize: '1rem' }}>记忆</Typography>
+          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', ml: 0.5 }}>MEMORY.md</Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pt: '8px !important' }}>
+          <Typography sx={{ fontSize: '0.8125rem', color: '#6B7280', mb: 1.5 }}>
+            在此记录重要信息，AI 助手将在每次对话中自动读取这些记忆作为上下文。
+          </Typography>
+          <TextField
+            multiline
+            fullWidth
+            minRows={10}
+            maxRows={20}
+            value={memoryContent}
+            onChange={(e) => setMemoryContent(e.target.value)}
+            placeholder="在此输入你想让 AI 助手记住的内容..."
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                fontSize: '0.875rem',
+                lineHeight: 1.7,
+                fontFamily: '"SF Mono", "Menlo", "Monaco", monospace',
+                bgcolor: '#F9FAFB',
+              },
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setMemoryOpen(false)} sx={{ color: '#6B7280' }}>
+            取消
+          </Button>
+          <Button
+            onClick={handleSaveMemory}
+            disabled={memorySaving}
+            variant="contained"
+            sx={{
+              bgcolor: '#7C3AED',
+              '&:hover': { bgcolor: '#6D28D9' },
+              textTransform: 'none',
+              borderRadius: 2,
+              px: 3,
+            }}
+          >
+            {memorySaving ? '保存中...' : '保存'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 保存结果 toast */}
+      <Snackbar
+        open={memoryToast.open}
+        autoHideDuration={2500}
+        onClose={() => setMemoryToast(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity={memoryToast.severity}
+          onClose={() => setMemoryToast(prev => ({ ...prev, open: false }))}
+          sx={{ borderRadius: 2 }}
+        >
+          {memoryToast.msg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

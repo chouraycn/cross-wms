@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box } from '@mui/material';
 import ReportsPanel from '../components/Reports/ReportsPanel';
+import PageHeader from '../components/Common/PageHeader';
 import { subscribeRefresh } from '../App';
 
 const ReportsPage: React.FC = () => {
@@ -17,6 +18,7 @@ const ReportsPage: React.FC = () => {
 
   return (
     <Box key={refreshKey} className="page-fade-in">
+      <PageHeader title="统计报表" subtitle="仓库运营数据报表与趋势分析" />
       <ReportsPanel />
     </Box>
   );
