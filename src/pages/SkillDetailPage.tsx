@@ -6,7 +6,9 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Box, Typography, Chip, Button, Paper, Divider, IconButton,
-  CircularProgress, Tooltip, Breadcrumbs, Link,
+  CircularProgress, Tooltip, Breadcrumbs, Link, Dialog,
+  DialogTitle, DialogContent, DialogActions, TextField,
+  Select, MenuItem, FormControl, InputLabel, Alert,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -17,10 +19,12 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { getAllSkills, removeSkill, onSkillsChange } from '../stores/skillStore';
+import EditIcon from '@mui/icons-material/Edit';
+import ExtensionIcon from '@mui/icons-material/Extension';
+import { getAllSkills, removeSkill, updateSkill, setSkillStatus, onSkillsChange } from '../stores/skillStore';
 import { loadAutomations, automationEngine } from '../services/automationEngine';
 import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automationEngine';
-import { ICON_MAP } from '../types/skill';
+import { ICON_MAP, AVAILABLE_ICON_NAMES } from '../types/skill';
 import type { Skill } from '../types/skill';
 
 // ===================== 常量 =====================
@@ -38,6 +42,20 @@ const categoryColors: Record<string, { bg: string; color: string }> = {
   auto: { bg: '#ECFDF5', color: '#059669' },
   tool: { bg: '#FFF7ED', color: '#EA580C' },
 };
+
+// ===================== 辅助函数 =====================
+
+/** 更新最近使用技能列表 */
+function updateRecentSkills(skillName: string) {
+  const recentRaw = localStorage.getItem('crosswms-recent-skills');
+  let recentNames: string[] = [];
+  try {
+    const parsed = recentRaw ? JSON.parse(recentRaw) : [];
+    if (Array.isArray(parsed)) recentNames = parsed.filter((n: unknown) => typeof n === 'string');
+  } catch { /* ignore */ }
+  const updated = [skillName, ...recentNames.filter((n) => n !== skillName)].slice(0, 6);
+  try { localStorage.setItem('crosswms-recent-skills', JSON.stringify(updated)); } catch { /* ignore */ }
+}
 
 // ===================== 组件 =====================
 
@@ -70,6 +88,19 @@ const SkillDetailPage: React.FC = () => {
   const [latestExec, setLatestExec] = useState<AutomationExecution | null>(null);
   const [triggering, setTriggering] = useState(false);
   const [toast, setToast] = useState<{ open: boolean; msg: string; severity: 'success' | 'error' | 'info' }>({ open: false, msg: '', severity: 'info' });
+
+  // 编辑 Dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    desc: '',
+    icon: 'Extension',
+    category: 'tool' as 'core' | 'data' | 'auto' | 'tool',
+    trigger: '',
+    path: '/',
+    tags: '',
+  });
+  const [editError, setEditError] = useState('');
 
   const automationMap = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -146,17 +177,96 @@ const SkillDetailPage: React.FC = () => {
   // 执行技能
   const handleExecute = () => {
     if (!skill) return;
-    const recentRaw = localStorage.getItem('crosswms-recent-skills');
-    let recentNames: string[] = [];
-    try {
-      const parsed = recentRaw ? JSON.parse(recentRaw) : [];
-      if (Array.isArray(parsed)) {
-        recentNames = parsed.filter((n: unknown) => typeof n === 'string');
+
+    // 记录最近使用
+    updateRecentSkills(skill.name);
+
+    // 1. 如果关联了自动化且有配置 → 触发自动化
+    if (skill.automationTaskType) {
+      const autoInfo = automationMap[skill.automationTaskType];
+      if (autoInfo) {
+        handleTriggerAutomation();
+        return;
       }
-    } catch { /* ignore */ }
-    const updated = [skill.name, ...recentNames.filter((n) => n !== skill.name)].slice(0, 6);
-    try { localStorage.setItem('crosswms-recent-skills', JSON.stringify(updated)); } catch { /* ignore */ }
-    navigate(skill.path);
+    }
+
+    // 2. 特殊路径处理
+    if (skill.path === '/agent') {
+      navigate('/agent');
+      return;
+    }
+
+    // 3. 常规路径导航
+    if (skill.path && skill.path !== '/') {
+      navigate(skill.path);
+      return;
+    }
+
+    // 4. 默认：如果有关联自动化，触发执行
+    if (skill.automationTaskType) {
+      handleTriggerAutomation();
+    }
+  };
+
+  // 激活/停用技能
+  const handleActivate = () => {
+    if (!skill) return;
+    setSkillStatus(skill.id, 'active');
+    setSkillVersion((v) => v + 1);
+    setToast({ open: true, msg: '技能已启用', severity: 'success' });
+  };
+
+  const handleDeactivate = () => {
+    if (!skill) return;
+    setSkillStatus(skill.id, 'available');
+    setSkillVersion((v) => v + 1);
+    setToast({ open: true, msg: '技能已停用', severity: 'info' });
+  };
+
+  // 打开编辑 Dialog
+  const handleOpenEdit = () => {
+    if (!skill) return;
+    setEditForm({
+      name: skill.name,
+      desc: skill.desc,
+      icon: skill.icon,
+      category: skill.category,
+      trigger: skill.trigger || '',
+      path: skill.path,
+      tags: (skill.tags || []).join(', '),
+    });
+    setEditError('');
+    setEditDialogOpen(true);
+  };
+
+  // 保存编辑
+  const handleSaveEdit = () => {
+    if (!skill) return;
+    if (!editForm.name.trim()) {
+      setEditError('请输入技能名称');
+      return;
+    }
+    if (!editForm.desc.trim()) {
+      setEditError('请输入技能描述');
+      return;
+    }
+    if (!editForm.path.trim()) {
+      setEditError('请输入路径');
+      return;
+    }
+    setEditError('');
+    updateSkill(skill.id, {
+      name: editForm.name.trim(),
+      desc: editForm.desc.trim(),
+      icon: editForm.icon,
+      category: editForm.category,
+      path: editForm.path.trim(),
+      trigger: editForm.trigger.trim() || undefined,
+      tags: editForm.tags.trim() ? editForm.tags.split(/[,，]/).map(t => t.trim()).filter(Boolean) : undefined,
+    });
+    setSkillVersion((v) => v + 1);
+    setEditDialogOpen(false);
+    setToast({ open: true, msg: '技能已更新', severity: 'success' });
   };
 
   // 删除技能
@@ -504,23 +614,90 @@ const SkillDetailPage: React.FC = () => {
 
       {/* 底部操作栏 */}
       <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: '1px solid #E5E7EB' }}>
-        <Button
-          fullWidth
-          variant="contained"
-          startIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
-          onClick={handleExecute}
-          sx={{
-            backgroundColor: '#111827',
-            '&:hover': { backgroundColor: '#374151' },
-            textTransform: 'none',
-            borderRadius: 2,
-            py: 1.25,
-            fontSize: '0.875rem',
-            fontWeight: 500,
-          }}
-        >
-          打开 {skill.name}
-        </Button>
+        {/* available 状态：显示"启用"按钮 */}
+        {skill.status === 'available' && (
+          <Button
+            fullWidth
+            variant="contained"
+            startIcon={<PlayArrowIcon sx={{ fontSize: 16 }} />}
+            onClick={handleActivate}
+            sx={{
+              backgroundColor: '#2563EB',
+              '&:hover': { backgroundColor: '#1D4ED8' },
+              textTransform: 'none',
+              borderRadius: 2,
+              py: 1.25,
+              fontSize: '0.875rem',
+              fontWeight: 500,
+            }}
+          >
+            启用 {skill.name}
+          </Button>
+        )}
+
+        {/* active 状态 + 用户自定义：显示"打开" + "停用" */}
+        {skill.status === 'active' && (
+          <Button
+            fullWidth
+            variant="contained"
+            startIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
+            onClick={handleExecute}
+            sx={{
+              backgroundColor: '#111827',
+              '&:hover': { backgroundColor: '#374151' },
+              textTransform: 'none',
+              borderRadius: 2,
+              py: 1.25,
+              fontSize: '0.875rem',
+              fontWeight: 500,
+            }}
+          >
+            打开 {skill.name}
+          </Button>
+        )}
+
+        {/* 用户自定义技能的停用按钮（仅 active 状态的 user 技能） */}
+        {isUserSkill && skill.status === 'active' && (
+          <Button
+            variant="outlined"
+            onClick={handleDeactivate}
+            sx={{
+              textTransform: 'none',
+              borderRadius: 2,
+              borderColor: '#D97706',
+              color: '#D97706',
+              '&:hover': { borderColor: '#B45309', backgroundColor: '#FFFBEB' },
+              minWidth: 80,
+              fontSize: '0.875rem',
+              flexShrink: 0,
+            }}
+          >
+            停用
+          </Button>
+        )}
+
+        {/* 用户自定义技能的编辑按钮 */}
+        {isUserSkill && (
+          <Button
+            variant="outlined"
+            startIcon={<EditIcon sx={{ fontSize: 16 }} />}
+            onClick={handleOpenEdit}
+            sx={{
+              textTransform: 'none',
+              borderRadius: 2,
+              borderColor: '#6B7280',
+              color: '#6B7280',
+              '&:hover': { borderColor: '#374151', backgroundColor: '#F9FAFB' },
+              minWidth: 80,
+              fontSize: '0.875rem',
+              flexShrink: 0,
+            }}
+          >
+            编辑
+          </Button>
+        )}
+
+        {/* 用户自定义技能的删除按钮 */}
         {isUserSkill && (
           <Button
             variant="outlined"
@@ -533,7 +710,7 @@ const SkillDetailPage: React.FC = () => {
               borderColor: '#DC2626',
               color: '#DC2626',
               '&:hover': { borderColor: '#B91C1C', backgroundColor: '#FEF2F2' },
-              minWidth: 100,
+              minWidth: 80,
               fontSize: '0.875rem',
               flexShrink: 0,
             }}
@@ -542,6 +719,148 @@ const SkillDetailPage: React.FC = () => {
           </Button>
         )}
       </Box>
+
+      {/* 编辑技能 Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, color: '#111827', pb: 1 }}>
+          编辑技能
+        </DialogTitle>
+        <DialogContent sx={{ pt: '8px !important' }}>
+          {editError && (
+            <Alert severity="error" sx={{ mb: 2, fontSize: '0.8rem' }}>
+              {editError}
+            </Alert>
+          )}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="技能名称"
+              size="small"
+              required
+              value={editForm.name}
+              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              fullWidth
+              sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
+            />
+            <TextField
+              label="技能描述"
+              size="small"
+              required
+              value={editForm.desc}
+              onChange={(e) => setEditForm({ ...editForm, desc: e.target.value })}
+              fullWidth
+              multiline
+              minRows={2}
+              sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
+            />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <FormControl size="small" sx={{ flex: 1 }}>
+                <InputLabel>图标</InputLabel>
+                <Select
+                  value={editForm.icon}
+                  label="图标"
+                  onChange={(e) => setEditForm({ ...editForm, icon: e.target.value })}
+                >
+                  {AVAILABLE_ICON_NAMES.map((name) => (
+                    <MenuItem key={name} value={name}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', color: '#6B7280' }}>
+                          {ICON_MAP[name] || <ExtensionIcon sx={{ fontSize: 20 }} />}
+                        </Box>
+                        <Typography sx={{ fontSize: '0.8rem' }}>{name}</Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ flex: 1 }}>
+                <InputLabel>分类</InputLabel>
+                <Select
+                  value={editForm.category}
+                  label="分类"
+                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value as 'core' | 'data' | 'auto' | 'tool' })}
+                >
+                  <MenuItem value="core">核心功能</MenuItem>
+                  <MenuItem value="data">数据管理</MenuItem>
+                  <MenuItem value="auto">自动化</MenuItem>
+                  <MenuItem value="tool">工具</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                label="触发词"
+                size="small"
+                value={editForm.trigger}
+                onChange={(e) => setEditForm({ ...editForm, trigger: e.target.value })}
+                fullWidth
+                placeholder="如: 同步数据 / 快捷指令"
+                sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
+              />
+              <TextField
+                label="路径"
+                size="small"
+                required
+                value={editForm.path}
+                onChange={(e) => setEditForm({ ...editForm, path: e.target.value })}
+                fullWidth
+                placeholder="/"
+                sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
+              />
+            </Box>
+            <TextField
+              label="标签"
+              size="small"
+              value={editForm.tags}
+              onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
+              fullWidth
+              placeholder="用逗号分隔，如: 同步,数据,报表"
+              sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setEditDialogOpen(false)} sx={{ textTransform: 'none', color: '#6B7280' }}>
+            取消
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveEdit}
+            sx={{
+              backgroundColor: '#111827',
+              '&:hover': { backgroundColor: '#374151' },
+              textTransform: 'none',
+              borderRadius: 2,
+            }}
+          >
+            保存修改
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Toast */}
+      <Alert
+        sx={{
+          display: toast.open ? 'flex' : 'none',
+          position: 'fixed',
+          bottom: 24,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9999,
+          fontSize: '0.8rem',
+          borderRadius: 2,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        }}
+        severity={toast.severity}
+        onClose={() => setToast((t) => ({ ...t, open: false }))}
+      >
+        {toast.msg}
+      </Alert>
 
       {/* 脉冲动画 */}
       <style>{`

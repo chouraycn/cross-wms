@@ -9,8 +9,11 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import AddIcon from '@mui/icons-material/Add';
 import MicIcon from '@mui/icons-material/Mic';
 import AppsIcon from '@mui/icons-material/Apps';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { useChat } from '../../hooks/useChat';
 import { Skill } from '../../types/skill';
+import { ICON_MAP } from '../../types/skill';
+import { getAllSkills } from '../../stores/skillStore';
 import { SkillSelector } from './SkillSelector';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { SECONDARY, BORDER } from '../../constants/theme';
@@ -35,11 +38,16 @@ type DropdownType = 'craft' | 'model' | 'skills' | 'permission' | null;
 const CRAFT_OPTIONS = ['创建文档', '创建表格', '创建演示'];
 const PERMISSION_OPTIONS = ['公开', '仅自己', '团队成员'];
 
+const categoryLabels: Record<string, string> = { core: '核心功能', data: '数据管理', auto: '自动化', tool: '工具' };
+const categoryOrder = ['core', 'data', 'auto', 'tool'];
+
 export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputProps) {
   const { settings } = useAppSettings();
   const navigate = useNavigate();
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
+  const [showSkillSelector, setShowSkillSelector] = useState(false);
+  const [slashQuery, setSlashQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<DropdownType>(null);
@@ -74,6 +82,7 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setActiveDropdown(null);
         setShowSkills(false);
+        setShowSkillSelector(false);
         // 点击外部收起输入区，恢复初始状态（按 HTML 逻辑）
         if (!inputValue.trim()) {
           setInputExpanded(false);
@@ -91,10 +100,20 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
   const handleInputChange = useCallback(() => {
     const text = editableRef.current?.innerText || '';
     setInputValue(text);
-    if (text.endsWith('@') && !showSkills) {
+
+    // 斜杠命令检测
+    if (text.startsWith('/')) {
+      const query = text.slice(1).trim();
+      setSlashQuery(query);
+      setShowSkillSelector(true);
+    } else if (text.endsWith('@')) {
       setShowSkills(true);
+      setShowSkillSelector(false);
+    } else {
+      setShowSkillSelector(false);
+      setShowSkills(false);
     }
-  }, [showSkills]);
+  }, []);
 
   const handleInputClick = () => {
     if (!inputExpanded) {
@@ -117,8 +136,14 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
   const handleSkillSelect = (skill: Skill) => {
     setSelectedSkill(skill);
     setShowSkills(false);
+    setShowSkillSelector(false);
     if (editableRef.current) {
-      editableRef.current.innerText += `[${skill.name}] `;
+      // 如果是斜杠命令选择，替换整个输入内容
+      if (inputValue.startsWith('/')) {
+        editableRef.current.innerText = `[${skill.name}] `;
+      } else {
+        editableRef.current.innerText += `[${skill.name}] `;
+      }
       setInputValue(editableRef.current.innerText);
       setTimeout(() => {
         if (editableRef.current) {
@@ -141,6 +166,7 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
       editableRef.current.innerHTML = '';
     }
     setInputValue('');
+    setShowSkillSelector(false);
     // 发送后收起输入区（按 HTML 逻辑：无内容时恢复初始状态）
     setInputExpanded(false);
   };
@@ -443,40 +469,46 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
           </MenuItem>
         </Menu>
 
-        {/* MUI Menu: Skills - 快速选择 + 查看全部 */}
+        {/* MUI Menu: Skills - 按分类分组显示 active 技能 */}
         <Menu
           anchorEl={skillsBtnRef.current}
           open={activeDropdown === 'skills'}
           onClose={() => setActiveDropdown(null)}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
           transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-          sx={{ mb: 0.5 }}
-          PaperProps={{
-            sx: { width: 280, maxHeight: 400 },
-          }}
+          PaperProps={{ sx: { width: 300, maxHeight: 420 } }}
         >
-          {/* 快速选择：弹出 SkillSelector */}
-          <MenuItem
-            onClick={() => {
-              setActiveDropdown(null);
-              setShowSkills(true);
-            }}
-          >
-            <ListItemIcon>
-              <AppsIcon sx={{ fontSize: 18, color: '#6B7280' }} />
-            </ListItemIcon>
-            <Typography sx={{ fontSize: 13 }}>快速选择技能</Typography>
-          </MenuItem>
+          {/* 按分类分组显示 active 技能 */}
+          {(() => {
+            const activeSkills = getAllSkills().filter(s => s.status === 'active');
+            const grouped: Record<string, Skill[]> = {};
+            for (const s of activeSkills) {
+              if (!grouped[s.category]) grouped[s.category] = [];
+              grouped[s.category].push(s);
+            }
+            const result: React.ReactNode[] = [];
+            for (const cat of categoryOrder) {
+              const items = grouped[cat];
+              if (!items || items.length === 0) continue;
+              result.push(
+                <Typography key={`cat-${cat}`} sx={{ px: 2, py: 0.5, fontSize: '0.65rem', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase' }}>
+                  {categoryLabels[cat]}
+                </Typography>
+              );
+              for (const skill of items.slice(0, 4)) {
+                result.push(
+                  <MenuItem key={skill.id} onClick={() => { handleSkillSelect(skill); setActiveDropdown(null); }} sx={{ py: 0.75, px: 2 }}>
+                    <ListItemIcon sx={{ minWidth: 32 }}>{ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 18 }} />}</ListItemIcon>
+                    <Typography sx={{ fontSize: '0.8rem' }}>{skill.name}</Typography>
+                  </MenuItem>
+                );
+              }
+            }
+            return result;
+          })()}
           <Divider />
-          <MenuItem
-            onClick={() => {
-              setActiveDropdown(null);
-              navigate('/skills');
-            }}
-          >
-            <ListItemIcon>
-              <AppsIcon sx={{ fontSize: 18, color: '#6B7280' }} />
-            </ListItemIcon>
+          <MenuItem onClick={() => { setActiveDropdown(null); navigate('/skills'); }}>
+            <ListItemIcon><AppsIcon sx={{ fontSize: 18, color: '#6B7280' }} /></ListItemIcon>
             <Typography sx={{ fontSize: 13, color: '#6B7280' }}>查看全部技能 →</Typography>
           </MenuItem>
         </Menu>
@@ -498,12 +530,22 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
         </Menu>
       </Paper>
 
-      {/* Skill selector dropdown */}
+      {/* Skill selector dropdown — @ 触发 */}
       {showSkills && (
         <SkillSelector
           anchorEl={editableRef.current}
           onSelect={handleSkillSelect}
           onClose={() => setShowSkills(false)}
+        />
+      )}
+
+      {/* Skill selector dropdown — / 斜杠命令触发 */}
+      {showSkillSelector && (
+        <SkillSelector
+          anchorEl={editableRef.current}
+          onSelect={handleSkillSelect}
+          onClose={() => setShowSkillSelector(false)}
+          initialFilter={slashQuery}
         />
       )}
     </Box>

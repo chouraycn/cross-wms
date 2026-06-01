@@ -4,11 +4,17 @@ import { Box, TextField, IconButton, Paper, Chip, Fade, Menu, MenuItem, Typograp
 import SendIcon from '@mui/icons-material/Send';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import AppsIcon from '@mui/icons-material/Apps';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { useChat } from '../../hooks/useChat';
 import { ChatPanel } from './ChatPanel';
 import { Skill } from '../../types/skill';
+import { ICON_MAP } from '../../types/skill';
+import { getAllSkills } from '../../stores/skillStore';
 import { SkillSelector } from './SkillSelector';
 import { PRIMARY, SECONDARY, BORDER, BG_LIGHT } from '../../constants/theme';
+
+const categoryLabels: Record<string, string> = { core: '核心功能', data: '数据管理', auto: '自动化', tool: '工具' };
+const categoryOrder = ['core', 'data', 'auto', 'tool'];
 
 interface BottomChatInputProps {
   session: {
@@ -28,6 +34,8 @@ interface BottomChatInputProps {
 export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputProps) {
   const navigate = useNavigate();
   const [showSkills, setShowSkills] = useState(false);
+  const [showSkillSelector, setShowSkillSelector] = useState(false);
+  const [slashQuery, setSlashQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [skillsMenuAnchor, setSkillsMenuAnchor] = useState<HTMLElement | null>(null);
@@ -42,16 +50,32 @@ export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputPro
 
   const handleInputChange = (value: string) => {
     setInputValue(value);
-    if (value.endsWith('@') && !showSkills) {
+
+    // 斜杠命令检测
+    if (value.startsWith('/')) {
+      const query = value.slice(1).trim();
+      setSlashQuery(query);
+      setShowSkillSelector(true);
+    } else if (value.endsWith('@')) {
       setShowSkills(true);
+      setShowSkillSelector(false);
+    } else {
+      setShowSkillSelector(false);
+      setShowSkills(false);
     }
   };
 
   const handleSkillSelect = (skill: Skill) => {
     setSelectedSkill(skill);
     setShowSkills(false);
+    setShowSkillSelector(false);
     setSkillsMenuAnchor(null);
-    setInputValue(prev => prev + `[${skill.name}] `);
+    // 如果是斜杠命令选择，替换整个输入内容
+    if (inputValue.startsWith('/')) {
+      setInputValue(`[${skill.name}] `);
+    } else {
+      setInputValue(prev => prev + `[${skill.name}] `);
+    }
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
@@ -181,48 +205,66 @@ export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputPro
         </IconButton>
       </Box>
 
-      {/* 技能下拉菜单：快速选择 + 查看全部 */}
+      {/* 技能下拉菜单：按分类分组显示 active 技能 */}
       <Menu
         anchorEl={skillsMenuAnchor}
         open={!!skillsMenuAnchor}
         onClose={() => setSkillsMenuAnchor(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
         transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        PaperProps={{
-          sx: { width: 240 },
-        }}
+        PaperProps={{ sx: { width: 300, maxHeight: 420 } }}
       >
-        <MenuItem
-          onClick={() => {
-            setSkillsMenuAnchor(null);
-            setShowSkills(true);
-          }}
-        >
-          <ListItemIcon>
-            <AppsIcon sx={{ fontSize: 18, color: '#6B7280' }} />
-          </ListItemIcon>
-          <Typography sx={{ fontSize: 13 }}>快速选择技能</Typography>
-        </MenuItem>
+        {/* 按分类分组显示 active 技能 */}
+        {(() => {
+          const activeSkills = getAllSkills().filter(s => s.status === 'active');
+          const grouped: Record<string, Skill[]> = {};
+          for (const s of activeSkills) {
+            if (!grouped[s.category]) grouped[s.category] = [];
+            grouped[s.category].push(s);
+          }
+          const result: React.ReactNode[] = [];
+          for (const cat of categoryOrder) {
+            const items = grouped[cat];
+            if (!items || items.length === 0) continue;
+            result.push(
+              <Typography key={`cat-${cat}`} sx={{ px: 2, py: 0.5, fontSize: '0.65rem', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase' }}>
+                {categoryLabels[cat]}
+              </Typography>
+            );
+            for (const skill of items.slice(0, 4)) {
+              result.push(
+                <MenuItem key={skill.id} onClick={() => { handleSkillSelect(skill); setSkillsMenuAnchor(null); }} sx={{ py: 0.75, px: 2 }}>
+                  <ListItemIcon sx={{ minWidth: 32 }}>{ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 18 }} />}</ListItemIcon>
+                  <Typography sx={{ fontSize: '0.8rem' }}>{skill.name}</Typography>
+                </MenuItem>
+              );
+            }
+          }
+          return result;
+        })()}
         <Divider />
-        <MenuItem
-          onClick={() => {
-            setSkillsMenuAnchor(null);
-            navigate('/skills');
-          }}
-        >
-          <ListItemIcon>
-            <AppsIcon sx={{ fontSize: 18, color: '#6B7280' }} />
-          </ListItemIcon>
+        <MenuItem onClick={() => { setSkillsMenuAnchor(null); navigate('/skills'); }}>
+          <ListItemIcon><AppsIcon sx={{ fontSize: 18, color: '#6B7280' }} /></ListItemIcon>
           <Typography sx={{ fontSize: 13, color: '#6B7280' }}>查看全部技能 →</Typography>
         </MenuItem>
       </Menu>
 
-      {/* 技能选择下拉 */}
+      {/* 技能选择下拉 — @ 触发 */}
       {showSkills && (
         <SkillSelector
           anchorEl={inputRef.current}
           onSelect={handleSkillSelect}
           onClose={() => setShowSkills(false)}
+        />
+      )}
+
+      {/* 技能选择下拉 — / 斜杠命令触发 */}
+      {showSkillSelector && (
+        <SkillSelector
+          anchorEl={inputRef.current}
+          onSelect={handleSkillSelect}
+          onClose={() => setShowSkillSelector(false)}
+          initialFilter={slashQuery}
         />
       )}
     </Paper>
