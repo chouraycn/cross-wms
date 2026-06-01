@@ -828,7 +828,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
 
 /** 单栏侧边栏布局 — 加宽至 260 */
 const SIDEBAR_WIDTH_EXPANDED = 260;
-const SIDEBAR_WIDTH_COLLAPSED = 73;
+const SIDEBAR_WIDTH_COLLAPSED = 83;
 
 // 背景色
 const SIDEBAR_BG = '#F0F0F0';
@@ -879,7 +879,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         // 收起时：红黄绿按钮下移5px后Y中心≈21px，Logo需避让到红黄绿下方
         // 红黄绿高度约12px，底部约 y=21+6=27px，Logo从 32px 开始
         // 展开时：完整避让红黄绿按钮区域（33px）
-        paddingTop: collapsed ? '0px' : 'var(--pw-top, 0px)',
+        paddingTop: 'var(--pw-top, 0px)',  // 收起/展开统一使用 --pw-top
         position: 'sticky',
         top: 0,
         zIndex: 1200,
@@ -891,26 +891,35 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         borderRight: 'none',
       }}
     >
-      {/* 侧边栏切换按钮 — 始终显示（MiniMax 风格） */}
+      {/* 侧边栏切换按钮 — fixed 定位，与红黄绿对齐，不被内容顶走 */}
       {onToggle && (
         <IconButton
           onClick={onToggle}
           size="small"
           sx={{
-            position: 'absolute',
-            // 收起时：与红黄绿按钮对齐（红黄绿右移5px后 x≈12, Y中心≈21px）
-            // 按钮中心 = top + 16(半高) ≈ 21px → top ≈ 5px
-            // 展开时：在 Logo 区域右侧垂直居中（paddingTop 之后 56px 区域的中间）
-            top: collapsed ? '5px' : 'calc(var(--pw-top, 0px) + 56px / 2 - 9px)',
-            right: collapsed ? 'auto' : 8,
-            left: collapsed ? '50%' : 'auto',
-            transform: collapsed ? 'translateX(-50%)' : 'none',
+            position: 'fixed',
+            // 红黄绿下移5px后 Y 中心≈17px，按钮32px高 → top≈1px 居中于红黄绿
+            top: '1px',
+            // 收起时：在白色内容区域内，加白色玻璃效果
+            // 展开时：在灰色侧边栏内靠右，无额外效果
+            left: collapsed ? SIDEBAR_WIDTH_COLLAPSED + 8 : 'auto',
+            right: collapsed ? 'auto' : `calc(100vw - ${SIDEBAR_WIDTH_EXPANDED}px + 8px)`,
+            zIndex: 1300,
             color: '#6B7280',
             borderRadius: '8px',
             p: 0.5,
             width: 32,
             height: 32,
-            '&:hover': { backgroundColor: '#e0e0e0' },
+            // 收起时：白色玻璃效果（按钮在白色内容区域上）
+            ...(collapsed ? {
+              backgroundColor: 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+            } : {}),
+            '&:hover': {
+              backgroundColor: collapsed ? 'rgba(255, 255, 255, 0.8)' : '#e0e0e0',
+            },
             '&:focus': { outline: 'none' },
           }}
         >
@@ -926,10 +935,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       <Box
         sx={{
           px: collapsed ? 0.5 : 2,
-          // 收起时：Logo 在红黄绿按钮下方（红黄绿区域约0~28px，Logo从32px开始）
-          // 展开时：正常高度显示图标+文字
-          height: collapsed ? 32 : 56,
-          mt: collapsed ? '32px' : 0,  // 收起时留出红黄绿空间
+          // 收起/展开时：Logo 区域高度统一
+          height: 28,
+          mt: '2px',
+          mb: 2,  // Logo 与第一个导航栏之间额外空间
           display: 'flex',
           alignItems: 'center',
           justifyContent: collapsed ? 'center' : 'space-between',
@@ -938,24 +947,23 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           WebkitAppRegion: 'drag',  // frameless 窗口拖拽
         } as React.CSSProperties}
       >
-        {/* Logo 图标 — 收起时单独居中，展开时与文字同行 */}
+        {/* Logo 图标 — 收起/展开均显示相同图标，尺寸与容器一致 */}
         <Box
           sx={{
-            width: 40,
-            height: 40,
+            width: 28,
+            height: 28,
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            borderRadius: '6px',
             WebkitAppRegion: 'no-drag',  // Logo 可点击，不触发拖拽
           } as React.CSSProperties}
           onClick={() => navigate('/')}
         >
           <svg
-            width="28"
-            height="28"
+            width="24"
+            height="24"
             viewBox="0 0 100 100"
             xmlns="http://www.w3.org/2000/svg"
           >
@@ -1006,7 +1014,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
       {/* 导航列表 — 独立滚动，禁用上下缓动 */}
       <List sx={{
-        pt: collapsed ? 0.5 : 0,
+        pt: 1,  // Logo 和第一个导航栏之间保持统一间距
         px: collapsed ? 0.5 : 1,
         flex: 1,
         overflow: 'auto',

@@ -180,7 +180,6 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
 
         print(f"[TrafficLight] 最终结果: 成功移动 {moved_count}/{len(buttons)} 个按钮, 偏移量({offset_x}, {offset_y})")
         return moved_count > 0
-        return True
     except Exception as e:
         print(f"[TrafficLight] 应用偏移失败: {e}")
         import traceback
@@ -1260,6 +1259,26 @@ class Api:
             'offset_x': config.get('traffic_light_offset_x', 5),
             'offset_y': config.get('traffic_light_offset_y', 5),
         })
+
+    def reapply_traffic_light_offset(self):
+        """
+        重新应用保存的红黄绿按钮偏移量（用于窗口 resize/zoom 后恢复位置）
+
+        当用户点击绿色 zoom 按钮时，macOS 会重置按钮位置。
+        前端在 window resize 事件后调用此方法恢复偏移。
+        """
+        if not COCOA_AVAILABLE:
+            return json.dumps({'ok': False, 'error': 'Cocoa/pyobjc not available'})
+
+        config = load_config()
+        offset_x = config.get('traffic_light_offset_x', 5)
+        offset_y = config.get('traffic_light_offset_y', 5)
+
+        # 重置原始位置缓存（因为 macOS resize 后按钮 ID 可能改变）
+        _traffic_light_original_frames.clear()
+
+        success = apply_traffic_light_offset(self._window, offset_x, offset_y)
+        return json.dumps({'ok': success, 'offset_x': offset_x, 'offset_y': offset_y})
 
     # ---- 红黄绿按钮控制 ----
 
