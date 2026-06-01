@@ -1397,8 +1397,8 @@ def main():
             resizable=True,
             text_select=True,
             js_api=api,
-            frameless=False,  # 显示原生标题栏和红黄绿按钮
-            easy_drag=True,
+            frameless=True,  # 无系统标题栏，使用 CSS 避让红黄绿按钮
+            easy_drag=False,  # frameless 模式下禁用 easy_drag，由前端 -webkit-app-region: drag 控制
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)

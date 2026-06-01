@@ -220,14 +220,18 @@ const MainLayout: React.FC = () => {
       return localStorage.getItem('crosswms-sidebar-collapsed') === 'true';
     } catch { return false; }
   });
-  // pywebview 检测 — pywebview_app.py 在 HTML 中注入 --pw-top: 28px，
-  // 这里的 isPy 状态用于非布局场景（API / AI 助手连接等）
+  // pywebview 检测 — frameless 模式下需要 --pw-top: 28px 避让红黄绿按钮
   const [isPy, setIsPy] = useState(() => isPyWebView());
   useEffect(() => {
-    if (isPy) return;
+    if (isPy) {
+      // pywebview 环境立即注入 CSS 变量，避免布局闪烁
+      document.documentElement.style.setProperty('--pw-top', '28px');
+      return;
+    }
     const id = setInterval(() => {
       if (isPyWebView()) {
         setIsPy(true);
+        document.documentElement.style.setProperty('--pw-top', '28px');
         clearInterval(id);
       }
     }, 100);
@@ -262,8 +266,8 @@ const MainLayout: React.FC = () => {
     emitWarehouseChange(warehouseId);
   }, []);
 
-  // 系统红黄绿按钮区域高度由 index.html 内联脚本通过 CSS 变量 --pwtl-h 控制
-  // 两侧（Sidebar + 工具栏）均使用 calc(40px + var(--pwtl-h, 0px)) 统一高度
+  // 系统红黄绿按钮区域高度由 CSS 变量 --pw-top 控制（frameless 模式下 JS 注入 28px）
+  // 两侧（Sidebar + 工具栏）均使用 calc(40px + var(--pw-top, 0px)) 统一高度
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar — 单栏布局 */}
@@ -288,8 +292,8 @@ const MainLayout: React.FC = () => {
             alignItems: 'flex-end',
             justifyContent: 'space-between',
             px: 1,
-            // pywebview 环境使用原生标题栏，无需 --pw-top 避让
-            height: isPy ? '40px' : 'calc(40px)',
+            // frameless 模式下 --pw-top: 28px 避让红黄绿按钮区域
+            height: 'calc(40px + var(--pw-top, 0px))',
             pb: '4px',
             flexShrink: 0,
             position: 'relative', // 为绝对定位的按钮提供参照
