@@ -483,6 +483,13 @@ def start_server():
     env = os.environ.copy()
     env['PORT'] = str(SERVER_PORT)
     env['CROSSWMS_DATA_DIR'] = os.path.expanduser('~/.crosswms')
+    env['CROSSWMS_NODE_PATH'] = node_path  # 让 server 端知道 node 完整路径
+
+    # 确保 node 在 PATH 中（agent-sdk 内部 spawn node 需要找到 node 命令）
+    node_dir = os.path.dirname(node_path)
+    if node_dir not in env.get('PATH', '').split(os.pathsep):
+        env['PATH'] = node_dir + os.pathsep + env.get('PATH', '')
+        print(f"[Server] PATH += {node_dir}")
 
     # 设置 NODE_PATH，让 esbuild 外部化的 require() 能找到 node_modules
     if getattr(sys, 'frozen', False):
@@ -556,6 +563,13 @@ def start_agent_server():
     env = os.environ.copy()
     env['PORT'] = str(AGENT_SERVER_PORT)
     env['CROSSWMS_DATA_DIR'] = os.path.expanduser('~/.crosswms')
+    env['CROSSWMS_NODE_PATH'] = node_path  # 让 server 端知道 node 完整路径
+
+    # 确保 node 在 PATH 中（agent-sdk 内部 spawn node 需要找到 node 命令）
+    node_dir = os.path.dirname(node_path)
+    if node_dir not in env.get('PATH', '').split(os.pathsep):
+        env['PATH'] = node_dir + os.pathsep + env.get('PATH', '')
+        print(f"[AgentServer] PATH += {node_dir}")
 
     # 设置 NODE_PATH
     if getattr(sys, 'frozen', False):
