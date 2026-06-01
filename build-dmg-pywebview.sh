@@ -123,8 +123,7 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/frontend_dist"
 cp -r "$FRONTEND_DIST"/* "$BUILD_DIR/frontend_dist/"
 
-# 注意：不再需要注入 --pw-top CSS 变量
-# 因为 frameless=False，pywebview 使用原生标题栏，红黄绿按钮会自动显示
+# frameless=True：无系统标题栏，前端通过 JS 检测 pywebview 后注入 --pw-top: 28px 避让红黄绿按钮
 
 # 2.5 构建 Agent Web 前端（如果存在）
 AGENT_DIST="$BUILD_DIR/agent_dist"
@@ -300,11 +299,16 @@ export PYTHONDONTWRITEBYTECODE=1
 export PYTHONOPTIMIZE=1
 export PYTHONMALLOC=malloc
 
-# 移除 Python 可执行文件的签名（避免 PyInstaller fix_exe_for_code_signing 断言失败）
-echo "🔧 检查并移除 Python 可执行文件签名..."
-codesign --remove-signature "$PYTHON" 2>/dev/null && echo "✅ 已移除 $PYTHON 的签名" || echo "⚠️  无需移除签名或移除失败（继续执行）"
-# 同时也检查并移除 PyInstaller 本身的签名（如果存在）
-codesign --remove-signature "$PYINSTALLER" 2>/dev/null && echo "✅ 已移除 $PYINSTALLER 的签名" || true
+# 确保 Python 可执行文件有 ad-hoc 签名（macOS AMFI 会拒绝未签名的二进制）
+echo "🔧 确保 Python 可执行文件已签名..."
+if ! codesign -v "$PYTHON" 2>/dev/null; then
+  codesign --sign - "$PYTHON" 2>/dev/null && echo "✅ 已签名 $PYTHON" || echo "⚠️  签名失败（继续执行）"
+else
+  echo "✅ $PYTHON 已有签名"
+fi
+if ! codesign -v "$PYINSTALLER" 2>/dev/null; then
+  codesign --sign - "$PYINSTALLER" 2>/dev/null || true
+fi
 
 # 构建数据文件参数
 DATA_ARGS="--add-data $BUILD_DIR/frontend_dist:frontend_dist "
