@@ -13,7 +13,7 @@ interface SidebarLogoProps {
 
 // ===================== Component =====================
 
-const SidebarLogo: React.FC<SidebarLogoProps> = ({ collapsed, onLogoClick, showVersion }) => {
+const SidebarLogo: React.FC<SidebarLogoProps> = ({ collapsed, onLogoClick, showVersion = true }) => {
   return (
     <Box
       sx={{

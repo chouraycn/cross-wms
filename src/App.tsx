@@ -11,6 +11,7 @@ import { UpdateProvider } from './contexts/UpdateContext';
 import UpdateNotification from './components/UpdateNotification';
 import { CrossWmsChat } from './components/CrossWmsChat';
 import ErrorBoundary from './components/Common/ErrorBoundary';
+import { automationEngine } from './services/automationEngine';
 
 // 从统一配色文件导入
 export { PRIMARY, SECONDARY, BORDER, BG_LIGHT, BG_PAGE, WHITE, RADIUS, CHAT_COLORS } from './constants/theme';
@@ -296,6 +297,14 @@ const MainLayout: React.FC = () => {
   const handleWarehouseChange = useCallback((warehouseId: string) => {
     setSelectedWarehouse(warehouseId);
     emitWarehouseChange(warehouseId);
+  }, []);
+
+  // 启动自动化执行引擎
+  useEffect(() => {
+    automationEngine.start();
+    return () => {
+      automationEngine.stop();
+    };
   }, []);
 
   // 系统红黄绿按钮区域高度由 CSS 变量 --pw-top 控制（frameless 模式下 JS 注入 33px）

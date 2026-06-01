@@ -22,6 +22,8 @@ import {
   Alert,
   Snackbar,
   InputAdornment,
+  LinearProgress,
+  Collapse,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -33,123 +35,74 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import SearchIcon from '@mui/icons-material/Search';
+import SyncIcon from '@mui/icons-material/Sync';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import WarningIcon from '@mui/icons-material/Warning';
+import CodeIcon from '@mui/icons-material/Code';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 
-// ===================== Types =====================
+import {
+  automationEngine,
+  loadAutomations,
+  saveAutomations,
+  buildRrule,
+  parseRrule,
+  computeNextRun,
+  formatScheduleLabel,
+  AUTOMATION_TEMPLATES,
+} from '../services/automationEngine';
+import type {
+  Automation,
+  TaskType,
+  FreqType,
+  TaskConfig,
+  AutomationExecution,
+  AutomationTemplate,
+} from '../services/automationEngine';
 
-interface Automation {
-  id: string;
-  name: string;
-  description: string;
-  status: 'ACTIVE' | 'PAUSED';
-  scheduleType: 'recurring' | 'once';
-  /** RFC 5545 RRULE string (e.g. FREQ=DAILY;BYHOUR=9) */
-  rrule: string;
-  /** ISO 8601 datetime for one-time tasks */
-  scheduledAt: string;
-  /** Human-readable schedule label (cached) */
-  scheduleLabel: string;
-  /** Task prompt/instruction */
-  prompt: string;
-  createdAt: string;
-  updatedAt: string;
-  /** Last execution time */
-  lastRunAt: string | null;
-  /** Next execution time (computed) */
-  nextRunAt: string | null;
-  /** Execution count */
-  runCount: number;
-}
+// ===================== 任务类型配置 =====================
 
-// ===================== Persistence =====================
+const TASK_TYPE_LABELS: Record<TaskType, string> = {
+  'data-sync': '数据同步',
+  'inventory-snapshot': '库存快照',
+  'report-gen': '报表生成',
+  'volume-alert': '容积率预警',
+  'custom': '自定义',
+};
 
-const STORAGE_KEY = 'crosswms-automations';
+const TASK_TYPE_ICONS: Record<TaskType, React.ReactNode> = {
+  'data-sync': <SyncIcon sx={{ fontSize: 16 }} />,
+  'inventory-snapshot': <CameraAltIcon sx={{ fontSize: 16 }} />,
+  'report-gen': <AssessmentIcon sx={{ fontSize: 16 }} />,
+  'volume-alert': <WarningIcon sx={{ fontSize: 16 }} />,
+  'custom': <CodeIcon sx={{ fontSize: 16 }} />,
+};
 
-function loadAutomations(): Automation[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
+const TEMPLATE_ICON_MAP: Record<string, React.ReactNode> = {
+  'SyncIcon': <SyncIcon sx={{ fontSize: 20 }} />,
+  'CameraAltIcon': <CameraAltIcon sx={{ fontSize: 20 }} />,
+  'AssessmentIcon': <AssessmentIcon sx={{ fontSize: 20 }} />,
+  'WarningIcon': <WarningIcon sx={{ fontSize: 20 }} />,
+};
 
-function saveAutomations(items: Automation[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-}
-
-// ===================== Schedule Helpers =====================
-
-type FreqType = 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
-
-const FREQ_LABELS: Record<FreqType, string> = {
-  HOURLY: '每小时',
-  DAILY: '每天',
-  WEEKLY: '每周',
-  MONTHLY: '每月',
+const TASK_TYPE_COLORS: Record<TaskType, string> = {
+  'data-sync': '#2563EB',
+  'inventory-snapshot': '#7C3AED',
+  'report-gen': '#059669',
+  'volume-alert': '#D97706',
+  'custom': '#6B7280',
 };
 
 const WEEKDAY_LABELS: Record<string, string> = {
   MO: '周一', TU: '周二', WE: '周三', TH: '周四', FR: '周五', SA: '周六', SU: '周日',
 };
 
-function buildRrule(freq: FreqType, hour: number, minute: number, weekdays: string[]): string {
-  let rule = `FREQ=${freq}`;
-  rule += `;BYHOUR=${hour};BYMINUTE=${minute}`;
-  if (freq === 'WEEKLY' && weekdays.length > 0) {
-    rule += `;BYDAY=${weekdays.join(',')}`;
-  }
-  return rule;
-}
-
-function parseRrule(rrule: string): { freq: FreqType; hour: number; minute: number; weekdays: string[] } {
-  const parts = Object.fromEntries(rrule.split(';').map((p) => p.split('=')));
-  return {
-    freq: (parts.FREQ || 'DAILY') as FreqType,
-    hour: parseInt(parts.BYHOUR || '9', 10),
-    minute: parseInt(parts.BYMINUTE || '0', 10),
-    weekdays: (parts.BYDAY || '').split(',').filter(Boolean),
-  };
-}
-
-function formatScheduleLabel(auto: Automation): string {
-  if (auto.scheduleType === 'once') {
-    try {
-      const d = new Date(auto.scheduledAt);
-      return `一次 · ${d.toLocaleDateString('zh-CN')} ${d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`;
-    } catch {
-      return '一次 · 日期无效';
-    }
-  }
-  const { freq, hour, minute, weekdays } = parseRrule(auto.rrule);
-  const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-  let label = `${FREQ_LABELS[freq] || freq} ${timeStr}`;
-  if (freq === 'WEEKLY' && weekdays.length > 0) {
-    label += ` (${weekdays.map((d) => WEEKDAY_LABELS[d] || d).join(', ')})`;
-  }
-  return label;
-}
-
-function computeNextRun(auto: Automation): string | null {
-  if (auto.status === 'PAUSED') return null;
-  if (auto.scheduleType === 'once') {
-    const d = new Date(auto.scheduledAt);
-    return d > new Date() ? d.toISOString() : null;
-  }
-  // For recurring: compute next occurrence from now
-  const { freq, hour, minute } = parseRrule(auto.rrule);
-  const now = new Date();
-  const next = new Date();
-  next.setHours(hour, minute, 0, 0);
-  if (next <= now) {
-    switch (freq) {
-      case 'HOURLY': next.setHours(next.getHours() + 1); break;
-      case 'DAILY': next.setDate(next.getDate() + 1); break;
-      case 'WEEKLY': next.setDate(next.getDate() + 7); break;
-      case 'MONTHLY': next.setMonth(next.getMonth() + 1); break;
-    }
-  }
-  return next.toISOString();
-}
+const WEEKDAY_ORDER = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
 
 // ===================== Component =====================
 
@@ -161,10 +114,21 @@ const AutomationPage: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState('');
 
+  // 执行状态：记录正在执行的任务 ID
+  const [triggeringIds, setTriggeringIds] = useState<Set<string>>(new Set());
+
+  // 展开的任务卡片（显示执行日志）
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  // 执行日志缓存（按 automationId 分组）
+  const [executionLogs, setExecutionLogs] = useState<Record<string, AutomationExecution[]>>({});
+
   // Form state
   const [formName, setFormName] = useState('');
   const [formDesc, setFormDesc] = useState('');
   const [formPrompt, setFormPrompt] = useState('');
+  const [formTaskType, setFormTaskType] = useState<TaskType>('custom');
+  const [formTaskConfig, setFormTaskConfig] = useState<TaskConfig>({});
   const [formScheduleType, setFormScheduleType] = useState<'recurring' | 'once'>('recurring');
   const [formFreq, setFormFreq] = useState<FreqType>('DAILY');
   const [formHour, setFormHour] = useState(9);
@@ -173,12 +137,15 @@ const AutomationPage: React.FC = () => {
   const [formScheduledAt, setFormScheduledAt] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // 是否从模板创建
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+
   // Persist on change
   useEffect(() => {
     saveAutomations(automations);
   }, [automations]);
 
-  // Refresh nextRunAt
+  // 刷新 nextRunAt
   const refreshTimings = useCallback((items: Automation[]): Automation[] => {
     return items.map((a) => {
       const nextRun = computeNextRun(a);
@@ -187,13 +154,26 @@ const AutomationPage: React.FC = () => {
     });
   }, []);
 
-  // Periodic refresh of nextRunAt
+  // 定时刷新 nextRunAt（每分钟）
   useEffect(() => {
     const timer = setInterval(() => {
       setAutomations((prev) => refreshTimings(prev));
-    }, 60000); // every minute
+    }, 60000);
     return () => clearInterval(timer);
   }, [refreshTimings]);
+
+  // 引擎执行回调 — 刷新 automations 列表
+  useEffect(() => {
+    const unsubscribe = automationEngine.onExecution((_exec) => {
+      setAutomations(loadAutomations());
+    });
+    return unsubscribe;
+  }, []);
+
+  // 加载执行日志
+  const loadLogsForAutomation = useCallback((automationId: string): AutomationExecution[] => {
+    return automationEngine.getExecutionLog(automationId).slice(-5).reverse();
+  }, []);
 
   // ---- Dialog handlers ----
 
@@ -202,6 +182,8 @@ const AutomationPage: React.FC = () => {
     setFormName('');
     setFormDesc('');
     setFormPrompt('');
+    setFormTaskType('custom');
+    setFormTaskConfig({});
     setFormScheduleType('recurring');
     setFormFreq('DAILY');
     setFormHour(9);
@@ -209,6 +191,7 @@ const AutomationPage: React.FC = () => {
     setFormWeekdays(['MO']);
     setFormScheduledAt('');
     setFormErrors({});
+    setSelectedTemplateId(null);
     setDialogOpen(true);
   };
 
@@ -217,6 +200,8 @@ const AutomationPage: React.FC = () => {
     setFormName(auto.name);
     setFormDesc(auto.description);
     setFormPrompt(auto.prompt);
+    setFormTaskType(auto.taskType || 'custom');
+    setFormTaskConfig(auto.taskConfig || {});
     setFormScheduleType(auto.scheduleType);
     if (auto.scheduleType === 'recurring') {
       const { freq, hour, minute, weekdays } = parseRrule(auto.rrule);
@@ -228,7 +213,35 @@ const AutomationPage: React.FC = () => {
       setFormScheduledAt(auto.scheduledAt ? auto.scheduledAt.slice(0, 16) : '');
     }
     setFormErrors({});
+    setSelectedTemplateId(null);
     setDialogOpen(true);
+  };
+
+  /** 选择模板后自动填充表单 */
+  const handleSelectTemplate = (tpl: AutomationTemplate) => {
+    setSelectedTemplateId(tpl.id);
+    setFormName(tpl.name);
+    setFormDesc(tpl.description);
+    setFormTaskType(tpl.taskType);
+    setFormTaskConfig(tpl.taskConfig || {});
+    setFormScheduleType(tpl.defaultSchedule.scheduleType);
+    setFormFreq(tpl.defaultSchedule.freq);
+    setFormHour(tpl.defaultSchedule.hour);
+    setFormMinute(tpl.defaultSchedule.minute);
+    // 为模板生成一个合适的 prompt
+    const promptMap: Record<TaskType, string> = {
+      'data-sync': '定时从数据源拉取最新数据并更新仪表盘',
+      'inventory-snapshot': '保存当前库存快照用于趋势分析',
+      'report-gen': '生成仓库运营数据报表',
+      'volume-alert': `监控仓库容积率，超过 ${tpl.taskConfig?.threshold ?? 85}% 时生成预警`,
+      'custom': '',
+    };
+    setFormPrompt(promptMap[tpl.taskType]);
+  };
+
+  /** 清除模板选择，回到自定义模式 */
+  const clearTemplateSelection = () => {
+    setSelectedTemplateId(null);
   };
 
   const handleSave = () => {
@@ -260,6 +273,8 @@ const AutomationPage: React.FC = () => {
                   name: formName.trim(),
                   description: formDesc.trim(),
                   prompt: formPrompt.trim(),
+                  taskType: formTaskType,
+                  taskConfig: formTaskConfig,
                   scheduleType: formScheduleType,
                   rrule,
                   scheduledAt: formScheduleType === 'once' ? new Date(formScheduledAt).toISOString() : '',
@@ -282,6 +297,8 @@ const AutomationPage: React.FC = () => {
         scheduledAt: formScheduleType === 'once' ? new Date(formScheduledAt).toISOString() : '',
         scheduleLabel: '',
         prompt: formPrompt.trim(),
+        taskType: formTaskType,
+        taskConfig: formTaskConfig,
         createdAt: now,
         updatedAt: now,
         lastRunAt: null,
@@ -314,6 +331,51 @@ const AutomationPage: React.FC = () => {
     setSnackbarOpen(true);
   };
 
+  /** 立即执行任务 */
+  const handleTriggerNow = async (id: string) => {
+    setTriggeringIds((prev) => new Set(prev).add(id));
+    try {
+      const exec = await automationEngine.triggerNow(id);
+      // 刷新 automations 列表（引擎会更新 lastRunAt, runCount 等）
+      setAutomations(loadAutomations());
+      // 刷新该任务的日志
+      const logs = loadLogsForAutomation(id);
+      setExecutionLogs((prev) => ({ ...prev, [id]: logs }));
+
+      if (exec.status === 'success') {
+        setSnackbarMsg(`执行成功: ${exec.result}`);
+      } else {
+        setSnackbarMsg(`执行失败: ${exec.result}`);
+      }
+      setSnackbarOpen(true);
+    } catch (err) {
+      setSnackbarMsg(`执行出错: ${err instanceof Error ? err.message : String(err)}`);
+      setSnackbarOpen(true);
+    } finally {
+      setTriggeringIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  /** 展开/收起任务卡片的执行日志 */
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+        // 加载日志
+        const logs = loadLogsForAutomation(id);
+        setExecutionLogs((prevLogs) => ({ ...prevLogs, [id]: logs }));
+      }
+      return next;
+    });
+  };
+
   // ---- Filter ----
 
   const filtered = automations.filter((a) => {
@@ -334,7 +396,46 @@ const AutomationPage: React.FC = () => {
     setFormErrors((e) => { const n = { ...e }; delete n.weekdays; return n; });
   };
 
-  const WEEKDAY_ORDER = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
+  // ---- 渲染执行日志条目 ----
+
+  const renderExecLog = (exec: AutomationExecution) => {
+    const isSuccess = exec.status === 'success';
+    const isFailed = exec.status === 'failed';
+    const statusColor = isSuccess ? '#059669' : isFailed ? '#EF4444' : '#D97706';
+    const StatusIcon = isSuccess ? CheckCircleOutlineIcon : isFailed ? ErrorOutlineIcon : HourglassEmptyIcon;
+
+    return (
+      <Box
+        key={exec.id}
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 1,
+          py: 0.75,
+          px: 1,
+          borderRadius: 1,
+          '&:hover': { backgroundColor: '#F9FAFB' },
+        }}
+      >
+        <StatusIcon sx={{ fontSize: 14, color: statusColor, mt: 0.25, flexShrink: 0 }} />
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontSize: '0.7rem', color: '#111827', fontWeight: 500, lineHeight: 1.3 }}>
+            {exec.result || (exec.status === 'running' ? '执行中...' : '无结果')}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1.5, mt: 0.25 }}>
+            <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>
+              {exec.completedAt ? new Date(exec.completedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}
+            </Typography>
+            {exec.duration !== null && (
+              <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>
+                {exec.duration < 1000 ? `${exec.duration}ms` : `${(exec.duration / 1000).toFixed(1)}s`}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      </Box>
+    );
+  };
 
   return (
     <Box className="page-fade-in">
@@ -412,7 +513,7 @@ const AutomationPage: React.FC = () => {
             {automations.length === 0 ? '暂无定时任务' : '未找到匹配的任务'}
           </Typography>
           <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF', mb: 2 }}>
-            {automations.length === 0 ? '点击「新建任务」创建第一个自动化调度' : '尝试调整搜索关键词'}
+            {automations.length === 0 ? '点击「新建任务」创建第一个自动化调度，或从模板快速创建' : '尝试调整搜索关键词'}
           </Typography>
           {automations.length === 0 && (
             <Button
@@ -433,131 +534,197 @@ const AutomationPage: React.FC = () => {
         </Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {filtered.map((auto) => (
-            <Card
-              key={auto.id}
-              elevation={0}
-              sx={{
-                border: '1px solid #E5E7EB',
-                borderRadius: 2,
-                transition: 'all 0.15s ease',
-                opacity: auto.status === 'PAUSED' ? 0.7 : 1,
-                '&:hover': {
-                  borderColor: '#9CA3AF',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                },
-              }}
-            >
-              <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  {/* 图标 */}
-                  <Box
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 1.5,
-                      backgroundColor: auto.status === 'ACTIVE' ? '#EFF6FF' : '#F3F4F6',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      color: auto.status === 'ACTIVE' ? '#2563EB' : '#9CA3AF',
-                    }}
-                  >
-                    {auto.scheduleType === 'recurring' ? (
-                      <RepeatIcon sx={{ fontSize: 18 }} />
-                    ) : (
-                      <CalendarTodayIcon sx={{ fontSize: 18 }} />
-                    )}
-                  </Box>
+          {filtered.map((auto) => {
+            const isExpanded = expandedIds.has(auto.id);
+            const isTriggering = triggeringIds.has(auto.id);
+            const logs = executionLogs[auto.id] || [];
+            const taskColor = TASK_TYPE_COLORS[auto.taskType] || '#6B7280';
 
-                  {/* 内容 */}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            return (
+              <Card
+                key={auto.id}
+                elevation={0}
+                sx={{
+                  border: '1px solid #E5E7EB',
+                  borderRadius: 2,
+                  transition: 'all 0.15s ease',
+                  opacity: auto.status === 'PAUSED' ? 0.7 : 1,
+                  '&:hover': {
+                    borderColor: '#9CA3AF',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  },
+                }}
+              >
+                <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    {/* 图标 — 按 taskType 显示不同图标 */}
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 1.5,
+                        backgroundColor: auto.status === 'ACTIVE' ? `${taskColor}15` : '#F3F4F6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        color: auto.status === 'ACTIVE' ? taskColor : '#9CA3AF',
+                      }}
+                    >
+                      {TASK_TYPE_ICONS[auto.taskType] || (auto.scheduleType === 'recurring' ? <RepeatIcon sx={{ fontSize: 18 }} /> : <CalendarTodayIcon sx={{ fontSize: 18 }} />)}
+                    </Box>
+
+                    {/* 内容 */}
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography
+                          sx={{
+                            fontSize: '0.875rem',
+                            fontWeight: 600,
+                            color: '#111827',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {auto.name}
+                        </Typography>
+                        <Chip
+                          label={TASK_TYPE_LABELS[auto.taskType] || '自定义'}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: '0.65rem',
+                            fontWeight: 500,
+                            backgroundColor: `${taskColor}15`,
+                            color: taskColor,
+                          }}
+                        />
+                        <Chip
+                          label={auto.status === 'ACTIVE' ? '运行中' : '已暂停'}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: '0.65rem',
+                            fontWeight: 500,
+                            backgroundColor: auto.status === 'ACTIVE' ? '#ECFDF5' : '#FEF3C7',
+                            color: auto.status === 'ACTIVE' ? '#059669' : '#D97706',
+                          }}
+                        />
+                      </Box>
                       <Typography
                         sx={{
-                          fontSize: '0.875rem',
-                          fontWeight: 600,
-                          color: '#111827',
+                          fontSize: '0.75rem',
+                          color: '#6B7280',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
+                          mt: 0.25,
                         }}
                       >
-                        {auto.name}
+                        {auto.scheduleLabel}
                       </Typography>
-                      <Chip
-                        label={auto.status === 'ACTIVE' ? '运行中' : '已暂停'}
-                        size="small"
-                        sx={{
-                          height: 20,
-                          fontSize: '0.65rem',
-                          fontWeight: 500,
-                          backgroundColor: auto.status === 'ACTIVE' ? '#ECFDF5' : '#FEF3C7',
-                          color: auto.status === 'ACTIVE' ? '#059669' : '#D97706',
-                        }}
-                      />
+                      {/* 下次执行 + 执行次数 */}
+                      <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+                        {auto.nextRunAt && (
+                          <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <AccessTimeIcon sx={{ fontSize: 12 }} />
+                            下次: {new Date(auto.nextRunAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          </Typography>
+                        )}
+                        {auto.runCount > 0 && (
+                          <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
+                            已执行 {auto.runCount} 次
+                          </Typography>
+                        )}
+                      </Box>
                     </Box>
-                    <Typography
-                      sx={{
-                        fontSize: '0.75rem',
-                        color: '#6B7280',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        mt: 0.25,
-                      }}
-                    >
-                      {auto.scheduleLabel}
-                    </Typography>
-                    {/* 下次执行 + 执行次数 */}
-                    <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
-                      {auto.nextRunAt && (
-                        <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <AccessTimeIcon sx={{ fontSize: 12 }} />
-                          下次: {new Date(auto.nextRunAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                        </Typography>
-                      )}
-                      {auto.runCount > 0 && (
-                        <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
-                          已执行 {auto.runCount} 次
-                        </Typography>
-                      )}
+
+                    {/* 操作 */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {/* 立即执行 */}
+                      <Tooltip title="立即执行">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleTriggerNow(auto.id)}
+                          disabled={isTriggering}
+                          sx={{
+                            color: taskColor,
+                            '&:hover': { backgroundColor: `${taskColor}10` },
+                            '&.Mui-disabled': { color: '#D1D5DB' },
+                          }}
+                        >
+                          {isTriggering ? (
+                            <SyncIcon sx={{ fontSize: 16, animation: 'spin 1s linear infinite' }} />
+                          ) : (
+                            <PlayArrowIcon sx={{ fontSize: 16 }} />
+                          )}
+                        </IconButton>
+                      </Tooltip>
+                      {/* 展开日志 */}
+                      <Tooltip title={isExpanded ? '收起日志' : '查看日志'}>
+                        <IconButton
+                          size="small"
+                          onClick={() => toggleExpand(auto.id)}
+                          sx={{ color: '#9CA3AF' }}
+                        >
+                          {isExpanded ? <ExpandLessIcon sx={{ fontSize: 16 }} /> : <ExpandMoreIcon sx={{ fontSize: 16 }} />}
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={auto.status === 'ACTIVE' ? '暂停' : '启用'}>
+                        <Switch
+                          checked={auto.status === 'ACTIVE'}
+                          onChange={() => toggleStatus(auto.id)}
+                          size="small"
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': { color: '#059669' },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#059669' },
+                          }}
+                        />
+                      </Tooltip>
+                      <Tooltip title="编辑">
+                        <IconButton size="small" onClick={() => openEditDialog(auto)} sx={{ color: '#9CA3AF' }}>
+                          <EditIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="删除">
+                        <IconButton
+                          size="small"
+                          onClick={() => deleteAutomation(auto.id)}
+                          sx={{ color: '#9CA3AF', '&:hover': { color: '#EF4444' } }}
+                        >
+                          <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
                     </Box>
                   </Box>
 
-                  {/* 操作 */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Tooltip title={auto.status === 'ACTIVE' ? '暂停' : '启用'}>
-                      <Switch
-                        checked={auto.status === 'ACTIVE'}
-                        onChange={() => toggleStatus(auto.id)}
-                        size="small"
-                        sx={{
-                          '& .MuiSwitch-switchBase.Mui-checked': { color: '#059669' },
-                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#059669' },
-                        }}
-                      />
-                    </Tooltip>
-                    <Tooltip title="编辑">
-                      <IconButton size="small" onClick={() => openEditDialog(auto)} sx={{ color: '#9CA3AF' }}>
-                        <EditIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="删除">
-                      <IconButton
-                        size="small"
-                        onClick={() => deleteAutomation(auto.id)}
-                        sx={{ color: '#9CA3AF', '&:hover': { color: '#EF4444' } }}
-                      >
-                        <DeleteOutlineIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          ))}
+                  {/* 执行中进度条 */}
+                  {isTriggering && (
+                    <Box sx={{ mt: 1 }}>
+                      <LinearProgress sx={{ height: 2, borderRadius: 1, backgroundColor: '#F3F4F6' }} />
+                    </Box>
+                  )}
+
+                  {/* 执行日志 */}
+                  <Collapse in={isExpanded} timeout="auto">
+                    <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid #F3F4F6' }}>
+                      <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', fontWeight: 500, mb: 0.5 }}>
+                        最近执行记录
+                      </Typography>
+                      {logs.length === 0 ? (
+                        <Typography sx={{ fontSize: '0.7rem', color: '#D1D5DB', py: 1, textAlign: 'center' }}>
+                          暂无执行记录
+                        </Typography>
+                      ) : (
+                        logs.map(renderExecLog)
+                      )}
+                    </Box>
+                  </Collapse>
+                </CardContent>
+              </Card>
+            );
+          })}
         </Box>
       )}
 
@@ -603,6 +770,80 @@ const AutomationPage: React.FC = () => {
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* 模板选择区域（仅新建时显示） */}
+            {!editingId && (
+              <>
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151' }}>
+                      从模板创建
+                    </Typography>
+                    {selectedTemplateId && (
+                      <Button
+                        size="small"
+                        onClick={clearTemplateSelection}
+                        sx={{ fontSize: '0.7rem', color: '#6B7280', textTransform: 'none' }}
+                      >
+                        清除选择
+                      </Button>
+                    )}
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5 }}>
+                    {AUTOMATION_TEMPLATES.map((tpl) => {
+                      const isSelected = selectedTemplateId === tpl.id;
+                      const tplColor = TASK_TYPE_COLORS[tpl.taskType];
+                      return (
+                        <Card
+                          key={tpl.id}
+                          elevation={0}
+                          onClick={() => handleSelectTemplate(tpl)}
+                          sx={{
+                            minWidth: 160,
+                            maxWidth: 180,
+                            cursor: 'pointer',
+                            border: isSelected ? `2px solid ${tplColor}` : '1px solid #E5E7EB',
+                            borderRadius: 2,
+                            transition: 'all 0.15s ease',
+                            backgroundColor: isSelected ? `${tplColor}08` : '#FAFAFA',
+                            '&:hover': {
+                              borderColor: tplColor,
+                              backgroundColor: `${tplColor}08`,
+                            },
+                          }}
+                        >
+                          <CardContent sx={{ py: 1.5, px: 1.5, '&:last-child': { pb: 1.5 } }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+                              <Box
+                                sx={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: 1,
+                                  backgroundColor: `${tplColor}15`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: tplColor,
+                                }}
+                              >
+                                {TEMPLATE_ICON_MAP[tpl.icon] || <CodeIcon sx={{ fontSize: 14 }} />}
+                              </Box>
+                              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#111827' }}>
+                                {tpl.name}
+                              </Typography>
+                            </Box>
+                            <Typography sx={{ fontSize: '0.65rem', color: '#6B7280', lineHeight: 1.4 }}>
+                              {tpl.description}
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </Box>
+                </Box>
+                <Divider />
+              </>
+            )}
+
             {/* 任务名称 */}
             <TextField
               label="任务名称"
@@ -626,6 +867,76 @@ const AutomationPage: React.FC = () => {
               onChange={(e) => setFormDesc(e.target.value)}
               sx={{ '& .MuiOutlinedInput-root': { fontSize: '0.8125rem' }, '& .MuiInputLabel-root': { fontSize: '0.8125rem' } }}
             />
+
+            {/* 任务类型选择器（仅非模板选择时 / 编辑时显示） */}
+            {!selectedTemplateId && (
+              <FormControl size="small" fullWidth>
+                <InputLabel sx={{ fontSize: '0.8125rem' }}>任务类型</InputLabel>
+                <Select
+                  value={formTaskType}
+                  label="任务类型"
+                  onChange={(e) => {
+                    const newType = e.target.value as TaskType;
+                    setFormTaskType(newType);
+                    // 切换类型时重置 taskConfig
+                    if (newType === 'volume-alert') {
+                      setFormTaskConfig({ threshold: 85 });
+                    } else {
+                      setFormTaskConfig({});
+                    }
+                  }}
+                  sx={{ fontSize: '0.8125rem' }}
+                >
+                  <MenuItem value="data-sync">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <SyncIcon sx={{ fontSize: 16, color: TASK_TYPE_COLORS['data-sync'] }} />
+                      数据同步
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="inventory-snapshot">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CameraAltIcon sx={{ fontSize: 16, color: TASK_TYPE_COLORS['inventory-snapshot'] }} />
+                      库存快照
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="report-gen">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AssessmentIcon sx={{ fontSize: 16, color: TASK_TYPE_COLORS['report-gen'] }} />
+                      报表生成
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="volume-alert">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <WarningIcon sx={{ fontSize: 16, color: TASK_TYPE_COLORS['volume-alert'] }} />
+                      容积率预警
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="custom">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CodeIcon sx={{ fontSize: 16, color: TASK_TYPE_COLORS['custom'] }} />
+                      自定义
+                    </Box>
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            )}
+
+            {/* volume-alert 专用配置：阈值 */}
+            {formTaskType === 'volume-alert' && (
+              <TextField
+                label="容积率预警阈值（%）"
+                type="number"
+                size="small"
+                fullWidth
+                value={formTaskConfig.threshold ?? 85}
+                onChange={(e) => {
+                  const val = Math.max(0, Math.min(100, parseInt(e.target.value, 10) || 0));
+                  setFormTaskConfig((prev) => ({ ...prev, threshold: val }));
+                }}
+                inputProps={{ min: 0, max: 100 }}
+                sx={{ '& .MuiOutlinedInput-root': { fontSize: '0.8125rem' }, '& .MuiInputLabel-root': { fontSize: '0.8125rem' } }}
+              />
+            )}
 
             <Divider />
 
@@ -798,6 +1109,14 @@ const AutomationPage: React.FC = () => {
           {snackbarMsg}
         </Alert>
       </Snackbar>
+
+      {/* 旋转动画（用于执行中的同步图标） */}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </Box>
   );
 };
