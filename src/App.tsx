@@ -244,7 +244,21 @@ const MainLayout: React.FC = () => {
       };
       // 延迟 500ms 确保 NSWindow 完全初始化
       setTimeout(applyTrafficLightOffset, 500);
-      return;
+
+      // 窗口 resize 后重新应用红黄绿偏移（点击绿色 zoom 按钮后 macOS 会重置按钮位置）
+      const reapplyOnResize = () => {
+        const api = (window as any).pywebview?.api;
+        if (api?.reapply_traffic_light_offset) {
+          // 延迟 200ms 等待 macOS 完成窗口动画
+          setTimeout(() => {
+            api.reapply_traffic_light_offset().catch(() => {});
+          }, 200);
+        }
+      };
+      window.addEventListener('resize', reapplyOnResize);
+      return () => {
+        window.removeEventListener('resize', reapplyOnResize);
+      };
     }
     const id = setInterval(() => {
       if (isPyWebView()) {
