@@ -5,17 +5,17 @@ import {
   IconButton, Tooltip, CircularProgress,
   Snackbar, Alert, Button, Paper, Dialog, DialogTitle,
   DialogContent, DialogActions, Select, MenuItem, FormControl,
-  InputLabel, Fade,
+  InputLabel,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SearchIcon from '@mui/icons-material/Search';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import AddIcon from '@mui/icons-material/Add';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ScheduleIcon from '@mui/icons-material/Schedule';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import AddIcon from '@mui/icons-material/Add';
 import ExtensionIcon from '@mui/icons-material/Extension';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { loadAutomations, automationEngine } from '../services/automationEngine';
 import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automationEngine';
@@ -39,6 +39,14 @@ const categoryColors: Record<string, { bg: string; color: string }> = {
   data: { bg: '#FAF5FF', color: '#7C3AED' },
   auto: { bg: '#ECFDF5', color: '#059669' },
   tool: { bg: '#FFF7ED', color: '#EA580C' },
+};
+
+/** 技能图标区渐变色（卡片风格） */
+const iconGradients: Record<string, string> = {
+  core: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+  data: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+  auto: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+  tool: 'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
 };
 
 // ===================== 组件 =====================
@@ -65,6 +73,7 @@ const SkillsPage: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<'market' | 'installed'>('market');
 
   // 最近使用 — 只存 name 字符串，反查 skills 获取完整 Skill
   const [recentNames, setRecentNames] = useState<string[]>(() => {
@@ -72,7 +81,7 @@ const SkillsPage: React.FC = () => {
       const saved = localStorage.getItem('crosswms-recent-skills');
       if (!saved) return [];
       const parsed = JSON.parse(saved);
-      // 兼容旧格式：[{name:"xxx",...}] → 提取 name；新格式：["xxx"]
+      // 兼容旧格式
       if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object') {
         const names = (parsed as { name?: string }[]).map(s => s.name).filter((n): n is string => !!n);
         localStorage.setItem('crosswms-recent-skills', JSON.stringify(names));
@@ -97,7 +106,7 @@ const SkillsPage: React.FC = () => {
   const [triggeringTypes, setTriggeringTypes] = useState<Set<TaskType>>(new Set());
   const [toast, setToast] = useState<{ open: boolean; msg: string; severity: 'success' | 'error' | 'info' }>({ open: false, msg: '', severity: 'info' });
 
-  // 构建 automationMap（响应式，随 automationVersion 刷新）
+  // 构建 automationMap
   const automationMap = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _v = automationVersion;
@@ -146,7 +155,6 @@ const SkillsPage: React.FC = () => {
     return unsubscribe;
   }, []);
 
-  // 刷新每个 taskType 的最近执行记录
   const refreshLatestExec = useCallback(() => {
     const autos = loadAutomations();
     const map: Record<string, AutomationExecution | null> = {};
@@ -196,11 +204,17 @@ const SkillsPage: React.FC = () => {
         (skill.tags || []).some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (skill.trigger || '').toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory === 'all' || skill.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      const matchesTab = activeTab === 'market' || skill.source === 'user';
+      return matchesSearch && matchesCategory && matchesTab;
     });
-  }, [searchQuery, selectedCategory, skills]);
+  }, [searchQuery, selectedCategory, skills, activeTab]);
 
-  // 按类别分组（保持 categoryOrder 顺序）
+  // 推荐技能
+  const featuredSkills = useMemo(() => {
+    return skills.filter(s => s.featured && s.status === 'active');
+  }, [skills]);
+
+  // 按 category 分组（全部 Tab 下）
   const grouped = useMemo(() => {
     const result: [string, Skill[]][] = [];
     for (const cat of categoryOrder) {
@@ -209,11 +223,6 @@ const SkillsPage: React.FC = () => {
     }
     return result;
   }, [filteredSkills]);
-
-  // 导航到详情页
-  const handleNavigateToDetail = (skill: Skill) => {
-    navigate(`/skills/${skill.id}`);
-  };
 
   // 统计数据
   const stats = useMemo(() => {
@@ -224,58 +233,11 @@ const SkillsPage: React.FC = () => {
     return { active, installed, automated, running };
   }, [skills, automationMap, runningTaskTypes]);
 
-  // 渲染技能状态标识
-  const renderStatusBadge = (skill: Skill) => {
-    if (skill.automationTaskType && automationMap[skill.automationTaskType]) {
-      return (
-        <Chip
-          icon={<PlayArrowIcon sx={{ fontSize: 10 }} />}
-          label="自动化"
-          size="small"
-          sx={{
-            height: 16,
-            fontSize: '0.55rem',
-            fontWeight: 500,
-            backgroundColor: '#ECFDF5',
-            color: '#059669',
-            ml: 0.5,
-            '& .MuiChip-icon': { color: '#059669' },
-          }}
-        />
-      );
-    }
-    if (skill.status === 'coming') {
-      return (
-        <Chip
-          label="即将上线"
-          size="small"
-          sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: '#FEF3C7', color: '#D97706', ml: 0.5 }}
-        />
-      );
-    }
-    if (skill.status === 'available') {
-      return (
-        <Chip
-          label="可用"
-          size="small"
-          sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: '#EFF6FF', color: '#2563EB', ml: 0.5 }}
-        />
-      );
-    }
-    return null;
-  };
-
   // 渲染最近执行状态
   const renderLatestExec = (skill: Skill) => {
     if (!skill.automationTaskType) return null;
     const exec = latestExecByType[skill.automationTaskType];
-    if (!exec) {
-      return (
-        <Typography sx={{ fontSize: '0.6rem', color: '#9CA3AF', mt: 0.25 }}>
-          暂无执行记录
-        </Typography>
-      );
-    }
+    if (!exec) return null;
     const statusIcon = exec.status === 'success'
       ? <CheckCircleIcon sx={{ fontSize: 10, color: '#059669' }} />
       : exec.status === 'failed'
@@ -286,75 +248,254 @@ const SkillsPage: React.FC = () => {
       ? new Date(exec.completedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
       : '';
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
         {statusIcon}
-        <Typography sx={{ fontSize: '0.6rem', color: '#6B7280' }}>
+        <Typography sx={{ fontSize: '0.6rem', color: '#999' }}>
           {statusText}{timeStr ? ` · ${timeStr}` : ''}
         </Typography>
       </Box>
     );
   };
 
+  // 获取技能图标的第一个字符（用于卡片图标区）
+  const getSkillChar = (skill: Skill): string => {
+    return skill.name.charAt(0);
+  };
+
+  // 渲染技能卡片
+  const renderSkillCard = (skill: Skill) => {
+    const autoInfo = skill.automationTaskType ? automationMap[skill.automationTaskType] : undefined;
+    const hasAutomation = !!autoInfo;
+    const isRunning = skill.automationTaskType ? runningTaskTypes.has(skill.automationTaskType as TaskType) : false;
+    const isTriggering = skill.automationTaskType ? triggeringTypes.has(skill.automationTaskType as TaskType) : false;
+
+    return (
+      <Paper
+        key={skill.id}
+        elevation={0}
+        onClick={() => navigate(`/skills/${skill.id}`)}
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          p: 2,
+          borderRadius: '12px',
+          border: '1px solid #F0F0F0',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            borderColor: '#E0E0E0',
+          },
+        }}
+      >
+        {/* 图标区 */}
+        <Box sx={{
+          width: 44,
+          height: 44,
+          borderRadius: '10px',
+          background: iconGradients[skill.category],
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          mr: 1.5,
+          flexShrink: 0,
+          position: 'relative',
+          color: '#fff',
+          fontSize: '1.1rem',
+          fontWeight: 600,
+        }}>
+          {/* 渲染 MUI 图标（白色） */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', '& .MuiSvgIcon-root': { fontSize: 22, color: '#fff' } }}>
+            {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 22 }} />}
+          </Box>
+          {/* 自动化运行指示点 */}
+          {hasAutomation && (
+            <Box sx={{
+              position: 'absolute',
+              top: -3,
+              right: -3,
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              backgroundColor: isRunning ? '#3B82F6' : '#10B981',
+              border: '2px solid #fff',
+              ...(isRunning ? { animation: 'pulse-dot 1.2s ease-in-out infinite' } : {}),
+            }} />
+          )}
+        </Box>
+
+        {/* 信息区 */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
+            <Typography sx={{
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              color: '#1A1A1A',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {skill.name}
+            </Typography>
+            {skill.status === 'available' && (
+              <Chip
+                label="可用"
+                size="small"
+                sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: '#EFF6FF', color: '#2563EB' }}
+              />
+            )}
+            {skill.status === 'coming' && (
+              <Chip
+                label="即将上线"
+                size="small"
+                sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: '#FEF3C7', color: '#D97706' }}
+              />
+            )}
+            {skill.source === 'user' && (
+              <Chip
+                label="自定义"
+                size="small"
+                sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: '#FAF5FF', color: '#7C3AED' }}
+              />
+            )}
+          </Box>
+          <Typography sx={{
+            fontSize: '0.75rem',
+            color: '#999',
+            lineHeight: 1.5,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}>
+            {skill.desc}
+          </Typography>
+          {/* 最近执行状态 */}
+          {renderLatestExec(skill)}
+        </Box>
+
+        {/* 操作按钮 */}
+        {skill.status === 'available' ? (
+          <Tooltip title="启用技能">
+            <IconButton
+              size="small"
+              onClick={(e) => handleActivateSkill(skill.id, e)}
+              sx={{
+                flexShrink: 0,
+                width: 28,
+                height: 28,
+                border: '1px solid #E0E0E0',
+                borderRadius: '6px',
+                backgroundColor: '#fff',
+                ml: 1,
+                color: '#2563EB',
+                '&:hover': { backgroundColor: '#F5F5F5', borderColor: '#D0D0D0' },
+              }}
+            >
+              <PlayArrowIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+          </Tooltip>
+        ) : hasAutomation ? (
+          <Tooltip title={isRunning ? '执行中...' : '立即执行'}>
+            <IconButton
+              size="small"
+              onClick={(e) => handleTriggerAutomation(skill, e)}
+              disabled={isRunning || isTriggering}
+              sx={{
+                flexShrink: 0,
+                width: 28,
+                height: 28,
+                border: '1px solid #E0E0E0',
+                borderRadius: '6px',
+                backgroundColor: '#fff',
+                ml: 1,
+                color: isRunning ? '#2563EB' : '#059669',
+                '&:hover': { backgroundColor: '#F5F5F5', borderColor: '#D0D0D0' },
+              }}
+            >
+              {isRunning || isTriggering ? (
+                <CircularProgress size={14} sx={{ color: '#2563EB' }} />
+              ) : (
+                <PlayArrowIcon sx={{ fontSize: 14 }} />
+              )}
+            </IconButton>
+          </Tooltip>
+        ) : (
+          <IconButton
+            size="small"
+            onClick={(e) => { e.stopPropagation(); navigate(`/skills/${skill.id}`); }}
+            sx={{
+              flexShrink: 0,
+              width: 28,
+              height: 28,
+              border: '1px solid #E0E0E0',
+              borderRadius: '6px',
+              backgroundColor: '#fff',
+              ml: 1,
+              color: '#666',
+              '&:hover': { backgroundColor: '#F5F5F5', borderColor: '#D0D0D0' },
+            }}
+          >
+            <AddIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+        )}
+      </Paper>
+    );
+  };
+
   // ===================== 渲染 =====================
 
   return (
-    <Box className="page-fade-in">
-      {/* 页面标题 + 统计 + 添加按钮 */}
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+    <Box className="page-fade-in" sx={{ px: 1 }}>
+      {/* Header: 标题 + 搜索 + 添加按钮 */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827', mb: 0.5 }}>
+          <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: '#1A1A1A', mb: 0.25 }}>
             技能
           </Typography>
-          <Typography sx={{ fontSize: '0.875rem', color: '#6B7280' }}>
-            选择技能快速跳转到对应功能模块，已配置自动化的技能可直接查看执行状态
+          <Typography sx={{ fontSize: '0.8125rem', color: '#999' }}>
+            赋予 CrossWMS 更强大的能力
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', gap: 1.5 }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>
-                {stats.active}
-              </Typography>
-              <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>可用</Typography>
-            </Box>
-            <Divider orientation="vertical" flexItem />
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: '#7C3AED' }}>
-                {stats.installed}
-              </Typography>
-              <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>已安装</Typography>
-            </Box>
-            <Divider orientation="vertical" flexItem />
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: '#059669' }}>
-                {stats.automated}
-              </Typography>
-              <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>自动化</Typography>
-            </Box>
-            {stats.running > 0 && (
-              <>
-                <Divider orientation="vertical" flexItem />
-                <Box sx={{ textAlign: 'center' }}>
-                  <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: '#2563EB' }}>
-                    {stats.running}
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>运行中</Typography>
-                </Box>
-              </>
-            )}
-          </Box>
+          <TextField
+            size="small"
+            placeholder="搜索技能"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              width: 200,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+                backgroundColor: '#F0F0F0',
+                fontSize: '0.8125rem',
+                '& fieldset': { border: 'none' },
+                '&:hover': { backgroundColor: '#E8E8E8' },
+                '&.Mui-focused': { backgroundColor: '#fff', '& fieldset': { border: '1px solid #1A1A1A' } },
+              },
+              '& .MuiInputBase-input': { py: 0.75, fontSize: '0.8125rem', color: '#666' },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ fontSize: 16, color: '#999' }} />
+                </InputAdornment>
+              ),
+            }}
+          />
           <Button
-            variant="contained"
-            startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+            variant="outlined"
+            startIcon={<AddIcon sx={{ fontSize: 14 }} />}
             onClick={() => setAddDialogOpen(true)}
             sx={{
-              backgroundColor: '#111827',
-              '&:hover': { backgroundColor: '#374151' },
               textTransform: 'none',
-              borderRadius: 2,
+              borderRadius: '8px',
               fontSize: '0.8125rem',
               py: 0.75,
               px: 2,
+              borderColor: '#E0E0E0',
+              color: '#333',
+              '&:hover': { borderColor: '#D0D0D0', backgroundColor: '#F9F9F9' },
             }}
           >
             添加技能
@@ -362,256 +503,166 @@ const SkillsPage: React.FC = () => {
         </Box>
       </Box>
 
-      {/* 最近使用 — Chip 行 */}
-      {recentSkills.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
-            最近使用
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {recentSkills.map((skill) => (
-              <Chip
-                key={skill.id}
-                icon={<Box sx={{ display: 'flex', alignItems: 'center', ml: 0.5, color: categoryColors[skill.category]?.color || '#6B7280' }}>{ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 22 }} />}</Box>}
-                label={skill.name}
-                onClick={() => handleNavigateToDetail(skill)}
-                sx={{
-                  borderRadius: '8px',
-                  fontSize: '0.8rem',
-                  height: 32,
-                  backgroundColor: '#F9FAFB',
-                  border: '1px solid #E5E7EB',
-                  '&:hover': { backgroundColor: '#F3F4F6', borderColor: '#D1D5DB' },
-                }}
-              />
-            ))}
+      {/* Main Tabs: 全部技能 / 已安装 */}
+      <Box sx={{ display: 'flex', gap: 3, borderBottom: '1px solid #E8E8E8', mb: 3 }}>
+        <Box
+          onClick={() => setActiveTab('market')}
+          sx={{
+            py: 1.5,
+            fontSize: '0.875rem',
+            color: activeTab === 'market' ? '#1A1A1A' : '#666',
+            cursor: 'pointer',
+            position: 'relative',
+            fontWeight: activeTab === 'market' ? 500 : 400,
+            transition: 'color 0.2s',
+            '&:hover': { color: '#333' },
+            '&::after': activeTab === 'market' ? {
+              content: '""',
+              position: 'absolute',
+              bottom: -1,
+              left: 0,
+              right: 0,
+              height: 2,
+              backgroundColor: '#1A1A1A',
+            } : {},
+          }}
+        >
+          全部技能
+        </Box>
+        <Box
+          onClick={() => setActiveTab('installed')}
+          sx={{
+            py: 1.5,
+            fontSize: '0.875rem',
+            color: activeTab === 'installed' ? '#1A1A1A' : '#666',
+            cursor: 'pointer',
+            position: 'relative',
+            fontWeight: activeTab === 'installed' ? 500 : 400,
+            transition: 'color 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            '&:hover': { color: '#333' },
+            '&::after': activeTab === 'installed' ? {
+              content: '""',
+              position: 'absolute',
+              bottom: -1,
+              left: 0,
+              right: 0,
+              height: 2,
+              backgroundColor: '#1A1A1A',
+            } : {},
+          }}
+        >
+          已安装
+          <Box sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: 18,
+            height: 18,
+            px: 0.625,
+            backgroundColor: '#F0F0F0',
+            borderRadius: '9px',
+            fontSize: '0.6875rem',
+            color: '#666',
+          }}>
+            {stats.installed}
+          </Box>
+        </Box>
+      </Box>
+
+      {/* 推荐区（仅在"全部技能"Tab下，且无搜索/分类过滤时显示） */}
+      {activeTab === 'market' && searchQuery === '' && selectedCategory === 'all' && featuredSkills.length > 0 && (
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: '#1A1A1A' }}>
+              为你推荐
+            </Typography>
+            <Button
+              size="small"
+              startIcon={<RefreshIcon sx={{ fontSize: 14 }} />}
+              sx={{ textTransform: 'none', fontSize: '0.8125rem', color: '#666', '&:hover': { color: '#333' } }}
+            >
+              换一换
+            </Button>
+          </Box>
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 2,
+          }}>
+            {featuredSkills.slice(0, 6).map(renderSkillCard)}
           </Box>
         </Box>
       )}
 
-      {/* 搜索和筛选栏 */}
-      <Box sx={{
-        display: 'flex',
-        gap: 2,
-        mb: 2.5,
-        flexDirection: { xs: 'column', sm: 'row' },
-        alignItems: { xs: 'stretch', sm: 'center' },
-      }}>
-        <TextField
-          size="small"
-          placeholder="搜索技能、触发词或标签..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{
-            flex: 1,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '8px',
-              backgroundColor: '#F9FAFB',
-              '& fieldset': { borderColor: '#E5E7EB' },
-              '&:hover fieldset': { borderColor: '#D1D5DB' },
-              '&.Mui-focused fieldset': { borderColor: '#111827' },
-            },
-            '& .MuiInputBase-input': { fontSize: '0.875rem' },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ fontSize: 18, color: '#9CA3AF' }} />
-              </InputAdornment>
-            ),
-          }}
-        />
-
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Chip
-            label="全部"
-            onClick={() => setSelectedCategory('all')}
-            sx={{
-              borderRadius: '6px', fontSize: '0.75rem', height: 32,
-              backgroundColor: selectedCategory === 'all' ? '#111827' : '#F3F4F6',
-              color: selectedCategory === 'all' ? '#fff' : '#374151',
-              '&:hover': { backgroundColor: selectedCategory === 'all' ? '#111827' : '#E5E7EB' },
-              transition: 'all 0.15s ease',
-            }}
-          />
-          {categoryOrder.map((key) => (
-            <Chip
+      {/* 分类标签行 */}
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
+        {['all', ...categoryOrder].map((key) => {
+          const isActive = selectedCategory === key;
+          const label = key === 'all' ? '全部' : categoryLabels[key];
+          return (
+            <Box
               key={key}
-              label={categoryLabels[key]}
               onClick={() => setSelectedCategory(key)}
               sx={{
-                borderRadius: '6px', fontSize: '0.75rem', height: 32,
-                backgroundColor: selectedCategory === key ? categoryColors[key].bg : '#F3F4F6',
-                color: selectedCategory === key ? categoryColors[key].color : '#374151',
-                '&:hover': { backgroundColor: selectedCategory === key ? categoryColors[key].bg : '#E5E7EB' },
-                transition: 'all 0.15s ease',
+                px: 1.75,
+                py: 0.75,
+                fontSize: '0.8125rem',
+                color: isActive ? '#1A1A1A' : '#666',
+                backgroundColor: isActive ? '#F0F0F0' : 'transparent',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: isActive ? 500 : 400,
+                transition: 'all 0.2s',
+                '&:hover': { backgroundColor: isActive ? '#F0F0F0' : '#F0F0F0' },
               }}
-            />
-          ))}
-        </Box>
+            >
+              {label}
+            </Box>
+          );
+        })}
       </Box>
 
-      {/* 技能列表 — WorkBuddy 风格列表式布局 */}
-      {grouped.map(([category, items]) => (
-        <Box key={category} sx={{ mb: 2.5 }}>
-          {/* 类别标题行 */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, px: 0.5 }}>
+      {/* 技能卡片网格 */}
+      {activeTab === 'market' && selectedCategory === 'all' ? (
+        // 全部 + 无分类筛选：按分类分区展示
+        grouped.map(([category, items]) => (
+          <Box key={category} sx={{ mb: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <Box sx={{
+                width: 3,
+                height: 14,
+                borderRadius: 0.5,
+                backgroundColor: categoryColors[category].color,
+              }} />
+              <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: '#1A1A1A' }}>
+                {categoryLabels[category]}
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: '#D1D5DB' }}>
+                {items.length}
+              </Typography>
+            </Box>
             <Box sx={{
-              width: 3, height: 14, borderRadius: 0.5,
-              backgroundColor: categoryColors[category].color,
-            }} />
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {categoryLabels[category]}
-            </Typography>
-            <Typography sx={{ fontSize: '0.65rem', color: '#D1D5DB' }}>
-              {items.length}
-            </Typography>
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 2,
+            }}>
+              {items.map(renderSkillCard)}
+            </Box>
           </Box>
-
-          {/* 列表行 */}
-          <Paper elevation={0} sx={{ borderRadius: 1.5, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-            {items.map((skill, index) => {
-              const autoInfo = skill.automationTaskType ? automationMap[skill.automationTaskType] : undefined;
-              const hasAutomation = !!autoInfo;
-              const isRunning = skill.automationTaskType ? runningTaskTypes.has(skill.automationTaskType as TaskType) : false;
-              const isTriggering = skill.automationTaskType ? triggeringTypes.has(skill.automationTaskType as TaskType) : false;
-              const isLast = index === items.length - 1;
-
-              return (
-                <Box
-                  key={skill.id}
-                  onClick={() => handleNavigateToDetail(skill)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    px: 2,
-                    py: 1.5,
-                    cursor: 'pointer',
-                    transition: 'background-color 0.12s ease',
-                    borderBottom: isLast ? 'none' : '1px solid #F3F4F6',
-                    '&:hover': {
-                      backgroundColor: '#FAFAFA',
-                      '& .row-chevron': { opacity: 1, transform: 'translateX(0)' },
-                    },
-                  }}
-                >
-                  {/* 左侧：图标 */}
-                  <Box sx={{
-                    width: 32, height: 32, borderRadius: 1,
-                    backgroundColor: categoryColors[skill.category].bg,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: categoryColors[skill.category].color,
-                    flexShrink: 0,
-                    position: 'relative',
-                  }}>
-                    {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 18 }} />}
-                    {hasAutomation && (
-                      <Box sx={{
-                        position: 'absolute',
-                        top: -3,
-                        right: -3,
-                        width: 7,
-                        height: 7,
-                        borderRadius: '50%',
-                        backgroundColor: isRunning ? '#2563EB' : '#059669',
-                        border: '2px solid #fff',
-                        ...(isRunning ? { animation: 'pulse-dot 1.2s ease-in-out infinite' } : {}),
-                      }} />
-                    )}
-                  </Box>
-
-                  {/* 中间：信息区 */}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    {/* 第一行：技能名称 + 状态 badge + 自定义 badge */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
-                      <Typography sx={{ fontWeight: 600, color: '#111827', fontSize: '0.8125rem', lineHeight: 1.4 }}>
-                        {skill.name}
-                      </Typography>
-                      {renderStatusBadge(skill)}
-                      {skill.source === 'user' && (
-                        <Chip
-                          label="自定义"
-                          size="small"
-                          sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: '#FAF5FF', color: '#7C3AED', ml: 0.5 }}
-                        />
-                      )}
-                    </Box>
-                    {/* 第二行：描述 */}
-                    <Typography sx={{
-                      color: '#6B7280',
-                      fontSize: '0.7rem',
-                      lineHeight: 1.4,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      mt: 0.25,
-                    }}>
-                      {skill.desc}
-                    </Typography>
-                    {/* 第三行（可选）：触发词 + 最近执行状态 */}
-                    {(skill.trigger || (skill.automationTaskType && latestExecByType[skill.automationTaskType])) && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.25 }}>
-                        {skill.trigger && (
-                          <Typography sx={{ fontSize: '0.6rem', color: '#B0B0B0', fontStyle: 'italic' }}>
-                            {skill.trigger}
-                          </Typography>
-                        )}
-                        {renderLatestExec(skill)}
-                      </Box>
-                    )}
-                  </Box>
-
-                  {/* 右侧：操作区 */}
-                  {skill.status === 'available' ? (
-                    <Tooltip title="启用技能">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleActivateSkill(skill.id, e)}
-                        sx={{
-                          flexShrink: 0,
-                          width: 28,
-                          height: 28,
-                          color: '#2563EB',
-                          '&:hover': { backgroundColor: '#EFF6FF' },
-                        }}
-                      >
-                        <PlayArrowIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
-                    </Tooltip>
-                  ) : hasAutomation ? (
-                    <Tooltip title={isRunning ? '执行中...' : '立即执行'}>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleTriggerAutomation(skill, e)}
-                        disabled={isRunning || isTriggering}
-                        sx={{
-                          flexShrink: 0,
-                          width: 28,
-                          height: 28,
-                          color: isRunning ? '#2563EB' : '#059669',
-                          '&:hover': { backgroundColor: '#ECFDF5' },
-                        }}
-                      >
-                        {isRunning || isTriggering ? (
-                          <CircularProgress size={14} sx={{ color: '#2563EB' }} />
-                        ) : (
-                          <PlayArrowIcon sx={{ fontSize: 16 }} />
-                        )}
-                      </IconButton>
-                    </Tooltip>
-                  ) : (
-                    <ChevronRightIcon
-                      className="row-chevron"
-                      sx={{ fontSize: 18, color: '#9CA3AF', opacity: 0, transform: 'translateX(-4px)', transition: 'all 0.15s ease', flexShrink: 0 }}
-                    />
-                  )}
-                </Box>
-              );
-            })}
-          </Paper>
+        ))
+      ) : (
+        // 已安装Tab / 选了分类：直接展示扁平网格
+        <Box sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 2,
+        }}>
+          {filteredSkills.map(renderSkillCard)}
         </Box>
-      ))}
+      )}
 
       {/* 无结果提示 */}
       {filteredSkills.length === 0 && (
@@ -636,7 +687,7 @@ const SkillsPage: React.FC = () => {
         }}
       />
 
-      {/* 执行结果 Toast */}
+      {/* Toast */}
       <Snackbar
         open={toast.open}
         autoHideDuration={3000}
@@ -712,7 +763,6 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
     });
 
     onAdded(newSkill.name);
-    // 重置表单
     setForm({ name: '', desc: '', icon: 'Extension', category: 'tool', trigger: '', path: '/', tags: '' });
     onClose();
   };
