@@ -20,6 +20,7 @@ export { PRIMARY, SECONDARY, BORDER, BG_LIGHT, BG_PAGE, WHITE, RADIUS, CHAT_COLO
 // Vite 构建时 inlineDynamicImports 已将全部代码打包到单文件，无需代码分割
 import DashboardPage from './pages/DashboardPage';
 import SkillsPage from './pages/SkillsPage';
+import SkillDetailPage from './pages/SkillDetailPage';
 import AgentPage from './pages/AgentPage';
 import WarehousesPage from './pages/WarehousesPage';
 import InTransitPage from './pages/InTransitPage';
@@ -418,6 +419,7 @@ const MainLayout: React.FC = () => {
                 <Routes>
                   <Route path="/" element={<DashboardPage />} />
                   <Route path="/skills" element={<SkillsPage />} />
+                  <Route path="/skills/:skillId" element={<SkillDetailPage />} />
                   <Route path="/agent" element={<AgentPage />} />
                   <Route path="/warehouses" element={<WarehousesPage />} />
                   <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
@@ -434,8 +436,8 @@ const MainLayout: React.FC = () => {
         </Box>
       </Box>
 
-      {/* AI 对话框 — 固定在页面中下方，自动化和 Agent 页面隐藏 */}
-      {!location.pathname.startsWith('/automation') && !location.pathname.startsWith('/agent') && (
+      {/* AI 对话框 — 固定在页面中下方，自动化/Agent/技能页面隐藏 */}
+      {showChatBar && (
         <Box
           sx={{
             position: 'fixed',

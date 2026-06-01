@@ -1,12 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box, CircularProgress } from '@mui/material';
+import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box, Divider } from '@mui/material';
 import { Skill } from '../../types/skill';
-import { DEFAULT_SKILLS } from '../../types/skill';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import InputIcon from '@mui/icons-material/Input';
-import OutputIcon from '@mui/icons-material/Output';
-import BarChartIcon from '@mui/icons-material/BarChart';
+import { ICON_MAP } from '../../types/skill';
+import { getAllSkills } from '../../stores/skillStore';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 
 interface SkillSelectorProps {
   anchorEl: HTMLElement | null;
@@ -14,17 +11,12 @@ interface SkillSelectorProps {
   onClose: () => void;
 }
 
-const ICON_MAP: Record<string, React.ReactNode> = {
-  'Analytics': <AnalyticsIcon sx={{ fontSize: 20, color: '#6B7280' }} />,
-  'LocalShipping': <LocalShippingIcon sx={{ fontSize: 20, color: '#6B7280' }} />,
-  'Input': <InputIcon sx={{ fontSize: 20, color: '#6B7280' }} />,
-  'Output': <OutputIcon sx={{ fontSize: 20, color: '#6B7280' }} />,
-  'BarChart': <BarChartIcon sx={{ fontSize: 20, color: '#6B7280' }} />,
-};
-
 export function SkillSelector({ anchorEl, onSelect, onClose }: SkillSelectorProps) {
   const [filterText, setFilterText] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
+
+  // 从 skillStore 获取所有技能
+  const allSkills = getAllSkills();
 
   // Close on click outside
   useEffect(() => {
@@ -48,10 +40,11 @@ export function SkillSelector({ anchorEl, onSelect, onClose }: SkillSelectorProp
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const filteredSkills = DEFAULT_SKILLS.filter(skill =>
+  const filteredSkills = allSkills.filter(skill =>
     skill.name.toLowerCase().includes(filterText.toLowerCase()) ||
-    skill.description.toLowerCase().includes(filterText.toLowerCase()) ||
-    skill.category.toLowerCase().includes(filterText.toLowerCase())
+    skill.desc.toLowerCase().includes(filterText.toLowerCase()) ||
+    skill.category.toLowerCase().includes(filterText.toLowerCase()) ||
+    (skill.trigger || '').toLowerCase().includes(filterText.toLowerCase())
   );
 
   if (!anchorEl) return null;
@@ -76,6 +69,27 @@ export function SkillSelector({ anchorEl, onSelect, onClose }: SkillSelectorProp
         boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.1)',
       }}
     >
+      {/* 搜索输入 */}
+      <Box sx={{ p: 1, borderBottom: '1px solid #F3F4F6' }}>
+        <input
+          type="text"
+          placeholder="搜索技能..."
+          value={filterText}
+          onChange={(e) => setFilterText(e.target.value)}
+          autoFocus
+          style={{
+            width: '100%',
+            border: 'none',
+            outline: 'none',
+            fontSize: 13,
+            padding: '4px 8px',
+            backgroundColor: '#F9FAFB',
+            borderRadius: 6,
+            color: '#111827',
+          }}
+        />
+      </Box>
+
       {filteredSkills.length === 0 ? (
         <Box sx={{ p: 2, textAlign: 'center' }}>
           <Typography sx={{ fontSize: 13, color: '#9CA3AF' }}>未找到匹配的技能</Typography>
@@ -99,7 +113,7 @@ export function SkillSelector({ anchorEl, onSelect, onClose }: SkillSelectorProp
               }}
             >
               <ListItemIcon sx={{ minWidth: 36 }}>
-                {ICON_MAP[skill.icon] || <AnalyticsIcon sx={{ fontSize: 20, color: '#6B7280' }} />}
+                {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 20, color: '#6B7280' }} />}
               </ListItemIcon>
               <ListItemText
                 primary={
@@ -109,7 +123,7 @@ export function SkillSelector({ anchorEl, onSelect, onClose }: SkillSelectorProp
                 }
                 secondary={
                   <Typography sx={{ fontSize: 11, color: '#9CA3AF', mt: 0.25 }}>
-                    {skill.description}
+                    {skill.desc}
                   </Typography>
                 }
               />

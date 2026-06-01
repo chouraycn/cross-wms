@@ -6,7 +6,7 @@ import type { Plugin } from 'vite'
 /**
  * 修复 file:// 协议下的白屏问题
  * 1. 移除 crossorigin 属性（file:// 下会导致加载失败）
- * 2. 保留 type="module"（构建产物包含 import.meta，必须运行在 module 上下文）
+ * 2. 将 type="module" 改为 defer（file:// 下 WKWebView 不支持 ES Module）
  * 3. 移除无意义的 modulepreload（file:// 下无意义）
  */
 function removeCrossorigin(): Plugin {
@@ -19,7 +19,8 @@ function removeCrossorigin(): Plugin {
           let source = typeof chunk.source === 'string' ? chunk.source : ''
           // 1. 移除 crossorigin 属性（file:// 下加载失败）
           source = source.replace(/\s+crossorigin(?:="[^"]*")?/g, '')
-          // 2. 保留 type="module"（不改为 defer，因为产物包含 import.meta 语法）
+          // 2. 将 type="module" 改为 defer（file:// 下 WKWebView 不支持 ES Module）
+          source = source.replace(/ type="module"/g, ' defer')
           // 3. 去掉 modulepreload（file:// 下无意义）
           source = source.replace(/<link\s+rel="modulepreload"[^>]*>/g, '')
           chunk.source = source

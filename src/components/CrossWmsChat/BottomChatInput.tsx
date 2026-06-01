@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { Box, TextField, IconButton, Paper, Chip, Fade } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { Box, TextField, IconButton, Paper, Chip, Fade, Menu, MenuItem, Typography, Divider, ListItemIcon } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import AppsIcon from '@mui/icons-material/Apps';
 import { useChat } from '../../hooks/useChat';
 import { ChatPanel } from './ChatPanel';
 import { Skill } from '../../types/skill';
@@ -24,9 +26,11 @@ interface BottomChatInputProps {
 }
 
 export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputProps) {
+  const navigate = useNavigate();
   const [showSkills, setShowSkills] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [skillsMenuAnchor, setSkillsMenuAnchor] = useState<HTMLElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { isLoading, inputValue, setInputValue, sendMessage } = useChat(
@@ -46,6 +50,7 @@ export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputPro
   const handleSkillSelect = (skill: Skill) => {
     setSelectedSkill(skill);
     setShowSkills(false);
+    setSkillsMenuAnchor(null);
     setInputValue(prev => prev + `[${skill.name}] `);
     setTimeout(() => inputRef.current?.focus(), 0);
   };
@@ -120,10 +125,10 @@ export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputPro
           transition: 'background-color 0.2s ease',
         }}
       >
-        {/* 技能选择按钮 */}
+        {/* 技能选择按钮 — 点击弹出下拉菜单 */}
         <IconButton
           size="small"
-          onClick={(e) => { e.stopPropagation(); setShowSkills(!showSkills); }}
+          onClick={(e) => { e.stopPropagation(); setSkillsMenuAnchor(e.currentTarget); }}
           sx={{
             p: 0.5,
             color: selectedSkill ? PRIMARY : SECONDARY,
@@ -175,6 +180,42 @@ export function BottomChatInput({ session, onSessionUpdate }: BottomChatInputPro
           <SendIcon sx={{ fontSize: 18 }} />
         </IconButton>
       </Box>
+
+      {/* 技能下拉菜单：快速选择 + 查看全部 */}
+      <Menu
+        anchorEl={skillsMenuAnchor}
+        open={!!skillsMenuAnchor}
+        onClose={() => setSkillsMenuAnchor(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        PaperProps={{
+          sx: { width: 240 },
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            setSkillsMenuAnchor(null);
+            setShowSkills(true);
+          }}
+        >
+          <ListItemIcon>
+            <AppsIcon sx={{ fontSize: 18, color: '#6B7280' }} />
+          </ListItemIcon>
+          <Typography sx={{ fontSize: 13 }}>快速选择技能</Typography>
+        </MenuItem>
+        <Divider />
+        <MenuItem
+          onClick={() => {
+            setSkillsMenuAnchor(null);
+            navigate('/skills');
+          }}
+        >
+          <ListItemIcon>
+            <AppsIcon sx={{ fontSize: 18, color: '#6B7280' }} />
+          </ListItemIcon>
+          <Typography sx={{ fontSize: 13, color: '#6B7280' }}>查看全部技能 →</Typography>
+        </MenuItem>
+      </Menu>
 
       {/* 技能选择下拉 */}
       {showSkills && (
