@@ -36,8 +36,11 @@ function saveUserSkills(skills: Skill[]): void {
   try {
     const userSkills = skills.filter((s) => s.source === 'user');
     localStorage.setItem(STORAGE_KEY, JSON.stringify(userSkills));
-  } catch {
-    // 存储满或不可用时静默失败
+  } catch (e) {
+    console.error(`[${STORAGE_KEY}] 保存失败:`, e);
+    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+      window.dispatchEvent(new CustomEvent('crosswms-storage-warning', { detail: { key: STORAGE_KEY } }));
+    }
   }
 }
 
@@ -57,7 +60,12 @@ function loadBuiltinPatches(): Record<string, Skill['status']> {
 function saveBuiltinPatches(): void {
   try {
     localStorage.setItem(BUILTIN_PATCHES_KEY, JSON.stringify(builtinStatusPatches));
-  } catch { /* ignore */ }
+  } catch (e) {
+    console.error(`[${BUILTIN_PATCHES_KEY}] 保存失败:`, e);
+    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+      window.dispatchEvent(new CustomEvent('crosswms-storage-warning', { detail: { key: BUILTIN_PATCHES_KEY } }));
+    }
+  }
 }
 
 // ====== 内存存储 ======

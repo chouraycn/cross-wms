@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box, IconButton } from '@mui/material';
+import { CssBaseline, Box, IconButton, Snackbar, Alert } from '@mui/material';
 import MenuOpenOutlinedIcon from '@mui/icons-material/MenuOpenOutlined';
 import Sidebar, { SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from './components/Layout/Sidebar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
@@ -29,6 +29,7 @@ import TencentDocsPage from './pages/TencentDocsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import AutomationPage from './pages/AutomationPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 /** Global MUI Theme */
 const theme = createTheme({
@@ -313,6 +314,18 @@ const MainLayout: React.FC = () => {
     };
   }, []);
 
+  // P0-1: localStorage 配额告警全局监听
+  const [storageWarning, setStorageWarning] = useState<string | null>(null);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const keyLabel = detail?.key ? detail.key.replace('crosswms-', '') : '未知';
+      setStorageWarning(`本地存储空间不足（${keyLabel}），部分数据可能无法保存。建议清理旧数据。`);
+    };
+    window.addEventListener('crosswms-storage-warning', handler);
+    return () => window.removeEventListener('crosswms-storage-warning', handler);
+  }, []);
+
   // 系统红黄绿按钮区域高度由 CSS 变量 --pw-top 控制（frameless 模式下 JS 注入 33px）
   // 两侧（Sidebar + 工具栏）均使用 calc(40px + var(--pw-top, 0px)) 统一高度
   return (
@@ -429,6 +442,7 @@ const MainLayout: React.FC = () => {
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/automation" element={<AutomationPage />} />
+                  <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </ErrorBoundary>
             </Box>
@@ -454,6 +468,23 @@ const MainLayout: React.FC = () => {
 
       {/* 自动更新通知 — 左下角 */}
       <UpdateNotification />
+
+      {/* P0-1: localStorage 配额告警 Snackbar */}
+      <Snackbar
+        open={Boolean(storageWarning)}
+        autoHideDuration={8000}
+        onClose={() => setStorageWarning(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity="warning"
+          variant="filled"
+          onClose={() => setStorageWarning(null)}
+          sx={{ width: '100%', maxWidth: 480 }}
+        >
+          {storageWarning}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

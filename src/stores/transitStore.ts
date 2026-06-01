@@ -27,8 +27,11 @@ function loadFromStorage(): TransitOrder[] {
 function saveToStorage(data: TransitOrder[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {
-    // 存储满或不可用时静默失败
+  } catch (e) {
+    console.error(`[${STORAGE_KEY}] 保存失败:`, e);
+    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+      window.dispatchEvent(new CustomEvent('crosswms-storage-warning', { detail: { key: STORAGE_KEY } }));
+    }
   }
 }
 

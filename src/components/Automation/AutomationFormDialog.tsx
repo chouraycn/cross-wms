@@ -1,0 +1,470 @@
+/**
+ * AutomationFormDialog — 创建/编辑对话框
+ *
+ * 纯展示组件，接收表单数据和回调
+ */
+
+import React from 'react';
+import {
+  Box,
+  Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Divider,
+  Chip,
+  InputAdornment,
+} from '@mui/material';
+import BoltIcon from '@mui/icons-material/Bolt';
+import SyncIcon from '@mui/icons-material/Sync';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import WarningIcon from '@mui/icons-material/Warning';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import RepeatIcon from '@mui/icons-material/Repeat';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
+import EventBusyIcon from '@mui/icons-material/EventBusy';
+
+import type { TaskType, FreqType, TaskConfig, ActionType } from '../../services/automationEngine';
+import {
+  TASK_TYPE_COLORS,
+  ACTION_CHAIN_OPTIONS,
+  WEEKDAY_LABELS,
+  WEEKDAY_ORDER,
+} from './sharedConstants';
+
+// ===================== Props =====================
+
+export interface AutomationFormDialogProps {
+  open: boolean;
+  editingId: string | null;
+  formName: string;
+  formPrompt: string;
+  formTaskType: TaskType;
+  formTaskConfig: TaskConfig;
+  formScheduleType: 'recurring' | 'once';
+  formFreq: FreqType;
+  formHour: number;
+  formMinute: number;
+  formWeekdays: string[];
+  formScheduledAt: string;
+  formValidFrom: string;
+  formValidUntil: string;
+  formErrors: Record<string, string>;
+  onFieldChange: (field: string, value: any) => void;
+  onToggleWeekday: (day: string) => void;
+  onToggleActionChain: (action: ActionType) => void;
+  onSave: () => void;
+  onClose: () => void;
+}
+
+// ===================== Component =====================
+
+const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
+  open,
+  editingId,
+  formName,
+  formPrompt,
+  formTaskType,
+  formTaskConfig,
+  formScheduleType,
+  formFreq,
+  formHour,
+  formMinute,
+  formWeekdays,
+  formScheduledAt,
+  formValidFrom,
+  formValidUntil,
+  formErrors,
+  onFieldChange,
+  onToggleWeekday,
+  onToggleActionChain,
+  onSave,
+  onClose,
+}) => {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: '12px',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+        },
+      }}
+    >
+      <DialogTitle sx={{ pb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: 1.5,
+              backgroundColor: '#111827',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+            }}
+          >
+            <BoltIcon sx={{ fontSize: 18 }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontWeight: 600, color: '#111827', fontSize: '0.9375rem' }}>
+              {editingId ? '编辑自动化' : '新建自动化'}
+            </Typography>
+            <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
+              配置自动化调度参数
+            </Typography>
+          </Box>
+        </Box>
+      </DialogTitle>
+      <DialogContent sx={{ pt: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* 名称 */}
+          <TextField
+            label="名称"
+            size="small"
+            fullWidth
+            placeholder="例如：每日库存同步"
+            value={formName}
+            onChange={(e) => { onFieldChange('formName', e.target.value); onFieldChange('formErrors', { ...formErrors, name: '' }); }}
+            error={Boolean(formErrors.name)}
+            helperText={formErrors.name}
+            sx={{
+              '& .MuiOutlinedInput-root': { fontSize: '0.8125rem', borderRadius: '8px' },
+              '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+            }}
+          />
+
+          {/* 任务类型选择器 */}
+          <FormControl size="small" fullWidth>
+            <InputLabel sx={{ fontSize: '0.8125rem' }}>任务类型</InputLabel>
+            <Select
+              value={formTaskType}
+              label="任务类型"
+              onChange={(e) => onFieldChange('formTaskType', e.target.value as TaskType)}
+              sx={{ fontSize: '0.8125rem', borderRadius: '8px' }}
+            >
+              <MenuItem value="data-sync">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <SyncIcon sx={{ fontSize: 16, color: TASK_TYPE_COLORS['data-sync'] }} />
+                  数据同步
+                </Box>
+              </MenuItem>
+              <MenuItem value="inventory-snapshot">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CameraAltIcon sx={{ fontSize: 16, color: TASK_TYPE_COLORS['inventory-snapshot'] }} />
+                  库存快照
+                </Box>
+              </MenuItem>
+              <MenuItem value="report-gen">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AssessmentIcon sx={{ fontSize: 16, color: TASK_TYPE_COLORS['report-gen'] }} />
+                  报表生成
+                </Box>
+              </MenuItem>
+              <MenuItem value="volume-alert">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <WarningIcon sx={{ fontSize: 16, color: TASK_TYPE_COLORS['volume-alert'] }} />
+                  容积率预警
+                </Box>
+              </MenuItem>
+              <MenuItem value="custom">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AccountTreeIcon sx={{ fontSize: 16, color: TASK_TYPE_COLORS['custom'] }} />
+                  自定义动作链
+                </Box>
+              </MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* volume-alert 专用配置 */}
+          {formTaskType === 'volume-alert' && (
+            <TextField
+              label="容积率预警阈值（%）"
+              type="number"
+              size="small"
+              fullWidth
+              value={formTaskConfig.threshold ?? 85}
+              onChange={(e) => {
+                const val = Math.max(0, Math.min(100, parseInt(e.target.value, 10) || 0));
+                onFieldChange('formTaskConfig', { ...formTaskConfig, threshold: val });
+              }}
+              inputProps={{ min: 0, max: 100 }}
+              sx={{
+                '& .MuiOutlinedInput-root': { fontSize: '0.8125rem', borderRadius: '8px' },
+                '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+              }}
+            />
+          )}
+
+          {/* custom 任务动作链配置 */}
+          {formTaskType === 'custom' && (
+            <Box>
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 1 }}>
+                动作链（按顺序执行）
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {ACTION_CHAIN_OPTIONS.map((opt) => {
+                  const isSelected = (formTaskConfig.actionChain || []).includes(opt.value);
+                  return (
+                    <Chip
+                      key={opt.value}
+                      icon={<Box sx={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: isSelected ? '#fff' : '#9CA3AF', ml: 0.5 }} />}
+                      label={opt.label}
+                      size="small"
+                      onClick={() => onToggleActionChain(opt.value)}
+                      sx={{
+                        fontSize: '0.7rem',
+                        height: 26,
+                        backgroundColor: isSelected ? '#111827' : '#F3F4F6',
+                        color: isSelected ? '#fff' : '#374151',
+                        '&:hover': { backgroundColor: isSelected ? '#374151' : '#E5E7EB' },
+                        transition: 'all 0.15s ease',
+                      }}
+                    />
+                  );
+                })}
+              </Box>
+              {/* 已选动作链排序显示 */}
+              {formTaskConfig.actionChain && formTaskConfig.actionChain.length > 0 && (
+                <Box sx={{ mt: 1, display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF', mr: 0.5 }}>执行顺序:</Typography>
+                  {formTaskConfig.actionChain.map((action, i) => (
+                    <React.Fragment key={action}>
+                      {i > 0 && <Typography sx={{ fontSize: '0.65rem', color: '#D1D5DB' }}>→</Typography>}
+                      <Chip
+                        label={ACTION_CHAIN_OPTIONS.find((o) => o.value === action)?.label || action}
+                        size="small"
+                        sx={{ height: 18, fontSize: '0.6rem', backgroundColor: '#111827', color: '#fff' }}
+                      />
+                    </React.Fragment>
+                  ))}
+                </Box>
+              )}
+            </Box>
+          )}
+
+          {/* 任务指令 */}
+          <TextField
+            label="指令"
+            size="small"
+            fullWidth
+            multiline
+            rows={2}
+            placeholder="描述此任务需要执行的操作"
+            value={formPrompt}
+            onChange={(e) => { onFieldChange('formPrompt', e.target.value); onFieldChange('formErrors', { ...formErrors, prompt: '' }); }}
+            error={Boolean(formErrors.prompt)}
+            helperText={formErrors.prompt}
+            sx={{
+              '& .MuiOutlinedInput-root': { fontSize: '0.8125rem', borderRadius: '8px' },
+              '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+            }}
+          />
+
+          <Divider />
+
+          {/* 调度类型 */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Chip
+              icon={<RepeatIcon sx={{ fontSize: 14 }} />}
+              label="周期执行"
+              onClick={() => onFieldChange('formScheduleType', 'recurring')}
+              sx={{
+                fontSize: '0.75rem',
+                backgroundColor: formScheduleType === 'recurring' ? '#111827' : '#F3F4F6',
+                color: formScheduleType === 'recurring' ? '#fff' : '#374151',
+                '&:hover': { backgroundColor: formScheduleType === 'recurring' ? '#374151' : '#E5E7EB' },
+              }}
+            />
+            <Chip
+              icon={<CalendarTodayIcon sx={{ fontSize: 14 }} />}
+              label="一次性"
+              onClick={() => onFieldChange('formScheduleType', 'once')}
+              sx={{
+                fontSize: '0.75rem',
+                backgroundColor: formScheduleType === 'once' ? '#111827' : '#F3F4F6',
+                color: formScheduleType === 'once' ? '#fff' : '#374151',
+                '&:hover': { backgroundColor: formScheduleType === 'once' ? '#374151' : '#E5E7EB' },
+              }}
+            />
+          </Box>
+
+          {/* 周期调度配置 */}
+          {formScheduleType === 'recurring' && (
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+              <FormControl size="small" sx={{ minWidth: 100 }}>
+                <InputLabel sx={{ fontSize: '0.8125rem' }}>频率</InputLabel>
+                <Select
+                  value={formFreq}
+                  label="频率"
+                  onChange={(e) => onFieldChange('formFreq', e.target.value as FreqType)}
+                  sx={{ fontSize: '0.8125rem', borderRadius: '8px' }}
+                >
+                  <MenuItem value="HOURLY">每小时</MenuItem>
+                  <MenuItem value="DAILY">每天</MenuItem>
+                  <MenuItem value="WEEKLY">每周</MenuItem>
+                  <MenuItem value="MONTHLY">每月</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                label="时"
+                type="number"
+                size="small"
+                value={formHour}
+                onChange={(e) => onFieldChange('formHour', Math.max(0, Math.min(23, parseInt(e.target.value, 10) || 0)))}
+                inputProps={{ min: 0, max: 23, style: { fontSize: '0.8125rem', width: 44, textAlign: 'center' } }}
+                sx={{ '& .MuiInputLabel-root': { fontSize: '0.8125rem' } }}
+              />
+              <TextField
+                label="分"
+                type="number"
+                size="small"
+                value={formMinute}
+                onChange={(e) => onFieldChange('formMinute', Math.max(0, Math.min(59, parseInt(e.target.value, 10) || 0)))}
+                inputProps={{ min: 0, max: 59, style: { fontSize: '0.8125rem', width: 44, textAlign: 'center' } }}
+                sx={{ '& .MuiInputLabel-root': { fontSize: '0.8125rem' } }}
+              />
+            </Box>
+          )}
+
+          {/* 每周选择 */}
+          {formScheduleType === 'recurring' && formFreq === 'WEEKLY' && (
+            <Box>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                {WEEKDAY_ORDER.map((day) => (
+                  <Chip
+                    key={day}
+                    label={WEEKDAY_LABELS[day]}
+                    size="small"
+                    onClick={() => onToggleWeekday(day)}
+                    sx={{
+                      fontSize: '0.65rem',
+                      height: 26,
+                      minWidth: 32,
+                      backgroundColor: formWeekdays.includes(day) ? '#111827' : '#F3F4F6',
+                      color: formWeekdays.includes(day) ? '#fff' : '#374151',
+                      '&:hover': { backgroundColor: formWeekdays.includes(day) ? '#374151' : '#E5E7EB' },
+                    }}
+                  />
+                ))}
+              </Box>
+              {formErrors.weekdays && (
+                <Typography variant="caption" sx={{ color: '#EF4444', mt: 0.5, fontSize: '0.65rem' }}>
+                  {formErrors.weekdays}
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          {/* 一次性调度配置 */}
+          {formScheduleType === 'once' && (
+            <TextField
+              label="执行时间"
+              type="datetime-local"
+              size="small"
+              fullWidth
+              value={formScheduledAt}
+              onChange={(e) => { onFieldChange('formScheduledAt', e.target.value); onFieldChange('formErrors', { ...formErrors, scheduledAt: '' }); }}
+              error={Boolean(formErrors.scheduledAt)}
+              helperText={formErrors.scheduledAt}
+              InputLabelProps={{ shrink: true }}
+              sx={{
+                '& .MuiOutlinedInput-root': { fontSize: '0.8125rem', borderRadius: '8px' },
+                '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+              }}
+            />
+          )}
+
+          <Divider />
+
+          {/* 有效期 */}
+          <Box>
+            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 500, mb: 1 }}>
+              有效期（可选）
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <TextField
+                label="开始日期"
+                type="date"
+                size="small"
+                value={formValidFrom}
+                onChange={(e) => onFieldChange('formValidFrom', e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={{
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': { fontSize: '0.8125rem', borderRadius: '8px' },
+                  '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EventAvailableIcon sx={{ fontSize: 16, color: '#9CA3AF' }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                label="结束日期"
+                type="date"
+                size="small"
+                value={formValidUntil}
+                onChange={(e) => onFieldChange('formValidUntil', e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                sx={{
+                  flex: 1,
+                  '& .MuiOutlinedInput-root': { fontSize: '0.8125rem', borderRadius: '8px' },
+                  '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EventBusyIcon sx={{ fontSize: 16, color: '#9CA3AF' }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+          </Box>
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button
+          onClick={onClose}
+          sx={{ color: '#6B7280', textTransform: 'none', fontSize: '0.8125rem' }}
+        >
+          取消
+        </Button>
+        <Button
+          variant="contained"
+          onClick={onSave}
+          sx={{
+            backgroundColor: '#111827',
+            '&:hover': { backgroundColor: '#374151' },
+            textTransform: 'none',
+            borderRadius: '8px',
+            fontSize: '0.8125rem',
+            fontWeight: 500,
+          }}
+        >
+          {editingId ? '保存修改' : '创建'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export default AutomationFormDialog;
