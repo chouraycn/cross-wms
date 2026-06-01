@@ -19,7 +19,6 @@ import type {
   KpiData,
 } from '../types';
 import { dashboardApi } from '../services/dashboardApi';
-import { transitStatusDistribution as defaultTransitStatusDistribution } from '../data/mockData';
 import { calcOverallByVolume } from '../utils/volumeCalculator';
 
 export interface DashboardData {
@@ -58,9 +57,9 @@ export function useDashboardData(options: UseDashboardDataOptions = {}): Dashboa
     todayOutboundCount: 0,
     inventoryDepth: 0,
   });
-  const [transitStatusDistribution, setTransitStatusDistribution] = useState(
-    defaultTransitStatusDistribution
-  );
+  const [transitStatusDistribution, setTransitStatusDistribution] = useState<
+    Array<{ name: string; value: number; color: string }>
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

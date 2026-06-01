@@ -4,9 +4,9 @@ import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { subscribeWarehouses } from '../../stores/warehouseStore';
-import { mockInboundRecords, mockOutboundRecords } from '../../data/mockData';
+import { dashboardApi } from '../../services/dashboardApi';
 import { exportToCsv } from '../../utils/exportCsv';
-import type { Warehouse } from '../../types';
+import type { Warehouse, InboundRecord, OutboundRecord } from '../../types';
 import dayjs from 'dayjs';
 
 /**
@@ -40,7 +40,7 @@ function mapToCurrentYear(dateStr: string): string {
 }
 
 /** 生成热力图数据 */
-function generateHeatmapData(days: number, warehouses: Warehouse[]) {
+function generateHeatmapData(days: number, warehouses: Warehouse[], inboundRecords: InboundRecord[], outboundRecords: OutboundRecord[]) {
   const whList = warehouses.map((w) => ({ id: w.id, name: w.name }));
   const dates: string[] = [];
   const dateLabels: string[] = [];
@@ -87,8 +87,8 @@ function generateHeatmapData(days: number, warehouses: Warehouse[]) {
     hasRealData.add(key);
   };
 
-  mockInboundRecords.forEach((r) => addRecord(r.warehouseId, r.createdAt, r.quantity, 'in'));
-  mockOutboundRecords.forEach((r) => addRecord(r.warehouseId, r.createdAt, r.quantity, 'out'));
+  inboundRecords.forEach((r) => addRecord(r.warehouseId, r.createdAt, r.quantity, 'in'));
+  outboundRecords.forEach((r) => addRecord(r.warehouseId, r.createdAt, r.quantity, 'out'));
 
   // 为没有真实数据的日期生成模拟数据（仅当天数≥90时启用，避免小范围视图数据失真）
   if (days >= 90) {
@@ -223,13 +223,37 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
   } | null>(null);
 
   const [allWarehouses, setAllWarehouses] = useState<Warehouse[]>([]);
+  const [inboundRecords, setInboundRecords] = useState<InboundRecord[]>([]);
+  const [outboundRecords, setOutboundRecords] = useState<OutboundRecord[]>([]);
 
   useEffect(() => {
     const unsub = subscribeWarehouses(setAllWarehouses);
     return unsub;
   }, []);
 
-  const rawData = useMemo(() => generateHeatmapData(days, allWarehouses), [days, allWarehouses]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchRecords() {
+      try {
+        const [inbound, outbound] = await Promise.all([
+          dashboardApi.getInboundRecords(),
+          dashboardApi.getOutboundRecords(),
+        ]);
+        if (!cancelled) {
+          setInboundRecords(inbound);
+          setOutboundRecords(outbound);
+        }
+      } catch (err) {
+        console.warn('热力图数据加载失败:', err);
+      }
+    }
+
+    fetchRecords();
+    return () => { cancelled = true; };
+  }, []);
+
+  const rawData = useMemo(() => generateHeatmapData(days, allWarehouses, inboundRecords, outboundRecords), [days, allWarehouses, inboundRecords, outboundRecords]);
 
   const { warehouses, dates, dateLabels, dateDisplays, monthLabels, data } = useMemo(() => {
     if (warehouseId === ALL_WAREHOUSES) return rawData;

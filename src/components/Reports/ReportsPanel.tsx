@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -9,6 +9,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Button,
+  Alert,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import {
@@ -28,18 +29,85 @@ import {
   PolarRadiusAxis,
   Radar,
 } from 'recharts';
-import { mockMonthlyTrend, mockWarehouses, mockInventory } from '../../data/mockData';
+import { dashboardApi } from '../../services/dashboardApi';
+import type { MonthlyTrend, Warehouse, InventoryItem } from '../../types';
 
 type TimeRange = 'month' | 'quarter' | 'year';
 
 const ReportsPanel: React.FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('year');
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<MonthlyTrend[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 从 dashboardApi 加载数据
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const [warehousesData, inventoryData] = await Promise.all([
+          dashboardApi.getWarehouses(),
+          dashboardApi.getInventory(),
+        ]);
+
+        if (!cancelled) {
+          setWarehouses(warehousesData);
+          setInventory(inventoryData);
+
+          // 基于入库/出库记录生成月度趋势（或 fallback 到 mock）
+          try {
+            const [inboundRecords, outboundRecords] = await Promise.all([
+              dashboardApi.getInboundRecords(),
+              dashboardApi.getOutboundRecords(),
+            ]);
+
+            // 按月聚合
+            const monthMap = new Map<string, { inbound: number; outbound: number }>();
+            inboundRecords.forEach((r) => {
+              const month = r.createdAt?.substring(0, 7) || '未知';
+              if (!monthMap.has(month)) monthMap.set(month, { inbound: 0, outbound: 0 });
+              monthMap.get(month)!.inbound += r.quantity;
+            });
+            outboundRecords.forEach((r) => {
+              const month = r.createdAt?.substring(0, 7) || '未知';
+              if (!monthMap.has(month)) monthMap.set(month, { inbound: 0, outbound: 0 });
+              monthMap.get(month)!.outbound += r.quantity;
+            });
+
+            const trend: MonthlyTrend[] = Array.from(monthMap.entries())
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([month, data]) => ({ month, inbound: data.inbound, outbound: data.outbound }));
+
+            if (!cancelled) setMonthlyTrend(trend.length > 0 ? trend : []);
+          } catch {
+            // 降级到空数据
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : '未知错误';
+          setError(`报表数据加载失败: ${message}`);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    fetchData();
+    return () => { cancelled = true; };
+  }, []);
 
   /** 根据时间范围过滤月度趋势 */
   const getFilteredTrend = () => {
-    if (timeRange === 'month') return mockMonthlyTrend.slice(-1);
-    if (timeRange === 'quarter') return mockMonthlyTrend.slice(-3);
-    return mockMonthlyTrend;
+    if (timeRange === 'month') return monthlyTrend.slice(-1);
+    if (timeRange === 'quarter') return monthlyTrend.slice(-3);
+    return monthlyTrend;
   };
 
   const trendData = getFilteredTrend().map((d) => ({
@@ -49,7 +117,7 @@ const ReportsPanel: React.FC = () => {
   }));
 
   /** 仓库容积数据 */
-  const warehouseVolumeData = mockWarehouses.map((wh) => ({
+  const warehouseVolumeData = warehouses.map((wh) => ({
     name: wh.name,
     已用容积: wh.usedItems || wh.usedVolume,
     空闲容积: parseFloat(((wh.totalItems || wh.totalVolume) - (wh.usedItems || wh.usedVolume)).toFixed(1)),
@@ -57,7 +125,7 @@ const ReportsPanel: React.FC = () => {
 
   /** 按品类的库存容积分布 */
   const categoryData: Record<string, number> = {};
-  mockInventory.forEach((item) => {
+  inventory.forEach((item) => {
     categoryData[item.category] = (categoryData[item.category] ?? 0) + item.totalVolume;
   });
   const categoryChartData = Object.entries(categoryData)
@@ -91,6 +159,20 @@ const ReportsPanel: React.FC = () => {
 
   return (
     <Box>
+      {/* Loading State */}
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Typography variant="body2" color="text.secondary">正在加载报表数据...</Typography>
+        </Box>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       {/* Time Range Selector */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>统计报表</Typography>

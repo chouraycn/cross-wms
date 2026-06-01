@@ -24,7 +24,7 @@ import { useNavigate } from 'react-router-dom';
 import { getWarehouseById as getStoreWarehouseById } from '../../stores/warehouseStore';
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';
 import type { Warehouse, InboundRecord, OutboundRecord, InventoryItem } from '../../types';
-import { warehouseApi } from '../../services/warehouseApi';
+import { dashboardApi } from '../../services/dashboardApi';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -57,17 +57,18 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
   const [outboundRecords, setOutboundRecords] = useState<OutboundRecord[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
 
-  // 数据获取：优先 API → 降级 localStorage → 最后 mock
+  // 数据获取：优先 dashboardApi → 降级 localStorage store
   useEffect(() => {
     let cancelled = false;
 
     async function fetchData() {
       setLoading(true);
 
-      // 1. 尝试从 API 获取仓库详情
+      // 1. 尝试从 dashboardApi 获取仓库列表
       let wh: Warehouse | null = null;
       try {
-        wh = await warehouseApi.getWarehouseById(warehouseId);
+        const allWarehouses = await dashboardApi.getWarehouses();
+        wh = allWarehouses.find((w) => w.id === warehouseId) || null;
       } catch {
         // API 不可用，继续降级
       }
@@ -80,26 +81,25 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
       if (cancelled) return;
       setWarehouse(wh);
 
-      // 3. 获取关联数据（API 或 mock）
+      // 3. 获取关联数据（dashboardApi 内部已含 try-catch + fallback）
       if (wh) {
         try {
-          const [inbound, outbound, inventory] = await Promise.all([
-            warehouseApi.getInboundRecords(warehouseId),
-            warehouseApi.getOutboundRecords(warehouseId),
-            warehouseApi.getInventory(warehouseId),
+          const [inbound, outbound, inv] = await Promise.all([
+            dashboardApi.getInboundRecords(),
+            dashboardApi.getOutboundRecords(),
+            dashboardApi.getInventory(),
           ]);
           if (!cancelled) {
-            setInboundRecords(inbound);
-            setOutboundRecords(outbound);
-            setInventory(inventory);
+            setInboundRecords(inbound.filter((r: InboundRecord) => r.warehouseId === warehouseId));
+            setOutboundRecords(outbound.filter((r: OutboundRecord) => r.warehouseId === warehouseId));
+            setInventory(inv.filter((i: InventoryItem) => i.warehouseId === warehouseId));
           }
         } catch {
-          // 降级到 mock 数据
-          const { mockInboundRecords, mockOutboundRecords, mockInventory } = await import('../../data/mockData');
+          // dashboardApi 内部已有 fallback，此处理论上不会触发
           if (!cancelled) {
-            setInboundRecords(mockInboundRecords.filter((r: InboundRecord) => r.warehouseId === warehouseId));
-            setOutboundRecords(mockOutboundRecords.filter((r: OutboundRecord) => r.warehouseId === warehouseId));
-            setInventory(mockInventory.filter((i: InventoryItem) => i.warehouseId === warehouseId));
+            setInboundRecords([]);
+            setOutboundRecords([]);
+            setInventory([]);
           }
         }
       }
