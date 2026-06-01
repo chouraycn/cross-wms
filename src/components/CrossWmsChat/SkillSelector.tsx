@@ -9,14 +9,24 @@ interface SkillSelectorProps {
   anchorEl: HTMLElement | null;
   onSelect: (skill: Skill) => void;
   onClose: () => void;
+  /** 初始过滤词（如斜杠命令后的文本） */
+  initialFilter?: string;
+  /** 是否只显示 active 状态的技能 */
+  activeOnly?: boolean;
 }
 
-export function SkillSelector({ anchorEl, onSelect, onClose }: SkillSelectorProps) {
-  const [filterText, setFilterText] = useState('');
+export function SkillSelector({ anchorEl, onSelect, onClose, initialFilter = '', activeOnly = false }: SkillSelectorProps) {
+  const [filterText, setFilterText] = useState(initialFilter);
   const listRef = useRef<HTMLDivElement>(null);
+
+  // 当 initialFilter 变化时同步
+  useEffect(() => {
+    setFilterText(initialFilter);
+  }, [initialFilter]);
 
   // 从 skillStore 获取所有技能
   const allSkills = getAllSkills();
+  const skills = activeOnly ? allSkills.filter((s) => s.status === 'active') : allSkills;
 
   // Close on click outside
   useEffect(() => {
@@ -40,11 +50,12 @@ export function SkillSelector({ anchorEl, onSelect, onClose }: SkillSelectorProp
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const filteredSkills = allSkills.filter(skill =>
+  const filteredSkills = skills.filter(skill =>
     skill.name.toLowerCase().includes(filterText.toLowerCase()) ||
     skill.desc.toLowerCase().includes(filterText.toLowerCase()) ||
     skill.category.toLowerCase().includes(filterText.toLowerCase()) ||
-    (skill.trigger || '').toLowerCase().includes(filterText.toLowerCase())
+    (skill.trigger || '').toLowerCase().includes(filterText.toLowerCase()) ||
+    (skill.tags || []).some(t => t.toLowerCase().includes(filterText.toLowerCase()))
   );
 
   if (!anchorEl) return null;
@@ -123,7 +134,7 @@ export function SkillSelector({ anchorEl, onSelect, onClose }: SkillSelectorProp
                 }
                 secondary={
                   <Typography sx={{ fontSize: 11, color: '#9CA3AF', mt: 0.25 }}>
-                    {skill.desc}
+                    {skill.trigger ? `${skill.trigger} · ` : ''}{skill.desc}
                   </Typography>
                 }
               />

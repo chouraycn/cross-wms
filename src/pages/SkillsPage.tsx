@@ -19,7 +19,7 @@ import ExtensionIcon from '@mui/icons-material/Extension';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { loadAutomations, automationEngine } from '../services/automationEngine';
 import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automationEngine';
-import { getAllSkills, addSkill, removeSkill, onSkillsChange } from '../stores/skillStore';
+import { getAllSkills, addSkill, removeSkill, onSkillsChange, setSkillStatus } from '../stores/skillStore';
 import { ICON_MAP, AVAILABLE_ICON_NAMES } from '../types/skill';
 import type { Skill } from '../types/skill';
 
@@ -177,6 +177,14 @@ const SkillsPage: React.FC = () => {
         return next;
       });
     }
+  };
+
+  // 启用技能
+  const handleActivateSkill = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSkillStatus(id, 'active');
+    setSkillVersion((v) => v + 1);
+    setToast({ open: true, msg: '技能已启用', severity: 'success' });
   };
 
   // 过滤技能
@@ -555,7 +563,23 @@ const SkillsPage: React.FC = () => {
                   </Box>
 
                   {/* 右侧：操作区 */}
-                  {hasAutomation ? (
+                  {skill.status === 'available' ? (
+                    <Tooltip title="启用技能">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleActivateSkill(skill.id, e)}
+                        sx={{
+                          flexShrink: 0,
+                          width: 28,
+                          height: 28,
+                          color: '#2563EB',
+                          '&:hover': { backgroundColor: '#EFF6FF' },
+                        }}
+                      >
+                        <PlayArrowIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Tooltip>
+                  ) : hasAutomation ? (
                     <Tooltip title={isRunning ? '执行中...' : '立即执行'}>
                       <IconButton
                         size="small"
