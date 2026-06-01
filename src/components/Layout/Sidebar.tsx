@@ -885,27 +885,49 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         overflow: 'visible', // 允许收起按钮显示在 paddingTop 区域
         display: 'flex',
         flexDirection: 'column',
-        borderRight: collapsed ? '1px solid #E5E7EB' : 'none',
+        borderRight: 'none',
       }}
     >
-      {/* 收起按钮 — 仅展开时显示，绝对定位到 paddingTop 区域（与系统按钮平行对齐） */}
+      {/* 收起/展开按钮 — WorkBuddy 风格，始终在 Sidebar 内部 */}
+      {collapsed && onToggle && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 'calc(56px / 2 - 12px)',
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            zIndex: 1,
+          }}
+        >
+          <IconButton
+            onClick={onToggle}
+            size="small"
+            sx={{
+              color: '#6B7280',
+              borderRadius: '6px',
+              p: 0.5,
+              '&:hover': { backgroundColor: '#e0e0e0' },
+              '&:focus': { outline: 'none' },
+            }}
+          >
+            <MenuOpenIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Box>
+      )}
       {!collapsed && onToggle && (
         <IconButton
           onClick={onToggle}
           size="small"
           sx={{
             position: 'absolute',
-            // 展开按钮在侧边栏顶部居中（相对于侧边栏，非系统按钮区域）
-            top: 'calc(40px / 2 - 9px)',
+            top: 'calc(56px / 2 - 9px)',
             right: 8,
             color: '#6B7280',
             borderRadius: '6px',
             p: 0.5,
-            backgroundColor: 'transparent',
-            border: 'none',
-            boxShadow: 'none',
-            zIndex: 1,
-            '&:hover': { backgroundColor: '#f5f5f5' },
+            '&:hover': { backgroundColor: '#e0e0e0' },
             '&:focus': { outline: 'none' },
           }}
         >
