@@ -3,6 +3,23 @@ import cors from 'cors';
 import { initDb, getSessions, createSession, getSessionMessages, addMessage, deleteSession } from './db.js';
 import { v4 as uuidv4 } from 'uuid';
 import { query } from '@tencent-ai/agent-sdk';
+import path from 'path';
+
+/**
+ * 获取 Node.js 可执行路径，用于 agent-sdk 内部 spawn。
+ * DMG 模式下 node 不在系统 PATH 中，需要从 CROSSWMS_NODE_PATH 或 process.execPath 推导。
+ */
+function getNodeExecutable(): string | undefined {
+  // 1. 环境变量显式指定
+  const envNode = process.env.CROSSWMS_NODE_PATH;
+  if (envNode) return envNode;
+  // 2. 如果 process.execPath 指向真正的 node（而非 PyInstaller 的 python）
+  if (process.execPath.endsWith('node') || process.execPath.endsWith('node.exe')) {
+    return process.execPath;
+  }
+  // 3. 从 PATH 中找
+  return undefined;
+}
 
 const app = express();
 app.use(cors());
@@ -64,13 +81,25 @@ app.post('/api/chat', async (req, res) => {
     // 调用 Agent SDK 进行流式对话
     let fullContent = '';
     try {
+      // 构建 query 选项，DMG 模式下需指定 node 可执行路径
+      const queryOptions: Record<string, unknown> = {
+        model,
+        permissionMode: 'bypassPermissions',
+        cwd: process.cwd(),
+      };
+      const nodeExe = getNodeExecutable();
+      if (nodeExe) {
+        // 将 node 目录加入 PATH，确保 agent-sdk 内部 spawn('node', ...) 能找到
+        const nodeDir = path.dirname(nodeExe);
+        const currentPath = process.env.PATH || '';
+        if (!currentPath.split(path.delimiter).includes(nodeDir)) {
+          process.env.PATH = nodeDir + path.delimiter + currentPath;
+        }
+      }
+
       const queryInstance = query({
         prompt: message,
-        options: {
-          model,
-          permissionMode: 'bypassPermissions',
-          cwd: process.cwd(),
-        },
+        options: queryOptions,
       });
 
       // 处理流式响应
