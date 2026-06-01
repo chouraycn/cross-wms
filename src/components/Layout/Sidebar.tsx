@@ -873,10 +873,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     <Box
       sx={{
         width,
-        height: '100vh',
-        boxSizing: 'border-box',
-        // frameless=False 使用原生标题栏，无需 --pw-top 避让
-        paddingTop: 0,
+        height: 'calc(100vh - var(--pw-top, 0px))',
+        boxSizing: 'content-box', // padding-top 向外扩展，不压缩内容
+        // frameless 模式下 --pw-top: 28px 避让红黄绿按钮区域
+        paddingTop: 'var(--pw-top, 0px)',
         position: 'sticky',
         top: 0,
         zIndex: 1200,
@@ -935,7 +935,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         </IconButton>
       )}
 
-      {/* Logo 区域 */}
+      {/* Logo 区域 — frameless 模式下支持拖拽窗口 */}
       <Box
         sx={{
           px: collapsed ? 0.5 : 2,
@@ -945,7 +945,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           justifyContent: collapsed ? 'center' : 'space-between',
           gap: 1.25,
           flexShrink: 0,
-        }}
+          WebkitAppRegion: 'drag',  // frameless 窗口拖拽
+        } as React.CSSProperties}
       >
         {/* Logo 图标 — 收起时单独居中，展开时与文字同行 */}
         <Box
@@ -958,7 +959,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             justifyContent: 'center',
             cursor: 'pointer',
             borderRadius: '6px',
-          }}
+            WebkitAppRegion: 'no-drag',  // Logo 可点击，不触发拖拽
+          } as React.CSSProperties}
           onClick={() => navigate('/')}
         >
           <svg
