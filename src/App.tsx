@@ -2,7 +2,6 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box, IconButton } from '@mui/material';
-import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import MenuOpenOutlinedIcon from '@mui/icons-material/MenuOpenOutlined';
 import Sidebar, { SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from './components/Layout/Sidebar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
@@ -221,7 +220,7 @@ const MainLayout: React.FC = () => {
     } catch { return false; }
   });
   // pywebview 检测 — frameless 模式下需要 --pw-top 避让红黄绿按钮
-  // 红黄绿按钮下移5px，总避让高度 = 28(默认) + 5 = 33px
+  // 红黄绿按钮下移5px + 右移5px，总避让高度 = 28(默认) + 5 = 33px
   const [isPy, setIsPy] = useState(() => isPyWebView());
   useEffect(() => {
     if (isPy) {
@@ -236,7 +235,7 @@ const MainLayout: React.FC = () => {
             const saved = await api.get_traffic_light_offset();
             const offset = typeof saved === 'string' ? JSON.parse(saved) : saved;
             if (offset?.ok !== false) {
-              const x = offset?.offset_x ?? 0;
+              const x = offset?.offset_x ?? 5;
               const y = offset?.offset_y ?? 5;
               await api.set_traffic_light_offset(x, y);
             }
@@ -311,30 +310,14 @@ const MainLayout: React.FC = () => {
             alignItems: 'flex-end',
             justifyContent: 'space-between',
             px: 1,
-            // frameless 模式下 --pw-top: 33px 避让红黄绿按钮区域（含5px下移）
+            // frameless 模式下 --pw-top: 33px 避让红黄绿按钮区域（含5px下移+5px右移）
             height: 'calc(40px + var(--pw-top, 0px))',
             pb: '4px',
             flexShrink: 0,
             position: 'relative', // 为绝对定位的按钮提供参照
           }}
         >
-          {/* 收起状态下的展开按钮 — fixed 定位在白色内容区域，与红黄绿按钮平行 */}
-          {sidebarCollapsed && (
-            <IconButton
-              onClick={toggleSidebar}
-              size="small"
-              sx={{
-                backgroundColor: '#F0F0F0',
-                color: '#6B7280',
-                borderRadius: '6px',
-                p: 0.5,
-                '&:hover': { backgroundColor: '#e0e0e0' },
-                '&:focus': { outline: 'none' },
-              }}
-            >
-              <MenuOutlinedIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-          )}
+          {/* 展开/收起按钮已移至 Sidebar 组件内始终显示 */}
 
           {/* 右侧：功能按钮 */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, marginLeft: 'auto' }}>
