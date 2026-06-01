@@ -26,7 +26,7 @@ const SidebarToggle: React.FC<SidebarToggleProps> = ({
       size="small"
       sx={{
         position: 'fixed',
-        top: '6px',
+        top: '7px',
         left: collapsed ? collapsedWidth + 8 : 'auto',
         right: collapsed ? 'auto' : `calc(100vw - ${expandedWidth}px + 8px)`,
         zIndex: 1300,
