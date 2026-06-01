@@ -51,6 +51,10 @@ export interface Automation {
   taskType: TaskType;
   /** 任务配置 */
   taskConfig?: TaskConfig;
+  /** ISO 8601 date/datetime — 调度有效期开始（可选） */
+  validFrom?: string;
+  /** ISO 8601 date/datetime — 调度有效期结束（可选） */
+  validUntil?: string;
   createdAt: string;
   updatedAt: string;
   /** Last execution time */
@@ -553,6 +557,9 @@ class AutomationEngine implements AutomationEngineAPI {
 
     for (const auto of automations) {
       if (auto.status !== 'ACTIVE') continue;
+      // validFrom/validUntil 检查
+      if (auto.validFrom && new Date(auto.validFrom) > now) continue;
+      if (auto.validUntil && new Date(auto.validUntil) < now) continue;
       if (!auto.nextRunAt) continue;
 
       const nextRun = new Date(auto.nextRunAt);

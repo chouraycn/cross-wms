@@ -29,7 +29,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: '仪表盘', path: '/', icon: <DashboardOutlinedIcon /> },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon /> },
-  { label: '定时任务', path: '/automation', icon: <ScheduleIcon /> },
+  { label: '自动化', path: '/automation', icon: <ScheduleIcon /> },
   { label: 'Agent 应用', path: '/agent', icon: <SmartToyOutlinedIcon /> },
   { label: '仓库管理', path: '/warehouses', icon: <WarehouseOutlinedIcon /> },
   { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon /> },
