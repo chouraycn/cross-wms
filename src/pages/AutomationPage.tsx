@@ -136,6 +136,9 @@ const AutomationPage: React.FC = () => {
   const [formValidUntil, setFormValidUntil] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // Tab 切换
+  const [activeTab, setActiveTab] = useState<'my' | 'templates'>('my');
+
   // 是否从模板创建
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
@@ -452,319 +455,436 @@ const AutomationPage: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* 快速创建模板 */}
-      {automations.length === 0 && (
-        <Box sx={{ mb: 3 }}>
-          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: '#374151', mb: 1.5 }}>
-            快速创建
+      {/* Tab 切换 */}
+      <Box sx={{ display: 'flex', gap: 0, mb: 3, borderBottom: '1px solid #E5E7EB' }}>
+        <Box
+          onClick={() => setActiveTab('my')}
+          sx={{
+            px: 2.5,
+            py: 1.25,
+            cursor: 'pointer',
+            position: 'relative',
+            transition: 'color 0.15s ease',
+            color: activeTab === 'my' ? '#111827' : '#6B7280',
+            '&:hover': { color: '#111827' },
+            '&::after': activeTab === 'my' ? {
+              content: '""',
+              position: 'absolute',
+              bottom: -1,
+              left: 0,
+              right: 0,
+              height: 2,
+              backgroundColor: '#111827',
+              borderRadius: '1px 1px 0 0',
+            } : {},
+          }}
+        >
+          <Typography sx={{ fontSize: '0.8125rem', fontWeight: activeTab === 'my' ? 600 : 400 }}>
+            我的自动化
           </Typography>
-          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+        </Box>
+        <Box
+          onClick={() => setActiveTab('templates')}
+          sx={{
+            px: 2.5,
+            py: 1.25,
+            cursor: 'pointer',
+            position: 'relative',
+            transition: 'color 0.15s ease',
+            color: activeTab === 'templates' ? '#111827' : '#6B7280',
+            '&:hover': { color: '#111827' },
+            '&::after': activeTab === 'templates' ? {
+              content: '""',
+              position: 'absolute',
+              bottom: -1,
+              left: 0,
+              right: 0,
+              height: 2,
+              backgroundColor: '#111827',
+              borderRadius: '1px 1px 0 0',
+            } : {},
+          }}
+        >
+          <Typography sx={{ fontSize: '0.8125rem', fontWeight: activeTab === 'templates' ? 600 : 400 }}>
+            模板
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* ========== 模板栏目 ========== */}
+      {activeTab === 'templates' && (
+        <Box>
+          <Typography sx={{ fontSize: '0.8125rem', color: '#6B7280', mb: 2.5 }}>
+            选择模板快速创建自动化任务，点击即可生成
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 2 }}>
             {AUTOMATION_TEMPLATES.map((tpl) => {
               const tplColor = TASK_TYPE_COLORS[tpl.taskType];
+              const tplIcon = TEMPLATE_ICON_MAP[tpl.icon] || <CodeIcon sx={{ fontSize: 20 }} />;
               return (
                 <Card
                   key={tpl.id}
                   elevation={0}
-                  onClick={() => handleQuickCreate(tpl)}
                   sx={{
-                    flex: '1 1 200px',
-                    maxWidth: 280,
-                    cursor: 'pointer',
                     border: '1px solid #E5E7EB',
                     borderRadius: 2,
                     transition: 'all 0.15s ease',
+                    cursor: 'pointer',
                     '&:hover': {
                       borderColor: tplColor,
-                      boxShadow: `0 2px 8px ${tplColor}20`,
+                      boxShadow: `0 4px 12px ${tplColor}18`,
+                      transform: 'translateY(-1px)',
                     },
                   }}
+                  onClick={() => handleQuickCreate(tpl)}
                 >
-                  <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+                    {/* 头部：图标 + 名称 */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
                       <Box
                         sx={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 1,
-                          backgroundColor: `${tplColor}15`,
+                          width: 40,
+                          height: 40,
+                          borderRadius: 2,
+                          backgroundColor: `${tplColor}12`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           color: tplColor,
                         }}
                       >
-                        {TEMPLATE_ICON_MAP[tpl.icon] || <CodeIcon sx={{ fontSize: 16 }} />}
+                        {tplIcon}
                       </Box>
-                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: '#111827' }}>
-                        {tpl.name}
-                      </Typography>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+                          {tpl.name}
+                        </Typography>
+                        <Chip
+                          label={TASK_TYPE_LABELS[tpl.taskType]}
+                          size="small"
+                          sx={{
+                            height: 18,
+                            fontSize: '0.625rem',
+                            fontWeight: 500,
+                            backgroundColor: `${tplColor}12`,
+                            color: tplColor,
+                            mt: 0.25,
+                          }}
+                        />
+                      </Box>
                     </Box>
-                    <Typography sx={{ fontSize: '0.7rem', color: '#6B7280', lineHeight: 1.4 }}>
+                    {/* 描述 */}
+                    <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: 1.5, mb: 1.5 }}>
                       {tpl.description}
                     </Typography>
+                    {/* 默认调度 */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pt: 1.5, borderTop: '1px solid #F3F4F6' }}>
+                      <RepeatIcon sx={{ fontSize: 14, color: '#9CA3AF' }} />
+                      <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
+                        默认：{tpl.defaultSchedule.scheduleType === 'recurring'
+                          ? `${tpl.defaultSchedule.freq === 'HOURLY' ? '每小时' : tpl.defaultSchedule.freq === 'DAILY' ? '每天' : tpl.defaultSchedule.freq === 'WEEKLY' ? '每周' : '每月'}${tpl.defaultSchedule.freq !== 'HOURLY' ? ` ${String(tpl.defaultSchedule.hour).padStart(2, '0')}:${String(tpl.defaultSchedule.minute).padStart(2, '0')}` : ''}`
+                          : '一次性'}
+                      </Typography>
+                      <Box sx={{ flex: 1 }} />
+                      <Typography sx={{ fontSize: '0.7rem', color: tplColor, fontWeight: 500 }}>
+                        点击创建 →
+                      </Typography>
+                    </Box>
                   </CardContent>
                 </Card>
               );
             })}
           </Box>
+
+          {/* 自定义模板提示 */}
+          <Box sx={{ mt: 3, p: 2, backgroundColor: '#F9FAFB', borderRadius: 2, border: '1px dashed #E5E7EB' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CodeIcon sx={{ fontSize: 16, color: '#9CA3AF' }} />
+              <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                需要更多自定义？点击右上角「新建自动化」从头创建
+              </Typography>
+            </Box>
+          </Box>
         </Box>
       )}
 
-      {/* 统计 + 操作栏 */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Chip
-          icon={<PlayArrowIcon sx={{ fontSize: 16 }} />}
-          label={`${activeCount} 运行中`}
-          size="small"
-          sx={{ backgroundColor: '#ECFDF5', color: '#059669', fontWeight: 500, fontSize: '0.75rem' }}
-        />
-        <Chip
-          icon={<PauseIcon sx={{ fontSize: 16 }} />}
-          label={`${pausedCount} 已暂停`}
-          size="small"
-          sx={{ backgroundColor: '#FEF3C7', color: '#D97706', fontWeight: 500, fontSize: '0.75rem' }}
-        />
-        <Box sx={{ flex: 1 }} />
-        <TextField
-          size="small"
-          placeholder="搜索..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{
-            width: 180,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '8px',
-              backgroundColor: '#F9FAFB',
-              fontSize: '0.8125rem',
-              '& fieldset': { borderColor: '#E5E7EB' },
-              '&:hover fieldset': { borderColor: '#D1D5DB' },
-              '&.Mui-focused fieldset': { borderColor: '#111827' },
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ fontSize: 16, color: '#9CA3AF' }} />
-              </InputAdornment>
-            ),
-          }}
-        />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={openCreateDialog}
-          sx={{
-            backgroundColor: '#111827',
-            '&:hover': { backgroundColor: '#374151' },
-            textTransform: 'none',
-            borderRadius: '8px',
-            fontSize: '0.8125rem',
-            fontWeight: 500,
-          }}
-        >
-          新建自动化
-        </Button>
-      </Box>
+      {/* ========== 我的自动化栏目 ========== */}
+      {activeTab === 'my' && (
+        <>
+          {/* 统计 + 操作栏 */}
+          <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Chip
+              icon={<PlayArrowIcon sx={{ fontSize: 16 }} />}
+              label={`${activeCount} 运行中`}
+              size="small"
+              sx={{ backgroundColor: '#ECFDF5', color: '#059669', fontWeight: 500, fontSize: '0.75rem' }}
+            />
+            <Chip
+              icon={<PauseIcon sx={{ fontSize: 16 }} />}
+              label={`${pausedCount} 已暂停`}
+              size="small"
+              sx={{ backgroundColor: '#FEF3C7', color: '#D97706', fontWeight: 500, fontSize: '0.75rem' }}
+            />
+            <Box sx={{ flex: 1 }} />
+            <TextField
+              size="small"
+              placeholder="搜索..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{
+                width: 180,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  backgroundColor: '#F9FAFB',
+                  fontSize: '0.8125rem',
+                  '& fieldset': { borderColor: '#E5E7EB' },
+                  '&:hover fieldset': { borderColor: '#D1D5DB' },
+                  '&.Mui-focused fieldset': { borderColor: '#111827' },
+                },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ fontSize: 16, color: '#9CA3AF' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={openCreateDialog}
+              sx={{
+                backgroundColor: '#111827',
+                '&:hover': { backgroundColor: '#374151' },
+                textTransform: 'none',
+                borderRadius: '8px',
+                fontSize: '0.8125rem',
+                fontWeight: 500,
+              }}
+            >
+              新建自动化
+            </Button>
+          </Box>
 
-      {/* 任务列表 */}
-      {filtered.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <BoltIcon sx={{ fontSize: 48, color: '#D1D5DB', mb: 1.5 }} />
-          <Typography sx={{ fontSize: '0.9375rem', color: '#6B7280', mb: 0.5, fontWeight: 500 }}>
-            {automations.length === 0 ? '暂无自动化任务' : '未找到匹配的任务'}
-          </Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
-            {automations.length === 0 ? '点击上方模板快速创建，或「新建自动化」自定义' : '尝试调整搜索关键词'}
-          </Typography>
-        </Box>
-      ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {filtered.map((auto) => {
-            const isExpanded = expandedIds.has(auto.id);
-            const isTriggering = triggeringIds.has(auto.id);
-            const logs = executionLogs[auto.id] || [];
-            const taskColor = TASK_TYPE_COLORS[auto.taskType] || '#6B7280';
-            const isExpired = auto.validUntil && new Date(auto.validUntil) < new Date();
+          {/* 任务列表 */}
+          {filtered.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <BoltIcon sx={{ fontSize: 48, color: '#D1D5DB', mb: 1.5 }} />
+              <Typography sx={{ fontSize: '0.9375rem', color: '#6B7280', mb: 0.5, fontWeight: 500 }}>
+                {automations.length === 0 ? '暂无自动化任务' : '未找到匹配的任务'}
+              </Typography>
+              <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF', mb: 2 }}>
+                {automations.length === 0 ? '切换到「模板」Tab 快速创建' : '尝试调整搜索关键词'}
+              </Typography>
+              {automations.length === 0 && (
+                <Button
+                  variant="outlined"
+                  startIcon={<BoltIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => setActiveTab('templates')}
+                  sx={{
+                    textTransform: 'none',
+                    borderRadius: '8px',
+                    fontSize: '0.8125rem',
+                    borderColor: '#E5E7EB',
+                    color: '#374151',
+                    '&:hover': { borderColor: '#111827', backgroundColor: '#F9FAFB' },
+                  }}
+                >
+                  浏览模板
+                </Button>
+              )}
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {filtered.map((auto) => {
+                const isExpanded = expandedIds.has(auto.id);
+                const isTriggering = triggeringIds.has(auto.id);
+                const logs = executionLogs[auto.id] || [];
+                const taskColor = TASK_TYPE_COLORS[auto.taskType] || '#6B7280';
+                const isExpired = auto.validUntil && new Date(auto.validUntil) < new Date();
 
-            return (
-              <Card
-                key={auto.id}
-                elevation={0}
-                sx={{
-                  border: '1px solid #E5E7EB',
-                  borderRadius: 2,
-                  transition: 'all 0.15s ease',
-                  opacity: auto.status === 'PAUSED' ? 0.65 : isExpired ? 0.5 : 1,
-                  '&:hover': {
-                    borderColor: '#9CA3AF',
-                    boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-                  },
-                }}
-              >
-                <CardContent sx={{ py: 1.25, px: 2, '&:last-child': { pb: 1.25 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    {/* 图标 */}
-                    <Box
-                      sx={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 1.5,
-                        backgroundColor: auto.status === 'ACTIVE' ? `${taskColor}12` : '#F3F4F6',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        color: auto.status === 'ACTIVE' ? taskColor : '#9CA3AF',
-                      }}
-                    >
-                      {TASK_TYPE_ICONS[auto.taskType] || <CodeIcon sx={{ fontSize: 16 }} />}
-                    </Box>
-
-                    {/* 内容 */}
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        <Typography
+                return (
+                  <Card
+                    key={auto.id}
+                    elevation={0}
+                    sx={{
+                      border: '1px solid #E5E7EB',
+                      borderRadius: 2,
+                      transition: 'all 0.15s ease',
+                      opacity: auto.status === 'PAUSED' ? 0.65 : isExpired ? 0.5 : 1,
+                      '&:hover': {
+                        borderColor: '#9CA3AF',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ py: 1.25, px: 2, '&:last-child': { pb: 1.25 } }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        {/* 图标 */}
+                        <Box
                           sx={{
-                            fontSize: '0.8125rem',
-                            fontWeight: 600,
-                            color: '#111827',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                            width: 34,
+                            height: 34,
+                            borderRadius: 1.5,
+                            backgroundColor: auto.status === 'ACTIVE' ? `${taskColor}12` : '#F3F4F6',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            color: auto.status === 'ACTIVE' ? taskColor : '#9CA3AF',
                           }}
                         >
-                          {auto.name}
-                        </Typography>
-                        <Chip
-                          label={TASK_TYPE_LABELS[auto.taskType] || '自定义'}
-                          size="small"
-                          sx={{
-                            height: 18,
-                            fontSize: '0.625rem',
-                            fontWeight: 500,
-                            backgroundColor: `${taskColor}12`,
-                            color: taskColor,
-                          }}
-                        />
-                        <Chip
-                          label={auto.status === 'ACTIVE' ? '运行中' : '已暂停'}
-                          size="small"
-                          sx={{
-                            height: 18,
-                            fontSize: '0.625rem',
-                            fontWeight: 500,
-                            backgroundColor: auto.status === 'ACTIVE' ? '#ECFDF5' : '#FEF3C7',
-                            color: auto.status === 'ACTIVE' ? '#059669' : '#D97706',
-                          }}
-                        />
-                        {isExpired && (
-                          <Chip label="已过期" size="small" sx={{ height: 18, fontSize: '0.625rem', fontWeight: 500, backgroundColor: '#FEF2F2', color: '#EF4444' }} />
-                        )}
-                      </Box>
-                      <Typography sx={{ fontSize: '0.7rem', color: '#6B7280', mt: 0.15 }}>
-                        {auto.scheduleLabel}
-                        {auto.validFrom && ` · 自 ${auto.validFrom.slice(0, 10)}`}
-                        {auto.validUntil && ` · 至 ${auto.validUntil.slice(0, 10)}`}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 2, mt: 0.25 }}>
-                        {auto.nextRunAt && (
-                          <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <AccessTimeIcon sx={{ fontSize: 11 }} />
-                            下次: {new Date(auto.nextRunAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          {TASK_TYPE_ICONS[auto.taskType] || <CodeIcon sx={{ fontSize: 16 }} />}
+                        </Box>
+
+                        {/* 内容 */}
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                            <Typography
+                              sx={{
+                                fontSize: '0.8125rem',
+                                fontWeight: 600,
+                                color: '#111827',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {auto.name}
+                            </Typography>
+                            <Chip
+                              label={TASK_TYPE_LABELS[auto.taskType] || '自定义'}
+                              size="small"
+                              sx={{
+                                height: 18,
+                                fontSize: '0.625rem',
+                                fontWeight: 500,
+                                backgroundColor: `${taskColor}12`,
+                                color: taskColor,
+                              }}
+                            />
+                            <Chip
+                              label={auto.status === 'ACTIVE' ? '运行中' : '已暂停'}
+                              size="small"
+                              sx={{
+                                height: 18,
+                                fontSize: '0.625rem',
+                                fontWeight: 500,
+                                backgroundColor: auto.status === 'ACTIVE' ? '#ECFDF5' : '#FEF3C7',
+                                color: auto.status === 'ACTIVE' ? '#059669' : '#D97706',
+                              }}
+                            />
+                            {isExpired && (
+                              <Chip label="已过期" size="small" sx={{ height: 18, fontSize: '0.625rem', fontWeight: 500, backgroundColor: '#FEF2F2', color: '#EF4444' }} />
+                            )}
+                          </Box>
+                          <Typography sx={{ fontSize: '0.7rem', color: '#6B7280', mt: 0.15 }}>
+                            {auto.scheduleLabel}
+                            {auto.validFrom && ` · 自 ${auto.validFrom.slice(0, 10)}`}
+                            {auto.validUntil && ` · 至 ${auto.validUntil.slice(0, 10)}`}
                           </Typography>
-                        )}
-                        {auto.runCount > 0 && (
-                          <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>
-                            已执行 {auto.runCount} 次
-                          </Typography>
-                        )}
+                          <Box sx={{ display: 'flex', gap: 2, mt: 0.25 }}>
+                            {auto.nextRunAt && (
+                              <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <AccessTimeIcon sx={{ fontSize: 11 }} />
+                                下次: {new Date(auto.nextRunAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                              </Typography>
+                            )}
+                            {auto.runCount > 0 && (
+                              <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>
+                                已执行 {auto.runCount} 次
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+
+                        {/* 操作 */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                          <Tooltip title="立即执行">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleTriggerNow(auto.id)}
+                              disabled={isTriggering}
+                              sx={{
+                                color: taskColor,
+                                '&:hover': { backgroundColor: `${taskColor}10` },
+                                '&.Mui-disabled': { color: '#D1D5DB' },
+                              }}
+                            >
+                              {isTriggering ? (
+                                <SyncIcon sx={{ fontSize: 16, animation: 'spin 1s linear infinite' }} />
+                              ) : (
+                                <PlayArrowIcon sx={{ fontSize: 16 }} />
+                              )}
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={isExpanded ? '收起日志' : '查看日志'}>
+                            <IconButton
+                              size="small"
+                              onClick={() => toggleExpand(auto.id)}
+                              sx={{ color: '#9CA3AF' }}
+                            >
+                              {isExpanded ? <ExpandLessIcon sx={{ fontSize: 16 }} /> : <ExpandMoreIcon sx={{ fontSize: 16 }} />}
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={auto.status === 'ACTIVE' ? '暂停' : '启用'}>
+                            <Switch
+                              checked={auto.status === 'ACTIVE'}
+                              onChange={() => toggleStatus(auto.id)}
+                              size="small"
+                              sx={{
+                                '& .MuiSwitch-switchBase.Mui-checked': { color: '#059669' },
+                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#059669' },
+                              }}
+                            />
+                          </Tooltip>
+                          <Tooltip title="编辑">
+                            <IconButton size="small" onClick={() => openEditDialog(auto)} sx={{ color: '#9CA3AF' }}>
+                              <EditIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="删除">
+                            <IconButton
+                              size="small"
+                              onClick={() => deleteAutomation(auto.id)}
+                              sx={{ color: '#9CA3AF', '&:hover': { color: '#EF4444' } }}
+                            >
+                              <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                       </Box>
-                    </Box>
 
-                    {/* 操作 */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                      <Tooltip title="立即执行">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleTriggerNow(auto.id)}
-                          disabled={isTriggering}
-                          sx={{
-                            color: taskColor,
-                            '&:hover': { backgroundColor: `${taskColor}10` },
-                            '&.Mui-disabled': { color: '#D1D5DB' },
-                          }}
-                        >
-                          {isTriggering ? (
-                            <SyncIcon sx={{ fontSize: 16, animation: 'spin 1s linear infinite' }} />
-                          ) : (
-                            <PlayArrowIcon sx={{ fontSize: 16 }} />
-                          )}
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title={isExpanded ? '收起日志' : '查看日志'}>
-                        <IconButton
-                          size="small"
-                          onClick={() => toggleExpand(auto.id)}
-                          sx={{ color: '#9CA3AF' }}
-                        >
-                          {isExpanded ? <ExpandLessIcon sx={{ fontSize: 16 }} /> : <ExpandMoreIcon sx={{ fontSize: 16 }} />}
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title={auto.status === 'ACTIVE' ? '暂停' : '启用'}>
-                        <Switch
-                          checked={auto.status === 'ACTIVE'}
-                          onChange={() => toggleStatus(auto.id)}
-                          size="small"
-                          sx={{
-                            '& .MuiSwitch-switchBase.Mui-checked': { color: '#059669' },
-                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#059669' },
-                          }}
-                        />
-                      </Tooltip>
-                      <Tooltip title="编辑">
-                        <IconButton size="small" onClick={() => openEditDialog(auto)} sx={{ color: '#9CA3AF' }}>
-                          <EditIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="删除">
-                        <IconButton
-                          size="small"
-                          onClick={() => deleteAutomation(auto.id)}
-                          sx={{ color: '#9CA3AF', '&:hover': { color: '#EF4444' } }}
-                        >
-                          <DeleteOutlineIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </Box>
-
-                  {/* 执行中进度条 */}
-                  {isTriggering && (
-                    <Box sx={{ mt: 1 }}>
-                      <LinearProgress sx={{ height: 2, borderRadius: 1, backgroundColor: '#F3F4F6' }} />
-                    </Box>
-                  )}
-
-                  {/* 执行日志 */}
-                  <Collapse in={isExpanded} timeout="auto">
-                    <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid #F3F4F6' }}>
-                      <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF', fontWeight: 500, mb: 0.5 }}>
-                        最近执行记录
-                      </Typography>
-                      {logs.length === 0 ? (
-                        <Typography sx={{ fontSize: '0.65rem', color: '#D1D5DB', py: 1, textAlign: 'center' }}>
-                          暂无执行记录
-                        </Typography>
-                      ) : (
-                        logs.map(renderExecLog)
+                      {/* 执行中进度条 */}
+                      {isTriggering && (
+                        <Box sx={{ mt: 1 }}>
+                          <LinearProgress sx={{ height: 2, borderRadius: 1, backgroundColor: '#F3F4F6' }} />
+                        </Box>
                       )}
-                    </Box>
-                  </Collapse>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </Box>
+
+                      {/* 执行日志 */}
+                      <Collapse in={isExpanded} timeout="auto">
+                        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid #F3F4F6' }}>
+                          <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF', fontWeight: 500, mb: 0.5 }}>
+                            最近执行记录
+                          </Typography>
+                          {logs.length === 0 ? (
+                            <Typography sx={{ fontSize: '0.65rem', color: '#D1D5DB', py: 1, textAlign: 'center' }}>
+                              暂无执行记录
+                            </Typography>
+                          ) : (
+                            logs.map(renderExecLog)
+                          )}
+                        </Box>
+                      </Collapse>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </Box>
+          )}
+        </>
       )}
 
       {/* 创建/编辑对话框 — 简洁版，参照 WorkBuddy 样式 */}
