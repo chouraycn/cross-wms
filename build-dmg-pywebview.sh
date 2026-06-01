@@ -314,7 +314,7 @@ fi
 DATA_ARGS="--add-data $BUILD_DIR/frontend_dist:frontend_dist "
 DATA_ARGS="$DATA_ARGS --add-data $SERVER_BUILD_DIR:server_dist "
 DATA_ARGS="$DATA_ARGS --add-data $NODE_RUNTIME_DIR:node "
-DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:version.txt "
+DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:. "
 
 if [ -d "$AGENT_DIST" ]; then
   DATA_ARGS="$DATA_ARGS --add-data $AGENT_DIST:agent_dist "
