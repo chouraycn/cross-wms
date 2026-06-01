@@ -279,7 +279,8 @@ const MainLayout: React.FC = () => {
             alignItems: 'flex-end',
             justifyContent: 'space-between',
             px: 1,
-            height: 'calc(40px + var(--pw-top, 0px))',
+            // pywebview 环境使用原生标题栏，无需 --pw-top 避让
+            height: isPy ? '40px' : 'calc(40px)',
             pb: '4px',
             flexShrink: 0,
             position: 'relative', // 为绝对定位的按钮提供参照
@@ -292,7 +293,8 @@ const MainLayout: React.FC = () => {
               size="small"
               sx={{
                 position: 'fixed',
-                top: 'calc(var(--pw-top, 0px) / 2 - 9px)',
+                // pywebview 原生标题栏下，按钮与标题栏垂直居中
+                top: isPy ? 'calc(40px / 2 - 9px)' : 'calc(40px / 2 - 9px)',
                 // 白色内容区域：侧边栏收起宽度 68px + 间距 8px
                 left: '76px',
                 color: '#6B7280',

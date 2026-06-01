@@ -123,14 +123,8 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/frontend_dist"
 cp -r "$FRONTEND_DIST"/* "$BUILD_DIR/frontend_dist/"
 
-# 在构建时注入 pywebview CSS 变量（解决 DMG 只读文件系统无法运行时写入的问题）
-INJECTED_HTML="$BUILD_DIR/frontend_dist/index.html"
-if [ -f "$INJECTED_HTML" ]; then
-  # 使用 sed 注入 CSS，避免 Python 内存问题
-  sed -i '' 's|</head>|<style>:root { --pw-top: 28px; }</style>\
-</head>|' "$INJECTED_HTML"
-  echo "✅ pywebview CSS 变量已注入 index.html"
-fi
+# 注意：不再需要注入 --pw-top CSS 变量
+# 因为 frameless=False，pywebview 使用原生标题栏，红黄绿按钮会自动显示
 
 # 2.5 构建 Agent Web 前端（如果存在）
 AGENT_DIST="$BUILD_DIR/agent_dist"

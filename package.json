@@ -1,7 +1,7 @@
 {
   "name": "cross-wms",
   "private": true,
-  "version": "1.0.46",
+  "version": "1.0.47",
   "type": "module",
   "scripts": {
     "dev:server": "tsx watch server/index.ts",
@@ -44,6 +44,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/node": "^25.9.1",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@types/uuid": "^9.0.7",
@@ -57,7 +58,7 @@
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "tsx": "^4.6.2",
-    "typescript": "^5.2.2",
+    "typescript": "^5.9.3",
     "vite": "^7.1.11"
   },
   "build": {
