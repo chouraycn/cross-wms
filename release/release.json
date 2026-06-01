@@ -1,0 +1,7 @@
+{
+  "version": "1.0.47",
+  "pubDate": "2026-06-01",
+  "notes": "CrossWMS v1.0.47 发布\n- 修复DMG闪退问题（frameless=False + 手动.app包 + 路径修复）\n- 新增红黄绿按钮位置调整功能（Cocoa API + 设置页UI）\n- 修复资源路径解析（CROSSWMS_RESOURCES环境变量）\n- 修复Python未签名被AMFI拒绝问题",
+  "dmgUrl": "https://github.com/chouraycn/cross-wms/releases/download/v1.0.47/CrossWMS.dmg",
+  "minVersion": "1.0.0"
+}
