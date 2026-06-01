@@ -452,17 +452,7 @@ def check_dependencies():
     except Exception as e:
         errors.append(f"pywebview 不可用: {e}")
 
-    # 3. 检查端口 9988 是否可用（仅开发模式）
-    if not getattr(sys, 'frozen', False):
-        import socket
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            s.bind(('127.0.0.1', 9988))
-            log("[Check] ✅ 端口 9988 可用")
-        except OSError as e:
-            errors.append(f"端口 9988 被占用: {e}")
-        finally:
-            s.close()
+    # 3. 端口检查已移除（不再需要 HTTP 服务器，直接 file:// 加载）
 
     if errors:
         for e in errors:
@@ -1387,7 +1377,7 @@ def main():
     if getattr(sys, 'frozen', False):
         log(f"  sys._MEIPASS = {sys._MEIPASS}")
 
-    httpd = None  # HTTP 服务器对象，finally 中清理
+    httpd = None  # HTTP 服务器对象（仅 Agent Web 使用），finally 中清理
     agent_httpd = None  # Agent Web HTTP 服务器对象
     exit_code = 0
 
@@ -1395,29 +1385,12 @@ def main():
         # 0. 启动前依赖检查
         check_dependencies()
 
-        # 1. 获取前端 dist 目录路径
+        # 1. 获取前端 dist 目录路径，直接通过 file:// 协议加载
         frontend_path = get_index_path()
-        dist_dir = os.path.dirname(frontend_path)
-        log(f"[Frontend] index.html: {frontend_path}")
-        log(f"[Frontend] dist 目录: {dist_dir}")
+        frontend_url = f'file://{frontend_path}'
+        log(f"[Frontend] 通过 file:// 加载: {frontend_url}")
 
-        # 2. 启动本地 HTTP 服务器（替代 file://，解决 WKWebView ES Module 白屏问题）
-        # 使用固定端口 9988，确保 WKWebView localStorage origin 一致（否则每次随机端口导致数据丢失）
-        HTTP_PORT = 9988
-        httpd, http_port = start_http_server(dist_dir, HTTP_PORT)
-        frontend_url = f'http://127.0.0.1:{http_port}/'
-        log(f"[Frontend] 通过 HTTP 加载: {frontend_url}")
-
-        # 2.5 验证 HTTP 服务器已就绪（访问一次确认）
-        try:
-            health_req = urllib.request.Request(frontend_url, method='HEAD')
-            with urllib.request.urlopen(health_req, timeout=3) as resp:
-                log(f"[Frontend] HTTP 服务器就绪 (status={resp.status})")
-        except Exception as e:
-            log(f"[Frontend] ⚠️  HTTP 服务器健康检查失败: {e}")
-            # 不阻塞，继续尝试加载
-
-        # 3. 尝试启动 Node.js 主后端（可选，仅用于 AI 助手功能）
+        # 2. 尝试启动 Node.js 主后端（可选，仅用于 AI 助手功能）
         server_proc = start_server()
         if server_proc:
             # 非阻塞：等待后端就绪，但不阻塞前端加载
@@ -1428,7 +1401,7 @@ def main():
         else:
             log("[Server] ⚠️  Node.js 未找到，AI 助手将不可用")
 
-        # 3.5 尝试启动 Agent Web 后端和前端服务器
+        # 2.5 尝试启动 Agent Web 后端和前端服务器
         agent_server_proc = start_agent_server()
         if agent_server_proc:
             def _wait_agent_server():
@@ -1453,11 +1426,11 @@ def main():
         else:
             log("[AgentServer] ⚠️  Agent Web 后端未找到，Agent Web 将不可用")
 
-        # 4. 创建 pywebview 窗口，通过 HTTP 加载前端
+        # 3. 创建 pywebview 窗口，通过 file:// 加载前端
         api = Api()
         window = webview.create_window(
             title=APP_NAME,
-            url=frontend_url,       # http:// 协议，彻底解决 ES Module 白屏
+            url=frontend_url,       # file:// 协议，本地化加载（无需 HTTP 服务器）
             width=WIDTH,
             height=HEIGHT,
             min_size=MIN_SIZE,
@@ -1475,7 +1448,7 @@ def main():
 
         log("[Main] pywebview 窗口已创建，启动事件循环...")
 
-        # 5. 启动事件循环（阻塞直到窗口关闭）
+        # 4. 启动事件循环（阻塞直到窗口关闭）
         webview.start(debug=False, private_mode=False)
 
         log("[Main] CrossWMS 窗口已关闭，退出")
@@ -1487,16 +1460,7 @@ def main():
         log(traceback.format_exc())
         exit_code = 1
     finally:
-        # 6. 清理 HTTP 服务器
-        if httpd:
-            try:
-                httpd.shutdown()
-                httpd.server_close()
-                log("[HTTP Server] 已停止")
-            except Exception as e:
-                log(f"[HTTP Server] 停止失败: {e}")
-
-        # 6.5 清理 Agent Web HTTP 服务器
+        # 5. 清理 Agent Web HTTP 服务器
         if agent_httpd:
             try:
                 agent_httpd.shutdown()
@@ -1505,7 +1469,7 @@ def main():
             except Exception as e:
                 log(f"[Agent HTTP Server] 停止失败: {e}")
 
-        # 7. 确保后端服务器被停止
+        # 6. 确保后端服务器被停止
         stop_server()
         stop_agent_server()
         log(f"=== CrossWMS 退出 (exit_code={exit_code}) ===")

@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box, IconButton, Paper, Chip, CircularProgress, Typography,
-  Menu, MenuItem
+  Menu, MenuItem, Divider, ListItemIcon
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import AddIcon from '@mui/icons-material/Add';
 import MicIcon from '@mui/icons-material/Mic';
+import AppsIcon from '@mui/icons-material/Apps';
 import { useChat } from '../../hooks/useChat';
 import { Skill } from '../../types/skill';
 import { SkillSelector } from './SkillSelector';
@@ -35,6 +37,7 @@ const PERMISSION_OPTIONS = ['公开', '仅自己', '团队成员'];
 
 export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputProps) {
   const { settings } = useAppSettings();
+  const navigate = useNavigate();
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
@@ -58,6 +61,7 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
   const craftBtnRef = useRef<HTMLButtonElement>(null);
   const modelBtnRef = useRef<HTMLButtonElement>(null);
   const permissionBtnRef = useRef<HTMLButtonElement>(null);
+  const skillsBtnRef = useRef<HTMLButtonElement>(null);
 
   const { isLoading, sendMessage } = useChat(
     session?.id ? session : undefined,
@@ -303,10 +307,11 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
               <ArrowDropDownIcon sx={{ fontSize: 16, ml: 0.25 }} />
             </IconButton>
 
-            {/* Skills button */}
+            {/* Skills button — 点击弹出下拉菜单 */}
             <IconButton
+              ref={skillsBtnRef}
               size="small"
-              onClick={(e) => { e.stopPropagation(); setShowSkills(!showSkills); }}
+              onClick={(e) => { e.stopPropagation(); handleDropdownClick('skills', skillsBtnRef); }}
               sx={{
                 width: 'auto',
                 height: 32,
@@ -435,6 +440,44 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
           <MenuItem component="div" divider sx={{ mx: 0, my: 0.5, pointerEvents: 'none' }} />
           <MenuItem onClick={() => setActiveDropdown(null)}>
             添加模型
+          </MenuItem>
+        </Menu>
+
+        {/* MUI Menu: Skills - 快速选择 + 查看全部 */}
+        <Menu
+          anchorEl={skillsBtnRef.current}
+          open={activeDropdown === 'skills'}
+          onClose={() => setActiveDropdown(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          sx={{ mb: 0.5 }}
+          PaperProps={{
+            sx: { width: 280, maxHeight: 400 },
+          }}
+        >
+          {/* 快速选择：弹出 SkillSelector */}
+          <MenuItem
+            onClick={() => {
+              setActiveDropdown(null);
+              setShowSkills(true);
+            }}
+          >
+            <ListItemIcon>
+              <AppsIcon sx={{ fontSize: 18, color: '#6B7280' }} />
+            </ListItemIcon>
+            <Typography sx={{ fontSize: 13 }}>快速选择技能</Typography>
+          </MenuItem>
+          <Divider />
+          <MenuItem
+            onClick={() => {
+              setActiveDropdown(null);
+              navigate('/skills');
+            }}
+          >
+            <ListItemIcon>
+              <AppsIcon sx={{ fontSize: 18, color: '#6B7280' }} />
+            </ListItemIcon>
+            <Typography sx={{ fontSize: 13, color: '#6B7280' }}>查看全部技能 →</Typography>
           </MenuItem>
         </Menu>
 

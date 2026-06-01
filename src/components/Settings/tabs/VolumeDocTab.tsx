@@ -23,6 +23,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import DescriptionIcon from '@mui/icons-material/Description';
 import type { AppSettings, VolumeDocLinkItem } from '../../../contexts/AppSettingsContext';
+import { downloadVolumeTemplate } from '../../../utils/exportCsv';
 import { textFieldSx } from '../sharedStyles';
 
 // ===================== Props =====================
@@ -108,10 +109,7 @@ const VolumeDocTab: React.FC<VolumeDocTabProps> = ({
           size="small"
           startIcon={<DownloadOutlinedIcon />}
           onClick={() => {
-            // Dynamic import to avoid SSR issues
-            import('../../../utils/exportCsv').then((mod) => {
-              mod.downloadVolumeTemplate();
-            });
+            downloadVolumeTemplate();
           }}
           sx={{ borderColor: '#111827', color: '#111827', fontSize: '0.8rem', '&:hover': { borderColor: '#374151', backgroundColor: '#F9FAFB' } }}
         >
