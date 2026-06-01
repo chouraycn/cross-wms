@@ -899,7 +899,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           sx={{
             position: 'fixed',
             // 红黄绿下移5px后 Y 中心≈17px，按钮32px高 → top≈1px 居中于红黄绿
-            top: '1px',
+            // 再下移5px → top: 6px
+            top: '6px',
             // 收起时：在白色内容区域内，加白色玻璃效果
             // 展开时：在灰色侧边栏内靠右，无额外效果
             left: collapsed ? SIDEBAR_WIDTH_COLLAPSED + 8 : 'auto',
@@ -937,7 +938,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           px: collapsed ? 0.5 : 2,
           // 收起/展开时：Logo 区域高度统一
           height: 28,
-          mt: '2px',
+          mt: '7px',  // Logo 整体下移 5px（原 2px + 5px）
           mb: 2,  // Logo 与第一个导航栏之间额外空间
           display: 'flex',
           alignItems: 'center',
