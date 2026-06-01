@@ -938,7 +938,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           px: collapsed ? 0.5 : 2,
           // 收起/展开时：Logo 区域高度统一
           height: 28,
-          mt: '7px',  // Logo 整体下移 5px（原 2px + 5px）
+          mt: '12px',  // Logo 整体下移 10px（原 2px + 10px）
           mb: 2,  // Logo 与第一个导航栏之间额外空间
           display: 'flex',
           alignItems: 'center',
