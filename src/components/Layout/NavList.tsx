@@ -17,6 +17,7 @@ import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import ScheduleIcon from '@mui/icons-material/Schedule';
+import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined';
 
 // ===================== Nav Items =====================
 
@@ -24,12 +25,15 @@ interface NavItem {
   label: string;
   path: string;
   icon: React.ReactNode;
+  /** 特殊行为：不走路由跳转，而是派发自定义事件 */
+  action?: string;
 }
 
 const navItems: NavItem[] = [
-  { label: '仪表盘', path: '/', icon: <DashboardOutlinedIcon /> },
+  { label: '新建任务', path: '/chat', icon: <TaskAltOutlinedIcon />, action: 'focus-chat' },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon /> },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon /> },
+  { label: '仪表盘', path: '/', icon: <DashboardOutlinedIcon /> },
   { label: 'Agent 应用', path: '/agent', icon: <SmartToyOutlinedIcon /> },
   { label: '仓库管理', path: '/warehouses', icon: <WarehouseOutlinedIcon /> },
   { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon /> },
@@ -69,7 +73,17 @@ const NavList: React.FC<NavListProps> = ({ collapsed, activePath, onNavigate }) 
           <ListItem key={item.path} disablePadding sx={{ display: 'block', mb: 0.5 }}>
             <Tooltip title={collapsed ? item.label : ''} placement="right" arrow>
               <ListItemButton
-                onClick={() => onNavigate(item.path)}
+                onClick={() => {
+                  if (item.action === 'focus-chat') {
+                    // 先导航到首页确保 AI 对话框可见，再派发聚焦事件
+                    onNavigate('/');
+                    setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent('crosswms-focus-chat'));
+                    }, 100);
+                  } else {
+                    onNavigate(item.path);
+                  }
+                }}
                 sx={{
                   minHeight: collapsed ? 40 : 36,
                   justifyContent: collapsed ? 'center' : 'flex-start',

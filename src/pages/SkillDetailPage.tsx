@@ -256,9 +256,9 @@ const SkillDetailPage: React.FC = () => {
   };
 
   // 删除技能
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!skill) return;
-    const success = removeSkill(skill.id);
+    const success = await removeSkill(skill.id);
     if (success) {
       navigate('/skills');
     }

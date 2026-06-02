@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import type { DataSourceConfig } from '../services/dashboardApi';
 import type { ModelsConfig, ModelConfig } from '../types/models';
+import * as api from '../services/api';
 
 export type { ModelConfig, ModelsConfig };
 
@@ -157,12 +158,38 @@ export interface SidebarConfig {
   showVersion: boolean;
 }
 
+// ===================== 外观配置 =====================
+
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type AccentColor = 'default' | 'blue' | 'green' | 'purple' | 'red' | 'orange';
+export type FontSize = 'small' | 'medium' | 'large';
+export type BorderRadius = 'sharp' | 'normal' | 'rounded';
+
+export interface AppearanceConfig {
+  /** 主题模式 */
+  themeMode: ThemeMode;
+  /** 强调色 */
+  accentColor: AccentColor;
+  /** 字体大小 */
+  fontSize: FontSize;
+  /** 圆角风格 */
+  borderRadius: BorderRadius;
+  /** 是否显示动画 */
+  enableAnimations: boolean;
+  /** 是否显示阴影 */
+  enableShadows: boolean;
+  /** 紧凑模式（减少内边距） */
+  compactMode: boolean;
+}
+
 export interface AppSettings {
   tencentDocs: TencentDocsConfig;
   wecomDocs: WeComDocsConfig;
   volumeDocs: VolumeDocsConfig;
   dashboard: DashboardConfig;
   sidebar: SidebarConfig;
+  /** 外观配置 */
+  appearance: AppearanceConfig;
   /** 模型管理配置 */
   models: ModelsConfig;
 }
@@ -223,6 +250,16 @@ const DEFAULT_SETTINGS: AppSettings = {
   },
   sidebar: {
     showVersion: true,
+  },
+  // 外观配置
+  appearance: {
+    themeMode: 'light',
+    accentColor: 'default',
+    fontSize: 'medium',
+    borderRadius: 'normal',
+    enableAnimations: true,
+    enableShadows: true,
+    compactMode: false,
   },
   // 模型管理配置
   models: {
@@ -309,116 +346,28 @@ export function openExternalLink(url: string): void {
   }
 }
 
-// ===================== Helper: Load from localStorage =====================
+// ===================== Helper: Load Settings =====================
 
-function loadSettings(): AppSettings {
+/** Load settings from API first, fallback to localStorage */
+async function loadSettingsFromApi(): Promise<AppSettings | null> {
+  try {
+    const data = await api.getAppSettings();
+    if (data && typeof data === 'object') {
+      return mergeWithDefaults(data as Partial<AppSettings>);
+    }
+  } catch (e) {
+    console.error('[AppSettings] loadFromApi failed, falling back to localStorage:', e);
+  }
+  return null;
+}
+
+/** Load settings from localStorage (legacy fallback) */
+function loadSettingsFromLocalStorage(): AppSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<AppSettings>;
-      // Deep merge with defaults to ensure all fields exist even if storage is partial
-      // Migrate from old API-based config and remove sync-related fields from docLinks
-      const rawDocs = parsed.tencentDocs as { docLinks?: unknown[]; onlineData?: unknown[] } | undefined;
-      const docLinks: DocLinkItem[] =
-        rawDocs && Array.isArray(rawDocs.docLinks)
-          ? rawDocs.docLinks.map((link: unknown) => {
-              const record = link as Record<string, unknown>;
-              return {
-                // Only pick the fields that belong to the simplified DocLinkItem
-                id: String(record.id ?? ''),
-                url: String(record.url ?? ''),
-                title: String(record.title ?? ''),
-                dataType: String(record.dataType ?? 'other') as DocLinkItem['dataType'],
-                // Ignore autoSync, syncInterval, lastSyncedAt, syncStatus from old data
-              };
-            })
-          : [];
-
-      // 在线数据加载
-      const onlineData: OnlineDataEntry[] =
-        rawDocs && Array.isArray(rawDocs.onlineData)
-          ? rawDocs.onlineData.map((entry: unknown) => {
-              const record = entry as Record<string, unknown>;
-              return {
-                id: String(record.id ?? ''),
-                name: String(record.name ?? ''),
-                dataType: String(record.dataType ?? 'other') as OnlineDataEntry['dataType'],
-                data: String(record.data ?? ''),
-                updatedAt: String(record.updatedAt ?? ''),
-              };
-            })
-          : [];
-
-      const tencentDocs = { docLinks, onlineData };
-
-      // 企业文档链接迁移
-      const rawWeComDocs = parsed.wecomDocs as { docLinks?: unknown[] } | undefined;
-      const wecomDocLinks: WeComDocLinkItem[] =
-        rawWeComDocs && Array.isArray(rawWeComDocs.docLinks)
-          ? rawWeComDocs.docLinks.map((link: unknown) => {
-              const record = link as Record<string, unknown>;
-              return {
-                id: String(record.id ?? ''),
-                url: String(record.url ?? ''),
-                title: String(record.title ?? ''),
-                dataType: String(record.dataType ?? 'other') as WeComDocLinkItem['dataType'],
-              };
-            })
-          : [];
-      const wecomDocs = { docLinks: wecomDocLinks };
-
-      // 容积率文档链接迁移
-      const rawVolumeDocs = parsed.volumeDocs as { docLinks?: unknown[] } | undefined;
-      const volumeDocLinks: VolumeDocLinkItem[] =
-        rawVolumeDocs && Array.isArray(rawVolumeDocs.docLinks)
-          ? rawVolumeDocs.docLinks.map((link: unknown) => {
-              const record = link as Record<string, unknown>;
-              return {
-                id: String(record.id ?? ''),
-                url: String(record.url ?? ''),
-                title: String(record.title ?? ''),
-                dataType: String(record.dataType ?? 'other') as VolumeDocLinkItem['dataType'],
-              };
-            })
-          : [];
-      const volumeDocs = { docLinks: volumeDocLinks };
-
-        return {
-          tencentDocs,
-          wecomDocs,
-          volumeDocs,
-          dashboard: {
-            ...DEFAULT_SETTINGS.dashboard,
-            ...parsed.dashboard,
-            visibility: { ...DEFAULT_SETTINGS.dashboard.visibility, ...(parsed.dashboard?.visibility ?? {}) },
-            heatmap: { ...DEFAULT_SETTINGS.dashboard.heatmap, ...(parsed.dashboard?.heatmap ?? {}) },
-            // 处理数据源字段（平铺结构，向后兼容旧版 dataSource 对象）
-            dataSourceMode: parsed.dashboard?.dataSourceMode
-              ?? (parsed.dashboard as any)?.dataSource?.mode
-              ?? DEFAULT_SETTINGS.dashboard.dataSourceMode,
-            dataSourceApiBaseUrl: parsed.dashboard?.dataSourceApiBaseUrl
-              ?? (parsed.dashboard as any)?.dataSource?.apiBaseUrl
-              ?? DEFAULT_SETTINGS.dashboard.dataSourceApiBaseUrl,
-            dataSourceDocMappings: parsed.dashboard?.dataSourceDocMappings
-              ?? (parsed.dashboard as any)?.dataSource?.docMappings
-              ?? DEFAULT_SETTINGS.dashboard.dataSourceDocMappings,
-          },
-          sidebar: {
-            ...DEFAULT_SETTINGS.sidebar,
-            ...parsed.sidebar,
-          },
-          // 模型配置（向后兼容）
-          models: parsed.models
-            ? {
-                models: (parsed.models as any).models?.map((m: any) => ({
-                  ...m,
-                  enabled: m.enabled ?? true,
-                  provider: m.provider ?? 'custom',
-                })) ?? DEFAULT_SETTINGS.models.models,
-                defaultModelId: (parsed.models as any).defaultModelId ?? DEFAULT_SETTINGS.models.defaultModelId,
-              }
-            : { ...DEFAULT_SETTINGS.models },
-        };
+      return mergeWithDefaults(parsed);
     }
   } catch {
     // Ignore parse errors, fall back to defaults
@@ -426,9 +375,135 @@ function loadSettings(): AppSettings {
   return { ...DEFAULT_SETTINGS };
 }
 
-// ===================== Helper: Save to localStorage =====================
+/** Merge partial settings with defaults, preserving backward compatibility */
+function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
+  // Deep merge with defaults to ensure all fields exist even if storage is partial
+  // Migrate from old API-based config and remove sync-related fields from docLinks
+  const rawDocs = parsed.tencentDocs as { docLinks?: unknown[]; onlineData?: unknown[] } | undefined;
+  const docLinks: DocLinkItem[] =
+    rawDocs && Array.isArray(rawDocs.docLinks)
+      ? rawDocs.docLinks.map((link: unknown) => {
+          const record = link as Record<string, unknown>;
+          return {
+            // Only pick the fields that belong to the simplified DocLinkItem
+            id: String(record.id ?? ''),
+            url: String(record.url ?? ''),
+            title: String(record.title ?? ''),
+            dataType: String(record.dataType ?? 'other') as DocLinkItem['dataType'],
+            // Ignore autoSync, syncInterval, lastSyncedAt, syncStatus from old data
+          };
+        })
+      : [];
 
-function saveSettings(settings: AppSettings): void {
+  // 在线数据加载
+  const onlineData: OnlineDataEntry[] =
+    rawDocs && Array.isArray(rawDocs.onlineData)
+      ? rawDocs.onlineData.map((entry: unknown) => {
+          const record = entry as Record<string, unknown>;
+          return {
+            id: String(record.id ?? ''),
+            name: String(record.name ?? ''),
+            dataType: String(record.dataType ?? 'other') as OnlineDataEntry['dataType'],
+            data: String(record.data ?? ''),
+            updatedAt: String(record.updatedAt ?? ''),
+          };
+        })
+      : [];
+
+  const tencentDocs = { docLinks, onlineData };
+
+  // 企业文档链接迁移
+  const rawWeComDocs = parsed.wecomDocs as { docLinks?: unknown[] } | undefined;
+  const wecomDocLinks: WeComDocLinkItem[] =
+    rawWeComDocs && Array.isArray(rawWeComDocs.docLinks)
+      ? rawWeComDocs.docLinks.map((link: unknown) => {
+          const record = link as Record<string, unknown>;
+          return {
+            id: String(record.id ?? ''),
+            url: String(record.url ?? ''),
+            title: String(record.title ?? ''),
+            dataType: String(record.dataType ?? 'other') as WeComDocLinkItem['dataType'],
+          };
+        })
+      : [];
+  const wecomDocs = { docLinks: wecomDocLinks };
+
+  // 容积率文档链接迁移
+  const rawVolumeDocs = parsed.volumeDocs as { docLinks?: unknown[] } | undefined;
+  const volumeDocLinks: VolumeDocLinkItem[] =
+    rawVolumeDocs && Array.isArray(rawVolumeDocs.docLinks)
+      ? rawVolumeDocs.docLinks.map((link: unknown) => {
+          const record = link as Record<string, unknown>;
+          return {
+            id: String(record.id ?? ''),
+            url: String(record.url ?? ''),
+            title: String(record.title ?? ''),
+            dataType: String(record.dataType ?? 'other') as VolumeDocLinkItem['dataType'],
+          };
+        })
+      : [];
+  const volumeDocs = { docLinks: volumeDocLinks };
+
+    return {
+      tencentDocs,
+      wecomDocs,
+      volumeDocs,
+      dashboard: {
+        ...DEFAULT_SETTINGS.dashboard,
+        ...parsed.dashboard,
+        visibility: { ...DEFAULT_SETTINGS.dashboard.visibility, ...(parsed.dashboard?.visibility ?? {}) },
+        heatmap: { ...DEFAULT_SETTINGS.dashboard.heatmap, ...(parsed.dashboard?.heatmap ?? {}) },
+        // 处理数据源字段（平铺结构，向后兼容旧版 dataSource 对象）
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        dataSourceMode: parsed.dashboard?.dataSourceMode
+          ?? (parsed.dashboard as any)?.dataSource?.mode
+          ?? DEFAULT_SETTINGS.dashboard.dataSourceMode,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        dataSourceApiBaseUrl: parsed.dashboard?.dataSourceApiBaseUrl
+          ?? (parsed.dashboard as any)?.dataSource?.apiBaseUrl
+          ?? DEFAULT_SETTINGS.dashboard.dataSourceApiBaseUrl,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        dataSourceDocMappings: parsed.dashboard?.dataSourceDocMappings
+          ?? (parsed.dashboard as any)?.dataSource?.docMappings
+          ?? DEFAULT_SETTINGS.dashboard.dataSourceDocMappings,
+      },
+      sidebar: {
+        ...DEFAULT_SETTINGS.sidebar,
+        ...parsed.sidebar,
+      },
+      // 模型配置（向后兼容）
+      models: parsed.models
+        ? {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            models: (parsed.models as any).models?.map((m: any) => ({
+              ...m,
+              enabled: m.enabled ?? true,
+              provider: m.provider ?? 'custom',
+            })) ?? DEFAULT_SETTINGS.models.models,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            defaultModelId: (parsed.models as any).defaultModelId ?? DEFAULT_SETTINGS.models.defaultModelId,
+          }
+        : { ...DEFAULT_SETTINGS.models },
+      // 外观配置（向后兼容）
+      appearance: parsed.appearance
+        ? { ...DEFAULT_SETTINGS.appearance, ...parsed.appearance }
+        : { ...DEFAULT_SETTINGS.appearance },
+    };
+}
+
+// ===================== Helper: Save to API + localStorage fallback =====================
+
+async function saveSettingsToApi(settings: AppSettings): Promise<void> {
+  try {
+    await api.updateAppSettings(settings);
+  } catch (e) {
+    console.error('[AppSettings] saveToApi failed, falling back to localStorage:', e);
+    // Fallback: save to localStorage if API fails
+    saveSettingsToLocalStorage(settings);
+  }
+}
+
+function saveSettingsToLocalStorage(settings: AppSettings): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   } catch {
@@ -439,12 +514,41 @@ function saveSettings(settings: AppSettings): void {
 // ===================== Provider =====================
 
 export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<AppSettings>(loadSettings);
+  const [settings, setSettings] = useState<AppSettings>(() => loadSettingsFromLocalStorage());
+  const [isApiLoaded, setIsApiLoaded] = useState(false);
 
-  // Persist to localStorage whenever settings change
+  // On mount, try to load from API (supersedes localStorage)
   useEffect(() => {
-    saveSettings(settings);
-  }, [settings]);
+    let cancelled = false;
+    loadSettingsFromApi().then((apiSettings) => {
+      if (cancelled) return;
+      if (apiSettings) {
+        setSettings(apiSettings);
+        // Sync to localStorage for backward compat
+        saveSettingsToLocalStorage(apiSettings);
+      }
+      setIsApiLoaded(true);
+    }).catch(() => {
+      // Already logged in loadSettingsFromApi
+      setIsApiLoaded(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Persist to API + localStorage whenever settings change (but only after initial API load)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    // Skip the initial render (settings are loaded from localStorage state init)
+    // We also skip if API hasn't been loaded yet to avoid overwriting API data with stale localStorage
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (!isApiLoaded) return;
+
+    saveSettingsToApi(settings);
+    saveSettingsToLocalStorage(settings);
+  }, [settings, isApiLoaded]);
 
   const updateSettings = useCallback((partial: Partial<AppSettings>) => {
     setSettings((prev) => {
@@ -473,12 +577,15 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
           visibility: { ...prevDashboard.visibility, ...(partialDashboard.visibility ?? {}) },
           heatmap: { ...prevDashboard.heatmap, ...(partialDashboard.heatmap ?? {}) },
           // 数据源字段（平铺结构，向后兼容旧版 dataSource 对象）
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           dataSourceMode: partialDashboard.dataSourceMode
             ?? (partialDashboard as any)?.dataSource?.mode
             ?? prevDashboard.dataSourceMode,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           dataSourceApiBaseUrl: partialDashboard.dataSourceApiBaseUrl
             ?? (partialDashboard as any)?.dataSource?.apiBaseUrl
             ?? prevDashboard.dataSourceApiBaseUrl,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           dataSourceDocMappings: partialDashboard.dataSourceDocMappings
             ?? (partialDashboard as any)?.dataSource?.docMappings
             ?? prevDashboard.dataSourceDocMappings,

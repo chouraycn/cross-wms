@@ -29,6 +29,7 @@ import TencentDocsPage from './pages/TencentDocsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import AutomationPage from './pages/AutomationPage';
+import TasksPage from './pages/TasksPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 /** Global MUI Theme */
@@ -286,7 +287,7 @@ const MainLayout: React.FC = () => {
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
   const scrollRef = useAutoHideScrollbar(!isPy);
 
-  // AI 对话框可见性：自动化和 Agent 页面隐藏
+  // AI 对话框可见性：自动化、Agent、技能、任务页面隐藏
   const showChatBar = !location.pathname.startsWith('/automation') && !location.pathname.startsWith('/agent') && !location.pathname.startsWith('/skills');
 
   const actions = getToolbarActions(location.pathname);
@@ -442,6 +443,7 @@ const MainLayout: React.FC = () => {
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/automation" element={<AutomationPage />} />
+                  <Route path="/tasks" element={<TasksPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </ErrorBoundary>

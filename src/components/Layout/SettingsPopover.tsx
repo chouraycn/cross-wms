@@ -47,14 +47,15 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
-import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, OnlineDataEntry, SidebarConfig, HeatmapConfig, ModelConfig } from '../../contexts/AppSettingsContext';
+import type { AppSettings, DashboardConfig, DashboardVisibility, DocLinkItem, OnlineDataEntry, SidebarConfig, HeatmapConfig, ModelConfig, AppearanceConfig, ThemeMode, AccentColor, FontSize, BorderRadius } from '../../contexts/AppSettingsContext';
 import { getAuthStatus, getAuthUrl, exchangeToken, refreshToken, isPyWebView, type TDocAuthStatus } from '../../services/tencentDocsApi';
 import { APP_VERSION } from '../Settings/sharedStyles';
 
 // ===================== Settings Panel Types & Data =====================
 
-type SettingsTab = 'menu' | 'tencentDocs' | 'tencentDocs_volumeDocs' | 'dashboardCalc' | 'dashboardIndicators' | 'modelManagement' | 'about';
+type SettingsTab = 'menu' | 'tencentDocs' | 'tencentDocs_volumeDocs' | 'dashboardCalc' | 'dashboardIndicators' | 'modelManagement' | 'appearance' | 'about';
 
 interface SettingsMenuItem {
   key: Exclude<SettingsTab, 'menu'>;
@@ -67,6 +68,7 @@ const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   { key: 'tencentDocs', label: '腾讯文档', icon: <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />, description: 'API 授权与文档链接管理' },
   { key: 'dashboardCalc', label: '仪表盘参数', icon: <DashboardIcon sx={{ fontSize: 20 }} />, description: '计算阈值和参数调整' },
   { key: 'dashboardIndicators', label: '指标控制', icon: <TuneIcon sx={{ fontSize: 20 }} />, description: '各模块显示与隐藏' },
+  { key: 'appearance', label: '外观', icon: <PaletteOutlinedIcon sx={{ fontSize: 20 }} />, description: '主题、字体、圆角与动画' },
   { key: 'modelManagement', label: '模型管理', icon: <SmartToyIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型' },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本' },
 ];
@@ -305,6 +307,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
     updateSettings({ dashboard: draft.dashboard });
     updateSettings({ sidebar: draft.sidebar });
     updateSettings({ models: draft.models });
+    updateSettings({ appearance: draft.appearance });
     setSnackbarMsg('设置已保存'); setSnackbarOpen(true);
   };
 
@@ -334,6 +337,15 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
         },
       },
       sidebar: { showVersion: true },
+      appearance: {
+        themeMode: 'light' as ThemeMode,
+        accentColor: 'default' as AccentColor,
+        fontSize: 'medium' as FontSize,
+        borderRadius: 'normal' as BorderRadius,
+        enableAnimations: true,
+        enableShadows: true,
+        compactMode: false,
+      },
       models: settings.models,
     });
     setErrors({});
@@ -768,6 +780,143 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
     }));
   }, [setDraft]);
 
+  // ===================== 外观设置 =====================
+
+  const updateAppearance = useCallback(<K extends keyof AppearanceConfig>(key: K, value: AppearanceConfig[K]) => {
+    setDraft(prev => ({
+      ...prev,
+      appearance: { ...prev.appearance, [key]: value },
+    }));
+  }, [setDraft]);
+
+  const renderAppearance = () => {
+    const accentColors: { key: AccentColor; label: string; color: string }[] = [
+      { key: 'default', label: '默认', color: '#111827' },
+      { key: 'blue', label: '蓝色', color: '#2563EB' },
+      { key: 'green', label: '绿色', color: '#059669' },
+      { key: 'purple', label: '紫色', color: '#7C3AED' },
+      { key: 'red', label: '红色', color: '#DC2626' },
+      { key: 'orange', label: '橙色', color: '#EA580C' },
+    ];
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* 主题模式 */}
+        <Box>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 0.75 }}>主题模式</Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {([['light', '浅色'], ['dark', '深色'], ['system', '跟随系统']] as [ThemeMode, string][]).map(([mode, label]) => (
+              <Button
+                key={mode}
+                size="small"
+                variant={draft.appearance.themeMode === mode ? 'contained' : 'outlined'}
+                onClick={() => updateAppearance('themeMode', mode)}
+                sx={{
+                  fontSize: '0.7rem', minWidth: 0, px: 1.5, py: 0.3,
+                  ...(draft.appearance.themeMode === mode
+                    ? { backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' } }
+                    : { borderColor: '#E5E7EB', color: '#6B7280', '&:hover': { borderColor: '#9CA3AF' } }),
+                }}
+              >
+                {label}
+              </Button>
+            ))}
+          </Box>
+        </Box>
+
+        {/* 强调色 */}
+        <Box>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 0.75 }}>强调色</Typography>
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            {accentColors.map(({ key, label, color }) => (
+              <Tooltip key={key} title={label} arrow placement="top">
+                <Box
+                  onClick={() => updateAppearance('accentColor', key)}
+                  sx={{
+                    width: 28, height: 28, borderRadius: '50%', backgroundColor: color, cursor: 'pointer',
+                    border: draft.appearance.accentColor === key ? '2.5px solid #111827' : '2.5px solid transparent',
+                    transform: draft.appearance.accentColor === key ? 'scale(1.15)' : 'scale(1)',
+                    transition: 'all 0.15s',
+                    '&:hover': { transform: 'scale(1.1)' },
+                  }}
+                />
+              </Tooltip>
+            ))}
+          </Box>
+        </Box>
+
+        {/* 字体大小 */}
+        <Box>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 0.75 }}>字体大小</Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {([['small', '小'], ['medium', '中'], ['large', '大']] as [FontSize, string][]).map(([size, label]) => (
+              <Button
+                key={size}
+                size="small"
+                variant={draft.appearance.fontSize === size ? 'contained' : 'outlined'}
+                onClick={() => updateAppearance('fontSize', size)}
+                sx={{
+                  fontSize: size === 'small' ? '0.65rem' : size === 'large' ? '0.85rem' : '0.75rem',
+                  minWidth: 0, px: 1.5, py: 0.3,
+                  ...(draft.appearance.fontSize === size
+                    ? { backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' } }
+                    : { borderColor: '#E5E7EB', color: '#6B7280', '&:hover': { borderColor: '#9CA3AF' } }),
+                }}
+              >
+                {label}
+              </Button>
+            ))}
+          </Box>
+        </Box>
+
+        {/* 圆角风格 */}
+        <Box>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 0.75 }}>圆角风格</Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {([['sharp', '直角'], ['normal', '标准'], ['rounded', '圆角']] as [BorderRadius, string][]).map(([br, label]) => (
+              <Button
+                key={br}
+                size="small"
+                variant={draft.appearance.borderRadius === br ? 'contained' : 'outlined'}
+                onClick={() => updateAppearance('borderRadius', br)}
+                sx={{
+                  borderRadius: br === 'sharp' ? 0 : br === 'rounded' ? 12 : 4,
+                  fontSize: '0.7rem', minWidth: 0, px: 1.5, py: 0.3,
+                  ...(draft.appearance.borderRadius === br
+                    ? { backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' } }
+                    : { borderColor: '#E5E7EB', color: '#6B7280', '&:hover': { borderColor: '#9CA3AF' } }),
+                }}
+              >
+                {label}
+              </Button>
+            ))}
+          </Box>
+        </Box>
+
+        {/* 开关项 */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          {([
+            { key: 'enableAnimations' as const, label: '动画效果', desc: '页面过渡与交互动画' },
+            { key: 'enableShadows' as const, label: '阴影效果', desc: '卡片与弹窗投影' },
+            { key: 'compactMode' as const, label: '紧凑模式', desc: '减少内边距，显示更多内容' },
+          ]).map(({ key, label, desc }) => (
+            <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.25 }}>
+              <Box>
+                <Typography sx={{ fontSize: '0.75rem', color: '#374151' }}>{label}</Typography>
+                <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>{desc}</Typography>
+              </Box>
+              <Switch
+                size="small"
+                checked={draft.appearance[key]}
+                onChange={e => updateAppearance(key, e.target.checked)}
+                sx={switchSx}
+              />
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    );
+  };
+
   const renderModelManagement = () => (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -936,6 +1085,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
         {activeTab === 'tencentDocs_volumeDocs' && renderVolumeDocs()}
         {activeTab === 'dashboardCalc' && renderDashboardCalc()}
         {activeTab === 'dashboardIndicators' && renderDashboardIndicators()}
+        {activeTab === 'appearance' && renderAppearance()}
         {activeTab === 'modelManagement' && renderModelManagement()}
         {activeTab === 'about' && renderAbout()}
 
