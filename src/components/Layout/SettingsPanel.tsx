@@ -11,6 +11,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
+import { isPyWebView } from '../../services/tencentDocsApi';
 import { APP_VERSION } from '../Settings/sharedStyles';
 import SettingsGeneral from './SettingsGeneral';
 import SettingsDashboard from './SettingsDashboard';
@@ -48,7 +49,6 @@ const SettingsPanel: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   }, [settings.tencentDocs]);
 
   const openInBrowser = useCallback(async (url: string) => {
-    const { isPyWebView } = await import('../../services/tencentDocsApi');
     if (isPyWebView() && window.pywebview?.api) { try { await window.pywebview.api.open_in_browser(url); return; } catch { /* 降级 */ } }
     window.open(url, '_blank');
   }, []);
