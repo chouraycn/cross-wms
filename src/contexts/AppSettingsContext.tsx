@@ -319,13 +319,13 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 const STORAGE_KEY = 'crosswms-settings';
 
-interface AppSettingsContextValue {
+export interface AppSettingsContextValue {
   settings: AppSettings;
   updateSettings: (partial: Partial<AppSettings>) => void;
   resetSettings: () => void;
 }
 
-const AppSettingsContext = createContext<AppSettingsContextValue | undefined>(undefined);
+export const AppSettingsContext = createContext<AppSettingsContextValue | undefined>(undefined);
 
 // ===================== Helper: Open External Link =====================
 
