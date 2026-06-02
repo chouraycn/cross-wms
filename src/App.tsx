@@ -22,6 +22,7 @@ import DashboardPage from './pages/DashboardPage';
 import SkillsPage from './pages/SkillsPage';
 import SkillDetailPage from './pages/SkillDetailPage';
 import AgentPage from './pages/AgentPage';
+import ChatPage from './pages/ChatPage';
 import WarehousesPage from './pages/WarehousesPage';
 import InTransitPage from './pages/InTransitPage';
 import InventoryPage from './pages/InventoryPage';
@@ -287,8 +288,8 @@ const MainLayout: React.FC = () => {
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
   const scrollRef = useAutoHideScrollbar(!isPy);
 
-  // AI 对话框可见性：自动化、Agent、技能、任务页面隐藏
-  const showChatBar = !location.pathname.startsWith('/automation') && !location.pathname.startsWith('/agent') && !location.pathname.startsWith('/skills');
+  // AI 对话框可见性：自动化、Agent、技能、任务/对话页面隐藏（ChatPage 自带输入框）
+  const showChatBar = !location.pathname.startsWith('/automation') && !location.pathname.startsWith('/agent') && !location.pathname.startsWith('/skills') && !location.pathname.startsWith('/chat');
 
   const actions = getToolbarActions(location.pathname);
   const pageKey = getPageRefreshKey(location.pathname);
@@ -435,6 +436,7 @@ const MainLayout: React.FC = () => {
                   <Route path="/skills" element={<SkillsPage />} />
                   <Route path="/skills/:skillId" element={<SkillDetailPage />} />
                   <Route path="/agent" element={<AgentPage />} />
+                  <Route path="/chat" element={<ChatPage />} />
                   <Route path="/warehouses" element={<WarehousesPage />} />
                   <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
                   <Route path="/in-transit" element={<InTransitPage />} />
