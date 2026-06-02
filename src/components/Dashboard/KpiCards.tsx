@@ -12,7 +12,7 @@ import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { exportToCsv } from '../../utils/exportCsv';
 import { calcOverallByItems } from '../../utils/volumeCalculator';
 import type { Warehouse, TransitOrder } from '../../types';
-import { useDashboardData } from '../../contexts/DashboardDataContext';
+import { useWarehouseCapability } from '../../capabilities/warehouse';
 
 /** KPI 卡片主题配置 */
 interface KpiTheme {
@@ -104,7 +104,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
   const vis = settings.dashboard.visibility;
 
   // 从 Context 获取数据
-  const { warehouses, transitOrders, kpiData, loading, error } = useDashboardData();
+  const { warehouses, transitOrders, kpiData, loading, error } = useWarehouseCapability({ includeDashboard: true });
 
   // 加载状态
   if (loading) {

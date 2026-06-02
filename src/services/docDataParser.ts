@@ -16,7 +16,7 @@ import type {
   TransitStatus,
   TransportMode,
 } from '../types';
-import { getWarehouses } from '../stores/warehouseStore';
+import { getWarehouses } from '../capabilities/warehouse';
 
 // ===================== 通用类型 =====================
 

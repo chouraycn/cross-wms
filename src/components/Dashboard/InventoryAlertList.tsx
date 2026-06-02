@@ -20,7 +20,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { useDashboardData } from '../../contexts/DashboardDataContext';
+import { useWarehouseCapability } from '../../capabilities/warehouse';
 import type { InventoryItem } from '../../types';
 
 interface InventoryAlertListProps {
@@ -32,7 +32,7 @@ const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = A
   const ageWarningDays = settings.dashboard.ageWarningDays;
 
   // 从 Context 获取数据
-  const { warehouses, inventory, loading, error } = useDashboardData();
+  const { warehouses, inventory, loading, error } = useWarehouseCapability({ includeDashboard: true });
 
   const warehouseNameMap = useMemo(() => {
     const map: Record<string, string> = {};

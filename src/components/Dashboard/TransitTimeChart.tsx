@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { useDashboardData } from '../../contexts/DashboardDataContext';
+import { useWarehouseCapability } from '../../capabilities/warehouse';
 
 interface TransitTimeChartProps {
   warehouseId?: string;
@@ -15,7 +15,7 @@ const TransitTimeChart: React.FC<TransitTimeChartProps> = ({ warehouseId = ALL_W
   const { settings } = useAppSettings();
 
   // 从 Context 获取数据
-  const { warehouses, transitOrders, loading, error } = useDashboardData();
+  const { warehouses, transitOrders, loading, error } = useWarehouseCapability({ includeDashboard: true });
 
   // 过滤运单（按仓库）
   const filteredOrders = useMemo(() => {

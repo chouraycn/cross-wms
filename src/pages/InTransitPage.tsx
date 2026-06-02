@@ -4,7 +4,7 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import TransitList from '../components/InTransit/TransitList';
 import PageHeader from '../components/Common/PageHeader';
 import { subscribeRefresh } from '../App';
-import { getTransitOrders } from '../stores/transitStore';
+import { getTransitOrders } from '../capabilities/warehouse';
 import { exportToCsv } from '../utils/exportCsv';
 
 const InTransitPage: React.FC = () => {

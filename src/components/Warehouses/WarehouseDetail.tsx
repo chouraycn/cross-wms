@@ -21,7 +21,7 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
-import { getWarehouseById as getStoreWarehouseById } from '../../stores/warehouseStore';
+import { getWarehouseById as getStoreWarehouseById } from '../../capabilities/warehouse';
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';
 import type { Warehouse, InboundRecord, OutboundRecord, InventoryItem } from '../../types';
 import { dashboardApi } from '../../services/dashboardApi';

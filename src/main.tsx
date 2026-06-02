@@ -3,9 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { checkAndMigrate } from './services/migration'
-import { initFromApi as initWarehouses } from './stores/warehouseStore'
-import { initFromApi as initInventory } from './stores/inventoryStore'
-import { initFromApi as initTransit } from './stores/transitStore'
+import { initFromApi as initWarehouseCapability } from './capabilities/warehouse'
 import { initFromApi as initSkills } from './stores/skillStore'
 
 async function bootstrap() {
@@ -18,7 +16,7 @@ async function bootstrap() {
   // SQLite 持久化：迁移 + Store 初始化
   try {
     await checkAndMigrate()
-    await Promise.all([initWarehouses(), initInventory(), initTransit(), initSkills()])
+    await Promise.all([initWarehouseCapability(), initSkills()])
   } catch (e) {
     console.error('[Bootstrap] Store 初始化失败:', e)
   }

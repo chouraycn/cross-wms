@@ -32,7 +32,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
-import { useInventoryData } from '../../hooks/useInventoryData';
+import { useWarehouseCapability } from '../../capabilities/warehouse';
 import type { InventoryItem } from '../../types';
 import dayjs from 'dayjs';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -40,7 +40,7 @@ import { useAppSettings } from '../../contexts/AppSettingsContext';
 const InventoryList: React.FC = () => {
   const { settings } = useAppSettings();
   const ageWarningDays = settings.dashboard.ageWarningDays ?? 90;
-  const { inventory: initialInventory, warehouses, loading, error, getWarehouseById } = useInventoryData();
+  const { inventory: initialInventory, warehouses, loading, error, getWarehouseById } = useWarehouseCapability();
 
   const [items, setItems] = useState<InventoryItem[]>([]);
 

@@ -4,7 +4,7 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import InventoryList from '../components/Inventory/InventoryList';
 import PageHeader from '../components/Common/PageHeader';
 import { subscribeRefresh } from '../App';
-import { getInventoryItems } from '../stores/inventoryStore';
+import { getInventoryItems } from '../capabilities/warehouse';
 import { exportToCsv } from '../utils/exportCsv';
 
 const InventoryPage: React.FC = () => {

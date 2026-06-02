@@ -3,7 +3,7 @@ import { Box, Typography, Card, CardHeader, CardContent, IconButton, CircularPro
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { useDashboardData } from '../../contexts/DashboardDataContext';
+import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { exportToCsv } from '../../utils/exportCsv';
 import type { Warehouse, InboundRecord, OutboundRecord } from '../../types';
 import dayjs from 'dayjs';
@@ -199,7 +199,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId }) => {
   const colors = COLOR_SCHEMES[colorScheme] || OCEAN;
 
   // 从 Context 获取数据
-  const { warehouses, inboundRecords, outboundRecords, loading, error } = useDashboardData();
+  const { warehouses, inboundRecords, outboundRecords, loading, error } = useWarehouseCapability({ includeDashboard: true });
 
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);

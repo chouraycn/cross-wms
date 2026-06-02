@@ -69,7 +69,7 @@ import {
   type WeComDocCategory,
   type WeComFieldInfo,
 } from '../../services/wecomDocsApi';
-import { getWarehouses } from '../../stores/warehouseStore';
+import { getWarehouses } from '../../capabilities/warehouse';
 import type { Warehouse } from '../../types';
 
 /** 腾讯文档品牌色 */
