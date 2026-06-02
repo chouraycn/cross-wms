@@ -74,7 +74,10 @@ def save_config(config):
 
 
 # 记录红黄绿按钮的原始位置（避免重复调用时累加偏移）
+# key: 按钮索引 (0=close, 1=miniaturize, 2=zoom)，value: (x, y)
 _traffic_light_original_frames = {}
+# 当前已应用的偏移量（用于在 reapply 前先撤销旧偏移）
+_traffic_light_current_offset = (0, 0)
 
 
 def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
@@ -124,13 +127,12 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
             f = btn.frame()
             print(f"[TrafficLight] 按钮 {i} 当前位置: x={f.origin.x:.1f}, y={f.origin.y:.1f}, w={f.size.width:.1f}, h={f.size.height:.1f}")
 
-        # 首次调用时记录按钮的原始位置（用于避免累加偏移）
-        btn_ids = [id(b) for b in buttons]
+        # 首次调用时记录按钮的原始位置（用索引做 key，避免 object id 变化导致缓存失效）
         first_call = not _traffic_light_original_frames
         if first_call:
             for i, btn in enumerate(buttons):
                 f = btn.frame()
-                _traffic_light_original_frames[id(btn)] = (f.origin.x, f.origin.y)
+                _traffic_light_original_frames[i] = (f.origin.x, f.origin.y)
             print(f"[TrafficLight] 已记录 {len(_traffic_light_original_frames)} 个按钮的原始位置")
 
         # Cocoa 坐标系 Y 轴朝上，而用户接口约定 Y 正值=向下
@@ -140,16 +142,15 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
 
         # 基于原始位置计算目标位置（避免累加偏移）
         moved_count = 0
-        for btn in buttons:
+        for idx, btn in enumerate(buttons):
             try:
-                btn_id = id(btn)
-                orig = _traffic_light_original_frames.get(btn_id)
+                orig = _traffic_light_original_frames.get(idx)
                 if orig:
                     # 基于原始位置 + 偏移量
                     new_x = orig[0] + cocoa_offset_x
                     new_y = orig[1] + cocoa_offset_y
                 else:
-                    # 没有原始位置记录（不应该发生），基于当前位置
+                    # 没有原始位置记录（按钮数量变化等边界情况），基于当前位置
                     frame = btn.frame()
                     new_x = frame.origin.x + cocoa_offset_x
                     new_y = frame.origin.y + cocoa_offset_y
@@ -177,6 +178,10 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
                     moved_count = len(buttons)  # 假设父视图偏移成功
             except Exception as e:
                 print(f"[TrafficLight] 父视图偏移失败: {e}")
+
+        # 记录当前偏移量（用于 reapply 时先撤销旧偏移）
+        global _traffic_light_current_offset
+        _traffic_light_current_offset = (offset_x, offset_y)
 
         print(f"[TrafficLight] 最终结果: 成功移动 {moved_count}/{len(buttons)} 个按钮, 偏移量({offset_x}, {offset_y})")
         return moved_count > 0
@@ -550,23 +555,41 @@ def start_server():
     if getattr(sys, 'frozen', False):
         meipass = sys._MEIPASS
         # 优先使用共享 node_modules（v1.0.69+ 节省 ~154MB）
-        shared_nm = os.path.join(meipass, 'shared_node_modules')
-        if os.path.isdir(shared_nm):
+        # 搜索顺序：meipass → Resources → server_dist 同级
+        shared_nm_candidates = [
+            os.path.join(meipass, 'shared_node_modules'),
+        ]
+        # PyInstaller onedir: Resources 与 Frameworks 同级
+        exe_dir = os.path.dirname(sys.executable)
+        resource_dir = os.path.join(os.path.dirname(exe_dir), 'Resources')
+        shared_nm_candidates.append(os.path.join(resource_dir, 'shared_node_modules'))
+        # server_dist 同级目录
+        server_dist_parent = os.path.dirname(server_script)
+        shared_nm_candidates.append(os.path.join(server_dist_parent, 'shared_node_modules'))
+        shared_nm_candidates.append(os.path.join(server_dist_parent, 'node_modules'))
+
+        shared_nm = None
+        for candidate in shared_nm_candidates:
+            if os.path.isdir(candidate):
+                shared_nm = candidate
+                break
+
+        if shared_nm:
             env['NODE_PATH'] = shared_nm
             print(f"[Server] NODE_PATH={shared_nm} (shared)")
         else:
-            # 兼容旧版：server_dist 目录下的 node_modules
-            server_dist_dir = os.path.dirname(server_script)
-            nm_path = os.path.join(server_dist_dir, 'node_modules')
-            if os.path.isdir(nm_path):
-                env['NODE_PATH'] = nm_path
-                print(f"[Server] NODE_PATH={nm_path}")
+            print(f"[Server] ⚠️ 未找到 shared_node_modules，搜索路径: {shared_nm_candidates}")
 
         # 设置前端静态文件路径
-        fe_dist = os.path.join(meipass, 'frontend_dist')
-        if os.path.isdir(fe_dist):
-            env['FRONTEND_DIST_PATH'] = fe_dist
-            print(f"[Server] FRONTEND_DIST_PATH={fe_dist}")
+        fe_candidates = [
+            os.path.join(meipass, 'frontend_dist'),
+            os.path.join(resource_dir, 'frontend_dist'),
+        ]
+        for fe_cand in fe_candidates:
+            if os.path.isdir(fe_cand):
+                env['FRONTEND_DIST_PATH'] = fe_cand
+                print(f"[Server] FRONTEND_DIST_PATH={fe_cand}")
+                break
 
     # 如果是 .ts 文件，需要用 tsx 运行
     if server_script.endswith('.ts'):
@@ -642,25 +665,40 @@ def start_agent_server():
     # 设置 NODE_PATH
     if getattr(sys, 'frozen', False):
         meipass = sys._MEIPASS
-        # 优先使用共享 node_modules（v1.0.69+ 节省 ~154MB）
-        shared_nm = os.path.join(meipass, 'shared_node_modules')
-        if os.path.isdir(shared_nm):
+        exe_dir = os.path.dirname(sys.executable)
+        resource_dir = os.path.join(os.path.dirname(exe_dir), 'Resources')
+
+        # 搜索 shared_node_modules：meipass → Resources → script 同级
+        shared_nm_candidates = [
+            os.path.join(meipass, 'shared_node_modules'),
+            os.path.join(resource_dir, 'shared_node_modules'),
+        ]
+        agent_server_dist_dir = os.path.dirname(agent_server_script)
+        shared_nm_candidates.append(os.path.join(agent_server_dist_dir, 'shared_node_modules'))
+        shared_nm_candidates.append(os.path.join(agent_server_dist_dir, 'node_modules'))
+
+        shared_nm = None
+        for candidate in shared_nm_candidates:
+            if os.path.isdir(candidate):
+                shared_nm = candidate
+                break
+
+        if shared_nm:
             env['NODE_PATH'] = shared_nm
             print(f"[AgentServer] NODE_PATH={shared_nm} (shared)")
         else:
-            # 兼容旧版：agent_server_dist 目录下的 node_modules
-            agent_server_dist_dir = os.path.dirname(agent_server_script)
-            nm_path = os.path.join(agent_server_dist_dir, 'node_modules')
-            if os.path.isdir(nm_path):
-                env['NODE_PATH'] = nm_path
-                print(f"[AgentServer] NODE_PATH={nm_path}")
+            print(f"[AgentServer] ⚠️ 未找到 shared_node_modules，搜索路径: {shared_nm_candidates}")
 
         # Agent Web 前端路径
-        meipass = sys._MEIPASS
-        agent_dist = os.path.join(meipass, 'agent_dist')
-        if os.path.isdir(agent_dist):
-            env['AGENT_FRONTEND_DIST'] = agent_dist
-            print(f"[AgentServer] AGENT_FRONTEND_DIST={agent_dist}")
+        agent_dist_candidates = [
+            os.path.join(meipass, 'agent_dist'),
+            os.path.join(resource_dir, 'agent_dist'),
+        ]
+        for ad_cand in agent_dist_candidates:
+            if os.path.isdir(ad_cand):
+                env['AGENT_FRONTEND_DIST'] = ad_cand
+                print(f"[AgentServer] AGENT_FRONTEND_DIST={ad_cand}")
+                break
 
     # 如果是 .ts 文件，需要用 tsx 运行
     if agent_server_script.endswith('.ts'):
@@ -1355,6 +1393,9 @@ class Api:
 
         当用户点击绿色 zoom 按钮时，macOS 会重置按钮位置。
         前端在 window resize 事件后调用此方法恢复偏移。
+
+        关键：不清空 _traffic_light_original_frames，避免把已偏移的位置
+        当成"原始位置"重新记录导致累加偏移。
         """
         if not COCOA_AVAILABLE:
             return json.dumps({'ok': False, 'error': 'Cocoa/pyobjc not available'})
@@ -1363,8 +1404,11 @@ class Api:
         offset_x = config.get('traffic_light_offset_x', 5)
         offset_y = config.get('traffic_light_offset_y', 5)
 
-        # 重置原始位置缓存（因为 macOS resize 后按钮 ID 可能改变）
-        _traffic_light_original_frames.clear()
+        # 先撤销旧偏移：将按钮移回缓存的原始位置
+        cur_ox, cur_oy = _traffic_light_current_offset
+        if cur_ox != 0 or cur_oy != 0:
+            # 重新应用（此时缓存中已有原始位置，直接从原始位置+新偏移计算）
+            pass  # apply_traffic_light_offset 内部会基于缓存计算
 
         success = apply_traffic_light_offset(self._window, offset_x, offset_y)
         return json.dumps({'ok': success, 'offset_x': offset_x, 'offset_y': offset_y})
