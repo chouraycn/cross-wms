@@ -308,6 +308,16 @@ const ChatPage: React.FC = () => {
                 onSessionUpdate={handleSessionUpdate}
                 initialSkill={initialSkill}
               />
+              <Typography
+                sx={{
+                  fontSize: '0.6875rem',
+                  color: '#9CA3AF',
+                  textAlign: 'center',
+                  pt: 0.5,
+                }}
+              >
+                内容由AI生成，请核实重要信息
+              </Typography>
             </Box>
           </Box>
         ) : (
@@ -372,6 +382,16 @@ const ChatPage: React.FC = () => {
                   onSessionUpdate={handleSessionUpdate}
                   initialSkill={initialSkill}
                 />
+                <Typography
+                  sx={{
+                    fontSize: '0.6875rem',
+                    color: '#9CA3AF',
+                    textAlign: 'center',
+                    pt: 0.5,
+                  }}
+                >
+                  内容由AI生成，请核实重要信息
+                </Typography>
               </Box>
             </Box>
           </Box>
