@@ -18,7 +18,7 @@ import { ICON_MAP } from '../../types/skill';
 import { getAllSkills } from '../../stores/skillStore';
 import { SkillSelector } from './SkillSelector';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
-import { SECONDARY, BORDER } from '../../constants/theme';
+import { SECONDARY } from '../../constants/theme';
 
 interface TopBarChatInputProps {
   session: {

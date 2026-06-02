@@ -1,11 +1,10 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Divider, TextField, InputAdornment, Chip,
+  Box, Typography, TextField, InputAdornment, Chip,
   IconButton, Tooltip, CircularProgress,
   Snackbar, Alert, Button, Paper, Dialog, DialogTitle,
-  DialogContent, DialogActions, Select, MenuItem, FormControl,
-  InputLabel,
+  DialogContent, DialogActions,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SearchIcon from '@mui/icons-material/Search';
@@ -19,8 +18,8 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { loadAutomations, automationEngine } from '../services/automationEngine';
 import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automationEngine';
-import { getAllSkills, addSkill, removeSkill, onSkillsChange, setSkillStatus } from '../stores/skillStore';
-import { ICON_MAP, AVAILABLE_ICON_NAMES } from '../types/skill';
+import { getAllSkills, addSkill, onSkillsChange, setSkillStatus } from '../stores/skillStore';
+import { ICON_MAP } from '../types/skill';
 import type { Skill } from '../types/skill';
 
 import { CATEGORY_LABELS, CATEGORY_ORDER, CATEGORY_COLORS, ICON_GRADIENTS } from '../constants/skillCategories';
@@ -28,7 +27,7 @@ import { CATEGORY_LABELS, CATEGORY_ORDER, CATEGORY_COLORS, ICON_GRADIENTS } from
 // ===================== 组件 =====================
 
 const SkillsPage: React.FC = () => {
-  const { settings } = useAppSettings();
+  useAppSettings();
   const navigate = useNavigate();
 
   // 技能列表（响应式，随 skillStore 变更刷新）
@@ -50,27 +49,6 @@ const SkillsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'market' | 'installed'>('market');
-
-  // 最近使用 — 只存 name 字符串，反查 skills 获取完整 Skill
-  const [recentNames, setRecentNames] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('crosswms-recent-skills');
-      if (!saved) return [];
-      const parsed = JSON.parse(saved);
-      // 兼容旧格式
-      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object') {
-        const names = (parsed as { name?: string }[]).map(s => s.name).filter((n): n is string => !!n);
-        localStorage.setItem('crosswms-recent-skills', JSON.stringify(names));
-        return names;
-      }
-      return Array.isArray(parsed) ? parsed.filter((n: unknown) => typeof n === 'string') : [];
-    } catch { return []; }
-  });
-
-  const recentSkills = useMemo(() => {
-    const nameSet = new Set(recentNames);
-    return skills.filter(s => nameSet.has(s.name));
-  }, [recentNames, skills]);
 
   // 添加技能 Dialog
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -234,10 +212,6 @@ const SkillsPage: React.FC = () => {
   };
 
   // 获取技能图标的第一个字符（用于卡片图标区）
-  const getSkillChar = (skill: Skill): string => {
-    return skill.name.charAt(0);
-  };
-
   // 渲染技能卡片
   const renderSkillCard = (skill: Skill) => {
     const autoInfo = skill.automationTaskType ? automationMap[skill.automationTaskType] : undefined;
@@ -751,8 +725,6 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
 
       if (jsonMatch) {
         // 找到了 JSON 内容，尝试解析
-        const jsonStart = text.indexOf(jsonMatch[0]);
-        const jsonStr = text.substring(jsonStart, jsonStart + jsonMatch[0].length);
         let skillData: Record<string, unknown> = {};
         try {
           // 尝试解析更完整的 JSON

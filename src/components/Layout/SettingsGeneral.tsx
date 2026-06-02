@@ -1,6 +1,5 @@
 import React, { useCallback } from 'react';
-import { Box, Typography, Button, Switch, FormControlLabel, Tooltip, useTheme } from '@mui/material';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { Box, Typography, Button, Switch, Tooltip, useTheme } from '@mui/material';
 import type { AppSettings, AppearanceConfig, ThemeMode, AccentColor, FontSize, BorderRadius } from '../../contexts/AppSettingsContext';
 
 /** 共享样式常量 */

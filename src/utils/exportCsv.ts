@@ -1,9 +1,4 @@
-/**
- * 通用 CSV 导出工具函数
- * 生成 CSV 字符串并触发下载，支持中文（BOM + UTF-8）
- * - pywebview 环境：调用 Python API 将文件保存到 ~/Downloads/
- * - 浏览器环境：使用 blob URL + <a> 标签下载
- */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
  * 将数组导出为 CSV 文件并触发下载

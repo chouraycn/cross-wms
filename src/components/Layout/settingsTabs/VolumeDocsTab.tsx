@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, IconButton, Card, CardContent, Divider, Tooltip } from '@mui/material';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import type { AppSettings, DocLinkItem } from '../../../contexts/AppSettingsContext';
+import type { AppSettings } from '../../../contexts/AppSettingsContext';
 
 export interface VolumeDocsTabProps {
   draft: AppSettings;

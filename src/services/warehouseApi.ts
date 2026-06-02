@@ -1,9 +1,4 @@
-/**
- * 仓库管理 API 服务层
- *
- * 封装仓库详情、入库/出库记录、库存列表的 API 调用
- * 支持 MSW Mock / 后端 API 两种模式（通过 VITE_ENABLE_MOCK 控制）
- */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { Warehouse, InboundRecord, OutboundRecord, InventoryItem } from '../types';
 import { mockInboundRecords, mockOutboundRecords, mockInventory } from '../data/mockData';

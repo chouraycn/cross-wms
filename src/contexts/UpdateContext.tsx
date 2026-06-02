@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { UpdateStatus } from '../services/updateService';
-import { checkForUpdates as checkForUpdatesService, openDownloadUrl, formatVersion } from '../services/updateService';
+import { checkForUpdates as checkForUpdatesService, openDownloadUrl } from '../services/updateService';
 
 // 从 Vite 环境变量读取版本号（编译时注入）
 const VITE_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';

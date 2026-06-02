@@ -14,7 +14,7 @@ import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import CodeIcon from '@mui/icons-material/Code';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
-import { getAuthStatus, getAuthUrl, exchangeToken, refreshToken, isPyWebView, type TDocAuthStatus } from '../../services/tencentDocsApi';
+import { getAuthStatus, getAuthUrl, exchangeToken, refreshToken, type TDocAuthStatus } from '../../services/tencentDocsApi';
 import type { AppSettings, DocLinkItem, OnlineDataEntry } from '../../contexts/AppSettingsContext';
 
 /** 共享样式常量 */

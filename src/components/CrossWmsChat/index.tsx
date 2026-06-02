@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, CircularProgress, Paper, IconButton, Tooltip } from '@mui/material';
+import { Box, Typography, Paper, IconButton, Tooltip } from '@mui/material';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import { TopBarChatInput } from './TopBarChatInput';
 import { Message, Session } from '../../types/chat';

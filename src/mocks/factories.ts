@@ -69,7 +69,7 @@ export function createMockWarehouse(overrides?: Partial<Warehouse>): Warehouse {
 }
 
 export function createMockWarehouses(count: number): Warehouse[] {
-  return Array.from({ length: count }, (_, i) => createMockWarehouse());
+  return Array.from({ length: count }, (_, _i) => createMockWarehouse());
 }
 
 // ===================== TransitOrder Mock 数据 =====================
