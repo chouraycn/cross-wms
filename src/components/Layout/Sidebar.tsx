@@ -103,7 +103,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       <NavList
         collapsed={collapsed}
         activePath={location.pathname}
-        onNavigate={(path) => navigate(path)}
+        onNavigate={(path) => {
+          // 导航到非聊天页面时，清除历史对话选中态
+          if (!path.startsWith('/chat')) {
+            setActiveSessionId('');
+          }
+          navigate(path);
+        }}
         activeSessionId={activeSessionId}
         onSelectSession={(sessionId) => {
           setActiveSessionId(sessionId);
