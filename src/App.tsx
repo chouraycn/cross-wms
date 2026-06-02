@@ -371,26 +371,8 @@ const MainLayout: React.FC = () => {
           minHeight: '100vh',
           paddingTop: 'var(--pw-top, 0px)',
           position: 'relative',
-          // 所有交互元素不允许拖拽（frameless 窗口）
-          '& button, & a, & [role="button"], & input, & textarea, & [tabindex], & [contenteditable]': {
-            WebkitAppRegion: 'no-drag',
-          },
         }}
       >
-        {/* Frameless 窗口拖拽区域 — 覆盖 --pw-top 空白区，允许拖拽移动窗口 */}
-        {isPy && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 'var(--pw-top, 0px)',
-              WebkitAppRegion: 'drag',
-              zIndex: 0,
-            }}
-          />
-        )}
         {/* 顶部操作按钮区 — 绝对定位在右上角，不占用垂直空间 */}
         {actions.warehouseSwitch && (
           <Box
