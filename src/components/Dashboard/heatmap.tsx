@@ -6,6 +6,7 @@ import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { exportToCsv } from '../../utils/exportCsv';
 import type { Warehouse, InboundRecord, OutboundRecord } from '../../types';
+import type { TimeRange } from './TimeRangeSelector';
 import dayjs from 'dayjs';
 
 /**
@@ -181,6 +182,7 @@ function buildWeekColumns(cells: DayCell[]): WeekColumn[] {
 
 interface HeatmapProps {
   warehouseId: string;
+  timeRange?: TimeRange;
 }
 
 const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
@@ -191,7 +193,7 @@ const LEGEND_LABELS = ['无', '少', '中', '多', '满'];
 const MAX_CELL_SIZE = 100;    // 最大格子尺寸（不设上限，让格子铺满）
 const MIN_CELL_SIZE = 4;      // 最小格子尺寸
 
-const Heatmap: React.FC<HeatmapProps> = ({ warehouseId }) => {
+const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
   const { settings } = useAppSettings();
   const heatmapSettings = settings.dashboard.heatmap;
   const days = heatmapSettings?.days ?? 90;

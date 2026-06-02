@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Box, Button, Tooltip } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import InventoryList from '../components/Inventory/InventoryList';
+import InboundDialog from '../components/Inventory/InboundDialog';
+import OutboundDialog from '../components/Inventory/OutboundDialog';
+import TransactionHistory from '../components/Inventory/TransactionHistory';
 import PageHeader from '../components/Common/PageHeader';
 import { subscribeRefresh } from '../App';
 import { getInventoryItems } from '../capabilities/warehouse';
@@ -9,6 +14,8 @@ import { exportToCsv } from '../utils/exportCsv';
 
 const InventoryPage: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [inboundOpen, setInboundOpen] = useState(false);
+  const [outboundOpen, setOutboundOpen] = useState(false);
 
   const handleRefresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
@@ -43,35 +50,93 @@ const InventoryPage: React.FC = () => {
     exportToCsv('inventory.csv', headers, rows);
   };
 
+  /** 入库/出库成功回调：刷新库存列表 */
+  const handleOperationSuccess = useCallback(() => {
+    handleRefresh();
+  }, [handleRefresh]);
+
   return (
     <Box key={refreshKey} className="page-fade-in">
       <PageHeader
         title="库存管理"
         summary={summary}
         action={
-          items.length > 0 ? (
-            <Tooltip title="导出 CSV">
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<FileDownloadIcon sx={{ fontSize: 16 }} />}
-                onClick={handleExport}
-                sx={{
-                  textTransform: 'none',
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  borderColor: '#E5E7EB',
-                  color: '#6B7280',
-                  '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
-                }}
-              >
-                导出
-              </Button>
-            </Tooltip>
-          ) : undefined
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddCircleOutlineIcon sx={{ fontSize: 16 }} />}
+              onClick={() => setInboundOpen(true)}
+              sx={{
+                textTransform: 'none',
+                borderRadius: '8px',
+                fontSize: '0.8125rem',
+                backgroundColor: '#111827',
+                '&:hover': { backgroundColor: '#374151' },
+              }}
+            >
+              入库
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<RemoveCircleOutlineIcon sx={{ fontSize: 16 }} />}
+              onClick={() => setOutboundOpen(true)}
+              sx={{
+                textTransform: 'none',
+                borderRadius: '8px',
+                fontSize: '0.8125rem',
+                borderColor: '#E5E7EB',
+                color: '#374151',
+                '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+              }}
+            >
+              出库
+            </Button>
+            {items.length > 0 && (
+              <Tooltip title="导出 CSV">
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<FileDownloadIcon sx={{ fontSize: 16 }} />}
+                  onClick={handleExport}
+                  sx={{
+                    textTransform: 'none',
+                    borderRadius: '8px',
+                    fontSize: '0.8125rem',
+                    borderColor: '#E5E7EB',
+                    color: '#6B7280',
+                    '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+                  }}
+                >
+                  导出
+                </Button>
+              </Tooltip>
+            )}
+          </Box>
         }
       />
       <InventoryList />
+
+      {/* 变动历史区域 */}
+      <Box sx={{ mt: 4 }}>
+        <PageHeader title="变动历史" subtitle="库存出入库记录" />
+        <TransactionHistory />
+      </Box>
+
+      {/* 入库弹窗 */}
+      <InboundDialog
+        open={inboundOpen}
+        onClose={() => setInboundOpen(false)}
+        onSuccess={handleOperationSuccess}
+      />
+
+      {/* 出库弹窗 */}
+      <OutboundDialog
+        open={outboundOpen}
+        onClose={() => setOutboundOpen(false)}
+        onSuccess={handleOperationSuccess}
+      />
     </Box>
   );
 };

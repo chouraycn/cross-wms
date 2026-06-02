@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Box, Typography, Divider, IconButton, Popover, Grow, Snackbar, Alert, Button, useTheme } from '@mui/material';
+import { Box, Typography, Divider, IconButton, Snackbar, Alert, Button, useTheme } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -10,7 +10,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import TuneIcon from '@mui/icons-material/Tune';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
-import type { AppSettings, ThemeMode, AccentColor, FontSize, BorderRadius } from '../../contexts/AppSettingsContext';
+import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { APP_VERSION } from '../Settings/sharedStyles';
 import SettingsGeneral from './SettingsGeneral';
 import SettingsDashboard from './SettingsDashboard';
@@ -19,9 +19,9 @@ import SettingsDocLinks from './SettingsDocLinks';
 import SettingsAbout from './SettingsAbout';
 import SettingsModelManagement from './SettingsModelManagement';
 
-const SIDEBAR_WIDTH_EXPANDED = 260;
 type SettingsTab = 'menu' | 'tencentDocs' | 'tencentDocs_volumeDocs' | 'dashboardCalc' | 'dashboardIndicators' | 'modelManagement' | 'appearance' | 'about';
 interface SettingsMenuItem { key: Exclude<SettingsTab, 'menu'>; label: string; icon: React.ReactNode; description: string; }
+
 const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   { key: 'tencentDocs', label: '腾讯文档', icon: <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />, description: 'API 授权与文档链接管理' },
   { key: 'dashboardCalc', label: '仪表盘参数', icon: <DashboardIcon sx={{ fontSize: 20 }} />, description: '计算阈值和参数调整' },
@@ -122,19 +122,4 @@ const SettingsPanel: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   );
 };
 
-export interface SettingsPopoverProps { open: boolean; onClose: () => void; anchorEl: HTMLElement | null; }
-
-const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchorEl }) => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  return (
-    <Popover open={open} onClose={onClose} anchorEl={anchorEl} anchorOrigin={{ vertical: 'top', horizontal: 'left' }} transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      TransitionComponent={Grow} TransitionProps={{ timeout: 200 }} disableScrollLock
-      slotProps={{ paper: { sx: { width: SIDEBAR_WIDTH_EXPANDED, maxHeight: '70vh', borderRadius: '12px', marginLeft: '-5px', boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)' : '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)', border: `1px solid ${isDark ? '#2D2D2D' : '#E5E7EB'}`, overflow: 'hidden', backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' } } }}
-    >
-      <SettingsPanel onClose={onClose} />
-    </Popover>
-  );
-};
-
-export default SettingsPopover;
+export default SettingsPanel;

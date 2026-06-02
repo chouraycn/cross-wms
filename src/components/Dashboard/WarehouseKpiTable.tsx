@@ -18,6 +18,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
+import type { TimeRange } from './TimeRangeSelector';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';
@@ -25,6 +26,7 @@ import dayjs from 'dayjs';
 
 interface WarehouseKpiTableProps {
   warehouseId?: string;
+  timeRange?: TimeRange;
 }
 
 interface TableRowData {
@@ -43,7 +45,7 @@ interface TableRowData {
   };
 }
 
-const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL_WAREHOUSES }) => {
+const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL_WAREHOUSES, timeRange }) => {
   const { settings } = useAppSettings();
   const { warningThreshold, fullThreshold } = settings.dashboard;
 

@@ -15,26 +15,26 @@ const router = Router();
 // GET /api/inventory?warehouseId=xxx
 router.get('/', (req: Request, res: Response) => {
   const data = dbGetAll(req.query.warehouseId as string | undefined);
-  res.json({ data });
+  res.json({ code: 0, data, message: 'ok' });
 });
 
 // GET /api/inventory/:id
 router.get('/:id', (req: Request, res: Response) => {
   const data = dbGetById(req.params.id);
   if (!data) {
-    res.status(404).json({ error: 'Inventory item not found' });
+    res.status(404).json({ code: 404, data: null, message: 'Inventory item not found' });
     return;
   }
-  res.json({ data });
+  res.json({ code: 0, data, message: 'ok' });
 });
 
 // POST /api/inventory
 router.post('/', (req: Request, res: Response) => {
   try {
     const data = dbCreate(req.body);
-    res.status(201).json({ data });
+    res.status(201).json({ code: 0, data, message: 'ok' });
   } catch (e) {
-    res.status(400).json({ error: (e as Error).message });
+    res.status(400).json({ code: 400, data: null, message: (e as Error).message });
   }
 });
 
@@ -43,12 +43,12 @@ router.put('/:id', (req: Request, res: Response) => {
   try {
     const data = dbUpdate(req.params.id, req.body);
     if (!data) {
-      res.status(404).json({ error: 'Inventory item not found' });
+      res.status(404).json({ code: 404, data: null, message: 'Inventory item not found' });
       return;
     }
-    res.json({ data });
+    res.json({ code: 0, data, message: 'ok' });
   } catch (e) {
-    res.status(400).json({ error: (e as Error).message });
+    res.status(400).json({ code: 400, data: null, message: (e as Error).message });
   }
 });
 
@@ -56,10 +56,10 @@ router.put('/:id', (req: Request, res: Response) => {
 router.delete('/:id', (req: Request, res: Response) => {
   const ok = dbDelete(req.params.id);
   if (!ok) {
-    res.status(404).json({ error: 'Inventory item not found' });
+    res.status(404).json({ code: 404, data: null, message: 'Inventory item not found' });
     return;
   }
-  res.json({ ok: true });
+  res.json({ code: 0, data: null, message: 'ok' });
 });
 
 export default router;

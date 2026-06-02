@@ -8,13 +8,16 @@ import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { exportToCsv } from '../../utils/exportCsv';
 import { calcUtilizationByItems, calcUtilizationByVolume } from '../../utils/volumeCalculator';
+import CustomTooltip from './CustomTooltip';
+import type { TimeRange } from './TimeRangeSelector';
 import type { Warehouse } from '../../types';
 
 interface WarehouseBarChartProps {
   warehouseId: string;
+  timeRange?: TimeRange;
 }
 
-const WarehouseBarChart: React.FC<WarehouseBarChartProps> = ({ warehouseId }) => {
+const WarehouseBarChart: React.FC<WarehouseBarChartProps> = ({ warehouseId, timeRange }) => {
   // 从 Context 获取数据
   const { warehouses, loading, error } = useWarehouseCapability({ includeDashboard: true });
 
@@ -164,17 +167,7 @@ const WarehouseBarChart: React.FC<WarehouseBarChartProps> = ({ warehouseId }) =>
               tickFormatter={(v) => `${v}`}
               width={40}
             />
-            <Tooltip
-              formatter={(value: number, name: string) => [`${value} 件`, name === 'used' ? '已用' : '空闲']}
-              contentStyle={{
-                fontSize: '0.8rem',
-                borderRadius: 8,
-                border: '1px solid #E5E7EB',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-                padding: '8px 12px',
-              }}
-              labelStyle={{ color: '#6B7280', marginBottom: 4 }}
-            />
+            <Tooltip content={<CustomTooltip unit=" 件" />} />
             <Legend
               wrapperStyle={{ fontSize: '0.8rem' }}
               iconType="circle"

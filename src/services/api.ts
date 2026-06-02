@@ -3,7 +3,7 @@
  * 封装所有后端 HTTP 调用，类型安全
  */
 
-import type { Warehouse, InventoryItem, TransitOrder, InboundRecord, OutboundRecord } from '../types';
+import type { Warehouse, InventoryItem, TransitOrder, InboundRecord, OutboundRecord, InventoryTransaction } from '../types';
 import type { Skill } from '../types/skill';
 import type { AppSettings } from '../contexts/AppSettingsContext';
 
@@ -181,4 +181,88 @@ export interface MigratePayload {
 
 export async function migrate(payload: MigratePayload): Promise<unknown> {
   return request<unknown>('POST', '/api/migrate', payload);
+}
+
+// ===================== Inbound / Outbound Operations =====================
+
+export interface InboundPayload {
+  sku: string;
+  name: string;
+  warehouseId: string;
+  quantity: number;
+  supplier?: string;
+  batchNo?: string;
+  operator?: string;
+  remark?: string;
+}
+
+export interface OutboundPayload {
+  sku: string;
+  name: string;
+  warehouseId: string;
+  quantity: number;
+  customer?: string;
+  orderNo?: string;
+  operator?: string;
+  remark?: string;
+}
+
+export interface InboundResponse {
+  inboundRecord: InboundRecord;
+  inventoryItem: InventoryItem;
+  transaction: InventoryTransaction;
+}
+
+export interface OutboundResponse {
+  outboundRecord: OutboundRecord;
+  inventoryItem: InventoryItem;
+  transaction: InventoryTransaction;
+}
+
+/** 入库操作：调用 POST /api/inbound */
+export async function createInbound(data: InboundPayload): Promise<InboundResponse> {
+  const res = await fetch(`${BASE_URL}/api/inbound`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (json.code !== 0) throw new Error(json.message || '入库失败');
+  return json.data as InboundResponse;
+}
+
+/** 出库操作：调用 POST /api/outbound */
+export async function createOutbound(data: OutboundPayload): Promise<OutboundResponse> {
+  const res = await fetch(`${BASE_URL}/api/outbound`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (json.code !== 0) throw new Error(json.message || '出库失败');
+  return json.data as OutboundResponse;
+}
+
+/** 查询库存变动历史：调用 GET /api/inventory-transactions */
+export async function getInventoryTransactions(params?: {
+  page?: number;
+  pageSize?: number;
+  type?: string;
+  warehouseId?: string;
+  startDate?: string;
+  endDate?: string;
+  sku?: string;
+}): Promise<{ items: InventoryTransaction[]; total: number; page: number; pageSize: number }> {
+  const query = new URLSearchParams();
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== '') query.set(k, String(v));
+    });
+  }
+  const qs = query.toString();
+  const path = `/api/inventory-transactions${qs ? `?${qs}` : ''}`;
+  const res = await fetch(`${BASE_URL}${path}`);
+  const json = await res.json();
+  if (json.code !== 0) throw new Error(json.message || '查询变动历史失败');
+  return json.data as { items: InventoryTransaction[]; total: number; page: number; pageSize: number };
 }
