@@ -164,6 +164,16 @@ const NavList: React.FC<NavListProps> = ({
   // 聊天历史
   const [sessions, setSessions] = useState<Session[]>(() => loadSessions());
 
+  // 即时选中状态：点击时立即切换视觉反馈，不等待父组件 state 传播
+  const [justClickedSessionId, setJustClickedSessionId] = useState<string | null>(null);
+
+  // 父组件 activeSessionId 更新后，清除本地即时状态
+  useEffect(() => {
+    if (justClickedSessionId && justClickedSessionId === activeSessionId) {
+      setJustClickedSessionId(null);
+    }
+  }, [activeSessionId, justClickedSessionId]);
+
   useEffect(() => {
     const onStorage = () => setSessions(loadSessions());
     window.addEventListener('storage', onStorage);
@@ -471,11 +481,15 @@ const NavList: React.FC<NavListProps> = ({
           </Typography>
           {chatSessions.slice(0, 10).map((session) => {
             const title = session.title || session.messages[0]?.content?.slice(0, 20) || '新对话';
-            const isSessionActive = session.id === activeSessionId;
+            const effectiveActiveId = justClickedSessionId ?? activeSessionId;
+            const isSessionActive = session.id === effectiveActiveId;
             return (
               <ListItem key={session.id} disablePadding sx={{ display: 'block', mb: 0.25 }}>
                 <ListItemButton
-                  onClick={() => onSelectSession(session.id)}
+                  onClick={() => {
+                    setJustClickedSessionId(session.id);
+                    onSelectSession(session.id);
+                  }}
                   sx={{
                     minHeight: 28,
                     px: 1.5,

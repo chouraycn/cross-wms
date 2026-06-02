@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
-import { Box, Typography, Switch, FormControlLabel, Alert, CircularProgress, Button } from '@mui/material';
-import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import { Box, Typography, Switch, FormControlLabel, Alert, CircularProgress } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import KpiCards from '../components/Dashboard/KpiCards';
 import VolumeChart from '../components/Dashboard/VolumeChart';
 import TransitPieChart from '../components/Dashboard/TransitPieChart';
 import WarehouseBarChart from '../components/Dashboard/WarehouseBarChart';
 import Heatmap from '../components/Dashboard/heatmap';
+import EmptyWarehouseState from '../components/Warehouses/EmptyWarehouseState';
 import InventoryAlertList from '../components/Dashboard/InventoryAlertList';
 import WarehouseKpiTable from '../components/Dashboard/WarehouseKpiTable';
 import TransitTimeChart from '../components/Dashboard/TransitTimeChart';
@@ -108,6 +108,7 @@ function computeAlerts(
 const DashboardPageContent: React.FC = () => {
   const { settings } = useAppSettings();
   const vis = settings.dashboard.visibility;
+  const navigate = useNavigate();
 
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(ALL_WAREHOUSES);
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
@@ -263,28 +264,7 @@ const DashboardPageContent: React.FC = () => {
 
       {/* 仓库为空时显示引导页 */}
       {!loading && !error && warehouses.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 10 }}>
-          <WarehouseOutlinedIcon sx={{ fontSize: 56, color: '#D1D5DB', mb: 2 }} />
-          <Typography sx={{ fontSize: '1rem', fontWeight: 500, color: '#6B7280', mb: 0.5 }}>
-            暂无仓库数据
-          </Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF', mb: 3 }}>
-            点击左上角仓库切换按钮，添加您的第一个仓库
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddOutlinedIcon />}
-            sx={{
-              bgcolor: '#111827',
-              color: '#fff',
-              textTransform: 'none',
-              borderRadius: 6,
-              '&:hover': { bgcolor: '#374151' },
-            }}
-          >
-            添加仓库
-          </Button>
-        </Box>
+        <EmptyWarehouseState onAddWarehouse={() => navigate('/warehouses')} />
       ) : !loading && !error && (
         <>
           {settings.dashboard.componentOrder.map((comp) => {

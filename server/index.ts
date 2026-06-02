@@ -66,7 +66,7 @@ function getNodeExecutable(): string | undefined {
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '3mb' }));
 
 // 健康检查
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
