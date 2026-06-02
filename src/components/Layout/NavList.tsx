@@ -202,7 +202,13 @@ const NavList: React.FC<NavListProps> = ({
     onNavigate(path);
   }, [onNavigate]);
 
-  const isActive = (path: string) => activePath.startsWith(path);
+  // 有历史会话选中时，"新建任务"不显示激活态（白条让给历史对话项）
+  const isChatWithSession = activeSessionId && activePath === '/chat';
+
+  const isActive = (path: string) => {
+    if (path === '/chat' && isChatWithSession) return false;
+    return activePath.startsWith(path);
+  };
 
   const toggleGroup = (label: string) => {
     setExpandedGroups((prev) => ({ ...prev, [label]: !prev[label] }));
