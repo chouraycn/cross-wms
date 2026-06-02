@@ -11,7 +11,7 @@ import { UpdateProvider } from './contexts/UpdateContext';
 import UpdateNotification from './components/UpdateNotification';
 import { CrossWmsChat } from './components/CrossWmsChat';
 import ErrorBoundary from './components/Common/ErrorBoundary';
-import { automationEngine } from './services/automationEngine';
+import { automationEngine } from './services/automation';
 
 // 从统一配色文件导入
 export { PRIMARY, SECONDARY, BORDER, BG_LIGHT, BG_PAGE, WHITE, RADIUS, CHAT_COLORS } from './constants/theme';

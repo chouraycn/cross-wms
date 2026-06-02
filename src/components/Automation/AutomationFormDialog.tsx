@@ -33,7 +33,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 
-import type { TaskType, FreqType, TaskConfig, ActionType } from '../../services/automationEngine';
+import type { TaskType, FreqType, TaskConfig, ActionType } from '../../services/automation';
 import {
   TASK_TYPE_COLORS,
   ACTION_CHAIN_OPTIONS,

@@ -5,29 +5,25 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom';
 import {
-  Box, Typography, Chip, Button, Paper,
-  CircularProgress, Breadcrumbs, Link, Dialog,
-  DialogTitle, DialogContent, DialogActions, TextField,
-  Select, MenuItem, FormControl, InputLabel, Alert,
+  Box, Typography, Chip, Button, Alert,
+  Breadcrumbs, Link,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import ScheduleIcon from '@mui/icons-material/Schedule';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EditIcon from '@mui/icons-material/Edit';
-import ExtensionIcon from '@mui/icons-material/Extension';
-import { getAllSkills, removeSkill, updateSkill, setSkillStatus, onSkillsChange } from '../stores/skillStore';
-import { loadAutomations, automationEngine } from '../services/automationEngine';
-import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automationEngine';
-import { ICON_MAP, AVAILABLE_ICON_NAMES } from '../types/skill';
+import { getAllSkills, removeSkill, setSkillStatus, onSkillsChange } from '../stores/skillStore';
+import { loadAutomations, automationEngine } from '../services/automation';
+import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automation';
+import { ICON_MAP } from '../types/skill';
 import type { Skill } from '../types/skill';
-
 import { CATEGORY_LABELS, CATEGORY_COLORS, ICON_GRADIENTS } from '../constants/skillCategories';
+import SkillInfoCards from '../components/Skills/SkillInfoCards';
+import EditSkillDialog from '../components/Skills/EditSkillDialog';
 
 // ===================== 辅助函数 =====================
 
@@ -77,16 +73,6 @@ const SkillDetailPage: React.FC = () => {
 
   // 编辑 Dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editForm, setEditForm] = useState({
-    name: '',
-    desc: '',
-    icon: 'Extension',
-    category: 'tool' as 'core' | 'data' | 'auto' | 'tool',
-    trigger: '',
-    path: '/',
-    tags: '',
-  });
-  const [editError, setEditError] = useState('');
 
   const automationMap = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -163,50 +149,41 @@ const SkillDetailPage: React.FC = () => {
   // 推断执行模式
   const getExecutionMode = useCallback((s: Skill): 'navigate' | 'chat' | 'automation' | 'hybrid' => {
     if (s.executionMode) return s.executionMode;
-    // 兼容推断：有 promptTemplate → chat，有 automationTaskType → automation，有有效路径 → navigate
     if (s.promptTemplate) return 'chat';
     if (s.automationTaskType) return 'automation';
     if (s.path && s.path !== '/') return 'navigate';
-    return 'chat'; // 默认走对话模式
+    return 'chat';
   }, []);
 
   // 执行技能
   const handleExecute = () => {
     if (!skill) return;
-
-    // 记录最近使用
     updateRecentSkills(skill.name);
-
     const mode = getExecutionMode(skill);
 
     switch (mode) {
       case 'chat': {
-        // 纯对话模式：导航到 /chat 页面，通过 URL 参数传递技能 ID
         navigate(`/chat?skill=${encodeURIComponent(skill.id)}`);
         break;
       }
       case 'navigate': {
-        // 纯导航模式
         if (skill.path && skill.path !== '/') {
           navigate(skill.path);
         }
         break;
       }
       case 'automation': {
-        // 纯自动化模式
         if (skill.automationTaskType) {
           const autoInfo = automationMap[skill.automationTaskType];
           if (autoInfo) {
             handleTriggerAutomation();
           } else {
-            // 没有配置自动化，跳转到自动化页面创建
             navigate('/automation');
           }
         }
         break;
       }
       case 'hybrid': {
-        // 混合模式：优先跳转对话（注入 promptTemplate），同时如果有自动化也关联
         navigate(`/chat?skill=${encodeURIComponent(skill.id)}`);
         break;
       }
@@ -226,52 +203,6 @@ const SkillDetailPage: React.FC = () => {
     setSkillStatus(skill.id, 'available');
     setSkillVersion((v) => v + 1);
     setToast({ open: true, msg: '技能已停用', severity: 'info' });
-  };
-
-  // 打开编辑 Dialog
-  const handleOpenEdit = () => {
-    if (!skill) return;
-    setEditForm({
-      name: skill.name,
-      desc: skill.desc,
-      icon: skill.icon,
-      category: skill.category,
-      trigger: skill.trigger || '',
-      path: skill.path,
-      tags: (skill.tags || []).join(', '),
-    });
-    setEditError('');
-    setEditDialogOpen(true);
-  };
-
-  // 保存编辑
-  const handleSaveEdit = () => {
-    if (!skill) return;
-    if (!editForm.name.trim()) {
-      setEditError('请输入技能名称');
-      return;
-    }
-    if (!editForm.desc.trim()) {
-      setEditError('请输入技能描述');
-      return;
-    }
-    if (!editForm.path.trim()) {
-      setEditError('请输入路径');
-      return;
-    }
-    setEditError('');
-    updateSkill(skill.id, {
-      name: editForm.name.trim(),
-      desc: editForm.desc.trim(),
-      icon: editForm.icon,
-      category: editForm.category,
-      path: editForm.path.trim(),
-      trigger: editForm.trigger.trim() || undefined,
-      tags: editForm.tags.trim() ? editForm.tags.split(/[,，]/).map(t => t.trim()).filter(Boolean) : undefined,
-    });
-    setSkillVersion((v) => v + 1);
-    setEditDialogOpen(false);
-    setToast({ open: true, msg: '技能已更新', severity: 'success' });
   };
 
   // 删除技能
@@ -430,197 +361,19 @@ const SkillDetailPage: React.FC = () => {
       </Box>
 
       {/* 中部：卡片式分组 */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
-
-        {/* 基本信息卡片 */}
-        <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-          <Box sx={{ px: 2.5, py: 1.5, backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151' }}>
-              基本信息
-            </Typography>
-          </Box>
-          <Box sx={{ px: 2.5, py: 2 }}>
-            {/* 详细描述 */}
-            <Typography sx={{ fontSize: '0.8125rem', color: '#374151', lineHeight: 1.7, mb: 2 }}>
-              {skill.detail || skill.desc}
-            </Typography>
-
-            {/* 触发方式 */}
-            {skill.trigger && (
-              <Box sx={{ mb: 2 }}>
-                <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#9CA3AF', mb: 0.5 }}>
-                  触发方式
-                </Typography>
-                <Paper elevation={0} sx={{ px: 1.5, py: 1, borderRadius: 1, backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}>
-                  <Typography sx={{ fontSize: '0.75rem', color: '#374151', fontFamily: 'monospace' }}>
-                    {skill.trigger}
-                  </Typography>
-                </Paper>
-              </Box>
-            )}
-
-            {/* 快捷方式 */}
-            {skill.shortcut && (
-              <Box sx={{ mb: 2 }}>
-                <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#9CA3AF', mb: 0.5 }}>
-                  快捷方式
-                </Typography>
-                <Paper elevation={0} sx={{ px: 1.5, py: 1, borderRadius: 1, backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}>
-                  <Typography sx={{ fontSize: '0.75rem', color: '#374151', fontFamily: 'monospace' }}>
-                    {skill.shortcut}
-                  </Typography>
-                </Paper>
-              </Box>
-            )}
-
-            {/* 标签 */}
-            {skill.tags && skill.tags.length > 0 && (
-              <Box>
-                <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#9CA3AF', mb: 0.5 }}>
-                  标签
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                  {skill.tags.map((tag) => (
-                    <Chip
-                      key={tag}
-                      label={tag}
-                      size="small"
-                      sx={{ height: 22, fontSize: '0.65rem', backgroundColor: '#F3F4F6', color: '#6B7280' }}
-                    />
-                  ))}
-                </Box>
-              </Box>
-            )}
-          </Box>
-        </Paper>
-
-        {/* 关联自动化卡片 */}
-        {skill.automationTaskType && (
-          <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-            <Box sx={{ px: 2.5, py: 1.5, backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151' }}>
-                关联自动化
-              </Typography>
-            </Box>
-            <Box sx={{ px: 2.5, py: 2 }}>
-              {autoInfo ? (
-                <>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                    <Box>
-                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: '#111827' }}>
-                        {autoInfo.name}
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
-                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: autoInfo.active ? '#059669' : '#D97706' }} />
-                        <Typography sx={{ fontSize: '0.7rem', color: autoInfo.active ? '#059669' : '#D97706' }}>
-                          {autoInfo.active ? '运行中' : '已暂停'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={isRunning || triggering ? <CircularProgress size={14} sx={{ color: '#059669' }} /> : <PlayArrowIcon sx={{ fontSize: 14 }} />}
-                      onClick={handleTriggerAutomation}
-                      disabled={isRunning || triggering}
-                      sx={{
-                        fontSize: '0.7rem',
-                        textTransform: 'none',
-                        borderColor: '#059669',
-                        color: '#059669',
-                        '&:hover': { borderColor: '#047857', backgroundColor: '#ECFDF5' },
-                      }}
-                    >
-                      {isRunning || triggering ? '执行中...' : '立即执行'}
-                    </Button>
-                  </Box>
-
-                  {/* 最近执行记录 */}
-                  {latestExec ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5 }}>
-                      {latestExec.status === 'success'
-                        ? <CheckCircleIcon sx={{ fontSize: 14, color: '#059669' }} />
-                        : latestExec.status === 'failed'
-                          ? <ErrorOutlineIcon sx={{ fontSize: 14, color: '#DC2626' }} />
-                          : <ScheduleIcon sx={{ fontSize: 14, color: '#D97706' }} />}
-                      <Typography sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
-                        最近执行: {latestExec.status === 'success' ? '成功' : latestExec.status === 'failed' ? '失败' : '运行中'}
-                        {latestExec.completedAt ? ` · ${new Date(latestExec.completedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}
-                      </Typography>
-                    </Box>
-                  ) : (
-                    <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mb: 1.5 }}>
-                      暂无执行记录
-                    </Typography>
-                  )}
-
-                  <Button
-                    size="small"
-                    onClick={() => navigate('/automation')}
-                    sx={{
-                      textTransform: 'none',
-                      fontSize: '0.7rem',
-                      color: '#6B7280',
-                      '&:hover': { color: '#111827', backgroundColor: 'transparent' },
-                      p: 0,
-                      minWidth: 0,
-                    }}
-                  >
-                    查看自动化详情 →
-                  </Button>
-                </>
-              ) : (
-                <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
-                  未配置自动化任务
-                </Typography>
-              )}
-            </Box>
-          </Paper>
-        )}
-
-        {/* 技能元信息卡片 */}
-        <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-          <Box sx={{ px: 2.5, py: 1.5, backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151' }}>
-              元信息
-            </Typography>
-          </Box>
-          <Box sx={{ px: 2.5, py: 2 }}>
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-              <Box>
-                <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mb: 0.25 }}>来源</Typography>
-                <Typography sx={{ fontSize: '0.8125rem', color: '#374151' }}>
-                  {skill.source === 'builtin' ? '内置' : '自定义'}
-                </Typography>
-              </Box>
-              {skill.version && (
-                <Box>
-                  <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mb: 0.25 }}>版本号</Typography>
-                  <Typography sx={{ fontSize: '0.8125rem', color: '#374151' }}>v{skill.version}</Typography>
-                </Box>
-              )}
-              {skill.installedAt && (
-                <Box>
-                  <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mb: 0.25 }}>安装时间</Typography>
-                  <Typography sx={{ fontSize: '0.8125rem', color: '#374151' }}>
-                    {new Date(skill.installedAt).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                  </Typography>
-                </Box>
-              )}
-              <Box>
-                <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mb: 0.25 }}>路径</Typography>
-                <Typography sx={{ fontSize: '0.8125rem', color: '#374151', fontFamily: 'monospace' }}>
-                  {skill.path}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-        </Paper>
-      </Box>
+      <SkillInfoCards
+        skill={skill}
+        autoInfo={autoInfo}
+        hasAutomation={hasAutomation}
+        isRunning={isRunning}
+        isTriggering={triggering}
+        latestExec={latestExec}
+        onTriggerAutomation={handleTriggerAutomation}
+        onNavigateAutomation={() => navigate('/automation')}
+      />
 
       {/* 底部操作栏 */}
       <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: '1px solid #E5E7EB' }}>
-        {/* available 状态：显示"启用"按钮 */}
         {skill.status === 'available' && (
           <Button
             fullWidth
@@ -641,7 +394,6 @@ const SkillDetailPage: React.FC = () => {
           </Button>
         )}
 
-        {/* active 状态 + 用户自定义：显示"打开" + "停用" */}
         {skill.status === 'active' && (
           <Button
             fullWidth
@@ -662,7 +414,6 @@ const SkillDetailPage: React.FC = () => {
           </Button>
         )}
 
-        {/* 用户自定义技能的停用按钮（仅 active 状态的 user 技能） */}
         {isUserSkill && skill.status === 'active' && (
           <Button
             variant="outlined"
@@ -682,12 +433,11 @@ const SkillDetailPage: React.FC = () => {
           </Button>
         )}
 
-        {/* 用户自定义技能的编辑按钮 */}
         {isUserSkill && (
           <Button
             variant="outlined"
             startIcon={<EditIcon sx={{ fontSize: 16 }} />}
-            onClick={handleOpenEdit}
+            onClick={() => setEditDialogOpen(true)}
             sx={{
               textTransform: 'none',
               borderRadius: 2,
@@ -703,7 +453,6 @@ const SkillDetailPage: React.FC = () => {
           </Button>
         )}
 
-        {/* 用户自定义技能的删除按钮 */}
         {isUserSkill && (
           <Button
             variant="outlined"
@@ -727,127 +476,15 @@ const SkillDetailPage: React.FC = () => {
       </Box>
 
       {/* 编辑技能 Dialog */}
-      <Dialog
+      <EditSkillDialog
         open={editDialogOpen}
         onClose={() => setEditDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
-      >
-        <DialogTitle sx={{ fontWeight: 700, color: '#111827', pb: 1 }}>
-          编辑技能
-        </DialogTitle>
-        <DialogContent sx={{ pt: '8px !important' }}>
-          {editError && (
-            <Alert severity="error" sx={{ mb: 2, fontSize: '0.8rem' }}>
-              {editError}
-            </Alert>
-          )}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <TextField
-              label="技能名称"
-              size="small"
-              required
-              value={editForm.name}
-              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-              fullWidth
-              sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
-            />
-            <TextField
-              label="技能描述"
-              size="small"
-              required
-              value={editForm.desc}
-              onChange={(e) => setEditForm({ ...editForm, desc: e.target.value })}
-              fullWidth
-              multiline
-              minRows={2}
-              sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
-            />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <FormControl size="small" sx={{ flex: 1 }}>
-                <InputLabel>图标</InputLabel>
-                <Select
-                  value={editForm.icon}
-                  label="图标"
-                  onChange={(e) => setEditForm({ ...editForm, icon: e.target.value })}
-                >
-                  {AVAILABLE_ICON_NAMES.map((name) => (
-                    <MenuItem key={name} value={name}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', color: '#6B7280' }}>
-                          {ICON_MAP[name] || <ExtensionIcon sx={{ fontSize: 20 }} />}
-                        </Box>
-                        <Typography sx={{ fontSize: '0.8rem' }}>{name}</Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{ flex: 1 }}>
-                <InputLabel>分类</InputLabel>
-                <Select
-                  value={editForm.category}
-                  label="分类"
-                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value as 'core' | 'data' | 'auto' | 'tool' })}
-                >
-                  <MenuItem value="core">核心功能</MenuItem>
-                  <MenuItem value="data">数据管理</MenuItem>
-                  <MenuItem value="auto">自动化</MenuItem>
-                  <MenuItem value="tool">工具</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="触发词"
-                size="small"
-                value={editForm.trigger}
-                onChange={(e) => setEditForm({ ...editForm, trigger: e.target.value })}
-                fullWidth
-                placeholder="如: 同步数据 / 快捷指令"
-                sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
-              />
-              <TextField
-                label="路径"
-                size="small"
-                required
-                value={editForm.path}
-                onChange={(e) => setEditForm({ ...editForm, path: e.target.value })}
-                fullWidth
-                placeholder="/"
-                sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
-              />
-            </Box>
-            <TextField
-              label="标签"
-              size="small"
-              value={editForm.tags}
-              onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
-              fullWidth
-              placeholder="用逗号分隔，如: 同步,数据,报表"
-              sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setEditDialogOpen(false)} sx={{ textTransform: 'none', color: '#6B7280' }}>
-            取消
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSaveEdit}
-            sx={{
-              backgroundColor: '#111827',
-              '&:hover': { backgroundColor: '#374151' },
-              textTransform: 'none',
-              borderRadius: 2,
-            }}
-          >
-            保存修改
-          </Button>
-        </DialogActions>
-      </Dialog>
+        skill={skill}
+        onSaved={() => {
+          setSkillVersion((v) => v + 1);
+          setToast({ open: true, msg: '技能已更新', severity: 'success' });
+        }}
+      />
 
       {/* Toast */}
       <Alert

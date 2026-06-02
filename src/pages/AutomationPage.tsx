@@ -18,7 +18,7 @@ import {
   parseRrule,
   computeNextRun,
   formatScheduleLabel,
-} from '../services/automationEngine';
+} from '../services/automation';
 import type {
   Automation,
   TaskType,
@@ -29,7 +29,7 @@ import type {
   ExecutionStep,
   EngineStateEvent,
   ActionType,
-} from '../services/automationEngine';
+} from '../services/automation';
 import {
   TABS,
   type TabKey,

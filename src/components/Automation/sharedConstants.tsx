@@ -14,7 +14,7 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import type { TaskType, ActionType } from '../../services/automationEngine';
+import type { TaskType, ActionType } from '../../services/automation';
 
 // ===================== 任务类型配置 =====================
 

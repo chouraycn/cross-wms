@@ -15,8 +15,8 @@ import {
 import CodeIcon from '@mui/icons-material/Code';
 import RepeatIcon from '@mui/icons-material/Repeat';
 
-import { AUTOMATION_TEMPLATES } from '../../services/automationEngine';
-import type { AutomationTemplate } from '../../services/automationEngine';
+import { AUTOMATION_TEMPLATES } from '../../services/automation';
+import type { AutomationTemplate } from '../../services/automation';
 import {
   TASK_TYPE_LABELS,
   TASK_TYPE_COLORS,

@@ -38,7 +38,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 
-import type { Automation, AutomationExecution } from '../../services/automationEngine';
+import type { Automation, AutomationExecution } from '../../services/automation';
 import {
   TASK_TYPE_LABELS,
   TASK_TYPE_ICONS,
