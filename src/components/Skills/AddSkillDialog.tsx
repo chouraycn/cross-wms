@@ -6,7 +6,9 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExtensionIcon from '@mui/icons-material/Extension';
+import { unzipSync } from 'fflate';
 import { addSkill } from '../../stores/skillStore';
+import type { SkillExecutionMode } from '../../types/skill';
 
 // ===================== 类型 =====================
 
@@ -16,6 +18,67 @@ export interface AddSkillDialogProps {
   onAdded: (name: string) => void;
 }
 
+/** skill.json 的完整结构 */
+interface SkillManifest {
+  name: string;
+  desc: string;
+  icon?: string;
+  category?: 'core' | 'data' | 'auto' | 'tool';
+  path?: string;
+  trigger?: string;
+  tags?: string[];
+  version?: string;
+  /** 技能执行模式 */
+  executionMode?: SkillExecutionMode;
+  /** AI 上下文模板：选择此技能后注入到 AI prompt */
+  promptTemplate?: string;
+  /** 详细描述 */
+  detail?: string;
+  /** 关联的自动化任务类型 */
+  automationTaskType?: string;
+  /** 快捷方式说明 */
+  shortcut?: string;
+  /** 是否推荐 */
+  featured?: boolean;
+}
+
+// ===================== ZIP 解析 =====================
+
+/** 从 ZIP 文件中解析 skill.json */
+function parseSkillZip(arrayBuffer: ArrayBuffer): SkillManifest | null {
+  const uint8 = new Uint8Array(arrayBuffer);
+  const entries = unzipSync(uint8);
+
+  // 查找 skill.json（支持根目录和子目录）
+  let skillJsonKey: string | null = null;
+  for (const key of Object.keys(entries)) {
+    const basename = key.split('/').pop() || '';
+    if (basename === 'skill.json' && !key.startsWith('__MACOSX')) {
+      skillJsonKey = key;
+      break;
+    }
+  }
+
+  if (!skillJsonKey) return null;
+
+  try {
+    const jsonBytes = entries[skillJsonKey];
+    const jsonText = new TextDecoder('utf-8').decode(jsonBytes);
+    return JSON.parse(jsonText) as SkillManifest;
+  } catch {
+    return null;
+  }
+}
+
+/** 自动生成 promptTemplate（当 skill.json 未提供时） */
+function buildAutoPrompt(manifest: SkillManifest): string {
+  const parts: string[] = [`你是 CrossWMS 的「${manifest.name}」技能助手。`];
+  if (manifest.desc) parts.push(manifest.desc);
+  if (manifest.trigger) parts.push(`触发方式：${manifest.trigger}`);
+  parts.push('请根据用户的请求，提供专业、准确的回答和操作建议。');
+  return parts.join(' ');
+}
+
 // ===================== 添加技能对话框 =====================
 
 const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded }) => {
@@ -23,12 +86,14 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [preview, setPreview] = useState<SkillManifest | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const reset = () => {
     setFile(null);
     setError('');
     setLoading(false);
+    setPreview(null);
   };
 
   const handleClose = () => {
@@ -36,13 +101,26 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
     onClose();
   };
 
-  const handleFile = (f: File) => {
+  const handleFile = async (f: File) => {
     if (!f.name.endsWith('.zip')) {
       setError('请上传 .zip 格式的技能包');
       return;
     }
     setFile(f);
     setError('');
+
+    // 预览 skill.json 内容
+    try {
+      const buf = await f.arrayBuffer();
+      const manifest = parseSkillZip(buf);
+      setPreview(manifest);
+      if (!manifest) {
+        setError('ZIP 中未找到 skill.json 文件，将使用文件名创建基础技能');
+      }
+    } catch (e) {
+      setPreview(null);
+      setError(`解析技能包失败：${e instanceof Error ? e.message : '未知错误'}`);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -58,41 +136,78 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
     setError('');
 
     try {
-      // 读取 zip 内容，解析 skill.json
-      const arrayBuffer = await file.arrayBuffer();
-      const uint8 = new Uint8Array(arrayBuffer);
+      const buf = await file.arrayBuffer();
+      const manifest = parseSkillZip(buf);
 
-      // 简单读取文件名（不依赖 jszip，纯文本匹配提取 skill.json）
-      const text = new TextDecoder('utf-8', { fatal: false }).decode(uint8);
-      const jsonMatch = text.match(/\{[\s\S]*?"name"\s*:\s*"([^"]+)"[\s\S]*?"desc"\s*:\s*"([^"]+)"[\s\S]*?\}/);
+      let name: string;
+      let desc: string;
+      let icon: string;
+      let category: 'core' | 'data' | 'auto' | 'tool';
+      let path: string;
+      let trigger: string | undefined;
+      let tags: string[] | undefined;
+      let version: string;
+      let executionMode: SkillExecutionMode | undefined;
+      let promptTemplate: string | undefined;
+      let detail: string | undefined;
+      let automationTaskType: string | undefined;
+      let shortcut: string | undefined;
+      let featured: boolean | undefined;
 
-      if (jsonMatch) {
-        let skillData: Record<string, unknown> = {};
-        try {
-          const fullJsonMatch = text.match(/\{[^{}]*"name"[^{}]*"desc"[^{}]*\}/);
-          if (fullJsonMatch) skillData = JSON.parse(fullJsonMatch[0]);
-        } catch {
-          skillData = { name: jsonMatch[1], desc: jsonMatch[2] };
+      if (manifest) {
+        name = manifest.name || file.name.replace('.zip', '');
+        desc = manifest.desc || '从技能包导入';
+        icon = manifest.icon || 'Extension';
+        category = manifest.category || 'tool';
+        path = manifest.path || '/chat';
+        trigger = manifest.trigger;
+        tags = manifest.tags;
+        version = manifest.version || '1.0';
+        executionMode = manifest.executionMode;
+        promptTemplate = manifest.promptTemplate;
+        detail = manifest.detail;
+        automationTaskType = manifest.automationTaskType;
+        shortcut = manifest.shortcut;
+        featured = manifest.featured;
+
+        // 如果没有 promptTemplate 也没有 navigation path，自动生成一个基础 prompt
+        if (!promptTemplate && (!executionMode || executionMode === 'chat' || executionMode === 'hybrid')) {
+          promptTemplate = buildAutoPrompt(manifest);
         }
-        const name = (skillData['name'] as string) || file.name.replace('.zip', '');
-        const desc = (skillData['desc'] as string) || '从技能包导入';
-        const icon = (skillData['icon'] as string) || 'Extension';
-        const category = (skillData['category'] as 'core' | 'data' | 'auto' | 'tool') || 'tool';
-        const trigger = skillData['trigger'] as string | undefined;
-        const tags = skillData['tags'] as string[] | undefined;
-        const path = (skillData['path'] as string) || '/';
 
-        const newSkill = await addSkill({ name, desc, icon, category, path, trigger, tags, status: 'active', version: '1.0' });
-        onAdded(newSkill.name);
-        reset();
-        onClose();
+        // 推断 executionMode
+        if (!executionMode) {
+          if (promptTemplate && path && path !== '/' && path !== '/chat') {
+            executionMode = 'hybrid';
+          } else if (promptTemplate) {
+            executionMode = 'chat';
+          } else if (automationTaskType) {
+            executionMode = 'automation';
+          } else if (path && path !== '/') {
+            executionMode = 'navigate';
+          } else {
+            executionMode = 'chat';
+          }
+        }
       } else {
-        const name = file.name.replace('.zip', '');
-        const newSkill = await addSkill({ name, desc: `从 ${file.name} 导入的技能包`, icon: 'Extension', category: 'tool', path: '/', status: 'active', version: '1.0' });
-        onAdded(newSkill.name);
-        reset();
-        onClose();
+        // 无 skill.json — 使用文件名创建基础技能
+        name = file.name.replace('.zip', '');
+        desc = `从 ${file.name} 导入的技能包`;
+        icon = 'Extension';
+        category = 'tool';
+        path = '/chat';
+        version = '1.0';
+        executionMode = 'chat';
+        promptTemplate = `你是 CrossWMS 的「${name}」技能助手。${desc}请根据用户的请求，提供专业、准确的回答和操作建议。`;
       }
+
+      const newSkill = await addSkill({
+        name, desc, icon, category, path, trigger, tags, status: 'active', version,
+        executionMode, promptTemplate, detail, automationTaskType, shortcut, featured,
+      });
+      onAdded(newSkill.name);
+      reset();
+      onClose();
     } catch (err) {
       setError(`安装失败：${err instanceof Error ? err.message : '未知错误'}`);
     } finally {
@@ -167,8 +282,47 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
           )}
         </Box>
 
+        {/* 预览技能信息 */}
+        {preview && (
+          <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#F0FDF4', borderRadius: 2, border: '1px solid #BBF7D0' }}>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534', mb: 0.75 }}>✓ 技能包预览</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px', fontSize: '0.75rem' }}>
+              <Typography sx={{ color: '#6B7280' }}>名称</Typography>
+              <Typography sx={{ color: '#111827', fontWeight: 500 }}>{preview.name}</Typography>
+              <Typography sx={{ color: '#6B7280' }}>描述</Typography>
+              <Typography sx={{ color: '#374151' }}>{preview.desc}</Typography>
+              <Typography sx={{ color: '#6B7280' }}>分类</Typography>
+              <Typography sx={{ color: '#374151' }}>{preview.category || 'tool'}</Typography>
+              {preview.executionMode && (
+                <>
+                  <Typography sx={{ color: '#6B7280' }}>执行模式</Typography>
+                  <Typography sx={{ color: '#374151' }}>{preview.executionMode}</Typography>
+                </>
+              )}
+              {preview.trigger && (
+                <>
+                  <Typography sx={{ color: '#6B7280' }}>触发词</Typography>
+                  <Typography sx={{ color: '#374151' }}>{preview.trigger}</Typography>
+                </>
+              )}
+              {preview.promptTemplate && (
+                <>
+                  <Typography sx={{ color: '#6B7280' }}>AI 上下文</Typography>
+                  <Typography sx={{ color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 300 }}>{preview.promptTemplate.slice(0, 60)}...</Typography>
+                </>
+              )}
+              {preview.tags && preview.tags.length > 0 && (
+                <>
+                  <Typography sx={{ color: '#6B7280' }}>标签</Typography>
+                  <Typography sx={{ color: '#374151' }}>{preview.tags.join(', ')}</Typography>
+                </>
+              )}
+            </Box>
+          </Box>
+        )}
+
         {error && (
-          <Alert severity="error" sx={{ mt: 2, fontSize: '0.8rem' }}>
+          <Alert severity={preview ? 'warning' : 'error'} sx={{ mt: 2, fontSize: '0.8rem' }}>
             {error}
           </Alert>
         )}
@@ -178,13 +332,17 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
           <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 0.75 }}>技能包格式（skill.json）</Typography>
           <Box
             component="pre"
-            sx={{ fontSize: '0.7rem', color: '#374151', backgroundColor: 'transparent', m: 0, fontFamily: 'monospace', lineHeight: 1.6 }}
+            sx={{ fontSize: '0.68rem', color: '#374151', backgroundColor: 'transparent', m: 0, fontFamily: 'monospace', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}
           >{`{
   "name": "技能名称",
   "desc": "技能描述",
   "icon": "Extension",
   "category": "tool",
   "trigger": "触发词（可选）",
+  "executionMode": "chat",
+  "promptTemplate": "AI上下文模板（可选）",
+  "path": "/chat",
+  "detail": "详细说明（可选）",
   "tags": ["标签1", "标签2"]
 }`}</Box>
         </Box>
