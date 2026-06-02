@@ -227,6 +227,21 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId }) => {
     [days, warehouses, warehouseId, inboundRecords, outboundRecords]
   );
 
+  // 所有 hooks 必须在条件返回之前调用（React Hooks 规则）
+  const weekColumns = useMemo(() => buildWeekColumns(cells), [cells]);
+  const cellSize = 14;
+  const totalShipments = useMemo(() => cells.reduce((s, c) => s + c.total, 0), [cells]);
+  const activeDays = useMemo(() => cells.filter(c => c.total > 0).length, [cells]);
+
+  // SVG viewBox 尺寸 — 精确计算内容宽度，避免右侧多余留白
+  const svgViewBoxWidth = useMemo(() => {
+    const lastCol = weekColumns[weekColumns.length - 1];
+    const maxWeekIdx = lastCol ? lastCol.weekIndex : 0;
+    return WEEKDAY_LABEL_WIDTH + (maxWeekIdx + 1) * cellSize + maxWeekIdx * CELL_GAP;
+  }, [weekColumns, cellSize]);
+  const svgViewBoxHeight = MONTH_LABEL_HEIGHT + 7 * (cellSize + CELL_GAP);
+  const containerHeightCalc = useMemo(() => `${svgViewBoxHeight + 24}px`, [svgViewBoxHeight]);
+
   // 加载状态
   if (loading) {
     return (
@@ -248,30 +263,6 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId }) => {
       </Card>
     );
   }
-
-  const weekColumns = useMemo(() => buildWeekColumns(cells), [cells]);
-
-  // cellSize：固定 14px（紧凑风格，类似 GitHub 原版）
-  const cellSize = 14;
-
-  // 总出货量
-  const totalShipments = useMemo(() => cells.reduce((s, c) => s + c.total, 0), [cells]);
-
-  // 活跃天数
-  const activeDays = useMemo(() => cells.filter(c => c.total > 0).length, [cells]);
-
-  // SVG viewBox 尺寸 — 精确计算内容宽度，避免右侧多余留白
-  const lastCol = weekColumns[weekColumns.length - 1];
-  const maxWeekIndex = lastCol ? lastCol.weekIndex : 0;
-  // 内容宽度 = 星期标签宽 + 最后列的起始位置 + 格子宽度
-  // 最后列起始位置 = maxWeekIndex * (cellSize + CELL_GAP)
-  const svgViewBoxWidth = WEEKDAY_LABEL_WIDTH + (maxWeekIndex + 1) * cellSize + maxWeekIndex * CELL_GAP;
-  const svgViewBoxHeight = MONTH_LABEL_HEIGHT + 7 * (cellSize + CELL_GAP);
-
-  // 容器高度 = SVG 内容高度 + 边距（tooltip 已在 SVG 内部，无需额外空间）
-  const containerHeightCalc = useMemo(() => {
-    return `${svgViewBoxHeight + 24}px`;
-  }, [svgViewBoxHeight]);
 
   const getColor = (level: number): string => {
     if (level === -1) return colors.empty;

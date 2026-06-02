@@ -15,7 +15,7 @@
  * - 自动刷新：useAppSettings 的 dataRefreshInterval 或 options.refreshInterval
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useContext } from 'react';
 import type {
   Warehouse,
   TransitOrder,
@@ -42,7 +42,8 @@ import {
 } from './warehouseCapabilityStore';
 import { dashboardApi } from './dashboardApi';
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { AppSettingsContext } from '../../contexts/AppSettingsContext';
+import type { AppSettings } from '../../contexts/AppSettingsContext';
 
 // ====== 类型定义 ======
 
@@ -104,9 +105,11 @@ export function useWarehouseCapability(options: UseWarehouseCapabilityOptions = 
     refreshInterval: optionsRefreshInterval = 30000,
   } = options;
 
-  // 从 AppSettings 获取自动刷新间隔（无条件调用，遵循 Hooks 规则）
-  const { settings } = useAppSettings();
-  const settingsRefreshInterval = (settings.dashboard.dataRefreshInterval || 30) * 1000;
+  // 安全获取 AppSettings — 使用 useContext 直接读取，避免 useAppSettings() 在 Provider 外抛异常
+  // 防御性 optional chaining：Provider 未就绪或 settings.dashboard 缺失时回退到默认值
+  const settingsCtx = useContext(AppSettingsContext);
+  const settings: AppSettings | null = settingsCtx?.settings ?? null;
+  const settingsRefreshInterval = (settings?.dashboard?.dataRefreshInterval || 30) * 1000;
 
   const effectiveAutoRefresh = optionsAutoRefresh || includeDashboard;
   const effectiveRefreshInterval = includeDashboard ? settingsRefreshInterval : optionsRefreshInterval;

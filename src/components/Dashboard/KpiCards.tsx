@@ -106,6 +106,73 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
   // 从 Context 获取数据
   const { warehouses, transitOrders, kpiData, loading, error } = useWarehouseCapability({ includeDashboard: true });
 
+  // 所有 hooks 和派生变量必须在条件返回之前计算（React Hooks 规则）
+  const safeKpiData = kpiData || {
+    pendingInboundOrders: 0,
+    todayOutboundCount: 0,
+    inventoryDepth: 0,
+  };
+
+  const filteredWarehouses = warehouseId === ALL_WAREHOUSES
+    ? warehouses
+    : warehouses.filter((w) => w.id === warehouseId);
+
+  const filteredTransit = warehouseId === ALL_WAREHOUSES
+    ? transitOrders
+    : transitOrders.filter((t) => t.toWarehouseId === warehouseId);
+
+  const VOLUME_PER_ITEM_ESTIMATE = 0.05;
+  const transitItems = filteredTransit.reduce((s, t) => s + Math.round(t.volume / VOLUME_PER_ITEM_ESTIMATE), 0);
+  const volumeUtilization = calcOverallByItems(filteredWarehouses);
+  const transitAlertThreshold = settings.dashboard.transitAlertThreshold;
+
+  const transitAlerts = useMemo(() => {
+    const pendingTransit = filteredTransit.filter(t => t.status !== 'arrived');
+    const alerts: { warehouseId: string; warehouseName: string; afterRate: number; isAlert: boolean }[] = [];
+
+    filteredWarehouses.forEach(wh => {
+      const toTransit = pendingTransit.filter(t => t.toWarehouseId === wh.id);
+      if (toTransit.length === 0) return;
+
+      const ti = toTransit.reduce((sum, t) => sum + (t.volume / VOLUME_PER_ITEM_ESTIMATE), 0);
+      const totalItems = wh.totalItems || wh.totalVolume;
+      const usedItems = wh.usedItems || wh.usedVolume;
+      const afterRate = totalItems > 0 ? ((usedItems + ti) / totalItems) * 100 : 0;
+
+      if (afterRate >= transitAlertThreshold) {
+        alerts.push({
+          warehouseId: wh.id,
+          warehouseName: wh.name,
+          afterRate: Math.round(afterRate * 10) / 10,
+          isAlert: true,
+        });
+      }
+    });
+
+    return alerts;
+  }, [filteredTransit, filteredWarehouses, transitAlertThreshold, VOLUME_PER_ITEM_ESTIMATE]);
+
+  const alertCount = transitAlerts.length;
+  const maxAlertRate = alertCount > 0 ? Math.max(...transitAlerts.map(a => a.afterRate)) : 0;
+
+  const pendingInbound = warehouseId === ALL_WAREHOUSES
+    ? safeKpiData.pendingInboundOrders
+    : warehouses.length > 0
+      ? Math.max(1, Math.round(safeKpiData.pendingInboundOrders / warehouses.length))
+      : 0;
+
+  const todayOutbound = warehouseId === ALL_WAREHOUSES
+    ? safeKpiData.todayOutboundCount
+    : warehouses.length > 0
+      ? Math.max(1, Math.round(safeKpiData.todayOutboundCount / warehouses.length))
+      : 0;
+
+  const inventoryDepth = warehouseId === ALL_WAREHOUSES
+    ? safeKpiData.inventoryDepth
+    : safeKpiData.inventoryDepth;
+
+  const warehouseName = filteredWarehouses.length === 1 ? filteredWarehouses[0].name : '';
+
   // 加载状态
   if (loading) {
     return (
@@ -123,84 +190,6 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
       </Box>
     );
   }
-
-  // kpiData 为空时使用默认值
-  const safeKpiData = kpiData || {
-    pendingInboundOrders: 0,
-    todayOutboundCount: 0,
-    inventoryDepth: 0,
-  };
-
-  // 根据选中仓库过滤
-  const filteredWarehouses = warehouseId === ALL_WAREHOUSES
-    ? warehouses
-    : warehouses.filter((w) => w.id === warehouseId);
-
-  const filteredTransit = warehouseId === ALL_WAREHOUSES
-    ? transitOrders
-    : transitOrders.filter((t) => t.toWarehouseId === warehouseId);
-
-  // 在途货物件数（volume / 0.05 估算，假设平均每件 0.05m³）
-  const VOLUME_PER_ITEM_ESTIMATE = 0.05;
-  const transitItems = filteredTransit.reduce((s, t) => s + Math.round(t.volume / VOLUME_PER_ITEM_ESTIMATE), 0);
-
-  // 容积率（基于件数）— 使用统一工具函数
-  const volumeUtilization = calcOverallByItems(filteredWarehouses);
-
-  // 待处理入库单 — 按仓库过滤
-  const pendingInbound = warehouseId === ALL_WAREHOUSES
-    ? safeKpiData.pendingInboundOrders
-    : warehouses.length > 0
-      ? Math.max(1, Math.round(safeKpiData.pendingInboundOrders / warehouses.length))
-      : 0;
-
-  // 当日出库量 — 按仓库过滤
-  const todayOutbound = warehouseId === ALL_WAREHOUSES
-    ? safeKpiData.todayOutboundCount
-    : warehouses.length > 0
-      ? Math.max(1, Math.round(safeKpiData.todayOutboundCount / warehouses.length))
-      : 0;
-
-  // 库存深度 — 按仓库容量比例
-  const inventoryDepth = warehouseId === ALL_WAREHOUSES
-    ? safeKpiData.inventoryDepth
-    : safeKpiData.inventoryDepth;
-
-  // ==================== 在途报警 ====================
-  // 逻辑：对在途运单（未到达），计算到仓后容积率，看是否超过报警阈值
-  const transitAlertThreshold = settings.dashboard.transitAlertThreshold;
-
-  // 按目的仓分组统计在途件数
-  const transitAlerts = useMemo(() => {
-    const pendingTransit = filteredTransit.filter(t => t.status !== 'arrived');
-    const alerts: { warehouseId: string; warehouseName: string; afterRate: number; isAlert: boolean }[] = [];
-
-    filteredWarehouses.forEach(wh => {
-      const toTransit = pendingTransit.filter(t => t.toWarehouseId === wh.id);
-      if (toTransit.length === 0) return;
-
-      const transitItems = toTransit.reduce((sum, t) => sum + (t.volume / VOLUME_PER_ITEM_ESTIMATE), 0);
-      const totalItems = wh.totalItems || wh.totalVolume;
-      const usedItems = wh.usedItems || wh.usedVolume;
-      const afterRate = totalItems > 0 ? ((usedItems + transitItems) / totalItems) * 100 : 0;
-
-      if (afterRate >= transitAlertThreshold) {
-        alerts.push({
-          warehouseId: wh.id,
-          warehouseName: wh.name,
-          afterRate: Math.round(afterRate * 10) / 10,
-          isAlert: true,
-        });
-      }
-    });
-
-    return alerts;
-  }, [filteredTransit, filteredWarehouses, transitAlertThreshold]);
-
-  const alertCount = transitAlerts.length;
-  const maxAlertRate = alertCount > 0 ? Math.max(...transitAlerts.map(a => a.afterRate)) : 0;
-
-  const warehouseName = filteredWarehouses.length === 1 ? filteredWarehouses[0].name : '';
 
   // ==================== 导出 KPI 汇总 ====================
   const handleExportKpi = () => {
