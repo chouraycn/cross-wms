@@ -24,12 +24,12 @@ import {
 
 // ===================== SKILL.md 解析工具 =====================
 
-/** SKILL.md 扫描结果 */
+/** SKILL.md 扫描结果（不含 body，仅元数据） */
 interface ScannedSkillMd {
   dirName: string;
   name: string;
   description: string;
-  body: string;
+  body: string; // 扫描接口为空，read 接口返回完整内容
   hasSkillMd: boolean;
 }
 
@@ -216,12 +216,57 @@ router.delete('/builtin-status-patches/:skillId', (req: Request, res: Response) 
 
 // ===================== SKILL.md Scan =====================
 
-// GET /api/skill-md-scan — 扫描 ~/.workbuddy/skills/ 下的 SKILL.md 技能包
+// GET /api/skill-md-scan — 扫描 ~/.workbuddy/skills/ 下的 SKILL.md 技能包（仅返回元数据，不含 body）
 router.get('/skill-md-scan', (_req: Request, res: Response) => {
   const scanned = scanWorkbuddySkills();
-  // 只返回有 SKILL.md 的目录
-  const available = scanned.filter((s) => s.hasSkillMd);
+  // 只返回有 SKILL.md 的目录，且不返回 body（体积太大，导入时再读取）
+  const available = scanned
+    .filter((s) => s.hasSkillMd)
+    .map(({ body: _b, ...rest }) => rest);
   res.json({ data: available });
+});
+
+// GET /api/skill-md-read/:dirName — 读取指定技能的完整 body（导入时调用）
+router.get('/skill-md-read/:dirName', (req: Request, res: Response) => {
+  const dirName = req.params.dirName;
+  const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+  const dirPath = path.join(skillsDir, dirName);
+
+  // 安全检查：防止路径遍历
+  if (!dirPath.startsWith(skillsDir) || !fs.existsSync(dirPath)) {
+    res.status(404).json({ error: 'Skill directory not found' });
+    return;
+  }
+
+  const skillMdPath = path.join(dirPath, 'SKILL.md');
+  const skillMdLowerPath = path.join(dirPath, 'skill.md');
+  let mdPath: string | null = null;
+  if (fs.existsSync(skillMdPath)) {
+    mdPath = skillMdPath;
+  } else if (fs.existsSync(skillMdLowerPath)) {
+    mdPath = skillMdLowerPath;
+  }
+
+  if (!mdPath) {
+    res.status(404).json({ error: 'SKILL.md not found' });
+    return;
+  }
+
+  try {
+    const content = fs.readFileSync(mdPath, 'utf-8');
+    const { frontmatter, body } = parseSkillMd(content);
+    res.json({
+      data: {
+        dirName,
+        name: frontmatter.name || dirName,
+        description: frontmatter.description || body.slice(0, 100).replace(/[#*\n]/g, ' ').trim(),
+        body,
+        hasSkillMd: true,
+      },
+    });
+  } catch {
+    res.status(500).json({ error: 'Failed to read SKILL.md' });
+  }
 });
 
 export default router;
