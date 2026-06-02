@@ -154,6 +154,22 @@ export async function removeBuiltinPatch(skillId: string): Promise<void> {
   await request<void>('DELETE', `/api/builtin-status-patches/${encodeURIComponent(skillId)}`);
 }
 
+// ===================== SKILL.md Scan =====================
+
+/** SKILL.md 扫描结果 */
+export interface ScannedSkillMd {
+  dirName: string;
+  name: string;
+  description: string;
+  body: string;
+  hasSkillMd: boolean;
+}
+
+/** 扫描 ~/.workbuddy/skills/ 下的 SKILL.md 技能包 */
+export async function scanSkillMd(): Promise<ScannedSkillMd[]> {
+  return request<ScannedSkillMd[]>('GET', '/api/skill-md-scan');
+}
+
 // ===================== App Settings =====================
 
 export async function getAppSettings(): Promise<AppSettings | null> {
