@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Unit tests for src/services/api.ts
  *
@@ -462,5 +463,308 @@ describe('Migration API', () => {
     expect(mockFetch.mock.calls[0][0]).toBe(`${BASE_URL}/api/migrate`);
     expect(mockFetch.mock.calls[0][1].method).toBe('POST');
     expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual(payload);
+  });
+});
+
+// ===================== Inbound Operations API =====================
+
+describe('Inbound Operations API', () => {
+  /** Helper: create a successful inbound/outbound JSON response (code: 0) */
+  function mockApiSuccessResponse(data: unknown): Response {
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: () => Promise.resolve({ code: 0, data, message: 'ok' }),
+      headers: new Headers(),
+      redirected: false,
+      type: 'basic' as ResponseType,
+      url: '',
+      clone: () => ({}) as Response,
+      body: null,
+      bodyUsed: false,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+      blob: () => Promise.resolve(new Blob()),
+      formData: () => Promise.resolve(new FormData()),
+      text: () => Promise.resolve(''),
+    } as unknown as Response;
+  }
+
+  /** Helper: create a business-error JSON response (code !== 0) */
+  function mockApiErrorResponse(code: number, message: string): Response {
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: () => Promise.resolve({ code, data: null, message }),
+      headers: new Headers(),
+      redirected: false,
+      type: 'basic' as ResponseType,
+      url: '',
+      clone: () => ({}) as Response,
+      body: null,
+      bodyUsed: false,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+      blob: () => Promise.resolve(new Blob()),
+      formData: () => Promise.resolve(new FormData()),
+      text: () => Promise.resolve(''),
+    } as unknown as Response;
+  }
+
+  it('createInbound() should POST to /api/inbound with correct body', async () => {
+    const payload: api.InboundPayload = {
+      sku: 'SKU-001',
+      name: 'Test Item',
+      warehouseId: 'wh-1',
+      quantity: 50,
+      supplier: 'Supplier A',
+      batchNo: 'BATCH-001',
+      operator: 'Alice',
+    };
+    const responseData = {
+      inboundRecord: { id: 'ib-1' },
+      inventoryItem: { id: 'item-1', quantity: 150 },
+      transaction: { id: 1, type: 'inbound' },
+    };
+    mockFetch.mockResolvedValueOnce(mockApiSuccessResponse(responseData));
+
+    const result = await api.createInbound(payload);
+
+    expect(mockFetch.mock.calls[0][0]).toBe(`${BASE_URL}/api/inbound`);
+    expect(mockFetch.mock.calls[0][1].method).toBe('POST');
+    expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual(payload);
+    expect(result).toEqual(responseData);
+  });
+
+  it('createInbound() should throw on API error (code !== 0)', async () => {
+    const payload: api.InboundPayload = {
+      sku: 'SKU-001',
+      name: 'Test Item',
+      warehouseId: 'wh-1',
+      quantity: 50,
+    };
+    mockFetch.mockResolvedValueOnce(mockApiErrorResponse(1, '入库失败：仓库不存在'));
+
+    await expect(api.createInbound(payload)).rejects.toThrow('入库失败：仓库不存在');
+  });
+
+  it('createInbound() should throw default message when error has no message', async () => {
+    const payload: api.InboundPayload = {
+      sku: 'SKU-001',
+      name: 'Test Item',
+      warehouseId: 'wh-1',
+      quantity: 50,
+    };
+    mockFetch.mockResolvedValueOnce(mockApiErrorResponse(1, ''));
+
+    await expect(api.createInbound(payload)).rejects.toThrow('入库失败');
+  });
+});
+
+// ===================== Outbound Operations API =====================
+
+describe('Outbound Operations API', () => {
+  /** Helper: create a successful inbound/outbound JSON response (code: 0) */
+  function mockApiSuccessResponse(data: unknown): Response {
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: () => Promise.resolve({ code: 0, data, message: 'ok' }),
+      headers: new Headers(),
+      redirected: false,
+      type: 'basic' as ResponseType,
+      url: '',
+      clone: () => ({}) as Response,
+      body: null,
+      bodyUsed: false,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+      blob: () => Promise.resolve(new Blob()),
+      formData: () => Promise.resolve(new FormData()),
+      text: () => Promise.resolve(''),
+    } as unknown as Response;
+  }
+
+  /** Helper: create a business-error JSON response (code !== 0) */
+  function mockApiErrorResponse(code: number, message: string): Response {
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: () => Promise.resolve({ code, data: null, message }),
+      headers: new Headers(),
+      redirected: false,
+      type: 'basic' as ResponseType,
+      url: '',
+      clone: () => ({}) as Response,
+      body: null,
+      bodyUsed: false,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+      blob: () => Promise.resolve(new Blob()),
+      formData: () => Promise.resolve(new FormData()),
+      text: () => Promise.resolve(''),
+    } as unknown as Response;
+  }
+
+  it('createOutbound() should POST to /api/outbound with correct body', async () => {
+    const payload: api.OutboundPayload = {
+      sku: 'SKU-001',
+      name: 'Test Item',
+      warehouseId: 'wh-1',
+      quantity: 20,
+      customer: 'Customer X',
+      orderNo: 'ORD-001',
+      operator: 'Bob',
+    };
+    const responseData = {
+      outboundRecord: { id: 'ob-1' },
+      inventoryItem: { id: 'item-1', quantity: 80 },
+      transaction: { id: 2, type: 'outbound' },
+    };
+    mockFetch.mockResolvedValueOnce(mockApiSuccessResponse(responseData));
+
+    const result = await api.createOutbound(payload);
+
+    expect(mockFetch.mock.calls[0][0]).toBe(`${BASE_URL}/api/outbound`);
+    expect(mockFetch.mock.calls[0][1].method).toBe('POST');
+    expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual(payload);
+    expect(result).toEqual(responseData);
+  });
+
+  it('createOutbound() should throw on insufficient stock (code=400)', async () => {
+    const payload: api.OutboundPayload = {
+      sku: 'SKU-001',
+      name: 'Test Item',
+      warehouseId: 'wh-1',
+      quantity: 999,
+    };
+    mockFetch.mockResolvedValueOnce(mockApiErrorResponse(400, '库存不足'));
+
+    await expect(api.createOutbound(payload)).rejects.toThrow('库存不足');
+  });
+
+  it('createOutbound() should throw default message when error has no message', async () => {
+    const payload: api.OutboundPayload = {
+      sku: 'SKU-001',
+      name: 'Test Item',
+      warehouseId: 'wh-1',
+      quantity: 10,
+    };
+    mockFetch.mockResolvedValueOnce(mockApiErrorResponse(1, ''));
+
+    await expect(api.createOutbound(payload)).rejects.toThrow('出库失败');
+  });
+});
+
+// ===================== Inventory Transactions API =====================
+
+describe('Inventory Transactions API', () => {
+  /** Helper: create a successful JSON response (code: 0) */
+  function mockApiSuccessResponse(data: unknown): Response {
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: () => Promise.resolve({ code: 0, data, message: 'ok' }),
+      headers: new Headers(),
+      redirected: false,
+      type: 'basic' as ResponseType,
+      url: '',
+      clone: () => ({}) as Response,
+      body: null,
+      bodyUsed: false,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+      blob: () => Promise.resolve(new Blob()),
+      formData: () => Promise.resolve(new FormData()),
+      text: () => Promise.resolve(''),
+    } as unknown as Response;
+  }
+
+  /** Helper: create a business-error JSON response */
+  function mockApiErrorResponse(code: number, message: string): Response {
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: () => Promise.resolve({ code, data: null, message }),
+      headers: new Headers(),
+      redirected: false,
+      type: 'basic' as ResponseType,
+      url: '',
+      clone: () => ({}) as Response,
+      body: null,
+      bodyUsed: false,
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+      blob: () => Promise.resolve(new Blob()),
+      formData: () => Promise.resolve(new FormData()),
+      text: () => Promise.resolve(''),
+    } as unknown as Response;
+  }
+
+  it('getInventoryTransactions() should GET /api/inventory-transactions without params', async () => {
+    const responseData = { items: [], total: 0, page: 1, pageSize: 20 };
+    mockFetch.mockResolvedValueOnce(mockApiSuccessResponse(responseData));
+
+    const result = await api.getInventoryTransactions();
+
+    expect(mockFetch.mock.calls[0][0]).toBe(`${BASE_URL}/api/inventory-transactions`);
+    // getInventoryTransactions uses fetch directly without method option (GET is default)
+    expect(mockFetch.mock.calls[0][1]).toBeUndefined();
+    expect(result).toEqual(responseData);
+  });
+
+  it('getInventoryTransactions() should pass pagination params', async () => {
+    const responseData = { items: [], total: 100, page: 2, pageSize: 10 };
+    mockFetch.mockResolvedValueOnce(mockApiSuccessResponse(responseData));
+
+    await api.getInventoryTransactions({ page: 2, pageSize: 10 });
+
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain('page=2');
+    expect(url).toContain('pageSize=10');
+  });
+
+  it('getInventoryTransactions() should pass filter params', async () => {
+    const responseData = { items: [], total: 0, page: 1, pageSize: 20 };
+    mockFetch.mockResolvedValueOnce(mockApiSuccessResponse(responseData));
+
+    await api.getInventoryTransactions({
+      type: 'inbound',
+      warehouseId: 'wh-1',
+      startDate: '2024-01-01',
+      endDate: '2024-12-31',
+      sku: 'SKU-001',
+    });
+
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain('type=inbound');
+    expect(url).toContain('warehouseId=wh-1');
+    expect(url).toContain('startDate=2024-01-01');
+    expect(url).toContain('endDate=2024-12-31');
+    expect(url).toContain('sku=SKU-001');
+  });
+
+  it('getInventoryTransactions() should omit undefined and empty params', async () => {
+    const responseData = { items: [], total: 0, page: 1, pageSize: 20 };
+    mockFetch.mockResolvedValueOnce(mockApiSuccessResponse(responseData));
+
+    await api.getInventoryTransactions({ type: 'outbound', sku: '' });
+
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain('type=outbound');
+    // sku='' should be omitted
+    expect(url).not.toContain('sku=');
+  });
+
+  it('getInventoryTransactions() should throw on API error', async () => {
+    mockFetch.mockResolvedValueOnce(mockApiErrorResponse(1, '查询变动历史失败'));
+
+    await expect(api.getInventoryTransactions()).rejects.toThrow('查询变动历史失败');
+  });
+
+  it('getInventoryTransactions() should throw default message on API error without message', async () => {
+    mockFetch.mockResolvedValueOnce(mockApiErrorResponse(1, ''));
+
+    await expect(api.getInventoryTransactions()).rejects.toThrow('查询变动历史失败');
   });
 });

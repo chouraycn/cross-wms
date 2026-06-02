@@ -1,9 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { HashRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box, IconButton, Snackbar, Alert, useMediaQuery } from '@mui/material';
-import MenuOpenOutlinedIcon from '@mui/icons-material/MenuOpenOutlined';
-import Sidebar, { SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from './components/Layout/Sidebar';
+import { CssBaseline, Box, Snackbar, Alert, useMediaQuery } from '@mui/material';
+import Sidebar from './components/Layout/Sidebar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 import type { AppearanceConfig, AccentColor } from './contexts/AppSettingsContext';
@@ -251,7 +250,6 @@ function getPageRefreshKey(pathname: string): string {
 /** 主布局（需要在 Router 内部以使用 useLocation / useNavigate） */
 const MainLayout: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
       return localStorage.getItem('crosswms-sidebar-collapsed') === 'true';
@@ -267,6 +265,7 @@ const MainLayout: React.FC = () => {
       // 红黄绿按钮偏移：通过 Cocoa API 移动（必须在窗口完全加载后调用）
       const applyTrafficLightOffset = async () => {
         try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const api = (window as any).pywebview?.api;
           if (api?.set_traffic_light_offset) {
             // 读取保存的偏移量（或使用默认值）
@@ -285,6 +284,7 @@ const MainLayout: React.FC = () => {
 
       // 窗口 resize 后重新应用红黄绿偏移（点击绿色 zoom 按钮后 macOS 会重置按钮位置）
       const reapplyOnResize = () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const api = (window as any).pywebview?.api;
         if (api?.reapply_traffic_light_offset) {
           // 延迟 200ms 等待 macOS 完成窗口动画

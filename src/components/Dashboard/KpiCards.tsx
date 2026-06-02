@@ -12,7 +12,6 @@ import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { exportToCsv } from '../../utils/exportCsv';
 import { calcOverallByItems } from '../../utils/volumeCalculator';
-import type { Warehouse, TransitOrder } from '../../types';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 
 /** KPI 卡片主题配置 */

@@ -7,10 +7,9 @@ import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { exportToCsv } from '../../utils/exportCsv';
-import { calcUtilizationByItems, calcUtilizationByVolume } from '../../utils/volumeCalculator';
+import { calcUtilizationByItems } from '../../utils/volumeCalculator';
 import CustomTooltip from './CustomTooltip';
 import type { TimeRange } from './TimeRangeSelector';
-import type { Warehouse } from '../../types';
 
 interface WarehouseBarChartProps {
   warehouseId: string;

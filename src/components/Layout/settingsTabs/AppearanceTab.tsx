@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Box, Typography, Button, Divider, FormControlLabel, Switch, Tooltip } from '@mui/material';
+import { Box, Typography, Button, Switch, Tooltip } from '@mui/material';
 import type { AppSettings, AppearanceConfig, ThemeMode, AccentColor, FontSize, BorderRadius } from '../../../contexts/AppSettingsContext';
 
 const switchSx = {

@@ -10,7 +10,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import TuneIcon from '@mui/icons-material/Tune';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
-import type { AppSettings, ThemeMode, AccentColor, FontSize, BorderRadius } from '../../contexts/AppSettingsContext';
+import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { APP_VERSION } from '../Settings/sharedStyles';
 import SettingsGeneral from './SettingsGeneral';
 import SettingsDashboard from './SettingsDashboard';

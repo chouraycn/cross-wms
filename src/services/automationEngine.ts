@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * 自动化执行引擎
  *
@@ -16,7 +17,6 @@
 
 import { dashboardApi } from '../capabilities/warehouse';
 import { setWarehouses } from '../capabilities/warehouse';
-import type { Warehouse } from '../types';
 
 // ===================== 类型定义 =====================
 
@@ -541,12 +541,11 @@ async function executeInventorySnapshot(): Promise<{ result: string; steps: Exec
 }
 
 /** 执行报表生成 */
-async function executeReportGen(config?: TaskConfig): Promise<{ result: string; steps: ExecutionStep[] }> {
+async function executeReportGen(_config?: TaskConfig): Promise<{ result: string; steps: ExecutionStep[] }> {
   const steps: ExecutionStep[] = [];
   const start = Date.now();
 
-  const [warehouses, transitOrders, inventory, volumeHistory, inbound, outbound, kpi, statusDist] =
-    await Promise.all([
+  const results = await Promise.all([
       dashboardApi.getWarehouses(),
       dashboardApi.getTransitOrders(),
       dashboardApi.getInventory(),
@@ -556,6 +555,7 @@ async function executeReportGen(config?: TaskConfig): Promise<{ result: string; 
       dashboardApi.getKpiData(),
       dashboardApi.getTransitStatusDistribution(),
     ]);
+  const [warehouses, , inventory, volumeHistory, , , kpi, statusDist] = results;
 
   steps.push({ action: '采集数据', status: 'success', message: `8 类数据已采集`, duration: Date.now() - start });
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
@@ -25,7 +26,6 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import TuneIcon from '@mui/icons-material/Tune';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
 import type { AppSettings, SidebarConfig, ModelConfig } from '../../../contexts/AppSettingsContext';
 import { formatVersion, type UpdateStatus } from '../../../services/updateService';
 import { useUpdateContext } from '../../../contexts/UpdateContext';

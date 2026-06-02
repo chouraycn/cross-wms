@@ -22,10 +22,8 @@ import {
   Button,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';
 import type { Warehouse, WarehouseStatus } from '../../types';
 import { useNavigate } from 'react-router-dom';

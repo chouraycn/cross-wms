@@ -7,12 +7,10 @@ import {
 } from 'recharts';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
-import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { exportToCsv } from '../../utils/exportCsv';
 import CustomTooltip from './CustomTooltip';
 import type { TimeRange } from './TimeRangeSelector';
-import type { VolumeHistoryPoint } from '../../types';
 
 interface VolumeChartProps {
   warehouseId: string;

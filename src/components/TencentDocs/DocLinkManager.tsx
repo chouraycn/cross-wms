@@ -6,18 +6,15 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 import DescriptionIcon from '@mui/icons-material/Description';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import AddIcon from '@mui/icons-material/Add';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { useNavigate } from 'react-router-dom';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { DocLinkItem, WeComDocLinkItem } from '../../contexts/AppSettingsContext';
-import { getDocTypeFromUrl, extractFileIdFromUrl, isPyWebView, type SheetCell } from '../../services/tencentDocsApi';
+import { getDocTypeFromUrl, extractFileIdFromUrl, type SheetCell } from '../../services/tencentDocsApi';
 import {
   extractWeComDocIdFromUrl, getWeComDocCategoryFromUrl, getWeComCategoryLabel,
 } from '../../services/wecomDocsApi';
 import { getWarehouses } from '../../capabilities/warehouse';
-import type { Warehouse } from '../../types';
 
 /** 腾讯文档品牌色 */
 const TDOC_COLOR = '#27A17C';

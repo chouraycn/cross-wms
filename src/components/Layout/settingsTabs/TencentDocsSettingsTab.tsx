@@ -30,7 +30,7 @@ import CodeIcon from '@mui/icons-material/Code';
 import EditIcon from '@mui/icons-material/Edit';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import type { AppSettings, DocLinkItem, OnlineDataEntry } from '../../../contexts/AppSettingsContext';
-import { getAuthStatus, getAuthUrl, exchangeToken, refreshToken, isPyWebView, type TDocAuthStatus } from '../../../services/tencentDocsApi';
+import { getAuthStatus, getAuthUrl, exchangeToken, refreshToken, type TDocAuthStatus } from '../../../services/tencentDocsApi';
 
 /** 共享样式 */
 const textFieldSx = {

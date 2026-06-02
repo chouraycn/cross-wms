@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import express from 'express';
 import cors from 'cors';
 import { initDb, getSessions, createSession, getSessionMessages, addMessage, deleteSession } from './db.js';

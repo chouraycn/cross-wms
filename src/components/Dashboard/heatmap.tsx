@@ -1,10 +1,8 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { Box, Typography, Card, CardHeader, CardContent, IconButton, CircularProgress, Alert, Paper } from '@mui/material';
-import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
+import { Box, Typography, Card, CardHeader, CardContent, CircularProgress, Alert, Paper } from '@mui/material';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
-import { exportToCsv } from '../../utils/exportCsv';
 import type { Warehouse, InboundRecord, OutboundRecord } from '../../types';
 import type { TimeRange } from './TimeRangeSelector';
 import dayjs from 'dayjs';
@@ -189,9 +187,6 @@ const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 const CELL_GAP = 3;           // 格子间距 3px
 const WEEKDAY_LABEL_WIDTH = 36; // 左侧星期标签宽 36px
 const MONTH_LABEL_HEIGHT = 20;
-const LEGEND_LABELS = ['无', '少', '中', '多', '满'];
-const MAX_CELL_SIZE = 100;    // 最大格子尺寸（不设上限，让格子铺满）
-const MIN_CELL_SIZE = 4;      // 最小格子尺寸
 
 const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
   const { settings } = useAppSettings();
@@ -204,7 +199,6 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
   const { warehouses, inboundRecords, outboundRecords, loading, error } = useWarehouseCapability({ includeDashboard: true });
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
   const [hoveredCell, setHoveredCell] = useState<DayCell | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
