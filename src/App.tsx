@@ -256,12 +256,12 @@ const MainLayout: React.FC = () => {
     } catch { return false; }
   });
   // pywebview 检测 — frameless 模式下需要 --pw-top 避让红黄绿按钮
-  // 红黄绿按钮下移5px + 右移5px，总避让高度 = 28(默认) + 5 = 33px
+  // 红黄绿按钮下移5px + 右移5px + 额外10px内容间距，总避让高度 = 28(默认) + 5 + 10 = 43px
   const [isPy, setIsPy] = useState(() => isPyWebView());
   useEffect(() => {
     if (isPy) {
       // pywebview 环境立即注入 CSS 变量，避免布局闪烁
-      document.documentElement.style.setProperty('--pw-top', '33px');
+      document.documentElement.style.setProperty('--pw-top', '43px');
       // 红黄绿按钮偏移：通过 Cocoa API 移动（必须在窗口完全加载后调用）
       const applyTrafficLightOffset = async () => {
         try {
@@ -301,7 +301,7 @@ const MainLayout: React.FC = () => {
     const id = setInterval(() => {
       if (isPyWebView()) {
         setIsPy(true);
-        document.documentElement.style.setProperty('--pw-top', '33px');
+        document.documentElement.style.setProperty('--pw-top', '43px');
         clearInterval(id);
       }
     }, 100);
@@ -352,7 +352,7 @@ const MainLayout: React.FC = () => {
     return () => window.removeEventListener('crosswms-storage-warning', handler);
   }, []);
 
-  // 系统红黄绿按钮区域高度由 CSS 变量 --pw-top 控制（frameless 模式下 JS 注入 33px）
+  // 系统红黄绿按钮区域高度由 CSS 变量 --pw-top 控制（frameless 模式下 JS 注入 43px）
   // 两侧（Sidebar + 工具栏）均使用 calc(40px + var(--pw-top, 0px)) 统一高度
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
