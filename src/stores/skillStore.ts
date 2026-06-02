@@ -114,10 +114,14 @@ export async function setSkillStatus(id: string, status: Skill['status']): Promi
   }
 }
 
-/** 删除技能（只能删除 source: 'user' 的技能） */
+/** 删除技能（只能删除 source: 'user' 的技能，内置技能禁止删除） */
 export async function removeSkill(id: string): Promise<boolean> {
-  const idx = userSkills.findIndex((s) => s.id === id);
-  if (idx === -1) return false;
+  const skill = userSkills.find((s) => s.id === id);
+  if (!skill) return false;
+  if (skill.source === 'builtin') {
+    console.warn('[skillStore] removeSkill: 内置技能禁止删除', id);
+    return false;
+  }
   try {
     await api.deleteUserSkill(id);
     userSkills = userSkills.filter((s) => s.id !== id);

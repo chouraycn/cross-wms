@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Button, CircularProgress, Dialog, DialogTitle,
-  DialogContent, DialogActions, Alert,
+  DialogContent, DialogActions, Alert, Checkbox, IconButton, Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExtensionIcon from '@mui/icons-material/Extension';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { unzipSync } from 'fflate';
 import { addSkill } from '../../stores/skillStore';
-import type { SkillExecutionMode } from '../../types/skill';
+import { scanSkillMd } from '../../services/api';
+import type { ScannedSkillMd } from '../../services/api';
 
 // ===================== 类型 =====================
 
@@ -18,75 +23,302 @@ export interface AddSkillDialogProps {
   onAdded: (name: string) => void;
 }
 
-/** skill.json 的完整结构 */
-interface SkillManifest {
-  name: string;
-  desc: string;
-  icon?: string;
-  category?: 'core' | 'data' | 'auto' | 'tool';
-  path?: string;
-  trigger?: string;
-  tags?: string[];
-  version?: string;
-  /** 技能执行模式 */
-  executionMode?: SkillExecutionMode;
-  /** AI 上下文模板：选择此技能后注入到 AI prompt */
-  promptTemplate?: string;
-  /** 详细描述 */
-  detail?: string;
-  /** 关联的自动化任务类型 */
-  automationTaskType?: string;
-  /** 快捷方式说明 */
-  shortcut?: string;
-  /** 是否推荐 */
-  featured?: boolean;
-}
+type TabType = 'zip' | 'skillmd';
 
 // ===================== ZIP 解析 =====================
 
-/** 从 ZIP 文件中解析 skill.json */
-function parseSkillZip(arrayBuffer: ArrayBuffer): SkillManifest | null {
+/** 解析 SKILL.md 的 YAML frontmatter + Markdown body（前端版，与后端逻辑一致） */
+function parseSkillMdContent(content: string): { frontmatter: Record<string, string>; body: string } {
+  const frontmatter: Record<string, string> = {};
+  let body = '';
+
+  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+  if (fmMatch) {
+    const fmText = fmMatch[1];
+    body = fmMatch[2].trim();
+    for (const line of fmText.split('\n')) {
+      const colonIdx = line.indexOf(':');
+      if (colonIdx > 0) {
+        const key = line.slice(0, colonIdx).trim();
+        const val = line.slice(colonIdx + 1).trim().replace(/^['"]|['"]$/g, '');
+        if (key && val) {
+          frontmatter[key] = val;
+        }
+      }
+    }
+  } else {
+    body = content.trim();
+  }
+
+  return { frontmatter, body };
+}
+
+/** SKILL.md 解析结果 */
+interface ParsedSkillMd {
+  name: string;
+  description: string;
+  body: string;
+  frontmatter: Record<string, string>;
+}
+
+/** 从 ZIP 文件中解析 skill.md / SKILL.md */
+function parseSkillZip(arrayBuffer: ArrayBuffer): ParsedSkillMd | null {
   const uint8 = new Uint8Array(arrayBuffer);
   const entries = unzipSync(uint8);
 
-  // 查找 skill.json（支持根目录和子目录）
-  let skillJsonKey: string | null = null;
+  let skillMdKey: string | null = null;
   for (const key of Object.keys(entries)) {
     const basename = key.split('/').pop() || '';
-    if (basename === 'skill.json' && !key.startsWith('__MACOSX')) {
-      skillJsonKey = key;
+    if ((basename === 'SKILL.md' || basename === 'skill.md') && !key.startsWith('__MACOSX')) {
+      skillMdKey = key;
       break;
     }
   }
 
-  if (!skillJsonKey) return null;
+  if (!skillMdKey) return null;
 
   try {
-    const jsonBytes = entries[skillJsonKey];
-    const jsonText = new TextDecoder('utf-8').decode(jsonBytes);
-    return JSON.parse(jsonText) as SkillManifest;
+    const mdBytes = entries[skillMdKey];
+    const mdText = new TextDecoder('utf-8').decode(mdBytes);
+    const { frontmatter, body } = parseSkillMdContent(mdText);
+    return {
+      name: frontmatter.name || '',
+      description: frontmatter.description || body.slice(0, 100).replace(/[#*\n]/g, ' ').trim(),
+      body,
+      frontmatter,
+    };
   } catch {
     return null;
   }
 }
 
-/** 自动生成 promptTemplate（当 skill.json 未提供时） */
-function buildAutoPrompt(manifest: SkillManifest): string {
-  const parts: string[] = [`你是 CrossWMS 的「${manifest.name}」技能助手。`];
-  if (manifest.desc) parts.push(manifest.desc);
-  if (manifest.trigger) parts.push(`触发方式：${manifest.trigger}`);
-  parts.push('请根据用户的请求，提供专业、准确的回答和操作建议。');
-  return parts.join(' ');
-}
+// ===================== SKILL.md 导入面板 =====================
+
+const SkillMdImportPanel: React.FC<{
+  onImport: (skill: ScannedSkillMd) => Promise<void>;
+  onClose: () => void;
+}> = ({ onImport, onClose }) => {
+  const [skills, setSkills] = useState<ScannedSkillMd[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [importing, setImporting] = useState(false);
+  const [error, setError] = useState('');
+  const [imported, setImported] = useState<Set<string>>(new Set());
+
+  const loadSkills = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await scanSkillMd();
+      setSkills(data);
+    } catch (e) {
+      setError(`扫描失败：${e instanceof Error ? e.message : '无法连接服务'}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSkills();
+  }, [loadSkills]);
+
+  const toggleSelect = (dirName: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(dirName)) next.delete(dirName);
+      else next.add(dirName);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selected.size === skills.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(skills.map((s) => s.dirName)));
+    }
+  };
+
+  const handleImportSelected = async () => {
+    if (selected.size === 0) return;
+    setImporting(true);
+    setError('');
+
+    let failed = 0;
+    for (const dirName of selected) {
+      const skill = skills.find((s) => s.dirName === dirName);
+      if (!skill) continue;
+      try {
+        await onImport(skill);
+        setImported((prev) => new Set(prev).add(dirName));
+      } catch {
+        failed++;
+      }
+    }
+
+    if (failed > 0) {
+      setError(`${failed} 个技能导入失败`);
+    }
+
+    setSelected(new Set());
+    setImporting(false);
+  };
+
+  const remaining = skills.filter((s) => !imported.has(s.dirName));
+
+  return (
+    <Box>
+      <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', mb: 2 }}>
+        从 <code style={{ backgroundColor: '#F3F4F6', padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>~/.workbuddy/skills/</code> 目录扫描 <code style={{ backgroundColor: '#F3F4F6', padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>SKILL.md</code> 格式的技能包并导入。SKILL.md 正文将作为 AI 上下文模板。
+      </Typography>
+
+      {/* 操作栏 */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {remaining.length > 0 && (
+            <Box onClick={toggleAll} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer' }}>
+              <Checkbox
+                checked={selected.size === remaining.length && remaining.length > 0}
+                indeterminate={selected.size > 0 && selected.size < remaining.length}
+                size="small"
+                sx={{ p: 0.25 }}
+              />
+              <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                全选 ({remaining.length})
+              </Typography>
+            </Box>
+          )}
+        </Box>
+        <Tooltip title="刷新">
+          <IconButton size="small" onClick={loadSkills} disabled={loading}>
+            <RefreshIcon sx={{ fontSize: 16, color: '#6B7280' }} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      {/* 加载中 */}
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress size={24} sx={{ color: '#6B7280' }} />
+        </Box>
+      )}
+
+      {/* 无结果 */}
+      {!loading && skills.length === 0 && !error && (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <FolderOpenIcon sx={{ fontSize: 36, color: '#D1D5DB', mb: 1 }} />
+          <Typography sx={{ fontSize: '0.85rem', color: '#9CA3AF' }}>
+            未发现 SKILL.md 技能包
+          </Typography>
+          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.5 }}>
+            请将技能包放入 ~/.workbuddy/skills/ 目录
+          </Typography>
+        </Box>
+      )}
+
+      {/* 技能列表 */}
+      {!loading && remaining.length > 0 && (
+        <Box sx={{ maxHeight: 300, overflowY: 'auto', border: '1px solid #E5E7EB', borderRadius: 2 }}>
+          {remaining.map((skill, idx) => (
+            <Box
+              key={skill.dirName}
+              onClick={() => toggleSelect(skill.dirName)}
+              sx={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 1.5,
+                px: 2,
+                py: 1.5,
+                cursor: 'pointer',
+                borderBottom: idx < remaining.length - 1 ? '1px solid #F3F4F6' : 'none',
+                backgroundColor: selected.has(skill.dirName) ? '#F0FDF4' : 'transparent',
+                transition: 'background-color 0.15s',
+                '&:hover': { backgroundColor: selected.has(skill.dirName) ? '#F0FDF4' : '#F9FAFB' },
+              }}
+            >
+              <Checkbox
+                checked={selected.has(skill.dirName)}
+                size="small"
+                sx={{ mt: -0.25, p: 0.5 }}
+              />
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <DescriptionIcon sx={{ fontSize: 16, color: '#6B7280' }} />
+                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 500, color: '#111827' }}>
+                    {skill.name}
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', mt: 0.25, ml: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {skill.description || '（无描述）'}
+                </Typography>
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      {/* 已导入 */}
+      {imported.size > 0 && (
+        <Box sx={{ mt: 1.5, p: 1.5, backgroundColor: '#F0FDF4', borderRadius: 2, border: '1px solid #BBF7D0' }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534' }}>
+            已导入 {imported.size} 个技能
+          </Typography>
+        </Box>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mt: 1.5, fontSize: '0.8rem' }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* 底部操作 */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+        <Button onClick={onClose} sx={{ textTransform: 'none', color: '#6B7280' }}>
+          关闭
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleImportSelected}
+          disabled={selected.size === 0 || importing}
+          sx={{
+            backgroundColor: '#111827',
+            '&:hover': { backgroundColor: '#374151' },
+            textTransform: 'none',
+            borderRadius: 2,
+          }}
+        >
+          {importing ? <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} /> : null}
+          {importing ? '导入中...' : `导入 ${selected.size > 0 ? `(${selected.size})` : ''}`}
+        </Button>
+      </Box>
+
+      {/* 格式说明 */}
+      <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#F9FAFB', borderRadius: 2, border: '1px solid #E5E7EB' }}>
+        <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 0.75 }}>SKILL.md 格式</Typography>
+        <Box
+          component="pre"
+          sx={{ fontSize: '0.68rem', color: '#374151', backgroundColor: 'transparent', m: 0, fontFamily: 'monospace', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}
+        >{`---
+name: 技能名称
+description: 技能描述
+---
+
+技能指令正文（将作为 AI 上下文模板注入）`}</Box>
+      </Box>
+    </Box>
+  );
+};
 
 // ===================== 添加技能对话框 =====================
 
 const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded }) => {
+  const [activeTab, setActiveTab] = useState<TabType>('skillmd');
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [preview, setPreview] = useState<SkillManifest | null>(null);
+  const [preview, setPreview] = useState<ParsedSkillMd | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const reset = () => {
@@ -101,6 +333,8 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
     onClose();
   };
 
+  // ---- ZIP Tab ----
+
   const handleFile = async (f: File) => {
     if (!f.name.endsWith('.zip')) {
       setError('请上传 .zip 格式的技能包');
@@ -109,13 +343,12 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
     setFile(f);
     setError('');
 
-    // 预览 skill.json 内容
     try {
       const buf = await f.arrayBuffer();
-      const manifest = parseSkillZip(buf);
-      setPreview(manifest);
-      if (!manifest) {
-        setError('ZIP 中未找到 skill.json 文件，将使用文件名创建基础技能');
+      const parsed = parseSkillZip(buf);
+      setPreview(parsed);
+      if (!parsed) {
+        setError('ZIP 中未找到 skill.md 描述文件，将使用文件名创建基础技能');
       }
     } catch (e) {
       setPreview(null);
@@ -137,73 +370,34 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
 
     try {
       const buf = await file.arrayBuffer();
-      const manifest = parseSkillZip(buf);
+      const parsed = parseSkillZip(buf);
 
       let name: string;
       let desc: string;
-      let icon: string;
-      let category: 'core' | 'data' | 'auto' | 'tool';
-      let path: string;
-      let trigger: string | undefined;
-      let tags: string[] | undefined;
-      let version: string;
-      let executionMode: SkillExecutionMode | undefined;
       let promptTemplate: string | undefined;
-      let detail: string | undefined;
-      let automationTaskType: string | undefined;
-      let shortcut: string | undefined;
-      let featured: boolean | undefined;
 
-      if (manifest) {
-        name = manifest.name || file.name.replace('.zip', '');
-        desc = manifest.desc || '从技能包导入';
-        icon = manifest.icon || 'Extension';
-        category = manifest.category || 'tool';
-        path = manifest.path || '/chat';
-        trigger = manifest.trigger;
-        tags = manifest.tags;
-        version = manifest.version || '1.0';
-        executionMode = manifest.executionMode;
-        promptTemplate = manifest.promptTemplate;
-        detail = manifest.detail;
-        automationTaskType = manifest.automationTaskType;
-        shortcut = manifest.shortcut;
-        featured = manifest.featured;
-
-        // 如果没有 promptTemplate 也没有 navigation path，自动生成一个基础 prompt
-        if (!promptTemplate && (!executionMode || executionMode === 'chat' || executionMode === 'hybrid')) {
-          promptTemplate = buildAutoPrompt(manifest);
-        }
-
-        // 推断 executionMode
-        if (!executionMode) {
-          if (promptTemplate && path && path !== '/' && path !== '/chat') {
-            executionMode = 'hybrid';
-          } else if (promptTemplate) {
-            executionMode = 'chat';
-          } else if (automationTaskType) {
-            executionMode = 'automation';
-          } else if (path && path !== '/') {
-            executionMode = 'navigate';
-          } else {
-            executionMode = 'chat';
-          }
-        }
+      if (parsed) {
+        name = parsed.name || file.name.replace('.zip', '');
+        desc = parsed.description || '从技能包导入';
+        promptTemplate = parsed.body || undefined;
       } else {
-        // 无 skill.json — 使用文件名创建基础技能
         name = file.name.replace('.zip', '');
         desc = `从 ${file.name} 导入的技能包`;
-        icon = 'Extension';
-        category = 'tool';
-        path = '/chat';
-        version = '1.0';
-        executionMode = 'chat';
         promptTemplate = `你是 CrossWMS 的「${name}」技能助手。${desc}请根据用户的请求，提供专业、准确的回答和操作建议。`;
       }
 
       const newSkill = await addSkill({
-        name, desc, icon, category, path, trigger, tags, status: 'active', version,
-        executionMode, promptTemplate, detail, automationTaskType, shortcut, featured,
+        name,
+        desc,
+        icon: 'Extension',
+        category: 'tool',
+        path: '/chat',
+        status: 'active',
+        version: '1.0',
+        executionMode: 'chat',
+        promptTemplate,
+        detail: desc,
+        tags: ['zip-import'],
       });
       onAdded(newSkill.name);
       reset();
@@ -214,6 +408,27 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       setLoading(false);
     }
   };
+
+  // ---- SKILL.md Tab ----
+
+  const handleImportSkillMd = async (skill: ScannedSkillMd) => {
+    const newSkill = await addSkill({
+      name: skill.name,
+      desc: skill.description || `从 WorkBuddy 导入: ${skill.dirName}`,
+      icon: 'Extension',
+      category: 'tool',
+      path: '/agent',
+      status: 'active',
+      version: '1.0',
+      executionMode: 'chat',
+      promptTemplate: skill.body || `你是 CrossWMS 的「${skill.name}」技能助手。请根据用户的请求，提供专业、准确的回答和操作建议。`,
+      detail: skill.description,
+      tags: [skill.dirName, 'workbuddy'],
+    });
+    onAdded(newSkill.name);
+  };
+
+  // ===================== 渲染 =====================
 
   return (
     <Dialog
@@ -227,145 +442,201 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         <ExtensionIcon sx={{ fontSize: 22, color: '#6B7280' }} />
         安装技能包
       </DialogTitle>
-      <DialogContent sx={{ pt: '8px !important' }}>
-        <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', mb: 2 }}>
-          上传 <code style={{ backgroundColor: '#F3F4F6', padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>.zip</code> 格式的技能包文件。技能包应包含 <code style={{ backgroundColor: '#F3F4F6', padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>skill.json</code> 描述文件。
-        </Typography>
 
-        {/* 拖拽上传区 */}
+      {/* Tab 切换 */}
+      <Box sx={{ display: 'flex', borderBottom: '1px solid #E5E7EB', px: 3 }}>
         <Box
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => setActiveTab('skillmd')}
           sx={{
-            border: `2px dashed ${dragging ? '#111827' : file ? '#10B981' : '#E5E7EB'}`,
-            borderRadius: '12px',
-            backgroundColor: dragging ? '#F9FAFB' : file ? '#F0FDF4' : '#FAFAFA',
-            py: 4,
-            px: 3,
-            textAlign: 'center',
+            py: 1.5,
+            px: 2,
+            fontSize: '0.8125rem',
+            color: activeTab === 'skillmd' ? '#1A1A1A' : '#666',
             cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+            position: 'relative',
+            fontWeight: activeTab === 'skillmd' ? 500 : 400,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            transition: 'color 0.2s',
+            '&:hover': { color: '#333' },
+            '&::after': activeTab === 'skillmd' ? {
+              content: '""',
+              position: 'absolute',
+              bottom: -1,
+              left: 0,
+              right: 0,
+              height: 2,
+              backgroundColor: '#1A1A1A',
+            } : {},
           }}
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".zip"
-            style={{ display: 'none' }}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-          />
-          {file ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CheckCircleIcon sx={{ fontSize: 28, color: '#10B981' }} />
-              </Box>
-              <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827' }}>{file.name}</Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                {(file.size / 1024).toFixed(1)} KB · 点击重新选择
-              </Typography>
-            </Box>
-          ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <AddIcon sx={{ fontSize: 28, color: '#9CA3AF' }} />
-              </Box>
-              <Typography sx={{ fontSize: '0.9rem', fontWeight: 500, color: '#374151' }}>
-                拖拽技能包到此处
-              </Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
-                或点击选择 .zip 文件
-              </Typography>
-            </Box>
-          )}
+          <FolderOpenIcon sx={{ fontSize: 16 }} />
+          SKILL.md 导入
         </Box>
-
-        {/* 预览技能信息 */}
-        {preview && (
-          <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#F0FDF4', borderRadius: 2, border: '1px solid #BBF7D0' }}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534', mb: 0.75 }}>✓ 技能包预览</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px', fontSize: '0.75rem' }}>
-              <Typography sx={{ color: '#6B7280' }}>名称</Typography>
-              <Typography sx={{ color: '#111827', fontWeight: 500 }}>{preview.name}</Typography>
-              <Typography sx={{ color: '#6B7280' }}>描述</Typography>
-              <Typography sx={{ color: '#374151' }}>{preview.desc}</Typography>
-              <Typography sx={{ color: '#6B7280' }}>分类</Typography>
-              <Typography sx={{ color: '#374151' }}>{preview.category || 'tool'}</Typography>
-              {preview.executionMode && (
-                <>
-                  <Typography sx={{ color: '#6B7280' }}>执行模式</Typography>
-                  <Typography sx={{ color: '#374151' }}>{preview.executionMode}</Typography>
-                </>
-              )}
-              {preview.trigger && (
-                <>
-                  <Typography sx={{ color: '#6B7280' }}>触发词</Typography>
-                  <Typography sx={{ color: '#374151' }}>{preview.trigger}</Typography>
-                </>
-              )}
-              {preview.promptTemplate && (
-                <>
-                  <Typography sx={{ color: '#6B7280' }}>AI 上下文</Typography>
-                  <Typography sx={{ color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 300 }}>{preview.promptTemplate.slice(0, 60)}...</Typography>
-                </>
-              )}
-              {preview.tags && preview.tags.length > 0 && (
-                <>
-                  <Typography sx={{ color: '#6B7280' }}>标签</Typography>
-                  <Typography sx={{ color: '#374151' }}>{preview.tags.join(', ')}</Typography>
-                </>
-              )}
-            </Box>
-          </Box>
-        )}
-
-        {error && (
-          <Alert severity={preview ? 'warning' : 'error'} sx={{ mt: 2, fontSize: '0.8rem' }}>
-            {error}
-          </Alert>
-        )}
-
-        {/* 技能包格式说明 */}
-        <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#F9FAFB', borderRadius: 2, border: '1px solid #E5E7EB' }}>
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 0.75 }}>技能包格式（skill.json）</Typography>
-          <Box
-            component="pre"
-            sx={{ fontSize: '0.68rem', color: '#374151', backgroundColor: 'transparent', m: 0, fontFamily: 'monospace', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}
-          >{`{
-  "name": "技能名称",
-  "desc": "技能描述",
-  "icon": "Extension",
-  "category": "tool",
-  "trigger": "触发词（可选）",
-  "executionMode": "chat",
-  "promptTemplate": "AI上下文模板（可选）",
-  "path": "/chat",
-  "detail": "详细说明（可选）",
-  "tags": ["标签1", "标签2"]
-}`}</Box>
-        </Box>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={handleClose} sx={{ textTransform: 'none', color: '#6B7280' }}>
-          取消
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleInstall}
-          disabled={!file || loading}
+        <Box
+          onClick={() => setActiveTab('zip')}
           sx={{
-            backgroundColor: '#111827',
-            '&:hover': { backgroundColor: '#374151' },
-            textTransform: 'none',
-            borderRadius: 2,
+            py: 1.5,
+            px: 2,
+            fontSize: '0.8125rem',
+            color: activeTab === 'zip' ? '#1A1A1A' : '#666',
+            cursor: 'pointer',
+            position: 'relative',
+            fontWeight: activeTab === 'zip' ? 500 : 400,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            transition: 'color 0.2s',
+            '&:hover': { color: '#333' },
+            '&::after': activeTab === 'zip' ? {
+              content: '""',
+              position: 'absolute',
+              bottom: -1,
+              left: 0,
+              right: 0,
+              height: 2,
+              backgroundColor: '#1A1A1A',
+            } : {},
           }}
         >
-          {loading ? <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} /> : null}
-          {loading ? '安装中...' : '安装技能'}
-        </Button>
-      </DialogActions>
+          <UploadFileIcon sx={{ fontSize: 16 }} />
+          ZIP 上传
+        </Box>
+      </Box>
+
+      <DialogContent sx={{ pt: '16px !important' }}>
+        {/* SKILL.md 导入面板 */}
+        {activeTab === 'skillmd' && (
+          <SkillMdImportPanel
+            onImport={handleImportSkillMd}
+            onClose={handleClose}
+          />
+        )}
+
+        {/* ZIP 上传面板 */}
+        {activeTab === 'zip' && (
+          <>
+            <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', mb: 2 }}>
+              上传 <code style={{ backgroundColor: '#F3F4F6', padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>.zip</code> 格式的技能包文件。技能包应包含 <code style={{ backgroundColor: '#F3F4F6', padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>skill.md</code> 描述文件。
+            </Typography>
+
+            {/* 拖拽上传区 */}
+            <Box
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              sx={{
+                border: `2px dashed ${dragging ? '#111827' : file ? '#10B981' : '#E5E7EB'}`,
+                borderRadius: '12px',
+                backgroundColor: dragging ? '#F9FAFB' : file ? '#F0FDF4' : '#FAFAFA',
+                py: 4,
+                px: 3,
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+              }}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".zip"
+                style={{ display: 'none' }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+              />
+              {file ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CheckCircleIcon sx={{ fontSize: 28, color: '#10B981' }} />
+                  </Box>
+                  <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827' }}>{file.name}</Typography>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                    {(file.size / 1024).toFixed(1)} KB · 点击重新选择
+                  </Typography>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <AddIcon sx={{ fontSize: 28, color: '#9CA3AF' }} />
+                  </Box>
+                  <Typography sx={{ fontSize: '0.9rem', fontWeight: 500, color: '#374151' }}>
+                    拖拽技能包到此处
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                    或点击选择 .zip 文件
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+
+            {/* 预览技能信息 */}
+            {preview && (
+              <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#F0FDF4', borderRadius: 2, border: '1px solid #BBF7D0' }}>
+                <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534', mb: 0.75 }}>✓ 技能包预览</Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px', fontSize: '0.75rem' }}>
+                  <Typography sx={{ color: '#6B7280' }}>名称</Typography>
+                  <Typography sx={{ color: '#111827', fontWeight: 500 }}>{preview.name || '（未指定）'}</Typography>
+                  <Typography sx={{ color: '#6B7280' }}>描述</Typography>
+                  <Typography sx={{ color: '#374151' }}>{preview.description || '（无描述）'}</Typography>
+                  {preview.body && (
+                    <>
+                      <Typography sx={{ color: '#6B7280' }}>AI 上下文</Typography>
+                      <Typography sx={{ color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 300 }}>
+                        {preview.body.length > 80 ? `${preview.body.slice(0, 80)}...` : preview.body}
+                      </Typography>
+                    </>
+                  )}
+                </Box>
+              </Box>
+            )}
+
+            {error && (
+              <Alert severity={preview ? 'warning' : 'error'} sx={{ mt: 2, fontSize: '0.8rem' }}>
+                {error}
+              </Alert>
+            )}
+
+            {/* 技能包格式说明 */}
+            <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#F9FAFB', borderRadius: 2, border: '1px solid #E5E7EB' }}>
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 0.75 }}>skill.md 格式</Typography>
+              <Box
+                component="pre"
+                sx={{ fontSize: '0.68rem', color: '#374151', backgroundColor: 'transparent', m: 0, fontFamily: 'monospace', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}
+              >{`---
+name: 技能名称
+description: 技能描述
+---
+
+技能指令正文（将作为 AI 上下文模板注入）`}</Box>
+            </Box>
+          </>
+        )}
+      </DialogContent>
+
+      {/* ZIP Tab 的底部操作 */}
+      {activeTab === 'zip' && (
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleClose} sx={{ textTransform: 'none', color: '#6B7280' }}>
+            取消
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleInstall}
+            disabled={!file || loading}
+            sx={{
+              backgroundColor: '#111827',
+              '&:hover': { backgroundColor: '#374151' },
+              textTransform: 'none',
+              borderRadius: 2,
+            }}
+          >
+            {loading ? <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} /> : null}
+            {loading ? '安装中...' : '安装技能'}
+          </Button>
+        </DialogActions>
+      )}
     </Dialog>
   );
 };
