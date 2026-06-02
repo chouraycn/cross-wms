@@ -315,6 +315,11 @@ _agent_server_process = None
 shutting_down = False
 
 
+# 连续重启失败计数器（超过阈值后停止重启，避免无限循环卡死）
+_restart_fail_counts = {'Server': 0, 'AgentServer': 0}
+_MAX_RESTART_FAILS = 3
+
+
 def _watch_process(proc, start_fn, name):
     """监控子进程：意外退出时自动重启（P0-3 后端进程崩溃自动恢复）
 
@@ -327,16 +332,38 @@ def _watch_process(proc, start_fn, name):
         proc.wait()
         if shutting_down:
             return
+        # 进程立刻退出（启动即崩），累计失败次数
+        _restart_fail_counts[name] += 1
+        if _restart_fail_counts[name] > _MAX_RESTART_FAILS:
+            log(f"[{name}] 连续 {_MAX_RESTART_FAILS} 次重启失败，停止重启。请检查 {os.path.dirname(get_log_path())}/ 下的日志。")
+            return
         log(f"[{name}] 进程意外退出 (code={proc.returncode})，3 秒后重启...")
         time.sleep(3)
         if shutting_down:
             return
         new_proc = start_fn()
         if new_proc:
+            # 启动成功，延迟重置计数（进程跑满 10 秒才算真正稳定）
+            def reset_count():
+                time.sleep(10)
+                if new_proc.poll() is None:
+                    _restart_fail_counts[name] = 0
+            threading.Thread(target=reset_count, daemon=True).start()
             log(f"[{name}] 已重启 (PID: {new_proc.pid})")
             _watch_process(new_proc, start_fn, name)
         else:
-            log(f"[{name}] 重启失败")
+            log(f"[{name}] 重启失败 ({_restart_fail_counts[name]}/{_MAX_RESTART_FAILS})")
+            # start_fn 返回 None 也需要继续尝试（递归自己，带延迟）
+            if _restart_fail_counts[name] <= _MAX_RESTART_FAILS:
+                time.sleep(5)
+                if not shutting_down:
+                    new_proc2 = start_fn()
+                    if new_proc2:
+                        log(f"[{name}] 延迟重启成功 (PID: {new_proc2.pid})")
+                        _restart_fail_counts[name] = 0
+                        _watch_process(new_proc2, start_fn, name)
+                    else:
+                        log(f"[{name}] 延迟重启也失败 ({_restart_fail_counts[name]}/{_MAX_RESTART_FAILS})")
     threading.Thread(target=watcher, daemon=True).start()
 
 
@@ -559,11 +586,16 @@ def start_server():
     else:
         cmd = [node_path, server_script]
 
+    # 将 stdout/stderr 重定向到日志文件，避免 PIPE 缓冲区满导致进程阻塞卡死
+    log_dir = os.path.dirname(get_log_path())
+    server_stdout_log = open(os.path.join(log_dir, 'server-stdout.log'), 'a')
+    server_stderr_log = open(os.path.join(log_dir, 'server-stderr.log'), 'a')
+
     try:
         proc = subprocess.Popen(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=server_stdout_log,
+            stderr=server_stderr_log,
             env=env,
             # 在新进程组中启动，方便终止
             start_new_session=True,
@@ -646,11 +678,16 @@ def start_agent_server():
     else:
         cmd = [node_path, agent_server_script]
 
+    # 将 stdout/stderr 重定向到日志文件，避免 PIPE 缓冲区满导致进程阻塞卡死
+    log_dir = os.path.dirname(get_log_path())
+    agent_stdout_log = open(os.path.join(log_dir, 'agent-stdout.log'), 'a')
+    agent_stderr_log = open(os.path.join(log_dir, 'agent-stderr.log'), 'a')
+
     try:
         proc = subprocess.Popen(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=agent_stdout_log,
+            stderr=agent_stderr_log,
             env=env,
             start_new_session=True,
         )

@@ -25,12 +25,10 @@ interface NavItem {
   label: string;
   path: string;
   icon: React.ReactNode;
-  /** 特殊行为：不走路由跳转，而是派发自定义事件 */
-  action?: string;
 }
 
 const navItems: NavItem[] = [
-  { label: '新建任务', path: '/chat', icon: <TaskAltOutlinedIcon />, action: 'focus-chat' },
+  { label: '新建任务', path: '/chat', icon: <TaskAltOutlinedIcon /> },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon /> },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon /> },
   { label: '仪表盘', path: '/', icon: <DashboardOutlinedIcon /> },
@@ -74,15 +72,7 @@ const NavList: React.FC<NavListProps> = ({ collapsed, activePath, onNavigate }) 
             <Tooltip title={collapsed ? item.label : ''} placement="right" arrow>
               <ListItemButton
                 onClick={() => {
-                  if (item.action === 'focus-chat') {
-                    // 先导航到首页确保 AI 对话框可见，再派发聚焦事件
-                    onNavigate('/');
-                    setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('crosswms-focus-chat'));
-                    }, 100);
-                  } else {
-                    onNavigate(item.path);
-                  }
+                  onNavigate(item.path);
                 }}
                 sx={{
                   minHeight: collapsed ? 40 : 36,
