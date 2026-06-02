@@ -34,11 +34,13 @@ interface NavItemLeaf {
   label: string;
   path: string;
   icon: React.ReactNode;
+  desc?: string;
 }
 
 interface NavItemGroup {
   label: string;
   icon: React.ReactNode;
+  desc?: string;
   children: NavItemLeaf[];
 }
 
@@ -51,20 +53,21 @@ function isGroup(item: NavItem): item is NavItemGroup {
 // ===================== Nav Items Config =====================
 
 const navItems: NavItem[] = [
-  { label: '新建任务', path: '/chat', icon: <TaskAltOutlinedIcon /> },
-  { label: '技能', path: '/skills', icon: <AutoFixHighIcon /> },
-  { label: '自动化', path: '/automation', icon: <ScheduleIcon /> },
-  { label: 'Agent 应用', path: '/agent', icon: <SmartToyOutlinedIcon /> },
+  { label: '新建任务', path: '/chat', icon: <TaskAltOutlinedIcon />, desc: 'AI 对话' },
+  { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
+  { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '定时任务' },
+  { label: 'Agent 应用', path: '/agent', icon: <SmartToyOutlinedIcon />, desc: '智能体' },
   {
     label: '仓储管理',
     icon: <WarehouseOutlinedIcon />,
+    desc: '仓库·在途·库存',
     children: [
-      { label: '仪表盘', path: '/dashboard', icon: <DashboardOutlinedIcon /> },
-      { label: '仓库管理', path: '/warehouses', icon: <FolderOutlinedIcon /> },
-      { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon /> },
-      { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon /> },
-      { label: '腾讯文档', path: '/tencent-docs', icon: <DescriptionOutlinedIcon /> },
-      { label: '统计报表', path: '/reports', icon: <AssessmentOutlinedIcon /> },
+      { label: '仪表盘', path: '/dashboard', icon: <DashboardOutlinedIcon />, desc: '总览' },
+      { label: '仓库管理', path: '/warehouses', icon: <FolderOutlinedIcon />, desc: '仓库列表' },
+      { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon />, desc: '在途跟踪' },
+      { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon />, desc: '库存查询' },
+      { label: '腾讯文档', path: '/tencent-docs', icon: <DescriptionOutlinedIcon />, desc: '在线文档' },
+      { label: '统计报表', path: '/reports', icon: <AssessmentOutlinedIcon />, desc: '数据报表' },
     ],
   },
 ];
@@ -277,6 +280,19 @@ const NavList: React.FC<NavListProps> = ({
                   >
                     {item.label}
                   </Typography>
+                  {item.desc && !collapsed && (
+                    <Typography
+                      sx={{
+                        fontSize: '0.625rem',
+                        color: textMuted,
+                        mr: 0.5,
+                        lineHeight: '36px',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {item.desc}
+                    </Typography>
+                  )}
                   {expanded ? (
                     <ExpandLessIcon sx={{ fontSize: 16, color: textMuted }} />
                   ) : (
@@ -318,6 +334,19 @@ const NavList: React.FC<NavListProps> = ({
                           >
                             {child.label}
                           </Typography>
+                          {child.desc && (
+                            <Typography
+                              sx={{
+                                fontSize: '0.625rem',
+                                color: textMuted,
+                                ml: 'auto',
+                                lineHeight: '28px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {child.desc}
+                            </Typography>
+                          )}
                         </ListItemButton>
                       </ListItem>
                     );
@@ -401,10 +430,23 @@ const NavList: React.FC<NavListProps> = ({
                     fontWeight: active ? 500 : 400,
                     color: active ? textActive : textNormal,
                     lineHeight: '36px',
+                    flex: 1,
                   }}
                 >
                   {item.label}
                 </Typography>
+                {'desc' in item && item.desc && (
+                  <Typography
+                    sx={{
+                      fontSize: '0.625rem',
+                      color: textMuted,
+                      lineHeight: '36px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {item.desc}
+                  </Typography>
+                )}
               </ListItemButton>
             </ListItem>
 
