@@ -20,6 +20,8 @@ import {
   IconButton,
   Tooltip,
   Button,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
@@ -70,6 +72,8 @@ const WarehouseList: React.FC = () => {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Warehouse | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
   const [form, setForm] = useState<NewWarehouseForm>({
     name: '',
     country: '',
@@ -81,9 +85,11 @@ const WarehouseList: React.FC = () => {
     phone: '',
   });
 
-  const handleOpenDialog = () => setOpenDialog(true);
+  const handleOpenDialog = () => { setOpenDialog(true); setCreateError(''); };
   const handleCloseDialog = () => {
     setOpenDialog(false);
+    setCreating(false);
+    setCreateError('');
     setForm({ name: '', country: '', city: '', totalVolume: '', totalItems: '', address: '', manager: '', phone: '' });
   };
 
@@ -92,6 +98,8 @@ const WarehouseList: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    setCreating(true);
+    setCreateError('');
     const totalVol = parseFloat(form.totalVolume);
     const totalItems = parseInt(form.totalItems, 10);
     const newWh: Warehouse = {
@@ -111,10 +119,11 @@ const WarehouseList: React.FC = () => {
     };
     try {
       await addGlobalWarehouse(newWh); // 等待后端持久化完成再跳转
-    } catch (e) {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '未知错误';
       console.error('[WarehouseList] addGlobalWarehouse failed:', e);
-      // 持久化失败 → 不跳转，提示用户
-      window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'createWarehouse', error: e } }));
+      setCreateError(`创建失败：${msg}`);
+      setCreating(false);
       return;
     }
     handleCloseDialog();
@@ -318,16 +327,22 @@ const WarehouseList: React.FC = () => {
               <TextField label="联系电话" value={form.phone} onChange={handleFormChange('phone')} fullWidth size="small" />
             </Grid>
           </Grid>
+          {createError && (
+            <Alert severity="error" sx={{ mt: 2, fontSize: '0.8rem' }}>
+              {createError}
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
-          <Button onClick={handleCloseDialog}>取消</Button>
+          <Button onClick={handleCloseDialog} disabled={creating}>取消</Button>
           <Button
             variant="contained"
             onClick={() => handleSubmit()}
-            disabled={!form.name || !form.totalVolume || !form.totalItems}
+            disabled={!form.name || !form.totalVolume || !form.totalItems || creating}
             sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' } }}
           >
-            确认创建
+            {creating ? <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} /> : null}
+            {creating ? '创建中...' : '确认创建'}
           </Button>
         </DialogActions>
       </Dialog>
