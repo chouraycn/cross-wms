@@ -373,8 +373,25 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
     setError('');
 
     try {
-      const buf = await file.arrayBuffer();
-      const parsed = parseSkillZip(buf);
+      // Step 1: 读取 ZIP 文件
+      let buf: ArrayBuffer;
+      try {
+        buf = await file.arrayBuffer();
+      } catch (readErr) {
+        console.error('[AddSkillDialog] Failed to read file:', readErr);
+        setError(`读取文件失败：${readErr instanceof Error ? readErr.message : '未知错误'}`);
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: 解析 ZIP（fflate 可能抛异常）
+      let parsed: ParsedSkillMd | null = null;
+      try {
+        parsed = parseSkillZip(buf);
+      } catch (zipErr) {
+        console.warn('[AddSkillDialog] ZIP parse failed, using fallback:', zipErr);
+        // 解析失败不算致命，继续用默认值
+      }
 
       let name: string;
       let desc: string;
@@ -390,7 +407,8 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         promptTemplate = `你是 CrossWMS 的「${name}」技能助手。${desc}请根据用户的请求，提供专业、准确的回答和操作建议。`;
       }
 
-      console.log('[AddSkillDialog] Installing skill:', name);
+      // Step 3: 调用 API 创建技能
+      console.log('[AddSkillDialog] Installing skill:', name, 'hasPromptTemplate:', !!promptTemplate);
       const newSkill = await addSkill({
         name,
         desc,

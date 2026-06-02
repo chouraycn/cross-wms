@@ -411,20 +411,46 @@ export function createWarehouse(data: Omit<WarehouseRow, 'id'> & { id?: string }
   const db = initDb();
   db.prepare(`INSERT INTO warehouses (id, name, country, city, totalVolume, usedVolume, totalItems, usedItems, status, address, manager, phone, createdAt)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-    id, data.name, data.country, data.city, data.totalVolume, data.usedVolume,
-    data.totalItems, data.usedItems, data.status, data.address, data.manager, data.phone, data.createdAt
+    id,
+    data.name ?? '',
+    data.country ?? '',
+    data.city ?? '',
+    data.totalVolume ?? 0,
+    data.usedVolume ?? 0,
+    data.totalItems ?? 1,
+    data.usedItems ?? 0,
+    data.status ?? 'normal',
+    data.address ?? '',
+    data.manager ?? '',
+    data.phone ?? '',
+    data.createdAt ?? new Date().toISOString().split('T')[0]
   );
-  return { ...data, id };
+  return {
+    ...data,
+    id,
+    country: data.country ?? '',
+    city: data.city ?? '',
+    address: data.address ?? '',
+    manager: data.manager ?? '',
+    phone: data.phone ?? '',
+    status: data.status ?? 'normal',
+  };
 }
 
 export function updateWarehouse(id: string, data: Partial<Omit<WarehouseRow, 'id'>>): WarehouseRow | null {
   const db = initDb();
   const existing = db.prepare('SELECT * FROM warehouses WHERE id = ?').get(id) as WarehouseRow | undefined;
   if (!existing) return null;
-  const updated = { ...existing, ...data, id };
+  // Defensive: coerce null/undefined to safe defaults before merging
+  const safeData = { ...data };
+  for (const key of ['country', 'city', 'address', 'manager', 'phone'] as const) {
+    if (safeData[key] == null) safeData[key] = '' as any;
+  }
+  if (safeData.status == null) safeData.status = 'normal';
+  const updated = { ...existing, ...safeData, id };
   db.prepare(`UPDATE warehouses SET name=?, country=?, city=?, totalVolume=?, usedVolume=?, totalItems=?, usedItems=?, status=?, address=?, manager=?, phone=?, createdAt=? WHERE id=?`).run(
-    updated.name, updated.country, updated.city, updated.totalVolume, updated.usedVolume,
-    updated.totalItems, updated.usedItems, updated.status, updated.address, updated.manager, updated.phone, updated.createdAt, id
+    updated.name ?? '', updated.country ?? '', updated.city ?? '', updated.totalVolume ?? 0, updated.usedVolume ?? 0,
+    updated.totalItems ?? 1, updated.usedItems ?? 0, updated.status ?? 'normal', updated.address ?? '', updated.manager ?? '', updated.phone ?? '', updated.createdAt, id
   );
   return updated;
 }
