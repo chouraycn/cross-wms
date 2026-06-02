@@ -340,6 +340,10 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       setError('请上传 .zip 格式的技能包');
       return;
     }
+    if (f.size > 3 * 1024 * 1024) {
+      setError('文件大小不能超过 3MB');
+      return;
+    }
     setFile(f);
     setError('');
 

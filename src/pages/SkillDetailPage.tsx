@@ -5,7 +5,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom';
 import {
-  Box, Typography, Chip, Button, Alert,
+  Box, Typography, Chip, Button, Alert, Dialog, DialogTitle, DialogContent, DialogActions,
   Breadcrumbs, Link,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -73,6 +73,10 @@ const SkillDetailPage: React.FC = () => {
 
   // 编辑 Dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  // 删除确认 Dialog
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const automationMap = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -208,9 +212,21 @@ const SkillDetailPage: React.FC = () => {
   // 删除技能
   const handleDelete = async () => {
     if (!skill) return;
-    const success = await removeSkill(skill.id);
-    if (success) {
-      navigate('/skills');
+    setDeleting(true);
+    try {
+      const success = await removeSkill(skill.id);
+      if (success) {
+        setDeleteConfirmOpen(false);
+        setToast({ open: true, msg: '技能已删除', severity: 'success' });
+        // 延迟导航，确保 store 更新已传播
+        setTimeout(() => navigate('/skills'), 150);
+      } else {
+        setToast({ open: true, msg: '删除失败：内置技能不可删除', severity: 'error' });
+      }
+    } catch (e) {
+      setToast({ open: true, msg: `删除失败: ${e instanceof Error ? e.message : '未知错误'}`, severity: 'error' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -458,7 +474,7 @@ const SkillDetailPage: React.FC = () => {
             variant="outlined"
             color="error"
             startIcon={<DeleteOutlineIcon sx={{ fontSize: 16 }} />}
-            onClick={handleDelete}
+            onClick={() => setDeleteConfirmOpen(true)}
             sx={{
               textTransform: 'none',
               borderRadius: 2,
@@ -504,6 +520,38 @@ const SkillDetailPage: React.FC = () => {
       >
         {toast.msg}
       </Alert>
+
+      {/* 删除确认对话框 */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' } }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>确认删除</DialogTitle>
+        <DialogContent sx={{ px: 3, py: 2.5 }}>
+          <Typography sx={{ color: '#6B7280' }}>
+            确定要删除技能「{skill?.name}」吗？此操作不可撤销。
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
+          <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting}>取消</Button>
+          <Button
+            variant="contained"
+            onClick={handleDelete}
+            disabled={deleting}
+            sx={{
+              backgroundColor: '#EF4444',
+              '&:hover': { backgroundColor: '#DC2626' },
+              textTransform: 'none',
+              fontWeight: 600,
+            }}
+          >
+            {deleting ? '删除中...' : '确认删除'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* 脉冲动画 */}
       <style>{`

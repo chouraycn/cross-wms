@@ -42,6 +42,7 @@ const SkillsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'market' | 'installed'>('market');
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
 
   // 添加技能 Dialog
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -156,6 +157,27 @@ const SkillsPage: React.FC = () => {
     });
   }, [searchQuery, selectedCategory, skills, activeTab]);
 
+  // 搜索联想建议（从技能名称、标签、触发词中提取）
+  const searchSuggestions = useMemo(() => {
+    if (!searchQuery || searchQuery.length < 1) return [];
+    const q = searchQuery.toLowerCase();
+    const suggestions = new Set<string>();
+    for (const skill of skills) {
+      if (skill.name.toLowerCase().includes(q) && skill.name.toLowerCase() !== q) {
+        suggestions.add(skill.name);
+      }
+      for (const tag of skill.tags || []) {
+        if (tag.toLowerCase().includes(q) && !suggestions.has(tag)) {
+          suggestions.add(tag);
+        }
+      }
+      if (skill.trigger && skill.trigger.toLowerCase().includes(q)) {
+        suggestions.add(skill.trigger);
+      }
+    }
+    return Array.from(suggestions).slice(0, 6);
+  }, [searchQuery, skills]);
+
   // 推荐技能
   const featuredSkills = useMemo(() => {
     return skills.filter(s => s.featured && s.status === 'active');
@@ -217,31 +239,74 @@ const SkillsPage: React.FC = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-          <TextField
-            size="small"
-            placeholder="搜索技能"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{
-              width: 200,
-              '& .MuiOutlinedInput-root': {
+          <Box sx={{ position: 'relative' }}>
+            <TextField
+              size="small"
+              placeholder="搜索技能"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSuggestionsOpen(true);
+              }}
+              onFocus={() => { if (searchQuery) setSuggestionsOpen(true); }}
+              onBlur={() => { setTimeout(() => setSuggestionsOpen(false), 200); }}
+              sx={{
+                width: 200,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  backgroundColor: '#F0F0F0',
+                  fontSize: '0.8125rem',
+                  '& fieldset': { border: 'none' },
+                  '&:hover': { backgroundColor: '#E8E8E8' },
+                  '&.Mui-focused': { backgroundColor: '#fff', '& fieldset': { border: '1px solid #1A1A1A' } },
+                },
+                '& .MuiInputBase-input': { py: 0.75, fontSize: '0.8125rem', color: '#666' },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ fontSize: 16, color: '#999' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            {/* 搜索联想下拉 */}
+            {suggestionsOpen && searchSuggestions.length > 0 && (
+              <Box sx={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                mt: 0.5,
+                backgroundColor: '#fff',
+                border: '1px solid #E5E7EB',
                 borderRadius: '8px',
-                backgroundColor: '#F0F0F0',
-                fontSize: '0.8125rem',
-                '& fieldset': { border: 'none' },
-                '&:hover': { backgroundColor: '#E8E8E8' },
-                '&.Mui-focused': { backgroundColor: '#fff', '& fieldset': { border: '1px solid #1A1A1A' } },
-              },
-              '& .MuiInputBase-input': { py: 0.75, fontSize: '0.8125rem', color: '#666' },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ fontSize: 16, color: '#999' }} />
-                </InputAdornment>
-              ),
-            }}
-          />
+                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                zIndex: 100,
+                overflow: 'hidden',
+              }}>
+                {searchSuggestions.map((suggestion) => (
+                  <Box
+                    key={suggestion}
+                    onMouseDown={() => {
+                      setSearchQuery(suggestion);
+                      setSuggestionsOpen(false);
+                    }}
+                    sx={{
+                      px: 2,
+                      py: 1,
+                      fontSize: '0.8125rem',
+                      color: '#374151',
+                      cursor: 'pointer',
+                      '&:hover': { backgroundColor: '#F9FAFB' },
+                    }}
+                  >
+                    {suggestion}
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
           <Button
             variant="outlined"
             startIcon={<AddIcon sx={{ fontSize: 14 }} />}

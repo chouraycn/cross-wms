@@ -66,6 +66,21 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         display: 'flex',
         flexDirection: 'column',
         borderRight: 'none',
+        // 侧边栏顶部空白区域允许拖拽移动窗口（frameless 模式）
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 'var(--pw-top, 0px)',
+          WebkitAppRegion: 'drag',
+          zIndex: 0,
+        },
+        // 所有交互元素不允许拖拽
+        '& button, & a, & [role="button"], & input, & [tabindex]': {
+          WebkitAppRegion: 'no-drag',
+        },
       }}
     >
       {/* Sidebar toggle button — fixed position */}
