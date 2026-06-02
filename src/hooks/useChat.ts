@@ -48,7 +48,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       let fullContent = '';
 
       if (reader) {
-        while (true) {
+        while (true) { // eslint-disable-line no-constant-condition
           const { done, value } = await reader.read();
           if (done) break;
           const chunk = decoder.decode(value);
@@ -63,7 +63,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                   const updatedSession = { ...session, messages: [...session.messages, assistantMsg] };
                   onSessionUpdate(updatedSession);
                 }
-              } catch {}
+              } catch { /* stream parse error, skip */ }
             }
           }
         }

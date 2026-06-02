@@ -32,11 +32,11 @@ import type {
 
 // ===================== 模拟数据库（内存） =====================
 
-let warehouses: Warehouse[] = createMockWarehouses(5);
-let transitOrders = createMockTransitOrders(20);
-let inventoryItems = createMockInventoryItems(50);
-let inboundRecords = createMockInboundRecords(30);
-let outboundRecords = createMockOutboundRecords(30);
+const warehouses: Warehouse[] = createMockWarehouses(5);
+const transitOrders = createMockTransitOrders(20);
+const inventoryItems = createMockInventoryItems(50);
+const inboundRecords = createMockInboundRecords(30);
+const outboundRecords = createMockOutboundRecords(30);
 
 // ===================== 通用响应格式 =====================
 
