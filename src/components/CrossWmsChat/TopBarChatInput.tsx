@@ -32,6 +32,7 @@ interface TopBarChatInputProps {
       timestamp: Date;
     }[];
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSessionUpdate: (session: any) => void;
   /** 从外部注入的初始技能（如从 URL 参数解析） */
   initialSkill?: Skill | null;
@@ -301,7 +302,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     }
   };
 
-  const handleDropdownClick = (type: DropdownType, ref: React.RefObject<HTMLButtonElement>) => {
+  const handleDropdownClick = (type: DropdownType, _ref: React.RefObject<HTMLButtonElement>) => {
     if (activeDropdown === type) {
       setActiveDropdown(null);
     } else {

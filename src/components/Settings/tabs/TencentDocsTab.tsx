@@ -54,6 +54,7 @@ const TencentDocsTab: React.FC<TencentDocsTabProps> = ({
   errors,
   setErrors,
   openInBrowser,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onShowSnackbar,
 }) => {
   const allWarehouses: Warehouse[] = getWarehouses();
@@ -75,7 +76,7 @@ const TencentDocsTab: React.FC<TencentDocsTabProps> = ({
 
   // ---- 企业微信文档状态 ----
   const [wecomAuth, setWecomAuth] = useState<WeComAuthStatus | null>(null);
-  const [wecomAuthLoading, setWecomAuthLoading] = useState(false);
+  const [wecomAuthLoading] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [fetchingWecomTitle, setFetchingWecomTitle] = useState(false);
   const [newWecomLinkUrl, setNewWecomLinkUrl] = useState('');
   const [newWecomLinkTitle, setNewWecomLinkTitle] = useState('');

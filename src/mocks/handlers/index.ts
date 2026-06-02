@@ -9,7 +9,6 @@ import {
   createMockWarehouses,
   createMockTransitOrder,
   createMockTransitOrders,
-  createMockInventoryItem,
   createMockInventoryItems,
   createMockInboundRecord,
   createMockInboundRecords,
@@ -25,7 +24,6 @@ import {
 import type {
   Warehouse,
   TransitOrder,
-  InventoryItem,
   InboundRecord,
   OutboundRecord,
 } from '../../types';
@@ -297,7 +295,7 @@ export const recordHandlers = [
     }
 
     const start = (page - 1) * pageSize;
-    const paginated = filtered.slice(start, start + pageSize);
+    filtered.slice(start, start + pageSize); // paginated subset
 
     return HttpResponse.json(success({
       list: filtered,

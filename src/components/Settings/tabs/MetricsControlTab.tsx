@@ -10,7 +10,6 @@ import {
   ListItem,
   ListItemText,
   IconButton,
-  Tooltip,
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -75,7 +74,9 @@ const updateHeatmap = (
 const MetricsControlTab: React.FC<MetricsControlTabProps> = ({
   draft,
   setDraft,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   errors,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setErrors,
 }) => {
   const dash = draft.dashboard;

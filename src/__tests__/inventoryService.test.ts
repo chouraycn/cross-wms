@@ -384,7 +384,7 @@ describe('inventoryService.createInbound', () => {
   });
 
   it('should use default values for optional fields when not provided', () => {
-    const stmts = setupInboundWithExistingItem();
+    setupInboundWithExistingItem();
 
     const minimalData: CreateInboundData = {
       warehouseId: 'wh-1',

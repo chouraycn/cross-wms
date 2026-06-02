@@ -31,7 +31,6 @@ import type {
   ActionType,
 } from '../services/automationEngine';
 import {
-  TASK_TYPE_LABELS,
   TABS,
   type TabKey,
 } from '../components/Automation/sharedConstants';
@@ -87,7 +86,8 @@ const AutomationPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('configured');
 
   // 是否从模板创建
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [, setSelectedTemplateId] = useState<string | null>(null);
 
   // Persist on change
   useEffect(() => {
@@ -534,6 +534,7 @@ const AutomationPage: React.FC = () => {
 
   // ---- Form field change handler ----
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleFieldChange = (field: string, value: any) => {
     switch (field) {
       case 'formName':

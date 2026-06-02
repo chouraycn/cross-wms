@@ -27,6 +27,7 @@ interface InventoryAlertListProps {
   timeRange?: TimeRange;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = ALL_WAREHOUSES, timeRange }) => {
   const { settings } = useAppSettings();
   const ageWarningDays = settings.dashboard.ageWarningDays;

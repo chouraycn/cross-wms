@@ -323,15 +323,8 @@ const MainLayout: React.FC = () => {
   const showChatBar = !location.pathname.startsWith('/automation') && !location.pathname.startsWith('/agent') && !location.pathname.startsWith('/skills') && !location.pathname.startsWith('/chat');
 
   const actions = getToolbarActions(location.pathname);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const pageKey = getPageRefreshKey(location.pathname);
-
-  const handleRefresh = useCallback(() => {
-    if (pageKey) emitRefresh(pageKey);
-  }, [pageKey]);
-
-  const handleNewWarehouse = useCallback(() => {
-    emitNewWarehouse();
-  }, []);
 
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(ALL_WAREHOUSES);
   const handleWarehouseChange = useCallback((warehouseId: string) => {

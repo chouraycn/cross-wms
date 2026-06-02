@@ -40,7 +40,6 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
     ...warehouses.map((w) => ({ id: w.id, name: w.name })),
   ];
 
-  const selectedName = options.find((o) => o.id === selected)?.name ?? '全部仓库';
   const hasWarehouses = warehouses.length > 0;
 
   const handleSelect = (id: string) => {

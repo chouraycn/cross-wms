@@ -1,10 +1,9 @@
-import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Box, Typography, Card, CardHeader, CardContent } from '@mui/material';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { subscribeWarehouses } from '../../capabilities/warehouse';
 import { dashboardApi } from '../../services/dashboardApi';
-import { exportToCsv } from '../../utils/exportCsv';
 import type { Warehouse, InboundRecord, OutboundRecord } from '../../types';
 import dayjs from 'dayjs';
 
@@ -275,25 +274,6 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
 
   /** 分位数阈值：25%, 50%, 75%, 90% */
   const thresholds = useMemo(() => calcThresholds(allValues, [0.25, 0.5, 0.75, 0.9]), [allValues]);
-
-  // ==================== 导出热力图数据 ====================
-  const handleExport = () => {
-    const csvHeaders = ['仓库名称', ...dates.map((d) => dateDisplays[dates.indexOf(d)])];
-    const csvRows: string[][] = [];
-    warehouses.forEach((wh) => {
-      const row: string[] = [wh.name];
-      dates.forEach((date) => {
-        const cell = data[wh.id]?.[date] ?? null;
-        if (cell) {
-          row.push(`${cell.in}+${cell.out}`);
-        } else {
-          row.push('-');
-        }
-      });
-      csvRows.push(row);
-    });
-    exportToCsv('heatmap_data.csv', csvHeaders, csvRows);
-  };
 
   // ====== 自适应布局计算 ======
   const maxLabelChars = 8;

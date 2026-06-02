@@ -10,7 +10,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { useNavigate } from 'react-router-dom';
 import type { DocLinkItem, WeComDocLinkItem } from '../../contexts/AppSettingsContext';
-import { getDocTypeFromUrl, extractFileIdFromUrl, type SheetCell } from '../../services/tencentDocsApi';
+import { getDocTypeFromUrl, extractFileIdFromUrl } from '../../services/tencentDocsApi';
 import {
   extractWeComDocIdFromUrl, getWeComDocCategoryFromUrl, getWeComCategoryLabel,
 } from '../../services/wecomDocsApi';
