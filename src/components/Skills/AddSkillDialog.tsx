@@ -390,6 +390,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         promptTemplate = `你是 CrossWMS 的「${name}」技能助手。${desc}请根据用户的请求，提供专业、准确的回答和操作建议。`;
       }
 
+      console.log('[AddSkillDialog] Installing skill:', name);
       const newSkill = await addSkill({
         name,
         desc,
@@ -403,11 +404,14 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         detail: desc,
         tags: ['zip-import'],
       });
+      console.log('[AddSkillDialog] Skill installed successfully:', newSkill.id);
       onAdded(newSkill.name);
       reset();
       onClose();
     } catch (err) {
-      setError(`安装失败：${err instanceof Error ? err.message : '未知错误'}`);
+      const msg = err instanceof Error ? err.message : '未知错误';
+      console.error('[AddSkillDialog] Install failed:', err);
+      setError(`安装失败：${msg}`);
     } finally {
       setLoading(false);
     }
