@@ -77,7 +77,6 @@ const SkillCard: React.FC<SkillCardProps> = ({
         transition: 'all 0.2s ease',
         '&:hover': {
           backgroundColor: 'rgba(0,0,0,0.04)',
-          borderColor: '#E0E0E0',
         },
       }}
     >

@@ -12,6 +12,58 @@ import { useAppSettings } from '../../contexts/AppSettingsContext';
 import ChatToolbar from './ChatToolbar';
 import MemoryDialog, { type MemoryDialogHandle } from './MemoryDialog';
 
+// ===================== Skill Auto-Match =====================
+
+/**
+ * 根据用户输入文本自动匹配最佳技能
+ * 匹配策略：遍历所有活跃技能的 trigger 关键词和 tags，
+ * 计算匹配分数（trigger 命中=2分，tag 命中=1分），返回最高分技能
+ */
+function matchSkillFromInput(input: string): Skill | null {
+  if (!input.trim()) return null;
+  const text = input.toLowerCase();
+  const activeSkills = getAllSkills().filter(s => s.status === 'active' && s.promptTemplate);
+
+  let bestSkill: Skill | null = null;
+  let bestScore = 0;
+
+  for (const skill of activeSkills) {
+    let score = 0;
+
+    // 从 trigger 提取关键词（格式如 "打开仪表盘 / 查看概览"）
+    if (skill.trigger) {
+      const triggers = skill.trigger.split('/').map(t => t.trim().toLowerCase()).filter(Boolean);
+      for (const kw of triggers) {
+        if (kw.length >= 2 && text.includes(kw)) {
+          score += 2; // trigger 关键词匹配，权重 2
+        }
+      }
+    }
+
+    // 从 tags 匹配
+    if (skill.tags) {
+      for (const tag of skill.tags) {
+        if (tag.length >= 2 && text.includes(tag.toLowerCase())) {
+          score += 1; // tag 匹配，权重 1
+        }
+      }
+    }
+
+    // 从名称匹配（精确子串，权重 3）
+    if (skill.name.length >= 2 && text.includes(skill.name.toLowerCase())) {
+      score += 3;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestSkill = skill;
+    }
+  }
+
+  // 至少需要 2 分才自动激活（避免误匹配）
+  return bestScore >= 2 ? bestSkill : null;
+}
+
 // ===================== Props =====================
 
 interface TopBarChatInputProps {
@@ -43,6 +95,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(initialSkill ?? null);
   const [inputValue, setInputValue] = useState('');
   const [skillFocusIndex, setSkillFocusIndex] = useState(-1);
+  const [autoMatched, setAutoMatched] = useState(false); // 标记技能是自动匹配的
 
   // 当 initialSkill 从外部变化时同步到 selectedSkill（如 SkillDetailPage 跳转过来）
   useEffect(() => {
@@ -172,7 +225,19 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
 
   const handleSend = () => {
     if (!inputValue.trim() || isLoading) return;
-    const skillContext = selectedSkill?.promptTemplate || undefined;
+
+    // 首次输入且未手动选择技能 → 自动匹配
+    let effectiveSkill = selectedSkill;
+    if (!selectedSkill && session.messages.length === 0) {
+      const matched = matchSkillFromInput(inputValue);
+      if (matched) {
+        effectiveSkill = matched;
+        setSelectedSkill(matched);
+        setAutoMatched(true);
+      }
+    }
+
+    const skillContext = effectiveSkill?.promptTemplate || undefined;
     sendMessage(inputValue, { skillContext });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
@@ -180,8 +245,9 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     setInputValue('');
     setShowSkillSelector(false);
     setInputExpanded(false);
-    if (selectedSkill && selectedSkill.executionMode === 'chat') {
+    if (effectiveSkill && effectiveSkill.executionMode === 'chat') {
       setSelectedSkill(null);
+      setAutoMatched(false);
     }
   };
 
@@ -266,25 +332,25 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <span>{selectedSkill.name}</span>
-                  {selectedSkill.promptTemplate && (
+                  {autoMatched && (
+                    <Typography component="span" sx={{ fontSize: 9, color: '#6B7280', fontWeight: 500, bgcolor: '#F3F4F6', px: 0.5, borderRadius: 0.5 }}>
+                      自动
+                    </Typography>
+                  )}
+                  {selectedSkill.promptTemplate && !autoMatched && (
                     <Typography component="span" sx={{ fontSize: 9, color: '#7C3AED', fontWeight: 600, bgcolor: '#FAF5FF', px: 0.5, borderRadius: 0.5 }}>
                       AI
                     </Typography>
                   )}
-                  {selectedSkill.trigger && (
-                    <Typography component="span" sx={{ fontSize: 10, color: '#9CA3AF', fontFamily: 'monospace' }}>
-                      {selectedSkill.trigger}
-                    </Typography>
-                  )}
                 </Box>
               }
-              onDelete={() => setSelectedSkill(null)}
+              onDelete={() => { setSelectedSkill(null); setAutoMatched(false); }}
               size="small"
               sx={{
                 height: 26,
                 fontSize: 12,
-                bgcolor: selectedSkill.promptTemplate ? '#FAF5FF' : '#F3F4F6',
-                border: selectedSkill.promptTemplate ? '1px solid #DDD6FE' : '1px solid #E5E7EB',
+                bgcolor: autoMatched ? '#F0FDF4' : selectedSkill.promptTemplate ? '#FAF5FF' : '#F3F4F6',
+                border: autoMatched ? '1px solid #BBF7D0' : selectedSkill.promptTemplate ? '1px solid #DDD6FE' : '1px solid #E5E7EB',
                 '& .MuiChip-label': { px: 1 },
               }}
             />

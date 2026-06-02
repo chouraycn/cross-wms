@@ -456,12 +456,12 @@ const NavList: React.FC<NavListProps> = ({
 
       {/* ====== 栏目底部：历史对话 ====== */}
       {!collapsed && chatSessions.length > 0 && (
-        <Box sx={{ mt: 1, borderTop: `1px solid ${isDark ? '#2D2D2D' : '#E5E7EB'}`, pt: 1, px: 1 }}>
+        <Box sx={{ mt: 1, pt: 2.25, pl: 0.25, pr: 1 }}>
           <Typography
             sx={{
               fontSize: '0.6875rem',
-              fontWeight: 500,
-              color: textMuted,
+              fontWeight: 700,
+              color: isDark ? '#9CA3AF' : '#9CA3AF',
               px: 1.5,
               mb: 0.5,
               letterSpacing: '0.02em',
@@ -513,7 +513,8 @@ const NavList: React.FC<NavListProps> = ({
                       color: textMuted,
                       transition: 'opacity 0.15s',
                       '.MuiListItemButton-root:hover &': { opacity: 1 },
-                      '&:hover': { color: '#EF4444' },
+                      '&:hover': { color: isDark ? '#F3F4F6' : '#111827' },
+                      '&:hover .MuiSvgIcon-root': { fontSize: 14 },
                     }}
                   >
                     <DeleteOutlineIcon sx={{ fontSize: 12 }} />

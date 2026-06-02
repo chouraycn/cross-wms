@@ -9,6 +9,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import InfoIcon from '@mui/icons-material/Info';
 import TuneIcon from '@mui/icons-material/Tune';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { APP_VERSION } from '../Settings/sharedStyles';
@@ -23,6 +24,7 @@ const SIDEBAR_WIDTH_EXPANDED = 260;
 type SettingsTab = 'menu' | 'tencentDocs' | 'tencentDocs_volumeDocs' | 'dashboardCalc' | 'dashboardIndicators' | 'modelManagement' | 'appearance' | 'about';
 interface SettingsMenuItem { key: Exclude<SettingsTab, 'menu'>; label: string; icon: React.ReactNode; description: string; }
 const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
+  { key: 'appearance', label: '外观', icon: <PaletteOutlinedIcon sx={{ fontSize: 20 }} />, description: '主题、颜色与显示偏好' },
   { key: 'tencentDocs', label: '腾讯文档', icon: <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />, description: 'API 授权与文档链接管理' },
   { key: 'dashboardCalc', label: '仪表盘参数', icon: <DashboardIcon sx={{ fontSize: 20 }} />, description: '计算阈值和参数调整' },
   { key: 'dashboardIndicators', label: '指标控制', icon: <TuneIcon sx={{ fontSize: 20 }} />, description: '各模块显示与隐藏' },
@@ -115,8 +117,22 @@ const SettingsPanel: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
           <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={handleSave} disabled={hasErrors} sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' }, fontSize: '0.75rem', '&.Mui-disabled': { backgroundColor: '#E5E7EB', color: '#9CA3AF' } }}>保存</Button>
         </Box>
       </Box>
-      <Snackbar open={snackbarOpen} autoHideDuration={2000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert onClose={() => setSnackbarOpen(false)} severity="success" variant="filled" sx={{ width: '100%' }}>{snackbarMsg}</Alert>
+      <Snackbar open={snackbarOpen} autoHideDuration={1500} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert onClose={() => setSnackbarOpen(false)} severity="info" variant="outlined"
+          sx={{
+            py: 0.25,
+            px: 1.5,
+            fontSize: '0.75rem',
+            lineHeight: 1.5,
+            color: '#6B7280',
+            borderColor: '#E5E7EB',
+            bgcolor: '#F9FAFB',
+            '& .MuiAlert-icon': { display: 'none' },
+            '& .MuiAlert-action': { ml: 0.5, pt: 0, '& .MuiIconButton-root': { p: 0.25, color: '#9CA3AF' } },
+          }}
+        >
+          {snackbarMsg}
+        </Alert>
       </Snackbar>
     </Box>
   );

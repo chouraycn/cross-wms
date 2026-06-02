@@ -436,7 +436,7 @@ const MainLayout: React.FC = () => {
             <Box
               sx={{
                 px: 3, // 与 logo 对齐，增加左右 padding
-                pt: 0.5, // 极小顶部间距，与 logo 区域顶部对齐
+                pt: 1.75, // 顶部间距：10px 下移
                 pb: 3,
                 paddingBottom: showChatBar ? '120px' : 3, // 为底部固定的对话框留出空间
                 '& .full-width-page': {

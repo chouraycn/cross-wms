@@ -4,20 +4,15 @@ import {
   ListItemButton,
   ListItemIcon,
   Typography,
-  Tooltip,
   useTheme,
 } from '@mui/material';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
-import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
-import MonitorOutlinedIcon from '@mui/icons-material/MonitorOutlined';
 import { useNavigate, useLocation } from 'react-router-dom';
 import SidebarLogo from './SidebarLogo';
 import NavList from './NavList';
 import SidebarToggle from './SidebarToggle';
 import SettingsPopover from './SettingsPopover';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
-import type { ThemeMode } from '../../contexts/AppSettingsContext';
+
 
 // ===================== Constants =====================
 
@@ -41,18 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLDivElement>(null);
-  const { settings, updateSettings } = useAppSettings();
 
-  // 主题切换：浅色 → 深色 → 跟随系统 → 浅色
-  const themeMode = settings.appearance.themeMode;
-  const cycleTheme = () => {
-    const next: Record<ThemeMode, ThemeMode> = { light: 'dark', dark: 'system', system: 'light' };
-    updateSettings({ appearance: { ...settings.appearance, themeMode: next[themeMode] } });
-  };
-
-  const themeIcon = themeMode === 'dark' ? <DarkModeOutlinedIcon /> : themeMode === 'light' ? <LightModeOutlinedIcon /> : <MonitorOutlinedIcon />;
-  const themeTooltip = themeMode === 'dark' ? '深色模式（点击切换）' : themeMode === 'light' ? '浅色模式（点击切换）' : '跟随系统（点击切换）';
-  const themeLabel = themeMode === 'dark' ? '深色' : themeMode === 'light' ? '浅色' : '跟随系统';
   const [activeSessionId, setActiveSessionId] = useState(() => {
     try {
       const raw = localStorage.getItem('crosswms-chat-sessions');
@@ -115,51 +99,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         }}
       />
 
-      {/* Bottom: Theme toggle + Settings button */}
+      {/* Bottom: Settings button */}
       <Box sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-        {/* 主题切换按钮 */}
-        {collapsed ? (
-          <Tooltip title={themeTooltip} placement="right" arrow>
-            <ListItemButton
-              onClick={cycleTheme}
-              sx={{
-                minHeight: 40,
-                justifyContent: 'center',
-                px: 0,
-                borderRadius: '6px',
-                '&:hover': { backgroundColor: isDark ? '#2D2D2D' : '#f5f5f5' },
-                color: isDark ? '#9CA3AF' : '#6B7280',
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 0, justifyContent: 'center', '& .MuiSvgIcon-root': { fontSize: '20px' } }}>
-                {themeIcon}
-              </ListItemIcon>
-            </ListItemButton>
-          </Tooltip>
-        ) : (
-          <ListItemButton
-            onClick={cycleTheme}
-            sx={{
-              minHeight: 36,
-              px: 1.5,
-              py: 0.25,
-              borderRadius: '6px',
-              '&:hover': { backgroundColor: isDark ? '#2D2D2D' : '#f5f5f5' },
-              color: isDark ? '#D1D5DB' : '#374151',
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 0, mr: 1.5, justifyContent: 'center', color: isDark ? '#9CA3AF' : '#6B7280', '& .MuiSvgIcon-root': { fontSize: '18px' } }}>
-              {themeIcon}
-            </ListItemIcon>
-            <Typography sx={{ fontSize: '0.8125rem', lineHeight: '36px', flex: 1 }}>
-              {themeLabel}
-            </Typography>
-            <Typography sx={{ fontSize: '0.625rem', color: isDark ? '#6B7280' : '#9CA3AF', lineHeight: '36px' }}>
-              {themeMode === 'light' ? '☀️' : themeMode === 'dark' ? '🌙' : '💻'}
-            </Typography>
-          </ListItemButton>
-        )}
-
         {/* 设置按钮 */}
         <Box ref={settingsBtnRef}>
         <ListItemButton
