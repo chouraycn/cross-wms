@@ -12,7 +12,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { unzipSync } from 'fflate';
 import { addSkill } from '../../stores/skillStore';
-import { scanSkillMd } from '../../services/api';
+import { scanSkillMd, readSkillMd } from '../../services/api';
 import type { ScannedSkillMd } from '../../services/api';
 
 // ===================== 类型 =====================
@@ -412,6 +412,15 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
   // ---- SKILL.md Tab ----
 
   const handleImportSkillMd = async (skill: ScannedSkillMd) => {
+    // 先读取完整 body（扫描接口不返回 body，节省流量）
+    let body = '';
+    try {
+      const detail = await readSkillMd(skill.dirName);
+      body = detail.body || '';
+    } catch {
+      // read 失败时用空 body 继续
+    }
+
     const newSkill = await addSkill({
       name: skill.name,
       desc: skill.description || `从 WorkBuddy 导入: ${skill.dirName}`,
@@ -421,7 +430,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       status: 'active',
       version: '1.0',
       executionMode: 'chat',
-      promptTemplate: skill.body || `你是 CrossWMS 的「${skill.name}」技能助手。请根据用户的请求，提供专业、准确的回答和操作建议。`,
+      promptTemplate: body || `你是 CrossWMS 的「${skill.name}」技能助手。请根据用户的请求，提供专业、准确的回答和操作建议。`,
       detail: skill.description,
       tags: [skill.dirName, 'workbuddy'],
     });

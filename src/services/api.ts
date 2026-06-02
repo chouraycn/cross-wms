@@ -156,18 +156,23 @@ export async function removeBuiltinPatch(skillId: string): Promise<void> {
 
 // ===================== SKILL.md Scan =====================
 
-/** SKILL.md 扫描结果 */
+/** SKILL.md 扫描结果（扫描不含 body，读取详情含 body） */
 export interface ScannedSkillMd {
   dirName: string;
   name: string;
   description: string;
-  body: string;
+  body?: string; // scan 时不返回，read 时返回
   hasSkillMd: boolean;
 }
 
-/** 扫描 ~/.workbuddy/skills/ 下的 SKILL.md 技能包 */
+/** 扫描 ~/.workbuddy/skills/ 下的 SKILL.md 技能包（仅元数据） */
 export async function scanSkillMd(): Promise<ScannedSkillMd[]> {
   return request<ScannedSkillMd[]>('GET', '/api/skill-md-scan');
+}
+
+/** 读取指定技能的完整 SKILL.md 内容（含 body） */
+export async function readSkillMd(dirName: string): Promise<ScannedSkillMd> {
+  return request<ScannedSkillMd>('GET', `/api/skill-md-read/${encodeURIComponent(dirName)}`);
 }
 
 // ===================== App Settings =====================
