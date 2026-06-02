@@ -143,6 +143,8 @@ export interface UserSkillRow {
   featured: number; // 0 or 1
   shortcut: string | null;
   installedAt: number;
+  promptTemplate: string | null;
+  executionMode: string | null;
 }
 
 export interface BuiltinStatusPatchRow {
@@ -281,7 +283,9 @@ export function initDb(): Database.Database {
       version TEXT DEFAULT '',
       featured INTEGER NOT NULL DEFAULT 0,
       shortcut TEXT DEFAULT '',
-      installedAt INTEGER NOT NULL DEFAULT 0
+      installedAt INTEGER NOT NULL DEFAULT 0,
+      promptTemplate TEXT DEFAULT '',
+      executionMode TEXT DEFAULT ''
     );
     CREATE TABLE IF NOT EXISTS builtin_status_patches (
       skillId TEXT PRIMARY KEY,
@@ -339,6 +343,9 @@ export function initDb(): Database.Database {
     { table: 'inbound_records', column: 'batchNo', definition: "TEXT NOT NULL DEFAULT ''" },
     { table: 'outbound_records', column: 'customer', definition: "TEXT NOT NULL DEFAULT ''" },
     { table: 'outbound_records', column: 'orderNo', definition: "TEXT NOT NULL DEFAULT ''" },
+    // v1.0.86: user_skills 新增 promptTemplate + executionMode
+    { table: 'user_skills', column: 'promptTemplate', definition: "TEXT DEFAULT ''" },
+    { table: 'user_skills', column: 'executionMode', definition: "TEXT DEFAULT ''" },
   ];
   for (const { table, column, definition } of columnsToAdd) {
     const colExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('${table}') WHERE name='${column}'`).get() as { cnt: number };
@@ -735,6 +742,8 @@ function skillRowToClient(row: UserSkillRow): Record<string, unknown> {
     shortcut: row.shortcut || undefined,
     source: 'user' as const,
     installedAt: row.installedAt,
+    promptTemplate: row.promptTemplate || undefined,
+    executionMode: row.executionMode || undefined,
   };
 }
 
@@ -754,6 +763,8 @@ function clientToSkillRow(data: Record<string, unknown>): Omit<UserSkillRow, 'id
     featured: data.featured === true ? 1 : 0,
     shortcut: (data.shortcut as string) || null,
     installedAt: (data.installedAt as number) ?? Date.now(),
+    promptTemplate: (data.promptTemplate as string) || null,
+    executionMode: (data.executionMode as string) || null,
   };
 }
 
@@ -773,9 +784,9 @@ export function createUserSkill(data: Record<string, unknown>): Record<string, u
   const id = (data.id as string) || `skill-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const db = initDb();
   const row = clientToSkillRow(data);
-  db.prepare(`INSERT INTO user_skills (id, name, "desc", icon, category, path, trigger, detail, tags, status, version, featured, shortcut, installedAt)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-    id, row.name, row.desc, row.icon, row.category, row.path, row.trigger, row.detail, row.tags, row.status, row.version, row.featured, row.shortcut, row.installedAt
+  db.prepare(`INSERT INTO user_skills (id, name, "desc", icon, category, path, trigger, detail, tags, status, version, featured, shortcut, installedAt, promptTemplate, executionMode)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    id, row.name, row.desc, row.icon, row.category, row.path, row.trigger, row.detail, row.tags, row.status, row.version, row.featured, row.shortcut, row.installedAt, row.promptTemplate, row.executionMode
   );
   // Read back from DB to ensure correct type conversion (e.g. tags: JSON string → array)
   const saved = db.prepare('SELECT * FROM user_skills WHERE id = ?').get(id) as UserSkillRow | undefined;
@@ -787,8 +798,8 @@ export function updateUserSkill(id: string, data: Record<string, unknown>): Reco
   const existing = db.prepare('SELECT * FROM user_skills WHERE id = ?').get(id) as UserSkillRow | undefined;
   if (!existing) return null;
   const row = clientToSkillRow({ ...skillRowToClient(existing), ...data });
-  db.prepare(`UPDATE user_skills SET name=?, "desc"=?, icon=?, category=?, path=?, trigger=?, detail=?, tags=?, status=?, version=?, featured=?, shortcut=?, installedAt=? WHERE id=?`).run(
-    row.name, row.desc, row.icon, row.category, row.path, row.trigger, row.detail, row.tags, row.status, row.version, row.featured, row.shortcut, row.installedAt, id
+  db.prepare(`UPDATE user_skills SET name=?, "desc"=?, icon=?, category=?, path=?, trigger=?, detail=?, tags=?, status=?, version=?, featured=?, shortcut=?, installedAt=?, promptTemplate=?, executionMode=? WHERE id=?`).run(
+    row.name, row.desc, row.icon, row.category, row.path, row.trigger, row.detail, row.tags, row.status, row.version, row.featured, row.shortcut, row.installedAt, row.promptTemplate, row.executionMode, id
   );
   // Read back from DB to ensure correct type conversion
   const saved = db.prepare('SELECT * FROM user_skills WHERE id = ?').get(id) as UserSkillRow | undefined;

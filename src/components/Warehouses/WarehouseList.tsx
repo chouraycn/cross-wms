@@ -91,7 +91,7 @@ const WarehouseList: React.FC = () => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const totalVol = parseFloat(form.totalVolume);
     const totalItems = parseInt(form.totalItems, 10);
     const newWh: Warehouse = {
@@ -109,7 +109,11 @@ const WarehouseList: React.FC = () => {
       phone: form.phone,
       createdAt: new Date().toISOString().split('T')[0],
     };
-    addGlobalWarehouse(newWh); // 写入全局 store（自动持久化 + 通知订阅者）
+    try {
+      await addGlobalWarehouse(newWh); // 等待后端持久化完成再跳转
+    } catch (e) {
+      console.error('[WarehouseList] addGlobalWarehouse failed:', e);
+    }
     handleCloseDialog();
     // 跳转到新仓库详情页
     navigate(`/warehouses/${newWh.id}`);
