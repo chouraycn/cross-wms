@@ -7,11 +7,8 @@ import { initFromApi as initWarehouseCapability } from './capabilities/warehouse
 import { initFromApi as initSkills } from './stores/skillStore'
 
 async function bootstrap() {
-  // 开发环境下根据环境变量启用 MSW Mock
-  if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_MOCK === 'true') {
-    const { initMsw } = await import('./mocks')
-    await initMsw()
-  }
+  // NOTE: 不使用动态 import() — file:// 协议下 WKWebView 不支持
+  // MSW Mock 仅在 dev 环境通过 Vite dev server 加载，生产构建不需要
 
   // SQLite 持久化：迁移 + Store 初始化
   try {
