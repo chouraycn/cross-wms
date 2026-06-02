@@ -57,28 +57,35 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
   const [outboundRecords, setOutboundRecords] = useState<OutboundRecord[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
 
-  // 数据获取：优先 dashboardApi → 降级 localStorage store
+  // 数据获取：优先 Store 缓存（含用户创建的仓库）→ 降级 dashboardApi
   useEffect(() => {
     let cancelled = false;
 
     async function fetchData() {
       setLoading(true);
 
-      // 1. 尝试从 dashboardApi 获取仓库列表
-      let wh: Warehouse | null = null;
-      try {
-        const allWarehouses = await dashboardApi.getWarehouses();
-        wh = allWarehouses.find((w) => w.id === warehouseId) || null;
-      } catch {
-        // API 不可用，继续降级
+      // 1. 优先从 Store 缓存获取（用户创建的仓库在 API+cache 模式下存在于此）
+      let wh: Warehouse | null = getStoreWarehouseById(warehouseId) || null;
+
+      // 2. 缓存未命中，尝试 dashboardApi（包含 mock 数据和 API 数据）
+      if (!wh) {
+        try {
+          const allWarehouses = await dashboardApi.getWarehouses();
+          wh = allWarehouses.find((w) => w.id === warehouseId) || null;
+        } catch {
+          // API 不可用，继续降级
+        }
       }
 
-      // 2. 降级：从 localStorage store 获取
+      // 3. 最终降级：再次尝试 Store（可能有并发写入）
       if (!wh) {
         wh = getStoreWarehouseById(warehouseId) || null;
       }
 
       if (cancelled) return;
+      if (!wh) {
+        console.warn('[WarehouseDetail] 仓库未找到（Store+API 均无数据），warehouseId:', warehouseId);
+      }
       setWarehouse(wh);
 
       // 3. 获取关联数据（dashboardApi 内部已含 try-catch + fallback）
