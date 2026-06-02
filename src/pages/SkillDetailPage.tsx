@@ -160,6 +160,16 @@ const SkillDetailPage: React.FC = () => {
     }
   };
 
+  // 推断执行模式
+  const getExecutionMode = useCallback((s: Skill): 'navigate' | 'chat' | 'automation' | 'hybrid' => {
+    if (s.executionMode) return s.executionMode;
+    // 兼容推断：有 promptTemplate → chat，有 automationTaskType → automation，有有效路径 → navigate
+    if (s.promptTemplate) return 'chat';
+    if (s.automationTaskType) return 'automation';
+    if (s.path && s.path !== '/') return 'navigate';
+    return 'chat'; // 默认走对话模式
+  }, []);
+
   // 执行技能
   const handleExecute = () => {
     if (!skill) return;
@@ -167,30 +177,39 @@ const SkillDetailPage: React.FC = () => {
     // 记录最近使用
     updateRecentSkills(skill.name);
 
-    // 1. 如果关联了自动化且有配置 → 触发自动化
-    if (skill.automationTaskType) {
-      const autoInfo = automationMap[skill.automationTaskType];
-      if (autoInfo) {
-        handleTriggerAutomation();
-        return;
+    const mode = getExecutionMode(skill);
+
+    switch (mode) {
+      case 'chat': {
+        // 纯对话模式：导航到 /chat 页面，通过 URL 参数传递技能 ID
+        navigate(`/chat?skill=${encodeURIComponent(skill.id)}`);
+        break;
       }
-    }
-
-    // 2. 特殊路径处理
-    if (skill.path === '/agent') {
-      navigate('/agent');
-      return;
-    }
-
-    // 3. 常规路径导航
-    if (skill.path && skill.path !== '/') {
-      navigate(skill.path);
-      return;
-    }
-
-    // 4. 默认：如果有关联自动化，触发执行
-    if (skill.automationTaskType) {
-      handleTriggerAutomation();
+      case 'navigate': {
+        // 纯导航模式
+        if (skill.path && skill.path !== '/') {
+          navigate(skill.path);
+        }
+        break;
+      }
+      case 'automation': {
+        // 纯自动化模式
+        if (skill.automationTaskType) {
+          const autoInfo = automationMap[skill.automationTaskType];
+          if (autoInfo) {
+            handleTriggerAutomation();
+          } else {
+            // 没有配置自动化，跳转到自动化页面创建
+            navigate('/automation');
+          }
+        }
+        break;
+      }
+      case 'hybrid': {
+        // 混合模式：优先跳转对话（注入 promptTemplate），同时如果有自动化也关联
+        navigate(`/chat?skill=${encodeURIComponent(skill.id)}`);
+        break;
+      }
     }
   };
 

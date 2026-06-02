@@ -33,6 +33,8 @@ interface TopBarChatInputProps {
     }[];
   };
   onSessionUpdate: (session: any) => void;
+  /** 从外部注入的初始技能（如从 URL 参数解析） */
+  initialSkill?: Skill | null;
 }
 
 type DropdownType = 'craft' | 'model' | 'skills' | 'permission' | null;
@@ -42,16 +44,36 @@ const PERMISSION_OPTIONS = ['公开', '仅自己', '团队成员'];
 
 import { CATEGORY_LABELS, CATEGORY_ORDER } from '../../constants/skillCategories';
 
-export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputProps) {
+export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopBarChatInputProps) {
   const { settings } = useAppSettings();
   const navigate = useNavigate();
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [showSkillSelector, setShowSkillSelector] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
-  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(initialSkill ?? null);
   const [inputValue, setInputValue] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<DropdownType>(null);
+  const [skillFocusIndex, setSkillFocusIndex] = useState(-1);
+
+  // 当 initialSkill 从外部变化时同步到 selectedSkill（如 SkillDetailPage 跳转过来）
+  useEffect(() => {
+    if (initialSkill) setSelectedSkill(initialSkill);
+  }, [initialSkill]);
+
+  // 获取当前斜杠命令过滤后的技能列表（用于键盘导航）
+  const slashFilteredCount = (() => {
+    if (!showSkillSelector) return 0;
+    const allSkills = getAllSkills().filter(s => s.status === 'active');
+    const q = slashQuery.toLowerCase();
+    return allSkills.filter(skill =>
+      skill.name.toLowerCase().includes(q) ||
+      skill.desc.toLowerCase().includes(q) ||
+      skill.category.toLowerCase().includes(q) ||
+      (skill.trigger || '').toLowerCase().includes(q) ||
+      (skill.tags || []).some(t => t.toLowerCase().includes(q))
+    ).length;
+  })();
 
   // 从 settings 中读取模型列表（仅启用的模型）
   const MODEL_OPTIONS = settings.models.models
@@ -144,17 +166,22 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
     const text = editableRef.current?.innerText || '';
     setInputValue(text);
 
-    // 斜杠命令检测
-    if (text.startsWith('/')) {
-      const query = text.slice(1).trim();
+    // 斜杠命令检测：只要当前行以 / 开头就触发（支持在已有文本后输入 /）
+    const currentLine = text.split('\n').pop() || '';
+    if (currentLine.startsWith('/')) {
+      const query = currentLine.slice(1).trim();
       setSlashQuery(query);
       setShowSkillSelector(true);
+      setShowSkills(false);
+      setSkillFocusIndex(-1); // 过滤词变化时重置导航索引
     } else if (text.endsWith('@')) {
       setShowSkills(true);
       setShowSkillSelector(false);
+      setSkillFocusIndex(-1);
     } else {
       setShowSkillSelector(false);
       setShowSkills(false);
+      setSkillFocusIndex(-1);
     }
   }, []);
 
@@ -181,11 +208,15 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
     setShowSkills(false);
     setShowSkillSelector(false);
     if (editableRef.current) {
-      // 如果是斜杠命令选择，替换整个输入内容
-      if (inputValue.startsWith('/')) {
-        editableRef.current.innerText = `[${skill.name}] `;
-      } else {
-        editableRef.current.innerText += `[${skill.name}] `;
+      // 如果是斜杠命令选择，清除 /xxx 部分，保留其他内容
+      if (inputValue.includes('/')) {
+        const lines = inputValue.split('\n');
+        // 替换最后一行中以 / 开头的内容
+        const lastLine = lines[lines.length - 1];
+        if (lastLine.startsWith('/')) {
+          lines[lines.length - 1] = '';
+        }
+        editableRef.current.innerText = lines.join('\n');
       }
       setInputValue(editableRef.current.innerText);
       setTimeout(() => {
@@ -196,6 +227,7 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
           range.collapse(false);
           sel?.removeAllRanges();
           sel?.addRange(range);
+          editableRef.current.focus();
         }
       }, 0);
     }
@@ -203,7 +235,9 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
 
   const handleSend = () => {
     if (!inputValue.trim() || isLoading) return;
-    sendMessage(inputValue);
+    // 如果选中了技能且有 promptTemplate，作为 skillContext 注入
+    const skillContext = selectedSkill?.promptTemplate || undefined;
+    sendMessage(inputValue, { skillContext });
     // Clear the contentEditable div
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
@@ -212,9 +246,55 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
     setShowSkillSelector(false);
     // 发送后收起输入区（按 HTML 逻辑：无内容时恢复初始状态）
     setInputExpanded(false);
+    // 发送后清空技能选择（hybrid 模式保留，chat 模式清空）
+    if (selectedSkill && selectedSkill.executionMode === 'chat') {
+      setSelectedSkill(null);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // 斜杠选择器打开时，上下箭头和 Enter 由这里处理
+    if (showSkillSelector) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowSkillSelector(false);
+        setSkillFocusIndex(-1);
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSkillFocusIndex(prev => slashFilteredCount > 0 ? (prev + 1) % slashFilteredCount : -1);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSkillFocusIndex(prev => prev <= 0 ? slashFilteredCount - 1 : prev - 1);
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (skillFocusIndex >= 0 && skillFocusIndex < slashFilteredCount) {
+          // 获取过滤后的技能列表，选择对应项
+          const allSkills = getAllSkills().filter(s => s.status === 'active');
+          const q = slashQuery.toLowerCase();
+          const filtered = allSkills.filter(skill =>
+            skill.name.toLowerCase().includes(q) ||
+            skill.desc.toLowerCase().includes(q) ||
+            skill.category.toLowerCase().includes(q) ||
+            (skill.trigger || '').toLowerCase().includes(q) ||
+            (skill.tags || []).some(t => t.toLowerCase().includes(q))
+          );
+          if (filtered[skillFocusIndex]) {
+            handleSkillSelect(filtered[skillFocusIndex]);
+          }
+        } else {
+          // 无选中项，正常发送
+          handleSend();
+        }
+        setSkillFocusIndex(-1);
+        return;
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -255,14 +335,35 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
           overflow: 'auto',
         }}
       >
-        {/* Selected skill tag */}
+        {/* Selected skill tag — 显示技能名+触发词+AI上下文标识 */}
         {selectedSkill && (
-          <Box sx={{ px: 1.5, py: 0.5, bgcolor: '#fff', borderBottom: `1px solid #eee` }}>
+          <Box sx={{ px: 1.5, py: 0.5, bgcolor: '#fff', borderBottom: `1px solid #eee`, display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Chip
-              label={selectedSkill.name}
+              icon={<Box component="span" sx={{ display: 'flex', alignItems: 'center', ml: '4px' }}>{ICON_MAP[selectedSkill.icon] || <AutoFixHighIcon sx={{ fontSize: 14 }} />}</Box>}
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <span>{selectedSkill.name}</span>
+                  {selectedSkill.promptTemplate && (
+                    <Typography component="span" sx={{ fontSize: 9, color: '#7C3AED', fontWeight: 600, bgcolor: '#FAF5FF', px: 0.5, borderRadius: 0.5 }}>
+                      AI
+                    </Typography>
+                  )}
+                  {selectedSkill.trigger && (
+                    <Typography component="span" sx={{ fontSize: 10, color: '#9CA3AF', fontFamily: 'monospace' }}>
+                      {selectedSkill.trigger}
+                    </Typography>
+                  )}
+                </Box>
+              }
               onDelete={() => setSelectedSkill(null)}
               size="small"
-              sx={{ height: 24, fontSize: 12 }}
+              sx={{
+                height: 26,
+                fontSize: 12,
+                bgcolor: selectedSkill.promptTemplate ? '#FAF5FF' : '#F3F4F6',
+                border: selectedSkill.promptTemplate ? '1px solid #DDD6FE' : '1px solid #E5E7EB',
+                '& .MuiChip-label': { px: 1 },
+              }}
             />
           </Box>
         )}
@@ -595,19 +696,22 @@ export function TopBarChatInput({ session, onSessionUpdate }: TopBarChatInputPro
       {/* Skill selector dropdown — @ 触发 */}
       {showSkills && (
         <SkillSelector
-          anchorEl={editableRef.current}
+          anchorEl={containerRef.current}
           onSelect={handleSkillSelect}
           onClose={() => setShowSkills(false)}
         />
       )}
 
-      {/* Skill selector dropdown — / 斜杠命令触发 */}
+      {/* Skill selector dropdown — / 斜杠命令触发（slashMode：无独立搜索框，用输入过滤 + 键盘导航，仅显示 active 技能） */}
       {showSkillSelector && (
         <SkillSelector
-          anchorEl={editableRef.current}
+          anchorEl={containerRef.current}
           onSelect={handleSkillSelect}
-          onClose={() => setShowSkillSelector(false)}
+          onClose={() => { setShowSkillSelector(false); setSkillFocusIndex(-1); }}
           initialFilter={slashQuery}
+          activeOnly
+          slashMode
+          focusedIndex={skillFocusIndex}
         />
       )}
 

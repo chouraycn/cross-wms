@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box, Divider } from '@mui/material';
+import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box } from '@mui/material';
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
 import { getAllSkills } from '../../stores/skillStore';
@@ -13,20 +13,51 @@ interface SkillSelectorProps {
   initialFilter?: string;
   /** 是否只显示 active 状态的技能 */
   activeOnly?: boolean;
+  /** 是否由斜杠命令触发（隐藏内部搜索框，用外部输入过滤） */
+  slashMode?: boolean;
+  /** 外部传入的键盘事件索引（用于键盘导航同步） */
+  focusedIndex?: number;
 }
 
-export function SkillSelector({ anchorEl, onSelect, onClose, initialFilter = '', activeOnly = false }: SkillSelectorProps) {
-  const [filterText, setFilterText] = useState(initialFilter);
+export function SkillSelector({ anchorEl, onSelect, onClose, initialFilter = '', activeOnly = false, slashMode = false, focusedIndex }: SkillSelectorProps) {
   const listRef = useRef<HTMLDivElement>(null);
+  const [hoveredIndex, setHoveredIndex] = useState(-1);
 
-  // 当 initialFilter 变化时同步
+  // 当 initialFilter 变化时重置 hover
   useEffect(() => {
-    setFilterText(initialFilter);
+    setHoveredIndex(-1);
   }, [initialFilter]);
+
+  // 同步外部传入的 focusedIndex
+  useEffect(() => {
+    if (focusedIndex !== undefined && focusedIndex >= 0) {
+      setHoveredIndex(focusedIndex);
+    }
+  }, [focusedIndex]);
 
   // 从 skillStore 获取所有技能
   const allSkills = getAllSkills();
   const skills = activeOnly ? allSkills.filter((s) => s.status === 'active') : allSkills;
+
+  // 斜杠模式用外部传入的 filter，非斜杠模式有内部搜索框
+  const filterText = slashMode ? initialFilter : initialFilter;
+
+  const filteredSkills = skills.filter(skill =>
+    skill.name.toLowerCase().includes(filterText.toLowerCase()) ||
+    skill.desc.toLowerCase().includes(filterText.toLowerCase()) ||
+    skill.category.toLowerCase().includes(filterText.toLowerCase()) ||
+    (skill.trigger || '').toLowerCase().includes(filterText.toLowerCase()) ||
+    (skill.tags || []).some(t => t.toLowerCase().includes(filterText.toLowerCase()))
+  );
+
+  // 滚动到高亮项
+  useEffect(() => {
+    if (hoveredIndex >= 0 && listRef.current) {
+      const items = listRef.current.querySelectorAll('[data-skill-index]');
+      const target = items[hoveredIndex] as HTMLElement;
+      if (target) target.scrollIntoView({ block: 'nearest' });
+    }
+  }, [hoveredIndex]);
 
   // Close on click outside
   useEffect(() => {
@@ -39,88 +70,67 @@ export function SkillSelector({ anchorEl, onSelect, onClose, initialFilter = '',
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [anchorEl, onClose]);
 
-  // Close on Escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
-  const filteredSkills = skills.filter(skill =>
-    skill.name.toLowerCase().includes(filterText.toLowerCase()) ||
-    skill.desc.toLowerCase().includes(filterText.toLowerCase()) ||
-    skill.category.toLowerCase().includes(filterText.toLowerCase()) ||
-    (skill.trigger || '').toLowerCase().includes(filterText.toLowerCase()) ||
-    (skill.tags || []).some(t => t.toLowerCase().includes(filterText.toLowerCase()))
-  );
-
   if (!anchorEl) return null;
 
   const anchorRect = anchorEl.getBoundingClientRect();
+  // 从锚点上方弹出，水平居中（限制不超出视口）
+  const popupWidth = slashMode ? 400 : 320;
+  const popupLeft = Math.max(8, Math.min(
+    anchorRect.left + (anchorRect.width - popupWidth) / 2,
+    window.innerWidth - popupWidth - 8
+  ));
 
   return (
     <Paper
       ref={listRef}
       elevation={4}
       sx={{
-        position: 'absolute',
-        top: anchorRect.bottom + 8,
-        left: anchorRect.left,
-        width: 320,
+        position: 'fixed',
+        bottom: `calc(100vh - ${anchorRect.top}px + 8)`,
+        left: popupLeft,
+        width: popupWidth,
         maxHeight: 360,
         overflow: 'auto',
         zIndex: 1400,
-        borderRadius: '8px',
+        borderRadius: '10px',
         border: '1px solid #E5E7EB',
         bgcolor: '#FFFFFF',
-        boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.12)',
       }}
     >
-      {/* 搜索输入 */}
-      <Box sx={{ p: 1, borderBottom: '1px solid #F3F4F6' }}>
-        <input
-          type="text"
-          placeholder="搜索技能..."
-          value={filterText}
-          onChange={(e) => setFilterText(e.target.value)}
-          autoFocus
-          style={{
-            width: '100%',
-            border: 'none',
-            outline: 'none',
-            fontSize: 13,
-            padding: '4px 8px',
-            backgroundColor: '#F9FAFB',
-            borderRadius: 6,
-            color: '#111827',
-          }}
-        />
-      </Box>
+      {/* 斜杠模式标题栏 */}
+      {slashMode && (
+        <Box sx={{ px: 2, py: 1, borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#6B7280' }}>技能指令</Typography>
+          <Typography sx={{ fontSize: 11, color: '#D1D5DB' }}>↑↓ 导航 · Enter 选择 · Esc 关闭</Typography>
+        </Box>
+      )}
 
       {filteredSkills.length === 0 ? (
         <Box sx={{ p: 2, textAlign: 'center' }}>
           <Typography sx={{ fontSize: 13, color: '#9CA3AF' }}>未找到匹配的技能</Typography>
+          {slashMode && filterText && (
+            <Typography sx={{ fontSize: 11, color: '#D1D5DB', mt: 0.5 }}>
+              尝试其他关键词
+            </Typography>
+          )}
         </Box>
       ) : (
         <List sx={{ py: 0.5, px: 0 }}>
-          {filteredSkills.map((skill) => (
+          {filteredSkills.map((skill, index) => (
             <ListItem
               key={skill.id}
-              button
-              onClick={() => {
-                onSelect(skill);
-              }}
+              data-skill-index={index}
+              onClick={() => onSelect(skill)}
+              onMouseEnter={() => setHoveredIndex(index)}
               sx={{
                 py: 1,
                 px: 1.5,
                 cursor: 'pointer',
-                '&:hover': {
-                  bgcolor: '#F3F4F6',
-                },
+                bgcolor: hoveredIndex === index ? '#F3F4F6' : 'transparent',
+                borderRadius: 1,
+                mx: 0.5,
+                transition: 'background-color 0.1s',
               }}
             >
               <ListItemIcon sx={{ minWidth: 36 }}>
@@ -130,11 +140,16 @@ export function SkillSelector({ anchorEl, onSelect, onClose, initialFilter = '',
                 primary={
                   <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#111827' }}>
                     {skill.name}
+                    {skill.trigger && (
+                      <Typography component="span" sx={{ fontSize: 11, color: '#9CA3AF', ml: 1, fontFamily: 'monospace' }}>
+                        {skill.trigger}
+                      </Typography>
+                    )}
                   </Typography>
                 }
                 secondary={
-                  <Typography sx={{ fontSize: 11, color: '#9CA3AF', mt: 0.25 }}>
-                    {skill.trigger ? `${skill.trigger} · ` : ''}{skill.desc}
+                  <Typography sx={{ fontSize: 11, color: '#9CA3AF', mt: 0.25 }} noWrap>
+                    {skill.desc}
                   </Typography>
                 }
               />

@@ -7,6 +7,7 @@ import {
   Typography,
   Box,
   Tooltip,
+  useTheme,
 } from '@mui/material';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
@@ -54,6 +55,9 @@ const NavList: React.FC<NavListProps> = ({ collapsed, activePath, onNavigate }) 
   const isActive = (path: string) =>
     path === '/' ? activePath === '/' : activePath.startsWith(path);
 
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   return (
     <List
       sx={{
@@ -72,7 +76,13 @@ const NavList: React.FC<NavListProps> = ({ collapsed, activePath, onNavigate }) 
             <Tooltip title={collapsed ? item.label : ''} placement="right" arrow>
               <ListItemButton
                 onClick={() => {
-                  onNavigate(item.path);
+                  if (item.path === '/chat') {
+                    // 新建任务：始终导航到 /chat（无 session 参数），同时发事件处理已在本页面的情况
+                    onNavigate(item.path);
+                    window.dispatchEvent(new CustomEvent('crosswms-navigate-chat'));
+                  } else {
+                    onNavigate(item.path);
+                  }
                 }}
                 sx={{
                   minHeight: collapsed ? 40 : 36,
@@ -80,9 +90,9 @@ const NavList: React.FC<NavListProps> = ({ collapsed, activePath, onNavigate }) 
                   px: collapsed ? 0 : 1.5,
                   py: 0.25,
                   borderRadius: '6px',
-                  backgroundColor: active ? '#FFFFFF' : 'transparent',
+                  backgroundColor: active ? (isDark ? '#2D2D2D' : '#FFFFFF') : 'transparent',
                   '&:hover': {
-                    backgroundColor: active ? '#F9FAFB' : '#f5f5f5',
+                    backgroundColor: active ? (isDark ? '#333333' : '#F9FAFB') : (isDark ? '#2D2D2D' : '#f5f5f5'),
                   },
                 }}
               >
@@ -91,7 +101,7 @@ const NavList: React.FC<NavListProps> = ({ collapsed, activePath, onNavigate }) 
                     minWidth: 0,
                     mr: collapsed ? 0 : 1.5,
                     justifyContent: 'center',
-                    color: active ? '#111827' : '#6B7280',
+                    color: active ? (isDark ? '#FFFFFF' : '#111827') : (isDark ? '#9CA3AF' : '#6B7280'),
                     '& .MuiSvgIcon-root': { fontSize: collapsed ? '20px' : '18px' },
                   }}
                 >
@@ -109,7 +119,7 @@ const NavList: React.FC<NavListProps> = ({ collapsed, activePath, onNavigate }) 
                     sx={{
                       fontSize: '0.8125rem',
                       fontWeight: active ? 500 : 400,
-                      color: active ? '#111827' : '#374151',
+                      color: active ? (isDark ? '#FFFFFF' : '#111827') : (isDark ? '#D1D5DB' : '#374151'),
                       lineHeight: '36px',
                     }}
                   >

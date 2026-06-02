@@ -119,7 +119,7 @@ app.delete('/api/sessions/:id', (req, res) => {
 
 // 发送消息（SSE）
 app.post('/api/chat', async (req, res) => {
-  const { sessionId, message, model = 'claude-sonnet-4' } = req.body;
+  const { sessionId, message, model = 'claude-sonnet-4', skillContext } = req.body;
 
   try {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -165,7 +165,12 @@ app.post('/api/chat', async (req, res) => {
       const memoryContent = readMemoryMd();
       let finalPrompt = message;
       if (memoryContent.trim()) {
-        finalPrompt = `<memory>\n${memoryContent.trim()}\n</memory>\n\n${message}`;
+        finalPrompt = `<memory>\n${memoryContent.trim()}\n</memory>\n\n${finalPrompt}`;
+      }
+
+      // 注入技能上下文到 prompt
+      if (skillContext && typeof skillContext === 'string' && skillContext.trim()) {
+        finalPrompt = `<skill-context>\n${skillContext.trim()}\n</skill-context>\n\n${finalPrompt}`;
       }
 
       const queryInstance = query({

@@ -9,6 +9,7 @@ import {
   Typography,
   Tooltip,
   IconButton,
+  Popover,
   Dialog,
   Grow,
   Card,
@@ -27,6 +28,7 @@ import {
   Switch,
   InputAdornment,
   Snackbar,
+  useTheme,
 } from '@mui/material';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -54,6 +56,8 @@ import { getAuthStatus, getAuthUrl, exchangeToken, refreshToken, isPyWebView, ty
 import { APP_VERSION } from '../Settings/sharedStyles';
 
 // ===================== Settings Panel Types & Data =====================
+
+const SIDEBAR_WIDTH_EXPANDED = 260;
 
 type SettingsTab = 'menu' | 'tencentDocs' | 'tencentDocs_volumeDocs' | 'dashboardCalc' | 'dashboardIndicators' | 'modelManagement' | 'appearance' | 'about';
 
@@ -94,6 +98,18 @@ interface SettingsPanelProps {
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
   const { settings, updateSettings, resetSettings } = useAppSettings();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
+  // Dark mode responsive colors
+  const textPrimary = isDark ? '#F3F4F6' : '#111827';
+  const textSecondary = isDark ? '#9CA3AF' : '#6B7280';
+  const textMuted = isDark ? '#6B7280' : '#9CA3AF';
+  const borderColor = isDark ? '#2D2D2D' : '#E5E7EB';
+  const bgCard = isDark ? '#252525' : '#FFFFFF';
+  const bgHover = isDark ? '#2D2D2D' : '#f5f5f5';
+  const bgInput = isDark ? '#2D2D2D' : '#FFFFFF';
+  const bgChip = isDark ? '#333333' : '#F3F4F6';
 
   const openInBrowser = useCallback(async (url: string) => {
     if (isPyWebView() && window.pywebview?.api) {
@@ -1099,20 +1115,20 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box className="settings-panel" sx={{ width: '100%', color: isDark ? '#F3F4F6' : '#111827' }}>
       {activeTab === 'menu' && (
         <Box sx={{ px: 2.5, pt: 2, pb: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box sx={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <g fill="#111827">
+              <g fill={isDark ? '#F3F4F6' : '#111827'}>
                 <path d="M93.45,36.53l-11.5,16.57,10.03,14.41c2.25-5.4,3.5-11.32,3.5-17.53,0-4.68-.71-9.2-2.02-13.45Z"/>
                 <path d="M57.48,88.15c-2.65.57-5.4.88-8.23.88-6.04,0-11.77-1.37-16.88-3.83V18.56c0-2.38,1.47-4.54,3.71-5.34,4.11-1.47,8.55-2.28,13.17-2.28.91,0,1.81.03,2.71.1v44.36c0,2.49,3.21,3.5,4.64,1.45l26.5-38.08c-7.87-8.37-18.87-13.77-31.13-14.32v.03c-.9-.05-1.8-.08-2.71-.08C24.07,4.39,3.66,24.8,3.66,49.99s20.41,45.59,45.59,45.59c1.04,0,2.07-.04,3.09-.11l-.03.04c10.67-.56,20.36-4.8,27.85-11.46l-6.65-9.55c-1.56-2.25-4.89-2.25-6.46-.01l-9.57,13.65Z"/>
               </g>
             </svg>
           </Box>
           <Box>
-            <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', lineHeight: 1.3 }}>CDF Know CrossWMS</Typography>
-            <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>v{APP_VERSION}</Typography>
+            <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: textPrimary, lineHeight: 1.3 }}>CDF Know CrossWMS</Typography>
+            <Typography sx={{ fontSize: '0.7rem', color: textMuted }}>v{APP_VERSION}</Typography>
           </Box>
         </Box>
       )}
@@ -1142,29 +1158,47 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
 export interface SettingsPopoverProps {
   open: boolean;
   onClose: () => void;
+  anchorEl: HTMLElement | null;
 }
 
-const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose }) => {
+const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchorEl }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   return (
-    <Dialog
+    <Popover
       open={open}
       onClose={onClose}
-      maxWidth={false}
-      PaperProps={{
-        sx: {
-          width: 680,
-          borderRadius: '12px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
-          border: '1px solid #E5E7EB',
-          overflow: 'hidden',
-          maxHeight: '85vh',
-        },
+      anchorEl={anchorEl}
+      anchorOrigin={{
+        vertical: 'top',
+        horizontal: 'left',
+      }}
+      transformOrigin={{
+        vertical: 'bottom',
+        horizontal: 'left',
       }}
       TransitionComponent={Grow}
       TransitionProps={{ timeout: 200 }}
+      disableScrollLock
+      slotProps={{
+        paper: {
+          sx: {
+            width: SIDEBAR_WIDTH_EXPANDED,
+            maxHeight: '70vh',
+            borderRadius: '12px',
+            boxShadow: isDark
+              ? '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)'
+              : '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
+            border: `1px solid ${isDark ? '#2D2D2D' : '#E5E7EB'}`,
+            overflow: 'hidden',
+            backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+          },
+        },
+      }}
     >
       <SettingsPanel onClose={onClose} />
-    </Dialog>
+    </Popover>
   );
 };
 

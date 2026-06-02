@@ -2,11 +2,16 @@ import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, Session } from '../types/chat';
 
+export interface SendMessageOptions {
+  /** 技能上下文：注入到 AI 对话的 prompt 模板 */
+  skillContext?: string;
+}
+
 export function useChat(currentSession: Session | undefined, onSessionUpdate: (session: Session) => void) {
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, options?: SendMessageOptions) => {
     if (!content.trim() || isLoading) return;
     setIsLoading(true);
 
@@ -22,10 +27,20 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
     onSessionUpdate(updatedSession);
 
     try {
+      const body: Record<string, unknown> = {
+        sessionId: session.id,
+        message: content,
+        model: session.model,
+      };
+      // 如果有技能上下文，传递给后端
+      if (options?.skillContext) {
+        body.skillContext = options.skillContext;
+      }
+
       const res = await fetch('http://localhost:3001/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: session.id, message: content, model: session.model })
+        body: JSON.stringify(body),
       });
 
       const reader = res.body?.getReader();

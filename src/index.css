@@ -13,6 +13,11 @@ body {
   background-color: #FFFFFF;
 }
 
+/* MUI dark mode 会给 body 添加 .MuiCssBaseline-root 和设置 background-color */
+.MuiCssBaseline-root {
+  transition: background-color 0.2s ease;
+}
+
 #root {
   min-height: 100vh;
 }
@@ -34,6 +39,68 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #9CA3AF;
+}
+
+/* Dark mode scrollbar */
+.MuiCssBaseline-root[data-mui-color-scheme="dark"] ::-webkit-scrollbar-track {
+  background: #1A1A1A;
+}
+.MuiCssBaseline-root[data-mui-color-scheme="dark"] ::-webkit-scrollbar-thumb {
+  background: #3A3A3A;
+}
+.MuiCssBaseline-root[data-mui-color-scheme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #4A4A4A;
+}
+
+/* Global dark mode overrides for hardcoded colors */
+[data-mui-color-scheme="dark"] .settings-panel .MuiTypography-root {
+  color: #F3F4F6;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiDivider-root {
+  border-color: #2D2D2D;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiOutlinedInput-root {
+  border-color: #3A3A3A;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiOutlinedInput-notchedOutline {
+  border-color: #3A3A3A;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiCard-root {
+  border-color: #2D2D2D;
+  background-color: #252525;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiChip-root {
+  background-color: #333333;
+  color: #D1D5DB;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiButton-outlined {
+  border-color: #3A3A3A;
+  color: #D1D5DB;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiSlider-root {
+  color: #9CA3AF;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiSwitch-root .MuiSwitch-track {
+  background-color: #3A3A3A;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiAlert-root {
+  background-color: #252525;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiList-root {
+  background-color: transparent;
+  border-color: #2D2D2D;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiListItem-root {
+  border-bottom-color: #2D2D2D;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiFormControl-root .MuiInputLabel-root {
+  color: #9CA3AF;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiSelect-root {
+  color: #D1D5DB;
+}
+[data-mui-color-scheme="dark"] .settings-panel .MuiMenuItem-root:hover {
+  background-color: #2D2D2D;
 }
 
 /* Recharts tooltip */
