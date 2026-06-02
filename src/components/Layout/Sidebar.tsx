@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Box,
   ListItemButton,
@@ -12,7 +12,6 @@ import SidebarLogo from './SidebarLogo';
 import NavList from './NavList';
 import SidebarToggle from './SidebarToggle';
 import SettingsPopover from './SettingsPopover';
-import ChatHistory from './ChatHistory';
 
 // ===================== Constants =====================
 
@@ -83,20 +82,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         onLogoClick={() => navigate('/')}
       />
 
-      {/* Navigation list */}
+      {/* Navigation list (含历史对话) */}
       <NavList
         collapsed={collapsed}
         activePath={location.pathname}
         onNavigate={(path) => navigate(path)}
-      />
-
-      {/* 历史对话 — 在页面栏目和设置之间 */}
-      <ChatHistory
-        collapsed={collapsed}
         activeSessionId={activeSessionId}
         onSelectSession={(sessionId) => {
           setActiveSessionId(sessionId);
-          // 通过 URL 参数传递 session ID，ChatPage 读取后加载对应会话
           navigate(`/chat?session=${encodeURIComponent(sessionId)}`);
         }}
         onDeleteSession={(sessionId) => {
