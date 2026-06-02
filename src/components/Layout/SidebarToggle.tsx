@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconButton } from '@mui/material';
+import { IconButton, useTheme } from '@mui/material';
 import ChevronLeftOutlinedIcon from '@mui/icons-material/ChevronLeftOutlined';
 import MenuOpenOutlinedIcon from '@mui/icons-material/MenuOpenOutlined';
 
@@ -20,6 +20,9 @@ const SidebarToggle: React.FC<SidebarToggleProps> = ({
   expandedWidth,
   collapsedWidth,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   return (
     <IconButton
       onClick={onToggle}
@@ -30,20 +33,22 @@ const SidebarToggle: React.FC<SidebarToggleProps> = ({
         left: collapsed ? collapsedWidth + 8 : expandedWidth - 40,
         right: 'auto',
         zIndex: 1300,
-        color: '#6B7280',
+        color: isDark ? '#9CA3AF' : '#6B7280',
         borderRadius: '8px',
         p: 0.5,
         width: 32,
         height: 32,
-        // Glass effect when collapsed (button sits on white content area)
+        // Glass effect when collapsed (button sits on content area)
         ...(collapsed ? {
-          backgroundColor: 'rgba(255, 255, 255, 0.6)',
+          backgroundColor: isDark ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.6)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(255, 255, 255, 0.2)',
         } : {}),
         '&:hover': {
-          backgroundColor: collapsed ? 'rgba(255, 255, 255, 0.8)' : '#e0e0e0',
+          backgroundColor: collapsed
+            ? (isDark ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)')
+            : (isDark ? '#333333' : '#e0e0e0'),
         },
         '&:focus': { outline: 'none' },
       }}

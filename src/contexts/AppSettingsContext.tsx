@@ -594,6 +594,9 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (partial.sidebar) {
         next.sidebar = { ...prev.sidebar, ...partial.sidebar };
       }
+      if (partial.appearance) {
+        next.appearance = { ...prev.appearance, ...partial.appearance };
+      }
       if (partial.models) {
         next.models = {
           ...prev.models,

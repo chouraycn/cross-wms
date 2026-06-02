@@ -1,11 +1,12 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box, IconButton, Snackbar, Alert } from '@mui/material';
+import { CssBaseline, Box, IconButton, Snackbar, Alert, useMediaQuery } from '@mui/material';
 import MenuOpenOutlinedIcon from '@mui/icons-material/MenuOpenOutlined';
 import Sidebar, { SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from './components/Layout/Sidebar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
-import { AppSettingsProvider } from './contexts/AppSettingsContext';
+import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
+import type { AppearanceConfig, AccentColor } from './contexts/AppSettingsContext';
 import { isPyWebView } from './services/tencentDocsApi';
 import { UpdateProvider } from './contexts/UpdateContext';
 import UpdateNotification from './components/UpdateNotification';
@@ -33,84 +34,114 @@ import AutomationPage from './pages/AutomationPage';
 import TasksPage from './pages/TasksPage';
 import NotFoundPage from './pages/NotFoundPage';
 
-/** Global MUI Theme */
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#000000',
-      light: '#374151',
-      dark: '#000000',
+/** 强调色映射 */
+const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
+  default: { main: '#111827', light: '#374151' },
+  blue:    { main: '#2563EB', light: '#60A5FA' },
+  green:   { main: '#059669', light: '#34D399' },
+  purple:  { main: '#7C3AED', light: '#A78BFA' },
+  red:     { main: '#DC2626', light: '#F87171' },
+  orange:  { main: '#EA580C', light: '#FB923C' },
+};
+
+/** 根据外观配置动态创建 MUI Theme */
+function buildTheme(appearance: AppearanceConfig, prefersDark: boolean) {
+  const isDark = appearance.themeMode === 'dark' || (appearance.themeMode === 'system' && prefersDark);
+  const accent = ACCENT_MAP[appearance.accentColor] || ACCENT_MAP.default;
+  const radiusMap = { sharp: 0, normal: 6, rounded: 12 } as const;
+  const radius = radiusMap[appearance.borderRadius] ?? 6;
+
+  return createTheme({
+    palette: {
+      mode: isDark ? 'dark' : 'light',
+      primary: { main: accent.main, light: accent.light, dark: accent.main },
+      secondary: { main: '#6B7280' },
+      background: {
+        default: isDark ? '#111111' : '#F8F8F8',
+        paper: isDark ? '#1E1E1E' : '#FFFFFF',
+      },
+      text: {
+        primary: isDark ? '#F3F4F6' : '#111827',
+        secondary: isDark ? '#9CA3AF' : '#6B7280',
+      },
+      divider: isDark ? '#2D2D2D' : '#E5E7EB',
     },
-    secondary: {
-      main: '#6B7280',
+    typography: {
+      fontFamily: [
+        '-apple-system',
+        'BlinkMacSystemFont',
+        '"Segoe UI"',
+        'Roboto',
+        '"Helvetica Neue"',
+        'Arial',
+        'sans-serif',
+      ].join(','),
     },
-    background: {
-      default: '#F8F8F8',
-      paper: '#FFFFFF',
-    },
-    text: {
-      primary: '#111827',
-      secondary: '#6B7280',
-    },
-    divider: '#E5E7EB',
-  },
-  typography: {
-    fontFamily: [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-    ].join(','),
-  },
-  components: {
-    MuiCard: {
-      defaultProps: { elevation: 0 },
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          border: '1px solid #E5E7EB',
+    components: {
+      MuiCard: {
+        defaultProps: { elevation: 0 },
+        styleOverrides: {
+          root: {
+            borderRadius: radius,
+            border: `1px solid ${isDark ? '#2D2D2D' : '#E5E7EB'}`,
+            backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+          },
         },
       },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: 6,
-          fontWeight: 500,
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            textTransform: 'none',
+            borderRadius: radius,
+            fontWeight: 500,
+          },
         },
       },
-    },
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          borderRadius: 6,
+      MuiChip: {
+        styleOverrides: {
+          root: { borderRadius: radius },
         },
       },
-    },
-    MuiTableCell: {
-      styleOverrides: {
-        head: {
-          fontSize: '0.8rem',
-          fontWeight: 600,
-          color: '#6B7280',
+      MuiTableCell: {
+        styleOverrides: {
+          head: {
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            color: isDark ? '#9CA3AF' : '#6B7280',
+          },
         },
       },
-    },
-    MuiTableRow: {
-      styleOverrides: {
-        root: {
-          '&:last-child td': {
-            borderBottom: 0,
+      MuiTableRow: {
+        styleOverrides: {
+          root: { '&:last-child td': { borderBottom: 0 } },
+        },
+      },
+      MuiDialog: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+          },
+        },
+      },
+      MuiPopover: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+          },
+        },
+      },
+      MuiTextField: {
+        styleOverrides: {
+          root: {
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: isDark ? '#2D2D2D' : '#FFFFFF',
+            },
           },
         },
       },
     },
-  },
-});
+  });
+}
 
 /** 自动隐藏滚动条 Hook：默认隐藏，滚动时显示，停止滚动 3 秒后隐藏；enabled=false 时完全禁用 */
 function useAutoHideScrollbar(enabled: boolean = true) {
@@ -343,7 +374,7 @@ const MainLayout: React.FC = () => {
           minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#FFFFFF',
+          backgroundColor: 'background.paper',
           minHeight: '100vh',
         }}
       >
@@ -493,18 +524,35 @@ const MainLayout: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
+/** 动态主题桥接组件：读取 settings → 构建 theme → 注入 ThemeProvider */
+const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { settings } = useAppSettings();
+  const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
+
+  const theme = useMemo(
+    () => buildTheme(settings.appearance, prefersDark),
+    [settings.appearance, prefersDark],
+  );
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <HashRouter>
-        <AppSettingsProvider>
+      {children}
+    </ThemeProvider>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AppSettingsProvider>
+      <ThemedApp>
+        <HashRouter>
           <UpdateProvider>
             <MainLayout />
           </UpdateProvider>
-        </AppSettingsProvider>
-      </HashRouter>
-    </ThemeProvider>
+        </HashRouter>
+      </ThemedApp>
+    </AppSettingsProvider>
   );
 };
 

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Box,
   ListItemButton,
   ListItemIcon,
   Typography,
+  useTheme,
 } from '@mui/material';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -11,12 +12,12 @@ import SidebarLogo from './SidebarLogo';
 import NavList from './NavList';
 import SidebarToggle from './SidebarToggle';
 import SettingsPopover from './SettingsPopover';
+import ChatHistory from './ChatHistory';
 
 // ===================== Constants =====================
 
 const SIDEBAR_WIDTH_EXPANDED = 260;
 const SIDEBAR_WIDTH_COLLAPSED = 83;
-const SIDEBAR_BG = '#F0F0F0';
 
 // ===================== Sidebar Component =====================
 
@@ -28,8 +29,23 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
+  const SIDEBAR_BG = isDark ? '#1A1A1A' : '#F0F0F0';
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsBtnRef = useRef<HTMLDivElement>(null);
+  const [activeSessionId, setActiveSessionId] = useState(() => {
+    try {
+      const raw = localStorage.getItem('crosswms-chat-sessions');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed[0].id;
+      }
+    } catch { /* ignore */ }
+    return '';
+  });
 
   const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
@@ -74,8 +90,22 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         onNavigate={(path) => navigate(path)}
       />
 
+      {/* 历史对话 — 在页面栏目和设置之间 */}
+      <ChatHistory
+        collapsed={collapsed}
+        activeSessionId={activeSessionId}
+        onSelectSession={(sessionId) => {
+          setActiveSessionId(sessionId);
+          // 通过 URL 参数传递 session ID，ChatPage 读取后加载对应会话
+          navigate(`/chat?session=${encodeURIComponent(sessionId)}`);
+        }}
+        onDeleteSession={(sessionId) => {
+          setActiveSessionId((prev: string) => prev === sessionId ? '' : prev);
+        }}
+      />
+
       {/* Bottom: Settings button */}
-      <Box sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, flexShrink: 0 }}>
+      <Box ref={settingsBtnRef} sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, flexShrink: 0 }}>
         <ListItemButton
           onClick={() => setSettingsOpen(true)}
           sx={{
@@ -83,10 +113,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             justifyContent: collapsed ? 'center' : 'flex-start',
             px: collapsed ? 0 : 1.5,
             borderRadius: '6px',
-            backgroundColor: settingsOpen ? '#FFFFFF' : 'transparent',
+            backgroundColor: settingsOpen ? (isDark ? '#2D2D2D' : '#FFFFFF') : 'transparent',
             '&:hover': {
-              backgroundColor: settingsOpen ? '#F9FAFB' : '#f5f5f5',
+              backgroundColor: settingsOpen ? (isDark ? '#333333' : '#F9FAFB') : (isDark ? '#2D2D2D' : '#f5f5f5'),
             },
+            color: isDark ? '#E5E7EB' : undefined,
           }}
         >
           <ListItemIcon
@@ -94,7 +125,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
               minWidth: 0,
               mr: collapsed ? 0 : 1.5,
               justifyContent: 'center',
-              color: settingsOpen ? '#111827' : '#6B7280',
+              color: settingsOpen ? (isDark ? '#FFFFFF' : '#111827') : (isDark ? '#9CA3AF' : '#6B7280'),
               '& .MuiSvgIcon-root': { fontSize: collapsed ? '20px' : '18px' },
             }}
           >
@@ -112,7 +143,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
               sx={{
                 fontSize: '0.8125rem',
                 fontWeight: settingsOpen ? 500 : 400,
-                color: settingsOpen ? '#111827' : '#374151',
+                color: settingsOpen ? (isDark ? '#FFFFFF' : '#111827') : (isDark ? '#D1D5DB' : '#374151'),
                 lineHeight: '36px',
               }}
             >
@@ -122,10 +153,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         </ListItemButton>
       </Box>
 
-      {/* Settings Dialog */}
+      {/* Settings Popover */}
       <SettingsPopover
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        anchorEl={settingsBtnRef.current}
       />
     </Box>
   );
