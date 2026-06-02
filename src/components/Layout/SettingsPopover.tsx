@@ -1186,6 +1186,7 @@ const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchor
             width: SIDEBAR_WIDTH_EXPANDED,
             maxHeight: '70vh',
             borderRadius: '12px',
+            marginLeft: '-5px',
             boxShadow: isDark
               ? '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)'
               : '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
