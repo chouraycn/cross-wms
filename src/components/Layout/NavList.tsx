@@ -59,7 +59,7 @@ const navItems: NavItem[] = [
     label: '仓储管理',
     icon: <WarehouseOutlinedIcon />,
     children: [
-      { label: '仪表盘', path: '/', icon: <DashboardOutlinedIcon /> },
+      { label: '仪表盘', path: '/dashboard', icon: <DashboardOutlinedIcon /> },
       { label: '仓库管理', path: '/warehouses', icon: <FolderOutlinedIcon /> },
       { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon /> },
       { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon /> },
@@ -138,7 +138,7 @@ const NavList: React.FC<NavListProps> = ({
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     for (const item of navItems) {
-      if (isGroup(item) && item.children.some((c) => c.path === '/' ? activePath === '/' : activePath.startsWith(c.path))) {
+      if (isGroup(item) && item.children.some((c) => activePath.startsWith(c.path))) {
         initial[item.label] = true;
       }
     }
@@ -150,7 +150,7 @@ const NavList: React.FC<NavListProps> = ({
     setExpandedGroups((prev) => {
       const next = { ...prev };
       for (const item of navItems) {
-        if (isGroup(item) && item.children.some((c) => c.path === '/' ? activePath === '/' : activePath.startsWith(c.path))) {
+        if (isGroup(item) && item.children.some((c) => activePath.startsWith(c.path))) {
           next[item.label] = true;
         }
       }
@@ -183,8 +183,7 @@ const NavList: React.FC<NavListProps> = ({
   // 只显示有消息的会话
   const chatSessions = sessions.filter((s) => s.messages.length > 0);
 
-  const isActive = (path: string) =>
-    path === '/' ? activePath === '/' : activePath.startsWith(path);
+  const isActive = (path: string) => activePath.startsWith(path);
 
   const toggleGroup = (label: string) => {
     setExpandedGroups((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -409,67 +408,80 @@ const NavList: React.FC<NavListProps> = ({
               </ListItemButton>
             </ListItem>
 
-            {/* ====== 新建任务下方：历史对话 ====== */}
-            {item.path === '/chat' && chatSessions.length > 0 && (
-              <Box sx={{ pl: 2.5, mb: 0.5 }}>
-                {chatSessions.slice(0, 10).map((session) => {
-                  const title = session.title || session.messages[0]?.content?.slice(0, 20) || '新对话';
-                  const isSessionActive = session.id === activeSessionId;
-                  return (
-                    <ListItem key={session.id} disablePadding sx={{ display: 'block', mb: 0.25 }}>
-                      <ListItemButton
-                        onClick={() => onSelectSession(session.id)}
-                        sx={{
-                          minHeight: 28,
-                          px: 1,
-                          py: 0,
-                          borderRadius: '6px',
-                          backgroundColor: isSessionActive ? bgActive : 'transparent',
-                          '&:hover': {
-                            backgroundColor: isSessionActive ? bgActiveHover : bgHover,
-                          },
-                        }}
-                      >
-                        <ListItemIcon sx={{ minWidth: 0, mr: 1, justifyContent: 'center', color: textMuted }}>
-                          <ChatBubbleOutlineIcon sx={{ fontSize: '13px' }} />
-                        </ListItemIcon>
-                        <Typography
-                          sx={{
-                            fontSize: '0.7rem',
-                            fontWeight: isSessionActive ? 500 : 400,
-                            color: isSessionActive ? textActive : textSecondary,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            flex: 1,
-                            lineHeight: '28px',
-                          }}
-                        >
-                          {title}
-                        </Typography>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleDeleteSession(e, session.id)}
-                          sx={{
-                            p: 0.25,
-                            opacity: 0,
-                            color: textMuted,
-                            transition: 'opacity 0.15s',
-                            '.MuiListItemButton-root:hover &': { opacity: 1 },
-                            '&:hover': { color: '#EF4444' },
-                          }}
-                        >
-                          <DeleteOutlineIcon sx={{ fontSize: 12 }} />
-                        </IconButton>
-                      </ListItemButton>
-                    </ListItem>
-                  );
-                })}
-              </Box>
-            )}
           </React.Fragment>
         );
       })}
+
+      {/* ====== 栏目底部：历史对话 ====== */}
+      {!collapsed && chatSessions.length > 0 && (
+        <Box sx={{ mt: 1, borderTop: `1px solid ${isDark ? '#2D2D2D' : '#E5E7EB'}`, pt: 1, px: 1 }}>
+          <Typography
+            sx={{
+              fontSize: '0.6875rem',
+              fontWeight: 500,
+              color: textMuted,
+              px: 1.5,
+              mb: 0.5,
+              letterSpacing: '0.02em',
+            }}
+          >
+            历史对话
+          </Typography>
+          {chatSessions.slice(0, 10).map((session) => {
+            const title = session.title || session.messages[0]?.content?.slice(0, 20) || '新对话';
+            const isSessionActive = session.id === activeSessionId;
+            return (
+              <ListItem key={session.id} disablePadding sx={{ display: 'block', mb: 0.25 }}>
+                <ListItemButton
+                  onClick={() => onSelectSession(session.id)}
+                  sx={{
+                    minHeight: 28,
+                    px: 1.5,
+                    py: 0,
+                    borderRadius: '6px',
+                    backgroundColor: isSessionActive ? bgActive : 'transparent',
+                    '&:hover': {
+                      backgroundColor: isSessionActive ? bgActiveHover : bgHover,
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 0, mr: 1, justifyContent: 'center', color: textMuted }}>
+                    <ChatBubbleOutlineIcon sx={{ fontSize: '13px' }} />
+                  </ListItemIcon>
+                  <Typography
+                    sx={{
+                      fontSize: '0.7rem',
+                      fontWeight: isSessionActive ? 500 : 400,
+                      color: isSessionActive ? textActive : textSecondary,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      flex: 1,
+                      lineHeight: '28px',
+                    }}
+                  >
+                    {title}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleDeleteSession(e, session.id)}
+                    sx={{
+                      p: 0.25,
+                      opacity: 0,
+                      color: textMuted,
+                      transition: 'opacity 0.15s',
+                      '.MuiListItemButton-root:hover &': { opacity: 1 },
+                      '&:hover': { color: '#EF4444' },
+                    }}
+                  >
+                    <DeleteOutlineIcon sx={{ fontSize: 12 }} />
+                  </IconButton>
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </Box>
+      )}
     </List>
   );
 };

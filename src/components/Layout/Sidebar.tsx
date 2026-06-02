@@ -79,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       {/* Logo area */}
       <SidebarLogo
         collapsed={collapsed}
-        onLogoClick={() => navigate('/')}
+        onLogoClick={() => navigate('/chat')}
       />
 
       {/* Navigation list (含历史对话) */}

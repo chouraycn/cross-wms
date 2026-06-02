@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box, IconButton, Snackbar, Alert, useMediaQuery } from '@mui/material';
 import MenuOpenOutlinedIcon from '@mui/icons-material/MenuOpenOutlined';
@@ -227,7 +227,7 @@ function getToolbarActions(pathname: string) {
     return { refresh: true, newWarehouse: true, warehouseSwitch: false };
   }
   // 仪表盘：仅刷新（仓库切换由 DashboardPage 内部管理）
-  if (pathname === '/') {
+  if (pathname === '/dashboard') {
     return { refresh: true, newWarehouse: false, warehouseSwitch: false };
   }
   // 在途、库存、报表：仅刷新
@@ -240,7 +240,7 @@ function getToolbarActions(pathname: string) {
 
 /** 获取当前页面刷新事件的 key */
 function getPageRefreshKey(pathname: string): string {
-  if (pathname === '/') return 'dashboard';
+  if (pathname === '/dashboard') return 'dashboard';
   if (pathname.startsWith('/warehouses')) return 'warehouses';
   if (pathname.startsWith('/in-transit')) return 'in-transit';
   if (pathname.startsWith('/inventory')) return 'inventory';
@@ -376,31 +376,23 @@ const MainLayout: React.FC = () => {
           flexDirection: 'column',
           backgroundColor: 'background.paper',
           minHeight: '100vh',
+          paddingTop: 'var(--pw-top, 0px)',
+          position: 'relative',
         }}
       >
-        {/* 顶部工具栏 — 与系统红黄绿平行对齐 */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            px: 1,
-            // frameless 模式下 --pw-top: 33px 避让红黄绿按钮区域（含5px下移+5px右移）
-            height: 'calc(40px + var(--pw-top, 0px))',
-            pb: '4px',
-            flexShrink: 0,
-            position: 'relative', // 为绝对定位的按钮提供参照
-          }}
-        >
-          {/* 展开/收起按钮已移至 Sidebar 组件内始终显示 */}
-
-          {/* 右侧：功能按钮 */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, marginLeft: 'auto' }}>
-            {actions.warehouseSwitch && (
-              <WarehouseSelector selected={selectedWarehouse} onChange={handleWarehouseChange} />
-            )}
+        {/* 顶部操作按钮区 — 绝对定位在右上角，不占用垂直空间 */}
+        {actions.warehouseSwitch && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: `calc(var(--pw-top, 0px) + 8px)`,
+              right: 16,
+              zIndex: 10,
+            }}
+          >
+            <WarehouseSelector selected={selectedWarehouse} onChange={handleWarehouseChange} />
           </Box>
-        </Box>
+        )}
 
         {/* 主内容区：高度由内容决定，不强制撑满视窗 */}
         <Box
@@ -451,19 +443,20 @@ const MainLayout: React.FC = () => {
             <Box
               sx={{
                 px: 3, // 与 logo 对齐，增加左右 padding
-                pt: 2, // 减少顶部 padding，与 logo 底部对齐
+                pt: 0.5, // 极小顶部间距，与 logo 区域顶部对齐
                 pb: 3,
                 paddingBottom: showChatBar ? '120px' : 3, // 为底部固定的对话框留出空间
                 '& .full-width-page': {
                   mx: -3, // 抵消 px: 3，让全宽组件保持全宽
-                  mt: -2, // 抵消 pt: 2
+                  mt: -0.5, // 抵消 pt: 0.5
                   mb: 3,
                 },
               }}
             >
               <ErrorBoundary>
                 <Routes>
-                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/" element={<Navigate to="/chat" replace />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/skills" element={<SkillsPage />} />
                   <Route path="/skills/:skillId" element={<SkillDetailPage />} />
                   <Route path="/agent" element={<AgentPage />} />

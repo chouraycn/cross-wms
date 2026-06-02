@@ -206,6 +206,19 @@ export function CrossWmsChat() {
         session={session}
         onSessionUpdate={handleSessionUpdate}
       />
+
+      {/* AI 免责声明 */}
+      <Typography
+        sx={{
+          fontSize: '0.6875rem',
+          color: '#9CA3AF',
+          textAlign: 'center',
+          py: 0.5,
+          flexShrink: 0,
+        }}
+      >
+        内容由AI生成，请核实重要信息
+      </Typography>
     </Box>
   );
 }
