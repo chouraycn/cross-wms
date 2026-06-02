@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { } from 'react';
 import { Box, Card, CardContent, Typography, Button, Chip, Alert } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import LinkIcon from '@mui/icons-material/Link';
@@ -30,10 +30,12 @@ interface AuthStatusSectionProps {
   onWecomRefresh: () => void;
 }
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const AuthStatusSection: React.FC<AuthStatusSectionProps> = ({
   authStatus, wecomAuthStatus, refreshing, wecomRefreshing, lastSync,
   docCount, wecomDocCount, onRefresh, onWecomRefresh,
 }) => {
+/* eslint-enable @typescript-eslint/no-unused-vars */
   const navigate = useNavigate();
 
   return (

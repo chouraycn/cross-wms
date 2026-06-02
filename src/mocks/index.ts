@@ -31,6 +31,7 @@ export async function initMsw() {
       },
       onUnhandledRequest: 'bypass',
     });
+    // eslint-disable-next-line no-console
     console.log('[MSW] Mock API 已启动');
   } catch (error) {
     console.error('[MSW] 启动失败:', error);

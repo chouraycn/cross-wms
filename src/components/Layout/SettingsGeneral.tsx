@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Box, Typography, Button, Switch, Tooltip, useTheme } from '@mui/material';
+import { Box, Typography, Button, Switch, Tooltip } from '@mui/material';
 import type { AppSettings, AppearanceConfig, ThemeMode, AccentColor, FontSize, BorderRadius } from '../../contexts/AppSettingsContext';
 
 /** 共享样式常量 */
@@ -19,9 +19,6 @@ interface SettingsGeneralProps {
 }
 
 const SettingsGeneral: React.FC<SettingsGeneralProps> = ({ draft, setDraft }) => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-
   const updateAppearance = useCallback(<K extends keyof AppearanceConfig>(key: K, value: AppearanceConfig[K]) => {
     setDraft(prev => ({
       ...prev,

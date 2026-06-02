@@ -59,6 +59,7 @@ export interface AutomationFormDialogProps {
   formValidFrom: string;
   formValidUntil: string;
   formErrors: Record<string, string>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onFieldChange: (field: string, value: any) => void;
   onToggleWeekday: (day: string) => void;
   onToggleActionChain: (action: ActionType) => void;

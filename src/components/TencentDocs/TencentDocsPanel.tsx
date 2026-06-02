@@ -11,7 +11,7 @@ import {
   getWeComAuthStatus, getWeComDocContent, getWeComSmartPageContent,
   getWeComSmartsheetStructure, getWeComSmartsheetData,
   extractWeComDocIdFromUrl, getWeComDocCategoryFromUrl,
-  convertWeComSheetToTable, type WeComAuthStatus, type WeComFieldInfo,
+  convertWeComSheetToTable, type WeComAuthStatus,
 } from '../../services/wecomDocsApi';
 import AuthStatusSection from './AuthStatusSection';
 import DocContentViewer from './DocContentViewer';

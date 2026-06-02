@@ -19,6 +19,7 @@ const RANGE_LABELS: Record<TimeRange, string> = {
 };
 
 /** 自定义 ToggleButton — 去除默认边框圆角叠加 */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const StyledToggleButton = styled(ToggleButton)(({ theme }) => ({
   fontSize: '0.75rem',
   padding: '4px 14px',

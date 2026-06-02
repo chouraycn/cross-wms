@@ -25,13 +25,10 @@ import {
   Stepper,
   Step,
   StepLabel,
-  StepContent,
   Collapse,
   IconButton,
-  Tooltip,
   InputAdornment,
   Alert,
-  CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -237,11 +234,6 @@ const TransitList: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
 
-  // ETA延迟检查（在 TransitRow 内部计算，此处保留工具函数）
-  const isEtaDelayed = (order: TransitOrder): boolean => {
-    if (order.status === 'arrived' || !order.estimatedArrival) return false;
-    return dayjs().isAfter(dayjs(order.estimatedArrival), 'day');
-  };
 
   const filteredOrders = orders.filter((o) => {
     if (filterMode !== 'all' && o.transportMode !== filterMode) return false;

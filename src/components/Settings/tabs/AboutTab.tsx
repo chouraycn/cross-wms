@@ -60,7 +60,9 @@ const updateSidebar = (
 const AboutTab: React.FC<AboutTabProps> = ({
   draft,
   setDraft,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   errors,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setErrors,
 }) => {
   // ---- Model management state ----

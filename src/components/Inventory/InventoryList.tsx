@@ -26,8 +26,6 @@ import {
   InputAdornment,
   Alert,
   Snackbar,
-  Paper,
-  LinearProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -89,7 +87,6 @@ const InventoryList: React.FC = () => {
     ...bucket,
     count: enrichedItems.filter((item) => item.daysInStorage >= bucket.min && item.daysInStorage < bucket.max).length,
   }));
-  const maxBucketCount = Math.max(...agingStats.map((b) => b.count), 1);
 
   const paginatedItems = enrichedItems.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 

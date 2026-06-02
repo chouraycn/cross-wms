@@ -38,7 +38,6 @@ import {
   addInventoryItem as storeAddInventoryItem,
   updateInventoryItem as storeUpdateInventoryItem,
   removeInventoryItem as storeRemoveInventoryItem,
-  initFromApi,
 } from './warehouseCapabilityStore';
 import { dashboardApi } from './dashboardApi';
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';

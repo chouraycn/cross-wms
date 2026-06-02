@@ -7,6 +7,21 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+// Polyfill window/CustomEvent/dispatchEvent for non-jsdom test environment
+// (warehouseCapabilityStore uses window.dispatchEvent for error reporting)
+if (typeof globalThis.window === 'undefined') {
+  // Minimal CustomEvent polyfill
+  class CustomEventPolyfill<T = unknown> extends Event {
+    detail: T;
+    constructor(type: string, init?: CustomEventInit<T>) {
+      super(type, init);
+      this.detail = init?.detail as T;
+    }
+  }
+  globalThis.dispatchEvent = vi.fn();
+  Object.assign(globalThis, { CustomEvent: CustomEventPolyfill, window: globalThis });
+}
+
 // Mock the api module before importing the store
 vi.mock('../services/api', () => ({
   getWarehouses: vi.fn(),

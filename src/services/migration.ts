@@ -64,6 +64,7 @@ export async function checkAndMigrate(): Promise<boolean> {
   try {
     const result = await migrate(payload);
     localStorage.setItem(MIGRATED_KEY, '1');
+    // eslint-disable-next-line no-console
     console.log('[Migration] localStorage → SQLite 迁移成功:', result);
     return true;
   } catch (e) {

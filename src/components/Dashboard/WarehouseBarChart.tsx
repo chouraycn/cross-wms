@@ -16,6 +16,7 @@ interface WarehouseBarChartProps {
   timeRange?: TimeRange;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const WarehouseBarChart: React.FC<WarehouseBarChartProps> = ({ warehouseId, timeRange }) => {
   // 从 Context 获取数据
   const { warehouses, loading, error } = useWarehouseCapability({ includeDashboard: true });

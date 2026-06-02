@@ -48,10 +48,12 @@ const renderCellValue = (cell: SheetCell): string => {
   return cell.cellValue?.text ?? '';
 };
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const DocContentViewer: React.FC<DocContentViewerProps> = ({
   viewMode, activeDocTitle, activeDocSource, docMarkdown,
   sheetRows, sheetHeaders, errorMsg, onBackToList, onOpenInBrowser,
 }) => {
+/* eslint-enable @typescript-eslint/no-unused-vars */
   const docColor = activeDocSource === 'enterprise' ? WECOM_COLOR : TDOC_COLOR;
   const docSourceLabel = activeDocSource === 'enterprise' ? '企业文档' : '个人文档';
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Card, CardContent, CardHeader, Typography, Box, IconButton, ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
@@ -24,6 +24,7 @@ const CALC_MODE_LABEL: Record<CalcMode, string> = {
   volume: '按体积计算',
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId, timeRange }) => {
   const { settings } = useAppSettings();
   const { warningThreshold, fullThreshold } = settings.dashboard;

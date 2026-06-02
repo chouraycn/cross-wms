@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
 import { Box, Typography, Switch, FormControlLabel, Alert, CircularProgress, Button } from '@mui/material';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
@@ -111,17 +111,6 @@ const DashboardPageContent: React.FC = () => {
 
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(ALL_WAREHOUSES);
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
-
-  /** 根据 timeRange 计算起止日期 */
-  const dateRange = useMemo(() => {
-    const daysMap: Record<TimeRange, number> = { '7d': 7, '30d': 30, '90d': 90 };
-    const days = daysMap[timeRange];
-    return {
-      startDate: dayjs().subtract(days, 'day').format('YYYY-MM-DD'),
-      endDate: dayjs().format('YYYY-MM-DD'),
-      days,
-    };
-  }, [timeRange]);
 
   // 从仓储能力 Hook 获取数据（含 Dashboard 扩展数据）
   const { warehouses, transitOrders, inventory, loading, error, refresh } = useWarehouseCapability({ includeDashboard: true });

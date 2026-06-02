@@ -10,6 +10,7 @@ export interface VolumeDocsTabProps {
   onNavigateToTencentDocs?: () => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const VolumeDocsTab: React.FC<VolumeDocsTabProps> = ({ draft, openInBrowser, onNavigateToTencentDocs }) => {
   const volumeRelatedDocs = draft.tencentDocs.docLinks.filter(d => d.dataType === 'warehouses' || d.dataType === 'other');
 

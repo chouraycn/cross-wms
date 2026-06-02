@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, Typography, Box, CircularProgress, Alert
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import CustomTooltip from './CustomTooltip';
@@ -14,9 +13,8 @@ interface TransitTimeChartProps {
   timeRange?: TimeRange;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TransitTimeChart: React.FC<TransitTimeChartProps> = ({ warehouseId = ALL_WAREHOUSES, timeRange }) => {
-  const { settings } = useAppSettings();
-
   // 从 Context 获取数据
   const { warehouses, transitOrders, loading, error } = useWarehouseCapability({ includeDashboard: true });
 

@@ -23,11 +23,6 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
 } from 'recharts';
 import { dashboardApi } from '../../services/dashboardApi';
 import type { MonthlyTrend, Warehouse, InventoryItem } from '../../types';

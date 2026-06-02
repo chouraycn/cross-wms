@@ -13,6 +13,7 @@ interface TransitPieChartProps {
   timeRange?: TimeRange;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TransitPieChart: React.FC<TransitPieChartProps> = ({ timeRange }) => {
   // 从 Context 获取数据
   const { transitStatusDistribution, loading, error } = useWarehouseCapability({ includeDashboard: true });

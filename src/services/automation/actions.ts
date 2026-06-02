@@ -243,12 +243,11 @@ export async function executeInventorySnapshot(): Promise<{ result: string; step
 }
 
 /** 执行报表生成 */
-export async function executeReportGen(config?: TaskConfig): Promise<{ result: string; steps: ExecutionStep[] }> {
+export async function executeReportGen(_config?: TaskConfig): Promise<{ result: string; steps: ExecutionStep[] }> {
   const steps: ExecutionStep[] = [];
   const start = Date.now();
 
-  const [warehouses, transitOrders, inventory, volumeHistory, inbound, outbound, kpi, statusDist] =
-    await Promise.all([
+  const results = await Promise.all([
       dashboardApi.getWarehouses(),
       dashboardApi.getTransitOrders(),
       dashboardApi.getInventory(),
@@ -258,6 +257,8 @@ export async function executeReportGen(config?: TaskConfig): Promise<{ result: s
       dashboardApi.getKpiData(),
       dashboardApi.getTransitStatusDistribution(),
     ]);
+
+  const [warehouses, , inventory, volumeHistory, , , kpi, statusDist] = results;
 
   steps.push({ action: '采集数据', status: 'success', message: `8 类数据已采集`, duration: Date.now() - start });
 

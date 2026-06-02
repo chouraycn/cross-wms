@@ -36,7 +36,8 @@ export function exportToCsv(filename: string, headers: string[], rows: string[][
       const resultJson = (window as any).pywebview.api.download_csv(filename, bomCsv);
       const result = typeof resultJson === 'string' ? JSON.parse(resultJson) : resultJson;
       if (result.ok) {
-        console.log(`[CSV Export] 已保存到: ${result.path}`);
+        // eslint-disable-next-line no-console
+      console.log(`[CSV Export] 已保存到: ${result.path}`);
       } else {
         console.error(`[CSV Export] 保存失败: ${result.error}`);
         alert(`CSV 导出失败: ${result.error}`);
