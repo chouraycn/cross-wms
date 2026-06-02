@@ -131,6 +131,22 @@ export interface OutboundRecord {
   destination: string;
 }
 
+// ===================== Inventory Transaction =====================
+
+export type TransactionType = 'inbound' | 'outbound' | 'adjustment';
+
+export interface InventoryTransaction {
+  id: string;
+  sku: string;
+  name: string;
+  warehouseId: string;
+  type: TransactionType;
+  quantity: number;
+  operator: string;
+  remark: string;
+  createdAt: string;
+}
+
 // ===== Widget 数据导出类型 =====
 
 export interface WidgetWarehouseSummary {

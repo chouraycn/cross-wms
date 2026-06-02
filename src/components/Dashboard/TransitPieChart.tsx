@@ -6,8 +6,14 @@ import {
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { exportToCsv } from '../../utils/exportCsv';
+import CustomTooltip from './CustomTooltip';
+import type { TimeRange } from './TimeRangeSelector';
 
-const TransitPieChart: React.FC = () => {
+interface TransitPieChartProps {
+  timeRange?: TimeRange;
+}
+
+const TransitPieChart: React.FC<TransitPieChartProps> = ({ timeRange }) => {
   // 从 Context 获取数据
   const { transitStatusDistribution, loading, error } = useWarehouseCapability({ includeDashboard: true });
 
@@ -83,20 +89,7 @@ const TransitPieChart: React.FC = () => {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip
-                formatter={(value: number, name: string) => [
-                  `${value} 单 (${((value / total) * 100).toFixed(1)}%)`,
-                  name,
-                ]}
-                contentStyle={{
-                  fontSize: '0.8rem',
-                  borderRadius: 8,
-                  border: '1px solid #E5E7EB',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-                  padding: '8px 12px',
-                }}
-                labelStyle={{ color: '#6B7280', marginBottom: 4 }}
-              />
+              <Tooltip content={<CustomTooltip unit=" 单" />} />
               <Legend
                 iconType="circle"
                 iconSize={8}

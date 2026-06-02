@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Grid, Card, CardContent, Typography, Box, IconButton, CircularProgress, Alert } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
@@ -38,20 +39,30 @@ interface KpiCardProps {
   theme: KpiTheme;
   trend?: string;
   trendColor?: string;
+  /** 点击跳转路径，不传则不可点击 */
+  navigateTo?: string;
 }
 
-const KpiCard: React.FC<KpiCardProps> = ({ title, value, unit, icon, theme, trend, trendColor }) => (
+const KpiCard: React.FC<KpiCardProps> = ({ title, value, unit, icon, theme, trend, trendColor, navigateTo }) => (
   <Card
     elevation={0}
+    onClick={navigateTo ? undefined : undefined}
     sx={{
       border: '1px solid #E5E7EB',
       borderLeft: `3px solid ${theme.border}`,
       borderRadius: '6px',
-      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-      '&:hover': {
-        transform: 'translateY(-2px)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-      },
+      cursor: navigateTo ? 'pointer' : 'default',
+      transition: 'transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
+      '&:hover': navigateTo
+        ? {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+            backgroundColor: 'rgba(17, 24, 39, 0.02)',
+          }
+        : {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+          },
     }}
   >
     <CardContent sx={{ p: '16px 20px' }}>
@@ -100,6 +111,7 @@ interface KpiCardsProps {
 
 const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
   const { settings } = useAppSettings();
+  const navigate = useNavigate();
   const compareDays = settings.dashboard.trendCompareDays;
   const vis = settings.dashboard.visibility;
 
@@ -220,6 +232,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
           ? `基于件数 ${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`
           : `基于件数 ${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`,
         trendColor: '#111827',
+        navigateTo: '/inventory',
       },
     },
     {
@@ -232,6 +245,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
         theme: KPI_THEME.transit,
         trend: `↑ 12.5% 较${compareDays}天前`,
         trendColor: '#059669',
+        navigateTo: '/in-transit',
       },
     },
     {
@@ -244,6 +258,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
         theme: KPI_THEME.inbound,
         trend: '需今日处理',
         trendColor: '#F59E0B',
+        navigateTo: '/inventory?filter=pending-inbound',
       },
     },
     {
@@ -256,6 +271,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
         theme: KPI_THEME.outbound,
         trend: '↑ 较昨日 +2单',
         trendColor: '#059669',
+        navigateTo: '/inventory?filter=outbound',
       },
     },
     {
@@ -268,6 +284,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
         theme: KPI_THEME.depth,
         trend: `按当前出库速率可支撑天数`,
         trendColor: '#6B7280',
+        navigateTo: '/inventory?filter=depth',
       },
     },
     {
@@ -282,6 +299,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
           ? `最高容积率 ${maxAlertRate}% (到仓后)`
           : `阈值 ${transitAlertThreshold}%，状态正常`,
         trendColor: alertCount > 0 ? '#EF4444' : '#059669',
+        navigateTo: '/inventory?filter=warning',
       },
     },
   ];
@@ -303,9 +321,14 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
         {visibleCards.map((item, idx) => {
           // 响应式：6卡片每行3个，4卡片每行4个，3卡片每行3个
           const cols = visibleCards.length >= 6 ? 4 : visibleCards.length >= 4 ? 3 : 4;
+          const handleClick = item.card.navigateTo
+            ? () => navigate(item.card.navigateTo!)
+            : undefined;
           return (
             <Grid item xs={12} sm={6} md={cols} key={idx}>
-              <KpiCard {...item.card} />
+              <Box onClick={handleClick} sx={item.card.navigateTo ? { cursor: 'pointer' } : undefined}>
+                <KpiCard {...item.card} />
+              </Box>
             </Grid>
           );
         })}

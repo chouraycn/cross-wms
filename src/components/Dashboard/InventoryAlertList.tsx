@@ -21,13 +21,15 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
+import type { TimeRange } from './TimeRangeSelector';
 import type { InventoryItem } from '../../types';
 
 interface InventoryAlertListProps {
   warehouseId?: string;
+  timeRange?: TimeRange;
 }
 
-const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = ALL_WAREHOUSES }) => {
+const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = ALL_WAREHOUSES, timeRange }) => {
   const { settings } = useAppSettings();
   const ageWarningDays = settings.dashboard.ageWarningDays;
 

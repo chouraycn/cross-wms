@@ -259,7 +259,7 @@ const SkillsPage: React.FC = () => {
           cursor: 'pointer',
           transition: 'all 0.2s ease',
           '&:hover': {
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            backgroundColor: 'rgba(0,0,0,0.04)',
             borderColor: '#E0E0E0',
           },
         }}

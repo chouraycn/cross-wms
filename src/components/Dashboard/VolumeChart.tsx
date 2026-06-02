@@ -10,10 +10,13 @@ import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { exportToCsv } from '../../utils/exportCsv';
+import CustomTooltip from './CustomTooltip';
+import type { TimeRange } from './TimeRangeSelector';
 import type { VolumeHistoryPoint } from '../../types';
 
 interface VolumeChartProps {
   warehouseId: string;
+  timeRange?: TimeRange;
 }
 
 type CalcMode = 'items' | 'volume';
@@ -23,7 +26,7 @@ const CALC_MODE_LABEL: Record<CalcMode, string> = {
   volume: '按体积计算',
 };
 
-const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
+const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId, timeRange }) => {
   const { settings } = useAppSettings();
   const { warningThreshold, fullThreshold } = settings.dashboard;
 
@@ -189,17 +192,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
               tickFormatter={(v) => `${v}%`}
               width={40}
             />
-            <Tooltip
-              formatter={(value: number) => [`${value}%`, CALC_MODE_LABEL[calcMode]]}
-              contentStyle={{
-                fontSize: '0.8rem',
-                borderRadius: 8,
-                border: '1px solid #E5E7EB',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-                padding: '8px 12px',
-              }}
-              labelStyle={{ color: '#6B7280', marginBottom: 4 }}
-            />
+            <Tooltip content={<CustomTooltip unit="%" />} />
             <Legend
               wrapperStyle={{ fontSize: '0.8rem' }}
               iconType="circle"

@@ -12,6 +12,7 @@ import InventoryAlertList from '../components/Dashboard/InventoryAlertList';
 import WarehouseKpiTable from '../components/Dashboard/WarehouseKpiTable';
 import TransitTimeChart from '../components/Dashboard/TransitTimeChart';
 import WarehouseSelector, { ALL_WAREHOUSES } from '../components/Dashboard/WarehouseSelector';
+import TimeRangeSelector, { type TimeRange } from '../components/Dashboard/TimeRangeSelector';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { subscribeRefresh, subscribeWarehouseChange } from '../App';
 import { useWarehouseCapability } from '../capabilities/warehouse';
@@ -109,6 +110,18 @@ const DashboardPageContent: React.FC = () => {
   const vis = settings.dashboard.visibility;
 
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(ALL_WAREHOUSES);
+  const [timeRange, setTimeRange] = useState<TimeRange>('30d');
+
+  /** 根据 timeRange 计算起止日期 */
+  const dateRange = useMemo(() => {
+    const daysMap: Record<TimeRange, number> = { '7d': 7, '30d': 30, '90d': 90 };
+    const days = daysMap[timeRange];
+    return {
+      startDate: dayjs().subtract(days, 'day').format('YYYY-MM-DD'),
+      endDate: dayjs().format('YYYY-MM-DD'),
+      days,
+    };
+  }, [timeRange]);
 
   // 从仓储能力 Hook 获取数据（含 Dashboard 扩展数据）
   const { warehouses, transitOrders, inventory, loading, error, refresh } = useWarehouseCapability({ includeDashboard: true });
@@ -200,6 +213,7 @@ const DashboardPageContent: React.FC = () => {
           仪表盘总览
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: -0.25 }}>
+          <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
           <WarehouseSelector selected={selectedWarehouse} onChange={setSelectedWarehouse} />
           {autoRefresh && (
             <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', minWidth: '4rem', textAlign: 'right' }}>
@@ -295,43 +309,43 @@ const DashboardPageContent: React.FC = () => {
                   case 'heatmap':
                     return vis.chartShipmentHeatmap ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <Heatmap warehouseId={selectedWarehouse} />
+                        <Heatmap warehouseId={selectedWarehouse} timeRange={timeRange} />
                       </Box>
                     ) : null;
                   case 'volume-trend':
                     return vis.chartVolumeTrend ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <VolumeChart warehouseId={selectedWarehouse} />
+                        <VolumeChart warehouseId={selectedWarehouse} timeRange={timeRange} />
                       </Box>
                     ) : null;
                   case 'transit-pie':
                     return vis.chartTransitPie ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <TransitPieChart />
+                        <TransitPieChart timeRange={timeRange} />
                       </Box>
                     ) : null;
                   case 'warehouse-bar':
                     return vis.chartWarehouseBar ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <WarehouseBarChart warehouseId={selectedWarehouse} />
+                        <WarehouseBarChart warehouseId={selectedWarehouse} timeRange={timeRange} />
                       </Box>
                     ) : null;
                   case 'inventory-alert':
                     return vis.chartInventoryAlert ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <InventoryAlertList warehouseId={selectedWarehouse} />
+                        <InventoryAlertList warehouseId={selectedWarehouse} timeRange={timeRange} />
                       </Box>
                     ) : null;
                   case 'kpi-comparison':
                     return vis.chartKpiComparison ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <WarehouseKpiTable warehouseId={selectedWarehouse} />
+                        <WarehouseKpiTable warehouseId={selectedWarehouse} timeRange={timeRange} />
                       </Box>
                     ) : null;
                   case 'transit-time':
                     return vis.chartTransitTime ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <TransitTimeChart warehouseId={selectedWarehouse} />
+                        <TransitTimeChart warehouseId={selectedWarehouse} timeRange={timeRange} />
                       </Box>
                     ) : null;
                   default:

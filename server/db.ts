@@ -58,6 +58,7 @@ export interface InventoryItemRow {
   totalValue: number;
   category: string;
   isAgeWarning: number; // 0 or 1 in SQLite
+  autoCreated: number; // 0 or 1 in SQLite — 1 if auto-created during inbound
 }
 
 export interface TransitOrderRow {
@@ -86,6 +87,19 @@ export interface StatusHistoryRow {
   remark: string;
 }
 
+export interface InventoryTransactionRow {
+  id: number;
+  sku: string;
+  type: string; // 'inbound' | 'outbound' | 'adjustment'
+  quantity: number;
+  warehouseId: string;
+  operator: string;
+  sourceId: string;
+  sourceType: string; // 'inbound_record' | 'outbound_record' | 'manual_adjustment'
+  remark: string;
+  createdAt: string;
+}
+
 export interface InboundRecordRow {
   id: string;
   warehouseId: string;
@@ -96,6 +110,8 @@ export interface InboundRecordRow {
   createdAt: string;
   operator: string;
   status: string;
+  supplier: string;
+  batchNo: string;
 }
 
 export interface OutboundRecordRow {
@@ -108,6 +124,8 @@ export interface OutboundRecordRow {
   createdAt: string;
   operator: string;
   destination: string;
+  customer: string;
+  orderNo: string;
 }
 
 export interface UserSkillRow {
@@ -282,6 +300,52 @@ export function initDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_outbound_warehouseId ON outbound_records(warehouseId);
     CREATE INDEX IF NOT EXISTS idx_status_history_orderId ON transit_status_history(transitOrderId);
   `);
+
+  // inventory_transactions table (v1.0.76)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS inventory_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sku TEXT NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('inbound', 'outbound', 'adjustment')),
+      quantity INTEGER NOT NULL,
+      warehouseId TEXT NOT NULL,
+      operator TEXT DEFAULT '',
+      sourceId TEXT DEFAULT '',
+      sourceType TEXT DEFAULT '',
+      remark TEXT DEFAULT '',
+      createdAt TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (warehouseId) REFERENCES warehouses(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_inv_trans_sku ON inventory_transactions(sku);
+    CREATE INDEX IF NOT EXISTS idx_inv_trans_type ON inventory_transactions(type);
+    CREATE INDEX IF NOT EXISTS idx_inv_trans_warehouse ON inventory_transactions(warehouseId);
+    CREATE INDEX IF NOT EXISTS idx_inv_trans_created ON inventory_transactions(createdAt);
+  `);
+
+  // Add autoCreated column to inventory_items (v1.0.76)
+  const extraColumns: Array<{ table: string; column: string; definition: string }> = [
+    { table: 'inventory_items', column: 'autoCreated', definition: "INTEGER NOT NULL DEFAULT 0" },
+  ];
+  for (const { table, column, definition } of extraColumns) {
+    const colExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('${table}') WHERE name='${column}'`).get() as { cnt: number };
+    if (colExists.cnt === 0) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    }
+  }
+
+  // Add new columns to existing tables (v1.0.76) — safe ALTER with column-existence check
+  const columnsToAdd: Array<{ table: string; column: string; definition: string }> = [
+    { table: 'inbound_records', column: 'supplier', definition: "TEXT NOT NULL DEFAULT ''" },
+    { table: 'inbound_records', column: 'batchNo', definition: "TEXT NOT NULL DEFAULT ''" },
+    { table: 'outbound_records', column: 'customer', definition: "TEXT NOT NULL DEFAULT ''" },
+    { table: 'outbound_records', column: 'orderNo', definition: "TEXT NOT NULL DEFAULT ''" },
+  ];
+  for (const { table, column, definition } of columnsToAdd) {
+    const colExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('${table}') WHERE name='${column}'`).get() as { cnt: number };
+    if (colExists.cnt === 0) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    }
+  }
 
   return db;
 }
@@ -539,12 +603,24 @@ export function addStatusHistory(orderId: string, data: { status: string; time: 
 
 // ===================== Inbound Record DAO =====================
 
-export function getInboundRecords(warehouseId?: string): InboundRecordRow[] {
+export function getInboundRecords(warehouseId?: string, startDate?: string, endDate?: string): InboundRecordRow[] {
   const db = initDb();
+  let sql = 'SELECT * FROM inbound_records WHERE 1=1';
+  const params: unknown[] = [];
   if (warehouseId) {
-    return db.prepare('SELECT * FROM inbound_records WHERE warehouseId = ? ORDER BY createdAt DESC').all(warehouseId) as InboundRecordRow[];
+    sql += ' AND warehouseId = ?';
+    params.push(warehouseId);
   }
-  return db.prepare('SELECT * FROM inbound_records ORDER BY createdAt DESC').all() as InboundRecordRow[];
+  if (startDate) {
+    sql += ' AND createdAt >= ?';
+    params.push(startDate);
+  }
+  if (endDate) {
+    sql += ' AND createdAt <= ?';
+    params.push(endDate + 'T23:59:59.999Z');
+  }
+  sql += ' ORDER BY createdAt DESC';
+  return db.prepare(sql).all(...params) as InboundRecordRow[];
 }
 
 export function getInboundRecordById(id: string): InboundRecordRow | undefined {
@@ -555,10 +631,11 @@ export function getInboundRecordById(id: string): InboundRecordRow | undefined {
 export function createInboundRecord(data: Omit<InboundRecordRow, 'id'> & { id?: string }): InboundRecordRow {
   const id = data.id || uuidv4();
   const db = initDb();
-  db.prepare(`INSERT INTO inbound_records (id, warehouseId, sku, name, quantity, volume, createdAt, operator, status) VALUES (?,?,?,?,?,?,?,?,?)`).run(
-    id, data.warehouseId, data.sku, data.name, data.quantity, data.volume, data.createdAt, data.operator, data.status
+  db.prepare(`INSERT INTO inbound_records (id, warehouseId, sku, name, quantity, volume, createdAt, operator, status, supplier, batchNo) VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(
+    id, data.warehouseId, data.sku, data.name, data.quantity, data.volume, data.createdAt, data.operator, data.status,
+    data.supplier ?? '', data.batchNo ?? ''
   );
-  return { ...data, id };
+  return { ...data, id, supplier: data.supplier ?? '', batchNo: data.batchNo ?? '' };
 }
 
 export function updateInboundRecord(id: string, data: Partial<Omit<InboundRecordRow, 'id'>>): InboundRecordRow | null {
@@ -566,8 +643,9 @@ export function updateInboundRecord(id: string, data: Partial<Omit<InboundRecord
   const existing = db.prepare('SELECT * FROM inbound_records WHERE id = ?').get(id) as InboundRecordRow | undefined;
   if (!existing) return null;
   const updated = { ...existing, ...data, id };
-  db.prepare(`UPDATE inbound_records SET warehouseId=?, sku=?, name=?, quantity=?, volume=?, createdAt=?, operator=?, status=? WHERE id=?`).run(
-    updated.warehouseId, updated.sku, updated.name, updated.quantity, updated.volume, updated.createdAt, updated.operator, updated.status, id
+  db.prepare(`UPDATE inbound_records SET warehouseId=?, sku=?, name=?, quantity=?, volume=?, createdAt=?, operator=?, status=?, supplier=?, batchNo=? WHERE id=?`).run(
+    updated.warehouseId, updated.sku, updated.name, updated.quantity, updated.volume, updated.createdAt, updated.operator, updated.status,
+    updated.supplier ?? '', updated.batchNo ?? '', id
   );
   return updated;
 }
@@ -580,12 +658,24 @@ export function deleteInboundRecord(id: string): boolean {
 
 // ===================== Outbound Record DAO =====================
 
-export function getOutboundRecords(warehouseId?: string): OutboundRecordRow[] {
+export function getOutboundRecords(warehouseId?: string, startDate?: string, endDate?: string): OutboundRecordRow[] {
   const db = initDb();
+  let sql = 'SELECT * FROM outbound_records WHERE 1=1';
+  const params: unknown[] = [];
   if (warehouseId) {
-    return db.prepare('SELECT * FROM outbound_records WHERE warehouseId = ? ORDER BY createdAt DESC').all(warehouseId) as OutboundRecordRow[];
+    sql += ' AND warehouseId = ?';
+    params.push(warehouseId);
   }
-  return db.prepare('SELECT * FROM outbound_records ORDER BY createdAt DESC').all() as OutboundRecordRow[];
+  if (startDate) {
+    sql += ' AND createdAt >= ?';
+    params.push(startDate);
+  }
+  if (endDate) {
+    sql += ' AND createdAt <= ?';
+    params.push(endDate + 'T23:59:59.999Z');
+  }
+  sql += ' ORDER BY createdAt DESC';
+  return db.prepare(sql).all(...params) as OutboundRecordRow[];
 }
 
 export function getOutboundRecordById(id: string): OutboundRecordRow | undefined {
@@ -596,10 +686,11 @@ export function getOutboundRecordById(id: string): OutboundRecordRow | undefined
 export function createOutboundRecord(data: Omit<OutboundRecordRow, 'id'> & { id?: string }): OutboundRecordRow {
   const id = data.id || uuidv4();
   const db = initDb();
-  db.prepare(`INSERT INTO outbound_records (id, warehouseId, sku, name, quantity, volume, createdAt, operator, destination) VALUES (?,?,?,?,?,?,?,?,?)`).run(
-    id, data.warehouseId, data.sku, data.name, data.quantity, data.volume, data.createdAt, data.operator, data.destination
+  db.prepare(`INSERT INTO outbound_records (id, warehouseId, sku, name, quantity, volume, createdAt, operator, destination, customer, orderNo) VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(
+    id, data.warehouseId, data.sku, data.name, data.quantity, data.volume, data.createdAt, data.operator, data.destination,
+    data.customer ?? '', data.orderNo ?? ''
   );
-  return { ...data, id };
+  return { ...data, id, customer: data.customer ?? '', orderNo: data.orderNo ?? '' };
 }
 
 export function updateOutboundRecord(id: string, data: Partial<Omit<OutboundRecordRow, 'id'>>): OutboundRecordRow | null {
@@ -607,8 +698,9 @@ export function updateOutboundRecord(id: string, data: Partial<Omit<OutboundReco
   const existing = db.prepare('SELECT * FROM outbound_records WHERE id = ?').get(id) as OutboundRecordRow | undefined;
   if (!existing) return null;
   const updated = { ...existing, ...data, id };
-  db.prepare(`UPDATE outbound_records SET warehouseId=?, sku=?, name=?, quantity=?, volume=?, createdAt=?, operator=?, destination=? WHERE id=?`).run(
-    updated.warehouseId, updated.sku, updated.name, updated.quantity, updated.volume, updated.createdAt, updated.operator, updated.destination, id
+  db.prepare(`UPDATE outbound_records SET warehouseId=?, sku=?, name=?, quantity=?, volume=?, createdAt=?, operator=?, destination=?, customer=?, orderNo=? WHERE id=?`).run(
+    updated.warehouseId, updated.sku, updated.name, updated.quantity, updated.volume, updated.createdAt, updated.operator, updated.destination,
+    updated.customer ?? '', updated.orderNo ?? '', id
   );
   return updated;
 }
