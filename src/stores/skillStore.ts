@@ -57,8 +57,22 @@ export async function addSkill(skill: Omit<Skill, 'id' | 'source' | 'installedAt
     source: 'user',
     installedAt: Date.now(),
   };
+  console.log('[skillStore] addSkill: creating skill', {
+    id: newSkill.id,
+    name: newSkill.name,
+    hasPromptTemplate: !!newSkill.promptTemplate,
+    promptTemplateLength: newSkill.promptTemplate?.length ?? 0,
+    executionMode: newSkill.executionMode,
+  });
   try {
     const created = await api.createUserSkill(newSkill);
+    console.log('[skillStore] addSkill: server response', {
+      id: created.id,
+      name: created.name,
+      hasPromptTemplate: !!created.promptTemplate,
+      promptTemplateLength: created.promptTemplate?.length ?? 0,
+      executionMode: created.executionMode,
+    });
     userSkills = [...userSkills, created];
     notifyAll();
     return created;

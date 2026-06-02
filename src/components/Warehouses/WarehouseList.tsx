@@ -113,6 +113,9 @@ const WarehouseList: React.FC = () => {
       await addGlobalWarehouse(newWh); // 等待后端持久化完成再跳转
     } catch (e) {
       console.error('[WarehouseList] addGlobalWarehouse failed:', e);
+      // 持久化失败 → 不跳转，提示用户
+      window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'createWarehouse', error: e } }));
+      return;
     }
     handleCloseDialog();
     // 跳转到新仓库详情页
