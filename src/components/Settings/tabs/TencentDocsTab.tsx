@@ -31,7 +31,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import type { AppSettings, DocLinkItem, WeComDocLinkItem, OnlineDataEntry } from '../../../contexts/AppSettingsContext';
 import { getAuthStatus, getAuthUrl, exchangeToken, refreshToken, isPyWebView, getDocContent, extractFileIdFromUrl, extractTextFromDoc, type TDocAuthStatus } from '../../../services/tencentDocsApi';
 import { getWeComAuthStatus, getWeComDocContent, getWeComSmartPageContent, isWeComDocUrl, getWeComDocCategoryFromUrl, getWeComCategoryLabel, extractWeComDocIdFromUrl, type WeComAuthStatus } from '../../../services/wecomDocsApi';
-import { getWarehouses } from '../../../stores/warehouseStore';
+import { getWarehouses } from '../../../capabilities/warehouse';
 import type { Warehouse } from '../../../types';
 import { switchSx, textFieldSx } from '../sharedStyles';
 

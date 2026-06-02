@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { useDashboardData } from '../../contexts/DashboardDataContext';
+import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { exportToCsv } from '../../utils/exportCsv';
 import { calcUtilizationByItems, calcUtilizationByVolume } from '../../utils/volumeCalculator';
 import type { Warehouse } from '../../types';
@@ -16,7 +16,7 @@ interface WarehouseBarChartProps {
 
 const WarehouseBarChart: React.FC<WarehouseBarChartProps> = ({ warehouseId }) => {
   // 从 Context 获取数据
-  const { warehouses, loading, error } = useDashboardData();
+  const { warehouses, loading, error } = useWarehouseCapability({ includeDashboard: true });
 
   const filtered = warehouseId === ALL_WAREHOUSES
     ? warehouses

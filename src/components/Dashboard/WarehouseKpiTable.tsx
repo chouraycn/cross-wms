@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { useDashboardData } from '../../contexts/DashboardDataContext';
+import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';
 import dayjs from 'dayjs';
 
@@ -48,7 +48,7 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
   const { warningThreshold, fullThreshold } = settings.dashboard;
 
   // 从 Context 获取数据
-  const { warehouses, transitOrders, inventory, inboundRecords, outboundRecords, loading, error } = useDashboardData();
+  const { warehouses, transitOrders, inventory, inboundRecords, outboundRecords, loading, error } = useWarehouseCapability({ includeDashboard: true });
 
   const filteredWarehouses = warehouseId === ALL_WAREHOUSES
     ? warehouses

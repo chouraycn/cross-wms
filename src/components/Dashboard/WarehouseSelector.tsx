@@ -3,7 +3,7 @@ import { IconButton, Popover, List, ListItemButton, ListItemText, ListItemIcon, 
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import CheckIcon from '@mui/icons-material/Check';
-import { subscribeWarehouses } from '../../stores/warehouseStore';
+import { subscribeWarehouses } from '../../capabilities/warehouse';
 import { emitNewWarehouse } from '../../App';
 import { useNavigate } from 'react-router-dom';
 import type { Warehouse } from '../../types';

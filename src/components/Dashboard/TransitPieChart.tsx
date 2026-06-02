@@ -4,12 +4,12 @@ import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
-import { useDashboardData } from '../../contexts/DashboardDataContext';
+import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { exportToCsv } from '../../utils/exportCsv';
 
 const TransitPieChart: React.FC = () => {
   // 从 Context 获取数据
-  const { transitStatusDistribution, loading, error } = useDashboardData();
+  const { transitStatusDistribution, loading, error } = useWarehouseCapability({ includeDashboard: true });
 
   const total = transitStatusDistribution.reduce((s, d) => s + d.value, 0);
 

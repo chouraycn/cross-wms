@@ -39,7 +39,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useTransitData } from '../../hooks/useTransitData';
+import { useWarehouseCapability } from '../../capabilities/warehouse';
 import type { TransitOrder, TransitStatus, TransportMode } from '../../types';
 import dayjs from 'dayjs';
 
@@ -206,7 +206,7 @@ const TransitRow: React.FC<RowProps> = ({ order, getWarehouseById, onEdit, onDel
 };
 
 const TransitList: React.FC = () => {
-  const { transitOrders: initialOrders, warehouses, loading, error, getWarehouseById } = useTransitData();
+  const { transitOrders: initialOrders, warehouses, loading, error, getWarehouseById } = useWarehouseCapability();
   const [orders, setOrders] = useState<TransitOrder[]>([]);
 
   // 当异步数据加载后同步到本地状态

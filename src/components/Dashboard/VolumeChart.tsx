@@ -8,7 +8,7 @@ import {
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { useDashboardData } from '../../contexts/DashboardDataContext';
+import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { exportToCsv } from '../../utils/exportCsv';
 import type { VolumeHistoryPoint } from '../../types';
 
@@ -30,7 +30,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId }) => {
   const [calcMode, setCalcMode] = useState<CalcMode>('items');
 
   // 从 Context 获取数据
-  const { volumeHistory, loading, error } = useDashboardData();
+  const { volumeHistory, loading, error } = useWarehouseCapability({ includeDashboard: true });
 
   const handleModeChange = (_: React.MouseEvent<HTMLElement>, newMode: CalcMode | null) => {
     if (newMode !== null) {

@@ -14,8 +14,8 @@
  * 引擎不是 React 组件，不使用 React hooks。
  */
 
-import { dashboardApi } from './dashboardApi';
-import { setWarehouses } from '../stores/warehouseStore';
+import { dashboardApi } from '../capabilities/warehouse';
+import { setWarehouses } from '../capabilities/warehouse';
 import type { Warehouse } from '../types';
 
 // ===================== 类型定义 =====================

@@ -35,7 +35,7 @@ import {
   addWarehouse as addGlobalWarehouse,
   removeWarehouse as removeGlobalWarehouse,
   subscribeWarehouses,
-} from '../../stores/warehouseStore';
+} from '../../capabilities/warehouse';
 
 /** 获取容积率进度条颜色 */
 function getProgressColor(rate: number): 'success' | 'warning' | 'error' {

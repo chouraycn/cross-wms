@@ -14,8 +14,7 @@ import TransitTimeChart from '../components/Dashboard/TransitTimeChart';
 import WarehouseSelector, { ALL_WAREHOUSES } from '../components/Dashboard/WarehouseSelector';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { subscribeRefresh, subscribeWarehouseChange } from '../App';
-import { useDashboardData } from '../contexts/DashboardDataContext';
-import { DashboardDataProvider } from '../contexts/DashboardDataContext';
+import { useWarehouseCapability } from '../capabilities/warehouse';
 import { AlertCarousel, type DashboardAlert } from '../components/Dashboard/AlertCarousel';
 import type { Warehouse, TransitOrder, InventoryItem } from '../types';
 
@@ -109,10 +108,10 @@ const DashboardPageContent: React.FC = () => {
   const { settings } = useAppSettings();
   const vis = settings.dashboard.visibility;
 
-  // 从 Context 获取数据
-  const { warehouses, transitOrders, inventory, loading, error, refresh } = useDashboardData();
-
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(ALL_WAREHOUSES);
+
+  // 从仓储能力 Hook 获取数据（含 Dashboard 扩展数据）
+  const { warehouses, transitOrders, inventory, loading, error, refresh } = useWarehouseCapability({ includeDashboard: true });
 
   // 自动刷新状态
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -356,9 +355,7 @@ const DashboardPageContent: React.FC = () => {
 
 const DashboardPage: React.FC = () => {
   return (
-    <DashboardDataProvider>
-      <DashboardPageContent />
-    </DashboardDataProvider>
+    <DashboardPageContent />
   );
 };
 

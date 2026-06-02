@@ -3,7 +3,7 @@ import { Box, Typography, Card, CardHeader, CardContent, IconButton } from '@mui
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
-import { subscribeWarehouses } from '../../stores/warehouseStore';
+import { subscribeWarehouses } from '../../capabilities/warehouse';
 import { dashboardApi } from '../../services/dashboardApi';
 import { exportToCsv } from '../../utils/exportCsv';
 import type { Warehouse, InboundRecord, OutboundRecord } from '../../types';
