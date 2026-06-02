@@ -7,6 +7,16 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 
+// Business data routes
+import warehousesRouter from './routes/warehouses.js';
+import inventoryRouter from './routes/inventory.js';
+import transitRouter from './routes/transit.js';
+import inboundRouter from './routes/inbound.js';
+import outboundRouter from './routes/outbound.js';
+import skillsRouter from './routes/skills.js';
+import settingsRouter from './routes/settings.js';
+import migrateRouter from './routes/migrate.js';
+
 // MEMORY.md 路径
 const CROSSWMS_DIR = path.join(os.homedir(), '.crosswms');
 const MEMORY_MD_PATH = path.join(CROSSWMS_DIR, 'MEMORY.md');
@@ -215,6 +225,17 @@ app.get('/api/agents', (_req, res) => {
     { id: 'default', name: '通用助手', description: '一个通用的 AI 助手', systemPrompt: '你是一个专业的AI助手' }
   ]});
 });
+
+// ========== Business Data API Routes ==========
+
+app.use('/api/warehouses', warehousesRouter);
+app.use('/api/inventory', inventoryRouter);
+app.use('/api/transit-orders', transitRouter);
+app.use('/api/inbound-records', inboundRouter);
+app.use('/api/outbound-records', outboundRouter);
+app.use('/api', skillsRouter); // handles /api/user-skills and /api/builtin-status-patches
+app.use('/api/app-settings', settingsRouter);
+app.use('/api/migrate', migrateRouter);
 
 const PORT = 3001;
 app.listen(PORT, () => {

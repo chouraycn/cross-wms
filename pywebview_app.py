@@ -522,12 +522,18 @@ def start_server():
     # 设置 NODE_PATH，让 esbuild 外部化的 require() 能找到 node_modules
     if getattr(sys, 'frozen', False):
         meipass = sys._MEIPASS
-        # server_dist 目录下的 node_modules
-        server_dist_dir = os.path.dirname(server_script)
-        nm_path = os.path.join(server_dist_dir, 'node_modules')
-        if os.path.isdir(nm_path):
-            env['NODE_PATH'] = nm_path
-            print(f"[Server] NODE_PATH={nm_path}")
+        # 优先使用共享 node_modules（v1.0.69+ 节省 ~154MB）
+        shared_nm = os.path.join(meipass, 'shared_node_modules')
+        if os.path.isdir(shared_nm):
+            env['NODE_PATH'] = shared_nm
+            print(f"[Server] NODE_PATH={shared_nm} (shared)")
+        else:
+            # 兼容旧版：server_dist 目录下的 node_modules
+            server_dist_dir = os.path.dirname(server_script)
+            nm_path = os.path.join(server_dist_dir, 'node_modules')
+            if os.path.isdir(nm_path):
+                env['NODE_PATH'] = nm_path
+                print(f"[Server] NODE_PATH={nm_path}")
 
         # 设置前端静态文件路径
         fe_dist = os.path.join(meipass, 'frontend_dist')
@@ -603,11 +609,19 @@ def start_agent_server():
 
     # 设置 NODE_PATH
     if getattr(sys, 'frozen', False):
-        agent_server_dist_dir = os.path.dirname(agent_server_script)
-        nm_path = os.path.join(agent_server_dist_dir, 'node_modules')
-        if os.path.isdir(nm_path):
-            env['NODE_PATH'] = nm_path
-            print(f"[AgentServer] NODE_PATH={nm_path}")
+        meipass = sys._MEIPASS
+        # 优先使用共享 node_modules（v1.0.69+ 节省 ~154MB）
+        shared_nm = os.path.join(meipass, 'shared_node_modules')
+        if os.path.isdir(shared_nm):
+            env['NODE_PATH'] = shared_nm
+            print(f"[AgentServer] NODE_PATH={shared_nm} (shared)")
+        else:
+            # 兼容旧版：agent_server_dist 目录下的 node_modules
+            agent_server_dist_dir = os.path.dirname(agent_server_script)
+            nm_path = os.path.join(agent_server_dist_dir, 'node_modules')
+            if os.path.isdir(nm_path):
+                env['NODE_PATH'] = nm_path
+                print(f"[AgentServer] NODE_PATH={nm_path}")
 
         # Agent Web 前端路径
         meipass = sys._MEIPASS

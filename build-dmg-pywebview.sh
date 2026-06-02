@@ -122,6 +122,13 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/frontend_dist"
 cp -r "$FRONTEND_DIST"/* "$BUILD_DIR/frontend_dist/"
 
+# 2.1 删除 mockServiceWorker.js（MSW 开发工具，生产环境不需要）
+MSW_FILE=$(find "$BUILD_DIR/frontend_dist" -name "mockServiceWorker.js" 2>/dev/null | head -1)
+if [ -n "$MSW_FILE" ]; then
+  rm -f "$MSW_FILE"
+  echo "   ✅ 已删除 mockServiceWorker.js"
+fi
+
 # frameless=True：无系统标题栏，前端通过 JS 检测 pywebview 后注入 --pw-top: 28px 避让红黄绿按钮
 
 # 2.5 构建 Agent Web 前端（如果存在）
@@ -200,14 +207,15 @@ else
 fi
 echo ""
 
-# 4. 安装后端生产依赖到独立目录
-echo "📦 安装后端生产依赖..."
-mkdir -p "$SERVER_BUILD_DIR/node_modules"
-cd "$SERVER_BUILD_DIR"
+# 4. 安装共享 node_modules（两个 server 共用，节省 ~154MB）
+echo "📦 安装共享 node_modules..."
+SHARED_NODE_MODULES="$BUILD_DIR/shared_node_modules"
+mkdir -p "$SHARED_NODE_MODULES"
+cd "$SHARED_NODE_MODULES"
 
 cat > package.json << 'PKGJSON'
 {
-  "name": "crosswms-server",
+  "name": "crosswms-shared-deps",
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
@@ -224,35 +232,74 @@ PKGJSON
 sed -i '' "s/\\\"version\\\": \\\"1.0.0\\\"/\\\"version\\\": \\\"${VERSION}\\\"/" package.json
 
 npm install --production --no-optional 2>&1 | tail -5
-echo "✅ 后端依赖安装完成"
+echo "✅ 共享 node_modules 安装完成"
 
-# 4.5 安装 Agent Web 后端生产依赖
-if [ -d "$AGENT_SERVER_BUILD_DIR" ]; then
-  echo "📦 安装 Agent Web 后端生产依赖..."
-  mkdir -p "$AGENT_SERVER_BUILD_DIR/node_modules"
-  cd "$AGENT_SERVER_BUILD_DIR"
+# 4.1 清理 node_modules 中非运行时必需文件（节省空间）
+echo "🧹 清理 node_modules 非运行时文件..."
+cd "$SHARED_NODE_MODULES/node_modules"
 
-  cat > package.json << 'AGENTPKGJSON'
-{
-  "name": "crosswms-agent-server",
-  "version": "1.0.0",
-  "type": "module",
-  "dependencies": {
-    "@tencent-ai/agent-sdk": "^0.3.43",
-    "express": "^5.2.0",
-    "cors": "^2.8.5",
-    "uuid": "^9.0.0",
-    "better-sqlite3": "^12.6.2"
-  }
-}
-AGENTPKGJSON
+# 删除文档、示例、测试、类型定义源文件等
+find . -type f \( \
+  -name "*.md" -o \
+  -name "*.d.ts" -o \
+  -name "*.d.ts.map" -o \
+  -name "*.d.mts" -o \
+  -name "*.js.map" -o \
+  -name "LICENSE" -o \
+  -name "CHANGELOG*" -o \
+  -name "HISTORY*" -o \
+  -name "README*" -o \
+  -name ".eslintrc*" -o \
+  -name ".prettierrc*" -o \
+  -name "tsconfig*" -o \
+  -name ".npmignore" -o \
+  -name ".travis.yml" -o \
+  -name "Makefile" -o \
+  -name "Gulpfile*" -o \
+  -name "Gruntfile*" \
+\) -delete 2>/dev/null || true
 
-  # 更新版本号
-  sed -i '' "s/\\\"version\\\": \\\"1.0.0\\\"/\\\"version\\\": \\\"${VERSION}\\\"/" package.json
+# 删除整个 docs/examples/tests/test/__tests__/coverage 目录
+find . -type d \( \
+  -name "docs" -o \
+  -name "examples" -o \
+  -name "example" -o \
+  -name "tests" -o \
+  -name "test" -o \
+  -name "__tests__" -o \
+  -name "__test__" -o \
+  -name "coverage" -o \
+  -name ".github" -o \
+  -name "benchmark" -o \
+  -name "benchmarks" \
+\) -exec rm -rf {} + 2>/dev/null || true
 
-  npm install --production --no-optional 2>&1 | tail -5
-  echo "✅ Agent Web 后端依赖安装完成"
-  cd "$PROJECT_DIR"
+# 删除 agent-sdk 内置的 CLI 和 web-ui（仅运行时 API 需要保留）
+AGENT_SDK_DIR=""
+for d in @tencent-ai/agent-sdk; do
+  if [ -d "$d" ]; then
+    AGENT_SDK_DIR="$d"
+    break
+  fi
+done
+if [ -n "$AGENT_SDK_DIR" ]; then
+  # CLI 工具和 web-ui 占 ~80MB，运行时不需要
+  rm -rf "$AGENT_SDK_DIR/cli" 2>/dev/null || true
+  rm -rf "$AGENT_SDK_DIR/dist/web-ui" 2>/dev/null || true
+  rm -rf "$AGENT_SDK_DIR/web-ui" 2>/dev/null || true
+  echo "   ✅ 已清理 @tencent-ai/agent-sdk CLI 和 web-ui"
+fi
+
+SHARED_NM_SIZE=$(du -sh "$SHARED_NODE_MODULES/node_modules" | cut -f1)
+echo "✅ node_modules 清理完成 (大小: $SHARED_NM_SIZE)"
+
+# 4.2 清理 better-sqlite3 源码（仅保留编译产物 .node，删除 deps/ 和 src/ 节省 ~10MB）
+BS3_DIR="$SHARED_NODE_MODULES/node_modules/better-sqlite3"
+if [ -d "$BS3_DIR" ]; then
+  BS3_BEFORE=$(du -sm "$BS3_DIR" | cut -f1)
+  rm -rf "$BS3_DIR/deps" "$BS3_DIR/src" 2>/dev/null || true
+  BS3_AFTER=$(du -sm "$BS3_DIR" | cut -f1)
+  echo "   ✅ better-sqlite3 源码已清理 (${BS3_BEFORE}M → ${BS3_AFTER}M)"
 fi
 
 cd "$PROJECT_DIR"
@@ -264,8 +311,12 @@ SYSTEM_NODE="$(which node 2>/dev/null || echo '')"
 
 if [ -n "$SYSTEM_NODE" ] && [ -x "$SYSTEM_NODE" ]; then
   cp "$SYSTEM_NODE" "$NODE_RUNTIME_DIR/bin/node"
+  # 去除本地符号（安全瘦身，不影响运行），108M → ~87M
+  NODE_BEFORE=$(du -sm "$NODE_RUNTIME_DIR/bin/node" | cut -f1)
+  strip -x "$NODE_RUNTIME_DIR/bin/node" 2>/dev/null || true
+  NODE_AFTER=$(du -sm "$NODE_RUNTIME_DIR/bin/node" | cut -f1)
   NODE_SIZE=$(du -sh "$NODE_RUNTIME_DIR/bin/node" | cut -f1)
-  echo "✅ Node.js: $SYSTEM_NODE ($NODE_SIZE)"
+  echo "✅ Node.js: $SYSTEM_NODE ($NODE_SIZE, strip: ${NODE_BEFORE}M → ${NODE_AFTER}M)"
 else
   echo "⚠️  系统未找到 Node.js，AI 助手将不可用"
 fi
@@ -274,21 +325,9 @@ fi
 echo "🔨 用 PyInstaller 构建 CrossWMS.app..."
 cd "$PROJECT_DIR"
 
-# 临时移走 node_modules，避免 PyInstaller 把 .node 文件当 Python 扩展处理
-SERVER_NODE_MODULES="$SERVER_BUILD_DIR/node_modules"
-SERVER_NODE_MODULES_BAK="$BUILD_DIR/server_dist_node_modules_bak"
-if [ -d "$SERVER_NODE_MODULES" ]; then
-  mv "$SERVER_NODE_MODULES" "$SERVER_NODE_MODULES_BAK"
-  echo "✅ 已临时移走 server_dist/node_modules"
-fi
-
-# 临时移走 agent_server_dist/node_modules
-AGENT_SERVER_NODE_MODULES="$AGENT_SERVER_BUILD_DIR/node_modules"
-AGENT_SERVER_NODE_MODULES_BAK="$BUILD_DIR/agent_server_dist_node_modules_bak"
-if [ -d "$AGENT_SERVER_BUILD_DIR" ] && [ -d "$AGENT_SERVER_NODE_MODULES" ]; then
-  mv "$AGENT_SERVER_NODE_MODULES" "$AGENT_SERVER_NODE_MODULES_BAK"
-  echo "✅ 已临时移走 agent_server_dist/node_modules"
-fi
+# 临时移走 shared_node_modules（如果 PyInstaller 误扫描到）
+# 注意：shared_node_modules 不在 server_dist/agent_server_dist 内，PyInstaller 不会自动扫描
+# 但需要确保 server_dist 和 agent_server_dist 内没有 node_modules 目录
 
 export PYINSTALLER_CONFIG_DIR="$BUILD_DIR/pyinstaller-cache"
 mkdir -p "$PYINSTALLER_CONFIG_DIR"
@@ -359,21 +398,13 @@ fi
   --specpath "$BUILD_DIR" \
   pywebview_app.py
 
-# 恢复 node_modules 到 .app 中
-APP_SERVER_DIST="$BUILD_DIR/dist/CrossWMS.app/Contents/Resources/server_dist"
-if [ -d "$SERVER_NODE_MODULES_BAK" ]; then
-  mkdir -p "$APP_SERVER_DIST"
-  cp -r "$SERVER_NODE_MODULES_BAK" "$APP_SERVER_DIST/node_modules"
-  rm -rf "$SERVER_NODE_MODULES_BAK"
-  echo "✅ node_modules 已复制到 .app/Contents/Resources/server_dist/"
-fi
-
-APP_AGENT_SERVER_DIST="$BUILD_DIR/dist/CrossWMS.app/Contents/Resources/agent_server_dist"
-if [ -d "$AGENT_SERVER_NODE_MODULES_BAK" ]; then
-  mkdir -p "$APP_AGENT_SERVER_DIST"
-  cp -r "$AGENT_SERVER_NODE_MODULES_BAK" "$APP_AGENT_SERVER_DIST/node_modules"
-  rm -rf "$AGENT_SERVER_NODE_MODULES_BAK"
-  echo "✅ Agent Web node_modules 已复制到 .app/Contents/Resources/agent_server_dist/"
+# 复制共享 node_modules 到 .app 中（两个 server 共用一份）
+APP_RESOURCES="$BUILD_DIR/dist/CrossWMS.app/Contents/Resources"
+if [ -d "$SHARED_NODE_MODULES/node_modules" ]; then
+  cp -r "$SHARED_NODE_MODULES/node_modules" "$APP_RESOURCES/shared_node_modules"
+  SHARED_APP_SIZE=$(du -sh "$APP_RESOURCES/shared_node_modules" | cut -f1)
+  echo "✅ 共享 node_modules 已复制到 .app/Contents/Resources/shared_node_modules/ ($SHARED_APP_SIZE)"
+  rm -rf "$SHARED_NODE_MODULES"
 fi
 
 # 7. 修复 Info.plist

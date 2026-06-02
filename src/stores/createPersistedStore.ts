@@ -1,8 +1,9 @@
 /**
  * 持久化 Store 工厂函数
  *
- * 统一 localStorage + 事件总线模式，避免各 store 重复实现
- * 新增 store 应优先使用此工厂函数
+ * @deprecated 此工厂基于 localStorage 实现，已不适用于 SQLite 持久化架构。
+ * 各 Store 已直接改为 API + 内存缓存模式，不再使用此工厂。
+ * 保留此文件仅为向后兼容，新 Store 不应使用此工厂。
  */
 
 /** Store 实例接口 */
@@ -18,6 +19,8 @@ export interface PersistedStore<T> {
 }
 
 /**
+ * @deprecated 使用 API + 内存缓存模式代替
+ *
  * 创建一个持久化 Store
  * @param storageKey localStorage 键名
  * @param defaultValue 默认值（首次创建时使用）

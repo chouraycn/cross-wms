@@ -2,87 +2,28 @@
  * 技能注册中心 — 统一管理内置技能与用户自定义技能
  * 使用事件总线模式（参照 warehouseStore.ts）
  *
- * localStorage keys:
- *   'crosswms-user-skills' — 用户自定义技能
- *   'crosswms-builtin-status-patches' — 内置技能运行时状态覆盖
+ * 改造策略：
+ * - getUserSkills / builtinStatusPatches 从 API 初始化
+ * - 写操作调用 API → 成功后更新缓存 → notifyAll()
+ * - 新增 initFromApi()，应用启动时调用
+ * - updateRecentSkills 仍使用 localStorage（P1 范围，不在 SQLite 迁移中）
  */
 
 import type { Skill } from '../types/skill';
 import { BUILTIN_SKILLS } from '../types/skill';
+import * as api from '../services/api';
 
-// ====== 持久化配置 ======
+// ====== 内存缓存 ======
 
-const STORAGE_KEY = 'crosswms-user-skills';
-const BUILTIN_PATCHES_KEY = 'crosswms-builtin-status-patches';
-
-/** 从 localStorage 读取用户自定义技能 */
-function loadUserSkills(): Skill[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed.filter((s: Skill) => s.source === 'user');
-      }
-    }
-  } catch {
-    // 数据损坏时静默返回空数组
-  }
-  return [];
-}
-
-/** 写入 localStorage（仅保存 source: 'user' 的技能） */
-function saveUserSkills(skills: Skill[]): void {
-  try {
-    const userSkills = skills.filter((s) => s.source === 'user');
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(userSkills));
-  } catch (e) {
-    console.error(`[${STORAGE_KEY}] 保存失败:`, e);
-    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-      window.dispatchEvent(new CustomEvent('crosswms-storage-warning', { detail: { key: STORAGE_KEY } }));
-    }
-  }
-}
-
-/** 从 localStorage 读取内置技能状态覆盖 */
-function loadBuiltinPatches(): Record<string, Skill['status']> {
-  try {
-    const raw = localStorage.getItem(BUILTIN_PATCHES_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') return parsed;
-    }
-  } catch { /* ignore */ }
-  return {};
-}
-
-/** 写入内置技能状态覆盖 */
-function saveBuiltinPatches(): void {
-  try {
-    localStorage.setItem(BUILTIN_PATCHES_KEY, JSON.stringify(builtinStatusPatches));
-  } catch (e) {
-    console.error(`[${BUILTIN_PATCHES_KEY}] 保存失败:`, e);
-    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-      window.dispatchEvent(new CustomEvent('crosswms-storage-warning', { detail: { key: BUILTIN_PATCHES_KEY } }));
-    }
-  }
-}
-
-// ====== 内存存储 ======
-
-// 启动时从 localStorage 恢复用户技能
-let userSkills: Skill[] = loadUserSkills();
-
-// 内置技能运行时状态覆盖（不修改 BUILTIN_SKILLS 原始数据）
-let builtinStatusPatches: Record<string, Skill['status']> = loadBuiltinPatches();
+let userSkills: Skill[] = [];
+let builtinStatusPatches: Record<string, string> = {};
 
 // 事件总线：技能变更监听
 type SkillsChangeListener = () => void;
 const listeners = new Set<SkillsChangeListener>();
 
-/** 通知所有监听者 + 持久化 */
-function notifyAndPersist(): void {
-  saveUserSkills(userSkills);
+/** 通知所有监听者 */
+function notifyAll(): void {
   listeners.forEach((fn) => {
     try {
       fn();
@@ -98,7 +39,7 @@ function notifyAndPersist(): void {
 export function getAllSkills(): Skill[] {
   const patchedBuiltins = BUILTIN_SKILLS.map((s) => {
     const patch = builtinStatusPatches[s.id];
-    return patch ? { ...s, status: patch } : s;
+    return patch ? { ...s, status: patch as Skill['status'] } : s;
   });
   return [...patchedBuiltins, ...userSkills];
 }
@@ -109,50 +50,84 @@ export function getSkillById(id: string): Skill | undefined {
 }
 
 /** 添加用户自定义技能 */
-export function addSkill(skill: Omit<Skill, 'id' | 'source' | 'installedAt'>): Skill {
+export async function addSkill(skill: Omit<Skill, 'id' | 'source' | 'installedAt'>): Promise<Skill> {
   const newSkill: Skill = {
     ...skill,
     id: `skill-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     source: 'user',
     installedAt: Date.now(),
   };
-  userSkills = [...userSkills, newSkill];
-  notifyAndPersist();
-  return newSkill;
+  try {
+    const created = await api.createUserSkill(newSkill);
+    userSkills = [...userSkills, created];
+    notifyAll();
+    return created;
+  } catch (e) {
+    console.error('[skillStore] addSkill failed:', e);
+    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'addSkill', error: e } }));
+    throw e;
+  }
 }
 
 /** 更新用户自定义技能（仅限 source: 'user'） */
-export function updateSkill(id: string, updates: Partial<Omit<Skill, 'id' | 'source'>>): boolean {
+export async function updateSkill(id: string, updates: Partial<Omit<Skill, 'id' | 'source'>>): Promise<boolean> {
   const idx = userSkills.findIndex((s) => s.id === id);
   if (idx === -1) return false;
-  userSkills[idx] = { ...userSkills[idx], ...updates };
-  notifyAndPersist();
-  return true;
+  try {
+    const updated = await api.updateUserSkill(id, updates);
+    userSkills[idx] = updated;
+    notifyAll();
+    return true;
+  } catch (e) {
+    console.error('[skillStore] updateSkill failed:', e);
+    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'updateSkill', error: e } }));
+    throw e;
+  }
 }
 
 /** 设置技能状态（内置+用户技能均可） */
-export function setSkillStatus(id: string, status: Skill['status']): boolean {
+export async function setSkillStatus(id: string, status: Skill['status']): Promise<boolean> {
   // 先查用户技能
   const uIdx = userSkills.findIndex((s) => s.id === id);
   if (uIdx !== -1) {
-    userSkills[uIdx] = { ...userSkills[uIdx], status };
-    notifyAndPersist();
-    return true;
+    try {
+      const updated = await api.updateUserSkill(id, { status });
+      userSkills[uIdx] = updated;
+      notifyAll();
+      return true;
+    } catch (e) {
+      console.error('[skillStore] setSkillStatus (user) failed:', e);
+      window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'setSkillStatus', error: e } }));
+      throw e;
+    }
   }
   // 内置技能：通过 patch map 覆盖
-  builtinStatusPatches[id] = status;
-  saveBuiltinPatches();
-  notifyAndPersist();
-  return true;
+  try {
+    await api.setBuiltinPatch(id, status);
+    builtinStatusPatches[id] = status;
+    notifyAll();
+    return true;
+  } catch (e) {
+    console.error('[skillStore] setSkillStatus (builtin) failed:', e);
+    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'setSkillStatus', error: e } }));
+    throw e;
+  }
 }
 
 /** 删除技能（只能删除 source: 'user' 的技能） */
-export function removeSkill(id: string): boolean {
+export async function removeSkill(id: string): Promise<boolean> {
   const idx = userSkills.findIndex((s) => s.id === id);
   if (idx === -1) return false;
-  userSkills = userSkills.filter((s) => s.id !== id);
-  notifyAndPersist();
-  return true;
+  try {
+    await api.deleteUserSkill(id);
+    userSkills = userSkills.filter((s) => s.id !== id);
+    notifyAll();
+    return true;
+  } catch (e) {
+    console.error('[skillStore] removeSkill failed:', e);
+    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'removeSkill', error: e } }));
+    throw e;
+  }
 }
 
 /** 按名称查找技能 */
@@ -179,7 +154,7 @@ export function getSkillsByCategory(category: string): Skill[] {
   return getAllSkills().filter((s) => s.category === category);
 }
 
-/** 更新最近使用技能 */
+/** 更新最近使用技能（仍使用 localStorage，P1 范围） */
 export function updateRecentSkills(skillName: string): void {
   let recentNames: string[] = [];
   try {
@@ -199,4 +174,19 @@ export function onSkillsChange(callback: () => void): () => void {
   return () => {
     listeners.delete(callback);
   };
+}
+
+/** 从 API 初始化缓存 */
+export async function initFromApi(): Promise<void> {
+  try {
+    const [skills, patches] = await Promise.all([
+      api.getUserSkills(),
+      api.getBuiltinPatches(),
+    ]);
+    userSkills = skills;
+    builtinStatusPatches = patches;
+    notifyAll();
+  } catch (e) {
+    console.error('[skillStore] initFromApi failed:', e);
+  }
 }

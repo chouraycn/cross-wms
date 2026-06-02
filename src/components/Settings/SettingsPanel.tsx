@@ -155,6 +155,15 @@ const SettingsPanel: React.FC = () => {
       sidebar: {
         showVersion: true,
       },
+      appearance: {
+        themeMode: 'light',
+        accentColor: 'default',
+        fontSize: 'medium',
+        borderRadius: 'normal',
+        enableAnimations: true,
+        enableShadows: true,
+        compactMode: false,
+      },
       models: settings.models,
     });
     setErrors({});

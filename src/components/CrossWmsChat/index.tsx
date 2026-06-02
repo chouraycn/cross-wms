@@ -107,6 +107,30 @@ export function CrossWmsChat() {
     setActiveSessionId(newSession.id);
   }, []);
 
+  // 监听侧边栏"新建任务"按钮事件 — 聚焦 AI 对话框输入
+  useEffect(() => {
+    const handleFocusChat = () => {
+      // 先新建一个空会话
+      handleNewChat();
+      // 延迟聚焦输入框（等待渲染完成）
+      setTimeout(() => {
+        const editable = document.querySelector('[contenteditable="true"]') as HTMLElement;
+        if (editable) {
+          editable.focus();
+          // 光标移到末尾
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(editable);
+          range.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      }, 200);
+    };
+    window.addEventListener('crosswms-focus-chat', handleFocusChat);
+    return () => window.removeEventListener('crosswms-focus-chat', handleFocusChat);
+  }, [handleNewChat]);
+
   return (
     <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}>
       {/* 顶部工具栏：新对话按钮 */}
@@ -121,36 +145,6 @@ export function CrossWmsChat() {
           </IconButton>
         </Tooltip>
       </Box>
-
-      {/* 空状态引导（P2-3） */}
-      {session.messages.length === 0 && (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            py: 4,
-            px: 2,
-            gap: 1,
-            animation: 'fadeIn 0.5s ease-in-out',
-            '@keyframes fadeIn': {
-              from: { opacity: 0, transform: 'translateY(8px)' },
-              to: { opacity: 1, transform: 'translateY(0)' },
-            },
-          }}
-        >
-          <Typography sx={{ fontSize: '1.5rem', textAlign: 'center' }}>
-            👋
-          </Typography>
-          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 600, color: '#374151', textAlign: 'center' }}>
-            你好！我是 CrossWMS 智能助手
-          </Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF', textAlign: 'center', maxWidth: 280 }}>
-            可以帮你查询仓库数据、生成报表、管理自动化任务
-          </Typography>
-        </Box>
-      )}
 
       {/* 消息历史区域 — 在 TopBarChatInput 上方显示 */}
       {session.messages.length > 0 && (

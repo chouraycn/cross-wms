@@ -1,69 +1,32 @@
 /**
- * 全局仓库数据 Store（localStorage 持久化）
+ * 全局仓库数据 Store（SQLite 持久化 via API）
  * WarehouseList 写入，Dashboard/Inventory/InTransit/Reports 等组件订阅
  * 用事件总线模式，与 subscribeRefresh / emitRefresh 一致
+ *
+ * 改造策略：
+ * - 读操作（get/list）：直接返回内存缓存，保持同步
+ * - 写操作（add/update/remove/set/reset）：改为 async，调用 API → 成功后更新缓存 → notifyAll()
+ * - 新增 initFromApi()，应用启动时调用
  */
 
 import type { Warehouse } from '../types';
+import * as api from '../services/api';
 
 // 重新导出 Warehouse 类型，方便其他模块引用
 export type { Warehouse } from '../types';
 
-// ====== 持久化配置 ======
+// ====== 内存缓存 ======
 
-const STORAGE_KEY = 'crosswms-warehouses';
-
-/** 从 localStorage 读取仓库列表（含旧数据迁移） */
-function loadFromStorage(): Warehouse[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        // 数据迁移：旧仓库数据缺少 totalItems/usedItems 字段
-        return parsed.map((w: Partial<Warehouse>) => {
-          // 清理旧字段，避免残留在对象中
-          const { totalVolume: _tv, usedVolume: _uv, ...rest } = w as Record<string, unknown>;
-          return {
-            ...rest,
-            totalItems: Number.isFinite(w.totalItems) && w.totalItems! > 0 ? w.totalItems! : Math.max(1, w.totalVolume || 1),
-            usedItems: Number.isFinite(w.usedItems) && w.usedItems! >= 0 ? w.usedItems! : (w.usedVolume || 0),
-          } as Warehouse;
-        });
-      }
-    }
-  } catch {
-    // 数据损坏时静默返回空数组
-  }
-  return [];
-}
-
-/** 写入 localStorage */
-function saveToStorage(data: Warehouse[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (e) {
-    console.error(`[${STORAGE_KEY}] 保存失败:`, e);
-    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-      window.dispatchEvent(new CustomEvent('crosswms-storage-warning', { detail: { key: STORAGE_KEY } }));
-    }
-  }
-}
-
-// ====== 仓库数据存储 ======
-
-// 启动时从 localStorage 恢复
-let warehouses: Warehouse[] = loadFromStorage();
+let cache: Warehouse[] = [];
 
 type WarehousesListener = (warehouses: Warehouse[]) => void;
 const listeners = new Set<WarehousesListener>();
 
-/** 通知所有监听者 + 持久化 */
-function notifyAndPersist(): void {
-  saveToStorage(warehouses);
+/** 通知所有监听者 */
+function notifyAll(): void {
   listeners.forEach((fn) => {
     try {
-      fn(warehouses);
+      fn(cache);
     } catch (e) {
       console.error('[warehouseStore] listener error:', e);
     }
@@ -72,48 +35,79 @@ function notifyAndPersist(): void {
 
 /** 获取当前仓库列表（快照） */
 export function getWarehouses(): Warehouse[] {
-  return [...warehouses];
+  return [...cache];
 }
 
 /** 按 id 获取单个仓库 */
 export function getWarehouseById(id: string): Warehouse | undefined {
-  return warehouses.find((w) => w.id === id);
+  return cache.find((w) => w.id === id);
 }
 
 /** 订阅仓库数据变化 */
 export function subscribeWarehouses(listener: WarehousesListener): () => void {
   listeners.add(listener);
   // 立即回调一次，让新订阅者获取当前数据
-  listener(warehouses);
+  listener(cache);
   return () => { listeners.delete(listener); };
 }
 
 /** 更新仓库列表（全量替换） */
-export function setWarehouses(newWarehouses: Warehouse[]): void {
-  warehouses = newWarehouses;
-  notifyAndPersist();
+export async function setWarehouses(newWarehouses: Warehouse[]): Promise<void> {
+  cache = newWarehouses;
+  notifyAll();
 }
 
 /** 添加单个仓库 */
-export function addWarehouse(warehouse: Warehouse): void {
-  warehouses = [...warehouses, warehouse];
-  notifyAndPersist();
+export async function addWarehouse(warehouse: Warehouse): Promise<void> {
+  try {
+    const created = await api.createWarehouse(warehouse);
+    cache = [...cache, created];
+    notifyAll();
+  } catch (e) {
+    console.error('[warehouseStore] addWarehouse failed:', e);
+    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'addWarehouse', error: e } }));
+    throw e;
+  }
 }
 
 /** 更新单个仓库（按 id 匹配） */
-export function updateWarehouse(updated: Warehouse): void {
-  warehouses = warehouses.map((w) => (w.id === updated.id ? updated : w));
-  notifyAndPersist();
+export async function updateWarehouse(updated: Warehouse): Promise<void> {
+  try {
+    const saved = await api.updateWarehouse(updated.id, updated);
+    cache = cache.map((w) => (w.id === updated.id ? saved : w));
+    notifyAll();
+  } catch (e) {
+    console.error('[warehouseStore] updateWarehouse failed:', e);
+    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'updateWarehouse', error: e } }));
+    throw e;
+  }
 }
 
 /** 删除单个仓库 */
-export function removeWarehouse(warehouseId: string): void {
-  warehouses = warehouses.filter((w) => w.id !== warehouseId);
-  notifyAndPersist();
+export async function removeWarehouse(warehouseId: string): Promise<void> {
+  try {
+    await api.deleteWarehouse(warehouseId);
+    cache = cache.filter((w) => w.id !== warehouseId);
+    notifyAll();
+  } catch (e) {
+    console.error('[warehouseStore] removeWarehouse failed:', e);
+    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'removeWarehouse', error: e } }));
+    throw e;
+  }
 }
 
 /** 重置为空 */
-export function resetWarehouses(): void {
-  warehouses = [];
-  notifyAndPersist();
+export async function resetWarehouses(): Promise<void> {
+  cache = [];
+  notifyAll();
+}
+
+/** 从 API 初始化缓存 */
+export async function initFromApi(): Promise<void> {
+  try {
+    cache = await api.getWarehouses();
+    notifyAll();
+  } catch (e) {
+    console.error('[warehouseStore] initFromApi failed:', e);
+  }
 }

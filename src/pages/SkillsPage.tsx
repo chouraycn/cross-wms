@@ -691,7 +691,7 @@ const SkillsPage: React.FC = () => {
   );
 };
 
-// ===================== 添加技能对话框 =====================
+// ===================== 添加技能对话框（ZIP上传） =====================
 
 interface AddSkillDialogProps {
   open: boolean;
@@ -700,53 +700,92 @@ interface AddSkillDialogProps {
 }
 
 const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded }) => {
-  const [form, setForm] = useState({
-    name: '',
-    desc: '',
-    icon: 'Extension',
-    category: 'tool' as 'core' | 'data' | 'auto' | 'tool',
-    trigger: '',
-    path: '/',
-    tags: '',
-  });
+  const [file, setFile] = useState<File | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleSave = () => {
-    if (!form.name.trim()) {
-      setError('请输入技能名称');
-      return;
-    }
-    if (!form.desc.trim()) {
-      setError('请输入技能描述');
-      return;
-    }
-    if (!form.path.trim()) {
-      setError('请输入路径');
-      return;
-    }
+  const reset = () => {
+    setFile(null);
     setError('');
-
-    const newSkill = addSkill({
-      name: form.name.trim(),
-      desc: form.desc.trim(),
-      icon: form.icon,
-      category: form.category,
-      path: form.path.trim(),
-      trigger: form.trigger.trim() || undefined,
-      tags: form.tags.trim() ? form.tags.split(/[,，]/).map(t => t.trim()).filter(Boolean) : undefined,
-      status: 'active',
-      version: '1.0',
-    });
-
-    onAdded(newSkill.name);
-    setForm({ name: '', desc: '', icon: 'Extension', category: 'tool', trigger: '', path: '/', tags: '' });
-    onClose();
+    setLoading(false);
   };
 
   const handleClose = () => {
-    setError('');
-    setForm({ name: '', desc: '', icon: 'Extension', category: 'tool', trigger: '', path: '/', tags: '' });
+    reset();
     onClose();
+  };
+
+  const handleFile = (f: File) => {
+    if (!f.name.endsWith('.zip')) {
+      setError('请上传 .zip 格式的技能包');
+      return;
+    }
+    setFile(f);
+    setError('');
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const f = e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  };
+
+  const handleInstall = async () => {
+    if (!file) { setError('请选择技能包文件'); return; }
+    setLoading(true);
+    setError('');
+
+    try {
+      // 读取 zip 内容，解析 skill.json
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8 = new Uint8Array(arrayBuffer);
+
+      // 简单读取文件名（不依赖 jszip，纯文本匹配提取 skill.json）
+      // 尝试从 zip 中提取 skill.json 的 JSON 内容
+      const text = new TextDecoder('utf-8', { fatal: false }).decode(uint8);
+      // 寻找 skill.json 的内容块（ZIP local file header后的内容）
+      const jsonMatch = text.match(/\{[\s\S]*?"name"\s*:\s*"([^"]+)"[\s\S]*?"desc"\s*:\s*"([^"]+)"[\s\S]*?\}/);
+
+      if (jsonMatch) {
+        // 找到了 JSON 内容，尝试解析
+        const jsonStart = text.indexOf(jsonMatch[0]);
+        const jsonStr = text.substring(jsonStart, jsonStart + jsonMatch[0].length);
+        let skillData: Record<string, unknown> = {};
+        try {
+          // 尝试解析更完整的 JSON
+          const fullJsonMatch = text.match(/\{[^{}]*"name"[^{}]*"desc"[^{}]*\}/);
+          if (fullJsonMatch) skillData = JSON.parse(fullJsonMatch[0]);
+        } catch {
+          skillData = { name: jsonMatch[1], desc: jsonMatch[2] };
+        }
+        const name = (skillData['name'] as string) || file.name.replace('.zip', '');
+        const desc = (skillData['desc'] as string) || '从技能包导入';
+        const icon = (skillData['icon'] as string) || 'Extension';
+        const category = (skillData['category'] as 'core' | 'data' | 'auto' | 'tool') || 'tool';
+        const trigger = skillData['trigger'] as string | undefined;
+        const tags = skillData['tags'] as string[] | undefined;
+        const path = (skillData['path'] as string) || '/';
+
+        const newSkill = await addSkill({ name, desc, icon, category, path, trigger, tags, status: 'active', version: '1.0' });
+        onAdded(newSkill.name);
+        reset();
+        onClose();
+      } else {
+        // 没有找到 skill.json，用文件名作为名称安装
+        const name = file.name.replace('.zip', '');
+        const newSkill = await addSkill({ name, desc: `从 ${file.name} 导入的技能包`, icon: 'Extension', category: 'tool', path: '/', status: 'active', version: '1.0' });
+        onAdded(newSkill.name);
+        reset();
+        onClose();
+      }
+    } catch (err) {
+      setError(`安装失败：${err instanceof Error ? err.message : '未知错误'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -757,100 +796,85 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       fullWidth
       PaperProps={{ sx: { borderRadius: 3 } }}
     >
-      <DialogTitle sx={{ fontWeight: 700, color: '#111827', pb: 1 }}>
-        添加自定义技能
+      <DialogTitle sx={{ fontWeight: 700, color: '#111827', pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <ExtensionIcon sx={{ fontSize: 22, color: '#6B7280' }} />
+        安装技能包
       </DialogTitle>
       <DialogContent sx={{ pt: '8px !important' }}>
+        <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', mb: 2 }}>
+          上传 <code style={{ backgroundColor: '#F3F4F6', padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>.zip</code> 格式的技能包文件。技能包应包含 <code style={{ backgroundColor: '#F3F4F6', padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>skill.json</code> 描述文件。
+        </Typography>
+
+        {/* 拖拽上传区 */}
+        <Box
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          sx={{
+            border: `2px dashed ${dragging ? '#111827' : file ? '#10B981' : '#E5E7EB'}`,
+            borderRadius: '12px',
+            backgroundColor: dragging ? '#F9FAFB' : file ? '#F0FDF4' : '#FAFAFA',
+            py: 4,
+            px: 3,
+            textAlign: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+          }}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".zip"
+            style={{ display: 'none' }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+          />
+          {file ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CheckCircleIcon sx={{ fontSize: 28, color: '#10B981' }} />
+              </Box>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827' }}>{file.name}</Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                {(file.size / 1024).toFixed(1)} KB · 点击重新选择
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AddIcon sx={{ fontSize: 28, color: '#9CA3AF' }} />
+              </Box>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 500, color: '#374151' }}>
+                拖拽技能包到此处
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                或点击选择 .zip 文件
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
         {error && (
-          <Alert severity="error" sx={{ mb: 2, fontSize: '0.8rem' }}>
+          <Alert severity="error" sx={{ mt: 2, fontSize: '0.8rem' }}>
             {error}
           </Alert>
         )}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField
-            label="技能名称"
-            size="small"
-            required
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            fullWidth
-            sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
-          />
-          <TextField
-            label="技能描述"
-            size="small"
-            required
-            value={form.desc}
-            onChange={(e) => setForm({ ...form, desc: e.target.value })}
-            fullWidth
-            multiline
-            minRows={2}
-            sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
-          />
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <FormControl size="small" sx={{ flex: 1 }}>
-              <InputLabel>图标</InputLabel>
-              <Select
-                value={form.icon}
-                label="图标"
-                onChange={(e) => setForm({ ...form, icon: e.target.value })}
-              >
-                {AVAILABLE_ICON_NAMES.map((name) => (
-                  <MenuItem key={name} value={name}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', color: '#6B7280' }}>
-                        {ICON_MAP[name] || <ExtensionIcon sx={{ fontSize: 20 }} />}
-                      </Box>
-                      <Typography sx={{ fontSize: '0.8rem' }}>{name}</Typography>
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ flex: 1 }}>
-              <InputLabel>分类</InputLabel>
-              <Select
-                value={form.category}
-                label="分类"
-                onChange={(e) => setForm({ ...form, category: e.target.value as 'core' | 'data' | 'auto' | 'tool' })}
-              >
-                <MenuItem value="core">核心功能</MenuItem>
-                <MenuItem value="data">数据管理</MenuItem>
-                <MenuItem value="auto">自动化</MenuItem>
-                <MenuItem value="tool">工具</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              label="触发词"
-              size="small"
-              value={form.trigger}
-              onChange={(e) => setForm({ ...form, trigger: e.target.value })}
-              fullWidth
-              placeholder="如: 同步数据 / 快捷指令"
-              sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
-            />
-            <TextField
-              label="路径"
-              size="small"
-              required
-              value={form.path}
-              onChange={(e) => setForm({ ...form, path: e.target.value })}
-              fullWidth
-              placeholder="/"
-              sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
-            />
-          </Box>
-          <TextField
-            label="标签"
-            size="small"
-            value={form.tags}
-            onChange={(e) => setForm({ ...form, tags: e.target.value })}
-            fullWidth
-            placeholder="用逗号分隔，如: 同步,数据,报表"
-            sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' } }}
-          />
+
+        {/* 技能包格式说明 */}
+        <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#F9FAFB', borderRadius: 2, border: '1px solid #E5E7EB' }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 0.75 }}>技能包格式（skill.json）</Typography>
+          <Box
+            component="pre"
+            sx={{ fontSize: '0.7rem', color: '#374151', backgroundColor: 'transparent', m: 0, fontFamily: 'monospace', lineHeight: 1.6 }}
+          >{`{
+  "name": "技能名称",
+  "desc": "技能描述",
+  "icon": "Extension",
+  "category": "tool",
+  "trigger": "触发词（可选）",
+  "tags": ["标签1", "标签2"]
+}`}</Box>
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -859,7 +883,8 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         </Button>
         <Button
           variant="contained"
-          onClick={handleSave}
+          onClick={handleInstall}
+          disabled={!file || loading}
           sx={{
             backgroundColor: '#111827',
             '&:hover': { backgroundColor: '#374151' },
@@ -867,7 +892,8 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
             borderRadius: 2,
           }}
         >
-          添加技能
+          {loading ? <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} /> : null}
+          {loading ? '安装中...' : '安装技能'}
         </Button>
       </DialogActions>
     </Dialog>
