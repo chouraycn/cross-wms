@@ -1,24 +1,18 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-  Box, IconButton, Paper, Chip, CircularProgress, Typography,
-  Menu, MenuItem, Divider, ListItemIcon, Dialog, DialogTitle, DialogContent,
-  DialogActions, Button, TextField, Tooltip, Snackbar, Alert
+  Box, Paper, Chip, Typography,
 } from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import AddIcon from '@mui/icons-material/Add';
-import MicIcon from '@mui/icons-material/Mic';
-import AppsIcon from '@mui/icons-material/Apps';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import PsychologyIcon from '@mui/icons-material/Psychology';
 import { useChat } from '../../hooks/useChat';
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
 import { getAllSkills } from '../../stores/skillStore';
 import { SkillSelector } from './SkillSelector';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
-import { SECONDARY } from '../../constants/theme';
+import ChatToolbar from './ChatToolbar';
+import MemoryDialog, { type MemoryDialogHandle } from './MemoryDialog';
+
+// ===================== Props =====================
 
 interface TopBarChatInputProps {
   session: {
@@ -38,23 +32,16 @@ interface TopBarChatInputProps {
   initialSkill?: Skill | null;
 }
 
-type DropdownType = 'craft' | 'model' | 'skills' | 'permission' | null;
-
-const CRAFT_OPTIONS = ['创建文档', '创建表格', '创建演示'];
-const PERMISSION_OPTIONS = ['公开', '仅自己', '团队成员'];
-
-import { CATEGORY_LABELS, CATEGORY_ORDER } from '../../constants/skillCategories';
+// ===================== Component =====================
 
 export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopBarChatInputProps) {
   const { settings } = useAppSettings();
-  const navigate = useNavigate();
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [showSkillSelector, setShowSkillSelector] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(initialSkill ?? null);
   const [inputValue, setInputValue] = useState('');
-  const [activeDropdown, setActiveDropdown] = useState<DropdownType>(null);
   const [skillFocusIndex, setSkillFocusIndex] = useState(-1);
 
   // 当 initialSkill 从外部变化时同步到 selectedSkill（如 SkillDetailPage 跳转过来）
@@ -88,71 +75,23 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
   });
   const [selectedPermission, setSelectedPermission] = useState('默认权限');
 
-  // MEMORY.md 状态
-  const [memoryOpen, setMemoryOpen] = useState(false);
-  const [memoryContent, setMemoryContent] = useState('');
-  const [memorySaving, setMemorySaving] = useState(false);
-  const [memoryToast, setMemoryToast] = useState<{ open: boolean; severity: 'success' | 'error'; msg: string }>({ open: false, severity: 'success', msg: '' });
-
-  const MEMORY_API = 'http://localhost:3001/api/memory';
-
-  /** 打开 MEMORY.md 编辑弹窗 */
-  const handleOpenMemory = useCallback(async () => {
-    try {
-      const res = await fetch(MEMORY_API);
-      const data = await res.json();
-      setMemoryContent(data.content || '');
-    } catch {
-      setMemoryContent('');
-    }
-    setMemoryOpen(true);
-  }, []);
-
-  /** 保存 MEMORY.md */
-  const handleSaveMemory = useCallback(async () => {
-    setMemorySaving(true);
-    try {
-      const res = await fetch(MEMORY_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: memoryContent }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        setMemoryToast({ open: true, severity: 'success', msg: '记忆已保存' });
-        setMemoryOpen(false);
-      } else {
-        setMemoryToast({ open: true, severity: 'error', msg: '保存失败' });
-      }
-    } catch {
-      setMemoryToast({ open: true, severity: 'error', msg: '保存失败' });
-    }
-    setMemorySaving(false);
-  }, [memoryContent]);
-
+  const memoryDialogRef = useRef<MemoryDialogHandle>(null);
   const editableRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const craftBtnRef = useRef<HTMLButtonElement>(null);
-  const modelBtnRef = useRef<HTMLButtonElement>(null);
-  const permissionBtnRef = useRef<HTMLButtonElement>(null);
-  const skillsBtnRef = useRef<HTMLButtonElement>(null);
 
   const { isLoading, sendMessage } = useChat(
     session?.id ? session : undefined,
     onSessionUpdate
   );
 
-  // Click outside to collapse input area - 严格按 chat-input.html 逻辑
+  // Click outside to collapse input area
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setActiveDropdown(null);
         setShowSkills(false);
         setShowSkillSelector(false);
-        // 点击外部收起输入区，恢复初始状态（按 HTML 逻辑）
         if (!inputValue.trim()) {
           setInputExpanded(false);
-          // 清空内容
           if (editableRef.current) {
             editableRef.current.innerHTML = '';
           }
@@ -167,14 +106,14 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     const text = editableRef.current?.innerText || '';
     setInputValue(text);
 
-    // 斜杠命令检测：只要当前行以 / 开头就触发（支持在已有文本后输入 /）
+    // 斜杠命令检测：只要当前行以 / 开头就触发
     const currentLine = text.split('\n').pop() || '';
     if (currentLine.startsWith('/')) {
       const query = currentLine.slice(1).trim();
       setSlashQuery(query);
       setShowSkillSelector(true);
       setShowSkills(false);
-      setSkillFocusIndex(-1); // 过滤词变化时重置导航索引
+      setSkillFocusIndex(-1);
     } else if (text.endsWith('@')) {
       setShowSkills(true);
       setShowSkillSelector(false);
@@ -192,7 +131,6 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
       setTimeout(() => {
         if (editableRef.current) {
           editableRef.current.focus();
-          // Position cursor at the end of content
           const range = document.createRange();
           const sel = window.getSelection();
           range.selectNodeContents(editableRef.current);
@@ -209,10 +147,8 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     setShowSkills(false);
     setShowSkillSelector(false);
     if (editableRef.current) {
-      // 如果是斜杠命令选择，清除 /xxx 部分，保留其他内容
       if (inputValue.includes('/')) {
         const lines = inputValue.split('\n');
-        // 替换最后一行中以 / 开头的内容
         const lastLine = lines[lines.length - 1];
         if (lastLine.startsWith('/')) {
           lines[lines.length - 1] = '';
@@ -236,25 +172,20 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
 
   const handleSend = () => {
     if (!inputValue.trim() || isLoading) return;
-    // 如果选中了技能且有 promptTemplate，作为 skillContext 注入
     const skillContext = selectedSkill?.promptTemplate || undefined;
     sendMessage(inputValue, { skillContext });
-    // Clear the contentEditable div
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
     }
     setInputValue('');
     setShowSkillSelector(false);
-    // 发送后收起输入区（按 HTML 逻辑：无内容时恢复初始状态）
     setInputExpanded(false);
-    // 发送后清空技能选择（hybrid 模式保留，chat 模式清空）
     if (selectedSkill && selectedSkill.executionMode === 'chat') {
       setSelectedSkill(null);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // 斜杠选择器打开时，上下箭头和 Enter 由这里处理
     if (showSkillSelector) {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -275,7 +206,6 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
       if (e.key === 'Enter') {
         e.preventDefault();
         if (skillFocusIndex >= 0 && skillFocusIndex < slashFilteredCount) {
-          // 获取过滤后的技能列表，选择对应项
           const allSkills = getAllSkills().filter(s => s.status === 'active');
           const q = slashQuery.toLowerCase();
           const filtered = allSkills.filter(skill =>
@@ -289,7 +219,6 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
             handleSkillSelect(filtered[skillFocusIndex]);
           }
         } else {
-          // 无选中项，正常发送
           handleSend();
         }
         setSkillFocusIndex(-1);
@@ -302,13 +231,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     }
   };
 
-  const handleDropdownClick = (type: DropdownType, _ref: React.RefObject<HTMLButtonElement>) => {
-    if (activeDropdown === type) {
-      setActiveDropdown(null);
-    } else {
-      setActiveDropdown(type);
-    }
-  };
+  // ---- Render ----
 
   return (
     <Box
@@ -321,7 +244,6 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
         pr: 1.25,
       }}
     >
-      {/* 严格按 chat-input.html .chat-container 结构：始终渲染，toolbar 始终可见 */}
       <Paper
         elevation={0}
         sx={{
@@ -336,7 +258,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
           overflow: 'auto',
         }}
       >
-        {/* Selected skill tag — 显示技能名+触发词+AI上下文标识 */}
+        {/* Selected skill tag */}
         {selectedSkill && (
           <Box sx={{ px: 1.5, py: 0.5, bgcolor: '#fff', borderBottom: `1px solid #eee`, display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Chip
@@ -369,7 +291,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
           </Box>
         )}
 
-        {/* Input area - 严格按 chat-input.html .input-area 样式 */}
+        {/* Input area */}
         <Box
           onClick={handleInputClick}
           sx={{
@@ -383,7 +305,6 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
         >
           {!inputExpanded ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
-              {/* 左侧占位，与 toolbar 的 Craft 按钮对齐 */}
               <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Typography sx={{ fontSize: 15, color: '#999', lineHeight: 1.4 }}>
                   今天帮你做些什么？
@@ -426,272 +347,19 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
           )}
         </Box>
 
-        {/* Toolbar - 严格按 chat-input.html: background:#fff, padding:8px 16px，始终可见 */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '8px 16px',
-            bgcolor: '#fff',
-            flexShrink: 0,
-          }}
-        >
-          {/* Left buttons: Craft, Model, Skills, Permission */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            {/* Craft button - 整体右移 10px */}
-            <IconButton
-              ref={craftBtnRef}
-              size="small"
-              onClick={(e) => { e.stopPropagation(); handleDropdownClick('craft', craftBtnRef); }}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '8px',
-                p: 0,
-                ml: 1.25,
-                color: SECONDARY,
-                bgcolor: 'transparent',
-                '&:hover': { bgcolor: '#f5f5f5' },
-              }}
-            >
-              <Typography sx={{ fontSize: 12, fontWeight: 500 }}>Craft</Typography>
-              <ArrowDropDownIcon sx={{ fontSize: 16, ml: 0.25 }} />
-            </IconButton>
-
-            {/* Model selector */}
-            <IconButton
-              ref={modelBtnRef}
-              size="small"
-              onClick={(e) => { e.stopPropagation(); handleDropdownClick('model', modelBtnRef); }}
-              sx={{
-                width: 'auto',
-                height: 32,
-                borderRadius: '8px',
-                px: 1,
-                color: SECONDARY,
-                bgcolor: 'transparent',
-                '&:hover': { bgcolor: '#f5f5f5' },
-              }}
-            >
-              <Typography sx={{ fontSize: 12, fontWeight: 500 }}>{selectedModel}</Typography>
-              <ArrowDropDownIcon sx={{ fontSize: 16, ml: 0.25 }} />
-            </IconButton>
-
-            {/* Skills button — 点击弹出下拉菜单 */}
-            <IconButton
-              ref={skillsBtnRef}
-              size="small"
-              onClick={(e) => { e.stopPropagation(); handleDropdownClick('skills', skillsBtnRef); }}
-              sx={{
-                width: 'auto',
-                height: 32,
-                borderRadius: '8px',
-                px: 1,
-                color: SECONDARY,
-                bgcolor: 'transparent',
-                '&:hover': { bgcolor: '#f5f5f5' },
-              }}
-            >
-              <Typography sx={{ fontSize: 12, fontWeight: 500 }}>Skills</Typography>
-            </IconButton>
-
-            {/* Permission button */}
-            <IconButton
-              ref={permissionBtnRef}
-              size="small"
-              onClick={(e) => { e.stopPropagation(); handleDropdownClick('permission', permissionBtnRef); }}
-              sx={{
-                width: 'auto',
-                height: 32,
-                borderRadius: '8px',
-                px: 1,
-                color: SECONDARY,
-                bgcolor: 'transparent',
-                '&:hover': { bgcolor: '#f5f5f5' },
-              }}
-            >
-              <Typography sx={{ fontSize: 12, fontWeight: 500 }}>{selectedPermission}</Typography>
-              <ArrowDropDownIcon sx={{ fontSize: 16, ml: 0.25 }} />
-            </IconButton>
-          </Box>
-
-          {/* Right buttons: Memory, Add, Voice, Send */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Memory button */}
-            <Tooltip title="记忆 (MEMORY.md)">
-              <IconButton
-                size="small"
-                onClick={(e) => { e.stopPropagation(); handleOpenMemory(); }}
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '8px',
-                  p: 0,
-                  color: SECONDARY,
-                  bgcolor: 'transparent',
-                  '&:hover': { bgcolor: '#f5f5f5' },
-                }}
-              >
-                <PsychologyIcon sx={{ fontSize: 20 }} />
-              </IconButton>
-            </Tooltip>
-
-            {/* Add button */}
-            <IconButton
-              size="small"
-              onClick={(e) => e.stopPropagation()}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '8px',
-                p: 0,
-                color: SECONDARY,
-                bgcolor: 'transparent',
-                '&:hover': { bgcolor: '#f5f5f5' },
-              }}
-            >
-              <AddIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-
-            {/* Voice button */}
-            <IconButton
-              size="small"
-              onClick={(e) => e.stopPropagation()}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '8px',
-                p: 0,
-                color: SECONDARY,
-                bgcolor: 'transparent',
-                '&:hover': { bgcolor: '#f5f5f5' },
-              }}
-            >
-              <MicIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-
-            {/* Send button - 橙色主题 */}
-            <IconButton
-              onClick={(e) => { e.stopPropagation(); handleSend(); }}
-              disabled={!inputValue.trim() || isLoading}
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                p: 0,
-                bgcolor: '#f97316',
-                color: '#fff',
-                flexShrink: 0,
-                border: 'none',
-                '&:hover': { bgcolor: '#ea580c' },
-                '&.Mui-disabled': { bgcolor: '#eee', color: '#bbb' },
-              }}
-            >
-              {isLoading ? (
-                <CircularProgress size={16} sx={{ color: '#fff' }} />
-              ) : (
-                <SendIcon sx={{ fontSize: 16 }} />
-              )}
-            </IconButton>
-          </Box>
-        </Box>
-
-        {/* MUI Menu: Craft - 上方弹出 */}
-        <Menu
-          anchorEl={craftBtnRef.current}
-          open={activeDropdown === 'craft'}
-          onClose={() => setActiveDropdown(null)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-          sx={{ mb: 0.5 }}
-        >
-          {CRAFT_OPTIONS.map((option) => (
-            <MenuItem key={option} onClick={() => setActiveDropdown(null)}>
-              {option}
-            </MenuItem>
-          ))}
-        </Menu>
-
-        {/* MUI Menu: Model - 上方弹出 */}
-        <Menu
-          anchorEl={modelBtnRef.current}
-          open={activeDropdown === 'model'}
-          onClose={() => setActiveDropdown(null)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-          sx={{ mb: 0.5 }}
-        >
-          {MODEL_OPTIONS.map((option) => (
-            <MenuItem key={option} onClick={() => { setSelectedModel(option); setActiveDropdown(null); }}>
-              {option}
-            </MenuItem>
-          ))}
-          <MenuItem component="div" divider sx={{ mx: 0, my: 0.5, pointerEvents: 'none' }} />
-          <MenuItem onClick={() => setActiveDropdown(null)}>
-            添加模型
-          </MenuItem>
-        </Menu>
-
-        {/* MUI Menu: Skills - 按分类分组显示 active 技能 */}
-        <Menu
-          anchorEl={skillsBtnRef.current}
-          open={activeDropdown === 'skills'}
-          onClose={() => setActiveDropdown(null)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-          PaperProps={{ sx: { width: 300, maxHeight: 420 } }}
-        >
-          {/* 按分类分组显示 active 技能 */}
-          {(() => {
-            const activeSkills = getAllSkills().filter(s => s.status === 'active');
-            const grouped: Record<string, Skill[]> = {};
-            for (const s of activeSkills) {
-              if (!grouped[s.category]) grouped[s.category] = [];
-              grouped[s.category].push(s);
-            }
-            const result: React.ReactNode[] = [];
-            for (const cat of CATEGORY_ORDER) {
-              const items = grouped[cat];
-              if (!items || items.length === 0) continue;
-              result.push(
-                <Typography key={`cat-${cat}`} sx={{ px: 2, py: 0.5, fontSize: '0.65rem', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase' }}>
-                  {CATEGORY_LABELS[cat]}
-                </Typography>
-              );
-              for (const skill of items.slice(0, 4)) {
-                result.push(
-                  <MenuItem key={skill.id} onClick={() => { handleSkillSelect(skill); setActiveDropdown(null); }} sx={{ py: 0.75, px: 2 }}>
-                    <ListItemIcon sx={{ minWidth: 32 }}>{ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 18 }} />}</ListItemIcon>
-                    <Typography sx={{ fontSize: '0.8rem' }}>{skill.name}</Typography>
-                  </MenuItem>
-                );
-              }
-            }
-            return result;
-          })()}
-          <Divider />
-          <MenuItem onClick={() => { setActiveDropdown(null); navigate('/skills'); }}>
-            <ListItemIcon><AppsIcon sx={{ fontSize: 18, color: '#6B7280' }} /></ListItemIcon>
-            <Typography sx={{ fontSize: 13, color: '#6B7280' }}>查看全部技能 →</Typography>
-          </MenuItem>
-        </Menu>
-
-        {/* MUI Menu: Permission - 上方弹出 */}
-        <Menu
-          anchorEl={permissionBtnRef.current}
-          open={activeDropdown === 'permission'}
-          onClose={() => setActiveDropdown(null)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-          sx={{ mb: 0.5 }}
-        >
-          {PERMISSION_OPTIONS.map((option) => (
-            <MenuItem key={option} onClick={() => { setSelectedPermission(option); setActiveDropdown(null); }}>
-              {option}
-            </MenuItem>
-          ))}
-        </Menu>
+        {/* Toolbar */}
+        <ChatToolbar
+          selectedModel={selectedModel}
+          onModelChange={setSelectedModel}
+          selectedPermission={selectedPermission}
+          onPermissionChange={setSelectedPermission}
+          isLoading={isLoading}
+          inputValue={inputValue}
+          onSend={handleSend}
+          onOpenMemory={() => memoryDialogRef.current?.open()}
+          onSkillSelect={handleSkillSelect}
+          modelOptions={MODEL_OPTIONS}
+        />
       </Paper>
 
       {/* Skill selector dropdown — @ 触发 */}
@@ -703,7 +371,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
         />
       )}
 
-      {/* Skill selector dropdown — / 斜杠命令触发（slashMode：无独立搜索框，用输入过滤 + 键盘导航，仅显示 active 技能） */}
+      {/* Skill selector dropdown — / 斜杠命令触发 */}
       {showSkillSelector && (
         <SkillSelector
           anchorEl={containerRef.current}
@@ -716,77 +384,8 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
         />
       )}
 
-      {/* MEMORY.md 编辑弹窗 */}
-      <Dialog
-        open={memoryOpen}
-        onClose={() => setMemoryOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3, minHeight: 420 } }}
-      >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1 }}>
-          <PsychologyIcon sx={{ fontSize: 20, color: '#7C3AED' }} />
-          <Typography sx={{ fontWeight: 600, fontSize: '1rem' }}>记忆</Typography>
-          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', ml: 0.5 }}>MEMORY.md</Typography>
-        </DialogTitle>
-        <DialogContent sx={{ pt: '8px !important' }}>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#6B7280', mb: 1.5 }}>
-            在此记录重要信息，AI 助手将在每次对话中自动读取这些记忆作为上下文。
-          </Typography>
-          <TextField
-            multiline
-            fullWidth
-            minRows={10}
-            maxRows={20}
-            value={memoryContent}
-            onChange={(e) => setMemoryContent(e.target.value)}
-            placeholder="在此输入你想让 AI 助手记住的内容..."
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                fontSize: '0.875rem',
-                lineHeight: 1.7,
-                fontFamily: '"SF Mono", "Menlo", "Monaco", monospace',
-                bgcolor: '#F9FAFB',
-              },
-            }}
-          />
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setMemoryOpen(false)} sx={{ color: '#6B7280' }}>
-            取消
-          </Button>
-          <Button
-            onClick={handleSaveMemory}
-            disabled={memorySaving}
-            variant="contained"
-            sx={{
-              bgcolor: '#7C3AED',
-              '&:hover': { bgcolor: '#6D28D9' },
-              textTransform: 'none',
-              borderRadius: 2,
-              px: 3,
-            }}
-          >
-            {memorySaving ? '保存中...' : '保存'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* 保存结果 toast */}
-      <Snackbar
-        open={memoryToast.open}
-        autoHideDuration={2500}
-        onClose={() => setMemoryToast(prev => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert
-          severity={memoryToast.severity}
-          onClose={() => setMemoryToast(prev => ({ ...prev, open: false }))}
-          sx={{ borderRadius: 2 }}
-        >
-          {memoryToast.msg}
-        </Alert>
-      </Snackbar>
+      {/* Memory dialog */}
+      <MemoryDialog ref={memoryDialogRef} />
     </Box>
   );
 }

@@ -24,7 +24,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import ReplayIcon from '@mui/icons-material/Replay';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 
-import type { AutomationExecution, TaskType } from '../../services/automationEngine';
+import type { AutomationExecution, TaskType } from '../../services/automation';
 import {
   TASK_TYPE_LABELS,
   TASK_TYPE_COLORS,

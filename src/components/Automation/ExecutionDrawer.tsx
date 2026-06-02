@@ -16,7 +16,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import ReplayIcon from '@mui/icons-material/Replay';
 
-import type { AutomationExecution, ExecutionStep } from '../../services/automationEngine';
+import type { AutomationExecution, ExecutionStep } from '../../services/automation';
 import {
   TASK_TYPE_LABELS,
   TASK_TYPE_COLORS,
