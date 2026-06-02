@@ -196,6 +196,12 @@ const NavList: React.FC<NavListProps> = ({
   // 只显示有消息的会话
   const chatSessions = sessions.filter((s) => s.messages.length > 0);
 
+  // 点击导航项时清除历史对话的即时选中状态
+  const handleNavClick = useCallback((path: string) => {
+    setJustClickedSessionId(null);
+    onNavigate(path);
+  }, [onNavigate]);
+
   const isActive = (path: string) => activePath.startsWith(path);
 
   const toggleGroup = (label: string) => {
@@ -240,7 +246,7 @@ const NavList: React.FC<NavListProps> = ({
               <Tooltip key={item.label} title={item.label} placement="right" arrow>
                 <ListItem disablePadding sx={{ display: 'block', mb: 0.5 }}>
                   <ListItemButton
-                    onClick={() => onNavigate(item.children[0].path)}
+                    onClick={() => handleNavClick(item.children[0].path)}
                     sx={{
                       minHeight: 40,
                       justifyContent: 'center',
@@ -317,7 +323,7 @@ const NavList: React.FC<NavListProps> = ({
                     return (
                       <ListItem key={child.path} disablePadding sx={{ display: 'block', mb: 0.25 }}>
                         <ListItemButton
-                          onClick={() => onNavigate(child.path)}
+                          onClick={() => handleNavClick(child.path)}
                           sx={{
                             minHeight: 32,
                             px: 1,
@@ -377,10 +383,10 @@ const NavList: React.FC<NavListProps> = ({
                 <ListItemButton
                   onClick={() => {
                     if (item.path === '/chat') {
-                      onNavigate(item.path);
+                      handleNavClick(item.path);
                       window.dispatchEvent(new CustomEvent('crosswms-navigate-chat'));
                     } else {
-                      onNavigate(item.path);
+                      handleNavClick(item.path);
                     }
                   }}
                   sx={{
@@ -412,10 +418,10 @@ const NavList: React.FC<NavListProps> = ({
               <ListItemButton
                 onClick={() => {
                   if (item.path === '/chat') {
-                    onNavigate(item.path);
+                    handleNavClick(item.path);
                     window.dispatchEvent(new CustomEvent('crosswms-navigate-chat'));
                   } else {
-                    onNavigate(item.path);
+                    handleNavClick(item.path);
                   }
                 }}
                 sx={{
