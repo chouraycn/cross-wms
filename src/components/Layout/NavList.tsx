@@ -478,7 +478,7 @@ const NavList: React.FC<NavListProps> = ({
 
       {/* ====== 栏目底部：历史对话 ====== */}
       {!collapsed && chatSessions.length > 0 && (
-        <Box sx={{ mt: 1, pt: 2.25, pl: 0.25, pr: 1 }}>
+        <Box sx={{ mt: 1, pt: 2.25, pl: 0.25, pr: 1, display: 'flex', flexDirection: 'column', minHeight: 0, flex: '0 1 auto', maxHeight: '40vh' }}>
           <Typography
             sx={{
               fontSize: '0.6875rem',
@@ -487,11 +487,24 @@ const NavList: React.FC<NavListProps> = ({
               px: 1.5,
               mb: 0.5,
               letterSpacing: '0.02em',
+              flexShrink: 0,
             }}
           >
             历史对话
+            <Box
+              component="span"
+              sx={{
+                ml: 0.75,
+                fontSize: '0.625rem',
+                fontWeight: 500,
+                color: isDark ? '#6B7280' : '#C0C0C0',
+              }}
+            >
+              {chatSessions.length}
+            </Box>
           </Typography>
-          {chatSessions.slice(0, 10).map((session) => {
+          <Box sx={{ overflowY: 'auto', overscrollBehaviorY: 'none', WebkitOverflowScrolling: 'auto', flex: 1, minHeight: 0 }}>
+          {chatSessions.map((session) => {
             const title = session.title || session.messages[0]?.content?.slice(0, 20) || '新对话';
             const effectiveActiveId = justClickedSessionId ?? activeSessionId;
             const isSessionActive = session.id === effectiveActiveId;
@@ -549,6 +562,7 @@ const NavList: React.FC<NavListProps> = ({
               </ListItem>
             );
           })}
+          </Box>
         </Box>
       )}
     </List>
