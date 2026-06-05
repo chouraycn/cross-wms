@@ -89,10 +89,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         collapsed={collapsed}
         activePath={location.pathname}
         onNavigate={(path) => {
-          // 导航到非聊天页面时，清除历史对话选中态
-          if (!path.startsWith('/chat')) {
-            setActiveSessionId('');
-          }
+          // 导航到任何页面时都清除历史对话选中态
+          // （包括点"新建任务" /chat，让白条回到"新建任务"按钮）
+          setActiveSessionId('');
           navigate(path);
         }}
         activeSessionId={activeSessionId}
