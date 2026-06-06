@@ -11,7 +11,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import SidebarLogo from './SidebarLogo';
 import NavList from './NavList';
 import SidebarToggle from './SidebarToggle';
-import SettingsPopover from './SettingsPopover';
 
 
 // ===================== Constants =====================
@@ -47,6 +46,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     } catch { /* ignore */ }
     return '';
   });
+
+  const isProjectsPage = location.pathname === '/projects';
 
   const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
@@ -104,20 +105,18 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         }}
       />
 
-      {/* Bottom: Settings button */}
+      {/* Bottom: Settings button → 项目页 */}
       <Box sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-        {/* 设置按钮 */}
-        <Box ref={settingsBtnRef}>
         <ListItemButton
-          onClick={() => setSettingsOpen(true)}
+          onClick={() => navigate('/projects')}
           sx={{
             minHeight: collapsed ? 40 : 36,
             justifyContent: collapsed ? 'center' : 'flex-start',
             px: collapsed ? 0 : 1.5,
             borderRadius: '6px',
-            backgroundColor: settingsOpen ? (isDark ? '#2D2D2D' : '#FFFFFF') : 'transparent',
+            backgroundColor: isProjectsPage ? (isDark ? '#2D2D2D' : '#FFFFFF') : 'transparent',
             '&:hover': {
-              backgroundColor: settingsOpen ? (isDark ? '#333333' : '#F9FAFB') : (isDark ? '#2D2D2D' : '#f5f5f5'),
+              backgroundColor: isProjectsPage ? (isDark ? '#333333' : '#F9FAFB') : (isDark ? '#2D2D2D' : '#f5f5f5'),
             },
             color: isDark ? '#E5E7EB' : undefined,
           }}
@@ -127,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
               minWidth: 0,
               mr: collapsed ? 0 : 1.5,
               justifyContent: 'center',
-              color: settingsOpen ? (isDark ? '#FFFFFF' : '#111827') : (isDark ? '#9CA3AF' : '#6B7280'),
+              color: isProjectsPage ? (isDark ? '#FFFFFF' : '#111827') : (isDark ? '#9CA3AF' : '#6B7280'),
               '& .MuiSvgIcon-root': { fontSize: collapsed ? '20px' : '18px' },
             }}
           >
@@ -144,24 +143,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             <Typography
               sx={{
                 fontSize: '0.8125rem',
-                fontWeight: settingsOpen ? 500 : 400,
-                color: settingsOpen ? (isDark ? '#FFFFFF' : '#111827') : (isDark ? '#D1D5DB' : '#374151'),
+                fontWeight: isProjectsPage ? 500 : 400,
+                color: isProjectsPage ? (isDark ? '#FFFFFF' : '#111827') : (isDark ? '#D1D5DB' : '#374151'),
                 lineHeight: '36px',
               }}
             >
-              设置
+              项目
             </Typography>
           </Box>
         </ListItemButton>
-        </Box>
       </Box>
-
-      {/* Settings Popover */}
-      <SettingsPopover
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        anchorEl={settingsBtnRef.current}
-      />
     </Box>
   );
 };

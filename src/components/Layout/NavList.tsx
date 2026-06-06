@@ -53,6 +53,7 @@ function isGroup(item: NavItem): item is NavItemGroup {
 // ===================== Nav Items Config =====================
 
 const navItems: NavItem[] = [
+  { label: '项目', path: '/projects', icon: <FolderOutlinedIcon />, desc: '项目总览' },
   { label: '新建任务', path: '/chat', icon: <TaskAltOutlinedIcon />, desc: 'AI 对话' },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '定时任务' },
