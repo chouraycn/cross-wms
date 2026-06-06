@@ -17,7 +17,6 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EditIcon from '@mui/icons-material/Edit';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { getAllSkills, removeSkill, setSkillStatus, onSkillsChange } from '../stores/skillStore';
 import { loadAutomations, automationEngine } from '../services/automation';
 import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automation';
