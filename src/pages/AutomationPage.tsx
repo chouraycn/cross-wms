@@ -29,6 +29,8 @@ import type {
   ExecutionStep,
   EngineStateEvent,
   ActionType,
+  TriggerType,
+  ExecutionPolicy,
 } from '../services/automation';
 import {
   TABS,
@@ -80,6 +82,13 @@ const AutomationPage: React.FC = () => {
   const [formScheduledAt, setFormScheduledAt] = useState('');
   const [formValidFrom, setFormValidFrom] = useState('');
   const [formValidUntil, setFormValidUntil] = useState('');
+  // v2.0
+  const [formTriggerType, setFormTriggerType] = useState<TriggerType>('schedule');
+  const [formExecutionPolicy, setFormExecutionPolicy] = useState<ExecutionPolicy>({
+    timeoutMs: 30_000,
+    retry: { maxAttempts: 1, intervalMs: 5_000, backoff: 'fixed' },
+    onFailure: 'stop',
+  });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Tab 切换
@@ -164,6 +173,12 @@ const AutomationPage: React.FC = () => {
     setFormScheduledAt('');
     setFormValidFrom('');
     setFormValidUntil('');
+    setFormTriggerType('schedule');
+    setFormExecutionPolicy({
+      timeoutMs: 30_000,
+      retry: { maxAttempts: 1, intervalMs: 5_000, backoff: 'fixed' },
+      onFailure: 'stop',
+    });
     setFormErrors({});
     setSelectedTemplateId(null);
     setDialogOpen(true);
@@ -187,6 +202,12 @@ const AutomationPage: React.FC = () => {
     }
     setFormValidFrom(auto.validFrom ? auto.validFrom.slice(0, 10) : '');
     setFormValidUntil(auto.validUntil ? auto.validUntil.slice(0, 10) : '');
+    setFormTriggerType(auto.triggerType || 'schedule');
+    setFormExecutionPolicy(auto.executionPolicy || {
+      timeoutMs: 30_000,
+      retry: { maxAttempts: 1, intervalMs: 5_000, backoff: 'fixed' },
+      onFailure: 'stop',
+    });
     setFormErrors({});
     setSelectedTemplateId(null);
     setDialogOpen(true);
@@ -263,6 +284,8 @@ const AutomationPage: React.FC = () => {
                   scheduledAt: formScheduleType === 'once' ? new Date(formScheduledAt).toISOString() : '',
                   validFrom: formValidFrom || undefined,
                   validUntil: formValidUntil || undefined,
+                  triggerType: formTriggerType,
+                  executionPolicy: formExecutionPolicy,
                   updatedAt: now,
                 }
               : a
@@ -285,6 +308,8 @@ const AutomationPage: React.FC = () => {
         taskConfig: formTaskConfig,
         validFrom: formValidFrom || undefined,
         validUntil: formValidUntil || undefined,
+        triggerType: formTriggerType,
+        executionPolicy: formExecutionPolicy,
         createdAt: now,
         updatedAt: now,
         lastRunAt: null,
@@ -583,6 +608,12 @@ const AutomationPage: React.FC = () => {
       case 'formErrors':
         setFormErrors(value);
         break;
+      case 'formTriggerType':
+        setFormTriggerType(value);
+        break;
+      case 'formExecutionPolicy':
+        setFormExecutionPolicy(value);
+        break;
       default:
         break;
     }
@@ -676,6 +707,8 @@ const AutomationPage: React.FC = () => {
         formScheduledAt={formScheduledAt}
         formValidFrom={formValidFrom}
         formValidUntil={formValidUntil}
+        formTriggerType={formTriggerType}
+        formExecutionPolicy={formExecutionPolicy}
         formErrors={formErrors}
         onFieldChange={handleFieldChange}
         onToggleWeekday={toggleWeekday}

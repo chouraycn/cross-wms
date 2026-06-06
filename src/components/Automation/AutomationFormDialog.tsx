@@ -33,12 +33,16 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 
-import type { TaskType, FreqType, TaskConfig, ActionType } from '../../services/automation';
+import type { TaskType, FreqType, TaskConfig, ActionType, TriggerType, ExecutionPolicy } from '../../services/automation';
 import {
   TASK_TYPE_COLORS,
   ACTION_CHAIN_OPTIONS,
   WEEKDAY_LABELS,
   WEEKDAY_ORDER,
+} from './sharedConstants';
+import {
+  TRIGGER_TYPE_LABELS,
+  TRIGGER_TYPE_ICONS,
 } from './sharedConstants';
 
 // ===================== Props =====================
@@ -58,6 +62,9 @@ export interface AutomationFormDialogProps {
   formScheduledAt: string;
   formValidFrom: string;
   formValidUntil: string;
+  // v2.0
+  formTriggerType: TriggerType;
+  formExecutionPolicy: ExecutionPolicy;
   formErrors: Record<string, string>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onFieldChange: (field: string, value: any) => void;
@@ -84,6 +91,8 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
   formScheduledAt,
   formValidFrom,
   formValidUntil,
+  formTriggerType,
+  formExecutionPolicy,
   formErrors,
   onFieldChange,
   onToggleWeekday,
@@ -278,6 +287,52 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
 
           <Divider />
 
+          {/* ===== v2.0: 触发方式选择 ===== */}
+          <Box>
+            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 500, mb: 1 }}>
+              触发方式
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {(Object.entries(TRIGGER_TYPE_LABELS) as [TriggerType, string][]).map(([key, label]) => (
+                <Chip
+                  key={key}
+                  icon={<Box sx={{ ml: 0.5, display: 'flex', alignItems: 'center' }}>{TRIGGER_TYPE_ICONS[key]}</Box>}
+                  label={label}
+                  onClick={() => onFieldChange('formTriggerType', key)}
+                  sx={{
+                    fontSize: '0.75rem',
+                    backgroundColor: formTriggerType === key ? '#111827' : '#F3F4F6',
+                    color: formTriggerType === key ? '#fff' : '#374151',
+                    '&:hover': { backgroundColor: formTriggerType === key ? '#374151' : '#E5E7EB' },
+                  }}
+                />
+              ))}
+            </Box>
+          </Box>
+
+          {/* v2.0: Webhook 配置提示 */}
+          {formTriggerType === 'webhook' && (
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: '8px',
+                backgroundColor: '#F0F7FF',
+                border: '1px solid #BFDBFE',
+              }}
+            >
+              <Typography sx={{ fontSize: '0.7rem', color: '#1D4ED8', fontWeight: 500, mb: 0.5 }}>
+                Webhook 触发
+              </Typography>
+              <Typography sx={{ fontSize: '0.65rem', color: '#3B82F6', lineHeight: 1.4 }}>
+                创建后将自动生成 Webhook URL，外部系统可通过 POST 请求触发此任务。
+                签名密钥在后端加密存储，可在自动化详情页管理。
+              </Typography>
+            </Box>
+          )}
+
+          {formTriggerType !== 'webhook' && (
+            <>
+
           {/* 调度类型 */}
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Chip
@@ -389,6 +444,67 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
               }}
             />
           )}
+          </>
+          )}
+
+          <Divider />
+
+          {/* ===== v2.0: 执行策略 ===== */}
+          <Box>
+            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 500, mb: 1 }}>
+              执行策略
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <TextField
+                label="超时（秒）"
+                type="number"
+                size="small"
+                value={Math.round(formExecutionPolicy.timeoutMs / 1000)}
+                onChange={(e) => {
+                  const secs = Math.max(5, Math.min(600, parseInt(e.target.value, 10) || 30));
+                  onFieldChange('formExecutionPolicy', { ...formExecutionPolicy, timeoutMs: secs * 1000 });
+                }}
+                inputProps={{ min: 5, max: 600, style: { fontSize: '0.8125rem', width: 60, textAlign: 'center' } }}
+                sx={{ flex: 1, '& .MuiInputLabel-root': { fontSize: '0.8125rem' } }}
+              />
+              <TextField
+                label="重试次数"
+                type="number"
+                size="small"
+                value={formExecutionPolicy.retry.maxAttempts}
+                onChange={(e) => {
+                  const n = Math.max(0, Math.min(5, parseInt(e.target.value, 10) || 0));
+                  onFieldChange('formExecutionPolicy', { ...formExecutionPolicy, retry: { ...formExecutionPolicy.retry, maxAttempts: n } });
+                }}
+                inputProps={{ min: 0, max: 5, style: { fontSize: '0.8125rem', width: 48, textAlign: 'center' } }}
+                sx={{ flex: 1, '& .MuiInputLabel-root': { fontSize: '0.8125rem' } }}
+              />
+              <TextField
+                label="重试间隔（秒）"
+                type="number"
+                size="small"
+                value={Math.round(formExecutionPolicy.retry.intervalMs / 1000)}
+                onChange={(e) => {
+                  const secs = Math.max(1, Math.min(300, parseInt(e.target.value, 10) || 5));
+                  onFieldChange('formExecutionPolicy', { ...formExecutionPolicy, retry: { ...formExecutionPolicy.retry, intervalMs: secs * 1000 } });
+                }}
+                inputProps={{ min: 1, max: 300, style: { fontSize: '0.8125rem', width: 60, textAlign: 'center' } }}
+                sx={{ flex: 1, '& .MuiInputLabel-root': { fontSize: '0.8125rem' } }}
+              />
+              <FormControl size="small" sx={{ minWidth: 80 }}>
+                <InputLabel sx={{ fontSize: '0.8125rem' }}>失败策略</InputLabel>
+                <Select
+                  value={formExecutionPolicy.onFailure}
+                  label="失败策略"
+                  onChange={(e) => onFieldChange('formExecutionPolicy', { ...formExecutionPolicy, onFailure: e.target.value as 'stop' | 'continue' })}
+                  sx={{ fontSize: '0.8125rem', borderRadius: '8px' }}
+                >
+                  <MenuItem value="stop">停止</MenuItem>
+                  <MenuItem value="continue">继续</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          </Box>
 
           <Divider />
 
