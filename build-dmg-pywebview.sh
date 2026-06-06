@@ -225,6 +225,7 @@ cat > package.json << 'PKGJSON'
   "dependencies": {
     "@tencent-ai/agent-sdk": "^0.3.43",
     "better-sqlite3": "^12.6.2",
+    "chokidar": "^4.3.0",
     "cors": "^2.8.5",
     "express": "^5.2.0",
     "uuid": "^9.0.0"
