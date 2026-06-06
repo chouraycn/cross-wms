@@ -10,6 +10,7 @@
 #   bash build-dmg-pywebview.sh --bump-major   # 构建前 bump major 版本（1.0.0 → 2.0.0）
 
 set -e
+set -o pipefail
 
 # 加载 ~/.zshrc 中的环境变量（如 GITHUB_TOKEN），确保非交互 shell 也能获取
 if [ -f "$HOME/.zshrc" ]; then
@@ -225,7 +226,7 @@ cat > package.json << 'PKGJSON'
   "dependencies": {
     "@tencent-ai/agent-sdk": "^0.3.43",
     "better-sqlite3": "^12.6.2",
-    "chokidar": "^4.3.0",
+    "chokidar": "^3.6.0",
     "cors": "^2.8.5",
     "express": "^5.2.0",
     "uuid": "^9.0.0"
