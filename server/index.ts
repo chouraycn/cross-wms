@@ -26,6 +26,9 @@ import { findByQuery, countByQuery } from './dao/inventoryTransactionDao.js';
 import { addClient, removeClient } from './services/chainExecutor.js';
 import { batchAuditSkills } from './services/securityAuditor.js';
 
+// Automation Engine v2.0
+import { startEngine, stopEngine } from './engine/engine.js';
+
 // MEMORY.md 路径
 const CROSSWMS_DIR = path.join(os.homedir(), '.crosswms');
 const MEMORY_MD_PATH = path.join(CROSSWMS_DIR, 'MEMORY.md');
@@ -366,6 +369,16 @@ const PORT = 3001;
 const server = app.listen(PORT, () => {
   console.log(`CrossWMS Chat Server running on port ${PORT}`);
   initDb();
+
+  // 启动自动化引擎 v2.0（30s 轮询）
+  const { stop } = startEngine(30_000);
+  // 绑定优雅关闭 — 在进程退出时停止引擎
+  const gracefulShutdown = () => {
+    console.log('[Server] 正在关闭自动化引擎...');
+    stop();
+  };
+  process.on('SIGTERM', gracefulShutdown);
+  process.on('SIGINT', gracefulShutdown);
 });
 
 // 异步批量审查预置技能（不阻塞启动，延迟 5 秒执行）
