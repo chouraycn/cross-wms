@@ -171,7 +171,9 @@ if command -v npx &>/dev/null; then
     --external:@tencent-ai/agent-sdk \
     --external:express \
     --external:cors \
-    --external:uuid
+    --external:uuid \
+    --external:chokidar \
+    --external:fsevents
   echo "✅ 后端编译完成 (index.cjs)"
 else
   echo "⚠️  esbuild 不可用，尝试手动复制..."
@@ -196,7 +198,9 @@ if [ -f "$AGENT_SERVER_SOURCE" ]; then
       --external:express \
       --external:cors \
       --external:uuid \
-      --external:better-sqlite3
+      --external:better-sqlite3 \
+      --external:chokidar \
+      --external:fsevents
     echo "✅ Agent Web 后端编译完成 (agent_index.cjs)"
   else
     echo "⚠️  esbuild 不可用，尝试手动复制..."
