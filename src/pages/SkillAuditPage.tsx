@@ -49,6 +49,7 @@ const SkillAuditPage: React.FC = () => {
 
   const handleRefresh = async () => {
     if (!skillId) return;
+    setLoading(true);
     try {
       const a = await api.triggerSkillAudit(skillId, '', true);
       setAudit(a);
@@ -57,6 +58,8 @@ const SkillAuditPage: React.FC = () => {
     } catch (e: any) {
       console.error('重新审查失败', e);
       setToast({ open: true, message: `重新审查失败: ${e?.message || e}`, severity: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -91,7 +94,7 @@ const SkillAuditPage: React.FC = () => {
     return (
       <Box sx={{ p: 4, textAlign: 'center' }}>
         <Typography variant="h6" color="text.secondary">暂无审查数据</Typography>
-        <Button variant="outlined" onClick={handleRefresh} sx={{ mt: 2 }} startIcon={<RefreshIcon />}>
+        <Button variant="outlined" onClick={handleRefresh} sx={{ mt: 2 }} startIcon={<RefreshIcon />} disabled={loading}>
           开始审查
         </Button>
       </Box>
@@ -131,7 +134,7 @@ const SkillAuditPage: React.FC = () => {
             </Typography>
           </Box>
           <Stack direction="row" spacing={1}>
-            <IconButton onClick={handleRefresh} title="重新审查"><RefreshIcon /></IconButton>
+            <IconButton onClick={handleRefresh} title="重新审查" disabled={loading}><RefreshIcon /></IconButton>
             <IconButton onClick={e => setExportAnchor(e.currentTarget)} title="导出"><DownloadIcon /></IconButton>
             <Menu anchorEl={exportAnchor} open={Boolean(exportAnchor)} onClose={() => setExportAnchor(null)}>
               <MenuItem onClick={() => handleExport('md')}>导出 Markdown</MenuItem>
