@@ -103,14 +103,37 @@ app.get('/api/chain-execution-events', (req, res) => {
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
     'Access-Control-Allow-Origin': '*',
+    'X-Accel-Buffering': 'no',  // Disable nginx buffering
   });
 
   const execId = req.query.execId as string | undefined;
   if (execId) {
     addClient(execId, res);
+
+    // Send initial connected event
+    res.write(`data: ${JSON.stringify({
+      type: 'connected',
+      executionId: execId,
+      timestamp: new Date().toISOString(),
+    })}\n\n`);
+  }
+
+  // Keepalive heartbeat: send a comment every 30s to keep connection alive
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': heartbeat\n\n');
+    } catch {
+      clearInterval(heartbeat);
+    }
+  }, 30000);
+
+  // Flush headers immediately
+  if (typeof res.flushHeaders === 'function') {
+    res.flushHeaders();
   }
 
   req.on('close', () => {
+    clearInterval(heartbeat);
     if (execId) {
       removeClient(execId, res);
     }
