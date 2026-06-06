@@ -15,6 +15,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import TuneIcon from '@mui/icons-material/Tune';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import ViewTimelineIcon from '@mui/icons-material/ViewTimeline';
+import ComputerIcon from '@mui/icons-material/Computer';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { isPyWebView } from '../../services/tencentDocsApi';
@@ -24,10 +25,11 @@ import MetricsControlTab from './tabs/MetricsControlTab';
 import VolumeDocTab from './tabs/VolumeDocTab';
 import ModelManagement from './tabs/ModelManagement';
 import AboutTab from './tabs/AboutTab';
+import TrafficLightOffsetSection from './tabs/TrafficLightOffsetSection';
 
 // ===================== Tab Definitions =====================
 
-type SettingsTab = 'tencentDocs' | 'dashboardParams' | 'metricsControl' | 'volumeDoc' | 'modelManagement' | 'about';
+type SettingsTab = 'tencentDocs' | 'dashboardParams' | 'metricsControl' | 'volumeDoc' | 'modelManagement' | 'dmgSettings' | 'about';
 
 interface TabItem {
   key: SettingsTab;
@@ -41,6 +43,7 @@ const TABS: TabItem[] = [
   { key: 'metricsControl', label: '指标控制', icon: <TuneIcon sx={{ fontSize: 20 }} /> },
   { key: 'volumeDoc', label: '容积率文档', icon: <ViewTimelineIcon sx={{ fontSize: 20 }} /> },
   { key: 'modelManagement', label: '模型管理', icon: <SmartToyIcon sx={{ fontSize: 20 }} /> },
+  { key: 'dmgSettings', label: 'DMG 设置', icon: <ComputerIcon sx={{ fontSize: 20 }} /> },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} /> },
 ];
 
@@ -186,6 +189,18 @@ const SettingsPanel: React.FC = () => {
         return <VolumeDocTab draft={draft} setDraft={setDraft} openInBrowser={openInBrowser} />;
       case 'modelManagement':
         return <ModelManagement draft={draft} setDraft={setDraft} />;
+      case 'dmgSettings':
+        return (
+          <Box sx={{ maxWidth: 680 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#111827' }}>
+              DMG 窗口设置
+            </Typography>
+            <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', mb: 3 }}>
+              配置桌面应用（DMG）的窗口行为，仅在使用 pywebview 桌面端时生效。
+            </Typography>
+            <TrafficLightOffsetSection />
+          </Box>
+        );
       case 'about':
         return <AboutTab draft={draft} setDraft={setDraft} errors={errors} setErrors={setErrors} />;
     }
