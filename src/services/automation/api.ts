@@ -14,7 +14,7 @@ import type {
   NotificationConfig,
 } from './types';
 
-const BASE_URL = '/api/automation';
+const BASE_URL = 'http://localhost:3001';
 
 /** 通用 fetch 封装 */
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -35,7 +35,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 /** 获取所有自动化 */
 export async function fetchAutomations(): Promise<Automation[]> {
-  const result = await request<{ data: Automation[]; total: number }>('');
+  const result = await request<{ data: Automation[]; total: number }>('/api/automation');
   return result.data;
 }
 
@@ -59,7 +59,7 @@ export async function createAutomationApi(data: {
   executionPolicy?: ExecutionPolicy | null;
   notificationConfig?: NotificationConfig | null;
 }): Promise<Automation> {
-  return request('', {
+  return request('/api/automation', {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -70,7 +70,7 @@ export async function updateAutomationApi(
   id: string,
   data: Partial<Automation>,
 ): Promise<Automation> {
-  return request(`/${encodeURIComponent(id)}`, {
+  return request(`/api/automation/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });
@@ -78,7 +78,7 @@ export async function updateAutomationApi(
 
 /** 删除自动化 */
 export async function deleteAutomationApi(id: string): Promise<void> {
-  await request(`/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await request(`/api/automation/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
 // ===================== Trigger =====================
@@ -93,7 +93,7 @@ export async function triggerAutomationApi(id: string): Promise<{
     data?: unknown;
   };
 }> {
-  return request(`/${encodeURIComponent(id)}/trigger`, { method: 'POST' });
+  return request(`/api/automation/${encodeURIComponent(id)}/trigger`, { method: 'POST' });
 }
 
 // ===================== Execution History =====================
@@ -108,7 +108,7 @@ export async function fetchExecutions(
   if (limit !== undefined) params.set('limit', String(limit));
   if (offset !== undefined) params.set('offset', String(offset));
   const qs = params.toString();
-  return request(`/${encodeURIComponent(id)}/executions${qs ? `?${qs}` : ''}`);
+  return request(`/api/automation/${encodeURIComponent(id)}/executions${qs ? `?${qs}` : ''}`);
 }
 
 // ===================== Webhook Config =====================
@@ -118,7 +118,7 @@ export async function fetchWebhookConfig(id: string): Promise<{
   enabled: boolean;
   hasSecret: boolean;
 }> {
-  return request(`/${encodeURIComponent(id)}/webhook-config`);
+  return request(`/api/automation/${encodeURIComponent(id)}/webhook-config`);
 }
 
 /** 更新 Webhook 密钥 */
@@ -143,7 +143,7 @@ export async function fetchAllExecutions(
   if (limit !== undefined) params.set('limit', String(limit));
   if (offset !== undefined) params.set('offset', String(offset));
   const qs = params.toString();
-  return request(`/executions${qs ? `?${qs}` : ''}`);
+  return request(`/api/automation/executions${qs ? `?${qs}` : ''}`);
 }
 
 // ===================== Events =====================
@@ -152,7 +152,7 @@ export async function fetchAllExecutions(
 export async function fetchAvailableEvents(): Promise<{
   events: Array<{ eventName: string; label: string }>;
 }> {
-  return request('/events/list');
+  return request('/api/automation/events/list');
 }
 
 /** 手动触发事件（调试用） */
@@ -160,7 +160,7 @@ export async function triggerEventApi(
   eventName: string,
   payload?: Record<string, unknown>,
 ): Promise<{ triggered: number; success: number; total: number }> {
-  return request('/events/trigger', {
+  return request('/api/automation/events/trigger', {
     method: 'POST',
     body: JSON.stringify({ eventName, payload }),
   });

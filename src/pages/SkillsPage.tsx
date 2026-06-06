@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, TextField, InputAdornment,
-  Button, Snackbar, Alert, Tabs, Tab,
+  Button, Snackbar, Alert,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SearchIcon from '@mui/icons-material/Search';
@@ -11,7 +11,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { loadAutomations, automationEngine } from '../services/automation';
 import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automation';
-import { getAllSkills, onSkillsChange, setSkillStatus, loadAllUsageStats, refreshFromRemote, getUsageStats } from '../stores/skillStore';
+import { getAllSkills, onSkillsChange, setSkillStatus, loadAllUsageStats, refreshFromRemote, getUsageStats, loadAuditStatuses, refreshAuditForSkill } from '../stores/skillStore';
 import type { Skill, SkillWatchEvent, UsageStats } from '../types/skill';
 import { CATEGORY_LABELS, CATEGORY_ORDER, CATEGORY_COLORS } from '../constants/skillCategories';
 import { findAllConflicts } from '../utils/skillConflict';
@@ -56,6 +56,15 @@ const SkillsPage: React.FC = () => {
     });
   }, []);
 
+  // 初始化时加载安全审查状态
+  useEffect(() => {
+    loadAuditStatuses().then(() => {
+      setSkillVersion((v) => v + 1);
+    }).catch((e) => {
+      console.error('[SkillsPage] loadAuditStatuses failed:', e);
+    });
+  }, []);
+
   // T03: SSE 连接
   const evtRef = useRef<EventSource | null>(null);
   useEffect(() => {
@@ -87,8 +96,7 @@ const SkillsPage: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'market' | 'installed'>('market');
-  const [pageTab, setPageTab] = useState<'skills' | 'chains'>('skills');
+  const [activeTab, setActiveTab] = useState<'market' | 'installed' | 'chains'>('market');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
 
   // ---- 技能链状态 ----
@@ -101,14 +109,14 @@ const SkillsPage: React.FC = () => {
 
   // ---- 技能链：加载 + 监听 ----
   useEffect(() => {
-    if (pageTab === 'chains') {
+    if (activeTab === 'chains') {
       chainStore.loadChains().then(() => {
         setChains(chainStore.getChains());
       }).catch((e) => {
         console.error('[SkillsPage] loadChains failed:', e);
       });
     }
-  }, [pageTab, chainVersion]);
+  }, [activeTab, chainVersion]);
 
   useEffect(() => {
     const unsubscribe = chainStore.subscribe(() => {
@@ -331,7 +339,7 @@ const SkillsPage: React.FC = () => {
         (skill.tags || []).some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (skill.trigger || '').toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory === 'all' || skill.category === selectedCategory;
-      const matchesTab = activeTab === 'market' || skill.source === 'user';
+      const matchesTab = activeTab === 'market' || (activeTab === 'installed' && skill.source === 'user');
       return matchesSearch && matchesCategory && matchesTab;
     });
   }, [searchQuery, selectedCategory, skills, activeTab]);
@@ -414,7 +422,14 @@ const SkillsPage: React.FC = () => {
         conflictCount={conflictInfo?.conflictCount}
         auditLevel={audit?.level ?? null}
         auditScore={audit?.score ?? null}
-        onAuditClick={() => navigate(`/skills/${skill.id}/audit`)}
+        onAuditClick={async () => {
+          try {
+            await refreshAuditForSkill(skill.id);
+            setToast({ open: true, msg: `「${skill.name}」安全审查已完成`, severity: 'success' });
+          } catch {
+            setToast({ open: true, msg: `「${skill.name}」安全审查失败`, severity: 'error' });
+          }
+        }}
       />
     );
   };
@@ -423,20 +438,6 @@ const SkillsPage: React.FC = () => {
 
   return (
     <Box className="page-fade-in" sx={{ px: 1 }}>
-      {/* 页面级 Tabs：技能 / 技能链 */}
-      <Box sx={{ borderBottom: '1px solid #E8E8E8', mb: 3 }}>
-        <Tabs
-          value={pageTab}
-          onChange={(_e, val) => setPageTab(val)}
-          sx={{ minHeight: 40, '& .MuiTab-root': { minHeight: 40, py: 0.75, textTransform: 'none', fontSize: '0.875rem' } }}
-        >
-          <Tab label="技能" value="skills" />
-          <Tab label="技能链" value="chains" />
-        </Tabs>
-      </Box>
-
-      {pageTab === 'skills' ? (
-        <>
       {/* Header: 标题 + 搜索 + 添加按钮 */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
         <Box>
@@ -444,7 +445,7 @@ const SkillsPage: React.FC = () => {
             技能
           </Typography>
           <Typography sx={{ fontSize: '0.8125rem', color: '#999' }}>
-            赋予 CrossWMS 更强大的能力
+            赋予 CDF Know 更强大的能力
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
@@ -516,27 +517,29 @@ const SkillsPage: React.FC = () => {
               </Box>
             )}
           </Box>
-          <Button
-            variant="outlined"
-            startIcon={<AddIcon sx={{ fontSize: 14 }} />}
-            onClick={() => setAddDialogOpen(true)}
-            sx={{
-              textTransform: 'none',
-              borderRadius: '8px',
-              fontSize: '0.8125rem',
-              py: 0.75,
-              px: 2,
-              borderColor: '#E0E0E0',
-              color: '#333',
-              '&:hover': { borderColor: '#D0D0D0', backgroundColor: '#F9F9F9' },
-            }}
-          >
-            添加技能
-          </Button>
+          {activeTab !== 'chains' && (
+            <Button
+              variant="outlined"
+              startIcon={<AddIcon sx={{ fontSize: 14 }} />}
+              onClick={() => setAddDialogOpen(true)}
+              sx={{
+                textTransform: 'none',
+                borderRadius: '8px',
+                fontSize: '0.8125rem',
+                py: 0.75,
+                px: 2,
+                borderColor: '#E0E0E0',
+                color: '#333',
+                '&:hover': { borderColor: '#D0D0D0', backgroundColor: '#F9F9F9' },
+              }}
+            >
+              添加技能
+            </Button>
+          )}
         </Box>
       </Box>
 
-      {/* Main Tabs: 全部技能 / 已安装 */}
+      {/* Main Tabs: 全部技能 / 已安装 / 技能链 */}
       <Box sx={{ display: 'flex', gap: 3, borderBottom: '1px solid #E8E8E8', mb: 3 }}>
         <Box
           onClick={() => setActiveTab('market')}
@@ -603,7 +606,88 @@ const SkillsPage: React.FC = () => {
             {stats.installed}
           </Box>
         </Box>
+        <Box
+          onClick={() => setActiveTab('chains')}
+          sx={{
+            py: 1.5,
+            fontSize: '0.875rem',
+            color: activeTab === 'chains' ? '#1A1A1A' : '#666',
+            cursor: 'pointer',
+            position: 'relative',
+            fontWeight: activeTab === 'chains' ? 500 : 400,
+            transition: 'color 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            '&:hover': { color: '#333' },
+            '&::after': activeTab === 'chains' ? {
+              content: '""',
+              position: 'absolute',
+              bottom: -1,
+              left: 0,
+              right: 0,
+              height: 2,
+              backgroundColor: '#1A1A1A',
+            } : {},
+          }}
+        >
+          技能链
+          <Box sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: 18,
+            height: 18,
+            px: 0.625,
+            backgroundColor: '#F0F0F0',
+            borderRadius: '9px',
+            fontSize: '0.6875rem',
+            color: '#666',
+          }}>
+            {chains.length}
+          </Box>
+        </Box>
       </Box>
+
+      {activeTab === 'chains' ? (
+        /* ========== 技能链视图 ========== */
+        <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 220px)' }}>
+          {/* 左侧：链列表 */}
+          <Box sx={{ width: 240, flexShrink: 0, borderRight: '1px solid #F0F0F0', pr: 2, overflow: 'auto' }}>
+            <ChainList
+              chains={chains}
+              selectedId={selectedChainId}
+              onSelect={handleSelectChain}
+              onCreate={handleCreateChain}
+            />
+          </Box>
+          {/* 右侧：链构建器 */}
+          <Box sx={{ flex: 1, overflow: 'auto', pr: 1 }}>
+            {editingChain ? (
+              <ChainBuilder
+                chain={editingChain}
+                onChange={setEditingChain}
+                onSave={handleSaveChain}
+                onExecute={handleExecuteChain}
+                onDelete={handleDeleteChain}
+                onDuplicate={handleDuplicateChain}
+              />
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 8 }}>
+                <AutoFixHighIcon sx={{ fontSize: 48, color: '#D1D5DB', mb: 2 }} />
+                <Typography sx={{ fontSize: '0.95rem', color: '#6B7280', mb: 0.5 }}>
+                  选择一个技能链或创建新的
+                </Typography>
+                <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
+                  技能链可以将多个技能串联执行，自动传递数据
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Box>
+      ) : (
+        /* ========== 技能卡片视图 ========== */
+        <>
 
       {/* 推荐区（仅在"全部技能"Tab下，且无搜索/分类过滤时显示） */}
       {activeTab === 'market' && searchQuery === '' && selectedCategory === 'all' && featuredSkills.length > 0 && (
@@ -730,44 +814,8 @@ const SkillsPage: React.FC = () => {
           setSkillVersion((v) => v + 1);
         }}
       />
-        </>
-      ) : (
-        /* ========== 技能链视图 ========== */
-        <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 180px)' }}>
-          {/* 左侧：链列表 */}
-          <Box sx={{ width: 240, flexShrink: 0, borderRight: '1px solid #F0F0F0', pr: 2, overflow: 'auto' }}>
-            <ChainList
-              chains={chains}
-              selectedId={selectedChainId}
-              onSelect={handleSelectChain}
-              onCreate={handleCreateChain}
-            />
-          </Box>
-          {/* 右侧：链构建器 */}
-          <Box sx={{ flex: 1, overflow: 'auto', pr: 1 }}>
-            {editingChain ? (
-              <ChainBuilder
-                chain={editingChain}
-                onChange={setEditingChain}
-                onSave={handleSaveChain}
-                onExecute={handleExecuteChain}
-                onDelete={handleDeleteChain}
-                onDuplicate={handleDuplicateChain}
-              />
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 8 }}>
-                <AutoFixHighIcon sx={{ fontSize: 48, color: '#D1D5DB', mb: 2 }} />
-                <Typography sx={{ fontSize: '0.95rem', color: '#6B7280', mb: 0.5 }}>
-                  选择一个技能链或创建新的
-                </Typography>
-                <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
-                  技能链可以将多个技能串联执行，自动传递数据
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      )}
+      </>
+    )}
 
       {/* 执行进度面板 */}
       {editingChain && (

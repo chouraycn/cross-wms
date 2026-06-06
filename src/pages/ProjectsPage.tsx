@@ -57,7 +57,7 @@ const FIXED_REPOS: FixedRepo[] = [
     name: '仓库管理',
     description: '跨境仓库数据管理，包含仓库、在途、库存、报表',
     icon: <WarehouseOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />,
-    path: '/warehouses',
+    path: '/dashboard',
     progress: undefined,
     meta: '仪表盘 · 仓库列表 · 在途跟踪 · 库存查询',
   },
@@ -152,9 +152,8 @@ const ProjectsPage: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          py: '60px 0 50px',
-          pt: 1.5,
-          pb: 5,
+          pt: '60px',
+          pb: '50px',
         }}
       >
         <Box>
@@ -185,35 +184,79 @@ const ProjectsPage: React.FC = () => {
           </Button>
         </Box>
 
-        {/* Hero Illustration */}
+        {/* Hero Illustration — 高度还原 projects.html */}
         <Box sx={{ width: 360, height: 240, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
           <svg viewBox="0 0 360 240" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-            <rect x="20" y="140" width="80" height="4" rx="2" fill="#1a1a1a" opacity="0.7" />
-            <rect x="28" y="144" width="4" height="40" rx="1" fill="#1a1a1a" opacity="0.7" />
-            <rect x="88" y="144" width="4" height="40" rx="1" fill="#1a1a1a" opacity="0.7" />
-            <rect x="35" y="120" width="50" height="20" rx="2" stroke="#1a1a1a" strokeWidth="1.5" fill="none" opacity="0.6" />
-            <rect x="40" y="124" width="40" height="12" rx="1" fill="#f0f0f0" opacity="0.5" />
-            <circle cx="60" cy="90" r="16" stroke="#1a1a1a" strokeWidth="1.5" fill="none" opacity="0.6" />
-            <path d="M40 130 Q40 110 60 110 Q80 110 80 130" stroke="#1a1a1a" strokeWidth="1.5" fill="none" opacity="0.6" />
+            {/* Desk 1 (left) */}
+            <rect x="20" y="140" width="80" height="4" rx="2" fill="#1a1a1a"/>
+            <rect x="28" y="144" width="4" height="40" rx="1" fill="#1a1a1a"/>
+            <rect x="88" y="144" width="4" height="40" rx="1" fill="#1a1a1a"/>
+            {/* Laptop 1 */}
+            <rect x="35" y="120" width="50" height="20" rx="2" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+            <rect x="40" y="124" width="40" height="12" rx="1" fill="#f0f0f0"/>
+            {/* Person 1 */}
+            <circle cx="60" cy="90" r="16" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+            <path d="M40 130 Q40 110 60 110 Q80 110 80 130" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+            {/* Coffee cup */}
+            <rect x="78" y="128" width="10" height="12" rx="2" stroke="#1a1a1a" strokeWidth="1" fill="none"/>
+            <path d="M88 132 Q94 132 94 137 Q94 142 88 142" stroke="#1a1a1a" strokeWidth="1" fill="none"/>
 
-            <rect x="140" y="140" width="80" height="4" rx="2" fill="#1a1a1a" opacity="0.7" />
-            <rect x="155" y="120" width="50" height="20" rx="2" stroke="#1a1a1a" strokeWidth="1.5" fill="none" opacity="0.6" />
-            <rect x="160" y="124" width="40" height="12" rx="1" fill="#f0f0f0" opacity="0.5" />
-            <rect x="168" y="72" width="24" height="28" rx="6" stroke="#1a1a1a" strokeWidth="1.5" fill="none" opacity="0.6" />
-            <circle cx="175" cy="84" r="3" fill="#2dd4a8" opacity="0.7" />
-            <circle cx="185" cy="84" r="3" fill="#2dd4a8" opacity="0.7" />
-            <rect x="164" y="76" width="4" height="8" rx="2" fill="#1a1a1a" opacity="0.6" />
-            <rect x="192" y="76" width="4" height="8" rx="2" fill="#1a1a1a" opacity="0.6" />
+            {/* Desk 2 (center) */}
+            <rect x="140" y="140" width="80" height="4" rx="2" fill="#1a1a1a"/>
+            <rect x="148" y="144" width="4" height="40" rx="1" fill="#1a1a1a"/>
+            <rect x="208" y="144" width="4" height="40" rx="1" fill="#1a1a1a"/>
+            {/* Laptop 2 */}
+            <rect x="155" y="120" width="50" height="20" rx="2" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+            <rect x="160" y="124" width="40" height="12" rx="1" fill="#f0f0f0"/>
+            {/* Robot/AI character */}
+            <rect x="168" y="72" width="24" height="28" rx="6" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+            {/* Robot eyes (teal glow) */}
+            <circle cx="175" cy="84" r="3" fill="#2dd4a8"/>
+            <circle cx="185" cy="84" r="3" fill="#2dd4a8"/>
+            {/* Headphones */}
+            <path d="M166 78 Q168 66 180 66 Q192 66 194 78" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+            <rect x="164" y="76" width="4" height="8" rx="2" fill="#1a1a1a"/>
+            <rect x="192" y="76" width="4" height="8" rx="2" fill="#1a1a1a"/>
+            {/* Robot body */}
+            <path d="M160 130 Q160 108 180 108 Q200 108 200 130" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+            {/* Antenna */}
+            <line x1="180" y1="72" x2="180" y2="64" stroke="#1a1a1a" strokeWidth="1.5"/>
+            <circle cx="180" cy="62" r="3" fill="#2dd4a8"/>
 
-            <rect x="260" y="140" width="80" height="4" rx="2" fill="#1a1a1a" opacity="0.7" />
-            <rect x="275" y="120" width="50" height="20" rx="2" stroke="#1a1a1a" strokeWidth="1.5" fill="none" opacity="0.6" />
-            <rect x="280" y="124" width="40" height="12" rx="1" fill="#f0f0f0" opacity="0.5" />
-            <circle cx="300" cy="90" r="16" stroke="#1a1a1a" strokeWidth="1.5" fill="none" opacity="0.6" />
-            <path d="M280 130 Q280 110 300 110 Q320 110 320 130" stroke="#1a1a1a" strokeWidth="1.5" fill="none" opacity="0.6" />
+            {/* Desk 3 (right) */}
+            <rect x="260" y="140" width="80" height="4" rx="2" fill="#1a1a1a"/>
+            <rect x="268" y="144" width="4" height="40" rx="1" fill="#1a1a1a"/>
+            <rect x="328" y="144" width="4" height="40" rx="1" fill="#1a1a1a"/>
+            {/* Laptop 3 */}
+            <rect x="275" y="120" width="50" height="20" rx="2" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+            <rect x="280" y="124" width="40" height="12" rx="1" fill="#f0f0f0"/>
+            {/* Person 3 */}
+            <circle cx="300" cy="90" r="16" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+            <path d="M280 130 Q280 110 300 110 Q320 110 320 130" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
 
-            <rect x="230" y="40" width="26" height="30" rx="4" fill="none" stroke="#1a1a1a" strokeWidth="1" opacity="0.5" />
-            <line x1="236" y1="50" x2="250" y2="50" stroke="#1a1a1a" strokeWidth="1" opacity="0.5" />
-            <line x1="236" y1="55" x2="248" y2="55" stroke="#1a1a1a" strokeWidth="1" opacity="0.5" />
+            {/* Floating elements */}
+            {/* Checkmark bubble */}
+            <rect x="100" y="50" width="30" height="24" rx="6" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
+            <path d="M110 62 L114 66 L120 58" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+
+            {/* Document bubble */}
+            <rect x="230" y="40" width="26" height="30" rx="4" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
+            <line x1="236" y1="50" x2="250" y2="50" stroke="#1a1a1a" strokeWidth="1"/>
+            <line x1="236" y1="55" x2="248" y2="55" stroke="#1a1a1a" strokeWidth="1"/>
+            <line x1="236" y1="60" x2="245" y2="60" stroke="#1a1a1a" strokeWidth="1"/>
+
+            {/* Folder bubble */}
+            <rect x="130" y="30" width="28" height="22" rx="4" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
+            <path d="M134 34 L134 48 L154 48 L154 37 L146 37 L144 34 Z" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
+
+            {/* Image bubble */}
+            <rect x="200" y="55" width="24" height="20" rx="3" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
+            <circle cx="208" cy="63" r="3" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
+            <path d="M200 72 L208 66 L216 72" stroke="#1a1a1a" strokeWidth="1" fill="none"/>
+
+            {/* Person 4 (small, back) */}
+            <circle cx="130" cy="82" r="10" stroke="#e0e0e0" strokeWidth="1" fill="none"/>
+            <path d="M118 108 Q118 96 130 96 Q142 96 142 108" stroke="#e0e0e0" strokeWidth="1" fill="none"/>
           </svg>
         </Box>
       </Box>
