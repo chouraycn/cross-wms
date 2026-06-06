@@ -3,6 +3,7 @@
  * chokidar 监听 ~/.workbuddy/skills/ 下 SKILL.md 变化，通过 SSE 广播给前端
  */
 
+import crypto from 'crypto';
 import chokidar from 'chokidar';
 import type { Response } from 'express';
 import path from 'path';
@@ -12,8 +13,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { scanWorkbuddySkills } from '../routes/skills.js';
 import { auditSkillMd, generateMarkdownReport } from './securityAuditor.js';
 import { initDb, createSkillAudit } from '../db.js';
-
-const crypto = require('crypto');
 
 // ===================== Types =====================
 

@@ -6,13 +6,12 @@
  * network requests, and dependency risks. Generates scored reports.
  */
 
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { initDb, createSkillAudit } from '../db';
-
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
 
 // ===================== Types =====================
 
