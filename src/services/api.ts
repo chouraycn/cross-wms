@@ -4,7 +4,7 @@
  */
 
 import type { Warehouse, InventoryItem, TransitOrder, InboundRecord, OutboundRecord, InventoryTransaction } from '../types';
-import type { Skill } from '../types/skill';
+import type { Skill, UsageStats, ConflictResult } from '../types/skill';
 import type { AppSettings } from '../contexts/AppSettingsContext';
 
 const BASE_URL = 'http://localhost:3001';
@@ -286,4 +286,112 @@ export async function getInventoryTransactions(params?: {
   const json = await res.json();
   if (json.code !== 0) throw new Error(json.message || '查询变动历史失败');
   return json.data as { items: InventoryTransaction[]; total: number; page: number; pageSize: number };
+}
+
+// ===================== Skill Usage Statistics API =====================
+
+/** 获取技能使用统计 */
+export async function fetchSkillUsageStats(skillId?: string): Promise<Record<string, UsageStats>> {
+  const query = skillId ? `?skillId=${encodeURIComponent(skillId)}` : '';
+  return request<Record<string, UsageStats>>('GET', `/api/skill-usage-stats${query}`);
+}
+
+// ===================== Skill Conflict Check API =====================
+
+/** 技能冲突检查结果 */
+export interface SkillConflictCheckResponse {
+  conflicts: ConflictResult[];
+  isHighRisk: boolean;
+}
+
+/** 检查技能冲突 */
+export async function fetchSkillConflictCheck(
+  name: string,
+  trigger?: string,
+  tags?: string[]
+): Promise<SkillConflictCheckResponse> {
+  return request<SkillConflictCheckResponse>('POST', '/api/skill-conflict-check', { name, trigger, tags });
+}
+
+// ===================== Skill Events SSE API =====================
+
+/** 连接技能事件 SSE 流 */
+export function connectSkillEvents(): EventSource {
+  return new EventSource(`${BASE_URL}/api/skill-events`);
+}
+
+// ===================== Skill Chain API =====================
+
+import type {
+  SkillChain,
+  SkillChainNode,
+  SkillChainExecution,
+  SkillAudit,
+} from '../types/skill';
+
+/** 获取所有技能链 */
+export async function fetchSkillChains(): Promise<SkillChain[]> {
+  return request<SkillChain[]>('GET', '/api/chains');
+}
+
+/** 获取单个技能链详情 */
+export async function fetchSkillChain(id: string): Promise<SkillChain> {
+  return request<SkillChain>('GET', `/api/chains/${encodeURIComponent(id)}`);
+}
+
+/** 创建技能链 */
+export async function createSkillChain(data: Omit<SkillChain, 'id' | 'createdAt' | 'updatedAt'>): Promise<SkillChain> {
+  return request<SkillChain>('POST', '/api/chains', data);
+}
+
+/** 更新技能链 */
+export async function updateSkillChain(id: string, data: Partial<SkillChain>): Promise<SkillChain> {
+  return request<SkillChain>('PUT', `/api/chains/${encodeURIComponent(id)}`, data);
+}
+
+/** 删除技能链 */
+export async function deleteSkillChain(id: string): Promise<void> {
+  await request<void>('DELETE', `/api/chains/${encodeURIComponent(id)}`);
+}
+
+/** 执行技能链 */
+export async function executeSkillChain(id: string): Promise<{ executionId: string }> {
+  return request<{ executionId: string }>('POST', `/api/chains/${encodeURIComponent(id)}/execute`);
+}
+
+/** 复制技能链 */
+export async function duplicateSkillChain(id: string): Promise<SkillChain> {
+  return request<SkillChain>('POST', `/api/chains/${encodeURIComponent(id)}/duplicate`);
+}
+
+/** 连接链执行事件流 */
+export function connectChainExecutionEvents(): EventSource {
+  return new EventSource(`${BASE_URL}/api/chain-events`);
+}
+
+// ===================== 安全审查 API =====================
+
+/** 获取技能最新审计结果 */
+export async function fetchSkillAudit(skillId: string): Promise<SkillAudit | null> {
+  return request<SkillAudit | null>('GET', `/api/skills/${encodeURIComponent(skillId)}/audit`);
+}
+
+/** 获取技能审计历史 */
+export async function fetchSkillAuditHistory(skillId: string): Promise<SkillAudit[]> {
+  return request<SkillAudit[]>('GET', `/api/skills/${encodeURIComponent(skillId)}/audit-history`);
+}
+
+/** 触发技能安全审计 */
+export async function triggerSkillAudit(skillId: string, _skillPath: string, _force?: boolean): Promise<SkillAudit> {
+  return request<SkillAudit>('POST', '/api/skills/audit', { skillId });
+}
+
+/** 导出审计报告（返回文件下载 URL） */
+export async function exportSkillAuditReport(skillId: string, format: 'md' | 'pdf'): Promise<string> {
+  return request<string>('POST', `/api/skills/${encodeURIComponent(skillId)}/audit-export`, { format });
+}
+
+/** 批量审计技能 */
+export async function batchAuditSkills(skillIds: string[]): Promise<{ queued: number }> {
+  return request<{ queued: number }>('POST', '/api/skills/audits/batch', { skillIds });
 }

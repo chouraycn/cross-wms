@@ -5,6 +5,10 @@ import { Message, Session } from '../types/chat';
 export interface SendMessageOptions {
   /** 技能上下文：注入到 AI 对话的 prompt 模板 */
   skillContext?: string;
+  /** 技能 ID：发送到后端用于统计与追踪 */
+  skillId?: string;
+  /** 引用的会话 ID 列表：用于关联历史对话 */
+  referencedSessionIds?: string[];
 }
 
 export function useChat(currentSession: Session | undefined, onSessionUpdate: (session: Session) => void) {
@@ -35,6 +39,14 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       // 如果有技能上下文，传递给后端
       if (options?.skillContext) {
         body.skillContext = options.skillContext;
+      }
+      // 如果有技能 ID，传递给后端
+      if (options?.skillId) {
+        body.skillId = options.skillId;
+      }
+      // 如果有引用的会话 ID，传递给后端
+      if (options?.referencedSessionIds && options.referencedSessionIds.length > 0) {
+        body.referencedSessionIds = options.referencedSessionIds;
       }
 
       const res = await fetch('http://localhost:3001/api/chat', {

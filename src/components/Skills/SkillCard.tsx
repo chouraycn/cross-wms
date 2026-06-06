@@ -9,9 +9,10 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import { ICON_MAP } from '../../types/skill';
-import type { Skill } from '../../types/skill';
+import type { Skill, AuditLevel, UsageStats } from '../../types/skill';
 import { ICON_GRADIENTS } from '../../constants/skillCategories';
 import type { TaskType, AutomationExecution } from '../../services/automation';
+import SecurityBadge from './SecurityBadge';
 
 // ===================== 类型 =====================
 
@@ -24,6 +25,18 @@ export interface SkillCardProps {
   onNavigate: (skillId: string) => void;
   onTrigger: (skill: Skill, e: React.MouseEvent) => void;
   onActivate: (id: string, e: React.MouseEvent) => void;
+  /** T03: 使用统计信息 */
+  usageStats?: UsageStats;
+  /** T04: 是否存在冲突 */
+  hasConflict?: boolean;
+  /** T04: 冲突数量（用于 Tooltip 显示） */
+  conflictCount?: number;
+  /** T03: 安全审查等级 */
+  auditLevel?: AuditLevel | null;
+  /** T03: 安全审查评分 */
+  auditScore?: number | null;
+  /** T03: 点击安全徽章的回调 */
+  onAuditClick?: () => void;
 }
 
 // ===================== 最近执行状态 =====================
@@ -49,6 +62,14 @@ const renderLatestExec = (exec: AutomationExecution | null) => {
   );
 };
 
+/** 计算距今天数 */
+function daysAgo(dateStr: string | null): number {
+  if (!dateStr) return Infinity;
+  const d = new Date(dateStr);
+  const now = Date.now();
+  return Math.floor((now - d.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 // ===================== 技能卡片组件 =====================
 
 const SkillCard: React.FC<SkillCardProps> = ({
@@ -60,6 +81,12 @@ const SkillCard: React.FC<SkillCardProps> = ({
   onNavigate,
   onTrigger,
   onActivate,
+  usageStats,
+  hasConflict,
+  conflictCount,
+  auditLevel,
+  auditScore,
+  onAuditClick,
 }) => {
   const hasAutomation = !!automationInfo;
 
@@ -68,6 +95,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
       elevation={0}
       onClick={() => onNavigate(skill.id)}
       sx={{
+        position: 'relative',
         display: 'flex',
         alignItems: 'flex-start',
         p: 2,
@@ -80,6 +108,39 @@ const SkillCard: React.FC<SkillCardProps> = ({
         },
       }}
     >
+      {/* T04: 冲突徽章（右上角） — Tooltip 显示冲突数量 */}
+      {hasConflict && (
+        <Tooltip title={`与 ${conflictCount ?? ''} 个技能存在冲突`} arrow placement="top">
+          <Chip
+            label="冲突"
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              height: 18,
+              fontSize: '0.55rem',
+              fontWeight: 500,
+              backgroundColor: '#FEF3C7',
+              color: '#EA580C',
+              zIndex: 2,
+              cursor: 'default',
+            }}
+          />
+        </Tooltip>
+      )}
+
+      {/* T03: 安全审查徽章（右上角，无冲突时显示） */}
+      {!hasConflict && (
+        <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 2 }}>
+          <SecurityBadge
+            level={auditLevel}
+            score={auditScore}
+            onClick={onAuditClick}
+          />
+        </Box>
+      )}
+
       {/* 图标区 */}
       <Box sx={{
         width: 44,
@@ -160,6 +221,33 @@ const SkillCard: React.FC<SkillCardProps> = ({
         }}>
           {skill.desc}
         </Typography>
+
+        {/* T03: 使用统计信息 */}
+        {usageStats && usageStats.totalUses > 0 ? (
+          <Typography
+            sx={{
+              fontSize: '0.7rem',
+              color: 'text.secondary',
+              mt: 0.25,
+            }}
+          >
+            使用 {usageStats.totalUses} 次
+            {usageStats.lastUsedAt && daysAgo(usageStats.lastUsedAt) < Infinity
+              ? ` · ${daysAgo(usageStats.lastUsedAt)}天前`
+              : ''}
+          </Typography>
+        ) : (
+          <Typography
+            sx={{
+              fontSize: '0.7rem',
+              color: '#CCC',
+              mt: 0.25,
+            }}
+          >
+            尚未使用
+          </Typography>
+        )}
+
         {renderLatestExec(latestExec)}
       </Box>
 

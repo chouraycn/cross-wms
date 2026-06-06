@@ -2,11 +2,11 @@
  * 技能详情页 — 每个技能的独立详情展示
  * 路由: /skills/:skillId
  */
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Box, Typography, Chip, Button, Alert, Dialog, DialogTitle, DialogContent, DialogActions,
-  Breadcrumbs, Link,
+  Breadcrumbs, Link, Snackbar,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -20,8 +20,9 @@ import { getAllSkills, removeSkill, setSkillStatus, onSkillsChange } from '../st
 import { loadAutomations, automationEngine } from '../services/automation';
 import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automation';
 import { ICON_MAP } from '../types/skill';
-import type { Skill } from '../types/skill';
+import type { Skill, SkillWatchEvent } from '../types/skill';
 import { CATEGORY_LABELS, CATEGORY_COLORS, ICON_GRADIENTS } from '../constants/skillCategories';
+import * as api from '../services/api';
 import SkillInfoCards from '../components/Skills/SkillInfoCards';
 import EditSkillDialog from '../components/Skills/EditSkillDialog';
 
@@ -122,6 +123,49 @@ const SkillDetailPage: React.FC = () => {
 
     return unsubscribe;
   }, [skill?.automationTaskType]);
+
+  // T03: SSE 连接 — 监听技能变更事件
+  const evtRef = useRef<EventSource | null>(null);
+  useEffect(() => {
+    evtRef.current = api.connectSkillEvents();
+    const es = evtRef.current;
+
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const data: SkillWatchEvent = JSON.parse(event.data);
+        console.log('[SkillDetailPage] SSE event:', data);
+
+        // 检查当前技能是否受影响
+        if (!skill) return;
+
+        // skill-changed → 显示更新 Toast
+        if (data.type === 'skill-changed') {
+          // 通过名称匹配（skill.name 对应 SSH 事件中的 name）
+          if (skill.name === data.name) {
+            setToast({ open: true, msg: `「${skill.name}」已更新`, severity: 'info' });
+            setSkillVersion((v) => v + 1);
+          }
+        }
+
+        // skill-removed → 跳转回列表
+        if (data.type === 'skill-removed') {
+          if (skill.name === data.name) {
+            setToast({ open: true, msg: `「${skill.name}」已被删除`, severity: 'error' });
+            setTimeout(() => navigate('/skills'), 300);
+          }
+        }
+      } catch (e) {
+        console.error('[SkillDetailPage] SSE parse error:', e);
+      }
+    };
+
+    es.addEventListener('message', handleMessage);
+
+    return () => {
+      es.removeEventListener('message', handleMessage);
+      es.close();
+    };
+  }, [skill?.name]);
 
   const refreshLatestExec = useCallback(() => {
     if (!skill?.automationTaskType) return;
@@ -503,23 +547,20 @@ const SkillDetailPage: React.FC = () => {
       />
 
       {/* Toast */}
-      <Alert
-        sx={{
-          display: toast.open ? 'flex' : 'none',
-          position: 'fixed',
-          bottom: 24,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 9999,
-          fontSize: '0.8rem',
-          borderRadius: 2,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        }}
-        severity={toast.severity}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={3000}
         onClose={() => setToast((t) => ({ ...t, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        {toast.msg}
-      </Alert>
+        <Alert
+          onClose={() => setToast((t) => ({ ...t, open: false }))}
+          severity={toast.severity}
+          sx={{ fontSize: '0.8rem', borderRadius: 2 }}
+        >
+          {toast.msg}
+        </Alert>
+      </Snackbar>
 
       {/* 删除确认对话框 */}
       <Dialog

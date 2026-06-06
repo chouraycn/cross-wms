@@ -38,6 +38,52 @@ export type SkillExecutionMode =
   | 'automation'  /** 触发关联的自动化任务 */
   | 'hybrid';     /** chat + navigate/automation 组合 */
 
+/** 技能分类 */
+export type SkillCategory =
+  | 'core'          /** 核心功能 */
+  | 'data'          /** 数据管理 */
+  | 'auto'          /** 自动化 */
+  | 'tool'          /** 工具 */
+  | 'communication' /** 通讯协作 */
+  | 'document'      /** 文档处理 */
+  | 'design'        /** 设计创作 */
+  | 'development'   /** 开发工具 */
+  | 'media'         /** 媒体处理 */
+  | 'finance'       /** 财务分析 */
+  | 'productivity'  /** 效率提升 */
+  | 'ai-agent'      /** AI 智能体 */
+  | string;         /** 允许自定义分类 */
+
+/** 技能使用统计 */
+export interface UsageStats {
+  totalUses: number;
+  lastUsedAt: string | null;
+}
+
+/** 冲突检测结果 */
+export interface ConflictResult {
+  skillId: string;
+  skillName: string;
+  score: number;
+  reasons: string[];
+}
+
+/** 技能监听事件 */
+export interface SkillWatchEvent {
+  type: 'skill-added' | 'skill-changed' | 'skill-removed';
+  dirName: string;
+  name: string;
+  timestamp: number;
+}
+
+/** 技能建议项 */
+export interface SkillSuggestionItem {
+  id: string;
+  name: string;
+  matchScore: number;
+  reason: string;
+}
+
 /** 统一技能类型 */
 export interface Skill {
   id: string;
@@ -45,7 +91,9 @@ export interface Skill {
   desc: string;
   /** Material Icon 名称（如 'Dashboard', 'Warehouse' 等） */
   icon: string;
-  category: 'core' | 'data' | 'auto' | 'tool';
+  category: SkillCategory;
+  /** 子分类（可选） */
+  subCategory?: string;
   path: string;
   /** 一句话说明触发/使用方式 */
   trigger?: string;
@@ -71,6 +119,8 @@ export interface Skill {
   executionMode?: SkillExecutionMode;
   /** AI 上下文模板：选择此技能后发送消息时，自动在用户消息前注入此 prompt 作为系统上下文 */
   promptTemplate?: string;
+  /** 使用统计（可选） */
+  usageStats?: UsageStats;
 }
 
 // ===================== 图标映射 =====================
@@ -387,3 +437,102 @@ export const BUILTIN_SKILLS: Skill[] = [
     promptTemplate: '你是 CrossWMS 快捷指令助手。用户通过 "/" 前缀触发指令，你需要帮助用户：1）解释可用的快捷指令及其功能；2）执行指令对应的操作（如 /sync 同步数据、/report 生成报表、/alert 查看预警）；3）创建自定义快捷指令；4）批量执行组合指令。可用指令：/sync（数据同步）、/report（报表生成）、/alert（预警查看）、/snapshot（库存快照）、/dashboard（仪表盘）、/warehouse（仓库管理）、/inventory（库存查看）、/transit（在途查询）。',
   },
 ];
+
+// ===================== 技能链类型 =====================
+
+/** 失败策略 */
+export type FailStrategy = 'stop' | 'skip';
+
+/** 数据传递模式 */
+export type DataPassMode = 'full' | 'fields' | 'custom';
+
+/** 安全等级 */
+export type AuditLevel = 'safe' | 'suspicious' | 'malicious';
+
+/** 审计触发方式 */
+export type AuditTrigger = 'import' | 'manual' | 'hot-reload';
+
+/** 执行状态 */
+export type ExecutionStatus = 'running' | 'success' | 'failed' | 'aborted';
+
+/** 步骤状态 */
+export type StepStatus = 'pending' | 'running' | 'success' | 'failed' | 'skipped';
+
+/** 技能链节点 */
+export interface SkillChainNode {
+  id: string;
+  skillId: string;
+  skillName: string;
+  skillIcon: string;
+  dataPassMode: DataPassMode;
+  selectedFields?: string[];
+  customMapping?: Record<string, string>;
+  timeout: number;
+  retryCount: number;
+  order: number;
+}
+
+/** 技能链 */
+export interface SkillChain {
+  id: string;
+  name: string;
+  description: string;
+  nodes: SkillChainNode[];
+  failStrategy: FailStrategy;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 链执行步骤 */
+export interface ChainExecutionStep {
+  nodeId: string;
+  skillId: string;
+  skillName: string;
+  status: StepStatus;
+  input?: unknown;
+  output?: unknown;
+  duration?: number;
+  error?: string;
+}
+
+/** 技能链执行记录 */
+export interface SkillChainExecution {
+  id: string;
+  chainId: string;
+  status: ExecutionStatus;
+  failStrategy: FailStrategy;
+  steps: ChainExecutionStep[];
+  startedAt: string;
+  completedAt?: string;
+  duration?: number;
+}
+
+/** 技能审计记录 */
+export interface SkillAudit {
+  id: string;
+  skillId: string;
+  skillVersion: string;
+  score: number;
+  level: AuditLevel;
+  reportJson: string;
+  reportMarkdown: string;
+  triggeredBy: AuditTrigger;
+  createdAt: string;
+}
+
+/** 审计发现项 */
+export interface AuditFinding {
+  severity: 'malicious' | 'suspicious' | 'informational';
+  type: string;
+  description: string;
+  location?: string;
+  pattern?: string;
+}
+
+// ===================== Skill 接口扩展 =====================
+
+/** 安全等级（可选字段，扩展自 Skill 接口） */
+export interface SkillWithAudit extends Skill {
+  auditLevel?: AuditLevel | null;
+  auditScore?: number | null;
+}

@@ -7,9 +7,10 @@
  * - 写操作调用 API → 成功后更新缓存 → notifyAll()
  * - 新增 initFromApi()，应用启动时调用
  * - updateRecentSkills 仍使用 localStorage（P1 范围，不在 SQLite 迁移中）
+ * - T02: 新增 usageStatsCache、loadAllUsageStats、refreshFromRemote
  */
 
-import type { Skill } from '../types/skill';
+import type { Skill, SkillAudit, UsageStats } from '../types/skill';
 import { BUILTIN_SKILLS } from '../types/skill';
 import * as api from '../services/api';
 
@@ -17,6 +18,12 @@ import * as api from '../services/api';
 
 let userSkills: Skill[] = [];
 let builtinStatusPatches: Record<string, string> = {};
+
+/** 使用统计缓存：key 为 skill.id */
+const usageStatsCache = new Map<string, UsageStats>();
+
+/** 安全审查状态缓存：key 为 skill.id */
+const auditStatusCache = new Map<string, SkillAudit>();
 
 // 事件总线：技能变更监听
 type SkillsChangeListener = () => void;
@@ -47,6 +54,41 @@ export function getAllSkills(): Skill[] {
 /** 根据 ID 获取单个技能 */
 export function getSkillById(id: string): Skill | undefined {
   return getAllSkills().find((s) => s.id === id);
+}
+
+/** 获取技能使用统计（同步读缓存） */
+export function getUsageStats(id: string): UsageStats | undefined {
+  return usageStatsCache.get(id);
+}
+
+/** 批量加载所有技能使用统计，写入缓存 */
+export async function loadAllUsageStats(): Promise<void> {
+  try {
+    const statsMap = await api.fetchSkillUsageStats();
+    usageStatsCache.clear();
+    for (const [skillId, stats] of Object.entries(statsMap)) {
+      usageStatsCache.set(skillId, stats);
+    }
+    notifyAll();
+  } catch (e) {
+    console.error('[skillStore] loadAllUsageStats failed:', e);
+  }
+}
+
+/** 全量从 API 刷新技能列表，触发 notifyAll() */
+export async function refreshFromRemote(): Promise<void> {
+  try {
+    const [skills, patches] = await Promise.all([
+      api.getUserSkills(),
+      api.getBuiltinPatches(),
+    ]);
+    userSkills = skills;
+    builtinStatusPatches = patches;
+    await loadAllUsageStats();
+    notifyAll();
+  } catch (e) {
+    console.error('[skillStore] refreshFromRemote failed:', e);
+  }
 }
 
 /** 添加用户自定义技能 */
@@ -194,6 +236,40 @@ export function onSkillsChange(callback: () => void): () => void {
   };
 }
 
+// ===================== 安全审查 =====================
+
+/** 获取技能审计状态（同步读缓存） */
+export function getAuditStatus(skillId: string): SkillAudit | undefined {
+  return auditStatusCache.get(skillId);
+}
+
+/** 批量加载所有技能的审计状态 */
+export async function loadAuditStatuses(): Promise<void> {
+  const skills = getAllSkills();
+  for (const skill of skills) {
+    try {
+      const audit = await api.fetchSkillAudit(skill.id);
+      if (audit) {
+        auditStatusCache.set(skill.id, audit);
+      }
+    } catch {
+      // 静默处理单个技能的审计查询失败
+    }
+  }
+  notifyAll();
+}
+
+/** 刷新单个技能的审计状态 */
+export async function refreshAuditForSkill(skillId: string): Promise<void> {
+  try {
+    const audit = await api.triggerSkillAudit(skillId, '', true);
+    auditStatusCache.set(skillId, audit);
+    notifyAll();
+  } catch {
+    // 静默处理审计触发失败
+  }
+}
+
 /** 从 API 初始化缓存 */
 export async function initFromApi(): Promise<void> {
   try {
@@ -204,6 +280,8 @@ export async function initFromApi(): Promise<void> {
     userSkills = skills;
     builtinStatusPatches = patches;
     notifyAll();
+    // T02: 初始化后批量加载使用统计
+    await loadAllUsageStats();
   } catch (e) {
     console.error('[skillStore] initFromApi failed:', e);
   }

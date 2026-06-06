@@ -21,6 +21,7 @@ export { PRIMARY, SECONDARY, BORDER, BG_LIGHT, BG_PAGE, WHITE, RADIUS, CHAT_COLO
 import DashboardPage from './pages/DashboardPage';
 import SkillsPage from './pages/SkillsPage';
 import SkillDetailPage from './pages/SkillDetailPage';
+import SkillAuditPage from './pages/SkillAuditPage';
 import AgentPage from './pages/AgentPage';
 import ChatPage from './pages/ChatPage';
 import WarehousesPage from './pages/WarehousesPage';
@@ -452,6 +453,7 @@ const MainLayout: React.FC = () => {
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/skills" element={<SkillsPage />} />
                   <Route path="/skills/:skillId" element={<SkillDetailPage />} />
+                  <Route path="/skills/:skillId/audit" element={<SkillAuditPage />} />
                   <Route path="/agent" element={<AgentPage />} />
                   <Route path="/chat" element={<ChatPage />} />
                   <Route path="/warehouses" element={<WarehousesPage />} />
