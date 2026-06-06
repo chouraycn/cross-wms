@@ -13,6 +13,7 @@ import {
 } from '../dao/automationDao.js';
 import { emitAutomationEvent, AutomationEventType } from '../engine/eventBus.js';
 import { executeAndRecord } from '../engine/engine.js';
+import { initDb } from '../db.js';
 
 const router = Router();
 
@@ -26,6 +27,102 @@ router.get('/', (_req: Request, res: Response) => {
   try {
     const automations = getAllAutomations();
     res.json({ data: automations, total: automations.length });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    res.status(500).json({ error: message });
+  }
+});
+
+// ===================== Global Routes (must be before /:id) =====================
+
+/**
+ * GET /api/automation/executions
+ * 获取全局执行历史（所有自动化）
+ */
+router.get('/executions', (req: Request, res: Response) => {
+  try {
+    const db = initDb();
+    const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit, 10) : 100;
+    const offset = typeof req.query.offset === 'string' ? parseInt(req.query.offset, 10) : 0;
+
+    const countRow = db.prepare('SELECT COUNT(*) as total FROM automation_runs').get() as { total: number };
+    const rows = db.prepare(
+      'SELECT * FROM automation_runs ORDER BY started_at DESC LIMIT ? OFFSET ?'
+    ).all(limit, offset);
+
+    const data = rows.map((row: Record<string, unknown>) => ({
+      id: row.id,
+      automationId: row.automation_id,
+      taskType: row.task_type,
+      status: row.status,
+      startedAt: row.started_at,
+      completedAt: row.completed_at,
+      duration: row.duration,
+      result: row.result,
+      steps: row.steps ? (() => { try { return JSON.parse(row.steps as string); } catch { return []; } })() : [],
+      isRetry: row.is_retry === 1,
+      triggerSource: row.trigger_source,
+      triggerDetail: row.trigger_detail ? (() => { try { return JSON.parse(row.trigger_detail as string); } catch { return null; } })() : null,
+      retryCount: row.retry_count,
+    }));
+
+    res.json({ data, total: countRow.total });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * GET /api/automation/events/list
+ * 返回可用的事件列表
+ */
+router.get('/events/list', (_req: Request, res: Response) => {
+  res.json({
+    events: [
+      { eventName: 'warehouse.created', label: '仓库创建' },
+      { eventName: 'warehouse.updated', label: '仓库更新' },
+      { eventName: 'warehouse.deleted', label: '仓库删除' },
+      { eventName: 'inventory.created', label: '库存新增' },
+      { eventName: 'inventory.updated', label: '库存更新' },
+      { eventName: 'inventory.deleted', label: '库存删除' },
+      { eventName: 'inventory.low_stock', label: '库存不足预警' },
+      { eventName: 'inbound.created', label: '入库单创建' },
+      { eventName: 'inbound.completed', label: '入库完成' },
+      { eventName: 'outbound.created', label: '出库单创建' },
+      { eventName: 'outbound.completed', label: '出库完成' },
+      { eventName: 'transit.created', label: '在途单创建' },
+      { eventName: 'transit.arrived', label: '在途到达' },
+      { eventName: 'volume.threshold_exceeded', label: '容积率超阈值' },
+      { eventName: 'report.scheduled', label: '报表生成定时' },
+    ],
+  });
+});
+
+/**
+ * POST /api/automation/events/trigger
+ * 手动触发事件
+ */
+router.post('/events/trigger', async (req: Request, res: Response) => {
+  try {
+    const { eventName, payload } = req.body;
+    if (!eventName) {
+      res.status(400).json({ error: 'eventName is required' });
+      return;
+    }
+
+    const automations = findAutomationsByEvent(String(eventName));
+    if (automations.length === 0) {
+      res.json({ triggered: 0, message: 'No matching automations found' });
+      return;
+    }
+
+    const results = await Promise.allSettled(
+      automations.map((auto) => executeAndRecord(auto, 'event'))
+    );
+
+    const successCount = results.filter((r) => r.status === 'fulfilled' && r.value).length;
+    res.json({ triggered: automations.length, success: successCount, total: automations.length });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
@@ -155,6 +252,14 @@ router.put('/:id', (req: Request, res: Response) => {
  */
 router.delete('/:id', (req: Request, res: Response) => {
   try {
+    const automation = getAutomationById(req.params.id);
+    if (!automation) {
+      res.status(404).json({ error: 'Automation not found' });
+      return;
+    }
+    // 级联删除关联的执行记录
+    const db = initDb();
+    db.prepare('DELETE FROM automation_runs WHERE automation_id = ?').run(req.params.id);
     const deleted = deleteAutomation(req.params.id);
     if (!deleted) {
       res.status(404).json({ error: 'Automation not found' });
@@ -354,108 +459,6 @@ router.post('/webhook/:id', async (req: Request, res: Response) => {
     });
 
     res.json({ acknowledged: true, automationId });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
-  }
-});
-
-// ===================== Global Execution History =====================
-
-// NOTE: 此路由必须在 /:id 之前注册，避免 "executions" 被当成 :id 参数
-router.get('/executions', (req: Request, res: Response) => {
-  try {
-    // 需要 DAO 支持全局查询，这里通过 runs 表直接查
-    const { initDb } = require('../db.js');
-    const db = initDb();
-    const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit, 10) : 100;
-    const offset = typeof req.query.offset === 'string' ? parseInt(req.query.offset, 10) : 0;
-
-    const countRow = db.prepare('SELECT COUNT(*) as total FROM automation_runs').get() as { total: number };
-    const rows = db.prepare(
-      'SELECT * FROM automation_runs ORDER BY started_at DESC LIMIT ? OFFSET ?'
-    ).all(limit, offset);
-
-    // 反序列化 JSON 字段
-    const data = rows.map((row: Record<string, unknown>) => ({
-      id: row.id,
-      automationId: row.automation_id,
-      taskType: row.task_type,
-      status: row.status,
-      startedAt: row.started_at,
-      completedAt: row.completed_at,
-      duration: row.duration,
-      result: row.result,
-      steps: row.steps ? (() => { try { return JSON.parse(row.steps as string); } catch { return []; } })() : [],
-      isRetry: row.is_retry === 1,
-      triggerSource: row.trigger_source,
-      triggerDetail: row.trigger_detail ? (() => { try { return JSON.parse(row.trigger_detail as string); } catch { return null; } })() : null,
-      retryCount: row.retry_count,
-    }));
-
-    res.json({ data, total: countRow.total });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Internal server error';
-    res.status(500).json({ error: message });
-  }
-});
-
-// ===================== Available Events =====================
-
-/**
- * GET /api/automation/events/list
- * 返回可用的事件列表（供前端事件触发配置使用）
- */
-router.get('/events/list', (_req: Request, res: Response) => {
-  res.json({
-    events: [
-      { eventName: 'warehouse.created', label: '仓库创建' },
-      { eventName: 'warehouse.updated', label: '仓库更新' },
-      { eventName: 'warehouse.deleted', label: '仓库删除' },
-      { eventName: 'inventory.created', label: '库存新增' },
-      { eventName: 'inventory.updated', label: '库存更新' },
-      { eventName: 'inventory.deleted', label: '库存删除' },
-      { eventName: 'inventory.low_stock', label: '库存不足预警' },
-      { eventName: 'inbound.created', label: '入库单创建' },
-      { eventName: 'inbound.completed', label: '入库完成' },
-      { eventName: 'outbound.created', label: '出库单创建' },
-      { eventName: 'outbound.completed', label: '出库完成' },
-      { eventName: 'transit.created', label: '在途单创建' },
-      { eventName: 'transit.arrived', label: '在途到达' },
-      { eventName: 'volume.threshold_exceeded', label: '容积率超阈值' },
-      { eventName: 'report.scheduled', label: '报表生成定时' },
-    ],
-  });
-});
-
-/**
- * POST /api/automation/events/trigger
- * 手动触发一个事件（调试/测试用）
- *
- * Body: { eventName: string, payload?: Record<string, unknown> }
- */
-router.post('/events/trigger', async (req: Request, res: Response) => {
-  try {
-    const { eventName, payload } = req.body;
-    if (!eventName) {
-      res.status(400).json({ error: 'eventName is required' });
-      return;
-    }
-
-    // 查找所有匹配该事件的自动化
-    const automations = findAutomationsByEvent(String(eventName));
-    if (automations.length === 0) {
-      res.json({ triggered: 0, message: 'No matching automations found' });
-      return;
-    }
-
-    // 异步触发每个匹配的自动化
-    const results = await Promise.allSettled(
-      automations.map((auto) => executeAndRecord(auto, 'event'))
-    );
-
-    const successCount = results.filter((r) => r.status === 'fulfilled' && r.value).length;
-    res.json({ triggered: automations.length, success: successCount, total: automations.length });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });

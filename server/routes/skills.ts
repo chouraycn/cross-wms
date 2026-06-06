@@ -10,6 +10,7 @@
  * - POST /api/skill-conflict-check
  */
 import { Router, type Request, type Response } from 'express';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -32,8 +33,6 @@ import {
   createSkillAudit as dbCreateAudit,
 } from '../db.js';
 import { auditSkillMd, generateMarkdownReport } from '../services/securityAuditor.js';
-
-const crypto = require('crypto');
 
 // ===================== SKILL.md 解析工具 =====================
 
