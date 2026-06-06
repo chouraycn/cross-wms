@@ -101,7 +101,7 @@ const AboutTab: React.FC<AboutTabProps> = ({
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Typography sx={{ color: '#6B7280', fontSize: '0.875rem' }}>系统名称</Typography>
-          <Typography sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 500 }}>CDF Know CrossWMS</Typography>
+          <Typography sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 500 }}>CDF Know Claw</Typography>
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Typography sx={{ color: '#6B7280', fontSize: '0.875rem' }}>版本</Typography>
