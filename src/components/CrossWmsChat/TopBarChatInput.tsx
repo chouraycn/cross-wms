@@ -461,7 +461,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     const skillId = effectiveSkill?.id || undefined;
     const referencedSessionIds = referencedSessions.map(s => s.id);
 
-    sendMessage(inputValue, { skillContext, skillId, referencedSessionIds });
+    sendMessage(inputValue, { skillContext, skillId, referencedSessionIds, referencedSessions });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
     }

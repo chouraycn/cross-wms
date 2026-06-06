@@ -514,16 +514,29 @@ async function executeCustom(
   return actionResults;
 }
 
+// ===================== 重试辅助 =====================
+
+/** 计算退避延迟 */
+function computeBackoffDelay(
+  intervalMs: number,
+  attempt: number,
+  backoff: 'fixed' | 'exponential',
+): number {
+  if (backoff === 'exponential') {
+    return intervalMs * Math.pow(2, attempt - 1);
+  }
+  return intervalMs;
+}
+
 // ===================== 主入口 =====================
 
 /**
- * 执行自动化任务
- *
- * @param automation - 自动化数据对象（AutomationData）
- * @returns 执行结果，包含成功/失败状态、步骤详情、数据、通知标志
+ * 执行一次自动化任务（内部实现，不含重试）
  */
-export async function executeAutomation(automation: any): Promise<ExecutionResult> {
-  const startTime = Date.now();
+async function executeOnce(automation: any, startTime: number): Promise<{
+  data: unknown;
+  steps: ExecutionStep[];
+}> {
   const steps: ExecutionStep[] = [];
   let data: unknown = null;
   const taskType = automation.taskType as string;
@@ -559,7 +572,6 @@ export async function executeAutomation(automation: any): Promise<ExecutionResul
       }
     }
   } catch (err) {
-    // 超时或致命错误
     const message = err instanceof Error ? err.message : String(err);
     steps.push({
       action: '执行自动化',
@@ -569,27 +581,97 @@ export async function executeAutomation(automation: any): Promise<ExecutionResul
     });
   }
 
-  const hasFailure = steps.some((s) => s.status === 'failed');
-  const totalDuration = Date.now() - startTime;
+  return { data, steps };
+}
 
-  if (hasFailure) {
-    const failedSteps = steps.filter((s) => s.status === 'failed');
-    const failedMsgs = failedSteps.map((s) => `${s.action}: ${s.message}`).join('; ');
-    return {
-      success: false,
-      message: `执行完成: ${steps.length} 个步骤, ${failedSteps.length} 个失败 — ${failedMsgs}`,
-      data,
-      steps,
-      shouldNotify: resolveShouldNotify(automation, true),
-    };
+/**
+ * 执行自动化任务（含执行策略重试）
+ *
+ * @param automation - 自动化数据对象（AutomationData），包含 executionPolicy
+ * @returns 执行结果，包含成功/失败状态、步骤详情、数据、通知标志
+ */
+export async function executeAutomation(automation: any): Promise<ExecutionResult> {
+  const startTime = Date.now();
+
+  // 读取执行策略
+  const executionPolicy = automation.executionPolicy as Record<string, unknown> | null | undefined;
+  const retry = (executionPolicy?.retry ?? {}) as Record<string, unknown>;
+  const maxAttempts: number = typeof retry?.maxAttempts === 'number' && retry.maxAttempts > 0
+    ? retry.maxAttempts
+    : 1;
+  const intervalMs: number = typeof retry?.intervalMs === 'number'
+    ? retry.intervalMs
+    : 5_000;
+  const backoff: 'fixed' | 'exponential' =
+    retry?.backoff === 'exponential' ? 'exponential' : 'fixed';
+
+  const allSteps: ExecutionStep[] = [];
+  let lastData: unknown = null;
+  let lastFailureSteps: ExecutionStep[] | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const attemptStart = Date.now();
+
+    // 超时检查（每次尝试前）
+    const timeoutMs: number =
+      typeof executionPolicy?.timeoutMs === 'number'
+        ? executionPolicy.timeoutMs
+        : 30_000;
+
+    if (Date.now() - startTime > timeoutMs && attempt > 1) {
+      allSteps.push({
+        action: `重试 ${attempt}/${maxAttempts}`,
+        status: 'skipped',
+        message: `总执行时间已超 ${timeoutMs}ms，跳过重试`,
+        duration: 0,
+      });
+      break;
+    }
+
+    const { data, steps } = await executeOnce({ ...automation, executionPolicy: { timeoutMs } }, attemptStart);
+
+    allSteps.push(...steps);
+
+    const hasFailure = steps.some((s) => s.status === 'failed');
+    if (!hasFailure) {
+      // 成功 — 直接返回
+      const totalDuration = Date.now() - startTime;
+      return {
+        success: true,
+        message: `执行完成: ${allSteps.length} 个步骤, 全部成功 (${totalDuration}ms)${attempt > 1 ? ` (重试${attempt - 1}次)` : ''}`,
+        data,
+        steps: allSteps,
+        shouldNotify: resolveShouldNotify(automation, false),
+      };
+    }
+
+    // 记录失败
+    lastData = data;
+    lastFailureSteps = steps;
+
+    if (attempt < maxAttempts) {
+      const delay = computeBackoffDelay(intervalMs, attempt, backoff);
+      allSteps.push({
+        action: `等待重试 ${attempt + 1}/${maxAttempts}`,
+        status: 'skipped',
+        message: `${backoff === 'exponential' ? '指数退避' : '固定间隔'} ${delay}ms`,
+        duration: 0,
+      });
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
   }
 
+  // 所有重试均失败
+  const totalDuration = Date.now() - startTime;
+  const failedSteps = allSteps.filter((s) => s.status === 'failed');
+  const failedMsgs = failedSteps.map((s) => `${s.action}: ${s.message}`).join('; ');
+
   return {
-    success: true,
-    message: `执行完成: ${steps.length} 个步骤, 全部成功 (${totalDuration}ms)`,
-    data,
-    steps,
-    shouldNotify: resolveShouldNotify(automation, false),
+    success: false,
+    message: `执行失败 (${maxAttempts}次尝试): ${allSteps.length} 个步骤, ${failedSteps.length} 个失败 — ${failedMsgs}`,
+    data: lastData,
+    steps: allSteps,
+    shouldNotify: resolveShouldNotify(automation, true),
   };
 }
 

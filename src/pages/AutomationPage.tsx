@@ -11,14 +11,21 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 
 import {
-  automationEngine,
-  loadAutomations,
-  saveAutomations,
   buildRrule,
   parseRrule,
   computeNextRun,
   formatScheduleLabel,
+  AUTOMATION_TEMPLATES,
 } from '../services/automation';
+import {
+  fetchAutomations,
+  createAutomationApi,
+  updateAutomationApi,
+  deleteAutomationApi,
+  triggerAutomationApi,
+  fetchExecutions,
+  fetchAllExecutions,
+} from '../services/automation/api';
 import type {
   Automation,
   TaskType,
@@ -27,7 +34,6 @@ import type {
   AutomationExecution,
   AutomationTemplate,
   ExecutionStep,
-  EngineStateEvent,
   ActionType,
   TriggerType,
   ExecutionPolicy,
@@ -47,12 +53,15 @@ import AutomationFormDialog from '../components/Automation/AutomationFormDialog'
 // ===================== Component =====================
 
 const AutomationPage: React.FC = () => {
-  const [automations, setAutomations] = useState<Automation[]>(loadAutomations);
+  // --- 数据状态 ---
+  const [automations, setAutomations] = useState<Automation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
   // 执行状态
   const [triggeringIds, setTriggeringIds] = useState<Set<string>>(new Set());
@@ -63,7 +72,8 @@ const AutomationPage: React.FC = () => {
   // 执行历史 Tab
   const [historyFilter, setHistoryFilter] = useState<'all' | 'success' | 'failed'>('all');
   const [historyTypeFilter, setHistoryTypeFilter] = useState<TaskType | 'all'>('all');
-  const [historyVersion, setHistoryVersion] = useState(0); // 用于强制刷新
+  const [historyVersion, setHistoryVersion] = useState(0);
+  const [allLogs, setAllLogs] = useState<AutomationExecution[]>([]);
 
   // 执行详情 Drawer
   const [detailExec, setDetailExec] = useState<AutomationExecution | null>(null);
@@ -82,7 +92,6 @@ const AutomationPage: React.FC = () => {
   const [formScheduledAt, setFormScheduledAt] = useState('');
   const [formValidFrom, setFormValidFrom] = useState('');
   const [formValidUntil, setFormValidUntil] = useState('');
-  // v2.0
   const [formTriggerType, setFormTriggerType] = useState<TriggerType>('schedule');
   const [formExecutionPolicy, setFormExecutionPolicy] = useState<ExecutionPolicy>({
     timeoutMs: 30_000,
@@ -91,71 +100,94 @@ const AutomationPage: React.FC = () => {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // Tab 切换
   const [activeTab, setActiveTab] = useState<TabKey>('configured');
 
-  // 是否从模板创建
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [, setSelectedTemplateId] = useState<string | null>(null);
+  // ===================== Data Loading =====================
 
-  // Persist on change
-  useEffect(() => {
-    saveAutomations(automations);
-  }, [automations]);
-
-  // 刷新 nextRunAt
-  const refreshTimings = useCallback((items: Automation[]): Automation[] => {
-    return items.map((a) => {
-      const nextRun = computeNextRun(a);
-      const scheduleLabel = formatScheduleLabel(a);
-      return { ...a, nextRunAt: nextRun, scheduleLabel };
-    });
+  const loadAllAutomations = useCallback(async () => {
+    try {
+      const data = await fetchAutomations();
+      // 计算 nextRunAt 和 scheduleLabel
+      setAutomations(
+        data.map((a) => ({
+          ...a,
+          nextRunAt: computeNextRun(a),
+          scheduleLabel: formatScheduleLabel(a),
+          taskConfig: (a.taskConfig || {}) as TaskConfig,
+        }))
+      );
+    } catch (err) {
+      console.error('[AutomationPage] 加载自动化失败:', err);
+      setSnackbarMsg('加载自动化失败: ' + (err instanceof Error ? err.message : ''));
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  const loadAllLogs = useCallback(async () => {
+    try {
+      const result = await fetchAllExecutions(200);
+      setAllLogs(result.data);
+    } catch (err) {
+      console.error('[AutomationPage] 加载执行历史失败:', err);
+    }
+  }, []);
+
+  // 初始化加载
+  useEffect(() => {
+    void loadAllAutomations();
+    void loadAllLogs();
+  }, [loadAllAutomations, loadAllLogs]);
 
   // 定时刷新 nextRunAt
   useEffect(() => {
     const timer = setInterval(() => {
-      setAutomations((prev) => refreshTimings(prev));
+      setAutomations((prev) =>
+        prev.map((a) => ({
+          ...a,
+          nextRunAt: computeNextRun(a),
+        }))
+      );
     }, 60000);
     return () => clearInterval(timer);
-  }, [refreshTimings]);
+  }, []);
 
-  // 🔑 引擎状态变更监听 — 实时刷新
+  // 刷新执行历史（Tab 切换时）
   useEffect(() => {
-    const unsubscribe = automationEngine.onStateChange((event: EngineStateEvent) => {
-      if (event.type === 'execution-start') {
-        setRunningIds((prev) => new Set(prev).add(event.automationId));
-      } else {
-        setRunningIds((prev) => {
-          const next = new Set(prev);
-          next.delete(event.automationId);
-          return next;
-        });
-        setTriggeringIds((prev) => {
-          const next = new Set(prev);
-          next.delete(event.automationId);
-          return next;
+    if (activeTab === 'history') {
+      void loadAllLogs();
+    }
+  }, [activeTab, historyVersion, loadAllLogs]);
+
+  // 加载特定自动化的执行日志
+  const loadLogsForAutomation = useCallback(async (automationId: string): Promise<AutomationExecution[]> => {
+    try {
+      const result = await fetchExecutions(automationId, 10);
+      return result.data;
+    } catch {
+      return [];
+    }
+  }, []);
+
+  // 扩展到某个自动化时加载日志
+  useEffect(() => {
+    expandedIds.forEach((id) => {
+      if (!executionLogs[id]) {
+        loadLogsForAutomation(id).then((logs) => {
+          setExecutionLogs((prev) => ({ ...prev, [id]: logs }));
         });
       }
-      // 更新自动化列表
-      setAutomations(loadAutomations());
-      // 强制刷新执行历史
-      setHistoryVersion((v) => v + 1);
     });
-    return unsubscribe;
-  }, []);
+  }, [expandedIds, executionLogs, loadLogsForAutomation]);
 
-  // 引擎执行回调（兼容旧接口）
-  useEffect(() => {
-    const unsubscribe = automationEngine.onExecution((_exec) => {
-      setAutomations(loadAutomations());
-    });
-    return unsubscribe;
-  }, []);
-
-  const loadLogsForAutomation = useCallback((automationId: string): AutomationExecution[] => {
-    return automationEngine.getExecutionLog(automationId).slice(-5).reverse();
-  }, []);
+  // ---- Toast helper ----
+  const showToast = (msg: string, severity: 'success' | 'error' = 'success') => {
+    setSnackbarMsg(msg);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
 
   // ---- Dialog handlers ----
 
@@ -180,7 +212,6 @@ const AutomationPage: React.FC = () => {
       onFailure: 'stop',
     });
     setFormErrors({});
-    setSelectedTemplateId(null);
     setDialogOpen(true);
   };
 
@@ -189,7 +220,7 @@ const AutomationPage: React.FC = () => {
     setFormName(auto.name);
     setFormPrompt(auto.prompt);
     setFormTaskType(auto.taskType || 'custom');
-    setFormTaskConfig(auto.taskConfig || {});
+    setFormTaskConfig(auto.taskConfig || ({} as TaskConfig));
     setFormScheduleType(auto.scheduleType);
     if (auto.scheduleType === 'recurring') {
       const { freq, hour, minute, weekdays } = parseRrule(auto.rrule);
@@ -202,22 +233,19 @@ const AutomationPage: React.FC = () => {
     }
     setFormValidFrom(auto.validFrom ? auto.validFrom.slice(0, 10) : '');
     setFormValidUntil(auto.validUntil ? auto.validUntil.slice(0, 10) : '');
-    setFormTriggerType(auto.triggerType || 'schedule');
-    setFormExecutionPolicy(auto.executionPolicy || {
+    setFormTriggerType((auto.triggerType as TriggerType) || 'schedule');
+    setFormExecutionPolicy((auto.executionPolicy as ExecutionPolicy) || {
       timeoutMs: 30_000,
       retry: { maxAttempts: 1, intervalMs: 5_000, backoff: 'fixed' },
       onFailure: 'stop',
     });
     setFormErrors({});
-    setSelectedTemplateId(null);
     setDialogOpen(true);
   };
 
   /** 从模板快速创建 */
-  const handleQuickCreate = (tpl: AutomationTemplate) => {
-    const now = new Date().toISOString();
+  const handleQuickCreate = async (tpl: AutomationTemplate) => {
     const rrule = buildRrule(tpl.defaultSchedule.freq, tpl.defaultSchedule.hour, tpl.defaultSchedule.minute, []);
-
     const promptMap: Record<TaskType, string> = {
       'data-sync': '定时从数据源拉取最新数据并更新仪表盘',
       'inventory-snapshot': '保存当前库存快照用于趋势分析',
@@ -227,30 +255,38 @@ const AutomationPage: React.FC = () => {
       'skill-chain': '按顺序执行技能链中的各个技能节点',
     };
 
-    const newAuto: Automation = {
-      id: `auto-${Date.now()}`,
-      name: tpl.name,
-      description: tpl.description,
-      status: 'ACTIVE',
-      scheduleType: tpl.defaultSchedule.scheduleType,
-      rrule,
-      scheduledAt: '',
-      scheduleLabel: '',
-      prompt: promptMap[tpl.taskType],
-      taskType: tpl.taskType,
-      taskConfig: tpl.taskConfig || {},
-      createdAt: now,
-      updatedAt: now,
-      lastRunAt: null,
-      nextRunAt: null,
-      runCount: 0,
-    };
-    setAutomations((prev) => refreshTimings([newAuto, ...prev]));
-    setSnackbarMsg(`已创建「${tpl.name}」`);
-    setSnackbarOpen(true);
+    try {
+      const created = await createAutomationApi({
+        name: tpl.name,
+        description: tpl.description,
+        prompt: promptMap[tpl.taskType],
+        taskType: tpl.taskType,
+        taskConfig: tpl.taskConfig || {},
+        scheduleType: tpl.defaultSchedule.scheduleType,
+        rrule,
+        triggerType: 'schedule',
+        executionPolicy: {
+          timeoutMs: 30_000,
+          retry: { maxAttempts: 1, intervalMs: 5_000, backoff: 'fixed' },
+          onFailure: 'stop',
+        },
+      });
+
+      const newAuto: Automation = {
+        ...created,
+        taskConfig: (created.taskConfig || {}) as TaskConfig,
+        nextRunAt: computeNextRun(created),
+        scheduleLabel: formatScheduleLabel(created),
+      };
+
+      setAutomations((prev) => [newAuto, ...prev]);
+      showToast(`已创建「${tpl.name}」`);
+    } catch (err) {
+      showToast(`创建失败: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const errors: Record<string, string> = {};
     if (!formName.trim()) errors.name = '请输入名称';
     if (!formPrompt.trim()) errors.prompt = '请输入指令';
@@ -266,100 +302,123 @@ const AutomationPage: React.FC = () => {
       ? buildRrule(formFreq, formHour, formMinute, formWeekdays)
       : '';
 
-    const now = new Date().toISOString();
+    try {
+      if (editingId) {
+        const updated = await updateAutomationApi(editingId, {
+          id: editingId,
+          name: formName.trim(),
+          description: '',
+          status: 'ACTIVE',
+          scheduleType: formScheduleType,
+          rrule,
+          scheduledAt: formScheduleType === 'once' ? new Date(formScheduledAt).toISOString() : '',
+          scheduleLabel: '',
+          prompt: formPrompt.trim(),
+          taskType: formTaskType,
+          taskConfig: formTaskConfig,
+          validFrom: formValidFrom || undefined,
+          validUntil: formValidUntil || undefined,
+          triggerType: formTriggerType,
+          executionPolicy: formExecutionPolicy,
+          createdAt: '',
+          updatedAt: '',
+          lastRunAt: null,
+          nextRunAt: null,
+          runCount: 0,
+        } as Automation);
 
-    if (editingId) {
-      setAutomations((prev) =>
-        refreshTimings(
+        setAutomations((prev) =>
           prev.map((a) =>
             a.id === editingId
               ? {
                   ...a,
-                  name: formName.trim(),
-                  prompt: formPrompt.trim(),
-                  taskType: formTaskType,
-                  taskConfig: formTaskConfig,
-                  scheduleType: formScheduleType,
-                  rrule,
-                  scheduledAt: formScheduleType === 'once' ? new Date(formScheduledAt).toISOString() : '',
-                  validFrom: formValidFrom || undefined,
-                  validUntil: formValidUntil || undefined,
-                  triggerType: formTriggerType,
-                  executionPolicy: formExecutionPolicy,
-                  updatedAt: now,
+                  ...updated,
+                  taskConfig: (updated.taskConfig || {}) as TaskConfig,
+                  nextRunAt: computeNextRun(updated),
+                  scheduleLabel: formatScheduleLabel(updated),
                 }
               : a
           )
+        );
+        showToast('自动化已更新');
+      } else {
+        const created = await createAutomationApi({
+          name: formName.trim(),
+          prompt: formPrompt.trim(),
+          taskType: formTaskType,
+          taskConfig: formTaskConfig,
+          scheduleType: formScheduleType,
+          rrule,
+          scheduledAt: formScheduleType === 'once' ? new Date(formScheduledAt).toISOString() : null,
+          validFrom: formValidFrom || null,
+          validUntil: formValidUntil || null,
+          triggerType: formTriggerType,
+          executionPolicy: formExecutionPolicy,
+        });
+
+        const newAuto: Automation = {
+          ...created,
+          taskConfig: (created.taskConfig || {}) as TaskConfig,
+          nextRunAt: computeNextRun(created),
+          scheduleLabel: formatScheduleLabel(created),
+        };
+
+        setAutomations((prev) => [newAuto, ...prev]);
+        showToast('自动化已创建');
+      }
+
+      setDialogOpen(false);
+    } catch (err) {
+      showToast(`保存失败: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    }
+  };
+
+  const toggleStatus = async (id: string) => {
+    const auto = automations.find((a) => a.id === id);
+    if (!auto) return;
+
+    const newStatus = auto.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    try {
+      await updateAutomationApi(id, { status: newStatus } as Partial<Automation>);
+      setAutomations((prev) =>
+        prev.map((a) =>
+          a.id === id ? { ...a, status: newStatus, updatedAt: new Date().toISOString() } : a
         )
       );
-      setSnackbarMsg('自动化已更新');
-    } else {
-      const newAuto: Automation = {
-        id: `auto-${Date.now()}`,
-        name: formName.trim(),
-        description: '',
-        status: 'ACTIVE',
-        scheduleType: formScheduleType,
-        rrule,
-        scheduledAt: formScheduleType === 'once' ? new Date(formScheduledAt).toISOString() : '',
-        scheduleLabel: '',
-        prompt: formPrompt.trim(),
-        taskType: formTaskType,
-        taskConfig: formTaskConfig,
-        validFrom: formValidFrom || undefined,
-        validUntil: formValidUntil || undefined,
-        triggerType: formTriggerType,
-        executionPolicy: formExecutionPolicy,
-        createdAt: now,
-        updatedAt: now,
-        lastRunAt: null,
-        nextRunAt: null,
-        runCount: 0,
-      };
-      setAutomations((prev) => refreshTimings([newAuto, ...prev]));
-      setSnackbarMsg('自动化已创建');
+    } catch (err) {
+      showToast(`状态更新失败: ${err instanceof Error ? err.message : String(err)}`, 'error');
     }
-
-    setDialogOpen(false);
-    setSnackbarOpen(true);
   };
 
-  const toggleStatus = (id: string) => {
-    setAutomations((prev) =>
-      refreshTimings(
-        prev.map((a) =>
-          a.id === id
-            ? { ...a, status: a.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE', updatedAt: new Date().toISOString() }
-            : a
-        )
-      )
-    );
-  };
-
-  const deleteAutomation = (id: string) => {
-    setAutomations((prev) => prev.filter((a) => a.id !== id));
-    setSnackbarMsg('自动化已删除');
-    setSnackbarOpen(true);
+  const deleteAutomation = async (id: string) => {
+    try {
+      await deleteAutomationApi(id);
+      setAutomations((prev) => prev.filter((a) => a.id !== id));
+      showToast('自动化已删除');
+    } catch (err) {
+      showToast(`删除失败: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    }
   };
 
   const handleTriggerNow = async (id: string) => {
     setTriggeringIds((prev) => new Set(prev).add(id));
     setRunningIds((prev) => new Set(prev).add(id));
     try {
-      const exec = await automationEngine.triggerNow(id);
-      setAutomations(loadAutomations());
-      const logs = loadLogsForAutomation(id);
+      const res = await triggerAutomationApi(id);
+      // 刷新数据
+      await loadAllAutomations();
+      await loadAllLogs();
+      // 加载该自动化的日志
+      const logs = await loadLogsForAutomation(id);
       setExecutionLogs((prev) => ({ ...prev, [id]: logs }));
 
-      if (exec.status === 'success') {
-        setSnackbarMsg(`执行成功: ${exec.result}`);
+      if (res.result?.success) {
+        showToast(`执行成功: ${res.result.message}`);
       } else {
-        setSnackbarMsg(`执行失败: ${exec.result}`);
+        showToast(`执行失败: ${res.result?.message || '未知错误'}`, 'error');
       }
-      setSnackbarOpen(true);
     } catch (err) {
-      setSnackbarMsg(`执行出错: ${err instanceof Error ? err.message : String(err)}`);
-      setSnackbarOpen(true);
+      showToast(`执行出错: ${err instanceof Error ? err.message : String(err)}`, 'error');
     } finally {
       setTriggeringIds((prev) => {
         const next = new Set(prev);
@@ -381,14 +440,12 @@ const AutomationPage: React.FC = () => {
         next.delete(id);
       } else {
         next.add(id);
-        const logs = loadLogsForAutomation(id);
-        setExecutionLogs((prevLogs) => ({ ...prevLogs, [id]: logs }));
       }
       return next;
     });
   };
 
-  // ---- Filter ----
+  // ---- 执行历史处理 ----
 
   const activeCount = automations.filter((a) => a.status === 'ACTIVE').length;
   const pausedCount = automations.filter((a) => a.status === 'PAUSED').length;
@@ -400,11 +457,7 @@ const AutomationPage: React.FC = () => {
     setFormErrors((e) => { const n = { ...e }; delete n.weekdays; return n; });
   };
 
-  // ---- 执行历史数据 ----
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _historyVersionRef = historyVersion; // 确保 historyVersion 被使用以触发重渲染
-  const allLogs = automationEngine.getExecutionLog();
+  // 执行历史数据
   const filteredLogs = allLogs
     .filter((log) => {
       if (historyFilter !== 'all' && log.status !== historyFilter) return false;
@@ -413,60 +466,38 @@ const AutomationPage: React.FC = () => {
     })
     .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
 
-  // 构建自动化 ID → 名称映射
   const autoNameMap = Object.fromEntries(automations.map((a) => [a.id, a.name]));
-
-  // 统计
   const totalLogs = allLogs.length;
   const successLogs = allLogs.filter((l) => l.status === 'success').length;
   const failedLogs = allLogs.filter((l) => l.status === 'failed').length;
 
   // ---- 重试失败任务 ----
-
   const handleRetry = async (executionId: string) => {
+    const exec = allLogs.find((l) => l.id === executionId);
+    if (!exec || !exec.automationId) return;
+
     try {
-      const exec = await automationEngine.retry(executionId);
-      if (exec) {
-        setHistoryVersion((v) => v + 1);
-        setSnackbarMsg(exec.status === 'success' ? `重试成功: ${exec.result}` : `重试失败: ${exec.result}`);
-        setSnackbarOpen(true);
+      const res = await triggerAutomationApi(exec.automationId);
+      setHistoryVersion((v) => v + 1);
+      await loadAllLogs();
+
+      if (res.result?.success) {
+        showToast(`重试成功: ${res.result.message}`);
+      } else {
+        showToast(`重试失败: ${res.result?.message || '未知错误'}`, 'error');
       }
     } catch (err) {
-      setSnackbarMsg(`重试出错: ${err instanceof Error ? err.message : String(err)}`);
-      setSnackbarOpen(true);
+      showToast(`重试出错: ${err instanceof Error ? err.message : String(err)}`, 'error');
     }
   };
 
   // ---- 查看执行详情 ----
-
   const handleViewDetail = (exec: AutomationExecution) => {
     setDetailExec(exec);
     setDrawerOpen(true);
   };
 
-  // ---- 清空日志 ----
-
-  const handleClearLogs = () => {
-    automationEngine.clearExecutionLogs();
-    setHistoryVersion((v) => v + 1);
-    setSnackbarMsg('执行日志已清空');
-    setSnackbarOpen(true);
-  };
-
-  // ---- Action chain 编辑 ----
-
-  const toggleActionChain = (action: ActionType) => {
-    setFormTaskConfig((prev) => {
-      const chain = prev.actionChain || [];
-      const newChain = chain.includes(action)
-        ? chain.filter((a) => a !== action)
-        : [...chain, action];
-      return { ...prev, actionChain: newChain };
-    });
-  };
-
   // ---- 渲染执行步骤 ----
-
   const renderSteps = (steps: ExecutionStep[]) => (
     <Box sx={{ mt: 1 }}>
       {steps.map((step, i) => (
@@ -504,8 +535,7 @@ const AutomationPage: React.FC = () => {
     </Box>
   );
 
-  // ---- 渲染 Tab 切换 ----
-
+  // ---- 渲染 Tab ----
   const renderTabs = () => (
     <Box sx={{ display: 'flex', gap: 0, mb: 3, borderBottom: '1px solid #E5E7EB' }}>
       {TABS.map((tab) => (
@@ -559,16 +589,11 @@ const AutomationPage: React.FC = () => {
   );
 
   // ---- Form field change handler ----
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleFieldChange = (field: string, value: any) => {
     switch (field) {
-      case 'formName':
-        setFormName(value);
-        break;
-      case 'formPrompt':
-        setFormPrompt(value);
-        break;
+      case 'formName': setFormName(value); break;
+      case 'formPrompt': setFormPrompt(value); break;
       case 'formTaskType': {
         const newType = value as TaskType;
         setFormTaskType(newType);
@@ -581,42 +606,30 @@ const AutomationPage: React.FC = () => {
         }
         break;
       }
-      case 'formTaskConfig':
-        setFormTaskConfig(value);
-        break;
-      case 'formScheduleType':
-        setFormScheduleType(value);
-        break;
-      case 'formFreq':
-        setFormFreq(value);
-        break;
-      case 'formHour':
-        setFormHour(value);
-        break;
-      case 'formMinute':
-        setFormMinute(value);
-        break;
-      case 'formScheduledAt':
-        setFormScheduledAt(value);
-        break;
-      case 'formValidFrom':
-        setFormValidFrom(value);
-        break;
-      case 'formValidUntil':
-        setFormValidUntil(value);
-        break;
-      case 'formErrors':
-        setFormErrors(value);
-        break;
-      case 'formTriggerType':
-        setFormTriggerType(value);
-        break;
-      case 'formExecutionPolicy':
-        setFormExecutionPolicy(value);
-        break;
-      default:
-        break;
+      case 'formTaskConfig': setFormTaskConfig(value); break;
+      case 'formScheduleType': setFormScheduleType(value); break;
+      case 'formFreq': setFormFreq(value); break;
+      case 'formHour': setFormHour(value); break;
+      case 'formMinute': setFormMinute(value); break;
+      case 'formScheduledAt': setFormScheduledAt(value); break;
+      case 'formValidFrom': setFormValidFrom(value); break;
+      case 'formValidUntil': setFormValidUntil(value); break;
+      case 'formErrors': setFormErrors(value); break;
+      case 'formTriggerType': setFormTriggerType(value); break;
+      case 'formExecutionPolicy': setFormExecutionPolicy(value); break;
+      default: break;
     }
+  };
+
+  // ---- Action chain 编辑 ----
+  const toggleActionChain = (action: ActionType) => {
+    setFormTaskConfig((prev) => {
+      const chain = prev.actionChain || [];
+      const newChain = chain.includes(action)
+        ? chain.filter((a) => a !== action)
+        : [...chain, action];
+      return { ...prev, actionChain: newChain };
+    });
   };
 
   return (
@@ -671,7 +684,9 @@ const AutomationPage: React.FC = () => {
           autoNameMap={autoNameMap}
           onRetry={handleRetry}
           onViewDetail={handleViewDetail}
-          onClearLogs={handleClearLogs}
+          onClearLogs={() => {
+            showToast('执行日志清空功能暂不可用');
+          }}
         />
       )}
 
@@ -726,7 +741,7 @@ const AutomationPage: React.FC = () => {
       >
         <Alert
           onClose={() => setSnackbarOpen(false)}
-          severity="success"
+          severity={snackbarSeverity}
           variant="filled"
           sx={{ width: '100%' }}
         >
