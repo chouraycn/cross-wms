@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Paper, IconButton, Tooltip } from '@mui/material';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import { TopBarChatInput } from './TopBarChatInput';
-import { Message, Session } from '../../types/chat';
+import { MarkdownRenderer } from './MarkdownRenderer';
+import { Message, ReferencedSession, Session } from '../../types/chat';
 
 // P0-4: 会话持久化配置
 const SESSIONS_STORAGE_KEY = 'crosswms-chat-sessions';
@@ -166,9 +167,51 @@ export function CrossWmsChat() {
               key={msg.id}
               sx={{
                 display: 'flex',
-                justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                flexDirection: 'column',
+                alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
               }}
             >
+              {/* 引用会话 chip — 仅在用户消息上展示 */}
+              {msg.role === 'user' && msg.referencedSessions && msg.referencedSessions.length > 0 && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 0.5,
+                    mb: 0.5,
+                    maxWidth: '80%',
+                  }}
+                >
+                  {msg.referencedSessions.map((ref: ReferencedSession) => (
+                    <Box
+                      key={ref.id}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        px: 0.8,
+                        py: 0.2,
+                        borderRadius: '6px',
+                        bgcolor: '#EFF6FF',
+                        color: '#2563EB',
+                        border: '1px solid #BFDBFE',
+                        fontSize: 11,
+                        lineHeight: 1.4,
+                        gap: 0.4,
+                      }}
+                    >
+                      <span style={{ fontSize: 13 }}>@</span>
+                      <span style={{
+                        maxWidth: 120,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {ref.title || '未命名对话'}
+                      </span>
+                    </Box>
+                  ))}
+                </Box>
+              )}
               <Paper
                 elevation={0}
                 sx={{
@@ -180,11 +223,35 @@ export function CrossWmsChat() {
                   color: msg.role === 'user' ? '#fff' : '#111827',
                   border: msg.role === 'assistant' ? '1px solid #E5E7EB' : 'none',
                   wordBreak: 'break-word',
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                  '& .markdown-body h1, & .markdown-body h2, & .markdown-body h3': {
+                    fontSize: 'inherit',
+                    fontWeight: 600,
+                    mt: 0.5,
+                    mb: 0.25,
+                  },
+                  '& .markdown-body ul, & .markdown-body ol': {
+                    paddingLeft: 2,
+                    mt: 0.25,
+                    mb: 0.25,
+                  },
+                  '& .markdown-body p': {
+                    m: 0,
+                    '& + p': { mt: 0.5 },
+                  },
+                  '& .markdown-body code': {
+                    fontSize: 13,
+                  },
                 }}
               >
-                <Typography sx={{ fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                  {msg.content || (msg.role === 'assistant' && msg.content === '' ? '思考中...' : '')}
-                </Typography>
+                {msg.role === 'assistant' ? (
+                  <MarkdownRenderer content={msg.content} />
+                ) : (
+                  <Typography sx={{ fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                    {msg.content}
+                  </Typography>
+                )}
                 <Typography
                   sx={{
                     fontSize: 11,

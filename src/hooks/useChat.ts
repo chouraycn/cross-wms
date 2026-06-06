@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Message, Session } from '../types/chat';
+import { Message, ReferencedSession, Session } from '../types/chat';
 
 export interface SendMessageOptions {
   /** 技能上下文：注入到 AI 对话的 prompt 模板 */
@@ -9,6 +9,8 @@ export interface SendMessageOptions {
   skillId?: string;
   /** 引用的会话 ID 列表：用于关联历史对话 */
   referencedSessionIds?: string[];
+  /** 引用的会话详情：用于前端展示 chip */
+  referencedSessions?: ReferencedSession[];
 }
 
 export function useChat(currentSession: Session | undefined, onSessionUpdate: (session: Session) => void) {
@@ -26,7 +28,13 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       messages: []
     };
 
-    const userMsg: Message = { id: uuidv4(), role: 'user', content, timestamp: new Date() };
+    const userMsg: Message = {
+      id: uuidv4(),
+      role: 'user',
+      content,
+      timestamp: new Date(),
+      referencedSessions: options?.referencedSessions,
+    };
     const updatedSession = { ...session, messages: [...session.messages, userMsg] };
     onSessionUpdate(updatedSession);
 
