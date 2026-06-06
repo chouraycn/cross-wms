@@ -303,7 +303,7 @@ const MainLayout: React.FC = () => {
     const id = setInterval(() => {
       if (isPyWebView()) {
         setIsPy(true);
-        document.documentElement.style.setProperty('--pw-top', '43px');
+        document.documentElement.style.setProperty('--pw-top', '38px');
         clearInterval(id);
       }
     }, 100);
@@ -450,7 +450,7 @@ const MainLayout: React.FC = () => {
             >
               <ErrorBoundary>
                 <Routes>
-                  <Route path="/" element={<Navigate to="/projects" replace />} />
+                  <Route path="/" element={<Navigate to="/chat" replace />} />
                   <Route path="/projects" element={<ProjectsPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/skills" element={<SkillsPage />} />

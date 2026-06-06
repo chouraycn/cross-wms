@@ -6,7 +6,7 @@ import { AUDIT_LEVEL_LABELS, AUDIT_LEVEL_COLORS, AUDIT_LEVEL_BG } from '../../co
 interface SecurityBadgeProps {
   level: AuditLevel | null | undefined;
   score?: number | null;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   size?: 'small' | 'medium';
 }
 
@@ -25,7 +25,7 @@ const SecurityBadge: React.FC<SecurityBadgeProps> = ({ level, score, onClick, si
             cursor: onClick ? 'pointer' : 'default',
             '& .MuiChip-label': { px: 1 },
           }}
-          onClick={onClick}
+          onClick={onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick(e); } : undefined}
         />
       </Tooltip>
     );

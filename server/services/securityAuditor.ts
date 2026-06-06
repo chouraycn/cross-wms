@@ -42,6 +42,15 @@ export interface AuditResultDetails {
   fileOperationHits: number;
   networkRequestHits: number;
   dependencyHits: number;
+  // skill-vetter additional detections
+  externalDataSendHits: number;
+  credentialRequestHits: number;
+  credentialFileHits: number;
+  internalFileAccessHits: number;
+  base64DecodeHits: number;
+  ipNetworkHits: number;
+  obfuscatedCodeHits: number;
+  browserCookieHits: number;
 }
 
 export interface AuditResult {
@@ -66,6 +75,9 @@ const COMMAND_EXEC_PATTERNS: Array<{ regex: RegExp; name: string }> = [
   { regex: /popen/i, name: 'popen' },
   { regex: /Runtime\.exec/i, name: 'runtime-exec' },
   { regex: /ProcessBuilder/i, name: 'process-builder' },
+  // skill-vetter: eval/exec with external input
+  { regex: /eval\s*\(.*\$_(GET|POST|REQUEST|COOKIE|SERVER)|eval\s*\(.*req\.|eval\s*\(.*request\.|eval\s*\(.*input\(/i, name: 'eval-with-external-input' },
+  { regex: /exec\s*\(.*\$_(GET|POST|REQUEST|COOKIE|SERVER)|exec\s*\(.*req\.|exec\s*\(.*request\.|exec\s*\(.*input\(/i, name: 'exec-with-external-input' },
 ];
 
 const STEALTH_PATTERNS: Array<{ regex: RegExp; name: string }> = [
@@ -81,6 +93,75 @@ const PRIVILEGE_PATTERNS: Array<{ regex: RegExp; name: string }> = [
   { regex: /sudo/, name: 'sudo-usage' },
   { regex: /chmod\s+777/, name: 'chmod-777' },
   { regex: /chown/, name: 'chown-usage' },
+  // skill-vetter: elevated/sudo permissions
+  { regex: /sudo\s+-i|sudo\s+-s|sudo\s+su\s+-|sudo\s+su\s+root/i, name: 'sudo-elevated' },
+  { regex: /setuid|setgid|seteuid|setegid/, name: 'privilege-escalation-call' },
+];
+
+// ===================== Step 2b: Skill-Vetter RED FLAGS Patterns =====================
+
+// External data sending patterns
+const EXTERNAL_DATA_SEND_PATTERNS: Array<{ regex: RegExp; name: string }> = [
+  { regex: /curl\s+-X\s*(POST|PUT|PATCH|DELETE)/i, name: 'curl-external-post' },
+  { regex: /wget\s+--post-data|--post-file/i, name: 'wget-external-post' },
+  { regex: /requests\.(post|put|patch|delete)\s*\(/i, name: 'python-external-post' },
+  { regex: /fetch\s*\([^)]*,\s*\{[^}]*method:\s*['"](POST|PUT|PATCH|DELETE)/i, name: 'fetch-external-post' },
+  { regex: /axios\.(post|put|patch|delete)\s*\(/i, name: 'axios-external-post' },
+  // Generic data exfiltration patterns
+  { regex: /[\w]+\s*=\s*.*\$\_(GET|POST|REQUEST)|req\.|request\.|\.body.*curl|wget|fetch|axios/i, name: 'data-exfiltration-risk' },
+];
+
+// Credential/token/API key request patterns
+const CREDENTIAL_REQUEST_PATTERNS: Array<{ regex: RegExp; name: string }> = [
+  { regex: /password|passwd|pwd/i, name: 'password-request' },
+  { regex: /token|apikey|api_key|api-key/i, name: 'token-request' },
+  { regex: /secret|credential/i, name: 'credential-request' },
+  { regex: /Authorization:\s*Bearer/i, name: 'authorization-header' },
+  { regex: /getpass|getpass\.getpass/i, name: 'password-prompt' },
+  { regex: /readline\s*\(.*password|input\s*\(.*password/i, name: 'password-input-prompt' },
+];
+
+// Internal file access patterns (MEMORY.md, USER.md, SOUL.md, IDENTITY.md)
+const INTERNAL_FILE_ACCESS_PATTERNS: Array<{ regex: RegExp; name: string }> = [
+  { regex: /MEMORY\.md|USER\.md|SOUL\.md|IDENTITY\.md/i, name: 'internal-file-access' },
+  { regex: /\.workbuddy\/MEMORY\.md|\.workbuddy\/.*\.md/i, name: 'workbuddy-internal-access' },
+];
+
+// Base64 decode patterns (not just base64 strings)
+const BASE64_DECODE_PATTERNS: Array<{ regex: RegExp; name: string }> = [
+  { regex: /base64\s*--decode|base64\s*-d/i, name: 'base64-decode-command' },
+  { regex: /atob\s*\(/i, name: 'js-atob-decode' },
+  { regex: /b64decode|base64\.b64decode|base64\.decode/i, name: 'python-base64-decode' },
+  { regex: /Convert\.FromBase64String|FromBase64String/i, name: 'csharp-base64-decode' },
+  { regex: /Base64\.decode|android\.util\.Base64/i, name: 'java-android-base64-decode' },
+  { regex: /Buffer\.from\s*\([^)]*,\s*['"]base64['"]\s*\)/i, name: 'nodejs-base64-decode' },
+];
+
+// Network calls to IPs instead of domains
+const IP_NETWORK_PATTERNS: Array<{ regex: RegExp; name: string }> = [
+  { regex: /https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/i, name: 'http-ip-direct' },
+  { regex: /curl\s+.*https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}/i, name: 'curl-ip-direct' },
+  { regex: /wget\s+.*https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}/i, name: 'wget-ip-direct' },
+  { regex: /fetch\s*\(.*https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}/i, name: 'fetch-ip-direct' },
+];
+
+// Obfuscated code patterns (compressed, encoded, minified)
+const OBFUSCATED_CODE_PATTERNS: Array<{ regex: RegExp; name: string }> = [
+  { regex: /\beval\s*\(?\s*String\.fromCharCode|eval\s*\(?\s*unescape/i, name: 'js-obfuscated-eval' },
+  { regex: /\\x[0-9a-fA-F]{2}[\\x][0-9a-fA-F]{2}/i, name: 'hex-encoded-string' },
+  { regex: /\\u[0-9a-fA-F]{4}[\\u][0-9a-fA-F]{4}/i, name: 'unicode-encoded-string' },
+  { regex: /decode\s*\(|decrypt\s*\(|decompress\s*\(/i, name: 'decode-call' },
+  { regex: /obfuscate|minify|uglify/i, name: 'code-obfuscation-tool' },
+  // Very long lines without spaces might be minified/obfuscated
+];
+
+// Browser cookie/session access patterns
+const BROWSER_COOKIE_PATTERNS: Array<{ regex: RegExp; name: string }> = [
+  { regex: /document\.cookie/i, name: 'js-document-cookie' },
+  { regex: /cookie\s*=\s*document\.cookie|cookie\s*=\s*req\.headers|cookie\s*=\s*request\.headers/i, name: 'cookie-access' },
+  { regex: /sessionStorage|localStorage/i, name: 'browser-storage-access' },
+  { regex: /Chrome\/Default\/Cookies|Firefox\/.*\/cookies\.sqlite/i, name: 'browser-cookie-file-access' },
+  { regex: /http\.cookiejar|http\.cookie|SimpleCookie/i, name: 'python-cookie-access' },
 ];
 
 // ===================== Step 3: File Operations & Sensitive Paths =====================
@@ -96,6 +177,15 @@ const SENSITIVE_PATH_PATTERNS: Array<{ regex: RegExp; name: string }> = [
   { regex: /secrets/, name: 'secrets-access' },
   { regex: /api_key/, name: 'api-key-access' },
   { regex: /private_key/, name: 'private-key-access' },
+];
+
+// Credential file touch patterns (extends SENSITIVE_PATH_PATTERNS)
+const CREDENTIAL_FILE_PATTERNS: Array<{ regex: RegExp; name: string }> = [
+  ...SENSITIVE_PATH_PATTERNS,
+  { regex: /\.aws\/credentials|\.aws\/config/i, name: 'aws-credentials-access' },
+  { regex: /\.ssh\/id_rsa|\.ssh\/id_ed25519|\.ssh\/known_hosts/i, name: 'ssh-key-access' },
+  { regex: /\.git-credentials|\.git\/config/i, name: 'git-credentials-access' },
+  { regex: /keychain|gnome-keyring|kwallet/i, name: 'system-keyring-access' },
 ];
 
 const FILE_OP_PATTERNS: Array<{ regex: RegExp; name: string }> = [
@@ -245,6 +335,79 @@ export async function auditSkillMd(skillPath: string, content: string): Promise<
     'Privilege escalation pattern detected'
   );
 
+  // Step 2b: Skill-Vetter RED FLAGS - Additional dangerous patterns
+  const externalDataSendFindings = searchPatterns(
+    content,
+    EXTERNAL_DATA_SEND_PATTERNS,
+    'malicious',
+    'external-data-send',
+    'critical',
+    'External data sending pattern detected'
+  );
+
+  const credentialRequestFindings = searchPatterns(
+    content,
+    CREDENTIAL_REQUEST_PATTERNS,
+    'malicious',
+    'credential-request',
+    'critical',
+    'Credential/token request pattern detected'
+  );
+
+  const internalFileAccessFindings = searchPatterns(
+    content,
+    INTERNAL_FILE_ACCESS_PATTERNS,
+    'suspicious',
+    'internal-file-access',
+    'high',
+    'Internal file access (MEMORY.md, USER.md, etc.) detected'
+  );
+
+  const base64DecodeFindings = searchPatterns(
+    content,
+    BASE64_DECODE_PATTERNS,
+    'suspicious',
+    'base64-decode',
+    'high',
+    'Base64 decode operation detected (potential obfuscation)'
+  );
+
+  const ipNetworkFindings = searchPatterns(
+    content,
+    IP_NETWORK_PATTERNS,
+    'suspicious',
+    'ip-network-call',
+    'high',
+    'Network call to raw IP address detected (untrusted)'
+  );
+
+  const obfuscatedCodeFindings = searchPatterns(
+    content,
+    OBFUSCATED_CODE_PATTERNS,
+    'suspicious',
+    'obfuscated-code',
+    'high',
+    'Obfuscated or encoded code pattern detected'
+  );
+
+  const browserCookieFindings = searchPatterns(
+    content,
+    BROWSER_COOKIE_PATTERNS,
+    'suspicious',
+    'browser-cookie-access',
+    'high',
+    'Browser cookie/session access detected'
+  );
+
+  const credentialFileFindings = searchPatterns(
+    content,
+    CREDENTIAL_FILE_PATTERNS,
+    'malicious',
+    'credential-file-access',
+    'critical',
+    'Credential file access detected'
+  );
+
   // Step 3: Check file operations and sensitive paths
   const sensitivePathFindings = searchPatterns(
     content,
@@ -310,6 +473,18 @@ export async function auditSkillMd(skillPath: string, content: string): Promise<
   const commandExecCount = commandExecFindings.length;
   score -= commandExecCount * 10;
 
+  // EXTERNAL_DATA_SEND: -15 each (skill-vetter RED FLAG)
+  const externalDataSendCount = externalDataSendFindings.length;
+  score -= externalDataSendCount * 15;
+
+  // CREDENTIAL_REQUEST: -15 each (skill-vetter RED FLAG)
+  const credentialRequestCount = credentialRequestFindings.length;
+  score -= credentialRequestCount * 15;
+
+  // CREDENTIAL_FILE_ACCESS (from skill-vetter): -20 each
+  const credentialFileCount = credentialFileFindings.length;
+  score -= credentialFileCount * 20;
+
   // STEALTH + COMMAND_EXEC combination: additional -15
   if (stealthFindings.length > 0 && commandExecCount > 0) {
     score -= 15;
@@ -335,6 +510,39 @@ export async function auditSkillMd(skillPath: string, content: string): Promise<
     score -= 15;
   }
 
+  // Skill-Vetter: INTERNAL_FILE_ACCESS - -10 each
+  score -= internalFileAccessFindings.length * 10;
+
+  // Skill-Vetter: BASE64_DECODE - -10 each
+  score -= base64DecodeFindings.length * 10;
+
+  // Skill-Vetter: IP_NETWORK (suspicious IP direct calls) - -10 each
+  score -= ipNetworkFindings.length * 10;
+
+  // Skill-Vetter: OBFUSCATED_CODE - -15 each
+  score -= obfuscatedCodeFindings.length * 15;
+
+  // Skill-Vetter: BROWSER_COOKIE - -15 each
+  score -= browserCookieFindings.length * 15;
+
+  // Skill-Vetter combinations with command exec: extra penalty
+  if (externalDataSendCount > 0 && commandExecCount > 0) {
+    score -= 25;
+  }
+  if (credentialRequestCount > 0 && externalDataSendCount > 0) {
+    score -= 25;
+  }
+  if (browserCookieFindings.length > 0 && externalDataSendCount > 0) {
+    score -= 25;
+  }
+
+  // Minified/obfuscated very long lines detection
+  const lines = content.split('\n');
+  const veryLongLines = lines.filter((l: string) => l.length > 500 && !l.includes('http') && !l.includes('=======') && !l.includes('------'));
+  if (veryLongLines.length > 0) {
+    score -= 10;
+  }
+
   // Clamp score to [0, 100]
   score = Math.max(0, Math.min(100, score));
 
@@ -349,7 +557,14 @@ export async function auditSkillMd(skillPath: string, content: string): Promise<
   }
 
   // Collect all findings by type
-  const maliciousFindings: AuditFinding[] = [...commandExecFindings];
+  const maliciousFindings: AuditFinding[] = [
+    ...commandExecFindings,
+    ...externalDataSendFindings,
+    ...credentialRequestFindings,
+    ...credentialFileFindings.filter(
+      (f: AuditFinding) => f.pattern !== 'env-file-access' && f.pattern !== 'api-key-access' && f.pattern !== 'credentials-access'
+    ),
+  ];
   const suspiciousFindings: AuditFinding[] = [
     ...stealthFindings,
     ...privilegeFindings,
@@ -357,6 +572,14 @@ export async function auditSkillMd(skillPath: string, content: string): Promise<
     ...fileOpFindings.filter((f: AuditFinding) => f.pattern !== 'read-file' && f.pattern !== 'write-file'),
     ...base64Findings,
     ...depFindings,
+    ...internalFileAccessFindings,
+    ...base64DecodeFindings,
+    ...ipNetworkFindings,
+    ...obfuscatedCodeFindings,
+    ...browserCookieFindings,
+    ...credentialFileFindings.filter(
+      (f: AuditFinding) => f.pattern === 'env-file-access' || f.pattern === 'api-key-access' || f.pattern === 'credentials-access'
+    ),
   ];
   const informationalNotes: AuditFinding[] = [
     ...networkFindings,
@@ -372,8 +595,32 @@ export async function auditSkillMd(skillPath: string, content: string): Promise<
   if (commandExecCount > 0) {
     recommendations.push('⚠️ 检测到命令执行模式，建议确认是否存在任意代码执行风险');
   }
+  if (externalDataSendCount > 0) {
+    recommendations.push('🔴 检测到外部数据发送模式，强烈建议确认数据外发目标'); // skill-vetter
+  }
+  if (credentialRequestCount > 0) {
+    recommendations.push('🔴 检测到凭证/Token 请求模式，强烈建议禁止收集用户敏感信息'); // skill-vetter
+  }
+  if (credentialFileCount > 0) {
+    recommendations.push('🔴 检测到凭证文件访问，这是严重的安全风险'); // skill-vetter
+  }
   if (stealthFindings.length > 0) {
     recommendations.push('⚠️ 检测到隐蔽行为模式，建议审查是否试图隐藏操作痕迹');
+  }
+  if (internalFileAccessFindings.length > 0) {
+    recommendations.push('⚠️ 检测到访问 MEMORY.md/USER.md 等内部文件，建议确认是否有信息收集意图'); // skill-vetter
+  }
+  if (base64DecodeFindings.length > 0) {
+    recommendations.push('⚠️ 检测到 Base64 解码操作，建议确认是否是代码混淆'); // skill-vetter
+  }
+  if (ipNetworkFindings.length > 0) {
+    recommendations.push('⚠️ 检测到直接 IP 网络调用（未使用域名），建议确认目标可信性'); // skill-vetter
+  }
+  if (obfuscatedCodeFindings.length > 0) {
+    recommendations.push('⚠️ 检测到混淆代码模式，建议确认代码是否经过压缩/编码'); // skill-vetter
+  }
+  if (browserCookieFindings.length > 0) {
+    recommendations.push('🔴 检测到浏览器 Cookie/Session 访问，这是严重的安全风险'); // skill-vetter
   }
   if (hasSensitivePath) {
     recommendations.push('⚠️ 检测到敏感路径访问，建议确认是否有读取敏感文件的意图');
@@ -400,6 +647,14 @@ export async function auditSkillMd(skillPath: string, content: string): Promise<
     fileOperationHits: fileOpFindings.length,
     networkRequestHits: networkFindings.length,
     dependencyHits: depFindings.length,
+    externalDataSendHits: externalDataSendCount,
+    credentialRequestHits: credentialRequestCount,
+    credentialFileHits: credentialFileCount,
+    internalFileAccessHits: internalFileAccessFindings.length,
+    base64DecodeHits: base64DecodeFindings.length,
+    ipNetworkHits: ipNetworkFindings.length,
+    obfuscatedCodeHits: obfuscatedCodeFindings.length,
+    browserCookieHits: browserCookieFindings.length,
   };
 
   const summary: AuditResultSummary = {
@@ -446,16 +701,28 @@ export function generateMarkdownReport(result: AuditResult): string {
   md += '## 详细检查结果\n\n';
 
   md += '### 命令执行检查\n';
-  md += `- 命中次数: ${result.details.commandExecutionHits}\n\n`;
+  md += `- 命中次数: ${result.details.commandExecutionHits}\n`;
+  md += `- 外部数据发送: ${result.details.externalDataSendHits}\n`;
+  md += `- 凭证请求: ${result.details.credentialRequestHits}\n\n`;
 
   md += '### 文件操作检查\n';
-  md += `- 命中次数: ${result.details.fileOperationHits}\n\n`;
+  md += `- 命中次数: ${result.details.fileOperationHits}\n`;
+  md += `- 凭证文件访问: ${result.details.credentialFileHits}\n`;
+  md += `- 内部文件访问: ${result.details.internalFileAccessHits}\n\n`;
 
   md += '### 网络请求检查\n';
-  md += `- 命中次数: ${result.details.networkRequestHits}\n\n`;
+  md += `- 命中次数: ${result.details.networkRequestHits}\n`;
+  md += `- IP 直连: ${result.details.ipNetworkHits}\n\n`;
+
+  md += '### 代码混淆检查\n';
+  md += `- Base64 解码: ${result.details.base64DecodeHits}\n`;
+  md += `- 混淆代码: ${result.details.obfuscatedCodeHits}\n\n`;
 
   md += '### 依赖风险检查\n';
   md += `- 命中次数: ${result.details.dependencyHits}\n\n`;
+
+  md += '### 浏览器安全\n';
+  md += `- Cookie/Session 访问: ${result.details.browserCookieHits}\n\n`;
 
   if (result.maliciousFindings.length > 0) {
     md += '## 恶意风险发现\n\n';

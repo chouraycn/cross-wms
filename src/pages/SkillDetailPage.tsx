@@ -17,7 +17,7 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EditIcon from '@mui/icons-material/Edit';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { getAllSkills, removeSkill, setSkillStatus, onSkillsChange } from '../stores/skillStore';
+import { getAllSkills, removeSkill, setSkillStatus, onSkillsChange, refreshAuditForSkill } from '../stores/skillStore';
 import { loadAutomations, automationEngine } from '../services/automation';
 import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automation';
 import { ICON_MAP } from '../types/skill';
@@ -553,7 +553,15 @@ const SkillDetailPage: React.FC = () => {
       {/* 安全审查 */}
       <Button
         variant="outlined"
-        onClick={() => navigate(`/skills/${skill.id}/audit`)}
+        onClick={async () => {
+          try {
+            await refreshAuditForSkill(skill.id);
+            setToast({ open: true, msg: '安全审查已完成', severity: 'success' });
+          } catch (e) {
+            setToast({ open: true, msg: '安全审查失败', severity: 'error' });
+          }
+          navigate(`/skills/${skill.id}/audit`);
+        }}
         sx={{
           textTransform: 'none',
           borderRadius: 2,

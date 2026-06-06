@@ -130,16 +130,6 @@ const SkillCard: React.FC<SkillCardProps> = ({
         </Tooltip>
       )}
 
-      {/* T03: 安全审查徽章（右上角，无冲突时显示） */}
-      {!hasConflict && (
-        <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 2 }}>
-          <SecurityBadge
-            level={auditLevel}
-            score={auditScore}
-            onClick={onAuditClick}
-          />
-        </Box>
-      )}
 
       {/* 图标区 */}
       <Box sx={{
@@ -208,6 +198,16 @@ const SkillCard: React.FC<SkillCardProps> = ({
               size="small"
               sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: '#FAF5FF', color: '#7C3AED' }}
             />
+          )}
+          {/* T03: 安全审查徽章 — 放在标题行右侧，避免与操作按钮重叠 */}
+          {!hasConflict && (
+            <Box sx={{ ml: 'auto', flexShrink: 0 }}>
+              <SecurityBadge
+                level={auditLevel}
+                score={auditScore}
+                onClick={(e) => { e.stopPropagation(); onAuditClick?.(); }}
+              />
+            </Box>
           )}
         </Box>
         <Typography sx={{
