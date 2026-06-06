@@ -32,6 +32,7 @@ import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import AutomationPage from './pages/AutomationPage';
 import TasksPage from './pages/TasksPage';
+import ProjectsPage from './pages/ProjectsPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 /** 强调色映射 */
@@ -320,8 +321,8 @@ const MainLayout: React.FC = () => {
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
   const scrollRef = useAutoHideScrollbar(!isPy);
 
-  // AI 对话框可见性：自动化、Agent、技能、任务/对话页面隐藏（ChatPage 自带输入框）
-  const showChatBar = !location.pathname.startsWith('/automation') && !location.pathname.startsWith('/agent') && !location.pathname.startsWith('/skills') && !location.pathname.startsWith('/chat');
+  // AI 对话框可见性：自动化、Agent、技能、任务/对话、项目页面隐藏
+  const showChatBar = !location.pathname.startsWith('/automation') && !location.pathname.startsWith('/agent') && !location.pathname.startsWith('/skills') && !location.pathname.startsWith('/chat') && !location.pathname.startsWith('/projects');
 
   const actions = getToolbarActions(location.pathname);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -449,7 +450,8 @@ const MainLayout: React.FC = () => {
             >
               <ErrorBoundary>
                 <Routes>
-                  <Route path="/" element={<Navigate to="/chat" replace />} />
+                  <Route path="/" element={<Navigate to="/projects" replace />} />
+                  <Route path="/projects" element={<ProjectsPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/skills" element={<SkillsPage />} />
                   <Route path="/skills/:skillId" element={<SkillDetailPage />} />
