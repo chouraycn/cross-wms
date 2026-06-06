@@ -24,103 +24,170 @@ import {
   deleteChainNodes as dbDeleteNodes,
   createSkillExecution as dbCreateExecution,
   updateSkillExecution as dbUpdateExecution,
+  initDb,
+  type SkillChainRow,
+  type SkillChainNodeRow,
 } from '../db.js';
 import { executeChain, abortExecution } from '../services/chainExecutor.js';
 
 const router = express.Router();
 
+// ===================== Helpers =====================
+
+/** Transform snake_case DB row to camelCase for frontend */
+function rowToChain(row: SkillChainRow) {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    failStrategy: row.fail_strategy,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function nodeToJson(node: SkillChainNodeRow) {
+  return {
+    id: node.id,
+    chainId: node.chain_id,
+    skillId: node.skill_id,
+    skillName: node.skill_name,
+    skillIcon: node.skill_icon,
+    dataPassMode: node.data_pass_mode,
+    selectedFields: safeJsonParse(node.selected_fields),
+    customMapping: safeJsonParse(node.custom_mapping),
+    timeout: node.timeout,
+    retryCount: node.retry_count,
+    nodeOrder: node.node_order,
+  };
+}
+
+function safeJsonParse(val: unknown): unknown {
+  if (typeof val !== 'string') return val;
+  try { return JSON.parse(val); } catch { return val; }
+}
+
 // ===================== 链 CRUD =====================
 
 // GET /api/skill-chains — 获取所有链
 router.get('/', (_req, res) => {
-  res.json({ data: [] });
+  try {
+    const chains = dbGetAllChains();
+    const enriched = chains.map((c) => {
+      const nodes = dbGetNodes(c.id);
+      return { ...rowToChain(c), nodes: nodes.map(nodeToJson) };
+    });
+    res.json({ data: enriched });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
 });
 
 // GET /api/skill-chains/:id — 获取单个链
 router.get('/:id', (req, res) => {
-  res.json({ data: null });
+  try {
+    const chain = dbGetChain(req.params.id);
+    if (!chain) {
+      res.status(404).json({ error: 'Chain not found' });
+      return;
+    }
+    const nodes = dbGetNodes(req.params.id);
+    res.json({ data: { ...rowToChain(chain), nodes: nodes.map(nodeToJson) } });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
 });
 
-// POST /api/skill-chains — 创建链
+// POST /api/skill-chains — 创建链（事务包裹）
 router.post('/', (req, res) => {
+  const db = initDb();
   try {
     const { name, description, failStrategy, nodes } = req.body;
     const chainId = `chain-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const now = new Date().toISOString();
 
-    // 创建链
-    dbCreateChain({
-      id: chainId,
-      name: name || 'New Chain',
-      description: description || '',
-      failStrategy: failStrategy || 'stop',
-      createdAt: now,
-      updatedAt: now,
+    const createWithNodes = db.transaction(() => {
+      dbCreateChain({
+        id: chainId,
+        name: name || 'New Chain',
+        description: description || '',
+        failStrategy: failStrategy || 'stop',
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      if (Array.isArray(nodes)) {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          dbCreateNode({
+            id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            chainId: chainId,
+            skillId: node.skillId || '',
+            skillName: node.skillName || '',
+            skillIcon: node.skillIcon,
+            dataPassMode: node.dataPassMode,
+            selectedFields: node.selectedFields ? JSON.stringify(node.selectedFields) : undefined,
+            customMapping: node.customMapping ? JSON.stringify(node.customMapping) : undefined,
+            timeout: node.timeout,
+            retryCount: node.retryCount,
+            nodeOrder: i,
+          });
+        }
+      }
     });
 
-    // 创建节点
-    if (Array.isArray(nodes)) {
-      for (let i = 0; i < nodes.length; i++) {
-        const node = nodes[i];
-        dbCreateNode({
-          id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          chainId: chainId,
-          skillId: node.skillId || '',
-          skillName: node.skillName || '',
-          skillIcon: node.skillIcon,
-          dataPassMode: node.dataPassMode,
-          selectedFields: node.selectedFields ? JSON.stringify(node.selectedFields) : undefined,
-          customMapping: node.customMapping ? JSON.stringify(node.customMapping) : undefined,
-          timeout: node.timeout,
-          retryCount: node.retryCount,
-          nodeOrder: i,
-        });
-      }
-    }
+    createWithNodes();
 
     const chain = dbGetChain(chainId);
-    res.status(201).json({ data: chain });
+    const chainNodes = dbGetNodes(chainId);
+    res.status(201).json({ data: { ...rowToChain(chain!), nodes: chainNodes.map(nodeToJson) } });
   } catch (e) {
     res.status(400).json({ error: (e as Error).message });
   }
 });
 
-// PUT /api/skill-chains/:id — 更新链
+// PUT /api/skill-chains/:id — 更新链（事务包裹，防止删完崩溃丢节点）
 router.put('/:id', (req, res) => {
+  const db = initDb();
   try {
     const { name, description, failStrategy, nodes } = req.body;
     const now = new Date().toISOString();
 
-    dbUpdateChain(req.params.id, {
-      name,
-      description,
-      fail_strategy: failStrategy,
-      updatedAt: now,
+    const updateNodes = db.transaction(() => {
+      dbUpdateChain(req.params.id, {
+        name,
+        description,
+        fail_strategy: failStrategy,
+        updatedAt: now,
+      });
+
+      // 更新节点：先删除旧节点，再创建新节点
+      dbDeleteNodes(req.params.id);
+      if (Array.isArray(nodes)) {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          dbCreateNode({
+            id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            chainId: req.params.id,
+            skillId: node.skillId || '',
+            skillName: node.skillName || '',
+            skillIcon: node.skillIcon,
+            dataPassMode: node.dataPassMode,
+            selectedFields: node.selectedFields ? JSON.stringify(node.selectedFields) : undefined,
+            customMapping: node.customMapping ? JSON.stringify(node.customMapping) : undefined,
+            timeout: node.timeout,
+            retryCount: node.retryCount,
+            nodeOrder: i,
+          });
+        }
+      }
     });
 
-    // 更新节点：先删除旧节点，再创建新节点
-    dbDeleteNodes(req.params.id);
-    if (Array.isArray(nodes)) {
-      for (let i = 0; i < nodes.length; i++) {
-        const node = nodes[i];
-        dbCreateNode({
-          id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          chainId: req.params.id,
-          skillId: node.skillId || '',
-          skillName: node.skillName || '',
-          skillIcon: node.skillIcon,
-          dataPassMode: node.dataPassMode,
-          selectedFields: node.selectedFields ? JSON.stringify(node.selectedFields) : undefined,
-          customMapping: node.customMapping ? JSON.stringify(node.customMapping) : undefined,
-          timeout: node.timeout,
-          retryCount: node.retryCount,
-          nodeOrder: i,
-        });
-      }
-    }
+    updateNodes();
 
     const chain = dbGetChain(req.params.id);
-    res.json({ data: chain });
+    const chainNodes = dbGetNodes(req.params.id);
+    res.json({ data: { ...rowToChain(chain!), nodes: chainNodes.map(nodeToJson) } });
   } catch (e) {
     res.status(400).json({ error: (e as Error).message });
   }
@@ -148,8 +215,9 @@ router.post('/:id/execute', async (req, res) => {
   }
 });
 
-// POST /api/skill-chains/:id/duplicate — 复制链
+// POST /api/skill-chains/:id/duplicate — 复制链（事务包裹）
 router.post('/:id/duplicate', (req, res) => {
+  const db = initDb();
   try {
     const chain = dbGetChain(req.params.id);
     if (!chain) {
@@ -161,36 +229,40 @@ router.post('/:id/duplicate', (req, res) => {
     const now = new Date().toISOString();
     const chainData = chain as unknown as Record<string, unknown>;
 
-    dbCreateChain({
-      id: newChainId,
-      name: `${chainData.name} (Copy)`,
-      description: (chainData.description as string) || '',
-      failStrategy: chainData.fail_strategy as string || 'stop',
-      createdAt: now,
-      updatedAt: now,
+    const duplicate = db.transaction(() => {
+      dbCreateChain({
+        id: newChainId,
+        name: `${chainData.name} (Copy)`,
+        description: (chainData.description as string) || '',
+        failStrategy: (chainData.fail_strategy as string) || 'stop',
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const nodes = dbGetNodes(req.params.id);
+      for (const node of nodes) {
+        const nodeData = node as unknown as Record<string, unknown>;
+        dbCreateNode({
+          id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          chainId: newChainId,
+          skillId: (nodeData.skill_id as string) || '',
+          skillName: (nodeData.skill_name as string) || '',
+          skillIcon: nodeData.skill_icon as string,
+          dataPassMode: nodeData.data_pass_mode as string,
+          selectedFields: nodeData.selected_fields as string,
+          customMapping: nodeData.custom_mapping as string,
+          timeout: nodeData.timeout as number,
+          retryCount: nodeData.retry_count as number,
+          nodeOrder: nodeData.node_order as number,
+        });
+      }
     });
 
-    // 复制节点
-    const nodes = dbGetNodes(req.params.id);
-    for (const node of nodes) {
-      const nodeData = node as unknown as Record<string, unknown>;
-      dbCreateNode({
-        id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        chainId: newChainId,
-        skillId: nodeData.skill_id as string,
-        skillName: nodeData.skill_name as string,
-        skillIcon: nodeData.skill_icon as string,
-        dataPassMode: nodeData.data_pass_mode as string,
-        selectedFields: nodeData.selected_fields as string,
-        customMapping: nodeData.custom_mapping as string,
-        timeout: nodeData.timeout as number,
-        retryCount: nodeData.retry_count as number,
-        nodeOrder: nodeData.node_order as number,
-      });
-    }
+    duplicate();
 
     const newChain = dbGetChain(newChainId);
-    res.json({ data: newChain });
+    const newNodes = dbGetNodes(newChainId);
+    res.json({ data: { ...rowToChain(newChain!), nodes: newNodes.map(nodeToJson) } });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
