@@ -79,7 +79,7 @@ const SidebarLogo: React.FC<SidebarLogoProps> = ({ collapsed, onLogoClick, showV
               lineHeight: 1.2,
             }}
           >
-            CDF Know CrossWMS
+            CDF Know Claw
           </Typography>
           {showVersion && (
             <Typography
