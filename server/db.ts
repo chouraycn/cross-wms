@@ -25,6 +25,7 @@ export interface Message {
   model?: string;
   timestamp: string;
   toolCalls?: string;
+  skillId?: string | null; // 关联的技能 ID
 }
 
 // ===================== Business Data Types =====================
@@ -187,6 +188,7 @@ export function initDb(): Database.Database {
       model TEXT,
       timestamp TEXT NOT NULL,
       toolCalls TEXT,
+      skillId TEXT DEFAULT NULL,
       FOREIGN KEY (sessionId) REFERENCES sessions(id) ON DELETE CASCADE
     );
   `);
@@ -337,6 +339,12 @@ export function initDb(): Database.Database {
     }
   }
 
+  // Add skillId column to messages table (v1.0.94) — 幂等迁移
+  const messagesSkillIdExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('messages') WHERE name='skillId'`).get() as { cnt: number };
+  if (messagesSkillIdExists.cnt === 0) {
+    db.exec(`ALTER TABLE messages ADD COLUMN skillId TEXT DEFAULT NULL`);
+  }
+
   // Add new columns to existing tables (v1.0.76) — safe ALTER with column-existence check
   const columnsToAdd: Array<{ table: string; column: string; definition: string }> = [
     { table: 'inbound_records', column: 'supplier', definition: "TEXT NOT NULL DEFAULT ''" },
@@ -354,6 +362,60 @@ export function initDb(): Database.Database {
     }
   }
 
+  // Skill chain tables (v1.1.0)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS skill_chains (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      fail_strategy TEXT NOT NULL DEFAULT 'stop',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS skill_chain_nodes (
+      id TEXT PRIMARY KEY,
+      chain_id TEXT NOT NULL REFERENCES skill_chains(id) ON DELETE CASCADE,
+      skill_id TEXT NOT NULL,
+      skill_name TEXT NOT NULL,
+      skill_icon TEXT DEFAULT 'Extension',
+      data_pass_mode TEXT NOT NULL DEFAULT 'full',
+      selected_fields TEXT DEFAULT '[]',
+      custom_mapping TEXT DEFAULT '{}',
+      timeout INTEGER NOT NULL DEFAULT 30000,
+      retry_count INTEGER NOT NULL DEFAULT 0,
+      node_order INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(chain_id, node_order)
+    );
+    CREATE TABLE IF NOT EXISTS skill_chain_executions (
+      id TEXT PRIMARY KEY,
+      chain_id TEXT NOT NULL REFERENCES skill_chains(id) ON DELETE CASCADE,
+      status TEXT NOT NULL DEFAULT 'running',
+      fail_strategy TEXT NOT NULL DEFAULT 'stop',
+      steps TEXT NOT NULL DEFAULT '[]',
+      started_at TEXT NOT NULL DEFAULT (datetime('now')),
+      completed_at TEXT,
+      duration INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS skill_audits (
+      id TEXT PRIMARY KEY,
+      skill_id TEXT NOT NULL,
+      skill_version TEXT NOT NULL,
+      score INTEGER NOT NULL,
+      level TEXT NOT NULL,
+      report_json TEXT NOT NULL DEFAULT '{}',
+      report_markdown TEXT NOT NULL DEFAULT '',
+      triggered_by TEXT NOT NULL DEFAULT 'manual',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(skill_id, skill_version)
+    );
+  `);
+
+  // Add description column to skill_chains if missing (idempotent migration)
+  const chainDescExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('skill_chains') WHERE name='description'`).get() as { cnt: number };
+  if (chainDescExists.cnt === 0) {
+    db.exec(`ALTER TABLE skill_chains ADD COLUMN description TEXT DEFAULT ''`);
+  }
+
   return db;
 }
 
@@ -362,6 +424,13 @@ export function initDb(): Database.Database {
 export function getSessions(): Session[] {
   const db = initDb();
   return db.prepare('SELECT * FROM sessions ORDER BY updatedAt DESC').all() as Session[];
+}
+
+/** 搜索会话（按标题模糊匹配） */
+export function searchSessions(query: string): Session[] {
+  const db = initDb();
+  const q = `%${query}%`;
+  return db.prepare('SELECT * FROM sessions WHERE title LIKE ? ORDER BY updatedAt DESC').all(q) as Session[];
 }
 
 export function createSession(id: string, title: string, model: string, agentId?: string): Session {
@@ -382,8 +451,8 @@ export function addMessage(msg: Omit<Message, 'id' | 'timestamp'> & { id?: strin
   const id = msg.id || uuidv4();
   const now = new Date().toISOString();
   const db = initDb();
-  db.prepare('INSERT INTO messages (id, sessionId, role, content, model, timestamp, toolCalls) VALUES (?,?,?,?,?,?,?)').run(
-    id, msg.sessionId, msg.role, msg.content, msg.model || null, now, msg.toolCalls || null
+  db.prepare('INSERT INTO messages (id, sessionId, role, content, model, timestamp, toolCalls, skillId) VALUES (?,?,?,?,?,?,?,?)').run(
+    id, msg.sessionId, msg.role, msg.content, msg.model || null, now, msg.toolCalls || null, msg.skillId || null
   );
   db.prepare('UPDATE sessions SET updatedAt = ? WHERE id = ?').run(now, msg.sessionId);
   return { ...msg, id, timestamp: now };
@@ -885,6 +954,256 @@ export interface MigrateResult {
   appSettings: number;
 }
 
+// ===================== Skill Chain Types =====================
+
+export interface SkillChainNodeRow {
+  id: string;
+  chain_id: string;
+  skill_id: string;
+  skill_name: string;
+  skill_icon: string;
+  data_pass_mode: string;
+  selected_fields: string;
+  custom_mapping: string;
+  timeout: number;
+  retry_count: number;
+  node_order: number;
+}
+
+export interface SkillChainRow {
+  id: string;
+  name: string;
+  description: string;
+  fail_strategy: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SkillChainExecutionRow {
+  id: string;
+  chain_id: string;
+  status: string;
+  fail_strategy: string;
+  steps: string;
+  started_at: string;
+  completed_at: string | null;
+  duration: number | null;
+}
+
+export interface SkillAuditRow {
+  id: string;
+  skill_id: string;
+  skill_version: string;
+  score: number;
+  level: string;
+  report_json: string;
+  report_markdown: string;
+  triggered_by: string;
+  created_at: string;
+}
+
+// ===================== Skill Chain DAO =====================
+
+/** Create a new skill chain */
+export function createSkillChain(chain: {
+  id: string;
+  name: string;
+  description?: string;
+  failStrategy?: string;
+  createdAt: string;
+  updatedAt: string;
+}): SkillChainRow {
+  const db = initDb();
+  const stmt = db.prepare(`INSERT INTO skill_chains (id, name, description, fail_strategy, created_at, updated_at) VALUES (?,?,?,?,?,?)`);
+  stmt.run(
+    chain.id,
+    chain.name,
+    chain.description ?? '',
+    chain.failStrategy ?? 'stop',
+    chain.createdAt,
+    chain.updatedAt
+  );
+  return getSkillChain(chain.id)!;
+}
+
+/** Get a skill chain by ID */
+export function getSkillChain(id: string): SkillChainRow | undefined {
+  const db = initDb();
+  return db.prepare('SELECT * FROM skill_chains WHERE id = ?').get(id) as SkillChainRow | undefined;
+}
+
+/** Get all skill chains */
+export function getAllSkillChains(): SkillChainRow[] {
+  const db = initDb();
+  return db.prepare('SELECT * FROM skill_chains ORDER BY created_at DESC').all() as SkillChainRow[];
+}
+
+/** Update a skill chain */
+export function updateSkillChain(id: string, data: Partial<{
+  name: string;
+  description: string;
+  fail_strategy: string;
+  updatedAt: string;
+}>): void {
+  const db = initDb();
+  const existing = getSkillChain(id);
+  if (!existing) return;
+  const updated = {
+    name: data.name ?? existing.name,
+    description: data.description ?? existing.description,
+    fail_strategy: data.fail_strategy ?? existing.fail_strategy,
+    updated_at: data.updatedAt ?? new Date().toISOString(),
+  };
+  db.prepare('UPDATE skill_chains SET name=?, description=?, fail_strategy=?, updated_at=? WHERE id=?').run(
+    updated.name,
+    updated.description,
+    updated.fail_strategy,
+    updated.updated_at,
+    id
+  );
+}
+
+/** Delete a skill chain (cascade deletes nodes and executions) */
+export function deleteSkillChain(id: string): void {
+  const db = initDb();
+  db.prepare('DELETE FROM skill_chains WHERE id = ?').run(id);
+}
+
+/** Create a chain node */
+export function createChainNode(node: {
+  id: string;
+  chainId: string;
+  skillId: string;
+  skillName: string;
+  skillIcon?: string;
+  dataPassMode?: string;
+  selectedFields?: string;
+  customMapping?: string;
+  timeout?: number;
+  retryCount?: number;
+  nodeOrder: number;
+}): void {
+  const db = initDb();
+  db.prepare(`INSERT INTO skill_chain_nodes (id, chain_id, skill_id, skill_name, skill_icon, data_pass_mode, selected_fields, custom_mapping, timeout, retry_count, node_order)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(
+    node.id,
+    node.chainId,
+    node.skillId,
+    node.skillName,
+    node.skillIcon ?? 'Extension',
+    node.dataPassMode ?? 'full',
+    node.selectedFields ?? '[]',
+    node.customMapping ?? '{}',
+    node.timeout ?? 30000,
+    node.retryCount ?? 0,
+    node.nodeOrder
+  );
+}
+
+/** Get all nodes for a chain */
+export function getChainNodes(chainId: string): SkillChainNodeRow[] {
+  const db = initDb();
+  return db.prepare('SELECT * FROM skill_chain_nodes WHERE chain_id = ? ORDER BY node_order ASC').all(chainId) as SkillChainNodeRow[];
+}
+
+/** Delete all nodes for a chain */
+export function deleteChainNodes(chainId: string): void {
+  const db = initDb();
+  db.prepare('DELETE FROM skill_chain_nodes WHERE chain_id = ?').run(chainId);
+}
+
+// ===================== Skill Audit DAO =====================
+
+/** Create a skill audit record */
+export function createSkillAudit(audit: {
+  id: string;
+  skillId: string;
+  skillVersion: string;
+  score: number;
+  level: string;
+  reportJson?: string;
+  reportMarkdown?: string;
+  triggeredBy?: string;
+  createdAt?: string;
+}): void {
+  const db = initDb();
+  db.prepare(`INSERT OR REPLACE INTO skill_audits (id, skill_id, skill_version, score, level, report_json, report_markdown, triggered_by, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?)`).run(
+    audit.id,
+    audit.skillId,
+    audit.skillVersion,
+    audit.score,
+    audit.level,
+    audit.reportJson ?? '{}',
+    audit.reportMarkdown ?? '',
+    audit.triggeredBy ?? 'manual',
+    audit.createdAt ?? new Date().toISOString()
+  );
+}
+
+/** Get latest audit for a skill */
+export function getLatestSkillAudit(skillId: string): SkillAuditRow | undefined {
+  const db = initDb();
+  return db.prepare('SELECT * FROM skill_audits WHERE skill_id = ? ORDER BY created_at DESC LIMIT 1').get(skillId) as SkillAuditRow | undefined;
+}
+
+/** Get audit history for a skill */
+export function getSkillAuditHistory(skillId: string): SkillAuditRow[] {
+  const db = initDb();
+  return db.prepare('SELECT * FROM skill_audits WHERE skill_id = ? ORDER BY created_at DESC').all(skillId) as SkillAuditRow[];
+}
+
+// ===================== Skill Chain Execution DAO =====================
+
+/** Create a chain execution record */
+export function createSkillExecution(execution: {
+  id: string;
+  chainId: string;
+  status?: string;
+  failStrategy?: string;
+  steps?: string;
+  startedAt?: string;
+}): void {
+  const db = initDb();
+  db.prepare(`INSERT INTO skill_chain_executions (id, chain_id, status, fail_strategy, steps, started_at, completed_at, duration)
+    VALUES (?,?,?,?,?,?,NULL,NULL)`).run(
+    execution.id,
+    execution.chainId,
+    execution.status ?? 'running',
+    execution.failStrategy ?? 'stop',
+    execution.steps ?? '[]',
+    execution.startedAt ?? new Date().toISOString()
+  );
+}
+
+/** Update a chain execution record */
+export function updateSkillExecution(id: string, data: Partial<{
+  status: string;
+  failStrategy: string;
+  steps: string;
+  completedAt: string | null;
+  duration: number | null;
+}>): void {
+  const db = initDb();
+  const existing = db.prepare('SELECT * FROM skill_chain_executions WHERE id = ?').get(id) as SkillChainExecutionRow | undefined;
+  if (!existing) return;
+  const updated = {
+    status: data.status ?? existing.status,
+    fail_strategy: data.failStrategy ?? existing.fail_strategy,
+    steps: data.steps ?? existing.steps,
+    completed_at: data.completedAt !== undefined ? data.completedAt : existing.completed_at,
+    duration: data.duration !== undefined ? data.duration : existing.duration,
+  };
+  db.prepare('UPDATE skill_chain_executions SET status=?, fail_strategy=?, steps=?, completed_at=?, duration=? WHERE id=?').run(
+    updated.status,
+    updated.fail_strategy,
+    updated.steps,
+    updated.completed_at,
+    updated.duration,
+    id
+  );
+}
+
 export function migrateData(payload: {
   warehouses?: WarehouseRow[];
   inventoryItems?: Record<string, unknown>[];
@@ -966,4 +1285,47 @@ export function migrateData(payload: {
 
   transaction();
   return result;
+}
+
+// ===================== Skill Usage Statistics DAO =====================
+
+/** 获取单个技能的使用统计 */
+export function getSkillUsageStats(skillId: string): { totalUses: number; lastUsedAt: string | null } {
+  const db = initDb();
+  const result = db.prepare(`SELECT COUNT(*) as count, MAX(timestamp) as lastUsed FROM messages WHERE skillId = ?`).get(skillId) as { count: number; lastUsed: string | null };
+  return {
+    totalUses: result.count,
+    lastUsedAt: result.lastUsed,
+  };
+}
+
+/** 批量获取多个技能的使用统计 */
+export function getBatchSkillUsageStats(skillIds: string[]): Map<string, { totalUses: number; lastUsedAt: string | null }> {
+  const db = initDb();
+  const statsMap = new Map<string, { totalUses: number; lastUsedAt: string | null }>();
+
+  // 初始化所有技能 ID 为 0
+  for (const id of skillIds) {
+    statsMap.set(id, { totalUses: 0, lastUsedAt: null });
+  }
+
+  if (skillIds.length === 0) {
+    return statsMap;
+  }
+
+  // 批量查询
+  const placeholders = skillIds.map(() => '?').join(',');
+  const rows = db.prepare(`SELECT skillId, COUNT(*) as count, MAX(timestamp) as lastUsed FROM messages WHERE skillId IN (${placeholders}) GROUP BY skillId`).all(...skillIds) as Array<{ skillId: string; count: number; lastUsed: string | null }>;
+
+  // 更新统计结果
+  for (const row of rows) {
+    if (row.skillId) {
+      statsMap.set(row.skillId, {
+        totalUses: row.count,
+        lastUsedAt: row.lastUsed,
+      });
+    }
+  }
+
+  return statsMap;
 }

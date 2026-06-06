@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Button, CircularProgress, Dialog, DialogTitle,
   DialogContent, DialogActions, Alert, Checkbox, IconButton, Tooltip,
+  Snackbar,
 } from '@mui/material';
+import MuiAlert from '@mui/material/Alert';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExtensionIcon from '@mui/icons-material/Extension';
@@ -10,10 +12,15 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DescriptionIcon from '@mui/icons-material/Description';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import { useNavigate } from 'react-router-dom';
 import { unzipSync } from 'fflate';
 import { addSkill } from '../../stores/skillStore';
-import { scanSkillMd, readSkillMd } from '../../services/api';
-import type { ScannedSkillMd } from '../../services/api';
+import { scanSkillMd, readSkillMd, fetchSkillConflictCheck, triggerSkillAudit } from '../../services/api';
+import type { ScannedSkillMd, SkillConflictCheckResponse } from '../../services/api';
+import type { ConflictResult } from '../../types/skill';
+import type { SkillAudit } from '../../types/skill';
+import SecurityAuditDialog from './SecurityAuditDialog';
 
 // ===================== 类型 =====================
 
@@ -92,6 +99,82 @@ function parseSkillZip(arrayBuffer: ArrayBuffer): ParsedSkillMd | null {
   }
 }
 
+// ===================== 冲突确认弹窗 =====================
+
+/** 冲突确认弹窗：列出冲突技能及原因，供用户选择「仍然导入」或「取消」 */
+const ConflictConfirmDialog: React.FC<{
+  open: boolean;
+  conflicts: ConflictResult[];
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ open, conflicts, onConfirm, onCancel }) => (
+  <Dialog
+    open={open}
+    onClose={onCancel}
+    maxWidth="xs"
+    fullWidth
+    PaperProps={{ sx: { borderRadius: '12px' } }}
+  >
+    <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1 }}>
+      <WarningAmberIcon sx={{ color: '#EA580C', fontSize: 22 }} />
+      <Typography sx={{ fontWeight: 600, fontSize: '0.95rem' }}>检测到技能冲突</Typography>
+    </DialogTitle>
+    <DialogContent>
+      <Typography sx={{ fontSize: '0.8125rem', color: '#6B7280', mb: 1.5 }}>
+        以下已安装技能与即将导入的技能存在重叠，可能导致触发词或标签冲突：
+      </Typography>
+      <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
+        {conflicts.map((c) => (
+          <Box
+            key={c.skillId}
+            sx={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 1,
+              px: 1.5,
+              py: 1,
+              mb: 0.75,
+              borderLeft: '3px solid #EA580C',
+              backgroundColor: '#FEF3C7',
+              borderRadius: '0 6px 6px 0',
+            }}
+          >
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#92400E' }}>
+                {c.skillName}
+              </Typography>
+              <Typography sx={{ fontSize: '0.7rem', color: '#B45309', mt: 0.25 }}>
+                {c.reasons.join('；')}
+              </Typography>
+            </Box>
+            <Typography sx={{ fontSize: '0.65rem', color: '#D97706', flexShrink: 0, mt: 0.25 }}>
+              {Math.round(c.score * 100)}%
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+    </DialogContent>
+    <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+      <Button onClick={onCancel} sx={{ textTransform: 'none', color: '#6B7280', borderRadius: 2 }}>
+        取消
+      </Button>
+      <Button
+        variant="contained"
+        onClick={onConfirm}
+        sx={{
+          backgroundColor: '#EA580C',
+          '&:hover': { backgroundColor: '#C2410C' },
+          textTransform: 'none',
+          borderRadius: 2,
+          fontWeight: 600,
+        }}
+      >
+        仍然导入
+      </Button>
+    </DialogActions>
+  </Dialog>
+);
+
 // ===================== SKILL.md 导入面板 =====================
 
 const SkillMdImportPanel: React.FC<{
@@ -104,6 +187,12 @@ const SkillMdImportPanel: React.FC<{
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState('');
   const [imported, setImported] = useState<Set<string>>(new Set());
+
+  // T04: 冲突检测状态
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [conflictResults, setConflictResults] = useState<ConflictResult[]>([]);
+  const [pendingImportSkill, setPendingImportSkill] = useState<ScannedSkillMd | null>(null);
+  const [checkingConflict, setCheckingConflict] = useState(false);
 
   const loadSkills = useCallback(async () => {
     setLoading(true);
@@ -139,25 +228,73 @@ const SkillMdImportPanel: React.FC<{
     }
   };
 
+  /** T04: 对单个技能执行冲突检查，有冲突弹窗确认，无冲突直接导入 */
+  const checkAndImport = async (skill: ScannedSkillMd): Promise<void> => {
+    setCheckingConflict(true);
+    try {
+      const result: SkillConflictCheckResponse = await fetchSkillConflictCheck(
+        skill.name,
+        undefined,
+        [skill.dirName, 'workbuddy']
+      );
+      if (result.conflicts.length > 0) {
+        // 有冲突：暂存，弹窗让用户确认
+        setConflictResults(result.conflicts);
+        setPendingImportSkill(skill);
+        setConflictDialogOpen(true);
+      } else {
+        // 无冲突：直接导入
+        await onImport(skill);
+        setImported((prev) => new Set(prev).add(skill.dirName));
+      }
+    } catch {
+      // 冲突检查 API 失败时不阻塞导入
+      console.warn('[SkillMdImportPanel] Conflict check failed, proceeding with import');
+      await onImport(skill);
+      setImported((prev) => new Set(prev).add(skill.dirName));
+    } finally {
+      setCheckingConflict(false);
+    }
+  };
+
+  /** T04: 冲突确认后，用户点击「仍然导入」 */
+  const handleConflictConfirm = async () => {
+    setConflictDialogOpen(false);
+    if (pendingImportSkill) {
+      try {
+        await onImport(pendingImportSkill);
+        setImported((prev) => new Set(prev).add(pendingImportSkill.dirName));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : '未知错误';
+        setError(`导入失败：${msg}`);
+      }
+    }
+    setPendingImportSkill(null);
+    setConflictResults([]);
+  };
+
+  /** T04: 冲突确认后，用户点击「取消」 */
+  const handleConflictCancel = () => {
+    setConflictDialogOpen(false);
+    setPendingImportSkill(null);
+    setConflictResults([]);
+  };
+
   const handleImportSelected = async () => {
     if (selected.size === 0) return;
     setImporting(true);
     setError('');
 
-    let failed = 0;
-    for (const dirName of selected) {
+    const selectedArr = Array.from(selected);
+    for (const dirName of selectedArr) {
       const skill = skills.find((s) => s.dirName === dirName);
       if (!skill) continue;
       try {
-        await onImport(skill);
-        setImported((prev) => new Set(prev).add(dirName));
-      } catch {
-        failed++;
+        await checkAndImport(skill);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : '未知错误';
+        setError(`导入失败：${skill.name} — ${msg}`);
       }
-    }
-
-    if (failed > 0) {
-      setError(`${failed} 个技能导入失败`);
     }
 
     setSelected(new Set());
@@ -280,7 +417,7 @@ const SkillMdImportPanel: React.FC<{
         <Button
           variant="contained"
           onClick={handleImportSelected}
-          disabled={selected.size === 0 || importing}
+          disabled={selected.size === 0 || importing || checkingConflict}
           sx={{
             backgroundColor: '#111827',
             '&:hover': { backgroundColor: '#374151' },
@@ -288,8 +425,8 @@ const SkillMdImportPanel: React.FC<{
             borderRadius: 2,
           }}
         >
-          {importing ? <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} /> : null}
-          {importing ? '导入中...' : `导入 ${selected.size > 0 ? `(${selected.size})` : ''}`}
+          {importing || checkingConflict ? <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} /> : null}
+          {checkingConflict ? '检查冲突中...' : importing ? '导入中...' : `导入 ${selected.size > 0 ? `(${selected.size})` : ''}`}
         </Button>
       </Box>
 
@@ -306,6 +443,14 @@ description: 技能描述
 
 技能指令正文（将作为 AI 上下文模板注入）`}</Box>
       </Box>
+
+      {/* T04: 冲突确认弹窗 */}
+      <ConflictConfirmDialog
+        open={conflictDialogOpen}
+        conflicts={conflictResults}
+        onConfirm={handleConflictConfirm}
+        onCancel={handleConflictCancel}
+      />
     </Box>
   );
 };
@@ -320,6 +465,37 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<ParsedSkillMd | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // T04: 在技能安装成功后，触发安全审查并处理结果
+  const triggerAuditAfterImport = async (skillId: string, skillName: string) => {
+    try {
+      const audit = await triggerSkillAudit(skillId, '');
+      
+      if (audit.level === 'safe') {
+        // 安全 → Toast 通知
+        setToast({ message: `「${skillName}」安全审查通过 (${audit.score}分)`, severity: 'success' });
+      } else if (audit.level === 'suspicious') {
+        // 可疑 → 弹出审查摘要对话框
+        setPendingAudit(audit);
+        setShowAuditDialog(true);
+      } else {
+        // 恶意 → 弹出审查报告（仅取消按钮）
+        setPendingAudit(audit);
+        setShowAuditDialog(true);
+      }
+    } catch (e) {
+      console.error('安全审查失败', e);
+    }
+  };
+  const [pendingAudit, setPendingAudit] = useState<SkillAudit | null>(null);
+  const [showAuditDialog, setShowAuditDialog] = useState(false);
+  const [toast, setToast] = useState<{ message: string; severity: 'success' | 'warning' | 'error' } | null>(null);
+  const navigate = useNavigate();
+
+  // T04: ZIP 安装冲突检测状态
+  const [zipConflictOpen, setZipConflictOpen] = useState(false);
+  const [zipConflicts, setZipConflicts] = useState<ConflictResult[]>([]);
+  const [zipPendingInstall, setZipPendingInstall] = useState<(() => Promise<void>) | null>(null);
 
   const reset = () => {
     setFile(null);
@@ -390,7 +566,6 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         parsed = parseSkillZip(buf);
       } catch (zipErr) {
         console.warn('[AddSkillDialog] ZIP parse failed, using fallback:', zipErr);
-        // 解析失败不算致命，继续用默认值
       }
 
       let name: string;
@@ -407,7 +582,42 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         promptTemplate = `你是 CrossWMS 的「${name}」技能助手。${desc}请根据用户的请求，提供专业、准确的回答和操作建议。`;
       }
 
-      // Step 3: 调用 API 创建技能
+      // Step 3: T04 冲突检测 — 在导入前检查
+      try {
+        const conflictResult = await fetchSkillConflictCheck(name, undefined, ['zip-import']);
+        if (conflictResult.conflicts.length > 0) {
+          // 有冲突：暂存安装函数，弹窗确认
+          const doInstall = async () => {
+            const newSkill = await addSkill({
+              name,
+              desc,
+              icon: 'Extension',
+              category: 'tool',
+              path: '/chat',
+              status: 'active',
+              version: '1.0',
+              executionMode: 'chat',
+              promptTemplate,
+              detail: desc,
+              tags: ['zip-import'],
+            });
+            console.log('[AddSkillDialog] Skill installed successfully:', newSkill.id);
+            onAdded(newSkill.name);
+            reset();
+            onClose();
+          };
+          setZipConflicts(conflictResult.conflicts);
+          setZipPendingInstall(() => doInstall);
+          setZipConflictOpen(true);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // 冲突检查 API 失败时不阻塞安装
+        console.warn('[AddSkillDialog] Conflict check failed, proceeding with install');
+      }
+
+      // Step 4: 无冲突，直接调用 API 创建技能
       console.log('[AddSkillDialog] Installing skill:', name, 'hasPromptTemplate:', !!promptTemplate);
       const newSkill = await addSkill({
         name,
@@ -424,6 +634,8 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       });
       console.log('[AddSkillDialog] Skill installed successfully:', newSkill.id);
       onAdded(newSkill.name);
+      // T04: 触发安全审查
+      await triggerAuditAfterImport(newSkill.id, newSkill.name);
       reset();
       onClose();
     } catch (err) {
@@ -461,6 +673,8 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       tags: [skill.dirName, 'workbuddy'],
     });
     onAdded(newSkill.name);
+    // T04: 触发安全审查
+    await triggerAuditAfterImport(newSkill.id, newSkill.name);
   };
 
   // ===================== 渲染 =====================
@@ -695,10 +909,79 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
             }}
           >
             {loading ? <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} /> : null}
-            {loading ? '安装中...' : '安装技能'}
+            {loading ? '检查冲突中...' : '安装技能'}
           </Button>
         </DialogActions>
       )}
+
+      {/* T04: ZIP 安装冲突确认弹窗 */}
+      <ConflictConfirmDialog
+        open={zipConflictOpen}
+        conflicts={zipConflicts}
+        onConfirm={async () => {
+          setZipConflictOpen(false);
+          if (zipPendingInstall) {
+            setLoading(true);
+            try {
+              await zipPendingInstall();
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : '未知错误';
+              setError(`安装失败：${msg}`);
+            } finally {
+              setLoading(false);
+            }
+          }
+          setZipPendingInstall(null);
+          setZipConflicts([]);
+        }}
+        onCancel={() => {
+          setZipConflictOpen(false);
+          setZipPendingInstall(null);
+          setZipConflicts([]);
+        }}
+      />
+
+      {/* T04: 安全审查对话框 */}
+      {pendingAudit && (
+        <SecurityAuditDialog
+          open={showAuditDialog}
+          audit={pendingAudit}
+          allowForceInstall={pendingAudit.level === 'suspicious'}
+          onInstall={() => {
+            setShowAuditDialog(false);
+            setToast({ message: `「${pendingAudit.skillId}」已安装（安全审查 ${pendingAudit.score}分）`, severity: 'warning' });
+          }}
+          onCancel={() => {
+            setShowAuditDialog(false);
+            if (pendingAudit.level === 'malicious') {
+              // 恶意技能：删除已安装的技能
+              onAdded('');  // TBD: 需要传入 onDelete 回调
+              setToast({ message: `已阻止安装恶意技能`, severity: 'error' });
+            }
+          }}
+          onViewReport={() => {
+            setShowAuditDialog(false);
+            navigate(`/skills/${pendingAudit.skillId}/audit`);
+          }}
+        />
+      )}
+
+      {/* T04: Toast 通知 */}
+      <Snackbar
+        open={Boolean(toast)}
+        autoHideDuration={6000}
+        onClose={() => setToast(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <MuiAlert
+          severity={toast?.severity || 'info'}
+          variant="filled"
+          onClose={() => setToast(null)}
+          sx={{ width: '100%' }}
+        >
+          {toast?.message || ''}
+        </MuiAlert>
+      </Snackbar>
     </Dialog>
   );
 };

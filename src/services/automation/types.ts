@@ -9,7 +9,7 @@
 // ===================== 任务类型 =====================
 
 /** 任务类型 */
-export type TaskType = 'data-sync' | 'inventory-snapshot' | 'report-gen' | 'volume-alert' | 'custom';
+export type TaskType = 'data-sync' | 'inventory-snapshot' | 'report-gen' | 'volume-alert' | 'custom' | 'skill-chain';
 
 /** 频率类型 */
 export type FreqType = 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
@@ -28,6 +28,8 @@ export interface TaskConfig {
   actionChain?: ActionType[];
   /** custom 专用：自定义脚本内容 */
   script?: string;
+  /** skill-chain 专用：链 ID */
+  chainId?: string;
 }
 
 /** custom 任务可执行的原子 action */

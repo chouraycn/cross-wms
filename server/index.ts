@@ -1,12 +1,13 @@
 /* eslint-disable no-console */
 import express from 'express';
 import cors from 'cors';
-import { initDb, getSessions, createSession, getSessionMessages, addMessage, deleteSession } from './db.js';
+import { initDb, getSessions, searchSessions, createSession, getSessionMessages, addMessage, deleteSession } from './db.js';
 import { v4 as uuidv4 } from 'uuid';
 import { query } from '@tencent-ai/agent-sdk';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import skillWatcher from './services/skillWatcher.js';
 
 // Business data routes
 import warehousesRouter from './routes/warehouses.js';
@@ -17,7 +18,12 @@ import outboundRouter from './routes/outbound.js';
 import skillsRouter from './routes/skills.js';
 import settingsRouter from './routes/settings.js';
 import migrateRouter from './routes/migrate.js';
+import chainRoutes from './routes/chainRoutes.js';
 import { findByQuery, countByQuery } from './dao/inventoryTransactionDao.js';
+
+// Services
+import { addClient, removeClient } from './services/chainExecutor.js';
+import { batchAuditSkills } from './services/securityAuditor.js';
 
 // MEMORY.md 路径
 const CROSSWMS_DIR = path.join(os.homedir(), '.crosswms');
@@ -68,8 +74,48 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '3mb' }));
 
+// 初始化 Skill Watcher
+skillWatcher.init();
+
 // 健康检查
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+
+// SSE 端点：监听技能变化
+app.get('/api/skill-events', (_req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  // 注册 SSE 客户端
+  skillWatcher.addClient(res);
+
+  // 客户端断开连接时清理
+  _req.on('close', () => {
+    skillWatcher.removeClient(res);
+  });
+});
+
+// SSE 端点：监听链执行事件
+app.get('/api/chain-execution-events', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+  });
+
+  const execId = req.query.execId as string | undefined;
+  if (execId) {
+    addClient(execId, res);
+  }
+
+  req.on('close', () => {
+    if (execId) {
+      removeClient(execId, res);
+    }
+  });
+});
 
 // ========== MEMORY.md API ==========
 
@@ -94,9 +140,10 @@ app.post('/api/memory', (req, res) => {
   }
 });
 
-// 获取会话列表
-app.get('/api/sessions', (_req, res) => {
-  const sessions = getSessions();
+// 获取会话列表（支持?q=搜索参数）
+app.get('/api/sessions', (req, res) => {
+  const q = req.query.q as string | undefined;
+  const sessions = q ? searchSessions(q) : getSessions();
   res.json({ sessions });
 });
 
@@ -121,7 +168,7 @@ app.delete('/api/sessions/:id', (req, res) => {
 
 // 发送消息（SSE）
 app.post('/api/chat', async (req, res) => {
-  const { sessionId, message, model = 'claude-sonnet-4', skillContext } = req.body;
+  const { sessionId, message, model = 'claude-sonnet-4', skillContext, skillId } = req.body;
 
   try {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -137,7 +184,7 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // 保存用户消息
-    const userMsg = addMessage({ sessionId, role: 'user', content: message, model });
+    const userMsg = addMessage({ sessionId, role: 'user', content: message, model, skillId: skillId || null });
     res.write(`data: ${JSON.stringify({ type: 'text', content: userMsg.content })}\n\n`);
 
     // 发送初始化事件
@@ -170,6 +217,26 @@ app.post('/api/chat', async (req, res) => {
         finalPrompt = `<memory>\n${memoryContent.trim()}\n</memory>\n\n${finalPrompt}`;
       }
 
+      // 注入引用的会话上下文到 prompt
+      const referencedSessionIds = req.body.referencedSessionIds;
+      if (Array.isArray(referencedSessionIds) && referencedSessionIds.length > 0) {
+        let sessionContext = '\n<referenced-sessions>\n';
+        for (const sessionId of referencedSessionIds) {
+          const refMessages = getSessionMessages(sessionId);
+          if (refMessages.length > 0) {
+            const sessionInfo = getSessions().find((s: { id: string }) => s.id === sessionId);
+            const sessionTitle = sessionInfo ? sessionInfo.title : sessionId;
+            sessionContext += `\n## 会话：${sessionTitle}\n`;
+            for (const msg of refMessages.slice(-10)) { // 只取最后 10 条消息避免过长
+              const role = msg.role === 'user' ? 'User' : 'Assistant';
+              sessionContext += `${role}: ${msg.content}\n`;
+            }
+          }
+        }
+        sessionContext += '</referenced-sessions>\n';
+        finalPrompt = sessionContext + '\n' + finalPrompt;
+      }
+
       // 注入技能上下文到 prompt
       if (skillContext && typeof skillContext === 'string' && skillContext.trim()) {
         finalPrompt = `<skill-context>\n${skillContext.trim()}\n</skill-context>\n\n${finalPrompt}`;
@@ -193,13 +260,13 @@ app.post('/api/chat', async (req, res) => {
       }
 
       // 保存完整的助手回复
-      addMessage({ sessionId, role: 'assistant', content: fullContent, model });
+      addMessage({ sessionId, role: 'assistant', content: fullContent, model, skillId: skillId || null });
     } catch (sdkError) {
       console.error('[Chat API] Agent SDK error:', sdkError);
       console.error('[Chat API] Stack trace:', sdkError instanceof Error ? sdkError.stack : 'N/A');
       const errorMsg = `抱歉，AI 服务暂时不可用，请稍后重试。\n错误：${sdkError instanceof Error ? sdkError.message : '未知错误'}`;
       res.write(`data: ${JSON.stringify({ type: 'text', content: errorMsg })}\n\n`);
-      addMessage({ sessionId, role: 'assistant', content: errorMsg, model });
+      addMessage({ sessionId, role: 'assistant', content: errorMsg, model, skillId: skillId || null });
     }
 
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
@@ -244,6 +311,10 @@ app.use('/api', skillsRouter); // handles /api/user-skills and /api/builtin-stat
 app.use('/api/app-settings', settingsRouter);
 app.use('/api/migrate', migrateRouter);
 
+// Skill chain routes
+app.use('/api/skill-chains', chainRoutes);
+app.use('/api/chain-executions', chainRoutes);
+
 // GET /api/inventory-transactions?page=1&pageSize=20&type=inbound&warehouseId=wh1&startDate=2026-01-01&endDate=2026-05-25&sku=ABC
 app.get('/api/inventory-transactions', (req, res) => {
   const page = parseInt(req.query.page as string, 10) || 1;
@@ -269,6 +340,11 @@ const server = app.listen(PORT, () => {
   console.log(`CrossWMS Chat Server running on port ${PORT}`);
   initDb();
 });
+
+// 异步批量审查预置技能（不阻塞启动，延迟 5 秒执行）
+setTimeout(() => {
+  batchAuditSkills().catch((e: Error) => console.error('[Startup] 批量审查失败:', e));
+}, 5000);
 
 // 端口冲突时优雅退出（让 pywebview 的进程监控 3 秒后重启，彼时端口已释放）
 server.on('error', (err: NodeJS.ErrnoException) => {

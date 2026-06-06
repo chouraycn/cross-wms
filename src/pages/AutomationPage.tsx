@@ -203,6 +203,7 @@ const AutomationPage: React.FC = () => {
       'report-gen': '生成仓库运营数据报表',
       'volume-alert': `监控仓库容积率，超过 ${tpl.taskConfig?.threshold ?? 85}% 时生成预警并发送通知`,
       'custom': '按动作链顺序执行自定义任务',
+      'skill-chain': '按顺序执行技能链中的各个技能节点',
     };
 
     const newAuto: Automation = {

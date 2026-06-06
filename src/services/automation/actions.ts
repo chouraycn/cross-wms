@@ -414,6 +414,67 @@ export async function executeByTypeWithSteps(taskType: TaskType, config?: TaskCo
       return await executeVolumeAlert(config);
     case 'custom':
       return await executeCustom(config);
+    case 'skill-chain': {
+      const start = Date.now();
+      const task = config as TaskConfig;
+      if (task.chainId) {
+        try {
+          const res = await fetch(`/api/skill-chains/${encodeURIComponent(task.chainId)}/execute`, {
+            method: 'POST',
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({ error: res.statusText }));
+            return {
+              result: `技能链执行失败: ${errData.error || res.statusText}`,
+              steps: [
+                {
+                  action: '执行技能链',
+                  status: 'failed',
+                  message: errData.error || res.statusText,
+                  duration: Date.now() - start,
+                },
+              ],
+            };
+          }
+          const data = await res.json();
+          return {
+            result: `技能链执行完成`,
+            steps: [
+              {
+                action: '执行技能链',
+                status: 'success',
+                message: `技能链 ${task.chainId} 已触发`,
+                duration: Date.now() - start,
+              },
+            ],
+          };
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return {
+            result: `技能链执行出错: ${message}`,
+            steps: [
+              {
+                action: '执行技能链',
+                status: 'failed',
+                message,
+                duration: Date.now() - start,
+              },
+            ],
+          };
+        }
+      }
+      return {
+        result: '未配置技能链 ID',
+        steps: [
+          {
+            action: '执行技能链',
+            status: 'failed',
+            message: '未配置技能链 ID',
+            duration: Date.now() - start,
+          },
+        ],
+      };
+    }
     default:
       return { result: `未知任务类型: ${taskType}`, steps: [] };
   }

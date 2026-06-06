@@ -12,4 +12,6 @@ export interface Session {
   title: string;
   model: string;
   messages: Message[];
+  createdAt?: string;
+  updatedAt?: string;
 }

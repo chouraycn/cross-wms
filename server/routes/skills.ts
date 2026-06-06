@@ -6,11 +6,14 @@
  * - GET/PUT /api/builtin-status-patches
  * - DELETE /api/builtin-status-patches/:skillId
  * - GET /api/skill-md-scan
+ * - GET /api/skill-usage-stats
+ * - POST /api/skill-conflict-check
  */
 import { Router, type Request, type Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { v4 as uuidv4 } from 'uuid';
 import {
   getUserSkills as dbGetSkills,
   getUserSkillById as dbGetSkillById,
@@ -20,7 +23,15 @@ import {
   getBuiltinPatches as dbGetPatches,
   setBuiltinPatch as dbSetPatch,
   removeBuiltinPatch as dbRemovePatch,
+  getSkillUsageStats as dbGetSkillUsageStats,
+  getBatchSkillUsageStats as dbGetBatchSkillUsageStats,
+  getLatestSkillAudit as dbGetLatestAudit,
+  getSkillAuditHistory as dbGetAuditHistory,
+  createSkillAudit as dbCreateAudit,
 } from '../db.js';
+import { auditSkillMd, generateMarkdownReport } from '../services/securityAuditor.js';
+
+const crypto = require('crypto');
 
 // ===================== SKILL.md 解析工具 =====================
 
@@ -63,7 +74,7 @@ function parseSkillMd(content: string): { frontmatter: Record<string, string>; b
 }
 
 /** 扫描 ~/.workbuddy/skills/ 目录下的所有 SKILL.md */
-function scanWorkbuddySkills(): ScannedSkillMd[] {
+export function scanWorkbuddySkills(): ScannedSkillMd[] {
   const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
   const results: ScannedSkillMd[] = [];
 
@@ -266,6 +277,300 @@ router.get('/skill-md-read/:dirName', (req: Request, res: Response) => {
     });
   } catch {
     res.status(500).json({ error: 'Failed to read SKILL.md' });
+  }
+});
+
+// ===================== Skill Usage Statistics =====================
+
+/** Jaccard 相似度计算 */
+function jaccardSimilarity(setA: string[], setB: string[]): number {
+  const a = new Set(setA.map(s => s.toLowerCase()));
+  const b = new Set(setB.map(s => s.toLowerCase()));
+  const intersection = new Set([...a].filter(x => b.has(x)));
+  const union = new Set([...a, ...b]);
+  return union.size === 0 ? 0 : intersection.size / union.size;
+}
+
+/** 检查两个技能是否冲突 */
+function checkConflict(skillA: Record<string, unknown>, skillB: Record<string, unknown>): { score: number; reasons: string[] } {
+  const reasons: string[] = [];
+  let score = 0;
+
+  // 1. 名称相似度
+  const nameA = (skillA.name as string || '').toLowerCase();
+  const nameB = (skillB.name as string || '').toLowerCase();
+  if (nameA && nameB) {
+    const nameSimilarity = jaccardSimilarity(nameA.split(''), nameB.split(''));
+    if (nameSimilarity > 0.5) {
+      score += nameSimilarity * 0.4;
+      reasons.push(`名称相似度: ${(nameSimilarity * 100).toFixed(1)}%`);
+    }
+  }
+
+  // 2. 触发词相似度
+  const triggerA = (skillA.trigger as string || '').toLowerCase();
+  const triggerB = (skillB.trigger as string || '').toLowerCase();
+  if (triggerA && triggerB) {
+    const triggerSimilarity = jaccardSimilarity(triggerA.split(' '), triggerB.split(' '));
+    if (triggerSimilarity > 0.3) {
+      score += triggerSimilarity * 0.3;
+      reasons.push(`触发词相似度: ${(triggerSimilarity * 100).toFixed(1)}%`);
+    }
+  }
+
+  // 3. 标签重叠度
+  const tagsA = Array.isArray(skillA.tags) ? skillA.tags as string[] : [];
+  const tagsB = Array.isArray(skillB.tags) ? skillB.tags as string[] : [];
+  if (tagsA.length > 0 && tagsB.length > 0) {
+    const tagSimilarity = jaccardSimilarity(tagsA, tagsB);
+    if (tagSimilarity > 0.3) {
+      score += tagSimilarity * 0.3;
+      reasons.push(`标签重叠度: ${(tagSimilarity * 100).toFixed(1)}%`);
+    }
+  }
+
+  return { score, reasons };
+}
+
+// GET /api/skill-usage-stats?skillId=xxx — 获取技能使用统计
+router.get('/skill-usage-stats', (req: Request, res: Response) => {
+  const skillId = req.query.skillId as string | undefined;
+
+  if (skillId) {
+    // 查询单个技能
+    const stats = dbGetSkillUsageStats(skillId);
+    res.json({ data: { [skillId]: stats } });
+  } else {
+    // 批量查询所有技能（从 user_skills 表中获取所有技能 ID）
+    const allSkills = dbGetSkills();
+    const skillIds = allSkills.map((s: Record<string, unknown>) => s.id as string);
+    const statsMap = dbGetBatchSkillUsageStats(skillIds);
+    const result: Record<string, { totalUses: number; lastUsedAt: string | null }> = {};
+    for (const [id, stats] of statsMap.entries()) {
+      result[id] = stats;
+    }
+    res.json({ data: result });
+  }
+});
+
+// POST /api/skill-conflict-check — 检查技能冲突
+router.post('/skill-conflict-check', (req: Request, res: Response) => {
+  const { name, trigger, tags } = req.body;
+
+  if (!name && !trigger && (!tags || !Array.isArray(tags) || tags.length === 0)) {
+    res.status(400).json({ error: 'At least one of name, trigger, or tags must be provided' });
+    return;
+  }
+
+  // 获取所有现有技能
+  const allSkills = dbGetSkills();
+
+  // 计算与每个现有技能的冲突分数
+  const conflicts: Array<{ skillId: string; skillName: string; score: number; reasons: string[] }> = [];
+  const THRESHOLD = 0.4; // 冲突阈值
+
+  for (const skill of allSkills) {
+    const { score, reasons } = checkConflict(
+      { name, trigger, tags },
+      { name: skill.name, trigger: skill.trigger, tags: skill.tags }
+    );
+
+    if (score >= THRESHOLD) {
+      conflicts.push({
+        skillId: (skill as Record<string, unknown>).id as string,
+        skillName: (skill as Record<string, unknown>).name as string,
+        score,
+        reasons,
+      });
+    }
+  }
+
+  // 按冲突分数降序排序
+  conflicts.sort((a, b) => b.score - a.score);
+
+  const isHighRisk = conflicts.length > 0 && conflicts[0].score >= 0.7;
+
+  res.json({
+    data: {
+      conflicts,
+      isHighRisk,
+    },
+  });
+});
+
+// ===================== Skill Audit Routes =====================
+
+// GET /api/skill-audits/:skillId — 获取最新审查结果
+router.get('/skill-audits/:skillId', (req: Request, res: Response) => {
+  try {
+    const audit = dbGetLatestAudit(req.params.skillId);
+    res.json({ data: audit || null });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// GET /api/skill-audits/:skillId/history — 获取审查历史
+router.get('/skill-audits/:skillId/history', (req: Request, res: Response) => {
+  try {
+    const history = dbGetAuditHistory(req.params.skillId);
+    res.json({ data: history });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// POST /api/skill-audits — 触发审查（带缓存，force 可跳过缓存）
+router.post('/skill-audits', async (req: Request, res: Response) => {
+  try {
+    const { skillId, skillPath, force } = req.body;
+    if (!skillId) {
+      res.status(400).json({ error: 'skillId is required' });
+      return;
+    }
+
+    // Resolve SKILL.md path
+    let mdPath: string;
+    if (skillPath && fs.existsSync(skillPath)) {
+      mdPath = skillPath;
+    } else {
+      const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+      const upperPath = path.join(skillsDir, skillId, 'SKILL.md');
+      const lowerPath = path.join(skillsDir, skillId, 'skill.md');
+      if (fs.existsSync(upperPath)) {
+        mdPath = upperPath;
+      } else if (fs.existsSync(lowerPath)) {
+        mdPath = lowerPath;
+      } else {
+        res.status(404).json({ error: `SKILL.md not found for skill: ${skillId}` });
+        return;
+      }
+    }
+
+    const content = fs.readFileSync(mdPath, 'utf-8');
+    const version = crypto.createHash('sha256').update(content).digest('hex');
+
+    // Cache check: return existing audit if same version (unless force=true)
+    if (!force) {
+      const existing = dbGetLatestAudit(skillId);
+      if (existing && existing.skill_version === version) {
+        return res.json({ data: existing });
+      }
+    }
+
+    // Run security audit
+    const result = await auditSkillMd(mdPath, content);
+    const id = uuidv4();
+    const now = new Date().toISOString();
+
+    dbCreateAudit({
+      id,
+      skillId,
+      skillVersion: version,
+      score: result.summary.score,
+      level: result.summary.level,
+      reportJson: JSON.stringify(result),
+      reportMarkdown: generateMarkdownReport(result),
+      triggeredBy: 'manual',
+      createdAt: now,
+    });
+
+    const audit = dbGetLatestAudit(skillId);
+    res.json({ data: audit });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// POST /api/skill-audits/batch — 批量审计技能
+router.post('/skill-audits/batch', async (req: Request, res: Response) => {
+  try {
+    const { skillIds } = req.body;
+    if (!Array.isArray(skillIds) || skillIds.length === 0) {
+      res.status(400).json({ error: 'skillIds array is required' });
+      return;
+    }
+
+    const results: Array<{ skillId: string; score: number; level: string; error?: string }> = [];
+    const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+
+    for (const skillId of skillIds) {
+      try {
+        const upperPath = path.join(skillsDir, skillId, 'SKILL.md');
+        const lowerPath = path.join(skillsDir, skillId, 'skill.md');
+        let mdPath: string | null = null;
+        if (fs.existsSync(upperPath)) {
+          mdPath = upperPath;
+        } else if (fs.existsSync(lowerPath)) {
+          mdPath = lowerPath;
+        }
+
+        if (!mdPath) {
+          results.push({ skillId, score: 100, level: 'safe', error: 'SKILL.md not found' });
+          continue;
+        }
+
+        const content = fs.readFileSync(mdPath, 'utf-8');
+        const version = crypto.createHash('sha256').update(content).digest('hex');
+
+        // Skip if already audited for this version
+        const existing = dbGetLatestAudit(skillId);
+        if (existing && existing.skill_version === version) {
+          results.push({ skillId, score: existing.score, level: existing.level });
+          continue;
+        }
+
+        const result = await auditSkillMd(mdPath, content);
+        const id = uuidv4();
+        const now = new Date().toISOString();
+
+        dbCreateAudit({
+          id,
+          skillId,
+          skillVersion: version,
+          score: result.summary.score,
+          level: result.summary.level,
+          reportJson: JSON.stringify(result),
+          reportMarkdown: generateMarkdownReport(result),
+          triggeredBy: 'manual',
+          createdAt: now,
+        });
+
+        results.push({ skillId, score: result.summary.score, level: result.summary.level });
+      } catch (e) {
+        results.push({
+          skillId,
+          score: 0,
+          level: 'malicious',
+          error: (e as Error).message,
+        });
+      }
+    }
+
+    res.json({ data: { results } });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// Backward-compatible aliases for old audit route paths
+// GET /api/skills/:id/audit → same as /api/skill-audits/:id
+router.get('/skills/:id/audit', (req: Request, res: Response) => {
+  try {
+    const audit = dbGetLatestAudit(req.params.id);
+    res.json({ data: audit || null });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// GET /api/skills/:id/audit-history → same as /api/skill-audits/:id/history
+router.get('/skills/:id/audit-history', (req: Request, res: Response) => {
+  try {
+    const history = dbGetAuditHistory(req.params.id);
+    res.json({ data: history });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
   }
 });
 

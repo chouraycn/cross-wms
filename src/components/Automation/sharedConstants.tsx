@@ -24,6 +24,7 @@ export const TASK_TYPE_LABELS: Record<TaskType, string> = {
   'report-gen': '报表生成',
   'volume-alert': '容积率预警',
   'custom': '自定义',
+  'skill-chain': '技能链',
 };
 
 export const TASK_TYPE_ICONS: Record<TaskType, React.ReactNode> = {
@@ -32,6 +33,7 @@ export const TASK_TYPE_ICONS: Record<TaskType, React.ReactNode> = {
   'report-gen': <AssessmentIcon sx={{ fontSize: 16 }} />,
   'volume-alert': <WarningIcon sx={{ fontSize: 16 }} />,
   'custom': <CodeIcon sx={{ fontSize: 16 }} />,
+  'skill-chain': <AccountTreeIcon sx={{ fontSize: 16 }} />,
 };
 
 export const TEMPLATE_ICON_MAP: Record<string, React.ReactNode> = {
@@ -48,6 +50,7 @@ export const TASK_TYPE_COLORS: Record<TaskType, string> = {
   'report-gen': '#059669',
   'volume-alert': '#D97706',
   'custom': '#6B7280',
+  'skill-chain': '#DB2777',
 };
 
 export const WEEKDAY_LABELS: Record<string, string> = {
