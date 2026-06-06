@@ -3,8 +3,66 @@
  *
  * 包含 TaskType、ActionType、EngineStateEvent、ExecutionStep 等核心类型，
  * 以及 Automation、AutomationExecution、AutomationTemplate 接口。
+ *
+ * v2.0 新增：
+ * - TriggerType、TriggerCondition、TriggerConditionGroup
+ * - EventTriggerConfig、WebhookConfig、ExecutionPolicy、NotificationConfig
+ * - 扩展 Automation、AutomationExecution、EngineStateEvent
  */
 
+
+// ===================== 触发类型 =====================
+
+/** 触发方式 */
+export type TriggerType = 'schedule' | 'event' | 'webhook';
+
+/** 触发条件 */
+export interface TriggerCondition {
+  field: string;
+  operator: '<' | '>' | '<=' | '>=' | '==' | '!=' | 'contains' | 'in';
+  value: string | number | boolean | string[];
+}
+
+/** 触发条件组（支持 AND/OR 嵌套） */
+export interface TriggerConditionGroup {
+  operator: 'AND' | 'OR';
+  conditions: (TriggerCondition | TriggerConditionGroup)[];
+}
+
+/** 事件触发配置 */
+export interface EventTriggerConfig {
+  eventName: string;
+  condition?: TriggerConditionGroup;
+  debounceMs?: number; // 默认 0
+  triggerMode?: 'once' | 'every'; // 默认 'every'
+}
+
+/** Webhook 配置 */
+export interface WebhookConfig {
+  enabled: boolean;
+  /** 后端加密存储，前端仅可重置不可查看明文 */
+  secret?: string;
+}
+
+/** 执行策略 */
+export interface ExecutionPolicy {
+  timeoutMs: number;        // 默认 30000
+  retry: {
+    maxAttempts: number;    // 默认 1
+    intervalMs: number;     // 默认 5000
+    backoff: 'fixed' | 'exponential'; // 默认 'fixed'
+  };
+  onFailure: 'stop' | 'continue'; // 默认 'stop'
+}
+
+/** 通知配置 */
+export interface NotificationConfig {
+  channels: ('in-app' | 'webhook' | 'desktop')[];
+  webhookUrl?: string;
+  onSuccess: boolean;
+  onFailure: boolean;
+  template?: string; // 支持 {{variable}} 替换
+}
 
 // ===================== 任务类型 =====================
 
@@ -66,6 +124,18 @@ export interface Automation {
   nextRunAt: string | null;
   /** Execution count */
   runCount: number;
+
+  // --- v2.0 新增字段（可选，向后兼容）---
+  /** 触发方式，默认 'schedule' */
+  triggerType?: TriggerType;
+  /** 事件触发配置 */
+  eventTrigger?: EventTriggerConfig;
+  /** Webhook 配置 */
+  webhookConfig?: WebhookConfig;
+  /** 执行策略 */
+  executionPolicy?: ExecutionPolicy;
+  /** 通知配置 */
+  notificationConfig?: NotificationConfig;
 }
 
 /** 执行记录 */
@@ -73,7 +143,7 @@ export interface AutomationExecution {
   id: string;
   automationId: string;
   taskType: TaskType;
-  status: 'running' | 'success' | 'failed';
+  status: 'running' | 'success' | 'failed' | 'timeout';
   startedAt: string;
   completedAt: string | null;
   /** 执行耗时（ms） */
@@ -84,6 +154,14 @@ export interface AutomationExecution {
   steps?: ExecutionStep[];
   /** 是否是重试执行 */
   isRetry?: boolean;
+
+  // --- v2.0 新增字段（可选，向后兼容）---
+  /** 触发来源 */
+  triggerSource?: 'schedule' | 'event' | 'webhook' | 'manual';
+  /** 触发详情（JSON 字符串：事件详情 / Webhook payload） */
+  triggerDetail?: string;
+  /** 本次执行实际重试次数 */
+  retryCount?: number;
 }
 
 /** 执行步骤 */
@@ -96,7 +174,7 @@ export interface ExecutionStep {
 
 /** 引擎状态变更事件 */
 export interface EngineStateEvent {
-  type: 'execution-start' | 'execution-complete' | 'execution-failed' | 'state-refresh';
+  type: 'execution-start' | 'execution-complete' | 'execution-failed' | 'execution-timeout' | 'state-refresh';
   automationId: string;
   execution?: AutomationExecution;
 }

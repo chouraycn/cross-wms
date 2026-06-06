@@ -511,6 +511,8 @@ export type {
   TaskType, FreqType, TaskConfig, ActionType,
   Automation, AutomationExecution, ExecutionStep,
   EngineStateEvent, AutomationEngineAPI, AutomationTemplate,
+  TriggerType, TriggerCondition, TriggerConditionGroup,
+  EventTriggerConfig, WebhookConfig, ExecutionPolicy, NotificationConfig,
 } from './types';
 
 // AUTOMATION_TEMPLATES is defined locally at line ~141
