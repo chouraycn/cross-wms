@@ -13,6 +13,8 @@ import { Router, type Request, type Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { v4 as uuidv4 } from 'uuid';
 import {
   getUserSkills as dbGetSkills,
@@ -570,6 +572,68 @@ router.get('/skills/:id/audit-history', (req: Request, res: Response) => {
     const history = dbGetAuditHistory(req.params.id);
     res.json({ data: history });
   } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// GET /api/skills/:id/export — 导出技能为 ZIP
+router.get('/skills/:id/export', async (req: Request, res: Response) => {
+  try {
+    const skill = dbGetSkillById(req.params.id);
+    if (!skill) {
+      res.status(404).json({ error: 'Skill not found' });
+      return;
+    }
+
+    const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+    const skillDir = path.join(skillsDir, req.params.id);
+
+    if (!fs.existsSync(skillDir)) {
+      res.status(404).json({ error: 'Skill directory not found' });
+      return;
+    }
+
+    // Create ZIP in temp directory
+    const tempDir = os.tmpdir();
+    const zipFileName = `${skill.name || 'skill'}-${req.params.id}.zip`;
+    const zipFilePath = path.join(tempDir, zipFileName);
+
+    // Remove existing ZIP file if it exists
+    if (fs.existsSync(zipFilePath)) {
+      fs.unlinkSync(zipFilePath);
+    }
+
+    // Create ZIP using the `zip` command (available on macOS)
+    const execAsync = promisify(exec);
+    try {
+      await execAsync(`cd "${skillDir}" && zip -r "${zipFilePath}" .`);
+    } catch (zipError) {
+      console.error('[Export] ZIP creation failed:', zipError);
+      res.status(500).json({ error: 'Failed to create ZIP file' });
+      return;
+    }
+
+    if (!fs.existsSync(zipFilePath)) {
+      res.status(500).json({ error: 'ZIP file was not created' });
+      return;
+    }
+
+    // Send the ZIP file
+    res.download(zipFilePath, zipFileName, (err) => {
+      // Clean up temp file after sending
+      if (fs.existsSync(zipFilePath)) {
+        try {
+          fs.unlinkSync(zipFilePath);
+        } catch (cleanupError) {
+          console.error('[Export] Failed to cleanup temp ZIP:', cleanupError);
+        }
+      }
+      if (err) {
+        console.error('[Export] Download failed:', err);
+      }
+    });
+  } catch (e) {
+    console.error('[Export] Export failed:', e);
     res.status(500).json({ error: (e as Error).message });
   }
 });

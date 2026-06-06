@@ -391,7 +391,50 @@ export async function exportSkillAuditReport(skillId: string, format: 'md' | 'pd
   return request<string>('POST', `/api/skills/${encodeURIComponent(skillId)}/audit-export`, { format });
 }
 
-/** 批量审计技能 */
-export async function batchAuditSkills(skillIds: string[]): Promise<{ queued: number }> {
-  return request<{ queued: number }>('POST', '/api/skill-audits/batch', { skillIds });
+// ===================== Skill Export API =====================
+
+/** 导出技能为 ZIP（返回 Blob 供前端下载） */
+export async function exportSkillAsZip(skillId: string, skillName: string): Promise<void> {
+  const url = `${BASE_URL}/api/skills/${encodeURIComponent(skillId)}/export`;
+
+  // 优先使用 pywebview 原生保存对话框（DMG/桌面应用环境）
+  if (typeof window !== 'undefined' && (window as any).pywebview?.api?.save_file) {
+    try {
+      const blob = await fetch(url).then(r => r.blob());
+      const reader = new FileReader();
+      return new Promise((resolve, reject) => {
+        reader.onload = async () => {
+          try {
+            const base64 = (reader.result as string).split(',')[1];
+            const filename = `${skillName}-skill.zip`;
+            // pywebview 的 save_file 会弹出系统保存对话框
+            await (window as any).pywebview.api.save_file(filename, base64, 'application/zip');
+            resolve();
+          } catch (e) {
+            reject(e);
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn('[exportSkillAsZip] pywebview save_file failed, fallback to browser download', e);
+    }
+  }
+
+  // 浏览器环境：直接触发下载
+  const response = await fetch(url);
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: response.statusText }));
+    throw new Error(err.error || `导出失败 (${response.status})`);
+  }
+  const blob = await response.blob();
+  const downloadUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = `${skillName}-skill.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(downloadUrl);
 }
