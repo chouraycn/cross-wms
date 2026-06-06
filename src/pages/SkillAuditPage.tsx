@@ -4,6 +4,7 @@ import {
   Box, Typography, Paper, CircularProgress, Button, Chip,
   Stack, Divider, List, ListItem, ListItemIcon, ListItemText,
   Accordion, AccordionSummary, AccordionDetails, IconButton, Menu, MenuItem,
+  Snackbar, Alert,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -24,6 +25,7 @@ const SkillAuditPage: React.FC = () => {
   const [history, setHistory] = useState<SkillAudit[]>([]);
   const [loading, setLoading] = useState(true);
   const [exportAnchor, setExportAnchor] = useState<null | HTMLElement>(null);
+  const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'error' });
 
   useEffect(() => {
     loadData();
@@ -51,8 +53,10 @@ const SkillAuditPage: React.FC = () => {
       const a = await api.triggerSkillAudit(skillId, '', true);
       setAudit(a);
       setHistory(prev => [a, ...prev]);
-    } catch (e) {
+      setToast({ open: true, message: '重新审查完成', severity: 'success' });
+    } catch (e: any) {
       console.error('重新审查失败', e);
+      setToast({ open: true, message: `重新审查失败: ${e?.message || e}`, severity: 'error' });
     }
   };
 
@@ -68,8 +72,10 @@ const SkillAuditPage: React.FC = () => {
       a.download = `audit-${skillId}.${format}`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch (e) {
+      setToast({ open: true, message: '导出成功', severity: 'success' });
+    } catch (e: any) {
       console.error('导出失败', e);
+      setToast({ open: true, message: `导出失败: ${e?.message || e}`, severity: 'error' });
     }
   };
 
@@ -108,7 +114,8 @@ const SkillAuditPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: 900, mx: 'auto' }}>
+    <>
+      <Box sx={{ p: 3, maxWidth: 900, mx: 'auto' }}>
       {/* 返回按钮 */}
       <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)} sx={{ mb: 2 }}>
         返回
@@ -298,6 +305,17 @@ const SkillAuditPage: React.FC = () => {
         )}
       </Paper>
     </Box>
+    <Snackbar
+      open={toast.open}
+      autoHideDuration={4000}
+      onClose={() => setToast({ ...toast, open: false })}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+    >
+      <Alert severity={toast.severity} onClose={() => setToast({ ...toast, open: false })}>
+        {toast.message}
+      </Alert>
+    </Snackbar>
+    </>
   );
 };
 

@@ -579,12 +579,6 @@ router.get('/skills/:id/audit-history', (req: Request, res: Response) => {
 // GET /api/skills/:id/export — 导出技能为 ZIP
 router.get('/skills/:id/export', async (req: Request, res: Response) => {
   try {
-    const skill = dbGetSkillById(req.params.id);
-    if (!skill) {
-      res.status(404).json({ error: 'Skill not found' });
-      return;
-    }
-
     const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
     const skillDir = path.join(skillsDir, req.params.id);
 
@@ -593,9 +587,16 @@ router.get('/skills/:id/export', async (req: Request, res: Response) => {
       return;
     }
 
+    // Try to get skill name from DB (user skills), fall back to directory name (built-in skills)
+    let skillName = req.params.id;
+    try {
+      const skill = dbGetSkillById(req.params.id);
+      if (skill && skill.name) skillName = skill.name;
+    } catch {}
+
     // Create ZIP in temp directory
     const tempDir = os.tmpdir();
-    const zipFileName = `${skill.name || 'skill'}-${req.params.id}.zip`;
+    const zipFileName = `${skillName}-${req.params.id}.zip`;
     const zipFilePath = path.join(tempDir, zipFileName);
 
     // Remove existing ZIP file if it exists
@@ -634,6 +635,38 @@ router.get('/skills/:id/export', async (req: Request, res: Response) => {
     });
   } catch (e) {
     console.error('[Export] Export failed:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// POST /api/skills/:id/audit-export — 导出审计报告为 Markdown
+router.post('/skills/:id/audit-export', async (req: Request, res: Response) => {
+  try {
+    const { format } = req.body;
+    const audit = dbGetLatestAudit(req.params.id);
+    if (!audit) {
+      res.status(404).json({ error: 'No audit found for this skill' });
+      return;
+    }
+    // Use pre-generated markdown if available
+    if (audit.report_markdown) {
+      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="audit-${req.params.id}.md"`);
+      res.send(audit.report_markdown);
+      return;
+    }
+    // Fallback: generate from report_json
+    if (audit.report_json) {
+      const result = JSON.parse(audit.report_json);
+      const md = generateMarkdownReport(result);
+      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="audit-${req.params.id}.md"`);
+      res.send(md);
+      return;
+    }
+    res.status(500).json({ error: 'No report data available' });
+  } catch (e) {
+    console.error('[Audit Export] Failed:', e);
     res.status(500).json({ error: (e as Error).message });
   }
 });
