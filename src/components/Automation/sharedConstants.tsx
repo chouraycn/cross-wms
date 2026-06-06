@@ -14,7 +14,10 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import type { TaskType, ActionType } from '../../services/automation';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import LinkIcon from '@mui/icons-material/Link';
+import type { TaskType, ActionType, TriggerType } from '../../services/automation';
 
 // ===================== 任务类型配置 =====================
 
@@ -59,10 +62,25 @@ export const WEEKDAY_LABELS: Record<string, string> = {
 
 export const WEEKDAY_ORDER = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
 
+// ===================== 触发类型配置 (v2.0) =====================
+
+export const TRIGGER_TYPE_LABELS: Record<TriggerType, string> = {
+  schedule: '定时',
+  event: '事件',
+  webhook: 'Webhook',
+};
+
+export const TRIGGER_TYPE_ICONS: Record<TriggerType, React.ReactNode> = {
+  schedule: <ScheduleIcon sx={{ fontSize: 16 }} />,
+  event: <NotificationsIcon sx={{ fontSize: 16 }} />,
+  webhook: <LinkIcon sx={{ fontSize: 16 }} />,
+};
+
 export const EXEC_STATUS_CONFIG = {
   success: { label: '成功', color: '#059669', bg: '#ECFDF5', Icon: CheckCircleOutlineIcon },
   failed: { label: '失败', color: '#EF4444', bg: '#FEF2F2', Icon: ErrorOutlineIcon },
   running: { label: '运行中', color: '#D97706', bg: '#FFFBEB', Icon: HourglassEmptyIcon },
+  timeout: { label: '超时', color: '#8B5CF6', bg: '#F5F3FF', Icon: HourglassEmptyIcon },
 };
 
 // Action chain 选项

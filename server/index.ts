@@ -19,6 +19,7 @@ import skillsRouter from './routes/skills.js';
 import settingsRouter from './routes/settings.js';
 import migrateRouter from './routes/migrate.js';
 import chainRoutes from './routes/chainRoutes.js';
+import automationRoutes from './routes/automation.js';
 import { findByQuery, countByQuery } from './dao/inventoryTransactionDao.js';
 
 // Services
@@ -333,6 +334,9 @@ app.use('/api/outbound-records', outboundRouter);
 app.use('/api', skillsRouter); // handles /api/user-skills and /api/builtin-status-patches
 app.use('/api/app-settings', settingsRouter);
 app.use('/api/migrate', migrateRouter);
+
+// Automation webhook routes
+app.use('/api/automation', automationRoutes);
 
 // Skill chain routes
 app.use('/api/skill-chains', chainRoutes);
