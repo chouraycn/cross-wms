@@ -331,42 +331,42 @@ import type {
 
 /** 获取所有技能链 */
 export async function fetchSkillChains(): Promise<SkillChain[]> {
-  return request<SkillChain[]>('GET', '/api/chains');
+  return request<SkillChain[]>('GET', '/api/skill-chains');
 }
 
 /** 获取单个技能链详情 */
 export async function fetchSkillChain(id: string): Promise<SkillChain> {
-  return request<SkillChain>('GET', `/api/chains/${encodeURIComponent(id)}`);
+  return request<SkillChain>('GET', `/api/skill-chains/${encodeURIComponent(id)}`);
 }
 
 /** 创建技能链 */
 export async function createSkillChain(data: Omit<SkillChain, 'id' | 'createdAt' | 'updatedAt'>): Promise<SkillChain> {
-  return request<SkillChain>('POST', '/api/chains', data);
+  return request<SkillChain>('POST', '/api/skill-chains', data);
 }
 
 /** 更新技能链 */
 export async function updateSkillChain(id: string, data: Partial<SkillChain>): Promise<SkillChain> {
-  return request<SkillChain>('PUT', `/api/chains/${encodeURIComponent(id)}`, data);
+  return request<SkillChain>('PUT', `/api/skill-chains/${encodeURIComponent(id)}`, data);
 }
 
 /** 删除技能链 */
 export async function deleteSkillChain(id: string): Promise<void> {
-  await request<void>('DELETE', `/api/chains/${encodeURIComponent(id)}`);
+  await request<void>('DELETE', `/api/skill-chains/${encodeURIComponent(id)}`);
 }
 
 /** 执行技能链 */
 export async function executeSkillChain(id: string): Promise<{ executionId: string }> {
-  return request<{ executionId: string }>('POST', `/api/chains/${encodeURIComponent(id)}/execute`);
+  return request<{ executionId: string }>('POST', `/api/skill-chains/${encodeURIComponent(id)}/execute`);
 }
 
 /** 复制技能链 */
 export async function duplicateSkillChain(id: string): Promise<SkillChain> {
-  return request<SkillChain>('POST', `/api/chains/${encodeURIComponent(id)}/duplicate`);
+  return request<SkillChain>('POST', `/api/skill-chains/${encodeURIComponent(id)}/duplicate`);
 }
 
-/** 连接链执行事件流 */
-export function connectChainExecutionEvents(): EventSource {
-  return new EventSource(`${BASE_URL}/api/chain-events`);
+/** 连接链执行事件流（需传入 executionId 订阅特定执行） */
+export function connectChainExecutionEvents(executionId: string): EventSource {
+  return new EventSource(`${BASE_URL}/api/chain-execution-events?execId=${encodeURIComponent(executionId)}`);
 }
 
 // ===================== 安全审查 API =====================
@@ -393,5 +393,5 @@ export async function exportSkillAuditReport(skillId: string, format: 'md' | 'pd
 
 /** 批量审计技能 */
 export async function batchAuditSkills(skillIds: string[]): Promise<{ queued: number }> {
-  return request<{ queued: number }>('POST', '/api/skills/audits/batch', { skillIds });
+  return request<{ queued: number }>('POST', '/api/skill-audits/batch', { skillIds });
 }

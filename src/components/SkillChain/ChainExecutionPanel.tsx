@@ -65,7 +65,7 @@ const ChainExecutionPanel: React.FC<ChainExecutionPanelProps> = ({
   useEffect(() => {
     if (!executionId) return;
 
-    evtRef.current = connectChainExecutionEvents();
+    evtRef.current = connectChainExecutionEvents(executionId);
     const es = evtRef.current;
 
     const handleMessage = (e: MessageEvent) => {
