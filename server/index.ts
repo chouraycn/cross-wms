@@ -265,7 +265,18 @@ app.get('/api/inventory-transactions', (req, res) => {
 });
 
 const PORT = 3001;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`CrossWMS Chat Server running on port ${PORT}`);
   initDb();
+});
+
+// 端口冲突时优雅退出（让 pywebview 的进程监控 3 秒后重启，彼时端口已释放）
+server.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`[Server] ❌ 端口 ${PORT} 已被占用，2 秒后退出并等待重启...`);
+    setTimeout(() => process.exit(1), 2000);
+  } else {
+    console.error('[Server] ❌ 启动失败:', err.message);
+    process.exit(1);
+  }
 });

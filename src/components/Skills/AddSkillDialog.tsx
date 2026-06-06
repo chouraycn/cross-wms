@@ -471,25 +471,40 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
+      PaperProps={{ sx: { borderRadius: '16px', overflow: 'hidden', m: 2 } }}
+      BackdropProps={{ sx: { backgroundColor: 'rgba(0,0,0,0.25)' } }}
     >
-      <DialogTitle sx={{ fontWeight: 700, color: '#111827', pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <ExtensionIcon sx={{ fontSize: 22, color: '#6B7280' }} />
-        安装技能包
-      </DialogTitle>
+      {/* 渐变 Header */}
+      <Box sx={{
+        background: 'linear-gradient(135deg, #0F2027 0%, #203A43 50%, #2C5364 100%)',
+        px: 3, py: 2.5,
+        display: 'flex', alignItems: 'center', gap: 1.5,
+      }}>
+        <Box sx={{
+          width: 36, height: 36, borderRadius: '10px',
+          backgroundColor: 'rgba(255,255,255,0.12)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <ExtensionIcon sx={{ color: '#fff', fontSize: 20 }} />
+        </Box>
+        <Box>
+          <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: '#fff', lineHeight: 1.2 }}>安装技能包</Typography>
+          <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', mt: 0.25 }}>从文件或目录导入技能</Typography>
+        </Box>
+      </Box>
 
       {/* Tab 切换 */}
-      <Box sx={{ display: 'flex', borderBottom: '1px solid #E5E7EB', px: 3 }}>
+      <Box sx={{ display: 'flex', borderBottom: '1px solid #E5E7EB', px: 3, backgroundColor: '#FAFAFA' }}>
         <Box
           onClick={() => setActiveTab('skillmd')}
           sx={{
             py: 1.5,
             px: 2,
             fontSize: '0.8125rem',
-            color: activeTab === 'skillmd' ? '#1A1A1A' : '#666',
+            color: activeTab === 'skillmd' ? '#111827' : '#6B7280',
             cursor: 'pointer',
             position: 'relative',
-            fontWeight: activeTab === 'skillmd' ? 500 : 400,
+            fontWeight: activeTab === 'skillmd' ? 600 : 400,
             display: 'flex',
             alignItems: 'center',
             gap: 0.75,
@@ -502,11 +517,12 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
               left: 0,
               right: 0,
               height: 2,
-              backgroundColor: '#1A1A1A',
+              backgroundColor: '#111827',
+              borderRadius: '2px 2px 0 0',
             } : {},
           }}
         >
-          <FolderOpenIcon sx={{ fontSize: 16 }} />
+          <FolderOpenIcon sx={{ fontSize: 15 }} />
           SKILL.md 导入
         </Box>
         <Box
@@ -515,10 +531,10 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
             py: 1.5,
             px: 2,
             fontSize: '0.8125rem',
-            color: activeTab === 'zip' ? '#1A1A1A' : '#666',
+            color: activeTab === 'zip' ? '#111827' : '#6B7280',
             cursor: 'pointer',
             position: 'relative',
-            fontWeight: activeTab === 'zip' ? 500 : 400,
+            fontWeight: activeTab === 'zip' ? 600 : 400,
             display: 'flex',
             alignItems: 'center',
             gap: 0.75,
@@ -531,16 +547,17 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
               left: 0,
               right: 0,
               height: 2,
-              backgroundColor: '#1A1A1A',
+              backgroundColor: '#111827',
+              borderRadius: '2px 2px 0 0',
             } : {},
           }}
         >
-          <UploadFileIcon sx={{ fontSize: 16 }} />
+          <UploadFileIcon sx={{ fontSize: 15 }} />
           ZIP 上传
         </Box>
       </Box>
 
-      <DialogContent sx={{ pt: '16px !important' }}>
+      <DialogContent sx={{ pt: '20px !important', pb: 1 }}>
         {/* SKILL.md 导入面板 */}
         {activeTab === 'skillmd' && (
           <SkillMdImportPanel
@@ -552,8 +569,8 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         {/* ZIP 上传面板 */}
         {activeTab === 'zip' && (
           <>
-            <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', mb: 2 }}>
-              上传 <code style={{ backgroundColor: '#F3F4F6', padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>.zip</code> 格式的技能包文件。技能包应包含 <code style={{ backgroundColor: '#F3F4F6', padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>skill.md</code> 描述文件。
+            <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', mb: 2, lineHeight: 1.6 }}>
+              上传 <code style={{ backgroundColor: '#F3F4F6', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontFamily: 'monospace' }}>.zip</code> 格式的技能包。包内需含 <code style={{ backgroundColor: '#F3F4F6', padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontFamily: 'monospace' }}>SKILL.md</code> 描述文件。
             </Typography>
 
             {/* 拖拽上传区 */}
@@ -563,15 +580,15 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
               sx={{
-                border: `2px dashed ${dragging ? '#111827' : file ? '#10B981' : '#E5E7EB'}`,
+                border: `2px dashed ${dragging ? '#2563EB' : file ? '#10B981' : '#D1D5DB'}`,
                 borderRadius: '12px',
-                backgroundColor: dragging ? '#F9FAFB' : file ? '#F0FDF4' : '#FAFAFA',
-                py: 4,
+                backgroundColor: dragging ? '#EFF6FF' : file ? '#F0FDF4' : '#F9FAFB',
+                py: 3.5,
                 px: 3,
                 textAlign: 'center',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+                '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F3F4F6' },
               }}
             >
               <input
@@ -583,24 +600,24 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
               />
               {file ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <CheckCircleIcon sx={{ fontSize: 28, color: '#10B981' }} />
+                  <Box sx={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CheckCircleIcon sx={{ fontSize: 26, color: '#10B981' }} />
                   </Box>
-                  <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827' }}>{file.name}</Typography>
+                  <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>{file.name}</Typography>
                   <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
-                    {(file.size / 1024).toFixed(1)} KB · 点击重新选择
+                    {(file.size / 1024).toFixed(1)} KB · <span style={{ color: '#2563EB', textDecoration: 'underline' }}>重新选择</span>
                   </Typography>
                 </Box>
               ) : (
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <AddIcon sx={{ fontSize: 28, color: '#9CA3AF' }} />
+                  <Box sx={{ width: 44, height: 44, borderRadius: '50%', backgroundColor: '#E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <UploadFileIcon sx={{ fontSize: 24, color: '#6B7280' }} />
                   </Box>
-                  <Typography sx={{ fontSize: '0.9rem', fontWeight: 500, color: '#374151' }}>
-                    拖拽技能包到此处
+                  <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: '#374151' }}>
+                    拖拽 .zip 文件到此处
                   </Typography>
                   <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
-                    或点击选择 .zip 文件
+                    或点击选择文件（最大 3MB）
                   </Typography>
                 </Box>
               )}
@@ -608,18 +625,21 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
 
             {/* 预览技能信息 */}
             {preview && (
-              <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#F0FDF4', borderRadius: 2, border: '1px solid #BBF7D0' }}>
-                <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534', mb: 0.75 }}>✓ 技能包预览</Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px', fontSize: '0.75rem' }}>
-                  <Typography sx={{ color: '#6B7280' }}>名称</Typography>
-                  <Typography sx={{ color: '#111827', fontWeight: 500 }}>{preview.name || '（未指定）'}</Typography>
-                  <Typography sx={{ color: '#6B7280' }}>描述</Typography>
-                  <Typography sx={{ color: '#374151' }}>{preview.description || '（无描述）'}</Typography>
+              <Box sx={{ mt: 2, p: 2, backgroundColor: '#F0FDF4', borderRadius: '10px', border: '1px solid #BBF7D0' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+                  <CheckCircleIcon sx={{ fontSize: 15, color: '#10B981' }} />
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534' }}>技能包解析成功</Typography>
+                </Box>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 12px' }}>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '24px' }}>名称</Typography>
+                  <Typography sx={{ fontSize: '0.8rem', color: '#111827', fontWeight: 600, lineHeight: '24px' }}>{preview.name || '（未指定）'}</Typography>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '20px' }}>描述</Typography>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#374151', lineHeight: '20px' }}>{preview.description || '（无描述）'}</Typography>
                   {preview.body && (
                     <>
-                      <Typography sx={{ color: '#6B7280' }}>AI 上下文</Typography>
-                      <Typography sx={{ color: '#374151', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 300 }}>
-                        {preview.body.length > 80 ? `${preview.body.slice(0, 80)}...` : preview.body}
+                      <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: '20px' }}>AI 上下文</Typography>
+                      <Typography sx={{ fontSize: '0.73rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '20px' }}>
+                        {preview.body.length > 60 ? `${preview.body.slice(0, 60)}...` : preview.body}
                       </Typography>
                     </>
                   )}
@@ -628,23 +648,23 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
             )}
 
             {error && (
-              <Alert severity={preview ? 'warning' : 'error'} sx={{ mt: 2, fontSize: '0.8rem' }}>
+              <Alert
+                severity={preview ? 'warning' : 'error'}
+                sx={{ mt: 2, fontSize: '0.8rem', borderRadius: 2 }}
+              >
                 {error}
               </Alert>
             )}
 
-            {/* 技能包格式说明 */}
-            <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#F9FAFB', borderRadius: 2, border: '1px solid #E5E7EB' }}>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 0.75 }}>skill.md 格式</Typography>
+            {/* 技能包格式说明（折叠式） */}
+            <Box sx={{ mt: 2, p: 1.5, backgroundColor: '#F9FAFB', borderRadius: '10px', border: '1px solid #E5E7EB' }}>
+              <Typography sx={{ fontSize: '0.73rem', fontWeight: 600, color: '#374151', mb: 0.75, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <DescriptionIcon sx={{ fontSize: 13, color: '#9CA3AF' }} /> SKILL.md 格式参考
+              </Typography>
               <Box
                 component="pre"
-                sx={{ fontSize: '0.68rem', color: '#374151', backgroundColor: 'transparent', m: 0, fontFamily: 'monospace', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}
-              >{`---
-name: 技能名称
-description: 技能描述
----
-
-技能指令正文（将作为 AI 上下文模板注入）`}</Box>
+                sx={{ fontSize: '0.67rem', color: '#6B7280', backgroundColor: 'transparent', m: 0, fontFamily: 'monospace', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}
+              >{`---\nname: 技能名称\ndescription: 技能描述\n---\n\nAI 上下文正文（作为技能模板注入）`}</Box>
             </Box>
           </>
         )}
@@ -652,8 +672,11 @@ description: 技能描述
 
       {/* ZIP Tab 的底部操作 */}
       {activeTab === 'zip' && (
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleClose} sx={{ textTransform: 'none', color: '#6B7280' }}>
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1 }}>
+          <Button
+            onClick={handleClose}
+            sx={{ textTransform: 'none', color: '#6B7280', borderRadius: 2, px: 2.5 }}
+          >
             取消
           </Button>
           <Button
@@ -661,10 +684,14 @@ description: 技能描述
             onClick={handleInstall}
             disabled={!file || loading}
             sx={{
-              backgroundColor: '#111827',
-              '&:hover': { backgroundColor: '#374151' },
+              background: 'linear-gradient(135deg, #0F2027 0%, #2C5364 100%)',
+              '&:hover': { background: 'linear-gradient(135deg, #1a3a4a 0%, #3a6b7a 100%)' },
+              '&:disabled': { backgroundColor: '#E5E7EB', color: '#9CA3AF' },
               textTransform: 'none',
               borderRadius: 2,
+              px: 3,
+              fontWeight: 600,
+              minWidth: 120,
             }}
           >
             {loading ? <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} /> : null}
