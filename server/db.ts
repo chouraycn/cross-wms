@@ -416,6 +416,18 @@ export function initDb(): Database.Database {
     db.exec(`ALTER TABLE skill_chains ADD COLUMN description TEXT DEFAULT ''`);
   }
 
+  // v1.0.99: Add node_results and result columns to skill_chain_executions
+  const execColumnsToAdd: Array<{ table: string; column: string; definition: string }> = [
+    { table: 'skill_chain_executions', column: 'node_results', definition: "TEXT NOT NULL DEFAULT '[]'" },
+    { table: 'skill_chain_executions', column: 'result', definition: "TEXT NOT NULL DEFAULT '{}'" },
+  ];
+  for (const { table, column, definition } of execColumnsToAdd) {
+    const colExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('${table}') WHERE name='${column}'`).get() as { cnt: number };
+    if (colExists.cnt === 0) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    }
+  }
+
   return db;
 }
 
@@ -985,6 +997,8 @@ export interface SkillChainExecutionRow {
   status: string;
   fail_strategy: string;
   steps: string;
+  node_results: string;
+  result: string;
   started_at: string;
   completed_at: string | null;
   duration: number | null;
@@ -1162,16 +1176,20 @@ export function createSkillExecution(execution: {
   status?: string;
   failStrategy?: string;
   steps?: string;
+  nodeResults?: string;
+  result?: string;
   startedAt?: string;
 }): void {
   const db = initDb();
-  db.prepare(`INSERT INTO skill_chain_executions (id, chain_id, status, fail_strategy, steps, started_at, completed_at, duration)
-    VALUES (?,?,?,?,?,?,NULL,NULL)`).run(
+  db.prepare(`INSERT INTO skill_chain_executions (id, chain_id, status, fail_strategy, steps, node_results, result, started_at, completed_at, duration)
+    VALUES (?,?,?,?,?,?,?,?,NULL,NULL)`).run(
     execution.id,
     execution.chainId,
     execution.status ?? 'running',
     execution.failStrategy ?? 'stop',
     execution.steps ?? '[]',
+    execution.nodeResults ?? '[]',
+    execution.result ?? '{}',
     execution.startedAt ?? new Date().toISOString()
   );
 }
@@ -1181,6 +1199,8 @@ export function updateSkillExecution(id: string, data: Partial<{
   status: string;
   failStrategy: string;
   steps: string;
+  nodeResults: string;
+  result: string;
   completedAt: string | null;
   duration: number | null;
 }>): void {
@@ -1191,13 +1211,17 @@ export function updateSkillExecution(id: string, data: Partial<{
     status: data.status ?? existing.status,
     fail_strategy: data.failStrategy ?? existing.fail_strategy,
     steps: data.steps ?? existing.steps,
+    node_results: data.nodeResults ?? existing.node_results,
+    result: data.result ?? existing.result,
     completed_at: data.completedAt !== undefined ? data.completedAt : existing.completed_at,
     duration: data.duration !== undefined ? data.duration : existing.duration,
   };
-  db.prepare('UPDATE skill_chain_executions SET status=?, fail_strategy=?, steps=?, completed_at=?, duration=? WHERE id=?').run(
+  db.prepare('UPDATE skill_chain_executions SET status=?, fail_strategy=?, steps=?, node_results=?, result=?, completed_at=?, duration=? WHERE id=?').run(
     updated.status,
     updated.fail_strategy,
     updated.steps,
+    updated.node_results,
+    updated.result,
     updated.completed_at,
     updated.duration,
     id
