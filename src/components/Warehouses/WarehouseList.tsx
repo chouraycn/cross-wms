@@ -98,23 +98,29 @@ const WarehouseList: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    // 前端校验
+    if (!form.name.trim()) { setCreateError('仓库名称不能为空'); return; }
+    if (!form.totalItems.trim() || parseInt(form.totalItems, 10) <= 0) {
+      setCreateError('件数上限必须大于 0');
+      return;
+    }
     setCreating(true);
     setCreateError('');
     const totalVol = parseFloat(form.totalVolume);
     const totalItems = parseInt(form.totalItems, 10);
     const newWh: Warehouse = {
       id: `wh-${Date.now()}`,
-      name: form.name,
-      country: form.country,
-      city: form.city,
+      name: form.name.trim(),
+      country: form.country.trim() || '',
+      city: form.city.trim() || '',
       totalVolume: Number.isFinite(totalVol) ? totalVol : 0,
       usedVolume: 0,
       totalItems: Number.isFinite(totalItems) && totalItems > 0 ? totalItems : 1,
       usedItems: 0,
       status: 'normal',
-      address: form.address,
-      manager: form.manager,
-      phone: form.phone,
+      address: form.address.trim() || '',
+      manager: form.manager.trim() || '',
+      phone: form.phone.trim() || '',
       createdAt: new Date().toISOString().split('T')[0],
     };
     try {
@@ -289,57 +295,124 @@ const WarehouseList: React.FC = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: '12px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+            borderRadius: '16px',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
             overflow: 'hidden',
-            m: 0,
+            m: 2,
           },
         }}
         BackdropProps={{
-          sx: { backgroundColor: 'rgba(0,0,0,0.3)' },
+          sx: { backgroundColor: 'rgba(0,0,0,0.25)' },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>新建仓库</DialogTitle>
-        <DialogContent sx={{ px: 3, py: 2.5 }}>
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField label="仓库名称" value={form.name} onChange={handleFormChange('name')} fullWidth size="small" required />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField label="总容积(m³)" value={form.totalVolume} onChange={handleFormChange('totalVolume')} fullWidth size="small" type="number" required />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField label="件数上限" value={form.totalItems} onChange={handleFormChange('totalItems')} fullWidth size="small" type="number" required helperText="影响容积率计算" />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField label="国家" value={form.country} onChange={handleFormChange('country')} fullWidth size="small" required />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField label="城市" value={form.city} onChange={handleFormChange('city')} fullWidth size="small" required />
-            </Grid>
+        {/* 渐变 Header */}
+        <Box sx={{
+          background: 'linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%)',
+          px: 3, py: 2.5,
+          display: 'flex', alignItems: 'center', gap: 1.5,
+        }}>
+          <Box sx={{
+            width: 36, height: 36, borderRadius: '10px',
+            backgroundColor: 'rgba(255,255,255,0.12)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <AddOutlinedIcon sx={{ color: '#fff', fontSize: 20 }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: '#fff', lineHeight: 1.2 }}>新建仓库</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', mt: 0.25 }}>填写仓库基本信息</Typography>
+          </Box>
+        </Box>
+
+        <DialogContent sx={{ px: 3, py: 3 }}>
+          {/* 必填字段区 */}
+          <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.08em', mb: 1.5, textTransform: 'uppercase' }}>
+            必填信息
+          </Typography>
+          <Grid container spacing={2}>
             <Grid item xs={12}>
-              <TextField label="详细地址" value={form.address} onChange={handleFormChange('address')} fullWidth size="small" />
+              <TextField
+                label="仓库名称"
+                value={form.name}
+                onChange={handleFormChange('name')}
+                fullWidth size="small" required
+                placeholder="如：深圳前海仓"
+                error={!!createError && !form.name.trim()}
+              />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField label="负责人" value={form.manager} onChange={handleFormChange('manager')} fullWidth size="small" />
+            <Grid item xs={6}>
+              <TextField
+                label="件数上限"
+                value={form.totalItems}
+                onChange={handleFormChange('totalItems')}
+                fullWidth size="small" type="number" required
+                placeholder="如：10000"
+                helperText="用于计算容积率"
+                error={!!createError && (!form.totalItems || parseInt(form.totalItems, 10) <= 0)}
+              />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField label="联系电话" value={form.phone} onChange={handleFormChange('phone')} fullWidth size="small" />
+            <Grid item xs={6}>
+              <TextField
+                label="总容积 (m³)"
+                value={form.totalVolume}
+                onChange={handleFormChange('totalVolume')}
+                fullWidth size="small" type="number"
+                placeholder="如：5000"
+              />
             </Grid>
           </Grid>
+
+          {/* 可选字段区 */}
+          <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.08em', mt: 2.5, mb: 1.5, textTransform: 'uppercase' }}>
+            位置 &amp; 联系人（选填）
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <TextField label="国家" value={form.country} onChange={handleFormChange('country')} fullWidth size="small" placeholder="如：中国" />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField label="城市" value={form.city} onChange={handleFormChange('city')} fullWidth size="small" placeholder="如：深圳" />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField label="详细地址" value={form.address} onChange={handleFormChange('address')} fullWidth size="small" placeholder="如：南山区科技园南路" />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField label="负责人" value={form.manager} onChange={handleFormChange('manager')} fullWidth size="small" placeholder="如：张三" />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField label="联系电话" value={form.phone} onChange={handleFormChange('phone')} fullWidth size="small" placeholder="如：13800000000" />
+            </Grid>
+          </Grid>
+
           {createError && (
-            <Alert severity="error" sx={{ mt: 2, fontSize: '0.8rem' }}>
+            <Alert severity="error" sx={{ mt: 2, fontSize: '0.8rem', borderRadius: 2 }}>
               {createError}
             </Alert>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
-          <Button onClick={handleCloseDialog} disabled={creating}>取消</Button>
+
+        <DialogActions sx={{ px: 3, pb: 3, pt: 0, gap: 1 }}>
+          <Button
+            onClick={handleCloseDialog}
+            disabled={creating}
+            sx={{ textTransform: 'none', color: '#6B7280', borderRadius: 2, px: 2.5 }}
+          >
+            取消
+          </Button>
           <Button
             variant="contained"
             onClick={() => handleSubmit()}
-            disabled={!form.name || !form.totalVolume || !form.totalItems || creating}
-            sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' } }}
+            disabled={!form.name || !form.totalItems || creating}
+            sx={{
+              background: 'linear-gradient(135deg, #1A1A2E 0%, #0F3460 100%)',
+              '&:hover': { background: 'linear-gradient(135deg, #16213E 0%, #1a4a80 100%)' },
+              '&:disabled': { backgroundColor: '#E5E7EB', color: '#9CA3AF' },
+              textTransform: 'none',
+              borderRadius: 2,
+              px: 3,
+              fontWeight: 600,
+              minWidth: 120,
+            }}
           >
             {creating ? <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} /> : null}
             {creating ? '创建中...' : '确认创建'}
