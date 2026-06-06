@@ -6,7 +6,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Box, Typography, Chip, Button, Alert, Dialog, DialogTitle, DialogContent, DialogActions,
-  Breadcrumbs, Link, Snackbar,
+  Breadcrumbs, Link, Snackbar, CircularProgress,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -16,6 +16,8 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EditIcon from '@mui/icons-material/Edit';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { getAllSkills, removeSkill, setSkillStatus, onSkillsChange } from '../stores/skillStore';
 import { loadAutomations, automationEngine } from '../services/automation';
 import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automation';
@@ -271,6 +273,21 @@ const SkillDetailPage: React.FC = () => {
       setToast({ open: true, msg: `删除失败: ${e instanceof Error ? e.message : '未知错误'}`, severity: 'error' });
     } finally {
       setDeleting(false);
+    }
+  };
+
+  // 导出技能为 ZIP
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    if (!skill) return;
+    setExporting(true);
+    try {
+      await api.exportSkillAsZip(skill.id, skill.name);
+      setToast({ open: true, msg: `「${skill.name}」已导出为 ZIP`, severity: 'success' });
+    } catch (e) {
+      setToast({ open: true, msg: `导出失败: ${e instanceof Error ? e.message : '未知错误'}`, severity: 'error' });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -550,6 +567,32 @@ const SkillDetailPage: React.FC = () => {
         }}
       >
         安全审查
+      </Button>
+
+      {/* 导出 ZIP */}
+      <Button
+        variant="outlined"
+        startIcon={<FileDownloadIcon sx={{ fontSize: 16 }} />}
+        onClick={async () => {
+          try {
+            await api.exportSkillAsZip(skill.id, skill.name);
+            setToast({ open: true, msg: '技能导出成功', severity: 'success' });
+          } catch (e) {
+            setToast({ open: true, msg: `导出失败: ${e instanceof Error ? e.message : '未知错误'}`, severity: 'error' });
+          }
+        }}
+        sx={{
+          textTransform: 'none',
+          borderRadius: 2,
+          borderColor: '#6B7280',
+          color: '#6B7280',
+          '&:hover': { borderColor: '#374151', backgroundColor: '#F9FAFB' },
+          minWidth: 80,
+          fontSize: '0.875rem',
+          flexShrink: 0,
+        }}
+      >
+        导出
       </Button>
       </Box>
 
