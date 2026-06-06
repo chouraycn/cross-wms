@@ -107,6 +107,19 @@ const ChatPage: React.FC = () => {
     }
   }, [searchParams, setSearchParams, handleNewChat]);
 
+  // 响应 URL 中的 session 参数变化（侧边栏点击历史对话时 navigate 携带 ?session=xxx）
+  // 必须放在 URL 清理 effect 之前，确保先读取 session ID 再清理 URL
+  useEffect(() => {
+    const sessionId = searchParams.get('session');
+    if (sessionId) {
+      const saved = loadSessions();
+      const found = saved.find(s => s.id === sessionId);
+      if (found) {
+        setActiveSessionId(found.id);
+      }
+    }
+  }, [searchParams]);
+
   // 清理 URL 中的 session 参数（避免刷新后重复加载）
   useEffect(() => {
     if (searchParams.has('session')) {
