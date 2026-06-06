@@ -1,8 +1,36 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box, TextField, InputAdornment } from '@mui/material';
 import { Session } from '../../types/chat';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import SearchIcon from '@mui/icons-material/Search';
+
+/** 与 ChatPage 共享的 localStorage key */
+const SESSIONS_STORAGE_KEY = 'crosswms-chat-sessions';
+
+/** 从 localStorage 加载会话列表（与 ChatPage/NavList 使用同一数据源） */
+function loadSessionsFromStorage(): Session[] {
+  try {
+    const raw = localStorage.getItem(SESSIONS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map((s: Record<string, unknown>) => ({
+          ...s,
+          messages: Array.isArray(s.messages)
+            ? s.messages.map((m: Record<string, unknown>) => ({
+                ...m,
+                timestamp: new Date(m.timestamp as string),
+              }))
+            : [],
+          // 确保 title/updatedAt 存在
+          title: typeof s.title === 'string' ? s.title : '',
+          updatedAt: typeof s.updatedAt === 'string' ? s.updatedAt : typeof s.createdAt === 'string' ? s.createdAt : undefined,
+        })) as Session[];
+      }
+    }
+  } catch { /* 数据损坏时静默返回空数组 */ }
+  return [];
+}
 
 interface SessionReferenceSelectorProps {
   anchorEl: HTMLElement | null;
@@ -34,41 +62,21 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
   const listRef = useRef<HTMLDivElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [allSessions, setAllSessions] = useState<Session[]>([]);
 
-  // 获取会话列表
-  const fetchSessions = useCallback(async (q?: string) => {
-    setLoading(true);
-    try {
-      const url = q ? `/api/sessions?q=${encodeURIComponent(q)}` : '/api/sessions';
-      const res = await fetch(`http://localhost:3001${url}`);
-      const data = await res.json();
-      setSessions(data.sessions || []);
-    } catch (e) {
-      console.error('[SessionReference] 获取会话列表失败:', e);
-      setSessions([]);
-    } finally {
-      setLoading(false);
-    }
+  // 从 localStorage 加载（与 NavList 侧边栏使用同一数据源）
+  useEffect(() => {
+    setAllSessions(loadSessionsFromStorage());
   }, []);
 
-  // 初始加载
-  useEffect(() => {
-    fetchSessions();
-  }, [fetchSessions]);
-
-  // 搜索防抖
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchQuery) {
-        fetchSessions(searchQuery);
-      } else {
-        fetchSessions();
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, fetchSessions]);
+  // 前端过滤（按标题模糊匹配）
+  const sessions = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return allSessions;
+    return allSessions.filter(s =>
+      (s.title || '').toLowerCase().includes(q)
+    );
+  }, [allSessions, searchQuery]);
 
   // 滚动到高亮项
   useEffect(() => {
@@ -170,11 +178,7 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
         />
       </Box>
 
-      {loading ? (
-        <Box sx={{ p: 2, textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 13, color: '#9CA3AF' }}>加载中...</Typography>
-        </Box>
-      ) : sessions.length === 0 ? (
+      {sessions.length === 0 ? (
         <Box sx={{ p: 2, textAlign: 'center' }}>
           <Typography sx={{ fontSize: 13, color: '#9CA3AF' }}>未找到对话记录</Typography>
         </Box>
