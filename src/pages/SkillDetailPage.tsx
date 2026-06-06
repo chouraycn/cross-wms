@@ -533,6 +533,24 @@ const SkillDetailPage: React.FC = () => {
             删除
           </Button>
         )}
+
+      {/* 安全审查 */}
+      <Button
+        variant="outlined"
+        onClick={() => navigate(`/skills/${skill.id}/audit`)}
+        sx={{
+          textTransform: 'none',
+          borderRadius: 2,
+          borderColor: '#3B82F6',
+          color: '#3B82F6',
+          '&:hover': { borderColor: '#2563EB', backgroundColor: '#EFF6FF' },
+          minWidth: 80,
+          fontSize: '0.875rem',
+          flexShrink: 0,
+        }}
+      >
+        安全审查
+      </Button>
       </Box>
 
       {/* 编辑技能 Dialog */}
