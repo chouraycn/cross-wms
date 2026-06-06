@@ -425,6 +425,7 @@ const SkillsPage: React.FC = () => {
         onAuditClick={async () => {
           try {
             await refreshAuditForSkill(skill.id);
+            setSkillVersion((v) => v + 1);
             setToast({ open: true, msg: `「${skill.name}」安全审查已完成`, severity: 'success' });
           } catch {
             setToast({ open: true, msg: `「${skill.name}」安全审查失败`, severity: 'error' });
