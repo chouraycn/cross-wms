@@ -571,27 +571,22 @@ const SkillDetailPage: React.FC = () => {
       {/* 导出 ZIP */}
       <Button
         variant="outlined"
-        startIcon={<FileDownloadIcon sx={{ fontSize: 16 }} />}
-        onClick={async () => {
-          try {
-            await api.exportSkillAsZip(skill.id, skill.name);
-            setToast({ open: true, msg: '技能导出成功', severity: 'success' });
-          } catch (e) {
-            setToast({ open: true, msg: `导出失败: ${e instanceof Error ? e.message : '未知错误'}`, severity: 'error' });
-          }
-        }}
+        startIcon={exporting ? <CircularProgress size={16} /> : <FileDownloadIcon sx={{ fontSize: 16 }} />}
+        onClick={handleExport}
+        disabled={exporting}
         sx={{
           textTransform: 'none',
           borderRadius: 2,
           borderColor: '#6B7280',
           color: '#6B7280',
           '&:hover': { borderColor: '#374151', backgroundColor: '#F9FAFB' },
+          '&:disabled': { borderColor: '#D1D5DB', color: '#9CA3AF' },
           minWidth: 80,
           fontSize: '0.875rem',
           flexShrink: 0,
         }}
       >
-        导出
+        {exporting ? '导出中...' : '导出'}
       </Button>
       </Box>
 
