@@ -383,7 +383,7 @@ export async function fetchSkillAuditHistory(skillId: string): Promise<SkillAudi
 
 /** 触发技能安全审计 */
 export async function triggerSkillAudit(skillId: string, _skillPath: string, _force?: boolean): Promise<SkillAudit> {
-  return request<SkillAudit>('POST', '/api/skills/audit', { skillId });
+  return request<SkillAudit>('POST', '/api/skill-audits', { skillId, force: _force });
 }
 
 /** 导出审计报告（返回文件下载 URL） */
