@@ -65,17 +65,34 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
   const [allSessions, setAllSessions] = useState<Session[]>([]);
 
   // 从 localStorage 加载（与 NavList 侧边栏使用同一数据源）
-  useEffect(() => {
+  const reloadSessions = React.useCallback(() => {
     setAllSessions(loadSessionsFromStorage());
   }, []);
 
-  // 前端过滤（按标题模糊匹配）
+  useEffect(() => {
+    reloadSessions();
+    // 监听数据变化事件（与 NavList 同步刷新）
+    const onStorage = () => reloadSessions();
+    const onChatUpdate = () => reloadSessions();
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('crosswms-chat-updated', onChatUpdate);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('crosswms-chat-updated', onChatUpdate);
+    };
+  }, [reloadSessions]);
+
+  // 过滤 + 搜索（与 NavList 侧边栏保持一致：只显示有消息的会话）
   const sessions = React.useMemo(() => {
+    // 1. 与 NavList 一致：只显示有消息的会话
+    const withMessages = allSessions.filter(s => s.messages.length > 0);
+    // 2. 前端搜索过滤（按标题 + 首条消息内容模糊匹配）
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return allSessions;
-    return allSessions.filter(s =>
-      (s.title || '').toLowerCase().includes(q)
-    );
+    if (!q) return withMessages;
+    return withMessages.filter(s => {
+      const title = s.title || s.messages[0]?.content?.slice(0, 20) || '新对话';
+      return title.toLowerCase().includes(q);
+    });
   }, [allSessions, searchQuery]);
 
   // 滚动到高亮项
@@ -206,7 +223,7 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
               <ListItemText
                 primary={
                   <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#111827' }} noWrap>
-                    {session.title}
+                    {session.title || (session.messages[0]?.content as string)?.slice(0, 20) || '新对话'}
                   </Typography>
                 }
                 secondary={
