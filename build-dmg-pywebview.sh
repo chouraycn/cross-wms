@@ -465,7 +465,7 @@ GITHUB_REPO = "cross-wms"
 
 version = os.environ.get("VERSION", "1.0.0")
 pub_date = datetime.now().strftime("%Y-%m-%d")
-dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/CrossWMS.dmg"
+dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/CrossWMS-{version}-mac.dmg"
 min_ver = "1.0.0"
 
 project_dir = os.environ.get("PROJECT_DIR", ".")
@@ -539,7 +539,7 @@ PYEOF3
   if [ -n "$RELEASE_ID" ]; then
     UPLOAD_OK=true
     echo "  上传 DMG..."
-    curl -s -X POST \
+    curl -s -f -X POST \
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/octet-stream" \
       --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
@@ -547,7 +547,7 @@ PYEOF3
       && echo "  ✅ DMG 上传成功" || { echo "  ⚠️  DMG 上传失败"; UPLOAD_OK=false; }
 
     echo "  上传 release.json..."
-    curl -s -X POST \
+    curl -s -f -X POST \
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
       --data-binary @"$PROJECT_DIR/release/release.json" \
