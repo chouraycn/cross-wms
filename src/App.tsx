@@ -1,17 +1,17 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box, Snackbar, Alert, useMediaQuery } from '@mui/material';
+import { CssBaseline, Box, useMediaQuery } from '@mui/material';
 import Sidebar from './components/Layout/Sidebar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 import type { AppearanceConfig, AccentColor } from './contexts/AppSettingsContext';
 import { isPyWebView } from './services/tencentDocsApi';
 import { UpdateProvider } from './contexts/UpdateContext';
+import { ToastProvider, useToast } from './contexts/ToastContext';
 import UpdateNotification from './components/UpdateNotification';
 import { CrossWmsChat } from './components/CrossWmsChat';
 import ErrorBoundary from './components/Common/ErrorBoundary';
-import { automationEngine } from './services/automation';
 
 // 从统一配色文件导入
 export { PRIMARY, SECONDARY, BORDER, BG_LIGHT, BG_PAGE, WHITE, RADIUS, CHAT_COLORS } from './constants/theme';
@@ -33,6 +33,14 @@ import SettingsPage from './pages/SettingsPage';
 import AutomationPage from './pages/AutomationPage';
 import TasksPage from './pages/TasksPage';
 import ProjectsPage from './pages/ProjectsPage';
+import WmsQualityPage from './pages/WmsQualityPage';
+import WmsInventoryPage from './pages/WmsInventoryPage';
+import WmsOutboundPage from './pages/WmsOutboundPage';
+import WmsAlertPage from './pages/WmsAlertPage';
+import WmsReportPage from './pages/WmsReportPage';
+import MarketplacePage from './pages/MarketplacePage';
+import MarketplaceDetailPage from './pages/MarketplaceDetailPage';
+import ProjectDetailPage from './pages/ProjectDetailPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 /** 强调色映射 */
@@ -231,8 +239,8 @@ function getToolbarActions(pathname: string) {
   if (pathname === '/dashboard') {
     return { refresh: true, newWarehouse: false, warehouseSwitch: false };
   }
-  // 在途、库存、报表：仅刷新
-  if (pathname.startsWith('/in-transit') || pathname.startsWith('/inventory') || pathname.startsWith('/reports')) {
+  // 在途、库存、报表、WMS页面：仅刷新
+  if (pathname.startsWith('/in-transit') || pathname.startsWith('/inventory') || pathname.startsWith('/reports') || pathname.startsWith('/wms/')) {
     return { refresh: true, newWarehouse: false, warehouseSwitch: false };
   }
   // 其他页面（腾讯文档、设置）：无操作按钮
@@ -246,10 +254,30 @@ function getPageRefreshKey(pathname: string): string {
   if (pathname.startsWith('/in-transit')) return 'in-transit';
   if (pathname.startsWith('/inventory')) return 'inventory';
   if (pathname.startsWith('/reports')) return 'reports';
+  if (pathname.startsWith('/wms/quality')) return 'wms-quality';
+  if (pathname.startsWith('/wms/inventory')) return 'wms-inventory';
+  if (pathname.startsWith('/wms/outbound')) return 'wms-outbound';
+  if (pathname.startsWith('/wms/alerts')) return 'wms-alerts';
+  if (pathname.startsWith('/wms/reports')) return 'wms-reports';
   return '';
 }
 
 /** 主布局（需要在 Router 内部以使用 useLocation / useNavigate） */
+/** P0-1: localStorage 配额告警全局监听 — 必须在 ToastProvider 内部使用 */
+const StorageWarningListener: React.FC = () => {
+  const { showToast } = useToast();
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const keyLabel = detail?.key ? detail.key.replace('crosswms-', '') : '未知';
+      showToast(`本地存储空间不足（${keyLabel}），部分数据可能无法保存。建议清理旧数据。`, 'warning', 8000);
+    };
+    window.addEventListener('crosswms-storage-warning', handler);
+    return () => window.removeEventListener('crosswms-storage-warning', handler);
+  }, [showToast]);
+  return null;
+};
+
 const MainLayout: React.FC = () => {
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
@@ -334,32 +362,14 @@ const MainLayout: React.FC = () => {
     emitWarehouseChange(warehouseId);
   }, []);
 
-  // 启动自动化执行引擎
-  useEffect(() => {
-    automationEngine.start();
-    return () => {
-      automationEngine.stop();
-    };
-  }, []);
-
-  // P0-1: localStorage 配额告警全局监听
-  const [storageWarning, setStorageWarning] = useState<string | null>(null);
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      const keyLabel = detail?.key ? detail.key.replace('crosswms-', '') : '未知';
-      setStorageWarning(`本地存储空间不足（${keyLabel}），部分数据可能无法保存。建议清理旧数据。`);
-    };
-    window.addEventListener('crosswms-storage-warning', handler);
-    return () => window.removeEventListener('crosswms-storage-warning', handler);
-  }, []);
-
   // 系统红黄绿按钮区域高度由 CSS 变量 --pw-top 控制（frameless 模式下 JS 注入 43px）
   // 两侧（Sidebar + 工具栏）均使用 calc(40px + var(--pw-top, 0px)) 统一高度
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar — 单栏布局 */}
-      <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
+    <ToastProvider sidebarCollapsed={sidebarCollapsed}>
+      <StorageWarningListener />
+      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+        {/* Sidebar — 单栏布局 */}
+        <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
 
       {/* Main content area */}
       <Box
@@ -452,6 +462,7 @@ const MainLayout: React.FC = () => {
                 <Routes>
                   <Route path="/" element={<Navigate to="/chat" replace />} />
                   <Route path="/projects" element={<ProjectsPage />} />
+                  <Route path="/projects/:id" element={<ProjectDetailPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/skills" element={<SkillsPage />} />
                   <Route path="/skills/:skillId" element={<SkillDetailPage />} />
@@ -464,6 +475,13 @@ const MainLayout: React.FC = () => {
                   <Route path="/inventory" element={<InventoryPage />} />
                   <Route path="/tencent-docs" element={<TencentDocsPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/wms/quality" element={<WmsQualityPage />} />
+                  <Route path="/wms/inventory" element={<WmsInventoryPage />} />
+                  <Route path="/wms/outbound" element={<WmsOutboundPage />} />
+                  <Route path="/wms/alerts" element={<WmsAlertPage />} />
+                  <Route path="/wms/reports" element={<WmsReportPage />} />
+                  <Route path="/marketplace" element={<MarketplacePage />} />
+                  <Route path="/marketplace/:remoteId" element={<MarketplaceDetailPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/automation" element={<AutomationPage />} />
                   <Route path="/tasks" element={<TasksPage />} />
@@ -493,25 +511,9 @@ const MainLayout: React.FC = () => {
 
       {/* 自动更新通知 — 左下角 */}
       <UpdateNotification />
-
-      {/* P0-1: localStorage 配额告警 Snackbar */}
-      <Snackbar
-        open={Boolean(storageWarning)}
-        autoHideDuration={8000}
-        onClose={() => setStorageWarning(null)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert
-          severity="warning"
-          variant="filled"
-          onClose={() => setStorageWarning(null)}
-          sx={{ width: '100%', maxWidth: 480 }}
-        >
-          {storageWarning}
-        </Alert>
-      </Snackbar>
     </Box>
-  );
+  </ToastProvider>
+);
 };
 
 /** 动态主题桥接组件：读取 settings → 构建 theme → 注入 ThemeProvider */
