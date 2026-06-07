@@ -545,6 +545,14 @@ def start_server():
     env['CROSSWMS_DATA_DIR'] = os.path.expanduser('~/.crosswms')
     env['CROSSWMS_NODE_PATH'] = node_path  # 让 server 端知道 node 完整路径
 
+    # 注入 CODEBUDDY_CODE_PATH（agent-sdk 需要，指向项目根目录）
+    if getattr(sys, 'frozen', False):
+        # DMG 模式：使用 ~/.crosswms/ 作为项目根目录
+        env['CODEBUDDY_CODE_PATH'] = os.path.expanduser('~/.crosswms')
+    else:
+        # 开发模式：使用 cross-wms/ 目录
+        env['CODEBUDDY_CODE_PATH'] = os.path.dirname(os.path.abspath(__file__))
+
     # 确保 node 在 PATH 中（agent-sdk 内部 spawn node 需要找到 node 命令）
     node_dir = os.path.dirname(node_path)
     if node_dir not in env.get('PATH', '').split(os.pathsep):
@@ -655,6 +663,14 @@ def start_agent_server():
     env['PORT'] = str(AGENT_SERVER_PORT)
     env['CROSSWMS_DATA_DIR'] = os.path.expanduser('~/.crosswms')
     env['CROSSWMS_NODE_PATH'] = node_path  # 让 server 端知道 node 完整路径
+
+    # 注入 CODEBUDDY_CODE_PATH（agent-sdk 需要，指向项目根目录）
+    if getattr(sys, 'frozen', False):
+        # DMG 模式：使用 ~/.crosswms/ 作为项目根目录
+        env['CODEBUDDY_CODE_PATH'] = os.path.expanduser('~/.crosswms')
+    else:
+        # 开发模式：使用 cross-wms/ 目录
+        env['CODEBUDDY_CODE_PATH'] = os.path.dirname(os.path.abspath(__file__))
 
     # 确保 node 在 PATH 中（agent-sdk 内部 spawn node 需要找到 node 命令）
     node_dir = os.path.dirname(node_path)
@@ -1538,10 +1554,28 @@ def main():
         # 0. 启动前依赖检查
         check_dependencies()
 
-        # 1. 获取前端 dist 目录路径，直接通过 file:// 协议加载
+        # 1. 获取前端 dist 目录路径，通过本地 HTTP 服务器加载（替代 file://，彻底解决 WKWebView ES Module 问题）
         frontend_path = get_index_path()
-        frontend_url = f'file://{frontend_path}'
-        log(f"[Frontend] 通过 file:// 加载: {frontend_url}")
+        dist_dir = os.path.dirname(frontend_path)
+        httpd, http_port = start_http_server(dist_dir, 9988)
+        frontend_url = f'http://127.0.0.1:{http_port}/'
+        log(f"[Frontend] 通过 HTTP 加载: {frontend_url}")
+
+        # 1.5 等待 HTTP 服务器就绪（避免竞态：WKWebView 在服务器线程启动前加载导致白屏）
+        log("[Frontend] 等待 HTTP 服务器就绪...")
+        health_url = f'http://127.0.0.1:{http_port}/api/health'
+        for _retry in range(50):  # 最多等待 5 秒
+            try:
+                req = urllib.request.Request(health_url, method='GET')
+                with urllib.request.urlopen(req, timeout=0.5) as resp:
+                    if resp.status == 200:
+                        log(f"[Frontend] ✅ HTTP 服务器就绪 (尝试 {_retry + 1} 次)")
+                        break
+            except Exception:
+                pass
+            time.sleep(0.1)
+        else:
+            log("[Frontend] ⚠️  HTTP 服务器未在 5 秒内就绪，继续启动（可能白屏）")
 
         # 2. 尝试启动 Node.js 主后端（可选，仅用于 AI 助手功能）
         server_proc = start_server()
@@ -1613,7 +1647,16 @@ def main():
         log(traceback.format_exc())
         exit_code = 1
     finally:
-        # 5. 清理 Agent Web HTTP 服务器
+        # 5. 清理主前端 HTTP 服务器
+        if httpd:
+            try:
+                httpd.shutdown()
+                httpd.server_close()
+                log("[HTTP Server] 已停止")
+            except Exception as e:
+                log(f"[HTTP Server] 停止失败: {e}")
+
+        # 6. 清理 Agent Web HTTP 服务器
         if agent_httpd:
             try:
                 agent_httpd.shutdown()
