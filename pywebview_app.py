@@ -1617,7 +1617,7 @@ def main():
         api = Api()
         window = webview.create_window(
             title=APP_NAME,
-            url=frontend_url,       # file:// 协议，本地化加载（无需 HTTP 服务器）
+            url=frontend_url,       # HTTP 协议（127.0.0.1:9988），彻底解决 WKWebView ES Module 问题
             width=WIDTH,
             height=HEIGHT,
             min_size=MIN_SIZE,
