@@ -13,8 +13,8 @@ import { initDb } from '../db.js';
 import type {
   SkillEmbeddingRow,
   SkillEmbedding,
-} from '../../src/types/semantic.js';
-import { rowToSkillEmbedding, skillEmbeddingToRow } from '../../src/types/semantic.js';
+} from '@src/types/semantic';
+import { rowToSkillEmbedding, skillEmbeddingToRow } from '@src/types/semantic';
 // Types inlined after marketplace.ts was removed (remote marketplace feature deleted)
 
 interface MatchFeedbackRow {

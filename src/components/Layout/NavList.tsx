@@ -435,7 +435,7 @@ const NavList: React.FC<NavListProps> = ({
                 onClick={() => {
                   if (item.path === '/chat') {
                     handleNavClick(item.path);
-                    window.dispatchEvent(new CustomEvent('crosswms-navigate-chat'));
+                    window.dispatchEvent(new CustomEvent('cdf-know-clow-navigate-chat'));
                   } else {
                     handleNavClick(item.path);
                   }

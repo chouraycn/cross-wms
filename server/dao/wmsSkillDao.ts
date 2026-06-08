@@ -455,7 +455,7 @@ export function updateOutboundReview(id: number, updates: Partial<OutboundReview
 // ===================== 异常预警（Alert）DAO =====================
 
 /** 创建预警记录，返回自增 ID */
-export function createAlert(alert: Omit<WmsAlert, 'id' | 'triggeredAt' | 'createdAt' | 'updatedAt'>): number {
+export function createAlert(alert: Omit<WmsAlert, 'id' | 'createdAt' | 'updatedAt'>): number {
   const db = initDb();
   const now = new Date().toISOString();
   const stmt = db.prepare(

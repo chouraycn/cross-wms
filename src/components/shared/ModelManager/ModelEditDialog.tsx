@@ -13,11 +13,12 @@ import React from 'react';
 import {
   Box, Typography, Button, TextField, FormControl, InputLabel,
   Select, MenuItem, Switch, FormControlLabel, IconButton, Dialog,
-  Slider, InputAdornment,
+  Slider, InputAdornment, Chip,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { providerLabel, providerIcon, ALL_PROVIDERS } from '../../../utils/providerIcons';
+import { CAPABILITY_LABELS, CAPABILITY_COLORS, type ModelCapability } from '../../../types/models';
 import { textFieldSx, COLORS, sliderLabelSx, sliderValueSx, primaryButtonSx } from './styles';
 import type { ModelEditDialogProps } from './types';
 import type { ModelProvider } from '../../../types/models';
@@ -142,6 +143,45 @@ const ModelEditDialog: React.FC<ModelEditDialogProps> = ({ state, actions }) => 
           rows={2}
           sx={textFieldSx}
         />
+
+        {/* 能力标签 */}
+        <Box>
+          <Typography sx={{ fontSize: '0.8125rem', color: COLORS.textSecondary, mb: 0.75 }}>
+            能力标签
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+            {(['code', 'longContext', 'reasoning', 'multimodal', 'fast', 'costEffective', 'general'] as ModelCapability[]).map(cap => {
+              const selected = modelForm.capabilities?.includes(cap);
+              return (
+                <Chip
+                  key={cap}
+                  label={CAPABILITY_LABELS[cap]}
+                  size="small"
+                  onClick={() => {
+                    setModelForm(p => ({
+                      ...p,
+                      capabilities: selected
+                        ? (p.capabilities || []).filter(c => c !== cap)
+                        : [...(p.capabilities || []), cap],
+                    }));
+                  }}
+                  sx={{
+                    fontSize: '0.75rem',
+                    height: 28,
+                    cursor: 'pointer',
+                    backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}20` : '#F3F4F6',
+                    color: selected ? CAPABILITY_COLORS[cap] : COLORS.textMuted,
+                    border: selected ? `1px solid ${CAPABILITY_COLORS[cap]}50` : '1px solid transparent',
+                    fontWeight: selected ? 600 : 400,
+                    '&:hover': {
+                      backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}30` : '#E5E7EB',
+                    },
+                  }}
+                />
+              );
+            })}
+          </Box>
+        </Box>
 
         {/* 上下文窗口 & 最大输出 */}
         <Box sx={{ display: 'flex', gap: 1.5 }}>

@@ -2,7 +2,7 @@
  * localStorage → SQLite 一次性数据迁移
  *
  * 策略：
- * - 首次启动检测 `crosswms-migrated` 标记
+ * - 首次启动检测 `cdf-know-clow-migrated` 标记
  * - 收集所有 localStorage 中的业务数据
  * - 单次 POST /api/migrate 批量写入
  * - 成功标记 migrated，不删除 localStorage 原始 key（保留回滚能力）

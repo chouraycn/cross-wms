@@ -7,6 +7,7 @@
 
 import { initDb } from '../db.js';
 import type { ProjectRow } from '../db.js';
+import type Database from 'better-sqlite3';
 
 // ===================== JSON Field Helpers =====================
 

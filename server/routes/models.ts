@@ -53,7 +53,7 @@ router.post('/reset', (_req: Request, res: Response) => {
   }
 });
 
-// POST /api/models/test-connection — 测试 API 连接（真实请求 + 返回模型列表）
+// POST /api/models/test-connection — 测试 API 连接（真实请求 + 返回模型列表 + 验证 modelId）
 router.post('/test-connection', async (req: Request, res: Response) => {
   try {
     const { apiEndpoint, apiKey, modelId } = req.body as {
@@ -75,6 +75,7 @@ router.post('/test-connection', async (req: Request, res: Response) => {
     try {
       let models: string[] = [];
       let message = '';
+      let modelValid = false;
 
       // --- Anthropic：真实调用 ---
       if (apiEndpoint.includes('anthropic.com')) {
@@ -92,11 +93,17 @@ router.post('/test-connection', async (req: Request, res: Response) => {
         clearTimeout(timeout);
         if (resp.ok) {
           message = 'Anthropic API 连接成功';
+          modelValid = true;
           // 尝试解析响应中的模型信息
-          try { const j = await resp.json(); if (j.model) models = [j.model]; } catch {}
+          try { const j = await resp.json() as any; if (j.model) models = [j.model]; } catch {}
         } else {
           const txt = await resp.text().catch(() => '');
           clearTimeout(timeout);
+          // 检查是否是模型不存在错误
+          if (resp.status === 404 || txt.toLowerCase().includes('model') || txt.toLowerCase().includes('not_found')) {
+            res.json({ success: false, message: `模型 "${modelId}" 不存在或不可用`, modelValid: false, models: [] });
+            return;
+          }
           res.json({ success: false, message: `Anthropic API 错误 ${resp.status}: ${txt.slice(0, 200)}` });
           return;
         }
@@ -112,18 +119,24 @@ router.post('/test-connection', async (req: Request, res: Response) => {
         });
 
         if (resp.ok) {
-          const j = await resp.json();
+          const j = await resp.json() as any;
           // OpenAI 格式: { data: [{ id: '...' }] }
           if (Array.isArray(j.data)) {
             models = j.data.map((m: { id?: string }) => m.id).filter(Boolean).slice(0, 50);
           } else if (Array.isArray(j.models)) {
             models = j.models.map((m: { id?: string; name?: string }) => m.id || m.name).filter(Boolean).slice(0, 50);
           }
+
+          // 验证 modelId 是否在返回的模型列表中
+          if (modelId && models.length > 0) {
+            modelValid = models.some(m => m === modelId || m.includes(modelId));
+          }
+
           message = models.length > 0
             ? `连接成功，发现 ${models.length} 个可用模型`
             : '连接成功，但未返回模型列表';
         } else if (resp.status === 404) {
-          // 不支持 /models 端点，尝试一次最小补全调用
+          // 不支持 /models 端点，尝试一次最小补全调用验证 modelId
           const chatUrl = apiEndpoint.endsWith('/') ? `${apiEndpoint}chat/completions` : `${apiEndpoint}/chat/completions`;
           const testResp = await fetch(chatUrl, {
             method: 'POST',
@@ -132,8 +145,16 @@ router.post('/test-connection', async (req: Request, res: Response) => {
             signal: controller.signal,
           });
           clearTimeout(timeout);
-          if (testResp.ok || testResp.status === 400) {
-            // 400 也可能是缺 model 参数，但端点本身可达
+          if (testResp.ok) {
+            modelValid = true;
+            message = '连接成功，模型可用';
+          } else if (testResp.status === 400) {
+            const txt = await testResp.text().catch(() => '');
+            // 400 可能是缺 model 参数，也可能是模型不存在
+            if (txt.toLowerCase().includes('model') && (txt.toLowerCase().includes('not found') || txt.toLowerCase().includes('does not exist') || txt.toLowerCase().includes('invalid'))) {
+              res.json({ success: false, message: `模型 "${modelId}" 不存在或不可用`, modelValid: false, models: [] });
+              return;
+            }
             message = '连接成功（端点可达，但未返回模型列表）';
           } else {
             const txt = await testResp.text().catch(() => '');
@@ -150,7 +171,21 @@ router.post('/test-connection', async (req: Request, res: Response) => {
       }
 
       clearTimeout(timeout);
-      res.json({ success: true, message, models });
+
+      // 如果提供了 modelId 但验证失败，给出明确提示
+      if (modelId && !modelValid && models.length > 0) {
+        const similar = models.filter(m => m.toLowerCase().includes(modelId.toLowerCase().split('-')[0])).slice(0, 5);
+        const hint = similar.length > 0 ? `。您是否想使用：${similar.join(', ')}` : '';
+        res.json({
+          success: true,
+          message: `连接成功，但模型 "${modelId}" 不在该账户的可用列表中${hint}`,
+          modelValid: false,
+          models,
+        });
+        return;
+      }
+
+      res.json({ success: true, message, modelValid, models });
     } catch (fetchError: unknown) {
       clearTimeout(timeout);
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {

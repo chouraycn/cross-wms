@@ -19,16 +19,16 @@ import {
   float32ArrayToBlob,
   blobToFloat32Array,
   bruteForceSearch,
-} from '../../src/services/skill/embeddingUtils.js';
+} from '@src/services/skill/embeddingUtils';
 import {
   EMBEDDING_DIMENSIONS,
   DEFAULT_EMBEDDING_MODEL,
   type SkillEmbeddingRow,
   type MatchEngineRuntimeConfig,
   DEFAULT_MATCH_ENGINE_CONFIG,
-} from '../../src/types/semantic.js';
+} from '@src/types/semantic';
 import { getUserSkills } from '../db.js';
-import { BUILTIN_SKILLS } from '../../src/types/skill.js';
+import { BUILTIN_SKILLS } from '@src/types/skill';
 
 // ===================== 类型定义 =====================
 

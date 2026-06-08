@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {
-  Box, Typography, Button, Chip, Switch, IconButton, Tooltip,
+  Box, Typography, Button, Chip, Switch, IconButton, Tooltip, Checkbox,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   List, ListItem, ListItemText,
 } from '@mui/material';
@@ -16,17 +16,24 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import TuneIcon from '@mui/icons-material/Tune';
 import { providerLabel, providerIcon } from '../../../utils/providerIcons';
+import { CAPABILITY_LABELS, CAPABILITY_COLORS } from '../../../types/models';
 import { switchSx, COLORS } from './styles';
 import type { ModelListProps } from './types';
 
 // ===================== Table 变体 =====================
 
-const ModelTable: React.FC<ModelListProps> = ({ models, defaultModelId, actions }) => (
+const ModelTable: React.FC<ModelListProps> = ({ models, defaultModelId, actions, selectedModelIds }) => (
   <Box sx={{ flex: 1, overflow: 'auto' }}>
     <TableContainer>
       <Table size="small">
         <TableHead>
           <TableRow>
+            <TableCell sx={{
+              fontSize: '0.8125rem', fontWeight: 500, color: COLORS.textMuted,
+              py: 1.25, px: 1.5, borderBottom: `1px solid ${COLORS.borderLight}`,
+              backgroundColor: '#FAFAFA', width: 40,
+            }}>
+            </TableCell>
             <TableCell sx={{
               fontSize: '0.8125rem', fontWeight: 500, color: COLORS.textMuted,
               py: 1.25, px: 2, borderBottom: `1px solid ${COLORS.borderLight}`,
@@ -53,7 +60,7 @@ const ModelTable: React.FC<ModelListProps> = ({ models, defaultModelId, actions 
         <TableBody>
           {models.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={3} align="center" sx={{ py: 8 }}>
+              <TableCell colSpan={4} align="center" sx={{ py: 8 }}>
                 <Typography sx={{ fontSize: '0.8125rem', color: COLORS.textLight }}>
                   暂无自定义模型，你可以
                   <Box
@@ -81,6 +88,14 @@ const ModelTable: React.FC<ModelListProps> = ({ models, defaultModelId, actions 
                   '&:hover': { backgroundColor: COLORS.bgHover },
                 }}
               >
+                <TableCell sx={{ py: 1.5, px: 1.5, borderBottom: `1px solid ${COLORS.borderLight}` }}>
+                  <Checkbox
+                    size="small"
+                    checked={selectedModelIds.includes(model.id)}
+                    onChange={() => actions.toggleModelSelection(model.id)}
+                    sx={{ p: 0.3 }}
+                  />
+                </TableCell>
                 <TableCell sx={{ py: 1.5, px: 2, borderBottom: `1px solid ${COLORS.borderLight}` }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                     {providerIcon(model.provider)}
@@ -90,7 +105,7 @@ const ModelTable: React.FC<ModelListProps> = ({ models, defaultModelId, actions 
                   </Box>
                 </TableCell>
                 <TableCell sx={{ py: 1.5, px: 2, borderBottom: `1px solid ${COLORS.borderLight}` }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                     <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: COLORS.textPrimary }}>
                       {model.name}
                     </Typography>
@@ -100,6 +115,20 @@ const ModelTable: React.FC<ModelListProps> = ({ models, defaultModelId, actions 
                     {!model.enabled && (
                       <Chip label="禁用" size="small" sx={{ backgroundColor: COLORS.errorBg, color: COLORS.errorText, fontSize: '0.65rem', height: 18 }} />
                     )}
+                    {model.capabilities?.map(cap => (
+                      <Chip
+                        key={cap}
+                        label={CAPABILITY_LABELS[cap]}
+                        size="small"
+                        sx={{
+                          fontSize: '0.6rem',
+                          height: 16,
+                          backgroundColor: `${CAPABILITY_COLORS[cap]}15`,
+                          color: CAPABILITY_COLORS[cap],
+                          fontWeight: 500,
+                        }}
+                      />
+                    ))}
                   </Box>
                   {model.description && (
                     <Typography sx={{ fontSize: '0.7rem', color: COLORS.textLight, mt: 0.35 }}>
@@ -146,7 +175,7 @@ const ModelTable: React.FC<ModelListProps> = ({ models, defaultModelId, actions 
 
 // ===================== List 变体（详细版） =====================
 
-const ModelListDetailed: React.FC<ModelListProps> = ({ models, defaultModelId, actions }) => (
+const ModelListDetailed: React.FC<ModelListProps> = ({ models, defaultModelId, actions, selectedModelIds }) => (
   <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 1, border: `1px solid ${COLORS.border}` }}>
     {models.map(model => (
       <ListItem
@@ -201,7 +230,13 @@ const ModelListDetailed: React.FC<ModelListProps> = ({ models, defaultModelId, a
       >
         <ListItemText
           primary={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Checkbox
+                size="small"
+                checked={selectedModelIds.includes(model.id)}
+                onChange={() => actions.toggleModelSelection(model.id)}
+                sx={{ p: 0.3, mr: -0.5 }}
+              />
               <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: COLORS.textPrimary }}>
                 {model.name}
               </Typography>
@@ -215,10 +250,24 @@ const ModelListDetailed: React.FC<ModelListProps> = ({ models, defaultModelId, a
               {!model.enabled && (
                 <Chip label="已禁用" size="small" sx={{ backgroundColor: COLORS.errorBg, color: COLORS.errorText, fontSize: '0.65rem' }} />
               )}
+              {model.capabilities?.map(cap => (
+                <Chip
+                  key={cap}
+                  label={CAPABILITY_LABELS[cap]}
+                  size="small"
+                  sx={{
+                    fontSize: '0.6rem',
+                    height: 18,
+                    backgroundColor: `${CAPABILITY_COLORS[cap]}15`,
+                    color: CAPABILITY_COLORS[cap],
+                    fontWeight: 500,
+                  }}
+                />
+              ))}
             </Box>
           }
           secondary={
-            <Box sx={{ mt: 0.5 }}>
+            <Box sx={{ mt: 0.5, ml: 3.5 }}>
               <Typography sx={{ fontSize: '0.75rem', color: COLORS.textMuted }}>
                 ID: {model.id}
               </Typography>
@@ -248,6 +297,12 @@ const ModelListDetailed: React.FC<ModelListProps> = ({ models, defaultModelId, a
                     Top P：{model.topP}
                   </Typography>
                 )}
+                {model.usageStats && (
+                  <Typography sx={{ fontSize: '0.7rem', color: COLORS.textMuted }}>
+                    使用 {model.usageStats.callCount} 次
+                    {model.usageStats.lastUsedAt ? ` · 最近 ${new Date(model.usageStats.lastUsedAt).toLocaleDateString()}` : ''}
+                  </Typography>
+                )}
               </Box>
             </Box>
           }
@@ -259,7 +314,7 @@ const ModelListDetailed: React.FC<ModelListProps> = ({ models, defaultModelId, a
 
 // ===================== Compact 变体 =====================
 
-const ModelListCompact: React.FC<ModelListProps> = ({ models, defaultModelId, actions }) => (
+const ModelListCompact: React.FC<ModelListProps> = ({ models, defaultModelId, actions, selectedModelIds }) => (
   <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 1, border: `1px solid ${COLORS.border}`, p: 0 }}>
     {models.length === 0 && (
       <ListItem>
@@ -313,7 +368,13 @@ const ModelListCompact: React.FC<ModelListProps> = ({ models, defaultModelId, ac
       >
         <ListItemText
           primary={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+              <Checkbox
+                size="small"
+                checked={selectedModelIds.includes(model.id)}
+                onChange={() => actions.toggleModelSelection(model.id)}
+                sx={{ p: 0.3, mr: -0.5 }}
+              />
               <Typography sx={{ fontSize: '0.8rem', fontWeight: 500, color: COLORS.textPrimary }}>
                 {model.name}
               </Typography>
@@ -327,14 +388,30 @@ const ModelListCompact: React.FC<ModelListProps> = ({ models, defaultModelId, ac
               {!model.enabled && (
                 <Chip label="禁用" size="small" sx={{ backgroundColor: COLORS.errorBg, color: COLORS.errorText, fontSize: '0.6rem', height: 18 }} />
               )}
+              {model.capabilities?.slice(0, 2).map(cap => (
+                <Chip
+                  key={cap}
+                  label={CAPABILITY_LABELS[cap]}
+                  size="small"
+                  sx={{
+                    fontSize: '0.55rem',
+                    height: 14,
+                    backgroundColor: `${CAPABILITY_COLORS[cap]}15`,
+                    color: CAPABILITY_COLORS[cap],
+                    fontWeight: 500,
+                  }}
+                />
+              ))}
             </Box>
           }
           secondary={
-            <Typography sx={{ fontSize: '0.7rem', color: COLORS.textLight }}>
-              {model.description || model.id}
-              {model.contextWindow ? ` · ${model.contextWindow.toLocaleString()} ctx` : ''}
-              {model.maxTokens ? ` · ${model.maxTokens.toLocaleString()} out` : ''}
-            </Typography>
+            <Box sx={{ ml: 3 }}>
+              <Typography sx={{ fontSize: '0.7rem', color: COLORS.textLight }}>
+                {model.description || model.id}
+                {model.contextWindow ? ` · ${model.contextWindow.toLocaleString()} ctx` : ''}
+                {model.maxTokens ? ` · ${model.maxTokens.toLocaleString()} out` : ''}
+              </Typography>
+            </Box>
           }
         />
       </ListItem>

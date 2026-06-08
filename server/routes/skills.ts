@@ -183,9 +183,9 @@ router.get('/user-skills/:id', (req: Request, res: Response) => {
 // POST /api/user-skills
 router.post('/user-skills', (req: Request, res: Response) => {
   try {
-    const data = dbCreateSkill(req.body);
+    const data = dbCreateSkill(req.body as Record<string, unknown>);
     // 同步 promptTemplate 到磁盘 SKILL.md（供审计扫描使用）
-    syncSkillMdToDisk(data.id, req.body.promptTemplate || data.promptTemplate);
+    syncSkillMdToDisk(data.id as string, ((req.body as Record<string, unknown>).promptTemplate ?? (data as Record<string, unknown>).promptTemplate) as string | null | undefined);
     res.status(201).json({ data });
   } catch (e) {
     res.status(400).json({ error: (e as Error).message });
@@ -201,7 +201,7 @@ router.put('/user-skills/:id', (req: Request, res: Response) => {
       return;
     }
     // 同步 promptTemplate 到磁盘 SKILL.md（供审计扫描使用）
-    syncSkillMdToDisk(req.params.id, req.body.promptTemplate || data.promptTemplate);
+    syncSkillMdToDisk(req.params.id, ((req.body as Record<string, unknown>).promptTemplate ?? (data as Record<string, unknown>).promptTemplate) as string | null | undefined);
     res.json({ data });
   } catch (e) {
     res.status(400).json({ error: (e as Error).message });
@@ -468,7 +468,7 @@ router.post('/skill-audits', async (req: Request, res: Response) => {
 
     if (skillPath && fs.existsSync(skillPath)) {
       mdPath = skillPath;
-      content = fs.readFileSync(mdPath, 'utf-8');
+      content = fs.readFileSync(mdPath as string, 'utf-8');
     } else {
       // 优先查找磁盘文件
       const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
@@ -510,7 +510,7 @@ router.post('/skill-audits', async (req: Request, res: Response) => {
     }
 
     // Run security audit
-    const result = await auditSkillMd(mdPath, content);
+    const result = await auditSkillMd(mdPath!, content!);
     const id = uuidv4();
     const now = new Date().toISOString();
 
@@ -571,7 +571,7 @@ router.post('/skill-audits/batch', async (req: Request, res: Response) => {
           continue;
         }
 
-        const result = await auditSkillMd(mdPath, content);
+        const result = await auditSkillMd(mdPath!, content!);
         const id = uuidv4();
         const now = new Date().toISOString();
 
@@ -640,7 +640,7 @@ router.get('/skills/:id/export', async (req: Request, res: Response) => {
     let skillName = req.params.id;
     try {
       const skill = dbGetSkillById(req.params.id);
-      if (skill && skill.name) skillName = skill.name;
+      if (skill && skill.name) skillName = skill.name as string;
     } catch {}
 
     // Create ZIP in temp directory

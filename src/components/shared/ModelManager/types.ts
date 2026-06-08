@@ -35,6 +35,7 @@ export interface ModelFormState {
   maxTokens: string;
   temperature: string;
   topP: string;
+  capabilities: string[];
 }
 
 /** 测试连接状态 */
@@ -53,6 +54,18 @@ export interface ModelManagerState {
   testMessage: string;
   deleteTarget: ModelConfig | null;
   showApiKey: boolean;
+  /** 搜索关键词 */
+  searchQuery: string;
+  /** 选中的能力标签筛选 */
+  selectedCapabilities: string[];
+  /** 批量选中的模型 ID */
+  selectedModelIds: string[];
+  /** 是否显示模板对话框 */
+  showTemplateDialog: boolean;
+  /** 连接测试返回的可用模型列表 */
+  testAvailableModels: string[];
+  /** 连接测试返回的模型是否有效 */
+  testModelValid: boolean;
 }
 
 /** Hook 返回的操作 */
@@ -71,6 +84,28 @@ export interface ModelManagerActions {
   handleExport: () => void;
   handleImport: () => void;
   toggleApiKeyVisibility: () => void;
+  /** 设置搜索关键词 */
+  setSearchQuery: (query: string) => void;
+  /** 切换能力标签筛选 */
+  toggleCapabilityFilter: (cap: string) => void;
+  /** 清除所有筛选 */
+  clearFilters: () => void;
+  /** 切换模型批量选中 */
+  toggleModelSelection: (modelId: string) => void;
+  /** 全选/取消全选 */
+  toggleSelectAll: () => void;
+  /** 批量启用 */
+  batchEnable: () => void;
+  /** 批量禁用 */
+  batchDisable: () => void;
+  /** 批量删除 */
+  batchDelete: () => void;
+  /** 打开模板对话框 */
+  openTemplateDialog: () => void;
+  /** 关闭模板对话框 */
+  closeTemplateDialog: () => void;
+  /** 应用模板 */
+  applyTemplate: (templateId: string) => void;
 }
 
 /** ModelList 组件 Props */
@@ -84,14 +119,21 @@ export interface ModelListProps {
     | 'handleDeleteModel'
     | 'handleSetDefaultModel'
     | 'handleToggleModelEnabled'
+    | 'toggleModelSelection'
   >;
+  /** 批量选中的模型 ID */
+  selectedModelIds: string[];
+  /** 搜索关键词 */
+  searchQuery: string;
+  /** 选中的能力标签 */
+  selectedCapabilities: string[];
 }
 
 /** ModelEditDialog 组件 Props */
 export interface ModelEditDialogProps {
   state: Pick<
     ModelManagerState,
-    'modelForm' | 'modelFormErrors' | 'modelDialogMode' | 'editingModel' | 'testStatus' | 'testMessage' | 'showApiKey'
+    'modelForm' | 'modelFormErrors' | 'modelDialogMode' | 'editingModel' | 'testStatus' | 'testMessage' | 'showApiKey' | 'testAvailableModels' | 'testModelValid'
   >;
   actions: Pick<
     ModelManagerActions,
@@ -115,4 +157,5 @@ export interface ModelToolbarProps {
   onReset: () => void;
   onExport: () => void;
   onImport: () => void;
+  onTemplate: () => void;
 }
