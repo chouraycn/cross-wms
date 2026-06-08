@@ -3,7 +3,7 @@
  */
 
 /** 模型提供商类型 */
-export type ModelProvider = 'openai' | 'anthropic' | 'tencent' | 'custom';
+export type ModelProvider = 'openai' | 'anthropic' | 'tencent' | 'deepseek' | 'google' | 'qwen' | 'custom';
 
 /** 模型配置接口 */
 export interface ModelConfig {
@@ -27,6 +27,10 @@ export interface ModelConfig {
   contextWindow?: number;
   /** 最大输出 token 数 */
   maxTokens?: number;
+  /** 生成温度（0-2，默认 1） */
+  temperature?: number;
+  /** Top P 采样（0-1，默认 1） */
+  topP?: number;
 }
 
 /** 模型管理配置 */
