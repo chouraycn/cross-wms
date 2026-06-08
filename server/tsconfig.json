@@ -4,13 +4,18 @@
     "module": "commonjs",
     "lib": ["ES2021"],
     "outDir": "../dist-server",
-    "rootDir": ".",
+    "rootDir": "..",
+    "baseUrl": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "jsx": "preserve",
+    "paths": {
+      "@src/*": ["../src/*"]
+    }
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "../src"]
 }

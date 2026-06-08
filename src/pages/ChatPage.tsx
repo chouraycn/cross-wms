@@ -10,7 +10,7 @@ import { ICON_MAP } from '../types/skill';
 import { getCategoryLabel, getCategoryGradient } from '../constants/skillCategories';
 import { MarkdownRenderer } from '../components/CrossWmsChat/MarkdownRenderer';
 
-// 会话持久化配置（与 CrossWmsChat 共享 localStorage）
+// 会话持久化配置（与 CDFKnowClowChat 共享 localStorage）
 const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
 const MAX_SESSIONS = 20;
 

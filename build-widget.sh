@@ -43,8 +43,8 @@ swift build -c release --product CDFKnowClowWidget 2>&1
 echo "🔍 查找构建产物..."
 # SPM 输出路径因 Swift 版本/架构而异
 # 可能路径：
-#   .build/release/libCrossWMSWidget.dylib + CrossWMSWidget_CrossWMSWidget.bundle (旧版)
-#   .build/arm64-apple-macosx/release/libCrossWMSWidget.dylib + CrossWMSWidget_CrossWMSWidget.bundle (新版)
+#   .build/release/libCDFKnowClowWidget.dylib + CDFKnowClowWidget_CDFKnowClowWidget.bundle (旧版)
+#   .build/arm64-apple-macosx/release/libCDFKnowClowWidget.dylib + CDFKnowClowWidget_CDFKnowClowWidget.bundle (新版)
 
 DYLIB_SOURCE=""
 BUNDLE_SOURCE=""
@@ -74,7 +74,7 @@ mkdir -p "$TARGET_APPEX/Contents/Resources"
 
 echo "📦 组装 .appex 结构..."
 
-# 复制可执行文件（dylib -> MacOS/CrossWMSWidget）
+# 复制可执行文件（dylib -> MacOS/CDFKnowClowWidget）
 cp "$DYLIB_SOURCE" "$TARGET_APPEX/Contents/MacOS/CDFKnowClowWidget"
   chmod +x "$TARGET_APPEX/Contents/MacOS/CDFKnowClowWidget"
 echo "  ✓ 可执行文件已复制"
@@ -166,7 +166,7 @@ echo "=== 构建结果 ==="
 echo "Widget .appex: $TARGET_APPEX"
 find "$TARGET_APPEX" -type f 2>/dev/null || true
 
-if [ "$ONLY_BUILD" = false ] && [ -d "$APP_PLUGINS/CrossWMSWidget.appex" ]; then
+if [ "$ONLY_BUILD" = false ] && [ -d "$APP_PLUGINS/CDFKnowClowWidget.appex" ]; then
   echo ""
   echo "✅ CDFKnowClowWidget.appex 已嵌入"
   codesign -dv --verbose=2 "$APP_PLUGINS/CDFKnowClowWidget.appex" 2>&1 | grep -E "Identifier|Team|Entitlements" || true

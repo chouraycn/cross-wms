@@ -30,6 +30,9 @@ import ModelToolbar from './ModelToolbar';
 import ModelList from './ModelList';
 import ModelEditDialog from './ModelEditDialog';
 import DeleteConfirmDialog from './DeleteConfirmDialog';
+import ModelFilterBar from './ModelFilterBar';
+import ModelBatchToolbar from './ModelBatchToolbar';
+import TemplateDialog from './TemplateDialog';
 import type { ModelManagerProps } from './types';
 
 const ModelManager: React.FC<ModelManagerProps> = (props) => {
@@ -57,7 +60,29 @@ const ModelManager: React.FC<ModelManagerProps> = (props) => {
         onReset={actions.handleResetToDefault}
         onExport={actions.handleExport}
         onImport={actions.handleImport}
+        onTemplate={actions.openTemplateDialog}
       />
+
+      {/* 筛选栏 */}
+      <ModelFilterBar
+        searchQuery={state.searchQuery}
+        selectedCapabilities={state.selectedCapabilities}
+        onSearchChange={actions.setSearchQuery}
+        onCapabilityToggle={actions.toggleCapabilityFilter}
+        onClearFilters={actions.clearFilters}
+      />
+
+      {/* 批量操作工具栏 */}
+      {state.selectedModelIds.length > 0 && (
+        <ModelBatchToolbar
+          selectedCount={state.selectedModelIds.length}
+          totalCount={models.length}
+          onSelectAll={actions.toggleSelectAll}
+          onBatchEnable={actions.batchEnable}
+          onBatchDisable={actions.batchDisable}
+          onBatchDelete={actions.batchDelete}
+        />
+      )}
 
       {/* 模型列表 */}
       <ModelList
@@ -65,6 +90,9 @@ const ModelManager: React.FC<ModelManagerProps> = (props) => {
         defaultModelId={defaultModelId}
         variant={variant}
         actions={actions}
+        selectedModelIds={state.selectedModelIds}
+        searchQuery={state.searchQuery}
+        selectedCapabilities={state.selectedCapabilities}
       />
 
       {/* 编辑弹窗 */}
@@ -75,6 +103,13 @@ const ModelManager: React.FC<ModelManagerProps> = (props) => {
         target={state.deleteTarget}
         onConfirm={actions.confirmDelete}
         onCancel={actions.cancelDelete}
+      />
+
+      {/* 模板对话框 */}
+      <TemplateDialog
+        open={state.showTemplateDialog}
+        onClose={actions.closeTemplateDialog}
+        onApply={actions.applyTemplate}
       />
     </Box>
   );

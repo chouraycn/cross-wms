@@ -376,7 +376,7 @@ Additional instructions here.`;
     // Frontmatter fields
     expect(result.name).toBe('data-analyzer');
     expect(result.version).toBe('2.0');
-    expect(result.author).toBe('CrossWMS Team');
+    expect(result.author).toBe('CDF Know Clow Team');
     expect(result.description).toBe('Analyze warehouse data');
     expect(result.trigger).toEqual(['数据分析', '趋势预测']); // 按 / 拆分
     expect(result.category).toBe('data');

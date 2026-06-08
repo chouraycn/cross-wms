@@ -89,6 +89,24 @@ export interface WmsReport {
   updatedAt?: string;
 }
 
+// ===================== 预警阈值与检查结果类型 =====================
+
+/** 预警阈值配置 */
+export interface AlertThresholds {
+  lowStock?: number;     // 低库存阈值，默认 10
+  expiryDays?: number;   // 临期天数，默认 30
+  stagnantDays?: number; // 呆滞天数（无出库记录），默认 90
+}
+
+/** 预警检查结果 */
+export interface AlertCheckResult {
+  newAlerts: number;          // 新创建的预警数量
+  lowStockAlerts: number;     // 低库存预警数
+  expiryAlerts: number;       // 临期预警数
+  stagnantAlerts: number;     // 呆滞预警数
+  errors: string[];           // 错误列表
+}
+
 // ===================== DB Row 类型（snake_case）=====================
 
 /** 数据库行：wms_quality_checks */

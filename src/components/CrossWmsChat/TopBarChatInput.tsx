@@ -287,11 +287,20 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
   })();
 
   // 从 settings 中读取模型列表（仅启用的模型），Auto 作为首选项
-  const MODEL_OPTIONS = [
-    { name: 'Auto', provider: 'auto' },
+  const MODEL_OPTIONS: import('./ChatToolbar').ModelOption[] = [
+    { id: 'auto', name: 'Auto', provider: 'auto', description: '根据任务自动选择最合适的模型' },
     ...settings.models.models
       .filter((m) => m.enabled)
-      .map((m) => ({ name: m.name, provider: m.provider })),
+      .map((m) => ({
+        id: m.id,
+        name: m.name,
+        provider: m.provider,
+        description: m.description,
+        capabilities: m.capabilities,
+        contextWindow: m.contextWindow,
+        isDefault: m.isDefault,
+        enabled: m.enabled,
+      })),
   ];
 
   // 获取已启用的模型列表（含 id 和 name，用于 id↔name 映射）

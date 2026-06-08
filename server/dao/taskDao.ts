@@ -4,7 +4,7 @@
  */
 
 import { initDb } from '../db.js';
-import type { Task, TaskFormData } from '../../src/types/task.js';
+import type { Task, TaskFormData } from '@src/types/task';
 
 function db() {
   return initDb();

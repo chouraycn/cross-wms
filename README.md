@@ -21,7 +21,7 @@
 - **前端**: Vite + React 18 + TypeScript + MUI v5 + Tailwind CSS + Recharts
 - **桌面**: Python pywebview (WKWebView 原生窗口)
 - **AI 后端**: Express + `@tencent-ai/agent-sdk`
-- **数据持久化**: localStorage (`crosswms-warehouses`, `crosswms-settings`)
+- **数据持久化**: localStorage (`cdf-know-clow-warehouses`, `cdf-know-clow-settings`)
 - **打包**: PyInstaller → macOS DMG (arm64)
 
 ## 快速开始
@@ -48,7 +48,7 @@ npm run build
 ## 项目结构
 
 ```
-cross-wms/
+cdf-know-clow/
 ├── src/
 │   ├── components/
 │   │   ├── Dashboard/          # 仪表盘组件（KPI、热力图、图表）
@@ -56,7 +56,7 @@ cross-wms/
 │   │   ├── Settings/           # 设置弹窗
 │   │   ├── TencentDocs/        # 腾讯文档面板
 │   │   ├── AIAssistant/        # AI 助手组件
-│   │   └── CrossWmsChat/       # 聊天组件
+│   │   └── CrossWmsChat/       # 聊天组件（目录名保留）
 │   ├── contexts/               # AppSettingsContext、UpdateContext
 │   ├── pages/                   # 页面路由
 │   ├── services/                # API 服务（腾讯文档、企业微信、更新检测）
@@ -79,7 +79,7 @@ npm run build
 bash build-dmg-pywebview.sh
 ```
 
-产物: `release/CrossWMS-{version}-mac.dmg`
+产物: `release/CDFKnowClow-{version}-mac.dmg`
 
 ### pywebview 特性
 
@@ -103,7 +103,7 @@ bash build-dmg-pywebview.sh
 | 版本 | 日期 | 关键变更 |
 |------|------|---------|
 | v1.0.47 | 2026-05-31 | DMG 闪退修复 + 红黄绿按钮位置调整 |
-| v1.0.42 | 2026-05-31 | CrossWmsChat 重命名 + 对话框功能完善 |
+| v1.0.42 | 2026-05-31 | CDFKnowClowChat 重命名 + 对话框功能完善 |
 | v1.0.37 | 2026-05-31 | ProWeb 风格 Banner + 侧边栏对齐 |
 | v1.0.21 | 2026-05-29 | CSV 导出 + 热力图修复 |
 | v1.0.4 | 2026-05-27 | 自动更新机制 + 版本号统一管理 |

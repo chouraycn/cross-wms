@@ -16,6 +16,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
+import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import { COLORS, toolbarButtonSx, primaryButtonSx } from './styles';
 import type { ModelToolbarProps } from './types';
 
@@ -27,6 +28,7 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
   onReset,
   onExport,
   onImport,
+  onTemplate,
 }) => {
   const defaultModel = models.find(m => m.id === defaultModelId);
 
@@ -88,6 +90,17 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
               导入
             </Button>
           </Tooltip>
+          <Tooltip title="应用配置模板">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<DashboardCustomizeIcon sx={{ fontSize: 16 }} />}
+              onClick={onTemplate}
+              sx={{ borderColor: '#D1D5DB', color: COLORS.textMuted, fontSize: '0.8125rem', '&:hover': { borderColor: '#9CA3AF' } }}
+            >
+              模板
+            </Button>
+          </Tooltip>
         </Box>
       </Box>
     );
@@ -119,6 +132,11 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
           <Tooltip title="导入">
             <IconButton size="small" onClick={onImport} sx={{ color: COLORS.textMuted, p: 0.5 }}>
               <FileUploadIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="模板">
+            <IconButton size="small" onClick={onTemplate} sx={{ color: COLORS.textMuted, p: 0.5 }}>
+              <DashboardCustomizeIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>
           <Button
@@ -183,6 +201,17 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
               sx={{ borderColor: '#D1D5DB', color: COLORS.textMuted, fontSize: '0.8rem', '&:hover': { borderColor: '#9CA3AF' } }}
             >
               导入
+            </Button>
+          </Tooltip>
+          <Tooltip title="应用配置模板">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<DashboardCustomizeIcon sx={{ fontSize: 16 }} />}
+              onClick={onTemplate}
+              sx={{ borderColor: '#D1D5DB', color: COLORS.textMuted, fontSize: '0.8rem', '&:hover': { borderColor: '#9CA3AF' } }}
+            >
+              模板
             </Button>
           </Tooltip>
         </Box>

@@ -8,10 +8,14 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { extractAndSaveApiKey, injectApiKeys, deleteApiKey } from './keychainStore.js';
 
 const AI_MODELS_DIR = path.join(os.homedir(), '.cdf-know-clow', 'ai-models');
 const MODELS_FILE = path.join(AI_MODELS_DIR, 'models.json');
 const OLD_MODELS_FILE = path.join(os.homedir(), '.cdf-know-clow', 'models.json');
+
+/** 模型能力标签 */
+export type ModelCapability = 'code' | 'longContext' | 'reasoning' | 'multimodal' | 'fast' | 'costEffective' | 'general';
 
 /** 模型提供商 */
 export type ModelProvider = 'openai' | 'anthropic' | 'tencent' | 'deepseek' | 'google' | 'qwen' | 'custom';
@@ -23,6 +27,7 @@ export interface ModelConfig {
   provider: ModelProvider;
   apiEndpoint?: string;
   apiKey?: string;
+  apiKeyRef?: string;    // keychain:<modelId> 或 env:<VAR_NAME>
   enabled: boolean;
   isDefault?: boolean;
   description?: string;
@@ -30,6 +35,7 @@ export interface ModelConfig {
   maxTokens?: number;
   temperature?: number;  // 0-2，默认 1
   topP?: number;         // 0-1，默认 1
+  capabilities?: ModelCapability[];  // 模型能力标签
 }
 
 /** models.json 文件结构 */
@@ -52,6 +58,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     description: 'OpenAI 最新多模态模型，支持文本和图像输入',
     contextWindow: 128000,
     maxTokens: 4096,
+    capabilities: ['multimodal', 'reasoning', 'general'],
   },
   {
     id: 'gpt-4-turbo',
@@ -63,6 +70,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     description: 'GPT-4 Turbo，性价比优秀的旗舰模型',
     contextWindow: 128000,
     maxTokens: 4096,
+    capabilities: ['reasoning', 'general'],
   },
   {
     id: 'claude-sonnet-4-20250514',
@@ -74,6 +82,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     description: 'Claude Sonnet 4，适合日常编程和分析任务',
     contextWindow: 200000,
     maxTokens: 8192,
+    capabilities: ['code', 'reasoning', 'longContext', 'general'],
   },
   {
     id: 'claude-haiku-3.5',
@@ -85,6 +94,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     description: '轻量快速模型，适合简单对话',
     contextWindow: 200000,
     maxTokens: 4096,
+    capabilities: ['fast', 'costEffective', 'general'],
   },
   {
     id: 'hunyuan-turbo',
@@ -96,6 +106,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     description: '腾讯混元大模型 Turbo 版本',
     contextWindow: 32000,
     maxTokens: 4096,
+    capabilities: ['general', 'costEffective'],
   },
   {
     id: 'hunyuan-pro',
@@ -107,6 +118,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     description: '腾讯混元大模型 Pro 版本',
     contextWindow: 32000,
     maxTokens: 4096,
+    capabilities: ['reasoning', 'general'],
   },
   {
     id: 'deepseek-chat',
@@ -118,6 +130,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     description: 'DeepSeek 通用对话模型，性价比优秀',
     contextWindow: 64000,
     maxTokens: 4096,
+    capabilities: ['costEffective', 'general'],
   },
   {
     id: 'deepseek-coder',
@@ -129,6 +142,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     description: 'DeepSeek 代码专用模型',
     contextWindow: 16000,
     maxTokens: 4096,
+    capabilities: ['code', 'costEffective'],
   },
   {
     id: 'qwen-turbo',
@@ -140,6 +154,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     description: '阿里通义千问 Turbo 版本',
     contextWindow: 32000,
     maxTokens: 4096,
+    capabilities: ['fast', 'costEffective', 'general'],
   },
   {
     id: 'qwen-plus',
@@ -151,6 +166,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     description: '阿里通义千问 Plus 版本，超长上下文',
     contextWindow: 128000,
     maxTokens: 4096,
+    capabilities: ['longContext', 'reasoning', 'general'],
   },
   {
     id: 'gemini-pro',
@@ -162,17 +178,18 @@ const BUILTIN_MODELS: ModelConfig[] = [
     description: 'Google Gemini Pro 模型',
     contextWindow: 32000,
     maxTokens: 4096,
+    capabilities: ['multimodal', 'reasoning', 'general'],
   },
 ];
 
-/** 确保 ~/.crosswms/ai-models 目录存在 */
+/** 确保 ~/.cdf-know-clow/ai-models 目录存在 */
 function ensureDir(): void {
   if (!fs.existsSync(AI_MODELS_DIR)) {
     fs.mkdirSync(AI_MODELS_DIR, { recursive: true });
   }
 }
 
-/** 从旧路径 ~/.crosswms/models.json 迁移到新路径 ~/.crosswms/ai-models/models.json */
+/** 从旧路径 ~/.cdf-know-clow/models.json 迁移到新路径 ~/.cdf-know-clow/ai-models/models.json */
 function migrateFromOldPath(): void {
   // 新文件已存在，无需迁移
   if (fs.existsSync(MODELS_FILE)) return;
@@ -262,6 +279,8 @@ export function loadModelsConfig(): ModelsFile {
       saved = { ...saved, models: migrated };
       writeModelsFile(saved);
     }
+    // 注入 Keychain 中的 API Key
+    saved.models = injectApiKeys(saved.models);
     return saved;
   }
 
@@ -278,8 +297,11 @@ export function loadModelsConfig(): ModelsFile {
 
 /** 保存模型配置 */
 export function saveModelsConfig(models: ModelConfig[], defaultModelId: string): ModelsFile {
+  // 提取 API Key 到 Keychain，替换为 apiKeyRef
+  const modelsWithKeychain = models.map(m => extractAndSaveApiKey(m));
+
   // 同步 isDefault 标记
-  const modelsWithDefault = models.map(m => ({
+  const modelsWithDefault = modelsWithKeychain.map(m => ({
     ...m,
     isDefault: m.id === defaultModelId,
   }));
@@ -292,6 +314,11 @@ export function saveModelsConfig(models: ModelConfig[], defaultModelId: string):
   };
   writeModelsFile(data);
   return data;
+}
+
+/** 删除模型时同步清理 Keychain */
+export function deleteModelConfig(modelId: string): void {
+  deleteApiKey(modelId);
 }
 
 /** 获取内置模型列表（供前端参考） */

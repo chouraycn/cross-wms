@@ -363,7 +363,7 @@ def get_node_path():
     candidates = []
 
     # 优先使用环境变量（手动 .app 包场景）
-    resources_env = os.environ.get('CROSSWMS_RESOURCES')
+    resources_env = os.environ.get('CDF_KNOW_CLOW_RESOURCES')
     if resources_env:
         candidates.extend([
             os.path.join(resources_env, 'node', 'node'),
@@ -408,7 +408,7 @@ def get_server_script_path():
     candidates = []
 
     # 优先使用环境变量（手动 .app 包场景）
-    resources_env = os.environ.get('CROSSWMS_RESOURCES')
+    resources_env = os.environ.get('CDF_KNOW_CLOW_RESOURCES')
     if resources_env:
         candidates.extend([
             os.path.join(resources_env, 'server_dist', 'index.cjs'),
@@ -495,10 +495,10 @@ def start_server():
 
     # 注入 CODEBUDDY_CODE_PATH（agent-sdk 需要，指向项目根目录）
     if getattr(sys, 'frozen', False):
-        # DMG 模式：使用 ~/.crosswms/ 作为项目根目录
+        # DMG 模式：使用 ~/.cdf-know-clow/ 作为项目根目录
         env['CODEBUDDY_CODE_PATH'] = os.path.expanduser('~/.cdf-know-clow')
     else:
-        # 开发模式：使用 cross-wms/ 目录
+        # 开发模式：使用 cdf-know-clow/ 目录
         env['CODEBUDDY_CODE_PATH'] = os.path.dirname(os.path.abspath(__file__))
 
     # 确保 node 在 PATH 中（agent-sdk 内部 spawn node 需要找到 node 命令）
@@ -1080,8 +1080,8 @@ class Api:
             release.json 的原文（JSON 字符串），或 {"error": "..."} 错误对象
         """
         RELEASE_URLS = [
-            'https://raw.githubusercontent.com/chouraycn/cross-wms/main/release/release.json',
-            'https://github.com/chouraycn/cross-wms/releases/latest/download/release.json',
+            'https://raw.githubusercontent.com/chouraycn/cdf-know-clow/main/release/release.json',
+            'https://github.com/chouraycn/cdf-know-clow/releases/latest/download/release.json',
         ]
         last_error = None
         # 遍历所有 URL，每个 URL 重试 2 次，每次超时 5 秒

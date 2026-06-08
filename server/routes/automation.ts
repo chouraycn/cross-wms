@@ -51,7 +51,7 @@ router.get('/executions', (req: Request, res: Response) => {
       'SELECT * FROM automation_runs ORDER BY started_at DESC LIMIT ? OFFSET ?'
     ).all(limit, offset);
 
-    const data = rows.map((row: Record<string, unknown>) => ({
+    const data = (rows as any[]).map((row: any) => ({
       id: row.id,
       automationId: row.automation_id,
       taskType: row.task_type,

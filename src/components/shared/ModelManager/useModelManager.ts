@@ -33,6 +33,7 @@ function createEmptyForm(): ModelFormState {
     maxTokens: '',
     temperature: '1',
     topP: '1',
+    capabilities: [],
   };
 }
 
@@ -50,6 +51,7 @@ function modelToForm(model: ModelConfig): ModelFormState {
     maxTokens: model.maxTokens?.toString() || '',
     temperature: model.temperature?.toString() ?? '1',
     topP: model.topP?.toString() ?? '1',
+    capabilities: model.capabilities || [],
   };
 }
 
@@ -65,6 +67,7 @@ function formToModel(form: ModelFormState): ModelConfig {
     maxTokens: form.maxTokens ? Number(form.maxTokens) : undefined,
     temperature: form.temperature ? Number(form.temperature) : undefined,
     topP: form.topP ? Number(form.topP) : undefined,
+    capabilities: form.capabilities.length > 0 ? form.capabilities as any : undefined,
   };
   if (form.apiEndpoint.trim()) {
     model.apiEndpoint = form.apiEndpoint.trim();
@@ -134,6 +137,12 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
   const [testMessage, setTestMessage] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<ModelConfig | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCapabilities, setSelectedCapabilities] = useState<string[]>([]);
+  const [selectedModelIds, setSelectedModelIds] = useState<string[]>([]);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [testAvailableModels, setTestAvailableModels] = useState<string[]>([]);
+  const [testModelValid, setTestModelValid] = useState(false);
 
   /** 隐藏的文件 input ref（用于导入） */
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -369,6 +378,132 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     setShowApiKey(prev => !prev);
   }, []);
 
+  /** 设置搜索关键词 */
+  const handleSetSearchQuery = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
+  /** 切换能力标签筛选 */
+  const handleToggleCapabilityFilter = useCallback((cap: string) => {
+    setSelectedCapabilities(prev =>
+      prev.includes(cap) ? prev.filter(c => c !== cap) : [...prev, cap]
+    );
+  }, []);
+
+  /** 清除所有筛选 */
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery('');
+    setSelectedCapabilities([]);
+  }, []);
+
+  /** 切换模型批量选中 */
+  const handleToggleModelSelection = useCallback((modelId: string) => {
+    setSelectedModelIds(prev =>
+      prev.includes(modelId) ? prev.filter(id => id !== modelId) : [...prev, modelId]
+    );
+  }, []);
+
+  /** 全选/取消全选 */
+  const handleToggleSelectAll = useCallback(() => {
+    if (selectedModelIds.length === models.length) {
+      setSelectedModelIds([]);
+    } else {
+      setSelectedModelIds(models.map(m => m.id));
+    }
+  }, [selectedModelIds, models]);
+
+  /** 批量启用 */
+  const handleBatchEnable = useCallback(() => {
+    const newModels = models.map(m =>
+      selectedModelIds.includes(m.id) ? { ...m, enabled: true } : m
+    );
+    onChange(newModels, defaultModelId);
+    setSelectedModelIds([]);
+  }, [selectedModelIds, models, defaultModelId, onChange]);
+
+  /** 批量禁用 */
+  const handleBatchDisable = useCallback(() => {
+    const newModels = models.map(m =>
+      selectedModelIds.includes(m.id) ? { ...m, enabled: false } : m
+    );
+    onChange(newModels, defaultModelId);
+    setSelectedModelIds([]);
+  }, [selectedModelIds, models, defaultModelId, onChange]);
+
+  /** 批量删除 */
+  const handleBatchDelete = useCallback(() => {
+    const newModels = models.filter(m => !selectedModelIds.includes(m.id));
+    let newDefaultId = defaultModelId;
+    if (selectedModelIds.includes(defaultModelId) && newModels.length > 0) {
+      const firstEnabled = newModels.find(m => m.enabled);
+      newDefaultId = firstEnabled ? firstEnabled.id : newModels[0].id;
+    }
+    if (newModels.length === 0) {
+      newDefaultId = '';
+    }
+    onChange(newModels, newDefaultId);
+    setSelectedModelIds([]);
+  }, [selectedModelIds, models, defaultModelId, onChange]);
+
+  /** 打开模板对话框 */
+  const handleOpenTemplateDialog = useCallback(() => {
+    setShowTemplateDialog(true);
+  }, []);
+
+  /** 关闭模板对话框 */
+  const handleCloseTemplateDialog = useCallback(() => {
+    setShowTemplateDialog(false);
+  }, []);
+
+  /** 应用模板 */
+  const handleApplyTemplate = useCallback((templateId: string) => {
+    // 预置模板
+    const templates: Record<string, { models: ModelConfig[]; defaultModelId: string }> = {
+      'domestic': {
+        models: models.map(m => ({
+          ...m,
+          enabled: ['tencent', 'qwen', 'deepseek'].includes(m.provider),
+        })),
+        defaultModelId: models.find(m => m.provider === 'tencent' && m.enabled)?.id || models[0]?.id || '',
+      },
+      'overseas': {
+        models: models.map(m => ({
+          ...m,
+          enabled: ['openai', 'anthropic', 'google'].includes(m.provider),
+        })),
+        defaultModelId: models.find(m => m.provider === 'openai' && m.enabled)?.id || models[0]?.id || '',
+      },
+      'cost-effective': {
+        models: models.map(m => ({
+          ...m,
+          enabled: m.capabilities?.includes('costEffective') || m.capabilities?.includes('fast') || false,
+        })),
+        defaultModelId: models.find(m => m.capabilities?.includes('costEffective'))?.id || models[0]?.id || '',
+      },
+      'high-performance': {
+        models: models.map(m => ({
+          ...m,
+          enabled: m.capabilities?.includes('reasoning') || m.capabilities?.includes('multimodal') || false,
+        })),
+        defaultModelId: models.find(m => m.capabilities?.includes('reasoning'))?.id || models[0]?.id || '',
+      },
+      'coding': {
+        models: models.map(m => ({
+          ...m,
+          enabled: m.capabilities?.includes('code') || false,
+        })),
+        defaultModelId: models.find(m => m.capabilities?.includes('code'))?.id || models[0]?.id || '',
+      },
+    };
+
+    const template = templates[templateId];
+    if (template) {
+      onChange(template.models, template.defaultModelId);
+    }
+    setShowTemplateDialog(false);
+    setSelectedModelIds([]);
+  }, [models, onChange]);
+
   // ---- 组装返回 ----
   const state: ModelManagerState = {
     modelForm,
@@ -379,6 +514,10 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     testMessage,
     deleteTarget,
     showApiKey,
+    searchQuery,
+    selectedCapabilities,
+    selectedModelIds,
+    showTemplateDialog,
   };
 
   const actions: ModelManagerActions = {
@@ -396,6 +535,17 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     handleExport,
     handleImport,
     toggleApiKeyVisibility,
+    setSearchQuery: handleSetSearchQuery,
+    toggleCapabilityFilter: handleToggleCapabilityFilter,
+    clearFilters: handleClearFilters,
+    toggleModelSelection: handleToggleModelSelection,
+    toggleSelectAll: handleToggleSelectAll,
+    batchEnable: handleBatchEnable,
+    batchDisable: handleBatchDisable,
+    batchDelete: handleBatchDelete,
+    openTemplateDialog: handleOpenTemplateDialog,
+    closeTemplateDialog: handleCloseTemplateDialog,
+    applyTemplate: handleApplyTemplate,
   };
 
   return { state, actions, handleImportFile, fileInputRef };

@@ -15,14 +15,14 @@
  */
 
 import { initDb } from '../db.js';
-import { BUILTIN_SKILLS } from '../../src/types/skill.js';
+import { BUILTIN_SKILLS } from '@src/types/skill';
 import type {
   MatchMode,
   MatchResult,
   MatchQuery,
   MatchEngineRuntimeConfig,
-} from '../../src/types/semantic.js';
-import { DEFAULT_MATCH_ENGINE_CONFIG } from '../../src/types/semantic.js';
+} from '@src/types/semantic';
+import { DEFAULT_MATCH_ENGINE_CONFIG } from '@src/types/semantic';
 
 // MatchFeedback type inlined after marketplace.ts removal
 interface MatchFeedback {
@@ -36,7 +36,7 @@ interface MatchFeedback {
   createdAt: string;
 }
 
-import { mergeHybridResults } from '../../src/services/skill/embeddingUtils.js';
+import { mergeHybridResults } from '@src/services/skill/embeddingUtils';
 import {
   generateEmbedding,
   semanticSearch,

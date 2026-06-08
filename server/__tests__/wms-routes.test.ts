@@ -45,7 +45,7 @@ vi.mock('fs', async (importOriginal) => {
     ...actual,
     existsSync: vi.fn((p: string) => {
       // Return true for existing report file paths, false otherwise
-      if (p.includes('/tmp/test-home/.crosswms/reports/') && p !== '/nonexistent/file.csv') return true;
+      if (p.includes('/tmp/test-home/.cdf-know-clow/reports/') && p !== '/nonexistent/file.csv') return true;
       return false;
     }),
     mkdirSync: vi.fn(),
@@ -198,7 +198,7 @@ function makeReport(overrides: Record<string, unknown> = {}) {
     warehouseId: 'WH-001',
     startDate: '2026-01-01',
     endDate: '2026-06-30',
-    filePath: '/tmp/test-home/.crosswms/reports/inventory_report_test.csv',
+    filePath: '/tmp/test-home/.cdf-know-clow/reports/inventory_report_test.csv',
     fileFormat: 'csv',
     generatedBy: '赵六',
     generatedAt: new Date().toISOString(),
@@ -280,6 +280,9 @@ vi.mock('../dao/wmsSkillDao.js', () => {
   };
 });
 
+import * as daoOriginal from '../dao/wmsSkillDao.js';
+const dao = vi.mocked(daoOriginal) as any;
+
 // ===================== Test Server Helper =====================
 
 function createTestApp(): { app: express.Application; server: http.Server; url: string } {
@@ -310,7 +313,6 @@ function stopServer(server: http.Server): Promise<void> {
 // The routes import from '../dao/wmsSkillDao.js' which is mocked.
 
 describe('WMS Routes', () => {
-  let dao: Awaited<typeof import('../dao/wmsSkillDao.js')>;
   let qualityRoutes: { default: express.Router };
   let inventoryRoutes: { default: express.Router };
   let outboundRoutes: { default: express.Router };
@@ -318,7 +320,6 @@ describe('WMS Routes', () => {
   let reportRoutes: { default: express.Router };
 
   beforeAll(async () => {
-    dao = await import('../dao/wmsSkillDao.js');
     qualityRoutes = await import('../routes/wms-quality.js');
     inventoryRoutes = await import('../routes/wms-inventory.js');
     outboundRoutes = await import('../routes/wms-outbound.js');
@@ -466,7 +467,7 @@ describe('WMS Routes', () => {
         startDate: params?.startDate,
         endDate: params?.endDate,
         generatedBy: params?.generatedBy,
-        filePath: '/tmp/test-home/.crosswms/reports/inventory_report_test.csv',
+        filePath: '/tmp/test-home/.cdf-know-clow/reports/inventory_report_test.csv',
         status: 'completed',
       });
       return record;
@@ -1507,7 +1508,7 @@ describe('WMS Routes', () => {
       let existingId: number;
       beforeEach(() => {
         resetStores();
-        const r = makeReport({ filePath: '/tmp/test-home/.crosswms/reports/test.csv' });
+        const r = makeReport({ filePath: '/tmp/test-home/.cdf-know-clow/reports/test.csv' });
         existingId = r.id as number;
       });
 

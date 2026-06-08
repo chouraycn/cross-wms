@@ -98,7 +98,7 @@ if [ -n "$CI" ]; then
   fi
 else
   # 本地环境：使用指定的 venv
-  PYWEBVIEW_VENV="/Users/chouray/.workbuddy/binaries/python/envs/crosswms-pywebview"
+  PYWEBVIEW_VENV="/Users/chouray/.workbuddy/binaries/python/envs/cdf-know-clow-pywebview"
   PYINSTALLER="$PYWEBVIEW_VENV/bin/pyinstaller"
   PYTHON="$PYWEBVIEW_VENV/bin/python3"
 fi
@@ -154,6 +154,7 @@ if command -v npx &>/dev/null; then
     --target=node18 \
     --format=cjs \
     --outfile="$SERVER_BUILD_DIR/index.cjs" \
+    --alias:@src=./src \
     --external:better-sqlite3 \
     --external:@tencent-ai/agent-sdk \
     --external:express \
@@ -506,7 +507,7 @@ GITHUB_REPO = "cdf-know-clow"
 
 version = os.environ.get("VERSION", "1.0.0")
 pub_date = datetime.now().strftime("%Y-%m-%d")
-dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/CrossWMS-{version}-mac.dmg"
+dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/CDFKnowClow-{version}-mac.dmg"
 min_ver = "1.0.0"
 
 project_dir = os.environ.get("PROJECT_DIR", ".")
@@ -540,7 +541,7 @@ echo "🚀 上传到 GitHub Releases..."
 if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
   echo "  标签 v${VERSION} 已存在，跳过创建"
 else
-  git tag "v${VERSION}" -m "CrossWMS v${VERSION}"
+  git tag "v${VERSION}" -m "CDF Know Clow v${VERSION}"
   git push origin "v${VERSION}"
   echo "✅ 标签 v${VERSION} 已推送"
 fi
@@ -552,11 +553,11 @@ if [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
   TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}"
 
   RELEASE_ID=$(curl -s -H "Authorization: token $TOKEN" \
-    "https://api.github.com/repos/chouraycn/cross-wms/releases/tags/v${VERSION}" \
+    "https://api.github.com/repos/chouraycn/cdf-know-clow/releases/tags/v${VERSION}" \
     | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || echo "")
 
   if [ -z "$RELEASE_ID" ]; then
-    python3 << 'PYEOF3' > /tmp/crosswms_release_data.json
+    python3 << 'PYEOF3' > /tmp/cdf_know_clow_release_data.json
 import json, os
 version = os.environ.get("VERSION", "1.0.0")
 project_dir = os.environ.get("PROJECT_DIR", ".")
@@ -565,15 +566,15 @@ if os.path.isfile(notes_file):
     with open(notes_file, 'r', encoding='utf-8') as f:
         notes = f.read().strip()
 else:
-    notes = f"CrossWMS v{version} 发布"
+    notes = f"CDF Know Clow v{version} 发布"
 print(json.dumps({"tag_name": "v" + version, "name": "CDF Know Clow v" + version, "body": notes}))
 PYEOF3
     RELEASE_DATA=$(curl -s -X POST \
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
-      -d @/tmp/crosswms_release_data.json \
-      "https://api.github.com/repos/chouraycn/cross-wms/releases")
-    rm -f /tmp/crosswms_release_data.json
+      -d @/tmp/cdf_know_clow_release_data.json \
+      "https://api.github.com/repos/chouraycn/cdf-know-clow/releases")
+    rm -f /tmp/cdf_know_clow_release_data.json
     RELEASE_ID=$(echo "$RELEASE_DATA" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
   fi
 
@@ -584,7 +585,7 @@ PYEOF3
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/octet-stream" \
       --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
-      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=$DMG_NAME" \
+      "https://uploads.github.com/repos/chouraycn/cdf-know-clow/releases/$RELEASE_ID/assets?name=$DMG_NAME" \
       && echo "  ✅ DMG 上传成功" || { echo "  ⚠️  DMG 上传失败"; UPLOAD_OK=false; }
 
     echo "  上传 release.json..."
@@ -592,7 +593,7 @@ PYEOF3
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
       --data-binary @"$PROJECT_DIR/release/release.json" \
-      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=release.json" \
+      "https://uploads.github.com/repos/chouraycn/cdf-know-clow/releases/$RELEASE_ID/assets?name=release.json" \
       && echo "  ✅ release.json 上传成功" || { echo "  ⚠️  release.json 上传失败"; UPLOAD_OK=false; }
 
     [ "$UPLOAD_OK" = true ] && echo "✅ Release v${VERSION} 已发布!"
@@ -603,7 +604,7 @@ if [ "$UPLOAD_OK" = false ] && command -v gh &>/dev/null; then
   echo "📦 尝试 gh CLI..."
   if gh auth status &>/dev/null 2>&1; then
     gh release create "v${VERSION}" \
-      "$PROJECT_DIR/release/$DMG_NAME#CrossWMS DMG" \
+      "$PROJECT_DIR/release/$DMG_NAME#CDF Know Clow DMG" \
       "$PROJECT_DIR/release/release.json#Release Info" \
       --title "CDF Know Clow v${VERSION}" \
       --notes "$(cat "$PROJECT_DIR/RELEASE_NOTES.md" 2>/dev/null || echo "CDF Know Clow v${VERSION} 发布")" \
@@ -615,4 +616,4 @@ echo ""
 echo "=== 完成 ==="
 echo "版本: $VERSION"
 echo "DMG 路径: $PROJECT_DIR/release/$DMG_NAME"
-echo "Release: https://github.com/chouraycn/cross-wms/releases/tag/v${VERSION}"
+echo "Release: https://github.com/chouraycn/cdf-know-clow/releases/tag/v${VERSION}"

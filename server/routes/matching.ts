@@ -15,7 +15,7 @@
  */
 
 import { Router, type Request, type Response } from 'express';
-import type { MatchMode, MatchQuery, MatchEngineRuntimeConfig } from '../../src/types/semantic.js';
+import type { MatchMode, MatchQuery, MatchEngineRuntimeConfig } from '@src/types/semantic';
 import {
   match,
   getRuntimeConfig,

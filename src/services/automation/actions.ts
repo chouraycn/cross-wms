@@ -21,7 +21,7 @@ function sendDesktopNotification(title: string, body: string, tag?: string): voi
     try {
       new Notification(title, {
         body,
-        tag: tag || `crosswms-${Date.now()}`,
+        tag: tag || `cdf-know-clow-${Date.now()}`,
         icon: '/vite.svg',
       });
     } catch {
@@ -236,7 +236,7 @@ export async function executeInventorySnapshot(): Promise<{ result: string; step
   };
 
   // 保存快照到 localStorage（保留最近 30 个快照）
-  const SNAPSHOTS_KEY = 'crosswms-inventory-snapshots';
+  const SNAPSHOTS_KEY = 'cdf-know-clow-inventory-snapshots';
   try {
     const existing = JSON.parse(localStorage.getItem(SNAPSHOTS_KEY) || '[]');
     existing.push(snapshot);
@@ -298,7 +298,7 @@ export async function executeReportGen(_config?: TaskConfig): Promise<{ result: 
   };
 
   // 保存报表到 localStorage（保留最近 20 个）
-  const REPORTS_KEY = 'crosswms-reports';
+  const REPORTS_KEY = 'cdf-know-clow-reports';
   try {
     const existing = JSON.parse(localStorage.getItem(REPORTS_KEY) || '[]');
     existing.push(report);
@@ -341,7 +341,7 @@ export async function executeVolumeAlert(config?: TaskConfig): Promise<{ result:
   }).join(', ');
 
   // 保存预警到 localStorage
-  const ALERTS_KEY = 'crosswms-volume-alerts';
+  const ALERTS_KEY = 'cdf-know-clow-volume-alerts';
   try {
     const existing = JSON.parse(localStorage.getItem(ALERTS_KEY) || '[]');
     existing.push({

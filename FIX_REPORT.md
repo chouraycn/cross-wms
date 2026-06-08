@@ -112,7 +112,7 @@ $ npm run build    → ✅ 零警告，零错误
 
 ## 关于 agent-web-vite.config.ts
 
-`agent-web-vite.config.ts` 在当前项目中不存在。Agent Web 前端是一个独立项目，位于 `../cross-wms-agent-web/`（参见 `build-dmg-pywebview.sh` 第 24 行）。Agent Web 后端的 `agent_index.cjs` 由 esbuild 编译（2.6MB 体积问题），如需修复需在 `cross-wms-agent-web` 项目中操作。
+`agent-web-vite.config.ts` 在当前项目中不存在。Agent Web 前端是一个独立项目，位于 `../cdf-know-clow-agent-web/`（参见 `build-dmg-pywebview.sh` 第 24 行）。Agent Web 后端的 `agent_index.cjs` 由 esbuild 编译（2.6MB 体积问题），如需修复需在 `cdf-know-clow-agent-web` 项目中操作。
 
 ---
 

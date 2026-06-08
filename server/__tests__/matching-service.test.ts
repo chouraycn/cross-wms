@@ -129,7 +129,7 @@ vi.mock('../../src/services/skill/embeddingUtils.js', () => ({
   }),
 }));
 
-const mockSemanticSearch = vi.fn(() => []);
+const mockSemanticSearch = vi.fn<() => Array<{ skillId: string; similarity: number }>>();
 const mockBatchGenerateEmbeddings = vi.fn(() => ({
   total: 4,
   newCount: 4,
@@ -140,7 +140,7 @@ const mockBatchGenerateEmbeddings = vi.fn(() => ({
 }));
 
 vi.mock('../services/embeddingService.js', () => ({
-  semanticSearch: (...args: any[]) => mockSemanticSearch(...args),
+  semanticSearch: (...args: any[]) => (mockSemanticSearch as any)(...args),
   generateEmbedding: vi.fn(() => ({
     skillId: 'test',
     embedding: new Float32Array(384),
@@ -151,7 +151,7 @@ vi.mock('../services/embeddingService.js', () => ({
     updated: false,
   })),
   invalidateCache: vi.fn(),
-  batchGenerateEmbeddings: (...args: any[]) => mockBatchGenerateEmbeddings(...args),
+  batchGenerateEmbeddings: (...args: any[]) => (mockBatchGenerateEmbeddings as any)(...args),
 }));
 
 const mockCreateMatchFeedback = vi.fn(() => 1);
@@ -173,13 +173,13 @@ const mockGetAverageFeedbackScore = vi.fn(() => 0.5);
 const mockGetMatchFeedback = vi.fn(() => []);
 
 vi.mock('../dao/matchingDao.js', () => ({
-  createMatchFeedback: (...args: any[]) => mockCreateMatchFeedback(...args),
-  getMatchEngineConfigValue: (...args: any[]) => mockGetMatchEngineConfigValue(...args),
+  createMatchFeedback: (...args: any[]) => (mockCreateMatchFeedback as any)(...args),
+  getMatchEngineConfigValue: (...args: any[]) => (mockGetMatchEngineConfigValue as any)(...args),
   setMatchEngineConfigValue: vi.fn(),
-  getAverageFeedbackScore: (...args: any[]) => mockGetAverageFeedbackScore(...args),
-  batchUpdateMatchEngineConfig: (...args: any[]) => mockBatchUpdateMatchEngineConfig(...args),
-  resetMatchEngineConfig: (...args: any[]) => mockResetMatchEngineConfig(...args),
-  getMatchFeedback: (...args: any[]) => mockGetMatchFeedback(...args),
+  getAverageFeedbackScore: (...args: any[]) => (mockGetAverageFeedbackScore as any)(...args),
+  batchUpdateMatchEngineConfig: (...args: any[]) => (mockBatchUpdateMatchEngineConfig as any)(...args),
+  resetMatchEngineConfig: (...args: any[]) => (mockResetMatchEngineConfig as any)(...args),
+  getMatchFeedback: (...args: any[]) => (mockGetMatchFeedback as any)(...args),
 }));
 
 // ===================== 导入被测模块 =====================
@@ -416,7 +416,7 @@ describe('Matching Service', () => {
       );
 
       expect(mockSemanticSearch).toHaveBeenCalled();
-      const callArgs = mockSemanticSearch.mock.calls[0];
+      const callArgs: any[] = (mockSemanticSearch.mock.calls[0] || []) as any[];
       expect(callArgs[0]).toContain('之前讨论了库存');
       expect(results.length).toBeGreaterThan(0);
       expect(results[0].matchMode).toBe('context');

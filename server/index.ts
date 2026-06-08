@@ -158,7 +158,7 @@ function writeMemoryMd(content: string): void {
 
 /**
  * 获取 Node.js 可执行路径，用于 agent-sdk 内部 spawn。
- * DMG 模式下 node 不在系统 PATH 中，需要从 CROSSWMS_NODE_PATH 或 process.execPath 推导。
+ * DMG 模式下 node 不在系统 PATH 中，需要从 CDF_KNOW_CLOW_NODE_PATH 或 process.execPath 推导。
  */
 function getNodeExecutable(): string | undefined {
   // 1. 环境变量显式指定
