@@ -101,7 +101,7 @@ async function sendWebhookNotification(
 ): Promise<void> {
   const message = template
     ? renderTemplate(template, payload, automationName)
-    : `[CrossWMS] 自动化「${automationName}」状态：${payload.status}`;
+    : `[CDF Know Clow] 自动化「${automationName}」状态：${payload.status}`;
 
   try {
     const controller = new AbortController();

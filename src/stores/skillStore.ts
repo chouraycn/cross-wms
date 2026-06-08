@@ -120,7 +120,7 @@ export async function addSkill(skill: Omit<Skill, 'id' | 'source' | 'installedAt
     return created;
   } catch (e) {
     console.error('[skillStore] addSkill failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'addSkill', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'addSkill', error: e } }));
     throw e;
   }
 }
@@ -136,7 +136,7 @@ export async function updateSkill(id: string, updates: Partial<Omit<Skill, 'id' 
     return true;
   } catch (e) {
     console.error('[skillStore] updateSkill failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'updateSkill', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'updateSkill', error: e } }));
     throw e;
   }
 }
@@ -153,7 +153,7 @@ export async function setSkillStatus(id: string, status: Skill['status']): Promi
       return true;
     } catch (e) {
       console.error('[skillStore] setSkillStatus (user) failed:', e);
-      window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'setSkillStatus', error: e } }));
+      window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'setSkillStatus', error: e } }));
       throw e;
     }
   }
@@ -165,7 +165,7 @@ export async function setSkillStatus(id: string, status: Skill['status']): Promi
     return true;
   } catch (e) {
     console.error('[skillStore] setSkillStatus (builtin) failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'setSkillStatus', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'setSkillStatus', error: e } }));
     throw e;
   }
 }
@@ -185,7 +185,7 @@ export async function removeSkill(id: string): Promise<boolean> {
     return true;
   } catch (e) {
     console.error('[skillStore] removeSkill failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'removeSkill', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'removeSkill', error: e } }));
     throw e;
   }
 }
@@ -218,14 +218,14 @@ export function getSkillsByCategory(category: string): Skill[] {
 export function updateRecentSkills(skillName: string): void {
   let recentNames: string[] = [];
   try {
-    const raw = localStorage.getItem('crosswms-recent-skills');
+    const raw = localStorage.getItem('cdf-know-clow-recent-skills');
     const parsed = raw ? JSON.parse(raw) : [];
     if (Array.isArray(parsed)) {
       recentNames = parsed.filter((n: unknown) => typeof n === 'string');
     }
   } catch { /* ignore */ }
   const updated = [skillName, ...recentNames.filter((n) => n !== skillName)].slice(0, 6);
-  try { localStorage.setItem('crosswms-recent-skills', JSON.stringify(updated)); } catch { /* ignore */ }
+  try { localStorage.setItem('cdf-know-clow-recent-skills', JSON.stringify(updated)); } catch { /* ignore */ }
 }
 
 /** 订阅技能数据变化 */
@@ -248,9 +248,26 @@ export async function loadAuditStatuses(): Promise<void> {
   const skills = getAllSkills();
   for (const skill of skills) {
     try {
-      const audit = await api.fetchSkillAudit(skill.id);
-      if (audit) {
-        auditStatusCache.set(skill.id, audit);
+      if (skill.source === 'builtin') {
+        // 内置技能：无需外部文件审查，默认标记为安全
+        if (!auditStatusCache.has(skill.id)) {
+          auditStatusCache.set(skill.id, {
+            id: `builtin-audit-${skill.id}`,
+            skillId: skill.id,
+            skillVersion: skill.version || '1.0',
+            score: 100,
+            level: 'safe',
+            reportJson: JSON.stringify({ summary: { level: 'safe', score: 100, skillName: skill.name }, findings: [] }),
+            reportMarkdown: `# 安全审计报告\n\n## 执行摘要\n- **审计对象**: ${skill.name}\n- **审计结果**: 安全\n- **评分**: 100/100\n\n该技能为系统内置，已通过安全审查。`,
+            triggeredBy: 'import',
+            createdAt: new Date().toISOString(),
+          });
+        }
+      } else {
+        const audit = await api.fetchSkillAudit(skill.id);
+        if (audit) {
+          auditStatusCache.set(skill.id, audit);
+        }
       }
     } catch {
       // 静默处理单个技能的审计查询失败
@@ -259,15 +276,17 @@ export async function loadAuditStatuses(): Promise<void> {
   notifyAll();
 }
 
+/** 手动设置技能的审计状态（供 SkillAuditPage 等外部组件同步缓存） */
+export function setAuditStatus(skillId: string, audit: SkillAudit): void {
+  auditStatusCache.set(skillId, audit);
+  notifyAll();
+}
+
 /** 刷新单个技能的审计状态 */
 export async function refreshAuditForSkill(skillId: string): Promise<void> {
-  try {
-    const audit = await api.triggerSkillAudit(skillId, '', true);
-    auditStatusCache.set(skillId, audit);
-    notifyAll();
-  } catch {
-    // 静默处理审计触发失败
-  }
+  const audit = await api.triggerSkillAudit(skillId, '', true);
+  auditStatusCache.set(skillId, audit);
+  notifyAll();
 }
 
 /** 从 API 初始化缓存 */

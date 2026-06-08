@@ -3,7 +3,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  TextField,
   List,
   ListItemButton,
   ListItemIcon,
@@ -12,7 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import SearchIcon from '@mui/icons-material/Search';
+import SearchInput from '../Common/SearchInput';
 import type { Skill } from '../../types/skill';
 
 interface SkillPickerDialogProps {
@@ -47,16 +46,12 @@ const SkillPickerDialog: React.FC<SkillPickerDialogProps> = ({ open, skills, onS
         </IconButton>
       </DialogTitle>
       <DialogContent>
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="搜索技能..."
+        <SearchInput
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={setSearch}
+          placeholder="搜索技能..."
+          fullWidth
           sx={{ mb: 1 }}
-          InputProps={{
-            startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 18 }} />,
-          }}
         />
         <List dense>
           {filtered.map((skill) => (

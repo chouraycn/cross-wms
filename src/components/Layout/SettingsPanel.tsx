@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Box, Typography, Divider, IconButton, Snackbar, Alert, Button, useTheme } from '@mui/material';
+import { Box, Typography, Divider, IconButton, Button, useTheme } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -8,7 +8,6 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InfoIcon from '@mui/icons-material/Info';
 import TuneIcon from '@mui/icons-material/Tune';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { isPyWebView } from '../../services/tencentDocsApi';
@@ -18,16 +17,15 @@ import SettingsDashboard from './SettingsDashboard';
 import SettingsSidebar from './SettingsSidebar';
 import SettingsDocLinks from './SettingsDocLinks';
 import SettingsAbout from './SettingsAbout';
-import SettingsModelManagement from './SettingsModelManagement';
+import { useToast } from '../../contexts/ToastContext';
 
-type SettingsTab = 'menu' | 'tencentDocs' | 'tencentDocs_volumeDocs' | 'dashboardCalc' | 'dashboardIndicators' | 'modelManagement' | 'appearance' | 'about';
+type SettingsTab = 'menu' | 'tencentDocs' | 'tencentDocs_volumeDocs' | 'dashboardCalc' | 'dashboardIndicators' | 'appearance' | 'about';
 interface SettingsMenuItem { key: Exclude<SettingsTab, 'menu'>; label: string; icon: React.ReactNode; description: string; }
 
 const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   { key: 'tencentDocs', label: '腾讯文档', icon: <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />, description: 'API 授权与文档链接管理' },
   { key: 'dashboardCalc', label: '仪表盘参数', icon: <DashboardIcon sx={{ fontSize: 20 }} />, description: '计算阈值和参数调整' },
   { key: 'dashboardIndicators', label: '指标控制', icon: <TuneIcon sx={{ fontSize: 20 }} />, description: '各模块显示与隐藏' },
-  { key: 'modelManagement', label: '模型管理', icon: <SmartToyIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型' },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本' },
 ];
 
@@ -41,8 +39,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('menu');
   const [draft, setDraft] = useState<AppSettings>({ ...settings });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMsg, setSnackbarMsg] = useState('');
+  const { showToast } = useToast();
 
   useEffect(() => {
     setDraft((prev) => (prev.tencentDocs !== settings.tencentDocs ? { ...prev, tencentDocs: { ...settings.tencentDocs } } : prev));
@@ -57,9 +54,9 @@ const SettingsPanel: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
     if (draft.dashboard.fullThreshold <= draft.dashboard.warningThreshold) { setErrors((e) => ({ ...e, 'dashboard.fullThreshold': '满仓线必须大于预警线' })); return; }
     updateSettings({ tencentDocs: draft.tencentDocs }); updateSettings({ dashboard: draft.dashboard });
     updateSettings({ sidebar: draft.sidebar }); updateSettings({ models: draft.models }); updateSettings({ appearance: draft.appearance });
-    setSnackbarMsg('设置已保存'); setSnackbarOpen(true);
+    showToast('设置已保存', 'success');
   };
-  const handleReset = () => { resetSettings(); setDraft({ ...settings, dashboard: { ...settings.dashboard } }); setErrors({}); setSnackbarMsg('已重置为默认值'); setSnackbarOpen(true); };
+  const handleReset = () => { resetSettings(); setDraft({ ...settings, dashboard: { ...settings.dashboard } }); setErrors({}); showToast('已重置为默认值', 'info'); };
 
   const hasErrors = Object.keys(errors).length > 0;
   const currentLabel = SETTINGS_MENU_ITEMS.find((i) => i.key === activeTab)?.label;
@@ -107,7 +104,6 @@ const SettingsPanel: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
         {activeTab === 'dashboardCalc' && <SettingsDashboard draft={draft} setDraft={setDraft} errors={errors} setErrors={setErrors} />}
         {activeTab === 'dashboardIndicators' && <SettingsDashboard draft={draft} setDraft={setDraft} errors={errors} setErrors={setErrors} />}
         {activeTab === 'appearance' && <SettingsGeneral draft={draft} setDraft={setDraft} />}
-        {activeTab === 'modelManagement' && <SettingsModelManagement draft={draft} setDraft={setDraft} />}
         {activeTab === 'about' && <SettingsAbout draft={draft} setDraft={setDraft} />}
         <Divider sx={{ mt: 2, mb: 1.5 }} />
         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
@@ -115,9 +111,6 @@ const SettingsPanel: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
           <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={handleSave} disabled={hasErrors} sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' }, fontSize: '0.75rem', '&.Mui-disabled': { backgroundColor: '#E5E7EB', color: '#9CA3AF' } }}>保存</Button>
         </Box>
       </Box>
-      <Snackbar open={snackbarOpen} autoHideDuration={2000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert onClose={() => setSnackbarOpen(false)} severity="success" variant="filled" sx={{ width: '100%' }}>{snackbarMsg}</Alert>
-      </Snackbar>
     </Box>
   );
 };

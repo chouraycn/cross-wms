@@ -19,6 +19,7 @@ import {
   updateSkillExecution,
 } from '../db';
 import type { SkillChainNodeRow } from '../db';
+import { loadModelsConfig } from '../modelsStore.js';
 
 // ===================== Module-Level State =====================
 
@@ -200,11 +201,21 @@ async function executeNodeWithTimeout(
       finalPrompt = `<context>\n${JSON.stringify(input, null, 2)}\n</context>\n\n${finalPrompt}`;
     }
 
+    // 加载默认模型配置，注入 apiEndpoint、apiKey、temperature、topP
+    const modelsConfig = loadModelsConfig();
+    const defaultModelConfig = modelsConfig.models.find((m) => m.id === modelsConfig.defaultModelId);
+
     // Call agent-sdk
     const queryOptions: Record<string, unknown> = {
       permissionMode: 'bypassPermissions',
       cwd: process.cwd(),
     };
+    if (defaultModelConfig) {
+      if (defaultModelConfig.apiEndpoint) queryOptions.apiEndpoint = defaultModelConfig.apiEndpoint;
+      if (defaultModelConfig.apiKey) queryOptions.apiKey = defaultModelConfig.apiKey;
+      if (typeof defaultModelConfig.temperature === 'number') queryOptions.temperature = defaultModelConfig.temperature;
+      if (typeof defaultModelConfig.topP === 'number') queryOptions.topP = defaultModelConfig.topP;
+    }
 
     try {
       const queryInstance = query({ prompt: finalPrompt, options: queryOptions });

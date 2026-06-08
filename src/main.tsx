@@ -17,7 +17,7 @@ function showFatalError(label: string, msg: string, detail?: string) {
     <div style="font-size:18px;font-weight:700;margin-bottom:8px">❌ ${label}</div>
     <div style="font-size:13px;margin-bottom:12px;max-width:600px;word-break:break-word">${msg}</div>
     ${detail ? `<pre style="font-size:11px;color:#7F1D1D;background:#FEE2E2;padding:12px;border-radius:6px;max-width:100%;overflow-x:auto;text-align:left">${detail}</pre>` : ''}
-    <div style="margin-top:16px;font-size:11px;color:#B45309">请查看日志: ~/.crosswms/logs/crosswms.log</div>
+    <div style="margin-top:16px;font-size:11px;color:#B45309">请查看日志: ~/.cdf-know-clow/logs/cdf-know-clow.log</div>
   `
   document.body.appendChild(fatalDisplay)
 }

@@ -59,7 +59,7 @@ export interface DocMapping {
 
 // ===================== LocalStorage 持久化 =====================
 
-const STORAGE_KEY = 'crosswms_datasource_config';
+const STORAGE_KEY = 'cdf-know-clow_datasource_config';
 
 function loadConfigFromStorage(): Partial<DataSourceConfig> | null {
   try {

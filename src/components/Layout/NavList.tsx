@@ -13,14 +13,18 @@ import {
 } from '@mui/material';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
+
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
+import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
+import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
+import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
+import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
 import ScheduleIcon from '@mui/icons-material/Schedule';
-import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
@@ -53,11 +57,11 @@ function isGroup(item: NavItem): item is NavItemGroup {
 // ===================== Nav Items Config =====================
 
 const navItems: NavItem[] = [
-  { label: '新建任务', path: '/chat', icon: <TaskAltOutlinedIcon />, desc: 'AI 对话' },
+  { label: 'AI 对话', path: '/chat', icon: <ChatBubbleOutlineIcon />, desc: '智能助手' },
   { label: '项目', path: '/projects', icon: <FolderOutlinedIcon />, desc: '项目总览' },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
-  { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '定时任务' },
-  { label: 'Agent 应用', path: '/agent', icon: <SmartToyOutlinedIcon />, desc: '智能体' },
+  { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
+
   {
     label: '仓储管理',
     icon: <WarehouseOutlinedIcon />,
@@ -69,13 +73,18 @@ const navItems: NavItem[] = [
       { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon />, desc: '库存查询' },
       { label: '腾讯文档', path: '/tencent-docs', icon: <DescriptionOutlinedIcon />, desc: '在线文档' },
       { label: '统计报表', path: '/reports', icon: <AssessmentOutlinedIcon />, desc: '数据报表' },
+      { label: '入库质检', path: '/wms/quality', icon: <FactCheckOutlinedIcon />, desc: '质检管理' },
+      { label: '库存盘点', path: '/wms/inventory', icon: <FindInPageOutlinedIcon />, desc: '盘点管理' },
+      { label: '出库复核', path: '/wms/outbound', icon: <VerifiedUserOutlinedIcon />, desc: '复核管理' },
+      { label: '异常预警', path: '/wms/alerts', icon: <NotificationsActiveOutlinedIcon />, desc: '预警中心' },
+      { label: '报表生成', path: '/wms/reports', icon: <SummarizeOutlinedIcon />, desc: '报表中心' },
     ],
   },
 ];
 
 // ===================== Session Helpers =====================
 
-const SESSIONS_STORAGE_KEY = 'crosswms-chat-sessions';
+const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
 
 function loadSessions(): Session[] {
   try {
@@ -179,10 +188,10 @@ const NavList: React.FC<NavListProps> = ({
     const onStorage = () => setSessions(loadSessions());
     window.addEventListener('storage', onStorage);
     const onChatUpdate = () => setSessions(loadSessions());
-    window.addEventListener('crosswms-chat-updated', onChatUpdate);
+    window.addEventListener('cdf-know-clow-chat-updated', onChatUpdate);
     return () => {
       window.removeEventListener('storage', onStorage);
-      window.removeEventListener('crosswms-chat-updated', onChatUpdate);
+      window.removeEventListener('cdf-know-clow-chat-updated', onChatUpdate);
     };
   }, []);
 
@@ -391,7 +400,7 @@ const NavList: React.FC<NavListProps> = ({
                   onClick={() => {
                     if (item.path === '/chat') {
                       handleNavClick(item.path);
-                      window.dispatchEvent(new CustomEvent('crosswms-navigate-chat'));
+                      window.dispatchEvent(new CustomEvent('cdf-know-clow-navigate-chat'));
                     } else {
                       handleNavClick(item.path);
                     }

@@ -1,16 +1,18 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, TextField, InputAdornment,
-  Button, Snackbar, Alert,
+  Box, Typography,
+  Button, IconButton, Dialog, DialogTitle, DialogContent, Tooltip,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import TuneIcon from '@mui/icons-material/Tune';
+import DownloadIcon from '@mui/icons-material/Download';
 import { useAppSettings } from '../contexts/AppSettingsContext';
-import { loadAutomations, automationEngine } from '../services/automation';
-import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automation';
+import type { TaskType, AutomationExecution } from '../services/automation';
+import type { Automation } from '../services/automation/types';
+import { fetchAutomations, triggerAutomationApi, fetchExecutions } from '../services/automation/api';
 import { getAllSkills, onSkillsChange, setSkillStatus, loadAllUsageStats, refreshFromRemote, getUsageStats, loadAuditStatuses, refreshAuditForSkill } from '../stores/skillStore';
 import type { Skill, SkillWatchEvent, UsageStats } from '../types/skill';
 import { CATEGORY_LABELS, CATEGORY_ORDER, CATEGORY_COLORS } from '../constants/skillCategories';
@@ -18,17 +20,23 @@ import { findAllConflicts } from '../utils/skillConflict';
 import * as api from '../services/api';
 import SkillCard from '../components/Skills/SkillCard';
 import AddSkillDialog from '../components/Skills/AddSkillDialog';
+import StandardSkillInstaller from '../components/Skills/StandardSkillInstaller';
 import ChainList from '../components/SkillChain/ChainList';
 import ChainBuilder from '../components/SkillChain/ChainBuilder';
 import ChainExecutionPanel from '../components/SkillChain/ChainExecutionPanel';
 import { chainStore } from '../stores/chainStore';
 import { getAuditStatus } from '../stores/skillStore';
+import { useToast } from '../contexts/ToastContext';
+import SearchInput from '../components/Common/SearchInput';
 import type { SkillChain } from '../types/skill';
+// T05: 匹配引擎设置
+import MatchConfigPanel from '../components/Matching/MatchConfigPanel';
 
 // ===================== 技能页面 =====================
 
 const SkillsPage: React.FC = () => {
   useAppSettings();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   // 技能列表（响应式，随 skillStore 变更刷新）
@@ -77,7 +85,7 @@ const SkillsPage: React.FC = () => {
         console.log('[SkillsPage] SSE event:', data);
         refreshFromRemote().then(() => {
           setSkillVersion((v) => v + 1);
-          setToast({ open: true, msg: '技能列表已更新', severity: 'info' });
+          showToast('技能列表已更新', 'info');
         }).catch((e) => {
           console.error('[SkillsPage] refreshFromRemote failed:', e);
         });
@@ -98,6 +106,8 @@ const SkillsPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'market' | 'installed' | 'chains'>('market');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  // T05: 匹配引擎设置对话框
+  const [matchConfigOpen, setMatchConfigOpen] = useState(false);
 
   // ---- 技能链状态 ----
   const [chains, setChains] = useState<SkillChain[]>([]);
@@ -159,9 +169,9 @@ const SkillsPage: React.FC = () => {
         setSelectedChainId(created.id);
       }
       setChainVersion((v) => v + 1);
-      setToast({ open: true, msg: '技能链已保存', severity: 'success' });
+      showToast('技能链已保存', 'success');
     } catch (e) {
-      setToast({ open: true, msg: '保存失败', severity: 'error' });
+      showToast('保存失败', 'error');
     }
   }, [editingChain]);
 
@@ -172,7 +182,7 @@ const SkillsPage: React.FC = () => {
       setExecutionId(result.executionId);
       setExecPanelOpen(true);
     } catch (e) {
-      setToast({ open: true, msg: '执行失败', severity: 'error' });
+      showToast('执行失败', 'error');
     }
   }, [editingChain]);
 
@@ -183,9 +193,9 @@ const SkillsPage: React.FC = () => {
       setEditingChain(null);
       setSelectedChainId(null);
       setChainVersion((v) => v + 1);
-      setToast({ open: true, msg: '技能链已删除', severity: 'success' });
+      showToast('技能链已删除', 'success');
     } catch (e) {
-      setToast({ open: true, msg: '删除失败', severity: 'error' });
+      showToast('删除失败', 'error');
     }
   }, [selectedChainId]);
 
@@ -196,16 +206,16 @@ const SkillsPage: React.FC = () => {
       setSelectedChainId(dup.id);
       setEditingChain({ ...dup });
       setChainVersion((v) => v + 1);
-      setToast({ open: true, msg: '技能链已复制', severity: 'success' });
+      showToast('技能链已复制', 'success');
     } catch (e) {
-      setToast({ open: true, msg: '复制失败', severity: 'error' });
+      showToast('复制失败', 'error');
     }
   }, [selectedChainId]);
 
   const handleAbortExecution = useCallback((_execId: string) => {
     setExecPanelOpen(false);
     setExecutionId(null);
-    setToast({ open: true, msg: '执行已终止', severity: 'info' });
+    showToast('执行已终止', 'info');
   }, []);
 
   // T04: 冲突信息 — 前端纯计算，skillId → { hasConflict, conflictCount }
@@ -234,71 +244,64 @@ const SkillsPage: React.FC = () => {
   // 添加技能 Dialog
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
+  // 标准技能安装器 Dialog
+  const [installerOpen, setInstallerOpen] = useState(false);
+
   // ---- 响应式自动化状态 ----
-  const [automationVersion, setAutomationVersion] = useState(0);
+  const [automations, setAutomations] = useState<Automation[]>([]);
   const [runningTaskTypes, setRunningTaskTypes] = useState<Set<TaskType>>(new Set());
   const [latestExecByType, setLatestExecByType] = useState<Record<string, AutomationExecution | null>>({});
-  const [triggeringTypes, setTriggeringTypes] = useState<Set<TaskType>>(new Set());
-  const [toast, setToast] = useState<{ open: boolean; msg: string; severity: 'success' | 'error' | 'info' }>({ open: false, msg: '', severity: 'info' });
-
-  // 构建 automationMap
+  const [triggeringTypes, setTriggeringTypes] = useState<Set<TaskType>>(new Set());  // 构建 automationMap
   const automationMap = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _v = automationVersion;
-    const autos = loadAutomations();
     const map: Record<string, { active: boolean; id: string; name: string }> = {};
-    for (const auto of autos) {
-      map[auto.taskType] = {
-        active: auto.status === 'ACTIVE',
-        id: auto.id,
-        name: auto.name,
-      };
+    for (const auto of automations) {
+      if (auto.taskType) {
+        map[auto.taskType] = {
+          active: auto.status === 'ACTIVE',
+          id: auto.id,
+          name: auto.name,
+        };
+      }
     }
     return map;
-  }, [automationVersion]);
+  }, [automations]);
 
-  // 初始化 + 监听引擎状态变更
+  // 初始化加载自动化数据
   useEffect(() => {
-    refreshLatestExec();
-
-    const unsubscribe = automationEngine.onStateChange((event: EngineStateEvent) => {
-      setAutomationVersion((v) => v + 1);
-
-      if (event.type === 'execution-start') {
-        const auto = loadAutomations().find((a) => a.id === event.automationId);
-        if (auto) {
-          setRunningTaskTypes((prev) => new Set(prev).add(auto.taskType));
+    const load = async () => {
+      try {
+        const data = await fetchAutomations();
+        setAutomations(data);
+        // 加载最新执行状态
+        const map: Record<string, AutomationExecution | null> = {};
+        for (const auto of data) {
+          try {
+            const result = await fetchExecutions(auto.id, 1);
+            map[auto.taskType || ''] = result.data[0] || null;
+          } catch {
+            map[auto.taskType || ''] = null;
+          }
         }
-      } else {
-        const auto = loadAutomations().find((a) => a.id === event.automationId);
-        if (auto) {
-          setRunningTaskTypes((prev) => {
-            const next = new Set(prev);
-            next.delete(auto.taskType);
-            return next;
-          });
-          setTriggeringTypes((prev) => {
-            const next = new Set(prev);
-            next.delete(auto.taskType);
-            return next;
-          });
-        }
-        refreshLatestExec();
+        setLatestExecByType(map);
+      } catch (err) {
+        console.error('Failed to load automations', err);
       }
-    });
-
-    return unsubscribe;
+    };
+    load();
   }, []);
 
-  const refreshLatestExec = useCallback(() => {
-    const autos = loadAutomations();
+  const refreshLatestExec = useCallback(async () => {
     const map: Record<string, AutomationExecution | null> = {};
-    for (const auto of autos) {
-      const logs = automationEngine.getExecutionLog(auto.id);
-      map[auto.taskType] = logs.length > 0 ? logs[0] : null;
+    for (const auto of automations) {
+      try {
+        const result = await fetchExecutions(auto.id, 1);
+        map[auto.taskType || ''] = result.data[0] || null;
+      } catch {
+        map[auto.taskType || ''] = null;
+      }
     }
     setLatestExecByType(map);
-  }, []);
+  }, [automations]);
 
   // 一键触发自动化
   const handleTriggerAutomation = async (skill: Skill, e: React.MouseEvent) => {
@@ -309,10 +312,14 @@ const SkillsPage: React.FC = () => {
 
     setTriggeringTypes((prev) => new Set(prev).add(skill.automationTaskType as TaskType));
     try {
-      const result = await automationEngine.triggerNow(autoInfo.id);
-      setToast({ open: true, msg: `${skill.name} 执行${result.status === 'success' ? '成功' : '失败'}`, severity: result.status === 'success' ? 'success' : 'error' });
+      const result = await triggerAutomationApi(autoInfo.id);
+      showToast(`${skill.name} 执行${result.result.success ? '成功' : '失败'}`, result.result.success ? 'success' : 'error');
+      // 触发后刷新
+      const data = await fetchAutomations();
+      setAutomations(data);
+      await refreshLatestExec();
     } catch (err) {
-      setToast({ open: true, msg: `${skill.name} 执行出错: ${err}`, severity: 'error' });
+      showToast(`${skill.name} 执行出错: ${err}`, 'error');
     } finally {
       setTriggeringTypes((prev) => {
         const next = new Set(prev);
@@ -327,7 +334,7 @@ const SkillsPage: React.FC = () => {
     e.stopPropagation();
     setSkillStatus(id, 'active');
     setSkillVersion((v) => v + 1);
-    setToast({ open: true, msg: '技能已启用', severity: 'success' });
+    showToast('技能已启用', 'success');
   };
 
   // 过滤技能
@@ -423,12 +430,17 @@ const SkillsPage: React.FC = () => {
         auditLevel={audit?.level ?? null}
         auditScore={audit?.score ?? null}
         onAuditClick={async () => {
+          if (skill.source === 'builtin') {
+            // 内置技能无需外部审查，直接跳转查看审计结果
+            navigate(`/skills/${skill.id}/audit`);
+            return;
+          }
           try {
             await refreshAuditForSkill(skill.id);
             setSkillVersion((v) => v + 1);
-            setToast({ open: true, msg: `「${skill.name}」安全审查已完成`, severity: 'success' });
+            showToast(`「${skill.name}」安全审查已完成`, 'success');
           } catch {
-            setToast({ open: true, msg: `「${skill.name}」安全审查失败`, severity: 'error' });
+            showToast(`「${skill.name}」安全审查失败`, 'error');
           }
         }}
       />
@@ -451,35 +463,16 @@ const SkillsPage: React.FC = () => {
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <Box sx={{ position: 'relative' }}>
-            <TextField
-              size="small"
-              placeholder="搜索技能"
+            <SearchInput
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
+              onChange={(value) => {
+                setSearchQuery(value);
                 setSuggestionsOpen(true);
               }}
+              placeholder="搜索技能"
+              width={200}
               onFocus={() => { if (searchQuery) setSuggestionsOpen(true); }}
               onBlur={() => { setTimeout(() => setSuggestionsOpen(false), 200); }}
-              sx={{
-                width: 200,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
-                  backgroundColor: '#F0F0F0',
-                  fontSize: '0.8125rem',
-                  '& fieldset': { border: 'none' },
-                  '&:hover': { backgroundColor: '#E8E8E8' },
-                  '&.Mui-focused': { backgroundColor: '#fff', '& fieldset': { border: '1px solid #1A1A1A' } },
-                },
-                '& .MuiInputBase-input': { py: 0.75, fontSize: '0.8125rem', color: '#666' },
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ fontSize: 16, color: '#999' }} />
-                  </InputAdornment>
-                ),
-              }}
             />
             {/* 搜索联想下拉 */}
             {suggestionsOpen && searchSuggestions.length > 0 && (
@@ -519,6 +512,7 @@ const SkillsPage: React.FC = () => {
             )}
           </Box>
           {activeTab !== 'chains' && (
+            <>
             <Button
               variant="outlined"
               startIcon={<AddIcon sx={{ fontSize: 14 }} />}
@@ -536,7 +530,41 @@ const SkillsPage: React.FC = () => {
             >
               添加技能
             </Button>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon sx={{ fontSize: 14 }} />}
+              onClick={() => setInstallerOpen(true)}
+              sx={{
+                textTransform: 'none',
+                borderRadius: '8px',
+                fontSize: '0.8125rem',
+                py: 0.75,
+                px: 2,
+                borderColor: '#E0E0E0',
+                color: '#6B7280',
+                '&:hover': { borderColor: '#7C3AED', color: '#7C3AED', backgroundColor: '#FAF5FF' },
+              }}
+            >
+              标准安装
+            </Button>
+            </>
           )}
+          {/* T05: 匹配引擎设置入口 */}
+          <Tooltip title="匹配引擎设置">
+            <IconButton
+              onClick={() => setMatchConfigOpen(true)}
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '8px',
+                border: '1px solid #E0E0E0',
+                color: '#6B7280',
+                '&:hover': { borderColor: '#7C3AED', color: '#7C3AED', bgcolor: '#FAF5FF' },
+              }}
+            >
+              <TuneIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
 
@@ -811,7 +839,17 @@ const SkillsPage: React.FC = () => {
         open={addDialogOpen}
         onClose={() => setAddDialogOpen(false)}
         onAdded={(name) => {
-          setToast({ open: true, msg: `技能已添加: ${name}`, severity: 'success' });
+          showToast(`技能已添加: ${name}`, 'success');
+          setSkillVersion((v) => v + 1);
+        }}
+      />
+
+      {/* 标准技能安装器 */}
+      <StandardSkillInstaller
+        open={installerOpen}
+        onClose={() => setInstallerOpen(false)}
+        onInstalled={(skillId) => {
+          showToast(`技能已安装: ${skillId}`, 'success');
           setSkillVersion((v) => v + 1);
         }}
       />
@@ -829,22 +867,6 @@ const SkillsPage: React.FC = () => {
         />
       )}
 
-      {/* Toast */}
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={3000}
-        onClose={() => setToast((t) => ({ ...t, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setToast((t) => ({ ...t, open: false }))}
-          severity={toast.severity}
-          sx={{ fontSize: '0.8rem', borderRadius: 2 }}
-        >
-          {toast.msg}
-        </Alert>
-      </Snackbar>
-
       {/* 脉冲动画 */}
       <style>{`
         @keyframes pulse-dot {
@@ -853,6 +875,27 @@ const SkillsPage: React.FC = () => {
           100% { opacity: 1; transform: scale(1); }
         }
       `}</style>
+
+      {/* T05: 匹配引擎设置对话框 */}
+      <Dialog
+        open={matchConfigOpen}
+        onClose={() => setMatchConfigOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '12px', maxHeight: '80vh' },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F3F4F6' }}>
+          <Typography sx={{ fontSize: '1rem', fontWeight: 600 }}>匹配引擎设置</Typography>
+          <IconButton size="small" onClick={() => setMatchConfigOpen(false)}>
+            <TuneIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <MatchConfigPanel onConfigSaved={() => {}} />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };

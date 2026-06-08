@@ -15,6 +15,11 @@ import { useAppSettings } from '../../contexts/AppSettingsContext';
 import ChatToolbar from './ChatToolbar';
 import MemoryDialog, { type MemoryDialogHandle } from './MemoryDialog';
 import { SessionReferenceSelector } from './SessionReferenceSelector';
+// T05: 语义匹配集成
+import { matchSkills, submitMatchFeedback, loadLocalMatchConfig, DEFAULT_MATCH_ENGINE_CONFIG, type MatchFeedback } from '../../services/matchingApi';
+import SkillMatchResult, { type SemanticMatchResult } from '../Matching/SkillMatchResult';
+import MatchFeedbackWidget from '../Matching/MatchFeedbackWidget';
+import type { MatchEngineConfig } from '../../services/matchingApi';
 
 // ===================== Skill Auto-Match =====================
 
@@ -196,6 +201,14 @@ function checkSuggestionConflict(suggestions: PopoverSuggestion[]): boolean {
   return gap < 0.3;
 }
 
+// ===================== T05: 语义匹配辅助 =====================
+
+/** 加载匹配配置（合并 localStorage 前端扩展字段） */
+function loadMatchEngineConfig(): MatchEngineConfig {
+  const localConfig = loadLocalMatchConfig();
+  return { ...DEFAULT_MATCH_ENGINE_CONFIG, ...localConfig };
+}
+
 // ===================== Props =====================
 
 interface TopBarChatInputProps {
@@ -238,6 +251,13 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
   const [showSessionReference, setShowSessionReference] = useState(false);
   const [referencedSessions, setReferencedSessions] = useState<Array<{ id: string; title: string }>>([]);
 
+  // T05: 语义匹配状态
+  const [matchCandidates, setMatchCandidates] = useState<SemanticMatchResult[]>([]);
+  const [showMatchCandidates, setShowMatchCandidates] = useState(false);
+  const [semanticMatching, setSemanticMatching] = useState(false);
+  const [showMatchFeedback, setShowMatchFeedback] = useState(false);
+  const [lastMatchResult, setLastMatchResult] = useState<{ skillId: string; skillName: string; confidence: number; input: string } | null>(null);
+
   // 当 initialSkill 从外部变化时同步到 selectedSkill（如 SkillDetailPage 跳转过来）
   useEffect(() => {
     if (initialSkill) setSelectedSkill(initialSkill);
@@ -266,17 +286,35 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     ).length;
   })();
 
-  // 从 settings 中读取模型列表（仅启用的模型）
-  const MODEL_OPTIONS = settings.models.models
-    .filter((m) => m.enabled)
-    .map((m) => m.name);
+  // 从 settings 中读取模型列表（仅启用的模型），Auto 作为首选项
+  const MODEL_OPTIONS = [
+    { name: 'Auto', provider: 'auto' },
+    ...settings.models.models
+      .filter((m) => m.enabled)
+      .map((m) => ({ name: m.name, provider: m.provider })),
+  ];
 
-  // 初始化选中的模型（优先使用默认模型）
-  const [selectedModel, setSelectedModel] = useState(() => {
-    const defaultModel = settings.models.models.find((m) => m.id === settings.models.defaultModelId);
-    return defaultModel?.name || MODEL_OPTIONS[0] || 'GPT-4';
-  });
+  // 获取已启用的模型列表（含 id 和 name，用于 id↔name 映射）
+  const enabledModels = settings.models.models.filter((m) => m.enabled);
+
+  // 初始化选中的模型（默认 Auto）
+  const [selectedModel, setSelectedModel] = useState('Auto');
+  const [selectedModelId, setSelectedModelId] = useState('auto');
   const [selectedPermission, setSelectedPermission] = useState('默认权限');
+
+  /** 模型切换：Auto 模式发送 "auto"，其他按名称匹配 ID */
+  const handleModelChange = useCallback((name: string) => {
+    setSelectedModel(name);
+    if (name === 'Auto') {
+      setSelectedModelId('auto');
+      onSessionUpdate({ ...session, model: 'auto' });
+    } else {
+      const found = enabledModels.find((m) => m.name === name);
+      const modelId = found?.id || name;
+      setSelectedModelId(modelId);
+      onSessionUpdate({ ...session, model: modelId });
+    }
+  }, [enabledModels, session, onSessionUpdate]);
 
   const memoryDialogRef = useRef<MemoryDialogHandle>(null);
   const editableRef = useRef<HTMLDivElement>(null);
@@ -295,6 +333,9 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
         setShowSkillSelector(false);
         setShowSessionReference(false);
         setSuggestionOpen(false);
+        // T05: 关闭语义匹配候选
+        setShowMatchCandidates(false);
+        setMatchCandidates([]);
         if (!inputValue.trim()) {
           setInputExpanded(false);
           if (editableRef.current) {
@@ -429,8 +470,96 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     }, 0);
   };
 
+  // ===================== T05: 语义匹配核心逻辑 =====================
+
+  /** 语义匹配 — 调用后端 /api/matching/match */
+  const handleSemanticMatch = useCallback(async (input: string): Promise<Skill | null> => {
+    const config = loadMatchEngineConfig();
+    try {
+      setSemanticMatching(true);
+      const response = await matchSkills(input, {
+        topK: 5,
+        mode: 'hybrid',
+      });
+
+      if (response.results && response.results.length > 0) {
+        const topMatch = response.results[0];
+        // 将后端 MatchResult 转换为前端 SemanticMatchResult
+        const matchResults: SemanticMatchResult[] = response.results.map(r => ({
+          skillId: r.skillId,
+          skillName: r.skillName,
+          confidence: r.score,
+          reasons: r.reasons,
+          matchMode: r.matchMode,
+        }));
+
+        if (topMatch.score >= config.autoActivateThreshold) {
+          // 高置信度：自动激活
+          const skill = getAllSkills().find(s => s.id === topMatch.skillId);
+          if (skill) {
+            setLastMatchResult({
+              skillId: skill.id,
+              skillName: skill.name,
+              confidence: topMatch.score,
+              input,
+            });
+            setShowMatchFeedback(true);
+            return skill;
+          }
+        } else if (topMatch.score >= config.candidateThreshold) {
+          // 中置信度：展示候选列表
+          setMatchCandidates(matchResults);
+          setShowMatchCandidates(true);
+          return null;
+        }
+        // 低置信度：降级到关键词匹配
+      }
+      return null;
+    } catch (err) {
+      console.warn('[SemanticMatch] 语义匹配失败，降级到关键词匹配:', err);
+      return null;
+    } finally {
+      setSemanticMatching(false);
+    }
+  }, []);
+
+  /** 从语义匹配候选列表中选择技能 */
+  const handleMatchCandidateSelect = (skillId: string) => {
+    const skill = getAllSkills().find(s => s.id === skillId);
+    if (skill) {
+      handleSkillSelect(skill);
+      setAutoMatched(true);
+      // 记录匹配结果用于反馈
+      const candidate = matchCandidates.find(m => m.skillId === skillId);
+      if (candidate) {
+        setLastMatchResult({
+          skillId,
+          skillName: candidate.skillName,
+          confidence: candidate.confidence,
+          input: inputValue,
+        });
+        setShowMatchFeedback(true);
+      }
+    }
+    setShowMatchCandidates(false);
+    setMatchCandidates([]);
+  };
+
+  /** 关闭语义匹配候选列表 */
+  const handleMatchCandidateDismiss = () => {
+    setShowMatchCandidates(false);
+    setMatchCandidates([]);
+  };
+
+  /** 提交匹配反馈 */
+  const handleMatchFeedbackSubmit = (feedback: MatchFeedback) => {
+    submitMatchFeedback(feedback).catch(err => {
+      console.warn('[MatchFeedback] 提交反馈失败:', err);
+    });
+  };
+
   const handleSend = () => {
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading || semanticMatching) return;
 
     // T05: 如果以 / 或 @ 开头，不触发发送（等用户完成选择）
     const trimmedInput = inputValue.trimStart();
@@ -441,18 +570,48 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     // 关闭建议浮层
     setSuggestionOpen(false);
     setSuggestions([]);
+    // T05: 关闭语义匹配候选
+    setShowMatchCandidates(false);
+    setMatchCandidates([]);
 
-    // 首次输入且未手动选择技能 → 自动匹配
+    // 首次输入且未手动选择技能 → 尝试语义匹配 → 降级到关键词匹配
     // T04: 当建议浮层存在冲突（isConflicted）时，不自动激活
     let effectiveSkill = selectedSkill;
     if (!selectedSkill && session.messages.length === 0) {
       const hasConflictedSuggestion = suggestions.some(s => s.isConflicted);
       if (!hasConflictedSuggestion) {
-        const matched = matchSkillFromInput(inputValue);
-        if (matched) {
-          effectiveSkill = matched;
-          setSelectedSkill(matched);
+        // T05: 先尝试语义匹配（异步，这里先用关键词匹配同步结果）
+        const keywordMatched = matchSkillFromInput(inputValue);
+        if (keywordMatched) {
+          effectiveSkill = keywordMatched;
+          setSelectedSkill(keywordMatched);
           setAutoMatched(true);
+        }
+
+        // T05: 异步尝试语义匹配 — 如果成功则覆盖关键词匹配结果
+        // 仅当关键词匹配未命中时尝试语义匹配
+        if (!keywordMatched) {
+          handleSemanticMatch(inputValue).then(semanticSkill => {
+            if (semanticSkill && !selectedSkill) {
+              setSelectedSkill(semanticSkill);
+              setAutoMatched(true);
+            }
+          }).catch(() => {
+            // 降级逻辑已在 handleSemanticMatch 内处理
+          });
+        } else {
+          // 关键词匹配成功，也尝试语义匹配获取反馈
+          handleSemanticMatch(inputValue).then(semanticSkill => {
+            if (semanticSkill) {
+              setLastMatchResult({
+                skillId: semanticSkill.id,
+                skillName: semanticSkill.name,
+                confidence: 0.8, // 关键词匹配成功时给一个默认置信度
+                input: inputValue,
+              });
+              setShowMatchFeedback(true);
+            }
+          }).catch(() => {});
         }
       }
     }
@@ -461,7 +620,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     const skillId = effectiveSkill?.id || undefined;
     const referencedSessionIds = referencedSessions.map(s => s.id);
 
-    sendMessage(inputValue, { skillContext, skillId, referencedSessionIds, referencedSessions });
+    sendMessage(inputValue, { skillContext, skillId, referencedSessionIds, referencedSessions, model: selectedModelId });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
     }
@@ -670,7 +829,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
         {/* Toolbar */}
         <ChatToolbar
           selectedModel={selectedModel}
-          onModelChange={setSelectedModel}
+          onModelChange={handleModelChange}
           selectedPermission={selectedPermission}
           onPermissionChange={setSelectedPermission}
           isLoading={isLoading}
@@ -723,6 +882,41 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
 
       {/* Memory dialog */}
       <MemoryDialog ref={memoryDialogRef} />
+
+      {/* T05: 语义匹配候选列表 */}
+      {showMatchCandidates && matchCandidates.length > 0 && (
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: '100%',
+            left: 0,
+            right: 0,
+            mb: 1,
+            zIndex: 1300,
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <SkillMatchResult
+            matches={matchCandidates}
+            onSelect={handleMatchCandidateSelect}
+            onDismiss={handleMatchCandidateDismiss}
+          />
+        </Box>
+      )}
+
+      {/* T05: 匹配反馈组件 */}
+      {showMatchFeedback && lastMatchResult && selectedSkill && (
+        <Box sx={{ mt: 0.5 }}>
+          <MatchFeedbackWidget
+            userInput={lastMatchResult.input}
+            matchedSkillId={lastMatchResult.skillId}
+            matchedSkillName={lastMatchResult.skillName}
+            confidence={lastMatchResult.confidence}
+            onSubmit={handleMatchFeedbackSubmit}
+          />
+        </Box>
+      )}
     </Box>
   );
 }

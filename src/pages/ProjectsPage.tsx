@@ -1,21 +1,43 @@
-import React from 'react';
-import { Box, Typography, Button, useTheme } from '@mui/material';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  IconButton,
+  Tooltip,
+  CircularProgress,
+  Alert,
+  useTheme,
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
+import SearchInput from '../components/Common/SearchInput';
+import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
-import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import ScheduleIcon from '@mui/icons-material/Schedule';
-import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import { useToast } from '../contexts/ToastContext';
+import { getProjects, createProject, updateProject, deleteProject } from '../services/api';
+import type { Project } from '../types/project';
 
-// ===================== Styles (projects.html inspired) =====================
+// ===================== Styles =====================
 
 const CARD_STYLE = {
   border: '1px solid',
@@ -29,9 +51,9 @@ const CARD_STYLE = {
   },
 };
 
-const SECTION_TITLE_STYLE = { fontSize: '18px', fontWeight: 700, color: 'text.primary' };
+const SECTION_TITLE_STYLE = { fontSize: 18, fontWeight: 700, color: 'text.primary' };
 
-// ===================== Data =====================
+// ===================== Fixed Repos =====================
 
 interface FixedRepo {
   key: string;
@@ -39,9 +61,21 @@ interface FixedRepo {
   description: string;
   icon: React.ReactNode;
   path: string;
-  progress?: number;
   meta?: string;
 }
+
+const FIXED_REPOS: FixedRepo[] = [
+  {
+    key: 'warehouse',
+    name: '仓库管理',
+    description: '跨境仓库数据管理，包含仓库、在途、库存、报表',
+    icon: <WarehouseOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />,
+    path: '/warehouses',
+    meta: '仪表盘 · 仓库列表 · 在途跟踪 · 库存查询',
+  },
+];
+
+// ===================== Templates (全部功能) =====================
 
 interface TemplateCard {
   key: string;
@@ -51,83 +85,114 @@ interface TemplateCard {
   path?: string;
 }
 
-const FIXED_REPOS: FixedRepo[] = [
-  {
-    key: 'warehouse',
-    name: '仓库管理',
-    description: '跨境仓库数据管理，包含仓库、在途、库存、报表',
-    icon: <WarehouseOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />,
-    path: '/dashboard',
-    progress: undefined,
-    meta: '仪表盘 · 仓库列表 · 在途跟踪 · 库存查询',
-  },
+const TEMPLATES: TemplateCard[] = [
+  { key: 'dashboard', name: '仪表盘', description: '仓库总览、容积率、在途统计', icon: <DashboardOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/dashboard' },
+  { key: 'inventory', name: '库存管理', description: '库存查询、出入库记录、库存流水', icon: <InventoryOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/inventory' },
+  { key: 'skills', name: '技能系统', description: 'AI 技能管理、导入导出、安全审查', icon: <AutoFixHighIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/skills' },
+  { key: 'automation', name: '自动化引擎', description: '定时任务、Webhook 触发、事件驱动', icon: <ScheduleIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/automation' },
+  { key: 'agent', name: 'Agent 应用', description: '智能体管理与配置', icon: <SmartToyOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/agent' },
+  { key: 'docs', name: '腾讯文档', description: '在线文档授权与管理', icon: <DescriptionOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/tencent-docs' },
+  { key: 'reports', name: '统计报表', description: '数据报表与导出', icon: <AssessmentOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/reports' },
+  { key: 'chat', name: 'AI 对话', description: '智能助手、历史对话、上下文引用', icon: <ChatBubbleOutlineIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/chat' },
+  { key: 'settings', name: '系统设置', description: '外观主题、模型配置、仪表盘参数', icon: <SettingsOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/settings' },
 ];
 
-const TEMPLATES: TemplateCard[] = [
-  {
-    key: 'dashboard',
-    name: '仪表盘',
-    description: '仓库总览、容积率、在途统计',
-    icon: <DashboardOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />,
-    path: '/dashboard',
-  },
-  {
-    key: 'inventory',
-    name: '库存管理',
-    description: '库存查询、出入库记录、库存流水',
-    icon: <InventoryOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />,
-    path: '/inventory',
-  },
-  {
-    key: 'skills',
-    name: '技能系统',
-    description: 'AI 技能管理、导入导出、安全审查',
-    icon: <AutoFixHighIcon sx={{ fontSize: 22, color: '#666' }} />,
-    path: '/skills',
-  },
-  {
-    key: 'automation',
-    name: '自动化引擎',
-    description: '定时任务、Webhook 触发、事件驱动',
-    icon: <ScheduleIcon sx={{ fontSize: 22, color: '#666' }} />,
-    path: '/automation',
-  },
-  {
-    key: 'agent',
-    name: 'Agent 应用',
-    description: '智能体管理与配置',
-    icon: <SmartToyOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />,
-    path: '/agent',
-  },
-  {
-    key: 'docs',
-    name: '腾讯文档',
-    description: '在线文档授权与管理',
-    icon: <DescriptionOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />,
-    path: '/tencent-docs',
-  },
-  {
-    key: 'reports',
-    name: '统计报表',
-    description: '数据报表与导出',
-    icon: <AssessmentOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />,
-    path: '/reports',
-  },
-  {
-    key: 'chat',
-    name: 'AI 对话',
-    description: '智能助手、历史对话、上下文引用',
-    icon: <ChatBubbleOutlineIcon sx={{ fontSize: 22, color: '#666' }} />,
-    path: '/chat',
-  },
-  {
-    key: 'settings',
-    name: '系统设置',
-    description: '外观主题、模型配置、仪表盘参数',
-    icon: <SettingsOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />,
-    path: '/settings',
-  },
-];
+// ===================== Project Form Dialog =====================
+
+interface ProjectFormProps {
+  open: boolean;
+  initial?: Project | null;
+  onClose: () => void;
+  onSave: (data: Partial<Project> & { name: string }) => void;
+}
+
+const EMPTY_FORM = {
+  name: '',
+  description: '',
+  status: 'active' as string,
+  category: 'custom' as string,
+};
+
+const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose, onSave }) => {
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [nameError, setNameError] = useState('');
+
+  React.useEffect(() => {
+    if (open) {
+      if (initial) {
+        setForm({
+          name: initial.name,
+          description: initial.description,
+          status: initial.status,
+          category: initial.category,
+        });
+      } else {
+        setForm(EMPTY_FORM);
+      }
+      setNameError('');
+    }
+  }, [open, initial]);
+
+  const handleSave = () => {
+    if (!form.name.trim()) { setNameError('项目名称不能为空'); return; }
+    onSave({
+      name: form.name.trim(),
+      description: form.description.trim() || undefined,
+      status: form.status as 'active' | 'archived' | 'completed',
+      category: form.category as 'custom' | 'template' | 'fixed',
+    });
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth
+      PaperProps={{ sx: { borderRadius: '12px' } }}>
+      <DialogTitle sx={{ fontSize: '1rem', fontWeight: 600, pb: 1 }}>
+        {initial ? '编辑项目' : '新建项目'}
+      </DialogTitle>
+      <DialogContent sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <TextField
+          label="项目名称" fullWidth size="small" autoFocus
+          value={form.name}
+          onChange={(e) => { setForm((f) => ({ ...f, name: e.target.value })); setNameError(''); }}
+          error={Boolean(nameError)} helperText={nameError}
+        />
+        <TextField
+          label="描述（可选）" fullWidth size="small" multiline rows={2}
+          value={form.description}
+          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+        />
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <FormControl size="small" sx={{ flex: 1 }}>
+            <InputLabel>状态</InputLabel>
+            <Select label="状态" value={form.status}
+              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
+              <MenuItem value="active">活跃</MenuItem>
+              <MenuItem value="archived">已归档</MenuItem>
+              <MenuItem value="completed">已完成</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ flex: 1 }}>
+            <InputLabel>分类</InputLabel>
+            <Select label="分类" value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
+              <MenuItem value="custom">自定义</MenuItem>
+              <MenuItem value="template">模板</MenuItem>
+              <MenuItem value="fixed">固定</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} sx={{ color: '#6B7280' }}>取消</Button>
+        <Button onClick={handleSave} variant="contained"
+          sx={{ bgcolor: '#111827', '&:hover': { bgcolor: '#374151' }, borderRadius: '6px' }}>
+          保存
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 // ===================== Component =====================
 
@@ -136,13 +201,93 @@ const ProjectsPage: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [templateSearch, setTemplateSearch] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const { showToast } = useToast();
+
+  // Theme helpers
   const textMuted = isDark ? '#9CA3AF' : '#999';
   const borderColor = isDark ? '#2D2D2D' : '#E5E5E5';
   const cardBg = isDark ? '#1E1E1E' : '#FFFFFF';
   const repoSectionBg = isDark ? '#1A1A1A' : '#FAFAFA';
-  const btnBg = isDark ? '#F3F4F6' : '#1A1A1A';
-  const btnColor = isDark ? '#1A1A1A' : '#FFFFFF';
-  const btnHover = isDark ? '#D1D5DB' : '#333333';
+
+  const loadProjects = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getProjects();
+      setProjects(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '加载项目失败';
+      setError(message);
+      showToast(message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
+
+  const handleSave = useCallback(async (data: Partial<Project> & { name: string }) => {
+    try {
+      if (editingProject) {
+        await updateProject(editingProject.id, data);
+        showToast('项目已更新', 'success');
+      } else {
+        await createProject(data);
+        showToast('项目已创建', 'success');
+      }
+      await loadProjects();
+      setEditingProject(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '保存失败';
+      showToast(message, 'error');
+    }
+  }, [editingProject, showToast, loadProjects]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    try {
+      await deleteProject(id);
+      showToast('项目已删除', 'success');
+      await loadProjects();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '删除失败';
+      showToast(message, 'error');
+    }
+  }, [showToast, loadProjects]);
+
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim()) return projects;
+    const query = searchQuery.toLowerCase();
+    return projects.filter((p) =>
+      p.name.toLowerCase().includes(query) ||
+      p.description.toLowerCase().includes(query)
+    );
+  }, [projects, searchQuery]);
+
+  const filteredTemplates = useMemo(() => {
+    if (!templateSearch.trim()) return TEMPLATES;
+    const query = templateSearch.toLowerCase();
+    return TEMPLATES.filter((t) =>
+      t.name.toLowerCase().includes(query) ||
+      t.description.toLowerCase().includes(query)
+    );
+  }, [templateSearch]);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+        <CircularProgress size={32} sx={{ color: '#6B7280' }} />
+      </Box>
+    );
+  }
 
   return (
     <Box className="page-fade-in" sx={{ maxWidth: 1100, mx: 'auto' }}>
@@ -152,8 +297,8 @@ const ProjectsPage: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          pt: '60px',
-          pb: '50px',
+          pt: 1.5,
+          pb: 5,
         }}
       >
         <Box>
@@ -166,25 +311,25 @@ const ProjectsPage: React.FC = () => {
           <Button
             variant="contained"
             startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-            onClick={() => navigate('/warehouses')}
+            onClick={() => { setEditingProject(null); setDialogOpen(true); }}
             disableElevation
             sx={{
               px: 3,
               py: 1.2,
-              backgroundColor: btnBg,
-              color: btnColor,
+              backgroundColor: isDark ? '#F3F4F6' : '#1A1A1A',
+              color: isDark ? '#1A1A1A' : '#FFFFFF',
               borderRadius: '8px',
               fontSize: 13,
               fontWeight: 500,
               textTransform: 'none',
-              '&:hover': { backgroundColor: btnHover },
+              '&:hover': { backgroundColor: isDark ? '#D1D5DB' : '#333333' },
             }}
           >
             新建项目
           </Button>
         </Box>
 
-        {/* Hero Illustration — 高度还原 projects.html */}
+        {/* Hero Illustration */}
         <Box sx={{ width: 360, height: 240, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
           <svg viewBox="0 0 360 240" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
             {/* Desk 1 (left) */}
@@ -238,22 +383,18 @@ const ProjectsPage: React.FC = () => {
             {/* Checkmark bubble */}
             <rect x="100" y="50" width="30" height="24" rx="6" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
             <path d="M110 62 L114 66 L120 58" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
-
             {/* Document bubble */}
             <rect x="230" y="40" width="26" height="30" rx="4" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
             <line x1="236" y1="50" x2="250" y2="50" stroke="#1a1a1a" strokeWidth="1"/>
             <line x1="236" y1="55" x2="248" y2="55" stroke="#1a1a1a" strokeWidth="1"/>
             <line x1="236" y1="60" x2="245" y2="60" stroke="#1a1a1a" strokeWidth="1"/>
-
             {/* Folder bubble */}
             <rect x="130" y="30" width="28" height="22" rx="4" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
             <path d="M134 34 L134 48 L154 48 L154 37 L146 37 L144 34 Z" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
-
             {/* Image bubble */}
             <rect x="200" y="55" width="24" height="20" rx="3" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
             <circle cx="208" cy="63" r="3" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
             <path d="M200 72 L208 66 L216 72" stroke="#1a1a1a" strokeWidth="1" fill="none"/>
-
             {/* Person 4 (small, back) */}
             <circle cx="130" cy="82" r="10" stroke="#e0e0e0" strokeWidth="1" fill="none"/>
             <path d="M118 108 Q118 96 130 96 Q142 96 142 108" stroke="#e0e0e0" strokeWidth="1" fill="none"/>
@@ -351,7 +492,146 @@ const ProjectsPage: React.FC = () => {
         </Box>
       </Box>
 
-      {/* ===== Template Gallery Section ===== */}
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2, borderRadius: '8px' }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {/* ===== Custom Projects Section ===== */}
+      <Box sx={{ mb: 5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <FolderOutlinedIcon sx={{ fontSize: 20, color: isDark ? '#9CA3AF' : '#666' }} />
+            <Typography sx={SECTION_TITLE_STYLE}>自定义项目</Typography>
+          </Box>
+        </Box>
+
+        {/* Search */}
+        <Box sx={{ mb: 2, maxWidth: 400 }}>
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="搜索项目"
+            width={400}
+          />
+        </Box>
+
+        {/* Projects Grid */}
+        {filteredProjects.length === 0 ? (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              py: 6,
+              color: '#9CA3AF',
+              gap: 1,
+            }}
+          >
+            <FolderOutlinedIcon sx={{ fontSize: 40, color: '#D1D5DB' }} />
+            <Typography sx={{ fontSize: '0.9375rem', color: '#6B7280' }}>
+              {searchQuery ? '没有匹配的项目' : '还没有自定义项目'}
+            </Typography>
+            {!searchQuery && (
+              <Button
+                size="small" startIcon={<AddIcon />}
+                onClick={() => { setEditingProject(null); setDialogOpen(true); }}
+                sx={{ mt: 0.5, color: '#6B7280', '&:hover': { bgcolor: '#F3F4F6' } }}
+              >
+                创建第一个项目
+              </Button>
+            )}
+          </Box>
+        ) : (
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+            {filteredProjects.map((project) => (
+              <Box
+                key={project.id}
+                onClick={() => navigate(`/projects/${project.id}`)}
+                sx={{
+                  ...CARD_STYLE,
+                  backgroundColor: cardBg,
+                  borderColor,
+                  p: 2.5,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
+                  <Box
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: '10px',
+                      backgroundColor: isDark ? '#2D2D2D' : '#F5F5F5',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <FolderOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
+                      {project.name}
+                    </Typography>
+                    <Typography sx={{ fontSize: 12, color: textMuted, lineHeight: 1.5 }}>
+                      {project.description || '暂无描述'}
+                    </Typography>
+                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingProject(project);
+                      setDialogOpen(true);
+                    }}
+                    sx={{ p: 0.5, color: '#9CA3AF', '&:hover': { color: '#374151' } }}
+                  >
+                    <Tooltip title="编辑">
+                      <span>✏️</span>
+                    </Tooltip>
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm('确定要删除这个项目吗？')) {
+                        handleDelete(project.id);
+                      }
+                    }}
+                    sx={{ p: 0.5, color: '#9CA3AF', '&:hover': { color: '#DC2626' } }}
+                  >
+                    <Tooltip title="删除">
+                      <span>🗑️</span>
+                    </Tooltip>
+                  </IconButton>
+                </Box>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    pt: 1.5,
+                    borderTop: `1px solid ${isDark ? '#2D2D2D' : '#F0F0F0'}`,
+                  }}
+                >
+                  <Typography sx={{ fontSize: 11, color: textMuted }}>
+                    状态: {project.status === 'active' ? '活跃' : project.status === 'archived' ? '已归档' : '已完成'}
+                  </Typography>
+                  <Typography sx={{ fontSize: 11, color: textMuted }}>
+                    分类: {project.category === 'custom' ? '自定义' : project.category === 'template' ? '模板' : '固定'}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Box>
+
+      {/* ===== Template Gallery Section (全部功能) ===== */}
       <Box sx={{ mb: 5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
           <Typography sx={SECTION_TITLE_STYLE}>全部功能</Typography>
@@ -369,6 +649,8 @@ const ProjectsPage: React.FC = () => {
             <Box
               component="input"
               placeholder="搜索功能"
+              value={templateSearch}
+              onChange={(e) => setTemplateSearch((e.target as HTMLInputElement).value)}
               sx={{
                 width: '100%',
                 height: 38,
@@ -388,7 +670,7 @@ const ProjectsPage: React.FC = () => {
         </Box>
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' }, gap: 2 }}>
-          {TEMPLATES.map((tpl) => (
+          {filteredTemplates.map((tpl) => (
             <Box
               key={tpl.key}
               onClick={() => tpl.path && navigate(tpl.path)}
@@ -428,6 +710,14 @@ const ProjectsPage: React.FC = () => {
           ))}
         </Box>
       </Box>
+
+      {/* Form Dialog */}
+      <ProjectFormDialog
+        open={dialogOpen}
+        initial={editingProject}
+        onClose={() => { setDialogOpen(false); setEditingProject(null); }}
+        onSave={handleSave}
+      />
     </Box>
   );
 };

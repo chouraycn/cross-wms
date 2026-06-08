@@ -67,7 +67,7 @@ export interface NotificationConfig {
 // ===================== 任务类型 =====================
 
 /** 任务类型 */
-export type TaskType = 'data-sync' | 'inventory-snapshot' | 'report-gen' | 'volume-alert' | 'custom' | 'skill-chain';
+export type TaskType = 'data-sync' | 'inventory-snapshot' | 'report-gen' | 'volume-alert' | 'custom' | 'skill-chain' | 'skill-audit' | 'wms-alert-check' | 'wms-report-gen';
 
 /** 频率类型 */
 export type FreqType = 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
@@ -88,10 +88,31 @@ export interface TaskConfig {
   script?: string;
   /** skill-chain 专用：链 ID */
   chainId?: string;
+  /** skill-audit 专用：要审计的技能 ID 列表，空则审计所有用户技能 */
+  skillIds?: string[];
+  /** skill-audit 专用：单个技能 ID（从恶意技能卡片跳转时使用） */
+  skillId?: string;
+  /** wms-alert-check 专用：预警检查配置 */
+  alertConfig?: {
+    lowStock?: number;      // 低库存阈值，默认 10
+    expiryDays?: number;     // 临期天数，默认 30
+    stagnantDays?: number;   // 呆滞天数，默认 90
+    enableLowStock?: boolean;  // 启用低库存检查
+    enableExpiry?: boolean;    // 启用临期检查
+    enableStagnant?: boolean;  // 启用呆滞检查
+  };
+  /** wms-report-gen 专用：报表生成配置 */
+  reportConfig?: {
+    reportType?: 'inventory' | 'inbound' | 'outbound';  // 报表类型
+    warehouseId?: string;                                   // 指定仓库，空则全部
+    startDate?: string;                                     // 开始日期
+    endDate?: string;                                       // 结束日期
+    format?: 'csv' | 'json';                              // 输出格式
+  };
 }
 
 /** custom 任务可执行的原子 action */
-export type ActionType = 'sync-warehouses' | 'sync-inventory' | 'sync-transit' | 'snapshot' | 'check-volume' | 'gen-report' | 'notify';
+export type ActionType = 'sync-warehouses' | 'sync-inventory' | 'sync-transit' | 'snapshot' | 'check-volume' | 'gen-report' | 'notify' | 'wms-alert-check' | 'wms-report-gen';
 
 /** 增强版 Automation 类型 */
 export interface Automation {
@@ -215,7 +236,7 @@ export interface AutomationTemplate {
 
 // ===================== 持久化常量 =====================
 
-export const AUTOMATIONS_KEY = 'crosswms-automations';
-export const EXECUTION_LOG_KEY = 'crosswms-automation-logs';
+export const AUTOMATIONS_KEY = 'cdf-know-clow-automations';
+export const EXECUTION_LOG_KEY = 'cdf-know-clow-automation-logs';
 export const MAX_LOG_ENTRIES = 100;
 export const CHECK_INTERVAL_MS = 30_000; // 30 秒

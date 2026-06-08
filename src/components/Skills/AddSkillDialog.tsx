@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Button, CircularProgress, Dialog, DialogTitle,
   DialogContent, DialogActions, Alert, Checkbox, IconButton, Tooltip,
-  Snackbar,
 } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
 import AddIcon from '@mui/icons-material/Add';
@@ -14,6 +13,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import DescriptionIcon from '@mui/icons-material/Description';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../contexts/ToastContext';
 import { unzipSync } from 'fflate';
 import { addSkill } from '../../stores/skillStore';
 import { scanSkillMd, readSkillMd, fetchSkillConflictCheck, triggerSkillAudit } from '../../services/api';
@@ -473,7 +473,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       
       if (audit.level === 'safe') {
         // 安全 → Toast 通知
-        setToast({ message: `「${skillName}」安全审查通过 (${audit.score}分)`, severity: 'success' });
+        showToast(`「${skillName}」安全审查通过 (${audit.score}分)`, 'success');
       } else if (audit.level === 'suspicious') {
         // 可疑 → 弹出审查摘要对话框
         setPendingAudit(audit);
@@ -484,12 +484,14 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         setShowAuditDialog(true);
       }
     } catch (e) {
+      const msg = e instanceof Error ? e.message : '未知错误';
       console.error('安全审查失败', e);
+      showToast(`「${skillName}」安全审查失败：${msg}`, 'error');
     }
   };
   const [pendingAudit, setPendingAudit] = useState<SkillAudit | null>(null);
   const [showAuditDialog, setShowAuditDialog] = useState(false);
-  const [toast, setToast] = useState<{ message: string; severity: 'success' | 'warning' | 'error' } | null>(null);
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   // T04: ZIP 安装冲突检测状态
@@ -579,10 +581,11 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       } else {
         name = file.name.replace('.zip', '');
         desc = `从 ${file.name} 导入的技能包`;
-        promptTemplate = `你是 CrossWMS 的「${name}」技能助手。${desc}请根据用户的请求，提供专业、准确的回答和操作建议。`;
+        promptTemplate = `你是 CDF Know Clow 的「${name}」技能助手。${desc}请根据用户的请求，提供专业、准确的回答和操作建议。`;
       }
 
       // Step 3: T04 冲突检测 — 在导入前检查
+      let conflictChecked = false;
       try {
         const conflictResult = await fetchSkillConflictCheck(name, undefined, ['zip-import']);
         if (conflictResult.conflicts.length > 0) {
@@ -602,6 +605,8 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
               tags: ['zip-import'],
             });
             console.log('[AddSkillDialog] Skill installed successfully:', newSkill.id);
+            // T04: 触发安全审查
+            await triggerAuditAfterImport(newSkill.id, newSkill.name);
             onAdded(newSkill.name);
             reset();
             onClose();
@@ -612,10 +617,14 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
           setLoading(false);
           return;
         }
+        conflictChecked = true;
       } catch {
         // 冲突检查 API 失败时不阻塞安装
         console.warn('[AddSkillDialog] Conflict check failed, proceeding with install');
+        conflictChecked = true;
       }
+
+      if (!conflictChecked) return;
 
       // Step 4: 无冲突，直接调用 API 创建技能
       console.log('[AddSkillDialog] Installing skill:', name, 'hasPromptTemplate:', !!promptTemplate);
@@ -664,11 +673,11 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       desc: skill.description || `从 WorkBuddy 导入: ${skill.dirName}`,
       icon: 'Extension',
       category: 'tool',
-      path: '/agent',
+      path: '/chat',
       status: 'active',
       version: '1.0',
       executionMode: 'chat',
-      promptTemplate: body || `你是 CrossWMS 的「${skill.name}」技能助手。请根据用户的请求，提供专业、准确的回答和操作建议。`,
+      promptTemplate: body || `你是 CDF Know Clow 的「${skill.name}」技能助手。请根据用户的请求，提供专业、准确的回答和操作建议。`,
       detail: skill.description,
       tags: [skill.dirName, 'workbuddy'],
     });
@@ -949,14 +958,14 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
           allowForceInstall={pendingAudit.level === 'suspicious'}
           onInstall={() => {
             setShowAuditDialog(false);
-            setToast({ message: `「${pendingAudit.skillId}」已安装（安全审查 ${pendingAudit.score}分）`, severity: 'warning' });
+            showToast(`「${pendingAudit.skillId}」已安装（安全审查 ${pendingAudit.score}分）`, 'warning');
           }}
           onCancel={() => {
             setShowAuditDialog(false);
             if (pendingAudit.level === 'malicious') {
               // 恶意技能：删除已安装的技能
               onAdded('');  // TBD: 需要传入 onDelete 回调
-              setToast({ message: `已阻止安装恶意技能`, severity: 'error' });
+              showToast(`已阻止安装恶意技能`, 'error');
             }
           }}
           onViewReport={() => {
@@ -965,23 +974,6 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
           }}
         />
       )}
-
-      {/* T04: Toast 通知 */}
-      <Snackbar
-        open={Boolean(toast)}
-        autoHideDuration={6000}
-        onClose={() => setToast(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <MuiAlert
-          severity={toast?.severity || 'info'}
-          variant="filled"
-          onClose={() => setToast(null)}
-          sx={{ width: '100%' }}
-        >
-          {toast?.message || ''}
-        </MuiAlert>
-      </Snackbar>
     </Dialog>
   );
 };

@@ -402,7 +402,7 @@ const WarehouseList: React.FC = () => {
           <Button
             variant="contained"
             onClick={() => handleSubmit()}
-            disabled={!form.name || !form.totalItems || creating}
+            disabled={!form.name.trim() || !form.totalItems.trim() || creating}
             sx={{
               background: 'linear-gradient(135deg, #1A1A2E 0%, #0F3460 100%)',
               '&:hover': { background: 'linear-gradient(135deg, #16213E 0%, #1a4a80 100%)' },

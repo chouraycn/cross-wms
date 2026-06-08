@@ -212,7 +212,7 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
                               <Typography variant="caption" color="text.secondary" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: 300 }}>{doc.url}</Typography>
                               {(() => {
                                 const docid = extractWeComDocIdFromUrl(doc.url);
-                                if (docid) return renderCacheTime(`crosswms-wecom-cache-${docid}`);
+                                if (docid) return renderCacheTime(`cdf-know-clow-wecom-cache-${docid}`);
                                 return null;
                               })()}
                             </Box>

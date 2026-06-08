@@ -7,10 +7,11 @@ import { Message, Session } from '../types/chat';
 import { getAllSkills } from '../stores/skillStore';
 import type { Skill } from '../types/skill';
 import { ICON_MAP } from '../types/skill';
-import { CATEGORY_LABELS, ICON_GRADIENTS } from '../constants/skillCategories';
+import { getCategoryLabel, getCategoryGradient } from '../constants/skillCategories';
+import { MarkdownRenderer } from '../components/CrossWmsChat/MarkdownRenderer';
 
 // 会话持久化配置（与 CrossWmsChat 共享 localStorage）
-const SESSIONS_STORAGE_KEY = 'crosswms-chat-sessions';
+const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
 const MAX_SESSIONS = 20;
 
 function loadSessions(): Session[] {
@@ -139,7 +140,7 @@ const ChatPage: React.FC = () => {
 
   useEffect(() => {
     if (sessions.length > 0) saveSessions(sessions);
-    window.dispatchEvent(new CustomEvent('crosswms-chat-updated'));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-chat-updated'));
   }, [sessions]);
 
   const handleSessionUpdate = useCallback((updatedSession: Session) => {
@@ -185,13 +186,13 @@ const ChatPage: React.FC = () => {
         if (editable) editable.focus();
       }, 200);
     };
-    window.addEventListener('crosswms-focus-chat', handleFocusChat);
-    window.addEventListener('crosswms-select-session', handleSelectSession);
-    window.addEventListener('crosswms-navigate-chat', handleNavigateToChat);
+    window.addEventListener('cdf-know-clow-focus-chat', handleFocusChat);
+    window.addEventListener('cdf-know-clow-select-session', handleSelectSession);
+    window.addEventListener('cdf-know-clow-navigate-chat', handleNavigateToChat);
     return () => {
-      window.removeEventListener('crosswms-focus-chat', handleFocusChat);
-      window.removeEventListener('crosswms-select-session', handleSelectSession);
-      window.removeEventListener('crosswms-navigate-chat', handleNavigateToChat);
+      window.removeEventListener('cdf-know-clow-focus-chat', handleFocusChat);
+      window.removeEventListener('cdf-know-clow-select-session', handleSelectSession);
+      window.removeEventListener('cdf-know-clow-navigate-chat', handleNavigateToChat);
     };
   }, [handleNewChat]);
 
@@ -246,7 +247,7 @@ const ChatPage: React.FC = () => {
                     width: 56,
                     height: 56,
                     borderRadius: '16px',
-                    background: ICON_GRADIENTS[initialSkill.category],
+                    background: getCategoryGradient(initialSkill.category),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -269,7 +270,7 @@ const ChatPage: React.FC = () => {
                     color: '#9CA3AF',
                     mb: 1,
                   }}>
-                    {CATEGORY_LABELS[initialSkill.category]}
+                    {getCategoryLabel(initialSkill.category)}
                   </Typography>
                   <Typography sx={{
                     fontSize: '0.875rem',
@@ -369,9 +370,13 @@ const ChatPage: React.FC = () => {
                       wordBreak: 'break-word',
                     }}
                   >
-                    <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                      {msg.content || (msg.role === 'assistant' && msg.content === '' ? '思考中...' : '')}
-                    </Typography>
+                    {msg.role === 'user' ? (
+                      <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                        {msg.content}
+                      </Typography>
+                    ) : (
+                      <MarkdownRenderer content={msg.content} />
+                    )}
                     <Typography
                       sx={{
                         fontSize: 11,

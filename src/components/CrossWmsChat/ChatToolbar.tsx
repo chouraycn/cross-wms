@@ -21,10 +21,17 @@ import PsychologyIcon from '@mui/icons-material/Psychology';
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
 import { getAllSkills } from '../../stores/skillStore';
-import { CATEGORY_LABELS, CATEGORY_ORDER } from '../../constants/skillCategories';
+import { getCategoryLabel, CATEGORY_ORDER } from '../../constants/skillCategories';
 import { SECONDARY } from '../../constants/theme';
+import { providerIcon } from '../../utils/providerIcons';
 
 // ===================== Types =====================
+
+/** 模型选项（含 provider 信息） */
+export interface ModelOption {
+  name: string;
+  provider: string;
+}
 
 export interface ChatToolbarProps {
   /** Currently selected model name */
@@ -45,8 +52,8 @@ export interface ChatToolbarProps {
   onOpenMemory: () => void;
   /** Skill select handler */
   onSkillSelect: (skill: Skill) => void;
-  /** Available model names */
-  modelOptions: string[];
+  /** Available model options with provider info */
+  modelOptions: ModelOption[];
 }
 
 // ===================== Constants =====================
@@ -238,13 +245,19 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
         sx={{ mb: 0.5 }}
       >
         {modelOptions.map((option) => (
-          <MenuItem key={option} onClick={() => { onModelChange(option); setActiveDropdown(null); }}>
-            {option}
+          <MenuItem key={option.name} onClick={() => { onModelChange(option.name); setActiveDropdown(null); }}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            {option.provider !== 'auto' && (
+              <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                {providerIcon(option.provider, 14)}
+              </Box>
+            )}
+            <Typography sx={{ fontSize: '0.8125rem' }}>{option.name}</Typography>
           </MenuItem>
         ))}
         <MenuItem component="div" divider sx={{ mx: 0, my: 0.5, pointerEvents: 'none' }} />
-        <MenuItem onClick={() => setActiveDropdown(null)}>
-          添加模型
+        <MenuItem onClick={() => { setActiveDropdown(null); navigate('/settings?tab=modelManagement'); }}>
+          管理模型
         </MenuItem>
       </Menu>
 
@@ -270,7 +283,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             if (!items || items.length === 0) continue;
             result.push(
               <Typography key={`cat-${cat}`} sx={{ px: 2, py: 0.5, fontSize: '0.65rem', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase' }}>
-                {CATEGORY_LABELS[cat]}
+                {getCategoryLabel(cat)}
               </Typography>
             );
             for (const skill of items.slice(0, 4)) {

@@ -18,6 +18,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   finance: '财务分析',
   productivity: '效率提升',
   'ai-agent': 'AI 智能体',
+  audit: '安全审计',
+  '审计': '安全审计',
 };
 
 /** 分类排序顺序 */
@@ -34,6 +36,7 @@ export const CATEGORY_ORDER = [
   'finance',
   'productivity',
   'ai-agent',
+  'audit',
 ];
 
 /** 分类配色（背景色 + 文字色） */
@@ -50,6 +53,8 @@ export const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
   finance: { bg: '#FFF7ED', color: '#EA580C' },
   productivity: { bg: '#EFF6FF', color: '#2563EB' },
   'ai-agent': { bg: '#FAF5FF', color: '#7C3AED' },
+  audit: { bg: '#ECFDF5', color: '#16A34A' },
+  '审计': { bg: '#ECFDF5', color: '#16A34A' },
 };
 
 /** 技能图标区渐变色（卡片风格） */
@@ -66,7 +71,24 @@ export const ICON_GRADIENTS: Record<string, string> = {
   finance: 'linear-gradient(135deg, #EA580C 0%, #C2410C 100%)',
   productivity: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
   'ai-agent': 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+  audit: 'linear-gradient(135deg, #16A34A 0%, #059669 100%)',
+  '审计': 'linear-gradient(135deg, #16A34A 0%, #059669 100%)',
 };
+
+/** 安全获取分类 label（未知分类返回原值或 "其他"） */
+export function getCategoryLabel(category: string): string {
+  return CATEGORY_LABELS[category] || category || '其他';
+}
+
+/** 安全获取分类颜色（未知分类返回兜底灰色调） */
+export function getCategoryColors(category: string): { bg: string; color: string } {
+  return CATEGORY_COLORS[category] || { bg: '#F3F4F6', color: '#6B7280' };
+}
+
+/** 安全获取分类图标渐变（未知分类返回兜底渐变） */
+export function getCategoryGradient(category: string): string {
+  return ICON_GRADIENTS[category] || 'linear-gradient(135deg, #6B7280 0%, #4B5563 100%)';
+}
 
 // ===================== 安全等级常量 =====================
 

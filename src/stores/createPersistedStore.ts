@@ -73,7 +73,7 @@ export function createPersistedStore<T>(
     } catch (e) {
       console.error(`[${storageKey}] 保存失败:`, e);
       if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-        window.dispatchEvent(new CustomEvent('crosswms-storage-warning', {
+        window.dispatchEvent(new CustomEvent('cdf-know-clow-storage-warning', {
           detail: { key: storageKey },
         }));
       }

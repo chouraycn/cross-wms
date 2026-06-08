@@ -1,8 +1,8 @@
-# CrossWMS MSW Mock API 使用指南
+# CDF Know Clow MSW Mock API 使用指南
 
 ## 概述
 
-MSW (Mock Service Worker) 已集成到 CrossWMS 项目中，用于模拟后端 API 接口。基于 API 接口规范 v1.0 实现。
+MSW (Mock Service Worker) 已集成到 CDF Know Clow 项目中，用于模拟后端 API 接口。基于 API 接口规范 v1.0 实现。
 
 ## 文件结构
 

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Box, Snackbar, Alert as MuiAlert } from '@mui/material';
+import { Box } from '@mui/material';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { DocLinkItem, WeComDocLinkItem } from '../../contexts/AppSettingsContext';
 import {
@@ -16,6 +16,7 @@ import {
 import AuthStatusSection from './AuthStatusSection';
 import DocContentViewer from './DocContentViewer';
 import DocLinkManager from './DocLinkManager';
+import { useToast } from '../../contexts/ToastContext';
 
 type ViewMode = 'list' | 'loading' | 'doc' | 'sheet' | 'error';
 type DocSource = 'personal' | 'enterprise';
@@ -46,13 +47,11 @@ const TencentDocsPanel: React.FC = () => {
   const [refreshingWecomDocId, setRefreshingWecomDocId] = useState<string | null>(null);
 
   // Snackbar
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+  const { showToast } = useToast();
 
-  const showSnackbar = useCallback((message: string, severity: 'success' | 'error' = 'success') => { setSnackbarMessage(message); setSnackbarSeverity(severity); setSnackbarOpen(true); }, []);
+  const showSnackbar = useCallback((message: string, severity: 'success' | 'error' = 'success') => { showToast(message, severity); }, [showToast]);
 
-  const cacheKey = (docId: string) => `crosswms-doc-cache-${docId}`;
+  const cacheKey = (docId: string) => `cdf-know-clow-doc-cache-${docId}`;
 
   const openInBrowser = useCallback(async (url: string) => {
     if (isPyWebView() && window.pywebview?.api) { try { await window.pywebview.api.open_in_browser(url); return; } catch { /* 降级 */ } }
@@ -94,7 +93,7 @@ const TencentDocsPanel: React.FC = () => {
     setViewMode('loading'); setActiveDocTitle(docTitle); setActiveDocSource('enterprise'); setErrorMsg('');
     const docid = extractWeComDocIdFromUrl(docUrl); const category = getWeComDocCategoryFromUrl(docUrl);
     if (!docid) { setViewMode('error'); setErrorMsg('无法从链接中提取企业文档 ID'); return; }
-    const cacheKeyStr = `crosswms-wecom-cache-${docid}`;
+    const cacheKeyStr = `cdf-know-clow-wecom-cache-${docid}`;
     const cached = localStorage.getItem(cacheKeyStr);
     if (cached) { try { const p = JSON.parse(cached); setDocMarkdown(p.markdown); setViewMode('doc'); return; } catch { /* ignore */ } }
     try {
@@ -157,9 +156,6 @@ const TencentDocsPanel: React.FC = () => {
     <Box>
       <AuthStatusSection authStatus={authStatus} wecomAuthStatus={wecomAuthStatus} refreshing={refreshing} wecomRefreshing={wecomRefreshing} lastSync={lastSync} docCount={docLinks.length} wecomDocCount={wecomDocLinks.length} onRefresh={handleRefresh} onWecomRefresh={handleWecomRefresh} />
       <DocLinkManager docLinks={docLinks} wecomDocLinks={wecomDocLinks} lastSync={lastSync} refreshingDocId={refreshingDocId} refreshingWecomDocId={refreshingWecomDocId} cacheKeyFn={cacheKey} onOpenDoc={handleOpenDoc} onOpenWeComDoc={handleOpenWeComDoc} onRefreshSingleDoc={handleRefreshSingleDoc} onRefreshSingleWecomDoc={handleRefreshSingleWecomDoc} onOpenInBrowser={openInBrowser} />
-      <Snackbar open={snackbarOpen} autoHideDuration={3000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <MuiAlert severity={snackbarSeverity} sx={{ width: '100%' }} onClose={() => setSnackbarOpen(false)}>{snackbarMessage}</MuiAlert>
-      </Snackbar>
     </Box>
   );
 };

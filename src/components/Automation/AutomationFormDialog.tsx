@@ -28,6 +28,7 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import WarningIcon from '@mui/icons-material/Warning';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import SecurityIcon from '@mui/icons-material/Security';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
@@ -197,6 +198,12 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
                   自定义动作链
                 </Box>
               </MenuItem>
+              <MenuItem value="skill-audit">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <SecurityIcon sx={{ fontSize: 16, color: TASK_TYPE_COLORS['skill-audit'] }} />
+                  技能审计
+                </Box>
+              </MenuItem>
             </Select>
           </FormControl>
 
@@ -263,6 +270,31 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
                     </React.Fragment>
                   ))}
                 </Box>
+              )}
+            </Box>
+          )}
+
+          {/* skill-audit 配置说明 */}
+          {formTaskType === 'skill-audit' && (
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: '8px',
+                backgroundColor: '#FEF2F2',
+                border: '1px solid #FECACA',
+              }}
+            >
+              <Typography sx={{ fontSize: '0.7rem', color: '#DC2626', fontWeight: 500, mb: 0.5 }}>
+                技能安全审计
+              </Typography>
+              <Typography sx={{ fontSize: '0.65rem', color: '#6B7280', lineHeight: 1.4 }}>
+                定期对所有用户技能执行安全审查，检查是否存在高风险操作。
+                如发现恶意或可疑技能，将发送桌面通知。
+              </Typography>
+              {formTaskConfig.skillId && (
+                <Typography sx={{ fontSize: '0.65rem', color: '#DC2626', mt: 0.5 }}>
+                  当前审计目标: <strong>{formTaskConfig.skillId}</strong>
+                </Typography>
               )}
             </Box>
           )}

@@ -3,8 +3,10 @@
  * 检查远程 release.json，对比版本，提示用户下载新版本
  */
 
-// GitHub Releases：release.json 随 DMG 一起上传到 Releases
-const RELEASE_URL = 'https://github.com/chouraycn/cross-wms/releases/latest/download/release.json';
+// GitHub Releases release.json：优先使用 raw.githubusercontent.com（直连，无重定向）
+// 回退到 /releases/latest/download/ 作为备用
+const RELEASE_URL = 'https://raw.githubusercontent.com/chouraycn/cdf-know-clow/main/release/release.json';
+const RELEASE_URL_FALLBACK = 'https://github.com/chouraycn/cdf-know-clow/releases/latest/download/release.json';
 
 export interface ReleaseInfo {
   version: string;
@@ -84,10 +86,17 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateSta
         // pywebview 调用失败，降级到 fetch（兼容旧版 pywebview 或未就绪情况）
         console.warn('[updateService] pywebview API 失败，降级到 fetch:', pywebviewError);
         try {
-          const response = await fetchWithTimeout(RELEASE_URL, {
+          let response = await fetchWithTimeout(RELEASE_URL, {
             method: 'GET',
             cache: 'no-cache',
           }, 8000);
+          if (!response.ok) {
+            // 尝试回退 URL
+            response = await fetchWithTimeout(RELEASE_URL_FALLBACK, {
+              method: 'GET',
+              cache: 'no-cache',
+            }, 8000);
+          }
           if (!response.ok) {
             throw new Error(`无法获取更新信息: ${response.status}`);
           }
@@ -100,9 +109,9 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateSta
         }
       }
     } else {
-      // 浏览器 / Electron 环境：直接 fetch（带超时）
+      // 浏览器 / Electron 环境：直接 fetch（带超时 + 回退）
       try {
-        const response = await fetchWithTimeout(RELEASE_URL, {
+        let response = await fetchWithTimeout(RELEASE_URL, {
           method: 'GET',
           cache: 'no-cache',
         }, 8000);
@@ -110,8 +119,20 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateSta
           throw new Error(`无法获取更新信息: ${response.status}`);
         }
         releaseInfo = await response.json();
-      } catch (fetchError) {
-        throw new Error(`无法检查更新: ${fetchError instanceof Error ? fetchError.message : fetchError}`);
+      } catch (primaryError) {
+        // 主 URL 失败，尝试回退 URL
+        try {
+          const response = await fetchWithTimeout(RELEASE_URL_FALLBACK, {
+            method: 'GET',
+            cache: 'no-cache',
+          }, 8000);
+          if (!response.ok) {
+            throw new Error(`无法获取更新信息: ${response.status}`);
+          }
+          releaseInfo = await response.json();
+        } catch (fetchError) {
+          throw new Error(`无法检查更新: ${fetchError instanceof Error ? fetchError.message : fetchError}`);
+        }
       }
     }
 

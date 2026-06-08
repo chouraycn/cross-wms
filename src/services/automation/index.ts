@@ -183,6 +183,49 @@ export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
     },
     defaultSchedule: { scheduleType: 'recurring', freq: 'DAILY', hour: 10, minute: 0 },
   },
+  {
+    id: 'tpl-skill-audit',
+    name: '定期检查技能安全',
+    description: '定期对所有用户技能执行安全审查，发现恶意或可疑技能时发送桌面通知',
+    icon: 'SecurityIcon',
+    taskType: 'skill-audit',
+    defaultSchedule: { scheduleType: 'recurring', freq: 'WEEKLY', hour: 9, minute: 0 },
+  },
+  {
+    id: 'tpl-wms-alert-check',
+    name: 'WMS 预警检查',
+    description: '定期扫描低库存、临期商品、呆滞库存，自动创建预警记录',
+    icon: 'Noti ficationsActiveIcon',
+    taskType: 'wms-alert-check',
+    taskConfig: {
+      alertConfig: {
+        lowStock: 10,
+        expiryDays: 30,
+        stagnantDays: 90,
+        enableLowStock: true,
+        enableExpiry: true,
+        enableStagnant: true,
+      },
+    },
+    defaultSchedule: { scheduleType: 'recurring', freq: 'DAILY', hour: 8, minute: 0 },
+  },
+  {
+    id: 'tpl-wms-report-gen',
+    name: 'WMS 报表生成',
+    description: '定期生成库存、入库、出库报表，支持 CSV 和 JSON 格式导出',
+    icon: 'AssessmentIcon',
+    taskType: 'wms-report-gen',
+    taskConfig: {
+      reportConfig: {
+        reportType: 'inventory',
+        warehouseId: undefined,
+        startDate: undefined,
+        endDate: undefined,
+        format: 'csv',
+      },
+    },
+    defaultSchedule: { scheduleType: 'recurring', freq: 'WEEKLY', hour: 9, minute: 0 },
+  },
 ];
 
 // ===================== 引擎核心 =====================
@@ -304,9 +347,9 @@ class AutomationEngine implements AutomationEngineAPI {
   /** 获取执行结果详情 */
   getExecutionResults(type: 'snapshots' | 'reports' | 'alerts'): unknown[] {
     const KEY_MAP = {
-      snapshots: 'crosswms-inventory-snapshots',
-      reports: 'crosswms-reports',
-      alerts: 'crosswms-volume-alerts',
+      snapshots: 'cdf-know-clow-inventory-snapshots',
+      reports: 'cdf-know-clow-reports',
+      alerts: 'cdf-know-clow-volume-alerts',
     };
     try {
       const raw = localStorage.getItem(KEY_MAP[type]);

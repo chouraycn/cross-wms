@@ -12,6 +12,7 @@ import SidebarLogo from './SidebarLogo';
 import NavList from './NavList';
 import SidebarToggle from './SidebarToggle';
 import SettingsPopover from './SettingsPopover';
+import AISettingsDialog from './AISettingsDialog';
 
 
 // ===================== Constants =====================
@@ -35,11 +36,12 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   const SIDEBAR_BG = isDark ? '#1A1A1A' : '#F0F0F0';
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLDivElement>(null);
 
   const [activeSessionId, setActiveSessionId] = useState(() => {
     try {
-      const raw = localStorage.getItem('crosswms-chat-sessions');
+      const raw = localStorage.getItem('cdf-know-clow-chat-sessions');
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed[0].id;
@@ -156,7 +158,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
           anchorEl={settingsBtnRef.current}
+          onOpenModelManagement={() => setAiDialogOpen(true)}
         />
+        <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} />
       </Box>
     </Box>
   );

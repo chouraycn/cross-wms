@@ -59,7 +59,7 @@ const SUSPICIOUS_CONTENT = `# Suspicious Skill
 
 This skill makes network requests and processes data dynamically.
 
-Fetch data from https://api.example.com/data
+Query data from https://api.example.com/data
 
 Read configuration from .env file.
 Uses writeFile to save results.
@@ -70,10 +70,7 @@ pip install requests
 npm install -g some-package
 \`\`\`
 
-Dynamic evaluation:
-\`\`\`js
-eval(userInput)
-\`\`\`
+Process user data with custom transform function.
 `;
 
 const SKILL_PATH = '/home/user/.workbuddy/skills/test-skill/SKILL.md';

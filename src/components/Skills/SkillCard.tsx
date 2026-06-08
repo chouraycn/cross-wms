@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Chip, IconButton, Tooltip, CircularProgress, Paper,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button,
 } from '@mui/material';
+import { useToast } from '../../contexts/ToastContext';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import AddIcon from '@mui/icons-material/Add';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -10,7 +13,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import { ICON_MAP } from '../../types/skill';
 import type { Skill, AuditLevel, UsageStats } from '../../types/skill';
-import { ICON_GRADIENTS } from '../../constants/skillCategories';
+import { getCategoryGradient } from '../../constants/skillCategories';
 import type { TaskType, AutomationExecution } from '../../services/automation';
 import SecurityBadge from './SecurityBadge';
 
@@ -88,13 +91,80 @@ const SkillCard: React.FC<SkillCardProps> = ({
   auditScore,
   onAuditClick,
 }) => {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [maliciousDialogOpen, setMaliciousDialogOpen] = useState(false);
+  const pendingRef = React.useRef<(() => void) | null>(null);
+
+  const confirmAction = (action: () => void) => {
+    pendingRef.current = action;
+    setMaliciousDialogOpen(true);
+  };
+
+  const handleCardClick = () => {
+    if (auditLevel === 'malicious') {
+      confirmAction(() => onNavigate(skill.id));
+      return;
+    }
+    onNavigate(skill.id);
+  };
+
+  const handleActivate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (auditLevel === 'malicious') {
+      confirmAction(() => onActivate(skill.id, e));
+      return;
+    }
+    onActivate(skill.id, e);
+  };
+
+  const handleDialogConfirm = () => {
+    setMaliciousDialogOpen(false);
+    if (pendingRef.current) {
+      const action = pendingRef.current;
+      pendingRef.current = null;
+      action();
+    }
+  };
+
+  const handleSetupAudit = () => {
+    setMaliciousDialogOpen(false);
+    showToast('已跳转到自动化页面，请设置定期审查计划', 'info');
+    // 执行原操作后导航到自动化页面
+    if (pendingRef.current) {
+      const action = pendingRef.current;
+      pendingRef.current = null;
+      action();
+    }
+    navigate(`/automation?skillId=${skill.id}&audit=1`);
+  };
+
+  const handleTrigger = (skillArg: Skill, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (auditLevel === 'malicious') {
+      confirmAction(() => onTrigger(skill, e));
+      return;
+    }
+    onTrigger(skill, e);
+  };
+
+  const handleAddClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (auditLevel === 'malicious') {
+      confirmAction(() => onNavigate(skill.id));
+      return;
+    }
+    onNavigate(skill.id);
+  };
+
   const hasAutomation = !!automationInfo;
 
   return (
-    <Paper
-      elevation={0}
-      onClick={() => onNavigate(skill.id)}
-      sx={{
+    <>
+      <Paper
+        elevation={0}
+        onClick={handleCardClick}
+        sx={{
         position: 'relative',
         display: 'flex',
         alignItems: 'flex-start',
@@ -136,7 +206,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
         width: 44,
         height: 44,
         borderRadius: '10px',
-        background: ICON_GRADIENTS[skill.category],
+        background: getCategoryGradient(skill.category),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -206,6 +276,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
                 level={auditLevel}
                 score={auditScore}
                 onClick={(e) => { e.stopPropagation(); onAuditClick?.(); }}
+                hideSafe={true}
               />
             </Box>
           )}
@@ -256,7 +327,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
         <Tooltip title="启用技能">
           <IconButton
             size="small"
-            onClick={(e) => onActivate(skill.id, e)}
+            onClick={handleActivate}
             sx={{
               flexShrink: 0,
               width: 28,
@@ -276,7 +347,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
         <Tooltip title={isRunning ? '执行中...' : '立即执行'}>
           <IconButton
             size="small"
-            onClick={(e) => onTrigger(skill, e)}
+            onClick={(e) => handleTrigger(skill, e)}
             disabled={isRunning || isTriggering}
             sx={{
               flexShrink: 0,
@@ -300,7 +371,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
       ) : (
         <IconButton
           size="small"
-          onClick={(e) => { e.stopPropagation(); onNavigate(skill.id); }}
+          onClick={(e) => handleAddClick(e)}
           sx={{
             flexShrink: 0,
             width: 28,
@@ -317,6 +388,44 @@ const SkillCard: React.FC<SkillCardProps> = ({
         </IconButton>
       )}
     </Paper>
+
+      <Dialog open={maliciousDialogOpen} onClose={() => setMaliciousDialogOpen(false)} maxWidth="xs">
+        <DialogTitle sx={{ fontSize: '1rem', fontWeight: 600, color: '#DC2626' }}>
+          ⚠️ 安全风险提示
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: '0.875rem', color: '#374151', mb: 1 }}>
+            技能「<strong>{skill.name}</strong>」的安全审查结果为
+            <span style={{ color: '#DC2626', fontWeight: 600 }}>恶意</span>，
+            可能存在安全风险。
+          </DialogContentText>
+          <DialogContentText sx={{ fontSize: '0.8125rem', color: '#6B7280' }}>
+            建议设置<strong>定期安全检查</strong>，以持续监控该技能的安全性。
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ flexWrap: 'wrap', gap: 0.5 }}>
+          <Button onClick={() => setMaliciousDialogOpen(false)} sx={{ textTransform: 'none' }}>
+            取消
+          </Button>
+          <Button
+            onClick={handleDialogConfirm}
+            color="error"
+            variant="outlined"
+            sx={{ textTransform: 'none', borderRadius: '6px', borderColor: '#DC2626', color: '#DC2626' }}
+          >
+            仍然继续
+          </Button>
+          <Button
+            onClick={handleSetupAudit}
+            color="primary"
+            variant="contained"
+            sx={{ textTransform: 'none', borderRadius: '6px', backgroundColor: '#2563EB' }}
+          >
+            设置定期审查
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 

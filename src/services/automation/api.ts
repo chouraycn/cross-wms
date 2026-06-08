@@ -126,7 +126,7 @@ export async function updateWebhookConfigApi(
   id: string,
   secret: string,
 ): Promise<{ enabled: boolean; hasSecret: boolean }> {
-  return request(`/${encodeURIComponent(id)}/webhook-config`, {
+  return request(`/api/automation/${encodeURIComponent(id)}/webhook-config`, {
     method: 'PUT',
     body: JSON.stringify({ secret }),
   });
@@ -164,4 +164,11 @@ export async function triggerEventApi(
     method: 'POST',
     body: JSON.stringify({ eventName, payload }),
   });
+}
+
+// ===================== Clear Logs =====================
+
+/** 清空所有执行日志 */
+export async function clearExecutionLogs(): Promise<{ success: boolean; deleted: number }> {
+  return request('/api/automation/executions', { method: 'DELETE' });
 }

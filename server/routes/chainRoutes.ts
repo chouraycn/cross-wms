@@ -10,6 +10,7 @@
  * - POST   /api/skill-chains/:id/execute  — 执行链
  * - POST   /api/skill-chains/:id/duplicate — 复制链
  * - POST   /api/skill-chains/:id/abort    — 中止执行
+ * - GET    /api/chain-executions/:execId  — 获取链执行当前状态
  */
 
 import express from 'express';
@@ -276,6 +277,54 @@ router.post('/:id/abort', (req, res) => {
       abortExecution(execId);
     }
     res.json({ data: { ok: true } });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// ===================== 链执行状态查询 =====================
+
+// GET /api/chain-executions/:execId — 获取链执行当前状态
+router.get('/:execId', (req, res) => {
+  try {
+    const db = initDb();
+    const execId = req.params.execId;
+
+    // Query execution record from DB
+    const execution = db.prepare('SELECT * FROM skill_executions WHERE id = ?').get(execId) as
+      | { id: string; chain_id: string; status: string; steps: string; node_results: string | null; result: string | null; started_at: string; completed_at: string | null; duration: number | null }
+      | undefined;
+
+    if (!execution) {
+      res.status(404).json({ error: 'Execution not found' });
+      return;
+    }
+
+    // Get chain name
+    const chain = db.prepare('SELECT name FROM skill_chains WHERE id = ?').get(execution.chain_id) as
+      | { name: string }
+      | undefined;
+
+    // Parse steps from JSON
+    let steps: Array<Record<string, unknown>> = [];
+    try {
+      steps = JSON.parse(execution.steps || '[]');
+    } catch {
+      steps = [];
+    }
+
+    res.json({
+      data: {
+        executionId: execution.id,
+        chainId: execution.chain_id,
+        chainName: chain?.name || 'Unknown Chain',
+        status: execution.status,
+        steps,
+        startedAt: execution.started_at,
+        completedAt: execution.completed_at,
+        duration: execution.duration,
+      },
+    });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }

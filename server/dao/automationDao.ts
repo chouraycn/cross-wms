@@ -400,3 +400,9 @@ export function getRunsByAutomationId(
     total: countRow.total,
   };
 }
+
+/** 清空所有执行记录 */
+export function clearAllExecutions(): number {
+  const result = db().prepare('DELETE FROM automation_runs').run();
+  return result.changes;
+}

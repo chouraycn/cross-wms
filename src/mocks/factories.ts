@@ -1,5 +1,5 @@
 /**
- * CrossWMS MSW Mock 数据工厂
+ * CDF Know Clow MSW Mock 数据工厂
  * 基于 src/types/index.ts 类型定义生成 mock 数据
  */
 

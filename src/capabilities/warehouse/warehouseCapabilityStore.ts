@@ -9,7 +9,7 @@
  * - 读操作（get/list）：直接返回内存缓存，保持同步
  * - 写操作（add/update/remove/set/reset）：async，调用 API → 成功后更新缓存 → notifyAll()
  * - initFromApi 合并为一个，并行拉取三类数据
- * - 报错继续 dispatch crosswms-api-error 事件
+ * - 报错继续 dispatch cdf-know-clow-api-error 事件
  */
 
 import type { Warehouse, TransitOrder, InventoryItem } from '../../types';
@@ -111,7 +111,7 @@ export async function addWarehouse(warehouse: Warehouse): Promise<void> {
     notifyAll();
   } catch (e) {
     console.error('[warehouseCapabilityStore] addWarehouse failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'addWarehouse', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'addWarehouse', error: e } }));
     throw e;
   }
 }
@@ -124,7 +124,7 @@ export async function updateWarehouse(updated: Warehouse): Promise<void> {
     notifyAll();
   } catch (e) {
     console.error('[warehouseCapabilityStore] updateWarehouse failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'updateWarehouse', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'updateWarehouse', error: e } }));
     throw e;
   }
 }
@@ -137,7 +137,7 @@ export async function removeWarehouse(warehouseId: string): Promise<void> {
     notifyAll();
   } catch (e) {
     console.error('[warehouseCapabilityStore] removeWarehouse failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'removeWarehouse', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'removeWarehouse', error: e } }));
     throw e;
   }
 }
@@ -171,7 +171,7 @@ export async function addTransitOrder(order: TransitOrder): Promise<void> {
     notifyAll();
   } catch (e) {
     console.error('[warehouseCapabilityStore] addTransitOrder failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'addTransitOrder', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'addTransitOrder', error: e } }));
     throw e;
   }
 }
@@ -184,7 +184,7 @@ export async function updateTransitOrder(updated: TransitOrder): Promise<void> {
     notifyAll();
   } catch (e) {
     console.error('[warehouseCapabilityStore] updateTransitOrder failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'updateTransitOrder', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'updateTransitOrder', error: e } }));
     throw e;
   }
 }
@@ -197,7 +197,7 @@ export async function removeTransitOrder(orderId: string): Promise<void> {
     notifyAll();
   } catch (e) {
     console.error('[warehouseCapabilityStore] removeTransitOrder failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'removeTransitOrder', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'removeTransitOrder', error: e } }));
     throw e;
   }
 }
@@ -231,7 +231,7 @@ export async function addInventoryItem(item: InventoryItem): Promise<void> {
     notifyAll();
   } catch (e) {
     console.error('[warehouseCapabilityStore] addInventoryItem failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'addInventoryItem', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'addInventoryItem', error: e } }));
     throw e;
   }
 }
@@ -244,7 +244,7 @@ export async function updateInventoryItem(updated: InventoryItem): Promise<void>
     notifyAll();
   } catch (e) {
     console.error('[warehouseCapabilityStore] updateInventoryItem failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'updateInventoryItem', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'updateInventoryItem', error: e } }));
     throw e;
   }
 }
@@ -257,7 +257,7 @@ export async function removeInventoryItem(itemId: string): Promise<void> {
     notifyAll();
   } catch (e) {
     console.error('[warehouseCapabilityStore] removeInventoryItem failed:', e);
-    window.dispatchEvent(new CustomEvent('crosswms-api-error', { detail: { action: 'removeInventoryItem', error: e } }));
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'removeInventoryItem', error: e } }));
     throw e;
   }
 }

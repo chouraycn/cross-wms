@@ -1,10 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
   Button,
   Alert,
-  Snackbar,
   Divider,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
@@ -26,6 +26,7 @@ import VolumeDocTab from './tabs/VolumeDocTab';
 import ModelManagement from './tabs/ModelManagement';
 import AboutTab from './tabs/AboutTab';
 import TrafficLightOffsetSection from './tabs/TrafficLightOffsetSection';
+import { useToast } from '../../contexts/ToastContext';
 
 // ===================== Tab Definitions =====================
 
@@ -66,21 +67,34 @@ const SettingsPanel: React.FC = () => {
   }, []);
 
   // Active tab
-  const [activeTab, setActiveTab] = useState<SettingsTab>('tencentDocs');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && TABS.some(t => t.key === tabParam)) {
+      return tabParam as SettingsTab;
+    }
+    return 'tencentDocs';
+  });
+
+  // 同步 tab 变化到 URL 参数
+  useEffect(() => {
+    const currentTab = searchParams.get('tab');
+    if (currentTab !== activeTab) {
+      setSearchParams(activeTab === 'tencentDocs' ? {} : { tab: activeTab }, { replace: true });
+    }
+  }, [activeTab, searchParams, setSearchParams]);
 
   // Local draft state for unsaved changes
   const [draft, setDraft] = useState<AppSettings>({ ...settings });
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMsg, setSnackbarMsg] = useState('');
+  const { showToast } = useToast();
 
   // Validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  /** Show a snackbar message */
+  /** Show a snackbar message (delegates to global ToastContext) */
   const onShowSnackbar = useCallback((msg: string) => {
-    setSnackbarMsg(msg);
-    setSnackbarOpen(true);
-  }, []);
+    showToast(msg, 'success');
+  }, [showToast]);
 
   /** Save draft to the global settings store */
   const handleSave = () => {
@@ -94,8 +108,7 @@ const SettingsPanel: React.FC = () => {
     updateSettings({ dashboard: draft.dashboard });
     updateSettings({ sidebar: draft.sidebar });
     updateSettings({ models: draft.models });
-    setSnackbarMsg('设置已保存');
-    setSnackbarOpen(true);
+    showToast('设置已保存', 'success');
   };
 
   /** Reset to defaults */
@@ -170,8 +183,7 @@ const SettingsPanel: React.FC = () => {
       models: settings.models,
     });
     setErrors({});
-    setSnackbarMsg('已重置为默认值');
-    setSnackbarOpen(true);
+    showToast('已重置为默认值', 'info');
   };
 
   const hasErrors = Object.keys(errors).length > 0;
@@ -305,18 +317,6 @@ const SettingsPanel: React.FC = () => {
           保存设置
         </Button>
       </Box>
-
-      {/* Snackbar for save/reset feedback */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={2500}
-        onClose={() => setSnackbarOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setSnackbarOpen(false)} severity="success" variant="filled" sx={{ width: '100%' }}>
-          {snackbarMsg}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 };

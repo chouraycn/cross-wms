@@ -22,12 +22,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  TextField,
-  InputAdornment,
   Alert,
-  Snackbar,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import { useToast } from '../../contexts/ToastContext';
+import SearchInput from '../Common/SearchInput';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
@@ -56,7 +54,7 @@ const InventoryList: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [targetWarehouseId, setTargetWarehouseId] = useState('');
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'info' }>({ open: false, message: '', severity: 'success' });
+  const { showToast } = useToast();
 
   const categories = Array.from(new Set(items.map((i) => i.category)));
 
@@ -111,11 +109,11 @@ const InventoryList: React.FC = () => {
     );
     setSelected([]);
     setMoveDialogOpen(false);
-    setSnackbar({ open: true, message: `已将 ${selected.length} 件商品移库至 ${getWarehouseById(targetWarehouseId)?.name}`, severity: 'success' });
+    showToast(`已将 ${selected.length} 件商品移库至 ${getWarehouseById(targetWarehouseId)?.name}`, 'success');
   };
 
   const handleInventoryCheck = () => {
-    setSnackbar({ open: true, message: `已标记 ${selected.length} 件商品为盘点完成`, severity: 'info' });
+    showToast(`已标记 ${selected.length} 件商品为盘点完成`, 'info');
     setSelected([]);
   };
 
@@ -206,15 +204,11 @@ const InventoryList: React.FC = () => {
       <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, mb: 2 }}>
         <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField
-              size="small"
-              placeholder="搜索SKU或品名..."
+            <SearchInput
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              sx={{ minWidth: 200 }}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
-              }}
+              onChange={setSearchText}
+              placeholder="搜索SKU或品名..."
+              width={200}
             />
             <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>仓库</InputLabel>
@@ -388,17 +382,6 @@ const InventoryList: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar((p) => ({ ...p, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert severity={snackbar.severity} onClose={() => setSnackbar((p) => ({ ...p, open: false }))}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 };

@@ -18,7 +18,7 @@ const AboutSettingsTab: React.FC<AboutSettingsTabProps> = ({ draft, updateSideba
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
         <Typography sx={{ color: '#6B7280', fontSize: '0.8rem' }}>系统名称</Typography>
-        <Typography sx={{ color: '#111827', fontSize: '0.8rem', fontWeight: 500 }}>CDF Know CrossWMS</Typography>
+        <Typography sx={{ color: '#111827', fontSize: '0.8rem', fontWeight: 500 }}>CDF Know Clow</Typography>
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
         <Typography sx={{ color: '#6B7280', fontSize: '0.8rem' }}>版本</Typography>
@@ -32,7 +32,7 @@ const AboutSettingsTab: React.FC<AboutSettingsTabProps> = ({ draft, updateSideba
       <Box sx={{ mb: 1 }}>
         <Typography sx={{ color: '#6B7280', fontSize: '0.8rem', mb: 0.5 }}>软件介绍</Typography>
         <Typography sx={{ color: '#111827', fontSize: '0.75rem', lineHeight: 1.6 }}>
-          CrossWMS 仓储系统配套线上知识库 / 随查平台，简称「随知」，专仓管、柜组库管、运维查询 WMS 全流程操作规范、单据规则、主数据查询等软件系统。
+          CDF Know Clow 中免CLow端系统配套线上知识库 / 随查平台，简称「随知」，专仓管、柜组库管、运维查询 WMS 全流程操作规范、单据规则、主数据查询等软件系统。
         </Typography>
       </Box>
       <FormControlLabel control={<Switch checked={draft.sidebar.showVersion} onChange={(e) => updateSidebar('showVersion', e.target.checked)} size="small" sx={switchSx} />} label={<Box><Typography sx={{ fontSize: '0.8rem', color: '#111827' }}>显示版本号</Typography><Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>在侧边栏 Logo 旁显示 v{APP_VERSION}</Typography></Box>} />

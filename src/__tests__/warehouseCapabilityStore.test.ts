@@ -277,7 +277,7 @@ describe('Async write operations - Warehouse', () => {
     expect(getWarehouses()).toEqual([mockWarehouse]);
   });
 
-  it('addWarehouse() should dispatch crosswms-api-error on failure', async () => {
+  it('addWarehouse() should dispatch cdf-know-clow-api-error on failure', async () => {
     const error = new Error('Network error');
     (api.createWarehouse as ReturnType<typeof vi.fn>).mockRejectedValueOnce(error);
 
@@ -287,7 +287,7 @@ describe('Async write operations - Warehouse', () => {
 
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'crosswms-api-error',
+        type: 'cdf-know-clow-api-error',
         detail: { action: 'addWarehouse', error },
       })
     );
@@ -317,7 +317,7 @@ describe('Async write operations - Warehouse', () => {
 
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'crosswms-api-error',
+        type: 'cdf-know-clow-api-error',
         detail: { action: 'updateWarehouse', error },
       })
     );
@@ -346,7 +346,7 @@ describe('Async write operations - Warehouse', () => {
 
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'crosswms-api-error',
+        type: 'cdf-know-clow-api-error',
         detail: { action: 'removeWarehouse', error },
       })
     );
@@ -394,7 +394,7 @@ describe('Async write operations - Transit Orders', () => {
 
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'crosswms-api-error',
+        type: 'cdf-know-clow-api-error',
         detail: { action: 'addTransitOrder', error },
       })
     );
@@ -442,7 +442,7 @@ describe('Async write operations - Inventory', () => {
 
     expect(dispatchSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'crosswms-api-error',
+        type: 'cdf-know-clow-api-error',
         detail: { action: 'addInventoryItem', error },
       })
     );

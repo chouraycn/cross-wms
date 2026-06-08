@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 """
-CrossWMS — pywebview 启动脚本
+CDF Know Clow — 中免CLow端系统桌面应用
+pywebview 启动脚本
 用原生 macOS 窗口内嵌 WebView 渲染前端页面，不弹浏览器
-
-v5: 集成 Agent Web 应用
-- 添加 Agent Web 后端支持（端口 3002）
-- 添加 Agent Web 前端服务（端口 5174）
-- 修复多处语法错误
 """
 
 import os
@@ -39,7 +35,7 @@ except ImportError:
 
 # ===================== 配置持久化 =====================
 
-CONFIG_DIR = os.path.expanduser("~/.crosswms")
+CONFIG_DIR = os.path.expanduser("~/.cdf-know-clow")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 
 
@@ -195,8 +191,8 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
 # ===================== 日志文件 =====================
 
 def get_log_path():
-    """获取日志文件路径 ~/Library/Logs/CrossWMS/startup.log"""
-    log_dir = os.path.expanduser("~/Library/Logs/CrossWMS")
+    """获取日志文件路径 ~/Library/Logs/CDFKnowClow/startup.log"""
+    log_dir = os.path.expanduser("~/Library/Logs/CDFKnowClow")
     os.makedirs(log_dir, exist_ok=True)
     return os.path.join(log_dir, "startup.log")
 
@@ -215,7 +211,7 @@ def log(msg):
 
 # ===================== 配置 =====================
 
-APP_NAME = "CrossWMS"
+APP_NAME = "CDF Know Clow"
 WIDTH = 1280
 HEIGHT = 800
 MIN_SIZE = (900, 600)
@@ -223,21 +219,12 @@ MIN_SIZE = (900, 600)
 # 腾讯文档 API
 TDOC_API_BASE = "https://docs.qq.com/openapi"
 TDOC_OAUTH_BASE = "https://docs.qq.com/oauth/v2"
-TDOC_TOKEN_FILE = os.path.expanduser("~/.crosswms/tdoc_token.json")
+TDOC_TOKEN_FILE = os.path.expanduser("~/.cdf-know-clow/tdoc_token.json")
 
 # Node.js 后端服务器配置（主后端）
 SERVER_PORT = 3001
 SERVER_HEALTH_URL = f"http://localhost:{SERVER_PORT}/api/health"
 SERVER_START_TIMEOUT = 30  # 等待后端启动的最长时间（秒）
-
-# Agent Web 后端配置
-AGENT_SERVER_PORT = 3002
-AGENT_SERVER_HEALTH_URL = f"http://localhost:{AGENT_SERVER_PORT}/api/health"
-AGENT_SERVER_START_TIMEOUT = 30
-
-# Agent Web 前端配置
-AGENT_FRONTEND_PORT = 5174
-AGENT_FRONTEND_URL = f"http://localhost:{AGENT_FRONTEND_PORT}"
 
 
 def read_version():
@@ -271,7 +258,7 @@ def get_index_path():
     candidates = []
 
     # 优先使用环境变量（手动 .app 包场景）
-    resources_env = os.environ.get('CROSSWMS_RESOURCES')
+    resources_env = os.environ.get('CDF_KNOW_CLOW_RESOURCES')
     if resources_env:
         candidates.extend([
             os.path.join(resources_env, 'frontend_dist', 'index.html'),
@@ -314,14 +301,13 @@ def get_index_path():
 # ===================== Node.js 后端管理 =====================
 
 _server_process = None
-_agent_server_process = None
 
 # P0-3: 全局关闭标志，窗口关闭时设为 True，阻止进程重启
 shutting_down = False
 
 
 # 连续重启失败计数器（超过阈值后停止重启，避免无限循环卡死）
-_restart_fail_counts = {'Server': 0, 'AgentServer': 0}
+_restart_fail_counts = {'Server': 0}
 _MAX_RESTART_FAILS = 3
 
 
@@ -330,8 +316,8 @@ def _watch_process(proc, start_fn, name):
 
     参数:
         proc: 当前 subprocess.Popen 进程对象
-        start_fn: 启动函数（如 start_server / start_agent_server），返回新进程
-        name: 日志标签（如 'Server' / 'AgentServer'）
+        start_fn: 启动函数（如 start_server），返回新进程
+        name: 日志标签（如 'Server'）
     """
     def watcher():
         proc.wait()
@@ -455,44 +441,6 @@ def get_server_script_path():
     return None
 
 
-def get_agent_server_script_path():
-    """获取 Agent Web 服务器入口文件路径"""
-    candidates = []
-
-    # 优先使用环境变量（手动 .app 包场景）
-    resources_env = os.environ.get('CROSSWMS_RESOURCES')
-    if resources_env:
-        candidates.extend([
-            os.path.join(resources_env, 'agent_server_dist', 'agent_index.cjs'),
-            os.path.join(resources_env, 'agent_server_dist', 'index.cjs'),
-        ])
-
-    if getattr(sys, 'frozen', False):
-        exe_dir = os.path.dirname(sys.executable)
-        resource_dir = os.path.join(os.path.dirname(exe_dir), 'Resources')
-        candidates.extend([
-            os.path.join(resource_dir, 'agent_server_dist', 'agent_index.cjs'),
-            os.path.join(resource_dir, 'agent_server_dist', 'index.cjs'),
-        ])
-        meipass = sys._MEIPASS
-        candidates.extend([
-            os.path.join(meipass, 'agent_server_dist', 'agent_index.cjs'),
-            os.path.join(meipass, 'agent_server_dist', 'index.cjs'),
-        ])
-
-    base = os.path.dirname(os.path.abspath(__file__))
-    candidates.extend([
-        os.path.join(base, 'agent_server_dist', 'agent_index.cjs'),
-        os.path.join(base, '..', 'cross-wms-agent-web', 'server', 'index.ts'),
-    ])
-
-    for p in candidates:
-        if os.path.isfile(p):
-            return p
-
-    return None
-
-
 def check_dependencies():
     """启动前检查关键依赖是否存在，失败则抛 RuntimeError"""
     errors = []
@@ -542,13 +490,13 @@ def start_server():
     # 设置环境变量
     env = os.environ.copy()
     env['PORT'] = str(SERVER_PORT)
-    env['CROSSWMS_DATA_DIR'] = os.path.expanduser('~/.crosswms')
-    env['CROSSWMS_NODE_PATH'] = node_path  # 让 server 端知道 node 完整路径
+    env['CDF_KNOW_CLOW_DATA_DIR'] = os.path.expanduser('~/.cdf-know-clow')
+    env['CDF_KNOW_CLOW_NODE_PATH'] = node_path  # 让 server 端知道 node 完整路径
 
     # 注入 CODEBUDDY_CODE_PATH（agent-sdk 需要，指向项目根目录）
     if getattr(sys, 'frozen', False):
         # DMG 模式：使用 ~/.crosswms/ 作为项目根目录
-        env['CODEBUDDY_CODE_PATH'] = os.path.expanduser('~/.crosswms')
+        env['CODEBUDDY_CODE_PATH'] = os.path.expanduser('~/.cdf-know-clow')
     else:
         # 开发模式：使用 cross-wms/ 目录
         env['CODEBUDDY_CODE_PATH'] = os.path.dirname(os.path.abspath(__file__))
@@ -641,120 +589,6 @@ def start_server():
         return None
 
 
-def start_agent_server():
-    """启动 Agent Web 后端服务器，返回进程对象"""
-    global _agent_server_process
-
-    node_path = get_node_path()
-    if not node_path:
-        print("[AgentServer] ⚠️  Node.js 未找到，Agent Web 将不可用")
-        return None
-
-    agent_server_script = get_agent_server_script_path()
-    if not agent_server_script:
-        print("[AgentServer] ⚠️  Agent Web 服务器脚本未找到，Agent Web 将不可用")
-        return None
-
-    print(f"[AgentServer] Node.js: {node_path}")
-    print(f"[AgentServer] 脚本: {agent_server_script}")
-
-    # 设置环境变量
-    env = os.environ.copy()
-    env['PORT'] = str(AGENT_SERVER_PORT)
-    env['CROSSWMS_DATA_DIR'] = os.path.expanduser('~/.crosswms')
-    env['CROSSWMS_NODE_PATH'] = node_path  # 让 server 端知道 node 完整路径
-
-    # 注入 CODEBUDDY_CODE_PATH（agent-sdk 需要，指向项目根目录）
-    if getattr(sys, 'frozen', False):
-        # DMG 模式：使用 ~/.crosswms/ 作为项目根目录
-        env['CODEBUDDY_CODE_PATH'] = os.path.expanduser('~/.crosswms')
-    else:
-        # 开发模式：使用 cross-wms/ 目录
-        env['CODEBUDDY_CODE_PATH'] = os.path.dirname(os.path.abspath(__file__))
-
-    # 确保 node 在 PATH 中（agent-sdk 内部 spawn node 需要找到 node 命令）
-    node_dir = os.path.dirname(node_path)
-    if node_dir not in env.get('PATH', '').split(os.pathsep):
-        env['PATH'] = node_dir + os.pathsep + env.get('PATH', '')
-        print(f"[AgentServer] PATH += {node_dir}")
-
-    # 设置 NODE_PATH
-    if getattr(sys, 'frozen', False):
-        meipass = sys._MEIPASS
-        exe_dir = os.path.dirname(sys.executable)
-        resource_dir = os.path.join(os.path.dirname(exe_dir), 'Resources')
-
-        # 搜索 shared_node_modules：meipass → Resources → script 同级
-        shared_nm_candidates = [
-            os.path.join(meipass, 'shared_node_modules'),
-            os.path.join(resource_dir, 'shared_node_modules'),
-        ]
-        agent_server_dist_dir = os.path.dirname(agent_server_script)
-        shared_nm_candidates.append(os.path.join(agent_server_dist_dir, 'shared_node_modules'))
-        shared_nm_candidates.append(os.path.join(agent_server_dist_dir, 'node_modules'))
-
-        shared_nm = None
-        for candidate in shared_nm_candidates:
-            if os.path.isdir(candidate):
-                shared_nm = candidate
-                break
-
-        if shared_nm:
-            env['NODE_PATH'] = shared_nm
-            print(f"[AgentServer] NODE_PATH={shared_nm} (shared)")
-        else:
-            print(f"[AgentServer] ⚠️ 未找到 shared_node_modules，搜索路径: {shared_nm_candidates}")
-
-        # Agent Web 前端路径
-        agent_dist_candidates = [
-            os.path.join(meipass, 'agent_dist'),
-            os.path.join(resource_dir, 'agent_dist'),
-        ]
-        for ad_cand in agent_dist_candidates:
-            if os.path.isdir(ad_cand):
-                env['AGENT_FRONTEND_DIST'] = ad_cand
-                print(f"[AgentServer] AGENT_FRONTEND_DIST={ad_cand}")
-                break
-
-    # 如果是 .ts 文件，需要用 tsx 运行
-    if agent_server_script.endswith('.ts'):
-        tsx_path = shutil.which('tsx')
-        if tsx_path:
-            cmd = [tsx_path, agent_server_script]
-        else:
-            base = os.path.dirname(os.path.abspath(__file__))
-            local_tsx = os.path.join(base, 'node_modules', '.bin', 'tsx')
-            if os.path.isfile(local_tsx):
-                cmd = [local_tsx, agent_server_script]
-            else:
-                print("[AgentServer] ⚠️  tsx 未找到，无法运行 TypeScript 服务器")
-                return None
-    else:
-        cmd = [node_path, agent_server_script]
-
-    # 将 stdout/stderr 重定向到日志文件，避免 PIPE 缓冲区满导致进程阻塞卡死
-    log_dir = os.path.dirname(get_log_path())
-    agent_stdout_log = open(os.path.join(log_dir, 'agent-stdout.log'), 'a')
-    agent_stderr_log = open(os.path.join(log_dir, 'agent-stderr.log'), 'a')
-
-    try:
-        proc = subprocess.Popen(
-            cmd,
-            stdout=agent_stdout_log,
-            stderr=agent_stderr_log,
-            env=env,
-            start_new_session=True,
-        )
-        _agent_server_process = proc
-        print(f"[AgentServer] 进程已启动 (PID: {proc.pid})")
-        # P0-3: 启动进程监控，意外退出时自动重启
-        _watch_process(proc, start_agent_server, 'AgentServer')
-        return proc
-    except Exception as e:
-        print(f"[AgentServer] ❌ 启动失败: {e}")
-        return None
-
-
 def wait_for_server():
     """等待主后端服务器就绪"""
     print(f"[Server] 等待后端就绪 (最长 {SERVER_START_TIMEOUT}s)...")
@@ -777,28 +611,6 @@ def wait_for_server():
     return False
 
 
-def wait_for_agent_server():
-    """等待 Agent Web 后端服务器就绪"""
-    print(f"[AgentServer] 等待后端就绪 (最长 {AGENT_SERVER_START_TIMEOUT}s)...")
-    start_time = time.time()
-
-    while time.time() - start_time < AGENT_SERVER_START_TIMEOUT:
-        try:
-            req = urllib.request.Request(AGENT_SERVER_HEALTH_URL, method='GET')
-            with urllib.request.urlopen(req, timeout=2) as resp:
-                if resp.status == 200:
-                    elapsed = time.time() - start_time
-                    print(f"[AgentServer] ✅ Agent Web 后端就绪 (耗时 {elapsed:.1f}s)")
-                    return True
-        except (urllib.error.URLError, ConnectionRefusedError, OSError):
-            pass
-
-        time.sleep(0.5)
-
-    print(f"[AgentServer] ⚠️  Agent Web 后端未在 {AGENT_SERVER_START_TIMEOUT}s 内就绪")
-    return False
-
-
 def stop_server():
     """停止 Node.js 主后端服务器"""
     global _server_process, shutting_down
@@ -816,24 +628,6 @@ def stop_server():
                 pass
         _server_process = None
         print("[Server] 后端已停止")
-
-
-def stop_agent_server():
-    """停止 Agent Web 后端服务器"""
-    global _agent_server_process, shutting_down
-    shutting_down = True  # 阻止进程重启
-    if _agent_server_process and _agent_server_process.poll() is None:
-        print("[AgentServer] 停止 Agent Web 后端服务器...")
-        try:
-            os.killpg(os.getpgid(_agent_server_process.pid), signal.SIGTERM)
-            _agent_server_process.wait(timeout=5)
-        except Exception:
-            try:
-                _agent_server_process.kill()
-            except Exception:
-                pass
-        _agent_server_process = None
-        print("[AgentServer] Agent Web 后端已停止")
 
 
 # ===================== 腾讯文档 Token 管理 =====================
@@ -932,26 +726,6 @@ class Api:
         if self._window:
             self._window.toggle_fullscreen()
         return json.dumps({'ok': True})
-
-    # ---- Agent Web 控制 ----
-
-    def open_agent_web(self):
-        """在 pywebview 中打开 Agent Web 应用"""
-        agent_url = AGENT_FRONTEND_URL
-        if self._window:
-            self._window.load_url(agent_url)
-        return json.dumps({'ok': True, 'url': agent_url})
-
-    def get_agent_status(self):
-        """获取 Agent Web 后端状态"""
-        try:
-            req = urllib.request.Request(AGENT_SERVER_HEALTH_URL, method='GET')
-            with urllib.request.urlopen(req, timeout=2) as resp:
-                if resp.status == 200:
-                    return json.dumps({'ok': True, 'running': True})
-        except Exception:
-            pass
-        return json.dumps({'ok': True, 'running': False})
 
     # ---- 腾讯文档 OAuth ----
 
@@ -1305,27 +1079,32 @@ class Api:
         返回：
             release.json 的原文（JSON 字符串），或 {"error": "..."} 错误对象
         """
-        RELEASE_URL = 'https://github.com/chouraycn/cross-wms/releases/latest/download/release.json'
+        RELEASE_URLS = [
+            'https://raw.githubusercontent.com/chouraycn/cross-wms/main/release/release.json',
+            'https://github.com/chouraycn/cross-wms/releases/latest/download/release.json',
+        ]
         last_error = None
-        # 重试 2 次，每次超时 5 秒（加快失败速度，避免前端长时间等待）
-        for attempt in range(3):
-            try:
-                req = urllib.request.Request(
-                    RELEASE_URL,
-                    method='GET',
-                    headers={'User-Agent': f'CrossWMS/{APP_VERSION}'}
-                )
-                with urllib.request.urlopen(req, timeout=5) as resp:
-                    data = resp.read().decode('utf-8')
-                    # 验证是合法 JSON（避免返回非 JSON 内容）
-                    json.loads(data)
-                    print(f"[update] release.json 获取成功 (attempt {attempt + 1})")
-                    return data  # 直接返回 release.json 内容
-            except Exception as e:
-                last_error = str(e)
-                print(f"[update] 获取 release.json 失败 (attempt {attempt + 1}/3): {last_error}")
-                if attempt < 2:
-                    time.sleep(1)  # 重试前等待 1 秒
+        # 遍历所有 URL，每个 URL 重试 2 次，每次超时 5 秒
+        for url in RELEASE_URLS:
+            for attempt in range(2):
+                try:
+                    req = urllib.request.Request(
+                        url,
+                        method='GET',
+                        headers={'User-Agent': f'CDF-Know-Clow/{APP_VERSION}'}
+                    )
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        data = resp.read().decode('utf-8')
+                        # 验证是合法 JSON（避免返回非 JSON 内容）
+                        json.loads(data)
+                        print(f"[update] release.json 获取成功 (URL={url[:50]}..., attempt {attempt + 1})")
+                        return data  # 直接返回 release.json 内容
+                except Exception as e:
+                    last_error = str(e)
+                    if attempt < 1:
+                        time.sleep(1)  # 重试前等待 1 秒
+            # 当前 URL 失败，尝试下一个
+            print(f"[update] URL {url[:50]}... 失败，尝试下一个")
         return json.dumps({'error': last_error or 'unknown error'})
 
     # ---- 文件下载（替代 WKWebView blob URL 下载） ----
@@ -1502,52 +1281,14 @@ def start_http_server(dist_dir: str, port: int = 9988):
     return httpd, port
 
 
-def start_agent_http_server(dist_dir: str, port: int = 5174):
-    """
-    启动 Agent Web 前端 HTTP 服务器。
-
-    参数：
-        dist_dir: Agent Web 静态文件目录
-        port: 监听端口（默认 5174）
-
-    返回：
-        (httpd, port): HTTP 服务器对象和端口号
-    """
-    if not os.path.isdir(dist_dir):
-        print(f"[Agent HTTP Server] ⚠️  目录不存在: {dist_dir}")
-        return None, None
-
-    class QuietHandler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory=dist_dir, **kwargs)
-
-        def log_message(self, format, *args):
-            pass
-
-    socketserver.TCPServer.allow_reuse_address = True
-
-    try:
-        httpd = socketserver.TCPServer(("127.0.0.1", port), QuietHandler)
-    except OSError as e:
-        print(f"[Agent HTTP Server] ⚠️  端口 {port} 被占用: {e}")
-        return None, None
-
-    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-    thread.start()
-
-    print(f"[Agent HTTP Server] 已启动 http://127.0.0.1:{port}/ (dist: {dist_dir})")
-    return httpd, port
-
-
 def main():
-    log("=== CrossWMS 启动 ===")
+    log("=== CDF Know Clow 启动 ===")
     log(f"  sys.frozen = {getattr(sys, 'frozen', False)}")
     log(f"  sys.executable = {getattr(sys, 'executable', 'N/A')}")
     if getattr(sys, 'frozen', False):
         log(f"  sys._MEIPASS = {sys._MEIPASS}")
 
-    httpd = None  # HTTP 服务器对象（仅 Agent Web 使用），finally 中清理
-    agent_httpd = None  # Agent Web HTTP 服务器对象
+    httpd = None  # HTTP 服务器对象，finally 中清理
     exit_code = 0
 
     try:
@@ -1558,7 +1299,7 @@ def main():
         frontend_path = get_index_path()
         dist_dir = os.path.dirname(frontend_path)
         httpd, http_port = start_http_server(dist_dir, 9988)
-        frontend_url = f'http://127.0.0.1:{http_port}/'
+        frontend_url = f'http://127.0.0.1:{http_port}/splash.html'
         log(f"[Frontend] 通过 HTTP 加载: {frontend_url}")
 
         # 1.5 等待 HTTP 服务器就绪（避免竞态：WKWebView 在服务器线程启动前加载导致白屏）
@@ -1589,30 +1330,6 @@ def main():
             log("[Server] ⚠️  Node.js 未找到，AI 助手将不可用")
 
         # 2.5 尝试启动 Agent Web 后端和前端服务器
-        agent_server_proc = start_agent_server()
-        if agent_server_proc:
-            def _wait_agent_server():
-                wait_for_agent_server()
-            threading.Thread(target=_wait_agent_server, daemon=True).start()
-            log("[AgentServer] Agent Web 后端已启动")
-
-            # 启动 Agent Web 前端 HTTP 服务器
-            agent_dist_dir = None
-            if getattr(sys, 'frozen', False):
-                meipass = sys._MEIPASS
-                agent_dist = os.path.join(meipass, 'agent_dist')
-                if os.path.isdir(agent_dist):
-                    agent_dist_dir = agent_dist
-
-            if agent_dist_dir:
-                agent_httpd, agent_port = start_agent_http_server(agent_dist_dir, AGENT_FRONTEND_PORT)
-                if agent_httpd:
-                    log(f"[Agent Frontend] Agent Web 前端已启动: http://127.0.0.1:{agent_port}/")
-            else:
-                log("[Agent Frontend] ⚠️  Agent Web 前端文件未找到")
-        else:
-            log("[AgentServer] ⚠️  Agent Web 后端未找到，Agent Web 将不可用")
-
         # 3. 创建 pywebview 窗口，通过 file:// 加载前端
         api = Api()
         window = webview.create_window(
@@ -1630,15 +1347,28 @@ def main():
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
-        # 红黄绿按钮偏移不在启动时设置（此时 NSWindow 未完全初始化，Cocoa API 无法获取按钮）
-        # 改由前端页面加载完成后通过 JS API pywebview.api.set_traffic_light_offset() 调用
+        # 尽早应用红黄绿按钮偏移（在 splash 动画 6.3s 期间完成，避免跳转到主页时抖动）
+        # NSWindow 需要短暂时间初始化标准按钮，使用重试线程在 1.5s 内完成
+        if COCOA_AVAILABLE:
+            def _apply_traffic_lights_early(win):
+                config = load_config()
+                offset_x = config.get('traffic_light_offset_x', 5)
+                offset_y = config.get('traffic_light_offset_y', 5)
+                for attempt in range(5):
+                    time.sleep(0.3)
+                    if apply_traffic_light_offset(win, offset_x, offset_y):
+                        log(f"[TrafficLight] ✅ 启动时偏移已应用 (尝试 {attempt + 1} 次, offset={offset_x},{offset_y})")
+                        return
+                    log(f"[TrafficLight] ⏳ 重试 {attempt + 1}/5...")
+                log("[TrafficLight] ⚠️  启动时偏移应用失败，将回退到前端调用")
+            threading.Thread(target=_apply_traffic_lights_early, args=(window,), daemon=True).start()
 
         log("[Main] pywebview 窗口已创建，启动事件循环...")
 
         # 4. 启动事件循环（阻塞直到窗口关闭）
         webview.start(debug=False, private_mode=False)
 
-        log("[Main] CrossWMS 窗口已关闭，退出")
+        log("[Main] CDF Know Clow 窗口已关闭，退出")
     except FileNotFoundError as e:
         log(f"[FATAL] {e}")
         exit_code = 1
@@ -1656,19 +1386,7 @@ def main():
             except Exception as e:
                 log(f"[HTTP Server] 停止失败: {e}")
 
-        # 6. 清理 Agent Web HTTP 服务器
-        if agent_httpd:
-            try:
-                agent_httpd.shutdown()
-                agent_httpd.server_close()
-                log("[Agent HTTP Server] 已停止")
-            except Exception as e:
-                log(f"[Agent HTTP Server] 停止失败: {e}")
-
-        # 6. 确保后端服务器被停止
-        stop_server()
-        stop_agent_server()
-        log(f"=== CrossWMS 退出 (exit_code={exit_code}) ===")
+        log(f"=== CDF Know Clow 退出 (exit_code={exit_code}) ===")
 
     # GUI 环境下不要用 sys.exit() / os._exit()，让进程自然退出
     if exit_code != 0:

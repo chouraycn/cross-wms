@@ -1,4 +1,4 @@
-CrossWMS v1.0.14 发布说明：
+CDF Know Clow v1.0.14 发布说明：
 
 ### v1.0.14（2026-05-28）
 - 修复：HTTP 服务器改用固定端口（9988），确保 pywebview WKWebView 的 localStorage origin 一致，解决每次重启仓库数据丢失的问题
