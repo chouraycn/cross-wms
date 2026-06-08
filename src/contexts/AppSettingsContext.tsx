@@ -318,7 +318,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 // ===================== Context =====================
 
-const STORAGE_KEY = 'crosswms-settings';
+const STORAGE_KEY = 'cdf-know-clow-settings';
 
 export interface AppSettingsContextValue {
   settings: AppSettings;
@@ -344,6 +344,22 @@ export function openExternalLink(url: string): void {
   } else {
     // Fallback for browser environment (non-Electron)
     window.open(url, '_blank');
+  }
+}
+
+/** Load models from models.json file (attempt) */
+async function loadModelsFromFile(): Promise<ModelsConfig | null> {
+  try {
+    const data = await api.getModelsConfig();
+    if (data && Array.isArray(data.models)) {
+      return {
+        models: data.models,
+        defaultModelId: data.defaultModelId || data.models[0]?.id || '',
+      };
+    }
+    return null;
+  } catch {
+    return null;
   }
 }
 
@@ -512,6 +528,15 @@ function saveSettingsToLocalStorage(settings: AppSettings): void {
   }
 }
 
+/** 将模型配置独立持久化到 ~/.cdf-know-clow/ai-models/models.json */
+async function saveModelsToFile(models: ModelsConfig): Promise<void> {
+  try {
+    await api.saveModelsConfig(models.models, models.defaultModelId);
+  } catch (e) {
+    console.error('[AppSettings] Failed to persist models to models.json:', e);
+  }
+}
+
 // ===================== Provider =====================
 
 export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -521,22 +546,29 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // On mount, try to load from API (supersedes localStorage)
   useEffect(() => {
     let cancelled = false;
-    loadSettingsFromApi().then((apiSettings) => {
+    Promise.all([
+      loadSettingsFromApi(),
+      loadModelsFromFile(),
+    ]).then(([apiSettings, modelsConfig]) => {
       if (cancelled) return;
-      if (apiSettings) {
-        setSettings(apiSettings);
-        // Sync to localStorage for backward compat
-        saveSettingsToLocalStorage(apiSettings);
+      const merged = apiSettings ?? loadSettingsFromLocalStorage();
+      // Override models with models.json data if available
+      if (modelsConfig && modelsConfig.models.length > 0) {
+        merged.models = {
+          models: modelsConfig.models,
+          defaultModelId: modelsConfig.defaultModelId,
+        };
       }
+      setSettings(merged);
+      saveSettingsToLocalStorage(merged);
       setIsApiLoaded(true);
     }).catch(() => {
-      // Already logged in loadSettingsFromApi
       setIsApiLoaded(true);
     });
     return () => { cancelled = true; };
   }, []);
 
-  // Persist to API + localStorage whenever settings change (but only after initial API load)
+  // Persist to API + localStorage + models.json whenever settings change (but only after initial API load)
   const isFirstRender = useRef(true);
   useEffect(() => {
     // Skip the initial render (settings are loaded from localStorage state init)
@@ -549,6 +581,7 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     saveSettingsToApi(settings);
     saveSettingsToLocalStorage(settings);
+    saveModelsToFile(settings.models);
   }, [settings, isApiLoaded]);
 
   const updateSettings = useCallback((partial: Partial<AppSettings>) => {
