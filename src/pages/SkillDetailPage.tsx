@@ -5,8 +5,9 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom';
 import {
-  Box, Typography, Chip, Button, Alert, Dialog, DialogTitle, DialogContent, DialogActions,
-  Breadcrumbs, Link, Snackbar, CircularProgress,
+  Box, Typography, Chip, Button,
+  Dialog, DialogTitle, DialogContent, DialogActions,
+  Breadcrumbs, Link, CircularProgress,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -17,13 +18,16 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import EditIcon from '@mui/icons-material/Edit';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { getAllSkills, removeSkill, setSkillStatus, onSkillsChange, refreshAuditForSkill } from '../stores/skillStore';
-import { loadAutomations, automationEngine } from '../services/automation';
-import type { TaskType, AutomationExecution, EngineStateEvent } from '../services/automation';
+import { getAllSkills, removeSkill, setSkillStatus, onSkillsChange, refreshAuditForSkill, getAuditStatus } from '../stores/skillStore';
+import SecurityBadge from '../components/Skills/SecurityBadge';
+import type { TaskType, AutomationExecution } from '../services/automation';
+import type { Automation } from '../services/automation/types';
+import { fetchAutomations, triggerAutomationApi, fetchExecutions } from '../services/automation/api';
 import { ICON_MAP } from '../types/skill';
 import type { Skill, SkillWatchEvent } from '../types/skill';
-import { CATEGORY_LABELS, CATEGORY_COLORS, ICON_GRADIENTS } from '../constants/skillCategories';
+import { getCategoryLabel, getCategoryColors, getCategoryGradient } from '../constants/skillCategories';
 import * as api from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import SkillInfoCards from '../components/Skills/SkillInfoCards';
 import EditSkillDialog from '../components/Skills/EditSkillDialog';
 
@@ -31,20 +35,21 @@ import EditSkillDialog from '../components/Skills/EditSkillDialog';
 
 /** 更新最近使用技能列表 */
 function updateRecentSkills(skillName: string) {
-  const recentRaw = localStorage.getItem('crosswms-recent-skills');
+  const recentRaw = localStorage.getItem('cdf-know-clow-recent-skills');
   let recentNames: string[] = [];
   try {
     const parsed = recentRaw ? JSON.parse(recentRaw) : [];
     if (Array.isArray(parsed)) recentNames = parsed.filter((n: unknown) => typeof n === 'string');
   } catch { /* ignore */ }
   const updated = [skillName, ...recentNames.filter((n) => n !== skillName)].slice(0, 6);
-  try { localStorage.setItem('crosswms-recent-skills', JSON.stringify(updated)); } catch { /* ignore */ }
+  try { localStorage.setItem('cdf-know-clow-recent-skills', JSON.stringify(updated)); } catch { /* ignore */ }
 }
 
 // ===================== 组件 =====================
 
 const SkillDetailPage: React.FC = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { skillId } = useParams<{ skillId: string }>();
 
   // 技能数据（响应式）
@@ -66,12 +71,17 @@ const SkillDetailPage: React.FC = () => {
     return allSkills.find((s) => s.id === skillId) ?? null;
   }, [allSkills, skillId]);
 
+  // 安全审查状态
+  const audit = useMemo(() => {
+    if (!skill) return null;
+    return getAuditStatus(skill.id);
+  }, [skill]);
+
   // 自动化状态
-  const [automationVersion, setAutomationVersion] = useState(0);
+  const [automations, setAutomations] = useState<Automation[]>([]);
   const [runningTaskTypes, setRunningTaskTypes] = useState<Set<TaskType>>(new Set());
   const [latestExec, setLatestExec] = useState<AutomationExecution | null>(null);
   const [triggering, setTriggering] = useState(false);
-  const [toast, setToast] = useState<{ open: boolean; msg: string; severity: 'success' | 'error' | 'info' }>({ open: false, msg: '', severity: 'info' });
 
   // 编辑 Dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -81,48 +91,36 @@ const SkillDetailPage: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
 
   const automationMap = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _v = automationVersion;
-    const autos = loadAutomations();
     const map: Record<string, { active: boolean; id: string; name: string }> = {};
-    for (const auto of autos) {
-      map[auto.taskType] = {
-        active: auto.status === 'ACTIVE',
-        id: auto.id,
-        name: auto.name,
-      };
+    for (const auto of automations) {
+      if (auto.taskType) {
+        map[auto.taskType] = {
+          active: auto.status === 'ACTIVE',
+          id: auto.id,
+          name: auto.name,
+        };
+      }
     }
     return map;
-  }, [automationVersion]);
+  }, [automations]);
 
-  // 初始化 + 监听引擎状态
+  // 初始化加载自动化数据
   useEffect(() => {
     if (!skill?.automationTaskType) return;
-    refreshLatestExec();
-
-    const unsubscribe = automationEngine.onStateChange((event: EngineStateEvent) => {
-      setAutomationVersion((v) => v + 1);
-
-      if (event.type === 'execution-start') {
-        const auto = loadAutomations().find((a) => a.id === event.automationId);
-        if (auto) {
-          setRunningTaskTypes((prev) => new Set(prev).add(auto.taskType));
+    const load = async () => {
+      try {
+        const data = await fetchAutomations();
+        setAutomations(data);
+        const matched = data.find((a) => a.taskType === skill.automationTaskType);
+        if (matched) {
+          const result = await fetchExecutions(matched.id, 1);
+          setLatestExec(result.data[0] || null);
         }
-      } else {
-        const auto = loadAutomations().find((a) => a.id === event.automationId);
-        if (auto) {
-          setRunningTaskTypes((prev) => {
-            const next = new Set(prev);
-            next.delete(auto.taskType);
-            return next;
-          });
-          setTriggering(false);
-        }
-        refreshLatestExec();
+      } catch (err) {
+        console.error('Failed to load', err);
       }
-    });
-
-    return unsubscribe;
+    };
+    load();
   }, [skill?.automationTaskType]);
 
   // T03: SSE 连接 — 监听技能变更事件
@@ -141,9 +139,9 @@ const SkillDetailPage: React.FC = () => {
 
         // skill-changed → 显示更新 Toast
         if (data.type === 'skill-changed') {
-          // 通过名称匹配（skill.name 对应 SSH 事件中的 name）
+          // 通过名称匹配（skill.name 对应 SSE 事件中的 name）
           if (skill.name === data.name) {
-            setToast({ open: true, msg: `「${skill.name}」已更新`, severity: 'info' });
+            showToast(`「${skill.name}」已更新`, 'info');
             setSkillVersion((v) => v + 1);
           }
         }
@@ -151,7 +149,7 @@ const SkillDetailPage: React.FC = () => {
         // skill-removed → 跳转回列表
         if (data.type === 'skill-removed') {
           if (skill.name === data.name) {
-            setToast({ open: true, msg: `「${skill.name}」已被删除`, severity: 'error' });
+            showToast(`「${skill.name}」已被删除`, 'error');
             setTimeout(() => navigate('/skills'), 300);
           }
         }
@@ -168,15 +166,18 @@ const SkillDetailPage: React.FC = () => {
     };
   }, [skill?.name]);
 
-  const refreshLatestExec = useCallback(() => {
+  const refreshLatestExec = useCallback(async () => {
     if (!skill?.automationTaskType) return;
-    const autos = loadAutomations();
-    const matched = autos.find((a) => a.taskType === skill.automationTaskType);
+    const matched = automations.find((a) => a.taskType === skill.automationTaskType);
     if (matched) {
-      const logs = automationEngine.getExecutionLog(matched.id);
-      setLatestExec(logs.length > 0 ? logs[0] : null);
+      try {
+        const result = await fetchExecutions(matched.id, 1);
+        setLatestExec(result.data[0] || null);
+      } catch {
+        setLatestExec(null);
+      }
     }
-  }, [skill?.automationTaskType]);
+  }, [skill?.automationTaskType, automations]);
 
   // 一键触发自动化
   const handleTriggerAutomation = async () => {
@@ -186,10 +187,14 @@ const SkillDetailPage: React.FC = () => {
 
     setTriggering(true);
     try {
-      const result = await automationEngine.triggerNow(autoInfo.id);
-      setToast({ open: true, msg: `${skill.name} 执行${result.status === 'success' ? '成功' : '失败'}`, severity: result.status === 'success' ? 'success' : 'error' });
+      const result = await triggerAutomationApi(autoInfo.id);
+      showToast(`${skill.name} 执行${result.result.success ? '成功' : '失败'}`, result.result.success ? 'success' : 'error');
+      // 触发后刷新
+      const data = await fetchAutomations();
+      setAutomations(data);
+      await refreshLatestExec();
     } catch (err) {
-      setToast({ open: true, msg: `${skill.name} 执行出错: ${err}`, severity: 'error' });
+      showToast(`${skill.name} 执行出错: ${err}`, 'error');
     } finally {
       setTriggering(false);
     }
@@ -244,14 +249,14 @@ const SkillDetailPage: React.FC = () => {
     if (!skill) return;
     setSkillStatus(skill.id, 'active');
     setSkillVersion((v) => v + 1);
-    setToast({ open: true, msg: '技能已启用', severity: 'success' });
+    showToast('技能已启用', 'success');
   };
 
   const handleDeactivate = () => {
     if (!skill) return;
     setSkillStatus(skill.id, 'available');
     setSkillVersion((v) => v + 1);
-    setToast({ open: true, msg: '技能已停用', severity: 'info' });
+    showToast('技能已停用', 'info');
   };
 
   // 删除技能
@@ -262,14 +267,14 @@ const SkillDetailPage: React.FC = () => {
       const success = await removeSkill(skill.id);
       if (success) {
         setDeleteConfirmOpen(false);
-        setToast({ open: true, msg: '技能已删除', severity: 'success' });
+        showToast('技能已删除', 'success');
         // 延迟导航，确保 store 更新已传播
         setTimeout(() => navigate('/skills'), 150);
       } else {
-        setToast({ open: true, msg: '删除失败：内置技能不可删除', severity: 'error' });
+        showToast('删除失败：内置技能不可删除', 'error');
       }
     } catch (e) {
-      setToast({ open: true, msg: `删除失败: ${e instanceof Error ? e.message : '未知错误'}`, severity: 'error' });
+      showToast(`删除失败: ${e instanceof Error ? e.message : '未知错误'}`, 'error');
     } finally {
       setDeleting(false);
     }
@@ -282,9 +287,9 @@ const SkillDetailPage: React.FC = () => {
     setExporting(true);
     try {
       await api.exportSkillAsZip(skill.id, skill.name);
-      setToast({ open: true, msg: `「${skill.name}」已导出为 ZIP`, severity: 'success' });
+      showToast(`「${skill.name}」已导出为 ZIP`, 'success');
     } catch (e) {
-      setToast({ open: true, msg: `导出失败: ${e instanceof Error ? e.message : '未知错误'}`, severity: 'error' });
+      showToast(`导出失败: ${e instanceof Error ? e.message : '未知错误'}`, 'error');
     } finally {
       setExporting(false);
     }
@@ -331,7 +336,7 @@ const SkillDetailPage: React.FC = () => {
           component={RouterLink}
           to="/skills"
           underline="hover"
-          sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#6B7280', fontSize: '0.8125rem', '&:hover': { color: '#111827' } }}
+          sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#6B7280', fontSize: '0.8125rem', '&: hover': { color: '#111827' } }}
         >
           <ArrowBackIcon sx={{ fontSize: 14 }} />
           返回技能中心
@@ -345,7 +350,7 @@ const SkillDetailPage: React.FC = () => {
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 3 }}>
         <Box sx={{
           width: 56, height: 56, borderRadius: '12px',
-          background: ICON_GRADIENTS[skill.category],
+          background: getCategoryGradient(skill.category),
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
           position: 'relative',
@@ -365,7 +370,7 @@ const SkillDetailPage: React.FC = () => {
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827' }}>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>
               {skill.name}
             </Typography>
             {skill.status === 'active' && (
@@ -413,15 +418,16 @@ const SkillDetailPage: React.FC = () => {
                 sx={{ height: 20, fontSize: '0.65rem', fontWeight: 500, backgroundColor: '#FAF5FF', color: '#7C3AED' }}
               />
             )}
+            <SecurityBadge level={audit?.level ?? null} score={audit?.score ?? null} size="small" />
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Chip
-              label={CATEGORY_LABELS[skill.category]}
+              label={getCategoryLabel(skill.category)}
               size="small"
               sx={{
                 height: 18, fontSize: '0.6rem', fontWeight: 500,
-                backgroundColor: CATEGORY_COLORS[skill.category].bg,
-                color: CATEGORY_COLORS[skill.category].color,
+                backgroundColor: getCategoryColors(skill.category).bg,
+                color: getCategoryColors(skill.category).color,
               }}
             />
             {skill.version && (
@@ -550,52 +556,58 @@ const SkillDetailPage: React.FC = () => {
           </Button>
         )}
 
-      {/* 安全审查 */}
-      <Button
-        variant="outlined"
-        onClick={async () => {
-          try {
-            await refreshAuditForSkill(skill.id);
-            setToast({ open: true, msg: '安全审查已完成', severity: 'success' });
-          } catch (e) {
-            setToast({ open: true, msg: '安全审查失败', severity: 'error' });
-          }
-          navigate(`/skills/${skill.id}/audit`);
-        }}
-        sx={{
-          textTransform: 'none',
-          borderRadius: 2,
-          borderColor: '#3B82F6',
-          color: '#3B82F6',
-          '&:hover': { borderColor: '#2563EB', backgroundColor: '#EFF6FF' },
-          minWidth: 80,
-          fontSize: '0.875rem',
-          flexShrink: 0,
-        }}
-      >
-        安全审查
-      </Button>
+        {/* 安全审查 */}
+        <Button
+          variant="outlined"
+          onClick={async () => {
+            if (skill.source === 'builtin') {
+              showToast(`「${skill.name}」是系统内置技能，已通过安全审查`, 'success');
+              navigate(`/skills/${skill.id}/audit`);
+              return;
+            }
+            try {
+              await refreshAuditForSkill(skill.id);
+              setSkillVersion((v) => v + 1);
+              showToast(`「${skill.name}」安全审查已完成`, 'success');
+            } catch (e) {
+              showToast(`「${skill.name}」安全审查失败`, 'error');
+            }
+            navigate(`/skills/${skill.id}/audit`);
+          }}
+          sx={{
+            textTransform: 'none',
+            borderRadius: 2,
+            borderColor: '#3B82F6',
+            color: '#3B82F6',
+            '&:hover': { borderColor: '#2563EB', backgroundColor: '#EFF6FF' },
+            minWidth: 80,
+            fontSize: '0.875rem',
+            flexShrink: 0,
+          }}
+        >
+          安全审查
+        </Button>
 
-      {/* 导出 ZIP */}
-      <Button
-        variant="outlined"
-        startIcon={exporting ? <CircularProgress size={16} /> : <FileDownloadIcon sx={{ fontSize: 16 }} />}
-        onClick={handleExport}
-        disabled={exporting}
-        sx={{
-          textTransform: 'none',
-          borderRadius: 2,
-          borderColor: '#6B7280',
-          color: '#6B7280',
-          '&:hover': { borderColor: '#374151', backgroundColor: '#F9FAFB' },
-          '&:disabled': { borderColor: '#D1D5DB', color: '#9CA3AF' },
-          minWidth: 80,
-          fontSize: '0.875rem',
-          flexShrink: 0,
-        }}
-      >
-        {exporting ? '导出中...' : '导出'}
-      </Button>
+        {/* 导出 ZIP */}
+        <Button
+          variant="outlined"
+          startIcon={exporting ? <CircularProgress size={16} /> : <FileDownloadIcon sx={{ fontSize: 16 }} />}
+          onClick={handleExport}
+          disabled={exporting}
+          sx={{
+            textTransform: 'none',
+            borderRadius: 2,
+            borderColor: '#6B7280',
+            color: '#6B7280',
+            '&:hover': { borderColor: '#374151', backgroundColor: '#F9FAFB' },
+            '&:disabled': { borderColor: '#D1D5DB', color: '#9CA3AF' },
+            minWidth: 80,
+            fontSize: '0.875rem',
+            flexShrink: 0,
+          }}
+        >
+          {exporting ? '导出中...' : '导出'}
+        </Button>
       </Box>
 
       {/* 编辑技能 Dialog */}
@@ -605,25 +617,9 @@ const SkillDetailPage: React.FC = () => {
         skill={skill}
         onSaved={() => {
           setSkillVersion((v) => v + 1);
-          setToast({ open: true, msg: '技能已更新', severity: 'success' });
+          showToast('技能已更新', 'success');
         }}
       />
-
-      {/* Toast */}
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={3000}
-        onClose={() => setToast((t) => ({ ...t, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setToast((t) => ({ ...t, open: false }))}
-          severity={toast.severity}
-          sx={{ fontSize: '0.8rem', borderRadius: 2 }}
-        >
-          {toast.msg}
-        </Alert>
-      </Snackbar>
 
       {/* 删除确认对话框 */}
       <Dialog

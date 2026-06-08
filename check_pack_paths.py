@@ -2,8 +2,8 @@
 """模拟打包后 pywebview_app.py 的路径检测逻辑"""
 import os
 
-meipass = '/Applications/CrossWMS.app/Contents/Resources'
-exe_dir = '/Applications/CrossWMS.app/Contents/MacOS'
+meipass = '/Applications/CDFKnowClow.app/Contents/Resources'
+exe_dir = '/Applications/CDFKnowClow.app/Contents/MacOS'
 resource_dir = os.path.join(os.path.dirname(exe_dir), 'Resources')
 
 print('=== sys._MEIPASS ===')

@@ -33,8 +33,9 @@ import {
   createSkillAudit as dbCreateAudit,
 } from '../db.js';
 import { auditSkillMd, generateMarkdownReport } from '../services/securityAuditor.js';
+import { parseSkillMdContent } from '../services/skillMdParser.js';
 
-// ===================== SKILL.md 解析工具 =====================
+// ===================== SKILL.md 解析工具（基于 js-yaml） =====================
 
 /** SKILL.md 扫描结果（不含 body，仅元数据） */
 interface ScannedSkillMd {
@@ -45,36 +46,63 @@ interface ScannedSkillMd {
   hasSkillMd: boolean;
 }
 
-/** 解析 SKILL.md 的 YAML frontmatter + Markdown body */
+// NOTE: parseSkillMd() 现已委托给 src/services/skill/skillMdParser.ts
+// 这里保留一个兼容包装，供 scanWorkbuddySkills() 使用
+
+/** 兼容包装：使用新的 js-yaml 解析器解析 SKILL.md 内容，返回原有格式的 frontmatter + body */
 function parseSkillMd(content: string): { frontmatter: Record<string, string>; body: string } {
+  const parsed = parseSkillMdContent(content);
   const frontmatter: Record<string, string> = {};
-  let body = '';
 
-  // 匹配 --- 包裹的 YAML frontmatter
-  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
-  if (fmMatch) {
-    const fmText = fmMatch[1];
-    body = fmMatch[2].trim();
-
-    // 简易 YAML 解析（仅支持 key: value 单行格式）
-    for (const line of fmText.split('\n')) {
-      const colonIdx = line.indexOf(':');
-      if (colonIdx > 0) {
-        const key = line.slice(0, colonIdx).trim();
-        const val = line.slice(colonIdx + 1).trim().replace(/^['"]|['"]$/g, '');
-        if (key && val) {
-          frontmatter[key] = val;
-        }
-      }
+  // 将新格式 frontmatter 转换为旧格式（key: string）
+  for (const [key, value] of Object.entries(parsed.frontmatter)) {
+    if (Array.isArray(value)) {
+      frontmatter[key] = JSON.stringify(value);
+    } else if (typeof value === 'object' && value !== null) {
+      frontmatter[key] = JSON.stringify(value);
+    } else {
+      frontmatter[key] = String(value);
     }
-  } else {
-    body = content.trim();
   }
 
-  return { frontmatter, body };
+  return { frontmatter, body: parsed.body };
 }
 
-/** 扫描 ~/.workbuddy/skills/ 目录下的所有 SKILL.md */
+// ===================== SKILL.md 磁盘同步 =====================
+
+/** 将技能的 promptTemplate 同步到磁盘 ~/.workbuddy/skills/{skillId}/SKILL.md */
+function syncSkillMdToDisk(skillId: string, promptTemplate: string | null | undefined): void {
+  if (!promptTemplate) return; // 没有内容则不写文件
+  try {
+    const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+    const skillDir = path.join(skillsDir, skillId);
+    if (!fs.existsSync(skillDir)) {
+      fs.mkdirSync(skillDir, { recursive: true });
+    }
+    const mdPath = path.join(skillDir, 'SKILL.md');
+    fs.writeFileSync(mdPath, promptTemplate, 'utf-8');
+  } catch (e) {
+    console.error(`[skills] syncSkillMdToDisk failed for ${skillId}:`, e);
+  }
+}
+
+/** 将数据库 snake_case 行转换为前端 camelCase 格式 */
+function toCamelAudit(row: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
+  if (!row) return null;
+  return {
+    id: row.id,
+    skillId: row.skill_id,
+    skillVersion: row.skill_version,
+    score: row.score,
+    level: row.level,
+    reportJson: row.report_json,
+    reportMarkdown: row.report_markdown,
+    triggeredBy: row.triggered_by,
+    createdAt: row.created_at,
+  };
+}
+
+/** 从数据库读取技能的 promptTemplate（当磁盘上无 SKILL.md 时使用） */
 export function scanWorkbuddySkills(): ScannedSkillMd[] {
   const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
   const results: ScannedSkillMd[] = [];
@@ -156,6 +184,8 @@ router.get('/user-skills/:id', (req: Request, res: Response) => {
 router.post('/user-skills', (req: Request, res: Response) => {
   try {
     const data = dbCreateSkill(req.body);
+    // 同步 promptTemplate 到磁盘 SKILL.md（供审计扫描使用）
+    syncSkillMdToDisk(data.id, req.body.promptTemplate || data.promptTemplate);
     res.status(201).json({ data });
   } catch (e) {
     res.status(400).json({ error: (e as Error).message });
@@ -170,6 +200,8 @@ router.put('/user-skills/:id', (req: Request, res: Response) => {
       res.status(404).json({ error: 'Skill not found' });
       return;
     }
+    // 同步 promptTemplate 到磁盘 SKILL.md（供审计扫描使用）
+    syncSkillMdToDisk(req.params.id, req.body.promptTemplate || data.promptTemplate);
     res.json({ data });
   } catch (e) {
     res.status(400).json({ error: (e as Error).message });
@@ -405,7 +437,7 @@ router.post('/skill-conflict-check', (req: Request, res: Response) => {
 router.get('/skill-audits/:skillId', (req: Request, res: Response) => {
   try {
     const audit = dbGetLatestAudit(req.params.skillId);
-    res.json({ data: audit || null });
+    res.json({ data: toCamelAudit(audit) });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
@@ -415,7 +447,7 @@ router.get('/skill-audits/:skillId', (req: Request, res: Response) => {
 router.get('/skill-audits/:skillId/history', (req: Request, res: Response) => {
   try {
     const history = dbGetAuditHistory(req.params.skillId);
-    res.json({ data: history });
+    res.json({ data: history.map(toCamelAudit) });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
@@ -430,32 +462,50 @@ router.post('/skill-audits', async (req: Request, res: Response) => {
       return;
     }
 
-    // Resolve SKILL.md path
-    let mdPath: string;
+    // Resolve SKILL.md path or promptTemplate from DB
+    let mdPath: string | null = null;
+    let content: string | null = null;
+
     if (skillPath && fs.existsSync(skillPath)) {
       mdPath = skillPath;
+      content = fs.readFileSync(mdPath, 'utf-8');
     } else {
+      // 优先查找磁盘文件
       const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
-      const upperPath = path.join(skillsDir, skillId, 'SKILL.md');
-      const lowerPath = path.join(skillsDir, skillId, 'skill.md');
+      const skillDir = path.join(skillsDir, skillId);
+      const upperPath = path.join(skillDir, 'SKILL.md');
+      const lowerPath = path.join(skillDir, 'skill.md');
       if (fs.existsSync(upperPath)) {
         mdPath = upperPath;
+        content = fs.readFileSync(mdPath, 'utf-8');
       } else if (fs.existsSync(lowerPath)) {
         mdPath = lowerPath;
+        content = fs.readFileSync(mdPath, 'utf-8');
       } else {
-        res.status(404).json({ error: `SKILL.md not found for skill: ${skillId}` });
-        return;
+        // 磁盘上无 SKILL.md：尝试从数据库读取 promptTemplate
+        const dbSkill = dbGetSkillById(skillId);
+        if (dbSkill && dbSkill.promptTemplate) {
+          content = dbSkill.promptTemplate as string;
+          // 写入磁盘，使 auditSkillMd 能正常工作（以及后续扫描能发现）
+          if (!fs.existsSync(skillDir)) {
+            fs.mkdirSync(skillDir, { recursive: true });
+          }
+          mdPath = upperPath; // 写入 SKILL.md（大写）
+          fs.writeFileSync(mdPath, content, 'utf-8');
+        } else {
+          res.status(404).json({ error: `SKILL.md not found for skill: ${skillId}` });
+          return;
+        }
       }
     }
 
-    const content = fs.readFileSync(mdPath, 'utf-8');
-    const version = crypto.createHash('sha256').update(content).digest('hex');
+    const version = crypto.createHash('sha256').update(content!).digest('hex');
 
     // Cache check: return existing audit if same version (unless force=true)
     if (!force) {
       const existing = dbGetLatestAudit(skillId);
       if (existing && existing.skill_version === version) {
-        return res.json({ data: existing });
+        return res.json({ data: toCamelAudit(existing) });
       }
     }
 
@@ -477,7 +527,7 @@ router.post('/skill-audits', async (req: Request, res: Response) => {
     });
 
     const audit = dbGetLatestAudit(skillId);
-    res.json({ data: audit });
+    res.json({ data: toCamelAudit(audit) });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
@@ -559,7 +609,7 @@ router.post('/skill-audits/batch', async (req: Request, res: Response) => {
 router.get('/skills/:id/audit', (req: Request, res: Response) => {
   try {
     const audit = dbGetLatestAudit(req.params.id);
-    res.json({ data: audit || null });
+    res.json({ data: toCamelAudit(audit) });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
@@ -569,7 +619,7 @@ router.get('/skills/:id/audit', (req: Request, res: Response) => {
 router.get('/skills/:id/audit-history', (req: Request, res: Response) => {
   try {
     const history = dbGetAuditHistory(req.params.id);
-    res.json({ data: history });
+    res.json({ data: history.map(toCamelAudit) });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }

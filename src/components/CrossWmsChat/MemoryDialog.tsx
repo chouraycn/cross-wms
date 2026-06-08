@@ -7,10 +7,9 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Snackbar,
-  Alert,
 } from '@mui/material';
 import PsychologyIcon from '@mui/icons-material/Psychology';
+import { useToast } from '../../contexts/ToastContext';
 
 const MEMORY_API = 'http://localhost:3001/api/memory';
 
@@ -26,11 +25,7 @@ const MemoryDialog = forwardRef<MemoryDialogHandle>((_props, ref) => {
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [memoryContent, setMemoryContent] = useState('');
   const [memorySaving, setMemorySaving] = useState(false);
-  const [memoryToast, setMemoryToast] = useState<{ open: boolean; severity: 'success' | 'error'; msg: string }>({
-    open: false,
-    severity: 'success',
-    msg: '',
-  });
+  const { showToast } = useToast();
 
   const handleOpen = useCallback(async () => {
     try {
@@ -53,16 +48,16 @@ const MemoryDialog = forwardRef<MemoryDialogHandle>((_props, ref) => {
       });
       const data = await res.json();
       if (data.ok) {
-        setMemoryToast({ open: true, severity: 'success', msg: '记忆已保存' });
+        showToast('记忆已保存', 'success');
         setMemoryOpen(false);
       } else {
-        setMemoryToast({ open: true, severity: 'error', msg: '保存失败' });
+        showToast('保存失败', 'error');
       }
     } catch {
-      setMemoryToast({ open: true, severity: 'error', msg: '保存失败' });
+      showToast('保存失败', 'error');
     }
     setMemorySaving(false);
-  }, [memoryContent]);
+  }, [memoryContent, showToast]);
 
   useImperativeHandle(ref, () => ({ open: handleOpen }), [handleOpen]);
 
@@ -122,21 +117,6 @@ const MemoryDialog = forwardRef<MemoryDialogHandle>((_props, ref) => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Snackbar
-        open={memoryToast.open}
-        autoHideDuration={2500}
-        onClose={() => setMemoryToast(prev => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert
-          severity={memoryToast.severity}
-          onClose={() => setMemoryToast(prev => ({ ...prev, open: false }))}
-          sx={{ borderRadius: 2 }}
-        >
-          {memoryToast.msg}
-        </Alert>
-      </Snackbar>
     </>
   );
 });

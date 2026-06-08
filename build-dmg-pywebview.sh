@@ -1,13 +1,13 @@
 #!/bin/bash
-# CrossWMS — 构建 DMG 安装包（pywebview + PyInstaller + Node.js 后端）
+# CDF Know Clow — 中免CLow端系统桌面应用
+# 构建 DMG 安装包（pywebview + PyInstaller + Node.js 后端）
 # 方案：Python + pywebview 创建原生 macOS 窗口，Node.js 运行 AI 助手后端
-# 新增：Agent Web 应用集成（前端端口 5174，后端端口 3002）
 #
 # 用法：
-#   bash build-dmg-pywebview.sh           # 正常构建
-#   bash build-dmg-pywebview.sh --bump-patch   # 构建前 bump patch 版本（1.0.0 → 1.0.1）
-#   bash build-dmg-pywebview.sh --bump-minor   # 构建前 bump minor 版本（1.0.0 → 1.1.0）
-#   bash build-dmg-pywebview.sh --bump-major   # 构建前 bump major 版本（1.0.0 → 2.0.0）
+#   bash build-dmg-pywebview.sh           # 默认自动 bump patch 版本（1.3.7 → 1.3.8）
+#   bash build-dmg-pywebview.sh --bump-minor   # bump minor 版本（1.3.7 → 1.4.0）
+#   bash build-dmg-pywebview.sh --bump-major   # bump major 版本（1.3.7 → 2.0.0）
+#   bash build-dmg-pywebview.sh --no-bump      # 不 bump，保持当前版本号
 
 set -e
 set -o pipefail
@@ -21,25 +21,35 @@ PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 FRONTEND_DIST="$PROJECT_DIR/dist"
 BUILD_DIR="$PROJECT_DIR/build-pywebview"
 VERSION_FILE="$PROJECT_DIR/version.txt"
-AGENT_WEB_DIR="$PROJECT_DIR/../cross-wms-agent-web"
 
 # ===================== 版本管理 =====================
 
 # 从 package.json 读取当前版本
 CURRENT_VERSION=$(node -e "console.log(require('./package.json').version)")
 
-# 处理 bump 参数
+# 处理 bump 参数（默认 bump patch，除非显式指定 --no-bump）
 BUMP_TYPE=""
 for arg in "$@"; do
   case "$arg" in
     --bump-patch|--bump-minor|--bump-major)
       BUMP_TYPE="${arg#--bump-}"
       ;;
+    --no-bump)
+      BUMP_TYPE="none"
+      ;;
   esac
 done
+# 默认自动 bump patch
+if [ -z "$BUMP_TYPE" ]; then
+  BUMP_TYPE="patch"
+fi
 
-# 如果指定了 bump，先更新版本号
-if [ -n "$BUMP_TYPE" ]; then
+# 如果是 none，跳过 bump
+if [ "$BUMP_TYPE" = "none" ]; then
+  echo "⏭️  跳过版本 bump（--no-bump）"
+  echo ""
+# 否则执行 bump
+elif [ -n "$BUMP_TYPE" ]; then
   echo "=== Bump ${BUMP_TYPE} version ==="
   node -e "
     const fs = require('fs');
@@ -68,8 +78,8 @@ fi
 
 # 导出版本号供后续使用
 export VERSION="$CURRENT_VERSION"
-DMG_NAME="CrossWMS-${VERSION}-mac.dmg"
-DMG_VOLUME="CrossWMS"
+DMG_NAME="CDF-Know-Clow-${VERSION}-mac.dmg"
+DMG_VOLUME="CDF Know Clow"
 
 # 生成 version.txt（供 pywebview_app.py 读取）
 echo "$VERSION" > "$VERSION_FILE"
@@ -98,7 +108,7 @@ SERVER_DIR="$PROJECT_DIR/server"
 SERVER_BUILD_DIR="$BUILD_DIR/server_dist"
 NODE_RUNTIME_DIR="$BUILD_DIR/node_runtime"
 
-echo "=== CrossWMS DMG Builder (pywebview + PyInstaller + Node.js) ==="
+echo "=== CDF Know Clow DMG Builder (pywebview + PyInstaller + Node.js) ==="
 echo "版本: $VERSION"
 echo ""
 
@@ -132,30 +142,6 @@ fi
 
 # frameless=True：无系统标题栏，前端通过 JS 检测 pywebview 后注入 --pw-top: 28px 避让红黄绿按钮
 
-# 2.5 构建 Agent Web 前端（如果存在）
-AGENT_DIST="$BUILD_DIR/agent_dist"
-if [ -d "$AGENT_WEB_DIR" ]; then
-  echo "📦 构建 Agent Web 前端..."
-  cd "$AGENT_WEB_DIR"
-  if [ -f "package.json" ]; then
-    echo "   安装 Agent Web 依赖..."
-    npm install --legacy-peer-deps 2>&1 | tail -5
-    echo "   构建 Agent Web 前端（输出到 dist/）..."
-    npm run build 2>&1 | tail -10
-    if [ -d "dist" ]; then
-      mkdir -p "$AGENT_DIST"
-      cp -r dist/* "$AGENT_DIST/"
-      echo "   ✅ Agent Web 前端已构建并复制到 $AGENT_DIST"
-    else
-      echo "   ⚠️  Agent Web dist/ 目录不存在，跳过..."
-    fi
-  else
-    echo "   ⚠️  Agent Web package.json 不存在，跳过前端构建"
-  fi
-  cd "$PROJECT_DIR"
-else
-  echo "⚠️  Agent Web 目录不存在 ($AGENT_WEB_DIR)，跳过前端构建"
-fi
 echo ""
 
 # 3. 编译 Node.js 后端 TypeScript → JavaScript
@@ -182,34 +168,6 @@ else
   cp -r "$SERVER_DIR"/* "$SERVER_BUILD_DIR/"
 fi
 
-# 3.5 编译 Agent Web 后端（使用 esbuild）
-AGENT_SERVER_SOURCE="$AGENT_WEB_DIR/server/index.ts"
-AGENT_SERVER_BUILD_DIR="$BUILD_DIR/agent_server_dist"
-if [ -f "$AGENT_SERVER_SOURCE" ]; then
-  echo "⚙️  编译 Agent Web 后端..."
-  mkdir -p "$AGENT_SERVER_BUILD_DIR"
-  if command -v npx &>/dev/null; then
-    npx esbuild "$AGENT_SERVER_SOURCE" \
-      --bundle \
-      --platform=node \
-      --target=node18 \
-      --format=cjs \
-      --outfile="$AGENT_SERVER_BUILD_DIR/agent_index.cjs" \
-      --external:@tencent-ai/agent-sdk \
-      --external:express \
-      --external:cors \
-      --external:uuid \
-      --external:better-sqlite3 \
-      --external:chokidar \
-      --external:fsevents
-    echo "✅ Agent Web 后端编译完成 (agent_index.cjs)"
-  else
-    echo "⚠️  esbuild 不可用，尝试手动复制..."
-    cp -r "$AGENT_WEB_DIR/server"/* "$AGENT_SERVER_BUILD_DIR/"
-  fi
-else
-  echo "⚠️  Agent Web 后端源码不存在 ($AGENT_SERVER_SOURCE)，跳过编译"
-fi
 echo ""
 
 # 4. 安装共享 node_modules（两个 server 共用，节省 ~154MB）
@@ -220,7 +178,7 @@ cd "$SHARED_NODE_MODULES"
 
 cat > package.json << 'PKGJSON'
 {
-  "name": "crosswms-shared-deps",
+  "name": "cdf-know-clow-shared-deps",
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
@@ -237,6 +195,8 @@ PKGJSON
 # 更新版本号
 sed -i '' "s/\\\"version\\\": \\\"1.0.0\\\"/\\\"version\\\": \\\"${VERSION}\\\"/" package.json
 
+# 确保 npm 子进程能找到 sh（sandbox 环境下 PATH 可能不含 /bin）
+export PATH="/bin:/usr/bin:/usr/local/bin:$PATH"
 npm install --production --no-optional 2>&1 | tail -5
 echo "✅ 共享 node_modules 安装完成"
 
@@ -328,12 +288,12 @@ else
 fi
 
 # 6. 用 PyInstaller 构建 .app
-echo "🔨 用 PyInstaller 构建 CrossWMS.app..."
+echo "🔨 用 PyInstaller 构建 CDF Know Clow.app..."
 cd "$PROJECT_DIR"
 
 # 临时移走 shared_node_modules（如果 PyInstaller 误扫描到）
-# 注意：shared_node_modules 不在 server_dist/agent_server_dist 内，PyInstaller 不会自动扫描
-# 但需要确保 server_dist 和 agent_server_dist 内没有 node_modules 目录
+# 注意：shared_node_modules 不在 server_dist 内，PyInstaller 不会自动扫描
+# 但需要确保 server_dist 内没有 node_modules 目录
 
 export PYINSTALLER_CONFIG_DIR="$BUILD_DIR/pyinstaller-cache"
 mkdir -p "$PYINSTALLER_CONFIG_DIR"
@@ -360,18 +320,9 @@ DATA_ARGS="$DATA_ARGS --add-data $SERVER_BUILD_DIR:server_dist "
 DATA_ARGS="$DATA_ARGS --add-data $NODE_RUNTIME_DIR:node "
 DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:. "
 
-if [ -d "$AGENT_DIST" ]; then
-  DATA_ARGS="$DATA_ARGS --add-data $AGENT_DIST:agent_dist "
-  echo "✅ 添加 Agent Web 前端到打包"
-fi
-
-if [ -d "$AGENT_SERVER_BUILD_DIR" ]; then
-  DATA_ARGS="$DATA_ARGS --add-data $AGENT_SERVER_BUILD_DIR:agent_server_dist "
-  echo "✅ 添加 Agent Web 后端到打包"
-fi
 
 "$PYINSTALLER" \
-  --name "CrossWMS" \
+  --name "CDF Know Clow" \
   --windowed \
   --onedir \
   --noconfirm \
@@ -405,7 +356,7 @@ fi
   pywebview_app.py
 
 # 复制共享 node_modules 到 .app 中（两个 server 共用一份）
-APP_RESOURCES="$BUILD_DIR/dist/CrossWMS.app/Contents/Resources"
+APP_RESOURCES="$BUILD_DIR/dist/CDF Know Clow.app/Contents/Resources"
 if [ -d "$SHARED_NODE_MODULES/node_modules" ]; then
   cp -r "$SHARED_NODE_MODULES/node_modules" "$APP_RESOURCES/shared_node_modules"
   SHARED_APP_SIZE=$(du -sh "$APP_RESOURCES/shared_node_modules" | cut -f1)
@@ -414,15 +365,15 @@ if [ -d "$SHARED_NODE_MODULES/node_modules" ]; then
 fi
 
 # 7. 修复 Info.plist
-APP_PATH="$BUILD_DIR/dist/CrossWMS.app"
+APP_PATH="$BUILD_DIR/dist/CDF Know Clow.app"
 PLIST_PATH="$APP_PATH/Contents/Info.plist"
 
 if [ -f "$PLIST_PATH" ]; then
   echo "📝 优化 Info.plist（版本: $VERSION）..."
-  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.crosswms.desktop" "$PLIST_PATH" 2>/dev/null || \
-    /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.crosswms.desktop" "$PLIST_PATH"
-  /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName CrossWMS 仓库管理" "$PLIST_PATH" 2>/dev/null || \
-    /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string 'CrossWMS 仓库管理'" "$PLIST_PATH"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.cdf.knowclow.desktop" "$PLIST_PATH" 2>/dev/null || \
+    /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.cdf.knowclow.desktop" "$PLIST_PATH"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName 'CDF Know Clow 中免CLow端'" "$PLIST_PATH" 2>/dev/null || \
+    /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string 'CDF Know Clow 中免CLow端'" "$PLIST_PATH"
   /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$PLIST_PATH" 2>/dev/null || \
     /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $VERSION" "$PLIST_PATH"
   /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" "$PLIST_PATH" 2>/dev/null || \
@@ -438,18 +389,108 @@ echo "🔏 签名应用包..."
 xattr -cr "$APP_PATH" 2>/dev/null || true
 codesign --force --sign - "$APP_PATH" 2>&1 || true
 
-# 9. 创建 DMG
+# 9. 创建 DMG 安装包（含拖拽到 Applications 引导）
 echo "💿 创建 DMG 安装包..."
+
+DMG_STAGING="$BUILD_DIR/dmg-staging"
+rm -rf "$DMG_STAGING"
+mkdir -p "$DMG_STAGING"
+
+# 9.1 复制 .app 到暂存目录
+cp -r "$APP_PATH" "$DMG_STAGING/"
+
+# 9.2 创建 Applications 快捷方式（标准 macOS DMG 做法）
+ln -sf /Applications "$DMG_STAGING/Applications"
+
+# 9.3 生成 DMG 背景图（浅灰底 + 箭头提示）
+DMG_BG_DIR="$BUILD_DIR/dmg-bg"
+mkdir -p "$DMG_BG_DIR/.background"
+BG_PATH="$DMG_BG_DIR/.background/install-bg.png"
+python3 << 'PYEOF_BG'
+import os, sys
+bg_dir = os.environ.get("DMG_BG_DIR", "")
+if not bg_dir:
+    sys.exit(0)
+bg_path = os.path.join(bg_dir, ".background", "install-bg.png")
+os.makedirs(os.path.dirname(bg_path), exist_ok=True)
+try:
+    from PIL import Image, ImageDraw
+    img = Image.new("RGBA", (540, 380), (242, 242, 247, 255))
+    draw = ImageDraw.Draw(img)
+    arrow = [(155,190),(350,175),(350,165),(400,190),(350,215),(350,205),(155,190)]
+    draw.polygon(arrow, fill=(120,120,120,200))
+    img.save(bg_path, "PNG")
+    print("✅ DMG 背景图已生成")
+except Exception:
+    pass
+PYEOF_BG
+
+# 将背景图复制到暂存目录
+if [ -f "$DMG_BG_DIR/.background/install-bg.png" ]; then
+  mkdir -p "$DMG_STAGING/.background"
+  cp "$DMG_BG_DIR/.background/install-bg.png" "$DMG_STAGING/.background/"
+fi
+
+# 9.4 创建可写临时 DMG 并配置窗口布局
+TEMP_DMG="$BUILD_DIR/temp.dmg"
+rm -f "$TEMP_DMG"
+hdiutil create -volname "$DMG_VOLUME" \
+  -srcfolder "$DMG_STAGING" \
+  -ov -format UDRW \
+  "$TEMP_DMG"
+
+# 挂载临时 DMG
+DMG_DEVICE=$(hdiutil attach -readwrite -noverify -noautoopen "$TEMP_DMG" 2>/dev/null | grep -E '^/dev/' | head -1 | awk '{print $1}')
+
+if [ -n "$DMG_DEVICE" ]; then
+  sleep 2
+  DMG_MOUNT="/Volumes/$DMG_VOLUME"
+
+  # 设置背景图
+  if [ -f "$DMG_STAGING/.background/install-bg.png" ]; then
+    cp "$DMG_STAGING/.background/install-bg.png" "$DMG_MOUNT/.background/" 2>/dev/null || true
+  fi
+
+  # 用 AppleScript 设置窗口属性
+  AS_TMP=$(mktemp /tmp/dmg_layout.XXXXXX.scpt)
+  cat > "$AS_TMP" << 'EOSCPT'
+tell application "Finder"
+  set dmgName to system attribute "DMG_VOLUME_NAME"
+  tell disk dmgName
+    open
+    set current view of container window to icon view
+    set toolbar visible of container window to false
+    set statusbar visible of container window to false
+    set the bounds of container window to {400, 200, 940, 580}
+    set theView to the icon view settings of container window
+    set icon size of theView to 100
+    set text size of theView to 12
+    set position of item "CDF Know Clow.app" of container window to {140, 190}
+    set position of item "Applications" of container window to {400, 190}
+    close
+    open
+    update without registering applications
+    delay 2
+  end tell
+end tell
+EOSCPT
+  DMG_VOLUME_NAME="$DMG_VOLUME" osascript "$AS_TMP" 2>/dev/null || true
+  rm -f "$AS_TMP"
+
+  # 卸载临时 DMG
+  hdiutil detach "$DMG_DEVICE" 2>/dev/null || hdiutil detach "$DMG_DEVICE" -force 2>/dev/null || true
+  sleep 2
+fi
+
+# 9.5 压缩为最终 DMG
 mkdir -p "$PROJECT_DIR/release"
 rm -f "$PROJECT_DIR/release/$DMG_NAME"
-
-hdiutil create -volname "$DMG_VOLUME" \
-  -srcfolder "$APP_PATH" \
-  -ov -format UDZO \
-  "$PROJECT_DIR/release/$DMG_NAME"
+hdiutil convert "$TEMP_DMG" -format UDZO -o "$PROJECT_DIR/release/$DMG_NAME" -ov
+rm -f "$TEMP_DMG"
+rm -rf "$DMG_STAGING" "$DMG_BG_DIR"
 
 echo ""
-echo "✅ DMG 构建完成！"
+echo "✅ DMG 构建完成（含 Applications 拖拽引导）！"
 ls -lh "$PROJECT_DIR/release/$DMG_NAME"
 echo ""
 
@@ -461,7 +502,7 @@ import json, os
 from datetime import datetime
 
 GITHUB_OWNER = "chouraycn"
-GITHUB_REPO = "cross-wms"
+GITHUB_REPO = "cdf-know-clow"
 
 version = os.environ.get("VERSION", "1.0.0")
 pub_date = datetime.now().strftime("%Y-%m-%d")
@@ -474,7 +515,7 @@ if os.path.isfile(notes_file):
     with open(notes_file, 'r', encoding='utf-8') as f:
         notes = f.read().strip()
 else:
-    notes = f"CrossWMS v{version} 发布\n- 修复已知问题\n- 优化用户体验"
+    notes = f"CDF Know Clow v{version} 发布\n- 修复已知问题\n- 优化用户体验"
 
 data = {
     'version': version,
@@ -525,7 +566,7 @@ if os.path.isfile(notes_file):
         notes = f.read().strip()
 else:
     notes = f"CrossWMS v{version} 发布"
-print(json.dumps({"tag_name": "v" + version, "name": "CrossWMS v" + version, "body": notes}))
+print(json.dumps({"tag_name": "v" + version, "name": "CDF Know Clow v" + version, "body": notes}))
 PYEOF3
     RELEASE_DATA=$(curl -s -X POST \
       -H "Authorization: token $TOKEN" \
@@ -564,8 +605,8 @@ if [ "$UPLOAD_OK" = false ] && command -v gh &>/dev/null; then
     gh release create "v${VERSION}" \
       "$PROJECT_DIR/release/$DMG_NAME#CrossWMS DMG" \
       "$PROJECT_DIR/release/release.json#Release Info" \
-      --title "CrossWMS v${VERSION}" \
-      --notes "$(cat "$PROJECT_DIR/RELEASE_NOTES.md" 2>/dev/null || echo "CrossWMS v${VERSION} 发布")" \
+      --title "CDF Know Clow v${VERSION}" \
+      --notes "$(cat "$PROJECT_DIR/RELEASE_NOTES.md" 2>/dev/null || echo "CDF Know Clow v${VERSION} 发布")" \
       && echo "✅ Release v${VERSION} 已发布!" || echo "⚠️  上传失败"
   fi
 fi

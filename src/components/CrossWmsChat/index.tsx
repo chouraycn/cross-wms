@@ -4,9 +4,10 @@ import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import { TopBarChatInput } from './TopBarChatInput';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { Message, ReferencedSession, Session } from '../../types/chat';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 
 // P0-4: 会话持久化配置
-const SESSIONS_STORAGE_KEY = 'crosswms-chat-sessions';
+const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
 const MAX_SESSIONS = 20;
 
 /** 从 localStorage 加载最近会话列表 */
@@ -49,7 +50,7 @@ function saveSessions(sessions: Session[]): void {
   } catch (e) {
     console.error(`[${SESSIONS_STORAGE_KEY}] 保存失败:`, e);
     if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-      window.dispatchEvent(new CustomEvent('crosswms-storage-warning', {
+      window.dispatchEvent(new CustomEvent('cdf-know-clow-storage-warning', {
         detail: { key: SESSIONS_STORAGE_KEY },
       }));
     }
@@ -57,16 +58,21 @@ function saveSessions(sessions: Session[]): void {
 }
 
 /** 创建新空会话 */
-function createNewSession(): Session {
+function createNewSession(defaultModel?: string): Session {
   return {
     id: `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     title: '',
-    model: 'claude-sonnet-4',
+    model: defaultModel || 'auto',
     messages: [],
   };
 }
 
 export function CrossWmsChat() {
+  const { settings } = useAppSettings();
+
+  // 获取默认模型 ID（优先使用 settings 中配置的默认模型）
+  const defaultModelId = 'auto';
+
   // P0-4: 初始化时从 localStorage 恢复最近会话
   const [sessions, setSessions] = useState<Session[]>(() => {
     const saved = loadSessions();
@@ -103,10 +109,10 @@ export function CrossWmsChat() {
 
   /** 新建对话 */
   const handleNewChat = useCallback(() => {
-    const newSession = createNewSession();
+    const newSession = createNewSession(defaultModelId);
     setSessions((prev) => [newSession, ...prev].slice(0, MAX_SESSIONS));
     setActiveSessionId(newSession.id);
-  }, []);
+  }, [defaultModelId]);
 
   // 监听侧边栏"新建任务"按钮事件 — 聚焦 AI 对话框输入
   useEffect(() => {
@@ -128,8 +134,8 @@ export function CrossWmsChat() {
         }
       }, 200);
     };
-    window.addEventListener('crosswms-focus-chat', handleFocusChat);
-    return () => window.removeEventListener('crosswms-focus-chat', handleFocusChat);
+    window.addEventListener('cdf-know-clow-focus-chat', handleFocusChat);
+    return () => window.removeEventListener('cdf-know-clow-focus-chat', handleFocusChat);
   }, [handleNewChat]);
 
   return (

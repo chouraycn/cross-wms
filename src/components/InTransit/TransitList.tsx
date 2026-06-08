@@ -27,15 +27,14 @@ import {
   StepLabel,
   Collapse,
   IconButton,
-  InputAdornment,
   Alert,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SearchInput from '../Common/SearchInput';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import type { TransitOrder, TransitStatus, TransportMode } from '../../types';
 import dayjs from 'dayjs';
@@ -374,15 +373,11 @@ const TransitList: React.FC = () => {
       <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, mb: 2 }}>
         <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-            <TextField
-              size="small"
-              placeholder="搜索运单号..."
+            <SearchInput
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              sx={{ minWidth: 180 }}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
-              }}
+              onChange={setSearchText}
+              placeholder="搜索运单号..."
+              width={180}
             />
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>运输方式</InputLabel>

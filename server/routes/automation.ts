@@ -10,6 +10,7 @@ import {
   createRun,
   getRunsByAutomationId,
   findAutomationsByEvent,
+  clearAllExecutions,
 } from '../dao/automationDao.js';
 import { emitAutomationEvent, AutomationEventType } from '../engine/eventBus.js';
 import { executeAndRecord } from '../engine/engine.js';
@@ -67,6 +68,20 @@ router.get('/executions', (req: Request, res: Response) => {
     }));
 
     res.json({ data, total: countRow.total });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
+ * DELETE /api/automation/executions
+ * 清空所有执行日志
+ */
+router.delete('/executions', (_req: Request, res: Response) => {
+  try {
+    const count = clearAllExecutions();
+    res.json({ success: true, deleted: count });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
@@ -424,7 +439,7 @@ router.post('/webhook/:id', async (req: Request, res: Response) => {
     // 验证签名
     const key = ensureEncryptionKey();
     const body = JSON.stringify(req.body);
-    const signatureHeader = (req.headers['x-crosswms-signature'] as string) ?? '';
+    const signatureHeader = (req.headers['x-cdf-know-clow-signature'] as string) ?? '';
 
     const result = authenticateWebhook(signatureHeader, body, secretEncrypted, key);
     if (!result.valid) {

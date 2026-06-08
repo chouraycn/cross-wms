@@ -15,8 +15,6 @@ import {
   Chip,
   Switch,
   Button,
-  TextField,
-  InputAdornment,
   LinearProgress,
   Collapse,
 } from '@mui/material';
@@ -25,8 +23,8 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
-import SearchIcon from '@mui/icons-material/Search';
 import SyncIcon from '@mui/icons-material/Sync';
+import SearchInput from '../Common/SearchInput';
 import CodeIcon from '@mui/icons-material/Code';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -156,29 +154,11 @@ const AutomationList: React.FC<AutomationListProps> = ({
           sx={{ backgroundColor: '#FEF3C7', color: '#D97706', fontWeight: 500, fontSize: '0.75rem' }}
         />
         <Box sx={{ flex: 1 }} />
-        <TextField
-          size="small"
-          placeholder="搜索..."
+        <SearchInput
           value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          sx={{
-            width: 180,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '8px',
-              backgroundColor: '#F9FAFB',
-              fontSize: '0.8125rem',
-              '& fieldset': { borderColor: '#E5E7EB' },
-              '&:hover fieldset': { borderColor: '#D1D5DB' },
-              '&.Mui-focused fieldset': { borderColor: '#111827' },
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ fontSize: 16, color: '#9CA3AF' }} />
-              </InputAdornment>
-            ),
-          }}
+          onChange={onSearchChange}
+          placeholder="搜索..."
+          width={180}
         />
         <Button
           variant="contained"

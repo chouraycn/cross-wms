@@ -187,7 +187,7 @@ describe('skillStore.addSkill', () => {
     expect(getSkillById('skill-new-123')).toBeDefined();
   });
 
-  it('should dispatch crosswms-api-error on API failure', async () => {
+  it('should dispatch cdf-know-clow-api-error on API failure', async () => {
     vi.mocked(api.createUserSkill).mockRejectedValue(new Error('API error'));
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
 
@@ -201,7 +201,7 @@ describe('skillStore.addSkill', () => {
     })).rejects.toThrow('API error');
 
     expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'crosswms-api-error' })
+      expect.objectContaining({ type: 'cdf-know-clow-api-error' })
     );
   });
 });
@@ -233,7 +233,7 @@ describe('skillStore.updateSkill', () => {
 
     await expect(updateSkill('user-skill-1', { name: 'Fail' })).rejects.toThrow('Update failed');
     expect(dispatchSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'crosswms-api-error' })
+      expect.objectContaining({ type: 'cdf-know-clow-api-error' })
     );
   });
 });
@@ -413,7 +413,7 @@ describe('skillStore updateRecentSkills', () => {
   it('should add skill name to localStorage recent list', () => {
     updateRecentSkills('My Custom Skill');
 
-    const stored = JSON.parse(localStorage.getItem('crosswms-recent-skills') || '[]');
+    const stored = JSON.parse(localStorage.getItem('cdf-know-clow-recent-skills') || '[]');
     expect(stored).toContain('My Custom Skill');
   });
 
@@ -425,7 +425,7 @@ describe('skillStore updateRecentSkills', () => {
     // Add first one again
     updateRecentSkills('Skill 0');
 
-    const stored: string[] = JSON.parse(localStorage.getItem('crosswms-recent-skills') || '[]');
+    const stored: string[] = JSON.parse(localStorage.getItem('cdf-know-clow-recent-skills') || '[]');
     expect(stored[0]).toBe('Skill 0');
     expect(stored.length).toBeLessThanOrEqual(6);
   });

@@ -221,7 +221,7 @@ export function useWarehouseCapability(options: UseWarehouseCapabilityOptions = 
   // ====== 监听数据源配置变化 ======
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'crosswms_datasource_config') {
+      if (e.key === 'cdf-know-clow_datasource_config') {
         refresh();
       }
     };

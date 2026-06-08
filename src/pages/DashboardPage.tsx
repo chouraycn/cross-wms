@@ -162,7 +162,7 @@ const DashboardPageContent: React.FC = () => {
 
   return (
     <Box className="page-fade-in">
-      {/* ProWeb 风格 Banner — 极简黑白、贴合 CrossWMS 功能 */}
+      {/* ProWeb 风格 Banner — 极简黑白、贴合 CDF Know Clow 功能 */}
       <Box
         sx={{
           mb: 3,

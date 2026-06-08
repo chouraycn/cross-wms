@@ -48,6 +48,8 @@ const ACTION_LABELS: Record<ActionType, string> = {
   'check-volume': '检查容积率',
   'gen-report': '生成运营报表',
   'notify': '发送通知',
+  'wms-alert-check': 'WMS 预警检查',
+  'wms-report-gen': 'WMS 报表生成',
 };
 
 // ===================== 原子 Action 执行 =====================
@@ -97,6 +99,14 @@ export async function executeAction(action: ActionType, config?: TaskConfig): Pr
           return { action, status: 'success', message: `已发送通知: ${details}`, duration: Date.now() - start };
         }
         return { action, status: 'success', message: '所有仓库容积率正常，无需通知', duration: Date.now() - start };
+      }
+      case 'wms-alert-check': {
+        const result = await executeWmsAlertCheck(config);
+        return { action, status: 'success', message: result.result, duration: Date.now() - start };
+      }
+      case 'wms-report-gen': {
+        const result = await executeWmsReportGen(config);
+        return { action, status: 'success', message: result.result, duration: Date.now() - start };
       }
       default:
         return { action, status: 'skipped', message: `未知 action: ${action}`, duration: Date.now() - start };
@@ -401,6 +411,184 @@ async function executeCustom(config?: TaskConfig): Promise<{ result: string; ste
   return { result, steps };
 }
 
+/** 执行技能安全审计 */
+async function executeSkillAudit(config?: TaskConfig): Promise<{ result: string; steps: ExecutionStep[] }> {
+  const steps: ExecutionStep[] = [];
+  const start = Date.now();
+
+  try {
+    // Step 1: 获取要审计的技能 ID 列表
+    let skillIds: string[];
+
+    if (config?.skillIds && Array.isArray(config.skillIds) && config.skillIds.length > 0) {
+      skillIds = config.skillIds as string[];
+      steps.push({ action: '读取审计目标', status: 'success', message: `指定 ${skillIds.length} 个技能`, duration: Date.now() - start });
+    } else if (config?.skillId && typeof config.skillId === 'string') {
+      skillIds = [config.skillId];
+      steps.push({ action: '读取审计目标', status: 'success', message: `指定技能: ${config.skillId}`, duration: Date.now() - start });
+    } else {
+      // 未指定：获取所有用户技能
+      const getStart = Date.now();
+      const getRes = await fetch('/api/skills?source=user');
+      if (!getRes.ok) throw new Error(`获取技能列表失败: ${getRes.statusText}`);
+      const getdata = await getRes.json();
+      const allSkills: Array<{ id: string; name: string }> = getdata.data || getdata || [];
+      skillIds = allSkills.map((s) => s.id);
+      steps.push({ action: '获取技能列表', status: 'success', message: `共 ${skillIds.length} 个用户技能`, duration: Date.now() - getStart });
+    }
+
+    if (skillIds.length === 0) {
+      steps.push({ action: '审计跳过', status: 'skipped', message: '无技能需要审计', duration: Date.now() - start });
+      return { result: '无技能需要审计', steps };
+    }
+
+    // Step 2: 调用批量审计 API
+    const auditStart = Date.now();
+    const auditRes = await fetch('/api/skill-audits/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ skillIds }),
+    });
+
+    if (!auditRes.ok) {
+      const errData = await auditRes.json().catch(() => ({ error: auditRes.statusText }));
+      throw new Error(`批量审计失败: ${errData.error || auditRes.statusText}`);
+    }
+
+    const auditData = await auditRes.json();
+    const results: Array<{ skillId: string; score: number; level: string; error?: string }> = auditData.results || [];
+    steps.push({ action: '执行安全审计', status: 'success', message: `${results.length} 个技能已审计`, duration: Date.now() - auditStart });
+
+    // Step 3: 汇总结果
+    const safeCount = results.filter((r) => r.level === 'safe').length;
+    const suspiciousCount = results.filter((r) => r.level === 'suspicious').length;
+    const maliciousCount = results.filter((r) => r.level === 'malicious').length;
+    const errorCount = results.filter((r) => r.error).length;
+
+    const summary = [
+      safeCount > 0 ? `${safeCount} 安全` : '',
+      suspiciousCount > 0 ? `${suspiciousCount} 可疑` : '',
+      maliciousCount > 0 ? `${maliciousCount} 恶意` : '',
+      errorCount > 0 ? `${errorCount} 错误` : '',
+    ].filter(Boolean).join(', ');
+
+    // 有恶意技能时发送桌面通知
+    if (maliciousCount > 0) {
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('技能安全预警', {
+            body: `${maliciousCount} 个技能被标记为恶意，请及时检查`,
+            icon: '/vite.svg',
+          });
+        }
+      } catch { /* ignore */ }
+    }
+
+    steps.push({ action: '汇总审计结果', status: 'success', message: summary || '全部通过', duration: Date.now() - start });
+    return { result: `审计完成: ${summary || '全部安全'}`, steps };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    steps.push({ action: '安全审计', status: 'failed', message, duration: Date.now() - start });
+    return { result: `审计失败: ${message}`, steps };
+  }
+}
+
+/** 执行 WMS 预警检查 */
+async function executeWmsAlertCheck(config?: TaskConfig): Promise<{ result: string; steps: ExecutionStep[] }> {
+  const steps: ExecutionStep[] = [];
+  const start = Date.now();
+
+  try {
+    const alertConfig = config?.alertConfig || {};
+    const body = {
+      lowStock: alertConfig.lowStock ?? 10,
+      expiryDays: alertConfig.expiryDays ?? 30,
+      stagnantDays: alertConfig.stagnantDays ?? 90,
+      enableLowStock: alertConfig.enableLowStock ?? true,
+      enableExpiry: alertConfig.enableExpiry ?? true,
+      enableStagnant: alertConfig.enableStagnant ?? true,
+    };
+
+    steps.push({ action: '准备预警配置', status: 'success', message: `低库存≤${body.lowStock}, 临期≤${body.expiryDays}天, 呆滞≤${body.stagnantDays}天`, duration: Date.now() - start });
+
+    const res = await fetch('/api/wms/alerts/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(`预警检查失败: ${errData.error || res.statusText}`);
+    }
+
+    const data = await res.json();
+    const result = data.data || data;
+
+    steps.push({ action: '执行预警检查', status: 'success', message: `新增 ${result.newAlerts || 0} 条预警`, duration: Date.now() - start });
+
+    const details = [
+      result.lowStockAlerts > 0 ? `低库存 ${result.lowStockAlerts} 条` : '',
+      result.expiryAlerts > 0 ? `临期 ${result.expiryAlerts} 条` : '',
+      result.stagnantAlerts > 0 ? `呆滞 ${result.stagnantAlerts} 条` : '',
+    ].filter(Boolean).join(', ');
+
+    const resultMsg = details ? `预警检查完成: ${details}` : '预警检查完成: 无新增预警';
+    return { result: resultMsg, steps };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    steps.push({ action: '预警检查', status: 'failed', message, duration: Date.now() - start });
+    return { result: `预警检查失败: ${message}`, steps };
+  }
+}
+
+/** 执行 WMS 报表生成 */
+async function executeWmsReportGen(config?: TaskConfig): Promise<{ result: string; steps: ExecutionStep[] }> {
+  const steps: ExecutionStep[] = [];
+  const start = Date.now();
+
+  try {
+    const reportConfig = config?.reportConfig || {};
+    const body = {
+      reportType: reportConfig.reportType || 'inventory',
+      warehouseId: reportConfig.warehouseId || null,
+      startDate: reportConfig.startDate || null,
+      endDate: reportConfig.endDate || null,
+      format: reportConfig.format || 'csv',
+    };
+
+    const reportTypeLabels: Record<string, string> = {
+      inventory: '库存',
+      inbound: '入库',
+      outbound: '出库',
+    };
+
+    steps.push({ action: '准备报表配置', status: 'success', message: `${reportTypeLabels[body.reportType]}报表, 格式: ${body.format.toUpperCase()}`, duration: Date.now() - start });
+
+    const res = await fetch('/api/wms/reports/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(`报表生成失败: ${errData.error || res.statusText}`);
+    }
+
+    const data = await res.json();
+    const result = data.data || data;
+
+    steps.push({ action: '生成报表', status: 'success', message: `报表已生成: ${result.filePath || '未知路径'}`, duration: Date.now() - start });
+
+    return { result: `报表生成完成: ${reportTypeLabels[body.reportType]}报表 → ${result.filePath || '已保存'}`, steps };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    steps.push({ action: '报表生成', status: 'failed', message, duration: Date.now() - start });
+    return { result: `报表生成失败: ${message}`, steps };
+  }
+}
+
 /** 按任务类型分发执行 — 返回步骤详情 */
 export async function executeByTypeWithSteps(taskType: TaskType, config?: TaskConfig): Promise<{ result: string; steps: ExecutionStep[] }> {
   switch (taskType) {
@@ -475,6 +663,12 @@ export async function executeByTypeWithSteps(taskType: TaskType, config?: TaskCo
         ],
       };
     }
+    case 'skill-audit':
+      return await executeSkillAudit(config);
+    case 'wms-alert-check':
+      return await executeWmsAlertCheck(config);
+    case 'wms-report-gen':
+      return await executeWmsReportGen(config);
     default:
       return { result: `未知任务类型: ${taskType}`, steps: [] };
   }

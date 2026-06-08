@@ -20,18 +20,116 @@ import settingsRouter from './routes/settings.js';
 import migrateRouter from './routes/migrate.js';
 import chainRoutes from './routes/chainRoutes.js';
 import automationRoutes from './routes/automation.js';
+
+// Projects & Tasks routes
+import projectsRouter from './routes/projects.js';
+import tasksRouter from './routes/tasks.js';
+
 import { findByQuery, countByQuery } from './dao/inventoryTransactionDao.js';
+import { ensureWmsTables } from './dao/wmsSkillDao.js';
+
+// WMS skill routes
+import wmsQualityRoutes from './routes/wms-quality.js';
+import wmsInventoryRoutes from './routes/wms-inventory.js';
+import wmsOutboundRoutes from './routes/wms-outbound.js';
+import wmsAlertRoutes from './routes/wms-alert.js';
+import wmsReportRoutes from './routes/wms-report.js';
+
+// Semantic matching routes
+import matchingRoutes from './routes/matching.js';
+
+// Model management routes
+import modelsRoutes from './routes/models.js';
 
 // Services
 import { addClient, removeClient } from './services/chainExecutor.js';
 import { batchAuditSkills } from './services/securityAuditor.js';
+import { initMatchingEngine } from './services/matchingService.js';
+import { loadModelsConfig, ModelsFile } from './modelsStore.js';
 
 // Automation Engine v2.0
 import { startEngine, stopEngine } from './engine/engine.js';
 
 // MEMORY.md 路径
-const CROSSWMS_DIR = path.join(os.homedir(), '.crosswms');
-const MEMORY_MD_PATH = path.join(CROSSWMS_DIR, 'MEMORY.md');
+const CDF_KNOW_CLOW_DIR = path.join(os.homedir(), '.cdf-know-clow');
+const MEMORY_MD_PATH = path.join(CDF_KNOW_CLOW_DIR, 'MEMORY.md');
+
+// ===================== Auto Model Selection =====================
+
+/** 模型能力分层 */
+const POWERFUL_MODEL_IDS = ['gpt-4o', 'gpt-4-turbo', 'claude-sonnet-4-20250514', 'qwen-plus'];
+const FAST_MODEL_IDS = ['claude-haiku-3.5'];
+const CODE_MODEL_IDS = ['deepseek-coder'];
+
+/**
+ * Auto 模式：根据用户输入智能选择最合适的模型。
+ *
+ * 策略：
+ * - 检测到代码 → 优先用代码专用模型 / 强力模型
+ * - 输入复杂（长文本、分析类关键词）→ 优先用强力模型
+ * - 简单短问题 → 优先用轻量快速模型
+ * - 默认 → 使用配置的 defaultModelId 或首个已启用模型
+ *
+ * @returns 选中的模型 ID
+ */
+function autoSelectModel(message: string, modelsConfig: ModelsFile): string {
+  const enabledModels = modelsConfig.models.filter((m) => m.enabled);
+  if (enabledModels.length === 0) return 'claude-sonnet-4';
+  if (enabledModels.length === 1) return enabledModels[0].id;
+
+  const msg = message.toLowerCase();
+
+  // 辅助：从指定 ID 列表中找第一个已启用的模型
+  const findEnabled = (ids: string[]) => enabledModels.find((m) => ids.includes(m.id));
+
+  // --- 检测代码信号 ---
+  const codeSignals = [
+    'function', 'class ', 'import ', 'const ', 'let ', 'var ',
+    'def ', 'async ', 'await ', 'export ', 'require(',
+    '```', '=>', 'interface ', 'type ', 'package ',
+    'from ', 'return ', 'print(', 'console.',
+  ];
+  const isCode = codeSignals.some((s) => msg.includes(s)) || message.length > 1000;
+
+  // --- 检测复杂度信号 ---
+  const analysisKeywords = [
+    '分析', '审查', 'review', 'explain', '解释', 'refactor',
+    '重构', '优化', 'optimize', 'debug', '排查', '架构',
+    '设计', 'design', '实现', '方案', '文档',
+  ];
+  const isComplex = message.length > 300 || analysisKeywords.some((k) => msg.includes(k)) || isCode;
+
+  // --- 检测简单信号 ---
+  const isSimple = message.length < 50
+    && !isCode
+    && !analysisKeywords.some((k) => msg.includes(k));
+
+  // --- 分层选择 ---
+  // 1. 代码 → 代码专用 / 强力
+  if (isCode) {
+    return findEnabled(CODE_MODEL_IDS)?.id
+      || findEnabled(POWERFUL_MODEL_IDS)?.id
+      || enabledModels[0].id;
+  }
+
+  // 2. 复杂分析 → 强力模型
+  if (isComplex) {
+    return findEnabled(POWERFUL_MODEL_IDS)?.id
+      || enabledModels[0].id;
+  }
+
+  // 3. 简单短对话 → 快速/轻量模型
+  if (isSimple) {
+    // 优先快速模型，否则选非强力模型（省成本），都无则用第一个
+    return findEnabled(FAST_MODEL_IDS)?.id
+      || enabledModels.find((m) => !POWERFUL_MODEL_IDS.includes(m.id))?.id
+      || enabledModels[0].id;
+  }
+
+  // 4. 默认 → 配置的默认模型，或第一个已启用模型
+  const defaultModel = enabledModels.find((m) => m.id === modelsConfig.defaultModelId);
+  return defaultModel?.id || enabledModels[0].id;
+}
 
 /** 读取 MEMORY.md 内容，不存在则返回空字符串 */
 function readMemoryMd(): string {
@@ -48,8 +146,8 @@ function readMemoryMd(): string {
 /** 写入 MEMORY.md 内容 */
 function writeMemoryMd(content: string): void {
   try {
-    if (!fs.existsSync(CROSSWMS_DIR)) {
-      fs.mkdirSync(CROSSWMS_DIR, { recursive: true });
+    if (!fs.existsSync(CDF_KNOW_CLOW_DIR)) {
+      fs.mkdirSync(CDF_KNOW_CLOW_DIR, { recursive: true });
     }
     fs.writeFileSync(MEMORY_MD_PATH, content, 'utf-8');
   } catch (e) {
@@ -64,7 +162,7 @@ function writeMemoryMd(content: string): void {
  */
 function getNodeExecutable(): string | undefined {
   // 1. 环境变量显式指定
-  const envNode = process.env.CROSSWMS_NODE_PATH;
+  const envNode = process.env.CDF_KNOW_CLOW_NODE_PATH;
   if (envNode) return envNode;
   // 2. 如果 process.execPath 指向真正的 node（而非 PyInstaller 的 python）
   if (process.execPath.endsWith('node') || process.execPath.endsWith('node.exe')) {
@@ -177,7 +275,7 @@ app.get('/api/sessions', (req, res) => {
 // 创建会话
 app.post('/api/sessions', (req, res) => {
   const { title, model, agentId } = req.body;
-  const session = createSession(uuidv4(), title || '新对话', model || 'claude-sonnet-4', agentId);
+  const session = createSession(uuidv4(), title || '新对话', model || 'auto', agentId);
   res.json({ session });
 });
 
@@ -195,7 +293,7 @@ app.delete('/api/sessions/:id', (req, res) => {
 
 // 发送消息（SSE）
 app.post('/api/chat', async (req, res) => {
-  const { sessionId, message, model = 'claude-sonnet-4', skillContext, skillId } = req.body;
+  const { sessionId, message, model = 'auto', skillContext, skillId } = req.body;
 
   try {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -203,30 +301,52 @@ app.post('/api/chat', async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
 
+    // Auto 模式：智能选择最合适的模型
+    const modelsConfig = loadModelsConfig();
+    let effectiveModel: string;
+    let autoReason: string | undefined;
+    if (model === 'auto') {
+      effectiveModel = autoSelectModel(message, modelsConfig);
+      const autoSelectedConfig = modelsConfig.models.find((m) => m.id === effectiveModel);
+      autoReason = autoSelectedConfig?.name || effectiveModel;
+      console.log(`[Auto Model] 输入复杂度分析 → 选择: ${autoReason} (${effectiveModel})`);
+    } else {
+      effectiveModel = model;
+    }
+
     // 确保会话存在，如果不存在则自动创建
     const sessions = getSessions();
     const sessionExists = sessions.some(s => s.id === sessionId);
     if (!sessionExists) {
-      createSession(sessionId, '新对话', model, undefined);
+      createSession(sessionId, '新对话', effectiveModel, undefined);
     }
 
     // 保存用户消息
-    const userMsg = addMessage({ sessionId, role: 'user', content: message, model, skillId: skillId || null });
+    const userMsg = addMessage({ sessionId, role: 'user', content: message, model: effectiveModel, skillId: skillId || null });
     res.write(`data: ${JSON.stringify({ type: 'text', content: userMsg.content })}\n\n`);
 
-    // 发送初始化事件
+    // 发送初始化事件（Auto 模式附加选择原因）
     const assistantId = uuidv4();
-    res.write(`data: ${JSON.stringify({ type: 'init', sessionId, assistantMessageId: assistantId, model })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'init', sessionId, assistantMessageId: assistantId, model: effectiveModel, autoReason })}\n\n`);
 
     // 调用 Agent SDK 进行流式对话
     let fullContent = '';
     try {
-      // 构建 query 选项，DMG 模式下需指定 node 可执行路径
+      // 查找模型配置
+      const modelConfig = modelsConfig.models.find((m) => m.id === effectiveModel);
+
+      // 构建 query 选项，桌面端模式下需指定 node 可执行路径
       const queryOptions: Record<string, unknown> = {
-        model,
+        model: effectiveModel,
         permissionMode: 'bypassPermissions',
         cwd: process.cwd(),
       };
+      if (modelConfig) {
+        if (modelConfig.apiEndpoint) queryOptions.apiEndpoint = modelConfig.apiEndpoint;
+        if (modelConfig.apiKey) queryOptions.apiKey = modelConfig.apiKey;
+        if (typeof modelConfig.temperature === 'number') queryOptions.temperature = modelConfig.temperature;
+        if (typeof modelConfig.topP === 'number') queryOptions.topP = modelConfig.topP;
+      }
       const nodeExe = getNodeExecutable();
       if (nodeExe) {
         // 将 node 目录加入 PATH，确保 agent-sdk 内部 spawn('node', ...) 能找到
@@ -287,13 +407,13 @@ app.post('/api/chat', async (req, res) => {
       }
 
       // 保存完整的助手回复
-      addMessage({ sessionId, role: 'assistant', content: fullContent, model, skillId: skillId || null });
+      addMessage({ sessionId, role: 'assistant', content: fullContent, model: effectiveModel, skillId: skillId || null });
     } catch (sdkError) {
       console.error('[Chat API] Agent SDK error:', sdkError);
       console.error('[Chat API] Stack trace:', sdkError instanceof Error ? sdkError.stack : 'N/A');
       const errorMsg = `抱歉，AI 服务暂时不可用，请稍后重试。\n错误：${sdkError instanceof Error ? sdkError.message : '未知错误'}`;
       res.write(`data: ${JSON.stringify({ type: 'text', content: errorMsg })}\n\n`);
-      addMessage({ sessionId, role: 'assistant', content: errorMsg, model, skillId: skillId || null });
+      addMessage({ sessionId, role: 'assistant', content: errorMsg, model: effectiveModel, skillId: skillId || null });
     }
 
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
@@ -312,21 +432,6 @@ app.post('/api/chat', async (req, res) => {
 // 权限响应（占位）
 app.post('/api/permission-response', (_req, res) => res.json({ ok: true }));
 
-// 模型列表（占位）
-app.get('/api/models', (_req, res) => {
-  res.json({ models: [
-    { modelId: 'claude-sonnet-4', name: 'Claude Sonnet 4' },
-    { modelId: 'gpt-4o', name: 'GPT-4o' },
-  ]});
-});
-
-// Agent 列表（占位）
-app.get('/api/agents', (_req, res) => {
-  res.json({ agents: [
-    { id: 'default', name: '通用助手', description: '一个通用的 AI 助手', systemPrompt: '你是一个专业的AI助手' }
-  ]});
-});
-
 // ========== Business Data API Routes ==========
 
 app.use('/api/warehouses', warehousesRouter);
@@ -338,12 +443,30 @@ app.use('/api', skillsRouter); // handles /api/user-skills and /api/builtin-stat
 app.use('/api/app-settings', settingsRouter);
 app.use('/api/migrate', migrateRouter);
 
+// Projects & Tasks routes
+app.use('/api/projects', projectsRouter);
+app.use('/api/tasks', tasksRouter);
+
+
 // Automation webhook routes
 app.use('/api/automation', automationRoutes);
 
 // Skill chain routes
 app.use('/api/skill-chains', chainRoutes);
 app.use('/api/chain-executions', chainRoutes);
+
+// WMS skill routes
+app.use('/api/wms/quality', wmsQualityRoutes);
+app.use('/api/wms/inventory-count', wmsInventoryRoutes);
+app.use('/api/wms/outbound-review', wmsOutboundRoutes);
+app.use('/api/wms/alerts', wmsAlertRoutes);
+app.use('/api/wms/reports', wmsReportRoutes);
+
+// Semantic matching engine routes
+app.use('/api/matching', matchingRoutes);
+
+// Model management routes
+app.use('/api/models', modelsRoutes);
 
 // GET /api/inventory-transactions?page=1&pageSize=20&type=inbound&warehouseId=wh1&startDate=2026-01-01&endDate=2026-05-25&sku=ABC
 app.get('/api/inventory-transactions', (req, res) => {
@@ -367,8 +490,21 @@ app.get('/api/inventory-transactions', (req, res) => {
 
 const PORT = 3001;
 const server = app.listen(PORT, () => {
-  console.log(`CrossWMS Chat Server running on port ${PORT}`);
-  initDb();
+  console.log(`CDF Know Clow Chat Server running on port ${PORT}`);
+  const db = initDb();
+
+  // 初始化 WMS 行业技能表
+  ensureWmsTables(db);
+
+  // 初始化语义匹配引擎（异步，不阻塞启动）
+  setTimeout(() => {
+    try {
+      const stats = initMatchingEngine();
+      console.log(`[Matching] 嵌入初始化完成: total=${stats.embeddingStats.total}, new=${stats.embeddingStats.newCount}, updated=${stats.embeddingStats.updatedCount}, skipped=${stats.embeddingStats.skippedCount}`);
+    } catch (e) {
+      console.error('[Matching] 嵌入初始化失败:', e);
+    }
+  }, 3000);
 
   // 启动自动化引擎 v2.0（30s 轮询）
   const { stop } = startEngine(30_000);

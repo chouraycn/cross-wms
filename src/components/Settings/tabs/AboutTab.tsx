@@ -12,7 +12,6 @@ import type { AppSettings, SidebarConfig } from '../../../contexts/AppSettingsCo
 import { formatVersion, type UpdateStatus } from '../../../services/updateService';
 import { useUpdateContext } from '../../../contexts/UpdateContext';
 import { switchSx, APP_VERSION } from '../sharedStyles';
-import ModelManagementSection from './ModelManagementSection';
 import TrafficLightOffsetSection from './TrafficLightOffsetSection';
 
 // ===================== Props =====================
@@ -89,11 +88,6 @@ const AboutTab: React.FC<AboutTabProps> = ({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {/* ===== Model Management ===== */}
-      <ModelManagementSection draft={draft} setDraft={setDraft} />
-
-      <Divider sx={{ my: 1 }} />
-
       {/* ===== About Section ===== */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxWidth: 400 }}>
         <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', mb: 1 }}>

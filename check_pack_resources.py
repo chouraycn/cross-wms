@@ -2,7 +2,7 @@
 """检查打包后 app 的路径和版本信息"""
 import os, sys
 
-APP = '/Applications/CrossWMS.app/Contents/Resources'
+APP = '/Applications/CDFKnowClow.app/Contents/Resources'
 index = os.path.join(APP, 'frontend_dist', 'index.html')
 js = os.path.join(APP, 'frontend_dist', 'assets', 'index-CWPVeMnk.js')
 css = os.path.join(APP, 'frontend_dist', 'assets', 'index-DRTKx0iW.css')

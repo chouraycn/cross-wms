@@ -19,6 +19,8 @@ import SkipNextIcon from '@mui/icons-material/SkipNext';
 import type { ChainExecutionStep, StepStatus } from '../../types/skill';
 import { connectChainExecutionEvents } from '../../services/api';
 
+const BASE_URL = 'http://localhost:3001';
+
 interface ChainExecutionPanelProps {
   open: boolean;
   executionId: string | null;
@@ -65,6 +67,22 @@ const ChainExecutionPanel: React.FC<ChainExecutionPanelProps> = ({
   useEffect(() => {
     if (!executionId) return;
 
+    // 先加载当前执行状态（获取已完成的步骤）
+    fetch(`${BASE_URL}/api/chain-executions/${executionId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.data?.steps && Array.isArray(data.data.steps)) {
+          setSteps(data.data.steps as ChainExecutionStep[]);
+        }
+        if (data.data?.status === 'completed' || data.data?.status === 'failed' || data.data?.status === 'aborted') {
+          setCompleted(true);
+        }
+      })
+      .catch(() => {
+        // 如果获取失败，不影响 SSE 连接
+      });
+
+    // 然后连接 SSE 获取实时更新
     evtRef.current = connectChainExecutionEvents(executionId);
     const es = evtRef.current;
 
@@ -106,7 +124,7 @@ const ChainExecutionPanel: React.FC<ChainExecutionPanelProps> = ({
               : s,
           ),
         );
-      } else if (data.type === 'chain-completed' || data.type === 'chain-failed') {
+      } else if (data.type === 'chain-completed' || data.type === 'chain-failed' || data.type === 'chain-aborted') {
         setCompleted(true);
       }
     };

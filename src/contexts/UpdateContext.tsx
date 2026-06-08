@@ -23,7 +23,8 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
   const [currentVersion, setCurrentVersion] = useState(APP_VERSION);
-  const ran = useRef(false);
+  const versionInitDone = useRef(false);
+  const autoCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 初始化：检测 pywebview 环境并获取真实版本号
   useEffect(() => {
@@ -56,6 +57,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           const ready = await waitForApi();
           if (!ready) {
             console.warn('[UpdateContext] pywebview API 未在超时内就绪，使用 Vite 注入版本号');
+            if (!cancelled) versionInitDone.current = true;
             return;
           }
 
@@ -71,6 +73,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           console.warn('[UpdateContext] 获取 pywebview 版本号失败，使用 Vite 注入版本:', e);
         }
       }
+      if (!cancelled) versionInitDone.current = true;
     }
 
     initVersion();
@@ -100,22 +103,42 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setShowUpdateNotification(false);
   }, [updateStatus]);
 
-  // 启动时自动检查更新（3秒延迟）
+  // 启动时自动检查更新：等待版本初始化完成后延迟 2 秒执行
   useEffect(() => {
-    if (ran.current) return;
-    ran.current = true;
-    const timer = setTimeout(async () => {
-      try {
-        const status = await checkForUpdatesService(currentVersion);
-        if (status.hasUpdate && status.releaseInfo) {
-          setUpdateStatus(status);
-          setShowUpdateNotification(true);
-        }
-      } catch (error) {
-        console.error('自动更新检查失败:', error);
+    // 轮询等待 versionInitDone（最多 8 秒），确保使用正确的 pywebview 版本号
+    let cancelled = false;
+    let pollCount = 0;
+
+    async function waitAndCheck() {
+      while (!versionInitDone.current && pollCount < 80) {
+        if (cancelled) return;
+        await new Promise(r => setTimeout(r, 100));
+        pollCount++;
       }
-    }, 3000);
-    return () => clearTimeout(timer);
+
+      if (cancelled) return;
+
+      // 版本已就绪，再延迟 2 秒给 UI 渲染时间
+      autoCheckTimer.current = setTimeout(async () => {
+        if (cancelled) return;
+        try {
+          console.log('[UpdateContext] 开始自动检查更新，版本:', currentVersion);
+          const status = await checkForUpdatesService(currentVersion);
+          if (status.hasUpdate && status.releaseInfo) {
+            setUpdateStatus(status);
+            setShowUpdateNotification(true);
+          }
+        } catch (error) {
+          console.error('[UpdateContext] 自动更新检查失败:', error);
+        }
+      }, 2000);
+    }
+
+    waitAndCheck();
+    return () => {
+      cancelled = true;
+      if (autoCheckTimer.current) clearTimeout(autoCheckTimer.current);
+    };
   }, [currentVersion]);
 
   return (

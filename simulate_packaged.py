@@ -5,14 +5,14 @@
 import os, sys
 
 # 模拟 PyInstaller 的 sys._MEIPASS
-APP_RESOURCES = '/Applications/CrossWMS.app/Contents/Resources'
+APP_RESOURCES = '/Applications/CDFKnowClow.app/Contents/Resources'
 sys._MEIPASS = APP_RESOURCES
 
 # 模拟 sys.frozen
 sys.frozen = True
 
 # 模拟 sys.executable
-sys.executable = '/Applications/CrossWMS.app/Contents/MacOS/CrossWMS'
+sys.executable = '/Applications/CDFKnowClow.app/Contents/MacOS/CDFKnowClow'
 
 print(f"sys._MEIPASS = {sys._MEIPASS}")
 print(f"sys.frozen = {getattr(sys, 'frozen', False)}")
@@ -128,7 +128,7 @@ if node and srv:
             [node, srv],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            env={**os.environ, 'PORT': '3001', 'CROSSWMS_DATA_DIR': os.path.expanduser('~/.crosswms')},
+            env={**os.environ, 'PORT': '3001', 'CDF_KNOW_CLOW_DATA_DIR': os.path.expanduser('~/.cdf-know-clow')},
             start_new_session=True,
         )
         print(f"Server started, PID={proc.pid}")

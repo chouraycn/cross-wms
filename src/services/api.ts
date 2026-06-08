@@ -1,17 +1,20 @@
 /**
- * CrossWMS 统一 API 客户端
+ * CDF Know Clow 统一 API 客户端
  * 封装所有后端 HTTP 调用，类型安全
  */
 
 import type { Warehouse, InventoryItem, TransitOrder, InboundRecord, OutboundRecord, InventoryTransaction } from '../types';
 import type { Skill, UsageStats, ConflictResult } from '../types/skill';
 import type { AppSettings } from '../contexts/AppSettingsContext';
+import type { ModelConfig, ModelsConfig } from '../types/models';
+import type { Task } from '../types/task';
+import type { Project } from '../types/project';
 
 const BASE_URL = 'http://localhost:3001';
 
 // ===================== Generic Request =====================
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+export async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const opts: RequestInit = {
     method,
     headers: { 'Content-Type': 'application/json' },
@@ -437,4 +440,132 @@ export async function exportSkillAsZip(skillId: string, skillName: string): Prom
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(downloadUrl);
+}
+
+// ===================== Tasks API =====================
+
+/** 获取任务列表（可选按 projectId 过滤） */
+export async function getTasks(projectId?: string): Promise<Task[]> {
+  const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+  return request<Task[]>('GET', `/api/tasks${query}`);
+}
+
+/** 获取指定项目下的任务 */
+export async function getProjectTasks(projectId: string): Promise<Task[]> {
+  return request<Task[]>('GET', `/api/tasks?projectId=${encodeURIComponent(projectId)}`);
+}
+
+/** 创建任务 */
+export async function createTask(data: {
+  title: string;
+  description: string;
+  status: Task['status'];
+  priority: Task['priority'];
+  assignee: string;
+  tags: string[];
+  dueDate: string;
+  projectId: string;
+}): Promise<Task> {
+  return request<Task>('POST', '/api/tasks', data);
+}
+
+/** 更新任务 */
+export async function updateTask(id: string, data: Partial<{
+  title: string;
+  description: string;
+  status: Task['status'];
+  priority: Task['priority'];
+  assignee: string;
+  tags: string[];
+  dueDate: string;
+}>): Promise<Task> {
+  return request<Task>('PUT', `/api/tasks/${encodeURIComponent(id)}`, data);
+}
+
+/** 删除任务 */
+export async function deleteTask(id: string): Promise<void> {
+  await request<void>('DELETE', `/api/tasks/${encodeURIComponent(id)}`);
+}
+
+/** 从 localStorage 迁移任务到数据库 */
+export async function migrateTasks(payload: {
+  tasks: Array<{
+    id: string;
+    title: string;
+    description: string;
+    status: Task['status'];
+    priority: Task['priority'];
+    assignee: string;
+    tags: string[];
+    dueDate: string;
+    projectId: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+}): Promise<{ imported: number; skipped: number }> {
+  return request<{ imported: number; skipped: number }>('POST', '/api/tasks/migrate', payload);
+}
+
+// ===================== Projects API =====================
+
+/** 获取所有项目 */
+export async function getProjects(): Promise<Project[]> {
+  return request<Project[]>('GET', '/api/projects');
+}
+
+/** 创建项目 */
+export async function createProject(data: Partial<Project> & { name: string }): Promise<Project> {
+  return request<Project>('POST', '/api/projects', data);
+}
+
+/** 更新项目 */
+export async function updateProject(id: string, data: Partial<Project> & { name?: string }): Promise<Project> {
+  return request<Project>('PUT', `/api/projects/${encodeURIComponent(id)}`, data);
+}
+
+/** 删除项目 */
+export async function deleteProject(id: string): Promise<void> {
+  await request<void>('DELETE', `/api/projects/${encodeURIComponent(id)}`);
+}
+
+// ===================== Models (models.json) =====================
+
+export interface ModelsFileResponse {
+  version: number;
+  models: ModelConfig[];
+  defaultModelId: string;
+  updatedAt: string;
+}
+
+/** 获取模型配置（从 models.json） */
+export async function getModelsConfig(): Promise<ModelsFileResponse> {
+  return request<ModelsFileResponse>('GET', '/api/models');
+}
+
+/** 保存模型配置到 models.json */
+export async function saveModelsConfig(models: ModelConfig[], defaultModelId: string): Promise<ModelsFileResponse> {
+  return request<ModelsFileResponse>('PUT', '/api/models', { models, defaultModelId });
+}
+
+/** 重置为内置默认模型 */
+export async function resetModelsConfig(): Promise<ModelsFileResponse> {
+  return request<ModelsFileResponse>('POST', '/api/models/reset');
+}
+
+/** 测试 API 连接（返回可用模型列表） */
+export interface TestConnectionResult {
+  success: boolean;
+  message: string;
+  models?: string[];
+}
+export async function testModelConnection(
+  apiEndpoint: string,
+  apiKey: string,
+  modelId: string,
+): Promise<TestConnectionResult> {
+  return request<TestConnectionResult>(
+    'POST',
+    '/api/models/test-connection',
+    { apiEndpoint, apiKey, modelId },
+  );
 }

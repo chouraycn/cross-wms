@@ -84,6 +84,26 @@ export interface SkillSuggestionItem {
   reason: string;
 }
 
+/** 技能依赖 */
+export interface SkillDependency {
+  /** 依赖的技能 ID 或名称 */
+  skillId: string;
+  /** 依赖类型：required / optional / conflicts */
+  type: 'required' | 'optional' | 'conflicts';
+  /** 版本约束（如 ">=2.0"） */
+  versionRange?: string;
+}
+
+/** 技能权限 */
+export interface SkillPermission {
+  /** 权限名称 */
+  name: string;
+  /** 权限描述 */
+  description?: string;
+  /** 是否为必须权限 */
+  required?: boolean;
+}
+
 /** 统一技能类型 */
 export interface Skill {
   id: string;
@@ -105,6 +125,8 @@ export interface Skill {
   status: 'active' | 'available' | 'coming';
   /** 技能版本 */
   version?: string;
+  /** 技能作者 */
+  author?: string;
   /** 是否为推荐技能 */
   featured?: boolean;
   /** 关联的自动化任务类型 */
@@ -121,6 +143,31 @@ export interface Skill {
   promptTemplate?: string;
   /** 使用统计（可选） */
   usageStats?: UsageStats;
+  /** 技能依赖列表（从 SKILL.md frontmatter 解析） */
+  dependencies?: SkillDependency[];
+  /** 技能权限声明（从 SKILL.md frontmatter 解析） */
+  permissions?: SkillPermission[];
+  /** 标准 SKILL.md 字段（从 SKILL.md 解析的原始标准字段快照） */
+  standardFields?: {
+    /** SKILL.md 中声明的版本号 */
+    version?: string;
+    /** SKILL.md 中声明的作者 */
+    author?: string;
+    /** SKILL.md 中声明的依赖 ID 列表 */
+    dependencies?: string[];
+    /** SKILL.md 中声明的权限名称列表 */
+    permissions?: string[];
+    /** SKILL.md 中提取的指令块内容 */
+    instructionBlocks?: string[];
+  };
+  /** 技能市场远程 ID（来自市场的唯一标识） */
+  remoteId?: string;
+  /** 技能市场元数据（仅 marketplace 技能有值） */
+  marketplaceMetadata?: {
+    rating: number;
+    downloadCount: number;
+    latestVersion: string;
+  };
 }
 
 // ===================== 图标映射 =====================
@@ -182,7 +229,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     featured: true,
     source: 'builtin',
     executionMode: 'chat',
-    promptTemplate: '你是 CrossWMS 仪表盘分析助手。用户正在查看仓库仪表盘，你需要帮助用户解读 KPI 数据、分析趋势、对比仓库表现。你可以：1）解释各指标含义与异常波动；2）建议关注哪些关键指标变化；3）对比不同仓库的入库/出库/在途/容积率数据；4）根据热力图趋势给出仓储优化建议。请用简洁专业的语言回答，涉及数据时优先给出具体数值。',
+    promptTemplate: '你是 CDF Know Clow 仪表盘分析助手。用户正在查看仓库仪表盘，你需要帮助用户解读 KPI 数据、分析趋势、对比仓库表现。你可以：1）解释各指标含义与异常波动；2）建议关注哪些关键指标变化；3）对比不同仓库的入库/出库/在途/容积率数据；4）根据热力图趋势给出仓储优化建议。请用简洁专业的语言回答，涉及数据时优先给出具体数值。',
   },
   {
     id: 'builtin-warehouse',
@@ -199,7 +246,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     featured: true,
     source: 'builtin',
     executionMode: 'hybrid',
-    promptTemplate: '你是 CrossWMS 仓库管理助手。用户正在管理跨境仓库，你需要帮助用户：1）规划仓库库位布局与容量分配；2）分析各仓库容积率与件数使用情况；3）制定库存调拨与多仓调配方案；4）优化仓储运营效率。注意区分仓库类型（保税仓/海外仓/直邮仓），考虑跨境合规要求。给出可操作的建议时附带预期效果。',
+    promptTemplate: '你是 CDF Know Clow 仓库管理助手。用户正在管理跨境仓库，你需要帮助用户：1）规划仓库库位布局与容量分配；2）分析各仓库容积率与件数使用情况；3）制定库存调拨与多仓调配方案；4）优化仓储运营效率。注意区分仓库类型（保税仓/海外仓/直邮仓），考虑跨境合规要求。给出可操作的建议时附带预期效果。',
   },
   {
     id: 'builtin-transit',
@@ -216,7 +263,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     featured: true,
     source: 'builtin',
     executionMode: 'hybrid',
-    promptTemplate: '你是 CrossWMS 在途物流跟踪助手。你需要帮助用户：1）追踪在途运单状态与预计到达时间；2）分析物流时效与延误原因；3）预警异常运单（超时/滞留/清关异常）；4）预测交期并建议应对方案。重点关注跨境物流节点：报关、清关、转关、尾程配送。对于异常情况，给出具体的处理步骤和负责人建议。',
+    promptTemplate: '你是 CDF Know Clow 在途物流跟踪助手。你需要帮助用户：1）追踪在途运单状态与预计到达时间；2）分析物流时效与延误原因；3）预警异常运单（超时/滞留/清关异常）；4）预测交期并建议应对方案。重点关注跨境物流节点：报关、清关、转关、尾程配送。对于异常情况，给出具体的处理步骤和负责人建议。',
   },
   {
     id: 'builtin-inventory',
@@ -232,7 +279,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     version: '1.0',
     source: 'builtin',
     executionMode: 'hybrid',
-    promptTemplate: '你是 CrossWMS 库存管理助手。你需要帮助用户：1）分析库存结构与库龄分布，识别滞销品；2）设置库龄预警阈值与保质期提醒规则；3）优化库存周转率，建议安全库存水平；4）制定滞销品处理方案（促销/调拨/退仓）。考虑跨境仓库的特殊性：多仓分布、跨境调拨周期、清关时效对库存的影响。',
+    promptTemplate: '你是 CDF Know Clow 库存管理助手。你需要帮助用户：1）分析库存结构与库龄分布，识别滞销品；2）设置库龄预警阈值与保质期提醒规则；3）优化库存周转率，建议安全库存水平；4）制定滞销品处理方案（促销/调拨/退仓）。考虑跨境仓库的特殊性：多仓分布、跨境调拨周期、清关时效对库存的影响。',
   },
   {
     id: 'builtin-inbound',
@@ -248,7 +295,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     version: '1.0',
     source: 'builtin',
     executionMode: 'chat',
-    promptTemplate: '你是 CrossWMS 入库规划助手。你需要帮助用户：1）根据仓库当前容积率推荐最佳入库仓库与时间窗口；2）规划入库批次与库位分配方案；3）预估入库耗时与所需人力；4）优化入库流程减少等待与错误率。关注跨境入库的特殊环节：到港卸货、报关入库、质检上架。给出方案时附带时间线和资源需求。',
+    promptTemplate: '你是 CDF Know Clow 入库规划助手。你需要帮助用户：1）根据仓库当前容积率推荐最佳入库仓库与时间窗口；2）规划入库批次与库位分配方案；3）预估入库耗时与所需人力；4）优化入库流程减少等待与错误率。关注跨境入库的特殊环节：到港卸货、报关入库、质检上架。给出方案时附带时间线和资源需求。',
   },
   {
     id: 'builtin-outbound',
@@ -264,7 +311,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     version: '1.0',
     source: 'builtin',
     executionMode: 'chat',
-    promptTemplate: '你是 CrossWMS 出库优化助手。你需要帮助用户：1）根据订单优先级与物流时效制定出库排程；2）优化拣货路径减少行走距离与时间；3）分析出库错误率原因并给出改进措施；4）处理紧急出库与批量出库的优先级冲突。关注跨境出库环节：订单审核、打包规范、报关申报、物流交接。建议附带预期效率提升指标。',
+    promptTemplate: '你是 CDF Know Clow 出库优化助手。你需要帮助用户：1）根据订单优先级与物流时效制定出库排程；2）优化拣货路径减少行走距离与时间；3）分析出库错误率原因并给出改进措施；4）处理紧急出库与批量出库的优先级冲突。关注跨境出库环节：订单审核、打包规范、报关申报、物流交接。建议附带预期效率提升指标。',
   },
   // ---- 数据管理 (data) ----
   {
@@ -283,7 +330,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     featured: true,
     source: 'builtin',
     executionMode: 'hybrid',
-    promptTemplate: '你是 CrossWMS 腾讯文档同步助手。你需要帮助用户：1）配置腾讯文档 API 授权与文档映射关系；2）设置定时同步策略与手动触发同步；3）排查同步失败原因与数据不一致问题；4）建议最优的文档组织方式与数据映射方案。了解支持的文档类型：在线表格、智能文档。提醒用户注意 API 调用频率限制与权限设置。',
+    promptTemplate: '你是 CDF Know Clow 腾讯文档同步助手。你需要帮助用户：1）配置腾讯文档 API 授权与文档映射关系；2）设置定时同步策略与手动触发同步；3）排查同步失败原因与数据不一致问题；4）建议最优的文档组织方式与数据映射方案。了解支持的文档类型：在线表格、智能文档。提醒用户注意 API 调用频率限制与权限设置。',
   },
   {
     id: 'builtin-reports',
@@ -300,7 +347,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     version: '1.0',
     source: 'builtin',
     executionMode: 'hybrid',
-    promptTemplate: '你是 CrossWMS 报表生成助手。你需要帮助用户：1）设计自定义报表模板与指标组合；2）导出数据为 CSV 格式并解释字段含义；3）配置定期自动生成报表的调度规则；4）解读报表数据并给出业务洞察。支持维度：仓库/品类/时间段/物流方式。报表类型：库存报表、出入库报表、在途报表、KPI 综合报表。',
+    promptTemplate: '你是 CDF Know Clow 报表生成助手。你需要帮助用户：1）设计自定义报表模板与指标组合；2）导出数据为 CSV 格式并解释字段含义；3）配置定期自动生成报表的调度规则；4）解读报表数据并给出业务洞察。支持维度：仓库/品类/时间段/物流方式。报表类型：库存报表、出入库报表、在途报表、KPI 综合报表。',
   },
   {
     id: 'builtin-volume',
@@ -317,7 +364,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     version: '1.0',
     source: 'builtin',
     executionMode: 'hybrid',
-    promptTemplate: '你是 CrossWMS 容积率优化助手。你需要帮助用户：1）计算各仓库当前容积率与件数使用率；2）设置容积率预警阈值与通知方式；3）当仓库接近满仓时推荐扩容或调拨方案；4）分析容积率趋势预测未来仓储需求。关键指标：容积率(已用件数/件数上限)、日均出入库量、预计满仓时间。给出方案时附带成本与时效评估。',
+    promptTemplate: '你是 CDF Know Clow 容积率优化助手。你需要帮助用户：1）计算各仓库当前容积率与件数使用率；2）设置容积率预警阈值与通知方式；3）当仓库接近满仓时推荐扩容或调拨方案；4）分析容积率趋势预测未来仓储需求。关键指标：容积率(已用件数/件数上限)、日均出入库量、预计满仓时间。给出方案时附带成本与时效评估。',
   },
   {
     id: 'builtin-data-analysis',
@@ -333,7 +380,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     version: '0.9',
     source: 'builtin',
     executionMode: 'chat',
-    promptTemplate: '你是 CrossWMS 数据分析助手，擅长从跨境仓储数据中挖掘洞察。你需要帮助用户：1）分析库存/在途/出入库数据趋势，识别异常波动；2）预测未来7-30天的仓储需求与物流量；3）对比不同时间段、仓库、品类的关键指标差异；4）给出数据驱动的运营优化建议。分析方法：同比/环比分析、异常值检测、趋势外推、关联性分析。输出格式：先给结论，再给数据支撑，最后给建议。',
+    promptTemplate: '你是 CDF Know Clow 数据分析助手，擅长从跨境仓储数据中挖掘洞察。你需要帮助用户：1）分析库存/在途/出入库数据趋势，识别异常波动；2）预测未来7-30天的仓储需求与物流量；3）对比不同时间段、仓库、品类的关键指标差异；4）给出数据驱动的运营优化建议。分析方法：同比/环比分析、异常值检测、趋势外推、关联性分析。输出格式：先给结论，再给数据支撑，最后给建议。',
   },
   {
     id: 'builtin-warehouse-kpi',
@@ -349,7 +396,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     version: '1.0',
     source: 'builtin',
     executionMode: 'chat',
-    promptTemplate: '你是 CrossWMS 仓库 KPI 分析助手。你需要帮助用户：1）解读各仓库关键绩效指标：出入库效率、准确率、时效达标率、库存周转率；2）对比不同仓库的 KPI 表现并排名；3）追踪 KPI 目标达成进度；4）分析 KPI 异常原因并给出改进建议。KPI 体系：运营效率类（出入库单量/时效）、质量类（差错率/客诉率）、成本类（单件仓储成本）。输出时用表格或排名形式清晰呈现。',
+    promptTemplate: '你是 CDF Know Clow 仓库 KPI 分析助手。你需要帮助用户：1）解读各仓库关键绩效指标：出入库效率、准确率、时效达标率、库存周转率；2）对比不同仓库的 KPI 表现并排名；3）追踪 KPI 目标达成进度；4）分析 KPI 异常原因并给出改进建议。KPI 体系：运营效率类（出入库单量/时效）、质量类（差错率/客诉率）、成本类（单件仓储成本）。输出时用表格或排名形式清晰呈现。',
   },
   // ---- 自动化 (auto) ----
   {
@@ -367,7 +414,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     featured: true,
     source: 'builtin',
     executionMode: 'hybrid',
-    promptTemplate: '你是 CrossWMS 自动化调度助手。你需要帮助用户：1）创建和配置自动化任务（周期/一次性/动作链）；2）设置任务有效期与执行频率；3）排查任务执行失败原因并建议修复方案；4）优化任务调度避免资源冲突。支持的任务类型：数据同步(data-sync)、库存快照(inventory-snapshot)、报表生成(report-gen)、容积率预警(volume-alert)、自定义(custom)。动作链支持串行组合多个 Action。',
+    promptTemplate: '你是 CDF Know Clow 自动化调度助手。你需要帮助用户：1）创建和配置自动化任务（周期/一次性/动作链）；2）设置任务有效期与执行频率；3）排查任务执行失败原因并建议修复方案；4）优化任务调度避免资源冲突。支持的任务类型：数据同步(data-sync)、库存快照(inventory-snapshot)、报表生成(report-gen)、容积率预警(volume-alert)、自定义(custom)。动作链支持串行组合多个 Action。',
   },
   {
     id: 'builtin-inventory-snapshot',
@@ -384,7 +431,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     version: '1.0',
     source: 'builtin',
     executionMode: 'hybrid',
-    promptTemplate: '你是 CrossWMS 库存快照助手。你需要帮助用户：1）配置库存快照采集频率与范围；2）对比不同时间点的库存快照，识别变动项；3）分析库存变化趋势（增长/减少/周转加速）；4）设置库存异常变动预警规则。快照维度：按仓库、按SKU、按库位、按库龄段。对比方式：环比（与上次快照）、同比（与上月同期）。输出时突出关键变动项和异常值。',
+    promptTemplate: '你是 CDF Know Clow 库存快照助手。你需要帮助用户：1）配置库存快照采集频率与范围；2）对比不同时间点的库存快照，识别变动项；3）分析库存变化趋势（增长/减少/周转加速）；4）设置库存异常变动预警规则。快照维度：按仓库、按SKU、按库位、按库龄段。对比方式：环比（与上次快照）、同比（与上月同期）。输出时突出关键变动项和异常值。',
   },
   // ---- 工具 (tool) ----
   {
@@ -393,7 +440,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     desc: 'AI 对话、数据查询、操作指引与自然语言交互',
     icon: 'Chat',
     category: 'tool',
-    path: '/agent',
+    path: '/chat',
     trigger: '提问 / AI 助手',
     detail: '通过底部 AI 对话框进行自然语言交互，支持数据查询、操作指引、报表解读等场景。在任何页面均可唤起。',
     tags: ['AI', '对话'],
@@ -401,7 +448,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     version: '1.0',
     source: 'builtin',
     executionMode: 'chat',
-    promptTemplate: '你是 CrossWMS 智能助手，一个跨境仓储管理系统的 AI 助理。你可以帮助用户：1）查询和解读仓库数据（库存/在途/出入库/KPI）；2）提供操作指引（如何添加仓库、配置同步、设置自动化等）；3）解答跨境仓储相关问题（报关流程、合规要求、多仓协同）；4）生成报表和数据分析。回答时保持简洁专业，涉及数据时给出具体数值，建议时附带操作步骤。',
+    promptTemplate: '你是 CDF Know Clow 智能助手，一个跨境仓储管理系统的 AI 助理。你可以帮助用户：1）查询和解读仓库数据（库存/在途/出入库/KPI）；2）提供操作指引（如何添加仓库、配置同步、设置自动化等）；3）解答跨境仓储相关问题（报关流程、合规要求、多仓协同）；4）生成报表和数据分析。回答时保持简洁专业，涉及数据时给出具体数值，建议时附带操作步骤。',
   },
   {
     id: 'builtin-metrics',
@@ -418,7 +465,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     version: '1.0',
     source: 'builtin',
     executionMode: 'chat',
-    promptTemplate: '你是 CrossWMS 指标配置助手。你需要帮助用户：1）调整仪表盘显示参数与模块显隐；2）配置热力图指标（入库量/出库量/在途量/容积率）与时间范围；3）设置数据源模式（Mock/API/腾讯文档）与连接参数；4）优化仪表盘布局以匹配业务关注点。可配置模块：KPI 卡片、趋势图、热力图、仓库概览。提醒用户修改后需保存设置。',
+    promptTemplate: '你是 CDF Know Clow 指标配置助手。你需要帮助用户：1）调整仪表盘显示参数与模块显隐；2）配置热力图指标（入库量/出库量/在途量/容积率）与时间范围；3）设置数据源模式（Mock/API/腾讯文档）与连接参数；4）优化仪表盘布局以匹配业务关注点。可配置模块：KPI 卡片、趋势图、热力图、仓库概览。提醒用户修改后需保存设置。',
   },
   {
     id: 'builtin-shortcut',
@@ -426,7 +473,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     desc: '快速执行常用操作、导航跳转与批量处理',
     icon: 'KeyboardCommandKey',
     category: 'tool',
-    path: '/agent',
+    path: '/chat',
     trigger: '输入 / 触发指令',
     detail: '通过 "/" 前缀快速触发预定义指令，如 /sync 触发同步、/report 生成报表、/alert 查看预警。可在 AI 对话框中直接使用。',
     tags: ['快捷', '指令'],
@@ -434,7 +481,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     version: '0.9',
     source: 'builtin',
     executionMode: 'chat',
-    promptTemplate: '你是 CrossWMS 快捷指令助手。用户通过 "/" 前缀触发指令，你需要帮助用户：1）解释可用的快捷指令及其功能；2）执行指令对应的操作（如 /sync 同步数据、/report 生成报表、/alert 查看预警）；3）创建自定义快捷指令；4）批量执行组合指令。可用指令：/sync（数据同步）、/report（报表生成）、/alert（预警查看）、/snapshot（库存快照）、/dashboard（仪表盘）、/warehouse（仓库管理）、/inventory（库存查看）、/transit（在途查询）。',
+    promptTemplate: '你是 CDF Know Clow 快捷指令助手。用户通过 "/" 前缀触发指令，你需要帮助用户：1）解释可用的快捷指令及其功能；2）执行指令对应的操作（如 /sync 同步数据、/report 生成报表、/alert 查看预警）；3）创建自定义快捷指令；4）批量执行组合指令。可用指令：/sync（数据同步）、/report（报表生成）、/alert（预警查看）、/snapshot（库存快照）、/dashboard（仪表盘）、/warehouse（仓库管理）、/inventory（库存查看）、/transit（在途查询）。',
   },
 ];
 

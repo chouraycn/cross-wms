@@ -11,6 +11,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import WarningIcon from '@mui/icons-material/Warning';
 import CodeIcon from '@mui/icons-material/Code';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import SecurityIcon from '@mui/icons-material/Security';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
@@ -28,6 +29,9 @@ export const TASK_TYPE_LABELS: Record<TaskType, string> = {
   'volume-alert': '容积率预警',
   'custom': '自定义',
   'skill-chain': '技能链',
+  'skill-audit': '技能审计',
+  'wms-alert-check': 'WMS 预警检查',
+  'wms-report-gen': 'WMS 报表生成',
 };
 
 export const TASK_TYPE_ICONS: Record<TaskType, React.ReactNode> = {
@@ -37,6 +41,9 @@ export const TASK_TYPE_ICONS: Record<TaskType, React.ReactNode> = {
   'volume-alert': <WarningIcon sx={{ fontSize: 16 }} />,
   'custom': <CodeIcon sx={{ fontSize: 16 }} />,
   'skill-chain': <AccountTreeIcon sx={{ fontSize: 16 }} />,
+  'skill-audit': <SecurityIcon sx={{ fontSize: 16 }} />,
+  'wms-alert-check': <NotificationsIcon sx={{ fontSize: 16 }} />,
+  'wms-report-gen': <AssessmentIcon sx={{ fontSize: 16 }} />,
 };
 
 export const TEMPLATE_ICON_MAP: Record<string, React.ReactNode> = {
@@ -45,6 +52,7 @@ export const TEMPLATE_ICON_MAP: Record<string, React.ReactNode> = {
   'AssessmentIcon': <AssessmentIcon sx={{ fontSize: 18 }} />,
   'WarningIcon': <WarningIcon sx={{ fontSize: 18 }} />,
   'AccountTreeIcon': <AccountTreeIcon sx={{ fontSize: 18 }} />,
+  'SecurityIcon': <SecurityIcon sx={{ fontSize: 18 }} />,
 };
 
 export const TASK_TYPE_COLORS: Record<TaskType, string> = {
@@ -54,6 +62,9 @@ export const TASK_TYPE_COLORS: Record<TaskType, string> = {
   'volume-alert': '#D97706',
   'custom': '#6B7280',
   'skill-chain': '#DB2777',
+  'skill-audit': '#DC2626',
+  'wms-alert-check': '#EA580C',
+  'wms-report-gen': '#0284C7',
 };
 
 export const WEEKDAY_LABELS: Record<string, string> = {

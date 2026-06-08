@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Typography,
   Chip,
-  Snackbar,
-  Alert,
+  Button,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 
+import { useToast } from '../contexts/ToastContext';
 import {
   buildRrule,
   parseRrule,
@@ -25,6 +27,7 @@ import {
   triggerAutomationApi,
   fetchExecutions,
   fetchAllExecutions,
+  clearExecutionLogs,
 } from '../services/automation/api';
 import type {
   Automation,
@@ -43,7 +46,8 @@ import {
   type TabKey,
 } from '../components/Automation/sharedConstants';
 
-// 子组件
+// 任务管理
+// ===================== 任务管理常量 =====================
 import AutomationList from '../components/Automation/AutomationList';
 import AutomationHistory from '../components/Automation/AutomationHistory';
 import AutomationTemplates from '../components/Automation/AutomationTemplates';
@@ -59,9 +63,7 @@ const AutomationPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMsg, setSnackbarMsg] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+  const { showToast } = useToast();
 
   // 执行状态
   const [triggeringIds, setTriggeringIds] = useState<Set<string>>(new Set());
@@ -100,8 +102,12 @@ const AutomationPage: React.FC = () => {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // URL 参数处理（从恶意技能卡片跳转过来）
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [activeTab, setActiveTab] = useState<TabKey>('configured');
 
+  // ---- 任务管理状态 ----
   // ===================== Data Loading =====================
 
   const loadAllAutomations = useCallback(async () => {
@@ -118,9 +124,7 @@ const AutomationPage: React.FC = () => {
       );
     } catch (err) {
       console.error('[AutomationPage] 加载自动化失败:', err);
-      setSnackbarMsg('加载自动化失败: ' + (err instanceof Error ? err.message : ''));
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
+      showToast('加载自动化失败: ' + (err instanceof Error ? err.message : ''), 'error');
     } finally {
       setLoading(false);
     }
@@ -140,6 +144,27 @@ const AutomationPage: React.FC = () => {
     void loadAllAutomations();
     void loadAllLogs();
   }, [loadAllAutomations, loadAllLogs]);
+
+  // 处理 URL 参数：从恶意技能卡片跳转过来 / 或 tab 参数指定默认 Tab
+  useEffect(() => {
+    const skillId = searchParams.get('skillId');
+    const auditFlag = searchParams.get('audit');
+    const tabParam = searchParams.get('tab');
+
+    if (skillId && auditFlag === '1') {
+      // 预填表单
+      setFormName(`定期检查 ${skillId} 安全`);
+      setFormPrompt(`定期审查技能 ${skillId} 的安全性`);
+      setFormTaskType('skill-audit');
+      setFormTaskConfig({ skillId });
+      setDialogOpen(true);
+      // 清除 URL 参数
+      setSearchParams({});
+    } else if (tabParam && TABS.some(t => t.key === tabParam)) {
+      setActiveTab(tabParam as TabKey);
+      setSearchParams({});
+    }
+  }, [searchParams]);
 
   // 定时刷新 nextRunAt
   useEffect(() => {
@@ -181,13 +206,6 @@ const AutomationPage: React.FC = () => {
       }
     });
   }, [expandedIds, executionLogs, loadLogsForAutomation]);
-
-  // ---- Toast helper ----
-  const showToast = (msg: string, severity: 'success' | 'error' = 'success') => {
-    setSnackbarMsg(msg);
-    setSnackbarSeverity(severity);
-    setSnackbarOpen(true);
-  };
 
   // ---- Dialog handlers ----
 
@@ -253,6 +271,9 @@ const AutomationPage: React.FC = () => {
       'volume-alert': `监控仓库容积率，超过 ${tpl.taskConfig?.threshold ?? 85}% 时生成预警并发送通知`,
       'custom': '按动作链顺序执行自定义任务',
       'skill-chain': '按顺序执行技能链中的各个技能节点',
+      'skill-audit': '定期对所有技能执行安全审查，发现风险时发送通知',
+      'wms-alert-check': '定期扫描低库存、临期商品、呆滞库存，自动创建预警记录',
+      'wms-report-gen': '定期生成库存、入库、出库报表，支持 CSV 和 JSON 格式导出',
     };
 
     try {
@@ -450,6 +471,9 @@ const AutomationPage: React.FC = () => {
   const activeCount = automations.filter((a) => a.status === 'ACTIVE').length;
   const pausedCount = automations.filter((a) => a.status === 'PAUSED').length;
 
+  // ---- 任务管理 Handlers ----
+  // ---- 自动化 Handlers （续）----
+
   const toggleWeekday = (day: string) => {
     setFormWeekdays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
@@ -637,10 +661,10 @@ const AutomationPage: React.FC = () => {
       {/* 页面标题 */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827', mb: 0.5 }}>
-          自动化
+          自动化调度
         </Typography>
         <Typography sx={{ fontSize: '0.875rem', color: '#6B7280' }}>
-          管理自动化调度任务，支持周期执行、一次性执行、动作链和有效期
+          管理自动化调度，支持周期执行、一次性执行、动作链和有效期
         </Typography>
       </Box>
 
@@ -684,8 +708,15 @@ const AutomationPage: React.FC = () => {
           autoNameMap={autoNameMap}
           onRetry={handleRetry}
           onViewDetail={handleViewDetail}
-          onClearLogs={() => {
-            showToast('执行日志清空功能暂不可用');
+          onClearLogs={async () => {
+            if (!window.confirm('确定要清空所有执行日志吗？此操作不可恢复。')) return;
+            try {
+              const result = await clearExecutionLogs();
+              showToast(`已清空 ${result.deleted} 条执行记录`, 'success');
+              void loadAllLogs();
+            } catch (e) {
+              showToast(`清空失败: ${(e as Error).message}`, 'error');
+            }
           }}
         />
       )}
@@ -697,6 +728,7 @@ const AutomationPage: React.FC = () => {
         />
       )}
 
+      {/* ========== 任务管理栏目 ========== */}
       {/* 执行详情 Drawer */}
       <ExecutionDrawer
         open={drawerOpen}
@@ -731,23 +763,6 @@ const AutomationPage: React.FC = () => {
         onSave={handleSave}
         onClose={() => setDialogOpen(false)}
       />
-
-      {/* Toast */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={2000}
-        onClose={() => setSnackbarOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity={snackbarSeverity}
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
-          {snackbarMsg}
-        </Alert>
-      </Snackbar>
 
       {/* 动画 */}
       <style>{`

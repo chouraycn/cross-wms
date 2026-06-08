@@ -28,6 +28,7 @@ import {
 } from '@mui/material';
 import { getInventoryTransactions } from '../../services/api';
 import { getWarehouses } from '../../capabilities/warehouse';
+import SearchInput from '../Common/SearchInput';
 import type { Warehouse, InventoryTransaction } from '../../types';
 
 export interface TransactionHistoryProps {
@@ -166,13 +167,11 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ warehouseId, sk
               ))}
             </Select>
           </FormControl>
-          <TextField
-            size="small"
-            label="SKU搜索"
+          <SearchInput
             value={filterSku}
-            onChange={(e) => handleFilterChange(setFilterSku, e.target.value)}
-            sx={{ minWidth: 140 }}
-            placeholder="输入SKU"
+            onChange={(v) => handleFilterChange(setFilterSku, v)}
+            placeholder="搜索SKU..."
+            width={180}
           />
           <TextField
             size="small"

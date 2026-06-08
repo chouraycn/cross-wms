@@ -12,6 +12,7 @@ import { ToastProvider, useToast } from './contexts/ToastContext';
 import UpdateNotification from './components/UpdateNotification';
 import { CrossWmsChat } from './components/CrossWmsChat';
 import ErrorBoundary from './components/Common/ErrorBoundary';
+import { automationEngine } from './services/automation';
 
 // 从统一配色文件导入
 export { PRIMARY, SECONDARY, BORDER, BG_LIGHT, BG_PAGE, WHITE, RADIUS, CHAT_COLORS } from './constants/theme';
@@ -22,7 +23,7 @@ import DashboardPage from './pages/DashboardPage';
 import SkillsPage from './pages/SkillsPage';
 import SkillDetailPage from './pages/SkillDetailPage';
 import SkillAuditPage from './pages/SkillAuditPage';
-import AgentPage from './pages/AgentPage';
+
 import ChatPage from './pages/ChatPage';
 import WarehousesPage from './pages/WarehousesPage';
 import InTransitPage from './pages/InTransitPage';
@@ -31,15 +32,12 @@ import TencentDocsPage from './pages/TencentDocsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import AutomationPage from './pages/AutomationPage';
-import TasksPage from './pages/TasksPage';
 import ProjectsPage from './pages/ProjectsPage';
 import WmsQualityPage from './pages/WmsQualityPage';
 import WmsInventoryPage from './pages/WmsInventoryPage';
 import WmsOutboundPage from './pages/WmsOutboundPage';
 import WmsAlertPage from './pages/WmsAlertPage';
 import WmsReportPage from './pages/WmsReportPage';
-import MarketplacePage from './pages/MarketplacePage';
-import MarketplaceDetailPage from './pages/MarketplaceDetailPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -269,11 +267,11 @@ const StorageWarningListener: React.FC = () => {
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      const keyLabel = detail?.key ? detail.key.replace('crosswms-', '') : '未知';
+      const keyLabel = detail?.key ? detail.key.replace('cdf-know-clow-', '') : '未知';
       showToast(`本地存储空间不足（${keyLabel}），部分数据可能无法保存。建议清理旧数据。`, 'warning', 8000);
     };
-    window.addEventListener('crosswms-storage-warning', handler);
-    return () => window.removeEventListener('crosswms-storage-warning', handler);
+    window.addEventListener('cdf-know-clow-storage-warning', handler);
+    return () => window.removeEventListener('cdf-know-clow-storage-warning', handler);
   }, [showToast]);
   return null;
 };
@@ -282,7 +280,7 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('crosswms-sidebar-collapsed') === 'true';
+      return localStorage.getItem('cdf-know-clow-sidebar-collapsed') === 'true';
     } catch { return false; }
   });
   // pywebview 检测 — frameless 模式下需要 --pw-top 避让红黄绿按钮
@@ -341,7 +339,7 @@ const MainLayout: React.FC = () => {
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed((prev) => {
       const next = !prev;
-      try { localStorage.setItem('crosswms-sidebar-collapsed', String(next)); } catch { /* ignore */ }
+      try { localStorage.setItem('cdf-know-clow-sidebar-collapsed', String(next)); } catch { /* ignore */ }
       return next;
     });
   }, []);
@@ -349,8 +347,8 @@ const MainLayout: React.FC = () => {
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
   const scrollRef = useAutoHideScrollbar(!isPy);
 
-  // AI 对话框可见性：自动化、Agent、技能、任务/对话、项目页面隐藏
-  const showChatBar = !location.pathname.startsWith('/automation') && !location.pathname.startsWith('/agent') && !location.pathname.startsWith('/skills') && !location.pathname.startsWith('/chat') && !location.pathname.startsWith('/projects');
+  // AI 对话框可见性：自动化、Agent、技能、对话、项目页面隐藏
+  const showChatBar = !location.pathname.startsWith('/automation') && !location.pathname.startsWith('/skills') && !location.pathname.startsWith('/chat') && !location.pathname.startsWith('/projects');
 
   const actions = getToolbarActions(location.pathname);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -467,7 +465,7 @@ const MainLayout: React.FC = () => {
                   <Route path="/skills" element={<SkillsPage />} />
                   <Route path="/skills/:skillId" element={<SkillDetailPage />} />
                   <Route path="/skills/:skillId/audit" element={<SkillAuditPage />} />
-                  <Route path="/agent" element={<AgentPage />} />
+
                   <Route path="/chat" element={<ChatPage />} />
                   <Route path="/warehouses" element={<WarehousesPage />} />
                   <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
@@ -480,11 +478,8 @@ const MainLayout: React.FC = () => {
                   <Route path="/wms/outbound" element={<WmsOutboundPage />} />
                   <Route path="/wms/alerts" element={<WmsAlertPage />} />
                   <Route path="/wms/reports" element={<WmsReportPage />} />
-                  <Route path="/marketplace" element={<MarketplacePage />} />
-                  <Route path="/marketplace/:remoteId" element={<MarketplaceDetailPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/automation" element={<AutomationPage />} />
-                  <Route path="/tasks" element={<TasksPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </ErrorBoundary>
@@ -535,6 +530,11 @@ const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const App: React.FC = () => {
+  useEffect(() => {
+    automationEngine.start();
+    return () => automationEngine.stop();
+  }, []);
+
   return (
     <AppSettingsProvider>
       <ThemedApp>

@@ -1,4 +1,4 @@
-# CrossWMS — 跨境仓库管理系统
+# CDF Know Clow — 中免CLow端系统桌面应用
 
 > macOS 原生桌面应用，pywebview + React 18 + TypeScript + MUI v5 + Tailwind CSS
 

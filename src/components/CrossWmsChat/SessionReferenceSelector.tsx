@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box, TextField, InputAdornment } from '@mui/material';
+import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box } from '@mui/material';
 import { Session } from '../../types/chat';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import SearchIcon from '@mui/icons-material/Search';
+import SearchInput from '../Common/SearchInput';
 
 /** 与 ChatPage 共享的 localStorage key */
-const SESSIONS_STORAGE_KEY = 'crosswms-chat-sessions';
+const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
 
 /** 从 localStorage 加载会话列表（与 ChatPage/NavList 使用同一数据源） */
 function loadSessionsFromStorage(): Session[] {
@@ -75,10 +75,10 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
     const onStorage = () => reloadSessions();
     const onChatUpdate = () => reloadSessions();
     window.addEventListener('storage', onStorage);
-    window.addEventListener('crosswms-chat-updated', onChatUpdate);
+    window.addEventListener('cdf-know-clow-chat-updated', onChatUpdate);
     return () => {
       window.removeEventListener('storage', onStorage);
-      window.removeEventListener('crosswms-chat-updated', onChatUpdate);
+      window.removeEventListener('cdf-know-clow-chat-updated', onChatUpdate);
     };
   }, [reloadSessions]);
 
@@ -168,30 +168,12 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
         <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#6B7280', mb: 0.5 }}>
           引用历史对话
         </Typography>
-        <TextField
-          size="small"
-          fullWidth
-          placeholder="搜索对话..."
+        <SearchInput
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={setSearchQuery}
+          placeholder="搜索对话..."
+          fullWidth
           autoFocus
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ fontSize: 18, color: '#9CA3AF' }} />
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              fontSize: 13,
-              bgcolor: '#F9FAFB',
-              borderRadius: '6px',
-              '& fieldset': { borderColor: '#E5E7EB' },
-              '&:hover fieldset': { borderColor: '#D1D5DB' },
-              '&.Mui-focused fieldset': { borderColor: '#3B82F6' },
-            },
-          }}
         />
       </Box>
 

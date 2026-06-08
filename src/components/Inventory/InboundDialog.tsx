@@ -18,7 +18,6 @@ import {
   Select,
   MenuItem,
   Stack,
-  Snackbar,
   Alert,
   CircularProgress,
   Box,
@@ -28,6 +27,7 @@ import {
 import { createInbound } from '../../services/api';
 import { getWarehouses } from '../../capabilities/warehouse';
 import type { Warehouse } from '../../types';
+import { useToast } from '../../contexts/ToastContext';
 
 export interface InboundDialogProps {
   open: boolean;
@@ -51,11 +51,7 @@ const InboundDialog: React.FC<InboundDialogProps> = ({ open, onClose, onSuccess,
   // UI 状态
   const [submitting, setSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
+  const { showToast } = useToast();
 
   // 加载仓库列表
   useEffect(() => {
@@ -103,7 +99,7 @@ const InboundDialog: React.FC<InboundDialogProps> = ({ open, onClose, onSuccess,
   const handleConfirmClick = () => {
     const error = validate();
     if (error) {
-      setSnackbar({ open: true, message: error, severity: 'error' });
+      showToast(error, 'error');
       return;
     }
     setConfirmOpen(true);
@@ -129,13 +125,13 @@ const InboundDialog: React.FC<InboundDialogProps> = ({ open, onClose, onSuccess,
         batchNo: batchNo.trim() || undefined,
         remark: remark.trim() || undefined,
       });
-      setSnackbar({ open: true, message: '入库成功', severity: 'success' });
+      showToast('入库成功', 'success');
       resetForm();
       onSuccess();
       onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : '入库失败';
-      setSnackbar({ open: true, message, severity: 'error' });
+      showToast(message, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -327,20 +323,6 @@ const InboundDialog: React.FC<InboundDialogProps> = ({ open, onClose, onSuccess,
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </>
   );
 };

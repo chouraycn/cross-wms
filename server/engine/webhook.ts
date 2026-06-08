@@ -7,7 +7,7 @@ export interface WebhookSignature {
 }
 
 /**
- * 解析 X-CrossWMS-Signature 请求头
+ * 解析 X-CDF-Know-Clow-Signature 请求头
  * 输入格式：t=1750000000,s=a1b2c3d4...
  * @throws {Error} 格式错误时抛出
  */

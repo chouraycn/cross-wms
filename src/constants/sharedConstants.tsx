@@ -18,7 +18,42 @@ export const AUTOMATION_TASK_TYPES = [
   { value: 'volume_alert', label: '容积率预警' },
   { value: 'chain', label: '技能链' },
   { value: 'custom', label: '自定义' },
+  { value: 'wms_alert_check', label: 'WMS 预警检查' },
+  { value: 'wms_report_gen', label: 'WMS 报表生成' },
 ] as const;
+
+export const AUTOMATION_TASK_TYPE_LABELS: Record<string, string> = {
+  sync: '数据同步',
+  snapshot: '库存快照',
+  report: '报表生成',
+  volume_alert: '容积率预警',
+  chain: '技能链',
+  custom: '自定义',
+  wms_alert_check: 'WMS 预警检查',
+  wms_report_gen: 'WMS 报表生成',
+};
+
+export const AUTOMATION_TASK_TYPE_ICONS: Record<string, string> = {
+  sync: 'SyncIcon',
+  snapshot: 'CameraAltIcon',
+  report: 'AssessmentIcon',
+  volume_alert: 'WarningIcon',
+  chain: 'AccountTreeIcon',
+  custom: 'CodeIcon',
+  wms_alert_check: 'NotificationsActiveIcon',
+  wms_report_gen: 'DescriptionIcon',
+};
+
+export const AUTOMATION_TASK_TYPE_COLORS: Record<string, string> = {
+  sync: '#1976d2',
+  snapshot: '#388e3c',
+  report: '#f57c00',
+  volume_alert: '#d32f2f',
+  chain: '#7b1fa2',
+  custom: '#616161',
+  wms_alert_check: '#ed6c02',
+  wms_report_gen: '#0288d1',
+};
 
 export const AUTOMATION_STATUS_LABELS: Record<string, string> = {
   active: '运行中',

@@ -11,7 +11,7 @@
 
 import { migrate } from './api';
 
-const MIGRATED_KEY = 'crosswms-migrated';
+const MIGRATED_KEY = 'cdf-know-clow-migrated';
 
 interface MigrateKeyMapping {
   lsKey: string;
@@ -19,12 +19,12 @@ interface MigrateKeyMapping {
 }
 
 const KEY_MAPPINGS: MigrateKeyMapping[] = [
-  { lsKey: 'crosswms-warehouses', field: 'warehouses' },
-  { lsKey: 'crosswms-inventory-items', field: 'inventoryItems' },
-  { lsKey: 'crosswms-transit-orders', field: 'transitOrders' },
-  { lsKey: 'crosswms-user-skills', field: 'userSkills' },
-  { lsKey: 'crosswms-builtin-status-patches', field: 'builtinStatusPatches' },
-  { lsKey: 'crosswms-settings', field: 'appSettings' },
+  { lsKey: 'cdf-know-clow-warehouses', field: 'warehouses' },
+  { lsKey: 'cdf-know-clow-inventory-items', field: 'inventoryItems' },
+  { lsKey: 'cdf-know-clow-transit-orders', field: 'transitOrders' },
+  { lsKey: 'cdf-know-clow-user-skills', field: 'userSkills' },
+  { lsKey: 'cdf-know-clow-builtin-status-patches', field: 'builtinStatusPatches' },
+  { lsKey: 'cdf-know-clow-settings', field: 'appSettings' },
 ];
 
 /**
