@@ -8,6 +8,10 @@ import type { Plugin } from 'vite'
  * 1. 移除 crossorigin 属性（file:// 下会导致加载失败）
  * 2. 将 type="module" 改为 defer（file:// 下 WKWebView 不支持 ES Module）
  * 3. 移除无意义的 modulepreload（file:// 下无意义）
+ *
+ * NOTE: 应用使用 React.lazy() + import() 实现路由级懒加载，
+ *       Vite 会自动为动态导入生成独立 chunk。
+ *       HTTP 服务器模式下 chunk 通过 JS 运行时按需加载，无需额外 script 标签。
  */
 function removeCrossorigin(): Plugin {
   return {
@@ -46,11 +50,8 @@ export default defineConfig({
   },
   build: {
     // 拆分大型依赖为独立 chunk
-    // NOTE: file:// 协议下 WKWebView 不支持动态 import()，此处 manualChunks 生成的
-    //       额外 <script> 标签会被 removeCrossorigin 插件转为 defer（经典脚本）。
-    //       应用源代码不能拆分为独立 chunk：MUI/Emotion 运行时会在 chunk 间形成
-    //       循环依赖（app → vendor-mui → @emotion → app），Rollup 无法静态解析
-    //       加载顺序，会导致除 main 外的 chunk 不再注入 HTML <script> 标签。
+    // 路由组件通过 React.lazy() + import() 自动拆分为独立 chunk（Vite 内置代码分割）
+    // manualChunks 仅处理第三方依赖拆分，应用代码由动态导入自动分割
     chunkSizeWarningLimit: 700,
     rollupOptions: {
       input: {
@@ -59,7 +60,7 @@ export default defineConfig({
       output: {
         manualChunks(id: string) {
           // MUI (Material UI) + @emotion 运行时 — 最大的单库
-          if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/')) {
+          if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/') || id.includes('node_modules/property-information/')) {
             return 'vendor-mui';
           }
           // React 核心 + 调度器（scheduler）+ react-dom
@@ -78,37 +79,11 @@ export default defineConfig({
           if (id.includes('node_modules/react-router-dom/') || id.includes('node_modules/react-router/')) {
             return 'vendor-router';
           }
-          // React Markdown 渲染相关（unified 生态 + syntax highlighter）
-          if (
-            id.includes('node_modules/react-markdown/') ||
-            id.includes('node_modules/react-syntax-highlighter/') ||
-            id.includes('node_modules/remark-gfm/') ||
-            id.includes('node_modules/remark-parse/') ||
-            id.includes('node_modules/remark-rehype/') ||
-            id.includes('node_modules/rehype-raw/') ||
-            id.includes('node_modules/rehype-sanitize/') ||
-            id.includes('node_modules/rehype-stringify/') ||
-            id.includes('node_modules/unified/') ||
-            id.includes('node_modules/mdast-util') ||
-            id.includes('node_modules/micromark') ||
-            id.includes('node_modules/hast-util-') ||
-            id.includes('node_modules/parse-entities/') ||
-            id.includes('node_modules/character-entities') ||
-            id.includes('node_modules/property-information/') ||
-            id.includes('node_modules/vfile/') ||
-            id.includes('node_modules/unist-util-') ||
-            id.includes('node_modules/is-plain-obj/') ||
-            id.includes('node_modules/ccount/') ||
-            id.includes('node_modules/longest-streak/') ||
-            id.includes('node_modules/zwitch/') ||
-            id.includes('node_modules/truncate/') ||
-            id.includes('node_modules/escape-string-regexp/') ||
-            id.includes('node_modules/trim-lines/') ||
-            id.includes('node_modules/mdast-builder/') ||
-            id.includes('node_modules/hast-util-whitespace/')
-          ) {
-            return 'vendor-markdown';
-          }
+          // React Markdown 渲染相关
+          // ⚠️ 不再单独拆分 vendor-markdown chunk
+          // 原因：markdown 生态包（hast-util-*、property-information 等）与 MUI/@emotion 存在共享依赖
+          // 强制拆分会产生 vendor-mui ↔ vendor-markdown 循环依赖，导致运行时白屏
+          // 让 Vite 自动处理这些包的归属，避免循环依赖
           // 工具库（dayjs/uuid/fflate/clsx 等）
           if (
             id.includes('node_modules/dayjs/') ||
