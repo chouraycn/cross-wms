@@ -310,6 +310,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
   const [selectedModel, setSelectedModel] = useState('Auto');
   const [selectedModelId, setSelectedModelId] = useState('auto');
   const [selectedPermission, setSelectedPermission] = useState('默认权限');
+  const [selectedPreset, setSelectedPreset] = useState('');
 
   /** 模型切换：Auto 模式发送 "auto"，其他按名称匹配 ID */
   const handleModelChange = useCallback((name: string) => {
@@ -629,7 +630,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     const skillId = effectiveSkill?.id || undefined;
     const referencedSessionIds = referencedSessions.map(s => s.id);
 
-    sendMessage(inputValue, { skillContext, skillId, referencedSessionIds, referencedSessions, model: selectedModelId });
+    sendMessage(inputValue, { skillContext, skillId, referencedSessionIds, referencedSessions, model: selectedModelId, preset: selectedPreset || undefined });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
     }
@@ -841,6 +842,8 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
           onModelChange={handleModelChange}
           selectedPermission={selectedPermission}
           onPermissionChange={setSelectedPermission}
+          selectedPreset={selectedPreset}
+          onPresetChange={setSelectedPreset}
           isLoading={isLoading}
           inputValue={inputValue}
           onSend={handleSend}

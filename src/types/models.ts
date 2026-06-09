@@ -2,8 +2,36 @@
  * 模型管理相关类型定义
  */
 
-/** 模型提供商类型 */
-export type ModelProvider = 'openai' | 'anthropic' | 'tencent' | 'deepseek' | 'google' | 'qwen' | 'custom';
+/** 模型提供商类型 — 覆盖主流国内外 API 平台 */
+export type ModelProvider =
+  | 'openai'
+  | 'anthropic'
+  | 'tencent'
+  | 'deepseek'
+  | 'google'
+  | 'qwen'
+  | 'xai'
+  | 'zai'
+  | 'minimax'
+  | 'kimi'
+  | 'byteplus'
+  | 'openrouter'
+  | 'novita'
+  | 'wwqglobal'
+  | 'wwqcn'
+  | 'aws'
+  | 'azure'
+  | 'vercel'
+  | 'ollama'
+  | 'bigmodel'
+  | 'minimaxcn'
+  | 'kimicn'
+  | 'volcengine'
+  | 'aliyun'
+  | 'siliconflow'
+  | 'modelark'
+  | 'ppio'
+  | 'custom';
 
 /** 模型能力标签 */
 export type ModelCapability = 'code' | 'longContext' | 'reasoning' | 'multimodal' | 'fast' | 'costEffective' | 'general';

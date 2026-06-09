@@ -96,6 +96,7 @@ const inboundRecord: InboundRecordRow = {
   status: 'completed',
   supplier: 'Supplier A',
   batchNo: 'BATCH-001',
+  supplier_id: null,
 };
 
 const outboundRecord: OutboundRecordRow = {
@@ -110,6 +111,7 @@ const outboundRecord: OutboundRecordRow = {
   destination: 'Customer X',
   customer: 'Customer X',
   orderNo: 'ORD-001',
+  customer_id: null,
 };
 
 const mockTransaction: InventoryTransactionRow = {

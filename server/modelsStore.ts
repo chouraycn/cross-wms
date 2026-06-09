@@ -17,8 +17,36 @@ const OLD_MODELS_FILE = path.join(os.homedir(), '.cdf-know-clow', 'models.json')
 /** 模型能力标签 */
 export type ModelCapability = 'code' | 'longContext' | 'reasoning' | 'multimodal' | 'fast' | 'costEffective' | 'general';
 
-/** 模型提供商 */
-export type ModelProvider = 'openai' | 'anthropic' | 'tencent' | 'deepseek' | 'google' | 'qwen' | 'custom';
+/** 模型提供商 — 覆盖主流国内外 API 平台 */
+export type ModelProvider =
+  | 'openai'
+  | 'anthropic'
+  | 'tencent'
+  | 'deepseek'
+  | 'google'
+  | 'qwen'
+  | 'xai'
+  | 'zai'
+  | 'minimax'
+  | 'kimi'
+  | 'byteplus'
+  | 'openrouter'
+  | 'novita'
+  | 'wwqglobal'
+  | 'wwqcn'
+  | 'aws'
+  | 'azure'
+  | 'vercel'
+  | 'ollama'
+  | 'bigmodel'
+  | 'minimaxcn'
+  | 'kimicn'
+  | 'volcengine'
+  | 'aliyun'
+  | 'siliconflow'
+  | 'modelark'
+  | 'ppio'
+  | 'custom';
 
 /** 模型配置 */
 export interface ModelConfig {
@@ -46,8 +74,9 @@ export interface ModelsFile {
   updatedAt: string;
 }
 
-/** 默认内置模型 */
+/** 默认内置模型 — 覆盖 24+ 主流平台 */
 const BUILTIN_MODELS: ModelConfig[] = [
+  // === OpenAI ===
   {
     id: 'gpt-4o',
     name: 'GPT-4o',
@@ -72,6 +101,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     maxTokens: 4096,
     capabilities: ['reasoning', 'general'],
   },
+  // === Anthropic ===
   {
     id: 'claude-sonnet-4-20250514',
     name: 'Claude Sonnet 4',
@@ -96,6 +126,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     maxTokens: 4096,
     capabilities: ['fast', 'costEffective', 'general'],
   },
+  // === 腾讯 ===
   {
     id: 'hunyuan-turbo',
     name: '混元 Turbo',
@@ -120,6 +151,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     maxTokens: 4096,
     capabilities: ['reasoning', 'general'],
   },
+  // === DeepSeek ===
   {
     id: 'deepseek-chat',
     name: 'DeepSeek Chat',
@@ -144,6 +176,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     maxTokens: 4096,
     capabilities: ['code', 'costEffective'],
   },
+  // === 通义千问 ===
   {
     id: 'qwen-turbo',
     name: '通义千问 Turbo',
@@ -168,6 +201,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     maxTokens: 4096,
     capabilities: ['longContext', 'reasoning', 'general'],
   },
+  // === Google ===
   {
     id: 'gemini-pro',
     name: 'Gemini Pro',
@@ -179,6 +213,123 @@ const BUILTIN_MODELS: ModelConfig[] = [
     contextWindow: 32000,
     maxTokens: 4096,
     capabilities: ['multimodal', 'reasoning', 'general'],
+  },
+  // === xAI ===
+  {
+    id: 'grok-2',
+    name: 'Grok 2',
+    provider: 'xai',
+    apiEndpoint: 'https://api.x.ai/v1',
+    enabled: false,
+    isDefault: false,
+    description: 'xAI Grok 2，支持实时信息获取',
+    contextWindow: 128000,
+    maxTokens: 4096,
+    capabilities: ['reasoning', 'general'],
+  },
+  // === MiniMax ===
+  {
+    id: 'abab6.5s-chat',
+    name: 'MiniMax abab6.5s',
+    provider: 'minimax',
+    apiEndpoint: 'https://api.minimaxi.chat/v1',
+    enabled: false,
+    isDefault: false,
+    description: 'MiniMax abab6.5s 对话模型',
+    contextWindow: 32000,
+    maxTokens: 4096,
+    capabilities: ['general', 'costEffective'],
+  },
+  // === Kimi ===
+  {
+    id: 'moonshot-v1-128k',
+    name: 'Kimi v1 128K',
+    provider: 'kimi',
+    apiEndpoint: 'https://api.moonshot.cn/v1',
+    enabled: false,
+    isDefault: false,
+    description: 'Moonshot Kimi，支持 128K 超长上下文',
+    contextWindow: 128000,
+    maxTokens: 4096,
+    capabilities: ['longContext', 'reasoning', 'general'],
+  },
+  // === OpenRouter ===
+  {
+    id: 'openrouter-gpt-4o',
+    name: 'OpenRouter GPT-4o',
+    provider: 'openrouter',
+    apiEndpoint: 'https://openrouter.ai/api/v1',
+    enabled: false,
+    isDefault: false,
+    description: '通过 OpenRouter 路由的 GPT-4o',
+    contextWindow: 128000,
+    maxTokens: 4096,
+    capabilities: ['multimodal', 'reasoning', 'general'],
+  },
+  // === 智谱 ===
+  {
+    id: 'glm-4',
+    name: 'GLM-4',
+    provider: 'bigmodel',
+    apiEndpoint: 'https://open.bigmodel.cn/api/paas/v4',
+    enabled: false,
+    isDefault: false,
+    description: '智谱 AI GLM-4，国产大模型',
+    contextWindow: 128000,
+    maxTokens: 4096,
+    capabilities: ['reasoning', 'general'],
+  },
+  // === 火山引擎 ===
+  {
+    id: 'doubao-pro-4k',
+    name: '豆包 Pro',
+    provider: 'volcengine',
+    apiEndpoint: 'https://ark.cn-beijing.volces.com/api/v3',
+    enabled: false,
+    isDefault: false,
+    description: '字节火山引擎豆包 Pro 模型',
+    contextWindow: 32000,
+    maxTokens: 4096,
+    capabilities: ['general', 'costEffective'],
+  },
+  // === 硅基流动 ===
+  {
+    id: 'siliconflow-deepseek-v2',
+    name: 'SiliconFlow DeepSeek-V2',
+    provider: 'siliconflow',
+    apiEndpoint: 'https://api.siliconflow.cn/v1',
+    enabled: false,
+    isDefault: false,
+    description: '硅基流动 DeepSeek-V2 推理',
+    contextWindow: 64000,
+    maxTokens: 4096,
+    capabilities: ['costEffective', 'general'],
+  },
+  // === Ollama ===
+  {
+    id: 'ollama-llama3.1',
+    name: 'Ollama Llama 3.1',
+    provider: 'ollama',
+    apiEndpoint: 'http://localhost:11434/v1',
+    enabled: false,
+    isDefault: false,
+    description: '本地 Ollama 部署的 Llama 3.1',
+    contextWindow: 128000,
+    maxTokens: 4096,
+    capabilities: ['costEffective', 'general'],
+  },
+  // === Azure ===
+  {
+    id: 'azure-gpt-4',
+    name: 'Azure GPT-4',
+    provider: 'azure',
+    apiEndpoint: 'https://{resource}.openai.azure.com/openai/deployments/{deployment}',
+    enabled: false,
+    isDefault: false,
+    description: 'Azure OpenAI Service GPT-4',
+    contextWindow: 128000,
+    maxTokens: 4096,
+    capabilities: ['reasoning', 'general'],
   },
 ];
 

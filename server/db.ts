@@ -113,6 +113,7 @@ export interface InboundRecordRow {
   status: string;
   supplier: string;
   batchNo: string;
+  supplier_id: string | null;  // v1.4.0: partner FK
 }
 
 export interface OutboundRecordRow {
@@ -127,6 +128,21 @@ export interface OutboundRecordRow {
   destination: string;
   customer: string;
   orderNo: string;
+  customer_id: string | null;  // v1.4.0: partner FK
+}
+
+// ===================== Partner Types (v1.4.0) =====================
+
+export interface PartnerRow {
+  id: string;
+  name: string;
+  type: 'supplier' | 'customer';
+  contact: string;
+  phone: string;
+  address: string;
+  remark: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UserSkillRow {
@@ -404,6 +420,170 @@ export function initDb(): Database.Database {
     if (colExists.cnt === 0) {
       db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
     }
+  }
+
+  // ===================== v1.4.0: Partners Table =====================
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS partners (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL DEFAULT '',
+      type TEXT NOT NULL DEFAULT 'supplier' CHECK(type IN ('supplier', 'customer')),
+      contact TEXT NOT NULL DEFAULT '',
+      phone TEXT NOT NULL DEFAULT '',
+      address TEXT NOT NULL DEFAULT '',
+      remark TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_partners_name_type ON partners(name, type);
+    CREATE INDEX IF NOT EXISTS idx_partners_type ON partners(type);
+  `);
+
+  // v1.4.0: Add supplier_id / customer_id columns (idempotent)
+  const v140Columns: Array<{ table: string; column: string; definition: string }> = [
+    { table: 'inbound_records', column: 'supplier_id', definition: 'TEXT DEFAULT NULL' },
+    { table: 'outbound_records', column: 'customer_id', definition: 'TEXT DEFAULT NULL' },
+  ];
+  for (const { table, column, definition } of v140Columns) {
+    const colExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('${table}') WHERE name='${column}'`).get() as { cnt: number };
+    if (colExists.cnt === 0) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    }
+  }
+
+  // v1.4.0: Create indexes for partner FK columns
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_inbound_supplier_id ON inbound_records(supplier_id);
+    CREATE INDEX IF NOT EXISTS idx_outbound_customer_id ON outbound_records(customer_id);
+  `);
+
+  // ===================== v1.4.0: Data Migration =====================
+
+  const migrationKey = 'migration_v1.4.0_partners';
+  const migrationExists = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(migrationKey) as { value: string } | undefined;
+
+  if (!migrationExists) {
+    console.log('[Migrate v1.4.0] 开始客商数据迁移...');
+
+    // --- Normalization helper ---
+    const normalize = (s: string): string => {
+      let t = s.trim();
+      // Full-width parentheses → half-width
+      t = t.replace(/\uff08/g, '(').replace(/\uff09/g, ')');
+      // Normalize spaces: collapse multiple spaces to single
+      t = t.replace(/\s+/g, ' ');
+      return t;
+    };
+
+    // ---- Phase A: Collect & deduplicate ----
+
+    // Suppliers from inbound_records
+    const supplierRows = db.prepare(
+      "SELECT DISTINCT TRIM(supplier) as name FROM inbound_records WHERE supplier IS NOT NULL AND supplier != ''"
+    ).all() as Array<{ name: string }>;
+
+    // Customers from outbound_records
+    const customerRows = db.prepare(
+      "SELECT DISTINCT TRIM(customer) as name FROM outbound_records WHERE customer IS NOT NULL AND customer != ''"
+    ).all() as Array<{ name: string }>;
+
+    // Group by normalized name, pick most frequent original
+    const groupByName = (rows: Array<{ name: string }>): Map<string, string> => {
+      const map = new Map<string, { original: string; count: number }>();
+      for (const row of rows) {
+        const key = normalize(row.name).toLowerCase();
+        const existing = map.get(key);
+        if (existing) {
+          existing.count++;
+          // Prefer shorter name as canonical
+          if (row.name.length < existing.original.length) {
+            existing.original = row.name;
+          }
+        } else {
+          map.set(key, { original: row.name, count: 1 });
+        }
+      }
+      const result = new Map<string, string>();
+      for (const [key, val] of map) {
+        result.set(key, val.original);
+      }
+      return result;
+    };
+
+    const supplierMap = groupByName(supplierRows);
+    const customerMap = groupByName(customerRows);
+
+    console.log(`[Migrate v1.4.0] 扫描: 入库供应商 ${supplierRows.length} 条, 出库客户 ${customerRows.length} 条`);
+    console.log(`[Migrate v1.4.0] 去重: 唯一供应商 ${supplierMap.size} 个, 唯一客户 ${customerMap.size} 个`);
+
+    // ---- Phase B: Create partners & backfill ----
+
+    const now = new Date().toISOString();
+    const insertPartner = db.prepare(
+      `INSERT INTO partners (id, name, type, contact, phone, address, remark, created_at, updated_at)
+       VALUES (?, ?, ?, '', '', '', '', ?, ?)
+       ON CONFLICT(name, type) DO NOTHING`
+    );
+
+    let supplierCreated = 0;
+    let customerCreated = 0;
+
+    for (const [normalizedKey, originalName] of supplierMap) {
+      const id = uuidv4();
+      const info = insertPartner.run(id, originalName, 'supplier', now, now);
+      if (info.changes > 0) supplierCreated++;
+    }
+
+    for (const [normalizedKey, originalName] of customerMap) {
+      const id = uuidv4();
+      const info = insertPartner.run(id, originalName, 'customer', now, now);
+      if (info.changes > 0) customerCreated++;
+    }
+
+    console.log(`[Migrate v1.4.0] 创建: 供应商 ${supplierCreated} 个, 客户 ${customerCreated} 个`);
+
+    // Backfill supplier_id in inbound_records
+    const backfillSupplier = db.prepare(
+      `UPDATE inbound_records SET supplier_id = (
+         SELECT p.id FROM partners p
+         WHERE LOWER(TRIM(p.name)) = LOWER(TRIM(inbound_records.supplier))
+           AND p.type = 'supplier'
+         LIMIT 1
+       )
+       WHERE supplier IS NOT NULL AND supplier != '' AND supplier_id IS NULL`
+    );
+    const supplierBackfillResult = backfillSupplier.run();
+    console.log(`[Migrate v1.4.0] 回填入库供应商外键: ${supplierBackfillResult.changes} 条`);
+
+    // Backfill customer_id in outbound_records
+    const backfillCustomer = db.prepare(
+      `UPDATE outbound_records SET customer_id = (
+         SELECT p.id FROM partners p
+         WHERE LOWER(TRIM(p.name)) = LOWER(TRIM(outbound_records.customer))
+           AND p.type = 'customer'
+         LIMIT 1
+       )
+       WHERE customer IS NOT NULL AND customer != '' AND customer_id IS NULL`
+    );
+    const customerBackfillResult = backfillCustomer.run();
+    console.log(`[Migrate v1.4.0] 回填出库客户外键: ${customerBackfillResult.changes} 条`);
+
+    // ---- Phase C: Write migration marker ----
+    const stats = {
+      scanned: supplierRows.length + customerRows.length,
+      deduped: supplierMap.size + customerMap.size,
+      created: supplierCreated + customerCreated,
+      linked_inbound: supplierBackfillResult.changes,
+      linked_outbound: customerBackfillResult.changes,
+    };
+    db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?)').run(
+      migrationKey,
+      JSON.stringify(stats)
+    );
+    console.log('[Migrate v1.4.0] ✅ 迁移完成:', JSON.stringify(stats));
+  } else {
+    console.log('[Migrate v1.4.0] 迁移已执行，跳过');
   }
 
   // Skill chain tables (v1.1.0)
@@ -985,11 +1165,11 @@ export function getInboundRecordById(id: string): InboundRecordRow | undefined {
 export function createInboundRecord(data: Omit<InboundRecordRow, 'id'> & { id?: string }): InboundRecordRow {
   const id = data.id || uuidv4();
   const db = initDb();
-  db.prepare(`INSERT INTO inbound_records (id, warehouseId, sku, name, quantity, volume, createdAt, operator, status, supplier, batchNo) VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(
+  db.prepare(`INSERT INTO inbound_records (id, warehouseId, sku, name, quantity, volume, createdAt, operator, status, supplier, batchNo, supplier_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     id, data.warehouseId, data.sku, data.name, data.quantity, data.volume, data.createdAt, data.operator, data.status,
-    data.supplier ?? '', data.batchNo ?? ''
+    data.supplier ?? '', data.batchNo ?? '', data.supplier_id ?? null
   );
-  return { ...data, id, supplier: data.supplier ?? '', batchNo: data.batchNo ?? '' };
+  return { ...data, id, supplier: data.supplier ?? '', batchNo: data.batchNo ?? '', supplier_id: data.supplier_id ?? null };
 }
 
 export function updateInboundRecord(id: string, data: Partial<Omit<InboundRecordRow, 'id'>>): InboundRecordRow | null {
@@ -997,9 +1177,9 @@ export function updateInboundRecord(id: string, data: Partial<Omit<InboundRecord
   const existing = db.prepare('SELECT * FROM inbound_records WHERE id = ?').get(id) as InboundRecordRow | undefined;
   if (!existing) return null;
   const updated = { ...existing, ...data, id };
-  db.prepare(`UPDATE inbound_records SET warehouseId=?, sku=?, name=?, quantity=?, volume=?, createdAt=?, operator=?, status=?, supplier=?, batchNo=? WHERE id=?`).run(
+  db.prepare(`UPDATE inbound_records SET warehouseId=?, sku=?, name=?, quantity=?, volume=?, createdAt=?, operator=?, status=?, supplier=?, batchNo=?, supplier_id=? WHERE id=?`).run(
     updated.warehouseId, updated.sku, updated.name, updated.quantity, updated.volume, updated.createdAt, updated.operator, updated.status,
-    updated.supplier ?? '', updated.batchNo ?? '', id
+    updated.supplier ?? '', updated.batchNo ?? '', updated.supplier_id ?? null, id
   );
   return updated;
 }
@@ -1040,11 +1220,11 @@ export function getOutboundRecordById(id: string): OutboundRecordRow | undefined
 export function createOutboundRecord(data: Omit<OutboundRecordRow, 'id'> & { id?: string }): OutboundRecordRow {
   const id = data.id || uuidv4();
   const db = initDb();
-  db.prepare(`INSERT INTO outbound_records (id, warehouseId, sku, name, quantity, volume, createdAt, operator, destination, customer, orderNo) VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(
+  db.prepare(`INSERT INTO outbound_records (id, warehouseId, sku, name, quantity, volume, createdAt, operator, destination, customer, orderNo, customer_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     id, data.warehouseId, data.sku, data.name, data.quantity, data.volume, data.createdAt, data.operator, data.destination,
-    data.customer ?? '', data.orderNo ?? ''
+    data.customer ?? '', data.orderNo ?? '', data.customer_id ?? null
   );
-  return { ...data, id, customer: data.customer ?? '', orderNo: data.orderNo ?? '' };
+  return { ...data, id, customer: data.customer ?? '', orderNo: data.orderNo ?? '', customer_id: data.customer_id ?? null };
 }
 
 export function updateOutboundRecord(id: string, data: Partial<Omit<OutboundRecordRow, 'id'>>): OutboundRecordRow | null {
@@ -1052,9 +1232,9 @@ export function updateOutboundRecord(id: string, data: Partial<Omit<OutboundReco
   const existing = db.prepare('SELECT * FROM outbound_records WHERE id = ?').get(id) as OutboundRecordRow | undefined;
   if (!existing) return null;
   const updated = { ...existing, ...data, id };
-  db.prepare(`UPDATE outbound_records SET warehouseId=?, sku=?, name=?, quantity=?, volume=?, createdAt=?, operator=?, destination=?, customer=?, orderNo=? WHERE id=?`).run(
+  db.prepare(`UPDATE outbound_records SET warehouseId=?, sku=?, name=?, quantity=?, volume=?, createdAt=?, operator=?, destination=?, customer=?, orderNo=?, customer_id=? WHERE id=?`).run(
     updated.warehouseId, updated.sku, updated.name, updated.quantity, updated.volume, updated.createdAt, updated.operator, updated.destination,
-    updated.customer ?? '', updated.orderNo ?? '', id
+    updated.customer ?? '', updated.orderNo ?? '', updated.customer_id ?? null, id
   );
   return updated;
 }

@@ -26,6 +26,7 @@ import SkillAuditPage from './pages/SkillAuditPage';
 
 import ChatPage from './pages/ChatPage';
 import WarehousesPage from './pages/WarehousesPage';
+import PartnersPage from './pages/PartnersPage';
 import InTransitPage from './pages/InTransitPage';
 import InventoryPage from './pages/InventoryPage';
 import TencentDocsPage from './pages/TencentDocsPage';
@@ -233,6 +234,10 @@ function getToolbarActions(pathname: string) {
   if (pathname.startsWith('/warehouses')) {
     return { refresh: true, newWarehouse: true, warehouseSwitch: false };
   }
+  // 客商管理页：仅刷新
+  if (pathname === '/partners') {
+    return { refresh: true, newWarehouse: false, warehouseSwitch: false };
+  }
   // 仪表盘：仅刷新（仓库切换由 DashboardPage 内部管理）
   if (pathname === '/dashboard') {
     return { refresh: true, newWarehouse: false, warehouseSwitch: false };
@@ -249,6 +254,7 @@ function getToolbarActions(pathname: string) {
 function getPageRefreshKey(pathname: string): string {
   if (pathname === '/dashboard') return 'dashboard';
   if (pathname.startsWith('/warehouses')) return 'warehouses';
+  if (pathname === '/partners') return 'partners';
   if (pathname.startsWith('/in-transit')) return 'in-transit';
   if (pathname.startsWith('/inventory')) return 'inventory';
   if (pathname.startsWith('/reports')) return 'reports';
@@ -469,6 +475,7 @@ const MainLayout: React.FC = () => {
                   <Route path="/chat" element={<ChatPage />} />
                   <Route path="/warehouses" element={<WarehousesPage />} />
                   <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
+                  <Route path="/partners" element={<PartnersPage />} />
                   <Route path="/in-transit" element={<InTransitPage />} />
                   <Route path="/inventory" element={<InventoryPage />} />
                   <Route path="/tencent-docs" element={<TencentDocsPage />} />

@@ -5,7 +5,7 @@
  * 点击「确认入库」时先弹出二次确认 Dialog，确认后才调用 API。
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -23,10 +23,13 @@ import {
   Box,
   Typography,
   Divider,
+  Autocomplete,
 } from '@mui/material';
-import { createInbound } from '../../services/api';
+import { createInbound, getAllPartners, quickCreatePartner } from '../../services/api';
 import { getWarehouses } from '../../capabilities/warehouse';
 import type { Warehouse } from '../../types';
+import type { PartnerOption } from '../../types/partners';
+import { matchPartnerName } from '../../utils/pinyin';
 import { useToast } from '../../contexts/ToastContext';
 
 export interface InboundDialogProps {
@@ -45,18 +48,35 @@ const InboundDialog: React.FC<InboundDialogProps> = ({ open, onClose, onSuccess,
   const [selectedWarehouseId, setSelectedWarehouseId] = useState(warehouseId ?? '');
   const [quantity, setQuantity] = useState<number | ''>('');
   const [supplier, setSupplier] = useState('');
+  const [supplierId, setSupplierId] = useState('');
+  const [supplierInputValue, setSupplierInputValue] = useState('');
   const [batchNo, setBatchNo] = useState('');
   const [remark, setRemark] = useState('');
+
+  // Autocomplete 选项
+  const [supplierOptions, setSupplierOptions] = useState<PartnerOption[]>([]);
 
   // UI 状态
   const [submitting, setSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { showToast } = useToast();
 
+  /** 快速创建供应商的 sentinel ID */
+  const CREATE_SENTINEL = '__CREATE_NEW_SUPPLIER__';
+
   // 加载仓库列表
   useEffect(() => {
     if (open) {
       setWarehouses(getWarehouses());
+    }
+  }, [open]);
+
+  // 加载供应商选项
+  useEffect(() => {
+    if (open) {
+      getAllPartners('supplier')
+        .then((opts) => setSupplierOptions(opts))
+        .catch(() => setSupplierOptions([]));
     }
   }, [open]);
 
@@ -74,6 +94,8 @@ const InboundDialog: React.FC<InboundDialogProps> = ({ open, onClose, onSuccess,
     setSelectedWarehouseId(warehouseId ?? '');
     setQuantity('');
     setSupplier('');
+    setSupplierId('');
+    setSupplierInputValue('');
     setBatchNo('');
     setRemark('');
     setSubmitting(false);
@@ -111,6 +133,25 @@ const InboundDialog: React.FC<InboundDialogProps> = ({ open, onClose, onSuccess,
     return wh?.name ?? whId;
   };
 
+  /** 快速创建供应商 */
+  const handleQuickCreateSupplier = useCallback(async (newName: string) => {
+    if (!newName.trim()) return;
+    try {
+      const created = await quickCreatePartner({ name: newName.trim(), type: 'supplier' });
+      setSupplierOptions((prev) => {
+        if (prev.some((o) => o.id === created.id)) return prev;
+        return [...prev, created];
+      });
+      setSupplierId(created.id);
+      setSupplier(created.name);
+      setSupplierInputValue(created.name);
+      showToast(`已创建供应商「${created.name}」`, 'success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '创建供应商失败';
+      showToast(message, 'error');
+    }
+  }, [showToast]);
+
   /** 二次确认后真正提交 */
   const handleConfirmedSubmit = async () => {
     setConfirmOpen(false);
@@ -122,6 +163,7 @@ const InboundDialog: React.FC<InboundDialogProps> = ({ open, onClose, onSuccess,
         warehouseId: selectedWarehouseId,
         quantity: Number(quantity),
         supplier: supplier.trim() || undefined,
+        supplier_id: supplierId || undefined,
         batchNo: batchNo.trim() || undefined,
         remark: remark.trim() || undefined,
       });
@@ -203,13 +245,108 @@ const InboundDialog: React.FC<InboundDialogProps> = ({ open, onClose, onSuccess,
               inputProps={{ min: 1 }}
               placeholder="请输入入库数量"
             />
-            <TextField
-              label="供应商"
+            <Autocomplete
+              freeSolo
               size="small"
-              fullWidth
-              value={supplier}
-              onChange={(e) => setSupplier(e.target.value)}
-              placeholder="可选"
+              options={supplierOptions}
+              value={supplierOptions.find((o) => o.id === supplierId) || null}
+              inputValue={supplierInputValue}
+              onInputChange={(_event, newInputValue, reason) => {
+                if (reason === 'input') setSupplierInputValue(newInputValue);
+                if (reason === 'clear') {
+                  setSupplierInputValue('');
+                  setSupplierId('');
+                  setSupplier('');
+                }
+              }}
+              onChange={(_event, newValue) => {
+                if (!newValue) {
+                  setSupplierId('');
+                  setSupplier('');
+                  return;
+                }
+                if (typeof newValue === 'string') {
+                  // freeSolo: user typed and pressed Enter
+                  const existing = supplierOptions.find(
+                    (o) => o.name.toLowerCase() === newValue.trim().toLowerCase(),
+                  );
+                  if (existing) {
+                    setSupplierId(existing.id);
+                    setSupplier(existing.name);
+                    setSupplierInputValue(existing.name);
+                  } else if (newValue.trim()) {
+                    handleQuickCreateSupplier(newValue.trim());
+                  }
+                  return;
+                }
+                const option = newValue as PartnerOption & { id: string };
+                if (option.id === CREATE_SENTINEL) {
+                  handleQuickCreateSupplier(option.name);
+                } else {
+                  setSupplierId(option.id);
+                  setSupplier(option.name);
+                  setSupplierInputValue(option.name);
+                }
+              }}
+              onKeyDown={(event: React.KeyboardEvent) => {
+                if (event.key === 'Enter') {
+                  const input = supplierInputValue.trim();
+                  if (!input) return;
+                  const exists = supplierOptions.some(
+                    (o) => o.name.toLowerCase() === input.toLowerCase(),
+                  );
+                  if (!exists) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleQuickCreateSupplier(input);
+                  }
+                }
+              }}
+              filterOptions={(options, state) => {
+                const input = state.inputValue.trim();
+                if (!input) return options;
+                const filtered = options.filter((opt) => matchPartnerName(input, opt.name));
+                const exactMatch = options.some(
+                  (opt) => opt.name.toLowerCase() === input.toLowerCase(),
+                );
+                if (!exactMatch) {
+                  filtered.push({
+                    id: CREATE_SENTINEL,
+                    name: input,
+                    type: 'supplier' as const,
+                  });
+                }
+                return filtered;
+              }}
+              getOptionLabel={(option) =>
+                typeof option === 'string' ? option : option.name
+              }
+              renderOption={(props, option) => {
+                const { key, ...rest } = props as React.HTMLAttributes<HTMLLIElement> & { key: string };
+                const opt = option as PartnerOption;
+                if (opt.id === CREATE_SENTINEL) {
+                  return (
+                    <li key={key} {...rest}>
+                      <Box component="span" sx={{ color: '#2563EB', fontWeight: 500 }}>
+                        创建新供应商「{opt.name}」
+                      </Box>
+                    </li>
+                  );
+                }
+                return (
+                  <li key={key} {...rest}>
+                    {opt.name}
+                  </li>
+                );
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="供应商"
+                  placeholder="搜索或输入名称..."
+                  InputLabelProps={{ shrink: true }}
+                />
+              )}
             />
             <TextField
               label="批次号"
@@ -296,12 +433,12 @@ const InboundDialog: React.FC<InboundDialogProps> = ({ open, onClose, onSuccess,
               <Typography variant="body2" color="text.secondary">数量</Typography>
               <Typography variant="body2" sx={{ fontWeight: 600, color: '#059669' }}>+{Number(quantity)}</Typography>
             </Box>
-            {supplier.trim() && (
+            {supplierInputValue.trim() && (
               <>
                 <Divider />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="body2" color="text.secondary">供应商</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{supplier.trim()}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{supplierInputValue.trim()}</Typography>
                 </Box>
               </>
             )}
