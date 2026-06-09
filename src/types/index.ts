@@ -117,6 +117,9 @@ export interface InboundRecord {
   createdAt: string;
   operator: string;
   status: 'pending' | 'completed';
+  supplier?: string;       // v1.4.0: 冗余显示名称
+  supplier_id?: string;    // v1.4.0: 外键
+  batchNo?: string;        // v1.4.0: 漏缺字段补全
 }
 
 export interface OutboundRecord {
@@ -129,6 +132,9 @@ export interface OutboundRecord {
   createdAt: string;
   operator: string;
   destination: string;
+  customer?: string;       // v1.4.0: 冗余显示名称
+  customer_id?: string;    // v1.4.0: 外键
+  orderNo?: string;        // v1.4.0: 漏缺字段补全
 }
 
 // ===================== Inventory Transaction =====================

@@ -27,6 +27,8 @@ export interface CreateInboundData {
   status: string;
   supplier: string;
   batchNo: string;
+  /** v1.4.0: partner FK for supplier */
+  supplier_id?: string;
   /** Optional: volumePerUnit for auto-created inventory item */
   volumePerUnit?: number;
   /** Optional: valuePerUnit for auto-created inventory item */
@@ -46,6 +48,8 @@ export interface CreateOutboundData {
   destination: string;
   customer: string;
   orderNo: string;
+  /** v1.4.0: partner FK for customer */
+  customer_id?: string;
   remark?: string;
 }
 
@@ -122,8 +126,8 @@ export function createInbound(data: CreateInboundData): CreateInboundResult {
     // 3. Insert inbound record
     const recordId = uuidv4();
     db.prepare(
-      `INSERT INTO inbound_records (id, warehouseId, sku, name, quantity, volume, createdAt, operator, status, supplier, batchNo)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO inbound_records (id, warehouseId, sku, name, quantity, volume, createdAt, operator, status, supplier, batchNo, supplier_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       recordId,
       data.warehouseId,
@@ -135,7 +139,8 @@ export function createInbound(data: CreateInboundData): CreateInboundResult {
       data.operator,
       data.status,
       data.supplier ?? '',
-      data.batchNo ?? ''
+      data.batchNo ?? '',
+      data.supplier_id ?? null
     );
 
     const inboundRecord = db.prepare('SELECT * FROM inbound_records WHERE id = ?').get(recordId) as InboundRecordRow;
@@ -197,8 +202,8 @@ export function createOutbound(data: CreateOutboundData): CreateOutboundResult {
     // 3. Insert outbound record
     const recordId = uuidv4();
     db.prepare(
-      `INSERT INTO outbound_records (id, warehouseId, sku, name, quantity, volume, createdAt, operator, destination, customer, orderNo)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO outbound_records (id, warehouseId, sku, name, quantity, volume, createdAt, operator, destination, customer, orderNo, customer_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       recordId,
       data.warehouseId,
@@ -210,7 +215,8 @@ export function createOutbound(data: CreateOutboundData): CreateOutboundResult {
       data.operator,
       data.destination,
       data.customer ?? '',
-      data.orderNo ?? ''
+      data.orderNo ?? '',
+      data.customer_id ?? null
     );
 
     const outboundRecord = db.prepare('SELECT * FROM outbound_records WHERE id = ?').get(recordId) as OutboundRecordRow;

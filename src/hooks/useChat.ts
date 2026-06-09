@@ -30,6 +30,8 @@ export interface SendMessageOptions {
   referencedSessions?: ReferencedSession[];
   /** 指定使用的模型 ID（优先于 session.model） */
   model?: string;
+  /** 参数预设 ID（creative/code/translate/analysis/precise） */
+  preset?: string;
 }
 
 export function useChat(currentSession: Session | undefined, onSessionUpdate: (session: Session) => void) {
@@ -78,6 +80,10 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       if (options?.referencedSessionIds && options.referencedSessionIds.length > 0) {
         body.referencedSessionIds = options.referencedSessionIds;
       }
+      // 如果有参数预设，传递给后端
+      if (options?.preset) {
+        body.preset = options.preset;
+      }
       // 如果有历史消息，添加到请求体（用于多轮对话）
       if (session.messages.length > 0) {
         body.conversationHistory = session.messages.map(m => ({
@@ -95,6 +101,9 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
+      let currentAutoReason: string | undefined;
+      let currentAutoReasonType: string | undefined;
+      let currentPreset: { id: string; label: string } | null = null;
 
       if (reader) {
         while (true) { // eslint-disable-line no-constant-condition
@@ -107,8 +116,22 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               try {
                 const data = JSON.parse(line.slice(6));
                 if (data.type === 'text') fullContent += data.content;
+                if (data.type === 'init') {
+                  // 捕获 Auto 选型原因和预设信息
+                  if (data.autoReason) currentAutoReason = data.autoReason;
+                  if (data.autoReasonType) currentAutoReasonType = data.autoReasonType;
+                  if (data.preset) currentPreset = data.preset;
+                }
                 if (data.type === 'done') {
-                  const assistantMsg: Message = { id: uuidv4(), role: 'assistant', content: fullContent, timestamp: new Date() };
+                  const assistantMsg: Message = {
+                    id: uuidv4(),
+                    role: 'assistant',
+                    content: fullContent,
+                    timestamp: new Date(),
+                    autoReason: currentAutoReason,
+                    autoReasonType: currentAutoReasonType as any,
+                    activePreset: currentPreset,
+                  };
                   const updatedSession = { ...session, messages: [...session.messages, assistantMsg] };
                   onSessionUpdate(updatedSession);
                 }

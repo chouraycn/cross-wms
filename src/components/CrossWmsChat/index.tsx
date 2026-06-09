@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Paper, IconButton, Tooltip } from '@mui/material';
+import { Box, Typography, Paper, IconButton, Tooltip, Chip } from '@mui/material';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { TopBarChatInput } from './TopBarChatInput';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { Message, ReferencedSession, Session } from '../../types/chat';
@@ -257,6 +258,27 @@ export function CrossWmsChat() {
                   <Typography sx={{ fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                     {msg.content}
                   </Typography>
+                )}
+                {msg.role === 'assistant' && msg.autoReason && (
+                  <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <AutoAwesomeIcon sx={{ fontSize: 12, color: '#9CA3AF' }} />
+                    <Typography sx={{ fontSize: 11, color: '#9CA3AF' }}>
+                      {msg.autoReason}
+                    </Typography>
+                    {msg.activePreset && (
+                      <Chip
+                        label={msg.activePreset.label}
+                        size="small"
+                        sx={{
+                          height: 18,
+                          fontSize: 10,
+                          backgroundColor: '#F3F4F6',
+                          color: '#6B7280',
+                          '& .MuiChip-label': { px: 1 },
+                        }}
+                      />
+                    )}
+                  </Box>
                 )}
                 <Typography
                   sx={{

@@ -22,6 +22,7 @@ import PsychologyIcon from '@mui/icons-material/Psychology';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
 import StarIcon from '@mui/icons-material/Star';
+import TuneIcon from '@mui/icons-material/Tune';
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
 import { getAllSkills } from '../../stores/skillStore';
@@ -73,6 +74,10 @@ export interface ChatToolbarProps {
   onSkillSelect: (skill: Skill) => void;
   /** Available model options with provider info */
   modelOptions: ModelOption[];
+  /** Current preset ID */
+  selectedPreset: string;
+  /** Callback when user picks a preset */
+  onPresetChange: (presetId: string) => void;
 }
 
 // ===================== Constants =====================
@@ -80,7 +85,17 @@ export interface ChatToolbarProps {
 const CRAFT_OPTIONS = ['创建文档', '创建表格', '创建演示'];
 const PERMISSION_OPTIONS = ['公开', '仅自己', '团队成员'];
 
-type DropdownType = 'craft' | 'model' | 'skills' | 'permission' | null;
+  /** 模型参数预设选项 */
+  const PRESET_OPTIONS = [
+    { id: '', label: '默认', description: '使用模型默认参数' },
+    { id: 'creative', label: '创意写作', description: '温度 1.3，适合创意、头脑风暴' },
+    { id: 'code', label: '代码生成', description: '温度 0.2，确保代码准确性' },
+    { id: 'translate', label: '翻译', description: '温度 0.3，保持翻译一致性' },
+    { id: 'analysis', label: '分析推理', description: '温度 0.5，适合逻辑分析' },
+    { id: 'precise', label: '精确问答', description: '温度 0.1，追求事实准确性' },
+  ];
+
+type DropdownType = 'craft' | 'model' | 'skills' | 'permission' | 'preset' | null;
 
 // ===================== Component =====================
 
@@ -95,6 +110,8 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   onOpenMemory,
   onSkillSelect,
   modelOptions,
+  selectedPreset,
+  onPresetChange,
 }) => {
   const navigate = useNavigate();
   const [activeDropdown, setActiveDropdown] = useState<DropdownType>(null);
@@ -103,6 +120,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   const modelBtnRef = useRef<HTMLButtonElement>(null);
   const permissionBtnRef = useRef<HTMLButtonElement>(null);
   const skillsBtnRef = useRef<HTMLButtonElement>(null);
+  const presetBtnRef = useRef<HTMLButtonElement>(null);
 
   const handleDropdownClick = (type: DropdownType) => {
     setActiveDropdown(prev => prev === type ? null : type);
@@ -174,6 +192,25 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             }}
           >
             <Typography sx={{ fontSize: 12, fontWeight: 500 }}>{selectedPermission}</Typography>
+            <ArrowDropDownIcon sx={{ fontSize: 16, ml: 0.25 }} />
+          </IconButton>
+
+          {/* Preset button (参数预设) */}
+          <IconButton
+            ref={presetBtnRef}
+            size="small"
+            onClick={(e) => { e.stopPropagation(); handleDropdownClick('preset'); }}
+            sx={{
+              width: 'auto', height: 32, borderRadius: '8px', px: 1,
+              color: selectedPreset ? '#2563EB' : SECONDARY,
+              bgcolor: selectedPreset ? '#EFF6FF' : 'transparent',
+              '&:hover': { bgcolor: selectedPreset ? '#DBEAFE' : '#f5f5f5' },
+            }}
+          >
+            <TuneIcon sx={{ fontSize: 16, mr: 0.25 }} />
+            <Typography sx={{ fontSize: 12, fontWeight: 500 }}>
+              {selectedPreset ? PRESET_OPTIONS.find(p => p.id === selectedPreset)?.label || '预设' : '预设'}
+            </Typography>
             <ArrowDropDownIcon sx={{ fontSize: 16, ml: 0.25 }} />
           </IconButton>
         </Box>
@@ -458,6 +495,41 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
         {PERMISSION_OPTIONS.map((option) => (
           <MenuItem key={option} onClick={() => { onPermissionChange(option); setActiveDropdown(null); }}>
             {option}
+          </MenuItem>
+        ))}
+      </Menu>
+
+      {/* MUI Menu: Preset (参数预设) */}
+      <Menu
+        anchorEl={presetBtnRef.current}
+        open={activeDropdown === 'preset'}
+        onClose={() => setActiveDropdown(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        PaperProps={{ sx: { width: 240 } }}
+        sx={{ mb: 0.5 }}
+      >
+        {PRESET_OPTIONS.map((option) => (
+          <MenuItem
+            key={option.id}
+            onClick={() => { onPresetChange(option.id); setActiveDropdown(null); }}
+            sx={{
+              py: 1,
+              backgroundColor: selectedPreset === option.id ? '#EFF6FF' : 'transparent',
+            }}
+          >
+            <Box sx={{ width: '100%' }}>
+              <Typography sx={{
+                fontSize: '0.8125rem',
+                fontWeight: selectedPreset === option.id ? 600 : 400,
+                color: selectedPreset === option.id ? '#2563EB' : '#111827',
+              }}>
+                {option.label}
+              </Typography>
+              <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mt: 0.25 }}>
+                {option.description}
+              </Typography>
+            </Box>
           </MenuItem>
         ))}
       </Menu>

@@ -270,6 +270,8 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
   const handleTestApi = useCallback(async () => {
     setTestStatus('testing');
     setTestMessage('');
+    setTestAvailableModels([]);
+    setTestModelValid(false);
     try {
       const endpoint =
         modelForm.provider === 'custom'
@@ -288,6 +290,13 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
       if (result.success) {
         setTestStatus('success');
         setTestMessage(result.message || '连接成功');
+        // 捕获可用模型列表和验证结果
+        if (result.models && Array.isArray(result.models)) {
+          setTestAvailableModels(result.models);
+        }
+        if (typeof result.modelValid === 'boolean') {
+          setTestModelValid(result.modelValid);
+        }
       } else {
         setTestStatus('error');
         setTestMessage(result.message || '连接失败');
@@ -518,6 +527,8 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     selectedCapabilities,
     selectedModelIds,
     showTemplateDialog,
+    testAvailableModels,
+    testModelValid,
   };
 
   const actions: ModelManagerActions = {

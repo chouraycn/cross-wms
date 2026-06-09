@@ -17,6 +17,7 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
@@ -69,6 +70,7 @@ const navItems: NavItem[] = [
     children: [
       { label: '仪表盘', path: '/dashboard', icon: <DashboardOutlinedIcon />, desc: '总览' },
       { label: '仓库管理', path: '/warehouses', icon: <FolderOutlinedIcon />, desc: '仓库列表' },
+      { label: '客商管理', path: '/partners', icon: <GroupsOutlinedIcon />, desc: '供应商 & 客户' },
       { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon />, desc: '在途跟踪' },
       { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon />, desc: '库存查询' },
       { label: '腾讯文档', path: '/tencent-docs', icon: <DescriptionOutlinedIcon />, desc: '在线文档' },

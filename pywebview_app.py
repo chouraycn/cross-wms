@@ -549,16 +549,17 @@ def start_server():
 
     # 如果是 .ts 文件，需要用 tsx 运行
     if server_script.endswith('.ts'):
+        base = os.path.dirname(os.path.abspath(__file__))
+        tsconfig_path = os.path.join(base, 'server', 'tsconfig.json')
         # 开发模式用 tsx
         tsx_path = shutil.which('tsx')
         if tsx_path:
-            cmd = [tsx_path, server_script]
+            cmd = [tsx_path, '--tsconfig', tsconfig_path, server_script]
         else:
             # 尝试项目本地 tsx
-            base = os.path.dirname(os.path.abspath(__file__))
             local_tsx = os.path.join(base, 'node_modules', '.bin', 'tsx')
             if os.path.isfile(local_tsx):
-                cmd = [local_tsx, server_script]
+                cmd = [local_tsx, '--tsconfig', tsconfig_path, server_script]
             else:
                 print("[Server] ⚠️  tsx 未找到，无法运行 TypeScript 服务器")
                 return None

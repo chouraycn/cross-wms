@@ -6,7 +6,7 @@
  * 点击「确认出库」时先弹出二次确认 Dialog，确认后才调用 API。
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -24,10 +24,13 @@ import {
   Box,
   Typography,
   Divider,
+  Autocomplete,
 } from '@mui/material';
-import { createOutbound } from '../../services/api';
+import { createOutbound, getAllPartners, quickCreatePartner } from '../../services/api';
 import { getWarehouses } from '../../capabilities/warehouse';
 import type { Warehouse } from '../../types';
+import type { PartnerOption } from '../../types/partners';
+import { matchPartnerName } from '../../utils/pinyin';
 import { useToast } from '../../contexts/ToastContext';
 
 export interface OutboundDialogProps {
@@ -55,8 +58,13 @@ const OutboundDialog: React.FC<OutboundDialogProps> = ({
   const [selectedWarehouseId, setSelectedWarehouseId] = useState(warehouseId ?? '');
   const [quantity, setQuantity] = useState<number | ''>('');
   const [customer, setCustomer] = useState('');
+  const [customerId, setCustomerId] = useState('');
+  const [customerInputValue, setCustomerInputValue] = useState('');
   const [orderNo, setOrderNo] = useState('');
   const [remark, setRemark] = useState('');
+
+  // Autocomplete 选项
+  const [customerOptions, setCustomerOptions] = useState<PartnerOption[]>([]);
 
   // UI 状态
   const [submitting, setSubmitting] = useState(false);
@@ -64,10 +72,22 @@ const OutboundDialog: React.FC<OutboundDialogProps> = ({
   const [stockWarning, setStockWarning] = useState('');
   const { showToast } = useToast();
 
+  /** 快速创建客户的 sentinel ID */
+  const CREATE_SENTINEL = '__CREATE_NEW_CUSTOMER__';
+
   // 加载仓库列表
   useEffect(() => {
     if (open) {
       setWarehouses(getWarehouses());
+    }
+  }, [open]);
+
+  // 加载客户选项
+  useEffect(() => {
+    if (open) {
+      getAllPartners('customer')
+        .then((opts) => setCustomerOptions(opts))
+        .catch(() => setCustomerOptions([]));
     }
   }, [open]);
 
@@ -91,6 +111,8 @@ const OutboundDialog: React.FC<OutboundDialogProps> = ({
     setSelectedWarehouseId(warehouseId ?? '');
     setQuantity('');
     setCustomer('');
+    setCustomerId('');
+    setCustomerInputValue('');
     setOrderNo('');
     setRemark('');
     setSubmitting(false);
@@ -130,6 +152,25 @@ const OutboundDialog: React.FC<OutboundDialogProps> = ({
     return wh?.name ?? whId;
   };
 
+  /** 快速创建客户 */
+  const handleQuickCreateCustomer = useCallback(async (newName: string) => {
+    if (!newName.trim()) return;
+    try {
+      const created = await quickCreatePartner({ name: newName.trim(), type: 'customer' });
+      setCustomerOptions((prev) => {
+        if (prev.some((o) => o.id === created.id)) return prev;
+        return [...prev, created];
+      });
+      setCustomerId(created.id);
+      setCustomer(created.name);
+      setCustomerInputValue(created.name);
+      showToast(`已创建客户「${created.name}」`, 'success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '创建客户失败';
+      showToast(message, 'error');
+    }
+  }, [showToast]);
+
   /** 二次确认后真正提交 */
   const handleConfirmedSubmit = async () => {
     setConfirmOpen(false);
@@ -141,6 +182,7 @@ const OutboundDialog: React.FC<OutboundDialogProps> = ({
         warehouseId: selectedWarehouseId,
         quantity: Number(quantity),
         customer: customer.trim() || undefined,
+        customer_id: customerId || undefined,
         orderNo: orderNo.trim() || undefined,
         remark: remark.trim() || undefined,
       });
@@ -231,13 +273,107 @@ const OutboundDialog: React.FC<OutboundDialogProps> = ({
               inputProps={{ min: 1 }}
               placeholder="请输入出库数量"
             />
-            <TextField
-              label="客户"
+            <Autocomplete
+              freeSolo
               size="small"
-              fullWidth
-              value={customer}
-              onChange={(e) => setCustomer(e.target.value)}
-              placeholder="可选"
+              options={customerOptions}
+              value={customerOptions.find((o) => o.id === customerId) || null}
+              inputValue={customerInputValue}
+              onInputChange={(_event, newInputValue, reason) => {
+                if (reason === 'input') setCustomerInputValue(newInputValue);
+                if (reason === 'clear') {
+                  setCustomerInputValue('');
+                  setCustomerId('');
+                  setCustomer('');
+                }
+              }}
+              onChange={(_event, newValue) => {
+                if (!newValue) {
+                  setCustomerId('');
+                  setCustomer('');
+                  return;
+                }
+                if (typeof newValue === 'string') {
+                  const existing = customerOptions.find(
+                    (o) => o.name.toLowerCase() === newValue.trim().toLowerCase(),
+                  );
+                  if (existing) {
+                    setCustomerId(existing.id);
+                    setCustomer(existing.name);
+                    setCustomerInputValue(existing.name);
+                  } else if (newValue.trim()) {
+                    handleQuickCreateCustomer(newValue.trim());
+                  }
+                  return;
+                }
+                const option = newValue as PartnerOption & { id: string };
+                if (option.id === CREATE_SENTINEL) {
+                  handleQuickCreateCustomer(option.name);
+                } else {
+                  setCustomerId(option.id);
+                  setCustomer(option.name);
+                  setCustomerInputValue(option.name);
+                }
+              }}
+              onKeyDown={(event: React.KeyboardEvent) => {
+                if (event.key === 'Enter') {
+                  const input = customerInputValue.trim();
+                  if (!input) return;
+                  const exists = customerOptions.some(
+                    (o) => o.name.toLowerCase() === input.toLowerCase(),
+                  );
+                  if (!exists) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleQuickCreateCustomer(input);
+                  }
+                }
+              }}
+              filterOptions={(options, state) => {
+                const input = state.inputValue.trim();
+                if (!input) return options;
+                const filtered = options.filter((opt) => matchPartnerName(input, opt.name));
+                const exactMatch = options.some(
+                  (opt) => opt.name.toLowerCase() === input.toLowerCase(),
+                );
+                if (!exactMatch) {
+                  filtered.push({
+                    id: CREATE_SENTINEL,
+                    name: input,
+                    type: 'customer' as const,
+                  });
+                }
+                return filtered;
+              }}
+              getOptionLabel={(option) =>
+                typeof option === 'string' ? option : option.name
+              }
+              renderOption={(props, option) => {
+                const { key, ...rest } = props as React.HTMLAttributes<HTMLLIElement> & { key: string };
+                const opt = option as PartnerOption;
+                if (opt.id === CREATE_SENTINEL) {
+                  return (
+                    <li key={key} {...rest}>
+                      <Box component="span" sx={{ color: '#059669', fontWeight: 500 }}>
+                        创建新客户「{opt.name}」
+                      </Box>
+                    </li>
+                  );
+                }
+                return (
+                  <li key={key} {...rest}>
+                    {opt.name}
+                  </li>
+                );
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="客户"
+                  placeholder="搜索或输入名称..."
+                  InputLabelProps={{ shrink: true }}
+                />
+              )}
             />
             <TextField
               label="订单号"
@@ -329,12 +465,12 @@ const OutboundDialog: React.FC<OutboundDialogProps> = ({
               <Typography variant="body2" color="text.secondary">数量</Typography>
               <Typography variant="body2" sx={{ fontWeight: 600, color: '#EA580C' }}>-{Number(quantity)}</Typography>
             </Box>
-            {customer.trim() && (
+            {customerInputValue.trim() && (
               <>
                 <Divider />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography variant="body2" color="text.secondary">客户</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{customer.trim()}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{customerInputValue.trim()}</Typography>
                 </Box>
               </>
             )}

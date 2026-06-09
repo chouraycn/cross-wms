@@ -267,6 +267,8 @@ const InventoryList: React.FC = () => {
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>品名</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>品类</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>所在仓库</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>供应商</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>客户</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>数量</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>单件体积(m³)</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>占用容积(m³)</TableCell>

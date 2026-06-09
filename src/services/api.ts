@@ -9,6 +9,13 @@ import type { AppSettings } from '../contexts/AppSettingsContext';
 import type { ModelConfig, ModelsConfig } from '../types/models';
 import type { Task } from '../types/task';
 import type { Project } from '../types/project';
+import type {
+  Partner,
+  PartnerOption,
+  PartnerType,
+  PartnerListResponse,
+  QuickCreatePartnerPayload,
+} from '../types/partners';
 
 const BASE_URL = 'http://localhost:3001';
 
@@ -215,6 +222,7 @@ export interface InboundPayload {
   warehouseId: string;
   quantity: number;
   supplier?: string;
+  supplier_id?: string;
   batchNo?: string;
   operator?: string;
   remark?: string;
@@ -226,6 +234,7 @@ export interface OutboundPayload {
   warehouseId: string;
   quantity: number;
   customer?: string;
+  customer_id?: string;
   orderNo?: string;
   operator?: string;
   remark?: string;
@@ -557,7 +566,10 @@ export interface TestConnectionResult {
   success: boolean;
   message: string;
   models?: string[];
+  /** 模型 ID 是否在可用列表中验证通过 */
+  modelValid?: boolean;
 }
+
 export async function testModelConnection(
   apiEndpoint: string,
   apiKey: string,
@@ -568,4 +580,62 @@ export async function testModelConnection(
     '/api/models/test-connection',
     { apiEndpoint, apiKey, modelId },
   );
+}
+
+// ===================== Partners (供应商/客户) API =====================
+
+/** 分页查询客商列表 */
+export async function getPartners(params?: {
+  type?: PartnerType;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<PartnerListResponse> {
+  const query = new URLSearchParams();
+  if (params) {
+    if (params.type) query.set('type', params.type);
+    if (params.search) query.set('search', params.search);
+    if (params.page !== undefined) query.set('page', String(params.page));
+    if (params.pageSize !== undefined) query.set('pageSize', String(params.pageSize));
+  }
+  const qs = query.toString();
+  return request<PartnerListResponse>('GET', `/api/partners${qs ? `?${qs}` : ''}`);
+}
+
+/** 获取全部客商（Autocomplete 选项用） */
+export async function getAllPartners(type?: PartnerType): Promise<PartnerOption[]> {
+  const query = type ? `?type=${encodeURIComponent(type)}` : '';
+  return request<PartnerOption[]>('GET', `/api/partners/all${query}`);
+}
+
+/** 根据 ID 获取客商详情 */
+export async function getPartnerById(id: string): Promise<Partner> {
+  return request<Partner>('GET', `/api/partners/${encodeURIComponent(id)}`);
+}
+
+/** 创建客商 */
+export async function createPartner(
+  data: Omit<Partner, 'id' | 'created_at' | 'updated_at'>,
+): Promise<Partner> {
+  return request<Partner>('POST', '/api/partners', data);
+}
+
+/** 更新客商 */
+export async function updatePartner(
+  id: string,
+  data: Partial<Partner>,
+): Promise<Partner> {
+  return request<Partner>('PUT', `/api/partners/${encodeURIComponent(id)}`, data);
+}
+
+/** 删除客商 */
+export async function deletePartner(id: string): Promise<void> {
+  await request<void>('DELETE', `/api/partners/${encodeURIComponent(id)}`);
+}
+
+/** 快速创建客商（仅 name + type），返回轻量选项 */
+export async function quickCreatePartner(
+  data: QuickCreatePartnerPayload,
+): Promise<PartnerOption> {
+  return request<PartnerOption>('POST', '/api/partners/quick', data);
 }

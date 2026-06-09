@@ -15,6 +15,7 @@ import inventoryRouter from './routes/inventory.js';
 import transitRouter from './routes/transit.js';
 import inboundRouter from './routes/inbound.js';
 import outboundRouter from './routes/outbound.js';
+import partnersRouter from './routes/partners.js';
 import skillsRouter from './routes/skills.js';
 import settingsRouter from './routes/settings.js';
 import migrateRouter from './routes/migrate.js';
@@ -58,8 +59,18 @@ const MEMORY_MD_PATH = path.join(CDF_KNOW_CLOW_DIR, 'MEMORY.md');
 
 /** 模型能力分层 */
 const POWERFUL_MODEL_IDS = ['gpt-4o', 'gpt-4-turbo', 'claude-sonnet-4-20250514', 'qwen-plus'];
-const FAST_MODEL_IDS = ['claude-haiku-3.5'];
+const FAST_MODEL_IDS = ['claude-haiku-3.5', 'qwen-turbo', 'hunyuan-turbo'];
 const CODE_MODEL_IDS = ['deepseek-coder'];
+
+/** Auto 选型结果 */
+interface AutoSelectResult {
+  modelId: string;
+  modelName: string;
+  /** 选型原因中文描述 */
+  reason: string;
+  /** 选型原因类型标签 */
+  reasonType: 'code' | 'complex' | 'simple' | 'default';
+}
 
 /**
  * Auto 模式：根据用户输入智能选择最合适的模型。
@@ -70,12 +81,20 @@ const CODE_MODEL_IDS = ['deepseek-coder'];
  * - 简单短问题 → 优先用轻量快速模型
  * - 默认 → 使用配置的 defaultModelId 或首个已启用模型
  *
- * @returns 选中的模型 ID
+ * @returns 选中的模型 ID + 选型原因
  */
-function autoSelectModel(message: string, modelsConfig: ModelsFile): string {
+function autoSelectModel(message: string, modelsConfig: ModelsFile): AutoSelectResult {
   const enabledModels = modelsConfig.models.filter((m) => m.enabled);
-  if (enabledModels.length === 0) return 'claude-sonnet-4';
-  if (enabledModels.length === 1) return enabledModels[0].id;
+  const fallback: AutoSelectResult = {
+    modelId: enabledModels[0]?.id || 'claude-sonnet-4',
+    modelName: enabledModels[0]?.name || 'Claude Sonnet 4',
+    reason: '默认模型',
+    reasonType: 'default',
+  };
+  if (enabledModels.length === 0) return fallback;
+  if (enabledModels.length === 1) {
+    return { ...fallback, reason: '唯一可用模型', reasonType: 'default' };
+  }
 
   const msg = message.toLowerCase();
 
@@ -107,29 +126,59 @@ function autoSelectModel(message: string, modelsConfig: ModelsFile): string {
   // --- 分层选择 ---
   // 1. 代码 → 代码专用 / 强力
   if (isCode) {
-    return findEnabled(CODE_MODEL_IDS)?.id
-      || findEnabled(POWERFUL_MODEL_IDS)?.id
-      || enabledModels[0].id;
+    const codeModel = findEnabled(CODE_MODEL_IDS) || findEnabled(POWERFUL_MODEL_IDS) || enabledModels[0];
+    return {
+      modelId: codeModel.id,
+      modelName: codeModel.name,
+      reason: '检测到代码内容，选择代码专用模型',
+      reasonType: 'code',
+    };
   }
 
   // 2. 复杂分析 → 强力模型
   if (isComplex) {
-    return findEnabled(POWERFUL_MODEL_IDS)?.id
-      || enabledModels[0].id;
+    const powerfulModel = findEnabled(POWERFUL_MODEL_IDS) || enabledModels[0];
+    return {
+      modelId: powerfulModel.id,
+      modelName: powerfulModel.name,
+      reason: '复杂分析任务，选择强力模型',
+      reasonType: 'complex',
+    };
   }
 
   // 3. 简单短对话 → 快速/轻量模型
   if (isSimple) {
-    // 优先快速模型，否则选非强力模型（省成本），都无则用第一个
-    return findEnabled(FAST_MODEL_IDS)?.id
-      || enabledModels.find((m) => !POWERFUL_MODEL_IDS.includes(m.id))?.id
-      || enabledModels[0].id;
+    const fastModel = findEnabled(FAST_MODEL_IDS)
+      || enabledModels.find((m) => !POWERFUL_MODEL_IDS.includes(m.id))
+      || enabledModels[0];
+    return {
+      modelId: fastModel.id,
+      modelName: fastModel.name,
+      reason: '简单对话，选择快速模型',
+      reasonType: 'simple',
+    };
   }
 
   // 4. 默认 → 配置的默认模型，或第一个已启用模型
-  const defaultModel = enabledModels.find((m) => m.id === modelsConfig.defaultModelId);
-  return defaultModel?.id || enabledModels[0].id;
+  const defaultModel = enabledModels.find((m) => m.id === modelsConfig.defaultModelId) || enabledModels[0];
+  return {
+    modelId: defaultModel.id,
+    modelName: defaultModel.name,
+    reason: '使用默认模型',
+    reasonType: 'default',
+  };
 }
+
+// ===================== Model Parameter Presets =====================
+
+/** 模型参数预设 */
+const MODEL_PRESETS: Record<string, { temperature: number; topP: number; label: string; description: string }> = {
+  creative: { temperature: 1.3, topP: 0.95, label: '创意写作', description: '高温度，适合创意、头脑风暴' },
+  code:     { temperature: 0.2, topP: 0.8,  label: '代码生成', description: '低温度，确保代码准确性' },
+  translate:{ temperature: 0.3, topP: 0.85, label: '翻译', description: '适中温度，保持翻译一致性' },
+  analysis: { temperature: 0.5, topP: 0.9, label: '分析推理', description: '平衡温度，适合逻辑分析' },
+  precise:  { temperature: 0.1, topP: 0.7, label: '精确问答', description: '极低温度，追求事实准确性' },
+};
 
 /** 读取 MEMORY.md 内容，不存在则返回空字符串 */
 function readMemoryMd(): string {
@@ -293,7 +342,7 @@ app.delete('/api/sessions/:id', (req, res) => {
 
 // 发送消息（SSE）
 app.post('/api/chat', async (req, res) => {
-  const { sessionId, message, model = 'auto', skillContext, skillId } = req.body;
+  const { sessionId, message, model = 'auto', skillContext, skillId, preset } = req.body;
 
   try {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -305,14 +354,19 @@ app.post('/api/chat', async (req, res) => {
     const modelsConfig = loadModelsConfig();
     let effectiveModel: string;
     let autoReason: string | undefined;
+    let autoReasonType: string | undefined;
     if (model === 'auto') {
-      effectiveModel = autoSelectModel(message, modelsConfig);
-      const autoSelectedConfig = modelsConfig.models.find((m) => m.id === effectiveModel);
-      autoReason = autoSelectedConfig?.name || effectiveModel;
-      console.log(`[Auto Model] 输入复杂度分析 → 选择: ${autoReason} (${effectiveModel})`);
+      const autoResult = autoSelectModel(message, modelsConfig);
+      effectiveModel = autoResult.modelId;
+      autoReason = `${autoResult.modelName} · ${autoResult.reason}`;
+      autoReasonType = autoResult.reasonType;
+      console.log(`[Auto Model] ${autoResult.reasonType} → ${autoResult.modelName} (${autoResult.modelId})`);
     } else {
       effectiveModel = model;
     }
+
+    // 应用参数预设
+    const activePreset = preset && MODEL_PRESETS[preset] ? MODEL_PRESETS[preset] : null;
 
     // 确保会话存在，如果不存在则自动创建
     const sessions = getSessions();
@@ -325,9 +379,17 @@ app.post('/api/chat', async (req, res) => {
     const userMsg = addMessage({ sessionId, role: 'user', content: message, model: effectiveModel, skillId: skillId || null });
     res.write(`data: ${JSON.stringify({ type: 'text', content: userMsg.content })}\n\n`);
 
-    // 发送初始化事件（Auto 模式附加选择原因）
+    // 发送初始化事件（Auto 模式附加选择原因 + 预设信息）
     const assistantId = uuidv4();
-    res.write(`data: ${JSON.stringify({ type: 'init', sessionId, assistantMessageId: assistantId, model: effectiveModel, autoReason })}\n\n`);
+    res.write(`data: ${JSON.stringify({
+      type: 'init',
+      sessionId,
+      assistantMessageId: assistantId,
+      model: effectiveModel,
+      autoReason,
+      autoReasonType,
+      preset: activePreset ? { id: preset, label: activePreset.label } : null,
+    })}\n\n`);
 
     // 调用 Agent SDK 进行流式对话
     let fullContent = '';
@@ -346,6 +408,11 @@ app.post('/api/chat', async (req, res) => {
         if (modelConfig.apiKey) queryOptions.apiKey = modelConfig.apiKey;
         if (typeof modelConfig.temperature === 'number') queryOptions.temperature = modelConfig.temperature;
         if (typeof modelConfig.topP === 'number') queryOptions.topP = modelConfig.topP;
+      }
+      // 预设参数覆盖模型配置
+      if (activePreset) {
+        queryOptions.temperature = activePreset.temperature;
+        queryOptions.topP = activePreset.topP;
       }
       const nodeExe = getNodeExecutable();
       if (nodeExe) {
@@ -439,6 +506,7 @@ app.use('/api/inventory', inventoryRouter);
 app.use('/api/transit-orders', transitRouter);
 app.use('/api/inbound-records', inboundRouter);
 app.use('/api/outbound-records', outboundRouter);
+app.use('/api/partners', partnersRouter);
 app.use('/api', skillsRouter); // handles /api/user-skills and /api/builtin-status-patches
 app.use('/api/app-settings', settingsRouter);
 app.use('/api/migrate', migrateRouter);
