@@ -84,43 +84,7 @@ export function CrossWmsChat() {
   const { settings } = useAppSettings();
   const { showToast } = useToast();
 
-  // 获取 sendMessage 用于重新生成功能
-  const { sendMessage } = useChat(session, handleSessionUpdate);
-
   const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  /** 复制消息内容到剪贴板 */
-  const handleCopy = useCallback((msg: Message) => {
-    navigator.clipboard.writeText(msg.content);
-    setCopiedId(msg.id);
-    setTimeout(() => setCopiedId(null), 2000);
-  }, []);
-
-  /** 重新生成：移除当前 assistant 消息，重新发送上一条用户消息 */
-  const handleRegenerate = useCallback((msg: Message) => {
-    const msgIndex = session.messages.findIndex((m) => m.id === msg.id);
-    if (msgIndex === -1) return;
-
-    // 找到前一条用户消息
-    let userContent: string | null = null;
-    for (let i = msgIndex - 1; i >= 0; i--) {
-      if (session.messages[i].role === 'user') {
-        userContent = session.messages[i].content;
-        break;
-      }
-    }
-    if (!userContent) return;
-
-    // 移除当前 assistant 消息及之后的所有消息
-    const trimmedMessages = session.messages.slice(0, msgIndex);
-    const updatedSession = { ...session, messages: trimmedMessages };
-    handleSessionUpdate(updatedSession);
-
-    // 重新发送用户消息
-    setTimeout(() => {
-      sendMessage(userContent);
-    }, 100);
-  }, [session, handleSessionUpdate, sendMessage]);
 
   // 获取默认模型 ID（优先使用 settings 中配置的默认模型）
   const defaultModelId = 'auto';
@@ -162,6 +126,42 @@ export function CrossWmsChat() {
       return [updatedSession, ...prev].slice(0, MAX_SESSIONS);
     });
   }, []);
+
+  // 获取 sendMessage 用于重新生成功能（必须在 session + handleSessionUpdate 声明之后）
+  const { sendMessage } = useChat(session, handleSessionUpdate);
+
+  /** 复制消息内容到剪贴板 */
+  const handleCopy = useCallback((msg: Message) => {
+    navigator.clipboard.writeText(msg.content);
+    setCopiedId(msg.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }, []);
+
+  /** 重新生成：移除当前 assistant 消息，重新发送上一条用户消息 */
+  const handleRegenerate = useCallback((msg: Message) => {
+    const msgIndex = session.messages.findIndex((m) => m.id === msg.id);
+    if (msgIndex === -1) return;
+
+    // 找到前一条用户消息
+    let userContent: string | null = null;
+    for (let i = msgIndex - 1; i >= 0; i--) {
+      if (session.messages[i].role === 'user') {
+        userContent = session.messages[i].content;
+        break;
+      }
+    }
+    if (!userContent) return;
+
+    // 移除当前 assistant 消息及之后的所有消息
+    const trimmedMessages = session.messages.slice(0, msgIndex);
+    const updatedSession = { ...session, messages: trimmedMessages };
+    handleSessionUpdate(updatedSession);
+
+    // 重新发送用户消息
+    setTimeout(() => {
+      sendMessage(userContent);
+    }, 100);
+  }, [session, handleSessionUpdate, sendMessage]);
 
   /** 新建对话 */
   const handleNewChat = useCallback(() => {
