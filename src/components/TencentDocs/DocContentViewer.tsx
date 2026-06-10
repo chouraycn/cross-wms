@@ -3,6 +3,7 @@ import {
   Box, Typography, IconButton, Tooltip, Button, Chip, Alert,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
   CircularProgress,
+  useTheme,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -12,6 +13,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { SheetRow, SheetCell } from '../../services/tencentDocsApi';
+import { getGrayScale } from '../../constants/theme';
 
 /** 腾讯文档品牌色 */
 const TDOC_COLOR = '#27A17C';
@@ -54,6 +56,9 @@ const DocContentViewer: React.FC<DocContentViewerProps> = ({
   sheetRows, sheetHeaders, errorMsg, onBackToList, onOpenInBrowser,
 }) => {
 /* eslint-enable @typescript-eslint/no-unused-vars */
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const docColor = activeDocSource === 'enterprise' ? WECOM_COLOR : TDOC_COLOR;
   const docSourceLabel = activeDocSource === 'enterprise' ? '企业文档' : '个人文档';
 
@@ -62,7 +67,7 @@ const DocContentViewer: React.FC<DocContentViewerProps> = ({
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 10 }}>
         <CircularProgress sx={{ color: docColor, mb: 2 }} />
-        <Typography sx={{ color: '#6B7280', fontSize: '0.9rem' }}>正在读取文档内容...</Typography>
+        <Typography sx={{ color: gs.textMuted, fontSize: '0.9rem' }}>正在读取文档内容...</Typography>
       </Box>
     );
   }
@@ -72,8 +77,8 @@ const DocContentViewer: React.FC<DocContentViewerProps> = ({
     return (
       <Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <Tooltip title="返回文档列表"><IconButton size="small" onClick={onBackToList} sx={{ color: '#6B7280' }}><ArrowBackIcon fontSize="small" /></IconButton></Tooltip>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: '#111827' }}>{activeDocTitle}</Typography>
+          <Tooltip title="返回文档列表"><IconButton size="small" onClick={onBackToList} sx={{ color: gs.textMuted }}><ArrowBackIcon fontSize="small" /></IconButton></Tooltip>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: gs.textPrimary }}>{activeDocTitle}</Typography>
         </Box>
         <Alert severity="error" sx={{ mb: 2 }}>{errorMsg}</Alert>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -91,19 +96,19 @@ const DocContentViewer: React.FC<DocContentViewerProps> = ({
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
         {/* 顶部工具栏 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1, borderBottom: '1px solid #E5E7EB', backgroundColor: '#FAFAFA', flexShrink: 0 }}>
-          <Tooltip title="返回文档列表"><IconButton size="small" onClick={onBackToList} sx={{ color: '#6B7280' }}><ArrowBackIcon fontSize="small" /></IconButton></Tooltip>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1, borderBottom: `1px solid ${gs.border}`, backgroundColor: gs.bgPage, flexShrink: 0 }}>
+          <Tooltip title="返回文档列表"><IconButton size="small" onClick={onBackToList} sx={{ color: gs.textMuted }}><ArrowBackIcon fontSize="small" /></IconButton></Tooltip>
           <Box sx={{ width: 28, height: 28, borderRadius: 1, backgroundColor: docColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <DescriptionIcon sx={{ color: '#fff', fontSize: 16 }} />
           </Box>
-          <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{activeDocTitle}</Typography>
+          <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: gs.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{activeDocTitle}</Typography>
           <Chip label="文档" size="small" sx={{ height: 20, fontSize: '0.65rem', backgroundColor: '#E8F5E9', color: docColor }} />
-          <Chip label={docSourceLabel} size="small" sx={{ height: 20, fontSize: '0.65rem', backgroundColor: '#F3F4F6', color: '#6B7280' }} />
+          <Chip label={docSourceLabel} size="small" sx={{ height: 20, fontSize: '0.65rem', backgroundColor: gs.bgHover, color: gs.textMuted }} />
           <CloudDoneIcon sx={{ fontSize: 16, color: docColor }} titleAccess="已从腾讯文档读取" />
         </Box>
         {/* Markdown 渲染 */}
-        <Box sx={{ flex: 1, overflow: 'auto', p: 3, backgroundColor: '#FFFFFF' }}>
-          <Box sx={{ maxWidth: 800, mx: 'auto', '& h1, & h2, & h3, & h4': { mt: 2, mb: 1, color: '#111827' }, '& h1': { fontSize: '1.5rem', fontWeight: 700 }, '& h2': { fontSize: '1.25rem', fontWeight: 600 }, '& h3': { fontSize: '1.1rem', fontWeight: 600 }, '& p': { mb: 1.5, lineHeight: 1.7, color: '#374151' }, '& ul, & ol': { mb: 1.5, pl: 3 }, '& li': { mb: 0.5, lineHeight: 1.6 }, '& strong': { fontWeight: 600, color: '#111827' }, '& code': { backgroundColor: '#F3F4F6', px: 0.5, py: 0.25, borderRadius: 0.5, fontSize: '0.875rem' }, '& blockquote': { borderLeft: `3px solid ${TDOC_COLOR}`, pl: 2, ml: 0, color: '#6B7280' }, '& table': { width: '100%', borderCollapse: 'collapse', mb: 2 }, '& th, & td': { border: '1px solid #E5E7EB', p: 1, fontSize: '0.875rem' }, '& th': { backgroundColor: '#F9FAFB', fontWeight: 600 } }}>
+        <Box sx={{ flex: 1, overflow: 'auto', p: 3, backgroundColor: gs.bgPanel }}>
+          <Box sx={{ maxWidth: 800, mx: 'auto', '& h1, & h2, & h3, & h4': { mt: 2, mb: 1, color: gs.textPrimary }, '& h1': { fontSize: '1.5rem', fontWeight: 700 }, '& h2': { fontSize: '1.25rem', fontWeight: 600 }, '& h3': { fontSize: '1.1rem', fontWeight: 600 }, '& p': { mb: 1.5, lineHeight: 1.7, color: gs.textSecondary }, '& ul, & ol': { mb: 1.5, pl: 3 }, '& li': { mb: 0.5, lineHeight: 1.6 }, '& strong': { fontWeight: 600, color: gs.textPrimary }, '& code': { backgroundColor: gs.bgHover, px: 0.5, py: 0.25, borderRadius: 0.5, fontSize: '0.875rem' }, '& blockquote': { borderLeft: `3px solid ${TDOC_COLOR}`, pl: 2, ml: 0, color: gs.textMuted }, '& table': { width: '100%', borderCollapse: 'collapse', mb: 2 }, '& th, & td': { border: `1px solid ${gs.border}`, p: 1, fontSize: '0.875rem' }, '& th': { backgroundColor: gs.bgPage, fontWeight: 600 } }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{docMarkdown}</ReactMarkdown>
           </Box>
         </Box>
@@ -118,26 +123,26 @@ const DocContentViewer: React.FC<DocContentViewerProps> = ({
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
         {/* 顶部工具栏 */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1, borderBottom: '1px solid #E5E7EB', backgroundColor: '#FAFAFA', flexShrink: 0 }}>
-          <Tooltip title="返回文档列表"><IconButton size="small" onClick={onBackToList} sx={{ color: '#6B7280' }}><ArrowBackIcon fontSize="small" /></IconButton></Tooltip>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1, borderBottom: `1px solid ${gs.border}`, backgroundColor: gs.bgPage, flexShrink: 0 }}>
+          <Tooltip title="返回文档列表"><IconButton size="small" onClick={onBackToList} sx={{ color: gs.textMuted }}><ArrowBackIcon fontSize="small" /></IconButton></Tooltip>
           <Box sx={{ width: 28, height: 28, borderRadius: 1, backgroundColor: docColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <TableChartIcon sx={{ color: '#fff', fontSize: 16 }} />
           </Box>
-          <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{activeDocTitle}</Typography>
+          <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: gs.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{activeDocTitle}</Typography>
           <Chip label="表格" size="small" sx={{ height: 20, fontSize: '0.65rem', backgroundColor: '#E8F5E9', color: docColor }} />
-          <Chip label={docSourceLabel} size="small" sx={{ height: 20, fontSize: '0.65rem', backgroundColor: '#F3F4F6', color: '#6B7280' }} />
+          <Chip label={docSourceLabel} size="small" sx={{ height: 20, fontSize: '0.65rem', backgroundColor: gs.bgHover, color: gs.textMuted }} />
           <Typography variant="caption" color="text.secondary">{dataRows.length} 行</Typography>
           <CloudDoneIcon sx={{ fontSize: 16, color: docColor }} titleAccess="已从腾讯文档读取" />
         </Box>
         {/* 表格内容 */}
-        <Box sx={{ flex: 1, overflow: 'auto', backgroundColor: '#FFFFFF' }}>
+        <Box sx={{ flex: 1, overflow: 'auto', backgroundColor: gs.bgPanel }}>
           <TableContainer component={Paper} elevation={0} sx={{ maxHeight: '100%' }}>
             <Table size="small" stickyHeader>
               {headerRow && (
                 <TableHead>
                   <TableRow>
                     {headerRow.values.map((cell, i) => (
-                      <TableCell key={i} sx={{ fontWeight: 600, backgroundColor: '#F9FAFB', whiteSpace: 'nowrap' }}>{renderCellValue(cell)}</TableCell>
+                      <TableCell key={i} sx={{ fontWeight: 600, backgroundColor: gs.bgPage, whiteSpace: 'nowrap' }}>{renderCellValue(cell)}</TableCell>
                     ))}
                   </TableRow>
                 </TableHead>

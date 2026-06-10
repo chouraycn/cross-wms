@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Box, Typography, Chip, Button, Paper, CircularProgress,
+  useTheme,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -9,6 +10,7 @@ import ScheduleIcon from '@mui/icons-material/Schedule';
 import type { Skill } from '../../types/skill';
 import type { AutomationExecution } from '../../services/automation';
 import { CATEGORY_LABELS, CATEGORY_COLORS } from '../../constants/skillCategories';
+import { getGrayScale } from '../../constants/theme';
 
 // ===================== 类型 =====================
 
@@ -35,27 +37,31 @@ const SkillInfoCards: React.FC<SkillInfoCardsProps> = ({
   onTriggerAutomation,
   onNavigateAutomation,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
       {/* 基本信息卡片 */}
-      <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-        <Box sx={{ px: 2.5, py: 1.5, backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151' }}>
+      <Paper elevation={0} sx={{ borderRadius: 2, border: `1px solid ${gs.border}`, overflow: 'hidden' }}>
+        <Box sx={{ px: 2.5, py: 1.5, backgroundColor: gs.bgHover, borderBottom: `1px solid ${gs.border}` }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textSecondary }}>
             基本信息
           </Typography>
         </Box>
         <Box sx={{ px: 2.5, py: 2 }}>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#374151', lineHeight: 1.7, mb: 2 }}>
+          <Typography sx={{ fontSize: '0.8125rem', color: gs.textSecondary, lineHeight: 1.7, mb: 2 }}>
             {skill.detail || skill.desc}
           </Typography>
 
           {skill.trigger && (
             <Box sx={{ mb: 2 }}>
-              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#9CA3AF', mb: 0.5 }}>
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: gs.textDisabled, mb: 0.5 }}>
                 触发方式
               </Typography>
-              <Paper elevation={0} sx={{ px: 1.5, py: 1, borderRadius: 1, backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}>
-                <Typography sx={{ fontSize: '0.75rem', color: '#374151', fontFamily: 'monospace' }}>
+              <Paper elevation={0} sx={{ px: 1.5, py: 1, borderRadius: 1, backgroundColor: gs.bgHover, border: `1px solid ${gs.border}` }}>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary, fontFamily: 'monospace' }}>
                   {skill.trigger}
                 </Typography>
               </Paper>
@@ -64,11 +70,11 @@ const SkillInfoCards: React.FC<SkillInfoCardsProps> = ({
 
           {skill.shortcut && (
             <Box sx={{ mb: 2 }}>
-              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#9CA3AF', mb: 0.5 }}>
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: gs.textDisabled, mb: 0.5 }}>
                 快捷方式
               </Typography>
-              <Paper elevation={0} sx={{ px: 1.5, py: 1, borderRadius: 1, backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB' }}>
-                <Typography sx={{ fontSize: '0.75rem', color: '#374151', fontFamily: 'monospace' }}>
+              <Paper elevation={0} sx={{ px: 1.5, py: 1, borderRadius: 1, backgroundColor: gs.bgHover, border: `1px solid ${gs.border}` }}>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary, fontFamily: 'monospace' }}>
                   {skill.shortcut}
                 </Typography>
               </Paper>
@@ -77,7 +83,7 @@ const SkillInfoCards: React.FC<SkillInfoCardsProps> = ({
 
           {skill.tags && skill.tags.length > 0 && (
             <Box>
-              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#9CA3AF', mb: 0.5 }}>
+              <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: gs.textDisabled, mb: 0.5 }}>
                 标签
               </Typography>
               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
@@ -86,7 +92,7 @@ const SkillInfoCards: React.FC<SkillInfoCardsProps> = ({
                     key={tag}
                     label={tag}
                     size="small"
-                    sx={{ height: 22, fontSize: '0.65rem', backgroundColor: '#F3F4F6', color: '#6B7280' }}
+                    sx={{ height: 22, fontSize: '0.65rem', backgroundColor: gs.bgHover, color: gs.textMuted }}
                   />
                 ))}
               </Box>
@@ -97,9 +103,9 @@ const SkillInfoCards: React.FC<SkillInfoCardsProps> = ({
 
       {/* 关联自动化卡片 */}
       {skill.automationTaskType && (
-        <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-          <Box sx={{ px: 2.5, py: 1.5, backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151' }}>
+        <Paper elevation={0} sx={{ borderRadius: 2, border: `1px solid ${gs.border}`, overflow: 'hidden' }}>
+          <Box sx={{ px: 2.5, py: 1.5, backgroundColor: gs.bgHover, borderBottom: `1px solid ${gs.border}` }}>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textSecondary }}>
               关联自动化
             </Typography>
           </Box>
@@ -108,7 +114,7 @@ const SkillInfoCards: React.FC<SkillInfoCardsProps> = ({
               <>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                   <Box>
-                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: '#111827' }}>
+                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: gs.textPrimary }}>
                       {autoInfo.name}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
@@ -143,13 +149,13 @@ const SkillInfoCards: React.FC<SkillInfoCardsProps> = ({
                       : latestExec.status === 'failed'
                         ? <ErrorOutlineIcon sx={{ fontSize: 14, color: '#DC2626' }} />
                         : <ScheduleIcon sx={{ fontSize: 14, color: '#D97706' }} />}
-                    <Typography sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+                    <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted }}>
                       最近执行: {latestExec.status === 'success' ? '成功' : latestExec.status === 'failed' ? '失败' : '运行中'}
                       {latestExec.completedAt ? ` · ${new Date(latestExec.completedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}
                     </Typography>
                   </Box>
                 ) : (
-                  <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mb: 1.5 }}>
+                  <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled, mb: 1.5 }}>
                     暂无执行记录
                   </Typography>
                 )}
@@ -160,8 +166,8 @@ const SkillInfoCards: React.FC<SkillInfoCardsProps> = ({
                   sx={{
                     textTransform: 'none',
                     fontSize: '0.7rem',
-                    color: '#6B7280',
-                    '&:hover': { color: '#111827', backgroundColor: 'transparent' },
+                    color: gs.textMuted,
+                    '&:hover': { color: gs.textPrimary, backgroundColor: 'transparent' },
                     p: 0,
                     minWidth: 0,
                   }}
@@ -170,7 +176,7 @@ const SkillInfoCards: React.FC<SkillInfoCardsProps> = ({
                 </Button>
               </>
             ) : (
-              <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
+              <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
                 未配置自动化任务
               </Typography>
             )}
@@ -179,37 +185,37 @@ const SkillInfoCards: React.FC<SkillInfoCardsProps> = ({
       )}
 
       {/* 技能元信息卡片 */}
-      <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-        <Box sx={{ px: 2.5, py: 1.5, backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151' }}>
+      <Paper elevation={0} sx={{ borderRadius: 2, border: `1px solid ${gs.border}`, overflow: 'hidden' }}>
+        <Box sx={{ px: 2.5, py: 1.5, backgroundColor: gs.bgHover, borderBottom: `1px solid ${gs.border}` }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textSecondary }}>
             元信息
           </Typography>
         </Box>
         <Box sx={{ px: 2.5, py: 2 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
             <Box>
-              <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mb: 0.25 }}>来源</Typography>
-              <Typography sx={{ fontSize: '0.8125rem', color: '#374151' }}>
+              <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled, mb: 0.25 }}>来源</Typography>
+              <Typography sx={{ fontSize: '0.8125rem', color: gs.textSecondary }}>
                 {skill.source === 'builtin' ? '内置' : '自定义'}
               </Typography>
             </Box>
             {skill.version && (
               <Box>
-                <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mb: 0.25 }}>版本号</Typography>
-                <Typography sx={{ fontSize: '0.8125rem', color: '#374151' }}>v{skill.version}</Typography>
+                <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled, mb: 0.25 }}>版本号</Typography>
+                <Typography sx={{ fontSize: '0.8125rem', color: gs.textSecondary }}>v{skill.version}</Typography>
               </Box>
             )}
             {skill.installedAt && (
               <Box>
-                <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mb: 0.25 }}>安装时间</Typography>
-                <Typography sx={{ fontSize: '0.8125rem', color: '#374151' }}>
+                <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled, mb: 0.25 }}>安装时间</Typography>
+                <Typography sx={{ fontSize: '0.8125rem', color: gs.textSecondary }}>
                   {new Date(skill.installedAt).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                 </Typography>
               </Box>
             )}
             <Box>
-              <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mb: 0.25 }}>路径</Typography>
-              <Typography sx={{ fontSize: '0.8125rem', color: '#374151', fontFamily: 'monospace' }}>
+              <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled, mb: 0.25 }}>路径</Typography>
+              <Typography sx={{ fontSize: '0.8125rem', color: gs.textSecondary, fontFamily: 'monospace' }}>
                 {skill.path}
               </Typography>
             </Box>

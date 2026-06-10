@@ -1,17 +1,20 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  Box, Paper, Chip, Typography,
+  Box, Paper, Chip, Typography, Popover, useTheme,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import { useChat } from '../../hooks/useChat';
-import { Skill, SkillSuggestionItem } from '../../types/skill';
+import { getGrayScale } from '../../constants/theme';
+import { Skill, SkillSuggestionItem, INTENT_CATEGORY_LABELS, INTENT_QUICK_EXAMPLES } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
+import type { IntentCategory } from '../../types/skill';
 import { getAllSkills } from '../../stores/skillStore';
 import { SkillSelector } from './SkillSelector';
 import SkillSuggestionPopover from './SkillSuggestionPopover';
 import type { PopoverSuggestion } from './SkillSuggestionPopover';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useModels } from '../../contexts/ModelsContext';
 import ChatToolbar from './ChatToolbar';
 import MemoryDialog, { type MemoryDialogHandle } from './MemoryDialog';
 import { SessionReferenceSelector } from './SessionReferenceSelector';
@@ -232,7 +235,11 @@ interface TopBarChatInputProps {
 // ===================== Component =====================
 
 export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopBarChatInputProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const { settings } = useAppSettings();
+  const { models: modelList } = useModels();
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [showSkillSelector, setShowSkillSelector] = useState(false);
@@ -258,10 +265,20 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
   const [showMatchFeedback, setShowMatchFeedback] = useState(false);
   const [lastMatchResult, setLastMatchResult] = useState<{ skillId: string; skillName: string; confidence: number; input: string } | null>(null);
 
+  // v1.7.0: 意图分类 Popover 状态
+  const [intentAnchorEl, setIntentAnchorEl] = useState<HTMLElement | null>(null);
+  const [expandedIntent, setExpandedIntent] = useState<IntentCategory | null>(null);
+
   // 当 initialSkill 从外部变化时同步到 selectedSkill（如 SkillDetailPage 跳转过来）
   useEffect(() => {
     if (initialSkill) setSelectedSkill(initialSkill);
   }, [initialSkill]);
+
+  // v1.7.0: 技能切换时清理意图分类状态
+  useEffect(() => {
+    setIntentAnchorEl(null);
+    setExpandedIntent(null);
+  }, [selectedSkill?.id]);
 
   // 自动匹配成功时显示内联提示，2s 后自动消失
   useEffect(() => {
@@ -286,10 +303,10 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     ).length;
   })();
 
-  // 从 settings 中读取模型列表（仅启用的模型），Auto 作为首选项
+  // 从 ModelsContext 中读取模型列表（仅启用的模型），Auto 作为首选项
   const MODEL_OPTIONS: import('./ChatToolbar').ModelOption[] = [
     { id: 'auto', name: 'Auto', provider: 'auto', description: '根据任务自动选择最合适的模型' },
-    ...settings.models.models
+    ...modelList
       .filter((m) => m.enabled)
       .map((m) => ({
         id: m.id,
@@ -304,7 +321,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
   ];
 
   // 获取已启用的模型列表（含 id 和 name，用于 id↔name 映射）
-  const enabledModels = settings.models.models.filter((m) => m.enabled);
+  const enabledModels = modelList.filter((m) => m.enabled);
 
   // 初始化选中的模型（默认 Auto）
   const [selectedModel, setSelectedModel] = useState('Auto');
@@ -330,7 +347,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
   const editableRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { isLoading, sendMessage } = useChat(
+  const { isLoading, sendMessage, stopGeneration } = useChat(
     session?.id ? session : undefined,
     onSessionUpdate
   );
@@ -568,11 +585,51 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     });
   };
 
-  const handleSend = () => {
-    if (!inputValue.trim() || isLoading || semanticMatching) return;
+  // ===================== v1.7.0: 意图分类 =====================
+
+  /** 意图分类颜色映射 */
+  const INTENT_COLORS: Record<IntentCategory, { bg: string; border: string; text: string }> = {
+    inventory_detail: { bg: '#EFF6FF', border: '#BFDBFE', text: '#1D4ED8' },
+    inbound_outbound_trend: { bg: '#F0FDF4', border: '#BBF7D0', text: '#15803D' },
+    replenishment_analysis: { bg: '#FFF7ED', border: '#FED7AA', text: '#C2410C' },
+    alert_summary: { bg: '#FEF2F2', border: '#FECACA', text: '#B91C1C' },
+    prediction_analysis: { bg: '#FAF5FF', border: '#DDD6FE', text: '#6D28D9' },
+  };
+
+  /** 点击意图分类 Chip — 切换 Popover */
+  const handleIntentChipClick = (intent: IntentCategory, event: React.MouseEvent<HTMLElement>) => {
+    if (expandedIntent === intent) {
+      setIntentAnchorEl(null);
+      setExpandedIntent(null);
+    } else {
+      setIntentAnchorEl(event.currentTarget);
+      setExpandedIntent(intent);
+    }
+  };
+
+  /** 关闭意图 Popover */
+  const handleIntentPopoverClose = () => {
+    setIntentAnchorEl(null);
+    setExpandedIntent(null);
+  };
+
+  /** 点击快捷示例 — 自动填入输入框并发送 */
+  const handleQuickExampleClick = (text: string) => {
+    setInputValue(text);
+    if (editableRef.current) {
+      editableRef.current.innerHTML = '';
+    }
+    setIntentAnchorEl(null);
+    setExpandedIntent(null);
+    handleSend(text);
+  };
+
+  const handleSend = (overrideText?: string) => {
+    const effectiveInput = overrideText ?? inputValue;
+    if (!effectiveInput.trim() || isLoading || semanticMatching) return;
 
     // T05: 如果以 / 或 @ 开头，不触发发送（等用户完成选择）
-    const trimmedInput = inputValue.trimStart();
+    const trimmedInput = effectiveInput.trimStart();
     if (trimmedInput.startsWith('/') || trimmedInput.startsWith('@')) {
       return;
     }
@@ -591,7 +648,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
       const hasConflictedSuggestion = suggestions.some(s => s.isConflicted);
       if (!hasConflictedSuggestion) {
         // T05: 先尝试语义匹配（异步，这里先用关键词匹配同步结果）
-        const keywordMatched = matchSkillFromInput(inputValue);
+        const keywordMatched = matchSkillFromInput(effectiveInput);
         if (keywordMatched) {
           effectiveSkill = keywordMatched;
           setSelectedSkill(keywordMatched);
@@ -601,7 +658,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
         // T05: 异步尝试语义匹配 — 如果成功则覆盖关键词匹配结果
         // 仅当关键词匹配未命中时尝试语义匹配
         if (!keywordMatched) {
-          handleSemanticMatch(inputValue).then(semanticSkill => {
+          handleSemanticMatch(effectiveInput).then(semanticSkill => {
             if (semanticSkill && !selectedSkill) {
               setSelectedSkill(semanticSkill);
               setAutoMatched(true);
@@ -611,13 +668,13 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
           });
         } else {
           // 关键词匹配成功，也尝试语义匹配获取反馈
-          handleSemanticMatch(inputValue).then(semanticSkill => {
+          handleSemanticMatch(effectiveInput).then(semanticSkill => {
             if (semanticSkill) {
               setLastMatchResult({
                 skillId: semanticSkill.id,
                 skillName: semanticSkill.name,
                 confidence: 0.8, // 关键词匹配成功时给一个默认置信度
-                input: inputValue,
+                input: effectiveInput,
               });
               setShowMatchFeedback(true);
             }
@@ -630,7 +687,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
     const skillId = effectiveSkill?.id || undefined;
     const referencedSessionIds = referencedSessions.map(s => s.id);
 
-    sendMessage(inputValue, { skillContext, skillId, referencedSessionIds, referencedSessions, model: selectedModelId, preset: selectedPreset || undefined });
+    sendMessage(effectiveInput, { skillContext, skillId, referencedSessionIds, referencedSessions, model: selectedModelId, preset: selectedPreset || undefined });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
     }
@@ -708,8 +765,8 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
         sx={{
           width: '100%',
           borderRadius: '12px',
-          border: '1px solid #eee',
-          bgcolor: '#fff',
+          border: `1px solid ${gs.border}`,
+          bgcolor: gs.bgPanel,
           boxShadow: 'none',
           display: 'flex',
           flexDirection: 'column',
@@ -719,14 +776,14 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
       >
         {/* Selected skill tag */}
         {selectedSkill && (
-          <Box sx={{ px: 1.5, py: 0.5, bgcolor: '#fff', borderBottom: `1px solid #eee`, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ px: 1.5, py: 0.5, bgcolor: gs.bgPanel, borderBottom: `1px solid ${gs.border}`, display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Chip
               icon={<Box component="span" sx={{ display: 'flex', alignItems: 'center', ml: '4px' }}>{ICON_MAP[selectedSkill.icon] || <AutoFixHighIcon sx={{ fontSize: 14 }} />}</Box>}
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <span>{selectedSkill.name}</span>
                   {autoMatched && (
-                    <Typography component="span" sx={{ fontSize: 9, color: '#6B7280', fontWeight: 500, bgcolor: '#F3F4F6', px: 0.5, borderRadius: 0.5 }}>
+                    <Typography component="span" sx={{ fontSize: 9, color: gs.textMuted, fontWeight: 500, bgcolor: gs.bgHover, px: 0.5, borderRadius: 0.5 }}>
                       自动
                     </Typography>
                   )}
@@ -749,9 +806,45 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
             />
           </Box>
         )}
+        {/* v1.7.0: 意图分类 Chips 行 — 仅当选中技能有 intentCategories 时展示 */}
+        {selectedSkill?.intentCategories && selectedSkill.intentCategories.length > 0 && (
+          <Box sx={{ px: 1.5, py: 0.75, bgcolor: gs.bgPanel, borderBottom: `1px solid ${gs.border}`, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+            <Typography sx={{ fontSize: 11, color: gs.textMuted, fontWeight: 500, mr: 0.25, flexShrink: 0 }}>
+              查询意图
+            </Typography>
+            {selectedSkill.intentCategories.map((intent) => {
+              const colors = INTENT_COLORS[intent];
+              const isActive = expandedIntent === intent;
+              return (
+                <Chip
+                  key={intent}
+                  label={INTENT_CATEGORY_LABELS[intent]}
+                  onClick={(e) => handleIntentChipClick(intent, e)}
+                  size="small"
+                  sx={{
+                    height: 24,
+                    fontSize: 11,
+                    fontWeight: isActive ? 600 : 400,
+                    bgcolor: isActive ? colors.bg : gs.bgHover,
+                    border: `1px solid ${isActive ? colors.border : gs.border}`,
+                    color: isActive ? colors.text : gs.textMuted,
+                    cursor: 'pointer',
+                    '&:hover': {
+                      bgcolor: colors.bg,
+                      borderColor: colors.border,
+                      color: colors.text,
+                    },
+                    '& .MuiChip-label': { px: 1.25 },
+                    transition: 'all 0.15s ease',
+                  }}
+                />
+              );
+            })}
+          </Box>
+        )}
         {/* Referenced sessions chips */}
         {referencedSessions.length > 0 && (
-          <Box sx={{ px: 1.5, py: 0.5, bgcolor: '#fff', borderBottom: `1px solid #eee`, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+          <Box sx={{ px: 1.5, py: 0.5, bgcolor: gs.bgPanel, borderBottom: `1px solid ${gs.border}`, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
             {referencedSessions.map((session) => (
               <Chip
                 key={session.id}
@@ -773,7 +866,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
         {showAutoTip && selectedSkill && (
           <Typography sx={{
             fontSize: 10, color: '#2563EB', px: 1.5, py: 0.5,
-            bgcolor: '#EFF6FF', lineHeight: 1.4, opacity: showAutoTip ? 1 : 0,
+            bgcolor: isDark ? '#1E3A8A' : '#EFF6FF', lineHeight: 1.4, opacity: showAutoTip ? 1 : 0,
             transition: 'opacity 0.4s ease',
           }}>
             ⚡ 已自动激活「{selectedSkill.name}」技能
@@ -795,10 +888,10 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
           {!inputExpanded ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
               <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Typography sx={{ fontSize: 15, color: '#999', lineHeight: 1.4 }}>
+                <Typography sx={{ fontSize: 15, color: gs.textMuted, lineHeight: 1.4 }}>
                   今天帮你做些什么？
                 </Typography>
-                <Typography sx={{ fontSize: 13, color: '#bbb', lineHeight: 1.4 }}>
+                <Typography sx={{ fontSize: 13, color: gs.textDisabled, lineHeight: 1.4 }}>
                   @ 引用对话文件，/ 调用技能与指令
                 </Typography>
               </Box>
@@ -816,7 +909,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
                   lineHeight: 1.5,
                   minHeight: 60,
                   outline: 'none',
-                  color: '#333',
+                  color: gs.textPrimary,
                   width: '100%',
                   wordBreak: 'break-word',
                   marginBottom: 8,
@@ -826,7 +919,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
               {!inputValue.trim() && (
                 <div style={{
                   fontSize: 13,
-                  color: '#bbb',
+                  color: gs.textDisabled,
                   lineHeight: 1.4,
                 }}>
                   @ 引用对话文件，/ 调用技能与指令
@@ -847,6 +940,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
           isLoading={isLoading}
           inputValue={inputValue}
           onSend={handleSend}
+          onStop={stopGeneration}
           onOpenMemory={() => memoryDialogRef.current?.open()}
           onSkillSelect={handleSkillSelect}
           modelOptions={MODEL_OPTIONS}
@@ -929,6 +1023,92 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
           />
         </Box>
       )}
+
+      {/* v1.7.0: 意图分类快捷示例 Popover */}
+      <Popover
+        open={!!intentAnchorEl && !!expandedIntent}
+        anchorEl={intentAnchorEl}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        onClose={handleIntentPopoverClose}
+        disableAutoFocus
+        slotProps={{
+          paper: {
+            elevation: 0,
+            sx: {
+              mt: 0.5,
+              borderRadius: '10px',
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              overflow: 'hidden',
+              minWidth: 240,
+              maxWidth: 340,
+            },
+          },
+        }}
+      >
+        {expandedIntent && (
+          <Box>
+            {/* 标题行 */}
+            <Box sx={{ px: 2, py: 1.25, borderBottom: '1px solid #F3F4F6' }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 600, color: INTENT_COLORS[expandedIntent].text }}>
+                {INTENT_CATEGORY_LABELS[expandedIntent]}
+              </Typography>
+              <Typography sx={{ fontSize: 10, color: '#9CA3AF', mt: 0.25 }}>
+                点击示例快速查询
+              </Typography>
+            </Box>
+            {/* 快捷示例列表 */}
+            <Box sx={{ py: 0.5 }}>
+              {(INTENT_QUICK_EXAMPLES[expandedIntent] || []).map((example, idx) => (
+                <Box
+                  key={idx}
+                  onClick={() => handleQuickExampleClick(example.text)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 2,
+                    py: 1,
+                    cursor: 'pointer',
+                    transition: 'background-color 0.15s ease',
+                    '&:hover': { bgcolor: gs.bgHover },
+                    '&:not(:last-child)': { borderBottom: `1px solid ${gs.border}` },
+                  }}
+                >
+                  {/* 图标 */}
+                  <Box
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      bgcolor: INTENT_COLORS[expandedIntent].bg,
+                      color: INTENT_COLORS[expandedIntent].text,
+                      '& .MuiSvgIcon-root': { fontSize: 14 },
+                    }}
+                  >
+                    {ICON_MAP[example.icon] || <AutoFixHighIcon sx={{ fontSize: 14 }} />}
+                  </Box>
+                  {/* 文本 */}
+                  <Typography
+                    sx={{
+                      fontSize: 12.5,
+                      color: '#374151',
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {example.text}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        )}
+      </Popover>
     </Box>
   );
 }

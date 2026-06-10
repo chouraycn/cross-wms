@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { Box, Typography, Card, CardHeader, CardContent, CircularProgress, Alert, Paper } from '@mui/material';
+import { Box, Typography, Card, CardHeader, CardContent, CircularProgress, Alert, Paper, useTheme } from '@mui/material';
+import { getGrayScale } from '../../constants/theme';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
@@ -190,6 +191,10 @@ const MONTH_LABEL_HEIGHT = 20;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   const { settings } = useAppSettings();
   const heatmapSettings = settings.dashboard.heatmap;
   const days = heatmapSettings?.days ?? 90;
@@ -242,9 +247,9 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
   // 加载状态
   if (loading) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
         <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-          <CircularProgress size={30} sx={{ color: '#111827' }} />
+          <CircularProgress size={30} sx={{ color: gs.textPrimary }} />
         </CardContent>
       </Card>
     );
@@ -253,7 +258,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
   // 错误状态
   if (error) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
         <CardContent>
           <Alert severity="error">{error}</Alert>
         </CardContent>
@@ -276,25 +281,25 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
   // 没有仓库时显示空状态
   if (warehouses.length === 0) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
         <CardHeader
           title={
-            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
               出货日历热力图
             </Typography>
           }
           subheader={
-            <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
               近 {days} 天 · GitHub 风格
             </Typography>
           }
         />
         <CardContent>
           <Box sx={{ py: 6, textAlign: 'center' }}>
-            <Typography sx={{ fontSize: '0.875rem', color: '#9CA3AF', mb: 1 }}>
+            <Typography sx={{ fontSize: '0.875rem', color: gs.textDisabled, mb: 1 }}>
               暂无仓库数据，请先添加仓库
             </Typography>
-            <Typography sx={{ fontSize: '0.75rem', color: '#D1D5DB' }}>
+            <Typography sx={{ fontSize: '0.75rem', color: gs.borderDarker }}>
               热力图将展示每日出货趋势
             </Typography>
           </Box>
@@ -304,14 +309,14 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
   }
 
   return (
-    <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+    <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
       <CardHeader
         title={
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
               出货日历热力图
             </Typography>
-            <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
               {warehouseId === ALL_WAREHOUSES
                 ? `全部 ${whCount} 个仓库 · 共 ${totalShipments} 件`
                 : `${warehouses.find(w => w.id === warehouseId)?.name ?? ''} · 共 ${totalShipments} 件`}
@@ -319,7 +324,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
           </Box>
         }
         subheader={
-          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+          <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
             近 {days} 天 · {activeDays} 天有出货
           </Typography>
         }
@@ -331,13 +336,13 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
         <Box sx={{ display: 'flex', gap: 3, mb: 2, flexWrap: 'wrap' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Box sx={{ width: 8, height: 8, borderRadius: '2px', bgcolor: colors.level4 }} />
-            <Typography sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+            <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted }}>
               最高单日: {maxVal} 件
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Box sx={{ width: 8, height: 8, borderRadius: '2px', bgcolor: colors.level0 }} />
-            <Typography sx={{ fontSize: '0.7rem', color: '#6B7280' }}>
+            <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted }}>
               活跃: {activeDays}/{days} 天
             </Typography>
           </Box>
@@ -362,7 +367,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
                   y={14}
                   fontSize={11}
                   fontWeight={600}
-                  fill="#6B7280"
+                  fill={gs.textMuted}
                   fontFamily="-apple-system, sans-serif"
                 >
                   {col.monthLabel}
@@ -378,7 +383,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
                 y={MONTH_LABEL_HEIGHT + i * (cellSize + CELL_GAP) + cellSize - 2}
                 textAnchor="end"
                 fontSize={9}
-                fill="#9CA3AF"
+                fill={gs.textDisabled}
                 fontFamily="-apple-system, sans-serif"
               >
                 {label}
@@ -427,15 +432,15 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
                 px: 1.5,
                 py: 0.75,
                 borderRadius: 1,
-                bgcolor: '#111827',
-                color: '#fff',
+                bgcolor: gs.textPrimary,
+                color: gs.bgPanel,
                 fontSize: '0.75rem',
                 whiteSpace: 'nowrap',
                 pointerEvents: 'none',
                 zIndex: 9999,
               }}
             >
-              <Typography sx={{ fontSize: '0.75rem', color: '#fff', lineHeight: 1.4 }}>
+              <Typography sx={{ fontSize: '0.75rem', color: gs.bgPanel, lineHeight: 1.4 }}>
                 {hoveredCell.display}：{hoveredCell.total} 件
               </Typography>
             </Paper>
@@ -444,7 +449,7 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
 
         {/* 图例 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-          <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>少</Typography>
+          <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>少</Typography>
           {[colors.empty, colors.level0, colors.level1, colors.level2, colors.level3, colors.level4].map((c, i) => (
             <Box
               key={c}
@@ -453,12 +458,12 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
                 height: 12,
                 borderRadius: '2px',
                 backgroundColor: c,
-                border: i === 0 ? '1px solid #E5E7EB' : 'none',
+                border: i === 0 ? `1px solid ${gs.border}` : 'none',
               }}
             />
           ))}
-          <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>多</Typography>
-          <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF', ml: 1 }}>
+          <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>多</Typography>
+          <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled, ml: 1 }}>
             {colorScheme === 'ocean' ? '🌊 海洋蓝' : colorScheme === 'forest' ? '🌲 森林绿' : '🌅 日落橙'}
           </Typography>
         </Box>

@@ -204,17 +204,20 @@
         // splashFadeOut 在 5.5s 开始持续 0.8s → 6.3s 后执行跳转
         var SPLASH_DURATION = 6300; // 6.3 秒
 
+        // 使用相对路径，避免 pywebview WKWebView 中绝对路径解析问题
+        var MAIN_PAGE = './index.html';
+
         function navigateToMain() {
             try {
                 // 方法 1：replace 避免浏览器历史残留 splash 页
-                window.location.replace('/index.html');
+                window.location.replace(MAIN_PAGE);
             } catch(e) {
                 // WKWebView 中 replace 可能被限制，fallback 到 href
                 try {
-                    window.location.href = '/index.html';
+                    window.location.href = MAIN_PAGE;
                 } catch(e2) {
                     // 最后兜底
-                    window.location = '/index.html';
+                    window.location = MAIN_PAGE;
                 }
             }
         }
@@ -237,9 +240,9 @@
                 document.head.appendChild(link);
             }
 
-            // 直接 fetch index.html 解析资源列表
+            // 直接 fetch index.html 解析资源列表（使用相对路径）
             try {
-                fetch('/index.html')
+                fetch(MAIN_PAGE)
                     .then(function(resp) { return resp.text(); })
                     .then(function(html) {
                         var parser = new DOMParser();

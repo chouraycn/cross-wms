@@ -1,5 +1,5 @@
 import React, { } from 'react';
-import { Box, Card, CardContent, Typography, Button, Chip, Alert } from '@mui/material';
+import { Box, Card, CardContent, Typography, Button, Chip, Alert, useTheme } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import LinkIcon from '@mui/icons-material/Link';
 import AddIcon from '@mui/icons-material/Add';
@@ -8,6 +8,7 @@ import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import { useNavigate } from 'react-router-dom';
 import type { WeComAuthStatus } from '../../services/wecomDocsApi';
+import { getGrayScale } from '../../constants/theme';
 /** 腾讯文档品牌色 */
 const TDOC_COLOR = '#27A17C';
 /** 企业微信品牌色 */
@@ -37,6 +38,9 @@ const AuthStatusSection: React.FC<AuthStatusSectionProps> = ({
 }) => {
 /* eslint-enable @typescript-eslint/no-unused-vars */
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
 
   return (
     <Box>
@@ -61,7 +65,7 @@ const AuthStatusSection: React.FC<AuthStatusSectionProps> = ({
             </Box>
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
               {authStatus && (
-                <Chip icon={authStatus.authenticated ? <CloudDoneIcon /> : <CloudOffIcon />} label={authStatus.authenticated ? '已授权' : '未授权'} size="small" sx={{ borderColor: authStatus.authenticated ? TDOC_COLOR : '#D1D5DB', color: authStatus.authenticated ? TDOC_COLOR : '#9CA3AF' }} variant="outlined" />
+                <Chip icon={authStatus.authenticated ? <CloudDoneIcon /> : <CloudOffIcon />} label={authStatus.authenticated ? '已授权' : '未授权'} size="small" sx={{ borderColor: authStatus.authenticated ? TDOC_COLOR : gs.borderDarker, color: authStatus.authenticated ? TDOC_COLOR : gs.textDisabled }} variant="outlined" />
               )}
               <Chip icon={<LinkIcon />} label={`${docCount} 个文档`} size="small" sx={{ borderColor: TDOC_COLOR, color: TDOC_COLOR }} variant="outlined" />
               <Button variant="outlined" startIcon={<RefreshIcon sx={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />} onClick={onRefresh} disabled={refreshing} sx={{ borderColor: TDOC_COLOR, color: TDOC_COLOR, '&:hover': { borderColor: '#1e7a5e', backgroundColor: '#f0faf6' } }}>
@@ -95,7 +99,7 @@ const AuthStatusSection: React.FC<AuthStatusSectionProps> = ({
             </Box>
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
               {wecomAuthStatus && (
-                <Chip icon={wecomAuthStatus.authorized ? <CloudDoneIcon /> : <CloudOffIcon />} label={!wecomAuthStatus.cliInstalled ? '未安装' : wecomAuthStatus.authorized ? '已授权' : '未授权'} size="small" sx={{ borderColor: wecomAuthStatus.authorized ? WECOM_COLOR : '#D1D5DB', color: wecomAuthStatus.authorized ? WECOM_COLOR : '#9CA3AF' }} variant="outlined" />
+                <Chip icon={wecomAuthStatus.authorized ? <CloudDoneIcon /> : <CloudOffIcon />} label={!wecomAuthStatus.cliInstalled ? '未安装' : wecomAuthStatus.authorized ? '已授权' : '未授权'} size="small" sx={{ borderColor: wecomAuthStatus.authorized ? WECOM_COLOR : gs.borderDarker, color: wecomAuthStatus.authorized ? WECOM_COLOR : gs.textDisabled }} variant="outlined" />
               )}
               <Chip icon={<LinkIcon />} label={`${wecomDocCount} 个文档`} size="small" sx={{ borderColor: WECOM_COLOR, color: WECOM_COLOR }} variant="outlined" />
               <Button variant="outlined" startIcon={<RefreshIcon sx={{ animation: wecomRefreshing ? 'spin 1s linear infinite' : 'none' }} />} onClick={onWecomRefresh} disabled={wecomRefreshing} sx={{ borderColor: WECOM_COLOR, color: WECOM_COLOR, '&:hover': { borderColor: '#06a451', backgroundColor: '#ecfdf5' } }}>

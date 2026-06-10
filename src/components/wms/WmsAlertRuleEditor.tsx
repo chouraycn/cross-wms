@@ -29,6 +29,12 @@ interface AlertRuleConfig {
   enableLowStock: boolean;
   enableExpiry: boolean;
   enableStagnant: boolean;
+  // 智能预测配置
+  enablePrediction: boolean;
+  predictionDays: number;
+  shortageThreshold: number;
+  overstockDays: number;
+  minHistoryDays: number;
 }
 
 const DEFAULT_CONFIG: AlertRuleConfig = {
@@ -38,6 +44,11 @@ const DEFAULT_CONFIG: AlertRuleConfig = {
   enableLowStock: true,
   enableExpiry: true,
   enableStagnant: true,
+  enablePrediction: true,
+  predictionDays: 14,
+  shortageThreshold: 10,
+  overstockDays: 60,
+  minHistoryDays: 7,
 };
 
 // ===================== 组件 =====================
@@ -65,6 +76,11 @@ const WmsAlertRuleEditor: React.FC = () => {
             enableLowStock: result.enableLowStock ?? DEFAULT_CONFIG.enableLowStock,
             enableExpiry: result.enableExpiry ?? DEFAULT_CONFIG.enableExpiry,
             enableStagnant: result.enableStagnant ?? DEFAULT_CONFIG.enableStagnant,
+            enablePrediction: result.enablePrediction ?? DEFAULT_CONFIG.enablePrediction,
+            predictionDays: result.predictionDays ?? DEFAULT_CONFIG.predictionDays,
+            shortageThreshold: result.shortageThreshold ?? DEFAULT_CONFIG.shortageThreshold,
+            overstockDays: result.overstockDays ?? DEFAULT_CONFIG.overstockDays,
+            minHistoryDays: result.minHistoryDays ?? DEFAULT_CONFIG.minHistoryDays,
           });
         }
       } catch (err) {
@@ -216,6 +232,81 @@ const WmsAlertRuleEditor: React.FC = () => {
           InputProps={{ inputProps: { min: 0 } }}
           helperText="≥ 此天数无变动/出库记录时触发预警"
           sx={{ mt: 1 }}
+        />
+      </Box>
+
+      <Divider sx={{ mb: 3 }} />
+
+      {/* 智能预测配置 */}
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: '#6366F1' }}>
+        🧠 智能预测配置
+      </Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        基于历史出库数据的 EMA 指数平滑预测，自动识别潜在短缺和积压风险。
+      </Typography>
+
+      <Box sx={{ mb: 3 }}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={config.enablePrediction}
+              onChange={handleSwitchChange('enablePrediction')}
+              color="primary"
+            />
+          }
+          label="启用智能预测"
+          sx={{ mb: 1, display: 'block' }}
+        />
+      </Box>
+
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+        <TextField
+          label="预测天数"
+          type="number"
+          value={config.predictionDays}
+          onChange={handleInputChange('predictionDays')}
+          disabled={!config.enablePrediction}
+          fullWidth
+          size="small"
+          InputProps={{ inputProps: { min: 1, max: 90 } }}
+          helperText="预测未来 N 天的库存趋势"
+        />
+        <TextField
+          label="短缺阈值"
+          type="number"
+          value={config.shortageThreshold}
+          onChange={handleInputChange('shortageThreshold')}
+          disabled={!config.enablePrediction}
+          fullWidth
+          size="small"
+          InputProps={{ inputProps: { min: 0 } }}
+          helperText="预测库存 ≤ 此值时触发预警"
+        />
+      </Box>
+
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 3 }}>
+        <TextField
+          label="积压天数"
+          type="number"
+          value={config.overstockDays}
+          onChange={handleInputChange('overstockDays')}
+          disabled={!config.enablePrediction}
+          fullWidth
+          size="small"
+          InputProps={{ inputProps: { min: 1 } }}
+          helperText="预测可消耗天数 > 此值时触发积压预警"
+        />
+        <TextField
+          label="最少数据天数"
+          type="number"
+          value={config.minHistoryDays}
+          onChange={handleInputChange('minHistoryDays')}
+          disabled={!config.enablePrediction}
+          fullWidth
+          size="small"
+          InputProps={{ inputProps: { min: 1, max: 30 } }}
+          helperText="需至少 N 天出库记录才参与预测"
         />
       </Box>
 

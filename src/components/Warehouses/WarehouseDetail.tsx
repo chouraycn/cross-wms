@@ -18,6 +18,7 @@ import {
   Button,
   Alert,
   CircularProgress,
+  useTheme,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
@@ -25,6 +26,7 @@ import { getWarehouseById as getStoreWarehouseById } from '../../capabilities/wa
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';
 import type { Warehouse, InboundRecord, OutboundRecord, InventoryItem } from '../../types';
 import { dashboardApi } from '../../services/dashboardApi';
+import { getGrayScale } from '../../constants/theme';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -50,6 +52,9 @@ function getProgressColor(rate: number): 'success' | 'warning' | 'error' {
 
 const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [warehouse, setWarehouse] = useState<Warehouse | null>(null);
@@ -156,17 +161,17 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
       <Button
         startIcon={<ArrowBackIcon />}
         onClick={() => navigate('/warehouses')}
-        sx={{ mb: 2, color: '#111827' }}
+        sx={{ mb: 2, color: gs.textPrimary }}
       >
         返回仓库列表
       </Button>
 
       {/* Header Card */}
-      <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, mb: 3 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, mb: 3 }}>
         <CardContent>
           <Grid container spacing={3} alignItems="center">
             <Grid item xs={12} md={6}>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827', mb: 1 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, color: gs.textPrimary, mb: 1 }}>
                 {warehouse.name}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
@@ -209,7 +214,7 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
                   variant="determinate"
                   value={Math.min(rate, 100)}
                   color={color}
-                  sx={{ height: 12, borderRadius: 6, backgroundColor: '#f0f0f0' }}
+                  sx={{ height: 12, borderRadius: 6, backgroundColor: gs.borderLighter }}
                 />
               </Box>
             </Grid>
@@ -218,8 +223,8 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
       </Card>
 
       {/* Tabs */}
-      <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2 }}>
-        <Box sx={{ borderBottom: '1px solid #e0e0e0', px: 2 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+        <Box sx={{ borderBottom: `1px solid ${gs.borderLighter}`, px: 2 }}>
           <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} textColor="primary" indicatorColor="primary">
             <Tab label={`入库记录 (${inboundRecords.length})`} />
             <Tab label={`出库记录 (${outboundRecords.length})`} />
@@ -231,7 +236,7 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
             <TableContainer>
               <Table size="small">
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                  <TableRow sx={{ backgroundColor: gs.bgPage }}>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>SKU编号</TableCell>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>品名</TableCell>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>数量</TableCell>
@@ -256,7 +261,7 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
                     </TableRow>
                   ))}
                   {inboundRecords.length === 0 && (
-                    <TableRow><TableCell colSpan={7} sx={{ textAlign: 'center', color: '#9e9e9e', py: 3 }}>暂无入库记录</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} sx={{ textAlign: 'center', color: gs.textDisabled, py: 3 }}>暂无入库记录</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -267,7 +272,7 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
             <TableContainer>
               <Table size="small">
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                  <TableRow sx={{ backgroundColor: gs.bgPage }}>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>SKU编号</TableCell>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>品名</TableCell>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>数量</TableCell>
@@ -290,7 +295,7 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
                     </TableRow>
                   ))}
                   {outboundRecords.length === 0 && (
-                    <TableRow><TableCell colSpan={7} sx={{ textAlign: 'center', color: '#9e9e9e', py: 3 }}>暂无出库记录</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} sx={{ textAlign: 'center', color: gs.textDisabled, py: 3 }}>暂无出库记录</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -301,7 +306,7 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
             <TableContainer>
               <Table size="small">
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: '#fafafa' }}>
+                  <TableRow sx={{ backgroundColor: gs.bgPage }}>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>SKU编号</TableCell>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>品名</TableCell>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>品类</TableCell>
@@ -330,7 +335,7 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
                     </TableRow>
                   ))}
                   {inventory.length === 0 && (
-                    <TableRow><TableCell colSpan={7} sx={{ textAlign: 'center', color: '#9e9e9e', py: 3 }}>暂无库存记录</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} sx={{ textAlign: 'center', color: gs.textDisabled, py: 3 }}>暂无库存记录</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>

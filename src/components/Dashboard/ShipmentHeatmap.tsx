@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { Box, Typography, Card, CardHeader, CardContent } from '@mui/material';
+import { Box, Typography, Card, CardHeader, CardContent, useTheme } from '@mui/material';
+import { getGrayScale } from '../../constants/theme';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { subscribeWarehouses } from '../../capabilities/warehouse';
@@ -146,10 +147,10 @@ function calcThresholds(values: number[], quantiles: number[]): number[] {
  * 基于分位数的颜色映射，数据分布更明显
  * null → 浅灰（无数据），0 → 白色（有数据但为0）
  */
-function getHeatColor(cell: HeatCell | null, thresholds: number[], scheme: ColorScheme): string {
-  if (cell === null) return '#F3F4F6'; // 无数据
+function getHeatColor(cell: HeatCell | null, thresholds: number[], scheme: ColorScheme, isDark: boolean): string {
+  if (cell === null) return isDark ? '#2A2A2A' : '#F3F4F6'; // 无数据
   const total = cell.in + cell.out;
-  if (total === 0) return '#F9FAFB'; // 有数据但件数为0
+  if (total === 0) return isDark ? '#1A1A1A' : '#F9FAFB'; // 有数据但件数为0
 
   const colors = COLOR_SCHEMES[scheme];
   const stops = [
@@ -206,6 +207,10 @@ interface ShipmentHeatmapProps {
 }
 
 const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   const { settings } = useAppSettings();
   const heatmapSettings = settings.dashboard.heatmap;
   const days = heatmapSettings?.days ?? 14;
@@ -329,25 +334,25 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
   // 没有仓库时显示空状态
   if (warehouses.length === 0) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
         <CardHeader
           title={
-            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
               仓库出入库热力图
             </Typography>
           }
           subheader={
-            <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
               近 {days} 天 · 件数
             </Typography>
           }
         />
         <CardContent>
           <Box sx={{ py: 6, textAlign: 'center' }}>
-            <Typography sx={{ fontSize: '0.875rem', color: '#9CA3AF', mb: 1 }}>
+            <Typography sx={{ fontSize: '0.875rem', color: gs.textDisabled, mb: 1 }}>
               暂无仓库数据，请先添加仓库
             </Typography>
-            <Typography sx={{ fontSize: '0.75rem', color: '#D1D5DB' }}>
+            <Typography sx={{ fontSize: '0.75rem', color: gs.borderDarker }}>
               热力图将展示各仓库每日出入库件数分布
             </Typography>
           </Box>
@@ -357,15 +362,15 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
   }
 
   return (
-    <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+    <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
       <CardHeader
         title={
-          <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
             仓库出入库热力图
           </Typography>
         }
         subheader={
-          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+          <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
             近 {days} 天 · 悬停查看详情
           </Typography>
         }
@@ -391,18 +396,18 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
 
               {/* 色盲无障碍图案：斜线（中等数值） */}
               <pattern id="pattern-diagonal" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-                <line x1="0" y1="0" x2="0" y2="6" stroke="#000" strokeWidth="0.8" strokeOpacity="0.25" />
+                <line x1="0" y1="0" x2="0" y2="6" stroke={isDark ? '#fff' : '#000'} strokeWidth="0.8" strokeOpacity="0.25" />
               </pattern>
 
               {/* 色盲无障碍图案：点阵（高数值） */}
               <pattern id="pattern-dots" patternUnits="userSpaceOnUse" width="6" height="6">
-                <circle cx="3" cy="3" r="1.2" fill="#000" fillOpacity="0.3" />
+                <circle cx="3" cy="3" r="1.2" fill={isDark ? '#fff' : '#000'} fillOpacity="0.3" />
               </pattern>
 
               {/* 无数据格子：交叉线 */}
               <pattern id="pattern-cross" patternUnits="userSpaceOnUse" width="8" height="8">
-                <line x1="0" y1="0" x2="8" y2="8" stroke="#D1D5DB" strokeWidth="0.7" />
-                <line x1="8" y1="0" x2="0" y2="8" stroke="#D1D5DB" strokeWidth="0.7" />
+                <line x1="0" y1="0" x2="8" y2="8" stroke={isDark ? '#555' : '#D1D5DB'} strokeWidth="0.7" />
+                <line x1="8" y1="0" x2="0" y2="8" stroke={isDark ? '#555' : '#D1D5DB'} strokeWidth="0.7" />
               </pattern>
             </defs>
 
@@ -424,7 +429,7 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
                   textAnchor="middle"
                   fontSize={fontSize}
                   fontWeight={tinyMode ? 400 : 600}
-                  fill="#6B7280"
+                  fill={gs.textMuted}
                   fontFamily="-apple-system, sans-serif"
                 >
                   {label}
@@ -444,7 +449,7 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
                   y={padding.top - 8}
                   textAnchor="middle"
                   fontSize={9}
-                  fill="#9CA3AF"
+                  fill={gs.textDisabled}
                   fontFamily="-apple-system, sans-serif"
                 >
                   {label}
@@ -463,7 +468,7 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
                     y={y + cellSize / 2 + 4}
                     textAnchor="end"
                     fontSize={11}
-                    fill="#374151"
+                    fill={gs.textSecondary}
                     fontWeight={500}
                     fontFamily="-apple-system, sans-serif"
                   >
@@ -474,7 +479,7 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
                   {/* 日期格子 — 用 <g> 包裹，mouse events 绑在 g 上避免 rect 重绘抖动 */}
                   {dates.map((date, colIdx) => {
                     const cell = data[wh.id]?.[date] ?? null;
-                    const color = getHeatColor(cell, thresholds, colorScheme);
+                    const color = getHeatColor(cell, thresholds, colorScheme, isDark);
                     const x = labelWidth + colIdx * (cellSize + cellGap);
                     const isHovered =
                       hoveredCell?.warehouse === wh.id && hoveredCell?.date === date;
@@ -512,7 +517,7 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
                           {...(tinyMode
                             ? {} // tinyMode：无描边
                             : {
-                                stroke: isHovered ? '#111827' : color,
+                                stroke: isHovered ? gs.textPrimary : color,
                                 strokeWidth: isHovered ? 2 : 1,
                                 strokeOpacity: isHovered ? 1 : 0.3,
                               })}
@@ -548,9 +553,9 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
             mt: 1.5,
             px: 2,
             py: 1,
-            backgroundColor: '#F9FAFB',
+            backgroundColor: gs.bgHover,
             borderRadius: 1.5,
-            border: '1px solid #E5E7EB',
+            border: `1px solid ${gs.border}`,
             display: 'inline-flex',
             flexDirection: 'column',
             gap: 0.5,
@@ -563,11 +568,11 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
           {hoveredCell ? (
             <>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#111827' }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: gs.textPrimary }}>
                   {hoveredCell.warehouseName}
                 </Typography>
-                <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>·</Typography>
-                <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>·</Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
                   {hoveredCell.dateDisplay}
                 </Typography>
               </Box>
@@ -576,17 +581,17 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Box sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: COLOR_SCHEMES[colorScheme].min }} />
-                      <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                      <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
                         入库 {hoveredCell.cell.in} 件
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Box sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: COLOR_SCHEMES[colorScheme].max }} />
-                      <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                      <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
                         出库 {hoveredCell.cell.out} 件
                       </Typography>
                     </Box>
-                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#111827' }}>
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textPrimary }}>
                       共 {hoveredCell.total} 件
                     </Typography>
                   </Box>
@@ -595,7 +600,7 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
                   </Typography>
                 </Box>
               ) : (
-                <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
                   无数据
                 </Typography>
               )}
@@ -609,30 +614,30 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
         {/* 图例：渐变条 + 说明 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <svg width={12} height={12} style={{ borderRadius: 3, border: '1px solid #D1D5DB', overflow: 'hidden' }}>
-              <rect x={0} y={0} width={12} height={12} fill="#F3F4F6" />
+            <svg width={12} height={12} style={{ borderRadius: 3, border: `1px solid ${gs.borderDarker}`, overflow: 'hidden' }}>
+              <rect x={0} y={0} width={12} height={12} fill={gs.borderLighter} />
               <rect x={0} y={0} width={12} height={12} fill="url(#pattern-cross)" />
             </svg>
-            <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>无数据</Typography>
+            <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>无数据</Typography>
           </Box>
-          <Typography sx={{ fontSize: '0.7rem', color: '#D1D5DB' }}>|</Typography>
-          <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>少</Typography>
+          <Typography sx={{ fontSize: '0.7rem', color: gs.borderDarker }}>|</Typography>
+          <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>少</Typography>
           <svg width={72} height={12} style={{ borderRadius: 3 }}>
             <rect width={72} height={12} rx={3} fill={`url(#heatmap-gradient-${colorScheme})`} />
           </svg>
-          <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>多</Typography>
-          <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF', whiteSpace: 'nowrap' }}>
+          <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>多</Typography>
+          <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled, whiteSpace: 'nowrap' }}>
             25%: {thresholds[0]}件 | 50%: {thresholds[1]}件 | 75%: {thresholds[2]}件 | 90%: {thresholds[3]}件
           </Typography>
-          <Typography sx={{ fontSize: '0.7rem', color: '#D1D5DB' }}>|</Typography>
+          <Typography sx={{ fontSize: '0.7rem', color: gs.borderDarker }}>|</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Box sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: COLOR_SCHEMES[colorScheme].min }} />
-              <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>入库</Typography>
+              <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled }}>入库</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Box sx={{ width: 10, height: 10, borderRadius: '2px', backgroundColor: COLOR_SCHEMES[colorScheme].max }} />
-              <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>出库</Typography>
+              <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled }}>出库</Typography>
             </Box>
           </Box>
         </Box>

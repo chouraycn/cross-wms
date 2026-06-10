@@ -23,6 +23,7 @@ import {
   Select,
   MenuItem,
   Alert,
+  useTheme,
 } from '@mui/material';
 import { useToast } from '../../contexts/ToastContext';
 import SearchInput from '../Common/SearchInput';
@@ -32,8 +33,12 @@ import { useWarehouseCapability } from '../../capabilities/warehouse';
 import type { InventoryItem } from '../../types';
 import dayjs from 'dayjs';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { getGrayScale } from '../../constants/theme';
 
 const InventoryList: React.FC = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const { settings } = useAppSettings();
   const ageWarningDays = settings.dashboard.ageWarningDays ?? 90;
   const { inventory: initialInventory, warehouses, loading, error, getWarehouseById } = useWarehouseCapability();
@@ -139,15 +144,15 @@ const InventoryList: React.FC = () => {
 
       {/* Summary + Aging Distribution */}
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-        <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
+        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
           <Typography variant="caption" color="text.secondary">SKU总数</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>{enrichedItems.length}</Typography>
         </Card>
-        <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
+        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
           <Typography variant="caption" color="text.secondary">占用容积</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>{totalVolume.toFixed(0)} m³</Typography>
         </Card>
-        <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
+        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, px: 2, py: 1.5, minWidth: 160 }}>
           <Typography variant="caption" color="text.secondary">货值合计</Typography>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>${(totalValue / 1000).toFixed(0)}K</Typography>
         </Card>
@@ -158,7 +163,7 @@ const InventoryList: React.FC = () => {
           </Card>
         )}
         {/* 库龄分布条 */}
-        <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, px: 2, py: 1.5, flex: 1, minWidth: 320 }}>
+        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, px: 2, py: 1.5, flex: 1, minWidth: 320 }}>
           <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>库龄分布</Typography>
           <Box sx={{ display: 'flex', gap: 0, height: 32, borderRadius: 1.5, overflow: 'hidden' }}>
             {agingStats.map((bucket) => (
@@ -201,7 +206,7 @@ const InventoryList: React.FC = () => {
       </Box>
 
       {/* Filters & Actions */}
-      <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, mb: 2 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, mb: 2 }}>
         <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <SearchInput
@@ -231,7 +236,7 @@ const InventoryList: React.FC = () => {
                   variant="outlined"
                   startIcon={<SwapHorizIcon />}
                   onClick={() => setMoveDialogOpen(true)}
-                  sx={{ borderColor: '#111827', color: '#111827' }}
+                  sx={{ borderColor: gs.textPrimary, color: gs.textPrimary }}
                 >
                   移库 ({selected.length})
                 </Button>
@@ -250,11 +255,11 @@ const InventoryList: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
         <TableContainer>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#fafafa' }}>
+              <TableRow sx={{ backgroundColor: gs.bgPage }}>
                 <TableCell padding="checkbox">
                   <Checkbox
                     size="small"
@@ -286,14 +291,14 @@ const InventoryList: React.FC = () => {
                     selected={isSelected}
                     sx={{
                       '&:last-child td': { borderBottom: 0 },
-                      backgroundColor: item.isAgeWarningDynamic ? '#fff8e1' : isSelected ? '#F3F4F6' : 'transparent',
+                      backgroundColor: item.isAgeWarningDynamic ? '#fff8e1' : isSelected ? gs.bgHover : 'transparent',
                     }}
                   >
                     <TableCell padding="checkbox">
                       <Checkbox size="small" checked={isSelected} onChange={() => handleSelect(item.id)} />
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#111827' }}>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: gs.textPrimary }}>
                         {item.sku}
                       </Typography>
                     </TableCell>
@@ -365,7 +370,7 @@ const InventoryList: React.FC = () => {
           sx: { backgroundColor: 'rgba(0,0,0,0.3)' },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>批量移库</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>批量移库</DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             将选中的 {selected.length} 件商品移至：
@@ -377,7 +382,7 @@ const InventoryList: React.FC = () => {
             </Select>
           </FormControl>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
           <Button onClick={() => setMoveDialogOpen(false)}>取消</Button>
           <Button variant="contained" onClick={handleMoveWarehouse} disabled={!targetWarehouseId} sx={{ backgroundColor: '#111827' }}>
             确认移库

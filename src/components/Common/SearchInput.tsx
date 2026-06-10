@@ -1,6 +1,7 @@
 import React from 'react';
-import { TextField, InputAdornment } from '@mui/material';
+import { TextField, InputAdornment, useTheme } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import { getGrayScale } from '../../constants/theme';
 
 interface SearchInputProps {
   value: string;
@@ -15,8 +16,7 @@ interface SearchInputProps {
 }
 
 /**
- * 全局统一搜索输入框 — 以 SkillsPage 搜索框为标准模版
- * 无边框灰色背景，聚焦时白色背景+黑色边框
+ * 全局统一搜索输入框 — 适配深色/浅色模式
  */
 const SearchInput: React.FC<SearchInputProps> = ({
   value,
@@ -29,29 +29,33 @@ const SearchInput: React.FC<SearchInputProps> = ({
   onBlur,
   sx,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   const baseSx = fullWidth
     ? {
         '& .MuiOutlinedInput-root': {
           borderRadius: '8px',
-          backgroundColor: '#F0F0F0',
+          backgroundColor: gs.bgHover,
           fontSize: '0.8125rem',
           '& fieldset': { border: 'none' },
-          '&:hover': { backgroundColor: '#E8E8E8' },
-          '&.Mui-focused': { backgroundColor: '#fff', '& fieldset': { border: '1px solid #1A1A1A' } },
+          '&:hover': { backgroundColor: gs.bgActive },
+          '&.Mui-focused': { backgroundColor: gs.bgInput, '& fieldset': { border: `1px solid ${gs.textMuted}` } },
         },
-        '& .MuiInputBase-input': { py: 0.75, fontSize: '0.8125rem', color: '#666' },
+        '& .MuiInputBase-input': { py: 0.75, fontSize: '0.8125rem', color: gs.textPrimary },
       }
     : {
         width,
         '& .MuiOutlinedInput-root': {
           borderRadius: '8px',
-          backgroundColor: '#F0F0F0',
+          backgroundColor: gs.bgHover,
           fontSize: '0.8125rem',
           '& fieldset': { border: 'none' },
-          '&:hover': { backgroundColor: '#E8E8E8' },
-          '&.Mui-focused': { backgroundColor: '#fff', '& fieldset': { border: '1px solid #1A1A1A' } },
+          '&:hover': { backgroundColor: gs.bgActive },
+          '&.Mui-focused': { backgroundColor: gs.bgInput, '& fieldset': { border: `1px solid ${gs.textMuted}` } },
         },
-        '& .MuiInputBase-input': { py: 0.75, fontSize: '0.8125rem', color: '#666' },
+        '& .MuiInputBase-input': { py: 0.75, fontSize: '0.8125rem', color: gs.textPrimary },
       };
 
   return (
@@ -68,7 +72,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
       InputProps={{
         startAdornment: (
           <InputAdornment position="start">
-            <SearchIcon sx={{ fontSize: 16, color: '#999' }} />
+            <SearchIcon sx={{ fontSize: 16, color: gs.textMuted }} />
           </InputAdornment>
         ),
       }}

@@ -6,6 +6,7 @@ import {
   Button,
   Alert,
   Divider,
+  useTheme,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -27,6 +28,7 @@ import ModelManagement from './tabs/ModelManagement';
 import AboutTab from './tabs/AboutTab';
 import TrafficLightOffsetSection from './tabs/TrafficLightOffsetSection';
 import { useToast } from '../../contexts/ToastContext';
+import { getGrayScale } from '../../constants/theme';
 
 // ===================== Tab Definitions =====================
 
@@ -52,6 +54,10 @@ const TABS: TabItem[] = [
 
 const SettingsPanel: React.FC = () => {
   const { settings, updateSettings, resetSettings } = useAppSettings();
+
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
 
   /** Open a link in the system browser (adapts to pywebview / browser environments) */
   const openInBrowser = useCallback(async (url: string) => {
@@ -107,7 +113,6 @@ const SettingsPanel: React.FC = () => {
     updateSettings({ volumeDocs: draft.volumeDocs });
     updateSettings({ dashboard: draft.dashboard });
     updateSettings({ sidebar: draft.sidebar });
-    updateSettings({ models: draft.models });
     showToast('设置已保存', 'success');
   };
 
@@ -180,7 +185,6 @@ const SettingsPanel: React.FC = () => {
         enableShadows: true,
         compactMode: false,
       },
-      models: settings.models,
     });
     setErrors({});
     showToast('已重置为默认值', 'info');
@@ -200,14 +204,14 @@ const SettingsPanel: React.FC = () => {
       case 'volumeDoc':
         return <VolumeDocTab draft={draft} setDraft={setDraft} openInBrowser={openInBrowser} />;
       case 'modelManagement':
-        return <ModelManagement draft={draft} setDraft={setDraft} />;
+        return <ModelManagement />;
       case 'dmgSettings':
         return (
           <Box sx={{ maxWidth: 680 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#111827' }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: gs.textPrimary }}>
               DMG 窗口设置
             </Typography>
-            <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', mb: 3 }}>
+            <Typography sx={{ fontSize: '0.8rem', color: gs.textMuted, mb: 3 }}>
               配置桌面应用（DMG）的窗口行为，仅在使用 pywebview 桌面端时生效。
             </Typography>
             <TrafficLightOffsetSection />
@@ -222,7 +226,7 @@ const SettingsPanel: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, color: '#111827' }}>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 3, color: gs.textPrimary }}>
         系统设置
       </Typography>
 
@@ -232,7 +236,7 @@ const SettingsPanel: React.FC = () => {
           sx={{
             width: 200,
             flexShrink: 0,
-            borderRight: '1px solid #E5E7EB',
+            borderRight: `1px solid ${gs.border}`,
             pr: 0,
           }}
         >
@@ -252,14 +256,14 @@ const SettingsPanel: React.FC = () => {
                   borderRadius: '0 8px 8px 0',
                   mr: 1,
                   mb: 0.5,
-                  backgroundColor: isActive ? '#111827' : 'transparent',
-                  color: isActive ? '#FFFFFF' : '#6B7280',
+                  backgroundColor: isActive ? gs.textPrimary : 'transparent',
+                  color: isActive ? gs.bgPanel : gs.textMuted,
                   transition: 'all 0.15s ease',
                   '&:hover': {
-                    backgroundColor: isActive ? '#111827' : '#F3F4F6',
+                    backgroundColor: isActive ? gs.textPrimary : gs.bgHover,
                   },
                   '& .tab-icon': {
-                    color: isActive ? '#FFFFFF' : '#6B7280',
+                    color: isActive ? gs.bgPanel : gs.textMuted,
                     transition: 'color 0.15s ease',
                   },
                   '& .tab-label': {
@@ -296,9 +300,9 @@ const SettingsPanel: React.FC = () => {
           startIcon={<RestartAltIcon />}
           onClick={handleReset}
           sx={{
-            borderColor: '#E5E7EB',
-            color: '#6B7280',
-            '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+            borderColor: gs.border,
+            color: gs.textMuted,
+            '&:hover': { borderColor: gs.borderDarker, backgroundColor: gs.bgHover },
           }}
         >
           重置为默认值
@@ -309,9 +313,9 @@ const SettingsPanel: React.FC = () => {
           onClick={handleSave}
           disabled={hasErrors}
           sx={{
-            backgroundColor: '#111827',
-            '&:hover': { backgroundColor: '#374151' },
-            '&.Mui-disabled': { backgroundColor: '#E5E7EB', color: '#9CA3AF' },
+            backgroundColor: gs.textPrimary,
+            '&:hover': { backgroundColor: gs.textSecondary },
+            '&.Mui-disabled': { backgroundColor: gs.border, color: gs.textDisabled },
           }}
         >
           保存设置

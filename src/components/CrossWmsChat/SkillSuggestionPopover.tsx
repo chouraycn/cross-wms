@@ -1,9 +1,10 @@
 import React from 'react';
-import { Box, Typography, Popover } from '@mui/material';
+import { Box, Typography, Popover, useTheme } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { ICON_MAP } from '../../types/skill';
 import type { Skill, SkillSuggestionItem } from '../../types/skill';
+import { getGrayScale } from '../../constants/theme';
 
 // ===================== 类型 =====================
 
@@ -34,6 +35,9 @@ const SkillSuggestionPopover: React.FC<SkillSuggestionPopoverProps> = ({
   onSelect,
   open,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   if (!open || suggestions.length === 0) return null;
 
   const displayItems = suggestions.slice(0, 3);
@@ -62,7 +66,7 @@ const SkillSuggestionPopover: React.FC<SkillSuggestionPopoverProps> = ({
           sx: {
             mt: 0.5,
             borderRadius: '8px',
-            border: '1px solid #E5E7EB',
+            border: `1px solid ${gs.border}`,
             boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
             overflow: 'hidden',
             minWidth: 260,
@@ -109,7 +113,7 @@ const SkillSuggestionPopover: React.FC<SkillSuggestionPopoverProps> = ({
               bgcolor: isConflicted ? '#FEF3C7' : '#DBEAFE',
             },
             '&:not(:last-child)': {
-              borderBottom: '1px solid #E8F0FE',
+              borderBottom: `1px solid ${isDark ? gs.border : '#E8F0FE'}`,
             },
           }}
         >
@@ -147,7 +151,7 @@ const SkillSuggestionPopover: React.FC<SkillSuggestionPopoverProps> = ({
             <Typography
               sx={{
                 fontSize: '0.6875rem',
-                color: isConflicted ? '#B45309' : '#6B7280',
+                color: isConflicted ? '#B45309' : gs.textMuted,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',

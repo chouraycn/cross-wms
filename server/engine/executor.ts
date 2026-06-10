@@ -13,6 +13,9 @@ import {
   getInboundRecords,
   getOutboundRecords,
 } from '../db.js';
+import { checkAllPredictions } from '../services/predictionService.js';
+import { generateSuggestions } from '../services/replenishmentService.js';
+import { initDb } from '../db.js';
 
 // ===================== 类型定义 =====================
 
@@ -372,6 +375,83 @@ async function executeVolumeAlert(
   }
 }
 
+/** inventory-prediction：智能库存预测扫描 */
+async function executeInventoryPrediction(
+  automation: any,
+  startTime: number,
+  steps: ExecutionStep[],
+): Promise<unknown> {
+  const t = Date.now();
+  try {
+    checkTimeout(startTime, automation);
+    const db = initDb();
+
+    // 从 taskConfig 读取预测配置
+    const taskConfig = (automation.taskConfig ?? {}) as Record<string, unknown>;
+    const predictionConfig = {
+      enabled: taskConfig.enablePrediction !== false,
+      predictionDays: typeof taskConfig.predictionDays === 'number' ? taskConfig.predictionDays : 14,
+      shortageThreshold: typeof taskConfig.shortageThreshold === 'number' ? taskConfig.shortageThreshold : 10,
+      overstockDays: typeof taskConfig.overstockDays === 'number' ? taskConfig.overstockDays : 60,
+      minHistoryDays: typeof taskConfig.minHistoryDays === 'number' ? taskConfig.minHistoryDays : 7,
+    };
+
+    const result = await checkAllPredictions(db, predictionConfig);
+
+    const totalPredicted = result.predictedShortageAlerts + result.predictedOverstockAlerts;
+    if (totalPredicted === 0) {
+      recordStep(steps, '智能预测扫描', 'success', '未发现新的预测预警', t);
+    } else {
+      const parts: string[] = [];
+      if (result.predictedShortageAlerts > 0) {
+        parts.push(`${result.predictedShortageAlerts} 条预测短缺`);
+      }
+      if (result.predictedOverstockAlerts > 0) {
+        parts.push(`${result.predictedOverstockAlerts} 条预测积压`);
+      }
+      recordStep(steps, '智能预测扫描', 'success', `发现 ${parts.join('、')} 预警`, t);
+    }
+
+    return { ...result, checkedAt: new Date().toISOString(), config: predictionConfig };
+  } catch (err) {
+    recordStep(steps, '智能预测扫描', 'failed', err instanceof Error ? err.message : String(err), t);
+    return null;
+  }
+}
+
+/** replenishment-suggestion：智能补货建议生成 */
+async function executeReplenishmentSuggestion(
+  automation: any,
+  startTime: number,
+  steps: ExecutionStep[],
+): Promise<unknown> {
+  const t = Date.now();
+  try {
+    checkTimeout(startTime, automation);
+
+    // 从 taskConfig 读取补货配置
+    const taskConfig = (automation.taskConfig ?? {}) as Record<string, unknown>;
+    const replenishmentConfig = {
+      coverDays: typeof taskConfig.coverDays === 'number' ? taskConfig.coverDays : 14,
+      enableAutoGenerate: taskConfig.enableAutoGenerate !== false,
+      minHistoryDays: typeof taskConfig.minHistoryDays === 'number' ? taskConfig.minHistoryDays : 7,
+    };
+
+    const result = generateSuggestions(replenishmentConfig);
+
+    if (result.created === 0) {
+      recordStep(steps, '生成补货建议', 'success', '未发现新的补货需求', t);
+    } else {
+      recordStep(steps, '生成补货建议', 'success', `${result.created} 条建议`, t);
+    }
+
+    return { ...result, generatedAt: new Date().toISOString(), config: replenishmentConfig };
+  } catch (err) {
+    recordStep(steps, '生成补货建议', 'failed', err instanceof Error ? err.message : String(err), t);
+    return null;
+  }
+}
+
 /** skill-chain：调用技能链执行端点 */
 async function executeSkillChain(
   automation: any,
@@ -554,6 +634,12 @@ async function executeOnce(automation: any, startTime: number): Promise<{
         break;
       case 'volume-alert':
         data = await executeVolumeAlert(automation, startTime, steps);
+        break;
+      case 'inventory-prediction':
+        data = await executeInventoryPrediction(automation, startTime, steps);
+        break;
+      case 'replenishment-suggestion':
+        data = await executeReplenishmentSuggestion(automation, startTime, steps);
         break;
       case 'skill-chain':
         data = await executeSkillChain(automation, startTime, steps);

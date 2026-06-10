@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { getGrayScale } from '../../constants/theme';
 import SidebarLogo from './SidebarLogo';
 import NavList from './NavList';
 import SidebarToggle from './SidebarToggle';
@@ -32,8 +33,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   const location = useLocation();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
 
-  const SIDEBAR_BG = isDark ? '#1A1A1A' : '#F0F0F0';
+  const SIDEBAR_BG = gs.bgSidebar;
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
@@ -116,11 +118,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             justifyContent: collapsed ? 'center' : 'flex-start',
             px: collapsed ? 0 : 1.5,
             borderRadius: '6px',
-            backgroundColor: settingsOpen ? (isDark ? '#2D2D2D' : '#FFFFFF') : 'transparent',
+            backgroundColor: settingsOpen ? gs.bgActive : 'transparent',
             '&:hover': {
-              backgroundColor: settingsOpen ? (isDark ? '#333333' : '#F9FAFB') : (isDark ? '#2D2D2D' : '#f5f5f5'),
+              backgroundColor: settingsOpen ? (isDark ? '#333333' : '#F9FAFB') : gs.bgHover,
             },
-            color: isDark ? '#E5E7EB' : undefined,
+            color: gs.textSecondary,
           }}
         >
           <ListItemIcon
@@ -128,7 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
               minWidth: 0,
               mr: collapsed ? 0 : 1.5,
               justifyContent: 'center',
-              color: settingsOpen ? (isDark ? '#FFFFFF' : '#111827') : (isDark ? '#9CA3AF' : '#6B7280'),
+              color: settingsOpen ? gs.textPrimary : gs.textMuted,
               '& .MuiSvgIcon-root': { fontSize: collapsed ? '20px' : '18px' },
             }}
           >
@@ -146,7 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
               sx={{
                 fontSize: '0.8125rem',
                 fontWeight: settingsOpen ? 500 : 400,
-                color: settingsOpen ? (isDark ? '#FFFFFF' : '#111827') : (isDark ? '#D1D5DB' : '#374151'),
+                color: settingsOpen ? gs.textPrimary : gs.textSecondary,
                 lineHeight: '36px',
               }}
             >

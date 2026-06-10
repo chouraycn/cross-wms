@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { Grid, Card, CardContent, Typography, Box, IconButton, CircularProgress, Alert } from '@mui/material';
+import { Grid, Card, CardContent, Typography, Box, IconButton, CircularProgress, Alert, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { getGrayScale } from '../../constants/theme';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
@@ -21,14 +22,14 @@ interface KpiTheme {
   bg: string;
 }
 
-const KPI_THEME: Record<string, KpiTheme> = {
-  transit:     { border: '#3B82F6', icon: '#3B82F6', bg: '#EFF6FF' },
-  utilization:  { border: '#8B5CF6', icon: '#8B5CF6', bg: '#F5F3FF' },
-  inbound:     { border: '#F59E0B', icon: '#F59E0B', bg: '#FFFBEB' },
-  outbound:    { border: '#10B981', icon: '#10B981', bg: '#ECFDF5' },
-  depth:       { border: '#6B7280', icon: '#6B7280', bg: '#F9FAFB' },
-  alert:       { border: '#EF4444', icon: '#EF4444', bg: '#FEF2F2' },
-};
+const getKpiTheme = (isDark: boolean): Record<string, KpiTheme> => ({
+  transit:     { border: '#3B82F6', icon: '#3B82F6', bg: isDark ? '#1E3A8A' : '#EFF6FF' },
+  utilization:  { border: '#8B5CF6', icon: '#8B5CF6', bg: isDark ? '#3B0764' : '#F5F3FF' },
+  inbound:     { border: '#F59E0B', icon: '#F59E0B', bg: isDark ? '#78350F' : '#FFFBEB' },
+  outbound:    { border: '#10B981', icon: '#10B981', bg: isDark ? '#064E3B' : '#ECFDF5' },
+  depth:       { border: '#6B7280', icon: '#6B7280', bg: isDark ? '#1A1A1A' : '#F9FAFB' },
+  alert:       { border: '#EF4444', icon: '#EF4444', bg: isDark ? '#7F1D1D' : '#FEF2F2' },
+});
 
 interface KpiCardProps {
   title: string;
@@ -42,73 +43,83 @@ interface KpiCardProps {
   navigateTo?: string;
 }
 
-const KpiCard: React.FC<KpiCardProps> = ({ title, value, unit, icon, theme, trend, trendColor, navigateTo }) => (
-  <Card
-    elevation={0}
-    onClick={navigateTo ? undefined : undefined}
-    sx={{
-      border: '1px solid #E5E7EB',
-      borderLeft: `3px solid ${theme.border}`,
-      borderRadius: '6px',
-      cursor: navigateTo ? 'pointer' : 'default',
-      transition: 'transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
-      '&:hover': navigateTo
-        ? {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-            backgroundColor: 'rgba(17, 24, 39, 0.02)',
-          }
-        : {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-          },
-    }}
-  >
-    <CardContent sx={{ p: '16px 20px' }}>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <Box sx={{ flex: 1, pr: 1 }}>
-          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#6B7280', mb: 0.5, lineHeight: 1.3 }}>
-            {title}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 0.5 }}>
-            <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827', lineHeight: 1.2 }}>
-              {value}
+const KpiCard: React.FC<KpiCardProps> = ({ title, value, unit, icon, theme, trend, trendColor, navigateTo }) => {
+  const cardTheme = useTheme();
+  const cardIsDark = cardTheme.palette.mode === 'dark';
+  const cgs = getGrayScale(cardIsDark);
+  return (
+    <Card
+      elevation={0}
+      onClick={navigateTo ? undefined : undefined}
+      sx={{
+        border: `1px solid ${cgs.border}`,
+        borderLeft: `3px solid ${theme.border}`,
+        borderRadius: '6px',
+        cursor: navigateTo ? 'pointer' : 'default',
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
+        '&:hover': navigateTo
+          ? {
+              transform: 'translateY(-2px)',
+              boxShadow: `0 4px 12px ${cardIsDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.06)'}`,
+              backgroundColor: cardIsDark ? 'rgba(255,255,255,0.04)' : 'rgba(17, 24, 39, 0.02)',
+            }
+          : {
+              transform: 'translateY(-2px)',
+              boxShadow: `0 4px 12px ${cardIsDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.06)'}`,
+            },
+      }}
+    >
+      <CardContent sx={{ p: '16px 20px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <Box sx={{ flex: 1, pr: 1 }}>
+            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: cgs.textMuted, mb: 0.5, lineHeight: 1.3 }}>
+              {title}
             </Typography>
-            <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', fontWeight: 400 }}>
-              {unit}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 0.5 }}>
+              <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color: cgs.textPrimary, lineHeight: 1.2 }}>
+                {value}
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: cgs.textDisabled, fontWeight: 400 }}>
+                {unit}
+              </Typography>
+            </Box>
+            {trend && (
+              <Typography sx={{ fontSize: '0.75rem', color: trendColor || cgs.textDisabled, lineHeight: 1.3 }}>
+                {trend}
+              </Typography>
+            )}
           </Box>
-          {trend && (
-            <Typography sx={{ fontSize: '0.75rem', color: trendColor || '#9CA3AF', lineHeight: 1.3 }}>
-              {trend}
-            </Typography>
-          )}
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: '10px',
+              backgroundColor: theme.bg,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              '& svg': { fontSize: '1.25rem', color: theme.icon },
+            }}
+          >
+            {icon}
+          </Box>
         </Box>
-        <Box
-          sx={{
-            width: 40,
-            height: 40,
-            borderRadius: '10px',
-            backgroundColor: theme.bg,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            '& svg': { fontSize: '1.25rem', color: theme.icon },
-          }}
-        >
-          {icon}
-        </Box>
-      </Box>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
 
 interface KpiCardsProps {
   warehouseId: string;
 }
 
 const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+  const KPI_THEME = getKpiTheme(isDark);
+
   const { settings } = useAppSettings();
   const navigate = useNavigate();
   const compareDays = settings.dashboard.trendCompareDays;
@@ -188,7 +199,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-        <CircularProgress size={30} sx={{ color: '#111827' }} />
+        <CircularProgress size={30} sx={{ color: gs.textPrimary }} />
       </Box>
     );
   }
@@ -230,7 +241,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
         trend: warehouseId === ALL_WAREHOUSES
           ? `基于件数 ${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`
           : `基于件数 ${filteredWarehouses.reduce((s, w) => s + (Number.isFinite(w.totalItems) ? w.totalItems : (Number.isFinite(w.totalVolume) ? w.totalVolume : 0)), 0).toLocaleString()} 件`,
-        trendColor: '#111827',
+        trendColor: gs.textPrimary,
         navigateTo: '/inventory',
       },
     },
@@ -282,7 +293,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
         icon: <LayersIcon />,
         theme: KPI_THEME.depth,
         trend: `按当前出库速率可支撑天数`,
-        trendColor: '#6B7280',
+        trendColor: gs.textMuted,
         navigateTo: '/inventory?filter=depth',
       },
     },
@@ -309,7 +320,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-        <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+        <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
           KPI 概览
         </Typography>
         <IconButton size="small" onClick={handleExportKpi} title="导出CSV">

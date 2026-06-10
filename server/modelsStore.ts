@@ -6,65 +6,56 @@
  */
 
 import fs from 'fs';
+import { writeFile, readFile } from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { extractAndSaveApiKey, injectApiKeys, deleteApiKey } from './keychainStore.js';
+import { extractAndSaveApiKey, injectApiKeys, deleteAllApiKeys } from './keychainStore.js';
+import { clearRotationState } from './keyRotator.js';
+import type { ModelProvider, ModelCapability, ModelConfig } from '../shared/types/models.js';
+
+// 重新导出共享类型，供其他 server 模块使用
+export type { ModelProvider, ModelCapability, ModelConfig };
+
+/** 写入队列，防止并发写入 */
+let writeLockPromise: Promise<unknown> = Promise.resolve();
+
+function withWriteLock<T>(fn: () => Promise<T>): Promise<T> {
+  const result = writeLockPromise.then(() => fn());
+  writeLockPromise = result.catch(() => {}); // 队列继续，不因错误中断
+  return result;
+}
+
+/** 内存缓存 */
+let cachedModelsFile: ModelsFile | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 5000; // 5 秒缓存
+let fileWatcher: fs.FSWatcher | null = null;
+
+/** 启动文件监听 */
+function startFileWatcher(): void {
+  if (fileWatcher) return;
+  try {
+    fileWatcher = fs.watch(MODELS_FILE, (eventType) => {
+      if (eventType === 'change') {
+        console.log('[modelsStore] models.json 发生变化，清除缓存');
+        cachedModelsFile = null;
+        cacheTimestamp = 0;
+      }
+    });
+  } catch (e) {
+    console.warn('[modelsStore] 无法监听 models.json:', e);
+  }
+}
+
+/** 使缓存失效 */
+function invalidateCache(): void {
+  cachedModelsFile = null;
+  cacheTimestamp = 0;
+}
 
 const AI_MODELS_DIR = path.join(os.homedir(), '.cdf-know-clow', 'ai-models');
 const MODELS_FILE = path.join(AI_MODELS_DIR, 'models.json');
 const OLD_MODELS_FILE = path.join(os.homedir(), '.cdf-know-clow', 'models.json');
-
-/** 模型能力标签 */
-export type ModelCapability = 'code' | 'longContext' | 'reasoning' | 'multimodal' | 'fast' | 'costEffective' | 'general';
-
-/** 模型提供商 — 覆盖主流国内外 API 平台 */
-export type ModelProvider =
-  | 'openai'
-  | 'anthropic'
-  | 'tencent'
-  | 'deepseek'
-  | 'google'
-  | 'qwen'
-  | 'xai'
-  | 'zai'
-  | 'minimax'
-  | 'kimi'
-  | 'byteplus'
-  | 'openrouter'
-  | 'novita'
-  | 'wwqglobal'
-  | 'wwqcn'
-  | 'aws'
-  | 'azure'
-  | 'vercel'
-  | 'ollama'
-  | 'bigmodel'
-  | 'minimaxcn'
-  | 'kimicn'
-  | 'volcengine'
-  | 'aliyun'
-  | 'siliconflow'
-  | 'modelark'
-  | 'ppio'
-  | 'custom';
-
-/** 模型配置 */
-export interface ModelConfig {
-  id: string;
-  name: string;
-  provider: ModelProvider;
-  apiEndpoint?: string;
-  apiKey?: string;
-  apiKeyRef?: string;    // keychain:<modelId> 或 env:<VAR_NAME>
-  enabled: boolean;
-  isDefault?: boolean;
-  description?: string;
-  contextWindow?: number;
-  maxTokens?: number;
-  temperature?: number;  // 0-2，默认 1
-  topP?: number;         // 0-1，默认 1
-  capabilities?: ModelCapability[];  // 模型能力标签
-}
 
 /** models.json 文件结构 */
 export interface ModelsFile {
@@ -360,32 +351,49 @@ function migrateFromOldPath(): void {
 }
 
 /** 读取 models.json，不存在则返回 null */
-export function readModelsFile(): ModelsFile | null {
+export async function readModelsFile(): Promise<ModelsFile | null> {
   migrateFromOldPath();
   ensureDir();
-  if (!fs.existsSync(MODELS_FILE)) return null;
   try {
-    const raw = fs.readFileSync(MODELS_FILE, 'utf-8');
+    if (!fs.existsSync(MODELS_FILE)) return null;
+    const raw = await readFile(MODELS_FILE, 'utf-8');
     const data = JSON.parse(raw) as ModelsFile;
-    if (!data.models || !Array.isArray(data.models)) return null;
+    if (!data || !Array.isArray(data.models)) {
+      console.error('[modelsStore] models.json 格式无效');
+      return null;
+    }
     return data;
-  } catch {
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    console.error('[modelsStore] models.json 解析失败，将使用默认配置:', e);
     return null;
   }
 }
 
 /** 写入 models.json */
-export function writeModelsFile(data: ModelsFile): void {
-  ensureDir();
-  data.updatedAt = new Date().toISOString();
-  fs.writeFileSync(MODELS_FILE, JSON.stringify(data, null, 2), 'utf-8');
+export async function writeModelsFile(data: ModelsFile): Promise<void> {
+  return withWriteLock(() => {
+    return new Promise<void>((resolve, reject) => {
+      ensureDir();
+      data.updatedAt = new Date().toISOString();
+      try {
+        fs.writeFileSync(MODELS_FILE, JSON.stringify(data, null, 2), 'utf-8');
+        // 写入后使缓存失效（文件监听会重新加载）
+        invalidateCache();
+        resolve();
+      } catch (e) {
+        console.error('[modelsStore] 写入 models.json 失败:', e);
+        reject(e);
+      }
+    });
+  });
 }
 
 /**
  * 修正已知模型 ID 的 provider（从旧版 'custom' → 新版具体 provider）
  * 并添加可能缺失的内置模型
  */
-function migrateProviderData(models: ModelConfig[]): ModelConfig[] {
+function migrateProviderData(models: ModelConfig[]): { models: ModelConfig[]; changed: boolean } {
   const ID_TO_PROVIDER: Record<string, ModelProvider> = {
     'deepseek-chat': 'deepseek',
     'deepseek-coder': 'deepseek',
@@ -417,37 +425,60 @@ function migrateProviderData(models: ModelConfig[]): ModelConfig[] {
   if (changed) {
     console.log('[modelsStore] Migrated provider data for built-in models');
   }
-  return migrated;
+  return { models: migrated, changed };
 }
 
 /** 读取模型配置（含内置模型兜底） */
-export function loadModelsConfig(): ModelsFile {
-  let saved = readModelsFile();
-  if (saved && saved.models.length > 0) {
-    // 自动迁移旧 provider 数据
-    const migrated = migrateProviderData(saved.models);
-    if (migrated !== saved.models) {
-      saved = { ...saved, models: migrated };
-      writeModelsFile(saved);
-    }
-    // 注入 Keychain 中的 API Key
-    saved.models = injectApiKeys(saved.models);
-    return saved;
+export async function loadModelsConfig(): Promise<ModelsFile> {
+  // 检查缓存是否有效
+  if (cachedModelsFile && Date.now() - cacheTimestamp < CACHE_TTL_MS) {
+    return cachedModelsFile;
   }
 
-  // 首次使用：创建默认内置模型
-  const defaultConfig: ModelsFile = {
+  // 启动文件监听（首次调用时）
+  startFileWatcher();
+
+  try {
+    let saved = await readModelsFile();
+    if (saved && saved.models.length > 0) {
+      // 自动迁移旧 provider 数据
+      const { models: migrated, changed } = migrateProviderData(saved.models);
+      if (changed) {
+        saved = { ...saved, models: migrated };
+        await writeModelsFile(saved);
+      }
+      // 注入 Keychain 中的 API Key（仅用于后端内部使用，不返回给前端）
+      saved.models = injectApiKeys(saved.models);
+      // 更新缓存
+      cachedModelsFile = saved;
+      cacheTimestamp = Date.now();
+      return saved;
+    }
+  } catch (e) {
+    console.error('[modelsStore] 加载模型配置失败:', e);
+  }
+
+  // 兜底：返回内置模型
+  const fallback: ModelsFile = {
     version: 1,
-    models: BUILTIN_MODELS,
-    defaultModelId: 'gpt-4o',
+    models: [...BUILTIN_MODELS],
+    defaultModelId: BUILTIN_MODELS[0]?.id || '',
     updatedAt: new Date().toISOString(),
   };
-  writeModelsFile(defaultConfig);
-  return defaultConfig;
+  cachedModelsFile = fallback;
+  cacheTimestamp = Date.now();
+  return fallback;
 }
 
 /** 保存模型配置 */
-export function saveModelsConfig(models: ModelConfig[], defaultModelId: string): ModelsFile {
+export async function saveModelsConfig(models: ModelConfig[], defaultModelId: string): Promise<ModelsFile> {
+  // 验证 defaultModelId 是否存在于 models 中
+  if (defaultModelId && models.length > 0 && !models.some(m => m.id === defaultModelId)) {
+    console.warn(`[modelsStore] defaultModelId "${defaultModelId}" 不存在于 models 中，将使用第一个已启用模型`);
+    const firstEnabled = models.find(m => m.enabled);
+    defaultModelId = firstEnabled ? firstEnabled.id : models[0].id;
+  }
+
   // 提取 API Key 到 Keychain，替换为 apiKeyRef
   const modelsWithKeychain = models.map(m => extractAndSaveApiKey(m));
 
@@ -463,13 +494,14 @@ export function saveModelsConfig(models: ModelConfig[], defaultModelId: string):
     defaultModelId,
     updatedAt: new Date().toISOString(),
   };
-  writeModelsFile(data);
+  await writeModelsFile(data);
   return data;
 }
 
-/** 删除模型时同步清理 Keychain */
+/** 删除模型时同步清理 Keychain 和轮询状态 */
 export function deleteModelConfig(modelId: string): void {
-  deleteApiKey(modelId);
+  deleteAllApiKeys(modelId);
+  clearRotationState(modelId);
 }
 
 /** 获取内置模型列表（供前端参考） */

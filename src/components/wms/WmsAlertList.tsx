@@ -28,16 +28,20 @@ import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import type { WmsAlert, AlertType, AlertSeverity } from '../../types/wms';
 
 /** 预警类型 → Chip 颜色映射 */
-const ALERT_TYPE_COLORS: Record<AlertType, 'warning' | 'error' | 'secondary'> = {
+const ALERT_TYPE_COLORS: Record<AlertType, 'warning' | 'error' | 'secondary' | 'info'> = {
   low_stock: 'warning',
   expiry: 'error',
   stagnant: 'secondary',
+  predicted_shortage: 'warning',
+  predicted_overstock: 'info',
 };
 
 const ALERT_TYPE_COLORS_HEX: Record<AlertType, string> = {
   low_stock: '#EA580C',
   expiry: '#DC2626',
   stagnant: '#CA8A04',
+  predicted_shortage: '#F97316',
+  predicted_overstock: '#6366F1',
 };
 
 /** 预警类型 → 中文标签 */
@@ -45,6 +49,8 @@ const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   low_stock: '低库存',
   expiry: '临期',
   stagnant: '滞销',
+  predicted_shortage: '预测短缺',
+  predicted_overstock: '预测积压',
 };
 
 /** 严重程度 → Chip 颜色映射 */
@@ -82,9 +88,11 @@ export interface WmsAlertListProps {
   loading: boolean;
   onResolve: (alertId: number) => void;
   onIgnore: (alertId: number) => void;
+  /** 点击预测型预警行时触发 */
+  onPredictionDetail?: (alert: WmsAlert) => void;
 }
 
-const WmsAlertList: React.FC<WmsAlertListProps> = ({ alerts, loading, onResolve, onIgnore }) => {
+const WmsAlertList: React.FC<WmsAlertListProps> = ({ alerts, loading, onResolve, onIgnore, onPredictionDetail }) => {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(20);
 
@@ -158,12 +166,23 @@ const WmsAlertList: React.FC<WmsAlertListProps> = ({ alerts, loading, onResolve,
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {paginatedAlerts.map((alert) => (
+                  {paginatedAlerts.map((alert) => {
+                    const isPrediction = alert.alertType === 'predicted_shortage' || alert.alertType === 'predicted_overstock';
+                    return (
                     <TableRow
                       key={alert.id}
                       sx={{
                         '&:last-child td': { borderBottom: 0 },
                         backgroundColor: alert.status === 'active' ? '#FFFBEB' : 'transparent',
+                        ...(isPrediction && onPredictionDetail ? {
+                          cursor: 'pointer',
+                          '&:hover': { backgroundColor: alert.status === 'active' ? '#FEF3C7' : '#F9FAFB' },
+                        } : {}),
+                      }}
+                      onClick={() => {
+                        if (isPrediction && onPredictionDetail) {
+                          onPredictionDetail(alert);
+                        }
                       }}
                     >
                       <TableCell>
@@ -255,7 +274,8 @@ const WmsAlertList: React.FC<WmsAlertListProps> = ({ alerts, loading, onResolve,
                         )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>

@@ -1,46 +1,50 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense } from 'react';
 import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box, useMediaQuery } from '@mui/material';
+import { CssBaseline, Box } from '@mui/material';
 import Sidebar from './components/Layout/Sidebar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 import type { AppearanceConfig, AccentColor } from './contexts/AppSettingsContext';
+import { ModelsProvider } from './contexts/ModelsContext';
 import { isPyWebView } from './services/tencentDocsApi';
+import { getGrayScale } from './constants/theme';
 import { UpdateProvider } from './contexts/UpdateContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import UpdateNotification from './components/UpdateNotification';
 import { CrossWmsChat } from './components/CrossWmsChat';
 import ErrorBoundary from './components/Common/ErrorBoundary';
+import LoadingFallback from './components/Common/LoadingFallback';
 import { automationEngine } from './services/automation';
 
 // 从统一配色文件导入
 export { PRIMARY, SECONDARY, BORDER, BG_LIGHT, BG_PAGE, WHITE, RADIUS, CHAT_COLORS } from './constants/theme';
 
-// 静态导入 — file:// 协议下 WKWebView 不支持动态 import()
-// Vite 构建时 inlineDynamicImports 已将全部代码打包到单文件，无需代码分割
-import DashboardPage from './pages/DashboardPage';
-import SkillsPage from './pages/SkillsPage';
-import SkillDetailPage from './pages/SkillDetailPage';
-import SkillAuditPage from './pages/SkillAuditPage';
+// 路由级懒加载 — 按需加载各页面组件，降低首屏加载体积
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
+const SkillsPage = React.lazy(() => import('./pages/SkillsPage'));
+const SkillDetailPage = React.lazy(() => import('./pages/SkillDetailPage'));
+const SkillAuditPage = React.lazy(() => import('./pages/SkillAuditPage'));
 
-import ChatPage from './pages/ChatPage';
-import WarehousesPage from './pages/WarehousesPage';
-import PartnersPage from './pages/PartnersPage';
-import InTransitPage from './pages/InTransitPage';
-import InventoryPage from './pages/InventoryPage';
-import TencentDocsPage from './pages/TencentDocsPage';
-import ReportsPage from './pages/ReportsPage';
-import SettingsPage from './pages/SettingsPage';
-import AutomationPage from './pages/AutomationPage';
-import ProjectsPage from './pages/ProjectsPage';
-import WmsQualityPage from './pages/WmsQualityPage';
-import WmsInventoryPage from './pages/WmsInventoryPage';
-import WmsOutboundPage from './pages/WmsOutboundPage';
-import WmsAlertPage from './pages/WmsAlertPage';
-import WmsReportPage from './pages/WmsReportPage';
-import ProjectDetailPage from './pages/ProjectDetailPage';
-import NotFoundPage from './pages/NotFoundPage';
+const ChatPage = React.lazy(() => import('./pages/ChatPage'));
+const WarehousesPage = React.lazy(() => import('./pages/WarehousesPage'));
+const PartnersPage = React.lazy(() => import('./pages/PartnersPage'));
+const InTransitPage = React.lazy(() => import('./pages/InTransitPage'));
+const InventoryPage = React.lazy(() => import('./pages/InventoryPage'));
+const TencentDocsPage = React.lazy(() => import('./pages/TencentDocsPage'));
+const ReportsPage = React.lazy(() => import('./pages/ReportsPage'));
+const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
+const AutomationPage = React.lazy(() => import('./pages/AutomationPage'));
+const ProjectsPage = React.lazy(() => import('./pages/ProjectsPage'));
+const WmsQualityPage = React.lazy(() => import('./pages/WmsQualityPage'));
+const WmsInventoryPage = React.lazy(() => import('./pages/WmsInventoryPage'));
+const WmsOutboundPage = React.lazy(() => import('./pages/WmsOutboundPage'));
+const WmsAlertPage = React.lazy(() => import('./pages/WmsAlertPage'));
+const WmsReportPage = React.lazy(() => import('./pages/WmsReportPage'));
+const WmsReplenishmentPage = React.lazy(() => import('./pages/WmsReplenishmentPage'));
+const TransferPage = React.lazy(() => import('./pages/TransferPage'));
+const ProjectDetailPage = React.lazy(() => import('./pages/ProjectDetailPage'));
+const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
 
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
@@ -52,9 +56,10 @@ const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
   orange:  { main: '#EA580C', light: '#FB923C' },
 };
 
-/** 根据外观配置动态创建 MUI Theme */
-function buildTheme(appearance: AppearanceConfig, prefersDark: boolean) {
-  const isDark = appearance.themeMode === 'dark' || (appearance.themeMode === 'system' && prefersDark);
+/** 根据外观配置动态创建 MUI Theme — 仅支持 light/dark，使用统一灰阶 */
+function buildTheme(appearance: AppearanceConfig) {
+  const isDark = appearance.themeMode === 'dark';
+  const gs = getGrayScale(isDark);
   const accent = ACCENT_MAP[appearance.accentColor] || ACCENT_MAP.default;
   const radiusMap = { sharp: 0, normal: 6, rounded: 12 } as const;
   const radius = radiusMap[appearance.borderRadius] ?? 6;
@@ -63,16 +68,16 @@ function buildTheme(appearance: AppearanceConfig, prefersDark: boolean) {
     palette: {
       mode: isDark ? 'dark' : 'light',
       primary: { main: accent.main, light: accent.light, dark: accent.main },
-      secondary: { main: '#6B7280' },
+      secondary: { main: gs.textMuted },
       background: {
-        default: isDark ? '#111111' : '#F8F8F8',
-        paper: isDark ? '#1E1E1E' : '#FFFFFF',
+        default: gs.bgPage,
+        paper: gs.bgPanel,
       },
       text: {
-        primary: isDark ? '#F3F4F6' : '#111827',
-        secondary: isDark ? '#9CA3AF' : '#6B7280',
+        primary: gs.textPrimary,
+        secondary: gs.textSecondary,
       },
-      divider: isDark ? '#2D2D2D' : '#E5E7EB',
+      divider: gs.border,
     },
     typography: {
       fontFamily: [
@@ -91,8 +96,8 @@ function buildTheme(appearance: AppearanceConfig, prefersDark: boolean) {
         styleOverrides: {
           root: {
             borderRadius: radius,
-            border: `1px solid ${isDark ? '#2D2D2D' : '#E5E7EB'}`,
-            backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+            border: `1px solid ${gs.border}`,
+            backgroundColor: gs.bgPanel,
           },
         },
       },
@@ -115,7 +120,7 @@ function buildTheme(appearance: AppearanceConfig, prefersDark: boolean) {
           head: {
             fontSize: '0.8rem',
             fontWeight: 600,
-            color: isDark ? '#9CA3AF' : '#6B7280',
+            color: gs.textMuted,
           },
         },
       },
@@ -127,14 +132,16 @@ function buildTheme(appearance: AppearanceConfig, prefersDark: boolean) {
       MuiDialog: {
         styleOverrides: {
           paper: {
-            backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+            backgroundColor: gs.bgPanel,
+            border: `1px solid ${gs.border}`,
           },
         },
       },
       MuiPopover: {
         styleOverrides: {
           paper: {
-            backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+            backgroundColor: gs.bgPanel,
+            border: `1px solid ${gs.border}`,
           },
         },
       },
@@ -142,8 +149,153 @@ function buildTheme(appearance: AppearanceConfig, prefersDark: boolean) {
         styleOverrides: {
           root: {
             '& .MuiOutlinedInput-root': {
-              backgroundColor: isDark ? '#2D2D2D' : '#FFFFFF',
+              backgroundColor: gs.bgInput,
+              borderRadius: radius,
             },
+          },
+        },
+      },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            '& fieldset': {
+              borderColor: gs.borderDarker,
+            },
+            '&:hover fieldset': {
+              borderColor: isDark ? '#555555' : '#9CA3AF',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: accent.main,
+            },
+          },
+        },
+      },
+      MuiMenu: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: gs.bgPanel,
+            border: `1px solid ${gs.border}`,
+          },
+        },
+      },
+      MuiMenuItem: {
+        styleOverrides: {
+          root: {
+            '&:hover': {
+              backgroundColor: gs.bgHover,
+            },
+          },
+        },
+      },
+      MuiSwitch: {
+        styleOverrides: {
+          root: {
+            '& .MuiSwitch-track': {
+              backgroundColor: gs.borderDarker,
+            },
+          },
+        },
+      },
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            backgroundColor: gs.bgPanel,
+            borderBottom: `1px solid ${gs.border}`,
+          },
+        },
+      },
+      MuiDrawer: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: gs.bgSidebar,
+            borderRight: `1px solid ${gs.border}`,
+          },
+        },
+      },
+      MuiListItemButton: {
+        styleOverrides: {
+          root: {
+            '&:hover': {
+              backgroundColor: gs.bgHover,
+            },
+            '&.Mui-selected': {
+              backgroundColor: gs.bgActive,
+            },
+          },
+        },
+      },
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            backgroundImage: 'none',
+          },
+        },
+      },
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            backgroundColor: gs.bgPage,
+            color: gs.textPrimary,
+          },
+        },
+      },
+      MuiInputBase: {
+        styleOverrides: {
+          root: {
+            backgroundColor: gs.bgInput,
+          },
+        },
+      },
+      MuiSelect: {
+        styleOverrides: {
+          root: {
+            backgroundColor: gs.bgInput,
+          },
+        },
+      },
+      MuiAutocomplete: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: gs.bgPanel,
+          },
+        },
+      },
+      MuiTooltip: {
+        styleOverrides: {
+          tooltip: {
+            backgroundColor: isDark ? '#2D2D2D' : '#374151',
+            color: isDark ? '#F3F4F6' : '#FFFFFF',
+          },
+        },
+      },
+      MuiDivider: {
+        styleOverrides: {
+          root: {
+            borderColor: gs.border,
+          },
+        },
+      },
+      MuiIconButton: {
+        styleOverrides: {
+          root: {
+            color: gs.textMuted,
+            '&:hover': {
+              backgroundColor: gs.bgHover,
+            },
+          },
+        },
+      },
+      MuiTypography: {
+        styleOverrides: {
+          root: {
+            color: gs.textPrimary,
+          },
+        },
+      },
+      MuiBackdrop: {
+        styleOverrides: {
+          root: {
+            backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)',
           },
         },
       },
@@ -243,7 +395,7 @@ function getToolbarActions(pathname: string) {
     return { refresh: true, newWarehouse: false, warehouseSwitch: false };
   }
   // 在途、库存、报表、WMS页面：仅刷新
-  if (pathname.startsWith('/in-transit') || pathname.startsWith('/inventory') || pathname.startsWith('/reports') || pathname.startsWith('/wms/')) {
+  if (pathname.startsWith('/in-transit') || pathname.startsWith('/inventory') || pathname.startsWith('/reports') || pathname.startsWith('/wms/') || pathname.startsWith('/transfer')) {
     return { refresh: true, newWarehouse: false, warehouseSwitch: false };
   }
   // 其他页面（腾讯文档、设置）：无操作按钮
@@ -263,6 +415,8 @@ function getPageRefreshKey(pathname: string): string {
   if (pathname.startsWith('/wms/outbound')) return 'wms-outbound';
   if (pathname.startsWith('/wms/alerts')) return 'wms-alerts';
   if (pathname.startsWith('/wms/reports')) return 'wms-reports';
+  if (pathname.startsWith('/wms/replenishment')) return 'wms-replenishment';
+  if (pathname.startsWith('/transfer')) return 'transfer';
   return '';
 }
 
@@ -463,32 +617,36 @@ const MainLayout: React.FC = () => {
               }}
             >
               <ErrorBoundary>
-                <Routes>
-                  <Route path="/" element={<Navigate to="/chat" replace />} />
-                  <Route path="/projects" element={<ProjectsPage />} />
-                  <Route path="/projects/:id" element={<ProjectDetailPage />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/skills" element={<SkillsPage />} />
-                  <Route path="/skills/:skillId" element={<SkillDetailPage />} />
-                  <Route path="/skills/:skillId/audit" element={<SkillAuditPage />} />
+                <Suspense fallback={<LoadingFallback />}>
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/chat" replace />} />
+                    <Route path="/projects" element={<ProjectsPage />} />
+                    <Route path="/projects/:id" element={<ProjectDetailPage />} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/skills" element={<SkillsPage />} />
+                    <Route path="/skills/:skillId" element={<SkillDetailPage />} />
+                    <Route path="/skills/:skillId/audit" element={<SkillAuditPage />} />
 
-                  <Route path="/chat" element={<ChatPage />} />
-                  <Route path="/warehouses" element={<WarehousesPage />} />
-                  <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
-                  <Route path="/partners" element={<PartnersPage />} />
-                  <Route path="/in-transit" element={<InTransitPage />} />
-                  <Route path="/inventory" element={<InventoryPage />} />
-                  <Route path="/tencent-docs" element={<TencentDocsPage />} />
-                  <Route path="/reports" element={<ReportsPage />} />
-                  <Route path="/wms/quality" element={<WmsQualityPage />} />
-                  <Route path="/wms/inventory" element={<WmsInventoryPage />} />
-                  <Route path="/wms/outbound" element={<WmsOutboundPage />} />
-                  <Route path="/wms/alerts" element={<WmsAlertPage />} />
-                  <Route path="/wms/reports" element={<WmsReportPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/automation" element={<AutomationPage />} />
-                  <Route path="*" element={<NotFoundPage />} />
-                </Routes>
+                    <Route path="/chat" element={<ChatPage />} />
+                    <Route path="/warehouses" element={<WarehousesPage />} />
+                    <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
+                    <Route path="/partners" element={<PartnersPage />} />
+                    <Route path="/in-transit" element={<InTransitPage />} />
+                    <Route path="/inventory" element={<InventoryPage />} />
+                    <Route path="/tencent-docs" element={<TencentDocsPage />} />
+                    <Route path="/reports" element={<ReportsPage />} />
+                    <Route path="/wms/quality" element={<WmsQualityPage />} />
+                    <Route path="/wms/inventory" element={<WmsInventoryPage />} />
+                    <Route path="/wms/outbound" element={<WmsOutboundPage />} />
+                    <Route path="/wms/alerts" element={<WmsAlertPage />} />
+                    <Route path="/wms/reports" element={<WmsReportPage />} />
+                    <Route path="/wms/replenishment" element={<Suspense fallback={<LoadingFallback />}><WmsReplenishmentPage /></Suspense>} />
+                    <Route path="/transfer" element={<TransferPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/automation" element={<AutomationPage />} />
+                    <Route path="*" element={<NotFoundPage />} />
+                  </Routes>
+                </Suspense>
               </ErrorBoundary>
             </Box>
           </Box>
@@ -521,11 +679,10 @@ const MainLayout: React.FC = () => {
 /** 动态主题桥接组件：读取 settings → 构建 theme → 注入 ThemeProvider */
 const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings } = useAppSettings();
-  const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
 
   const theme = useMemo(
-    () => buildTheme(settings.appearance, prefersDark),
-    [settings.appearance, prefersDark],
+    () => buildTheme(settings.appearance),
+    [settings.appearance],
   );
 
   return (
@@ -544,13 +701,15 @@ const App: React.FC = () => {
 
   return (
     <AppSettingsProvider>
-      <ThemedApp>
-        <HashRouter>
-          <UpdateProvider>
-            <MainLayout />
-          </UpdateProvider>
-        </HashRouter>
-      </ThemedApp>
+      <ModelsProvider>
+        <ThemedApp>
+          <HashRouter>
+            <UpdateProvider>
+              <MainLayout />
+            </UpdateProvider>
+          </HashRouter>
+        </ThemedApp>
+      </ModelsProvider>
     </AppSettingsProvider>
   );
 };

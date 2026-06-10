@@ -98,7 +98,7 @@ if [ -n "$CI" ]; then
   fi
 else
   # 本地环境：使用指定的 venv
-  PYWEBVIEW_VENV="/Users/chouray/.workbuddy/binaries/python/envs/cdf-know-clow-pywebview"
+  PYWEBVIEW_VENV="/Users/chouray/.workbuddy/binaries/python/envs/crosswms-pywebview"
   PYINSTALLER="$PYWEBVIEW_VENV/bin/pyinstaller"
   PYTHON="$PYWEBVIEW_VENV/bin/python3"
 fi

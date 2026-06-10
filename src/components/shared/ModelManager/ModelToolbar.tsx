@@ -1,23 +1,29 @@
 /**
- * ModelToolbar — 操作工具栏
+ * ModelToolbar — 操作工具栏（精简版）
  *
- * 包含：
- * - 添加模型按钮
- * - 恢复默认按钮（F5）
- * - 导出按钮（F6）
- * - 导入按钮（F6）
+ * 布局策略：
+ * - 主要操作：添加模型（始终可见）
+ * - 次要操作：收起为 "更多" 下拉菜单（恢复默认、导出、导入、模板、发现本地）
+ * - 状态操作：健康检测、自动刷新开关
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  Box, Typography, Button, Chip, Tooltip, IconButton,
+  Box, Typography, Button, Chip, Tooltip, IconButton, Menu, MenuItem,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
-import { COLORS, toolbarButtonSx, primaryButtonSx } from './styles';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import StorageIcon from '@mui/icons-material/Storage';
+import TimerIcon from '@mui/icons-material/Timer';
+import TimerOffIcon from '@mui/icons-material/TimerOff';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { COLORS, toolbarButtonSx } from './styles';
 import type { ModelToolbarProps } from './types';
 
 const ModelToolbar: React.FC<ModelToolbarProps> = ({
@@ -29,84 +35,161 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
   onExport,
   onImport,
   onTemplate,
+  onHealthCheck,
+  isHealthChecking,
+  onDiscoverLocal,
+  autoRefreshEnabled,
+  onToggleAutoRefresh,
+  healthCheckError,
 }) => {
   const defaultModel = models.find(m => m.id === defaultModelId);
+  const [moreAnchor, setMoreAnchor] = useState<null | HTMLElement>(null);
 
-  // table 变体：类似 AISettingsDialog 风格
+  // ========== table 变体：精简单行布局 ==========
   if (variant === 'table') {
     return (
       <Box sx={{ mb: 2 }}>
-        <Box sx={{ mb: 3 }}>
+        {/* 标题区 */}
+        <Box sx={{ mb: 2 }}>
           <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: COLORS.textPrimary, mb: 0.5 }}>
             模型
           </Typography>
-          <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: COLORS.textPrimary, mb: 0.75 }}>
-            模型管理
-          </Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: COLORS.textMuted, mb: 2.5, lineHeight: 1.6 }}>
-            配置 API key 添加更多可用模型，预留模型默认使用稳定版本。
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Typography sx={{ fontSize: '0.8125rem', color: COLORS.textMuted }}>
+              配置 API key 添加更多可用模型
+            </Typography>
+            <Chip
+              label={`默认: ${defaultModel?.name || '未设置'}`}
+              size="small"
+              sx={{
+                backgroundColor: defaultModel ? COLORS.successBg : COLORS.errorBg,
+                color: defaultModel ? COLORS.success : COLORS.errorText,
+                fontSize: '0.7rem',
+                height: 20,
+                fontWeight: 500,
+              }}
+            />
+          </Box>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-            onClick={onAdd}
-            sx={toolbarButtonSx}
-          >
-            添加模型
-          </Button>
-          <Tooltip title="恢复默认模型配置">
+
+        {/* 错误提示 */}
+        {healthCheckError && (
+          <Box sx={{ mb: 2, p: 1.5, backgroundColor: COLORS.errorBg, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ErrorOutlineIcon sx={{ color: COLORS.error, fontSize: 18 }} />
+            <Typography sx={{ fontSize: '0.8rem', color: COLORS.errorText }}>
+              {healthCheckError}
+            </Typography>
+          </Box>
+        )}
+
+        {/* 操作栏：单行紧凑布局 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+          {/* 左侧：主要操作 + 更多菜单 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
             <Button
-              variant="outlined"
+              variant="contained"
               size="small"
-              startIcon={<RestartAltIcon sx={{ fontSize: 16 }} />}
-              onClick={onReset}
-              sx={{ borderColor: '#D1D5DB', color: COLORS.textMuted, fontSize: '0.8125rem', '&:hover': { borderColor: '#9CA3AF' } }}
+              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+              onClick={onAdd}
+              sx={toolbarButtonSx}
             >
-              恢复默认
+              添加模型
             </Button>
-          </Tooltip>
-          <Tooltip title="导出模型配置为 JSON">
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<FileDownloadIcon sx={{ fontSize: 16 }} />}
-              onClick={onExport}
-              sx={{ borderColor: '#D1D5DB', color: COLORS.textMuted, fontSize: '0.8125rem', '&:hover': { borderColor: '#9CA3AF' } }}
+
+            {/* 更多操作下拉 */}
+            <Tooltip title="更多操作">
+              <IconButton
+                size="small"
+                onClick={e => setMoreAnchor(e.currentTarget)}
+                sx={{ color: COLORS.textMuted, border: `1px solid ${COLORS.border}`, borderRadius: 1 }}
+              >
+                <MoreVertIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+            <Menu
+              anchorEl={moreAnchor}
+              open={Boolean(moreAnchor)}
+              onClose={() => setMoreAnchor(null)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+              PaperProps={{ sx: { minWidth: 160, borderRadius: 1.5 } }}
             >
-              导出
-            </Button>
-          </Tooltip>
-          <Tooltip title="从 JSON 文件导入模型配置">
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<FileUploadIcon sx={{ fontSize: 16 }} />}
-              onClick={onImport}
-              sx={{ borderColor: '#D1D5DB', color: COLORS.textMuted, fontSize: '0.8125rem', '&:hover': { borderColor: '#9CA3AF' } }}
-            >
-              导入
-            </Button>
-          </Tooltip>
-          <Tooltip title="应用配置模板">
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<DashboardCustomizeIcon sx={{ fontSize: 16 }} />}
-              onClick={onTemplate}
-              sx={{ borderColor: '#D1D5DB', color: COLORS.textMuted, fontSize: '0.8125rem', '&:hover': { borderColor: '#9CA3AF' } }}
-            >
-              模板
-            </Button>
-          </Tooltip>
+              <MenuItem onClick={() => { onReset(); setMoreAnchor(null); }} sx={{ fontSize: '0.8125rem', gap: 1 }}>
+                <RestartAltIcon sx={{ fontSize: 16, color: COLORS.textMuted }} />
+                恢复默认配置
+              </MenuItem>
+              <MenuItem onClick={() => { onExport(); setMoreAnchor(null); }} sx={{ fontSize: '0.8125rem', gap: 1 }}>
+                <FileDownloadIcon sx={{ fontSize: 16, color: COLORS.textMuted }} />
+                导出 JSON
+              </MenuItem>
+              <MenuItem onClick={() => { onImport(); setMoreAnchor(null); }} sx={{ fontSize: '0.8125rem', gap: 1 }}>
+                <FileUploadIcon sx={{ fontSize: 16, color: COLORS.textMuted }} />
+                导入 JSON
+              </MenuItem>
+              <MenuItem onClick={() => { onTemplate(); setMoreAnchor(null); }} sx={{ fontSize: '0.8125rem', gap: 1 }}>
+                <DashboardCustomizeIcon sx={{ fontSize: 16, color: COLORS.textMuted }} />
+                应用模板
+              </MenuItem>
+              {onDiscoverLocal && (
+                <MenuItem onClick={() => { onDiscoverLocal(); setMoreAnchor(null); }} sx={{ fontSize: '0.8125rem', gap: 1 }}>
+                  <StorageIcon sx={{ fontSize: 16, color: COLORS.textMuted }} />
+                  发现本地模型
+                </MenuItem>
+              )}
+            </Menu>
+          </Box>
+
+          {/* 右侧：健康检测 + 自动刷新 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            {onHealthCheck && (
+              <Tooltip title="检测所有模型 API 连接状态">
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={isHealthChecking
+                    ? <AutorenewIcon sx={{ fontSize: 14, animation: 'spin 1s linear infinite' }} />
+                    : <MonitorHeartIcon sx={{ fontSize: 14 }} />
+                  }
+                  onClick={onHealthCheck}
+                  disabled={isHealthChecking}
+                  sx={{
+                    borderColor: '#D1D5DB',
+                    color: COLORS.textMuted,
+                    fontSize: '0.75rem',
+                    py: 0.3,
+                    '&:hover': { borderColor: '#9CA3AF' },
+                  }}
+                >
+                  {isHealthChecking ? '检测中' : '健康检测'}
+                </Button>
+              </Tooltip>
+            )}
+            {onToggleAutoRefresh && (
+              <Tooltip title={autoRefreshEnabled ? '自动刷新已开启（5分钟）' : '自动刷新已关闭'}>
+                <IconButton
+                  size="small"
+                  onClick={onToggleAutoRefresh}
+                  sx={{
+                    color: autoRefreshEnabled ? '#10B981' : COLORS.textMuted,
+                    border: `1px solid ${autoRefreshEnabled ? '#10B981' : COLORS.border}`,
+                    borderRadius: 1,
+                    p: 0.6,
+                  }}
+                >
+                  {autoRefreshEnabled
+                    ? <TimerIcon sx={{ fontSize: 16 }} />
+                    : <TimerOffIcon sx={{ fontSize: 16 }} />
+                  }
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
         </Box>
       </Box>
     );
   }
 
-  // compact 变体：极简风格
+  // ========== compact 变体：极简风格 ==========
   if (variant === 'compact') {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
@@ -139,12 +222,40 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
               <DashboardCustomizeIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>
+          {onHealthCheck && (
+            <Tooltip title={isHealthChecking ? '检测中...' : '健康检测'}>
+              <IconButton size="small" onClick={onHealthCheck} disabled={isHealthChecking} sx={{ color: COLORS.textMuted, p: 0.5 }}>
+                {isHealthChecking
+                  ? <AutorenewIcon sx={{ fontSize: 16, animation: 'spin 1s linear infinite' }} />
+                  : <MonitorHeartIcon sx={{ fontSize: 16 }} />
+                }
+              </IconButton>
+            </Tooltip>
+          )}
+          {onDiscoverLocal && (
+            <Tooltip title="发现本地模型">
+              <IconButton size="small" onClick={onDiscoverLocal} sx={{ color: COLORS.textMuted, p: 0.5 }}>
+                <StorageIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onToggleAutoRefresh && (
+            <Tooltip title={autoRefreshEnabled ? '自动刷新已开启（5分钟）' : '自动刷新已关闭'}>
+              <IconButton
+                size="small"
+                onClick={onToggleAutoRefresh}
+                sx={{ color: autoRefreshEnabled ? '#10B981' : COLORS.textMuted, p: 0.5 }}
+              >
+                {autoRefreshEnabled ? <TimerIcon sx={{ fontSize: 16 }} /> : <TimerOffIcon sx={{ fontSize: 16 }} />}
+              </IconButton>
+            </Tooltip>
+          )}
           <Button
             variant="contained"
             size="small"
             startIcon={<AddIcon />}
             onClick={onAdd}
-            sx={{ ...primaryButtonSx, fontSize: '0.7rem', py: 0.3 }}
+            sx={{ ...toolbarButtonSx, fontSize: '0.7rem', py: 0.3 }}
           >
             添加
           </Button>
@@ -153,9 +264,17 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
     );
   }
 
-  // list 变体：默认详细风格
+  // ========== list 变体：默认详细风格 ==========
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+      {healthCheckError && (
+        <Box sx={{ p: 1.5, backgroundColor: COLORS.errorBg, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ErrorOutlineIcon sx={{ color: COLORS.error, fontSize: 18 }} />
+          <Typography sx={{ fontSize: '0.8rem', color: COLORS.errorText }}>
+            {healthCheckError}
+          </Typography>
+        </Box>
+      )}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: COLORS.textPrimary }}>
           模型管理
@@ -166,58 +285,67 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
             size="small"
             startIcon={<AddIcon />}
             onClick={onAdd}
-            sx={primaryButtonSx}
+            sx={toolbarButtonSx}
           >
             添加模型
           </Button>
           <Tooltip title="恢复默认模型配置">
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<RestartAltIcon sx={{ fontSize: 16 }} />}
-              onClick={onReset}
-              sx={{ borderColor: '#D1D5DB', color: COLORS.textMuted, fontSize: '0.8rem', '&:hover': { borderColor: '#9CA3AF' } }}
-            >
-              恢复默认
-            </Button>
+            <IconButton size="small" onClick={onReset} sx={{ color: COLORS.textMuted }}>
+              <RestartAltIcon sx={{ fontSize: 18 }} />
+            </IconButton>
           </Tooltip>
           <Tooltip title="导出模型配置">
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<FileDownloadIcon sx={{ fontSize: 16 }} />}
-              onClick={onExport}
-              sx={{ borderColor: '#D1D5DB', color: COLORS.textMuted, fontSize: '0.8rem', '&:hover': { borderColor: '#9CA3AF' } }}
-            >
-              导出
-            </Button>
+            <IconButton size="small" onClick={onExport} sx={{ color: COLORS.textMuted }}>
+              <FileDownloadIcon sx={{ fontSize: 18 }} />
+            </IconButton>
           </Tooltip>
           <Tooltip title="导入模型配置">
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<FileUploadIcon sx={{ fontSize: 16 }} />}
-              onClick={onImport}
-              sx={{ borderColor: '#D1D5DB', color: COLORS.textMuted, fontSize: '0.8rem', '&:hover': { borderColor: '#9CA3AF' } }}
-            >
-              导入
-            </Button>
+            <IconButton size="small" onClick={onImport} sx={{ color: COLORS.textMuted }}>
+              <FileUploadIcon sx={{ fontSize: 18 }} />
+            </IconButton>
           </Tooltip>
           <Tooltip title="应用配置模板">
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<DashboardCustomizeIcon sx={{ fontSize: 16 }} />}
-              onClick={onTemplate}
-              sx={{ borderColor: '#D1D5DB', color: COLORS.textMuted, fontSize: '0.8rem', '&:hover': { borderColor: '#9CA3AF' } }}
-            >
-              模板
-            </Button>
+            <IconButton size="small" onClick={onTemplate} sx={{ color: COLORS.textMuted }}>
+              <DashboardCustomizeIcon sx={{ fontSize: 18 }} />
+            </IconButton>
           </Tooltip>
+          {onHealthCheck && (
+            <Tooltip title="检测所有模型 API 连接状态">
+              <IconButton
+                size="small"
+                onClick={onHealthCheck}
+                disabled={isHealthChecking}
+                sx={{ color: COLORS.textMuted }}
+              >
+                {isHealthChecking
+                  ? <AutorenewIcon sx={{ fontSize: 18, animation: 'spin 1s linear infinite' }} />
+                  : <MonitorHeartIcon sx={{ fontSize: 18 }} />
+                }
+              </IconButton>
+            </Tooltip>
+          )}
+          {onDiscoverLocal && (
+            <Tooltip title="自动发现本地 Ollama/vLLM 模型">
+              <IconButton size="small" onClick={onDiscoverLocal} sx={{ color: COLORS.textMuted }}>
+                <StorageIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onToggleAutoRefresh && (
+            <Tooltip title={autoRefreshEnabled ? '自动刷新已开启（5分钟）' : '自动刷新已关闭'}>
+              <IconButton
+                size="small"
+                onClick={onToggleAutoRefresh}
+                sx={{ color: autoRefreshEnabled ? '#10B981' : COLORS.textMuted }}
+              >
+                {autoRefreshEnabled ? <TimerIcon sx={{ fontSize: 18 }} /> : <TimerOffIcon sx={{ fontSize: 18 }} />}
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       </Box>
       <Typography sx={{ fontSize: '0.8rem', color: COLORS.textMuted }}>
-        管理 AI 模型配置，设置默认模型。当前默认模型：
+        管理AI模型配置，设置默认模型。当前默认模型：
         <Chip
           label={defaultModel?.name || '未设置'}
           size="small"

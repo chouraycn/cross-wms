@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, useTheme } from '@mui/material';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { TopBarChatInput } from '../components/CrossWmsChat/TopBarChatInput';
 import { Message, Session } from '../types/chat';
 import { getAllSkills } from '../stores/skillStore';
@@ -9,6 +11,7 @@ import type { Skill } from '../types/skill';
 import { ICON_MAP } from '../types/skill';
 import { getCategoryLabel, getCategoryGradient } from '../constants/skillCategories';
 import { MarkdownRenderer } from '../components/CrossWmsChat/MarkdownRenderer';
+import { getGrayScale } from '../constants/theme';
 
 // 会话持久化配置（与 CDFKnowClowChat 共享 localStorage）
 const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
@@ -67,6 +70,10 @@ function resolveSkillFromParams(skillId: string | null): Skill | null {
 
 /** AI 对话全屏页面 — "新建任务" 的目标页 */
 const ChatPage: React.FC = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [sessions, setSessions] = useState<Session[]>(() => loadSessions());
 
@@ -205,6 +212,14 @@ const ChatPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = useCallback((msg: Message) => {
+    navigator.clipboard.writeText(msg.content);
+    setCopiedId(msg.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }, []);
+
   const isEmpty = session.messages.length === 0;
 
   return (
@@ -217,7 +232,7 @@ const ChatPage: React.FC = () => {
       mb: -3,
       display: 'flex',
       flexDirection: 'column',
-      bgcolor: '#fff',
+      bgcolor: gs.bgPanel,
       overflow: 'hidden',
     }}>
       {/* 内容区 */}
@@ -287,25 +302,25 @@ const ChatPage: React.FC = () => {
                     width: 56,
                     height: 56,
                     borderRadius: '16px',
-                    bgcolor: '#F3F4F6',
+                    bgcolor: gs.bgHover,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     mb: 3,
                   }}>
-                    <SmartToyOutlinedIcon sx={{ fontSize: 28, color: '#6B7280' }} />
+                    <SmartToyOutlinedIcon sx={{ fontSize: 28, color: gs.textMuted }} />
                   </Box>
                   <Typography sx={{
                     fontSize: '1.25rem',
                     fontWeight: 600,
-                    color: '#111827',
+                    color: gs.textPrimary,
                     mb: 1,
                   }}>
                     有什么可以帮你的？
                   </Typography>
                   <Typography sx={{
                     fontSize: '0.875rem',
-                    color: '#9CA3AF',
+                    color: gs.textMuted,
                     textAlign: 'center',
                     maxWidth: 400,
                   }}>
@@ -355,39 +370,89 @@ const ChatPage: React.FC = () => {
                   key={msg.id}
                   sx={{
                     display: 'flex',
-                    justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    flexDirection: 'column',
+                    alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    gap: 0.5,
                   }}
                 >
+                  {/* 角色标签 + 时间（Bot 显示在左侧，用户显示在右侧） */}
                   <Box
                     sx={{
-                      px: 2,
-                      py: 1.5,
-                      borderRadius: '12px',
-                      maxWidth: '75%',
-                      bgcolor: msg.role === 'user' ? '#f97316' : '#F3F4F6',
-                      color: msg.role === 'user' ? '#fff' : '#111827',
-                      border: msg.role === 'assistant' ? '1px solid #E5E7EB' : 'none',
-                      wordBreak: 'break-word',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      px: msg.role === 'user' ? 2 : 0,
                     }}
                   >
-                    {msg.role === 'user' ? (
+                    {msg.role === 'assistant' && (
+                      <Typography
+                        sx={{
+                          fontSize: '0.8125rem',
+                          fontWeight: 600,
+                          color: '#10b981',
+                        }}
+                      >
+                        CDF Bot
+                      </Typography>
+                    )}
+                    <Typography sx={{ fontSize: '0.6875rem', color: '#9CA3AF' }}>
+                      {msg.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                    </Typography>
+                    {msg.role === 'user' && (
+                      <Typography
+                        sx={{
+                          fontSize: '0.8125rem',
+                          fontWeight: 600,
+                          color: '#f97316',
+                        }}
+                      >
+                        You
+                      </Typography>
+                    )}
+                  </Box>
+
+                  {/* 消息内容 */}
+                  {msg.role === 'user' ? (
+                    /* 用户消息：右侧灰色对话框 */
+                    <Box
+                      sx={{
+                        px: 2,
+                        py: 1.5,
+                        borderRadius: '16px',
+                        maxWidth: '75%',
+                        bgcolor: isDark ? '#374151' : '#F3F4F6',
+                        color: gs.textPrimary,
+                        wordBreak: 'break-word',
+                      }}
+                    >
                       <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                         {msg.content}
                       </Typography>
-                    ) : (
-                      <MarkdownRenderer content={msg.content} />
-                    )}
-                    <Typography
+                    </Box>
+                  ) : (
+                    /* Bot 消息：左侧平铺，无头像 */
+                    <Box
                       sx={{
-                        fontSize: 11,
-                        color: msg.role === 'user' ? 'rgba(255,255,255,0.7)' : '#9CA3AF',
-                        mt: 0.5,
-                        textAlign: 'right',
+                        maxWidth: '85%',
+                        color: gs.textPrimary,
+                        pl: 0,
                       }}
                     >
-                      {msg.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-                    </Typography>
-                  </Box>
+                      <MarkdownRenderer content={msg.content} />
+                      {/* 操作按钮 */}
+                      <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
+                        <Tooltip title={copiedId === msg.id ? '已复制' : '复制'}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCopy(msg)}
+                            sx={{ color: gs.textDisabled, '&:hover': { color: gs.textPrimary } }}
+                          >
+                            <ContentCopyIcon sx={{ fontSize: 14 }} />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Box>
+                  )}
                 </Box>
               ))}
             </Box>

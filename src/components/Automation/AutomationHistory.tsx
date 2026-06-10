@@ -16,7 +16,9 @@ import {
   FormControl,
   Select,
   MenuItem,
+  useTheme,
 } from '@mui/material';
+import { getGrayScale } from '../../constants/theme';
 import HistoryIcon from '@mui/icons-material/History';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -64,6 +66,9 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
   onViewDetail,
   onClearLogs,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   return (
     <>
       {/* 统计 + 筛选栏 */}
@@ -72,7 +77,7 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
           icon={<HistoryIcon sx={{ fontSize: 16 }} />}
           label={`共 ${totalLogs} 条`}
           size="small"
-          sx={{ backgroundColor: '#F3F4F6', color: '#374151', fontWeight: 500, fontSize: '0.75rem' }}
+          sx={{ backgroundColor: gs.bgHover, color: gs.textSecondary, fontWeight: 500, fontSize: '0.75rem' }}
         />
         <Chip
           icon={<CheckCircleOutlineIcon sx={{ fontSize: 14 }} />}
@@ -91,7 +96,7 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
 
         {/* 状态筛选 */}
         <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-          <FilterListIcon sx={{ fontSize: 14, color: '#9CA3AF', mr: 0.5 }} />
+          <FilterListIcon sx={{ fontSize: 14, color: gs.textDisabled, mr: 0.5 }} />
           {(['all', 'success', 'failed'] as const).map((key) => (
             <Chip
               key={key}
@@ -101,9 +106,9 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
               sx={{
                 fontSize: '0.7rem',
                 height: 24,
-                backgroundColor: historyFilter === key ? '#111827' : '#F3F4F6',
-                color: historyFilter === key ? '#fff' : '#374151',
-                '&:hover': { backgroundColor: historyFilter === key ? '#374151' : '#E5E7EB' },
+                backgroundColor: historyFilter === key ? gs.textPrimary : gs.bgHover,
+                color: historyFilter === key ? gs.bgPanel : gs.textSecondary,
+                '&:hover': { backgroundColor: historyFilter === key ? gs.textSecondary : gs.border },
                 transition: 'all 0.15s ease',
               }}
             />
@@ -130,7 +135,7 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
             <IconButton
               size="small"
               onClick={onClearLogs}
-              sx={{ color: '#9CA3AF', '&:hover': { color: '#EF4444' } }}
+              sx={{ color: gs.textDisabled, '&:hover': { color: '#EF4444' } }}
             >
               <DeleteSweepIcon sx={{ fontSize: 18 }} />
             </IconButton>
@@ -141,11 +146,11 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
       {/* 执行历史列表 */}
       {filteredLogs.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8 }}>
-          <HistoryIcon sx={{ fontSize: 48, color: '#D1D5DB', mb: 1.5 }} />
-          <Typography sx={{ fontSize: '0.9375rem', color: '#6B7280', mb: 0.5, fontWeight: 500 }}>
+          <HistoryIcon sx={{ fontSize: 48, color: gs.borderDarker, mb: 1.5 }} />
+          <Typography sx={{ fontSize: '0.9375rem', color: gs.textMuted, mb: 0.5, fontWeight: 500 }}>
             暂无执行记录
           </Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
+          <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
             配置并运行自动化任务后，执行记录将在此展示
           </Typography>
         </Box>
@@ -153,7 +158,7 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           {filteredLogs.map((log) => {
             const statusCfg = EXEC_STATUS_CONFIG[log.status] || EXEC_STATUS_CONFIG.running;
-            const taskColor = TASK_TYPE_COLORS[log.taskType] || '#6B7280';
+            const taskColor = TASK_TYPE_COLORS[log.taskType] || gs.textMuted;
             const autoName = autoNameMap[log.automationId] || '未知任务';
 
             return (
@@ -161,13 +166,13 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
                 key={log.id}
                 elevation={0}
                 sx={{
-                  border: '1px solid #E5E7EB',
+                  border: `1px solid ${gs.border}`,
                   borderRadius: 1.5,
                   transition: 'all 0.15s ease',
                   cursor: 'pointer',
                   '&:hover': {
-                    borderColor: '#9CA3AF',
-                    backgroundColor: '#FAFAFA',
+                    borderColor: gs.textDisabled,
+                    backgroundColor: gs.bgHover,
                   },
                 }}
                 onClick={() => onViewDetail(log)}
@@ -198,7 +203,7 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
                           sx={{
                             fontSize: '0.8125rem',
                             fontWeight: 600,
-                            color: '#111827',
+                            color: gs.textPrimary,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -242,7 +247,7 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
                           />
                         )}
                       </Box>
-                      <Typography sx={{ fontSize: '0.7rem', color: '#6B7280', mt: 0.15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, mt: 0.15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {log.result || '—'}
                       </Typography>
                     </Box>
@@ -261,11 +266,11 @@ const AutomationHistory: React.FC<AutomationHistoryProps> = ({
                         </Tooltip>
                       )}
                       <Box sx={{ textAlign: 'right' }}>
-                        <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
+                        <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>
                           {new Date(log.startedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                         </Typography>
                         {log.duration !== null && (
-                          <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>
+                          <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled }}>
                             {log.duration < 1000 ? `${log.duration}ms` : `${(log.duration / 1000).toFixed(1)}s`}
                           </Typography>
                         )}

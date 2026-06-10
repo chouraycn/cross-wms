@@ -1,11 +1,14 @@
 /**
- * ModelFilterBar — 模型筛选栏
+ * ModelFilterBar — 模型筛选栏（紧凑版）
  *
- * 提供搜索框和能力标签筛选
+ * 布局策略：
+ * - 搜索框和能力标签放在同一行，不换行
+ * - 能力标签缩小为更紧凑的样式
+ * - 超出宽度时能力标签区域可横向滚动
  */
 
 import React from 'react';
-import { Box, TextField, Chip, IconButton } from '@mui/material';
+import { Box, TextField, Chip, IconButton, InputAdornment } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { CAPABILITY_LABELS, CAPABILITY_COLORS, type ModelCapability } from '../../../types/models';
@@ -31,74 +34,100 @@ const ModelFilterBar: React.FC<ModelFilterBarProps> = ({
   const hasFilters = searchQuery || selectedCapabilities.length > 0;
 
   return (
-    <Box sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${COLORS.borderLight}` }}>
-      {/* 搜索框 */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+    <Box sx={{ px: 0, py: 1.5 }}>
+      {/* 单行布局：搜索框 + 能力标签，不换行 */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap' }}>
+        {/* 搜索框 - 固定宽度 */}
         <TextField
           size="small"
-          placeholder="搜索模型名称、ID、描述..."
+          placeholder="搜索模型..."
           value={searchQuery}
           onChange={e => onSearchChange(e.target.value)}
-          fullWidth
-          InputProps={{
-            startAdornment: <SearchIcon sx={{ fontSize: 18, color: COLORS.textMuted, mr: 0.5 }} />,
-            endAdornment: searchQuery ? (
-              <IconButton size="small" onClick={() => onSearchChange('')} sx={{ p: 0.3 }}>
-                <ClearIcon sx={{ fontSize: 16, color: COLORS.textMuted }} />
-              </IconButton>
-            ) : null,
-            sx: { fontSize: '0.8125rem', height: 36 },
-          }}
           sx={{
+            width: 160,
+            flexShrink: 0,
             '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
+              borderRadius: 1.5,
               backgroundColor: '#FAFAFA',
+              height: 30,
+              fontSize: '0.75rem',
             },
           }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ fontSize: 14, color: COLORS.textMuted }} />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery ? (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={() => onSearchChange('')} sx={{ p: 0.1 }}>
+                  <ClearIcon sx={{ fontSize: 12, color: COLORS.textMuted }} />
+                </IconButton>
+              </InputAdornment>
+            ) : null,
+          }}
         />
+
+        {/* 分隔线 */}
+        <Box sx={{ width: '1px', height: 18, backgroundColor: COLORS.borderLight, flexShrink: 0 }} />
+
+        {/* 能力标签 - 紧凑样式，不换行，超出可滚动 */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 0.4,
+            alignItems: 'center',
+            flex: 1,
+            overflow: 'auto',
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none',
+          }}
+        >
+          {ALL_CAPABILITIES.map(cap => {
+            const selected = selectedCapabilities.includes(cap);
+            return (
+              <Chip
+                key={cap}
+                label={CAPABILITY_LABELS[cap]}
+                size="small"
+                onClick={() => onCapabilityToggle(cap)}
+                sx={{
+                  fontSize: '0.6rem',
+                  height: 20,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}18` : 'transparent',
+                  color: selected ? CAPABILITY_COLORS[cap] : COLORS.textLight,
+                  border: selected ? `1px solid ${CAPABILITY_COLORS[cap]}40` : `1px solid ${COLORS.borderLight}`,
+                  fontWeight: selected ? 600 : 400,
+                  '&:hover': {
+                    backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}28` : '#F3F4F6',
+                    borderColor: selected ? `${CAPABILITY_COLORS[cap]}60` : COLORS.border,
+                  },
+                }}
+              />
+            );
+          })}
+        </Box>
+
+        {/* 清除筛选 */}
         {hasFilters && (
           <Chip
-            label="清除筛选"
+            label="清除"
             size="small"
             onClick={onClearFilters}
             sx={{
-              fontSize: '0.75rem',
-              height: 28,
+              fontSize: '0.6rem',
+              height: 20,
               cursor: 'pointer',
               backgroundColor: COLORS.errorBg,
               color: COLORS.errorText,
               '&:hover': { backgroundColor: '#FECACA' },
+              flexShrink: 0,
             }}
           />
         )}
-      </Box>
-
-      {/* 能力标签筛选 */}
-      <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.75rem', color: COLORS.textMuted, marginRight: 4 }}>能力：</span>
-        {ALL_CAPABILITIES.map(cap => {
-          const selected = selectedCapabilities.includes(cap);
-          return (
-            <Chip
-              key={cap}
-              label={CAPABILITY_LABELS[cap]}
-              size="small"
-              onClick={() => onCapabilityToggle(cap)}
-              sx={{
-                fontSize: '0.7rem',
-                height: 24,
-                cursor: 'pointer',
-                backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}20` : '#F3F4F6',
-                color: selected ? CAPABILITY_COLORS[cap] : COLORS.textMuted,
-                border: selected ? `1px solid ${CAPABILITY_COLORS[cap]}50` : '1px solid transparent',
-                fontWeight: selected ? 600 : 400,
-                '&:hover': {
-                  backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}30` : '#E5E7EB',
-                },
-              }}
-            />
-          );
-        })}
       </Box>
     </Box>
   );

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography,
   Button, IconButton, Dialog, DialogTitle, DialogContent, Tooltip,
+  useTheme,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import AddIcon from '@mui/icons-material/Add';
@@ -31,6 +32,7 @@ import SearchInput from '../components/Common/SearchInput';
 import type { SkillChain } from '../types/skill';
 // T05: 匹配引擎设置
 import MatchConfigPanel from '../components/Matching/MatchConfigPanel';
+import { getGrayScale } from '../constants/theme';
 
 // ===================== 技能页面 =====================
 
@@ -38,6 +40,9 @@ const SkillsPage: React.FC = () => {
   useAppSettings();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
 
   // 技能列表（响应式，随 skillStore 变更刷新）
   const [skillVersion, setSkillVersion] = useState(0);
@@ -454,10 +459,10 @@ const SkillsPage: React.FC = () => {
       {/* Header: 标题 + 搜索 + 添加按钮 */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
         <Box>
-          <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: '#1A1A1A', mb: 0.25 }}>
+          <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: gs.textPrimary, mb: 0.25 }}>
             技能
           </Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#999' }}>
+          <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>
             赋予 CDF Know 更强大的能力
           </Typography>
         </Box>
@@ -482,8 +487,8 @@ const SkillsPage: React.FC = () => {
                 left: 0,
                 right: 0,
                 mt: 0.5,
-                backgroundColor: '#fff',
-                border: '1px solid #E5E7EB',
+                backgroundColor: gs.bgPanel,
+                border: `1px solid ${gs.border}`,
                 borderRadius: '8px',
                 boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
                 zIndex: 100,
@@ -500,9 +505,9 @@ const SkillsPage: React.FC = () => {
                       px: 2,
                       py: 1,
                       fontSize: '0.8125rem',
-                      color: '#374151',
+                      color: gs.textSecondary,
                       cursor: 'pointer',
-                      '&:hover': { backgroundColor: '#F9FAFB' },
+                      '&:hover': { backgroundColor: gs.bgHover },
                     }}
                   >
                     {suggestion}
@@ -523,9 +528,9 @@ const SkillsPage: React.FC = () => {
                 fontSize: '0.8125rem',
                 py: 0.75,
                 px: 2,
-                borderColor: '#E0E0E0',
-                color: '#333',
-                '&:hover': { borderColor: '#D0D0D0', backgroundColor: '#F9F9F9' },
+                borderColor: gs.border,
+                color: gs.textSecondary,
+                '&:hover': { borderColor: gs.borderDarker, backgroundColor: gs.bgHover },
               }}
             >
               添加技能
@@ -540,8 +545,8 @@ const SkillsPage: React.FC = () => {
                 fontSize: '0.8125rem',
                 py: 0.75,
                 px: 2,
-                borderColor: '#E0E0E0',
-                color: '#6B7280',
+                borderColor: gs.border,
+                color: gs.textMuted,
                 '&:hover': { borderColor: '#7C3AED', color: '#7C3AED', backgroundColor: '#FAF5FF' },
               }}
             >
@@ -557,8 +562,8 @@ const SkillsPage: React.FC = () => {
                 width: 36,
                 height: 36,
                 borderRadius: '8px',
-                border: '1px solid #E0E0E0',
-                color: '#6B7280',
+                border: `1px solid ${gs.border}`,
+                color: gs.textMuted,
                 '&:hover': { borderColor: '#7C3AED', color: '#7C3AED', bgcolor: '#FAF5FF' },
               }}
             >
@@ -569,18 +574,18 @@ const SkillsPage: React.FC = () => {
       </Box>
 
       {/* Main Tabs: 全部技能 / 已安装 / 技能链 */}
-      <Box sx={{ display: 'flex', gap: 3, borderBottom: '1px solid #E8E8E8', mb: 3 }}>
+      <Box sx={{ display: 'flex', gap: 3, borderBottom: `1px solid ${gs.border}`, mb: 3 }}>
         <Box
           onClick={() => setActiveTab('market')}
           sx={{
             py: 1.5,
             fontSize: '0.875rem',
-            color: activeTab === 'market' ? '#1A1A1A' : '#666',
+            color: activeTab === 'market' ? gs.textPrimary : gs.textMuted,
             cursor: 'pointer',
             position: 'relative',
             fontWeight: activeTab === 'market' ? 500 : 400,
             transition: 'color 0.2s',
-            '&:hover': { color: '#333' },
+            '&:hover': { color: gs.textSecondary },
             '&::after': activeTab === 'market' ? {
               content: '""',
               position: 'absolute',
@@ -588,7 +593,7 @@ const SkillsPage: React.FC = () => {
               left: 0,
               right: 0,
               height: 2,
-              backgroundColor: '#1A1A1A',
+              backgroundColor: gs.textPrimary,
             } : {},
           }}
         >
@@ -599,7 +604,7 @@ const SkillsPage: React.FC = () => {
           sx={{
             py: 1.5,
             fontSize: '0.875rem',
-            color: activeTab === 'installed' ? '#1A1A1A' : '#666',
+            color: activeTab === 'installed' ? gs.textPrimary : gs.textMuted,
             cursor: 'pointer',
             position: 'relative',
             fontWeight: activeTab === 'installed' ? 500 : 400,
@@ -607,7 +612,7 @@ const SkillsPage: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: 0.75,
-            '&:hover': { color: '#333' },
+            '&:hover': { color: gs.textSecondary },
             '&::after': activeTab === 'installed' ? {
               content: '""',
               position: 'absolute',
@@ -615,7 +620,7 @@ const SkillsPage: React.FC = () => {
               left: 0,
               right: 0,
               height: 2,
-              backgroundColor: '#1A1A1A',
+              backgroundColor: gs.textPrimary,
             } : {},
           }}
         >
@@ -627,10 +632,10 @@ const SkillsPage: React.FC = () => {
             minWidth: 18,
             height: 18,
             px: 0.625,
-            backgroundColor: '#F0F0F0',
+            backgroundColor: gs.bgHover,
             borderRadius: '9px',
             fontSize: '0.6875rem',
-            color: '#666',
+            color: gs.textMuted,
           }}>
             {stats.installed}
           </Box>
@@ -640,7 +645,7 @@ const SkillsPage: React.FC = () => {
           sx={{
             py: 1.5,
             fontSize: '0.875rem',
-            color: activeTab === 'chains' ? '#1A1A1A' : '#666',
+            color: activeTab === 'chains' ? gs.textPrimary : gs.textMuted,
             cursor: 'pointer',
             position: 'relative',
             fontWeight: activeTab === 'chains' ? 500 : 400,
@@ -648,7 +653,7 @@ const SkillsPage: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: 0.75,
-            '&:hover': { color: '#333' },
+            '&:hover': { color: gs.textSecondary },
             '&::after': activeTab === 'chains' ? {
               content: '""',
               position: 'absolute',
@@ -656,7 +661,7 @@ const SkillsPage: React.FC = () => {
               left: 0,
               right: 0,
               height: 2,
-              backgroundColor: '#1A1A1A',
+              backgroundColor: gs.textPrimary,
             } : {},
           }}
         >
@@ -668,10 +673,10 @@ const SkillsPage: React.FC = () => {
             minWidth: 18,
             height: 18,
             px: 0.625,
-            backgroundColor: '#F0F0F0',
+            backgroundColor: gs.bgHover,
             borderRadius: '9px',
             fontSize: '0.6875rem',
-            color: '#666',
+            color: gs.textMuted,
           }}>
             {chains.length}
           </Box>
@@ -682,7 +687,7 @@ const SkillsPage: React.FC = () => {
         /* ========== 技能链视图 ========== */
         <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 220px)' }}>
           {/* 左侧：链列表 */}
-          <Box sx={{ width: 240, flexShrink: 0, borderRight: '1px solid #F0F0F0', pr: 2, overflow: 'auto' }}>
+          <Box sx={{ width: 240, flexShrink: 0, borderRight: `1px solid ${gs.border}`, pr: 2, overflow: 'auto' }}>
             <ChainList
               chains={chains}
               selectedId={selectedChainId}
@@ -703,11 +708,11 @@ const SkillsPage: React.FC = () => {
               />
             ) : (
               <Box sx={{ textAlign: 'center', py: 8 }}>
-                <AutoFixHighIcon sx={{ fontSize: 48, color: '#D1D5DB', mb: 2 }} />
-                <Typography sx={{ fontSize: '0.95rem', color: '#6B7280', mb: 0.5 }}>
+                <AutoFixHighIcon sx={{ fontSize: 48, color: gs.borderDarker, mb: 2 }} />
+                <Typography sx={{ fontSize: '0.95rem', color: gs.textMuted, mb: 0.5 }}>
                   选择一个技能链或创建新的
                 </Typography>
-                <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
+                <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
                   技能链可以将多个技能串联执行，自动传递数据
                 </Typography>
               </Box>
@@ -722,13 +727,13 @@ const SkillsPage: React.FC = () => {
       {activeTab === 'market' && searchQuery === '' && selectedCategory === 'all' && featuredSkills.length > 0 && (
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: '#1A1A1A' }}>
+            <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: gs.textPrimary }}>
               为你推荐
             </Typography>
             <Button
               size="small"
               startIcon={<RefreshIcon sx={{ fontSize: 14 }} />}
-              sx={{ textTransform: 'none', fontSize: '0.8125rem', color: '#666', '&:hover': { color: '#333' } }}
+              sx={{ textTransform: 'none', fontSize: '0.8125rem', color: gs.textMuted, '&:hover': { color: gs.textSecondary } }}
             >
               换一换
             </Button>
@@ -756,13 +761,13 @@ const SkillsPage: React.FC = () => {
                 px: 1.75,
                 py: 0.75,
                 fontSize: '0.8125rem',
-                color: isActive ? '#1A1A1A' : '#666',
-                backgroundColor: isActive ? '#F0F0F0' : 'transparent',
+                color: isActive ? gs.textPrimary : gs.textMuted,
+                backgroundColor: isActive ? gs.bgHover : 'transparent',
                 borderRadius: '6px',
                 cursor: 'pointer',
                 fontWeight: isActive ? 500 : 400,
                 transition: 'all 0.2s',
-                '&:hover': { backgroundColor: isActive ? '#F0F0F0' : '#F0F0F0' },
+                '&:hover': { backgroundColor: gs.bgHover },
               }}
             >
               {label}
@@ -780,12 +785,12 @@ const SkillsPage: React.FC = () => {
                 width: 3,
                 height: 14,
                 borderRadius: 0.5,
-                backgroundColor: (CATEGORY_COLORS[category] ?? { color: '#6B7280' }).color,
+                backgroundColor: (CATEGORY_COLORS[category] ?? { color: gs.textMuted }).color,
               }} />
-              <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: '#1A1A1A' }}>
+              <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: gs.textPrimary }}>
                 {CATEGORY_LABELS[category] || category}
               </Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#D1D5DB' }}>
+              <Typography sx={{ fontSize: '0.75rem', color: gs.borderDarker }}>
                 {items.length}
               </Typography>
             </Box>
@@ -811,22 +816,22 @@ const SkillsPage: React.FC = () => {
       {/* T05: 无结果提示 — 区分「分类下无技能」和「搜索无结果」 */}
       {filteredSkills.length === 0 && (
         <Box sx={{ textAlign: 'center', py: 8 }}>
-          <AutoFixHighIcon sx={{ fontSize: 48, color: '#D1D5DB', mb: 2 }} />
+          <AutoFixHighIcon sx={{ fontSize: 48, color: gs.borderDarker, mb: 2 }} />
           {selectedCategory !== 'all' && searchQuery === '' ? (
             <>
-              <Typography sx={{ fontSize: '0.95rem', color: '#6B7280', mb: 0.5 }}>
+              <Typography sx={{ fontSize: '0.95rem', color: gs.textMuted, mb: 0.5 }}>
                 该分类下暂无技能
               </Typography>
-              <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
+              <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
                 尝试选择其他分类或查看全部技能
               </Typography>
             </>
           ) : (
             <>
-              <Typography sx={{ fontSize: '0.95rem', color: '#6B7280', mb: 0.5 }}>
+              <Typography sx={{ fontSize: '0.95rem', color: gs.textMuted, mb: 0.5 }}>
                 未找到匹配的技能
               </Typography>
-              <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
+              <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
                 尝试调整搜索关键词或筛选条件
               </Typography>
             </>
@@ -886,7 +891,7 @@ const SkillsPage: React.FC = () => {
           sx: { borderRadius: '12px', maxHeight: '80vh' },
         }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #F3F4F6' }}>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${gs.border}` }}>
           <Typography sx={{ fontSize: '1rem', fontWeight: 600 }}>匹配引擎设置</Typography>
           <IconButton size="small" onClick={() => setMatchConfigOpen(false)}>
             <TuneIcon sx={{ fontSize: 18 }} />

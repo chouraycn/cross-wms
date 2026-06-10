@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import dayjs from 'dayjs';
-import { Box, Typography, Switch, FormControlLabel, Alert, CircularProgress } from '@mui/material';
+import { Box, Typography, Switch, FormControlLabel, Alert, CircularProgress, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { getGrayScale } from '../constants/theme';
 import KpiCards from '../components/Dashboard/KpiCards';
 import VolumeChart from '../components/Dashboard/VolumeChart';
 import TransitPieChart from '../components/Dashboard/TransitPieChart';
@@ -106,6 +107,10 @@ function computeAlerts(
 }
 
 const DashboardPageContent: React.FC = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   const { settings } = useAppSettings();
   const vis = settings.dashboard.visibility;
   const navigate = useNavigate();
@@ -167,14 +172,14 @@ const DashboardPageContent: React.FC = () => {
         sx={{
           mb: 3,
           pb: 3,
-          borderBottom: '1px solid #E5E7EB',
+          borderBottom: `1px solid ${gs.border}`,
         }}
       >
         <Typography
           sx={{
             fontSize: { xs: '1.75rem', md: '2.25rem' },
             fontWeight: 800,
-            color: '#111827',
+            color: gs.textPrimary,
             letterSpacing: '0.04em',
             textTransform: 'uppercase',
             lineHeight: 1.15,
@@ -187,7 +192,7 @@ const DashboardPageContent: React.FC = () => {
           sx={{
             fontSize: { xs: '0.8125rem', md: '0.875rem' },
             fontWeight: 500,
-            color: '#6B7280',
+            color: gs.textMuted,
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
             lineHeight: 1.5,
@@ -199,14 +204,14 @@ const DashboardPageContent: React.FC = () => {
 
       {/* 标题行 — 与侧边栏 logo 垂直居中对齐 */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827', mb: 0 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: gs.textPrimary, mb: 0 }}>
           仪表盘总览
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: -0.25 }}>
           <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
           <WarehouseSelector selected={selectedWarehouse} onChange={setSelectedWarehouse} />
           {autoRefresh && (
-            <Typography sx={{ fontSize: '0.8rem', color: '#6B7280', minWidth: '4rem', textAlign: 'right' }}>
+            <Typography sx={{ fontSize: '0.8rem', color: gs.textMuted, minWidth: '4rem', textAlign: 'right' }}>
               {countdown}s 后刷新
             </Typography>
           )}
@@ -220,12 +225,12 @@ const DashboardPageContent: React.FC = () => {
                   setCountdown(settings.dashboard.dataRefreshInterval);
                 }}
                 sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': { color: '#111827' },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#111827' },
+                  '& .MuiSwitch-switchBase.Mui-checked': { color: gs.textPrimary },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: gs.textPrimary },
                 }}
               />
             }
-            label={<Typography sx={{ fontSize: '0.8rem', color: '#6B7280' }}>自动刷新</Typography>}
+            label={<Typography sx={{ fontSize: '0.8rem', color: gs.textMuted }}>自动刷新</Typography>}
             sx={{ m: 0 }}
           />
         </Box>
@@ -255,8 +260,8 @@ const DashboardPageContent: React.FC = () => {
       {/* 加载状态 */}
       {loading && (
         <Box sx={{ textAlign: 'center', py: 10 }}>
-          <CircularProgress size={40} sx={{ color: '#111827' }} />
-          <Typography sx={{ mt: 2, color: '#6B7280', fontSize: '0.875rem' }}>
+          <CircularProgress size={40} sx={{ color: gs.textPrimary }} />
+          <Typography sx={{ mt: 2, color: gs.textMuted, fontSize: '0.875rem' }}>
             数据加载中...
           </Typography>
         </Box>
@@ -325,7 +330,7 @@ const DashboardPageContent: React.FC = () => {
               {/* 所有指标隐藏时的提示 */}
               {!hasKpiCards && !vis.chartShipmentHeatmap && !vis.chartVolumeTrend && !vis.chartTransitPie && !vis.chartWarehouseBar && !vis.chartInventoryAlert && !vis.chartKpiComparison && !vis.chartTransitTime && (
                 <Box sx={{ textAlign: 'center', py: 8 }}>
-                  <Typography sx={{ color: '#9CA3AF', fontSize: '0.95rem' }}>
+                  <Typography sx={{ color: gs.textDisabled, fontSize: '0.95rem' }}>
                     所有指标已隐藏，请在设置中开启需要显示的指标
                   </Typography>
                 </Box>

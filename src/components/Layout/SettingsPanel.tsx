@@ -53,7 +53,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const handleSave = () => {
     if (draft.dashboard.fullThreshold <= draft.dashboard.warningThreshold) { setErrors((e) => ({ ...e, 'dashboard.fullThreshold': '满仓线必须大于预警线' })); return; }
     updateSettings({ tencentDocs: draft.tencentDocs }); updateSettings({ dashboard: draft.dashboard });
-    updateSettings({ sidebar: draft.sidebar }); updateSettings({ models: draft.models }); updateSettings({ appearance: draft.appearance });
+    updateSettings({ sidebar: draft.sidebar }); updateSettings({ appearance: draft.appearance });
     showToast('设置已保存', 'success');
   };
   const handleReset = () => { resetSettings(); setDraft({ ...settings, dashboard: { ...settings.dashboard } }); setErrors({}); showToast('已重置为默认值', 'info'); };

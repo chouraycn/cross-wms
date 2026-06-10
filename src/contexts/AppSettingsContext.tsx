@@ -2,10 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import type { DataSourceConfig } from '../services/dashboardApi';
-import type { ModelsConfig, ModelConfig } from '../types/models';
 import * as api from '../services/api';
-
-export type { ModelConfig, ModelsConfig };
 
 // ===================== Settings Type Definitions =====================
 
@@ -161,7 +158,7 @@ export interface SidebarConfig {
 
 // ===================== 外观配置 =====================
 
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'light' | 'dark';
 export type AccentColor = 'default' | 'blue' | 'green' | 'purple' | 'red' | 'orange';
 export type FontSize = 'small' | 'medium' | 'large';
 export type BorderRadius = 'sharp' | 'normal' | 'rounded';
@@ -191,8 +188,6 @@ export interface AppSettings {
   sidebar: SidebarConfig;
   /** 外观配置 */
   appearance: AppearanceConfig;
-  /** 模型管理配置 */
-  models: ModelsConfig;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -262,58 +257,6 @@ const DEFAULT_SETTINGS: AppSettings = {
     enableShadows: true,
     compactMode: false,
   },
-  // 模型管理配置
-  models: {
-    models: [
-      {
-        id: 'gpt-4',
-        name: 'GPT-4',
-        provider: 'openai',
-        enabled: true,
-        isDefault: true,
-        description: 'OpenAI GPT-4 模型，强大的通用推理能力',
-        contextWindow: 128000,
-        maxTokens: 4096,
-      },
-      {
-        id: 'gpt-3.5-turbo',
-        name: 'GPT-3.5 Turbo',
-        provider: 'openai',
-        enabled: true,
-        description: 'OpenAI GPT-3.5 Turbo 模型，性价比高',
-        contextWindow: 16385,
-        maxTokens: 4096,
-      },
-      {
-        id: 'claude-3-opus',
-        name: 'Claude 3 Opus',
-        provider: 'anthropic',
-        enabled: false,
-        description: 'Anthropic Claude 3 Opus 模型，擅长复杂推理',
-        contextWindow: 200000,
-        maxTokens: 4096,
-      },
-      {
-        id: 'claude-3-sonnet',
-        name: 'Claude 3 Sonnet',
-        provider: 'anthropic',
-        enabled: true,
-        description: 'Anthropic Claude 3 Sonnet 模型，平衡性能与成本',
-        contextWindow: 200000,
-        maxTokens: 4096,
-      },
-      {
-        id: 'hunyuan-turbo',
-        name: '腾讯混元 Turbo',
-        provider: 'tencent',
-        enabled: false,
-        description: '腾讯混元 Turbo 模型，支持中文场景',
-        contextWindow: 65536,
-        maxTokens: 4096,
-      },
-    ],
-    defaultModelId: 'gpt-4',
-  },
 };
 
 // ===================== Context =====================
@@ -344,22 +287,6 @@ export function openExternalLink(url: string): void {
   } else {
     // Fallback for browser environment (non-Electron)
     window.open(url, '_blank');
-  }
-}
-
-/** Load models from models.json file (attempt) */
-async function loadModelsFromFile(): Promise<ModelsConfig | null> {
-  try {
-    const data = await api.getModelsConfig();
-    if (data && Array.isArray(data.models)) {
-      return {
-        models: data.models,
-        defaultModelId: data.defaultModelId || data.models[0]?.id || '',
-      };
-    }
-    return null;
-  } catch {
-    return null;
   }
 }
 
@@ -488,19 +415,6 @@ function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
         ...DEFAULT_SETTINGS.sidebar,
         ...parsed.sidebar,
       },
-      // 模型配置（向后兼容）
-      models: parsed.models
-        ? {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            models: (parsed.models as any).models?.map((m: any) => ({
-              ...m,
-              enabled: m.enabled ?? true,
-              provider: m.provider ?? 'custom',
-            })) ?? DEFAULT_SETTINGS.models.models,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            defaultModelId: (parsed.models as any).defaultModelId ?? DEFAULT_SETTINGS.models.defaultModelId,
-          }
-        : { ...DEFAULT_SETTINGS.models },
       // 外观配置（向后兼容）
       appearance: parsed.appearance
         ? { ...DEFAULT_SETTINGS.appearance, ...parsed.appearance }
@@ -528,15 +442,6 @@ function saveSettingsToLocalStorage(settings: AppSettings): void {
   }
 }
 
-/** 将模型配置独立持久化到 ~/.cdf-know-clow/ai-models/models.json */
-async function saveModelsToFile(models: ModelsConfig): Promise<void> {
-  try {
-    await api.saveModelsConfig(models.models, models.defaultModelId);
-  } catch (e) {
-    console.error('[AppSettings] Failed to persist models to models.json:', e);
-  }
-}
-
 // ===================== Provider =====================
 
 export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -546,19 +451,9 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // On mount, try to load from API (supersedes localStorage)
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      loadSettingsFromApi(),
-      loadModelsFromFile(),
-    ]).then(([apiSettings, modelsConfig]) => {
+    loadSettingsFromApi().then((apiSettings) => {
       if (cancelled) return;
       const merged = apiSettings ?? loadSettingsFromLocalStorage();
-      // Override models with models.json data if available
-      if (modelsConfig && modelsConfig.models.length > 0) {
-        merged.models = {
-          models: modelsConfig.models,
-          defaultModelId: modelsConfig.defaultModelId,
-        };
-      }
       setSettings(merged);
       saveSettingsToLocalStorage(merged);
       setIsApiLoaded(true);
@@ -568,20 +463,21 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return () => { cancelled = true; };
   }, []);
 
-  // Persist to API + localStorage + models.json whenever settings change (but only after initial API load)
+  // Persist general settings to API + localStorage
   const isFirstRender = useRef(true);
   useEffect(() => {
-    // Skip the initial render (settings are loaded from localStorage state init)
-    // We also skip if API hasn't been loaded yet to avoid overwriting API data with stale localStorage
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
     if (!isApiLoaded) return;
 
-    saveSettingsToApi(settings);
-    saveSettingsToLocalStorage(settings);
-    saveModelsToFile(settings.models);
+    const timer = setTimeout(() => {
+      saveSettingsToApi(settings);
+      saveSettingsToLocalStorage(settings);
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [settings, isApiLoaded]);
 
   const updateSettings = useCallback((partial: Partial<AppSettings>) => {
@@ -630,13 +526,6 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
       if (partial.appearance) {
         next.appearance = { ...prev.appearance, ...partial.appearance };
-      }
-      if (partial.models) {
-        next.models = {
-          ...prev.models,
-          ...partial.models,
-          models: partial.models.models ?? prev.models.models,
-        };
       }
       return next;
     });

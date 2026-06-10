@@ -16,7 +16,9 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  useTheme,
 } from '@mui/material';
+import { getGrayScale } from '../../constants/theme';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { TimeRange } from './TimeRangeSelector';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
@@ -47,6 +49,10 @@ interface TableRowData {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL_WAREHOUSES, timeRange }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   const { settings } = useAppSettings();
   const { warningThreshold, fullThreshold } = settings.dashboard;
 
@@ -117,16 +123,16 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
   // 加载状态
   if (loading) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, height: '100%' }}>
         <CardHeader
           title={
-            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
               各仓库KPI对比
             </Typography>
           }
         />
         <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 260 }}>
-          <CircularProgress size={30} sx={{ color: '#111827' }} />
+          <CircularProgress size={30} sx={{ color: gs.textPrimary }} />
         </CardContent>
       </Card>
     );
@@ -135,10 +141,10 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
   // 错误状态
   if (error) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, height: '100%' }}>
         <CardHeader
           title={
-            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
               各仓库KPI对比
             </Typography>
           }
@@ -152,17 +158,17 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
 
   if (filteredWarehouses.length === 0) {
     return (
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
         <CardHeader
           title={
-            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
               各仓库KPI对比
             </Typography>
           }
         />
         <CardContent>
           <Box sx={{ py: 6, textAlign: 'center' }}>
-            <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
+            <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
               暂无仓库数据
             </Typography>
           </Box>
@@ -172,15 +178,15 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
   }
 
   return (
-    <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, height: '100%' }}>
+    <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, height: '100%' }}>
       <CardHeader
         title={
-          <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: '#111827' }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', color: gs.textPrimary }}>
             各仓库KPI对比
           </Typography>
         }
         subheader={
-          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.25 }}>
+          <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled, mt: 0.25 }}>
             横向对比所有仓库核心指标
           </Typography>
         }
@@ -189,30 +195,30 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
         <TableContainer
           component={Paper}
           elevation={0}
-          sx={{ border: '1px solid #E5E7EB', borderRadius: 1, overflow: 'auto' }}
+          sx={{ border: `1px solid ${gs.border}`, borderRadius: 1, overflow: 'auto' }}
         >
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: '#6B7280', py: 1, whiteSpace: 'nowrap' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: gs.textMuted, py: 1, whiteSpace: 'nowrap' }}>
                   仓库名称
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: '#6B7280', py: 1, whiteSpace: 'nowrap' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: gs.textMuted, py: 1, whiteSpace: 'nowrap' }}>
                   容积使用率
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: '#6B7280', py: 1, whiteSpace: 'nowrap' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: gs.textMuted, py: 1, whiteSpace: 'nowrap' }}>
                   在途货物量
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: '#6B7280', py: 1, whiteSpace: 'nowrap' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: gs.textMuted, py: 1, whiteSpace: 'nowrap' }}>
                   库存深度
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: '#6B7280', py: 1, whiteSpace: 'nowrap' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: gs.textMuted, py: 1, whiteSpace: 'nowrap' }}>
                   待处理入库单
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: '#6B7280', py: 1, whiteSpace: 'nowrap' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: gs.textMuted, py: 1, whiteSpace: 'nowrap' }}>
                   当日出库量
                 </TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: '#6B7280', py: 1, whiteSpace: 'nowrap' }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', color: gs.textMuted, py: 1, whiteSpace: 'nowrap' }}>
                   状态
                 </TableCell>
               </TableRow>
@@ -226,7 +232,7 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
                     : '#10B981';
                 return (
                   <TableRow key={row.warehouseId} hover>
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#111827', fontWeight: 600, py: 1, whiteSpace: 'nowrap' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: gs.textPrimary, fontWeight: 600, py: 1, whiteSpace: 'nowrap' }}>
                       {row.warehouseName}
                     </TableCell>
                     <TableCell sx={{ py: 1, minWidth: 160 }}>
@@ -238,7 +244,7 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
                             sx={{
                               height: 8,
                               borderRadius: 4,
-                              backgroundColor: '#F3F4F6',
+                              backgroundColor: gs.borderLighter,
                               '& .MuiLinearProgress-bar': {
                                 backgroundColor: rateColor,
                                 borderRadius: 4,
@@ -251,16 +257,16 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
                         </Typography>
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#111827', py: 1, whiteSpace: 'nowrap' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: gs.textPrimary, py: 1, whiteSpace: 'nowrap' }}>
                       {row.transitVolume.toFixed(1)} m³
                     </TableCell>
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#111827', py: 1, whiteSpace: 'nowrap' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: gs.textPrimary, py: 1, whiteSpace: 'nowrap' }}>
                       {row.inventoryCount.toLocaleString()} 件
                     </TableCell>
-                    <TableCell sx={{ fontSize: '0.8125rem', color: row.pendingInbound > 0 ? '#F59E0B' : '#6B7280', py: 1, whiteSpace: 'nowrap' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: row.pendingInbound > 0 ? '#F59E0B' : gs.textMuted, py: 1, whiteSpace: 'nowrap' }}>
                       {row.pendingInbound}
                     </TableCell>
-                    <TableCell sx={{ fontSize: '0.8125rem', color: '#111827', py: 1, whiteSpace: 'nowrap' }}>
+                    <TableCell sx={{ fontSize: '0.8125rem', color: gs.textPrimary, py: 1, whiteSpace: 'nowrap' }}>
                       {row.todayOutbound} 单
                     </TableCell>
                     <TableCell sx={{ py: 1 }}>
@@ -268,7 +274,9 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
                         label={row.statusChip.label}
                         size="small"
                         sx={{
-                          backgroundColor: row.statusChip.bgColor,
+                          backgroundColor: isDark
+                            ? (row.statusChip.color === 'error' ? '#7F1D1D' : row.statusChip.color === 'warning' ? '#78350F' : '#064E3B')
+                            : row.statusChip.bgColor,
                           color: row.statusChip.textColor,
                           fontSize: '0.7rem',
                           height: 20,

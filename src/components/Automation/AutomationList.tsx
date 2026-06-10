@@ -17,7 +17,9 @@ import {
   Button,
   LinearProgress,
   Collapse,
+  useTheme,
 } from '@mui/material';
+import { getGrayScale } from '../../constants/theme';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
@@ -68,7 +70,7 @@ export interface AutomationListProps {
 // ===================== Helpers =====================
 
 /** 渲染单条执行日志条目 */
-const renderExecLog = (exec: AutomationExecution, onViewDetail: (exec: AutomationExecution) => void) => {
+const renderExecLog = (exec: AutomationExecution, onViewDetail: (exec: AutomationExecution) => void, gs: ReturnType<typeof getGrayScale>) => {
   const isSuccess = exec.status === 'success';
   const isFailed = exec.status === 'failed';
   const statusColor = isSuccess ? '#059669' : isFailed ? '#EF4444' : '#D97706';
@@ -85,21 +87,21 @@ const renderExecLog = (exec: AutomationExecution, onViewDetail: (exec: Automatio
         px: 1,
         borderRadius: 1,
         cursor: 'pointer',
-        '&:hover': { backgroundColor: '#F9FAFB' },
+        '&:hover': { backgroundColor: gs.bgHover },
       }}
       onClick={() => onViewDetail(exec)}
     >
       <StatusIcon sx={{ fontSize: 14, color: statusColor, mt: 0.25, flexShrink: 0 }} />
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography sx={{ fontSize: '0.7rem', color: '#111827', fontWeight: 500, lineHeight: 1.3 }}>
+        <Typography sx={{ fontSize: '0.7rem', color: gs.textPrimary, fontWeight: 500, lineHeight: 1.3 }}>
           {exec.result || (exec.status === 'running' ? '执行中...' : '无结果')}
         </Typography>
         <Box sx={{ display: 'flex', gap: 1.5, mt: 0.25 }}>
-          <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>
+          <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled }}>
             {exec.completedAt ? new Date(exec.completedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}
           </Typography>
           {exec.duration !== null && (
-            <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>
+            <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled }}>
               {exec.duration < 1000 ? `${exec.duration}ms` : `${(exec.duration / 1000).toFixed(1)}s`}
             </Typography>
           )}
@@ -130,6 +132,9 @@ const AutomationList: React.FC<AutomationListProps> = ({
   onViewDetail,
   onSwitchToTemplates,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   // ---- Filter ----
   const filtered = automations.filter((a) => {
     if (!searchQuery) return true;
@@ -165,8 +170,8 @@ const AutomationList: React.FC<AutomationListProps> = ({
           startIcon={<AddIcon />}
           onClick={onCreateClick}
           sx={{
-            backgroundColor: '#111827',
-            '&:hover': { backgroundColor: '#374151' },
+            backgroundColor: gs.textPrimary,
+            '&:hover': { backgroundColor: gs.textSecondary },
             textTransform: 'none',
             borderRadius: '8px',
             fontSize: '0.8125rem',
@@ -180,11 +185,11 @@ const AutomationList: React.FC<AutomationListProps> = ({
       {/* 任务列表 */}
       {filtered.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8 }}>
-          <BoltIcon sx={{ fontSize: 48, color: '#D1D5DB', mb: 1.5 }} />
-          <Typography sx={{ fontSize: '0.9375rem', color: '#6B7280', mb: 0.5, fontWeight: 500 }}>
+          <BoltIcon sx={{ fontSize: 48, color: gs.borderDarker, mb: 1.5 }} />
+          <Typography sx={{ fontSize: '0.9375rem', color: gs.textMuted, mb: 0.5, fontWeight: 500 }}>
             {automations.length === 0 ? '暂无自动化任务' : '未找到匹配的任务'}
           </Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF', mb: 2 }}>
+          <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled, mb: 2 }}>
             {automations.length === 0 ? '切换到「任务模板」Tab 快速创建' : '尝试调整搜索关键词'}
           </Typography>
           {automations.length === 0 && (
@@ -196,9 +201,9 @@ const AutomationList: React.FC<AutomationListProps> = ({
                 textTransform: 'none',
                 borderRadius: '8px',
                 fontSize: '0.8125rem',
-                borderColor: '#E5E7EB',
-                color: '#374151',
-                '&:hover': { borderColor: '#111827', backgroundColor: '#F9FAFB' },
+                borderColor: gs.border,
+                color: gs.textSecondary,
+                '&:hover': { borderColor: gs.textPrimary, backgroundColor: gs.bgHover },
               }}
             >
               浏览模板
@@ -212,7 +217,7 @@ const AutomationList: React.FC<AutomationListProps> = ({
             const isTriggering = triggeringIds.has(auto.id);
             const isRunning = runningIds.has(auto.id);
             const logs = executionLogs[auto.id] || [];
-            const taskColor = TASK_TYPE_COLORS[auto.taskType] || '#6B7280';
+            const taskColor = TASK_TYPE_COLORS[auto.taskType] || gs.textMuted;
             const isExpired = auto.validUntil && new Date(auto.validUntil) < new Date();
 
             return (
@@ -220,7 +225,7 @@ const AutomationList: React.FC<AutomationListProps> = ({
                 key={auto.id}
                 elevation={0}
                 sx={{
-                  border: '1px solid #E5E7EB',
+                  border: `1px solid ${gs.border}`,
                   borderRadius: 2,
                   transition: 'all 0.15s ease',
                   opacity: auto.status === 'PAUSED' ? 0.65 : isExpired ? 0.5 : 1,
@@ -229,7 +234,7 @@ const AutomationList: React.FC<AutomationListProps> = ({
                     boxShadow: `0 0 0 1px ${taskColor}20`,
                   } : {}),
                   '&:hover': {
-                    borderColor: '#9CA3AF',
+                    borderColor: gs.textDisabled,
                     boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
                   },
                 }}
@@ -242,12 +247,12 @@ const AutomationList: React.FC<AutomationListProps> = ({
                         width: 34,
                         height: 34,
                         borderRadius: 1.5,
-                        backgroundColor: isRunning ? `${taskColor}20` : auto.status === 'ACTIVE' ? `${taskColor}12` : '#F3F4F6',
+                        backgroundColor: isRunning ? `${taskColor}20` : auto.status === 'ACTIVE' ? `${taskColor}12` : gs.bgHover,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
-                        color: isRunning ? taskColor : auto.status === 'ACTIVE' ? taskColor : '#9CA3AF',
+                        color: isRunning ? taskColor : auto.status === 'ACTIVE' ? taskColor : gs.textDisabled,
                         position: 'relative',
                       }}
                     >
@@ -276,7 +281,7 @@ const AutomationList: React.FC<AutomationListProps> = ({
                           sx={{
                             fontSize: '0.8125rem',
                             fontWeight: 600,
-                            color: '#111827',
+                            color: gs.textPrimary,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -310,14 +315,14 @@ const AutomationList: React.FC<AutomationListProps> = ({
                           <Chip label="已过期" size="small" sx={{ height: 18, fontSize: '0.625rem', fontWeight: 500, backgroundColor: '#FEF2F2', color: '#EF4444' }} />
                         )}
                       </Box>
-                      <Typography sx={{ fontSize: '0.7rem', color: '#6B7280', mt: 0.15 }}>
+                      <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, mt: 0.15 }}>
                         {auto.scheduleLabel}
                         {auto.validFrom && ` · 自 ${auto.validFrom.slice(0, 10)}`}
                         {auto.validUntil && ` · 至 ${auto.validUntil.slice(0, 10)}`}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 2, mt: 0.25 }}>
                         {auto.nextRunAt && !isRunning && (
-                          <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <AccessTimeIcon sx={{ fontSize: 11 }} />
                             下次: {new Date(auto.nextRunAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                           </Typography>
@@ -329,7 +334,7 @@ const AutomationList: React.FC<AutomationListProps> = ({
                           </Typography>
                         )}
                         {auto.runCount > 0 && (
-                          <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>
+                          <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled }}>
                             已执行 {auto.runCount} 次
                           </Typography>
                         )}
@@ -346,7 +351,7 @@ const AutomationList: React.FC<AutomationListProps> = ({
                           sx={{
                             color: taskColor,
                             '&:hover': { backgroundColor: `${taskColor}10` },
-                            '&.Mui-disabled': { color: '#D1D5DB' },
+                            '&.Mui-disabled': { color: gs.borderDarker },
                           }}
                         >
                           <PlayArrowIcon sx={{ fontSize: 16 }} />
@@ -356,7 +361,7 @@ const AutomationList: React.FC<AutomationListProps> = ({
                         <IconButton
                           size="small"
                           onClick={() => onToggleExpand(auto.id)}
-                          sx={{ color: '#9CA3AF' }}
+                          sx={{ color: gs.textDisabled }}
                         >
                           {isExpanded ? <ExpandLessIcon sx={{ fontSize: 16 }} /> : <ExpandMoreIcon sx={{ fontSize: 16 }} />}
                         </IconButton>
@@ -373,7 +378,7 @@ const AutomationList: React.FC<AutomationListProps> = ({
                         />
                       </Tooltip>
                       <Tooltip title="编辑">
-                        <IconButton size="small" onClick={() => onEdit(auto)} sx={{ color: '#9CA3AF' }}>
+                        <IconButton size="small" onClick={() => onEdit(auto)} sx={{ color: gs.textDisabled }}>
                           <EditIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                       </Tooltip>
@@ -381,7 +386,7 @@ const AutomationList: React.FC<AutomationListProps> = ({
                         <IconButton
                           size="small"
                           onClick={() => onDelete(auto.id)}
-                          sx={{ color: '#9CA3AF', '&:hover': { color: '#EF4444' } }}
+                          sx={{ color: gs.textDisabled, '&:hover': { color: '#EF4444' } }}
                         >
                           <DeleteOutlineIcon sx={{ fontSize: 16 }} />
                         </IconButton>
@@ -392,22 +397,22 @@ const AutomationList: React.FC<AutomationListProps> = ({
                   {/* 执行中进度条 */}
                   {isRunning && (
                     <Box sx={{ mt: 1 }}>
-                      <LinearProgress sx={{ height: 2, borderRadius: 1, backgroundColor: '#F3F4F6', '& .MuiLinearProgress-bar': { backgroundColor: taskColor } }} />
+                      <LinearProgress sx={{ height: 2, borderRadius: 1, backgroundColor: gs.bgHover, '& .MuiLinearProgress-bar': { backgroundColor: taskColor } }} />
                     </Box>
                   )}
 
                   {/* 执行日志 */}
                   <Collapse in={isExpanded} timeout="auto">
-                    <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid #F3F4F6' }}>
-                      <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF', fontWeight: 500, mb: 0.5 }}>
+                    <Box sx={{ mt: 1.5, pt: 1.5, borderTop: `1px solid ${gs.bgHover}` }}>
+                      <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled, fontWeight: 500, mb: 0.5 }}>
                         最近执行记录
                       </Typography>
                       {logs.length === 0 ? (
-                        <Typography sx={{ fontSize: '0.65rem', color: '#D1D5DB', py: 1, textAlign: 'center' }}>
+                        <Typography sx={{ fontSize: '0.65rem', color: gs.borderDarker, py: 1, textAlign: 'center' }}>
                           暂无执行记录
                         </Typography>
                       ) : (
-                        logs.map((exec) => renderExecLog(exec, onViewDetail))
+                        logs.map((exec) => renderExecLog(exec, onViewDetail, gs))
                       )}
                     </Box>
                   </Collapse>

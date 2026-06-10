@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Chip, IconButton, Tooltip, CircularProgress, Paper,
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button,
+  useTheme,
 } from '@mui/material';
 import { useToast } from '../../contexts/ToastContext';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
@@ -16,6 +17,7 @@ import type { Skill, AuditLevel, UsageStats } from '../../types/skill';
 import { getCategoryGradient } from '../../constants/skillCategories';
 import type { TaskType, AutomationExecution } from '../../services/automation';
 import SecurityBadge from './SecurityBadge';
+import { getGrayScale } from '../../constants/theme';
 
 // ===================== 类型 =====================
 
@@ -44,7 +46,7 @@ export interface SkillCardProps {
 
 // ===================== 最近执行状态 =====================
 
-const renderLatestExec = (exec: AutomationExecution | null) => {
+const renderLatestExec = (exec: AutomationExecution | null, gs: ReturnType<typeof getGrayScale>) => {
   if (!exec) return null;
   const statusIcon = exec.status === 'success'
     ? <CheckCircleIcon sx={{ fontSize: 10, color: '#059669' }} />
@@ -58,7 +60,7 @@ const renderLatestExec = (exec: AutomationExecution | null) => {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
       {statusIcon}
-      <Typography sx={{ fontSize: '0.6rem', color: '#999' }}>
+      <Typography sx={{ fontSize: '0.6rem', color: gs.textMuted }}>
         {statusText}{timeStr ? ` · ${timeStr}` : ''}
       </Typography>
     </Box>
@@ -95,6 +97,9 @@ const SkillCard: React.FC<SkillCardProps> = ({
   const { showToast } = useToast();
   const [maliciousDialogOpen, setMaliciousDialogOpen] = useState(false);
   const pendingRef = React.useRef<(() => void) | null>(null);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
 
   const confirmAction = (action: () => void) => {
     pendingRef.current = action;
@@ -170,11 +175,11 @@ const SkillCard: React.FC<SkillCardProps> = ({
         alignItems: 'flex-start',
         p: 2,
         borderRadius: '12px',
-        border: '1px solid #F0F0F0',
+        border: `1px solid ${gs.border}`,
         cursor: 'pointer',
         transition: 'all 0.2s ease',
         '&:hover': {
-          backgroundColor: 'rgba(0,0,0,0.04)',
+          backgroundColor: gs.bgHover,
         },
       }}
     >
@@ -213,11 +218,11 @@ const SkillCard: React.FC<SkillCardProps> = ({
         mr: 1.5,
         flexShrink: 0,
         position: 'relative',
-        color: '#fff',
+        color: gs.bgPanel,
         fontSize: '1.1rem',
         fontWeight: 600,
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', '& .MuiSvgIcon-root': { fontSize: 22, color: '#fff' } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: gs.bgPanel, '& .MuiSvgIcon-root': { fontSize: 22, color: gs.bgPanel } }}>
           {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 22 }} />}
         </Box>
         {hasAutomation && (
@@ -229,7 +234,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
             height: 8,
             borderRadius: '50%',
             backgroundColor: isRunning ? '#3B82F6' : '#10B981',
-            border: '2px solid #fff',
+            border: `2px solid ${gs.bgPanel}`,
             ...(isRunning ? { animation: 'pulse-dot 1.2s ease-in-out infinite' } : {}),
           }} />
         )}
@@ -241,7 +246,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
           <Typography sx={{
             fontSize: '0.875rem',
             fontWeight: 500,
-            color: '#1A1A1A',
+            color: gs.textPrimary,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -283,7 +288,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
         </Box>
         <Typography sx={{
           fontSize: '0.75rem',
-          color: '#999',
+          color: gs.textMuted,
           lineHeight: 1.5,
           display: '-webkit-box',
           WebkitLineClamp: 2,
@@ -311,7 +316,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
           <Typography
             sx={{
               fontSize: '0.7rem',
-              color: '#CCC',
+              color: gs.borderDarker,
               mt: 0.25,
             }}
           >
@@ -319,7 +324,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
           </Typography>
         )}
 
-        {renderLatestExec(latestExec)}
+        {renderLatestExec(latestExec, gs)}
       </Box>
 
       {/* 操作按钮 */}
@@ -332,12 +337,12 @@ const SkillCard: React.FC<SkillCardProps> = ({
               flexShrink: 0,
               width: 28,
               height: 28,
-              border: '1px solid #E0E0E0',
+              border: `1px solid ${gs.border}`,
               borderRadius: '6px',
-              backgroundColor: '#fff',
+              backgroundColor: gs.bgPanel,
               ml: 1,
               color: '#2563EB',
-              '&:hover': { backgroundColor: '#F5F5F5', borderColor: '#D0D0D0' },
+              '&:hover': { backgroundColor: gs.bgHover, borderColor: gs.borderDarker },
             }}
           >
             <PlayArrowIcon sx={{ fontSize: 14 }} />
@@ -353,12 +358,12 @@ const SkillCard: React.FC<SkillCardProps> = ({
               flexShrink: 0,
               width: 28,
               height: 28,
-              border: '1px solid #E0E0E0',
+              border: `1px solid ${gs.border}`,
               borderRadius: '6px',
-              backgroundColor: '#fff',
+              backgroundColor: gs.bgPanel,
               ml: 1,
               color: isRunning ? '#2563EB' : '#059669',
-              '&:hover': { backgroundColor: '#F5F5F5', borderColor: '#D0D0D0' },
+              '&:hover': { backgroundColor: gs.bgHover, borderColor: gs.borderDarker },
             }}
           >
             {isRunning || isTriggering ? (
@@ -376,12 +381,12 @@ const SkillCard: React.FC<SkillCardProps> = ({
             flexShrink: 0,
             width: 28,
             height: 28,
-            border: '1px solid #E0E0E0',
+            border: `1px solid ${gs.border}`,
             borderRadius: '6px',
-            backgroundColor: '#fff',
+            backgroundColor: gs.bgPanel,
             ml: 1,
-            color: '#666',
-            '&:hover': { backgroundColor: '#F5F5F5', borderColor: '#D0D0D0' },
+            color: gs.textMuted,
+            '&:hover': { backgroundColor: gs.bgHover, borderColor: gs.borderDarker },
           }}
         >
           <AddIcon sx={{ fontSize: 14 }} />
@@ -394,12 +399,12 @@ const SkillCard: React.FC<SkillCardProps> = ({
           ⚠️ 安全风险提示
         </DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ fontSize: '0.875rem', color: '#374151', mb: 1 }}>
+          <DialogContentText sx={{ fontSize: '0.875rem', color: gs.textSecondary, mb: 1 }}>
             技能「<strong>{skill.name}</strong>」的安全审查结果为
             <span style={{ color: '#DC2626', fontWeight: 600 }}>恶意</span>，
             可能存在安全风险。
           </DialogContentText>
-          <DialogContentText sx={{ fontSize: '0.8125rem', color: '#6B7280' }}>
+          <DialogContentText sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>
             建议设置<strong>定期安全检查</strong>，以持续监控该技能的安全性。
           </DialogContentText>
         </DialogContent>

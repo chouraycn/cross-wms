@@ -12,7 +12,9 @@ import {
   Chip,
   Drawer,
   Button,
+  useTheme,
 } from '@mui/material';
+import { getGrayScale } from '../../constants/theme';
 import CloseIcon from '@mui/icons-material/Close';
 import ReplayIcon from '@mui/icons-material/Replay';
 
@@ -42,6 +44,9 @@ const ExecutionDrawer: React.FC<ExecutionDrawerProps> = ({
   onRetry,
   renderSteps,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   return (
     <Drawer
       anchor="right"
@@ -51,7 +56,7 @@ const ExecutionDrawer: React.FC<ExecutionDrawerProps> = ({
         sx: {
           width: 420,
           p: 0,
-          borderLeft: '1px solid #E5E7EB',
+          borderLeft: `1px solid ${gs.border}`,
         },
       }}
     >
@@ -59,7 +64,7 @@ const ExecutionDrawer: React.FC<ExecutionDrawerProps> = ({
         <Box sx={{ p: 3 }}>
           {/* 头部 */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: '#111827' }}>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: gs.textPrimary }}>
               执行详情
             </Typography>
             <IconButton size="small" onClick={onClose}>
@@ -88,8 +93,8 @@ const ExecutionDrawer: React.FC<ExecutionDrawerProps> = ({
                   height: 20,
                   fontSize: '0.7rem',
                   fontWeight: 500,
-                  backgroundColor: EXEC_STATUS_CONFIG[execution.status]?.bg || '#F3F4F6',
-                  color: EXEC_STATUS_CONFIG[execution.status]?.color || '#6B7280',
+                  backgroundColor: EXEC_STATUS_CONFIG[execution.status]?.bg || gs.bgHover,
+                  color: EXEC_STATUS_CONFIG[execution.status]?.color || gs.textMuted,
                 }}
               />
               {execution.isRetry && (
@@ -99,25 +104,25 @@ const ExecutionDrawer: React.FC<ExecutionDrawerProps> = ({
           </Box>
 
           {/* 时间与耗时 */}
-          <Box sx={{ mb: 2, p: 1.5, backgroundColor: '#F9FAFB', borderRadius: 1.5 }}>
+          <Box sx={{ mb: 2, p: 1.5, backgroundColor: gs.bgHover, borderRadius: 1.5 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-              <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>开始时间</Typography>
-              <Typography sx={{ fontSize: '0.7rem', color: '#374151' }}>
+              <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>开始时间</Typography>
+              <Typography sx={{ fontSize: '0.7rem', color: gs.textSecondary }}>
                 {new Date(execution.startedAt).toLocaleString('zh-CN')}
               </Typography>
             </Box>
             {execution.completedAt && (
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>完成时间</Typography>
-                <Typography sx={{ fontSize: '0.7rem', color: '#374151' }}>
+                <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>完成时间</Typography>
+                <Typography sx={{ fontSize: '0.7rem', color: gs.textSecondary }}>
                   {new Date(execution.completedAt).toLocaleString('zh-CN')}
                 </Typography>
               </Box>
             )}
             {execution.duration !== null && (
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>耗时</Typography>
-                <Typography sx={{ fontSize: '0.7rem', color: '#374151', fontWeight: 500 }}>
+                <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>耗时</Typography>
+                <Typography sx={{ fontSize: '0.7rem', color: gs.textSecondary, fontWeight: 500 }}>
                   {execution.duration < 1000 ? `${execution.duration}ms` : `${(execution.duration / 1000).toFixed(2)}s`}
                 </Typography>
               </Box>
@@ -126,11 +131,11 @@ const ExecutionDrawer: React.FC<ExecutionDrawerProps> = ({
 
           {/* 执行结果 */}
           <Box sx={{ mb: 2 }}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 0.75 }}>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textSecondary, mb: 0.75 }}>
               执行结果
             </Typography>
-            <Box sx={{ p: 1.5, backgroundColor: execution.status === 'success' ? '#ECFDF5' : execution.status === 'failed' ? '#FEF2F2' : '#F9FAFB', borderRadius: 1.5, border: '1px solid', borderColor: execution.status === 'success' ? '#A7F3D0' : execution.status === 'failed' ? '#FECACA' : '#E5E7EB' }}>
-              <Typography sx={{ fontSize: '0.75rem', color: '#374151', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+            <Box sx={{ p: 1.5, backgroundColor: execution.status === 'success' ? '#ECFDF5' : execution.status === 'failed' ? '#FEF2F2' : gs.bgHover, borderRadius: 1.5, border: '1px solid', borderColor: execution.status === 'success' ? '#A7F3D0' : execution.status === 'failed' ? '#FECACA' : gs.border }}>
+              <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
                 {execution.result || '无结果'}
               </Typography>
             </Box>
@@ -139,7 +144,7 @@ const ExecutionDrawer: React.FC<ExecutionDrawerProps> = ({
           {/* 执行步骤 */}
           {execution.steps && execution.steps.length > 0 && (
             <Box sx={{ mb: 2 }}>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 0.75 }}>
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textSecondary, mb: 0.75 }}>
                 执行步骤
               </Typography>
               {renderSteps(execution.steps)}

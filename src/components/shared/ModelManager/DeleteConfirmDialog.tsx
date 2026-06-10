@@ -6,13 +6,17 @@
 
 import React from 'react';
 import {
-  Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions,
+  Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, useTheme,
 } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import { COLORS, primaryButtonSx } from './styles';
+import { getModelManagerStyles } from './styles';
 import type { DeleteConfirmDialogProps } from './types';
 
 const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({ target, onConfirm, onCancel }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const styles = getModelManagerStyles(isDark);
+
   if (!target) return null;
 
   return (
@@ -24,15 +28,15 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({ target, onCon
       PaperProps={{ sx: { borderRadius: 3 } }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
-        <WarningAmberIcon sx={{ color: '#F59E0B', fontSize: 22 }} />
-        <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: COLORS.textPrimary }}>
+        <WarningAmberIcon sx={{ color: styles.textSecondary, fontSize: 22 }} />
+        <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: styles.textPrimary }}>
           确认删除
         </Typography>
       </DialogTitle>
       <DialogContent>
-        <Typography sx={{ fontSize: '0.8125rem', color: COLORS.textSecondary, lineHeight: 1.6 }}>
+        <Typography sx={{ fontSize: '0.8125rem', color: styles.textSecondary, lineHeight: 1.6 }}>
           确定要删除模型
-          <Box component="span" sx={{ fontWeight: 600, color: COLORS.textPrimary, mx: 0.5 }}>
+          <Box component="span" sx={{ fontWeight: 600, color: styles.textPrimary, mx: 0.5 }}>
             {target.name}
           </Box>
           （{target.id}）吗？此操作不可恢复。
@@ -52,9 +56,9 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({ target, onCon
           onClick={onConfirm}
           size="small"
           sx={{
-            ...primaryButtonSx,
-            backgroundColor: COLORS.error,
-            '&:hover': { backgroundColor: '#DC2626' },
+            ...styles.primaryButton,
+            backgroundColor: styles.textSecondary,
+            '&:hover': { backgroundColor: styles.textMuted },
           }}
         >
           删除

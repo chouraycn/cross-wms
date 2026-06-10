@@ -27,6 +27,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  useTheme,
 } from '@mui/material';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
@@ -37,6 +38,7 @@ import PageHeader from '../components/Common/PageHeader';
 import SearchInput from '../components/Common/SearchInput';
 import { useToast } from '../contexts/ToastContext';
 import type { Partner, PartnerType } from '../types/partners';
+import { getGrayScale } from '../constants/theme';
 
 const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
   supplier: '供应商',
@@ -51,6 +53,9 @@ const PARTNER_TYPE_COLORS: Record<PartnerType, 'primary' | 'success'> = {
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
 const PartnersPage: React.FC = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const { showToast } = useToast();
 
   // 列表数据
@@ -194,7 +199,7 @@ const PartnersPage: React.FC = () => {
       />
 
       {/* 筛选栏 */}
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2, mb: 2 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 1 }}>
           <Tabs
             value={filterType}
@@ -226,11 +231,11 @@ const PartnersPage: React.FC = () => {
       </Card>
 
       {/* 数据表格 */}
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
         <TableContainer>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#FAFAFA' }}>
+              <TableRow sx={{ backgroundColor: gs.bgPage }}>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>名称</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>类型</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>联系人</TableCell>
@@ -255,7 +260,7 @@ const PartnersPage: React.FC = () => {
               {items.map((partner) => (
                 <TableRow key={partner.id} hover>
                   <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#111827' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500, color: gs.textPrimary }}>
                       {partner.name}
                     </Typography>
                   </TableCell>
@@ -304,7 +309,7 @@ const PartnersPage: React.FC = () => {
                         <IconButton
                           size="small"
                           onClick={() => handleEdit(partner)}
-                          sx={{ color: '#6B7280', '&:hover': { color: '#111827' } }}
+                          sx={{ color: gs.textMuted, '&:hover': { color: gs.textPrimary } }}
                         >
                           <EditOutlinedIcon sx={{ fontSize: 16 }} />
                         </IconButton>
@@ -313,7 +318,7 @@ const PartnersPage: React.FC = () => {
                         <IconButton
                           size="small"
                           onClick={() => setDeleteTarget(partner)}
-                          sx={{ color: '#9CA3AF', '&:hover': { color: '#EF4444' } }}
+                          sx={{ color: gs.textDisabled, '&:hover': { color: '#EF4444' } }}
                         >
                           <DeleteOutlineOutlinedIcon sx={{ fontSize: 16 }} />
                         </IconButton>
@@ -365,15 +370,15 @@ const PartnersPage: React.FC = () => {
           sx: { backgroundColor: 'rgba(0,0,0,0.3)' },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>
           确认删除
         </DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
-          <Typography sx={{ color: '#6B7280' }}>
+          <Typography sx={{ color: gs.textMuted }}>
             确定要删除客商「{deleteTarget?.name}」吗？此操作不可撤销。
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
           <Button onClick={() => setDeleteTarget(null)} disabled={deleting}>
             取消
           </Button>

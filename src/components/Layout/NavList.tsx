@@ -24,13 +24,16 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
+import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
 import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import { getGrayScale } from '../../constants/theme';
 import { Session } from '../../types/chat';
 
 // ===================== Nav Item Types =====================
@@ -73,13 +76,15 @@ const navItems: NavItem[] = [
       { label: '客商管理', path: '/partners', icon: <GroupsOutlinedIcon />, desc: '供应商 & 客户' },
       { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon />, desc: '在途跟踪' },
       { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon />, desc: '库存查询' },
+      { label: '仓库调拨', path: '/transfer', icon: <SwapHorizIcon />, desc: '多仓调拨' },
       { label: '腾讯文档', path: '/tencent-docs', icon: <DescriptionOutlinedIcon />, desc: '在线文档' },
       { label: '统计报表', path: '/reports', icon: <AssessmentOutlinedIcon />, desc: '数据报表' },
       { label: '入库质检', path: '/wms/quality', icon: <FactCheckOutlinedIcon />, desc: '质检管理' },
       { label: '库存盘点', path: '/wms/inventory', icon: <FindInPageOutlinedIcon />, desc: '盘点管理' },
       { label: '出库复核', path: '/wms/outbound', icon: <VerifiedUserOutlinedIcon />, desc: '复核管理' },
-      { label: '异常预警', path: '/wms/alerts', icon: <NotificationsActiveOutlinedIcon />, desc: '预警中心' },
-      { label: '报表生成', path: '/wms/reports', icon: <SummarizeOutlinedIcon />, desc: '报表中心' },
+              { label: '异常预警', path: '/wms/alerts', icon: <NotificationsActiveOutlinedIcon />, desc: '预警中心' },
+              { label: '补货建议', path: '/wms/replenishment', icon: <AutorenewOutlinedIcon />, desc: '智能补货' },
+              { label: '报表生成', path: '/wms/reports', icon: <SummarizeOutlinedIcon />, desc: '报表中心' },
     ],
   },
 ];
@@ -148,6 +153,7 @@ const NavList: React.FC<NavListProps> = ({
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
 
   // 分组展开状态 — 初始根据当前路由自动展开活跃分组
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
@@ -230,16 +236,16 @@ const NavList: React.FC<NavListProps> = ({
   const isGroupActive = (group: NavItemGroup) =>
     group.children.some((child) => isActive(child.path));
 
-  // Dark mode colors
-  const bgActive = isDark ? '#2D2D2D' : '#FFFFFF';
+  // 统一灰阶（从 theme.ts 获取）
+  const bgActive = gs.bgActive;
   const bgActiveHover = isDark ? '#333333' : '#F9FAFB';
-  const bgHover = isDark ? '#2D2D2D' : '#f5f5f5';
-  const textActive = isDark ? '#FFFFFF' : '#111827';
-  const textNormal = isDark ? '#D1D5DB' : '#374151';
-  const textSecondary = isDark ? '#9CA3AF' : '#6B7280';
-  const textMuted = isDark ? '#6B7280' : '#9CA3AF';
-  const iconActive = isDark ? '#FFFFFF' : '#111827';
-  const iconNormal = isDark ? '#9CA3AF' : '#6B7280';
+  const bgHover = gs.bgHover;
+  const textActive = gs.textPrimary;
+  const textNormal = gs.textSecondary;
+  const textSecondary = gs.textMuted;
+  const textMuted = gs.textDisabled;
+  const iconActive = gs.textPrimary;
+  const iconNormal = gs.textMuted;
 
   return (
     <List
@@ -495,7 +501,7 @@ const NavList: React.FC<NavListProps> = ({
             sx={{
               fontSize: '0.6875rem',
               fontWeight: 700,
-              color: isDark ? '#9CA3AF' : '#9CA3AF',
+              color: gs.textMuted,
               px: 1.5,
               mb: 0.5,
               letterSpacing: '0.02em',
@@ -509,7 +515,7 @@ const NavList: React.FC<NavListProps> = ({
                 ml: 0.75,
                 fontSize: '0.625rem',
                 fontWeight: 500,
-                color: isDark ? '#6B7280' : '#C0C0C0',
+                color: gs.textDisabled,
               }}
             >
               {chatSessions.length}
@@ -564,7 +570,7 @@ const NavList: React.FC<NavListProps> = ({
                       color: textMuted,
                       transition: 'opacity 0.15s',
                       '.MuiListItemButton-root:hover &': { opacity: 1 },
-                      '&:hover': { color: isDark ? '#F3F4F6' : '#111827' },
+                      '&:hover': { color: gs.textPrimary },
                       '&:hover .MuiSvgIcon-root': { fontSize: 14 },
                     }}
                   >

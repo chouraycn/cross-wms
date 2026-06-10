@@ -7,9 +7,11 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  useTheme,
 } from '@mui/material';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import { useToast } from '../../contexts/ToastContext';
+import { getGrayScale } from '../../constants/theme';
 
 const MEMORY_API = 'http://localhost:3001/api/memory';
 
@@ -22,6 +24,9 @@ export interface MemoryDialogHandle {
 // ===================== Component =====================
 
 const MemoryDialog = forwardRef<MemoryDialogHandle>((_props, ref) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [memoryContent, setMemoryContent] = useState('');
   const [memorySaving, setMemorySaving] = useState(false);
@@ -73,10 +78,10 @@ const MemoryDialog = forwardRef<MemoryDialogHandle>((_props, ref) => {
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1 }}>
           <PsychologyIcon sx={{ fontSize: 20, color: '#7C3AED' }} />
           <Typography sx={{ fontWeight: 600, fontSize: '1rem' }}>记忆</Typography>
-          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', ml: 0.5 }}>MEMORY.md</Typography>
+          <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled, ml: 0.5 }}>MEMORY.md</Typography>
         </DialogTitle>
         <DialogContent sx={{ pt: '8px !important' }}>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#6B7280', mb: 1.5 }}>
+          <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted, mb: 1.5 }}>
             在此记录重要信息，AI 助手将在每次对话中自动读取这些记忆作为上下文。
           </Typography>
           <TextField
@@ -92,13 +97,13 @@ const MemoryDialog = forwardRef<MemoryDialogHandle>((_props, ref) => {
                 fontSize: '0.875rem',
                 lineHeight: 1.7,
                 fontFamily: '"SF Mono", "Menlo", "Monaco", monospace',
-                bgcolor: '#F9FAFB',
+                bgcolor: gs.bgHover,
               },
             }}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setMemoryOpen(false)} sx={{ color: '#6B7280' }}>
+          <Button onClick={() => setMemoryOpen(false)} sx={{ color: gs.textMuted }}>
             取消
           </Button>
           <Button

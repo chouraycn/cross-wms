@@ -5,7 +5,9 @@ import {
   Typography,
   Chip,
   Button,
+  useTheme,
 } from '@mui/material';
+import { getGrayScale } from '../constants/theme';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -57,6 +59,10 @@ import AutomationFormDialog from '../components/Automation/AutomationFormDialog'
 // ===================== Component =====================
 
 const AutomationPage: React.FC = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   // --- 数据状态 ---
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -534,7 +540,7 @@ const AutomationPage: React.FC = () => {
             py: 0.5,
             px: 1,
             borderRadius: 1,
-            backgroundColor: step.status === 'success' ? '#ECFDF5' : step.status === 'failed' ? '#FEF2F2' : '#F9FAFB',
+            backgroundColor: step.status === 'success' ? '#ECFDF5' : step.status === 'failed' ? '#FEF2F2' : gs.bgHover,
             mb: 0.5,
           }}
         >
@@ -543,15 +549,15 @@ const AutomationPage: React.FC = () => {
           ) : step.status === 'failed' ? (
             <ErrorOutlineIcon sx={{ fontSize: 12, color: '#EF4444' }} />
           ) : (
-            <FiberManualRecordIcon sx={{ fontSize: 8, color: '#9CA3AF' }} />
+            <FiberManualRecordIcon sx={{ fontSize: 8, color: gs.textDisabled }} />
           )}
-          <Typography sx={{ fontSize: '0.7rem', color: '#374151', fontWeight: 500, flex: 1 }}>
+          <Typography sx={{ fontSize: '0.7rem', color: gs.textSecondary, fontWeight: 500, flex: 1 }}>
             {step.action}
           </Typography>
-          <Typography sx={{ fontSize: '0.6rem', color: '#9CA3AF' }}>
+          <Typography sx={{ fontSize: '0.6rem', color: gs.textDisabled }}>
             {step.message.length > 40 ? step.message.slice(0, 40) + '...' : step.message}
           </Typography>
-          <Typography sx={{ fontSize: '0.6rem', color: '#D1D5DB' }}>
+          <Typography sx={{ fontSize: '0.6rem', color: gs.borderDarker }}>
             {step.duration < 1000 ? `${step.duration}ms` : `${(step.duration / 1000).toFixed(1)}s`}
           </Typography>
         </Box>
@@ -561,7 +567,7 @@ const AutomationPage: React.FC = () => {
 
   // ---- 渲染 Tab ----
   const renderTabs = () => (
-    <Box sx={{ display: 'flex', gap: 0, mb: 3, borderBottom: '1px solid #E5E7EB' }}>
+    <Box sx={{ display: 'flex', gap: 0, mb: 3, borderBottom: `1px solid ${gs.border}` }}>
       {TABS.map((tab) => (
         <Box
           key={tab.key}
@@ -575,8 +581,8 @@ const AutomationPage: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: 0.75,
-            color: activeTab === tab.key ? '#111827' : '#6B7280',
-            '&:hover': { color: '#111827' },
+            color: activeTab === tab.key ? gs.textPrimary : gs.textMuted,
+            '&:hover': { color: gs.textPrimary },
             '&::after': activeTab === tab.key ? {
               content: '""',
               position: 'absolute',
@@ -584,7 +590,7 @@ const AutomationPage: React.FC = () => {
               left: 0,
               right: 0,
               height: 2,
-              backgroundColor: '#111827',
+              backgroundColor: gs.textPrimary,
               borderRadius: '1px 1px 0 0',
             } : {},
           }}
@@ -601,8 +607,8 @@ const AutomationPage: React.FC = () => {
                 height: 16,
                 fontSize: '0.6rem',
                 fontWeight: 500,
-                backgroundColor: '#F3F4F6',
-                color: '#6B7280',
+                backgroundColor: gs.bgHover,
+                color: gs.textMuted,
                 ml: -0.25,
               }}
             />
@@ -660,10 +666,10 @@ const AutomationPage: React.FC = () => {
     <Box className="page-fade-in">
       {/* 页面标题 */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, color: '#111827', mb: 0.5 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>
           自动化调度
         </Typography>
-        <Typography sx={{ fontSize: '0.875rem', color: '#6B7280' }}>
+        <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted }}>
           管理自动化调度，支持周期执行、一次性执行、动作链和有效期
         </Typography>
       </Box>
