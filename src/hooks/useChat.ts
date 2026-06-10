@@ -106,105 +106,117 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
     onSessionUpdateRef.current(updatedSession);
 
     try {
-      const res = await fetch('http://localhost:3001/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // v1.8.5: 使用 XHR 代替 fetch，避免 Electron browserView 的 ERR_ABORTED 问题
+      const fullContent = await new Promise<string>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'http://localhost:3001/api/chat?_t=' + Date.now(), true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('Cache-Control', 'no-cache');
+        xhr.responseType = 'text';
+
+        let result = '';
+        let lastIndex = 0;
+        let settled = false;
+
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState >= 3) {
+            const newData = xhr.responseText.substring(lastIndex);
+            lastIndex = xhr.responseText.length;
+            const lines = newData.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+                  if (data.type === 'text') result += data.content;
+                } catch { /* parse error */ }
+              }
+            }
+          }
+          if (xhr.readyState === 4 && !settled) {
+            settled = true;
+            resolve(result);
+          }
+        };
+        xhr.onerror = () => {
+          if (!settled) { settled = true; reject(new Error('net::ERR_ABORTED')); }
+        };
+        xhr.onabort = () => {
+          if (!settled) { settled = true; reject(new Error('net::ERR_ABORTED')); }
+        };
+        xhr.send(JSON.stringify({
           sessionId: session.id,
           message: correctionMessage,
           model: session.model,
           skillId: 'builtin-inventory-query',
-        }),
+        }));
       });
 
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullContent = '';
+      // 递归处理可能的新 inventory_query 块
+      const queryMatch = fullContent.match(QUERY_BLOCK_REGEX);
+      if (queryMatch) {
+        const jsonStr = queryMatch[1];
+        const cleanContent = fullContent.replace(QUERY_BLOCK_REGEX, '').trim();
 
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.type === 'text') fullContent += data.content;
-                if (data.type === 'done') {
-                  // 递归处理可能的新 inventory_query 块
-                  const queryMatch = fullContent.match(QUERY_BLOCK_REGEX);
-                  if (queryMatch) {
-                    const jsonStr = queryMatch[1];
-                    const cleanContent = fullContent.replace(QUERY_BLOCK_REGEX, '').trim();
+        const retryAssistantMsg: Message = {
+          id: uuidv4(),
+          role: 'assistant',
+          content: cleanContent,
+          timestamp: new Date(),
+          metadata: { loading: true, autoRetried: true },
+        };
 
-                    const retryAssistantMsg: Message = {
-                      id: uuidv4(),
-                      role: 'assistant',
-                      content: cleanContent,
-                      timestamp: new Date(),
-                      metadata: { loading: true, autoRetried: true },
-                    };
+        const sessionWithLoading = { ...session, messages: [...session.messages, retryAssistantMsg] };
+        onSessionUpdateRef.current(sessionWithLoading);
 
-                    const sessionWithLoading = { ...session, messages: [...session.messages, retryAssistantMsg] };
-                    onSessionUpdateRef.current(sessionWithLoading);
+        try {
+          const payload: InventoryQueryPayload = JSON.parse(jsonStr);
+          const apiRes = await fetch('http://localhost:3001/api/inventory/nl-query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sql: payload.sql,
+              chartType: payload.chartType || 'table',
+              chartConfig: payload.chartConfig,
+              dataSource: payload.dataSource,
+              queryIntent: payload.queryIntent,
+            }),
+          });
 
-                    try {
-                      const payload: InventoryQueryPayload = JSON.parse(jsonStr);
-                      const apiRes = await fetch('http://localhost:3001/api/inventory/nl-query', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          sql: payload.sql,
-                          chartType: payload.chartType || 'table',
-                          chartConfig: payload.chartConfig,
-                          dataSource: payload.dataSource,
-                          queryIntent: payload.queryIntent,
-                        }),
-                      });
-
-                      const retryApiData = await apiRes.json();
-                      if (retryApiData.code === 0 && retryApiData.data) {
-                        const queryResult: QueryResult = retryApiData.data;
-                        retryAssistantMsg.metadata = {
-                          queryResult,
-                          loading: false,
-                          autoRetried: true,
-                        };
-                      } else {
-                        retryAssistantMsg.content = cleanContent + `\n\n> ⚠️ 重试后库存查询仍失败：${retryApiData.message || '未知错误'}`;
-                        retryAssistantMsg.metadata = {
-                          loading: false,
-                          error: retryApiData.message || '查询失败',
-                          errorCode: 'SQL_EXEC_FAILED',
-                          autoRetried: true,
-                        };
-                      }
-                    } catch {
-                      retryAssistantMsg.content = cleanContent + '\n\n> ⚠️ 重试库存查询请求失败，请稍后再试。';
-                      retryAssistantMsg.metadata = {
-                        loading: false,
-                        error: '重试请求失败',
-                        autoRetried: true,
-                      };
-                    }
-                  } else {
-                    const retryAssistantMsg: Message = {
-                      id: uuidv4(),
-                      role: 'assistant',
-                      content: fullContent,
-                      timestamp: new Date(),
-                      metadata: { autoRetried: true },
-                    };
-                    const finalSession = { ...session, messages: [...session.messages, retryAssistantMsg] };
-                    onSessionUpdateRef.current(finalSession);
-                  }
-                }
-              } catch { /* stream parse error */ }
-            }
+          const retryApiData = await apiRes.json();
+          if (retryApiData.code === 0 && retryApiData.data) {
+            const queryResult: QueryResult = retryApiData.data;
+            retryAssistantMsg.metadata = {
+              queryResult,
+              loading: false,
+              autoRetried: true,
+            };
+          } else {
+            retryAssistantMsg.content = cleanContent + `\n\n> ⚠️ 重试后库存查询仍失败：${retryApiData.message || '未知错误'}`;
+            retryAssistantMsg.metadata = {
+              loading: false,
+              error: retryApiData.message || '查询失败',
+              errorCode: 'SQL_EXEC_FAILED',
+              autoRetried: true,
+            };
           }
+        } catch {
+          retryAssistantMsg.content = cleanContent + '\n\n> ⚠️ 重试库存查询请求失败，请稍后再试。';
+          retryAssistantMsg.metadata = {
+            loading: false,
+            error: '重试请求失败',
+            autoRetried: true,
+          };
         }
+      } else {
+        const retryAssistantMsg: Message = {
+          id: uuidv4(),
+          role: 'assistant',
+          content: fullContent,
+          timestamp: new Date(),
+          metadata: { autoRetried: true },
+        };
+        const finalSession = { ...session, messages: [...session.messages, retryAssistantMsg] };
+        onSessionUpdateRef.current(finalSession);
       }
     } catch (e) {
       console.error('[useChat] Auto-retry failed:', e);
@@ -331,6 +343,11 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                     try {
                       const data = JSON.parse(line.slice(6));
                       if (data.type === 'text') {
+                        // 防御性过滤：如果收到的内容恰好等于用户消息（且是首个字符），
+                        // 可能是后端异常或代理缓存导致的回显，跳过以避免 UI 显示用户消息作为 bot 回复
+                        if (result === '' && data.content === content) {
+                          continue;
+                        }
                         result += data.content;
                         // 实时更新流式消息
                         fullContent = result;

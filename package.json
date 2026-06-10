@@ -1,10 +1,10 @@
 {
   "name": "cdf-know-clow",
   "private": true,
-  "version": "1.5.4",
+  "version": "1.5.5",
   "type": "module",
   "scripts": {
-    "dev:server": "tsx --tsconfig server/tsconfig.json watch server/index.ts",
+    "dev:server": "tsx watch --tsconfig server/tsconfig.json server/index.ts",
     "server": "tsx --tsconfig server/tsconfig.json server/index.ts",
     "dev": "concurrently \"npm run dev:server\" \"vite\"",
     "build": "tsc && vite build",

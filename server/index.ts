@@ -383,6 +383,8 @@ app.delete('/api/sessions/:id', (req, res) => {
 app.post('/api/chat', async (req, res) => {
   const { sessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory } = req.body;
   console.log(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, message="${message?.slice(0, 30)}"`);
+  // 额外写入文件日志，确认请求是否到达
+  try { require('fs').appendFileSync('/tmp/chat-api.log', `[${new Date().toISOString()}] sessionId=${sessionId} model=${model} message="${message?.slice(0, 30)}"\n`); } catch {}
 
   try {
     res.setHeader('Content-Type', 'text/event-stream');
