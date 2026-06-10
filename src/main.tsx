@@ -40,9 +40,7 @@ window.addEventListener('unhandledrejection', (evt) => {
 // 后端 crash 时 fetch 可能长时间挂起，如果 render() 放在 await 之后会导致永久白屏。
 try {
   ReactDOM.createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>,
+    <App />,
   )
 } catch (e: any) {
   showFatalError('React 渲染异常',

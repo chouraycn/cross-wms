@@ -382,6 +382,7 @@ app.delete('/api/sessions/:id', (req, res) => {
 // 发送消息（SSE）
 app.post('/api/chat', async (req, res) => {
   const { sessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory } = req.body;
+  console.log(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, message="${message?.slice(0, 30)}"`);
 
   try {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -414,9 +415,8 @@ app.post('/api/chat', async (req, res) => {
       createSession(sessionId, '新对话', effectiveModel, undefined);
     }
 
-    // 保存用户消息
+    // 保存用户消息（不回显到 SSE 流，避免前端将用户输入混入 AI 回复内容）
     const userMsg = addMessage({ sessionId, role: 'user', content: message, model: effectiveModel, skillId: skillId || null });
-    res.write(`data: ${JSON.stringify({ type: 'text', content: userMsg.content })}\n\n`);
 
     // 发送初始化事件（Auto 模式附加选择原因 + 预设信息）
     const assistantId = uuidv4();
@@ -581,8 +581,15 @@ app.post('/api/chat', async (req, res) => {
         errorMsg = '请求已取消。';
         errorCode = 'ABORTED';
       } else {
-        errorMsg = `抱歉，AI 服务暂时不可用，请稍后重试。\n错误：${apiError instanceof Error ? apiError.message : '未知错误'}`;
-        errorCode = 'UNKNOWN_ERROR';
+        const errMessage = apiError instanceof Error ? apiError.message : '未知错误';
+        // Ollama / 本地模型连接失败的专门提示
+        if (errMessage.includes('stdout closed') || errMessage.includes('ENOENT') || errMessage.includes('ECONNREFUSED') || errMessage.includes('connect')) {
+          errorMsg = `无法连接到 AI 模型服务（${effectiveModel}）。请确认模型服务已启动。\n提示：如果使用 Ollama，请先运行 'ollama serve' 启动服务。`;
+          errorCode = 'MODEL_UNAVAILABLE';
+        } else {
+          errorMsg = `抱歉，AI 服务暂时不可用，请稍后重试。\n错误：${errMessage}`;
+          errorCode = 'UNKNOWN_ERROR';
+        }
       }
 
       res.write(`data: ${JSON.stringify({ type: 'text', content: errorMsg })}\n\n`);

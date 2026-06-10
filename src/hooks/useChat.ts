@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, ReferencedSession, Session } from '../types/chat';
 import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../types/inventory-query';
@@ -47,11 +47,31 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   const abortControllerRef = useRef<AbortController | null>(null);
   /** v1.8.0: 当前正在流式输出的消息 ID */
   const streamingMsgIdRef = useRef<string | null>(null);
+  /** v1.8.1: 使用 ref 存储 session 和 callback，避免引用变化导致 sendMessage 重新创建 */
+  const sessionRef = useRef<Session | undefined>(currentSession);
+  const onSessionUpdateRef = useRef<(session: Session) => void>(onSessionUpdate);
+  const isLoadingRef = useRef<boolean>(isLoading);
+  /** v1.8.2: 用户手动停止标志（不使用 AbortController signal，避免 Electron ERR_ABORTED） */
+  const stoppedRef = useRef(false);
+
+  // v1.8.1: 使用 useEffect 同步 ref 值，避免渲染时直接赋值导致 Fast Refresh 问题
+  useEffect(() => {
+    sessionRef.current = currentSession;
+  }, [currentSession]);
+
+  useEffect(() => {
+    onSessionUpdateRef.current = onSessionUpdate;
+  }, [onSessionUpdate]);
+
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
 
   /**
    * v1.8.0: 中断当前 AI 生成
    */
   const stopGeneration = useCallback(() => {
+    stoppedRef.current = true;
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
@@ -83,7 +103,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
     };
 
     const updatedSession = { ...session, messages: [...session.messages, userMsg] };
-    onSessionUpdate(updatedSession);
+    onSessionUpdateRef.current(updatedSession);
 
     try {
       const res = await fetch('http://localhost:3001/api/chat', {
@@ -128,7 +148,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                     };
 
                     const sessionWithLoading = { ...session, messages: [...session.messages, retryAssistantMsg] };
-                    onSessionUpdate(sessionWithLoading);
+                    onSessionUpdateRef.current(sessionWithLoading);
 
                     try {
                       const payload: InventoryQueryPayload = JSON.parse(jsonStr);
@@ -178,7 +198,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                       metadata: { autoRetried: true },
                     };
                     const finalSession = { ...session, messages: [...session.messages, retryAssistantMsg] };
-                    onSessionUpdate(finalSession);
+                    onSessionUpdateRef.current(finalSession);
                   }
                 }
               } catch { /* stream parse error */ }
@@ -192,13 +212,17 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   }, []);
 
   const sendMessage = useCallback(async (content: string, options?: SendMessageOptions) => {
-    if (!content.trim() || isLoading) return;
+    // v1.8.1: 使用 ref 读取最新值，避免依赖变化导致函数重新创建
+    if (!content.trim() || isLoadingRef.current) return;
     setIsLoading(true);
+    isLoadingRef.current = true;
+    stoppedRef.current = false; // 重置停止标志
 
     // v1.8.0: 创建新的 AbortController
-    abortControllerRef.current = new AbortController();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-    const session = currentSession || {
+    const session = sessionRef.current || {
       id: uuidv4(),
       title: content.slice(0, 30),
       model: getDefaultModelId(),
@@ -213,7 +237,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       referencedSessions: options?.referencedSessions,
     };
     const updatedSession = { ...session, messages: [...session.messages, userMsg] };
-    onSessionUpdate(updatedSession);
+    onSessionUpdateRef.current(updatedSession);
 
     // v1.8.0: 创建流式 assistant 消息占位（实时更新）
     const streamingMsgId = uuidv4();
@@ -226,7 +250,10 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       isStreaming: true,
     };
     const sessionWithStreaming = { ...session, messages: [...session.messages, userMsg, streamingMsg] };
-    onSessionUpdate(sessionWithStreaming);
+    onSessionUpdateRef.current(sessionWithStreaming);
+
+    // v1.8.4: 声明在外层 try 之前，使 catch 块也能访问
+    let fullContent = '';
 
     try {
       // 优先使用 options.model，否则使用 session.model
@@ -261,55 +288,121 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         }));
       }
 
-      const res = await fetch('http://localhost:3001/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: abortControllerRef.current.signal,
-      });
-
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullContent = '';
+      // v1.8.4: 使用 XMLHttpRequest 代替 fetch，避免 Electron browserView 的 ERR_ABORTED 问题。
+      // XHR 的 readyState + onprogress 模式在 Electron 中更稳定。
+      const MAX_RETRIES = 2;
       let currentAutoReason: string | undefined;
       let currentAutoReasonType: string | undefined;
       let currentPreset: { id: string; label: string } | null = null;
       let currentErrorCode: string | null = null;
       let currentErrorMessage: string | null = null;
 
-      if (reader) {
-        while (true) { // eslint-disable-line no-constant-condition
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.type === 'text') {
-                  fullContent += data.content;
-                  // v1.8.0: 实时更新流式消息内容
-                  streamingMsg.content = fullContent;
-                  onSessionUpdate({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: fullContent }] });
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          const sseResult = await new Promise<{ content: string; autoReason?: string; autoReasonType?: string; preset: { id: string; label: string } | null; errorCode: string | null; errorMessage: string | null }>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'http://localhost:3001/api/chat?_t=' + Date.now(), true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('Cache-Control', 'no-cache');
+            xhr.setRequestHeader('Pragma', 'no-cache');
+            xhr.responseType = 'text';
+
+            let result = '';
+            let autoReason: string | undefined;
+            let autoReasonType: string | undefined;
+            let preset: { id: string; label: string } | null = null;
+            let errorCode: string | null = null;
+            let errorMessage: string | null = null;
+            let lastIndex = 0;
+            let settled = false; // 防止 resolve/reject 多次调用
+
+            xhr.onreadystatechange = () => {
+              if (xhr.readyState >= 3) { // LOADING or DONE
+                if (stoppedRef.current) {
+                  xhr.abort();
+                  return;
                 }
-                if (data.type === 'init') {
-                  // 捕获 Auto 选型原因和预设信息
-                  if (data.autoReason) currentAutoReason = data.autoReason;
-                  if (data.autoReasonType) currentAutoReasonType = data.autoReasonType;
-                  if (data.preset) currentPreset = data.preset;
-                }
-                if (data.type === 'done') {
-                  currentErrorCode = data.errorCode ?? null;
-                  currentErrorMessage = data.errorMessage ?? null;
-                  // 如果流结束时有错误，用错误消息替换已累积的内容，避免包含异常流数据
-                  if (currentErrorCode && currentErrorMessage) {
-                    fullContent = currentErrorMessage;
+                const newData = xhr.responseText.substring(lastIndex);
+                lastIndex = xhr.responseText.length;
+                // 解析 SSE 数据
+                const lines = newData.split('\n');
+                for (const line of lines) {
+                  if (line.startsWith('data: ')) {
+                    try {
+                      const data = JSON.parse(line.slice(6));
+                      if (data.type === 'text') {
+                        result += data.content;
+                        // 实时更新流式消息
+                        fullContent = result;
+                        streamingMsg.content = result;
+                        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: result }] });
+                      }
+                      if (data.type === 'init') {
+                        if (data.autoReason) autoReason = data.autoReason;
+                        if (data.autoReasonType) autoReasonType = data.autoReasonType;
+                        if (data.preset) preset = data.preset;
+                      }
+                      if (data.type === 'done') {
+                        errorCode = data.errorCode ?? null;
+                        errorMessage = data.errorMessage ?? null;
+                        if (errorCode && errorMessage) {
+                          result = errorMessage;
+                          // 同步更新 fullContent，确保错误消息被正确保存
+                          fullContent = errorMessage;
+                          streamingMsg.content = errorMessage;
+                          onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: errorMessage }] });
+                        }
+                      }
+                    } catch { /* parse error */ }
                   }
                 }
-              } catch { /* stream parse error, skip */ }
-            }
+              }
+              if (xhr.readyState === 4 && !settled) {
+                settled = true;
+                // DONE — 无论 status 如何，只要有响应就视为成功（后端总是返回 200）
+                resolve({ content: result, autoReason, autoReasonType, preset, errorCode, errorMessage });
+              }
+            };
+
+            xhr.onerror = () => {
+              if (settled) return;
+              settled = true;
+              reject(new Error('net::ERR_ABORTED'));
+            };
+            xhr.onabort = () => {
+              if (settled) return;
+              settled = true;
+              // 用户手动停止不视为错误
+              if (stoppedRef.current) {
+                resolve({ content: result, autoReason, autoReasonType, preset, errorCode, errorMessage });
+              } else {
+                reject(new Error('net::ERR_ABORTED'));
+              }
+            };
+
+            xhr.send(JSON.stringify(body));
+          });
+
+          fullContent = sseResult.content;
+          currentAutoReason = sseResult.autoReason;
+          currentAutoReasonType = sseResult.autoReasonType;
+          currentPreset = sseResult.preset;
+          currentErrorCode = sseResult.errorCode;
+          currentErrorMessage = sseResult.errorMessage;
+
+          // 成功，跳出重试循环
+          break;
+        } catch (fetchErr) {
+          const errMsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+          if (/abort/i.test(errMsg) && attempt < MAX_RETRIES - 1 && !stoppedRef.current) {
+            console.warn(`[useChat] XHR ERR_ABORTED (attempt ${attempt + 1}/${MAX_RETRIES}), retrying...`);
+            fullContent = '';
+            // 重置流式消息内容，避免重试时 UI 显示旧内容
+            streamingMsg.content = '';
+            onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: '' }] });
+            continue;
           }
+          throw fetchErr;
         }
       }
 
@@ -348,7 +441,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
         // 先用 cleanContent 创建 assistant 消息（带 loading 状态）
         streamingMsg.metadata = { loading: true };
-        onSessionUpdate({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, metadata: { loading: true } }] });
+        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, metadata: { loading: true } }] });
 
         // 异步调用后端 API 执行查询
         (async () => {
@@ -388,10 +481,10 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                 ...session,
                 messages: [...session.messages, streamingMsg],
               };
-              onSessionUpdate(failedSession);
+              onSessionUpdateRef.current(failedSession);
 
               // 异步自动重试（不阻塞当前 UI 更新）
-              retryOnSqlFailure(session, content, apiData, onSessionUpdate);
+              retryOnSqlFailure(session, content, apiData, onSessionUpdateRef.current);
               return; // 跳过下方的 onSessionUpdate（已在此处更新）
             }
           } catch (apiErr) {
@@ -413,11 +506,11 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               streamingMsg,
             ],
           };
-          onSessionUpdate(finalSession);
+          onSessionUpdateRef.current(finalSession);
         })();
       } else {
         // 无 inventory_query JSON 块，直接更新最终消息
-        onSessionUpdate({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), streamingMsg] });
+        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), streamingMsg] });
       }
 
       // v1.7.0: 重置 autoRetried 标记（新对话开始时）
@@ -425,19 +518,30 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         autoRetriedRef.current = false;
       }
     } catch (e) {
-      console.error(e);
+      console.error('[useChat] sendMessage error:', e);
       streamingMsgIdRef.current = null;
 
-      // v1.8.0: 区分取消错误和其他错误
+      // v1.8.4: 区分取消错误、ERR_ABORTED 和其他错误
       let errorContent: string;
-      if (e instanceof Error && e.name === 'AbortError') {
-        errorContent = streamingMsg.content || '已取消生成。';
-        // 保留已生成的内容，标记为非流式
+      const errorMsg = e instanceof Error ? e.message : String(e);
+
+      if (stoppedRef.current) {
+        // 用户手动停止 — 保留已生成的内容
+        errorContent = fullContent || '已取消生成。';
         streamingMsg.isStreaming = false;
         streamingMsg.content = errorContent;
-        onSessionUpdate({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), streamingMsg] });
+        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), streamingMsg] });
+      } else if (/abort/i.test(errorMsg)) {
+        // ERR_ABORTED — 所有重试均失败
+        errorContent = 'AI 服务连接中断，请稍后重试';
+        streamingMsg.isStreaming = false;
+        streamingMsg.content = errorContent;
+        streamingMsg.metadata = {
+          error: errorMsg,
+          errorCode: 'NETWORK_ERROR',
+        };
+        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), streamingMsg] });
       } else {
-        const errorMsg = e instanceof Error ? e.message : String(e);
         // 根据错误类型生成用户友好的提示
         if (errorMsg.includes('spawn') || errorMsg.includes('ENOENT')) {
           errorContent = 'AI 服务配置异常，请在设置中检查模型配置';
@@ -452,13 +556,14 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           error: errorMsg,
           errorCode: 'NETWORK_ERROR',
         };
-        onSessionUpdate({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), streamingMsg] });
+        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), streamingMsg] });
       }
     }
     setIsLoading(false);
+    isLoadingRef.current = false;
     abortControllerRef.current = null;
     setInputValue('');
-  }, [currentSession, isLoading, onSessionUpdate, retryOnSqlFailure]);
+  }, []);
 
   /** v1.7.0: 重置 autoRetriedRef（切换会话或新对话时调用） */
   const resetAutoRetry = useCallback(() => {

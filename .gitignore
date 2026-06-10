@@ -78,3 +78,4 @@ start-mac.sh
 test-app/
 test-electron.cjs
 test-main.cjs
+dist-server/

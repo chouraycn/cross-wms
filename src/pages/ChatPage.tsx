@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Box, Typography, IconButton, Tooltip, useTheme } from '@mui/material';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
@@ -135,15 +135,24 @@ const ChatPage: React.FC = () => {
     }
   }, [searchParams, setSearchParams]);
 
-  // 如果 activeSessionId 为空，自动创建新 session
-  const effectiveSessionId = activeSessionId || (() => {
-    const newSession = createNewSession();
-    setSessions(prev => [newSession, ...prev].slice(0, MAX_SESSIONS));
-    setActiveSessionId(newSession.id);
-    return newSession.id;
-  })();
+  // 如果 activeSessionId 为空，通过 useEffect 自动创建新 session（避免渲染期间 setState 导致重渲染循环）
+  const [effectiveSessionId, setEffectiveSessionId] = useState<string>(activeSessionId || '');
 
-  const session = sessions.find((s) => s.id === effectiveSessionId) || createNewSession();
+  useEffect(() => {
+    if (!activeSessionId && !effectiveSessionId) {
+      const newSession = createNewSession();
+      setSessions(prev => [newSession, ...prev].slice(0, MAX_SESSIONS));
+      setActiveSessionId(newSession.id);
+      setEffectiveSessionId(newSession.id);
+    } else if (activeSessionId && activeSessionId !== effectiveSessionId) {
+      setEffectiveSessionId(activeSessionId);
+    }
+  }, [activeSessionId, effectiveSessionId]);
+
+  const session = useMemo(() =>
+    sessions.find((s) => s.id === effectiveSessionId) || createNewSession(),
+    [sessions, effectiveSessionId]
+  );
 
   useEffect(() => {
     if (sessions.length > 0) saveSessions(sessions);
@@ -239,7 +248,7 @@ const ChatPage: React.FC = () => {
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
 
         {isEmpty ? (
-          /* 首页状态 — 欢迎区居中 + 输入框吸底 */
+          /* 首页状态 — 欢迎区居中 */
           <Box sx={{
             flex: 1,
             display: 'flex',
@@ -329,28 +338,9 @@ const ChatPage: React.FC = () => {
                 </>
               )}
             </Box>
-
-            {/* 输入框吸底 */}
-            <Box sx={{ px: 3, py: 2, flexShrink: 0, maxWidth: 960, width: '100%', mx: 'auto' }}>
-              <TopBarChatInput
-                session={session}
-                onSessionUpdate={handleSessionUpdate}
-                initialSkill={initialSkill}
-              />
-              <Typography
-                sx={{
-                  fontSize: '0.6875rem',
-                  color: '#9CA3AF',
-                  textAlign: 'center',
-                  pt: 0.5,
-                }}
-              >
-                内容由AI生成，请核实重要信息
-              </Typography>
-            </Box>
           </Box>
         ) : (
-          /* 对话状态 — 消息 + 输入框 */
+          /* 对话状态 — 消息历史 */
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             {/* 消息历史 */}
             <Box
@@ -456,29 +446,34 @@ const ChatPage: React.FC = () => {
                 </Box>
               ))}
             </Box>
-
-            {/* 底部输入框 */}
-            <Box sx={{ px: 3, py: 2, borderTop: '1px solid #F3F4F6', flexShrink: 0 }}>
-              <Box sx={{ maxWidth: 960, mx: 'auto' }}>
-                <TopBarChatInput
-                  session={session}
-                  onSessionUpdate={handleSessionUpdate}
-                  initialSkill={initialSkill}
-                />
-                <Typography
-                  sx={{
-                    fontSize: '0.6875rem',
-                    color: '#9CA3AF',
-                    textAlign: 'center',
-                    pt: 0.5,
-                  }}
-                >
-                  内容由AI生成，请核实重要信息
-                </Typography>
-              </Box>
-            </Box>
           </Box>
         )}
+
+        {/* 输入框 — 放在条件渲染之外，避免组件重新挂载导致请求取消 */}
+        <Box sx={{
+          px: 3,
+          py: 2,
+          flexShrink: 0,
+          borderTop: isEmpty ? 'none' : '1px solid #F3F4F6',
+        }}>
+          <Box sx={{ maxWidth: 960, mx: 'auto' }}>
+            <TopBarChatInput
+              session={session}
+              onSessionUpdate={handleSessionUpdate}
+              initialSkill={initialSkill}
+            />
+            <Typography
+              sx={{
+                fontSize: '0.6875rem',
+                color: '#9CA3AF',
+                textAlign: 'center',
+                pt: 0.5,
+              }}
+            >
+              内容由AI生成，请核实重要信息
+            </Typography>
+          </Box>
+        </Box>
       </Box>
     </Box>
   );

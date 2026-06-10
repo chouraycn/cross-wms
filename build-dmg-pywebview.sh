@@ -156,7 +156,6 @@ if command -v npx &>/dev/null; then
     --outfile="$SERVER_BUILD_DIR/index.cjs" \
     --alias:@src=./src \
     --external:better-sqlite3 \
-    --external:@tencent-ai/agent-sdk \
     --external:express \
     --external:cors \
     --external:uuid \
@@ -183,7 +182,6 @@ cat > package.json << 'PKGJSON'
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "@tencent-ai/agent-sdk": "^0.3.43",
     "better-sqlite3": "^12.6.2",
     "chokidar": "^3.6.0",
     "cors": "^2.8.5",
@@ -241,21 +239,13 @@ find . -type d \( \
   -name "benchmarks" \
 \) -exec rm -rf {} + 2>/dev/null || true
 
-# 删除 agent-sdk 内置的 CLI 和 web-ui（仅运行时 API 需要保留）
-AGENT_SDK_DIR=""
+# 清理已移除依赖的残留目录（如果存在）
 for d in @tencent-ai/agent-sdk; do
   if [ -d "$d" ]; then
-    AGENT_SDK_DIR="$d"
-    break
+    rm -rf "$d" 2>/dev/null || true
+    echo "   ✅ 已清理残留目录 $d"
   fi
 done
-if [ -n "$AGENT_SDK_DIR" ]; then
-  # CLI 工具和 web-ui 占 ~80MB，运行时不需要
-  rm -rf "$AGENT_SDK_DIR/cli" 2>/dev/null || true
-  rm -rf "$AGENT_SDK_DIR/dist/web-ui" 2>/dev/null || true
-  rm -rf "$AGENT_SDK_DIR/web-ui" 2>/dev/null || true
-  echo "   ✅ 已清理 @tencent-ai/agent-sdk CLI 和 web-ui"
-fi
 
 SHARED_NM_SIZE=$(du -sh "$SHARED_NODE_MODULES/node_modules" | cut -f1)
 echo "✅ node_modules 清理完成 (大小: $SHARED_NM_SIZE)"
