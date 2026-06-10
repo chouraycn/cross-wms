@@ -11,8 +11,10 @@ import {
   CircularProgress,
   Tooltip,
   Chip,
+  useTheme,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
+import StopIcon from '@mui/icons-material/Stop';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import AddIcon from '@mui/icons-material/Add';
 import MicIcon from '@mui/icons-material/Mic';
@@ -27,7 +29,7 @@ import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
 import { getAllSkills } from '../../stores/skillStore';
 import { getCategoryLabel, CATEGORY_ORDER } from '../../constants/skillCategories';
-import { SECONDARY } from '../../constants/theme';
+import { getGrayScale } from '../../constants/theme';
 import { providerIcon } from '../../utils/providerIcons';
 import { CAPABILITY_LABELS, CAPABILITY_COLORS, type ModelCapability } from '../../types/models';
 
@@ -68,6 +70,8 @@ export interface ChatToolbarProps {
   inputValue: string;
   /** Send handler */
   onSend: () => void;
+  /** Stop generation handler */
+  onStop?: () => void;
   /** Memory dialog open handler */
   onOpenMemory: () => void;
   /** Skill select handler */
@@ -107,12 +111,17 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   isLoading,
   inputValue,
   onSend,
+  onStop,
   onOpenMemory,
   onSkillSelect,
   modelOptions,
   selectedPreset,
   onPresetChange,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+  const SECONDARY = gs.textMuted;
   const navigate = useNavigate();
   const [activeDropdown, setActiveDropdown] = useState<DropdownType>(null);
 
@@ -134,7 +143,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '8px 16px',
-          bgcolor: '#fff',
+          bgcolor: gs.bgPanel,
           flexShrink: 0,
         }}
       >
@@ -147,7 +156,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             onClick={(e) => { e.stopPropagation(); handleDropdownClick('craft'); }}
             sx={{
               width: 32, height: 32, borderRadius: '8px', p: 0, ml: 1.25,
-              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: '#f5f5f5' },
+              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
             }}
           >
             <Typography sx={{ fontSize: 12, fontWeight: 500 }}>Craft</Typography>
@@ -161,7 +170,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             onClick={(e) => { e.stopPropagation(); handleDropdownClick('model'); }}
             sx={{
               width: 'auto', height: 32, borderRadius: '8px', px: 1,
-              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: '#f5f5f5' },
+              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
             }}
           >
             <Typography sx={{ fontSize: 12, fontWeight: 500 }}>{selectedModel}</Typography>
@@ -175,7 +184,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             onClick={(e) => { e.stopPropagation(); handleDropdownClick('skills'); }}
             sx={{
               width: 'auto', height: 32, borderRadius: '8px', px: 1,
-              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: '#f5f5f5' },
+              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
             }}
           >
             <Typography sx={{ fontSize: 12, fontWeight: 500 }}>Skills</Typography>
@@ -188,7 +197,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             onClick={(e) => { e.stopPropagation(); handleDropdownClick('permission'); }}
             sx={{
               width: 'auto', height: 32, borderRadius: '8px', px: 1,
-              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: '#f5f5f5' },
+              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
             }}
           >
             <Typography sx={{ fontSize: 12, fontWeight: 500 }}>{selectedPermission}</Typography>
@@ -203,8 +212,8 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             sx={{
               width: 'auto', height: 32, borderRadius: '8px', px: 1,
               color: selectedPreset ? '#2563EB' : SECONDARY,
-              bgcolor: selectedPreset ? '#EFF6FF' : 'transparent',
-              '&:hover': { bgcolor: selectedPreset ? '#DBEAFE' : '#f5f5f5' },
+              bgcolor: selectedPreset ? (isDark ? '#1E3A8A' : '#EFF6FF') : 'transparent',
+              '&:hover': { bgcolor: selectedPreset ? (isDark ? '#1E40AF' : '#DBEAFE') : gs.bgHover },
             }}
           >
             <TuneIcon sx={{ fontSize: 16, mr: 0.25 }} />
@@ -224,7 +233,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               onClick={(e) => { e.stopPropagation(); onOpenMemory(); }}
               sx={{
                 width: 32, height: 32, borderRadius: '8px', p: 0,
-                color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: '#f5f5f5' },
+                color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
               }}
             >
               <PsychologyIcon sx={{ fontSize: 20 }} />
@@ -237,7 +246,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             onClick={(e) => e.stopPropagation()}
             sx={{
               width: 32, height: 32, borderRadius: '8px', p: 0,
-              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: '#f5f5f5' },
+              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
             }}
           >
             <AddIcon sx={{ fontSize: 20 }} />
@@ -249,25 +258,35 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             onClick={(e) => e.stopPropagation()}
             sx={{
               width: 32, height: 32, borderRadius: '8px', p: 0,
-              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: '#f5f5f5' },
+              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
             }}
           >
             <MicIcon sx={{ fontSize: 20 }} />
           </IconButton>
 
-          {/* Send button */}
+          {/* Send / Stop button */}
           <IconButton
-            onClick={(e) => { e.stopPropagation(); onSend(); }}
-            disabled={!inputValue.trim() || isLoading}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isLoading && onStop) {
+                onStop();
+              } else {
+                onSend();
+              }
+            }}
+            disabled={!isLoading && !inputValue.trim()}
             sx={{
               width: 32, height: 32, borderRadius: '50%', p: 0,
-              bgcolor: '#f97316', color: '#fff', flexShrink: 0, border: 'none',
-              '&:hover': { bgcolor: '#ea580c' },
-              '&.Mui-disabled': { bgcolor: '#eee', color: '#bbb' },
+              bgcolor: isLoading ? '#EF4444' : '#f97316',
+              color: '#fff',
+              flexShrink: 0,
+              border: 'none',
+              '&:hover': { bgcolor: isLoading ? '#DC2626' : '#ea580c' },
+              '&.Mui-disabled': { bgcolor: gs.border, color: gs.textDisabled },
             }}
           >
             {isLoading ? (
-              <CircularProgress size={16} sx={{ color: '#fff' }} />
+              <StopIcon sx={{ fontSize: 16 }} />
             ) : (
               <SendIcon sx={{ fontSize: 16 }} />
             )}

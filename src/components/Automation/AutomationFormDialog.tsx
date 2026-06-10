@@ -21,7 +21,9 @@ import {
   Divider,
   Chip,
   InputAdornment,
+  useTheme,
 } from '@mui/material';
+import { getGrayScale } from '../../constants/theme';
 import BoltIcon from '@mui/icons-material/Bolt';
 import SyncIcon from '@mui/icons-material/Sync';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
@@ -101,6 +103,9 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
   onSave,
   onClose,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   return (
     <Dialog
       open={open}
@@ -110,7 +115,7 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
       PaperProps={{
         sx: {
           borderRadius: '12px',
-          border: '1px solid #E5E7EB',
+          border: `1px solid ${gs.border}`,
           boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
         },
       }}
@@ -122,20 +127,20 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
               width: 32,
               height: 32,
               borderRadius: 1.5,
-              backgroundColor: '#111827',
+              backgroundColor: gs.textPrimary,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#fff',
+              color: gs.bgPanel,
             }}
           >
             <BoltIcon sx={{ fontSize: 18 }} />
           </Box>
           <Box>
-            <Typography sx={{ fontWeight: 600, color: '#111827', fontSize: '0.9375rem' }}>
+            <Typography sx={{ fontWeight: 600, color: gs.textPrimary, fontSize: '0.9375rem' }}>
               {editingId ? '编辑自动化' : '新建自动化'}
             </Typography>
-            <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
+            <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>
               配置自动化调度参数
             </Typography>
           </Box>
@@ -230,7 +235,7 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
           {/* custom 任务动作链配置 */}
           {formTaskType === 'custom' && (
             <Box>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#374151', mb: 1 }}>
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textSecondary, mb: 1 }}>
                 动作链（按顺序执行）
               </Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
@@ -239,16 +244,16 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
                   return (
                     <Chip
                       key={opt.value}
-                      icon={<Box sx={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: isSelected ? '#fff' : '#9CA3AF', ml: 0.5 }} />}
+                      icon={<Box sx={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: isSelected ? gs.bgPanel : gs.textDisabled, ml: 0.5 }} />}
                       label={opt.label}
                       size="small"
                       onClick={() => onToggleActionChain(opt.value)}
                       sx={{
                         fontSize: '0.7rem',
                         height: 26,
-                        backgroundColor: isSelected ? '#111827' : '#F3F4F6',
-                        color: isSelected ? '#fff' : '#374151',
-                        '&:hover': { backgroundColor: isSelected ? '#374151' : '#E5E7EB' },
+                        backgroundColor: isSelected ? gs.textPrimary : gs.bgHover,
+                        color: isSelected ? gs.bgPanel : gs.textSecondary,
+                        '&:hover': { backgroundColor: isSelected ? gs.textSecondary : gs.border },
                         transition: 'all 0.15s ease',
                       }}
                     />
@@ -258,14 +263,14 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
               {/* 已选动作链排序显示 */}
               {formTaskConfig.actionChain && formTaskConfig.actionChain.length > 0 && (
                 <Box sx={{ mt: 1, display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF', mr: 0.5 }}>执行顺序:</Typography>
+                  <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled, mr: 0.5 }}>执行顺序:</Typography>
                   {formTaskConfig.actionChain.map((action, i) => (
                     <React.Fragment key={action}>
-                      {i > 0 && <Typography sx={{ fontSize: '0.65rem', color: '#D1D5DB' }}>→</Typography>}
+                      {i > 0 && <Typography sx={{ fontSize: '0.65rem', color: gs.borderDarker }}>→</Typography>}
                       <Chip
                         label={ACTION_CHAIN_OPTIONS.find((o) => o.value === action)?.label || action}
                         size="small"
-                        sx={{ height: 18, fontSize: '0.6rem', backgroundColor: '#111827', color: '#fff' }}
+                        sx={{ height: 18, fontSize: '0.6rem', backgroundColor: gs.textPrimary, color: gs.bgPanel }}
                       />
                     </React.Fragment>
                   ))}
@@ -287,7 +292,7 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
               <Typography sx={{ fontSize: '0.7rem', color: '#DC2626', fontWeight: 500, mb: 0.5 }}>
                 技能安全审计
               </Typography>
-              <Typography sx={{ fontSize: '0.65rem', color: '#6B7280', lineHeight: 1.4 }}>
+              <Typography sx={{ fontSize: '0.65rem', color: gs.textMuted, lineHeight: 1.4 }}>
                 定期对所有用户技能执行安全审查，检查是否存在高风险操作。
                 如发现恶意或可疑技能，将发送桌面通知。
               </Typography>
@@ -321,7 +326,7 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
 
           {/* ===== v2.0: 触发方式选择 ===== */}
           <Box>
-            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 500, mb: 1 }}>
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, fontWeight: 500, mb: 1 }}>
               触发方式
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
@@ -333,9 +338,9 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
                   onClick={() => onFieldChange('formTriggerType', key)}
                   sx={{
                     fontSize: '0.75rem',
-                    backgroundColor: formTriggerType === key ? '#111827' : '#F3F4F6',
-                    color: formTriggerType === key ? '#fff' : '#374151',
-                    '&:hover': { backgroundColor: formTriggerType === key ? '#374151' : '#E5E7EB' },
+                    backgroundColor: formTriggerType === key ? gs.textPrimary : gs.bgHover,
+                    color: formTriggerType === key ? gs.bgPanel : gs.textSecondary,
+                    '&:hover': { backgroundColor: formTriggerType === key ? gs.textSecondary : gs.border },
                   }}
                 />
               ))}
@@ -373,9 +378,9 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
               onClick={() => onFieldChange('formScheduleType', 'recurring')}
               sx={{
                 fontSize: '0.75rem',
-                backgroundColor: formScheduleType === 'recurring' ? '#111827' : '#F3F4F6',
-                color: formScheduleType === 'recurring' ? '#fff' : '#374151',
-                '&:hover': { backgroundColor: formScheduleType === 'recurring' ? '#374151' : '#E5E7EB' },
+                backgroundColor: formScheduleType === 'recurring' ? gs.textPrimary : gs.bgHover,
+                color: formScheduleType === 'recurring' ? gs.bgPanel : gs.textSecondary,
+                '&:hover': { backgroundColor: formScheduleType === 'recurring' ? gs.textSecondary : gs.border },
               }}
             />
             <Chip
@@ -384,9 +389,9 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
               onClick={() => onFieldChange('formScheduleType', 'once')}
               sx={{
                 fontSize: '0.75rem',
-                backgroundColor: formScheduleType === 'once' ? '#111827' : '#F3F4F6',
-                color: formScheduleType === 'once' ? '#fff' : '#374151',
-                '&:hover': { backgroundColor: formScheduleType === 'once' ? '#374151' : '#E5E7EB' },
+                backgroundColor: formScheduleType === 'once' ? gs.textPrimary : gs.bgHover,
+                color: formScheduleType === 'once' ? gs.bgPanel : gs.textSecondary,
+                '&:hover': { backgroundColor: formScheduleType === 'once' ? gs.textSecondary : gs.border },
               }}
             />
           </Box>
@@ -443,9 +448,9 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
                       fontSize: '0.65rem',
                       height: 26,
                       minWidth: 32,
-                      backgroundColor: formWeekdays.includes(day) ? '#111827' : '#F3F4F6',
-                      color: formWeekdays.includes(day) ? '#fff' : '#374151',
-                      '&:hover': { backgroundColor: formWeekdays.includes(day) ? '#374151' : '#E5E7EB' },
+                      backgroundColor: formWeekdays.includes(day) ? gs.textPrimary : gs.bgHover,
+                      color: formWeekdays.includes(day) ? gs.bgPanel : gs.textSecondary,
+                      '&:hover': { backgroundColor: formWeekdays.includes(day) ? gs.textSecondary : gs.border },
                     }}
                   />
                 ))}
@@ -483,7 +488,7 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
 
           {/* ===== v2.0: 执行策略 ===== */}
           <Box>
-            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 500, mb: 1 }}>
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, fontWeight: 500, mb: 1 }}>
               执行策略
             </Typography>
             <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -542,7 +547,7 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
 
           {/* 有效期 */}
           <Box>
-            <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 500, mb: 1 }}>
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, fontWeight: 500, mb: 1 }}>
               有效期（可选）
             </Typography>
             <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -561,7 +566,7 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <EventAvailableIcon sx={{ fontSize: 16, color: '#9CA3AF' }} />
+                      <EventAvailableIcon sx={{ fontSize: 16, color: gs.textDisabled }} />
                     </InputAdornment>
                   ),
                 }}
@@ -581,7 +586,7 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <EventBusyIcon sx={{ fontSize: 16, color: '#9CA3AF' }} />
+                      <EventBusyIcon sx={{ fontSize: 16, color: gs.textDisabled }} />
                     </InputAdornment>
                   ),
                 }}
@@ -593,7 +598,7 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button
           onClick={onClose}
-          sx={{ color: '#6B7280', textTransform: 'none', fontSize: '0.8125rem' }}
+          sx={{ color: gs.textMuted, textTransform: 'none', fontSize: '0.8125rem' }}
         >
           取消
         </Button>
@@ -601,8 +606,8 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
           variant="contained"
           onClick={onSave}
           sx={{
-            backgroundColor: '#111827',
-            '&:hover': { backgroundColor: '#374151' },
+            backgroundColor: gs.textPrimary,
+            '&:hover': { backgroundColor: gs.textSecondary },
             textTransform: 'none',
             borderRadius: '8px',
             fontSize: '0.8125rem',

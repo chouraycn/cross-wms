@@ -22,10 +22,11 @@ const BASE_URL = 'http://localhost:3001';
 // ===================== Generic Request =====================
 
 export async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const opts: RequestInit = {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-  };
+  const headers: Record<string, string> = {};
+  if (body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+  }
+  const opts: RequestInit = { method, headers };
   if (body !== undefined) {
     opts.body = JSON.stringify(body);
   }
@@ -580,6 +581,38 @@ export async function testModelConnection(
     '/api/models/test-connection',
     { apiEndpoint, apiKey, modelId },
   );
+}
+
+/** 健康检查结果项 */
+export interface HealthCheckItem {
+  modelId: string;
+  status: 'healthy' | 'unhealthy' | 'timeout' | 'skipped';
+  message: string;
+  latency?: number;
+  checkedAt: string;
+}
+
+/** 批量健康检查（所有已启用模型） */
+export async function healthCheckModels(models?: ModelConfig[]): Promise<HealthCheckItem[]> {
+  const body = models ? { models } : {};
+  return request<HealthCheckItem[]>('POST', '/api/models/health-check', body);
+}
+
+/** 本地发现的模型 */
+export interface DiscoveredLocalModel {
+  id: string;
+  name: string;
+  provider: string;
+  apiEndpoint: string;
+  size?: string;
+  family?: string;
+  parameterSize?: string;
+  contextWindow?: number;
+}
+
+/** 自动发现本地模型（Ollama / vLLM / LM Studio） */
+export async function discoverLocalModels(): Promise<DiscoveredLocalModel[]> {
+  return request<DiscoveredLocalModel[]>('POST', '/api/models/discover-local', {});
 }
 
 // ===================== Partners (供应商/客户) API =====================

@@ -4,13 +4,13 @@
  * Executes skill chains sequentially, with SSE broadcasting, abort support,
  * retry logic, and timeout handling. Singleton pattern using module-level state.
  *
- * v2: Real execution via @tencent-ai/agent-sdk, node_results persistence,
- *     enriched SSE event types, and keepalive heartbeat.
+ * v2: Direct AI model API calls (OpenAI compatible / Anthropic native),
+ *     node_results persistence, enriched SSE event types, and keepalive heartbeat.
  */
 
 import { v4 as uuidv4 } from 'uuid';
 import type { Response } from 'express';
-import { query } from '@tencent-ai/agent-sdk';
+import { callAIModel } from '../aiClient.js';
 import {
   initDb,
   getSkillChain,
@@ -158,9 +158,9 @@ function buildNodeInput(
 
 /**
  * Execute a single node with timeout support.
- * v2: Real execution via @tencent-ai/agent-sdk.
- *     Reads promptTemplate from user_skills, invokes agent-sdk query(),
- *     and returns the streaming response content.
+ * v2: Direct AI model API call.
+ *     Reads promptTemplate from user_skills, invokes callAIModel(),
+ *     and returns the response content.
  */
 async function executeNodeWithTimeout(
   node: SkillChainNodeRow,
@@ -182,7 +182,7 @@ async function executeNodeWithTimeout(
     const promptTemplate = skillRow?.promptTemplate;
 
     if (!promptTemplate || promptTemplate.trim() === '') {
-      // No promptTemplate — return a basic result without calling agent-sdk
+      // No promptTemplate — return a basic result without calling AI
       return {
         success: true,
         output: {
@@ -201,35 +201,30 @@ async function executeNodeWithTimeout(
       finalPrompt = `<context>\n${JSON.stringify(input, null, 2)}\n</context>\n\n${finalPrompt}`;
     }
 
-    // 加载默认模型配置，注入 apiEndpoint、apiKey、temperature、topP
-    const modelsConfig = loadModelsConfig();
+    // 加载默认模型配置
+    const modelsConfig = await loadModelsConfig();
     const defaultModelConfig = modelsConfig.models.find((m) => m.id === modelsConfig.defaultModelId);
 
-    // Call agent-sdk
-    const queryOptions: Record<string, unknown> = {
-      permissionMode: 'bypassPermissions',
-      cwd: process.cwd(),
-    };
-    if (defaultModelConfig) {
-      if (defaultModelConfig.apiEndpoint) queryOptions.apiEndpoint = defaultModelConfig.apiEndpoint;
-      if (defaultModelConfig.apiKey) queryOptions.apiKey = defaultModelConfig.apiKey;
-      if (typeof defaultModelConfig.temperature === 'number') queryOptions.temperature = defaultModelConfig.temperature;
-      if (typeof defaultModelConfig.topP === 'number') queryOptions.topP = defaultModelConfig.topP;
+    if (!defaultModelConfig || !defaultModelConfig.apiKey) {
+      return {
+        success: false,
+        error: `未配置默认模型或 API Key，请在模型管理中设置`,
+      };
     }
 
     try {
-      const queryInstance = query({ prompt: finalPrompt, options: queryOptions });
-      let fullContent = '';
-
-      for await (const msg of queryInstance) {
-        if (msg.type === 'assistant') {
-          for (const block of msg.message.content) {
-            if (block.type === 'text') {
-              fullContent += block.text;
-            }
-          }
-        }
-      }
+      const fullContent = await callAIModel(
+        {
+          id: defaultModelConfig.id,
+          provider: defaultModelConfig.provider,
+          apiEndpoint: defaultModelConfig.apiEndpoint,
+          apiKey: defaultModelConfig.apiKey,
+          temperature: defaultModelConfig.temperature,
+          topP: defaultModelConfig.topP,
+          maxTokens: defaultModelConfig.maxTokens,
+        },
+        [{ role: 'user', content: finalPrompt }],
+      );
 
       return {
         success: true,
@@ -240,10 +235,10 @@ async function executeNodeWithTimeout(
           result: { content: fullContent },
         },
       };
-    } catch (sdkError) {
+    } catch (apiError) {
       return {
         success: false,
-        error: `Agent SDK error: ${sdkError instanceof Error ? sdkError.message : 'Unknown error'}`,
+        error: `AI API error: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`,
       };
     }
   })();

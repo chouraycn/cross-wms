@@ -9,6 +9,7 @@ import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useModels } from '../../contexts/ModelsContext';
 import ModelManager from '../shared/ModelManager';
 
 /* ------------------------------------------------------------------ */
@@ -54,6 +55,7 @@ export interface AISettingsDialogProps {
 const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) => {
   const [activeTab, setActiveTab] = useState<AITab>('model');
   const { settings, updateSettings } = useAppSettings();
+  const { models: modelList, defaultModelId, updateModels } = useModels();
 
   return (
     <Dialog
@@ -136,10 +138,10 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) =>
         <Box sx={{ flex: 1, px: 4, pt: 3, pr: 5, pb: 4, overflow: 'auto', minWidth: 0, position: 'relative' }}>
           {activeTab === 'model' && (
             <ModelManager
-              models={settings.models.models}
-              defaultModelId={settings.models.defaultModelId}
+              models={modelList}
+              defaultModelId={defaultModelId}
               variant="table"
-              onChange={(models, defaultModelId) => updateSettings({ models: { models, defaultModelId } })}
+              onChange={(models, newDefaultModelId) => updateModels(models, newDefaultModelId)}
             />
           )}
           {activeTab === 'mcp' && <PlaceholderTab title="MCP" description="MCP Server 配置功能开发中，敬请期待" />}

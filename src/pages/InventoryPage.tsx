@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Box, Button, Tooltip } from '@mui/material';
+import { Box, Button, Tooltip, useTheme } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
@@ -11,8 +11,12 @@ import PageHeader from '../components/Common/PageHeader';
 import { subscribeRefresh } from '../App';
 import { getInventoryItems } from '../capabilities/warehouse';
 import { exportToCsv } from '../utils/exportCsv';
+import { getGrayScale } from '../constants/theme';
 
 const InventoryPage: React.FC = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const [refreshKey, setRefreshKey] = useState(0);
   const [inboundOpen, setInboundOpen] = useState(false);
   const [outboundOpen, setOutboundOpen] = useState(false);
@@ -86,9 +90,9 @@ const InventoryPage: React.FC = () => {
                 textTransform: 'none',
                 borderRadius: '8px',
                 fontSize: '0.8125rem',
-                borderColor: '#E5E7EB',
-                color: '#374151',
-                '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+                borderColor: gs.border,
+                color: gs.textSecondary,
+                '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgPage },
               }}
             >
               出库
@@ -104,9 +108,9 @@ const InventoryPage: React.FC = () => {
                     textTransform: 'none',
                     borderRadius: '8px',
                     fontSize: '0.8125rem',
-                    borderColor: '#E5E7EB',
-                    color: '#6B7280',
-                    '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+                    borderColor: gs.border,
+                    color: gs.textMuted,
+                    '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgPage },
                   }}
                 >
                   导出

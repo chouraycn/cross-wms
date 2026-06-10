@@ -1,99 +1,39 @@
 /**
- * ModelEditDialog — 统一编辑弹窗
+ * ModelEditDialog — 分步添加模型 Step 2：补全信息
  *
- * 包含：
- * - 基础字段：ID、名称、提供商（联动自动填充端点）、API 端点、API Key（含可见性切换）、描述
- * - 能力标签选择
- * - 高级字段：上下文窗口、最大输出、temperature 滑块、topP 滑块
- * - 启用开关
- * - 测试连接按钮（含可用模型列表展示）
- * - 保存/取消按钮
+ * 在 Step 1 选择了预设模型后，进入此页面补全 API Key 等信息。
+ * 编辑模式下直接使用此组件（不分步）。
+ *
+ * 设计原则：
+ * - 左侧导航栏：分步骤指示，快速跳转
+ * - 右侧内容区：按步骤分组，信息层级清晰
+ * - 高级设置默认折叠，点击展开
+ * - 未设置的属性使用推荐默认值
  */
 
-import React, { useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  Box, Typography, Button, TextField, FormControl, InputLabel,
-  Select, MenuItem, Switch, FormControlLabel, IconButton, Dialog,
-  Slider, InputAdornment, Chip, Collapse, List, ListItemButton, ListItemText,
+  Box, Typography, Button, TextField, Switch, FormControlLabel, IconButton, Dialog,
+  Slider, InputAdornment, Chip, List, ListItemButton, ListItemText,
+  Select, MenuItem, FormControl, Divider, useTheme,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
-import { providerLabel, providerIcon, ALL_PROVIDERS } from '../../../utils/providerIcons';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import SettingsIcon from '@mui/icons-material/Settings';
+import KeyIcon from '@mui/icons-material/Key';
+import TuneIcon from '@mui/icons-material/Tune';
+import ScienceIcon from '@mui/icons-material/Science';
+import { providerLabel, providerIcon } from '../../../utils/providerIcons';
 import { CAPABILITY_LABELS, CAPABILITY_COLORS, type ModelCapability } from '../../../types/models';
-import { textFieldSx, COLORS, sliderLabelSx, sliderValueSx, primaryButtonSx, PROVIDER_ENDPOINTS } from './styles';
-import type { ModelEditDialogProps } from './types';
-import type { ModelProvider } from '../../../types/models';
+import { getModelManagerStyles } from './styles';
+import type { ModelEditDialogProps, ModelFormState } from './types';
 
-/** 提供商说明文案 — 覆盖 24+ 主流平台 */
-const PROVIDER_HINTS: Record<string, string> = {
-  openai: 'OpenAI 官方 API，支持 GPT-4o、GPT-4 Turbo、o1 等模型',
-  anthropic: 'Anthropic 官方 API，支持 Claude Sonnet 4、Claude 3.5 Haiku 等模型',
-  tencent: '腾讯混元大模型 API，支持 hunyuan-turbo、hunyuan-pro',
-  deepseek: 'DeepSeek API，支持 deepseek-chat、deepseek-coder，性价比优秀',
-  google: 'Google Gemini API，支持 gemini-pro 等多模态模型',
-  qwen: '阿里通义千问 API，支持 qwen-turbo、qwen-plus，超长上下文',
-  xai: 'xAI (Grok) API，支持 grok-2、grok-1.5 等模型',
-  zai: 'Z.ai 开放平台，支持多种开源和商业模型',
-  minimax: 'MiniMax 国际版 API，支持 abab 系列模型',
-  kimi: 'Moonshot Kimi 国际版 API，支持长文本对话',
-  byteplus: '字节跳动 BytePlus API，支持豆包系列模型',
-  openrouter: 'OpenRouter 统一路由 API，支持 200+ 模型',
-  novita: 'Novita AI API，支持多种开源模型部署',
-  wwqglobal: '无问芯穹国际版 API，支持多种国产模型',
-  wwqcn: '无问芯穹国内版 API，支持多种国产模型',
-  aws: 'AWS Bedrock API，支持 Claude、Llama、Titan 等',
-  azure: 'Azure OpenAI Service，支持 GPT-4、GPT-3.5 等',
-  vercel: 'Vercel AI Gateway，统一代理多种模型',
-  ollama: 'Ollama 本地部署，支持 Llama、Mistral 等开源模型',
-  bigmodel: '智谱 AI Bigmodel，支持 GLM-4、ChatGLM 系列',
-  minimaxcn: 'MiniMax 国内版 API，支持 abab 系列模型',
-  kimicn: 'Moonshot Kimi 国内版 API，支持超长上下文',
-  volcengine: '字节火山引擎 API，支持豆包系列模型',
-  aliyun: '阿里云百炼 API，支持通义千问系列模型',
-  siliconflow: '硅基流动 API，支持多种开源模型推理',
-  modelark: '模力方舟 API，支持多种国产大模型',
-  ppio: 'PPIO 派欧云 API，支持多种开源模型',
-  custom: '自定义 OpenAI 兼容 API 端点，支持各种第三方服务',
-};
-
-/** 推荐的模型 ID 列表 — 覆盖 24+ 主流平台 */
-const PROVIDER_MODEL_SUGGESTIONS: Record<string, string[]> = {
-  openai: ['gpt-4o', 'gpt-4-turbo', 'gpt-4o-mini', 'gpt-3.5-turbo', 'o1-preview', 'o1-mini'],
-  anthropic: ['claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
-  tencent: ['hunyuan-turbo', 'hunyuan-pro', 'hunyuan-lite'],
-  deepseek: ['deepseek-chat', 'deepseek-coder', 'deepseek-reasoner'],
-  google: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'],
-  qwen: ['qwen-turbo', 'qwen-plus', 'qwen-max', 'qwen-long'],
-  xai: ['grok-2', 'grok-2-mini', 'grok-1.5'],
-  zai: ['zai-gpt-4', 'zai-claude', 'zai-llama'],
-  minimax: ['abab6.5s-chat', 'abab6-chat', 'abab5.5-chat'],
-  kimi: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
-  byteplus: ['doubao-pro-4k', 'doubao-lite-4k', 'doubao-vision'],
-  openrouter: ['openai/gpt-4o', 'anthropic/claude-3.5-sonnet', 'google/gemini-pro'],
-  novita: ['meta-llama/llama-3-70b', 'mistralai/mixtral-8x22b', 'qwen/qwen-72b'],
-  wwqglobal: ['wwq-qwen-72b', 'wwq-llama-70b', 'wwq-baichuan-13b'],
-  wwqcn: ['wwq-qwen-72b', 'wwq-llama-70b', 'wwq-baichuan-13b'],
-  aws: ['anthropic.claude-3-5-sonnet', 'meta.llama3-70b', 'amazon.titan-text'],
-  azure: ['gpt-4', 'gpt-4-turbo', 'gpt-35-turbo'],
-  vercel: ['gpt-4o', 'claude-3-5-sonnet', 'llama-3-70b'],
-  ollama: ['llama3.1', 'mistral', 'qwen2', 'deepseek-coder-v2'],
-  bigmodel: ['glm-4', 'glm-4v', 'chatglm3-6b', 'glm-4-flash'],
-  minimaxcn: ['abab6.5s-chat', 'abab6-chat', 'abab5.5-chat'],
-  kimicn: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
-  volcengine: ['doubao-pro-4k', 'doubao-lite-4k', 'doubao-vision'],
-  aliyun: ['qwen-turbo', 'qwen-plus', 'qwen-max', 'qwen-long'],
-  siliconflow: ['deepseek-ai/DeepSeek-V2', 'Qwen/Qwen2-72B', 'meta-llama/Meta-Llama-3-70B'],
-  modelark: ['modelark-qwen-72b', 'modelark-llama-70b', 'modelark-glm-4'],
-  ppio: ['deepseek-ai/DeepSeek-V2', 'Qwen/Qwen2-72B', 'meta-llama/Meta-Llama-3-70B'],
-  custom: [],
-};
-
-/** 各提供商 API Key 获取链接 — 覆盖 24+ 主流平台 */
+/** 各提供商 API Key 获取链接 */
 const PROVIDER_API_KEY_URLS: Record<string, string> = {
   openai: 'https://platform.openai.com/api-keys',
   anthropic: 'https://console.anthropic.com/settings/keys',
@@ -125,6 +65,588 @@ const PROVIDER_API_KEY_URLS: Record<string, string> = {
   custom: '',
 };
 
+/** 导航步骤定义 */
+const STEPS = [
+  { id: 'basic', label: '基础配置', icon: <SettingsIcon sx={{ fontSize: 16 }} /> },
+  { id: 'keys', label: 'API Key', icon: <KeyIcon sx={{ fontSize: 16 }} /> },
+  { id: 'advanced', label: '高级参数', icon: <TuneIcon sx={{ fontSize: 16 }} /> },
+  { id: 'test', label: '连接测试', icon: <ScienceIcon sx={{ fontSize: 16 }} /> },
+] as const;
+
+type StepId = typeof STEPS[number]['id'];
+
+// ====== 基础配置区域 ======
+const BasicSection: React.FC<{
+  modelForm: ModelFormState;
+  setModelForm: React.Dispatch<React.SetStateAction<ModelFormState>>;
+  isAddMode: boolean;
+  isCustomMode: boolean;
+  modelDialogMode: 'add' | 'edit' | null;
+  modelFormErrors: Record<string, string>;
+  styles: ReturnType<typeof getModelManagerStyles>;
+}> = ({ modelForm, setModelForm, isAddMode, isCustomMode, modelDialogMode, modelFormErrors, styles }) => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    {/* 模型概览卡片（添加模式只读展示） */}
+    {isAddMode && !isCustomMode && (
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          p: 1.5,
+          borderRadius: 2,
+          backgroundColor: styles.bgHover,
+          border: `1px solid ${styles.border}`,
+        }}
+      >
+        {providerIcon(modelForm.provider, 28)}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: styles.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {modelForm.name || modelForm.id}
+          </Typography>
+          <Typography sx={{ fontSize: '0.7rem', color: styles.textMuted }}>
+            {providerLabel(modelForm.provider)} · {modelForm.id}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+          {(modelForm.capabilities || []).slice(0, 3).map(cap => (
+            <Chip
+              key={cap}
+              label={CAPABILITY_LABELS[cap as ModelCapability]}
+              size="small"
+              sx={{
+                fontSize: '0.625rem',
+                height: 20,
+                backgroundColor: `${CAPABILITY_COLORS[cap as ModelCapability]}15`,
+                color: CAPABILITY_COLORS[cap as ModelCapability],
+              }}
+            />
+          ))}
+        </Box>
+      </Box>
+    )}
+
+    {/* 提供商信息（编辑模式/自定义模式） */}
+    {(modelDialogMode === 'edit' || isCustomMode) && (
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          p: 1,
+          borderRadius: 1.5,
+          backgroundColor: styles.bgHover,
+        }}
+      >
+        {providerIcon(modelForm.provider, 20)}
+        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: styles.textPrimary }}>
+          {providerLabel(modelForm.provider)}
+        </Typography>
+      </Box>
+    )}
+
+    {/* 模型 ID（自定义模式可编辑） */}
+    {isCustomMode && (
+      <TextField
+        label="模型 ID"
+        value={modelForm.id}
+        onChange={e => setModelForm(p => ({ ...p, id: e.target.value }))}
+        error={!!modelFormErrors['model.id']}
+        helperText={modelFormErrors['model.id'] || '输入模型标识符，如 gpt-4o'}
+        fullWidth
+        size="small"
+        sx={styles.input}
+      />
+    )}
+
+    {/* 模型名称（自定义模式可编辑） */}
+    {isCustomMode && (
+      <TextField
+        label="模型名称（显示用）"
+        value={modelForm.name}
+        onChange={e => setModelForm(p => ({ ...p, name: e.target.value }))}
+        error={!!modelFormErrors['model.name']}
+        helperText={modelFormErrors['model.name'] || '留空则使用模型 ID'}
+        fullWidth
+        size="small"
+        sx={styles.input}
+      />
+    )}
+
+    {/* API 端点 */}
+    <TextField
+      label="API 端点"
+      value={modelForm.apiEndpoint}
+      onChange={e => setModelForm(p => ({ ...p, apiEndpoint: e.target.value }))}
+      fullWidth
+      size="small"
+      placeholder="https://api.example.com/v1"
+      helperText={!isCustomMode ? '已根据提供商自动填充，可按需修改' : '请输入自定义 API 端点地址'}
+      sx={styles.input}
+    />
+
+    {/* 描述 */}
+    <TextField
+      label="描述（可选）"
+      value={modelForm.description}
+      onChange={e => setModelForm(p => ({ ...p, description: e.target.value }))}
+      fullWidth
+      size="small"
+      multiline
+      rows={2}
+      placeholder="简要描述模型的特点和适用场景"
+      sx={styles.input}
+    />
+
+    {/* 能力标签 */}
+    <Box>
+      <Typography sx={{ fontSize: '0.8125rem', color: styles.textSecondary, mb: 0.75 }}>
+        能力标签
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+        {(['code', 'longContext', 'reasoning', 'multimodal', 'fast', 'costEffective', 'general'] as ModelCapability[]).map(cap => {
+          const selected = modelForm.capabilities?.includes(cap);
+          return (
+            <Chip
+              key={cap}
+              label={CAPABILITY_LABELS[cap]}
+              size="small"
+              onClick={() => {
+                setModelForm(p => ({
+                  ...p,
+                  capabilities: selected
+                    ? (p.capabilities || []).filter(c => c !== cap)
+                    : [...(p.capabilities || []), cap],
+                }));
+              }}
+              sx={{
+                fontSize: '0.75rem',
+                height: 28,
+                cursor: 'pointer',
+                backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}20` : styles.bgHover,
+                color: selected ? CAPABILITY_COLORS[cap] : styles.textMuted,
+                border: selected ? `1px solid ${CAPABILITY_COLORS[cap]}50` : '1px solid transparent',
+                fontWeight: selected ? 600 : 400,
+                '&:hover': {
+                  backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}30` : styles.border,
+                },
+              }}
+            />
+          );
+        })}
+      </Box>
+    </Box>
+
+    {/* 启用开关 */}
+    <FormControlLabel
+      control={
+        <Switch
+          checked={modelForm.enabled}
+          onChange={e => setModelForm(p => ({ ...p, enabled: e.target.checked }))}
+          size="small"
+          sx={{
+            '& .MuiSwitch-switchBase.Mui-checked': { color: styles.textPrimary },
+            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: styles.textPrimary },
+          }}
+        />
+      }
+      label={<Typography sx={{ fontSize: '0.8rem' }}>启用此模型</Typography>}
+    />
+  </Box>
+);
+
+// ====== API Key 区域 ======
+const KeysSection: React.FC<{
+  modelForm: ModelFormState;
+  setModelForm: React.Dispatch<React.SetStateAction<ModelFormState>>;
+  showApiKey: boolean;
+  toggleApiKeyVisibility: () => void;
+  styles: ReturnType<typeof getModelManagerStyles>;
+}> = ({ modelForm, setModelForm, showApiKey, toggleApiKeyVisibility, styles }) => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    {/* 单 Key 输入 */}
+    <Box>
+      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: styles.textSecondary, mb: 0.75 }}>
+        主 API Key
+      </Typography>
+      <TextField
+        label="API Key（可选，留空则使用环境变量）"
+        value={modelForm.apiKey}
+        onChange={e => setModelForm(p => ({ ...p, apiKey: e.target.value }))}
+        fullWidth
+        size="small"
+        type={showApiKey ? 'text' : 'password'}
+        sx={styles.input}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <IconButton
+                size="small"
+                onClick={toggleApiKeyVisibility}
+                edge="end"
+                sx={{ color: styles.textMuted }}
+                aria-label={showApiKey ? '隐藏 API Key' : '显示 API Key'}
+              >
+                {showApiKey ? <VisibilityOffIcon sx={{ fontSize: 18 }} /> : <VisibilityIcon sx={{ fontSize: 18 }} />}
+              </IconButton>
+            </InputAdornment>
+          ),
+        }}
+      />
+      {PROVIDER_API_KEY_URLS[modelForm.provider] && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}>
+          <Button
+            size="small"
+            variant="text"
+            onClick={() => {
+              const url = PROVIDER_API_KEY_URLS[modelForm.provider];
+              if (url) window.open(url, '_blank', 'noopener,noreferrer');
+            }}
+            sx={{
+              fontSize: '0.7rem',
+              textTransform: 'none',
+              color: styles.textSecondary,
+              p: 0,
+              minWidth: 'auto',
+              '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline' },
+            }}
+          >
+            获取 {providerLabel(modelForm.provider)} API Key →
+          </Button>
+        </Box>
+      )}
+    </Box>
+
+    <Divider sx={{ my: 0.5 }} />
+
+    {/* 多 Key 管理 */}
+    <Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: styles.textSecondary }}>
+          多 Key 轮询管理
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+          <FormControl size="small" sx={{ minWidth: 100 }}>
+            <Select
+              value={modelForm.keyStrategy}
+              onChange={e => setModelForm(p => ({ ...p, keyStrategy: e.target.value as 'round-robin' | 'random' | 'failover' }))}
+              sx={{ fontSize: '0.75rem', height: 28 }}
+            >
+              <MenuItem value="round-robin" sx={{ fontSize: '0.75rem' }}>轮询</MenuItem>
+              <MenuItem value="random" sx={{ fontSize: '0.75rem' }}>随机</MenuItem>
+              <MenuItem value="failover" sx={{ fontSize: '0.75rem' }}>故障转移</MenuItem>
+            </Select>
+          </FormControl>
+          <Button
+            size="small"
+            startIcon={<AddIcon sx={{ fontSize: 14 }} />}
+            onClick={() => setModelForm(p => ({
+              ...p,
+              apiKeys: [...p.apiKeys, { label: `Key ${p.apiKeys.length + 1}`, key: '', enabled: true, _uid: `${Date.now()}-${p.apiKeys.length}` }],
+            }))}
+            sx={{ fontSize: '0.7rem', textTransform: 'none', minWidth: 'auto', px: 1 }}
+          >
+            添加
+          </Button>
+        </Box>
+      </Box>
+
+      {modelForm.apiKeys.length > 0 ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+          {modelForm.apiKeys.map((entry, index) => (
+            <Box
+              key={entry._uid || index}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
+                p: 0.75,
+                borderRadius: 1.5,
+                backgroundColor: entry.enabled ? styles.bgHover : styles.bgPanel,
+                border: `1px solid ${entry.enabled ? styles.borderLight : styles.border}`,
+                opacity: entry.enabled ? 1 : 0.6,
+              }}
+            >
+              <TextField
+                placeholder="标识"
+                value={entry.label}
+                onChange={e => {
+                  const newKeys = [...modelForm.apiKeys];
+                  newKeys[index] = { ...entry, label: e.target.value };
+                  setModelForm(p => ({ ...p, apiKeys: newKeys }));
+                }}
+                size="small"
+                sx={{ ...styles.input, width: 90, '& .MuiInputBase-input': { fontSize: '0.75rem', py: 0.5 } }}
+              />
+              <TextField
+                placeholder="API Key"
+                value={entry.key}
+                onChange={e => {
+                  const newKeys = [...modelForm.apiKeys];
+                  newKeys[index] = { ...entry, key: e.target.value };
+                  setModelForm(p => ({ ...p, apiKeys: newKeys }));
+                }}
+                size="small"
+                type={showApiKey ? 'text' : 'password'}
+                sx={{ ...styles.input, flex: 1, '& .MuiInputBase-input': { fontSize: '0.75rem', py: 0.5 } }}
+              />
+              <Switch
+                checked={entry.enabled}
+                onChange={e => {
+                  const newKeys = [...modelForm.apiKeys];
+                  newKeys[index] = { ...entry, enabled: e.target.checked };
+                  setModelForm(p => ({ ...p, apiKeys: newKeys }));
+                }}
+                size="small"
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': { color: styles.textPrimary },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: styles.textPrimary },
+                }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => {
+                  const newKeys = modelForm.apiKeys.filter((_, i) => i !== index);
+                  setModelForm(p => ({ ...p, apiKeys: newKeys }));
+                }}
+                sx={{ color: styles.textSecondary, p: 0.25 }}
+              >
+                <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Box>
+          ))}
+        </Box>
+      ) : (
+        <Box sx={{ p: 2, textAlign: 'center', backgroundColor: styles.bgHover, borderRadius: 1.5 }}>
+          <Typography sx={{ fontSize: '0.75rem', color: styles.textDisabled }}>
+            暂无多 Key 配置，点击"添加"按钮配置轮询 Key
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  </Box>
+);
+
+// ====== 高级参数区域 ======
+const AdvancedSection: React.FC<{
+  modelForm: ModelFormState;
+  setModelForm: React.Dispatch<React.SetStateAction<ModelFormState>>;
+  modelFormErrors: Record<string, string>;
+  styles: ReturnType<typeof getModelManagerStyles>;
+}> = ({ modelForm, setModelForm, modelFormErrors, styles }) => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box sx={{ display: 'flex', gap: 1.5 }}>
+      <TextField
+        label="上下文窗口 (tokens)"
+        value={modelForm.contextWindow}
+        onChange={e => setModelForm(p => ({ ...p, contextWindow: e.target.value }))}
+        error={!!modelFormErrors['model.contextWindow']}
+        helperText={modelFormErrors['model.contextWindow'] || '留空使用默认值'}
+        size="small"
+        type="number"
+        placeholder="如 128000"
+        sx={{ ...styles.input, flex: 1 }}
+      />
+      <TextField
+        label="最大输出 (tokens)"
+        value={modelForm.maxTokens}
+        onChange={e => setModelForm(p => ({ ...p, maxTokens: e.target.value }))}
+        error={!!modelFormErrors['model.maxTokens']}
+        helperText={modelFormErrors['model.maxTokens'] || '留空使用默认值'}
+        size="small"
+        type="number"
+        placeholder="如 4096"
+        sx={{ ...styles.input, flex: 1 }}
+      />
+    </Box>
+
+    <Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+        <Typography sx={styles.label}>Temperature</Typography>
+        <Typography sx={{ fontSize: '0.75rem', color: styles.textMuted, minWidth: 32, textAlign: 'right' }}>{modelForm.temperature || '1'}</Typography>
+      </Box>
+      <Slider
+        value={Number(modelForm.temperature) || 1}
+        onChange={(_e, value) => setModelForm(p => ({ ...p, temperature: String(value) }))}
+        min={0}
+        max={2}
+        step={0.1}
+        size="small"
+        valueLabelDisplay="auto"
+        valueLabelFormat={v => Number(v).toFixed(1)}
+        sx={{
+          color: styles.textPrimary,
+          '& .MuiSlider-thumb': { width: 14, height: 14 },
+          '& .MuiSlider-valueLabel': { fontSize: '0.7rem' },
+        }}
+      />
+      {modelFormErrors['model.temperature'] && (
+        <Typography sx={{ fontSize: '0.7rem', color: styles.textSecondary, mt: -0.5 }}>
+          {modelFormErrors['model.temperature']}
+        </Typography>
+      )}
+    </Box>
+
+    <Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+        <Typography sx={styles.label}>Top P</Typography>
+        <Typography sx={{ fontSize: '0.75rem', color: styles.textMuted, minWidth: 32, textAlign: 'right' }}>{modelForm.topP || '1'}</Typography>
+      </Box>
+      <Slider
+        value={Number(modelForm.topP) || 1}
+        onChange={(_e, value) => setModelForm(p => ({ ...p, topP: String(value) }))}
+        min={0}
+        max={1}
+        step={0.05}
+        size="small"
+        valueLabelDisplay="auto"
+        valueLabelFormat={v => Number(v).toFixed(2)}
+        sx={{
+          color: styles.textPrimary,
+          '& .MuiSlider-thumb': { width: 14, height: 14 },
+          '& .MuiSlider-valueLabel': { fontSize: '0.7rem' },
+        }}
+      />
+      {modelFormErrors['model.topP'] && (
+        <Typography sx={{ fontSize: '0.7rem', color: styles.textSecondary, mt: -0.5 }}>
+          {modelFormErrors['model.topP']}
+        </Typography>
+      )}
+    </Box>
+  </Box>
+);
+
+// ====== 测试连接区域 ======
+const TestSection: React.FC<{
+  modelForm: ModelFormState;
+  setModelForm: React.Dispatch<React.SetStateAction<ModelFormState>>;
+  testStatus: 'idle' | 'testing' | 'success' | 'error';
+  testMessage: string;
+  testModelValid: boolean;
+  testAvailableModels: string[];
+  handleTestApi: () => void;
+  styles: ReturnType<typeof getModelManagerStyles>;
+}> = ({ modelForm, setModelForm, testStatus, testMessage, testModelValid, testAvailableModels, handleTestApi, styles }) => {
+  const handleSelectTestModel = useCallback((modelId: string) => {
+    setModelForm(p => ({
+      ...p,
+      id: modelId,
+      name: p.name || modelId,
+    }));
+  }, [setModelForm]);
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: styles.textSecondary }}>
+          连接测试
+        </Typography>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={testStatus === 'testing' ? <AutorenewIcon sx={{ fontSize: 14, animation: 'spin 1s linear infinite' }} /> : null}
+          onClick={handleTestApi}
+          disabled={testStatus === 'testing'}
+          sx={{
+            fontSize: '0.75rem',
+            borderColor: styles.borderDarker,
+            color: styles.textMuted,
+            '&:hover': { borderColor: styles.border },
+          }}
+        >
+          {testStatus === 'testing' ? '测试中...' : '测试连接'}
+        </Button>
+      </Box>
+
+      {testMessage && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 0.75,
+            p: 1,
+            borderRadius: 1.5,
+            backgroundColor: testStatus === 'success'
+              ? testModelValid ? '#F0FDF4' : '#FFFBEB'
+              : '#FEF2F2',
+            border: `1px solid ${
+              testStatus === 'success'
+                ? testModelValid ? '#BBF7D0' : '#FDE68A'
+                : '#FECACA'
+            }`,
+          }}
+        >
+          {testStatus === 'success' ? (
+            testModelValid ? (
+              <CheckCircleOutlineIcon sx={{ fontSize: 18, color: '#16A34A', flexShrink: 0, mt: 0.25 }} />
+            ) : (
+              <ErrorOutlineIcon sx={{ fontSize: 18, color: '#D97706', flexShrink: 0, mt: 0.25 }} />
+            )
+          ) : (
+            <ErrorOutlineIcon sx={{ fontSize: 18, color: '#DC2626', flexShrink: 0, mt: 0.25 }} />
+          )}
+          <Typography sx={{
+            fontSize: '0.75rem',
+            color: testStatus === 'success'
+              ? testModelValid ? '#166534' : '#92400E'
+              : '#991B1B',
+            lineHeight: 1.5,
+            whiteSpace: 'pre-line',
+          }}>
+            {testMessage}
+          </Typography>
+        </Box>
+      )}
+
+      {testAvailableModels.length > 0 && (
+        <Box>
+          <Typography sx={{ fontSize: '0.7rem', color: styles.textMuted, mb: 0.5 }}>
+            可用模型列表（点击选择作为模型 ID）：
+          </Typography>
+          <Box
+            sx={{
+              maxHeight: 160,
+              overflow: 'auto',
+              border: `1px solid ${styles.borderLight}`,
+              borderRadius: 1.5,
+              backgroundColor: styles.bgHover,
+            }}
+          >
+            <List dense sx={{ py: 0 }}>
+              {testAvailableModels.map(modelId => (
+                <ListItemButton
+                  key={modelId}
+                  onClick={() => handleSelectTestModel(modelId)}
+                  selected={modelForm.id === modelId}
+                  sx={{
+                    py: 0.5,
+                    '&.Mui-selected': {
+                      backgroundColor: styles.bgActive,
+                      '&:hover': { backgroundColor: styles.bgActive },
+                    },
+                  }}
+                >
+                  <ListItemText
+                    primary={
+                      <Typography sx={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                        {modelId}
+                      </Typography>
+                    }
+                  />
+                  {modelForm.id === modelId && (
+                    <CheckCircleOutlineIcon sx={{ fontSize: 16, color: styles.textSecondary }} />
+                  )}
+                </ListItemButton>
+              ))}
+            </List>
+          </Box>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+// ====== 主组件 ======
 const ModelEditDialog: React.FC<ModelEditDialogProps> = ({ state, actions }) => {
   const {
     modelForm, modelFormErrors, modelDialogMode,
@@ -133,475 +655,150 @@ const ModelEditDialog: React.FC<ModelEditDialogProps> = ({ state, actions }) => 
   } = state;
   const { closeModelDialog, setModelForm, handleSaveModel, handleTestApi, toggleApiKeyVisibility } = actions;
 
-  // 高级参数折叠状态
-  const [showAdvanced, setShowAdvanced] = React.useState(false);
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const styles = getModelManagerStyles(isDark);
+
+  // 当前步骤
+  const [activeStep, setActiveStep] = useState<StepId>('basic');
 
   if (!modelDialogMode) return null;
 
-  // 提供商切换时自动填充 API 端点
-  const handleProviderChange = (provider: ModelProvider) => {
-    const endpoint = PROVIDER_ENDPOINTS[provider] || '';
-    setModelForm(p => ({
-      ...p,
-      provider,
-      apiEndpoint: endpoint,
-    }));
-  };
-
-  // 从测试结果中选择模型 ID
-  const handleSelectTestModel = (modelId: string) => {
-    setModelForm(p => ({
-      ...p,
-      id: modelId,
-      name: p.name || modelId,
-    }));
-  };
+  const isAddMode = modelDialogMode === 'add';
+  const isCustomMode = modelForm.provider === 'custom';
 
   return (
     <Dialog
       open
       onClose={closeModelDialog}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
+      PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
     >
-      <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5, maxHeight: '85vh', overflow: 'auto' }}>
-        {/* 标题 */}
-        <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: COLORS.textPrimary }}>
-          {modelDialogMode === 'add' ? '添加模型' : '编辑模型'}
-        </Typography>
-
-        {/* ====== 基础信息区 ====== */}
-
-        {/* 提供商下拉（带说明） */}
-        <FormControl fullWidth size="small">
-          <InputLabel sx={{ fontSize: '0.8125rem' }}>提供商</InputLabel>
-          <Select
-            value={modelForm.provider}
-            label="提供商"
-            onChange={e => handleProviderChange(e.target.value as ModelProvider)}
-            renderValue={(value) => (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {providerIcon(value as string, 18)}
-                <Typography sx={{ fontSize: '0.8125rem' }}>{providerLabel(value as string)}</Typography>
-              </Box>
-            )}
-          >
-            {ALL_PROVIDERS.map(p => (
-              <MenuItem key={p} value={p}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  {providerIcon(p, 18)}
-                  <Box>
-                    <Typography sx={{ fontSize: '0.8125rem' }}>{providerLabel(p)}</Typography>
-                    <Typography sx={{ fontSize: '0.65rem', color: '#9CA3AF' }}>
-                      {PROVIDER_HINTS[p] || ''}
-                    </Typography>
-                  </Box>
-                </Box>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        {/* 模型 ID（带推荐列表） */}
-        <TextField
-          label="模型 ID"
-          value={modelForm.id}
-          onChange={e => setModelForm(p => ({ ...p, id: e.target.value }))}
-          error={!!modelFormErrors['model.id']}
-          helperText={modelFormErrors['model.id'] || (modelDialogMode === 'add' ? '输入模型标识符，如 gpt-4o、claude-sonnet-4-20250514' : '')}
-          disabled={modelDialogMode === 'edit'}
-          fullWidth
-          size="small"
-          sx={textFieldSx}
-        />
-        {/* 推荐模型 ID 快捷选择（仅添加模式且当前 ID 为空或为默认值时显示） */}
-        {modelDialogMode === 'add' && PROVIDER_MODEL_SUGGESTIONS[modelForm.provider]?.length > 0 && (
-          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-            <Typography sx={{ fontSize: '0.7rem', color: COLORS.textMuted, lineHeight: '28px', mr: 0.5 }}>
-              常用：
-            </Typography>
-            {PROVIDER_MODEL_SUGGESTIONS[modelForm.provider].map(suggestion => (
-              <Chip
-                key={suggestion}
-                label={suggestion}
-                size="small"
-                onClick={() => setModelForm(p => ({ ...p, id: suggestion, name: p.name || suggestion }))}
-                sx={{
-                  fontSize: '0.7rem',
-                  height: 24,
-                  cursor: 'pointer',
-                  backgroundColor: modelForm.id === suggestion ? '#DBEAFE' : '#F3F4F6',
-                  color: modelForm.id === suggestion ? '#2563EB' : COLORS.textSecondary,
-                  border: modelForm.id === suggestion ? '1px solid #93C5FD' : '1px solid transparent',
-                  '&:hover': { backgroundColor: '#E5E7EB' },
-                }}
-              />
-            ))}
-          </Box>
-        )}
-
-        {/* 模型名称 */}
-        <TextField
-          label="模型名称（显示用）"
-          value={modelForm.name}
-          onChange={e => setModelForm(p => ({ ...p, name: e.target.value }))}
-          error={!!modelFormErrors['model.name']}
-          helperText={modelFormErrors['model.name'] || '留空则使用模型 ID'}
-          fullWidth
-          size="small"
-          sx={textFieldSx}
-        />
-
-        {/* API 端点（始终可见，非 custom 时预填） */}
-        <TextField
-          label="API 端点"
-          value={modelForm.apiEndpoint}
-          onChange={e => setModelForm(p => ({ ...p, apiEndpoint: e.target.value }))}
-          fullWidth
-          size="small"
-          placeholder="https://api.example.com/v1"
-          helperText={modelForm.provider !== 'custom' ? '已根据提供商自动填充，可按需修改' : '请输入自定义 API 端点地址'}
-          sx={textFieldSx}
-        />
-
-        {/* API Key（含可见性切换 + 获取链接） */}
-        <Box>
-          <TextField
-            label="API Key（可选，留空则使用环境变量）"
-            value={modelForm.apiKey}
-            onChange={e => setModelForm(p => ({ ...p, apiKey: e.target.value }))}
-            fullWidth
-            size="small"
-            type={showApiKey ? 'text' : 'password'}
-            sx={textFieldSx}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    size="small"
-                    onClick={toggleApiKeyVisibility}
-                    edge="end"
-                    sx={{ color: COLORS.textMuted }}
-                    aria-label={showApiKey ? '隐藏 API Key' : '显示 API Key'}
-                  >
-                    {showApiKey ? <VisibilityOffIcon sx={{ fontSize: 18 }} /> : <VisibilityIcon sx={{ fontSize: 18 }} />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          {/* 获取 API Key 链接 */}
-          {PROVIDER_API_KEY_URLS[modelForm.provider] && (
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 0.5 }}>
-              <Button
-                size="small"
-                variant="text"
-                onClick={() => {
-                  const url = PROVIDER_API_KEY_URLS[modelForm.provider];
-                  if (url) window.open(url, '_blank', 'noopener,noreferrer');
-                }}
-                sx={{
-                  fontSize: '0.7rem',
-                  textTransform: 'none',
-                  color: '#2563EB',
-                  p: 0,
-                  minWidth: 'auto',
-                  '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline' },
-                }}
-              >
-                获取 {providerLabel(modelForm.provider)} API Key →
-              </Button>
-            </Box>
-          )}
-        </Box>
-
-        {/* 描述 */}
-        <TextField
-          label="描述"
-          value={modelForm.description}
-          onChange={e => setModelForm(p => ({ ...p, description: e.target.value }))}
-          fullWidth
-          size="small"
-          multiline
-          rows={2}
-          placeholder="简要描述模型的特点和适用场景"
-          sx={textFieldSx}
-        />
-
-        {/* 能力标签 */}
-        <Box>
-          <Typography sx={{ fontSize: '0.8125rem', color: COLORS.textSecondary, mb: 0.75 }}>
-            能力标签
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
-            {(['code', 'longContext', 'reasoning', 'multimodal', 'fast', 'costEffective', 'general'] as ModelCapability[]).map(cap => {
-              const selected = modelForm.capabilities?.includes(cap);
-              return (
-                <Chip
-                  key={cap}
-                  label={CAPABILITY_LABELS[cap]}
-                  size="small"
-                  onClick={() => {
-                    setModelForm(p => ({
-                      ...p,
-                      capabilities: selected
-                        ? (p.capabilities || []).filter(c => c !== cap)
-                        : [...(p.capabilities || []), cap],
-                    }));
-                  }}
-                  sx={{
-                    fontSize: '0.75rem',
-                    height: 28,
-                    cursor: 'pointer',
-                    backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}20` : '#F3F4F6',
-                    color: selected ? CAPABILITY_COLORS[cap] : COLORS.textMuted,
-                    border: selected ? `1px solid ${CAPABILITY_COLORS[cap]}50` : '1px solid transparent',
-                    fontWeight: selected ? 600 : 400,
-                    '&:hover': {
-                      backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}30` : '#E5E7EB',
-                    },
-                  }}
-                />
-              );
-            })}
-          </Box>
-        </Box>
-
-        {/* ====== 高级参数区（可折叠） ====== */}
+      <Box sx={{ display: 'flex', height: '80vh', maxHeight: 700 }}>
+        {/* ====== 左侧导航栏 ====== */}
         <Box
-          onClick={() => setShowAdvanced(!showAdvanced)}
           sx={{
-            display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer',
-            py: 0.5, userSelect: 'none',
+            width: 180,
+            backgroundColor: styles.bgHover,
+            borderRight: `1px solid ${styles.borderLight}`,
+            display: 'flex',
+            flexDirection: 'column',
+            p: 2,
+            gap: 0.5,
           }}
         >
-          {showAdvanced ? <ExpandLessIcon sx={{ fontSize: 18, color: COLORS.textMuted }} /> : <ExpandMoreIcon sx={{ fontSize: 18, color: COLORS.textMuted }} />}
-          <Typography sx={{ fontSize: '0.8125rem', color: COLORS.textSecondary, fontWeight: 500 }}>
-            高级参数
+          <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: styles.textPrimary, mb: 1.5 }}>
+            {modelDialogMode === 'add' ? '补全模型信息' : '编辑模型'}
           </Typography>
-        </Box>
 
-        <Collapse in={showAdvanced}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pl: 0.5 }}>
-            {/* 上下文窗口 & 最大输出 */}
-            <Box sx={{ display: 'flex', gap: 1.5 }}>
-              <TextField
-                label="上下文窗口 (tokens)"
-                value={modelForm.contextWindow}
-                onChange={e => setModelForm(p => ({ ...p, contextWindow: e.target.value }))}
-                error={!!modelFormErrors['model.contextWindow']}
-                helperText={modelFormErrors['model.contextWindow']}
-                size="small"
-                type="number"
-                placeholder="如 128000"
-                sx={{ ...textFieldSx, flex: 1 }}
-              />
-              <TextField
-                label="最大输出 (tokens)"
-                value={modelForm.maxTokens}
-                onChange={e => setModelForm(p => ({ ...p, maxTokens: e.target.value }))}
-                error={!!modelFormErrors['model.maxTokens']}
-                helperText={modelFormErrors['model.maxTokens']}
-                size="small"
-                type="number"
-                placeholder="如 4096"
-                sx={{ ...textFieldSx, flex: 1 }}
-              />
-            </Box>
-
-            {/* Temperature 滑块 */}
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                <Typography sx={sliderLabelSx}>Temperature</Typography>
-                <Typography sx={sliderValueSx}>{modelForm.temperature || '1'}</Typography>
-              </Box>
-              <Slider
-                value={Number(modelForm.temperature) || 1}
-                onChange={(_e, value) => setModelForm(p => ({ ...p, temperature: String(value) }))}
-                min={0}
-                max={2}
-                step={0.1}
-                size="small"
-                valueLabelDisplay="auto"
-                valueLabelFormat={v => Number(v).toFixed(1)}
-                sx={{
-                  color: COLORS.textPrimary,
-                  '& .MuiSlider-thumb': { width: 14, height: 14 },
-                  '& .MuiSlider-valueLabel': { fontSize: '0.7rem' },
-                }}
-              />
-              {modelFormErrors['model.temperature'] && (
-                <Typography sx={{ fontSize: '0.7rem', color: COLORS.error, mt: -0.5 }}>
-                  {modelFormErrors['model.temperature']}
-                </Typography>
-              )}
-            </Box>
-
-            {/* Top P 滑块 */}
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                <Typography sx={sliderLabelSx}>Top P</Typography>
-                <Typography sx={sliderValueSx}>{modelForm.topP || '1'}</Typography>
-              </Box>
-              <Slider
-                value={Number(modelForm.topP) || 1}
-                onChange={(_e, value) => setModelForm(p => ({ ...p, topP: String(value) }))}
-                min={0}
-                max={1}
-                step={0.05}
-                size="small"
-                valueLabelDisplay="auto"
-                valueLabelFormat={v => Number(v).toFixed(2)}
-                sx={{
-                  color: COLORS.textPrimary,
-                  '& .MuiSlider-thumb': { width: 14, height: 14 },
-                  '& .MuiSlider-valueLabel': { fontSize: '0.7rem' },
-                }}
-              />
-              {modelFormErrors['model.topP'] && (
-                <Typography sx={{ fontSize: '0.7rem', color: COLORS.error, mt: -0.5 }}>
-                  {modelFormErrors['model.topP']}
-                </Typography>
-              )}
-            </Box>
-          </Box>
-        </Collapse>
-
-        {/* 启用开关 */}
-        <FormControlLabel
-          control={
-            <Switch
-              checked={modelForm.enabled}
-              onChange={e => setModelForm(p => ({ ...p, enabled: e.target.checked }))}
-              size="small"
-              sx={{
-                '& .MuiSwitch-switchBase.Mui-checked': { color: COLORS.textPrimary },
-                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: COLORS.textPrimary },
-              }}
-            />
-          }
-          label={<Typography sx={{ fontSize: '0.8rem' }}>启用此模型</Typography>}
-        />
-
-        {/* ====== 测试连接区 ====== */}
-        <Box sx={{ borderTop: `1px solid ${COLORS.borderLight}`, pt: 1.5 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: COLORS.textSecondary }}>
-              连接测试
-            </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={testStatus === 'testing' ? <AutorenewIcon sx={{ fontSize: 14, animation: 'spin 1s linear infinite' }} /> : null}
-              onClick={handleTestApi}
-              disabled={testStatus === 'testing'}
-              sx={{
-                fontSize: '0.75rem',
-                borderColor: '#D1D5DB',
-                color: COLORS.textMuted,
-                '&:hover': { borderColor: '#9CA3AF' },
-              }}
-            >
-              {testStatus === 'testing' ? '测试中...' : '测试连接'}
-            </Button>
-          </Box>
-
-          {/* 测试结果消息 */}
-          {testMessage && (
+          {STEPS.map((step) => (
             <Box
+              key={step.id}
+              onClick={() => setActiveStep(step.id)}
               sx={{
                 display: 'flex',
-                alignItems: 'flex-start',
-                gap: 0.75,
+                alignItems: 'center',
+                gap: 1,
                 p: 1,
                 borderRadius: 1.5,
-                backgroundColor: testStatus === 'success'
-                  ? testModelValid ? '#F0FDF4' : '#FFFBEB'
-                  : '#FEF2F2',
-                border: `1px solid ${
-                  testStatus === 'success'
-                    ? testModelValid ? '#BBF7D0' : '#FDE68A'
-                    : '#FECACA'
-                }`,
+                cursor: 'pointer',
+                backgroundColor: activeStep === step.id ? styles.bgActive : 'transparent',
+                color: activeStep === step.id ? styles.textPrimary : styles.textSecondary,
+                '&:hover': {
+                  backgroundColor: activeStep === step.id ? styles.bgActive : styles.bgHover,
+                },
               }}
             >
-              {testStatus === 'success' ? (
-                testModelValid ? (
-                  <CheckCircleOutlineIcon sx={{ fontSize: 18, color: '#16A34A', flexShrink: 0, mt: 0.25 }} />
-                ) : (
-                  <ErrorOutlineIcon sx={{ fontSize: 18, color: '#D97706', flexShrink: 0, mt: 0.25 }} />
-                )
-              ) : (
-                <ErrorOutlineIcon sx={{ fontSize: 18, color: '#DC2626', flexShrink: 0, mt: 0.25 }} />
-              )}
-              <Typography sx={{
-                fontSize: '0.75rem',
-                color: testStatus === 'success'
-                  ? testModelValid ? '#166534' : '#92400E'
-                  : '#991B1B',
-                lineHeight: 1.5,
-              }}>
-                {testMessage}
-              </Typography>
-            </Box>
-          )}
-
-          {/* 测试返回的可用模型列表 */}
-          {testAvailableModels.length > 0 && (
-            <Box sx={{ mt: 1 }}>
-              <Typography sx={{ fontSize: '0.7rem', color: COLORS.textMuted, mb: 0.5 }}>
-                可用模型列表（点击选择作为模型 ID）：
-              </Typography>
               <Box
                 sx={{
-                  maxHeight: 160,
-                  overflow: 'auto',
-                  border: `1px solid ${COLORS.borderLight}`,
-                  borderRadius: 1.5,
-                  backgroundColor: '#FAFAFA',
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: activeStep === step.id ? styles.textPrimary : styles.border,
+                  color: activeStep === step.id ? '#fff' : styles.textMuted,
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
                 }}
               >
-                <List dense sx={{ py: 0 }}>
-                  {testAvailableModels.map(modelId => (
-                    <ListItemButton
-                      key={modelId}
-                      onClick={() => handleSelectTestModel(modelId)}
-                      selected={modelForm.id === modelId}
-                      sx={{
-                        py: 0.5,
-                        '&.Mui-selected': {
-                          backgroundColor: '#EFF6FF',
-                          '&:hover': { backgroundColor: '#DBEAFE' },
-                        },
-                      }}
-                    >
-                      <ListItemText
-                        primary={
-                          <Typography sx={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
-                            {modelId}
-                          </Typography>
-                        }
-                      />
-                      {modelForm.id === modelId && (
-                        <CheckCircleOutlineIcon sx={{ fontSize: 16, color: '#2563EB' }} />
-                      )}
-                    </ListItemButton>
-                  ))}
-                </List>
+                {step.icon}
               </Box>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: activeStep === step.id ? 600 : 400 }}>
+                {step.label}
+              </Typography>
             </Box>
-          )}
+          ))}
+
+          <Box sx={{ flex: 1 }} />
+
+          {/* 底部操作按钮 */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, pt: 2, borderTop: `1px solid ${styles.borderLight}` }}>
+            <Button
+              variant="contained"
+              onClick={handleSaveModel}
+              size="small"
+              fullWidth
+              sx={{ ...styles.primaryButton, fontSize: '0.8rem' }}
+            >
+              保存
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={closeModelDialog}
+              size="small"
+              fullWidth
+              sx={{ fontSize: '0.8rem', color: styles.textSecondary, borderColor: styles.borderDarker }}
+            >
+              取消
+            </Button>
+          </Box>
         </Box>
 
-        {/* ====== 操作按钮 ====== */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 0.5 }}>
-          <Button variant="outlined" onClick={closeModelDialog} size="small" sx={{ fontSize: '0.8rem' }}>
-            取消
-          </Button>
-          <Button variant="contained" onClick={handleSaveModel} size="small" sx={primaryButtonSx}>
-            保存
-          </Button>
+        {/* ====== 右侧内容区 ====== */}
+        <Box sx={{ flex: 1, p: 3, overflow: 'auto' }}>
+          {activeStep === 'basic' && (
+            <BasicSection
+              modelForm={modelForm}
+              setModelForm={setModelForm}
+              isAddMode={isAddMode}
+              isCustomMode={isCustomMode}
+              modelDialogMode={modelDialogMode}
+              modelFormErrors={modelFormErrors}
+              styles={styles}
+            />
+          )}
+          {activeStep === 'keys' && (
+            <KeysSection
+              modelForm={modelForm}
+              setModelForm={setModelForm}
+              showApiKey={showApiKey}
+              toggleApiKeyVisibility={toggleApiKeyVisibility}
+              styles={styles}
+            />
+          )}
+          {activeStep === 'advanced' && (
+            <AdvancedSection
+              modelForm={modelForm}
+              setModelForm={setModelForm}
+              modelFormErrors={modelFormErrors}
+              styles={styles}
+            />
+          )}
+          {activeStep === 'test' && (
+            <TestSection
+              modelForm={modelForm}
+              setModelForm={setModelForm}
+              testStatus={testStatus}
+              testMessage={testMessage}
+              testModelValid={testModelValid}
+              testAvailableModels={testAvailableModels}
+              handleTestApi={handleTestApi}
+              styles={styles}
+            />
+          )}
         </Box>
       </Box>
     </Dialog>

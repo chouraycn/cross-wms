@@ -6,6 +6,7 @@
  * - PUT  /api/models              → 全量保存 models + defaultModelId
  * - POST /api/models/reset        → 重置为内置默认
  * - POST /api/models/test-connection → 测试 API 连接
+ * - POST /api/models/health-check  → 批量健康检查（所有已启用模型）
  */
 
 import { Router, type Request, type Response } from 'express';
@@ -17,25 +18,33 @@ import {
 
 const router = Router();
 
-// GET /api/models — 读取当前模型配置
-router.get('/', (_req: Request, res: Response) => {
+// GET /api/models — 读取当前模型配置（返回时脱敏 API Key）
+router.get('/', async (_req: Request, res: Response) => {
   try {
-    const config = loadModelsConfig();
-    res.json({ data: config });
+    const config = await loadModelsConfig();
+    // 脱敏：移除明文 apiKey 和 apiKeys，只保留引用信息
+    const sanitized = {
+      ...config,
+      models: config.models.map((m) => {
+        const { apiKey, apiKeys, ...rest } = m as any;
+        return rest;
+      }),
+    };
+    res.json({ data: sanitized });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
 });
 
 // PUT /api/models — 全量保存模型配置
-router.put('/', (req: Request, res: Response) => {
+router.put('/', async (req: Request, res: Response) => {
   try {
     const { models, defaultModelId } = req.body;
     if (!Array.isArray(models)) {
       res.status(400).json({ error: 'models 必须是数组' });
       return;
     }
-    const config = saveModelsConfig(models, defaultModelId || models[0]?.id || '');
+    const config = await saveModelsConfig(models, defaultModelId || models[0]?.id || '');
     res.json({ data: config });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
@@ -43,11 +52,263 @@ router.put('/', (req: Request, res: Response) => {
 });
 
 // POST /api/models/reset — 重置为内置默认
-router.post('/reset', (_req: Request, res: Response) => {
+router.post('/reset', async (_req: Request, res: Response) => {
   try {
     const builtin = getBuiltinModels();
-    const config = saveModelsConfig(builtin, 'gpt-4o');
+    const config = await saveModelsConfig(builtin, 'gpt-4o');
     res.json({ data: config });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// POST /api/models/health-check — 批量健康检查（所有已启用模型）
+// 请求体可选 { models: ModelConfig[] }，不传则自动读取当前配置中的已启用模型
+// 返回 { data: HealthCheckResult[] }
+interface HealthCheckItem {
+  modelId: string;
+  status: 'healthy' | 'unhealthy' | 'timeout' | 'skipped';
+  message: string;
+  latency?: number;
+  checkedAt: string;
+}
+
+router.post('/health-check', async (req: Request, res: Response) => {
+  try {
+    // 获取待检查的模型列表
+    let modelsToCheck: Array<{
+      id: string;
+      provider: string;
+      apiEndpoint?: string;
+      apiKey?: string;
+      enabled?: boolean;
+    }>;
+
+    if (Array.isArray(req.body?.models) && req.body.models.length > 0) {
+      modelsToCheck = req.body.models;
+    } else {
+      const config = await loadModelsConfig();
+      modelsToCheck = config.models.filter(m => m.enabled);
+    }
+
+    if (modelsToCheck.length === 0) {
+      res.json({ data: [] });
+      return;
+    }
+
+    // 按端点分组（不再按 Key 分组，每个模型独立检测以支持多 Key 场景）
+    const endpointModels = new Map<string, string[]>(); // endpoint -> modelIds
+
+    for (const model of modelsToCheck) {
+      const endpoint = model.apiEndpoint || '';
+      if (!endpoint) continue;
+      if (!endpointModels.has(endpoint)) {
+        endpointModels.set(endpoint, []);
+      }
+      endpointModels.get(endpoint)!.push(model.id);
+    }
+
+    // 并行检测每个模型（独立 Key）
+    const results: HealthCheckItem[] = [];
+    const checkPromises: Promise<void>[] = [];
+
+    for (const model of modelsToCheck) {
+      const endpoint = model.apiEndpoint || '';
+      const apiKey = model.apiKey || '';
+      if (!endpoint) continue;
+
+      checkPromises.push((async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6000); // 健康检查 6 秒超时
+        const startTime = Date.now();
+
+        try {
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+          let success = false;
+          let message = '';
+
+          // Anthropic 特殊处理
+          if (endpoint.includes('anthropic.com')) {
+            const resp = await fetch(`${endpoint}/v1/messages`, {
+              method: 'POST',
+              headers: { ...headers, 'anthropic-version': '2023-06-01' },
+              body: JSON.stringify({
+                model: model.id || 'claude-3-5-sonnet-latest',
+                max_tokens: 1,
+                messages: [{ role: 'user', content: 'Hi' }],
+              }),
+              signal: controller.signal,
+            });
+            success = resp.ok;
+            message = success ? '连接正常' : `API 错误 ${resp.status}`;
+          } else {
+            // OpenAI 兼容：GET /models
+            const modelsUrl = endpoint.endsWith('/') ? `${endpoint}models` : `${endpoint}/models`;
+            const resp = await fetch(modelsUrl, {
+              method: 'GET',
+              headers,
+              signal: controller.signal,
+            });
+            success = resp.ok;
+            message = success ? '连接正常' : `API 错误 ${resp.status}`;
+          }
+
+          const latency = Date.now() - startTime;
+          const status: HealthCheckItem['status'] = success ? 'healthy' : 'unhealthy';
+
+          results.push({
+            modelId: model.id,
+            status,
+            message,
+            latency,
+            checkedAt: new Date().toISOString(),
+          });
+        } catch (fetchError: unknown) {
+          const isTimeout = fetchError instanceof Error && fetchError.name === 'AbortError';
+          const status: HealthCheckItem['status'] = isTimeout ? 'timeout' : 'unhealthy';
+          const message = isTimeout ? '连接超时（6秒）' : `连接失败`;
+          const latency = Date.now() - startTime;
+
+          results.push({
+            modelId: model.id,
+            status,
+            message,
+            latency,
+            checkedAt: new Date().toISOString(),
+          });
+        } finally {
+          clearTimeout(timeout);
+        }
+      })());
+    }
+
+    // 为跳过的模型（无端点）添加 skipped 状态
+    for (const model of modelsToCheck) {
+      if (!model.apiEndpoint) {
+        results.push({
+          modelId: model.id,
+          status: 'skipped',
+          message: '未配置 API 端点',
+          checkedAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    await Promise.all(checkPromises);
+
+    // 按 modelId 排序
+    results.sort((a, b) => a.modelId.localeCompare(b.modelId));
+
+    res.json({ data: results });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// POST /api/models/discover-local — 自动发现本地模型（Ollama / vLLM）
+// 扫描常见本地端点，返回可用的模型列表
+interface DiscoveredModel {
+  id: string;
+  name: string;
+  provider: string;
+  apiEndpoint: string;
+  size?: string;
+  family?: string;
+  parameterSize?: string;
+  contextWindow?: number;
+}
+
+router.post('/discover-local', async (_req: Request, res: Response) => {
+  try {
+    const results: DiscoveredModel[] = [];
+
+    // 要扫描的本地端点列表
+    const localEndpoints = [
+      { name: 'Ollama (默认)', url: 'http://localhost:11434', provider: 'ollama' },
+      { name: 'Ollama (备用)', url: 'http://localhost:11435', provider: 'ollama' },
+      { name: 'vLLM (默认)', url: 'http://localhost:8000', provider: 'custom' },
+      { name: 'vLLM (备用)', url: 'http://localhost:8001', provider: 'custom' },
+      { name: 'LM Studio', url: 'http://localhost:1234', provider: 'custom' },
+      { name: 'text-generation-webui', url: 'http://localhost:5000', provider: 'custom' },
+    ];
+
+    const discoverPromises = localEndpoints.map(async (ep) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000); // 3 秒超时
+
+      try {
+        // Ollama 使用专用 API
+        if (ep.provider === 'ollama') {
+          const resp = await fetch(`${ep.url}/api/tags`, {
+            method: 'GET',
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+
+          if (!resp.ok) return;
+
+          const data = await resp.json();
+          if (data.models && Array.isArray(data.models)) {
+            for (const m of data.models) {
+              results.push({
+                id: m.name || m.model || '',
+                name: (m.name || m.model || '').split(':').pop() || m.name || m.model,
+                provider: 'ollama',
+                apiEndpoint: `${ep.url}/v1`,
+                size: m.size ? `${(m.size / 1e9).toFixed(1)}GB` : undefined,
+                family: m.details?.family || undefined,
+                parameterSize: m.details?.parameter_size || undefined,
+                contextWindow: m.details?.context_length || undefined,
+              });
+            }
+          }
+        } else {
+          // vLLM / LM Studio / 其他 — 使用 OpenAI 兼容 GET /v1/models
+          const modelsUrl = ep.url.endsWith('/') ? `${ep.url}v1/models` : `${ep.url}/v1/models`;
+          const resp = await fetch(modelsUrl, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: { 'Content-Type': 'application/json' },
+          });
+          clearTimeout(timeout);
+
+          if (!resp.ok) return;
+
+          const data = await resp.json();
+          const modelList = data.data || data.models || [];
+          for (const m of modelList) {
+            const modelId = m.id || m.name || '';
+            results.push({
+              id: modelId,
+              name: modelId.split('/').pop() || modelId,
+              provider: 'custom',
+              apiEndpoint: ep.url.endsWith('/') ? `${ep.url}v1` : `${ep.url}/v1`,
+              contextWindow: m.context_length || undefined,
+            });
+          }
+        }
+      } catch {
+        // 端点不可用，静默跳过
+        clearTimeout(timeout);
+      }
+    });
+
+    await Promise.all(discoverPromises);
+
+    // 去重（按 id + apiEndpoint）
+    const seen = new Set<string>();
+    const unique: DiscoveredModel[] = [];
+    for (const m of results) {
+      const key = `${m.id}@${m.apiEndpoint}`;
+      if (!seen.has(key) && m.id) {
+        seen.add(key);
+        unique.push(m);
+      }
+    }
+
+    res.json({ data: unique });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
@@ -90,7 +351,6 @@ router.post('/test-connection', async (req: Request, res: Response) => {
           body: testBody,
           signal: controller.signal,
         });
-        clearTimeout(timeout);
         if (resp.ok) {
           message = 'Anthropic API 连接成功';
           modelValid = true;
@@ -98,7 +358,6 @@ router.post('/test-connection', async (req: Request, res: Response) => {
           try { const j = await resp.json() as any; if (j.model) models = [j.model]; } catch {}
         } else {
           const txt = await resp.text().catch(() => '');
-          clearTimeout(timeout);
           // 检查是否是模型不存在错误
           if (resp.status === 404 || txt.toLowerCase().includes('model') || txt.toLowerCase().includes('not_found')) {
             res.json({ success: false, message: `模型 "${modelId}" 不存在或不可用`, modelValid: false, models: [] });
@@ -144,7 +403,6 @@ router.post('/test-connection', async (req: Request, res: Response) => {
             body: JSON.stringify({ model: modelId || '', max_tokens: 1, messages: [{ role: 'user', content: 'Hi' }] }),
             signal: controller.signal,
           });
-          clearTimeout(timeout);
           if (testResp.ok) {
             modelValid = true;
             message = '连接成功，模型可用';
@@ -158,19 +416,15 @@ router.post('/test-connection', async (req: Request, res: Response) => {
             message = '连接成功（端点可达，但未返回模型列表）';
           } else {
             const txt = await testResp.text().catch(() => '');
-            clearTimeout(timeout);
             res.json({ success: false, message: `API 错误 ${testResp.status}: ${txt.slice(0, 200)}` });
             return;
           }
         } else {
           const txt = await resp.text().catch(() => '');
-          clearTimeout(timeout);
           res.json({ success: false, message: `API 错误 ${resp.status}: ${txt.slice(0, 200)}` });
           return;
         }
       }
-
-      clearTimeout(timeout);
 
       // 如果提供了 modelId 但验证失败，给出明确提示
       if (modelId && !modelValid && models.length > 0) {
@@ -187,13 +441,14 @@ router.post('/test-connection', async (req: Request, res: Response) => {
 
       res.json({ success: true, message, modelValid, models });
     } catch (fetchError: unknown) {
-      clearTimeout(timeout);
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         res.json({ success: false, message: '连接超时（8秒）' });
       } else {
         const msg = fetchError instanceof Error ? fetchError.message : String(fetchError);
         res.json({ success: false, message: `连接失败: ${msg}` });
       }
+    } finally {
+      clearTimeout(timeout);
     }
   } catch (e) {
     res.status(500).json({ success: false, message: (e as Error).message });

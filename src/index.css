@@ -125,3 +125,9 @@ body {
 .page-fade-in {
   animation: fadeIn 0.25s ease-out forwards;
 }
+
+/* v1.8.0: AI 流式输出光标闪烁动画 */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}

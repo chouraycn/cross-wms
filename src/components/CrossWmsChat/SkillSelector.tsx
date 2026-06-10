@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box } from '@mui/material';
+import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box, useTheme } from '@mui/material';
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
 import { getAllSkills } from '../../stores/skillStore';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import { getGrayScale } from '../../constants/theme';
 
 interface SkillSelectorProps {
   anchorEl: HTMLElement | null;
@@ -20,6 +21,9 @@ interface SkillSelectorProps {
 }
 
 export function SkillSelector({ anchorEl, onSelect, onClose, initialFilter = '', activeOnly = false, slashMode = false, focusedIndex }: SkillSelectorProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const listRef = useRef<HTMLDivElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
 
@@ -93,24 +97,24 @@ export function SkillSelector({ anchorEl, onSelect, onClose, initialFilter = '',
         overflow: 'auto',
         zIndex: 1400,
         borderRadius: '10px',
-        border: '1px solid #E5E7EB',
-        bgcolor: '#FFFFFF',
+        border: `1px solid ${gs.border}`,
+        bgcolor: gs.bgPanel,
         boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.12)',
       }}
     >
       {/* 斜杠模式标题栏 */}
       {slashMode && (
-        <Box sx={{ px: 2, py: 1, borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#6B7280' }}>技能指令</Typography>
-          <Typography sx={{ fontSize: 11, color: '#D1D5DB' }}>↑↓ 导航 · Enter 选择 · Esc 关闭</Typography>
+        <Box sx={{ px: 2, py: 1, borderBottom: `1px solid ${gs.bgHover}`, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography sx={{ fontSize: 12, fontWeight: 600, color: gs.textMuted }}>技能指令</Typography>
+          <Typography sx={{ fontSize: 11, color: gs.borderDarker }}>↑↓ 导航 · Enter 选择 · Esc 关闭</Typography>
         </Box>
       )}
 
       {filteredSkills.length === 0 ? (
         <Box sx={{ p: 2, textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 13, color: '#9CA3AF' }}>未找到匹配的技能</Typography>
+          <Typography sx={{ fontSize: 13, color: gs.textDisabled }}>未找到匹配的技能</Typography>
           {slashMode && filterText && (
-            <Typography sx={{ fontSize: 11, color: '#D1D5DB', mt: 0.5 }}>
+            <Typography sx={{ fontSize: 11, color: gs.borderDarker, mt: 0.5 }}>
               尝试其他关键词
             </Typography>
           )}
@@ -127,28 +131,28 @@ export function SkillSelector({ anchorEl, onSelect, onClose, initialFilter = '',
                 py: 1,
                 px: 1.5,
                 cursor: 'pointer',
-                bgcolor: hoveredIndex === index ? '#F3F4F6' : 'transparent',
+                bgcolor: hoveredIndex === index ? gs.bgHover : 'transparent',
                 borderRadius: 1,
                 mx: 0.5,
                 transition: 'background-color 0.1s',
               }}
             >
               <ListItemIcon sx={{ minWidth: 36 }}>
-                {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 20, color: '#6B7280' }} />}
+                {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 20, color: gs.textMuted }} />}
               </ListItemIcon>
               <ListItemText
                 primary={
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#111827' }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 500, color: gs.textPrimary }}>
                     {skill.name}
                     {skill.trigger && (
-                      <Typography component="span" sx={{ fontSize: 11, color: '#9CA3AF', ml: 1, fontFamily: 'monospace' }}>
+                      <Typography component="span" sx={{ fontSize: 11, color: gs.textDisabled, ml: 1, fontFamily: 'monospace' }}>
                         {skill.trigger}
                       </Typography>
                     )}
                   </Typography>
                 }
                 secondary={
-                  <Typography sx={{ fontSize: 11, color: '#9CA3AF', mt: 0.25 }} noWrap>
+                  <Typography sx={{ fontSize: 11, color: gs.textDisabled, mt: 0.25 }} noWrap>
                     {skill.desc}
                   </Typography>
                 }

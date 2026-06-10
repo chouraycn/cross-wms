@@ -11,7 +11,9 @@ import {
   Card,
   CardContent,
   Chip,
+  useTheme,
 } from '@mui/material';
+import { getGrayScale } from '../../constants/theme';
 import CodeIcon from '@mui/icons-material/Code';
 import RepeatIcon from '@mui/icons-material/Repeat';
 
@@ -34,10 +36,13 @@ export interface AutomationTemplatesProps {
 const AutomationTemplates: React.FC<AutomationTemplatesProps> = ({
   onQuickCreate,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
 
   return (
     <Box>
-      <Typography sx={{ fontSize: '0.8125rem', color: '#6B7280', mb: 2.5 }}>
+      <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted, mb: 2.5 }}>
         选择模板快速创建自动化任务，点击即可生成
       </Typography>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 2 }}>
@@ -49,7 +54,7 @@ const AutomationTemplates: React.FC<AutomationTemplatesProps> = ({
               key={tpl.id}
               elevation={0}
               sx={{
-                border: '1px solid #E5E7EB',
+                border: `1px solid ${gs.border}`,
                 borderRadius: 2,
                 transition: 'all 0.15s ease',
                 cursor: 'pointer',
@@ -79,7 +84,7 @@ const AutomationTemplates: React.FC<AutomationTemplatesProps> = ({
                     {tplIcon}
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: gs.textPrimary }}>
                       {tpl.name}
                     </Typography>
                     <Chip
@@ -97,13 +102,13 @@ const AutomationTemplates: React.FC<AutomationTemplatesProps> = ({
                   </Box>
                 </Box>
                 {/* 描述 */}
-                <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', lineHeight: 1.5, mb: 1.5 }}>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, lineHeight: 1.5, mb: 1.5 }}>
                   {tpl.description}
                 </Typography>
                 {/* 默认调度 */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pt: 1.5, borderTop: '1px solid #F3F4F6' }}>
-                  <RepeatIcon sx={{ fontSize: 14, color: '#9CA3AF' }} />
-                  <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, pt: 1.5, borderTop: `1px solid ${gs.bgHover}` }}>
+                  <RepeatIcon sx={{ fontSize: 14, color: gs.textDisabled }} />
+                  <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>
                     默认：{tpl.defaultSchedule.scheduleType === 'recurring'
                       ? `${tpl.defaultSchedule.freq === 'HOURLY' ? '每小时' : tpl.defaultSchedule.freq === 'DAILY' ? '每天' : tpl.defaultSchedule.freq === 'WEEKLY' ? '每周' : '每月'}${tpl.defaultSchedule.freq !== 'HOURLY' ? ` ${String(tpl.defaultSchedule.hour).padStart(2, '0')}:${String(tpl.defaultSchedule.minute).padStart(2, '0')}` : ''}`
                       : '一次性'}
@@ -120,10 +125,10 @@ const AutomationTemplates: React.FC<AutomationTemplatesProps> = ({
       </Box>
 
       {/* 自定义模板提示 */}
-      <Box sx={{ mt: 3, p: 2, backgroundColor: '#F9FAFB', borderRadius: 2, border: '1px dashed #E5E7EB' }}>
+      <Box sx={{ mt: 3, p: 2, backgroundColor: gs.bgHover, borderRadius: 2, border: `1px dashed ${gs.border}` }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CodeIcon sx={{ fontSize: 16, color: '#9CA3AF' }} />
-          <Typography sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+          <CodeIcon sx={{ fontSize: 16, color: gs.textDisabled }} />
+          <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
             需要更多自定义？切换到「已配置」Tab 点击「新建自动化」从头创建
           </Typography>
         </Box>

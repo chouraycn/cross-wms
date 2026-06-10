@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Paper, IconButton, Tooltip, Chip } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, Chip, useTheme, Avatar } from '@mui/material';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import { TopBarChatInput } from './TopBarChatInput';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { QueryResultRenderer } from './QueryResultRenderer';
 import { Message, ReferencedSession, Session } from '../../types/chat';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useToast } from '../../contexts/ToastContext';
+import type { DataSourceType } from '../../types/inventory-query';
+import { getGrayScale } from '../../constants/theme';
+import { useChat } from '../../hooks/useChat';
 
 // P0-4: 会话持久化配置
 const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
@@ -69,23 +78,69 @@ function createNewSession(defaultModel?: string): Session {
 }
 
 export function CrossWmsChat() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const { settings } = useAppSettings();
+  const { showToast } = useToast();
+
+  // 获取 sendMessage 用于重新生成功能
+  const { sendMessage } = useChat(session, handleSessionUpdate);
+
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  /** 复制消息内容到剪贴板 */
+  const handleCopy = useCallback((msg: Message) => {
+    navigator.clipboard.writeText(msg.content);
+    setCopiedId(msg.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }, []);
+
+  /** 重新生成：移除当前 assistant 消息，重新发送上一条用户消息 */
+  const handleRegenerate = useCallback((msg: Message) => {
+    const msgIndex = session.messages.findIndex((m) => m.id === msg.id);
+    if (msgIndex === -1) return;
+
+    // 找到前一条用户消息
+    let userContent: string | null = null;
+    for (let i = msgIndex - 1; i >= 0; i--) {
+      if (session.messages[i].role === 'user') {
+        userContent = session.messages[i].content;
+        break;
+      }
+    }
+    if (!userContent) return;
+
+    // 移除当前 assistant 消息及之后的所有消息
+    const trimmedMessages = session.messages.slice(0, msgIndex);
+    const updatedSession = { ...session, messages: trimmedMessages };
+    handleSessionUpdate(updatedSession);
+
+    // 重新发送用户消息
+    setTimeout(() => {
+      sendMessage(userContent);
+    }, 100);
+  }, [session, handleSessionUpdate, sendMessage]);
 
   // 获取默认模型 ID（优先使用 settings 中配置的默认模型）
   const defaultModelId = 'auto';
 
   // P0-4: 初始化时从 localStorage 恢复最近会话
-  const [sessions, setSessions] = useState<Session[]>(() => {
+  // 使用单个初始化函数确保 sessions 和 activeSessionId 完全同步
+  const initState = (() => {
     const saved = loadSessions();
-    return saved;
-  });
-  const [activeSessionId, setActiveSessionId] = useState<string>(() => {
-    const saved = loadSessions();
-    return saved.length > 0 ? saved[0].id : '';
-  });
+    if (saved.length === 0) {
+      const newSession = createNewSession();
+      return { sessions: [newSession], activeSessionId: newSession.id };
+    }
+    return { sessions: saved, activeSessionId: saved[0].id };
+  })();
 
-  // 获取当前活跃会话
-  const session = sessions.find((s) => s.id === activeSessionId) || createNewSession();
+  const [sessions, setSessions] = useState<Session[]>(initState.sessions);
+  const [activeSessionId, setActiveSessionId] = useState<string>(initState.activeSessionId);
+
+  // 获取当前活跃会话（始终从 sessions 数组中查找，确保状态一致性）
+  const session = sessions.find((s) => s.id === activeSessionId) || sessions[0] || createNewSession();
 
   // 会话更新时自动持久化
   useEffect(() => {
@@ -115,6 +170,23 @@ export function CrossWmsChat() {
     setActiveSessionId(newSession.id);
   }, [defaultModelId]);
 
+  /**
+   * v1.7.0: 补货确认成功回调
+   *
+   * ConfirmReplenishmentButton 自行调用 API 并管理 loading/success/error 状态。
+   * 本回调仅在确认成功后触发，用于父组件通知。若发生异常则抛出，以便 button 进入 error 态。
+   */
+  const handleConfirmReplenishment = useCallback(async (suggestionId: number) => {
+    try {
+      showToast(`补货建议 #${suggestionId} 已确认`, 'success', 2000);
+    } catch (e) {
+      console.error('[CrossWmsChat] 确认补货回调异常:', e);
+      throw new Error(
+        e instanceof Error ? e.message : '确认补货建议失败，请重试',
+      );
+    }
+  }, [showToast]);
+
   // 监听侧边栏"新建任务"按钮事件 — 聚焦 AI 对话框输入
   useEffect(() => {
     const handleFocusChat = () => {
@@ -142,29 +214,29 @@ export function CrossWmsChat() {
   return (
     <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}>
       {/* 顶部工具栏：新对话按钮 */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', px: 1, py: 0.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', px: 2, py: 0.5 }}>
         <Tooltip title="新对话">
           <IconButton
             size="small"
             onClick={handleNewChat}
-            sx={{ color: '#9CA3AF', '&:hover': { color: '#374151', backgroundColor: '#F3F4F6' } }}
+            sx={{ color: gs.textDisabled, '&:hover': { color: gs.textSecondary, backgroundColor: gs.bgHover } }}
           >
             <AddCommentOutlinedIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Tooltip>
       </Box>
 
-      {/* 消息历史区域 — 在 TopBarChatInput 上方显示 */}
+      {/* 消息历史区域 */}
       {session.messages.length > 0 && (
         <Box
           sx={{
             flex: 1,
             overflow: 'auto',
-            px: 1.5,
-            py: 1,
+            px: 3,
+            py: 2,
             display: 'flex',
             flexDirection: 'column',
-            gap: 1.5,
+            gap: 2,
             minHeight: 0,
             maxHeight: 'calc(70vh - 130px)',
           }}
@@ -176,8 +248,45 @@ export function CrossWmsChat() {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                gap: 0.5,
               }}
             >
+              {/* 角色标签 + 时间 */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: msg.role === 'user' ? 2 : 0,
+                }}
+              >
+                {msg.role === 'assistant' && (
+                  <Typography
+                    sx={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: isDark ? '#E5E7EB' : '#111827',
+                    }}
+                  >
+                    CDF Bot
+                  </Typography>
+                )}
+                <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
+                  {msg.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                </Typography>
+                {msg.role === 'user' && (
+                  <Typography
+                    sx={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: gs.textPrimary,
+                    }}
+                  >
+                    你
+                  </Typography>
+                )}
+              </Box>
+
               {/* 引用会话 chip — 仅在用户消息上展示 */}
               {msg.role === 'user' && msg.referencedSessions && msg.referencedSessions.length > 0 && (
                 <Box
@@ -186,7 +295,7 @@ export function CrossWmsChat() {
                     flexWrap: 'wrap',
                     gap: 0.5,
                     mb: 0.5,
-                    maxWidth: '80%',
+                    justifyContent: 'flex-end',
                   }}
                 >
                   {msg.referencedSessions.map((ref: ReferencedSession) => (
@@ -198,9 +307,9 @@ export function CrossWmsChat() {
                         px: 0.8,
                         py: 0.2,
                         borderRadius: '6px',
-                        bgcolor: '#EFF6FF',
-                        color: '#2563EB',
-                        border: '1px solid #BFDBFE',
+                        bgcolor: isDark ? '#1E3A5F' : '#EFF6FF',
+                        color: isDark ? '#60A5FA' : '#2563EB',
+                        border: `1px solid ${isDark ? '#1E40AF' : '#BFDBFE'}`,
                         fontSize: 11,
                         lineHeight: 1.4,
                         gap: 0.4,
@@ -219,78 +328,146 @@ export function CrossWmsChat() {
                   ))}
                 </Box>
               )}
-              <Paper
-                elevation={0}
-                sx={{
-                  px: 1.5,
-                  py: 1,
-                  borderRadius: '12px',
-                  maxWidth: '80%',
-                  bgcolor: msg.role === 'user' ? '#f97316' : '#F3F4F6',
-                  color: msg.role === 'user' ? '#fff' : '#111827',
-                  border: msg.role === 'assistant' ? '1px solid #E5E7EB' : 'none',
-                  wordBreak: 'break-word',
-                  fontSize: 14,
-                  lineHeight: 1.6,
-                  '& .markdown-body h1, & .markdown-body h2, & .markdown-body h3': {
-                    fontSize: 'inherit',
-                    fontWeight: 600,
-                    mt: 0.5,
-                    mb: 0.25,
-                  },
-                  '& .markdown-body ul, & .markdown-body ol': {
-                    paddingLeft: 2,
-                    mt: 0.25,
-                    mb: 0.25,
-                  },
-                  '& .markdown-body p': {
-                    m: 0,
-                    '& + p': { mt: 0.5 },
-                  },
-                  '& .markdown-body code': {
-                    fontSize: 13,
-                  },
-                }}
-              >
-                {msg.role === 'assistant' ? (
-                  <MarkdownRenderer content={msg.content} />
-                ) : (
-                  <Typography sx={{ fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                    {msg.content}
-                  </Typography>
-                )}
-                {msg.role === 'assistant' && msg.autoReason && (
-                  <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <AutoAwesomeIcon sx={{ fontSize: 12, color: '#9CA3AF' }} />
-                    <Typography sx={{ fontSize: 11, color: '#9CA3AF' }}>
-                      {msg.autoReason}
-                    </Typography>
-                    {msg.activePreset && (
-                      <Chip
-                        label={msg.activePreset.label}
-                        size="small"
-                        sx={{
-                          height: 18,
-                          fontSize: 10,
-                          backgroundColor: '#F3F4F6',
-                          color: '#6B7280',
-                          '& .MuiChip-label': { px: 1 },
-                        }}
-                      />
-                    )}
-                  </Box>
-                )}
-                <Typography
+
+              {/* 消息内容 */}
+              {msg.role === 'user' ? (
+                /* 用户消息：右侧灰色对话框 */
+                <Box
                   sx={{
-                    fontSize: 11,
-                    color: msg.role === 'user' ? 'rgba(255,255,255,0.7)' : '#9CA3AF',
-                    mt: 0.5,
-                    textAlign: 'right',
+                    px: 2,
+                    py: 1.5,
+                    borderRadius: '16px',
+                    maxWidth: '75%',
+                    bgcolor: isDark ? '#374151' : '#F3F4F6',
+                    color: gs.textPrimary,
+                    wordBreak: 'break-word',
                   }}
                 >
-                  {msg.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-                </Typography>
-              </Paper>
+                  <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                    {msg.content}
+                  </Typography>
+                </Box>
+              ) : (
+                /* Bot 消息：左侧平铺，无头像 */
+                <Box
+                  sx={{
+                    maxWidth: '85%',
+                    color: gs.textPrimary,
+                    fontSize: 14,
+                    lineHeight: 1.7,
+                    wordBreak: 'break-word',
+                    '& .markdown-body h1, & .markdown-body h2, & .markdown-body h3': {
+                      fontSize: 'inherit',
+                      fontWeight: 600,
+                      mt: 1,
+                      mb: 0.5,
+                    },
+                    '& .markdown-body ul, & .markdown-body ol': {
+                      paddingLeft: 2.5,
+                      mt: 0.5,
+                      mb: 0.5,
+                    },
+                    '& .markdown-body p': {
+                      m: 0,
+                      '& + p': { mt: 0.75 },
+                    },
+                    '& .markdown-body code': {
+                      fontSize: 13,
+                    },
+                    '& .markdown-body pre': {
+                      my: 1,
+                    },
+                  }}
+                >
+                  {/* 查询结果渲染 */}
+                  {msg.metadata?.queryResult && (
+                    <QueryResultRenderer
+                      queryResult={msg.metadata.queryResult}
+                      loading={msg.metadata.loading}
+                      dataSource={msg.metadata.queryResult.dataSource}
+                      onConfirmReplenishment={handleConfirmReplenishment}
+                    />
+                  )}
+                  {/* 如果仅有 loading 状态 */}
+                  {msg.metadata?.loading && !msg.metadata.queryResult && (
+                    <QueryResultRenderer
+                      queryResult={{
+                        columns: [],
+                        rows: [],
+                        rowCount: 0,
+                        truncated: false,
+                        chartType: 'table',
+                        sql: '',
+                      }}
+                      loading={true}
+                      onConfirmReplenishment={handleConfirmReplenishment}
+                    />
+                  )}
+                  <MarkdownRenderer content={msg.content} />
+                  {/* v1.8.0: 流式输出闪烁光标 */}
+                  {msg.isStreaming && (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: 7,
+                        height: 16,
+                        backgroundColor: gs.textPrimary,
+                        marginLeft: 2,
+                        verticalAlign: 'middle',
+                        animation: 'cursor-blink 1s step-end infinite',
+                        borderRadius: 1,
+                      }}
+                    />
+                  )}
+
+                  {/* 操作按钮：复制 + 重新生成（非流式输出时显示） */}
+                  {!msg.isStreaming && (
+                    <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
+                      <Tooltip title={copiedId === msg.id ? '已复制' : '复制'}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleCopy(msg)}
+                          sx={{ color: gs.textDisabled, '&:hover': { color: gs.textPrimary } }}
+                        >
+                          <ContentCopyIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="重新生成">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleRegenerate(msg)}
+                          sx={{ color: gs.textDisabled, '&:hover': { color: gs.textPrimary } }}
+                        >
+                          <AutorenewIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  )}
+
+                  {/* Auto 选型原因 */}
+                  {msg.autoReason && (
+                    <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                      <AutoAwesomeIcon sx={{ fontSize: 12, color: gs.textDisabled }} />
+                      <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
+                        {msg.autoReason}
+                      </Typography>
+                      {msg.activePreset && (
+                        <Chip
+                          label={msg.activePreset.label}
+                          size="small"
+                          sx={{
+                            height: 18,
+                            fontSize: 10,
+                            backgroundColor: isDark ? '#374151' : '#F3F4F6',
+                            color: gs.textMuted,
+                            '& .MuiChip-label': { px: 1 },
+                          }}
+                        />
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              )}
             </Box>
           ))}
         </Box>
@@ -306,7 +483,7 @@ export function CrossWmsChat() {
       <Typography
         sx={{
           fontSize: '0.6875rem',
-          color: '#9CA3AF',
+          color: gs.textDisabled,
           textAlign: 'center',
           py: 0.5,
           flexShrink: 0,

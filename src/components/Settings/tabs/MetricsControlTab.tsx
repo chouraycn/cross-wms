@@ -10,11 +10,13 @@ import {
   ListItem,
   ListItemText,
   IconButton,
+  useTheme,
 } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import type { AppSettings, DashboardConfig, DashboardVisibility, HeatmapConfig } from '../../../contexts/AppSettingsContext';
 import { switchSx } from '../sharedStyles';
+import { getGrayScale } from '../../../constants/theme';
 
 // ===================== Props =====================
 
@@ -79,89 +81,93 @@ const MetricsControlTab: React.FC<MetricsControlTabProps> = ({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setErrors,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   const dash = draft.dashboard;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxWidth: 480 }}>
-      <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', mb: 1 }}>
+      <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: gs.textPrimary, mb: 1 }}>
         仪表盘指标控制
       </Typography>
-      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', mb: 1 }}>
+      <Typography sx={{ fontSize: '0.8rem', color: gs.textDisabled, mb: 1 }}>
         开关控制仪表盘上各模块的显示与隐藏
       </Typography>
 
       {/* KPI Section */}
-      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', mt: 1, mb: 0.5 }}>
+      <Typography sx={{ fontSize: '0.8rem', color: gs.textDisabled, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', mt: 1, mb: 0.5 }}>
         KPI 指标卡片
       </Typography>
       <FormControlLabel
         control={<Switch checked={dash.visibility.kpiTransitVolume} onChange={(e) => updateVisibility(setDraft, 'kpiTransitVolume', e.target.checked)} size="small" sx={switchSx} />}
-        label={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>在途货物总量</Typography>}
+        label={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>在途货物总量</Typography>}
       />
       <FormControlLabel
         control={<Switch checked={dash.visibility.kpiVolumeUtilization} onChange={(e) => updateVisibility(setDraft, 'kpiVolumeUtilization', e.target.checked)} size="small" sx={switchSx} />}
-        label={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>仓库总容积利用率</Typography>}
+        label={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>仓库总容积利用率</Typography>}
       />
       <FormControlLabel
         control={<Switch checked={dash.visibility.kpiPendingInbound} onChange={(e) => updateVisibility(setDraft, 'kpiPendingInbound', e.target.checked)} size="small" sx={switchSx} />}
-        label={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>待处理入库单</Typography>}
+        label={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>待处理入库单</Typography>}
       />
       <FormControlLabel
         control={<Switch checked={dash.visibility.kpiOutboundCount} onChange={(e) => updateVisibility(setDraft, 'kpiOutboundCount', e.target.checked)} size="small" sx={switchSx} />}
-        label={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>当日出库量</Typography>}
+        label={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>当日出库量</Typography>}
       />
       <FormControlLabel
         control={<Switch checked={dash.visibility.kpiInventoryDepth} onChange={(e) => updateVisibility(setDraft, 'kpiInventoryDepth', e.target.checked)} size="small" sx={switchSx} />}
-        label={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>库存深度</Typography>}
+        label={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>库存深度</Typography>}
       />
 
       <Divider sx={{ my: 1.5 }} />
 
       {/* Charts Section */}
-      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', mt: 0.5, mb: 0.5 }}>
+      <Typography sx={{ fontSize: '0.8rem', color: gs.textDisabled, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', mt: 0.5, mb: 0.5 }}>
         图表组件
       </Typography>
       <FormControlLabel
         control={<Switch checked={dash.visibility.chartVolumeTrend} onChange={(e) => updateVisibility(setDraft, 'chartVolumeTrend', e.target.checked)} size="small" sx={switchSx} />}
-        label={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>容积率趋势图</Typography>}
+        label={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>容积率趋势图</Typography>}
       />
       <FormControlLabel
         control={<Switch checked={dash.visibility.chartTransitPie} onChange={(e) => updateVisibility(setDraft, 'chartTransitPie', e.target.checked)} size="small" sx={switchSx} />}
-        label={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>在途货物状态分布</Typography>}
+        label={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>在途货物状态分布</Typography>}
       />
       <FormControlLabel
         control={<Switch checked={dash.visibility.chartWarehouseBar} onChange={(e) => updateVisibility(setDraft, 'chartWarehouseBar', e.target.checked)} size="small" sx={switchSx} />}
-        label={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>各仓库容积使用情况</Typography>}
+        label={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>各仓库容积使用情况</Typography>}
       />
       <FormControlLabel
         control={<Switch checked={dash.visibility.chartInventoryAlert} onChange={(e) => updateVisibility(setDraft, 'chartInventoryAlert', e.target.checked)} size="small" sx={switchSx} />}
-        label={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>库存预警列表</Typography>}
+        label={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>库存预警列表</Typography>}
       />
       <FormControlLabel
         control={<Switch checked={dash.visibility.chartKpiComparison} onChange={(e) => updateVisibility(setDraft, 'chartKpiComparison', e.target.checked)} size="small" sx={switchSx} />}
-        label={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>各仓库KPI对比表</Typography>}
+        label={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>各仓库KPI对比表</Typography>}
       />
       <FormControlLabel
         control={<Switch checked={dash.visibility.chartTransitTime} onChange={(e) => updateVisibility(setDraft, 'chartTransitTime', e.target.checked)} size="small" sx={switchSx} />}
-        label={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>运单时效分析</Typography>}
+        label={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>运单时效分析</Typography>}
       />
 
       <Divider sx={{ my: 1.5 }} />
 
       {/* Heatmap Section */}
-      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', mt: 0.5, mb: 0.5 }}>
+      <Typography sx={{ fontSize: '0.8rem', color: gs.textDisabled, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', mt: 0.5, mb: 0.5 }}>
         热力图
       </Typography>
       <FormControlLabel
         control={<Switch checked={dash.visibility.chartShipmentHeatmap} onChange={(e) => updateVisibility(setDraft, 'chartShipmentHeatmap', e.target.checked)} size="small" sx={switchSx} />}
-        label={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>仓库出货热力图</Typography>}
+        label={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>仓库出货热力图</Typography>}
       />
 
       {/* Heatmap detailed settings (only shown when heatmap is enabled) */}
       {dash.visibility.chartShipmentHeatmap && (
         <Box sx={{ ml: 3, mt: 0.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Box>
-            <Typography sx={{ fontSize: '0.8rem', color: '#111827', mb: 0.5, fontWeight: 500 }}>
+            <Typography sx={{ fontSize: '0.8rem', color: gs.textPrimary, mb: 0.5, fontWeight: 500 }}>
               时间范围
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
@@ -173,10 +179,10 @@ const MetricsControlTab: React.FC<MetricsControlTabProps> = ({
                   onClick={() => updateHeatmap(setDraft, 'days', d)}
                   sx={{
                     fontSize: '0.75rem',
-                    backgroundColor: dash.heatmap.days === d ? '#111827' : '#F3F4F6',
-                    color: dash.heatmap.days === d ? '#FFFFFF' : '#6B7280',
+                    backgroundColor: dash.heatmap.days === d ? gs.textPrimary : gs.bgHover,
+                    color: dash.heatmap.days === d ? gs.bgPanel : gs.textMuted,
                     '&:hover': {
-                      backgroundColor: dash.heatmap.days === d ? '#374151' : '#E5E7EB',
+                      backgroundColor: dash.heatmap.days === d ? gs.textSecondary : gs.border,
                     },
                     transition: 'all 0.15s ease',
                   }}
@@ -185,7 +191,7 @@ const MetricsControlTab: React.FC<MetricsControlTabProps> = ({
             </Box>
           </Box>
           <Box>
-            <Typography sx={{ fontSize: '0.8rem', color: '#111827', mb: 0.5, fontWeight: 500 }}>
+            <Typography sx={{ fontSize: '0.8rem', color: gs.textPrimary, mb: 0.5, fontWeight: 500 }}>
               颜色方案
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
@@ -201,10 +207,10 @@ const MetricsControlTab: React.FC<MetricsControlTabProps> = ({
                   onClick={() => updateHeatmap(setDraft, 'colorScheme', scheme.key)}
                   sx={{
                     fontSize: '0.75rem',
-                    backgroundColor: dash.heatmap.colorScheme === scheme.key ? '#111827' : '#F3F4F6',
-                    color: dash.heatmap.colorScheme === scheme.key ? '#FFFFFF' : '#6B7280',
+                    backgroundColor: dash.heatmap.colorScheme === scheme.key ? gs.textPrimary : gs.bgHover,
+                    color: dash.heatmap.colorScheme === scheme.key ? gs.bgPanel : gs.textMuted,
                     '&:hover': {
-                      backgroundColor: dash.heatmap.colorScheme === scheme.key ? '#374151' : '#E5E7EB',
+                      backgroundColor: dash.heatmap.colorScheme === scheme.key ? gs.textSecondary : gs.border,
                     },
                     transition: 'all 0.15s ease',
                   }}
@@ -225,13 +231,13 @@ const MetricsControlTab: React.FC<MetricsControlTabProps> = ({
       <Divider sx={{ my: 1.5 }} />
 
       {/* Component ordering */}
-      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
+      <Typography sx={{ fontSize: '0.8rem', color: gs.textDisabled, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
         组件顺序
       </Typography>
-      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', mb: 1 }}>
+      <Typography sx={{ fontSize: '0.8rem', color: gs.textDisabled, mb: 1 }}>
         拖动调整仪表盘组件的显示顺序
       </Typography>
-      <List sx={{ bgcolor: '#F9FAFB', borderRadius: 2, border: '1px solid #E5E7EB', py: 0.5 }}>
+      <List sx={{ bgcolor: gs.bgHover, borderRadius: 2, border: `1px solid ${gs.border}`, py: 0.5 }}>
         {dash.componentOrder.map((comp, idx) => {
           const labels: Record<string, string> = {
             'kpi-cards': 'KPI 指标卡片',
@@ -252,7 +258,7 @@ const MetricsControlTab: React.FC<MetricsControlTabProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
-                borderBottom: idx < dash.componentOrder.length - 1 ? '1px solid #E5E7EB' : 'none',
+                borderBottom: idx < dash.componentOrder.length - 1 ? `1px solid ${gs.border}` : 'none',
               }}
               secondaryAction={
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -265,7 +271,7 @@ const MetricsControlTab: React.FC<MetricsControlTabProps> = ({
                       [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
                       updateDashboard(setDraft, 'componentOrder', next);
                     }}
-                    sx={{ color: '#6B7280', '&.Mui-disabled': { color: '#D1D5DB' } }}
+                    sx={{ color: gs.textMuted, '&.Mui-disabled': { color: gs.borderDarker } }}
                   >
                     <ArrowUpwardIcon fontSize="small" />
                   </IconButton>
@@ -278,7 +284,7 @@ const MetricsControlTab: React.FC<MetricsControlTabProps> = ({
                       [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
                       updateDashboard(setDraft, 'componentOrder', next);
                     }}
-                    sx={{ color: '#6B7280', '&.Mui-disabled': { color: '#D1D5DB' } }}
+                    sx={{ color: gs.textMuted, '&.Mui-disabled': { color: gs.borderDarker } }}
                   >
                     <ArrowDownwardIcon fontSize="small" />
                   </IconButton>
@@ -286,7 +292,7 @@ const MetricsControlTab: React.FC<MetricsControlTabProps> = ({
               }
             >
               <ListItemText
-                primary={<Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>{labels[comp] || comp}</Typography>}
+                primary={<Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>{labels[comp] || comp}</Typography>}
               />
             </ListItem>
           );

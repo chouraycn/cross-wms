@@ -31,7 +31,9 @@ import {
   Select,
   MenuItem,
   LinearProgress,
+  useTheme,
 } from '@mui/material';
+import { getGrayScale } from '../constants/theme';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -55,6 +57,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: 'warning' | 'success
 
 const WmsOutboundPage: React.FC = () => {
   const { showToast } = useToast();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
 
   const [data, setData] = useState<OutboundReview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -210,8 +215,8 @@ const WmsOutboundPage: React.FC = () => {
                 textTransform: 'none',
                 borderRadius: '8px',
                 fontSize: '0.8125rem',
-                backgroundColor: '#111827',
-                '&:hover': { backgroundColor: '#374151' },
+                backgroundColor: gs.textPrimary,
+                '&:hover': { backgroundColor: gs.textSecondary },
               }}
             >
               新增复核
@@ -226,9 +231,9 @@ const WmsOutboundPage: React.FC = () => {
                   textTransform: 'none',
                   borderRadius: '8px',
                   fontSize: '0.8125rem',
-                  borderColor: '#E5E7EB',
-                  color: '#6B7280',
-                  '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+                  borderColor: gs.border,
+                  color: gs.textMuted,
+                  '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgHover },
                 }}
               >
                 导出
@@ -238,7 +243,7 @@ const WmsOutboundPage: React.FC = () => {
         }
       />
 
-      <Card elevation={0} sx={{ border: '1px solid #E5E7EB', borderRadius: 2 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <Typography variant="body2" color="text.secondary">正在加载数据...</Typography>
@@ -252,7 +257,7 @@ const WmsOutboundPage: React.FC = () => {
             <TableContainer>
               <Table size="small">
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: '#FAFAFA' }}>
+                  <TableRow sx={{ backgroundColor: gs.bgHover }}>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>ID</TableCell>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>出库单号</TableCell>
                     <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>SKU</TableCell>
@@ -313,13 +318,13 @@ const WmsOutboundPage: React.FC = () => {
                                 flex: 1,
                                 height: 6,
                                 borderRadius: 3,
-                                backgroundColor: '#E5E7EB',
+                                backgroundColor: gs.border,
                                 '& .MuiLinearProgress-bar': {
                                   backgroundColor: progress >= 100 ? '#059669' : '#2563EB',
                                 },
                               }}
                             />
-                            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: '#6B7280' }}>
+                            <Typography variant="caption" sx={{ fontSize: '0.65rem', color: gs.textMuted }}>
                               {Math.round(progress)}%
                             </Typography>
                           </Box>
@@ -338,7 +343,7 @@ const WmsOutboundPage: React.FC = () => {
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', color: '#6B7280' }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
                             {formatDate(item.reviewTime)}
                           </Typography>
                         </TableCell>
@@ -397,13 +402,13 @@ const WmsOutboundPage: React.FC = () => {
         fullWidth
         PaperProps={{ sx: { borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' } }}
       >
-        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>
           确认删除
         </DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
           <DialogContentText>确定删除该复核记录吗？此操作不可撤销。</DialogContentText>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
           <Button onClick={() => setDeleteDialogOpen(false)}>取消</Button>
           <Button variant="contained" color="error" onClick={handleDeleteConfirm}>确认删除</Button>
         </DialogActions>

@@ -12,6 +12,7 @@ import {
   FormControl,
   InputLabel,
   Slider,
+  useTheme,
 } from '@mui/material';
 import LinkIcon from '@mui/icons-material/Link';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
@@ -20,6 +21,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import type { AppSettings, DashboardConfig } from '../../../contexts/AppSettingsContext';
 import { dashboardApi } from '../../../services/dashboardApi';
 import { textFieldSx } from '../sharedStyles';
+import { getGrayScale } from '../../../constants/theme';
 
 // ===================== Props =====================
 
@@ -62,23 +64,27 @@ const DashboardParamsTab: React.FC<DashboardParamsTabProps> = ({
   setErrors,
   onShowSnackbar,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   const dash = draft.dashboard;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 480 }}>
-      <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', mb: 1 }}>仪表盘计算参数</Typography>
-      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', mb: 1 }}>调整仪表盘中的计算阈值和参数</Typography>
+      <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: gs.textPrimary, mb: 1 }}>仪表盘计算参数</Typography>
+      <Typography sx={{ fontSize: '0.8rem', color: gs.textDisabled, mb: 1 }}>调整仪表盘中的计算阈值和参数</Typography>
 
       {/* Warning Threshold */}
       <Box>
-        <Typography sx={{ fontSize: '0.875rem', color: '#111827', mb: 1, fontWeight: 500 }}>容积率预警线：{dash.warningThreshold}%</Typography>
+        <Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary, mb: 1, fontWeight: 500 }}>容积率预警线：{dash.warningThreshold}%</Typography>
         <Slider value={dash.warningThreshold} onChange={(_, v) => updateDashboard(setDraft, setErrors, 'warningThreshold', v as number)} min={0} max={100} valueLabelDisplay="auto" valueLabelFormat={(v) => `${v}%`} sx={{ color: '#F59E0B' }} />
         {errors['dashboard.warningThreshold'] && <Typography variant="caption" sx={{ color: '#EF4444', mt: 0.5 }}>{errors['dashboard.warningThreshold']}</Typography>}
       </Box>
 
       {/* Full Threshold */}
       <Box>
-        <Typography sx={{ fontSize: '0.875rem', color: '#111827', mb: 1, fontWeight: 500 }}>容积率满仓线：{dash.fullThreshold}%</Typography>
+        <Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary, mb: 1, fontWeight: 500 }}>容积率满仓线：{dash.fullThreshold}%</Typography>
         <Slider value={dash.fullThreshold} onChange={(_, v) => updateDashboard(setDraft, setErrors, 'fullThreshold', v as number)} min={0} max={100} valueLabelDisplay="auto" valueLabelFormat={(v) => `${v}%`} sx={{ color: '#EF4444' }} />
         {errors['dashboard.fullThreshold'] && <Typography variant="caption" sx={{ color: '#EF4444', mt: 0.5 }}>{errors['dashboard.fullThreshold']}</Typography>}
       </Box>
@@ -92,15 +98,15 @@ const DashboardParamsTab: React.FC<DashboardParamsTabProps> = ({
 
       <Divider />
 
-      <Typography sx={{ fontSize: '0.875rem', color: '#111827', mb: 0.5, fontWeight: 500 }}>总件数指标</Typography>
-      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', mb: 1 }}>设置仓库总件数基数，影响仓库总容积利用率的计算</Typography>
+      <Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary, mb: 0.5, fontWeight: 500 }}>总件数指标</Typography>
+      <Typography sx={{ fontSize: '0.8rem', color: gs.textDisabled, mb: 1 }}>设置仓库总件数基数，影响仓库总容积利用率的计算</Typography>
       <TextField label="仓库总件数" type="number" size="small" fullWidth value={dash.totalItems} onChange={(e) => updateDashboard(setDraft, setErrors, 'totalItems', Math.max(1, parseInt(e.target.value, 10) || 1))} inputProps={{ min: 1 }} helperText="总容积利用率 = 已用容积件数 / 总件数 × 100%" sx={textFieldSx} />
 
       <Divider sx={{ my: 2 }} />
 
       {/* ========== Data Source Configuration ========== */}
-      <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', mb: 1 }}>数据源配置</Typography>
-      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF', mb: 2 }}>选择仪表盘数据来源：本地 Mock、后端 API 或腾讯文档</Typography>
+      <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: gs.textPrimary, mb: 1 }}>数据源配置</Typography>
+      <Typography sx={{ fontSize: '0.8rem', color: gs.textDisabled, mb: 2 }}>选择仪表盘数据来源：本地 Mock、后端 API 或腾讯文档</Typography>
 
       {/* Data source mode selector */}
       <FormControl fullWidth size="small" sx={{ mb: 2 }}>
@@ -114,7 +120,7 @@ const DashboardParamsTab: React.FC<DashboardParamsTabProps> = ({
 
       {/* API Base URL - only shown in API mode */}
       {dash.dataSourceMode === 'api' && (
-        <TextField label="API 基础地址" type="url" size="small" fullWidth value={dash.dataSourceApiBaseUrl || ''} onChange={(e) => updateDashboard(setDraft, setErrors, 'dataSourceApiBaseUrl', e.target.value)} placeholder="例如：https://api.example.com" helperText="后端 API 服务的基础 URL 地址" sx={{ ...textFieldSx, mb: 2 }} InputProps={{ startAdornment: <InputAdornment position="start"><LinkIcon sx={{ fontSize: 18, color: '#9CA3AF' }} /></InputAdornment> }} />
+        <TextField label="API 基础地址" type="url" size="small" fullWidth value={dash.dataSourceApiBaseUrl || ''} onChange={(e) => updateDashboard(setDraft, setErrors, 'dataSourceApiBaseUrl', e.target.value)} placeholder="例如：https://api.example.com" helperText="后端 API 服务的基础 URL 地址" sx={{ ...textFieldSx, mb: 2 }} InputProps={{ startAdornment: <InputAdornment position="start"><LinkIcon sx={{ fontSize: 18, color: gs.textDisabled }} /></InputAdornment> }} />
       )}
 
       {/* Tencent Docs mappings - only shown in tencent-docs mode */}
@@ -133,7 +139,7 @@ const DashboardParamsTab: React.FC<DashboardParamsTabProps> = ({
       {/* Sync interval - only shown in non-mock mode */}
       {dash.dataSourceMode !== 'mock' && (
         <Box sx={{ mb: 2 }}>
-          <Typography sx={{ fontSize: '0.85rem', fontWeight: 500, color: '#374151', mb: 1 }}>数据同步间隔</Typography>
+          <Typography sx={{ fontSize: '0.85rem', fontWeight: 500, color: gs.textSecondary, mb: 1 }}>数据同步间隔</Typography>
           <FormControl fullWidth size="small">
             <InputLabel>同步间隔</InputLabel>
             <Select
@@ -148,18 +154,18 @@ const DashboardParamsTab: React.FC<DashboardParamsTabProps> = ({
               <MenuItem value="3600">1 小时</MenuItem>
             </Select>
           </FormControl>
-          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.5 }}>自动从远程数据源刷新数据的频率</Typography>
+          <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled, mt: 0.5 }}>自动从远程数据源刷新数据的频率</Typography>
         </Box>
       )}
 
       {/* Status indicator */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 1, bgcolor: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, borderRadius: 1, bgcolor: gs.bgHover, border: `1px solid ${gs.border}` }}>
         {dash.dataSourceMode === 'mock' ? (
-          <><CloudOffIcon sx={{ fontSize: 20, color: '#9CA3AF' }} /><Typography sx={{ fontSize: '0.8rem', color: '#6B7280' }}>使用本地 Mock 数据，刷新页面后生效</Typography></>
+          <><CloudOffIcon sx={{ fontSize: 20, color: gs.textDisabled }} /><Typography sx={{ fontSize: '0.8rem', color: gs.textMuted }}>使用本地 Mock 数据，刷新页面后生效</Typography></>
         ) : dash.dataSourceMode === 'api' ? (
-          <><CloudDoneIcon sx={{ fontSize: 20, color: '#3B82F6' }} /><Typography sx={{ fontSize: '0.8rem', color: '#6B7280' }}>从 API 获取数据：{dash.dataSourceApiBaseUrl || '未配置'}</Typography></>
+          <><CloudDoneIcon sx={{ fontSize: 20, color: '#3B82F6' }} /><Typography sx={{ fontSize: '0.8rem', color: gs.textMuted }}>从 API 获取数据：{dash.dataSourceApiBaseUrl || '未配置'}</Typography></>
         ) : (
-          <><DescriptionIcon sx={{ fontSize: 20, color: '#F59E0B' }} /><Typography sx={{ fontSize: '0.8rem', color: '#6B7280' }}>从腾讯文档获取数据</Typography></>
+          <><DescriptionIcon sx={{ fontSize: 20, color: '#F59E0B' }} /><Typography sx={{ fontSize: '0.8rem', color: gs.textMuted }}>从腾讯文档获取数据</Typography></>
         )}
       </Box>
 
@@ -174,8 +180,8 @@ const DashboardParamsTab: React.FC<DashboardParamsTabProps> = ({
             onShowSnackbar('数据源配置已保存，正在刷新数据...');
           }}
           sx={{
-            bgcolor: '#111827',
-            '&:hover': { bgcolor: '#1F2937' },
+            bgcolor: gs.textPrimary,
+            '&:hover': { bgcolor: gs.textSecondary },
             height: 42,
             borderRadius: 1,
           }}
@@ -202,12 +208,12 @@ const DashboardParamsTab: React.FC<DashboardParamsTabProps> = ({
               }
             }}
             sx={{
-              borderColor: '#111827',
-              color: '#111827',
+              borderColor: gs.textPrimary,
+              color: gs.textPrimary,
               height: 42,
               borderRadius: 1,
               minWidth: 100,
-              '&:hover': { borderColor: '#374151' },
+              '&:hover': { borderColor: gs.textSecondary },
             }}
           >
             立即同步

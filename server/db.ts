@@ -131,6 +131,31 @@ export interface OutboundRecordRow {
   customer_id: string | null;  // v1.4.0: partner FK
 }
 
+// ===================== Transfer Order Types (v1.5.0) =====================
+
+export interface TransferOrderRow {
+  id: string;
+  transferNo: string;
+  fromWarehouseId: string;
+  toWarehouseId: string;
+  sku: string;
+  name: string;
+  quantity: number;
+  volume: number;
+  status: string; // 'draft' | 'submitted' | 'in_transit' | 'completed'
+  transitOrderId: string | null;
+  createdBy: string;
+  submittedAt: string | null;
+  submittedBy: string | null;
+  receivedAt: string | null;
+  receivedBy: string | null;
+  completedAt: string | null;
+  completedBy: string | null;
+  remark: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ===================== Partner Types (v1.4.0) =====================
 
 export interface PartnerRow {
@@ -420,6 +445,112 @@ export function initDb(): Database.Database {
     if (colExists.cnt === 0) {
       db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
     }
+  }
+
+  // ===================== v1.5.0: Transfer Orders =====================
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS transfer_orders (
+      id TEXT PRIMARY KEY,
+      transferNo TEXT NOT NULL DEFAULT '',
+      fromWarehouseId TEXT NOT NULL,
+      toWarehouseId TEXT NOT NULL,
+      sku TEXT NOT NULL,
+      name TEXT NOT NULL DEFAULT '',
+      quantity INTEGER NOT NULL DEFAULT 0,
+      volume REAL NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'draft',
+      transitOrderId TEXT DEFAULT NULL,
+      createdBy TEXT NOT NULL DEFAULT '',
+      submittedAt TEXT DEFAULT NULL,
+      submittedBy TEXT DEFAULT NULL,
+      receivedAt TEXT DEFAULT NULL,
+      receivedBy TEXT DEFAULT NULL,
+      completedAt TEXT DEFAULT NULL,
+      completedBy TEXT DEFAULT NULL,
+      remark TEXT DEFAULT '',
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      FOREIGN KEY (fromWarehouseId) REFERENCES warehouses(id),
+      FOREIGN KEY (toWarehouseId) REFERENCES warehouses(id),
+      FOREIGN KEY (transitOrderId) REFERENCES transit_orders(id) ON DELETE SET NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_transfer_status ON transfer_orders(status);
+    CREATE INDEX IF NOT EXISTS idx_transfer_from ON transfer_orders(fromWarehouseId);
+    CREATE INDEX IF NOT EXISTS idx_transfer_to ON transfer_orders(toWarehouseId);
+    CREATE INDEX IF NOT EXISTS idx_transfer_sku ON transfer_orders(sku);
+    CREATE INDEX IF NOT EXISTS idx_transfer_transit ON transfer_orders(transitOrderId);
+  `);
+
+  // v1.5.0: Expand inventory_transactions CHECK constraint to include transfer_out / transfer_in
+  // SQLite does not support ALTER CONSTRAINT, so we rebuild the table.
+  const v150CheckMigrationKey = 'migration_v1.5.0_inv_txn_check';
+  const v150CheckMigrationExists = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(v150CheckMigrationKey) as { value: string } | undefined;
+  if (!v150CheckMigrationExists) {
+    console.log('[Migrate v1.5.0] 扩展 inventory_transactions CHECK 约束...');
+    db.exec(`
+      CREATE TABLE inventory_transactions_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sku TEXT NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('inbound', 'outbound', 'adjustment', 'transfer_out', 'transfer_in')),
+        quantity INTEGER NOT NULL,
+        warehouseId TEXT NOT NULL,
+        operator TEXT DEFAULT '',
+        sourceId TEXT DEFAULT '',
+        sourceType TEXT DEFAULT '',
+        remark TEXT DEFAULT '',
+        createdAt TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (warehouseId) REFERENCES warehouses(id)
+      );
+      INSERT INTO inventory_transactions_new SELECT * FROM inventory_transactions;
+      DROP TABLE inventory_transactions;
+      ALTER TABLE inventory_transactions_new RENAME TO inventory_transactions;
+    `);
+    // Recreate indexes
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_inv_trans_sku ON inventory_transactions(sku);
+      CREATE INDEX IF NOT EXISTS idx_inv_trans_type ON inventory_transactions(type);
+      CREATE INDEX IF NOT EXISTS idx_inv_trans_warehouse ON inventory_transactions(warehouseId);
+      CREATE INDEX IF NOT EXISTS idx_inv_trans_created ON inventory_transactions(createdAt);
+    `);
+    db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?)').run(v150CheckMigrationKey, JSON.stringify({ migratedAt: new Date().toISOString() }));
+    console.log('[Migrate v1.5.0] ✅ CHECK 约束扩展完成');
+  }
+
+  // ===================== v1.6.0: Replenishment Suggestions =====================
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS replenishment_suggestions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sku TEXT NOT NULL,
+      warehouse_id TEXT NOT NULL,
+      current_stock INTEGER NOT NULL DEFAULT 0,
+      in_transit_qty INTEGER NOT NULL DEFAULT 0,
+      safety_stock INTEGER NOT NULL DEFAULT 0,
+      daily_consumption REAL NOT NULL DEFAULT 0,
+      target_stock INTEGER NOT NULL DEFAULT 0,
+      suggested_qty INTEGER NOT NULL DEFAULT 0,
+      source_warehouse_id TEXT,
+      priority TEXT NOT NULL DEFAULT 'low' CHECK(priority IN ('critical', 'high', 'medium', 'low')),
+      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'confirmed', 'ignored', 'deferred')),
+      transfer_order_id TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (warehouse_id) REFERENCES warehouses(id),
+      FOREIGN KEY (source_warehouse_id) REFERENCES warehouses(id),
+      FOREIGN KEY (transfer_order_id) REFERENCES transfer_orders(id) ON DELETE SET NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_replenishment_sku ON replenishment_suggestions(sku);
+    CREATE INDEX IF NOT EXISTS idx_replenishment_warehouse ON replenishment_suggestions(warehouse_id);
+    CREATE INDEX IF NOT EXISTS idx_replenishment_status ON replenishment_suggestions(status);
+    CREATE INDEX IF NOT EXISTS idx_replenishment_priority ON replenishment_suggestions(priority);
+  `);
+
+  // v1.6.0: Add minStock column to inventory_items (idempotent)
+  const minStockExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('inventory_items') WHERE name='minStock'`).get() as { cnt: number };
+  if (minStockExists.cnt === 0) {
+    db.exec(`ALTER TABLE inventory_items ADD COLUMN minStock INTEGER NOT NULL DEFAULT 0`);
+    console.log('[Migrate v1.6.0] ✅ 添加 minStock 列到 inventory_items');
   }
 
   // ===================== v1.4.0: Partners Table =====================
@@ -1799,4 +1930,115 @@ export function getBatchSkillUsageStats(skillIds: string[]): Map<string, { total
   }
 
   return statsMap;
+}
+
+// ===================== Transfer Order DAO (v1.5.0) =====================
+
+/** Query transfer orders with optional filters and pagination */
+export function getTransferOrders(params?: {
+  status?: string;
+  fromWarehouseId?: string;
+  toWarehouseId?: string;
+  sku?: string;
+  page?: number;
+  pageSize?: number;
+}): { items: TransferOrderRow[]; total: number } {
+  const db = initDb();
+  const { status, fromWarehouseId, toWarehouseId, sku, page = 1, pageSize = 20 } = params ?? {};
+
+  let sql = 'SELECT * FROM transfer_orders WHERE 1=1';
+  const queryParams: unknown[] = [];
+
+  if (status) {
+    sql += ' AND status = ?';
+    queryParams.push(status);
+  }
+  if (fromWarehouseId) {
+    sql += ' AND fromWarehouseId = ?';
+    queryParams.push(fromWarehouseId);
+  }
+  if (toWarehouseId) {
+    sql += ' AND toWarehouseId = ?';
+    queryParams.push(toWarehouseId);
+  }
+  if (sku) {
+    sql += ' AND sku LIKE ?';
+    queryParams.push(`%${sku}%`);
+  }
+
+  // Count query
+  const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
+  const countRow = db.prepare(countSql).get(...queryParams) as { total: number };
+
+  sql += ' ORDER BY createdAt DESC';
+  const offset = (page - 1) * pageSize;
+  sql += ' LIMIT ? OFFSET ?';
+  queryParams.push(pageSize, offset);
+
+  const items = db.prepare(sql).all(...queryParams) as TransferOrderRow[];
+  return { items, total: countRow.total };
+}
+
+/** Get a single transfer order by ID */
+export function getTransferOrderById(id: string): TransferOrderRow | undefined {
+  const db = initDb();
+  return db.prepare('SELECT * FROM transfer_orders WHERE id = ?').get(id) as TransferOrderRow | undefined;
+}
+
+/** Create a new transfer order */
+export function createTransferOrder(data: Omit<TransferOrderRow, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): TransferOrderRow {
+  const id = data.id || uuidv4();
+  const now = new Date().toISOString();
+  const db = initDb();
+  db.prepare(
+    `INSERT INTO transfer_orders (id, transferNo, fromWarehouseId, toWarehouseId, sku, name, quantity, volume, status, transitOrderId, createdBy, submittedAt, submittedBy, receivedAt, receivedBy, completedAt, completedBy, remark, createdAt, updatedAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    id,
+    data.transferNo ?? '',
+    data.fromWarehouseId,
+    data.toWarehouseId,
+    data.sku,
+    data.name ?? '',
+    data.quantity ?? 0,
+    data.volume ?? 0,
+    data.status ?? 'draft',
+    data.transitOrderId ?? null,
+    data.createdBy ?? '',
+    data.submittedAt ?? null,
+    data.submittedBy ?? null,
+    data.receivedAt ?? null,
+    data.receivedBy ?? null,
+    data.completedAt ?? null,
+    data.completedBy ?? null,
+    data.remark ?? '',
+    now,
+    now
+  );
+  return db.prepare('SELECT * FROM transfer_orders WHERE id = ?').get(id) as TransferOrderRow;
+}
+
+/** Update a transfer order (only draft status should be updatable) */
+export function updateTransferOrder(id: string, data: Partial<Omit<TransferOrderRow, 'id' | 'createdAt'>>): TransferOrderRow | null {
+  const db = initDb();
+  const existing = db.prepare('SELECT * FROM transfer_orders WHERE id = ?').get(id) as TransferOrderRow | undefined;
+  if (!existing) return null;
+  const updated = { ...existing, ...data, id, updatedAt: new Date().toISOString() };
+  db.prepare(
+    `UPDATE transfer_orders SET transferNo=?, fromWarehouseId=?, toWarehouseId=?, sku=?, name=?, quantity=?, volume=?, status=?, transitOrderId=?, createdBy=?, submittedAt=?, submittedBy=?, receivedAt=?, receivedBy=?, completedAt=?, completedBy=?, remark=?, updatedAt=? WHERE id=?`
+  ).run(
+    updated.transferNo, updated.fromWarehouseId, updated.toWarehouseId, updated.sku,
+    updated.name, updated.quantity, updated.volume, updated.status, updated.transitOrderId,
+    updated.createdBy, updated.submittedAt, updated.submittedBy, updated.receivedAt,
+    updated.receivedBy, updated.completedAt, updated.completedBy, updated.remark,
+    updated.updatedAt, id
+  );
+  return db.prepare('SELECT * FROM transfer_orders WHERE id = ?').get(id) as TransferOrderRow;
+}
+
+/** Delete a transfer order (only draft status should be deletable) */
+export function deleteTransferOrder(id: string): boolean {
+  const db = initDb();
+  const result = db.prepare('DELETE FROM transfer_orders WHERE id = ?').run(id);
+  return result.changes > 0;
 }

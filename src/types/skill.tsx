@@ -104,6 +104,60 @@ export interface SkillPermission {
   required?: boolean;
 }
 
+/** 意图分类（v1.7.0 新增） */
+export type IntentCategory =
+  | 'inventory_detail'
+  | 'inbound_outbound_trend'
+  | 'replenishment_analysis'
+  | 'alert_summary'
+  | 'prediction_analysis';
+
+/** 意图分类中文映射 */
+export const INTENT_CATEGORY_LABELS: Record<IntentCategory, string> = {
+  inventory_detail: '库存明细',
+  inbound_outbound_trend: '出入库趋势',
+  replenishment_analysis: '补货分析',
+  alert_summary: '预警摘要',
+  prediction_analysis: '预测分析',
+};
+
+/** 意图分类快捷示例 */
+export interface QuickExample {
+  /** 示例文本 */
+  text: string;
+  /** 图标（MUI icon name） */
+  icon: string;
+}
+
+/** 快捷示例映射（每个意图分类 3 个示例） */
+export const INTENT_QUICK_EXAMPLES: Record<IntentCategory, QuickExample[]> = {
+  inventory_detail: [
+    { text: '哪个SKU库存最多？', icon: 'Inventory' },
+    { text: '库龄超过90天的商品有哪些？', icon: 'Inventory' },
+    { text: '各仓库的库存总价值？', icon: 'QueryStats' },
+  ],
+  inbound_outbound_trend: [
+    { text: '最近7天的入库趋势', icon: 'Input' },
+    { text: '本月出库量TOP10', icon: 'Output' },
+    { text: '各仓库出入库对比', icon: 'BarChart' },
+  ],
+  replenishment_analysis: [
+    { text: '哪些商品需要紧急补货？', icon: 'LocalShipping' },
+    { text: '补货建议按优先级统计', icon: 'Assessment' },
+    { text: '库存低于安全线的SKU', icon: 'Inventory' },
+  ],
+  alert_summary: [
+    { text: '当前有哪些未解决的预警？', icon: 'WarningAmber' },
+    { text: '各仓库的严重预警统计', icon: 'Analytics' },
+    { text: '库龄预警商品清单', icon: 'Inventory' },
+  ],
+  prediction_analysis: [
+    { text: '预测下月需要的库存量', icon: 'AutoMode' },
+    { text: '哪些SKU的周转率在下降？', icon: 'Assessment' },
+    { text: '未来一周的出入库预估', icon: 'Analytics' },
+  ],
+};
+
 /** 统一技能类型 */
 export interface Skill {
   id: string;
@@ -168,6 +222,10 @@ export interface Skill {
     downloadCount: number;
     latestVersion: string;
   };
+  /** v1.7.0: 意图分类列表（仅 builtin-inventory-query 等自然语言查询技能有值） */
+  intentCategories?: IntentCategory[];
+  /** v1.7.0: 快捷示例列表（仅 builtin-inventory-query 等自然语言查询技能有值） */
+  quickExamples?: QuickExample[];
 }
 
 // ===================== 图标映射 =====================
@@ -482,6 +540,38 @@ export const BUILTIN_SKILLS: Skill[] = [
     source: 'builtin',
     executionMode: 'chat',
     promptTemplate: '你是 CDF Know Clow 快捷指令助手。用户通过 "/" 前缀触发指令，你需要帮助用户：1）解释可用的快捷指令及其功能；2）执行指令对应的操作（如 /sync 同步数据、/report 生成报表、/alert 查看预警）；3）创建自定义快捷指令；4）批量执行组合指令。可用指令：/sync（数据同步）、/report（报表生成）、/alert（预警查看）、/snapshot（库存快照）、/dashboard（仪表盘）、/warehouse（仓库管理）、/inventory（库存查看）、/transit（在途查询）。',
+  },
+  // ---- 数据查询 (data) ----
+  {
+    id: 'builtin-inventory-query',
+    name: '库存查询',
+    desc: '自然语言查询库存数据，自动生成 SQL 并以图表/表格展示结果',
+    icon: 'QueryStats',
+    category: 'data',
+    path: '/',
+    trigger: '查询库存 / 库存数据 / 库存统计',
+    detail: '通过自然语言查询库存数据，AI 自动生成安全 SQL 查询，结果以表格或图表（柱状/折线/饼图）展示。支持出库排名、低库存预警、趋势分析等场景。',
+    tags: ['库存', '查询', '数据'],
+    status: 'active',
+    version: '1.7.0',
+    featured: false,
+    source: 'builtin',
+    executionMode: 'chat',
+    promptTemplate: '',  // 运行时由服务端 skillWatcher 热重载注入 INVENTORY_QUERY_PROMPT
+    intentCategories: [
+      'inventory_detail',
+      'inbound_outbound_trend',
+      'replenishment_analysis',
+      'alert_summary',
+      'prediction_analysis',
+    ],
+    quickExamples: [
+      { text: '哪个SKU库存最多？', icon: 'Inventory' },
+      { text: '最近7天的入库趋势', icon: 'Input' },
+      { text: '哪些商品需要紧急补货？', icon: 'LocalShipping' },
+      { text: '当前有哪些未解决的预警？', icon: 'WarningAmber' },
+      { text: '预测下月需要的库存量', icon: 'AutoMode' },
+    ],
   },
 ];
 

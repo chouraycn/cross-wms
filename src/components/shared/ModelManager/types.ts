@@ -3,7 +3,7 @@
  */
 
 import type { Dispatch, SetStateAction } from 'react';
-import type { ModelConfig, ModelProvider } from '../../../types/models';
+import type { ModelConfig, ModelProvider, ModelCapability } from '../../../types/models';
 
 /** 变体：控制 UI 布局 */
 export type ModelManagerVariant = 'table' | 'list' | 'compact';
@@ -22,6 +22,15 @@ export interface ModelManagerProps {
   compact?: boolean;
 }
 
+/** 表单中的多 Key 项 */
+export interface FormApiKeyEntry {
+  label: string;
+  key: string;
+  enabled: boolean;
+  /** 内部唯一 ID（用于 React key） */
+  _uid?: string;
+}
+
 /** 模型表单字段类型（字符串化，保存时转 number） */
 export interface ModelFormState {
   id: string;
@@ -29,6 +38,10 @@ export interface ModelFormState {
   provider: ModelProvider;
   apiEndpoint: string;
   apiKey: string;
+  apiKeyRef: string;
+  apiKeys: FormApiKeyEntry[];
+  apiKeyRefs: string[];
+  keyStrategy: 'round-robin' | 'random' | 'failover';
   enabled: boolean;
   description: string;
   contextWindow: string;
@@ -43,6 +56,24 @@ export type TestStatus = 'idle' | 'testing' | 'success' | 'error';
 
 /** 对话框模式 */
 export type DialogMode = 'add' | 'edit' | null;
+
+/** 通用确认对话框配置 */
+export interface ConfirmDialogConfig {
+  /** 是否打开 */
+  open: boolean;
+  /** 对话框标题 */
+  title: string;
+  /** 对话框内容 */
+  content: string;
+  /** 确认按钮文本 */
+  confirmText: string;
+  /** 确认按钮颜色 */
+  confirmColor?: 'error' | 'primary' | 'warning';
+  /** 确认回调 */
+  onConfirm: () => void;
+  /** 取消回调 */
+  onCancel: () => void;
+}
 
 /** Hook 返回的状态 */
 export interface ModelManagerState {
@@ -66,11 +97,21 @@ export interface ModelManagerState {
   testAvailableModels: string[];
   /** 连接测试返回的模型是否有效 */
   testModelValid: boolean;
+  /** 是否显示模型选择弹窗（Step 1） */
+  showModelSelectDialog: boolean;
+  /** 通用确认对话框配置 */
+  confirmDialog: ConfirmDialogConfig;
 }
 
 /** Hook 返回的操作 */
 export interface ModelManagerActions {
   openModelDialog: (mode: 'add' | 'edit', model?: ModelConfig) => void;
+  /** 打开模型选择弹窗（Step 1） */
+  openModelSelectDialog: () => void;
+  /** 关闭模型选择弹窗 */
+  closeModelSelectDialog: () => void;
+  /** 从预设选择模型后填充表单 */
+  handlePresetSelect: (preset: { id: string; name: string; provider: ModelProvider; description: string; contextWindow: number; maxTokens: number; capabilities: ModelCapability[] }) => void;
   closeModelDialog: () => void;
   setModelForm: Dispatch<SetStateAction<ModelFormState>>;
   handleSaveModel: () => void;
@@ -106,6 +147,10 @@ export interface ModelManagerActions {
   closeTemplateDialog: () => void;
   /** 应用模板 */
   applyTemplate: (templateId: string) => void;
+  /** 重新排序模型列表 */
+  reorderModels: (fromIndex: number, toIndex: number) => void;
+  /** 关闭确认对话框 */
+  closeConfirmDialog: () => void;
 }
 
 /** ModelList 组件 Props */
@@ -120,6 +165,7 @@ export interface ModelListProps {
     | 'handleSetDefaultModel'
     | 'handleToggleModelEnabled'
     | 'toggleModelSelection'
+    | 'reorderModels'
   >;
   /** 批量选中的模型 ID */
   selectedModelIds: string[];
@@ -127,6 +173,10 @@ export interface ModelListProps {
   searchQuery: string;
   /** 选中的能力标签 */
   selectedCapabilities: string[];
+  /** 健康状态映射 (modelId → status) */
+  healthStatuses?: Record<string, 'healthy' | 'unhealthy' | 'timeout' | 'skipped' | 'unknown'>;
+  /** 健康延迟映射 (modelId → latency ms) */
+  healthLatencies?: Record<string, number>;
 }
 
 /** ModelEditDialog 组件 Props */
@@ -148,6 +198,11 @@ export interface DeleteConfirmDialogProps {
   onCancel: () => void;
 }
 
+/** ConfirmDialog 通用确认对话框 Props */
+export interface ConfirmDialogProps {
+  config: ConfirmDialogConfig;
+}
+
 /** ModelToolbar 组件 Props */
 export interface ModelToolbarProps {
   variant: ModelManagerVariant;
@@ -158,4 +213,16 @@ export interface ModelToolbarProps {
   onExport: () => void;
   onImport: () => void;
   onTemplate: () => void;
+  /** 健康检测回调 */
+  onHealthCheck?: () => void;
+  /** 是否正在检测中 */
+  isHealthChecking?: boolean;
+  /** 发现本地模型回调 */
+  onDiscoverLocal?: () => void;
+  /** 是否启用自动刷新 */
+  autoRefreshEnabled?: boolean;
+  /** 切换自动刷新 */
+  onToggleAutoRefresh?: () => void;
+  /** 健康检查错误信息 */
+  healthCheckError?: string | null;
 }

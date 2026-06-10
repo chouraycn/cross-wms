@@ -7,12 +7,14 @@ import {
   FormControlLabel,
   Button,
   Divider,
+  useTheme,
 } from '@mui/material';
 import type { AppSettings, SidebarConfig } from '../../../contexts/AppSettingsContext';
 import { formatVersion, type UpdateStatus } from '../../../services/updateService';
 import { useUpdateContext } from '../../../contexts/UpdateContext';
 import { switchSx, APP_VERSION } from '../sharedStyles';
 import TrafficLightOffsetSection from './TrafficLightOffsetSection';
+import { getGrayScale } from '../../../constants/theme';
 
 // ===================== Props =====================
 
@@ -47,6 +49,10 @@ const AboutTab: React.FC<AboutTabProps> = ({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setErrors,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   // ---- Update check state ----
   const { checkForUpdates: globalCheckForUpdates, updateStatus, showUpdateNotification, downloadUpdate } = useUpdateContext();
   const [checkingUpdate, setCheckingUpdate] = useState(false);
@@ -90,26 +96,26 @@ const AboutTab: React.FC<AboutTabProps> = ({
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       {/* ===== About Section ===== */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxWidth: 400 }}>
-        <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: '#111827', mb: 1 }}>
+        <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: gs.textPrimary, mb: 1 }}>
           关于系统
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography sx={{ color: '#6B7280', fontSize: '0.875rem' }}>系统名称</Typography>
-          <Typography sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 500 }}>CDF Know Claw</Typography>
+          <Typography sx={{ color: gs.textMuted, fontSize: '0.875rem' }}>系统名称</Typography>
+          <Typography sx={{ color: gs.textPrimary, fontSize: '0.875rem', fontWeight: 500 }}>CDF Know Claw</Typography>
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography sx={{ color: '#6B7280', fontSize: '0.875rem' }}>版本</Typography>
-          <Typography sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 500 }}>V{APP_VERSION}</Typography>
+          <Typography sx={{ color: gs.textMuted, fontSize: '0.875rem' }}>版本</Typography>
+          <Typography sx={{ color: gs.textPrimary, fontSize: '0.875rem', fontWeight: 500 }}>V{APP_VERSION}</Typography>
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography sx={{ color: '#6B7280', fontSize: '0.875rem' }}>构建日期</Typography>
-          <Typography sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 500 }}>
+          <Typography sx={{ color: gs.textMuted, fontSize: '0.875rem' }}>构建日期</Typography>
+          <Typography sx={{ color: gs.textPrimary, fontSize: '0.875rem', fontWeight: 500 }}>
             {new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-')}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography sx={{ color: '#6B7280', fontSize: '0.875rem' }}>运行环境</Typography>
-          <Typography sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 500 }}>
+          <Typography sx={{ color: gs.textMuted, fontSize: '0.875rem' }}>运行环境</Typography>
+          <Typography sx={{ color: gs.textPrimary, fontSize: '0.875rem', fontWeight: 500 }}>
             {window.electronAPI ? 'Electron 桌面应用' : '浏览器'}
           </Typography>
         </Box>
@@ -121,19 +127,19 @@ const AboutTab: React.FC<AboutTabProps> = ({
             size="small"
             onClick={handleCheckUpdate}
             disabled={checkingUpdate}
-            startIcon={checkingUpdate ? <Box component="span" sx={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid #9CA3AF', borderTopColor: 'transparent', animation: 'spin 1s linear infinite' }} /> : undefined}
+            startIcon={checkingUpdate ? <Box component="span" sx={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${gs.textDisabled}`, borderTopColor: 'transparent', animation: 'spin 1s linear infinite' }} /> : undefined}
             sx={{
-              borderColor: '#E5E7EB',
-              color: '#6B7280',
+              borderColor: gs.border,
+              color: gs.textMuted,
               fontSize: '0.8rem',
-              '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+              '&:hover': { borderColor: gs.borderDarker, backgroundColor: gs.bgHover },
             }}
           >
             {checkingUpdate ? '检查中...' : effectiveUpdateStatus ? '重新检查更新' : '检查更新'}
           </Button>
 
           {effectiveUpdateStatus && !effectiveUpdateStatus.error && (
-            <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, backgroundColor: effectiveUpdateStatus.hasUpdate ? '#FFF7ED' : '#F9FAFB', border: `1px solid ${effectiveUpdateStatus.hasUpdate ? '#FDBA74' : '#E5E7EB'}` }}>
+            <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, backgroundColor: effectiveUpdateStatus.hasUpdate ? '#FFF7ED' : gs.bgHover, border: `1px solid ${effectiveUpdateStatus.hasUpdate ? '#FDBA74' : gs.border}` }}>
               {effectiveUpdateStatus.hasUpdate && effectiveUpdateStatus.releaseInfo ? (
                 <Box>
                   <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#9A3412', mb: 0.5 }}>
@@ -159,7 +165,7 @@ const AboutTab: React.FC<AboutTabProps> = ({
                   </Button>
                 </Box>
               ) : (
-                <Typography sx={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                <Typography sx={{ fontSize: '0.8rem', color: gs.textMuted }}>
                   ✓ 当前已是最新版本
                 </Typography>
               )}
@@ -181,7 +187,7 @@ const AboutTab: React.FC<AboutTabProps> = ({
         <Divider sx={{ my: 1 }} />
 
         {/* Sidebar settings */}
-        <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827', mt: 0.5 }}>
+        <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: gs.textPrimary, mt: 0.5 }}>
           侧边栏设置
         </Typography>
         <FormControlLabel
@@ -195,8 +201,8 @@ const AboutTab: React.FC<AboutTabProps> = ({
           }
           label={
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Typography sx={{ fontSize: '0.875rem', color: '#111827' }}>显示版本号</Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+              <Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>显示版本号</Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
                 在侧边栏 Logo 旁显示当前版本号（v{APP_VERSION}）
               </Typography>
             </Box>

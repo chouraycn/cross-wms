@@ -36,17 +36,18 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import { useToast } from '../contexts/ToastContext';
 import { getProjects, createProject, updateProject, deleteProject } from '../services/api';
 import type { Project } from '../types/project';
+import { getGrayScale } from '../constants/theme';
 
 // ===================== Styles =====================
 
 const CARD_STYLE = {
   border: '1px solid',
-  borderColor: '#E5E5E5',
+  borderColor: 'transparent',
   borderRadius: '12px',
   transition: 'border-color 0.2s, box-shadow 0.2s',
   cursor: 'pointer',
   '&:hover': {
-    borderColor: '#CCCCCC',
+    borderColor: 'divider',
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
   },
 };
@@ -69,7 +70,7 @@ const FIXED_REPOS: FixedRepo[] = [
     key: 'warehouse',
     name: '仓库管理',
     description: '跨境仓库数据管理，包含仓库、在途、库存、报表',
-    icon: <WarehouseOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />,
+    icon: <WarehouseOutlinedIcon sx={{ fontSize: 22 }} />,
     path: '/warehouses',
     meta: '仪表盘 · 仓库列表 · 在途跟踪 · 库存查询',
   },
@@ -86,15 +87,15 @@ interface TemplateCard {
 }
 
 const TEMPLATES: TemplateCard[] = [
-  { key: 'dashboard', name: '仪表盘', description: '仓库总览、容积率、在途统计', icon: <DashboardOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/dashboard' },
-  { key: 'inventory', name: '库存管理', description: '库存查询、出入库记录、库存流水', icon: <InventoryOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/inventory' },
-  { key: 'skills', name: '技能系统', description: 'AI 技能管理、导入导出、安全审查', icon: <AutoFixHighIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/skills' },
-  { key: 'automation', name: '自动化引擎', description: '定时任务、Webhook 触发、事件驱动', icon: <ScheduleIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/automation' },
-  { key: 'agent', name: 'Agent 应用', description: '智能体管理与配置', icon: <SmartToyOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/agent' },
-  { key: 'docs', name: '腾讯文档', description: '在线文档授权与管理', icon: <DescriptionOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/tencent-docs' },
-  { key: 'reports', name: '统计报表', description: '数据报表与导出', icon: <AssessmentOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/reports' },
-  { key: 'chat', name: 'AI 对话', description: '智能助手、历史对话、上下文引用', icon: <ChatBubbleOutlineIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/chat' },
-  { key: 'settings', name: '系统设置', description: '外观主题、模型配置、仪表盘参数', icon: <SettingsOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />, path: '/settings' },
+  { key: 'dashboard', name: '仪表盘', description: '仓库总览、容积率、在途统计', icon: <DashboardOutlinedIcon sx={{ fontSize: 22 }} />, path: '/dashboard' },
+  { key: 'inventory', name: '库存管理', description: '库存查询、出入库记录、库存流水', icon: <InventoryOutlinedIcon sx={{ fontSize: 22 }} />, path: '/inventory' },
+  { key: 'skills', name: '技能系统', description: 'AI 技能管理、导入导出、安全审查', icon: <AutoFixHighIcon sx={{ fontSize: 22 }} />, path: '/skills' },
+  { key: 'automation', name: '自动化引擎', description: '定时任务、Webhook 触发、事件驱动', icon: <ScheduleIcon sx={{ fontSize: 22 }} />, path: '/automation' },
+  { key: 'agent', name: 'Agent 应用', description: '智能体管理与配置', icon: <SmartToyOutlinedIcon sx={{ fontSize: 22 }} />, path: '/agent' },
+  { key: 'docs', name: '腾讯文档', description: '在线文档授权与管理', icon: <DescriptionOutlinedIcon sx={{ fontSize: 22 }} />, path: '/tencent-docs' },
+  { key: 'reports', name: '统计报表', description: '数据报表与导出', icon: <AssessmentOutlinedIcon sx={{ fontSize: 22 }} />, path: '/reports' },
+  { key: 'chat', name: 'AI 对话', description: '智能助手、历史对话、上下文引用', icon: <ChatBubbleOutlineIcon sx={{ fontSize: 22 }} />, path: '/chat' },
+  { key: 'settings', name: '系统设置', description: '外观主题、模型配置、仪表盘参数', icon: <SettingsOutlinedIcon sx={{ fontSize: 22 }} />, path: '/settings' },
 ];
 
 // ===================== Project Form Dialog =====================
@@ -114,6 +115,9 @@ const EMPTY_FORM = {
 };
 
 const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose, onSave }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const [form, setForm] = useState(EMPTY_FORM);
   const [nameError, setNameError] = useState('');
 
@@ -184,9 +188,9 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} sx={{ color: '#6B7280' }}>取消</Button>
+        <Button onClick={onClose} sx={{ color: gs.textMuted }}>取消</Button>
         <Button onClick={handleSave} variant="contained"
-          sx={{ bgcolor: '#111827', '&:hover': { bgcolor: '#374151' }, borderRadius: '6px' }}>
+          sx={{ bgcolor: gs.textPrimary, '&:hover': { bgcolor: gs.textSecondary }, borderRadius: '6px' }}>
           保存
         </Button>
       </DialogActions>
@@ -200,6 +204,7 @@ const ProjectsPage: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -210,11 +215,11 @@ const ProjectsPage: React.FC = () => {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const { showToast } = useToast();
 
-  // Theme helpers
-  const textMuted = isDark ? '#9CA3AF' : '#999';
-  const borderColor = isDark ? '#2D2D2D' : '#E5E5E5';
-  const cardBg = isDark ? '#1E1E1E' : '#FFFFFF';
-  const repoSectionBg = isDark ? '#1A1A1A' : '#FAFAFA';
+  // Theme helpers - use unified gray scale
+  const textMuted = gs.textMuted;
+  const borderColor = gs.border;
+  const cardBg = gs.bgPanel;
+  const repoSectionBg = gs.bgHover;
 
   const loadProjects = useCallback(async () => {
     try {
@@ -305,7 +310,7 @@ const ProjectsPage: React.FC = () => {
           <Typography sx={{ fontSize: 32, fontWeight: 700, color: 'text.primary', mb: 0.5, letterSpacing: '-0.02em' }}>
             项目
           </Typography>
-          <Typography sx={{ fontSize: 13, color: isDark ? '#9CA3AF' : '#666', mb: 3 }}>
+          <Typography sx={{ fontSize: 13, color: gs.textMuted, mb: 3 }}>
             多人协同，打造超级团队
           </Typography>
           <Button
@@ -316,13 +321,13 @@ const ProjectsPage: React.FC = () => {
             sx={{
               px: 3,
               py: 1.2,
-              backgroundColor: isDark ? '#F3F4F6' : '#1A1A1A',
-              color: isDark ? '#1A1A1A' : '#FFFFFF',
+              backgroundColor: gs.textPrimary,
+              color: gs.bgPanel,
               borderRadius: '8px',
               fontSize: 13,
               fontWeight: 500,
               textTransform: 'none',
-              '&:hover': { backgroundColor: isDark ? '#D1D5DB' : '#333333' },
+              '&:hover': { backgroundColor: gs.textSecondary },
             }}
           >
             新建项目
@@ -414,7 +419,7 @@ const ProjectsPage: React.FC = () => {
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <FolderOutlinedIcon sx={{ fontSize: 20, color: isDark ? '#9CA3AF' : '#666' }} />
+            <FolderOutlinedIcon sx={{ fontSize: 20, color: gs.textMuted }} />
             <Typography sx={SECTION_TITLE_STYLE}>固定项目仓库</Typography>
           </Box>
           <Button
@@ -423,14 +428,14 @@ const ProjectsPage: React.FC = () => {
             startIcon={<AddIcon sx={{ fontSize: 14 }} />}
             onClick={() => navigate('/warehouses')}
             sx={{
-              borderColor: isDark ? '#444' : '#D1D5DB',
-              color: isDark ? '#D1D5DB' : '#374151',
+              borderColor: gs.borderDarker,
+              color: gs.textSecondary,
               fontSize: 12,
               textTransform: 'none',
               borderRadius: '8px',
               '&:hover': {
-                borderColor: isDark ? '#666' : '#9CA3AF',
-                backgroundColor: isDark ? '#2D2D2D' : '#F3F4F6',
+                borderColor: gs.textMuted,
+                backgroundColor: gs.bgHover,
               },
             }}
           >
@@ -456,11 +461,12 @@ const ProjectsPage: React.FC = () => {
                     width: 44,
                     height: 44,
                     borderRadius: '10px',
-                    backgroundColor: isDark ? '#2D2D2D' : '#F5F5F5',
+                    backgroundColor: gs.bgHover,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
+                    color: gs.textMuted,
                   }}
                 >
                   {repo.icon}
@@ -481,7 +487,7 @@ const ProjectsPage: React.FC = () => {
                     alignItems: 'center',
                     gap: 2,
                     pt: 1.5,
-                    borderTop: `1px solid ${isDark ? '#2D2D2D' : '#F0F0F0'}`,
+                    borderTop: `1px solid ${gs.border}`,
                   }}
                 >
                   <Typography sx={{ fontSize: 11, color: textMuted }}>{repo.meta}</Typography>
@@ -503,7 +509,7 @@ const ProjectsPage: React.FC = () => {
       <Box sx={{ mb: 5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <FolderOutlinedIcon sx={{ fontSize: 20, color: isDark ? '#9CA3AF' : '#666' }} />
+            <FolderOutlinedIcon sx={{ fontSize: 20, color: gs.textMuted }} />
             <Typography sx={SECTION_TITLE_STYLE}>自定义项目</Typography>
           </Box>
         </Box>
@@ -527,19 +533,19 @@ const ProjectsPage: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'center',
               py: 6,
-              color: '#9CA3AF',
+              color: gs.textMuted,
               gap: 1,
             }}
           >
-            <FolderOutlinedIcon sx={{ fontSize: 40, color: '#D1D5DB' }} />
-            <Typography sx={{ fontSize: '0.9375rem', color: '#6B7280' }}>
+            <FolderOutlinedIcon sx={{ fontSize: 40, color: gs.borderDarker }} />
+            <Typography sx={{ fontSize: '0.9375rem', color: gs.textMuted }}>
               {searchQuery ? '没有匹配的项目' : '还没有自定义项目'}
             </Typography>
             {!searchQuery && (
               <Button
                 size="small" startIcon={<AddIcon />}
                 onClick={() => { setEditingProject(null); setDialogOpen(true); }}
-                sx={{ mt: 0.5, color: '#6B7280', '&:hover': { bgcolor: '#F3F4F6' } }}
+                sx={{ mt: 0.5, color: gs.textMuted, '&:hover': { bgcolor: gs.bgHover } }}
               >
                 创建第一个项目
               </Button>
@@ -564,14 +570,15 @@ const ProjectsPage: React.FC = () => {
                       width: 44,
                       height: 44,
                       borderRadius: '10px',
-                      backgroundColor: isDark ? '#2D2D2D' : '#F5F5F5',
+                      backgroundColor: gs.bgHover,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
+                      color: gs.textMuted,
                     }}
                   >
-                    <FolderOutlinedIcon sx={{ fontSize: 22, color: '#666' }} />
+                    <FolderOutlinedIcon sx={{ fontSize: 22 }} />
                   </Box>
                   <Box sx={{ flex: 1 }}>
                     <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
@@ -588,7 +595,7 @@ const ProjectsPage: React.FC = () => {
                       setEditingProject(project);
                       setDialogOpen(true);
                     }}
-                    sx={{ p: 0.5, color: '#9CA3AF', '&:hover': { color: '#374151' } }}
+                    sx={{ p: 0.5, color: gs.textMuted, '&:hover': { color: gs.textPrimary } }}
                   >
                     <Tooltip title="编辑">
                       <span>✏️</span>
@@ -602,7 +609,7 @@ const ProjectsPage: React.FC = () => {
                         handleDelete(project.id);
                       }
                     }}
-                    sx={{ p: 0.5, color: '#9CA3AF', '&:hover': { color: '#DC2626' } }}
+                    sx={{ p: 0.5, color: gs.textMuted, '&:hover': { color: '#DC2626' } }}
                   >
                     <Tooltip title="删除">
                       <span>🗑️</span>
@@ -610,14 +617,14 @@ const ProjectsPage: React.FC = () => {
                   </IconButton>
                 </Box>
                 <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    pt: 1.5,
-                    borderTop: `1px solid ${isDark ? '#2D2D2D' : '#F0F0F0'}`,
-                  }}
-                >
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      pt: 1.5,
+                      borderTop: `1px solid ${gs.border}`,
+                    }}
+                  >
                   <Typography sx={{ fontSize: 11, color: textMuted }}>
                     状态: {project.status === 'active' ? '活跃' : project.status === 'archived' ? '已归档' : '已完成'}
                   </Typography>
@@ -656,14 +663,14 @@ const ProjectsPage: React.FC = () => {
                 height: 38,
                 pl: 4.5,
                 pr: 1.5,
-                border: `1px solid ${isDark ? '#444' : '#E5E5E5'}`,
+                border: `1px solid ${gs.borderDarker}`,
                 borderRadius: '8px',
                 fontSize: 13,
                 color: 'text.primary',
-                bgcolor: cardBg,
+                bgcolor: gs.bgInput,
                 outline: 'none',
                 '&::placeholder': { color: textMuted },
-                '&:focus': { borderColor: isDark ? '#666' : '#999' },
+                '&:focus': { borderColor: gs.textMuted },
               }}
             />
           </Box>
@@ -689,11 +696,12 @@ const ProjectsPage: React.FC = () => {
                   width: 44,
                   height: 44,
                   borderRadius: '10px',
-                  backgroundColor: isDark ? '#2D2D2D' : '#F5F5F5',
+                  backgroundColor: gs.bgHover,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
+                  color: gs.textMuted,
                 }}
               >
                 {tpl.icon}

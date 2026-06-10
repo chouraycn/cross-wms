@@ -8,6 +8,7 @@ import {
   Box, Typography, Chip, Button,
   Dialog, DialogTitle, DialogContent, DialogActions,
   Breadcrumbs, Link, CircularProgress,
+  useTheme,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -30,6 +31,7 @@ import * as api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import SkillInfoCards from '../components/Skills/SkillInfoCards';
 import EditSkillDialog from '../components/Skills/EditSkillDialog';
+import { getGrayScale } from '../constants/theme';
 
 // ===================== 辅助函数 =====================
 
@@ -51,6 +53,9 @@ const SkillDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { skillId } = useParams<{ skillId: string }>();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
 
   // 技能数据（响应式）
   const [skillVersion, setSkillVersion] = useState(0);
@@ -299,18 +304,18 @@ const SkillDetailPage: React.FC = () => {
   if (!skill) {
     return (
       <Box className="page-fade-in" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <AutoFixHighIcon sx={{ fontSize: 56, color: '#D1D5DB', mb: 2 }} />
-        <Typography sx={{ fontSize: '1.125rem', fontWeight: 600, color: '#111827', mb: 0.5 }}>
+        <AutoFixHighIcon sx={{ fontSize: 56, color: gs.borderDarker, mb: 2 }} />
+        <Typography sx={{ fontSize: '1.125rem', fontWeight: 600, color: gs.textPrimary, mb: 0.5 }}>
           技能未找到
         </Typography>
-        <Typography sx={{ fontSize: '0.875rem', color: '#6B7280', mb: 3 }}>
+        <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted, mb: 3 }}>
           该技能可能已被删除或 ID 无效
         </Typography>
         <Button
           variant="outlined"
           startIcon={<ArrowBackIcon sx={{ fontSize: 16 }} />}
           onClick={() => navigate('/skills')}
-          sx={{ textTransform: 'none', borderRadius: 2, borderColor: '#E5E7EB', color: '#374151' }}
+          sx={{ textTransform: 'none', borderRadius: 2, borderColor: gs.border, color: gs.textSecondary }}
         >
           返回技能中心
         </Button>
@@ -336,12 +341,12 @@ const SkillDetailPage: React.FC = () => {
           component={RouterLink}
           to="/skills"
           underline="hover"
-          sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#6B7280', fontSize: '0.8125rem', '&: hover': { color: '#111827' } }}
+          sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: gs.textMuted, fontSize: '0.8125rem', '&: hover': { color: gs.textPrimary } }}
         >
           <ArrowBackIcon sx={{ fontSize: 14 }} />
           返回技能中心
         </Link>
-        <Typography sx={{ fontSize: '0.8125rem', color: '#111827', fontWeight: 500 }}>
+        <Typography sx={{ fontSize: '0.8125rem', color: gs.textPrimary, fontWeight: 500 }}>
           {skill.name}
         </Typography>
       </Breadcrumbs>
@@ -355,7 +360,7 @@ const SkillDetailPage: React.FC = () => {
           flexShrink: 0,
           position: 'relative',
         }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', '& .MuiSvgIcon-root': { fontSize: 28, color: '#fff' } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: gs.bgPanel, '& .MuiSvgIcon-root': { fontSize: 28, color: gs.bgPanel } }}>
             {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 28 }} />}
           </Box>
           {hasAutomation && (
@@ -363,14 +368,14 @@ const SkillDetailPage: React.FC = () => {
               position: 'absolute', top: -4, right: -4,
               width: 10, height: 10, borderRadius: '50%',
               backgroundColor: isRunning ? '#2563EB' : '#059669',
-              border: '2px solid #fff',
+              border: `2px solid ${gs.bgPanel}`,
               ...(isRunning ? { animation: 'pulse-dot 1.2s ease-in-out infinite' } : {}),
             }} />
           )}
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
-            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827' }}>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: gs.textPrimary }}>
               {skill.name}
             </Typography>
             {skill.status === 'active' && (
@@ -431,12 +436,12 @@ const SkillDetailPage: React.FC = () => {
               }}
             />
             {skill.version && (
-              <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
+              <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>
                 v{skill.version}
               </Typography>
             )}
           </Box>
-          <Typography sx={{ fontSize: '0.875rem', color: '#6B7280', mt: 1 }}>
+          <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted, mt: 1 }}>
             {skill.desc}
           </Typography>
         </Box>
@@ -455,7 +460,7 @@ const SkillDetailPage: React.FC = () => {
       />
 
       {/* 底部操作栏 */}
-      <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: '1px solid #E5E7EB' }}>
+      <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: `1px solid ${gs.border}` }}>
         {skill.status === 'available' && (
           <Button
             fullWidth
@@ -483,8 +488,8 @@ const SkillDetailPage: React.FC = () => {
             startIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
             onClick={handleExecute}
             sx={{
-              backgroundColor: '#111827',
-              '&:hover': { backgroundColor: '#374151' },
+              backgroundColor: gs.textPrimary,
+              '&:hover': { backgroundColor: gs.textSecondary },
               textTransform: 'none',
               borderRadius: 2,
               py: 1.25,
@@ -523,9 +528,9 @@ const SkillDetailPage: React.FC = () => {
             sx={{
               textTransform: 'none',
               borderRadius: 2,
-              borderColor: '#6B7280',
-              color: '#6B7280',
-              '&:hover': { borderColor: '#374151', backgroundColor: '#F9FAFB' },
+              borderColor: gs.textMuted,
+              color: gs.textMuted,
+              '&:hover': { borderColor: gs.textSecondary, backgroundColor: gs.bgHover },
               minWidth: 80,
               fontSize: '0.875rem',
               flexShrink: 0,
@@ -597,10 +602,10 @@ const SkillDetailPage: React.FC = () => {
           sx={{
             textTransform: 'none',
             borderRadius: 2,
-            borderColor: '#6B7280',
-            color: '#6B7280',
-            '&:hover': { borderColor: '#374151', backgroundColor: '#F9FAFB' },
-            '&:disabled': { borderColor: '#D1D5DB', color: '#9CA3AF' },
+            borderColor: gs.textMuted,
+            color: gs.textMuted,
+            '&:hover': { borderColor: gs.textSecondary, backgroundColor: gs.bgHover },
+            '&:disabled': { borderColor: gs.borderDarker, color: gs.textDisabled },
             minWidth: 80,
             fontSize: '0.875rem',
             flexShrink: 0,
@@ -629,13 +634,13 @@ const SkillDetailPage: React.FC = () => {
         fullWidth
         PaperProps={{ sx: { borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' } }}
       >
-        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>确认删除</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>确认删除</DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
-          <Typography sx={{ color: '#6B7280' }}>
+          <Typography sx={{ color: gs.textMuted }}>
             确定要删除技能「{skill?.name}」吗？此操作不可撤销。
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
           <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting}>取消</Button>
           <Button
             variant="contained"

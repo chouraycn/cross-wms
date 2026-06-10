@@ -39,9 +39,10 @@ import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown
 import diff from 'react-syntax-highlighter/dist/esm/languages/prism/diff';
 // @ts-ignore
 import oneLight from 'react-syntax-highlighter/dist/esm/styles/prism/one-light';
-import { Box, IconButton } from '@mui/material';
+import { Box, IconButton, useTheme } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
+import { getGrayScale } from '../../constants/theme';
 
 // 注册常用语言
 SyntaxHighlighter.registerLanguage('tsx', tsx);
@@ -84,12 +85,15 @@ interface MarkdownRendererProps {
  * - 响应式图片/表格
  */
 export function MarkdownRenderer({ content, darkMode = false }: MarkdownRendererProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const [copied, setCopied] = useState(false);
   const empty = !content || content.trim() === '';
   if (empty) {
     // 流式输出时 content 可能为空 — 显示占位
     return (
-      <span style={{ fontSize: 14, lineHeight: 1.6, color: darkMode ? '#9CA3AF' : '#6B7280' }}>
+      <span style={{ fontSize: 14, lineHeight: 1.6, color: gs.textDisabled }}>
         思考中...
       </span>
     );
@@ -110,8 +114,8 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
               return (
                 <code
                   style={{
-                    backgroundColor: darkMode ? '#374151' : '#F3F4F6',
-                    color: darkMode ? '#F97316' : '#D97706',
+                    backgroundColor: gs.bgInput,
+                    color: isDark ? '#F97316' : '#D97706',
                     padding: '2px 6px',
                     borderRadius: 4,
                     fontSize: 13,
@@ -126,6 +130,12 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
 
             // 代码块
             const language = match?.[1] || '';
+
+            // v1.7.0: 跳过 inventory_query 代码块（由 useChat 拦截处理，不渲染）
+            if (language === 'inventory_query') {
+              return null;
+            }
+
             return (
               <Box sx={{ position: 'relative', '&:hover .copy-btn': { opacity: 1 } }}>
                 <SyntaxHighlighter
@@ -136,7 +146,7 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
                     borderRadius: 8,
                     fontSize: 13,
                     margin: '8px 0',
-                    border: darkMode ? '1px solid #374151' : '1px solid #E5E7EB',
+                    border: `1px solid ${gs.border}`,
                   }}
                   {...props}
                 >
@@ -155,9 +165,9 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
                     right: 4,
                     opacity: 0,
                     transition: 'opacity 0.2s',
-                    color: '#9CA3AF',
+                    color: gs.textDisabled,
                     p: 0.5,
-                    '&:hover': { color: '#111827', bgcolor: '#F3F4F6' },
+                    '&:hover': { color: gs.textPrimary, bgcolor: gs.bgHover },
                   }}
                 >
                   {copied ? <CheckIcon sx={{ fontSize: 14, color: '#16A34A' }} /> : <ContentCopyIcon sx={{ fontSize: 14 }} />}
@@ -185,9 +195,9 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
             return (
               <th
                 style={{
-                  border: darkMode ? '1px solid #374151' : '1px solid #E5E7EB',
+                  border: `1px solid ${gs.border}`,
                   padding: '6px 12px',
-                  backgroundColor: darkMode ? '#1F2937' : '#F9FAFB',
+                  backgroundColor: gs.bgHover,
                   fontWeight: 600,
                   textAlign: 'left',
                 }}
@@ -200,7 +210,7 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
             return (
               <td
                 style={{
-                  border: darkMode ? '1px solid #374151' : '1px solid #E5E7EB',
+                  border: `1px solid ${gs.border}`,
                   padding: '6px 12px',
                 }}
               >
@@ -216,7 +226,7 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  color: darkMode ? '#60A5FA' : '#2563EB',
+                  color: isDark ? '#60A5FA' : '#2563EB',
                   textDecoration: 'underline',
                 }}
               >
@@ -243,10 +253,10 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
             return (
               <blockquote
                 style={{
-                  borderLeft: `3px solid ${darkMode ? '#4B5563' : '#D1D5DB'}`,
+                  borderLeft: `3px solid ${gs.borderDarker}`,
                   paddingLeft: 12,
                   margin: '8px 0',
-                  color: darkMode ? '#9CA3AF' : '#6B7280',
+                  color: gs.textDisabled,
                 }}
               >
                 {children}
@@ -259,7 +269,7 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
               <hr
                 style={{
                   border: 'none',
-                  borderTop: darkMode ? '1px solid #374151' : '1px solid #E5E7EB',
+                  borderTop: `1px solid ${gs.border}`,
                   margin: '12px 0',
                 }}
               />

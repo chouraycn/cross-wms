@@ -28,6 +28,7 @@ import {
   Collapse,
   IconButton,
   Alert,
+  useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -38,6 +39,7 @@ import SearchInput from '../Common/SearchInput';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import type { TransitOrder, TransitStatus, TransportMode } from '../../types';
 import dayjs from 'dayjs';
+import { getGrayScale } from '../../constants/theme';
 
 const statusLabels: Record<TransitStatus, { label: string; color: 'default' | 'info' | 'warning' | 'success' }> = {
   dispatched: { label: '已发出', color: 'default' },
@@ -66,6 +68,9 @@ interface RowProps {
 }
 
 const TransitRow: React.FC<RowProps> = ({ order, getWarehouseById, onEdit, onDelete }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const [expanded, setExpanded] = useState(false);
   const fromWh = getWarehouseById(order.fromWarehouseId);
   const toWh = getWarehouseById(order.toWarehouseId);
@@ -78,7 +83,7 @@ const TransitRow: React.FC<RowProps> = ({ order, getWarehouseById, onEdit, onDel
       <TableRow
         sx={{
           cursor: 'pointer',
-          '&:hover': { backgroundColor: '#fafafa' },
+          '&:hover': { backgroundColor: gs.bgPage },
           backgroundColor: expanded ? '#f3f4ff' : 'transparent',
         }}
         onClick={() => setExpanded((v) => !v)}
@@ -87,7 +92,7 @@ const TransitRow: React.FC<RowProps> = ({ order, getWarehouseById, onEdit, onDel
           <IconButton size="small">{expanded ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}</IconButton>
         </TableCell>
         <TableCell>
-          <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: 'monospace', color: '#111827', fontSize: '0.8rem' }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: 'monospace', color: gs.textPrimary, fontSize: '0.8rem' }}>
             {order.trackingNo}
           </Typography>
         </TableCell>
@@ -116,7 +121,7 @@ const TransitRow: React.FC<RowProps> = ({ order, getWarehouseById, onEdit, onDel
           {delayed ? (
             <Chip label="已延误" color="error" size="small" />
           ) : (
-            <Typography variant="body2" sx={{ fontSize: '0.75rem', color: '#9e9e9e' }}>-</Typography>
+            <Typography variant="body2" sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>-</Typography>
           )}
         </TableCell>
         <TableCell>
@@ -124,7 +129,7 @@ const TransitRow: React.FC<RowProps> = ({ order, getWarehouseById, onEdit, onDel
         </TableCell>
         <TableCell>
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); onEdit(order); }} sx={{ color: '#111827' }}>
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); onEdit(order); }} sx={{ color: gs.textPrimary }}>
               <EditIcon fontSize="small" />
             </IconButton>
             <IconButton size="small" onClick={(e) => { e.stopPropagation(); onDelete(order.id); }} sx={{ color: '#d32f2f' }}>
@@ -136,7 +141,7 @@ const TransitRow: React.FC<RowProps> = ({ order, getWarehouseById, onEdit, onDel
 
       {/* Expanded timeline row */}
       <TableRow>
-        <TableCell colSpan={12} sx={{ py: 0, borderBottom: expanded ? '1px solid #e0e0e0' : 'none' }}>
+        <TableCell colSpan={12} sx={{ py: 0, borderBottom: expanded ? `1px solid ${gs.borderLighter}` : 'none' }}>
           <Collapse in={expanded} timeout="auto" unmountOnExit>
             <Box sx={{ py: 2, px: 4 }}>
               {delayed && (
@@ -186,7 +191,7 @@ const TransitRow: React.FC<RowProps> = ({ order, getWarehouseById, onEdit, onDel
                 )}
               </Box>
               <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
-                <Button size="small" startIcon={<EditIcon />} onClick={(e) => { e.stopPropagation(); onEdit(order); }} sx={{ color: '#111827' }}>
+                <Button size="small" startIcon={<EditIcon />} onClick={(e) => { e.stopPropagation(); onEdit(order); }} sx={{ color: gs.textPrimary }}>
                   编辑
                 </Button>
                 <Button size="small" startIcon={<DeleteIcon />} color="error" onClick={(e) => { e.stopPropagation(); onDelete(order.id); }} sx={{ color: '#d32f2f' }}>
@@ -202,6 +207,9 @@ const TransitRow: React.FC<RowProps> = ({ order, getWarehouseById, onEdit, onDel
 };
 
 const TransitList: React.FC = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const { transitOrders: initialOrders, warehouses, loading, error, getWarehouseById } = useWarehouseCapability();
   const [orders, setOrders] = useState<TransitOrder[]>([]);
 
@@ -370,7 +378,7 @@ const TransitList: React.FC = () => {
       )}
 
       {/* Filters */}
-      <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, mb: 2 }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, mb: 2 }}>
         <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <SearchInput
@@ -412,7 +420,7 @@ const TransitList: React.FC = () => {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => { resetNewOrder(); setOpenDialog(true); }}
-                sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' } }}
+                sx={{ backgroundColor: gs.textPrimary, '&:hover': { backgroundColor: gs.textSecondary } }}
               >
                 新增运单
               </Button>
@@ -421,8 +429,8 @@ const TransitList: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2 }}>
-        <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid #f0f0f0' }}>
+      <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+        <Box sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${gs.borderLighter}` }}>
           <Typography variant="body2" color="text.secondary">
             共 {filteredOrders.length} 条记录（点击行展开状态时间轴）
           </Typography>
@@ -430,7 +438,7 @@ const TransitList: React.FC = () => {
         <TableContainer>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#fafafa' }}>
+              <TableRow sx={{ backgroundColor: gs.bgPage }}>
                 <TableCell sx={{ width: 40 }} />
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>运单号</TableCell>
                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8rem' }}>起始仓</TableCell>
@@ -478,7 +486,7 @@ const TransitList: React.FC = () => {
           sx: { backgroundColor: 'rgba(0,0,0,0.3)' },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>{editingOrder ? '编辑在途运单' : '新增在途运单'}</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>{editingOrder ? '编辑在途运单' : '新增在途运单'}</DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid item xs={12} sm={6}>
@@ -554,9 +562,9 @@ const TransitList: React.FC = () => {
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
           <Button onClick={() => { setOpenDialog(false); resetNewOrder(); }}>取消</Button>
-          <Button variant="contained" onClick={handleSaveOrder} sx={{ backgroundColor: '#111827', '&:hover': { backgroundColor: '#374151' } }}>
+          <Button variant="contained" onClick={handleSaveOrder} sx={{ backgroundColor: gs.textPrimary, '&:hover': { backgroundColor: gs.textSecondary } }}>
             {editingOrder ? '保存修改' : '确认创建'}
           </Button>
         </DialogActions>
@@ -580,13 +588,13 @@ const TransitList: React.FC = () => {
           sx: { backgroundColor: 'rgba(0,0,0,0.3)' },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>确认删除</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>确认删除</DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
           <Typography variant="body2" color="text.secondary">
             确定要删除该运单吗？此操作不可撤销。
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
           <Button onClick={() => { setDeleteConfirmOpen(false); setOrderToDelete(null); }}>取消</Button>
           <Button variant="contained" color="error" onClick={handleDeleteConfirm}>
             确认删除

@@ -12,6 +12,7 @@ import {
   IconButton,
   Chip,
   Divider,
+  useTheme,
 } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
@@ -19,6 +20,7 @@ import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { getGrayScale } from '../../constants/theme';
 
 interface BreadcrumbItem {
   label: string;
@@ -39,6 +41,10 @@ const TopBar: React.FC = () => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   const breadcrumbs = routeMap[location.pathname] ?? [{ label: '未知页面' }];
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -55,9 +61,9 @@ const TopBar: React.FC = () => {
       elevation={0}
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 1,
-        backgroundColor: '#FFFFFF',
-        borderBottom: '1px solid #E5E7EB',
-        color: '#111827',
+        backgroundColor: gs.bgPanel,
+        borderBottom: `1px solid ${gs.border}`,
+        color: gs.textPrimary,
       }}
     >
       <Toolbar sx={{ minHeight: '64px !important', px: 3 }}>
@@ -70,7 +76,7 @@ const TopBar: React.FC = () => {
             <Link
               underline="hover"
               color="inherit"
-              sx={{ cursor: 'pointer', fontSize: '0.85rem', color: '#9CA3AF' }}
+              sx={{ cursor: 'pointer', fontSize: '0.85rem', color: gs.textDisabled }}
               onClick={() => navigate('/')}
             >
               首页
@@ -86,7 +92,7 @@ const TopBar: React.FC = () => {
                   {bc.label}
                 </Link>
               ) : (
-                <Typography key={idx} sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#111827' }}>
+                <Typography key={idx} sx={{ fontSize: '0.85rem', fontWeight: 600, color: gs.textPrimary }}>
                   {bc.label}
                 </Typography>
               )
@@ -100,10 +106,10 @@ const TopBar: React.FC = () => {
             label="深圳总仓"
             size="small"
             variant="outlined"
-            sx={{ borderColor: '#E5E7EB', color: '#374151', fontSize: '0.75rem' }}
+            sx={{ borderColor: gs.border, color: gs.textSecondary, fontSize: '0.75rem' }}
           />
 
-          <IconButton size="small" sx={{ color: '#6B7280' }}>
+          <IconButton size="small" sx={{ color: gs.textMuted }}>
             <NotificationsNoneIcon />
           </IconButton>
 
@@ -116,7 +122,7 @@ const TopBar: React.FC = () => {
               sx={{
                 width: 34,
                 height: 34,
-                backgroundColor: '#000000',
+                backgroundColor: gs.textPrimary,
                 fontSize: '0.85rem',
                 fontWeight: 600,
               }}
@@ -146,11 +152,11 @@ const TopBar: React.FC = () => {
             </Box>
             <Divider />
             <MenuItem onClick={handleMenuClose} sx={{ fontSize: '0.875rem' }}>
-              <PersonOutlineIcon fontSize="small" sx={{ mr: 1.5, color: '#6B7280' }} />
+              <PersonOutlineIcon fontSize="small" sx={{ mr: 1.5, color: gs.textMuted }} />
               个人资料
             </MenuItem>
             <MenuItem onClick={handleMenuClose} sx={{ fontSize: '0.875rem' }}>
-              <SettingsOutlinedIcon fontSize="small" sx={{ mr: 1.5, color: '#6B7280' }} />
+              <SettingsOutlinedIcon fontSize="small" sx={{ mr: 1.5, color: gs.textMuted }} />
               系统设置
             </MenuItem>
             <Divider />

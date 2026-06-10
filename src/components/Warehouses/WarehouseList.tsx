@@ -22,6 +22,7 @@ import {
   Button,
   CircularProgress,
   Alert,
+  useTheme,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
@@ -37,6 +38,7 @@ import {
   subscribeWarehouses,
 } from '../../capabilities/warehouse';
 import EmptyWarehouseState from './EmptyWarehouseState';
+import { getGrayScale } from '../../constants/theme';
 
 /** 获取容积率进度条颜色 */
 function getProgressColor(rate: number): 'success' | 'warning' | 'error' {
@@ -69,6 +71,9 @@ interface NewWarehouseForm {
 
 const WarehouseList: React.FC = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Warehouse | null>(null);
@@ -175,7 +180,7 @@ const WarehouseList: React.FC = () => {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600, color: '#111827' }}>
+        <Typography variant="h6" sx={{ fontWeight: 600, color: gs.textPrimary }}>
           仓库列表（{warehouses.length} 个）
         </Typography>
         <Button
@@ -198,19 +203,19 @@ const WarehouseList: React.FC = () => {
       {warehouses.length === 0 ? (
           <EmptyWarehouseState onAddWarehouse={handleOpenDialog} />
         ) : (
-        <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2, overflow: 'hidden' }}>
+        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2, overflow: 'hidden' }}>
         <TableContainer>
           <Table>
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#F9FAFB' }}>
-                <TableCell sx={{ fontWeight: 600, color: '#6B7280', fontSize: '0.8rem' }}>仓库名称</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6B7280', fontSize: '0.8rem' }}>位置</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6B7280', fontSize: '0.8rem' }}>件数上限</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6B7280', fontSize: '0.8rem' }}>已用件数</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6B7280', fontSize: '0.8rem', minWidth: 160 }}>容积率</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6B7280', fontSize: '0.8rem' }}>状态</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6B7280', fontSize: '0.8rem' }}>负责人</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#6B7280', fontSize: '0.8rem' }}>操作</TableCell>
+              <TableRow sx={{ backgroundColor: gs.bgPage }}>
+                <TableCell sx={{ fontWeight: 600, color: gs.textMuted, fontSize: '0.8rem' }}>仓库名称</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: gs.textMuted, fontSize: '0.8rem' }}>位置</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: gs.textMuted, fontSize: '0.8rem' }}>件数上限</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: gs.textMuted, fontSize: '0.8rem' }}>已用件数</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: gs.textMuted, fontSize: '0.8rem', minWidth: 160 }}>容积率</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: gs.textMuted, fontSize: '0.8rem' }}>状态</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: gs.textMuted, fontSize: '0.8rem' }}>负责人</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: gs.textMuted, fontSize: '0.8rem' }}>操作</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -224,7 +229,7 @@ const WarehouseList: React.FC = () => {
                     sx={{ cursor: 'pointer', '&:last-child td': { borderBottom: 0 } }}
                   >
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#111827' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: gs.textPrimary }}>
                         {wh.name}
                       </Typography>
                     </TableCell>
@@ -245,7 +250,7 @@ const WarehouseList: React.FC = () => {
                           variant="determinate"
                           value={Math.min(rate, 100)}
                           color={color}
-                          sx={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: '#f0f0f0' }}
+                          sx={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: gs.borderLighter }}
                         />
                         <Typography variant="body2" sx={{ minWidth: 42, fontWeight: 600, color: color === 'error' ? '#f44336' : color === 'warning' ? '#ff9800' : '#4caf50' }}>
                           {rate}%
@@ -262,7 +267,7 @@ const WarehouseList: React.FC = () => {
                           <IconButton
                             size="small"
                             onClick={() => navigate(`/warehouses/${wh.id}`)}
-                            sx={{ color: '#6B7280' }}
+                            sx={{ color: gs.textMuted }}
                           >
                             <InfoOutlinedIcon fontSize="small" />
                           </IconButton>
@@ -271,7 +276,7 @@ const WarehouseList: React.FC = () => {
                           <IconButton
                             size="small"
                             onClick={() => setDeleteTarget(wh)}
-                            sx={{ color: '#9CA3AF', '&:hover': { color: '#EF4444' } }}
+                            sx={{ color: gs.textDisabled, '&:hover': { color: '#EF4444' } }}
                           >
                             <DeleteOutlineOutlinedIcon fontSize="small" />
                           </IconButton>
@@ -326,7 +331,7 @@ const WarehouseList: React.FC = () => {
 
         <DialogContent sx={{ px: 3, py: 3 }}>
           {/* 必填字段区 */}
-          <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.08em', mb: 1.5, textTransform: 'uppercase' }}>
+          <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: gs.textDisabled, letterSpacing: '0.08em', mb: 1.5, textTransform: 'uppercase' }}>
             必填信息
           </Typography>
           <Grid container spacing={2}>
@@ -363,7 +368,7 @@ const WarehouseList: React.FC = () => {
           </Grid>
 
           {/* 可选字段区 */}
-          <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.08em', mt: 2.5, mb: 1.5, textTransform: 'uppercase' }}>
+          <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: gs.textDisabled, letterSpacing: '0.08em', mt: 2.5, mb: 1.5, textTransform: 'uppercase' }}>
             位置 &amp; 联系人（选填）
           </Typography>
           <Grid container spacing={2}>
@@ -395,7 +400,7 @@ const WarehouseList: React.FC = () => {
           <Button
             onClick={handleCloseDialog}
             disabled={creating}
-            sx={{ textTransform: 'none', color: '#6B7280', borderRadius: 2, px: 2.5 }}
+            sx={{ textTransform: 'none', color: gs.textMuted, borderRadius: 2, px: 2.5 }}
           >
             取消
           </Button>
@@ -406,7 +411,7 @@ const WarehouseList: React.FC = () => {
             sx={{
               background: 'linear-gradient(135deg, #1A1A2E 0%, #0F3460 100%)',
               '&:hover': { background: 'linear-gradient(135deg, #16213E 0%, #1a4a80 100%)' },
-              '&:disabled': { backgroundColor: '#E5E7EB', color: '#9CA3AF' },
+              '&:disabled': { backgroundColor: gs.border, color: gs.textDisabled },
               textTransform: 'none',
               borderRadius: 2,
               px: 3,
@@ -438,13 +443,13 @@ const WarehouseList: React.FC = () => {
           sx: { backgroundColor: 'rgba(0,0,0,0.3)' },
         }}
       >
-        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: '1px solid #E5E7EB' }}>确认删除</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, px: 3, py: 2, borderBottom: `1px solid ${gs.border}` }}>确认删除</DialogTitle>
         <DialogContent sx={{ px: 3, py: 2.5 }}>
-          <Typography sx={{ color: '#6B7280' }}>
+          <Typography sx={{ color: gs.textMuted }}>
             确定要删除仓库「{deleteTarget?.name}」吗？此操作不可撤销。
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: '1px solid #E5E7EB' }}>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 2, borderTop: `1px solid ${gs.border}` }}>
           <Button onClick={() => setDeleteTarget(null)}>取消</Button>
           <Button
             variant="contained"

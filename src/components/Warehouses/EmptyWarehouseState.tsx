@@ -3,9 +3,10 @@
  * 统一空状态 UI，仪表盘和仓库管理共用
  */
 import React from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, useTheme } from '@mui/material';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
+import { getGrayScale } from '../../constants/theme';
 
 interface EmptyWarehouseStateProps {
   /** 点击"新建仓库"按钮的回调 */
@@ -13,6 +14,9 @@ interface EmptyWarehouseStateProps {
 }
 
 const EmptyWarehouseState: React.FC<EmptyWarehouseStateProps> = ({ onAddWarehouse }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   return (
     <Box
       sx={{
@@ -27,7 +31,7 @@ const EmptyWarehouseState: React.FC<EmptyWarehouseStateProps> = ({ onAddWarehous
       <WarehouseOutlinedIcon
         sx={{
           fontSize: 56,
-          color: '#D1D5DB',
+          color: gs.borderDarker,
           mb: 2,
         }}
       />
@@ -35,7 +39,7 @@ const EmptyWarehouseState: React.FC<EmptyWarehouseStateProps> = ({ onAddWarehous
         sx={{
           fontSize: '1rem',
           fontWeight: 500,
-          color: '#6B7280',
+          color: gs.textMuted,
           mb: 1,
         }}
       >
@@ -44,7 +48,7 @@ const EmptyWarehouseState: React.FC<EmptyWarehouseStateProps> = ({ onAddWarehous
       <Typography
         sx={{
           fontSize: '0.8125rem',
-          color: '#9CA3AF',
+          color: gs.textDisabled,
           mb: 3,
           maxWidth: 280,
           textAlign: 'center',

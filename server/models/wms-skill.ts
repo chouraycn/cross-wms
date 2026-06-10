@@ -62,7 +62,7 @@ export interface OutboundReview {
 export interface WmsAlert {
   id?: number;
   warehouseId: string;
-  alertType: 'low_stock' | 'expiry' | 'stagnant';
+  alertType: 'low_stock' | 'expiry' | 'stagnant' | 'predicted_shortage' | 'predicted_overstock';
   severity: 'low' | 'medium' | 'high' | 'critical';
   sku?: string;
   message: string;
@@ -96,6 +96,12 @@ export interface AlertThresholds {
   lowStock?: number;     // 低库存阈值，默认 10
   expiryDays?: number;   // 临期天数，默认 30
   stagnantDays?: number; // 呆滞天数（无出库记录），默认 90
+  // 智能预测参数
+  enablePrediction?: boolean;
+  predictionDays?: number;     // 默认 14
+  shortageThreshold?: number;  // 默认 10
+  overstockDays?: number;      // 默认 60
+  minHistoryDays?: number;     // 默认 7
 }
 
 /** 预警检查结果 */
@@ -104,6 +110,9 @@ export interface AlertCheckResult {
   lowStockAlerts: number;     // 低库存预警数
   expiryAlerts: number;       // 临期预警数
   stagnantAlerts: number;     // 呆滞预警数
+  // 智能预测结果
+  predictedShortageAlerts: number;   // 预测短缺预警数
+  predictedOverstockAlerts: number;  // 预测积压预警数
   errors: string[];           // 错误列表
 }
 
@@ -191,6 +200,60 @@ export interface WmsReportRow {
   created_at: string;
   updated_at: string;
 }
+
+// ===================== 智能预测类型 =====================
+
+/** 每日出库聚合数据（从 inventory_transactions 查询） */
+export interface DailyOutbound {
+  sku: string;
+  warehouseId: string;
+  date: string;          // ISO date string (YYYY-MM-DD)
+  dailyOutbound: number; // 当日出库量合计
+}
+
+/** SKU 预测结果 */
+export interface SkuPrediction {
+  sku: string;
+  warehouseId: string;
+  warehouseName?: string;
+  currentStock: number;          // 当前库存
+  dailyConsumption: number;      // EMA 日均消耗速率
+  predictedStock: number;        // 预测库存 = currentStock - dailyConsumption × predictionDays
+  daysUntilZero: number;         // 预测归零天数（若 >= predictionDays 则无风险）
+  historyDays: number;           // 实际有出库记录的天数
+  confidence: 'high' | 'medium' | 'low'; // 置信度（基于数据量）
+}
+
+/** 预测详情（API 返回给前端图表） */
+export interface PredictionDetail {
+  sku: string;
+  warehouseId: string;
+  warehouseName?: string;
+  currentStock: number;
+  dailyConsumption: number;
+  daysUntilZero: number;
+  confidence: 'high' | 'medium' | 'low';
+  historyData: Array<{ date: string; stock: number; outbound: number }>; // 过去 30 天
+  predictionCurve: Array<{ date: string; predictedStock: number }>;      // 未来 N 天
+  safetyStockLine: number; // 安全库存线（= shortageThreshold）
+}
+
+/** 预测配置（与 AlertRuleConfig 预测部分对齐） */
+export interface PredictionConfig {
+  enabled: boolean;
+  predictionDays: number;     // 默认 14
+  shortageThreshold: number;  // 默认 10
+  overstockDays: number;      // 默认 60
+  minHistoryDays: number;     // 默认 7
+}
+
+export const DEFAULT_PREDICTION_CONFIG: PredictionConfig = {
+  enabled: true,
+  predictionDays: 14,
+  shortageThreshold: 10,
+  overstockDays: 60,
+  minHistoryDays: 7,
+};
 
 // ===================== 转换工具函数 =====================
 
@@ -285,4 +348,93 @@ export function reportRowToModel(row: WmsReportRow): WmsReport {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+// ===================== Replenishment Suggestion Types (v1.6.0) =====================
+
+export type ReplenishmentPriority = 'critical' | 'high' | 'medium' | 'low';
+export type ReplenishmentStatus = 'pending' | 'confirmed' | 'ignored' | 'deferred';
+
+/** Replenishment suggestion (application model, camelCase) */
+export interface ReplenishmentSuggestion {
+  id?: number;
+  sku: string;
+  warehouseId: string;
+  currentStock: number;
+  inTransitQty: number;
+  safetyStock: number;
+  dailyConsumption: number;
+  targetStock: number;
+  suggestedQty: number;
+  sourceWarehouseId?: string;
+  priority: ReplenishmentPriority;
+  status: ReplenishmentStatus;
+  transferOrderId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  warehouseName?: string;
+  sourceWarehouseName?: string;
+  skuName?: string;
+  daysUntilZero?: number;
+}
+
+/** Replenishment configuration */
+export interface ReplenishmentConfig {
+  coverDays: number;
+  enableAutoGenerate: boolean;
+  minHistoryDays: number;
+}
+
+export const DEFAULT_REPLENISHMENT_CONFIG: ReplenishmentConfig = {
+  coverDays: 14,
+  enableAutoGenerate: false,
+  minHistoryDays: 7,
+};
+
+/** Database row: replenishment_suggestions (snake_case) */
+export interface ReplenishmentSuggestionRow {
+  id: number;
+  sku: string;
+  warehouse_id: string;
+  current_stock: number;
+  in_transit_qty: number;
+  safety_stock: number;
+  daily_consumption: number;
+  target_stock: number;
+  suggested_qty: number;
+  source_warehouse_id: string | null;
+  priority: string;
+  status: string;
+  transfer_order_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** snake_case DB Row → camelCase application model */
+export function replenishmentRowToModel(row: ReplenishmentSuggestionRow): ReplenishmentSuggestion {
+  return {
+    id: row.id,
+    sku: row.sku,
+    warehouseId: row.warehouse_id,
+    currentStock: row.current_stock,
+    inTransitQty: row.in_transit_qty,
+    safetyStock: row.safety_stock,
+    dailyConsumption: row.daily_consumption,
+    targetStock: row.target_stock,
+    suggestedQty: row.suggested_qty,
+    sourceWarehouseId: row.source_warehouse_id ?? undefined,
+    priority: row.priority as ReplenishmentPriority,
+    status: row.status as ReplenishmentStatus,
+    transferOrderId: row.transfer_order_id ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/** Source warehouse recommendation */
+export interface SourceRecommendation {
+  warehouseId: string;
+  warehouseName: string;
+  surplus: number;
+  score: number;
 }

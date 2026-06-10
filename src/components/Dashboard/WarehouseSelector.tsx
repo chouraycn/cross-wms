@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { IconButton, Popover, List, ListItemButton, ListItemText, Typography, Box, Button, Grow, Divider } from '@mui/material';
+import { IconButton, Popover, List, ListItemButton, ListItemText, Typography, Box, Button, Grow, Divider, useTheme } from '@mui/material';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import { subscribeWarehouses } from '../../capabilities/warehouse';
 import { emitNewWarehouse } from '../../App';
 import { useNavigate } from 'react-router-dom';
+import { getGrayScale } from '../../constants/theme';
 import type { Warehouse } from '../../types';
 
 export const ALL_WAREHOUSES = '__all__';
@@ -16,6 +17,10 @@ interface WarehouseSelectorProps {
 }
 
 const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChange }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   const [open, setOpen] = useState(false);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const anchorRef = useRef<HTMLButtonElement>(null);
@@ -54,9 +59,9 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
         onClick={handleAddWarehouse}
         size="small"
         sx={{
-          color: '#6B7280',
+          color: gs.textMuted,
           borderRadius: '6px',
-          '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
+          '&:hover': { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
         }}
       >
         <AddOutlinedIcon fontSize="small" />
@@ -71,9 +76,9 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
         onClick={() => setOpen(true)}
         size="small"
         sx={{
-          color: '#6B7280',
+          color: gs.textMuted,
           borderRadius: '6px',
-          '&:hover': { backgroundColor: 'rgba(0,0,0,0.06)' },
+          '&:hover': { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
         }}
       >
         <WarehouseOutlinedIcon fontSize="small" />
@@ -89,8 +94,10 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
           paper: {
             sx: {
               borderRadius: '12px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
-              border: '1px solid #E5E7EB',
+              boxShadow: isDark
+                ? '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2)'
+                : '0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
+              border: `1px solid ${gs.border}`,
               minWidth: 180,
               mt: 0.5,
               py: 0.5,
@@ -102,7 +109,7 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
         TransitionProps={{ timeout: 200 }}
       >
         <Box sx={{ px: 2, pt: 1.5, pb: 0.75 }}>
-          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             切换仓库
           </Typography>
         </Box>
@@ -116,7 +123,7 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
                 sx={{
                   py: 0.75,
                   px: 2,
-                  '&:hover': { backgroundColor: '#F3F4F6' },
+                  '&:hover': { backgroundColor: gs.bgHover },
                 }}
               >
                 <ListItemText
@@ -124,11 +131,11 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
                   primaryTypographyProps={{
                     fontSize: '0.8125rem',
                     fontWeight: isSelected ? 600 : 400,
-                    color: isSelected ? '#111827' : '#374151',
+                    color: isSelected ? gs.textPrimary : gs.textSecondary,
                   }}
                 />
                 {isSelected && (
-                  <CheckIcon sx={{ fontSize: 16, color: '#111827', ml: 1 }} />
+                  <CheckIcon sx={{ fontSize: 16, color: gs.textPrimary, ml: 1 }} />
                 )}
               </ListItemButton>
             );
@@ -143,12 +150,12 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
               startIcon={<AddOutlinedIcon sx={{ fontSize: 16 }} />}
               onClick={handleAddWarehouse}
               sx={{
-                borderColor: '#D1D5DB',
-                color: '#374151',
+                borderColor: gs.borderDarker,
+                color: gs.textSecondary,
                 fontSize: '0.75rem',
                 justifyContent: 'flex-start',
                 textTransform: 'none',
-                '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+                '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgHover },
               }}
             >
               新建仓库

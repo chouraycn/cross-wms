@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Box, Card, Typography, List, ListItem, ListItemText, ListItemIcon, ListItemButton, Divider, IconButton, Tooltip, Chip, Button,
+  useTheme,
 } from '@mui/material';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -15,6 +16,7 @@ import {
   extractWeComDocIdFromUrl, getWeComDocCategoryFromUrl, getWeComCategoryLabel,
 } from '../../services/wecomDocsApi';
 import { getWarehouses } from '../../capabilities/warehouse';
+import { getGrayScale } from '../../constants/theme';
 
 /** 腾讯文档品牌色 */
 const TDOC_COLOR = '#27A17C';
@@ -50,6 +52,9 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
   cacheKeyFn, onOpenDoc, onOpenWeComDoc, onRefreshSingleDoc, onRefreshSingleWecomDoc, onOpenInBrowser,
 }) => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const allWarehouses = getWarehouses();
 
   /** 按仓库分组文档 */
@@ -83,7 +88,7 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
         const parsed = JSON.parse(cached);
         if (parsed.cachedAt) {
           return (
-            <Typography variant="caption" sx={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Typography variant="caption" sx={{ fontSize: '0.7rem', color: gs.textDisabled, display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <AccessTimeIcon sx={{ fontSize: 12 }} />
               上次更新：{new Date(parsed.cachedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
             </Typography>
@@ -99,17 +104,17 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
       {/* === 个人文档空状态 === */}
       {docLinks.length === 0 && (
         <Box sx={{ textAlign: 'center', py: 6 }}>
-          <DescriptionIcon sx={{ fontSize: 56, color: '#D1D5DB', mb: 2 }} />
-          <Typography sx={{ color: '#6B7280', fontSize: '0.95rem', mb: 1 }}>暂无关联文档</Typography>
-          <Typography sx={{ color: '#9CA3AF', fontSize: '0.85rem', mb: 2 }}>在设置中粘贴腾讯文档链接，即可在应用内读取文档内容</Typography>
+          <DescriptionIcon sx={{ fontSize: 56, color: gs.borderDarker, mb: 2 }} />
+          <Typography sx={{ color: gs.textMuted, fontSize: '0.95rem', mb: 1 }}>暂无关联文档</Typography>
+          <Typography sx={{ color: gs.textDisabled, fontSize: '0.85rem', mb: 2 }}>在设置中粘贴腾讯文档链接，即可在应用内读取文档内容</Typography>
           <Button variant="contained" startIcon={<SettingsIcon />} onClick={() => navigate('/settings')} sx={{ backgroundColor: TDOC_COLOR, '&:hover': { backgroundColor: '#1e7a5e' } }}>前往设置添加文档</Button>
         </Box>
       )}
 
       {/* === 个人文档列表 === */}
       {docLinks.length > 0 && (
-        <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2 }}>
-          <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+          <Box sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${gs.borderLighter}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>已关联文档（{docLinks.length} 个）</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               {lastSync && <Typography variant="caption" color="text.secondary">上次检查：{lastSync}</Typography>}
@@ -118,10 +123,10 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
           </Box>
           {getDocsGroupedByWarehouse(docLinks as DocLinkItem[]).map(([warehouseId, group]) => (
             <Box key={warehouseId}>
-              <Box sx={{ px: 2, py: 1, backgroundColor: '#f9fafb', borderBottom: '1px solid #f0f0f0' }}>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: '#374151' }}>
+              <Box sx={{ px: 2, py: 1, backgroundColor: gs.bgPage, borderBottom: `1px solid ${gs.borderLighter}` }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: gs.textSecondary }}>
                   {group.warehouseName}
-                  <Chip label={group.docs.length} size="small" sx={{ ml: 1, height: 18, fontSize: '0.65rem', backgroundColor: '#E5E7EB' }} />
+                  <Chip label={group.docs.length} size="small" sx={{ ml: 1, height: 18, fontSize: '0.65rem', backgroundColor: gs.border }} />
                 </Typography>
               </Box>
               <List disablePadding>
@@ -129,18 +134,18 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
                   <React.Fragment key={doc.id}>
                     <ListItem disablePadding secondaryAction={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Tooltip title="在浏览器中打开"><IconButton size="small" onClick={(e) => { e.stopPropagation(); onOpenInBrowser(doc.url); }} sx={{ color: '#6B7280' }}><OpenInNewIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
-                        <Tooltip title="刷新文档内容"><IconButton size="small" onClick={(e) => { e.stopPropagation(); onRefreshSingleDoc(doc); }} disabled={refreshingDocId === doc.id} sx={{ color: refreshingDocId === doc.id ? TDOC_COLOR : '#6B7280' }}><RefreshIcon sx={{ fontSize: 16, animation: refreshingDocId === doc.id ? 'spin 1s linear infinite' : 'none' }} /></IconButton></Tooltip>
+                        <Tooltip title="在浏览器中打开"><IconButton size="small" onClick={(e) => { e.stopPropagation(); onOpenInBrowser(doc.url); }} sx={{ color: gs.textMuted }}><OpenInNewIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+                        <Tooltip title="刷新文档内容"><IconButton size="small" onClick={(e) => { e.stopPropagation(); onRefreshSingleDoc(doc); }} disabled={refreshingDocId === doc.id} sx={{ color: refreshingDocId === doc.id ? TDOC_COLOR : gs.textMuted }}><RefreshIcon sx={{ fontSize: 16, animation: refreshingDocId === doc.id ? 'spin 1s linear infinite' : 'none' }} /></IconButton></Tooltip>
                       </Box>
                     }>
                       <ListItemButton sx={{ py: 1.5 }} onClick={() => onOpenDoc(doc.id, doc.title, doc.url)}>
                         <ListItemIcon sx={{ minWidth: 40 }}>
-                          {doc.url.includes('/sheet/') ? <TableChartIcon sx={{ color: TDOC_COLOR }} /> : <DescriptionIcon sx={{ color: '#111827' }} />}
+                          {doc.url.includes('/sheet/') ? <TableChartIcon sx={{ color: TDOC_COLOR }} /> : <DescriptionIcon sx={{ color: gs.textPrimary }} />}
                         </ListItemIcon>
                         <ListItemText primary={
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Typography variant="body2" sx={{ fontWeight: 500 }}>{doc.title}</Typography>
-                            <Chip label={dataTypeLabels[doc.dataType] ?? '其他'} size="small" sx={{ height: 18, fontSize: '0.65rem', backgroundColor: '#F3F4F6', color: '#6B7280' }} />
+                            <Chip label={dataTypeLabels[doc.dataType] ?? '其他'} size="small" sx={{ height: 18, fontSize: '0.65rem', backgroundColor: gs.bgHover, color: gs.textMuted }} />
                             <Chip label={getDocTypeFromUrl(doc.url) === 'sheet' ? '表格' : '文档'} size="small" sx={{ height: 18, fontSize: '0.65rem', backgroundColor: '#E8F5E9', color: TDOC_COLOR }} />
                           </Box>
                         } secondary={
@@ -164,26 +169,26 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
 
       {/* === 企业文档空状态 === */}
       {wecomDocLinks.length === 0 && (
-        <Box sx={{ textAlign: 'center', py: 4, border: '1px dashed #E5E7EB', borderRadius: 2 }}>
-          <DescriptionIcon sx={{ fontSize: 48, color: '#D1D5DB', mb: 1.5 }} />
-          <Typography sx={{ color: '#6B7280', fontSize: '0.9rem', mb: 0.5 }}>暂无企业文档</Typography>
-          <Typography sx={{ color: '#9CA3AF', fontSize: '0.8rem' }}>在设置中添加企业微信文档链接（doc.weixin.qq.com）</Typography>
+        <Box sx={{ textAlign: 'center', py: 4, border: `1px dashed ${gs.border}`, borderRadius: 2 }}>
+          <DescriptionIcon sx={{ fontSize: 48, color: gs.borderDarker, mb: 1.5 }} />
+          <Typography sx={{ color: gs.textMuted, fontSize: '0.9rem', mb: 0.5 }}>暂无企业文档</Typography>
+          <Typography sx={{ color: gs.textDisabled, fontSize: '0.8rem' }}>在设置中添加企业微信文档链接（doc.weixin.qq.com）</Typography>
         </Box>
       )}
 
       {/* === 企业文档列表 === */}
       {wecomDocLinks.length > 0 && (
-        <Card elevation={0} sx={{ border: '1px solid #e8e8e8', borderRadius: 2 }}>
-          <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Card elevation={0} sx={{ border: `1px solid ${gs.border}`, borderRadius: 2 }}>
+          <Box sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${gs.borderLighter}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>企业文档（{wecomDocLinks.length} 个）</Typography>
             <Typography variant="caption" color="text.secondary">点击文档读取内容</Typography>
           </Box>
           {getDocsGroupedByWarehouse(wecomDocLinks as WeComDocLinkItem[]).map(([warehouseId, group]) => (
             <Box key={warehouseId}>
-              <Box sx={{ px: 2, py: 1, backgroundColor: '#f9fafb', borderBottom: '1px solid #f0f0f0' }}>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: '#374151' }}>
+              <Box sx={{ px: 2, py: 1, backgroundColor: gs.bgPage, borderBottom: `1px solid ${gs.borderLighter}` }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: gs.textSecondary }}>
                   {group.warehouseName}
-                  <Chip label={group.docs.length} size="small" sx={{ ml: 1, height: 18, fontSize: '0.65rem', backgroundColor: '#E5E7EB' }} />
+                  <Chip label={group.docs.length} size="small" sx={{ ml: 1, height: 18, fontSize: '0.65rem', backgroundColor: gs.border }} />
                 </Typography>
               </Box>
               <List disablePadding>
@@ -193,18 +198,18 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
                     <React.Fragment key={doc.id}>
                       <ListItem disablePadding secondaryAction={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Tooltip title="在浏览器中打开"><IconButton size="small" onClick={(e) => { e.stopPropagation(); onOpenInBrowser(doc.url); }} sx={{ color: '#6B7280' }}><OpenInNewIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
-                          <Tooltip title="刷新文档内容"><IconButton size="small" onClick={(e) => { e.stopPropagation(); onRefreshSingleWecomDoc(doc); }} disabled={refreshingWecomDocId === doc.id} sx={{ color: refreshingWecomDocId === doc.id ? WECOM_COLOR : '#6B7280' }}><RefreshIcon sx={{ fontSize: 16, animation: refreshingWecomDocId === doc.id ? 'spin 1s linear infinite' : 'none' }} /></IconButton></Tooltip>
+                          <Tooltip title="在浏览器中打开"><IconButton size="small" onClick={(e) => { e.stopPropagation(); onOpenInBrowser(doc.url); }} sx={{ color: gs.textMuted }}><OpenInNewIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
+                          <Tooltip title="刷新文档内容"><IconButton size="small" onClick={(e) => { e.stopPropagation(); onRefreshSingleWecomDoc(doc); }} disabled={refreshingWecomDocId === doc.id} sx={{ color: refreshingWecomDocId === doc.id ? WECOM_COLOR : gs.textMuted }}><RefreshIcon sx={{ fontSize: 16, animation: refreshingWecomDocId === doc.id ? 'spin 1s linear infinite' : 'none' }} /></IconButton></Tooltip>
                         </Box>
                       }>
                         <ListItemButton sx={{ py: 1.5 }} onClick={() => onOpenWeComDoc(doc.id, doc.title, doc.url)}>
                           <ListItemIcon sx={{ minWidth: 40 }}>
-                            {category === 'smartpage' ? <DescriptionIcon sx={{ color: WECOM_COLOR }} /> : category === 'smartsheet' ? <TableChartIcon sx={{ color: WECOM_COLOR }} /> : <DescriptionIcon sx={{ color: '#111827' }} />}
+                            {category === 'smartpage' ? <DescriptionIcon sx={{ color: WECOM_COLOR }} /> : category === 'smartsheet' ? <TableChartIcon sx={{ color: WECOM_COLOR }} /> : <DescriptionIcon sx={{ color: gs.textPrimary }} />}
                           </ListItemIcon>
                           <ListItemText primary={
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <Typography variant="body2" sx={{ fontWeight: 500 }}>{doc.title}</Typography>
-                              <Chip label={dataTypeLabels[doc.dataType] ?? '其他'} size="small" sx={{ height: 18, fontSize: '0.65rem', backgroundColor: '#F3F4F6', color: '#6B7280' }} />
+                              <Chip label={dataTypeLabels[doc.dataType] ?? '其他'} size="small" sx={{ height: 18, fontSize: '0.65rem', backgroundColor: gs.bgHover, color: gs.textMuted }} />
                               <Chip label={getWeComCategoryLabel(category)} size="small" sx={{ height: 18, fontSize: '0.65rem', backgroundColor: '#ECFDF5', color: WECOM_COLOR }} />
                             </Box>
                           } secondary={

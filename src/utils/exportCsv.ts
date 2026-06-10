@@ -61,6 +61,106 @@ export function exportToCsv(filename: string, headers: string[], rows: string[][
   URL.revokeObjectURL(url);
 }
 
+// ===================== v1.7.0: 带元数据的 CSV 导出 =====================
+
+export interface CsvMetadata {
+  /** 查询 SQL 语句 */
+  sql?: string;
+  /** 生成时间 (ISO 8601) */
+  timestamp?: string;
+  /** 数据来源表 */
+  dataSource?: string;
+  /** 查询意图 */
+  queryIntent?: string;
+}
+
+/**
+ * v1.7.0: 导出带元数据注释行的 CSV
+ *
+ * CSV 文件头部包含：
+ *   # 查询语句: {sql}
+ *   # 生成时间: {timestamp}
+ *   # 数据来源: {dataSource}
+ *   # 查询意图: {queryIntent}
+ * 后跟标准 CSV 数据行。
+ */
+export function exportCsvWithMetadata(
+  columns: string[],
+  rows: Record<string, unknown>[],
+  metadata?: CsvMetadata,
+  filename?: string,
+): void {
+  if (columns.length === 0 || rows.length === 0) return;
+
+  const escapeCsvField = (field: string): string => {
+    if (/[",\n\r]/.test(field)) {
+      return `"${field.replace(/"/g, '""')}"`;
+    }
+    return field;
+  };
+
+  const metaLines: string[] = [];
+
+  if (metadata?.sql) {
+    metaLines.push(`# 查询语句: ${metadata.sql.replace(/\n/g, ' ')}`);
+  }
+  if (metadata?.timestamp) {
+    metaLines.push(`# 生成时间: ${metadata.timestamp}`);
+  }
+  if (metadata?.dataSource) {
+    metaLines.push(`# 数据来源: ${metadata.dataSource}`);
+  }
+  if (metadata?.queryIntent) {
+    metaLines.push(`# 查询意图: ${metadata.queryIntent}`);
+  }
+
+  const headerLine = columns.map(escapeCsvField).join(',');
+  const dataLines = rows.map(row =>
+    columns.map(col => {
+      const val = row[col];
+      const str = val === null || val === undefined ? '' : String(val);
+      return escapeCsvField(str);
+    }).join(',')
+  );
+
+  const csv = [...metaLines, headerLine, ...dataLines].join('\n');
+  const bomCsv = '\uFEFF' + csv;
+
+  // 检测 pywebview 环境
+  const hasPywebviewApi =
+    typeof window !== 'undefined' &&
+    (window as any).pywebview?.api?.download_csv;
+
+  if (hasPywebviewApi) {
+    try {
+      const resultJson = (window as any).pywebview.api.download_csv(
+        filename || `inventory-query-${Date.now()}.csv`,
+        bomCsv,
+      );
+      const result = typeof resultJson === 'string' ? JSON.parse(resultJson) : resultJson;
+      if (result.ok) {
+        console.log(`[CSV Export] 已保存到: ${result.path}`);
+      } else {
+        console.error(`[CSV Export] 保存失败: ${result.error}`);
+      }
+    } catch (e: any) {
+      console.error('[CSV Export] pywebview API 调用失败:', e);
+    }
+    return;
+  }
+
+  // 浏览器环境
+  const blob = new Blob([bomCsv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename || `inventory-query-${Date.now()}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 /**
  * 下载容积率导入模板（支持中文字段）
  * 优先读取 public/templates/volume-template.csv，若失败则使用硬编码内容降级

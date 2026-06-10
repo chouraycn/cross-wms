@@ -10,7 +10,10 @@ import type { AlertThresholds, AlertCheckResult, WmsAlert } from '../models/wms-
 
 // ===================== 默认阈值配置 =====================
 
-const DEFAULT_THRESHOLDS: Required<AlertThresholds> = {
+/** alertService 仅使用规则驱动的阈值字段，不包含预测参数 */
+type RuleThresholds = Required<Pick<AlertThresholds, 'lowStock' | 'expiryDays' | 'stagnantDays'>>;
+
+const DEFAULT_THRESHOLDS: RuleThresholds = {
   lowStock: 10,
   expiryDays: 30,
   stagnantDays: 90,
@@ -39,6 +42,8 @@ export async function checkAllAlerts(
     lowStockAlerts: 0,
     expiryAlerts: 0,
     stagnantAlerts: 0,
+    predictedShortageAlerts: 0,
+    predictedOverstockAlerts: 0,
     errors: [],
   };
 

@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box } from '@mui/material';
+import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box, useTheme } from '@mui/material';
 import { Session } from '../../types/chat';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import SearchInput from '../Common/SearchInput';
+import { getGrayScale } from '../../constants/theme';
 
 /** 与 ChatPage 共享的 localStorage key */
 const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
@@ -59,6 +60,9 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: SessionReferenceSelectorProps) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const listRef = useRef<HTMLDivElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -158,14 +162,14 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
         overflow: 'auto',
         zIndex: 1400,
         borderRadius: '10px',
-        border: '1px solid #E5E7EB',
-        bgcolor: '#FFFFFF',
+        border: `1px solid ${gs.border}`,
+        bgcolor: gs.bgPanel,
         boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.12)',
       }}
     >
       {/* 标题栏 + 搜索框 */}
-      <Box sx={{ px: 1.5, py: 1, borderBottom: '1px solid #F3F4F6' }}>
-        <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#6B7280', mb: 0.5 }}>
+      <Box sx={{ px: 1.5, py: 1, borderBottom: `1px solid ${gs.bgHover}` }}>
+        <Typography sx={{ fontSize: 12, fontWeight: 600, color: gs.textMuted, mb: 0.5 }}>
           引用历史对话
         </Typography>
         <SearchInput
@@ -179,7 +183,7 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
 
       {sessions.length === 0 ? (
         <Box sx={{ p: 2, textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 13, color: '#9CA3AF' }}>未找到对话记录</Typography>
+          <Typography sx={{ fontSize: 13, color: gs.textDisabled }}>未找到对话记录</Typography>
         </Box>
       ) : (
         <List sx={{ py: 0.5, px: 0 }}>
@@ -193,30 +197,30 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
                 py: 1,
                 px: 1.5,
                 cursor: 'pointer',
-                bgcolor: hoveredIndex === index ? '#F3F4F6' : 'transparent',
+                bgcolor: hoveredIndex === index ? gs.bgHover : 'transparent',
                 borderRadius: 1,
                 mx: 0.5,
                 transition: 'background-color 0.1s',
               }}
             >
               <ListItemIcon sx={{ minWidth: 36 }}>
-                <ChatBubbleOutlineIcon sx={{ fontSize: 20, color: '#6B7280' }} />
+                <ChatBubbleOutlineIcon sx={{ fontSize: 20, color: gs.textMuted }} />
               </ListItemIcon>
               <ListItemText
                 primary={
-                  <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#111827' }} noWrap>
+                  <Typography sx={{ fontSize: 13, fontWeight: 500, color: gs.textPrimary }} noWrap>
                     {session.title || (session.messages[0]?.content as string)?.slice(0, 20) || '新对话'}
                   </Typography>
                 }
                 secondary={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.25 }}>
-                    <Typography sx={{ fontSize: 11, color: '#9CA3AF' }} noWrap>
+                    <Typography sx={{ fontSize: 11, color: gs.textDisabled }} noWrap>
                       {session.model}
                     </Typography>
-                    <Typography sx={{ fontSize: 11, color: '#D1D5DB' }}>
+                    <Typography sx={{ fontSize: 11, color: gs.borderDarker }}>
                       ·
                     </Typography>
-                    <Typography sx={{ fontSize: 11, color: '#9CA3AF' }} noWrap>
+                    <Typography sx={{ fontSize: 11, color: gs.textDisabled }} noWrap>
                       {session.updatedAt ? formatTimeAgo(session.updatedAt) : '未知时间'}
                     </Typography>
                   </Box>

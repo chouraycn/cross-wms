@@ -6,8 +6,10 @@ import {
   Button,
   Slider,
   Alert,
+  useTheme,
 } from '@mui/material';
 import { isPyWebView } from '../../../services/tencentDocsApi';
+import { getGrayScale } from '../../../constants/theme';
 
 // ===================== Props =====================
 
@@ -18,6 +20,10 @@ export interface TrafficLightOffsetProps {
 // ===================== Component =====================
 
 const TrafficLightOffset: React.FC<TrafficLightOffsetProps> = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   const [trafficLightOffset, setTrafficLightOffset] = useState({ x: 0, y: 0 });
   const [loadingTrafficLight, setLoadingTrafficLight] = useState(false);
   const [savingTrafficLight, setSavingTrafficLight] = useState(false);
@@ -83,19 +89,19 @@ const TrafficLightOffset: React.FC<TrafficLightOffsetProps> = () => {
 
   return (
     <>
-      <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#111827', mt: 0.5, mb: 1 }}>
+      <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: gs.textPrimary, mt: 0.5, mb: 1 }}>
         红黄绿按钮位置
       </Typography>
-      <Typography sx={{ fontSize: '0.75rem', color: '#6B7280', mb: 1.5 }}>
+      <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, mb: 1.5 }}>
         调整 macOS 窗口标题栏左上角红黄绿按钮的偏移量。正值向右/向下，负值向左/向上。
       </Typography>
 
       {loadingTrafficLight ? (
-        <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF' }}>加载中...</Typography>
+        <Typography sx={{ fontSize: '0.8rem', color: gs.textDisabled }}>加载中...</Typography>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Box>
-            <Typography sx={{ fontSize: '0.8rem', color: '#374151', mb: 0.5 }}>
+            <Typography sx={{ fontSize: '0.8rem', color: gs.textSecondary, mb: 0.5 }}>
               水平偏移: {trafficLightOffset.x}px
             </Typography>
             <Slider
@@ -105,11 +111,11 @@ const TrafficLightOffset: React.FC<TrafficLightOffsetProps> = () => {
               max={150}
               step={1}
               valueLabelDisplay="auto"
-              sx={{ color: '#111827', '& .MuiSlider-thumb': { width: 16, height: 16 } }}
+              sx={{ color: gs.textPrimary, '& .MuiSlider-thumb': { width: 16, height: 16 } }}
             />
           </Box>
           <Box>
-            <Typography sx={{ fontSize: '0.8rem', color: '#374151', mb: 0.5 }}>
+            <Typography sx={{ fontSize: '0.8rem', color: gs.textSecondary, mb: 0.5 }}>
               垂直偏移: {trafficLightOffset.y}px
             </Typography>
             <Slider
@@ -119,7 +125,7 @@ const TrafficLightOffset: React.FC<TrafficLightOffsetProps> = () => {
               max={150}
               step={1}
               valueLabelDisplay="auto"
-              sx={{ color: '#111827', '& .MuiSlider-thumb': { width: 16, height: 16 } }}
+              sx={{ color: gs.textPrimary, '& .MuiSlider-thumb': { width: 16, height: 16 } }}
             />
           </Box>
 
@@ -130,8 +136,8 @@ const TrafficLightOffset: React.FC<TrafficLightOffsetProps> = () => {
               onClick={applyTrafficLightOffset}
               disabled={savingTrafficLight}
               sx={{
-                backgroundColor: '#111827',
-                '&:hover': { backgroundColor: '#1F2937' },
+                backgroundColor: gs.textPrimary,
+                '&:hover': { backgroundColor: gs.textSecondary },
                 fontSize: '0.8rem',
               }}
             >
@@ -142,10 +148,10 @@ const TrafficLightOffset: React.FC<TrafficLightOffsetProps> = () => {
               size="small"
               onClick={resetTrafficLightOffset}
               sx={{
-                borderColor: '#E5E7EB',
-                color: '#6B7280',
+                borderColor: gs.border,
+                color: gs.textMuted,
                 fontSize: '0.8rem',
-                '&:hover': { borderColor: '#9CA3AF', backgroundColor: '#F9FAFB' },
+                '&:hover': { borderColor: gs.borderDarker, backgroundColor: gs.bgHover },
               }}
             >
               重置默认
@@ -162,7 +168,7 @@ const TrafficLightOffset: React.FC<TrafficLightOffsetProps> = () => {
             </Alert>
           )}
 
-          <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mt: 0.5 }}>
+          <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled, mt: 0.5 }}>
             提示：此设置仅在 macOS 系统的 pywebview 环境中生效，重启应用后自动生效。
           </Typography>
         </Box>

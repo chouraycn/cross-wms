@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
+import { getGrayScale } from '../../constants/theme';
 
 /** Recharts Tooltip payload 条目 */
 interface PayloadItem {
@@ -48,6 +49,10 @@ function formatNumber(value: number | string): string {
  * - 数值带单位格式化
  */
 const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, unit }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   if (!active || !payload || payload.length === 0) return null;
 
   return (
@@ -55,10 +60,12 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, u
       sx={{
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
-        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        backgroundColor: isDark ? 'rgba(26, 26, 26, 0.9)' : gs.bgPanel,
         borderRadius: '8px',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
-        border: '1px solid rgba(229, 231, 235, 0.6)',
+        boxShadow: isDark
+          ? '0 4px 16px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2)'
+          : '0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
+        border: `1px solid ${gs.border}`,
         padding: '10px 14px',
         minWidth: 80,
         pointerEvents: 'none',
@@ -69,7 +76,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, u
         <Typography
           sx={{
             fontSize: '0.75rem',
-            color: '#6B7280',
+            color: gs.textMuted,
             fontWeight: 500,
             mb: 0.5,
             lineHeight: 1.4,
@@ -96,7 +103,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, u
               width: 8,
               height: 8,
               borderRadius: '50%',
-              backgroundColor: entry.color || '#111827',
+              backgroundColor: entry.color || gs.textPrimary,
               flexShrink: 0,
             }}
           />
@@ -105,7 +112,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, u
           <Typography
             sx={{
               fontSize: '0.75rem',
-              color: '#6B7280',
+              color: gs.textMuted,
               flex: 1,
               lineHeight: 1.4,
             }}
@@ -117,7 +124,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, u
           <Typography
             sx={{
               fontSize: '0.8125rem',
-              color: '#111827',
+              color: gs.textPrimary,
               fontWeight: 600,
               lineHeight: 1.4,
               whiteSpace: 'nowrap',

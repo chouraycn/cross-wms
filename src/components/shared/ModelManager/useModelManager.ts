@@ -11,13 +11,16 @@
 import React, { useState, useCallback, useRef } from 'react';
 import type { ModelConfig } from '../../../types/models';
 import * as api from '../../../services/api';
-import { PROVIDER_ENDPOINTS } from './styles';
+import { PROVIDER_ENDPOINTS } from '../../../../shared/data/providerEndpoints';
 import type {
   ModelManagerProps,
   ModelFormState,
   ModelManagerState,
   ModelManagerActions,
+  ConfirmDialogConfig,
 } from './types';
+import { PRESET_MODELS, type PresetModel } from './ModelSelectDialog';
+import { modelToForm, formToModel } from './modelFormUtils';
 
 /** 创建空白模型表单 */
 function createEmptyForm(): ModelFormState {
@@ -27,6 +30,10 @@ function createEmptyForm(): ModelFormState {
     provider: 'openai',
     apiEndpoint: '',
     apiKey: '',
+    apiKeyRef: '',
+    apiKeys: [],
+    apiKeyRefs: [],
+    keyStrategy: 'round-robin',
     enabled: true,
     description: '',
     contextWindow: '',
@@ -35,47 +42,6 @@ function createEmptyForm(): ModelFormState {
     topP: '1',
     capabilities: [],
   };
-}
-
-/** 将 ModelConfig 转为 ModelFormState */
-function modelToForm(model: ModelConfig): ModelFormState {
-  return {
-    id: model.id,
-    name: model.name,
-    provider: model.provider,
-    apiEndpoint: model.apiEndpoint || '',
-    apiKey: model.apiKey || '',
-    enabled: model.enabled,
-    description: model.description || '',
-    contextWindow: model.contextWindow?.toString() || '',
-    maxTokens: model.maxTokens?.toString() || '',
-    temperature: model.temperature?.toString() ?? '1',
-    topP: model.topP?.toString() ?? '1',
-    capabilities: model.capabilities || [],
-  };
-}
-
-/** 将 ModelFormState 转为 ModelConfig（验证通过后调用） */
-function formToModel(form: ModelFormState): ModelConfig {
-  const model: ModelConfig = {
-    id: form.id.trim(),
-    name: form.name.trim(),
-    provider: form.provider,
-    enabled: form.enabled,
-    description: form.description.trim() || undefined,
-    contextWindow: form.contextWindow ? Number(form.contextWindow) : undefined,
-    maxTokens: form.maxTokens ? Number(form.maxTokens) : undefined,
-    temperature: form.temperature ? Number(form.temperature) : undefined,
-    topP: form.topP ? Number(form.topP) : undefined,
-    capabilities: form.capabilities.length > 0 ? form.capabilities as any : undefined,
-  };
-  if (form.apiEndpoint.trim()) {
-    model.apiEndpoint = form.apiEndpoint.trim();
-  }
-  if (form.apiKey.trim()) {
-    model.apiKey = form.apiKey.trim();
-  }
-  return model;
 }
 
 /** 导入文件 JSON 的校验结构 */
@@ -143,25 +109,86 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [testAvailableModels, setTestAvailableModels] = useState<string[]>([]);
   const [testModelValid, setTestModelValid] = useState(false);
+  const [showModelSelectDialog, setShowModelSelectDialog] = useState(false);
+  /** 通用确认对话框状态 */
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogConfig>({
+    open: false,
+    title: '',
+    content: '',
+    confirmText: '',
+    confirmColor: 'primary',
+    onConfirm: () => {},
+    onCancel: () => {},
+  });
 
   /** 隐藏的文件 input ref（用于导入） */
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /** 关闭确认对话框 */
+  const closeConfirmDialog = useCallback(() => {
+    setConfirmDialog(prev => ({ ...prev, open: false }));
+  }, []);
+
+  /** 打开确认对话框（辅助函数） */
+  const openConfirmDialog = useCallback((config: Omit<ConfirmDialogConfig, 'open'>) => {
+    setConfirmDialog({
+      ...config,
+      open: true,
+    });
+  }, []);
+
   // ---- 操作 ----
 
-  /** 打开模型对话框 */
-  const openModelDialog = useCallback((mode: 'add' | 'edit', model?: ModelConfig) => {
-    setModelDialogMode(mode);
-    if (mode === 'edit' && model) {
-      setEditingModel(model);
-      setModelForm(modelToForm(model));
-    } else {
-      setEditingModel(null);
-      setModelForm(createEmptyForm());
-    }
+  /** 打开模型选择弹窗（Step 1） */
+  const openModelSelectDialog = useCallback(() => {
+    setShowModelSelectDialog(true);
+  }, []);
+
+  /** 关闭模型选择弹窗 */
+  const closeModelSelectDialog = useCallback(() => {
+    setShowModelSelectDialog(false);
+  }, []);
+
+  /** 从预设选择模型后，填充表单并进入 Step 2 */
+  const handlePresetSelect = useCallback((preset: PresetModel) => {
+    setShowModelSelectDialog(false);
+    const endpoint = preset.provider === 'custom' ? '' : (PROVIDER_ENDPOINTS[preset.provider] || '');
+    setModelDialogMode('add');
+    setEditingModel(null);
+    setModelForm({
+      id: preset.id || `model-${Date.now()}`,
+      name: preset.name || '',
+      provider: preset.provider,
+      apiEndpoint: endpoint,
+      apiKey: '',
+      apiKeyRef: '',
+      apiKeys: [],
+      apiKeyRefs: [],
+      keyStrategy: 'round-robin',
+      enabled: true,
+      description: preset.description || '',
+      contextWindow: preset.contextWindow ? String(preset.contextWindow) : '',
+      maxTokens: preset.maxTokens ? String(preset.maxTokens) : '',
+      temperature: '1',
+      topP: '1',
+      capabilities: preset.capabilities || [],
+    });
     setModelFormErrors({});
     setTestStatus('idle');
     setTestMessage('');
+  }, []);
+
+  /** 打开模型对话框（编辑模式直接打开，添加模式已改为先选模型） */
+  const openModelDialog = useCallback((mode: 'add' | 'edit', model?: ModelConfig) => {
+    if (mode === 'edit' && model) {
+      setModelDialogMode(mode);
+      setEditingModel(model);
+      setModelForm(modelToForm(model));
+      setModelFormErrors({});
+      setTestStatus('idle');
+      setTestMessage('');
+    }
+    // add 模式现在通过 openModelSelectDialog -> handlePresetSelect 触发
   }, []);
 
   /** 关闭模型对话框 */
@@ -178,11 +205,25 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     const errs: Record<string, string> = {};
     if (!modelForm.id.trim()) {
       errs['model.id'] = 'ID 不能为空';
-    } else if (modelDialogMode === 'add' && models.some(m => m.id === modelForm.id.trim())) {
+    } else if (
+      modelDialogMode === 'add' && models.some((m) => m.id === modelForm.id.trim())
+    ) {
+      errs['model.id'] = 'ID 已存在';
+    } else if (
+      modelDialogMode === 'edit' &&
+      editingModel &&
+      modelForm.id.trim() !== editingModel.id &&
+      models.some((m) => m.id === modelForm.id.trim())
+    ) {
       errs['model.id'] = 'ID 已存在';
     }
     if (!modelForm.name.trim()) {
       errs['model.name'] = '名称不能为空';
+    }
+    if (modelForm.provider === 'custom' && !modelForm.apiEndpoint.trim()) {
+      errs['model.apiEndpoint'] = '自定义提供商必须填写 API 端点';
+    } else if (modelForm.apiEndpoint.trim() && !modelForm.apiEndpoint.trim().startsWith('http')) {
+      errs['model.apiEndpoint'] = 'API 端点必须以 http:// 或 https:// 开头';
     }
     if (modelForm.contextWindow && isNaN(Number(modelForm.contextWindow))) {
       errs['model.contextWindow'] = '必须是数字';
@@ -209,11 +250,11 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     setModelFormErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
-    const modelData = formToModel(modelForm);
+    const modelData = formToModel(modelForm, editingModel);
 
     let newModels: ModelConfig[];
     if (modelDialogMode === 'edit' && editingModel) {
-      newModels = models.map(m =>
+      newModels = models.map((m) =>
         m.id === editingModel.id ? { ...m, ...modelData, id: modelForm.id.trim() } : m
       );
     } else {
@@ -251,11 +292,7 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
 
   /** 设置默认模型 */
   const handleSetDefaultModel = useCallback((modelId: string) => {
-    const newModels = models.map(m => ({
-      ...m,
-      isDefault: m.id === modelId,
-    }));
-    onChange(newModels, modelId);
+    onChange(models, modelId);
   }, [models, onChange]);
 
   /** 切换模型启用状态 */
@@ -266,7 +303,7 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     onChange(newModels, defaultModelId);
   }, [models, defaultModelId, onChange]);
 
-  /** 测试 API 连接 */
+  /** 测试 API 连接（支持多 Key 轮询测试） */
   const handleTestApi = useCallback(async () => {
     setTestStatus('testing');
     setTestMessage('');
@@ -282,24 +319,63 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
         setTestMessage('请先填写 API 端点');
         return;
       }
-      const result = await api.testModelConnection(
-        endpoint,
-        modelForm.apiKey.trim(),
-        modelForm.id.trim() || modelForm.name.trim() || 'test',
-      );
-      if (result.success) {
-        setTestStatus('success');
-        setTestMessage(result.message || '连接成功');
-        // 捕获可用模型列表和验证结果
-        if (result.models && Array.isArray(result.models)) {
-          setTestAvailableModels(result.models);
+
+      const modelId = modelForm.id.trim() || modelForm.name.trim() || 'test';
+
+      // 收集所有待测试的 Key（多 Key 优先）
+      const keysToTest: { key: string; label: string }[] = [];
+      const activeMultiKeys = (modelForm.apiKeys || []).filter((k) => k.enabled && k.key.trim());
+      if (activeMultiKeys.length > 0) {
+        for (const k of activeMultiKeys) {
+          keysToTest.push({ key: k.key.trim(), label: k.label || 'Key' });
         }
-        if (typeof result.modelValid === 'boolean') {
-          setTestModelValid(result.modelValid);
-        }
-      } else {
+      } else if (modelForm.apiKey.trim()) {
+        keysToTest.push({ key: modelForm.apiKey.trim(), label: 'API Key' });
+      }
+
+      if (keysToTest.length === 0) {
         setTestStatus('error');
-        setTestMessage(result.message || '连接失败');
+        setTestMessage('请先填写 API Key');
+        return;
+      }
+
+      // 逐个测试每个 Key
+      const results: { label: string; success: boolean; message: string; models?: string[]; modelValid?: boolean }[] = [];
+      let anySuccess = false;
+      let allModels: string[] = [];
+
+      for (const { key, label } of keysToTest) {
+        try {
+          const result = await api.testModelConnection(endpoint, key, modelId);
+          results.push({ label, success: result.success, message: result.message || '', models: result.models, modelValid: result.modelValid });
+          if (result.success) {
+            anySuccess = true;
+            if (result.models && Array.isArray(result.models)) {
+              allModels = [...new Set([...allModels, ...result.models])];
+            }
+            if (typeof result.modelValid === 'boolean' && result.modelValid) {
+              setTestModelValid(true);
+            }
+          }
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : '网络错误';
+          results.push({ label, success: false, message: msg });
+        }
+      }
+
+      // 汇总结果
+      if (keysToTest.length === 1) {
+        const r = results[0];
+        setTestStatus(r.success ? 'success' : 'error');
+        setTestMessage(r.message);
+        if (r.models) setTestAvailableModels(r.models);
+        if (typeof r.modelValid === 'boolean') setTestModelValid(r.modelValid);
+      } else {
+        const successCount = results.filter((r) => r.success).length;
+        setTestStatus(anySuccess ? 'success' : 'error');
+        const summary = results.map((r) => `${r.label}: ${r.success ? '✅' : '❌'} ${r.message}`).join('\n');
+        setTestMessage(`测试完成 ${successCount}/${keysToTest.length} 个 Key 通过\n${summary}`);
+        if (allModels.length > 0) setTestAvailableModels(allModels);
       }
     } catch (e: unknown) {
       setTestStatus('error');
@@ -308,15 +384,33 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     }
   }, [modelForm]);
 
-  /** 恢复默认模型配置（F5） */
-  const handleResetToDefault = useCallback(async () => {
-    try {
-      const result = await api.resetModelsConfig();
-      onChange(result.models, result.defaultModelId);
-    } catch (e: unknown) {
-      console.error('[ModelManager] resetModelsConfig failed:', e);
-    }
-  }, [onChange]);
+  /** 恢复默认模型配置（F5） — 需要用户确认 */
+  const handleResetToDefault = useCallback(() => {
+    openConfirmDialog({
+      title: '恢复默认配置',
+      content: '确定要恢复默认模型配置吗？\n\n这将清除所有自定义模型和 API Key 配置，此操作不可撤销。',
+      confirmText: '恢复',
+      confirmColor: 'warning',
+      onConfirm: async () => {
+        closeConfirmDialog();
+        try {
+          const result = await api.resetModelsConfig();
+          onChange(result.models, result.defaultModelId);
+        } catch (e: unknown) {
+          console.error('[ModelManager] resetModelsConfig failed:', e);
+          openConfirmDialog({
+            title: '恢复失败',
+            content: e instanceof Error ? e.message : '恢复默认配置失败，请稍后重试',
+            confirmText: '确定',
+            confirmColor: 'primary',
+            onConfirm: closeConfirmDialog,
+            onCancel: closeConfirmDialog,
+          });
+        }
+      },
+      onCancel: closeConfirmDialog,
+    });
+  }, [onChange, openConfirmDialog, closeConfirmDialog]);
 
   /** 导出模型配置为 JSON 文件（F6） */
   const handleExport = useCallback(() => {
@@ -356,13 +450,27 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
         try {
           const text = e.target?.result;
           if (typeof text !== 'string') {
-            alert('文件读取失败');
+            openConfirmDialog({
+              title: '导入失败',
+              content: '文件读取失败',
+              confirmText: '确定',
+              confirmColor: 'primary',
+              onConfirm: closeConfirmDialog,
+              onCancel: closeConfirmDialog,
+            });
             return;
           }
           const data = JSON.parse(text);
           const validation = validateImportPayload(data);
           if (!validation.valid) {
-            alert(`导入失败：${validation.error}`);
+            openConfirmDialog({
+              title: '导入失败',
+              content: `导入失败：${validation.error}`,
+              confirmText: '确定',
+              confirmColor: 'primary',
+              onConfirm: closeConfirmDialog,
+              onCancel: closeConfirmDialog,
+            });
             return;
           }
           const imported = data as { models: ModelConfig[]; defaultModelId: string };
@@ -374,12 +482,19 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
           }));
           onChange(normalizedModels, imported.defaultModelId);
         } catch {
-          alert('文件解析失败，请确保是有效的 JSON 文件');
+          openConfirmDialog({
+            title: '导入失败',
+            content: '文件解析失败，请确保是有效的 JSON 文件',
+            confirmText: '确定',
+            confirmColor: 'primary',
+            onConfirm: closeConfirmDialog,
+            onCancel: closeConfirmDialog,
+          });
         }
       };
       reader.readAsText(file);
     },
-    [onChange],
+    [onChange, openConfirmDialog, closeConfirmDialog],
   );
 
   /** 切换 API Key 可见性 */
@@ -439,20 +554,31 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     setSelectedModelIds([]);
   }, [selectedModelIds, models, defaultModelId, onChange]);
 
-  /** 批量删除 */
+  /** 批量删除 — 需要用户确认 */
   const handleBatchDelete = useCallback(() => {
-    const newModels = models.filter(m => !selectedModelIds.includes(m.id));
-    let newDefaultId = defaultModelId;
-    if (selectedModelIds.includes(defaultModelId) && newModels.length > 0) {
-      const firstEnabled = newModels.find(m => m.enabled);
-      newDefaultId = firstEnabled ? firstEnabled.id : newModels[0].id;
-    }
-    if (newModels.length === 0) {
-      newDefaultId = '';
-    }
-    onChange(newModels, newDefaultId);
-    setSelectedModelIds([]);
-  }, [selectedModelIds, models, defaultModelId, onChange]);
+    if (selectedModelIds.length === 0) return;
+    openConfirmDialog({
+      title: '确认批量删除',
+      content: `确定要删除选中的 ${selectedModelIds.length} 个模型吗？\n\n此操作不可撤销。`,
+      confirmText: '删除',
+      confirmColor: 'error',
+      onConfirm: () => {
+        closeConfirmDialog();
+        const newModels = models.filter(m => !selectedModelIds.includes(m.id));
+        let newDefaultId = defaultModelId;
+        if (selectedModelIds.includes(defaultModelId) && newModels.length > 0) {
+          const firstEnabled = newModels.find(m => m.enabled);
+          newDefaultId = firstEnabled ? firstEnabled.id : newModels[0].id;
+        }
+        if (newModels.length === 0) {
+          newDefaultId = '';
+        }
+        onChange(newModels, newDefaultId);
+        setSelectedModelIds([]);
+      },
+      onCancel: closeConfirmDialog,
+    });
+  }, [selectedModelIds, models, defaultModelId, onChange, openConfirmDialog, closeConfirmDialog]);
 
   /** 打开模板对话框 */
   const handleOpenTemplateDialog = useCallback(() => {
@@ -466,52 +592,61 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
 
   /** 应用模板 */
   const handleApplyTemplate = useCallback((templateId: string) => {
-    // 预置模板
-    const templates: Record<string, { models: ModelConfig[]; defaultModelId: string }> = {
-      'domestic': {
-        models: models.map(m => ({
+    // 先计算新模型列表
+    let newModels: ModelConfig[];
+    switch (templateId) {
+      case 'domestic':
+        newModels = models.map(m => ({
           ...m,
           enabled: ['tencent', 'qwen', 'deepseek'].includes(m.provider),
-        })),
-        defaultModelId: models.find(m => m.provider === 'tencent' && m.enabled)?.id || models[0]?.id || '',
-      },
-      'overseas': {
-        models: models.map(m => ({
+        }));
+        break;
+      case 'overseas':
+        newModels = models.map(m => ({
           ...m,
           enabled: ['openai', 'anthropic', 'google'].includes(m.provider),
-        })),
-        defaultModelId: models.find(m => m.provider === 'openai' && m.enabled)?.id || models[0]?.id || '',
-      },
-      'cost-effective': {
-        models: models.map(m => ({
+        }));
+        break;
+      case 'cost-effective':
+        newModels = models.map(m => ({
           ...m,
           enabled: m.capabilities?.includes('costEffective') || m.capabilities?.includes('fast') || false,
-        })),
-        defaultModelId: models.find(m => m.capabilities?.includes('costEffective'))?.id || models[0]?.id || '',
-      },
-      'high-performance': {
-        models: models.map(m => ({
+        }));
+        break;
+      case 'high-performance':
+        newModels = models.map(m => ({
           ...m,
           enabled: m.capabilities?.includes('reasoning') || m.capabilities?.includes('multimodal') || false,
-        })),
-        defaultModelId: models.find(m => m.capabilities?.includes('reasoning'))?.id || models[0]?.id || '',
-      },
-      'coding': {
-        models: models.map(m => ({
+        }));
+        break;
+      case 'coding':
+        newModels = models.map(m => ({
           ...m,
           enabled: m.capabilities?.includes('code') || false,
-        })),
-        defaultModelId: models.find(m => m.capabilities?.includes('code'))?.id || models[0]?.id || '',
-      },
-    };
-
-    const template = templates[templateId];
-    if (template) {
-      onChange(template.models, template.defaultModelId);
+        }));
+        break;
+      default:
+        return;
     }
+
+    // 基于新模型列表计算 defaultModelId（选择第一个启用的模型）
+    const newDefaultModelId = newModels.find(m => m.enabled)?.id || newModels[0]?.id || '';
+
+    onChange(newModels, newDefaultModelId);
     setShowTemplateDialog(false);
     setSelectedModelIds([]);
   }, [models, onChange]);
+
+  /** 重新排序模型列表（拖拽后调用） */
+  const handleReorderModels = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    if (fromIndex < 0 || fromIndex >= models.length) return;
+    if (toIndex < 0 || toIndex >= models.length) return;
+    const newModels = [...models];
+    const [moved] = newModels.splice(fromIndex, 1);
+    newModels.splice(toIndex, 0, moved);
+    onChange(newModels, defaultModelId);
+  }, [models, defaultModelId, onChange]);
 
   // ---- 组装返回 ----
   const state: ModelManagerState = {
@@ -529,10 +664,15 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     showTemplateDialog,
     testAvailableModels,
     testModelValid,
+    showModelSelectDialog,
+    confirmDialog,
   };
 
   const actions: ModelManagerActions = {
     openModelDialog,
+    openModelSelectDialog,
+    closeModelSelectDialog,
+    handlePresetSelect,
     closeModelDialog,
     setModelForm,
     handleSaveModel,
@@ -557,6 +697,8 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     openTemplateDialog: handleOpenTemplateDialog,
     closeTemplateDialog: handleCloseTemplateDialog,
     applyTemplate: handleApplyTemplate,
+    reorderModels: handleReorderModels,
+    closeConfirmDialog,
   };
 
   return { state, actions, handleImportFile, fileInputRef };

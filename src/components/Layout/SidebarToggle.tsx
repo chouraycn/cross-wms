@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconButton, useTheme } from '@mui/material';
+import { getGrayScale } from '../../constants/theme';
 
 // ===================== 自定义 SVG 图标 =====================
 
@@ -38,6 +39,7 @@ const SidebarToggle: React.FC<SidebarToggleProps> = ({
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
 
   return (
     <IconButton
@@ -49,22 +51,22 @@ const SidebarToggle: React.FC<SidebarToggleProps> = ({
         left: collapsed ? collapsedWidth + 7 : expandedWidth - 33,
         right: 'auto',
         zIndex: 1300,
-        color: '#000000',
+        color: gs.textPrimary,
         borderRadius: '6.48px',
         p: 0.45,
         width: 25.92,
         height: 25.92,
         // Glass effect when collapsed (button sits on content area)
         ...(collapsed ? {
-          backgroundColor: isDark ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+          backgroundColor: isDark ? 'rgba(20, 20, 20, 0.6)' : 'rgba(240, 240, 240, 0.6)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(255, 255, 255, 0.2)',
+          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
         } : {}),
         '&:hover': {
           backgroundColor: collapsed
-            ? (isDark ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)')
-            : (isDark ? '#333333' : '#e0e0e0'),
+            ? (isDark ? 'rgba(20, 20, 20, 0.8)' : 'rgba(240, 240, 240, 0.8)')
+            : gs.bgHover,
         },
         '&:focus': { outline: 'none' },
       }}
