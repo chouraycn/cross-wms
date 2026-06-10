@@ -493,15 +493,7 @@ def start_server():
     env['CDF_KNOW_CLOW_DATA_DIR'] = os.path.expanduser('~/.cdf-know-clow')
     env['CDF_KNOW_CLOW_NODE_PATH'] = node_path  # 让 server 端知道 node 完整路径
 
-    # 注入 CODEBUDDY_CODE_PATH（agent-sdk 需要，指向项目根目录）
-    if getattr(sys, 'frozen', False):
-        # DMG 模式：使用 ~/.cdf-know-clow/ 作为项目根目录
-        env['CODEBUDDY_CODE_PATH'] = os.path.expanduser('~/.cdf-know-clow')
-    else:
-        # 开发模式：使用 cdf-know-clow/ 目录
-        env['CODEBUDDY_CODE_PATH'] = os.path.dirname(os.path.abspath(__file__))
-
-    # 确保 node 在 PATH 中（agent-sdk 内部 spawn node 需要找到 node 命令）
+    # 确保 node 在 PATH 中（后端服务需要 spawn node 命令）
     node_dir = os.path.dirname(node_path)
     if node_dir not in env.get('PATH', '').split(os.pathsep):
         env['PATH'] = node_dir + os.pathsep + env.get('PATH', '')

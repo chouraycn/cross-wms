@@ -97,12 +97,17 @@ export async function callOpenAICompatibleStream(
     endpoint += '/chat/completions';
   }
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  // Ollama 等本地模型通常不需要 API Key，仅在提供时添加
+  if (apiKey && apiKey.trim()) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  }
+
   const response = await fetch(endpoint, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
+    headers,
     body: JSON.stringify({
       model: modelId,
       messages,
@@ -323,8 +328,11 @@ export async function callAIModelStream(
   const modelId = modelConfig.id;
   const temperature = modelConfig.temperature ?? 0.7;
   const maxTokens = modelConfig.maxTokens || 4096;
+  const provider = modelConfig.provider;
 
-  if (!apiKey) {
+  // Ollama 等本地部署模型通常不需要 API Key
+  const isLocalModel = provider === 'ollama' || apiEndpoint.includes('localhost') || apiEndpoint.includes('127.0.0.1');
+  if (!apiKey && !isLocalModel) {
     throw new AIAPIError(
       `模型 ${modelId} 未配置 API Key，请在模型管理中设置密钥`,
       'auth',
@@ -336,8 +344,6 @@ export async function callAIModelStream(
       'unknown',
     );
   }
-
-  const provider = modelConfig.provider;
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {

@@ -20,7 +20,7 @@
 
 - **前端**: Vite + React 18 + TypeScript + MUI v5 + Tailwind CSS + Recharts
 - **桌面**: Python pywebview (WKWebView 原生窗口)
-- **AI 后端**: Express + `@tencent-ai/agent-sdk`
+- **AI 后端**: Express + 原生 AI API 客户端（OpenAI/Anthropic 兼容格式）
 - **数据持久化**: localStorage (`cdf-know-clow-warehouses`, `cdf-know-clow-settings`)
 - **打包**: PyInstaller → macOS DMG (arm64)
 
