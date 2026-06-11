@@ -135,9 +135,8 @@ jobs:
           cat RELEASE_NOTES.md >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      # ====== Fetch tags（确保本地有刚推送的 tag）======
       - name: Fetch tags
-        run: git fetch --tags origin
+        run: git fetch --tags origin 2>/dev/null || true
 
       # ====== 构建 DMG（不传 GITHUB_TOKEN → 脚本跳过上传）======
       - name: Build DMG
