@@ -22,6 +22,25 @@ FRONTEND_DIST="$PROJECT_DIR/dist"
 BUILD_DIR="$PROJECT_DIR/build-pywebview"
 VERSION_FILE="$PROJECT_DIR/version.txt"
 
+# 从 git remote 动态获取 GitHub Owner/Repo（避免硬编码）
+GIT_REMOTE_URL=$(cd "$PROJECT_DIR" && git remote get-url origin 2>/dev/null || echo "")
+if [ -n "$GIT_REMOTE_URL" ]; then
+  # 支持 git@github.com:owner/repo.git 和 https://github.com/owner/repo 两种格式
+  GITHUB_OWNER=$(echo "$GIT_REMOTE_URL" | sed -n 's|.*github.com[:/]\([^/]*\)/.*|\1|p')
+  GITHUB_REPO=$(echo "$GIT_REMOTE_URL" | sed -n 's|.*github.com[:/][^/]*/\([^.]*\)\.git$|\1|p')
+  if [ -z "$GITHUB_REPO" ]; then
+    GITHUB_REPO=$(echo "$GIT_REMOTE_URL" | sed -n 's|.*github.com[:/][^/]*/\([^/]*\)$|\1|p')
+  fi
+  echo "🔗 Git Remote: $GITHUB_OWNER/$GITHUB_REPO"
+else
+  echo "⚠️ 未检测到 git remote，使用默认值"
+  GITHUB_OWNER="chouraycn"
+  GITHUB_REPO="cross-wms"
+fi
+
+# 导出供 Python heredoc 使用
+export GITHUB_OWNER GITHUB_REPO
+
 # ===================== 版本管理 =====================
 
 # 从 package.json 读取当前版本
@@ -78,8 +97,8 @@ fi
 
 # 导出版本号供后续使用
 export VERSION="$CURRENT_VERSION"
-DMG_NAME="CDF-Know-Clow-${VERSION}-mac.dmg"
-DMG_VOLUME="CDF Know Clow"
+export DMG_NAME="CDF-Know-Clow-${VERSION}-mac.dmg"
+export DMG_VOLUME="CDF Know Clow"
 
 # 生成 version.txt（供 pywebview_app.py 读取）
 echo "$VERSION" > "$VERSION_FILE"
@@ -492,12 +511,13 @@ python3 << 'PYEOF2'
 import json, os
 from datetime import datetime
 
-GITHUB_OWNER = "chouraycn"
-GITHUB_REPO = "cdf-know-clow"
+GITHUB_OWNER = os.environ.get("GITHUB_OWNER", "chouraycn")
+GITHUB_REPO = os.environ.get("GITHUB_REPO", "cross-wms")
 
 version = os.environ.get("VERSION", "1.0.0")
+dmg_name = os.environ.get("DMG_NAME", f"CDF-Know-Clow-{version}-mac.dmg")
 pub_date = datetime.now().strftime("%Y-%m-%d")
-dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/CDFKnowClow-{version}-mac.dmg"
+dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/{dmg_name}"
 min_ver = "1.0.0"
 
 project_dir = os.environ.get("PROJECT_DIR", ".")
@@ -542,8 +562,11 @@ if [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
   echo "📦 使用 GitHub API 上传..."
   TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}"
 
+  API_REPO_PATH="https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}"
+  UPLOAD_PATH="https://uploads.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases"
+
   RELEASE_ID=$(curl -s -H "Authorization: token $TOKEN" \
-    "https://api.github.com/repos/chouraycn/cdf-know-clow/releases/tags/v${VERSION}" \
+    "${API_REPO_PATH}/releases/tags/v${VERSION}" \
     | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || echo "")
 
   if [ -z "$RELEASE_ID" ]; then
@@ -563,7 +586,7 @@ PYEOF3
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
       -d @/tmp/cdf_know_clow_release_data.json \
-      "https://api.github.com/repos/chouraycn/cdf-know-clow/releases")
+      "${API_REPO_PATH}/releases")
     rm -f /tmp/cdf_know_clow_release_data.json
     RELEASE_ID=$(echo "$RELEASE_DATA" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
   fi
@@ -575,7 +598,7 @@ PYEOF3
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/octet-stream" \
       --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
-      "https://uploads.github.com/repos/chouraycn/cdf-know-clow/releases/$RELEASE_ID/assets?name=$DMG_NAME" \
+      "${UPLOAD_PATH}/$RELEASE_ID/assets?name=$DMG_NAME" \
       && echo "  ✅ DMG 上传成功" || { echo "  ⚠️  DMG 上传失败"; UPLOAD_OK=false; }
 
     echo "  上传 release.json..."
@@ -583,7 +606,7 @@ PYEOF3
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
       --data-binary @"$PROJECT_DIR/release/release.json" \
-      "https://uploads.github.com/repos/chouraycn/cdf-know-clow/releases/$RELEASE_ID/assets?name=release.json" \
+      "${UPLOAD_PATH}/$RELEASE_ID/assets?name=release.json" \
       && echo "  ✅ release.json 上传成功" || { echo "  ⚠️  release.json 上传失败"; UPLOAD_OK=false; }
 
     [ "$UPLOAD_OK" = true ] && echo "✅ Release v${VERSION} 已发布!"
@@ -606,4 +629,4 @@ echo ""
 echo "=== 完成 ==="
 echo "版本: $VERSION"
 echo "DMG 路径: $PROJECT_DIR/release/$DMG_NAME"
-echo "Release: https://github.com/chouraycn/cdf-know-clow/releases/tag/v${VERSION}"
+echo "Release: https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/tag/v${VERSION}"
