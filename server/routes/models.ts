@@ -14,6 +14,7 @@ import {
   loadModelsConfig,
   saveModelsConfig,
   getBuiltinModels,
+  isLocalModel,
 } from '../modelsStore.js';
 
 const router = Router();
@@ -119,7 +120,9 @@ router.post('/health-check', async (req: Request, res: Response) => {
 
       checkPromises.push((async () => {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 6000); // 健康检查 6 秒超时
+        // 本地模型给更长的超时（首次推理可能较慢）
+        const timeoutMs = isLocalModel(model) ? 20000 : 6000;
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
         const startTime = Date.now();
 
         try {
@@ -254,7 +257,7 @@ router.post('/discover-local', async (_req: Request, res: Response) => {
             for (const m of data.models) {
               results.push({
                 id: m.name || m.model || '',
-                name: (m.name || m.model || '').split(':').pop() || m.name || m.model,
+                name: (m.name || m.model || '').split(':')[0] || m.name || m.model,
                 provider: 'ollama',
                 apiEndpoint: `${ep.url}/v1`,
                 size: m.size ? `${(m.size / 1e9).toFixed(1)}GB` : undefined,

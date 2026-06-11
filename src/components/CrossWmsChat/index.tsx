@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Typography, IconButton, Tooltip, Chip, useTheme, Avatar } from '@mui/material';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
@@ -86,6 +86,19 @@ export function CrossWmsChat() {
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // 自动滚动到底部
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isUserScrolledUp = useRef(false);
+
+  // 检测用户是否手动向上滚动
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    // 距离底部超过 80px 视为用户主动向上滚动
+    isUserScrolledUp.current = el.scrollHeight - el.scrollTop - el.clientHeight > 80;
+  }, []);
+
   // 获取默认模型 ID（优先使用 settings 中配置的默认模型）
   const defaultModelId = 'auto';
 
@@ -106,10 +119,27 @@ export function CrossWmsChat() {
   // 获取当前活跃会话（始终从 sessions 数组中查找，确保状态一致性）
   const session = sessions.find((s) => s.id === activeSessionId) || sessions[0] || createNewSession();
 
+  // 新消息时自动滚动（仅在用户没有主动上翻时）
+  useEffect(() => {
+    if (!isUserScrolledUp.current && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [session.messages.length, session.messages[session.messages.length - 1]?.content]);
+
+  // 切换会话时重置滚动状态并滚到底部
+  useEffect(() => {
+    isUserScrolledUp.current = false;
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'instant' as ScrollBehavior });
+    }
+  }, [activeSessionId]);
+
   // 会话更新时自动持久化
   useEffect(() => {
     if (sessions.length > 0) {
       saveSessions(sessions);
+      // 通知侧边栏刷新历史对话列表
+      window.dispatchEvent(new CustomEvent('cdf-know-clow-chat-updated'));
     }
   }, [sessions]);
 
@@ -229,6 +259,8 @@ export function CrossWmsChat() {
       {/* 消息历史区域 */}
       {session.messages.length > 0 && (
         <Box
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
           sx={{
             flex: 1,
             overflow: 'auto',
@@ -470,6 +502,8 @@ export function CrossWmsChat() {
               )}
             </Box>
           ))}
+          {/* 滚动锚点：自动滚动到此位置 */}
+          <div ref={messagesEndRef} />
         </Box>
       )}
 

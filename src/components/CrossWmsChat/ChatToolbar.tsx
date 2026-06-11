@@ -8,22 +8,18 @@ import {
   MenuItem,
   Divider,
   ListItemIcon,
-  CircularProgress,
   Tooltip,
   Chip,
   useTheme,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import StopIcon from '@mui/icons-material/Stop';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import AddIcon from '@mui/icons-material/Add';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import MicIcon from '@mui/icons-material/Mic';
-import AppsIcon from '@mui/icons-material/Apps';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import PsychologyIcon from '@mui/icons-material/Psychology';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
-import StarIcon from '@mui/icons-material/Star';
+import CheckIcon from '@mui/icons-material/Check';
 import TuneIcon from '@mui/icons-material/Tune';
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
@@ -72,8 +68,6 @@ export interface ChatToolbarProps {
   onSend: () => void;
   /** Stop generation handler */
   onStop?: () => void;
-  /** Memory dialog open handler */
-  onOpenMemory: () => void;
   /** Skill select handler */
   onSkillSelect: (skill: Skill) => void;
   /** Available model options with provider info */
@@ -82,12 +76,11 @@ export interface ChatToolbarProps {
   selectedPreset: string;
   /** Callback when user picks a preset */
   onPresetChange: (presetId: string) => void;
+  /** Open AI settings (model management) dialog */
+  onOpenAISettings?: () => void;
 }
 
 // ===================== Constants =====================
-
-const CRAFT_OPTIONS = ['创建文档', '创建表格', '创建演示'];
-const PERMISSION_OPTIONS = ['公开', '仅自己', '团队成员'];
 
   /** 模型参数预设选项 */
   const PRESET_OPTIONS = [
@@ -99,7 +92,7 @@ const PERMISSION_OPTIONS = ['公开', '仅自己', '团队成员'];
     { id: 'precise', label: '精确问答', description: '温度 0.1，追求事实准确性' },
   ];
 
-type DropdownType = 'craft' | 'model' | 'skills' | 'permission' | 'preset' | null;
+type DropdownType = 'model' | 'skills' | 'preset' | null;
 
 // ===================== Component =====================
 
@@ -112,28 +105,36 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   inputValue,
   onSend,
   onStop,
-  onOpenMemory,
   onSkillSelect,
   modelOptions,
   selectedPreset,
   onPresetChange,
+  onOpenAISettings,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
-  const SECONDARY = gs.textMuted;
   const navigate = useNavigate();
   const [activeDropdown, setActiveDropdown] = useState<DropdownType>(null);
 
-  const craftBtnRef = useRef<HTMLButtonElement>(null);
-  const modelBtnRef = useRef<HTMLButtonElement>(null);
-  const permissionBtnRef = useRef<HTMLButtonElement>(null);
-  const skillsBtnRef = useRef<HTMLButtonElement>(null);
-  const presetBtnRef = useRef<HTMLButtonElement>(null);
+  const modelBtnRef = useRef<HTMLDivElement>(null);
+  const skillsBtnRef = useRef<HTMLDivElement>(null);
+  const presetBtnRef = useRef<HTMLDivElement>(null);
 
   const handleDropdownClick = (type: DropdownType) => {
     setActiveDropdown(prev => prev === type ? null : type);
   };
+
+  // 参考截图的配色
+  const ACCENT = '#F97316'; // 橘色主色调
+  const BTN_BG = isDark ? '#2A2A2A' : '#F0F0F0';
+  const BTN_HOVER = isDark ? '#333333' : '#E5E5E5';
+  const MENU_BG = isDark ? '#1E1E1E' : '#FFFFFF';
+  const MENU_BORDER = isDark ? '#333333' : '#E5E5E5';
+  const SECTION_TEXT = isDark ? '#888888' : '#9CA3AF';
+  const ITEM_TEXT = isDark ? '#E0E0E0' : '#111827';
+  const ITEM_DESC = isDark ? '#888888' : '#9CA3AF';
+  const SELECTED_BG = isDark ? '#3D2A10' : '#FFF7ED';
 
   return (
     <>
@@ -142,129 +143,111 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '8px 16px',
-          bgcolor: gs.bgPanel,
+          padding: '6px 12px',
           flexShrink: 0,
         }}
       >
-        {/* Left buttons: Craft, Model, Skills, Permission */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          {/* Craft button */}
-          <IconButton
-            ref={craftBtnRef}
-            size="small"
-            onClick={(e) => { e.stopPropagation(); handleDropdownClick('craft'); }}
-            sx={{
-              width: 32, height: 32, borderRadius: '8px', p: 0, ml: 1.25,
-              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
-            }}
-          >
-            <Typography sx={{ fontSize: 12, fontWeight: 500 }}>Craft</Typography>
-            <ArrowDropDownIcon sx={{ fontSize: 16, ml: 0.25 }} />
-          </IconButton>
-
-          {/* Model selector */}
-          <IconButton
-            ref={modelBtnRef}
-            size="small"
-            onClick={(e) => { e.stopPropagation(); handleDropdownClick('model'); }}
-            sx={{
-              width: 'auto', height: 32, borderRadius: '8px', px: 1,
-              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
-            }}
-          >
-            <Typography sx={{ fontSize: 12, fontWeight: 500 }}>{selectedModel}</Typography>
-            <ArrowDropDownIcon sx={{ fontSize: 16, ml: 0.25 }} />
-          </IconButton>
-
-          {/* Skills button */}
-          <IconButton
-            ref={skillsBtnRef}
-            size="small"
+        {/* Left: Skills + Preset */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Skills button — 药丸 */}
+          <Box
+            ref={skillsBtnRef as React.RefObject<HTMLDivElement>}
             onClick={(e) => { e.stopPropagation(); handleDropdownClick('skills'); }}
             sx={{
-              width: 'auto', height: 32, borderRadius: '8px', px: 1,
-              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              px: 1.5,
+              py: 0.5,
+              borderRadius: '20px',
+              bgcolor: BTN_BG,
+              cursor: 'pointer',
+              transition: 'background-color 0.15s',
+              '&:hover': { bgcolor: BTN_HOVER },
+              userSelect: 'none',
             }}
           >
-            <Typography sx={{ fontSize: 12, fontWeight: 500 }}>Skills</Typography>
-          </IconButton>
+            <AutoFixHighIcon sx={{ fontSize: 15, color: gs.textMuted }} />
+            <Typography sx={{ fontSize: 13, fontWeight: 500, color: ITEM_TEXT, lineHeight: 1 }}>
+              Skills
+            </Typography>
+          </Box>
 
-          {/* Permission button */}
-          <IconButton
-            ref={permissionBtnRef}
-            size="small"
-            onClick={(e) => { e.stopPropagation(); handleDropdownClick('permission'); }}
-            sx={{
-              width: 'auto', height: 32, borderRadius: '8px', px: 1,
-              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
-            }}
-          >
-            <Typography sx={{ fontSize: 12, fontWeight: 500 }}>{selectedPermission}</Typography>
-            <ArrowDropDownIcon sx={{ fontSize: 16, ml: 0.25 }} />
-          </IconButton>
-
-          {/* Preset button (参数预设) */}
-          <IconButton
-            ref={presetBtnRef}
-            size="small"
+          {/* Preset button — 药丸，选中时橘色 */}
+          <Box
+            ref={presetBtnRef as React.RefObject<HTMLDivElement>}
             onClick={(e) => { e.stopPropagation(); handleDropdownClick('preset'); }}
             sx={{
-              width: 'auto', height: 32, borderRadius: '8px', px: 1,
-              color: selectedPreset ? '#2563EB' : SECONDARY,
-              bgcolor: selectedPreset ? (isDark ? '#1E3A8A' : '#EFF6FF') : 'transparent',
-              '&:hover': { bgcolor: selectedPreset ? (isDark ? '#1E40AF' : '#DBEAFE') : gs.bgHover },
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              px: 1.5,
+              py: 0.5,
+              borderRadius: '20px',
+              bgcolor: selectedPreset
+                ? (isDark ? '#3D2A10' : '#FFF7ED')
+                : BTN_BG,
+              cursor: 'pointer',
+              transition: 'background-color 0.15s',
+              '&:hover': {
+                bgcolor: selectedPreset
+                  ? (isDark ? '#4A3518' : '#FFEDD5')
+                  : BTN_HOVER,
+              },
+              userSelect: 'none',
             }}
           >
-            <TuneIcon sx={{ fontSize: 16, mr: 0.25 }} />
-            <Typography sx={{ fontSize: 12, fontWeight: 500 }}>
+            <TuneIcon sx={{ fontSize: 15, color: selectedPreset ? ACCENT : gs.textMuted }} />
+            <Typography sx={{
+              fontSize: 13, fontWeight: 500, lineHeight: 1,
+              color: selectedPreset ? ACCENT : ITEM_TEXT,
+            }}>
               {selectedPreset ? PRESET_OPTIONS.find(p => p.id === selectedPreset)?.label || '预设' : '预设'}
             </Typography>
-            <ArrowDropDownIcon sx={{ fontSize: 16, ml: 0.25 }} />
-          </IconButton>
+          </Box>
         </Box>
 
-        {/* Right buttons: Memory, Add, Voice, Send */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {/* Memory button */}
-          <Tooltip title="记忆 (MEMORY.md)">
+        {/* Right: Model selector (ghost text), Memory, Mic, Send */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          {/* Model selector — 默认无背景，点击后显示灰色背景 */}
+          <Box
+            ref={modelBtnRef as React.RefObject<HTMLDivElement>}
+            onClick={(e) => { e.stopPropagation(); handleDropdownClick('model'); }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              px: 1.5,
+              py: 0.5,
+              borderRadius: '20px',
+              bgcolor: activeDropdown === 'model' ? BTN_BG : 'transparent',
+              cursor: 'pointer',
+              transition: 'background-color 0.15s',
+              '&:hover': { bgcolor: BTN_HOVER },
+              userSelect: 'none',
+            }}
+          >
+            <Typography sx={{ fontSize: 13, fontWeight: 500, color: ITEM_TEXT, lineHeight: 1 }}>
+              {selectedModel === 'Auto' ? 'CDF Auto Model' : selectedModel}
+            </Typography>
+            <KeyboardArrowUpIcon sx={{ fontSize: 18, color: gs.textMuted }} />
+          </Box>
+
+          {/* Voice button */}
+          <Tooltip title="语音输入">
             <IconButton
               size="small"
-              onClick={(e) => { e.stopPropagation(); onOpenMemory(); }}
+              onClick={(e) => e.stopPropagation()}
               sx={{
                 width: 32, height: 32, borderRadius: '8px', p: 0,
-                color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
+                color: gs.textMuted, '&:hover': { bgcolor: BTN_BG },
               }}
             >
-              <PsychologyIcon sx={{ fontSize: 20 }} />
+              <MicIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Tooltip>
 
-          {/* Add button */}
-          <IconButton
-            size="small"
-            onClick={(e) => e.stopPropagation()}
-            sx={{
-              width: 32, height: 32, borderRadius: '8px', p: 0,
-              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
-            }}
-          >
-            <AddIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-
-          {/* Voice button */}
-          <IconButton
-            size="small"
-            onClick={(e) => e.stopPropagation()}
-            sx={{
-              width: 32, height: 32, borderRadius: '8px', p: 0,
-              color: SECONDARY, bgcolor: 'transparent', '&:hover': { bgcolor: gs.bgHover },
-            }}
-          >
-            <MicIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-
-          {/* Send / Stop button */}
+          {/* Send / Stop button — 紫色方形圆角 */}
           <IconButton
             onClick={(e) => {
               e.stopPropagation();
@@ -276,13 +259,12 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             }}
             disabled={!isLoading && !inputValue.trim()}
             sx={{
-              width: 32, height: 32, borderRadius: '50%', p: 0,
-              bgcolor: isLoading ? '#EF4444' : '#f97316',
+              width: 34, height: 34, borderRadius: '10px', p: 0,
+              bgcolor: ACCENT,
               color: '#fff',
               flexShrink: 0,
-              border: 'none',
-              '&:hover': { bgcolor: isLoading ? '#DC2626' : '#ea580c' },
-              '&.Mui-disabled': { bgcolor: gs.border, color: gs.textDisabled },
+              '&:hover': { bgcolor: '#EA580C' },
+              '&.Mui-disabled': { bgcolor: isDark ? '#333' : '#E0E0E0', color: isDark ? '#666' : '#AAA' },
             }}
           >
             {isLoading ? (
@@ -294,31 +276,39 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
         </Box>
       </Box>
 
-      {/* MUI Menu: Craft */}
-      <Menu
-        anchorEl={craftBtnRef.current}
-        open={activeDropdown === 'craft'}
-        onClose={() => setActiveDropdown(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        sx={{ mb: 0.5 }}
-      >
-        {CRAFT_OPTIONS.map((option) => (
-          <MenuItem key={option} onClick={() => setActiveDropdown(null)}>
-            {option}
-          </MenuItem>
-        ))}
-      </Menu>
-
-      {/* MUI Menu: Model — 增强版，展示能力标签、描述、上下文窗口 */}
+      {/* ====== Model Menu — 弹窗在按钮上方，无背景遮罩 ====== */}
       <Menu
         anchorEl={modelBtnRef.current}
         open={activeDropdown === 'model'}
         onClose={() => setActiveDropdown(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        PaperProps={{ sx: { width: 360, maxHeight: 480 } }}
-        sx={{ mb: 0.5 }}
+        // 关键：弹窗出现在按钮上方
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: 320,
+              maxHeight: 520,
+              mt: -0.5, // 紧贴按钮
+              borderRadius: '14px',
+              border: `1px solid ${MENU_BORDER}`,
+              boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+              bgcolor: MENU_BG,
+              overflow: 'hidden',
+            },
+          },
+          root: {
+            sx: {
+              '& .MuiMenu-list': { py: 0.5 },
+            },
+          },
+        }}
+        MenuListProps={{ disablePadding: true }}
+        sx={{
+          '& .MuiBackdrop-root': {
+            backgroundColor: 'transparent',
+          },
+        }}
       >
         {/* Auto 选项 */}
         {(() => {
@@ -330,34 +320,45 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               key="auto"
               onClick={() => { onModelChange(autoOption.name); setActiveDropdown(null); }}
               sx={{
-                py: 1.25, px: 2,
-                backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
-                borderLeft: isSelected ? '3px solid #2563EB' : '3px solid transparent',
+                py: 1.25, px: 2, mx: 0.5, borderRadius: '10px',
+                backgroundColor: isSelected ? SELECTED_BG : 'transparent',
+                '&:hover': { backgroundColor: isSelected ? SELECTED_BG : (isDark ? '#2A2A2A' : '#F5F5F5') },
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, width: '100%' }}>
-                <AutoModeIcon sx={{ fontSize: 20, color: '#2563EB', flexShrink: 0 }} />
+                <AutoModeIcon sx={{ fontSize: 20, color: ACCENT, flexShrink: 0 }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: isSelected ? '#2563EB' : '#111827' }}>
-                      Auto
+                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: isSelected ? ACCENT : ITEM_TEXT }}>
+                      CDF Auto Model
                     </Typography>
-                    <Chip label="智能" size="small" sx={{ fontSize: '0.6rem', height: 16, backgroundColor: '#DBEAFE', color: '#2563EB', fontWeight: 600 }} />
+                    <Chip
+                      label="智能"
+                      size="small"
+                      sx={{
+                        fontSize: '0.6rem', height: 18,
+                        backgroundColor: isDark ? '#3D2A10' : '#FFF7ED',
+                        color: ACCENT, fontWeight: 600,
+                        borderRadius: '6px',
+                      }}
+                    />
                   </Box>
-                  <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mt: 0.25 }}>
+                  <Typography sx={{ fontSize: '0.7rem', color: ITEM_DESC, mt: 0.25 }}>
                     根据任务自动选择最合适的模型
                   </Typography>
                 </Box>
-                {isSelected && <StarIcon sx={{ fontSize: 14, color: '#2563EB' }} />}
+                {isSelected && (
+                  <CheckIcon sx={{ fontSize: 18, color: ACCENT, flexShrink: 0 }} />
+                )}
               </Box>
             </MenuItem>
           );
         })()}
 
-        <Divider sx={{ my: 0.5 }} />
+        <Divider sx={{ mx: 1.5, my: 0.5, borderColor: MENU_BORDER }} />
 
-        {/* 按 Provider 分组标题 */}
-        <Typography sx={{ px: 2, py: 0.5, fontSize: '0.65rem', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase' }}>
+        {/* 分组标题 */}
+        <Typography sx={{ px: 2, py: 0.5, fontSize: '0.6875rem', fontWeight: 600, color: SECTION_TEXT, letterSpacing: '0.02em' }}>
           可用模型
         </Typography>
 
@@ -371,25 +372,24 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                 key={option.id}
                 onClick={() => { onModelChange(option.name); setActiveDropdown(null); }}
                 sx={{
-                  py: 1, px: 2,
-                  backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
-                  borderLeft: isSelected ? '3px solid #2563EB' : '3px solid transparent',
+                  py: 1, px: 2, mx: 0.5, borderRadius: '10px',
+                  backgroundColor: isSelected ? SELECTED_BG : 'transparent',
+                  '&:hover': { backgroundColor: isSelected ? SELECTED_BG : (isDark ? '#2A2A2A' : '#F5F5F5') },
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, width: '100%' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
                   {/* Provider 图标 */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, pt: 0.25 }}>
-                    {providerIcon(option.provider, 16)}
+                  <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                    {providerIcon(option.provider, 18)}
                   </Box>
 
                   {/* 模型信息 */}
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    {/* 第一行：名称 + 默认标记 */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Typography sx={{
                         fontSize: '0.8125rem',
                         fontWeight: isSelected ? 600 : 500,
-                        color: isSelected ? '#2563EB' : '#111827',
+                        color: isSelected ? ACCENT : ITEM_TEXT,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -397,17 +397,23 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                         {option.name}
                       </Typography>
                       {option.isDefault && (
-                        <Chip label="默认" size="small" sx={{ fontSize: '0.55rem', height: 14, backgroundColor: '#FEF3C7', color: '#D97706', fontWeight: 600 }} />
+                        <Chip
+                          label="默认"
+                          size="small"
+                          sx={{
+                            fontSize: '0.55rem', height: 16,
+                            backgroundColor: isDark ? '#3D3520' : '#FEF3C7',
+                            color: '#D97706', fontWeight: 600,
+                            borderRadius: '4px',
+                          }}
+                        />
                       )}
-                      {isSelected && <StarIcon sx={{ fontSize: 12, color: '#2563EB', ml: 'auto' }} />}
                     </Box>
-
-                    {/* 第二行：描述 */}
                     {option.description && (
                       <Typography sx={{
                         fontSize: '0.7rem',
-                        color: '#9CA3AF',
-                        mt: 0.25,
+                        color: ITEM_DESC,
+                        mt: 0.15,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -415,58 +421,56 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                         {option.description}
                       </Typography>
                     )}
-
-                    {/* 第三行：能力标签 + 上下文窗口 */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
-                      {option.capabilities?.map(cap => (
-                        <Chip
-                          key={cap}
-                          label={CAPABILITY_LABELS[cap]}
-                          size="small"
-                          sx={{
-                            fontSize: '0.55rem',
-                            height: 14,
-                            backgroundColor: `${CAPABILITY_COLORS[cap]}12`,
-                            color: CAPABILITY_COLORS[cap],
-                            fontWeight: 500,
-                            maxWidth: 'none',
-                          }}
-                        />
-                      ))}
-                      {option.contextWindow != null && (
-                        <Typography sx={{ fontSize: '0.6rem', color: '#C0C4CC' }}>
-                          {option.contextWindow >= 1000 ? `${Math.round(option.contextWindow / 1000)}K` : option.contextWindow} ctx
-                        </Typography>
-                      )}
-                    </Box>
                   </Box>
+
+                  {/* 选中勾 */}
+                  {isSelected && (
+                    <CheckIcon sx={{ fontSize: 18, color: ACCENT, flexShrink: 0 }} />
+                  )}
                 </Box>
               </MenuItem>
             );
           })}
 
-        <Divider sx={{ my: 0.5 }} />
+        <Divider sx={{ mx: 1.5, my: 0.5, borderColor: MENU_BORDER }} />
 
         {/* 管理模型入口 */}
         <MenuItem
-          onClick={() => { setActiveDropdown(null); navigate('/settings?tab=modelManagement'); }}
-          sx={{ py: 0.75 }}
+          onClick={() => { setActiveDropdown(null); onOpenAISettings?.(); }}
+          sx={{ py: 1, mx: 0.5, borderRadius: '10px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
         >
           <ListItemIcon sx={{ minWidth: 32 }}>
-            <SettingsIcon sx={{ fontSize: 16, color: '#6B7280' }} />
+            <SettingsIcon sx={{ fontSize: 16, color: SECTION_TEXT }} />
           </ListItemIcon>
-          <Typography sx={{ fontSize: '0.8rem', color: '#6B7280' }}>管理模型 →</Typography>
+          <Typography sx={{ fontSize: '0.8125rem', color: SECTION_TEXT }}>添加模型</Typography>
         </MenuItem>
       </Menu>
 
-      {/* MUI Menu: Skills — 按分类分组显示 active 技能 */}
+      {/* ====== Skills Menu — 弹窗在按钮上方，无背景遮罩 ====== */}
       <Menu
         anchorEl={skillsBtnRef.current}
         open={activeDropdown === 'skills'}
         onClose={() => setActiveDropdown(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        PaperProps={{ sx: { width: 300, maxHeight: 420 } }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: 280,
+              maxHeight: 400,
+              mt: -0.5,
+              borderRadius: '14px',
+              border: `1px solid ${MENU_BORDER}`,
+              boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+              bgcolor: MENU_BG,
+            },
+          },
+        }}
+        sx={{
+          '& .MuiBackdrop-root': {
+            backgroundColor: 'transparent',
+          },
+        }}
       >
         {(() => {
           const activeSkills = getAllSkills().filter(s => s.status === 'active');
@@ -480,72 +484,86 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             const items = grouped[cat];
             if (!items || items.length === 0) continue;
             result.push(
-              <Typography key={`cat-${cat}`} sx={{ px: 2, py: 0.5, fontSize: '0.65rem', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase' }}>
+              <Typography key={`cat-${cat}`} sx={{ px: 2, py: 0.5, fontSize: '0.6875rem', fontWeight: 600, color: SECTION_TEXT }}>
                 {getCategoryLabel(cat)}
               </Typography>
             );
             for (const skill of items.slice(0, 4)) {
               result.push(
-                <MenuItem key={skill.id} onClick={() => { onSkillSelect(skill); setActiveDropdown(null); }} sx={{ py: 0.75, px: 2 }}>
-                  <ListItemIcon sx={{ minWidth: 32 }}>{ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 18 }} />}</ListItemIcon>
-                  <Typography sx={{ fontSize: '0.8rem' }}>{skill.name}</Typography>
+                <MenuItem
+                  key={skill.id}
+                  onClick={() => { onSkillSelect(skill); setActiveDropdown(null); }}
+                  sx={{ py: 0.75, px: 2, mx: 0.5, borderRadius: '8px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
+                >
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 18 }} />}
+                  </ListItemIcon>
+                  <Typography sx={{ fontSize: '0.8125rem', color: ITEM_TEXT }}>{skill.name}</Typography>
                 </MenuItem>
               );
             }
           }
           return result;
         })()}
-        <Divider />
-        <MenuItem onClick={() => { setActiveDropdown(null); navigate('/skills'); }}>
-          <ListItemIcon><AppsIcon sx={{ fontSize: 18, color: '#6B7280' }} /></ListItemIcon>
-          <Typography sx={{ fontSize: 13, color: '#6B7280' }}>查看全部技能 →</Typography>
+        <Divider sx={{ mx: 1.5, borderColor: MENU_BORDER }} />
+        <MenuItem
+          onClick={() => { setActiveDropdown(null); navigate('/skills'); }}
+          sx={{ py: 0.75, mx: 0.5, borderRadius: '8px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
+        >
+          <ListItemIcon><SettingsIcon sx={{ fontSize: 16, color: SECTION_TEXT }} /></ListItemIcon>
+          <Typography sx={{ fontSize: '0.8125rem', color: SECTION_TEXT }}>查看全部技能 →</Typography>
         </MenuItem>
       </Menu>
 
-      {/* MUI Menu: Permission */}
-      <Menu
-        anchorEl={permissionBtnRef.current}
-        open={activeDropdown === 'permission'}
-        onClose={() => setActiveDropdown(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        sx={{ mb: 0.5 }}
-      >
-        {PERMISSION_OPTIONS.map((option) => (
-          <MenuItem key={option} onClick={() => { onPermissionChange(option); setActiveDropdown(null); }}>
-            {option}
-          </MenuItem>
-        ))}
-      </Menu>
-
-      {/* MUI Menu: Preset (参数预设) */}
+      {/* ====== Preset Menu — 弹窗在按钮上方，无背景遮罩 ====== */}
       <Menu
         anchorEl={presetBtnRef.current}
         open={activeDropdown === 'preset'}
         onClose={() => setActiveDropdown(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        PaperProps={{ sx: { width: 240 } }}
-        sx={{ mb: 0.5 }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: 240,
+              mt: -0.5,
+              borderRadius: '14px',
+              border: `1px solid ${MENU_BORDER}`,
+              boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+              bgcolor: MENU_BG,
+            },
+          },
+        }}
+        sx={{
+          '& .MuiBackdrop-root': {
+            backgroundColor: 'transparent',
+          },
+        }}
       >
         {PRESET_OPTIONS.map((option) => (
           <MenuItem
             key={option.id}
             onClick={() => { onPresetChange(option.id); setActiveDropdown(null); }}
             sx={{
-              py: 1,
-              backgroundColor: selectedPreset === option.id ? '#EFF6FF' : 'transparent',
+              py: 1, px: 2, mx: 0.5, borderRadius: '10px',
+              backgroundColor: selectedPreset === option.id ? SELECTED_BG : 'transparent',
+              '&:hover': { backgroundColor: selectedPreset === option.id ? SELECTED_BG : (isDark ? '#2A2A2A' : '#F5F5F5') },
             }}
           >
             <Box sx={{ width: '100%' }}>
-              <Typography sx={{
-                fontSize: '0.8125rem',
-                fontWeight: selectedPreset === option.id ? 600 : 400,
-                color: selectedPreset === option.id ? '#2563EB' : '#111827',
-              }}>
-                {option.label}
-              </Typography>
-              <Typography sx={{ fontSize: '0.7rem', color: '#9CA3AF', mt: 0.25 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Typography sx={{
+                  fontSize: '0.8125rem',
+                  fontWeight: selectedPreset === option.id ? 600 : 400,
+                  color: selectedPreset === option.id ? ACCENT : ITEM_TEXT,
+                }}>
+                  {option.label}
+                </Typography>
+                {selectedPreset === option.id && (
+                  <CheckIcon sx={{ fontSize: 16, color: ACCENT, ml: 'auto' }} />
+                )}
+              </Box>
+              <Typography sx={{ fontSize: '0.7rem', color: ITEM_DESC, mt: 0.25 }}>
                 {option.description}
               </Typography>
             </Box>

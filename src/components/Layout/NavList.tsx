@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   List,
   ListItem,
@@ -181,6 +181,7 @@ const NavList: React.FC<NavListProps> = ({
 
   // 聊天历史
   const [sessions, setSessions] = useState<Session[]>(() => loadSessions());
+  const historyListRef = useRef<HTMLDivElement>(null);
 
   // 即时选中状态：点击时立即切换视觉反馈，不等待父组件 state 传播
   const [justClickedSessionId, setJustClickedSessionId] = useState<string | null>(null);
@@ -193,9 +194,21 @@ const NavList: React.FC<NavListProps> = ({
   }, [activeSessionId, justClickedSessionId]);
 
   useEffect(() => {
-    const onStorage = () => setSessions(loadSessions());
+    const onStorage = () => {
+      setSessions(loadSessions());
+      // 新会话时自动滚动到历史对话区域
+      requestAnimationFrame(() => {
+        historyListRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+    };
+    const onChatUpdate = () => {
+      setSessions(loadSessions());
+      // AI 回复后自动滚动到历史对话区域
+      requestAnimationFrame(() => {
+        historyListRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+    };
     window.addEventListener('storage', onStorage);
-    const onChatUpdate = () => setSessions(loadSessions());
     window.addEventListener('cdf-know-clow-chat-updated', onChatUpdate);
     return () => {
       window.removeEventListener('storage', onStorage);
@@ -496,7 +509,7 @@ const NavList: React.FC<NavListProps> = ({
 
       {/* ====== 栏目底部：历史对话 ====== */}
       {!collapsed && chatSessions.length > 0 && (
-        <Box sx={{ mt: 1, pt: 2.25, pl: 0.25, pr: 1, display: 'flex', flexDirection: 'column', minHeight: 0, flex: '0 1 auto', maxHeight: '40vh' }}>
+        <Box ref={historyListRef} sx={{ mt: 1, pt: 2.25, pl: 0.25, pr: 1, display: 'flex', flexDirection: 'column', minHeight: 0, flex: '0 1 auto', maxHeight: '40vh' }}>
           <Typography
             sx={{
               fontSize: '0.6875rem',
@@ -521,7 +534,7 @@ const NavList: React.FC<NavListProps> = ({
               {chatSessions.length}
             </Box>
           </Typography>
-          <Box sx={{ overflowY: 'auto', overscrollBehaviorY: 'none', WebkitOverflowScrolling: 'auto', flex: 1, minHeight: 0 }}>
+          <Box className="auto-hide-scrollbar" sx={{ overflowY: 'auto', overscrollBehaviorY: 'none', WebkitOverflowScrolling: 'auto', flex: 1, minHeight: 0 }}>
           {chatSessions.map((session) => {
             const title = session.title || session.messages[0]?.content?.slice(0, 20) || '新对话';
             const effectiveActiveId = justClickedSessionId ?? activeSessionId;

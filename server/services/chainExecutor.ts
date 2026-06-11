@@ -19,7 +19,7 @@ import {
   updateSkillExecution,
 } from '../db';
 import type { SkillChainNodeRow } from '../db';
-import { loadModelsConfig } from '../modelsStore.js';
+import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
 
 // ===================== Module-Level State =====================
 
@@ -205,7 +205,7 @@ async function executeNodeWithTimeout(
     const modelsConfig = await loadModelsConfig();
     const defaultModelConfig = modelsConfig.models.find((m) => m.id === modelsConfig.defaultModelId);
 
-    if (!defaultModelConfig || !defaultModelConfig.apiKey) {
+    if (!defaultModelConfig || (!defaultModelConfig.apiKey && !isLocalModel(defaultModelConfig))) {
       return {
         success: false,
         error: `未配置默认模型或 API Key，请在模型管理中设置`,

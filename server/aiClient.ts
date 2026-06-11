@@ -9,6 +9,8 @@
 
 // ===================== 类型定义 =====================
 
+import { isLocalModel } from './modelsStore.js';
+
 export interface ModelCallConfig {
   id: string;
   provider: string;
@@ -330,9 +332,8 @@ export async function callAIModelStream(
   const maxTokens = modelConfig.maxTokens || 4096;
   const provider = modelConfig.provider;
 
-  // Ollama 等本地部署模型通常不需要 API Key
-  const isLocalModel = provider === 'ollama' || apiEndpoint.includes('localhost') || apiEndpoint.includes('127.0.0.1');
-  if (!apiKey && !isLocalModel) {
+  // 本地部署模型不需要 API Key
+  if (!apiKey && !isLocalModel(modelConfig)) {
     throw new AIAPIError(
       `模型 ${modelId} 未配置 API Key，请在模型管理中设置密钥`,
       'auth',

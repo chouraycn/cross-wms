@@ -333,10 +333,21 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
         keysToTest.push({ key: modelForm.apiKey.trim(), label: 'API Key' });
       }
 
-      if (keysToTest.length === 0) {
+      // 本地模型（Ollama）不需要 API Key，直接测试连接
+      const isLocal = modelForm.provider === 'ollama'
+        || endpoint.includes('localhost')
+        || endpoint.includes('127.0.0.1')
+        || endpoint.includes('0.0.0.0');
+
+      if (keysToTest.length === 0 && !isLocal) {
         setTestStatus('error');
         setTestMessage('请先填写 API Key');
         return;
+      }
+
+      // 本地模型无 Key 时，用空字符串测试
+      if (keysToTest.length === 0 && isLocal) {
+        keysToTest.push({ key: '', label: '本地模型' });
       }
 
       // 逐个测试每个 Key
