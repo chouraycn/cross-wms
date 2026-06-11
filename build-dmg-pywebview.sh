@@ -552,8 +552,8 @@ if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
   echo "  标签 v${VERSION} 已存在，跳过创建"
 else
   git tag "v${VERSION}" -m "CDF Know Clow v${VERSION}"
-  git push origin "v${VERSION}"
-  echo "✅ 标签 v${VERSION} 已推送"
+  git push origin "v${VERSION}" 2>/dev/null || true
+  echo "✅ 标签 v${VERSION} 已推送（如已存在则跳过）"
 fi
 
 UPLOAD_OK=false

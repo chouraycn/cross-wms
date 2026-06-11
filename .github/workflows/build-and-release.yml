@@ -7,52 +7,56 @@ on:
   workflow_dispatch:
     inputs:
       version_bump:
-        description: 'Version bump type (patch/minor/major)'
-        required: false
+        description: 'Version bump type'
+        required: true
         default: 'patch'
         type: choice
         options:
           - patch
           - minor
           - major
+      release_notes:
+        description: 'Release notes (optional)'
+        required: false
+        type: string
 
 jobs:
   build:
     runs-on: macos-latest
-    
+
     steps:
-      - name: Check out code
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-      
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      
-      - name: Install Python dependencies
+
+      - name: Install dependencies
         run: |
+          npm ci
           python3 -m pip install --upgrade pip
-          pip install pywebview pyinstaller Pillow
-      
-      - name: Install Node.js dependencies
-        run: npm ci
-      
-      - name: Bump version (manual dispatch only)
+          pip install pywebview pyinstaller pillow
+
+      # ====== 场景 A：手动触发，先 bump 版本 ======
+      - name: Bump version (manual dispatch)
         if: github.event_name == 'workflow_dispatch'
+        id: bump
         run: |
           BUMP_TYPE="${{ github.event.inputs.version_bump }}"
           node -e "
             const fs = require('fs');
-            const path = './package.json';
-            const pkg = JSON.parse(fs.readFileSync(path, 'utf-8'));
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
             const parts = pkg.version.split('.').map(Number);
             if ('${BUMP_TYPE}' === 'major') {
               parts[0]++;
@@ -65,69 +69,98 @@ jobs:
               parts[2]++;
             }
             pkg.version = parts.join('.');
-            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
-            console.log('Version bumped to ' + pkg.version);
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log('Version bumped to', pkg.version);
           "
-          echo "VERSION=$(node -e "console.log(require('./package.json').version)")" >> $GITHUB_ENV
-      
-      - name: Get version
-        id: get_version
-        run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            VERSION="${{ github.ref }}"
-            VERSION="${VERSION#refs/tags/v}"
-          else
-            VERSION=$(node -e "console.log(require('./package.json').version)")
-          fi
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          VERSION=$(node -e "console.log(require('./package.json').version)")
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
-      
-      - name: Build frontend
-        run: npm run build
-      
-      - name: Build DMG
-        run: bash build-dmg-pywebview.sh
-      
-      - name: Generate release notes
-        id: release_notes
-        run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
-          if [ -n "$PREV_TAG" ]; then
-            echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
-            echo "## Changes since ${PREV_TAG}" >> $GITHUB_ENV
-            git log ${PREV_TAG}..HEAD --oneline --no-merges | sed 's/^/- /' >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
-          else
-            echo "RELEASE_NOTES=Initial release" >> $GITHUB_ENV
-          fi
-      
-      - name: Create Git Tag (manual dispatch only)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Commit & push version bump (manual dispatch)
         if: github.event_name == 'workflow_dispatch'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json
-          git commit -m "Bump version to ${{ env.VERSION }}" || true
-          git tag "v${{ env.VERSION }}"
-          git push origin "v${{ env.VERSION }}"
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.version }}" || echo "No changes to commit"
+          git push origin HEAD
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Create GitHub Release and Upload DMG
+
+      - name: Create & push git tag (manual dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          TAG="v${{ steps.bump.outputs.version }}"
+          git tag "$TAG"
+          git push origin "$TAG"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ====== 场景 B：Tag 推送，从 tag 解析版本 ======
+      - name: Get version from tag (tag push)
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: tag_version
+        run: |
+          VERSION="${{ github.ref }}"
+          VERSION="${VERSION#refs/tags/v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          # 同步写入 package.json，确保构建脚本读到正确版本
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
+            pkg.version = '${VERSION}';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      # ====== 生成 release notes（构建前）======
+      - name: Generate release notes
+        id: notes
+        run: |
+          VERSION="${{ env.VERSION }}"
+          if [ -n "${{ github.event.inputs.release_notes }}" ]; then
+            echo "${{ github.event.inputs.release_notes }}" > RELEASE_NOTES.md
+          else
+            PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+            if [ -n "$PREV_TAG" ]; then
+              echo "## Changes since ${PREV_TAG}" > RELEASE_NOTES.md
+              echo "" >> RELEASE_NOTES.md
+              git log ${PREV_TAG}..HEAD --oneline --no-merges | sed 's/^/- /' | head -30 >> RELEASE_NOTES.md
+            else
+              echo "CrossWMS v${VERSION} release" > RELEASE_NOTES.md
+            fi
+          fi
+          # 导出给后续 step 使用
+          echo "NOTES<<EOF" >> $GITHUB_ENV
+          cat RELEASE_NOTES.md >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # ====== Fetch tags（确保本地有刚推送的 tag）======
+      - name: Fetch tags
+        run: git fetch --tags origin
+
+      # ====== 构建 DMG（不传 GITHUB_TOKEN → 脚本跳过上传）======
+      - name: Build DMG
+        run: bash build-dmg-pywebview.sh --no-bump
+
+      # ====== 上传到 GitHub Release ======
+      - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
           name: CrossWMS v${{ env.VERSION }}
           body: ${{ env.RELEASE_NOTES }}
-          files: release/CrossWMS-${{ env.VERSION }}-mac.dmg
+          files: |
+            release/CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
+            release/release.json
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Upload DMG as artifact (backup)
         uses: actions/upload-artifact@v4
         with:
-          name: CrossWMS-${{ env.VERSION }}-mac.dmg
-          path: release/CrossWMS-${{ env.VERSION }}-mac.dmg
+          name: CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
+          path: release/CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
           retention-days: 90
