@@ -1,8 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Message, ReferencedSession, Session } from '../types/chat';
+import { Message, ReferencedSession, Session, Attachment } from '../types/chat';
 import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../types/inventory-query';
 import { getApiUrl } from '../utils/api';
+import { generateSessionTitle } from '../utils/sessionStore';
+import { getAllSkills } from '../stores/skillStore';
 
 /** 从 localStorage 读取默认模型 ID */
 function getDefaultModelId(): string {
@@ -34,6 +36,10 @@ export interface SendMessageOptions {
   model?: string;
   /** 参数预设 ID（creative/code/translate/analysis/precise） */
   preset?: string;
+  /** 附件列表 */
+  attachments?: Attachment[];
+  /** 回复引用的消息 */
+  replyTo?: { messageId: string; content: string; role: 'user' | 'assistant' };
 }
 
 /** inventory_query JSON 块正则 */
@@ -248,8 +254,17 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       content,
       timestamp: new Date(),
       referencedSessions: options?.referencedSessions,
+      attachments: options?.attachments,
+      replyTo: options?.replyTo,
     };
     const updatedSession = { ...session, messages: [...session.messages, userMsg] };
+
+    // v1.9.0: 如果 session.title 为空且这是第一条消息，自动生成标题
+    if (!session.title && session.messages.length === 0) {
+      const generatedTitle = generateSessionTitle(updatedSession);
+      updatedSession.title = generatedTitle;
+    }
+
     onSessionUpdateRef.current(updatedSession);
 
     // v1.8.0: 创建流式 assistant 消息占位（实时更新）
@@ -262,6 +277,21 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       timestamp: new Date(),
       isStreaming: true,
     };
+
+    // 如果有 skillId，查找对应技能信息并赋值给 streamingMsg.skillInfo
+    if (options?.skillId) {
+      const skill = getAllSkills().find((s) => s.id === options.skillId);
+      if (skill) {
+        streamingMsg.skillInfo = {
+          id: skill.id,
+          name: skill.name,
+          icon: skill.icon,
+          executionMode: skill.executionMode,
+          category: skill.category,
+        };
+      }
+    }
+
     const sessionWithStreaming = { ...session, messages: [...session.messages, userMsg, streamingMsg] };
     onSessionUpdateRef.current(sessionWithStreaming);
 
@@ -293,6 +323,15 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       if (options?.preset) {
         body.preset = options.preset;
       }
+      // 如果有附件，传递给后端（目前为 base64 模拟上传）
+      if (options?.attachments && options.attachments.length > 0) {
+        body.attachments = options.attachments.map(att => ({
+          type: att.type,
+          name: att.name,
+          url: att.url,
+          size: att.size,
+        }));
+      }
       // 如果有历史消息，添加到请求体（用于多轮对话）
       if (session.messages.length > 0) {
         body.conversationHistory = session.messages.map(m => ({
@@ -312,7 +351,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
-          const sseResult = await new Promise<{ content: string; autoReason?: string; autoReasonType?: string; preset: { id: string; label: string } | null; errorCode: string | null; errorMessage: string | null }>((resolve, reject) => {
+          const sseResult = await new Promise<{ content: string; thinking?: string; thinkingDuration?: number; autoReason?: string; autoReasonType?: string; preset: { id: string; label: string } | null; errorCode: string | null; errorMessage: string | null }>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', getApiUrl('/api/chat?_t=' + Date.now()), true);
             xhr.setRequestHeader('Content-Type', 'application/json');
@@ -321,11 +360,13 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             xhr.responseType = 'text';
 
             let result = '';
+            let thinkingContent = '';
             let autoReason: string | undefined;
             let autoReasonType: string | undefined;
             let preset: { id: string; label: string } | null = null;
             let errorCode: string | null = null;
             let errorMessage: string | null = null;
+            let thinkingDuration: number | undefined;
             let lastIndex = 0;
             let settled = false; // 防止 resolve/reject 多次调用
 
@@ -355,6 +396,11 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         streamingMsg.content = result;
                         onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: result }] });
                       }
+                      if (data.type === 'thinking') {
+                        thinkingContent += data.content;
+                        streamingMsg.thinking = thinkingContent;
+                        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, thinking: thinkingContent }] });
+                      }
                       if (data.type === 'init') {
                         if (data.autoReason) autoReason = data.autoReason;
                         if (data.autoReasonType) autoReasonType = data.autoReasonType;
@@ -363,12 +409,32 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                       if (data.type === 'done') {
                         errorCode = data.errorCode ?? null;
                         errorMessage = data.errorMessage ?? null;
+                        if (data.thinkingDuration != null) {
+                          thinkingDuration = data.thinkingDuration;
+                        }
                         if (errorCode && errorMessage) {
                           result = errorMessage;
                           // 同步更新 fullContent，确保错误消息被正确保存
                           fullContent = errorMessage;
                           streamingMsg.content = errorMessage;
                           onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: errorMessage }] });
+                        }
+                        // 读取 AI 返回的下一步建议
+                        if (data.followUpSuggestions && Array.isArray(data.followUpSuggestions)) {
+                          streamingMsg.followUpSuggestions = data.followUpSuggestions;
+                        }
+                        // 如果后端返回了 skillId，更新 skillInfo
+                        if (data.skillId) {
+                          const skill = getAllSkills().find((s) => s.id === data.skillId);
+                          if (skill) {
+                            streamingMsg.skillInfo = {
+                              id: skill.id,
+                              name: skill.name,
+                              icon: skill.icon,
+                              executionMode: skill.executionMode,
+                              category: skill.category,
+                            };
+                          }
                         }
                       }
                     } catch { /* parse error */ }
@@ -378,7 +444,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               if (xhr.readyState === 4 && !settled) {
                 settled = true;
                 // DONE — 无论 status 如何，只要有响应就视为成功（后端总是返回 200）
-                resolve({ content: result, autoReason, autoReasonType, preset, errorCode, errorMessage });
+                resolve({ content: result, thinking: thinkingContent, thinkingDuration, autoReason, autoReasonType, preset, errorCode, errorMessage });
               }
             };
 
@@ -392,7 +458,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               settled = true;
               // 用户手动停止不视为错误
               if (stoppedRef.current) {
-                resolve({ content: result, autoReason, autoReasonType, preset, errorCode, errorMessage });
+                resolve({ content: result, thinking: thinkingContent, thinkingDuration, autoReason, autoReasonType, preset, errorCode, errorMessage });
               } else {
                 reject(new Error('net::ERR_ABORTED'));
               }
@@ -407,6 +473,14 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           currentPreset = sseResult.preset;
           currentErrorCode = sseResult.errorCode;
           currentErrorMessage = sseResult.errorMessage;
+
+          // 保存 thinking 相关数据到 streamingMsg
+          if (sseResult.thinking) {
+            streamingMsg.thinking = sseResult.thinking;
+          }
+          if (sseResult.thinkingDuration !== undefined) {
+            streamingMsg.thinkingDuration = sseResult.thinkingDuration;
+          }
 
           // 成功，跳出重试循环
           break;

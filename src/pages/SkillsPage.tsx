@@ -30,8 +30,6 @@ import { getAuditStatus } from '../stores/skillStore';
 import { useToast } from '../contexts/ToastContext';
 import SearchInput from '../components/Common/SearchInput';
 import type { SkillChain } from '../types/skill';
-// T05: 匹配引擎设置
-import MatchConfigPanel from '../components/Matching/MatchConfigPanel';
 import { getGrayScale } from '../constants/theme';
 
 // ===================== 技能页面 =====================
@@ -113,7 +111,6 @@ const SkillsPage: React.FC = () => {
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   // T05: 匹配引擎设置对话框
   const [matchConfigOpen, setMatchConfigOpen] = useState(false);
-
   // ---- 技能链状态 ----
   const [chains, setChains] = useState<SkillChain[]>([]);
   const [selectedChainId, setSelectedChainId] = useState<string | null>(null);
@@ -881,26 +878,6 @@ const SkillsPage: React.FC = () => {
         }
       `}</style>
 
-      {/* T05: 匹配引擎设置对话框 */}
-      <Dialog
-        open={matchConfigOpen}
-        onClose={() => setMatchConfigOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: '12px', maxHeight: '80vh' },
-        }}
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${gs.border}` }}>
-          <Typography sx={{ fontSize: '1rem', fontWeight: 600 }}>匹配引擎设置</Typography>
-          <IconButton size="small" onClick={() => setMatchConfigOpen(false)}>
-            <TuneIcon sx={{ fontSize: 18 }} />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ p: 3 }}>
-          <MatchConfigPanel onConfigSaved={() => {}} />
-        </DialogContent>
-      </Dialog>
     </Box>
   );
 };

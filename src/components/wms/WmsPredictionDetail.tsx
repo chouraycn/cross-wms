@@ -39,8 +39,7 @@ import {
 } from 'recharts';
 import type { WmsAlert, PredictionDetail as PredictionDetailType } from '../../types/wms';
 import { getGrayScale } from '../../constants/theme';
-
-const BASE_URL = 'http://localhost:3001';
+import { getApiUrl } from '../../utils/api';
 
 interface WmsPredictionDetailProps {
   open: boolean;
@@ -91,7 +90,7 @@ const WmsPredictionDetail: React.FC<WmsPredictionDetailProps> = ({
       setError(null);
       try {
         const res = await fetch(
-          `${BASE_URL}/api/wms/alerts/prediction/${encodeURIComponent(sku)}?warehouseId=${encodeURIComponent(warehouseId)}`
+          getApiUrl(`/api/wms/alerts/prediction/${encodeURIComponent(sku)}?warehouseId=${encodeURIComponent(warehouseId)}`)
         );
         const json = await res.json();
         if (json.code === 0) {

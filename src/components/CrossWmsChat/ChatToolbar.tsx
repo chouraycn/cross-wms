@@ -11,6 +11,7 @@ import {
   Tooltip,
   Chip,
   useTheme,
+  keyframes,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import StopIcon from '@mui/icons-material/Stop';
@@ -21,6 +22,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
 import CheckIcon from '@mui/icons-material/Check';
 import TuneIcon from '@mui/icons-material/Tune';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
 import { getAllSkills } from '../../stores/skillStore';
@@ -78,6 +80,10 @@ export interface ChatToolbarProps {
   onPresetChange: (presetId: string) => void;
   /** Open AI settings (model management) dialog */
   onOpenAISettings?: () => void;
+  /** 上传按钮点击 */
+  onUploadClick?: () => void;
+  /** 是否有已选文件 */
+  hasAttachments?: boolean;
 }
 
 // ===================== Constants =====================
@@ -110,6 +116,8 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   selectedPreset,
   onPresetChange,
   onOpenAISettings,
+  onUploadClick,
+  hasAttachments,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -135,6 +143,13 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   const ITEM_TEXT = isDark ? '#E0E0E0' : '#111827';
   const ITEM_DESC = isDark ? '#888888' : '#9CA3AF';
   const SELECTED_BG = isDark ? '#3D2A10' : '#FFF7ED';
+
+  // 录音状态红色圆点闪烁动画
+  const pulse = keyframes`
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.6; }
+    100% { transform: scale(1); opacity: 1; }
+  `;
 
   return (
     <>
@@ -213,6 +228,10 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           <Box
             ref={modelBtnRef as React.RefObject<HTMLDivElement>}
             onClick={(e) => { e.stopPropagation(); handleDropdownClick('model'); }}
+            role="button"
+            aria-label="选择模型"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDropdownClick('model'); } }}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -233,17 +252,22 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             <KeyboardArrowUpIcon sx={{ fontSize: 18, color: gs.textMuted }} />
           </Box>
 
-          {/* Voice button */}
-          <Tooltip title="语音输入">
+          {/* Upload button */}
+          <Tooltip title="上传文件">
             <IconButton
               size="small"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onUploadClick?.();
+              }}
+              aria-label="上传文件"
               sx={{
                 width: 32, height: 32, borderRadius: '8px', p: 0,
-                color: gs.textMuted, '&:hover': { bgcolor: BTN_BG },
+                color: hasAttachments ? ACCENT : gs.textMuted,
+                '&:hover': { bgcolor: BTN_BG },
               }}
             >
-              <MicIcon sx={{ fontSize: 18 }} />
+              <AttachFileIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Tooltip>
 
@@ -258,6 +282,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               }
             }}
             disabled={!isLoading && !inputValue.trim()}
+            aria-label={isLoading ? '停止生成' : '发送消息'}
             sx={{
               width: 34, height: 34, borderRadius: '10px', p: 0,
               bgcolor: ACCENT,

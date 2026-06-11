@@ -44,9 +44,8 @@ import WmsOutboundForm from '../components/wms/WmsOutboundForm';
 import { subscribeRefresh } from '../App';
 import { useToast } from '../contexts/ToastContext';
 import { exportToCsv } from '../utils/exportCsv';
+import { getApiUrl } from '../utils/api';
 import type { OutboundReview } from '../types/wms';
-
-const BASE_URL = 'http://localhost:3001';
 
 /** 复核状态映射 */
 const STATUS_CONFIG: Record<string, { label: string; color: 'warning' | 'success' | 'error' }> = {
@@ -78,7 +77,7 @@ const WmsOutboundPage: React.FC = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/outbound`);
+      const res = await fetch(getApiUrl('/api/wms/outbound'));
       const json = await res.json();
       if (json.code === 0 || json.success) {
         setData(json.data || []);
@@ -126,7 +125,7 @@ const WmsOutboundPage: React.FC = () => {
   const handleDeleteConfirm = async () => {
     if (deletingId === null) return;
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/outbound/${deletingId}`, { method: 'DELETE' });
+      const res = await fetch(getApiUrl(`/api/wms/outbound/${deletingId}`), { method: 'DELETE' });
       const json = await res.json();
       if (json.code === 0 || json.success) {
         showToast('删除成功', 'success');
@@ -147,7 +146,7 @@ const WmsOutboundPage: React.FC = () => {
     if (id === undefined) return;
     setScanningId(id);
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/outbound/${id}/scan`, { method: 'POST' });
+      const res = await fetch(getApiUrl(`/api/wms/outbound/${id}/scan`), { method: 'POST' });
       const json = await res.json();
       if (json.code === 0 || json.success) {
         showToast('扫描成功', 'success');

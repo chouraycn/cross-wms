@@ -7,6 +7,7 @@ import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/Wareho
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
 import type { AppearanceConfig, AccentColor } from './contexts/AppSettingsContext';
 import { ModelsProvider } from './contexts/ModelsContext';
+import { ActiveSessionProvider } from './contexts/ActiveSessionContext';
 import { isPyWebView } from './services/tencentDocsApi';
 import { getGrayScale } from './constants/theme';
 import { UpdateProvider } from './contexts/UpdateContext';
@@ -572,7 +573,8 @@ const MainLayout: React.FC = () => {
             className={isPy ? undefined : "auto-hide-scrollbar"}
             sx={{
               minHeight: '100%',
-              overflow: 'auto',
+              overflowY: 'scroll',
+              overflowX: 'auto',
               display: 'flex',
               flexDirection: 'column',
               // pywebview 环境：始终显示宽滚动条，提升拖动体验
@@ -585,20 +587,20 @@ const MainLayout: React.FC = () => {
                   '&:hover': { background: 'rgba(0,0,0,0.45)' },
                 },
               } : {
-                // 浏览器环境：默认隐藏滚动条，滚动时显示
+                // 浏览器环境：滚动条始终可见，hover / 滚动中加深
                 '&::-webkit-scrollbar': { width: '6px' },
                 '&::-webkit-scrollbar-track': { background: 'transparent' },
                 '&::-webkit-scrollbar-thumb': {
-                  background: 'transparent',
+                  background: 'rgba(0,0,0,0.12)',
                   borderRadius: '3px',
                   transition: 'background-color 0.3s ease',
                 },
                 '&:hover::-webkit-scrollbar-thumb': {
-                  background: 'rgba(0,0,0,0.15)',
+                  background: 'rgba(0,0,0,0.22)',
                 },
                 '&.scrollbar-visible::-webkit-scrollbar-thumb': {
-                  background: 'rgba(0,0,0,0.2)',
-                  '&:hover': { background: 'rgba(0,0,0,0.35)' },
+                  background: 'rgba(0,0,0,0.35)',
+                  '&:hover': { background: 'rgba(0,0,0,0.45)' },
                 },
               }),
             }}
@@ -702,13 +704,15 @@ const App: React.FC = () => {
   return (
     <AppSettingsProvider>
       <ModelsProvider>
-        <ThemedApp>
-          <HashRouter>
-            <UpdateProvider>
-              <MainLayout />
-            </UpdateProvider>
-          </HashRouter>
-        </ThemedApp>
+        <ActiveSessionProvider>
+          <ThemedApp>
+            <HashRouter>
+              <UpdateProvider>
+                <MainLayout />
+              </UpdateProvider>
+            </HashRouter>
+          </ThemedApp>
+        </ActiveSessionProvider>
       </ModelsProvider>
     </AppSettingsProvider>
   );

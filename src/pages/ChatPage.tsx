@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Box, Typography, useTheme } from '@mui/material';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
@@ -8,9 +8,10 @@ import type { Skill } from '../types/skill';
 import { ICON_MAP } from '../types/skill';
 import { getCategoryLabel, getCategoryGradient } from '../constants/skillCategories';
 import { getGrayScale } from '../constants/theme';
+import { useActiveSession } from '../contexts/ActiveSessionContext';
 import {
-  loadSessions,
-  SESSIONS_UPDATED_EVENT,
+  subscribeSessions,
+  getSessionsSnapshot,
 } from '../utils/sessionStore';
 
 /** 从 URL 参数解析技能上下文 */
@@ -42,20 +43,19 @@ const ChatPage: React.FC = () => {
     return resolveSkillFromParams(skillId);
   });
 
+  // 使用 ActiveSessionContext（提前声明，避免 TDZ）
+  const { activeSessionId } = useActiveSession();
+
   // 是否显示欢迎区（空状态 + 技能上下文）
   const [showWelcome, setShowWelcome] = useState(() => {
-    const sessionId = searchParams.get('session');
     const skillId = searchParams.get('skill');
-    // 有 session 或 skill 参数时，不显示欢迎区（会自动跳到对话）
-    return !sessionId && !skillId;
+    // 有 skill 参数时，不显示欢迎区（会自动跳到对话）
+    return !skillId && !activeSessionId;
   });
 
-  // 判断当前是否有任何聊天消息（用于控制欢迎区显示）
-  const [hasMessages, setHasMessages] = useState(() => {
-    const sessions = loadSessions();
-    // 如果没有任何有消息的会话，显示欢迎区
-    return sessions.some(s => s.messages.length > 0);
-  });
+  // 判断当前是否有任何聊天消息（使用 useSyncExternalStore 统一读取）
+  const sessions = useSyncExternalStore(subscribeSessions, getSessionsSnapshot);
+  const hasMessages = sessions.some(s => s.messages.length > 0);
 
   // 当 URL 参数中存在 skill 时，解析并创建新 session
   useEffect(() => {
@@ -69,25 +69,6 @@ const ChatPage: React.FC = () => {
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
-
-  // 响应 URL 中的 session 参数变化（侧边栏点击历史对话时 navigate 携带 ?session=xxx）
-  useEffect(() => {
-    const sessionId = searchParams.get('session');
-    if (sessionId) {
-      setShowWelcome(false);
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
-
-  // 监听会话更新事件，跟踪是否有消息
-  useEffect(() => {
-    const handleUpdate = () => {
-      const sessions = loadSessions();
-      setHasMessages(sessions.some(s => s.messages.length > 0));
-    };
-    window.addEventListener(SESSIONS_UPDATED_EVENT, handleUpdate);
-    return () => window.removeEventListener(SESSIONS_UPDATED_EVENT, handleUpdate);
-  }, []);
 
   // 监听侧边栏事件 — 转发为 CrossWmsChat 也能响应的标准事件
   useEffect(() => {

@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useSyncExternalStore } from 'react';
 import { Paper, List, ListItem, ListItemText, ListItemIcon, Typography, Box, useTheme } from '@mui/material';
 import { Session } from '../../types/chat';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import SearchInput from '../Common/SearchInput';
 import { getGrayScale } from '../../constants/theme';
-import { loadSessions, SESSIONS_UPDATED_EVENT } from '../../utils/sessionStore';
+import { subscribeSessions, getSessionsSnapshot } from '../../utils/sessionStore';
 
 interface SessionReferenceSelectorProps {
   anchorEl: HTMLElement | null;
@@ -39,25 +39,9 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
   const listRef = useRef<HTMLDivElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [allSessions, setAllSessions] = useState<Session[]>([]);
 
-  // 从统一的 sessionStore 加载
-  const reloadSessions = React.useCallback(() => {
-    setAllSessions(loadSessions());
-  }, []);
-
-  useEffect(() => {
-    reloadSessions();
-    // 监听统一事件（同标签页内组件间同步 + 跨标签页同步）
-    const onChatUpdate = () => reloadSessions();
-    const onStorage = () => reloadSessions();
-    window.addEventListener('storage', onStorage);
-    window.addEventListener(SESSIONS_UPDATED_EVENT, onChatUpdate);
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener(SESSIONS_UPDATED_EVENT, onChatUpdate);
-    };
-  }, [reloadSessions]);
+  // 使用 useSyncExternalStore 统一读取 sessions
+  const allSessions = useSyncExternalStore(subscribeSessions, getSessionsSnapshot);
 
   // 过滤 + 搜索（与 NavList 侧边栏保持一致：只显示有消息的会话）
   const sessions = React.useMemo(() => {
@@ -67,7 +51,7 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
     const q = searchQuery.trim().toLowerCase();
     if (!q) return withMessages;
     return withMessages.filter(s => {
-      const title = s.title || s.messages[0]?.content?.slice(0, 20) || '新对话';
+      const title = s.title || '新对话';
       return title.toLowerCase().includes(q);
     });
   }, [allSessions, searchQuery]);
@@ -182,7 +166,7 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
               <ListItemText
                 primary={
                   <Typography sx={{ fontSize: 13, fontWeight: 500, color: gs.textPrimary }} noWrap>
-                    {session.title || (session.messages[0]?.content as string)?.slice(0, 20) || '新对话'}
+                    {session.title || '新对话'}
                   </Typography>
                 }
                 secondary={

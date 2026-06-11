@@ -11,7 +11,7 @@ import {
   Typography,
   IconButton,
   Tooltip,
-  CircularProgress,
+  Skeleton,
   useTheme,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -172,17 +172,56 @@ export function QueryResultRenderer({
     }
   }, [dataSource]);
 
-  // 加载态
+  // 加载态 — 骨架屏
   if (loading) {
     return (
       <Paper
         elevation={1}
-        sx={{ p: 3, mb: 1.5, display: 'flex', alignItems: 'center', gap: 2, borderRadius: '12px' }}
+        sx={{
+          mb: 1.5,
+          borderRadius: '12px',
+          overflow: 'hidden',
+          border: `1px solid ${gs.border}`,
+        }}
       >
-        <CircularProgress size={20} />
-        <Typography variant="body2" color="text.secondary">
-          正在查询库存数据...
-        </Typography>
+        {/* 顶部表头骨架 */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            px: 2,
+            py: 1,
+            borderBottom: `1px solid ${gs.bgHover}`,
+            bgcolor: gs.bgPage,
+          }}
+        >
+          <Skeleton variant="rectangular" height={32} width="100%" animation="pulse" />
+        </Box>
+
+        {/* 内容区域骨架 */}
+        <Box sx={{ p: 2, minHeight: 200 }}>
+          {/* 图表区域大矩形骨架 */}
+          <Skeleton
+            variant="rectangular"
+            height={200}
+            width="100%"
+            animation="pulse"
+            sx={{ borderRadius: 1, mb: 2 }}
+          />
+          {/* 表格区域 5 行骨架 */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {Array.from({ length: 5 }).map((_, idx) => (
+              <Skeleton
+                key={idx}
+                variant="rectangular"
+                height={40}
+                width="100%"
+                animation="pulse"
+                sx={{ borderRadius: 1 }}
+              />
+            ))}
+          </Box>
+        </Box>
       </Paper>
     );
   }
