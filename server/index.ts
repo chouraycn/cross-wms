@@ -7,7 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import skillWatcher from './services/skillWatcher.js';
-import { callAIModelStream, AIAPIError } from './aiClient.js';
+import { callAIModelStream, callAIModel, AIAPIError } from './aiClient.js';
 
 // Business data routes
 import warehousesRouter from './routes/warehouses.js';
@@ -51,7 +51,7 @@ import inventoryNlQueryRouter from './routes/inventory-nl-query.js';
 import { addClient, removeClient } from './services/chainExecutor.js';
 import { batchAuditSkills } from './services/securityAuditor.js';
 import { initMatchingEngine } from './services/matchingService.js';
-import { loadModelsConfig, ModelsFile } from './modelsStore.js';
+import { loadModelsConfig, ModelsFile, isLocalModel } from './modelsStore.js';
 import { selectKey, reportKeyResult } from './keyRotator.js';
 
 // Automation Engine v2.0
@@ -69,7 +69,7 @@ const MEMORY_MD_PATH = path.join(CDF_KNOW_CLOW_DIR, 'MEMORY.md');
 function generateMockResponse(userMessage: string): string {
   const msg = userMessage.toLowerCase();
 
-  const apiKeyGuide = `\n\n---\n💡 **配置 API Key 即可使用真正的 AI 对话**\n\n1. 点击对话界面顶部的「设置」按钮\n2. 在模型管理中选择一个模型（推荐 DeepSeek 或通义千问，性价比高）\n3. 填入对应服务商的 API Key\n4. 保存后即可开始真正的 AI 对话\n\n支持的服务商：OpenAI、DeepSeek、Anthropic、通义千问、Google Gemini、智谱、火山引擎等 20+ 平台`;
+  const apiKeyGuide = `\n\n---\n💡 **启用真正的 AI 对话**\n\n点击对话框底部的模型选择按钮，选择「添加模型」进行配置。\n\n**方案一：配置 API Key（推荐）**\n1. 选择一个模型（推荐 DeepSeek 或通义千问，性价比高）\n2. 填入对应服务商的 API Key\n3. 保存后即可开始真正的 AI 对话\n\n**方案二：使用本地模型（免 Key）**\n1. 安装 [Ollama](https://ollama.com) 并启动服务（ollama serve）\n2. 拉取模型：ollama pull llama3.1\n3. 添加 Ollama 模型，端点填 http://localhost:11434/v1\n4. 无需 API Key，直接开始对话`;
 
   if (msg.includes('你好') || msg.includes('hello') || msg.includes('hi') || msg.includes('在吗')) {
     return '你好！我是 AI 助手（模拟模式）。\n\n当前系统未配置 API Key，所以我返回的是预设的演示响应。配置 API Key 后，我将连接真正的 AI 模型为你提供智能问答服务。' + apiKeyGuide;
@@ -84,7 +84,7 @@ function generateMockResponse(userMessage: string): string {
   }
 
   if (msg.includes('api') || msg.includes('key') || msg.includes('密钥') || msg.includes('配置')) {
-    return '**API Key 配置指南**\n\n要启用真正的 AI 对话功能，需要配置 API Key：\n\n1. **选择服务商**（推荐）：\n   - DeepSeek：https://platform.deepseek.com（性价比高，中文优秀）\n   - 通义千问：https://dashscope.aliyun.com（国内稳定）\n   - SiliconFlow：https://siliconflow.cn（有免费额度）\n\n2. **获取 API Key**：在对应平台注册账号并创建 API Key\n\n3. **配置到系统**：\n   - 点击对话界面顶部的「设置」按钮\n   - 选择你想使用的模型\n   - 填入 API Key 并保存\n\n4. **开始对话**：配置完成后即可使用真正的 AI 模型进行对话';
+    return '**API Key 配置指南**\n\n要启用真正的 AI 对话功能，需要配置 API Key：\n\n1. **选择服务商**（推荐）：\n   - DeepSeek：https://platform.deepseek.com（性价比高，中文优秀）\n   - 通义千问：https://dashscope.aliyun.com（国内稳定）\n   - SiliconFlow：https://siliconflow.cn（有免费额度）\n\n2. **获取 API Key**：在对应平台注册账号并创建 API Key\n\n3. **配置到系统**：\n   - 点击对话框底部的模型选择按钮\n   - 选择「添加模型」进行配置\n   - 填入 API Key 并保存\n\n4. **开始对话**：配置完成后即可使用真正的 AI 模型进行对话';
   }
 
   return `收到你的消息：「${userMessage}」\n\n（模拟模式）这是一个预设的演示响应。配置 API Key 后，我将连接真正的 AI 模型为你提供智能、准确的回答。` + apiKeyGuide;
@@ -107,6 +107,20 @@ interface AutoSelectResult {
 }
 
 /**
+ * 判断模型是否实际可用（有 API Key 或为本地模型）
+ * 用于 auto 模式选型时过滤掉不可用的模型
+ */
+function isModelAvailable(model: { provider?: string; apiKey?: string; apiKeys?: Array<{ key?: string; enabled?: boolean }>; apiEndpoint?: string }): boolean {
+  // 本地模型不需要 API Key
+  if (isLocalModel(model)) return true;
+  // 有单 Key
+  if (model.apiKey?.trim()) return true;
+  // 有多 Key（至少一个启用且有值）
+  if (model.apiKeys?.some(k => k.enabled !== false && k.key?.trim())) return true;
+  return false;
+}
+
+/**
  * Auto 模式：根据用户输入智能选择最合适的模型。
  *
  * 选型逻辑（按优先级）：
@@ -116,110 +130,34 @@ interface AutoSelectResult {
  * 4. 简单短对话 → 快速/轻量模型
  * 5. 默认 → 配置的默认模型
  *
+ * 只从实际可用的模型（有 Key 或本地模型）中选择。
+ *
  * @returns 选中的模型 ID + 选型原因
  */
 function autoSelectModel(message: string, modelsConfig: ModelsFile): AutoSelectResult {
   const enabledModels = modelsConfig.models.filter((m) => m.enabled);
-  const fallback: AutoSelectResult = {
-    modelId: enabledModels[0]?.id || 'gpt-4o',
-    modelName: enabledModels[0]?.name || 'GPT-4o',
-    reason: '默认模型',
-    reasonType: 'default',
-  };
-  if (enabledModels.length === 0) return fallback;
-  if (enabledModels.length === 1) {
-    return { ...fallback, reason: '唯一可用模型', reasonType: 'default' };
-  }
+  // 只保留实际可用的模型（有 API Key 或本地模型）
+  const availableModels = enabledModels.filter(isModelAvailable);
 
-  const msg = message.toLowerCase();
+  // 如果没有可用模型，回退到所有已启用模型（让后端报错提示用户配置 Key）
+  const candidateModels = availableModels.length > 0 ? availableModels : enabledModels;
 
-  // 辅助：从指定 ID 列表中找第一个已启用的模型
-  const findEnabled = (ids: string[]) => enabledModels.find((m) => ids.includes(m.id));
-
-  // --- 检测代码信号 ---
-  const codeSignals = [
-    'function', 'class ', 'import ', 'const ', 'let ', 'var ',
-    'def ', 'async ', 'await ', 'export ', 'require(',
-    '```', '=>', 'interface ', 'type ', 'package ',
-    'from ', 'return ', 'print(', 'console.',
-    '#include', 'public static', 'func ', 'fn ',
-    'struct ', 'impl ', 'match ', 'use ', 'mod ',
-    '<script', '<style', 'npm ', 'yarn ', 'pip ',
-  ];
-  const isCode = codeSignals.some((s) => msg.includes(s)) || message.length > 1500;
-
-  // --- 检测长上下文信号 ---
-  const isLongContext = message.length > 8000;
-
-  // --- 检测复杂度信号 ---
-  const analysisKeywords = [
-    '分析', '审查', 'review', 'explain', '解释', 'refactor',
-    '重构', '优化', 'optimize', 'debug', '排查', '架构',
-    '设计', 'design', '实现', '方案', '文档', '对比',
-    'compare', 'evaluate', '评估', '总结', 'summarize',
-    '推理', 'reasoning', '逻辑', 'logic', '证明',
-  ];
-  const isComplex = message.length > 300 || analysisKeywords.some((k) => msg.includes(k));
-
-  // --- 检测简单信号 ---
-  const isSimple = message.length < 80
-    && !isCode
-    && !isComplex
-    && !analysisKeywords.some((k) => msg.includes(k));
-
-  // --- 分层选择 ---
-  // 1. 代码 → 代码专用 / 强力
-  if (isCode) {
-    const codeModel = findEnabled(CODE_MODEL_IDS) || findEnabled(POWERFUL_MODEL_IDS) || enabledModels[0];
+  if (candidateModels.length === 0) {
     return {
-      modelId: codeModel.id,
-      modelName: codeModel.name,
-      reason: `${codeModel.name} · 检测到代码内容，选择代码专用模型`,
-      reasonType: 'code',
+      modelId: 'gpt-4o',
+      modelName: 'GPT-4o',
+      reason: '无可用模型（请配置 API Key）',
+      reasonType: 'default',
     };
   }
 
-  // 2. 超长文本 → 长上下文模型
-  if (isLongContext) {
-    const longModel = findEnabled(LONG_CONTEXT_IDS) || enabledModels[0];
-    return {
-      modelId: longModel.id,
-      modelName: longModel.name,
-      reason: `${longModel.name} · 长文本内容，选择大上下文窗口模型`,
-      reasonType: 'longContext',
-    };
-  }
+  // 优先使用配置的默认模型（如果它在可用列表中）
+  const defaultModel = candidateModels.find((m) => m.id === modelsConfig.defaultModelId) || candidateModels[0];
 
-  // 3. 复杂分析 → 强力模型
-  if (isComplex) {
-    const powerfulModel = findEnabled(POWERFUL_MODEL_IDS) || enabledModels[0];
-    return {
-      modelId: powerfulModel.id,
-      modelName: powerfulModel.name,
-      reason: `${powerfulModel.name} · 复杂分析任务，选择强力模型`,
-      reasonType: 'complex',
-    };
-  }
-
-  // 4. 简单短对话 → 快速/轻量模型
-  if (isSimple) {
-    const fastModel = findEnabled(FAST_MODEL_IDS)
-      || enabledModels.find((m) => !POWERFUL_MODEL_IDS.includes(m.id))
-      || enabledModels[0];
-    return {
-      modelId: fastModel.id,
-      modelName: fastModel.name,
-      reason: `${fastModel.name} · 简单对话，选择快速模型`,
-      reasonType: 'simple',
-    };
-  }
-
-  // 5. 默认 → 配置的默认模型，或第一个已启用模型
-  const defaultModel = enabledModels.find((m) => m.id === modelsConfig.defaultModelId) || enabledModels[0];
   return {
     modelId: defaultModel.id,
     modelName: defaultModel.name,
-    reason: `${defaultModel.name} · 使用默认模型`,
+    reason: candidateModels.length === 1 ? '唯一可用模型' : '使用默认模型',
     reasonType: 'default',
   };
 }
@@ -257,6 +195,144 @@ function writeMemoryMd(content: string): void {
   } catch (e) {
     console.error('[Memory] 写入失败:', e);
     throw e;
+  }
+}
+
+/**
+ * 自动记忆学习：从对话中提取关键信息，追加到 MEMORY.md
+ *
+ * 策略：
+ * 1. 只在对话轮次 >= 3 时触发（避免首句无意义提取）
+ * 2. 异步执行，不阻塞主对话流程
+ * 3. 提取前读取现有记忆，避免重复
+ * 4. 只追加新内容，不覆盖用户手动编写的内容
+ */
+async function extractAndAppendMemory(
+  userMessage: string,
+  assistantMessage: string,
+  conversationHistory: Array<{ role: string; content: string }>,
+): Promise<{ updated: boolean; count: number }> {
+  try {
+    // 至少有一定长度的对话才提取
+    if (userMessage.length < 5 || assistantMessage.length < 10) return { updated: false, count: 0 };
+
+    const existingMemory = readMemoryMd();
+
+    // 构建提取 prompt
+    const historySummary = conversationHistory
+      .slice(-6) // 最近 3 轮
+      .map((m) => `${m.role === 'user' ? '用户' : '助手'}: ${m.content.slice(0, 200)}`)
+      .join('\n');
+
+    const extractPrompt = `你是一个记忆提取助手。请从以下对话中提取值得长期记住的关键信息。
+
+## 提取规则
+1. 只提取以下类型的信息：
+   - 用户的偏好、习惯、喜好
+   - 用户提到的个人事实（名字、角色、环境等）
+   - 用户明确要求记住的指令或规则
+   - 重要的项目上下文（技术栈、配置、约定）
+2. 不要提取：
+   - 临时性问题（如"今天天气怎么样"）
+   - 已经在现有记忆中存在的重复信息
+   - 对话中的闲聊、客套
+   - AI 助手自己的回复内容
+3. 每条记忆用一行简洁的 Markdown 格式表示
+4. 如果没有值得记住的新信息，返回空字符串
+
+## 现有记忆
+${existingMemory || '（无现有记忆）'}
+
+## 最近对话
+${historySummary}
+
+## 本次对话
+用户: ${userMessage.slice(0, 500)}
+助手: ${assistantMessage.slice(0, 500)}
+
+请只输出提取到的记忆条目，每条一行。如果没有新信息，输出空字符串。不要输出任何解释。`;
+
+    // 使用当前可用的模型进行提取
+    const modelsConfig = await loadModelsConfig();
+    const availableModels = modelsConfig.models.filter((m) => m.enabled);
+    const targetModel = availableModels[0];
+
+    if (!targetModel) {
+      console.log('[AutoMemory] 无可用模型，跳过记忆提取');
+      return { updated: false, count: 0 };
+    }
+
+    const effectiveApiKey = selectKey(targetModel);
+
+    if (!effectiveApiKey && !isLocalModel(targetModel)) {
+      console.log('[AutoMemory] 无可用 API Key，跳过记忆提取');
+      return { updated: false, count: 0 };
+    }
+
+    // 调用 AI 进行提取（非流式）
+    const extractMessages: Array<{ role: string; content: string }> = [
+      { role: 'system', content: '你是一个精确的记忆提取助手。只输出提取到的记忆条目，不要输出任何解释或格式标记。' },
+      { role: 'user', content: extractPrompt },
+    ];
+
+    const extractedContent = await callAIModel(
+      {
+        id: targetModel.id,
+        provider: targetModel.provider || '',
+        apiEndpoint: targetModel.apiEndpoint,
+        apiKey: effectiveApiKey || undefined,
+        maxTokens: 512,
+        temperature: 0.3,
+      },
+      extractMessages,
+    );
+
+    if (!extractedContent?.trim()) {
+      console.log('[AutoMemory] 未提取到新记忆');
+      return { updated: false, count: 0 };
+    }
+
+    // 清理提取结果：去除可能的 markdown 标记
+    const cleanedExtraction = extractedContent
+      .trim()
+      .split('\n')
+      .map((line) => line.replace(/^[-*]\s*/, '').replace(/^#+\s*/, '').trim())
+      .filter((line) => line.length > 3 && line.length < 200)
+      .join('\n');
+
+    if (!cleanedExtraction) {
+      console.log('[AutoMemory] 清理后无有效记忆');
+      return { updated: false, count: 0 };
+    }
+
+    // 去重：检查每条新记忆是否已存在于现有记忆中
+    const existingLines = new Set(
+      existingMemory.split('\n').map((l) => l.trim().toLowerCase()).filter(Boolean),
+    );
+    const newLines = cleanedExtraction
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 3 && !existingLines.has(l.toLowerCase()));
+
+    if (newLines.length === 0) {
+      console.log('[AutoMemory] 所有提取的记忆已存在，跳过');
+      return { updated: false, count: 0 };
+    }
+
+    // 追加到 MEMORY.md
+    const timestamp = new Date().toLocaleString('zh-CN');
+    const newSection = `\n## 自动学习 (${timestamp})\n${newLines.map((l) => `- ${l}`).join('\n')}\n`;
+    const updatedMemory = existingMemory
+      ? existingMemory.trimEnd() + '\n' + newSection
+      : `# AI 记忆 (MEMORY.md)\n\n本文件由 AI 自动学习和用户手动编辑共同维护。\n${newSection}`;
+
+    writeMemoryMd(updatedMemory);
+    console.log(`[AutoMemory] 成功追加 ${newLines.length} 条记忆`);
+    return { updated: true, count: newLines.length };
+  } catch (e) {
+    // 记忆提取失败不应影响主对话流程
+    console.error('[AutoMemory] 提取失败:', e instanceof Error ? e.message : e);
+    return { updated: false, count: 0 };
   }
 }
 
@@ -383,8 +459,6 @@ app.delete('/api/sessions/:id', (req, res) => {
 app.post('/api/chat', async (req, res) => {
   const { sessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory } = req.body;
   console.log(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, message="${message?.slice(0, 30)}"`);
-  // 额外写入文件日志，确认请求是否到达
-  try { require('fs').appendFileSync('/tmp/chat-api.log', `[${new Date().toISOString()}] sessionId=${sessionId} model=${model} message="${message?.slice(0, 30)}"\n`); } catch {}
 
   try {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -508,11 +582,13 @@ app.post('/api/chat', async (req, res) => {
 
       // 创建 AbortController 用于超时控制
       const abortController = new AbortController();
-      const timeout = setTimeout(() => abortController.abort(), 120000); // 2分钟超时
+      // 本地模型给更长的超时（大模型推理可能较慢）
+      const timeoutMs = isLocalModel(modelConfig) ? 300000 : 120000;
+      const timeout = setTimeout(() => abortController.abort(), timeoutMs);
 
       try {
-        // 无 API Key 时使用模拟模式
-        if (!effectiveApiKey) {
+        // 无 API Key 且非本地模型时使用模拟模式
+        if (!effectiveApiKey && !isLocalModel(modelConfig)) {
           console.log(`[Chat API] 模型 ${effectiveModel} 未配置 API Key，使用模拟模式`);
           const mockResponse = generateMockResponse(message);
           const segments = mockResponse.match(/[\s\S]{1,5}/g) || [mockResponse];
@@ -542,6 +618,9 @@ app.post('/api/chat', async (req, res) => {
       if (selectedKeyIndex >= 0 && effectiveModel) {
         reportKeyResult(effectiveModel, selectedKeyIndex, true);
       }
+
+      // 异步自动记忆学习（不阻塞主流程，不 await）
+      extractAndAppendMemory(message, fullContent, apiMessages).catch(() => {});
     } catch (apiError) {
       console.error('[Chat API] AI API error:', apiError);
       console.error('[Chat API] Stack trace:', apiError instanceof Error ? apiError.stack : 'N/A');

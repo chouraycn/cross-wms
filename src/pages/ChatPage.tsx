@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Box, Typography, IconButton, Tooltip, useTheme } from '@mui/material';
 import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
@@ -73,6 +73,17 @@ const ChatPage: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+
+  // 自动滚动到底部
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isUserScrolledUp = useRef(false);
+
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    isUserScrolledUp.current = el.scrollHeight - el.scrollTop - el.clientHeight > 80;
+  }, []);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [sessions, setSessions] = useState<Session[]>(() => loadSessions());
@@ -153,6 +164,21 @@ const ChatPage: React.FC = () => {
     sessions.find((s) => s.id === effectiveSessionId) || createNewSession(),
     [sessions, effectiveSessionId]
   );
+
+  // 新消息时自动滚动（仅在用户没有主动上翻时）
+  useEffect(() => {
+    if (!isUserScrolledUp.current && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [session.messages.length, session.messages[session.messages.length - 1]?.content]);
+
+  // 切换会话时重置滚动状态并滚到底部
+  useEffect(() => {
+    isUserScrolledUp.current = false;
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'instant' as ScrollBehavior });
+    }
+  }, [effectiveSessionId]);
 
   useEffect(() => {
     if (sessions.length > 0) saveSessions(sessions);
@@ -344,6 +370,8 @@ const ChatPage: React.FC = () => {
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             {/* 消息历史 */}
             <Box
+              ref={messagesContainerRef}
+              onScroll={handleScroll}
               sx={{
                 flex: 1,
                 overflow: 'auto',
@@ -445,6 +473,8 @@ const ChatPage: React.FC = () => {
                   )}
                 </Box>
               ))}
+              {/* 滚动锚点：自动滚动到此位置 */}
+              <div ref={messagesEndRef} />
             </Box>
           </Box>
         )}
@@ -454,7 +484,7 @@ const ChatPage: React.FC = () => {
           px: 3,
           py: 2,
           flexShrink: 0,
-          borderTop: isEmpty ? 'none' : '1px solid #F3F4F6',
+          borderTop: 'none',
         }}>
           <Box sx={{ maxWidth: 960, mx: 'auto' }}>
             <TopBarChatInput

@@ -16,6 +16,27 @@ import type { ModelProvider, ModelCapability, ModelConfig } from '../shared/type
 // 重新导出共享类型，供其他 server 模块使用
 export type { ModelProvider, ModelCapability, ModelConfig };
 
+/**
+ * 判断模型是否为本地部署（不需要 API Key）
+ * 统一判断逻辑，避免各处重复实现
+ */
+export function isLocalModel(model: { provider?: string; apiEndpoint?: string }): boolean {
+  const endpoint = model.apiEndpoint || '';
+  return (
+    model.provider === 'ollama' ||
+    model.provider === 'lmstudio' ||
+    model.provider === 'local' ||
+    endpoint.includes('localhost') ||
+    endpoint.includes('127.0.0.1') ||
+    endpoint.includes('0.0.0.0') ||
+    endpoint.includes('[::1]') ||
+    // 私有网络地址
+    /https?:\/\/(192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.)/.test(endpoint) ||
+    // Ollama 默认端口
+    endpoint.includes(':11434')
+  );
+}
+
 /** 写入队列，防止并发写入 */
 let writeLockPromise: Promise<unknown> = Promise.resolve();
 
@@ -73,7 +94,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     name: 'GPT-4o',
     provider: 'openai',
     apiEndpoint: 'https://api.openai.com/v1',
-    enabled: true,
+    enabled: false,
     isDefault: false,
     description: 'OpenAI 最新多模态模型，支持文本和图像输入',
     contextWindow: 128000,
@@ -85,7 +106,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     name: 'GPT-4 Turbo',
     provider: 'openai',
     apiEndpoint: 'https://api.openai.com/v1',
-    enabled: true,
+    enabled: false,
     isDefault: false,
     description: 'GPT-4 Turbo，性价比优秀的旗舰模型',
     contextWindow: 128000,
@@ -98,7 +119,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     name: 'Claude Sonnet 4',
     provider: 'anthropic',
     apiEndpoint: 'https://api.anthropic.com/v1',
-    enabled: true,
+    enabled: false,
     isDefault: false,
     description: 'Claude Sonnet 4，适合日常编程和分析任务',
     contextWindow: 200000,
@@ -110,7 +131,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     name: 'Claude 3.5 Haiku',
     provider: 'anthropic',
     apiEndpoint: 'https://api.anthropic.com/v1',
-    enabled: true,
+    enabled: false,
     isDefault: false,
     description: '轻量快速模型，适合简单对话',
     contextWindow: 200000,
@@ -123,7 +144,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     name: '混元 Turbo',
     provider: 'tencent',
     apiEndpoint: 'https://api.hunyuan.cloud.tencent.com/v1',
-    enabled: true,
+    enabled: false,
     isDefault: false,
     description: '腾讯混元大模型 Turbo 版本',
     contextWindow: 32000,
@@ -449,6 +470,25 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
       }
       // 注入 Keychain 中的 API Key（仅用于后端内部使用，不返回给前端）
       saved.models = injectApiKeys(saved.models);
+      // 自动禁用没有 API Key 的远程模型（修复旧版遗留 enabled:true 问题）
+      let needSave = changed;
+      saved.models = saved.models.map((m) => {
+        if (!m.enabled) return m;
+        const hasKey = m.apiKey?.trim() || m.apiKeys?.some(k => k.enabled !== false && k.key?.trim());
+        if (!hasKey && !isLocalModel(m)) {
+          needSave = true;
+          return { ...m, enabled: false };
+        }
+        return m;
+      });
+      if (needSave) {
+        // 保存前脱敏（移除注入的 Key）
+        const sanitized = saved.models.map((m) => {
+          const { apiKey, apiKeys, ...rest } = m as any;
+          return rest;
+        });
+        await writeModelsFile({ ...saved, models: sanitized });
+      }
       // 更新缓存
       cachedModelsFile = saved;
       cacheTimestamp = Date.now();

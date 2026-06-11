@@ -165,7 +165,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           metadata: { loading: true, autoRetried: true },
         };
 
-        const sessionWithLoading = { ...session, messages: [...session.messages, retryAssistantMsg] };
+        const sessionWithLoading = { ...updatedSession, messages: [...updatedSession.messages, retryAssistantMsg] };
         onSessionUpdateRef.current(sessionWithLoading);
 
         try {
@@ -215,7 +215,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           timestamp: new Date(),
           metadata: { autoRetried: true },
         };
-        const finalSession = { ...session, messages: [...session.messages, retryAssistantMsg] };
+        const finalSession = { ...updatedSession, messages: [...updatedSession.messages, retryAssistantMsg] };
         onSessionUpdateRef.current(finalSession);
       }
     } catch (e) {
@@ -493,15 +493,15 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                 errorCode: 'SQL_EXEC_FAILED',
               };
 
-              // 更新会话后触发自动重试
+              // 更新会话后触发自动重试（包含 userMsg + streamingMsg）
               const failedSession = {
-                ...session,
-                messages: [...session.messages, streamingMsg],
+                ...updatedSession,
+                messages: [...updatedSession.messages, streamingMsg],
               };
               onSessionUpdateRef.current(failedSession);
 
-              // 异步自动重试（不阻塞当前 UI 更新）
-              retryOnSqlFailure(session, content, apiData, onSessionUpdateRef.current);
+              // 异步自动重试（不阻塞当前 UI 更新，基于包含原始 userMsg 的会话）
+              retryOnSqlFailure(updatedSession, content, apiData, onSessionUpdateRef.current);
               return; // 跳过下方的 onSessionUpdate（已在此处更新）
             }
           } catch (apiErr) {
@@ -515,11 +515,11 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             };
           }
 
-          // 更新会话
+          // 更新会话（基于包含 userMsg 的 updatedSession）
           const finalSession = {
-            ...session,
+            ...updatedSession,
             messages: [
-              ...session.messages,
+              ...updatedSession.messages,
               streamingMsg,
             ],
           };

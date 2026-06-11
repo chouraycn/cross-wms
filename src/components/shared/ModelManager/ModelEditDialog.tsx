@@ -262,8 +262,25 @@ const KeysSection: React.FC<{
   showApiKey: boolean;
   toggleApiKeyVisibility: () => void;
   styles: ReturnType<typeof getModelManagerStyles>;
-}> = ({ modelForm, setModelForm, showApiKey, toggleApiKeyVisibility, styles }) => (
+}> = ({ modelForm, setModelForm, showApiKey, toggleApiKeyVisibility, styles }) => {
+  const isLocalProvider = modelForm.provider === 'ollama'
+    || (modelForm.apiEndpoint || '').includes('localhost')
+    || (modelForm.apiEndpoint || '').includes('127.0.0.1');
+
+  return (
   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    {/* 本地模型提示 */}
+    {isLocalProvider && (
+      <Box sx={{
+        px: 1.5, py: 1, borderRadius: 1,
+        bgcolor: '#F0FDF4', border: '1px solid #BBF7D0',
+        fontSize: '0.8125rem', color: '#166534',
+        display: 'flex', alignItems: 'center', gap: 1,
+      }}>
+        <span>🔒</span>
+        <span>本地模型（Ollama）无需 API Key，可直接跳过此步骤。</span>
+      </Box>
+    )}
     {/* 单 Key 输入 */}
     <Box>
       <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: styles.textSecondary, mb: 0.75 }}>
@@ -425,7 +442,8 @@ const KeysSection: React.FC<{
       )}
     </Box>
   </Box>
-);
+  );
+};
 
 // ====== 高级参数区域 ======
 const AdvancedSection: React.FC<{
