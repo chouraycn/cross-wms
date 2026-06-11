@@ -281,13 +281,33 @@ const KeysSection: React.FC<{
         <span>本地模型（Ollama）无需 API Key，可直接跳过此步骤。</span>
       </Box>
     )}
+    {/* Keychain 已保存密钥提示 */}
+    {(modelForm.apiKeyRef?.startsWith('keychain:') || modelForm.apiKeyRefs?.some(ref => ref.startsWith('keychain:'))) && (
+      <Box sx={{
+        px: 1.5, py: 1, borderRadius: 1,
+        bgcolor: '#F0FDF4', border: '1px solid #BBF7D0',
+        fontSize: '0.8125rem', color: '#166534',
+        display: 'flex', alignItems: 'center', gap: 1,
+      }}>
+        <span>🔑</span>
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: '#166534' }}>
+            API Key 已保存至 macOS 钥匙串
+          </Typography>
+          <Typography sx={{ fontSize: '0.7rem', color: '#15803D', mt: 0.25 }}>
+            密钥已安全存储在系统钥匙串中，安装新版本 DMG 不会丢失。如需更换 Key，直接输入新值即可覆盖。
+            {modelForm.apiKeyRefs && modelForm.apiKeyRefs.length > 0 && `（已配置 ${modelForm.apiKeyRefs.length} 个轮询 Key）`}
+          </Typography>
+        </Box>
+      </Box>
+    )}
     {/* 单 Key 输入 */}
     <Box>
       <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: styles.textSecondary, mb: 0.75 }}>
         主 API Key
       </Typography>
       <TextField
-        label="API Key（可选，留空则使用环境变量）"
+        label={modelForm.apiKeyRef?.startsWith('keychain:') ? 'API Key（已存储于钥匙串，留空保持不变）' : 'API Key（可选，留空则使用环境变量）'}
         value={modelForm.apiKey}
         onChange={e => setModelForm(p => ({ ...p, apiKey: e.target.value }))}
         fullWidth
