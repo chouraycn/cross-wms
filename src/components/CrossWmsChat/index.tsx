@@ -13,71 +13,24 @@ import { Message, ReferencedSession, Session } from '../../types/chat';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useToast } from '../../contexts/ToastContext';
 import type { DataSourceType } from '../../types/inventory-query';
+import type { Skill } from '../../types/skill';
 import { getGrayScale } from '../../constants/theme';
 import { useChat } from '../../hooks/useChat';
+import {
+  loadSessions,
+  saveAndNotify,
+  createNewSession,
+  MAX_SESSIONS,
+} from '../../utils/sessionStore';
 
-// P0-4: 会话持久化配置
-const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
-const MAX_SESSIONS = 20;
-
-/** 从 localStorage 加载最近会话列表 */
-function loadSessions(): Session[] {
-  try {
-    const raw = localStorage.getItem(SESSIONS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed.map((s: Record<string, unknown>) => ({
-          ...s,
-          // 反序列化：timestamp 从 ISO 字符串恢复为 Date
-          messages: Array.isArray(s.messages)
-            ? s.messages.map((m: Record<string, unknown>) => ({
-                ...m,
-                timestamp: new Date(m.timestamp as string),
-              }))
-            : [],
-        })) as Session[];
-      }
-    }
-  } catch {
-    // 数据损坏时静默返回空数组
-  }
-  return [];
+interface CrossWmsChatProps {
+  /** 从外部注入的初始技能（如从 URL 参数解析），传递给 TopBarChatInput */
+  initialSkill?: Skill | null;
+  /** 是否使用全高布局（ChatPage 全屏模式） */
+  fullHeight?: boolean;
 }
 
-/** 保存会话列表到 localStorage（仅保留最近 MAX_SESSIONS 条） */
-function saveSessions(sessions: Session[]): void {
-  try {
-    // 序列化：Date → ISO 字符串
-    const serializable = sessions.slice(0, MAX_SESSIONS).map((s) => ({
-      ...s,
-      messages: s.messages.map((m) => ({
-        ...m,
-        timestamp: m.timestamp.toISOString(),
-      })),
-    }));
-    localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(serializable));
-  } catch (e) {
-    console.error(`[${SESSIONS_STORAGE_KEY}] 保存失败:`, e);
-    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-      window.dispatchEvent(new CustomEvent('cdf-know-clow-storage-warning', {
-        detail: { key: SESSIONS_STORAGE_KEY },
-      }));
-    }
-  }
-}
-
-/** 创建新空会话 */
-function createNewSession(defaultModel?: string): Session {
-  return {
-    id: `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    title: '',
-    model: defaultModel || 'auto',
-    messages: [],
-  };
-}
-
-export function CrossWmsChat() {
+export function CrossWmsChat({ initialSkill, fullHeight = false }: CrossWmsChatProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -137,9 +90,7 @@ export function CrossWmsChat() {
   // 会话更新时自动持久化
   useEffect(() => {
     if (sessions.length > 0) {
-      saveSessions(sessions);
-      // 通知侧边栏刷新历史对话列表
-      window.dispatchEvent(new CustomEvent('cdf-know-clow-chat-updated'));
+      saveAndNotify(sessions);
     }
   }, [sessions]);
 
@@ -242,7 +193,7 @@ export function CrossWmsChat() {
   }, [handleNewChat]);
 
   return (
-    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}>
+    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', ...(fullHeight ? { height: '100%' } : { maxHeight: '70vh' }) }}>
       {/* 顶部工具栏：新对话按钮 */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', px: 2, py: 0.5 }}>
         <Tooltip title="新对话">
@@ -270,7 +221,7 @@ export function CrossWmsChat() {
             flexDirection: 'column',
             gap: 2,
             minHeight: 0,
-            maxHeight: 'calc(70vh - 130px)',
+            ...(fullHeight ? {} : { maxHeight: 'calc(70vh - 130px)' }),
           }}
         >
           {session.messages.map((msg: Message) => (
@@ -511,6 +462,7 @@ export function CrossWmsChat() {
       <TopBarChatInput
         session={session}
         onSessionUpdate={handleSessionUpdate}
+        initialSkill={initialSkill}
       />
 
       {/* AI 免责声明 */}

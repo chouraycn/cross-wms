@@ -151,7 +151,42 @@ function autoSelectModel(message: string, modelsConfig: ModelsFile): AutoSelectR
     };
   }
 
-  // 优先使用配置的默认模型（如果它在可用列表中）
+  // ===== 智能内容感知选择（只从可用模型中选） =====
+  const msg = message.toLowerCase();
+
+  // 1. 代码生成/调试 → 代码专用模型
+  if (/代码|编程|写一个|函数|bug|调试|算法|重构|code|script|function|api/.test(msg)) {
+    const codeModel = findFirstAvailable(CODE_MODEL_IDS, candidateModels) || findFirstAvailable(POWERFUL_MODEL_IDS, candidateModels);
+    if (codeModel) {
+      return { modelId: codeModel.id, modelName: codeModel.name, reason: '代码任务，选择代码/强力模型', reasonType: 'code' };
+    }
+  }
+
+  // 2. 超长文本分析 → 长上下文模型
+  if (message.length > 500 || /分析报告|总结|全文|文档|翻译.*全文|长篇/.test(msg)) {
+    const longCtxModel = findFirstAvailable(LONG_CONTEXT_IDS, candidateModels);
+    if (longCtxModel) {
+      return { modelId: longCtxModel.id, modelName: longCtxModel.name, reason: '长文本任务，选择长上下文模型', reasonType: 'longContext' };
+    }
+  }
+
+  // 3. 复杂分析推理 → 强力模型
+  if (/分析|评估|对比|为什么|方案|策略|预测|推理|逻辑|计算/.test(msg)) {
+    const powerModel = findFirstAvailable(POWERFUL_MODEL_IDS, candidateModels);
+    if (powerModel) {
+      return { modelId: powerModel.id, modelName: powerModel.name, reason: '复杂分析，选择强力模型', reasonType: 'complex' };
+    }
+  }
+
+  // 4. 简单短对话 → 快速/轻量模型（仅当有可用快速模型时）
+  if (message.length < 30) {
+    const fastModel = findFirstAvailable(FAST_MODEL_IDS, candidateModels);
+    if (fastModel) {
+      return { modelId: fastModel.id, modelName: fastModel.name, reason: '简单对话，选择快速模型', reasonType: 'simple' };
+    }
+  }
+
+  // 5. 默认：优先用配置的默认模型
   const defaultModel = candidateModels.find((m) => m.id === modelsConfig.defaultModelId) || candidateModels[0];
 
   return {
@@ -160,6 +195,15 @@ function autoSelectModel(message: string, modelsConfig: ModelsFile): AutoSelectR
     reason: candidateModels.length === 1 ? '唯一可用模型' : '使用默认模型',
     reasonType: 'default',
   };
+}
+
+/** 从优先 ID 列表中查找第一个在候选集合中存在的模型 */
+function findFirstAvailable(preferredIds: string[], candidates: Array<{ id: string; name: string }>): { id: string; name: string } | undefined {
+  for (const id of preferredIds) {
+    const found = candidates.find((m) => m.id === id);
+    if (found) return found;
+  }
+  return undefined;
 }
 
 // ===================== Model Parameter Presets =====================

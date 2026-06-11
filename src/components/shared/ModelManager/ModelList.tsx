@@ -16,10 +16,12 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import TuneIcon from '@mui/icons-material/Tune';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import { providerLabel, providerIcon } from '../../../utils/providerIcons';
 import { CAPABILITY_LABELS, CAPABILITY_COLORS } from '../../../types/models';
 import { switchSx, COLORS } from './styles';
 import type { ModelListProps } from './types';
+import type { ModelConfig } from '../../../types/models';
 
 // ===================== 时间格式化工具 =====================
 
@@ -42,6 +44,32 @@ function formatUsageStats(stats?: { callCount: number; lastUsedAt: string | null
   if (!stats || stats.callCount === 0) return '从未使用';
   return `${stats.callCount} 次 · ${formatTimeAgo(stats.lastUsedAt)}`;
 }
+
+// ===================== Keychain 已存 Key 指示器 =====================
+
+const KeychainChip: React.FC<{ model: ModelConfig }> = ({ model }) => {
+  const hasKey = model.apiKeyRef?.startsWith('keychain:') ||
+    (model.apiKeyRefs && model.apiKeyRefs.length > 0 && model.apiKeyRefs.some(r => r.startsWith('keychain:')));
+  if (!hasKey) return null;
+  return (
+    <Tooltip title="API Key 已保存至 macOS 钥匙串，安装新版 DMG 不会丢失">
+      <Chip
+        icon={<VpnKeyIcon sx={{ fontSize: '0.65rem !important' }} />}
+        label="已存 Key"
+        size="small"
+        sx={{
+          fontSize: '0.55rem',
+          height: 18,
+          backgroundColor: '#F0FDF4',
+          color: '#166534',
+          border: '1px solid #BBF7D0',
+          '& .MuiChip-icon': { color: '#16A34A', ml: 0.5 },
+          '& .MuiChip-label': { px: 0.5 },
+        }}
+      />
+    </Tooltip>
+  );
+};
 
 // ===================== 健康状态指示灯 =====================
 
@@ -215,6 +243,7 @@ const ModelTable: React.FC<ModelListProps & DragProps> = ({
                     {!model.enabled && (
                       <Chip label="禁用" size="small" sx={{ backgroundColor: COLORS.errorBg, color: COLORS.errorText, fontSize: '0.6rem', height: 16 }} />
                     )}
+                    <KeychainChip model={model} />
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25, flexWrap: 'wrap' }}>
                     {model.capabilities?.slice(0, 4).map(cap => (
@@ -378,6 +407,7 @@ const ModelListDetailed: React.FC<ModelListProps & DragProps> = ({
               {!model.enabled && (
                 <Chip label="已禁用" size="small" sx={{ backgroundColor: COLORS.errorBg, color: COLORS.errorText, fontSize: '0.65rem' }} />
               )}
+              <KeychainChip model={model} />
               {model.capabilities?.map(cap => (
                 <Chip
                   key={cap}
@@ -535,6 +565,7 @@ const ModelListCompact: React.FC<ModelListProps & DragProps> = ({
               {!model.enabled && (
                 <Chip label="禁用" size="small" sx={{ backgroundColor: COLORS.errorBg, color: COLORS.errorText, fontSize: '0.6rem', height: 18 }} />
               )}
+              <KeychainChip model={model} />
               {model.capabilities?.slice(0, 2).map(cap => (
                 <Chip
                   key={cap}

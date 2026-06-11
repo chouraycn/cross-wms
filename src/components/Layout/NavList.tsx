@@ -35,6 +35,11 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import { getGrayScale } from '../../constants/theme';
 import { Session } from '../../types/chat';
+import {
+  loadSessions,
+  saveAndNotify,
+  SESSIONS_UPDATED_EVENT,
+} from '../../utils/sessionStore';
 
 // ===================== Nav Item Types =====================
 
@@ -88,44 +93,6 @@ const navItems: NavItem[] = [
     ],
   },
 ];
-
-// ===================== Session Helpers =====================
-
-const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
-
-function loadSessions(): Session[] {
-  try {
-    const raw = localStorage.getItem(SESSIONS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed.map((s: Record<string, unknown>) => ({
-          ...s,
-          messages: Array.isArray(s.messages)
-            ? s.messages.map((m: Record<string, unknown>) => ({
-                ...m,
-                timestamp: new Date(m.timestamp as string),
-              }))
-            : [],
-        })) as Session[];
-      }
-    }
-  } catch { /* ignore */ }
-  return [];
-}
-
-function saveSessions(sessions: Session[]): void {
-  try {
-    const serializable = sessions.map((s) => ({
-      ...s,
-      messages: s.messages.map((m) => ({
-        ...m,
-        timestamp: m.timestamp.toISOString(),
-      })),
-    }));
-    localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(serializable));
-  } catch { /* ignore */ }
-}
 
 // ===================== Props =====================
 
@@ -209,10 +176,10 @@ const NavList: React.FC<NavListProps> = ({
       });
     };
     window.addEventListener('storage', onStorage);
-    window.addEventListener('cdf-know-clow-chat-updated', onChatUpdate);
+    window.addEventListener(SESSIONS_UPDATED_EVENT, onChatUpdate);
     return () => {
       window.removeEventListener('storage', onStorage);
-      window.removeEventListener('cdf-know-clow-chat-updated', onChatUpdate);
+      window.removeEventListener(SESSIONS_UPDATED_EVENT, onChatUpdate);
     };
   }, []);
 
@@ -220,7 +187,7 @@ const NavList: React.FC<NavListProps> = ({
     e.stopPropagation();
     const next = sessions.filter((s) => s.id !== sessionId);
     setSessions(next);
-    saveSessions(next);
+    saveAndNotify(next);
     onDeleteSession(sessionId);
   }, [sessions, onDeleteSession]);
 

@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, ReferencedSession, Session } from '../types/chat';
 import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../types/inventory-query';
+import { getApiUrl } from '../utils/api';
 
 /** 从 localStorage 读取默认模型 ID */
 function getDefaultModelId(): string {
@@ -109,7 +110,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       // v1.8.5: 使用 XHR 代替 fetch，避免 Electron browserView 的 ERR_ABORTED 问题
       const fullContent = await new Promise<string>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://localhost:3001/api/chat?_t=' + Date.now(), true);
+        xhr.open('POST', getApiUrl('/api/chat?_t=' + Date.now()), true);
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.setRequestHeader('Cache-Control', 'no-cache');
         xhr.responseType = 'text';
@@ -170,7 +171,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
         try {
           const payload: InventoryQueryPayload = JSON.parse(jsonStr);
-          const apiRes = await fetch('http://localhost:3001/api/inventory/nl-query', {
+          const apiRes = await fetch(getApiUrl('/api/inventory/nl-query'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -313,7 +314,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         try {
           const sseResult = await new Promise<{ content: string; autoReason?: string; autoReasonType?: string; preset: { id: string; label: string } | null; errorCode: string | null; errorMessage: string | null }>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', 'http://localhost:3001/api/chat?_t=' + Date.now(), true);
+            xhr.open('POST', getApiUrl('/api/chat?_t=' + Date.now()), true);
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.setRequestHeader('Cache-Control', 'no-cache');
             xhr.setRequestHeader('Pragma', 'no-cache');
@@ -464,7 +465,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         (async () => {
           try {
             const payload: InventoryQueryPayload = JSON.parse(jsonStr);
-            const apiRes = await fetch('http://localhost:3001/api/inventory/nl-query', {
+            const apiRes = await fetch(getApiUrl('/api/inventory/nl-query'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

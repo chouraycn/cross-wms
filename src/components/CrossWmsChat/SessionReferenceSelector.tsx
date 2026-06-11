@@ -4,34 +4,7 @@ import { Session } from '../../types/chat';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import SearchInput from '../Common/SearchInput';
 import { getGrayScale } from '../../constants/theme';
-
-/** 与 ChatPage 共享的 localStorage key */
-const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
-
-/** 从 localStorage 加载会话列表（与 ChatPage/NavList 使用同一数据源） */
-function loadSessionsFromStorage(): Session[] {
-  try {
-    const raw = localStorage.getItem(SESSIONS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed.map((s: Record<string, unknown>) => ({
-          ...s,
-          messages: Array.isArray(s.messages)
-            ? s.messages.map((m: Record<string, unknown>) => ({
-                ...m,
-                timestamp: new Date(m.timestamp as string),
-              }))
-            : [],
-          // 确保 title/updatedAt 存在
-          title: typeof s.title === 'string' ? s.title : '',
-          updatedAt: typeof s.updatedAt === 'string' ? s.updatedAt : typeof s.createdAt === 'string' ? s.createdAt : undefined,
-        })) as Session[];
-      }
-    }
-  } catch { /* 数据损坏时静默返回空数组 */ }
-  return [];
-}
+import { loadSessions, SESSIONS_UPDATED_EVENT } from '../../utils/sessionStore';
 
 interface SessionReferenceSelectorProps {
   anchorEl: HTMLElement | null;
@@ -68,21 +41,21 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
   const [searchQuery, setSearchQuery] = useState('');
   const [allSessions, setAllSessions] = useState<Session[]>([]);
 
-  // 从 localStorage 加载（与 NavList 侧边栏使用同一数据源）
+  // 从统一的 sessionStore 加载
   const reloadSessions = React.useCallback(() => {
-    setAllSessions(loadSessionsFromStorage());
+    setAllSessions(loadSessions());
   }, []);
 
   useEffect(() => {
     reloadSessions();
-    // 监听数据变化事件（与 NavList 同步刷新）
-    const onStorage = () => reloadSessions();
+    // 监听统一事件（同标签页内组件间同步 + 跨标签页同步）
     const onChatUpdate = () => reloadSessions();
+    const onStorage = () => reloadSessions();
     window.addEventListener('storage', onStorage);
-    window.addEventListener('cdf-know-clow-chat-updated', onChatUpdate);
+    window.addEventListener(SESSIONS_UPDATED_EVENT, onChatUpdate);
     return () => {
       window.removeEventListener('storage', onStorage);
-      window.removeEventListener('cdf-know-clow-chat-updated', onChatUpdate);
+      window.removeEventListener(SESSIONS_UPDATED_EVENT, onChatUpdate);
     };
   }, [reloadSessions]);
 
