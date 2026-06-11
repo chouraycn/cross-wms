@@ -44,7 +44,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm ci
+          npm ci --legacy-peer-deps
           python3 -m pip install --upgrade pip
           pip install pywebview pyinstaller pillow
 
@@ -131,7 +131,7 @@ jobs:
             fi
           fi
           # 导出给后续 step 使用
-          echo "NOTES<<EOF" >> $GITHUB_ENV
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
           cat RELEASE_NOTES.md >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
