@@ -348,6 +348,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
 
   const editableRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isComposingRef = useRef(false); // 手动追踪 IME 组合状态（WKWebView 中 isComposing 不可靠）
 
   const { isLoading, sendMessage, stopGeneration } = useChat(
     session?.id ? session : undefined,
@@ -736,7 +737,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
         setSkillFocusIndex(prev => prev <= 0 ? slashFilteredCount - 1 : prev - 1);
         return;
       }
-      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+      if (e.key === 'Enter' && !isComposingRef.current) {
         e.preventDefault();
         if (skillFocusIndex >= 0 && skillFocusIndex < slashFilteredCount) {
           const allSkills = getAllSkills().filter(s => s.status === 'active');
@@ -758,7 +759,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
         return;
       }
     }
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+    if (e.key === 'Enter' && !e.shiftKey && !isComposingRef.current) {
       e.preventDefault();
       handleSend();
     }
@@ -921,6 +922,8 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill }: TopB
                 suppressContentEditableWarning
                 onInput={handleInputChange}
                 onKeyDown={handleKeyDown}
+                onCompositionStart={() => { isComposingRef.current = true; }}
+                onCompositionEnd={() => { isComposingRef.current = false; }}
                 style={{
                   fontSize: 15,
                   lineHeight: 1.5,
