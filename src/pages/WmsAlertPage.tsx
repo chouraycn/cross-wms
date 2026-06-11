@@ -28,9 +28,8 @@ import WmsPredictionDashboard from '../components/wms/WmsPredictionDashboard';
 import WmsPredictionDetail from '../components/wms/WmsPredictionDetail';
 import { subscribeRefresh } from '../App';
 import { useToast } from '../contexts/ToastContext';
+import { getApiUrl } from '../utils/api';
 import type { WmsAlert, PredictionDashboardData } from '../types/wms';
-
-const BASE_URL = 'http://localhost:3001';
 
 const WmsAlertPage: React.FC = () => {
   const { showToast } = useToast();
@@ -52,7 +51,7 @@ const WmsAlertPage: React.FC = () => {
   const fetchAlerts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/alerts`);
+      const res = await fetch(getApiUrl('/api/wms/alerts'));
       const json = await res.json();
       if (json.code === 0 || json.success) {
         setAlerts(json.data || []);
@@ -69,7 +68,7 @@ const WmsAlertPage: React.FC = () => {
   const fetchPredictionDashboard = useCallback(async () => {
     setPredictionLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/alerts/prediction/dashboard`);
+      const res = await fetch(getApiUrl('/api/wms/alerts/prediction/dashboard'));
       const json = await res.json();
       if (json.code === 0) {
         setPredictionData(json.data);
@@ -98,7 +97,7 @@ const WmsAlertPage: React.FC = () => {
   const handleCheck = async () => {
     setChecking(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/alerts/check`, {
+      const res = await fetch(getApiUrl('/api/wms/alerts/check'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ includePrediction: true }),
@@ -129,7 +128,7 @@ const WmsAlertPage: React.FC = () => {
   /** 标记预警已解决 */
   const handleResolve = async (alertId: number) => {
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/alerts/${alertId}/resolve`, { method: 'POST' });
+      const res = await fetch(getApiUrl(`/api/wms/alerts/${alertId}/resolve`), { method: 'POST' });
       const json = await res.json();
       if (json.code === 0 || json.success) {
         showToast('已标记为已解决', 'success');
@@ -146,7 +145,7 @@ const WmsAlertPage: React.FC = () => {
   /** 忽略预警 */
   const handleIgnore = async (alertId: number) => {
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/alerts/${alertId}/ignore`, { method: 'POST' });
+      const res = await fetch(getApiUrl(`/api/wms/alerts/${alertId}/ignore`), { method: 'POST' });
       const json = await res.json();
       if (json.code === 0 || json.success) {
         showToast('已忽略该预警', 'info');
@@ -170,7 +169,7 @@ const WmsAlertPage: React.FC = () => {
   const handleCheckPrediction = async () => {
     setChecking(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/alerts/check`, {
+      const res = await fetch(getApiUrl('/api/wms/alerts/check'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ includePrediction: true }),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
 import {
   List,
   ListItem,
@@ -36,9 +36,9 @@ import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import { getGrayScale } from '../../constants/theme';
 import { Session } from '../../types/chat';
 import {
-  loadSessions,
+  subscribeSessions,
+  getSessionsSnapshot,
   saveAndNotify,
-  SESSIONS_UPDATED_EVENT,
 } from '../../utils/sessionStore';
 
 // ===================== Nav Item Types =====================
@@ -146,8 +146,8 @@ const NavList: React.FC<NavListProps> = ({
     });
   }, [activePath]);
 
-  // 聊天历史
-  const [sessions, setSessions] = useState<Session[]>(() => loadSessions());
+  // 聊天历史 — 使用 useSyncExternalStore 统一读取
+  const sessions = useSyncExternalStore(subscribeSessions, getSessionsSnapshot);
   const historyListRef = useRef<HTMLDivElement>(null);
 
   // 即时选中状态：点击时立即切换视觉反馈，不等待父组件 state 传播
@@ -160,36 +160,13 @@ const NavList: React.FC<NavListProps> = ({
     }
   }, [activeSessionId, justClickedSessionId]);
 
-  useEffect(() => {
-    const onStorage = () => {
-      setSessions(loadSessions());
-      // 新会话时自动滚动到历史对话区域
-      requestAnimationFrame(() => {
-        historyListRef.current?.scrollIntoView({ behavior: 'smooth' });
-      });
-    };
-    const onChatUpdate = () => {
-      setSessions(loadSessions());
-      // AI 回复后自动滚动到历史对话区域
-      requestAnimationFrame(() => {
-        historyListRef.current?.scrollIntoView({ behavior: 'smooth' });
-      });
-    };
-    window.addEventListener('storage', onStorage);
-    window.addEventListener(SESSIONS_UPDATED_EVENT, onChatUpdate);
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener(SESSIONS_UPDATED_EVENT, onChatUpdate);
-    };
-  }, []);
-
   const handleDeleteSession = useCallback((e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
-    const next = sessions.filter((s) => s.id !== sessionId);
-    setSessions(next);
+    const current = getSessionsSnapshot();
+    const next = current.filter((s) => s.id !== sessionId);
     saveAndNotify(next);
     onDeleteSession(sessionId);
-  }, [sessions, onDeleteSession]);
+  }, [onDeleteSession]);
 
   // 只显示有消息的会话
   const chatSessions = sessions.filter((s) => s.messages.length > 0);
@@ -233,9 +210,20 @@ const NavList: React.FC<NavListProps> = ({
         pt: 1,
         px: collapsed ? 0.5 : 1,
         flex: 1,
-        overflow: 'auto',
+        overflowY: 'scroll',
+        overflowX: 'hidden',
         overscrollBehaviorY: 'none',
         WebkitOverflowScrolling: 'auto',
+        '&::-webkit-scrollbar': { width: '6px' },
+        '&::-webkit-scrollbar-track': { background: 'transparent' },
+        '&::-webkit-scrollbar-thumb': {
+          background: 'rgba(0,0,0,0.12)',
+          borderRadius: '3px',
+          transition: 'background-color 0.3s ease',
+        },
+        '&:hover::-webkit-scrollbar-thumb': {
+          background: 'rgba(0,0,0,0.22)',
+        },
       }}
     >
       {navItems.map((item) => {
@@ -501,9 +489,25 @@ const NavList: React.FC<NavListProps> = ({
               {chatSessions.length}
             </Box>
           </Typography>
-          <Box className="auto-hide-scrollbar" sx={{ overflowY: 'auto', overscrollBehaviorY: 'none', WebkitOverflowScrolling: 'auto', flex: 1, minHeight: 0 }}>
+          <Box className="auto-hide-scrollbar" sx={{
+            overflowY: 'scroll',
+            overscrollBehaviorY: 'none',
+            WebkitOverflowScrolling: 'auto',
+            flex: 1,
+            minHeight: 0,
+            '&::-webkit-scrollbar': { width: '6px' },
+            '&::-webkit-scrollbar-track': { background: 'transparent' },
+            '&::-webkit-scrollbar-thumb': {
+              background: 'rgba(0,0,0,0.12)',
+              borderRadius: '3px',
+              transition: 'background-color 0.3s ease',
+            },
+            '&:hover::-webkit-scrollbar-thumb': {
+              background: 'rgba(0,0,0,0.22)',
+            },
+          }}>
           {chatSessions.map((session) => {
-            const title = session.title || session.messages[0]?.content?.slice(0, 20) || '新对话';
+            const title = session.title || '新对话';
             const effectiveActiveId = justClickedSessionId ?? activeSessionId;
             const isSessionActive = session.id === effectiveActiveId;
             return (

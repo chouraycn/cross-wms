@@ -3,7 +3,7 @@
  *
  * 根据运行环境动态返回后端 API 的基础 URL：
  * - 开发模式（Vite dev server）：http://localhost:3001
- * - 生产模式（pywebview）：使用 window.__PYWEBVIEW_API_URL__ 或 window.location.origin
+ * - 生产模式（pywebview）：使用 window.__PYWEBVIEW_API_URL__ 或回退到 localhost:3001
  *
  * @version 1.9.0
  */
@@ -22,7 +22,7 @@ declare global {
  * 判断优先级：
  * 1. window.__PYWEBVIEW_API_URL__（pywebview 显式注入）
  * 2. import.meta.env.DEV === true → 开发模式 → localhost:3001
- * 3. 回退到 window.location.origin（pywebview 内嵌浏览器同源）
+ * 3. 回退到 localhost:3001（pywebview 前端在 127.0.0.1:9988，后端固定 3001）
  */
 export function getApiBaseUrl(): string {
   // 1. pywebview 显式注入
@@ -35,12 +35,9 @@ export function getApiBaseUrl(): string {
     return 'http://localhost:3001';
   }
 
-  // 3. 生产模式（pywebview 内嵌浏览器，后端与前端同源）
-  if (typeof window !== 'undefined' && window.location) {
-    return window.location.origin;
-  }
-
-  // 4. SSR / 降级
+  // 3. 生产模式（pywebview 内嵌浏览器）
+  //    前端 HTTP 服务器在 127.0.0.1:9988，后端 Node.js 在 localhost:3001
+  //    ⚠️ 不能使用 window.location.origin（会返回前端端口 9988，而非后端 3001）
   return 'http://localhost:3001';
 }
 

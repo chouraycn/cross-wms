@@ -11,9 +11,8 @@ import PageHeader from '../components/Common/PageHeader';
 import WmsReportGenerator from '../components/wms/WmsReportGenerator';
 import { subscribeRefresh } from '../App';
 import { useToast } from '../contexts/ToastContext';
+import { getApiUrl, getApiBaseUrl } from '../utils/api';
 import type { WmsReport, ReportType, FileFormat } from '../types/wms';
-
-const BASE_URL = 'http://localhost:3001';
 
 const WmsReportPage: React.FC = () => {
   const { showToast } = useToast();
@@ -24,7 +23,7 @@ const WmsReportPage: React.FC = () => {
   const fetchReports = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/reports`);
+      const res = await fetch(getApiUrl('/api/wms/reports'));
       const json = await res.json();
       if (json.code === 0 || json.success) {
         setReports(json.data || []);
@@ -56,7 +55,7 @@ const WmsReportPage: React.FC = () => {
     fileFormat: FileFormat;
   }) => {
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/reports/generate`, {
+      const res = await fetch(getApiUrl('/api/wms/reports/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
@@ -82,7 +81,7 @@ const WmsReportPage: React.FC = () => {
       if (typeof window !== 'undefined' && (window as any).pywebview?.api?.save_file) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const api = (window as any).pywebview.api;
-        const res = await fetch(`${BASE_URL}/api/wms/reports/${report.id}/download`);
+        const res = await fetch(getApiUrl(`/api/wms/reports/${report.id}/download`));
         const blob = await res.blob();
         const reader = new FileReader();
         reader.onload = async () => {
@@ -100,7 +99,7 @@ const WmsReportPage: React.FC = () => {
 
       // 浏览器环境：直接下载
       const a = document.createElement('a');
-      a.href = `${BASE_URL}/api/wms/reports/${report.id}/download`;
+      a.href = getApiUrl(`/api/wms/reports/${report.id}/download`);
       a.download = `report-${report.reportType}-${report.id}.${report.fileFormat}`;
       document.body.appendChild(a);
       a.click();

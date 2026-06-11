@@ -5,6 +5,15 @@ export interface ReferencedSession {
   title: string;
 }
 
+/** 附件类型 */
+export interface Attachment {
+  id: string;
+  type: 'image' | 'file';
+  name: string;
+  url: string;
+  size?: number;
+}
+
 /** 消息元数据（可扩展） */
 export interface MessageMetadata {
   /** 自然语言查询结果（仅 builtin-inventory-query 技能产生） */
@@ -36,6 +45,24 @@ export interface Message {
   activePreset?: { id: string; label: string } | null;
   /** 消息元数据（可扩展，用于承载查询结果等附加信息） */
   metadata?: MessageMetadata;
+  /** 附件列表（图片/文件） */
+  attachments?: Attachment[];
+  /** AI 回复后的下一步建议 */
+  followUpSuggestions?: string[];
+  /** 回复引用的消息 */
+  replyTo?: { messageId: string; content: string; role: 'user' | 'assistant' };
+  /** AI 思考过程内容（Chain-of-Thought） */
+  thinking?: string;
+  /** AI 思考耗时（毫秒） */
+  thinkingDuration?: number;
+  /** 触发此回复的技能信息（通过关键字启动 skill 时展示） */
+  skillInfo?: {
+    id: string;
+    name: string;
+    icon?: string;
+    executionMode?: string;
+    category?: string;
+  };
 }
 
 export interface Session {

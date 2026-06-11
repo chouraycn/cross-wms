@@ -18,6 +18,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { getGrayScale } from '../../constants/theme';
+import { getApiUrl } from '../../utils/api';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import InventoryIcon from '@mui/icons-material/Inventory';
@@ -62,7 +63,7 @@ const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = A
     const fetchPredictionAlerts = async () => {
       setPredictionLoading(true);
       try {
-        const res = await fetch('http://localhost:3001/api/wms/alerts?status=active');
+        const res = await fetch(getApiUrl('/api/wms/alerts?status=active'));
         const json = await res.json();
         if (json.code === 0 && Array.isArray(json.data)) {
           const predicted = json.data.filter(

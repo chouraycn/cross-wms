@@ -18,8 +18,7 @@ import LoopIcon from '@mui/icons-material/Loop';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import type { ChainExecutionStep, StepStatus } from '../../types/skill';
 import { connectChainExecutionEvents } from '../../services/api';
-
-const BASE_URL = 'http://localhost:3001';
+import { getApiBaseUrl } from '../../utils/api';
 
 interface ChainExecutionPanelProps {
   open: boolean;
@@ -68,7 +67,7 @@ const ChainExecutionPanel: React.FC<ChainExecutionPanelProps> = ({
     if (!executionId) return;
 
     // 先加载当前执行状态（获取已完成的步骤）
-    fetch(`${BASE_URL}/api/chain-executions/${executionId}`)
+    fetch(`${getApiBaseUrl()}/api/chain-executions/${executionId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.data?.steps && Array.isArray(data.data.steps)) {

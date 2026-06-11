@@ -16,8 +16,9 @@ import type {
   PartnerListResponse,
   QuickCreatePartnerPayload,
 } from '../types/partners';
+import { getApiBaseUrl } from '../utils/api';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = getApiBaseUrl();
 
 // ===================== Generic Request =====================
 

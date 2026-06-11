@@ -22,9 +22,8 @@ import {
   Box,
 } from '@mui/material';
 import { useToast } from '../../contexts/ToastContext';
+import { getApiUrl } from '../../utils/api';
 import type { QualityCheck } from '../../types/wms';
-
-const BASE_URL = 'http://localhost:3001';
 
 export interface WmsQualityFormProps {
   open: boolean;
@@ -82,8 +81,8 @@ const WmsQualityForm: React.FC<WmsQualityFormProps> = ({ open, onClose, onSucces
     setSubmitting(true);
     try {
       const url = isEdit
-        ? `${BASE_URL}/api/wms/quality/${initialData!.id}`
-        : `${BASE_URL}/api/wms/quality`;
+        ? getApiUrl(`/api/wms/quality/${initialData!.id}`)
+        : getApiUrl('/api/wms/quality');
       const method = isEdit ? 'PUT' : 'POST';
 
       const res = await fetch(url, {

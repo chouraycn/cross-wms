@@ -11,13 +11,14 @@ export default defineConfig({
     include: [
       'src/__tests__/**/*.test.{ts,tsx}',
       'src/components/**/__tests__/**/*.test.{ts,tsx}',
+      'src/hooks/**/__tests__/**/*.test.{ts,tsx}',
       'server/__tests__/**/*.test.{ts,tsx}',
       'server/**/__tests__/**/*.test.{ts,tsx}',
     ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/services/**', 'src/stores/**', 'src/capabilities/**'],
+      include: ['src/services/**', 'src/stores/**', 'src/capabilities/**', 'src/hooks/**'],
     },
   },
   resolve: {

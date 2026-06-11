@@ -40,9 +40,8 @@ import WmsQualityForm from '../components/wms/WmsQualityForm';
 import { subscribeRefresh } from '../App';
 import { useToast } from '../contexts/ToastContext';
 import { exportToCsv } from '../utils/exportCsv';
+import { getApiUrl } from '../utils/api';
 import type { QualityCheck } from '../types/wms';
-
-const BASE_URL = 'http://localhost:3001';
 
 /** 质检状态映射 */
 const STATUS_CONFIG: Record<string, { label: string; color: 'warning' | 'success' | 'error' }> = {
@@ -71,7 +70,7 @@ const WmsQualityPage: React.FC = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/quality`);
+      const res = await fetch(getApiUrl('/api/wms/quality'));
       const json = await res.json();
       if (json.code === 0 || json.success) {
         setData(json.data || []);
@@ -128,7 +127,7 @@ const WmsQualityPage: React.FC = () => {
   const handleDeleteConfirm = async () => {
     if (deletingId === null) return;
     try {
-      const res = await fetch(`${BASE_URL}/api/wms/quality/${deletingId}`, { method: 'DELETE' });
+      const res = await fetch(getApiUrl(`/api/wms/quality/${deletingId}`), { method: 'DELETE' });
       const json = await res.json();
       if (json.code === 0 || json.success) {
         showToast('删除成功', 'success');

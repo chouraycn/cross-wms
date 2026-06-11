@@ -23,9 +23,8 @@ import {
   Chip,
 } from '@mui/material';
 import { useToast } from '../../contexts/ToastContext';
+import { getApiUrl } from '../../utils/api';
 import type { OutboundReview } from '../../types/wms';
-
-const BASE_URL = 'http://localhost:3001';
 
 export interface WmsOutboundFormProps {
   open: boolean;
@@ -103,8 +102,8 @@ const WmsOutboundForm: React.FC<WmsOutboundFormProps> = ({ open, onClose, onSucc
     setSubmitting(true);
     try {
       const url = isEdit
-        ? `${BASE_URL}/api/wms/outbound/${initialData!.id}`
-        : `${BASE_URL}/api/wms/outbound`;
+        ? getApiUrl(`/api/wms/outbound/${initialData!.id}`)
+        : getApiUrl('/api/wms/outbound');
       const method = isEdit ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
