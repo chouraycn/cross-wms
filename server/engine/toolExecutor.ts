@@ -24,12 +24,39 @@ export interface ToolExecutorOptions {
   onToolCall?: (toolCall: ToolCall, result: string) => void;
 }
 
+/** 敏感工具列表 — 需要用户二次确认 */
+const SENSITIVE_TOOLS = new Set([
+  'file:writeFile',
+  'shell:exec',
+  'desktop:click',
+  'desktop:type',
+  'desktop:key_press',
+  'desktop:app_launch',
+  'desktop:app_quit',
+  'desktop:window_focus',
+  'desktop:clipboard',
+  'desktop:scroll',
+  'desktop:see',
+]);
+
+function isSensitiveTool(name: string): boolean {
+  return SENSITIVE_TOOLS.has(name);
+}
+
+/**
+ * Tool Calling 执行结果
+ */
+export interface ToolExecutionResult {
+  content: string;
+  toolCalls: Array<{ name: string; arguments: string; result: string }>;
+}
+
 /**
  * 执行 Tool Calling 循环
  *
- * @returns 最终 AI 的文本响应
+ * @returns 最终 AI 的文本响应 + 工具调用记录
  */
-export async function executeToolLoop(options: ToolExecutorOptions): Promise<string> {
+export async function executeToolLoop(options: ToolExecutorOptions): Promise<ToolExecutionResult> {
   const {
     modelConfig,
     messages,
@@ -43,6 +70,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<str
   const tools = getToolDefinitions();
   const currentMessages = [...messages];
   let finalContent = '';
+  const executedToolCalls: Array<{ name: string; arguments: string; result: string }> = [];
 
   for (let turn = 0; turn < maxToolTurns; turn++) {
     if (signal?.aborted) {
@@ -64,7 +92,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<str
 
     // 如果没有 tool_calls，直接返回结果
     if (!response.toolCalls || response.toolCalls.length === 0) {
-      return response.content || finalContent;
+      return { content: response.content || finalContent, toolCalls: executedToolCalls };
     }
 
     // 有 tool_calls，需要执行工具并回填
@@ -84,7 +112,35 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<str
 
     // 执行每个 tool call
     for (const toolCall of response.toolCalls) {
+      const toolName = toolCall.function.name;
+
+      // 敏感工具：自动拒绝（后续可扩展为用户确认机制）
+      if (isSensitiveTool(toolName)) {
+        const denyResult = JSON.stringify({ error: `安全限制：工具 '${toolName}' 已被禁用。请联系管理员启用。` });
+        executedToolCalls.push({
+          name: toolName,
+          arguments: toolCall.function.arguments,
+          result: denyResult,
+        });
+        if (onToolCall) {
+          onToolCall(toolCall, denyResult);
+        }
+        currentMessages.push({
+          role: 'tool',
+          content: denyResult,
+          tool_call_id: toolCall.id,
+        } as any);
+        continue;
+      }
+
       const result = await executeToolCall(toolCall);
+
+      // 记录工具调用
+      executedToolCalls.push({
+        name: toolName,
+        arguments: toolCall.function.arguments,
+        result,
+      });
 
       // 通知调用方
       if (onToolCall) {
@@ -104,5 +160,5 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<str
   }
 
   // 达到最大轮数，返回最后一轮的内容
-  return finalContent;
+  return { content: finalContent, toolCalls: executedToolCalls };
 }

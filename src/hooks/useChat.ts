@@ -302,11 +302,18 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         body.attachments = options.attachments;
       }
       // 如果有历史消息，添加到请求体（用于多轮对话）
+      // v1.9.0: 包含 toolCalls 信息，确保多轮工具调用上下文不丢失
       if (session.messages.length > 0) {
-        body.conversationHistory = session.messages.map(m => ({
-          role: m.role,
-          content: m.content,
-        }));
+        body.conversationHistory = session.messages.map(m => {
+          const msg: { role: string; content: string; toolCalls?: ToolCallInfo[] } = {
+            role: m.role,
+            content: m.content,
+          };
+          if (m.toolCalls && m.toolCalls.length > 0) {
+            msg.toolCalls = m.toolCalls;
+          }
+          return msg;
+        });
       }
 
       // v1.8.4: 使用 XMLHttpRequest 代替 fetch，避免 Electron browserView 的 ERR_ABORTED 问题。
