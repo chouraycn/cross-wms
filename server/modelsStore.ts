@@ -498,13 +498,17 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
     console.error('[modelsStore] 加载模型配置失败:', e);
   }
 
-  // 兜底：返回内置模型
+  // 兜底：返回内置模型，并立即写入磁盘（确保首次启动时内置模型被持久化）
   const fallback: ModelsFile = {
     version: 1,
     models: [...BUILTIN_MODELS],
     defaultModelId: BUILTIN_MODELS[0]?.id || '',
     updatedAt: new Date().toISOString(),
   };
+  // 立即持久化到磁盘，避免每次启动都走内存兜底
+  writeModelsFile(fallback).catch((e) => {
+    console.error('[modelsStore] 写入内置模型兜底配置失败:', e);
+  });
   cachedModelsFile = fallback;
   cacheTimestamp = Date.now();
   return fallback;
