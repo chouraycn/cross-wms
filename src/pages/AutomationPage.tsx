@@ -42,6 +42,7 @@ import type {
   ActionType,
   TriggerType,
   ExecutionPolicy,
+  NotificationConfig,
 } from '../services/automation';
 import {
   TABS,
@@ -105,6 +106,11 @@ const AutomationPage: React.FC = () => {
     timeoutMs: 30_000,
     retry: { maxAttempts: 1, intervalMs: 5_000, backoff: 'fixed' },
     onFailure: 'stop',
+  });
+  const [formNotificationConfig, setFormNotificationConfig] = useState<NotificationConfig>({
+    channels: [],
+    onSuccess: true,
+    onFailure: true,
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -235,6 +241,11 @@ const AutomationPage: React.FC = () => {
       retry: { maxAttempts: 1, intervalMs: 5_000, backoff: 'fixed' },
       onFailure: 'stop',
     });
+    setFormNotificationConfig({
+      channels: [],
+      onSuccess: true,
+      onFailure: true,
+    });
     setFormErrors({});
     setDialogOpen(true);
   };
@@ -262,6 +273,11 @@ const AutomationPage: React.FC = () => {
       timeoutMs: 30_000,
       retry: { maxAttempts: 1, intervalMs: 5_000, backoff: 'fixed' },
       onFailure: 'stop',
+    });
+    setFormNotificationConfig((auto.notificationConfig as NotificationConfig) || {
+      channels: [],
+      onSuccess: true,
+      onFailure: true,
     });
     setFormErrors({});
     setDialogOpen(true);
@@ -347,6 +363,7 @@ const AutomationPage: React.FC = () => {
           validUntil: formValidUntil || undefined,
           triggerType: formTriggerType,
           executionPolicy: formExecutionPolicy,
+          notificationConfig: formNotificationConfig,
           createdAt: '',
           updatedAt: '',
           lastRunAt: null,
@@ -381,6 +398,7 @@ const AutomationPage: React.FC = () => {
           validUntil: formValidUntil || null,
           triggerType: formTriggerType,
           executionPolicy: formExecutionPolicy,
+          notificationConfig: formNotificationConfig,
         });
 
         const newAuto: Automation = {
@@ -647,6 +665,7 @@ const AutomationPage: React.FC = () => {
       case 'formErrors': setFormErrors(value); break;
       case 'formTriggerType': setFormTriggerType(value); break;
       case 'formExecutionPolicy': setFormExecutionPolicy(value); break;
+      case 'formNotificationConfig': setFormNotificationConfig(value); break;
       default: break;
     }
   };
@@ -762,6 +781,7 @@ const AutomationPage: React.FC = () => {
         formValidUntil={formValidUntil}
         formTriggerType={formTriggerType}
         formExecutionPolicy={formExecutionPolicy}
+        formNotificationConfig={formNotificationConfig}
         formErrors={formErrors}
         onFieldChange={handleFieldChange}
         onToggleWeekday={toggleWeekday}

@@ -35,6 +35,7 @@ import type { QueryResult, DataSourceType } from '../../types/inventory-query';
 import { ConfirmReplenishmentButton } from './ConfirmReplenishmentButton';
 import { exportCsvWithMetadata } from '../../utils/exportCsv';
 import { getGrayScale } from '../../constants/theme';
+import { API_BASE } from '../../constants/api';
 
 /** 默认色板 */
 const DEFAULT_COLORS = ['#4F46E5', '#F97316', '#10B981', '#EF4444', '#8B5CF6', '#F59E0B', '#06B6D4', '#EC4899'];
@@ -300,7 +301,7 @@ function renderTable(
               isConfirmed={isConfirmed}
               onConfirm={async () => {
                 try {
-                  const res = await fetch(`http://localhost:3001/api/wms/replenishment/${sid}/confirm`, {
+                  const res = await fetch(`${API_BASE}/wms/replenishment/${sid}/confirm`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                   });

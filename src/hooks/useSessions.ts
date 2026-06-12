@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Session, Message } from '../types/chat';
-
-const API_BASE = 'http://localhost:3001/api';
+import { API_BASE } from '../constants/api';
 
 export interface UseSessionsReturn {
   sessions: Session[];

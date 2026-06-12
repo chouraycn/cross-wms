@@ -468,8 +468,13 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
         saved = { ...saved, models: migrated };
         await writeModelsFile(saved);
       }
-      // 注入 Keychain 中的 API Key（仅用于后端内部使用，不返回给前端）
-      saved.models = injectApiKeys(saved.models);
+      // RC-2: 注入 Keychain 中的 API Key — 单独 try/catch，防止 execSync 抛出非 Error 对象导致整体加载失败
+      try {
+        saved.models = injectApiKeys(saved.models);
+      } catch (keychainErr) {
+        console.error('[modelsStore] Keychain API key injection failed, continuing without keys:', keychainErr);
+        // continue without API keys — models just won't auto-authenticate
+      }
       // 自动禁用没有 API Key 的远程模型（修复旧版遗留 enabled:true 问题）
       let needSave = changed;
       saved.models = saved.models.map((m) => {
@@ -482,8 +487,10 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
         return m;
       });
       if (needSave) {
-        // 保存前脱敏（移除注入的 Key）
-        const sanitized = saved.models.map((m) => {
+        // 保存前：先将明文 API Key 提取到 Keychain/AES 加密
+        const protectedModels = saved.models.map((m) => extractAndSaveApiKey(m));
+        // 脱敏（移除注入的 Key，保留 apiKeyRef/apiKeyRefs）
+        const sanitized = protectedModels.map((m) => {
           const { apiKey, apiKeys, ...rest } = m as any;
           return rest;
         });
@@ -498,13 +505,21 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
     console.error('[modelsStore] 加载模型配置失败:', e);
   }
 
-  // 兜底：返回内置模型
+  // 兜底：返回内置模型，并立即写入磁盘（确保首次启动时内置模型被持久化）
+  // RC-1: 自动启用第一个内置模型，避免首次启动时所有模型均禁用
+  const fallbackModels = BUILTIN_MODELS.map((m, i) =>
+    i === 0 ? { ...m, enabled: true, isDefault: true } : { ...m }
+  );
   const fallback: ModelsFile = {
     version: 1,
-    models: [...BUILTIN_MODELS],
+    models: fallbackModels,
     defaultModelId: BUILTIN_MODELS[0]?.id || '',
     updatedAt: new Date().toISOString(),
   };
+  // 立即持久化到磁盘，避免每次启动都走内存兜底
+  writeModelsFile(fallback).catch((e) => {
+    console.error('[modelsStore] 写入内置模型兜底配置失败:', e);
+  });
   cachedModelsFile = fallback;
   cacheTimestamp = Date.now();
   return fallback;

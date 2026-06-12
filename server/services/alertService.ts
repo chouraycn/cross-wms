@@ -35,6 +35,11 @@ export async function checkAllAlerts(
     lowStock: thresholds?.lowStock ?? DEFAULT_THRESHOLDS.lowStock,
     expiryDays: thresholds?.expiryDays ?? DEFAULT_THRESHOLDS.expiryDays,
     stagnantDays: thresholds?.stagnantDays ?? DEFAULT_THRESHOLDS.stagnantDays,
+    enablePrediction: thresholds?.enablePrediction ?? false,
+    predictionDays: thresholds?.predictionDays ?? 14,
+    shortageThreshold: thresholds?.shortageThreshold ?? 10,
+    overstockDays: thresholds?.overstockDays ?? 60,
+    minHistoryDays: thresholds?.minHistoryDays ?? 7,
   };
 
   const result: AlertCheckResult = {

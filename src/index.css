@@ -126,6 +126,11 @@ body {
   animation: fadeIn 0.25s ease-out forwards;
 }
 
+/* 隐藏 SettingsPopover 的黑色透明遮罩 */
+.MuiPopover-root .MuiBackdrop-root {
+  display: none !important;
+}
+
 /* v1.8.0: AI 流式输出光标闪烁动画 */
 @keyframes cursor-blink {
   0%, 100% { opacity: 1; }

@@ -16,8 +16,9 @@ import type {
   PartnerListResponse,
   QuickCreatePartnerPayload,
 } from '../types/partners';
+import { API_BASE_URL } from '../constants/api';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = API_BASE_URL;
 
 // ===================== Generic Request =====================
 
@@ -613,6 +614,35 @@ export interface DiscoveredLocalModel {
 /** 自动发现本地模型（Ollama / vLLM / LM Studio） */
 export async function discoverLocalModels(): Promise<DiscoveredLocalModel[]> {
   return request<DiscoveredLocalModel[]>('POST', '/api/models/discover-local', {});
+}
+
+// ===================== File Upload API =====================
+
+/** 文件上传结果 */
+export interface UploadResult {
+  fileId: string;
+  fileName: string;
+  filePath: string;
+  mimeType: string;
+  size: number;
+  url: string;
+}
+
+/** 上传文件到服务器（POST /api/upload） */
+export async function uploadFile(file: File): Promise<UploadResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${BASE_URL}/api/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `上传失败 (${res.status})`);
+  }
+  const json = await res.json();
+  return json.data ?? json;
 }
 
 // ===================== Partners (供应商/客户) API =====================

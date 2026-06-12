@@ -22,6 +22,7 @@ import {
   Divider,
   Tooltip,
   MenuItem as MenuItemComp,
+  useTheme,
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -31,7 +32,10 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import { useToast } from '../contexts/ToastContext';
+import { getGrayScale } from '../constants/theme';
 import {
   getProjectTasks,
   createTask,
@@ -68,6 +72,277 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   active: { label: '进行中', color: '#059669' },
   archived: { label: '已归档', color: '#9CA3AF' },
   completed: { label: '已完成', color: '#2563EB' },
+};
+
+// ===================== Kanban Components =====================
+
+interface KanbanCardProps {
+  task: Task;
+  onEdit: (task: Task) => void;
+  onDelete: (id: string) => void;
+  isDark: boolean;
+}
+
+const KanbanCard: React.FC<KanbanCardProps> = ({ task, onEdit, onDelete, isDark }) => {
+  const priority = PRIORITY_CONFIG[task.priority];
+  const gs = getGrayScale(isDark);
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    e.dataTransfer.setData('text/plain', task.id);
+    e.dataTransfer.effectAllowed = 'move';
+    // Add a slight delay to allow the browser to render the drag image before adding styles
+    setTimeout(() => {
+      (e.target as HTMLElement).classList.add('dragging');
+    }, 0);
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    (e.target as HTMLElement).classList.remove('dragging');
+  };
+
+  const borderColor =
+    task.priority === 'high' ? '#DC2626' : task.priority === 'medium' ? '#D97706' : '#059669';
+
+  return (
+    <Box
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      sx={{
+        p: 1.5,
+        borderRadius: '8px',
+        border: '1px solid',
+        borderColor: borderColor,
+        backgroundColor: gs.bgPanel,
+        cursor: 'grab',
+        transition: 'box-shadow 0.15s, opacity 0.15s',
+        '&:hover': { boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
+        '&.dragging': { opacity: 0.5, borderStyle: 'dashed' },
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+        <Typography
+          sx={{
+            fontSize: '0.8125rem',
+            fontWeight: 500,
+            color: gs.textPrimary,
+            lineHeight: 1.4,
+            wordBreak: 'break-word',
+          }}
+        >
+          {task.title}
+        </Typography>
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(task);
+          }}
+          sx={{ p: 0.25, color: gs.textMuted, '&:hover': { color: gs.textPrimary }, flexShrink: 0 }}
+        >
+          <MoreHorizIcon sx={{ fontSize: 16 }} />
+        </IconButton>
+      </Box>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+        <Box
+          component="span"
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.25,
+            px: 0.75,
+            py: 0.125,
+            borderRadius: '4px',
+            backgroundColor: priority.bg,
+            fontSize: '0.6875rem',
+            fontWeight: 500,
+            color: priority.color,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <FlagOutlinedIcon sx={{ fontSize: 10 }} />
+          {priority.label}
+        </Box>
+        {task.dueDate && (
+          <Typography sx={{ fontSize: '0.6875rem', color: gs.textMuted }}>
+            截止 {task.dueDate}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+};
+
+interface KanbanColumnProps {
+  status: TaskStatus;
+  tasks: Task[];
+  onDrop: (taskId: string, status: TaskStatus) => void;
+  onEdit: (task: Task) => void;
+  onDelete: (id: string) => void;
+  isDark: boolean;
+  isOver: boolean;
+  onDragOverColumn: (status: TaskStatus | null) => void;
+}
+
+const KanbanColumn: React.FC<KanbanColumnProps> = ({
+  status,
+  tasks,
+  onDrop,
+  onEdit,
+  onDelete,
+  isDark,
+  isOver,
+  onDragOverColumn,
+}) => {
+  const gs = getGrayScale(isDark);
+  const config = STATUS_CONFIG[status];
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    onDragOverColumn(status);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    // Only clear if we're actually leaving the column (not entering a child)
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      onDragOverColumn(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('text/plain');
+    if (taskId) {
+      onDrop(taskId, status);
+    }
+    onDragOverColumn(null);
+  };
+
+  return (
+    <Box
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minWidth: 260,
+        maxWidth: 360,
+        borderRadius: '10px',
+        border: '1.5px solid',
+        borderColor: isOver ? config.color : gs.border,
+        backgroundColor: isOver ? (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)') : gs.bgPage,
+        transition: 'border-color 0.2s, background-color 0.2s',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Column Header */}
+      <Box
+        sx={{
+          px: 2,
+          py: 1.5,
+          borderBottom: '1px solid',
+          borderColor: gs.border,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box
+            sx={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              backgroundColor: config.color,
+            }}
+          />
+          <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: gs.textPrimary }}>
+            {config.label}
+          </Typography>
+        </Box>
+        <Box
+          component="span"
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: 20,
+            height: 20,
+            borderRadius: '10px',
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            bgcolor: gs.bgHover,
+            color: gs.textSecondary,
+            px: 0.5,
+          }}
+        >
+          {tasks.length}
+        </Box>
+      </Box>
+
+      {/* Task Cards */}
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: 'auto',
+          p: 1.5,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+          minHeight: 120,
+        }}
+      >
+        {tasks.map((task) => (
+          <KanbanCard key={task.id} task={task} onEdit={onEdit} onDelete={onDelete} isDark={isDark} />
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
+interface KanbanBoardProps {
+  tasks: Task[];
+  onChangeStatus: (id: string, status: TaskStatus) => void;
+  onEdit: (task: Task) => void;
+  onDelete: (id: string) => void;
+  isDark: boolean;
+}
+
+const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onChangeStatus, onEdit, onDelete, isDark }) => {
+  const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
+
+  const columns: TaskStatus[] = ['todo', 'in_progress', 'done'];
+
+  const tasksByStatus = {
+    todo: tasks.filter((t) => t.status === 'todo'),
+    in_progress: tasks.filter((t) => t.status === 'in_progress'),
+    done: tasks.filter((t) => t.status === 'done'),
+  };
+
+  return (
+    <Box sx={{ display: 'flex', gap: 2, overflowX: 'auto', pb: 1 }}>
+      {columns.map((status) => (
+        <KanbanColumn
+          key={status}
+          status={status}
+          tasks={tasksByStatus[status]}
+          onDrop={onChangeStatus}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          isDark={isDark}
+          isOver={dragOverColumn === status}
+          onDragOverColumn={setDragOverColumn}
+        />
+      ))}
+    </Box>
+  );
 };
 
 // ===================== TaskCard =====================
@@ -350,6 +625,7 @@ const ProjectDetailPage: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [taskFilter, setTaskFilter] = useState<TaskStatus | 'all'>('all');
+  const [taskView, setTaskView] = useState<'list' | 'kanban'>('list');
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
@@ -492,6 +768,8 @@ const ProjectDetailPage: React.FC = () => {
   }
 
   const projectStatus = statusLabels[project.status] || statusLabels.active;
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
 
   return (
     <Box sx={{ maxWidth: 960, mx: 'auto' }}>
@@ -581,77 +859,148 @@ const ProjectDetailPage: React.FC = () => {
           <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#111827' }}>
             任务列表
           </Typography>
-          <Button
-            startIcon={<AddIcon />}
-            variant="contained"
-            onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }}
-            sx={{
-              bgcolor: '#111827',
-              '&:hover': { bgcolor: '#374151' },
-              borderRadius: '8px',
-              fontSize: '0.8125rem',
-              fontWeight: 500,
-              px: 2,
-              py: 0.875,
-            }}
-          >
-            新建任务
-          </Button>
-        </Box>
-
-        {/* Task Filter Tabs */}
-        <Box sx={{ display: 'flex', gap: 0.5, mb: 2.5, alignItems: 'center' }}>
-          <FilterListIcon sx={{ fontSize: 16, color: '#9CA3AF', mr: 0.5 }} />
-          {FILTER_OPTIONS.map((opt) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* View Toggle */}
             <Box
-              key={opt.value}
-              component="button"
-              onClick={() => setTaskFilter(opt.value)}
               sx={{
-                border: 'none',
-                outline: 'none',
-                cursor: 'pointer',
-                px: 1.25,
-                py: 0.5,
-                borderRadius: '6px',
-                fontSize: '0.8125rem',
-                fontWeight: taskFilter === opt.value ? 500 : 400,
-                color: taskFilter === opt.value ? '#111827' : '#6B7280',
-                bgcolor: taskFilter === opt.value ? '#F3F4F6' : 'transparent',
-                '&:hover': { bgcolor: '#F3F4F6' },
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                gap: 0.5,
-                transition: 'all 0.1s',
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                overflow: 'hidden',
               }}
             >
-              {opt.label}
-              <Box
-                component="span"
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minWidth: 18,
-                  height: 18,
-                  borderRadius: '9px',
-                  fontSize: '0.6875rem',
-                  bgcolor: taskFilter === opt.value ? '#E5E7EB' : '#F3F4F6',
-                  color: '#6B7280',
-                  px: 0.5,
-                }}
-              >
-                {taskCounts[opt.value]}
-              </Box>
+              <Tooltip title="列表视图">
+                <IconButton
+                  size="small"
+                  onClick={() => setTaskView('list')}
+                  sx={{
+                    borderRadius: 0,
+                    px: 1,
+                    py: 0.5,
+                    color: taskView === 'list' ? '#111827' : '#9CA3AF',
+                    bgcolor: taskView === 'list' ? '#F3F4F6' : 'transparent',
+                    '&:hover': { bgcolor: taskView === 'list' ? '#F3F4F6' : '#F9FAFB' },
+                  }}
+                >
+                  <ViewListIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="看板视图">
+                <IconButton
+                  size="small"
+                  onClick={() => setTaskView('kanban')}
+                  sx={{
+                    borderRadius: 0,
+                    px: 1,
+                    py: 0.5,
+                    color: taskView === 'kanban' ? '#111827' : '#9CA3AF',
+                    bgcolor: taskView === 'kanban' ? '#F3F4F6' : 'transparent',
+                    '&:hover': { bgcolor: taskView === 'kanban' ? '#F3F4F6' : '#F9FAFB' },
+                  }}
+                >
+                  <ViewColumnIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
             </Box>
-          ))}
+            <Button
+              startIcon={<AddIcon />}
+              variant="contained"
+              onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }}
+              sx={{
+                bgcolor: '#111827',
+                '&:hover': { bgcolor: '#374151' },
+                borderRadius: '8px',
+                fontSize: '0.8125rem',
+                fontWeight: 500,
+                px: 2,
+                py: 0.875,
+              }}
+            >
+              新建任务
+            </Button>
+          </Box>
         </Box>
 
-        {/* Task List */}
+        {/* Task Filter Tabs (List View Only) */}
+        {taskView === 'list' && (
+          <Box sx={{ display: 'flex', gap: 0.5, mb: 2.5, alignItems: 'center' }}>
+            <FilterListIcon sx={{ fontSize: 16, color: '#9CA3AF', mr: 0.5 }} />
+            {FILTER_OPTIONS.map((opt) => (
+              <Box
+                key={opt.value}
+                component="button"
+                onClick={() => setTaskFilter(opt.value)}
+                sx={{
+                  border: 'none',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  px: 1.25,
+                  py: 0.5,
+                  borderRadius: '6px',
+                  fontSize: '0.8125rem',
+                  fontWeight: taskFilter === opt.value ? 500 : 400,
+                  color: taskFilter === opt.value ? '#111827' : '#6B7280',
+                  bgcolor: taskFilter === opt.value ? '#F3F4F6' : 'transparent',
+                  '&:hover': { bgcolor: '#F3F4F6' },
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  transition: 'all 0.1s',
+                }}
+              >
+                {opt.label}
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: 18,
+                    height: 18,
+                    borderRadius: '9px',
+                    fontSize: '0.6875rem',
+                    bgcolor: taskFilter === opt.value ? '#E5E7EB' : '#F3F4F6',
+                    color: '#6B7280',
+                    px: 0.5,
+                  }}
+                >
+                  {taskCounts[opt.value]}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        )}
+
+        {/* Task Content */}
         {tasksLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress size={24} sx={{ color: '#6B7280' }} />
           </Box>
+        ) : taskView === 'kanban' ? (
+          tasks.length === 0 ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8, gap: 1 }}>
+              <CheckCircleOutlineIcon sx={{ fontSize: 40, color: '#D1D5DB' }} />
+              <Typography sx={{ fontSize: '0.9375rem', color: '#6B7280' }}>
+                还没有任务
+              </Typography>
+              <Button
+                size="small" startIcon={<AddIcon />}
+                onClick={() => { setEditingTask(null); setTaskDialogOpen(true); }}
+                sx={{ mt: 0.5, color: '#6B7280', '&:hover': { bgcolor: '#F3F4F6' } }}
+              >
+                新建第一个任务
+              </Button>
+            </Box>
+          ) : (
+            <KanbanBoard
+              tasks={tasks}
+              onChangeStatus={handleTaskChangeStatus}
+              onEdit={handleTaskEdit}
+              onDelete={handleTaskDelete}
+              isDark={isDark}
+            />
+          )
         ) : filteredTasks.length === 0 ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8, gap: 1 }}>
             <CheckCircleOutlineIcon sx={{ fontSize: 40, color: '#D1D5DB' }} />

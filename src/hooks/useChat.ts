@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Message, ReferencedSession, Session } from '../types/chat';
+import { Message, ReferencedSession, Session, ToolCallInfo, Attachment } from '../types/chat';
 import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../types/inventory-query';
+import { CHAT_API_URL, INVENTORY_QUERY_API_URL } from '../constants/api';
 
 /** 从 localStorage 读取默认模型 ID */
 function getDefaultModelId(): string {
@@ -33,6 +34,8 @@ export interface SendMessageOptions {
   model?: string;
   /** 参数预设 ID（creative/code/translate/analysis/precise） */
   preset?: string;
+  /** 附件列表（图片、文件等） */
+  attachments?: Attachment[];
 }
 
 /** inventory_query JSON 块正则 */
@@ -109,7 +112,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       // v1.8.5: 使用 XHR 代替 fetch，避免 Electron browserView 的 ERR_ABORTED 问题
       const fullContent = await new Promise<string>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://localhost:3001/api/chat?_t=' + Date.now(), true);
+        xhr.open('POST', `${CHAT_API_URL}?_t=${Date.now()}`, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.setRequestHeader('Cache-Control', 'no-cache');
         xhr.responseType = 'text';
@@ -170,7 +173,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
         try {
           const payload: InventoryQueryPayload = JSON.parse(jsonStr);
-          const apiRes = await fetch('http://localhost:3001/api/inventory/nl-query', {
+          const apiRes = await fetch(INVENTORY_QUERY_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -247,6 +250,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       content,
       timestamp: new Date(),
       referencedSessions: options?.referencedSessions,
+      attachments: options?.attachments,
     };
     const updatedSession = { ...session, messages: [...session.messages, userMsg] };
     onSessionUpdateRef.current(updatedSession);
@@ -258,6 +262,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       id: streamingMsgId,
       role: 'assistant',
       content: '',
+      thinking: '',
       timestamp: new Date(),
       isStreaming: true,
     };
@@ -292,6 +297,10 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       if (options?.preset) {
         body.preset = options.preset;
       }
+      // 如果有附件，传递给后端
+      if (options?.attachments && options.attachments.length > 0) {
+        body.attachments = options.attachments;
+      }
       // 如果有历史消息，添加到请求体（用于多轮对话）
       if (session.messages.length > 0) {
         body.conversationHistory = session.messages.map(m => ({
@@ -308,12 +317,14 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       let currentPreset: { id: string; label: string } | null = null;
       let currentErrorCode: string | null = null;
       let currentErrorMessage: string | null = null;
+      let currentThinkingDuration: number | undefined;
+      let currentThinkingType: 'deep' | 'local' = 'deep';
 
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
-          const sseResult = await new Promise<{ content: string; autoReason?: string; autoReasonType?: string; preset: { id: string; label: string } | null; errorCode: string | null; errorMessage: string | null }>((resolve, reject) => {
+          const sseResult = await new Promise<{ content: string; autoReason?: string; autoReasonType?: string; preset: { id: string; label: string } | null; errorCode: string | null; errorMessage: string | null; thinkingDuration?: number }>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', 'http://localhost:3001/api/chat?_t=' + Date.now(), true);
+            xhr.open('POST', `${CHAT_API_URL}?_t=${Date.now()}`, true);
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.setRequestHeader('Cache-Control', 'no-cache');
             xhr.setRequestHeader('Pragma', 'no-cache');
@@ -325,6 +336,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             let preset: { id: string; label: string } | null = null;
             let errorCode: string | null = null;
             let errorMessage: string | null = null;
+            let thinkingDuration: number | undefined;
             let lastIndex = 0;
             let settled = false; // 防止 resolve/reject 多次调用
 
@@ -359,9 +371,32 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         if (data.autoReasonType) autoReasonType = data.autoReasonType;
                         if (data.preset) preset = data.preset;
                       }
+                      // v1.8.6: 处理 AI 思考过程流式内容
+                      if (data.type === 'thinking') {
+                        streamingMsg.thinking = (streamingMsg.thinking || '') + data.content;
+                        // v1.8.7: 解析思考类型
+                        if (data.thinkingType) {
+                          streamingMsg.thinkingType = data.thinkingType;
+                        }
+                        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
+                      }
+                      // v1.9.0: 处理工具调用事件（Tool Calling）
+                      if (data.type === 'tool_call') {
+                        const toolCall: ToolCallInfo = {
+                          name: data.toolName || 'unknown',
+                          arguments: data.toolArgs || '{}',
+                          result: data.toolResult || '',
+                        };
+                        streamingMsg.toolCalls = [...(streamingMsg.toolCalls || []), toolCall];
+                        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
+                      }
                       if (data.type === 'done') {
                         errorCode = data.errorCode ?? null;
                         errorMessage = data.errorMessage ?? null;
+                        thinkingDuration = data.thinkingDuration;
+                        if (data.thinkingType) {
+                          currentThinkingType = data.thinkingType;
+                        }
                         if (errorCode && errorMessage) {
                           result = errorMessage;
                           // 同步更新 fullContent，确保错误消息被正确保存
@@ -377,7 +412,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               if (xhr.readyState === 4 && !settled) {
                 settled = true;
                 // DONE — 无论 status 如何，只要有响应就视为成功（后端总是返回 200）
-                resolve({ content: result, autoReason, autoReasonType, preset, errorCode, errorMessage });
+                resolve({ content: result, autoReason, autoReasonType, preset, errorCode, errorMessage, thinkingDuration });
               }
             };
 
@@ -391,7 +426,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               settled = true;
               // 用户手动停止不视为错误
               if (stoppedRef.current) {
-                resolve({ content: result, autoReason, autoReasonType, preset, errorCode, errorMessage });
+                resolve({ content: result, autoReason, autoReasonType, preset, errorCode, errorMessage, thinkingDuration });
               } else {
                 reject(new Error('net::ERR_ABORTED'));
               }
@@ -406,6 +441,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           currentPreset = sseResult.preset;
           currentErrorCode = sseResult.errorCode;
           currentErrorMessage = sseResult.errorMessage;
+          currentThinkingDuration = sseResult.thinkingDuration;
 
           // 成功，跳出重试循环
           break;
@@ -416,7 +452,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             fullContent = '';
             // 重置流式消息内容，避免重试时 UI 显示旧内容
             streamingMsg.content = '';
-            onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: '' }] });
+            streamingMsg.thinking = '';
+            onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: '', thinking: '' }] });
             continue;
           }
           throw fetchErr;
@@ -427,6 +464,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       streamingMsgIdRef.current = null;
       streamingMsg.isStreaming = false;
       streamingMsg.content = fullContent;
+      streamingMsg.thinkingDuration = currentThinkingDuration;
+      streamingMsg.thinkingType = currentThinkingType;
       streamingMsg.autoReason = currentAutoReason;
       streamingMsg.autoReasonType = currentAutoReasonType as any;
       streamingMsg.activePreset = currentPreset;
@@ -464,7 +503,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         (async () => {
           try {
             const payload: InventoryQueryPayload = JSON.parse(jsonStr);
-            const apiRes = await fetch('http://localhost:3001/api/inventory/nl-query', {
+            const apiRes = await fetch(INVENTORY_QUERY_API_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

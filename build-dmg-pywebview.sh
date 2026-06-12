@@ -87,6 +87,28 @@ echo "📝 版本文件已生成: $VERSION_FILE → $VERSION"
 echo ""
 
 # pywebview venv 路径（CI 环境自动检测）
+# 检查操作系统（DMG 只能在 macOS 上构建）
+if [ "$(uname -s)" != "Darwin" ]; then
+  echo "❌ 错误：DMG 打包只能在 macOS 上执行"
+  echo "   当前系统: $(uname -s) ($(uname -m))"
+  echo "   请在 Mac 电脑上运行此脚本"
+  exit 1
+fi
+
+# 检查必需的 macOS 工具
+# hdiutil 和 osascript 是必需的；codesign 可选（无签名时用户需手动允许）
+for tool in hdiutil osascript; do
+  if ! command -v "$tool" &>/dev/null; then
+    echo "❌ 错误：缺少必需的 macOS 工具 '$tool'"
+    exit 1
+  fi
+done
+
+if ! command -v codesign &>/dev/null; then
+  echo "⚠️  警告：codesign 未安装，将跳过代码签名"
+  echo "   安装 Xcode Command Line Tools: xcode-select --install"
+fi
+
 if [ -n "$CI" ]; then
   # CI 环境：使用系统 Python 和 pip 安装的 pyinstaller
   PYTHON="$(which python3)"
@@ -97,8 +119,14 @@ if [ -n "$CI" ]; then
     PYINSTALLER="$(which pyinstaller)"
   fi
 else
-  # 本地环境：使用指定的 venv
-  PYWEBVIEW_VENV="/Users/chouray/.workbuddy/binaries/python/envs/crosswms-pywebview"
+  # 本地环境：使用指定的 venv（支持通过环境变量覆盖）
+  PYWEBVIEW_VENV="${PYWEBVIEW_VENV:-/Users/chouray/.workbuddy/binaries/python/envs/crosswms-pywebview}"
+  if [ ! -d "$PYWEBVIEW_VENV" ]; then
+    echo "❌ 错误：Python 虚拟环境未找到: $PYWEBVIEW_VENV"
+    echo "   请设置环境变量 PYWEBVIEW_VENV 指向正确的虚拟环境路径"
+    echo "   例如: export PYWEBVIEW_VENV=/path/to/your/venv"
+    exit 1
+  fi
   PYINSTALLER="$PYWEBVIEW_VENV/bin/pyinstaller"
   PYTHON="$PYWEBVIEW_VENV/bin/python3"
 fi
@@ -148,13 +176,16 @@ echo ""
 echo "⚙️  编译 Node.js 后端..."
 
 if command -v npx &>/dev/null; then
+  # 注意：@src 别名在 server/tsconfig.json 中映射到 ../src/*
+  # 即相对于 server 目录的父目录（项目根目录）的 src 目录
+  # 因此 esbuild 的别名应该指向项目根目录下的 src
   npx esbuild "$SERVER_DIR/index.ts" \
     --bundle \
     --platform=node \
     --target=node18 \
     --format=cjs \
     --outfile="$SERVER_BUILD_DIR/index.cjs" \
-    --alias:@src=./src \
+    --alias:@src="$PROJECT_DIR/src" \
     --external:better-sqlite3 \
     --external:express \
     --external:cors \
@@ -286,6 +317,12 @@ cd "$PROJECT_DIR"
 # 注意：shared_node_modules 不在 server_dist 内，PyInstaller 不会自动扫描
 # 但需要确保 server_dist 内没有 node_modules 目录
 
+# 清理 server_dist 中可能残留的 node_modules（避免 PyInstaller 误打包）
+if [ -d "$SERVER_BUILD_DIR/node_modules" ]; then
+  echo "🧹 清理 server_dist/node_modules..."
+  rm -rf "$SERVER_BUILD_DIR/node_modules"
+fi
+
 export PYINSTALLER_CONFIG_DIR="$BUILD_DIR/pyinstaller-cache"
 mkdir -p "$PYINSTALLER_CONFIG_DIR"
 
@@ -306,10 +343,14 @@ if ! codesign -v "$PYINSTALLER" 2>/dev/null; then
 fi
 
 # 构建数据文件参数
+# 注意：--add-data 格式为 "源路径:目标路径"
+# 目标路径为 . 时，文件放到 sys._MEIPASS 根目录
+# 目标路径为目录名时，文件放到 sys._MEIPASS/目录名/ 下
 DATA_ARGS="--add-data $BUILD_DIR/frontend_dist:frontend_dist "
 DATA_ARGS="$DATA_ARGS --add-data $SERVER_BUILD_DIR:server_dist "
 DATA_ARGS="$DATA_ARGS --add-data $NODE_RUNTIME_DIR:node "
-DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:. "
+# version.txt 放到 version_txt/ 目录下（避免与可能存在的 version.txt 文件冲突）
+DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:version_txt "
 
 
 "$PYINSTALLER" \
@@ -375,10 +416,16 @@ if [ -f "$PLIST_PATH" ]; then
     /usr/libexec/PlistBuddy -c "Add :LSMinimumSystemVersion string 12.0" "$PLIST_PATH"
 fi
 
-# 8. 签名
-echo "🔏 签名应用包..."
-xattr -cr "$APP_PATH" 2>/dev/null || true
-codesign --force --sign - "$APP_PATH" 2>&1 || true
+# 8. 签名（可选：如果缺少 codesign 则跳过）
+if command -v codesign &>/dev/null; then
+  echo "🔏 签名应用包..."
+  xattr -cr "$APP_PATH" 2>/dev/null || true
+  codesign --force --sign - "$APP_PATH" 2>&1 || true
+else
+  echo "⚠️  跳过签名（codesign 未安装）"
+  echo "   安装 Xcode Command Line Tools: xcode-select --install"
+  echo "   未签名的应用首次启动需在 系统设置 > 隐私与安全性 中手动允许"
+fi
 
 # 9. 创建 DMG 安装包（含拖拽到 Applications 引导）
 echo "💿 创建 DMG 安装包..."
@@ -493,11 +540,11 @@ import json, os
 from datetime import datetime
 
 GITHUB_OWNER = "chouraycn"
-GITHUB_REPO = "cdf-know-clow"
+GITHUB_REPO = "cross-wms"
 
 version = os.environ.get("VERSION", "1.0.0")
 pub_date = datetime.now().strftime("%Y-%m-%d")
-dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/CDFKnowClow-{version}-mac.dmg"
+dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/CDF-Know-Clow-{version}-mac.dmg"
 min_ver = "1.0.0"
 
 project_dir = os.environ.get("PROJECT_DIR", ".")
@@ -528,13 +575,16 @@ echo ""
 # 11. 上传到 GitHub Releases
 echo "🚀 上传到 GitHub Releases..."
 
+# 如果 tag 已存在，先删除远程 tag 再重建（确保 Release 可重新创建）
 if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
-  echo "  标签 v${VERSION} 已存在，跳过创建"
-else
-  git tag "v${VERSION}" -m "CDF Know Clow v${VERSION}"
-  git push origin "v${VERSION}"
-  echo "✅ 标签 v${VERSION} 已推送"
+  echo "  ⚠️  标签 v${VERSION} 已存在，删除远程 tag 后重建..."
+  git push origin ":refs/tags/v${VERSION}" 2>/dev/null || true
+  git tag -d "v${VERSION}" 2>/dev/null || true
 fi
+
+git tag "v${VERSION}" -m "CDF Know Clow v${VERSION}"
+git push origin "v${VERSION}"
+echo "✅ 标签 v${VERSION} 已推送"
 
 UPLOAD_OK=false
 
@@ -542,9 +592,39 @@ if [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
   echo "📦 使用 GitHub API 上传..."
   TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}"
 
-  RELEASE_ID=$(curl -s -H "Authorization: token $TOKEN" \
-    "https://api.github.com/repos/chouraycn/cdf-know-clow/releases/tags/v${VERSION}" \
+  # 先删除已有 Release（如果存在）
+  OLD_RELEASE_ID=$(curl -s -H "Authorization: token $TOKEN" \
+    "https://api.github.com/repos/chouraycn/cross-wms/releases/tags/v${VERSION}" \
     | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || echo "")
+  
+  if [ -n "$OLD_RELEASE_ID" ]; then
+    echo "  ⚠️  删除已有 Release (ID: $OLD_RELEASE_ID)..."
+    curl -s -X DELETE -H "Authorization: token $TOKEN" \
+      "https://api.github.com/repos/chouraycn/cross-wms/releases/$OLD_RELEASE_ID" 2>/dev/null || true
+    sleep 2  # 等待 GitHub API 同步
+  fi
+
+  # 创建新 Release
+  python3 << 'PYEOF3' > /tmp/cdf_release_data.json
+import json, os
+version = os.environ.get("VERSION", "1.0.0")
+project_dir = os.environ.get("PROJECT_DIR", ".")
+notes_file = os.path.join(project_dir, "RELEASE_NOTES.md")
+if os.path.isfile(notes_file):
+    with open(notes_file, 'r', encoding='utf-8') as f:
+        notes = f.read().strip()
+else:
+    notes = f"CDF Know Clow v{version} 发布"
+print(json.dumps({"tag_name": "v" + version, "name": "CDF Know Clow v" + version, "body": notes, "draft": False, "prerelease": False}))
+PYEOF3
+
+  RELEASE_DATA=$(curl -s -X POST \
+    -H "Authorization: token $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d @/tmp/cdf_release_data.json \
+    "https://api.github.com/repos/chouraycn/cross-wms/releases")
+  rm -f /tmp/cdf_release_data.json
+  RELEASE_ID=$(echo "$RELEASE_DATA" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
 
   if [ -z "$RELEASE_ID" ]; then
     python3 << 'PYEOF3' > /tmp/cdf_know_clow_release_data.json
@@ -563,7 +643,7 @@ PYEOF3
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
       -d @/tmp/cdf_know_clow_release_data.json \
-      "https://api.github.com/repos/chouraycn/cdf-know-clow/releases")
+      "https://api.github.com/repos/chouraycn/cross-wms/releases")
     rm -f /tmp/cdf_know_clow_release_data.json
     RELEASE_ID=$(echo "$RELEASE_DATA" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
   fi
@@ -575,7 +655,7 @@ PYEOF3
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/octet-stream" \
       --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
-      "https://uploads.github.com/repos/chouraycn/cdf-know-clow/releases/$RELEASE_ID/assets?name=$DMG_NAME" \
+      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=$DMG_NAME" \
       && echo "  ✅ DMG 上传成功" || { echo "  ⚠️  DMG 上传失败"; UPLOAD_OK=false; }
 
     echo "  上传 release.json..."
@@ -583,7 +663,7 @@ PYEOF3
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
       --data-binary @"$PROJECT_DIR/release/release.json" \
-      "https://uploads.github.com/repos/chouraycn/cdf-know-clow/releases/$RELEASE_ID/assets?name=release.json" \
+      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=release.json" \
       && echo "  ✅ release.json 上传成功" || { echo "  ⚠️  release.json 上传失败"; UPLOAD_OK=false; }
 
     [ "$UPLOAD_OK" = true ] && echo "✅ Release v${VERSION} 已发布!"
@@ -606,4 +686,4 @@ echo ""
 echo "=== 完成 ==="
 echo "版本: $VERSION"
 echo "DMG 路径: $PROJECT_DIR/release/$DMG_NAME"
-echo "Release: https://github.com/chouraycn/cdf-know-clow/releases/tag/v${VERSION}"
+echo "Release: https://github.com/chouraycn/cross-wms/releases/tag/v${VERSION}"

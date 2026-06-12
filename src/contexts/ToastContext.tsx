@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode, useMemo } from 'react';
 import { Snackbar, Alert, AlertColor, useTheme } from '@mui/material';
 
 interface ToastContextValue {
@@ -47,21 +47,22 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children, sidebarC
   const [message, setMessage] = useState('');
   const [severity, setSeverity] = useState<AlertColor>('info');
   const [duration, setDuration] = useState(3000);
-  const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);  // 改用 ref 存储 timer，避免 showToast 不稳定
 
-  // 清除之前的定时器
+  // 清除之前的定时器（稳定函数，不依赖状态）
   const clearTimer = useCallback(() => {
-    if (timer) {
-      clearTimeout(timer);
-      setTimer(null);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
     }
-  }, [timer]);
+  }, []);
 
   // 组件卸载时清除定时器
   useEffect(() => {
-    return () => { if (timer) clearTimeout(timer); };
-  }, [timer]);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
 
+  // showToast 现在保持稳定（依赖项为空数组）
   const showToast = useCallback((
     message: string,
     severity: AlertColor = 'info',
@@ -74,7 +75,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children, sidebarC
     setOpen(true);
 
     const t = setTimeout(() => { setOpen(false); }, duration);
-    setTimer(t);
+    timerRef.current = t;
   }, [clearTimer]);
 
   const handleClose = useCallback((_: React.SyntheticEvent | Event, reason?: string) => {

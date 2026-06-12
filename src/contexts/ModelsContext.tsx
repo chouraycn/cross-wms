@@ -46,23 +46,48 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [error, setError] = useState<string | null>(null);
   const isFirstLoad = useRef(true);
 
-  /** 从后端加载模型配置 */
+  /** 从后端加载模型配置（含自动重试：后端可能尚未就绪，使用指数退避） */
   const loadModels = useCallback(async () => {
+    const MAX_RETRIES = 8;
+    const INITIAL_DELAY_MS = 1000;
+    const MAX_DELAY_MS = 10000;
     try {
       setIsLoading(true);
       setError(null);
-      const data = await api.getModelsConfig();
-      if (data && Array.isArray(data.models)) {
-        // 过滤无效模型
-        const validModels = data.models.filter(
-          (m: any) => m && typeof m === 'object' && typeof m.id === 'string' && m.id.trim() && typeof m.name === 'string'
-        );
-        setModels(validModels);
-        setDefaultModelId(data.defaultModelId || validModels[0]?.id || '');
+      let lastError: unknown = null;
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const data = await api.getModelsConfig();
+          if (data && Array.isArray(data.models)) {
+            // 过滤无效模型
+            const validModels = data.models.filter(
+              (m: any) => m && typeof m === 'object' && typeof m.id === 'string' && m.id.trim() && typeof m.name === 'string'
+            );
+            // RC-3: 检测所有模型均未启用的状态，避免前端误认为加载成功但无可选模型
+            const enabledModels = validModels.filter((m: any) => m.enabled);
+            if (validModels.length > 0 && enabledModels.length === 0) {
+              console.warn('[ModelsContext] 所有模型均未启用，请在设置中启用至少一个模型');
+            }
+            setModels(validModels);
+            setDefaultModelId(data.defaultModelId || validModels[0]?.id || '');
+            lastError = null;
+            break; // 成功，退出重试循环
+          }
+        } catch (e) {
+          lastError = e;
+          if (attempt < MAX_RETRIES) {
+            // 指数退避：1s, 2s, 4s, 8s, 10s, 10s, 10s...
+            const delay = Math.min(INITIAL_DELAY_MS * Math.pow(2, attempt - 1), MAX_DELAY_MS);
+            console.warn(`[ModelsContext] 加载模型配置失败 (第${attempt}/${MAX_RETRIES}次)，${delay}ms后重试...`, e);
+            await new Promise(r => setTimeout(r, delay));
+          }
+        }
       }
-    } catch (e) {
-      console.error('[ModelsContext] 加载模型配置失败:', e);
-      setError(e instanceof Error ? e.message : '加载失败');
+      if (lastError != null) {
+        console.error('[ModelsContext] 加载模型配置失败（已重试' + MAX_RETRIES + '次）:', lastError);
+        const rawMsg = lastError instanceof Error ? lastError.message : String(lastError);
+        setError(`${rawMsg}（后端服务可能尚未就绪，请稍后重试）`);
+      }
     } finally {
       setIsLoading(false);
     }
