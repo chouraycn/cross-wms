@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useActiveSession } from '../../contexts/ActiveSessionContext';
+import { loadSessions } from '../../utils/sessionStore';
 import { getGrayScale } from '../../constants/theme';
 import SidebarLogo from './SidebarLogo';
 import NavList from './NavList';
@@ -42,7 +42,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLDivElement>(null);
 
-  const { activeSessionId, setActiveSessionId } = useActiveSession();
+  const [activeSessionId, setActiveSessionId] = useState(() => {
+    const sessions = loadSessions();
+    return sessions.length > 0 ? sessions[0].id : '';
+  });
 
   const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
@@ -93,12 +96,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         activeSessionId={activeSessionId}
         onSelectSession={(sessionId) => {
           setActiveSessionId(sessionId);
-          navigate('/chat');
+          navigate(`/chat?session=${encodeURIComponent(sessionId)}`);
         }}
         onDeleteSession={(sessionId) => {
-          if (activeSessionId === sessionId) {
-            setActiveSessionId('');
-          }
+          setActiveSessionId((prev: string) => prev === sessionId ? '' : prev);
         }}
       />
 
