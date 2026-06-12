@@ -86,7 +86,9 @@ jobs:
         run: npm run build
       
       - name: Build DMG
-        run: bash build-dmg-pywebview.sh
+        run: bash build-dmg-pywebview.sh --no-bump
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Generate release notes
         id: release_notes
@@ -117,9 +119,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
-          name: CrossWMS v${{ env.VERSION }}
+          name: CDF Know Clow v${{ env.VERSION }}
           body: ${{ env.RELEASE_NOTES }}
-          files: release/CrossWMS-${{ env.VERSION }}-mac.dmg
+          files: release/CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
           draft: false
           prerelease: false
         env:
@@ -128,6 +130,6 @@ jobs:
       - name: Upload DMG as artifact (backup)
         uses: actions/upload-artifact@v4
         with:
-          name: CrossWMS-${{ env.VERSION }}-mac.dmg
-          path: release/CrossWMS-${{ env.VERSION }}-mac.dmg
+          name: CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
+          path: release/CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
           retention-days: 90
