@@ -5,9 +5,84 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useUpdateContext } from '../contexts/UpdateContext';
 
 const UpdateNotification: React.FC = () => {
-  const { updateStatus, showUpdateNotification, hideUpdateNotification, downloadUpdate } = useUpdateContext();
+  const { updateStatus, showUpdateNotification, isChecking, hideUpdateNotification, downloadUpdate } = useUpdateContext();
 
-  if (!showUpdateNotification || !updateStatus?.releaseInfo) {
+  // 检查中状态
+  if (isChecking) {
+    return (
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          left: 16,
+          zIndex: 9999,
+          width: 320,
+          backgroundColor: '#f8f8f8',
+          borderRadius: 2,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
+          border: '1px solid #e5e7eb',
+          overflow: 'hidden',
+        }}
+      >
+        <LinearProgress
+          sx={{
+            height: 3,
+            backgroundColor: 'rgba(59, 130, 246, 0.15)',
+            '& .MuiLinearProgress-bar': {
+              backgroundColor: '#3b82f6',
+            },
+          }}
+        />
+        <Box sx={{ p: 2 }}>
+          <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+            正在检查更新...
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (!showUpdateNotification) {
+    return null;
+  }
+
+  // 错误状态
+  if (updateStatus?.error) {
+    return (
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          left: 16,
+          zIndex: 9999,
+          width: 320,
+          backgroundColor: '#f8f8f8',
+          borderRadius: 2,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
+          border: '1px solid #e5e7eb',
+          overflow: 'hidden',
+        }}
+      >
+        <Box sx={{ p: 2 }}>
+          <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827' }}>
+            更新检查失败
+          </Typography>
+          <Typography sx={{ fontSize: '0.75rem', color: '#6b7280', mt: 0.5 }}>
+            {updateStatus.error}
+          </Typography>
+          <Button
+            size="small"
+            onClick={hideUpdateNotification}
+            sx={{ mt: 1, textTransform: 'none' }}
+          >
+            关闭
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (!updateStatus?.releaseInfo) {
     return null;
   }
 

@@ -12,6 +12,7 @@ let APP_VERSION = VITE_VERSION;
 interface UpdateContextType {
   updateStatus: UpdateStatus | null;
   showUpdateNotification: boolean;
+  isChecking: boolean;
   checkForUpdates: () => Promise<UpdateStatus>;
   hideUpdateNotification: () => void;
   downloadUpdate: () => void;
@@ -22,6 +23,7 @@ const UpdateContext = createContext<UpdateContextType | undefined>(undefined);
 export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
   const [currentVersion, setCurrentVersion] = useState(APP_VERSION);
   const versionInitDone = useRef(false);
   const autoCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -81,15 +83,25 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   const checkForUpdates = useCallback(async () => {
-    const status = await checkForUpdatesService(currentVersion);
-    if (status.hasUpdate && status.releaseInfo) {
-      setUpdateStatus(status);
-      setShowUpdateNotification(true);
-    } else {
-      setUpdateStatus(null);
-      setShowUpdateNotification(false);
+    setIsChecking(true);
+    try {
+      const status = await checkForUpdatesService(currentVersion);
+      if (status.hasUpdate && status.releaseInfo) {
+        setUpdateStatus(status);
+        setShowUpdateNotification(true);
+      } else if (status.error) {
+        // 检查失败，显示错误通知
+        setUpdateStatus(status);
+        setShowUpdateNotification(true);
+      } else {
+        // 没有更新
+        setUpdateStatus(null);
+        setShowUpdateNotification(false);
+      }
+      return status;
+    } finally {
+      setIsChecking(false);
     }
-    return status;
   }, [currentVersion]);
 
   const hideUpdateNotification = useCallback(() => {
@@ -124,9 +136,28 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         try {
           console.log('[UpdateContext] 开始自动检查更新，版本:', currentVersion);
           const status = await checkForUpdatesService(currentVersion);
+          console.log('[UpdateContext] 更新检查结果:', status);
           if (status.hasUpdate && status.releaseInfo) {
             setUpdateStatus(status);
             setShowUpdateNotification(true);
+          } else {
+            // 即使没有更新，也在开发模式下显示通知（用于测试）
+            if (import.meta.env.DEV) {
+              console.log('[UpdateContext] 开发模式：模拟更新通知');
+              setUpdateStatus({
+                hasUpdate: true,
+                currentVersion,
+                latestVersion: '1.5.99',
+                releaseInfo: {
+                  version: '1.5.99',
+                  pubDate: new Date().toISOString(),
+                  notes: '测试更新通知',
+                  dmgUrl: 'https://example.com/test.dmg',
+                  minVersion: '1.0.0',
+                },
+              });
+              setShowUpdateNotification(true);
+            }
           }
         } catch (error) {
           console.error('[UpdateContext] 自动更新检查失败:', error);
@@ -146,6 +177,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       value={{
         updateStatus,
         showUpdateNotification,
+        isChecking,
         checkForUpdates,
         hideUpdateNotification,
         downloadUpdate,

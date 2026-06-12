@@ -774,10 +774,20 @@ app.post('/api/chat', async (req, res) => {
       }
 
       // 添加历史对话（如果前端传了 conversationHistory）
+      // v1.9.0: 包含 toolCalls，确保多轮工具调用上下文不丢失
       if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
         for (const msg of conversationHistory) {
           if (msg.role === 'user' || msg.role === 'assistant') {
             apiMessages.push({ role: msg.role, content: msg.content });
+          }
+          // 如果历史消息包含 toolCalls，将其转换为 tool 角色消息注入上下文
+          if (msg.toolCalls && Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0) {
+            for (const tc of msg.toolCalls) {
+              apiMessages.push({
+                role: 'tool',
+                content: tc.result,
+              } as any);
+            }
           }
         }
       }
@@ -875,7 +885,7 @@ app.post('/api/chat', async (req, res) => {
           fullContent = mockResponse;
         } else {
           // v1.9.0: 使用 Tool Calling 循环
-          fullContent = await executeToolLoop({
+          const toolResult = await executeToolLoop({
             modelConfig: finalModelConfig,
             messages: apiMessages,
             maxToolTurns: 10,
@@ -900,13 +910,15 @@ app.post('/api/chat', async (req, res) => {
               })}\n\n`);
             },
           });
+          fullContent = toolResult.content;
+          var toolCallsJson = toolResult.toolCalls.length > 0 ? JSON.stringify(toolResult.toolCalls) : undefined;
         }
       } finally {
         clearTimeout(timeout);
       }
 
-      // 保存完整的助手回复
-      addMessage({ sessionId, role: 'assistant', content: fullContent, model: effectiveModel, skillId: skillId || null });
+      // 保存完整的助手回复（含 toolCalls）
+      addMessage({ sessionId, role: 'assistant', content: fullContent, model: effectiveModel, skillId: skillId || null, toolCalls: toolCallsJson });
       // 报告 Key 使用成功
       if (selectedKeyIndex >= 0 && effectiveModel) {
         reportKeyResult(effectiveModel, selectedKeyIndex, true);
