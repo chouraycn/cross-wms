@@ -317,7 +317,16 @@ const KeysSection: React.FC<{
             variant="text"
             onClick={() => {
               const url = PROVIDER_API_KEY_URLS[modelForm.provider];
-              if (url) window.open(url, '_blank', 'noopener,noreferrer');
+              if (url) {
+                // pywebview 环境
+                if (window.pywebview?.api) {
+                  window.pywebview.api.open_in_browser(url).catch(() => {
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                  });
+                } else {
+                  window.open(url, '_blank', 'noopener,noreferrer');
+                }
+              }
             }}
             sx={{
               fontSize: '0.7rem',

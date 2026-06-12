@@ -57,11 +57,14 @@ export interface ExecutionPolicy {
 
 /** 通知配置 */
 export interface NotificationConfig {
-  channels: ('in-app' | 'webhook' | 'desktop')[];
+  channels: ('in-app' | 'webhook' | 'desktop' | 'wechat' | 'dingtalk')[];
   webhookUrl?: string;
   onSuccess: boolean;
   onFailure: boolean;
   template?: string; // 支持 {{variable}} 替换
+  wechatKey?: string;
+  dingtalkToken?: string;
+  dingtalkSecret?: string;
 }
 
 // ===================== 任务类型 =====================
@@ -205,7 +208,7 @@ export interface AutomationEngineAPI {
   start(): void;
   stop(): void;
   triggerNow(id: string): Promise<AutomationExecution>;
-  getExecutionLog(automationId?: string): AutomationExecution[];
+  getExecutionLog(automationId?: string): Promise<AutomationExecution[]>;
   onExecution(callback: (exec: AutomationExecution) => void): () => void;
   onStateChange(callback: (event: EngineStateEvent) => void): () => void;
   isRunning(): boolean;
@@ -234,9 +237,12 @@ export interface AutomationTemplate {
   };
 }
 
-// ===================== 持久化常量 =====================
+// ===================== 常量 =====================
 
+/** v2.0: AUTOMATIONS_KEY 已废弃，数据迁移到后端 SQLite */
 export const AUTOMATIONS_KEY = 'cdf-know-clow-automations';
+/** v2.0: EXECUTION_LOG_KEY 已废弃，数据迁移到后端 SQLite */
 export const EXECUTION_LOG_KEY = 'cdf-know-clow-automation-logs';
+/** v2.0: MAX_LOG_ENTRIES 已废弃，后端管理日志保留策略 */
 export const MAX_LOG_ENTRIES = 100;
 export const CHECK_INTERVAL_MS = 30_000; // 30 秒

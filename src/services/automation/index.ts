@@ -1,14 +1,15 @@
 /**
- * 自动化执行引擎 — Facade
+ * 自动化执行引擎 — Facade (API 驱动版)
  *
  * 定时任务调度与执行的核心服务，职责：
  * - 每 30 秒轮询检查是否有任务到期
  * - 按 taskType 分发执行逻辑（委托给 actions 模块）
- * - 执行结果持久化到 localStorage
+ * - 执行结果通过 API 持久化到后端 SQLite
  * - 支持手动触发、执行回调通知、状态变更通知
  * - 失败任务自动重试 1 次
  *
  * 本文件是 Facade 薄壳，核心执行逻辑在 actions.ts 中。
+ * v2.0: 从 localStorage 迁移到后端 REST API
  */
 
 import type {
@@ -17,9 +18,15 @@ import type {
   EngineStateEvent, AutomationEngineAPI, AutomationTemplate,
 } from './types';
 import {
-  AUTOMATIONS_KEY, EXECUTION_LOG_KEY, MAX_LOG_ENTRIES, CHECK_INTERVAL_MS,
+  CHECK_INTERVAL_MS,
 } from './types';
 import { executeByTypeWithSteps } from './actions';
+import {
+  fetchAutomations,
+  updateAutomationApi,
+  fetchAllExecutions,
+  clearExecutionLogs as clearExecutionLogsApi,
+} from './api';
 
 // ===================== 调度辅助函数 =====================
 
@@ -97,45 +104,6 @@ export function computeNextRun(auto: Automation): string | null {
   return next.toISOString();
 }
 
-// ===================== 持久化 =====================
-
-/** 读取所有自动化任务（兼容旧数据：无 taskType 字段默认 'custom'） */
-export function loadAutomations(): Automation[] {
-  try {
-    const raw = localStorage.getItem(AUTOMATIONS_KEY);
-    if (!raw) return [];
-    const items = JSON.parse(raw) as Automation[];
-    // 兼容旧数据：补充缺失的 taskType
-    return items.map((a) => ({
-      ...a,
-      taskType: a.taskType || 'custom',
-    }));
-  } catch {
-    return [];
-  }
-}
-
-/** 保存所有自动化任务 */
-export function saveAutomations(items: Automation[]): void {
-  localStorage.setItem(AUTOMATIONS_KEY, JSON.stringify(items));
-}
-
-/** 读取执行日志 */
-function loadExecutionLogs(): AutomationExecution[] {
-  try {
-    const raw = localStorage.getItem(EXECUTION_LOG_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-/** 保存执行日志（保留最近 MAX_LOG_ENTRIES 条） */
-function saveExecutionLogs(logs: AutomationExecution[]): void {
-  const trimmed = logs.slice(-MAX_LOG_ENTRIES);
-  localStorage.setItem(EXECUTION_LOG_KEY, JSON.stringify(trimmed));
-}
-
 // ===================== 预置模板 =====================
 
 export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
@@ -195,7 +163,7 @@ export const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
     id: 'tpl-wms-alert-check',
     name: 'WMS 预警检查',
     description: '定期扫描低库存、临期商品、呆滞库存，自动创建预警记录',
-    icon: 'Noti ficationsActiveIcon',
+    icon: 'NotificationsActiveIcon',
     taskType: 'wms-alert-check',
     taskConfig: {
       alertConfig: {
@@ -282,7 +250,7 @@ class AutomationEngine implements AutomationEngineAPI {
 
   /** 立即执行指定任务 */
   async triggerNow(id: string): Promise<AutomationExecution> {
-    const automations = loadAutomations();
+    const automations = await fetchAutomations();
     const auto = automations.find((a) => a.id === id);
     if (!auto) {
       throw new Error(`任务不存在: ${id}`);
@@ -291,28 +259,22 @@ class AutomationEngine implements AutomationEngineAPI {
     const exec = await this.runTask(auto);
 
     // 更新任务的 lastRunAt, runCount, nextRunAt
-    const updatedAutomations = loadAutomations();
-    const idx = updatedAutomations.findIndex((a) => a.id === id);
-    if (idx !== -1) {
-      updatedAutomations[idx] = {
-        ...updatedAutomations[idx],
-        lastRunAt: new Date().toISOString(),
-        runCount: updatedAutomations[idx].runCount + 1,
-        nextRunAt: computeNextRun(updatedAutomations[idx]),
-      };
-      saveAutomations(updatedAutomations);
-    }
+    await updateAutomationApi(id, {
+      lastRunAt: new Date().toISOString(),
+      runCount: (auto.runCount || 0) + 1,
+      nextRunAt: computeNextRun(auto),
+    });
 
     return exec;
   }
 
   /** 重试失败的执行 */
   async retry(executionId: string): Promise<AutomationExecution | null> {
-    const logs = loadExecutionLogs();
+    const { data: logs } = await fetchAllExecutions(100, 0);
     const original = logs.find((l) => l.id === executionId);
     if (!original || original.status !== 'failed') return null;
 
-    const automations = loadAutomations();
+    const automations = await fetchAutomations();
     const auto = automations.find((a) => a.id === original.automationId);
     if (!auto) return null;
 
@@ -320,24 +282,18 @@ class AutomationEngine implements AutomationEngineAPI {
     const exec = await this.runTask(auto, true);
 
     // 更新任务状态
-    const updatedAutomations = loadAutomations();
-    const idx = updatedAutomations.findIndex((a) => a.id === original.automationId);
-    if (idx !== -1) {
-      updatedAutomations[idx] = {
-        ...updatedAutomations[idx],
-        lastRunAt: new Date().toISOString(),
-        runCount: updatedAutomations[idx].runCount + 1,
-        nextRunAt: computeNextRun(updatedAutomations[idx]),
-      };
-      saveAutomations(updatedAutomations);
-    }
+    await updateAutomationApi(original.automationId, {
+      lastRunAt: new Date().toISOString(),
+      runCount: (auto.runCount || 0) + 1,
+      nextRunAt: computeNextRun(auto),
+    });
 
     return exec;
   }
 
   /** 获取执行日志 */
-  getExecutionLog(automationId?: string): AutomationExecution[] {
-    const logs = loadExecutionLogs();
+  async getExecutionLog(automationId?: string): Promise<AutomationExecution[]> {
+    const { data: logs } = await fetchAllExecutions(100, 0);
     if (automationId) {
       return logs.filter((l) => l.automationId === automationId);
     }
@@ -346,22 +302,15 @@ class AutomationEngine implements AutomationEngineAPI {
 
   /** 获取执行结果详情 */
   getExecutionResults(type: 'snapshots' | 'reports' | 'alerts'): unknown[] {
-    const KEY_MAP = {
-      snapshots: 'cdf-know-clow-inventory-snapshots',
-      reports: 'cdf-know-clow-reports',
-      alerts: 'cdf-know-clow-volume-alerts',
-    };
-    try {
-      const raw = localStorage.getItem(KEY_MAP[type]);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
+    // v2.0: 执行结果不再存储在 localStorage，改为通过 API 获取
+    // 临时返回空数组，后续可通过 /api/automation/executions 获取
+    console.warn('[AutomationEngine] getExecutionResults 已废弃，请通过 API 获取执行结果');
+    return [];
   }
 
   /** 清空执行日志 */
-  clearExecutionLogs(): void {
-    localStorage.setItem(EXECUTION_LOG_KEY, JSON.stringify([]));
+  async clearExecutionLogs(): Promise<void> {
+    await clearExecutionLogsApi();
   }
 
   /** 注册执行回调 */
@@ -403,37 +352,39 @@ class AutomationEngine implements AutomationEngineAPI {
   }
 
   /** 检查并执行到期任务 */
-  private checkAndExecute(): void {
-    const automations = loadAutomations();
-    const now = new Date();
-    let modified = false;
+  private async checkAndExecute(): Promise<void> {
+    try {
+      const automations = await fetchAutomations();
+      const now = new Date();
 
-    for (const auto of automations) {
-      if (auto.status !== 'ACTIVE') continue;
-      // validFrom/validUntil 检查
-      if (auto.validFrom && new Date(auto.validFrom) > now) continue;
-      if (auto.validUntil && new Date(auto.validUntil) < now) continue;
-      if (!auto.nextRunAt) continue;
-      // 避免重复执行
-      if (this.runningTaskIds.has(auto.id)) continue;
+      for (const auto of automations) {
+        if (auto.status !== 'ACTIVE') continue;
+        // validFrom/validUntil 检查
+        if (auto.validFrom && new Date(auto.validFrom) > now) continue;
+        if (auto.validUntil && new Date(auto.validUntil) < now) continue;
+        if (!auto.nextRunAt) continue;
+        // 避免重复执行
+        if (this.runningTaskIds.has(auto.id)) continue;
 
-      const nextRun = new Date(auto.nextRunAt);
-      if (nextRun <= now) {
-        // 到期执行（异步，不阻塞检查循环）
-        this.runTask(auto).then((exec) => {
-          this.notifyCallbacks(exec);
-        });
+        const nextRun = new Date(auto.nextRunAt);
+        if (nextRun <= now) {
+          // 到期执行（异步，不阻塞检查循环）
+          this.runTask(auto).then((exec) => {
+            this.notifyCallbacks(exec);
+          }).catch((err) => {
+            console.error('[AutomationEngine] 任务执行失败:', err);
+          });
 
-        // 更新任务状态
-        auto.lastRunAt = now.toISOString();
-        auto.runCount += 1;
-        auto.nextRunAt = computeNextRun(auto);
-        modified = true;
+          // 更新任务状态（通过 API）
+          await updateAutomationApi(auto.id, {
+            lastRunAt: now.toISOString(),
+            runCount: (auto.runCount || 0) + 1,
+            nextRunAt: computeNextRun(auto),
+          });
+        }
       }
-    }
-
-    if (modified) {
-      saveAutomations(automations);
+    } catch (err) {
+      console.error('[AutomationEngine] 检查任务失败:', err);
     }
   }
 
@@ -455,11 +406,6 @@ class AutomationEngine implements AutomationEngineAPI {
 
     // 标记正在运行
     this.runningTaskIds.add(auto.id);
-
-    // 记录开始执行
-    const logs = loadExecutionLogs();
-    logs.push(exec);
-    saveExecutionLogs(logs);
 
     // 通知 UI 开始执行
     this.notifyStateChange({
@@ -523,16 +469,6 @@ class AutomationEngine implements AutomationEngineAPI {
     // 解除运行标记
     this.runningTaskIds.delete(auto.id);
 
-    // 更新日志
-    const updatedLogs = loadExecutionLogs();
-    const idx = updatedLogs.findIndex((l) => l.id === execId);
-    if (idx !== -1) {
-      updatedLogs[idx] = exec;
-    } else {
-      updatedLogs.push(exec);
-    }
-    saveExecutionLogs(updatedLogs);
-
     // 通知 UI 执行完成
     this.notifyStateChange({
       type: exec.status === 'success' ? 'execution-complete' : 'execution-failed',
@@ -557,6 +493,3 @@ export type {
   TriggerType, TriggerCondition, TriggerConditionGroup,
   EventTriggerConfig, WebhookConfig, ExecutionPolicy, NotificationConfig,
 } from './types';
-
-// AUTOMATION_TEMPLATES is defined locally at line ~141
-// who import from the barrel.

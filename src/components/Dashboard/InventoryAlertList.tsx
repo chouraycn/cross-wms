@@ -25,6 +25,7 @@ import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import type { TimeRange } from './TimeRangeSelector';
+import { API_BASE } from '../../constants/api';
 
 interface InventoryAlertListProps {
   warehouseId?: string;
@@ -62,7 +63,7 @@ const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = A
     const fetchPredictionAlerts = async () => {
       setPredictionLoading(true);
       try {
-        const res = await fetch('http://localhost:3001/api/wms/alerts?status=active');
+        const res = await fetch(`${API_BASE}/wms/alerts?status=active`);
         const json = await res.json();
         if (json.code === 0 && Array.isArray(json.data)) {
           const predicted = json.data.filter(

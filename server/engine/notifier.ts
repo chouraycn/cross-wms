@@ -2,7 +2,7 @@
  * 自动化通知器
  *
  * 监听 automation 事件，根据每个 automation 的 notificationConfig
- * 通过配置的渠道（in-app / webhook / desktop）发送通知。
+ * 通过配置的渠道（in-app / webhook / desktop / wechat / dingtalk）发送通知。
  *
  * 用法（在 engine.ts 启动时调用一次）：
  *   import { initNotifier, destroyNotifier } from './notifier.js';
@@ -17,11 +17,12 @@ import eventBus, {
   onAutomationEvent,
 } from './eventBus.js';
 import { getAutomationById } from '../dao/automationDao.js';
+import crypto from 'crypto';
 
 // ===================== 本地类型定义 =====================
 
 /** 通知渠道 */
-type NotificationChannel = 'in-app' | 'webhook' | 'desktop';
+type NotificationChannel = 'in-app' | 'webhook' | 'desktop' | 'wechat' | 'dingtalk';
 
 /** 通知配置（与前端 types.ts 保持一致） */
 interface NotificationConfig {
@@ -30,6 +31,9 @@ interface NotificationConfig {
   onSuccess: boolean;
   onFailure: boolean;
   template?: string;
+  wechatKey?: string;
+  dingtalkToken?: string;
+  dingtalkSecret?: string;
 }
 
 // ===================== 模板变量替换 =====================
@@ -153,6 +157,131 @@ function sendDesktopNotification(
   );
 }
 
+/**
+ * 企业微信通知：通过企业微信机器人 Webhook 发送 markdown 消息
+ */
+async function sendWechatNotification(
+  key: string,
+  payload: AutomationEventPayload,
+  automationName: string,
+  template?: string,
+): Promise<void> {
+  const url = `https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=${encodeURIComponent(key)}`;
+
+  const statusText = payload.status === 'success' ? '执行成功' : '执行失败';
+  const statusColor = payload.status === 'success' ? 'info' : 'warning';
+  const message = template
+    ? renderTemplate(template, payload, automationName)
+    : `自动化「${automationName}」${statusText}`;
+
+  const markdownContent = `## CDF Know Clow 自动化通知
+
+**任务名称：** ${automationName}  
+**状态：** <font color="${statusColor === 'warning' ? 'red' : 'green'}">${statusText}</font>  
+**时间：** ${payload.timestamp}  
+**任务类型：** ${payload.taskType}  
+
+**执行结果摘要：**
+${message}
+`;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        msgtype: 'markdown',
+        markdown: { content: markdownContent },
+      }),
+      signal: controller.signal as AbortSignal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      console.error(
+        `[Notifier] 企业微信通知失败 (${res.status}):`,
+        url,
+      );
+    }
+  } catch (err) {
+    console.error('[Notifier] 企业微信通知异常:', err);
+  }
+}
+
+/**
+ * 钉钉通知：通过钉钉机器人 Webhook 发送 markdown 消息（带签名验证）
+ */
+async function sendDingtalkNotification(
+  token: string,
+  secret: string | undefined,
+  payload: AutomationEventPayload,
+  automationName: string,
+  template?: string,
+): Promise<void> {
+  let url = `https://oapi.dingtalk.com/robot/send?access_token=${encodeURIComponent(token)}`;
+
+  if (secret) {
+    const timestamp = Date.now();
+    const signString = `${timestamp}\n${secret}`;
+    const sign = crypto
+      .createHmac('sha256', secret)
+      .update(signString)
+      .digest('base64');
+    url += `&timestamp=${timestamp}&sign=${encodeURIComponent(sign)}`;
+  }
+
+  const statusText = payload.status === 'success' ? '执行成功' : '执行失败';
+  const message = template
+    ? renderTemplate(template, payload, automationName)
+    : `自动化「${automationName}」${statusText}`;
+
+  const markdownContent = `## CDF Know Clow 自动化通知
+
+**任务名称：** ${automationName}  
+**状态：** ${statusText}  
+**时间：** ${payload.timestamp}  
+**任务类型：** ${payload.taskType}  
+
+**执行结果摘要：**
+${message}
+`;
+
+  const title = `自动化「${automationName}」${statusText}`;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        msgtype: 'markdown',
+        markdown: {
+          title,
+          text: markdownContent,
+        },
+      }),
+      signal: controller.signal as AbortSignal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      console.error(
+        `[Notifier] 钉钉通知失败 (${res.status}):`,
+        url,
+      );
+    }
+  } catch (err) {
+    console.error('[Notifier] 钉钉通知异常:', err);
+  }
+}
+
 // ===================== 事件处理 =====================
 
 /**
@@ -200,6 +329,27 @@ async function handleAutomationEvent(
           return Promise.resolve();
         case 'desktop':
           return Promise.resolve(sendDesktopNotification(payload, name, config.template));
+        case 'wechat':
+          if (config.wechatKey) {
+            return sendWechatNotification(
+              config.wechatKey,
+              payload,
+              name,
+              config.template,
+            );
+          }
+          return Promise.resolve();
+        case 'dingtalk':
+          if (config.dingtalkToken) {
+            return sendDingtalkNotification(
+              config.dingtalkToken,
+              config.dingtalkSecret,
+              payload,
+              name,
+              config.template,
+            );
+          }
+          return Promise.resolve();
         default:
           return Promise.resolve();
       }

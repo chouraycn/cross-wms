@@ -80,8 +80,9 @@ vi.mock('@/components/wms/WmsPredictionDetail', () => ({
 
 // Now import the actual component AFTER all mocks are set up
 import WmsAlertPage from '@/pages/WmsAlertPage';
+import { API_BASE_URL } from '@/constants/api';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = API_BASE_URL;
 
 function renderPage() {
   return render(<WmsAlertPage />);

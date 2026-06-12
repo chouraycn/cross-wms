@@ -39,8 +39,9 @@ import {
 } from 'recharts';
 import type { WmsAlert, PredictionDetail as PredictionDetailType } from '../../types/wms';
 import { getGrayScale } from '../../constants/theme';
+import { API_BASE_URL } from '../../constants/api';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = API_BASE_URL;
 
 interface WmsPredictionDetailProps {
   open: boolean;

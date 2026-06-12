@@ -15,7 +15,7 @@
  */
 
 import { initDb } from '../db.js';
-import { BUILTIN_SKILLS } from '@src/types/skill';
+import { BUILTIN_SKILLS } from '@src/types/skill-core';
 import type {
   MatchMode,
   MatchResult,

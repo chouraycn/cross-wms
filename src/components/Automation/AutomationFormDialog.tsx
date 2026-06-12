@@ -36,7 +36,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 
-import type { TaskType, FreqType, TaskConfig, ActionType, TriggerType, ExecutionPolicy } from '../../services/automation';
+import type { TaskType, FreqType, TaskConfig, ActionType, TriggerType, ExecutionPolicy, NotificationConfig } from '../../services/automation';
 import {
   TASK_TYPE_COLORS,
   ACTION_CHAIN_OPTIONS,
@@ -68,6 +68,7 @@ export interface AutomationFormDialogProps {
   // v2.0
   formTriggerType: TriggerType;
   formExecutionPolicy: ExecutionPolicy;
+  formNotificationConfig: NotificationConfig;
   formErrors: Record<string, string>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onFieldChange: (field: string, value: any) => void;
@@ -96,6 +97,7 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
   formValidUntil,
   formTriggerType,
   formExecutionPolicy,
+  formNotificationConfig,
   formErrors,
   onFieldChange,
   onToggleWeekday,
@@ -106,6 +108,22 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+
+  const toggleChannel = (channel: NotificationConfig['channels'][number]) => {
+    const channels = formNotificationConfig.channels || [];
+    const newChannels = channels.includes(channel)
+      ? channels.filter((c) => c !== channel)
+      : [...channels, channel];
+    onFieldChange('formNotificationConfig', { ...formNotificationConfig, channels: newChannels });
+  };
+
+  const toggleNotifyOn = (key: 'onSuccess' | 'onFailure') => {
+    onFieldChange('formNotificationConfig', {
+      ...formNotificationConfig,
+      [key]: !formNotificationConfig[key],
+    });
+  };
+
   return (
     <Dialog
       open={open}
@@ -541,6 +559,121 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
                 </Select>
               </FormControl>
             </Box>
+          </Box>
+
+          <Divider />
+
+          {/* ===== 通知配置 ===== */}
+          <Box>
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, fontWeight: 500, mb: 1 }}>
+              通知配置
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
+              {(['in-app', 'webhook', 'desktop', 'wechat', 'dingtalk'] as const).map((ch) => (
+                <Chip
+                  key={ch}
+                  label={
+                    ch === 'in-app' ? '应用内' :
+                    ch === 'webhook' ? 'Webhook' :
+                    ch === 'desktop' ? '桌面' :
+                    ch === 'wechat' ? '企业微信' : '钉钉'
+                  }
+                  size="small"
+                  onClick={() => toggleChannel(ch)}
+                  sx={{
+                    fontSize: '0.75rem',
+                    backgroundColor: (formNotificationConfig.channels || []).includes(ch) ? gs.textPrimary : gs.bgHover,
+                    color: (formNotificationConfig.channels || []).includes(ch) ? gs.bgPanel : gs.textSecondary,
+                    '&:hover': { backgroundColor: (formNotificationConfig.channels || []).includes(ch) ? gs.textSecondary : gs.border },
+                  }}
+                />
+              ))}
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
+              <Chip
+                label="成功时通知"
+                size="small"
+                onClick={() => toggleNotifyOn('onSuccess')}
+                sx={{
+                  fontSize: '0.7rem',
+                  backgroundColor: formNotificationConfig.onSuccess ? '#ECFDF5' : gs.bgHover,
+                  color: formNotificationConfig.onSuccess ? '#059669' : gs.textSecondary,
+                  border: `1px solid ${formNotificationConfig.onSuccess ? '#A7F3D0' : gs.border}`,
+                }}
+              />
+              <Chip
+                label="失败时通知"
+                size="small"
+                onClick={() => toggleNotifyOn('onFailure')}
+                sx={{
+                  fontSize: '0.7rem',
+                  backgroundColor: formNotificationConfig.onFailure ? '#FEF2F2' : gs.bgHover,
+                  color: formNotificationConfig.onFailure ? '#DC2626' : gs.textSecondary,
+                  border: `1px solid ${formNotificationConfig.onFailure ? '#FECACA' : gs.border}`,
+                }}
+              />
+            </Box>
+            {/* Webhook URL */}
+            {(formNotificationConfig.channels || []).includes('webhook') && (
+              <TextField
+                label="Webhook URL"
+                size="small"
+                fullWidth
+                placeholder="https://..."
+                value={formNotificationConfig.webhookUrl || ''}
+                onChange={(e) => onFieldChange('formNotificationConfig', { ...formNotificationConfig, webhookUrl: e.target.value })}
+                sx={{
+                  mb: 1,
+                  '& .MuiOutlinedInput-root': { fontSize: '0.8125rem', borderRadius: '8px' },
+                  '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                }}
+              />
+            )}
+            {/* 企业微信 Key */}
+            {(formNotificationConfig.channels || []).includes('wechat') && (
+              <TextField
+                label="企业微信机器人 Key"
+                size="small"
+                fullWidth
+                placeholder="企业微信机器人 Webhook 的 key 参数"
+                value={formNotificationConfig.wechatKey || ''}
+                onChange={(e) => onFieldChange('formNotificationConfig', { ...formNotificationConfig, wechatKey: e.target.value })}
+                sx={{
+                  mb: 1,
+                  '& .MuiOutlinedInput-root': { fontSize: '0.8125rem', borderRadius: '8px' },
+                  '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                }}
+              />
+            )}
+            {/* 钉钉 Token + Secret */}
+            {(formNotificationConfig.channels || []).includes('dingtalk') && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <TextField
+                  label="钉钉机器人 Access Token"
+                  size="small"
+                  fullWidth
+                  placeholder="钉钉机器人 Webhook 的 access_token"
+                  value={formNotificationConfig.dingtalkToken || ''}
+                  onChange={(e) => onFieldChange('formNotificationConfig', { ...formNotificationConfig, dingtalkToken: e.target.value })}
+                  sx={{
+                    '& .MuiOutlinedInput-root': { fontSize: '0.8125rem', borderRadius: '8px' },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                  }}
+                />
+                <TextField
+                  label="钉钉机器人 Secret（可选）"
+                  size="small"
+                  fullWidth
+                  placeholder="加签密钥，未设置则不使用签名"
+                  value={formNotificationConfig.dingtalkSecret || ''}
+                  onChange={(e) => onFieldChange('formNotificationConfig', { ...formNotificationConfig, dingtalkSecret: e.target.value })}
+                  sx={{
+                    '& .MuiOutlinedInput-root': { fontSize: '0.8125rem', borderRadius: '8px' },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                  }}
+                />
+              </Box>
+            )}
           </Box>
 
           <Divider />

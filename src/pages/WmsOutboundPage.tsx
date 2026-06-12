@@ -45,8 +45,9 @@ import { subscribeRefresh } from '../App';
 import { useToast } from '../contexts/ToastContext';
 import { exportToCsv } from '../utils/exportCsv';
 import type { OutboundReview } from '../types/wms';
+import { API_BASE_URL } from '../constants/api';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = API_BASE_URL;
 
 /** 复核状态映射 */
 const STATUS_CONFIG: Record<string, { label: string; color: 'warning' | 'success' | 'error' }> = {

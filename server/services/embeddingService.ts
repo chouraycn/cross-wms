@@ -28,7 +28,7 @@ import {
   DEFAULT_MATCH_ENGINE_CONFIG,
 } from '@src/types/semantic';
 import { getUserSkills } from '../db.js';
-import { BUILTIN_SKILLS } from '@src/types/skill';
+import { BUILTIN_SKILLS } from '@src/types/skill-core';
 
 // ===================== 类型定义 =====================
 

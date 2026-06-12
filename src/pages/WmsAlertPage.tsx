@@ -29,8 +29,9 @@ import WmsPredictionDetail from '../components/wms/WmsPredictionDetail';
 import { subscribeRefresh } from '../App';
 import { useToast } from '../contexts/ToastContext';
 import type { WmsAlert, PredictionDashboardData } from '../types/wms';
+import { API_BASE_URL } from '../constants/api';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = API_BASE_URL;
 
 const WmsAlertPage: React.FC = () => {
   const { showToast } = useToast();

@@ -273,7 +273,7 @@ const ProjectsPage: React.FC = () => {
     const query = searchQuery.toLowerCase();
     return projects.filter((p) =>
       p.name.toLowerCase().includes(query) ||
-      p.description.toLowerCase().includes(query)
+      (p.description || '').toLowerCase().includes(query)
     );
   }, [projects, searchQuery]);
 

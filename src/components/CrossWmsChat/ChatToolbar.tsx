@@ -78,6 +78,8 @@ export interface ChatToolbarProps {
   onPresetChange: (presetId: string) => void;
   /** Open AI settings (model management) dialog */
   onOpenAISettings?: () => void;
+  /** Whether models are still loading from backend */
+  modelsLoading?: boolean;
 }
 
 // ===================== Constants =====================
@@ -110,6 +112,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   selectedPreset,
   onPresetChange,
   onOpenAISettings,
+  modelsLoading = false,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -212,7 +215,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           {/* Model selector — 默认无背景，点击后显示灰色背景 */}
           <Box
             ref={modelBtnRef as React.RefObject<HTMLDivElement>}
-            onClick={(e) => { e.stopPropagation(); handleDropdownClick('model'); }}
+            onClick={(e) => { e.stopPropagation(); if (!modelsLoading) handleDropdownClick('model'); }}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -221,16 +224,16 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               py: 0.5,
               borderRadius: '20px',
               bgcolor: activeDropdown === 'model' ? BTN_BG : 'transparent',
-              cursor: 'pointer',
+              cursor: modelsLoading ? 'default' : 'pointer',
               transition: 'background-color 0.15s',
-              '&:hover': { bgcolor: BTN_HOVER },
+              '&:hover': modelsLoading ? {} : { bgcolor: BTN_HOVER },
               userSelect: 'none',
             }}
           >
-            <Typography sx={{ fontSize: 13, fontWeight: 500, color: ITEM_TEXT, lineHeight: 1 }}>
-              {selectedModel === 'Auto' ? 'CDF Auto Model' : selectedModel}
+            <Typography sx={{ fontSize: 13, fontWeight: 500, color: modelsLoading ? gs.textMuted : ITEM_TEXT, lineHeight: 1 }}>
+              {modelsLoading ? '加载模型中...' : (selectedModel === 'Auto' ? 'CDF Auto Model' : selectedModel)}
             </Typography>
-            <KeyboardArrowUpIcon sx={{ fontSize: 18, color: gs.textMuted }} />
+            {!modelsLoading && <KeyboardArrowUpIcon sx={{ fontSize: 18, color: gs.textMuted }} />}
           </Box>
 
           {/* Voice button */}
@@ -433,6 +436,18 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           })}
 
         <Divider sx={{ mx: 1.5, my: 0.5, borderColor: MENU_BORDER }} />
+
+        {/* 无已启用模型提示 */}
+        {modelOptions.filter(o => o.provider !== 'auto').length === 0 && !modelsLoading && (
+          <Box sx={{ px: 2, py: 1, mx: 0.5, borderRadius: '10px', bgcolor: isDark ? '#2A1A0A' : '#FFF7ED' }}>
+            <Typography sx={{ fontSize: '0.75rem', color: ACCENT, fontWeight: 500 }}>
+              尚未启用任何模型
+            </Typography>
+            <Typography sx={{ fontSize: '0.6875rem', color: ITEM_DESC, mt: 0.25 }}>
+              请在模型管理中添加 API Key 并启用模型
+            </Typography>
+          </Box>
+        )}
 
         {/* 管理模型入口 */}
         <MenuItem

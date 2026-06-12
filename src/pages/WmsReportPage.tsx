@@ -12,8 +12,9 @@ import WmsReportGenerator from '../components/wms/WmsReportGenerator';
 import { subscribeRefresh } from '../App';
 import { useToast } from '../contexts/ToastContext';
 import type { WmsReport, ReportType, FileFormat } from '../types/wms';
+import { API_BASE_URL } from '../constants/api';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = API_BASE_URL;
 
 const WmsReportPage: React.FC = () => {
   const { showToast } = useToast();

@@ -14,8 +14,9 @@ vi.stubGlobal('fetch', mockFetch);
 
 // Import after mocking
 import * as api from '../services/api';
+import { API_BASE_URL } from '../constants/api';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = API_BASE_URL;
 
 /** Helper: create a successful fetch response */
 function mockSuccessResponse(data: unknown): Response {

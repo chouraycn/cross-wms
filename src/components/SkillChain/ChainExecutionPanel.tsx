@@ -18,8 +18,9 @@ import LoopIcon from '@mui/icons-material/Loop';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import type { ChainExecutionStep, StepStatus } from '../../types/skill';
 import { connectChainExecutionEvents } from '../../services/api';
+import { API_BASE_URL } from '../../constants/api';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = API_BASE_URL;
 
 interface ChainExecutionPanelProps {
   open: boolean;

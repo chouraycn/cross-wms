@@ -233,9 +233,11 @@ def read_version():
 
     if getattr(sys, 'frozen', False):
         meipass = sys._MEIPASS
-        # PyInstaller --add-data version.txt:version.txt 会创建 version.txt/ 目录
-        candidates.append(os.path.join(meipass, 'version.txt', 'version.txt'))
+        # PyInstaller --add-data version.txt:version_txt 会创建 version_txt/ 目录
+        candidates.append(os.path.join(meipass, 'version_txt', 'version.txt'))
+        # 兼容旧版本打包（直接放到根目录或 version.txt/ 目录）
         candidates.append(os.path.join(meipass, 'version.txt'))
+        candidates.append(os.path.join(meipass, 'version.txt', 'version.txt'))
 
     base = os.path.dirname(os.path.abspath(__file__))
     candidates.append(os.path.join(base, 'version.txt'))
@@ -271,12 +273,24 @@ def get_index_path():
             os.path.join(meipass, 'frontend_dist', 'index.html'),
             os.path.join(meipass, 'dist', 'index.html'),
         ])
+        # PyInstaller --onedir 模式: sys.executable 在 .app/Contents/MacOS/ 下
+        # Resources 目录在 .app/Contents/Resources/
         exe_dir = os.path.dirname(sys.executable)
         resource_dir = os.path.join(os.path.dirname(exe_dir), 'Resources')
         candidates.extend([
             os.path.join(resource_dir, 'frontend_dist', 'index.html'),
             os.path.join(resource_dir, 'dist', 'index.html'),
         ])
+        # 备用：如果上述路径都找不到，尝试遍历 .app 包内所有可能位置
+        app_bundle_dir = os.path.dirname(os.path.dirname(exe_dir))  # .app 根目录
+        for root, dirs, files in os.walk(app_bundle_dir):
+            if 'index.html' in files:
+                candidate = os.path.join(root, 'index.html')
+                if candidate not in candidates:
+                    candidates.append(candidate)
+            # 限制遍历深度，避免过慢
+            if root.count(os.sep) - app_bundle_dir.count(os.sep) >= 4:
+                del dirs[:]
 
     base = os.path.dirname(os.path.abspath(__file__))
     candidates.extend([
@@ -445,6 +459,29 @@ def check_dependencies():
     """启动前检查关键依赖是否存在，失败则抛 RuntimeError"""
     errors = []
 
+    # 打印运行环境诊断信息
+    log("[Check] ===== 运行环境诊断 =====")
+    log(f"[Check] sys.frozen = {getattr(sys, 'frozen', False)}")
+    log(f"[Check] sys.executable = {sys.executable}")
+    if getattr(sys, 'frozen', False):
+        log(f"[Check] sys._MEIPASS = {sys._MEIPASS}")
+        meipass = sys._MEIPASS
+        # 列出 MEIPASS 下的关键目录
+        for item in ['frontend_dist', 'server_dist', 'node', 'version.txt']:
+            path = os.path.join(meipass, item)
+            exists = os.path.exists(path)
+            log(f"[Check]   {item}/ exists = {exists} ({path})")
+        # 列出 Resources 目录
+        exe_dir = os.path.dirname(sys.executable)
+        resource_dir = os.path.join(os.path.dirname(exe_dir), 'Resources')
+        if os.path.isdir(resource_dir):
+            log(f"[Check]   Resources/ exists = True ({resource_dir})")
+            for item in ['shared_node_modules', 'frontend_dist']:
+                path = os.path.join(resource_dir, item)
+                exists = os.path.exists(path)
+                log(f"[Check]     {item}/ exists = {exists} ({path})")
+    log("[Check] =========================")
+
     # 1. 检查前端 dist/index.html
     try:
         idx = get_index_path()
@@ -452,15 +489,26 @@ def check_dependencies():
     except FileNotFoundError as e:
         errors.append(f"前端文件缺失: {e}")
 
-    # 2. 检查 PyWebView 是否可用
+    # 2. 检查 Node.js 后端
+    node_path = get_node_path()
+    if node_path:
+        log(f"[Check] ✅ Node.js: {node_path}")
+    else:
+        log("[Check] ⚠️ Node.js 未找到")
+
+    server_script = get_server_script_path()
+    if server_script:
+        log(f"[Check] ✅ Server script: {server_script}")
+    else:
+        log("[Check] ⚠️ Server script 未找到")
+
+    # 3. 检查 PyWebView 是否可用
     try:
         import webview
         pywebview_version = getattr(webview, '__version__', None) or getattr(webview, 'version', 'unknown')
         log(f"[Check] ✅ pywebview: {pywebview_version}")
     except Exception as e:
         errors.append(f"pywebview 不可用: {e}")
-
-    # 3. 端口检查已移除（不再需要 HTTP 服务器，直接 file:// 加载）
 
     if errors:
         for e in errors:
@@ -1073,8 +1121,8 @@ class Api:
             release.json 的原文（JSON 字符串），或 {"error": "..."} 错误对象
         """
         RELEASE_URLS = [
-            'https://raw.githubusercontent.com/chouraycn/cdf-know-clow/main/release/release.json',
-            'https://github.com/chouraycn/cdf-know-clow/releases/latest/download/release.json',
+            'https://raw.githubusercontent.com/chouraycn/cross-wms/main/release/release.json',
+            'https://github.com/chouraycn/cross-wms/releases/latest/download/release.json',
         ]
         last_error = None
         # 遍历所有 URL，每个 URL 重试 2 次，每次超时 5 秒
@@ -1220,6 +1268,25 @@ def start_http_server(dist_dir: str, port: int = 9988):
         (httpd, port): HTTP 服务器对象和端口号
     """
 
+    # WKWebView 对 MIME 类型极其严格，必须在每个响应中显式设置 Content-Type
+    # Python 的 mimetypes 在某些环境下可能返回 None，导致 WKWebView 拒绝加载 JS/CSS
+    _MIME_OVERRIDES = {
+        '.js':   'application/javascript; charset=utf-8',
+        '.mjs':  'application/javascript; charset=utf-8',
+        '.css':  'text/css; charset=utf-8',
+        '.html': 'text/html; charset=utf-8',
+        '.svg':  'image/svg+xml',
+        '.png':  'image/png',
+        '.jpg':  'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif':  'image/gif',
+        '.ico':  'image/x-icon',
+        '.woff': 'font/woff',
+        '.woff2':'font/woff2',
+        '.ttf':  'font/ttf',
+        '.json': 'application/json; charset=utf-8',
+    }
+
     class QuietHandler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             # 关键：必须将 directory 传给父类，否则 SimpleHTTPRequestHandler
@@ -1230,15 +1297,80 @@ def start_http_server(dist_dir: str, port: int = 9988):
             # 静默日志，避免控制台刷屏
             pass
 
+        def end_headers(self):
+            # 显式设置 MIME 类型，确保 WKWebView 正确识别 JS/CSS 等关键资源
+            _, ext = os.path.splitext(self.path)
+            if ext in _MIME_OVERRIDES:
+                self.send_header('Content-Type', _MIME_OVERRIDES[ext])
+            super().end_headers()
+
+        def _proxy_to_backend(self):
+            """将 /api/* 请求反向代理到 Node.js 后端 (localhost:3001)"""
+            backend_url = f"http://localhost:{SERVER_PORT}{self.path}"
+            try:
+                # 读取请求体（POST/PUT/DELETE 可能有 body）
+                content_length = int(self.headers.get('Content-Length', 0))
+                body = self.rfile.read(content_length) if content_length > 0 else None
+
+                req = urllib.request.Request(backend_url, data=body, method=self.command)
+                # 转发关键请求头
+                for header in ('Content-Type', 'Authorization', 'Accept'):
+                    val = self.headers.get(header)
+                    if val:
+                        req.add_header(header, val)
+
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    self.send_response(resp.status)
+                    # 转发响应头
+                    for key, val in resp.getheaders():
+                        if key.lower() not in ('transfer-encoding', 'connection'):
+                            self.send_header(key, val)
+                    self.end_headers()
+                    # 流式转发响应体
+                    shutil.copyfileobj(resp, self.wfile)
+            except urllib.error.HTTPError as e:
+                self.send_response(e.code)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                error_body = e.read() if e.fp else b'{"error":"Backend error"}'
+                self.wfile.write(error_body)
+            except Exception as e:
+                self.send_response(502)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': f'Proxy error: {str(e)}'}).encode('utf-8'))
+
         def do_GET(self):
-            """P0-3: 添加 /api/health 端点，供前端健康检查"""
+            """GET: /api/* 反向代理，其余静态文件"""
             if self.path == '/api/health':
+                # 健康检查直接返回，不走代理（避免依赖后端启动）
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps({'status': 'ok'}).encode('utf-8'))
                 return
+            if self.path.startswith('/api/'):
+                self._proxy_to_backend()
+                return
             super().do_GET()
+
+        def do_POST(self):
+            if self.path.startswith('/api/'):
+                self._proxy_to_backend()
+                return
+            self.send_error(404)
+
+        def do_PUT(self):
+            if self.path.startswith('/api/'):
+                self._proxy_to_backend()
+                return
+            self.send_error(404)
+
+        def do_DELETE(self):
+            if self.path.startswith('/api/'):
+                self._proxy_to_backend()
+                return
+            self.send_error(404)
 
     # 允许端口复用，便于快速重启
     socketserver.TCPServer.allow_reuse_address = True
@@ -1359,7 +1491,7 @@ def main():
         log("[Main] pywebview 窗口已创建，启动事件循环...")
 
         # 4. 启动事件循环（阻塞直到窗口关闭）
-        webview.start(debug=False, private_mode=False)
+        webview.start(debug=True, private_mode=False)  # debug=True 启用 Safari Web Inspector
 
         log("[Main] CDF Know Clow 窗口已关闭，退出")
     except FileNotFoundError as e:

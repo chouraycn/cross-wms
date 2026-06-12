@@ -1,18 +1,85 @@
 /**
  * API Key 安全存储模块
  *
- * 使用 macOS Keychain（security 命令）存储敏感 API Key
- * models.json 中只保留 keyRef 引用，不存储明文 Key
+ * 存储策略（按优先级）：
+ * 1. macOS Keychain（security 命令）— 最安全
+ * 2. AES-256-GCM 加密 — Keychain 不可用时的回退方案
  *
- * 存储格式：
+ * Keychain 模式：
+ *   models.json 中只保留 keyRef 引用，不存储明文 Key
  *   单 Key: service="cdf-know-clow", account="apikey:<modelId>"
  *   多 Key: service="cdf-know-clow", account="apikey:<modelId>:<index>"
  *   models.json: { apiKeyRef: "keychain:<modelId>" } 或 { apiKeyRefs: ["keychain:<modelId>:0", ...] }
+ *
+ * 加密模式（非 macOS 或 Keychain 失败时）：
+ *   models.json: { apiKeyRef: "encrypted:<base64>" } 或 { apiKeyRefs: ["encrypted:<base64>", ...] }
+ *   加密密钥存储在 ~/.cdf-know-clow/.encryption_key（首次自动生成）
  */
 
 import { execSync } from 'child_process';
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 const KEYCHAIN_SERVICE = 'cdf-know-clow';
+const ENCRYPTED_PREFIX = 'encrypted:';
+const KEYCHAIN_PREFIX = 'keychain:';
+
+// ===================== AES 加密回退 =====================
+
+const ENCRYPTION_KEY_FILE = path.join(os.homedir(), '.cdf-know-clow', '.encryption_key');
+const KEY_LENGTH = 32;
+
+/** 获取或生成 AES 加密密钥 */
+function getEncryptionKey(): string {
+  try {
+    if (fs.existsSync(ENCRYPTION_KEY_FILE)) {
+      const key = fs.readFileSync(ENCRYPTION_KEY_FILE, 'utf-8').trim();
+      if (Buffer.from(key, 'base64').length === KEY_LENGTH) {
+        return key;
+      }
+    }
+  } catch { /* ignore */ }
+
+  // 生成新密钥
+  const newKey = crypto.randomBytes(KEY_LENGTH).toString('base64');
+  try {
+    const dir = path.dirname(ENCRYPTION_KEY_FILE);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(ENCRYPTION_KEY_FILE, newKey, 'utf-8');
+    // 设置文件权限为仅 owner 可读写
+    fs.chmodSync(ENCRYPTION_KEY_FILE, 0o600);
+  } catch (e) {
+    console.error('[keychainStore] 无法写入加密密钥文件:', e);
+  }
+  return newKey;
+}
+
+/** AES-256-GCM 加密 */
+function aesEncrypt(plaintext: string): string {
+  const key = Buffer.from(getEncryptionKey(), 'base64');
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.from(JSON.stringify({ iv: iv.toString('base64'), tag: tag.toString('base64'), ct: encrypted.toString('base64') })).toString('base64');
+}
+
+/** AES-256-GCM 解密 */
+function aesDecrypt(encryptedBase64: string): string | null {
+  try {
+    const key = Buffer.from(getEncryptionKey(), 'base64');
+    const { iv, tag, ct } = JSON.parse(Buffer.from(encryptedBase64, 'base64').toString('utf8'));
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'base64'));
+    decipher.setAuthTag(Buffer.from(tag, 'base64'));
+    const decrypted = Buffer.concat([decipher.update(Buffer.from(ct, 'base64')), decipher.final()]);
+    return decrypted.toString('utf8');
+  } catch (e) {
+    console.error('[keychainStore] AES 解密失败:', e);
+    return null;
+  }
+}
 
 /** 检查 security 命令是否可用 */
 function isKeychainAvailable(): boolean {
@@ -62,9 +129,9 @@ export function saveApiKey(modelId: string, apiKey: string): boolean {
       );
     } catch { /* 可能不存在，忽略 */ }
 
-    // 添加新的
+    // 添加新的（加 -T 允许 security CLI 读取，避免 DMG 覆盖后签名变化导致无法访问）
     execSync(
-      `security add-generic-password -s ${shellEscape(KEYCHAIN_SERVICE)} -a ${shellEscape(accountName(modelId))} -w ${shellEscape(apiKey)} -U`,
+      `security add-generic-password -s ${shellEscape(KEYCHAIN_SERVICE)} -a ${shellEscape(accountName(modelId))} -w ${shellEscape(apiKey)} -T /usr/bin/security -U`,
       { stdio: 'ignore' }
     );
     return true;
@@ -90,14 +157,14 @@ export function saveApiKeys(modelId: string, apiKeys: string[]): number[] {
     for (let i = 0; i < apiKeys.length; i++) {
       const key = apiKeys[i].trim();
       if (!key) continue;
-      try {
-        execSync(
-          `security add-generic-password -s ${shellEscape(KEYCHAIN_SERVICE)} -a ${shellEscape(accountNameIndexed(modelId, OFFSET + i))} -w ${shellEscape(key)}`,
-          { stdio: 'ignore' }
-        );
-        saved.push(i);
-      } catch (e) {
-        console.error(`[keychainStore] 保存 API Key [${i}] 失败:`, e);
+        try {
+          execSync(
+            `security add-generic-password -s ${shellEscape(KEYCHAIN_SERVICE)} -a ${shellEscape(accountNameIndexed(modelId, OFFSET + i))} -w ${shellEscape(key)} -T /usr/bin/security`,
+            { stdio: 'ignore' }
+          );
+          saved.push(i);
+        } catch (e) {
+          console.error(`[keychainStore] 保存 API Key [${i}] 失败:`, e);
         // 清理已保存的临时 Key
         for (const idx of saved) {
           try {
@@ -124,7 +191,7 @@ export function saveApiKeys(modelId: string, apiKeys: string[]): number[] {
         ).trim();
         // 保存到正式索引
         execSync(
-          `security add-generic-password -s ${shellEscape(KEYCHAIN_SERVICE)} -a ${shellEscape(accountNameIndexed(modelId, idx))} -w ${shellEscape(keyVal)}`,
+          `security add-generic-password -s ${shellEscape(KEYCHAIN_SERVICE)} -a ${shellEscape(accountNameIndexed(modelId, idx))} -w ${shellEscape(keyVal)} -T /usr/bin/security`,
           { stdio: 'ignore' }
         );
         // 删除临时索引
@@ -154,7 +221,8 @@ export function loadApiKey(modelId: string): string | null {
       { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
     );
     return result.trim();
-  } catch {
+  } catch (e) {
+    console.warn(`[keychainStore] 读取 API Key 失败 (modelId=${modelId}):`, (e as Error).message || e);
     return null;
   }
 }
@@ -171,7 +239,8 @@ export function loadApiKeyByIndex(modelId: string, index: number): string | null
       { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
     );
     return result.trim();
-  } catch {
+  } catch (e) {
+    console.warn(`[keychainStore] 读取 API Key 失败 (modelId=${modelId}, idx=${index}):`, (e as Error).message || e);
     return null;
   }
 }
@@ -270,8 +339,10 @@ export function hasKeychainKeyByIndex(modelId: string, index: number): boolean {
 
 /**
  * 为模型配置注入真实的 API Key
- * 如果 model.apiKeyRef 存在，从 Keychain 读取并注入到 apiKey 字段
- * 如果 model.apiKeyRefs 存在，读取所有 Key 注入到 apiKeys 字段
+ * 支持三种来源：
+ * 1. Keychain（apiKeyRef 以 "keychain:" 开头）
+ * 2. AES 加密（apiKeyRef 以 "encrypted:" 开头）
+ * 3. 明文（apiKeyRef 不存在，apiKey 直接存在 — 兼容旧数据）
  */
 export function injectApiKeys<T extends { id: string; apiKey?: string; apiKeyRef?: string; apiKeys?: { key: string; label?: string; enabled?: boolean }[]; apiKeyRefs?: string[] }>(
   models: T[]
@@ -280,8 +351,15 @@ export function injectApiKeys<T extends { id: string; apiKey?: string; apiKeyRef
     const updates: Partial<T> = {};
 
     // 单 Key 注入（兼容旧数据）
-    if (m.apiKeyRef?.startsWith('keychain:')) {
+    if (m.apiKeyRef?.startsWith(KEYCHAIN_PREFIX)) {
       const key = loadApiKey(m.id);
+      if (key) {
+        updates.apiKey = key as any;
+      }
+    } else if (m.apiKeyRef?.startsWith(ENCRYPTED_PREFIX)) {
+      // AES 加密的 Key
+      const encryptedData = m.apiKeyRef.slice(ENCRYPTED_PREFIX.length);
+      const key = aesDecrypt(encryptedData);
       if (key) {
         updates.apiKey = key as any;
       }
@@ -292,8 +370,15 @@ export function injectApiKeys<T extends { id: string; apiKey?: string; apiKeyRef
       const injectedKeys: { key: string; label?: string; enabled?: boolean }[] = [];
       for (let i = 0; i < m.apiKeyRefs.length; i++) {
         const ref = m.apiKeyRefs[i];
-        if (ref.startsWith('keychain:')) {
+        if (ref.startsWith(KEYCHAIN_PREFIX)) {
           const key = loadApiKeyByIndex(m.id, i);
+          if (key) {
+            injectedKeys.push({ key, label: `Key ${i + 1}`, enabled: true });
+          }
+        } else if (ref.startsWith(ENCRYPTED_PREFIX)) {
+          // AES 加密的 Key
+          const encryptedData = ref.slice(ENCRYPTED_PREFIX.length);
+          const key = aesDecrypt(encryptedData);
           if (key) {
             injectedKeys.push({ key, label: `Key ${i + 1}`, enabled: true });
           }
@@ -314,6 +399,7 @@ export function injectApiKeys<T extends { id: string; apiKey?: string; apiKeyRef
 /**
  * 提取并保存 API Key 到 Keychain，返回带 apiKeyRef 的模型配置
  * 支持单 Key 和多 Key
+ * Keychain 不可用时回退到 AES-256-GCM 加密
  */
 export function extractAndSaveApiKey<T extends { id: string; apiKey?: string; apiKeyRef?: string; apiKeys?: { key: string; label?: string; enabled?: boolean }[]; apiKeyRefs?: string[]; keyStrategy?: string }>(
   model: T
@@ -327,10 +413,15 @@ export function extractAndSaveApiKey<T extends { id: string; apiKey?: string; ap
     if (keysToSave.length > 0) {
       const savedIndices = saveApiKeys(model.id, keysToSave);
       if (savedIndices.length > 0) {
+        // Keychain 成功
         const apiKeyRefs = savedIndices.map(i => `keychain:${model.id}:${i}`);
         const { apiKey, apiKeys, apiKeyRef, ...rest } = model as any;
         return { ...rest, apiKeyRefs } as T;
       }
+      // Keychain 失败，回退到 AES 加密
+      const apiKeyRefs = keysToSave.map(k => `${ENCRYPTED_PREFIX}${aesEncrypt(k)}`);
+      const { apiKey, apiKeys, apiKeyRef, ...rest } = model as any;
+      return { ...rest, apiKeyRefs } as T;
     }
   }
 
@@ -338,9 +429,13 @@ export function extractAndSaveApiKey<T extends { id: string; apiKey?: string; ap
   if (model.apiKey && model.apiKey.trim()) {
     const saved = saveApiKey(model.id, model.apiKey.trim());
     if (saved) {
+      // Keychain 成功
       const { apiKey, apiKeys, apiKeyRefs, ...rest } = model as any;
       return { ...rest, apiKeyRef: `keychain:${model.id}` } as T;
     }
+    // Keychain 失败，回退到 AES 加密
+    const { apiKey, apiKeys, apiKeyRefs, ...rest } = model as any;
+    return { ...rest, apiKeyRef: `${ENCRYPTED_PREFIX}${aesEncrypt(model.apiKey.trim())}` } as T;
   }
 
   return model;

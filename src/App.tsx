@@ -12,7 +12,8 @@ import { getGrayScale } from './constants/theme';
 import { UpdateProvider } from './contexts/UpdateContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import UpdateNotification from './components/UpdateNotification';
-import { CrossWmsChat } from './components/CrossWmsChat';
+import { ChatContainer } from './components/CrossWmsChat/ChatContainer';
+import { ChatProvider } from './contexts/ChatContext';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
 import { automationEngine } from './services/automation';
@@ -26,7 +27,7 @@ const SkillsPage = React.lazy(() => import('./pages/SkillsPage'));
 const SkillDetailPage = React.lazy(() => import('./pages/SkillDetailPage'));
 const SkillAuditPage = React.lazy(() => import('./pages/SkillAuditPage'));
 
-const ChatPage = React.lazy(() => import('./pages/ChatPage'));
+
 const WarehousesPage = React.lazy(() => import('./pages/WarehousesPage'));
 const PartnersPage = React.lazy(() => import('./pages/PartnersPage'));
 const InTransitPage = React.lazy(() => import('./pages/InTransitPage'));
@@ -440,8 +441,10 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('cdf-know-clow-sidebar-collapsed') === 'true';
-    } catch { return false; }
+      const saved = localStorage.getItem('cdf-know-clow-sidebar-collapsed');
+      // 第一次使用（无保存值）默认收起，之后尊重用户选择
+      return saved === null ? true : saved === 'true';
+    } catch { return true; }
   });
   // pywebview 检测 — frameless 模式下需要 --pw-top 避让红黄绿按钮
   // 红黄绿按钮下移5px + 右移5px + 额外5px内容间距，总避让高度 = 28(默认) + 5 + 5 = 38px
@@ -569,10 +572,9 @@ const MainLayout: React.FC = () => {
           {/* 可滚动的内容区域 — min-height:100% 让内容少时撑满可视区域，内容多时自然扩展 */}
           <Box
             ref={scrollRef}
-            className={isPy ? undefined : "auto-hide-scrollbar"}
             sx={{
               minHeight: '100%',
-              overflow: 'auto',
+              overflowY: 'scroll',
               display: 'flex',
               flexDirection: 'column',
               // pywebview 环境：始终显示宽滚动条，提升拖动体验
@@ -585,19 +587,12 @@ const MainLayout: React.FC = () => {
                   '&:hover': { background: 'rgba(0,0,0,0.45)' },
                 },
               } : {
-                // 浏览器环境：默认隐藏滚动条，滚动时显示
+                // 浏览器环境：始终显示滚动条
                 '&::-webkit-scrollbar': { width: '6px' },
                 '&::-webkit-scrollbar-track': { background: 'transparent' },
                 '&::-webkit-scrollbar-thumb': {
-                  background: 'transparent',
-                  borderRadius: '3px',
-                  transition: 'background-color 0.3s ease',
-                },
-                '&:hover::-webkit-scrollbar-thumb': {
-                  background: 'rgba(0,0,0,0.15)',
-                },
-                '&.scrollbar-visible::-webkit-scrollbar-thumb': {
                   background: 'rgba(0,0,0,0.2)',
+                  borderRadius: '3px',
                   '&:hover': { background: 'rgba(0,0,0,0.35)' },
                 },
               }),
@@ -627,7 +622,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/skills/:skillId" element={<SkillDetailPage />} />
                     <Route path="/skills/:skillId/audit" element={<SkillAuditPage />} />
 
-                    <Route path="/chat" element={<ChatPage />} />
+                    <Route path="/chat" element={<ChatContainer variant="page" />} />
                     <Route path="/warehouses" element={<WarehousesPage />} />
                     <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
                     <Route path="/partners" element={<PartnersPage />} />
@@ -665,7 +660,7 @@ const MainLayout: React.FC = () => {
             filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.12))',
           }}
         >
-          <CrossWmsChat />
+          <ChatContainer variant="embedded" />
         </Box>
       )}
 
@@ -700,17 +695,21 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <AppSettingsProvider>
-      <ModelsProvider>
-        <ThemedApp>
-          <HashRouter>
-            <UpdateProvider>
-              <MainLayout />
-            </UpdateProvider>
-          </HashRouter>
-        </ThemedApp>
-      </ModelsProvider>
-    </AppSettingsProvider>
+    <ErrorBoundary>
+      <AppSettingsProvider>
+        <ModelsProvider>
+          <ChatProvider defaultModel="auto">
+            <ThemedApp>
+              <HashRouter>
+                <UpdateProvider>
+                  <MainLayout />
+                </UpdateProvider>
+              </HashRouter>
+            </ThemedApp>
+          </ChatProvider>
+        </ModelsProvider>
+      </AppSettingsProvider>
+    </ErrorBoundary>
   );
 };
 

@@ -8,7 +8,7 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InfoIcon from '@mui/icons-material/Info';
 import TuneIcon from '@mui/icons-material/Tune';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import { useNavigate } from 'react-router-dom';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
@@ -31,7 +31,7 @@ const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   { key: 'tencentDocs', label: '腾讯文档', icon: <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />, description: 'API 授权与文档链接管理' },
   { key: 'dashboardCalc', label: '仪表盘参数', icon: <DashboardIcon sx={{ fontSize: 20 }} />, description: '计算阈值和参数调整' },
   { key: 'dashboardIndicators', label: '指标控制', icon: <TuneIcon sx={{ fontSize: 20 }} />, description: '各模块显示与隐藏' },
-  { key: 'modelManagement', label: '模型管理', icon: <SmartToyIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型' },
+  { key: 'modelManagement', label: '模型管理', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型' },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本' },
 ];
 
@@ -214,8 +214,9 @@ const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchor
   const gs = getGrayScale(isDark);
   return (
     <Popover open={open} onClose={onClose} anchorEl={anchorEl} anchorOrigin={{ vertical: 'top', horizontal: 'left' }} transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      TransitionComponent={Grow} TransitionProps={{ timeout: 200 }} disableScrollLock
-      slotProps={{ paper: { sx: { width: SIDEBAR_WIDTH_EXPANDED, maxHeight: '70vh', borderRadius: '12px', marginLeft: '-5px', boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)' : '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)', border: `1px solid ${gs.border}`, overflow: 'hidden', backgroundColor: gs.bgPanel } } }}
+      TransitionComponent={Grow} TransitionProps={{ timeout: 200 }} disableScrollLock disableEnforceFocus
+      slotProps={{ paper: { sx: { width: SIDEBAR_WIDTH_EXPANDED, maxHeight: '70vh', borderRadius: '12px', marginLeft: '-5px', boxShadow: 'none', border: `1px solid ${gs.border}`, overflow: 'hidden' } } }}
+      hideBackdrop
     >
       <SettingsPanel onClose={onClose} onOpenModelManagement={onOpenModelManagement} />
     </Popover>

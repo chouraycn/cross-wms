@@ -4,34 +4,7 @@ import { Session } from '../../types/chat';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import SearchInput from '../Common/SearchInput';
 import { getGrayScale } from '../../constants/theme';
-
-/** 与 ChatPage 共享的 localStorage key */
-const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
-
-/** 从 localStorage 加载会话列表（与 ChatPage/NavList 使用同一数据源） */
-function loadSessionsFromStorage(): Session[] {
-  try {
-    const raw = localStorage.getItem(SESSIONS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed.map((s: Record<string, unknown>) => ({
-          ...s,
-          messages: Array.isArray(s.messages)
-            ? s.messages.map((m: Record<string, unknown>) => ({
-                ...m,
-                timestamp: new Date(m.timestamp as string),
-              }))
-            : [],
-          // 确保 title/updatedAt 存在
-          title: typeof s.title === 'string' ? s.title : '',
-          updatedAt: typeof s.updatedAt === 'string' ? s.updatedAt : typeof s.createdAt === 'string' ? s.createdAt : undefined,
-        })) as Session[];
-      }
-    }
-  } catch { /* 数据损坏时静默返回空数组 */ }
-  return [];
-}
+import { useChatContext } from '../../contexts/ChatContext';
 
 interface SessionReferenceSelectorProps {
   anchorEl: HTMLElement | null;
@@ -66,25 +39,9 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
   const listRef = useRef<HTMLDivElement>(null);
   const [hoveredIndex, setHoveredIndex] = useState(-1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [allSessions, setAllSessions] = useState<Session[]>([]);
 
-  // 从 localStorage 加载（与 NavList 侧边栏使用同一数据源）
-  const reloadSessions = React.useCallback(() => {
-    setAllSessions(loadSessionsFromStorage());
-  }, []);
-
-  useEffect(() => {
-    reloadSessions();
-    // 监听数据变化事件（与 NavList 同步刷新）
-    const onStorage = () => reloadSessions();
-    const onChatUpdate = () => reloadSessions();
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('cdf-know-clow-chat-updated', onChatUpdate);
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('cdf-know-clow-chat-updated', onChatUpdate);
-    };
-  }, [reloadSessions]);
+  // 从 ChatContext 获取会话列表
+  const { sessions: allSessions } = useChatContext();
 
   // 过滤 + 搜索（与 NavList 侧边栏保持一致：只显示有消息的会话）
   const sessions = React.useMemo(() => {

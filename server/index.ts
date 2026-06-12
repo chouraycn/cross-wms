@@ -8,6 +8,9 @@ import fs from 'fs';
 import os from 'os';
 import skillWatcher from './services/skillWatcher.js';
 import { callAIModelStream, callAIModel, AIAPIError } from './aiClient.js';
+import type { MessageContent } from './aiClient.js';
+import { initDefaultTools, listTools } from './engine/toolRegistry.js';
+import { executeToolLoop } from './engine/toolExecutor.js';
 
 // Business data routes
 import warehousesRouter from './routes/warehouses.js';
@@ -262,7 +265,8 @@ ${historySummary}
       return { updated: false, count: 0 };
     }
 
-    const effectiveApiKey = selectKey(targetModel);
+    const keyResult = selectKey(targetModel);
+    const effectiveApiKey = keyResult ? keyResult.key : undefined;
 
     if (!effectiveApiKey && !isLocalModel(targetModel)) {
       console.log('[AutoMemory] 无可用 API Key，跳过记忆提取');
@@ -280,7 +284,7 @@ ${historySummary}
         id: targetModel.id,
         provider: targetModel.provider || '',
         apiEndpoint: targetModel.apiEndpoint,
-        apiKey: effectiveApiKey || undefined,
+        apiKey: effectiveApiKey,
         maxTokens: 512,
         temperature: 0.3,
       },
@@ -337,8 +341,200 @@ ${historySummary}
 }
 
 const app = express();
-app.use(cors());
+// CORS 收紧：仅允许本地访问（开发服务器 + PyWebView 桌面壳）
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3001',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:9988',
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
 app.use(express.json({ limit: '3mb' }));
+
+// ===================== File Upload (multipart/form-data) =====================
+
+const UPLOADS_DIR = path.join(CDF_KNOW_CLOW_DIR, 'uploads');
+
+/** 确保上传目录存在 */
+function ensureUploadsDir(): void {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+}
+
+/** 允许的文件扩展名 */
+const ALLOWED_EXTENSIONS = new Set([
+  'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'ico', 'tiff', 'avif',
+  'pdf', 'csv', 'txt', 'json', 'md', 'xlsx', 'docx',
+]);
+
+/** 最大文件大小：10MB */
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
+
+/**
+ * 轻量级 multipart/form-data 解析器（无外部依赖）
+ * 仅解析单文件上传（field name: 'file'）
+ */
+function parseMultipartFormData(
+  req: express.Request,
+): Promise<{ fileName: string; mimeType: string; data: Buffer } | null> {
+  return new Promise((resolve, reject) => {
+    const contentType = req.headers['content-type'] || '';
+    if (!contentType.includes('multipart/form-data')) {
+      return resolve(null);
+    }
+
+    // 从 Content-Type 提取 boundary
+    const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^\s;]+))/);
+    if (!boundaryMatch) {
+      return reject(new Error('Missing boundary in Content-Type'));
+    }
+    const boundary = boundaryMatch[1] || boundaryMatch[2];
+    const delimiter = Buffer.from(`--${boundary}`);
+    const endDelimiter = Buffer.from(`--${boundary}--`);
+
+    const chunks: Buffer[] = [];
+    let totalSize = 0;
+    let foundFile = false;
+    let fileData: Buffer[] = [];
+    let fileTotalSize = 0;
+    let parsedFileName = 'upload';
+    let parsedMimeType = 'application/octet-stream';
+
+    req.on('data', (chunk: Buffer) => {
+      totalSize += chunk.length;
+      if (totalSize > MAX_UPLOAD_SIZE * 1.5) {
+        req.destroy(new Error('Request body too large'));
+        return;
+      }
+      chunks.push(chunk);
+    });
+
+    req.on('end', () => {
+      try {
+        const body = Buffer.concat(chunks);
+
+        // 查找文件部分
+        let pos = 0;
+        while (pos < body.length) {
+          // 查找 delimiter
+          const delimIdx = body.indexOf(delimiter, pos);
+          if (delimIdx === -1) break;
+
+          // 跳过 delimiter + \r\n
+          let headerEnd = body.indexOf('\r\n\r\n', delimIdx + delimiter.length);
+          if (headerEnd === -1) break;
+
+          const headerSection = body.subarray(delimIdx + delimiter.length, headerEnd).toString();
+          headerEnd += 4; // 跳过 \r\n\r\n
+
+          // 查找下一个 delimiter（即当前 part 的结束位置）
+          const nextDelim = body.indexOf(delimiter, headerEnd);
+          if (nextDelim === -1) break;
+
+          // part 数据（去掉末尾的 \r\n）
+          let partEnd = nextDelim;
+          if (body[partEnd - 1] === 0x0a && body[partEnd - 2] === 0x0d) {
+            partEnd -= 2;
+          }
+
+          // 解析 Content-Disposition
+          if (headerSection.includes('name="file"') || headerSection.includes('name="file"')) {
+            // 提取 filename
+            const fnMatch = headerSection.match(/filename="([^"]*)"/);
+            if (fnMatch) parsedFileName = fnMatch[1];
+
+            // 提取 Content-Type
+            const ctMatch = headerSection.match(/Content-Type:\s*([^\r\n]+)/i);
+            if (ctMatch) parsedMimeType = ctMatch[1].trim();
+
+            fileData.push(body.subarray(headerEnd, partEnd));
+            fileTotalSize += partEnd - headerEnd;
+            foundFile = true;
+          }
+
+          pos = nextDelim + delimiter.length;
+          // 检查是否是结束标记
+          if (body.subarray(pos, pos + 2).equals(Buffer.from('--'))) break;
+        }
+
+        if (foundFile && fileTotalSize <= MAX_UPLOAD_SIZE) {
+          resolve({
+            fileName: parsedFileName,
+            mimeType: parsedMimeType,
+            data: Buffer.concat(fileData),
+          });
+        } else if (foundFile && fileTotalSize > MAX_UPLOAD_SIZE) {
+          reject(new Error('File too large (max 10MB)'));
+        } else {
+          resolve(null);
+        }
+      } catch (e) {
+        reject(e);
+      }
+    });
+
+    req.on('error', reject);
+  });
+}
+
+// 静态文件服务：提供已上传文件的访问
+ensureUploadsDir();
+app.use('/api/uploads', express.static(UPLOADS_DIR));
+
+// POST /api/upload — 文件上传接口
+app.post('/api/upload', async (req, res) => {
+  try {
+    const parsed = await parseMultipartFormData(req);
+    if (!parsed) {
+      return res.status(400).json({ error: '未找到文件或请求格式错误' });
+    }
+
+    const { fileName, mimeType, data } = parsed;
+
+    // 验证文件类型
+    const ext = path.extname(fileName).toLowerCase().replace('.', '');
+    const isImage = mimeType.startsWith('image/');
+    if (!isImage && !ALLOWED_EXTENSIONS.has(ext)) {
+      return res.status(400).json({ error: `不支持的文件类型: ${ext}` });
+    }
+
+    // 验证文件大小
+    if (data.length > MAX_UPLOAD_SIZE) {
+      return res.status(400).json({ error: '文件大小超过 10MB 限制' });
+    }
+
+    // 生成唯一文件名
+    const fileId = uuidv4();
+    const safeExt = ext || (isImage ? 'png' : 'bin');
+    const savedFileName = `${fileId}.${safeExt}`;
+    const filePath = path.join(UPLOADS_DIR, savedFileName);
+
+    // 保存文件
+    fs.writeFileSync(filePath, data);
+
+    const result = {
+      fileId,
+      fileName,
+      filePath,
+      mimeType,
+      size: data.length,
+      url: `/api/uploads/${savedFileName}`,
+    };
+
+    console.log(`[Upload] 文件已保存: ${fileName} (${(data.length / 1024).toFixed(1)}KB) -> ${savedFileName}`);
+    res.json({ data: result });
+  } catch (error) {
+    console.error('[Upload] 上传失败:', error);
+    const msg = error instanceof Error ? error.message : '上传失败';
+    res.status(500).json({ error: msg });
+  }
+});
 
 // 初始化 Skill Watcher
 skillWatcher.init();
@@ -455,10 +651,24 @@ app.delete('/api/sessions/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// 更新会话标题
+app.patch('/api/sessions/:id', (req, res) => {
+  const { title } = req.body;
+  if (!title) {
+    return res.status(400).json({ error: 'title is required' });
+  }
+  const db = initDb();
+  db.prepare('UPDATE sessions SET title = ?, updatedAt = ? WHERE id = ?').run(title, new Date().toISOString(), req.params.id);
+  res.json({ ok: true });
+});
+
 // 发送消息（SSE）
 app.post('/api/chat', async (req, res) => {
-  const { sessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory } = req.body;
+  const { sessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory, attachments } = req.body;
   console.log(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, message="${message?.slice(0, 30)}"`);
+  if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+    console.log(`[Chat API] 附件数量: ${attachments.length}`);
+  }
 
   try {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -506,9 +716,12 @@ app.post('/api/chat', async (req, res) => {
       preset: activePreset ? { id: preset, label: activePreset.label } : null,
     })}\n\n`);
 
-    // 调用 AI 模型 API 进行流式对话
-    let fullContent = '';
-    let selectedKeyIndex = -1;
+      // 调用 AI 模型 API 进行流式对话
+      let fullContent = '';
+      let selectedKeyIndex = -1;
+      // Thinking 跟踪
+      let thinkingStartTime: number | null = null;
+      let hasThinking = false;
     try {
       // 查找模型配置
       const modelConfig = modelsConfig.models.find((m) => m.id === effectiveModel);
@@ -526,7 +739,7 @@ app.post('/api/chat', async (req, res) => {
       }
 
       // 构建消息列表（含上下文）
-      const apiMessages: Array<{ role: string; content: string }> = [];
+      const apiMessages: Array<{ role: string; content: MessageContent }> = [];
 
       // 注入 MEMORY.md 上下文
       const memoryContent = readMemoryMd();
@@ -569,8 +782,71 @@ app.post('/api/chat', async (req, res) => {
         }
       }
 
-      // 添加当前用户消息
-      apiMessages.push({ role: 'user', content: message });
+      // 添加当前用户消息（含附件处理）
+      if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+        // 构建 OpenAI Vision 格式的 content 数组
+        const contentParts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'auto' | 'low' | 'high' } }> = [];
+
+        // 添加文本内容
+        contentParts.push({ type: 'text', text: message });
+
+        // 处理附件
+        for (const att of attachments) {
+          if (att.type === 'image') {
+            // 图片：读取文件并转为 base64 data URL
+            try {
+              const filePath = path.join(UPLOADS_DIR, path.basename(att.url));
+              if (fs.existsSync(filePath)) {
+                const fileBuffer = fs.readFileSync(filePath);
+                const base64 = fileBuffer.toString('base64');
+                contentParts.push({
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${att.mimeType};base64,${base64}`,
+                    detail: 'auto',
+                  },
+                });
+              }
+            } catch (err) {
+              console.error(`[Chat API] 读取图片附件失败: ${att.fileName}`, err);
+            }
+          } else {
+            // 文件：读取内容并作为文本注入
+            try {
+              const filePath = path.join(UPLOADS_DIR, path.basename(att.url));
+              if (fs.existsSync(filePath)) {
+                const ext = path.extname(att.fileName).toLowerCase().replace('.', '');
+                // 仅对文本类文件读取内容
+                if (['txt', 'csv', 'json', 'md'].includes(ext)) {
+                  const fileContent = fs.readFileSync(filePath, 'utf-8');
+                  const truncated = fileContent.length > 50000
+                    ? fileContent.slice(0, 50000) + '\n\n... (文件内容已截断)'
+                    : fileContent;
+                  contentParts.push({
+                    type: 'text',
+                    text: `\n---\n[附件: ${att.fileName}]\n${truncated}\n---\n`,
+                  });
+                } else {
+                  contentParts.push({
+                    type: 'text',
+                    text: `\n---\n[附件: ${att.fileName} (${(att.size / 1024).toFixed(1)}KB, ${att.mimeType})]\n注: 此文件类型暂不支持内容预览\n---\n`,
+                  });
+                }
+              }
+            } catch (err) {
+              console.error(`[Chat API] 读取文件附件失败: ${att.fileName}`, err);
+              contentParts.push({
+                type: 'text',
+                text: `\n---\n[附件: ${att.fileName} - 读取失败]\n---\n`,
+              });
+            }
+          }
+        }
+
+        apiMessages.push({ role: 'user', content: contentParts });
+      } else {
+        apiMessages.push({ role: 'user', content: message });
+      }
 
       // 合并模型配置和预设参数
       const finalModelConfig = {
@@ -598,15 +874,32 @@ app.post('/api/chat', async (req, res) => {
           }
           fullContent = mockResponse;
         } else {
-          // 调用 AI 模型流式 API
-          fullContent = await callAIModelStream(
-            finalModelConfig,
-            apiMessages,
-            (chunk) => {
+          // v1.9.0: 使用 Tool Calling 循环
+          fullContent = await executeToolLoop({
+            modelConfig: finalModelConfig,
+            messages: apiMessages,
+            maxToolTurns: 10,
+            signal: abortController.signal,
+            onChunk: (chunk) => {
               res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
             },
-            abortController.signal,
-          );
+            onThinking: (thinkingChunk) => {
+              if (!hasThinking) {
+                hasThinking = true;
+                thinkingStartTime = Date.now();
+              }
+              res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`);
+            },
+            onToolCall: (toolCall, result) => {
+              // 发送 tool_call 事件到前端（用于展示工具调用过程）
+              res.write(`data: ${JSON.stringify({
+                type: 'tool_call',
+                toolName: toolCall.function.name,
+                toolArgs: toolCall.function.arguments,
+                toolResult: result,
+              })}\n\n`);
+            },
+          });
         }
       } finally {
         clearTimeout(timeout);
@@ -686,6 +979,7 @@ app.post('/api/chat', async (req, res) => {
           type: 'done',
           errorCode,
           errorMessage: errorMsg,
+          thinkingDuration: 0,
         })}\n\n`);
         res.end();
       } catch {
@@ -696,10 +990,12 @@ app.post('/api/chat', async (req, res) => {
 
     // 正常完成：发送 done 事件
     try {
+      const thinkingDuration = (hasThinking && thinkingStartTime) ? Date.now() - thinkingStartTime : 0;
       res.write(`data: ${JSON.stringify({
         type: 'done',
         errorCode: null,
         errorMessage: null,
+        thinkingDuration,
       })}\n\n`);
       res.end();
     } catch {
@@ -782,9 +1078,13 @@ app.get('/api/inventory-transactions', (req, res) => {
 });
 
 const PORT = 3001;
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`CDF Know Clow Chat Server running on port ${PORT}`);
   const db = initDb();
+
+  // 初始化 Tool Registry
+  await initDefaultTools();
+  console.log('[Tool Registry] 工具注册完成:', listTools().join(', '));
 
   // 初始化 WMS 行业技能表
   ensureWmsTables(db);

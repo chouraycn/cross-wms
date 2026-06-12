@@ -24,8 +24,9 @@ import {
 } from '@mui/material';
 import { useToast } from '../../contexts/ToastContext';
 import type { OutboundReview } from '../../types/wms';
+import { API_BASE_URL } from '../../constants/api';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = API_BASE_URL;
 
 export interface WmsOutboundFormProps {
   open: boolean;

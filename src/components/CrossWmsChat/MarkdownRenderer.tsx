@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 // @ts-ignore — types package not installed, using default export
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 // @ts-ignore
@@ -102,7 +105,8 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
   return (
     <div className="markdown-body" style={{ fontSize: 14, lineHeight: 1.7 }}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           // 代码块：有语言标注 → 语法高亮；否则 → 纯文本
           code({ className, children, node, ...props }) {

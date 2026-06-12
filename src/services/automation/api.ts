@@ -13,8 +13,9 @@ import type {
   ExecutionPolicy,
   NotificationConfig,
 } from './types';
+import { API_BASE_URL } from '../../constants/api';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = API_BASE_URL;
 
 /** 通用 fetch 封装 */
 async function request<T>(path: string, options?: RequestInit): Promise<T> {

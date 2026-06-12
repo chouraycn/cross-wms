@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   ListItemButton,
@@ -41,16 +41,36 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLDivElement>(null);
 
-  const [activeSessionId, setActiveSessionId] = useState(() => {
-    try {
-      const raw = localStorage.getItem('cdf-know-clow-chat-sessions');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed[0].id;
+  const [activeSessionId, setActiveSessionId] = useState('');
+  // 点击「AI 对话」新建会话后，短暂忽略 chat-updated 事件，避免新会话 ID 覆盖清空状态
+  const ignoreChatUpdateRef = useRef(false);
+
+  // 兼容 hash 路由：从 hash 中提取实际路径
+  const activePath = location.hash ? location.hash.replace('#', '') : location.pathname;
+
+  // 监听 CrossWmsChat 的会话更新事件，同步 activeSessionId
+  useEffect(() => {
+    const onChatUpdate = ((e: CustomEvent) => {
+      // 如果正处于「新建对话」后的保护期内，忽略事件
+      if (ignoreChatUpdateRef.current) return;
+      // 防御：只有收到明确的 activeSessionId 才更新，避免空事件覆盖状态
+      if (e.detail && e.detail.activeSessionId) {
+        setActiveSessionId(e.detail.activeSessionId);
       }
-    } catch { /* ignore */ }
-    return '';
-  });
+    }) as EventListener;
+    const onClearSession = () => {
+      setActiveSessionId('');
+      // 开启保护期：200ms 内忽略 chat-updated 事件（ChatPage 新建会话后会发送该事件）
+      ignoreChatUpdateRef.current = true;
+      setTimeout(() => { ignoreChatUpdateRef.current = false; }, 200);
+    };
+    window.addEventListener('cdf-know-clow-chat-updated', onChatUpdate);
+    window.addEventListener('cdf-know-clow-clear-session', onClearSession);
+    return () => {
+      window.removeEventListener('cdf-know-clow-chat-updated', onChatUpdate);
+      window.removeEventListener('cdf-know-clow-clear-session', onClearSession);
+    };
+  }, []);
 
   const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
@@ -91,11 +111,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       {/* Navigation list (含历史对话) */}
       <NavList
         collapsed={collapsed}
-        activePath={location.pathname}
+        activePath={activePath}
         onNavigate={(path) => {
-          // 导航到任何页面时都清除历史对话选中态
-          // （包括点"新建任务" /chat，让白条回到"新建任务"按钮）
-          setActiveSessionId('');
+          // 导航到非 chat 页面时清除历史对话选中态，让白条回到导航项
+          // 如果目标就是 /chat 且当前已在 /chat，不清除（保持历史对话白条）
+          if (path !== '/chat' || location.pathname !== '/chat') {
+            setActiveSessionId('');
+          }
           navigate(path);
         }}
         activeSessionId={activeSessionId}

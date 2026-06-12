@@ -18,6 +18,7 @@ import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
+import { useChatContext } from '../../contexts/ChatContext';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
@@ -90,42 +91,8 @@ const navItems: NavItem[] = [
 ];
 
 // ===================== Session Helpers =====================
-
-const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
-
-function loadSessions(): Session[] {
-  try {
-    const raw = localStorage.getItem(SESSIONS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed.map((s: Record<string, unknown>) => ({
-          ...s,
-          messages: Array.isArray(s.messages)
-            ? s.messages.map((m: Record<string, unknown>) => ({
-                ...m,
-                timestamp: new Date(m.timestamp as string),
-              }))
-            : [],
-        })) as Session[];
-      }
-    }
-  } catch { /* ignore */ }
-  return [];
-}
-
-function saveSessions(sessions: Session[]): void {
-  try {
-    const serializable = sessions.map((s) => ({
-      ...s,
-      messages: s.messages.map((m) => ({
-        ...m,
-        timestamp: m.timestamp.toISOString(),
-      })),
-    }));
-    localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(serializable));
-  } catch { /* ignore */ }
-}
+// 使用共享的 loadSessions / saveSessions（来自 useChatSession）
+// 避免多处定义导致的数据格式不一致
 
 // ===================== Props =====================
 
@@ -179,8 +146,8 @@ const NavList: React.FC<NavListProps> = ({
     });
   }, [activePath]);
 
-  // 聊天历史
-  const [sessions, setSessions] = useState<Session[]>(() => loadSessions());
+  // 聊天历史 — 从 ChatContext 获取
+  const { sessions, handleDeleteSession: deleteSessionFromContext } = useChatContext();
   const historyListRef = useRef<HTMLDivElement>(null);
 
   // 即时选中状态：点击时立即切换视觉反馈，不等待父组件 state 传播
@@ -193,36 +160,11 @@ const NavList: React.FC<NavListProps> = ({
     }
   }, [activeSessionId, justClickedSessionId]);
 
-  useEffect(() => {
-    const onStorage = () => {
-      setSessions(loadSessions());
-      // 新会话时自动滚动到历史对话区域
-      requestAnimationFrame(() => {
-        historyListRef.current?.scrollIntoView({ behavior: 'smooth' });
-      });
-    };
-    const onChatUpdate = () => {
-      setSessions(loadSessions());
-      // AI 回复后自动滚动到历史对话区域
-      requestAnimationFrame(() => {
-        historyListRef.current?.scrollIntoView({ behavior: 'smooth' });
-      });
-    };
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('cdf-know-clow-chat-updated', onChatUpdate);
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('cdf-know-clow-chat-updated', onChatUpdate);
-    };
-  }, []);
-
   const handleDeleteSession = useCallback((e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
-    const next = sessions.filter((s) => s.id !== sessionId);
-    setSessions(next);
-    saveSessions(next);
+    deleteSessionFromContext(sessionId);
     onDeleteSession(sessionId);
-  }, [sessions, onDeleteSession]);
+  }, [deleteSessionFromContext, onDeleteSession]);
 
   // 只显示有消息的会话
   const chatSessions = sessions.filter((s) => s.messages.length > 0);
@@ -233,8 +175,10 @@ const NavList: React.FC<NavListProps> = ({
     onNavigate(path);
   }, [onNavigate]);
 
-  // 有历史会话选中时，"新建任务"不显示激活态（白条让给历史对话项）
-  const isChatWithSession = activeSessionId && activePath === '/chat';
+  // 有历史会话选中且历史列表不为空时，"AI 对话"不显示激活态（白条让给历史对话项）
+  // 防御：只有 activeSessionId 对应的会话真的有消息时才让出白条
+  const activeSessionHasMessages = chatSessions.some((s) => s.id === activeSessionId);
+  const isChatWithSession = activeSessionId && activePath === '/chat' && activeSessionHasMessages;
 
   const isActive = (path: string) => {
     if (path === '/chat' && isChatWithSession) return false;
@@ -421,6 +365,8 @@ const NavList: React.FC<NavListProps> = ({
                   onClick={() => {
                     if (item.path === '/chat') {
                       handleNavClick(item.path);
+                      // 新建对话时清除历史对话选中态
+                      window.dispatchEvent(new CustomEvent('cdf-know-clow-clear-session'));
                       window.dispatchEvent(new CustomEvent('cdf-know-clow-navigate-chat'));
                     } else {
                       handleNavClick(item.path);
@@ -456,6 +402,8 @@ const NavList: React.FC<NavListProps> = ({
                 onClick={() => {
                   if (item.path === '/chat') {
                     handleNavClick(item.path);
+                    // 新建对话时清除历史对话选中态
+                    window.dispatchEvent(new CustomEvent('cdf-know-clow-clear-session'));
                     window.dispatchEvent(new CustomEvent('cdf-know-clow-navigate-chat'));
                   } else {
                     handleNavClick(item.path);
@@ -509,7 +457,7 @@ const NavList: React.FC<NavListProps> = ({
 
       {/* ====== 栏目底部：历史对话 ====== */}
       {!collapsed && chatSessions.length > 0 && (
-        <Box ref={historyListRef} sx={{ mt: 1, pt: 2.25, pl: 0.25, pr: 1, display: 'flex', flexDirection: 'column', minHeight: 0, flex: '0 1 auto', maxHeight: '40vh' }}>
+        <Box ref={historyListRef} sx={{ mt: 1, pt: 2.25, pl: 0.25, pr: 1, display: 'flex', flexDirection: 'column', minHeight: 0, flex: '0 1 auto' }}>
           <Typography
             sx={{
               fontSize: '0.6875rem',
@@ -534,7 +482,36 @@ const NavList: React.FC<NavListProps> = ({
               {chatSessions.length}
             </Box>
           </Typography>
-          <Box className="auto-hide-scrollbar" sx={{ overflowY: 'auto', overscrollBehaviorY: 'none', WebkitOverflowScrolling: 'auto', flex: 1, minHeight: 0 }}>
+          <Box
+            sx={{
+              overflowY: 'auto',
+              overscrollBehaviorY: 'none',
+              WebkitOverflowScrolling: 'auto',
+              flex: 1,
+              minHeight: 0,
+              maxHeight: 280, // 固定高度：约10条会话
+              // 滚动条仅在悬停时显示
+              '&::-webkit-scrollbar': {
+                width: '4px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: 'transparent',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: 'transparent',
+                borderRadius: '2px',
+              },
+              '&:hover::-webkit-scrollbar-thumb': {
+                background: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
+              },
+              // Firefox
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'transparent transparent',
+              '&:hover': {
+                scrollbarColor: isDark ? 'rgba(255,255,255,0.2) transparent' : 'rgba(0,0,0,0.15) transparent',
+              },
+            }}
+          >
           {chatSessions.map((session) => {
             const title = session.title || session.messages[0]?.content?.slice(0, 20) || '新对话';
             const effectiveActiveId = justClickedSessionId ?? activeSessionId;
@@ -576,15 +553,17 @@ const NavList: React.FC<NavListProps> = ({
                   </Typography>
                   <IconButton
                     size="small"
-                    onClick={(e) => handleDeleteSession(e, session.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeleteSession(e, session.id);
+                    }}
                     sx={{
                       p: 0.25,
-                      opacity: 0,
+                      opacity: 0.7,
                       color: textMuted,
                       transition: 'opacity 0.15s',
-                      '.MuiListItemButton-root:hover &': { opacity: 1 },
-                      '&:hover': { color: gs.textPrimary },
-                      '&:hover .MuiSvgIcon-root': { fontSize: 14 },
+                      '&:hover': { opacity: 1, color: gs.textPrimary },
                     }}
                   >
                     <DeleteOutlineIcon sx={{ fontSize: 12 }} />
