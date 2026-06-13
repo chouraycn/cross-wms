@@ -141,7 +141,7 @@ echo "版本: $VERSION"
 echo ""
 
 # 1. 构建前端（始终重新构建，确保版本号是最新的）
-echo "🔨 构建前端（版本: $VERSION）..."
+echo ">>> 构建前端 (版本: $VERSION) ..."
 cd "$PROJECT_DIR" && npm run build
 echo "✅ 前端构建完成"
 
@@ -401,7 +401,7 @@ APP_PATH="$BUILD_DIR/dist/CDF Know Clow.app"
 PLIST_PATH="$APP_PATH/Contents/Info.plist"
 
 if [ -f "$PLIST_PATH" ]; then
-  echo "📝 优化 Info.plist（版本: $VERSION）..."
+  echo ">>> 优化 Info.plist (版本: $VERSION) ..."
   /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.cdf.knowclow.desktop" "$PLIST_PATH" 2>/dev/null || \
     /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.cdf.knowclow.desktop" "$PLIST_PATH"
   /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName 'CDF Know Clow 中免CLow端'" "$PLIST_PATH" 2>/dev/null || \
@@ -651,20 +651,34 @@ PYEOF3
   if [ -n "$RELEASE_ID" ]; then
     UPLOAD_OK=true
     echo "  上传 DMG..."
-    curl -s -f -X POST \
-      -H "Authorization: token $TOKEN" \
-      -H "Content-Type: application/octet-stream" \
-      --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
-      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=$DMG_NAME" \
-      && echo "  ✅ DMG 上传成功" || { echo "  ⚠️  DMG 上传失败"; UPLOAD_OK=false; }
+    # 带超时和重试的上传（大文件最多尝试3次）
+    for i in 1 2 3; do
+      curl -s -f --max-time 600 --connect-timeout 30 -X POST \
+        -H "Authorization: token $TOKEN" \
+        -H "Content-Type: application/octet-stream" \
+        --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
+        "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=$DMG_NAME" \
+        > /dev/null 2>&1 && { echo "  ✅ DMG 上传成功"; break; } || {
+        if [ "$i" -lt 3 ]; then
+          echo "  ⚠️  DMG 上传重试 $i/3..."
+          sleep $((i * 5))
+        else
+          echo "  ❌ DMG 上传失败（已重试3次）"
+          UPLOAD_OK=false
+        fi
+      }
+    done
 
-    echo "  上传 release.json..."
-    curl -s -f -X POST \
-      -H "Authorization: token $TOKEN" \
-      -H "Content-Type: application/json" \
-      --data-binary @"$PROJECT_DIR/release/release.json" \
-      "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=release.json" \
-      && echo "  ✅ release.json 上传成功" || { echo "  ⚠️  release.json 上传失败"; UPLOAD_OK=false; }
+    if [ "$UPLOAD_OK" = true ]; then
+      echo "  上传 release.json..."
+      curl -s -f --max-time 30 --connect-timeout 10 -X POST \
+        -H "Authorization: token $TOKEN" \
+        -H "Content-Type: application/json" \
+        --data-binary @"$PROJECT_DIR/release/release.json" \
+        "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=release.json" \
+        > /dev/null 2>&1 \
+        && echo "  ✅ release.json 上传成功" || { echo "  ⚠️  release.json 上传失败"; UPLOAD_OK=false; }
+    fi
 
     [ "$UPLOAD_OK" = true ] && echo "✅ Release v${VERSION} 已发布!"
   fi
