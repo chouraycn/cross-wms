@@ -7,12 +7,20 @@
  * - file.* — 文件系统操作
  * - db.* — 数据库查询
  * - wms.* — WMS 业务操作
- * - desktop.* — 桌面自动化操作（macOS 原生工具）
+ * - desktop.* — 桌面自动化操作（macOS 原生工具 / Linux 工具）
  *
  * v1.9.0: 新增 Tool Calling 支持
  * v2.0.0: 新增 desktop:* 命名空间，支持 macOS 桌面自动化
  * v2.1.0: 迁移到 macOS 原生工具（screencapture, osascript, open, pbcopy, pbpaste）
+ * v2.2.0: 新增 Linux 支持（import/scrot 截图, xdotool 点击/输入, xclip 剪贴板）
  */
+
+import os from 'os';
+
+/** v2.2.0: 平台检测 */
+const PLATFORM = os.platform(); // 'darwin' | 'linux' | 'win32'
+const isMac = PLATFORM === 'darwin';
+const isLinux = PLATFORM === 'linux';
 
 import type { ToolDefinition, ToolCall } from '../aiClient.js';
 
@@ -290,53 +298,112 @@ async function runAppleScript(script: string, timeout: number = 3000): Promise<s
   }
 }
 
-/** desktop:health - Check native tool availability */
+/** v2.2.0: Helper — Linux 截图（优先 import，其次 scrot，最后 gnome-screenshot） */
+async function linuxScreenshot(outputPath: string): Promise<void> {
+  const { execSync } = await import('child_process');
+  // 优先使用 ImageMagick import
+  try {
+    execSync(`import -window root "${outputPath}"`, { encoding: 'utf8', timeout: 8000 });
+    return;
+  } catch {
+    // import 失败，尝试 scrot
+  }
+  try {
+    execSync(`scrot "${outputPath}"`, { encoding: 'utf8', timeout: 8000 });
+    return;
+  } catch {
+    // scrot 失败，尝试 gnome-screenshot
+  }
+  try {
+    execSync(`gnome-screenshot -f "${outputPath}"`, { encoding: 'utf8', timeout: 8000 });
+    return;
+  } catch {
+    throw new Error('所有截图工具均不可用。请安装以下之一：imagemagick (import), scrot, gnome-screenshot');
+  }
+}
+
+/** v2.2.0: Helper — 检测 Linux 工具是否可用 */
+async function linuxToolAvailable(toolName: string): Promise<boolean> {
+  const { execSync } = await import('child_process');
+  try {
+    execSync(`which ${toolName}`, { encoding: 'utf8', timeout: 1000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** desktop_health - Check native tool availability */
 async function handleDesktopHealth(): Promise<string> {
   try {
     const { execSync } = await import('child_process');
-    const tools = ['screencapture', 'osascript', 'open', 'pbcopy', 'pbpaste'];
     const results: Record<string, boolean> = {};
 
-    for (const tool of tools) {
-      try {
-        execSync(`which ${tool}`, { encoding: 'utf8', timeout: 1000 });
-        results[tool] = true;
-      } catch {
-        results[tool] = false;
+    if (isMac) {
+      const tools = ['screencapture', 'osascript', 'open', 'pbcopy', 'pbpaste'];
+      for (const tool of tools) {
+        try {
+          execSync(`which ${tool}`, { encoding: 'utf8', timeout: 1000 });
+          results[tool] = true;
+        } catch {
+          results[tool] = false;
+        }
       }
+    } else if (isLinux) {
+      // v2.2.0: Linux 工具检测
+      const linuxTools = [
+        'import', 'scrot', 'gnome-screenshot',  // 截图
+        'xdotool',                                // 点击/输入/按键
+        'xclip', 'xsel',                          // 剪贴板
+        'xdg-open',                               // 打开应用/URL
+        'wmctrl',                                 // 窗口管理
+      ];
+      for (const tool of linuxTools) {
+        results[tool] = await linuxToolAvailable(tool);
+      }
+    } else {
+      return JSON.stringify({
+        success: false,
+        platform: PLATFORM,
+        message: `Unsupported platform: ${PLATFORM}. Desktop automation is only supported on macOS and Linux.`,
+      });
     }
 
     const allAvailable = Object.values(results).every(v => v === true);
 
     return JSON.stringify({
       success: allAvailable,
+      platform: PLATFORM,
       tools: results,
       message: allAvailable
-        ? 'All native macOS tools are available'
-        : 'Some tools are missing. Ensure you are running on macOS.',
+        ? `All native ${isMac ? 'macOS' : 'Linux'} tools are available`
+        : `Some tools are missing on ${isMac ? 'macOS' : 'Linux'}.`,
     });
   } catch (e: any) {
     return JSON.stringify({ success: false, error: e.message || 'Health check failed' });
   }
 }
 
-/** desktop:screenshot - Take a screenshot and return base64 */
+/** desktop_screenshot - Take a screenshot and return base64 */
 async function handleDesktopScreenshot(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
   const fs = await import('fs');
-  const path = await import('path');
 
   try {
     const timestamp = Date.now();
     const screenshotPath = `/tmp/desktop-screenshot-${timestamp}.png`;
 
-    // Take screenshot using screencapture
-    // -x: suppress countdown sound
-    // -t png: specify PNG format
-    execSync(`screencapture -x -t png "${screenshotPath}"`, {
-      encoding: 'utf8',
-      timeout: 5000,
-    });
+    // v2.2.0: 跨平台截图
+    if (isMac) {
+      execSync(`screencapture -x -t png "${screenshotPath}"`, {
+        encoding: 'utf8',
+        timeout: 5000,
+      });
+    } else if (isLinux) {
+      await linuxScreenshot(screenshotPath);
+    } else {
+      return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
+    }
 
     // Check if file exists
     if (!fs.existsSync(screenshotPath)) {
@@ -365,125 +432,66 @@ async function handleDesktopScreenshot(args: Record<string, unknown>): Promise<s
   }
 }
 
-/** desktop:click - Click at coordinates using osascript */
+/** desktop_click - Click at coordinates */
 async function handleDesktopClick(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
 
   try {
-    // Validate arguments
     const x = args.x !== undefined ? Number(args.x) : null;
     const y = args.y !== undefined ? Number(args.y) : null;
 
     if (x === null || y === null) {
-      return JSON.stringify({
-        success: false,
-        error: 'Both x and y coordinates are required for native click',
-      });
+      return JSON.stringify({ success: false, error: 'Both x and y coordinates are required' });
     }
 
-    // Use osascript to perform click via System Events
-    // Note: This requires Accessibility permissions
-    const script = `
-tell application "System Events"
-  set theLocation to {${x}, ${y}}
-  set theMouse to theLocation
-  tell application process "System Events"
-    click at theMouse
-  end tell
-end tell
-`;
-
-    // Alternative: Use AppleScript to move mouse and click
-    const moveScript = `tell application "System Events" to set position of mouse to {${x}, ${y}}`;
-    const clickScript = `tell application "System Events" to click`;
-
-    try {
-      // Move mouse to position
-      execSync(`osascript -e '${moveScript.replace(/'/g, "'\\''")}'`, {
-        encoding: 'utf8',
-        timeout: 3000,
-      });
-
-      // Perform click using Python via osascript for better mouse control
-      // Using a small Python script for precise clicking
-      const pythonScript = `
-import sys
-import time
+    if (isMac) {
+      // macOS: 使用 Python + Quartz 精确点击
+      try {
+        const fs = await import('fs');
+        const pythonScript = `
+import sys, time
 try:
     import Quartz
-    import ApplicationServices
-    from Foundation import NSURL
-    
-    # Move mouse and click
     moveEvent = Quartz.CGEventCreateMouseEvent(None, Quartz.kCGEventMouseMoved, (${x}, ${y}), Quartz.kCGMouseButtonLeft)
     Quartz.CGEventPost(Quartz.kCGHIDEventTap, moveEvent)
     time.sleep(0.05)
-    
-    # Left mouse down
     downEvent = Quartz.CGEventCreateMouseEvent(None, Quartz.kCGEventLeftMouseDown, (${x}, ${y}), Quartz.kCGMouseButtonLeft)
     Quartz.CGEventPost(Quartz.kCGHIDEventTap, downEvent)
     time.sleep(0.05)
-    
-    # Left mouse up
     upEvent = Quartz.CGEventCreateMouseEvent(None, Quartz.kCGEventLeftMouseUp, (${x}, ${y}), Quartz.kCGMouseButtonLeft)
     Quartz.CGEventPost(Quartz.kCGHIDEventTap, upEvent)
-    
-    print("Click successful at {${x}, ${y}}")
+    print("OK")
 except Exception as e:
     print(f"Error: {e}", file=sys.stderr)
     sys.exit(1)
 `;
-
-      // Write Python script to temp file and execute
-      const fs = await import('fs');
-      const tmpFile = `/tmp/desktop-click-${Date.now()}.py`;
-      fs.writeFileSync(tmpFile, pythonScript);
-
-      const output = execSync(`python3 "${tmpFile}"`, {
-        encoding: 'utf8',
-        timeout: 3000,
-      }).toString();
-
-      // Clean up
-      try { fs.unlinkSync(tmpFile); } catch {}
-
-      return JSON.stringify({
-        success: true,
-        output: output.trim(),
-        x,
-        y,
-      });
-    } catch (e: any) {
-      // Fallback: Try using cliclick if available (common macOS automation tool)
-      try {
-        execSync(`which cliclick`, { encoding: 'utf8', timeout: 1000 });
-        const output = execSync(`cliclick c:${x},${y}`, {
-          encoding: 'utf8',
-          timeout: 3000,
-        }).toString();
-
-        return JSON.stringify({
-          success: true,
-          output: output.trim(),
-          method: 'cliclick',
-          x,
-          y,
-        });
+        const tmpFile = `/tmp/desktop-click-${Date.now()}.py`;
+        fs.writeFileSync(tmpFile, pythonScript);
+        const output = execSync(`python3 "${tmpFile}"`, { encoding: 'utf8', timeout: 3000 }).toString();
+        try { fs.unlinkSync(tmpFile); } catch {}
+        return JSON.stringify({ success: true, output: output.trim(), x, y });
       } catch {
-        // cliclick not available
-        return JSON.stringify({
-          success: false,
-          error: 'Click failed. Install cliclick for reliable clicking, or grant Accessibility permissions.',
-          help: 'brew install cliclick',
-        });
+        // Fallback: cliclick
+        try {
+          execSync(`cliclick c:${x},${y}`, { encoding: 'utf8', timeout: 3000 });
+          return JSON.stringify({ success: true, method: 'cliclick', x, y });
+        } catch {
+          return JSON.stringify({ success: false, error: 'Click failed. Grant Accessibility permissions or install cliclick.' });
+        }
       }
+    } else if (isLinux) {
+      // Linux: xdotool
+      execSync(`xdotool mousemove ${x} ${y} click 1`, { encoding: 'utf8', timeout: 3000 });
+      return JSON.stringify({ success: true, x, y });
+    } else {
+      return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
   } catch (e: any) {
     return JSON.stringify({ success: false, error: e.message || 'Click failed' });
   }
 }
 
-/** desktop:type - Type text using osascript */
+/** desktop_type - Type text using osascript */
 async function handleDesktopType(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
 
@@ -495,6 +503,7 @@ async function handleDesktopType(args: Record<string, unknown>): Promise<string>
       return JSON.stringify({ success: false, error: 'text parameter is required' });
     }
 
+    if (isMac) {
     // Escape text for AppleScript
     const escapedText = escapeForAppleScript(text);
 
@@ -522,12 +531,31 @@ async function handleDesktopType(args: Record<string, unknown>): Promise<string>
       charactersTyped: text.length,
       submitted: submit,
     });
+    } else if (isLinux) {
+      // xdotool type --delay 0 不支持中文，用 xsel + xdotool key
+      const escapedText = text.replace(/'/g, "'\\''");
+      if (await linuxToolAvailable('xdotool')) {
+        execSync(`xdotool type --clearmodifiers --delay 2 '${escapedText}'`, { encoding: 'utf8', timeout: 5000 });
+        if (submit) {
+          execSync(`xdotool key Return`, { encoding: 'utf8', timeout: 1000 });
+        }
+        return JSON.stringify({
+          success: true,
+          charactersTyped: text.length,
+          submitted: submit,
+        });
+      } else {
+        return JSON.stringify({ success: false, error: 'xdotool not available on Linux. Install: apt install xdotool' });
+      }
+    } else {
+      return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
+    }
   } catch (e: any) {
     return JSON.stringify({ success: false, error: e.message || 'Type failed' });
   }
 }
 
-/** desktop:key_press - Press key combination using osascript */
+/** desktop_key_press - Press key combination */
 async function handleDesktopKeyPress(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
 
@@ -539,6 +567,7 @@ async function handleDesktopKeyPress(args: Record<string, unknown>): Promise<str
       return JSON.stringify({ success: false, error: 'keys parameter is required' });
     }
 
+    if (isMac) {
     // Parse key combination (e.g., "cmd,shift,t" or "cmd,v")
     const keyArray = keys.split(',').map(k => k.trim().toLowerCase());
     
@@ -602,12 +631,31 @@ async function handleDesktopKeyPress(args: Record<string, unknown>): Promise<str
       keys,
       parsed: { key, modifiers },
     });
+    } else if (isLinux) {
+      // 转换按键格式: "ctrl,shift,t" → "ctrl+shift+t"
+      const keyStr = keys.replace(/,/g, '+');
+      // 映射 macOS 按键名到 Linux
+      const linuxKeys = keyStr
+        .replace(/cmd\+?/gi, 'ctrl')
+        .replace(/option\+?/gi, 'alt')
+        .replace(/command\+?/gi, 'ctrl')
+        .replace(/return/gi, 'Return')
+        .replace(/enter/gi, 'Return');
+      execSync(`xdotool key '${linuxKeys}'`, { encoding: 'utf8', timeout: 3000 });
+      return JSON.stringify({
+        success: true,
+        keys,
+        linuxKeys,
+      });
+    } else {
+      return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
+    }
   } catch (e: any) {
     return JSON.stringify({ success: false, error: e.message || 'Key press failed' });
   }
 }
 
-/** desktop:app_launch - Launch application using `open` command */
+/** desktop_app_launch - Launch application using `open` command */
 async function handleDesktopAppLaunch(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
 
@@ -620,17 +668,25 @@ async function handleDesktopAppLaunch(args: Record<string, unknown>): Promise<st
     }
 
     let command: string;
-    let output: string;
+    let output = '';
 
+    if (isMac) {
     if (url) {
-      // Launch app with URL
       command = `open -a "${app}" "${url}"`;
     } else {
-      // Launch app without URL
       command = `open -a "${app}"`;
     }
-
     output = execSync(command, { encoding: 'utf8', timeout: 5000 }).toString();
+    } else if (isLinux) {
+      if (url) {
+        execSync(`xdg-open "${url}"`, { encoding: 'utf8', timeout: 5000 });
+      } else {
+        execSync(`nohup ${app} > /dev/null 2>&1 &`, { encoding: 'utf8', timeout: 3000, shell: '/bin/bash' });
+      }
+      output = '';
+    } else {
+      return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
+    }
 
     return JSON.stringify({
       success: true,
@@ -651,7 +707,7 @@ async function handleDesktopAppLaunch(args: Record<string, unknown>): Promise<st
   }
 }
 
-/** desktop:app_quit - Quit application using osascript */
+/** desktop_app_quit - Quit application using osascript */
 async function handleDesktopAppQuit(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
 
@@ -662,6 +718,7 @@ async function handleDesktopAppQuit(args: Record<string, unknown>): Promise<stri
       return JSON.stringify({ success: false, error: 'app parameter is required' });
     }
 
+    if (isMac) {
     // Use osascript to quit the app
     const script = `quit app "${app}"`;
     const output = execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, {
@@ -674,10 +731,27 @@ async function handleDesktopAppQuit(args: Record<string, unknown>): Promise<stri
       output: output.trim() || `${app} quit successfully`,
       app,
     });
+    } else if (isLinux) {
+      try {
+        execSync(`pkill -x "${app}"`, { encoding: 'utf8', timeout: 3000 });
+      } catch {
+        try {
+          execSync(`killall "${app}"`, { encoding: 'utf8', timeout: 3000 });
+        } catch {
+          return JSON.stringify({ success: false, error: `Failed to quit ${app}` });
+        }
+      }
+      return JSON.stringify({
+        success: true,
+        output: `${app} quit successfully`,
+        app,
+      });
+    } else {
+      return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
+    }
   } catch (e: any) {
-    // If osascript fails, try `pkill` as fallback
+    // If osascript/pkill fails, try pkill as fallback
     try {
-      const { execSync } = await import('child_process');
       execSync(`pkill -x "${args.app}"`, { encoding: 'utf8', timeout: 3000 });
       return JSON.stringify({
         success: true,
@@ -694,7 +768,7 @@ async function handleDesktopAppQuit(args: Record<string, unknown>): Promise<stri
   }
 }
 
-/** desktop:window_focus - Focus application window using osascript */
+/** desktop_window_focus - Focus application window using osascript */
 async function handleDesktopWindowFocus(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
 
@@ -708,6 +782,7 @@ async function handleDesktopWindowFocus(args: Record<string, unknown>): Promise<
 
     let output: string;
 
+    if (isMac) {
     if (windowTitle) {
       // Focus specific window by title
       const script = `
@@ -752,6 +827,26 @@ end tell
       app,
       windowTitle: windowTitle || undefined,
     });
+    } else if (isLinux) {
+      if (await linuxToolAvailable('wmctrl')) {
+        if (windowTitle) {
+          execSync(`wmctrl -a "${windowTitle}"`, { encoding: 'utf8', timeout: 3000 });
+        } else {
+          execSync(`wmctrl -a "${app}"`, { encoding: 'utf8', timeout: 3000 });
+        }
+      } else if (await linuxToolAvailable('xdotool')) {
+        execSync(`xdotool search --name "${app}" windowactivate`, { encoding: 'utf8', timeout: 3000 });
+      } else {
+        return JSON.stringify({ success: false, error: 'wmctrl/xdotool not available. Install: apt install wmctrl xdotool' });
+      }
+      return JSON.stringify({
+        success: true,
+        app,
+        windowTitle: windowTitle || undefined,
+      });
+    } else {
+      return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
+    }
   } catch (e: any) {
     return JSON.stringify({
       success: false,
@@ -761,7 +856,7 @@ end tell
   }
 }
 
-/** desktop:clipboard - Read/write clipboard using pbcopy/pbpaste */
+/** desktop_clipboard - Read/write clipboard using pbcopy/pbpaste */
 async function handleDesktopClipboard(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
 
@@ -770,6 +865,7 @@ async function handleDesktopClipboard(args: Record<string, unknown>): Promise<st
     const content = args.content ? String(args.content) : null;
 
     if (action === 'get') {
+      if (isMac) {
       // Read from clipboard using pbpaste
       const output = execSync('pbpaste', {
         encoding: 'utf8',
@@ -781,11 +877,23 @@ async function handleDesktopClipboard(args: Record<string, unknown>): Promise<st
         action: 'get',
         content: output,
       });
+      } else if (isLinux) {
+        try {
+          const output = execSync('xclip -selection clipboard -o', { encoding: 'utf8', timeout: 3000 }).toString();
+          return JSON.stringify({ success: true, action: 'get', content: output });
+        } catch {
+          const output = execSync('xsel --clipboard --output', { encoding: 'utf8', timeout: 3000 }).toString();
+          return JSON.stringify({ success: true, action: 'get', content: output });
+        }
+      } else {
+        return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
+      }
     } else if (action === 'set') {
       if (!content) {
         return JSON.stringify({ success: false, error: 'content parameter is required for set action' });
       }
 
+      if (isMac) {
       // Write to clipboard using pbcopy
       const { spawn } = await import('child_process');
       const child = spawn('pbcopy', [], { stdio: ['pipe', 'ignore', 'pipe'] });
@@ -811,6 +919,25 @@ async function handleDesktopClipboard(args: Record<string, unknown>): Promise<st
         action: 'set',
         contentLength: content.length,
       });
+      } else if (isLinux) {
+        try {
+          const { spawn } = await import('child_process');
+          const child = spawn('xclip', ['-selection', 'clipboard'], { stdio: ['pipe', 'ignore', 'pipe'] });
+          (child.stdin as any).write(content);
+          (child.stdin as any).end();
+          await new Promise<void>((resolve, reject) => {
+            (child as any).on('close', (code: number) => code === 0 ? resolve() : reject(new Error(`xclip exited with code ${code}`)));
+            (child as any).on('error', reject);
+          });
+          return JSON.stringify({ success: true, action: 'set', contentLength: content.length });
+        } catch {
+          // fallback to xsel
+          execSync(`echo '${content.replace(/'/g, "'\\''")}' | xsel --clipboard --input`, { encoding: 'utf8', timeout: 3000, shell: '/bin/bash' });
+          return JSON.stringify({ success: true, action: 'set', contentLength: content.length });
+        }
+      } else {
+        return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
+      }
     } else {
       return JSON.stringify({
         success: false,
@@ -825,7 +952,7 @@ async function handleDesktopClipboard(args: Record<string, unknown>): Promise<st
   }
 }
 
-/** desktop:scroll - Scroll using osascript (via keyboard simulation) */
+/** desktop_scroll - Scroll using osascript (via keyboard simulation) */
 async function handleDesktopScroll(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
 
@@ -835,6 +962,7 @@ async function handleDesktopScroll(args: Record<string, unknown>): Promise<strin
     const amount = Number(args.amount) || 100;
 
     // Move mouse to position first
+    if (isMac) {
     const moveScript = `tell application "System Events" to set position of mouse to {${x}, ${y}}`;
     execSync(`osascript -e '${moveScript.replace(/'/g, "'\\''")}'`, {
       encoding: 'utf8',
@@ -868,6 +996,20 @@ async function handleDesktopScroll(args: Record<string, unknown>): Promise<strin
       keyPresses: numPresses,
       note: 'Scrolling simulated via Page Up/Down keys. For pixel-precise scrolling, consider installing cliclick.',
     });
+    } else if (isLinux) {
+      const scrollAmount = amount > 0 ? Math.abs(amount) : Math.abs(amount);
+      const button = amount > 0 ? 5 : 4; // 5=scroll down, 4=scroll up
+      execSync(`xdotool mousemove ${x} ${y} click --repeat ${Math.ceil(scrollAmount / 50)} ${button}`, { encoding: 'utf8', timeout: 3000 });
+      return JSON.stringify({
+        success: true,
+        x,
+        y,
+        amount,
+        direction: amount > 0 ? 'down' : 'up',
+      });
+    } else {
+      return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
+    }
   } catch (e: any) {
     return JSON.stringify({
       success: false,
@@ -877,7 +1019,7 @@ async function handleDesktopScroll(args: Record<string, unknown>): Promise<strin
   }
 }
 
-/** desktop:see - Take screenshot for visual analysis */
+/** desktop_see - Take screenshot for visual analysis */
 async function handleDesktopSee(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
   const fs = await import('fs');
@@ -886,11 +1028,17 @@ async function handleDesktopSee(args: Record<string, unknown>): Promise<string> 
     const timestamp = Date.now();
     const screenshotPath = `/tmp/desktop-see-${timestamp}.png`;
 
-    // Take screenshot using screencapture
-    execSync(`screencapture -x -t png "${screenshotPath}"`, {
-      encoding: 'utf8',
-      timeout: 5000,
-    });
+    // v2.2.0: 跨平台截图
+    if (isMac) {
+      execSync(`screencapture -x -t png "${screenshotPath}"`, {
+        encoding: 'utf8',
+        timeout: 5000,
+      });
+    } else if (isLinux) {
+      await linuxScreenshot(screenshotPath);
+    } else {
+      return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
+    }
 
     // Check if file exists
     if (!fs.existsSync(screenshotPath)) {
@@ -930,12 +1078,12 @@ function registerTool(tool: RegisteredTool): void {
 
 /** 初始化默认工具集 */
 export async function initDefaultTools(): Promise<void> {
-  // system:info
+  // system_info
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'system:info',
+        name: 'system_info',
         description: '获取当前系统的基本信息，包括操作系统、CPU、内存、Node.js 版本等',
         parameters: {
           type: 'object',
@@ -947,12 +1095,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleSystemInfo,
   });
 
-  // file:listDir
+  // file_listDir
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'file:listDir',
+        name: 'file_listDir',
         description: '列出指定目录下的文件和子目录',
         parameters: {
           type: 'object',
@@ -966,12 +1114,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleListDir,
   });
 
-  // file:readFile
+  // file_readFile
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'file:readFile',
+        name: 'file_readFile',
         description: '读取指定文件的内容（文本文件）',
         parameters: {
           type: 'object',
@@ -985,12 +1133,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleReadFile,
   });
 
-  // file:writeFile
+  // file_writeFile
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'file:writeFile',
+        name: 'file_writeFile',
         description: '将内容写入指定文件（会覆盖已有内容）',
         parameters: {
           type: 'object',
@@ -1005,12 +1153,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleWriteFile,
   });
 
-  // shell:exec
+  // shell_exec
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'shell:exec',
+        name: 'shell_exec',
         description: '执行终端命令（仅限白名单内的命令：ls, cat, echo, pwd, git, npm, node, python, curl 等）',
         parameters: {
           type: 'object',
@@ -1025,12 +1173,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleExecCommand,
   });
 
-  // db:query
+  // db_query
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'db:query',
+        name: 'db_query',
         description: '执行 SQLite 数据库查询（SELECT 语句）',
         parameters: {
           type: 'object',
@@ -1044,12 +1192,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDbQuery,
   });
 
-  // wms:inventory
+  // wms_inventory
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'wms:inventory',
+        name: 'wms_inventory',
         description: '获取 WMS 库存概览信息（总商品数、仓库数、低库存商品数）',
         parameters: {
           type: 'object',
@@ -1063,12 +1211,12 @@ export async function initDefaultTools(): Promise<void> {
 
   // ===================== Desktop Automation Tools (macOS Native) =====================
 
-  // desktop:health
+  // desktop_health
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'desktop:health',
+        name: 'desktop_health',
         description: '检查 macOS 原生工具是否可用（screencapture, osascript, open, pbcopy, pbpaste）。用于验证桌面自动化功能是否可用。',
         parameters: {
           type: 'object',
@@ -1080,12 +1228,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDesktopHealth,
   });
 
-  // desktop:screenshot
+  // desktop_screenshot
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'desktop:screenshot',
+        name: 'desktop_screenshot',
         description: '截取当前屏幕截图，返回 base64 图片数据。用于 AI 分析屏幕内容后决定下一步操作。可选生成带标注的版本。',
         parameters: {
           type: 'object',
@@ -1097,13 +1245,13 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDesktopScreenshot,
   });
 
-  // desktop:click
+  // desktop_click
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'desktop:click',
-        description: '在指定坐标点击。提供 x,y 坐标进行点击。可配合 desktop:screenshot 获取屏幕截图后确定坐标。',
+        name: 'desktop_click',
+        description: '在指定坐标点击。提供 x,y 坐标进行点击。可配合 desktop_screenshot 获取屏幕截图后确定坐标。',
         parameters: {
           type: 'object',
           properties: {
@@ -1117,12 +1265,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDesktopClick,
   });
 
-  // desktop:type
+  // desktop_type
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'desktop:type',
+        name: 'desktop_type',
         description: '在当前焦点位置输入文本。可选是否在输入后按回车键。',
         parameters: {
           type: 'object',
@@ -1137,12 +1285,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDesktopType,
   });
 
-  // desktop:key_press
+  // desktop_key_press
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'desktop:key_press',
+        name: 'desktop_key_press',
         description: '按下键盘快捷键组合（如 "cmd,shift,t"）。可选指定目标应用。',
         parameters: {
           type: 'object',
@@ -1157,12 +1305,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDesktopKeyPress,
   });
 
-  // desktop:app_launch
+  // desktop_app_launch
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'desktop:app_launch',
+        name: 'desktop_app_launch',
         description: '启动 macOS 应用。可选同时打开指定 URL（适用于浏览器等应用）。',
         parameters: {
           type: 'object',
@@ -1177,12 +1325,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDesktopAppLaunch,
   });
 
-  // desktop:app_quit
+  // desktop_app_quit
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'desktop:app_quit',
+        name: 'desktop_app_quit',
         description: '退出指定的 macOS 应用。',
         parameters: {
           type: 'object',
@@ -1196,12 +1344,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDesktopAppQuit,
   });
 
-  // desktop:window_focus
+  // desktop_window_focus
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'desktop:window_focus',
+        name: 'desktop_window_focus',
         description: '聚焦到指定应用的窗口。可选指定窗口标题。',
         parameters: {
           type: 'object',
@@ -1216,12 +1364,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDesktopWindowFocus,
   });
 
-  // desktop:clipboard
+  // desktop_clipboard
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'desktop:clipboard',
+        name: 'desktop_clipboard',
         description: '读取或设置系统剪贴板内容。action 可选 "get"（读取）或 "set"（设置）。',
         parameters: {
           type: 'object',
@@ -1236,12 +1384,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDesktopClipboard,
   });
 
-  // desktop:scroll
+  // desktop_scroll
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'desktop:scroll',
+        name: 'desktop_scroll',
         description: '在指定坐标位置滚动鼠标滚轮。amount 为正数向下滚动，负数向上滚动。',
         parameters: {
           type: 'object',
@@ -1257,12 +1405,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDesktopScroll,
   });
 
-  // desktop:see
+  // desktop_see
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'desktop:see',
+        name: 'desktop_see',
         description: '截取当前屏幕截图并返回 base64 图片。用于 AI 视觉分析屏幕内容，识别可点击元素、文本框、菜单等，然后决定下一步操作（如点击坐标、输入文本等）。',
         parameters: {
           type: 'object',
@@ -1274,12 +1422,12 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDesktopSee,
   });
 
-  // app:setBotName — 修改 AI 助手显示名称
+  // app_setBotName — 修改 AI 助手显示名称
   registerTool({
     definition: {
       type: 'function',
       function: {
-        name: 'app:setBotName',
+        name: 'app_setBotName',
         description: '修改 AI 助手的显示名称。当用户要求修改 AI 助手的名字、称呼时调用此工具。',
         parameters: {
           type: 'object',

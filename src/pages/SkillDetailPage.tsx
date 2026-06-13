@@ -35,6 +35,47 @@ import { getGrayScale } from '../constants/theme';
 
 // ===================== 辅助函数 =====================
 
+/** v1.9.5-fix: JS 驱动的脉冲圆点，避免 WKWebView 不兼容 CSS @keyframes */
+const PulsingDot: React.FC<{ isRunning?: boolean; gs: { bgPanel: string } }> = ({ isRunning, gs }) => {
+  const [scale, setScale] = useState(1);
+  const [opacity, setOpacity] = useState(1);
+  
+  useEffect(() => {
+    if (!isRunning) {
+      setScale(1);
+      setOpacity(1);
+      return;
+    }
+    
+    let frame = 0;
+    const interval = setInterval(() => {
+      frame = (frame + 1) % 60; // 60 frames ≈ 1.2s at 20ms interval
+      const progress = frame / 30; // 0→1→0 over 60 frames
+      const s = 1 + 0.3 * Math.abs(1 - progress * 2);
+      const o = 1 - 0.4 * Math.abs(1 - progress * 2);
+      setScale(s);
+      setOpacity(o);
+    }, 20);
+    
+    return () => clearInterval(interval);
+  }, [isRunning]);
+  
+  return (
+    <Box
+      sx={{
+        width: 10,
+        height: 10,
+        borderRadius: '50%',
+        bgcolor: '#2563EB',
+        border: `2px solid ${gs.bgPanel}`,
+        transform: `scale(${scale})`,
+        opacity: opacity,
+        transition: 'transform 0.02s ease-in-out, opacity 0.02s ease-in-out',
+      }}
+    />
+  );
+};
+
 /** 更新最近使用技能列表 */
 function updateRecentSkills(skillName: string) {
   const recentRaw = localStorage.getItem('cdf-know-clow-recent-skills');
@@ -366,11 +407,17 @@ const SkillDetailPage: React.FC = () => {
           {hasAutomation && (
             <Box sx={{
               position: 'absolute', top: -4, right: -4,
-              width: 10, height: 10, borderRadius: '50%',
-              backgroundColor: isRunning ? '#2563EB' : '#059669',
-              border: `2px solid ${gs.bgPanel}`,
-              ...(isRunning ? { animation: 'pulse-dot 1.2s ease-in-out infinite' } : {}),
-            }} />
+            }}>
+              {isRunning ? (
+                <PulsingDot gs={gs} />
+              ) : (
+                <Box sx={{
+                  width: 10, height: 10, borderRadius: '50%',
+                  bgcolor: '#059669',
+                  border: `2px solid ${gs.bgPanel}`,
+                }} />
+              )}
+            </Box>
           )}
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -658,14 +705,7 @@ const SkillDetailPage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* 脉冲动画 */}
-      <style>{`
-        @keyframes pulse-dot {
-          0% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.3); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
+      {/* v1.9.5-fix: 移除 @keyframes pulse-dot，已用 JS 定时器替代 */}
     </Box>
   );
 };

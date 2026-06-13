@@ -561,14 +561,26 @@ router.post('/chat', async (req, res) => {
         }
       }
 
+      // v1.9.3: 判断模型是否真正支持多模态（图片）
+      // 注意：DeepSeek API 目前不支持 image_url 格式，已从列表中移除
+      const isMultimodalModel = modelConfig.capabilities?.includes('multimodal');
+      const isKnownVisionModel = [
+        'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4-vision',
+        'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'claude-3-5-sonnet',
+        'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision',
+        'qwen-vl', 'qwen-vl-max',
+      ].some(id => modelConfig.id.toLowerCase().includes(id.toLowerCase()));
+      const supportsVision = isMultimodalModel || isKnownVisionModel;
+
       // 添加历史对话（如果前端传了 conversationHistory）
       // v1.9.0: 包含 toolCalls，确保多轮工具调用上下文不丢失
       // v1.9.3: 包含 attachments，确保多轮图片上下文不丢失
+      // v1.9.3-fix: 历史消息中的图片只在当前模型支持 Vision 时才发送
       if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
         for (const msg of conversationHistory) {
           if (msg.role === 'user' || msg.role === 'assistant') {
-            // v1.9.3: 如果历史用户消息包含图片附件，构建 Vision 格式
-            if (msg.role === 'user' && msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0) {
+            // v1.9.3: 如果历史用户消息包含图片附件，仅在模型支持 Vision 时构建 Vision 格式
+            if (msg.role === 'user' && msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0 && supportsVision) {
               const contentParts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'auto' | 'low' | 'high' } }> = [];
               if (msg.content) {
                 contentParts.push({ type: 'text', text: msg.content });
@@ -595,16 +607,43 @@ router.post('/chat', async (req, res) => {
               } else {
                 apiMessages.push({ role: msg.role, content: msg.content });
               }
+            } else if (msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0) {
+              // v1.9.3-fix: assistant 消息含 toolCalls 时，必须携带 tool_calls 字段
+              // OpenAI 要求 tool 角色消息前必须有带 tool_calls 的 assistant 消息
+              // 为每个 toolCall 生成稳定的 callId，确保 assistant.tool_calls[].id === tool.tool_call_id
+              const callIds = msg.toolCalls.map(() => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+              apiMessages.push({
+                role: 'assistant',
+                content: msg.content || null,
+                tool_calls: msg.toolCalls.map((tc: any, i: number) => ({
+                  id: callIds[i],
+                  type: 'function',
+                  function: {
+                    name: tc.name,
+                    arguments: tc.arguments,
+                  },
+                })),
+              } as any);
+              // 直接在这里插入 tool 角色消息，避免下方重复生成不一致的 ID
+              for (let i = 0; i < msg.toolCalls.length; i++) {
+                apiMessages.push({
+                  role: 'tool',
+                  content: msg.toolCalls[i].result,
+                  tool_call_id: callIds[i],
+                } as any);
+              }
             } else {
               apiMessages.push({ role: msg.role, content: msg.content });
             }
           }
-          // 如果历史消息包含 toolCalls，将其转换为 tool 角色消息注入上下文
-          if (msg.toolCalls && Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0) {
+          // 如果历史消息包含 toolCalls 且不是 assistant（assistant 已在上方处理），转换为 tool 角色消息
+          // v1.9.3-fix: assistant 的 toolCalls 已在上方连同 tool_calls 字段一起处理，此处仅处理 user 消息的 toolCalls
+          if (msg.role !== 'assistant' && msg.toolCalls && Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0) {
             for (const tc of msg.toolCalls) {
               apiMessages.push({
                 role: 'tool',
                 content: tc.result,
+                tool_call_id: tc.id || `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
               } as any);
             }
           }
@@ -620,22 +659,12 @@ router.post('/chat', async (req, res) => {
         const effectiveMessage = message?.trim() || '请仔细识别并分析这张图片的内容，理解用户的意图，然后根据图片内容和你的能力采取相应的行动（如调用工具查询数据、生成报表、执行操作等）。如果图片包含单据、订单、库存、商品等信息，请提取关键数据并执行相关业务操作。';
         contentParts.push({ type: 'text', text: effectiveMessage });
 
-        // v1.9.3: 判断模型是否真正支持多模态（图片）
-        const isMultimodalModel = modelConfig.capabilities?.includes('multimodal');
-        const isKnownVisionModel = [
-          'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4-vision',
-          'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'claude-3-5-sonnet',
-          'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision',
-          'deepseek-v4-pro', 'qwen-vl', 'qwen-vl-max',
-        ].some(id => modelConfig.id.toLowerCase().includes(id.toLowerCase()));
-        const supportsVision = isMultimodalModel || isKnownVisionModel;
-
         // 如果上传了图片但模型不支持，添加提示文本
         const hasImageAttachments = attachments.some((att: { type: string }) => att.type === 'image');
         if (hasImageAttachments && !supportsVision) {
           contentParts.push({
             type: 'text',
-            text: `\n⚠️ [系统提示] 当前模型 "${modelConfig.name}" (${modelConfig.id}) 不支持图片理解。已上传图片但模型无法识别内容。如需分析图片，请切换到支持多模态的模型，如：\n- GPT-4o (OpenAI)\n- Claude 3 Sonnet/Opus (Anthropic)\n- Gemini 1.5 Pro (Google)\n- DeepSeek V4 Pro (DeepSeek)\n- Qwen-VL (阿里云)\n`,
+            text: `\n⚠️ [系统提示] 当前模型 "${modelConfig.name}" (${modelConfig.id}) 不支持图片理解。已上传图片但模型无法识别内容。如需分析图片，请切换到支持多模态的模型，如：\n- GPT-4o (OpenAI)\n- Claude 3 Sonnet/Opus (Anthropic)\n- Gemini 1.5 Pro (Google)\n- Qwen-VL (阿里云)\n`,
           });
         }
 
@@ -701,7 +730,7 @@ router.post('/chat', async (req, res) => {
       const abortController = new AbortController();
       // 本地模型给更长的超时（大模型推理可能较慢）
       const timeoutMs = isLocalModel(modelConfig) ? 300000 : 120000;
-      const timeout = setTimeout(() => abortController.abort(), timeoutMs);
+      let timeout = setTimeout(() => abortController.abort(), timeoutMs);
 
       try {
         // 无 API Key 且非本地模型时使用模拟模式
@@ -737,14 +766,16 @@ router.post('/chat', async (req, res) => {
               // 发送 tool_call 事件到前端（用于展示工具调用过程）
               res.write(`data: ${JSON.stringify({
                 type: 'tool_call',
+                toolCallId: toolCall.id,
                 toolName: toolCall.function.name,
                 toolArgs: toolCall.function.arguments,
                 toolResult: result,
               })}\n\n`);
             },
-            // v1.9.2: 敏感工具权限请求 — 通过 EventEmitter 等待前端响应
+            // v1.9.3: 敏感工具权限请求 — 通过 EventEmitter 等待前端响应
+            // 无超时限制，用户可以在任何时候响应
             onPermissionRequest: (toolCall) => {
-              return new Promise((resolve, reject) => {
+              return new Promise((resolve) => {
                 const reqId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
                 // 发送权限请求事件到前端
                 res.write(`data: ${JSON.stringify({
@@ -753,22 +784,34 @@ router.post('/chat', async (req, res) => {
                   toolName: toolCall.function.name,
                   toolArgs: toolCall.function.arguments,
                 })}\n\n`);
+                // v1.9.3: 权限等待期间清除超时，无时间限制
+                clearTimeout(timeout);
+                timeout = null as any;
                 // 监听前端响应
                 const handler = (approved: boolean) => {
                   permissionEmitter.removeListener(reqId, handler);
+                  // 用户响应后恢复原始超时
+                  timeout = setTimeout(() => abortController.abort(), timeoutMs);
                   resolve(approved);
                 };
                 permissionEmitter.once(reqId, handler);
-                // 60 秒超时
-                setTimeout(() => {
-                  permissionEmitter.removeListener(reqId, handler);
-                  reject(new Error('权限请求超时'));
-                }, 60000);
               });
             },
             reasoningEffort,
           });
           fullContent = toolResult.content;
+          // v1.9.5-fix: 如果 toolLoop 返回空内容但有思考过程，用思考内容作为兜底
+          // 避免 fullContent 为空导致前端显示"内容生成失败"
+          if (!fullContent && thinkingContent) {
+            const trimmedThinking = thinkingContent.trim();
+            if (trimmedThinking) {
+              // 取最后 500 字作为摘要
+              const summary = trimmedThinking.length > 500
+                ? '（思考摘要）\n\n' + trimmedThinking.slice(-500)
+                : trimmedThinking;
+              fullContent = summary;
+            }
+          }
           var toolCallsJson = toolResult.toolCalls.length > 0 ? JSON.stringify(toolResult.toolCalls) : undefined;
         }
       } finally {

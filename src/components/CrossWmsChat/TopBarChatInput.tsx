@@ -6,6 +6,14 @@ import {
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import ImageIcon from '@mui/icons-material/Image';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import DescriptionIcon from '@mui/icons-material/Description';
+import AudioFileIcon from '@mui/icons-material/AudioFile';
+import VideoFileIcon from '@mui/icons-material/VideoFile';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import FolderZipIcon from '@mui/icons-material/FolderZip';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import CloseIcon from '@mui/icons-material/Close';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
@@ -51,6 +59,39 @@ interface TopBarChatInputProps {
   sendMessage: (content: string, options?: SendMessageOptions) => void;
   /** 停止生成函数（从外部注入，避免重复实例化 useChat） */
   stopGeneration: () => void;
+}
+
+// ===================== v1.9.3: 文件类型图标工具 =====================
+
+function getFileExtension(fileName: string): string {
+  const idx = fileName.lastIndexOf('.');
+  return idx >= 0 ? fileName.slice(idx + 1) : '';
+}
+
+function getFileTypeIconPreview(mimeType: string, fileName: string): React.ElementType {
+  const ext = getFileExtension(fileName).toLowerCase();
+  const mime = (mimeType || '').toLowerCase();
+  if (mime.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) return ImageIcon;
+  if (mime === 'application/pdf' || ext === 'pdf') return PictureAsPdfIcon;
+  if (mime.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext)) return AudioFileIcon;
+  if (mime.startsWith('video/') || ['mp4', 'avi', 'mov', 'mkv', 'webm'].includes(ext)) return VideoFileIcon;
+  if (['csv', 'xls', 'xlsx'].includes(ext)) return TableChartIcon;
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return FolderZipIcon;
+  if (mime.startsWith('text/') || ['txt', 'md', 'json', 'xml', 'yaml', 'yml', 'log'].includes(ext)) return DescriptionIcon;
+  return InsertDriveFileIcon;
+}
+
+function getFileTypeColor(mimeType: string, fileName: string): string {
+  const ext = getFileExtension(fileName).toLowerCase();
+  const mime = (mimeType || '').toLowerCase();
+  if (mime.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) return '#F59E0B';
+  if (mime === 'application/pdf' || ext === 'pdf') return '#EF4444';
+  if (mime.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext)) return '#8B5CF6';
+  if (mime.startsWith('video/') || ['mp4', 'avi', 'mov', 'mkv', 'webm'].includes(ext)) return '#EC4899';
+  if (['csv', 'xls', 'xlsx'].includes(ext)) return '#10B981';
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return '#6B7280';
+  if (mime.startsWith('text/') || ['txt', 'md', 'json', 'xml', 'yaml', 'yml', 'log'].includes(ext)) return '#3B82F6';
+  return '#6B7280';
 }
 
 // ===================== Component =====================
@@ -676,7 +717,9 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
                     }}
                   />
                 ) : (
-                  <AttachFileIcon sx={{ fontSize: 16, color: gs.textMuted }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '6px', bgcolor: getFileTypeColor(att.mimeType, att.fileName) + '18', flexShrink: 0 }}>
+                    {React.createElement(getFileTypeIconPreview(att.mimeType, att.fileName), { sx: { fontSize: 18, color: getFileTypeColor(att.mimeType, att.fileName) } })}
+                  </Box>
                 )}
                 <Box sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontSize: 11, color: gs.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

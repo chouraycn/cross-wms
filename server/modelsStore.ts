@@ -113,6 +113,19 @@ const BUILTIN_MODELS: ModelConfig[] = [
     maxTokens: 384_000,
     capabilities: ['costEffective', 'fast', 'general'],
   },
+  // === Ollama (本地) ===
+  {
+    id: 'ollama-llama3.1',
+    name: 'Llama 3.1',
+    provider: 'ollama',
+    apiEndpoint: 'http://localhost:11434/v1',
+    enabled: false,
+    isDefault: false,
+    description: 'Ollama 本地部署 Llama 3.1',
+    contextWindow: 128_000,
+    maxTokens: 4_096,
+    capabilities: ['general'],
+  },
 ];
 
 /** 确保 ~/.cdf-know-clow/ai-models 目录存在 */
@@ -344,11 +357,14 @@ interface ProviderDiscovery {
   provider: ModelProvider;
   /** GET /v1/models 的 base URL */
   modelsEndpoint: string;
+  /** v1.9.3: Ollama 原生 API 端点（如 /api/tags） */
+  nativeEndpoint?: string;
   /** 从 API 返回的 model id 推断 ModelConfig */
   mapper: (modelId: string) => ModelConfig | null;
 }
 
 const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
+  // ========== 中国模型（优先） ==========
   // === DeepSeek ===
   {
     provider: 'deepseek',
@@ -377,162 +393,6 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
         name: info.name || id,
         provider: 'deepseek' as ModelProvider,
         apiEndpoint: 'https://api.deepseek.com/v1',
-        enabled: false,
-        isDefault: false,
-        description: info.description,
-        contextWindow: info.contextWindow,
-        maxTokens: info.maxTokens,
-        capabilities: info.capabilities,
-      };
-    },
-  },
-
-  // === OpenAI ===
-  {
-    provider: 'openai',
-    modelsEndpoint: 'https://api.openai.com/v1',
-    mapper: (id: string) => {
-      const known: Record<string, Partial<ModelConfig>> = {
-        'gpt-4o': {
-          name: 'GPT-4o',
-          capabilities: ['multimodal', 'reasoning', 'general'],
-          contextWindow: 128_000,
-          maxTokens: 16_384,
-          description: 'OpenAI GPT-4o，多模态、推理、128K 上下文',
-        },
-        'gpt-4o-mini': {
-          name: 'GPT-4o Mini',
-          capabilities: ['fast', 'costEffective', 'general'],
-          contextWindow: 128_000,
-          maxTokens: 16_384,
-          description: 'OpenAI GPT-4o Mini，轻量快速、高性价比',
-        },
-        'o3': {
-          name: 'OpenAI o3',
-          capabilities: ['reasoning', 'code', 'general'],
-          contextWindow: 200_000,
-          maxTokens: 100_000,
-          description: 'OpenAI o3，深度推理模型，支持 reasoning_effort',
-        },
-        'o3-mini': {
-          name: 'OpenAI o3 Mini',
-          capabilities: ['reasoning', 'fast', 'costEffective', 'general'],
-          contextWindow: 200_000,
-          maxTokens: 65_536,
-          description: 'OpenAI o3 Mini，轻量推理模型',
-        },
-        'o4-mini': {
-          name: 'OpenAI o4 Mini',
-          capabilities: ['reasoning', 'fast', 'code', 'general'],
-          contextWindow: 200_000,
-          maxTokens: 100_000,
-          description: 'OpenAI o4 Mini，最新轻量推理模型',
-        },
-      };
-      const info = known[id];
-      if (!info) return null;
-      return {
-        id,
-        name: info.name || id,
-        provider: 'openai' as ModelProvider,
-        apiEndpoint: 'https://api.openai.com/v1',
-        enabled: false,
-        isDefault: false,
-        description: info.description,
-        contextWindow: info.contextWindow,
-        maxTokens: info.maxTokens,
-        capabilities: info.capabilities,
-      };
-    },
-  },
-
-  // === Anthropic ===
-  {
-    provider: 'anthropic',
-    modelsEndpoint: 'https://api.anthropic.com/v1',
-    mapper: (id: string) => {
-      const known: Record<string, Partial<ModelConfig>> = {
-        'claude-sonnet-4-20250514': {
-          name: 'Claude Sonnet 4',
-          capabilities: ['reasoning', 'code', 'longContext', 'general'],
-          contextWindow: 200_000,
-          maxTokens: 64_000,
-          description: 'Anthropic Claude Sonnet 4，推理、代码、200K 上下文',
-        },
-        'claude-opus-4-20250514': {
-          name: 'Claude Opus 4',
-          capabilities: ['reasoning', 'code', 'longContext', 'general'],
-          contextWindow: 200_000,
-          maxTokens: 32_000,
-          description: 'Anthropic Claude Opus 4，最强推理与代码能力',
-        },
-        'claude-3-5-sonnet-20241022': {
-          name: 'Claude 3.5 Sonnet',
-          capabilities: ['code', 'longContext', 'general'],
-          contextWindow: 200_000,
-          maxTokens: 8_192,
-          description: 'Anthropic Claude 3.5 Sonnet，代码与长文本',
-        },
-        'claude-3-5-haiku-20241022': {
-          name: 'Claude 3.5 Haiku',
-          capabilities: ['fast', 'costEffective', 'general'],
-          contextWindow: 200_000,
-          maxTokens: 8_192,
-          description: 'Anthropic Claude 3.5 Haiku，快速轻量',
-        },
-      };
-      const info = known[id];
-      if (!info) return null;
-      return {
-        id,
-        name: info.name || id,
-        provider: 'anthropic' as ModelProvider,
-        apiEndpoint: 'https://api.anthropic.com/v1',
-        enabled: false,
-        isDefault: false,
-        description: info.description,
-        contextWindow: info.contextWindow,
-        maxTokens: info.maxTokens,
-        capabilities: info.capabilities,
-      };
-    },
-  },
-
-  // === Google Gemini ===
-  {
-    provider: 'google',
-    modelsEndpoint: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    mapper: (id: string) => {
-      const known: Record<string, Partial<ModelConfig>> = {
-        'gemini-2.5-pro': {
-          name: 'Gemini 2.5 Pro',
-          capabilities: ['reasoning', 'multimodal', 'longContext', 'code', 'general'],
-          contextWindow: 1_000_000,
-          maxTokens: 65_536,
-          description: 'Google Gemini 2.5 Pro，1M 上下文、推理、多模态',
-        },
-        'gemini-2.5-flash': {
-          name: 'Gemini 2.5 Flash',
-          capabilities: ['fast', 'multimodal', 'longContext', 'costEffective', 'general'],
-          contextWindow: 1_000_000,
-          maxTokens: 65_536,
-          description: 'Google Gemini 2.5 Flash，1M 上下文、快速、高性价比',
-        },
-        'gemini-2.0-flash': {
-          name: 'Gemini 2.0 Flash',
-          capabilities: ['fast', 'multimodal', 'costEffective', 'general'],
-          contextWindow: 1_000_000,
-          maxTokens: 8_192,
-          description: 'Google Gemini 2.0 Flash，多模态、快速',
-        },
-      };
-      const info = known[id];
-      if (!info) return null;
-      return {
-        id,
-        name: info.name || id,
-        provider: 'google' as ModelProvider,
-        apiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/openai',
         enabled: false,
         isDefault: false,
         description: info.description,
@@ -837,33 +697,544 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
       };
     },
   },
+
+  // ========== 国外模型 ==========
+  // === OpenAI ===
+  {
+    provider: 'openai',
+    modelsEndpoint: 'https://api.openai.com/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'gpt-4o': {
+          name: 'GPT-4o',
+          capabilities: ['multimodal', 'reasoning', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 16_384,
+          description: 'OpenAI GPT-4o，多模态、推理、128K 上下文',
+        },
+        'gpt-4o-mini': {
+          name: 'GPT-4o Mini',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 16_384,
+          description: 'OpenAI GPT-4o Mini，轻量快速、高性价比',
+        },
+        'o3': {
+          name: 'OpenAI o3',
+          capabilities: ['reasoning', 'code', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 100_000,
+          description: 'OpenAI o3，深度推理模型，支持 reasoning_effort',
+        },
+        'o3-mini': {
+          name: 'OpenAI o3 Mini',
+          capabilities: ['reasoning', 'fast', 'costEffective', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 65_536,
+          description: 'OpenAI o3 Mini，轻量推理模型',
+        },
+        'o4-mini': {
+          name: 'OpenAI o4 Mini',
+          capabilities: ['reasoning', 'fast', 'code', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 100_000,
+          description: 'OpenAI o4 Mini，最新轻量推理模型',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'openai' as ModelProvider,
+        apiEndpoint: 'https://api.openai.com/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === Anthropic ===
+  {
+    provider: 'anthropic',
+    modelsEndpoint: 'https://api.anthropic.com/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'claude-sonnet-4-20250514': {
+          name: 'Claude Sonnet 4',
+          capabilities: ['reasoning', 'code', 'longContext', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 64_000,
+          description: 'Anthropic Claude Sonnet 4，推理、代码、200K 上下文',
+        },
+        'claude-opus-4-20250514': {
+          name: 'Claude Opus 4',
+          capabilities: ['reasoning', 'code', 'longContext', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 32_000,
+          description: 'Anthropic Claude Opus 4，最强推理与代码能力',
+        },
+        'claude-3-5-sonnet-20241022': {
+          name: 'Claude 3.5 Sonnet',
+          capabilities: ['code', 'longContext', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 8_192,
+          description: 'Anthropic Claude 3.5 Sonnet，代码与长文本',
+        },
+        'claude-3-5-haiku-20241022': {
+          name: 'Claude 3.5 Haiku',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 8_192,
+          description: 'Anthropic Claude 3.5 Haiku，快速轻量',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'anthropic' as ModelProvider,
+        apiEndpoint: 'https://api.anthropic.com/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === Google Gemini ===
+  {
+    provider: 'google',
+    modelsEndpoint: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'gemini-2.5-pro': {
+          name: 'Gemini 2.5 Pro',
+          capabilities: ['reasoning', 'multimodal', 'longContext', 'code', 'general'],
+          contextWindow: 1_000_000,
+          maxTokens: 65_536,
+          description: 'Google Gemini 2.5 Pro，1M 上下文、推理、多模态',
+        },
+        'gemini-2.5-flash': {
+          name: 'Gemini 2.5 Flash',
+          capabilities: ['fast', 'multimodal', 'longContext', 'costEffective', 'general'],
+          contextWindow: 1_000_000,
+          maxTokens: 65_536,
+          description: 'Google Gemini 2.5 Flash，1M 上下文、快速、高性价比',
+        },
+        'gemini-2.0-flash': {
+          name: 'Gemini 2.0 Flash',
+          capabilities: ['fast', 'multimodal', 'costEffective', 'general'],
+          contextWindow: 1_000_000,
+          maxTokens: 8_192,
+          description: 'Google Gemini 2.0 Flash，多模态、快速',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'google' as ModelProvider,
+        apiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === xAI (Grok) ===
+  {
+    provider: 'xai',
+    modelsEndpoint: 'https://api.x.ai/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'grok-3': {
+          name: 'Grok 3',
+          capabilities: ['reasoning', 'code', 'general'],
+          contextWindow: 131_072,
+          maxTokens: 32_768,
+          description: 'xAI Grok 3，推理与代码',
+        },
+        'grok-3-mini': {
+          name: 'Grok 3 Mini',
+          capabilities: ['fast', 'costEffective', 'reasoning', 'general'],
+          contextWindow: 131_072,
+          maxTokens: 32_768,
+          description: 'xAI Grok 3 Mini，轻量推理',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'xai' as ModelProvider,
+        apiEndpoint: 'https://api.x.ai/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // ========== 更多中国模型 & 本地 ==========
+  // === 字节豆包 (Volcengine/Ark) ===
+  {
+    provider: 'volcengine',
+    modelsEndpoint: 'https://ark.cn-beijing.volces.com/api/v3',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'doubao-pro-32k': {
+          name: '豆包 Pro 32K',
+          capabilities: ['reasoning', 'code', 'general'],
+          contextWindow: 32_000,
+          maxTokens: 4_096,
+          description: '字节豆包 Pro，推理与代码',
+        },
+        'doubao-pro-128k': {
+          name: '豆包 Pro 128K',
+          capabilities: ['reasoning', 'longContext', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 4_096,
+          description: '字节豆包 Pro 128K，长文本',
+        },
+        'doubao-lite-32k': {
+          name: '豆包 Lite 32K',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 32_000,
+          maxTokens: 4_096,
+          description: '字节豆包 Lite，极速轻量',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'volcengine' as ModelProvider,
+        apiEndpoint: 'https://ark.cn-beijing.volces.com/api/v3',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === 零一万物 (Yi) ===
+  {
+    provider: 'custom',
+    modelsEndpoint: 'https://api.lingyiwanwu.com/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'yi-large': {
+          name: 'Yi Large',
+          capabilities: ['reasoning', 'longContext', 'general'],
+          contextWindow: 64_000,
+          maxTokens: 8_192,
+          description: '零一万物 Yi Large，推理与长文本',
+        },
+        'yi-medium': {
+          name: 'Yi Medium',
+          capabilities: ['general', 'costEffective'],
+          contextWindow: 32_000,
+          maxTokens: 4_096,
+          description: '零一万物 Yi Medium，均衡能力',
+        },
+        'yi-spark': {
+          name: 'Yi Spark',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 16_000,
+          maxTokens: 4_096,
+          description: '零一万物 Yi Spark，极速响应',
+        },
+        'yi-vision': {
+          name: 'Yi Vision',
+          capabilities: ['multimodal', 'general'],
+          contextWindow: 16_000,
+          maxTokens: 4_096,
+          description: '零一万物 Yi Vision，多模态理解',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'custom' as ModelProvider,
+        apiEndpoint: 'https://api.lingyiwanwu.com/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === 百川 ===
+  {
+    provider: 'custom',
+    modelsEndpoint: 'https://api.baichuan-ai.com/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'Baichuan4': {
+          name: '百川 4',
+          capabilities: ['reasoning', 'code', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 8_192,
+          description: '百川 4，推理与代码',
+        },
+        'Baichuan3-Turbo': {
+          name: '百川 3 Turbo',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 32_000,
+          maxTokens: 4_096,
+          description: '百川 3 Turbo，极速响应',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'custom' as ModelProvider,
+        apiEndpoint: 'https://api.baichuan-ai.com/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === 阶跃星辰 (StepFun) ===
+  {
+    provider: 'custom',
+    modelsEndpoint: 'https://api.stepfun.com/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'step-2-16k': {
+          name: 'Step-2 16K',
+          capabilities: ['reasoning', 'code', 'general'],
+          contextWindow: 16_000,
+          maxTokens: 4_096,
+          description: '阶跃星辰 Step-2，推理与代码',
+        },
+        'step-1-32k': {
+          name: 'Step-1 32K',
+          capabilities: ['general', 'costEffective'],
+          contextWindow: 32_000,
+          maxTokens: 4_096,
+          description: '阶跃星辰 Step-1，均衡能力',
+        },
+        'step-1-8k': {
+          name: 'Step-1 8K',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 8_000,
+          maxTokens: 4_096,
+          description: '阶跃星辰 Step-1 8K，极速轻量',
+        },
+        'step-vision': {
+          name: 'Step Vision',
+          capabilities: ['multimodal', 'general'],
+          contextWindow: 8_000,
+          maxTokens: 4_096,
+          description: '阶跃星辰 Step Vision，多模态理解',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'custom' as ModelProvider,
+        apiEndpoint: 'https://api.stepfun.com/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === OpenRouter ===
+  {
+    provider: 'openrouter',
+    modelsEndpoint: 'https://openrouter.ai/api/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'openai/gpt-4o': {
+          name: 'GPT-4o (OpenRouter)',
+          capabilities: ['multimodal', 'reasoning', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 16_384,
+          description: '通过 OpenRouter 路由的 GPT-4o',
+        },
+        'anthropic/claude-sonnet-4': {
+          name: 'Claude Sonnet 4 (OpenRouter)',
+          capabilities: ['reasoning', 'code', 'longContext', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 64_000,
+          description: '通过 OpenRouter 路由的 Claude Sonnet 4',
+        },
+        'google/gemini-2.5-pro': {
+          name: 'Gemini 2.5 Pro (OpenRouter)',
+          capabilities: ['reasoning', 'multimodal', 'longContext', 'code', 'general'],
+          contextWindow: 1_000_000,
+          maxTokens: 65_536,
+          description: '通过 OpenRouter 路由的 Gemini 2.5 Pro',
+        },
+        'deepseek/deepseek-v4-pro': {
+          name: 'DeepSeek V4 Pro (OpenRouter)',
+          capabilities: ['multimodal', 'reasoning', 'general'],
+          contextWindow: 1_000_000,
+          maxTokens: 384_000,
+          description: '通过 OpenRouter 路由的 DeepSeek V4 Pro',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'openrouter' as ModelProvider,
+        apiEndpoint: 'https://openrouter.ai/api/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === Ollama (本地) ===
+  {
+    provider: 'ollama',
+    modelsEndpoint: 'http://localhost:11434/v1',
+    // Ollama 使用原生 API /api/tags 而非 OpenAI 兼容端点
+    nativeEndpoint: 'http://localhost:11434/api/tags',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'llama3.1': {
+          name: 'Llama 3.1',
+          capabilities: ['general'],
+          contextWindow: 128_000,
+          maxTokens: 4_096,
+          description: 'Ollama 本地部署 Llama 3.1',
+        },
+        'qwen2.5': {
+          name: 'Qwen 2.5',
+          capabilities: ['general', 'code'],
+          contextWindow: 128_000,
+          maxTokens: 4_096,
+          description: 'Ollama 本地部署 Qwen 2.5',
+        },
+        'deepseek-r1': {
+          name: 'DeepSeek R1',
+          capabilities: ['reasoning', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 4_096,
+          description: 'Ollama 本地部署 DeepSeek R1',
+        },
+        'gemma2': {
+          name: 'Gemma 2',
+          capabilities: ['general', 'costEffective'],
+          contextWindow: 128_000,
+          maxTokens: 4_096,
+          description: 'Ollama 本地部署 Gemma 2',
+        },
+        'mistral': {
+          name: 'Mistral',
+          capabilities: ['general', 'code'],
+          contextWindow: 128_000,
+          maxTokens: 4_096,
+          description: 'Ollama 本地部署 Mistral',
+        },
+      };
+      const info = known[id];
+      // v1.9.3: 未知模型也返回，不返回 null（用户可能安装了任意模型）
+      const displayName = info?.name || id.split(':')[0] || id;
+      return {
+        id,
+        name: displayName,
+        provider: 'ollama' as ModelProvider,
+        apiEndpoint: 'http://localhost:11434/v1',
+        enabled: false,
+        isDefault: false,
+        description: info?.description || `Ollama 本地部署 ${displayName}`,
+        contextWindow: info?.contextWindow || 128_000,
+        maxTokens: info?.maxTokens || 4_096,
+        capabilities: info?.capabilities || ['general'],
+      };
+    },
+  },
 ];
 
 /**
  * 从单个提供商拉取模型列表
- * 返回发现的模型配置数组（仅包含已知模型）
+ * 返回发现的模型配置数组
+ * v1.9.3: 支持 Ollama 原生 API (/api/tags)
  */
 async function fetchModelsFromProvider(
-  discovery: ProviderDiscovery,
+  discovery: ProviderDiscovery & { nativeEndpoint?: string },
   apiKey: string,
 ): Promise<ModelConfig[]> {
   try {
-    const url = `${discovery.modelsEndpoint.replace(/\/$/, '')}/models`;
+    // v1.9.3: Ollama 使用原生 /api/tags 端点
+    const isOllama = discovery.provider === 'ollama';
+    const url = isOllama
+      ? (discovery.nativeEndpoint || discovery.modelsEndpoint)
+      : `${discovery.modelsEndpoint.replace(/\/$/, '')}/models`;
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
     const resp = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers,
       signal: AbortSignal.timeout(8000), // 8s 超时
     });
     if (!resp.ok) return [];
-    const data = await resp.json() as { data?: Array<{ id: string }> };
-    if (!data.data || !Array.isArray(data.data)) return [];
+
+    const data = await resp.json();
+
+    // Ollama /api/tags 返回 { models: [...] }，OpenAI /models 返回 { data: [...] }
+    let modelIds: string[] = [];
+    if (isOllama && Array.isArray((data as any).models)) {
+      modelIds = (data as any).models.map((m: any) => m.name || m.model || '');
+    } else if (Array.isArray(data.data)) {
+      modelIds = data.data.map((m: any) => m.id || '');
+    }
 
     const models: ModelConfig[] = [];
-    for (const item of data.data) {
-      const mapped = discovery.mapper(item.id);
+    for (const id of modelIds) {
+      const mapped = discovery.mapper(id);
       if (mapped) models.push(mapped);
     }
     return models;
@@ -885,16 +1256,22 @@ export async function syncModelsFromApi(): Promise<void> {
     const newModels: ModelConfig[] = [];
 
     for (const discovery of PROVIDER_DISCOVERY_LIST) {
-      // 找到该提供商下有 API Key 的模型
-      const providerModels = config.models.filter(
-        m => m.provider === discovery.provider && (m.apiKey?.trim() || m.apiKeys?.some(k => k.key?.trim())),
-      );
-      if (providerModels.length === 0) continue;
+      // v1.9.3: Ollama 是本地模型，不需要 API Key，直接发现
+      const isLocalProvider = discovery.provider === 'ollama';
 
-      // 使用第一个可用的 API Key
-      const keyModel = providerModels[0];
-      const apiKey = keyModel.apiKey?.trim() || keyModel.apiKeys?.find(k => k.key?.trim())?.key?.trim();
-      if (!apiKey) continue;
+      // 找到该提供商下有 API Key 的模型（本地模型跳过此检查）
+      const providerModels = isLocalProvider
+        ? config.models.filter(m => m.provider === discovery.provider)
+        : config.models.filter(
+            m => m.provider === discovery.provider && (m.apiKey?.trim() || m.apiKeys?.some(k => k.key?.trim())),
+          );
+      if (providerModels.length === 0 && !isLocalProvider) continue;
+
+      // 使用第一个可用的 API Key（本地模型不需要 Key）
+      const apiKey = isLocalProvider
+        ? ''
+        : (providerModels[0].apiKey?.trim() || providerModels[0].apiKeys?.find((k: any) => k.key?.trim())?.key?.trim() || '');
+      if (!isLocalProvider && !apiKey) continue;
 
       const discovered = await fetchModelsFromProvider(discovery, apiKey);
       for (const model of discovered) {

@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 import {
   Box, Typography, Dialog, Button, IconButton, Chip, Checkbox,
-  CircularProgress, Tooltip, useTheme,
+  CircularProgress, Tooltip, useTheme, TextField,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
@@ -43,6 +43,27 @@ const LocalModelDiscoverDialog: React.FC<LocalModelDiscoverDialogProps> = ({
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [discovered, setDiscovered] = useState(false);
   const [error, setError] = useState('');
+  const [customUrl, setCustomUrl] = useState('');
+
+  // 弹窗打开时自动检测宿主机 IP
+  React.useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await fetch('/api/models/host-ip');
+        const data = await resp.json();
+        if (!cancelled && data.hostIp) {
+          setCustomUrl(`http://${data.hostIp}:11434`);
+        } else if (!cancelled) {
+          setCustomUrl('http://localhost:11434');
+        }
+      } catch {
+        if (!cancelled) setCustomUrl('http://localhost:11434');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
 
   // 弹窗关闭时重置状态
   React.useEffect(() => {
@@ -58,7 +79,17 @@ const LocalModelDiscoverDialog: React.FC<LocalModelDiscoverDialogProps> = ({
     setIsDiscovering(true);
     setError('');
     try {
-      const models = await api.discoverLocalModels();
+      // v1.9.3: 通过后端代理发现（传入自定义 Ollama 地址，避免浏览器 CORS 限制）
+      const resp = await fetch('/api/models/discover-local', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ollamaUrl: customUrl }),
+      });
+      if (!resp.ok) {
+        throw new Error(`服务器返回 ${resp.status}`);
+      }
+      const data = await resp.json();
+      const models: DiscoveredLocalModel[] = data.data || [];
       setDiscoveredModels(models);
       setDiscovered(true);
     } catch (e) {
@@ -123,6 +154,30 @@ const LocalModelDiscoverDialog: React.FC<LocalModelDiscoverDialogProps> = ({
         <Typography sx={{ fontSize: '0.75rem', color: styles.textMuted }}>
           自动扫描本地 Ollama、vLLM、LM Studio 等推理服务
         </Typography>
+
+        {/* Ollama 地址输入 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography sx={{ fontSize: '0.75rem', color: styles.textSecondary, whiteSpace: 'nowrap' }}>
+            Ollama 地址：
+          </Typography>
+          <TextField
+            size="small"
+            value={customUrl}
+            onChange={(e) => setCustomUrl(e.target.value)}
+            placeholder="http://localhost:11434"
+            sx={{
+              flex: 1,
+              '& .MuiInputBase-input': {
+                fontSize: '0.75rem',
+                fontFamily: 'monospace',
+                p: '4px 8px',
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: styles.borderLight,
+              },
+            }}
+          />
+        </Box>
 
         {/* 发现按钮 */}
         {!discovered && (

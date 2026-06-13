@@ -363,6 +363,48 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             let lastIndex = 0;
             let settled = false; // 防止 resolve/reject 多次调用
 
+            // v1.9.3: 平滑渲染队列 — 解决 XHR 缓冲导致文字突然跳出的问题
+            let pendingContent = '';
+            let displayedContent = '';
+            let renderTimer: ReturnType<typeof setTimeout> | null = null;
+            const BASE_CHUNK_SIZE = 6;  // 基础每次渲染字符数
+            const RENDER_INTERVAL = 20;  // 渲染间隔 ms
+
+            const flushRender = () => {
+              if (pendingContent.length === 0) {
+                renderTimer = null;
+                return;
+              }
+              // 自适应速度：pending 越多，每次渲染越多（加速追赶）
+              const adaptiveChunk = Math.min(
+                Math.max(BASE_CHUNK_SIZE, Math.ceil(pendingContent.length / 15)),
+                pendingContent.length
+              );
+              const chunk = pendingContent.slice(0, adaptiveChunk);
+              pendingContent = pendingContent.slice(adaptiveChunk);
+              displayedContent += chunk;
+              // v1.9.3: 只更新 streamingMsg.content，不修改 fullContent
+              streamingMsg.content = displayedContent;
+              onSessionUpdateRef.current({
+                ...sessionWithStreaming,
+                messages: [
+                  ...sessionWithStreaming.messages.slice(0, -1),
+                  { ...streamingMsg, content: displayedContent },
+                ],
+              });
+              if (pendingContent.length > 0) {
+                renderTimer = setTimeout(flushRender, RENDER_INTERVAL);
+              } else {
+                renderTimer = null;
+              }
+            };
+
+            const scheduleRender = () => {
+              if (!renderTimer) {
+                renderTimer = setTimeout(flushRender, RENDER_INTERVAL);
+              }
+            };
+
             xhr.onreadystatechange = () => {
               if (xhr.readyState >= 3) { // LOADING or DONE
                 if (stoppedRef.current) {
@@ -384,10 +426,9 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                           continue;
                         }
                         result += data.content;
-                        // 实时更新流式消息
-                        fullContent = result;
-                        streamingMsg.content = result;
-                        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: result }] });
+                        // v1.9.3: 使用平滑渲染队列，避免文字突然跳出
+                        pendingContent += data.content;
+                        scheduleRender();
                       }
                       if (data.type === 'init') {
                         if (data.autoReason) autoReason = data.autoReason;
@@ -412,6 +453,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                       // v1.9.0: 处理工具调用事件（Tool Calling）
                       if (data.type === 'tool_call') {
                         const toolCall: ToolCallInfo = {
+                          id: data.toolCallId,
                           name: data.toolName || 'unknown',
                           arguments: data.toolArgs || '{}',
                           result: data.toolResult || '',
@@ -430,12 +472,19 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
                         onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
                       }
-                      // v1.9.2: 处理敏感工具权限请求
+                      // v1.9.3: 处理敏感工具权限请求 — 内联显示在消息中
                       if (data.type === 'permission_request') {
-                        requestPermission({
+                        streamingMsg.permissionRequest = {
                           reqId: data.reqId,
                           toolName: data.toolName,
                           toolArgs: data.toolArgs,
+                        };
+                        onSessionUpdateRef.current({
+                          ...sessionWithStreaming,
+                          messages: [
+                            ...sessionWithStreaming.messages.slice(0, -1),
+                            { ...streamingMsg },
+                          ],
                         });
                       }
                       if (data.type === 'done') {
@@ -459,6 +508,22 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               }
               if (xhr.readyState === 4 && !settled) {
                 settled = true;
+                // v1.9.3-fix: 清除渲染计时器，防止 flushRender 在流结束后继续运行并覆盖完整内容
+                if (renderTimer) {
+                  clearTimeout(renderTimer);
+                  renderTimer = null;
+                }
+                // 立即将剩余内容刷新到 UI — 使用 result（完整内容）一次性同步更新，避免 setTimeout 竞态
+                // result 由 SSE text 事件累积得到，是最终完整内容
+                pendingContent = '';
+                streamingMsg.content = result;
+                onSessionUpdateRef.current({
+                  ...sessionWithStreaming,
+                  messages: [
+                    ...sessionWithStreaming.messages.slice(0, -1),
+                    { ...streamingMsg, content: result },
+                  ],
+                });
                 // DONE — 无论 status 如何，只要有响应就视为成功（后端总是返回 200）
                 resolve({ content: result, autoReason, autoReasonType, errorCode, errorMessage, thinkingDuration });
               }
@@ -510,7 +575,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       // v1.8.0: 流结束，将占位消息替换为最终消息
       streamingMsgIdRef.current = null;
       streamingMsg.isStreaming = false;
-      streamingMsg.content = fullContent;
       streamingMsg.thinkingDuration = currentThinkingDuration;
       streamingMsg.thinkingType = currentThinkingType;
       streamingMsg.autoReason = currentAutoReason;
@@ -521,6 +585,19 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           error: currentErrorMessage || '请求失败',
           errorCode: currentErrorCode,
         };
+      }
+
+      // v1.9.5-fix: 如果 AI 没有输出文本内容（只有思考或只有工具调用），用思考内容兜底
+      // 避免 fullContent 为空导致显示"内容生成失败，请重试"
+      if (!fullContent && !currentErrorCode) {
+        const thinking = streamingMsg.thinking;
+        if (thinking && thinking.trim()) {
+          const trimmed = thinking.trim();
+          fullContent = trimmed.length > 500
+            ? `> ⚡ AI 思考过程如下，未生成独立文本回答：\n\n${trimmed.slice(-500)}`
+            : `> ⚡ AI 思考过程如下，未生成独立文本回答：\n\n${trimmed}`;
+          streamingMsg.content = fullContent;
+        }
       }
 
       // ---- inventory_query JSON 块拦截逻辑 ----
@@ -612,6 +689,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         })();
       } else {
         // 无 inventory_query JSON 块，直接更新最终消息
+        // v1.9.3: 确保 content 是完整的（渲染队列可能还没消化完）
+        streamingMsg.content = fullContent;
         onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), streamingMsg] });
       }
 

@@ -791,16 +791,7 @@ const AutomationPage: React.FC = () => {
       />
 
       {/* 动画 */}
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes pulse-ring {
-          0% { opacity: 0.6; transform: scale(1); }
-          100% { opacity: 0; transform: scale(1.15); }
-        }
-      `}</style>
+      {/* v1.9.5-fix: 移除未使用的 @keyframes，避免 WKWebView 兼容性问题 */}
     </Box>
   );
 };

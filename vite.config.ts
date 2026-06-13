@@ -64,6 +64,12 @@ export default defineConfig({
           });
         },
       },
+      // v1.9.3: 代理 Ollama 本地 API，绕过浏览器 CORS 限制
+      '/ollama-api': {
+        target: 'http://localhost:11434',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ollama-api/, ''),
+      },
     },
   },
   define: {

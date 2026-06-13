@@ -178,7 +178,7 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
         </svg>
       );
 
-    // ── 通义千问 (Qwen) — 官方 Q 标 ──────────────────────────
+    // ── 通义千问 (Qwen) — 官方品牌色 #615CED ─────────────────
     case 'qwen':
       return (
         <svg
@@ -189,16 +189,18 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
           xmlns="http://www.w3.org/2000/svg"
           style={{ flexShrink: 0 }}
         >
-          <circle cx="12" cy="12" r="10.5" stroke="#6C5CE7" strokeWidth="1.6" fill="none" />
-          <path
-            d="M10.5 6c-2.1 1.5-3.5 3.5-3.5 6 0 4.5 5 6.5 5 6.5s5-2 5-6.5c0-2.5-1.4-4.5-3.5-6L12 8.5 Z"
-            fill="#6C5CE7"
-            fillOpacity="0.15"
-            stroke="#6C5CE7"
-            strokeWidth="1.6"
-            strokeLinejoin="round"
-          />
-          <path d="M9.5 12.5h5" stroke="#6C5CE7" strokeWidth="1.5" strokeLinecap="round" />
+          <rect width="24" height="24" rx="5" fill="#615CED" />
+          <text
+            x="12"
+            y="17.5"
+            textAnchor="middle"
+            fill="white"
+            fontSize="15"
+            fontWeight="700"
+            fontFamily="system-ui, -apple-system, sans-serif"
+          >
+            Q
+          </text>
         </svg>
       );
 

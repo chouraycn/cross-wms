@@ -4,7 +4,35 @@ import os from 'os';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 
-const DB_PATH = path.join(os.homedir(), '.cdf-know-clow', 'chat.db');
+const DB_DIR = path.join(os.homedir(), '.cdf-know-clow');
+const DB_PATH = path.join(DB_DIR, 'chat.db');
+const DB_BACKUP_PATH = path.join(DB_DIR, 'chat.db.bak');
+
+/** v1.9.3: 备份数据库 */
+function backupDatabase(): void {
+  try {
+    if (fs.existsSync(DB_PATH)) {
+      fs.copyFileSync(DB_PATH, DB_BACKUP_PATH);
+      console.log('[DB] 数据库已备份到 chat.db.bak');
+    }
+  } catch (e) {
+    console.warn('[DB] 数据库备份失败:', e);
+  }
+}
+
+/** v1.9.3: 从备份恢复数据库 */
+function restoreDatabaseFromBackup(): boolean {
+  try {
+    if (fs.existsSync(DB_BACKUP_PATH) && !fs.existsSync(DB_PATH)) {
+      fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
+      console.log('[DB] 数据库已从备份恢复');
+      return true;
+    }
+  } catch (e) {
+    console.warn('[DB] 从备份恢复数据库失败:', e);
+  }
+  return false;
+}
 
 // ===================== Chat Session Types =====================
 
@@ -262,6 +290,13 @@ export function initDb(): Database.Database {
   if (db) return db;
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+  // v1.9.3: 如果数据库文件丢失，尝试从备份恢复
+  restoreDatabaseFromBackup();
+
+  // v1.9.3: 如果数据库存在，先备份
+  backupDatabase();
+
   db = new Database(DB_PATH);
 
   // Enable foreign keys

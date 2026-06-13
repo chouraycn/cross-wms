@@ -29,7 +29,37 @@ const KEYCHAIN_PREFIX = 'keychain:';
 // ===================== AES 加密回退 =====================
 
 const ENCRYPTION_KEY_FILE = path.join(os.homedir(), '.cdf-know-clow', '.encryption_key');
+const ENCRYPTION_KEY_BACKUP_FILE = path.join(os.homedir(), '.cdf-know-clow', '.encryption_key.bak');
 const KEY_LENGTH = 32;
+
+/** 备份加密密钥 */
+function backupEncryptionKey(key: string): void {
+  try {
+    fs.writeFileSync(ENCRYPTION_KEY_BACKUP_FILE, key, 'utf-8');
+    fs.chmodSync(ENCRYPTION_KEY_BACKUP_FILE, 0o600);
+  } catch (e) {
+    console.warn('[keychainStore] 备份加密密钥失败:', e);
+  }
+}
+
+/** 从备份恢复加密密钥 */
+function restoreEncryptionKey(): string | null {
+  try {
+    if (fs.existsSync(ENCRYPTION_KEY_BACKUP_FILE)) {
+      const key = fs.readFileSync(ENCRYPTION_KEY_BACKUP_FILE, 'utf-8').trim();
+      if (Buffer.from(key, 'base64').length === KEY_LENGTH) {
+        console.log('[keychainStore] 从备份恢复加密密钥');
+        // 恢复主文件
+        fs.writeFileSync(ENCRYPTION_KEY_FILE, key, 'utf-8');
+        fs.chmodSync(ENCRYPTION_KEY_FILE, 0o600);
+        return key;
+      }
+    }
+  } catch (e) {
+    console.warn('[keychainStore] 从备份恢复加密密钥失败:', e);
+  }
+  return null;
+}
 
 /** 获取或生成 AES 加密密钥 */
 function getEncryptionKey(): string {
@@ -37,19 +67,28 @@ function getEncryptionKey(): string {
     if (fs.existsSync(ENCRYPTION_KEY_FILE)) {
       const key = fs.readFileSync(ENCRYPTION_KEY_FILE, 'utf-8').trim();
       if (Buffer.from(key, 'base64').length === KEY_LENGTH) {
+        // 成功读取，确保有备份
+        backupEncryptionKey(key);
         return key;
       }
     }
   } catch { /* ignore */ }
 
-  // 生成新密钥
+  // 尝试从备份恢复
+  const restored = restoreEncryptionKey();
+  if (restored) {
+    return restored;
+  }
+
+  // 生成新密钥（会丢失之前加密的 Key，但避免完全无法使用）
+  console.warn('[keychainStore] 加密密钥文件丢失且无法恢复，生成新密钥。之前保存的 API Key 将失效，需要重新配置。');
   const newKey = crypto.randomBytes(KEY_LENGTH).toString('base64');
   try {
     const dir = path.dirname(ENCRYPTION_KEY_FILE);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(ENCRYPTION_KEY_FILE, newKey, 'utf-8');
-    // 设置文件权限为仅 owner 可读写
     fs.chmodSync(ENCRYPTION_KEY_FILE, 0o600);
+    backupEncryptionKey(newKey);
   } catch (e) {
     console.error('[keychainStore] 无法写入加密密钥文件:', e);
   }
@@ -112,12 +151,23 @@ function shellEscape(str: string): string {
 }
 
 /**
- * 将 API Key 保存到 macOS Keychain
+ * 将 API Key 保存到 macOS Keychain，同时备份到 AES 加密（防止 Keychain 丢失）
  * @returns 是否成功
  */
 export function saveApiKey(modelId: string, apiKey: string): boolean {
+  // 无论 Keychain 是否可用，都先备份到 AES 加密
+  try {
+    const encrypted = aesEncrypt(apiKey);
+    const backupFile = path.join(os.homedir(), '.cdf-know-clow', '.apikey_backup', `${modelId}.enc`);
+    fs.mkdirSync(path.dirname(backupFile), { recursive: true });
+    fs.writeFileSync(backupFile, encrypted, 'utf-8');
+    fs.chmodSync(backupFile, 0o600);
+  } catch (e) {
+    console.warn('[keychainStore] AES 备份 API Key 失败:', e);
+  }
+
   if (!isKeychainAvailable()) {
-    console.warn('[keychainStore] security 命令不可用，API Key 将回退到明文存储');
+    console.warn('[keychainStore] security 命令不可用，API Key 将回退到 AES 加密存储');
     return false;
   }
   try {
@@ -136,7 +186,7 @@ export function saveApiKey(modelId: string, apiKey: string): boolean {
     );
     return true;
   } catch (e) {
-    console.error('[keychainStore] 保存 API Key 失败:', e);
+    console.error('[keychainStore] 保存 API Key 到 Keychain 失败，已回退到 AES 加密:', e);
     return false;
   }
 }
@@ -210,21 +260,44 @@ export function saveApiKeys(modelId: string, apiKeys: string[]): number[] {
 }
 
 /**
- * 从 macOS Keychain 读取 API Key
+ * 从 AES 备份文件恢复 API Key
+ */
+function loadApiKeyFromBackup(modelId: string): string | null {
+  try {
+    const backupFile = path.join(os.homedir(), '.cdf-know-clow', '.apikey_backup', `${modelId}.enc`);
+    if (fs.existsSync(backupFile)) {
+      const encrypted = fs.readFileSync(backupFile, 'utf-8');
+      const key = aesDecrypt(encrypted);
+      if (key) {
+        console.log(`[keychainStore] 从 AES 备份恢复 API Key (modelId=${modelId})`);
+        return key;
+      }
+    }
+  } catch (e) {
+    console.warn(`[keychainStore] 从 AES 备份读取 API Key 失败 (modelId=${modelId}):`, e);
+  }
+  return null;
+}
+
+/**
+ * 从 macOS Keychain 读取 API Key，Keychain 失败时尝试 AES 备份
  * @returns API Key 或 null
  */
 export function loadApiKey(modelId: string): string | null {
-  if (!isKeychainAvailable()) return null;
-  try {
-    const result = execSync(
-      `security find-generic-password -s ${shellEscape(KEYCHAIN_SERVICE)} -a ${shellEscape(accountName(modelId))} -w 2>/dev/null`,
-      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
-    );
-    return result.trim();
-  } catch (e) {
-    console.warn(`[keychainStore] 读取 API Key 失败 (modelId=${modelId}):`, (e as Error).message || e);
-    return null;
+  // 先尝试 Keychain
+  if (isKeychainAvailable()) {
+    try {
+      const result = execSync(
+        `security find-generic-password -s ${shellEscape(KEYCHAIN_SERVICE)} -a ${shellEscape(accountName(modelId))} -w 2>/dev/null`,
+        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] }
+      );
+      return result.trim();
+    } catch (e) {
+      console.warn(`[keychainStore] Keychain 读取失败 (modelId=${modelId})，尝试 AES 备份...`);
+    }
   }
+  // Keychain 失败或不可用时，尝试 AES 备份
+  return loadApiKeyFromBackup(modelId);
 }
 
 /**

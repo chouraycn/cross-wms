@@ -267,6 +267,9 @@ const KeysSection: React.FC<{
     || (modelForm.apiEndpoint || '').includes('localhost')
     || (modelForm.apiEndpoint || '').includes('127.0.0.1');
 
+  // v1.9.3: 检查是否已保存过 Key（有 apiKeyRef 且当前未输入新 Key）
+  const hasSavedKey = !!modelForm.apiKeyRef && !modelForm.apiKey.trim();
+
   return (
   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
     {/* 本地模型提示 */}
@@ -279,6 +282,18 @@ const KeysSection: React.FC<{
       }}>
         <span>🔒</span>
         <span>本地模型（Ollama）无需 API Key，可直接跳过此步骤。</span>
+      </Box>
+    )}
+    {/* 已保存 Key 提示 */}
+    {hasSavedKey && (
+      <Box sx={{
+        px: 1.5, py: 1, borderRadius: 1,
+        bgcolor: '#EFF6FF', border: '1px solid #BFDBFE',
+        fontSize: '0.8125rem', color: '#1E40AF',
+        display: 'flex', alignItems: 'center', gap: 1,
+      }}>
+        <span>✓</span>
+        <span>已保存 API Key（出于安全考虑不显示）。如需更换请输入新 Key，留空则保留现有 Key。</span>
       </Box>
     )}
     {/* 单 Key 输入 */}
