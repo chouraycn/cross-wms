@@ -142,6 +142,7 @@ export async function callOpenAICompatibleStream(
   onThinking?: (text: string) => void,
   tools?: ToolDefinition[],
   onToolCall?: (toolCall: ToolCall) => void,
+  reasoningEffort?: string,
 ): Promise<AIResponse> {
   let endpoint = apiEndpoint.replace(/\/+$/, '');
   if (!endpoint.endsWith('/chat/completions')) {
@@ -167,12 +168,37 @@ export async function callOpenAICompatibleStream(
     body.tool_choice = 'auto';
   }
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-    signal,
-  });
+  // reasoning_effort 支持（推理模型）
+  // 仅对明确支持 reasoning 的模型发送该参数，避免 Ollama 等本地模型报错
+  const supportsReasoning = modelId.toLowerCase().includes('deepseek') || modelId.toLowerCase().includes('reasoner');
+  if (reasoningEffort && supportsReasoning) {
+    body.reasoning_effort = reasoningEffort;
+    // DeepSeek V4 模型：额外启用 thinking 模式
+    if (modelId.toLowerCase().includes('deepseek')) {
+      body.thinking = { type: 'enabled' };
+      // thinking 模式不支持 temperature，移除
+      delete body.temperature;
+    }
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (fetchErr) {
+    const errMsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+    if (errMsg.includes('ECONNREFUSED') || errMsg.includes('fetch failed') || errMsg.includes('connect')) {
+      throw new AIAPIError(
+        `无法连接到 AI 模型服务，请确认服务已启动。错误：${errMsg}`,
+        'network',
+      );
+    }
+    throw fetchErr;
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -231,8 +257,8 @@ export async function callOpenAICompatibleStream(
           const parsed = JSON.parse(data);
           const delta = parsed.choices?.[0]?.delta;
 
-          // 解析 reasoning_content（DeepSeek-R1 等推理模型）
-          const reasoningDelta = delta?.reasoning_content;
+          // 解析 reasoning_content（DeepSeek-R1 等推理模型）和 reasoning（OpenAI o3/o4-mini）
+          const reasoningDelta = delta?.reasoning_content || delta?.reasoning;
           if (reasoningDelta) {
             reasoningContent += reasoningDelta;
             if (onThinking) onThinking(reasoningDelta);
@@ -306,9 +332,9 @@ export async function callOpenAICompatibleStream(
 
 // ===================== Anthropic 原生格式 =====================
 
-/** Anthropic 格式的 content block */
+/** Anthropic 格式的 content block（v1.9.3: 支持 image 多模态） */
 interface AnthropicContentBlock {
-  type: 'text' | 'tool_use' | 'tool_result' | 'thinking';
+  type: 'text' | 'tool_use' | 'tool_result' | 'thinking' | 'image';
   text?: string;
   id?: string;
   name?: string;
@@ -316,9 +342,15 @@ interface AnthropicContentBlock {
   tool_use_id?: string;
   content?: string;
   thinking?: string;
+  source?: {
+    type: 'base64' | 'url';
+    media_type?: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+    data?: string;
+    url?: string;
+  };
 }
 
-/** Anthropic 消息格式 */
+/** Anthropic 消息格式（v1.9.3: 支持多模态 content 数组） */
 interface AnthropicMessage {
   role: 'user' | 'assistant';
   content: string | AnthropicContentBlock[];
@@ -331,29 +363,72 @@ interface AnthropicToolDefinition {
   input_schema: Record<string, unknown>;
 }
 
+/** OpenAI Vision 格式的 content 项 */
+interface OpenAIVisionContent {
+  type: 'text' | 'image_url';
+  text?: string;
+  image_url?: { url: string; detail?: 'auto' | 'low' | 'high' };
+}
+
 /**
  * 将 OpenAI 格式的消息转换为 Anthropic 格式
  *
  * 转换规则：
  * - role: 'system' → 提取为 systemPrompt 返回
- * - role: 'user' → 保持 role: 'user'
+ * - role: 'user' → 保持 role: 'user'（支持多模态 content 数组）
  * - role: 'assistant' → 保持 role: 'assistant'（含 tool_calls 时转为 content 数组）
  * - role: 'tool' → 转为 role: 'user'，content 为 tool_result 数组
+ *
+ * v1.9.3: 新增多模态支持 — OpenAI image_url 格式转为 Anthropic image 格式
  */
 function convertMessagesToAnthropic(
-  messages: Array<{ role: string; content: string; tool_calls?: ToolCall[]; tool_call_id?: string }>,
+  messages: Array<{ role: string; content: string | OpenAIVisionContent[]; tool_calls?: ToolCall[]; tool_call_id?: string }>,
 ): { systemPrompt: string; anthropicMessages: AnthropicMessage[] } {
   let systemPrompt = '';
   const anthropicMessages: AnthropicMessage[] = [];
 
   for (const msg of messages) {
     if (msg.role === 'system') {
-      systemPrompt = msg.content;
+      systemPrompt = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
       continue;
     }
 
     if (msg.role === 'user') {
-      anthropicMessages.push({ role: 'user', content: msg.content });
+      // v1.9.3: 支持多模态 content 数组（OpenAI Vision 格式 → Anthropic 格式）
+      if (Array.isArray(msg.content)) {
+        const contentBlocks: AnthropicContentBlock[] = [];
+        for (const part of msg.content) {
+          if (part.type === 'text' && part.text) {
+            contentBlocks.push({ type: 'text', text: part.text });
+          } else if (part.type === 'image_url' && part.image_url?.url) {
+            // OpenAI image_url → Anthropic image 格式
+            const url = part.image_url.url;
+            if (url.startsWith('data:')) {
+              // data URL: data:image/png;base64,xxx
+              const match = url.match(/^data:([^;]+);base64,(.+)$/);
+              if (match) {
+                contentBlocks.push({
+                  type: 'image',
+                  source: {
+                    type: 'base64',
+                    media_type: match[1] as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+                    data: match[2],
+                  },
+                });
+              }
+            } else {
+              // 普通 URL
+              contentBlocks.push({
+                type: 'image',
+                source: { type: 'url', url },
+              } as AnthropicContentBlock);
+            }
+          }
+        }
+        anthropicMessages.push({ role: 'user', content: contentBlocks });
+      } else {
+        anthropicMessages.push({ role: 'user', content: msg.content });
+      }
       continue;
     }
 
@@ -362,7 +437,7 @@ function convertMessagesToAnthropic(
       if (msg.tool_calls && msg.tool_calls.length > 0) {
         const contentBlocks: AnthropicContentBlock[] = [];
         if (msg.content) {
-          contentBlocks.push({ type: 'text', text: msg.content });
+          contentBlocks.push({ type: 'text', text: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content) });
         }
         for (const tc of msg.tool_calls) {
           contentBlocks.push({
@@ -374,7 +449,7 @@ function convertMessagesToAnthropic(
         }
         anthropicMessages.push({ role: 'assistant', content: contentBlocks });
       } else {
-        anthropicMessages.push({ role: 'assistant', content: msg.content });
+        anthropicMessages.push({ role: 'assistant', content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content) });
       }
       continue;
     }
@@ -387,7 +462,7 @@ function convertMessagesToAnthropic(
           {
             type: 'tool_result',
             tool_use_id: msg.tool_call_id || '',
-            content: msg.content,
+            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
           },
         ],
       });
@@ -395,7 +470,7 @@ function convertMessagesToAnthropic(
     }
 
     // 其他未知 role，按原样传递（Anthropic 会报错，便于调试）
-    anthropicMessages.push({ role: msg.role as 'user' | 'assistant', content: msg.content });
+    anthropicMessages.push({ role: msg.role as 'user' | 'assistant', content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content) });
   }
 
   return { systemPrompt, anthropicMessages };
@@ -421,7 +496,7 @@ export async function callAnthropicStream(
   apiEndpoint: string,
   apiKey: string | undefined,
   modelId: string,
-  messages: Array<{ role: string; content: string; tool_calls?: ToolCall[]; tool_call_id?: string }>,
+  messages: Array<{ role: string; content: string | OpenAIVisionContent[]; tool_calls?: ToolCall[]; tool_call_id?: string }>,
   temperature: number,
   maxTokens: number,
   onChunk: (text: string) => void,
@@ -429,6 +504,7 @@ export async function callAnthropicStream(
   onThinking?: (text: string) => void,
   tools?: ToolDefinition[],
   onToolCall?: (toolCall: ToolCall) => void,
+  reasoningEffort?: string,
 ): Promise<AIResponse> {
   let endpoint = apiEndpoint.replace(/\/+$/, '');
   if (!endpoint.endsWith('/messages')) {
@@ -452,17 +528,38 @@ export async function callAnthropicStream(
     body.tool_choice = { type: 'auto' };
   }
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify(body),
-    signal,
-  });
+  // Anthropic thinking budget（推理模型）
+  if (reasoningEffort) {
+    const budgetMap: Record<string, number> = { high: 10000, max: 32000 };
+    const budgetTokens = budgetMap[reasoningEffort] || 10000;
+    body.thinking = { type: 'enabled', budget_tokens: budgetTokens };
+    // Anthropic thinking 模式不支持 temperature，移除
+    delete body.temperature;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (fetchErr) {
+    const errMsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+    if (errMsg.includes('ECONNREFUSED') || errMsg.includes('fetch failed') || errMsg.includes('connect')) {
+      throw new AIAPIError(
+        `无法连接到 AI 模型服务，请确认服务已启动。错误：${errMsg}`,
+        'network',
+      );
+    }
+    throw fetchErr;
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -583,12 +680,13 @@ export async function callAnthropicStream(
  */
 export async function callAIModelStream(
   modelConfig: ModelCallConfig,
-  messages: Array<{ role: string; content: MessageContent }>,
+  messages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>,
   onChunk: (text: string) => void,
   signal?: AbortSignal,
   onThinking?: (text: string) => void,
   tools?: ToolDefinition[],
   onToolCall?: (toolCall: ToolCall) => void,
+  reasoningEffort?: string,
 ): Promise<AIResponse> {
   const apiKey = modelConfig.apiKey;
   const apiEndpoint = modelConfig.apiEndpoint || '';
@@ -619,15 +717,17 @@ export async function callAIModelStream(
     try {
       if (provider === 'anthropic') {
         return await callAnthropicStream(
-          apiEndpoint, apiKey, modelId, messages,
+          apiEndpoint, apiKey, modelId,
+          messages as Array<{ role: string; content: string | OpenAIVisionContent[]; tool_calls?: ToolCall[]; tool_call_id?: string }>,
           temperature, maxTokens, onChunk, signal,
-          onThinking, tools, onToolCall,
+          onThinking, tools, onToolCall, reasoningEffort,
         );
       }
       return await callOpenAICompatibleStream(
-        apiEndpoint, apiKey, modelId, messages,
+        apiEndpoint, apiKey, modelId,
+        messages as Array<{ role: string; content: string | OpenAIVisionContent[] }>,
         temperature, maxTokens, onChunk, signal,
-        onThinking, tools, onToolCall,
+        onThinking, tools, onToolCall, reasoningEffort,
       );
     } catch (error) {
       lastError = error;
