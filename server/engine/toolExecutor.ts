@@ -27,19 +27,26 @@ export interface ToolExecutorOptions {
   reasoningEffort?: string;
 }
 
-/** 敏感工具列表 — 需要用户二次确认 */
+/** 
+ * 敏感工具列表 — 需要用户二次确认
+ * 
+ * 安全等级设计原则：
+ * - shell_exec 已移除（toolRegistry 有 ALLOWED_COMMANDS 白名单 + 危险参数检测 + Shell注入防护）
+ * - file_writeFile 保留（文件写入不可逆）
+ * - desktop_* 保留（桌面自动化为高风险操作）
+ * - 同一会话中，批准过一次的工具自动缓存，不再重复询问
+ */
 const SENSITIVE_TOOLS = new Set([
-  'file:writeFile',
-  'shell:exec',
-  'desktop:click',
-  'desktop:type',
-  'desktop:key_press',
-  'desktop:app_launch',
-  'desktop:app_quit',
-  'desktop:window_focus',
-  'desktop:clipboard',
-  'desktop:scroll',
-  'desktop:see',
+  'file_writeFile',
+  'desktop_click',
+  'desktop_type',
+  'desktop_key_press',
+  'desktop_app_launch',
+  'desktop_app_quit',
+  'desktop_window_focus',
+  'desktop_clipboard',
+  'desktop_scroll',
+  'desktop_see',
 ]);
 
 function isSensitiveTool(name: string): boolean {
@@ -76,6 +83,9 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
   const currentMessages = [...messages];
   let finalContent = '';
   const executedToolCalls: Array<{ name: string; arguments: string; result: string }> = [];
+
+  // v1.9.4: 会话级工具批准缓存 — 同一轮 Tool Loop 中已批准的工具不再重复询问
+  const approvedToolsCache = new Set<string>();
 
   for (let turn = 0; turn < maxToolTurns; turn++) {
     if (signal?.aborted) {
@@ -122,11 +132,22 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     for (const toolCall of response.toolCalls) {
       const toolName = toolCall.function.name;
 
-      // v1.9.2: 敏感工具 — 询问用户是否允许执行
+      // v1.9.4: 敏感工具权限检查 — 会话缓存 + 用户确认
       if (isSensitiveTool(toolName)) {
-        const hasPermission = onPermissionRequest
-          ? await onPermissionRequest(toolCall)
-          : false;
+        let hasPermission: boolean;
+
+        if (approvedToolsCache.has(toolName)) {
+          // 同一轮会话中已批准过该工具，跳过二次确认
+          hasPermission = true;
+        } else {
+          hasPermission = onPermissionRequest
+            ? await onPermissionRequest(toolCall)
+            : false;
+          if (hasPermission) {
+            // 批准后加入缓存，本次会话后续调用不再询问
+            approvedToolsCache.add(toolName);
+          }
+        }
 
         if (!hasPermission) {
           const denyResult = JSON.stringify({ error: `用户拒绝了工具 '${toolName}' 的执行请求。` });
@@ -169,10 +190,14 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       } as any);
     }
 
-    // 重置 finalContent，准备下一轮
-    finalContent = '';
+    // v1.9.5-fix: 不重置 finalContent，而是累积所有轮次的 AI 文本输出
+    // 之前重置为 '' 会导致：模型先输出文字再调用工具 → 文字在工具执行后丢失 → fullContent 为空 → 前端显示"内容生成失败"
+    // 添加换行分隔符，避免不同轮次的内容粘连
+    if (finalContent && !finalContent.endsWith('\n')) {
+      finalContent += '\n\n';
+    }
   }
 
-  // 达到最大轮数，返回最后一轮的内容
+  // 达到最大轮数，返回所有轮次累积的内容
   return { content: finalContent, toolCalls: executedToolCalls };
 }

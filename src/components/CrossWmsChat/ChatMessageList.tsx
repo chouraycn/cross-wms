@@ -1,18 +1,112 @@
 import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react';
-import { Box, Typography, IconButton, Tooltip, Chip, useTheme, CircularProgress, keyframes, TextField, ClickAwayListener } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, Chip, useTheme, CircularProgress, keyframes, TextField, ClickAwayListener, Button } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import ImageIcon from '@mui/icons-material/Image';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import DescriptionIcon from '@mui/icons-material/Description';
+import AudioFileIcon from '@mui/icons-material/AudioFile';
+import VideoFileIcon from '@mui/icons-material/VideoFile';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import FolderZipIcon from '@mui/icons-material/FolderZip';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import EditIcon from '@mui/icons-material/Edit';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { Message, Session } from '../../types/chat';
-import { getGrayScale } from '../../constants/theme';
+import { getGrayScale, GrayScale } from '../../constants/theme';
 
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ThinkingBlock } from './ThinkingBlock';
 import { QueryResultRenderer } from './QueryResultRenderer';
 import ToolCallBlock from './ToolCallBlock';
+
+// ===================== v1.9.3: 文件类型图标工具 =====================
+
+/** 获取文件扩展名 */
+function getFileExtension(fileName: string): string {
+  const idx = fileName.lastIndexOf('.');
+  return idx >= 0 ? fileName.slice(idx + 1) : '';
+}
+
+/** 根据文件 MIME 类型或扩展名返回对应的图标组件 */
+function getFileTypeIcon(mimeType: string, fileName: string): React.ElementType {
+  const ext = getFileExtension(fileName).toLowerCase();
+  const mime = (mimeType || '').toLowerCase();
+
+  if (mime.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext)) {
+    return ImageIcon;
+  }
+  if (mime === 'application/pdf' || ext === 'pdf') {
+    return PictureAsPdfIcon;
+  }
+  if (mime.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext)) {
+    return AudioFileIcon;
+  }
+  if (mime.startsWith('video/') || ['mp4', 'avi', 'mov', 'mkv', 'webm', 'flv'].includes(ext)) {
+    return VideoFileIcon;
+  }
+  if (mime.startsWith('text/csv') || ['csv', 'xls', 'xlsx'].includes(ext)) {
+    return TableChartIcon;
+  }
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) {
+    return FolderZipIcon;
+  }
+  if (mime.startsWith('text/') || ['txt', 'md', 'json', 'xml', 'yaml', 'yml', 'log', 'conf', 'cfg', 'ini'].includes(ext)) {
+    return DescriptionIcon;
+  }
+  return InsertDriveFileIcon;
+}
+
+/** 图片附件组件：支持加载失败回退 */
+function ImageAttachment({ att, isDark, gs }: { att: { id: string; url: string; fileName: string; mimeType: string; size: number }; isDark: boolean; gs: GrayScale }) {
+  const [loadError, setLoadError] = React.useState(false);
+
+  if (loadError) {
+    // 图片加载失败：显示文件卡片样式
+    return (
+      <Chip
+        icon={<ImageIcon sx={{ fontSize: 16, color: '#F59E0B' }} />}
+        label={`${att.fileName} (${(att.size / 1024).toFixed(1)}KB)`}
+        size="small"
+        clickable
+        onClick={() => window.open(att.url, '_blank')}
+        sx={{
+          height: 30,
+          fontSize: 12,
+          bgcolor: isDark ? '#1E293B' : '#F8FAFC',
+          border: `1px solid ${gs.border}`,
+          '& .MuiChip-label': { px: 1 },
+          '&:hover': { bgcolor: isDark ? '#263348' : '#EFF6FF' },
+        }}
+      />
+    );
+  }
+
+  return (
+    <Box
+      component="img"
+      src={att.url}
+      alt={att.fileName}
+      onError={() => setLoadError(true)}
+      onClick={() => window.open(att.url, '_blank')}
+      sx={{
+        maxHeight: 200,
+        maxWidth: '100%',
+        borderRadius: '12px',
+        border: `1px solid ${gs.border}`,
+        objectFit: 'cover',
+        cursor: 'pointer',
+        transition: 'opacity 0.2s',
+        '&:hover': { opacity: 0.85 },
+      }}
+    />
+  );
+}
+
 
 // ===================== 入场动画 =====================
 
@@ -43,6 +137,8 @@ export interface ChatMessageListProps {
   onCopy: (msg: Message) => void;
   onRegenerate?: (msg: Message) => void;
   onConfirmReplenishment?: (suggestionId: number) => Promise<void>;
+  /** v1.9.3: 权限请求响应回调 */
+  onPermissionRespond?: (reqId: string, approved: boolean) => void;
   /** 是否显示重新生成按钮 */
   showRegenerate?: boolean;
   /** 容器最大高度 */
@@ -61,6 +157,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   onCopy,
   onRegenerate,
   onConfirmReplenishment,
+  onPermissionRespond,
   showRegenerate = false,
   maxHeight,
   sx = {},
@@ -303,25 +400,22 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 maxWidth: '75%',
               }}
             >
-              {msg.attachments.map((att) => (
-                att.type === 'image' ? (
-                  <Box
+              {msg.attachments.map((att) => {
+                // v1.9.3: 根据文件类型选择图标
+                const FileIcon = getFileTypeIcon(att.mimeType, att.fileName);
+                const fileExt = getFileExtension(att.fileName).toUpperCase();
+
+                return att.type === 'image' ? (
+                  <ImageAttachment
                     key={att.id}
-                    component="img"
-                    src={att.url}
-                    alt={att.fileName}
-                    sx={{
-                      maxHeight: 200,
-                      maxWidth: '100%',
-                      borderRadius: '12px',
-                      border: `1px solid ${gs.border}`,
-                      objectFit: 'cover',
-                    }}
+                    att={att}
+                    isDark={isDark}
+                    gs={gs}
                   />
                 ) : (
                   <Chip
                     key={att.id}
-                    icon={<FileDownloadIcon sx={{ fontSize: 14 }} />}
+                    icon={<FileIcon sx={{ fontSize: 16 }} />}
                     label={`${att.fileName} (${(att.size / 1024).toFixed(1)}KB)`}
                     size="small"
                     clickable
@@ -332,7 +426,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       link.click();
                     }}
                     sx={{
-                      height: 26,
+                      height: 30,
                       fontSize: 12,
                       bgcolor: isDark ? '#1E293B' : '#F8FAFC',
                       border: `1px solid ${gs.border}`,
@@ -340,8 +434,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       '&:hover': { bgcolor: isDark ? '#263348' : '#EFF6FF' },
                     }}
                   />
-                )
-              ))}
+                );
+              })}
             </Box>
           )}
 
@@ -377,6 +471,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
               onRegenerate={onRegenerate}
               showRegenerate={showRegenerate}
               onConfirmReplenishment={onConfirmReplenishment}
+              onPermissionRespond={onPermissionRespond}
             />
           )}
         </Box>
@@ -384,6 +479,158 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       })}
       {/* 滚动锚点 */}
       <div ref={messagesEndRef} />
+    </Box>
+  );
+};
+
+/**
+ * v1.9.3: 内联权限请求组件 — 在消息中显示敏感工具确认
+ */
+interface InlinePermissionRequestProps {
+  permissionRequest: NonNullable<Message['permissionRequest']>;
+  onRespond: (reqId: string, approved: boolean) => void;
+}
+
+const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
+  permissionRequest,
+  onRespond,
+}) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
+  if (permissionRequest.approved !== undefined) {
+    return (
+      <Box
+        sx={{
+          mt: 1,
+          p: 1.5,
+          borderRadius: 2,
+          bgcolor: permissionRequest.approved
+            ? isDark ? 'rgba(34, 197, 94, 0.1)' : '#F0FDF4'
+            : isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2',
+          border: `1px solid ${permissionRequest.approved ? '#22C55E' : '#EF4444'}`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
+        <Typography sx={{ fontSize: 13, color: permissionRequest.approved ? '#22C55E' : '#EF4444' }}>
+          {permissionRequest.approved ? '✓ 已允许执行' : '✗ 已拒绝执行'}
+        </Typography>
+        <Typography sx={{ fontSize: 12, color: gs.textMuted, fontFamily: 'monospace' }}>
+          {permissionRequest.toolName}
+        </Typography>
+      </Box>
+    );
+  }
+
+  let argsObj: Record<string, unknown> = {};
+  try {
+    argsObj = JSON.parse(permissionRequest.toolArgs);
+  } catch {
+    argsObj = { raw: permissionRequest.toolArgs };
+  }
+
+  return (
+    <Box
+      sx={{
+        mt: 1.5,
+        p: 2,
+        borderRadius: 2,
+        bgcolor: isDark ? '#2A1A0A' : '#FFFBEB',
+        border: `1px solid ${isDark ? '#F59E0B40' : '#FDE68A'}`,
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+        <WarningAmberIcon sx={{ color: '#F59E0B', fontSize: 20 }} />
+        <Typography sx={{ fontSize: 14, fontWeight: 600, color: gs.textPrimary }}>
+          权限请求
+        </Typography>
+        <Chip
+          label="敏感操作"
+          size="small"
+          sx={{
+            bgcolor: '#F59E0B20',
+            color: '#F59E0B',
+            fontWeight: 600,
+            fontSize: 11,
+          }}
+        />
+      </Box>
+
+      <Typography sx={{ fontSize: 13, color: gs.textSecondary, mb: 1 }}>
+        AI 助手请求执行以下操作：
+      </Typography>
+
+      <Box
+        sx={{
+          p: 1.5,
+          borderRadius: 1.5,
+          bgcolor: isDark ? '#1A1A1A' : '#F3F4F6',
+          mb: 1.5,
+        }}
+      >
+        <Typography
+          sx={{
+            fontFamily: 'monospace',
+            fontSize: 13,
+            fontWeight: 600,
+            color: gs.textPrimary,
+            mb: 0.5,
+          }}
+        >
+          {permissionRequest.toolName}
+        </Typography>
+        <Box
+          component="pre"
+          sx={{
+            m: 0,
+            fontFamily: 'monospace',
+            fontSize: 12,
+            color: gs.textSecondary,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+          }}
+        >
+          {JSON.stringify(argsObj, null, 2)}
+        </Box>
+      </Box>
+
+      <Typography sx={{ fontSize: 12, color: gs.textMuted, mb: 1.5 }}>
+        此操作可能对系统产生影响，请确认是否允许执行。
+      </Typography>
+
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <Button
+          onClick={() => onRespond(permissionRequest.reqId, false)}
+          variant="outlined"
+          size="small"
+          sx={{
+            borderRadius: 1.5,
+            textTransform: 'none',
+            color: gs.textMuted,
+            borderColor: gs.border,
+            '&:hover': { borderColor: gs.textSecondary },
+          }}
+        >
+          拒绝
+        </Button>
+        <Button
+          onClick={() => onRespond(permissionRequest.reqId, true)}
+          variant="contained"
+          size="small"
+          sx={{
+            borderRadius: 1.5,
+            textTransform: 'none',
+            bgcolor: '#F59E0B',
+            color: '#fff',
+            '&:hover': { bgcolor: '#D97706' },
+          }}
+        >
+          允许执行
+        </Button>
+      </Box>
     </Box>
   );
 };
@@ -400,6 +647,7 @@ interface BotMessageContentProps {
   onRegenerate?: (msg: Message) => void;
   showRegenerate?: boolean;
   onConfirmReplenishment?: (suggestionId: number) => Promise<void>;
+  onPermissionRespond?: (reqId: string, approved: boolean) => void;
 }
 
 const BotMessageContent: React.FC<BotMessageContentProps> = ({
@@ -411,6 +659,7 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
   onRegenerate,
   showRegenerate,
   onConfirmReplenishment,
+  onPermissionRespond,
 }) => {
   return (
     <Box
@@ -483,6 +732,13 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
       {msg.toolCalls && msg.toolCalls.length > 0 && (
         <ToolCallBlock toolCalls={msg.toolCalls} />
       )}
+      {/* v1.9.3: 内联权限请求 */}
+      {msg.permissionRequest && onPermissionRespond && (
+        <InlinePermissionRequest
+          permissionRequest={msg.permissionRequest}
+          onRespond={onPermissionRespond}
+        />
+      )}
       {/* 消息内容渲染 */}
       {msg.content && msg.content.trim() ? (
         <MarkdownRenderer content={msg.content} />
@@ -493,6 +749,58 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
             {msg.thinking ? '深度思考中...' : '思考中...'}
           </Typography>
         </Box>
+      ) : msg.role === 'assistant' ? (
+        // v1.9.3: assistant 消息无内容且非 streaming 时显示错误提示
+        // v1.9.5: 当有 thinking 内容时，提取最后一段作为摘要展示（兜底 toolExecutor finalContent 丢失的情况）
+        (() => {
+          const serverError = (msg.metadata as any)?.error as string | undefined;
+          const thinkingSummary = (() => {
+            if (!msg.thinking || msg.thinking.trim() === '') return null;
+            const paragraphs = msg.thinking.split(/\n\n+/).filter(p => p.trim());
+            if (paragraphs.length === 0) return msg.thinking.trim().substring(0, 200);
+            return paragraphs[paragraphs.length - 1].trim();
+          })();
+
+          // 有 thinking 摘要时，展示摘要代替错误提示
+          if (thinkingSummary && !serverError) {
+            return (
+              <MarkdownRenderer content={thinkingSummary} />
+            );
+          }
+
+          const errorMessage = serverError || '内容生成失败，请重试';
+          return (
+            <Box sx={{
+              display: 'flex', alignItems: 'flex-start', gap: 0.75,
+              p: 1, borderRadius: 1.5,
+              bgcolor: isDark ? 'rgba(239,68,68,0.08)' : '#FEF2F2',
+              border: `1px solid ${isDark ? 'rgba(239,68,68,0.2)' : '#FECACA'}`,
+            }}>
+              <ErrorOutlineIcon sx={{ fontSize: 14, color: '#EF4444', mt: 0.15 }} />
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontSize: 12, color: '#EF4444', lineHeight: 1.6 }}>
+                  {errorMessage}
+                </Typography>
+                {serverError && (
+                  <Typography sx={{ fontSize: 11, color: gs.textDisabled, mt: 0.5, fontFamily: 'monospace' }}>
+                    错误码: {(msg.metadata as any)?.errorCode || 'N/A'}
+                  </Typography>
+                )}
+              </Box>
+              {onRegenerate && (
+                <Tooltip title="重新生成">
+                  <IconButton
+                    size="small"
+                    onClick={() => onRegenerate(msg)}
+                    sx={{ ml: 'auto', color: '#EF4444', '&:hover': { bgcolor: isDark ? 'rgba(239,68,68,0.15)' : '#FEE2E2' } }}
+                  >
+                    <AutorenewIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
+          );
+        })()
       ) : null}
       {/* 操作按钮：复制 + 重新生成（非流式输出时显示） */}
       {!msg.isStreaming && (
