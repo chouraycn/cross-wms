@@ -326,11 +326,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
                       ? 'linear-gradient(135deg, #1A1A2E 0%, #2A1A0A 100%)'
                       : 'linear-gradient(135deg, #FFFBEB 0%, #FFF7ED 100%)',
                     overflow: 'hidden',
-                    animation: 'slideIn 0.3s ease-out',
-                    '@keyframes slideIn': {
-                      from: { opacity: 0, transform: 'translateY(10px)' },
-                      to: { opacity: 1, transform: 'translateY(0)' },
-                    },
+                    // v1.9.5-fix: 移除入场动画，避免 WKWebView 不兼容 CSS @keyframes
                   }}
                 >
                   {/* 顶部渐变条 */}
