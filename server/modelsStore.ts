@@ -86,262 +86,32 @@ export interface ModelsFile {
   updatedAt: string;
 }
 
-/** 默认内置模型 — 覆盖 24+ 主流平台 */
+/** 默认内置模型 — 只保留 DeepSeek */
 const BUILTIN_MODELS: ModelConfig[] = [
-  // === OpenAI ===
-  {
-    id: 'gpt-4o',
-    name: 'GPT-4o',
-    provider: 'openai',
-    apiEndpoint: 'https://api.openai.com/v1',
-    enabled: false,
-    isDefault: false,
-    description: 'OpenAI 最新多模态模型，支持文本和图像输入',
-    contextWindow: 128000,
-    maxTokens: 4096,
-    capabilities: ['multimodal', 'reasoning', 'general'],
-  },
-  {
-    id: 'gpt-4-turbo',
-    name: 'GPT-4 Turbo',
-    provider: 'openai',
-    apiEndpoint: 'https://api.openai.com/v1',
-    enabled: false,
-    isDefault: false,
-    description: 'GPT-4 Turbo，性价比优秀的旗舰模型',
-    contextWindow: 128000,
-    maxTokens: 4096,
-    capabilities: ['reasoning', 'general'],
-  },
-  // === Anthropic ===
-  {
-    id: 'claude-sonnet-4-20250514',
-    name: 'Claude Sonnet 4',
-    provider: 'anthropic',
-    apiEndpoint: 'https://api.anthropic.com/v1',
-    enabled: false,
-    isDefault: false,
-    description: 'Claude Sonnet 4，适合日常编程和分析任务',
-    contextWindow: 200000,
-    maxTokens: 8192,
-    capabilities: ['code', 'reasoning', 'longContext', 'general'],
-  },
-  {
-    id: 'claude-haiku-3.5',
-    name: 'Claude 3.5 Haiku',
-    provider: 'anthropic',
-    apiEndpoint: 'https://api.anthropic.com/v1',
-    enabled: false,
-    isDefault: false,
-    description: '轻量快速模型，适合简单对话',
-    contextWindow: 200000,
-    maxTokens: 4096,
-    capabilities: ['fast', 'costEffective', 'general'],
-  },
-  // === 腾讯 ===
-  {
-    id: 'hunyuan-turbo',
-    name: '混元 Turbo',
-    provider: 'tencent',
-    apiEndpoint: 'https://api.hunyuan.cloud.tencent.com/v1',
-    enabled: false,
-    isDefault: false,
-    description: '腾讯混元大模型 Turbo 版本',
-    contextWindow: 32000,
-    maxTokens: 4096,
-    capabilities: ['general', 'costEffective'],
-  },
-  {
-    id: 'hunyuan-pro',
-    name: '混元 Pro',
-    provider: 'tencent',
-    apiEndpoint: 'https://api.hunyuan.cloud.tencent.com/v1',
-    enabled: false,
-    isDefault: false,
-    description: '腾讯混元大模型 Pro 版本',
-    contextWindow: 32000,
-    maxTokens: 4096,
-    capabilities: ['reasoning', 'general'],
-  },
   // === DeepSeek ===
   {
-    id: 'deepseek-chat',
-    name: 'DeepSeek Chat',
+    id: 'deepseek-v4-pro',
+    name: 'DeepSeek V4 Pro',
     provider: 'deepseek',
     apiEndpoint: 'https://api.deepseek.com/v1',
     enabled: false,
     isDefault: false,
-    description: 'DeepSeek 通用对话模型，性价比优秀',
-    contextWindow: 64000,
-    maxTokens: 4096,
-    capabilities: ['costEffective', 'general'],
+    description: 'DeepSeek V4 Pro，支持 1M 上下文、工具调用、多模态、推理',
+    contextWindow: 1_000_000,
+    maxTokens: 384_000,
+    capabilities: ['multimodal', 'reasoning', 'general'],
   },
   {
-    id: 'deepseek-coder',
-    name: 'DeepSeek Coder',
+    id: 'deepseek-v4-flash',
+    name: 'DeepSeek V4 Flash',
     provider: 'deepseek',
     apiEndpoint: 'https://api.deepseek.com/v1',
     enabled: false,
     isDefault: false,
-    description: 'DeepSeek 代码专用模型',
-    contextWindow: 16000,
-    maxTokens: 4096,
-    capabilities: ['code', 'costEffective'],
-  },
-  // === 通义千问 ===
-  {
-    id: 'qwen-turbo',
-    name: '通义千问 Turbo',
-    provider: 'qwen',
-    apiEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    enabled: false,
-    isDefault: false,
-    description: '阿里通义千问 Turbo 版本',
-    contextWindow: 32000,
-    maxTokens: 4096,
-    capabilities: ['fast', 'costEffective', 'general'],
-  },
-  {
-    id: 'qwen-plus',
-    name: '通义千问 Plus',
-    provider: 'qwen',
-    apiEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    enabled: false,
-    isDefault: false,
-    description: '阿里通义千问 Plus 版本，超长上下文',
-    contextWindow: 128000,
-    maxTokens: 4096,
-    capabilities: ['longContext', 'reasoning', 'general'],
-  },
-  // === Google ===
-  {
-    id: 'gemini-pro',
-    name: 'Gemini Pro',
-    provider: 'google',
-    apiEndpoint: 'https://generativelanguage.googleapis.com/v1beta',
-    enabled: false,
-    isDefault: false,
-    description: 'Google Gemini Pro 模型',
-    contextWindow: 32000,
-    maxTokens: 4096,
-    capabilities: ['multimodal', 'reasoning', 'general'],
-  },
-  // === xAI ===
-  {
-    id: 'grok-2',
-    name: 'Grok 2',
-    provider: 'xai',
-    apiEndpoint: 'https://api.x.ai/v1',
-    enabled: false,
-    isDefault: false,
-    description: 'xAI Grok 2，支持实时信息获取',
-    contextWindow: 128000,
-    maxTokens: 4096,
-    capabilities: ['reasoning', 'general'],
-  },
-  // === MiniMax ===
-  {
-    id: 'abab6.5s-chat',
-    name: 'MiniMax abab6.5s',
-    provider: 'minimax',
-    apiEndpoint: 'https://api.minimaxi.chat/v1',
-    enabled: false,
-    isDefault: false,
-    description: 'MiniMax abab6.5s 对话模型',
-    contextWindow: 32000,
-    maxTokens: 4096,
-    capabilities: ['general', 'costEffective'],
-  },
-  // === Kimi ===
-  {
-    id: 'moonshot-v1-128k',
-    name: 'Kimi v1 128K',
-    provider: 'kimi',
-    apiEndpoint: 'https://api.moonshot.cn/v1',
-    enabled: false,
-    isDefault: false,
-    description: 'Moonshot Kimi，支持 128K 超长上下文',
-    contextWindow: 128000,
-    maxTokens: 4096,
-    capabilities: ['longContext', 'reasoning', 'general'],
-  },
-  // === OpenRouter ===
-  {
-    id: 'openrouter-gpt-4o',
-    name: 'OpenRouter GPT-4o',
-    provider: 'openrouter',
-    apiEndpoint: 'https://openrouter.ai/api/v1',
-    enabled: false,
-    isDefault: false,
-    description: '通过 OpenRouter 路由的 GPT-4o',
-    contextWindow: 128000,
-    maxTokens: 4096,
-    capabilities: ['multimodal', 'reasoning', 'general'],
-  },
-  // === 智谱 ===
-  {
-    id: 'glm-4',
-    name: 'GLM-4',
-    provider: 'bigmodel',
-    apiEndpoint: 'https://open.bigmodel.cn/api/paas/v4',
-    enabled: false,
-    isDefault: false,
-    description: '智谱 AI GLM-4，国产大模型',
-    contextWindow: 128000,
-    maxTokens: 4096,
-    capabilities: ['reasoning', 'general'],
-  },
-  // === 火山引擎 ===
-  {
-    id: 'doubao-pro-4k',
-    name: '豆包 Pro',
-    provider: 'volcengine',
-    apiEndpoint: 'https://ark.cn-beijing.volces.com/api/v3',
-    enabled: false,
-    isDefault: false,
-    description: '字节火山引擎豆包 Pro 模型',
-    contextWindow: 32000,
-    maxTokens: 4096,
-    capabilities: ['general', 'costEffective'],
-  },
-  // === 硅基流动 ===
-  {
-    id: 'siliconflow-deepseek-v2',
-    name: 'SiliconFlow DeepSeek-V2',
-    provider: 'siliconflow',
-    apiEndpoint: 'https://api.siliconflow.cn/v1',
-    enabled: false,
-    isDefault: false,
-    description: '硅基流动 DeepSeek-V2 推理',
-    contextWindow: 64000,
-    maxTokens: 4096,
-    capabilities: ['costEffective', 'general'],
-  },
-  // === Ollama ===
-  {
-    id: 'ollama-llama3.1',
-    name: 'Ollama Llama 3.1',
-    provider: 'ollama',
-    apiEndpoint: 'http://localhost:11434/v1',
-    enabled: false,
-    isDefault: false,
-    description: '本地 Ollama 部署的 Llama 3.1',
-    contextWindow: 128000,
-    maxTokens: 4096,
-    capabilities: ['costEffective', 'general'],
-  },
-  // === Azure ===
-  {
-    id: 'azure-gpt-4',
-    name: 'Azure GPT-4',
-    provider: 'azure',
-    apiEndpoint: 'https://{resource}.openai.azure.com/openai/deployments/{deployment}',
-    enabled: false,
-    isDefault: false,
-    description: 'Azure OpenAI Service GPT-4',
-    contextWindow: 128000,
-    maxTokens: 4096,
-    capabilities: ['reasoning', 'general'],
+    description: 'DeepSeek V4 Flash，1M 上下文、工具调用，高性价比',
+    contextWindow: 1_000_000,
+    maxTokens: 384_000,
+    capabilities: ['costEffective', 'fast', 'general'],
   },
 ];
 
@@ -416,12 +186,8 @@ export async function writeModelsFile(data: ModelsFile): Promise<void> {
  */
 function migrateProviderData(models: ModelConfig[]): { models: ModelConfig[]; changed: boolean } {
   const ID_TO_PROVIDER: Record<string, ModelProvider> = {
-    'deepseek-chat': 'deepseek',
-    'deepseek-coder': 'deepseek',
-    'qwen-turbo': 'qwen',
-    'qwen-plus': 'qwen',
-    'gemini-pro': 'google',
-    // 混元模型自身就是 'tencent'，不会误判
+    'deepseek-v4-pro': 'deepseek',
+    'deepseek-v4-flash': 'deepseek',
   };
 
   let changed = false;
@@ -469,23 +235,28 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
         await writeModelsFile(saved);
       }
       // RC-2: 注入 Keychain 中的 API Key — 单独 try/catch，防止 execSync 抛出非 Error 对象导致整体加载失败
+      let keychainFailed = false;
       try {
         saved.models = injectApiKeys(saved.models);
       } catch (keychainErr) {
-        console.error('[modelsStore] Keychain API key injection failed, continuing without keys:', keychainErr);
-        // continue without API keys — models just won't auto-authenticate
+        console.warn('[modelsStore] Keychain API Key 注入失败（可能 Keychain 不可用），保持已有配置:', String(keychainErr));
+        keychainFailed = true;
+        // Keychain 不可用时保留已有配置，不强制禁用模型
       }
-      // 自动禁用没有 API Key 的远程模型（修复旧版遗留 enabled:true 问题）
+      // 自动禁用没有 API Key 的远程模型（仅在 Keychain 正常且首次迁移时执行）
+      // 若 Keychain 注入失败，跳过自动禁用，信任用户已有的 enabled 配置
       let needSave = changed;
-      saved.models = saved.models.map((m) => {
-        if (!m.enabled) return m;
-        const hasKey = m.apiKey?.trim() || m.apiKeys?.some(k => k.enabled !== false && k.key?.trim());
-        if (!hasKey && !isLocalModel(m)) {
-          needSave = true;
-          return { ...m, enabled: false };
-        }
-        return m;
-      });
+      if (!keychainFailed) {
+        saved.models = saved.models.map((m) => {
+          if (!m.enabled) return m;
+          const hasKey = m.apiKey?.trim() || m.apiKeys?.some(k => k.enabled !== false && k.key?.trim());
+          if (!hasKey && !isLocalModel(m)) {
+            needSave = true;
+            return { ...m, enabled: false };
+          }
+          return m;
+        });
+      }
       if (needSave) {
         // 保存前：先将明文 API Key 提取到 Keychain/AES 加密
         const protectedModels = saved.models.map((m) => extractAndSaveApiKey(m));
@@ -562,4 +333,621 @@ export function deleteModelConfig(modelId: string): void {
 /** 获取内置模型列表（供前端参考） */
 export function getBuiltinModels(): ModelConfig[] {
   return BUILTIN_MODELS;
+}
+
+// ============================================================
+// 模型自动发现：启动时从 API 提供商拉取最新模型列表
+// ============================================================
+
+/** 已知的提供商模型发现配置 */
+interface ProviderDiscovery {
+  provider: ModelProvider;
+  /** GET /v1/models 的 base URL */
+  modelsEndpoint: string;
+  /** 从 API 返回的 model id 推断 ModelConfig */
+  mapper: (modelId: string) => ModelConfig | null;
+}
+
+const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
+  // === DeepSeek ===
+  {
+    provider: 'deepseek',
+    modelsEndpoint: 'https://api.deepseek.com/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'deepseek-v4-pro': {
+          name: 'DeepSeek V4 Pro',
+          capabilities: ['multimodal', 'reasoning', 'general'],
+          contextWindow: 1_000_000,
+          maxTokens: 384_000,
+          description: 'DeepSeek V4 Pro，支持 1M 上下文、工具调用、多模态、推理',
+        },
+        'deepseek-v4-flash': {
+          name: 'DeepSeek V4 Flash',
+          capabilities: ['costEffective', 'fast', 'general'],
+          contextWindow: 1_000_000,
+          maxTokens: 384_000,
+          description: 'DeepSeek V4 Flash，1M 上下文、工具调用，高性价比',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'deepseek' as ModelProvider,
+        apiEndpoint: 'https://api.deepseek.com/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === OpenAI ===
+  {
+    provider: 'openai',
+    modelsEndpoint: 'https://api.openai.com/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'gpt-4o': {
+          name: 'GPT-4o',
+          capabilities: ['multimodal', 'reasoning', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 16_384,
+          description: 'OpenAI GPT-4o，多模态、推理、128K 上下文',
+        },
+        'gpt-4o-mini': {
+          name: 'GPT-4o Mini',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 16_384,
+          description: 'OpenAI GPT-4o Mini，轻量快速、高性价比',
+        },
+        'o3': {
+          name: 'OpenAI o3',
+          capabilities: ['reasoning', 'code', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 100_000,
+          description: 'OpenAI o3，深度推理模型，支持 reasoning_effort',
+        },
+        'o3-mini': {
+          name: 'OpenAI o3 Mini',
+          capabilities: ['reasoning', 'fast', 'costEffective', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 65_536,
+          description: 'OpenAI o3 Mini，轻量推理模型',
+        },
+        'o4-mini': {
+          name: 'OpenAI o4 Mini',
+          capabilities: ['reasoning', 'fast', 'code', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 100_000,
+          description: 'OpenAI o4 Mini，最新轻量推理模型',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'openai' as ModelProvider,
+        apiEndpoint: 'https://api.openai.com/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === Anthropic ===
+  {
+    provider: 'anthropic',
+    modelsEndpoint: 'https://api.anthropic.com/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'claude-sonnet-4-20250514': {
+          name: 'Claude Sonnet 4',
+          capabilities: ['reasoning', 'code', 'longContext', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 64_000,
+          description: 'Anthropic Claude Sonnet 4，推理、代码、200K 上下文',
+        },
+        'claude-opus-4-20250514': {
+          name: 'Claude Opus 4',
+          capabilities: ['reasoning', 'code', 'longContext', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 32_000,
+          description: 'Anthropic Claude Opus 4，最强推理与代码能力',
+        },
+        'claude-3-5-sonnet-20241022': {
+          name: 'Claude 3.5 Sonnet',
+          capabilities: ['code', 'longContext', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 8_192,
+          description: 'Anthropic Claude 3.5 Sonnet，代码与长文本',
+        },
+        'claude-3-5-haiku-20241022': {
+          name: 'Claude 3.5 Haiku',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 8_192,
+          description: 'Anthropic Claude 3.5 Haiku，快速轻量',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'anthropic' as ModelProvider,
+        apiEndpoint: 'https://api.anthropic.com/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === Google Gemini ===
+  {
+    provider: 'google',
+    modelsEndpoint: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'gemini-2.5-pro': {
+          name: 'Gemini 2.5 Pro',
+          capabilities: ['reasoning', 'multimodal', 'longContext', 'code', 'general'],
+          contextWindow: 1_000_000,
+          maxTokens: 65_536,
+          description: 'Google Gemini 2.5 Pro，1M 上下文、推理、多模态',
+        },
+        'gemini-2.5-flash': {
+          name: 'Gemini 2.5 Flash',
+          capabilities: ['fast', 'multimodal', 'longContext', 'costEffective', 'general'],
+          contextWindow: 1_000_000,
+          maxTokens: 65_536,
+          description: 'Google Gemini 2.5 Flash，1M 上下文、快速、高性价比',
+        },
+        'gemini-2.0-flash': {
+          name: 'Gemini 2.0 Flash',
+          capabilities: ['fast', 'multimodal', 'costEffective', 'general'],
+          contextWindow: 1_000_000,
+          maxTokens: 8_192,
+          description: 'Google Gemini 2.0 Flash，多模态、快速',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'google' as ModelProvider,
+        apiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === 阿里通义千问 ===
+  {
+    provider: 'qwen',
+    modelsEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'qwen-max': {
+          name: 'Qwen Max',
+          capabilities: ['reasoning', 'code', 'longContext', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 32_768,
+          description: '通义千问 Max，推理、代码、128K 上下文',
+        },
+        'qwen-plus': {
+          name: 'Qwen Plus',
+          capabilities: ['general', 'costEffective'],
+          contextWindow: 128_000,
+          maxTokens: 32_768,
+          description: '通义千问 Plus，均衡能力、高性价比',
+        },
+        'qwen-turbo': {
+          name: 'Qwen Turbo',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 32_768,
+          description: '通义千问 Turbo，极速响应',
+        },
+        'qwen-vl-max': {
+          name: 'Qwen VL Max',
+          capabilities: ['multimodal', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 8_192,
+          description: '通义千问 VL Max，多模态理解',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'qwen' as ModelProvider,
+        apiEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === 月之暗面 Kimi ===
+  {
+    provider: 'kimi',
+    modelsEndpoint: 'https://api.moonshot.cn/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'moonshot-v1-128k': {
+          name: 'Moonshot V1 128K',
+          capabilities: ['longContext', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 8_192,
+          description: 'Kimi Moonshot V1，128K 长文本',
+        },
+        'moonshot-v1-32k': {
+          name: 'Moonshot V1 32K',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 32_000,
+          maxTokens: 8_192,
+          description: 'Kimi Moonshot V1，32K 快速',
+        },
+        'moonshot-v1-8k': {
+          name: 'Moonshot V1 8K',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 8_000,
+          maxTokens: 4_096,
+          description: 'Kimi Moonshot V1，8K 轻量',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'kimi' as ModelProvider,
+        apiEndpoint: 'https://api.moonshot.cn/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === 智谱 GLM ===
+  {
+    provider: 'bigmodel',
+    modelsEndpoint: 'https://open.bigmodel.cn/api/paas/v4',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'glm-4-plus': {
+          name: 'GLM-4 Plus',
+          capabilities: ['reasoning', 'code', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 4_096,
+          description: '智谱 GLM-4 Plus，推理与代码',
+        },
+        'glm-4-flash': {
+          name: 'GLM-4 Flash',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 4_096,
+          description: '智谱 GLM-4 Flash，极速免费',
+        },
+        'glm-4v-plus': {
+          name: 'GLM-4V Plus',
+          capabilities: ['multimodal', 'general'],
+          contextWindow: 8_000,
+          maxTokens: 4_096,
+          description: '智谱 GLM-4V Plus，多模态理解',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'bigmodel' as ModelProvider,
+        apiEndpoint: 'https://open.bigmodel.cn/api/paas/v4',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === 硅基流动 SiliconFlow ===
+  {
+    provider: 'siliconflow',
+    modelsEndpoint: 'https://api.siliconflow.cn/v1',
+    mapper: (id: string) => {
+      // SiliconFlow 托管多种模型，仅映射热门模型
+      const known: Record<string, Partial<ModelConfig>> = {
+        'deepseek-ai/DeepSeek-V3': {
+          name: 'DeepSeek V3 (SiliconFlow)',
+          capabilities: ['general', 'costEffective'],
+          contextWindow: 64_000,
+          maxTokens: 8_192,
+          description: 'SiliconFlow 托管 DeepSeek V3',
+        },
+        'Qwen/Qwen2.5-72B-Instruct': {
+          name: 'Qwen2.5 72B (SiliconFlow)',
+          capabilities: ['general', 'longContext'],
+          contextWindow: 128_000,
+          maxTokens: 8_192,
+          description: 'SiliconFlow 托管 Qwen2.5 72B',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'siliconflow' as ModelProvider,
+        apiEndpoint: 'https://api.siliconflow.cn/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === 腾讯混元 ===
+  {
+    provider: 'tencent',
+    modelsEndpoint: 'https://api.hunyuan.cloud.tencent.com/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'hunyuan-pro': {
+          name: '混元 Pro',
+          capabilities: ['reasoning', 'code', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 8_192,
+          description: '腾讯混元 Pro，推理与代码',
+        },
+        'hunyuan-standard': {
+          name: '混元 Standard',
+          capabilities: ['general', 'costEffective'],
+          contextWindow: 128_000,
+          maxTokens: 8_192,
+          description: '腾讯混元 Standard，均衡能力',
+        },
+        'hunyuan-lite': {
+          name: '混元 Lite',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 32_000,
+          maxTokens: 4_096,
+          description: '腾讯混元 Lite，极速轻量',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'tencent' as ModelProvider,
+        apiEndpoint: 'https://api.hunyuan.cloud.tencent.com/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === xAI (Grok) ===
+  {
+    provider: 'xai',
+    modelsEndpoint: 'https://api.x.ai/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'grok-3': {
+          name: 'Grok 3',
+          capabilities: ['reasoning', 'code', 'general'],
+          contextWindow: 131_072,
+          maxTokens: 32_768,
+          description: 'xAI Grok 3，推理与代码',
+        },
+        'grok-3-mini': {
+          name: 'Grok 3 Mini',
+          capabilities: ['fast', 'costEffective', 'reasoning', 'general'],
+          contextWindow: 131_072,
+          maxTokens: 32_768,
+          description: 'xAI Grok 3 Mini，轻量推理',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'xai' as ModelProvider,
+        apiEndpoint: 'https://api.x.ai/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+
+  // === MiniMax ===
+  {
+    provider: 'minimax',
+    modelsEndpoint: 'https://api.minimax.chat/v1',
+    mapper: (id: string) => {
+      const known: Record<string, Partial<ModelConfig>> = {
+        'MiniMax-Text-01': {
+          name: 'MiniMax Text-01',
+          capabilities: ['longContext', 'general'],
+          contextWindow: 4_000_000,
+          maxTokens: 32_768,
+          description: 'MiniMax Text-01，4M 超长上下文',
+        },
+      };
+      const info = known[id];
+      if (!info) return null;
+      return {
+        id,
+        name: info.name || id,
+        provider: 'minimax' as ModelProvider,
+        apiEndpoint: 'https://api.minimax.chat/v1',
+        enabled: false,
+        isDefault: false,
+        description: info.description,
+        contextWindow: info.contextWindow,
+        maxTokens: info.maxTokens,
+        capabilities: info.capabilities,
+      };
+    },
+  },
+];
+
+/**
+ * 从单个提供商拉取模型列表
+ * 返回发现的模型配置数组（仅包含已知模型）
+ */
+async function fetchModelsFromProvider(
+  discovery: ProviderDiscovery,
+  apiKey: string,
+): Promise<ModelConfig[]> {
+  try {
+    const url = `${discovery.modelsEndpoint.replace(/\/$/, '')}/models`;
+    const resp = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal: AbortSignal.timeout(8000), // 8s 超时
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json() as { data?: Array<{ id: string }> };
+    if (!data.data || !Array.isArray(data.data)) return [];
+
+    const models: ModelConfig[] = [];
+    for (const item of data.data) {
+      const mapped = discovery.mapper(item.id);
+      if (mapped) models.push(mapped);
+    }
+    return models;
+  } catch (e) {
+    console.log(`[ModelDiscovery] 从 ${discovery.provider} 拉取模型列表失败:`, (e as Error).message);
+    return [];
+  }
+}
+
+/**
+ * 启动时自动发现新模型并合并到本地配置
+ * 仅在有 API Key 的提供商上执行，不阻塞启动
+ */
+export async function syncModelsFromApi(): Promise<void> {
+  try {
+    const config = await loadModelsConfig();
+    const existingIds = new Set(config.models.map(m => m.id));
+    let hasNewModels = false;
+    const newModels: ModelConfig[] = [];
+
+    for (const discovery of PROVIDER_DISCOVERY_LIST) {
+      // 找到该提供商下有 API Key 的模型
+      const providerModels = config.models.filter(
+        m => m.provider === discovery.provider && (m.apiKey?.trim() || m.apiKeys?.some(k => k.key?.trim())),
+      );
+      if (providerModels.length === 0) continue;
+
+      // 使用第一个可用的 API Key
+      const keyModel = providerModels[0];
+      const apiKey = keyModel.apiKey?.trim() || keyModel.apiKeys?.find(k => k.key?.trim())?.key?.trim();
+      if (!apiKey) continue;
+
+      const discovered = await fetchModelsFromProvider(discovery, apiKey);
+      for (const model of discovered) {
+        if (!existingIds.has(model.id)) {
+          hasNewModels = true;
+          newModels.push(model);
+          console.log(`[ModelDiscovery] 发现新模型: ${model.id} (${model.name})`);
+        } else {
+          // 已存在的模型：更新 capabilities/contextWindow 等元数据
+          const existing = config.models.find(m => m.id === model.id);
+          if (existing && model.capabilities && model.capabilities.length > 0) {
+            // 合并新能力（不覆盖用户手动设置）
+            const existingCaps = new Set(existing.capabilities || []);
+            for (const cap of model.capabilities) {
+              if (!existingCaps.has(cap)) {
+                existingCaps.add(cap);
+              }
+            }
+            existing.capabilities = Array.from(existingCaps);
+            // 更新 contextWindow 如果 API 返回了更大的值
+            if (model.contextWindow && (!existing.contextWindow || model.contextWindow > existing.contextWindow)) {
+              existing.contextWindow = model.contextWindow;
+            }
+          }
+        }
+      }
+    }
+
+    if (hasNewModels && newModels.length > 0) {
+      // 注入 API Key 到新模型（复用同提供商已有 Key）
+      for (const nm of newModels) {
+        const sameProvider = config.models.find(
+          m => m.provider === nm.provider && (m.apiKey?.trim() || m.apiKeys?.some(k => k.key?.trim())),
+        );
+        if (sameProvider) {
+          if (sameProvider.apiKey) nm.apiKey = sameProvider.apiKey;
+          if (sameProvider.apiKeys) nm.apiKeys = sameProvider.apiKeys;
+          if (sameProvider.apiKeyRef) nm.apiKeyRef = sameProvider.apiKeyRef;
+          if (sameProvider.apiKeyRefs) nm.apiKeyRefs = sameProvider.apiKeyRefs;
+        }
+      }
+      config.models.push(...newModels);
+      // 脱敏保存
+      const sanitized = config.models.map((m) => {
+        const { apiKey, apiKeys, ...rest } = m as any;
+        return rest;
+      });
+      await writeModelsFile({ ...config, models: sanitized });
+      console.log(`[ModelDiscovery] 已合并 ${newModels.length} 个新模型到本地配置`);
+    } else {
+      console.log('[ModelDiscovery] 模型列表已是最新，无需更新');
+    }
+  } catch (e) {
+    console.error('[ModelDiscovery] 自动发现失败（不影响正常使用）:', e);
+  }
 }
