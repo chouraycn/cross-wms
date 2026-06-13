@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, Typography, IconButton, Collapse, useTheme, keyframes, Chip } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, IconButton, Collapse, useTheme, Chip } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -15,13 +15,6 @@ interface ThinkingBlockProps {
   /** 推理强度（'high' 深度思考 / 'max' 极致推理） */
   reasoningEffort?: string;
 }
-
-/** 脉冲动画 keyframes */
-const pulse = keyframes`
-  0% { opacity: 0.4; }
-  50% { opacity: 1; }
-  100% { opacity: 0.4; }
-`;
 
 /** 格式化耗时：毫秒 → 可读字符串 */
 function formatDuration(ms?: number): string {
@@ -48,6 +41,17 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
   const gs = getGrayScale(isDark);
   const [expanded, setExpanded] = useState(false);
   const reasoningLabel = getReasoningLabel(reasoningEffort);
+
+  // v1.9.5-fix: 用 JS 定时器模拟脉冲动画，避免 WKWebView 不兼容 CSS @keyframes
+  // 原来用 keyframes pulse 动画在 WKWebView 中可能导致组件不渲染或样式丢失
+  const [pulseOpacity, setPulseOpacity] = useState(0.4);
+  useEffect(() => {
+    if (!isStreaming) return;
+    const interval = setInterval(() => {
+      setPulseOpacity(prev => (prev === 0.4 ? 1 : 0.4));
+    }, 750);
+    return () => clearInterval(interval);
+  }, [isStreaming]);
 
   return (
     <Box
@@ -91,12 +95,21 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
 
         {isStreaming ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AutoAwesomeIcon sx={{ fontSize: 14, color: reasoningLabel.color, animation: `${pulse} 1.5s ease-in-out infinite` }} />
+            <AutoAwesomeIcon
+              sx={{
+                fontSize: 14,
+                color: reasoningLabel.color,
+                // v1.9.5-fix: 用 opacity 过渡代替 CSS animation，兼容 WKWebView
+                opacity: pulseOpacity,
+                transition: 'opacity 0.75s ease-in-out',
+              }}
+            />
             <Typography
               sx={{
                 fontSize: 12,
                 color: gs.textSecondary,
-                animation: `${pulse} 1.5s ease-in-out infinite`,
+                opacity: pulseOpacity,
+                transition: 'opacity 0.75s ease-in-out',
               }}
             >
               正在思考...
