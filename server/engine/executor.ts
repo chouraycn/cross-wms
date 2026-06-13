@@ -6,16 +6,16 @@
  * volume-alert、skill-chain、custom 六种任务类型。
  */
 
+import { initDb } from '../db.js';
 import {
   getWarehouses,
   getInventoryItems,
   getTransitOrders,
   getInboundRecords,
   getOutboundRecords,
-} from '../db.js';
+} from '../dao/warehouse.js';
 import { checkAllPredictions } from '../services/predictionService.js';
 import { generateSuggestions } from '../services/replenishmentService.js';
-import { initDb } from '../db.js';
 
 // ===================== 类型定义 =====================
 

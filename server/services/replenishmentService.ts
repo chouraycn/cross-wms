@@ -13,7 +13,8 @@
  */
 
 import Database from 'better-sqlite3';
-import { initDb, createTransferOrder } from '../db.js';
+import { initDb } from '../db.js';
+import { createTransferOrder } from '../dao/warehouse.js';
 import { computeEMA } from './predictionService.js';
 import { generateTransferNo } from './transferService.js';
 import type {

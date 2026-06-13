@@ -27,7 +27,7 @@ import {
   type MatchEngineRuntimeConfig,
   DEFAULT_MATCH_ENGINE_CONFIG,
 } from '@src/types/semantic';
-import { getUserSkills } from '../db.js';
+import { getUserSkills } from '../dao/skills.js';
 import { BUILTIN_SKILLS } from '@src/types/skill-core';
 
 // ===================== 类型定义 =====================

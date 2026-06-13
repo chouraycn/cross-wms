@@ -91,6 +91,11 @@ function isRetryableError(error: unknown): boolean {
     return ['network', 'timeout', 'server', 'rate_limit'].includes(error.category);
   }
   if (error instanceof TypeError) {
+    // 本地模型连接失败（ECONNREFUSED）不应重试
+    const msg = error.message || '';
+    if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
+      return false;
+    }
     return true;
   }
   return false;

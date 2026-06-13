@@ -8,7 +8,8 @@
  * in ~/.workbuddy/skills/ (async, non-blocking).
  */
 import { Router, type Request, type Response } from 'express';
-import { migrateData as dbMigrate, createSkillAudit, getLatestSkillAudit } from '../db.js';
+import { migrateData as dbMigrate } from '../dao/settings.js';
+import { createSkillAudit, getLatestSkillAudit } from '../dao/chains.js';
 import { auditSkillMd, generateMarkdownReport } from '../services/securityAuditor.js';
 import crypto from 'crypto';
 import fs from 'fs';

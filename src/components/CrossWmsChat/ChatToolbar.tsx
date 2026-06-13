@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -20,7 +20,10 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
 import CheckIcon from '@mui/icons-material/Check';
-import TuneIcon from '@mui/icons-material/Tune';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
 import { getAllSkills } from '../../stores/skillStore';
@@ -72,29 +75,23 @@ export interface ChatToolbarProps {
   onSkillSelect: (skill: Skill) => void;
   /** Available model options with provider info */
   modelOptions: ModelOption[];
-  /** Current preset ID */
-  selectedPreset: string;
-  /** Callback when user picks a preset */
-  onPresetChange: (presetId: string) => void;
   /** Open AI settings (model management) dialog */
   onOpenAISettings?: () => void;
   /** Whether models are still loading from backend */
   modelsLoading?: boolean;
+  /** v1.9.0: 附件按钮点击回调 */
+  onAttachClick?: () => void;
+  /** v1.9.0: 是否有待上传附件 */
+  hasAttachments?: boolean;
+  /** v1.9.1: 推理强度（'high' / 'max'） */
+  reasoningEffort?: string;
+  /** v1.9.1: 推理强度切换回调 */
+  onReasoningEffortChange?: (effort: string) => void;
 }
 
 // ===================== Constants =====================
 
-  /** 模型参数预设选项 */
-  const PRESET_OPTIONS = [
-    { id: '', label: '默认', description: '使用模型默认参数' },
-    { id: 'creative', label: '创意写作', description: '温度 1.3，适合创意、头脑风暴' },
-    { id: 'code', label: '代码生成', description: '温度 0.2，确保代码准确性' },
-    { id: 'translate', label: '翻译', description: '温度 0.3，保持翻译一致性' },
-    { id: 'analysis', label: '分析推理', description: '温度 0.5，适合逻辑分析' },
-    { id: 'precise', label: '精确问答', description: '温度 0.1，追求事实准确性' },
-  ];
-
-type DropdownType = 'model' | 'skills' | 'preset' | null;
+type DropdownType = 'model' | 'skills' | null;
 
 // ===================== Component =====================
 
@@ -109,10 +106,12 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   onStop,
   onSkillSelect,
   modelOptions,
-  selectedPreset,
-  onPresetChange,
   onOpenAISettings,
   modelsLoading = false,
+  onAttachClick,
+  hasAttachments = false,
+  reasoningEffort,
+  onReasoningEffortChange,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -122,7 +121,25 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
 
   const modelBtnRef = useRef<HTMLDivElement>(null);
   const skillsBtnRef = useRef<HTMLDivElement>(null);
-  const presetBtnRef = useRef<HTMLDivElement>(null);
+
+  // 点击弹窗外部自动关闭（兜底处理，确保透明 backdrop 下也能关闭）
+  useEffect(() => {
+    if (!activeDropdown) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        modelBtnRef.current?.contains(target) ||
+        skillsBtnRef.current?.contains(target)
+      ) return;
+      // 如果点击在 Menu 的 Paper 内部，不关闭
+      const menuPaper = document.querySelector('.MuiMenu-root .MuiPaper-root');
+      if (menuPaper?.contains(target)) return;
+      setActiveDropdown(null);
+    };
+    // 使用 capture 阶段确保优先于 MUI 内部处理
+    document.addEventListener('mousedown', handleClickOutside, true);
+    return () => document.removeEventListener('mousedown', handleClickOutside, true);
+  }, [activeDropdown]);
 
   const handleDropdownClick = (type: DropdownType) => {
     setActiveDropdown(prev => prev === type ? null : type);
@@ -150,7 +167,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           flexShrink: 0,
         }}
       >
-        {/* Left: Skills + Preset */}
+        {/* Left: Skills + Attach */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Skills button — 药丸 */}
           <Box
@@ -176,38 +193,60 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             </Typography>
           </Box>
 
-          {/* Preset button — 药丸，选中时橘色 */}
-          <Box
-            ref={presetBtnRef as React.RefObject<HTMLDivElement>}
-            onClick={(e) => { e.stopPropagation(); handleDropdownClick('preset'); }}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
-              px: 1.5,
-              py: 0.5,
-              borderRadius: '20px',
-              bgcolor: selectedPreset
-                ? (isDark ? '#3D2A10' : '#FFF7ED')
-                : BTN_BG,
-              cursor: 'pointer',
-              transition: 'background-color 0.15s',
-              '&:hover': {
-                bgcolor: selectedPreset
-                  ? (isDark ? '#4A3518' : '#FFEDD5')
-                  : BTN_HOVER,
-              },
-              userSelect: 'none',
-            }}
-          >
-            <TuneIcon sx={{ fontSize: 15, color: selectedPreset ? ACCENT : gs.textMuted }} />
-            <Typography sx={{
-              fontSize: 13, fontWeight: 500, lineHeight: 1,
-              color: selectedPreset ? ACCENT : ITEM_TEXT,
-            }}>
-              {selectedPreset ? PRESET_OPTIONS.find(p => p.id === selectedPreset)?.label || '预设' : '预设'}
-            </Typography>
-          </Box>
+          {/* Attach button — 药丸 */}
+          {onAttachClick && (
+            <Box
+              onClick={(e) => { e.stopPropagation(); onAttachClick(); }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: '20px',
+                bgcolor: BTN_BG,
+                cursor: 'pointer',
+                transition: 'background-color 0.15s',
+                '&:hover': { bgcolor: BTN_HOVER },
+                userSelect: 'none',
+              }}
+            >
+              <AttachFileIcon sx={{ fontSize: 15, color: gs.textMuted }} />
+              <Typography sx={{ fontSize: 13, fontWeight: 500, color: ITEM_TEXT, lineHeight: 1 }}>
+                附件
+              </Typography>
+            </Box>
+          )}
+
+          {/* Reasoning effort toggle — 药丸 */}
+          {onReasoningEffortChange && (
+            <Box
+              onClick={(e) => {
+                e.stopPropagation();
+                // 循环切换: '' -> 'high' -> 'max' -> ''
+                const next = reasoningEffort === 'high' ? 'max' : reasoningEffort === 'max' ? '' : 'high';
+                onReasoningEffortChange(next);
+              }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: '20px',
+                bgcolor: reasoningEffort ? (reasoningEffort === 'max' ? (isDark ? '#3D2A10' : '#FFF7ED') : (isDark ? '#2A1A3A' : '#F3E8FF')) : BTN_BG,
+                cursor: 'pointer',
+                transition: 'background-color 0.15s',
+                '&:hover': { bgcolor: reasoningEffort ? (reasoningEffort === 'max' ? (isDark ? '#4A3518' : '#FFEDD5') : (isDark ? '#3A1A4A' : '#E9D5FF')) : BTN_HOVER },
+                userSelect: 'none',
+              }}
+            >
+              <AutoAwesomeIcon sx={{ fontSize: 15, color: reasoningEffort ? (reasoningEffort === 'max' ? '#F59E0B' : '#8B5CF6') : gs.textMuted }} />
+              <Typography sx={{ fontSize: 13, fontWeight: 500, color: reasoningEffort ? (reasoningEffort === 'max' ? '#F59E0B' : '#8B5CF6') : ITEM_TEXT, lineHeight: 1 }}>
+                {reasoningEffort === 'max' ? '极致推理' : reasoningEffort === 'high' ? '深度思考' : '思考'}
+              </Typography>
+            </Box>
+          )}
         </Box>
 
         {/* Right: Model selector (ghost text), Memory, Mic, Send */}
@@ -412,18 +451,33 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                         />
                       )}
                     </Box>
-                    {option.description && (
-                      <Typography sx={{
-                        fontSize: '0.7rem',
-                        color: ITEM_DESC,
-                        mt: 0.15,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {option.description}
-                      </Typography>
-                    )}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.15, flexWrap: 'wrap' }}>
+                      {option.capabilities?.map(cap => (
+                        <Chip
+                          key={cap}
+                          label={CAPABILITY_LABELS[cap]}
+                          size="small"
+                          sx={{
+                            fontSize: '0.55rem',
+                            height: 14,
+                            backgroundColor: `${CAPABILITY_COLORS[cap]}15`,
+                            color: CAPABILITY_COLORS[cap],
+                            fontWeight: 500,
+                          }}
+                        />
+                      ))}
+                      {option.description && (
+                        <Typography sx={{
+                          fontSize: '0.7rem',
+                          color: ITEM_DESC,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {option.description}
+                        </Typography>
+                      )}
+                    </Box>
                   </Box>
 
                   {/* 选中勾 */}
@@ -530,61 +584,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
         </MenuItem>
       </Menu>
 
-      {/* ====== Preset Menu — 弹窗在按钮上方，无背景遮罩 ====== */}
-      <Menu
-        anchorEl={presetBtnRef.current}
-        open={activeDropdown === 'preset'}
-        onClose={() => setActiveDropdown(null)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        slotProps={{
-          paper: {
-            sx: {
-              width: 240,
-              mt: -0.5,
-              borderRadius: '14px',
-              border: `1px solid ${MENU_BORDER}`,
-              boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-              bgcolor: MENU_BG,
-            },
-          },
-        }}
-        sx={{
-          '& .MuiBackdrop-root': {
-            backgroundColor: 'transparent',
-          },
-        }}
-      >
-        {PRESET_OPTIONS.map((option) => (
-          <MenuItem
-            key={option.id}
-            onClick={() => { onPresetChange(option.id); setActiveDropdown(null); }}
-            sx={{
-              py: 1, px: 2, mx: 0.5, borderRadius: '10px',
-              backgroundColor: selectedPreset === option.id ? SELECTED_BG : 'transparent',
-              '&:hover': { backgroundColor: selectedPreset === option.id ? SELECTED_BG : (isDark ? '#2A2A2A' : '#F5F5F5') },
-            }}
-          >
-            <Box sx={{ width: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                <Typography sx={{
-                  fontSize: '0.8125rem',
-                  fontWeight: selectedPreset === option.id ? 600 : 400,
-                  color: selectedPreset === option.id ? ACCENT : ITEM_TEXT,
-                }}>
-                  {option.label}
-                </Typography>
-                {selectedPreset === option.id && (
-                  <CheckIcon sx={{ fontSize: 16, color: ACCENT, ml: 'auto' }} />
-                )}
-              </Box>
-              <Typography sx={{ fontSize: '0.7rem', color: ITEM_DESC, mt: 0.25 }}>
-                {option.description}
-              </Typography>
-            </Box>
-          </MenuItem>
-        ))}
-      </Menu>
+
     </>
   );
 };

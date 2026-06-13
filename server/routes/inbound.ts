@@ -10,7 +10,7 @@ import {
   getInboundRecordById as dbGetById,
   updateInboundRecord as dbUpdate,
   deleteInboundRecord as dbDelete,
-} from '../db.js';
+} from '../dao/warehouse.js';
 import * as InventoryService from '../services/inventoryService.js';
 
 const router = Router();

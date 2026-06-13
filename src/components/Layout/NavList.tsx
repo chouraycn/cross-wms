@@ -10,6 +10,14 @@ import {
   Collapse,
   IconButton,
   useTheme,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
 } from '@mui/material';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
@@ -34,8 +42,9 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import { getGrayScale } from '../../constants/theme';
-import { Session } from '../../types/chat';
+import { Session, Folder } from '../../types/chat';
 
 // ===================== Nav Item Types =====================
 
@@ -90,10 +99,6 @@ const navItems: NavItem[] = [
   },
 ];
 
-// ===================== Session Helpers =====================
-// 使用共享的 loadSessions / saveSessions（来自 useChatSession）
-// 避免多处定义导致的数据格式不一致
-
 // ===================== Props =====================
 
 interface NavListProps {
@@ -147,7 +152,13 @@ const NavList: React.FC<NavListProps> = ({
   }, [activePath]);
 
   // 聊天历史 — 从 ChatContext 获取
-  const { sessions, handleDeleteSession: deleteSessionFromContext } = useChatContext();
+  const {
+    sessions,
+    folders,
+    handleDeleteSession: deleteSessionFromContext,
+    moveSessionToFolder,
+    createFolder,
+  } = useChatContext();
   const historyListRef = useRef<HTMLDivElement>(null);
 
   // 即时选中状态：点击时立即切换视觉反馈，不等待父组件 state 传播
@@ -203,6 +214,201 @@ const NavList: React.FC<NavListProps> = ({
   const textMuted = gs.textDisabled;
   const iconActive = gs.textPrimary;
   const iconNormal = gs.textMuted;
+
+  // ===================== 文件夹展开状态 =====================
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
+
+  const toggleFolder = (folderId: string) => {
+    setExpandedFolders((prev) => ({ ...prev, [folderId]: !prev[folderId] }));
+  };
+
+  // ===================== 右键菜单状态 =====================
+  const [contextMenu, setContextMenu] = useState<{
+    mouseX: number;
+    mouseY: number;
+    sessionId: string;
+  } | null>(null);
+
+  const [moveSubMenuAnchor, setMoveSubMenuAnchor] = useState<HTMLElement | null>(null);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent, sessionId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      sessionId,
+    });
+  }, []);
+
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu(null);
+    setMoveSubMenuAnchor(null);
+  }, []);
+
+  const handleMoveSession = useCallback(async (folderId: string | null) => {
+    if (contextMenu) {
+      await moveSessionToFolder(contextMenu.sessionId, folderId);
+    }
+    handleCloseContextMenu();
+  }, [contextMenu, moveSessionToFolder, handleCloseContextMenu]);
+
+  // ===================== 新建文件夹对话框 =====================
+  const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+
+  const handleOpenNewFolderDialog = useCallback(() => {
+    setNewFolderName('');
+    setNewFolderDialogOpen(true);
+  }, []);
+
+  const handleCloseNewFolderDialog = useCallback(() => {
+    setNewFolderDialogOpen(false);
+    setNewFolderName('');
+  }, []);
+
+  const handleCreateFolder = useCallback(async () => {
+    const name = newFolderName.trim();
+    if (name) {
+      await createFolder(name);
+    }
+    handleCloseNewFolderDialog();
+  }, [newFolderName, createFolder, handleCloseNewFolderDialog]);
+
+  // ===================== 按文件夹分组会话 =====================
+  const uncategorizedSessions = chatSessions.filter((s) => !s.folderId);
+  const folderSessionsMap = useCallback((folderId: string) => {
+    return chatSessions.filter((s) => s.folderId === folderId);
+  }, [chatSessions]);
+
+  // 渲染单个会话项
+  const renderSessionItem = (session: Session) => {
+    const title = session.title || session.messages[0]?.content?.slice(0, 20) || '新对话';
+    const effectiveActiveId = justClickedSessionId ?? activeSessionId;
+    const isSessionActive = session.id === effectiveActiveId;
+    return (
+      <ListItem
+        key={session.id}
+        disablePadding
+        sx={{ display: 'block', mb: 0.25 }}
+        onContextMenu={(e) => handleContextMenu(e, session.id)}
+      >
+        <ListItemButton
+          onClick={() => {
+            setJustClickedSessionId(session.id);
+            onSelectSession(session.id);
+          }}
+          sx={{
+            minHeight: 28,
+            px: 1.5,
+            py: 0,
+            borderRadius: '6px',
+            backgroundColor: isSessionActive ? bgActive : 'transparent',
+            '&:hover': {
+              backgroundColor: isSessionActive ? bgActiveHover : bgHover,
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 0, mr: 1, justifyContent: 'center', color: textMuted }}>
+            <ChatBubbleOutlineIcon sx={{ fontSize: '13px' }} />
+          </ListItemIcon>
+          <Typography
+            sx={{
+              fontSize: '0.7rem',
+              fontWeight: isSessionActive ? 500 : 400,
+              color: isSessionActive ? textActive : textSecondary,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+              lineHeight: '28px',
+            }}
+          >
+            {title}
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleDeleteSession(e, session.id);
+            }}
+            sx={{
+              p: 0.25,
+              opacity: 0.7,
+              color: textMuted,
+              transition: 'opacity 0.15s',
+              '&:hover': { opacity: 1, color: gs.textPrimary },
+            }}
+          >
+            <DeleteOutlineIcon sx={{ fontSize: 12 }} />
+          </IconButton>
+        </ListItemButton>
+      </ListItem>
+    );
+  };
+
+  // 渲染文件夹及其会话
+  const renderFolder = (folder: Folder) => {
+    const sessionsInFolder = folderSessionsMap(folder.id);
+    const expanded = expandedFolders[folder.id] ?? false;
+
+    return (
+      <Box key={folder.id} sx={{ mb: 0.5 }}>
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={() => toggleFolder(folder.id)}
+            sx={{
+              minHeight: 28,
+              px: 1.5,
+              py: 0,
+              borderRadius: '6px',
+              '&:hover': { backgroundColor: bgHover },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 0, mr: 1, justifyContent: 'center', color: textMuted }}>
+              <FolderOutlinedIcon sx={{ fontSize: '14px' }} />
+            </ListItemIcon>
+            <Typography
+              sx={{
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                color: textNormal,
+                flex: 1,
+                lineHeight: '28px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {folder.name}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: '0.625rem',
+                color: textMuted,
+                lineHeight: '28px',
+                flexShrink: 0,
+                mr: 0.5,
+              }}
+            >
+              {sessionsInFolder.length}
+            </Typography>
+            {expanded ? (
+              <ExpandLessIcon sx={{ fontSize: 14, color: textMuted }} />
+            ) : (
+              <ExpandMoreIcon sx={{ fontSize: 14, color: textMuted }} />
+            )}
+          </ListItemButton>
+        </ListItem>
+        <Collapse in={expanded} timeout="auto">
+          <List sx={{ py: 0, pl: 2.5 }}>
+            {sessionsInFolder.map((session) => renderSessionItem(session))}
+          </List>
+        </Collapse>
+      </Box>
+    );
+  };
 
   return (
     <List
@@ -458,30 +664,42 @@ const NavList: React.FC<NavListProps> = ({
       {/* ====== 栏目底部：历史对话 ====== */}
       {!collapsed && chatSessions.length > 0 && (
         <Box ref={historyListRef} sx={{ mt: 1, pt: 2.25, pl: 0.25, pr: 1, display: 'flex', flexDirection: 'column', minHeight: 0, flex: '0 1 auto' }}>
-          <Typography
-            sx={{
-              fontSize: '0.6875rem',
-              fontWeight: 700,
-              color: gs.textMuted,
-              px: 1.5,
-              mb: 0.5,
-              letterSpacing: '0.02em',
-              flexShrink: 0,
-            }}
-          >
-            历史对话
-            <Box
-              component="span"
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, mb: 0.5, flexShrink: 0 }}>
+            <Typography
               sx={{
-                ml: 0.75,
-                fontSize: '0.625rem',
-                fontWeight: 500,
-                color: gs.textDisabled,
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                color: gs.textMuted,
+                letterSpacing: '0.02em',
               }}
             >
-              {chatSessions.length}
-            </Box>
-          </Typography>
+              历史对话
+              <Box
+                component="span"
+                sx={{
+                  ml: 0.75,
+                  fontSize: '0.625rem',
+                  fontWeight: 500,
+                  color: gs.textDisabled,
+                }}
+              >
+                {chatSessions.length}
+              </Box>
+            </Typography>
+            <Tooltip title="新建文件夹" placement="top" arrow>
+              <IconButton
+                size="small"
+                onClick={handleOpenNewFolderDialog}
+                sx={{
+                  p: 0.25,
+                  color: gs.textMuted,
+                  '&:hover': { color: gs.textPrimary },
+                }}
+              >
+                <CreateNewFolderIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
           <Box
             sx={{
               overflowY: 'auto',
@@ -512,69 +730,98 @@ const NavList: React.FC<NavListProps> = ({
               },
             }}
           >
-          {chatSessions.map((session) => {
-            const title = session.title || session.messages[0]?.content?.slice(0, 20) || '新对话';
-            const effectiveActiveId = justClickedSessionId ?? activeSessionId;
-            const isSessionActive = session.id === effectiveActiveId;
-            return (
-              <ListItem key={session.id} disablePadding sx={{ display: 'block', mb: 0.25 }}>
-                <ListItemButton
-                  onClick={() => {
-                    setJustClickedSessionId(session.id);
-                    onSelectSession(session.id);
-                  }}
-                  sx={{
-                    minHeight: 28,
-                    px: 1.5,
-                    py: 0,
-                    borderRadius: '6px',
-                    backgroundColor: isSessionActive ? bgActive : 'transparent',
-                    '&:hover': {
-                      backgroundColor: isSessionActive ? bgActiveHover : bgHover,
-                    },
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 0, mr: 1, justifyContent: 'center', color: textMuted }}>
-                    <ChatBubbleOutlineIcon sx={{ fontSize: '13px' }} />
-                  </ListItemIcon>
-                  <Typography
-                    sx={{
-                      fontSize: '0.7rem',
-                      fontWeight: isSessionActive ? 500 : 400,
-                      color: isSessionActive ? textActive : textSecondary,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      flex: 1,
-                      lineHeight: '28px',
-                    }}
-                  >
-                    {title}
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDeleteSession(e, session.id);
-                    }}
-                    sx={{
-                      p: 0.25,
-                      opacity: 0.7,
-                      color: textMuted,
-                      transition: 'opacity 0.15s',
-                      '&:hover': { opacity: 1, color: gs.textPrimary },
-                    }}
-                  >
-                    <DeleteOutlineIcon sx={{ fontSize: 12 }} />
-                  </IconButton>
-                </ListItemButton>
-              </ListItem>
-            );
-          })}
+            {/* 渲染文件夹 */}
+            {folders.map((folder) => renderFolder(folder))}
+
+            {/* 渲染未分类会话 */}
+            {uncategorizedSessions.map((session) => renderSessionItem(session))}
           </Box>
         </Box>
       )}
+
+      {/* ====== 右键菜单 ====== */}
+      <Menu
+        open={!!contextMenu}
+        onClose={handleCloseContextMenu}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+            : undefined
+        }
+        PaperProps={{
+          sx: {
+            minWidth: 160,
+            '& .MuiMenuItem-root': {
+              fontSize: '0.8125rem',
+              py: 0.75,
+            },
+          },
+        }}
+      >
+        <MenuItem
+          onMouseEnter={(e) => setMoveSubMenuAnchor(e.currentTarget)}
+          onMouseLeave={() => setMoveSubMenuAnchor(null)}
+          sx={{ position: 'relative' }}
+        >
+          移动到文件夹
+          <Menu
+            open={!!moveSubMenuAnchor}
+            anchorEl={moveSubMenuAnchor}
+            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            onClose={() => setMoveSubMenuAnchor(null)}
+            PaperProps={{
+              sx: {
+                minWidth: 140,
+                '& .MuiMenuItem-root': {
+                  fontSize: '0.8125rem',
+                  py: 0.75,
+                },
+              },
+            }}
+          >
+            <MenuItem onClick={() => handleMoveSession(null)}>
+              未分类
+            </MenuItem>
+            {folders.map((folder) => (
+              <MenuItem key={folder.id} onClick={() => handleMoveSession(folder.id)}>
+                {folder.name}
+              </MenuItem>
+            ))}
+          </Menu>
+        </MenuItem>
+      </Menu>
+
+      {/* ====== 新建文件夹对话框 ====== */}
+      <Dialog open={newFolderDialogOpen} onClose={handleCloseNewFolderDialog} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontSize: '1rem', pb: 1 }}>新建文件夹</DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <TextField
+            autoFocus
+            fullWidth
+            label="文件夹名称"
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleCreateFolder();
+              }
+            }}
+            size="small"
+            sx={{ mt: 0.5 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCloseNewFolderDialog} size="small">
+            取消
+          </Button>
+          <Button onClick={handleCreateFolder} variant="contained" size="small" disabled={!newFolderName.trim()}>
+            创建
+          </Button>
+        </DialogActions>
+      </Dialog>
     </List>
   );
 };

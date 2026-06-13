@@ -178,6 +178,8 @@ export interface AppearanceConfig {
   enableShadows: boolean;
   /** 紧凑模式（减少内边距） */
   compactMode: boolean;
+  /** AI 助手显示名称 */
+  botName: string;
 }
 
 export interface AppSettings {
@@ -256,6 +258,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     enableAnimations: true,
     enableShadows: true,
     compactMode: false,
+    botName: 'CDF Bot',
   },
 };
 

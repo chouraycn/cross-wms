@@ -12,7 +12,8 @@ import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { scanWorkbuddySkills } from '../routes/skills.js';
 import { auditSkillMd, generateMarkdownReport } from './securityAuditor.js';
-import { initDb, createSkillAudit } from '../db.js';
+import { initDb } from '../db.js';
+import { createSkillAudit } from '../dao/chains.js';
 
 // ===================== Types =====================
 

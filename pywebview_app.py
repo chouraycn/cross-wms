@@ -1305,18 +1305,24 @@ def start_http_server(dist_dir: str, port: int = 9988):
             super().end_headers()
 
         def _proxy_to_backend(self):
-            """将 /api/* 请求反向代理到 Node.js 后端 (localhost:3001)"""
+            """将 /api/* 请求反向代理到 Node.js 后端 (localhost:3001)
+
+            v1.9.3: 修复 multipart/form-data 上传问题
+            - 转发所有请求头（不只是白名单），确保 Content-Type 的 boundary 参数不丢失
+            - 使用 unverifiable=True 避免 401/403 预检问题
+            """
             backend_url = f"http://localhost:{SERVER_PORT}{self.path}"
             try:
                 # 读取请求体（POST/PUT/DELETE 可能有 body）
                 content_length = int(self.headers.get('Content-Length', 0))
                 body = self.rfile.read(content_length) if content_length > 0 else None
 
-                req = urllib.request.Request(backend_url, data=body, method=self.command)
-                # 转发关键请求头
-                for header in ('Content-Type', 'Authorization', 'Accept'):
-                    val = self.headers.get(header)
-                    if val:
+                req = urllib.request.Request(backend_url, data=body, method=self.command, unverifiable=True)
+                # v1.9.3: 转发所有原始请求头（multipart upload 需要完整的 Content-Type 含 boundary）
+                for header, val in self.headers.items():
+                    # 跳过 hop-by-hop headers，避免连接问题
+                    if header.lower() not in ('host', 'connection', 'keep-alive', 'proxy-authenticate',
+                                               'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade'):
                         req.add_header(header, val)
 
                 with urllib.request.urlopen(req, timeout=30) as resp:

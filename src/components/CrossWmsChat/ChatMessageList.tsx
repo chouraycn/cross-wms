@@ -1,11 +1,14 @@
-import React, { useRef, useEffect, useCallback, useMemo } from 'react';
-import { Box, Typography, IconButton, Tooltip, Chip, useTheme, CircularProgress, keyframes } from '@mui/material';
+import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react';
+import { Box, Typography, IconButton, Tooltip, Chip, useTheme, CircularProgress, keyframes, TextField, ClickAwayListener } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import EditIcon from '@mui/icons-material/Edit';
 import { Message, Session } from '../../types/chat';
 import { getGrayScale } from '../../constants/theme';
-import { API_BASE_URL } from '../../constants/api';
+
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ThinkingBlock } from './ThinkingBlock';
 import { QueryResultRenderer } from './QueryResultRenderer';
@@ -65,6 +68,11 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+  const { settings, updateSettings } = useAppSettings();
+  const botName = settings.appearance.botName || 'CDF Bot';
+  const [isEditingBotName, setIsEditingBotName] = useState(false);
+  const [editingBotName, setEditingBotName] = useState('');
+  const botNameInputRef = useRef<HTMLInputElement>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -103,6 +111,9 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         flexDirection: 'column',
         gap: 2,
         minHeight: 0,
+        // v1.9.3: 确保消息文本可以被选中
+        userSelect: 'text',
+        WebkitUserSelect: 'text',
         ...(maxHeight ? { maxHeight } : {}),
         ...sx,
       }}
@@ -136,15 +147,91 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
             }}
           >
             {msg.role === 'assistant' && (
-              <Typography
-                sx={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: isDark ? '#E5E7EB' : '#111827',
-                }}
-              >
-                CDF Bot
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                {isEditingBotName ? (
+                  <ClickAwayListener onClickAway={() => {
+                    const trimmed = editingBotName.trim();
+                    if (trimmed) {
+                      updateSettings({ appearance: { ...settings.appearance, botName: trimmed } });
+                    }
+                    setIsEditingBotName(false);
+                  }}>
+                    <TextField
+                      inputRef={botNameInputRef}
+                      size="small"
+                      value={editingBotName}
+                      onChange={e => setEditingBotName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          const trimmed = editingBotName.trim();
+                          if (trimmed) {
+                            updateSettings({ appearance: { ...settings.appearance, botName: trimmed } });
+                          }
+                          setIsEditingBotName(false);
+                        }
+                        if (e.key === 'Escape') {
+                          setIsEditingBotName(false);
+                        }
+                      }}
+                      autoFocus
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: isDark ? '#E5E7EB' : '#111827',
+                          bgcolor: isDark ? '#2A2A2A' : '#F5F5F5',
+                          borderRadius: '6px',
+                          px: 0.5,
+                          py: 0,
+                          height: 22,
+                        },
+                        '& .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? '#555' : '#CCC' },
+                        width: 120,
+                      }}
+                    />
+                  </ClickAwayListener>
+                ) : (
+                  <Box
+                    onClick={() => {
+                      setEditingBotName(botName);
+                      setIsEditingBotName(true);
+                    }}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.25,
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      px: 0.5,
+                      py: 0.15,
+                      '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' },
+                      transition: 'background-color 0.15s',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: isDark ? '#E5E7EB' : '#111827',
+                      }}
+                    >
+                      {botName}
+                    </Typography>
+                    <EditIcon sx={{ fontSize: 11, color: gs.textDisabled, opacity: 0.5 }} />
+                  </Box>
+                )}
+                {msg.model && (
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      color: gs.textMuted,
+                      fontWeight: 400,
+                    }}
+                  >
+                    · {msg.model}
+                  </Typography>
+                )}
+              </Box>
             )}
             <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
               {msg.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
@@ -221,7 +308,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                   <Box
                     key={att.id}
                     component="img"
-                    src={`${API_BASE_URL}${att.url}`}
+                    src={att.url}
                     alt={att.fileName}
                     sx={{
                       maxHeight: 200,
@@ -234,15 +321,23 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 ) : (
                   <Chip
                     key={att.id}
-                    icon={<ContentCopyIcon sx={{ fontSize: 14 }} />}
+                    icon={<FileDownloadIcon sx={{ fontSize: 14 }} />}
                     label={`${att.fileName} (${(att.size / 1024).toFixed(1)}KB)`}
                     size="small"
+                    clickable
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = att.url;
+                      link.download = att.fileName;
+                      link.click();
+                    }}
                     sx={{
                       height: 26,
                       fontSize: 12,
                       bgcolor: isDark ? '#1E293B' : '#F8FAFC',
                       border: `1px solid ${gs.border}`,
                       '& .MuiChip-label': { px: 1 },
+                      '&:hover': { bgcolor: isDark ? '#263348' : '#EFF6FF' },
                     }}
                   />
                 )
@@ -262,9 +357,12 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 bgcolor: isDark ? '#374151' : '#F3F4F6',
                 color: gs.textPrimary,
                 wordBreak: 'break-word',
+                // v1.9.3: 确保用户消息文本可以被选中
+                userSelect: 'text',
+                WebkitUserSelect: 'text',
               }}
             >
-              <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+              <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap', userSelect: 'text', WebkitUserSelect: 'text' }}>
                 {msg.content}
               </Typography>
             </Box>
@@ -322,6 +420,9 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
         fontSize: 14,
         lineHeight: 1.7,
         wordBreak: 'break-word',
+        // v1.9.3: 确保 Bot 消息文本可以被选中
+        userSelect: 'text',
+        WebkitUserSelect: 'text',
         '& .markdown-body h1, & .markdown-body h2, & .markdown-body h3': {
           fontSize: 'inherit',
           fontWeight: 600,
@@ -375,6 +476,7 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
           thinking={msg.thinking}
           isStreaming={msg.isStreaming}
           duration={msg.thinkingDuration}
+          reasoningEffort={msg.reasoningEffort}
         />
       )}
       {/* AI 工具调用展示（Tool Calling） */}
@@ -418,26 +520,13 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
         </Box>
       )}
 
-      {/* Auto 选型原因 */}
-      {msg.autoReason && (
+      {/* Auto 选型原因 — 仅在非默认选型时显示（避免每次显示"使用默认模型"造成干扰） */}
+      {msg.autoReason && msg.autoReasonType !== 'default' && (
         <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
           <AutoAwesomeIcon sx={{ fontSize: 12, color: gs.textDisabled }} />
           <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
             {msg.autoReason}
           </Typography>
-          {msg.activePreset && (
-            <Chip
-              label={msg.activePreset.label}
-              size="small"
-              sx={{
-                height: 18,
-                fontSize: 10,
-                backgroundColor: isDark ? '#374151' : '#F3F4F6',
-                color: gs.textMuted,
-                '& .MuiChip-label': { px: 1 },
-              }}
-            />
-          )}
         </Box>
       )}
     </Box>

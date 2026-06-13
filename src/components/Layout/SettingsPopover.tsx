@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Box, Typography, Divider, IconButton, Popover, Grow, Button, useTheme } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
@@ -212,10 +212,43 @@ const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchor
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+
+  // 点击弹窗外部关闭
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // 找到当前打开的 Popover paper 元素（通过 class 名匹配）
+      const popoverPapers = document.querySelectorAll('.MuiPopover-paper');
+      let inside = false;
+      popoverPapers.forEach((paper) => {
+        if (paper.contains(target)) inside = true;
+      });
+      // 同时检查 anchorEl（设置按钮本身）
+      if (anchorEl && anchorEl.contains(target)) inside = true;
+      if (!inside) {
+        onClose();
+      }
+    };
+    // 延迟绑定，避免设置按钮的点击事件立即触发关闭
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open, onClose, anchorEl]);
+
   return (
-    <Popover open={open} onClose={onClose} anchorEl={anchorEl} anchorOrigin={{ vertical: 'top', horizontal: 'left' }} transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+    <Popover ref={popoverRef} open={open} onClose={onClose} anchorEl={anchorEl} anchorOrigin={{ vertical: 'top', horizontal: 'left' }} transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       TransitionComponent={Grow} TransitionProps={{ timeout: 200 }} disableScrollLock disableEnforceFocus
-      slotProps={{ paper: { sx: { width: SIDEBAR_WIDTH_EXPANDED, maxHeight: '70vh', borderRadius: '12px', marginLeft: '-5px', boxShadow: 'none', border: `1px solid ${gs.border}`, overflow: 'hidden' } } }}
+      slotProps={{
+        paper: {
+          sx: { width: SIDEBAR_WIDTH_EXPANDED, maxHeight: '70vh', borderRadius: '12px', marginLeft: '-5px', boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.15)', border: `1px solid ${gs.border}`, overflow: 'hidden' },
+        },
+      }}
       hideBackdrop
     >
       <SettingsPanel onClose={onClose} onOpenModelManagement={onOpenModelManagement} />

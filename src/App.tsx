@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense } from 'react';
 import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box } from '@mui/material';
+import { CssBaseline, Box, useTheme } from '@mui/material';
 import Sidebar from './components/Layout/Sidebar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
@@ -14,6 +14,8 @@ import { ToastProvider, useToast } from './contexts/ToastContext';
 import UpdateNotification from './components/UpdateNotification';
 import { ChatContainer } from './components/CrossWmsChat/ChatContainer';
 import { ChatProvider } from './contexts/ChatContext';
+import { ToolPermissionProvider, useToolPermission } from './contexts/ToolPermissionContext';
+import ToolPermissionDialog from './components/CrossWmsChat/ToolPermissionDialog';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
 import { automationEngine } from './services/automation';
@@ -438,6 +440,8 @@ const StorageWarningListener: React.FC = () => {
 };
 
 const MainLayout: React.FC = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
@@ -525,9 +529,18 @@ const MainLayout: React.FC = () => {
 
   // 系统红黄绿按钮区域高度由 CSS 变量 --pw-top 控制（frameless 模式下 JS 注入 43px）
   // 两侧（Sidebar + 工具栏）均使用 calc(40px + var(--pw-top, 0px)) 统一高度
+  const { pendingRequest, submitPermission } = useToolPermission();
+
   return (
     <ToastProvider sidebarCollapsed={sidebarCollapsed}>
       <StorageWarningListener />
+      {/* v1.9.2: 敏感工具权限确认弹窗 */}
+      <ToolPermissionDialog
+        open={!!pendingRequest}
+        request={pendingRequest}
+        onApprove={(reqId) => submitPermission(reqId, true)}
+        onDeny={(reqId) => submitPermission(reqId, false)}
+      />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Sidebar — 单栏布局 */}
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
@@ -577,25 +590,19 @@ const MainLayout: React.FC = () => {
               overflowY: 'scroll',
               display: 'flex',
               flexDirection: 'column',
-              // pywebview 环境：始终显示宽滚动条，提升拖动体验
-              ...(isPy ? {
-                '&::-webkit-scrollbar': { width: '10px', height: '10px' },
-                '&::-webkit-scrollbar-track': { background: '#F3F4F6' },
-                '&::-webkit-scrollbar-thumb': {
-                  background: 'rgba(0,0,0,0.25)',
-                  borderRadius: '5px',
-                  '&:hover': { background: 'rgba(0,0,0,0.45)' },
-                },
-              } : {
-                // 浏览器环境：始终显示滚动条
-                '&::-webkit-scrollbar': { width: '6px' },
-                '&::-webkit-scrollbar-track': { background: 'transparent' },
-                '&::-webkit-scrollbar-thumb': {
-                  background: 'rgba(0,0,0,0.2)',
-                  borderRadius: '3px',
-                  '&:hover': { background: 'rgba(0,0,0,0.35)' },
-                },
-              }),
+              // 滚动条默认隐藏，滚动时显示（通过 scrollbar-visible class）
+              '&::-webkit-scrollbar': { width: '6px', height: '6px' },
+              '&::-webkit-scrollbar-track': { background: 'transparent' },
+              '&::-webkit-scrollbar-thumb': {
+                background: 'transparent',
+                borderRadius: '3px',
+              },
+              '&.scrollbar-visible::-webkit-scrollbar-thumb': {
+                background: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+              },
+              '&.scrollbar-visible::-webkit-scrollbar-thumb:hover': {
+                background: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)',
+              },
             }}
           >
             <Box
@@ -699,13 +706,15 @@ const App: React.FC = () => {
       <AppSettingsProvider>
         <ModelsProvider>
           <ChatProvider defaultModel="auto">
-            <ThemedApp>
-              <HashRouter>
-                <UpdateProvider>
-                  <MainLayout />
-                </UpdateProvider>
-              </HashRouter>
-            </ThemedApp>
+            <ToolPermissionProvider>
+              <ThemedApp>
+                <HashRouter>
+                  <UpdateProvider>
+                    <MainLayout />
+                  </UpdateProvider>
+                </HashRouter>
+              </ThemedApp>
+            </ToolPermissionProvider>
           </ChatProvider>
         </ModelsProvider>
       </AppSettingsProvider>

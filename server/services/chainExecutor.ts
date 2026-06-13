@@ -11,14 +11,14 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { Response } from 'express';
 import { callAIModel } from '../aiClient.js';
+import { initDb } from '../db.js';
 import {
-  initDb,
   getSkillChain,
   getChainNodes,
   createSkillExecution,
   updateSkillExecution,
-} from '../db';
-import type { SkillChainNodeRow } from '../db';
+} from '../dao/chains.js';
+import type { SkillChainNodeRow } from '../db.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
 
 // ===================== Module-Level State =====================
@@ -304,7 +304,7 @@ export async function executeChain(chainId: string): Promise<{ executionId: stri
     status: 'running',
     failStrategy: chain.fail_strategy,
     steps: JSON.stringify(
-      nodes.map((n, i) => ({
+      nodes.map((n: SkillChainNodeRow, i: number) => ({
         nodeId: n.id,
         skillId: n.skill_id,
         skillName: n.skill_name,

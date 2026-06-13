@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Box, Typography, IconButton, Tooltip, useTheme } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, useTheme, Collapse } from '@mui/material';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import LogoAi from '../../assets/logo-ai.svg';
 import { TopBarChatInput } from './TopBarChatInput';
@@ -236,6 +236,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
                     }}>
                       <img src={LogoAi} alt="AI" style={{ width: 36, height: 36 }} />
                     </Box>
+
                     <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: gs.textPrimary, mb: 1 }}>
                       有什么可以帮你的？
                     </Typography>
@@ -268,9 +269,11 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
                 sendMessage={sendMessage}
                 stopGeneration={stopGeneration}
               />
-              <Typography sx={{ fontSize: '0.6875rem', color: '#9CA3AF', textAlign: 'center', pt: 0.5 }}>
-                内容由AI生成，请核实重要信息
-              </Typography>
+              <Collapse in={session.messages.length === 0} timeout={300}>
+                <Typography sx={{ fontSize: '0.6875rem', color: '#9CA3AF', textAlign: 'center', pt: 0.5 }}>
+                  内容由AI生成，请核实重要信息
+                </Typography>
+              </Collapse>
             </Box>
           </Box>
         </Box>
@@ -316,18 +319,20 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
         stopGeneration={stopGeneration}
       />
 
-      {/* AI 免责声明 */}
-      <Typography
-        sx={{
-          fontSize: '0.6875rem',
-          color: gs.textDisabled,
-          textAlign: 'center',
-          py: 0.5,
-          flexShrink: 0,
-        }}
-      >
-        内容由AI生成，请核实重要信息
-      </Typography>
+      {/* AI 免责声明 — 有消息时折叠隐藏 */}
+      <Collapse in={session.messages.length === 0} timeout={300}>
+        <Typography
+          sx={{
+            fontSize: '0.6875rem',
+            color: gs.textDisabled,
+            textAlign: 'center',
+            py: 0.5,
+            flexShrink: 0,
+          }}
+        >
+          内容由AI生成，请核实重要信息
+        </Typography>
+      </Collapse>
     </Box>
   );
 };

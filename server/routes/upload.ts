@@ -54,6 +54,7 @@ export function parseMultipartFormData(
     const boundary = boundaryMatch[1] || boundaryMatch[2];
     const delimiter = Buffer.from(`--${boundary}`);
     const endDelimiter = Buffer.from(`--${boundary}--`);
+    console.log('[upload] multipart 解析开始, boundary:', boundary);
 
     const chunks: Buffer[] = [];
     let totalSize = 0;
@@ -88,6 +89,7 @@ export function parseMultipartFormData(
           if (headerEnd === -1) break;
 
           const headerSection = body.subarray(delimIdx + delimiter.length, headerEnd).toString();
+          console.log('[upload] header section:', headerSection.substring(0, 200));
           headerEnd += 4; // 跳过 \r\n\r\n
 
           // 查找下一个 delimiter（即当前 part 的结束位置）
@@ -100,8 +102,11 @@ export function parseMultipartFormData(
             partEnd -= 2;
           }
 
-          // 解析 Content-Disposition
-          if (headerSection.includes('name="file"') || headerSection.includes('name="file"')) {
+          // 解析 Content-Disposition — 兼容 name 带引号和不带引号两种格式
+          // 浏览器 FormData 发送 name="file"，某些库发送 name=file
+          const nameMatch = headerSection.match(/name="?([^";\s]+)"?/);
+          const fieldName = nameMatch ? nameMatch[1] : '';
+          if (fieldName === 'file' || fieldName === 'image') {
             // 提取 filename
             const fnMatch = headerSection.match(/filename="([^"]*)"/);
             if (fnMatch) parsedFileName = fnMatch[1];
@@ -119,6 +124,8 @@ export function parseMultipartFormData(
           // 检查是否是结束标记
           if (body.subarray(pos, pos + 2).equals(Buffer.from('--'))) break;
         }
+
+        console.log('[upload] 解析完成, foundFile:', foundFile, 'fileTotalSize:', fileTotalSize, 'fileName:', parsedFileName);
 
         if (foundFile && fileTotalSize <= MAX_UPLOAD_SIZE) {
           resolve({

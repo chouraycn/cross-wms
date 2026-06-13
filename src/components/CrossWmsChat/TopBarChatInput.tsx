@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Paper, Chip, Typography, Popover, useTheme, IconButton,
+  Box, Paper, Chip, Typography, Popover, useTheme, IconButton, Collapse,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CloseIcon from '@mui/icons-material/Close';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { getGrayScale } from '../../constants/theme';
 import { Skill, INTENT_CATEGORY_LABELS, INTENT_QUICK_EXAMPLES } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
@@ -16,12 +18,14 @@ import { getAllSkills } from '../../stores/skillStore';
 import { SkillSelector } from './SkillSelector';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useModels } from '../../contexts/ModelsContext';
+import { useToast } from '../../contexts/ToastContext';
 import ChatToolbar from './ChatToolbar';
 import AISettingsDialog from '../Layout/AISettingsDialog';
 import { SessionReferenceSelector } from './SessionReferenceSelector';
 import type { SendMessageOptions } from '../../hooks/useChat';
 import { uploadFile } from '../../services/api';
 import { API_BASE_URL } from '../../constants/api';
+
 
 // ===================== Props =====================
 
@@ -57,6 +61,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
   const gs = getGrayScale(isDark);
   const navigate = useNavigate();
   const { settings } = useAppSettings();
+  const { showToast } = useToast();
   const { models: modelList, isLoading: modelsLoading } = useModels();
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
@@ -123,8 +128,20 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
   const [selectedModel, setSelectedModel] = useState('Auto');
   const [selectedModelId, setSelectedModelId] = useState('auto');
   const [selectedPermission, setSelectedPermission] = useState('默认权限');
-  const [selectedPreset, setSelectedPreset] = useState('');
   const [showAISettings, setShowAISettings] = useState(false);
+
+  // v1.9.1: 推理强度（默认 high，持久化到 localStorage）
+  const [reasoningEffort, setReasoningEffort] = useState<string>(() => {
+    try {
+      return localStorage.getItem('cdf-reasoning-effort') || 'high';
+    } catch { return 'high'; }
+  });
+
+  // 持久化推理强度选择
+  const handleReasoningEffortChange = useCallback((effort: string) => {
+    setReasoningEffort(effort);
+    try { localStorage.setItem('cdf-reasoning-effort', effort); } catch { /* ignore */ }
+  }, []);
 
   // 附件状态
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
@@ -137,13 +154,22 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
     if (name === 'Auto') {
       setSelectedModelId('auto');
       onSessionUpdate({ ...session, model: 'auto' });
+      // Auto 模式：恢复默认推理强度
+      handleReasoningEffortChange('high');
     } else {
       const found = enabledModels.find((m) => m.name === name);
       const modelId = found?.id || name;
       setSelectedModelId(modelId);
       onSessionUpdate({ ...session, model: modelId });
+      // 根据模型能力自动调整推理强度
+      const supportsReasoning = found?.capabilities?.includes('reasoning');
+      if (!supportsReasoning) {
+        handleReasoningEffortChange('');
+      } else if (!reasoningEffort) {
+        handleReasoningEffortChange('high');
+      }
     }
-  }, [enabledModels, session, onSessionUpdate]);
+  }, [enabledModels, session, onSessionUpdate, handleReasoningEffortChange, reasoningEffort]);
 
   /** 格式化文件大小 */
   const formatFileSize = (bytes: number): string => {
@@ -152,10 +178,35 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
     return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
   };
 
+  // 与服务端 ALLOWED_EXTENSIONS 保持一致的允许扩展名列表
+  const ALLOWED_EXTENSIONS = new Set([
+    'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'ico', 'tiff', 'avif',
+    'pdf', 'csv', 'txt', 'json', 'md', 'xlsx', 'docx', 'pptx', 'html', 'htm',
+    'js', 'ts', 'jsx', 'tsx', 'py', 'java', 'go', 'rs', 'cpp', 'c', 'h', 'hpp',
+    'rb', 'php', 'swift', 'kt', 'scala', 'r', 'm', 'mm', 'yaml', 'yml', 'xml',
+    'toml', 'ini', 'cfg', 'conf', 'sql', 'sh', 'bat', 'ps1', 'css', 'scss',
+    'less', 'vue', 'svelte', 'dart', 'lua', 'pl', 'pm', 'log', 'tsv',
+  ]);
+  const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+
   /** 处理文件上传 */
   const handleFileUpload = useCallback(async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
     if (fileArray.length === 0) return;
+
+    // 前置校验：大小 + 文件类型
+    for (const file of fileArray) {
+      if (file.size > MAX_UPLOAD_SIZE) {
+        showToast(`文件 "${file.name}" 超过 10MB 限制`, 'error', 3000);
+        return;
+      }
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const isImage = file.type.startsWith('image/');
+      if (!isImage && !ALLOWED_EXTENSIONS.has(ext)) {
+        showToast(`不支持的文件类型: .${ext}`, 'error', 3000);
+        return;
+      }
+    }
 
     setIsUploading(true);
     const newAttachments: Attachment[] = [];
@@ -164,17 +215,22 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
       try {
         const result = await uploadFile(file);
         const isImage = result.mimeType.startsWith('image/');
+        // v1.9.3: 确保附件 URL 在 Electron 打包后也能正确访问
+        // 开发模式下 API_BASE_URL 为空/undefined，使用相对路径
+        const baseUrl = API_BASE_URL || '';
+        const fullUrl = result.url.startsWith('http') ? result.url : `${baseUrl}${result.url}`;
         newAttachments.push({
-          id: crypto.randomUUID(),
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
           fileId: result.fileId,
           fileName: result.fileName,
           mimeType: result.mimeType,
           size: result.size,
-          url: result.url,
+          url: fullUrl,
           type: isImage ? 'image' : 'file',
         });
       } catch (err) {
         console.error('[TopBarChatInput] 文件上传失败:', file.name, err);
+        showToast(`文件上传失败: ${file.name}`, 'error', 3000);
       }
     }
 
@@ -366,7 +422,9 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
 
   const handleSend = (overrideText?: string) => {
     const effectiveInput = overrideText ?? inputValue;
-    if (!effectiveInput.trim() || isLoading) return;
+    // v1.9.3: 允许空文字但带有附件的消息发送
+    const hasAttachments = pendingAttachments.length > 0;
+    if ((!effectiveInput.trim() && !hasAttachments) || isLoading) return;
 
     // 如果以 / 或 @ 开头，不触发发送（等用户完成选择）
     const trimmedInput = effectiveInput.trimStart();
@@ -387,7 +445,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
     const skillContext = effectiveSkill?.promptTemplate || undefined;
     const skillId = effectiveSkill?.id || undefined;
 
-    sendMessage(effectiveInput, { skillContext, skillId, referencedSessions, model: selectedModelId, preset: selectedPreset || undefined, attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined });
+    sendMessage(effectiveInput, { skillContext, skillId, referencedSessions, model: selectedModelId, attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined, reasoningEffort: reasoningEffort || undefined });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
     }
@@ -527,7 +585,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
         )}
         {/* v1.7.0: 意图分类 Chips 行 — 仅当选中技能有 intentCategories 时展示 */}
         {selectedSkill?.intentCategories && selectedSkill.intentCategories.length > 0 && (
-          <Box sx={{ px: 1.5, py: 0.75, bgcolor: gs.bgPanel, borderBottom: `1px solid ${gs.border}`, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+          <Box sx={{ px: 1.5, py: 0.75, bgcolor: gs.bgPanel, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
             <Typography sx={{ fontSize: 11, color: gs.textMuted, fontWeight: 500, mr: 0.25, flexShrink: 0 }}>
               查询意图
             </Typography>
@@ -584,10 +642,11 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
         )}
         {/* Pending attachments preview */}
         {pendingAttachments.length > 0 && (
-          <Box sx={{ px: 1.5, py: 0.75, bgcolor: gs.bgPanel, borderBottom: `1px solid ${gs.border}`, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+          <Box sx={{ px: 1.5, py: 0.75, bgcolor: gs.bgPanel, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
             {pendingAttachments.map((att) => (
               <Box
                 key={att.id}
+                className="attachment-item"
                 sx={{
                   position: 'relative',
                   display: 'inline-flex',
@@ -596,15 +655,18 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
                   px: 0.75,
                   py: 0.5,
                   borderRadius: '8px',
-                  bgcolor: isDark ? '#1E293B' : '#F8FAFC',
-                  border: `1px solid ${gs.border}`,
+                  bgcolor: isDark ? '#1A1A1A' : '#F5F5F5',
                   maxWidth: 200,
+                  '&:hover .attachment-close-btn': {
+                    opacity: 1,
+                    visibility: 'visible',
+                  },
                 }}
               >
                 {att.type === 'image' ? (
                   <Box
                     component="img"
-                    src={`${API_BASE_URL}${att.url}`}
+                    src={att.url}
                     alt={att.fileName}
                     sx={{
                       width: 40,
@@ -626,20 +688,24 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
                 </Box>
                 <IconButton
                   size="small"
+                  className="attachment-close-btn"
                   onClick={() => removePendingAttachment(att.id)}
                   sx={{
                     position: 'absolute',
                     top: -4,
                     right: -4,
-                    width: 18,
-                    height: 18,
-                    bgcolor: isDark ? '#374151' : '#E5E7EB',
-                    color: gs.textMuted,
-                    '&:hover': { bgcolor: isDark ? '#4B5563' : '#D1D5DB' },
+                    width: 16,
+                    height: 16,
+                    bgcolor: '#000000',
+                    color: '#FFFFFF',
+                    '&:hover': { bgcolor: '#1A1A1A' },
                     borderRadius: '50%',
                     p: 0,
                     minWidth: 0,
                     '.MuiSvgIcon-root': { fontSize: 12 },
+                    opacity: 0,
+                    visibility: 'hidden',
+                    transition: 'opacity 0.2s, visibility 0.2s',
                   }}
                 >
                   <CloseIcon />
@@ -681,17 +747,6 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
           />
           {!inputExpanded ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
-              {/* 附件按钮（未展开状态） */}
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  fileInputRef.current?.click();
-                }}
-                sx={{ color: gs.textMuted, '&:hover': { color: gs.textPrimary } }}
-              >
-                <AttachFileIcon sx={{ fontSize: 18 }} />
-              </IconButton>
               <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Typography sx={{ fontSize: 15, color: gs.textMuted, lineHeight: 1.4 }}>
                   今天帮你做些什么？
@@ -704,17 +759,6 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
           ) : (
             <>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, width: '100%' }}>
-                {/* 附件按钮（展开状态） */}
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    fileInputRef.current?.click();
-                  }}
-                  sx={{ mt: 0.25, color: gs.textMuted, '&:hover': { color: gs.textPrimary }, flexShrink: 0 }}
-                >
-                  <AttachFileIcon sx={{ fontSize: 18 }} />
-                </IconButton>
                 <div
                   ref={editableRef}
                   contentEditable
@@ -755,8 +799,6 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
           onModelChange={handleModelChange}
           selectedPermission={selectedPermission}
           onPermissionChange={setSelectedPermission}
-          selectedPreset={selectedPreset}
-          onPresetChange={setSelectedPreset}
           isLoading={isLoading}
           inputValue={inputValue}
           onSend={handleSend}
@@ -765,8 +807,50 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
           modelOptions={MODEL_OPTIONS}
           onOpenAISettings={() => setShowAISettings(true)}
           modelsLoading={modelsLoading}
+          onAttachClick={() => fileInputRef.current?.click()}
+          hasAttachments={pendingAttachments.length > 0}
+          reasoningEffort={reasoningEffort}
+          onReasoningEffortChange={handleReasoningEffortChange}
         />
       </Paper>
+
+      {/* v1.9.2: 文件夹选择区域 — 仅在启动页面（无消息时）显示，带折叠动画 */}
+      <Collapse in={session.messages.length === 0} timeout={300}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            px: 2,
+            py: 0.75,
+            bgcolor: isDark ? '#1A1A1A' : '#F5F5F5',
+            border: `1px solid ${gs.border}`,
+            borderTop: 'none',
+            borderRadius: '0 0 12px 12px',
+            mt: '-1px',
+          }}
+        >
+          {/* 选择文件夹下拉 */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              px: 1,
+              py: 0.4,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              color: gs.textMuted,
+              fontSize: 13,
+              '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#E8E8E8' },
+            }}
+          >
+            <FolderOpenIcon sx={{ fontSize: 16 }} />
+            <Typography sx={{ fontSize: 13, color: gs.textMuted }}>选择文件夹（可选）</Typography>
+            <KeyboardArrowDownIcon sx={{ fontSize: 14 }} />
+          </Box>
+        </Box>
+      </Collapse>
 
       {/* AI 设置弹窗（模型管理） */}
       <AISettingsDialog

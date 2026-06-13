@@ -9,7 +9,7 @@ import { Router, type Request, type Response } from 'express';
 import {
   getAppSettings as dbGet,
   setAppSettings as dbSet,
-} from '../db.js';
+} from '../dao/settings.js';
 
 const router = Router();
 

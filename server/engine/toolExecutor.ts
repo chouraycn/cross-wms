@@ -11,17 +11,20 @@
  * v1.9.0: 新增 Tool Calling 执行循环
  */
 
-import { callAIModelStream, type ModelCallConfig, type ToolCall, type AIResponse } from '../aiClient.js';
+import { callAIModelStream, type ModelCallConfig, type ToolCall, type AIResponse, type MessageContent } from '../aiClient.js';
 import { getToolDefinitions, executeToolCall } from './toolRegistry.js';
 
 export interface ToolExecutorOptions {
   modelConfig: ModelCallConfig;
-  messages: Array<{ role: string; content: string }>;
+  messages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;
   maxToolTurns?: number;
   signal?: AbortSignal;
   onChunk?: (text: string) => void;
   onThinking?: (text: string) => void;
   onToolCall?: (toolCall: ToolCall, result: string) => void;
+  /** v1.9.2: 敏感工具权限请求回调。返回 true 表示允许执行，false 表示拒绝 */
+  onPermissionRequest?: (toolCall: ToolCall) => Promise<boolean>;
+  reasoningEffort?: string;
 }
 
 /** 敏感工具列表 — 需要用户二次确认 */
@@ -65,6 +68,8 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     onChunk,
     onThinking,
     onToolCall,
+    onPermissionRequest,
+    reasoningEffort,
   } = options;
 
   const tools = getToolDefinitions();
@@ -88,6 +93,8 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       signal,
       onThinking,
       tools,
+      undefined,
+      reasoningEffort,
     );
 
     // 如果没有 tool_calls，直接返回结果
@@ -96,10 +103,11 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     }
 
     // 有 tool_calls，需要执行工具并回填
-    // 添加 assistant 的消息（包含 tool_calls，用于 Anthropic 格式转换）
+    // 添加 assistant 的消息（包含 tool_calls 和 reasoning_content，用于 DeepSeek V4 thinking + tool calls）
     currentMessages.push({
       role: 'assistant',
       content: response.content || '',
+      reasoning_content: response.reasoningContent,
       tool_calls: response.toolCalls.map(tc => ({
         id: tc.id,
         type: tc.type,
@@ -114,23 +122,29 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     for (const toolCall of response.toolCalls) {
       const toolName = toolCall.function.name;
 
-      // 敏感工具：自动拒绝（后续可扩展为用户确认机制）
+      // v1.9.2: 敏感工具 — 询问用户是否允许执行
       if (isSensitiveTool(toolName)) {
-        const denyResult = JSON.stringify({ error: `安全限制：工具 '${toolName}' 已被禁用。请联系管理员启用。` });
-        executedToolCalls.push({
-          name: toolName,
-          arguments: toolCall.function.arguments,
-          result: denyResult,
-        });
-        if (onToolCall) {
-          onToolCall(toolCall, denyResult);
+        const hasPermission = onPermissionRequest
+          ? await onPermissionRequest(toolCall)
+          : false;
+
+        if (!hasPermission) {
+          const denyResult = JSON.stringify({ error: `用户拒绝了工具 '${toolName}' 的执行请求。` });
+          executedToolCalls.push({
+            name: toolName,
+            arguments: toolCall.function.arguments,
+            result: denyResult,
+          });
+          if (onToolCall) {
+            onToolCall(toolCall, denyResult);
+          }
+          currentMessages.push({
+            role: 'tool',
+            content: denyResult,
+            tool_call_id: toolCall.id,
+          } as any);
+          continue;
         }
-        currentMessages.push({
-          role: 'tool',
-          content: denyResult,
-          tool_call_id: toolCall.id,
-        } as any);
-        continue;
       }
 
       const result = await executeToolCall(toolCall);

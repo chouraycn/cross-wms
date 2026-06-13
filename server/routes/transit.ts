@@ -9,7 +9,7 @@ import {
   updateTransitOrder as dbUpdate,
   deleteTransitOrder as dbDelete,
   addStatusHistory as dbAddStatusHistory,
-} from '../db.js';
+} from '../dao/warehouse.js';
 
 const router = Router();
 

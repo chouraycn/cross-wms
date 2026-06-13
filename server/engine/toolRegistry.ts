@@ -788,22 +788,22 @@ async function handleDesktopClipboard(args: Record<string, unknown>): Promise<st
 
       // Write to clipboard using pbcopy
       const { spawn } = await import('child_process');
-      const child = spawn('pbcopy', [], { stdio: ['pipe', 'stdout', 'stderr'] });
+      const child = spawn('pbcopy', [], { stdio: ['pipe', 'ignore', 'pipe'] });
 
       // Write content to stdin
-      child.stdin!.write(content);
-      child.stdin!.end();
+      (child.stdin as any).write(content);
+      (child.stdin as any).end();
 
       // Wait for completion
       await new Promise<void>((resolve, reject) => {
-        child.on('close', (code) => {
+        (child as any).on('close', (code: number) => {
           if (code === 0) {
             resolve();
           } else {
             reject(new Error(`pbcopy exited with code ${code}`));
           }
         });
-        child.on('error', reject);
+        (child as any).on('error', reject);
       });
 
       return JSON.stringify({
@@ -1272,6 +1272,30 @@ export async function initDefaultTools(): Promise<void> {
       },
     },
     handler: handleDesktopSee,
+  });
+
+  // app:setBotName — 修改 AI 助手显示名称
+  registerTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'app:setBotName',
+        description: '修改 AI 助手的显示名称。当用户要求修改 AI 助手的名字、称呼时调用此工具。',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: '新的 AI 助手名称' },
+          },
+          required: ['name'],
+        },
+      },
+    },
+    handler: async (args) => {
+      const name = String(args.name || '').trim();
+      if (!name) return JSON.stringify({ success: false, error: '名称不能为空' });
+      if (name.length > 20) return JSON.stringify({ success: false, error: '名称不能超过 20 个字符' });
+      return JSON.stringify({ success: true, action: 'set_bot_name', name });
+    },
   });
 }
 

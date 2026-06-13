@@ -8,7 +8,7 @@ import {
   createInventoryItem as dbCreate,
   updateInventoryItem as dbUpdate,
   deleteInventoryItem as dbDelete,
-} from '../db.js';
+} from '../dao/warehouse.js';
 
 const router = Router();
 
