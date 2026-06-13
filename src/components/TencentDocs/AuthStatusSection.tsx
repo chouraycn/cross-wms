@@ -14,6 +14,41 @@ const TDOC_COLOR = '#27A17C';
 /** 企业微信品牌色 */
 const WECOM_COLOR = '#07C160';
 
+// v1.9.5-fix: JS 驱动的旋转图标包装器，避免 WKWebView 不兼容 CSS @keyframes
+const SpinningIconWrapper: React.FC<{ spinning: boolean; children: React.ReactNode }> = ({ spinning, children }) => {
+  const [rotation, setRotation] = useState(0);
+  
+  useEffect(() => {
+    if (!spinning) {
+      setRotation(0);
+      return;
+    }
+      
+    let start: number;
+    const animate = (timestamp: number) => {
+      if (!start) start = timestamp;
+      const progress = timestamp - start;
+      setRotation((progress * 360) / 1000); // 1秒转 360 度
+      requestAnimationFrame(animate);
+    };
+    const frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [spinning]);
+    
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        transform: `rotate(${rotation}deg)`,
+        transition: 'transform 0.016s linear',
+      }}
+    >
+      {children}
+    </Box>
+  );
+};
+
 /**
  * 认证状态区子组件
  *
@@ -44,14 +79,7 @@ const AuthStatusSection: React.FC<AuthStatusSectionProps> = ({
 
   return (
     <Box>
-      {/* 旋转动画 keyframes */}
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-
+      {/* v1.9.5-fix: 移除 @keyframes spin，已用 JS 定时器替代 */}
       {/* === 个人文档品牌卡片 === */}
       <Card elevation={0} sx={{ border: `2px solid ${TDOC_COLOR}`, borderRadius: 2, mb: 3 }}>
         <CardContent>
@@ -68,7 +96,15 @@ const AuthStatusSection: React.FC<AuthStatusSectionProps> = ({
                 <Chip icon={authStatus.authenticated ? <CloudDoneIcon /> : <CloudOffIcon />} label={authStatus.authenticated ? '已授权' : '未授权'} size="small" sx={{ borderColor: authStatus.authenticated ? TDOC_COLOR : gs.borderDarker, color: authStatus.authenticated ? TDOC_COLOR : gs.textDisabled }} variant="outlined" />
               )}
               <Chip icon={<LinkIcon />} label={`${docCount} 个文档`} size="small" sx={{ borderColor: TDOC_COLOR, color: TDOC_COLOR }} variant="outlined" />
-              <Button variant="outlined" startIcon={<RefreshIcon sx={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />} onClick={onRefresh} disabled={refreshing} sx={{ borderColor: TDOC_COLOR, color: TDOC_COLOR, '&:hover': { borderColor: '#1e7a5e', backgroundColor: '#f0faf6' } }}>
+              <Button variant="outlined" startIcon={
+                refreshing ? (
+                  <SpinningIconWrapper spinning={refreshing}>
+                    <RefreshIcon />
+                  </SpinningIconWrapper>
+                ) : (
+                  <RefreshIcon />
+                )
+              } onClick={onRefresh} disabled={refreshing} sx={{ borderColor: TDOC_COLOR, color: TDOC_COLOR, '&:hover': { borderColor: '#1e7a5e', backgroundColor: '#f0faf6' } }}>
                 {refreshing ? '同步中...' : '检查状态'}
               </Button>
               <Button variant="outlined" startIcon={<AddIcon />} onClick={() => navigate('/settings')} sx={{ borderColor: TDOC_COLOR, color: TDOC_COLOR, '&:hover': { borderColor: '#1e7a5e', backgroundColor: '#f0faf6' } }}>
@@ -102,7 +138,15 @@ const AuthStatusSection: React.FC<AuthStatusSectionProps> = ({
                 <Chip icon={wecomAuthStatus.authorized ? <CloudDoneIcon /> : <CloudOffIcon />} label={!wecomAuthStatus.cliInstalled ? '未安装' : wecomAuthStatus.authorized ? '已授权' : '未授权'} size="small" sx={{ borderColor: wecomAuthStatus.authorized ? WECOM_COLOR : gs.borderDarker, color: wecomAuthStatus.authorized ? WECOM_COLOR : gs.textDisabled }} variant="outlined" />
               )}
               <Chip icon={<LinkIcon />} label={`${wecomDocCount} 个文档`} size="small" sx={{ borderColor: WECOM_COLOR, color: WECOM_COLOR }} variant="outlined" />
-              <Button variant="outlined" startIcon={<RefreshIcon sx={{ animation: wecomRefreshing ? 'spin 1s linear infinite' : 'none' }} />} onClick={onWecomRefresh} disabled={wecomRefreshing} sx={{ borderColor: WECOM_COLOR, color: WECOM_COLOR, '&:hover': { borderColor: '#06a451', backgroundColor: '#ecfdf5' } }}>
+              <Button variant="outlined" startIcon={
+                wecomRefreshing ? (
+                  <SpinningIconWrapper spinning={wecomRefreshing}>
+                    <RefreshIcon />
+                  </SpinningIconWrapper>
+                ) : (
+                  <RefreshIcon />
+                )
+              } onClick={onWecomRefresh} disabled={wecomRefreshing} sx={{ borderColor: WECOM_COLOR, color: WECOM_COLOR, '&:hover': { borderColor: '#06a451', backgroundColor: '#ecfdf5' } }}>
                 {wecomRefreshing ? '检查中...' : '检查状态'}
               </Button>
               <Button variant="outlined" startIcon={<AddIcon />} onClick={() => navigate('/settings')} sx={{ borderColor: WECOM_COLOR, color: WECOM_COLOR, '&:hover': { borderColor: '#06a451', backgroundColor: '#ecfdf5' } }}>
