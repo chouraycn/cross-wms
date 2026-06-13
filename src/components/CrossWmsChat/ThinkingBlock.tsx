@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Box, Typography, IconButton, Collapse, useTheme, keyframes } from '@mui/material';
+import { Box, Typography, IconButton, Collapse, useTheme, keyframes, Chip } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { getGrayScale } from '../../constants/theme';
 
@@ -11,6 +12,8 @@ interface ThinkingBlockProps {
   duration?: number;
   /** 是否正在流式输出 */
   isStreaming?: boolean;
+  /** 推理强度（'high' 深度思考 / 'max' 极致推理） */
+  reasoningEffort?: string;
 }
 
 /** 脉冲动画 keyframes */
@@ -27,18 +30,31 @@ function formatDuration(ms?: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
-export function ThinkingBlock({ thinking, duration, isStreaming }: ThinkingBlockProps) {
+/** 获取推理强度标签 */
+function getReasoningLabel(effort?: string): { label: string; color: string } {
+  switch (effort) {
+    case 'max':
+      return { label: '极致推理', color: '#F59E0B' };
+    case 'high':
+      return { label: '深度思考', color: '#8B5CF6' };
+    default:
+      return { label: '思考过程', color: '#3B82F6' };
+  }
+}
+
+export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort }: ThinkingBlockProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
   const [expanded, setExpanded] = useState(false);
+  const reasoningLabel = getReasoningLabel(reasoningEffort);
 
   return (
     <Box
       sx={{
         mb: 1,
         borderRadius: '8px',
-        borderLeft: '3px solid #3B82F6',
+        borderLeft: `3px solid ${reasoningLabel.color}`,
         bgcolor: isDark ? '#1F2937' : '#F9FAFB',
         overflow: 'hidden',
       }}
@@ -75,6 +91,7 @@ export function ThinkingBlock({ thinking, duration, isStreaming }: ThinkingBlock
 
         {isStreaming ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AutoAwesomeIcon sx={{ fontSize: 14, color: reasoningLabel.color, animation: `${pulse} 1.5s ease-in-out infinite` }} />
             <Typography
               sx={{
                 fontSize: 12,
@@ -87,9 +104,20 @@ export function ThinkingBlock({ thinking, duration, isStreaming }: ThinkingBlock
           </Box>
         ) : (
           <>
-            <Typography sx={{ fontSize: 12, color: gs.textSecondary, fontWeight: 500 }}>
-              思考过程
-            </Typography>
+            <AutoAwesomeIcon sx={{ fontSize: 14, color: reasoningLabel.color }} />
+            <Chip
+              label={reasoningLabel.label}
+              size="small"
+              sx={{
+                height: 20,
+                fontSize: 11,
+                fontWeight: 600,
+                bgcolor: `${reasoningLabel.color}18`,
+                color: reasoningLabel.color,
+                border: `1px solid ${reasoningLabel.color}40`,
+                '& .MuiChip-label': { px: 1 },
+              }}
+            />
             {duration !== undefined && (
               <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
                 耗时 {formatDuration(duration)}
@@ -106,6 +134,7 @@ export function ThinkingBlock({ thinking, duration, isStreaming }: ThinkingBlock
             px: 1.5,
             py: 1,
             color: gs.textMuted,
+            userSelect: 'text',
             '& .markdown-body': {
               fontSize: 13,
               lineHeight: 1.6,

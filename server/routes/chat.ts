@@ -493,9 +493,9 @@ router.post('/chat', async (req, res) => {
       let thinkingStartTime: number | null = null;
       let hasThinking = false;
       let thinkingContent = '';
-    try {
-      // 查找模型配置
+      // v1.9.3: 提前获取模型配置，用于 catch 块中的错误提示
       const modelConfig = modelsConfig.models.find((m) => m.id === effectiveModel);
+    try {
 
       if (!modelConfig) {
         throw new Error(`未找到模型配置: ${effectiveModel}`);
@@ -811,10 +811,19 @@ router.post('/chat', async (req, res) => {
             errorMsg = '请求过于频繁，已达到速率限制，请稍后再试。';
             errorCode = 'RATE_LIMITED';
             break;
-          case 'network':
-            errorMsg = '网络连接失败，请检查网络或 API 端点配置。';
-            errorCode = 'NETWORK_ERROR';
+          case 'network': {
+            // v1.9.3: 本地模型连接失败时提供更精准的提示
+            const isLocal = modelConfig ? isLocalModel(modelConfig) : false;
+            if (isLocal) {
+              const modelName = modelConfig?.id?.replace('ollama-', '') || '';
+              errorMsg = `无法连接到本地 AI 模型服务（${effectiveModel}）。\n\n请检查以下事项：\n1. 确认 Ollama 或其他本地模型服务已启动\n2. 运行 'ollama serve' 启动服务（如使用 Ollama）\n3. 确认模型已下载：ollama pull ${modelName}\n4. 检查端口是否正确（默认 11434）\n\n或者切换到云模型（如 DeepSeek、OpenAI）使用。`;
+              errorCode = 'MODEL_UNAVAILABLE';
+            } else {
+              errorMsg = '网络连接失败，请检查网络或 API 端点配置。';
+              errorCode = 'NETWORK_ERROR';
+            }
             break;
+          }
           case 'timeout':
             errorMsg = '请求超时，模型响应时间过长，请稍后重试。';
             errorCode = 'TIMEOUT';
@@ -833,8 +842,15 @@ router.post('/chat', async (req, res) => {
       } else {
         const errMessage = apiError instanceof Error ? apiError.message : '未知错误';
         // Ollama / 本地模型连接失败的专门提示
-        if (errMessage.includes('stdout closed') || errMessage.includes('ENOENT') || errMessage.includes('ECONNREFUSED') || errMessage.includes('connect')) {
-          errorMsg = `无法连接到 AI 模型服务（${effectiveModel}）。请确认模型服务已启动。\n提示：如果使用 Ollama，请先运行 'ollama serve' 启动服务。`;
+        if (errMessage.includes('stdout closed') || errMessage.includes('ENOENT') || errMessage.includes('ECONNREFUSED') || errMessage.includes('connect') || errMessage.includes('fetch failed')) {
+          // 判断是否为本地模型，提供更精准的提示
+          const isLocal = modelConfig ? isLocalModel(modelConfig) : false;
+          if (isLocal) {
+            const modelName = modelConfig?.id?.replace('ollama-', '') || '';
+            errorMsg = `无法连接到本地 AI 模型服务（${effectiveModel}）。\n\n请检查以下事项：\n1. 确认 Ollama 或其他本地模型服务已启动\n2. 运行 'ollama serve' 启动服务（如使用 Ollama）\n3. 确认模型已下载：ollama pull ${modelName}\n4. 检查端口是否正确（默认 11434）\n\n或者切换到云模型（如 DeepSeek、OpenAI）使用。`;
+          } else {
+            errorMsg = `无法连接到 AI 模型服务（${effectiveModel}）。请确认模型服务已启动。\n提示：如果使用 Ollama，请先运行 'ollama serve' 启动服务。`;
+          }
           errorCode = 'MODEL_UNAVAILABLE';
         } else {
           errorMsg = `抱歉，AI 服务暂时不可用，请稍后重试。\n错误：${errMessage}`;

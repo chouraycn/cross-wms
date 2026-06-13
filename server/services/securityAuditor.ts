@@ -11,7 +11,8 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
-import { initDb, createSkillAudit } from '../db';
+import { initDb } from '../db.js';
+import { createSkillAudit } from '../dao/chains.js';
 
 // ===================== Types =====================
 

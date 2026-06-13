@@ -3,6 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, ReferencedSession, Session, ToolCallInfo, Attachment } from '../types/chat';
 import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../types/inventory-query';
 import { CHAT_API_URL, INVENTORY_QUERY_API_URL } from '../constants/api';
+import { useAppSettings } from '../contexts/AppSettingsContext';
+import { useToolPermission } from '../contexts/ToolPermissionContext';
 
 /** 从 localStorage 读取默认模型 ID */
 function getDefaultModelId(): string {
@@ -32,10 +34,10 @@ export interface SendMessageOptions {
   referencedSessions?: ReferencedSession[];
   /** 指定使用的模型 ID（优先于 session.model） */
   model?: string;
-  /** 参数预设 ID（creative/code/translate/analysis/precise） */
-  preset?: string;
   /** 附件列表（图片、文件等） */
   attachments?: Attachment[];
+  /** 推理强度（'high' 深度思考 / 'max' 极致推理） */
+  reasoningEffort?: string;
 }
 
 /** inventory_query JSON 块正则 */
@@ -44,6 +46,8 @@ const QUERY_BLOCK_REGEX = /```inventory_query\s*\n([\s\S]*?)\n```/;
 export function useChat(currentSession: Session | undefined, onSessionUpdate: (session: Session) => void) {
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const { updateSettings, settings } = useAppSettings();
+  const { requestPermission } = useToolPermission();
   /** v1.7.0: 每个会话级别限制一次 SQL 失败自动重试 */
   const autoRetriedRef = useRef<boolean>(false);
   /** v1.8.0: AbortController 用于中断请求 */
@@ -54,6 +58,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   const sessionRef = useRef<Session | undefined>(currentSession);
   const onSessionUpdateRef = useRef<(session: Session) => void>(onSessionUpdate);
   const isLoadingRef = useRef<boolean>(isLoading);
+  /** v1.9.2: 使用 ref 保存最新的 settings，避免 sendMessage 闭包中引用旧值 */
+  const settingsRef = useRef(settings);
   /** v1.8.2: 用户手动停止标志（不使用 AbortController signal，避免 Electron ERR_ABORTED） */
   const stoppedRef = useRef(false);
 
@@ -69,6 +75,10 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   useEffect(() => {
     isLoadingRef.current = isLoading;
   }, [isLoading]);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
 
   /**
    * v1.8.0: 中断当前 AI 生成
@@ -228,7 +238,9 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
   const sendMessage = useCallback(async (content: string, options?: SendMessageOptions) => {
     // v1.8.1: 使用 ref 读取最新值，避免依赖变化导致函数重新创建
-    if (!content.trim() || isLoadingRef.current) return;
+    // v1.9.3: 允许空文字但带有附件的消息发送
+    const hasAttachments = options?.attachments && options.attachments.length > 0;
+    if ((!content.trim() && !hasAttachments) || isLoadingRef.current) return;
     setIsLoading(true);
     isLoadingRef.current = true;
     stoppedRef.current = false; // 重置停止标志
@@ -239,7 +251,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
     const session = sessionRef.current || {
       id: uuidv4(),
-      title: content.slice(0, 30),
+      title: content.trim() ? content.slice(0, 30) : (options?.attachments?.[0]?.fileName || '图片'),
       model: getDefaultModelId(),
       messages: []
     };
@@ -265,6 +277,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       thinking: '',
       timestamp: new Date(),
       isStreaming: true,
+      model: options?.model || session.model || 'auto',
     };
     const sessionWithStreaming = { ...session, messages: [...session.messages, userMsg, streamingMsg] };
     onSessionUpdateRef.current(sessionWithStreaming);
@@ -293,24 +306,29 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       if (options?.referencedSessionIds && options.referencedSessionIds.length > 0) {
         body.referencedSessionIds = options.referencedSessionIds;
       }
-      // 如果有参数预设，传递给后端
-      if (options?.preset) {
-        body.preset = options.preset;
-      }
       // 如果有附件，传递给后端
       if (options?.attachments && options.attachments.length > 0) {
         body.attachments = options.attachments;
       }
+      // 如果有推理强度设置，传递给后端
+      if (options?.reasoningEffort) {
+        body.reasoningEffort = options.reasoningEffort;
+      }
       // 如果有历史消息，添加到请求体（用于多轮对话）
       // v1.9.0: 包含 toolCalls 信息，确保多轮工具调用上下文不丢失
+      // v1.9.3: 包含 attachments 信息，确保多轮图片上下文不丢失
       if (session.messages.length > 0) {
         body.conversationHistory = session.messages.map(m => {
-          const msg: { role: string; content: string; toolCalls?: ToolCallInfo[] } = {
+          const msg: { role: string; content: string; toolCalls?: ToolCallInfo[]; attachments?: typeof m.attachments } = {
             role: m.role,
             content: m.content,
           };
           if (m.toolCalls && m.toolCalls.length > 0) {
             msg.toolCalls = m.toolCalls;
+          }
+          // v1.9.3: 传递附件信息，让后端在多轮对话中也能看到之前的图片
+          if (m.attachments && m.attachments.length > 0) {
+            msg.attachments = m.attachments;
           }
           return msg;
         });
@@ -321,7 +339,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       const MAX_RETRIES = 2;
       let currentAutoReason: string | undefined;
       let currentAutoReasonType: string | undefined;
-      let currentPreset: { id: string; label: string } | null = null;
       let currentErrorCode: string | null = null;
       let currentErrorMessage: string | null = null;
       let currentThinkingDuration: number | undefined;
@@ -329,7 +346,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
-          const sseResult = await new Promise<{ content: string; autoReason?: string; autoReasonType?: string; preset: { id: string; label: string } | null; errorCode: string | null; errorMessage: string | null; thinkingDuration?: number }>((resolve, reject) => {
+          const sseResult = await new Promise<{ content: string; autoReason?: string; autoReasonType?: string; errorCode: string | null; errorMessage: string | null; thinkingDuration?: number }>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', `${CHAT_API_URL}?_t=${Date.now()}`, true);
             xhr.setRequestHeader('Content-Type', 'application/json');
@@ -340,7 +357,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             let result = '';
             let autoReason: string | undefined;
             let autoReasonType: string | undefined;
-            let preset: { id: string; label: string } | null = null;
             let errorCode: string | null = null;
             let errorMessage: string | null = null;
             let thinkingDuration: number | undefined;
@@ -376,7 +392,13 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                       if (data.type === 'init') {
                         if (data.autoReason) autoReason = data.autoReason;
                         if (data.autoReasonType) autoReasonType = data.autoReasonType;
-                        if (data.preset) preset = data.preset;
+                        if (data.reasoningEffort) {
+                          streamingMsg.reasoningEffort = data.reasoningEffort;
+                        }
+                        // 同步后端实际使用的模型名到消息（优先使用 modelName 显示名）
+                        if (data.model) {
+                          streamingMsg.model = data.modelName || data.model;
+                        }
                       }
                       // v1.8.6: 处理 AI 思考过程流式内容
                       if (data.type === 'thinking') {
@@ -395,7 +417,26 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                           result: data.toolResult || '',
                         };
                         streamingMsg.toolCalls = [...(streamingMsg.toolCalls || []), toolCall];
+
+                        // v1.9.1: 处理 app:setBotName 工具 — 自动修改 AI 助手名称
+                        if (data.toolName === 'app:setBotName' && data.toolResult) {
+                          try {
+                            const result = JSON.parse(data.toolResult);
+                            if (result.success && result.name) {
+                              updateSettings({ appearance: { ...settingsRef.current.appearance, botName: result.name } });
+                            }
+                          } catch { /* JSON 解析失败，忽略 */ }
+                        }
+
                         onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
+                      }
+                      // v1.9.2: 处理敏感工具权限请求
+                      if (data.type === 'permission_request') {
+                        requestPermission({
+                          reqId: data.reqId,
+                          toolName: data.toolName,
+                          toolArgs: data.toolArgs,
+                        });
                       }
                       if (data.type === 'done') {
                         errorCode = data.errorCode ?? null;
@@ -419,7 +460,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               if (xhr.readyState === 4 && !settled) {
                 settled = true;
                 // DONE — 无论 status 如何，只要有响应就视为成功（后端总是返回 200）
-                resolve({ content: result, autoReason, autoReasonType, preset, errorCode, errorMessage, thinkingDuration });
+                resolve({ content: result, autoReason, autoReasonType, errorCode, errorMessage, thinkingDuration });
               }
             };
 
@@ -433,7 +474,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               settled = true;
               // 用户手动停止不视为错误
               if (stoppedRef.current) {
-                resolve({ content: result, autoReason, autoReasonType, preset, errorCode, errorMessage, thinkingDuration });
+                resolve({ content: result, autoReason, autoReasonType, errorCode, errorMessage, thinkingDuration });
               } else {
                 reject(new Error('net::ERR_ABORTED'));
               }
@@ -445,7 +486,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           fullContent = sseResult.content;
           currentAutoReason = sseResult.autoReason;
           currentAutoReasonType = sseResult.autoReasonType;
-          currentPreset = sseResult.preset;
           currentErrorCode = sseResult.errorCode;
           currentErrorMessage = sseResult.errorMessage;
           currentThinkingDuration = sseResult.thinkingDuration;
@@ -475,7 +515,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       streamingMsg.thinkingType = currentThinkingType;
       streamingMsg.autoReason = currentAutoReason;
       streamingMsg.autoReasonType = currentAutoReasonType as any;
-      streamingMsg.activePreset = currentPreset;
 
       if (currentErrorCode) {
         streamingMsg.metadata = {

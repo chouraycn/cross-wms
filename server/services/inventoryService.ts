@@ -6,12 +6,12 @@
  * inventory_transactions tables.
  */
 import { v4 as uuidv4 } from 'uuid';
-import {
-  initDb,
-  type InboundRecordRow,
-  type OutboundRecordRow,
-  type InventoryItemRow,
-  type InventoryTransactionRow,
+import { initDb } from '../db.js';
+import type {
+  InboundRecordRow,
+  OutboundRecordRow,
+  InventoryItemRow,
+  InventoryTransactionRow,
 } from '../db.js';
 import * as txnDao from '../dao/inventoryTransactionDao.js';
 

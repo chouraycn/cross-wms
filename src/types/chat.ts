@@ -52,8 +52,6 @@ export interface Message {
   autoReason?: string;
   /** Auto 选型原因类型 */
   autoReasonType?: 'code' | 'complex' | 'simple' | 'default';
-  /** 当前使用的参数预设 */
-  activePreset?: { id: string; label: string } | null;
   /** 消息元数据（可扩展，用于承载查询结果等附加信息） */
   metadata?: MessageMetadata;
   /** v1.8.6: AI 思考过程内容（如 DeepSeek-R1 reasoning_content / Claude thinking） */
@@ -66,6 +64,8 @@ export interface Message {
   toolCalls?: ToolCallInfo[];
   /** 附件列表（图片、文件等） */
   attachments?: Attachment[];
+  /** 推理强度（'high' 深度思考 / 'max' 极致推理） */
+  reasoningEffort?: string;
 }
 
 export interface Session {
@@ -73,6 +73,16 @@ export interface Session {
   title: string;
   model: string;
   messages: Message[];
+  folderId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  parentId?: string | null;
+  sortOrder: number;
   createdAt?: string;
   updatedAt?: string;
 }

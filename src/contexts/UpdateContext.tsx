@@ -140,24 +140,6 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if (status.hasUpdate && status.releaseInfo) {
             setUpdateStatus(status);
             setShowUpdateNotification(true);
-          } else {
-            // 即使没有更新，也在开发模式下显示通知（用于测试）
-            if (import.meta.env.DEV) {
-              console.log('[UpdateContext] 开发模式：模拟更新通知');
-              setUpdateStatus({
-                hasUpdate: true,
-                currentVersion,
-                latestVersion: '1.5.99',
-                releaseInfo: {
-                  version: '1.5.99',
-                  pubDate: new Date().toISOString(),
-                  notes: '测试更新通知',
-                  dmgUrl: 'https://example.com/test.dmg',
-                  minVersion: '1.0.0',
-                },
-              });
-              setShowUpdateNotification(true);
-            }
           }
         } catch (error) {
           console.error('[UpdateContext] 自动更新检查失败:', error);

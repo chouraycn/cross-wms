@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useCallback, useRef, useEffect, useState } from 'react';
-import { Session, Message, ReferencedSession } from '../types/chat';
+import { Session, Message, ReferencedSession, Folder } from '../types/chat';
 import { useChat, SendMessageOptions } from '../hooks/useChat';
 import { API_BASE } from '../constants/api';
 
@@ -8,6 +8,8 @@ import { API_BASE } from '../constants/api';
 interface ChatContextValue {
   /** 所有会话列表 */
   sessions: Session[];
+  /** 文件夹列表 */
+  folders: Folder[];
   /** 当前活跃会话 ID */
   activeSessionId: string;
   /** 当前活跃会话（computed） */
@@ -30,6 +32,14 @@ interface ChatContextValue {
   stopGeneration: () => void;
   /** 默认模型 */
   defaultModel: string;
+  /** 创建文件夹 */
+  createFolder: (name: string) => Promise<Folder | null>;
+  /** 更新文件夹 */
+  updateFolder: (id: string, name: string) => Promise<boolean>;
+  /** 删除文件夹 */
+  deleteFolder: (id: string) => Promise<boolean>;
+  /** 移动会话到文件夹 */
+  moveSessionToFolder: (sessionId: string, folderId: string | null) => Promise<boolean>;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -189,6 +199,77 @@ async function updateSessionTitleViaAPI(id: string, title: string): Promise<bool
   return false;
 }
 
+// ===================== Folder API 函数 =====================
+
+async function fetchFoldersFromAPI(): Promise<Folder[]> {
+  try {
+    const response = await fetch(`${API_BASE}/folders`);
+    const data = await response.json();
+    if (data.folders && Array.isArray(data.folders)) {
+      return data.folders as Folder[];
+    }
+  } catch (e) {
+    console.warn('[ChatProvider] 加载文件夹失败:', e);
+  }
+  return [];
+}
+
+async function createFolderViaAPI(name: string): Promise<Folder | null> {
+  try {
+    const response = await fetch(`${API_BASE}/folders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const data = await response.json();
+    if (data.folder) return data.folder as Folder;
+  } catch (e) {
+    console.warn('[ChatProvider] 创建文件夹失败:', e);
+  }
+  return null;
+}
+
+async function updateFolderViaAPI(id: string, name: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE}/folders/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const data = await response.json();
+    return !!data.folder;
+  } catch (e) {
+    console.warn('[ChatProvider] 更新文件夹失败:', e);
+  }
+  return false;
+}
+
+async function deleteFolderViaAPI(id: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE}/folders/${id}`, { method: 'DELETE' });
+    const data = await response.json();
+    return data.ok === true;
+  } catch (e) {
+    console.warn('[ChatProvider] 删除文件夹失败:', e);
+  }
+  return false;
+}
+
+async function moveSessionViaAPI(sessionId: string, folderId: string | null): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE}/sessions/${sessionId}/move`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folderId }),
+    });
+    const data = await response.json();
+    return data.ok === true;
+  } catch (e) {
+    console.warn('[ChatProvider] 移动会话失败:', e);
+  }
+  return false;
+}
+
 // ===================== Provider Props =====================
 
 export interface ChatProviderProps {
@@ -208,6 +289,7 @@ export function ChatProvider({
 }: ChatProviderProps) {
   // 启动时先从 localStorage 加载缓存（快速显示），然后从 API 加载权威数据
   const [sessions, setSessions] = useState<Session[]>(() => loadSessionsFromCache());
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [activeSessionId, setActiveSessionIdState] = useState<string>(initialActiveSessionId);
   const [initialized, setInitialized] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -215,20 +297,23 @@ export function ChatProvider({
   // 已加载过消息的会话 ID 集合（避免重复请求）
   const loadedMessageIds = useRef(new Set<string>());
 
-  // ===================== 初始化：从后端 API 加载会话列表 =====================
+  // ===================== 初始化：从后端 API 加载会话列表和文件夹 =====================
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const apiSessions = await fetchSessionsFromAPI();
+      const [apiSessions, apiFolders] = await Promise.all([
+        fetchSessionsFromAPI(),
+        fetchFoldersFromAPI(),
+      ]);
       if (cancelled) return;
       if (apiSessions.length > 0) {
-        // 仅当 API 数据与当前缓存不同时才更新 state，避免不必要的重渲染导致页面闪烁
         setSessions((prev) => {
           if (sessionsEqual(prev, apiSessions)) return prev;
           saveSessionsToCache(apiSessions);
           return apiSessions;
         });
       }
+      setFolders(apiFolders);
       setInitialized(true);
       setIsInitializing(false);
     })();
@@ -343,11 +428,47 @@ export function ChatProvider({
     deleteSessionViaAPI(id); // 不阻塞 UI
   }, []);
 
+  // ===================== 文件夹操作 =====================
+  const createFolder = useCallback(async (name: string): Promise<Folder | null> => {
+    const folder = await createFolderViaAPI(name);
+    if (folder) {
+      setFolders((prev) => [...prev, folder].sort((a, b) => a.sortOrder - b.sortOrder));
+    }
+    return folder;
+  }, []);
+
+  const updateFolder = useCallback(async (id: string, name: string): Promise<boolean> => {
+    const ok = await updateFolderViaAPI(id, name);
+    if (ok) {
+      setFolders((prev) => prev.map((f) => f.id === id ? { ...f, name } : f));
+    }
+    return ok;
+  }, []);
+
+  const deleteFolder = useCallback(async (id: string): Promise<boolean> => {
+    const ok = await deleteFolderViaAPI(id);
+    if (ok) {
+      setFolders((prev) => prev.filter((f) => f.id !== id));
+      // 关联的会话 folderId 会被数据库 SET NULL
+      setSessions((prev) => prev.map((s) => s.folderId === id ? { ...s, folderId: null } : s));
+    }
+    return ok;
+  }, []);
+
+  const moveSessionToFolder = useCallback(async (sessionId: string, folderId: string | null): Promise<boolean> => {
+    const ok = await moveSessionViaAPI(sessionId, folderId);
+    if (ok) {
+      setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, folderId } : s));
+    }
+    return ok;
+  }, []);
+
   // ===================== useChat hook =====================
   const { isLoading, sendMessage, stopGeneration } = useChat(session, handleSessionUpdate);
 
   const value = useMemo<ChatContextValue>(() => ({
     sessions,
+    folders,
     activeSessionId,
     session,
     setActiveSessionId,
@@ -359,10 +480,15 @@ export function ChatProvider({
     sendMessage,
     stopGeneration,
     defaultModel,
+    createFolder,
+    updateFolder,
+    deleteFolder,
+    moveSessionToFolder,
   }), [
-    sessions, activeSessionId, session, setActiveSessionId,
+    sessions, folders, activeSessionId, session, setActiveSessionId,
     handleSessionUpdate, handleNewChat, handleDeleteSession,
     isLoading, isInitializing, sendMessage, stopGeneration, defaultModel,
+    createFolder, updateFolder, deleteFolder, moveSessionToFolder,
   ]);
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

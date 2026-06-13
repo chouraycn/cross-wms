@@ -628,12 +628,17 @@ export interface UploadResult {
   url: string;
 }
 
-/** 上传文件到服务器（POST /api/upload） */
+/** 上传文件到服务器（POST /api/upload）
+ * v1.9.3: 开发模式使用相对路径（通过 Vite 代理），Electron 打包后使用 BASE_URL
+ */
 export async function uploadFile(file: File): Promise<UploadResult> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${BASE_URL}/api/upload`, {
+  // 开发模式下 BASE_URL 为空，使用相对路径通过 Vite 代理转发
+  // Electron 打包后 BASE_URL 被设置为 http://localhost:3001，直接请求后端
+  const uploadUrl = BASE_URL ? `${BASE_URL}/api/upload` : '/api/upload';
+  const res = await fetch(uploadUrl, {
     method: 'POST',
     body: formData,
   });

@@ -184,6 +184,7 @@ const SettingsPanel: React.FC = () => {
         enableAnimations: true,
         enableShadows: true,
         compactMode: false,
+        botName: 'CDF Bot',
       },
     });
     setErrors({});

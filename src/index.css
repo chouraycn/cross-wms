@@ -24,33 +24,41 @@ body {
   min-height: 100vh;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar — 默认隐藏，滚动时显示 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F3F4F6;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
+  background: transparent;
   border-radius: 3px;
+  transition: background 0.3s ease;
 }
 
-::-webkit-scrollbar-thumb:hover {
+/* 滚动时显示滚动条 */
+.scrollbar-visible::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+}
+
+.scrollbar-visible::-webkit-scrollbar-thumb:hover {
   background: #9CA3AF;
 }
 
 /* Dark mode scrollbar */
-.MuiCssBaseline-root[data-mui-color-scheme="dark"] ::-webkit-scrollbar-track {
-  background: #1A1A1A;
-}
 .MuiCssBaseline-root[data-mui-color-scheme="dark"] ::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.MuiCssBaseline-root[data-mui-color-scheme="dark"] .scrollbar-visible::-webkit-scrollbar-thumb {
   background: #3A3A3A;
 }
-.MuiCssBaseline-root[data-mui-color-scheme="dark"] ::-webkit-scrollbar-thumb:hover {
+
+.MuiCssBaseline-root[data-mui-color-scheme="dark"] .scrollbar-visible::-webkit-scrollbar-thumb:hover {
   background: #4A4A4A;
 }
 

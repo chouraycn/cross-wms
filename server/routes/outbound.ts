@@ -11,7 +11,7 @@ import {
   getOutboundRecordById as dbGetById,
   updateOutboundRecord as dbUpdate,
   deleteOutboundRecord as dbDelete,
-} from '../db.js';
+} from '../dao/warehouse.js';
 import * as InventoryService from '../services/inventoryService.js';
 
 const router = Router();

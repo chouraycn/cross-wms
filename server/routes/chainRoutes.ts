@@ -14,6 +14,8 @@
  */
 
 import express from 'express';
+import { initDb } from '../db.js';
+import type { SkillChainRow, SkillChainNodeRow } from '../db.js';
 import {
   createSkillChain as dbCreateChain,
   getSkillChain as dbGetChain,
@@ -25,10 +27,7 @@ import {
   deleteChainNodes as dbDeleteNodes,
   createSkillExecution as dbCreateExecution,
   updateSkillExecution as dbUpdateExecution,
-  initDb,
-  type SkillChainRow,
-  type SkillChainNodeRow,
-} from '../db.js';
+} from '../dao/chains.js';
 import { executeChain, abortExecution } from '../services/chainExecutor.js';
 
 const router = express.Router();

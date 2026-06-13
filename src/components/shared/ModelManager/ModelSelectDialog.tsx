@@ -56,7 +56,7 @@ const ModelSelectDialog: React.FC<ModelSelectDialogProps> = ({
   const styles = getModelManagerStyles(isDark);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set(['openai', 'anthropic']));
+  const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
 
   // 按提供商分组
   const groupedModels = useMemo(() => {

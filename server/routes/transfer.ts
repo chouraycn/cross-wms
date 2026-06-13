@@ -21,7 +21,7 @@ import {
   deleteTransferOrder as dbDelete,
   getWarehouseById,
   getTransitOrderById,
-} from '../db.js';
+} from '../dao/warehouse.js';
 import * as TransferService from '../services/transferService.js';
 
 const router = Router();

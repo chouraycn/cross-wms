@@ -45,6 +45,27 @@ export default defineConfig({
       '@': '/src',
     },
   },
+  // v1.9.3: 开发模式下将 /api 请求代理到后端，避免跨域问题（Electron/浏览器均兼容）
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        // v1.9.3: 确保 multipart/form-data 请求正确转发
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('Sending Request to the Target:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+          });
+        },
+      },
+    },
+  },
   define: {
     __APP_VERSION__: JSON.stringify(version),
   },

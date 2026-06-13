@@ -7,14 +7,13 @@
  * atomicity across transfer_orders, inventory_items, and inventory_transactions tables.
  */
 import { v4 as uuidv4 } from 'uuid';
+import { initDb } from '../db.js';
+import type { TransferOrderRow, InventoryItemRow } from '../db.js';
 import {
-  initDb,
   getTransferOrderById as dbGetById,
   createTransferOrder as dbCreate,
   updateTransferOrder as dbUpdate,
-  type TransferOrderRow,
-  type InventoryItemRow,
-} from '../db.js';
+} from '../dao/warehouse.js';
 import * as txnDao from '../dao/inventoryTransactionDao.js';
 
 // ===================== Helper =====================
