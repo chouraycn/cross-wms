@@ -235,7 +235,6 @@ const SkillCard: React.FC<SkillCardProps> = ({
             borderRadius: '50%',
             backgroundColor: isRunning ? '#3B82F6' : '#10B981',
             border: `2px solid ${gs.bgPanel}`,
-            ...(isRunning ? { animation: 'pulse-dot 1.2s ease-in-out infinite' } : {}),
           }} />
         )}
       </Box>

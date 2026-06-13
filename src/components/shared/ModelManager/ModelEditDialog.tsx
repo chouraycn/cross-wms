@@ -32,6 +32,7 @@ import { providerLabel, providerIcon } from '../../../utils/providerIcons';
 import { CAPABILITY_LABELS, CAPABILITY_COLORS, type ModelCapability } from '../../../types/models';
 import { getModelManagerStyles } from './styles';
 import type { ModelEditDialogProps, ModelFormState } from './types';
+import { SpinningIcon } from '../SpinningIcon';
 
 /** 各提供商 API Key 获取链接 */
 const PROVIDER_API_KEY_URLS: Record<string, string> = {
@@ -586,7 +587,7 @@ const TestSection: React.FC<{
         <Button
           variant="outlined"
           size="small"
-          startIcon={testStatus === 'testing' ? <AutorenewIcon sx={{ fontSize: 14, animation: 'spin 1s linear infinite' }} /> : null}
+          startIcon={testStatus === 'testing' ? <SpinningIcon spinning={testStatus === 'testing'}><AutorenewIcon sx={{ fontSize: 14 }} /></SpinningIcon> : null}
           onClick={handleTestApi}
           disabled={testStatus === 'testing'}
           sx={{

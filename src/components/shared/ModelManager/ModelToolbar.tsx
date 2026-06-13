@@ -25,6 +25,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { COLORS, toolbarButtonSx } from './styles';
 import type { ModelToolbarProps } from './types';
+import { SpinningIcon } from '../SpinningIcon';
 
 const ModelToolbar: React.FC<ModelToolbarProps> = ({
   variant,
@@ -147,7 +148,7 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
                   variant="outlined"
                   size="small"
                   startIcon={isHealthChecking
-                    ? <AutorenewIcon sx={{ fontSize: 14, animation: 'spin 1s linear infinite' }} />
+                    ? <SpinningIcon spinning={isHealthChecking}><AutorenewIcon sx={{ fontSize: 14 }} /></SpinningIcon>
                     : <MonitorHeartIcon sx={{ fontSize: 14 }} />
                   }
                   onClick={onHealthCheck}
@@ -226,7 +227,7 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
             <Tooltip title={isHealthChecking ? '检测中...' : '健康检测'}>
               <IconButton size="small" onClick={onHealthCheck} disabled={isHealthChecking} sx={{ color: COLORS.textMuted, p: 0.5 }}>
                 {isHealthChecking
-                  ? <AutorenewIcon sx={{ fontSize: 16, animation: 'spin 1s linear infinite' }} />
+                  ? <SpinningIcon spinning={isHealthChecking}><AutorenewIcon sx={{ fontSize: 16 }} /></SpinningIcon>
                   : <MonitorHeartIcon sx={{ fontSize: 16 }} />
                 }
               </IconButton>
@@ -318,7 +319,7 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
                 sx={{ color: COLORS.textMuted }}
               >
                 {isHealthChecking
-                  ? <AutorenewIcon sx={{ fontSize: 18, animation: 'spin 1s linear infinite' }} />
+                  ? <SpinningIcon spinning={isHealthChecking}><AutorenewIcon sx={{ fontSize: 18 }} /></SpinningIcon>
                   : <MonitorHeartIcon sx={{ fontSize: 18 }} />
                 }
               </IconButton>

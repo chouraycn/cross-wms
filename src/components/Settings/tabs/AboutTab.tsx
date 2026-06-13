@@ -15,6 +15,7 @@ import { useUpdateContext } from '../../../contexts/UpdateContext';
 import { switchSx, APP_VERSION } from '../sharedStyles';
 import TrafficLightOffsetSection from './TrafficLightOffsetSection';
 import { getGrayScale } from '../../../constants/theme';
+import { SpinningIcon } from '../../../components/shared/SpinningIcon';
 
 // ===================== Props =====================
 
@@ -127,7 +128,7 @@ const AboutTab: React.FC<AboutTabProps> = ({
             size="small"
             onClick={handleCheckUpdate}
             disabled={checkingUpdate}
-            startIcon={checkingUpdate ? <Box component="span" sx={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${gs.textDisabled}`, borderTopColor: 'transparent', animation: 'spin 1s linear infinite' }} /> : undefined}
+            startIcon={checkingUpdate ? <SpinningIcon spinning={checkingUpdate}><Box component="span" sx={{ width: 14, height: 14, borderRadius: '50%', border: `2px solid ${gs.textDisabled}`, borderTopColor: 'transparent' }} /></SpinningIcon> : undefined}
             sx={{
               borderColor: gs.border,
               color: gs.textMuted,
