@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Box, Typography, IconButton, Collapse, useTheme, keyframes } from '@mui/material';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Box, Typography, IconButton, Collapse, useTheme } from '@mui/material';
 import BuildIcon from '@mui/icons-material/Build';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -8,22 +8,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorCircleIcon from '@mui/icons-material/ErrorOutline';
 import type { ToolCallInfo } from '../../types/chat';
 import { getGrayScale } from '../../constants/theme';
-
-// ===================== 动画定义 =====================
-
-/** 脉冲动画 keyframes */
-const pulse = keyframes`
-  0% { opacity: 0.3; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.2); }
-  100% { opacity: 0.3; transform: scale(0.8); }
-`;
-
-/** 脉冲光晕动画 */
-const pulseGlow = keyframes`
-  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-  70% { box-shadow: 0 0 0 6px rgba(99, 102, 241, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
-`;
 
 // ===================== 工具名称映射 =====================
 
@@ -184,28 +168,51 @@ function isToolCallFailed(toolCall: ToolCallInfo): boolean {
 
 // ===================== 脉冲指示器组件 =====================
 
-const PulseIndicator: React.FC = () => (
-  <Box
-    sx={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 0.5,
-    }}
-  >
+/** v1.9.5-fix: 用 JS 定时器模拟脉冲动画，避免 WKWebView 不兼容 CSS @keyframes */
+const PulseIndicator: React.FC = () => {
+  const [scale, setScale] = useState(0.8);
+  const [opacity, setOpacity] = useState(0.3);
+
+  useEffect(() => {
+    let frame = 0;
+    const interval = setInterval(() => {
+      frame = (frame + 1) % 60; // 60 frames ≈ 1.4s at 750ms interval
+      const progress = frame / 30; // 0→1→0 over 60 frames
+      const s = 0.8 + 0.4 * Math.abs(1 - progress * 2);
+      const o = 0.3 + 0.7 * Math.abs(1 - progress * 2);
+      setScale(s);
+      setOpacity(o);
+    }, 750);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
     <Box
       sx={{
-        width: 8,
-        height: 8,
-        borderRadius: '50%',
-        bgcolor: '#6366F1',
-        animation: `${pulse} 1.4s ease-in-out infinite, ${pulseGlow} 1.4s ease-in-out infinite`,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
       }}
-    />
-    <Typography sx={{ fontSize: 11, color: '#6366F1', fontWeight: 500 }}>
-      执行中
-    </Typography>
-  </Box>
-);
+    >
+      <Box
+        sx={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          bgcolor: '#6366F1',
+          transform: `scale(${scale})`,
+          opacity: opacity,
+          transition: 'transform 0.75s ease-in-out, opacity 0.75s ease-in-out',
+          boxShadow: opacity > 0.6 ? `0 0 6px rgba(99, 102, 241, ${opacity - 0.3})` : 'none',
+        }}
+      />
+      <Typography sx={{ fontSize: 11, color: '#6366F1', fontWeight: 500 }}>
+        执行中
+      </Typography>
+    </Box>
+  );
+};
 
 // ===================== 步骤进度指示器 =====================
 
@@ -269,11 +276,10 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ total, currentIndex }) =>
                   : isCurrent
                     ? '#6366F1'
                     : 'transparent',
-                animation: isCurrent
-                  ? `${pulse} 1.4s ease-in-out infinite, ${pulseGlow} 1.4s ease-in-out infinite`
-                  : 'none',
+                // v1.9.5-fix: 移除 CSS animation，改用 JS 定时器（见下方 useEffect）
                 transition: 'all 0.3s ease',
               }}
+              {...(isCurrent ? { 'data-pulse': 'true' } : {})}
             />
           </React.Fragment>
         );
