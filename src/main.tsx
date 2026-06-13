@@ -11,6 +11,19 @@ import { initFromApi as initSkills } from './stores/skillStore'
 try {
   const root = ReactDOM.createRoot(document.getElementById('root')!)
   root.render(<App />)
+
+  // WKWebView 兼容：监听 .page-fade-in 元素并添加 .visible 类以触发淡入动画
+  if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver(() => {
+      document.querySelectorAll('.page-fade-in:not(.visible)').forEach((el) => {
+        // 使用 requestAnimationFrame 确保 DOM 更新后再触发 transition
+        requestAnimationFrame(() => {
+          el.classList.add('visible');
+        });
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
 } catch (e: any) {
   console.error('[CrossWMS] React 渲染异常:', e?.message || String(e), e?.stack)
 }

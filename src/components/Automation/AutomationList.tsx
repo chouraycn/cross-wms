@@ -39,6 +39,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 
 import type { Automation, AutomationExecution } from '../../services/automation';
+import { SpinningIcon } from '../../components/shared/SpinningIcon';
 import {
   TASK_TYPE_LABELS,
   TASK_TYPE_ICONS,
@@ -257,7 +258,9 @@ const AutomationList: React.FC<AutomationListProps> = ({
                       }}
                     >
                       {isRunning ? (
-                        <SyncIcon sx={{ fontSize: 16, animation: 'spin 1s linear infinite' }} />
+                        <SpinningIcon spinning={true}>
+                          <SyncIcon sx={{ fontSize: 16 }} />
+                        </SpinningIcon>
                       ) : (
                         TASK_TYPE_ICONS[auto.taskType] || <CodeIcon sx={{ fontSize: 16 }} />
                       )}
@@ -268,8 +271,7 @@ const AutomationList: React.FC<AutomationListProps> = ({
                           inset: -2,
                           borderRadius: 2,
                           border: `2px solid ${taskColor}`,
-                          animation: 'pulse-ring 1.5s ease-out infinite',
-                          opacity: 0,
+                          opacity: 0.5,
                         }} />
                       )}
                     </Box>

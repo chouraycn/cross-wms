@@ -17,6 +17,7 @@ import {
 } from '../../services/wecomDocsApi';
 import { getWarehouses } from '../../capabilities/warehouse';
 import { getGrayScale } from '../../constants/theme';
+import { SpinningIcon } from '../../components/shared/SpinningIcon';
 
 /** 腾讯文档品牌色 */
 const TDOC_COLOR = '#27A17C';
@@ -135,7 +136,18 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
                     <ListItem disablePadding secondaryAction={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <Tooltip title="在浏览器中打开"><IconButton size="small" onClick={(e) => { e.stopPropagation(); onOpenInBrowser(doc.url); }} sx={{ color: gs.textMuted }}><OpenInNewIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
-                        <Tooltip title="刷新文档内容"><IconButton size="small" onClick={(e) => { e.stopPropagation(); onRefreshSingleDoc(doc); }} disabled={refreshingDocId === doc.id} sx={{ color: refreshingDocId === doc.id ? TDOC_COLOR : gs.textMuted }}><RefreshIcon sx={{ fontSize: 16, animation: refreshingDocId === doc.id ? 'spin 1s linear infinite' : 'none' }} /></IconButton></Tooltip>
+                        <Tooltip title="刷新文档内容">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => { e.stopPropagation(); onRefreshSingleDoc(doc); }}
+                            disabled={refreshingDocId === doc.id}
+                            sx={{ color: refreshingDocId === doc.id ? TDOC_COLOR : gs.textMuted }}
+                          >
+                            <SpinningIcon spinning={refreshingDocId === doc.id}>
+                              <RefreshIcon sx={{ fontSize: 16 }} />
+                            </SpinningIcon>
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                     }>
                       <ListItemButton sx={{ py: 1.5 }} onClick={() => onOpenDoc(doc.id, doc.title, doc.url)}>
@@ -199,7 +211,18 @@ const DocLinkManager: React.FC<DocLinkManagerProps> = ({
                       <ListItem disablePadding secondaryAction={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <Tooltip title="在浏览器中打开"><IconButton size="small" onClick={(e) => { e.stopPropagation(); onOpenInBrowser(doc.url); }} sx={{ color: gs.textMuted }}><OpenInNewIcon sx={{ fontSize: 16 }} /></IconButton></Tooltip>
-                          <Tooltip title="刷新文档内容"><IconButton size="small" onClick={(e) => { e.stopPropagation(); onRefreshSingleWecomDoc(doc); }} disabled={refreshingWecomDocId === doc.id} sx={{ color: refreshingWecomDocId === doc.id ? WECOM_COLOR : gs.textMuted }}><RefreshIcon sx={{ fontSize: 16, animation: refreshingWecomDocId === doc.id ? 'spin 1s linear infinite' : 'none' }} /></IconButton></Tooltip>
+                          <Tooltip title="刷新文档内容">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => { e.stopPropagation(); onRefreshSingleWecomDoc(doc); }}
+                              disabled={refreshingWecomDocId === doc.id}
+                              sx={{ color: refreshingWecomDocId === doc.id ? WECOM_COLOR : gs.textMuted }}
+                            >
+                              <SpinningIcon spinning={refreshingWecomDocId === doc.id}>
+                                <RefreshIcon sx={{ fontSize: 16 }} />
+                              </SpinningIcon>
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       }>
                         <ListItemButton sx={{ py: 1.5 }} onClick={() => onOpenWeComDoc(doc.id, doc.title, doc.url)}>
