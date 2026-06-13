@@ -872,15 +872,6 @@ const SkillsPage: React.FC = () => {
         />
       )}
 
-      {/* 脉冲动画 */}
-      <style>{`
-        @keyframes pulse-dot {
-          0% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.3); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
-
       {/* T05: 匹配引擎设置对话框 */}
       <Dialog
         open={matchConfigOpen}

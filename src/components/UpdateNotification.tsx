@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Button, IconButton, Typography, LinearProgress } from '@mui/material';
 import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import CloseIcon from '@mui/icons-material/Close';
@@ -6,6 +6,13 @@ import { useUpdateContext } from '../contexts/UpdateContext';
 
 const UpdateNotification: React.FC = () => {
   const { updateStatus, showUpdateNotification, isChecking, hideUpdateNotification, downloadUpdate } = useUpdateContext();
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    // 延迟一帧触发入场动画
+    const timer = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   // 检查中状态
   if (isChecking) {
@@ -131,11 +138,10 @@ const UpdateNotification: React.FC = () => {
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
         border: '1px solid #e5e7eb',
         overflow: 'hidden',
-        animation: 'slideUp 0.3s ease-out',
-        '@keyframes slideUp': {
-          from: { transform: 'translateY(100%)', opacity: 0 },
-          to: { transform: 'translateY(0)', opacity: 1 },
-        },
+        // v1.9.5-fix: 用 JS 驱动入场动画，避免 WKWebView 不兼容 CSS @keyframes
+        transition: 'opacity 0.3s ease-out, transform 0.3s ease-out',
+        opacity: mounted ? 1 : 0,
+        transform: mounted ? 'translateY(0)' : 'translateY(100%)',
       }}
     >
       {/* 顶部进度条装饰 */}

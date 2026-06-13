@@ -7,6 +7,8 @@ export interface ReferencedSession {
 
 /** 工具调用信息（AI 通过 Tool Calling 执行的操作） */
 export interface ToolCallInfo {
+  /** 工具调用 ID（对应 OpenAI tool_call.id） */
+  id?: string;
   /** 工具名称（如 file:readFile、shell:exec） */
   name: string;
   /** 工具参数（JSON 字符串） */
@@ -66,6 +68,13 @@ export interface Message {
   attachments?: Attachment[];
   /** 推理强度（'high' 深度思考 / 'max' 极致推理） */
   reasoningEffort?: string;
+  /** v1.9.3: 内联权限请求（敏感工具执行确认） */
+  permissionRequest?: {
+    reqId: string;
+    toolName: string;
+    toolArgs: string;
+    approved?: boolean;
+  };
 }
 
 export interface Session {

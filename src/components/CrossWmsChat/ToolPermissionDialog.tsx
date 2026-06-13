@@ -51,12 +51,14 @@ const ToolPermissionDialog: React.FC<ToolPermissionDialogProps> = ({
     argsObj = { raw: request.toolArgs };
   }
 
-  // 工具分类和描述
+  // 工具分类和描述（v1.9.3: 适配下划线格式工具名）
   const getToolInfo = (name: string) => {
-    if (name.startsWith('file:')) return { category: '文件操作', color: '#3B82F6' };
-    if (name.startsWith('shell:')) return { category: '命令执行', color: '#EF4444' };
-    if (name.startsWith('desktop:')) return { category: '桌面控制', color: '#F59E0B' };
-    return { category: '系统工具', color: '#8B5CF6' };
+    if (name.startsWith('file_')) return { category: '文件操作', color: '#3B82F6' };
+    if (name.startsWith('shell_')) return { category: '命令执行', color: '#EF4444' };
+    if (name.startsWith('desktop_')) return { category: '桌面控制', color: '#F59E0B' };
+    if (name.startsWith('db_')) return { category: '数据库', color: '#10B981' };
+    if (name.startsWith('wms_')) return { category: '库存管理', color: '#8B5CF6' };
+    return { category: '系统工具', color: '#6B7280' };
   };
 
   const toolInfo = getToolInfo(request.toolName);

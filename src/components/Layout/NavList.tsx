@@ -42,6 +42,8 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import CircularProgress from '@mui/material/CircularProgress';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import { getGrayScale } from '../../constants/theme';
 import { Session, Folder } from '../../types/chat';
@@ -282,10 +284,47 @@ const NavList: React.FC<NavListProps> = ({
   }, [chatSessions]);
 
   // 渲染单个会话项
+  // v1.9.3: 跟踪每个会话的完成通知状态（AI 完成回复时显示绿点）
+  const [completedSessions, setCompletedSessions] = useState<Set<string>>(new Set());
+  const prevSessionsRef = useRef<Session[]>(sessions);
+
+  React.useEffect(() => {
+    const prev = prevSessionsRef.current;
+    // 检查哪些会话从 streaming 变为完成
+    for (const session of sessions) {
+      if (completedSessions.has(session.id)) continue;
+      const prevSession = prev.find(s => s.id === session.id);
+      if (!prevSession) continue;
+      const prevLast = prevSession.messages[prevSession.messages.length - 1];
+      const currLast = session.messages[session.messages.length - 1];
+      if (
+        prevLast?.role === 'assistant' && prevLast?.isStreaming &&
+        currLast?.role === 'assistant' && !currLast?.isStreaming
+      ) {
+        setCompletedSessions(prev => new Set(prev).add(session.id));
+      }
+    }
+    prevSessionsRef.current = sessions;
+  }, [sessions, completedSessions]);
+
+  const clearCompletedFlag = useCallback((sessionId: string) => {
+    setCompletedSessions(prev => {
+      const next = new Set(prev);
+      next.delete(sessionId);
+      return next;
+    });
+  }, []);
+
   const renderSessionItem = (session: Session) => {
     const title = session.title || session.messages[0]?.content?.slice(0, 20) || '新对话';
     const effectiveActiveId = justClickedSessionId ?? activeSessionId;
     const isSessionActive = session.id === effectiveActiveId;
+
+    // 检查该会话是否有 AI 正在思考/流式响应
+    const lastMsg = session.messages[session.messages.length - 1];
+    const isThinking = lastMsg?.role === 'assistant' && lastMsg?.isStreaming === true;
+    const showCompleted = completedSessions.has(session.id) && !isThinking;
+
     return (
       <ListItem
         key={session.id}
@@ -326,6 +365,27 @@ const NavList: React.FC<NavListProps> = ({
           >
             {title}
           </Typography>
+          {/* v1.9.3: AI 思考/完成指示器 */}
+          {isThinking && (
+            <CircularProgress size={14} thickness={3} sx={{ color: '#F59E0B', mr: 0.5 }} />
+          )}
+          {!isThinking && showCompleted && (
+            <Tooltip title="AI 已完成回复" placement="right">
+              <Box
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearCompletedFlag(session.id);
+                }}
+                sx={{
+                  display: 'flex', alignItems: 'center', cursor: 'pointer', mr: 0.5,
+                  transition: 'opacity 0.2s',
+                  '&:hover': { opacity: 0.6 },
+                }}
+              >
+                <CheckCircleIcon sx={{ fontSize: 14, color: '#22C55E' }} />
+              </Box>
+            </Tooltip>
+          )}
           <IconButton
             size="small"
             onClick={(e) => {

@@ -1,7 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Box, Typography, IconButton, Tooltip, useTheme, Collapse } from '@mui/material';
+import {
+  Box, Typography, IconButton, Tooltip, useTheme, Collapse,
+  Button, Chip, Paper,
+} from '@mui/material';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import ShieldIcon from '@mui/icons-material/Shield';
+import CodeIcon from '@mui/icons-material/Code';
+import StorageIcon from '@mui/icons-material/Storage';
+import TerminalIcon from '@mui/icons-material/Terminal';
+import DesktopMacIcon from '@mui/icons-material/DesktopMac';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import LogoAi from '../../assets/logo-ai.svg';
 import { TopBarChatInput } from './TopBarChatInput';
 import ChatMessageList from './ChatMessageList';
@@ -142,6 +153,46 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
     }
   }, [showToast]);
 
+  /** v1.9.3: 权限请求响应 — 发送给后端并更新消息状态 */
+  const handlePermissionRespond = useCallback((reqId: string, approved: boolean) => {
+    // 发送响应到后端
+    fetch('/api/permission-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reqId, approved }),
+    }).catch((e) => console.error('[ChatContainer] 发送权限响应失败:', e));
+
+    // 更新本地消息状态，标记为已处理
+    const updatedMessages = session.messages.map((msg) => {
+      if (msg.permissionRequest && msg.permissionRequest.reqId === reqId) {
+        return { ...msg, permissionRequest: { ...msg.permissionRequest, approved } };
+      }
+      return msg;
+    });
+    handleSessionUpdate({ ...session, messages: updatedMessages });
+  }, [session, handleSessionUpdate]);
+
+  // v1.9.3: 从消息中提取 pending 权限请求（用于输入框上方展示）
+  const pendingPermission = useMemo(() => {
+    for (const msg of session.messages) {
+      if (msg.permissionRequest && msg.permissionRequest.approved === undefined) {
+        return msg.permissionRequest;
+      }
+    }
+    return null;
+  }, [session.messages]);
+
+  // 工具分类映射
+  const getToolCategory = (toolName: string): { label: string; icon: React.ReactNode; color: string } => {
+    if (toolName.startsWith('file:') || toolName.startsWith('db:'))
+      return { label: '数据操作', icon: <StorageIcon sx={{ fontSize: 16 }} />, color: '#3B82F6' };
+    if (toolName.startsWith('shell:') || toolName.startsWith('exec'))
+      return { label: '命令执行', icon: <TerminalIcon sx={{ fontSize: 16 }} />, color: '#EF4444' };
+    if (toolName.startsWith('desktop_'))
+      return { label: '桌面控制', icon: <DesktopMacIcon sx={{ fontSize: 16 }} />, color: '#8B5CF6' };
+    return { label: '工具调用', icon: <CodeIcon sx={{ fontSize: 16 }} />, color: '#F59E0B' };
+  };
+
   // 监听侧边栏事件
   useEffect(() => {
     const focusInput = () => {
@@ -254,6 +305,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
                 session={session}
                 copiedId={copiedId}
                 onCopy={handleCopy}
+                onPermissionRespond={handlePermissionRespond}
               />
             </Box>
           )}
@@ -261,6 +313,139 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
           {/* 输入框 */}
           <Box sx={{ px: 3, py: 2, flexShrink: 0, borderTop: 'none' }}>
             <Box sx={{ maxWidth: 960, mx: 'auto' }}>
+              {/* v1.9.3: 权限确认浮动卡片 — 输入框上方 */}
+              {pendingPermission && (
+                <Paper
+                  elevation={8}
+                  sx={{
+                    mb: 2,
+                    borderRadius: 3,
+                    border: '1px solid',
+                    borderColor: isDark ? '#F59E0B40' : '#FDE68A',
+                    background: isDark
+                      ? 'linear-gradient(135deg, #1A1A2E 0%, #2A1A0A 100%)'
+                      : 'linear-gradient(135deg, #FFFBEB 0%, #FFF7ED 100%)',
+                    overflow: 'hidden',
+                    animation: 'slideIn 0.3s ease-out',
+                    '@keyframes slideIn': {
+                      from: { opacity: 0, transform: 'translateY(10px)' },
+                      to: { opacity: 1, transform: 'translateY(0)' },
+                    },
+                  }}
+                >
+                  {/* 顶部渐变条 */}
+                  <Box sx={{
+                    height: 3,
+                    background: 'linear-gradient(90deg, #F59E0B, #EF4444, #8B5CF6, #3B82F6)',
+                  }} />
+
+                  <Box sx={{ p: 2 }}>
+                    {/* 标题行 */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                      <ShieldIcon sx={{ color: '#F59E0B', fontSize: 22 }} />
+                      <Typography sx={{ fontSize: 14, fontWeight: 700, color: gs.textPrimary }}>
+                        安全确认
+                      </Typography>
+                      <Chip
+                        label="需要授权"
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          bgcolor: '#F59E0B20',
+                          color: '#F59E0B',
+                        }}
+                      />
+                    </Box>
+
+                    {/* 工具信息 */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                      {(() => {
+                        const cat = getToolCategory(pendingPermission.toolName);
+                        return (
+                          <Box sx={{
+                            display: 'flex', alignItems: 'center', gap: 0.75,
+                            px: 1.5, py: 0.75, borderRadius: 2,
+                            bgcolor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF',
+                            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#F3F4F6'}`,
+                          }}>
+                            <Box sx={{ color: cat.color }}>{cat.icon}</Box>
+                            <Box>
+                              <Typography sx={{ fontSize: 13, fontWeight: 600, color: gs.textPrimary, fontFamily: 'monospace' }}>
+                                {pendingPermission.toolName}
+                              </Typography>
+                              <Typography sx={{ fontSize: 11, color: cat.color, fontWeight: 500 }}>
+                                {cat.label}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        );
+                      })()}
+                    </Box>
+
+                    {/* 参数预览 */}
+                    {(() => {
+                      let argsObj: Record<string, unknown> = {};
+                      try { argsObj = JSON.parse(pendingPermission.toolArgs); } catch { argsObj = { raw: pendingPermission.toolArgs }; }
+                      return (
+                        <Box sx={{
+                          px: 1.5, py: 1, borderRadius: 1.5, mb: 1.5,
+                          bgcolor: isDark ? '#0D0D0D' : '#F9FAFB',
+                          border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6'}`,
+                          maxHeight: 120, overflow: 'auto',
+                        }}>
+                          <Box component="pre" sx={{
+                            m: 0, fontFamily: 'monospace', fontSize: 12,
+                            color: gs.textSecondary, whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+                          }}>
+                            {JSON.stringify(argsObj, null, 2)}
+                          </Box>
+                        </Box>
+                      );
+                    })()}
+
+                    {/* 操作按钮 */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Typography sx={{ fontSize: 11, color: gs.textMuted }}>
+                        AI 请求执行敏感操作，请确认
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          size="small"
+                          startIcon={<CancelIcon sx={{ fontSize: 16 }} />}
+                          onClick={() => handlePermissionRespond(pendingPermission.reqId, false)}
+                          sx={{
+                            borderRadius: 2, textTransform: 'none', fontSize: 13,
+                            color: gs.textMuted,
+                            borderColor: gs.border,
+                            '&:hover': { borderColor: '#EF4444', color: '#EF4444', bgcolor: isDark ? 'rgba(239,68,68,0.08)' : '#FEF2F2' },
+                          }}
+                          variant="outlined"
+                        >
+                          拒绝
+                        </Button>
+                        <Button
+                          size="small"
+                          startIcon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
+                          onClick={() => handlePermissionRespond(pendingPermission.reqId, true)}
+                          sx={{
+                            borderRadius: 2, textTransform: 'none', fontSize: 13, fontWeight: 600,
+                            background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                            color: '#fff',
+                            boxShadow: '0 2px 8px rgba(245,158,11,0.3)',
+                            '&:hover': { background: 'linear-gradient(135deg, #D97706, #B45309)', boxShadow: '0 4px 12px rgba(245,158,11,0.4)' },
+                          }}
+                          variant="contained"
+                        >
+                          允许执行
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Paper>
+              )}
+
               <TopBarChatInput
                 session={session}
                 onSessionUpdate={handleSessionUpdate}
@@ -306,8 +491,36 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
           onRegenerate={handleRegenerate}
           showRegenerate={true}
           onConfirmReplenishment={handleConfirmReplenishment}
+          onPermissionRespond={handlePermissionRespond}
           maxHeight="calc(70vh - 130px)"
         />
+      )}
+
+      {/* v1.9.3: 权限确认 — embedded 模式简化版 */}
+      {pendingPermission && (
+        <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}>
+          <Box sx={{
+            p: 1.5, borderRadius: 2,
+            border: '1px solid', borderColor: isDark ? '#F59E0B40' : '#FDE68A',
+            bgcolor: isDark ? '#2A1A0A' : '#FFFBEB',
+            display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap',
+          }}>
+            <ShieldIcon sx={{ color: '#F59E0B', fontSize: 18 }} />
+            <Typography sx={{ fontSize: 12, fontWeight: 600, color: gs.textPrimary, fontFamily: 'monospace' }}>
+              {pendingPermission.toolName}
+            </Typography>
+            <Box sx={{ flex: 1 }} />
+            <Button size="small" onClick={() => handlePermissionRespond(pendingPermission.reqId, false)}
+              sx={{ fontSize: 11, textTransform: 'none', color: gs.textMuted, minWidth: 'auto', px: 1.5 }} variant="text">
+              拒绝
+            </Button>
+            <Button size="small" onClick={() => handlePermissionRespond(pendingPermission.reqId, true)}
+              sx={{ fontSize: 11, textTransform: 'none', fontWeight: 600, bgcolor: '#F59E0B', color: '#fff', minWidth: 'auto', px: 1.5, borderRadius: 1.5,
+                '&:hover': { bgcolor: '#D97706' } }} variant="contained">
+              允许
+            </Button>
+          </Box>
+        </Box>
       )}
 
       {/* TopBarChatInput */}

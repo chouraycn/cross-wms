@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -22,6 +22,34 @@ import { API_BASE_URL } from '../../constants/api';
 
 const BASE_URL = API_BASE_URL;
 
+// v1.9.5-fix: JS 驱动的旋转图标，避免 WKWebView 不兼容 CSS @keyframes
+const SpinningIcon: React.FC = () => {
+  const [rotation, setRotation] = useState(0);
+  
+  useEffect(() => {
+    let start: number;
+    const animate = (timestamp: number) => {
+      if (!start) start = timestamp;
+      const progress = timestamp - start;
+      setRotation((progress * 360) / 1000); // 1秒转 360 度
+      requestAnimationFrame(animate);
+    };
+    const frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  
+  return (
+    <LoopIcon
+      sx={{
+        fontSize: 18,
+        color: '#2563EB',
+        transform: `rotate(${rotation}deg)`,
+        transition: 'transform 0.016s linear',
+      }}
+    />
+  );
+};
+
 interface ChainExecutionPanelProps {
   open: boolean;
   executionId: string | null;
@@ -32,15 +60,7 @@ interface ChainExecutionPanelProps {
 
 const STATUS_ICON: Record<StepStatus, React.ReactNode> = {
   pending: <HourglassEmptyIcon sx={{ fontSize: 18, color: '#9CA3AF' }} />,
-  running: (
-    <LoopIcon
-      sx={{
-        fontSize: 18,
-        color: '#2563EB',
-        animation: 'spin 1s linear infinite',
-      }}
-    />
-  ),
+  running: <SpinningIcon />,
   success: <CheckCircleIcon sx={{ fontSize: 18, color: '#16A34A' }} />,
   failed: <ErrorIcon sx={{ fontSize: 18, color: '#DC2626' }} />,
   skipped: <SkipNextIcon sx={{ fontSize: 18, color: '#D1D5DB' }} />,
@@ -198,13 +218,6 @@ const ChainExecutionPanel: React.FC<ChainExecutionPanelProps> = ({
           </Button>
         )}
       </DialogContent>
-      {/* Spin animation for running icon */}
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </Dialog>
   );
 };

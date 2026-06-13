@@ -33,7 +33,7 @@ export interface PresetModel {
 }
 
 /** 按提供商分组的预设模型列表 — 从 JSON 文件动态加载 */
-const PRESET_MODELS: PresetModel[] = presetModelsData as PresetModel[];
+const PRESET_MODELS: PresetModel[] = (presetModelsData as { version: string; models: PresetModel[] }).models;
 
 export { PRESET_MODELS };
 

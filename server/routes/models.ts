@@ -38,6 +38,8 @@ router.get('/', async (_req: Request, res: Response) => {
 });
 
 // PUT /api/models — 全量保存模型配置
+// v1.9.3-fix: 合并前端传来的数据与已有配置，保留 API Key 引用（apiKeyRef/apiKeyRefs）
+// 前端 GET 时拿到的数据不含明文 apiKey（已脱敏），直接覆盖会导致 Key 引用丢失
 router.put('/', async (req: Request, res: Response) => {
   try {
     const { models, defaultModelId } = req.body;
@@ -45,7 +47,26 @@ router.put('/', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'models 必须是数组' });
       return;
     }
-    const config = await saveModelsConfig(models, defaultModelId || models[0]?.id || '');
+
+    // 读取当前已有配置（含 apiKeyRef/apiKeyRefs）
+    const currentConfig = await loadModelsConfig();
+    const currentMap = new Map(currentConfig.models.map(m => [m.id, m]));
+
+    // 合并：前端传来的字段覆盖，但保留已有的 apiKeyRef/apiKeyRefs/keyStrategy
+    const mergedModels = models.map((m: any) => {
+      const existing = currentMap.get(m.id);
+      if (!existing) return m; // 新模型，直接使用
+      return {
+        ...existing,              // 保留已有字段（含 apiKeyRef/apiKeyRefs）
+        ...m,                     // 前端传来的字段覆盖
+        // 确保 Key 引用不被覆盖为 undefined
+        apiKeyRef: m.apiKeyRef ?? (existing as any).apiKeyRef,
+        apiKeyRefs: m.apiKeyRefs ?? (existing as any).apiKeyRefs,
+        keyStrategy: m.keyStrategy ?? (existing as any).keyStrategy,
+      };
+    });
+
+    const config = await saveModelsConfig(mergedModels, defaultModelId || mergedModels[0]?.id || '');
     res.json({ data: config });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
@@ -223,18 +244,56 @@ interface DiscoveredModel {
   contextWindow?: number;
 }
 
-router.post('/discover-local', async (_req: Request, res: Response) => {
+/** v1.9.3: 动态检测宿主机 IP（VM 网关地址） */
+function getHostIp(): string {
+  try {
+    const os = require('os');
+    const interfaces = os.networkInterfaces();
+
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name] || []) {
+        if (!iface.internal && iface.family === 'IPv4') {
+          if (iface.address.startsWith('192.168.64.')) return '192.168.64.1';
+          if (iface.address.startsWith('172.17.')) return '172.17.0.1';
+        }
+      }
+    }
+
+    // 回退：读取默认网关
+    try {
+      const { execSync } = require('child_process');
+      const routeOutput = execSync('ip route | grep default', { encoding: 'utf8', timeout: 2000 });
+      const match = routeOutput.match(/via\s+(\S+)/);
+      if (match) return match[1];
+    } catch {
+      // ignore
+    }
+  } catch {
+    // ignore
+  }
+  return '192.168.64.1';
+}
+
+// GET /api/models/host-ip — 动态检测宿主机 IP（VM 网关地址）
+router.get('/host-ip', (_req: Request, res: Response) => {
+  res.json({ hostIp: getHostIp() });
+});
+
+router.post('/discover-local', async (req: Request, res: Response) => {
   try {
     const results: DiscoveredModel[] = [];
 
+    // v1.9.3: 支持前端传入自定义 Ollama 地址，默认动态检测宿主机 IP
+    const defaultHostIp = getHostIp();
+    const customOllamaUrl = (req.body as any)?.ollamaUrl?.replace(/\/+$/, '') || `http://${defaultHostIp}:11434`;
+
     // 要扫描的本地端点列表
     const localEndpoints = [
-      { name: 'Ollama (默认)', url: 'http://localhost:11434', provider: 'ollama' },
-      { name: 'Ollama (备用)', url: 'http://localhost:11435', provider: 'ollama' },
-      { name: 'vLLM (默认)', url: 'http://localhost:8000', provider: 'custom' },
-      { name: 'vLLM (备用)', url: 'http://localhost:8001', provider: 'custom' },
+      { name: 'Ollama (自定义)', url: customOllamaUrl, provider: 'ollama' },
+      { name: 'Ollama (11435)', url: 'http://localhost:11435', provider: 'ollama' },
+      { name: 'vLLM (8000)', url: 'http://localhost:8000', provider: 'custom' },
+      { name: 'vLLM (8001)', url: 'http://localhost:8001', provider: 'custom' },
       { name: 'LM Studio', url: 'http://localhost:1234', provider: 'custom' },
-      { name: 'text-generation-webui', url: 'http://localhost:5000', provider: 'custom' },
     ];
 
     const discoverPromises = localEndpoints.map(async (ep) => {
@@ -424,6 +483,15 @@ router.post('/test-connection', async (req: Request, res: Response) => {
           }
         } else {
           const txt = await resp.text().catch(() => '');
+          // v1.9.3: 改进 401 错误提示，区分 Key 无效和 Key 丢失
+          if (resp.status === 401) {
+            const isInvalidKey = txt.toLowerCase().includes('invalid') || txt.toLowerCase().includes('authentication');
+            const msg = isInvalidKey
+              ? `API Key 无效或已过期。请检查：\n1. Key 是否正确（从服务商控制台复制）\n2. Key 是否已过期或被撤销\n3. 是否使用了正确的服务商端点\n\n原始错误：${txt.slice(0, 200)}`
+              : `认证失败（401）。请检查 API Key 是否正确配置。\n\n原始错误：${txt.slice(0, 200)}`;
+            res.json({ success: false, message: msg });
+            return;
+          }
           res.json({ success: false, message: `API 错误 ${resp.status}: ${txt.slice(0, 200)}` });
           return;
         }

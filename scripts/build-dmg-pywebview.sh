@@ -17,7 +17,8 @@ if [ -f "$HOME/.zshrc" ]; then
   source "$HOME/.zshrc" 2>/dev/null || true
 fi
 
-PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 FRONTEND_DIST="$PROJECT_DIR/dist"
 BUILD_DIR="$PROJECT_DIR/build-pywebview"
 VERSION_FILE="$PROJECT_DIR/version.txt"
@@ -385,7 +386,7 @@ DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:version_txt "
   --distpath "$BUILD_DIR/dist" \
   --workpath "$BUILD_DIR/work" \
   --specpath "$BUILD_DIR" \
-  pywebview_app.py
+  "$SCRIPT_DIR/pywebview_app.py"
 
 # 复制共享 node_modules 到 .app 中（两个 server 共用一份）
 APP_RESOURCES="$BUILD_DIR/dist/CDF Know Clow.app/Contents/Resources"

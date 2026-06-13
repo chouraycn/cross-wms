@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react';
-import { Box, Typography, IconButton, Tooltip, Chip, useTheme, CircularProgress, keyframes, TextField, ClickAwayListener, Button } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, Chip, useTheme, CircularProgress, TextField, ClickAwayListener, Button } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ImageIcon from '@mui/icons-material/Image';
@@ -108,29 +108,6 @@ function ImageAttachment({ att, isDark, gs }: { att: { id: string; url: string; 
 }
 
 
-// ===================== 入场动画 =====================
-
-const slideInRight = keyframes`
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-`;
-
-const slideInLeft = keyframes`
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-`;
 export interface ChatMessageListProps {
   session: Session;
   copiedId: string | null;
@@ -231,7 +208,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
             width: '100%',
             mx: 'auto',
             ...(isNew ? {
-              animation: `${msg.role === 'user' ? slideInRight : slideInLeft} 0.3s ease-out`,
+              // v1.9.5-fix: 移除入场动画，避免 WKWebView 不兼容 CSS @keyframes
+              // 原来: animation: `${msg.role === 'user' ? slideInRight : slideInLeft} 0.3s ease-out`
             } : {}),
           }}
         >

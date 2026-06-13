@@ -33,4 +33,8 @@ export const PROVIDER_ENDPOINTS: Record<string, string> = {
   siliconflow: 'https://api.siliconflow.cn/v1',
   modelark: 'https://api.modelark.cn/v1',
   ppio: 'https://api.ppinfra.com/v3/openai',
+  // v1.9.3: 新增中国模型提供商
+  yi: 'https://api.lingyiwanwu.com/v1',
+  baichuan: 'https://api.baichuan-ai.com/v1',
+  stepfun: 'https://api.stepfun.com/v1',
 } as const;
