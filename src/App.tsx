@@ -12,13 +12,13 @@ import { getGrayScale } from './constants/theme';
 import { UpdateProvider } from './contexts/UpdateContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import UpdateNotification from './components/UpdateNotification';
+import { WindowDragBar } from './components/Layout/WindowDragBar';
 import { ChatContainer } from './components/CrossWmsChat/ChatContainer';
 import { ChatProvider } from './contexts/ChatContext';
 import { ToolPermissionProvider, useToolPermission } from './contexts/ToolPermissionContext';
 import ToolPermissionDialog from './components/CrossWmsChat/ToolPermissionDialog';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
-import { WindowDragBar } from './components/Layout/WindowDragBar';
 import { automationEngine } from './services/automation';
 
 // 从统一配色文件导入
@@ -535,15 +535,15 @@ const MainLayout: React.FC = () => {
   return (
     <ToastProvider sidebarCollapsed={sidebarCollapsed}>
       <StorageWarningListener />
-      {/* v2.2.1: pywebview 窗口拖拽条 — 仅在 macOS frameless 模式下显示 */}
-      <WindowDragBar />
       {/* v1.9.2: 敏感工具权限确认弹窗 */}
       <ToolPermissionDialog
         open={!!pendingRequest}
         request={pendingRequest}
-        onApprove={(reqId) => submitPermission(reqId, true)}
+        onApprove={(reqId, alwaysAllow) => submitPermission(reqId, true, alwaysAllow)}
         onDeny={(reqId) => submitPermission(reqId, false)}
       />
+      {/* v1.5.64: 窗口拖拽条 — frameless pywebview 窗口移动入口 */}
+      <WindowDragBar height={20} />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Sidebar — 单栏布局 */}
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
@@ -560,6 +560,8 @@ const MainLayout: React.FC = () => {
           minHeight: '100vh',
           paddingTop: 'var(--pw-top, 0px)',
           position: 'relative',
+          // v2.3.0: 内容区排除拖拽，允许文本选择/复制
+          WebkitAppRegion: 'no-drag',
         }}
       >
         {/* 顶部操作按钮区 — 绝对定位在右上角，不占用垂直空间 */}
