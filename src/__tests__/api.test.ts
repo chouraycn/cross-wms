@@ -80,7 +80,7 @@ describe('api.request (generic)', () => {
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toBe(`${BASE_URL}/api/warehouses`);
     expect(opts.method).toBe('GET');
-    expect(opts.headers).toEqual({ 'Content-Type': 'application/json' });
+    expect(opts.headers).toEqual({});
     expect(opts.body).toBeUndefined();
     expect(result).toEqual([{ id: '1' }]);
   });

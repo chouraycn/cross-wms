@@ -32,6 +32,41 @@ export const permissionEmitter = new EventEmitter();
 // key 为 sessionId，value 为该 session 已授权的工具名称集合
 const sessionApprovedToolsCache = new Map<string, Set<string>>();
 
+// v2.2.0: Thinking 结果缓存（LRU，最多 50 条，TTL 10 分钟）
+const thinkingCache = new Map<string, { content: string; thinking: string; timestamp: number }>();
+const THINKING_CACHE_MAX = 50;
+const THINKING_CACHE_TTL = 10 * 60 * 1000; // 10 分钟
+
+function getThinkingCacheKey(model: string, message: string, effort: string): string {
+  // 简单 hash
+  const str = `${model}:${message}:${effort}`;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash.toString(36);
+}
+
+function getThinkingCache(key: string): { content: string; thinking: string } | null {
+  const entry = thinkingCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > THINKING_CACHE_TTL) {
+    thinkingCache.delete(key);
+    return null;
+  }
+  return { content: entry.content, thinking: entry.thinking };
+}
+
+function setThinkingCache(key: string, content: string, thinking: string): void {
+  if (thinkingCache.size >= THINKING_CACHE_MAX) {
+    // 删除最旧的
+    const oldest = [...thinkingCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp)[0];
+    if (oldest) thinkingCache.delete(oldest[0]);
+  }
+  thinkingCache.set(key, { content, thinking, timestamp: Date.now() });
+}
+
 // ===================== File Content Extraction =====================
 
 /**
@@ -497,6 +532,12 @@ router.post('/chat', async (req, res) => {
       let thinkingStartTime: number | null = null;
       let hasThinking = false;
       let thinkingContent = '';
+      // v2.2.0: 全局 keep-alive — 每 10 秒发送一次，防止 WKWebView 因长时间无数据关闭 SSE 连接
+      let keepAliveTimer: NodeJS.Timeout | null = null;
+      // v2.2.0: usage 数据收集
+      let usageData: { promptTokens?: number; completionTokens?: number; thinkingTokens?: number; totalTokens?: number } | undefined;
+      // v2.2.0: toolCalls JSON（缓存命中时为 undefined）
+      let toolCallsJson: string | undefined;
       // v1.9.3: 提前获取模型配置，用于 catch 块中的错误提示
       const modelConfig = modelsConfig.models.find((m) => m.id === effectiveModel);
     try {
@@ -746,6 +787,13 @@ router.post('/chat', async (req, res) => {
       }
       let timeout = setTimeout(() => abortController.abort(), timeoutMs);
 
+      // v2.2.0: 启动全局 keep-alive — 每 10 秒发送一次，防止 WKWebView 因长时间无数据关闭 SSE 连接
+      // 这在 thinking 阶段尤其重要（AI 思考时可能数十秒无输出）
+      keepAliveTimer = setInterval(() => {
+        res.write(`data: ${JSON.stringify({ type: 'keep_alive', timestamp: Date.now(), thinking: hasThinking, elapsed: thinkingStartTime ? Date.now() - thinkingStartTime : 0 })}
+\n\n`);
+      }, 10000);
+
       try {
         // 无 API Key 且非本地模型时使用模拟模式
         if (!effectiveApiKey && !isLocalModel(modelConfig)) {
@@ -765,6 +813,29 @@ router.post('/chat', async (req, res) => {
           if (!sessionApprovedToolsCache.has(sessionId)) {
             sessionApprovedToolsCache.set(sessionId, sessionApprovedSet);
           }
+
+          // v2.2.0: Thinking 缓存检查
+          let cacheHit = false;
+          if (reasoningEffort) {
+            const cacheKey = getThinkingCacheKey(effectiveModel, message, reasoningEffort);
+            const cached = getThinkingCache(cacheKey);
+            if (cached) {
+              console.log('[Chat API] Thinking cache hit for', effectiveModel);
+              cacheHit = true;
+              fullContent = cached.content;
+              thinkingContent = cached.thinking;
+              hasThinking = !!thinkingContent;
+              if (hasThinking) thinkingStartTime = 0;
+              // 发送缓存结果到前端
+              if (thinkingContent) {
+                res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingContent })}\n\n`);
+              }
+              res.write(`data: ${JSON.stringify({ type: 'text', content: fullContent })}\n\n`);
+              res.write(`data: ${JSON.stringify({ type: 'cache_hit', cached: true })}\n\n`);
+            }
+          }
+
+          if (!cacheHit) {
           const toolResult = await executeToolLoop({
             modelConfig: finalModelConfig,
             messages: apiMessages,
@@ -779,7 +850,8 @@ router.post('/chat', async (req, res) => {
                 thinkingStartTime = Date.now();
               }
               thinkingContent += thinkingChunk;
-              res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`);
+              res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}
+\n\n`);
             },
             onToolCall: (toolCall, result) => {
               // 发送 tool_call 事件到前端（用于展示工具调用过程）
@@ -817,18 +889,29 @@ router.post('/chat', async (req, res) => {
               });
             },
             reasoningEffort,
+            // v2.2.0: 透传模型能力标签
+            modelCapabilities: modelConfig.capabilities || [],
             approvedToolsCache: sessionApprovedSet,
           });
           fullContent = toolResult.content;
+          // v2.2.0: 收集 usage 数据（从最后一轮 AI 调用中获取）
+          // 注意：toolLoop 内多轮调用时，这里获取的是最后一轮的 usage
+          // v2.2.0: 写入 thinking 缓存
+          if (reasoningEffort && thinkingContent) {
+            const cacheKey = getThinkingCacheKey(effectiveModel, message, reasoningEffort);
+            setThinkingCache(cacheKey, fullContent, thinkingContent);
+          }
           // v1.9.5-fix: 如果 toolLoop 返回空内容但有思考过程，用思考内容作为兜底
           // 避免 fullContent 为空导致前端显示"内容生成失败"
           if (!fullContent && thinkingContent) {
             const trimmedThinking = thinkingContent.trim();
             if (trimmedThinking) {
-              // 取最后 500 字作为摘要
-              const summary = trimmedThinking.length > 500
-                ? '（思考摘要）\n\n' + trimmedThinking.slice(-500)
-                : trimmedThinking;
+              // v2.2.0: 取最后完整段落而非固定 500 字，确保语义完整
+              const paragraphs = trimmedThinking.split(/\n{2,}|\n(?=[A-Z\u4e00-\u9fff])/);
+              const lastParagraph = paragraphs.filter(p => p.trim().length > 20).pop() || trimmedThinking;
+              const summary = lastParagraph.length > 800
+                ? '（思考摘要）\n\n' + lastParagraph.slice(-800)
+                : '（思考摘要）\n\n' + lastParagraph;
               fullContent = summary;
             }
           }
@@ -837,10 +920,16 @@ router.post('/chat', async (req, res) => {
             console.warn('[Chat API] 模型返回空内容，无文本也无思考，sessionId=%s model=%s', sessionId, effectiveModel);
             fullContent = '（模型未返回内容，可能是请求超时或服务异常，请重试）';
           }
-          var toolCallsJson = toolResult.toolCalls.length > 0 ? JSON.stringify(toolResult.toolCalls) : undefined;
+          toolCallsJson = toolResult.toolCalls.length > 0 ? JSON.stringify(toolResult.toolCalls) : undefined;
+          } // end if (!cacheHit)
         }
       } finally {
         clearTimeout(timeout);
+        // v2.2.0: 清除 keep-alive 定时器
+        if (keepAliveTimer) {
+          clearInterval(keepAliveTimer);
+          keepAliveTimer = null;
+        }
       }
 
       // 保存完整的助手回复（含 toolCalls、thinking）
@@ -958,6 +1047,8 @@ router.post('/chat', async (req, res) => {
         errorCode: null,
         errorMessage: null,
         thinkingDuration,
+        // v2.2.0: 传递 token 使用统计
+        usage: usageData || null,
       })}\n\n`);
       // v1.5.58: 延迟关闭连接，确保 WKWebView 有足够时间解析最后一个 SSE 事件
       await new Promise(r => setTimeout(r, 200));

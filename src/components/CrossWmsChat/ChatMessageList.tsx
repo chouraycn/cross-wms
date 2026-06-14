@@ -704,6 +704,9 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
           isStreaming={msg.isStreaming}
           duration={msg.thinkingDuration}
           reasoningEffort={msg.reasoningEffort}
+          thinkingElapsed={msg.thinkingElapsed}
+          cacheHit={msg.cacheHit}
+          usage={msg.usage}
         />
       )}
       {/* AI 工具调用展示（Tool Calling） */}

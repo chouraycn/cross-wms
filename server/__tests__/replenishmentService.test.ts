@@ -45,7 +45,6 @@ const { mockCreateTransferOrder, mockComputeEMA, mockGenerateTransferNo } = vi.h
 
 vi.mock('../db.js', () => ({
   initDb: () => mockDb,
-  createTransferOrder: mockCreateTransferOrder,
   createSkillAudit: vi.fn(),
   getSessions: vi.fn(),
   searchSessions: vi.fn(),
@@ -53,6 +52,10 @@ vi.mock('../db.js', () => ({
   getSessionMessages: vi.fn(),
   addMessage: vi.fn(),
   deleteSession: vi.fn(),
+}));
+
+vi.mock('../dao/warehouse.js', () => ({
+  createTransferOrder: mockCreateTransferOrder,
 }));
 
 vi.mock('../services/predictionService.js', () => ({

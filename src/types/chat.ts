@@ -68,6 +68,17 @@ export interface Message {
   attachments?: Attachment[];
   /** 推理强度（'high' 深度思考 / 'max' 极致推理） */
   reasoningEffort?: string;
+  /** v2.2.0: 思考已等待时间（毫秒，心跳更新） */
+  thinkingElapsed?: number;
+  /** v2.2.0: 是否命中 thinking 缓存 */
+  cacheHit?: boolean;
+  /** v2.2.0: token 使用统计 */
+  usage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    thinkingTokens?: number;
+    totalTokens?: number;
+  };
   /** v1.9.3: 内联权限请求（敏感工具执行确认） */
   permissionRequest?: {
     reqId: string;

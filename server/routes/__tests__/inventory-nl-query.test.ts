@@ -178,12 +178,15 @@ describe('POST /api/inventory/nl-query', () => {
       message: 'ok',
     });
 
-    await fetch(`${baseUrl}/api/inventory/nl-query`, {
+    const res = await fetch(`${baseUrl}/api/inventory/nl-query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sql: 'SELECT 1' }),
+      body: JSON.stringify({ sql: 'SELECT 2' }),
     });
+    const body = await res.json();
 
+    expect(res.status).toBe(200);
+    expect(body.data?.chartType).toBe('table');
     expect(mockValidateAndExecute).toHaveBeenCalledWith(
       expect.objectContaining({ chartType: 'table' }),
     );
@@ -196,12 +199,13 @@ describe('POST /api/inventory/nl-query', () => {
       message: 'ok',
     });
 
-    await fetch(`${baseUrl}/api/inventory/nl-query`, {
+    const res = await fetch(`${baseUrl}/api/inventory/nl-query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sql: 'SELECT 1', chartType: 'bar' }),
     });
 
+    expect(res.status).toBe(200);
     expect(mockValidateAndExecute).toHaveBeenCalledWith(
       expect.objectContaining({ chartType: 'bar' }),
     );
@@ -210,16 +214,19 @@ describe('POST /api/inventory/nl-query', () => {
   it('should fallback to table for invalid chartType', async () => {
     mockValidateAndExecute.mockReturnValue({
       code: 0,
-      data: { columns: [], rows: [], rowCount: 0, truncated: false, chartType: 'table', sql: 'SELECT 1 LIMIT 200' },
+      data: { columns: [], rows: [], rowCount: 0, truncated: false, chartType: 'table', sql: 'SELECT 3 LIMIT 200' },
       message: 'ok',
     });
 
-    await fetch(`${baseUrl}/api/inventory/nl-query`, {
+    const res = await fetch(`${baseUrl}/api/inventory/nl-query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sql: 'SELECT 1', chartType: 'scatter' }),
+      body: JSON.stringify({ sql: 'SELECT 3', chartType: 'scatter' }),
     });
+    const body = await res.json();
 
+    expect(res.status).toBe(200);
+    expect(body.data?.chartType).toBe('table');
     expect(mockValidateAndExecute).toHaveBeenCalledWith(
       expect.objectContaining({ chartType: 'table' }),
     );
@@ -270,17 +277,19 @@ describe('POST /api/inventory/nl-query', () => {
   it('should pass chartConfig through to the service', async () => {
     mockValidateAndExecute.mockReturnValue({
       code: 0,
-      data: { columns: [], rows: [], rowCount: 0, truncated: false, chartType: 'bar', sql: 'SELECT 1 LIMIT 200' },
+      data: { columns: [], rows: [], rowCount: 0, truncated: false, chartType: 'bar', sql: 'SELECT 4 LIMIT 200' },
       message: 'ok',
     });
 
     const chartConfig = { xKey: 'sku', yKey: 'quantity', xLabel: 'SKU', yLabel: '数量' };
-    await fetch(`${baseUrl}/api/inventory/nl-query`, {
+    const res = await fetch(`${baseUrl}/api/inventory/nl-query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sql: 'SELECT 1', chartType: 'bar', chartConfig }),
+      body: JSON.stringify({ sql: 'SELECT 4', chartType: 'bar', chartConfig }),
     });
+    const body = await res.json();
 
+    expect(res.status).toBe(200);
     expect(mockValidateAndExecute).toHaveBeenCalledWith(
       expect.objectContaining({ chartConfig }),
     );
