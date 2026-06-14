@@ -441,6 +441,10 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         if (data.model) {
                           streamingMsg.model = data.modelName || data.model;
                         }
+                        // v2.2.0: init 事件中的缓存命中
+                        if (data.cacheHit) {
+                          streamingMsg.cacheHit = true;
+                        }
                       }
                       // v1.8.6: 处理 AI 思考过程流式内容
                       if (data.type === 'thinking') {
@@ -450,6 +454,20 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                           streamingMsg.thinkingType = data.thinkingType;
                         }
                         onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
+                      }
+                      // v2.2.0: 思考心跳 — 更新已等待时间
+                      if (data.type === 'thinking_heartbeat') {
+                        streamingMsg.thinkingElapsed = data.elapsed;
+                        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
+                      }
+                      // v2.2.0: 缓存命中
+                      if (data.type === 'cache_hit') {
+                        streamingMsg.cacheHit = true;
+                      }
+                      // v2.2.0: keep-alive — 更新连接状态，防止 WKWebView 超时断开
+                      if (data.type === 'keep_alive') {
+                        streamingMsg.thinkingElapsed = data.elapsed;
+                        // 静默更新，不触发完整 re-render 以避免闪烁
                       }
                       // v1.9.0: 处理工具调用事件（Tool Calling）
                       if (data.type === 'tool_call') {
@@ -496,6 +514,10 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         if (data.thinkingType) {
                           currentThinkingType = data.thinkingType;
                         }
+                        // v2.2.0: 保存 token 使用统计
+                        if (data.usage) {
+                          streamingMsg.usage = data.usage;
+                        }
                         if (errorCode && errorMessage) {
                           result = errorMessage;
                           // 同步更新 fullContent，确保错误消息被正确保存
@@ -517,9 +539,12 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                   const hasThinking = !!(streamingMsg.thinking && streamingMsg.thinking.trim());
                   if (hasThinking) {
                     const trimmed = streamingMsg.thinking!.trim();
-                    result = trimmed.length > 500
-                      ? `(思考摘要)\n\n${trimmed.slice(-500)}`
-                      : trimmed;
+                    // v2.2.0: 取最后完整段落而非固定 500 字
+                    const paragraphs = trimmed.split(/\n{2,}|\n(?=[A-Z\u4e00-\u9fff])/);
+                    const lastParagraph = paragraphs.filter(p => p.trim().length > 20).pop() || trimmed;
+                    result = lastParagraph.length > 800
+                      ? `(思考摘要)\n\n${lastParagraph.slice(-800)}`
+                      : `(思考摘要)\n\n${lastParagraph}`;
                     errorCode = null;
                     errorMessage = null;
                   } else {
@@ -615,9 +640,11 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         const thinking = streamingMsg.thinking;
         if (thinking && thinking.trim()) {
           const trimmed = thinking.trim();
-          fullContent = trimmed.length > 500
-            ? `> ⚡ AI 思考过程如下，未生成独立文本回答：\n\n${trimmed.slice(-500)}`
-            : `> ⚡ AI 思考过程如下，未生成独立文本回答：\n\n${trimmed}`;
+          // v2.2.0: 取最后完整段落
+          const paragraphs = trimmed.split(/\n{2,}|\n(?=[A-Z\u4e00-\u9fff])/);
+          const lastParagraph = paragraphs.filter(p => p.trim().length > 20).pop() || trimmed;
+          const summary = lastParagraph.length > 800 ? lastParagraph.slice(-800) : lastParagraph;
+          fullContent = `> ⚡ AI 思考过程如下，未生成独立文本回答：\n\n${summary}`;
           streamingMsg.content = fullContent;
         }
       }

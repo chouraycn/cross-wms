@@ -18,6 +18,7 @@ import { ToolPermissionProvider, useToolPermission } from './contexts/ToolPermis
 import ToolPermissionDialog from './components/CrossWmsChat/ToolPermissionDialog';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
+import { WindowDragBar } from './components/Layout/WindowDragBar';
 import { automationEngine } from './services/automation';
 
 // 从统一配色文件导入
@@ -534,6 +535,8 @@ const MainLayout: React.FC = () => {
   return (
     <ToastProvider sidebarCollapsed={sidebarCollapsed}>
       <StorageWarningListener />
+      {/* v2.2.1: pywebview 窗口拖拽条 — 仅在 macOS frameless 模式下显示 */}
+      <WindowDragBar />
       {/* v1.9.2: 敏感工具权限确认弹窗 */}
       <ToolPermissionDialog
         open={!!pendingRequest}

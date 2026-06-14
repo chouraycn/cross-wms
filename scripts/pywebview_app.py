@@ -768,6 +768,24 @@ class Api:
             self._window.toggle_fullscreen()
         return json.dumps({'ok': True})
 
+    # v2.2.1: 前端拖拽窗口 — 替代 easy_drag，避免全局拦截鼠标事件导致无法选中文本
+    def window_move(self, delta_x: float, delta_y: float):
+        """相对移动窗口位置（前端拖拽时调用）"""
+        if self._window:
+            try:
+                import webview.platforms.cocoa as cocoa
+                from Cocoa import NSApp
+                win = self._window
+                # 获取当前窗口位置
+                current = win.x, win.y
+                new_x = current[0] + delta_x
+                new_y = current[1] - delta_y  # macOS 坐标系 Y 轴向下
+                win.move(new_x, new_y)
+                return json.dumps({'ok': True, 'x': new_x, 'y': new_y})
+            except Exception as e:
+                return json.dumps({'ok': False, 'error': str(e)})
+        return json.dumps({'ok': False, 'error': 'window not ready'})
+
     # ---- 腾讯文档 OAuth ----
 
     def tdoc_status(self):
@@ -1479,7 +1497,7 @@ def main():
             text_select=True,
             js_api=api,
             frameless=True,  # 无系统标题栏，使用 CSS 避让红黄绿按钮
-            easy_drag=True,  # frameless 模式下启用原生拖拽（Cocoa mouseDown/mouseDragged）
+            easy_drag=False,  # v2.2.1: 关闭全局拖拽，改用前端局部拖拽区域（避免拦截文本选择）
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)

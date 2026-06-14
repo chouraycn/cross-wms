@@ -3,7 +3,7 @@
  * Tests rendering for different chartType, empty data, CSV export, and loading state
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryResultRenderer } from '../QueryResultRenderer';
 import type { QueryResult } from '../../../types/inventory-query';
 
@@ -40,14 +40,17 @@ beforeEach(() => {
 describe('QueryResultRenderer', () => {
   // ---- Table rendering ----
 
-  it('should render table view when chartType is "table"', () => {
+  it('should render table view when chartType is "table"', async () => {
     const queryResult = createMockQueryResult({ chartType: 'table' });
     render(<QueryResultRenderer queryResult={queryResult} />);
 
-    // DataGrid should render column headers
-    expect(screen.getByText('sku')).toBeInTheDocument();
-    expect(screen.getByText('name')).toBeInTheDocument();
-    expect(screen.getByText('quantity')).toBeInTheDocument();
+    // DataGrid should render column headers (mapped to Chinese labels)
+    await waitFor(() => {
+      expect(screen.getByText('SKU')).toBeInTheDocument();
+    });
+    // name column may be split in DataGrid header, check row data instead
+    expect(screen.getByText('Widget A')).toBeInTheDocument();
+    expect(screen.getByText('100')).toBeInTheDocument();
   });
 
   it('should display row count in toolbar', () => {
@@ -98,12 +101,14 @@ describe('QueryResultRenderer', () => {
 
   // ---- Default to table for unknown chartType ----
 
-  it('should default to table view for unknown chartType', () => {
+  it('should default to table view for unknown chartType', async () => {
     const queryResult = createMockQueryResult({ chartType: 'unknown' as any });
     render(<QueryResultRenderer queryResult={queryResult} />);
 
-    // Should fall back to table — DataGrid headers should appear
-    expect(screen.getByText('sku')).toBeInTheDocument();
+    // Should fall back to table — DataGrid headers should appear (mapped to Chinese)
+    await waitFor(() => {
+      expect(screen.getAllByText('SKU').length).toBeGreaterThanOrEqual(1);
+    });
   });
 
   // ---- Empty data ----

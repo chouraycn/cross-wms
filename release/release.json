@@ -1,7 +1,7 @@
 {
-  "version": "1.5.56",
+  "version": "1.5.58",
   "pubDate": "2026-06-14",
-  "notes": "CDF Know Clow v1.5.56 发布\n- 修复已知问题\n- 优化用户体验",
-  "dmgUrl": "https://github.com/chouraycn/cross-wms/releases/download/v1.5.56/CDF-Know-Clow-1.5.56-mac.dmg",
+  "notes": "CDF Know Clow v1.5.58 发布\n- 修复已知问题\n- 优化用户体验",
+  "dmgUrl": "https://github.com/chouraycn/cross-wms/releases/download/v1.5.58/CDF-Know-Clow-1.5.58-mac.dmg",
   "minVersion": "1.0.0"
 }

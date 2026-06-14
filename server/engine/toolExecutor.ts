@@ -25,6 +25,8 @@ export interface ToolExecutorOptions {
   /** v1.9.2: 敏感工具权限请求回调。返回 true 表示允许执行，false 表示拒绝 */
   onPermissionRequest?: (toolCall: ToolCall) => Promise<boolean>;
   reasoningEffort?: string;
+  /** v2.2.0: 模型能力标签，透传到 callAIModelStream */
+  modelCapabilities?: string[];
   /**
    * v1.9.6: 外部传入的已授权工具缓存（Session 级别）。
    * 如果传入，则使用该缓存代替函数内部新建的 Set，实现同一会话内授权一次、全局生效。
@@ -83,6 +85,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     onToolCall,
     onPermissionRequest,
     reasoningEffort,
+    modelCapabilities,
     approvedToolsCache: externalApprovedToolsCache,
   } = options;
 
@@ -112,6 +115,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       tools,
       undefined,
       reasoningEffort,
+      modelCapabilities,
     );
 
     // 如果没有 tool_calls，直接返回结果

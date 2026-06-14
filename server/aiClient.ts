@@ -65,6 +65,13 @@ export interface AIResponse {
   content: string;
   toolCalls?: ToolCall[];
   reasoningContent?: string;
+  // v2.2.0: token 使用统计
+  usage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    thinkingTokens?: number;
+    totalTokens?: number;
+  };
 }
 
 /** AI API 错误分类 */
@@ -150,6 +157,7 @@ export async function callOpenAICompatibleStream(
   tools?: ToolDefinition[],
   onToolCall?: (toolCall: ToolCall) => void,
   reasoningEffort?: string,
+  modelCapabilities?: string[],
 ): Promise<AIResponse> {
   let endpoint = apiEndpoint.replace(/\/+$/, '');
   if (!endpoint.endsWith('/chat/completions')) {
@@ -175,8 +183,8 @@ export async function callOpenAICompatibleStream(
     body.tool_choice = 'auto';
   }
 
-  // reasoning_effort 支持（推理模型）
-  const supportsReasoning = /deepseek|reasoner|o3|o4|r1/i.test(modelId);
+  // v2.2.0: 优先使用 capabilities 判断，正则作为 fallback
+  const supportsReasoning = modelCapabilities?.includes('reasoning') || /deepseek|reasoner|o3|o4|r1/i.test(modelId);
   if (reasoningEffort && supportsReasoning) {
     body.reasoning_effort = reasoningEffort;
   }
@@ -222,6 +230,9 @@ export async function callOpenAICompatibleStream(
   // Tool Calling 状态追踪
   const toolCalls: ToolCall[] = [];
   let currentToolCall: ToolCall | null = null;
+
+  // v2.2.0: token 使用统计
+  let usageData: AIResponse['usage'];
 
   try {
     while (true) {
@@ -299,6 +310,17 @@ export async function callOpenAICompatibleStream(
             onChunk(contentDelta);
           }
 
+          // v2.2.0: 提取 token 使用统计
+          if (parsed.usage) {
+            usageData = {
+              promptTokens: parsed.usage.prompt_tokens,
+              completionTokens: parsed.usage.completion_tokens,
+              totalTokens: parsed.usage.total_tokens,
+              // DeepSeek-R1 返回 reasoning_tokens
+              thinkingTokens: parsed.usage.reasoning_tokens || parsed.usage.completion_tokens_details?.reasoning_tokens,
+            };
+          }
+
           if (parsed.error) {
             throw new AIAPIError(
               `流中收到错误: ${JSON.stringify(parsed.error)}`,
@@ -327,6 +349,7 @@ export async function callOpenAICompatibleStream(
     content: fullContent,
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     reasoningContent: reasoningContent || undefined,
+    usage: usageData,
   };
 }
 
@@ -505,6 +528,7 @@ export async function callAnthropicStream(
   tools?: ToolDefinition[],
   onToolCall?: (toolCall: ToolCall) => void,
   reasoningEffort?: string,
+  modelCapabilities?: string[],
 ): Promise<AIResponse> {
   let endpoint = apiEndpoint.replace(/\/+$/, '');
   if (!endpoint.endsWith('/messages')) {
@@ -531,8 +555,10 @@ export async function callAnthropicStream(
   // Anthropic thinking budget（推理模型）
   // 仅对明确支持 extended thinking 的模型发送 thinking 参数
   // Claude 3.7+, Claude 4+ 支持；旧版 Opus/Sonnet 不支持
-  const supportsThinking = /claude.*(3[-.]7|4|sonnet[-.]4)/i.test(modelId);
+  // v2.2.0: 优先使用 capabilities 判断，正则作为 fallback
+  const supportsThinking = modelCapabilities?.includes('reasoning') || /claude.*(3[-.]7|4|sonnet[-.]4)/i.test(modelId);
   if (reasoningEffort && supportsThinking) {
+    // v2.2.0: budget_tokens 可配置，默认值映射
     const budgetMap: Record<string, number> = { high: 10000, max: 32000 };
     const budgetTokens = budgetMap[reasoningEffort] || 10000;
     body.thinking = { type: 'enabled', budget_tokens: budgetTokens };
@@ -589,6 +615,9 @@ export async function callAnthropicStream(
   const toolCalls: ToolCall[] = [];
   let currentToolCall: ToolCall | null = null;
   let currentToolInput = '';
+
+  // v2.2.0: token 使用统计
+  let usageData: AIResponse['usage'];
 
   try {
     while (true) {
@@ -653,6 +682,14 @@ export async function callAnthropicStream(
               currentToolInput = '';
             }
           }
+          // v2.2.0: 提取 Anthropic token 使用统计（message_delta 事件中包含 usage）
+          if (parsed.type === 'message_delta' && parsed.usage) {
+            usageData = {
+              promptTokens: parsed.usage.input_tokens,
+              completionTokens: parsed.usage.output_tokens,
+              totalTokens: (parsed.usage.input_tokens || 0) + (parsed.usage.output_tokens || 0),
+            };
+          }
           if (parsed.type === 'error') {
             throw new AIAPIError(
               `Anthropic 流错误: ${parsed.error?.message || JSON.stringify(parsed.error)}`,
@@ -672,6 +709,7 @@ export async function callAnthropicStream(
     content: fullContent,
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     reasoningContent: reasoningContent || undefined,
+    usage: usageData,
   };
 }
 
@@ -692,6 +730,7 @@ export async function callAIModelStream(
   tools?: ToolDefinition[],
   onToolCall?: (toolCall: ToolCall) => void,
   reasoningEffort?: string,
+  modelCapabilities?: string[],
 ): Promise<AIResponse> {
   const apiKey = modelConfig.apiKey;
   const apiEndpoint = modelConfig.apiEndpoint || '';
@@ -699,6 +738,9 @@ export async function callAIModelStream(
   const temperature = modelConfig.temperature ?? 0.7;
   const maxTokens = modelConfig.maxTokens || 4096;
   const provider = modelConfig.provider;
+
+  // v2.2.0: 优先从 modelConfig 获取 capabilities，其次使用传入参数
+  const capabilities = (modelConfig as any).capabilities || modelCapabilities || [];
 
   if (!apiKey && !isLocalModel(modelConfig)) {
     throw new AIAPIError(
@@ -726,6 +768,7 @@ export async function callAIModelStream(
           messages as Array<{ role: string; content: string | OpenAIVisionContent[]; tool_calls?: ToolCall[]; tool_call_id?: string }>,
           temperature, maxTokens, onChunk, signal,
           onThinking, tools, onToolCall, reasoningEffort,
+          capabilities,
         );
       }
       return await callOpenAICompatibleStream(
@@ -733,6 +776,7 @@ export async function callAIModelStream(
         messages as Array<{ role: string; content: string | OpenAIVisionContent[] }>,
         temperature, maxTokens, onChunk, signal,
         onThinking, tools, onToolCall, reasoningEffort,
+        capabilities,
       );
     } catch (error) {
       lastError = error;
