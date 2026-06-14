@@ -360,6 +360,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             let errorCode: string | null = null;
             let errorMessage: string | null = null;
             let thinkingDuration: number | undefined;
+            let doneReceived = false; // v1.5.57: 标记是否收到后端 done 事件
             let lastIndex = 0;
             let settled = false; // 防止 resolve/reject 多次调用
 
@@ -488,6 +489,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         });
                       }
                       if (data.type === 'done') {
+                        doneReceived = true; // v1.5.57: 标记已收到 done 事件
                         errorCode = data.errorCode ?? null;
                         errorMessage = data.errorMessage ?? null;
                         thinkingDuration = data.thinkingDuration;
@@ -508,6 +510,14 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               }
               if (xhr.readyState === 4 && !settled) {
                 settled = true;
+                // v1.5.57: 流未正常结束保护 — 没收到 done 事件且内容为空，视为连接中断
+                if (!doneReceived && !result.trim()) {
+                  errorCode = 'STREAM_INCOMPLETE';
+                  errorMessage = '连接已断开，内容生成失败，请重试';
+                  result = errorMessage;
+                  streamingMsg.content = errorMessage;
+                  streamingMsg.metadata = { error: '连接已断开', errorCode: 'STREAM_INCOMPLETE' };
+                }
                 // v1.9.3-fix: 清除渲染计时器，防止 flushRender 在流结束后继续运行并覆盖完整内容
                 if (renderTimer) {
                   clearTimeout(renderTimer);

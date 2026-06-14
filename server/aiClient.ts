@@ -29,6 +29,8 @@ export interface ModelCallConfig {
   topP?: number;
   maxTokens?: number;
   contextWindow?: number;
+  /** 模型能力标签（如 ['reasoning', 'multimodal']） */
+  capabilities?: string[];
 }
 
 /** Tool 定义（OpenAI 格式） */
@@ -174,16 +176,9 @@ export async function callOpenAICompatibleStream(
   }
 
   // reasoning_effort 支持（推理模型）
-  // 仅对明确支持 reasoning 的模型发送该参数，避免 Ollama 等本地模型报错
-  const supportsReasoning = modelId.toLowerCase().includes('deepseek') || modelId.toLowerCase().includes('reasoner');
+  const supportsReasoning = /deepseek|reasoner|o3|o4|r1/i.test(modelId);
   if (reasoningEffort && supportsReasoning) {
     body.reasoning_effort = reasoningEffort;
-    // DeepSeek V4 模型：额外启用 thinking 模式
-    if (modelId.toLowerCase().includes('deepseek')) {
-      body.thinking = { type: 'enabled' };
-      // thinking 模式不支持 temperature，移除
-      delete body.temperature;
-    }
   }
 
   let response: Response;
@@ -534,12 +529,17 @@ export async function callAnthropicStream(
   }
 
   // Anthropic thinking budget（推理模型）
-  if (reasoningEffort) {
+  // 仅对明确支持 extended thinking 的模型发送 thinking 参数
+  // Claude 3.7+, Claude 4+ 支持；旧版 Opus/Sonnet 不支持
+  const supportsThinking = /claude.*(3[-.]7|4|sonnet[-.]4)/i.test(modelId);
+  if (reasoningEffort && supportsThinking) {
     const budgetMap: Record<string, number> = { high: 10000, max: 32000 };
     const budgetTokens = budgetMap[reasoningEffort] || 10000;
     body.thinking = { type: 'enabled', budget_tokens: budgetTokens };
     // Anthropic thinking 模式不支持 temperature，移除
     delete body.temperature;
+  } else if (reasoningEffort && !supportsThinking) {
+    console.warn(`[AIClient] 模型 ${modelId} 可能不支持 extended thinking，跳过 thinking 参数`);
   }
 
   let response: Response;
