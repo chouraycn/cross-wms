@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, IconButton, Collapse, useTheme, Chip } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
@@ -53,6 +53,15 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
     return () => clearInterval(interval);
   }, [isStreaming]);
 
+  // v1.9.6: 流式输出开始时自动展开思考内容，结束后不自动折叠（用户可手动控制）
+  const prevIsStreamingRef = useRef(false);
+  useEffect(() => {
+    if (isStreaming && !prevIsStreamingRef.current) {
+      setExpanded(true);
+    }
+    prevIsStreamingRef.current = !!isStreaming;
+  }, [isStreaming]);
+
   return (
     <Box
       sx={{
@@ -63,20 +72,18 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
         overflow: 'hidden',
       }}
     >
-      {/* 折叠状态的头部栏（始终可见） */}
+      {/* 折叠状态的头部栏（始终可见），流式/非流式均可手动切换展开/折叠 */}
       <Box
-        onClick={() => !isStreaming && setExpanded((prev) => !prev)}
+        onClick={() => setExpanded((prev) => !prev)}
         sx={{
           display: 'flex',
           alignItems: 'center',
           gap: 1,
           px: 1.5,
           py: 0.75,
-          cursor: isStreaming ? 'default' : 'pointer',
+          cursor: 'pointer',
           bgcolor: isDark ? '#1F2937' : '#F3F4F6',
-          '&:hover': isStreaming
-            ? {}
-            : { bgcolor: isDark ? '#374151' : '#E5E7EB' },
+          '&:hover': { bgcolor: isDark ? '#374151' : '#E5E7EB' },
           transition: 'background-color 0.2s ease',
           userSelect: 'none',
         }}
