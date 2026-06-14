@@ -9,7 +9,7 @@ import { EventEmitter } from 'events';
 declare const require: any;
 import { callAIModelStream, callAIModel, AIAPIError } from '../aiClient.js';
 import type { MessageContent } from '../aiClient.js';
-import { executeToolLoop } from '../engine/toolExecutor.js';
+import { executeToolLoop, getToolRiskLevel } from '../engine/toolExecutor.js';
 import { loadModelsConfig, ModelsFile, isLocalModel, syncModelsFromApi } from '../modelsStore.js';
 import { selectKey, reportKeyResult } from '../keyRotator.js';
 import {
@@ -287,7 +287,7 @@ export function autoSelectModel(message: string, modelsConfig: ModelsFile, hasIm
         'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4-vision',
         'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'claude-3-5-sonnet',
         'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision',
-        'deepseek-v4-pro', 'qwen-vl', 'qwen-vl-max',
+        'qwen-vl', 'qwen-vl-max',
       ].some(id => m.id.toLowerCase().includes(id.toLowerCase()));
       return isMultimodal || isKnownVisionModel;
     });
@@ -862,6 +862,16 @@ router.post('/chat', async (req, res) => {
                 toolArgs: toolCall.function.arguments,
                 toolResult: result,
               })}\n\n`);
+              // v2.2.1: 发送工具执行审计事件
+              const isDenied = result.includes('用户拒绝了工具');
+              const isError = !isDenied && result.includes('"error"');
+              const auditResult = isDenied ? 'denied' : isError ? 'error' : 'success';
+              res.write(`data: ${JSON.stringify({
+                type: 'tool_audit',
+                toolName: toolCall.function.name,
+                result: auditResult,
+                timestamp: Date.now(),
+              })}\n\n`);
             },
             // v1.9.3: 敏感工具权限请求 — 通过 EventEmitter 等待前端响应
             // 无超时限制，用户可以在任何时候响应
@@ -874,6 +884,7 @@ router.post('/chat', async (req, res) => {
                   reqId,
                   toolName: toolCall.function.name,
                   toolArgs: toolCall.function.arguments,
+                  riskLevel: getToolRiskLevel(toolCall.function.name),
                 })}\n\n`);
                 // v1.9.3: 权限等待期间清除超时，无时间限制
                 clearTimeout(timeout);
@@ -883,6 +894,13 @@ router.post('/chat', async (req, res) => {
                   permissionEmitter.removeListener(reqId, handler);
                   // 用户响应后恢复原始超时
                   timeout = setTimeout(() => abortController.abort(), timeoutMs);
+                  // v2.2.1: 发送权限决策审计事件
+                  res.write(`data: ${JSON.stringify({
+                    type: 'tool_audit',
+                    toolName: toolCall.function.name,
+                    result: approved ? 'approved' : 'denied',
+                    timestamp: Date.now(),
+                  })}\n\n`);
                   resolve(approved);
                 };
                 permissionEmitter.once(reqId, handler);
