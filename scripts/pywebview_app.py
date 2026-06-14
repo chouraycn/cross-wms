@@ -1356,8 +1356,13 @@ def start_http_server(dist_dir: str, port: int = 9988):
                         if key.lower() not in ('transfer-encoding', 'connection'):
                             self.send_header(key, val)
                     self.end_headers()
-                    # 流式转发响应体
-                    shutil.copyfileobj(resp, self.wfile)
+                    # 流式转发响应体（逐块读取并立即 flush，避免 SSE 被缓冲区卡住）
+                    while True:
+                        chunk = resp.read(1024)
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+                        self.wfile.flush()
             except urllib.error.HTTPError as e:
                 self.send_response(e.code)
                 self.send_header('Content-Type', 'application/json')
@@ -1497,7 +1502,7 @@ def main():
             text_select=True,
             js_api=api,
             frameless=True,  # 无系统标题栏，使用 CSS 避让红黄绿按钮
-            easy_drag=False,  # v2.2.1: 关闭全局拖拽，改用前端局部拖拽区域（避免拦截文本选择）
+            easy_drag=False,  # v2.3.1: 关闭 easy_drag，使用 CSS WebkitAppRegion:drag 实现窗口拖拽（避免拦截鼠标事件导致文本无法选中）
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)

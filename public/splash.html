@@ -29,7 +29,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: splashFadeOut 0.8s ease-in 5.5s forwards;
+            animation: splashFadeOut 0.5s ease-in 2.8s forwards;
         }
 
         /* SVG 容器 — 缩放弹入 */
@@ -37,7 +37,7 @@
             width: 96px;
             height: 96px;
             transform: scale(0);
-            animation: logoScaleIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s forwards;
+            animation: logoScaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards;
         }
 
         /* 主路径描边动画 */
@@ -49,14 +49,14 @@
             stroke-linejoin: round;
             stroke-dasharray: 600;
             stroke-dashoffset: 600;
-            animation: drawPath 1.8s cubic-bezier(0.65, 0, 0.35, 1) 0.5s forwards;
+            animation: drawPath 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.4s forwards;
         }
 
         /* 填充渐入 */
         .logo-svg .path-fill {
             fill: #1a1a1a;
             opacity: 0;
-            animation: fillIn 0.6s ease-out 2.0s forwards;
+            animation: fillIn 0.4s ease-out 1.4s forwards;
         }
 
         /* 光晕效果 */
@@ -66,7 +66,7 @@
             height: 112px;
             border-radius: 50%;
             border: 1px solid rgba(0, 0, 0, 0);
-            animation: glowPulse 2s ease-in-out 2.5s forwards;
+            animation: glowPulse 1.5s ease-in-out 1.8s forwards;
         }
 
         /* 品牌文字 */
@@ -79,7 +79,7 @@
             letter-spacing: 1.5px;
             white-space: nowrap;
             opacity: 0;
-            animation: textFadeIn 1s ease-out 2.8s forwards;
+            animation: textFadeIn 0.7s ease-out 2.0s forwards;
         }
 
         /* 背景微光 */
@@ -91,7 +91,7 @@
             height: 100%;
             background: radial-gradient(circle at center, rgba(0,0,0,0.03) 0%, transparent 70%);
             opacity: 0;
-            animation: bgGlow 3s ease-in-out 1s forwards;
+            animation: bgGlow 2s ease-in-out 0.8s forwards;
         }
 
         /* ===== Keyframes ===== */
@@ -201,28 +201,39 @@
     <script>
         // ========== 跳转逻辑（最先注册，确保不被其他代码阻塞）==========
         // 动画完成后自动跳转到主页面
-        // splashFadeOut 在 5.5s 开始持续 0.8s → 6.3s 后执行跳转
-        var SPLASH_DURATION = 6300; // 6.3 秒
+        // v2.3.1: 总时长从 6.3s 降到 3.3s，动画更快，启动更灵敏
+        var SPLASH_DURATION = 3500; // 3.5 秒（fadeOut 0.5s 在 3.0s 开始，3.5s 完成）
 
-        // 使用相对路径，避免 pywebview WKWebView 中绝对路径解析问题
         var MAIN_PAGE = './index.html';
+        var _navigated = false; // 防止重复跳转
 
         function navigateToMain() {
+            if (_navigated) return;
+            _navigated = true;
             try {
-                // 方法 1：replace 避免浏览器历史残留 splash 页
                 window.location.replace(MAIN_PAGE);
             } catch(e) {
-                // WKWebView 中 replace 可能被限制，fallback 到 href
                 try {
                     window.location.href = MAIN_PAGE;
                 } catch(e2) {
-                    // 最后兜底
                     window.location = MAIN_PAGE;
                 }
             }
         }
 
+        // 方法 1: setTimeout 兜底（主路径）
         setTimeout(navigateToMain, SPLASH_DURATION);
+
+        // 方法 2: animationend 事件 — splashFadeOut 动画结束时立即跳转（更精确）
+        var splashContainer = document.getElementById('splashContainer');
+        if (splashContainer) {
+            splashContainer.addEventListener('animationend', function(e) {
+                // 只响应 splashFadeOut 动画
+                if (e.animationName === 'splashFadeOut') {
+                    navigateToMain();
+                }
+            });
+        }
 
         // ========== 预加载主页面资源 ==========
         // 在 splash 动画进行的同时，后台预加载 index.html 及其依赖
@@ -240,11 +251,15 @@
                 document.head.appendChild(link);
             }
 
-            // 直接 fetch index.html 解析资源列表（使用相对路径）
+            // 直接 fetch index.html 解析资源列表（加超时，避免 Python HTTP 服务未就绪时永久挂起）
+            var FETCH_TIMEOUT = 5000; // 5 秒
+            var fetchController = new AbortController();
+            var fetchTimer = setTimeout(function() { fetchController.abort(); }, FETCH_TIMEOUT);
             try {
-                fetch(MAIN_PAGE)
-                    .then(function(resp) { return resp.text(); })
+                fetch(MAIN_PAGE, { signal: fetchController.signal })
+                    .then(function(resp) { clearTimeout(fetchTimer); return resp.text(); })
                     .then(function(html) {
+                        clearTimeout(fetchTimer);
                         var parser = new DOMParser();
                         var doc = parser.parseFromString(html, 'text/html');
 

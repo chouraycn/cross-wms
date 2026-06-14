@@ -20,6 +20,25 @@ import { API_BASE_URL } from '../constants/api';
 
 const BASE_URL = API_BASE_URL;
 
+// v2.3.1: 所有 fetch 统一加 30s 超时，避免后端挂掉时页面永久转圈
+const FETCH_TIMEOUT = 30000;
+
+async function fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+    return res;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('请求超时（30秒），请检查后端是否正常运行');
+    }
+    throw err;
+  }
+}
+
 // ===================== Generic Request =====================
 
 export async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -31,7 +50,7 @@ export async function request<T>(method: string, path: string, body?: unknown): 
   if (body !== undefined) {
     opts.body = JSON.stringify(body);
   }
-  const res = await fetch(`${BASE_URL}${path}`, opts);
+  const res = await fetchWithTimeout(`${BASE_URL}${path}`, opts);
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error || `API error ${res.status}`);
@@ -256,7 +275,7 @@ export interface OutboundResponse {
 
 /** 入库操作：调用 POST /api/inbound */
 export async function createInbound(data: InboundPayload): Promise<InboundResponse> {
-  const res = await fetch(`${BASE_URL}/api/inbound`, {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/inbound`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -268,7 +287,7 @@ export async function createInbound(data: InboundPayload): Promise<InboundRespon
 
 /** 出库操作：调用 POST /api/outbound */
 export async function createOutbound(data: OutboundPayload): Promise<OutboundResponse> {
-  const res = await fetch(`${BASE_URL}/api/outbound`, {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/outbound`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -296,7 +315,7 @@ export async function getInventoryTransactions(params?: {
   }
   const qs = query.toString();
   const path = `/api/inventory-transactions${qs ? `?${qs}` : ''}`;
-  const res = await fetch(`${BASE_URL}${path}`);
+  const res = await fetchWithTimeout(`${BASE_URL}${path}`);
   const json = await res.json();
   if (json.code !== 0) throw new Error(json.message || '查询变动历史失败');
   return json.data as { items: InventoryTransaction[]; total: number; page: number; pageSize: number };
@@ -414,7 +433,7 @@ export async function exportSkillAsZip(skillId: string, skillName: string): Prom
   // 优先使用 pywebview 原生保存对话框（DMG/桌面应用环境）
   if (typeof window !== 'undefined' && (window as any).pywebview?.api?.save_file) {
     try {
-      const blob = await fetch(url).then(r => r.blob());
+      const blob = await fetchWithTimeout(url).then(r => r.blob());
       const reader = new FileReader();
       return new Promise((resolve, reject) => {
         reader.onload = async () => {
@@ -437,7 +456,7 @@ export async function exportSkillAsZip(skillId: string, skillName: string): Prom
   }
 
   // 浏览器环境：直接触发下载
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
   if (!response.ok) {
     const err = await response.json().catch(() => ({ error: response.statusText }));
     throw new Error(err.error || `导出失败 (${response.status})`);
@@ -638,7 +657,7 @@ export async function uploadFile(file: File): Promise<UploadResult> {
   // 开发模式下 BASE_URL 为空，使用相对路径通过 Vite 代理转发
   // Electron 打包后 BASE_URL 被设置为 http://localhost:3001，直接请求后端
   const uploadUrl = BASE_URL ? `${BASE_URL}/api/upload` : '/api/upload';
-  const res = await fetch(uploadUrl, {
+  const res = await fetchWithTimeout(uploadUrl, {
     method: 'POST',
     body: formData,
   });
