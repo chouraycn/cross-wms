@@ -18,6 +18,7 @@ import signal
 import tempfile
 import shutil
 import http.server
+import socket
 import socketserver
 import threading
 import traceback
@@ -1347,6 +1348,14 @@ def start_http_server(dist_dir: str, port: int = 9988):
                 # 使用更长的超时（10 分钟），避免深度思考时连接被 Python 代理中断
                 if self.path.startswith('/api/chat'):
                     proxy_timeout = 600
+                    # v1.5.60: 禁用 TCP Nagle — 深度思考产生的 SSE 事件（thinking/keep-alive）
+                    # 仅几十字节，Nagle 算法会将小包延迟 200ms，多个包连续延迟导致
+                    # WKWebView 长时间收不到数据而超时断开。设置 TCP_NODELAY 确保
+                    # 每个 SSE 事件立即发送到 WKWebView。
+                    try:
+                        self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                    except Exception:
+                        pass  # 非 TCP socket（如 Unix domain），忽略
                 else:
                     proxy_timeout = 30
                 with urllib.request.urlopen(req, timeout=proxy_timeout) as resp:
