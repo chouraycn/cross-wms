@@ -771,9 +771,24 @@ export async function callAIModelStream(
           capabilities,
         );
       }
+      // v1.5.62-fix: DeepSeek API 不支持 image_url 格式，自动剥离多模态内容。
+      // 即使 modelsStore 的 capabilities 配置有误，此兜底过滤也能防止 API 400 错误。
+      const effectiveMessages = provider === 'deepseek'
+        ? (messages as Array<{ role: string; content: string | OpenAIVisionContent[] }>).map(m => {
+            if (Array.isArray(m.content)) {
+              const textParts = m.content
+                .filter((p: OpenAIVisionContent) => p.type === 'text')
+                .map((p: OpenAIVisionContent) => p.text || '')
+                .join('\n');
+              return { ...m, content: textParts || '（图片内容已移除，当前模型不支持图片理解）' };
+            }
+            return m;
+          })
+        : messages;
+
       return await callOpenAICompatibleStream(
         apiEndpoint, apiKey, modelId,
-        messages as Array<{ role: string; content: string | OpenAIVisionContent[] }>,
+        effectiveMessages as Array<{ role: string; content: string | OpenAIVisionContent[] }>,
         temperature, maxTokens, onChunk, signal,
         onThinking, tools, onToolCall, reasoningEffort,
         capabilities,

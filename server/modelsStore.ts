@@ -96,10 +96,10 @@ const BUILTIN_MODELS: ModelConfig[] = [
     apiEndpoint: 'https://api.deepseek.com/v1',
     enabled: false,
     isDefault: false,
-    description: 'DeepSeek V4 Pro，支持 1M 上下文、工具调用、多模态、推理',
+    description: 'DeepSeek V4 Pro，支持 1M 上下文、工具调用、推理（API 不支持 image_url 格式）',
     contextWindow: 1_000_000,
     maxTokens: 384_000,
-    capabilities: ['multimodal', 'reasoning', 'general'],
+    capabilities: ['reasoning', 'general'],
   },
   {
     id: 'deepseek-v4-flash',
@@ -373,10 +373,10 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
       const known: Record<string, Partial<ModelConfig>> = {
         'deepseek-v4-pro': {
           name: 'DeepSeek V4 Pro',
-          capabilities: ['multimodal', 'reasoning', 'general'],
+          capabilities: ['reasoning', 'general'],
           contextWindow: 1_000_000,
           maxTokens: 384_000,
-          description: 'DeepSeek V4 Pro，支持 1M 上下文、工具调用、多模态、推理',
+          description: 'DeepSeek V4 Pro，1M 上下文、工具调用、推理（API 不支持 image_url 格式）',
         },
         'deepseek-v4-flash': {
           name: 'DeepSeek V4 Flash',
@@ -1110,7 +1110,7 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
         },
         'deepseek/deepseek-v4-pro': {
           name: 'DeepSeek V4 Pro (OpenRouter)',
-          capabilities: ['multimodal', 'reasoning', 'general'],
+          capabilities: ['reasoning', 'general'],
           contextWindow: 1_000_000,
           maxTokens: 384_000,
           description: '通过 OpenRouter 路由的 DeepSeek V4 Pro',
