@@ -25,6 +25,12 @@ export interface ToolExecutorOptions {
   /** v1.9.2: 敏感工具权限请求回调。返回 true 表示允许执行，false 表示拒绝 */
   onPermissionRequest?: (toolCall: ToolCall) => Promise<boolean>;
   reasoningEffort?: string;
+  /**
+   * v1.9.6: 外部传入的已授权工具缓存（Session 级别）。
+   * 如果传入，则使用该缓存代替函数内部新建的 Set，实现同一会话内授权一次、全局生效。
+   * 如果不传，则回退到函数内部的局部 Set（保持向后兼容）。
+   */
+  approvedToolsCache?: Set<string>;
 }
 
 /** 
@@ -77,6 +83,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     onToolCall,
     onPermissionRequest,
     reasoningEffort,
+    approvedToolsCache: externalApprovedToolsCache,
   } = options;
 
   const tools = getToolDefinitions();
@@ -84,8 +91,8 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
   let finalContent = '';
   const executedToolCalls: Array<{ name: string; arguments: string; result: string }> = [];
 
-  // v1.9.4: 会话级工具批准缓存 — 同一轮 Tool Loop 中已批准的工具不再重复询问
-  const approvedToolsCache = new Set<string>();
+  // v1.9.6: 优先使用外部传入的 Session 级缓存，否则使用函数内部的局部缓存（向后兼容）
+  const approvedToolsCache = externalApprovedToolsCache ?? new Set<string>();
 
   for (let turn = 0; turn < maxToolTurns; turn++) {
     if (signal?.aborted) {
@@ -132,19 +139,19 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     for (const toolCall of response.toolCalls) {
       const toolName = toolCall.function.name;
 
-      // v1.9.4: 敏感工具权限检查 — 会话缓存 + 用户确认
+      // v1.9.6: 敏感工具权限检查 — Session 级缓存 + 用户确认
       if (isSensitiveTool(toolName)) {
         let hasPermission: boolean;
 
         if (approvedToolsCache.has(toolName)) {
-          // 同一轮会话中已批准过该工具，跳过二次确认
+          // 同一 Session 中已批准过该工具，跳过二次确认
           hasPermission = true;
         } else {
           hasPermission = onPermissionRequest
             ? await onPermissionRequest(toolCall)
             : false;
           if (hasPermission) {
-            // 批准后加入缓存，本次会话后续调用不再询问
+            // 批准后加入缓存，本 Session 后续调用不再询问
             approvedToolsCache.add(toolName);
           }
         }

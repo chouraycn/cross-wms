@@ -28,6 +28,10 @@ const MEMORY_MD_PATH = path.join(CDF_KNOW_CLOW_DIR, 'MEMORY.md');
 // v1.9.2: 工具权限请求全局 EventEmitter
 export const permissionEmitter = new EventEmitter();
 
+// v1.9.6: Session 级工具授权缓存 — 同一会话内，工具授权一次后不再重复授权
+// key 为 sessionId，value 为该 session 已授权的工具名称集合
+const sessionApprovedToolsCache = new Map<string, Set<string>>();
+
 // ===================== File Content Extraction =====================
 
 /**
@@ -756,6 +760,11 @@ router.post('/chat', async (req, res) => {
         } else {
           // v1.9.0: 使用 Tool Calling 循环
           // v1.9.2: 敏感工具权限请求 — 发送事件到前端并等待响应
+          // v1.9.6: 传入 Session 级工具授权缓存，同一会话内授权一次后不再重复授权
+          const sessionApprovedSet = sessionApprovedToolsCache.get(sessionId) ?? new Set<string>();
+          if (!sessionApprovedToolsCache.has(sessionId)) {
+            sessionApprovedToolsCache.set(sessionId, sessionApprovedSet);
+          }
           const toolResult = await executeToolLoop({
             modelConfig: finalModelConfig,
             messages: apiMessages,
@@ -808,6 +817,7 @@ router.post('/chat', async (req, res) => {
               });
             },
             reasoningEffort,
+            approvedToolsCache: sessionApprovedSet,
           });
           fullContent = toolResult.content;
           // v1.9.5-fix: 如果 toolLoop 返回空内容但有思考过程，用思考内容作为兜底
@@ -931,6 +941,8 @@ router.post('/chat', async (req, res) => {
           errorMessage: errorMsg,
           thinkingDuration: 0,
         })}\n\n`);
+        // v1.5.58: 延迟关闭连接，确保 WKWebView 有足够时间解析最后一个 SSE 事件
+        await new Promise(r => setTimeout(r, 200));
         res.end();
       } catch {
         // 响应流可能已关闭，忽略
@@ -947,6 +959,8 @@ router.post('/chat', async (req, res) => {
         errorMessage: null,
         thinkingDuration,
       })}\n\n`);
+      // v1.5.58: 延迟关闭连接，确保 WKWebView 有足够时间解析最后一个 SSE 事件
+      await new Promise(r => setTimeout(r, 200));
       res.end();
     } catch {
       // 响应流可能已关闭，忽略

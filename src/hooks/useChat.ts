@@ -512,11 +512,23 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                 settled = true;
                 // v1.5.57: 流未正常结束保护 — 没收到 done 事件且内容为空，视为连接中断
                 if (!doneReceived && !result.trim()) {
-                  errorCode = 'STREAM_INCOMPLETE';
-                  errorMessage = '连接已断开，内容生成失败，请重试';
-                  result = errorMessage;
-                  streamingMsg.content = errorMessage;
-                  streamingMsg.metadata = { error: '连接已断开', errorCode: 'STREAM_INCOMPLETE' };
+                  // v1.5.58-fix: 即使 done 事件丢失，如果有思考内容，也用思考内容兜底
+                  // 不视为失败（WKWebView 中 done 事件可能因时序问题丢失）
+                  const hasThinking = !!(streamingMsg.thinking && streamingMsg.thinking.trim());
+                  if (hasThinking) {
+                    const trimmed = streamingMsg.thinking!.trim();
+                    result = trimmed.length > 500
+                      ? `(思考摘要)\n\n${trimmed.slice(-500)}`
+                      : trimmed;
+                    errorCode = null;
+                    errorMessage = null;
+                  } else {
+                    errorCode = 'STREAM_INCOMPLETE';
+                    errorMessage = '连接已断开，内容生成失败，请重试';
+                    result = errorMessage;
+                    streamingMsg.content = errorMessage;
+                    streamingMsg.metadata = { error: '连接已断开', errorCode: 'STREAM_INCOMPLETE' };
+                  }
                 }
                 // v1.9.3-fix: 清除渲染计时器，防止 flushRender 在流结束后继续运行并覆盖完整内容
                 if (renderTimer) {
