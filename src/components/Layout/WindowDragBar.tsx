@@ -1,13 +1,15 @@
 /**
- * v2.3.0: macOS pywebview 窗口拖拽条（CSS 原生方案）
+ * v1.5.64: macOS pywebview 窗口拖拽条（pointer events + JS API）
  *
- * 背景：JS mousemove 方案在 WKWebView 中不稳定，导致拖拽失效。
- * 解决方案：使用 macOS WKWebView 原生支持的 -webkit-app-region CSS 属性，
- * 将拖拽条标记为可拖拽区域，完全由系统处理窗口移动，无需 JS 事件。
+ * 注意：-webkit-app-region: drag 是 Electron/Chromium 专有属性，pywebview 的
+ * WKWebView 不支持。必须通过 JS pointer events + pywebview.api.window_move() 实现。
  *
- * 文本可选中：内容区不设 user-select: none，拖拽条单独设 WebkitAppRegion: 'drag'。
+ * 方案：pointerdown 时记录初始位置 + setPointerCapture 捕获所有后续移动事件，
+ * pointermove 时计算增量并调用 window_move(dx, dy)。
+ *
+ * 文本选中：仅拖拽条禁用 user-select，内容区不受影响。
  */
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import { Box } from '@mui/material';
 import { isPyWebView } from '../../services/tencentDocsApi';
 
@@ -15,11 +17,72 @@ interface WindowDragBarProps {
   height?: number;
 }
 
+const DRAG_THRESHOLD = 3; // 移动超过 3px 才触发拖拽（防止误触）
+
 export const WindowDragBar: React.FC<WindowDragBarProps> = ({ height = 20 }) => {
+  const isDragging = useRef(false);
+  const lastX = useRef(0);
+  const lastY = useRef(0);
+  const movedTotal = useRef(false);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // 只响应鼠标左键
+    if (e.button !== 0) return;
+
+    const el = e.currentTarget as HTMLElement;
+    // 关键：setPointerCapture 确保即使鼠标移出拖拽条，也能收到后续事件
+    el.setPointerCapture(e.pointerId);
+
+    isDragging.current = true;
+    movedTotal.current = false;
+    lastX.current = e.clientX;
+    lastY.current = e.clientY;
+  }, []);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging.current) return;
+
+    const dx = e.clientX - lastX.current;
+    const dy = e.clientY - lastY.current;
+
+    // 超过阈值才开始拖拽
+    if (!movedTotal.current) {
+      const total = Math.abs(dx) + Math.abs(dy);
+      if (total < DRAG_THRESHOLD) return;
+      movedTotal.current = true;
+    }
+
+    lastX.current = e.clientX;
+    lastY.current = e.clientY;
+
+    // 调用 Python 端 window_move(delta_x, delta_y)
+    try {
+      const w = window as any;
+      if (w.pywebview?.api?.window_move) {
+        w.pywebview.api.window_move(dx, dy).catch(() => {});
+      }
+    } catch {
+      // 非 pywebview 环境，忽略
+    }
+  }, []);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    isDragging.current = false;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // 忽略 releasePointerCapture 错误
+    }
+  }, []);
+
   if (!isPyWebView()) return null;
 
   return (
     <Box
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       sx={{
         position: 'fixed',
         top: 0,
@@ -27,10 +90,12 @@ export const WindowDragBar: React.FC<WindowDragBarProps> = ({ height = 20 }) => 
         right: 0,
         height,
         zIndex: 9999,
-        WebkitAppRegion: 'drag',
         userSelect: 'none',
         WebkitUserSelect: 'none',
+        cursor: 'default',
         background: 'transparent',
+        // 确保拖拽条可以接收到指针事件
+        pointerEvents: 'auto',
       }}
     />
   );
