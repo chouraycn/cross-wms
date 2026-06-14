@@ -340,7 +340,23 @@ const ToolCallItem: React.FC<ToolCallItemProps> = ({ toolCall, index, total, def
     : formattedResult;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(toolCall.result).catch(() => {});
+    // WKWebView file:// 协议下 Clipboard API 可能不可用，需容错降级
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(toolCall.result).catch(() => {});
+    } else {
+      try {
+        const el = document.createElement('textarea');
+        el.value = toolCall.result;
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      } catch {
+        // 静默失败
+      }
+    }
   };
 
   return (

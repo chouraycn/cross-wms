@@ -111,9 +111,28 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
     return () => clearTimeout(timer);
   }, [isPage]);
 
-  /** 复制消息内容到剪贴板 */
+  /** 复制消息内容到剪贴板（WKWebView 兼容降级） */
   const handleCopy = useCallback((msg: Message) => {
-    navigator.clipboard.writeText(msg.content);
+    const doCopy = async () => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(msg.content);
+        } else {
+          // 降级方案：document.execCommand（兼容 WKWebView file:// 协议）
+          const el = document.createElement('textarea');
+          el.value = msg.content;
+          el.style.position = 'fixed';
+          el.style.opacity = '0';
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+        }
+      } catch {
+        // 静默失败，不影响其他功能
+      }
+    };
+    doCopy();
     setCopiedId(msg.id);
     setTimeout(() => setCopiedId(null), 2000);
   }, []);
