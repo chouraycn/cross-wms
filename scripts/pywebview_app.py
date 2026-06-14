@@ -1417,10 +1417,14 @@ def start_http_server(dist_dir: str, port: int = 9988):
             self.send_error(404)
 
     # 允许端口复用，便于快速重启
-    socketserver.TCPServer.allow_reuse_address = True
+    # v1.5.61: 使用 ThreadingTCPServer 替代单线程 TCPServer。
+    # TCPServer 是单线程的，Chat SSE 长连接会阻塞所有其他请求（包括页面加载、API 调用）。
+    # ThreadingTCPServer 为每个连接创建独立线程，Chat SSE 不会阻塞其他页面。
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
 
     try:
-        httpd = socketserver.TCPServer(("127.0.0.1", port), QuietHandler)
+        httpd = socketserver.ThreadingTCPServer(("127.0.0.1", port), QuietHandler)
+        httpd.daemon_threads = True  # 退出时自动终止工作线程
     except OSError as e:
         # 端口被占用时，kill 旧进程后重试（仅开发环境）
         if getattr(sys, 'frozen', False):
@@ -1438,7 +1442,8 @@ def start_http_server(dist_dir: str, port: int = 9988):
                 except Exception:
                     pass
             time.sleep(0.5)
-            httpd = socketserver.TCPServer(("127.0.0.1", port), QuietHandler)
+            httpd = socketserver.ThreadingTCPServer(("127.0.0.1", port), QuietHandler)
+            httpd.daemon_threads = True
         else:
             raise
 
