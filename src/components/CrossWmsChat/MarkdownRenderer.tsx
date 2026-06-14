@@ -159,7 +159,27 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
                 <IconButton
                   className="copy-btn"
                   onClick={() => {
-                    navigator.clipboard.writeText(codeString);
+                    // WKWebView file:// 协议下 Clipboard API 可能不可用，需容错
+                    const doCopy = async () => {
+                      try {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                          await navigator.clipboard.writeText(codeString);
+                        } else {
+                          // 降级方案：document.execCommand
+                          const el = document.createElement('textarea');
+                          el.value = codeString;
+                          el.style.position = 'fixed';
+                          el.style.opacity = '0';
+                          document.body.appendChild(el);
+                          el.select();
+                          document.execCommand('copy');
+                          document.body.removeChild(el);
+                        }
+                      } catch {
+                        // 静默失败，不影响其他功能
+                      }
+                    };
+                    doCopy();
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                   }}
