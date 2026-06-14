@@ -728,8 +728,18 @@ router.post('/chat', async (req, res) => {
 
       // 创建 AbortController 用于超时控制
       const abortController = new AbortController();
-      // 本地模型给更长的超时（大模型推理可能较慢）
-      const timeoutMs = isLocalModel(modelConfig) ? 300000 : 120000;
+      // 超时时间：reasoning 模型需要更长时间（thinking 可能很久）
+      // 本地模型也给更长超时
+      let timeoutMs: number;
+      if (isLocalModel(modelConfig)) {
+        timeoutMs = 300000; // 本地模型 5 分钟
+      } else if (reasoningEffort === 'max') {
+        timeoutMs = 600000; // max 推理 10 分钟
+      } else if (reasoningEffort === 'high') {
+        timeoutMs = 300000; // high 推理 5 分钟
+      } else {
+        timeoutMs = 120000; // 普通模型 2 分钟
+      }
       let timeout = setTimeout(() => abortController.abort(), timeoutMs);
 
       try {
@@ -811,6 +821,11 @@ router.post('/chat', async (req, res) => {
                 : trimmedThinking;
               fullContent = summary;
             }
+          }
+          // v1.5.57: 双空保护 — 模型既无文本输出也无思考过程
+          if (!fullContent && !thinkingContent?.trim()) {
+            console.warn('[Chat API] 模型返回空内容，无文本也无思考，sessionId=%s model=%s', sessionId, effectiveModel);
+            fullContent = '（模型未返回内容，可能是请求超时或服务异常，请重试）';
           }
           var toolCallsJson = toolResult.toolCalls.length > 0 ? JSON.stringify(toolResult.toolCalls) : undefined;
         }
