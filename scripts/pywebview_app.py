@@ -1325,7 +1325,13 @@ def start_http_server(dist_dir: str, port: int = 9988):
                                                'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade'):
                         req.add_header(header, val)
 
-                with urllib.request.urlopen(req, timeout=30) as resp:
+                # v1.5.58: Chat API 是 SSE 长连接，deep thinking 可能需要 3-5 分钟
+                # 使用更长的超时（10 分钟），避免深度思考时连接被 Python 代理中断
+                if self.path.startswith('/api/chat'):
+                    proxy_timeout = 600
+                else:
+                    proxy_timeout = 30
+                with urllib.request.urlopen(req, timeout=proxy_timeout) as resp:
                     self.send_response(resp.status)
                     # 转发响应头
                     for key, val in resp.getheaders():
