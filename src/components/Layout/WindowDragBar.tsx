@@ -15,7 +15,7 @@ interface WindowDragBarProps {
   height?: number;
 }
 
-export const WindowDragBar: React.FC<WindowDragBarProps> = ({ height = 38 }) => {
+export const WindowDragBar: React.FC<WindowDragBarProps> = ({ height = 20 }) => {
   if (!isPyWebView()) return null;
 
   return (
