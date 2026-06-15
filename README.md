@@ -1,6 +1,7 @@
-# CDF Know Clow — 中免CLow端系统桌面应用
+# CDF Know — 能力发现与知识管理平台
 
-> macOS 原生桌面应用，pywebview + React 18 + TypeScript + MUI v5 + Tailwind CSS
+> Cross-border Capability Discovery Know — 跨境仓储只是 CDF Know 中的一个能力模块。
+> 支持仓库管理、AI 助手、技能系统、自动化引擎、腾讯文档同步等多元化能力。
 
 ## 功能概览
 

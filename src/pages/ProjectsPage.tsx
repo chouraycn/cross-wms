@@ -69,7 +69,7 @@ const FIXED_REPOS: FixedRepo[] = [
   {
     key: 'warehouse',
     name: '仓库管理',
-    description: '跨境仓库数据管理，包含仓库、在途、库存、报表',
+    description: 'CDF Know 能力管理平台，包含仓库、在途、库存、报表、AI 助手等模块',
     icon: <WarehouseOutlinedIcon sx={{ fontSize: 22 }} />,
     path: '/warehouses',
     meta: '仪表盘 · 仓库列表 · 在途跟踪 · 库存查询',
