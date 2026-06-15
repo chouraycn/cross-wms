@@ -1,7 +1,7 @@
 {
   "name": "cdf-know-clow",
   "private": true,
-  "version": "1.5.69",
+  "version": "1.5.73",
   "type": "module",
   "scripts": {
     "dev:server": "tsx watch --tsconfig server/tsconfig.json server/index.ts",
@@ -39,7 +39,9 @@
     "js-yaml": "^4.2.0",
     "jsonpath-plus": "^10.4.0",
     "katex": "^0.17.0",
+    "mammoth": "^1.11.0",
     "onnxruntime-node": "^1.26.0",
+    "pdf-parse": "^1.1.1",
     "playwright": "^1.60.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -52,6 +54,7 @@
     "remark-math": "^6.0.0",
     "sqlite-vec": "^0.1.9",
     "uuid": "^9.0.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {

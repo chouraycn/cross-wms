@@ -178,8 +178,8 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     setTestMessage('');
   }, []);
 
-  /** 打开模型对话框（编辑模式直接打开，添加模式支持预设 provider） */
-  const openModelDialog = useCallback((mode: 'add' | 'edit', model?: ModelConfig, presetProvider?: string) => {
+  /** 打开模型对话框（编辑模式直接打开，添加模式通过 openModelSelectDialog -> handlePresetSelect 触发） */
+  const openModelDialog = useCallback((mode: 'add' | 'edit', model?: ModelConfig) => {
     if (mode === 'edit' && model) {
       setModelDialogMode(mode);
       setEditingModel(model);
@@ -187,34 +187,8 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
       setModelFormErrors({});
       setTestStatus('idle');
       setTestMessage('');
-    } else if (mode === 'add' && presetProvider) {
-      // v1.5.68: 直接打开添加对话框并预填 provider（来自 ApiKeyHelpPage 深度链接）
-      const endpoint = PROVIDER_ENDPOINTS[presetProvider] || '';
-      setModelDialogMode('add');
-      setEditingModel(null);
-      setModelForm({
-        id: `model-${Date.now()}`,
-        name: '',
-        provider: presetProvider as ModelConfig['provider'],
-        apiEndpoint: endpoint,
-        apiKey: '',
-        apiKeyRef: '',
-        apiKeys: [],
-        apiKeyRefs: [],
-        keyStrategy: 'round-robin',
-        enabled: true,
-        description: '',
-        contextWindow: '',
-        maxTokens: '',
-        temperature: '1',
-        topP: '1',
-        capabilities: [],
-      });
-      setModelFormErrors({});
-      setTestStatus('idle');
-      setTestMessage('');
     }
-    // add 模式（无 presetProvider）现在通过 openModelSelectDialog -> handlePresetSelect 触发
+    // add 模式现在通过 openModelSelectDialog -> handlePresetSelect 触发
   }, []);
 
   /** 关闭模型对话框 */
@@ -225,18 +199,6 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     setTestStatus('idle');
     setTestMessage('');
   }, []);
-
-  /** v1.5.68: 监听来自 ModelManagement 的深度链接事件，自动打开添加对话框并预填 provider */
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const { provider } = (e as CustomEvent).detail || {};
-      if (provider) {
-        openModelDialog('add', undefined, provider);
-      }
-    };
-    window.addEventListener('model-manager:open-with-provider', handler);
-    return () => window.removeEventListener('model-manager:open-with-provider', handler);
-  }, [openModelDialog]);
 
   /** 保存模型 */
   const handleSaveModel = useCallback(() => {

@@ -188,11 +188,14 @@ if command -v npx &>/dev/null; then
     --outfile="$SERVER_BUILD_DIR/index.cjs" \
     --alias:@src="$PROJECT_DIR/src" \
     --external:better-sqlite3 \
-    --external:express \
-    --external:cors \
-    --external:uuid \
     --external:chokidar \
-    --external:fsevents
+    --external:cors \
+    --external:express \
+    --external:fsevents \
+    --external:mammoth \
+    --external:pdf-parse \
+    --external:uuid \
+    --external:xlsx
   echo "✅ 后端编译完成 (index.cjs)"
 else
   echo "⚠️  esbuild 不可用，尝试手动复制..."
@@ -218,7 +221,10 @@ cat > package.json << 'PKGJSON'
     "chokidar": "^3.6.0",
     "cors": "^2.8.5",
     "express": "^5.2.0",
-    "uuid": "^9.0.0"
+    "mammoth": "^1.11.0",
+    "pdf-parse": "^1.1.1",
+    "uuid": "^9.0.0",
+    "xlsx": "^0.18.5"
   }
 }
 PKGJSON

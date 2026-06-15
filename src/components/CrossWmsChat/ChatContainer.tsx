@@ -13,7 +13,7 @@ import TerminalIcon from '@mui/icons-material/Terminal';
 import DesktopMacIcon from '@mui/icons-material/DesktopMac';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
-import LogoAi from '../../assets/logo-ai.svg';
+import CdfLogoAnimation from '../../assets/cdf-logo-animation.svg';
 import { TopBarChatInput } from './TopBarChatInput';
 import ChatMessageList from './ChatMessageList';
 import ToolPermissionDialog from './ToolPermissionDialog';
@@ -305,17 +305,24 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
                 ) : (
                   <>
                     <Box sx={{
-                      width: 56, height: 56, borderRadius: '16px', bgcolor: gs.bgHover,
+                      width: 160, height: 56,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3,
+                      ml: '20px',
+                      filter: isDark ? 'invert(1)' : 'none',
                     }}>
-                      <img src={LogoAi} alt="AI" style={{ width: 36, height: 36 }} />
+                      <object
+                        data={CdfLogoAnimation}
+                        type="image/svg+xml"
+                        style={{ width: 140, height: 48, pointerEvents: 'none' }}
+                        aria-label="CDF Know Clow"
+                      />
                     </Box>
 
                     <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: gs.textPrimary, mb: 1 }}>
-                      有什么可以帮你的？
+                      时刻可视，实时感知，尽在掌握
                     </Typography>
                     <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted, textAlign: 'center', maxWidth: 400 }}>
-                      输入任务描述，AI 助手将为你完成工作
+                      See anytime, know anytime
                     </Typography>
                   </>
                 )}

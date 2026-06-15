@@ -9,7 +9,9 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import InfoIcon from '@mui/icons-material/Info';
 import TuneIcon from '@mui/icons-material/Tune';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { useNavigate } from 'react-router-dom';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
@@ -21,10 +23,11 @@ import SettingsDashboard from './SettingsDashboard';
 import SettingsSidebar from './SettingsSidebar';
 import SettingsDocLinks from './SettingsDocLinks';
 import SettingsAbout from './SettingsAbout';
+import SettingsSystemAuthorization from './SettingsSystemAuthorization';
 import { useToast } from '../../contexts/ToastContext';
 
 const SIDEBAR_WIDTH_EXPANDED = 360;
-type SettingsTab = 'menu' | 'tencentDocs' | 'tencentDocs_volumeDocs' | 'dashboardCalc' | 'dashboardIndicators' | 'modelManagement' | 'appearance' | 'about';
+type SettingsTab = 'menu' | 'tencentDocs' | 'tencentDocs_volumeDocs' | 'dashboardCalc' | 'dashboardIndicators' | 'modelManagement' | 'toolManagement' | 'systemAuthorization' | 'appearance' | 'about';
 interface SettingsMenuItem { key: Exclude<SettingsTab, 'menu'>; label: string; icon: React.ReactNode; description: string; }
 const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   { key: 'appearance', label: '外观', icon: <PaletteOutlinedIcon sx={{ fontSize: 20 }} />, description: '主题、颜色与显示偏好' },
@@ -32,10 +35,12 @@ const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   { key: 'dashboardCalc', label: '仪表盘参数', icon: <DashboardIcon sx={{ fontSize: 20 }} />, description: '计算阈值和参数调整' },
   { key: 'dashboardIndicators', label: '指标控制', icon: <TuneIcon sx={{ fontSize: 20 }} />, description: '各模块显示与隐藏' },
   { key: 'modelManagement', label: '模型管理', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型' },
+  { key: 'toolManagement', label: '工具管理', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件工具安装与管理' },
+  { key: 'systemAuthorization', label: '系统授权', icon: <AdminPanelSettingsIcon sx={{ fontSize: 20 }} />, description: '系统级权限一键授权' },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本' },
 ];
 
-const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: () => void }> = ({ onClose, onOpenModelManagement }) => {
+const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void }> = ({ onClose, onOpenModelManagement, onOpenToolManagement }) => {
   const { settings, updateSettings, resetSettings } = useAppSettings();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -94,6 +99,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
                   key={item.key}
                   onClick={() => {
                     if (item.key === 'modelManagement') { onClose?.(); onOpenModelManagement?.(); }
+                    else if (item.key === 'toolManagement') { onClose?.(); onOpenToolManagement?.(); }
                     else if (!isAppearance) { setActiveTab(item.key); }
                   }}
                   sx={{
@@ -196,6 +202,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
         {activeTab === 'dashboardIndicators' && <SettingsDashboard draft={draft} setDraft={setDraft} errors={errors} setErrors={setErrors} />}
         {activeTab === 'appearance' && <SettingsGeneral draft={draft} setDraft={setDraft} />}
         {activeTab === 'about' && <SettingsAbout draft={draft} setDraft={setDraft} />}
+        {activeTab === 'systemAuthorization' && <SettingsSystemAuthorization draft={draft} setDraft={setDraft} />}
         <Divider sx={{ mt: 2, mb: 1.5 }} />
         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
           <Button variant="outlined" size="small" startIcon={<RestartAltIcon />} onClick={handleReset} sx={{ borderColor: gs.border, color: gs.textMuted, fontSize: '0.75rem', '&:hover': { borderColor: gs.textDisabled } }}>重置</Button>
@@ -206,9 +213,9 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   );
 };
 
-export interface SettingsPopoverProps { open: boolean; onClose: () => void; anchorEl: HTMLElement | null; onOpenModelManagement?: () => void; }
+export interface SettingsPopoverProps { open: boolean; onClose: () => void; anchorEl: HTMLElement | null; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; }
 
-const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchorEl, onOpenModelManagement }) => {
+const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchorEl, onOpenModelManagement, onOpenToolManagement }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -251,7 +258,7 @@ const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchor
       }}
       hideBackdrop
     >
-      <SettingsPanel onClose={onClose} onOpenModelManagement={onOpenModelManagement} />
+      <SettingsPanel onClose={onClose} onOpenModelManagement={onOpenModelManagement} onOpenToolManagement={onOpenToolManagement} />
     </Popover>
   );
 };

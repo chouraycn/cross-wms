@@ -1,34 +1,11 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Box, Typography, CircularProgress, Alert, Button } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ModelManager from '../../shared/ModelManager';
 import { useModels } from '../../../contexts/ModelsContext';
 
-interface ModelManagementProps {
-  /** 从 ApiKeyHelpPage 深度链接传入的预填 provider，触发自动打开添加对话框 */
-  initialProvider?: string;
-}
-
-const ModelManagement: React.FC<ModelManagementProps> = ({ initialProvider }) => {
+const ModelManagement: React.FC = () => {
   const { models: modelList, defaultModelId, updateModels, isLoading, error, reload } = useModels();
-  const triggeredRef = useRef(false);
-
-  // 自动打开添加对话框（由 SettingsPanel 通过 initialProvider prop 传入）
-  // 使用 DOM event 通知 ModelManager 内部的 useModelManager 打开对话框
-  useEffect(() => {
-    if (initialProvider && !triggeredRef.current && !isLoading) {
-      triggeredRef.current = true;
-      // 延迟触发，确保 ModelManager 和 useModelManager 已完成初始化
-      const timer = setTimeout(() => {
-        window.dispatchEvent(
-          new CustomEvent('model-manager:open-with-provider', {
-            detail: { provider: initialProvider },
-          })
-        );
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [initialProvider, isLoading]);
 
   if (isLoading) {
     return (

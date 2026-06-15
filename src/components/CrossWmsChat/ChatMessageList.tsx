@@ -170,8 +170,14 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     e.clipboardData.setData('text/plain', text);
   }, []);
 
-  // 新消息时自动滚动（仅在用户没有主动上翻时）
+  // 新消息时自动滚动
+  // 用户发送新消息 → 强制滚到底部（无视上翻状态）
+  // AI 流式回复 → 仅在用户没有主动上翻时滚动
   useEffect(() => {
+    const lastMsg = session.messages[session.messages.length - 1];
+    if (lastMsg && lastMsg.role === 'user') {
+      isUserScrolledUp.current = false;
+    }
     if (!isUserScrolledUp.current && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }

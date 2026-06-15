@@ -254,7 +254,7 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
         </svg>
       );
 
-    // ── Kimi (Moonshot) — 品牌色 #10B981 ─────────────────────
+    // ── Kimi (Moonshot) — 品牌色 #1E1B4B ─────────────────────
     case 'kimi':
     case 'kimicn':
       return (
@@ -266,8 +266,12 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
           xmlns="http://www.w3.org/2000/svg"
           style={{ flexShrink: 0 }}
         >
-          <circle cx="12" cy="12" r="10" fill="#10B981" />
-          <path d="M8 8l4 4-4 4M13 8h4M13 12h4M13 16h4" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <rect width="24" height="24" rx="5" fill="#1E1B4B" />
+          <path
+            d="M11.065 11.199l7.257-7.2c.137-.136.06-.41-.116-.41H14.3a.164.164 0 00-.117.051l-7.82 7.756c-.122.12-.302.013-.302-.179V3.82c0-.127-.083-.23-.185-.23H3.186c-.103 0-.186.103-.186.23V19.77c0 .128.083.23.186.23h2.69c.103 0 .186-.102.186-.23v-3.25c0-.069.025-.135.069-.178l2.424-2.406a.158.158 0 01.205-.023l6.484 4.772a7.677 7.677 0 003.453 1.283c.108.012.2-.095.2-.23v-3.06c0-.117-.07-.212-.164-.227a5.028 5.028 0 01-2.027-.807l-5.613-4.064c-.117-.078-.132-.279-.028-.381z"
+            fill="#FFFFFF"
+          />
+          <circle cx="20.8" cy="3.2" r="1.6" fill="#1783FF" />
         </svg>
       );
 
