@@ -41,7 +41,7 @@ function formatDuration(ms?: number): string {
 function getEffortStyle(effort?: string) {
   switch (effort) {
     case 'max': return { label: '极致推理', color: '#F59E0B', gradient: 'linear-gradient(135deg, #F59E0B, #EF4444)' };
-    case 'high': return { label: '深度思考', color: '#8B5CF6', gradient: 'linear-gradient(135deg, #8B5CF6, #6366F1)' };
+    case 'high': return { label: '深度思考', color: '#6B7280', gradient: 'linear-gradient(135deg, #6B7280, #4B5563)' };
     default: return { label: '思考过程', color: '#3B82F6', gradient: 'linear-gradient(135deg, #3B82F6, #06B6D4)' };
   }
 }
@@ -84,11 +84,11 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
         borderRadius: 2,
         overflow: 'hidden',
         // 柔和的背景
-        bgcolor: isDark ? 'rgba(139,92,246,0.04)' : 'rgba(139,92,246,0.03)',
-        border: `1px solid ${isDark ? 'rgba(139,92,246,0.12)' : 'rgba(139,92,246,0.08)'}`,
+        bgcolor: isDark ? 'rgba(156,163,175,0.06)' : 'rgba(107,114,128,0.04)',
+        border: `1px solid ${isDark ? 'rgba(156,163,175,0.15)' : 'rgba(107,114,128,0.1)'}`,
         transition: 'border-color 0.2s ease',
         '&:hover': {
-          borderColor: isDark ? 'rgba(139,92,246,0.25)' : 'rgba(139,92,246,0.15)',
+          borderColor: isDark ? 'rgba(156,163,175,0.3)' : 'rgba(107,114,128,0.2)',
         },
       }}
     >
@@ -213,7 +213,7 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
             pt: 0.5,
             // 顶部细分割线
             borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'}`,
-            maxHeight: 480,
+            maxHeight: 240,
             overflowY: 'auto',
             // 自定义滚动条
             '&::-webkit-scrollbar': { width: 4 },

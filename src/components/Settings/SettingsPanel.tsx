@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Box,
@@ -17,6 +17,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import ViewTimelineIcon from '@mui/icons-material/ViewTimeline';
 import ComputerIcon from '@mui/icons-material/Computer';
+import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { isPyWebView } from '../../services/tencentDocsApi';
@@ -25,6 +26,7 @@ import DashboardParamsTab from './tabs/DashboardParamsTab';
 import MetricsControlTab from './tabs/MetricsControlTab';
 import VolumeDocTab from './tabs/VolumeDocTab';
 import ModelManagement from './tabs/ModelManagement';
+import ToolManagement from './tabs/ToolManagement';
 import AboutTab from './tabs/AboutTab';
 import TrafficLightOffsetSection from './tabs/TrafficLightOffsetSection';
 import { useToast } from '../../contexts/ToastContext';
@@ -32,7 +34,7 @@ import { getGrayScale } from '../../constants/theme';
 
 // ===================== Tab Definitions =====================
 
-type SettingsTab = 'tencentDocs' | 'dashboardParams' | 'metricsControl' | 'volumeDoc' | 'modelManagement' | 'dmgSettings' | 'about';
+type SettingsTab = 'tencentDocs' | 'dashboardParams' | 'metricsControl' | 'volumeDoc' | 'modelManagement' | 'toolManagement' | 'dmgSettings' | 'about';
 
 interface TabItem {
   key: SettingsTab;
@@ -46,6 +48,7 @@ const TABS: TabItem[] = [
   { key: 'metricsControl', label: '指标控制', icon: <TuneIcon sx={{ fontSize: 20 }} /> },
   { key: 'volumeDoc', label: '容积率文档', icon: <ViewTimelineIcon sx={{ fontSize: 20 }} /> },
   { key: 'modelManagement', label: '模型管理', icon: <SmartToyIcon sx={{ fontSize: 20 }} /> },
+  { key: 'toolManagement', label: '工具管理', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} /> },
   { key: 'dmgSettings', label: 'DMG 设置', icon: <ComputerIcon sx={{ fontSize: 20 }} /> },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} /> },
 ];
@@ -75,12 +78,22 @@ const SettingsPanel: React.FC = () => {
   // Active tab
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
+    // v1.5.68: 深度链接支持 — 从 ApiKeyHelpPage 返回时自动切换到模型管理 tab
+    const fromParam = searchParams.get('from');
     const tabParam = searchParams.get('tab');
+    if (fromParam === 'api-key-help') {
+      return 'modelManagement';
+    }
     if (tabParam && TABS.some(t => t.key === tabParam)) {
       return tabParam as SettingsTab;
     }
     return 'tencentDocs';
   });
+
+  // v1.5.68: 从 ApiKeyHelpPage 深度链接获取预填 provider（用 ref 保存，不受后续 searchParams 变更影响）
+  const deepLinkProviderRef = useRef(searchParams.get('from') === 'api-key-help'
+    ? searchParams.get('provider') || undefined
+    : undefined);
 
   // 同步 tab 变化到 URL 参数
   useEffect(() => {
@@ -89,6 +102,15 @@ const SettingsPanel: React.FC = () => {
       setSearchParams(activeTab === 'tencentDocs' ? {} : { tab: activeTab }, { replace: true });
     }
   }, [activeTab, searchParams, setSearchParams]);
+
+  // v1.5.68: 深度链接参数清理 — 触发后清除 from/provider/action 参数，避免刷新重复触发
+  useEffect(() => {
+    if (deepLinkProviderRef.current) {
+      setSearchParams({ tab: 'modelManagement' }, { replace: true });
+    }
+    // 只在首次挂载时清理
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Local draft state for unsaved changes
   const [draft, setDraft] = useState<AppSettings>({ ...settings });
@@ -205,7 +227,9 @@ const SettingsPanel: React.FC = () => {
       case 'volumeDoc':
         return <VolumeDocTab draft={draft} setDraft={setDraft} openInBrowser={openInBrowser} />;
       case 'modelManagement':
-        return <ModelManagement />;
+        return <ModelManagement initialProvider={deepLinkProviderRef.current} />;
+      case 'toolManagement':
+        return <ToolManagement />;
       case 'dmgSettings':
         return (
           <Box sx={{ maxWidth: 680 }}>

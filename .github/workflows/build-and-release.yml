@@ -17,34 +17,64 @@ on:
           - major
 
 jobs:
-  build:
-    runs-on: macos-latest
-    
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-      
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check frontend
+        run: npx tsc --noEmit
+
+      - name: Type check backend
+        run: npx tsc --noEmit --project server/tsconfig.json
+
+      - name: Test
+        run: npm run test -- --passWithNoTests
+
+  build:
+    name: Build DMG
+    needs: quality-gate
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      
+
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
           pip install pywebview pyinstaller Pillow
-      
+
       - name: Install Node.js dependencies
         run: npm ci
-      
+
       - name: Bump version (manual dispatch only)
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -69,7 +99,7 @@ jobs:
             console.log('Version bumped to ' + pkg.version);
           "
           echo "VERSION=$(node -e "console.log(require('./package.json').version)")" >> $GITHUB_ENV
-      
+
       - name: Get version
         id: get_version
         run: |
@@ -81,15 +111,15 @@ jobs:
           fi
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
-      
+
       - name: Build frontend
         run: npm run build
-      
+
       - name: Build DMG
         run: bash build-dmg-pywebview.sh --no-bump
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Generate release notes
         id: release_notes
         run: |
@@ -102,7 +132,7 @@ jobs:
           else
             echo "RELEASE_NOTES=Initial release" >> $GITHUB_ENV
           fi
-      
+
       - name: Create Git Tag (manual dispatch only)
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -114,7 +144,7 @@ jobs:
           git push origin "v${{ env.VERSION }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Create GitHub Release and Upload DMG
         uses: softprops/action-gh-release@v2
         with:
@@ -126,7 +156,7 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Upload DMG as artifact (backup)
         uses: actions/upload-artifact@v4
         with:

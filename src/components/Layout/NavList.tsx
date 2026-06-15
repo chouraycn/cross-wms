@@ -78,6 +78,10 @@ const navItems: NavItem[] = [
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
 
+  // v1.5.68: "工具管理" 已迁入 Settings > 工具管理 Tab，导航栏不再展示该分组。
+  // 保留 /plugins, /api-domain-whitelist, /api-templates, /browser, /api-credentials, /api-history
+  // 路由用于向后兼容（书签 / 直接访问），实际入口在设置中。
+
   {
     label: '仓储管理',
     icon: <WarehouseOutlinedIcon />,

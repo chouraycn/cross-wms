@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, IconButton, Tooltip, useTheme, Collapse,
-  Button, Chip, Paper,
+  Button, Chip, Paper, Checkbox, FormControlLabel,
 } from '@mui/material';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -16,6 +16,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import LogoAi from '../../assets/logo-ai.svg';
 import { TopBarChatInput } from './TopBarChatInput';
 import ChatMessageList from './ChatMessageList';
+import ToolPermissionDialog from './ToolPermissionDialog';
 import { Message } from '../../types/chat';
 import { getAllSkills } from '../../stores/skillStore';
 import type { Skill } from '../../types/skill';
@@ -172,13 +173,16 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
     }
   }, [showToast]);
 
+  // v2.3.3: 权限请求的 "始终允许" 状态
+  const [permAlwaysAllow, setPermAlwaysAllow] = useState(false);
+
   /** v1.9.3: 权限请求响应 — 发送给后端并更新消息状态 */
-  const handlePermissionRespond = useCallback((reqId: string, approved: boolean) => {
+  const handlePermissionRespond = useCallback((reqId: string, approved: boolean, alwaysAllow?: boolean) => {
     // 发送响应到后端
     fetch('/api/permission-response', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reqId, approved }),
+      body: JSON.stringify({ reqId, approved, alwaysAllow }),
     }).catch((e) => console.error('[ChatContainer] 发送权限响应失败:', e));
 
     // 更新本地消息状态，标记为已处理
@@ -288,13 +292,13 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
                         {ICON_MAP[initialSkill.icon]}
                       </Box>
                     </Box>
-                    <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: '#111827', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: gs.textPrimary, mb: 0.5 }}>
                       {initialSkill.name}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mb: 1 }}>
+                    <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled, mb: 1 }}>
                       {getCategoryLabel(initialSkill.category)}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.875rem', color: '#6B7280', textAlign: 'center', maxWidth: 400 }}>
+                    <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted, textAlign: 'center', maxWidth: 400 }}>
                       {initialSkill.desc}
                     </Typography>
                   </>
@@ -421,10 +425,24 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
                     })()}
 
                     {/* 操作按钮 */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Typography sx={{ fontSize: 11, color: gs.textMuted }}>
-                        AI 请求执行敏感操作，请确认
-                      </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={permAlwaysAllow}
+                              onChange={(e) => setPermAlwaysAllow(e.target.checked)}
+                              sx={{ '& .MuiSvgIcon-root': { fontSize: 16 } }}
+                            />
+                          }
+                          label="始终允许"
+                          sx={{
+                            mr: 0,
+                            '& .MuiTypography-root': { fontSize: 11, color: gs.textMuted },
+                          }}
+                        />
+                      </Box>
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         <Button
                           size="small"
@@ -443,7 +461,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
                         <Button
                           size="small"
                           startIcon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
-                          onClick={() => handlePermissionRespond(pendingPermission.reqId, true)}
+                          onClick={() => { handlePermissionRespond(pendingPermission.reqId, true, permAlwaysAllow); setPermAlwaysAllow(false); }}
                           sx={{
                             borderRadius: 2, textTransform: 'none', fontSize: 13, fontWeight: 600,
                             background: 'linear-gradient(135deg, #F59E0B, #D97706)',
@@ -470,7 +488,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
                 stopGeneration={stopGeneration}
               />
               <Collapse in={session.messages.length === 0} timeout={300}>
-                <Typography sx={{ fontSize: '0.6875rem', color: '#9CA3AF', textAlign: 'center', pt: 0.5 }}>
+                <Typography sx={{ fontSize: '0.6875rem', color: gs.textDisabled, textAlign: 'center', pt: 0.5 }}>
                   内容由AI生成，请核实重要信息
                 </Typography>
               </Collapse>
@@ -511,41 +529,22 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
         />
       )}
 
-      {/* v1.9.3: 权限确认 — embedded 模式简化版 */}
-      {pendingPermission && (
-        <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}>
-          <Box sx={{
-            p: 1.5, borderRadius: 2,
-            border: '1px solid', borderColor: isDark ? '#F59E0B40' : '#FDE68A',
-            bgcolor: isDark ? '#2A1A0A' : '#FFFBEB',
-            display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap',
-          }}>
-            <ShieldIcon sx={{ color: '#F59E0B', fontSize: 18 }} />
-            <Typography sx={{ fontSize: 12, fontWeight: 600, color: gs.textPrimary, fontFamily: 'monospace' }}>
-              {pendingPermission.toolName}
-            </Typography>
-            <Box sx={{ flex: 1 }} />
-            <Button size="small" onClick={() => handlePermissionRespond(pendingPermission.reqId, false)}
-              sx={{ fontSize: 11, textTransform: 'none', color: gs.textMuted, minWidth: 'auto', px: 1.5 }} variant="text">
-              拒绝
-            </Button>
-            <Button size="small" onClick={() => handlePermissionRespond(pendingPermission.reqId, true)}
-              sx={{ fontSize: 11, textTransform: 'none', fontWeight: 600, bgcolor: '#F59E0B', color: '#fff', minWidth: 'auto', px: 1.5, borderRadius: 1.5,
-                '&:hover': { bgcolor: '#D97706' } }} variant="contained">
-              允许
-            </Button>
-          </Box>
-        </Box>
-      )}
-
-      {/* TopBarChatInput */}
-      <TopBarChatInput
-        session={session}
-        onSessionUpdate={handleSessionUpdate}
-        isLoading={isLoading}
-        sendMessage={sendMessage}
-        stopGeneration={stopGeneration}
-      />
+      {/* v2.3.0: 权限确认 — 浮动面板覆盖在输入框上方 */}
+      <Box sx={{ position: 'relative', flexShrink: 0 }}>
+        <ToolPermissionDialog
+          open={!!pendingPermission}
+          request={pendingPermission}
+          onApprove={(reqId, alwaysAllow) => { handlePermissionRespond(reqId, true, alwaysAllow); setPermAlwaysAllow(false); }}
+          onDeny={(reqId) => handlePermissionRespond(reqId, false)}
+        />
+        <TopBarChatInput
+          session={session}
+          onSessionUpdate={handleSessionUpdate}
+          isLoading={isLoading}
+          sendMessage={sendMessage}
+          stopGeneration={stopGeneration}
+        />
+      </Box>
 
       {/* AI 免责声明 — 有消息时折叠隐藏 */}
       <Collapse in={session.messages.length === 0} timeout={300}>

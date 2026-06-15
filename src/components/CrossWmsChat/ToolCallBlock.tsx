@@ -362,8 +362,9 @@ const ToolCallItem: React.FC<ToolCallItemProps> = ({ toolCall, index, total, def
   return (
     <Box
       sx={{
-        bgcolor: isDark ? 'rgba(99, 102, 241, 0.08)' : 'rgba(99, 102, 241, 0.04)',
-        border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.12)'}`,
+        bgcolor: 'transparent',
+        border: 'none',
+        borderLeft: `2px solid ${isDark ? '#555555' : '#e0e0e0'}`,
         borderRadius: '8px',
         overflow: 'hidden',
         '& + &': { mt: 0.5 },
@@ -380,14 +381,13 @@ const ToolCallItem: React.FC<ToolCallItemProps> = ({ toolCall, index, total, def
           py: 0.625,
           cursor: 'pointer',
           '&:hover': {
-            bgcolor: isDark ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.08)',
+            bgcolor: isDark ? 'rgba(255,255,255,0.05)' : '#f5f5f5',
           },
           transition: 'background-color 0.15s ease',
         }}
       >
-        <Typography sx={{ fontSize: 14 }}>{getToolIcon(toolCall.name)}</Typography>
-        <BuildIcon sx={{ fontSize: 14, color: '#6366F1' }} />
-        <Typography sx={{ fontSize: 13, fontWeight: 500, color: '#6366F1', flex: 1 }}>
+        <BuildIcon sx={{ fontSize: 14, color: gs.textSecondary }} />
+        <Typography sx={{ fontSize: 13, fontWeight: 500, color: gs.textSecondary, flex: 1 }}>
           {getToolLabel(toolCall.name)}
         </Typography>
 
@@ -495,7 +495,7 @@ const ToolCallBlock: React.FC<ToolCallBlockProps> = ({ toolCalls }) => {
           toolCall={tc}
           index={i}
           total={toolCalls.length}
-          defaultExpanded={i === toolCalls.length - 1}
+          defaultExpanded={false}
         />
       ))}
     </Box>

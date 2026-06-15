@@ -69,6 +69,30 @@ import { loadModelsConfig, syncModelsFromApi } from './modelsStore.js';
 // Automation Engine v2.0
 import { startEngine, stopEngine } from './engine/engine.js';
 
+// v3.0: Plugin & API Domain Whitelist routes
+import pluginsRouter from './routes/plugins.js';
+import apiDomainWhitelistRouter from './routes/apiDomainWhitelist.js';
+
+// v3.0: Browser routes
+import browserRouter from './routes/browser.js';
+import browserProfilesRouter from './routes/browserProfiles.js';
+
+// v3.0: API Templates routes
+import apiTemplatesRouter from './routes/apiTemplates.js';
+
+// v3.0: API Credentials routes
+import apiCredentialsRouter from './routes/apiCredentials.js';
+
+// v3.0: API Request History routes
+import apiHistoryRouter from './routes/apiHistory.js';
+
+// v3.0: Plugin Registry
+import { pluginRegistry } from './engine/pluginRegistry.js';
+import { listPluginTools } from './engine/toolRegistry.js';
+
+// v3.0: BrowserHost Client
+import { startBrowserHost, stopBrowserHost, getBrowserHostHealth } from './services/browserHostClient.js';
+
 const app = express();
 // CORS: 开发环境允许所有本地来源
 app.use((req, res, next) => {
@@ -147,6 +171,23 @@ app.use('/api/models', modelsRoutes);
 // Inventory NL-Query route (v1.5.0)
 app.use('/api/inventory', inventoryNlQueryRouter);
 
+// ========== v3.0: Plugin & API Domain Whitelist Routes ==========
+app.use('/api/plugins', pluginsRouter);
+app.use('/api/api-domain-whitelist', apiDomainWhitelistRouter);
+
+// ========== v3.0: Browser Routes ==========
+app.use('/api/browser', browserRouter);
+app.use('/api/browser/profiles', browserProfilesRouter);
+
+// ========== v3.0: API Templates Routes ==========
+app.use('/api/api-templates', apiTemplatesRouter);
+
+// ========== v3.0: API Credentials Routes ==========
+app.use('/api/api-credentials', apiCredentialsRouter);
+
+// ========== v3.0: API Request History Routes ==========
+app.use('/api/api-history', apiHistoryRouter);
+
 const PORT = 3001;
 const server = app.listen(PORT, async () => {
   console.log(`CDF Know Clow Chat Server running on port ${PORT}`);
@@ -155,6 +196,28 @@ const server = app.listen(PORT, async () => {
   // 初始化 Tool Registry
   await initDefaultTools();
   console.log('[Tool Registry] 工具注册完成:', listTools().join(', '));
+
+  // v3.0: 自动加载已启用的插件
+  await pluginRegistry.loadEnabledPlugins();
+  const pluginToolNames = listPluginTools();
+  if (pluginToolNames.length > 0) {
+    console.log('[Plugin Registry] 插件工具已加载:', pluginToolNames.join(', '));
+  }
+
+  // v3.0: 启动 BrowserHost 进程（异步，不阻塞主流程）
+  setTimeout(async () => {
+    try {
+      const result = await startBrowserHost();
+      if (result.ok) {
+        const health = await getBrowserHostHealth();
+        console.log(`[BrowserHost] 进程已启动, status=${health.status}`);
+      } else {
+        console.warn(`[BrowserHost] 启动失败: ${result.error} (Browser tools will be unavailable)`);
+      }
+    } catch (err) {
+      console.warn('[BrowserHost] 启动异常:', err instanceof Error ? err.message : String(err));
+    }
+  }, 3000);
 
   // 自动发现新模型（异步，不阻塞启动）
   setTimeout(() => {
@@ -182,6 +245,24 @@ const server = app.listen(PORT, async () => {
   const gracefulShutdown = () => {
     console.log('[Server] 正在关闭自动化引擎...');
     stop();
+    // v3.0: 关闭 BrowserHost 进程
+    stopBrowserHost().catch(err => {
+      console.warn('[Server] BrowserHost 关闭异常:', err);
+    });
+    // v1.5.68: 在退出前做 WAL checkpoint — 避免进程被 kill 时 WAL 未刷盘，
+    // 下次启动时虽然 initDb 会尝试恢复，但提前 checkpoint 可以减少数据丢失风险。
+    // pywebview 端在 stop_server() 中通过 os.killpg(SIGTERM) 触发本流程。
+    // v4.0: checkpoint 后安全关闭数据库连接，确保所有数据刷入磁盘
+    try {
+      const dbInstance = initDb();
+      const ckpt = dbInstance.pragma('wal_checkpoint(TRUNCATE)');
+      console.log('[Server] ✅ WAL checkpoint 完成:', JSON.stringify(ckpt));
+      dbInstance.close();
+      console.log('[Server] ✅ 数据库连接已安全关闭');
+    } catch (err) {
+      console.warn('[Server] WAL checkpoint 失败:', err instanceof Error ? err.message : String(err));
+    }
+    process.exit(0);
   };
   process.on('SIGTERM', gracefulShutdown);
   process.on('SIGINT', gracefulShutdown);

@@ -12,7 +12,7 @@ interface ToolPermissionContextValue {
   /** 当前待处理的权限请求 */
   pendingRequest: ToolPermissionRequest | null;
   /** 提交权限响应（允许/拒绝） */
-  submitPermission: (reqId: string, approved: boolean) => void;
+  submitPermission: (reqId: string, approved: boolean, alwaysAllow?: boolean) => void;
   /** 注册新的权限请求 */
   requestPermission: (req: ToolPermissionRequest) => void;
 }
@@ -42,12 +42,16 @@ export const ToolPermissionProvider: React.FC<{ children: React.ReactNode }> = (
     processQueue();
   }, [processQueue]);
 
-  const submitPermission = useCallback((reqId: string, approved: boolean) => {
+  const submitPermission = useCallback((reqId: string, approved: boolean, alwaysAllow?: boolean) => {
     // 发送响应到后端
+    const body: Record<string, unknown> = { reqId, approved };
+    if (alwaysAllow) {
+      body.alwaysAllow = true;
+    }
     fetch('/api/permission-response', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reqId, approved }),
+      body: JSON.stringify(body),
     }).catch((e) => console.error('[ToolPermission] 发送权限响应失败:', e));
 
     // 处理下一个请求

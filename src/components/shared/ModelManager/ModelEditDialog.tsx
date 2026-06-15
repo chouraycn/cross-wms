@@ -29,42 +29,22 @@ import KeyIcon from '@mui/icons-material/Key';
 import TuneIcon from '@mui/icons-material/Tune';
 import ScienceIcon from '@mui/icons-material/Science';
 import { providerLabel, providerIcon } from '../../../utils/providerIcons';
+import { PROVIDER_API_KEY_URLS } from '../../../utils/providerApiKeyUrls';
 import { CAPABILITY_LABELS, CAPABILITY_COLORS, type ModelCapability } from '../../../types/models';
 import { getModelManagerStyles } from './styles';
 import type { ModelEditDialogProps, ModelFormState } from './types';
 import { SpinningIcon } from '../SpinningIcon';
 
-/** 各提供商 API Key 获取链接 */
-const PROVIDER_API_KEY_URLS: Record<string, string> = {
-  openai: 'https://platform.openai.com/api-keys',
-  anthropic: 'https://console.anthropic.com/settings/keys',
-  tencent: 'https://console.cloud.tencent.com/cam/capi',
-  deepseek: 'https://platform.deepseek.com/api_keys',
-  google: 'https://aistudio.google.com/app/apikey',
-  qwen: 'https://dashscope.console.aliyun.com/apiKey',
-  xai: 'https://console.x.ai/team/default/api-keys',
-  zai: 'https://z.ai/settings/api-keys',
-  minimax: 'https://www.minimaxi.com/user-center/basic-information/interface-key',
-  kimi: 'https://platform.moonshot.cn/console/api-keys',
-  byteplus: 'https://console.byteplus.com/ark/region:ark+cn-beijing/apiKey',
-  openrouter: 'https://openrouter.ai/settings/keys',
-  novita: 'https://novita.ai/settings/key-management',
-  wwqglobal: 'https://www.wwq.com/console/api-keys',
-  wwqcn: 'https://www.wwq.cn/console/api-keys',
-  aws: 'https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/overview',
-  azure: 'https://portal.azure.com/#home',
-  vercel: 'https://vercel.com/dashboard/stores/ai',
-  ollama: 'https://ollama.com/download',
-  bigmodel: 'https://open.bigmodel.cn/usercenter/apikeys',
-  minimaxcn: 'https://www.minimaxi.com/platform/login',
-  kimicn: 'https://platform.moonshot.cn/console/api-keys',
-  volcengine: 'https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey',
-  aliyun: 'https://dashscope.console.aliyun.com/apiKey',
-  siliconflow: 'https://cloud.siliconflow.cn/account/ak',
-  modelark: 'https://www.modelark.cn/console/api-keys',
-  ppio: 'https://ppinfra.com/settings/key-management',
-  custom: '',
-};
+/** pywebview 环境下用系统浏览器打开 URL */
+function openInSystemBrowser(url: string): void {
+  if ((window as any).pywebview?.api?.open_in_browser) {
+    (window as any).pywebview.api.open_in_browser(url).catch(() => {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    });
+  } else {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+}
 
 /** 导航步骤定义 */
 const STEPS = [
@@ -85,7 +65,9 @@ const BasicSection: React.FC<{
   modelDialogMode: 'add' | 'edit' | null;
   modelFormErrors: Record<string, string>;
   styles: ReturnType<typeof getModelManagerStyles>;
-}> = ({ modelForm, setModelForm, isAddMode, isCustomMode, modelDialogMode, modelFormErrors, styles }) => (
+  /** "获取 Key"按钮点击回调，关闭对话框并跳转到帮助页 */
+  onGetApiKey?: () => void;
+}> = ({ modelForm, setModelForm, isAddMode, isCustomMode, modelDialogMode, modelFormErrors, styles, onGetApiKey }) => (
   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
     {/* 模型概览卡片（添加模式只读展示） */}
     {isAddMode && !isCustomMode && (
@@ -182,7 +164,39 @@ const BasicSection: React.FC<{
       fullWidth
       size="small"
       placeholder="https://api.example.com/v1"
-      helperText={!isCustomMode ? '已根据提供商自动填充，可按需修改' : '请输入自定义 API 端点地址'}
+      helperText={
+        PROVIDER_API_KEY_URLS[modelForm.provider] ? (
+          <Box component="span" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <span>{!isCustomMode ? '已根据提供商自动填充，可按需修改' : '请输入自定义 API 端点地址'}</span>
+            <Button
+              size="small"
+              variant="text"
+              onClick={() => {
+                if (onGetApiKey) {
+                  onGetApiKey();
+                } else {
+                  // fallback: 直接打开 URL（兼容未传 navigate 的场景）
+                  const url = PROVIDER_API_KEY_URLS[modelForm.provider];
+                  if (url) openInSystemBrowser(url);
+                }
+              }}
+              sx={{
+                fontSize: '0.7rem',
+                textTransform: 'none',
+                color: styles.textMuted,
+                p: 0,
+                minWidth: 'auto',
+                fontWeight: 400,
+                flexShrink: 0,
+                ml: 1,
+                '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline', color: styles.textSecondary },
+              }}
+            >
+              获取 {providerLabel(modelForm.provider)} Key →
+            </Button>
+          </Box>
+        ) : (!isCustomMode ? '已根据提供商自动填充，可按需修改' : '请输入自定义 API 端点地址')
+      }
       sx={styles.input}
     />
 
@@ -263,7 +277,9 @@ const KeysSection: React.FC<{
   showApiKey: boolean;
   toggleApiKeyVisibility: () => void;
   styles: ReturnType<typeof getModelManagerStyles>;
-}> = ({ modelForm, setModelForm, showApiKey, toggleApiKeyVisibility, styles }) => {
+  /** "获取 Key"按钮点击回调 */
+  onGetApiKey?: () => void;
+}> = ({ modelForm, setModelForm, showApiKey, toggleApiKeyVisibility, styles, onGetApiKey }) => {
   const isLocalProvider = modelForm.provider === 'ollama'
     || (modelForm.apiEndpoint || '').includes('localhost')
     || (modelForm.apiEndpoint || '').includes('127.0.0.1');
@@ -332,25 +348,21 @@ const KeysSection: React.FC<{
             size="small"
             variant="text"
             onClick={() => {
-              const url = PROVIDER_API_KEY_URLS[modelForm.provider];
-              if (url) {
-                // pywebview 环境
-                if (window.pywebview?.api) {
-                  window.pywebview.api.open_in_browser(url).catch(() => {
-                    window.open(url, '_blank', 'noopener,noreferrer');
-                  });
-                } else {
-                  window.open(url, '_blank', 'noopener,noreferrer');
-                }
+              if (onGetApiKey) {
+                onGetApiKey();
+              } else {
+                const url = PROVIDER_API_KEY_URLS[modelForm.provider];
+                if (url) openInSystemBrowser(url);
               }
             }}
             sx={{
               fontSize: '0.7rem',
               textTransform: 'none',
-              color: styles.textSecondary,
+              color: styles.textMuted,
               p: 0,
               minWidth: 'auto',
-              '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline' },
+              fontWeight: 400,
+              '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline', color: styles.textSecondary },
             }}
           >
             获取 {providerLabel(modelForm.provider)} API Key →
@@ -690,7 +702,7 @@ const TestSection: React.FC<{
 };
 
 // ====== 主组件 ======
-const ModelEditDialog: React.FC<ModelEditDialogProps> = ({ state, actions }) => {
+const ModelEditDialog: React.FC<ModelEditDialogProps> = ({ state, actions, navigate }) => {
   const {
     modelForm, modelFormErrors, modelDialogMode,
     testStatus, testMessage, showApiKey,
@@ -704,6 +716,19 @@ const ModelEditDialog: React.FC<ModelEditDialogProps> = ({ state, actions }) => 
 
   // 当前步骤
   const [activeStep, setActiveStep] = useState<StepId>('basic');
+
+  /** "获取 Key"回调：关闭对话框并跳转到帮助页 */
+  const handleGetApiKey = useCallback(() => {
+    const provider = modelForm.provider;
+    closeModelDialog();
+    if (navigate) {
+      navigate(`/api-key-help/${provider}`);
+    } else {
+      // fallback: 直接打开 URL
+      const url = PROVIDER_API_KEY_URLS[provider];
+      if (url) openInSystemBrowser(url);
+    }
+  }, [modelForm.provider, closeModelDialog, navigate]);
 
   if (!modelDialogMode) return null;
 
@@ -811,6 +836,7 @@ const ModelEditDialog: React.FC<ModelEditDialogProps> = ({ state, actions }) => 
               modelDialogMode={modelDialogMode}
               modelFormErrors={modelFormErrors}
               styles={styles}
+              onGetApiKey={handleGetApiKey}
             />
           )}
           {activeStep === 'keys' && (
@@ -820,6 +846,7 @@ const ModelEditDialog: React.FC<ModelEditDialogProps> = ({ state, actions }) => 
               showApiKey={showApiKey}
               toggleApiKeyVisibility={toggleApiKeyVisibility}
               styles={styles}
+              onGetApiKey={handleGetApiKey}
             />
           )}
           {activeStep === 'advanced' && (

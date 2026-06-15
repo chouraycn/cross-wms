@@ -709,8 +709,9 @@ describe('Inventory Transactions API', () => {
     const result = await api.getInventoryTransactions();
 
     expect(mockFetch.mock.calls[0][0]).toBe(`${BASE_URL}/api/inventory-transactions`);
-    // getInventoryTransactions uses fetch directly without method option (GET is default)
-    expect(mockFetch.mock.calls[0][1]).toBeUndefined();
+    // fetchWithTimeout always passes { signal: AbortController.signal }
+    expect(mockFetch.mock.calls[0][1]).toBeDefined();
+    expect(mockFetch.mock.calls[0][1]?.signal).toBeDefined();
     expect(result).toEqual(responseData);
   });
 
