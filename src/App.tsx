@@ -15,8 +15,7 @@ import UpdateNotification from './components/UpdateNotification';
 import { WindowDragBar } from './components/Layout/WindowDragBar';
 import { ChatContainer } from './components/CrossWmsChat/ChatContainer';
 import { ChatProvider } from './contexts/ChatContext';
-import { ToolPermissionProvider, useToolPermission } from './contexts/ToolPermissionContext';
-import ToolPermissionDialog from './components/CrossWmsChat/ToolPermissionDialog';
+import { ToolPermissionProvider } from './contexts/ToolPermissionContext';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
 import { automationEngine } from './services/automation';
@@ -49,6 +48,13 @@ const WmsReplenishmentPage = React.lazy(() => import('./pages/WmsReplenishmentPa
 const TransferPage = React.lazy(() => import('./pages/TransferPage'));
 const ProjectDetailPage = React.lazy(() => import('./pages/ProjectDetailPage'));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
+const PluginsPage = React.lazy(() => import('./pages/PluginsPage'));
+const ApiDomainWhitelistPage = React.lazy(() => import('./pages/ApiDomainWhitelistPage'));
+const ApiTemplatesPage = React.lazy(() => import('./pages/ApiTemplatesPage'));
+const BrowserPage = React.lazy(() => import('./pages/BrowserPage'));
+const ApiCredentialsPage = React.lazy(() => import('./pages/ApiCredentialsPage'));
+const ApiHistoryPage = React.lazy(() => import('./pages/ApiHistoryPage'));
+const ApiKeyHelpPage = React.lazy(() => import('./pages/ApiKeyHelpPage'));
 
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
@@ -516,7 +522,11 @@ const MainLayout: React.FC = () => {
   const scrollRef = useAutoHideScrollbar(!isPy);
 
   // AI 对话框可见性：自动化、Agent、技能、对话、项目页面隐藏
-  const showChatBar = !location.pathname.startsWith('/automation') && !location.pathname.startsWith('/skills') && !location.pathname.startsWith('/chat') && !location.pathname.startsWith('/projects');
+  // 在设置型页面中不显示 AI 对话框，避免混入 AI 浮层。
+  const showChatBar = !location.pathname.startsWith('/automation') &&
+    !location.pathname.startsWith('/skills') &&
+    !location.pathname.startsWith('/chat') &&
+    !location.pathname.startsWith('/projects');
 
   const actions = getToolbarActions(location.pathname);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -530,20 +540,12 @@ const MainLayout: React.FC = () => {
 
   // 系统红黄绿按钮区域高度由 CSS 变量 --pw-top 控制（frameless 模式下 JS 注入 43px）
   // 两侧（Sidebar + 工具栏）均使用 calc(40px + var(--pw-top, 0px)) 统一高度
-  const { pendingRequest, submitPermission } = useToolPermission();
 
   return (
     <ToastProvider sidebarCollapsed={sidebarCollapsed}>
       <StorageWarningListener />
-      {/* v1.9.2: 敏感工具权限确认弹窗 */}
-      <ToolPermissionDialog
-        open={!!pendingRequest}
-        request={pendingRequest}
-        onApprove={(reqId, alwaysAllow) => submitPermission(reqId, true, alwaysAllow)}
-        onDeny={(reqId) => submitPermission(reqId, false)}
-      />
       {/* v1.5.64: 窗口拖拽条 — frameless pywebview 窗口移动入口 */}
-      <WindowDragBar height={20} />
+      <WindowDragBar height={38} />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Sidebar — 单栏布局 */}
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
@@ -650,7 +652,14 @@ const MainLayout: React.FC = () => {
                     <Route path="/wms/replenishment" element={<Suspense fallback={<LoadingFallback />}><WmsReplenishmentPage /></Suspense>} />
                     <Route path="/transfer" element={<TransferPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/api-key-help/:provider" element={<ApiKeyHelpPage />} />
                     <Route path="/automation" element={<AutomationPage />} />
+                    <Route path="/plugins" element={<PluginsPage />} />
+                    <Route path="/api-domain-whitelist" element={<ApiDomainWhitelistPage />} />
+                    <Route path="/api-templates" element={<ApiTemplatesPage />} />
+                    <Route path="/browser" element={<BrowserPage />} />
+                    <Route path="/api-credentials" element={<ApiCredentialsPage />} />
+                    <Route path="/api-history" element={<ApiHistoryPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Suspense>

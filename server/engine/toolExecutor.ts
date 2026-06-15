@@ -13,6 +13,7 @@
 
 import { callAIModelStream, type ModelCallConfig, type ToolCall, type AIResponse, type MessageContent } from '../aiClient.js';
 import { getToolDefinitions, executeToolCall } from './toolRegistry.js';
+import { pluginRegistry } from './pluginRegistry.js';
 
 export interface ToolExecutorOptions {
   modelConfig: ModelCallConfig;
@@ -35,30 +36,61 @@ export interface ToolExecutorOptions {
   approvedToolsCache?: Set<string>;
 }
 
-/** 
- * 敏感工具列表 — 需要用户二次确认
- * 
- * 安全等级设计原则：
- * - shell_exec 已移除（toolRegistry 有 ALLOWED_COMMANDS 白名单 + 危险参数检测 + Shell注入防护）
- * - file_writeFile 保留（文件写入不可逆）
- * - desktop_* 保留（桌面自动化为高风险操作）
- * - 同一会话中，批准过一次的工具自动缓存，不再重复询问
- */
-const SENSITIVE_TOOLS = new Set([
-  'file_writeFile',
-  'desktop_click',
-  'desktop_type',
-  'desktop_key_press',
-  'desktop_app_launch',
-  'desktop_app_quit',
-  'desktop_window_focus',
-  'desktop_clipboard',
-  'desktop_scroll',
-  'desktop_see',
-]);
+/** v2.2.1: 工具风险等级 */
+export type ToolRiskLevel = 'auto' | 'confirm' | 'high-risk';
 
-function isSensitiveTool(name: string): boolean {
-  return SENSITIVE_TOOLS.has(name);
+/** v2.2.1: 工具风险分级映射 */
+const TOOL_RISK_LEVELS: Record<string, ToolRiskLevel> = {
+  // auto-approve: 只读、无副作用
+  'system_info': 'auto',
+  'file_listDir': 'auto',
+  'file_readFile': 'auto',
+  'db_query': 'auto',
+  'desktop_health': 'auto',
+  'desktop_screenshot': 'auto',
+  'app_setBotName': 'auto',
+  'wms_inventory': 'auto',     // v2.3.2: 只读库存概览，无需确认
+  'web_search': 'auto',        // v2.4.0: 只读搜索，无副作用
+  'web_fetch': 'auto',         // v2.4.0: 只读抓取，无副作用
+
+  // confirm: 写入、有副作用（需用户确认）
+  'file_writeFile': 'confirm',
+  'shell_exec': 'confirm',
+  'web_api_call': 'confirm',   // v2.4.0: 可能写入外部系统，需确认
+  'browser_navigate': 'confirm',  // v3.0: 导航到新 URL
+  'browser_click': 'confirm',     // v3.0: 点击页面元素
+  'browser_type': 'confirm',      // v3.0: 输入文本
+
+  // high-risk: 不可逆、系统级（需确认 + 显示高风险警告）
+  'desktop_click': 'high-risk',
+  'desktop_type': 'high-risk',
+  'desktop_key_press': 'high-risk',
+  'desktop_app_launch': 'auto',  // v2.3.4: 改为自动授权，URL 在应用内窗口打开
+  'desktop_app_quit': 'high-risk',
+  'desktop_window_focus': 'high-risk',
+  'desktop_clipboard': 'high-risk',
+  'desktop_scroll': 'high-risk',
+  'desktop_see': 'high-risk',
+
+  // v3.0: Browser auto-approve (只读、无副作用)
+  'browser_snapshot': 'auto',
+  'browser_screenshot': 'auto',
+
+  // v3.0: Webhook tools
+  'web_hook_listen': 'confirm',
+  'web_hook_poll': 'auto',
+  'web_hook_stop': 'auto',
+};
+
+/** v2.2.1: 获取工具风险等级 */
+export function getToolRiskLevel(name: string): ToolRiskLevel {
+  return TOOL_RISK_LEVELS[name] || 'confirm'; // 未知工具默认需要确认
+}
+
+/** v2.2.1: 判断工具是否需要权限确认 */
+function needsPermission(name: string): boolean {
+  const level = getToolRiskLevel(name);
+  return level === 'confirm' || level === 'high-risk';
 }
 
 /**
@@ -89,7 +121,9 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     approvedToolsCache: externalApprovedToolsCache,
   } = options;
 
-  const tools = getToolDefinitions();
+  const builtinTools = getToolDefinitions();
+  const pluginTools = pluginRegistry.getActiveTools();
+  const tools = [...builtinTools, ...pluginTools];
   const currentMessages = [...messages];
   let finalContent = '';
   const executedToolCalls: Array<{ name: string; arguments: string; result: string }> = [];
@@ -144,7 +178,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       const toolName = toolCall.function.name;
 
       // v1.9.6: 敏感工具权限检查 — Session 级缓存 + 用户确认
-      if (isSensitiveTool(toolName)) {
+      if (needsPermission(toolName)) {
         let hasPermission: boolean;
 
         if (approvedToolsCache.has(toolName)) {

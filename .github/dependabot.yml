@@ -1,0 +1,41 @@
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Asia/Shanghai'
+    open-pull-requests-limit: 10
+    reviewers:
+      - 'cdf-know-clow-maintainers'
+    labels:
+      - 'dependencies'
+      - 'security'
+    commit-message:
+      prefix: 'chore(deps)'
+      include: 'scope'
+    # 安全更新自动合并（patch 级别）
+    groups:
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - '*'
+        update-types:
+          - 'patch'
+          - 'minor'
+
+  - package-ecosystem: 'pip'
+    directory: '/scripts'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Asia/Shanghai'
+    open-pull-requests-limit: 5
+    labels:
+      - 'dependencies'
+      - 'python'
+    commit-message:
+      prefix: 'chore(deps-py)'

@@ -503,12 +503,20 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
   };
 
   /**
-   * 检测当前是否处于 IME 组合状态 — 三重检测
+   * 检测当前是否处于 IME 组合状态 — 四重检测
    *
-   * 优先级：
+   * 问题背景：
+   * 1. WKWebView 中 nativeEvent.isComposing 不可靠
+   * 2. 某些输入法（搜狗/百度）输入英文时不触发 onCompositionEnd
+   * 3. 某些场景下 onCompositionStart 不触发
+   * 4. macOS 中文输入法输入英文时（如拼音模式直接输英文按 Enter），
+   *    不触发 onCompositionStart/End，nativeEvent.isComposing 也为 false
+   *
+   * 解决方案：
    * 1. nativeEvent.isComposing（标准浏览器最可靠）
    * 2. isComposingRef（兜底，由 onCompositionStart/End 维护）
-   * 3. 两者都为 false 时才认为不在组合中
+   * 3. beforeinput 事件检测 insertCompositionText（macOS 中文输入法输英文的关键）
+   * 4. 两者都为 false 时才认为不在组合中
    *
    * 注意：不使用超时自动重置，因为会导致中文输入法下输入英文时
    * 回车确认候选词被误当作消息发送。
@@ -521,6 +529,42 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
     }
     return isComposingRef.current;
   };
+
+  /**
+   * v2.3.0: beforeinput 事件处理 — 检测 IME 组合状态
+   *
+   * macOS 中文输入法在拼音模式下输入英文（不切换输入法），
+   * 按 Enter 确认时不会触发 onCompositionStart/End，
+   * 但会触发 beforeinput 事件且 inputType 为 'insertCompositionText'。
+   *
+   * 策略：
+   * - beforeinput 时如果 inputType 包含 'Composition'，标记为组合中
+   * - 下一个非组合的 beforeinput 事件触发时重置（不依赖超时，避免 WKWebView 下回车误发送）
+   */
+  const compositionTextInsertedRef = useRef(false);
+
+  const handleBeforeInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+    const event = e.nativeEvent as InputEvent;
+    if (event.inputType?.includes('Composition')) {
+      isComposingRef.current = true;
+      compositionTextInsertedRef.current = true;
+    } else if (compositionTextInsertedRef.current) {
+      // 组合结束后的第一个非组合输入，重置状态（不依赖超时）
+      isComposingRef.current = false;
+      compositionTextInsertedRef.current = false;
+    }
+  }, []);
+
+  const handleInputWithComposition = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+    const event = e.nativeEvent as InputEvent;
+    // 组合文本输入时维持组合标记（确保 WKWebView 下 isComposingRef 不丢失）
+    if (event.inputType?.includes('Composition')) {
+      isComposingRef.current = true;
+      compositionTextInsertedRef.current = true;
+    }
+    // 调用原有的 input 处理
+    handleInputChange();
+  }, [handleInputChange]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (showSkillSelector) {
@@ -540,7 +584,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
         setSkillFocusIndex(prev => prev <= 0 ? slashFilteredCount - 1 : prev - 1);
         return;
       }
-      if (e.key === 'Enter' && !isComposing(e)) {
+      if (e.key === 'Enter' && !isComposing(e) && !compositionTextInsertedRef.current) {
         e.preventDefault();
         if (skillFocusIndex >= 0 && skillFocusIndex < slashFilteredCount) {
           const allSkills = getAllSkills().filter(s => s.status === 'active');
@@ -562,7 +606,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
         return;
       }
     }
-    if (e.key === 'Enter' && !e.shiftKey && !isComposing(e)) {
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing(e) && !compositionTextInsertedRef.current) {
       e.preventDefault();
       handleSend();
     }
@@ -594,7 +638,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
           display: 'flex',
           flexDirection: 'column',
           maxHeight: 'calc(70vh - 60px)',
-          overflow: 'auto',
+          overflow: 'hidden',
         }}
       >
         {/* Selected skill tag */}
@@ -806,10 +850,11 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
                   ref={editableRef}
                   contentEditable
                   suppressContentEditableWarning
-                  onInput={handleInputChange}
+                  onBeforeInput={handleBeforeInput}
+                  onInput={handleInputWithComposition}
                   onKeyDown={handleKeyDown}
                   onCompositionStart={() => { isComposingRef.current = true; }}
-                  onCompositionEnd={() => { isComposingRef.current = false; }}
+                  onCompositionEnd={() => { isComposingRef.current = false; compositionTextInsertedRef.current = false; }}
                   style={{
                     fontSize: 15,
                     lineHeight: 1.5,
@@ -855,45 +900,41 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
           reasoningEffort={reasoningEffort}
           onReasoningEffortChange={handleReasoningEffortChange}
         />
-      </Paper>
-
-      {/* v1.9.2: 文件夹选择区域 — 仅在启动页面（无消息时）显示，带折叠动画 */}
-      <Collapse in={session.messages.length === 0} timeout={300}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            px: 2,
-            py: 0.75,
-            bgcolor: isDark ? '#1A1A1A' : '#F5F5F5',
-            border: `1px solid ${gs.border}`,
-            borderTop: 'none',
-            borderRadius: '0 0 12px 12px',
-            mt: '-1px',
-          }}
-        >
-          {/* 选择文件夹下拉 */}
+        {/* v2.3.0: 文件夹选择区域 — 作为 Paper 内部元素，避免圆角颜色不一致 */}
+        <Collapse in={session.messages.length === 0} timeout={300}>
           <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: 0.5,
-              px: 1,
-              py: 0.4,
-              borderRadius: '6px',
-              cursor: 'pointer',
-              color: gs.textMuted,
-              fontSize: 13,
-              '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#E8E8E8' },
+              gap: 1.5,
+              px: 2,
+              py: 0.75,
+              bgcolor: isDark ? 'rgba(0,0,0,0.2)' : '#F5F5F5',
+              borderTop: `1px solid ${gs.border}`,
             }}
           >
-            <FolderOpenIcon sx={{ fontSize: 16 }} />
-            <Typography sx={{ fontSize: 13, color: gs.textMuted }}>选择文件夹（可选）</Typography>
-            <KeyboardArrowDownIcon sx={{ fontSize: 14 }} />
+            {/* 选择文件夹下拉 */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1,
+                py: 0.4,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                color: gs.textMuted,
+                fontSize: 13,
+                '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : '#E8E8E8' },
+              }}
+            >
+              <FolderOpenIcon sx={{ fontSize: 16 }} />
+              <Typography sx={{ fontSize: 13, color: gs.textMuted }}>选择文件夹（可选）</Typography>
+              <KeyboardArrowDownIcon sx={{ fontSize: 14 }} />
+            </Box>
           </Box>
-        </Box>
-      </Collapse>
+        </Collapse>
+      </Paper>
 
       {/* AI 设置弹窗（模型管理） */}
       <AISettingsDialog

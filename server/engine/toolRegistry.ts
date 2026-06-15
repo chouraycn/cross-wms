@@ -23,6 +23,7 @@ const isMac = PLATFORM === 'darwin';
 const isLinux = PLATFORM === 'linux';
 
 import type { ToolDefinition, ToolCall } from '../aiClient.js';
+import { handleWebSearch, handleWebFetch, handleWebApiCall } from './webTools.js'; // v2.4.0
 
 // ===================== 类型定义 =====================
 
@@ -656,6 +657,13 @@ async function handleDesktopKeyPress(args: Record<string, unknown>): Promise<str
 }
 
 /** desktop_app_launch - Launch application using `open` command */
+/** v2.3.4: 浏览器名称集合，用于检测是否应该启用应用内窗口而非系统浏览器 */
+const BROWSER_APPS = new Set([
+  'safari', 'chrome', 'google chrome', 'firefox', 'edge', 'microsoft edge',
+  'brave', 'opera', 'arc', 'vivaldi', 'chromium',
+  '默认浏览器', 'default browser', 'browser',
+]);
+
 async function handleDesktopAppLaunch(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
 
@@ -665,6 +673,46 @@ async function handleDesktopAppLaunch(args: Record<string, unknown>): Promise<st
 
     if (!app) {
       return JSON.stringify({ success: false, error: 'app parameter is required' });
+    }
+
+    // v2.3.4: 对于浏览器 + URL 的组合，不启动系统浏览器，改为返回 URL 让前端在应用内窗口打开
+    const isBrowserApp = BROWSER_APPS.has(app.toLowerCase().trim());
+    if (isBrowserApp && url) {
+      // 通过本地 Python HTTP 服务器中转，创建应用内 pywebview 窗口
+      try {
+        const http = await import('http');
+        const payload = JSON.stringify({ url });
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: 9988,
+          path: '/api/open-url',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(payload),
+          },
+          timeout: 5000,
+        });
+        req.write(payload);
+        req.end();
+        return JSON.stringify({
+          success: true,
+          output: `已在应用内窗口打开: ${url}`,
+          app,
+          url,
+          inApp: true,
+        });
+      } catch (e: any) {
+        // 如果 Python HTTP 服务器未就绪，返回 URL 但标记为应用内方式已尝试
+        return JSON.stringify({
+          success: true,
+          output: `链接已准备好: ${url}（请在应用内查看）`,
+          app,
+          url,
+          inApp: true,
+          note: 'HTTP bridge unavailable, URL shown inline',
+        });
+      }
     }
 
     let command: string;
@@ -1445,6 +1493,102 @@ export async function initDefaultTools(): Promise<void> {
       return JSON.stringify({ success: true, action: 'set_bot_name', name });
     },
   });
+
+  // ===================== Web Tools (v2.4.0) =====================
+
+  // web_search — 互联网搜索（DuckDuckGo，免 API Key）
+  registerTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'web_search',
+        description: '搜索互联网获取最新信息。返回标题、摘要和链接列表。当 AI 需要查询实时信息、新闻、或知识库中没有的内容时使用。',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: { type: 'string', description: '搜索关键词' },
+            maxResults: { type: 'number', description: '最大结果数（默认 8，最大 20）' },
+          },
+          required: ['query'],
+        },
+      },
+    },
+    handler: handleWebSearch,
+  });
+
+  // web_fetch — 抓取网页并转换 Markdown
+  registerTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'web_fetch',
+        description: '抓取指定 URL 的网页内容，将 HTML 转换为 Markdown 格式返回。适用于获取文章、文档、API 响应等网页内容。仅支持 http/https。',
+        parameters: {
+          type: 'object',
+          properties: {
+            url: { type: 'string', description: '要抓取的网页 URL（支持 http/https）' },
+            maxLength: { type: 'number', description: '最大返回内容长度（字节，默认 80000，最大 200000）' },
+          },
+          required: ['url'],
+        },
+      },
+    },
+    handler: handleWebFetch,
+  });
+
+  // web_api_call — 调用外部 REST API（域名白名单）/ API 模板
+  registerTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'web_api_call',
+        description: '调用外部 REST API 或 API 模板。支持两种模式：(1) 直接调用：传入 url、method、headers、body；(2) 模板调用：传入 templateId 和 variables，使用预配置的 API 模板执行。仅允许白名单内的域名。',
+        parameters: {
+          type: 'object',
+          properties: {
+            url: { type: 'string', description: 'API 端点 URL（必须匹配白名单域名，直接调用模式必填）' },
+            method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], description: 'HTTP 方法（默认 GET）' },
+            headers: { type: 'object', description: '自定义请求头（可选）' },
+            body: { type: 'string', description: '请求体（可选，用于 POST/PUT）' },
+            templateId: { type: 'string', description: 'API 模板 ID（模板调用模式，与 url 二选一）' },
+            variables: { type: 'object', description: '模板变量映射（模板调用模式使用，key-value 对）' },
+          },
+        },
+      },
+    },
+    handler: handleWebApiCall,
+  });
+
+  // v3.0: Browser 工具注册 (5 tools)
+  try {
+    const { getBrowserToolDefinitions, getBrowserToolHandlers } = await import('./browserTools.js');
+    const browserDefs = getBrowserToolDefinitions();
+    const browserHandlers = getBrowserToolHandlers();
+    for (const def of browserDefs) {
+      const handler = browserHandlers.get(def.function.name);
+      if (handler) {
+        registerTool({ definition: def, handler });
+      }
+    }
+    console.log('[Tool Registry] Browser tools registered:', browserDefs.map(d => d.function.name).join(', '));
+  } catch (err) {
+    // Playwright 可能未安装，优雅降级
+    console.warn('[Tool Registry] Browser tools not registered (playwright may not be installed):', err instanceof Error ? err.message : String(err));
+  }
+
+  // v3.0: Webhook 工具注册
+  try {
+    const { getWebhookToolDefinitions, getWebhookToolHandlers } = await import('./webhookTools.js');
+    const whDefs = getWebhookToolDefinitions();
+    const whHandlers = getWebhookToolHandlers();
+    for (const def of whDefs) {
+      const handler = whHandlers.get(def.function.name);
+      if (handler) registerTool({ definition: def, handler });
+    }
+    console.log('[Tool Registry] Webhook tools registered:', whDefs.map(d => d.function.name).join(', '));
+  } catch (err) {
+    console.warn('[Tool Registry] Webhook tools not registered:', err instanceof Error ? err.message : String(err));
+  }
 }
 
 /** 获取所有已注册工具的 definitions（用于传给 LLM） */
@@ -1481,4 +1625,34 @@ export function hasTool(name: string): boolean {
 /** 获取工具列表（调试用） */
 export function listTools(): string[] {
   return Array.from(registry.keys());
+}
+
+// ===================== Plugin Tool 动态注册（v3.0） =====================
+
+/**
+ * 注册 Plugin 工具（动态）。
+ * 返回 unregister 函数，可用于清理。
+ */
+export function registerPluginTool(
+  name: string,
+  definition: ToolDefinition,
+  handler: ToolHandler
+): () => void {
+  const tool: RegisteredTool = { definition, handler };
+  registry.set(name, tool);
+  return () => { registry.delete(name); };
+}
+
+/**
+ * 注销 Plugin 工具。
+ */
+export function unregisterPluginTool(name: string): boolean {
+  return registry.delete(name);
+}
+
+/**
+ * 列出所有 Plugin 工具名（以 plugin_ 前缀的）。
+ */
+export function listPluginTools(): string[] {
+  return Array.from(registry.keys()).filter(name => name.startsWith('plugin_'));
 }

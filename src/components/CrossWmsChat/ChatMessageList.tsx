@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react';
-import { Box, Typography, IconButton, Tooltip, Chip, useTheme, CircularProgress, TextField, ClickAwayListener, Button } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, Chip, useTheme, CircularProgress, TextField, ClickAwayListener, Button, Checkbox, FormControlLabel } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ImageIcon from '@mui/icons-material/Image';
@@ -23,6 +23,8 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 import { ThinkingBlock } from './ThinkingBlock';
 import { QueryResultRenderer } from './QueryResultRenderer';
 import ToolCallBlock from './ToolCallBlock';
+import PluginResultBlock from './PluginResultBlock';
+import { formatToolArgs } from './ToolPermissionDialog';
 
 // ===================== v1.9.3: 文件类型图标工具 =====================
 
@@ -115,7 +117,7 @@ export interface ChatMessageListProps {
   onRegenerate?: (msg: Message) => void;
   onConfirmReplenishment?: (suggestionId: number) => Promise<void>;
   /** v1.9.3: 权限请求响应回调 */
-  onPermissionRespond?: (reqId: string, approved: boolean) => void;
+  onPermissionRespond?: (reqId: string, approved: boolean, alwaysAllow?: boolean) => void;
   /** 是否显示重新生成按钮 */
   showRegenerate?: boolean;
   /** 容器最大高度 */
@@ -158,6 +160,16 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     isUserScrolledUp.current = el.scrollHeight - el.scrollTop - el.clientHeight > 80;
   }, []);
 
+  // v2.4.1: 拦截 copy 事件，只复制纯文本（去除 HTML 样式）
+  const handleContainerCopy = useCallback((e: React.ClipboardEvent) => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+    const text = selection.toString();
+    if (!text) return;
+    e.preventDefault();
+    e.clipboardData.setData('text/plain', text);
+  }, []);
+
   // 新消息时自动滚动（仅在用户没有主动上翻时）
   useEffect(() => {
     if (!isUserScrolledUp.current && messagesEndRef.current) {
@@ -177,6 +189,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     <Box
       ref={messagesContainerRef}
       onScroll={handleScroll}
+      onCopy={handleContainerCopy}
       sx={{
         flex: 1,
         overflow: 'auto',
@@ -193,8 +206,6 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       }}
     >
       {session.messages.map((msg: Message, index: number) => {
-        const isLatest = index === session.messages.length - 1;
-        const isNew = isLatest && msg.timestamp > new Date(Date.now() - 3000);
         return (
         <Box
           key={msg.id}
@@ -207,10 +218,6 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
             maxWidth: 960,
             width: '100%',
             mx: 'auto',
-            ...(isNew ? {
-              // v1.9.5-fix: 移除入场动画，避免 WKWebView 不兼容 CSS @keyframes
-              // 原来: animation: `${msg.role === 'user' ? slideInRight : slideInLeft} 0.3s ease-out`
-            } : {}),
           }}
         >
           {/* 角色标签 + 时间 */}
@@ -463,11 +470,28 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
 
 /**
  * v1.9.3: 内联权限请求组件 — 在消息中显示敏感工具确认
+ * v2.2.1: 更新 — 风险等级颜色编码、结构化参数展示、始终允许选项
  */
 interface InlinePermissionRequestProps {
   permissionRequest: NonNullable<Message['permissionRequest']>;
-  onRespond: (reqId: string, approved: boolean) => void;
+  onRespond: (reqId: string, approved: boolean, alwaysAllow?: boolean) => void;
 }
+
+/** v2.2.1: 风险等级样式映射（内联版本） */
+const INLINE_RISK_STYLES: Record<string, { color: string; bg: string; border: string; label: string }> = {
+  'confirm': {
+    color: '#F59E0B',
+    bg: 'rgba(245,158,11,0.08)',
+    border: 'rgba(245,158,11,0.25)',
+    label: '需要确认',
+  },
+  'high-risk': {
+    color: '#EF4444',
+    bg: 'rgba(239,68,68,0.08)',
+    border: 'rgba(239,68,68,0.25)',
+    label: '高风险操作',
+  },
+};
 
 const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
   permissionRequest,
@@ -476,7 +500,14 @@ const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+  const [alwaysAllow, setAlwaysAllow] = React.useState(false);
 
+  // 根据风险等级获取样式
+  const riskLevel = permissionRequest.riskLevel || 'confirm';
+  const riskStyle = INLINE_RISK_STYLES[riskLevel] || INLINE_RISK_STYLES['confirm'];
+  const isHighRisk = riskLevel === 'high-risk';
+
+  // 已响应状态
   if (permissionRequest.approved !== undefined) {
     return (
       <Box
@@ -503,6 +534,7 @@ const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
     );
   }
 
+  // 解析参数
   let argsObj: Record<string, unknown> = {};
   try {
     argsObj = JSON.parse(permissionRequest.toolArgs);
@@ -510,76 +542,98 @@ const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
     argsObj = { raw: permissionRequest.toolArgs };
   }
 
+  // 结构化参数
+  const formattedArgs = formatToolArgs(permissionRequest.toolName, argsObj);
+
   return (
     <Box
       sx={{
         mt: 1.5,
         p: 2,
         borderRadius: 2,
-        bgcolor: isDark ? '#2A1A0A' : '#FFFBEB',
-        border: `1px solid ${isDark ? '#F59E0B40' : '#FDE68A'}`,
+        bgcolor: isHighRisk
+          ? (isDark ? 'rgba(239,68,68,0.06)' : '#FEF2F2')
+          : (isDark ? '#2A1A0A' : '#FFFBEB'),
+        border: `1px solid ${riskStyle.border}`,
       }}
     >
+      {/* 标题行 */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-        <WarningAmberIcon sx={{ color: '#F59E0B', fontSize: 20 }} />
+        {isHighRisk ? (
+          <ErrorOutlineIcon sx={{ color: riskStyle.color, fontSize: 20 }} />
+        ) : (
+          <WarningAmberIcon sx={{ color: riskStyle.color, fontSize: 20 }} />
+        )}
         <Typography sx={{ fontSize: 14, fontWeight: 600, color: gs.textPrimary }}>
-          权限请求
+          {riskStyle.label}
         </Typography>
-        <Chip
-          label="敏感操作"
-          size="small"
-          sx={{
-            bgcolor: '#F59E0B20',
-            color: '#F59E0B',
-            fontWeight: 600,
-            fontSize: 11,
-          }}
-        />
-      </Box>
-
-      <Typography sx={{ fontSize: 13, color: gs.textSecondary, mb: 1 }}>
-        AI 助手请求执行以下操作：
-      </Typography>
-
-      <Box
-        sx={{
-          p: 1.5,
-          borderRadius: 1.5,
-          bgcolor: isDark ? '#1A1A1A' : '#F3F4F6',
-          mb: 1.5,
-        }}
-      >
         <Typography
           sx={{
+            fontSize: 12,
             fontFamily: 'monospace',
-            fontSize: 13,
-            fontWeight: 600,
-            color: gs.textPrimary,
-            mb: 0.5,
+            color: gs.textMuted,
+            ml: 'auto',
           }}
         >
           {permissionRequest.toolName}
         </Typography>
-        <Box
-          component="pre"
-          sx={{
-            m: 0,
-            fontFamily: 'monospace',
-            fontSize: 12,
-            color: gs.textSecondary,
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all',
-          }}
-        >
-          {JSON.stringify(argsObj, null, 2)}
-        </Box>
       </Box>
 
-      <Typography sx={{ fontSize: 12, color: gs.textMuted, mb: 1.5 }}>
-        此操作可能对系统产生影响，请确认是否允许执行。
-      </Typography>
+      {/* 高风险提示 */}
+      {isHighRisk && (
+        <Typography sx={{ fontSize: 12, color: riskStyle.color, mb: 1 }}>
+          此操作可能对系统产生不可逆的影响，请仔细确认。
+        </Typography>
+      )}
 
-      <Box sx={{ display: 'flex', gap: 1 }}>
+      {/* 结构化参数列表 */}
+      <Box
+        sx={{
+          borderRadius: 1.5,
+          bgcolor: isDark ? '#1A1A1A' : '#F3F4F6',
+          mb: 1.5,
+          overflow: 'hidden',
+        }}
+      >
+        {formattedArgs.map((item, idx) => (
+          <Box
+            key={item.label}
+            sx={{
+              display: 'flex',
+              px: 1.5,
+              py: 0.75,
+              ...(idx > 0 ? { borderTop: `1px solid ${gs.border}` } : {}),
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: 12,
+                color: gs.textMuted,
+                minWidth: 70,
+                flexShrink: 0,
+                lineHeight: '18px',
+              }}
+            >
+              {item.label}
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: 12,
+                fontFamily: 'monospace',
+                color: gs.textPrimary,
+                wordBreak: 'break-all',
+                lineHeight: '18px',
+                flex: 1,
+              }}
+            >
+              {item.value}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+
+      {/* 操作按钮 */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Button
           onClick={() => onRespond(permissionRequest.reqId, false)}
           variant="outlined"
@@ -594,16 +648,33 @@ const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
         >
           拒绝
         </Button>
+        <FormControlLabel
+          control={
+            <Checkbox
+              size="small"
+              checked={alwaysAllow}
+              onChange={(e) => setAlwaysAllow(e.target.checked)}
+              sx={{ '& .MuiSvgIcon-root': { fontSize: 16 } }}
+            />
+          }
+          label="始终允许"
+          sx={{
+            mr: 0,
+            ml: 1,
+            '& .MuiTypography-root': { fontSize: 12, color: gs.textMuted },
+          }}
+        />
         <Button
-          onClick={() => onRespond(permissionRequest.reqId, true)}
+          onClick={() => onRespond(permissionRequest.reqId, true, alwaysAllow)}
           variant="contained"
           size="small"
           sx={{
             borderRadius: 1.5,
             textTransform: 'none',
-            bgcolor: '#F59E0B',
+            bgcolor: isHighRisk ? '#EF4444' : '#F59E0B',
             color: '#fff',
-            '&:hover': { bgcolor: '#D97706' },
+            '&:hover': { bgcolor: isHighRisk ? '#DC2626' : '#D97706' },
+            ml: 'auto',
           }}
         >
           允许执行
@@ -625,7 +696,7 @@ interface BotMessageContentProps {
   onRegenerate?: (msg: Message) => void;
   showRegenerate?: boolean;
   onConfirmReplenishment?: (suggestionId: number) => Promise<void>;
-  onPermissionRespond?: (reqId: string, approved: boolean) => void;
+  onPermissionRespond?: (reqId: string, approved: boolean, alwaysAllow?: boolean) => void;
 }
 
 const BotMessageContent: React.FC<BotMessageContentProps> = ({
@@ -712,6 +783,10 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
       {/* AI 工具调用展示（Tool Calling） */}
       {msg.toolCalls && msg.toolCalls.length > 0 && (
         <ToolCallBlock toolCalls={msg.toolCalls} />
+      )}
+      {/* v3.0: 插件自动调用结果展示（reasoning 流触发） */}
+      {msg.pluginResults && msg.pluginResults.length > 0 && (
+        <PluginResultBlock results={msg.pluginResults} />
       )}
       {/* v1.9.3: 内联权限请求 */}
       {msg.permissionRequest && onPermissionRespond && (

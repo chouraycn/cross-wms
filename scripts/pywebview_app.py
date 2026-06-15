@@ -752,7 +752,22 @@ class Api:
     # ---- 窗口控制（frameless 模式下前端调用） ----
 
     def window_close(self):
-        """关闭窗口"""
+        """关闭窗口（R3: 先通知 Node 后端停止 BrowserHost，再销毁窗口）"""
+        # v1.5.68: 在销毁窗口前同步停止 Node 后端 — 触发 server 端 gracefulShutdown，
+        # 内部会执行 PRAGMA wal_checkpoint(TRUNCATE)，避免 DMG 安装/卸载时 WAL 数据丢失
+        try:
+            stop_server()
+        except Exception as e:
+            log(f"[Shutdown] stop_server 异常: {e}")
+        # R3: 通知 Node 后端停止 BrowserHost 进程（fire-and-forget，不阻塞窗口关闭）
+        try:
+            stop_host_url = f"http://127.0.0.1:{SERVER_PORT}/api/browser/stop-host"
+            req = urllib.request.Request(stop_host_url, method='POST',
+                                         data=b'{}',
+                                         headers={'Content-Type': 'application/json'})
+            urllib.request.urlopen(req, timeout=3)
+        except Exception:
+            pass  # 后端可能未运行，忽略
         if self._window:
             self._window.destroy()
         return json.dumps({'ok': True})
@@ -761,6 +776,15 @@ class Api:
         """最小化窗口"""
         if self._window:
             self._window.minimize()
+        return json.dumps({'ok': True})
+
+    def window_show(self):
+        """恢复窗口（从最小化状态）"""
+        if self._window:
+            try:
+                self._window.restore()
+            except Exception:
+                pass  # 窗口可能不在最小化状态，忽略
         return json.dumps({'ok': True})
 
     def window_maximize(self):
@@ -780,7 +804,7 @@ class Api:
                 # 获取当前窗口位置
                 current = win.x, win.y
                 new_x = current[0] + delta_x
-                new_y = current[1] - delta_y  # macOS 坐标系 Y 轴向下
+                new_y = current[1] + delta_y  # pywebview 使用屏幕坐标（Y 轴向下），鼠标下移=窗口下移
                 win.move(new_x, new_y)
                 return json.dumps({'ok': True, 'x': new_x, 'y': new_y})
             except Exception as e:
@@ -1126,9 +1150,27 @@ class Api:
     # ---- 通用 ----
 
     def open_in_browser(self, url):
-        """在系统浏览器中打开 URL"""
-        webbrowser.open(url)
-        return json.dumps({'ok': True})
+        """在应用内嵌入式窗口中打开 URL（v2.3.2：使用 pywebview 原生窗口代替系统浏览器，避免跳转割裂感）"""
+        try:
+            # 提取域名作为窗口标题，最多 30 字符
+            parsed = urllib.parse.urlparse(url)
+            title = parsed.netloc or os.path.basename(url)
+            if len(title) > 30:
+                title = title[:27] + '...'
+            webview.create_window(
+                title=title,
+                url=url,
+                width=1024,
+                height=768,
+                resizable=True,
+                text_select=True,
+            )
+            log(f"[open_in_browser] 应用内窗口: {url}")
+            return json.dumps({'ok': True, 'mode': 'webview'})
+        except Exception as e:
+            log(f"[open_in_browser] pywebview 窗口失败，降级到系统浏览器: {e}")
+            webbrowser.open(url)
+            return json.dumps({'ok': True, 'mode': 'browser', 'fallback': True})
 
     def get_release_info(self):
         """获取 GitHub Releases 上的 release.json（供前端检查更新，绕过 CORS）
@@ -1399,10 +1441,60 @@ def start_http_server(dist_dir: str, port: int = 9988):
             super().do_GET()
 
         def do_POST(self):
+            # v2.3.4: /api/open-url — 在应用内 pywebview 窗口打开 URL（由 Node.js 后端 desktop_app_launch 调用）
+            if self.path == '/api/open-url':
+                self._handle_open_url()
+                return
             if self.path.startswith('/api/'):
                 self._proxy_to_backend()
                 return
             self.send_error(404)
+
+        def _handle_open_url(self):
+            """处理 /api/open-url POST 请求，在应用内创建 pywebview 窗口"""
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                body = self.rfile.read(content_length) if content_length > 0 else b'{}'
+                data = json.loads(body.decode('utf-8'))
+                url = data.get('url', '')
+                if not url:
+                    self.send_response(400)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({'ok': False, 'error': 'Missing url'}).encode('utf-8'))
+                    return
+            except Exception:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'ok': False, 'error': 'Invalid JSON'}).encode('utf-8'))
+                return
+
+            try:
+                # 在应用内创建嵌入式窗口
+                parsed = urllib.parse.urlparse(url)
+                title = parsed.netloc or '网页'
+                if len(title) > 30:
+                    title = title[:27] + '...'
+                webview.create_window(
+                    title=title,
+                    url=url,
+                    width=1024,
+                    height=768,
+                    resizable=True,
+                    text_select=True,
+                )
+                log(f"[open-url] 应用内窗口: {url}")
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'ok': True, 'url': url}).encode('utf-8'))
+            except Exception as e:
+                log(f"[open-url] 窗口创建失败: {e}")
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'ok': False, 'error': str(e)}).encode('utf-8'))
 
         def do_PUT(self):
             if self.path.startswith('/api/'):
@@ -1516,7 +1608,7 @@ def main():
             text_select=True,
             js_api=api,
             frameless=True,  # 无系统标题栏，使用 CSS 避让红黄绿按钮
-            easy_drag=False,  # v2.3.1: 关闭 easy_drag，使用 CSS WebkitAppRegion:drag 实现窗口拖拽（避免拦截鼠标事件导致文本无法选中）
+            easy_drag=True,  # v2.5.0: 开启系统原生拖拽，配合 CSS WebkitAppRegion:no-drag 释放内容区文本选择
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
@@ -1559,6 +1651,14 @@ def main():
                 log("[HTTP Server] 已停止")
             except Exception as e:
                 log(f"[HTTP Server] 停止失败: {e}")
+
+        # v1.5.68: 在所有退出路径上确保 Node 后端被优雅停止（SIGTERM），
+        # 触发 server 端 gracefulShutdown -> PRAGMA wal_checkpoint(TRUNCATE)，
+        # 防止 DMG 卸载/重装时 chat.db WAL 残留导致历史对话丢失。
+        try:
+            stop_server()
+        except Exception as e:
+            log(f"[Shutdown] finally:stop_server 异常: {e}")
 
         log(f"=== CDF Know Clow 退出 (exit_code={exit_code}) ===")
 

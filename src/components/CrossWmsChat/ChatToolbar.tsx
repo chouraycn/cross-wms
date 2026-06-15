@@ -145,16 +145,9 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
     setActiveDropdown(prev => prev === type ? null : type);
   };
 
-  // 参考截图的配色
+  // 参考截图的配色（灰阶使用主题系统，语义色保留）
   const ACCENT = '#F97316'; // 橘色主色调
-  const BTN_BG = isDark ? '#2A2A2A' : '#F0F0F0';
-  const BTN_HOVER = isDark ? '#333333' : '#E5E5E5';
-  const MENU_BG = isDark ? '#1E1E1E' : '#FFFFFF';
-  const MENU_BORDER = isDark ? '#333333' : '#E5E5E5';
-  const SECTION_TEXT = isDark ? '#888888' : '#9CA3AF';
-  const ITEM_TEXT = isDark ? '#E0E0E0' : '#111827';
-  const ITEM_DESC = isDark ? '#888888' : '#9CA3AF';
-  const SELECTED_BG = isDark ? '#3D2A10' : '#FFF7ED';
+  const SELECTED_BG = isDark ? '#3D2A10' : '#FFF7ED'; // 橙色选中态
 
   return (
     <>
@@ -180,15 +173,15 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               px: 1.5,
               py: 0.5,
               borderRadius: '20px',
-              bgcolor: BTN_BG,
+              bgcolor: gs.bgHover,
               cursor: 'pointer',
               transition: 'background-color 0.15s',
-              '&:hover': { bgcolor: BTN_HOVER },
+              '&:hover': { bgcolor: gs.bgActive },
               userSelect: 'none',
             }}
           >
             <AutoFixHighIcon sx={{ fontSize: 15, color: gs.textMuted }} />
-            <Typography sx={{ fontSize: 13, fontWeight: 500, color: ITEM_TEXT, lineHeight: 1 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 500, color: gs.textPrimary, lineHeight: 1 }}>
               Skills
             </Typography>
           </Box>
@@ -204,15 +197,15 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                 px: 1.5,
                 py: 0.5,
                 borderRadius: '20px',
-                bgcolor: BTN_BG,
+                bgcolor: gs.bgHover,
                 cursor: 'pointer',
                 transition: 'background-color 0.15s',
-                '&:hover': { bgcolor: BTN_HOVER },
+                '&:hover': { bgcolor: gs.bgActive },
                 userSelect: 'none',
               }}
             >
               <AttachFileIcon sx={{ fontSize: 15, color: gs.textMuted }} />
-              <Typography sx={{ fontSize: 13, fontWeight: 500, color: ITEM_TEXT, lineHeight: 1 }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 500, color: gs.textPrimary, lineHeight: 1 }}>
                 附件
               </Typography>
             </Box>
@@ -234,15 +227,15 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                 px: 1.5,
                 py: 0.5,
                 borderRadius: '20px',
-                bgcolor: reasoningEffort ? (reasoningEffort === 'max' ? (isDark ? '#3D2A10' : '#FFF7ED') : (isDark ? '#2A1A3A' : '#F3E8FF')) : BTN_BG,
+                bgcolor: reasoningEffort ? (reasoningEffort === 'max' ? (isDark ? '#3D2A10' : '#FFF7ED') : (isDark ? '#2A1A3A' : '#F3E8FF')) : gs.bgHover,
                 cursor: 'pointer',
                 transition: 'background-color 0.15s',
-                '&:hover': { bgcolor: reasoningEffort ? (reasoningEffort === 'max' ? (isDark ? '#4A3518' : '#FFEDD5') : (isDark ? '#3A1A4A' : '#E9D5FF')) : BTN_HOVER },
+                '&:hover': { bgcolor: reasoningEffort ? (reasoningEffort === 'max' ? (isDark ? '#4A3518' : '#FFEDD5') : (isDark ? '#3A1A4A' : '#E9D5FF')) : gs.bgActive },
                 userSelect: 'none',
               }}
             >
               <AutoAwesomeIcon sx={{ fontSize: 15, color: reasoningEffort ? (reasoningEffort === 'max' ? '#F59E0B' : '#8B5CF6') : gs.textMuted }} />
-              <Typography sx={{ fontSize: 13, fontWeight: 500, color: reasoningEffort ? (reasoningEffort === 'max' ? '#F59E0B' : '#8B5CF6') : ITEM_TEXT, lineHeight: 1 }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 500, color: reasoningEffort ? (reasoningEffort === 'max' ? '#F59E0B' : '#8B5CF6') : gs.textPrimary, lineHeight: 1 }}>
                 {reasoningEffort === 'max' ? '极致推理' : reasoningEffort === 'high' ? '深度思考' : '思考'}
               </Typography>
             </Box>
@@ -262,14 +255,14 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               px: 1.5,
               py: 0.5,
               borderRadius: '20px',
-              bgcolor: activeDropdown === 'model' ? BTN_BG : 'transparent',
+              bgcolor: activeDropdown === 'model' ? gs.bgHover : 'transparent',
               cursor: modelsLoading ? 'default' : 'pointer',
               transition: 'background-color 0.15s',
-              '&:hover': modelsLoading ? {} : { bgcolor: BTN_HOVER },
+              '&:hover': modelsLoading ? {} : { bgcolor: gs.bgActive },
               userSelect: 'none',
             }}
           >
-            <Typography sx={{ fontSize: 13, fontWeight: 500, color: modelsLoading ? gs.textMuted : ITEM_TEXT, lineHeight: 1 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 500, color: modelsLoading ? gs.textMuted : gs.textPrimary, lineHeight: 1 }}>
               {modelsLoading ? '加载模型中...' : (selectedModel === 'Auto' ? 'CDF Auto Model' : selectedModel)}
             </Typography>
             {!modelsLoading && <KeyboardArrowUpIcon sx={{ fontSize: 18, color: gs.textMuted }} />}
@@ -282,7 +275,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               onClick={(e) => e.stopPropagation()}
               sx={{
                 width: 32, height: 32, borderRadius: '8px', p: 0,
-                color: gs.textMuted, '&:hover': { bgcolor: BTN_BG },
+                color: gs.textMuted, '&:hover': { bgcolor: gs.bgHover },
               }}
             >
               <MicIcon sx={{ fontSize: 18 }} />
@@ -333,9 +326,9 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               maxHeight: 520,
               mt: -0.5, // 紧贴按钮
               borderRadius: '14px',
-              border: `1px solid ${MENU_BORDER}`,
+              border: `1px solid ${gs.border}`,
               boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-              bgcolor: MENU_BG,
+              bgcolor: gs.bgPanel,
               overflow: 'hidden',
             },
           },
@@ -371,7 +364,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                 <AutoModeIcon sx={{ fontSize: 20, color: ACCENT, flexShrink: 0 }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: isSelected ? ACCENT : ITEM_TEXT }}>
+                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: isSelected ? ACCENT : gs.textPrimary }}>
                       CDF Auto Model
                     </Typography>
                     <Chip
@@ -385,7 +378,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                       }}
                     />
                   </Box>
-                  <Typography sx={{ fontSize: '0.7rem', color: ITEM_DESC, mt: 0.25 }}>
+                  <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, mt: 0.25 }}>
                     根据任务自动选择最合适的模型
                   </Typography>
                 </Box>
@@ -397,10 +390,10 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           );
         })()}
 
-        <Divider sx={{ mx: 1.5, my: 0.5, borderColor: MENU_BORDER }} />
+        <Divider sx={{ mx: 1.5, my: 0.5, borderColor: gs.border }} />
 
         {/* 分组标题 */}
-        <Typography sx={{ px: 2, py: 0.5, fontSize: '0.6875rem', fontWeight: 600, color: SECTION_TEXT, letterSpacing: '0.02em' }}>
+        <Typography sx={{ px: 2, py: 0.5, fontSize: '0.6875rem', fontWeight: 600, color: gs.textMuted, letterSpacing: '0.02em' }}>
           可用模型
         </Typography>
 
@@ -431,7 +424,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                       <Typography sx={{
                         fontSize: '0.8125rem',
                         fontWeight: isSelected ? 600 : 500,
-                        color: isSelected ? ACCENT : ITEM_TEXT,
+                        color: isSelected ? ACCENT : gs.textPrimary,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -469,7 +462,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                       {option.description && (
                         <Typography sx={{
                           fontSize: '0.7rem',
-                          color: ITEM_DESC,
+                          color: gs.textMuted,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -489,7 +482,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             );
           })}
 
-        <Divider sx={{ mx: 1.5, my: 0.5, borderColor: MENU_BORDER }} />
+        <Divider sx={{ mx: 1.5, my: 0.5, borderColor: gs.border }} />
 
         {/* 无已启用模型提示 */}
         {modelOptions.filter(o => o.provider !== 'auto').length === 0 && !modelsLoading && (
@@ -497,7 +490,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             <Typography sx={{ fontSize: '0.75rem', color: ACCENT, fontWeight: 500 }}>
               尚未启用任何模型
             </Typography>
-            <Typography sx={{ fontSize: '0.6875rem', color: ITEM_DESC, mt: 0.25 }}>
+            <Typography sx={{ fontSize: '0.6875rem', color: gs.textMuted, mt: 0.25 }}>
               请在模型管理中添加 API Key 并启用模型
             </Typography>
           </Box>
@@ -509,9 +502,9 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           sx={{ py: 1, mx: 0.5, borderRadius: '10px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
         >
           <ListItemIcon sx={{ minWidth: 32 }}>
-            <SettingsIcon sx={{ fontSize: 16, color: SECTION_TEXT }} />
+            <SettingsIcon sx={{ fontSize: 16, color: gs.textMuted }} />
           </ListItemIcon>
-          <Typography sx={{ fontSize: '0.8125rem', color: SECTION_TEXT }}>添加模型</Typography>
+          <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>添加模型</Typography>
         </MenuItem>
       </Menu>
 
@@ -529,9 +522,9 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               maxHeight: 400,
               mt: -0.5,
               borderRadius: '14px',
-              border: `1px solid ${MENU_BORDER}`,
+              border: `1px solid ${gs.border}`,
               boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-              bgcolor: MENU_BG,
+              bgcolor: gs.bgPanel,
             },
           },
         }}
@@ -553,7 +546,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             const items = grouped[cat];
             if (!items || items.length === 0) continue;
             result.push(
-              <Typography key={`cat-${cat}`} sx={{ px: 2, py: 0.5, fontSize: '0.6875rem', fontWeight: 600, color: SECTION_TEXT }}>
+              <Typography key={`cat-${cat}`} sx={{ px: 2, py: 0.5, fontSize: '0.6875rem', fontWeight: 600, color: gs.textMuted }}>
                 {getCategoryLabel(cat)}
               </Typography>
             );
@@ -567,20 +560,20 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                   <ListItemIcon sx={{ minWidth: 32 }}>
                     {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 18 }} />}
                   </ListItemIcon>
-                  <Typography sx={{ fontSize: '0.8125rem', color: ITEM_TEXT }}>{skill.name}</Typography>
+                  <Typography sx={{ fontSize: '0.8125rem', color: gs.textPrimary }}>{skill.name}</Typography>
                 </MenuItem>
               );
             }
           }
           return result;
         })()}
-        <Divider sx={{ mx: 1.5, borderColor: MENU_BORDER }} />
+        <Divider sx={{ mx: 1.5, borderColor: gs.border }} />
         <MenuItem
           onClick={() => { setActiveDropdown(null); navigate('/skills'); }}
           sx={{ py: 0.75, mx: 0.5, borderRadius: '8px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
         >
-          <ListItemIcon><SettingsIcon sx={{ fontSize: 16, color: SECTION_TEXT }} /></ListItemIcon>
-          <Typography sx={{ fontSize: '0.8125rem', color: SECTION_TEXT }}>查看全部技能 →</Typography>
+          <ListItemIcon><SettingsIcon sx={{ fontSize: 16, color: gs.textMuted }} /></ListItemIcon>
+          <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>查看全部技能 →</Typography>
         </MenuItem>
       </Menu>
 

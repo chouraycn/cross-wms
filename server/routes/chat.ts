@@ -8,7 +8,7 @@ import { EventEmitter } from 'events';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const require: any;
 import { callAIModelStream, callAIModel, AIAPIError } from '../aiClient.js';
-import type { MessageContent } from '../aiClient.js';
+import type { MessageContent, ModelCallConfig } from '../aiClient.js';
 import { executeToolLoop, getToolRiskLevel } from '../engine/toolExecutor.js';
 import { loadModelsConfig, ModelsFile, isLocalModel, syncModelsFromApi } from '../modelsStore.js';
 import { selectKey, reportKeyResult } from '../keyRotator.js';
@@ -20,6 +20,7 @@ import {
   addMessage,
   deleteSession,
 } from '../dao/chat.js';
+import { matchTriggers, executePluginTrigger } from '../services/pluginAutoInvoke.js';
 
 // MEMORY.md 路径
 const CDF_KNOW_CLOW_DIR = path.join(os.homedir(), '.cdf-know-clow');
@@ -28,9 +29,28 @@ const MEMORY_MD_PATH = path.join(CDF_KNOW_CLOW_DIR, 'MEMORY.md');
 // v1.9.2: 工具权限请求全局 EventEmitter
 export const permissionEmitter = new EventEmitter();
 
+// v2.3.3: reqId → { toolName, sessionId } 映射，用于持久化 "始终允许"
+const reqIdToolMap = new Map<string, { toolName: string; sessionId: string }>();
+
 // v1.9.6: Session 级工具授权缓存 — 同一会话内，工具授权一次后不再重复授权
 // key 为 sessionId，value 为该 session 已授权的工具名称集合
 const sessionApprovedToolsCache = new Map<string, Set<string>>();
+
+// v2.3.3: 全局始终允许的工具集合（持久化到 DB，跨会话）
+let globalAlwaysAllowed: Set<string> | null = null;
+
+/** v2.3.3: 加载全局始终允许的工具列表 */
+function loadAlwaysAllowedTools(): Set<string> {
+  if (globalAlwaysAllowed) return globalAlwaysAllowed;
+  try {
+    const { getAppSettings } = require('../dao/settings');
+    const val = getAppSettings('always_allowed_tools');
+    globalAlwaysAllowed = val ? new Set(JSON.parse(val)) : new Set();
+  } catch {
+    globalAlwaysAllowed = new Set();
+  }
+  return globalAlwaysAllowed;
+}
 
 // v2.2.0: Thinking 结果缓存（LRU，最多 50 条，TTL 10 分钟）
 const thinkingCache = new Map<string, { content: string; thinking: string; timestamp: number }>();
@@ -477,6 +497,12 @@ router.post('/chat', async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
+    // v2.2.3: 立即发送响应头 + 禁用 TCP Nagle，确保 SSE 小包（thinking/keep-alive）
+    // 不会被 200ms 延迟积累后导致 WKWebView ReadableStream 断连
+    res.flushHeaders();
+    if (req.socket) {
+      req.socket.setNoDelay(true);
+    }
 
     // Auto 模式：智能选择最合适的模型
     const modelsConfig = await loadModelsConfig();
@@ -532,6 +558,8 @@ router.post('/chat', async (req, res) => {
       let thinkingStartTime: number | null = null;
       let hasThinking = false;
       let thinkingContent = '';
+      // v3.0: thinking chunk 计数器，用于控制触发器匹配频率
+      let thinkingChunkCount = 0;
       // v2.2.0: 全局 keep-alive — 每 10 秒发送一次，防止 WKWebView 因长时间无数据关闭 SSE 连接
       let keepAliveTimer: NodeJS.Timeout | null = null;
       // v2.2.0: usage 数据收集
@@ -811,6 +839,10 @@ router.post('/chat', async (req, res) => {
           // v1.9.6: 传入 Session 级工具授权缓存，同一会话内授权一次后不再重复授权
           const sessionApprovedSet = sessionApprovedToolsCache.get(sessionId) ?? new Set<string>();
           if (!sessionApprovedToolsCache.has(sessionId)) {
+            // v2.3.3: 首次创建会话时，注入全局始终允许的工具
+            for (const t of loadAlwaysAllowedTools()) {
+              sessionApprovedSet.add(t);
+            }
             sessionApprovedToolsCache.set(sessionId, sessionApprovedSet);
           }
 
@@ -850,8 +882,39 @@ router.post('/chat', async (req, res) => {
                 thinkingStartTime = Date.now();
               }
               thinkingContent += thinkingChunk;
+              thinkingChunkCount++;
               res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}
 \n\n`);
+
+              // v3.0: 检查插件触发器匹配（每 5 个 chunk 检查一次，避免高频匹配）
+              if (thinkingChunkCount % 5 === 0 && thinkingContent.length > 20) {
+                matchTriggers(thinkingContent, sessionId).then((matches) => {
+                  for (const match of matches) {
+                    // 发送 client_tool 事件到前端
+                    res.write(`data: ${JSON.stringify({
+                      type: 'client_tool',
+                      tool: match.toolName,
+                      args: match.args,
+                      pluginId: match.pluginId,
+                    })}\n\n`);
+
+                    // 同时在服务端执行插件工具，发送 plugin_result 事件
+                    executePluginTrigger(match).then((result) => {
+                      res.write(`data: ${JSON.stringify({
+                        type: 'plugin_result',
+                        tool: match.toolName,
+                        output: result.output,
+                        durationMs: result.durationMs,
+                        pluginId: match.pluginId,
+                      })}\n\n`);
+                    }).catch((err) => {
+                      console.error('[Chat API] plugin trigger execution failed:', err);
+                    });
+                  }
+                }).catch((err) => {
+                  console.error('[Chat API] trigger matching failed:', err);
+                });
+              }
             },
             onToolCall: (toolCall, result) => {
               // 发送 tool_call 事件到前端（用于展示工具调用过程）
@@ -878,6 +941,8 @@ router.post('/chat', async (req, res) => {
             onPermissionRequest: (toolCall) => {
               return new Promise((resolve) => {
                 const reqId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+                // v2.3.3: 存储 reqId → { toolName, sessionId } 映射
+                reqIdToolMap.set(reqId, { toolName: toolCall.function.name, sessionId });
                 // 发送权限请求事件到前端
                 res.write(`data: ${JSON.stringify({
                   type: 'permission_request',
@@ -968,6 +1033,154 @@ router.post('/chat', async (req, res) => {
     } catch (apiError) {
       console.error('[Chat API] AI API error:', apiError);
       console.error('[Chat API] Stack trace:', apiError instanceof Error ? apiError.stack : 'N/A');
+
+      // v2.3.4: 深度思考失败自动降级重试
+      // 当深度思考(reasoning)模型失败时，自动切换到非推理模型重试一次
+      const isReasoningError = !!(reasoningEffort && modelConfig);
+      const isRecoverable = isReasoningError && (
+        (apiError instanceof AIAPIError && (
+          apiError.category === 'timeout' ||
+          apiError.category === 'network' ||
+          apiError.category === 'server'
+        )) ||
+        (apiError instanceof Error && apiError.name === 'AbortError') ||
+        // 通用错误也算可恢复（如 fetch failed, ECONNREFUSED）
+        (!(apiError instanceof AIAPIError))
+      );
+
+      if (isRecoverable) {
+        console.log('[Chat API] 深度思考失败，尝试降级到非推理模型...', effectiveModel);
+        try {
+          // 查找非推理 fallback 模型
+          const fallbackModel = modelsConfig.models.find(m => {
+            if (!m.enabled || m.id === effectiveModel) return false;
+            const hasReasoning = m.capabilities?.includes('reasoning');
+            return !hasReasoning && isModelAvailable(m);
+          }) || modelsConfig.models.find(m => {
+            // 如果没找到非推理模型，至少换一个不同的模型
+            if (!m.enabled || m.id === effectiveModel) return false;
+            return isModelAvailable(m);
+          });
+
+          if (fallbackModel) {
+            console.log('[Chat API] 降级使用模型:', fallbackModel.id);
+
+            // 通知前端切换模型
+            res.write(`data: ${JSON.stringify({
+              type: 'text',
+              content: `\n\n> ⚠️ 深度思考模式暂时不可用，已自动切换到 **${fallbackModel.name || fallbackModel.id}** 重试...\n\n`,
+            })}\n\n`);
+
+            // 重新选择 Key
+            const fallbackKey = selectKey(fallbackModel);
+            const fallbackApiKey = fallbackKey ? fallbackKey.key : (fallbackModel.apiKey || '');
+            const fallbackKeyIndex = fallbackKey ? fallbackKey.index : -1;
+
+            // 使用 fallback 模型配置调用（非推理模式）
+            const fallbackModelConfig: ModelCallConfig = {
+              model: fallbackModel.id,
+              apiKey: fallbackApiKey,
+              baseURL: fallbackModel.apiEndpoint || '',
+              provider: fallbackModel.provider,
+              temperature: fallbackModel.temperature ?? 0.7,
+              topP: fallbackModel.topP ?? 1,
+              maxTokens: fallbackModel.maxTokens,
+              // v2.3.4: 关键 — 不使用 reasoning
+              capabilities: (fallbackModel.capabilities || []).filter((c: string) => c !== 'reasoning'),
+            };
+
+            const fallbackResult = await executeToolLoop({
+              modelConfig: fallbackModelConfig,
+              messages: apiMessages,
+              maxToolTurns: 10,
+              signal: abortController.signal,
+              onChunk: (chunk) => {
+                res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
+              },
+              onThinking: () => { /* 不用 thinking */ },
+              onToolCall: (toolCall, result) => {
+                res.write(`data: ${JSON.stringify({
+                  type: 'tool_call',
+                  toolCallId: toolCall.id,
+                  toolName: toolCall.function.name,
+                  toolArgs: toolCall.function.arguments,
+                  toolResult: result,
+                })}\n\n`);
+                const isDenied = result.includes('用户拒绝了工具');
+                const isErr = !isDenied && result.includes('"error"');
+                res.write(`data: ${JSON.stringify({
+                  type: 'tool_audit',
+                  toolName: toolCall.function.name,
+                  result: isDenied ? 'denied' : isErr ? 'error' : 'success',
+                  timestamp: Date.now(),
+                })}\n\n`);
+              },
+              onPermissionRequest: (toolCall) => {
+                return new Promise((resolve) => {
+                  const reqId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+                  reqIdToolMap.set(reqId, { toolName: toolCall.function.name, sessionId });
+                  res.write(`data: ${JSON.stringify({
+                    type: 'permission_request',
+                    reqId,
+                    toolName: toolCall.function.name,
+                    toolArgs: toolCall.function.arguments,
+                    riskLevel: getToolRiskLevel(toolCall.function.name),
+                  })}\n\n`);
+                  clearTimeout(timeout);
+                  timeout = null as any;
+                  const handler = (approved: boolean) => {
+                    permissionEmitter.removeListener(reqId, handler);
+                    timeout = setTimeout(() => abortController.abort(), timeoutMs);
+                    res.write(`data: ${JSON.stringify({
+                      type: 'tool_audit',
+                      toolName: toolCall.function.name,
+                      result: approved ? 'approved' : 'denied',
+                      timestamp: Date.now(),
+                    })}\n\n`);
+                    resolve(approved);
+                  };
+                  permissionEmitter.once(reqId, handler);
+                });
+              },
+              reasoningEffort: null,  // 关键：不使用推理
+              modelCapabilities: fallbackModelConfig.capabilities || [],
+              approvedToolsCache: sessionApprovedSet,
+            });
+
+            fullContent = fallbackResult.content;
+            toolCallsJson = fallbackResult.toolCalls.length > 0
+              ? JSON.stringify(fallbackResult.toolCalls) : undefined;
+
+            // 保存降级结果
+            addMessage({
+              sessionId, role: 'assistant', content: fullContent,
+              model: fallbackModel.id, skillId: skillId || null,
+              toolCalls: toolCallsJson,
+            });
+            if (fallbackKeyIndex >= 0) {
+              reportKeyResult(fallbackModel.id, fallbackKeyIndex, true);
+            }
+
+            // 发送 done 事件
+            clearTimeout(timeout);
+            if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
+            res.write(`data: ${JSON.stringify({
+              type: 'done',
+              errorCode: null,
+              errorMessage: null,
+              thinkingDuration: 0,
+              fallbackModel: fallbackModel.id,
+              fallbackReason: 'reasoning_failed',
+            })}\n\n`);
+            await new Promise(r => setTimeout(r, 200));
+            res.end();
+            return;
+          }
+        } catch (fallbackError) {
+          console.error('[Chat API] 降级重试也失败了:', fallbackError);
+          // 降级失败，继续显示原始错误
+        }
+      }
 
       // 重置 fullContent，避免包含之前流式回调写入的内容（如用户输入回显）
       fullContent = '';
@@ -1087,9 +1300,28 @@ router.post('/chat', async (req, res) => {
 
 // v1.9.2: 工具权限响应 — 前端通过此端点回复权限请求
 router.post('/permission-response', (req, res) => {
-  const { reqId, approved } = req.body;
+  const { reqId, approved, alwaysAllow } = req.body;
   if (!reqId) {
     return res.status(400).json({ error: 'reqId is required' });
+  }
+  // v2.3.3: 如果用户勾选"始终允许"，持久化工具名到 app_settings
+  if (alwaysAllow) {
+    const info = reqIdToolMap.get(reqId);
+    if (info) {
+      const { toolName, sessionId } = info;
+      try {
+        loadAlwaysAllowedTools();
+        globalAlwaysAllowed!.add(toolName);
+        const { setAppSettings } = require('../dao/settings');
+        setAppSettings('always_allowed_tools', JSON.stringify([...globalAlwaysAllowed!]));
+        // 同时注入当前会话缓存
+        const sessionCache = sessionApprovedToolsCache.get(sessionId);
+        if (sessionCache) sessionCache.add(toolName);
+      } catch (e) {
+        console.warn('[permission-response] 持久化 alwaysAllow 失败:', e);
+      }
+    }
+    reqIdToolMap.delete(reqId);
   }
   // 通过 EventEmitter 通知对应的 chat 请求
   permissionEmitter.emit(reqId, approved === true);

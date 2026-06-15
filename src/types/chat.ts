@@ -17,6 +17,16 @@ export interface ToolCallInfo {
   result: string;
 }
 
+/** v3.0: 插件自动调用结果 */
+export interface PluginResultInfo {
+  /** 触发的插件工具名 */
+  tool: string;
+  /** 插件输出内容 */
+  output: string;
+  /** 执行耗时(ms) */
+  durationMs?: number;
+}
+
 /** 消息元数据（可扩展） */
 export interface MessageMetadata {
   /** 自然语言查询结果（仅 builtin-inventory-query 技能产生） */
@@ -79,12 +89,16 @@ export interface Message {
     thinkingTokens?: number;
     totalTokens?: number;
   };
+  /** v3.0: 插件自动调用结果（reasoning 流中触发） */
+  pluginResults?: PluginResultInfo[];
   /** v1.9.3: 内联权限请求（敏感工具执行确认） */
   permissionRequest?: {
     reqId: string;
     toolName: string;
     toolArgs: string;
     approved?: boolean;
+    /** v2.2.1: 风险等级 */
+    riskLevel?: 'auto' | 'confirm' | 'high-risk';
   };
 }
 

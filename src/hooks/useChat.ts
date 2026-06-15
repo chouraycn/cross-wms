@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Message, ReferencedSession, Session, ToolCallInfo, Attachment } from '../types/chat';
+import { Message, ReferencedSession, Session, ToolCallInfo, Attachment, PluginResultInfo } from '../types/chat';
 import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../types/inventory-query';
 import { CHAT_API_URL, INVENTORY_QUERY_API_URL } from '../constants/api';
 import { useAppSettings } from '../contexts/AppSettingsContext';
@@ -119,49 +119,59 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
     onSessionUpdateRef.current(updatedSession);
 
     try {
-      // v1.8.5: 使用 XHR 代替 fetch，避免 Electron browserView 的 ERR_ABORTED 问题
-      const fullContent = await new Promise<string>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `${CHAT_API_URL}?_t=${Date.now()}`, true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.setRequestHeader('Cache-Control', 'no-cache');
-        xhr.responseType = 'text';
+      // v2.2.2: 使用 fetch + ReadableStream 代替 XHR
+      const fullContent = await new Promise<string>(async (resolve, reject) => {
+        try {
+          const response = await fetch(`${CHAT_API_URL}?_t=${Date.now()}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+            },
+            body: JSON.stringify({
+              sessionId: session.id,
+              message: correctionMessage,
+              model: session.model,
+              skillId: 'builtin-inventory-query',
+            }),
+          });
 
-        let result = '';
-        let lastIndex = 0;
-        let settled = false;
+          if (!response.ok || !response.body) {
+            reject(new Error(`HTTP ${response.status}`));
+            return;
+          }
 
-        xhr.onreadystatechange = () => {
-          if (xhr.readyState >= 3) {
-            const newData = xhr.responseText.substring(lastIndex);
-            lastIndex = xhr.responseText.length;
-            const lines = newData.split('\n');
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const data = JSON.parse(line.slice(6));
-                  if (data.type === 'text') result += data.content;
-                } catch { /* parse error */ }
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let result = '';
+          let buffer = '';
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) {
+                resolve(result);
+                break;
+              }
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    if (data.type === 'text') result += data.content;
+                  } catch { /* parse error */ }
+                }
               }
             }
+          } catch (readErr) {
+            reject(readErr);
           }
-          if (xhr.readyState === 4 && !settled) {
-            settled = true;
-            resolve(result);
-          }
-        };
-        xhr.onerror = () => {
-          if (!settled) { settled = true; reject(new Error('net::ERR_ABORTED')); }
-        };
-        xhr.onabort = () => {
-          if (!settled) { settled = true; reject(new Error('net::ERR_ABORTED')); }
-        };
-        xhr.send(JSON.stringify({
-          sessionId: session.id,
-          message: correctionMessage,
-          model: session.model,
-          skillId: 'builtin-inventory-query',
-        }));
+        } catch (fetchErr) {
+          reject(fetchErr);
+        }
       });
 
       // 递归处理可能的新 inventory_query 块
@@ -334,8 +344,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         });
       }
 
-      // v1.8.4: 使用 XMLHttpRequest 代替 fetch，避免 Electron browserView 的 ERR_ABORTED 问题。
-      // XHR 的 readyState + onprogress 模式在 Electron 中更稳定。
+      // v2.2.2: 使用 fetch + ReadableStream 代替 XHR，WKWebView 中 ReadableStream 是真正的流式读取
+      // 避免了 XHR readyState===3 在 WKWebView 中不可靠导致深度思考卡死的问题
       const MAX_RETRIES = 2;
       let currentAutoReason: string | undefined;
       let currentAutoReasonType: string | undefined;
@@ -346,200 +356,94 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
-          const sseResult = await new Promise<{ content: string; autoReason?: string; autoReasonType?: string; errorCode: string | null; errorMessage: string | null; thinkingDuration?: number }>((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', `${CHAT_API_URL}?_t=${Date.now()}`, true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.setRequestHeader('Cache-Control', 'no-cache');
-            xhr.setRequestHeader('Pragma', 'no-cache');
-            xhr.responseType = 'text';
+          let result = '';
+          let autoReason: string | undefined;
+          let autoReasonType: string | undefined;
+          let errorCode: string | null = null;
+          let errorMessage: string | null = null;
+          let thinkingDuration: number | undefined;
+          let doneReceived = false;
 
-            let result = '';
-            let autoReason: string | undefined;
-            let autoReasonType: string | undefined;
-            let errorCode: string | null = null;
-            let errorMessage: string | null = null;
-            let thinkingDuration: number | undefined;
-            let doneReceived = false; // v1.5.57: 标记是否收到后端 done 事件
-            let lastIndex = 0;
-            let settled = false; // 防止 resolve/reject 多次调用
+          // v1.9.3: 平滑渲染队列 — 解决缓冲导致文字突然跳出的问题
+          let pendingContent = '';
+          let displayedContent = '';
+          let renderTimer: ReturnType<typeof setTimeout> | null = null;
+          // v2.2.3: 提速渲染 — 深度思考产生大量文本，6字/20ms 太慢
+          const BASE_CHUNK_SIZE = 24;
+          const RENDER_INTERVAL = 10;
 
-            // v1.9.3: 平滑渲染队列 — 解决 XHR 缓冲导致文字突然跳出的问题
-            let pendingContent = '';
-            let displayedContent = '';
-            let renderTimer: ReturnType<typeof setTimeout> | null = null;
-            const BASE_CHUNK_SIZE = 6;  // 基础每次渲染字符数
-            const RENDER_INTERVAL = 20;  // 渲染间隔 ms
+          const flushRender = () => {
+            if (pendingContent.length === 0) {
+              renderTimer = null;
+              return;
+            }
+            const adaptiveChunk = Math.min(
+              Math.max(BASE_CHUNK_SIZE, Math.ceil(pendingContent.length / 15)),
+              pendingContent.length
+            );
+            const chunk = pendingContent.slice(0, adaptiveChunk);
+            pendingContent = pendingContent.slice(adaptiveChunk);
+            displayedContent += chunk;
+            streamingMsg.content = displayedContent;
+            onSessionUpdateRef.current({
+              ...sessionWithStreaming,
+              messages: [
+                ...sessionWithStreaming.messages.slice(0, -1),
+                { ...streamingMsg, content: displayedContent },
+              ],
+            });
+            if (pendingContent.length > 0) {
+              renderTimer = setTimeout(flushRender, RENDER_INTERVAL);
+            } else {
+              renderTimer = null;
+            }
+          };
 
-            const flushRender = () => {
-              if (pendingContent.length === 0) {
-                renderTimer = null;
-                return;
+          const scheduleRender = () => {
+            if (!renderTimer) {
+              renderTimer = setTimeout(flushRender, RENDER_INTERVAL);
+            }
+          };
+
+          // v1.8.0: 使用 AbortController signal 支持用户中断
+          const response = await fetch(`${CHAT_API_URL}?_t=${Date.now()}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+            },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          // v2.2.2: 使用 ReadableStream 逐块读取，比 XHR responseText 增量读取可靠
+          if (!response.body) {
+            throw new Error('ReadableStream not supported');
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+
+              if (stoppedRef.current) {
+                await reader.cancel();
+                break;
               }
-              // 自适应速度：pending 越多，每次渲染越多（加速追赶）
-              const adaptiveChunk = Math.min(
-                Math.max(BASE_CHUNK_SIZE, Math.ceil(pendingContent.length / 15)),
-                pendingContent.length
-              );
-              const chunk = pendingContent.slice(0, adaptiveChunk);
-              pendingContent = pendingContent.slice(adaptiveChunk);
-              displayedContent += chunk;
-              // v1.9.3: 只更新 streamingMsg.content，不修改 fullContent
-              streamingMsg.content = displayedContent;
-              onSessionUpdateRef.current({
-                ...sessionWithStreaming,
-                messages: [
-                  ...sessionWithStreaming.messages.slice(0, -1),
-                  { ...streamingMsg, content: displayedContent },
-                ],
-              });
-              if (pendingContent.length > 0) {
-                renderTimer = setTimeout(flushRender, RENDER_INTERVAL);
-              } else {
-                renderTimer = null;
-              }
-            };
 
-            const scheduleRender = () => {
-              if (!renderTimer) {
-                renderTimer = setTimeout(flushRender, RENDER_INTERVAL);
-              }
-            };
-
-            xhr.onreadystatechange = () => {
-              if (xhr.readyState >= 3) { // LOADING or DONE
-                if (stoppedRef.current) {
-                  xhr.abort();
-                  return;
-                }
-                const newData = xhr.responseText.substring(lastIndex);
-                lastIndex = xhr.responseText.length;
-                // 解析 SSE 数据
-                const lines = newData.split('\n');
-                for (const line of lines) {
-                  if (line.startsWith('data: ')) {
-                    try {
-                      const data = JSON.parse(line.slice(6));
-                      if (data.type === 'text') {
-                        // 防御性过滤：如果收到的内容恰好等于用户消息（且是首个字符），
-                        // 可能是后端异常或代理缓存导致的回显，跳过以避免 UI 显示用户消息作为 bot 回复
-                        if (result === '' && data.content === content) {
-                          continue;
-                        }
-                        result += data.content;
-                        // v1.9.3: 使用平滑渲染队列，避免文字突然跳出
-                        pendingContent += data.content;
-                        scheduleRender();
-                      }
-                      if (data.type === 'init') {
-                        if (data.autoReason) autoReason = data.autoReason;
-                        if (data.autoReasonType) autoReasonType = data.autoReasonType;
-                        if (data.reasoningEffort) {
-                          streamingMsg.reasoningEffort = data.reasoningEffort;
-                        }
-                        // 同步后端实际使用的模型名到消息（优先使用 modelName 显示名）
-                        if (data.model) {
-                          streamingMsg.model = data.modelName || data.model;
-                        }
-                        // v2.2.0: init 事件中的缓存命中
-                        if (data.cacheHit) {
-                          streamingMsg.cacheHit = true;
-                        }
-                      }
-                      // v1.8.6: 处理 AI 思考过程流式内容
-                      if (data.type === 'thinking') {
-                        streamingMsg.thinking = (streamingMsg.thinking || '') + data.content;
-                        // v1.8.7: 解析思考类型
-                        if (data.thinkingType) {
-                          streamingMsg.thinkingType = data.thinkingType;
-                        }
-                        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
-                      }
-                      // v2.2.0: 思考心跳 — 更新已等待时间
-                      if (data.type === 'thinking_heartbeat') {
-                        streamingMsg.thinkingElapsed = data.elapsed;
-                        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
-                      }
-                      // v2.2.0: 缓存命中
-                      if (data.type === 'cache_hit') {
-                        streamingMsg.cacheHit = true;
-                      }
-                      // v2.2.0: keep-alive — 更新连接状态，防止 WKWebView 超时断开
-                      if (data.type === 'keep_alive') {
-                        streamingMsg.thinkingElapsed = data.elapsed;
-                        // 静默更新，不触发完整 re-render 以避免闪烁
-                      }
-                      // v1.9.0: 处理工具调用事件（Tool Calling）
-                      if (data.type === 'tool_call') {
-                        const toolCall: ToolCallInfo = {
-                          id: data.toolCallId,
-                          name: data.toolName || 'unknown',
-                          arguments: data.toolArgs || '{}',
-                          result: data.toolResult || '',
-                        };
-                        streamingMsg.toolCalls = [...(streamingMsg.toolCalls || []), toolCall];
-
-                        // v1.9.1: 处理 app:setBotName 工具 — 自动修改 AI 助手名称
-                        if (data.toolName === 'app:setBotName' && data.toolResult) {
-                          try {
-                            const result = JSON.parse(data.toolResult);
-                            if (result.success && result.name) {
-                              updateSettings({ appearance: { ...settingsRef.current.appearance, botName: result.name } });
-                            }
-                          } catch { /* JSON 解析失败，忽略 */ }
-                        }
-
-                        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
-                      }
-                      // v1.9.3: 处理敏感工具权限请求 — 内联显示在消息中
-                      if (data.type === 'permission_request') {
-                        streamingMsg.permissionRequest = {
-                          reqId: data.reqId,
-                          toolName: data.toolName,
-                          toolArgs: data.toolArgs,
-                        };
-                        onSessionUpdateRef.current({
-                          ...sessionWithStreaming,
-                          messages: [
-                            ...sessionWithStreaming.messages.slice(0, -1),
-                            { ...streamingMsg },
-                          ],
-                        });
-                      }
-                      if (data.type === 'done') {
-                        doneReceived = true; // v1.5.57: 标记已收到 done 事件
-                        errorCode = data.errorCode ?? null;
-                        errorMessage = data.errorMessage ?? null;
-                        thinkingDuration = data.thinkingDuration;
-                        if (data.thinkingType) {
-                          currentThinkingType = data.thinkingType;
-                        }
-                        // v2.2.0: 保存 token 使用统计
-                        if (data.usage) {
-                          streamingMsg.usage = data.usage;
-                        }
-                        if (errorCode && errorMessage) {
-                          result = errorMessage;
-                          // 同步更新 fullContent，确保错误消息被正确保存
-                          fullContent = errorMessage;
-                          streamingMsg.content = errorMessage;
-                          onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: errorMessage }] });
-                        }
-                      }
-                    } catch { /* parse error */ }
-                  }
-                }
-              }
-              if (xhr.readyState === 4 && !settled) {
-                settled = true;
-                // v1.5.57: 流未正常结束保护 — 没收到 done 事件且内容为空，视为连接中断
+              if (done) {
+                // 流自然结束 — v1.5.57: 流未正常结束保护
                 if (!doneReceived && !result.trim()) {
-                  // v1.5.58-fix: 即使 done 事件丢失，如果有思考内容，也用思考内容兜底
-                  // 不视为失败（WKWebView 中 done 事件可能因时序问题丢失）
                   const hasThinking = !!(streamingMsg.thinking && streamingMsg.thinking.trim());
                   if (hasThinking) {
                     const trimmed = streamingMsg.thinking!.trim();
-                    // v2.2.0: 取最后完整段落而非固定 500 字
                     const paragraphs = trimmed.split(/\n{2,}|\n(?=[A-Z\u4e00-\u9fff])/);
                     const lastParagraph = paragraphs.filter(p => p.trim().length > 20).pop() || trimmed;
                     result = lastParagraph.length > 800
@@ -555,13 +459,10 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                     streamingMsg.metadata = { error: '连接已断开', errorCode: 'STREAM_INCOMPLETE' };
                   }
                 }
-                // v1.9.3-fix: 清除渲染计时器，防止 flushRender 在流结束后继续运行并覆盖完整内容
                 if (renderTimer) {
                   clearTimeout(renderTimer);
                   renderTimer = null;
                 }
-                // 立即将剩余内容刷新到 UI — 使用 result（完整内容）一次性同步更新，避免 setTimeout 竞态
-                // result 由 SSE text 事件累积得到，是最终完整内容
                 pendingContent = '';
                 streamingMsg.content = result;
                 onSessionUpdateRef.current({
@@ -571,43 +472,157 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                     { ...streamingMsg, content: result },
                   ],
                 });
-                // DONE — 无论 status 如何，只要有响应就视为成功（后端总是返回 200）
-                resolve({ content: result, autoReason, autoReasonType, errorCode, errorMessage, thinkingDuration });
+                break;
               }
-            };
 
-            xhr.onerror = () => {
-              if (settled) return;
-              settled = true;
-              reject(new Error('net::ERR_ABORTED'));
-            };
-            xhr.onabort = () => {
-              if (settled) return;
-              settled = true;
-              // 用户手动停止不视为错误
-              if (stoppedRef.current) {
-                resolve({ content: result, autoReason, autoReasonType, errorCode, errorMessage, thinkingDuration });
-              } else {
-                reject(new Error('net::ERR_ABORTED'));
+              const chunk = decoder.decode(value, { stream: true });
+              buffer += chunk;
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    if (data.type === 'text') {
+                      if (result === '' && data.content === content) {
+                        continue;
+                      }
+                      result += data.content;
+                      pendingContent += data.content;
+                      scheduleRender();
+                    }
+                    if (data.type === 'init') {
+                      if (data.autoReason) autoReason = data.autoReason;
+                      if (data.autoReasonType) autoReasonType = data.autoReasonType;
+                      if (data.reasoningEffort) {
+                        streamingMsg.reasoningEffort = data.reasoningEffort;
+                      }
+                      if (data.model) {
+                        streamingMsg.model = data.modelName || data.model;
+                      }
+                      if (data.cacheHit) {
+                        streamingMsg.cacheHit = true;
+                      }
+                    }
+                    if (data.type === 'thinking') {
+                      streamingMsg.thinking = (streamingMsg.thinking || '') + data.content;
+                      if (data.thinkingType) {
+                        streamingMsg.thinkingType = data.thinkingType;
+                      }
+                      onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
+                    }
+                    if (data.type === 'thinking_heartbeat') {
+                      streamingMsg.thinkingElapsed = data.elapsed;
+                      onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
+                    }
+                    if (data.type === 'cache_hit') {
+                      streamingMsg.cacheHit = true;
+                    }
+                    if (data.type === 'keep_alive') {
+                      streamingMsg.thinkingElapsed = data.elapsed;
+                    }
+                    if (data.type === 'tool_call') {
+                      const toolCall: ToolCallInfo = {
+                        id: data.toolCallId,
+                        name: data.toolName || 'unknown',
+                        arguments: data.toolArgs || '{}',
+                        result: data.toolResult || '',
+                      };
+                      streamingMsg.toolCalls = [...(streamingMsg.toolCalls || []), toolCall];
+                      if (data.toolName === 'app:setBotName' && data.toolResult) {
+                        try {
+                          const parsed = JSON.parse(data.toolResult);
+                          if (parsed.success && parsed.name) {
+                            updateSettings({ appearance: { ...settingsRef.current.appearance, botName: parsed.name } });
+                          }
+                        } catch { /* JSON 解析失败，忽略 */ }
+                      }
+                      onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
+                    }
+                    if (data.type === 'permission_request') {
+                      streamingMsg.permissionRequest = {
+                        reqId: data.reqId,
+                        toolName: data.toolName,
+                        toolArgs: data.toolArgs,
+                        riskLevel: data.riskLevel,
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [
+                          ...sessionWithStreaming.messages.slice(0, -1),
+                          { ...streamingMsg },
+                        ],
+                      });
+                    }
+                    if (data.type === 'tool_audit') {
+                      console.log('[useChat] tool_audit:', data);
+                    }
+                    // v3.0: client_tool 事件 — 服务端通知前端有插件需要在 reasoning 流中自动调用
+                    if (data.type === 'client_tool') {
+                      console.log('[useChat] client_tool event received:', data.tool, data.args);
+                    }
+                    // v3.0: plugin_result 事件 — 插件执行结果插入 thinking 流
+                    if (data.type === 'plugin_result') {
+                      const pluginResult: PluginResultInfo = {
+                        tool: data.tool || 'unknown',
+                        output: data.output || '',
+                        durationMs: data.durationMs,
+                      };
+                      streamingMsg.pluginResults = [...(streamingMsg.pluginResults || []), pluginResult];
+                      // 将插件结果拼接到 thinking 内容中，以特殊标记包裹
+                      if (streamingMsg.thinking) {
+                        streamingMsg.thinking += `\n\n[Plugin: ${pluginResult.tool}] ${pluginResult.output}\n\n`;
+                      }
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    if (data.type === 'done') {
+                      doneReceived = true;
+                      errorCode = data.errorCode ?? null;
+                      errorMessage = data.errorMessage ?? null;
+                      thinkingDuration = data.thinkingDuration;
+                      if (data.thinkingType) {
+                        currentThinkingType = data.thinkingType;
+                      }
+                      if (data.usage) {
+                        streamingMsg.usage = data.usage;
+                      }
+                      if (errorCode && errorMessage) {
+                        result = errorMessage;
+                        fullContent = errorMessage;
+                        streamingMsg.content = errorMessage;
+                        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: errorMessage }] });
+                      }
+                    }
+                  } catch { /* parse error */ }
+                }
               }
-            };
+            }
+          } catch (readErr: any) {
+            // reader.read() 异常 — 仅用户手动停止时吞掉错误
+            if (stoppedRef.current) {
+              // 用户手动停止，保留已生成内容
+            } else {
+              throw readErr;
+            }
+          }
 
-            xhr.send(JSON.stringify(body));
-          });
-
-          fullContent = sseResult.content;
-          currentAutoReason = sseResult.autoReason;
-          currentAutoReasonType = sseResult.autoReasonType;
-          currentErrorCode = sseResult.errorCode;
-          currentErrorMessage = sseResult.errorMessage;
-          currentThinkingDuration = sseResult.thinkingDuration;
+          fullContent = result;
+          currentAutoReason = autoReason;
+          currentAutoReasonType = autoReasonType;
+          currentErrorCode = errorCode;
+          currentErrorMessage = errorMessage;
+          currentThinkingDuration = thinkingDuration;
 
           // 成功，跳出重试循环
           break;
         } catch (fetchErr) {
           const errMsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-          if (/abort/i.test(errMsg) && attempt < MAX_RETRIES - 1 && !stoppedRef.current) {
-            console.warn(`[useChat] XHR ERR_ABORTED (attempt ${attempt + 1}/${MAX_RETRIES}), retrying...`);
+          if ((/abort|failed to fetch/i.test(errMsg)) && attempt < MAX_RETRIES - 1 && !stoppedRef.current) {
+            console.warn(`[useChat] stream fetch failed (attempt ${attempt + 1}/${MAX_RETRIES}), retrying...`);
             fullContent = '';
             // 重置流式消息内容，避免重试时 UI 显示旧内容
             streamingMsg.content = '';

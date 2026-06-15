@@ -21,6 +21,21 @@ import {
 import type { SkillChainNodeRow } from '../db.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
 
+// ===================== v3.0: ChainExecutor Hooks =====================
+
+/**
+ * Hooks for plugin/automation injection into chain execution.
+ * All hooks are optional — defaulting to no-ops preserves backward compatibility.
+ */
+export interface ChainExecutorHooks {
+  /** Called when a node starts reasoning (before AI call) */
+  onReasoning?: (node: SkillChainNodeRow, input: Record<string, unknown>) => void;
+  /** Called before a node executes its tool/AI call */
+  onToolCall?: (node: SkillChainNodeRow, input: Record<string, unknown>) => void;
+  /** Called after a node completes (success or failure) */
+  onResult?: (node: SkillChainNodeRow, result: { success: boolean; output?: unknown; error?: string; duration: number }) => void;
+}
+
 // ===================== Module-Level State =====================
 
 /** Map of executionId → Set of SSE response clients */
@@ -164,7 +179,8 @@ function buildNodeInput(
  */
 async function executeNodeWithTimeout(
   node: SkillChainNodeRow,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  hooks?: ChainExecutorHooks
 ): Promise<{ success: boolean; output?: unknown; error?: string }> {
   const timeoutMs = node.timeout || 60000;
 
@@ -213,6 +229,9 @@ async function executeNodeWithTimeout(
     }
 
     try {
+      // v3.0: onToolCall hook — notify plugins before AI call
+      hooks?.onToolCall?.(node, input);
+
       const fullContent = await callAIModel(
         {
           id: defaultModelConfig.id,
@@ -236,10 +255,13 @@ async function executeNodeWithTimeout(
         },
       };
     } catch (apiError) {
-      return {
+      const errorResult = {
         success: false,
         error: `AI API error: ${apiError instanceof Error ? apiError.message : 'Unknown error'}`,
       };
+      // v3.0: onResult hook — notify plugins on failure
+      hooks?.onResult?.(node, { success: false, error: errorResult.error, duration: 0 });
+      return errorResult;
     }
   })();
 
@@ -268,7 +290,7 @@ async function executeNodeWithTimeout(
  * @param chainId - The skill chain ID to execute
  * @returns The execution ID for SSE subscription
  */
-export async function executeChain(chainId: string): Promise<{ executionId: string }> {
+export async function executeChain(chainId: string, hooks?: ChainExecutorHooks): Promise<{ executionId: string }> {
   const db = initDb();
 
   // 1. Read chain + nodes from DB
@@ -380,6 +402,9 @@ export async function executeChain(chainId: string): Promise<{ executionId: stri
     let nodeResult: { success: boolean; output?: unknown; error?: string } = { success: false };
     const maxRetries = node.retry_count || 0;
 
+    // v3.0: onReasoning hook — notify plugins before node starts reasoning
+    hooks?.onReasoning?.(node, nodeInput);
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       if (attempt > 0) {
         broadcast(executionId, {
@@ -395,7 +420,7 @@ export async function executeChain(chainId: string): Promise<{ executionId: stri
       }
 
       try {
-        nodeResult = await executeNodeWithTimeout(node, nodeInput);
+        nodeResult = await executeNodeWithTimeout(node, nodeInput, hooks);
         if (nodeResult.success) {
           break;
         }
@@ -413,6 +438,14 @@ export async function executeChain(chainId: string): Promise<{ executionId: stri
     }
 
     const nodeDuration = Date.now() - nodeStartTime;
+
+    // v3.0: onResult hook — notify plugins of node completion
+    hooks?.onResult?.(node, {
+      success: nodeResult.success,
+      output: nodeResult.output,
+      error: nodeResult.error,
+      duration: nodeDuration,
+    });
 
     if (nodeResult.success) {
       // Store output in context for subsequent nodes
