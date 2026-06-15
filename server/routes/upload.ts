@@ -20,7 +20,7 @@ export const ALLOWED_EXTENSIONS = new Set([
   // 图片
   'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'ico', 'tiff', 'avif',
   // 文档
-  'pdf', 'csv', 'txt', 'json', 'md', 'xlsx', 'docx', 'pptx', 'html', 'htm',
+  'pdf', 'csv', 'txt', 'json', 'md', 'xlsx', 'docx', 'doc', 'pptx', 'html', 'htm',
   // 代码/配置
   'js', 'ts', 'jsx', 'tsx', 'py', 'java', 'go', 'rs', 'cpp', 'c', 'h', 'hpp',
   'rb', 'php', 'swift', 'kt', 'scala', 'r', 'm', 'mm',

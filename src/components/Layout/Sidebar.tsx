@@ -14,6 +14,7 @@ import NavList from './NavList';
 import SidebarToggle from './SidebarToggle';
 import SettingsPopover from './SettingsPopover';
 import AISettingsDialog from './AISettingsDialog';
+import ToolManagementDialog from './ToolManagementDialog';
 
 
 // ===================== Constants =====================
@@ -26,9 +27,12 @@ const SIDEBAR_WIDTH_COLLAPSED = 83;
 interface SidebarProps {
   collapsed: boolean;
   onToggle?: () => void;
+  /** v1.5.73: 从 MainLayout 提升，供 /settings 路由触发 */
+  settingsOpen?: boolean;
+  onSettingsOpenChange?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: settingsOpenProp, onSettingsOpenChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -37,8 +41,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
   const SIDEBAR_BG = gs.bgSidebar;
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  // v1.5.73: settingsOpen 提升到 MainLayout，通过 props 传入；无 props 时回退本地 state（兼容旧调用）
+  const [localSettingsOpen, localSetSettingsOpen] = useState(false);
+  const settingsOpen = settingsOpenProp ?? localSettingsOpen;
+  const setSettingsOpen = onSettingsOpenChange ?? localSetSettingsOpen;
+
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [toolManagementDialogOpen, setToolManagementDialogOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLDivElement>(null);
 
   const [activeSessionId, setActiveSessionId] = useState('');
@@ -183,8 +192,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           onClose={() => setSettingsOpen(false)}
           anchorEl={settingsBtnRef.current}
           onOpenModelManagement={() => setAiDialogOpen(true)}
+          onOpenToolManagement={() => setToolManagementDialogOpen(true)}
         />
         <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} />
+        <ToolManagementDialog open={toolManagementDialogOpen} onClose={() => setToolManagementDialogOpen(false)} />
       </Box>
     </Box>
   );

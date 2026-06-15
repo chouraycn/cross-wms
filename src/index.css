@@ -11,8 +11,9 @@ body {
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: #FFFFFF;
-  /* pywebview frameless: 防止光标在文本上变成I-beam */
-  cursor: default;
+  /* v1.5.73: easy_drag=False 时全局排除拖拽，仅有 WindowDragBar 为 drag 区域 */
+  /* 确保内容区文字始终可选中（WKWebView 中 -webkit-app-region:drag 会阻止文字选择） */
+  -webkit-app-region: no-drag;
 }
 
 /* MUI dark mode 会给 body 添加 .MuiCssBaseline-root 和设置 background-color */

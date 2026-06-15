@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense } from 'react';
-import { HashRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box, useTheme } from '@mui/material';
 import Sidebar from './components/Layout/Sidebar';
@@ -36,7 +36,7 @@ const InTransitPage = React.lazy(() => import('./pages/InTransitPage'));
 const InventoryPage = React.lazy(() => import('./pages/InventoryPage'));
 const TencentDocsPage = React.lazy(() => import('./pages/TencentDocsPage'));
 const ReportsPage = React.lazy(() => import('./pages/ReportsPage'));
-const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
+// /settings 已改为侧边栏弹窗重定向，不再需要全页面 SettingsPage
 const AutomationPage = React.lazy(() => import('./pages/AutomationPage'));
 const ProjectsPage = React.lazy(() => import('./pages/ProjectsPage'));
 const WmsQualityPage = React.lazy(() => import('./pages/WmsQualityPage'));
@@ -54,7 +54,6 @@ const ApiTemplatesPage = React.lazy(() => import('./pages/ApiTemplatesPage'));
 const BrowserPage = React.lazy(() => import('./pages/BrowserPage'));
 const ApiCredentialsPage = React.lazy(() => import('./pages/ApiCredentialsPage'));
 const ApiHistoryPage = React.lazy(() => import('./pages/ApiHistoryPage'));
-const ApiKeyHelpPage = React.lazy(() => import('./pages/ApiKeyHelpPage'));
 
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
@@ -518,6 +517,20 @@ const MainLayout: React.FC = () => {
     });
   }, []);
 
+  // v1.5.73: settingsPopoverOpen 从 Sidebar 提升到 MainLayout，供 /settings 路由触发
+  const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
+
+  // /settings 路由：打开侧边栏设置弹窗并重定向到 /chat
+  function SettingsRedirect() {
+    const navigate = useNavigate();
+    React.useEffect(() => {
+      setSettingsPopoverOpen(true);
+      navigate('/chat', { replace: true });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    return null;
+  }
+
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
   const scrollRef = useAutoHideScrollbar(!isPy);
 
@@ -548,7 +561,7 @@ const MainLayout: React.FC = () => {
       <WindowDragBar height={38} />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Sidebar — 单栏布局 */}
-        <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
+        <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} settingsOpen={settingsPopoverOpen} onSettingsOpenChange={setSettingsPopoverOpen} />
 
       {/* Main content area */}
       <Box
@@ -651,8 +664,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/wms/reports" element={<WmsReportPage />} />
                     <Route path="/wms/replenishment" element={<Suspense fallback={<LoadingFallback />}><WmsReplenishmentPage /></Suspense>} />
                     <Route path="/transfer" element={<TransferPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/api-key-help/:provider" element={<ApiKeyHelpPage />} />
+                    <Route path="/settings" element={<SettingsRedirect />} />
                     <Route path="/automation" element={<AutomationPage />} />
                     <Route path="/plugins" element={<PluginsPage />} />
                     <Route path="/api-domain-whitelist" element={<ApiDomainWhitelistPage />} />

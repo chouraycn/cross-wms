@@ -16,7 +16,6 @@
  */
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 import { useModelManager } from './useModelManager';
 import { useModelHealth } from './useModelHealth';
@@ -36,7 +35,6 @@ import type { DiscoveredLocalModel } from '../../../services/api';
 
 const ModelManager: React.FC<ModelManagerProps> = (props) => {
   const { models, defaultModelId, variant = 'list' } = props;
-  const navigate = useNavigate();
 
   const { state, actions, handleImportFile, fileInputRef } = useModelManager(props);
   const { healthMap, isChecking, checkHealth, getModelStatus, getLatencyText, autoRefreshEnabled, toggleAutoRefresh, checkError } = useModelHealth();
@@ -150,7 +148,7 @@ const ModelManager: React.FC<ModelManagerProps> = (props) => {
       />
 
       {/* Step 2: 补全信息 / 编辑弹窗 */}
-      <ModelEditDialog state={state} actions={actions} navigate={navigate} />
+      <ModelEditDialog state={state} actions={actions} />
 
       {/* 本地模型发现弹窗 */}
       <LocalModelDiscoverDialog

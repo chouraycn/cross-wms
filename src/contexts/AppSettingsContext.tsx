@@ -182,6 +182,13 @@ export interface AppearanceConfig {
   botName: string;
 }
 
+// ===================== 系统授权配置 =====================
+
+export interface SystemAuthorizationConfig {
+  /** 是否启用系统授权（启用后自动授予系统级权限，无需每次手动确认） */
+  enabled: boolean;
+}
+
 export interface AppSettings {
   tencentDocs: TencentDocsConfig;
   wecomDocs: WeComDocsConfig;
@@ -190,6 +197,8 @@ export interface AppSettings {
   sidebar: SidebarConfig;
   /** 外观配置 */
   appearance: AppearanceConfig;
+  /** 系统授权配置 */
+  systemAuthorization: SystemAuthorizationConfig;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -259,6 +268,10 @@ const DEFAULT_SETTINGS: AppSettings = {
     enableShadows: true,
     compactMode: false,
     botName: 'CDF Bot',
+  },
+  // 系统授权配置
+  systemAuthorization: {
+    enabled: false,
   },
 };
 
@@ -422,6 +435,10 @@ function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
       appearance: parsed.appearance
         ? { ...DEFAULT_SETTINGS.appearance, ...parsed.appearance }
         : { ...DEFAULT_SETTINGS.appearance },
+      // 系统授权配置（向后兼容）
+      systemAuthorization: parsed.systemAuthorization
+        ? { ...DEFAULT_SETTINGS.systemAuthorization, ...parsed.systemAuthorization }
+        : { ...DEFAULT_SETTINGS.systemAuthorization },
     };
 }
 
@@ -529,6 +546,9 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
       if (partial.appearance) {
         next.appearance = { ...prev.appearance, ...partial.appearance };
+      }
+      if (partial.systemAuthorization) {
+        next.systemAuthorization = { ...prev.systemAuthorization, ...partial.systemAuthorization };
       }
       return next;
     });

@@ -6,10 +6,10 @@
       "name": "DeepSeek V4 Pro",
       "provider": "deepseek",
       "apiEndpoint": "https://api.deepseek.com/v1",
-      "description": "DeepSeek V4 Pro，支持 1M 上下文、工具调用、多模态、推理",
+      "description": "DeepSeek V4 Pro，支持 1M 上下文、工具调用、推理（API 不支持 image_url 格式）",
       "contextWindow": 1000000,
       "maxTokens": 384000,
-      "capabilities": ["multimodal", "reasoning", "general"]
+      "capabilities": ["reasoning", "general"]
     },
     {
       "id": "deepseek-v4-flash",
@@ -62,31 +62,61 @@
       "capabilities": ["multimodal", "general"]
     },
     {
-      "id": "kimi-v1-128k",
-      "name": "Kimi V1 128K",
+      "id": "kimi-k2.7-code",
+      "name": "Kimi K2.7 Code",
       "provider": "kimi",
       "apiEndpoint": "https://api.moonshot.cn/v1",
-      "description": "月之暗面 Kimi V1 128K，长文本处理",
+      "description": "Kimi 最强编码模型，256K 上下文，Agent + 代码生成",
+      "contextWindow": 256000,
+      "maxTokens": 8192,
+      "capabilities": ["code", "reasoning", "general"]
+    },
+    {
+      "id": "kimi-k2.6",
+      "name": "Kimi K2.6",
+      "provider": "kimi",
+      "apiEndpoint": "https://api.moonshot.cn/v1",
+      "description": "Kimi 最智能通用模型，256K，多模态、思考/非思考双模式",
+      "contextWindow": 256000,
+      "maxTokens": 8192,
+      "capabilities": ["multimodal", "reasoning", "general"]
+    },
+    {
+      "id": "kimi-k2.5",
+      "name": "Kimi K2.5",
+      "provider": "kimi",
+      "apiEndpoint": "https://api.moonshot.cn/v1",
+      "description": "Kimi K2.5，256K 上下文，多模态输入，Agent 支持",
+      "contextWindow": 256000,
+      "maxTokens": 8192,
+      "capabilities": ["multimodal", "reasoning", "general"]
+    },
+    {
+      "id": "moonshot-v1-128k",
+      "name": "Moonshot V1 128K",
+      "provider": "kimi",
+      "apiEndpoint": "https://api.moonshot.cn/v1",
+      "description": "月之暗面 Moonshot V1，128K 超长上下文，经典模型",
       "contextWindow": 128000,
       "maxTokens": 4096,
       "capabilities": ["longContext", "general"]
     },
     {
-      "id": "kimi-v1-32k",
-      "name": "Kimi V1 32K",
+      "id": "moonshot-v1-32k",
+      "name": "Moonshot V1 32K",
       "provider": "kimi",
       "apiEndpoint": "https://api.moonshot.cn/v1",
-      "description": "月之暗面 Kimi V1 32K，均衡能力",
+      "description": "月之暗面 Moonshot V1，32K 上下文，均衡选择",
       "contextWindow": 32000,
       "maxTokens": 4096,
       "capabilities": ["general", "costEffective"]
     },
     {
-      "id": "kimi-v1-8k",
-      "name": "Kimi V1 8K",
+      "id": "moonshot-v1-8k",
+      "name": "Moonshot V1 8K",
       "provider": "kimi",
       "apiEndpoint": "https://api.moonshot.cn/v1",
-      "description": "月之暗面 Kimi V1 8K，极速轻量",
+      "description": "月之暗面 Moonshot V1，8K 上下文，极速轻量",
       "contextWindow": 8000,
       "maxTokens": 4096,
       "capabilities": ["fast", "costEffective", "general"]

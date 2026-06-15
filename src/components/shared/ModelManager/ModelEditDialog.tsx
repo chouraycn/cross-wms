@@ -702,7 +702,7 @@ const TestSection: React.FC<{
 };
 
 // ====== 主组件 ======
-const ModelEditDialog: React.FC<ModelEditDialogProps> = ({ state, actions, navigate }) => {
+const ModelEditDialog: React.FC<ModelEditDialogProps> = ({ state, actions }) => {
   const {
     modelForm, modelFormErrors, modelDialogMode,
     testStatus, testMessage, showApiKey,
@@ -717,18 +717,11 @@ const ModelEditDialog: React.FC<ModelEditDialogProps> = ({ state, actions, navig
   // 当前步骤
   const [activeStep, setActiveStep] = useState<StepId>('basic');
 
-  /** "获取 Key"回调：关闭对话框并跳转到帮助页 */
+  /** "获取 Key"回调：直接打开系统浏览器 */
   const handleGetApiKey = useCallback(() => {
-    const provider = modelForm.provider;
-    closeModelDialog();
-    if (navigate) {
-      navigate(`/api-key-help/${provider}`);
-    } else {
-      // fallback: 直接打开 URL
-      const url = PROVIDER_API_KEY_URLS[provider];
-      if (url) openInSystemBrowser(url);
-    }
-  }, [modelForm.provider, closeModelDialog, navigate]);
+    const url = PROVIDER_API_KEY_URLS[modelForm.provider];
+    if (url) openInSystemBrowser(url);
+  }, [modelForm.provider]);
 
   if (!modelDialogMode) return null;
 

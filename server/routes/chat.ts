@@ -10,6 +10,7 @@ declare const require: any;
 import { callAIModelStream, callAIModel, AIAPIError } from '../aiClient.js';
 import type { MessageContent, ModelCallConfig } from '../aiClient.js';
 import { executeToolLoop, getToolRiskLevel } from '../engine/toolExecutor.js';
+import { estimateMessagesTokens, truncateContextForModel } from '../engine/contextTruncate.js';
 import { loadModelsConfig, ModelsFile, isLocalModel, syncModelsFromApi } from '../modelsStore.js';
 import { selectKey, reportKeyResult } from '../keyRotator.js';
 import {
@@ -50,6 +51,19 @@ function loadAlwaysAllowedTools(): Set<string> {
     globalAlwaysAllowed = new Set();
   }
   return globalAlwaysAllowed;
+}
+
+/** v1.5.66: 检查系统授权是否已启用 */
+function isSystemAuthorized(): boolean {
+  try {
+    const { getAppSettings } = require('../dao/settings');
+    const val = getAppSettings('systemAuthorization');
+    if (!val) return false;
+    const config = JSON.parse(val);
+    return config.enabled === true;
+  } catch {
+    return false;
+  }
 }
 
 // v2.2.0: Thinking 结果缓存（LRU，最多 50 条，TTL 10 分钟）
@@ -149,19 +163,24 @@ async function extractFileContent(filePath: string, ext: string, fileName: strin
     }
   }
 
-  // DOCX：尝试用 mammoth 提取文本
-  if (ext === 'docx') {
+  // DOCX / DOC：尝试用 mammoth 提取文本（mammoth 同时支持 .docx 和 .doc）
+  if (ext === 'docx' || ext === 'doc') {
     try {
       const mammoth = require('mammoth');
       const result = await mammoth.extractRawText({ path: filePath });
       const text = result.value || '';
+      const warnings = result.messages || [];
       const isTruncated = text.length > MAX_SIZE;
       const truncated = isTruncated
         ? text.slice(0, MAX_SIZE) + buildTruncatedNotice(text.length, MAX_SIZE, 'Word 文档')
         : text;
-      return `\n---\n[附件: ${fileName} (Word 文档)]\n${truncated}\n---\n`;
+      const warningNote = warnings.length > 0
+        ? `\n⚠️ 提取警告: ${warnings.map((w: { message: string }) => w.message).join('; ')}\n`
+        : '';
+      return `\n---\n[附件: ${fileName} (Word 文档)]\n${warningNote}${truncated}\n---\n`;
     } catch {
-      return `\n---\n[附件: ${fileName} (DOCX)]\n注: 无法提取 Word 文档文本内容（请安装 mammoth: npm install mammoth）\n---\n`;
+      const formatLabel = ext === 'doc' ? 'DOC (旧版 Word)' : 'DOCX (新版 Word)';
+      return `\n---\n[附件: ${fileName} (${formatLabel})]\n注: 无法提取 Word 文档文本内容（请安装 mammoth: npm install mammoth）\n---\n`;
     }
   }
 
@@ -308,8 +327,11 @@ export function autoSelectModel(message: string, modelsConfig: ModelsFile, hasIm
         'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'claude-3-5-sonnet',
         'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision',
         'qwen-vl', 'qwen-vl-max',
+        'kimi-k2.6', 'kimi-k2.5',
       ].some(id => m.id.toLowerCase().includes(id.toLowerCase()));
-      return isMultimodal || isKnownVisionModel;
+      // ⚠️ DeepSeek API 不支持 image_url 格式，即使有 multimodal 标签也排除
+      const isFalsePositiveVision = /deepseek/i.test(m.id);
+      return (isMultimodal || isKnownVisionModel) && !isFalsePositiveVision;
     });
     if (visionModels.length > 0) {
       const defaultVision = visionModels.find(m => m.id === modelsConfig.defaultModelId) || visionModels[0];
@@ -642,8 +664,11 @@ router.post('/chat', async (req, res) => {
         'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'claude-3-5-sonnet',
         'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision',
         'qwen-vl', 'qwen-vl-max',
+        'kimi-k2.6', 'kimi-k2.5',
       ].some(id => modelConfig.id.toLowerCase().includes(id.toLowerCase()));
-      const supportsVision = isMultimodalModel || isKnownVisionModel;
+      // ⚠️ DeepSeek API 不支持 image_url 格式，即使有 multimodal 标签也视为不支持
+      const isFalsePositiveVision = /deepseek/i.test(modelConfig.id);
+      const supportsVision = (isMultimodalModel || isKnownVisionModel) && !isFalsePositiveVision;
 
       // 添加历史对话（如果前端传了 conversationHistory）
       // v1.9.0: 包含 toolCalls，确保多轮工具调用上下文不丢失
@@ -868,9 +893,24 @@ router.post('/chat', async (req, res) => {
           }
 
           if (!cacheHit) {
+          // v1.5.73: 截断上下文以适配模型 token 限制（如 Kimi 256K 限制）
+          const ctxWindow = (finalModelConfig as any).contextWindow || 128000;
+          const ctxMaxTokens = (finalModelConfig as any).maxTokens || 8192;
+          const estimatedToolsCount = 30; // 24 内置工具 + 插件工具预留
+          const truncated = truncateContextForModel(apiMessages, ctxWindow, ctxMaxTokens, estimatedToolsCount);
+          if (truncated.truncated) {
+            // 通知前端上下文已截断
+            res.write(`data: ${JSON.stringify({
+              type: 'context_truncated',
+              originalTokens: estimateMessagesTokens(apiMessages),
+              truncatedTokens: estimateMessagesTokens(truncated.messages),
+              modelLimit: ctxWindow,
+            })}\n\n`);
+          }
+
           const toolResult = await executeToolLoop({
             modelConfig: finalModelConfig,
-            messages: apiMessages,
+            messages: truncated.messages,
             maxToolTurns: 10,
             signal: abortController.signal,
             onChunk: (chunk) => {
@@ -939,6 +979,11 @@ router.post('/chat', async (req, res) => {
             // v1.9.3: 敏感工具权限请求 — 通过 EventEmitter 等待前端响应
             // 无超时限制，用户可以在任何时候响应
             onPermissionRequest: (toolCall) => {
+              // v1.5.66: 系统授权启用时自动通过所有权限请求，无需前端弹窗
+              if (isSystemAuthorized()) {
+                console.log('[Chat API] 系统授权已启用，自动通过工具权限:', toolCall.function.name);
+                return Promise.resolve(true);
+              }
               return new Promise((resolve) => {
                 const reqId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
                 // v2.3.3: 存储 reqId → { toolName, sessionId } 映射
@@ -1089,9 +1134,14 @@ router.post('/chat', async (req, res) => {
               capabilities: (fallbackModel.capabilities || []).filter((c: string) => c !== 'reasoning'),
             };
 
+            // v1.5.73: 降级重试时也截断上下文
+            const fbCtxWindow = (fallbackModelConfig as any).contextWindow || 128000;
+            const fbCtxMaxTokens = fallbackModel.maxTokens || 8192;
+            const fbTruncated = truncateContextForModel(apiMessages, fbCtxWindow, fbCtxMaxTokens, 30);
+
             const fallbackResult = await executeToolLoop({
               modelConfig: fallbackModelConfig,
-              messages: apiMessages,
+              messages: fbTruncated.messages,
               maxToolTurns: 10,
               signal: abortController.signal,
               onChunk: (chunk) => {
@@ -1116,6 +1166,11 @@ router.post('/chat', async (req, res) => {
                 })}\n\n`);
               },
               onPermissionRequest: (toolCall) => {
+                // v1.5.66: 系统授权启用时自动通过所有权限请求，无需前端弹窗
+                if (isSystemAuthorized()) {
+                  console.log('[Chat API] 系统授权已启用，自动通过工具权限(fallback):', toolCall.function.name);
+                  return Promise.resolve(true);
+                }
                 return new Promise((resolve) => {
                   const reqId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
                   reqIdToolMap.set(reqId, { toolName: toolCall.function.name, sessionId });

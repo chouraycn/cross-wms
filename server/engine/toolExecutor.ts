@@ -14,6 +14,7 @@
 import { callAIModelStream, type ModelCallConfig, type ToolCall, type AIResponse, type MessageContent } from '../aiClient.js';
 import { getToolDefinitions, executeToolCall } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
+import { truncateContextForModel } from './contextTruncate.js';
 
 export interface ToolExecutorOptions {
   modelConfig: ModelCallConfig;
@@ -134,6 +135,16 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
   for (let turn = 0; turn < maxToolTurns; turn++) {
     if (signal?.aborted) {
       throw new Error('请求已取消');
+    }
+
+    // v1.5.73: 每轮调用前截断上下文，防止 tool call 循环中消息膨胀超限
+    const ctxWindow = (modelConfig as any).contextWindow || 128000;
+    const ctxMaxTokens = modelConfig.maxTokens || 8192;
+    const turnTruncated = truncateContextForModel(currentMessages, ctxWindow, ctxMaxTokens, tools.length);
+    if (turnTruncated.truncated && currentMessages.length !== turnTruncated.messages.length) {
+      // 替换 currentMessages 内容（保持引用不变）
+      currentMessages.length = 0;
+      currentMessages.push(...turnTruncated.messages as any[]);
     }
 
     // 调用 AI，传入 tools

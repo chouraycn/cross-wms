@@ -105,7 +105,7 @@ export interface ModelManagerState {
 
 /** Hook 返回的操作 */
 export interface ModelManagerActions {
-  openModelDialog: (mode: 'add' | 'edit', model?: ModelConfig, presetProvider?: string) => void;
+  openModelDialog: (mode: 'add' | 'edit', model?: ModelConfig) => void;
   /** 打开模型选择弹窗（Step 1） */
   openModelSelectDialog: () => void;
   /** 关闭模型选择弹窗 */
@@ -189,8 +189,6 @@ export interface ModelEditDialogProps {
     ModelManagerActions,
     'closeModelDialog' | 'setModelForm' | 'handleSaveModel' | 'handleTestApi' | 'toggleApiKeyVisibility'
   >;
-  /** react-router navigate 函数（用于"获取 Key"按钮跳转到帮助页） */
-  navigate?: ReturnType<typeof import('react-router-dom').useNavigate>;
 }
 
 /** DeleteConfirmDialog 组件 Props */

@@ -86,7 +86,7 @@ export interface ModelsFile {
   updatedAt: string;
 }
 
-/** 默认内置模型 — 只保留 DeepSeek */
+/** 默认内置模型 */
 const BUILTIN_MODELS: ModelConfig[] = [
   // === DeepSeek ===
   {
@@ -481,6 +481,27 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
           contextWindow: 8_000,
           maxTokens: 4_096,
           description: 'Kimi Moonshot V1，8K 轻量',
+        },
+        'kimi-k2.7-code': {
+          name: 'Kimi K2.7 Code',
+          capabilities: ['code', 'reasoning', 'general'],
+          contextWindow: 256_000,
+          maxTokens: 8_192,
+          description: 'Kimi 最强编码模型，256K 上下文',
+        },
+        'kimi-k2.6': {
+          name: 'Kimi K2.6',
+          capabilities: ['multimodal', 'reasoning', 'general'],
+          contextWindow: 256_000,
+          maxTokens: 8_192,
+          description: 'Kimi 最智能通用模型，多模态 + 思考模式',
+        },
+        'kimi-k2.5': {
+          name: 'Kimi K2.5',
+          capabilities: ['multimodal', 'reasoning', 'general'],
+          contextWindow: 256_000,
+          maxTokens: 8_192,
+          description: 'Kimi K2.5，多模态 + Agent 支持',
         },
       };
       const info = known[id];

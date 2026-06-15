@@ -222,7 +222,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
   // 与服务端 ALLOWED_EXTENSIONS 保持一致的允许扩展名列表
   const ALLOWED_EXTENSIONS = new Set([
     'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'ico', 'tiff', 'avif',
-    'pdf', 'csv', 'txt', 'json', 'md', 'xlsx', 'docx', 'pptx', 'html', 'htm',
+    'pdf', 'csv', 'txt', 'json', 'md', 'xlsx', 'docx', 'doc', 'pptx', 'html', 'htm',
     'js', 'ts', 'jsx', 'tsx', 'py', 'java', 'go', 'rs', 'cpp', 'c', 'h', 'hpp',
     'rb', 'php', 'swift', 'kt', 'scala', 'r', 'm', 'mm', 'yaml', 'yml', 'xml',
     'toml', 'ini', 'cfg', 'conf', 'sql', 'sh', 'bat', 'ps1', 'css', 'scss',
@@ -503,31 +503,35 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
   };
 
   /**
-   * 检测当前是否处于 IME 组合状态 — 四重检测
+   * v1.5.73: compositionend 后标记 — 解决 WKWebView 中 compositionend 先于 keydown 触发的问题
    *
-   * 问题背景：
-   * 1. WKWebView 中 nativeEvent.isComposing 不可靠
-   * 2. 某些输入法（搜狗/百度）输入英文时不触发 onCompositionEnd
-   * 3. 某些场景下 onCompositionStart 不触发
-   * 4. macOS 中文输入法输入英文时（如拼音模式直接输英文按 Enter），
-   *    不触发 onCompositionStart/End，nativeEvent.isComposing 也为 false
+   * WKWebView 事件顺序（中文输入法按 Enter 确认选字时）：
+   *   compositionend → beforeinput(insertText) → keydown(Enter)
    *
-   * 解决方案：
-   * 1. nativeEvent.isComposing（标准浏览器最可靠）
-   * 2. isComposingRef（兜底，由 onCompositionStart/End 维护）
-   * 3. beforeinput 事件检测 insertCompositionText（macOS 中文输入法输英文的关键）
-   * 4. 两者都为 false 时才认为不在组合中
+   * compositionend 会重置 isComposingRef / compositionTextInsertedRef，
+   * 导致后续 keydown(Enter) 三个检测全部失败，消息被误发送。
    *
-   * 注意：不使用超时自动重置，因为会导致中文输入法下输入英文时
-   * 回车确认候选词被误当作消息发送。
+   * 此 ref 在 compositionend 中设为 true，在 keydown(Enter) 中检测并清除，
+   * 确保 IME 确认用的 Enter 不会被当作发送快捷键。
+   */
+  const compositionJustEndedRef = useRef(false);
+
+  /**
+   * 检测当前是否处于 IME 组合状态 — 五重检测
+   *
+   * 检测优先级（任一项为 true 即认为在组合中）：
+   * 1. nativeEvent.isComposing（标准浏览器）
+   * 2. isComposingRef（onCompositionStart/End 维护）
+   * 3. compositionTextInsertedRef（beforeinput insertCompositionText 检测）
+   * 4. compositionJustEndedRef（compositionend → keydown 之间的过渡期）
    */
   const isComposing = (e: React.KeyboardEvent | React.CompositionEvent): boolean => {
     // @ts-expect-error nativeEvent 类型兼容
     const nativeIsComposing = e.nativeEvent?.isComposing;
     if (typeof nativeIsComposing === 'boolean') {
-      return nativeIsComposing || isComposingRef.current;
+      return nativeIsComposing || isComposingRef.current || compositionJustEndedRef.current;
     }
-    return isComposingRef.current;
+    return isComposingRef.current || compositionJustEndedRef.current;
   };
 
   /**
@@ -585,6 +589,8 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
         return;
       }
       if (e.key === 'Enter' && !isComposing(e) && !compositionTextInsertedRef.current) {
+        // v1.5.73: 清除 compositionJustEndedRef（Enter 已被正确处理，不会误发送）
+        compositionJustEndedRef.current = false;
         e.preventDefault();
         if (skillFocusIndex >= 0 && skillFocusIndex < slashFilteredCount) {
           const allSkills = getAllSkills().filter(s => s.status === 'active');
@@ -607,6 +613,8 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
       }
     }
     if (e.key === 'Enter' && !e.shiftKey && !isComposing(e) && !compositionTextInsertedRef.current) {
+      // v1.5.73: 清除 compositionJustEndedRef（Enter 已被正确处理，不会误发送）
+      compositionJustEndedRef.current = false;
       e.preventDefault();
       handleSend();
     }
@@ -822,7 +830,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*,.pdf,.csv,.txt,.json,.md,.xlsx,.docx"
+            accept="image/*,.pdf,.csv,.txt,.json,.md,.xlsx,.docx,.doc"
             multiple
             style={{ display: 'none' }}
             onChange={(e) => {
@@ -853,8 +861,14 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
                   onBeforeInput={handleBeforeInput}
                   onInput={handleInputWithComposition}
                   onKeyDown={handleKeyDown}
-                  onCompositionStart={() => { isComposingRef.current = true; }}
-                  onCompositionEnd={() => { isComposingRef.current = false; compositionTextInsertedRef.current = false; }}
+                  onCompositionStart={() => { isComposingRef.current = true; compositionJustEndedRef.current = false; }}
+                  onCompositionEnd={() => {
+                    isComposingRef.current = false;
+                    compositionTextInsertedRef.current = false;
+                    // v1.5.73: 标记 composition 刚结束，防止 WKWebView 中
+                    // compositionend 先于 keydown(Enter) 触发导致误发送
+                    compositionJustEndedRef.current = true;
+                  }}
                   style={{
                     fontSize: 15,
                     lineHeight: 1.5,
