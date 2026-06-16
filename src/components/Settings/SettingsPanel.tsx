@@ -192,6 +192,16 @@ const SettingsPanel: React.FC = () => {
       },
       systemAuthorization: {
         enabled: false,
+        permissions: {
+          screenRecording:     { enabled: false, status: 'unknown' as const, lastChecked: null },
+          accessibility:       { enabled: false, status: 'unknown' as const, lastChecked: null },
+          inputMonitoring:     { enabled: false, status: 'unknown' as const, lastChecked: null },
+          fullDiskAccess:      { enabled: false, status: 'unknown' as const, lastChecked: null },
+          microphone:          { enabled: false, status: 'unknown' as const, lastChecked: null },
+          camera:              { enabled: false, status: 'unknown' as const, lastChecked: null },
+          notifications:       { enabled: false, status: 'unknown' as const, lastChecked: null },
+          automation:          { enabled: false, status: 'unknown' as const, lastChecked: null },
+        },
       },
     });
     setErrors({});
