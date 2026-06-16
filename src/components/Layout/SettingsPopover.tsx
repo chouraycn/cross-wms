@@ -40,7 +40,7 @@ const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本' },
 ];
 
-const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void }> = ({ onClose, onOpenModelManagement, onOpenToolManagement }) => {
+const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; onOpenSystemAuthorization?: () => void }> = ({ onClose, onOpenModelManagement, onOpenToolManagement, onOpenSystemAuthorization }) => {
   const { settings, updateSettings, resetSettings } = useAppSettings();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -100,6 +100,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
                   onClick={() => {
                     if (item.key === 'modelManagement') { onClose?.(); onOpenModelManagement?.(); }
                     else if (item.key === 'toolManagement') { onClose?.(); onOpenToolManagement?.(); }
+                    else if (item.key === 'systemAuthorization') { onClose?.(); onOpenSystemAuthorization?.(); }
                     else if (!isAppearance) { setActiveTab(item.key); }
                   }}
                   sx={{
@@ -202,7 +203,6 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
         {activeTab === 'dashboardIndicators' && <SettingsDashboard draft={draft} setDraft={setDraft} errors={errors} setErrors={setErrors} />}
         {activeTab === 'appearance' && <SettingsGeneral draft={draft} setDraft={setDraft} />}
         {activeTab === 'about' && <SettingsAbout draft={draft} setDraft={setDraft} />}
-        {activeTab === 'systemAuthorization' && <SettingsSystemAuthorization draft={draft} setDraft={setDraft} />}
         <Divider sx={{ mt: 2, mb: 1.5 }} />
         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
           <Button variant="outlined" size="small" startIcon={<RestartAltIcon />} onClick={handleReset} sx={{ borderColor: gs.border, color: gs.textMuted, fontSize: '0.75rem', '&:hover': { borderColor: gs.textDisabled } }}>重置</Button>
@@ -213,9 +213,9 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   );
 };
 
-export interface SettingsPopoverProps { open: boolean; onClose: () => void; anchorEl: HTMLElement | null; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; }
+export interface SettingsPopoverProps { open: boolean; onClose: () => void; anchorEl: HTMLElement | null; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; onOpenSystemAuthorization?: () => void; }
 
-const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchorEl, onOpenModelManagement, onOpenToolManagement }) => {
+const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchorEl, onOpenModelManagement, onOpenToolManagement, onOpenSystemAuthorization }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -258,7 +258,7 @@ const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchor
       }}
       hideBackdrop
     >
-      <SettingsPanel onClose={onClose} onOpenModelManagement={onOpenModelManagement} onOpenToolManagement={onOpenToolManagement} />
+      <SettingsPanel onClose={onClose} onOpenModelManagement={onOpenModelManagement} onOpenToolManagement={onOpenToolManagement} onOpenSystemAuthorization={onOpenSystemAuthorization} />
     </Popover>
   );
 };
