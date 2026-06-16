@@ -362,6 +362,8 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
   }, []);
 
   const handleInputClick = () => {
+    // v2.3.1-fix: 点击输入框时清除 composition 残留标记，防止回车被误判
+    compositionJustEndedRef.current = false;
     if (!inputExpanded) {
       setInputExpanded(true);
       setTimeout(() => {
@@ -571,6 +573,13 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
   }, [handleInputChange]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // v2.3.1-fix: 保存并立即清除 compositionJustEndedRef，防止死锁
+    // 问题：compositionend → 设置 compositionJustEndedRef=true → Enter 被该标记阻塞
+    // → 标记永不重置 → 后续所有回车永久失效
+    // 解决：在 keydown 开头快照该值后立即清除，用快照值做判断
+    const justEndedComposition = compositionJustEndedRef.current;
+    compositionJustEndedRef.current = false;
+
     if (showSkillSelector) {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -588,9 +597,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
         setSkillFocusIndex(prev => prev <= 0 ? slashFilteredCount - 1 : prev - 1);
         return;
       }
-      if (e.key === 'Enter' && !isComposing(e) && !compositionTextInsertedRef.current) {
-        // v1.5.73: 清除 compositionJustEndedRef（Enter 已被正确处理，不会误发送）
-        compositionJustEndedRef.current = false;
+      if (e.key === 'Enter' && !isComposing(e) && !compositionTextInsertedRef.current && !justEndedComposition) {
         e.preventDefault();
         if (skillFocusIndex >= 0 && skillFocusIndex < slashFilteredCount) {
           const allSkills = getAllSkills().filter(s => s.status === 'active');
@@ -612,9 +619,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
         return;
       }
     }
-    if (e.key === 'Enter' && !e.shiftKey && !isComposing(e) && !compositionTextInsertedRef.current) {
-      // v1.5.73: 清除 compositionJustEndedRef（Enter 已被正确处理，不会误发送）
-      compositionJustEndedRef.current = false;
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing(e) && !compositionTextInsertedRef.current && !justEndedComposition) {
       e.preventDefault();
       handleSend();
     }

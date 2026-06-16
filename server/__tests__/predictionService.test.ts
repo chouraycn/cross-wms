@@ -221,7 +221,7 @@ describe('checkAllPredictions', () => {
     const insertStmt = createMockStatement({ runReturn: { changes: 1 } });
 
     const stmtMap: Record<string, ReturnType<typeof createMockStatement>> = {};
-    let stmtIndex = 0;
+    const stmtIndex = 0;
 
     mockDb.prepare.mockImplementation((sql: string) => {
       if (sql.includes('SUM(ABS(it.quantity))') && sql.includes('inventory_transactions it')) {

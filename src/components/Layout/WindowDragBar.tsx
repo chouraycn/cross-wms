@@ -29,8 +29,10 @@ export const WindowDragBar: React.FC<{ height?: number }> = ({ height = 38 }) =>
         cursor: 'default',
         background: 'transparent',
         pointerEvents: 'auto',
-        WebkitAppRegion: 'drag',
       }}
+      // v2.5.1-fix: MUI sx 无法正确输出 -webkit-app-region 到构建产物，
+      // 改用 React style prop（原生处理 vendor-prefixed CSS 属性）
+      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     />
   );
 };

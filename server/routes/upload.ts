@@ -59,7 +59,7 @@ export function parseMultipartFormData(
     const chunks: Buffer[] = [];
     let totalSize = 0;
     let foundFile = false;
-    let fileData: Buffer[] = [];
+    const fileData: Buffer[] = [];
     let fileTotalSize = 0;
     let parsedFileName = 'upload';
     let parsedMimeType = 'application/octet-stream';
