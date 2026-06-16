@@ -15,6 +15,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import EditIcon from '@mui/icons-material/Edit';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { Message, Session } from '../../types/chat';
 import { getGrayScale, GrayScale } from '../../constants/theme';
 
@@ -68,7 +69,6 @@ function ImageAttachment({ att, isDark, gs }: { att: { id: string; url: string; 
   const [loadError, setLoadError] = React.useState(false);
 
   if (loadError) {
-    // 图片加载失败：显示文件卡片样式
     return (
       <Chip
         icon={<ImageIcon sx={{ fontSize: 16, color: '#F59E0B' }} />}
@@ -127,8 +127,8 @@ export interface ChatMessageListProps {
 }
 
 /**
- * 统一的消息列表渲染组件
- * 被 ChatPage 和 CrossWmsChat 共享使用
+ * v1.5.86: 虚拟滚动消息列表（react-virtuoso）
+ * 长对话（数百条消息）仅渲染可视区域 + 缓冲区，避免 DOM 节点膨胀导致滚动卡顿
  */
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   session,
@@ -150,15 +150,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   const [editingBotName, setEditingBotName] = useState('');
   const botNameInputRef = useRef<HTMLInputElement>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const virtuosoRef = useRef<VirtuosoHandle>(null);
   const isUserScrolledUp = useRef(false);
-
-  const handleScroll = useCallback(() => {
-    const el = messagesContainerRef.current;
-    if (!el) return;
-    isUserScrolledUp.current = el.scrollHeight - el.scrollTop - el.clientHeight > 80;
-  }, []);
 
   // v2.4.1: 拦截 copy 事件，只复制纯文本（去除 HTML 样式）
   const handleContainerCopy = useCallback((e: React.ClipboardEvent) => {
@@ -170,306 +163,312 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     e.clipboardData.setData('text/plain', text);
   }, []);
 
-  // 新消息时自动滚动
-  // 用户发送新消息 → 强制滚到底部（无视上翻状态）
-  // AI 流式回复 → 仅在用户没有主动上翻时滚动
+  // 自定义 List 组件，注入 copy handler
+  const ListComponent = useMemo(() => {
+    return React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+      (props, ref) => <div {...props} ref={ref} onCopy={handleContainerCopy} />
+    );
+  }, [handleContainerCopy]);
+
+  // v1.5.86: 流式内容变化时自动滚动（仅当用户未主动上翻）
+  // followOutput 处理新增消息的滚动，此 effect 处理已有消息内容变化的滚动（如 AI 流式输出）
   useEffect(() => {
     const lastMsg = session.messages[session.messages.length - 1];
-    if (lastMsg && lastMsg.role === 'user') {
+    if (!lastMsg) return;
+    // 用户发送新消息 → 强制重置滚动状态
+    if (lastMsg.role === 'user') {
       isUserScrolledUp.current = false;
     }
-    if (!isUserScrolledUp.current && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    // 仅在用户没有主动上翻时，跟随内容滚动
+    if (!isUserScrolledUp.current && virtuosoRef.current) {
+      virtuosoRef.current.autoscrollToBottom();
     }
   }, [session.messages.length, session.messages[session.messages.length - 1]?.content]);
 
-  // 切换会话时重置滚动状态并滚到底部
-  useEffect(() => {
-    isUserScrolledUp.current = false;
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'instant' as ScrollBehavior });
-    }
-  }, [session.id]);
-
   return (
     <Box
-      ref={messagesContainerRef}
-      onScroll={handleScroll}
-      onCopy={handleContainerCopy}
       sx={{
         flex: 1,
-        overflow: 'auto',
-        py: 2,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
+        py: 1,
         minHeight: 0,
-        // v1.9.3: 确保消息文本可以被选中
         userSelect: 'text',
         WebkitUserSelect: 'text',
         ...(maxHeight ? { maxHeight } : {}),
         ...sx,
       }}
     >
-      {session.messages.map((msg: Message, index: number) => {
-        return (
-        <Box
-          key={msg.id}
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            gap: 0.5,
-            px: 3,
-            maxWidth: 960,
-            width: '100%',
-            mx: 'auto',
-          }}
-        >
-          {/* 角色标签 + 时间 */}
+      <Virtuoso
+        ref={virtuosoRef}
+        key={session.id}
+        style={{ height: '100%' }}
+        data={session.messages}
+        // 用户发送消息 → 强制平滑滚动；AI 流式 → 仅当用户在底部才跟随
+        followOutput={(isAtBottom) => {
+          const lastMsg = session.messages[session.messages.length - 1];
+          if (lastMsg?.role === 'user') return 'smooth';
+          return isAtBottom ? 'smooth' : false;
+        }}
+        atBottomStateChange={(atBottom) => {
+          isUserScrolledUp.current = !atBottom;
+        }}
+        // 切换会话时定位到末尾
+        initialTopMostItemIndex={session.messages.length > 0 ? { index: session.messages.length - 1, align: 'end' } : undefined}
+        // 上下缓冲区，确保滚动时消息不闪烁
+        increaseViewportBy={{ top: 200, bottom: 400 }}
+        components={{ List: ListComponent }}
+        computeItemKey={(_index: number, msg: Message) => msg.id}
+        itemContent={(_index: number, msg: Message) => (
           <Box
+            key={msg.id}
             sx={{
+              py: 1,
               display: 'flex',
-              alignItems: 'center',
-              gap: 1,
+              flexDirection: 'column',
+              alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
+              gap: 0.5,
+              px: 3,
+              maxWidth: 960,
+              width: '100%',
+              mx: 'auto',
             }}
           >
-            {msg.role === 'assistant' && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                {isEditingBotName ? (
-                  <ClickAwayListener onClickAway={() => {
-                    const trimmed = editingBotName.trim();
-                    if (trimmed) {
-                      updateSettings({ appearance: { ...settings.appearance, botName: trimmed } });
-                    }
-                    setIsEditingBotName(false);
-                  }}>
-                    <TextField
-                      inputRef={botNameInputRef}
-                      size="small"
-                      value={editingBotName}
-                      onChange={e => setEditingBotName(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          const trimmed = editingBotName.trim();
-                          if (trimmed) {
-                            updateSettings({ appearance: { ...settings.appearance, botName: trimmed } });
+            {/* 角色标签 + 时间 */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
+              {msg.role === 'assistant' && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  {isEditingBotName ? (
+                    <ClickAwayListener onClickAway={() => {
+                      const trimmed = editingBotName.trim();
+                      if (trimmed) {
+                        updateSettings({ appearance: { ...settings.appearance, botName: trimmed } });
+                      }
+                      setIsEditingBotName(false);
+                    }}>
+                      <TextField
+                        inputRef={botNameInputRef}
+                        size="small"
+                        value={editingBotName}
+                        onChange={e => setEditingBotName(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const trimmed = editingBotName.trim();
+                            if (trimmed) {
+                              updateSettings({ appearance: { ...settings.appearance, botName: trimmed } });
+                            }
+                            setIsEditingBotName(false);
                           }
-                          setIsEditingBotName(false);
-                        }
-                        if (e.key === 'Escape') {
-                          setIsEditingBotName(false);
-                        }
+                          if (e.key === 'Escape') {
+                            setIsEditingBotName(false);
+                          }
+                        }}
+                        autoFocus
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: isDark ? '#E5E7EB' : '#111827',
+                            bgcolor: isDark ? '#2A2A2A' : '#F5F5F5',
+                            borderRadius: '6px',
+                            px: 0.5,
+                            py: 0,
+                            height: 22,
+                          },
+                          '& .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? '#555' : '#CCC' },
+                          width: 120,
+                        }}
+                      />
+                    </ClickAwayListener>
+                  ) : (
+                    <Box
+                      onClick={() => {
+                        setEditingBotName(botName);
+                        setIsEditingBotName(true);
                       }}
-                      autoFocus
                       sx={{
-                        '& .MuiInputBase-root': {
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.25,
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        px: 0.5,
+                        py: 0.15,
+                        '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' },
+                        transition: 'background-color 0.15s',
+                      }}
+                    >
+                      <Typography
+                        sx={{
                           fontSize: 13,
                           fontWeight: 600,
                           color: isDark ? '#E5E7EB' : '#111827',
-                          bgcolor: isDark ? '#2A2A2A' : '#F5F5F5',
-                          borderRadius: '6px',
-                          px: 0.5,
-                          py: 0,
-                          height: 22,
-                        },
-                        '& .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? '#555' : '#CCC' },
-                        width: 120,
+                        }}
+                      >
+                        {botName}
+                      </Typography>
+                      <EditIcon sx={{ fontSize: 11, color: gs.textDisabled, opacity: 0.5 }} />
+                    </Box>
+                  )}
+                  {msg.model && (
+                    <Typography
+                      sx={{
+                        fontSize: 11,
+                        color: gs.textMuted,
+                        fontWeight: 400,
                       }}
-                    />
-                  </ClickAwayListener>
-                ) : (
+                    >
+                      · {msg.model}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+              <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
+                {msg.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+              </Typography>
+              {msg.role === 'user' && (
+                <Typography
+                  sx={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: gs.textPrimary,
+                  }}
+                >
+                  你
+                </Typography>
+              )}
+            </Box>
+
+            {/* 引用会话 chip — 仅在用户消息上展示 */}
+            {msg.role === 'user' && msg.referencedSessions && msg.referencedSessions.length > 0 && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 0.5,
+                  mb: 0.5,
+                  justifyContent: 'flex-end',
+                }}
+              >
+                {msg.referencedSessions.map((ref) => (
                   <Box
-                    onClick={() => {
-                      setEditingBotName(botName);
-                      setIsEditingBotName(true);
-                    }}
+                    key={ref.id}
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 0.25,
-                      cursor: 'pointer',
-                      borderRadius: '4px',
-                      px: 0.5,
-                      py: 0.15,
-                      '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' },
-                      transition: 'background-color 0.15s',
-                    }}
-                  >
-                    <Typography
-                      sx={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: isDark ? '#E5E7EB' : '#111827',
-                      }}
-                    >
-                      {botName}
-                    </Typography>
-                    <EditIcon sx={{ fontSize: 11, color: gs.textDisabled, opacity: 0.5 }} />
-                  </Box>
-                )}
-                {msg.model && (
-                  <Typography
-                    sx={{
+                      px: 0.8,
+                      py: 0.2,
+                      borderRadius: '6px',
+                      bgcolor: isDark ? '#1E3A5F' : '#EFF6FF',
+                      color: isDark ? '#60A5FA' : '#2563EB',
+                      border: `1px solid ${isDark ? '#1E40AF' : '#BFDBFE'}`,
                       fontSize: 11,
-                      color: gs.textMuted,
-                      fontWeight: 400,
+                      lineHeight: 1.4,
+                      gap: 0.4,
                     }}
                   >
-                    · {msg.model}
-                  </Typography>
-                )}
+                    <span style={{ fontSize: 13 }}>@</span>
+                    <span style={{
+                      maxWidth: 120,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {ref.title || '未命名对话'}
+                    </span>
+                  </Box>
+                ))}
               </Box>
             )}
-            <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
-              {msg.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-            </Typography>
-            {msg.role === 'user' && (
-              <Typography
+
+            {/* 附件展示 — 仅在用户消息上展示 */}
+            {msg.role === 'user' && msg.attachments && msg.attachments.length > 0 && (
+              <Box
                 sx={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: gs.textPrimary,
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 0.75,
+                  mb: 0.5,
+                  justifyContent: 'flex-end',
+                  maxWidth: '75%',
                 }}
               >
-                你
-              </Typography>
+                {msg.attachments.map((att) => {
+                  const FileIcon = getFileTypeIcon(att.mimeType, att.fileName);
+
+                  return att.type === 'image' ? (
+                    <ImageAttachment
+                      key={att.id}
+                      att={att}
+                      isDark={isDark}
+                      gs={gs}
+                    />
+                  ) : (
+                    <Chip
+                      key={att.id}
+                      icon={<FileIcon sx={{ fontSize: 16 }} />}
+                      label={`${att.fileName} (${(att.size / 1024).toFixed(1)}KB)`}
+                      size="small"
+                      clickable
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = att.url;
+                        link.download = att.fileName;
+                        link.click();
+                      }}
+                      sx={{
+                        height: 30,
+                        fontSize: 12,
+                        bgcolor: isDark ? '#1E293B' : '#F8FAFC',
+                        border: `1px solid ${gs.border}`,
+                        '& .MuiChip-label': { px: 1 },
+                        '&:hover': { bgcolor: isDark ? '#263348' : '#EFF6FF' },
+                      }}
+                    />
+                  );
+                })}
+              </Box>
+            )}
+
+            {/* 消息内容 */}
+            {msg.role === 'user' ? (
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  borderRadius: '16px',
+                  maxWidth: '75%',
+                  bgcolor: isDark ? '#374151' : '#F3F4F6',
+                  color: gs.textPrimary,
+                  wordBreak: 'break-word',
+                  userSelect: 'text',
+                  WebkitUserSelect: 'text',
+                }}
+              >
+                <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap', userSelect: 'text', WebkitUserSelect: 'text' }}>
+                  {msg.content}
+                </Typography>
+              </Box>
+            ) : (
+              <BotMessageContent
+                msg={msg}
+                gs={gs}
+                isDark={isDark}
+                copiedId={copiedId}
+                onCopy={onCopy}
+                onRegenerate={onRegenerate}
+                showRegenerate={showRegenerate}
+                onConfirmReplenishment={onConfirmReplenishment}
+                onPermissionRespond={onPermissionRespond}
+              />
             )}
           </Box>
-
-          {/* 引用会话 chip — 仅在用户消息上展示 */}
-          {msg.role === 'user' && msg.referencedSessions && msg.referencedSessions.length > 0 && (
-            <Box
-              sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 0.5,
-                mb: 0.5,
-                justifyContent: 'flex-end',
-              }}
-            >
-              {msg.referencedSessions.map((ref) => (
-                <Box
-                  key={ref.id}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    px: 0.8,
-                    py: 0.2,
-                    borderRadius: '6px',
-                    bgcolor: isDark ? '#1E3A5F' : '#EFF6FF',
-                    color: isDark ? '#60A5FA' : '#2563EB',
-                    border: `1px solid ${isDark ? '#1E40AF' : '#BFDBFE'}`,
-                    fontSize: 11,
-                    lineHeight: 1.4,
-                    gap: 0.4,
-                  }}
-                >
-                  <span style={{ fontSize: 13 }}>@</span>
-                  <span style={{
-                    maxWidth: 120,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {ref.title || '未命名对话'}
-                  </span>
-                </Box>
-              ))}
-            </Box>
-          )}
-
-          {/* 附件展示 — 仅在用户消息上展示 */}
-          {msg.role === 'user' && msg.attachments && msg.attachments.length > 0 && (
-            <Box
-              sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 0.75,
-                mb: 0.5,
-                justifyContent: 'flex-end',
-                maxWidth: '75%',
-              }}
-            >
-              {msg.attachments.map((att) => {
-                // v1.9.3: 根据文件类型选择图标
-                const FileIcon = getFileTypeIcon(att.mimeType, att.fileName);
-                const fileExt = getFileExtension(att.fileName).toUpperCase();
-
-                return att.type === 'image' ? (
-                  <ImageAttachment
-                    key={att.id}
-                    att={att}
-                    isDark={isDark}
-                    gs={gs}
-                  />
-                ) : (
-                  <Chip
-                    key={att.id}
-                    icon={<FileIcon sx={{ fontSize: 16 }} />}
-                    label={`${att.fileName} (${(att.size / 1024).toFixed(1)}KB)`}
-                    size="small"
-                    clickable
-                    onClick={() => {
-                      const link = document.createElement('a');
-                      link.href = att.url;
-                      link.download = att.fileName;
-                      link.click();
-                    }}
-                    sx={{
-                      height: 30,
-                      fontSize: 12,
-                      bgcolor: isDark ? '#1E293B' : '#F8FAFC',
-                      border: `1px solid ${gs.border}`,
-                      '& .MuiChip-label': { px: 1 },
-                      '&:hover': { bgcolor: isDark ? '#263348' : '#EFF6FF' },
-                    }}
-                  />
-                );
-              })}
-            </Box>
-          )}
-
-          {/* 消息内容 */}
-          {msg.role === 'user' ? (
-            /* 用户消息：右侧灰色对话框 */
-            <Box
-              sx={{
-                px: 2,
-                py: 1.5,
-                borderRadius: '16px',
-                maxWidth: '75%',
-                bgcolor: isDark ? '#374151' : '#F3F4F6',
-                color: gs.textPrimary,
-                wordBreak: 'break-word',
-                // v1.9.3: 确保用户消息文本可以被选中
-                userSelect: 'text',
-                WebkitUserSelect: 'text',
-              }}
-            >
-              <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap', userSelect: 'text', WebkitUserSelect: 'text' }}>
-                {msg.content}
-              </Typography>
-            </Box>
-          ) : (
-            /* Bot 消息：左侧平铺 */
-            <BotMessageContent
-              msg={msg}
-              gs={gs}
-              isDark={isDark}
-              copiedId={copiedId}
-              onCopy={onCopy}
-              onRegenerate={onRegenerate}
-              showRegenerate={showRegenerate}
-              onConfirmReplenishment={onConfirmReplenishment}
-              onPermissionRespond={onPermissionRespond}
-            />
-          )}
-        </Box>
-        );
-      })}
-      {/* 滚动锚点 */}
-      <div ref={messagesEndRef} />
+        )}
+      />
     </Box>
   );
 };
@@ -508,12 +507,10 @@ const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
   const gs = getGrayScale(isDark);
   const [alwaysAllow, setAlwaysAllow] = React.useState(false);
 
-  // 根据风险等级获取样式
   const riskLevel = permissionRequest.riskLevel || 'confirm';
   const riskStyle = INLINE_RISK_STYLES[riskLevel] || INLINE_RISK_STYLES['confirm'];
   const isHighRisk = riskLevel === 'high-risk';
 
-  // 已响应状态
   if (permissionRequest.approved !== undefined) {
     return (
       <Box
@@ -540,7 +537,6 @@ const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
     );
   }
 
-  // 解析参数
   let argsObj: Record<string, unknown> = {};
   try {
     argsObj = JSON.parse(permissionRequest.toolArgs);
@@ -548,7 +544,6 @@ const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
     argsObj = { raw: permissionRequest.toolArgs };
   }
 
-  // 结构化参数
   const formattedArgs = formatToolArgs(permissionRequest.toolName, argsObj);
 
   return (
@@ -563,7 +558,6 @@ const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
         border: `1px solid ${riskStyle.border}`,
       }}
     >
-      {/* 标题行 */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
         {isHighRisk ? (
           <ErrorOutlineIcon sx={{ color: riskStyle.color, fontSize: 20 }} />
@@ -585,14 +579,12 @@ const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
         </Typography>
       </Box>
 
-      {/* 高风险提示 */}
       {isHighRisk && (
         <Typography sx={{ fontSize: 12, color: riskStyle.color, mb: 1 }}>
           此操作可能对系统产生不可逆的影响，请仔细确认。
         </Typography>
       )}
 
-      {/* 结构化参数列表 */}
       <Box
         sx={{
           borderRadius: 1.5,
@@ -638,7 +630,6 @@ const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
         ))}
       </Box>
 
-      {/* 操作按钮 */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Button
           onClick={() => onRespond(permissionRequest.reqId, false)}
@@ -724,7 +715,6 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
         fontSize: 14,
         lineHeight: 1.7,
         wordBreak: 'break-word',
-        // v1.9.3: 确保 Bot 消息文本可以被选中
         userSelect: 'text',
         WebkitUserSelect: 'text',
         '& .markdown-body h1, & .markdown-body h2, & .markdown-body h3': {
@@ -759,7 +749,6 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
           onConfirmReplenishment={onConfirmReplenishment}
         />
       )}
-      {/* 如果仅有 loading 状态 */}
       {msg.metadata?.loading && !msg.metadata.queryResult && (
         <QueryResultRenderer
           queryResult={{
@@ -812,8 +801,6 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
           </Typography>
         </Box>
       ) : msg.role === 'assistant' ? (
-        // v1.9.3: assistant 消息无内容且非 streaming 时显示错误提示
-        // v1.9.5: 当有 thinking 内容时，提取最后一段作为摘要展示（兜底 toolExecutor finalContent 丢失的情况）
         (() => {
           const serverError = (msg.metadata as any)?.error as string | undefined;
           const thinkingSummary = (() => {
@@ -823,7 +810,6 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
             return paragraphs[paragraphs.length - 1].trim();
           })();
 
-          // 有 thinking 摘要时，展示摘要代替错误提示
           if (thinkingSummary && !serverError) {
             return (
               <MarkdownRenderer content={thinkingSummary} />
@@ -890,7 +876,7 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
         </Box>
       )}
 
-      {/* Auto 选型原因 — 仅在非默认选型时显示（避免每次显示"使用默认模型"造成干扰） */}
+      {/* Auto 选型原因 — 仅在非默认选型时显示 */}
       {msg.autoReason && msg.autoReasonType !== 'default' && (
         <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.75 }}>
           <AutoAwesomeIcon sx={{ fontSize: 12, color: gs.textDisabled }} />

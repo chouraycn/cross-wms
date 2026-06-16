@@ -222,7 +222,8 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
   // 与服务端 ALLOWED_EXTENSIONS 保持一致的允许扩展名列表
   const ALLOWED_EXTENSIONS = new Set([
     'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'ico', 'tiff', 'avif',
-    'pdf', 'csv', 'txt', 'json', 'md', 'xlsx', 'docx', 'doc', 'pptx', 'html', 'htm',
+    'pdf', 'csv', 'txt', 'json', 'md', 'xlsx', 'docx', 'doc', 'ppt', 'xls', 'pptx',
+    'wps', 'et', 'dps', 'html', 'htm',
     'js', 'ts', 'jsx', 'tsx', 'py', 'java', 'go', 'rs', 'cpp', 'c', 'h', 'hpp',
     'rb', 'php', 'swift', 'kt', 'scala', 'r', 'm', 'mm', 'yaml', 'yml', 'xml',
     'toml', 'ini', 'cfg', 'conf', 'sql', 'sh', 'bat', 'ps1', 'css', 'scss',
@@ -488,7 +489,17 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
     const skillContext = effectiveSkill?.promptTemplate || undefined;
     const skillId = effectiveSkill?.id || undefined;
 
-    sendMessage(effectiveInput, { skillContext, skillId, referencedSessions, model: selectedModelId, attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined, reasoningEffort: reasoningEffort || undefined });
+    // v1.5.85: 智能模型 + 附件时，自动选用支持多模态的模型，避免后端 auto 路由到不支持图片的模型
+    let effectiveModelId = selectedModelId;
+    if (effectiveModelId === 'auto' && pendingAttachments.length > 0) {
+      const multimodalModel = enabledModels.find(m => m.capabilities?.includes('multimodal'));
+      if (multimodalModel) {
+        effectiveModelId = multimodalModel.id;
+        console.log(`[ModelRouter] 检测到附件，智能模型自动切换为多模态模型: ${multimodalModel.name} (${multimodalModel.id})`);
+      }
+    }
+
+    sendMessage(effectiveInput, { skillContext, skillId, referencedSessions, model: effectiveModelId, attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined, reasoningEffort: reasoningEffort || undefined });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
     }
@@ -761,23 +772,9 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
                   },
                 }}
               >
-                {att.type === 'image' ? (
-                  <Box
-                    component="img"
-                    src={att.url}
-                    alt={att.fileName}
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      objectFit: 'cover',
-                      borderRadius: '4px',
-                    }}
-                  />
-                ) : (
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '6px', bgcolor: getFileTypeColor(att.mimeType, att.fileName) + '18', flexShrink: 0 }}>
-                    {React.createElement(getFileTypeIconPreview(att.mimeType, att.fileName), { sx: { fontSize: 18, color: getFileTypeColor(att.mimeType, att.fileName) } })}
-                  </Box>
-                )}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '6px', bgcolor: getFileTypeColor(att.mimeType, att.fileName) + '18', flexShrink: 0 }}>
+                  {React.createElement(getFileTypeIconPreview(att.mimeType, att.fileName), { sx: { fontSize: 18, color: getFileTypeColor(att.mimeType, att.fileName) } })}
+                </Box>
                 <Box sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontSize: 11, color: gs.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {att.fileName}
@@ -835,7 +832,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*,.pdf,.csv,.txt,.json,.md,.xlsx,.docx,.doc"
+            accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.svg,.ico,.tiff,.avif,.pdf,.csv,.txt,.json,.md,.xlsx,.docx,.doc,.ppt,.xls,.pptx,.wps,.et,.dps"
             multiple
             style={{ display: 'none' }}
             onChange={(e) => {

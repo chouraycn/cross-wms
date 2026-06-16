@@ -31,8 +31,7 @@ const SidebarLogo: React.FC<SidebarLogoProps> = ({ collapsed, onLogoClick, showV
         justifyContent: collapsed ? 'center' : 'space-between',
         gap: 1.25,
         flexShrink: 0,
-        WebkitAppRegion: 'drag',
-      } as React.CSSProperties}
+      }}
     >
       {/* Logo 图标 */}
       <Box

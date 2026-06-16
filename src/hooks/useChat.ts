@@ -266,6 +266,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       messages: []
     };
 
+    const effectiveModel = options?.model || session.model;
+
     const userMsg: Message = {
       id: uuidv4(),
       role: 'user',
@@ -273,6 +275,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       timestamp: new Date(),
       referencedSessions: options?.referencedSessions,
       attachments: options?.attachments,
+      // v1.5.85: 记录用户消息实际使用的模型 ID，供重新生成时恢复
+      model: effectiveModel,
     };
     const updatedSession = { ...session, messages: [...session.messages, userMsg] };
     onSessionUpdateRef.current(updatedSession);
@@ -296,8 +300,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
     let fullContent = '';
 
     try {
-      // 优先使用 options.model，否则使用 session.model
-      const effectiveModel = options?.model || session.model;
 
       const body: Record<string, unknown> = {
         sessionId: session.id,
