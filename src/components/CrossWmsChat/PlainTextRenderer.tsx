@@ -10,7 +10,7 @@ import { Typography, Link } from '@mui/material';
  * - 自动识别并链接 URL
  * - 保留换行符（white-space: pre-wrap）
  */
-const PlainTextRenderer: React.FC<{ content: string }> = ({ content }) => {
+const PlainTextRenderer = React.memo<{ content: string }>(function PlainTextRenderer({ content }) {
   // 空内容不渲染（避免占用空间覆盖加载态）
   if (!content || !content.trim()) return null;
 
@@ -52,6 +52,6 @@ const PlainTextRenderer: React.FC<{ content: string }> = ({ content }) => {
       ))}
     </>
   );
-};
+});
 
 export default PlainTextRenderer;

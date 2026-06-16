@@ -13,7 +13,7 @@ interface PageHeaderProps {
   action?: React.ReactNode;
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, summary, action }) => {
+const PageHeader = React.memo<PageHeaderProps>(function PageHeader({ title, subtitle, summary, action }) {
   return (
     <Box sx={{ mb: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -36,6 +36,6 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, summary, actio
       </Box>
     </Box>
   );
-};
+});
 
 export default PageHeader;

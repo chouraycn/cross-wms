@@ -48,7 +48,7 @@ function formatNumber(value: number | string): string {
  * - 圆角 8px，阴影
  * - 数值带单位格式化
  */
-const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, unit }) => {
+const CustomTooltip = React.memo<CustomTooltipProps>(function CustomTooltip({ active, payload, label, unit }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -137,6 +137,6 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload, label, u
       ))}
     </Box>
   );
-};
+});
 
 export default CustomTooltip;

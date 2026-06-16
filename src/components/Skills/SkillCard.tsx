@@ -77,7 +77,7 @@ function daysAgo(dateStr: string | null): number {
 
 // ===================== 技能卡片组件 =====================
 
-const SkillCard: React.FC<SkillCardProps> = ({
+const SkillCard = React.memo<SkillCardProps>(function SkillCard({
   skill,
   automationInfo,
   isRunning,
@@ -92,7 +92,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
   auditLevel,
   auditScore,
   onAuditClick,
-}) => {
+}) {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [maliciousDialogOpen, setMaliciousDialogOpen] = useState(false);
@@ -431,7 +431,7 @@ const SkillCard: React.FC<SkillCardProps> = ({
       </Dialog>
     </>
   );
-};
+});
 
 export default SkillCard;
 

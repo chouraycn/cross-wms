@@ -772,9 +772,29 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
                   },
                 }}
               >
+                {att.type === 'image' && att.url ? (
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    border: '1px solid',
+                    borderColor: gs.border,
+                  }}
+                >
+                  <img
+                    src={att.url}
+                    alt={att.fileName}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </Box>
+              ) : (
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '6px', bgcolor: getFileTypeColor(att.mimeType, att.fileName) + '18', flexShrink: 0 }}>
                   {React.createElement(getFileTypeIconPreview(att.mimeType, att.fileName), { sx: { fontSize: 18, color: getFileTypeColor(att.mimeType, att.fileName) } })}
                 </Box>
+              )}
                 <Box sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontSize: 11, color: gs.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {att.fileName}

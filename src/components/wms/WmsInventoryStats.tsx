@@ -17,7 +17,7 @@ interface WmsInventoryStatsProps {
   data: InventoryCount[];
 }
 
-const WmsInventoryStats: React.FC<WmsInventoryStatsProps> = ({ data }) => {
+const WmsInventoryStats = React.memo<WmsInventoryStatsProps>(function WmsInventoryStats({ data }) {
   const stats: InventoryStats = useMemo(() => {
     const result: InventoryStats = {
       total: data.length,
@@ -133,6 +133,6 @@ const WmsInventoryStats: React.FC<WmsInventoryStatsProps> = ({ data }) => {
       ))}
     </Stack>
   );
-};
+});
 
 export default WmsInventoryStats;

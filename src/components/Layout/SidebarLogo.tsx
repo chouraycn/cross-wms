@@ -14,7 +14,7 @@ interface SidebarLogoProps {
 
 // ===================== Component =====================
 
-const SidebarLogo: React.FC<SidebarLogoProps> = ({ collapsed, onLogoClick, showVersion = true }) => {
+const SidebarLogo = React.memo<SidebarLogoProps>(function SidebarLogo({ collapsed, onLogoClick, showVersion = true }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -98,6 +98,6 @@ const SidebarLogo: React.FC<SidebarLogoProps> = ({ collapsed, onLogoClick, showV
       )}
     </Box>
   );
-};
+});
 
 export default SidebarLogo;
