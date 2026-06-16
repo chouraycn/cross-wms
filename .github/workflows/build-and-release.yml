@@ -116,7 +116,7 @@ jobs:
         run: npm run build
 
       - name: Build DMG
-        run: bash build-dmg-pywebview.sh --no-bump
+        run: bash scripts/build-dmg-pywebview.sh --no-bump
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
