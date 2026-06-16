@@ -10,8 +10,8 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import SaveIcon from '@mui/icons-material/Save';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
-import type { AppSettings } from '../../contexts/AppSettingsContext';
+import { useSystemAuthSettings } from '../../contexts/AppSettingsContext';
+import type { SystemAuthorizationConfig } from '../../contexts/AppSettingsContext';
 import { getGrayScale } from '../../constants/theme';
 import SettingsSystemAuthorization from './SettingsSystemAuthorization';
 import { useToast } from '../../contexts/ToastContext';
@@ -25,38 +25,32 @@ export interface SystemAuthorizationDialogProps {
 }
 
 const SystemAuthorizationDialog: React.FC<SystemAuthorizationDialogProps> = ({ open, onClose }) => {
-  const { settings, updateSettings, resetSettings } = useAppSettings();
+  const { settings, updateSettings, resetSettings } = useSystemAuthSettings();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
   const { showToast } = useToast();
 
-  const [draft, setDraft] = useState<AppSettings>({ ...settings });
+  const [draft, setDraft] = useState<SystemAuthorizationConfig>({ ...settings });
 
   // 每次打开时重置为当前 settings
   useEffect(() => {
     if (open) {
-      setDraft((prev) => ({
-        ...prev,
-        systemAuthorization: { ...settings.systemAuthorization },
-      }));
+      setDraft({ ...settings });
     }
-  }, [open, settings.systemAuthorization]);
+  }, [open, settings]);
 
   const handleSave = useCallback(() => {
-    updateSettings({ systemAuthorization: draft.systemAuthorization });
+    updateSettings({ systemAuthorization: draft });
     showToast('系统授权设置已保存', 'success');
     onClose();
-  }, [draft.systemAuthorization, updateSettings, showToast, onClose]);
+  }, [draft, updateSettings, showToast, onClose]);
 
   const handleReset = useCallback(() => {
     resetSettings();
-    setDraft((prev) => ({
-      ...prev,
-      systemAuthorization: { ...settings.systemAuthorization },
-    }));
+    setDraft({ ...settings });
     showToast('已重置为默认值', 'info');
-  }, [resetSettings, settings.systemAuthorization, showToast]);
+  }, [resetSettings, settings, showToast]);
 
   return (
     <Dialog

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Box, Typography, IconButton,
-  Dialog, Alert, Button, CircularProgress,
+  Dialog, Alert, Button, CircularProgress, useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import LinkIcon from '@mui/icons-material/Link';
@@ -9,8 +9,8 @@ import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useModels } from '../../contexts/ModelsContext';
+import { getGrayScale } from '../../constants/theme';
 import ModelManager from '../shared/ModelManager';
 import SystemAuthBanner from './SystemAuthBanner';
 
@@ -35,11 +35,11 @@ const SIDEBAR_TABS: TabDef[] = [
 /* ------------------------------------------------------------------ */
 /*  Placeholder tab content                                             */
 /* ------------------------------------------------------------------ */
-const PlaceholderTab: React.FC<{ title: string; description?: string }> = ({ title, description }) => (
+const PlaceholderTab: React.FC<{ title: string; description?: string; colors: { textPrimary: string; textDisabled: string } }> = ({ title, description, colors }) => (
   <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-    <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827', mb: 0.5 }}>{title}</Typography>
+    <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: colors.textPrimary, mb: 0.5 }}>{title}</Typography>
     <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Typography sx={{ fontSize: '0.8rem', color: '#9CA3AF' }}>
+      <Typography sx={{ fontSize: '0.8rem', color: colors.textDisabled }}>
         {description || '功能开发中，敬请期待'}
       </Typography>
     </Box>
@@ -57,8 +57,10 @@ export interface AISettingsDialogProps {
 }
 
 const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOpenSystemAuthorization }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const [activeTab, setActiveTab] = useState<AITab>('model');
-  const { settings, updateSettings } = useAppSettings();
   const { models: modelList, defaultModelId, updateModels, isLoading, error, reload } = useModels();
 
   return (
@@ -69,7 +71,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
       PaperProps={{
         sx: {
           borderRadius: 2.5,
-          boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
+          boxShadow: isDark ? '0 24px 64px rgba(0,0,0,0.5)' : '0 24px 64px rgba(0,0,0,0.18)',
           width: 880,
           height: 580,
           maxHeight: 'none',
@@ -86,8 +88,8 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
           top: 14,
           right: 14,
           zIndex: 10,
-          color: '#6B7280',
-          '&:hover': { color: '#111827', backgroundColor: '#F3F4F6' },
+          color: gs.textMuted,
+          '&:hover': { color: gs.textPrimary, backgroundColor: gs.bgHover },
         }}
       >
         <CloseIcon sx={{ fontSize: 20 }} />
@@ -98,8 +100,8 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
         <Box
           sx={{
             width: 156,
-            borderRight: '1px solid #EDEDED',
-            backgroundColor: '#F5F5F5',
+            borderRight: `1px solid ${gs.border}`,
+            backgroundColor: gs.bgSidebar,
             py: 2,
             px: 1.25,
             display: 'flex',
@@ -123,11 +125,11 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
                   borderRadius: '6px',
                   cursor: 'pointer',
                   transition: 'all 0.12s ease',
-                  backgroundColor: isSelected ? '#ECECEC' : 'transparent',
-                  color: isSelected ? '#1F2937' : '#6B7280',
+                  backgroundColor: isSelected ? gs.bgActive : 'transparent',
+                  color: isSelected ? gs.textPrimary : gs.textMuted,
                   '&:hover': {
-                    backgroundColor: isSelected ? '#ECECEC' : '#EBEBEB',
-                    color: '#1F2937',
+                    backgroundColor: isSelected ? gs.bgActive : gs.bgHover,
+                    color: gs.textPrimary,
                   },
                 }}
               >
@@ -146,7 +148,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
               {isLoading && (
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, gap: 1 }}>
                   <CircularProgress size={20} />
-                  <Typography sx={{ fontSize: '0.875rem', color: '#6B7280' }}>正在加载模型配置...</Typography>
+                  <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted }}>正在加载模型配置...</Typography>
                 </Box>
               )}
               {error && (
@@ -172,9 +174,9 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
               )}
             </>
           )}
-          {activeTab === 'mcp' && <PlaceholderTab title="MCP" description="MCP Server 配置功能开发中，敬请期待" />}
-          {activeTab === 'chat' && <PlaceholderTab title="对话" description="对话设置功能开发中，敬请期待" />}
-          {activeTab === 'auth' && <PlaceholderTab title="外部应用授权" description="外部应用授权管理功能开发中，敬请期待" />}
+          {activeTab === 'mcp' && <PlaceholderTab title="MCP" description="MCP Server 配置功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
+          {activeTab === 'chat' && <PlaceholderTab title="对话" description="对话设置功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
+          {activeTab === 'auth' && <PlaceholderTab title="外部应用授权" description="外部应用授权管理功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
         </Box>
       </Box>
     </Dialog>

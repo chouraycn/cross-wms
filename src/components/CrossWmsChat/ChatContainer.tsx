@@ -24,7 +24,7 @@ import { ICON_MAP } from '../../types/skill';
 import { getCategoryLabel, getCategoryGradient } from '../../constants/skillCategories';
 import { getGrayScale } from '../../constants/theme';
 import { useToast } from '../../contexts/ToastContext';
-import { useChatContext } from '../../contexts/ChatContext';
+import { useChatSession } from '../../contexts/ChatContext';
 
 /** 从 URL 参数解析技能上下文 */
 function resolveSkillFromParams(skillId: string | null): Skill | null {
@@ -50,7 +50,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
   const gs = getGrayScale(isDark);
   const { showToast } = useToast();
 
-  // 从 ChatContext 获取所有状态和方法
+  // 从 ChatSessionContext 获取活跃会话状态
   const {
     session,
     setActiveSessionId,
@@ -59,7 +59,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
     isLoading,
     sendMessage,
     stopGeneration,
-  } = useChatContext();
+  } = useChatSession();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -203,15 +203,23 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
     handleSessionUpdate({ ...session, messages: updatedMessages });
   }, [session, handleSessionUpdate]);
 
-  // v1.9.3: 从消息中提取 pending 权限请求（用于输入框上方展示）
-  const pendingPermission = useMemo(() => {
+  // v1.9.5: pendingPermissions Map 化，key=reqId，支持多并发权限请求
+  const pendingPermissions = useMemo(() => {
+    const map = new Map<string, NonNullable<Message['permissionRequest']>>();
     for (const msg of session.messages) {
-      if (msg.permissionRequest && msg.permissionRequest.approved === undefined) {
-        return msg.permissionRequest;
+      const pr = msg.permissionRequest;
+      if (pr && pr.approved === undefined) {
+        map.set(pr.reqId, pr);
       }
     }
-    return null;
+    return map;
   }, [session.messages]);
+
+  // v1.9.3: 取第一个 pending 权限请求（UI 同屏只展示一条）
+  const pendingPermission = useMemo(() => {
+    for (const [_id, req] of pendingPermissions) return req;
+    return null;
+  }, [pendingPermissions]);
 
   // 工具分类映射
   const getToolCategory = (toolName: string): { label: string; icon: React.ReactNode; color: string } => {

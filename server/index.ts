@@ -9,6 +9,20 @@ import skillWatcher from './services/skillWatcher.js';
 import { initDefaultTools, listTools } from './engine/toolRegistry.js';
 import { EventEmitter } from 'events';
 
+// v1.5.88: 全局异常兜底 — Node.js v15+ 未处理 rejection 默认崩溃进程
+process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
+  const msg = reason instanceof Error ? reason.stack || reason.message : String(reason);
+  console.error('[Process] ⚠️ unhandledRejection:', msg);
+  // 不调用 process.exit()，桌面应用保持运行比崩溃更合理
+});
+
+process.on('uncaughtException', (err: Error) => {
+  console.error('[Process] ❌ uncaughtException:', err.stack || err.message);
+  // uncaughtException 通常更严重，但仍保持运行 (Node 文档建议此时进程状态不确定，尽快优雅退出)
+  // 对于桌面应用，记录错误并继续运行，避免静默崩溃
+  console.error('[Process] 进程状态可能异常，建议重启应用。继续运行中...');
+});
+
 // v1.9.2: 工具权限请求全局 EventEmitter
 const permissionEmitter = new EventEmitter();
 

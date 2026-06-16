@@ -22,7 +22,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import type { AppSettings, TccPermissionItem } from '../../contexts/AppSettingsContext';
+import type { SystemAuthorizationConfig, TccPermissionItem } from '../../contexts/AppSettingsContext';
 import { isPyWebView } from '../../services/tencentDocsApi';
 import { getGrayScale } from '../../constants/theme';
 import { switchSx } from '../Settings/sharedStyles';
@@ -30,7 +30,7 @@ import { switchSx } from '../Settings/sharedStyles';
 // ===================== macOS TCC 权限定义 =====================
 
 interface TccPermissionDef {
-  key: keyof AppSettings['systemAuthorization']['permissions'];
+  key: keyof SystemAuthorizationConfig['permissions'];
   label: string;
   description: string;
   icon: React.ReactNode;
@@ -126,15 +126,15 @@ const StatusBadge: React.FC<{ status: TccPermissionItem['status']; isDark: boole
 // ===================== Main Component =====================
 
 interface SettingsSystemAuthorizationProps {
-  draft: AppSettings;
-  setDraft: React.Dispatch<React.SetStateAction<AppSettings>>;
+  draft: SystemAuthorizationConfig;
+  setDraft: React.Dispatch<React.SetStateAction<SystemAuthorizationConfig>>;
 }
 
 const SettingsSystemAuthorization: React.FC<SettingsSystemAuthorizationProps> = ({ draft, setDraft }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
-  const enabled = draft.systemAuthorization?.enabled ?? false;
+  const enabled = draft.enabled ?? false;
 
   // 打开 macOS 系统设置隐私面板
   const openSystemPrefs = useCallback(async (prefPane: string) => {
@@ -172,30 +172,24 @@ const SettingsSystemAuthorization: React.FC<SettingsSystemAuthorizationProps> = 
   const handleMasterToggle = () => {
     setDraft((prev) => ({
       ...prev,
-      systemAuthorization: {
-        ...prev.systemAuthorization,
-        enabled: !(prev.systemAuthorization?.enabled ?? false),
-        permissions: { ...(prev.systemAuthorization?.permissions ?? DEFAULT_PERMS) },
-      },
+      enabled: !(prev.enabled ?? false),
+      permissions: { ...(prev.permissions ?? DEFAULT_PERMS) },
     }));
   };
 
   // Individual permission toggle
-  const handlePermissionToggle = (key: keyof AppSettings['systemAuthorization']['permissions']) => {
+  const handlePermissionToggle = (key: keyof SystemAuthorizationConfig['permissions']) => {
     setDraft((prev) => {
-      const perms = prev.systemAuthorization?.permissions ?? DEFAULT_PERMS;
+      const perms = prev.permissions ?? DEFAULT_PERMS;
       const current = perms[key];
       return {
         ...prev,
-        systemAuthorization: {
-          ...prev.systemAuthorization,
-          enabled: prev.systemAuthorization?.enabled ?? false,
-          permissions: {
-            ...perms,
-            [key]: {
-              ...current,
-              enabled: !current.enabled,
-            },
+        enabled: prev.enabled ?? false,
+        permissions: {
+          ...perms,
+          [key]: {
+            ...current,
+            enabled: !current.enabled,
           },
         },
       };
@@ -204,7 +198,7 @@ const SettingsSystemAuthorization: React.FC<SettingsSystemAuthorizationProps> = 
 
   // Count enabled permissions
   const enabledCount = TCC_PERMISSIONS.filter(
-    (p) => draft.systemAuthorization?.permissions?.[p.key]?.enabled
+    (p) => draft.permissions?.[p.key]?.enabled
   ).length;
 
   return (
@@ -264,7 +258,7 @@ const SettingsSystemAuthorization: React.FC<SettingsSystemAuthorizationProps> = 
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {TCC_PERMISSIONS.map((perm) => {
-          const permData = draft.systemAuthorization?.permissions?.[perm.key] ?? { enabled: false, status: 'unknown' as const, lastChecked: null };
+          const permData = draft.permissions?.[perm.key] ?? { enabled: false, status: 'unknown' as const, lastChecked: null };
           const isEnabled = permData.enabled;
 
           return (
@@ -337,7 +331,7 @@ const SettingsSystemAuthorization: React.FC<SettingsSystemAuthorizationProps> = 
 
 // ===================== Default perms for fallback =====================
 
-const DEFAULT_PERMS: AppSettings['systemAuthorization']['permissions'] = {
+const DEFAULT_PERMS: SystemAuthorizationConfig['permissions'] = {
   screenRecording:     { enabled: false, status: 'unknown', lastChecked: null },
   accessibility:       { enabled: false, status: 'unknown', lastChecked: null },
   inputMonitoring:     { enabled: false, status: 'unknown', lastChecked: null },

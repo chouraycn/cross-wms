@@ -14,7 +14,7 @@ import WarehouseKpiTable from '../components/Dashboard/WarehouseKpiTable';
 import TransitTimeChart from '../components/Dashboard/TransitTimeChart';
 import WarehouseSelector, { ALL_WAREHOUSES } from '../components/Dashboard/WarehouseSelector';
 import TimeRangeSelector, { type TimeRange } from '../components/Dashboard/TimeRangeSelector';
-import { useAppSettings } from '../contexts/AppSettingsContext';
+import { useDashboardSettings } from '../contexts/AppSettingsContext';
 import { subscribeRefresh, subscribeWarehouseChange } from '../App';
 import { useWarehouseCapability } from '../capabilities/warehouse';
 import { AlertCarousel, type DashboardAlert } from '../components/Dashboard/AlertCarousel';
@@ -22,16 +22,16 @@ import type { Warehouse, TransitOrder, InventoryItem } from '../types';
 
 function computeAlerts(
   warehouses: Warehouse[],
-  settings: ReturnType<typeof useAppSettings>['settings'],
+  settings: ReturnType<typeof useDashboardSettings>['settings'],
   selectedWarehouse: string,
   transitOrders: TransitOrder[],
   inventory: InventoryItem[],
 ): DashboardAlert[] {
   const alerts: DashboardAlert[] = [];
-  const alertThreshold = settings.dashboard.warningThreshold;
-  const fullThreshold = settings.dashboard.fullThreshold;
-  const ageWarningDays = settings.dashboard.ageWarningDays;
-  const transitAlertThreshold = settings.dashboard.transitAlertThreshold;
+  const alertThreshold = settings.warningThreshold;
+  const fullThreshold = settings.fullThreshold;
+  const ageWarningDays = settings.ageWarningDays;
+  const transitAlertThreshold = settings.transitAlertThreshold;
   const VOLUME_PER_ITEM_ESTIMATE = 0.05;
 
   // 1. 容积率预警
@@ -111,8 +111,8 @@ const DashboardPageContent: React.FC = () => {
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
 
-  const { settings } = useAppSettings();
-  const vis = settings.dashboard.visibility;
+  const { settings } = useDashboardSettings();
+  const vis = settings.visibility;
   const navigate = useNavigate();
 
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(ALL_WAREHOUSES);
@@ -123,7 +123,7 @@ const DashboardPageContent: React.FC = () => {
 
   // 自动刷新状态
   const [autoRefresh, setAutoRefresh] = useState(false);
-  const [countdown, setCountdown] = useState(settings.dashboard.dataRefreshInterval);
+  const [countdown, setCountdown] = useState(settings.dataRefreshInterval);
 
   // 告警通知状态
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
@@ -140,18 +140,18 @@ const DashboardPageContent: React.FC = () => {
   // 自动刷新定时器
   useEffect(() => {
     if (!autoRefresh) return;
-    setCountdown(settings.dashboard.dataRefreshInterval);
+    setCountdown(settings.dataRefreshInterval);
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           refresh();
-          return settings.dashboard.dataRefreshInterval;
+          return settings.dataRefreshInterval;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [autoRefresh, settings.dashboard.dataRefreshInterval, refresh]);
+  }, [autoRefresh, settings.dataRefreshInterval, refresh]);
 
   useEffect(() => {
     const unsubRefresh = subscribeRefresh('dashboard', refresh);
@@ -222,7 +222,7 @@ const DashboardPageContent: React.FC = () => {
                 checked={autoRefresh}
                 onChange={(e) => {
                   setAutoRefresh(e.target.checked);
-                  setCountdown(settings.dashboard.dataRefreshInterval);
+                  setCountdown(settings.dataRefreshInterval);
                 }}
                 sx={{
                   '& .MuiSwitch-switchBase.Mui-checked': { color: gs.textPrimary },
@@ -272,7 +272,7 @@ const DashboardPageContent: React.FC = () => {
         <EmptyWarehouseState onAddWarehouse={() => navigate('/warehouses')} />
       ) : !loading && !error && (
         <>
-          {settings.dashboard.componentOrder.map((comp) => {
+          {settings.componentOrder.map((comp) => {
                 switch (comp) {
                   case 'kpi-cards':
                     return hasKpiCards ? (

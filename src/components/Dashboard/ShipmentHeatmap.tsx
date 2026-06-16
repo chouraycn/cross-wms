@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Box, Typography, Card, CardHeader, CardContent, useTheme } from '@mui/material';
 import { getGrayScale } from '../../constants/theme';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useDashboardSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { subscribeWarehouses } from '../../capabilities/warehouse';
 import { dashboardApi } from '../../services/dashboardApi';
@@ -211,8 +211,8 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
 
-  const { settings } = useAppSettings();
-  const heatmapSettings = settings.dashboard.heatmap;
+  const { settings } = useDashboardSettings();
+  const heatmapSettings = settings.heatmap;
   const days = heatmapSettings?.days ?? 14;
   const colorScheme: ColorScheme = (heatmapSettings?.colorScheme as ColorScheme) ?? 'blue';
 

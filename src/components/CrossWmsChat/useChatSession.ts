@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Session } from '../../types/chat';
+import { getDebouncedStorage } from '../../utils/storageDebounce';
 
 const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
 const MAX_SESSIONS = 20;
+
+const debouncedStorage = getDebouncedStorage(500);
 
 function loadSessions(): Session[] {
   try {
@@ -34,7 +37,7 @@ function saveSessions(sessions: Session[]): void {
         timestamp: m.timestamp.toISOString(),
       })),
     }));
-    localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(serializable));
+    debouncedStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(serializable));
   } catch (e) {
     console.error(`[${SESSIONS_STORAGE_KEY}] 保存失败:`, e);
     if (e instanceof DOMException && e.name === 'QuotaExceededError') {

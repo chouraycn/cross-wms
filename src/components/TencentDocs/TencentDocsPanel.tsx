@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Box } from '@mui/material';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useDocLinksSettings } from '../../contexts/AppSettingsContext';
 import type { DocLinkItem, WeComDocLinkItem } from '../../contexts/AppSettingsContext';
 import {
   getAuthStatus, getDocContent, getSheetContent, extractFileIdFromUrl,
@@ -22,7 +22,7 @@ type ViewMode = 'list' | 'loading' | 'doc' | 'sheet' | 'error';
 type DocSource = 'personal' | 'enterprise';
 
 const TencentDocsPanel: React.FC = () => {
-  const { settings } = useAppSettings();
+  const { settings } = useDocLinksSettings();
   const docLinks = settings.tencentDocs.docLinks;
   const wecomDocLinks = settings.wecomDocs.docLinks;
 

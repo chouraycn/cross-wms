@@ -8,11 +8,11 @@
  */
 
 import React from 'react';
-import { Box, TextField, Chip, IconButton, InputAdornment } from '@mui/material';
+import { Box, TextField, Chip, IconButton, InputAdornment, useTheme } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { CAPABILITY_LABELS, CAPABILITY_COLORS, type ModelCapability } from '../../../types/models';
-import { COLORS } from './styles';
+import { getModelManagerStyles } from './styles';
 
 interface ModelFilterBarProps {
   searchQuery: string;
@@ -31,6 +31,9 @@ const ModelFilterBar: React.FC<ModelFilterBarProps> = ({
   onCapabilityToggle,
   onClearFilters,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const styles = getModelManagerStyles(isDark);
   const hasFilters = searchQuery || selectedCapabilities.length > 0;
 
   return (
@@ -48,7 +51,7 @@ const ModelFilterBar: React.FC<ModelFilterBarProps> = ({
             flexShrink: 0,
             '& .MuiOutlinedInput-root': {
               borderRadius: 1.5,
-              backgroundColor: '#FAFAFA',
+              backgroundColor: styles.bgInput,
               height: 30,
               fontSize: '0.75rem',
             },
@@ -56,13 +59,13 @@ const ModelFilterBar: React.FC<ModelFilterBarProps> = ({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ fontSize: 14, color: COLORS.textMuted }} />
+                <SearchIcon sx={{ fontSize: 14, color: styles.textMuted }} />
               </InputAdornment>
             ),
             endAdornment: searchQuery ? (
               <InputAdornment position="end">
                 <IconButton size="small" onClick={() => onSearchChange('')} sx={{ p: 0.1 }}>
-                  <ClearIcon sx={{ fontSize: 12, color: COLORS.textMuted }} />
+                  <ClearIcon sx={{ fontSize: 12, color: styles.textMuted }} />
                 </IconButton>
               </InputAdornment>
             ) : null,
@@ -70,7 +73,7 @@ const ModelFilterBar: React.FC<ModelFilterBarProps> = ({
         />
 
         {/* 分隔线 */}
-        <Box sx={{ width: '1px', height: 18, backgroundColor: COLORS.borderLight, flexShrink: 0 }} />
+        <Box sx={{ width: '1px', height: 18, backgroundColor: styles.borderLight, flexShrink: 0 }} />
 
         {/* 能力标签 - 紧凑样式，不换行，超出可滚动 */}
         <Box
@@ -98,12 +101,12 @@ const ModelFilterBar: React.FC<ModelFilterBarProps> = ({
                   cursor: 'pointer',
                   flexShrink: 0,
                   backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}18` : 'transparent',
-                  color: selected ? CAPABILITY_COLORS[cap] : COLORS.textLight,
-                  border: selected ? `1px solid ${CAPABILITY_COLORS[cap]}40` : `1px solid ${COLORS.borderLight}`,
+                  color: selected ? CAPABILITY_COLORS[cap] : styles.textDisabled,
+                  border: selected ? `1px solid ${CAPABILITY_COLORS[cap]}40` : `1px solid ${styles.borderLight}`,
                   fontWeight: selected ? 600 : 400,
                   '&:hover': {
-                    backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}28` : '#F3F4F6',
-                    borderColor: selected ? `${CAPABILITY_COLORS[cap]}60` : COLORS.border,
+                    backgroundColor: selected ? `${CAPABILITY_COLORS[cap]}28` : styles.bgHover,
+                    borderColor: selected ? `${CAPABILITY_COLORS[cap]}60` : styles.border,
                   },
                 }}
               />
@@ -121,9 +124,9 @@ const ModelFilterBar: React.FC<ModelFilterBarProps> = ({
               fontSize: '0.6rem',
               height: 20,
               cursor: 'pointer',
-              backgroundColor: COLORS.errorBg,
-              color: COLORS.errorText,
-              '&:hover': { backgroundColor: '#FECACA' },
+              backgroundColor: styles.semantic.errorBg,
+              color: styles.semantic.errorText,
+              '&:hover': { backgroundColor: isDark ? '#991B1B' : '#FECACA' },
               flexShrink: 0,
             }}
           />

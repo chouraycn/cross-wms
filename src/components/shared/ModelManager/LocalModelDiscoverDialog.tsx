@@ -194,8 +194,8 @@ const LocalModelDiscoverDialog: React.FC<LocalModelDiscoverDialogProps> = ({
 
         {/* 错误提示 */}
         {error && (
-          <Box sx={{ p: 1, borderRadius: 1.5, backgroundColor: '#FEF2F2', border: '1px solid #FECACA' }}>
-            <Typography sx={{ fontSize: '0.75rem', color: '#991B1B' }}>{error}</Typography>
+          <Box sx={{ p: 1, borderRadius: 1.5, backgroundColor: styles.semantic.errorBg, border: `1px solid ${styles.semantic.errorBorder}` }}>
+            <Typography sx={{ fontSize: '0.75rem', color: styles.semantic.errorText }}>{error}</Typography>
           </Box>
         )}
 

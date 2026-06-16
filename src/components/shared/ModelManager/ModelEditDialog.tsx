@@ -293,8 +293,8 @@ const KeysSection: React.FC<{
     {isLocalProvider && (
       <Box sx={{
         px: 1.5, py: 1, borderRadius: 1,
-        bgcolor: '#F0FDF4', border: '1px solid #BBF7D0',
-        fontSize: '0.8125rem', color: '#166534',
+        bgcolor: styles.semantic.successBg, border: `1px solid ${styles.semantic.successBorder}`,
+        fontSize: '0.8125rem', color: styles.semantic.successText,
         display: 'flex', alignItems: 'center', gap: 1,
       }}>
         <span>🔒</span>
@@ -305,8 +305,8 @@ const KeysSection: React.FC<{
     {hasSavedKey && (
       <Box sx={{
         px: 1.5, py: 1, borderRadius: 1,
-        bgcolor: '#EFF6FF', border: '1px solid #BFDBFE',
-        fontSize: '0.8125rem', color: '#1E40AF',
+        bgcolor: styles.semantic.infoBg, border: `1px solid ${styles.semantic.infoBorder}`,
+        fontSize: '0.8125rem', color: styles.semantic.infoText,
         display: 'flex', alignItems: 'center', gap: 1,
       }}>
         <span>✓</span>
@@ -622,29 +622,29 @@ const TestSection: React.FC<{
             p: 1,
             borderRadius: 1.5,
             backgroundColor: testStatus === 'success'
-              ? testModelValid ? '#F0FDF4' : '#FFFBEB'
-              : '#FEF2F2',
+              ? testModelValid ? styles.semantic.successBg : styles.semantic.warningBg
+              : styles.semantic.errorBg,
             border: `1px solid ${
               testStatus === 'success'
-                ? testModelValid ? '#BBF7D0' : '#FDE68A'
-                : '#FECACA'
+                ? testModelValid ? styles.semantic.successBorder : styles.semantic.warningBorder
+                : styles.semantic.errorBorder
             }`,
           }}
         >
           {testStatus === 'success' ? (
             testModelValid ? (
-              <CheckCircleOutlineIcon sx={{ fontSize: 18, color: '#16A34A', flexShrink: 0, mt: 0.25 }} />
+              <CheckCircleOutlineIcon sx={{ fontSize: 18, color: styles.semantic.success, flexShrink: 0, mt: 0.25 }} />
             ) : (
-              <ErrorOutlineIcon sx={{ fontSize: 18, color: '#D97706', flexShrink: 0, mt: 0.25 }} />
+              <ErrorOutlineIcon sx={{ fontSize: 18, color: styles.semantic.warning, flexShrink: 0, mt: 0.25 }} />
             )
           ) : (
-            <ErrorOutlineIcon sx={{ fontSize: 18, color: '#DC2626', flexShrink: 0, mt: 0.25 }} />
+            <ErrorOutlineIcon sx={{ fontSize: 18, color: styles.semantic.error, flexShrink: 0, mt: 0.25 }} />
           )}
           <Typography sx={{
             fontSize: '0.75rem',
             color: testStatus === 'success'
-              ? testModelValid ? '#166534' : '#92400E'
-              : '#991B1B',
+              ? testModelValid ? styles.semantic.successText : styles.semantic.warningText
+              : styles.semantic.errorText,
             lineHeight: 1.5,
             whiteSpace: 'pre-line',
           }}>
@@ -780,7 +780,7 @@ const ModelEditDialog: React.FC<ModelEditDialogProps> = ({ state, actions }) => 
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: activeStep === step.id ? styles.textPrimary : styles.border,
-                  color: activeStep === step.id ? '#fff' : styles.textMuted,
+                  color: activeStep === step.id ? (isDark ? '#111827' : '#FFFFFF') : styles.textMuted,
                   fontSize: '0.7rem',
                   fontWeight: 600,
                 }}

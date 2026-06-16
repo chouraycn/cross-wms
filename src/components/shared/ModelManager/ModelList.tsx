@@ -18,18 +18,8 @@ import TuneIcon from '@mui/icons-material/Tune';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { providerLabel, providerIcon } from '../../../utils/providerIcons';
 import { CAPABILITY_LABELS, CAPABILITY_COLORS } from '../../../types/models';
-import { getModelManagerStyles, switchSx } from './styles';
+import { getModelManagerStyles } from './styles';
 import type { ModelListProps } from './types';
-
-// 语义色（不随主题变化）
-const SEMANTIC = {
-  success: '#10B981',
-  successBg: '#F0FDF4',
-  successHover: '#059669',
-  error: '#EF4444',
-  errorBg: '#FEE2E2',
-  errorText: '#DC2626',
-} as const;
 
 // ===================== 时间格式化工具 =====================
 
@@ -113,10 +103,10 @@ interface DragProps {
   handleDragEnd: () => void;
 }
 
-const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typeof getModelManagerStyles> }> = ({
+const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typeof getModelManagerStyles>; isDark: boolean }> = ({
   models, defaultModelId, actions, selectedModelIds, healthStatuses, healthLatencies,
   isFiltered, draggingIndex, dragOverIndex, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
-  styles,
+  styles, isDark,
 }) => (
   <Box sx={{ flex: 1, overflow: 'auto' }}>
     <TableContainer>
@@ -127,27 +117,27 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
               <TableCell sx={{
                 fontSize: '0.75rem', fontWeight: 500, color: styles.textMuted,
                 py: 1, px: 1, borderBottom: `1px solid ${styles.borderLight}`,
-                backgroundColor: '#FAFAFA', width: 28,
+                backgroundColor: styles.bgHover, width: 28,
               }}>
               </TableCell>
             )}
             <TableCell sx={{
               fontSize: '0.75rem', fontWeight: 500, color: styles.textMuted,
               py: 1, px: 1, borderBottom: `1px solid ${styles.borderLight}`,
-              backgroundColor: '#FAFAFA', width: 36,
+              backgroundColor: styles.bgHover, width: 36,
             }}>
             </TableCell>
             <TableCell sx={{
               fontSize: '0.75rem', fontWeight: 500, color: styles.textMuted,
               py: 1, px: 1.5, borderBottom: `1px solid ${styles.borderLight}`,
-              backgroundColor: '#FAFAFA',
+              backgroundColor: styles.bgHover,
             }}>
               模型信息
             </TableCell>
             <TableCell align="right" sx={{
               fontSize: '0.75rem', fontWeight: 500, color: styles.textMuted,
               py: 1, px: 1.5, borderBottom: `1px solid ${styles.borderLight}`,
-              backgroundColor: '#FAFAFA', width: 140,
+              backgroundColor: styles.bgHover, width: 140,
             }}>
               操作
             </TableCell>
@@ -187,11 +177,11 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
                 onDragEnd={handleDragEnd}
                 sx={{
                   opacity: draggingIndex === index ? 0.5 : 1,
-                  backgroundColor: dragOverIndex === index ? 'rgba(25, 118, 210, 0.08)' : 'inherit',
+                  backgroundColor: dragOverIndex === index ? (isDark ? 'rgba(96, 165, 250, 0.12)' : (isDark ? 'rgba(96, 165, 250, 0.12)' : 'rgba(25, 118, 210, 0.08)')) : 'inherit',
                   transition: 'background-color 0.15s ease',
                   cursor: isFiltered ? 'default' : 'move',
-                  '&:nth-of-type(even)': { backgroundColor: dragOverIndex === index ? 'rgba(25, 118, 210, 0.08)' : '#FAFAFA' },
-                  '&:hover': { backgroundColor: dragOverIndex === index ? 'rgba(25, 118, 210, 0.08)' : styles.bgHover },
+                  '&:nth-of-type(even)': { backgroundColor: dragOverIndex === index ? (isDark ? 'rgba(96, 165, 250, 0.12)' : (isDark ? 'rgba(96, 165, 250, 0.12)' : 'rgba(25, 118, 210, 0.08)')) : styles.bgHover },
+                  '&:hover': { backgroundColor: dragOverIndex === index ? (isDark ? 'rgba(96, 165, 250, 0.12)' : (isDark ? 'rgba(96, 165, 250, 0.12)' : 'rgba(25, 118, 210, 0.08)')) : styles.bgHover },
                 }}
               >
                 {!isFiltered && (
@@ -221,10 +211,10 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
                       {model.name}
                     </Typography>
                     {model.id === defaultModelId && (
-                      <Chip label="默认" size="small" sx={{ backgroundColor: SEMANTIC.success, color: '#FFF', fontSize: '0.6rem', height: 16, fontWeight: 600 }} />
+                      <Chip label="默认" size="small" sx={{ backgroundColor: styles.semantic.badgeSuccess, color: '#FFFFFF', fontSize: '0.6rem', height: 16, fontWeight: 600 }} />
                     )}
                     {!model.enabled && (
-                      <Chip label="禁用" size="small" sx={{ backgroundColor: SEMANTIC.errorBg, color: SEMANTIC.errorText, fontSize: '0.6rem', height: 16 }} />
+                      <Chip label="禁用" size="small" sx={{ backgroundColor: styles.semantic.errorBg, color: styles.semantic.errorText, fontSize: '0.6rem', height: 16 }} />
                     )}
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25, flexWrap: 'wrap' }}>
@@ -257,7 +247,7 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
                           size="small"
                           variant="outlined"
                           onClick={() => actions.handleSetDefaultModel(model.id)}
-                          sx={{ borderColor: SEMANTIC.success, color: SEMANTIC.success, fontSize: '0.65rem', py: 0.1, minWidth: 36, height: 24, '&:hover': { borderColor: SEMANTIC.successHover } }}
+                          sx={{ borderColor: styles.semantic.success, color: styles.semantic.success, fontSize: '0.65rem', py: 0.1, minWidth: 36, height: 24, '&:hover': { borderColor: styles.semantic.success } }}
                         >
                           默认
                         </Button>
@@ -267,7 +257,7 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
                       checked={model.enabled}
                       onChange={e => actions.handleToggleModelEnabled(model.id, e.target.checked)}
                       size="small"
-                      sx={{ ...switchSx, '& .MuiSwitch-root': { width: 36, height: 20 } }}
+                      sx={{ '& .MuiSwitch-root': { width: 36, height: 20 } }}
                     />
                     <Tooltip title="编辑">
                       <IconButton size="small" onClick={() => actions.openModelDialog('edit', model)} sx={{ color: styles.textMuted, p: 0.4 }}>
@@ -275,7 +265,7 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="删除">
-                      <IconButton size="small" onClick={() => actions.handleDeleteModel(model)} sx={{ color: SEMANTIC.error, p: 0.4 }}>
+                      <IconButton size="small" onClick={() => actions.handleDeleteModel(model)} sx={{ color: styles.semantic.error, p: 0.4 }}>
                         <DeleteOutlineIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     </Tooltip>
@@ -292,10 +282,10 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
 
 // ===================== List 变体（详细版） =====================
 
-const ModelListDetailed: React.FC<ModelListProps & DragProps & { styles: ReturnType<typeof getModelManagerStyles> }> = ({
+const ModelListDetailed: React.FC<ModelListProps & DragProps & { styles: ReturnType<typeof getModelManagerStyles>; isDark: boolean }> = ({
   models, defaultModelId, actions, selectedModelIds, healthStatuses, healthLatencies,
   isFiltered, draggingIndex, dragOverIndex, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
-  styles,
+  styles, isDark,
 }) => (
   <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 1, border: `1px solid ${styles.border}` }}>
     {models.map((model, index) => (
@@ -311,7 +301,7 @@ const ModelListDetailed: React.FC<ModelListProps & DragProps & { styles: ReturnT
           py: 1.5,
           px: 2,
           borderBottom: `1px solid ${styles.border}`,
-          backgroundColor: dragOverIndex === index ? 'rgba(25, 118, 210, 0.08)' : (model.id === defaultModelId ? SEMANTIC.successBg : 'transparent'),
+          backgroundColor: dragOverIndex === index ? (isDark ? 'rgba(96, 165, 250, 0.12)' : 'rgba(25, 118, 210, 0.08)') : (model.id === defaultModelId ? styles.semantic.successBg : 'transparent'),
           opacity: draggingIndex === index ? 0.5 : 1,
           transition: 'background-color 0.15s ease',
           cursor: isFiltered ? 'default' : 'move',
@@ -326,11 +316,11 @@ const ModelListDetailed: React.FC<ModelListProps & DragProps & { styles: ReturnT
                   variant="outlined"
                   onClick={() => actions.handleSetDefaultModel(model.id)}
                   sx={{
-                    borderColor: SEMANTIC.success,
-                    color: SEMANTIC.success,
+                    borderColor: styles.semantic.success,
+                    color: styles.semantic.success,
                     fontSize: '0.7rem',
                     py: 0.2,
-                    '&:hover': { borderColor: SEMANTIC.successHover, backgroundColor: SEMANTIC.successBg },
+                    '&:hover': { borderColor: styles.semantic.success, backgroundColor: styles.semantic.successBg },
                   }}
                 >
                   默认
@@ -342,7 +332,7 @@ const ModelListDetailed: React.FC<ModelListProps & DragProps & { styles: ReturnT
                 checked={model.enabled}
                 onChange={e => actions.handleToggleModelEnabled(model.id, e.target.checked)}
                 size="small"
-                sx={switchSx}
+                sx={{}}
               />
             </Tooltip>
             <Tooltip title="编辑">
@@ -351,7 +341,7 @@ const ModelListDetailed: React.FC<ModelListProps & DragProps & { styles: ReturnT
               </IconButton>
             </Tooltip>
             <Tooltip title="删除">
-              <IconButton size="small" onClick={() => actions.handleDeleteModel(model)} sx={{ color: SEMANTIC.error }}>
+              <IconButton size="small" onClick={() => actions.handleDeleteModel(model)} sx={{ color: styles.semantic.error }}>
                 <DeleteOutlineIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -381,14 +371,14 @@ const ModelListDetailed: React.FC<ModelListProps & DragProps & { styles: ReturnT
                 size={10}
               />
               {model.id === defaultModelId && (
-                <Chip label="默认" size="small" sx={{ backgroundColor: SEMANTIC.success, color: '#FFF', fontSize: '0.65rem' }} />
+                <Chip label="默认" size="small" sx={{ backgroundColor: styles.semantic.badgeSuccess, color: '#FFF', fontSize: '0.65rem' }} />
               )}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 0.5 }}>
                 {providerIcon(model.provider, 14)}
                 <Typography sx={{ fontSize: '0.7rem', color: styles.textMuted }}>{providerLabel(model.provider)}</Typography>
               </Box>
               {!model.enabled && (
-                <Chip label="已禁用" size="small" sx={{ backgroundColor: SEMANTIC.errorBg, color: SEMANTIC.errorText, fontSize: '0.65rem' }} />
+                <Chip label="已禁用" size="small" sx={{ backgroundColor: styles.semantic.errorBg, color: styles.semantic.errorText, fontSize: '0.65rem' }} />
               )}
               {model.capabilities?.map(cap => (
                 <Chip
@@ -451,10 +441,10 @@ const ModelListDetailed: React.FC<ModelListProps & DragProps & { styles: ReturnT
 
 // ===================== Compact 变体 =====================
 
-const ModelListCompact: React.FC<ModelListProps & DragProps & { styles: ReturnType<typeof getModelManagerStyles> }> = ({
+const ModelListCompact: React.FC<ModelListProps & DragProps & { styles: ReturnType<typeof getModelManagerStyles>; isDark: boolean }> = ({
   models, defaultModelId, actions, selectedModelIds, healthStatuses, healthLatencies,
   isFiltered, draggingIndex, dragOverIndex, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
-  styles,
+  styles, isDark,
 }) => (
   <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 1, border: `1px solid ${styles.border}`, p: 0 }}>
     {models.length === 0 && (
@@ -481,7 +471,7 @@ const ModelListCompact: React.FC<ModelListProps & DragProps & { styles: ReturnTy
           py: 1,
           px: 1.5,
           borderBottom: `1px solid ${styles.borderLight}`,
-          backgroundColor: dragOverIndex === index ? 'rgba(25, 118, 210, 0.08)' : (model.id === defaultModelId ? SEMANTIC.successBg : 'transparent'),
+          backgroundColor: dragOverIndex === index ? (isDark ? 'rgba(96, 165, 250, 0.12)' : 'rgba(25, 118, 210, 0.08)') : (model.id === defaultModelId ? styles.semantic.successBg : 'transparent'),
           opacity: draggingIndex === index ? 0.5 : 1,
           transition: 'background-color 0.15s ease',
           cursor: isFiltered ? 'default' : 'move',
@@ -495,7 +485,7 @@ const ModelListCompact: React.FC<ModelListProps & DragProps & { styles: ReturnTy
                   size="small"
                   variant="outlined"
                   onClick={() => actions.handleSetDefaultModel(model.id)}
-                  sx={{ borderColor: SEMANTIC.success, color: SEMANTIC.success, fontSize: '0.6rem', py: 0.1, minWidth: 32, '&:hover': { borderColor: SEMANTIC.successHover } }}
+                  sx={{ borderColor: styles.semantic.success, color: styles.semantic.success, fontSize: '0.6rem', py: 0.1, minWidth: 32, '&:hover': { borderColor: styles.semantic.success } }}
                 >
                   默认
                 </Button>
@@ -505,12 +495,12 @@ const ModelListCompact: React.FC<ModelListProps & DragProps & { styles: ReturnTy
               checked={model.enabled}
               onChange={e => actions.handleToggleModelEnabled(model.id, e.target.checked)}
               size="small"
-              sx={{ ...switchSx, '& .MuiSwitch-switchBase': { py: 0 } }}
+              sx={{ '& .MuiSwitch-switchBase': { py: 0 } }}
             />
             <IconButton size="small" onClick={() => actions.openModelDialog('edit', model)} sx={{ color: styles.textMuted }}>
               <EditIcon sx={{ fontSize: 16 }} />
             </IconButton>
-            <IconButton size="small" onClick={() => actions.handleDeleteModel(model)} sx={{ color: SEMANTIC.error }}>
+            <IconButton size="small" onClick={() => actions.handleDeleteModel(model)} sx={{ color: styles.semantic.error }}>
               <DeleteOutlineIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Box>
@@ -539,14 +529,14 @@ const ModelListCompact: React.FC<ModelListProps & DragProps & { styles: ReturnTy
                 size={7}
               />
               {model.id === defaultModelId && (
-                <Chip label="默认" size="small" sx={{ backgroundColor: SEMANTIC.success, color: '#FFF', fontSize: '0.6rem', height: 18 }} />
+                <Chip label="默认" size="small" sx={{ backgroundColor: styles.semantic.badgeSuccess, color: '#FFF', fontSize: '0.6rem', height: 18 }} />
               )}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 0.5 }}>
                 {providerIcon(model.provider, 14)}
                 <Typography sx={{ fontSize: '0.7rem', color: styles.textMuted }}>{providerLabel(model.provider)}</Typography>
               </Box>
               {!model.enabled && (
-                <Chip label="禁用" size="small" sx={{ backgroundColor: SEMANTIC.errorBg, color: SEMANTIC.errorText, fontSize: '0.6rem', height: 18 }} />
+                <Chip label="禁用" size="small" sx={{ backgroundColor: styles.semantic.errorBg, color: styles.semantic.errorText, fontSize: '0.6rem', height: 18 }} />
               )}
               {model.capabilities?.slice(0, 2).map(cap => (
                 <Chip
@@ -662,12 +652,12 @@ const ModelList: React.FC<ModelListProps> = (props) => {
 
   switch (props.variant) {
     case 'table':
-      return <ModelTable {...filteredProps} {...dragProps} styles={styles} />;
+      return <ModelTable {...filteredProps} {...dragProps} styles={styles} isDark={isDark} />;
     case 'compact':
-      return <ModelListCompact {...filteredProps} {...dragProps} styles={styles} />;
+      return <ModelListCompact {...filteredProps} {...dragProps} styles={styles} isDark={isDark} />;
     case 'list':
     default:
-      return <ModelListDetailed {...filteredProps} {...dragProps} styles={styles} />;
+      return <ModelListDetailed {...filteredProps} {...dragProps} styles={styles} isDark={isDark} />;
   }
 };
 

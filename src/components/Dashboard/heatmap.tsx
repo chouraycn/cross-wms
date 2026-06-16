@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { Box, Typography, Card, CardHeader, CardContent, CircularProgress, Alert, Paper, useTheme } from '@mui/material';
 import { getGrayScale } from '../../constants/theme';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useDashboardSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import type { Warehouse, InboundRecord, OutboundRecord } from '../../types';
@@ -195,8 +195,8 @@ const Heatmap: React.FC<HeatmapProps> = ({ warehouseId, timeRange }) => {
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
 
-  const { settings } = useAppSettings();
-  const heatmapSettings = settings.dashboard.heatmap;
+  const { settings } = useDashboardSettings();
+  const heatmapSettings = settings.heatmap;
   const days = heatmapSettings?.days ?? 90;
   const colorScheme = (heatmapSettings?.colorScheme as ColorScheme) ?? 'ocean';
   const colors = COLOR_SCHEMES[colorScheme] || OCEAN;

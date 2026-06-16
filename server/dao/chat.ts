@@ -6,14 +6,27 @@ import type { Session, Folder, Message } from '../db.js';
 
 export function getSessions(): Session[] {
   const db = initDb();
-  return db.prepare('SELECT * FROM sessions ORDER BY updatedAt DESC').all() as Session[];
+  return db.prepare(`
+    SELECT s.*, COUNT(m.id) as messageCount
+    FROM sessions s
+    LEFT JOIN messages m ON s.id = m.sessionId
+    GROUP BY s.id
+    ORDER BY s.updatedAt DESC
+  `).all() as Session[];
 }
 
 /** 搜索会话（按标题模糊匹配） */
 export function searchSessions(query: string): Session[] {
   const db = initDb();
   const q = `%${query}%`;
-  return db.prepare('SELECT * FROM sessions WHERE title LIKE ? ORDER BY updatedAt DESC').all(q) as Session[];
+  return db.prepare(`
+    SELECT s.*, COUNT(m.id) as messageCount
+    FROM sessions s
+    LEFT JOIN messages m ON s.id = m.sessionId
+    WHERE s.title LIKE ?
+    GROUP BY s.id
+    ORDER BY s.updatedAt DESC
+  `).all(q) as Session[];
 }
 
 export function createSession(id: string, title: string, model: string, agentId?: string, folderId?: string | null): Session {

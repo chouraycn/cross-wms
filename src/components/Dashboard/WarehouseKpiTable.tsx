@@ -19,7 +19,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { getGrayScale } from '../../constants/theme';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useDashboardSettings } from '../../contexts/AppSettingsContext';
 import type { TimeRange } from './TimeRangeSelector';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
@@ -53,8 +53,8 @@ const WarehouseKpiTable: React.FC<WarehouseKpiTableProps> = ({ warehouseId = ALL
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
 
-  const { settings } = useAppSettings();
-  const { warningThreshold, fullThreshold } = settings.dashboard;
+  const { settings } = useDashboardSettings();
+  const { warningThreshold, fullThreshold } = settings;
 
   // 从 Context 获取数据
   const { warehouses, transitOrders, inventory, inboundRecords, outboundRecords, loading, error } = useWarehouseCapability({ includeDashboard: true });

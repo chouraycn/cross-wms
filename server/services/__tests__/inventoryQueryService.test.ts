@@ -13,6 +13,7 @@ import type Database from 'better-sqlite3';
 interface MockStatement {
   all: ReturnType<typeof vi.fn>;
   source: string;
+  readonly: boolean;
 }
 
 /**
@@ -26,14 +27,16 @@ function createMockDb(options: {
   pragmaValue?: number;
   prepareError?: Error;
   allError?: Error;
+  readonly?: boolean;
 }) {
-  const { rows = [], source = 'SELECT sku, name FROM inventory_items', pragmaValue = 5000, prepareError, allError } = options;
+  const { rows = [], source = 'SELECT sku, name FROM inventory_items', pragmaValue = 5000, prepareError, allError, readonly = true } = options;
 
   const mockStmt: MockStatement = {
     all: allError
       ? vi.fn(() => { throw allError; })
       : vi.fn(() => rows),
     source,
+    readonly,
   };
 
   const mockPrepare = prepareError

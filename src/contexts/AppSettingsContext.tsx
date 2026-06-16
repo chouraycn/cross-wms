@@ -321,6 +321,25 @@ export interface AppSettingsContextValue {
 
 export const AppSettingsContext = createContext<AppSettingsContextValue | undefined>(undefined);
 
+// ===================== 子域 Context（按依赖分离，避免跨域重渲染） =====================
+
+interface DomainSettingsValue<T> {
+  settings: T;
+  updateSettings: (partial: Partial<AppSettings>) => void;
+  resetSettings: () => void;
+}
+
+interface DocLinksSettingsValue {
+  settings: { tencentDocs: TencentDocsConfig; wecomDocs: WeComDocsConfig; volumeDocs: VolumeDocsConfig };
+  updateSettings: (partial: Partial<AppSettings>) => void;
+  resetSettings: () => void;
+}
+
+const AppearanceSettingsContext = createContext<DomainSettingsValue<AppearanceConfig> | null>(null);
+const DashboardSettingsContext = createContext<DomainSettingsValue<DashboardConfig> | null>(null);
+const DocLinksSettingsContext = createContext<DocLinksSettingsValue | null>(null);
+const SystemAuthSettingsContext = createContext<DomainSettingsValue<SystemAuthorizationConfig> | null>(null);
+
 // ===================== Helper: Open External Link =====================
 
 /**
@@ -597,9 +616,46 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     [settings, updateSettings, resetSettings],
   );
 
+  // 子域 values — 各自仅依赖所属子域切片，updateSettings/resetSettings 是稳定引用
+  const appearanceValue = useMemo<DomainSettingsValue<AppearanceConfig>>(() => ({
+    settings: settings.appearance,
+    updateSettings,
+    resetSettings,
+  }), [settings.appearance, updateSettings, resetSettings]);
+
+  const dashboardValue = useMemo<DomainSettingsValue<DashboardConfig>>(() => ({
+    settings: settings.dashboard,
+    updateSettings,
+    resetSettings,
+  }), [settings.dashboard, updateSettings, resetSettings]);
+
+  const docLinksValue = useMemo<DocLinksSettingsValue>(() => ({
+    settings: {
+      tencentDocs: settings.tencentDocs,
+      wecomDocs: settings.wecomDocs,
+      volumeDocs: settings.volumeDocs,
+    },
+    updateSettings,
+    resetSettings,
+  }), [settings.tencentDocs, settings.wecomDocs, settings.volumeDocs, updateSettings, resetSettings]);
+
+  const systemAuthValue = useMemo<DomainSettingsValue<SystemAuthorizationConfig>>(() => ({
+    settings: settings.systemAuthorization,
+    updateSettings,
+    resetSettings,
+  }), [settings.systemAuthorization, updateSettings, resetSettings]);
+
   return (
     <AppSettingsContext.Provider value={value}>
-      {children}
+      <AppearanceSettingsContext.Provider value={appearanceValue}>
+        <DashboardSettingsContext.Provider value={dashboardValue}>
+          <DocLinksSettingsContext.Provider value={docLinksValue}>
+            <SystemAuthSettingsContext.Provider value={systemAuthValue}>
+              {children}
+            </SystemAuthSettingsContext.Provider>
+          </DocLinksSettingsContext.Provider>
+        </DashboardSettingsContext.Provider>
+      </AppearanceSettingsContext.Provider>
     </AppSettingsContext.Provider>
   );
 };
@@ -610,6 +666,40 @@ export function useAppSettings(): AppSettingsContextValue {
   const ctx = useContext(AppSettingsContext);
   if (!ctx) {
     throw new Error('useAppSettings must be used within an AppSettingsProvider');
+  }
+  return ctx;
+}
+
+// ===================== 子域 Hooks =====================
+
+export function useAppearanceSettings(): DomainSettingsValue<AppearanceConfig> {
+  const ctx = useContext(AppearanceSettingsContext);
+  if (!ctx) {
+    throw new Error('useAppearanceSettings must be used within an AppSettingsProvider');
+  }
+  return ctx;
+}
+
+export function useDashboardSettings(): DomainSettingsValue<DashboardConfig> {
+  const ctx = useContext(DashboardSettingsContext);
+  if (!ctx) {
+    throw new Error('useDashboardSettings must be used within an AppSettingsProvider');
+  }
+  return ctx;
+}
+
+export function useDocLinksSettings(): DocLinksSettingsValue {
+  const ctx = useContext(DocLinksSettingsContext);
+  if (!ctx) {
+    throw new Error('useDocLinksSettings must be used within an AppSettingsProvider');
+  }
+  return ctx;
+}
+
+export function useSystemAuthSettings(): DomainSettingsValue<SystemAuthorizationConfig> {
+  const ctx = useContext(SystemAuthSettingsContext);
+  if (!ctx) {
+    throw new Error('useSystemAuthSettings must be used within an AppSettingsProvider');
   }
   return ctx;
 }

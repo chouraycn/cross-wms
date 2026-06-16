@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, Alert, Button } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import type { SystemAuthorizationConfig } from '../../contexts/AppSettingsContext';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useSystemAuthSettings } from '../../contexts/AppSettingsContext';
 
 /** 模型自动化操作依赖的关键 TCC 权限 */
 const CRITICAL_PERMISSION_KEYS = [
@@ -52,8 +52,8 @@ interface SystemAuthBannerProps {
 }
 
 const SystemAuthBanner: React.FC<SystemAuthBannerProps> = ({ onOpenSettings }) => {
-  const { settings } = useAppSettings();
-  const status = getAuthStatus(settings.systemAuthorization);
+  const { settings } = useSystemAuthSettings();
+  const status = getAuthStatus(settings);
 
   // 全部授权且已启用 → 不显示
   if (status.isEnabled && status.missingCritical.length === 0) {
