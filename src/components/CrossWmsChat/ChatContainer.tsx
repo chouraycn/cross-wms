@@ -144,9 +144,14 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
     if (msgIndex === -1) return;
 
     let userContent: string | null = null;
+    let userAttachments: Message['attachments'] = undefined;
+    let userModel: string | undefined;
     for (let i = msgIndex - 1; i >= 0; i--) {
       if (session.messages[i].role === 'user') {
         userContent = session.messages[i].content;
+        // v1.5.85: 重新生成时保留原始附件和模型
+        userAttachments = session.messages[i].attachments;
+        userModel = session.messages[i].model;
         break;
       }
     }
@@ -157,7 +162,10 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
     handleSessionUpdate(updatedSession);
 
     setTimeout(() => {
-      sendMessage(userContent!);
+      sendMessage(userContent!, {
+        attachments: userAttachments,
+        model: userModel || session.model,
+      });
     }, 100);
   }, [session, handleSessionUpdate, sendMessage]);
 

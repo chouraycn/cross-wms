@@ -452,9 +452,9 @@ const MainLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('cdf-know-clow-sidebar-collapsed');
-      // 第一次使用（无保存值）默认收起，之后尊重用户选择
-      return saved === null ? true : saved === 'true';
-    } catch { return true; }
+      // 第一次使用（无保存值）默认展开，之后尊重用户选择
+      return saved === null ? false : saved === 'true';
+    } catch { return false; }
   });
   // pywebview 检测 — frameless 模式下需要 --pw-top 避让红黄绿按钮
   // 红黄绿按钮下移5px + 右移5px + 额外5px内容间距，总避让高度 = 28(默认) + 5 + 5 = 38px
@@ -558,7 +558,7 @@ const MainLayout: React.FC = () => {
     <ToastProvider sidebarCollapsed={sidebarCollapsed}>
       <StorageWarningListener />
       {/* v1.5.64: 窗口拖拽条 — frameless pywebview 窗口移动入口 */}
-      <WindowDragBar height={38} />
+      <WindowDragBar height={38} sidebarCollapsed={sidebarCollapsed} />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Sidebar — 单栏布局 */}
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} settingsOpen={settingsPopoverOpen} onSettingsOpenChange={setSettingsPopoverOpen} />
