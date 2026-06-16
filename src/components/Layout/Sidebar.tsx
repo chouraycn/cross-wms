@@ -197,7 +197,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
           onOpenToolManagement={() => setToolManagementDialogOpen(true)}
           onOpenSystemAuthorization={() => setSystemAuthDialogOpen(true)}
         />
-        <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} />
+        <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} onOpenSystemAuthorization={() => { setAiDialogOpen(false); setSystemAuthDialogOpen(true); }} />
         <ToolManagementDialog open={toolManagementDialogOpen} onClose={() => setToolManagementDialogOpen(false)} />
         <SystemAuthorizationDialog open={systemAuthDialogOpen} onClose={() => setSystemAuthDialogOpen(false)} />
       </Box>

@@ -3,8 +3,14 @@ import { Box, Typography, CircularProgress, Alert, Button } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ModelManager from '../shared/ModelManager';
 import { useModels } from '../../contexts/ModelsContext';
+import SystemAuthBanner from './SystemAuthBanner';
 
-const SettingsModelManagement: React.FC = () => {
+interface SettingsModelManagementProps {
+  /** 点击「前往设置」时，切换到系统授权 Tab */
+  onOpenSystemAuthorization?: () => void;
+}
+
+const SettingsModelManagement: React.FC<SettingsModelManagementProps> = ({ onOpenSystemAuthorization }) => {
   const { models: modelList, defaultModelId, updateModels, isLoading, error, reload } = useModels();
 
   if (isLoading) {
@@ -33,12 +39,15 @@ const SettingsModelManagement: React.FC = () => {
   }
 
   return (
-    <ModelManager
-      models={modelList}
-      defaultModelId={defaultModelId}
-      variant="compact"
-      onChange={(models, newDefaultModelId) => updateModels(models, newDefaultModelId)}
-    />
+    <>
+      <SystemAuthBanner onOpenSettings={onOpenSystemAuthorization} />
+      <ModelManager
+        models={modelList}
+        defaultModelId={defaultModelId}
+        variant="compact"
+        onChange={(models, newDefaultModelId) => updateModels(models, newDefaultModelId)}
+      />
+    </>
   );
 };
 
