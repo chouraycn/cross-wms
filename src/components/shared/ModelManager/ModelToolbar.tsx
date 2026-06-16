@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 import {
-  Box, Typography, Button, Chip, Tooltip, IconButton, Menu, MenuItem,
+  Box, Typography, Button, Chip, Tooltip, IconButton, Menu, MenuItem, useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -23,7 +23,7 @@ import TimerIcon from '@mui/icons-material/Timer';
 import TimerOffIcon from '@mui/icons-material/TimerOff';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { COLORS, toolbarButtonSx } from './styles';
+import { getModelManagerStyles } from './styles';
 import type { ModelToolbarProps } from './types';
 import { SpinningIcon } from '../SpinningIcon';
 
@@ -43,6 +43,9 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
   onToggleAutoRefresh,
   healthCheckError,
 }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const styles = getModelManagerStyles(isDark);
   const defaultModel = models.find(m => m.id === defaultModelId);
   const [moreAnchor, setMoreAnchor] = useState<null | HTMLElement>(null);
 
@@ -52,19 +55,19 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
       <Box sx={{ mb: 2 }}>
         {/* 标题区 */}
         <Box sx={{ mb: 2 }}>
-          <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: COLORS.textPrimary, mb: 0.5 }}>
+          <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: styles.textPrimary, mb: 0.5 }}>
             模型
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <Typography sx={{ fontSize: '0.8125rem', color: COLORS.textMuted }}>
+            <Typography sx={{ fontSize: '0.8125rem', color: styles.textMuted }}>
               配置 API key 添加更多可用模型
             </Typography>
             <Chip
               label={`默认: ${defaultModel?.name || '未设置'}`}
               size="small"
               sx={{
-                backgroundColor: defaultModel ? COLORS.successBg : COLORS.errorBg,
-                color: defaultModel ? COLORS.success : COLORS.errorText,
+                backgroundColor: defaultModel ? styles.semantic.successBg : styles.semantic.errorBg,
+                color: defaultModel ? styles.semantic.successText : styles.semantic.errorText,
                 fontSize: '0.7rem',
                 height: 20,
                 fontWeight: 500,
@@ -75,9 +78,9 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
 
         {/* 错误提示 */}
         {healthCheckError && (
-          <Box sx={{ mb: 2, p: 1.5, backgroundColor: COLORS.errorBg, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ErrorOutlineIcon sx={{ color: COLORS.error, fontSize: 18 }} />
-            <Typography sx={{ fontSize: '0.8rem', color: COLORS.errorText }}>
+          <Box sx={{ mb: 2, p: 1.5, backgroundColor: styles.semantic.errorBg, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ErrorOutlineIcon sx={{ color: styles.semantic.error, fontSize: 18 }} />
+            <Typography sx={{ fontSize: '0.8rem', color: styles.semantic.errorText }}>
               {healthCheckError}
             </Typography>
           </Box>
@@ -92,7 +95,7 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
               size="small"
               startIcon={<AddIcon sx={{ fontSize: 16 }} />}
               onClick={onAdd}
-              sx={toolbarButtonSx}
+              sx={styles.toolbarButton}
             >
               添加模型
             </Button>
@@ -102,7 +105,7 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
               <IconButton
                 size="small"
                 onClick={e => setMoreAnchor(e.currentTarget)}
-                sx={{ color: COLORS.textMuted, border: `1px solid ${COLORS.border}`, borderRadius: 1 }}
+                sx={{ color: styles.textMuted, border: `1px solid ${styles.border}`, borderRadius: 1 }}
               >
                 <MoreVertIcon sx={{ fontSize: 18 }} />
               </IconButton>
@@ -116,24 +119,24 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
               PaperProps={{ sx: { minWidth: 160, borderRadius: 1.5 } }}
             >
               <MenuItem onClick={() => { onReset(); setMoreAnchor(null); }} sx={{ fontSize: '0.8125rem', gap: 1 }}>
-                <RestartAltIcon sx={{ fontSize: 16, color: COLORS.textMuted }} />
+                <RestartAltIcon sx={{ fontSize: 16, color: styles.textMuted }} />
                 恢复默认配置
               </MenuItem>
               <MenuItem onClick={() => { onExport(); setMoreAnchor(null); }} sx={{ fontSize: '0.8125rem', gap: 1 }}>
-                <FileDownloadIcon sx={{ fontSize: 16, color: COLORS.textMuted }} />
+                <FileDownloadIcon sx={{ fontSize: 16, color: styles.textMuted }} />
                 导出 JSON
               </MenuItem>
               <MenuItem onClick={() => { onImport(); setMoreAnchor(null); }} sx={{ fontSize: '0.8125rem', gap: 1 }}>
-                <FileUploadIcon sx={{ fontSize: 16, color: COLORS.textMuted }} />
+                <FileUploadIcon sx={{ fontSize: 16, color: styles.textMuted }} />
                 导入 JSON
               </MenuItem>
               <MenuItem onClick={() => { onTemplate(); setMoreAnchor(null); }} sx={{ fontSize: '0.8125rem', gap: 1 }}>
-                <DashboardCustomizeIcon sx={{ fontSize: 16, color: COLORS.textMuted }} />
+                <DashboardCustomizeIcon sx={{ fontSize: 16, color: styles.textMuted }} />
                 应用模板
               </MenuItem>
               {onDiscoverLocal && (
                 <MenuItem onClick={() => { onDiscoverLocal(); setMoreAnchor(null); }} sx={{ fontSize: '0.8125rem', gap: 1 }}>
-                  <StorageIcon sx={{ fontSize: 16, color: COLORS.textMuted }} />
+                  <StorageIcon sx={{ fontSize: 16, color: styles.textMuted }} />
                   发现本地模型
                 </MenuItem>
               )}
@@ -154,11 +157,11 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
                   onClick={onHealthCheck}
                   disabled={isHealthChecking}
                   sx={{
-                    borderColor: '#D1D5DB',
-                    color: COLORS.textMuted,
+                    borderColor: styles.borderDarker,
+                    color: styles.textMuted,
                     fontSize: '0.75rem',
                     py: 0.3,
-                    '&:hover': { borderColor: '#9CA3AF' },
+                    '&:hover': { borderColor: styles.borderLight },
                   }}
                 >
                   {isHealthChecking ? '检测中' : '健康检测'}
@@ -171,8 +174,8 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
                   size="small"
                   onClick={onToggleAutoRefresh}
                   sx={{
-                    color: autoRefreshEnabled ? '#10B981' : COLORS.textMuted,
-                    border: `1px solid ${autoRefreshEnabled ? '#10B981' : COLORS.border}`,
+                    color: autoRefreshEnabled ? styles.semantic.success : styles.textMuted,
+                    border: `1px solid ${autoRefreshEnabled ? styles.semantic.successBorder : styles.border}`,
                     borderRadius: 1,
                     p: 0.6,
                   }}
@@ -194,38 +197,38 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
   if (variant === 'compact') {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-        <Typography sx={{ fontSize: '0.8rem', color: COLORS.textMuted }}>
+        <Typography sx={{ fontSize: '0.8rem', color: styles.textMuted }}>
           默认模型：
           <Chip
             label={defaultModel?.name || '未设置'}
             size="small"
-            sx={{ ml: 0.5, backgroundColor: COLORS.infoBg, color: COLORS.infoText, fontSize: '0.7rem', height: 22 }}
+            sx={{ ml: 0.5, backgroundColor: styles.semantic.infoBg, color: styles.semantic.infoText, fontSize: '0.7rem', height: 22 }}
           />
         </Typography>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
           <Tooltip title="恢复默认">
-            <IconButton size="small" onClick={onReset} sx={{ color: COLORS.textMuted, p: 0.5 }}>
+            <IconButton size="small" onClick={onReset} sx={{ color: styles.textMuted, p: 0.5 }}>
               <RestartAltIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="导出">
-            <IconButton size="small" onClick={onExport} sx={{ color: COLORS.textMuted, p: 0.5 }}>
+            <IconButton size="small" onClick={onExport} sx={{ color: styles.textMuted, p: 0.5 }}>
               <FileDownloadIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="导入">
-            <IconButton size="small" onClick={onImport} sx={{ color: COLORS.textMuted, p: 0.5 }}>
+            <IconButton size="small" onClick={onImport} sx={{ color: styles.textMuted, p: 0.5 }}>
               <FileUploadIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="模板">
-            <IconButton size="small" onClick={onTemplate} sx={{ color: COLORS.textMuted, p: 0.5 }}>
+            <IconButton size="small" onClick={onTemplate} sx={{ color: styles.textMuted, p: 0.5 }}>
               <DashboardCustomizeIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>
           {onHealthCheck && (
             <Tooltip title={isHealthChecking ? '检测中...' : '健康检测'}>
-              <IconButton size="small" onClick={onHealthCheck} disabled={isHealthChecking} sx={{ color: COLORS.textMuted, p: 0.5 }}>
+              <IconButton size="small" onClick={onHealthCheck} disabled={isHealthChecking} sx={{ color: styles.textMuted, p: 0.5 }}>
                 {isHealthChecking
                   ? <SpinningIcon spinning={isHealthChecking}><AutorenewIcon sx={{ fontSize: 16 }} /></SpinningIcon>
                   : <MonitorHeartIcon sx={{ fontSize: 16 }} />
@@ -235,7 +238,7 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
           )}
           {onDiscoverLocal && (
             <Tooltip title="发现本地模型">
-              <IconButton size="small" onClick={onDiscoverLocal} sx={{ color: COLORS.textMuted, p: 0.5 }}>
+              <IconButton size="small" onClick={onDiscoverLocal} sx={{ color: styles.textMuted, p: 0.5 }}>
                 <StorageIcon sx={{ fontSize: 16 }} />
               </IconButton>
             </Tooltip>
@@ -245,7 +248,7 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
               <IconButton
                 size="small"
                 onClick={onToggleAutoRefresh}
-                sx={{ color: autoRefreshEnabled ? '#10B981' : COLORS.textMuted, p: 0.5 }}
+                sx={{ color: autoRefreshEnabled ? styles.semantic.success : styles.textMuted, p: 0.5 }}
               >
                 {autoRefreshEnabled ? <TimerIcon sx={{ fontSize: 16 }} /> : <TimerOffIcon sx={{ fontSize: 16 }} />}
               </IconButton>
@@ -256,7 +259,7 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
             size="small"
             startIcon={<AddIcon />}
             onClick={onAdd}
-            sx={{ ...toolbarButtonSx, fontSize: '0.7rem', py: 0.3 }}
+            sx={{ ...styles.toolbarButton, fontSize: '0.7rem', py: 0.3 }}
           >
             添加
           </Button>
@@ -269,15 +272,15 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
       {healthCheckError && (
-        <Box sx={{ p: 1.5, backgroundColor: COLORS.errorBg, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <ErrorOutlineIcon sx={{ color: COLORS.error, fontSize: 18 }} />
-          <Typography sx={{ fontSize: '0.8rem', color: COLORS.errorText }}>
+        <Box sx={{ p: 1.5, backgroundColor: styles.semantic.errorBg, borderRadius: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ErrorOutlineIcon sx={{ color: styles.semantic.error, fontSize: 18 }} />
+          <Typography sx={{ fontSize: '0.8rem', color: styles.semantic.errorText }}>
             {healthCheckError}
           </Typography>
         </Box>
       )}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: COLORS.textPrimary }}>
+        <Typography sx={{ fontSize: '0.95rem', fontWeight: 600, color: styles.textPrimary }}>
           模型管理
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -286,27 +289,27 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
             size="small"
             startIcon={<AddIcon />}
             onClick={onAdd}
-            sx={toolbarButtonSx}
+            sx={styles.toolbarButton}
           >
             添加模型
           </Button>
           <Tooltip title="恢复默认模型配置">
-            <IconButton size="small" onClick={onReset} sx={{ color: COLORS.textMuted }}>
+            <IconButton size="small" onClick={onReset} sx={{ color: styles.textMuted }}>
               <RestartAltIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="导出模型配置">
-            <IconButton size="small" onClick={onExport} sx={{ color: COLORS.textMuted }}>
+            <IconButton size="small" onClick={onExport} sx={{ color: styles.textMuted }}>
               <FileDownloadIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="导入模型配置">
-            <IconButton size="small" onClick={onImport} sx={{ color: COLORS.textMuted }}>
+            <IconButton size="small" onClick={onImport} sx={{ color: styles.textMuted }}>
               <FileUploadIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="应用配置模板">
-            <IconButton size="small" onClick={onTemplate} sx={{ color: COLORS.textMuted }}>
+            <IconButton size="small" onClick={onTemplate} sx={{ color: styles.textMuted }}>
               <DashboardCustomizeIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Tooltip>
@@ -316,7 +319,7 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
                 size="small"
                 onClick={onHealthCheck}
                 disabled={isHealthChecking}
-                sx={{ color: COLORS.textMuted }}
+                sx={{ color: styles.textMuted }}
               >
                 {isHealthChecking
                   ? <SpinningIcon spinning={isHealthChecking}><AutorenewIcon sx={{ fontSize: 18 }} /></SpinningIcon>
@@ -327,7 +330,7 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
           )}
           {onDiscoverLocal && (
             <Tooltip title="自动发现本地 Ollama/vLLM 模型">
-              <IconButton size="small" onClick={onDiscoverLocal} sx={{ color: COLORS.textMuted }}>
+              <IconButton size="small" onClick={onDiscoverLocal} sx={{ color: styles.textMuted }}>
                 <StorageIcon sx={{ fontSize: 18 }} />
               </IconButton>
             </Tooltip>
@@ -337,7 +340,7 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
               <IconButton
                 size="small"
                 onClick={onToggleAutoRefresh}
-                sx={{ color: autoRefreshEnabled ? '#10B981' : COLORS.textMuted }}
+                sx={{ color: autoRefreshEnabled ? styles.semantic.success : styles.textMuted }}
               >
                 {autoRefreshEnabled ? <TimerIcon sx={{ fontSize: 18 }} /> : <TimerOffIcon sx={{ fontSize: 18 }} />}
               </IconButton>
@@ -345,12 +348,12 @@ const ModelToolbar: React.FC<ModelToolbarProps> = ({
           )}
         </Box>
       </Box>
-      <Typography sx={{ fontSize: '0.8rem', color: COLORS.textMuted }}>
+      <Typography sx={{ fontSize: '0.8rem', color: styles.textMuted }}>
         管理AI模型配置，设置默认模型。当前默认模型：
         <Chip
           label={defaultModel?.name || '未设置'}
           size="small"
-          sx={{ ml: 1, backgroundColor: COLORS.infoBg, color: COLORS.infoText, fontSize: '0.75rem' }}
+          sx={{ ml: 1, backgroundColor: styles.semantic.infoBg, color: styles.semantic.infoText, fontSize: '0.75rem' }}
         />
       </Typography>
     </Box>

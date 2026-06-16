@@ -8,7 +8,7 @@
  * - 与 AppSettingsContext 解耦
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import * as api from '../services/api';
 import type { ModelConfig, ModelsConfig } from '../types/models';
 
@@ -131,7 +131,7 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [loadModels]);
 
-  const value: ModelsContextValue = {
+  const value = useMemo<ModelsContextValue>(() => ({
     models,
     defaultModelId,
     isLoading,
@@ -140,7 +140,7 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     reload: loadModels,
     getDefaultModel,
     getEnabledModels,
-  };
+  }), [models, defaultModelId, isLoading, error, updateModels, loadModels, getDefaultModel, getEnabledModels]);
 
   return <ModelsContext.Provider value={value}>{children}</ModelsContext.Provider>;
 };

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Paper, Chip, Typography, Popover, useTheme, IconButton, Collapse,
@@ -18,13 +18,11 @@ import CloseIcon from '@mui/icons-material/Close';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { getGrayScale } from '../../constants/theme';
-import { Skill, INTENT_CATEGORY_LABELS, INTENT_QUICK_EXAMPLES } from '../../types/skill';
-import { ICON_MAP } from '../../types/skill';
+import { Skill, INTENT_CATEGORY_LABELS, INTENT_QUICK_EXAMPLES, ICON_MAP } from '../../types/skill';
 import type { IntentCategory } from '../../types/skill';
 import type { Attachment } from '../../types/chat';
 import { getAllSkills } from '../../stores/skillStore';
 import { SkillSelector } from './SkillSelector';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useModels } from '../../contexts/ModelsContext';
 import { useToast } from '../../contexts/ToastContext';
 import ChatToolbar from './ChatToolbar';
@@ -101,7 +99,6 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
   const navigate = useNavigate();
-  const { settings } = useAppSettings();
   const { showToast } = useToast();
   const { models: modelList, isLoading: modelsLoading } = useModels();
   const [inputExpanded, setInputExpanded] = useState(false);
@@ -131,9 +128,9 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
     setExpandedIntent(null);
   }, [selectedSkill?.id]);
 
-  // 获取当前斜杠命令过滤后的技能列表（用于键盘导航）
-  const slashFilteredCount = (() => {
-    if (!showSkillSelector) return 0;
+  // 获取当前斜杠命令过滤后的技能列表（用于键盘导航，缓存避免每次渲染重新计算）
+  const slashFilteredSkills = useMemo(() => {
+    if (!showSkillSelector) return [];
     const allSkills = getAllSkills().filter(s => s.status === 'active');
     const q = slashQuery.toLowerCase();
     return allSkills.filter(skill =>
@@ -142,8 +139,9 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
       skill.category.toLowerCase().includes(q) ||
       (skill.trigger || '').toLowerCase().includes(q) ||
       (skill.tags || []).some(t => t.toLowerCase().includes(q))
-    ).length;
-  })();
+    );
+  }, [showSkillSelector, slashQuery]);
+  const slashFilteredCount = slashFilteredSkills.length;
 
   // 从 ModelsContext 中读取模型列表（仅启用的模型），Auto 作为首选项
   const MODEL_OPTIONS: import('./ChatToolbar').ModelOption[] = [
@@ -611,17 +609,8 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
       if (e.key === 'Enter' && !isComposing(e) && !compositionTextInsertedRef.current && !justEndedComposition) {
         e.preventDefault();
         if (skillFocusIndex >= 0 && skillFocusIndex < slashFilteredCount) {
-          const allSkills = getAllSkills().filter(s => s.status === 'active');
-          const q = slashQuery.toLowerCase();
-          const filtered = allSkills.filter(skill =>
-            skill.name.toLowerCase().includes(q) ||
-            skill.desc.toLowerCase().includes(q) ||
-            skill.category.toLowerCase().includes(q) ||
-            (skill.trigger || '').toLowerCase().includes(q) ||
-            (skill.tags || []).some(t => t.toLowerCase().includes(q))
-          );
-          if (filtered[skillFocusIndex]) {
-            handleSkillSelect(filtered[skillFocusIndex]);
+          if (slashFilteredSkills[skillFocusIndex]) {
+            handleSkillSelect(slashFilteredSkills[skillFocusIndex]);
           }
         } else {
           handleSend();
@@ -631,6 +620,17 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
       }
     }
     if (e.key === 'Enter' && !e.shiftKey && !isComposing(e) && !compositionTextInsertedRef.current && !justEndedComposition) {
+      e.preventDefault();
+      handleSend();
+      return;
+    }
+    // v2.3.2-fix: 如果 IME 已结束（nativeEvent.isComposing=false, justEndedComposition=false），
+    // 但 isComposingRef/compositionTextInsertedRef 被 beforeinput(insertCompositionText) 残留置为 true，
+    // 导致上面的 send 条件未命中 → Enter 未被 preventDefault → contentEditable 原生换行
+    // 修复：第二个 Enter（plain Enter）时，清除残留标记，触发发送
+    if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent as any)?.isComposing && !justEndedComposition) {
+      isComposingRef.current = false;
+      compositionTextInsertedRef.current = false;
       e.preventDefault();
       handleSend();
     }
@@ -885,11 +885,14 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
                   onKeyDown={handleKeyDown}
                   onCompositionStart={() => { isComposingRef.current = true; compositionJustEndedRef.current = false; }}
                   onCompositionEnd={() => {
+                    // Bug Fix: 仅在确实正在组合输入时才标记 compositionJustEndedRef
+                    // WKWebView 会在非 IME 回车时也触发 compositionend（无 compositionstart 配对）
+                    const wasComposing = isComposingRef.current;
                     isComposingRef.current = false;
                     compositionTextInsertedRef.current = false;
-                    // v1.5.73: 标记 composition 刚结束，防止 WKWebView 中
-                    // compositionend 先于 keydown(Enter) 触发导致误发送
-                    compositionJustEndedRef.current = true;
+                    if (wasComposing) {
+                      compositionJustEndedRef.current = true;
+                    }
                   }}
                   style={{
                     fontSize: 15,

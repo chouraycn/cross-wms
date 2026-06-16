@@ -107,7 +107,10 @@ export interface Session {
   title: string;
   model: string;
   messages: Message[];
+  /** 消息数量（列表接口返回，避免加载完整消息） */
+  messageCount?: number;
   folderId?: string | null;
+  isPinned?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

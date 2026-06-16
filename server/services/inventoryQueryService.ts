@@ -161,6 +161,9 @@ export class InventoryQueryService {
       const errorMessage = err instanceof Error ? err.message : '未知错误';
 
       // 区分错误类型返回友好提示，不暴露 SQL 细节
+      if (errorMessage.includes('执行被拒绝')) {
+        return { error: '仅允许只读查询（SELECT）' };
+      }
       if (errorMessage.includes('no such table') || errorMessage.includes('no such column')) {
         return { error: '查询的表或字段不存在，请检查后重试' };
       }
@@ -184,6 +187,15 @@ export class InventoryQueryService {
 
     try {
       const stmt = this.db.prepare(sql);
+
+      // v1.5.88: 核心安全门 — SQLite 原生 readonly 检查
+      // INSERT/UPDATE/DELETE/DROP/ALTER/PRAGMA/ATTACH/REINDEX/VACUUM
+      // 等任一写操作在 prepare 阶段即被 SQLite 判定为 readonly=false
+      // 绕过正则黑名单的注入手段（注释穿插、子查询嵌套、UNION 注入）在此全部失效
+      if (!stmt.readonly) {
+        throw new Error('执行被拒绝：仅允许只读查询');
+      }
+
       const rows = stmt.all() as Record<string, unknown>[];
 
       // 推断列名

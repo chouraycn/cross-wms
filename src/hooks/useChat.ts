@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, ReferencedSession, Session, ToolCallInfo, Attachment, PluginResultInfo } from '../types/chat';
 import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../types/inventory-query';
 import { CHAT_API_URL, INVENTORY_QUERY_API_URL } from '../constants/api';
-import { useAppSettings } from '../contexts/AppSettingsContext';
+import { useAppSettings, useAppearanceSettings } from '../contexts/AppSettingsContext';
 import { useToolPermission } from '../contexts/ToolPermissionContext';
 
 /** 从 localStorage 读取默认模型 ID */
@@ -46,7 +46,8 @@ const QUERY_BLOCK_REGEX = /```inventory_query\s*\n([\s\S]*?)\n```/;
 export function useChat(currentSession: Session | undefined, onSessionUpdate: (session: Session) => void) {
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
-  const { updateSettings, settings } = useAppSettings();
+  const { updateSettings } = useAppSettings();
+  const { settings: appearance } = useAppearanceSettings();
   const { requestPermission } = useToolPermission();
   /** v1.7.0: 每个会话级别限制一次 SQL 失败自动重试 */
   const autoRetriedRef = useRef<boolean>(false);
@@ -59,7 +60,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   const onSessionUpdateRef = useRef<(session: Session) => void>(onSessionUpdate);
   const isLoadingRef = useRef<boolean>(isLoading);
   /** v1.9.2: 使用 ref 保存最新的 settings，避免 sendMessage 闭包中引用旧值 */
-  const settingsRef = useRef(settings);
+  const settingsRef = useRef(appearance);
   /** v1.8.2: 用户手动停止标志（不使用 AbortController signal，避免 Electron ERR_ABORTED） */
   const stoppedRef = useRef(false);
 
@@ -77,8 +78,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   }, [isLoading]);
 
   useEffect(() => {
-    settingsRef.current = settings;
-  }, [settings]);
+    settingsRef.current = appearance;
+  }, [appearance]);
 
   /**
    * v1.8.0: 中断当前 AI 生成
@@ -366,17 +367,16 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           let thinkingDuration: number | undefined;
           let doneReceived = false;
 
-          // v1.9.3: 平滑渲染队列 — 解决缓冲导致文字突然跳出的问题
+          // v2.8.0: requestAnimationFrame 渲染队列 — 与显示器刷新率对齐
           let pendingContent = '';
           let displayedContent = '';
-          let renderTimer: ReturnType<typeof setTimeout> | null = null;
+          let renderHandle: number | null = null;
           // v2.2.3: 提速渲染 — 深度思考产生大量文本，6字/20ms 太慢
           const BASE_CHUNK_SIZE = 24;
-          const RENDER_INTERVAL = 10;
 
           const flushRender = () => {
             if (pendingContent.length === 0) {
-              renderTimer = null;
+              renderHandle = null;
               return;
             }
             const adaptiveChunk = Math.min(
@@ -395,15 +395,15 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               ],
             });
             if (pendingContent.length > 0) {
-              renderTimer = setTimeout(flushRender, RENDER_INTERVAL);
+              renderHandle = requestAnimationFrame(flushRender);
             } else {
-              renderTimer = null;
+              renderHandle = null;
             }
           };
 
           const scheduleRender = () => {
-            if (!renderTimer) {
-              renderTimer = setTimeout(flushRender, RENDER_INTERVAL);
+            if (renderHandle === null) {
+              renderHandle = requestAnimationFrame(flushRender);
             }
           };
 
@@ -461,9 +461,9 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                     streamingMsg.metadata = { error: '连接已断开', errorCode: 'STREAM_INCOMPLETE' };
                   }
                 }
-                if (renderTimer) {
-                  clearTimeout(renderTimer);
-                  renderTimer = null;
+                if (renderHandle !== null) {
+                  cancelAnimationFrame(renderHandle);
+                  renderHandle = null;
                 }
                 pendingContent = '';
                 streamingMsg.content = result;
@@ -536,7 +536,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         try {
                           const parsed = JSON.parse(data.toolResult);
                           if (parsed.success && parsed.name) {
-                            updateSettings({ appearance: { ...settingsRef.current.appearance, botName: parsed.name } });
+                            updateSettings({ appearance: { ...settingsRef.current, botName: parsed.name } });
                           }
                         } catch { /* JSON 解析失败，忽略 */ }
                       }

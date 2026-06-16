@@ -88,6 +88,84 @@ export const INFO = '#3B82F6';
 export const INFO_BG = '#EFF6FF';
 export const INFO_BG_DARK = '#1E3A8A';
 
+// ===================== 语义化暗色模式颜色 =====================
+
+/** 语义化状态色（暗色模式适配，符合 WCAG AA 4.5:1） */
+export interface SemanticColors {
+  success: string;
+  successBg: string;
+  successBorder: string;
+  successText: string;
+  error: string;
+  errorBg: string;
+  errorBorder: string;
+  errorText: string;
+  warning: string;
+  warningBg: string;
+  warningBorder: string;
+  warningText: string;
+  info: string;
+  infoBg: string;
+  infoBorder: string;
+  infoText: string;
+  /** 徽章背景色（深色，搭配白字对比度 >= 4.5:1） */
+  badgeSuccess: string;
+  badgeError: string;
+  badgeWarning: string;
+  badgeInfo: string;
+}
+
+/** 根据主题模式获取语义化颜色 */
+export function getSemanticColors(isDark: boolean): SemanticColors {
+  return isDark
+    ? {
+        success: '#34D399',
+        successBg: '#064E3B',
+        successBorder: '#059669',
+        successText: '#A7F3D0',
+        error: '#F87171',
+        errorBg: '#7F1D1D',
+        errorBorder: '#DC2626',
+        errorText: '#FECACA',
+        warning: '#FBBF24',
+        warningBg: '#78350F',
+        warningBorder: '#D97706',
+        warningText: '#FDE68A',
+        info: '#60A5FA',
+        infoBg: '#1E3A8A',
+        infoBorder: '#2563EB',
+        infoText: '#BFDBFE',
+        // 徽章背景色（深色，白字对比度 >= 4.5:1）
+        badgeSuccess: '#047857',
+        badgeError: '#B91C1C',
+        badgeWarning: '#B45309',
+        badgeInfo: '#1D4ED8',
+      }
+    : {
+        success: '#10B981',
+        successBg: '#F0FDF4',
+        successBorder: '#BBF7D0',
+        successText: '#166534',
+        error: '#EF4444',
+        errorBg: '#FEF2F2',
+        errorBorder: '#FECACA',
+        errorText: '#991B1B',
+        info: '#3B82F6',
+        infoBg: '#EFF6FF',
+        infoBorder: '#BFDBFE',
+        infoText: '#1E40AF',
+        warning: '#F59E0B',
+        warningBg: '#FFFBEB',
+        warningBorder: '#FDE68A',
+        warningText: '#92400E',
+        // 徽章背景色（深色，白字对比度 >= 4.5:1）
+        badgeSuccess: '#059669',
+        badgeError: '#DC2626',
+        badgeWarning: '#D97706',
+        badgeInfo: '#2563EB',
+      };
+}
+
 // ===================== 统一灰阶获取函数 =====================
 
 export interface GrayScale {

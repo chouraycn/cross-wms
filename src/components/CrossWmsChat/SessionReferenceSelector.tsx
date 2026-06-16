@@ -4,7 +4,7 @@ import { Session } from '../../types/chat';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import SearchInput from '../Common/SearchInput';
 import { getGrayScale } from '../../constants/theme';
-import { useChatContext } from '../../contexts/ChatContext';
+import { useChatSidebar } from '../../contexts/ChatContext';
 
 interface SessionReferenceSelectorProps {
   anchorEl: HTMLElement | null;
@@ -40,18 +40,18 @@ export function SessionReferenceSelector({ anchorEl, onSelect, onClose }: Sessio
   const [hoveredIndex, setHoveredIndex] = useState(-1);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 从 ChatContext 获取会话列表
-  const { sessions: allSessions } = useChatContext();
+  // 从 ChatSidebarContext 获取会话列表（不随流式消息更新）
+  const { sessions: allSessions } = useChatSidebar();
 
   // 过滤 + 搜索（与 NavList 侧边栏保持一致：只显示有消息的会话）
   const sessions = React.useMemo(() => {
-    // 1. 与 NavList 一致：只显示有消息的会话
-    const withMessages = allSessions.filter(s => s.messages.length > 0);
-    // 2. 前端搜索过滤（按标题 + 首条消息内容模糊匹配）
+    // 1. 与 NavList 一致：只显示有消息的会话（优先用 messageCount）
+    const withMessages = allSessions.filter(s => (s.messageCount ?? s.messages.length) > 0);
+    // 2. 前端搜索过滤（按标题模糊匹配）
     const q = searchQuery.trim().toLowerCase();
     if (!q) return withMessages;
     return withMessages.filter(s => {
-      const title = s.title || s.messages[0]?.content?.slice(0, 20) || '新对话';
+      const title = s.title || '新对话';
       return title.toLowerCase().includes(q);
     });
   }, [allSessions, searchQuery]);

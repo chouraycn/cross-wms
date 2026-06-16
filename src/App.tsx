@@ -4,7 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box, useTheme } from '@mui/material';
 import Sidebar from './components/Layout/Sidebar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
-import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
+import { AppSettingsProvider, useAppSettings, useAppearanceSettings } from './contexts/AppSettingsContext';
 import type { AppearanceConfig, AccentColor } from './contexts/AppSettingsContext';
 import { ModelsProvider } from './contexts/ModelsContext';
 import { isPyWebView } from './services/tencentDocsApi';
@@ -706,11 +706,11 @@ const MainLayout: React.FC = () => {
 
 /** 动态主题桥接组件：读取 settings → 构建 theme → 注入 ThemeProvider */
 const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { settings } = useAppSettings();
+  const { settings } = useAppearanceSettings();
 
   const theme = useMemo(
-    () => buildTheme(settings.appearance),
-    [settings.appearance],
+    () => buildTheme(settings),
+    [settings],
   );
 
   return (

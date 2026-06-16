@@ -9,7 +9,7 @@ import StorefrontIcon from '@mui/icons-material/Storefront';
 import LayersIcon from '@mui/icons-material/Layers';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useDashboardSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { exportToCsv } from '../../utils/exportCsv';
 import { calcOverallByItems } from '../../utils/volumeCalculator';
@@ -120,10 +120,10 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
   const gs = getGrayScale(isDark);
   const KPI_THEME = getKpiTheme(isDark);
 
-  const { settings } = useAppSettings();
+  const { settings } = useDashboardSettings();
   const navigate = useNavigate();
-  const compareDays = settings.dashboard.trendCompareDays;
-  const vis = settings.dashboard.visibility;
+  const compareDays = settings.trendCompareDays;
+  const vis = settings.visibility;
 
   // 从 Context 获取数据
   const { warehouses, transitOrders, kpiData, loading, error } = useWarehouseCapability({ includeDashboard: true });
@@ -146,7 +146,7 @@ const KpiCards: React.FC<KpiCardsProps> = ({ warehouseId }) => {
   const VOLUME_PER_ITEM_ESTIMATE = 0.05;
   const transitItems = filteredTransit.reduce((s, t) => s + Math.round(t.volume / VOLUME_PER_ITEM_ESTIMATE), 0);
   const volumeUtilization = calcOverallByItems(filteredWarehouses);
-  const transitAlertThreshold = settings.dashboard.transitAlertThreshold;
+  const transitAlertThreshold = settings.transitAlertThreshold;
 
   const transitAlerts = useMemo(() => {
     const pendingTransit = filteredTransit.filter(t => t.status !== 'arrived');

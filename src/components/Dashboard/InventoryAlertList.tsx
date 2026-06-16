@@ -21,7 +21,7 @@ import { getGrayScale } from '../../constants/theme';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useDashboardSettings } from '../../contexts/AppSettingsContext';
 import { ALL_WAREHOUSES } from './WarehouseSelector';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import type { TimeRange } from './TimeRangeSelector';
@@ -49,8 +49,8 @@ const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = A
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
 
-  const { settings } = useAppSettings();
-  const ageWarningDays = settings.dashboard.ageWarningDays;
+  const { settings } = useDashboardSettings();
+  const ageWarningDays = settings.ageWarningDays;
 
   // 从 Context 获取数据
   const { warehouses, inventory, loading, error } = useWarehouseCapability({ includeDashboard: true });

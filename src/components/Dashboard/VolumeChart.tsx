@@ -6,7 +6,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useDashboardSettings } from '../../contexts/AppSettingsContext';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import { exportToCsv } from '../../utils/exportCsv';
 import CustomTooltip from './CustomTooltip';
@@ -26,8 +26,8 @@ const CALC_MODE_LABEL: Record<CalcMode, string> = {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId, timeRange }) => {
-  const { settings } = useAppSettings();
-  const { warningThreshold, fullThreshold } = settings.dashboard;
+  const { settings } = useDashboardSettings();
+  const { warningThreshold, fullThreshold } = settings;
 
   const [calcMode, setCalcMode] = useState<CalcMode>('items');
 
@@ -108,7 +108,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId, timeRange }) => 
           }
           subheader={
             <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF', mt: 0.25 }}>
-              近 {settings.dashboard.trendCompareDays} 天 · {CALC_MODE_LABEL[calcMode]}
+              近 {settings.trendCompareDays} 天 · {CALC_MODE_LABEL[calcMode]}
             </Typography>
           }
           action={
@@ -139,7 +139,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ warehouseId, timeRange }) => 
         subheader={
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.25 }}>
             <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
-              近 {settings.dashboard.trendCompareDays} 天 · {CALC_MODE_LABEL[calcMode]}
+              近 {settings.trendCompareDays} 天 · {CALC_MODE_LABEL[calcMode]}
             </Typography>
             <ToggleButtonGroup
               value={calcMode}

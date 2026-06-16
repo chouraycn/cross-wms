@@ -12,7 +12,7 @@
  * - 订阅 warehouseCapabilityStore 的 subscribeCapability
  * - 如果 includeDashboard=true，额外从 dashboardApi 拉取扩展数据
  * - warehouseFilter 时过滤数据并重算KPI
- * - 自动刷新：useAppSettings 的 dataRefreshInterval 或 options.refreshInterval
+ * - 自动刷新：useDashboardSettings 的 dataRefreshInterval 或 options.refreshInterval
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef, useContext } from 'react';
@@ -41,8 +41,8 @@ import {
 } from './warehouseCapabilityStore';
 import { dashboardApi } from './dashboardApi';
 import { calcUtilizationByItems } from '../../utils/volumeCalculator';
-import { AppSettingsContext } from '../../contexts/AppSettingsContext';
-import type { AppSettings } from '../../contexts/AppSettingsContext';
+import { useDashboardSettings } from '../../contexts/AppSettingsContext';
+import type { DashboardConfig } from '../../contexts/AppSettingsContext';
 
 // ====== 类型定义 ======
 
@@ -104,11 +104,11 @@ export function useWarehouseCapability(options: UseWarehouseCapabilityOptions = 
     refreshInterval: optionsRefreshInterval = 30000,
   } = options;
 
-  // 安全获取 AppSettings — 使用 useContext 直接读取，避免 useAppSettings() 在 Provider 外抛异常
-  // 防御性 optional chaining：Provider 未就绪或 settings.dashboard 缺失时回退到默认值
-  const settingsCtx = useContext(AppSettingsContext);
-  const settings: AppSettings | null = settingsCtx?.settings ?? null;
-  const settingsRefreshInterval = (settings?.dashboard?.dataRefreshInterval || 30) * 1000;
+  // 安全获取 Dashboard 设置 — 使用 useDashboardSettings 直接获取 DashboardConfig
+  // 防御性 optional chaining：Provider 未就绪或 settings 缺失时回退到默认值
+  const dashboardSettings = useDashboardSettings();
+  const settings: DashboardConfig | null = dashboardSettings?.settings ?? null;
+  const settingsRefreshInterval = (settings?.dataRefreshInterval || 30) * 1000;
 
   const effectiveAutoRefresh = optionsAutoRefresh || includeDashboard;
   const effectiveRefreshInterval = includeDashboard ? settingsRefreshInterval : optionsRefreshInterval;

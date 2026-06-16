@@ -1,11 +1,13 @@
 /**
  * ModelManager 共享样式 - 使用统一灰阶 Token
  */
-import { getGrayScale } from '../../../constants/theme';
+import { getGrayScale, getSemanticColors } from '../../../constants/theme';
+import type { SemanticColors } from '../../../constants/theme';
 
 /** 获取模型管理器样式（需传入主题模式） */
 export function getModelManagerStyles(isDark: boolean) {
   const gs = getGrayScale(isDark);
+  const sc = getSemanticColors(isDark);
 
   return {
     // 容器
@@ -48,7 +50,7 @@ export function getModelManagerStyles(isDark: boolean) {
       fontWeight: 500,
       px: 1.5,
       py: 0.6,
-      color: isDark ? '#FFFFFF' : '#FFFFFF',
+      color: isDark ? '#111827' : '#FFFFFF',
       backgroundColor: isDark ? '#E5E7EB' : '#111827',
       '&:hover': {
         backgroundColor: isDark ? '#D1D5DB' : '#374151',
@@ -164,6 +166,10 @@ export function getModelManagerStyles(isDark: boolean) {
     border: gs.border,
     borderDarker: gs.borderDarker,
     borderLight: gs.borderLighter,
+    /** 灰阶快捷引用（供需要直接取值的场景） */
+    bgInput: gs.bgInput,
+    /** 语义化颜色（暗色模式适配） */
+    semantic: sc,
   };
 }
 
@@ -317,11 +323,7 @@ export const primaryButtonSx = {
 };
 
 /** @deprecated 使用 getModelManagerStyles(isDark) */
-export const switchSx = {
-  '& .MuiSwitch-switchBase': {
-    '&.Mui-checked': { color: '#111827', '& + .MuiSwitch-track': { backgroundColor: '#111827' } },
-  },
-};
+export const switchSx = {} as Record<string, unknown>; // 废弃，改用 MUI theme 默认 Switch 样式
 
 /** @deprecated 使用 getModelManagerStyles(isDark).input */
 export const textFieldSx = {

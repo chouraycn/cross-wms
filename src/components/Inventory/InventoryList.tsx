@@ -32,15 +32,15 @@ import FactCheckIcon from '@mui/icons-material/FactCheck';
 import { useWarehouseCapability } from '../../capabilities/warehouse';
 import type { InventoryItem } from '../../types';
 import dayjs from 'dayjs';
-import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useDashboardSettings } from '../../contexts/AppSettingsContext';
 import { getGrayScale } from '../../constants/theme';
 
 const InventoryList: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
-  const { settings } = useAppSettings();
-  const ageWarningDays = settings.dashboard.ageWarningDays ?? 90;
+  const { settings } = useDashboardSettings();
+  const ageWarningDays = settings.ageWarningDays ?? 90;
   const { inventory: initialInventory, warehouses, loading, error, getWarehouseById } = useWarehouseCapability();
 
   const [items, setItems] = useState<InventoryItem[]>([]);

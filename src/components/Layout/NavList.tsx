@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   List,
   ListItem,
@@ -10,23 +10,14 @@ import {
   Collapse,
   IconButton,
   useTheme,
-  Menu,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
 } from '@mui/material';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
-import { useChatContext } from '../../contexts/ChatContext';
+import { useChatSidebar } from '../../contexts/ChatContext';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
@@ -37,16 +28,36 @@ import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
 import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import ScheduleIcon from '@mui/icons-material/Schedule';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import CircularProgress from '@mui/material/CircularProgress';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import { getGrayScale } from '../../constants/theme';
-import { Session, Folder } from '../../types/chat';
+import { Session } from '../../types/chat';
+
+// ===================== Helpers =====================
+
+function getRelativeTime(dateStr?: string): string {
+  if (!dateStr) return '';
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diff = now - then;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return '刚刚';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}分钟前`;
+  const hour = Math.floor(min / 60);
+  if (hour < 24) return `${hour}小时前`;
+  const day = Math.floor(hour / 24);
+  if (day < 30) return `${day}天前`;
+  const month = Math.floor(day / 30);
+  if (month < 12) return `${month}个月前`;
+  return `${Math.floor(month / 12)}年前`;
+}
 
 // ===================== Nav Item Types =====================
 
@@ -78,10 +89,6 @@ const navItems: NavItem[] = [
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
 
-  // v1.5.68: "工具管理" 已迁入 Settings > 工具管理 Tab，导航栏不再展示该分组。
-  // 保留 /plugins, /api-domain-whitelist, /api-templates, /browser, /api-credentials, /api-history
-  // 路由用于向后兼容（书签 / 直接访问），实际入口在设置中。
-
   {
     label: '仓储管理',
     icon: <WarehouseOutlinedIcon />,
@@ -98,9 +105,9 @@ const navItems: NavItem[] = [
       { label: '入库质检', path: '/wms/quality', icon: <FactCheckOutlinedIcon />, desc: '质检管理' },
       { label: '库存盘点', path: '/wms/inventory', icon: <FindInPageOutlinedIcon />, desc: '盘点管理' },
       { label: '出库复核', path: '/wms/outbound', icon: <VerifiedUserOutlinedIcon />, desc: '复核管理' },
-              { label: '异常预警', path: '/wms/alerts', icon: <NotificationsActiveOutlinedIcon />, desc: '预警中心' },
-              { label: '补货建议', path: '/wms/replenishment', icon: <AutorenewOutlinedIcon />, desc: '智能补货' },
-              { label: '报表生成', path: '/wms/reports', icon: <SummarizeOutlinedIcon />, desc: '报表中心' },
+      { label: '异常预警', path: '/wms/alerts', icon: <NotificationsActiveOutlinedIcon />, desc: '预警中心' },
+      { label: '补货建议', path: '/wms/replenishment', icon: <AutorenewOutlinedIcon />, desc: '智能补货' },
+      { label: '报表生成', path: '/wms/reports', icon: <SummarizeOutlinedIcon />, desc: '报表中心' },
     ],
   },
 ];
@@ -157,14 +164,12 @@ const NavList: React.FC<NavListProps> = ({
     });
   }, [activePath]);
 
-  // 聊天历史 — 从 ChatContext 获取
+  // 聊天历史 — 从 ChatSidebarContext 获取（不随流式消息更新）
   const {
     sessions,
-    folders,
     handleDeleteSession: deleteSessionFromContext,
-    moveSessionToFolder,
-    createFolder,
-  } = useChatContext();
+    togglePinSession,
+  } = useChatSidebar();
   const historyListRef = useRef<HTMLDivElement>(null);
 
   // 即时选中状态：点击时立即切换视觉反馈，不等待父组件 state 传播
@@ -183,8 +188,18 @@ const NavList: React.FC<NavListProps> = ({
     onDeleteSession(sessionId);
   }, [deleteSessionFromContext, onDeleteSession]);
 
-  // 只显示有消息的会话
-  const chatSessions = sessions.filter((s) => s.messages.length > 0);
+  const chatSessions = sessions;
+
+  // 置顶优先 + 最近更新排序
+  const sortedSessions = useMemo(() => {
+    return [...chatSessions].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+  }, [chatSessions]);
 
   // 点击导航项时清除历史对话的即时选中状态
   const handleNavClick = useCallback((path: string) => {
@@ -193,7 +208,6 @@ const NavList: React.FC<NavListProps> = ({
   }, [onNavigate]);
 
   // 有历史会话选中且历史列表不为空时，"AI 对话"不显示激活态（白条让给历史对话项）
-  // 防御：只有 activeSessionId 对应的会话真的有消息时才让出白条
   const activeSessionHasMessages = chatSessions.some((s) => s.id === activeSessionId);
   const isChatWithSession = activeSessionId && activePath === '/chat' && activeSessionHasMessages;
 
@@ -221,80 +235,12 @@ const NavList: React.FC<NavListProps> = ({
   const iconActive = gs.textPrimary;
   const iconNormal = gs.textMuted;
 
-  // ===================== 文件夹展开状态 =====================
-  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
-
-  const toggleFolder = (folderId: string) => {
-    setExpandedFolders((prev) => ({ ...prev, [folderId]: !prev[folderId] }));
-  };
-
-  // ===================== 右键菜单状态 =====================
-  const [contextMenu, setContextMenu] = useState<{
-    mouseX: number;
-    mouseY: number;
-    sessionId: string;
-  } | null>(null);
-
-  const [moveSubMenuAnchor, setMoveSubMenuAnchor] = useState<HTMLElement | null>(null);
-
-  const handleContextMenu = useCallback((e: React.MouseEvent, sessionId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-      sessionId,
-    });
-  }, []);
-
-  const handleCloseContextMenu = useCallback(() => {
-    setContextMenu(null);
-    setMoveSubMenuAnchor(null);
-  }, []);
-
-  const handleMoveSession = useCallback(async (folderId: string | null) => {
-    if (contextMenu) {
-      await moveSessionToFolder(contextMenu.sessionId, folderId);
-    }
-    handleCloseContextMenu();
-  }, [contextMenu, moveSessionToFolder, handleCloseContextMenu]);
-
-  // ===================== 新建文件夹对话框 =====================
-  const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
-
-  const handleOpenNewFolderDialog = useCallback(() => {
-    setNewFolderName('');
-    setNewFolderDialogOpen(true);
-  }, []);
-
-  const handleCloseNewFolderDialog = useCallback(() => {
-    setNewFolderDialogOpen(false);
-    setNewFolderName('');
-  }, []);
-
-  const handleCreateFolder = useCallback(async () => {
-    const name = newFolderName.trim();
-    if (name) {
-      await createFolder(name);
-    }
-    handleCloseNewFolderDialog();
-  }, [newFolderName, createFolder, handleCloseNewFolderDialog]);
-
-  // ===================== 按文件夹分组会话 =====================
-  const uncategorizedSessions = chatSessions.filter((s) => !s.folderId);
-  const folderSessionsMap = useCallback((folderId: string) => {
-    return chatSessions.filter((s) => s.folderId === folderId);
-  }, [chatSessions]);
-
-  // 渲染单个会话项
-  // v1.9.3: 跟踪每个会话的完成通知状态（AI 完成回复时显示绿点）
+  // ===== AI 完成标记（v1.9.3） =====
   const [completedSessions, setCompletedSessions] = useState<Set<string>>(new Set());
   const prevSessionsRef = useRef<Session[]>(sessions);
 
   React.useEffect(() => {
     const prev = prevSessionsRef.current;
-    // 检查哪些会话从 streaming 变为完成
     for (const session of sessions) {
       if (completedSessions.has(session.id)) continue;
       const prevSession = prev.find(s => s.id === session.id);
@@ -319,12 +265,14 @@ const NavList: React.FC<NavListProps> = ({
     });
   }, []);
 
-  const renderSessionItem = (session: Session) => {
+  // ===== 渲染单个会话项 =====
+  const renderSessionItem = useCallback((session: Session) => {
     const title = session.title || session.messages[0]?.content?.slice(0, 20) || '新对话';
     const effectiveActiveId = justClickedSessionId ?? activeSessionId;
     const isSessionActive = session.id === effectiveActiveId;
+    const isPinned = session.isPinned === true;
+    const relativeTime = getRelativeTime(session.updatedAt || session.createdAt);
 
-    // 检查该会话是否有 AI 正在思考/流式响应
     const lastMsg = session.messages[session.messages.length - 1];
     const isThinking = lastMsg?.role === 'assistant' && lastMsg?.isStreaming === true;
     const showCompleted = completedSessions.has(session.id) && !isThinking;
@@ -333,8 +281,7 @@ const NavList: React.FC<NavListProps> = ({
       <ListItem
         key={session.id}
         disablePadding
-        sx={{ display: 'block', mb: 0.25 }}
-        onContextMenu={(e) => handleContextMenu(e, session.id)}
+        sx={{ display: 'block' }}
       >
         <ListItemButton
           onClick={() => {
@@ -342,19 +289,18 @@ const NavList: React.FC<NavListProps> = ({
             onSelectSession(session.id);
           }}
           sx={{
-            minHeight: 28,
+            minHeight: 32,
             px: 1.5,
-            py: 0,
+            py: 0.25,
             borderRadius: '6px',
             backgroundColor: isSessionActive ? bgActive : 'transparent',
             '&:hover': {
               backgroundColor: isSessionActive ? bgActiveHover : bgHover,
+              '& .session-actions': { opacity: 1 },
+              '& .session-time': { opacity: 0 },
             },
           }}
         >
-          <ListItemIcon sx={{ minWidth: 0, mr: 1, justifyContent: 'center', color: textMuted }}>
-            <ChatBubbleOutlineIcon sx={{ fontSize: '13px' }} />
-          </ListItemIcon>
           <Typography
             sx={{
               fontSize: '0.7rem',
@@ -364,14 +310,15 @@ const NavList: React.FC<NavListProps> = ({
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
               flex: 1,
+              minWidth: 0,
               lineHeight: '28px',
             }}
           >
             {title}
           </Typography>
-          {/* v1.9.3: AI 思考/完成指示器 */}
+          {/* AI 思考 / 完成指示器 */}
           {isThinking && (
-            <CircularProgress size={14} thickness={3} sx={{ color: '#F59E0B', mr: 0.5 }} />
+            <CircularProgress size={12} thickness={3} sx={{ color: '#F59E0B', mr: 0.5 }} />
           )}
           {!isThinking && showCompleted && (
             <Tooltip title="AI 已完成回复" placement="right">
@@ -386,93 +333,80 @@ const NavList: React.FC<NavListProps> = ({
                   '&:hover': { opacity: 0.6 },
                 }}
               >
-                <CheckCircleIcon sx={{ fontSize: 14, color: '#22C55E' }} />
+                <CheckCircleIcon sx={{ fontSize: 12, color: '#22C55E' }} />
               </Box>
             </Tooltip>
           )}
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleDeleteSession(e, session.id);
-            }}
-            sx={{
-              p: 0.25,
-              opacity: 0.7,
-              color: textMuted,
-              transition: 'opacity 0.15s',
-              '&:hover': { opacity: 1, color: gs.textPrimary },
-            }}
-          >
-            <DeleteOutlineIcon sx={{ fontSize: 12 }} />
-          </IconButton>
+          {/* 右侧区：时间正常显示，hover 时按钮覆盖在时间上方 */}
+          <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto', flexShrink: 0, position: 'relative' }}>
+            {relativeTime && (
+              <Typography
+                className="session-time"
+                sx={{
+                  fontSize: '0.6rem',
+                  fontWeight: 400,
+                  color: textMuted,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  lineHeight: '28px',
+                  transition: 'opacity 0.15s',
+                }}
+              >
+                {relativeTime}
+              </Typography>
+            )}
+            <Box
+              className="session-actions"
+              sx={{
+                position: 'absolute',
+                right: 0,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                opacity: 0,
+                transition: 'opacity 0.15s',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <Tooltip title={isPinned ? '取消置顶' : '置顶'} placement="top" arrow>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePinSession(session.id);
+                  }}
+                  sx={{
+                    p: 0.25,
+                    color: isPinned ? '#F59E0B' : gs.textMuted,
+                    '&:hover': { color: isPinned ? '#D97706' : gs.textPrimary },
+                  }}
+                >
+                  <PushPinOutlinedIcon sx={{ fontSize: 12 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="删除" placement="top" arrow>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDeleteSession(e, session.id);
+                  }}
+                  sx={{
+                    p: 0.25,
+                    color: gs.textMuted,
+                    '&:hover': { color: '#EF4444' },
+                  }}
+                >
+                  <DeleteOutlineIcon sx={{ fontSize: 12 }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
         </ListItemButton>
       </ListItem>
     );
-  };
-
-  // 渲染文件夹及其会话
-  const renderFolder = (folder: Folder) => {
-    const sessionsInFolder = folderSessionsMap(folder.id);
-    const expanded = expandedFolders[folder.id] ?? false;
-
-    return (
-      <Box key={folder.id} sx={{ mb: 0.5 }}>
-        <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => toggleFolder(folder.id)}
-            sx={{
-              minHeight: 28,
-              px: 1.5,
-              py: 0,
-              borderRadius: '6px',
-              '&:hover': { backgroundColor: bgHover },
-            }}
-          >
-            <ListItemIcon sx={{ minWidth: 0, mr: 1, justifyContent: 'center', color: textMuted }}>
-              <FolderOutlinedIcon sx={{ fontSize: '14px' }} />
-            </ListItemIcon>
-            <Typography
-              sx={{
-                fontSize: '0.75rem',
-                fontWeight: 500,
-                color: textNormal,
-                flex: 1,
-                lineHeight: '28px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {folder.name}
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: '0.625rem',
-                color: textMuted,
-                lineHeight: '28px',
-                flexShrink: 0,
-                mr: 0.5,
-              }}
-            >
-              {sessionsInFolder.length}
-            </Typography>
-            {expanded ? (
-              <ExpandLessIcon sx={{ fontSize: 14, color: textMuted }} />
-            ) : (
-              <ExpandMoreIcon sx={{ fontSize: 14, color: textMuted }} />
-            )}
-          </ListItemButton>
-        </ListItem>
-        <Collapse in={expanded} timeout="auto">
-          <List sx={{ py: 0, pl: 2.5 }}>
-            {sessionsInFolder.map((session) => renderSessionItem(session))}
-          </List>
-        </Collapse>
-      </Box>
-    );
-  };
+  }, [justClickedSessionId, activeSessionId, completedSessions, bgActive, bgActiveHover, bgHover, textActive, textSecondary, textMuted, gs, onSelectSession, togglePinSession, handleDeleteSession, clearCompletedFlag]);
 
   return (
     <List
@@ -572,52 +506,52 @@ const NavList: React.FC<NavListProps> = ({
                   {item.children.map((child) => {
                     const childActive = isActive(child.path);
                     return (
-                      <ListItem key={child.path} disablePadding sx={{ display: 'block', mb: 0.25 }}>
+                      <ListItem key={child.path} disablePadding sx={{ display: 'block' }}>
                         <ListItemButton
                           onClick={() => handleNavClick(child.path)}
+                        sx={{
+                          minHeight: 32,
+                          px: 1,
+                          py: 0.25,
+                          borderRadius: '6px',
+                          backgroundColor: childActive ? bgActive : 'transparent',
+                          '&:hover': {
+                            backgroundColor: childActive ? bgActiveHover : bgHover,
+                          },
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 0, mr: 1, justifyContent: 'center', color: childActive ? iconActive : iconNormal }}>
+                          {React.cloneElement(child.icon as React.ReactElement, {
+                            sx: { fontSize: '16px' },
+                          })}
+                        </ListItemIcon>
+                        <Typography
                           sx={{
-                            minHeight: 32,
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: '6px',
-                            backgroundColor: childActive ? bgActive : 'transparent',
-                            '&:hover': {
-                              backgroundColor: childActive ? bgActiveHover : bgHover,
-                            },
+                            fontSize: '0.75rem',
+                            fontWeight: childActive ? 500 : 400,
+                            color: childActive ? textActive : textNormal,
+                            lineHeight: '28px',
                           }}
                         >
-                          <ListItemIcon sx={{ minWidth: 0, mr: 1, justifyContent: 'center', color: childActive ? iconActive : iconNormal }}>
-                            {React.cloneElement(child.icon as React.ReactElement, {
-                              sx: { fontSize: '16px' },
-                            })}
-                          </ListItemIcon>
+                          {child.label}
+                        </Typography>
+                        {child.desc && (
                           <Typography
                             sx={{
-                              fontSize: '0.75rem',
-                              fontWeight: childActive ? 500 : 400,
-                              color: childActive ? textActive : textNormal,
+                              fontSize: '0.625rem',
+                              color: textMuted,
+                              ml: 'auto',
                               lineHeight: '28px',
+                              flexShrink: 0,
                             }}
                           >
-                            {child.label}
+                            {child.desc}
                           </Typography>
-                          {child.desc && (
-                            <Typography
-                              sx={{
-                                fontSize: '0.625rem',
-                                color: textMuted,
-                                ml: 'auto',
-                                lineHeight: '28px',
-                                flexShrink: 0,
-                              }}
-                            >
-                              {child.desc}
-                            </Typography>
-                          )}
-                        </ListItemButton>
-                      </ListItem>
-                    );
-                  })}
+                        )}
+                      </ListItemButton>
+                    </ListItem>
+                  );
+                })}
                 </List>
               </Collapse>
             </Box>
@@ -635,7 +569,6 @@ const NavList: React.FC<NavListProps> = ({
                   onClick={() => {
                     if (item.path === '/chat') {
                       handleNavClick(item.path);
-                      // 新建对话时清除历史对话选中态
                       window.dispatchEvent(new CustomEvent('cdf-know-clow-clear-session'));
                       window.dispatchEvent(new CustomEvent('cdf-know-clow-navigate-chat'));
                     } else {
@@ -672,7 +605,6 @@ const NavList: React.FC<NavListProps> = ({
                 onClick={() => {
                   if (item.path === '/chat') {
                     handleNavClick(item.path);
-                    // 新建对话时清除历史对话选中态
                     window.dispatchEvent(new CustomEvent('cdf-know-clow-clear-session'));
                     window.dispatchEvent(new CustomEvent('cdf-know-clow-navigate-chat'));
                   } else {
@@ -720,15 +652,14 @@ const NavList: React.FC<NavListProps> = ({
                 )}
               </ListItemButton>
             </ListItem>
-
           </React.Fragment>
         );
       })}
 
-      {/* ====== 栏目底部：历史对话 ====== */}
-      {!collapsed && chatSessions.length > 0 && (
-        <Box ref={historyListRef} sx={{ mt: 1, pt: 2.25, pl: 0.25, pr: 1, display: 'flex', flexDirection: 'column', minHeight: 0, flex: '0 1 auto' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, mb: 0.5, flexShrink: 0 }}>
+      {/* ====== 历史对话 ====== */}
+      {!collapsed && sortedSessions.length > 0 && (
+        <Box ref={historyListRef} sx={{ mt: 1, pt: 2.25, display: 'flex', flexDirection: 'column', minHeight: 0, flex: '0 1 auto' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', px: 1.5, mb: 0.5, flexShrink: 0 }}>
             <Typography
               sx={{
                 fontSize: '0.6875rem',
@@ -747,145 +678,16 @@ const NavList: React.FC<NavListProps> = ({
                   color: gs.textDisabled,
                 }}
               >
-                {chatSessions.length}
+                {sortedSessions.length}
               </Box>
             </Typography>
-            <Tooltip title="新建文件夹" placement="top" arrow>
-              <IconButton
-                size="small"
-                onClick={handleOpenNewFolderDialog}
-                sx={{
-                  p: 0.25,
-                  color: gs.textMuted,
-                  '&:hover': { color: gs.textPrimary },
-                }}
-              >
-                <CreateNewFolderIcon sx={{ fontSize: 14 }} />
-              </IconButton>
-            </Tooltip>
           </Box>
-          <Box
-            sx={{
-              overflowY: 'auto',
-              overscrollBehaviorY: 'none',
-              WebkitOverflowScrolling: 'auto',
-              flex: 1,
-              minHeight: 0,
-              maxHeight: 280, // 固定高度：约10条会话
-              // 滚动条仅在悬停时显示
-              '&::-webkit-scrollbar': {
-                width: '4px',
-              },
-              '&::-webkit-scrollbar-track': {
-                background: 'transparent',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                background: 'transparent',
-                borderRadius: '2px',
-              },
-              '&:hover::-webkit-scrollbar-thumb': {
-                background: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
-              },
-              // Firefox
-              scrollbarWidth: 'thin',
-              scrollbarColor: 'transparent transparent',
-              '&:hover': {
-                scrollbarColor: isDark ? 'rgba(255,255,255,0.2) transparent' : 'rgba(0,0,0,0.15) transparent',
-              },
-            }}
-          >
-            {/* 渲染文件夹 */}
-            {folders.map((folder) => renderFolder(folder))}
-
-            {/* 渲染未分类会话 */}
-            {uncategorizedSessions.map((session) => renderSessionItem(session))}
+          {/* DEBUG: 先用普通列表验证数据，确认后再换回 Virtuoso */}
+          <Box sx={{ flex: 1, overflow: 'auto', maxHeight: 280 }}>
+            {sortedSessions.map((s) => renderSessionItem(s))}
           </Box>
         </Box>
       )}
-
-      {/* ====== 右键菜单 ====== */}
-      <Menu
-        open={!!contextMenu}
-        onClose={handleCloseContextMenu}
-        anchorReference="anchorPosition"
-        anchorPosition={
-          contextMenu
-            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
-            : undefined
-        }
-        PaperProps={{
-          sx: {
-            minWidth: 160,
-            '& .MuiMenuItem-root': {
-              fontSize: '0.8125rem',
-              py: 0.75,
-            },
-          },
-        }}
-      >
-        <MenuItem
-          onMouseEnter={(e) => setMoveSubMenuAnchor(e.currentTarget)}
-          onMouseLeave={() => setMoveSubMenuAnchor(null)}
-          sx={{ position: 'relative' }}
-        >
-          移动到文件夹
-          <Menu
-            open={!!moveSubMenuAnchor}
-            anchorEl={moveSubMenuAnchor}
-            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-            onClose={() => setMoveSubMenuAnchor(null)}
-            PaperProps={{
-              sx: {
-                minWidth: 140,
-                '& .MuiMenuItem-root': {
-                  fontSize: '0.8125rem',
-                  py: 0.75,
-                },
-              },
-            }}
-          >
-            <MenuItem onClick={() => handleMoveSession(null)}>
-              未分类
-            </MenuItem>
-            {folders.map((folder) => (
-              <MenuItem key={folder.id} onClick={() => handleMoveSession(folder.id)}>
-                {folder.name}
-              </MenuItem>
-            ))}
-          </Menu>
-        </MenuItem>
-      </Menu>
-
-      {/* ====== 新建文件夹对话框 ====== */}
-      <Dialog open={newFolderDialogOpen} onClose={handleCloseNewFolderDialog} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontSize: '1rem', pb: 1 }}>新建文件夹</DialogTitle>
-        <DialogContent sx={{ pt: 1 }}>
-          <TextField
-            autoFocus
-            fullWidth
-            label="文件夹名称"
-            value={newFolderName}
-            onChange={(e) => setNewFolderName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleCreateFolder();
-              }
-            }}
-            size="small"
-            sx={{ mt: 0.5 }}
-          />
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleCloseNewFolderDialog} size="small">
-            取消
-          </Button>
-          <Button onClick={handleCreateFolder} variant="contained" size="small" disabled={!newFolderName.trim()}>
-            创建
-          </Button>
-        </DialogActions>
-      </Dialog>
     </List>
   );
 };

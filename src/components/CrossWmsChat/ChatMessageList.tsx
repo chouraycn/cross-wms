@@ -19,7 +19,7 @@ import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { Message, Session } from '../../types/chat';
 import { getGrayScale, GrayScale } from '../../constants/theme';
 
-import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { useAppearanceSettings } from '../../contexts/AppSettingsContext';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { ThinkingBlock } from './ThinkingBlock';
 import { QueryResultRenderer } from './QueryResultRenderer';
@@ -144,8 +144,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
-  const { settings, updateSettings } = useAppSettings();
-  const botName = settings.appearance.botName || 'CDF Bot';
+  const { settings, updateSettings } = useAppearanceSettings();
+  const botName = settings.botName || 'CDF Bot';
   const [isEditingBotName, setIsEditingBotName] = useState(false);
   const [editingBotName, setEditingBotName] = useState('');
   const botNameInputRef = useRef<HTMLInputElement>(null);
@@ -246,7 +246,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                     <ClickAwayListener onClickAway={() => {
                       const trimmed = editingBotName.trim();
                       if (trimmed) {
-                        updateSettings({ appearance: { ...settings.appearance, botName: trimmed } });
+                     updateSettings({ appearance: { ...settings, botName: trimmed } });
                       }
                       setIsEditingBotName(false);
                     }}>
@@ -259,7 +259,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                           if (e.key === 'Enter') {
                             const trimmed = editingBotName.trim();
                             if (trimmed) {
-                              updateSettings({ appearance: { ...settings.appearance, botName: trimmed } });
+                              updateSettings({ appearance: { ...settings, botName: trimmed } });
                             }
                             setIsEditingBotName(false);
                           }
@@ -696,7 +696,7 @@ interface BotMessageContentProps {
   onPermissionRespond?: (reqId: string, approved: boolean, alwaysAllow?: boolean) => void;
 }
 
-const BotMessageContent: React.FC<BotMessageContentProps> = ({
+const BotMessageContent = React.memo<BotMessageContentProps>(({
   msg,
   gs,
   isDark,
@@ -887,6 +887,7 @@ const BotMessageContent: React.FC<BotMessageContentProps> = ({
       )}
     </Box>
   );
-};
+});
+BotMessageContent.displayName = 'BotMessageContent';
 
 export default ChatMessageList;
