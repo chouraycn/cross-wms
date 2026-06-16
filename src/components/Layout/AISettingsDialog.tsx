@@ -12,6 +12,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { useModels } from '../../contexts/ModelsContext';
 import ModelManager from '../shared/ModelManager';
+import SystemAuthBanner from './SystemAuthBanner';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar tabs                                                        */
@@ -51,9 +52,11 @@ const PlaceholderTab: React.FC<{ title: string; description?: string }> = ({ tit
 export interface AISettingsDialogProps {
   open: boolean;
   onClose: () => void;
+  /** 当用户点击「前往设置」时，打开系统授权配置 */
+  onOpenSystemAuthorization?: () => void;
 }
 
-const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) => {
+const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOpenSystemAuthorization }) => {
   const [activeTab, setActiveTab] = useState<AITab>('model');
   const { settings, updateSettings } = useAppSettings();
   const { models: modelList, defaultModelId, updateModels, isLoading, error, reload } = useModels();
@@ -139,6 +142,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) =>
         <Box sx={{ flex: 1, px: 4, pt: 3, pr: 5, pb: 4, overflow: 'auto', minWidth: 0, position: 'relative' }}>
           {activeTab === 'model' && (
             <>
+              <SystemAuthBanner onOpenSettings={onOpenSystemAuthorization} />
               {isLoading && (
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, gap: 1 }}>
                   <CircularProgress size={20} />

@@ -222,7 +222,7 @@ const SettingsPanel: React.FC = () => {
       case 'volumeDoc':
         return <VolumeDocTab draft={draft} setDraft={setDraft} openInBrowser={openInBrowser} />;
       case 'modelManagement':
-        return <ModelManagement />;
+        return <ModelManagement onOpenSystemAuthorization={() => setActiveTab('systemAuthorization')} />;
       case 'dmgSettings':
         return (
           <Box sx={{ maxWidth: 680 }}>
