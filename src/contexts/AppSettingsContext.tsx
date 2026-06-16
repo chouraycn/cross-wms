@@ -184,9 +184,33 @@ export interface AppearanceConfig {
 
 // ===================== 系统授权配置 =====================
 
+/** macOS TCC 单项权限状态 */
+export interface TccPermissionItem {
+  /** 是否已由用户手动授权 */
+  enabled: boolean;
+  /** 权限检查状态 */
+  status: 'granted' | 'denied' | 'unknown';
+  /** 上次检查时间戳（毫秒） */
+  lastChecked: number | null;
+}
+
+/** macOS TCC 权限集 */
+export interface TccPermissions {
+  screenRecording: TccPermissionItem;
+  accessibility: TccPermissionItem;
+  inputMonitoring: TccPermissionItem;
+  fullDiskAccess: TccPermissionItem;
+  microphone: TccPermissionItem;
+  camera: TccPermissionItem;
+  notifications: TccPermissionItem;
+  automation: TccPermissionItem;
+}
+
 export interface SystemAuthorizationConfig {
   /** 是否启用系统授权（启用后自动授予系统级权限，无需每次手动确认） */
   enabled: boolean;
+  /** macOS TCC 各权限详细配置 */
+  permissions: TccPermissions;
 }
 
 export interface AppSettings {
@@ -272,6 +296,16 @@ const DEFAULT_SETTINGS: AppSettings = {
   // 系统授权配置
   systemAuthorization: {
     enabled: false,
+    permissions: {
+      screenRecording:     { enabled: false, status: 'unknown' as const, lastChecked: null },
+      accessibility:       { enabled: false, status: 'unknown' as const, lastChecked: null },
+      inputMonitoring:     { enabled: false, status: 'unknown' as const, lastChecked: null },
+      fullDiskAccess:      { enabled: false, status: 'unknown' as const, lastChecked: null },
+      microphone:          { enabled: false, status: 'unknown' as const, lastChecked: null },
+      camera:              { enabled: false, status: 'unknown' as const, lastChecked: null },
+      notifications:       { enabled: false, status: 'unknown' as const, lastChecked: null },
+      automation:          { enabled: false, status: 'unknown' as const, lastChecked: null },
+    },
   },
 };
 
