@@ -517,20 +517,6 @@ const MainLayout: React.FC = () => {
     });
   }, []);
 
-  // v1.5.73: settingsPopoverOpen 从 Sidebar 提升到 MainLayout，供 /settings 路由触发
-  const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
-
-  // /settings 路由：打开侧边栏设置弹窗并重定向到 /chat
-  function SettingsRedirect() {
-    const navigate = useNavigate();
-    React.useEffect(() => {
-      setSettingsPopoverOpen(true);
-      navigate('/chat', { replace: true });
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-    return null;
-  }
-
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
   const scrollRef = useAutoHideScrollbar(!isPy);
 
@@ -561,7 +547,7 @@ const MainLayout: React.FC = () => {
       <WindowDragBar height={38} />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Sidebar — 单栏布局 */}
-        <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} settingsOpen={settingsPopoverOpen} onSettingsOpenChange={setSettingsPopoverOpen} />
+        <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
 
       {/* Main content area */}
       <Box
@@ -664,7 +650,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/wms/reports" element={<WmsReportPage />} />
                     <Route path="/wms/replenishment" element={<Suspense fallback={<LoadingFallback />}><WmsReplenishmentPage /></Suspense>} />
                     <Route path="/transfer" element={<TransferPage />} />
-                    <Route path="/settings" element={<SettingsRedirect />} />
+                    <Route path="/settings" element={<Navigate to="/chat" replace />} />
                     <Route path="/automation" element={<AutomationPage />} />
                     <Route path="/plugins" element={<PluginsPage />} />
                     <Route path="/api-domain-whitelist" element={<ApiDomainWhitelistPage />} />

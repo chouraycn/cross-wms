@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Box,
   ListItemButton,
@@ -8,13 +8,13 @@ import {
 } from '@mui/material';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { loadSessions } from '../../utils/sessionStore';
 import { getGrayScale } from '../../constants/theme';
 import SidebarLogo from './SidebarLogo';
 import NavList from './NavList';
 import SidebarToggle from './SidebarToggle';
 import SettingsPopover from './SettingsPopover';
 import AISettingsDialog from './AISettingsDialog';
-import ToolManagementDialog from './ToolManagementDialog';
 
 
 // ===================== Constants =====================
@@ -27,12 +27,9 @@ const SIDEBAR_WIDTH_COLLAPSED = 83;
 interface SidebarProps {
   collapsed: boolean;
   onToggle?: () => void;
-  /** v1.5.73: 从 MainLayout 提升，供 /settings 路由触发 */
-  settingsOpen?: boolean;
-  onSettingsOpenChange?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: settingsOpenProp, onSettingsOpenChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -41,45 +38,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
 
   const SIDEBAR_BG = gs.bgSidebar;
 
-  // v1.5.73: settingsOpen 提升到 MainLayout，通过 props 传入；无 props 时回退本地 state（兼容旧调用）
-  const [localSettingsOpen, localSetSettingsOpen] = useState(false);
-  const settingsOpen = settingsOpenProp ?? localSettingsOpen;
-  const setSettingsOpen = onSettingsOpenChange ?? localSetSettingsOpen;
-
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
-  const [toolManagementDialogOpen, setToolManagementDialogOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLDivElement>(null);
 
-  const [activeSessionId, setActiveSessionId] = useState('');
-  // 点击「AI 对话」新建会话后，短暂忽略 chat-updated 事件，避免新会话 ID 覆盖清空状态
-  const ignoreChatUpdateRef = useRef(false);
-
-  // 兼容 hash 路由：从 hash 中提取实际路径
-  const activePath = location.hash ? location.hash.replace('#', '') : location.pathname;
-
-  // 监听 CrossWmsChat 的会话更新事件，同步 activeSessionId
-  useEffect(() => {
-    const onChatUpdate = ((e: CustomEvent) => {
-      // 如果正处于「新建对话」后的保护期内，忽略事件
-      if (ignoreChatUpdateRef.current) return;
-      // 防御：只有收到明确的 activeSessionId 才更新，避免空事件覆盖状态
-      if (e.detail && e.detail.activeSessionId) {
-        setActiveSessionId(e.detail.activeSessionId);
-      }
-    }) as EventListener;
-    const onClearSession = () => {
-      setActiveSessionId('');
-      // 开启保护期：200ms 内忽略 chat-updated 事件（ChatPage 新建会话后会发送该事件）
-      ignoreChatUpdateRef.current = true;
-      setTimeout(() => { ignoreChatUpdateRef.current = false; }, 200);
-    };
-    window.addEventListener('cdf-know-clow-chat-updated', onChatUpdate);
-    window.addEventListener('cdf-know-clow-clear-session', onClearSession);
-    return () => {
-      window.removeEventListener('cdf-know-clow-chat-updated', onChatUpdate);
-      window.removeEventListener('cdf-know-clow-clear-session', onClearSession);
-    };
-  }, []);
+  const [activeSessionId, setActiveSessionId] = useState(() => {
+    const sessions = loadSessions();
+    return sessions.length > 0 ? sessions[0].id : '';
+  });
 
   const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
@@ -120,13 +86,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       {/* Navigation list (含历史对话) */}
       <NavList
         collapsed={collapsed}
-        activePath={activePath}
+        activePath={location.pathname}
         onNavigate={(path) => {
-          // 导航到非 chat 页面时清除历史对话选中态，让白条回到导航项
-          // 如果目标就是 /chat 且当前已在 /chat，不清除（保持历史对话白条）
-          if (path !== '/chat' || location.pathname !== '/chat') {
-            setActiveSessionId('');
-          }
+          setActiveSessionId('');
           navigate(path);
         }}
         activeSessionId={activeSessionId}
@@ -192,10 +154,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
           onClose={() => setSettingsOpen(false)}
           anchorEl={settingsBtnRef.current}
           onOpenModelManagement={() => setAiDialogOpen(true)}
-          onOpenToolManagement={() => setToolManagementDialogOpen(true)}
         />
         <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} />
-        <ToolManagementDialog open={toolManagementDialogOpen} onClose={() => setToolManagementDialogOpen(false)} />
       </Box>
     </Box>
   );
