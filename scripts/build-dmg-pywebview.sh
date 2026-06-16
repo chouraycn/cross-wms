@@ -17,11 +17,29 @@ if [ -f "$HOME/.zshrc" ]; then
   source "$HOME/.zshrc" 2>/dev/null || true
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 FRONTEND_DIST="$PROJECT_DIR/dist"
 BUILD_DIR="$PROJECT_DIR/build-pywebview"
 VERSION_FILE="$PROJECT_DIR/version.txt"
+
+# 从 git remote 动态获取 GitHub Owner/Repo（避免硬编码）
+GIT_REMOTE_URL=$(cd "$PROJECT_DIR" && git remote get-url origin 2>/dev/null || echo "")
+if [ -n "$GIT_REMOTE_URL" ]; then
+  # 支持 git@github.com:owner/repo.git 和 https://github.com/owner/repo 两种格式
+  GITHUB_OWNER=$(echo "$GIT_REMOTE_URL" | sed -n 's|.*github.com[:/]\([^/]*\)/.*|\1|p')
+  GITHUB_REPO=$(echo "$GIT_REMOTE_URL" | sed -n 's|.*github.com[:/][^/]*/\([^.]*\)\.git$|\1|p')
+  if [ -z "$GITHUB_REPO" ]; then
+    GITHUB_REPO=$(echo "$GIT_REMOTE_URL" | sed -n 's|.*github.com[:/][^/]*/\([^/]*\)$|\1|p')
+  fi
+  echo "🔗 Git Remote: $GITHUB_OWNER/$GITHUB_REPO"
+else
+  echo "⚠️ 未检测到 git remote，使用默认值"
+  GITHUB_OWNER="chouraycn"
+  GITHUB_REPO="cross-wms"
+fi
+
+# 导出供 Python heredoc 使用
+export GITHUB_OWNER GITHUB_REPO
 
 # ===================== 版本管理 =====================
 
@@ -79,8 +97,8 @@ fi
 
 # 导出版本号供后续使用
 export VERSION="$CURRENT_VERSION"
-DMG_NAME="CDF-Know-Clow-${VERSION}-mac.dmg"
-DMG_VOLUME="CDF Know Clow"
+export DMG_NAME="CDF-Know-Clow-${VERSION}-mac.dmg"
+export DMG_VOLUME="CDF Know Clow"
 
 # 生成 version.txt（供 pywebview_app.py 读取）
 echo "$VERSION" > "$VERSION_FILE"
@@ -88,28 +106,6 @@ echo "📝 版本文件已生成: $VERSION_FILE → $VERSION"
 echo ""
 
 # pywebview venv 路径（CI 环境自动检测）
-# 检查操作系统（DMG 只能在 macOS 上构建）
-if [ "$(uname -s)" != "Darwin" ]; then
-  echo "❌ 错误：DMG 打包只能在 macOS 上执行"
-  echo "   当前系统: $(uname -s) ($(uname -m))"
-  echo "   请在 Mac 电脑上运行此脚本"
-  exit 1
-fi
-
-# 检查必需的 macOS 工具
-# hdiutil 和 osascript 是必需的；codesign 可选（无签名时用户需手动允许）
-for tool in hdiutil osascript; do
-  if ! command -v "$tool" &>/dev/null; then
-    echo "❌ 错误：缺少必需的 macOS 工具 '$tool'"
-    exit 1
-  fi
-done
-
-if ! command -v codesign &>/dev/null; then
-  echo "⚠️  警告：codesign 未安装，将跳过代码签名"
-  echo "   安装 Xcode Command Line Tools: xcode-select --install"
-fi
-
 if [ -n "$CI" ]; then
   # CI 环境：使用系统 Python 和 pip 安装的 pyinstaller
   PYTHON="$(which python3)"
@@ -120,14 +116,8 @@ if [ -n "$CI" ]; then
     PYINSTALLER="$(which pyinstaller)"
   fi
 else
-  # 本地环境：使用指定的 venv（支持通过环境变量覆盖）
-  PYWEBVIEW_VENV="${PYWEBVIEW_VENV:-/Users/chouray/.workbuddy/binaries/python/envs/crosswms-pywebview}"
-  if [ ! -d "$PYWEBVIEW_VENV" ]; then
-    echo "❌ 错误：Python 虚拟环境未找到: $PYWEBVIEW_VENV"
-    echo "   请设置环境变量 PYWEBVIEW_VENV 指向正确的虚拟环境路径"
-    echo "   例如: export PYWEBVIEW_VENV=/path/to/your/venv"
-    exit 1
-  fi
+  # 本地环境：使用指定的 venv
+  PYWEBVIEW_VENV="/Users/chouray/.workbuddy/binaries/python/envs/crosswms-pywebview"
   PYINSTALLER="$PYWEBVIEW_VENV/bin/pyinstaller"
   PYTHON="$PYWEBVIEW_VENV/bin/python3"
 fi
@@ -142,7 +132,7 @@ echo "版本: $VERSION"
 echo ""
 
 # 1. 构建前端（始终重新构建，确保版本号是最新的）
-echo ">>> 构建前端 (版本: $VERSION) ..."
+echo "🔨 构建前端（版本: $VERSION）..."
 cd "$PROJECT_DIR" && npm run build
 echo "✅ 前端构建完成"
 
@@ -177,25 +167,19 @@ echo ""
 echo "⚙️  编译 Node.js 后端..."
 
 if command -v npx &>/dev/null; then
-  # 注意：@src 别名在 server/tsconfig.json 中映射到 ../src/*
-  # 即相对于 server 目录的父目录（项目根目录）的 src 目录
-  # 因此 esbuild 的别名应该指向项目根目录下的 src
   npx esbuild "$SERVER_DIR/index.ts" \
     --bundle \
     --platform=node \
     --target=node18 \
     --format=cjs \
     --outfile="$SERVER_BUILD_DIR/index.cjs" \
-    --alias:@src="$PROJECT_DIR/src" \
+    --alias:@src=./src \
     --external:better-sqlite3 \
-    --external:chokidar \
-    --external:cors \
     --external:express \
-    --external:fsevents \
-    --external:mammoth \
-    --external:pdf-parse \
+    --external:cors \
     --external:uuid \
-    --external:xlsx
+    --external:chokidar \
+    --external:fsevents
   echo "✅ 后端编译完成 (index.cjs)"
 else
   echo "⚠️  esbuild 不可用，尝试手动复制..."
@@ -221,10 +205,7 @@ cat > package.json << 'PKGJSON'
     "chokidar": "^3.6.0",
     "cors": "^2.8.5",
     "express": "^5.2.0",
-    "mammoth": "^1.11.0",
-    "pdf-parse": "^1.1.1",
-    "uuid": "^9.0.0",
-    "xlsx": "^0.18.5"
+    "uuid": "^9.0.0"
   }
 }
 PKGJSON
@@ -324,12 +305,6 @@ cd "$PROJECT_DIR"
 # 注意：shared_node_modules 不在 server_dist 内，PyInstaller 不会自动扫描
 # 但需要确保 server_dist 内没有 node_modules 目录
 
-# 清理 server_dist 中可能残留的 node_modules（避免 PyInstaller 误打包）
-if [ -d "$SERVER_BUILD_DIR/node_modules" ]; then
-  echo "🧹 清理 server_dist/node_modules..."
-  rm -rf "$SERVER_BUILD_DIR/node_modules"
-fi
-
 export PYINSTALLER_CONFIG_DIR="$BUILD_DIR/pyinstaller-cache"
 mkdir -p "$PYINSTALLER_CONFIG_DIR"
 
@@ -350,14 +325,10 @@ if ! codesign -v "$PYINSTALLER" 2>/dev/null; then
 fi
 
 # 构建数据文件参数
-# 注意：--add-data 格式为 "源路径:目标路径"
-# 目标路径为 . 时，文件放到 sys._MEIPASS 根目录
-# 目标路径为目录名时，文件放到 sys._MEIPASS/目录名/ 下
 DATA_ARGS="--add-data $BUILD_DIR/frontend_dist:frontend_dist "
 DATA_ARGS="$DATA_ARGS --add-data $SERVER_BUILD_DIR:server_dist "
 DATA_ARGS="$DATA_ARGS --add-data $NODE_RUNTIME_DIR:node "
-# version.txt 放到 version_txt/ 目录下（避免与可能存在的 version.txt 文件冲突）
-DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:version_txt "
+DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:. "
 
 
 "$PYINSTALLER" \
@@ -392,7 +363,7 @@ DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:version_txt "
   --distpath "$BUILD_DIR/dist" \
   --workpath "$BUILD_DIR/work" \
   --specpath "$BUILD_DIR" \
-  "$SCRIPT_DIR/pywebview_app.py"
+  pywebview_app.py
 
 # 复制共享 node_modules 到 .app 中（两个 server 共用一份）
 APP_RESOURCES="$BUILD_DIR/dist/CDF Know Clow.app/Contents/Resources"
@@ -408,7 +379,7 @@ APP_PATH="$BUILD_DIR/dist/CDF Know Clow.app"
 PLIST_PATH="$APP_PATH/Contents/Info.plist"
 
 if [ -f "$PLIST_PATH" ]; then
-  echo ">>> 优化 Info.plist (版本: $VERSION) ..."
+  echo "📝 优化 Info.plist（版本: $VERSION）..."
   /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.cdf.knowclow.desktop" "$PLIST_PATH" 2>/dev/null || \
     /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.cdf.knowclow.desktop" "$PLIST_PATH"
   /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName 'CDF Know Clow 中免CLow端'" "$PLIST_PATH" 2>/dev/null || \
@@ -423,16 +394,10 @@ if [ -f "$PLIST_PATH" ]; then
     /usr/libexec/PlistBuddy -c "Add :LSMinimumSystemVersion string 12.0" "$PLIST_PATH"
 fi
 
-# 8. 签名（可选：如果缺少 codesign 则跳过）
-if command -v codesign &>/dev/null; then
-  echo "🔏 签名应用包..."
-  xattr -cr "$APP_PATH" 2>/dev/null || true
-  codesign --force --sign - "$APP_PATH" 2>&1 || true
-else
-  echo "⚠️  跳过签名（codesign 未安装）"
-  echo "   安装 Xcode Command Line Tools: xcode-select --install"
-  echo "   未签名的应用首次启动需在 系统设置 > 隐私与安全性 中手动允许"
-fi
+# 8. 签名
+echo "🔏 签名应用包..."
+xattr -cr "$APP_PATH" 2>/dev/null || true
+codesign --force --sign - "$APP_PATH" 2>&1 || true
 
 # 9. 创建 DMG 安装包（含拖拽到 Applications 引导）
 echo "💿 创建 DMG 安装包..."
@@ -546,12 +511,13 @@ python3 << 'PYEOF2'
 import json, os
 from datetime import datetime
 
-GITHUB_OWNER = "chouraycn"
-GITHUB_REPO = "cross-wms"
+GITHUB_OWNER = os.environ.get("GITHUB_OWNER", "chouraycn")
+GITHUB_REPO = os.environ.get("GITHUB_REPO", "cross-wms")
 
 version = os.environ.get("VERSION", "1.0.0")
+dmg_name = os.environ.get("DMG_NAME", f"CDF-Know-Clow-{version}-mac.dmg")
 pub_date = datetime.now().strftime("%Y-%m-%d")
-dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/CDF-Know-Clow-{version}-mac.dmg"
+dmg_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/v{version}/{dmg_name}"
 min_ver = "1.0.0"
 
 project_dir = os.environ.get("PROJECT_DIR", ".")
@@ -582,16 +548,13 @@ echo ""
 # 11. 上传到 GitHub Releases
 echo "🚀 上传到 GitHub Releases..."
 
-# 如果 tag 已存在，先删除远程 tag 再重建（确保 Release 可重新创建）
 if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
-  echo "  ⚠️  标签 v${VERSION} 已存在，删除远程 tag 后重建..."
-  git push origin ":refs/tags/v${VERSION}" 2>/dev/null || true
-  git tag -d "v${VERSION}" 2>/dev/null || true
+  echo "  标签 v${VERSION} 已存在，跳过创建"
+else
+  git tag "v${VERSION}" -m "CDF Know Clow v${VERSION}"
+  git push origin "v${VERSION}" 2>/dev/null || true
+  echo "✅ 标签 v${VERSION} 已推送（如已存在则跳过）"
 fi
-
-git tag "v${VERSION}" -m "CDF Know Clow v${VERSION}"
-git push origin "v${VERSION}"
-echo "✅ 标签 v${VERSION} 已推送"
 
 UPLOAD_OK=false
 
@@ -599,39 +562,12 @@ if [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
   echo "📦 使用 GitHub API 上传..."
   TOKEN="${GITHUB_TOKEN:-$GH_TOKEN}"
 
-  # 先删除已有 Release（如果存在）
-  OLD_RELEASE_ID=$(curl -s -H "Authorization: token $TOKEN" \
-    "https://api.github.com/repos/chouraycn/cross-wms/releases/tags/v${VERSION}" \
+  API_REPO_PATH="https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}"
+  UPLOAD_PATH="https://uploads.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases"
+
+  RELEASE_ID=$(curl -s -H "Authorization: token $TOKEN" \
+    "${API_REPO_PATH}/releases/tags/v${VERSION}" \
     | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || echo "")
-  
-  if [ -n "$OLD_RELEASE_ID" ]; then
-    echo "  ⚠️  删除已有 Release (ID: $OLD_RELEASE_ID)..."
-    curl -s -X DELETE -H "Authorization: token $TOKEN" \
-      "https://api.github.com/repos/chouraycn/cross-wms/releases/$OLD_RELEASE_ID" 2>/dev/null || true
-    sleep 2  # 等待 GitHub API 同步
-  fi
-
-  # 创建新 Release
-  python3 << 'PYEOF3' > /tmp/cdf_release_data.json
-import json, os
-version = os.environ.get("VERSION", "1.0.0")
-project_dir = os.environ.get("PROJECT_DIR", ".")
-notes_file = os.path.join(project_dir, "RELEASE_NOTES.md")
-if os.path.isfile(notes_file):
-    with open(notes_file, 'r', encoding='utf-8') as f:
-        notes = f.read().strip()
-else:
-    notes = f"CDF Know Clow v{version} 发布"
-print(json.dumps({"tag_name": "v" + version, "name": "CDF Know Clow v" + version, "body": notes, "draft": False, "prerelease": False}))
-PYEOF3
-
-  RELEASE_DATA=$(curl -s -X POST \
-    -H "Authorization: token $TOKEN" \
-    -H "Content-Type: application/json" \
-    -d @/tmp/cdf_release_data.json \
-    "https://api.github.com/repos/chouraycn/cross-wms/releases")
-  rm -f /tmp/cdf_release_data.json
-  RELEASE_ID=$(echo "$RELEASE_DATA" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
 
   if [ -z "$RELEASE_ID" ]; then
     python3 << 'PYEOF3' > /tmp/cdf_know_clow_release_data.json
@@ -650,7 +586,7 @@ PYEOF3
       -H "Authorization: token $TOKEN" \
       -H "Content-Type: application/json" \
       -d @/tmp/cdf_know_clow_release_data.json \
-      "https://api.github.com/repos/chouraycn/cross-wms/releases")
+      "${API_REPO_PATH}/releases")
     rm -f /tmp/cdf_know_clow_release_data.json
     RELEASE_ID=$(echo "$RELEASE_DATA" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
   fi
@@ -658,34 +594,20 @@ PYEOF3
   if [ -n "$RELEASE_ID" ]; then
     UPLOAD_OK=true
     echo "  上传 DMG..."
-    # 带超时和重试的上传（大文件最多尝试3次）
-    for i in 1 2 3; do
-      curl -s -f --max-time 600 --connect-timeout 30 -X POST \
-        -H "Authorization: token $TOKEN" \
-        -H "Content-Type: application/octet-stream" \
-        --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
-        "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=$DMG_NAME" \
-        > /dev/null 2>&1 && { echo "  ✅ DMG 上传成功"; break; } || {
-        if [ "$i" -lt 3 ]; then
-          echo "  ⚠️  DMG 上传重试 $i/3..."
-          sleep $((i * 5))
-        else
-          echo "  ❌ DMG 上传失败（已重试3次）"
-          UPLOAD_OK=false
-        fi
-      }
-    done
+    curl -s -f -X POST \
+      -H "Authorization: token $TOKEN" \
+      -H "Content-Type: application/octet-stream" \
+      --data-binary @"$PROJECT_DIR/release/$DMG_NAME" \
+      "${UPLOAD_PATH}/$RELEASE_ID/assets?name=$DMG_NAME" \
+      && echo "  ✅ DMG 上传成功" || { echo "  ⚠️  DMG 上传失败"; UPLOAD_OK=false; }
 
-    if [ "$UPLOAD_OK" = true ]; then
-      echo "  上传 release.json..."
-      curl -s -f --max-time 30 --connect-timeout 10 -X POST \
-        -H "Authorization: token $TOKEN" \
-        -H "Content-Type: application/json" \
-        --data-binary @"$PROJECT_DIR/release/release.json" \
-        "https://uploads.github.com/repos/chouraycn/cross-wms/releases/$RELEASE_ID/assets?name=release.json" \
-        > /dev/null 2>&1 \
-        && echo "  ✅ release.json 上传成功" || { echo "  ⚠️  release.json 上传失败"; UPLOAD_OK=false; }
-    fi
+    echo "  上传 release.json..."
+    curl -s -f -X POST \
+      -H "Authorization: token $TOKEN" \
+      -H "Content-Type: application/json" \
+      --data-binary @"$PROJECT_DIR/release/release.json" \
+      "${UPLOAD_PATH}/$RELEASE_ID/assets?name=release.json" \
+      && echo "  ✅ release.json 上传成功" || { echo "  ⚠️  release.json 上传失败"; UPLOAD_OK=false; }
 
     [ "$UPLOAD_OK" = true ] && echo "✅ Release v${VERSION} 已发布!"
   fi
@@ -707,4 +629,4 @@ echo ""
 echo "=== 完成 ==="
 echo "版本: $VERSION"
 echo "DMG 路径: $PROJECT_DIR/release/$DMG_NAME"
-echo "Release: https://github.com/chouraycn/cross-wms/releases/tag/v${VERSION}"
+echo "Release: https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/tag/v${VERSION}"

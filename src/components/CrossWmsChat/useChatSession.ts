@@ -2,23 +2,45 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Session } from '../../types/chat';
 
 const SESSIONS_STORAGE_KEY = 'cdf-know-clow-chat-sessions';
+const LEGACY_SESSIONS_STORAGE_KEY = 'cross-wms-chat-sessions';
 const MAX_SESSIONS = 20;
+
+/** 解析原始 JSON 为 Session 数组 */
+function parseSessionsRaw(raw: string): Session[] | null {
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    return parsed.map((s: Record<string, unknown>) => ({
+      ...s,
+      messages: Array.isArray(s.messages)
+        ? s.messages.map((m: Record<string, unknown>) => ({
+            ...m,
+            timestamp: new Date(m.timestamp as string),
+          }))
+        : [],
+    })) as Session[];
+  } catch {
+    return null;
+  }
+}
 
 function loadSessions(): Session[] {
   try {
     const raw = localStorage.getItem(SESSIONS_STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed.map((s: Record<string, unknown>) => ({
-          ...s,
-          messages: Array.isArray(s.messages)
-            ? s.messages.map((m: Record<string, unknown>) => ({
-                ...m,
-                timestamp: new Date(m.timestamp as string),
-              }))
-            : [],
-        })) as Session[];
+      const parsed = parseSessionsRaw(raw);
+      if (parsed && parsed.length > 0) return parsed;
+    }
+
+    // v1.5.83: 自动从旧键名 cross-wms-chat-sessions 迁移数据
+    const legacyRaw = localStorage.getItem(LEGACY_SESSIONS_STORAGE_KEY);
+    if (legacyRaw) {
+      const legacyParsed = parseSessionsRaw(legacyRaw);
+      if (legacyParsed && legacyParsed.length > 0) {
+        localStorage.setItem(SESSIONS_STORAGE_KEY, legacyRaw);
+        localStorage.removeItem(LEGACY_SESSIONS_STORAGE_KEY);
+        console.log(`[useChatSession] 已从 ${LEGACY_SESSIONS_STORAGE_KEY} 迁移 ${legacyParsed.length} 个会话`);
+        return legacyParsed;
       }
     }
   } catch { /* 数据损坏时静默返回空数组 */ }

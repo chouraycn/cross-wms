@@ -103,7 +103,7 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
   }
 
   return (
-    <div className="markdown-body" style={{ fontSize: 14, lineHeight: 1.7 }}>
+    <div className="markdown-body" style={{ fontSize: 14, lineHeight: 1.7, overflowWrap: 'break-word', wordBreak: 'break-word' }}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
@@ -141,7 +141,7 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
             }
 
             return (
-              <Box sx={{ position: 'relative', '&:hover .copy-btn': { opacity: 1 } }}>
+              <Box sx={{ position: 'relative', '&:hover .copy-btn': { opacity: 1 }, overflowX: 'auto' }}>
                 <SyntaxHighlighter
                   style={oneLight}
                   language={language || 'text'}

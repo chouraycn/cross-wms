@@ -167,6 +167,16 @@ export interface Skill {
   source: 'builtin' | 'user';
   /** 用户安装时间（仅 source: 'user' 有值） */
   installedAt?: number;
+  /** PRD 展示名称（与 name slug 区分） */
+  displayName?: string;
+  /** 是否启用 */
+  enabled?: boolean;
+  /** 技能作用域 */
+  skillScope?: 'project' | 'user' | 'builtin';
+  /** 运行时执行链 */
+  skillChain?: string[];
+  /** 指定模型 */
+  preferredModel?: string;
   /** 技能执行模式（默认根据 promptTemplate/path/automationTaskType 自动推断） */
   executionMode?: SkillExecutionMode;
   /** AI 上下文模板：选择此技能后发送消息时，自动在用户消息前注入此 prompt 作为系统上下文 */
@@ -620,4 +630,12 @@ export interface AuditFinding {
 export interface SkillWithAudit extends Skill {
   auditLevel?: AuditLevel | null;
   auditScore?: number | null;
+}
+
+/** 技能匹配结果（v1.5.79 新增） */
+export interface SkillMatchResult {
+  skill: Skill;
+  matchScore: number;
+  reasons: string[];
+  source: 'builtin' | 'project' | 'user';
 }
