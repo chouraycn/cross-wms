@@ -1,7 +1,7 @@
 {
-  "version": "1.5.74",
-  "pubDate": "2026-06-15",
-  "notes": "CDF Know Clow v1.5.74 发布\n- 修复已知问题\n- 优化用户体验",
-  "dmgUrl": "https://github.com/chouraycn/cross-wms/releases/download/v1.5.74/CDF-Know-Clow-1.5.74-mac.dmg",
+  "version": "1.5.78",
+  "pubDate": "2026-06-16",
+  "notes": "CDF Know Clow v1.5.78 发布\n- 系统授权改为独立弹窗模式（与模型管理一致）\n- 优化用户体验",
+  "dmgUrl": "https://github.com/chouraycn/cross-wms/releases/download/v1.5.78/CDF-Know-Clow-1.5.78-mac.dmg",
   "minVersion": "1.0.0"
 }
