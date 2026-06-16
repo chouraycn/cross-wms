@@ -43,6 +43,8 @@ export interface Message {
   autoReasonType?: 'code' | 'complex' | 'simple' | 'default';
   /** 当前使用的参数预设 */
   activePreset?: { id: string; label: string } | null;
+  /** 模型 failover 信息（当模型故障自动切换时） */
+  autoFallback?: { fromModel?: string; toModel?: string; toModelName?: string; reason?: string; final?: boolean } | null;
   /** 消息元数据（可扩展，用于承载查询结果等附加信息） */
   metadata?: MessageMetadata;
   /** 附件列表（图片/文件） */

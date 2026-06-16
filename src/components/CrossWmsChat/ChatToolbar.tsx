@@ -388,10 +388,30 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
         </Typography>
 
         {/* 模型列表 */}
-        {modelOptions
-          .filter(o => o.provider !== 'auto')
-          .map((option) => {
-            const isSelected = selectedModel === option.name;
+        {modelOptions.filter(o => o.provider !== 'auto').length === 0 ? (
+          <Box sx={{ px: 2.5, py: 2, textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '0.75rem', color: ITEM_DESC, mb: 1 }}>
+              暂无可用的 AI 模型
+            </Typography>
+            <Typography
+              component="span"
+              onClick={() => { onOpenAISettings?.(); setActiveDropdown(null); }}
+              sx={{
+                fontSize: '0.75rem',
+                color: ACCENT,
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                '&:hover': { opacity: 0.8 },
+              }}
+            >
+              前往 AI 设置启用模型
+            </Typography>
+          </Box>
+        ) : (
+          modelOptions
+            .filter(o => o.provider !== 'auto')
+            .map((option) => {
+              const isSelected = selectedModel === option.name;
             return (
               <MenuItem
                 key={option.id}
@@ -455,7 +475,8 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                 </Box>
               </MenuItem>
             );
-          })}
+          })
+        )}
 
         <Divider sx={{ mx: 1.5, my: 0.5, borderColor: MENU_BORDER }} />
 

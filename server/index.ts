@@ -206,6 +206,43 @@ function findFirstAvailable(preferredIds: string[], candidates: Array<{ id: stri
   return undefined;
 }
 
+// ===================== 模型 Failover =====================
+
+/** 最大 fallback 尝试次数 */
+const MAX_FALLBACK_ATTEMPTS = 3;
+
+/**
+ * 获取 fallback 模型列表：当前模型的 provider 下的其他模型 + 其他可用模型
+ * 排除当前已尝试失败的模型
+ */
+function getFallbackModels(currentModelId: string, failedModelIds: Set<string>, modelsConfig: ModelsFile): Array<{ id: string; name: string }> {
+  const currentModel = modelsConfig.models.find((m) => m.id === currentModelId);
+  const enabledModels = modelsConfig.models.filter((m) => m.enabled && isModelAvailable(m));
+
+  const result: Array<{ id: string; name: string }> = [];
+  const seen = new Set<string>([currentModelId, ...failedModelIds]);
+
+  // 优先：同 provider 下的其他模型
+  if (currentModel) {
+    for (const m of enabledModels) {
+      if (!seen.has(m.id) && m.provider === currentModel.provider) {
+        result.push({ id: m.id, name: m.name });
+        seen.add(m.id);
+      }
+    }
+  }
+
+  // 其次：其他可用模型
+  for (const m of enabledModels) {
+    if (!seen.has(m.id)) {
+      result.push({ id: m.id, name: m.name });
+      seen.add(m.id);
+    }
+  }
+
+  return result;
+}
+
 // ===================== Model Parameter Presets =====================
 
 /** 模型参数预设 */
@@ -550,192 +587,230 @@ app.post('/api/chat', async (req, res) => {
       preset: activePreset ? { id: preset, label: activePreset.label } : null,
     })}\n\n`);
 
-    // 调用 AI 模型 API 进行流式对话
+    // 调用 AI 模型 API 进行流式对话（含 failover）
     let fullContent = '';
     let selectedKeyIndex = -1;
-    try {
-      // 查找模型配置
-      const modelConfig = modelsConfig.models.find((m) => m.id === effectiveModel);
+    let attemptCount = 0;
+    const failedModelIds = new Set<string>();
+    let currentAttemptModel = effectiveModel;
 
-      if (!modelConfig) {
-        throw new Error(`未找到模型配置: ${effectiveModel}`);
-      }
+    while (attemptCount < MAX_FALLBACK_ATTEMPTS) {
+      attemptCount++;
 
-      // 使用 KeyRotator 选择 API Key（支持多 Key 轮询/故障转移）
-      const keyResult = selectKey(modelConfig);
-      let effectiveApiKey = modelConfig.apiKey || '';
-      if (keyResult) {
-        effectiveApiKey = keyResult.key;
-        selectedKeyIndex = keyResult.index;
-      }
+      try {
+        // 查找模型配置
+        const modelConfig = modelsConfig.models.find((m) => m.id === currentAttemptModel);
 
-      // 构建消息列表（含上下文）
-      const apiMessages: Array<{ role: string; content: string }> = [];
+        if (!modelConfig) {
+          throw new Error(`未找到模型配置: ${currentAttemptModel}`);
+        }
 
-      // 注入 MEMORY.md 上下文
-      const memoryContent = readMemoryMd();
-      if (memoryContent.trim()) {
-        apiMessages.push({ role: 'system', content: memoryContent.trim() });
-      }
+        // 使用 KeyRotator 选择 API Key
+        const keyResult = selectKey(modelConfig);
+        let effectiveApiKey = modelConfig.apiKey || '';
+        if (keyResult) {
+          effectiveApiKey = keyResult.key;
+          selectedKeyIndex = keyResult.index;
+        }
 
-      // 注入技能上下文
-      if (skillContext && typeof skillContext === 'string' && skillContext.trim()) {
-        apiMessages.push({ role: 'system', content: skillContext.trim() });
-      }
+        // 构建消息列表（含上下文）
+        const apiMessages: Array<{ role: string; content: string }> = [];
 
-      // 注入引用的会话上下文
-      const referencedSessionIds = req.body.referencedSessionIds;
-      if (Array.isArray(referencedSessionIds) && referencedSessionIds.length > 0) {
-        let sessionContext = '';
-        for (const refId of referencedSessionIds) {
-          const refMessages = getSessionMessages(refId);
-          if (refMessages.length > 0) {
-            const sessionInfo = getSessions().find((s: { id: string }) => s.id === refId);
-            const sessionTitle = sessionInfo ? sessionInfo.title : refId;
-            sessionContext += `\n## 会话：${sessionTitle}\n`;
-            for (const msg of refMessages.slice(-10)) {
-              const role = msg.role === 'user' ? 'User' : 'Assistant';
-              sessionContext += `${role}: ${msg.content}\n`;
+        const memoryContent = readMemoryMd();
+        if (memoryContent.trim()) {
+          apiMessages.push({ role: 'system', content: memoryContent.trim() });
+        }
+
+        if (skillContext && typeof skillContext === 'string' && skillContext.trim()) {
+          apiMessages.push({ role: 'system', content: skillContext.trim() });
+        }
+
+        const referencedSessionIds = req.body.referencedSessionIds;
+        if (Array.isArray(referencedSessionIds) && referencedSessionIds.length > 0) {
+          let sessionContext = '';
+          for (const refId of referencedSessionIds) {
+            const refMessages = getSessionMessages(refId);
+            if (refMessages.length > 0) {
+              const sessionInfo = getSessions().find((s: { id: string }) => s.id === refId);
+              const sessionTitle = sessionInfo ? sessionInfo.title : refId;
+              sessionContext += `\n## 会话：${sessionTitle}\n`;
+              for (const msg of refMessages.slice(-10)) {
+                const role = msg.role === 'user' ? 'User' : 'Assistant';
+                sessionContext += `${role}: ${msg.content}\n`;
+              }
+            }
+          }
+          if (sessionContext) {
+            apiMessages.push({ role: 'system', content: `<referenced-sessions>\n${sessionContext}\n</referenced-sessions>` });
+          }
+        }
+
+        if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+          for (const msg of conversationHistory) {
+            if (msg.role === 'user' || msg.role === 'assistant') {
+              apiMessages.push({ role: msg.role, content: msg.content });
             }
           }
         }
-        if (sessionContext) {
-          apiMessages.push({ role: 'system', content: `<referenced-sessions>\n${sessionContext}\n</referenced-sessions>` });
+
+        apiMessages.push({ role: 'user', content: message });
+
+        const finalModelConfig = {
+          ...modelConfig,
+          apiKey: effectiveApiKey,
+          temperature: activePreset ? activePreset.temperature : modelConfig.temperature,
+          topP: activePreset ? activePreset.topP : modelConfig.topP,
+        };
+
+        // Failover 切换时通知前端
+        if (failedModelIds.size > 0) {
+          console.log(`[Chat API] Failover: ${currentAttemptModel} (attempt ${attemptCount}/${MAX_FALLBACK_ATTEMPTS})`);
+          res.write(`data: ${JSON.stringify({
+            type: 'model_switch',
+            fromModel: effectiveModel,
+            toModel: currentAttemptModel,
+            toModelName: modelConfig.name,
+            attempt: attemptCount,
+            maxAttempts: MAX_FALLBACK_ATTEMPTS,
+            reason: `原模型不可用，已自动切换到 ${modelConfig.name}`,
+          })}\n\n`);
         }
-      }
 
-      // 添加历史对话（如果前端传了 conversationHistory）
-      if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
-        for (const msg of conversationHistory) {
-          if (msg.role === 'user' || msg.role === 'assistant') {
-            apiMessages.push({ role: msg.role, content: msg.content });
+        const abortController = new AbortController();
+        const timeoutMs = isLocalModel(modelConfig) ? 300000 : 120000;
+        const timeout = setTimeout(() => abortController.abort(), timeoutMs);
+
+        try {
+          if (!effectiveApiKey && !isLocalModel(modelConfig)) {
+            console.log(`[Chat API] 模型 ${currentAttemptModel} 未配置 API Key，使用模拟模式`);
+            const mockResponse = generateMockResponse(message);
+            const segments = mockResponse.match(/[\s\S]{1,5}/g) || [mockResponse];
+            for (const segment of segments) {
+              res.write(`data: ${JSON.stringify({ type: 'text', content: segment })}\n\n`);
+              await new Promise(r => setTimeout(r, 15));
+            }
+            fullContent = mockResponse;
+          } else {
+            fullContent = await callAIModelStream(
+              finalModelConfig,
+              apiMessages,
+              (chunk) => {
+                res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
+              },
+              abortController.signal,
+            );
           }
+        } finally {
+          clearTimeout(timeout);
         }
-      }
 
-      // 添加当前用户消息
-      apiMessages.push({ role: 'user', content: message });
+        // 成功：保存结果并退出循环
+        addMessage({ sessionId, role: 'assistant', content: fullContent, model: currentAttemptModel, skillId: skillId || null });
+        if (selectedKeyIndex >= 0 && currentAttemptModel) {
+          reportKeyResult(currentAttemptModel, selectedKeyIndex, true);
+        }
+        extractAndAppendMemory(message, fullContent, apiMessages).catch(() => {});
 
-      // 合并模型配置和预设参数
-      const finalModelConfig = {
-        ...modelConfig,
-        apiKey: effectiveApiKey,
-        temperature: activePreset ? activePreset.temperature : modelConfig.temperature,
-        topP: activePreset ? activePreset.topP : modelConfig.topP,
-      };
+        // 如果发生了 failover，发送最终模型信息
+        if (failedModelIds.size > 0) {
+          res.write(`data: ${JSON.stringify({
+            type: 'model_switch',
+            fromModel: effectiveModel,
+            toModel: currentAttemptModel,
+            toModelName: modelConfig.name,
+            attempt: attemptCount,
+            maxAttempts: MAX_FALLBACK_ATTEMPTS,
+            final: true,
+            reason: `已成功切换到 ${modelConfig.name}`,
+          })}\n\n`);
+        }
 
-      // 创建 AbortController 用于超时控制
-      const abortController = new AbortController();
-      // 本地模型给更长的超时（大模型推理可能较慢）
-      const timeoutMs = isLocalModel(modelConfig) ? 300000 : 120000;
-      const timeout = setTimeout(() => abortController.abort(), timeoutMs);
+        // 退出 failover 循环
+        break;
+      } catch (apiError) {
+        console.error(`[Chat API] 模型 ${currentAttemptModel} 调用失败 (attempt ${attemptCount}/${MAX_FALLBACK_ATTEMPTS}):`, apiError);
 
-      try {
-        // 无 API Key 且非本地模型时使用模拟模式
-        if (!effectiveApiKey && !isLocalModel(modelConfig)) {
-          console.log(`[Chat API] 模型 ${effectiveModel} 未配置 API Key，使用模拟模式`);
-          const mockResponse = generateMockResponse(message);
-          const segments = mockResponse.match(/[\s\S]{1,5}/g) || [mockResponse];
-          for (const segment of segments) {
-            res.write(`data: ${JSON.stringify({ type: 'text', content: segment })}\n\n`);
-            await new Promise(r => setTimeout(r, 15));
+        // 报告 Key 使用失败
+        if (selectedKeyIndex >= 0 && currentAttemptModel) {
+          reportKeyResult(currentAttemptModel, selectedKeyIndex, false);
+        }
+
+        // 标记失败模型
+        failedModelIds.add(currentAttemptModel);
+
+        // 尝试获取 fallback 模型
+        const fallbackModels = getFallbackModels(currentAttemptModel, failedModelIds, modelsConfig);
+
+        if (fallbackModels.length > 0 && attemptCount < MAX_FALLBACK_ATTEMPTS) {
+          currentAttemptModel = fallbackModels[0].id;
+          fullContent = '';
+          continue; // 重试
+        }
+
+        // 所有 fallback 已耗尽 → 发送最终错误
+        let errorMsg: string;
+        let errorCode: string | null = null;
+
+        if (apiError instanceof AIAPIError) {
+          switch (apiError.category) {
+            case 'auth':
+              errorMsg = 'API Key 无效或已过期，请在「模型管理」中检查密钥配置。';
+              errorCode = 'AUTH_FAILED';
+              break;
+            case 'rate_limit':
+              errorMsg = '请求过于频繁，已达到速率限制，请稍后再试。';
+              errorCode = 'RATE_LIMITED';
+              break;
+            case 'network':
+              errorMsg = '网络连接失败，请检查网络或 API 端点配置。';
+              errorCode = 'NETWORK_ERROR';
+              break;
+            case 'timeout':
+              errorMsg = '请求超时，模型响应时间过长，请稍后重试。';
+              errorCode = 'TIMEOUT';
+              break;
+            case 'server':
+              errorMsg = 'AI 服务商暂时不可用，请稍后重试。';
+              errorCode = 'SERVER_ERROR';
+              break;
+            default:
+              errorMsg = `AI 服务暂时不可用：${apiError.message}`;
+              errorCode = 'UNKNOWN_ERROR';
           }
-          fullContent = mockResponse;
+        } else if (apiError instanceof Error && apiError.name === 'AbortError') {
+          errorMsg = '请求已取消。';
+          errorCode = 'ABORTED';
         } else {
-          // 调用 AI 模型流式 API
-          fullContent = await callAIModelStream(
-            finalModelConfig,
-            apiMessages,
-            (chunk) => {
-              res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
-            },
-            abortController.signal,
-          );
-        }
-      } finally {
-        clearTimeout(timeout);
-      }
-
-      // 保存完整的助手回复
-      addMessage({ sessionId, role: 'assistant', content: fullContent, model: effectiveModel, skillId: skillId || null });
-      // 报告 Key 使用成功
-      if (selectedKeyIndex >= 0 && effectiveModel) {
-        reportKeyResult(effectiveModel, selectedKeyIndex, true);
-      }
-
-      // 异步自动记忆学习（不阻塞主流程，不 await）
-      extractAndAppendMemory(message, fullContent, apiMessages).catch(() => {});
-    } catch (apiError) {
-      console.error('[Chat API] AI API error:', apiError);
-      console.error('[Chat API] Stack trace:', apiError instanceof Error ? apiError.stack : 'N/A');
-
-      // 重置 fullContent，避免包含之前流式回调写入的内容（如用户输入回显）
-      fullContent = '';
-
-      // 根据错误类型生成友好的错误信息
-      let errorMsg: string;
-      let errorCode: string | null = null;
-
-      if (apiError instanceof AIAPIError) {
-        switch (apiError.category) {
-          case 'auth':
-            errorMsg = 'API Key 无效或已过期，请在「模型管理」中检查密钥配置。';
-            errorCode = 'AUTH_FAILED';
-            break;
-          case 'rate_limit':
-            errorMsg = '请求过于频繁，已达到速率限制，请稍后再试。';
-            errorCode = 'RATE_LIMITED';
-            break;
-          case 'network':
-            errorMsg = '网络连接失败，请检查网络或 API 端点配置。';
-            errorCode = 'NETWORK_ERROR';
-            break;
-          case 'timeout':
-            errorMsg = '请求超时，模型响应时间过长，请稍后重试。';
-            errorCode = 'TIMEOUT';
-            break;
-          case 'server':
-            errorMsg = 'AI 服务商暂时不可用，请稍后重试。';
-            errorCode = 'SERVER_ERROR';
-            break;
-          default:
-            errorMsg = `AI 服务暂时不可用：${apiError.message}`;
+          const errMessage = apiError instanceof Error ? apiError.message : '未知错误';
+          if (errMessage.includes('stdout closed') || errMessage.includes('ENOENT') || errMessage.includes('ECONNREFUSED') || errMessage.includes('connect')) {
+            errorMsg = `无法连接到 AI 模型服务（${currentAttemptModel}）。请确认模型服务已启动。`;
+            errorCode = 'MODEL_UNAVAILABLE';
+          } else {
+            errorMsg = `抱歉，AI 服务暂时不可用，请稍后重试。\n错误：${errMessage}`;
             errorCode = 'UNKNOWN_ERROR';
+          }
         }
-      } else if (apiError instanceof Error && apiError.name === 'AbortError') {
-        errorMsg = '请求已取消。';
-        errorCode = 'ABORTED';
-      } else {
-        const errMessage = apiError instanceof Error ? apiError.message : '未知错误';
-        // Ollama / 本地模型连接失败的专门提示
-        if (errMessage.includes('stdout closed') || errMessage.includes('ENOENT') || errMessage.includes('ECONNREFUSED') || errMessage.includes('connect')) {
-          errorMsg = `无法连接到 AI 模型服务（${effectiveModel}）。请确认模型服务已启动。\n提示：如果使用 Ollama，请先运行 'ollama serve' 启动服务。`;
-          errorCode = 'MODEL_UNAVAILABLE';
-        } else {
-          errorMsg = `抱歉，AI 服务暂时不可用，请稍后重试。\n错误：${errMessage}`;
-          errorCode = 'UNKNOWN_ERROR';
+
+        // 添加 fallback 耗尽提示
+        if (failedModelIds.size > 1) {
+          errorMsg += `\n已尝试 ${failedModelIds.size} 个模型，均不可用。`;
         }
-      }
 
-      res.write(`data: ${JSON.stringify({ type: 'text', content: errorMsg })}\n\n`);
-      addMessage({ sessionId, role: 'assistant', content: errorMsg, model: effectiveModel, skillId: skillId || null });
-      // 报告 Key 使用失败（触发故障转移）
-      if (selectedKeyIndex >= 0 && effectiveModel) {
-        reportKeyResult(effectiveModel, selectedKeyIndex, false);
-      }
+        res.write(`data: ${JSON.stringify({ type: 'text', content: errorMsg })}\n\n`);
+        addMessage({ sessionId, role: 'assistant', content: errorMsg, model: currentAttemptModel, skillId: skillId || null });
 
-      // 发送带错误码的 done 事件
-      try {
-        res.write(`data: ${JSON.stringify({
-          type: 'done',
-          errorCode,
-          errorMessage: errorMsg,
-        })}\n\n`);
-        res.end();
-      } catch {
-        // 响应流可能已关闭，忽略
+        try {
+          res.write(`data: ${JSON.stringify({
+            type: 'done',
+            errorCode,
+            errorMessage: errorMsg,
+          })}\n\n`);
+          res.end();
+        } catch {
+          // 响应流可能已关闭
+        }
+        return;
       }
-      return;
     }
 
     // 正常完成：发送 done 事件

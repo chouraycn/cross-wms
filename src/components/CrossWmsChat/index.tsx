@@ -9,7 +9,6 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
-import SmartToyOutlinedIcon from '@mui/icons-material/SmartToyOutlined';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import DownloadIcon from '@mui/icons-material/Download';
 import CloseIcon from '@mui/icons-material/Close';
@@ -18,10 +17,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
-import WarningIcon from '@mui/icons-material/Warning';
+import CdfLogoAnimation from '../../assets/cdf-logo-animation.svg';
 import { TopBarChatInput } from './TopBarChatInput';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { QueryResultRenderer } from './QueryResultRenderer';
@@ -82,6 +78,8 @@ export function CrossWmsChat({ initialSkill, fullHeight = false }: CrossWmsChatP
   // 消息编辑状态
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const editIsComposingRef = useRef(false);
+  const editCompositionJustEndedRef = useRef(false);
 
   // 删除确认弹窗状态
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -966,8 +964,16 @@ export function CrossWmsChat({ initialSkill, fullHeight = false }: CrossWmsChatP
                         autoFocus
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
+                        onCompositionStart={() => { editIsComposingRef.current = true; }}
+                        onCompositionEnd={() => {
+                          editIsComposingRef.current = false;
+                          editCompositionJustEndedRef.current = true;
+                          setTimeout(() => { editCompositionJustEndedRef.current = false; }, 50);
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
+                            // IME 组合态期间不触发保存
+                            if (editIsComposingRef.current || editCompositionJustEndedRef.current) return;
                             e.preventDefault();
                             handleEditSave();
                           }
@@ -1214,80 +1220,27 @@ export function CrossWmsChat({ initialSkill, fullHeight = false }: CrossWmsChatP
           ...(fullHeight ? {} : { maxHeight: 'calc(70vh - 130px)' }),
         }}
       >
-        {/* 品牌 Logo + 欢迎标题 */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
-          <SmartToyOutlinedIcon sx={{ fontSize: 48, color: '#F97316' }} />
-          <Typography
-            sx={{
-              fontSize: isSmallScreen ? 18 : 22,
-              fontWeight: 600,
-              color: gs.textPrimary,
-              textAlign: 'center',
-            }}
-          >
-            你好，有什么可以帮你？
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: isSmallScreen ? 13 : 14,
-              color: gs.textSecondary,
-              textAlign: 'center',
-            }}
-          >
-            选择下方快捷提问或输入 / 查看可用技能
-          </Typography>
+        {/* CDF Logo SVG 动画 */}
+        <Box sx={{
+          width: 160, height: 56,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          mb: 3, ml: '20px',
+          filter: isDark ? 'invert(1)' : 'none',
+        }}>
+          <object
+            data={CdfLogoAnimation}
+            type="image/svg+xml"
+            style={{ width: 140, height: 48, pointerEvents: 'none' }}
+            aria-label="CDF Know Clow"
+          />
         </Box>
 
-        {/* 快捷提问卡片网格 */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: isSmallScreen ? '1fr' : 'repeat(2, 1fr)',
-            gap: 1.5,
-            width: '100%',
-            maxWidth: 480,
-          }}
-        >
-          {[
-            { title: '库存查询', icon: <InventoryIcon sx={{ fontSize: 20, color: '#3B82F6' }} /> },
-            { title: '入库操作', icon: <AddShoppingCartIcon sx={{ fontSize: 20, color: '#10B981' }} /> },
-            { title: '出库操作', icon: <TrendingUpIcon sx={{ fontSize: 20, color: '#F59E0B' }} /> },
-            { title: '库存预警', icon: <WarningIcon sx={{ fontSize: 20, color: '#EF4444' }} /> },
-          ].map((q) => (
-            <Box
-              key={q.title}
-              onClick={() => sendMessage(q.title)}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                px: 2,
-                py: 1.5,
-                borderRadius: 2,
-                bgcolor: isDark ? '#1F2937' : '#F9FAFB',
-                border: `1px solid ${gs.border}`,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  bgcolor: isDark ? '#374151' : '#F3F4F6',
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                },
-              }}
-            >
-              {q.icon}
-              <Typography
-                sx={{
-                  fontSize: isSmallScreen ? 13 : 14,
-                  fontWeight: 500,
-                  color: gs.textPrimary,
-                }}
-              >
-                {q.title}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
+        <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: gs.textPrimary, mb: 1, textAlign: 'center' }}>
+          时刻可视，实时感知，尽在掌握
+        </Typography>
+        <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted, textAlign: 'center', maxWidth: 400 }}>
+          See anytime, know anytime
+        </Typography>
 
         {/* 底部提示 */}
         <Typography

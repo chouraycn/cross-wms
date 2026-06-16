@@ -351,7 +351,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
-          const sseResult = await new Promise<{ content: string; thinking?: string; thinkingDuration?: number; autoReason?: string; autoReasonType?: string; preset: { id: string; label: string } | null; errorCode: string | null; errorMessage: string | null }>((resolve, reject) => {
+          const sseResult = await new Promise<{ content: string; thinking?: string; thinkingDuration?: number; autoReason?: string; autoReasonType?: string; preset: { id: string; label: string } | null; errorCode: string | null; errorMessage: string | null; autoFallback?: { fromModel?: string; toModel?: string; toModelName?: string; reason?: string; final?: boolean } | null }>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', getApiUrl('/api/chat?_t=' + Date.now()), true);
             xhr.setRequestHeader('Content-Type', 'application/json');
@@ -367,6 +367,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             let errorCode: string | null = null;
             let errorMessage: string | null = null;
             let thinkingDuration: number | undefined;
+            let autoFallback: { fromModel?: string; toModel?: string; toModelName?: string; reason?: string; final?: boolean } | null = null;
             let lastIndex = 0;
             let settled = false; // 防止 resolve/reject 多次调用
 
@@ -406,6 +407,9 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         if (data.autoReasonType) autoReasonType = data.autoReasonType;
                         if (data.preset) preset = data.preset;
                       }
+                      if (data.type === 'model_switch') {
+                        autoFallback = data;
+                      }
                       if (data.type === 'done') {
                         errorCode = data.errorCode ?? null;
                         errorMessage = data.errorMessage ?? null;
@@ -444,7 +448,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               if (xhr.readyState === 4 && !settled) {
                 settled = true;
                 // DONE — 无论 status 如何，只要有响应就视为成功（后端总是返回 200）
-                resolve({ content: result, thinking: thinkingContent, thinkingDuration, autoReason, autoReasonType, preset, errorCode, errorMessage });
+                resolve({ content: result, thinking: thinkingContent, thinkingDuration, autoReason, autoReasonType, preset, errorCode, errorMessage, autoFallback });
               }
             };
 
@@ -458,7 +462,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               settled = true;
               // 用户手动停止不视为错误
               if (stoppedRef.current) {
-                resolve({ content: result, thinking: thinkingContent, thinkingDuration, autoReason, autoReasonType, preset, errorCode, errorMessage });
+                resolve({ content: result, thinking: thinkingContent, thinkingDuration, autoReason, autoReasonType, preset, errorCode, errorMessage, autoFallback });
               } else {
                 reject(new Error('net::ERR_ABORTED'));
               }

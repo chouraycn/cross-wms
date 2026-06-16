@@ -470,25 +470,15 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
       }
       // 注入 Keychain 中的 API Key（仅用于后端内部使用，不返回给前端）
       saved.models = injectApiKeys(saved.models);
-      // 自动禁用没有 API Key 的远程模型（修复旧版遗留 enabled:true 问题）
-      let needSave = changed;
+      // 自动禁用没有 API Key 的远程模型（仅内存操作，不写回磁盘）
       saved.models = saved.models.map((m) => {
         if (!m.enabled) return m;
         const hasKey = m.apiKey?.trim() || m.apiKeys?.some(k => k.enabled !== false && k.key?.trim());
         if (!hasKey && !isLocalModel(m)) {
-          needSave = true;
-          return { ...m, enabled: false };
+          return { ...m, enabled: false, _autoDisabled: true };
         }
         return m;
       });
-      if (needSave) {
-        // 保存前脱敏（移除注入的 Key）
-        const sanitized = saved.models.map((m) => {
-          const { apiKey, apiKeys, ...rest } = m as any;
-          return rest;
-        });
-        await writeModelsFile({ ...saved, models: sanitized });
-      }
       // 更新缓存
       cachedModelsFile = saved;
       cacheTimestamp = Date.now();

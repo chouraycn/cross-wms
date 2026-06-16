@@ -241,7 +241,10 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, replyT
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [inputValue]);
 
-  const handleInputChange = useCallback(() => {
+  const handleInputChange = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+    // 双重保障：原生 isComposing + ref 回退，防止拼音原文混入 inputValue
+    if ((e.nativeEvent as InputEvent).isComposing || isComposingRef.current) return;
+
     const text = editableRef.current?.innerText || '';
     setInputValue(text);
 
@@ -418,16 +421,21 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, replyT
       )}
       <Paper
         elevation={0}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         sx={{
           width: '100%',
           borderRadius: '12px',
-          border: `1px solid ${gs.border}`,
+          border: `1px solid ${isDragging ? '#F97316' : gs.border}`,
           bgcolor: gs.bgPanel,
           boxShadow: 'none',
           display: 'flex',
           flexDirection: 'column',
           maxHeight: 'calc(70vh - 60px)',
           overflow: 'auto',
+          transition: 'border-color 0.2s ease',
         }}
       >
         {/* Selected skill tag */}
@@ -579,6 +587,27 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, replyT
           )}
         </Box>
 
+        {/* 附件预览区 */}
+        {pendingAttachments.length > 0 && (
+          <Box sx={{ px: 1.5, py: 0.5, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap', borderTop: `1px solid ${gs.border}` }}>
+            {pendingAttachments.map((att) => (
+              <Chip
+                key={att.id}
+                icon={att.type === 'image' ? <ImageIcon sx={{ fontSize: 14 }} /> : <InsertDriveFileIcon sx={{ fontSize: 14 }} />}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</span>
+                    <Typography component="span" sx={{ fontSize: 9, color: gs.textMuted }}>{att.size != null ? formatFileSize(att.size) : ''}</Typography>
+                  </Box>
+                }
+                onDelete={() => handleRemoveAttachment(att.id)}
+                size="small"
+                sx={{ height: 26, fontSize: 12, '& .MuiChip-label': { px: 0.75 } }}
+              />
+            ))}
+          </Box>
+        )}
+
         {/* Toolbar */}
         <ChatToolbar
           selectedModel={selectedModel}
@@ -594,8 +623,43 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, replyT
           onSkillSelect={handleSkillSelect}
           modelOptions={MODEL_OPTIONS}
           onOpenAISettings={() => setShowAISettings(true)}
+          onUploadClick={handleUploadClick}
+          hasAttachments={pendingAttachments.length > 0}
         />
       </Paper>
+
+      {/* 隐藏的文件上传 input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        onChange={handleFileInputChange}
+        style={{ display: 'none' }}
+        accept="*/*"
+      />
+
+      {/* 拖拽上传视觉提示 */}
+      {isDragging && (
+        <Box
+          sx={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            bgcolor: 'rgba(249, 115, 22, 0.08)',
+            border: '2px dashed #F97316',
+            pointerEvents: 'none',
+          }}
+        >
+          <Box sx={{ textAlign: 'center' }}>
+            <InsertDriveFileIcon sx={{ fontSize: 48, color: '#F97316', mb: 1 }} />
+            <Typography sx={{ fontSize: 16, fontWeight: 600, color: '#F97316' }}>
+              释放以添加文件
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: '#F97316', mt: 0.5, opacity: 0.7 }}>
+              支持图片、PDF、文档等格式
+            </Typography>
+          </Box>
+        </Box>
+      )}
 
       {/* AI 设置弹窗（模型管理） */}
       <AISettingsDialog
