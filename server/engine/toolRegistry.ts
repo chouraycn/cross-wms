@@ -509,7 +509,7 @@ async function handleDesktopType(args: Record<string, unknown>): Promise<string>
     const escapedText = escapeForAppleScript(text);
 
     // Build AppleScript command
-    let script = `tell application "System Events" to keystroke "${escapedText}"`;
+    const script = `tell application "System Events" to keystroke "${escapedText}"`;
 
     // Execute the keystroke
     const output = execSync(`osascript -e '${script.replace(/'/g, "'\\''")}'`, {

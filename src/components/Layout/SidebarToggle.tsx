@@ -50,7 +50,8 @@ const SidebarToggle: React.FC<SidebarToggleProps> = ({
         top: '10px',
         left: collapsed ? collapsedWidth + 7 : expandedWidth - 33,
         right: 'auto',
-        zIndex: 1300,
+        // v2.5.1-fix: zIndex 必须高于 WindowDragBar(9999)，否则拖拽条覆盖按钮导致无法点击
+        zIndex: 10001,
         color: gs.textPrimary,
         borderRadius: '6.48px',
         p: 0.45,
@@ -70,6 +71,8 @@ const SidebarToggle: React.FC<SidebarToggleProps> = ({
         },
         '&:focus': { outline: 'none' },
       }}
+      // v2.5.1-fix: 确保 WKWebView 不将此按钮区域当作拖拽区域
+      style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
     >
       {collapsed ? (
         <ExpandIcon />

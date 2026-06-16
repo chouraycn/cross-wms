@@ -111,7 +111,7 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateSta
     } else {
       // 浏览器 / Electron 环境：直接 fetch（带超时 + 回退）
       try {
-        let response = await fetchWithTimeout(RELEASE_URL, {
+        const response = await fetchWithTimeout(RELEASE_URL, {
           method: 'GET',
           cache: 'no-cache',
         }, 8000);

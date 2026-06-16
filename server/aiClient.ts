@@ -229,7 +229,7 @@ export async function callOpenAICompatibleStream(
 
   // Tool Calling 状态追踪
   const toolCalls: ToolCall[] = [];
-  let currentToolCall: ToolCall | null = null;
+  const currentToolCall: ToolCall | null = null;
 
   // v2.2.0: token 使用统计
   let usageData: AIResponse['usage'];
