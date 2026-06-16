@@ -16,7 +16,7 @@ interface AlertCarouselProps {
   onDismiss: (alertId: string) => void;
 }
 
-export function AlertCarousel({ alerts, onDismiss }: AlertCarouselProps) {
+export const AlertCarousel = React.memo<AlertCarouselProps>(function AlertCarousel({ alerts, onDismiss }: AlertCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (alerts.length === 0) return null;
@@ -79,4 +79,4 @@ export function AlertCarousel({ alerts, onDismiss }: AlertCarouselProps) {
       </Alert>
     </Paper>
   );
-}
+});

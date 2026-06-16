@@ -12,7 +12,7 @@ interface SecurityBadgeProps {
   hideSafe?: boolean;
 }
 
-const SecurityBadge: React.FC<SecurityBadgeProps> = ({ level, score, onClick, size = 'small', hideSafe }) => {
+const SecurityBadge = React.memo<SecurityBadgeProps>(function SecurityBadge({ level, score, onClick, size = 'small', hideSafe }) {
   // 列表页模式：安全等级不显示徽章
   if (hideSafe && level === 'safe') return null;
 
@@ -62,6 +62,6 @@ const SecurityBadge: React.FC<SecurityBadgeProps> = ({ level, score, onClick, si
       />
     </Tooltip>
   );
-};
+});
 
 export default SecurityBadge;

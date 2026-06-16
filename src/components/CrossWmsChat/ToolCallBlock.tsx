@@ -297,7 +297,7 @@ interface ToolCallItemProps {
   defaultExpanded: boolean;
 }
 
-const ToolCallItem: React.FC<ToolCallItemProps> = ({ toolCall, index, total, defaultExpanded }) => {
+const ToolCallItem = React.memo<ToolCallItemProps>(function ToolCallItem({ toolCall, index, total, defaultExpanded }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -468,7 +468,7 @@ const ToolCallItem: React.FC<ToolCallItemProps> = ({ toolCall, index, total, def
       </Collapse>
     </Box>
   );
-};
+});
 
 // ===================== 工具调用列表 =====================
 
@@ -476,7 +476,7 @@ interface ToolCallBlockProps {
   toolCalls: ToolCallInfo[];
 }
 
-const ToolCallBlock: React.FC<ToolCallBlockProps> = ({ toolCalls }) => {
+const ToolCallBlock = React.memo<ToolCallBlockProps>(function ToolCallBlock({ toolCalls }) {
   if (!toolCalls || toolCalls.length === 0) return null;
 
   // 找到当前正在执行的工具索引（第一个没有 result 的）
@@ -500,6 +500,6 @@ const ToolCallBlock: React.FC<ToolCallBlockProps> = ({ toolCalls }) => {
       ))}
     </Box>
   );
-};
+});
 
 export default ToolCallBlock;

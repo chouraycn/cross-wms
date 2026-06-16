@@ -55,7 +55,7 @@ const StyledToggleButton = styled(ToggleButton)(() => {
  * 提供 7天 / 30天 / 90天 三个按钮，使用 MUI ToggleButtonGroup 实现。
  * 默认选中 '30d'，选中状态以主题色高亮。
  */
-const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({ value, onChange }) => {
+const TimeRangeSelector = React.memo<TimeRangeSelectorProps>(function TimeRangeSelector({ value, onChange }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -88,6 +88,6 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({ value, onChange }
       ))}
     </ToggleButtonGroup>
   );
-};
+});
 
 export default TimeRangeSelector;

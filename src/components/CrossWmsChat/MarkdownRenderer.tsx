@@ -87,7 +87,7 @@ interface MarkdownRendererProps {
  * - 内联代码样式
  * - 响应式图片/表格
  */
-export function MarkdownRenderer({ content, darkMode = false }: MarkdownRendererProps) {
+export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, darkMode = false }: MarkdownRendererProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -258,18 +258,35 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
               </a>
             );
           },
-          // 图片
+          // 图片 — 统一显示为文件附件样式，不直接渲染图片
           img({ src, alt }) {
+            const fileName = alt || (src ? src.split('/').pop()?.split('?')[0] || 'image' : 'image');
+            const ext = fileName.split('.').pop()?.toLowerCase() || '';
+            const isImageExt = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff', 'avif'].includes(ext);
+            const icon = isImageExt ? '🖼️' : '📎';
             return (
-              <img
-                src={src}
-                alt={alt || ''}
+              <a
+                href={src}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
-                  maxWidth: '100%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 12px',
                   borderRadius: 8,
-                  margin: '8px 0',
+                  backgroundColor: gs.bgPanel,
+                  border: `1px solid ${gs.border}`,
+                  textDecoration: 'none',
+                  color: gs.textPrimary,
+                  fontSize: 13,
+                  margin: '4px 0',
+                  maxWidth: '100%',
                 }}
-              />
+              >
+                <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fileName}</span>
+              </a>
             );
           },
           // 引用
@@ -305,4 +322,4 @@ export function MarkdownRenderer({ content, darkMode = false }: MarkdownRenderer
       </ReactMarkdown>
     </div>
   );
-}
+});

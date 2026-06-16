@@ -35,7 +35,7 @@ interface ConfirmReplenishmentButtonProps {
 
 type ButtonState = 'idle' | 'loading' | 'success' | 'error';
 
-export function ConfirmReplenishmentButton({
+export const ConfirmReplenishmentButton = React.memo<ConfirmReplenishmentButtonProps>(function ConfirmReplenishmentButton({
   isConfirmed = false,
   onConfirm,
 }: ConfirmReplenishmentButtonProps) {
@@ -142,6 +142,6 @@ export function ConfirmReplenishmentButton({
         </Tooltip>
       );
   }
-}
+});
 
 export default ConfirmReplenishmentButton;

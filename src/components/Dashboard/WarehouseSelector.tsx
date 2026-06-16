@@ -16,7 +16,7 @@ interface WarehouseSelectorProps {
   onChange: (warehouseId: string) => void;
 }
 
-const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChange }) => {
+const WarehouseSelector = React.memo<WarehouseSelectorProps>(function WarehouseSelector({ selected, onChange }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -165,6 +165,6 @@ const WarehouseSelector: React.FC<WarehouseSelectorProps> = ({ selected, onChang
       </Popover>
     </>
   );
-};
+});
 
 export default WarehouseSelector;

@@ -31,12 +31,12 @@ export interface SidebarToggleProps {
 
 // ===================== Component =====================
 
-const SidebarToggle: React.FC<SidebarToggleProps> = ({
+const SidebarToggle = React.memo<SidebarToggleProps>(function SidebarToggle({
   collapsed,
   onToggle,
   expandedWidth,
   collapsedWidth,
-}) => {
+}) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -81,6 +81,6 @@ const SidebarToggle: React.FC<SidebarToggleProps> = ({
       )}
     </IconButton>
   );
-};
+});
 
 export default SidebarToggle;
