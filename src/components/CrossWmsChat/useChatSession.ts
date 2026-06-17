@@ -34,7 +34,7 @@ function saveSessions(sessions: Session[]): void {
       ...s,
       messages: s.messages.map((m) => ({
         ...m,
-        timestamp: m.timestamp.toISOString(),
+        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : String(m.timestamp),
       })),
     }));
     debouncedStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(serializable));

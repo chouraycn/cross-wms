@@ -213,6 +213,15 @@ export interface SystemAuthorizationConfig {
   permissions: TccPermissions;
 }
 
+// ===================== AI 引擎配置 =====================
+
+export type ExecutionMode = 'legacy' | 'observer' | 'planner' | 'react';
+
+export interface AiEngineConfig {
+  /** 默认执行模式：legacy(原始) / observer(观察反思) / planner(规划) / react(完整ReAct) */
+  defaultExecutionMode: ExecutionMode;
+}
+
 export interface AppSettings {
   tencentDocs: TencentDocsConfig;
   wecomDocs: WeComDocsConfig;
@@ -223,6 +232,8 @@ export interface AppSettings {
   appearance: AppearanceConfig;
   /** 系统授权配置 */
   systemAuthorization: SystemAuthorizationConfig;
+  /** AI 引擎配置 */
+  aiEngine: AiEngineConfig;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -307,6 +318,10 @@ const DEFAULT_SETTINGS: AppSettings = {
       automation:          { enabled: false, status: 'unknown' as const, lastChecked: null },
     },
   },
+  // AI 引擎配置
+  aiEngine: {
+    defaultExecutionMode: 'legacy',
+  },
 };
 
 // ===================== Context =====================
@@ -339,6 +354,7 @@ const AppearanceSettingsContext = createContext<DomainSettingsValue<AppearanceCo
 const DashboardSettingsContext = createContext<DomainSettingsValue<DashboardConfig> | null>(null);
 const DocLinksSettingsContext = createContext<DocLinksSettingsValue | null>(null);
 const SystemAuthSettingsContext = createContext<DomainSettingsValue<SystemAuthorizationConfig> | null>(null);
+const AiEngineSettingsContext = createContext<DomainSettingsValue<AiEngineConfig> | null>(null);
 
 // ===================== Helper: Open External Link =====================
 
@@ -492,6 +508,11 @@ function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
       systemAuthorization: parsed.systemAuthorization
         ? { ...DEFAULT_SETTINGS.systemAuthorization, ...parsed.systemAuthorization }
         : { ...DEFAULT_SETTINGS.systemAuthorization },
+      // AI 引擎配置（向后兼容）
+      aiEngine: {
+        ...DEFAULT_SETTINGS.aiEngine,
+        ...parsed.aiEngine,
+      },
     };
 }
 
@@ -603,6 +624,9 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (partial.systemAuthorization) {
         next.systemAuthorization = { ...prev.systemAuthorization, ...partial.systemAuthorization };
       }
+      if (partial.aiEngine) {
+        next.aiEngine = { ...prev.aiEngine, ...partial.aiEngine };
+      }
       return next;
     });
   }, []);
@@ -645,13 +669,21 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     resetSettings,
   }), [settings.systemAuthorization, updateSettings, resetSettings]);
 
+  const aiEngineValue = useMemo<DomainSettingsValue<AiEngineConfig>>(() => ({
+    settings: settings.aiEngine,
+    updateSettings,
+    resetSettings,
+  }), [settings.aiEngine, updateSettings, resetSettings]);
+
   return (
     <AppSettingsContext.Provider value={value}>
       <AppearanceSettingsContext.Provider value={appearanceValue}>
         <DashboardSettingsContext.Provider value={dashboardValue}>
           <DocLinksSettingsContext.Provider value={docLinksValue}>
             <SystemAuthSettingsContext.Provider value={systemAuthValue}>
-              {children}
+              <AiEngineSettingsContext.Provider value={aiEngineValue}>
+                {children}
+              </AiEngineSettingsContext.Provider>
             </SystemAuthSettingsContext.Provider>
           </DocLinksSettingsContext.Provider>
         </DashboardSettingsContext.Provider>
@@ -700,6 +732,14 @@ export function useSystemAuthSettings(): DomainSettingsValue<SystemAuthorization
   const ctx = useContext(SystemAuthSettingsContext);
   if (!ctx) {
     throw new Error('useSystemAuthSettings must be used within an AppSettingsProvider');
+  }
+  return ctx;
+}
+
+export function useAiEngineSettings(): DomainSettingsValue<AiEngineConfig> {
+  const ctx = useContext(AiEngineSettingsContext);
+  if (!ctx) {
+    throw new Error('useAiEngineSettings must be used within an AppSettingsProvider');
   }
   return ctx;
 }

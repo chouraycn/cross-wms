@@ -10,6 +10,7 @@ declare const require: any;
 import { callAIModelStream, callAIModel, AIAPIError } from '../aiClient.js';
 import type { MessageContent, ModelCallConfig } from '../aiClient.js';
 import { executeToolLoop, getToolRiskLevel } from '../engine/toolExecutor.js';
+import { ExecutionStrategyFactory, ExecutionMode, type ExecutionStrategyOptions } from '../engine/executionStrategy.js';
 import { estimateMessagesTokens, truncateContextForModel } from '../engine/contextTruncate.js';
 import { loadModelsConfig, ModelsFile, isLocalModel, syncModelsFromApi } from '../modelsStore.js';
 import { selectKey, reportKeyResult } from '../keyRotator.js';
@@ -223,7 +224,7 @@ async function extractFileContent(filePath: string, ext: string, fileName: strin
 export function generateMockResponse(userMessage: string): string {
   const msg = userMessage.toLowerCase();
 
-  const apiKeyGuide = `\n\n---\n💡 **启用真正的 AI 对话**\n\n点击对话框底部的模型选择按钮，选择「添加模型」进行配置。\n\n**方案一：配置 API Key（推荐）**\n1. 选择一个模型（推荐 DeepSeek 或通义千问，性价比高）\n2. 填入对应服务商的 API Key\n3. 保存后即可开始真正的 AI 对话\n\n**方案二：使用本地模型（免 Key）**\n1. 安装 [Ollama](https://ollama.com) 并启动服务（ollama serve）\n2. 拉取模型：ollama pull llama3.1\n3. 添加 Ollama 模型，端点填 http://localhost:11434/v1\n4. 无需 API Key，直接开始对话`;
+  const apiKeyGuide = `\n\n---\n💡 **启用真正的 AI 对话**\n\n点击对话框底部的模型选择按钮，选择「添加模型」进行配置。\n\n**方案一：配置 API Key（推荐）**\n1. 选择一个模型（推荐 DeepSeek 或通义千问，性价比高）\n2. 填入对应服务商的 API Key\n3. 保存后即可开始真正的 AI 对话\n\n**方案二：使用本地模型（免 Key）**\n1. 安装 [Ollama](https://ollama.com) 并启动服务（ollama serve）\n2. 拉取模型：ollama pull llama3.1\n3. 添加 Ollama 模型\n4. 无需 API Key，直接开始对话`;
 
   if (msg.includes('你好') || msg.includes('hello') || msg.includes('hi') || msg.includes('在吗')) {
     return '你好！我是 AI 助手（模拟模式）。\n\n当前系统未配置 API Key，所以我返回的是预设的演示响应。配置 API Key 后，我将连接真正的 AI 模型为你提供智能问答服务。' + apiKeyGuide;
@@ -238,7 +239,7 @@ export function generateMockResponse(userMessage: string): string {
   }
 
   if (msg.includes('api') || msg.includes('key') || msg.includes('密钥') || msg.includes('配置')) {
-    return '**API Key 配置指南**\n\n要启用真正的 AI 对话功能，需要配置 API Key：\n\n1. **选择服务商**（推荐）：\n   - DeepSeek：https://platform.deepseek.com（性价比高，中文优秀）\n   - 通义千问：https://dashscope.aliyun.com（国内稳定）\n   - SiliconFlow：https://siliconflow.cn（有免费额度）\n\n2. **获取 API Key**：在对应平台注册账号并创建 API Key\n\n3. **配置到系统**：\n   - 点击对话框底部的模型选择按钮\n   - 选择「添加模型」进行配置\n   - 填入 API Key 并保存\n\n4. **开始对话**：配置完成后即可使用真正的 AI 模型进行对话';
+    return '**API Key 配置指南**\n\n💡 **启用真正的 AI 对话**\n\n点击对话框底部的模型选择按钮，选择「添加模型」进行配置。\n\n**方案一：配置 API Key（推荐）**\n1. 选择一个模型（推荐 DeepSeek 或通义千问，性价比高）\n2. 填入对应服务商的 API Key\n3. 保存后即可开始真正的 AI 对话\n\n**方案二：使用本地模型（免 Key）**\n1. 安装 [Ollama](https://ollama.com) 并启动服务（ollama serve）\n2. 拉取模型：ollama pull llama3.1\n3. 添加 Ollama 模型\n4. 无需 API Key，直接开始对话';
   }
 
   return `收到你的消息：「${userMessage}」\n\n（模拟模式）这是一个预设的演示响应。配置 API Key 后，我将连接真正的 AI 模型为你提供智能、准确的回答。` + apiKeyGuide;
@@ -508,7 +509,7 @@ const router = Router();
 
 // 发送消息（SSE）
 router.post('/chat', async (req, res) => {
-  const { sessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory, attachments, reasoningEffort } = req.body;
+  const { sessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory, attachments, reasoningEffort, executionMode } = req.body;
   console.log(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, message="${message?.slice(0, 30)}"`);
   if (attachments && Array.isArray(attachments) && attachments.length > 0) {
     console.log(`[Chat API] 附件数量: ${attachments.length}`);
@@ -908,11 +909,41 @@ router.post('/chat', async (req, res) => {
             })}\n\n`);
           }
 
-          const toolResult = await executeToolLoop({
+          // v4.0: 策略模式 — 根据 executionMode 选择执行策略
+          let effectiveMode = (executionMode && Object.values(ExecutionMode).includes(executionMode as ExecutionMode))
+            ? (executionMode as ExecutionMode)
+            : undefined;
+
+          // 如果请求未指定 executionMode，从 app_settings 读取全局默认值
+          if (!effectiveMode) {
+            try {
+              const { getAppSettings } = require('../dao/settings');
+              const settingsVal = getAppSettings('default');
+              if (settingsVal) {
+                const parsed = JSON.parse(settingsVal);
+                const defaultMode = parsed?.aiEngine?.defaultExecutionMode;
+                if (defaultMode && Object.values(ExecutionMode).includes(defaultMode as ExecutionMode)) {
+                  effectiveMode = defaultMode as ExecutionMode;
+                }
+              }
+            } catch { /* ignore settings read error, fallback to default */ }
+          }
+
+          if (!effectiveMode) {
+            effectiveMode = ExecutionStrategyFactory.getDefaultMode();
+          }
+
+          const strategy = ExecutionStrategyFactory.create(effectiveMode);
+
+          const toolResult = await strategy.execute({
             modelConfig: finalModelConfig,
             messages: truncated.messages,
             maxToolTurns: 10,
             signal: abortController.signal,
+            executionMode: effectiveMode,
+            onSSEEvent: (event) => {
+              res.write(`data: ${JSON.stringify(event)}\n\n`);
+            },
             onChunk: (chunk) => {
               res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
             },

@@ -101,7 +101,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
         display: 'flex',
         flexDirection: 'column',
         borderRight: 'none',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
       }}
+      // v1.5.107: 侧边栏整体作为窗口拖拽区域（pywebview frameless 窗口）
+      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       {/* Sidebar toggle button — fixed position */}
       {onToggle && (
@@ -116,7 +120,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       {/* Logo area */}
       <SidebarLogo
         collapsed={collapsed}
-        onLogoClick={() => navigate('/chat')}
       />
 
       {/* Navigation list (含历史对话) */}
@@ -139,7 +142,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       />
 
       {/* Bottom: Settings button */}
-      <Box sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+      <Box
+        sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 0.25 }}
+        // v1.5.107: 排除底部按钮区出窗口拖拽
+        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+      >
         <ListItemButton
           ref={settingsBtnRef}
           onClick={() => setSettingsOpen((prev) => !prev)}

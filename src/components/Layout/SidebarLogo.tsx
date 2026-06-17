@@ -1,23 +1,24 @@
 import React from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { getGrayScale } from '../../constants/theme';
-
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.60';
+import { useUpdateContext } from '../../contexts/UpdateContext';
 
 // ===================== Props =====================
 
 interface SidebarLogoProps {
   collapsed: boolean;
-  onLogoClick: () => void;
   showVersion?: boolean;
 }
 
 // ===================== Component =====================
 
-const SidebarLogo = React.memo<SidebarLogoProps>(function SidebarLogo({ collapsed, onLogoClick, showVersion = true }) {
+const SidebarLogo = React.memo<SidebarLogoProps>(function SidebarLogo({ collapsed, showVersion = true }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+
+  // 从 UpdateContext 获取版本号（pywebview 环境下可能动态覆盖）
+  const { currentVersion } = useUpdateContext();
 
   return (
     <Box
@@ -42,10 +43,8 @@ const SidebarLogo = React.memo<SidebarLogoProps>(function SidebarLogo({ collapse
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          cursor: 'pointer',
           WebkitAppRegion: 'no-drag',
         } as React.CSSProperties}
-        onClick={onLogoClick}
       >
         <svg
           width="24"
@@ -91,7 +90,7 @@ const SidebarLogo = React.memo<SidebarLogoProps>(function SidebarLogo({ collapse
                 lineHeight: 1.2,
               }}
             >
-              v{APP_VERSION}
+              v{currentVersion}
             </Typography>
           )}
         </Box>

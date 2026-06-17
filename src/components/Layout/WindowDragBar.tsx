@@ -1,27 +1,21 @@
 /**
- * v2.5.0: macOS pywebview 窗口拖拽条（系统原生拖拽）
+ * v2.5.0 → v1.5.107: macOS pywebview 窗口拖拽条（系统原生拖拽）
  *
  * 方案：pywebview easy_drag=False + CSS -webkit-app-region:drag
  * 系统 Cocoa 原生处理拖拽，零 JS 事件，零抖动。
  *
- * 主内容区和 Sidebar 交互元素通过 WebkitAppRegion:no-drag 排除，
- * 文本选择、按钮点击不受影响。
- *
- * 之前的方案（v2.4.1，JS pointer events + rAF）因 WKWebView JS↔Python
- * 桥接延迟导致坐标累积抖动，已废弃。
+ * v1.5.107: 侧边栏本身也设了 WebkitAppRegion:drag（Logo 区域可拖拽），
+ * 交互元素（NavList/设置按钮）通过 no-drag 排除。
+ * 此拖拽条从 left:0 开始，覆盖整个窗口顶部，与侧边栏 drag 区域重叠无缝衔接。
  */
 
 import React, { useState, useEffect } from 'react';
 import { Box } from '@mui/material';
 import { isPyWebView } from '../../services/tencentDocsApi';
 
-export const WindowDragBar: React.FC<{ height?: number; sidebarCollapsed?: boolean }> = ({ height = 38, sidebarCollapsed = false }) => {
+export const WindowDragBar: React.FC<{ height?: number; sidebarCollapsed?: boolean }> = ({ height = 38 }) => {
   // v1.5.80: 使用自检轮询，确保 pywebview 环境注入后正确渲染
   const [ready, setReady] = useState(() => isPyWebView());
-
-  // 侧边栏宽度：收起 83px / 展开 260px
-  // 收起时 + 展开按钮宽度(26px) + 间距，避免拖拽条覆盖按钮
-  const sidebarWidth = sidebarCollapsed ? 120 : 260;
 
   useEffect(() => {
     if (ready) return;
@@ -43,7 +37,7 @@ export const WindowDragBar: React.FC<{ height?: number; sidebarCollapsed?: boole
       sx={{
         position: 'fixed',
         top: 0,
-        left: sidebarWidth,
+        left: 0,
         right: 0,
         height,
         zIndex: 9999,

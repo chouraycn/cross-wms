@@ -1,7 +1,7 @@
 {
   "name": "cdf-know-clow",
   "private": true,
-  "version": "1.5.97",
+  "version": "1.5.108",
   "type": "module",
   "scripts": {
     "dev:server": "tsx watch --tsconfig server/tsconfig.json server/index.ts",
@@ -28,6 +28,7 @@
     "@mui/icons-material": "^5.15.15",
     "@mui/material": "^5.15.15",
     "@mui/x-data-grid": "^7.29.13",
+    "ajv": "^8.20.0",
     "better-sqlite3": "^12.6.2",
     "cheerio": "^1.2.0",
     "chokidar": "^3.6.0",

@@ -29,10 +29,11 @@ router.post('/', (req, res) => {
 // 获取会话消息
 router.get('/:id', (req, res) => {
   const messages = getSessionMessages(req.params.id);
-  // 解析 attachments JSON 字符串为数组
+  // 解析 JSON 字符串字段为数组/对象（DB 中存储为 TEXT）
   const parsed = messages.map((m: any) => ({
     ...m,
     attachments: m.attachments ? (typeof m.attachments === 'string' ? JSON.parse(m.attachments) : m.attachments) : undefined,
+    toolCalls: m.toolCalls ? (typeof m.toolCalls === 'string' ? JSON.parse(m.toolCalls) : m.toolCalls) : undefined,
   }));
   res.json({ messages: parsed });
 });

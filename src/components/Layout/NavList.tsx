@@ -418,6 +418,8 @@ const NavList: React.FC<NavListProps> = ({
         overscrollBehaviorY: 'none',
         WebkitOverflowScrolling: 'auto',
       }}
+      // v1.5.107: 排除导航区域出窗口拖拽（父 Sidebar 已设 WebkitAppRegion:drag）
+      style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
     >
       {navItems.map((item) => {
         // ====== 分组项 ======

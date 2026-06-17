@@ -16,7 +16,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
-import { Message, Session } from '../../types/chat';
+import { Message, Session, ObserverReflectionInfo, ExecutionPlanInfo, PlanStepInfo, ReactPhaseInfo } from '../../types/chat';
 import { getGrayScale, GrayScale } from '../../constants/theme';
 
 import { useAppearanceSettings } from '../../contexts/AppSettingsContext';
@@ -328,7 +328,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 </Box>
               )}
               <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
-                {msg.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                {(msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
               </Typography>
               {msg.role === 'user' && (
                 <Typography
@@ -776,12 +776,68 @@ const BotMessageContent = React.memo<BotMessageContentProps>(({
         />
       )}
       {/* AI 工具调用展示（Tool Calling） */}
-      {msg.toolCalls && msg.toolCalls.length > 0 && (
+      {msg.toolCalls && Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0 && (
         <ToolCallBlock toolCalls={msg.toolCalls} />
       )}
       {/* v3.0: 插件自动调用结果展示（reasoning 流触发） */}
       {msg.pluginResults && msg.pluginResults.length > 0 && (
         <PluginResultBlock results={msg.pluginResults} />
+      )}
+      {/* v4.0: ReAct 阶段指示器 */}
+      {msg.reactPhase && (
+        <ReactPhaseIndicator phaseInfo={msg.reactPhase} gs={gs} isDark={isDark} />
+      )}
+      {/* v4.0: 执行计划卡片 */}
+      {msg.executionPlan && (
+        <ExecutionPlanCard plan={msg.executionPlan} gs={gs} isDark={isDark} />
+      )}
+      {/* v4.0: Observer 反思标签 */}
+      {msg.observerReflections && msg.observerReflections.length > 0 && (
+        <ObserverReflectionChips reflections={msg.observerReflections} gs={gs} isDark={isDark} />
+      )}
+      {/* v5.0: 反思置信度条 */}
+      {msg.reflectionConfidence && (
+        <ReflectionConfidenceBar data={msg.reflectionConfidence} gs={gs} isDark={isDark} />
+      )}
+      {/* v5.0: 预算超出指示器 */}
+      {msg.budgetExceeded && (
+        <BudgetExceededIndicator data={msg.budgetExceeded} gs={gs} isDark={isDark} />
+      )}
+      {/* v5.0: 复杂度评估徽章 */}
+      {msg.complexityAssessment && (
+        <ComplexityAssessmentBadge data={msg.complexityAssessment} gs={gs} isDark={isDark} />
+      )}
+      {/* v5.0: 上下文压缩通知 */}
+      {msg.contextCompressed && (
+        <ContextCompressedNotice data={msg.contextCompressed} gs={gs} isDark={isDark} />
+      )}
+      {/* v6.0: 计划步骤完成指示器 */}
+      {msg.planStepCompleted && (
+        <PlanStepCompletedIndicator data={msg.planStepCompleted} gs={gs} isDark={isDark} />
+      )}
+      {/* v6.0: 熔断器触发告警 */}
+      {msg.circuitBreakerTriggered && (
+        <CircuitBreakerAlert data={msg.circuitBreakerTriggered} gs={gs} isDark={isDark} />
+      )}
+      {/* v6.0: 复杂度升级通知 */}
+      {msg.complexityUpgraded && (
+        <ComplexityUpgradedNotice data={msg.complexityUpgraded} gs={gs} isDark={isDark} />
+      )}
+      {/* v6.0: LLM 反思标签 */}
+      {msg.llmReflection && (
+        <LLMReflectionTag data={msg.llmReflection} gs={gs} isDark={isDark} />
+      )}
+      {/* v6.0: 长期记忆检索通知 */}
+      {msg.memoryRetrieved && (
+        <MemoryRetrievedNotice data={msg.memoryRetrieved} gs={gs} isDark={isDark} />
+      )}
+      {/* v6.0: 输出修复通知 */}
+      {msg.outputRepaired && (
+        <OutputRepairedNotice data={msg.outputRepaired} gs={gs} isDark={isDark} />
+      )}
+      {/* v6.0: 预算调整通知 */}
+      {msg.budgetAdjusted && (
+        <BudgetAdjustedNotice data={msg.budgetAdjusted} gs={gs} isDark={isDark} />
       )}
       {/* v1.9.3: 内联权限请求 */}
       {msg.permissionRequest && onPermissionRespond && (
@@ -889,5 +945,892 @@ const BotMessageContent = React.memo<BotMessageContentProps>(({
   );
 });
 BotMessageContent.displayName = 'BotMessageContent';
+
+// ===================== v4.0: ReAct / Planner 展示组件 =====================
+
+/** Observer 反思标签颜色映射 */
+const REFLECTION_LEVEL_COLORS: Record<string, { color: string; bg: string; border: string }> = {
+  error: { color: '#EF4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)' },
+  warning: { color: '#F59E0B', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)' },
+  retry_suggested: { color: '#3B82F6', bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.25)' },
+  success: { color: '#22C55E', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.25)' },
+};
+
+/** 步骤状态图标 */
+const STEP_STATUS_ICONS: Record<string, string> = {
+  completed: '✅',
+  in_progress: '🔄',
+  failed: '❌',
+  skipped: '⏭️',
+  pending: '⏳',
+};
+
+/** ReAct 阶段定义 */
+const REACT_PHASES: Array<{ key: ReactPhaseInfo['phase']; label: string }> = [
+  { key: 'reasoning', label: '推理' },
+  { key: 'acting', label: '执行' },
+  { key: 'observing', label: '观察' },
+  { key: 'reflecting', label: '反思' },
+  { key: 'done', label: '完成' },
+];
+
+/**
+ * v4.0: Observer 反思标签
+ * 每条反思用 MUI Chip 展示，颜色按 level 区分。
+ */
+const ObserverReflectionChips: React.FC<{
+  reflections: ObserverReflectionInfo[];
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ reflections, gs, isDark }) => {
+  const memoizedReflections = useMemo(() => reflections, [reflections]);
+
+  if (!memoizedReflections || memoizedReflections.length === 0) return null;
+
+  return (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+      {memoizedReflections.map((r, idx) => {
+        const style = REFLECTION_LEVEL_COLORS[r.level] || REFLECTION_LEVEL_COLORS.error;
+        const retryLabel = r.willRetry ? ` (重试 ${r.retryIndex}/${r.maxRetries})` : '';
+        const label = `🔍 ${r.toolName}: ${r.hint}${retryLabel}`;
+
+        return (
+          <Chip
+            key={`${r.toolName}-${idx}`}
+            label={label}
+            size="small"
+            sx={{
+              height: 26,
+              fontSize: 11,
+              maxWidth: '100%',
+              '& .MuiChip-label': {
+                px: 1,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              },
+              color: style.color,
+              bgcolor: style.bg,
+              border: `1px solid ${style.border}`,
+            }}
+          />
+        );
+      })}
+    </Box>
+  );
+});
+ObserverReflectionChips.displayName = 'ObserverReflectionChips';
+
+/**
+ * v4.0: 执行计划卡片
+ * 用 MUI Card 展示计划意图和步骤列表。
+ */
+const ExecutionPlanCard: React.FC<{
+  plan: ExecutionPlanInfo;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ plan, gs, isDark }) => {
+  if (!plan) return null;
+
+  return (
+    <Box
+      sx={{
+        mt: 1,
+        p: 1.5,
+        borderRadius: 2,
+        bgcolor: isDark ? '#1A1A2E' : '#F8FAFC',
+        border: `1px solid ${gs.border}`,
+        maxWidth: '100%',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+        <Typography sx={{ fontSize: 12, fontWeight: 600, color: gs.textPrimary }}>
+          📋 执行计划
+        </Typography>
+        <Typography sx={{ fontSize: 11, color: gs.textMuted, flex: 1 }}>
+          {plan.intent}
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+        {plan.steps.map((step) => {
+          const icon = STEP_STATUS_ICONS[step.status] || '⏳';
+          const indent = step.dependsOn.length > 0 ? 2 : 0;
+
+          return (
+            <Box
+              key={step.step}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                pl: indent,
+                py: 0.15,
+              }}
+            >
+              <Typography sx={{ fontSize: 12, lineHeight: 1.4, flexShrink: 0 }}>
+                {icon}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  color: step.status === 'failed' ? '#EF4444'
+                    : step.status === 'in_progress' ? '#3B82F6'
+                    : step.status === 'completed' ? '#22C55E'
+                    : gs.textMuted,
+                  lineHeight: 1.4,
+                }}
+              >
+                {step.step}. {step.description}
+              </Typography>
+              {step.toolName && (
+                <Typography
+                  sx={{
+                    fontSize: 10,
+                    fontFamily: 'monospace',
+                    color: gs.textDisabled,
+                    ml: 'auto',
+                    flexShrink: 0,
+                  }}
+                >
+                  {step.toolName}
+                </Typography>
+              )}
+            </Box>
+          );
+        })}
+      </Box>
+    </Box>
+  );
+});
+ExecutionPlanCard.displayName = 'ExecutionPlanCard';
+
+/**
+ * v4.0: ReAct 阶段指示器
+ * 状态条展示当前阶段：Reasoning → Acting → Observing → Reflecting → Done
+ */
+const ReactPhaseIndicator: React.FC<{
+  phaseInfo: ReactPhaseInfo;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ phaseInfo, gs, isDark }) => {
+  if (!phaseInfo) return null;
+
+  const currentIdx = REACT_PHASES.findIndex(p => p.key === phaseInfo.phase);
+
+  return (
+    <Box
+      sx={{
+        mt: 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        px: 1,
+        py: 0.5,
+        borderRadius: 1.5,
+        bgcolor: isDark ? '#1A1A2E' : '#F1F5F9',
+        border: `1px solid ${gs.border}`,
+        maxWidth: 'fit-content',
+      }}
+    >
+      {REACT_PHASES.map((phase, idx) => {
+        const isCurrent = idx === currentIdx;
+        const isCompleted = idx < currentIdx;
+        const isPending = idx > currentIdx;
+
+        let bgColor: string;
+        let textColor: string;
+        if (isCurrent) {
+          bgColor = '#3B82F6';
+          textColor = '#FFFFFF';
+        } else if (isCompleted) {
+          bgColor = isDark ? '#374151' : '#D1D5DB';
+          textColor = isDark ? '#9CA3AF' : '#6B7280';
+        } else {
+          bgColor = isDark ? '#1F2937' : '#E5E7EB';
+          textColor = isDark ? '#4B5563' : '#9CA3AF';
+        }
+
+        return (
+          <React.Fragment key={phase.key}>
+            {idx > 0 && (
+              <Typography sx={{ fontSize: 10, color: gs.textDisabled, mx: 0.25 }}>
+                →
+              </Typography>
+            )}
+            <Box
+              sx={{
+                px: 1,
+                py: 0.15,
+                borderRadius: 0.75,
+                bgcolor: bgColor,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: 36,
+                transition: 'background-color 0.2s',
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 10,
+                  fontWeight: isCurrent ? 600 : 400,
+                  color: textColor,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {phase.label}
+              </Typography>
+            </Box>
+          </React.Fragment>
+        );
+      })}
+      {phaseInfo.step != null && phaseInfo.totalSteps != null && (
+        <Typography sx={{ fontSize: 10, color: gs.textMuted, ml: 0.5 }}>
+          {phaseInfo.step}/{phaseInfo.totalSteps}
+        </Typography>
+      )}
+    </Box>
+  );
+});
+ReactPhaseIndicator.displayName = 'ReactPhaseIndicator';
+
+// ===================== v5.0: ReAct 优化展示组件 =====================
+
+/** 置信度颜色映射 */
+const CONFIDENCE_COLORS = {
+  low: { bar: '#EF4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)' },
+  medium: { bar: '#F59E0B', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)' },
+  high: { bar: '#22C55E', bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.25)' },
+} as const;
+
+/** 决策标签样式映射 */
+const DECISION_STYLES: Record<string, { color: string; bg: string; label: string }> = {
+  continue: { color: '#3B82F6', bg: 'rgba(59,130,246,0.1)', label: '继续' },
+  early_stop: { color: '#EF4444', bg: 'rgba(239,68,68,0.1)', label: '提前终止' },
+  replan: { color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', label: '重新规划' },
+};
+
+/** 复杂度等级样式映射 */
+const COMPLEXITY_STYLES: Record<string, { color: string; bg: string; border: string; label: string }> = {
+  simple: { color: '#3B82F6', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.25)', label: '简单' },
+  moderate: { color: '#F59E0B', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)', label: '中等' },
+  complex: { color: '#EF4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.25)', label: '复杂' },
+};
+
+/**
+ * v5.0: 反思置信度进度条
+ * 显示 confidenceScore (1-10) 进度条、决策标签、可折叠推理文本
+ */
+const ReflectionConfidenceBar: React.FC<{
+  data: NonNullable<Message['reflectionConfidence']>;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ data, gs, isDark }) => {
+  const [reasonOpen, setReasonOpen] = React.useState(false);
+
+  const score = Math.max(1, Math.min(10, data.confidenceScore));
+  const selfScore = Math.max(0, Math.min(10, data.selfScore));
+  const pct = (score / 10) * 100;
+  const tier = score < 4 ? 'low' : score < 7 ? 'medium' : 'high';
+  const colors = CONFIDENCE_COLORS[tier];
+
+  // Derive decision from shouldEarlyStop flag
+  const decision: string = data.shouldEarlyStop ? 'early_stop' : 'continue';
+  const decisionStyle = DECISION_STYLES[decision] || DECISION_STYLES.continue;
+
+  return (
+    <Box
+      sx={{
+        mt: 1,
+        px: 1.5,
+        py: 0.75,
+        borderRadius: 1.5,
+        bgcolor: colors.bg,
+        border: `1px solid ${colors.border}`,
+        maxWidth: '100%',
+      }}
+    >
+      {/* Row 1: bar + score + decision badge */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, height: 24 }}>
+        {/* Progress bar track */}
+        <Box
+          sx={{
+            flex: 1,
+            height: 6,
+            borderRadius: 3,
+            bgcolor: isDark ? '#374151' : '#E5E7EB',
+            overflow: 'hidden',
+            minWidth: 60,
+          }}
+        >
+          <Box
+            sx={{
+              height: '100%',
+              width: `${pct}%`,
+              borderRadius: 3,
+              bgcolor: colors.bar,
+              transition: 'width 0.3s ease',
+            }}
+          />
+        </Box>
+        {/* Score number */}
+        <Typography sx={{ fontSize: 11, fontWeight: 600, color: colors.bar, fontFamily: 'monospace', minWidth: 20, textAlign: 'center' }}>
+          {score}/10
+        </Typography>
+        {/* Self score (subtle) */}
+        {selfScore > 0 && (
+          <Typography sx={{ fontSize: 10, color: gs.textDisabled, fontFamily: 'monospace' }}>
+            (自评:{selfScore})
+          </Typography>
+        )}
+        {/* Decision badge */}
+        <Box
+          sx={{
+            px: 0.75,
+            py: 0.1,
+            borderRadius: 0.75,
+            bgcolor: decisionStyle.bg,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <Typography sx={{ fontSize: 10, fontWeight: 600, color: decisionStyle.color, whiteSpace: 'nowrap' }}>
+            {decisionStyle.label}
+          </Typography>
+        </Box>
+        {/* Expand reason toggle */}
+        {data.reason && (
+          <IconButton
+            size="small"
+            onClick={() => setReasonOpen(!reasonOpen)}
+            sx={{
+              p: 0.25,
+              color: gs.textDisabled,
+              '&:hover': { color: gs.textMuted },
+              transition: 'transform 0.2s',
+              transform: reasonOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+              <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            </svg>
+          </IconButton>
+        )}
+      </Box>
+      {/* Collapsible reasoning text */}
+      {reasonOpen && data.reason && (
+        <Typography
+          sx={{
+            mt: 0.5,
+            fontSize: 11,
+            color: gs.textMuted,
+            lineHeight: 1.5,
+            wordBreak: 'break-word',
+          }}
+        >
+          {data.reason}
+        </Typography>
+      )}
+    </Box>
+  );
+});
+ReflectionConfidenceBar.displayName = 'ReflectionConfidenceBar';
+
+/**
+ * v5.0: 预算超出指示器
+ * 一行紧凑展示：警告图标 + 类型 + 当前/限制值
+ */
+const BudgetExceededIndicator: React.FC<{
+  data: NonNullable<Message['budgetExceeded']>;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ data, gs, isDark }) => {
+  const isTurns = data.consumedTurns > data.maxTurns && data.maxTurns > 0;
+  const isTokens = data.consumedTokens > data.maxTokens && data.maxTokens > 0;
+
+  return (
+    <Box
+      sx={{
+        mt: 1,
+        px: 1.25,
+        py: 0.5,
+        borderRadius: 1.5,
+        bgcolor: isDark ? 'rgba(239,68,68,0.08)' : '#FEF2F2',
+        border: '1px solid rgba(239,68,68,0.25)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.75,
+        maxWidth: 'fit-content',
+      }}
+    >
+      <ErrorOutlineIcon sx={{ fontSize: 14, color: '#EF4444', flexShrink: 0 }} />
+      <Typography sx={{ fontSize: 11, fontWeight: 600, color: '#EF4444', whiteSpace: 'nowrap' }}>
+        预算超出
+      </Typography>
+      {isTurns && (
+        <Typography sx={{ fontSize: 11, color: gs.textMuted, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+          轮次 {data.consumedTurns}/{data.maxTurns}
+        </Typography>
+      )}
+      {isTokens && (
+        <Typography sx={{ fontSize: 11, color: gs.textMuted, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+          Token {data.consumedTokens}/{data.maxTokens}
+        </Typography>
+      )}
+      {!isTurns && !isTokens && (
+        <Typography sx={{ fontSize: 11, color: gs.textMuted, whiteSpace: 'nowrap' }}>
+          {data.reason}
+        </Typography>
+      )}
+    </Box>
+  );
+});
+BudgetExceededIndicator.displayName = 'BudgetExceededIndicator';
+
+/**
+ * v5.0: 复杂度评估徽章
+ * 彩色徽章 + 分数 + hover tooltip 显示推理
+ */
+const ComplexityAssessmentBadge: React.FC<{
+  data: NonNullable<Message['complexityAssessment']>;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ data, gs, isDark }) => {
+  const level = data.level || 'simple';
+  const style = COMPLEXITY_STYLES[level] || COMPLEXITY_STYLES.simple;
+
+  return (
+    <Tooltip
+      title={
+        <Box sx={{ p: 0.5 }}>
+          <Typography sx={{ fontSize: 11, color: '#fff', lineHeight: 1.5 }}>
+            {data.reason || '无推理信息'}
+          </Typography>
+          {data.recommendedMode && (
+            <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', mt: 0.5 }}>
+              推荐模式: {data.recommendedMode}
+            </Typography>
+          )}
+        </Box>
+      }
+      arrow
+      placement="top"
+    >
+      <Box
+        sx={{
+          mt: 1,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 0.5,
+          px: 1,
+          py: 0.25,
+          borderRadius: 1,
+          bgcolor: style.bg,
+          border: `1px solid ${style.border}`,
+          cursor: 'default',
+        }}
+      >
+        <Typography sx={{ fontSize: 11, fontWeight: 600, color: style.color, whiteSpace: 'nowrap' }}>
+          {style.label}
+        </Typography>
+        {data.estimatedSteps > 0 && (
+          <Typography sx={{ fontSize: 10, color: gs.textDisabled, fontFamily: 'monospace' }}>
+            ≈{data.estimatedSteps}步
+          </Typography>
+        )}
+      </Box>
+    </Tooltip>
+  );
+});
+ComplexityAssessmentBadge.displayName = 'ComplexityAssessmentBadge';
+
+/**
+ * v5.0: 上下文压缩通知
+ * 灰色低调样式：显示压缩轮数信息
+ */
+const ContextCompressedNotice: React.FC<{
+  data: NonNullable<Message['contextCompressed']>;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ data, gs, isDark }) => {
+  const turns = data.compressedTurns || 0;
+  const summaryLen = data.summaryLength || 0;
+
+  return (
+    <Box
+      sx={{
+        mt: 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        px: 1,
+        py: 0.25,
+        borderRadius: 1,
+        bgcolor: isDark ? 'rgba(156,163,175,0.06)' : 'rgba(156,163,175,0.08)',
+        maxWidth: 'fit-content',
+      }}
+    >
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+        <path d="M2 4h12M2 8h12M2 12h8" stroke={gs.textDisabled} strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M12 10l2 2-2 2" stroke={gs.textDisabled} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <Typography sx={{ fontSize: 10, color: gs.textDisabled, whiteSpace: 'nowrap' }}>
+        历史上下文已压缩：{turns} 轮 → 摘要{summaryLen > 0 ? ` (${summaryLen} 字符)` : ''}
+      </Typography>
+    </Box>
+  );
+});
+ContextCompressedNotice.displayName = 'ContextCompressedNotice';
+
+/**
+ * v6.0: 计划步骤完成指示器
+ * 绿色低调样式：显示步骤完成信息
+ */
+const PlanStepCompletedIndicator: React.FC<{
+  data: NonNullable<Message['planStepCompleted']>;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ data, gs, isDark }) => {
+  return (
+    <Box
+      sx={{
+        mt: 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        px: 1,
+        py: 0.25,
+        borderRadius: 1,
+        bgcolor: isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.06)',
+        maxWidth: 'fit-content',
+      }}
+    >
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+        <path d="M3 8.5l3.5 3.5 6.5-7" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <Typography sx={{ fontSize: 10, color: '#22c55e', whiteSpace: 'nowrap' }}>
+        步骤 {data.step} 完成{data.toolName ? ` · ${data.toolName}` : ''}
+      </Typography>
+      {data.description && (
+        <Typography sx={{ fontSize: 10, color: gs.textDisabled, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
+          {data.description}
+        </Typography>
+      )}
+    </Box>
+  );
+});
+PlanStepCompletedIndicator.displayName = 'PlanStepCompletedIndicator';
+
+/**
+ * v6.0: 熔断器触发告警
+ * 橙色警告样式：显示熔断工具和备选建议
+ */
+const CircuitBreakerAlert: React.FC<{
+  data: NonNullable<Message['circuitBreakerTriggered']>;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ data, gs, isDark }) => {
+  const isOpen = data.state === 'open';
+  const bgColor = isOpen
+    ? (isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.06)')
+    : (isDark ? 'rgba(249,115,22,0.1)' : 'rgba(249,115,22,0.06)');
+  const textColor = isOpen ? '#ef4444' : '#f97316';
+
+  return (
+    <Tooltip
+      title={
+        <Box sx={{ p: 0.5 }}>
+          <Typography sx={{ fontSize: 11, color: '#fff', lineHeight: 1.5 }}>
+            工具 {data.toolName} 连续失败 {data.failureCount} 次
+          </Typography>
+          {data.alternativeTool && (
+            <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', mt: 0.5 }}>
+              建议替代: {data.alternativeTool}
+            </Typography>
+          )}
+        </Box>
+      }
+      arrow
+      placement="top"
+    >
+      <Box
+        sx={{
+          mt: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          px: 1,
+          py: 0.25,
+          borderRadius: 1,
+          bgcolor: bgColor,
+          maxWidth: 'fit-content',
+          cursor: 'default',
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+          <path d="M8 2L2 14h12L8 2z" stroke={textColor} strokeWidth="1.5" strokeLinejoin="round" fill="none" />
+          <path d="M8 6v3M8 11.5v0.5" stroke={textColor} strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+        <Typography sx={{ fontSize: 10, color: textColor, fontWeight: 600, whiteSpace: 'nowrap' }}>
+          {isOpen ? '熔断' : '降级'}: {data.toolName}
+        </Typography>
+        {data.alternativeTool && (
+          <Typography sx={{ fontSize: 10, color: gs.textDisabled, whiteSpace: 'nowrap' }}>
+            → {data.alternativeTool}
+          </Typography>
+        )}
+      </Box>
+    </Tooltip>
+  );
+});
+CircuitBreakerAlert.displayName = 'CircuitBreakerAlert';
+
+/**
+ * v6.0: 复杂度升级通知
+ * 紫色徽章样式：显示从低到高的升级
+ */
+const ComplexityUpgradedNotice: React.FC<{
+  data: NonNullable<Message['complexityUpgraded']>;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ data, gs, isDark }) => {
+  const levelMap: Record<string, string> = { simple: '简单', moderate: '中等', complex: '复杂' };
+  return (
+    <Tooltip
+      title={
+        <Box sx={{ p: 0.5 }}>
+          <Typography sx={{ fontSize: 11, color: '#fff', lineHeight: 1.5 }}>
+            {data.reason || '无升级原因'}
+          </Typography>
+        </Box>
+      }
+      arrow
+      placement="top"
+    >
+      <Box
+        sx={{
+          mt: 1,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 0.5,
+          px: 1,
+          py: 0.25,
+          borderRadius: 1,
+          bgcolor: isDark ? 'rgba(168,85,247,0.12)' : 'rgba(168,85,247,0.08)',
+          border: '1px solid rgba(168,85,247,0.3)',
+          cursor: 'default',
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+          <path d="M8 2l2 5h5l-4 3 1.5 5L8 12 3.5 15 5 10 1 7h5z" stroke="#a855f7" strokeWidth="1.2" fill="none" />
+        </svg>
+        <Typography sx={{ fontSize: 10, color: '#a855f7', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          复杂度升级
+        </Typography>
+        <Typography sx={{ fontSize: 10, color: gs.textDisabled, whiteSpace: 'nowrap' }}>
+          {levelMap[data.oldLevel] || data.oldLevel} → {levelMap[data.newLevel] || data.newLevel}
+        </Typography>
+      </Box>
+    </Tooltip>
+  );
+});
+ComplexityUpgradedNotice.displayName = 'ComplexityUpgradedNotice';
+
+/**
+ * v6.0: LLM 反思标签
+ * 蓝色低调样式：显示 LLM 反思洞察
+ */
+const LLMReflectionTag: React.FC<{
+  data: NonNullable<Message['llmReflection']>;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ data, gs, isDark }) => {
+  return (
+    <Box
+      sx={{
+        mt: 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        px: 1,
+        py: 0.25,
+        borderRadius: 1,
+        bgcolor: isDark ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.06)',
+        maxWidth: 'fit-content',
+      }}
+    >
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+        <circle cx="8" cy="8" r="6" stroke="#3b82f6" strokeWidth="1.5" fill="none" />
+        <path d="M8 5v3l2 2" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+      <Typography sx={{ fontSize: 10, color: '#3b82f6', fontWeight: 500, whiteSpace: 'nowrap' }}>
+        LLM 反思
+      </Typography>
+      {data.insight && (
+        <Typography sx={{ fontSize: 10, color: gs.textDisabled, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
+          {data.insight.length > 50 ? data.insight.substring(0, 50) + '...' : data.insight}
+        </Typography>
+      )}
+      <Typography sx={{ fontSize: 9, color: gs.textDisabled, fontFamily: 'monospace' }}>
+        ({data.confidenceScore})
+      </Typography>
+    </Box>
+  );
+});
+LLMReflectionTag.displayName = 'LLMReflectionTag';
+
+/**
+ * v6.0: 长期记忆检索通知
+ * 灰色低调样式：显示检索到的记忆数量
+ */
+const MemoryRetrievedNotice: React.FC<{
+  data: NonNullable<Message['memoryRetrieved']>;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ data, gs, isDark }) => {
+  return (
+    <Tooltip
+      title={
+        data.summaries && data.summaries.length > 0 ? (
+          <Box sx={{ p: 0.5 }}>
+            {data.summaries.map((s, i) => (
+              <Typography key={i} sx={{ fontSize: 10, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>
+                {i + 1}. {s.length > 80 ? s.substring(0, 80) + '...' : s}
+              </Typography>
+            ))}
+          </Box>
+        ) : undefined
+      }
+      arrow
+      placement="top"
+    >
+      <Box
+        sx={{
+          mt: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          px: 1,
+          py: 0.25,
+          borderRadius: 1,
+          bgcolor: isDark ? 'rgba(156,163,175,0.06)' : 'rgba(156,163,175,0.08)',
+          maxWidth: 'fit-content',
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+          <path d="M2 4a6 6 0 0112 0" stroke={gs.textDisabled} strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M2 8a6 6 0 0112 0" stroke={gs.textDisabled} strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M4 12a4 4 0 018 0" stroke={gs.textDisabled} strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+        <Typography sx={{ fontSize: 10, color: gs.textDisabled, whiteSpace: 'nowrap' }}>
+          历史记忆注入: {data.count} 条
+        </Typography>
+      </Box>
+    </Tooltip>
+  );
+});
+MemoryRetrievedNotice.displayName = 'MemoryRetrievedNotice';
+
+/**
+ * v6.0: 输出修复通知
+ * 黄色低调样式：显示工具输出被自动修复
+ */
+const OutputRepairedNotice: React.FC<{
+  data: NonNullable<Message['outputRepaired']>;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ data, gs, isDark }) => {
+  return (
+    <Tooltip
+      title={
+        data.repairDetails ? (
+          <Box sx={{ p: 0.5 }}>
+            <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>
+              {data.repairDetails}
+            </Typography>
+          </Box>
+        ) : undefined
+      }
+      arrow
+      placement="top"
+    >
+      <Box
+        sx={{
+          mt: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          px: 1,
+          py: 0.25,
+          borderRadius: 1,
+          bgcolor: isDark ? 'rgba(234,179,8,0.08)' : 'rgba(234,179,8,0.06)',
+          maxWidth: 'fit-content',
+          cursor: 'default',
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+          <path d="M2 8l4 4 8-8" stroke="#eab308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M10 4l4-0L14 8" stroke="#eab308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <Typography sx={{ fontSize: 10, color: '#eab308', whiteSpace: 'nowrap' }}>
+          输出已修复: {data.toolName}
+        </Typography>
+      </Box>
+    </Tooltip>
+  );
+});
+OutputRepairedNotice.displayName = 'OutputRepairedNotice';
+
+/**
+ * v6.0: 预算调整通知
+ * 灰色低调样式：显示预算动态调整
+ */
+const BudgetAdjustedNotice: React.FC<{
+  data: NonNullable<Message['budgetAdjusted']>;
+  gs: GrayScale;
+  isDark: boolean;
+}> = React.memo(({ data, gs, isDark }) => {
+  return (
+    <Tooltip
+      title={
+        <Box sx={{ p: 0.5 }}>
+          <Typography sx={{ fontSize: 11, color: '#fff', lineHeight: 1.5 }}>
+            {data.reason || '复杂度变更'}
+          </Typography>
+          {data.oldMaxTokens !== undefined && data.newMaxTokens !== undefined && (
+            <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', mt: 0.5 }}>
+              Token 预算: {data.oldMaxTokens} → {data.newMaxTokens}
+            </Typography>
+          )}
+        </Box>
+      }
+      arrow
+      placement="top"
+    >
+      <Box
+        sx={{
+          mt: 1,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          px: 1,
+          py: 0.25,
+          borderRadius: 1,
+          bgcolor: isDark ? 'rgba(156,163,175,0.06)' : 'rgba(156,163,175,0.08)',
+          maxWidth: 'fit-content',
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+          <rect x="2" y="6" width="12" height="8" rx="1" stroke={gs.textDisabled} strokeWidth="1.5" fill="none" />
+          <path d="M5 6V4a3 3 0 016 0v2" stroke={gs.textDisabled} strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+        <Typography sx={{ fontSize: 10, color: gs.textDisabled, whiteSpace: 'nowrap' }}>
+          预算调整: {data.oldMaxTurns} → {data.newMaxTurns} 轮
+        </Typography>
+      </Box>
+    </Tooltip>
+  );
+});
+BudgetAdjustedNotice.displayName = 'BudgetAdjustedNotice';
 
 export default ChatMessageList;
