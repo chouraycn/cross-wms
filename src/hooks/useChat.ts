@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Message, ReferencedSession, Session, ToolCallInfo, Attachment, PluginResultInfo } from '../types/chat';
+import { Message, ReferencedSession, Session, ToolCallInfo, Attachment, PluginResultInfo, ObserverReflectionInfo, ExecutionPlanInfo, PlanStepInfo, ReactPhaseInfo } from '../types/chat';
 import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../types/inventory-query';
 import { CHAT_API_URL, INVENTORY_QUERY_API_URL } from '../constants/api';
 import { useAppSettings, useAppearanceSettings } from '../contexts/AppSettingsContext';
@@ -38,6 +38,8 @@ export interface SendMessageOptions {
   attachments?: Attachment[];
   /** 推理强度（'high' 深度思考 / 'max' 极致推理） */
   reasoningEffort?: string;
+  /** 执行模式（覆盖全局默认值） */
+  executionMode?: 'legacy' | 'observer' | 'planner' | 'react';
 }
 
 /** inventory_query JSON 块正则 */
@@ -327,6 +329,10 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       if (options?.reasoningEffort) {
         body.reasoningEffort = options.reasoningEffort;
       }
+      // 如果有执行模式设置，传递给后端
+      if (options?.executionMode) {
+        body.executionMode = options.executionMode;
+      }
       // 如果有历史消息，添加到请求体（用于多轮对话）
       // v1.9.0: 包含 toolCalls 信息，确保多轮工具调用上下文不丢失
       // v1.9.3: 包含 attachments 信息，确保多轮图片上下文不丢失
@@ -559,6 +565,206 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                     }
                     if (data.type === 'tool_audit') {
                       console.log('[useChat] tool_audit:', data);
+                    }
+                    // v4.0: observer_reflection — Observer 反思提示
+                    if (data.type === 'observer_reflection') {
+                      const reflection: ObserverReflectionInfo = {
+                        toolName: data.toolName || 'unknown',
+                        level: data.level || 'error',
+                        hint: data.hint || '',
+                        willRetry: data.willRetry ?? false,
+                        retryIndex: data.retryIndex ?? 0,
+                        maxRetries: data.maxRetries ?? 0,
+                      };
+                      streamingMsg.observerReflections = [...(streamingMsg.observerReflections || []), reflection];
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v4.0: execution_plan — 执行计划
+                    if (data.type === 'execution_plan') {
+                      streamingMsg.executionPlan = data.plan as ExecutionPlanInfo;
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v4.0: plan_step_update — 计划步骤状态变更
+                    if (data.type === 'plan_step_update' && streamingMsg.executionPlan) {
+                      const updatedPlan = { ...streamingMsg.executionPlan };
+                      const stepIdx = updatedPlan.steps.findIndex(s => s.step === data.step);
+                      if (stepIdx !== -1) {
+                        updatedPlan.steps = updatedPlan.steps.map((s, i) =>
+                          i === stepIdx ? { ...s, status: data.status || s.status } : s
+                        );
+                      }
+                      streamingMsg.executionPlan = updatedPlan;
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v4.0: react_phase — ReAct 阶段切换
+                    if (data.type === 'react_phase') {
+                      streamingMsg.reactPhase = {
+                        phase: data.phase,
+                        step: data.step,
+                        totalSteps: data.totalSteps,
+                        description: data.description,
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v5.0: reflection_confidence — 反思置信度
+                    if (data.type === 'reflection_confidence') {
+                      streamingMsg.reflectionConfidence = {
+                        confidenceScore: data.confidenceScore,
+                        selfScore: data.selfScore,
+                        shouldEarlyStop: data.shouldEarlyStop,
+                        reason: data.reason,
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v5.0: budget_exceeded — 预算超出
+                    if (data.type === 'budget_exceeded') {
+                      streamingMsg.budgetExceeded = {
+                        reason: data.reason,
+                        consumedTurns: data.consumedTurns,
+                        consumedTokens: data.consumedTokens,
+                        maxTurns: data.maxTurns,
+                        maxTokens: data.maxTokens,
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v5.0: complexity_assessment — 复杂度评估
+                    if (data.type === 'complexity_assessment') {
+                      streamingMsg.complexityAssessment = {
+                        level: data.level,
+                        estimatedSteps: data.estimatedSteps,
+                        reason: data.reason,
+                        recommendedMode: data.recommendedMode,
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v5.0: replan_triggered — 重规划触发
+                    if (data.type === 'replan_triggered') {
+                      streamingMsg.replanTriggered = {
+                        reason: data.reason,
+                        oldPlanId: data.oldPlanId,
+                        newPlanId: data.newPlanId,
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v5.0: context_compressed — 上下文压缩
+                    if (data.type === 'context_compressed') {
+                      streamingMsg.contextCompressed = {
+                        compressedTurns: data.compressedTurns,
+                        summaryLength: data.summaryLength,
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v6.0: plan_step_completed — 计划步骤完成
+                    if (data.type === 'plan_step_completed') {
+                      streamingMsg.planStepCompleted = {
+                        planId: data.planId || '',
+                        step: data.step || 0,
+                        description: data.description || '',
+                        toolName: data.toolName,
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v6.0: circuit_breaker_triggered — 熔断器触发
+                    if (data.type === 'circuit_breaker_triggered') {
+                      streamingMsg.circuitBreakerTriggered = {
+                        toolName: data.toolName || 'unknown',
+                        failureCount: data.failureCount || 0,
+                        state: data.state || 'open',
+                        alternativeTool: data.alternativeTool,
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v6.0: complexity_upgraded — 复杂度升级
+                    if (data.type === 'complexity_upgraded') {
+                      streamingMsg.complexityUpgraded = {
+                        oldLevel: data.oldLevel || 'simple',
+                        newLevel: data.newLevel || 'moderate',
+                        reason: data.reason || '',
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v6.0: llm_reflection — LLM 辅助反思
+                    if (data.type === 'llm_reflection') {
+                      streamingMsg.llmReflection = {
+                        insight: data.insight || '',
+                        confidenceScore: data.confidenceScore ?? 0,
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v6.0: memory_retrieved — 长期记忆检索
+                    if (data.type === 'memory_retrieved') {
+                      streamingMsg.memoryRetrieved = {
+                        count: data.count ?? 0,
+                        summaries: data.summaries || [],
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v6.0: output_repaired — 输出修复
+                    if (data.type === 'output_repaired') {
+                      streamingMsg.outputRepaired = {
+                        toolName: data.toolName || 'unknown',
+                        repairDetails: data.repairDetails || '',
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v6.0: budget_adjusted — 预算调整
+                    if (data.type === 'budget_adjusted') {
+                      streamingMsg.budgetAdjusted = {
+                        oldMaxTurns: data.oldMaxTurns ?? 0,
+                        newMaxTurns: data.newMaxTurns ?? 0,
+                        oldMaxTokens: data.oldMaxTokens,
+                        newMaxTokens: data.newMaxTokens,
+                        reason: data.reason || '',
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
                     }
                     // v3.0: client_tool 事件 — 服务端通知前端有插件需要在 reasoning 流中自动调用
                     if (data.type === 'client_tool') {

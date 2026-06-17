@@ -31,6 +31,7 @@ import { SessionReferenceSelector } from './SessionReferenceSelector';
 import type { SendMessageOptions } from '../../hooks/useChat';
 import { uploadFile } from '../../services/api';
 import { API_BASE_URL } from '../../constants/api';
+import { useAiEngineSettings } from '../../contexts/AppSettingsContext';
 
 
 // ===================== Props =====================
@@ -101,6 +102,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { models: modelList, isLoading: modelsLoading } = useModels();
+  const { settings: aiEngineSettings } = useAiEngineSettings();
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [showSkillSelector, setShowSkillSelector] = useState(false);
@@ -497,7 +499,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
       }
     }
 
-    sendMessage(effectiveInput, { skillContext, skillId, referencedSessions, model: effectiveModelId, attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined, reasoningEffort: reasoningEffort || undefined });
+    sendMessage(effectiveInput, { skillContext, skillId, referencedSessions, model: effectiveModelId, attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined, reasoningEffort: reasoningEffort || undefined, executionMode: aiEngineSettings.defaultExecutionMode !== 'legacy' ? aiEngineSettings.defaultExecutionMode : undefined });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
     }

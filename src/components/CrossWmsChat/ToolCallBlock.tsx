@@ -477,7 +477,8 @@ interface ToolCallBlockProps {
 }
 
 const ToolCallBlock = React.memo<ToolCallBlockProps>(function ToolCallBlock({ toolCalls }) {
-  if (!toolCalls || toolCalls.length === 0) return null;
+  // 防御性检查：toolCalls 可能不是数组（如后端返回 JSON string 未被解析）
+  if (!toolCalls || !Array.isArray(toolCalls) || toolCalls.length === 0) return null;
 
   // 找到当前正在执行的工具索引（第一个没有 result 的）
   const runningIndex = toolCalls.findIndex((tc) => !tc.result);

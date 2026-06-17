@@ -203,6 +203,9 @@ const SettingsPanel: React.FC = () => {
           automation:          { enabled: false, status: 'unknown' as const, lastChecked: null },
         },
       },
+      aiEngine: {
+        defaultExecutionMode: 'legacy',
+      },
     });
     setErrors({});
     showToast('已重置为默认值', 'info');

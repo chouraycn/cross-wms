@@ -16,6 +16,8 @@ interface UpdateContextType {
   checkForUpdates: () => Promise<UpdateStatus>;
   hideUpdateNotification: () => void;
   downloadUpdate: () => void;
+  /** 当前版本号（pywebview 环境下可能从 version.txt 动态获取） */
+  currentVersion: string;
 }
 
 const UpdateContext = createContext<UpdateContextType | undefined>(undefined);
@@ -163,6 +165,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         checkForUpdates,
         hideUpdateNotification,
         downloadUpdate,
+        currentVersion,
       }}
     >
       {children}

@@ -14,7 +14,7 @@ import { ToastProvider, useToast } from './contexts/ToastContext';
 import UpdateNotification from './components/UpdateNotification';
 import { WindowDragBar } from './components/Layout/WindowDragBar';
 import { ChatContainer } from './components/CrossWmsChat/ChatContainer';
-import { ChatProvider } from './contexts/ChatContext';
+import { ChatProvider, useChatSession } from './contexts/ChatContext';
 import { ToolPermissionProvider } from './contexts/ToolPermissionContext';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
@@ -430,6 +430,40 @@ function getPageRefreshKey(pathname: string): string {
 }
 
 /** 主布局（需要在 Router 内部以使用 useLocation / useNavigate） */
+/**
+ * 路由级会话同步组件 — 从非聊天页切回 /chat 时自动创建新会话
+ *
+ * 覆盖所有导航路径（不仅限于 NavList 的 navigate-chat 事件）：
+ * - 浏览器后退/前进按钮
+ * - /settings → /chat 重定向
+ * - URL 直接输入
+ * - 其他任何编程式导航
+ *
+ * 例外：URL 含 session 参数时（用户点击了历史对话），不创建新会话
+ */
+const ChatRouteSync: React.FC = () => {
+  const location = useLocation();
+  const prevPathRef = useRef(location.pathname);
+  const { session, handleNewChat } = useChatSession();
+
+  useEffect(() => {
+    const prevPath = prevPathRef.current;
+    prevPathRef.current = location.pathname;
+
+    // 仅当从非 /chat 页切到 /chat 时触发
+    if (location.pathname === '/chat' && prevPath !== '/chat') {
+      const searchParams = new URLSearchParams(location.search);
+      // URL 含 session（历史对话点击）或 skill（技能对话）参数时不创建新会话
+      if (searchParams.has('session') || searchParams.has('skill')) return;
+      // 当前会话已经是空会话（NavList 的 navigate-chat 事件已触发），跳过
+      if (session.messages.length === 0) return;
+      // 创建新会话
+      handleNewChat();
+    }
+  }, [location.pathname, location.search, session, handleNewChat]);
+
+  return null;
+};
 /** P0-1: localStorage 配额告警全局监听 — 必须在 ToastProvider 内部使用 */
 const StorageWarningListener: React.FC = () => {
   const { showToast } = useToast();
@@ -557,8 +591,10 @@ const MainLayout: React.FC = () => {
   return (
     <ToastProvider sidebarCollapsed={sidebarCollapsed}>
       <StorageWarningListener />
+      {/* v1.5.107: 路由级会话同步 — 从非聊天页切回 /chat 时自动创建新会话 */}
+      <ChatRouteSync />
       {/* v1.5.64: 窗口拖拽条 — frameless pywebview 窗口移动入口 */}
-      <WindowDragBar height={38} sidebarCollapsed={sidebarCollapsed} />
+      <WindowDragBar height={38} />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Sidebar — 单栏布局 */}
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} settingsOpen={settingsPopoverOpen} onSettingsOpenChange={setSettingsPopoverOpen} />

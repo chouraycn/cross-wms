@@ -232,8 +232,9 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
     return { label: '工具调用', icon: <CodeIcon sx={{ fontSize: 16 }} />, color: '#F59E0B' };
   };
 
-  // 监听侧边栏事件
+  // 自动聚焦输入框（仅 page 模式，监听 cdf-know-clow-navigate-chat / focus-chat 事件）
   useEffect(() => {
+    if (!isPage) return;
     const focusInput = () => {
       setTimeout(() => {
         const editable = document.querySelector('[contenteditable="true"]') as HTMLElement;
@@ -248,27 +249,16 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
         }
       }, 200);
     };
-    const handleFocusChat = () => {
-      handleNewChat();
-      focusInput();
-    };
-    const handleSelectSession = (e: Event) => {
-      const sessionId = (e as CustomEvent).detail;
-      if (sessionId) setActiveSessionId(sessionId);
-    };
-    const handleNavigateToChat = () => {
-      handleNewChat();
-      focusInput();
-    };
-    window.addEventListener('cdf-know-clow-focus-chat', handleFocusChat);
-    window.addEventListener('cdf-know-clow-select-session', handleSelectSession);
+    // 仅负责聚焦输入框，会话切换逻辑已移至 ChatProvider（始终注册，避免从非聊天页切换时事件丢失）
+    const handleNavigateToChat = () => focusInput();
+    const handleFocusChat = () => focusInput();
     window.addEventListener('cdf-know-clow-navigate-chat', handleNavigateToChat);
+    window.addEventListener('cdf-know-clow-focus-chat', handleFocusChat);
     return () => {
-      window.removeEventListener('cdf-know-clow-focus-chat', handleFocusChat);
-      window.removeEventListener('cdf-know-clow-select-session', handleSelectSession);
       window.removeEventListener('cdf-know-clow-navigate-chat', handleNavigateToChat);
+      window.removeEventListener('cdf-know-clow-focus-chat', handleFocusChat);
     };
-  }, [handleNewChat, setActiveSessionId]);
+  }, [isPage]);
 
   const isEmpty = session.messages.length === 0;
 

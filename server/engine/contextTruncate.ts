@@ -71,7 +71,13 @@ export function truncateContextForModel(
   contextWindow: number,
   maxOutputTokens: number,
   toolsCount: number,
+  workingMemoryMessages?: Array<{ role: string; content: string }>,
 ): { messages: typeof apiMessages; truncated: boolean } {
+  // v5.0: 如果有 workingMemoryMessages，在截断前注入
+  if (workingMemoryMessages && workingMemoryMessages.length > 0) {
+    apiMessages = [...workingMemoryMessages as typeof apiMessages, ...apiMessages];
+  }
+
   // 工具定义开销估算：每个工具约 150 tokens 的 JSON schema
   const toolsTokenEstimate = toolsCount * 150;
   // 安全边距：2000 tokens（避免估算误差导致 400 错误）

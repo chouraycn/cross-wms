@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Box, Typography, IconButton,
   Dialog, Alert, Button, CircularProgress, useTheme,
+  ToggleButtonGroup, ToggleButton,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import LinkIcon from '@mui/icons-material/Link';
@@ -9,10 +10,12 @@ import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 import { useModels } from '../../contexts/ModelsContext';
 import { getGrayScale } from '../../constants/theme';
 import ModelManager from '../shared/ModelManager';
 import SystemAuthBanner from './SystemAuthBanner';
+import { useAiEngineSettings, type ExecutionMode } from '../../contexts/AppSettingsContext';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar tabs                                                        */
@@ -175,12 +178,89 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
             </>
           )}
           {activeTab === 'mcp' && <PlaceholderTab title="MCP" description="MCP Server 配置功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
-          {activeTab === 'chat' && <PlaceholderTab title="对话" description="对话设置功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
+          {activeTab === 'chat' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>对话引擎</Typography>
+              <Typography sx={{ fontSize: '0.8rem', color: gs.textSecondary, mb: 3 }}>
+                选择 AI 工具执行的策略模式
+              </Typography>
+              <ExecutionModeSelector />
+            </Box>
+          )}
           {activeTab === 'auth' && <PlaceholderTab title="外部应用授权" description="外部应用授权管理功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
         </Box>
       </Box>
     </Dialog>
   );
 };
+
+// ===================== Execution Mode Selector =====================
+
+const EXECUTION_MODE_OPTIONS: { value: ExecutionMode; label: string; desc: string }[] = [
+  { value: 'legacy', label: '经典', desc: 'AI 直接调用工具并返回结果，无额外规划或反思' },
+  { value: 'observer', label: '观察者', desc: '工具执行后自动评估结果，失败时注入反思提示并重试' },
+  { value: 'planner', label: '规划器', desc: '复杂任务先拆解为执行计划，按步骤依次执行，动态调整' },
+  { value: 'react', label: 'ReAct', desc: '完整推理-行动-观察-反思循环，AI 具备真正的思考能力' },
+];
+
+function ExecutionModeSelector() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+  const { settings: aiEngine, updateSettings } = useAiEngineSettings();
+
+  const handleChange = (_: React.MouseEvent<HTMLElement>, newMode: string | null) => {
+    if (newMode && newMode !== aiEngine.defaultExecutionMode) {
+      updateSettings({ aiEngine: { defaultExecutionMode: newMode as ExecutionMode } });
+    }
+  };
+
+  return (
+    <Box>
+      <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: gs.textPrimary, mb: 1.5 }}>
+        默认执行模式
+      </Typography>
+      <ToggleButtonGroup
+        value={aiEngine.defaultExecutionMode}
+        exclusive
+        onChange={handleChange}
+        size="small"
+        sx={{ mb: 3, flexWrap: 'wrap', gap: 0.5 }}
+      >
+        {EXECUTION_MODE_OPTIONS.map(opt => (
+          <ToggleButton key={opt.value} value={opt.value} sx={{
+            px: 2, py: 0.75, borderRadius: 1.5, border: '1px solid',
+            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+            textTransform: 'none', fontSize: '0.78rem',
+            '&.Mui-selected': { backgroundColor: isDark ? 'rgba(99,102,241,0.2)' : 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.5)' },
+          }}>
+            {opt.label}
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
+
+      {EXECUTION_MODE_OPTIONS.map(opt => (
+        <Box key={opt.value} sx={{
+          mb: 2, p: 2, borderRadius: 2, border: '1px solid',
+          borderColor: aiEngine.defaultExecutionMode === opt.value ? 'rgba(99,102,241,0.4)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'),
+          backgroundColor: aiEngine.defaultExecutionMode === opt.value ? (isDark ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.03)') : 'transparent',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+            {opt.value === 'react' && <PsychologyIcon sx={{ fontSize: 18, color: aiEngine.defaultExecutionMode === opt.value ? 'rgba(99,102,241,1)' : gs.textSecondary }} />}
+            <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: aiEngine.defaultExecutionMode === opt.value ? gs.textPrimary : gs.textSecondary }}>
+              {opt.label}
+            </Typography>
+            <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled, fontFamily: 'monospace' }}>
+              {opt.value}
+            </Typography>
+          </Box>
+          <Typography sx={{ fontSize: '0.78rem', color: gs.textSecondary, lineHeight: 1.5 }}>
+            {opt.desc}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
 
 export default AISettingsDialog;

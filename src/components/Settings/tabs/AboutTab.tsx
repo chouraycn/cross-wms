@@ -55,7 +55,7 @@ const AboutTab: React.FC<AboutTabProps> = ({
   const gs = getGrayScale(isDark);
 
   // ---- Update check state ----
-  const { checkForUpdates: globalCheckForUpdates, updateStatus, showUpdateNotification, downloadUpdate } = useUpdateContext();
+  const { checkForUpdates: globalCheckForUpdates, updateStatus, showUpdateNotification, downloadUpdate, currentVersion } = useUpdateContext();
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [localUpdateStatus, setLocalUpdateStatus] = useState<UpdateStatus | null>(null);
   const effectiveUpdateStatus = showUpdateNotification ? updateStatus : localUpdateStatus;
@@ -106,7 +106,7 @@ const AboutTab: React.FC<AboutTabProps> = ({
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Typography sx={{ color: gs.textMuted, fontSize: '0.875rem' }}>版本</Typography>
-          <Typography sx={{ color: gs.textPrimary, fontSize: '0.875rem', fontWeight: 500 }}>V{APP_VERSION}</Typography>
+          <Typography sx={{ color: gs.textPrimary, fontSize: '0.875rem', fontWeight: 500 }}>V{currentVersion}</Typography>
         </Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Typography sx={{ color: gs.textMuted, fontSize: '0.875rem' }}>构建日期</Typography>
@@ -204,7 +204,7 @@ const AboutTab: React.FC<AboutTabProps> = ({
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
               <Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>显示版本号</Typography>
               <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
-                在侧边栏 Logo 旁显示当前版本号（v{APP_VERSION}）
+                在侧边栏 Logo 旁显示当前版本号（v{currentVersion}）
               </Typography>
             </Box>
           }

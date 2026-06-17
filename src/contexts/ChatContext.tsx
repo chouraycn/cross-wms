@@ -139,6 +139,13 @@ function loadSessionsFromCache(): Session[] {
   return [];
 }
 
+/** 安全地将 timestamp 转为 ISO 字符串（兼容 Date 对象和 string） */
+function timestampToISO(ts: Date | string): string {
+  if (ts instanceof Date) return ts.toISOString();
+  if (typeof ts === 'string') return ts;
+  return String(ts);
+}
+
 /** 保存会话到 localStorage（离线缓存，不包含消息内容以节省空间） */
 function saveSessionsToCache(sessions: Session[]): void {
   try {
@@ -149,7 +156,7 @@ function saveSessionsToCache(sessions: Session[]): void {
         ...m,
         // 截断长内容
         content: m.content.length > 200 ? m.content.slice(0, 200) + '...' : m.content,
-        timestamp: m.timestamp.toISOString(),
+        timestamp: timestampToISO(m.timestamp),
       })),
     }));
     getDebouncedStorage(500).setItem(SESSIONS_CACHE_KEY, JSON.stringify(serializable));
@@ -171,8 +178,8 @@ async function fetchSessionsFromAPI(retries = 5): Promise<Session[]> {
           ...s,
           messages: [], // 列表不加载消息，按需懒加载
           messageCount: (s as any).messageCount, // 后端返回值（undefined 表示未提供）
-          createdAt: new Date(s.createdAt as string),
-          updatedAt: new Date(s.updatedAt as string),
+          createdAt: s.createdAt as string,       // 保持 string 类型，不做 Date 转换
+          updatedAt: s.updatedAt as string,       // 保持 string 类型，不做 Date 转换
         })) as Session[];
       }
       // 响应格式异常（如后端返回的 sessions 不是数组），直接放弃
@@ -219,8 +226,8 @@ async function createSessionViaAPI(title: string, model: string): Promise<Sessio
       return {
         ...data.session,
         messages: [],
-        createdAt: new Date(data.session.createdAt),
-        updatedAt: new Date(data.session.updatedAt),
+        createdAt: data.session.createdAt as string,   // 保持 string 类型，不做 Date 转换
+        updatedAt: data.session.updatedAt as string,   // 保持 string 类型，不做 Date 转换
       } as Session;
     }
   } catch (e) {
@@ -524,6 +531,21 @@ export function ChatProvider({
       }
     }
     // 4. 流式更新：不触及 sessions → sidebar 不重渲染
+    // 5. 流式完成后同步消息到 sessions + 更新 updatedAt + 移到顶部
+    const lastMsg = updatedSession.messages[updatedSession.messages.length - 1];
+    if (existingIdx !== -1 && lastMsg && lastMsg.role === 'assistant' && !lastMsg.isStreaming) {
+      setSessions((prev) => {
+        const existing = prev.find((s) => s.id === updatedSession.id);
+        if (existing && existing.messages.length < updatedSession.messages.length) {
+          const now = new Date().toISOString();
+          const updatedItem: Session = { ...existing, messages: updatedSession.messages, messageCount: updatedSession.messages.length, updatedAt: now };
+          // 将活跃会话移到顶部（最新的在最上面）
+          const rest = prev.filter((s) => s.id !== updatedSession.id);
+          return [updatedItem, ...rest];
+        }
+        return prev;
+      });
+    }
   }, [syncSidebar]);
 
   // ===================== 新建对话 =====================
@@ -534,6 +556,28 @@ export function ChatProvider({
     setActiveSessionIdState(newSession.id);
     setActiveSession(newSession);
   }, [defaultModel]);
+
+  // ===================== 监听侧边栏事件（始终注册，避免从非聊天页切换时事件丢失） =====================
+  useEffect(() => {
+    const handleFocusChat = () => {
+      handleNewChat();
+    };
+    const handleSelectSession = (e: Event) => {
+      const sessionId = (e as CustomEvent).detail;
+      if (sessionId) setActiveSessionId(sessionId);
+    };
+    const handleNavigateToChat = () => {
+      handleNewChat();
+    };
+    window.addEventListener('cdf-know-clow-focus-chat', handleFocusChat);
+    window.addEventListener('cdf-know-clow-select-session', handleSelectSession);
+    window.addEventListener('cdf-know-clow-navigate-chat', handleNavigateToChat);
+    return () => {
+      window.removeEventListener('cdf-know-clow-focus-chat', handleFocusChat);
+      window.removeEventListener('cdf-know-clow-select-session', handleSelectSession);
+      window.removeEventListener('cdf-know-clow-navigate-chat', handleNavigateToChat);
+    };
+  }, [handleNewChat, setActiveSessionId]);
 
   // ===================== 删除会话 =====================
   const handleDeleteSession = useCallback((id: string) => {
