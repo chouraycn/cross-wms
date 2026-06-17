@@ -164,11 +164,8 @@ export interface Message {
     reason: string;
     recommendedMode: string;
   };
-  /** v5.0: 上下文压缩信息 */
-  contextCompressed?: {
-    compressedTurns: number;
-    summaryLength: number;
-  };
+  /** v6.0: 上下文语义压缩信息 */
+  contextCompressed?: ContextCompressedData;
   /** v5.0: 重规划触发信息 */
   replanTriggered?: {
     reason: string;
@@ -394,11 +391,23 @@ export interface ReplanTriggeredEvent {
   newPlanId: string;
 }
 
+/** v6.0: 语义压缩数据（context_compressed SSE 事件负载） */
+export interface ContextCompressedData {
+  strategy: 'semantic' | 'extractive' | 'truncation';
+  originalTokens: number;
+  compressedTokens: number;
+  ratio: number;
+  keyInfoPreserved?: string[];
+}
+
 /** 上下文压缩事件 */
 export interface ContextCompressedEvent {
   type: 'context_compressed';
-  compressedTurns: number;
-  summaryLength: number;
+  strategy: 'semantic' | 'extractive' | 'truncation';
+  originalTokens: number;
+  compressedTokens: number;
+  ratio: number;
+  keyInfoPreserved?: string[];
 }
 
 // ===== v6.0: SSE 新增事件类型 =====

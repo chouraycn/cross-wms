@@ -15,6 +15,7 @@ import { useModels } from '../../contexts/ModelsContext';
 import { getGrayScale } from '../../constants/theme';
 import ModelManager from '../shared/ModelManager';
 import SystemAuthBanner from './SystemAuthBanner';
+import MCPSettingsTab from './MCPSettingsTab';
 import { useAiEngineSettings, type ExecutionMode } from '../../contexts/AppSettingsContext';
 
 /* ------------------------------------------------------------------ */
@@ -177,7 +178,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
               )}
             </>
           )}
-          {activeTab === 'mcp' && <PlaceholderTab title="MCP" description="MCP Server 配置功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
+          {activeTab === 'mcp' && <MCPSettingsTab />}
           {activeTab === 'chat' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>对话引擎</Typography>
