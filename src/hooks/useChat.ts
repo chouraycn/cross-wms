@@ -670,11 +670,14 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
                       });
                     }
-                    // v5.0: context_compressed — 上下文压缩
+                    // v6.0: context_compressed — 语义压缩
                     if (data.type === 'context_compressed') {
                       streamingMsg.contextCompressed = {
-                        compressedTurns: data.compressedTurns,
-                        summaryLength: data.summaryLength,
+                        strategy: data.strategy || 'semantic',
+                        originalTokens: data.originalTokens ?? 0,
+                        compressedTokens: data.compressedTokens ?? 0,
+                        ratio: data.ratio ?? 0,
+                        keyInfoPreserved: data.keyInfoPreserved,
                       };
                       onSessionUpdateRef.current({
                         ...sessionWithStreaming,

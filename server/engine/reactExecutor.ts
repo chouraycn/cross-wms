@@ -44,6 +44,8 @@ import { Observer, type Observation, type ObserverEvent } from './observer.js';
 import { Planner, type ExecutionPlan } from './planner.js';
 import { getToolDefinitions, executeToolCall } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
+import { mcpClientManager } from './mcpClientManager.js';
+import { isMcpToolName, getMcpServerPrefix } from './mcpTypes.js';
 import { truncateContextForModel } from './contextTruncate.js';
 import type { ToolExecutionResult } from './toolExecutor.js';
 import type { ExecutionStrategyOptions } from './executionStrategy.js';
@@ -55,6 +57,12 @@ import { ObservationCompressor, needsCompression } from './observationCompressor
 import { CircuitBreaker } from './circuitBreaker.js';
 import { LongTermMemory } from './longTermMemory.js';
 import { OutputValidator } from './outputValidator.js';
+import { ToolPermissionSandbox, type PermissionContext, type PermissionDecision } from './toolPermissionSandbox.js';
+import { PlanDoCheck, type PDCACheckResult } from './planDoCheck.js';
+import { ABTestFramework, type ExperimentVariant, type ExperimentResult } from './abTestFramework.js';
+import { ToolDependencyGraph, type ToolCallNode, type TopologyLayer } from './toolDependencyGraph.js';
+import { SemanticCompressor, type CompressionResult } from './semanticCompressor.js';
+import { MultilingualIntent, type IntentResult } from './multilingualIntent.js';
 
 // ===================== 类型定义 =====================
 
@@ -118,6 +126,12 @@ interface ReActState {
   terminateReason: string;
   /** v6.0: P0-1 计划步骤指针 */
   currentStepIndex: number;
+  /** v6.0: P2-1 当前复杂度等级（用于权限沙箱上下文） */
+  currentComplexityLevel: 'simple' | 'moderate' | 'complex';
+  /** v6.0: P2-3 最近一次反思置信度评分 */
+  lastConfidenceScore: number;
+  /** v6.0: P2-3 是否提前终止 */
+  earlyTermination: boolean;
 }
 
 /** 复杂度评估结果（内部使用） */
@@ -126,27 +140,6 @@ interface ComplexityAssessment {
   estimatedSteps: number;
   reason: string;
   recommendedMode: string;
-}
-
-// ===================== 工具风险分级 =====================
-
-const TOOL_RISK_LEVELS: Record<string, string> = {
-  'system_info': 'auto', 'file_listDir': 'auto', 'file_readFile': 'auto',
-  'db_query': 'auto', 'desktop_health': 'auto', 'desktop_screenshot': 'auto',
-  'app_setBotName': 'auto', 'wms_inventory': 'auto', 'web_search': 'auto',
-  'web_fetch': 'auto', 'file_writeFile': 'confirm', 'shell_exec': 'confirm',
-  'web_api_call': 'confirm', 'browser_navigate': 'confirm', 'browser_click': 'confirm',
-  'browser_type': 'confirm', 'desktop_click': 'high-risk', 'desktop_type': 'high-risk',
-  'desktop_key_press': 'high-risk', 'desktop_app_launch': 'auto',
-  'desktop_app_quit': 'high-risk', 'desktop_window_focus': 'high-risk',
-  'desktop_clipboard': 'high-risk', 'desktop_scroll': 'high-risk',
-  'desktop_see': 'high-risk', 'browser_snapshot': 'auto', 'browser_screenshot': 'auto',
-  'web_hook_listen': 'confirm', 'web_hook_poll': 'auto', 'web_hook_stop': 'auto',
-};
-
-/** 获取工具风险等级，未知工具默认 confirm */
-function getToolRiskLevel(name: string): string {
-  return TOOL_RISK_LEVELS[name] || 'confirm';
 }
 
 // ===================== ReActExecutor =====================
@@ -175,6 +168,12 @@ export class ReActExecutor {
   private circuitBreaker: CircuitBreaker;
   private longTermMemory: LongTermMemory;
   private outputValidator: OutputValidator;
+  private permissionSandbox: ToolPermissionSandbox;
+  private planDoCheck: PlanDoCheck;
+  private abTestFramework: ABTestFramework;
+  private dependencyGraph: ToolDependencyGraph;
+  private semanticCompressor: SemanticCompressor;
+  private multilingualIntent: MultilingualIntent;
 
   constructor(observer?: Observer, planner?: Planner, budgetConfig?: Partial<BudgetConfig>) {
     this.observer = observer ?? new Observer();
@@ -186,6 +185,12 @@ export class ReActExecutor {
     this.circuitBreaker = new CircuitBreaker();
     this.longTermMemory = new LongTermMemory();
     this.outputValidator = new OutputValidator();
+    this.permissionSandbox = new ToolPermissionSandbox();
+    this.planDoCheck = new PlanDoCheck();
+    this.abTestFramework = new ABTestFramework();
+    this.dependencyGraph = new ToolDependencyGraph();
+    this.semanticCompressor = new SemanticCompressor();
+    this.multilingualIntent = new MultilingualIntent();
     this.state = this.createInitialState();
   }
 
@@ -197,6 +202,9 @@ export class ReActExecutor {
       shouldTerminate: false,
       terminateReason: '',
       currentStepIndex: 0,
+      currentComplexityLevel: 'moderate',
+      lastConfidenceScore: 0,
+      earlyTermination: false,
     };
   }
 
@@ -228,14 +236,22 @@ export class ReActExecutor {
     this.circuitBreaker.reset();
     this.workingMemory.reset();
     this.outputValidator.reset();
+    this.planDoCheck.reset();
 
     // v6.0: P1-1 会话 ID（用于长期记忆写入）
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-    // 获取工具定义
+    // v6.0: P2-3 A/B 测试（选择实验变体）
+    const experimentId = 'react_v6_optimization';
+    const selectedVariant = this.abTestFramework.selectVariant(experimentId, sessionId);
+    const variantName = selectedVariant?.name ?? 'default';
+    const executionStartTime = Date.now();
+
+    // 获取工具定义（内置 + 插件 + MCP）
     const builtinTools = getToolDefinitions();
     const pluginTools = pluginRegistry.getActiveTools();
-    const tools = [...builtinTools, ...pluginTools];
+    const mcpTools = mcpClientManager.getMcpTools();
+    const tools = [...builtinTools, ...pluginTools, ...mcpTools];
 
     // 复制消息列表
     const currentMessages = [...messages];
@@ -263,6 +279,7 @@ export class ReActExecutor {
 
     // ============== v5.0: 复杂度评估 SSE ==============
     let complexityAssessment = this.assessComplexity(messages);
+    this.state.currentComplexityLevel = complexityAssessment.level;
     if (onSSEEvent) {
       onSSEEvent({
         type: 'complexity_assessment',
@@ -369,6 +386,7 @@ export class ReActExecutor {
             reason: `简单路径置信度过低(${simpleDecision.confidenceScore}/10)，升级为完整 ReAct`,
             recommendedMode: 'react',
           };
+          this.state.currentComplexityLevel = 'moderate';
 
           // 推送 complexity_upgraded SSE
           if (onSSEEvent) {
@@ -674,6 +692,9 @@ export class ReActExecutor {
 
       const decision = this.reflectionPhase(observations);
 
+      // v6.0: P2-3 更新最近置信度评分
+      this.state.lastConfidenceScore = decision.confidenceScore;
+
       // v5.0: 推送 reflection_confidence SSE 事件（v5.1: 含 selfEvaluation）
       if (onSSEEvent) {
         const sseEvent: Record<string, unknown> = {
@@ -739,6 +760,39 @@ export class ReActExecutor {
             console.log(`[ReActExecutor] 工具 ${obs.toolCall.name} 将重试（第 ${retryIndex + 1}/${obs.assessment.maxRetries} 次）`);
           }
         }
+      }
+
+      // v6.0: P2-2 PDCA Check（每轮反思后评估计划进度）
+      const pdcaResult = this.planDoCheck.check(plan, decision.confidenceScore);
+      if (onSSEEvent) {
+        onSSEEvent({
+          type: 'pdca_check',
+          decision: pdcaResult.decision,
+          reason: pdcaResult.reason,
+          progressPercent: pdcaResult.progressPercent,
+          confidence: pdcaResult.confidence,
+        });
+      }
+
+      // PDCA 决策处理
+      if (pdcaResult.decision === 'abort') {
+        this.state.shouldTerminate = true;
+        this.state.terminateReason = `PDCA 中止: ${pdcaResult.reason}`;
+        console.warn(`[ReActExecutor] PDCA 中止: ${pdcaResult.reason}`);
+      } else if (pdcaResult.decision === 'adjust' && plan) {
+        // 标记失败步骤为 skipped，调整后续步骤
+        for (const step of plan.steps) {
+          if (step.status === 'failed') {
+            step.status = 'skipped';
+          }
+        }
+        if (pdcaResult.adjustmentSuggestion) {
+          currentMessages.push({
+            role: 'system',
+            content: `[PDCA 调整建议] ${pdcaResult.adjustmentSuggestion}`,
+          } as typeof currentMessages[number]);
+        }
+        console.log(`[ReActExecutor] PDCA 调整: ${pdcaResult.reason}`);
       }
 
       // ============== v5.0: Loop detection ==============
@@ -866,6 +920,7 @@ export class ReActExecutor {
             reason: `置信度过低(${decision.confidenceScore}/10)，升级为完整 ReAct`,
             recommendedMode: 'react',
           };
+          this.state.currentComplexityLevel = 'moderate';
 
           if (onSSEEvent) {
             onSSEEvent({
@@ -887,6 +942,7 @@ export class ReActExecutor {
             reason: `连续低置信度(${decision.confidenceScore}/10)，任务比预期复杂`,
             recommendedMode: 'react',
           };
+          this.state.currentComplexityLevel = 'complex';
 
           if (onSSEEvent) {
             onSSEEvent({
@@ -947,20 +1003,42 @@ export class ReActExecutor {
         }
       }
 
-      // ============== v5.0: Working memory compression ==============
+      // ============== v6.0: P2-5 语义保留压缩 ==============
       if (this.workingMemory.needsCompression()) {
         const turnCountBefore = this.workingMemory.getTurnCount();
-        const compressedSummary = await this.workingMemory.compressOldTurns(modelConfig, signal);
-        const turnCountAfter = this.workingMemory.getTurnCount();
-        const compressedTurns = turnCountBefore - turnCountAfter;
 
-        // v5.0: 推送 context_compressed SSE 事件
-        if (onSSEEvent) {
-          onSSEEvent({
-            type: 'context_compressed',
-            compressedTurns,
-            summaryLength: compressedSummary.length,
-          });
+        // 获取需要压缩的旧轮次
+        const oldTurns = this.workingMemory.getOldTurnsForCompression();
+
+        if (oldTurns.length > 0) {
+          // 收集旧轮次的观察结果
+          const oldObservations = oldTurns.flatMap(t => t.observations);
+          const existingSummary = this.workingMemory.getSummary();
+
+          // 使用语义压缩替代通用压缩
+          const compressionResult = await this.semanticCompressor.compress(
+            oldObservations,
+            existingSummary,
+            modelConfig,
+            signal,
+          );
+
+          // 更新 workingMemory 的摘要缓存
+          this.workingMemory.updateSummaryCache(compressionResult.compressed);
+          this.workingMemory.removeCompressedTurns(oldTurns.length);
+
+          const turnCountAfter = this.workingMemory.getTurnCount();
+          const compressedTurns = turnCountBefore - turnCountAfter;
+
+          if (onSSEEvent) {
+            onSSEEvent({
+              type: 'context_compressed',
+              compressedTurns,
+              summaryLength: compressionResult.compressedLength,
+              compressionStrategy: compressionResult.strategy,
+              preservedEntities: compressionResult.preservedEntities.slice(0, 5),
+            });
+          }
         }
       }
     }
@@ -971,13 +1049,35 @@ export class ReActExecutor {
     // v6.0: P1-1 长期记忆清理（定期修剪 + 关闭连接）
     this.longTermMemory.prune(1000);
 
+    // v6.0: P2-3 更新 earlyTermination 状态
+    this.state.earlyTermination = this.state.shouldTerminate && this.state.terminateReason !== 'task_completed';
+
+    // v6.0: P2-3 A/B 测试（记录实验结果）
+    this.abTestFramework.recordResult({
+      experimentId,
+      variantName,
+      sessionId,
+      metrics: {
+        totalTurns: this.state.turn,
+        toolCallCount: executedToolCalls.length,
+        toolSuccessRate: executedToolCalls.length > 0
+          ? executedToolCalls.filter(tc => !tc.result.includes('"error"')).length / executedToolCalls.length
+          : 0,
+        finalConfidence: this.state.lastConfidenceScore,
+        executionTimeMs: Date.now() - executionStartTime,
+        earlyTermination: this.state.earlyTermination,
+        complexityLevel: complexityAssessment.level,
+      },
+      timestamp: Date.now(),
+    });
+
     return {
       content: finalContent,
       toolCalls: executedToolCalls,
       plan,
       observations: allObservations,
       totalTurns: this.state.turn,
-      earlyTermination: this.state.shouldTerminate && this.state.terminateReason !== 'task_completed',
+      earlyTermination: this.state.earlyTermination,
     };
   }
 
@@ -1074,21 +1174,100 @@ export class ReActExecutor {
 
     const toolCalls = response.toolCalls;
 
-    // 按风险等级分组
-    const autoGroup = toolCalls.filter(tc => getToolRiskLevel(tc.function.name) === 'auto');
-    const confirmGroup = toolCalls.filter(tc => getToolRiskLevel(tc.function.name) === 'confirm');
-    const highRiskGroup = toolCalls.filter(tc => getToolRiskLevel(tc.function.name) === 'high-risk');
+    // v6.0: P2-1 使用 ToolPermissionSandbox 分组
+    const permissionContext: PermissionContext = {
+      complexityLevel: this.state.currentComplexityLevel,
+      currentTurn: this.state.turn,
+      executedTools: context.executedToolCalls.map(tc => tc.name),
+      userMessage: this.extractUserMessage(context.currentMessages) ?? '',
+    };
+    const allowGroup = toolCalls.filter(tc => {
+      const decision = this.permissionSandbox.getPermission(tc.function.name, permissionContext);
+      return decision.permission === 'allow';
+    });
+    const confirmGroup = toolCalls.filter(tc => {
+      const decision = this.permissionSandbox.getPermission(tc.function.name, permissionContext);
+      return decision.permission === 'confirm';
+    });
+    const highRiskGroup = toolCalls.filter(tc => {
+      const decision = this.permissionSandbox.getPermission(tc.function.name, permissionContext);
+      return decision.permission === 'high-risk';
+    });
+    const denyGroup = toolCalls.filter(tc => {
+      const decision = this.permissionSandbox.getPermission(tc.function.name, permissionContext);
+      return decision.permission === 'deny';
+    });
 
-    // auto 组：Promise.all 并行执行
-    if (autoGroup.length > 0) {
-      const autoResults = await Promise.all(
-        autoGroup.map(async (tc) => {
-          const result = await this.executeToolWithPermission(tc, context);
-          return { toolCall: tc, result };
-        }),
-      );
-      for (const { toolCall, result } of autoResults) {
-        results.set(toolCall, result);
+    // deny 组：跳过执行，返回禁止结果
+    for (const tc of denyGroup) {
+      const denyResult = JSON.stringify({ error: `工具 '${tc.function.name}' 已被权限沙箱禁止执行。` });
+      results.set(tc, denyResult);
+      context.executedToolCalls.push({
+        name: tc.function.name,
+        arguments: tc.function.arguments,
+        result: denyResult,
+      });
+      if (context.onToolCall) {
+        context.onToolCall(tc, denyResult);
+      }
+    }
+
+    // v6.0: P2-4 构建工具依赖图（仅对 allow 组使用 DAG 优化）
+    if (allowGroup.length > 1) {
+      this.dependencyGraph.reset();
+      allowGroup.forEach((tc, idx) => {
+        const decision = this.permissionSandbox.getPermission(tc.function.name, permissionContext);
+        this.dependencyGraph.addNode({
+          id: `allow_${idx}`,
+          toolName: tc.function.name,
+          arguments: tc.function.arguments,
+          index: idx,
+          permission: decision.permission,
+        });
+      });
+      this.dependencyGraph.inferDependencies();
+    }
+
+    // v6.0: P2-4 allow 组：按 DAG 拓扑层级执行
+    if (allowGroup.length > 0) {
+      if (allowGroup.length === 1 || this.dependencyGraph.getEdges().length === 0) {
+        // 单个工具或无依赖：直接 Promise.all 并行
+        const allowResults = await Promise.all(
+          allowGroup.map(async (tc) => {
+            const result = await this.executeToolWithPermission(tc, context);
+            return { toolCall: tc, result };
+          }),
+        );
+        for (const { toolCall, result } of allowResults) {
+          results.set(toolCall, result);
+        }
+      } else {
+        // 多工具有依赖：按拓扑层级执行
+        const layers = this.dependencyGraph.topologicalSort();
+        for (const layer of layers) {
+          if (layer.parallelizable && layer.nodes.length > 1) {
+            // 同层可并行
+            const layerResults = await Promise.all(
+              layer.nodes.map(async (node) => {
+                const tc = allowGroup[node.index];
+                const result = tc ? await this.executeToolWithPermission(tc, context) : '';
+                return { toolCall: tc, result };
+              }),
+            );
+            for (const { toolCall, result } of layerResults) {
+              if (toolCall) results.set(toolCall, result);
+            }
+          } else {
+            // 同层串行
+            for (const node of layer.nodes) {
+              const tc = allowGroup[node.index];
+              if (tc) {
+                const result = await this.executeToolWithPermission(tc, context);
+                results.set(tc, result);
+              }
+            }
+          }
+        }
       }
     }
 
@@ -1139,6 +1318,26 @@ export class ReActExecutor {
       return skipResult;
     }
 
+    // MCP Server 级熔断检查
+    if (isMcpToolName(toolName)) {
+      const prefix = getMcpServerPrefix(toolName);
+      if (prefix && this.circuitBreaker.isMcpServerOpen(prefix)) {
+        const skipResult = JSON.stringify({
+          error: `MCP Server '${prefix}' 已被熔断（连续失败过多），已跳过执行。`,
+          circuitBreakerState: 'open',
+        });
+        context.executedToolCalls.push({
+          name: toolName,
+          arguments: toolCall.function.arguments,
+          result: skipResult,
+        });
+        if (context.onToolCall) {
+          context.onToolCall(toolCall, skipResult);
+        }
+        return skipResult;
+      }
+    }
+
     // 权限检查（confirm 和 high-risk 工具需要确认）
     if (this.needsPermission(toolName)) {
       let hasPermission: boolean;
@@ -1168,8 +1367,30 @@ export class ReActExecutor {
       }
     }
 
-    // 执行工具
-    const result = await executeToolCall(toolCall);
+    // 执行工具（区分 MCP 工具和内置工具）
+    let result: string;
+    if (isMcpToolName(toolName)) {
+      // MCP 工具：委托给 mcpClientManager
+      try {
+        const parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
+        result = await mcpClientManager.executeMcpTool(toolName, parsedArgs);
+        // 记录 MCP Server 级成功
+        const prefix = getMcpServerPrefix(toolName);
+        if (prefix) {
+          this.circuitBreaker.recordMcpServerSuccess(prefix);
+        }
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        result = JSON.stringify({ error: `MCP 工具执行异常: ${errMsg}` });
+        // 记录 MCP Server 级失败
+        const prefix2 = getMcpServerPrefix(toolName);
+        if (prefix2) {
+          this.circuitBreaker.recordMcpServerFailure(prefix2, errMsg);
+        }
+      }
+    } else {
+      result = await executeToolCall(toolCall);
+    }
     context.executedToolCalls.push({
       name: toolName,
       arguments: toolCall.function.arguments,
@@ -1418,8 +1639,8 @@ export class ReActExecutor {
   }
 
   /**
-   * 评估消息复杂度（内部方法，避免循环依赖）。
-   * 与 ExecutionStrategyFactory.assessComplexity 逻辑一致。
+   * 评估消息复杂度（内部方法）。
+   * v6.0: P2-6 使用 MultilingualIntent 多语言意图识别
    */
   private assessComplexity(
     messages: Array<{ role: string; content: MessageContent }>,
@@ -1427,23 +1648,43 @@ export class ReActExecutor {
     const toolCallCount = messages.filter(m => m.role === 'tool').length;
     const userMsgText = this.extractUserMessage(messages) || '';
 
-    if (toolCallCount >= 5 || /先.*再.*然后/.test(userMsgText)) {
-      return { level: 'complex', estimatedSteps: 6, reason: '多步骤复杂任务', recommendedMode: 'react' };
+    // v6.0: P2-6 多语言意图识别
+    const intent = this.multilingualIntent.recognize(userMsgText);
+
+    // 基于意图 + 工具调用数综合评估
+    if (toolCallCount >= 5 || (intent.isMultiStep && intent.estimatedSteps >= 4)) {
+      return {
+        level: 'complex',
+        estimatedSteps: Math.max(intent.estimatedSteps, 6),
+        reason: `多步骤复杂任务 (意图: ${intent.primaryIntent}, 语言: ${intent.detectedLanguage})`,
+        recommendedMode: 'react',
+      };
     }
-    if (toolCallCount >= 2 || /查询|分析/.test(userMsgText)) {
-      return { level: 'moderate', estimatedSteps: 3, reason: '中等复杂任务', recommendedMode: 'planner' };
+    if (toolCallCount >= 2 || intent.intents.some(i => ['query', 'analyze', 'compare'].includes(i))) {
+      return {
+        level: 'moderate',
+        estimatedSteps: Math.max(intent.estimatedSteps, 3),
+        reason: `中等复杂任务 (意图: ${intent.primaryIntent}, 语言: ${intent.detectedLanguage})`,
+        recommendedMode: 'planner',
+      };
     }
-    return { level: 'simple', estimatedSteps: 1, reason: '简单任务', recommendedMode: 'observer' };
+    return {
+      level: 'simple',
+      estimatedSteps: intent.estimatedSteps || 1,
+      reason: `简单任务 (意图: ${intent.primaryIntent}, 语言: ${intent.detectedLanguage})`,
+      recommendedMode: 'observer',
+    };
   }
 
   // ===================== 原有辅助方法 =====================
 
   /**
    * 判断工具是否需要权限确认。
+   * v6.0: P2-1 委托给 ToolPermissionSandbox
    */
-  private needsPermission(name: string): boolean {
-    const level = TOOL_RISK_LEVELS[name] || 'confirm';
-    return level === 'confirm' || level === 'high-risk';
+  private needsPermission(name: string, context?: PermissionContext): boolean {
+    const decision = this.permissionSandbox.getPermission(name, context);
+    return decision.needsConfirmation || decision.permission === 'deny';
   }
 
   /**
@@ -1485,6 +1726,8 @@ export class ReActExecutor {
   }
 }
 
-// ===================== P2 接口预留 =====================
+// ===================== P3 接口预留 =====================
 // - 长期记忆向量检索：sqlite-vss 替代关键词匹配
 // - 结构化输出深度校验：更多 WMS schema + 自定义 schema
+// - 工具权限沙箱动态规则热加载
+// - PDCA 多轮策略自动调优

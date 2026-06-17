@@ -239,6 +239,33 @@ ${this.summaryCache ? `已有摘要: ${this.summaryCache}` : ''}
   }
 
   /**
+   * 获取需要压缩的旧轮次（滑窗之外的）。
+   * v6.0: P2-5 语义压缩支持
+   */
+  getOldTurnsForCompression(): WorkingMemoryTurn[] {
+    if (this.turns.length <= this.windowSize) {
+      return [];
+    }
+    return this.turns.slice(0, this.turns.length - this.windowSize);
+  }
+
+  /**
+   * 更新摘要缓存。
+   * v6.0: P2-5 语义压缩支持
+   */
+  updateSummaryCache(summary: string): void {
+    this.summaryCache = summary;
+  }
+
+  /**
+   * 移除已压缩的轮次。
+   * v6.0: P2-5 语义压缩支持
+   */
+  removeCompressedTurns(count: number): void {
+    this.turns = this.turns.slice(Math.min(count, this.turns.length - this.windowSize));
+  }
+
+  /**
    * 重置工作记忆。
    */
   reset(): void {

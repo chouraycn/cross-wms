@@ -107,6 +107,10 @@ import { listPluginTools } from './engine/toolRegistry.js';
 // v3.0: BrowserHost Client
 import { startBrowserHost, stopBrowserHost, getBrowserHostHealth } from './services/browserHostClient.js';
 
+// v4.0: MCP Client Manager
+import mcpRouter from './routes/mcp.js';
+import { mcpClientManager } from './engine/mcpClientManager.js';
+
 const app = express();
 // CORS: 开发环境允许所有本地来源
 app.use((req, res, next) => {
@@ -202,6 +206,9 @@ app.use('/api/api-credentials', apiCredentialsRouter);
 // ========== v3.0: API Request History Routes ==========
 app.use('/api/api-history', apiHistoryRouter);
 
+// ========== v4.0: MCP Routes ==========
+app.use('/api/mcp', mcpRouter);
+
 const PORT = 3001;
 const server = app.listen(PORT, async () => {
   console.log(`CDF Know Clow Chat Server running on port ${PORT}`);
@@ -217,6 +224,15 @@ const server = app.listen(PORT, async () => {
   if (pluginToolNames.length > 0) {
     console.log('[Plugin Registry] 插件工具已加载:', pluginToolNames.join(', '));
   }
+
+  // v4.0: 启动时连接所有已启用的 MCP Server（异步，不阻塞主流程）
+  setTimeout(async () => {
+    try {
+      await mcpClientManager.connectAllEnabled();
+    } catch (err) {
+      console.error('[McpClientManager] 启动连接失败:', err instanceof Error ? err.message : String(err));
+    }
+  }, 5000);
 
   // v3.0: 启动 BrowserHost 进程（异步，不阻塞主流程）
   setTimeout(async () => {
@@ -262,6 +278,10 @@ const server = app.listen(PORT, async () => {
     // v3.0: 关闭 BrowserHost 进程
     stopBrowserHost().catch(err => {
       console.warn('[Server] BrowserHost 关闭异常:', err);
+    });
+    // v4.0: 关闭 MCP Client Manager
+    mcpClientManager.shutdown().catch(err => {
+      console.warn('[Server] MCP Client Manager 关闭异常:', err);
     });
     // v1.5.68: 在退出前做 WAL checkpoint — 避免进程被 kill 时 WAL 未刷盘，
     // 下次启动时虽然 initDb 会尝试恢复，但提前 checkpoint 可以减少数据丢失风险。

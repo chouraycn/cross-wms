@@ -119,4 +119,40 @@ export class CircuitBreaker {
   reset(): void {
     this.records.clear();
   }
+
+  // ===================== MCP Per-Server 熔断方法 =====================
+
+  /**
+   * 记录 MCP Server 级别失败。
+   * 同一 mcp__{serverName}__ 前缀的工具失败计入同一熔断器。
+   *
+   * @param serverPrefix - sanitized server 前缀（如 "filesystem"）
+   * @param reason - 失败原因
+   * @returns 熔断状态
+   */
+  recordMcpServerFailure(serverPrefix: string, reason: string): CircuitState {
+    const key = `mcp__${serverPrefix}__*`;
+    return this.recordFailure(key, reason);
+  }
+
+  /**
+   * 记录 MCP Server 级别成功。
+   *
+   * @param serverPrefix - sanitized server 前缀
+   */
+  recordMcpServerSuccess(serverPrefix: string): void {
+    const key = `mcp__${serverPrefix}__*`;
+    this.recordSuccess(key);
+  }
+
+  /**
+   * 检查 MCP Server 级别是否已熔断。
+   *
+   * @param serverPrefix - sanitized server 前缀
+   * @returns 是否已熔断（open 状态）
+   */
+  isMcpServerOpen(serverPrefix: string): boolean {
+    const key = `mcp__${serverPrefix}__*`;
+    return this.isOpen(key);
+  }
 }
