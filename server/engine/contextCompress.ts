@@ -7,7 +7,7 @@
  * v1.5.116: 新增 compressContextWithSummary — 上下文溢出时自动压缩
  */
 
-import { estimateTokens, estimateMessagesTokens } from './contextTruncate.js';
+import { estimateTokens, estimateMessagesTokens, sanitizeToolMessages } from './contextTruncate.js';
 import { callAIModel } from '../aiClient.js';
 import type { ModelCallConfig } from '../aiClient.js';
 
@@ -116,6 +116,21 @@ export async function compressContextWithSummary(
     return { messages: apiMessages, compressed: false, truncated: false };
   }
 
+  // v1.5.120: 修正分割点 — 如果 compressStartIdx 落在 tool 消息上，
+  // 向前扫描跳过所有连续的 tool 消息（它们的 parent assistant(tool_calls) 在压缩区）
+  while (compressStartIdx < apiMessages.length &&
+         apiMessages[compressStartIdx].role === 'tool' &&
+         apiMessages[compressStartIdx].tool_call_id) {
+    compressStartIdx++;
+  }
+
+  // 如果调整后所有消息都要被压缩，降级为简单截断
+  if (compressStartIdx >= apiMessages.length) {
+    const { truncateContextForModel } = await import('./contextTruncate.js');
+    const result = truncateContextForModel(apiMessages, contextWindow, maxOutputTokens, toolsCount);
+    return { ...result, compressed: false };
+  }
+
   // 提取待压缩的消息（前 compressStartIdx 条）
   const toCompress = apiMessages.slice(0, compressStartIdx)
     .filter(m => typeof m.content === 'string')
@@ -141,19 +156,22 @@ export async function compressContextWithSummary(
       ...retained,
     ] as typeof apiMessages;
 
+    // v1.5.120: 安全网 — 清理可能的孤儿 tool_calls/tool 消息
+    const sanitizedMessages = sanitizeToolMessages(compressedMessages as Parameters<typeof sanitizeToolMessages>[0]);
+
     // 压缩后再次检查是否超出限制
-    const afterTokens = estimateMessagesTokens(compressedMessages);
+    const afterTokens = estimateMessagesTokens(sanitizedMessages);
     console.log(`[ContextCompress] ✅ 压缩完成: ~${currentTokens} → ~${afterTokens} tokens（摘要 ${estimateTokens(summary)} tokens）`);
 
     if (afterTokens > maxInputTokens) {
       // 压缩后仍然超出，降级为简单截断
       console.log('[ContextCompress] 压缩后仍然超出限制，降级为简单截断');
       const { truncateContextForModel } = await import('./contextTruncate.js');
-      const result = truncateContextForModel(compressedMessages, contextWindow, maxOutputTokens, toolsCount);
+      const result = truncateContextForModel(sanitizedMessages, contextWindow, maxOutputTokens, toolsCount);
       return { ...result, compressed: true };
     }
 
-    return { messages: compressedMessages, compressed: true, truncated: false };
+    return { messages: sanitizedMessages, compressed: true, truncated: false };
   } catch (err) {
     console.warn('[ContextCompress] 压缩失败，降级为简单截断：', err);
     const { truncateContextForModel } = await import('./contextTruncate.js');

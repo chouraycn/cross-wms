@@ -12,6 +12,7 @@
 // ===================== 类型定义 =====================
 
 import { isLocalModel } from './modelsStore.js';
+import { sanitizeToolMessages } from './engine/contextTruncate.js';
 
 /** 消息内容类型（支持 OpenAI Vision 格式） */
 export type MessageContent = string | Array<{
@@ -785,7 +786,8 @@ export async function callAIModelStream(
       }
       // v1.5.62-fix: DeepSeek API 不支持 image_url 格式，自动剥离多模态内容。
       // 即使 modelsStore 的 capabilities 配置有误，此兜底过滤也能防止 API 400 错误。
-      const effectiveMessages = provider === 'deepseek'
+      // v1.5.120: 调用 sanitizeToolMessages 安全网，清理孤儿 tool_calls/tool 消息
+      const rawMessages = provider === 'deepseek'
         ? (messages as Array<{ role: string; content: string | OpenAIVisionContent[] }>).map(m => {
             if (Array.isArray(m.content)) {
               const textParts = m.content
@@ -797,6 +799,8 @@ export async function callAIModelStream(
             return m;
           })
         : messages;
+
+      const effectiveMessages = sanitizeToolMessages(rawMessages as Parameters<typeof sanitizeToolMessages>[0]);
 
       return await callOpenAICompatibleStream(
         apiEndpoint, apiKey, modelId,
