@@ -34,6 +34,7 @@ import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import CircularProgress from '@mui/material/CircularProgress';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { getGrayScale } from '../../constants/theme';
@@ -169,6 +170,9 @@ const NavList: React.FC<NavListProps> = ({
     sessions,
     handleDeleteSession: deleteSessionFromContext,
     togglePinSession,
+    archiveSession: archiveSessionFromContext,
+    restoreSession: restoreSessionFromContext,
+    archivedSessions,
   } = useChatSidebar();
   const historyListRef = useRef<HTMLDivElement>(null);
 
@@ -190,16 +194,31 @@ const NavList: React.FC<NavListProps> = ({
 
   const chatSessions = sessions;
 
+  // v6.0: 仅显示活跃会话（归档会话不在此列表中）
+  const activeSessions = chatSessions.filter(s => s.status !== 'archived' && s.status !== 'daily_reset');
+
   // 置顶优先 + 最近更新排序
   const sortedSessions = useMemo(() => {
-    return [...chatSessions].sort((a, b) => {
+    return [...activeSessions].sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
       const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
       const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
       return bTime - aTime;
     });
-  }, [chatSessions]);
+  }, [activeSessions]);
+
+  // v6.0: 归档会话排序
+  const sortedArchivedSessions = useMemo(() => {
+    return [...archivedSessions].sort((a, b) => {
+      const aTime = new Date(a.archivedAt || a.updatedAt || a.createdAt || 0).getTime();
+      const bTime = new Date(b.archivedAt || b.updatedAt || b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+  }, [archivedSessions]);
+
+  // v6.0: 归档区展开状态
+  const [archivedExpanded, setArchivedExpanded] = useState(false);
 
   // 点击导航项时清除历史对话的即时选中状态
   const handleNavClick = useCallback((path: string) => {
@@ -267,7 +286,7 @@ const NavList: React.FC<NavListProps> = ({
 
   // ===== 渲染单个会话项 =====
   const renderSessionItem = useCallback((session: Session) => {
-    const title = session.title || session.messages[0]?.content?.slice(0, 20) || '新对话';
+    const title = (session.parentSessionId ? '└ ' : '') + (session.title || session.messages[0]?.content?.slice(0, 20) || '新对话');
     const effectiveActiveId = justClickedSessionId ?? activeSessionId;
     const isSessionActive = session.id === effectiveActiveId;
     const isPinned = session.isPinned === true;
@@ -384,6 +403,22 @@ const NavList: React.FC<NavListProps> = ({
                   <PushPinOutlinedIcon sx={{ fontSize: 12 }} />
                 </IconButton>
               </Tooltip>
+              <Tooltip title="归档" placement="top" arrow>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    archiveSessionFromContext(session.id);
+                  }}
+                  sx={{
+                    p: 0.25,
+                    color: gs.textMuted,
+                    '&:hover': { color: '#8B5CF6' },
+                  }}
+                >
+                  <Inventory2OutlinedIcon sx={{ fontSize: 12 }} />
+                </IconButton>
+              </Tooltip>
               <Tooltip title="删除" placement="top" arrow>
                 <IconButton
                   size="small"
@@ -406,7 +441,7 @@ const NavList: React.FC<NavListProps> = ({
         </ListItemButton>
       </ListItem>
     );
-  }, [justClickedSessionId, activeSessionId, completedSessions, bgActive, bgActiveHover, bgHover, textActive, textSecondary, textMuted, gs, onSelectSession, togglePinSession, handleDeleteSession, clearCompletedFlag]);
+  }, [justClickedSessionId, activeSessionId, completedSessions, bgActive, bgActiveHover, bgHover, textActive, textSecondary, textMuted, gs, onSelectSession, togglePinSession, handleDeleteSession, archiveSessionFromContext, clearCompletedFlag]);
 
   return (
     <List
@@ -684,10 +719,84 @@ const NavList: React.FC<NavListProps> = ({
               </Box>
             </Typography>
           </Box>
-          {/* DEBUG: 先用普通列表验证数据，确认后再换回 Virtuoso */}
           <Box sx={{ flex: 1, overflow: 'auto', maxHeight: 280 }}>
             {sortedSessions.map((s) => renderSessionItem(s))}
           </Box>
+        </Box>
+      )}
+
+      {/* ====== v6.0: 归档会话 ====== */}
+      {!collapsed && sortedArchivedSessions.length > 0 && (
+        <Box sx={{ mt: 1, pt: 1, display: 'flex', flexDirection: 'column', minHeight: 0, flex: '0 1 auto' }}>
+          <ListItemButton
+            onClick={() => setArchivedExpanded(prev => !prev)}
+            sx={{
+              minHeight: 28,
+              px: 1.5,
+              py: 0,
+              borderRadius: '4px',
+              '&:hover': { backgroundColor: bgHover },
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                color: gs.textDisabled,
+                letterSpacing: '0.02em',
+                flex: 1,
+              }}
+            >
+              归档
+              <Box
+                component="span"
+                sx={{ ml: 0.75, fontSize: '0.625rem', fontWeight: 500, color: gs.textDisabled }}
+              >
+                {sortedArchivedSessions.length}
+              </Box>
+            </Typography>
+            {archivedExpanded
+              ? <ExpandLessIcon sx={{ fontSize: 14, color: gs.textDisabled }} />
+              : <ExpandMoreIcon sx={{ fontSize: 14, color: gs.textDisabled }} />
+            }
+          </ListItemButton>
+          <Collapse in={archivedExpanded} timeout="auto">
+            <Box sx={{ overflow: 'auto', maxHeight: 200 }}>
+              {sortedArchivedSessions.map((s) => (
+                <ListItem key={s.id} disablePadding sx={{ display: 'block' }}>
+                  <ListItemButton
+                    onClick={() => {
+                      restoreSessionFromContext(s.id);
+                      onSelectSession(s.id);
+                    }}
+                    sx={{
+                      minHeight: 32,
+                      px: 1.5,
+                      py: 0,
+                      borderRadius: '4px',
+                      '&:hover': { backgroundColor: bgHover },
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontSize: '0.75rem',
+                        color: gs.textSecondary,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        flex: 1,
+                      }}
+                    >
+                      {s.title || '未命名对话'}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.6rem', color: gs.textDisabled, ml: 1, flexShrink: 0 }}>
+                      {getRelativeTime(s.archivedAt || s.updatedAt)}
+                    </Typography>
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </Box>
+          </Collapse>
         </Box>
       )}
     </List>
