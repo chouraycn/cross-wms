@@ -43,7 +43,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Type check backend (non-blocking)
-        run: npx tsc --noEmit --project server/tsconfig.json || echo "Backend type check skipped (pre-existing issues)"
+        run: npx tsc --noEmit --project server/tsconfig.json
 
       - name: Test
         run: npm run test -- --passWithNoTests

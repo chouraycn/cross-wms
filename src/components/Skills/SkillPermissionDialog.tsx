@@ -1,64 +1,52 @@
 /**
  * 技能权限确认对话框
  *
- * 弹出对话框，展示技能声明的权限，用户确认后才能安装。
- * 根据权限等级分类显示：危险（红色）、警告（橙色）、信息（蓝色）。
- *
- * @module SkillPermissionDialog
+ * v2.0: 重写样式，对齐 ToolPermissionDialog / SystemAuthBanner 设计体系。
+ * - 使用 getGrayScale 主题系统，支持暗色模式
+ * - 顶部渐变条 + 风险等级颜色编码
+ * - 结构化权限展示（替代原生 Alert + List）
+ * - 自定义按钮样式，与全站风格统一
  */
 
 import React, { useMemo } from 'react';
 import {
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Typography,
   Box,
-  Alert,
   Button,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
+  IconButton,
+  useTheme,
 } from '@mui/material';
-import WarningIcon from '@mui/icons-material/Warning';
-import InfoIcon from '@mui/icons-material/Info';
-import ErrorIcon from '@mui/icons-material/Error';
+import CloseIcon from '@mui/icons-material/Close';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ShieldIcon from '@mui/icons-material/Shield';
 import LockIcon from '@mui/icons-material/Lock';
+import { getGrayScale, getSemanticColors } from '../../constants/theme';
 
-/**
- * 权限项定义
- */
+/* ------------------------------------------------------------------ */
+/*  Types                                                               */
+/* ------------------------------------------------------------------ */
+
 interface PermissionItem {
-  /** 权限名称 */
   name: string;
-  /** 权限描述 */
   description?: string;
-  /** 权限等级：danger / warning / info */
   level: 'danger' | 'warning' | 'info';
 }
 
-/**
- * SkillPermissionDialog 组件属性
- */
-interface SkillPermissionDialogProps {
-  /** 对话框是否打开 */
+export interface SkillPermissionDialogProps {
   open: boolean;
-  /** 权限名称列表 */
   permissions: string[];
-  /** 技能名称 */
   skillName: string;
-  /** 关闭对话框回调 */
   onClose: () => void;
-  /** 确认安装回调 */
   onConfirm: () => void;
 }
 
-/**
- * 权限描述映射
- */
+/* ------------------------------------------------------------------ */
+/*  Constants                                                           */
+/* ------------------------------------------------------------------ */
+
 const PERMISSION_DESCRIPTIONS: Record<string, string> = {
   file_write: '读写文件',
   file_read: '读取文件（只读）',
@@ -71,31 +59,118 @@ const PERMISSION_DESCRIPTIONS: Record<string, string> = {
   install: '安装软件',
 };
 
-/**
- * 获取权限等级
- *
- * @param permission - 权限名称
- * @returns 权限等级
- */
-function getPermissionLevel(permission: string): 'danger' | 'warning' | 'info' {
-  const dangerous = ['execute_command', 'network', 'shell', 'root', 'sudo'];
-  const warning = ['file_write', 'delete', 'install'];
-
-  if (dangerous.includes(permission)) {
-    return 'danger';
-  }
-  if (warning.includes(permission)) {
-    return 'warning';
-  }
+function getPermissionLevel(perm: string): 'danger' | 'warning' | 'info' {
+  if (['execute_command', 'network', 'shell', 'root', 'sudo'].includes(perm)) return 'danger';
+  if (['file_write', 'delete', 'install'].includes(perm)) return 'warning';
   return 'info';
 }
 
-/**
- * 技能权限确认对话框
- *
- * @param props - 组件属性
- * @returns React 组件
- */
+/** 每个风险等级对应的视觉 Token */
+const LEVEL_STYLES = {
+  danger: {
+    label: '危险权限',
+    gradient: 'linear-gradient(90deg, #EF4444, #F87171)',
+    border: 'rgba(239,68,68,0.2)',
+  },
+  warning: {
+    label: '警告权限',
+    gradient: 'linear-gradient(90deg, #F59E0B, #FBBF24)',
+    border: 'rgba(245,158,11,0.2)',
+  },
+  info: {
+    label: '信息权限',
+    gradient: 'linear-gradient(90deg, #3B82F6, #60A5FA)',
+    border: 'rgba(59,130,246,0.2)',
+  },
+} as const;
+
+/* ------------------------------------------------------------------ */
+/*  Sub-component: PermissionGroup                                      */
+/* ------------------------------------------------------------------ */
+
+const PermissionGroup: React.FC<{
+  items: PermissionItem[];
+  level: 'danger' | 'warning' | 'info';
+  isDark: boolean;
+}> = ({ items, level, isDark }) => {
+  if (items.length === 0) return null;
+
+  const style = LEVEL_STYLES[level];
+  const sem = getSemanticColors(isDark);
+  const colors = level === 'danger' ? sem : level === 'warning' ? sem : sem;
+  const levelColor = level === 'danger' ? sem.error : level === 'warning' ? sem.warning : sem.info;
+  const levelBg = level === 'danger' ? sem.errorBg : level === 'warning' ? sem.warningBg : sem.infoBg;
+  const levelBorder = level === 'danger' ? sem.errorBorder : level === 'warning' ? sem.warningBorder : sem.infoBorder;
+
+  const LevelIcon = level === 'danger' ? ErrorOutlineIcon : level === 'warning' ? WarningAmberIcon : InfoOutlinedIcon;
+
+  return (
+    <Box sx={{ mb: 1.5 }}>
+      {/* 分组标题 */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
+        <LevelIcon sx={{ fontSize: 14, color: levelColor }} />
+        <Typography sx={{ fontSize: 11, fontWeight: 600, color: levelColor, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          {style.label} ({items.length})
+        </Typography>
+      </Box>
+
+      {/* 权限条目 */}
+      <Box
+        sx={{
+          borderRadius: 1,
+          border: `1px solid ${levelBorder}`,
+          overflow: 'hidden',
+        }}
+      >
+        {items.map((item, idx) => (
+          <Box
+            key={item.name}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              px: 1.5,
+              py: 0.75,
+              bgcolor: levelBg,
+              ...(idx > 0 ? { borderTop: `1px solid ${levelBorder}` } : {}),
+            }}
+          >
+            <Box
+              sx={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                bgcolor: levelColor,
+                flexShrink: 0,
+              }}
+            />
+            <Typography
+              sx={{
+                fontSize: 12,
+                fontFamily: 'monospace',
+                color: isDark ? '#E5E7EB' : '#374151',
+                fontWeight: 500,
+                flexShrink: 0,
+              }}
+            >
+              {item.name}
+            </Typography>
+            {item.description && (
+              <Typography sx={{ fontSize: 11, color: isDark ? '#9CA3AF' : '#6B7280', flex: 1 }}>
+                — {item.description}
+              </Typography>
+            )}
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Main Component                                                      */
+/* ------------------------------------------------------------------ */
+
 const SkillPermissionDialog: React.FC<SkillPermissionDialogProps> = ({
   open,
   permissions,
@@ -103,134 +178,208 @@ const SkillPermissionDialog: React.FC<SkillPermissionDialogProps> = ({
   onClose,
   onConfirm,
 }) => {
-  /**
-   * 分类权限
-   */
-  const categorizedPermissions = useMemo(() => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+  const sem = getSemanticColors(isDark);
+
+  const categorized = useMemo(() => {
     const danger: PermissionItem[] = [];
     const warning: PermissionItem[] = [];
     const info: PermissionItem[] = [];
 
-    if (!permissions || permissions.length === 0) {
-      return { danger, warning, info };
-    }
+    if (!permissions || permissions.length === 0) return { danger, warning, info };
 
     for (const perm of permissions) {
       const level = getPermissionLevel(perm);
-      const item: PermissionItem = {
-        name: perm,
-        description: PERMISSION_DESCRIPTIONS[perm],
-        level,
-      };
-
-      switch (level) {
-        case 'danger':
-          danger.push(item);
-          break;
-        case 'warning':
-          warning.push(item);
-          break;
-        case 'info':
-          info.push(item);
-          break;
-      }
+      const item: PermissionItem = { name: perm, description: PERMISSION_DESCRIPTIONS[perm], level };
+      if (level === 'danger') danger.push(item);
+      else if (level === 'warning') warning.push(item);
+      else info.push(item);
     }
-
     return { danger, warning, info };
   }, [permissions]);
 
-  /**
-   * 渲染权限列表
-   */
-  const renderPermissionList = (items: PermissionItem[], icon: React.ReactNode, color: 'error' | 'warning' | 'info') => {
-    if (items.length === 0) {
-      return null;
-    }
+  const hasDanger = categorized.danger.length > 0;
+  const topGradient = hasDanger
+    ? LEVEL_STYLES.danger.gradient
+    : categorized.warning.length > 0
+      ? LEVEL_STYLES.warning.gradient
+      : LEVEL_STYLES.info.gradient;
 
-    return (
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="subtitle2" gutterBottom>
-          {color === 'error' ? '危险权限' : color === 'warning' ? '警告权限' : '信息权限'} ({items.length})
-        </Typography>
-        <Alert
-          severity={color}
-          sx={{ mb: 1 }}
-        >
-          <List dense disablePadding>
-            {items.map((item, index) => (
-              <ListItem key={index} disablePadding sx={{ py: 0.5 }}>
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  {icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.name}
-                  secondary={item.description}
-                />
-              </ListItem>
-            ))}
-          </List>
-        </Alert>
-      </Box>
-    );
-  };
+  const accentColor = hasDanger ? sem.error : categorized.warning.length > 0 ? sem.warning : sem.info;
+  const confirmBg = hasDanger ? '#EF4444' : categorized.warning.length > 0 ? '#F59E0B' : gs.textPrimary;
+  const confirmHover = hasDanger ? '#DC2626' : categorized.warning.length > 0 ? '#D97706' : gs.textSecondary;
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-      aria-labelledby="permission-dialog-title"
+      maxWidth={false}
+      PaperProps={{
+        sx: {
+          borderRadius: 2,
+          boxShadow: isDark
+            ? '0 24px 64px rgba(0,0,0,0.5), 0 0 1px rgba(255,255,255,0.06)'
+            : '0 24px 64px rgba(0,0,0,0.18)',
+          bgcolor: gs.bgPanel,
+          border: `1px solid ${gs.border}`,
+          width: 440,
+          maxHeight: 'none',
+          margin: 'auto',
+          overflow: 'hidden',
+          animation: 'skillPermIn 0.2s cubic-bezier(0.4,0,0.2,1)',
+          '@keyframes skillPermIn': {
+            from: { opacity: 0, transform: 'scale(0.96) translateY(8px)' },
+            to: { opacity: 1, transform: 'scale(1) translateY(0)' },
+          },
+        },
+      }}
     >
-      <DialogTitle id="permission-dialog-title">
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LockIcon color="primary" />
-          <Typography variant="h6" component="span">
-            权限确认
-          </Typography>
+      {/* 顶部渐变条 */}
+      <Box sx={{ height: 3, background: topGradient }} />
+
+      {/* 关闭按钮 */}
+      <IconButton
+        size="small"
+        onClick={onClose}
+        sx={{
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          zIndex: 10,
+          color: gs.textMuted,
+          '&:hover': { color: gs.textPrimary, backgroundColor: gs.bgHover },
+        }}
+      >
+        <CloseIcon sx={{ fontSize: 18 }} />
+      </IconButton>
+
+      <Box sx={{ px: 2.5, pt: 2, pb: 0 }}>
+        {/* 头部 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <Box
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: hasDanger ? sem.errorBg : categorized.warning.length > 0 ? sem.warningBg : sem.infoBg,
+            }}
+          >
+            <LockIcon sx={{ fontSize: 16, color: accentColor }} />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 600, color: gs.textPrimary, lineHeight: 1.3 }}>
+              权限确认
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: 11,
+                fontFamily: 'monospace',
+                color: gs.textMuted,
+                lineHeight: 1.3,
+              }}
+            >
+              {skillName}
+            </Typography>
+          </Box>
+          <ShieldIcon sx={{ fontSize: 14, color: gs.textDisabled, opacity: 0.5 }} />
         </Box>
-      </DialogTitle>
-      <DialogContent>
-        <Typography variant="body1" gutterBottom>
-          技能 "{skillName}" 请求以下权限：
+
+        {/* 技能名称提示 */}
+        <Typography sx={{ fontSize: 12, color: gs.textSecondary, mb: 1.5 }}>
+          此技能请求以下权限{hasDanger ? '，包含高风险操作' : ''}：
         </Typography>
 
-        {(!permissions || permissions.length === 0) ? (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            此技能未声明任何权限
-          </Alert>
+        {/* 权限分组 */}
+        {!permissions || permissions.length === 0 ? (
+          <Box
+            sx={{
+              p: 1.5,
+              borderRadius: 1,
+              bgcolor: sem.infoBg,
+              border: `1px solid ${sem.infoBorder}`,
+              mb: 1.5,
+            }}
+          >
+            <Typography sx={{ fontSize: 12, color: sem.infoText }}>
+              此技能未声明任何权限
+            </Typography>
+          </Box>
         ) : (
-          <Box sx={{ mt: 2 }}>
-            {/* 危险权限 */}
-            {renderPermissionList(categorizedPermissions.danger, <ErrorIcon />, 'error')}
+          <Box sx={{ mb: 1.5 }}>
+            <PermissionGroup items={categorized.danger} level="danger" isDark={isDark} />
+            <PermissionGroup items={categorized.warning} level="warning" isDark={isDark} />
+            <PermissionGroup items={categorized.info} level="info" isDark={isDark} />
 
-            {/* 警告权限 */}
-            {renderPermissionList(categorizedPermissions.warning, <WarningIcon />, 'warning')}
-
-            {/* 信息权限 */}
-            {renderPermissionList(categorizedPermissions.info, <InfoIcon />, 'info')}
-
-            <Divider sx={{ my: 2 }} />
-
-            <Alert severity="warning" sx={{ mt: 2 }}>
-              请仔细审查。安装即表示你信任此技能。
-            </Alert>
+            {/* 高风险警告 */}
+            {hasDanger && (
+              <Box
+                sx={{
+                  p: 1,
+                  borderRadius: 1,
+                  bgcolor: sem.errorBg,
+                  border: `1px solid ${sem.errorBorder}`,
+                  mt: 1,
+                }}
+              >
+                <Typography sx={{ fontSize: 11, color: sem.error, fontWeight: 500 }}>
+                  此操作可能对系统产生不可逆的影响，请仔细确认后再安装。
+                </Typography>
+              </Box>
+            )}
           </Box>
         )}
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} color="inherit">
+      </Box>
+
+      {/* 底部操作栏 */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 2.5,
+          py: 1.5,
+          borderTop: `1px solid ${gs.border}`,
+        }}
+      >
+        <Button
+          onClick={onClose}
+          variant="text"
+          size="small"
+          sx={{
+            borderRadius: 1.5,
+            textTransform: 'none',
+            color: gs.textMuted,
+            fontSize: 12,
+            px: 1.5,
+            '&:hover': { color: gs.textSecondary, bgcolor: 'rgba(0,0,0,0.04)' },
+          }}
+        >
           取消
         </Button>
+
         <Button
           onClick={onConfirm}
-          color="primary"
           variant="contained"
-          startIcon={<LockIcon />}
+          size="small"
+          startIcon={<ShieldIcon sx={{ fontSize: 14 }} />}
+          sx={{
+            borderRadius: 1.5,
+            textTransform: 'none',
+            bgcolor: confirmBg,
+            color: '#fff',
+            fontSize: 12,
+            px: 2,
+            '&:hover': { bgcolor: confirmHover },
+          }}
         >
           我信任此技能
         </Button>
-      </DialogActions>
+      </Box>
     </Dialog>
   );
 };

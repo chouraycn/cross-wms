@@ -10,6 +10,7 @@
 
 import { initDb, type Session, type SessionStatus } from '../db.js';
 import { v4 as uuidv4 } from 'uuid';
+import { writeMemory } from '../engine/vecMemoryStore.js';
 
 // ===================== 常量 =====================
 
@@ -86,6 +87,17 @@ export function archiveSession(sessionId: string, summary?: string): boolean {
       updatedAt = ?
     WHERE id = ? AND (status = 'active' OR status IS NULL OR status = 'daily_reset')
   `).run(now, summary, now, sessionId);
+
+  // v8.6: 归档时自动将会话摘要写入向量记忆（异步，不阻塞归档）
+  if (info.changes > 0 && summary) {
+    writeMemory({
+      userId: 'default',
+      sessionId,
+      category: 'conversation',
+      content: `[会话摘要] ${summary}`,
+      keywords: summary.substring(0, 80).toLowerCase(),
+    }).catch(e => console.warn('[SessionLifecycle] 会话摘要 embedding 失败:', e));
+  }
 
   return info.changes > 0;
 }

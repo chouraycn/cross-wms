@@ -16,6 +16,8 @@
 import { callAIModelStream } from '../aiClient.js';
 import type { ModelCallConfig, ToolCall, MessageContent } from '../aiClient.js';
 import { getToolDefinitions } from './toolRegistry.js';
+import { pluginRegistry } from './pluginRegistry.js';
+import { mcpClientManager } from './mcpClientManager.js';
 
 // ===================== 类型定义 =====================
 
@@ -233,7 +235,10 @@ export class Planner {
     }
 
     // 获取可用工具列表，构造工具描述
-    const tools = getToolDefinitions();
+    const builtinTools = getToolDefinitions();
+    const pluginTools = pluginRegistry.getActiveTools();
+    const mcpTools = mcpClientManager.getMcpTools();
+    const tools = [...builtinTools, ...pluginTools, ...mcpTools];
     const toolDescriptions = tools
       .map(t => `- ${t.function.name}: ${t.function.description}`)
       .join('\n');
@@ -419,7 +424,10 @@ export class Planner {
       return null;
     }
 
-    const tools = getToolDefinitions();
+    const builtinTools = getToolDefinitions();
+    const pluginTools = pluginRegistry.getActiveTools();
+    const mcpTools = mcpClientManager.getMcpTools();
+    const tools = [...builtinTools, ...pluginTools, ...mcpTools];
     const toolDescriptions = tools
       .map(t => `- ${t.function.name}: ${t.function.description}`)
       .join('\n');

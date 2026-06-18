@@ -5,6 +5,10 @@
  * - web_search: DuckDuckGo 搜索，返回结构化结果
  * - web_fetch:  抓取网页并 HTML→Markdown 转换
  * - web_api_call: 封装的 REST API 调用（域名白名单）
+ *
+ * v3.1: 三个工具均支持 renderJs 参数
+ * - renderJs=true 时通过 Playwright 渲染 JS 动态页面
+ * - Playwright 不可用时自动降级到原生 fetch
  */
 
 // ===================== 域名白名单（web_api_call） =====================
@@ -76,6 +80,30 @@ function htmlToMarkdown(html: string): string {
   return md;
 }
 
+// ===================== JS 渲染辅助 =====================
+
+/**
+ * 动态导入 renderContent（Playwright 可能未安装）
+ * 返回 null 表示不可用
+ */
+async function tryRenderContent(url: string, selector?: string): Promise<{
+  html: string;
+  title: string;
+  finalUrl: string;
+} | null> {
+  try {
+    const { renderContent } = await import('../services/browserHostClient.js');
+    const result = await renderContent({ url, waitUntil: 'networkidle', selector, timeout: 20000 });
+    if (result.ok && result.html) {
+      return { html: result.html, title: result.title || '', finalUrl: result.url || url };
+    }
+    return null;
+  } catch {
+    // Playwright 未安装或 BrowserHost 不可用
+    return null;
+  }
+}
+
 // ===================== Handler: web_search =====================
 
 export async function handleWebSearch(args: Record<string, unknown>): Promise<string> {
@@ -85,30 +113,49 @@ export async function handleWebSearch(args: Record<string, unknown>): Promise<st
   }
 
   const maxResults = Math.min(Number(args.maxResults) || 8, 20);
+  const renderJs = args.renderJs === true;
 
   try {
     const encodedQuery = encodeURIComponent(query);
     const url = `https://html.duckduckgo.com/html/?q=${encodedQuery}`;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    let html: string;
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'CrossWMS-AI/1.0',
-        'Accept': 'text/html',
-      },
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      return JSON.stringify({ success: false, error: `搜索请求失败: HTTP ${response.status}` });
+    if (renderJs) {
+      // 使用 Playwright 渲染搜索结果页
+      const rendered = await tryRenderContent(url);
+      if (rendered) {
+        html = rendered.html;
+      } else {
+        // 降级到原生 fetch
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: { 'User-Agent': 'CrossWMS-AI/1.0', 'Accept': 'text/html' },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          return JSON.stringify({ success: false, error: `搜索请求失败: HTTP ${response.status}` });
+        }
+        html = await response.text();
+      }
+    } else {
+      // 原生 fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'User-Agent': 'CrossWMS-AI/1.0', 'Accept': 'text/html' },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        return JSON.stringify({ success: false, error: `搜索请求失败: HTTP ${response.status}` });
+      }
+      html = await response.text();
     }
-
-    const html = await response.text();
 
     // 解析 DuckDuckGo HTML 搜索结果
     const results: Array<{ title: string; snippet: string; url: string }> = [];
@@ -154,6 +201,7 @@ export async function handleWebSearch(args: Record<string, unknown>): Promise<st
       query,
       results,
       count: results.length,
+      rendered: renderJs,
     });
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
@@ -185,7 +233,40 @@ export async function handleWebFetch(args: Record<string, unknown>): Promise<str
   }
 
   const maxLength = Math.min(Number(args.maxLength) || 80000, 200000);
+  const renderJs = args.renderJs === true;
 
+  // ---- JS 渲染模式 ----
+  if (renderJs) {
+    const rendered = await tryRenderContent(rawUrl);
+    if (rendered) {
+      const markdown = htmlToMarkdown(rendered.html);
+
+      let truncated = false;
+      let finalMd = markdown;
+      if (Buffer.byteLength(finalMd, 'utf8') > maxLength) {
+        finalMd = finalMd.substring(0, maxLength);
+        while (Buffer.byteLength(finalMd, 'utf8') > maxLength) {
+          finalMd = finalMd.substring(0, finalMd.length - 1);
+        }
+        finalMd += '\n\n> ⚠️ 内容过长，已截断至 ' + maxLength + ' 字节';
+        truncated = true;
+      }
+
+      return JSON.stringify({
+        success: true,
+        url: rendered.finalUrl,
+        title: rendered.title,
+        contentType: 'text/html',
+        length: Buffer.byteLength(rendered.html, 'utf8'),
+        truncated,
+        rendered: true,
+        markdown: finalMd,
+      });
+    }
+    // Playwright 不可用 → 降级到原生 fetch
+  }
+
+  // ---- 原生 fetch 模式 ----
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -244,6 +325,7 @@ export async function handleWebFetch(args: Record<string, unknown>): Promise<str
       contentType,
       length: Buffer.byteLength(text, 'utf8'),
       truncated,
+      rendered: false,
       markdown,
     });
   } catch (e) {
@@ -310,6 +392,7 @@ export async function handleWebApiCall(args: Record<string, unknown>): Promise<s
 
   // body
   const body = args.body ? String(args.body) : undefined;
+  const renderJs = args.renderJs === true;
 
   try {
     const controller = new AbortController();
@@ -334,6 +417,31 @@ export async function handleWebApiCall(args: Record<string, unknown>): Promise<s
     const resContentType = response.headers.get('content-type') || '';
     const resText = await response.text();
 
+    // ---- JS 渲染模式：响应是 HTML 时用 Playwright 渲染 ----
+    if (renderJs && resContentType.includes('text/html')) {
+      const rendered = await tryRenderContent(urlStr);
+      if (rendered) {
+        const markdown = htmlToMarkdown(rendered.html);
+        let truncated = false;
+        let finalMd = markdown;
+        if (finalMd.length > 50000) {
+          finalMd = finalMd.substring(0, 50000) + '\n\n> ⚠️ 响应过长，已截断至 50KB';
+          truncated = true;
+        }
+
+        return JSON.stringify({
+          success: response.ok,
+          status: response.status,
+          statusText: response.statusText,
+          contentType: resContentType,
+          rendered: true,
+          data: finalMd,
+          truncated,
+        });
+      }
+      // Playwright 不可用 → 降级到普通处理
+    }
+
     // 处理响应 body
     let data: unknown;
     if (resContentType.includes('application/json')) {
@@ -356,6 +464,7 @@ export async function handleWebApiCall(args: Record<string, unknown>): Promise<s
       status: response.status,
       statusText: response.statusText,
       contentType: resContentType,
+      rendered: false,
       data,
     });
   } catch (e) {

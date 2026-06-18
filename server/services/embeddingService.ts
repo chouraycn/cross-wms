@@ -1,14 +1,12 @@
 /**
  * Embedding Service — 嵌入向量生成服务
  *
- * v1.3.0: 使用 generateMockEmbedding 生成随机归一化向量（降级方案）
- * v1.3.1（规划中）: 接入 onnxruntime-node，使用 all-MiniLM-L6-v2 进行真实推理
- *
- * 核心职责：
- * - 为技能内容生成嵌入向量
+ * v8.6: 接入 onnxruntime-node + all-MiniLM-L6-v2 真实推理
+ * - 本地 ONNX 模型生成 384 维语义向量
  * - 增量更新检测（基于 contentHash）
  * - 批量嵌入生成
  * - 嵌入向量 L2 归一化
+ * - sqlite-vec KNN 搜索（替代暴力搜索）
  */
 
 import { initDb } from '../db.js';
@@ -29,6 +27,7 @@ import {
 } from '@src/types/semantic';
 import { getUserSkills } from '../dao/skills.js';
 import { BUILTIN_SKILLS } from '@src/types/skill-core';
+import { embedText, initOnnxEmbedding, getOnnxStatus } from '../engine/onnxEmbedding.js';
 
 // ===================== 类型定义 =====================
 
@@ -111,17 +110,19 @@ function buildEmbeddingContent(skill: {
 /**
  * 为单个技能生成嵌入向量（含增量更新检测）
  *
+ * v8.6: 使用 ONNX 真实推理替代 Mock 随机向量
+ *
  * 流程：
  * 1. 拼接技能内容 → 计算 contentHash
  * 2. 查询 DB：是否已存在且 contentHash 一致 → 跳过
- * 3. 调用 generateMockEmbedding 生成向量 → L2 归一化
+ * 3. 调用 ONNX 模型生成 384 维向量 → L2 归一化
  * 4. 写入 skill_embeddings 表（INSERT OR REPLACE）
  *
  * @param skill 技能对象
  * @param force 是否强制重新生成（忽略 contentHash 检测）
  * @returns 嵌入生成结果
  */
-export function generateEmbedding(
+export async function generateEmbedding(
   skill: {
     id: string;
     name: string;
@@ -132,7 +133,7 @@ export function generateEmbedding(
     category?: string;
   },
   force: boolean = false
-): EmbeddingResult {
+): Promise<EmbeddingResult> {
   const db = initDb();
   const content = buildEmbeddingContent(skill);
   const hash = contentHash(content);
@@ -160,9 +161,20 @@ export function generateEmbedding(
     };
   }
 
-  // 生成新嵌入向量
-  const rawEmbedding = generateMockEmbedding(dimensions);
-  const embedding = l2NormalizeCopy(rawEmbedding);
+  // v8.6: 使用 ONNX 真实推理生成嵌入向量
+  let embedding: Float32Array;
+  try {
+    const status = getOnnxStatus();
+    if (status.status !== 'ready') {
+      await initOnnxEmbedding();
+    }
+    embedding = await embedText(content);
+  } catch (onnxErr) {
+    // ONNX 推理失败时降级为 Mock 向量
+    console.warn(`[EmbeddingService] ONNX 推理失败，降级为 Mock (skillId=${skill.id}):`, onnxErr);
+    const rawEmbedding = generateMockEmbedding(dimensions);
+    embedding = l2NormalizeCopy(rawEmbedding);
+  }
   const now = new Date().toISOString();
 
   // 写入数据库（INSERT OR REPLACE）
@@ -211,7 +223,7 @@ export function generateEmbedding(
  * @param force 是否强制重新生成所有嵌入
  * @returns 批量生成统计
  */
-export function batchGenerateEmbeddings(force: boolean = false): BatchEmbedStats {
+export async function batchGenerateEmbeddings(force: boolean = false): Promise<BatchEmbedStats> {
   const stats: BatchEmbedStats = {
     total: 0,
     newCount: 0,
@@ -268,7 +280,7 @@ export function batchGenerateEmbeddings(force: boolean = false): BatchEmbedStats
   // 逐个生成嵌入
   for (const skill of allSkills) {
     try {
-      const result = generateEmbedding(skill, force);
+      const result = await generateEmbedding(skill, force);
       if (result.isNew) {
         stats.newCount++;
       } else if (result.updated) {
@@ -363,25 +375,31 @@ export function invalidateCache(skillId?: string): void {
 
 /**
  * 使用嵌入向量进行语义搜索
- * 生成查询向量 → 暴力搜索 → 返回 Top-K 结果
+ * v8.6: 使用 ONNX 真实推理生成查询向量
  *
  * @param query 查询文本
  * @param topK 返回数量
  * @param threshold 最低相似度阈值
  * @returns 匹配结果列表
  */
-export function semanticSearch(
+export async function semanticSearch(
   query: string,
   topK: number = DEFAULT_MATCH_ENGINE_CONFIG.defaultTopK,
   threshold: number = DEFAULT_MATCH_ENGINE_CONFIG.defaultThreshold
-): Array<{ skillId: string; similarity: number }> {
-  // 为查询文本生成嵌入
-  const queryContent = query.toLowerCase().trim();
-  const queryEmbedding = generateMockEmbedding(EMBEDDING_DIMENSIONS);
-  // 使用确定性 mock 使相同查询得到一致结果
-  // 注意：generateMockEmbedding 使用随机数，实际 v1.3.1 会用 ONNX 推理
-  // 这里先做 L2 归一化
-  const normalizedQuery = l2NormalizeCopy(queryEmbedding);
+): Promise<Array<{ skillId: string; similarity: number }>> {
+  // v8.6: 使用 ONNX 生成真实查询向量
+  let normalizedQuery: Float32Array;
+  try {
+    const status = getOnnxStatus();
+    if (status.status !== 'ready') {
+      await initOnnxEmbedding();
+    }
+    normalizedQuery = await embedText(query);
+  } catch (onnxErr) {
+    console.warn('[EmbeddingService] 查询 embedding 降级为 Mock:', onnxErr);
+    const queryEmbedding = generateMockEmbedding(EMBEDDING_DIMENSIONS);
+    normalizedQuery = l2NormalizeCopy(queryEmbedding);
+  }
 
   // 获取所有技能嵌入
   const allEmbeddings = getAllEmbeddings();

@@ -17,6 +17,7 @@
  *   browser_click      — 点击元素 (by ref or coordinates)
  *   browser_type       — 输入文本 (by ref)
  *   browser_screenshot — 截图 (base64)
+ *   browser_render_content — JS 渲染页面并返回 HTML
  *   browser_health     — 健康检查
  *   browser_close      — 关闭浏览器
  */
@@ -422,6 +423,67 @@ async function handleScreenshot(args) {
 }
 
 /**
+ * browser_render_content: 导航到 URL，等待 JS 渲染完成，返回渲染后的 HTML
+ * 使用独立页面（不影响当前活跃页面），渲染完毕后自动关闭
+ */
+async function handleRenderContent(args) {
+  const {
+    url,
+    waitUntil = 'networkidle',
+    selector,
+    timeout = 15000,
+  } = args;
+
+  if (!url || !url.startsWith('http')) {
+    return { ok: false, error: 'Invalid URL (must start with http/https)' };
+  }
+
+  // 如果浏览器未启动，自动启动 headless 实例
+  if (!browser || !context) {
+    const launchResult = await launchBrowser({ headless: true });
+    if (!launchResult.ok) {
+      return { ok: false, error: `Browser not available: ${launchResult.error}` };
+    }
+  }
+
+  let renderPage = null;
+  try {
+    renderPage = await context.newPage();
+
+    const response = await renderPage.goto(url, {
+      waitUntil,
+      timeout,
+    });
+
+    // 如果指定了 CSS selector，等待该元素出现
+    if (selector) {
+      await renderPage.waitForSelector(selector, { timeout });
+    }
+
+    // 获取渲染后的完整 HTML
+    const html = await renderPage.content();
+    const title = await renderPage.title();
+
+    return {
+      ok: true,
+      output: {
+        url: renderPage.url(),
+        title,
+        status: response?.status() || null,
+        html,
+      },
+    };
+  } catch (err) {
+    return { ok: false, error: `Render failed: ${err.message}` };
+  } finally {
+    // 确保关闭临时页面
+    if (renderPage) {
+      try { await renderPage.close(); } catch { /* 忽略 */ }
+    }
+  }
+}
+
+/**
  * browser_health: 健康检查
  */
 async function handleHealth() {
@@ -455,6 +517,7 @@ const COMMAND_HANDLERS = {
   browser_health: handleHealth,
   browser_close: handleClose,
   browser_launch: launchBrowser,
+  browser_render_content: handleRenderContent,
 };
 
 /**

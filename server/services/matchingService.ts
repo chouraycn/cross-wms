@@ -326,13 +326,13 @@ function keywordMatch(
 /**
  * 上下文增强匹配：将最近 N 条对话与用户查询拼接后进行语义搜索
  */
-function contextSearch(
+async function contextSearch(
   query: string,
   contextMessages: string[],
   topK: number,
   threshold: number,
   contextWindowSize: number
-): Array<{ skillId: string; similarity: number }> {
+): Promise<Array<{ skillId: string; similarity: number }>> {
   // 拼接上下文
   const recentMessages = contextMessages.slice(-contextWindowSize);
   const enrichedQuery = [...recentMessages, query].join(' | ');
@@ -408,10 +408,10 @@ function buildSkillNameMap(): Map<string, string> {
  * @param contextMessages 上下文消息（仅 context 模式使用）
  * @returns 匹配结果列表
  */
-export function match(
+export async function match(
   matchQuery: MatchQuery,
   contextMessages?: string[]
-): MatchResult[] {
+): Promise<MatchResult[]> {
   const config = getRuntimeConfig();
   const {
     query,
@@ -430,7 +430,7 @@ export function match(
 
   switch (matchMode) {
     case 'semantic': {
-      const semanticResults = semanticSearch(query, topK, threshold);
+      const semanticResults = await semanticSearch(query, topK, threshold);
       results = semanticResults.map(r => ({
         skillId: r.skillId,
         skillName: nameMap.get(r.skillId) ?? r.skillId,
@@ -455,7 +455,7 @@ export function match(
 
     case 'hybrid': {
       // 语义搜索
-      const semanticResults = semanticSearch(query, topK * 2, 0);
+      const semanticResults = await semanticSearch(query, topK * 2, 0);
       // 关键词搜索
       const keywordResults = keywordMatch(query, activeSkills, topK * 2, 0);
 
@@ -492,7 +492,7 @@ export function match(
 
     case 'context': {
       const messages = contextMessages ?? [];
-      const contextResults = contextSearch(
+      const contextResults = await contextSearch(
         query,
         messages,
         topK,
@@ -514,7 +514,7 @@ export function match(
 
     default: {
       // 未知模式，fallback 到 hybrid
-      const semanticResults = semanticSearch(query, topK, threshold);
+      const semanticResults = await semanticSearch(query, topK, threshold);
       const keywordResults = keywordMatch(query, activeSkills, topK, 3);
       const merged = mergeHybridResults(
         semanticResults,
@@ -594,17 +594,17 @@ function applyFeedbackLearning(
  * 初始化匹配引擎
  * 确保所有技能已有嵌入向量
  */
-export function initMatchingEngine(): {
-  embeddingStats: ReturnType<typeof batchGenerateEmbeddings>;
-} {
-  const embeddingStats = batchGenerateEmbeddings(false);
+export async function initMatchingEngine(): Promise<{
+  embeddingStats: Awaited<ReturnType<typeof batchGenerateEmbeddings>>;
+}> {
+  const embeddingStats = await batchGenerateEmbeddings(false);
   return { embeddingStats };
 }
 
 /**
  * 强制重建所有嵌入向量
  */
-export function rebuildAllEmbeddings(): ReturnType<typeof batchGenerateEmbeddings> {
+export async function rebuildAllEmbeddings(): Promise<Awaited<ReturnType<typeof batchGenerateEmbeddings>>> {
   invalidateCache();
   return batchGenerateEmbeddings(true);
 }

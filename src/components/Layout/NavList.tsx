@@ -286,7 +286,8 @@ const NavList: React.FC<NavListProps> = ({
 
   // ===== 渲染单个会话项 =====
   const renderSessionItem = useCallback((session: Session) => {
-    const title = (session.parentSessionId ? '└ ' : '') + (session.title || session.messages[0]?.content?.slice(0, 20) || '新对话');
+    const rawTitle = session.title === '新对话' ? '' : (session.title || '');
+    const title = (session.parentSessionId ? '└ ' : '') + (rawTitle || session.messages[0]?.content?.slice(0, 20) || '新对话');
     const effectiveActiveId = justClickedSessionId ?? activeSessionId;
     const isSessionActive = session.id === effectiveActiveId;
     const isPinned = session.isPinned === true;
@@ -787,7 +788,7 @@ const NavList: React.FC<NavListProps> = ({
                         flex: 1,
                       }}
                     >
-                      {s.title || '未命名对话'}
+                      {(s.title && s.title !== '新对话') ? s.title : '未命名对话'}
                     </Typography>
                     <Typography sx={{ fontSize: '0.6rem', color: gs.textDisabled, ml: 1, flexShrink: 0 }}>
                       {getRelativeTime(s.archivedAt || s.updatedAt)}

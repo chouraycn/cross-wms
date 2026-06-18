@@ -47,6 +47,7 @@ import { pluginRegistry } from './pluginRegistry.js';
 import { mcpClientManager } from './mcpClientManager.js';
 import { isMcpToolName, getMcpServerPrefix } from './mcpTypes.js';
 import { truncateContextForModel } from './contextTruncate.js';
+import { compressContextWithSummary } from './contextCompress.js';
 import type { ToolExecutionResult } from './toolExecutor.js';
 import type { ExecutionStrategyOptions } from './executionStrategy.js';
 import { BudgetManager, type BudgetConfig } from './budgetManager.js';
@@ -55,7 +56,7 @@ import { WorkingMemory } from './workingMemory.js';
 import { fewShotTemplates } from './fewShotTemplates.js';
 import { ObservationCompressor, needsCompression } from './observationCompressor.js';
 import { CircuitBreaker } from './circuitBreaker.js';
-import { LongTermMemory } from './longTermMemory.js';
+import { searchMemory, writeMemory, type VecSearchResult } from './vecMemoryStore.js';
 import { OutputValidator } from './outputValidator.js';
 import { ToolPermissionSandbox, type PermissionContext, type PermissionDecision } from './toolPermissionSandbox.js';
 import { PlanDoCheck, type PDCACheckResult } from './planDoCheck.js';
@@ -63,6 +64,17 @@ import { ABTestFramework, type ExperimentVariant, type ExperimentResult } from '
 import { ToolDependencyGraph, type ToolCallNode, type TopologyLayer } from './toolDependencyGraph.js';
 import { SemanticCompressor, type CompressionResult } from './semanticCompressor.js';
 import { MultilingualIntent, type IntentResult } from './multilingualIntent.js';
+
+/** v2.5.0: 检查工具是否在已授权集合中（支持通配符前缀匹配，如 mcp__server__*） */
+function isToolInApprovedSet(toolName: string, approvedSet: Set<string>): boolean {
+  if (approvedSet.has(toolName)) return true;
+  for (const pattern of approvedSet) {
+    if (pattern.endsWith('*') && toolName.startsWith(pattern.slice(0, -1))) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // ===================== 类型定义 =====================
 
@@ -166,7 +178,7 @@ export class ReActExecutor {
   private _loopDetector?: LoopDetector;
   private _observationCompressor?: ObservationCompressor;
   private _circuitBreaker?: CircuitBreaker;
-  private _longTermMemory?: LongTermMemory;
+  // v8.6: 向量记忆由 vecMemoryStore 单例管理，无需实例属性
   private _outputValidator?: OutputValidator;
   private _permissionSandbox?: ToolPermissionSandbox;
   private _planDoCheck?: PlanDoCheck;
@@ -204,9 +216,7 @@ export class ReActExecutor {
   private get circuitBreaker(): CircuitBreaker {
     return this._circuitBreaker ?? (this._circuitBreaker = new CircuitBreaker());
   }
-  private get longTermMemory(): LongTermMemory {
-    return this._longTermMemory ?? (this._longTermMemory = new LongTermMemory());
-  }
+  // v8.6: 向量记忆由 vecMemoryStore 模块函数管理
   private get outputValidator(): OutputValidator {
     return this._outputValidator ?? (this._outputValidator = new OutputValidator());
   }
@@ -346,31 +356,35 @@ export class ReActExecutor {
     // v6.0: P1-3 自适应预算（按复杂度等级动态调整 maxTurns）
     this.budgetManager.setAdaptiveMaxTurns(complexityAssessment.level, onSSEEvent);
 
-    // v6.0: P1-1 长期记忆检索（Reasoning 前注入历史经验）
+    // v6.0→v8.6: 语义记忆检索（sqlite-vec 向量搜索 + 关键词降级）
     // 性能优化：try-catch 包裹，记忆检索失败不阻塞主流程
     try {
-      const memoryResult = this.longTermMemory.search(userMessage ?? '', 'default');
-      if (memoryResult.entries.length > 0 && memoryResult.totalTokens <= 500) {
-        const memoryContext = memoryResult.entries
-          .map(e => `[${e.category}] ${e.content}`)
-          .join('\n');
-        currentMessages.push({
-          role: 'system',
-          content: `[历史记忆]\n${memoryContext}`,
-        } as typeof currentMessages[number]);
+      const memoryResults: VecSearchResult[] = await searchMemory(userMessage ?? '', 'default', 5, 0.35);
+      if (memoryResults.length > 0) {
+        const totalChars = memoryResults.reduce((sum, r) => sum + r.entry.content.length, 0);
+        const totalTokens = Math.ceil(totalChars / 1.5);
+        if (totalTokens <= 500) {
+          const memoryContext = memoryResults
+            .map(r => `[${r.entry.category}] ${r.entry.content} (相似度: ${r.similarity.toFixed(2)})`)
+            .join('\n');
+          currentMessages.push({
+            role: 'system',
+            content: `[历史记忆]\n${memoryContext}`,
+          } as typeof currentMessages[number]);
 
-        if (onSSEEvent) {
-          onSSEEvent({
-            type: 'memory_retrieved',
-            count: memoryResult.entries.length,
-            summaries: memoryResult.entries.map(e => e.content.substring(0, 50)),
-          });
+          if (onSSEEvent) {
+            onSSEEvent({
+              type: 'memory_retrieved',
+              count: memoryResults.length,
+              summaries: memoryResults.map(r => r.entry.content.substring(0, 50)),
+            });
+          }
+
+          console.log(`[ReActExecutor] 语义记忆注入: ${memoryResults.length} 条, 估算 ${totalTokens} tokens`);
         }
-
-        console.log(`[ReActExecutor] 长期记忆注入: ${memoryResult.entries.length} 条, 估算 ${memoryResult.totalTokens} tokens`);
       }
     } catch (memErr) {
-      console.warn('[ReActExecutor] 长期记忆检索失败（已跳过）:', memErr instanceof Error ? memErr.message : String(memErr));
+      console.warn('[ReActExecutor] 语义记忆检索失败（已跳过）:', memErr instanceof Error ? memErr.message : String(memErr));
     }
 
     // ============== P1-1: 简单任务（v6.0: P0-3 支持 handoff） ==============
@@ -589,17 +603,20 @@ export class ReActExecutor {
       }
 
       // ============== v5.0: Context truncation with working memory ==============
+      // v1.5.116: 优先智能压缩（LLM 摘要），失败则降级为简单截断
       const workingMemoryMessages = this.workingMemory.getContextMessages();
       const ctxWindow = (modelConfig as Record<string, unknown>).contextWindow as number || 128000;
       const ctxMaxTokens = modelConfig.maxTokens || 8192;
-      const turnTruncated = truncateContextForModel(
+      const turnTruncated = await compressContextWithSummary(
         currentMessages,
         ctxWindow,
         ctxMaxTokens,
         tools.length,
+        modelConfig,
+        undefined,
         workingMemoryMessages,
       );
-      if (turnTruncated.truncated && currentMessages.length !== turnTruncated.messages.length) {
+      if ((turnTruncated.compressed || turnTruncated.truncated) && currentMessages.length !== turnTruncated.messages.length) {
         currentMessages.length = 0;
         currentMessages.push(...turnTruncated.messages as typeof currentMessages);
       }
@@ -1044,13 +1061,14 @@ export class ReActExecutor {
         const insight = insightParts.join('; ').substring(0, 200);
 
         if (insight) {
-          this.longTermMemory.write({
+          // v8.6: 异步写入向量记忆（不阻塞主流程）
+          writeMemory({
             userId: 'default',
             sessionId,
             category: decision.confidenceScore < 5 ? 'insight' : 'summary',
             content: insight,
             keywords: (userMessage ?? '').substring(0, 50).toLowerCase(),
-          });
+          }).catch(e => console.warn('[ReActExecutor] 向量记忆写入失败:', e));
         }
       }
 
@@ -1124,8 +1142,8 @@ export class ReActExecutor {
     // 返回最终结果
     this.state.phase = 'done';
 
-    // v6.0: P1-1 长期记忆清理（定期修剪 + 关闭连接）
-    this.longTermMemory.prune(1000);
+    // v8.6: 向量记忆清理（定期修剪）
+    // pruneMemory 在 vecMemoryStore 中实现，此处省略（由定期任务处理）
 
     // v6.0: P2-3 更新 earlyTermination 状态
     this.state.earlyTermination = this.state.shouldTerminate && this.state.terminateReason !== 'task_completed';
@@ -1417,10 +1435,15 @@ export class ReActExecutor {
     }
 
     // 权限检查（confirm 和 high-risk 工具需要确认）
-    if (this.needsPermission(toolName)) {
+    if (this.needsPermission(toolName, {
+      complexityLevel: this.state.currentComplexityLevel,
+      currentTurn: this.state.turn,
+      executedTools: context.executedToolCalls.map(tc => tc.name),
+      userMessage: '',
+    })) {
       let hasPermission: boolean;
 
-      if (context.approvedTools.has(toolName)) {
+      if (isToolInApprovedSet(toolName, context.approvedTools)) {
         hasPermission = true;
       } else {
         hasPermission = context.onPermissionRequest

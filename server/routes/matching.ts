@@ -45,7 +45,7 @@ const router = Router();
  *   contextMessages?: string[]; // 上下文消息（context 模式）
  * }
  */
-router.post('/match', (req: Request, res: Response) => {
+router.post('/match', async (req: Request, res: Response) => {
   try {
     const {
       query,
@@ -81,7 +81,7 @@ router.post('/match', (req: Request, res: Response) => {
       excludeSkillIds: Array.isArray(excludeSkillIds) && excludeSkillIds.length > 0 ? excludeSkillIds : undefined,
     };
 
-    const results = match(matchQuery, contextMessages);
+    const results = await match(matchQuery, contextMessages);
 
     res.json({ success: true, data: results });
   } catch (e) {
@@ -246,9 +246,9 @@ router.get('/feedback', (req: Request, res: Response) => {
 /**
  * 强制重建所有嵌入向量
  */
-router.post('/embeddings/rebuild', (_req: Request, res: Response) => {
+router.post('/embeddings/rebuild', async (_req: Request, res: Response) => {
   try {
-    const stats = rebuildAllEmbeddings();
+    const stats = await rebuildAllEmbeddings();
     res.json({ success: true, data: stats });
   } catch (e) {
     console.error('[Matching API] rebuild embeddings error:', e);

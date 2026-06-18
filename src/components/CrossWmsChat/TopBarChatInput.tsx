@@ -499,7 +499,16 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
       }
     }
 
-    sendMessage(effectiveInput, { skillContext, skillId, referencedSessions, model: effectiveModelId, attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined, reasoningEffort: reasoningEffort || undefined, executionMode: aiEngineSettings.defaultExecutionMode !== 'legacy' ? aiEngineSettings.defaultExecutionMode : undefined });
+    sendMessage(effectiveInput, {
+      skillContext,
+      skillId,
+      referencedSessions,
+      model: effectiveModelId,
+      attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
+      reasoningEffort: reasoningEffort || undefined,
+      executionMode: aiEngineSettings.defaultExecutionMode !== 'legacy' ? aiEngineSettings.defaultExecutionMode : undefined,
+      queueMode: aiEngineSettings.defaultQueueMode !== 'followup' ? aiEngineSettings.defaultQueueMode : undefined,
+    });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
     }

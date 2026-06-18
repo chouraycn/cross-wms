@@ -215,7 +215,7 @@ export interface SystemAuthorizationConfig {
 
 // ===================== AI 引擎配置 =====================
 
-export type ExecutionMode = 'legacy' | 'observer' | 'planner' | 'react';
+export type ExecutionMode = 'legacy' | 'observer' | 'planner' | 'react' | 'orchestrator';
 
 /** v7.0: 队列模式 — 高频交互消息竞争控制 */
 export type QueueMode = 'collect' | 'steer' | 'followup';

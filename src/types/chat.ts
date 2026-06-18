@@ -55,6 +55,41 @@ export interface ExecutionPlanInfo {
   createdAt: string;
 }
 
+/** v7.0: 队列状态信息 */
+export interface QueueStateInfo {
+  /** 队列模式 */
+  mode?: 'collect' | 'steer' | 'followup';
+  /** 会话队列状态 */
+  state?: 'idle' | 'executing' | 'executing_with_queue' | 'steering' | 'collecting';
+  /** 排队消息数 */
+  queueLength?: number;
+  /** 事件类型 */
+  type?: string;
+}
+
+/** v8.0: 多 Agent 编排状态 */
+export interface OrchestrationState {
+  /** 状态 */
+  status: 'decomposing' | 'executing' | 'completed' | 'failed';
+  /** 原始任务 */
+  originalTask?: string;
+  /** 子任务列表 */
+  subTasks: Array<{
+    id: string;
+    description: string;
+    assignedAgentId: string | null;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    result?: string | null;
+  }>;
+  /** 执行统计（完成时填充） */
+  stats?: {
+    total: number;
+    completed: number;
+    failed: number;
+    parallelGroups: number;
+  };
+}
+
 /** v4.0: ReAct 阶段信息 */
 export interface ReactPhaseInfo {
   phase: 'reasoning' | 'acting' | 'observing' | 'reflecting' | 'done';
@@ -215,6 +250,27 @@ export interface Message {
     newMaxTokens?: number;
     reason: string;
   };
+  /** v6.0: 子会话创建建议 */
+  subSessionSuggested?: {
+    parentSessionId: string;
+    stepIndex: number;
+    title: string;
+    toolName?: string;
+  };
+  /** v6.0: PDCA 检查结果 */
+  pdcaCheck?: {
+    decision: string;
+    reason: string;
+    progressPercent: number;
+    confidence: number;
+  };
+  /** v7.0: 队列状态（Collect/Steer/Followup 模式下的实时状态反馈） */
+  queueState?: QueueStateInfo;
+  /** v8.0: 多 Agent 编排状态 */
+  orchestrationState?: OrchestrationState;
+  /** v1.5.116: 模型降级信息 */
+  fallbackModel?: string;
+  fallbackReason?: 'model_not_supported' | 'request_failed';
 }
 
 /** 会话状态 */
