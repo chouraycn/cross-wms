@@ -28,6 +28,8 @@ export interface ObservationAssessment {
   shouldRetry: boolean;
   /** 是否建议调整策略 */
   shouldAdjustStrategy: boolean;
+  /** 策略调整建议 */
+  strategyHint?: string;
   /** 最大重试次数 */
   maxRetries: number;
 }

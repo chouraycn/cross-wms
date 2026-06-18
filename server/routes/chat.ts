@@ -11,7 +11,9 @@ import { callAIModelStream, callAIModel, AIAPIError } from '../aiClient.js';
 import type { MessageContent, ModelCallConfig } from '../aiClient.js';
 import { executeToolLoop, getToolRiskLevel } from '../engine/toolExecutor.js';
 import { ExecutionStrategyFactory, ExecutionMode, type ExecutionStrategyOptions } from '../engine/executionStrategy.js';
+import { buildSoulSystemMessage, getMergedStrategyPreferences, loadSoulProfile } from '../engine/soulLoader.js';
 import { estimateMessagesTokens, truncateContextForModel } from '../engine/contextTruncate.js';
+import { compressContextWithSummary } from '../engine/contextCompress.js';
 import { loadModelsConfig, ModelsFile, isLocalModel, syncModelsFromApi } from '../modelsStore.js';
 import { selectKey, reportKeyResult } from '../keyRotator.js';
 import {
@@ -71,6 +73,19 @@ function loadAlwaysAllowedTools(): Set<string> {
     globalAlwaysAllowed = new Set();
   }
   return globalAlwaysAllowed;
+}
+
+/** v2.5.0: 检查工具是否在始终允许列表中（支持通配符前缀匹配 mcp__server__* 等） */
+function isToolAlwaysAllowed(toolName: string): boolean {
+  const allowed = loadAlwaysAllowedTools();
+  if (allowed.has(toolName)) return true;
+  // 通配符匹配：检查是否有 `prefix*` 模式匹配
+  for (const pattern of allowed) {
+    if (pattern.endsWith('*') && toolName.startsWith(pattern.slice(0, -1))) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /** v1.5.66: 检查系统授权是否已启用 */
@@ -561,6 +576,10 @@ async function executeFromQueue(
 ): Promise<void> {
   console.log(`[MessageQueue] 执行出队消息: sessionId=${sessionId}, mode=${event.mode}, messageId=${event.messageId}`);
 
+  // v1.5.116: 在 try 外部声明，使 catch 块内能访问
+  let apiMessages: Array<Record<string, any>> = [];
+  let abortController: AbortController | null = null;
+
   try {
     const modelConfig = params.modelsConfig.models.find(m => m.id === params.model);
     if (!modelConfig) {
@@ -582,9 +601,15 @@ async function executeFromQueue(
 
     // v7.0: 从 DB 实时读取会话消息构建上下文（替代前端快照）
     const dbMessages = getSessionMessages(sessionId);
-    const apiMessages: Array<Record<string, any>> = [];
+    apiMessages = [];
 
-    // 注入 MEMORY.md
+    // v8.5: 注入人格层 system message（最前面，优先级最高）
+    const soulSystemMsg = buildSoulSystemMessage();
+    if (soulSystemMsg.trim()) {
+      apiMessages.push({ role: 'system', content: soulSystemMsg.trim() });
+    }
+
+    // 注入 MEMORY.md（补充记忆上下文）
     const memoryContent = readMemoryMd();
     if (memoryContent.trim()) {
       apiMessages.push({ role: 'system', content: memoryContent.trim() });
@@ -638,13 +663,25 @@ async function executeFromQueue(
       }
     }
 
-    // 截断上下文
+    // 截断/压缩上下文
     const ctxWindow = (finalModelConfig as any).contextWindow || 128000;
     const ctxMaxTokens = (finalModelConfig as any).maxTokens || 8192;
-    const truncated = truncateContextForModel(apiMessages as any, ctxWindow, ctxMaxTokens, 30);
+    // v1.5.116: 优先尝试智能压缩，失败则降级为简单截断
+    let truncated: { messages: typeof apiMessages; truncated: boolean };
+    try {
+      const compressResult = await compressContextWithSummary(
+        apiMessages as any, ctxWindow, ctxMaxTokens, 30, finalModelConfig,
+      );
+      truncated = { messages: compressResult.messages as any, truncated: compressResult.truncated || compressResult.compressed };
+      if (compressResult.compressed) {
+        console.log('[Chat API] 上下文已智能压缩（非流式）');
+      }
+    } catch {
+      truncated = truncateContextForModel(apiMessages as any, ctxWindow, ctxMaxTokens, 30);
+    }
 
     // 获取会话级 AbortController
-    const abortController = messageQueue.getCurrentAbortController(sessionId);
+    abortController = messageQueue.getCurrentAbortController(sessionId);
     if (!abortController) {
       throw new Error('未找到会话级 AbortController');
     }
@@ -674,6 +711,7 @@ async function executeFromQueue(
 
     // 确保 sessionApprovedSet 已注册
     if (!sessionApprovedToolsCache.has(sessionId)) {
+      // v2.5.0: 注入全局白名单（含通配符模式，后续通过 isToolAlwaysAllowed 匹配）
       for (const t of loadAlwaysAllowedTools()) {
         params.sessionApprovedSet.add(t);
       }
@@ -807,6 +845,80 @@ async function executeFromQueue(
   } catch (error) {
     console.error('[MessageQueue executeFromQueue] 执行失败:', error);
 
+    // v1.5.116: 模型降级逻辑 — 与 /chat 路由一致的降级链
+    const isModelUnsupported =
+      error instanceof AIAPIError && error.category === 'model_not_supported';
+    const isRecoverable = isModelUnsupported || (
+      error instanceof AIAPIError && (
+        error.category === 'timeout' ||
+        error.category === 'network' ||
+        error.category === 'server'
+      )
+    );
+
+    if (isRecoverable) {
+      const currentModelConfig = params.modelsConfig.models.find(m => m.id === params.model);
+      const fbModel = params.modelsConfig.models.find(m =>
+        m.enabled && m.id !== params.model && !m.capabilities?.includes('reasoning') && currentModelConfig && m.provider === currentModelConfig.provider && isModelAvailable(m)
+      ) || params.modelsConfig.models.find(m =>
+        m.enabled && m.id !== params.model && isModelAvailable(m)
+      );
+
+      if (fbModel) {
+        const reasonLabel = isModelUnsupported ? '模型不支持' : '请求失败';
+        console.log(`[MessageQueue] ${reasonLabel}，降级到 ${fbModel.id}...`);
+
+        if (!res.writableEnded) {
+          try {
+            res.write(`data: ${JSON.stringify({
+              type: 'text',
+              content: `\n\n> ⚠️ ${reasonLabel}，已自动切换到 **${fbModel.name || fbModel.id}** 重试...\n\n`,
+            })}\n\n`);
+          } catch { /* ignore */ }
+        }
+
+        try {
+          const fbKey = selectKey(fbModel);
+          const fbApiKey = fbKey ? fbKey.key : (fbModel.apiKey || '');
+          const fbModelConfig: ModelCallConfig = {
+            model: fbModel.id,
+            apiKey: fbApiKey,
+            apiEndpoint: fbModel.apiEndpoint || '',
+            provider: fbModel.provider || '',
+            maxTokens: fbModel.maxTokens || 4096,
+            temperature: fbModel.temperature ?? 0.7,
+            contextWindow: (fbModel as any).contextWindow || 128000,
+          };
+
+          const strategy = ExecutionStrategyFactory.create(params.executionMode as ExecutionMode || ExecutionMode.REACT);
+          const fbResult = await strategy.execute({
+            modelConfig: fbModelConfig,
+            messages: apiMessages as any,
+            maxToolTurns: 10,
+            signal: abortController?.signal ?? new AbortController().signal,
+            executionMode: (params.executionMode as ExecutionMode) || ExecutionMode.REACT,
+            approvedToolsCache: params.sessionApprovedSet,
+          });
+
+          if (fbKey && fbKey.index >= 0) { reportKeyResult(fbModel.id, fbKey.index, true); }
+
+          if (!res.writableEnded) {
+            try {
+              res.write(`data: ${JSON.stringify({ type: 'done', errorCode: null, errorMessage: null, thinkingDuration: 0, fallbackModel: fbModel.id, fallbackReason: isModelUnsupported ? 'model_not_supported' : 'request_failed' })}\n\n`);
+              await new Promise(r => setTimeout(r, 200));
+              res.end();
+            } catch { /* ignore */ }
+          }
+
+          messageQueue.markCompleted(sessionId);
+          activeSSEConnections.delete(sessionId);
+          return;
+        } catch (fbErr) {
+          console.warn(`[MessageQueue] 降级模型 ${fbModel.id} 也失败:`, fbErr);
+        }
+      }
+    }
+
     if (!res.writableEnded) {
       try {
         const errMsg = error instanceof Error ? error.message : '服务器内部错误';
@@ -834,6 +946,11 @@ router.post('/chat', async (req, res) => {
   if (attachments && Array.isArray(attachments) && attachments.length > 0) {
     console.log(`[Chat API] 附件数量: ${attachments.length}`);
   }
+
+  // v1.5.116: 在 try 外部声明关键变量，使 catch 块内降级逻辑可访问
+  let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: any[]; tool_call_id?: string }> = [];
+  let sessionApprovedSet: Set<string> = new Set();
+  let abortController: AbortController = new AbortController();
 
   try {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -1037,7 +1154,7 @@ router.post('/chat', async (req, res) => {
       }
 
       // 构建消息列表（含上下文）
-      const apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: any[]; tool_call_id?: string }> = [];
+      apiMessages = [];
 
       // v1.9.3: 注入图片处理指引系统提示
       const hasImageInRequest = attachments && Array.isArray(attachments) && attachments.some((att: { type: string }) => att.type === 'image');
@@ -1056,7 +1173,13 @@ router.post('/chat', async (req, res) => {
         });
       }
 
-      // 注入 MEMORY.md 上下文
+      // v8.5: 注入人格层 system message（最前面，优先级最高）
+      const soulSystemMsg = buildSoulSystemMessage();
+      if (soulSystemMsg.trim()) {
+        apiMessages.push({ role: 'system', content: soulSystemMsg.trim() });
+      }
+
+      // 注入 MEMORY.md 上下文（补充记忆）
       const memoryContent = readMemoryMd();
       if (memoryContent.trim()) {
         apiMessages.push({ role: 'system', content: memoryContent.trim() });
@@ -1257,7 +1380,7 @@ router.post('/chat', async (req, res) => {
       };
 
       // 创建 AbortController 用于超时控制
-      const abortController = new AbortController();
+      abortController = new AbortController();
       // 超时时间：reasoning 模型需要更长时间（thinking 可能很久）
       // 本地模型也给更长超时
       let timeoutMs: number;
@@ -1294,9 +1417,9 @@ router.post('/chat', async (req, res) => {
           // v1.9.0: 使用 Tool Calling 循环
           // v1.9.2: 敏感工具权限请求 — 发送事件到前端并等待响应
           // v1.9.6: 传入 Session 级工具授权缓存，同一会话内授权一次后不再重复授权
-          const sessionApprovedSet = sessionApprovedToolsCache.get(sessionId) ?? new Set<string>();
+          sessionApprovedSet = sessionApprovedToolsCache.get(sessionId) ?? new Set<string>();
           if (!sessionApprovedToolsCache.has(sessionId)) {
-            // v2.3.3: 首次创建会话时，注入全局始终允许的工具
+            // v2.3.3: 首次创建会话时，注入全局始终允许的工具（含通配符模式）
             for (const t of loadAlwaysAllowedTools()) {
               sessionApprovedSet.add(t);
             }
@@ -1325,18 +1448,32 @@ router.post('/chat', async (req, res) => {
           }
 
           if (!cacheHit) {
-          // v1.5.73: 截断上下文以适配模型 token 限制（如 Kimi 256K 限制）
+          // v1.5.73: 截断/压缩上下文以适配模型 token 限制
           const ctxWindow = (finalModelConfig as any).contextWindow || 128000;
           const ctxMaxTokens = (finalModelConfig as any).maxTokens || 8192;
-          const estimatedToolsCount = 30; // 24 内置工具 + 插件工具预留
+          const estimatedToolsCount = 30;
+          // v1.5.116: 优先尝试智能压缩
+          let compressed = false;
+          try {
+            const compressResult = await compressContextWithSummary(
+              apiMessages, ctxWindow, ctxMaxTokens, estimatedToolsCount, finalModelConfig,
+            );
+            apiMessages = compressResult.messages as any;
+            compressed = compressResult.compressed;
+            if (compressed) {
+              console.log('[Chat API] 上下文已智能压缩（流式）');
+            }
+          } catch {
+            // 压缩失败，降级为简单截断
+          }
           const truncated = truncateContextForModel(apiMessages, ctxWindow, ctxMaxTokens, estimatedToolsCount);
-          if (truncated.truncated) {
-            // 通知前端上下文已截断
+          if (truncated.truncated || compressed) {
             res.write(`data: ${JSON.stringify({
               type: 'context_truncated',
               originalTokens: estimateMessagesTokens(apiMessages),
               truncatedTokens: estimateMessagesTokens(truncated.messages),
               modelLimit: ctxWindow,
+              compressed,
             })}\n\n`);
           }
 
@@ -1368,7 +1505,7 @@ router.post('/chat', async (req, res) => {
 
           const toolResult = await strategy.execute({
             modelConfig: finalModelConfig,
-            messages: truncated.messages,
+            messages: truncated.messages as any,
             maxToolTurns: 10,
             signal: abortController.signal,
             executionMode: effectiveMode,
@@ -1482,6 +1619,19 @@ router.post('/chat', async (req, res) => {
             // v2.2.0: 透传模型能力标签
             modelCapabilities: modelConfig.capabilities || [],
             approvedToolsCache: sessionApprovedSet,
+            // v1.5.116: 速率限制时自动切换备用 Key
+            onRateLimit: async () => {
+              if (selectedKeyIndex >= 0 && effectiveModel) {
+                reportKeyResult(effectiveModel, selectedKeyIndex, false);
+              }
+              const nextKey = selectKey(modelConfig);
+              if (nextKey) {
+                selectedKeyIndex = nextKey.index;
+                console.log(`[Chat API] 429 速率限制，切换到备用 Key #${nextKey.index}`);
+                return { apiKey: nextKey.key, keyIndex: nextKey.index };
+              }
+              return null;
+            },
           });
           fullContent = toolResult.content;
           // v2.2.0: 收集 usage 数据（从最后一轮 AI 调用中获取）
@@ -1541,164 +1691,76 @@ router.post('/chat', async (req, res) => {
       console.error('[Chat API] AI API error:', apiError);
       console.error('[Chat API] Stack trace:', apiError instanceof Error ? apiError.stack : 'N/A');
 
-      // v2.3.4: 深度思考失败自动降级重试
-      // 当深度思考(reasoning)模型失败时，自动切换到非推理模型重试一次
-      const isReasoningError = !!(reasoningEffort && modelConfig);
-      const isRecoverable = isReasoningError && (
-        (apiError instanceof AIAPIError && (
+      // v1.5.116: 降级重试逻辑（executeFromQueue 简化版）
+      // 降级链：按优先级寻找备用模型（同 provider 非推理 → 任意非推理 → 任意可用）
+      const isModelUnsupported =
+        apiError instanceof AIAPIError && apiError.category === 'model_not_supported';
+      const isRecoverable = isModelUnsupported || (
+        apiError instanceof AIAPIError && (
           apiError.category === 'timeout' ||
           apiError.category === 'network' ||
           apiError.category === 'server'
-        )) ||
-        (apiError instanceof Error && apiError.name === 'AbortError') ||
-        // 通用错误也算可恢复（如 fetch failed, ECONNREFUSED）
-        (!(apiError instanceof AIAPIError))
+        )
       );
 
-      if (isRecoverable) {
-        console.log('[Chat API] 深度思考失败，尝试降级到非推理模型...', effectiveModel);
-        try {
-          // 查找非推理 fallback 模型
-          const fallbackModel = modelsConfig.models.find(m => {
-            if (!m.enabled || m.id === effectiveModel) return false;
-            const hasReasoning = m.capabilities?.includes('reasoning');
-            return !hasReasoning && isModelAvailable(m);
-          }) || modelsConfig.models.find(m => {
-            // 如果没找到非推理模型，至少换一个不同的模型
-            if (!m.enabled || m.id === effectiveModel) return false;
-            return isModelAvailable(m);
-          });
+      if (isRecoverable && modelConfig) {
+        // 构建降级链（简化版，不含 SSE 推送）
+        const fbModel = modelsConfig.models.find(m =>
+          m.enabled && m.id !== effectiveModel && !m.capabilities?.includes('reasoning') && m.provider === modelConfig.provider && isModelAvailable(m)
+        ) || modelsConfig.models.find(m =>
+          m.enabled && m.id !== effectiveModel && isModelAvailable(m)
+        );
 
-          if (fallbackModel) {
-            console.log('[Chat API] 降级使用模型:', fallbackModel.id);
+        if (fbModel) {
+          const reasonLabel = isModelUnsupported ? '模型不支持' : '请求失败';
+          console.log(`[Chat API] ${reasonLabel}，降级到 ${fbModel.id}...`);
+          res.write(`data: ${JSON.stringify({
+            type: 'text',
+            content: `\n\n> ⚠️ ${reasonLabel}，已自动切换到 **${fbModel.name || fbModel.id}** 重试...\n\n`,
+          })}\n\n`);
 
-            // 通知前端切换模型
-            res.write(`data: ${JSON.stringify({
-              type: 'text',
-              content: `\n\n> ⚠️ 深度思考模式暂时不可用，已自动切换到 **${fallbackModel.name || fallbackModel.id}** 重试...\n\n`,
-            })}\n\n`);
-
-            // 重新选择 Key
-            const fallbackKey = selectKey(fallbackModel);
-            const fallbackApiKey = fallbackKey ? fallbackKey.key : (fallbackModel.apiKey || '');
-            const fallbackKeyIndex = fallbackKey ? fallbackKey.index : -1;
-
-            // 使用 fallback 模型配置调用（非推理模式）
-            const fallbackModelConfig: ModelCallConfig = {
-              model: fallbackModel.id,
-              apiKey: fallbackApiKey,
-              baseURL: fallbackModel.apiEndpoint || '',
-              provider: fallbackModel.provider,
-              temperature: fallbackModel.temperature ?? 0.7,
-              topP: fallbackModel.topP ?? 1,
-              maxTokens: fallbackModel.maxTokens,
-              // v2.3.4: 关键 — 不使用 reasoning
-              capabilities: (fallbackModel.capabilities || []).filter((c: string) => c !== 'reasoning'),
+          try {
+            const fbKey = selectKey(fbModel);
+            const fbApiKey = fbKey ? fbKey.key : (fbModel.apiKey || '');
+            const fbModelConfig: ModelCallConfig = {
+              id: fbModel.id,
+              apiKey: fbApiKey,
+              apiEndpoint: fbModel.apiEndpoint || '',
+              provider: fbModel.provider,
+              temperature: fbModel.temperature ?? 0.7,
+              topP: fbModel.topP ?? 1,
+              maxTokens: fbModel.maxTokens,
+              capabilities: (fbModel.capabilities || []).filter((c: string) => c !== 'reasoning'),
             };
-
-            // v1.5.73: 降级重试时也截断上下文
-            const fbCtxWindow = (fallbackModelConfig as any).contextWindow || 128000;
-            const fbCtxMaxTokens = fallbackModel.maxTokens || 8192;
-            const fbTruncated = truncateContextForModel(apiMessages, fbCtxWindow, fbCtxMaxTokens, 30);
-
-            const fallbackResult = await executeToolLoop({
-              modelConfig: fallbackModelConfig,
-              messages: fbTruncated.messages,
+            const fbResult = await executeToolLoop({
+              modelConfig: fbModelConfig,
+              messages: apiMessages,
               maxToolTurns: 10,
-              signal: abortController.signal,
+              signal: abortController?.signal ?? new AbortController().signal,
               onChunk: (chunk) => {
                 res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
               },
-              onThinking: () => { /* 不用 thinking */ },
-              onToolCall: (toolCall, result) => {
-                res.write(`data: ${JSON.stringify({
-                  type: 'tool_call',
-                  toolCallId: toolCall.id,
-                  toolName: toolCall.function.name,
-                  toolArgs: toolCall.function.arguments,
-                  toolResult: result,
-                })}\n\n`);
-                const isDenied = result.includes('用户拒绝了工具');
-                const isErr = !isDenied && result.includes('"error"');
-                res.write(`data: ${JSON.stringify({
-                  type: 'tool_audit',
-                  toolName: toolCall.function.name,
-                  result: isDenied ? 'denied' : isErr ? 'error' : 'success',
-                  timestamp: Date.now(),
-                })}\n\n`);
-              },
-              onPermissionRequest: (toolCall) => {
-                // v1.5.66: 系统授权启用时自动通过所有权限请求，无需前端弹窗
-                if (isSystemAuthorized()) {
-                  console.log('[Chat API] 系统授权已启用，自动通过工具权限(fallback):', toolCall.function.name);
-                  return Promise.resolve(true);
-                }
-                return new Promise((resolve) => {
-                  const reqId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-                  reqIdToolMap.set(reqId, { toolName: toolCall.function.name, sessionId });
-                  res.write(`data: ${JSON.stringify({
-                    type: 'permission_request',
-                    reqId,
-                    toolName: toolCall.function.name,
-                    toolArgs: toolCall.function.arguments,
-                    riskLevel: getToolRiskLevel(toolCall.function.name),
-                  })}\n\n`);
-                  clearTimeout(timeout);
-                  timeout = null as any;
-                  const handler = (approved: boolean) => {
-                    permissionEmitter.removeListener(reqId, handler);
-                    timeout = setTimeout(() => abortController.abort(), timeoutMs);
-                    res.write(`data: ${JSON.stringify({
-                      type: 'tool_audit',
-                      toolName: toolCall.function.name,
-                      result: approved ? 'approved' : 'denied',
-                      timestamp: Date.now(),
-                    })}\n\n`);
-                    resolve(approved);
-                  };
-                  permissionEmitter.once(reqId, handler);
-                });
-              },
-              reasoningEffort: null,  // 关键：不使用推理
-              modelCapabilities: fallbackModelConfig.capabilities || [],
+              onThinking: () => {},
+              onPermissionRequest: () => Promise.resolve(isSystemAuthorized()),
+              reasoningEffort: undefined,
+              modelCapabilities: fbModelConfig.capabilities || [],
               approvedToolsCache: sessionApprovedSet,
             });
 
-            fullContent = fallbackResult.content;
-            toolCallsJson = fallbackResult.toolCalls.length > 0
-              ? JSON.stringify(fallbackResult.toolCalls) : undefined;
+            fullContent = fbResult.content;
+            toolCallsJson = fbResult.toolCalls.length > 0 ? JSON.stringify(fbResult.toolCalls) : undefined;
+            addMessage({ sessionId, role: 'assistant', content: fullContent, model: fbModel.id, skillId: skillId || null, toolCalls: toolCallsJson });
+            if (fbKey && fbKey.index >= 0) { reportKeyResult(fbModel.id, fbKey.index, true); }
 
-            // 保存降级结果
-            addMessage({
-              sessionId, role: 'assistant', content: fullContent,
-              model: fallbackModel.id, skillId: skillId || null,
-              toolCalls: toolCallsJson,
-            });
-            if (fallbackKeyIndex >= 0) {
-              reportKeyResult(fallbackModel.id, fallbackKeyIndex, true);
-            }
-
-            // 发送 done 事件
-            clearTimeout(timeout);
-            if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
-            res.write(`data: ${JSON.stringify({
-              type: 'done',
-              errorCode: null,
-              errorMessage: null,
-              thinkingDuration: 0,
-              fallbackModel: fallbackModel.id,
-              fallbackReason: 'reasoning_failed',
-            })}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: 'done', errorCode: null, errorMessage: null, thinkingDuration: 0, fallbackModel: fbModel.id, fallbackReason: isModelUnsupported ? 'model_not_supported' : 'request_failed' })}\n\n`);
             await new Promise(r => setTimeout(r, 200));
             res.end();
             return;
+          } catch (fbErr) {
+            console.warn(`[Chat API] 降级模型 ${fbModel.id} 也失败:`, fbErr);
           }
-        } catch (fallbackError) {
-          console.error('[Chat API] 降级重试也失败了:', fallbackError);
-          // 降级失败，继续显示原始错误
         }
       }
-
       // 重置 fullContent，避免包含之前流式回调写入的内容（如用户输入回显）
       fullContent = '';
 
@@ -1817,23 +1879,34 @@ router.post('/chat', async (req, res) => {
 
 // v1.9.2: 工具权限响应 — 前端通过此端点回复权限请求
 router.post('/permission-response', (req, res) => {
-  const { reqId, approved, alwaysAllow } = req.body;
+  const { reqId, approved, alwaysAllow, toolCategory } = req.body;
   if (!reqId) {
     return res.status(400).json({ error: 'reqId is required' });
   }
-  // v2.3.3: 如果用户勾选"始终允许"，持久化工具名到 app_settings
+  // v2.5.0: 如果用户勾选"始终允许"，持久化工具名/类别到 app_settings
   if (alwaysAllow) {
     const info = reqIdToolMap.get(reqId);
     if (info) {
       const { toolName, sessionId } = info;
       try {
         loadAlwaysAllowedTools();
-        globalAlwaysAllowed!.add(toolName);
+        // 优先存储类别通配符（如 mcp__tencent_docs__*），否则存储精确工具名
+        const patternToStore = toolCategory || toolName;
+        globalAlwaysAllowed!.add(patternToStore);
+        // 如果存储了通配符，也把当前工具名加入（即时生效）
+        if (toolCategory && toolCategory !== toolName) {
+          globalAlwaysAllowed!.add(toolName);
+        }
         const { setAppSettings } = require('../dao/settings');
         setAppSettings('always_allowed_tools', JSON.stringify([...globalAlwaysAllowed!]));
         // 同时注入当前会话缓存
         const sessionCache = sessionApprovedToolsCache.get(sessionId);
-        if (sessionCache) sessionCache.add(toolName);
+        if (sessionCache) {
+          sessionCache.add(patternToStore);
+          if (toolCategory && toolCategory !== toolName) {
+            sessionCache.add(toolName);
+          }
+        }
       } catch (e) {
         console.warn('[permission-response] 持久化 alwaysAllow 失败:', e);
       }

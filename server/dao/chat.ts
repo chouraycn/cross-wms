@@ -58,6 +58,20 @@ export function addMessage(msg: Omit<Message, 'id' | 'timestamp'> & { id?: strin
   );
   // v6.0: 更新 lastActiveAt 和 sessionDate（会话生命周期）
   db.prepare('UPDATE sessions SET updatedAt = ?, lastActiveAt = ?, sessionDate = DATE(?) WHERE id = ?').run(now, now, now, msg.sessionId);
+
+  // v6.0: 首条用户消息自动生成标题（替代默认的"新对话"）
+  if (msg.role === 'user') {
+    const session = db.prepare('SELECT title FROM sessions WHERE id = ?').get(msg.sessionId) as { title: string } | undefined;
+    if (session && (session.title === '新对话' || !session.title)) {
+      // 检查是否为该会话的第一条消息
+      const msgCount = db.prepare('SELECT COUNT(*) as count FROM messages WHERE sessionId = ?').get(msg.sessionId) as { count: number };
+      if (msgCount.count <= 1) {
+        const autoTitle = msg.content.slice(0, 30).replace(/\n/g, ' ').trim() || '新对话';
+        db.prepare('UPDATE sessions SET title = ? WHERE id = ?').run(autoTitle, msg.sessionId);
+      }
+    }
+  }
+
   return { ...msg, id, timestamp: now };
 }
 

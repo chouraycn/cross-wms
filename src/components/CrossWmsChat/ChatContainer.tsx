@@ -2,21 +2,12 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, IconButton, Tooltip, useTheme, Collapse,
-  Button, Chip, Paper, Checkbox, FormControlLabel,
 } from '@mui/material';
 import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import ShieldIcon from '@mui/icons-material/Shield';
-import CodeIcon from '@mui/icons-material/Code';
-import StorageIcon from '@mui/icons-material/Storage';
-import TerminalIcon from '@mui/icons-material/Terminal';
-import DesktopMacIcon from '@mui/icons-material/DesktopMac';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
 import CdfLogoAnimation from '../../assets/cdf-logo-animation.svg';
 import { TopBarChatInput } from './TopBarChatInput';
 import ChatMessageList from './ChatMessageList';
-import ToolPermissionDialog from './ToolPermissionDialog';
+import ToolPermissionDialog, { getToolCategory } from './ToolPermissionDialog';
 import { Message } from '../../types/chat';
 import { getAllSkills } from '../../stores/skillStore';
 import type { Skill } from '../../types/skill';
@@ -181,16 +172,13 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
     }
   }, [showToast]);
 
-  // v2.3.3: 权限请求的 "始终允许" 状态
-  const [permAlwaysAllow, setPermAlwaysAllow] = useState(false);
-
   /** v1.9.3: 权限请求响应 — 发送给后端并更新消息状态 */
-  const handlePermissionRespond = useCallback((reqId: string, approved: boolean, alwaysAllow?: boolean) => {
+  const handlePermissionRespond = useCallback((reqId: string, approved: boolean, alwaysAllow?: boolean, toolCategory?: string) => {
     // 发送响应到后端
     fetch('/api/permission-response', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reqId, approved, alwaysAllow }),
+      body: JSON.stringify({ reqId, approved, alwaysAllow, toolCategory }),
     }).catch((e) => console.error('[ChatContainer] 发送权限响应失败:', e));
 
     // 更新本地消息状态，标记为已处理
@@ -215,22 +203,30 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
     return map;
   }, [session.messages]);
 
-  // v1.9.3: 取第一个 pending 权限请求（UI 同屏只展示一条）
-  const pendingPermission = useMemo(() => {
-    for (const [_id, req] of pendingPermissions) return req;
-    return null;
+  // v2.5.0: 所有 pending 权限请求（批量展示）
+  const pendingRequestsArray = useMemo(() => {
+    return Array.from(pendingPermissions.values()).map(pr => ({
+      reqId: pr.reqId,
+      toolName: pr.toolName,
+      toolArgs: pr.toolArgs,
+      riskLevel: pr.riskLevel,
+    }));
   }, [pendingPermissions]);
 
-  // 工具分类映射
-  const getToolCategory = (toolName: string): { label: string; icon: React.ReactNode; color: string } => {
-    if (toolName.startsWith('file:') || toolName.startsWith('db:'))
-      return { label: '数据操作', icon: <StorageIcon sx={{ fontSize: 16 }} />, color: '#3B82F6' };
-    if (toolName.startsWith('shell:') || toolName.startsWith('exec'))
-      return { label: '命令执行', icon: <TerminalIcon sx={{ fontSize: 16 }} />, color: '#EF4444' };
-    if (toolName.startsWith('desktop_'))
-      return { label: '桌面控制', icon: <DesktopMacIcon sx={{ fontSize: 16 }} />, color: '#8B5CF6' };
-    return { label: '工具调用', icon: <CodeIcon sx={{ fontSize: 16 }} />, color: '#F59E0B' };
-  };
+  /** v2.5.0: 批量允许所有待审批工具 */
+  const handleApproveAll = useCallback((alwaysAllow?: boolean) => {
+    for (const req of pendingRequestsArray) {
+      const toolCategory = alwaysAllow ? getToolCategory(req.toolName) : undefined;
+      handlePermissionRespond(req.reqId, true, alwaysAllow, toolCategory);
+    }
+  }, [pendingRequestsArray, handlePermissionRespond]);
+
+  /** v2.5.0: 批量拒绝所有待审批工具 */
+  const handleDenyAll = useCallback(() => {
+    for (const req of pendingRequestsArray) {
+      handlePermissionRespond(req.reqId, false);
+    }
+  }, [pendingRequestsArray, handlePermissionRespond]);
 
   // 自动聚焦输入框（仅 page 模式，监听 cdf-know-clow-navigate-chat / focus-chat 事件）
   useEffect(() => {
@@ -348,149 +344,20 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
 
           {/* 输入框 */}
           <Box sx={{ px: 3, py: 2, flexShrink: 0, borderTop: 'none' }}>
-            <Box sx={{ maxWidth: 960, mx: 'auto' }}>
-              {/* v1.9.3: 权限确认浮动卡片 — 输入框上方 */}
-              {pendingPermission && (
-                <Paper
-                  elevation={8}
-                  sx={{
-                    mb: 2,
-                    borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: isDark ? '#F59E0B40' : '#FDE68A',
-                    background: isDark
-                      ? 'linear-gradient(135deg, #1A1A2E 0%, #2A1A0A 100%)'
-                      : 'linear-gradient(135deg, #FFFBEB 0%, #FFF7ED 100%)',
-                    overflow: 'hidden',
-                    // v1.9.5-fix: 移除入场动画，避免 WKWebView 不兼容 CSS @keyframes
-                  }}
-                >
-                  {/* 顶部渐变条 */}
-                  <Box sx={{
-                    height: 3,
-                    background: 'linear-gradient(90deg, #F59E0B, #EF4444, #8B5CF6, #3B82F6)',
-                  }} />
-
-                  <Box sx={{ p: 2 }}>
-                    {/* 标题行 */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                      <ShieldIcon sx={{ color: '#F59E0B', fontSize: 22 }} />
-                      <Typography sx={{ fontSize: 14, fontWeight: 700, color: gs.textPrimary }}>
-                        安全确认
-                      </Typography>
-                      <Chip
-                        label="需要授权"
-                        size="small"
-                        sx={{
-                          height: 20,
-                          fontSize: 11,
-                          fontWeight: 600,
-                          bgcolor: '#F59E0B20',
-                          color: '#F59E0B',
-                        }}
-                      />
-                    </Box>
-
-                    {/* 工具信息 */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                      {(() => {
-                        const cat = getToolCategory(pendingPermission.toolName);
-                        return (
-                          <Box sx={{
-                            display: 'flex', alignItems: 'center', gap: 0.75,
-                            px: 1.5, py: 0.75, borderRadius: 2,
-                            bgcolor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF',
-                            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : '#F3F4F6'}`,
-                          }}>
-                            <Box sx={{ color: cat.color }}>{cat.icon}</Box>
-                            <Box>
-                              <Typography sx={{ fontSize: 13, fontWeight: 600, color: gs.textPrimary, fontFamily: 'monospace' }}>
-                                {pendingPermission.toolName}
-                              </Typography>
-                              <Typography sx={{ fontSize: 11, color: cat.color, fontWeight: 500 }}>
-                                {cat.label}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        );
-                      })()}
-                    </Box>
-
-                    {/* 参数预览 */}
-                    {(() => {
-                      let argsObj: Record<string, unknown> = {};
-                      try { argsObj = JSON.parse(pendingPermission.toolArgs); } catch { argsObj = { raw: pendingPermission.toolArgs }; }
-                      return (
-                        <Box sx={{
-                          px: 1.5, py: 1, borderRadius: 1.5, mb: 1.5,
-                          bgcolor: isDark ? '#0D0D0D' : '#F9FAFB',
-                          border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : '#F3F4F6'}`,
-                          maxHeight: 120, overflow: 'auto',
-                        }}>
-                          <Box component="pre" sx={{
-                            m: 0, fontFamily: 'monospace', fontSize: 12,
-                            color: gs.textSecondary, whiteSpace: 'pre-wrap', wordBreak: 'break-all',
-                          }}>
-                            {JSON.stringify(argsObj, null, 2)}
-                          </Box>
-                        </Box>
-                      );
-                    })()}
-
-                    {/* 操作按钮 */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              size="small"
-                              checked={permAlwaysAllow}
-                              onChange={(e) => setPermAlwaysAllow(e.target.checked)}
-                              sx={{ '& .MuiSvgIcon-root': { fontSize: 16 } }}
-                            />
-                          }
-                          label="始终允许"
-                          sx={{
-                            mr: 0,
-                            '& .MuiTypography-root': { fontSize: 11, color: gs.textMuted },
-                          }}
-                        />
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                          size="small"
-                          startIcon={<CancelIcon sx={{ fontSize: 16 }} />}
-                          onClick={() => handlePermissionRespond(pendingPermission.reqId, false)}
-                          sx={{
-                            borderRadius: 2, textTransform: 'none', fontSize: 13,
-                            color: gs.textMuted,
-                            borderColor: gs.border,
-                            '&:hover': { borderColor: '#EF4444', color: '#EF4444', bgcolor: isDark ? 'rgba(239,68,68,0.08)' : '#FEF2F2' },
-                          }}
-                          variant="outlined"
-                        >
-                          拒绝
-                        </Button>
-                        <Button
-                          size="small"
-                          startIcon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
-                          onClick={() => { handlePermissionRespond(pendingPermission.reqId, true, permAlwaysAllow); setPermAlwaysAllow(false); }}
-                          sx={{
-                            borderRadius: 2, textTransform: 'none', fontSize: 13, fontWeight: 600,
-                            background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-                            color: '#fff',
-                            boxShadow: '0 2px 8px rgba(245,158,11,0.3)',
-                            '&:hover': { background: 'linear-gradient(135deg, #D97706, #B45309)', boxShadow: '0 4px 12px rgba(245,158,11,0.4)' },
-                          }}
-                          variant="contained"
-                        >
-                          允许执行
-                        </Button>
-                      </Box>
-                    </Box>
-                  </Box>
-                </Paper>
-              )}
+            <Box sx={{ maxWidth: 960, mx: 'auto', position: 'relative' }}>
+              {/* v2.5.0: 批量权限确认浮动面板 */}
+              <ToolPermissionDialog
+                open={pendingRequestsArray.length > 0}
+                requests={pendingRequestsArray}
+                onApprove={(reqId, alwaysAllow) => {
+            const req = pendingRequestsArray.find(r => r.reqId === reqId);
+            const toolCategory = alwaysAllow && req ? getToolCategory(req.toolName) : undefined;
+            handlePermissionRespond(reqId, true, alwaysAllow, toolCategory);
+          }}
+                onDeny={(reqId) => handlePermissionRespond(reqId, false)}
+                onApproveAll={handleApproveAll}
+                onDenyAll={handleDenyAll}
+              />
 
               <TopBarChatInput
                 session={session}
@@ -542,13 +409,19 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
         />
       )}
 
-      {/* v2.3.0: 权限确认 — 浮动面板覆盖在输入框上方 */}
+      {/* v2.5.0: 批量权限确认 — 浮动面板覆盖在输入框上方 */}
       <Box sx={{ position: 'relative', flexShrink: 0 }}>
         <ToolPermissionDialog
-          open={!!pendingPermission}
-          request={pendingPermission}
-          onApprove={(reqId, alwaysAllow) => { handlePermissionRespond(reqId, true, alwaysAllow); setPermAlwaysAllow(false); }}
+          open={pendingRequestsArray.length > 0}
+          requests={pendingRequestsArray}
+          onApprove={(reqId, alwaysAllow) => {
+            const req = pendingRequestsArray.find(r => r.reqId === reqId);
+            const toolCategory = alwaysAllow && req ? getToolCategory(req.toolName) : undefined;
+            handlePermissionRespond(reqId, true, alwaysAllow, toolCategory);
+          }}
           onDeny={(reqId) => handlePermissionRespond(reqId, false)}
+          onApproveAll={handleApproveAll}
+          onDenyAll={handleDenyAll}
         />
         <TopBarChatInput
           session={session}

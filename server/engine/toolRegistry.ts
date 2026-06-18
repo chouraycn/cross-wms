@@ -23,6 +23,7 @@ const isMac = PLATFORM === 'darwin';
 const isLinux = PLATFORM === 'linux';
 
 import type { ToolDefinition, ToolCall } from '../aiClient.js';
+import { isMcpToolName } from './mcpTypes.js';
 import { handleWebSearch, handleWebFetch, handleWebApiCall } from './webTools.js'; // v2.4.0
 
 // ===================== 类型定义 =====================
@@ -433,16 +434,32 @@ async function handleDesktopScreenshot(args: Record<string, unknown>): Promise<s
   }
 }
 
-/** desktop_click - Click at coordinates */
+/** desktop_click — 点击元素（ref 优先）或坐标 */
 async function handleDesktopClick(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
 
   try {
-    const x = args.x !== undefined ? Number(args.x) : null;
-    const y = args.y !== undefined ? Number(args.y) : null;
+    const ref = args.ref ? String(args.ref) : null;
+    let x = args.x !== undefined ? Number(args.x) : null;
+    let y = args.y !== undefined ? Number(args.y) : null;
+    let resolvedFromRef = false;
+
+    // ref 模式：从缓存查找元素 bounds，计算中心坐标
+    if (ref) {
+      if (!desktopSnapshotCache || !desktopSnapshotCache.has(ref)) {
+        return JSON.stringify({
+          success: false,
+          error: `未找到 ref "${ref}" 的缓存元素。请先调用 desktop_snapshot 获取元素列表。`,
+        });
+      }
+      const elem = desktopSnapshotCache.get(ref)!;
+      x = Math.round(elem.bounds.x + elem.bounds.w / 2);
+      y = Math.round(elem.bounds.y + elem.bounds.h / 2);
+      resolvedFromRef = true;
+    }
 
     if (x === null || y === null) {
-      return JSON.stringify({ success: false, error: 'Both x and y coordinates are required' });
+      return JSON.stringify({ success: false, error: '需要提供 ref 或 x/y 坐标' });
     }
 
     if (isMac) {
@@ -470,12 +487,12 @@ except Exception as e:
         fs.writeFileSync(tmpFile, pythonScript);
         const output = execSync(`python3 "${tmpFile}"`, { encoding: 'utf8', timeout: 3000 }).toString();
         try { fs.unlinkSync(tmpFile); } catch {}
-        return JSON.stringify({ success: true, output: output.trim(), x, y });
+        return JSON.stringify({ success: true, output: output.trim(), x, y, ...(ref ? { ref, resolvedFromRef } : {}) });
       } catch {
         // Fallback: cliclick
         try {
           execSync(`cliclick c:${x},${y}`, { encoding: 'utf8', timeout: 3000 });
-          return JSON.stringify({ success: true, method: 'cliclick', x, y });
+          return JSON.stringify({ success: true, method: 'cliclick', x, y, ...(ref ? { ref, resolvedFromRef } : {}) });
         } catch {
           return JSON.stringify({ success: false, error: 'Click failed. Grant Accessibility permissions or install cliclick.' });
         }
@@ -483,7 +500,7 @@ except Exception as e:
     } else if (isLinux) {
       // Linux: xdotool
       execSync(`xdotool mousemove ${x} ${y} click 1`, { encoding: 'utf8', timeout: 3000 });
-      return JSON.stringify({ success: true, x, y });
+      return JSON.stringify({ success: true, x, y, ...(ref ? { ref, resolvedFromRef } : {}) });
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
@@ -492,16 +509,39 @@ except Exception as e:
   }
 }
 
-/** desktop_type - Type text using osascript */
+/** desktop_type — 在元素（ref）或当前焦点位置输入文本 */
 async function handleDesktopType(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
 
   try {
     const text = String(args.text || '');
     const submit = Boolean(args.submit);
+    const ref = args.ref ? String(args.ref) : null;
 
     if (!text) {
       return JSON.stringify({ success: false, error: 'text parameter is required' });
+    }
+
+    // ref 模式：先点击元素中心聚焦，再输入
+    let focusedViaRef = false;
+    if (ref) {
+      if (!desktopSnapshotCache || !desktopSnapshotCache.has(ref)) {
+        return JSON.stringify({
+          success: false,
+          error: `未找到 ref "${ref}" 的缓存元素。请先调用 desktop_snapshot。`,
+        });
+      }
+      const elem = desktopSnapshotCache.get(ref)!;
+      const cx = Math.round(elem.bounds.x + elem.bounds.w / 2);
+      const cy = Math.round(elem.bounds.y + elem.bounds.h / 2);
+      // 点击元素中心聚焦
+      const clickResult = JSON.parse(await handleDesktopClick({ x: cx, y: cy }));
+      if (!clickResult.success) {
+        return JSON.stringify({ success: false, error: `聚焦元素失败: ${clickResult.error}` });
+      }
+      focusedViaRef = true;
+      // 短暂等待聚焦完成
+      execSync('sleep 0.15', { encoding: 'utf8', timeout: 1000 });
     }
 
     if (isMac) {
@@ -531,6 +571,7 @@ async function handleDesktopType(args: Record<string, unknown>): Promise<string>
       output: output.trim(),
       charactersTyped: text.length,
       submitted: submit,
+      ...(focusedViaRef ? { ref, focusedViaRef } : {}),
     });
     } else if (isLinux) {
       // xdotool type --delay 0 不支持中文，用 xsel + xdotool key
@@ -544,6 +585,7 @@ async function handleDesktopType(args: Record<string, unknown>): Promise<string>
           success: true,
           charactersTyped: text.length,
           submitted: submit,
+          ...(focusedViaRef ? { ref, focusedViaRef } : {}),
         });
       } else {
         return JSON.stringify({ success: false, error: 'xdotool not available on Linux. Install: apt install xdotool' });
@@ -1116,6 +1158,183 @@ async function handleDesktopSee(args: Record<string, unknown>): Promise<string> 
   }
 }
 
+// ===================== 桌面元素快照系统 =====================
+
+/** 桌面元素缓存 — ref → 元素信息（含 bounds），供后续 ref 操作使用 */
+interface DesktopElement {
+  ref: string;
+  role: string;
+  name: string;
+  value?: string;
+  enabled?: boolean;
+  description?: string;
+  bounds: { x: number; y: number; w: number; h: number };
+}
+
+let desktopSnapshotCache: Map<string, DesktopElement> | null = null;
+
+/** desktop_snapshot — 使用 JXA 遍历 macOS Accessibility UI 元素树 */
+async function handleDesktopSnapshot(): Promise<string> {
+  if (!isMac) {
+    return JSON.stringify({
+      success: false,
+      error: `desktop_snapshot 仅支持 macOS，当前平台: ${PLATFORM}`,
+    });
+  }
+
+  const { execSync } = await import('child_process');
+
+  // JXA 脚本 — 遍历前台应用 UI 元素树，返回 JSON
+  const jxaScript = `(function() {
+    var se = Application('System Events');
+    var procs = se.processes.whose({frontmost: true});
+    if (procs.length === 0) return JSON.stringify({error: 'No frontmost process'});
+
+    var proc = procs[0];
+    var appName = proc.name();
+    var results = [];
+    var MAX_DEPTH = 5;
+    var MAX_ELEMENTS = 80;
+
+    function traverse(elem, depth) {
+      if (depth > MAX_DEPTH || results.length >= MAX_ELEMENTS) return;
+
+      var info = {};
+      try { info.role = elem.role(); } catch(e) { info.role = ''; }
+      try { info.name = elem.name() || ''; } catch(e) { info.name = ''; }
+
+      try {
+        var pos = elem.position();
+        if (pos) { info.x = pos[0]; info.y = pos[1]; }
+      } catch(e) {}
+      try {
+        var sz = elem.size();
+        if (sz) { info.w = sz[0]; info.h = sz[1]; }
+      } catch(e) {}
+
+      try { info.enabled = elem.enabled(); } catch(e) {}
+      try { info.value = elem.value() || ''; } catch(e) {}
+      try { info.description = elem.description() || ''; } catch(e) {}
+
+      if (info.role) results.push(info);
+
+      try {
+        var children = elem.uiElements();
+        if (children) {
+          for (var i = 0; i < children.length && results.length < MAX_ELEMENTS; i++) {
+            traverse(children[i], depth + 1);
+          }
+        }
+      } catch(e) {}
+    }
+
+    try {
+      var win = proc.windows[0];
+      traverse(win, 0);
+    } catch(e) {
+      return JSON.stringify({error: 'Cannot access front window: ' + e.message});
+    }
+
+    return JSON.stringify({app: appName, elements: results, count: results.length});
+  })();`;
+
+  try {
+    // 执行 JXA 脚本
+    const rawOutput = execSync(`osascript -l JavaScript -e '${jxaScript.replace(/'/g, "'\\''")}'`, {
+      encoding: 'utf8',
+      timeout: 10000,
+    }).toString().trim();
+
+    const parsed = JSON.parse(rawOutput);
+
+    if (parsed.error) {
+      return JSON.stringify({ success: false, error: parsed.error });
+    }
+
+    // 分配 ref ID 并构建缓存
+    const elements: DesktopElement[] = [];
+    const cache = new Map<string, DesktopElement>();
+
+    for (let i = 0; i < parsed.elements.length; i++) {
+      const el = parsed.elements[i];
+      const ref = `d${i + 1}`;
+      const elem: DesktopElement = {
+        ref,
+        role: el.role || 'unknown',
+        name: el.name || '',
+        bounds: {
+          x: el.x || 0,
+          y: el.y || 0,
+          w: el.w || 0,
+          h: el.h || 0,
+        },
+      };
+      if (el.value) elem.value = String(el.value);
+      if (el.enabled !== undefined) elem.enabled = el.enabled;
+      if (el.description) elem.description = el.description;
+
+      elements.push(elem);
+      cache.set(ref, elem);
+    }
+
+    // 更新缓存
+    desktopSnapshotCache = cache;
+
+    const truncated = elements.length >= 80;
+
+    return JSON.stringify({
+      success: true,
+      snapshot: {
+        app: parsed.app,
+        elements,
+        truncated,
+        timestamp: Date.now(),
+      },
+      message: truncated
+        ? `获取到 ${elements.length} 个 UI 元素（已达上限，部分元素被截断）。使用 ref (d1, d2, ...) 调用 desktop_click(ref) 或 desktop_type(ref) 操作元素。`
+        : `获取到 ${elements.length} 个 UI 元素。使用 ref (d1, d2, ...) 调用 desktop_click(ref) 或 desktop_type(ref) 操作元素。`,
+    });
+  } catch (e: any) {
+    return JSON.stringify({
+      success: false,
+      error: `快照获取失败: ${e.message || e}。请确保已在「系统设置 → 隐私与安全 → 辅助功能」中授权相关应用。`,
+    });
+  }
+}
+
+/** desktop_find — 从缓存快照中按 role/name 搜索元素 */
+async function handleDesktopFind(args: Record<string, unknown>): Promise<string> {
+  const role = args.role ? String(args.role).toLowerCase() : null;
+  const name = args.name ? String(args.name).toLowerCase() : null;
+
+  if (!role && !name) {
+    return JSON.stringify({ success: false, error: '至少提供 role 或 name 之一作为搜索条件' });
+  }
+
+  if (!desktopSnapshotCache || desktopSnapshotCache.size === 0) {
+    return JSON.stringify({
+      success: false,
+      error: '无缓存的元素快照。请先调用 desktop_snapshot 获取当前界面元素列表。',
+    });
+  }
+
+  const matches: DesktopElement[] = [];
+  for (const elem of desktopSnapshotCache.values()) {
+    if (role && !elem.role.toLowerCase().includes(role)) continue;
+    if (name && !elem.name.toLowerCase().includes(name)) continue;
+    matches.push(elem);
+  }
+
+  return JSON.stringify({
+    success: true,
+    matches,
+    count: matches.length,
+    hint: matches.length > 0
+      ? `使用 ref (${matches[0].ref}, ...) 调用 desktop_click 或 desktop_type 操作匹配的元素。`
+      : '未找到匹配元素，可尝试调整搜索条件或重新调用 desktop_snapshot。',
+  });
+}
+
 // ===================== 工具注册表 =====================
 
 const registry = new Map<string, RegisteredTool>();
@@ -1299,14 +1518,15 @@ export async function initDefaultTools(): Promise<void> {
       type: 'function',
       function: {
         name: 'desktop_click',
-        description: '在指定坐标点击。提供 x,y 坐标进行点击。可配合 desktop_screenshot 获取屏幕截图后确定坐标。',
+        description: '点击桌面 UI 元素或坐标。推荐使用 ref（来自 desktop_snapshot）精确定位元素，也可提供 x/y 坐标点击。ref 优先于坐标。',
         parameters: {
           type: 'object',
           properties: {
-            x: { type: 'number', description: '点击位置的 X 坐标' },
-            y: { type: 'number', description: '点击位置的 Y 坐标' },
+            ref: { type: 'string', description: '元素引用 ID（如 "d1"、"d2"），来自 desktop_snapshot 的返回结果。提供 ref 时自动计算元素中心坐标点击。' },
+            x: { type: 'number', description: '点击位置的 X 坐标（当不使用 ref 时必填）' },
+            y: { type: 'number', description: '点击位置的 Y 坐标（当不使用 ref 时必填）' },
           },
-          required: ['x', 'y'],
+          required: [],
         },
       },
     },
@@ -1319,11 +1539,12 @@ export async function initDefaultTools(): Promise<void> {
       type: 'function',
       function: {
         name: 'desktop_type',
-        description: '在当前焦点位置输入文本。可选是否在输入后按回车键。',
+        description: '在指定 UI 元素（ref）或当前焦点位置输入文本。使用 ref 时会先点击元素聚焦再输入。可选输入后按回车。',
         parameters: {
           type: 'object',
           properties: {
             text: { type: 'string', description: '要输入的文本内容' },
+            ref: { type: 'string', description: '目标元素引用 ID（如 "d3"），来自 desktop_snapshot。提供 ref 时先聚焦元素再输入。' },
             submit: { type: 'boolean', description: '是否在输入后按回车键（默认 false）', default: false },
           },
           required: ['text'],
@@ -1470,6 +1691,43 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleDesktopSee,
   });
 
+  // desktop_snapshot — 获取前台应用 UI 元素树（基于 macOS Accessibility API）
+  registerTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'desktop_snapshot',
+        description: '获取当前前台应用的 UI 元素树，返回结构化元素列表（含 ref、role、name、bounds）。类似于浏览器端的 accessibility snapshot。调用后可用 ref (d1, d2, ...) 通过 desktop_click(ref) 或 desktop_type(ref) 精确操作元素，无需依赖坐标。推荐在桌面自动化前先调用此工具获取元素列表。',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+        },
+      },
+    },
+    handler: handleDesktopSnapshot,
+  });
+
+  // desktop_find — 从缓存快照中搜索元素
+  registerTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'desktop_find',
+        description: '在 desktop_snapshot 缓存的元素列表中按 role 或 name 模糊搜索。返回匹配的元素及其 ref。用于在大量元素中快速定位目标。',
+        parameters: {
+          type: 'object',
+          properties: {
+            role: { type: 'string', description: '元素角色关键词（模糊匹配，如 "button"、"text"）' },
+            name: { type: 'string', description: '元素名称关键词（模糊匹配，如 "登录"、"搜索"）' },
+          },
+          required: [],
+        },
+      },
+    },
+    handler: handleDesktopFind,
+  });
+
   // app_setBotName — 修改 AI 助手显示名称
   registerTool({
     definition: {
@@ -1502,12 +1760,13 @@ export async function initDefaultTools(): Promise<void> {
       type: 'function',
       function: {
         name: 'web_search',
-        description: '搜索互联网获取最新信息。返回标题、摘要和链接列表。当 AI 需要查询实时信息、新闻、或知识库中没有的内容时使用。',
+        description: '搜索互联网获取最新信息。返回标题、摘要和链接列表。当 AI 需要查询实时信息、新闻、或知识库中没有的内容时使用。renderJs=true 时使用 Playwright 渲染搜索页（适用于 JS 动态渲染的搜索引擎），不可用时自动降级。',
         parameters: {
           type: 'object',
           properties: {
             query: { type: 'string', description: '搜索关键词' },
             maxResults: { type: 'number', description: '最大结果数（默认 8，最大 20）' },
+            renderJs: { type: 'boolean', description: '是否使用 JS 渲染搜索页面（适用于动态渲染的搜索引擎，默认 false）' },
           },
           required: ['query'],
         },
@@ -1522,12 +1781,13 @@ export async function initDefaultTools(): Promise<void> {
       type: 'function',
       function: {
         name: 'web_fetch',
-        description: '抓取指定 URL 的网页内容，将 HTML 转换为 Markdown 格式返回。适用于获取文章、文档、API 响应等网页内容。仅支持 http/https。',
+        description: '抓取指定 URL 的网页内容，将 HTML 转换为 Markdown 格式返回。适用于获取文章、文档、API 响应等网页内容。仅支持 http/https。renderJs=true 时使用 Playwright 渲染 JS 动态页面（SPA/React/Vue 等），不可用时自动降级到原生 fetch。',
         parameters: {
           type: 'object',
           properties: {
             url: { type: 'string', description: '要抓取的网页 URL（支持 http/https）' },
             maxLength: { type: 'number', description: '最大返回内容长度（字节，默认 80000，最大 200000）' },
+            renderJs: { type: 'boolean', description: '是否使用 Playwright JS 渲染（适用于 SPA/动态页面，默认 false）' },
           },
           required: ['url'],
         },
@@ -1542,7 +1802,7 @@ export async function initDefaultTools(): Promise<void> {
       type: 'function',
       function: {
         name: 'web_api_call',
-        description: '调用外部 REST API 或 API 模板。支持两种模式：(1) 直接调用：传入 url、method、headers、body；(2) 模板调用：传入 templateId 和 variables，使用预配置的 API 模板执行。仅允许白名单内的域名。',
+        description: '调用外部 REST API 或 API 模板。支持两种模式：(1) 直接调用：传入 url、method、headers、body；(2) 模板调用：传入 templateId 和 variables，使用预配置的 API 模板执行。仅允许白名单内的域名。renderJs=true 时对 HTML 响应使用 Playwright 渲染。',
         parameters: {
           type: 'object',
           properties: {
@@ -1552,6 +1812,7 @@ export async function initDefaultTools(): Promise<void> {
             body: { type: 'string', description: '请求体（可选，用于 POST/PUT）' },
             templateId: { type: 'string', description: 'API 模板 ID（模板调用模式，与 url 二选一）' },
             variables: { type: 'object', description: '模板变量映射（模板调用模式使用，key-value 对）' },
+            renderJs: { type: 'boolean', description: '是否对 HTML 响应使用 Playwright JS 渲染（默认 false）' },
           },
         },
       },
@@ -1598,6 +1859,11 @@ export function getToolDefinitions(): ToolDefinition[] {
 
 /** 执行单个 tool call */
 export async function executeToolCall(toolCall: ToolCall): Promise<string> {
+  // 防御性检查：MCP 工具不应路由到此处
+  if (isMcpToolName(toolCall.function.name)) {
+    return JSON.stringify({ error: `内部错误: MCP 工具 '${toolCall.function.name}' 被错误路由到 toolRegistry，应通过 mcpClientManager 执行。` });
+  }
+
   const tool = registry.get(toolCall.function.name);
   if (!tool) {
     return JSON.stringify({ error: `未知工具: ${toolCall.function.name}` });

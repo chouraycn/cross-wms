@@ -11,6 +11,7 @@ import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PsychologyIcon from '@mui/icons-material/Psychology';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import { useModels } from '../../contexts/ModelsContext';
 import { getGrayScale } from '../../constants/theme';
 import ModelManager from '../shared/ModelManager';
@@ -203,6 +204,7 @@ const EXECUTION_MODE_OPTIONS: { value: ExecutionMode; label: string; desc: strin
   { value: 'observer', label: '观察者', desc: '工具执行后自动评估结果，失败时注入反思提示并重试' },
   { value: 'planner', label: '规划器', desc: '复杂任务先拆解为执行计划，按步骤依次执行，动态调整' },
   { value: 'react', label: 'ReAct', desc: '完整推理-行动-观察-反思循环，AI 具备真正的思考能力' },
+  { value: 'orchestrator', label: '多 Agent', desc: '主 Agent 统筹拆分任务，多个专业子 Agent 并行执行，自动汇总结果' },
 ];
 
 function ExecutionModeSelector() {
@@ -249,6 +251,7 @@ function ExecutionModeSelector() {
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
             {opt.value === 'react' && <PsychologyIcon sx={{ fontSize: 18, color: aiEngine.defaultExecutionMode === opt.value ? 'rgba(99,102,241,1)' : gs.textSecondary }} />}
+            {opt.value === 'orchestrator' && <AccountTreeIcon sx={{ fontSize: 18, color: aiEngine.defaultExecutionMode === opt.value ? 'rgba(99,102,241,1)' : gs.textSecondary }} />}
             <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: aiEngine.defaultExecutionMode === opt.value ? gs.textPrimary : gs.textSecondary }}>
               {opt.label}
             </Typography>

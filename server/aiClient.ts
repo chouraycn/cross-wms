@@ -78,7 +78,7 @@ export interface AIResponse {
 export class AIAPIError extends Error {
   constructor(
     message: string,
-    public readonly category: 'auth' | 'rate_limit' | 'network' | 'timeout' | 'server' | 'unknown',
+    public readonly category: 'auth' | 'rate_limit' | 'network' | 'timeout' | 'server' | 'model_not_supported' | 'unknown',
     public readonly statusCode?: number,
     public readonly responseBody?: string,
   ) {
@@ -124,12 +124,19 @@ function sleep(ms: number): Promise<void> {
   return new Promise(r => setTimeout(r, ms));
 }
 
-/** 根据 HTTP 状态码分类错误 */
+/** 根据 HTTP 状态码 + 响应体分类错误 */
 function classifyError(statusCode: number, responseBody: string): AIAPIError['category'] {
   if (statusCode === 401 || statusCode === 403) return 'auth';
   if (statusCode === 429) return 'rate_limit';
   if (statusCode >= 500) return 'server';
-  if (statusCode >= 400) return 'unknown';
+  if (statusCode >= 400) {
+    // v1.5.116: 识别模型不支持错误
+    const body = responseBody.toLowerCase();
+    if (body.includes('model_not_supported') || body.includes('invalid_model') || body.includes('model not found')) {
+      return 'model_not_supported';
+    }
+    return 'unknown';
+  }
   return 'unknown';
 }
 
@@ -713,6 +720,9 @@ export async function callAnthropicStream(
   };
 }
 
+/** Key 切换回调 — 速率限制时由上层切换到备用 Key */
+export type OnRateLimitCallback = () => Promise<{ apiKey: string; keyIndex: number } | null>;
+
 // ===================== 统一调用入口（含重试）====================
 
 /**
@@ -720,6 +730,7 @@ export async function callAnthropicStream(
  * 支持流式 SSE 响应，含自动重试机制
  *
  * v1.9.0: 新增 tools 参数支持 Tool Calling
+ * v1.5.116: 新增 onRateLimit 回调 — 429 时自动切换备用 Key
  */
 export async function callAIModelStream(
   modelConfig: ModelCallConfig,
@@ -731,8 +742,9 @@ export async function callAIModelStream(
   onToolCall?: (toolCall: ToolCall) => void,
   reasoningEffort?: string,
   modelCapabilities?: string[],
+  onRateLimit?: OnRateLimitCallback,
 ): Promise<AIResponse> {
-  const apiKey = modelConfig.apiKey;
+  let apiKey = modelConfig.apiKey;
   const apiEndpoint = modelConfig.apiEndpoint || '';
   const modelId = modelConfig.id;
   const temperature = modelConfig.temperature ?? 0.7;
@@ -799,6 +811,22 @@ export async function callAIModelStream(
       if (error instanceof AIAPIError && error.category === 'auth') {
         throw error;
       }
+
+      // v1.5.116: 速率限制时自动切换备用 Key
+      if (error instanceof AIAPIError && error.category === 'rate_limit' && onRateLimit) {
+        try {
+          const newKey = await onRateLimit();
+          if (newKey) {
+            apiKey = newKey.apiKey;
+            console.log(`[AIClient] 429 速率限制，已切换到备用 Key #${newKey.keyIndex}，立即重试...`);
+            // 不等延时，立即重试（新 Key 有自己的配额）
+            continue;
+          }
+        } catch {
+          // 切换 Key 失败，走正常重试逻辑
+        }
+      }
+
       if (attempt >= RETRY_CONFIG.maxRetries) break;
       if (!isRetryableError(error)) break;
 

@@ -72,6 +72,8 @@ const TOOL_FAMILIES: Record<string, number> = {
   'file_readFile': 2,
   'file_writeFile': 3,
   // Desktop 族
+  'desktop_snapshot': 0,   // v3.1: 先获取元素树
+  'desktop_find': 0,       // v3.1: 搜索缓存快照
   'desktop_screenshot': 1,
   'desktop_see': 2,
   'desktop_click': 3,

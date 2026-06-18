@@ -325,6 +325,13 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                       · {msg.model}
                     </Typography>
                   )}
+                  {msg.fallbackModel && (
+                    <Chip
+                      size="small"
+                      label={`⚠️ 已降级到 ${msg.fallbackModel}`}
+                      sx={{ height: 20, fontSize: 10, color: '#b45309', bgcolor: '#fef3c7', border: '1px solid #fcd34d' }}
+                    />
+                  )}
                 </Box>
               )}
               <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
@@ -916,6 +923,37 @@ const BotMessageContent = React.memo<BotMessageContentProps>(({
       {msg.budgetAdjusted && (
         <BudgetAdjustedNotice data={msg.budgetAdjusted} gs={gs} isDark={isDark} />
       )}
+      {/* v7.0: 队列状态指示器 — Collect/Steer/Followup 模式反馈 */}
+      {msg.queueState && msg.isStreaming && (() => {
+        const qs = msg.queueState;
+        const stateLabel: Record<string, { text: string; color: string; icon: string }> = {
+          collecting: { text: `合并输入中 (${qs.queueLength ?? 0} 条)`, color: '#7C3AED', icon: '⊕' },
+          steering: { text: '转向指令中...', color: '#EA580C', icon: '↗' },
+          executing_with_queue: { text: `执行中 (${qs.queueLength ?? 0} 条排队)`, color: '#2563EB', icon: '◉' },
+          executing: { text: '执行中...', color: '#2563EB', icon: '◉' },
+        };
+        const info = stateLabel[qs.state ?? ''];
+        if (!info) return null;
+        return (
+          <Box sx={{
+            display: 'flex', alignItems: 'center', gap: 0.5,
+            px: 1, py: 0.25, borderRadius: 1, mb: 0.5,
+            bgcolor: info.color + '0A', border: `1px solid ${info.color}20`,
+          }}>
+            <Typography sx={{ fontSize: 12, color: info.color, fontWeight: 600, lineHeight: 1 }}>
+              {info.icon}
+            </Typography>
+            <Typography sx={{ fontSize: 11, color: info.color, fontWeight: 500, lineHeight: 1 }}>
+              {info.text}
+            </Typography>
+            {qs.mode && (
+              <Typography sx={{ fontSize: 10, color: info.color + '99', ml: 0.5, lineHeight: 1 }}>
+                [{qs.mode}]
+              </Typography>
+            )}
+          </Box>
+        );
+      })()}
       {/* v1.9.3: 内联权限请求 */}
       {msg.permissionRequest && onPermissionRespond && (
         <InlinePermissionRequest

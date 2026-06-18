@@ -7,6 +7,8 @@ import fs from 'fs';
 import os from 'os';
 import skillWatcher from './services/skillWatcher.js';
 import { initDefaultTools, listTools } from './engine/toolRegistry.js';
+import { agentRegistry } from './engine/agentRegistry.js';
+import { initDefaultSoulFiles } from './engine/soulLoader.js';
 import { EventEmitter } from 'events';
 
 // v1.5.88: 全局异常兜底 — Node.js v15+ 未处理 rejection 默认崩溃进程
@@ -224,6 +226,12 @@ const server = app.listen(PORT, async () => {
   await initDefaultTools();
   console.log('[Tool Registry] 工具注册完成:', listTools().join(', '));
 
+  // v8.0: 初始化 Agent Registry（加载内置 Agent 模板）
+  agentRegistry.initialize();
+
+  // v8.5: 初始化人格层文件（首次启动时复制 SOUL.md / USER.md 到 ~/.cdf-know-clow/）
+  initDefaultSoulFiles();
+
   // v3.0: 自动加载已启用的插件
   await pluginRegistry.loadEnabledPlugins();
   const pluginToolNames = listPluginTools();
@@ -266,9 +274,9 @@ const server = app.listen(PORT, async () => {
   ensureWmsTables(db);
 
   // 初始化语义匹配引擎（异步，不阻塞启动）
-  setTimeout(() => {
+  setTimeout(async () => {
     try {
-      const stats = initMatchingEngine();
+      const stats = await initMatchingEngine();
       console.log(`[Matching] 嵌入初始化完成: total=${stats.embeddingStats.total}, new=${stats.embeddingStats.newCount}, updated=${stats.embeddingStats.updatedCount}, skipped=${stats.embeddingStats.skippedCount}`);
     } catch (e) {
       console.error('[Matching] 嵌入初始化失败:', e);

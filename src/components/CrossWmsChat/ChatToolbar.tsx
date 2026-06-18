@@ -23,6 +23,8 @@ import CheckIcon from '@mui/icons-material/Check';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
@@ -31,6 +33,7 @@ import { getCategoryLabel, CATEGORY_ORDER } from '../../constants/skillCategorie
 import { getGrayScale } from '../../constants/theme';
 import { providerIcon } from '../../utils/providerIcons';
 import { CAPABILITY_LABELS, CAPABILITY_COLORS, type ModelCapability } from '../../types/models';
+import { useToolPermission } from '../../contexts/ToolPermissionContext';
 
 // ===================== Types =====================
 
@@ -117,6 +120,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
   const navigate = useNavigate();
+  const { trustMode, toggleTrustMode } = useToolPermission();
   const [activeDropdown, setActiveDropdown] = useState<DropdownType>(null);
 
   const modelBtnRef = useRef<HTMLDivElement>(null);
@@ -240,6 +244,38 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               </Typography>
             </Box>
           )}
+
+          {/* v2.5.0: Trust mode toggle — 免确认模式 */}
+          <Tooltip title={trustMode ? '免确认模式已开启：工具自动执行' : '开启免确认模式：跳过工具授权弹窗'}>
+            <Box
+              onClick={(e) => { e.stopPropagation(); toggleTrustMode(); }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: '20px',
+                bgcolor: trustMode ? (isDark ? '#0A2E1A' : '#ECFDF5') : gs.bgHover,
+                border: trustMode ? `1px solid ${isDark ? '#10B98140' : '#10B98130'}` : '1px solid transparent',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                '&:hover': { bgcolor: trustMode ? (isDark ? '#0D3A20' : '#D1FAE5') : gs.bgActive },
+                userSelect: 'none',
+              }}
+            >
+              {trustMode
+                ? <VerifiedUserIcon sx={{ fontSize: 15, color: '#10B981' }} />
+                : <ShieldOutlinedIcon sx={{ fontSize: 15, color: gs.textMuted }} />
+              }
+              <Typography sx={{
+                fontSize: 13, fontWeight: 500, lineHeight: 1,
+                color: trustMode ? '#10B981' : gs.textPrimary,
+              }}>
+                {trustMode ? '免确认' : '授权'}
+              </Typography>
+            </Box>
+          </Tooltip>
         </Box>
 
         {/* Right: Model selector (ghost text), Memory, Mic, Send */}

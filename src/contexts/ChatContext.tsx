@@ -493,11 +493,22 @@ export function ChatProvider({
   // ===================== 更新当前会话 — 只更新 activeSession，不清洗 sessions =====================
   // 流式渲染时每 ~10ms 调用：仅更新 activeSession（不触发 sidebar 重渲染）
   // 标题自动生成时：将 title 同步到 sessions（触发 sidebar 更新）
-  const handleSessionUpdate = useCallback((updatedSession: Session) => {
+  const handleSessionUpdate = useCallback((originalSession: Session) => {
+    // 2. 自动标题：在所有路径之前执行，确保新会话也能生成标题
+    let updatedSession = originalSession;
+    const firstUserMsg = updatedSession.messages.find((m) => m.role === 'user');
+    if (firstUserMsg && (!updatedSession.title || updatedSession.title === '新对话')) {
+      const autoTitle = firstUserMsg.content.slice(0, 20).replace(/\n/g, ' ').trim();
+      if (autoTitle) {
+        updatedSession = { ...updatedSession, title: autoTitle };
+        updateSessionTitleViaAPI(updatedSession.id, autoTitle);
+      }
+    }
+
     // 1. 始终更新 activeSession（ChatSessionContext 消费）
     setActiveSession(updatedSession);
 
-    // 2. 检测是否需要同步 sidebar（仅 title 变更 或 新会话）
+    // 3. 检测是否需要同步 sidebar（仅 title 变更 或 新会话）
     const prevSessions = sessionsRef.current;
     const existingIdx = prevSessions.findIndex((s) => s.id === updatedSession.id);
 
@@ -526,24 +537,6 @@ export function ChatProvider({
       return;
     }
 
-    // 3. 自动标题：仅当 title 为空/默认值时生成一次
-    const firstUserMsg = updatedSession.messages.find((m) => m.role === 'user');
-    if (firstUserMsg && (!updatedSession.title || updatedSession.title === '新对话')) {
-      const autoTitle = firstUserMsg.content.slice(0, 20).replace(/\n/g, ' ').trim();
-      if (autoTitle) {
-        updateSessionTitleViaAPI(updatedSession.id, autoTitle);
-        setSessions((prev) => {
-          const idx = prev.findIndex((s) => s.id === updatedSession.id);
-          if (idx !== -1) {
-            const next = [...prev];
-            next[idx] = { ...next[idx], title: autoTitle };
-            syncSidebar(updatedSession.id);
-            return next;
-          }
-          return prev;
-        });
-      }
-    }
     // 4. 流式更新：不触及 sessions → sidebar 不重渲染
     // 5. 流式完成后同步消息到 sessions + 更新 updatedAt + 移到顶部
     const lastMsg = updatedSession.messages[updatedSession.messages.length - 1];

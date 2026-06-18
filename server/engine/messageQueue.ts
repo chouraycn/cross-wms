@@ -71,6 +71,8 @@ interface SessionQueue {
   executionResolve: (() => void) | null;
   /** 执行 promise（用于串行等待） */
   executionPromise: Promise<void> | null;
+  /** 最后活跃时间戳（用于空闲清理） */
+  lastActiveAt: number;
 }
 
 /** 队列事件 */
@@ -163,8 +165,7 @@ export class MessageQueue extends EventEmitter {
     extra: Record<string, unknown> = {},
   ): { accepted: boolean; messageId: string; assistantMessageId: string; reason?: string } {
     const sq = this.getOrCreateSession(sessionId);
-
-    // 队列长度检查
+    sq.lastActiveAt = Date.now();
     if (sq.queue.length >= this.config.maxQueueLength) {
       this.emitEvent('rejected', sessionId, { reason: 'queue_full' });
       return {
@@ -260,6 +261,7 @@ export class MessageQueue extends EventEmitter {
     sq.currentMessageId = null;
     sq.currentAssistantId = null;
     sq.currentMode = null;
+    sq.lastActiveAt = Date.now();
     this.activeCount = Math.max(0, this.activeCount - 1);
 
     // 如果有排队消息，继续执行
@@ -322,6 +324,7 @@ export class MessageQueue extends EventEmitter {
         collectDeadline: null,
         executionResolve: null,
         executionPromise: null,
+        lastActiveAt: Date.now(),
       };
       this.sessions.set(sessionId, sq);
     }
@@ -522,10 +525,9 @@ export class MessageQueue extends EventEmitter {
       if (
         sq.state === 'idle' &&
         sq.queue.length === 0 &&
-        sq.executionPromise === null
+        sq.executionPromise === null &&
+        now - sq.lastActiveAt > this.config.idleCleanupMs
       ) {
-        // 简单策略：空闲超过配置时间就清理
-        // 实际实现可以跟踪最后活跃时间，这里简化为每次清理所有空闲会话
         this.sessions.delete(sessionId);
       }
     }

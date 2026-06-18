@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Message, ReferencedSession, Session, ToolCallInfo, Attachment, PluginResultInfo, ObserverReflectionInfo, ExecutionPlanInfo, PlanStepInfo, ReactPhaseInfo } from '../types/chat';
+import { Message, ReferencedSession, Session, ToolCallInfo, Attachment, PluginResultInfo, ObserverReflectionInfo, ExecutionPlanInfo, PlanStepInfo, ReactPhaseInfo, QueueStateInfo } from '../types/chat';
 import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../types/inventory-query';
 import { CHAT_API_URL, INVENTORY_QUERY_API_URL } from '../constants/api';
 import { useAppSettings, useAppearanceSettings } from '../contexts/AppSettingsContext';
@@ -39,7 +39,7 @@ export interface SendMessageOptions {
   /** 推理强度（'high' 深度思考 / 'max' 极致推理） */
   reasoningEffort?: string;
   /** 执行模式（覆盖全局默认值） */
-  executionMode?: 'legacy' | 'observer' | 'planner' | 'react';
+  executionMode?: 'legacy' | 'observer' | 'planner' | 'react' | 'orchestrator';
   /** v7.0: 队列模式（覆盖全局默认值）：collect(合并) / steer(转向) / followup(追加) */
   queueMode?: 'collect' | 'steer' | 'followup';
 }
@@ -52,7 +52,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   const [inputValue, setInputValue] = useState('');
   const { updateSettings } = useAppSettings();
   const { settings: appearance } = useAppearanceSettings();
-  const { requestPermission } = useToolPermission();
+  const { requestPermission, trustMode } = useToolPermission();
   /** v1.7.0: 每个会话级别限制一次 SQL 失败自动重试 */
   const autoRetriedRef = useRef<boolean>(false);
   /** v1.8.0: AbortController 用于中断请求 */
@@ -67,6 +67,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   const settingsRef = useRef(appearance);
   /** v1.8.2: 用户手动停止标志（不使用 AbortController signal，避免 Electron ERR_ABORTED） */
   const stoppedRef = useRef(false);
+  /** v2.5.0: 免确认模式 ref，SSE 回调中使用 */
+  const trustModeRef = useRef(trustMode);
 
   // v1.8.1: 使用 useEffect 同步 ref 值，避免渲染时直接赋值导致 Fast Refresh 问题
   useEffect(() => {
@@ -84,6 +86,11 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   useEffect(() => {
     settingsRef.current = appearance;
   }, [appearance]);
+
+  // v2.5.0: 同步 trustMode 到 ref（SSE 回调中使用）
+  useEffect(() => {
+    trustModeRef.current = trustMode;
+  }, [trustMode]);
 
   /**
    * v1.8.0: 中断当前 AI 生成
@@ -555,19 +562,28 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                       onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
                     }
                     if (data.type === 'permission_request') {
-                      streamingMsg.permissionRequest = {
-                        reqId: data.reqId,
-                        toolName: data.toolName,
-                        toolArgs: data.toolArgs,
-                        riskLevel: data.riskLevel,
-                      };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [
-                          ...sessionWithStreaming.messages.slice(0, -1),
-                          { ...streamingMsg },
-                        ],
-                      });
+                      // v2.5.0: 免确认模式下自动通过，不显示弹窗
+                      if (trustModeRef.current) {
+                        fetch('/api/permission-response', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ reqId: data.reqId, approved: true }),
+                        }).catch(() => {});
+                      } else {
+                        streamingMsg.permissionRequest = {
+                          reqId: data.reqId,
+                          toolName: data.toolName,
+                          toolArgs: data.toolArgs,
+                          riskLevel: data.riskLevel,
+                        };
+                        onSessionUpdateRef.current({
+                          ...sessionWithStreaming,
+                          messages: [
+                            ...sessionWithStreaming.messages.slice(0, -1),
+                            { ...streamingMsg },
+                          ],
+                        });
+                      }
                     }
                     if (data.type === 'tool_audit') {
                       console.log('[useChat] tool_audit:', data);
@@ -775,6 +791,32 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
                       });
                     }
+                    // v6.0: sub_session_suggested — 子会话创建建议
+                    if (data.type === 'sub_session_suggested') {
+                      streamingMsg.subSessionSuggested = {
+                        parentSessionId: data.parentSessionId || '',
+                        stepIndex: data.stepIndex ?? 0,
+                        title: data.title || '',
+                        toolName: data.toolName,
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    // v6.0: pdca_check — PDCA 检查结果
+                    if (data.type === 'pdca_check') {
+                      streamingMsg.pdcaCheck = {
+                        decision: data.decision || '',
+                        reason: data.reason || '',
+                        progressPercent: data.progressPercent ?? 0,
+                        confidence: data.confidence ?? 0,
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
                     // v3.0: client_tool 事件 — 服务端通知前端有插件需要在 reasoning 流中自动调用
                     if (data.type === 'client_tool') {
                       console.log('[useChat] client_tool event received:', data.tool, data.args);
@@ -799,7 +841,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                     // v7.0: 队列事件处理 — 实时反馈队列状态变化
                     if (data.type === 'queue_event' || data.type === 'queue_status') {
                       // 将队列状态存储到 streamingMsg 上，供 UI 组件渲染
-                      (streamingMsg as any).queueState = {
+                      streamingMsg.queueState = {
                         mode: data.mode,
                         state: data.state,
                         queueLength: data.queueLength,
@@ -822,6 +864,11 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                       errorCode = data.errorCode ?? null;
                       errorMessage = data.errorMessage ?? null;
                       thinkingDuration = data.thinkingDuration;
+                      // v1.5.116: 模型降级信息
+                      if (data.fallbackModel) {
+                        streamingMsg.fallbackModel = data.fallbackModel;
+                        streamingMsg.fallbackReason = data.fallbackReason;
+                      }
                       if (data.thinkingType) {
                         currentThinkingType = data.thinkingType;
                       }

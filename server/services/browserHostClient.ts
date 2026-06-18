@@ -364,3 +364,46 @@ export async function getBrowserHostHealth(): Promise<BrowserHostHealth> {
     };
   }
 }
+
+// ===================== JS 渲染（供 webTools 使用） =====================
+
+/** renderContent 返回类型 */
+export interface RenderContentResult {
+  ok: boolean;
+  html?: string;
+  title?: string;
+  url?: string;
+  status?: number | null;
+  error?: string;
+}
+
+/**
+ * 使用 Playwright 渲染页面并返回渲染后的 HTML
+ * — 供 web_fetch / web_search / web_api_call 的 renderJs 模式使用
+ * — 使用独立临时页面，不影响当前活跃页面
+ */
+export async function renderContent(options: {
+  url: string;
+  waitUntil?: 'domcontentloaded' | 'networkidle' | 'load';
+  selector?: string;
+  timeout?: number;
+}): Promise<RenderContentResult> {
+  const response = await sendCommand('browser_render_content', {
+    url: options.url,
+    waitUntil: options.waitUntil || 'networkidle',
+    selector: options.selector,
+    timeout: options.timeout || 15000,
+  });
+
+  if (response.ok && response.output) {
+    const out = response.output;
+    return {
+      ok: true,
+      html: out.html,
+      title: out.title,
+      url: out.url,
+      status: out.status,
+    };
+  }
+  return { ok: false, error: response.error || 'Render failed' };
+}

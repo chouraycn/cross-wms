@@ -16,6 +16,7 @@ import {
   executeToolLoop,
   type ToolExecutorOptions,
   type ToolExecutionResult,
+  getToolRiskLevel,
 } from './toolExecutor.js';
 import { Observer, type Observation, type ObserverEvent } from './observer.js';
 import { Planner, type ExecutionPlan, type PlanStep } from './planner.js';
@@ -25,8 +26,13 @@ import type { ModelCallConfig, ToolCall, MessageContent } from '../aiClient.js';
 import { getToolDefinitions } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
 import { truncateContextForModel } from './contextTruncate.js';
+import { compressContextWithSummary } from './contextCompress.js';
 import { executeToolCall } from './toolRegistry.js';
-import { type BudgetConfig } from './budgetManager.js';
+import { type BudgetConfig, DEFAULT_BUDGET_CONFIG } from './budgetManager.js';
+import { mcpClientManager } from './mcpClientManager.js';
+import { isMcpToolName, getMcpServerPrefix } from './mcpTypes.js';
+import { CircuitBreaker } from './circuitBreaker.js';
+import { getMergedStrategyPreferences, type StrategyPreferences, type PersonalityMode } from './soulLoader.js';
 
 // ===================== 执行模式枚举 =====================
 
@@ -40,6 +46,8 @@ export enum ExecutionMode {
   PLANNER = 'planner',
   /** ReAct 模式：T02 实现 */
   REACT = 'react',
+  /** 编排器模式：v8.0 多 Agent 架构 */
+  ORCHESTRATOR = 'orchestrator',
 }
 
 // ===================== 策略选项 =====================
@@ -83,10 +91,16 @@ export interface IExecutionStrategy {
  * 向后兼容，无任何额外逻辑。
  */
 export class LegacyStrategy implements IExecutionStrategy {
+  private circuitBreaker = new CircuitBreaker();
+
   async execute(options: ExecutionStrategyOptions): Promise<ToolExecutionResult> {
     // 剥离策略相关字段，传递纯 ToolExecutorOptions
     const { executionMode, onSSEEvent, budgetConfig, ...toolOptions } = options;
-    return executeToolLoop(toolOptions);
+    return executeToolLoop({
+      ...toolOptions,
+      circuitBreaker: this.circuitBreaker,
+      onSSEEvent,
+    });
   }
 }
 
@@ -105,6 +119,7 @@ export class LegacyStrategy implements IExecutionStrategy {
  */
 export class ObserverStrategy implements IExecutionStrategy {
   private observer: Observer;
+  private circuitBreaker = new CircuitBreaker();
 
   constructor(observer?: Observer) {
     this.observer = observer ?? new Observer();
@@ -129,7 +144,8 @@ export class ObserverStrategy implements IExecutionStrategy {
     // 获取工具定义
     const builtinTools = getToolDefinitions();
     const pluginTools = pluginRegistry.getActiveTools();
-    const tools = [...builtinTools, ...pluginTools];
+    const mcpTools = mcpClientManager.getMcpTools();
+    const tools = [...builtinTools, ...pluginTools, ...mcpTools];
 
     // 复制消息列表
     const currentMessages = [...messages];
@@ -142,25 +158,7 @@ export class ObserverStrategy implements IExecutionStrategy {
     // 每个工具调用的重试计数器
     const retryCounters = new Map<string, number>();
 
-    // v2.2.1: 工具风险分级（复用 toolExecutor 逻辑）
-    const TOOL_RISK_LEVELS: Record<string, string> = {
-      'system_info': 'auto', 'file_listDir': 'auto', 'file_readFile': 'auto',
-      'db_query': 'auto', 'desktop_health': 'auto', 'desktop_screenshot': 'auto',
-      'app_setBotName': 'auto', 'wms_inventory': 'auto', 'web_search': 'auto',
-      'web_fetch': 'auto', 'file_writeFile': 'confirm', 'shell_exec': 'confirm',
-      'web_api_call': 'confirm', 'browser_navigate': 'confirm', 'browser_click': 'confirm',
-      'browser_type': 'confirm', 'desktop_click': 'high-risk', 'desktop_type': 'high-risk',
-      'desktop_key_press': 'high-risk', 'desktop_app_launch': 'auto',
-      'desktop_app_quit': 'high-risk', 'desktop_window_focus': 'high-risk',
-      'desktop_clipboard': 'high-risk', 'desktop_scroll': 'high-risk',
-      'desktop_see': 'high-risk', 'browser_snapshot': 'auto', 'browser_screenshot': 'auto',
-      'web_hook_listen': 'confirm', 'web_hook_poll': 'auto', 'web_hook_stop': 'auto',
-    };
-
-    function getToolRiskLevel(name: string): string {
-      return TOOL_RISK_LEVELS[name] || 'confirm';
-    }
-
+    // v2.2.1: 工具风险分级（统一使用 toolExecutor 的定义，避免不同步）
     function needsPermission(name: string): boolean {
       const level = getToolRiskLevel(name);
       return level === 'confirm' || level === 'high-risk';
@@ -172,11 +170,11 @@ export class ObserverStrategy implements IExecutionStrategy {
         throw new Error('请求已取消');
       }
 
-      // 截断上下文防止超限
-      const ctxWindow = (modelConfig as Record<string, unknown>).contextWindow as number || 128000;
+      // 截断上下文防止超限（v1.5.116: 优先智能压缩）
+      const ctxWindow = (modelConfig as unknown as Record<string, unknown>).contextWindow as number || 128000;
       const ctxMaxTokens = modelConfig.maxTokens || 8192;
-      const turnTruncated = truncateContextForModel(currentMessages, ctxWindow, ctxMaxTokens, tools.length);
-      if (turnTruncated.truncated && currentMessages.length !== turnTruncated.messages.length) {
+      const turnTruncated = await compressContextWithSummary(currentMessages, ctxWindow, ctxMaxTokens, tools.length, modelConfig);
+      if ((turnTruncated.compressed || turnTruncated.truncated) && currentMessages.length !== turnTruncated.messages.length) {
         currentMessages.length = 0;
         currentMessages.push(...turnTruncated.messages as typeof currentMessages);
       }
@@ -255,8 +253,129 @@ export class ObserverStrategy implements IExecutionStrategy {
           }
         }
 
-        // 执行工具
-        const result = await executeToolCall(toolCall);
+        // v1.5.116: 熔断检查 — 工具已熔断则跳过执行
+        if (this.circuitBreaker.isOpen(toolName)) {
+          const skipResult = JSON.stringify({
+            error: `工具 '${toolName}' 已被熔断（连续失败过多），已跳过执行。`,
+            circuitBreakerState: 'open',
+          });
+          executedToolCalls.push({
+            name: toolName,
+            arguments: toolCall.function.arguments,
+            result: skipResult,
+          });
+          if (onToolCall) {
+            onToolCall(toolCall, skipResult);
+          }
+          currentMessages.push({
+            role: 'tool',
+            content: skipResult,
+            tool_call_id: toolCall.id,
+          } as typeof currentMessages[number]);
+          continue;
+        }
+
+        // v1.5.116: MCP Server 级熔断检查
+        if (isMcpToolName(toolName)) {
+          const prefix = getMcpServerPrefix(toolName);
+          if (prefix && this.circuitBreaker.isMcpServerOpen(prefix)) {
+            const skipResult = JSON.stringify({
+              error: `MCP Server '${prefix}' 已被熔断（连续失败过多），已跳过执行。`,
+              circuitBreakerState: 'open',
+            });
+            executedToolCalls.push({
+              name: toolName,
+              arguments: toolCall.function.arguments,
+              result: skipResult,
+            });
+            if (onToolCall) {
+              onToolCall(toolCall, skipResult);
+            }
+            currentMessages.push({
+              role: 'tool',
+              content: skipResult,
+              tool_call_id: toolCall.id,
+            } as typeof currentMessages[number]);
+            continue;
+          }
+        }
+
+        // 执行工具（v1.5.116: 区分 MCP 工具和内置工具）
+        let result: string;
+        let mcpExecutionSucceeded = true;
+        if (isMcpToolName(toolName)) {
+          try {
+            const parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
+            result = await mcpClientManager.executeMcpTool(toolName, parsedArgs);
+            // MCP Server 级成功记录
+            const prefix = getMcpServerPrefix(toolName);
+            if (prefix) {
+              this.circuitBreaker.recordMcpServerSuccess(prefix);
+            }
+          } catch (err) {
+            mcpExecutionSucceeded = false;
+            const errMsg = err instanceof Error ? err.message : String(err);
+            result = JSON.stringify({ error: `MCP 工具执行异常: ${errMsg}` });
+            // MCP Server 级失败记录
+            const prefix = getMcpServerPrefix(toolName);
+            if (prefix) {
+              const mcpState = this.circuitBreaker.recordMcpServerFailure(prefix, errMsg);
+              if (mcpState === 'open' && onSSEEvent) {
+                onSSEEvent({
+                  type: 'circuit_breaker_triggered',
+                  toolName,
+                  failureCount: this.circuitBreaker.getRecord(`mcp__${prefix}__*`)?.consecutiveFailures ?? 0,
+                  state: 'open',
+                });
+              }
+            }
+          }
+        } else {
+          result = await executeToolCall(toolCall);
+        }
+
+        // v1.5.116: 熔断器 — 记录内置工具成功/失败
+        if (!isMcpToolName(toolName)) {
+          const hasError = result.includes('"error"') || result.includes('"error":');
+          if (hasError) {
+            const circuitState = this.circuitBreaker.recordFailure(toolName, result.slice(0, 100));
+            if (circuitState === 'half_open') {
+              const suggestion = this.circuitBreaker.getAlternativeSuggestion(toolName);
+              if (suggestion) {
+                currentMessages.push({
+                  role: 'system',
+                  content: `[熔断器] ${suggestion}`,
+                } as typeof currentMessages[number]);
+              }
+            }
+            if (circuitState === 'open' && onSSEEvent) {
+              const record = this.circuitBreaker.getRecord(toolName);
+              onSSEEvent({
+                type: 'circuit_breaker_triggered',
+                toolName,
+                failureCount: record?.consecutiveFailures ?? 0,
+                state: 'open',
+                alternativeTool: record?.alternativeTool,
+              });
+            }
+          } else {
+            this.circuitBreaker.recordSuccess(toolName);
+          }
+        } else if (!mcpExecutionSucceeded) {
+          // MCP 工具级别的熔断记录
+          const circuitState = this.circuitBreaker.recordFailure(toolName, result.slice(0, 100));
+          if (circuitState === 'half_open') {
+            const suggestion = this.circuitBreaker.getAlternativeSuggestion(toolName);
+            if (suggestion) {
+              currentMessages.push({
+                role: 'system',
+                content: `[熔断器] ${suggestion}`,
+              } as typeof currentMessages[number]);
+            }
+          }
+        } else {
+          this.circuitBreaker.recordSuccess(toolName);
+        }
 
         // 记录工具调用
         executedToolCalls.push({
@@ -271,33 +390,46 @@ export class ObserverStrategy implements IExecutionStrategy {
         }
 
         // ============== Observer 节点 ==============
-        let observation: Observation;
-        try {
-          let toolArgs: Record<string, unknown> = {};
-          try {
-            toolArgs = JSON.parse(toolCall.function.arguments);
-          } catch {
-            // 参数解析失败，使用空对象
-          }
+        // v8.5: 人格联动 — efficient 模式跳过 Observer 反思
+        let toolArgs: Record<string, unknown> = {};
+        try { toolArgs = JSON.parse(toolCall.function.arguments); } catch { /* 参数解析失败 */ }
 
-          observation = this.observer.observe(
-            { name: toolName, arguments: toolArgs },
-            result,
-          );
-        } catch (observerErr) {
-          // Observer 内部错误不传播
-          console.error('[ObserverStrategy] Observer 错误（已忽略）:', observerErr instanceof Error ? observerErr.message : String(observerErr));
+        let observation: Observation;
+        if (ExecutionStrategyFactory.getPersonalityObserverFastPath()) {
+          // 快速路径：不进行 Observer 反思，直接记录结果
           observation = {
-            toolCall: { name: toolName, arguments: {} },
+            toolCall: { name: toolName, arguments: toolArgs },
             result,
             assessment: {
               level: 'success',
-              reason: 'Observer 错误已忽略',
+              reason: '高效模式跳过反思',
               shouldRetry: false,
               shouldAdjustStrategy: false,
               maxRetries: 0,
             },
           };
+        } else {
+          // 正常路径：执行 Observer 反思
+          try {
+            observation = this.observer.observe(
+              { name: toolName, arguments: toolArgs },
+              result,
+            );
+          } catch (observerErr) {
+            // Observer 内部错误不传播
+            console.error('[ObserverStrategy] Observer 错误（已忽略）:', observerErr instanceof Error ? observerErr.message : String(observerErr));
+            observation = {
+              toolCall: { name: toolName, arguments: {} },
+              result,
+              assessment: {
+                level: 'success',
+                reason: 'Observer 错误已忽略',
+                shouldRetry: false,
+                shouldAdjustStrategy: false,
+                maxRetries: 0,
+              },
+            };
+          }
         }
 
         // 获取重试计数
@@ -321,7 +453,7 @@ export class ObserverStrategy implements IExecutionStrategy {
 
           // 通过 onSSEEvent 回调发送
           if (onSSEEvent) {
-            onSSEEvent(observerEvent as Record<string, unknown>);
+            onSSEEvent(observerEvent as unknown as Record<string, unknown>);
           }
         }
 
@@ -435,24 +567,25 @@ export class PlannerStrategy implements IExecutionStrategy {
       return this.observerStrategy.execute(options);
     }
 
-    console.log(`[PlannerStrategy] 计划生成成功: intent="${plan.intent}", steps=${plan.steps.length}`);
+    const activePlan = plan; // TypeScript narrowing — plan is guaranteed non-null after this point
+    console.log(`[PlannerStrategy] 计划生成成功: intent="${activePlan.intent}", steps=${activePlan.steps.length}`);
 
     // 5. 生成计划成功 → 推送 execution_plan SSE 事件
     if (onSSEEvent) {
       onSSEEvent({
         type: 'execution_plan',
         plan: {
-          id: plan.id,
-          intent: plan.intent,
-          steps: plan.steps.map(s => ({
+          id: activePlan.id,
+          intent: activePlan.intent,
+          steps: activePlan.steps.map(s => ({
             step: s.step,
             description: s.description,
             toolName: s.toolName,
             dependsOn: s.dependsOn,
             status: s.status,
           })),
-          isDynamic: plan.isDynamic,
-          createdAt: plan.createdAt,
+          isDynamic: activePlan.isDynamic,
+          createdAt: activePlan.createdAt,
         },
       });
     }
@@ -461,8 +594,8 @@ export class PlannerStrategy implements IExecutionStrategy {
     let finalContent = '';
     const allExecutedToolCalls: Array<{ name: string; arguments: string; result: string }> = [];
 
-    for (let stepIdx = 0; stepIdx < plan.steps.length; stepIdx++) {
-      const currentStep = plan.steps[stepIdx];
+    for (let stepIdx = 0; stepIdx < activePlan.steps.length; stepIdx++) {
+      const currentStep = activePlan.steps[stepIdx];
 
       // 跳过已完成的步骤
       if (currentStep.status === 'completed' || currentStep.status === 'skipped') {
@@ -471,14 +604,14 @@ export class PlannerStrategy implements IExecutionStrategy {
 
       // 跳过依赖未完成的步骤
       const unmetDeps = currentStep.dependsOn.filter(
-        depStep => plan.steps.find(s => s.step === depStep && s.status !== 'completed'),
+        depStep => activePlan.steps.find(s => s.step === depStep && s.status !== 'completed'),
       );
       if (unmetDeps.length > 0) {
         currentStep.status = 'skipped';
         if (onSSEEvent) {
           onSSEEvent({
             type: 'plan_step_update',
-            planId: plan.id,
+            planId: activePlan.id,
             step: currentStep.step,
             status: 'skipped',
             reason: `依赖步骤 ${unmetDeps.join(', ')} 未完成`,
@@ -492,7 +625,7 @@ export class PlannerStrategy implements IExecutionStrategy {
       if (onSSEEvent) {
         onSSEEvent({
           type: 'plan_step_update',
-          planId: plan.id,
+          planId: activePlan.id,
           step: currentStep.step,
           status: 'in_progress',
         });
@@ -501,7 +634,7 @@ export class PlannerStrategy implements IExecutionStrategy {
       // 将当前步骤描述注入到 messages 中作为 system 提示
       const stepSystemMessage = {
         role: 'system' as const,
-        content: `[执行计划] 当前步骤 ${currentStep.step}/${plan.steps.length}: ${currentStep.description}${currentStep.toolName ? `\n推荐工具: ${currentStep.toolName}` : ''}`,
+        content: `[执行计划] 当前步骤 ${currentStep.step}/${activePlan.steps.length}: ${currentStep.description}${currentStep.toolName ? `\n推荐工具: ${currentStep.toolName}` : ''}`,
       };
 
       // 构造带步骤注入的消息列表
@@ -528,7 +661,7 @@ export class PlannerStrategy implements IExecutionStrategy {
         if (onSSEEvent) {
           onSSEEvent({
             type: 'plan_step_update',
-            planId: plan.id,
+            planId: activePlan.id,
             step: currentStep.step,
             status: 'failed',
             error: errorMsg,
@@ -536,7 +669,7 @@ export class PlannerStrategy implements IExecutionStrategy {
         }
 
         // 动态重规划
-        if (plan.isDynamic) {
+        if (activePlan.isDynamic) {
           const adjustedPlan = this.planner.adjustPlan(plan, {
             failedStepIndex: stepIdx,
             error: errorMsg,
@@ -544,23 +677,23 @@ export class PlannerStrategy implements IExecutionStrategy {
           });
 
           // 如果调整后产生了新步骤，推送更新
-          if (adjustedPlan.steps.length > plan.steps.length) {
+          if (adjustedPlan.steps.length > activePlan.steps.length) {
             plan = adjustedPlan;
             if (onSSEEvent) {
               onSSEEvent({
                 type: 'execution_plan',
                 plan: {
-                  id: plan.id,
-                  intent: plan.intent,
-                  steps: plan.steps.map(s => ({
+                  id: activePlan.id,
+                  intent: activePlan.intent,
+                  steps: activePlan.steps.map(s => ({
                     step: s.step,
                     description: s.description,
                     toolName: s.toolName,
                     dependsOn: s.dependsOn,
                     status: s.status,
                   })),
-                  isDynamic: plan.isDynamic,
-                  createdAt: plan.createdAt,
+                  isDynamic: activePlan.isDynamic,
+                  createdAt: activePlan.createdAt,
                 },
               });
             }
@@ -580,27 +713,27 @@ export class PlannerStrategy implements IExecutionStrategy {
       if (onSSEEvent) {
         onSSEEvent({
           type: 'plan_step_update',
-          planId: plan.id,
+          planId: activePlan.id,
           step: currentStep.step,
           status: 'completed',
         });
       }
 
-      console.log(`[PlannerStrategy] 步骤 ${currentStep.step}/${plan.steps.length} 完成`);
+      console.log(`[PlannerStrategy] 步骤 ${currentStep.step}/${activePlan.steps.length} 完成`);
     }
 
     // 推送计划完成事件
     if (onSSEEvent) {
       onSSEEvent({
         type: 'plan_step_update',
-        planId: plan.id,
+        planId: activePlan.id,
         step: 0, // 0 表示整体计划
         status: 'completed',
         summary: {
-          total: plan.steps.length,
-          completed: plan.steps.filter(s => s.status === 'completed').length,
-          failed: plan.steps.filter(s => s.status === 'failed').length,
-          skipped: plan.steps.filter(s => s.status === 'skipped').length,
+          total: activePlan.steps.length,
+          completed: activePlan.steps.filter(s => s.status === 'completed').length,
+          failed: activePlan.steps.filter(s => s.status === 'failed').length,
+          skipped: activePlan.steps.filter(s => s.status === 'skipped').length,
         },
       });
     }
@@ -628,7 +761,7 @@ export class PlannerStrategy implements IExecutionStrategy {
   }
 }
 
-// ===================== ReActStrategy =====================
+// ===================== ReactStrategy =====================
 
 /**
  * ReAct 策略 — 实现 ReAct (Reasoning + Acting) 循环。
@@ -649,10 +782,17 @@ export class ReactStrategy implements IExecutionStrategy {
     if (!ReactStrategy.sharedPlanner) {
       ReactStrategy.sharedPlanner = new Planner();
     }
+    // v8.5: 人格联动 — 合并 SOUL.md 的 budget 覆盖
+    const personalityBudgetOverride = ExecutionStrategyFactory.getPersonalityBudgetOverride();
+    const mergedBudgetConfig = {
+      ...personalityBudgetOverride,
+      ...options.budgetConfig,  // 显式传入的优先
+    };
+
     const executor = new ReActExecutor(
       ReactStrategy.sharedObserver,
       ReactStrategy.sharedPlanner,
-      options.budgetConfig,
+      mergedBudgetConfig,
     );
     try {
       const result = await executor.execute(options);
@@ -665,6 +805,23 @@ export class ReactStrategy implements IExecutionStrategy {
       console.error('[ReActStrategy] 执行失败，降级为 Observer:', error instanceof Error ? error.message : String(error));
       return new ObserverStrategy().execute(options);
     }
+  }
+}
+
+// ===================== OrchestratorStrategy (v8.0) =====================
+
+/**
+ * 编排器策略 — 多 Agent 架构入口
+ *
+ * 使用 AgentOrchestrator 实现任务拆分 + 并行子 Agent 执行。
+ * 单 Agent 模式下降级为 ReActStrategy。
+ */
+export class OrchestratorStrategy implements IExecutionStrategy {
+  async execute(options: ExecutionStrategyOptions): Promise<ToolExecutionResult> {
+    // 动态导入避免循环依赖
+    const { AgentOrchestrator } = await import('./agentOrchestrator.js');
+    const orchestrator = new AgentOrchestrator();
+    return orchestrator.execute(options);
   }
 }
 
@@ -687,6 +844,8 @@ export class ExecutionStrategyFactory {
         return new PlannerStrategy();
       case ExecutionMode.REACT:
         return new ReactStrategy();
+      case ExecutionMode.ORCHESTRATOR:
+        return new OrchestratorStrategy();
       default:
         return new LegacyStrategy();
     }
@@ -700,8 +859,9 @@ export class ExecutionStrategyFactory {
   }
 
   /**
-   * 评估消息复杂度（v5.0 新增）。
+   * 评估消息复杂度（v5.0 新增，v8.5 人格联动）。
    * 根据工具调用数量和用户消息关键词判断复杂度等级。
+   * 人格层 SOUL.md 中的 plannerThreshold 会调整触发阈值。
    *
    * @param messages - 消息列表
    * @returns 复杂度评估结果
@@ -718,12 +878,45 @@ export class ExecutionStrategyFactory {
       }
     }
 
+    // v8.5: 从人格层获取策略偏好
+    const soulPrefs = getMergedStrategyPreferences();
+    const threshold = soulPrefs.plannerThreshold;
+
     if (toolCallCount >= 5 || /先.*再.*然后/.test(userText)) {
       return { level: 'complex', estimatedSteps: 6, reason: '多步骤复杂任务', recommendedMode: 'react' };
     }
-    if (toolCallCount >= 2 || /查询|分析/.test(userText)) {
+
+    // v8.5: 人格联动 — plannerThreshold 控制何时触发 moderate/Planner
+    // - 'simple': 几乎所有非简单任务都走 Planner
+    // - 'moderate': 默认行为，2+ 工具或查询/分析关键词
+    // - 'complex': 只有明确复杂时才走 Planner
+    const isModerate = threshold === 'simple'
+      ? (toolCallCount >= 1 || /查询|分析|查看|获取/.test(userText))
+      : threshold === 'complex'
+        ? (toolCallCount >= 3 || (/先.*再/.test(userText) && /查询|分析/.test(userText)))
+        : (toolCallCount >= 2 || /查询|分析/.test(userText));
+
+    if (isModerate) {
       return { level: 'moderate', estimatedSteps: 3, reason: '中等复杂任务', recommendedMode: 'planner' };
     }
     return { level: 'simple', estimatedSteps: 1, reason: '简单任务', recommendedMode: 'observer' };
+  }
+
+  /**
+   * v8.5: 获取人格层影响的预算配置覆盖。
+   * 将 SOUL.md 中的 maxTurnsMultiplier 应用到 budgetConfig。
+   */
+  static getPersonalityBudgetOverride(): Partial<BudgetConfig> {
+    const soulPrefs = getMergedStrategyPreferences();
+    return {
+      maxTurns: Math.round(DEFAULT_BUDGET_CONFIG.maxTurns * soulPrefs.maxTurnsMultiplier),
+    };
+  }
+
+  /**
+   * v8.5: 获取人格层的 Observer 快速路径设置。
+   */
+  static getPersonalityObserverFastPath(): boolean {
+    return getMergedStrategyPreferences().observerFastPath;
   }
 }

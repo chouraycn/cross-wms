@@ -159,6 +159,7 @@ export function updateServer(id: string, updates: Partial<Omit<McpServerConfig, 
     WHERE id = ?
   `).run(
     merged.name,
+    merged.command,
     JSON.stringify(merged.args),
     encodeEnv(merged.env),
     merged.enabled ? 1 : 0,
