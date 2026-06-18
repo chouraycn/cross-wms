@@ -40,6 +40,8 @@ export interface SendMessageOptions {
   reasoningEffort?: string;
   /** 执行模式（覆盖全局默认值） */
   executionMode?: 'legacy' | 'observer' | 'planner' | 'react';
+  /** v7.0: 队列模式（覆盖全局默认值）：collect(合并) / steer(转向) / followup(追加) */
+  queueMode?: 'collect' | 'steer' | 'followup';
 }
 
 /** inventory_query JSON 块正则 */
@@ -332,6 +334,10 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       // 如果有执行模式设置，传递给后端
       if (options?.executionMode) {
         body.executionMode = options.executionMode;
+      }
+      // v7.0: 如果有队列模式设置，传递给后端
+      if (options?.queueMode) {
+        body.queueMode = options.queueMode;
       }
       // 如果有历史消息，添加到请求体（用于多轮对话）
       // v1.9.0: 包含 toolCalls 信息，确保多轮工具调用上下文不丢失
@@ -789,6 +795,27 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         ...sessionWithStreaming,
                         messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
                       });
+                    }
+                    // v7.0: 队列事件处理 — 实时反馈队列状态变化
+                    if (data.type === 'queue_event' || data.type === 'queue_status') {
+                      // 将队列状态存储到 streamingMsg 上，供 UI 组件渲染
+                      (streamingMsg as any).queueState = {
+                        mode: data.mode,
+                        state: data.state,
+                        queueLength: data.queueLength,
+                        type: data.type === 'queue_event' ? data.eventType : 'status',
+                      };
+                      onSessionUpdateRef.current({
+                        ...sessionWithStreaming,
+                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
+                      });
+                    }
+                    if (data.type === 'queue_rejected') {
+                      // 队列拒绝消息（已满）
+                      streamingMsg.content = `⚠️ ${data.reason || '消息队列已满，请稍后再试'}`;
+                      doneReceived = true;
+                      errorCode = 'QUEUE_REJECTED';
+                      errorMessage = data.reason;
                     }
                     if (data.type === 'done') {
                       doneReceived = true;

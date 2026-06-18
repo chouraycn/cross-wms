@@ -1,8 +1,20 @@
+/**
+ * SystemAuthBanner — 系统授权状态横幅
+ *
+ * v7.0: 重写样式，与 ToolPermissionDialog 对齐。
+ * - 使用 getGrayScale 主题系统，支持暗色模式
+ * - 顶部渐变条（与 ToolPermissionDialog 风格一致）
+ * - 结构化权限标签展示
+ */
+
 import React from 'react';
-import { Box, Typography, Alert, Button } from '@mui/material';
+import { Box, Typography, Button, useTheme } from '@mui/material';
+import ShieldIcon from '@mui/icons-material/Shield';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import SettingsIcon from '@mui/icons-material/Settings';
 import type { SystemAuthorizationConfig } from '../../contexts/AppSettingsContext';
 import { useSystemAuthSettings } from '../../contexts/AppSettingsContext';
+import { getGrayScale } from '../../constants/theme';
 
 /** 模型自动化操作依赖的关键 TCC 权限 */
 const CRITICAL_PERMISSION_KEYS = [
@@ -53,6 +65,9 @@ interface SystemAuthBannerProps {
 
 const SystemAuthBanner: React.FC<SystemAuthBannerProps> = ({ onOpenSettings }) => {
   const { settings } = useSystemAuthSettings();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
   const status = getAuthStatus(settings);
 
   // 全部授权且已启用 → 不显示
@@ -60,90 +75,118 @@ const SystemAuthBanner: React.FC<SystemAuthBannerProps> = ({ onOpenSettings }) =
     return null;
   }
 
-  // 未启用
-  if (!status.isEnabled) {
-    return (
-      <Alert
-        severity="warning"
-        sx={{
-          mb: 1.5,
-          borderRadius: 1.5,
-          fontSize: '0.75rem',
-          '& .MuiAlert-icon': { alignItems: 'center' },
-          '& .MuiAlert-message': { flex: 1 },
-        }}
-        action={
-          onOpenSettings ? (
-            <Button
-              color="inherit"
-              size="small"
-              startIcon={<SettingsIcon sx={{ fontSize: 15 }} />}
-              onClick={onOpenSettings}
-              sx={{ fontSize: '0.7rem', whiteSpace: 'nowrap' }}
-            >
-              前往设置
-            </Button>
-          ) : undefined
-        }
-      >
-        <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, mb: 0.25 }}>
-          系统授权未启用
-        </Typography>
-        <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
-          模型自动化能力（截图、点击、窗口控制等）需要 macOS 系统授权。请在系统授权中启用相关权限。
-        </Typography>
-      </Alert>
-    );
-  }
+  // 确定风险级别颜色
+  const isNotEnabled = !status.isEnabled;
+  const accentColor = isNotEnabled ? '#F59E0B' : '#F59E0B';
+  const accentBg = isNotEnabled ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.08)';
+  const accentBorder = isNotEnabled ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.2)';
 
-  // 已启用但关键权限缺失
   return (
-    <Alert
-      severity="warning"
+    <Box
       sx={{
         mb: 1.5,
-        borderRadius: 1.5,
-        fontSize: '0.75rem',
-        '& .MuiAlert-icon': { alignItems: 'center' },
-        '& .MuiAlert-message': { flex: 1 },
+        borderRadius: 2,
+        bgcolor: gs.bgPanel,
+        border: `1px solid ${accentBorder}`,
+        overflow: 'hidden',
+        animation: 'authBannerIn 0.25s cubic-bezier(0.4,0,0.2,1)',
+        '@keyframes authBannerIn': {
+          from: { opacity: 0, transform: 'translateY(-8px)' },
+          to: { opacity: 1, transform: 'translateY(0)' },
+        },
       }}
-      action={
-        onOpenSettings ? (
+    >
+      {/* 顶部渐变条 */}
+      <Box
+        sx={{
+          height: 3,
+          background: 'linear-gradient(90deg, #F59E0B, #FBBF24)',
+        }}
+      />
+
+      <Box sx={{ px: 2, pt: 1.5, pb: 1 }}>
+        {/* 头部：图标 + 标签 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <Box
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: accentBg,
+            }}
+          >
+            <WarningAmberIcon sx={{ color: accentColor, fontSize: 18 }} />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 600, color: gs.textPrimary, lineHeight: 1.3 }}>
+              {isNotEnabled ? '系统授权未启用' : `关键权限未授权（${status.grantedCount}/${status.totalCritical}）`}
+            </Typography>
+            {isNotEnabled ? (
+              <Typography sx={{ fontSize: 11, color: gs.textMuted, lineHeight: 1.4, mt: 0.25 }}>
+                模型自动化能力（截图、点击、窗口控制等）需要 macOS 系统授权。请在系统授权中启用相关权限。
+              </Typography>
+            ) : (
+              <Box component="span" sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                {status.missingCritical.map(label => (
+                  <Box
+                    key={label}
+                    component="span"
+                    sx={{
+                      fontSize: '0.65rem',
+                      px: 0.75,
+                      py: 0.125,
+                      borderRadius: '4px',
+                      backgroundColor: accentBg,
+                      color: accentColor,
+                      fontWeight: 500,
+                      border: `1px solid ${accentBorder}`,
+                    }}
+                  >
+                    {label}
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+          <ShieldIcon sx={{ fontSize: 14, color: gs.textDisabled, opacity: 0.5 }} />
+        </Box>
+      </Box>
+
+      {/* 底部操作栏 */}
+      {onOpenSettings && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            px: 2,
+            py: 0.75,
+            borderTop: `1px solid ${gs.border}`,
+            gap: 1,
+          }}
+        >
           <Button
-            color="inherit"
-            size="small"
-            startIcon={<SettingsIcon sx={{ fontSize: 15 }} />}
             onClick={onOpenSettings}
-            sx={{ fontSize: '0.7rem', whiteSpace: 'nowrap' }}
+            variant="text"
+            size="small"
+            startIcon={<SettingsIcon sx={{ fontSize: 14 }} />}
+            sx={{
+              borderRadius: 1.5,
+              textTransform: 'none',
+              color: accentColor,
+              fontSize: 11,
+              px: 1.5,
+              '&:hover': { bgcolor: accentBg },
+            }}
           >
             前往设置
           </Button>
-        ) : undefined
-      }
-    >
-      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, mb: 0.25 }}>
-        关键权限未授权（{status.grantedCount}/{status.totalCritical}）
-      </Typography>
-      <Box component="span" sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.25 }}>
-        {status.missingCritical.map(label => (
-          <Box
-            key={label}
-            component="span"
-            sx={{
-              fontSize: '0.65rem',
-              px: 0.75,
-              py: 0.125,
-              borderRadius: '4px',
-              backgroundColor: 'rgba(255,152,0,0.12)',
-              color: '#E65100',
-              fontWeight: 500,
-            }}
-          >
-            {label}
-          </Box>
-        ))}
-      </Box>
-    </Alert>
+        </Box>
+      )}
+    </Box>
   );
 };
 

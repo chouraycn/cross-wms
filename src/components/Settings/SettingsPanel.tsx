@@ -205,6 +205,7 @@ const SettingsPanel: React.FC = () => {
       },
       aiEngine: {
         defaultExecutionMode: 'legacy',
+        defaultQueueMode: 'followup',
       },
     });
     setErrors({});

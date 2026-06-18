@@ -23,6 +23,7 @@ import {
   deleteSession,
 } from '../dao/chat.js';
 import { matchTriggers, executePluginTrigger } from '../services/pluginAutoInvoke.js';
+import { messageQueue, type QueueMode, type QueueEvent } from '../engine/messageQueue.js';
 
 // MEMORY.md 路径
 const CDF_KNOW_CLOW_DIR = path.join(os.homedir(), '.cdf-know-clow');
@@ -40,6 +41,24 @@ const sessionApprovedToolsCache = new Map<string, Set<string>>();
 
 // v2.3.3: 全局始终允许的工具集合（持久化到 DB，跨会话）
 let globalAlwaysAllowed: Set<string> | null = null;
+
+// v7.0: 消息队列事件监听 — 将队列状态变化推送到活跃 SSE 连接
+const activeSSEConnections = new Map<string, { res: import('express').Response; assistantMessageId: string }>();
+
+messageQueue.on('queue', (event: QueueEvent) => {
+  // 将队列事件转发到对应的 SSE 连接
+  const conn = activeSSEConnections.get(event.sessionId);
+  if (conn && !conn.res.writableEnded) {
+    try {
+      conn.res.write(`data: ${JSON.stringify({
+        ...event,
+        type: 'queue_event',
+      })}\n\n`);
+    } catch {
+      // SSE 连接可能已关闭
+    }
+  }
+});
 
 /** v2.3.3: 加载全局始终允许的工具列表 */
 function loadAlwaysAllowedTools(): Set<string> {
@@ -507,10 +526,311 @@ export async function extractAndAppendMemory(
 
 const router = Router();
 
+// ===================== v7.0: 队列模式执行函数 =====================
+
+interface QueueExecuteParams {
+  model: string;
+  modelName: string;
+  assistantId: string;
+  preset: typeof MODEL_PRESETS[string] | null;
+  reasoningEffort?: string;
+  executionMode?: string;
+  conversationHistory?: any[];
+  skillContext?: string;
+  skillId?: string;
+  attachments?: any[];
+  autoReason?: string;
+  autoReasonType?: string;
+  message: string;
+  modelsConfig: ModelsFile;
+  sessionApprovedSet: Set<string>;
+}
+
+/**
+ * 从队列执行消息 — 复用 chat route 的核心执行逻辑
+ *
+ * 当消息从 MessageQueue 出队时，此函数被调用。
+ * 它从 DB 实时读取 conversationHistory（而非前端快照），
+ * 执行策略，并通过 SSE 推送结果。
+ */
+async function executeFromQueue(
+  sessionId: string,
+  event: QueueEvent,
+  res: import('express').Response,
+  params: QueueExecuteParams,
+): Promise<void> {
+  console.log(`[MessageQueue] 执行出队消息: sessionId=${sessionId}, mode=${event.mode}, messageId=${event.messageId}`);
+
+  try {
+    const modelConfig = params.modelsConfig.models.find(m => m.id === params.model);
+    if (!modelConfig) {
+      throw new Error(`未找到模型配置: ${params.model}`);
+    }
+
+    const keyResult = selectKey(modelConfig);
+    let effectiveApiKey = modelConfig.apiKey || '';
+    if (keyResult) {
+      effectiveApiKey = keyResult.key;
+    }
+
+    const finalModelConfig = {
+      ...modelConfig,
+      apiKey: effectiveApiKey,
+      temperature: params.preset ? params.preset.temperature : modelConfig.temperature,
+      topP: params.preset ? params.preset.topP : modelConfig.topP,
+    };
+
+    // v7.0: 从 DB 实时读取会话消息构建上下文（替代前端快照）
+    const dbMessages = getSessionMessages(sessionId);
+    const apiMessages: Array<Record<string, any>> = [];
+
+    // 注入 MEMORY.md
+    const memoryContent = readMemoryMd();
+    if (memoryContent.trim()) {
+      apiMessages.push({ role: 'system', content: memoryContent.trim() });
+    }
+
+    // 注入技能上下文
+    if (params.skillContext?.trim()) {
+      apiMessages.push({ role: 'system', content: params.skillContext.trim() });
+    }
+
+    // v7.0: 从 DB 消息构建上下文（实时，包含之前所有执行的结果）
+    const isMultimodalModel = modelConfig.capabilities?.includes('multimodal');
+    const isKnownVisionModel = [
+      'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4-vision',
+      'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'claude-3-5-sonnet',
+      'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision',
+      'qwen-vl', 'qwen-vl-max',
+      'kimi-k2.6', 'kimi-k2.5',
+    ].some(id => modelConfig.id.toLowerCase().includes(id.toLowerCase()));
+    const isFalsePositiveVision = /deepseek/i.test(modelConfig.id);
+    const supportsVision = (isMultimodalModel || isKnownVisionModel) && !isFalsePositiveVision;
+
+    for (const msg of dbMessages) {
+      if (msg.role === 'user' || msg.role === 'assistant') {
+        if (msg.role === 'assistant' && msg.toolCalls) {
+          try {
+            const toolCalls = typeof msg.toolCalls === 'string' ? JSON.parse(msg.toolCalls) : msg.toolCalls;
+            if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+              const callIds = toolCalls.map(() => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+              apiMessages.push({
+                role: 'assistant',
+                content: msg.content || null,
+                tool_calls: toolCalls.map((tc: any, i: number) => ({
+                  id: callIds[i],
+                  type: 'function',
+                  function: { name: tc.name, arguments: tc.arguments },
+                })),
+              });
+              for (let i = 0; i < toolCalls.length; i++) {
+                apiMessages.push({
+                  role: 'tool',
+                  content: toolCalls[i].result,
+                  tool_call_id: callIds[i],
+                });
+              }
+              continue;
+            }
+          } catch { /* toolCalls 解析失败，按普通消息处理 */ }
+        }
+        apiMessages.push({ role: msg.role, content: msg.content });
+      }
+    }
+
+    // 截断上下文
+    const ctxWindow = (finalModelConfig as any).contextWindow || 128000;
+    const ctxMaxTokens = (finalModelConfig as any).maxTokens || 8192;
+    const truncated = truncateContextForModel(apiMessages as any, ctxWindow, ctxMaxTokens, 30);
+
+    // 获取会话级 AbortController
+    const abortController = messageQueue.getCurrentAbortController(sessionId);
+    if (!abortController) {
+      throw new Error('未找到会话级 AbortController');
+    }
+
+    // 选择执行模式
+    let effectiveMode = (params.executionMode && Object.values(ExecutionMode).includes(params.executionMode as ExecutionMode))
+      ? (params.executionMode as ExecutionMode)
+      : undefined;
+    if (!effectiveMode) {
+      try {
+        const { getAppSettings } = require('../dao/settings');
+        const settingsVal = getAppSettings('default');
+        if (settingsVal) {
+          const parsed = JSON.parse(settingsVal);
+          const defaultMode = parsed?.aiEngine?.defaultExecutionMode;
+          if (defaultMode && Object.values(ExecutionMode).includes(defaultMode as ExecutionMode)) {
+            effectiveMode = defaultMode as ExecutionMode;
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    if (!effectiveMode) {
+      effectiveMode = ExecutionStrategyFactory.getDefaultMode();
+    }
+
+    const strategy = ExecutionStrategyFactory.create(effectiveMode);
+
+    // 确保 sessionApprovedSet 已注册
+    if (!sessionApprovedToolsCache.has(sessionId)) {
+      for (const t of loadAlwaysAllowedTools()) {
+        params.sessionApprovedSet.add(t);
+      }
+      sessionApprovedToolsCache.set(sessionId, params.sessionApprovedSet);
+    }
+
+    // Keep-alive
+    let keepAliveTimer: NodeJS.Timeout | null = setInterval(() => {
+      if (!res.writableEnded) {
+        try {
+          res.write(`data: ${JSON.stringify({ type: 'keep_alive', timestamp: Date.now() })}\n\n`);
+        } catch { /* ignore */ }
+      }
+    }, 10000);
+
+    let fullContent = '';
+    let thinkingContent = '';
+    let hasThinking = false;
+    let thinkingStartTime: number | null = null;
+    let usageData: any = undefined;
+
+    const toolResult = await strategy.execute({
+      modelConfig: finalModelConfig as any,
+      messages: truncated.messages as any,
+      maxToolTurns: 10,
+      signal: messageQueue.getCurrentAbortController(sessionId)?.signal ?? new AbortController().signal,
+      executionMode: effectiveMode,
+      onSSEEvent: (evt: Record<string, unknown>) => {
+        if (!res.writableEnded) {
+          try { res.write(`data: ${JSON.stringify(evt)}\n\n`); } catch { /* ignore */ }
+        }
+      },
+      onChunk: (chunk: string) => {
+        fullContent += chunk;
+        if (!res.writableEnded) {
+          try { res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`); } catch { /* ignore */ }
+        }
+      },
+      onThinking: (thinkingChunk: string) => {
+        if (!hasThinking) { hasThinking = true; thinkingStartTime = Date.now(); }
+        thinkingContent += thinkingChunk;
+        if (!res.writableEnded) {
+          try { res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`); } catch { /* ignore */ }
+        }
+      },
+      onPermissionRequest: (toolCall: any) => {
+        const reqId = `perm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const toolName = toolCall.function?.name || toolCall.name || 'unknown';
+        const args = toolCall.function?.arguments || toolCall.args || '';
+        const riskLevel = getToolRiskLevel(toolName);
+        const sessionSet = sessionApprovedToolsCache.get(sessionId);
+        if (sessionSet?.has(toolName)) return Promise.resolve(true);
+        reqIdToolMap.set(reqId, { toolName, sessionId });
+        if (!res.writableEnded) {
+          try {
+            res.write(`data: ${JSON.stringify({
+              type: 'permission_request',
+              reqId,
+              toolName,
+              args,
+              riskLevel,
+            })}\n\n`);
+          } catch { /* ignore */ }
+        }
+        return new Promise<boolean>((resolve) => {
+          const timeout = setTimeout(() => resolve(false), 60000);
+          const handler = (approved: boolean) => {
+            clearTimeout(timeout);
+            permissionEmitter.removeListener(reqId, handler);
+            if (approved) {
+              sessionSet?.add(toolName);
+            }
+            resolve(approved);
+          };
+          permissionEmitter.once(reqId, handler);
+        });
+      },
+      onToolCall: (toolCall: any, result: string) => {
+        if (!res.writableEnded) {
+          try {
+            res.write(`data: ${JSON.stringify({
+              type: 'tool_call',
+              tool: toolCall.function?.name || toolCall.name,
+              args: toolCall.function?.arguments || toolCall.args,
+              result,
+              id: toolCall.id,
+            })}\n\n`);
+          } catch { /* ignore */ }
+        }
+      },
+      approvedToolsCache: params.sessionApprovedSet,
+      reasoningEffort: params.reasoningEffort,
+    });
+
+    // 保存助手消息
+    addMessage({
+      sessionId,
+      role: 'assistant',
+      content: toolResult.content,
+      model: params.model,
+      toolCalls: toolResult.toolCalls?.length ? JSON.stringify(toolResult.toolCalls) : undefined,
+      thinking: thinkingContent || undefined,
+      thinkingDuration: hasThinking && thinkingStartTime ? Date.now() - thinkingStartTime : undefined,
+    });
+
+    // 异步记忆学习
+    extractAndAppendMemory(params.message, toolResult.content, dbMessages.map(m => ({ role: m.role, content: m.content }))).catch(() => {});
+
+    // 清理
+    if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
+
+    // 发送 done 事件
+    if (!res.writableEnded) {
+      try {
+        res.write(`data: ${JSON.stringify({
+          type: 'done',
+          errorCode: null,
+          errorMessage: null,
+          thinkingDuration: (hasThinking && thinkingStartTime) ? Date.now() - thinkingStartTime : 0,
+          usage: usageData || null,
+        })}\n\n`);
+        await new Promise(r => setTimeout(r, 200));
+        res.end();
+      } catch { /* ignore */ }
+    }
+
+    // 标记队列执行完成
+    messageQueue.markCompleted(sessionId);
+    activeSSEConnections.delete(sessionId);
+
+  } catch (error) {
+    console.error('[MessageQueue executeFromQueue] 执行失败:', error);
+
+    if (!res.writableEnded) {
+      try {
+        const errMsg = error instanceof Error ? error.message : '服务器内部错误';
+        res.write(`data: ${JSON.stringify({
+          type: 'done',
+          errorCode: 'QUEUE_EXEC_ERROR',
+          errorMessage: errMsg,
+          thinkingDuration: 0,
+        })}\n\n`);
+        await new Promise(r => setTimeout(r, 200));
+        res.end();
+      } catch { /* ignore */ }
+    }
+
+    // 确保标记完成（即使出错也要解锁队列）
+    messageQueue.markCompleted(sessionId);
+    activeSSEConnections.delete(sessionId);
+  }
+}
+
 // 发送消息（SSE）
 router.post('/chat', async (req, res) => {
-  const { sessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory, attachments, reasoningEffort, executionMode } = req.body;
-  console.log(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, message="${message?.slice(0, 30)}"`);
+  const { sessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory, attachments, reasoningEffort, executionMode, queueMode } = req.body;
+  console.log(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, message="${message?.slice(0, 30)}", queueMode=${queueMode || 'default'}`);
   if (attachments && Array.isArray(attachments) && attachments.length > 0) {
     console.log(`[Chat API] 附件数量: ${attachments.length}`);
   }
@@ -573,6 +893,117 @@ router.post('/chat', async (req, res) => {
       preset: activePreset ? { id: preset, label: activePreset.label } : null,
       reasoningEffort: reasoningEffort || null,
     })}\n\n`);
+
+    // v7.0: 队列模式处理
+    // 当前端指定 queueMode 时，消息通过 MessageQueue 管理执行
+    // 无 queueMode 时保持原有直接执行行为（向后兼容）
+    const effectiveQueueMode = queueMode as QueueMode | undefined;
+    if (effectiveQueueMode) {
+      // 注册 SSE 连接到活跃连接池
+      activeSSEConnections.set(sessionId, { res, assistantMessageId: assistantId });
+
+      const result = messageQueue.enqueue(sessionId, message, effectiveQueueMode, {
+        model: effectiveModel,
+        modelName: effectiveModelName,
+        skillContext,
+        skillId,
+        preset,
+        attachments,
+        reasoningEffort,
+        executionMode,
+        conversationHistory,
+        autoReason,
+        autoReasonType,
+      });
+
+      if (!result.accepted) {
+        // 队列已满，拒绝消息
+        res.write(`data: ${JSON.stringify({
+          type: 'queue_rejected',
+          reason: result.reason,
+        })}\n\n`);
+        await new Promise(r => setTimeout(r, 200));
+        res.end();
+        activeSSEConnections.delete(sessionId);
+        return;
+      }
+
+      // 发送队列状态事件
+      res.write(`data: ${JSON.stringify({
+        type: 'queue_status',
+        mode: effectiveQueueMode,
+        state: messageQueue.getSessionState(sessionId),
+        queueLength: messageQueue.getQueueLength(sessionId),
+        assistantMessageId: result.assistantMessageId,
+      })}\n\n`);
+
+      // 如果是 collect/steer 模式且消息需要等待，保持 SSE 连接
+      // 队列的 executing 事件会触发实际执行（通过下方监听器）
+      // 当消息出队执行时，需要重新走完整的 chat 执行流程
+      // 这里我们监听 executing 事件来启动执行
+      const executeHandler = (event: QueueEvent) => {
+        if (event.sessionId !== sessionId) return;
+        if (event.type === 'executing' && event.messageId === result.messageId) {
+          // 从队列中移除此监听器
+          messageQueue.off('queue', executeHandler);
+          // 触发实际执行（复用下方的主执行逻辑）
+          executeFromQueue(sessionId, event, res, {
+            model: effectiveModel,
+            modelName: effectiveModelName,
+            assistantId: result.assistantMessageId,
+            preset: activePreset,
+            reasoningEffort,
+            executionMode,
+            conversationHistory,
+            skillContext,
+            skillId,
+            attachments,
+            autoReason,
+            autoReasonType,
+            message,
+            modelsConfig,
+            sessionApprovedSet: sessionApprovedToolsCache.get(sessionId) ?? new Set<string>(),
+          });
+        }
+      };
+
+      messageQueue.on('queue', executeHandler);
+
+      // 如果队列状态已经是 executing（直出场景），立即执行
+      // 这种情况发生在 idle 状态下入队，scheduleExecution 同步调度成功时
+      const currentState = messageQueue.getSessionState(sessionId);
+      if (currentState === 'executing' && messageQueue.getCurrentAssistantId(sessionId) === result.assistantMessageId) {
+        messageQueue.off('queue', executeHandler);
+        executeFromQueue(sessionId, {
+          type: 'executing',
+          sessionId,
+          messageId: result.messageId,
+          assistantMessageId: result.assistantMessageId,
+          mode: effectiveQueueMode,
+          queueLength: 0,
+          state: 'executing',
+        }, res, {
+          model: effectiveModel,
+          modelName: effectiveModelName,
+          assistantId: result.assistantMessageId,
+          preset: activePreset,
+          reasoningEffort,
+          executionMode,
+          conversationHistory,
+          skillContext,
+          skillId,
+          attachments,
+          autoReason,
+          autoReasonType,
+          message,
+          modelsConfig,
+          sessionApprovedSet: sessionApprovedToolsCache.get(sessionId) ?? new Set<string>(),
+        });
+      }
+
+      // 返回 — 实际执行在 executeFromQueue 中异步进行
+      return;
+    }
 
       // 调用 AI 模型 API 进行流式对话
       let fullContent = '';
@@ -1412,6 +1843,26 @@ router.post('/permission-response', (req, res) => {
   // 通过 EventEmitter 通知对应的 chat 请求
   permissionEmitter.emit(reqId, approved === true);
   res.json({ ok: true });
+});
+
+// v7.0: 获取队列状态
+router.get('/queue-status/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  res.json({
+    sessionId,
+    state: messageQueue.getSessionState(sessionId),
+    queueLength: messageQueue.getQueueLength(sessionId),
+    activeGlobalCount: messageQueue.getActiveCount(),
+    canAcceptGlobal: messageQueue.canAcceptGlobal(),
+  });
+});
+
+// v7.0: 取消队列中所有消息
+router.post('/queue-cancel/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  const cancelledCount = messageQueue.cancelAll(sessionId);
+  activeSSEConnections.delete(sessionId);
+  res.json({ ok: true, cancelledCount });
 });
 
 export default router;
