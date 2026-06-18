@@ -158,40 +158,82 @@ interface ComplexityAssessment {
  * - 5 种新 SSE 事件
  */
 export class ReActExecutor {
-  private observer: Observer;
-  private planner?: Planner;
-  private state: ReActState;
-  private budgetManager: BudgetManager;
-  private workingMemory: WorkingMemory;
-  private loopDetector: LoopDetector;
-  private observationCompressor: ObservationCompressor;
-  private circuitBreaker: CircuitBreaker;
-  private longTermMemory: LongTermMemory;
-  private outputValidator: OutputValidator;
-  private permissionSandbox: ToolPermissionSandbox;
-  private planDoCheck: PlanDoCheck;
-  private abTestFramework: ABTestFramework;
-  private dependencyGraph: ToolDependencyGraph;
-  private semanticCompressor: SemanticCompressor;
-  private multilingualIntent: MultilingualIntent;
+  private _observer?: Observer;
+  private _planner?: Planner;
+  private _state?: ReActState;
+  private _budgetManager?: BudgetManager;
+  private _workingMemory?: WorkingMemory;
+  private _loopDetector?: LoopDetector;
+  private _observationCompressor?: ObservationCompressor;
+  private _circuitBreaker?: CircuitBreaker;
+  private _longTermMemory?: LongTermMemory;
+  private _outputValidator?: OutputValidator;
+  private _permissionSandbox?: ToolPermissionSandbox;
+  private _planDoCheck?: PlanDoCheck;
+  private _abTestFramework?: ABTestFramework;
+  private _dependencyGraph?: ToolDependencyGraph;
+  private _semanticCompressor?: SemanticCompressor;
+  private _multilingualIntent?: MultilingualIntent;
+  private _budgetConfig?: Partial<BudgetConfig>;
+
+  // 懒加载访问器 — 避免构造函数中一次性创建 13 个对象（含 SQLite 连接）
+  private get observer(): Observer {
+    return this._observer ?? (this._observer = new Observer());
+  }
+  private get planner(): Planner | undefined {
+    return this._planner;
+  }
+  private get state(): ReActState {
+    return this._state ?? (this._state = this.createInitialState());
+  }
+  private set state(value: ReActState) {
+    this._state = value;
+  }
+  private get budgetManager(): BudgetManager {
+    return this._budgetManager ?? (this._budgetManager = new BudgetManager(this._budgetConfig));
+  }
+  private get workingMemory(): WorkingMemory {
+    return this._workingMemory ?? (this._workingMemory = new WorkingMemory(this._budgetConfig?.windowSize));
+  }
+  private get loopDetector(): LoopDetector {
+    return this._loopDetector ?? (this._loopDetector = new LoopDetector());
+  }
+  private get observationCompressor(): ObservationCompressor {
+    return this._observationCompressor ?? (this._observationCompressor = new ObservationCompressor());
+  }
+  private get circuitBreaker(): CircuitBreaker {
+    return this._circuitBreaker ?? (this._circuitBreaker = new CircuitBreaker());
+  }
+  private get longTermMemory(): LongTermMemory {
+    return this._longTermMemory ?? (this._longTermMemory = new LongTermMemory());
+  }
+  private get outputValidator(): OutputValidator {
+    return this._outputValidator ?? (this._outputValidator = new OutputValidator());
+  }
+  private get permissionSandbox(): ToolPermissionSandbox {
+    return this._permissionSandbox ?? (this._permissionSandbox = new ToolPermissionSandbox());
+  }
+  private get planDoCheck(): PlanDoCheck {
+    return this._planDoCheck ?? (this._planDoCheck = new PlanDoCheck());
+  }
+  private get abTestFramework(): ABTestFramework {
+    return this._abTestFramework ?? (this._abTestFramework = new ABTestFramework());
+  }
+  private get dependencyGraph(): ToolDependencyGraph {
+    return this._dependencyGraph ?? (this._dependencyGraph = new ToolDependencyGraph());
+  }
+  private get semanticCompressor(): SemanticCompressor {
+    return this._semanticCompressor ?? (this._semanticCompressor = new SemanticCompressor());
+  }
+  private get multilingualIntent(): MultilingualIntent {
+    return this._multilingualIntent ?? (this._multilingualIntent = new MultilingualIntent());
+  }
 
   constructor(observer?: Observer, planner?: Planner, budgetConfig?: Partial<BudgetConfig>) {
-    this.observer = observer ?? new Observer();
-    this.planner = planner;
-    this.budgetManager = new BudgetManager(budgetConfig);
-    this.workingMemory = new WorkingMemory(budgetConfig?.windowSize);
-    this.loopDetector = new LoopDetector();
-    this.observationCompressor = new ObservationCompressor();
-    this.circuitBreaker = new CircuitBreaker();
-    this.longTermMemory = new LongTermMemory();
-    this.outputValidator = new OutputValidator();
-    this.permissionSandbox = new ToolPermissionSandbox();
-    this.planDoCheck = new PlanDoCheck();
-    this.abTestFramework = new ABTestFramework();
-    this.dependencyGraph = new ToolDependencyGraph();
-    this.semanticCompressor = new SemanticCompressor();
-    this.multilingualIntent = new MultilingualIntent();
-    this.state = this.createInitialState();
+    this._observer = observer;
+    this._planner = planner;
+    this._budgetConfig = budgetConfig;
+    this._state = this.createInitialState();
   }
 
   /** 创建初始状态 */
@@ -230,13 +272,24 @@ export class ReActExecutor {
       onSSEEvent,
     } = options;
 
-    // 重置状态
-    this.state = this.createInitialState();
-    this.loopDetector.reset();
-    this.circuitBreaker.reset();
-    this.workingMemory.reset();
-    this.outputValidator.reset();
-    this.planDoCheck.reset();
+    // 立即推送 SSE 反馈 — 让用户在首 token 到达前就看到"AI 正在处理"
+    if (onSSEEvent) {
+      onSSEEvent({
+        type: 'react_phase',
+        phase: 'reasoning',
+        step: 0,
+        totalSteps: undefined,
+        description: 'AI 正在分析您的请求...',
+      });
+    }
+
+    // 重置状态（懒加载模块仅在已创建时才重置，避免强制初始化）
+    this._state = this.createInitialState();
+    this._loopDetector?.reset();
+    this._circuitBreaker?.reset();
+    this._workingMemory?.reset();
+    this._outputValidator?.reset();
+    this._planDoCheck?.reset();
 
     // v6.0: P1-1 会话 ID（用于长期记忆写入）
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
@@ -294,25 +347,30 @@ export class ReActExecutor {
     this.budgetManager.setAdaptiveMaxTurns(complexityAssessment.level, onSSEEvent);
 
     // v6.0: P1-1 长期记忆检索（Reasoning 前注入历史经验）
-    const memoryResult = this.longTermMemory.search(userMessage ?? '', 'default');
-    if (memoryResult.entries.length > 0 && memoryResult.totalTokens <= 500) {
-      const memoryContext = memoryResult.entries
-        .map(e => `[${e.category}] ${e.content}`)
-        .join('\n');
-      currentMessages.push({
-        role: 'system',
-        content: `[历史记忆]\n${memoryContext}`,
-      } as typeof currentMessages[number]);
+    // 性能优化：try-catch 包裹，记忆检索失败不阻塞主流程
+    try {
+      const memoryResult = this.longTermMemory.search(userMessage ?? '', 'default');
+      if (memoryResult.entries.length > 0 && memoryResult.totalTokens <= 500) {
+        const memoryContext = memoryResult.entries
+          .map(e => `[${e.category}] ${e.content}`)
+          .join('\n');
+        currentMessages.push({
+          role: 'system',
+          content: `[历史记忆]\n${memoryContext}`,
+        } as typeof currentMessages[number]);
 
-      if (onSSEEvent) {
-        onSSEEvent({
-          type: 'memory_retrieved',
-          count: memoryResult.entries.length,
-          summaries: memoryResult.entries.map(e => e.content.substring(0, 50)),
-        });
+        if (onSSEEvent) {
+          onSSEEvent({
+            type: 'memory_retrieved',
+            count: memoryResult.entries.length,
+            summaries: memoryResult.entries.map(e => e.content.substring(0, 50)),
+          });
+        }
+
+        console.log(`[ReActExecutor] 长期记忆注入: ${memoryResult.entries.length} 条, 估算 ${memoryResult.totalTokens} tokens`);
       }
-
-      console.log(`[ReActExecutor] 长期记忆注入: ${memoryResult.entries.length} 条, 估算 ${memoryResult.totalTokens} tokens`);
+    } catch (memErr) {
+      console.warn('[ReActExecutor] 长期记忆检索失败（已跳过）:', memErr instanceof Error ? memErr.message : String(memErr));
     }
 
     // ============== P1-1: 简单任务（v6.0: P0-3 支持 handoff） ==============
@@ -408,18 +466,23 @@ export class ReActExecutor {
 
           console.log(`[ReActExecutor] 简单路径 handoff: confidenceScore=${simpleDecision.confidenceScore}，升级为 moderate`);
         } else {
-          // 置信度足够 → 获取最终响应并返回
-          this.emitPhase(onSSEEvent, 'reasoning', 1, 1, '简单任务：生成最终响应');
-          const finalResponse = await this.callModelSimple(currentMessages, {
-            modelConfig,
-            signal,
-            onChunk,
-            onThinking,
-            tools: [],  // 不再需要工具调用
-            reasoningEffort,
-            modelCapabilities,
-          });
-          simpleContent = finalResponse.content || simpleContent;
+          // 置信度足够 → 生成最终响应
+          // 性能优化：如果首次调用已产生足够的文本内容（>20字符），跳过第二次 LLM 调用
+          if (simpleContent && simpleContent.trim().length > 20) {
+            console.log(`[ReActExecutor] 简单路径跳过二次 LLM 调用：首次响应已含 ${simpleContent.length} 字符`);
+          } else {
+            this.emitPhase(onSSEEvent, 'reasoning', 1, 1, '简单任务：生成最终响应');
+            const finalResponse = await this.callModelSimple(currentMessages, {
+              modelConfig,
+              signal,
+              onChunk,
+              onThinking,
+              tools: [],  // 不再需要工具调用
+              reasoningEffort,
+              modelCapabilities,
+            });
+            simpleContent = finalResponse.content || simpleContent;
+          }
         }
       }
 
@@ -440,10 +503,12 @@ export class ReActExecutor {
       // simple 阶段的 messages/observations/toolCalls 已累积到对应变量中
     }
 
-    // ============== Phase 0：可选规划 ==============
+    // ============== Phase 0：可选规划（仅 complex 级别触发 LLM 规划） ==============
     let plan: ExecutionPlan | undefined;
 
-    if (this.planner) {
+    // 性能优化：moderate 级别跳过 Planner LLM 调用，直进主循环
+    // 仅 complex 级别且 planner 可用时才触发规划
+    if (this.planner && complexityAssessment.level === 'complex') {
       const planUserMessage = this.extractUserMessage(messages);
       if (planUserMessage) {
         const assessment = this.planner.assessTrigger(messages, planUserMessage);
@@ -474,6 +539,19 @@ export class ReActExecutor {
                 createdAt: plan.createdAt,
               },
             });
+
+            // v6.0: 为计划中的每个步骤发送子会话创建通知
+            if (plan.steps.length > 1) {
+              for (const step of plan.steps) {
+                onSSEEvent({
+                  type: 'sub_session_suggested',
+                  parentSessionId: sessionId,
+                  stepIndex: step.step,
+                  title: `步骤${step.step}: ${step.description}`,
+                  toolName: step.toolName,
+                });
+              }
+            }
           }
         }
       }

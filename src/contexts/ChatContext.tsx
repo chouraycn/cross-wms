@@ -48,6 +48,12 @@ interface ChatSidebarValue {
   deleteFolder: (id: string) => Promise<boolean>;
   /** 移动会话到文件夹 */
   moveSessionToFolder: (sessionId: string, folderId: string | null) => Promise<boolean>;
+  /** v6.0: 归档会话 */
+  archiveSession: (sessionId: string) => void;
+  /** v6.0: 恢复归档会话 */
+  restoreSession: (sessionId: string) => void;
+  /** v6.0: 归档会话列表 */
+  archivedSessions: Session[];
 }
 
 /**
@@ -98,13 +104,21 @@ const MAX_SESSIONS = 20;
 
 // ===================== 工具函数 =====================
 
-function createNewSession(defaultModel: string): Session {
+function createNewSession(defaultModel: string, parentSessionId?: string | null, tags?: string[]): Session {
+  const now = new Date();
   return {
     id: `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    title: '',
+    title: parentSessionId ? '子任务' : '',
     model: defaultModel,
     messages: [],
     isPinned: false,
+    status: 'active',
+    lastActiveAt: now.toISOString(),
+    sessionDate: now.toISOString().split('T')[0],
+    parentSessionId: parentSessionId || null,
+    tags: tags ? JSON.stringify(tags) : null,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
   };
 }
 
@@ -626,6 +640,34 @@ export function ChatProvider({
     return ok;
   }, []);
 
+  // ===================== v6.0: 会话生命周期 =====================
+
+  /** 归档会话 */
+  const archiveSession = useCallback((sessionId: string) => {
+    setSessions((prev) => prev.map((s) =>
+      s.id === sessionId
+        ? { ...s, status: 'archived' as const, archivedAt: new Date().toISOString() }
+        : s
+    ));
+    // 同步后端
+    fetch(`${API_BASE}/sessions/${sessionId}/archive`, { method: 'POST' }).catch(() => {});
+  }, []);
+
+  /** 恢复归档会话 */
+  const restoreSession = useCallback((sessionId: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    setSessions((prev) => prev.map((s) =>
+      s.id === sessionId
+        ? { ...s, status: 'active' as const, archivedAt: null, lastActiveAt: new Date().toISOString(), sessionDate: today }
+        : s
+    ));
+    // 同步后端
+    fetch(`${API_BASE}/sessions/${sessionId}/restore`, { method: 'POST' }).catch(() => {});
+  }, []);
+
+  /** 归档会话列表 */
+  const archivedSessions = sessions.filter(s => s.status === 'archived');
+
   // ===================== useChat hook — 传入 activeSession + handleSessionUpdate =====================
   const { isLoading, sendMessage, stopGeneration } = useChat(activeSession, handleSessionUpdate);
 
@@ -653,7 +695,10 @@ export function ChatProvider({
     updateFolder,
     deleteFolder,
     moveSessionToFolder,
-  }), [sessions, folders, handleDeleteSession, togglePinSession, createFolder, updateFolder, deleteFolder, moveSessionToFolder]);
+    archiveSession,
+    restoreSession,
+    archivedSessions,
+  }), [sessions, folders, handleDeleteSession, togglePinSession, createFolder, updateFolder, deleteFolder, moveSessionToFolder, archiveSession, restoreSession, archivedSessions]);
 
   // ChatMetaContext：极少变更
   const metaValue = useMemo<ChatMetaValue>(() => ({

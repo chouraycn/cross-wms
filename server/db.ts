@@ -60,6 +60,9 @@ function restoreDatabaseFromBackup(): boolean {
 
 // ===================== Chat Session Types =====================
 
+/** 会话状态 */
+export type SessionStatus = 'active' | 'archived' | 'daily_reset';
+
 export interface Session {
   id: string;
   title: string;
@@ -68,6 +71,22 @@ export interface Session {
   folderId?: string | null;
   createdAt: string;
   updatedAt: string;
+  /** v6.0: 会话状态（active/archived/daily_reset） */
+  status?: SessionStatus;
+  /** v6.0: 最后活跃时间（用于空闲归档检测） */
+  lastActiveAt?: string;
+  /** v6.0: 归档时间 */
+  archivedAt?: string | null;
+  /** v6.0: 父会话 ID（子任务自动创建子会话） */
+  parentSessionId?: string | null;
+  /** v6.0: 会话日期键（YYYY-MM-DD，用于每日重置） */
+  sessionDate?: string;
+  /** v6.0: 会话标签（JSON 数组，用于归档搜索） */
+  tags?: string | null;
+  /** v6.0: 摘要（归档时自动生成） */
+  summary?: string | null;
+  /** v6.0: 消息数量 */
+  messageCount?: number;
 }
 
 export interface Folder {
@@ -1226,6 +1245,55 @@ export function initDb(): Database.Database {
     }
   } catch (e) {
     console.warn('[Migrate v1.9.3] 添加 agentId 列失败（可能表不存在）:', e);
+  }
+
+  // ===================== v6.0: Session Lifecycle Columns =====================
+
+  const sessionLifecycleColumns: Array<{ column: string; definition: string }> = [
+    { column: 'status', definition: "TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','archived','daily_reset'))" },
+    { column: 'lastActiveAt', definition: 'TEXT' },
+    { column: 'archivedAt', definition: 'TEXT' },
+    { column: 'parentSessionId', definition: 'TEXT' },
+    { column: 'sessionDate', definition: 'TEXT' },
+    { column: 'tags', definition: "TEXT DEFAULT '[]'" },
+    { column: 'summary', definition: 'TEXT' },
+  ];
+  for (const { column, definition } of sessionLifecycleColumns) {
+    try {
+      const colExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('sessions') WHERE name='${column}'`).get() as { cnt: number };
+      if (colExists.cnt === 0) {
+        db.exec(`ALTER TABLE sessions ADD COLUMN ${column} ${definition}`);
+        console.log(`[Migrate v6.0] 添加 ${column} 列到 sessions 表`);
+      }
+    } catch (e) {
+      console.warn(`[Migrate v6.0] 添加 ${column} 列失败:`, e);
+    }
+  }
+
+  // v6.0: 为 sessions 表添加索引（生命周期查询优化）
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(status);
+    CREATE INDEX IF NOT EXISTS idx_sessions_sessionDate ON sessions(sessionDate);
+    CREATE INDEX IF NOT EXISTS idx_sessions_parentSessionId ON sessions(parentSessionId);
+    CREATE INDEX IF NOT EXISTS idx_sessions_lastActiveAt ON sessions(lastActiveAt);
+  `);
+
+  // v6.0: 将现有会话补充 lastActiveAt 和 sessionDate（一次性迁移）
+  const lifecycleMigrationKey = 'migration_v6.0_session_lifecycle';
+  const lifecycleMigrationExists = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(lifecycleMigrationKey) as { value: string } | undefined;
+  if (!lifecycleMigrationExists) {
+    console.log('[Migrate v6.0] 补充现有会话的 lastActiveAt / sessionDate...');
+    db.exec(`
+      UPDATE sessions SET
+        lastActiveAt = COALESCE(lastActiveAt, updatedAt, createdAt),
+        sessionDate = COALESCE(sessionDate, DATE(COALESCE(updatedAt, createdAt)))
+      WHERE lastActiveAt IS NULL OR sessionDate IS NULL
+    `);
+    db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?)').run(
+      lifecycleMigrationKey,
+      JSON.stringify({ migratedAt: new Date().toISOString() })
+    );
+    console.log('[Migrate v6.0] ✅ 会话生命周期字段迁移完成');
   }
 
   // ===================== v3.0: Tools v3 Plugin & HTTP Tables =====================

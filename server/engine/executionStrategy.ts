@@ -637,10 +637,23 @@ export class PlannerStrategy implements IExecutionStrategy {
  * 失败时降级为 ObserverStrategy。
  */
 export class ReactStrategy implements IExecutionStrategy {
+  // 复用 Observer/Planner 实例，避免每次请求重新创建
+  private static sharedObserver: Observer | null = null;
+  private static sharedPlanner: Planner | null = null;
+
   async execute(options: ExecutionStrategyOptions): Promise<ToolExecutionResult> {
-    const observer = new Observer();
-    const planner = new Planner();
-    const executor = new ReActExecutor(observer, planner, options.budgetConfig);
+    // 懒加载共享实例
+    if (!ReactStrategy.sharedObserver) {
+      ReactStrategy.sharedObserver = new Observer();
+    }
+    if (!ReactStrategy.sharedPlanner) {
+      ReactStrategy.sharedPlanner = new Planner();
+    }
+    const executor = new ReActExecutor(
+      ReactStrategy.sharedObserver,
+      ReactStrategy.sharedPlanner,
+      options.budgetConfig,
+    );
     try {
       const result = await executor.execute(options);
       return {

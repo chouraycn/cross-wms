@@ -29,13 +29,19 @@ export function searchSessions(query: string): Session[] {
   `).all(q) as Session[];
 }
 
-export function createSession(id: string, title: string, model: string, agentId?: string, folderId?: string | null): Session {
+export function createSession(id: string, title: string, model: string, agentId?: string, folderId?: string | null, parentSessionId?: string | null, tags?: string[]): Session {
   const now = new Date().toISOString();
   const db = initDb();
-  db.prepare('INSERT INTO sessions (id, title, model, agentId, folderId, createdAt, updatedAt) VALUES (?,?,?,?,?,?,?)').run(
-    id, title, model, agentId || null, folderId || null, now, now
+  db.prepare(`
+    INSERT INTO sessions (id, title, model, agentId, folderId, createdAt, updatedAt, status, lastActiveAt, sessionDate, parentSessionId, tags)
+    VALUES (?,?,?,?,?,?,?, 'active', ?, DATE(?), ?, ?)
+  `).run(
+    id, title, model, agentId || null, folderId || null, now, now,
+    now, now,
+    parentSessionId || null,
+    JSON.stringify(tags || [])
   );
-  return { id, title, model, agentId, folderId: folderId || null, createdAt: now, updatedAt: now };
+  return { id, title, model, agentId, folderId: folderId || null, createdAt: now, updatedAt: now, status: 'active', lastActiveAt: now, sessionDate: now.split('T')[0], parentSessionId: parentSessionId || null, tags: JSON.stringify(tags || []) };
 }
 
 export function getSessionMessages(sessionId: string): Message[] {
@@ -50,7 +56,8 @@ export function addMessage(msg: Omit<Message, 'id' | 'timestamp'> & { id?: strin
   db.prepare('INSERT INTO messages (id, sessionId, role, content, model, timestamp, toolCalls, skillId, thinking, thinkingDuration, attachments) VALUES (?,?,?,?,?,?,?,?,?,?,?)').run(
     id, msg.sessionId, msg.role, msg.content, msg.model || null, now, msg.toolCalls || null, msg.skillId || null, msg.thinking || null, msg.thinkingDuration ?? null, msg.attachments ? JSON.stringify(msg.attachments) : null
   );
-  db.prepare('UPDATE sessions SET updatedAt = ? WHERE id = ?').run(now, msg.sessionId);
+  // v6.0: 更新 lastActiveAt 和 sessionDate（会话生命周期）
+  db.prepare('UPDATE sessions SET updatedAt = ?, lastActiveAt = ?, sessionDate = DATE(?) WHERE id = ?').run(now, now, now, msg.sessionId);
   return { ...msg, id, timestamp: now };
 }
 

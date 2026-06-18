@@ -217,6 +217,9 @@ export interface Message {
   };
 }
 
+/** 会话状态 */
+export type SessionStatus = 'active' | 'archived' | 'daily_reset';
+
 export interface Session {
   id: string;
   title: string;
@@ -228,6 +231,20 @@ export interface Session {
   isPinned?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  /** v6.0: 会话状态 */
+  status?: SessionStatus;
+  /** v6.0: 最后活跃时间 */
+  lastActiveAt?: string;
+  /** v6.0: 归档时间 */
+  archivedAt?: string | null;
+  /** v6.0: 父会话 ID（子任务创建子会话） */
+  parentSessionId?: string | null;
+  /** v6.0: 会话日期键（YYYY-MM-DD） */
+  sessionDate?: string;
+  /** v6.0: 标签（JSON 数组） */
+  tags?: string | null;
+  /** v6.0: 摘要（归档时自动生成） */
+  summary?: string | null;
 }
 
 export interface Folder {
