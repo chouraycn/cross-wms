@@ -195,7 +195,9 @@ if command -v npx &>/dev/null; then
     --external:mammoth \
     --external:pdf-parse \
     --external:uuid \
-    --external:xlsx
+    --external:xlsx \
+    --external:onnxruntime-node \
+    --external:sqlite-vec
   echo "✅ 后端编译完成 (index.cjs)"
 else
   echo "⚠️  esbuild 不可用，尝试手动复制..."
@@ -222,7 +224,9 @@ cat > package.json << 'PKGJSON'
     "cors": "^2.8.5",
     "express": "^5.2.0",
     "mammoth": "^1.11.0",
+    "onnxruntime-node": "^1.26.0",
     "pdf-parse": "^1.1.1",
+    "sqlite-vec": "^0.1.9",
     "uuid": "^9.0.0",
     "xlsx": "^0.18.5"
   }

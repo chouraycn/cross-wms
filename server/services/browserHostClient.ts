@@ -198,10 +198,8 @@ export async function startBrowserHost(): Promise<{ ok: boolean; error?: string 
     return { ok: true };
   }
 
-  const scriptPath = path.resolve(
-    path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')),
-    '../../scripts/browser-host.mjs'
-  );
+  // 打包环境无 import.meta.url，用 process.cwd() 兜底查找 scripts 目录
+  const scriptPath = path.resolve(process.cwd(), 'scripts/browser-host.mjs');
 
   if (!fs.existsSync(scriptPath)) {
     error(`BrowserHost script not found: ${scriptPath}`);

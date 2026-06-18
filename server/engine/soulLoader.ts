@@ -305,10 +305,8 @@ export function invalidateSoulCache(): void {
  * 复制失败（如 DMG 打包环境无模板文件）则使用内联默认内容。
  */
 export function initDefaultSoulFiles(): void {
-  const projectSoulDir = path.join(
-    path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')),
-    '../../.cdf-know-clow',
-  );
+  // 打包环境无 import.meta.url，用 process.cwd() 兜底
+  const projectSoulDir = path.join(process.cwd(), '.cdf-know-clow');
 
   fs.mkdirSync(CDF_KNOW_CLOW_DIR, { recursive: true });
 
