@@ -114,6 +114,9 @@ import { mcpClientManager } from './engine/mcpClientManager.js';
 // v6.0: Session Lifecycle Manager
 import { sessionLifecycleManager } from './services/sessionLifecycle.js';
 
+// v7.0: Message Queue (队列与并发控制)
+import { messageQueue } from './engine/messageQueue.js';
+
 const app = express();
 // CORS: 开发环境允许所有本地来源
 app.use((req, res, next) => {
@@ -278,12 +281,17 @@ const server = app.listen(PORT, async () => {
   // v6.0: 启动会话生命周期管理器（空闲归档 + 每日重置）
   sessionLifecycleManager.start();
 
+  // v7.0: 启动消息队列（空闲会话清理 + 全局并发度控制）
+  messageQueue.start();
+
   // 绑定优雅关闭 — 在进程退出时停止引擎
   const gracefulShutdown = () => {
     console.log('[Server] 正在关闭自动化引擎...');
     stop();
     // v6.0: 停止会话生命周期守护
     sessionLifecycleManager.stop();
+    // v7.0: 停止消息队列
+    messageQueue.stop();
     // v3.0: 关闭 BrowserHost 进程
     stopBrowserHost().catch(err => {
       console.warn('[Server] BrowserHost 关闭异常:', err);

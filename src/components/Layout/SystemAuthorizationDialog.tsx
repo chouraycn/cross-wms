@@ -60,7 +60,11 @@ const SystemAuthorizationDialog: React.FC<SystemAuthorizationDialogProps> = ({ o
       PaperProps={{
         sx: {
           borderRadius: 2.5,
-          boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
+          boxShadow: isDark
+            ? '0 24px 64px rgba(0,0,0,0.5), 0 0 1px rgba(255,255,255,0.06)'
+            : '0 24px 64px rgba(0,0,0,0.18)',
+          bgcolor: gs.bgPanel,
+          border: `1px solid ${gs.border}`,
           width: 560,
           height: 620,
           maxHeight: 'none',
@@ -77,8 +81,8 @@ const SystemAuthorizationDialog: React.FC<SystemAuthorizationDialogProps> = ({ o
           top: 14,
           right: 14,
           zIndex: 10,
-          color: '#6B7280',
-          '&:hover': { color: '#111827', backgroundColor: '#F3F4F6' },
+          color: gs.textMuted,
+          '&:hover': { color: gs.textPrimary, backgroundColor: gs.bgHover },
         }}
       >
         <CloseIcon sx={{ fontSize: 20 }} />
@@ -87,16 +91,16 @@ const SystemAuthorizationDialog: React.FC<SystemAuthorizationDialogProps> = ({ o
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', pt: 1 }}>
         {/* Header */}
         <Box sx={{ px: 4, pt: 2, pb: 1 }}>
-          <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: '#111827', mb: 0.25 }}>
+          <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: gs.textPrimary, mb: 0.25 }}>
             系统授权
           </Typography>
-          <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+          <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
             管理系统级安全与隐私权限
           </Typography>
         </Box>
 
         {/* Divider */}
-        <Box sx={{ borderBottom: '1px solid #EDEDED', mx: 4 }} />
+        <Box sx={{ borderBottom: `1px solid ${gs.border}`, mx: 4 }} />
 
         {/* Content */}
         <Box sx={{ flex: 1, px: 4, pt: 2, pb: 2, overflow: 'auto', minWidth: 0 }}>
@@ -104,7 +108,7 @@ const SystemAuthorizationDialog: React.FC<SystemAuthorizationDialogProps> = ({ o
         </Box>
 
         {/* Footer */}
-        <Box sx={{ borderTop: '1px solid #EDEDED', mx: 4 }} />
+        <Box sx={{ borderTop: `1px solid ${gs.border}`, mx: 4 }} />
         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', px: 4, py: 2 }}>
           <Button
             variant="outlined"
@@ -115,7 +119,7 @@ const SystemAuthorizationDialog: React.FC<SystemAuthorizationDialogProps> = ({ o
               borderColor: gs.border,
               color: gs.textMuted,
               fontSize: '0.75rem',
-              '&:hover': { borderColor: gs.textDisabled },
+              '&:hover': { borderColor: gs.textDisabled, backgroundColor: gs.bgHover },
             }}
           >
             重置
