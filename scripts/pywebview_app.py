@@ -189,6 +189,61 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
         return False
 
 
+# ---- 标题栏透明化（保留红黄绿按钮） ----
+
+def make_titlebar_transparent(target_window):
+    """
+    将窗口标题栏设为透明，保留红黄绿按钮（macOS only）
+
+    通过 Cocoa API 设置：
+    - setTitlebarAppearsTransparent_(True)  # 标题栏透明
+    - setTitleVisibility_(NSWindowTitleHidden)  # 隐藏标题文本
+    - styleMask |= NSWindowStyleMaskFullSizeContentView  # 内容延伸到标题栏区域
+
+    需要在 webview.start() 之前调用，确保窗口样式正确设置。
+    """
+    if not COCOA_AVAILABLE:
+        return False
+    if not target_window:
+        return False
+
+    try:
+        from Cocoa import NSWindowTitleHidden, NSWindowStyleMaskFullSizeContentView
+
+        # 查找目标 NSWindow
+        ns_window = None
+        for w in NSApp.windows():
+            try:
+                if w.isVisible() and w.title() == APP_NAME:
+                    ns_window = w
+                    break
+            except Exception:
+                continue
+
+        if ns_window is None:
+            print("[Titlebar] 未找到匹配的 NSWindow")
+            return False
+
+        # 1. 标题栏透明
+        ns_window.setTitlebarAppearsTransparent_(True)
+
+        # 2. 隐藏标题文本
+        ns_window.setTitleVisibility_(NSWindowTitleHidden)
+
+        # 3. 内容延伸到标题栏区域
+        current_mask = ns_window.styleMask()
+        if not (current_mask & NSWindowStyleMaskFullSizeContentView):
+            ns_window.setStyleMask_(current_mask | NSWindowStyleMaskFullSizeContentView)
+
+        print("[Titlebar] ✅ 标题栏已设为透明（红黄绿按钮保留）")
+        return True
+    except Exception as e:
+        print(f"[Titlebar] 设置失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 # ===================== 日志文件 =====================
 
 def get_log_path():
@@ -1596,7 +1651,7 @@ def main():
             log("[Server] ⚠️  Node.js 未找到，AI 助手将不可用")
 
         # 2.5 尝试启动 Agent Web 后端和前端服务器
-        # 3. 创建 pywebview 窗口，通过 file:// 加载前端
+        # 3. 创建 pywebview 窗口，通过 HTTP 加载前端
         api = Api()
         window = webview.create_window(
             title=APP_NAME,
@@ -1607,11 +1662,15 @@ def main():
             resizable=True,
             text_select=True,
             js_api=api,
-            frameless=True,  # 无系统标题栏，使用 CSS 避让红黄绿按钮
+            frameless=False,  # 保留系统标题栏（红黄绿按钮），后续设为透明
             easy_drag=False,  # v1.5.73: 关闭全局拖拽，仅通过 CSS WebkitAppRegion:drag 拖拽条移动窗口，释放内容区文本选择
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
+
+        # v1.5.134: 标题栏透明化，保留红黄绿按钮
+        if COCOA_AVAILABLE:
+            make_titlebar_transparent(window)
 
         # 尽早应用红黄绿按钮偏移（在 splash 动画 6.3s 期间完成，避免跳转到主页时抖动）
         # NSWindow 需要短暂时间初始化标准按钮，使用重试线程在 1.5s 内完成
