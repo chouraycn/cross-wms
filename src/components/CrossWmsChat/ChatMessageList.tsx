@@ -115,6 +115,9 @@ export interface ChatMessageListProps {
   copiedId: string | null;
   onCopy: (msg: Message) => void;
   onRegenerate?: (msg: Message) => void;
+  onEdit?: (msg: Message) => void;
+  onDelete?: (msgId: string) => void;
+  onQuote?: (msg: Message) => void;
   onConfirmReplenishment?: (suggestionId: number) => Promise<void>;
   /** v1.9.3: 权限请求响应回调 */
   onPermissionRespond?: (reqId: string, approved: boolean, alwaysAllow?: boolean) => void;
@@ -135,6 +138,9 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   copiedId,
   onCopy,
   onRegenerate,
+  onEdit,
+  onDelete,
+  onQuote,
   onConfirmReplenishment,
   onPermissionRespond,
   showRegenerate = false,
@@ -467,6 +473,9 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                 copiedId={copiedId}
                 onCopy={onCopy}
                 onRegenerate={onRegenerate}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onQuote={onQuote}
                 showRegenerate={showRegenerate}
                 onConfirmReplenishment={onConfirmReplenishment}
                 onPermissionRespond={onPermissionRespond}
@@ -774,6 +783,9 @@ interface BotMessageContentProps {
   copiedId: string | null;
   onCopy: (msg: Message) => void;
   onRegenerate?: (msg: Message) => void;
+  onEdit?: (msg: Message) => void;
+  onDelete?: (msgId: string) => void;
+  onQuote?: (msg: Message) => void;
   showRegenerate?: boolean;
   onConfirmReplenishment?: (suggestionId: number) => Promise<void>;
   onPermissionRespond?: (reqId: string, approved: boolean, alwaysAllow?: boolean) => void;
@@ -786,6 +798,9 @@ const BotMessageContent = React.memo<BotMessageContentProps>(({
   copiedId,
   onCopy,
   onRegenerate,
+  onEdit,
+  onDelete,
+  onQuote,
   showRegenerate,
   onConfirmReplenishment,
   onPermissionRespond,
@@ -1022,7 +1037,7 @@ const BotMessageContent = React.memo<BotMessageContentProps>(({
           );
         })()
       ) : null}
-      {/* 操作按钮：复制 + 重新生成（hover 显示，非流式输出时） */}
+      {/* 操作按钮：复制 + 编辑 + 删除 + 引用 + 重新生成（hover 显示，非流式输出时） */}
       {!msg.isStreaming && (
         <Box sx={{
           display: 'flex',
@@ -1041,6 +1056,44 @@ const BotMessageContent = React.memo<BotMessageContentProps>(({
               <ContentCopyIcon sx={{ fontSize: 14 }} />
             </IconButton>
           </Tooltip>
+          {onEdit && (
+            <Tooltip title="编辑">
+              <IconButton
+                size="small"
+                onClick={() => onEdit(msg)}
+                sx={{ color: gs.textDisabled, '&:hover': { color: gs.textPrimary } }}
+              >
+                <EditIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onDelete && (
+            <Tooltip title="删除">
+              <IconButton
+                size="small"
+                onClick={() => onDelete(msg.id)}
+                sx={{ color: gs.textDisabled, '&:hover': { color: '#EF4444' } }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                </svg>
+              </IconButton>
+            </Tooltip>
+          )}
+          {onQuote && (
+            <Tooltip title="引用">
+              <IconButton
+                size="small"
+                onClick={() => onQuote(msg)}
+                sx={{ color: gs.textDisabled, '&:hover': { color: gs.textPrimary } }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                </svg>
+              </IconButton>
+            </Tooltip>
+          )}
           {showRegenerate && onRegenerate && (
             <Tooltip title="重新生成">
               <IconButton
