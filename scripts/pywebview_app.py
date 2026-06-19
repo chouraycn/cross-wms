@@ -27,8 +27,8 @@ import webview
 
 # ===================== Cocoa 支持（macOS 红黄绿按钮控制）=====================
 try:
-    from Cocoa import NSApp
-    from objc import lookUpClass
+    from Cocoa import NSApp, NSWindowStyleMaskFullSizeContentView, NSWindowTitleHidden
+    from Foundation import dispatch_async, dispatch_get_main_queue
     COCOA_AVAILABLE = True
 except ImportError:
     COCOA_AVAILABLE = False
@@ -1682,7 +1682,7 @@ def main():
         # 3. 创建 pywebview 窗口，通过 HTTP 加载前端
         api = Api()
         window = webview.create_window(
-            title=APP_NAME,
+            title="",  # 标题设为空，避免标题栏显示软件名称
             url=frontend_url,       # HTTP 协议（127.0.0.1:9988），彻底解决 WKWebView ES Module 问题
             width=WIDTH,
             height=HEIGHT,
@@ -1690,15 +1690,50 @@ def main():
             resizable=True,
             text_select=True,
             js_api=api,
-            frameless=True,  # 无系统标题栏，保留红黄绿按钮，使用 CSS 避让
+            frameless=False,  # False = 保留系统标题栏和红黄绿按钮
             easy_drag=False,  # v1.5.73: 关闭全局拖拽，仅通过 CSS WebkitAppRegion:drag 拖拽条移动窗口，释放内容区文本选择
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
+        # 配置标题栏（在主线程中执行，避免闪退）
+        if COCOA_AVAILABLE:
+            def _configure_titlebar_main_thread():
+                """在主线程中配置标题栏（透明 + 无标题）"""
+                try:
+                    for w in NSApp.windows():
+                        try:
+                            if w.isVisible():
+                                # 设置窗口样式：允许内容延伸至标题栏区域
+                                w.setStyleMask_(NSWindowStyleMaskFullSizeContentView)
+                                # 隐藏标题
+                                w.setTitleVisibility_(NSWindowTitleHidden)
+                                # 使标题栏透明
+                                w.setTitlebarAppearsTransparent_(True)
+                                print("[Titlebar] ✅ 标题栏已配置：透明 + 无标题 + 内容可延伸至标题栏")
+                                break
+                        except Exception:
+                            continue
+                except Exception as e:
+                    print(f"[Titlebar] ⚠️ 配置标题栏失败: {e}")
+            
+            # 在后台线程中等待窗口初始化，然后通过 dispatch_async 在主线程中执行
+            def _schedule_titlebar_config():
+                time.sleep(0.5)  # 等待窗口初始化
+                try:
+                    from Foundation import dispatch_async, dispatch_get_main_queue
+                    # 在主线程中执行配置
+                    dispatch_async(dispatch_get_main_queue(), _configure_titlebar_main_thread)
+                    print("[Titlebar] ✅ 已调度标题栏配置（主线程）")
+                except Exception as e:
+                    print(f"[Titlebar] ⚠️ 调度标题栏配置失败: {e}")
+            
+            threading.Thread(target=_schedule_titlebar_config, daemon=True).start()
+            log("[Main] 已启动标题栏配置调度线程")
+
         # 调试：输出 Cocoa 可用性
         print(f"[DEBUG] COCOA_AVAILABLE = {COCOA_AVAILABLE}")
-        print(f"[DEBUG] frameless = True (无边框窗口，红黄绿按钮由 Cocoa API 偏移)")
+        print(f"[DEBUG] frameless = False (标准窗口，100% 保留红黄绿按钮)")
         if COCOA_AVAILABLE:
             try:
                 import Cocoa
