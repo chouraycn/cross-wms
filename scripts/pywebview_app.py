@@ -27,7 +27,8 @@ import webview
 
 # ===================== Cocoa 支持（macOS 红黄绿按钮控制）=====================
 try:
-    from Cocoa import NSApp
+    from Cocoa import NSApp, NSWindowStyleMaskFullSizeContentView, NSWindowTitleHidden
+    from Foundation import dispatch_async, dispatch_get_main_queue
     COCOA_AVAILABLE = True
 except ImportError:
     COCOA_AVAILABLE = False
@@ -88,34 +89,6 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
         return False
 
     try:
-        print(f"[DEBUG] COCOA_AVAILABLE = {COCOA_AVAILABLE}")
-        print(f"[DEBUG] frameless = True (无边框窗口，红黄绿按钮由 Cocoa API 偏移)")
-        
-        # 调试：检查 NSWindow 的标准按钮是否存在
-        try:
-            ns_window = None
-            for w in NSApp.windows():
-                try:
-                    if w.isVisible():
-                        ns_window = w
-                        print(f"[DEBUG] 找到可见 NSWindow: title='{w.title()}', frame={w.frame()}")
-                        break
-                except Exception:
-                    continue
-            
-            if ns_window:
-                close_btn = ns_window.standardWindowButton_(0)  # NSWindowCloseButton
-                zoom_btn = ns_window.standardWindowButton_(1)   # NSWindowZoomButton
-                mini_btn = ns_window.standardWindowButton_(2)   # NSWindowMiniaturizeButton
-                print(f"[DEBUG] standardWindowButton_(0) [关闭] = {close_btn}")
-                print(f"[DEBUG] standardWindowButton_(1) [缩放] = {zoom_btn}")
-                print(f"[DEBUG] standardWindowButton_(2) [最小化] = {mini_btn}")
-                
-                if not close_btn:
-                    print("[WARNING] 关闭按钮为 None！frameless 窗口可能没有标准按钮")
-        except Exception as e:
-            print(f"[DEBUG] 检查标准按钮失败: {e}")
-        
         # 通过 NSApp.windows() 查找我们的窗口
         # 策略：查找有标准按钮的可见窗口（不依赖标题匹配）
         target_window = None
@@ -132,7 +105,28 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
 
         if target_window is None:
             return False
-
+        
+        # 配置标题栏（透明 + 无标题 + 内容可延伸至标题栏区域）
+        # 必须在主线程中执行（AppKit 要求）
+        try:
+            def _configure_titlebar_main_thread():
+                """在主线程中配置标题栏（安全）"""
+                try:
+                    # 设置窗口样式：允许内容延伸至标题栏区域
+                    target_window.setStyleMask_(NSWindowStyleMaskFullSizeContentView)
+                    # 隐藏标题
+                    target_window.setTitleVisibility_(NSWindowTitleHidden)
+                    # 使标题栏透明
+                    target_window.setTitlebarAppearsTransparent_(True)
+                    print("[Titlebar] ✅ 标题栏已配置：透明 + 无标题")
+                except Exception as e:
+                    print(f"[Titlebar] ⚠️ 主线程配置失败: {e}")
+            
+            # 在主线程中执行配置
+            dispatch_async(dispatch_get_main_queue(), _configure_titlebar_main_thread)
+        except Exception as e:
+            print(f"[Titlebar] ⚠️ 调度标题栏配置失败: {e}")
+        
         # 按钮类型常量
         NSWindowCloseButton = 0
         NSWindowMiniaturizeButton = 1
@@ -1684,7 +1678,7 @@ def main():
         # 3. 创建 pywebview 窗口，通过 HTTP 加载前端
         api = Api()
         window = webview.create_window(
-            title=APP_NAME,
+            title='',  # 标题设为空，避免标题栏显示软件名称
             url=frontend_url,       # HTTP 协议（127.0.0.1:9988），彻底解决 WKWebView ES Module 问题
             width=WIDTH,
             height=HEIGHT,
@@ -1692,7 +1686,7 @@ def main():
             resizable=True,
             text_select=True,
             js_api=api,
-            frameless=True,  # 无系统标题栏，红黄绿按钮由 Cocoa API 偏移
+            frameless=False,  # False = 保留系统标题栏和红黄绿按钮（100% 可靠）
             easy_drag=False,  # v1.5.73: 关闭全局拖拽，仅通过 CSS WebkitAppRegion:drag 拖拽条移动窗口，释放内容区文本选择
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
