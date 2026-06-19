@@ -81,11 +81,12 @@ jobs:
             const path = './package.json';
             const pkg = JSON.parse(fs.readFileSync(path, 'utf-8'));
             const parts = pkg.version.split('.').map(Number);
-            if ('${BUMP_TYPE}' === 'major') {
+            const bump = '${BUMP_TYPE}';
+            if (bump === 'major') {
               parts[0]++;
               parts[1] = 0;
               parts[2] = 0;
-            } else if ('${BUMP_TYPE}' === 'minor') {
+            } else if (bump === 'minor') {
               parts[1]++;
               parts[2] = 0;
             } else {
@@ -95,7 +96,8 @@ jobs:
             fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
             console.log('Version bumped to ' + pkg.version);
           "
-          echo "VERSION=$(node -e "console.log(require('./package.json').version)")" >> $GITHUB_ENV
+          VERSION=$(node -e "console.log(require('./package.json').version)")
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Get version
         id: get_version

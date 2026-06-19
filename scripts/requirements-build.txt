@@ -1,3 +1,4 @@
 pywebview
 pyinstaller
 Pillow
+pyobjc-framework-Cocoa
