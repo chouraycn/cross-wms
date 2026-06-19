@@ -162,6 +162,6 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
-    target: 'esnext',
+    target: ['es2020', 'edge88', 'chrome88', 'firefox78', 'safari14'], // WKWebView 兼容（macOS 11+）
   },
 }))
