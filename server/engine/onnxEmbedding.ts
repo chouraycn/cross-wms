@@ -17,6 +17,7 @@ import { homedir } from 'os';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { createHash } from 'crypto';
 import https from 'https';
+import { logger } from '../logger.js';
 
 // ===================== 常量 =====================
 
@@ -50,7 +51,7 @@ const HF_BASE_URL = 'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main
 let inferenceSession: ort.InferenceSession | null = null;
 
 /** vocab 映射 */
-let vocabMap: Map<string, number> = new Map();
+const vocabMap: Map<string, number> = new Map();
 
 /** 模型配置 */
 let modelConfig: { max_position_embeddings?: number; hidden_size?: number } = {};
@@ -138,11 +139,11 @@ async function ensureModelFiles(): Promise<void> {
 
   if (filesToDownload.length === 0) return;
 
-  console.log(`[OnnxEmbedding] 下载模型文件 (${filesToDownload.length} 个)...`);
+  logger.debug(`[OnnxEmbedding] 下载模型文件 (${filesToDownload.length} 个)...`);
   for (const file of filesToDownload) {
-    console.log(`[OnnxEmbedding] 下载 ${file.name}...`);
+    logger.debug(`[OnnxEmbedding] 下载 ${file.name}...`);
     await downloadFile(file.url, file.path);
-    console.log(`[OnnxEmbedding] ${file.name} 下载完成`);
+    logger.debug(`[OnnxEmbedding] ${file.name} 下载完成`);
   }
 }
 
@@ -158,7 +159,7 @@ function loadVocab(): void {
   for (let i = 0; i < tokens.length; i++) {
     vocabMap.set(tokens[i], i);
   }
-  console.log(`[OnnxEmbedding] vocab 加载完成: ${vocabMap.size} 个 token`);
+  logger.debug(`[OnnxEmbedding] vocab 加载完成: ${vocabMap.size} 个 token`);
 }
 
 /**
@@ -269,7 +270,7 @@ export async function initOnnxEmbedding(): Promise<void> {
   initError = '';
 
   try {
-    console.log('[OnnxEmbedding] 初始化中...');
+    logger.debug('[OnnxEmbedding] 初始化中...');
     await ensureModelFiles();
 
     loadVocab();
@@ -282,11 +283,11 @@ export async function initOnnxEmbedding(): Promise<void> {
     });
 
     initStatus = 'ready';
-    console.log('[OnnxEmbedding] 初始化完成, 输入:', inferenceSession.inputNames, '输出:', inferenceSession.outputNames);
+    logger.debug('[OnnxEmbedding] 初始化完成, 输入:', inferenceSession.inputNames, '输出:', inferenceSession.outputNames);
   } catch (e) {
     initStatus = 'failed';
     initError = e instanceof Error ? e.message : String(e);
-    console.error('[OnnxEmbedding] 初始化失败:', initError);
+    logger.error('[OnnxEmbedding] 初始化失败:', initError);
     throw e;
   }
 }

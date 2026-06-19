@@ -20,6 +20,7 @@ import {
 import { initDb } from '../db.js';
 import type { ReplenishmentConfig } from '../models/wms-skill.js';
 import { DEFAULT_REPLENISHMENT_CONFIG } from '../models/wms-skill.js';
+import { logger } from '../logger.js';
 
 const router = Router();
 
@@ -52,7 +53,7 @@ router.get('/', (req: Request, res: Response) => {
 
     res.json({ code: 0, data: response, message: 'ok' });
   } catch (e) {
-    console.error('[ReplenishmentRoute] 查询建议列表失败:', e);
+    logger.error('[ReplenishmentRoute] 查询建议列表失败:', e);
     res.status(500).json({ code: 1, message: (e as Error).message });
   }
 });
@@ -69,7 +70,7 @@ router.post('/generate', (req: Request, res: Response) => {
     const result = generateSuggestions(config);
     res.json({ code: 0, data: result, message: 'ok' });
   } catch (e) {
-    console.error('[ReplenishmentRoute] 生成建议失败:', e);
+    logger.error('[ReplenishmentRoute] 生成建议失败:', e);
     res.status(500).json({ code: 1, message: (e as Error).message });
   }
 });
@@ -98,7 +99,7 @@ router.put('/:id/status', (req: Request, res: Response) => {
 
     res.json({ code: 0, data: updated, message: 'ok' });
   } catch (e) {
-    console.error('[ReplenishmentRoute] 更新建议状态失败:', e);
+    logger.error('[ReplenishmentRoute] 更新建议状态失败:', e);
     res.status(500).json({ code: 1, message: (e as Error).message });
   }
 });
@@ -122,7 +123,7 @@ router.get('/:id/sources', (req: Request, res: Response) => {
     const recommendations = recommendSourceWarehouse(suggestion.sku, suggestion.warehouse_id, suggestion.suggested_qty);
     res.json({ code: 0, data: recommendations, message: 'ok' });
   } catch (e) {
-    console.error('[ReplenishmentRoute] 获取来源仓库推荐失败:', e);
+    logger.error('[ReplenishmentRoute] 获取来源仓库推荐失败:', e);
     res.status(500).json({ code: 1, message: (e as Error).message });
   }
 });
@@ -162,7 +163,7 @@ router.post('/:id/confirm', (req: Request, res: Response) => {
 
     res.json({ code: 0, data: updated, message: 'ok' });
   } catch (e) {
-    console.error('[ReplenishmentRoute] 确认补货建议失败:', e);
+    logger.error('[ReplenishmentRoute] 确认补货建议失败:', e);
     res.status(500).json({ code: 1, message: (e as Error).message });
   }
 });
@@ -189,7 +190,7 @@ router.post('/:id/transfer', (req: Request, res: Response) => {
     const result = createTransferFromSuggestion(id, { fromWarehouseId, quantity });
     res.json({ code: 0, data: result, message: 'ok' });
   } catch (e) {
-    console.error('[ReplenishmentRoute] 创建调拨单失败:', e);
+    logger.error('[ReplenishmentRoute] 创建调拨单失败:', e);
     res.status(400).json({ code: 1, message: (e as Error).message });
   }
 });

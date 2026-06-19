@@ -95,7 +95,7 @@ function mockAlertData() {
     { id: 3, warehouseId: 'WH-002', alertType: 'stagnant', severity: 'info', message: 'SKU003 滞销', status: 'active' },
   ];
 
-  vi.spyOn(global, 'fetch').mockImplementation((input, init?) => {
+  return vi.spyOn(global, 'fetch').mockImplementation((input, init?) => {
     const url = typeof input === 'string' ? input : input.toString();
 
     if (url === `${BASE_URL}/api/wms/alerts` && (!init || init.method === undefined || init.method === 'GET')) {
@@ -195,8 +195,7 @@ describe('WmsAlertPage', () => {
 
   describe('Alert list loading', () => {
     it('should load alerts on mount', async () => {
-      const fetchSpy = vi.spyOn(global, 'fetch');
-      mockAlertData();
+      const fetchSpy = mockAlertData();
       renderPage();
 
       await waitFor(() => {
@@ -316,8 +315,7 @@ describe('WmsAlertPage', () => {
     });
 
     it('should call POST /api/wms/alerts/check on click', async () => {
-      const fetchSpy = vi.spyOn(global, 'fetch');
-      mockAlertData();
+      const fetchSpy = mockAlertData();
 
       // Add mock for the check endpoint
       fetchSpy.mockImplementation((input, init?) => {
@@ -439,8 +437,7 @@ describe('WmsAlertPage', () => {
 
   describe('Resolve and Ignore', () => {
     it('should call resolve API on resolve click', async () => {
-      const fetchSpy = vi.spyOn(global, 'fetch');
-      mockAlertData();
+      const fetchSpy = mockAlertData();
 
       // Add mock for resolve endpoint
       fetchSpy.mockImplementation((input, init?) => {
@@ -488,8 +485,7 @@ describe('WmsAlertPage', () => {
     });
 
     it('should call ignore API on ignore click', async () => {
-      const fetchSpy = vi.spyOn(global, 'fetch');
-      mockAlertData();
+      const fetchSpy = mockAlertData();
 
       fetchSpy.mockImplementation((input, init?) => {
         const url = typeof input === 'string' ? input : input.toString();
@@ -547,8 +543,7 @@ describe('WmsAlertPage', () => {
     });
 
     it('should load prediction dashboard on mount', async () => {
-      const fetchSpy = vi.spyOn(global, 'fetch');
-      mockAlertData();
+      const fetchSpy = mockAlertData();
       renderPage();
 
       await waitFor(() => {

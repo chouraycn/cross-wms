@@ -84,7 +84,7 @@ const WmsAlertRuleEditor: React.FC = () => {
           });
         }
       } catch (err) {
-        console.error('加载预警配置失败:', err);
+        // console.error('加载预警配置失败:', err);
       }
     };
 

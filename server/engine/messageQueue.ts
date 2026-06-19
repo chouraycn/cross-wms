@@ -17,6 +17,7 @@
 
 import { EventEmitter } from 'events';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -545,7 +546,7 @@ export class MessageQueue extends EventEmitter {
     try {
       this.emit('queue', event);
     } catch (err) {
-      console.error(`[MessageQueue] 事件发射失败:`, err);
+      logger.error(`[MessageQueue] 事件发射失败:`, err);
     }
   }
 }

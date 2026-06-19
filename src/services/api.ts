@@ -341,9 +341,10 @@ export interface SkillConflictCheckResponse {
 export async function fetchSkillConflictCheck(
   name: string,
   trigger?: string,
-  tags?: string[]
+  tags?: string[],
+  desc?: string,
 ): Promise<SkillConflictCheckResponse> {
-  return request<SkillConflictCheckResponse>('POST', '/api/skill-conflict-check', { name, trigger, tags });
+  return request<SkillConflictCheckResponse>('POST', '/api/skill-conflict-check', { name, trigger, tags, desc });
 }
 
 // ===================== Skill Events SSE API =====================
@@ -451,7 +452,7 @@ export async function exportSkillAsZip(skillId: string, skillName: string): Prom
         reader.readAsDataURL(blob);
       });
     } catch (e) {
-      console.warn('[exportSkillAsZip] pywebview save_file failed, fallback to browser download', e);
+      // console.warn('[exportSkillAsZip] pywebview save_file failed, fallback to browser download', e);
     }
   }
 

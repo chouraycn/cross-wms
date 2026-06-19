@@ -425,6 +425,7 @@ async function handleScreenshot(args) {
 /**
  * browser_render_content: 导航到 URL，等待 JS 渲染完成，返回渲染后的 HTML
  * 使用独立页面（不影响当前活跃页面），渲染完毕后自动关闭
+ * v1.5.131: 支持 executeJs 参数 — 在页面渲染后执行自定义 JS
  */
 async function handleRenderContent(args) {
   const {
@@ -432,6 +433,7 @@ async function handleRenderContent(args) {
     waitUntil = 'networkidle',
     selector,
     timeout = 15000,
+    executeJs,
   } = args;
 
   if (!url || !url.startsWith('http')) {
@@ -460,6 +462,16 @@ async function handleRenderContent(args) {
       await renderPage.waitForSelector(selector, { timeout });
     }
 
+    // v1.5.131: 如果指定了 executeJs，在页面上执行
+    let jsResult = undefined;
+    if (executeJs && typeof executeJs === 'string') {
+      try {
+        jsResult = await renderPage.evaluate(executeJs);
+      } catch (jsErr) {
+        jsResult = { error: `JS execution failed: ${jsErr.message}` };
+      }
+    }
+
     // 获取渲染后的完整 HTML
     const html = await renderPage.content();
     const title = await renderPage.title();
@@ -471,6 +483,7 @@ async function handleRenderContent(args) {
         title,
         status: response?.status() || null,
         html,
+        ...(jsResult !== undefined ? { jsResult } : {}),
       },
     };
   } catch (err) {
@@ -480,6 +493,47 @@ async function handleRenderContent(args) {
     if (renderPage) {
       try { await renderPage.close(); } catch { /* 忽略 */ }
     }
+  }
+}
+
+/**
+ * browser_execute_js: 在当前活跃页面上执行 JavaScript
+ * v1.5.131: 新增 — 支持在已打开的页面上执行任意 JS 并返回结果
+ */
+async function handleExecuteJs(args) {
+  const { script, returnHtml = false } = args;
+
+  if (!script || typeof script !== 'string') {
+    return { ok: false, error: 'script parameter is required (must be a string)' };
+  }
+
+  if (!browser || !context) {
+    return { ok: false, error: 'Browser not launched. Call browser_navigate first.' };
+  }
+
+  if (!page) {
+    return { ok: false, error: 'No active page. Call browser_navigate first.' };
+  }
+
+  try {
+    const result = await page.evaluate(script);
+
+    // 可选：返回执行后的页面 HTML
+    let html = undefined;
+    if (returnHtml) {
+      html = await page.content();
+    }
+
+    return {
+      ok: true,
+      output: {
+        result,
+        url: page.url(),
+        ...(returnHtml ? { html } : {}),
+      },
+    };
+  } catch (err) {
+    return { ok: false, error: `JS execution failed: ${err.message}` };
   }
 }
 
@@ -518,6 +572,7 @@ const COMMAND_HANDLERS = {
   browser_close: handleClose,
   browser_launch: launchBrowser,
   browser_render_content: handleRenderContent,
+  browser_execute_js: handleExecuteJs,
 };
 
 /**

@@ -18,6 +18,7 @@ import { installPlugin } from './pluginLoader.js';
 import type { PluginManifest, PluginToolDefinition as PluginToolDef } from '../../shared/pluginManifest.js';
 import type { ToolDefinition } from '../aiClient.js';
 import { executeInSandbox } from './pluginSandbox.js';
+import { logger } from '../logger.js';
 
 /** 插件错误信息记录 */
 interface PluginError {
@@ -479,7 +480,7 @@ class PluginRegistry {
       try {
         await this.enable(plugin.id);
       } catch (e) {
-        console.error(`[PluginRegistry] 启动加载插件 '${plugin.name}' 失败:`, e);
+        logger.error(`[PluginRegistry] 启动加载插件 '${plugin.name}' 失败:`, e);
       }
     }
   }

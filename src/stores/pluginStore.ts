@@ -29,7 +29,7 @@ function notifyAll(): void {
     try {
       fn();
     } catch (e) {
-      console.error('[pluginStore] listener error:', e);
+      // console.error('[pluginStore] listener error:', e);
     }
   });
 }
@@ -74,7 +74,7 @@ export async function refreshFromApi(): Promise<void> {
     healthStatus = health;
     notifyAll();
   } catch (e) {
-    console.error('[pluginStore] refreshFromApi failed:', e);
+    // console.error('[pluginStore] refreshFromApi failed:', e);
   }
 }
 
@@ -92,7 +92,7 @@ export async function installPluginAction(file: File): Promise<PluginInfo> {
     notifyAll();
     return newPlugin;
   } catch (e) {
-    console.error('[pluginStore] installPlugin failed:', e);
+    // console.error('[pluginStore] installPlugin failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', {
       detail: { action: 'installPlugin', error: e },
     }));
@@ -110,7 +110,7 @@ export async function enablePluginAction(id: string): Promise<void> {
     }
     notifyAll();
   } catch (e) {
-    console.error('[pluginStore] enablePlugin failed:', e);
+    // console.error('[pluginStore] enablePlugin failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', {
       detail: { action: 'enablePlugin', error: e },
     }));
@@ -128,7 +128,7 @@ export async function disablePluginAction(id: string): Promise<void> {
     }
     notifyAll();
   } catch (e) {
-    console.error('[pluginStore] disablePlugin failed:', e);
+    // console.error('[pluginStore] disablePlugin failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', {
       detail: { action: 'disablePlugin', error: e },
     }));
@@ -143,7 +143,7 @@ export async function uninstallPluginAction(id: string): Promise<void> {
     plugins = plugins.filter((p) => p.id !== id);
     notifyAll();
   } catch (e) {
-    console.error('[pluginStore] uninstallPlugin failed:', e);
+    // console.error('[pluginStore] uninstallPlugin failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', {
       detail: { action: 'uninstallPlugin', error: e },
     }));
@@ -161,7 +161,7 @@ export async function reloadPluginAction(id: string): Promise<void> {
     }
     notifyAll();
   } catch (e) {
-    console.error('[pluginStore] reloadPlugin failed:', e);
+    // console.error('[pluginStore] reloadPlugin failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', {
       detail: { action: 'reloadPlugin', error: e },
     }));
@@ -189,6 +189,6 @@ export async function initFromApi(): Promise<void> {
     healthStatus = await api.fetchPluginHealth().catch(() => null);
     notifyAll();
   } catch (e) {
-    console.error('[pluginStore] initFromApi failed:', e);
+    // console.error('[pluginStore] initFromApi failed:', e);
   }
 }

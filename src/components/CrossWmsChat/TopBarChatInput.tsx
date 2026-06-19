@@ -37,19 +37,10 @@ import { useAiEngineSettings } from '../../contexts/AppSettingsContext';
 // ===================== Props =====================
 
 interface TopBarChatInputProps {
-  session: {
-    id: string;
-    title: string;
-    model: string;
-    messages: {
-      id: string;
-      role: 'user' | 'assistant';
-      content: string;
-      timestamp: Date;
-    }[];
-  };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSessionUpdate: (session: any) => void;
+  /** 会话是否为空（无消息）— 仅在 0→1 消息时变化，流式期间稳定 */
+  isEmpty: boolean;
+  /** 轻量更新会话模型字段（不展开整个 session） */
+  updateSessionModel: (model: string) => void;
   /** 从外部注入的初始技能（如从 URL 参数解析） */
   initialSkill?: Skill | null;
   /** 是否正在加载中（从外部注入，避免重复实例化 useChat） */
@@ -95,10 +86,10 @@ function getFileTypeColor(mimeType: string, fileName: string): string {
 
 // ===================== Component =====================
 
-export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoading, sendMessage, stopGeneration }: TopBarChatInputProps) {
+export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, updateSessionModel, initialSkill, isLoading, sendMessage, stopGeneration }: TopBarChatInputProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const gs = getGrayScale(isDark);
+  const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { models: modelList, isLoading: modelsLoading } = useModels();
@@ -194,14 +185,14 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
     setSelectedModel(name);
     if (name === 'Auto') {
       setSelectedModelId('auto');
-      onSessionUpdate({ ...session, model: 'auto' });
+      updateSessionModel('auto');
       // Auto 模式：恢复默认推理强度
       handleReasoningEffortChange('high');
     } else {
       const found = enabledModels.find((m) => m.name === name);
       const modelId = found?.id || name;
       setSelectedModelId(modelId);
-      onSessionUpdate({ ...session, model: modelId });
+      updateSessionModel(modelId);
       // 根据模型能力自动调整推理强度
       const supportsReasoning = found?.capabilities?.includes('reasoning');
       if (!supportsReasoning) {
@@ -210,7 +201,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
         handleReasoningEffortChange('high');
       }
     }
-  }, [enabledModels, session, onSessionUpdate, handleReasoningEffortChange, reasoningEffort]);
+  }, [enabledModels, updateSessionModel, handleReasoningEffortChange, reasoningEffort]);
 
   /** 格式化文件大小 */
   const formatFileSize = (bytes: number): string => {
@@ -271,7 +262,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
           type: isImage ? 'image' : 'file',
         });
       } catch (err) {
-        console.error('[TopBarChatInput] 文件上传失败:', file.name, err);
+        // console.error('[TopBarChatInput] 文件上传失败:', file.name, err);
         showToast(`文件上传失败: ${file.name}`, 'error', 3000);
       }
     }
@@ -495,7 +486,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
       const multimodalModel = enabledModels.find(m => m.capabilities?.includes('multimodal'));
       if (multimodalModel) {
         effectiveModelId = multimodalModel.id;
-        console.log(`[ModelRouter] 检测到附件，智能模型自动切换为多模态模型: ${multimodalModel.name} (${multimodalModel.id})`);
+        // console.log(`[ModelRouter] 检测到附件，智能模型自动切换为多模态模型: ${multimodalModel.name} (${multimodalModel.id})`);
       }
     }
 
@@ -951,7 +942,7 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
           onReasoningEffortChange={handleReasoningEffortChange}
         />
         {/* v2.3.0: 文件夹选择区域 — 作为 Paper 内部元素，避免圆角颜色不一致 */}
-        <Collapse in={session.messages.length === 0} timeout={300}>
+        <Collapse in={isEmpty} timeout={300}>
           <Box
             sx={{
               display: 'flex',
@@ -1110,4 +1101,4 @@ export function TopBarChatInput({ session, onSessionUpdate, initialSkill, isLoad
       </Popover>
     </Box>
   );
-}
+});

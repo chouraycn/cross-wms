@@ -32,13 +32,13 @@ const skillA: Skill = {
 
 const skillB: Skill = {
   id: 'skill-b',
-  name: '库存优化',
+  name: '库存管理优化',
   desc: '库龄预警与库存周转优化工具',
   icon: 'Inventory',
   category: 'core',
   path: '/inventory-opt',
-  trigger: '查看库存 / 优化库存',
-  tags: ['库存', '优化', '管理'],
+  trigger: '查看库存 / 库存分析',
+  tags: ['库存', '预警', '管理'],
   status: 'active',
   source: 'user',
 };
@@ -132,7 +132,7 @@ describe('skillConflict.checkConflict', () => {
 
   it('should include skill name in result', () => {
     const result = checkConflict(skillA, skillB);
-    expect(result.skillName).toBe('库存优化');
+    expect(result.skillName).toBe('库存管理优化');
   });
 
   it('should cap score at 1', () => {
@@ -245,7 +245,7 @@ describe('skillConflict.getCloseCandidates', () => {
     expect(candidates.length).toBeGreaterThan(0);
     const names = candidates.map((c) => c.name);
     expect(names).toContain('库存管理');
-    expect(names).toContain('库存优化');
+    expect(names).toContain('库存管理优化');
   });
 
   it('should sort candidates by matchScore descending', () => {

@@ -18,6 +18,7 @@ import eventBus, {
 } from './eventBus.js';
 import { getAutomationById } from '../dao/automationDao.js';
 import crypto from 'crypto';
+import { logger } from '../logger.js';
 
 // ===================== 本地类型定义 =====================
 
@@ -129,13 +130,13 @@ async function sendWebhookNotification(
     clearTimeout(timeout);
 
     if (!res.ok) {
-      console.error(
+      logger.error(
         `[Notifier] Webhook 通知失败 (${res.status}):`,
         webhookUrl,
       );
     }
   } catch (err) {
-    console.error('[Notifier] Webhook 通知异常:', err);
+    logger.error('[Notifier] Webhook 通知异常:', err);
   }
 }
 
@@ -152,7 +153,7 @@ function sendDesktopNotification(
     ? renderTemplate(template, payload, automationName)
     : `自动化「${automationName}」${payload.status === 'success' ? '执行成功' : '执行失败'}`;
 
-  console.log(
+  logger.debug(
     `[Desktop Notification] ${message} (time: ${payload.timestamp})`,
   );
 }
@@ -202,13 +203,13 @@ ${message}
     clearTimeout(timeout);
 
     if (!res.ok) {
-      console.error(
+      logger.error(
         `[Notifier] 企业微信通知失败 (${res.status}):`,
         url,
       );
     }
   } catch (err) {
-    console.error('[Notifier] 企业微信通知异常:', err);
+    logger.error('[Notifier] 企业微信通知异常:', err);
   }
 }
 
@@ -272,13 +273,13 @@ ${message}
     clearTimeout(timeout);
 
     if (!res.ok) {
-      console.error(
+      logger.error(
         `[Notifier] 钉钉通知失败 (${res.status}):`,
         url,
       );
     }
   } catch (err) {
-    console.error('[Notifier] 钉钉通知异常:', err);
+    logger.error('[Notifier] 钉钉通知异常:', err);
   }
 }
 
@@ -357,7 +358,7 @@ async function handleAutomationEvent(
 
     await Promise.allSettled(tasks);
   } catch (err) {
-    console.error('[Notifier] 处理事件异常:', err);
+    logger.error('[Notifier] 处理事件异常:', err);
   }
 }
 
@@ -372,7 +373,7 @@ const unsubscribers: (() => void)[] = [];
  */
 export function initNotifier(): void {
   if (initialized) {
-    console.warn('[Notifier] 已初始化，跳过重复初始化');
+    logger.warn('[Notifier] 已初始化，跳过重复初始化');
     return;
   }
   initialized = true;
@@ -387,13 +388,13 @@ export function initNotifier(): void {
     const unsub = onAutomationEvent(event, (payload) => {
       // 异步处理，不阻塞事件循环
       handleAutomationEvent(event, payload).catch((err) => {
-        console.error('[Notifier] handleAutomationEvent 异常:', err);
+        logger.error('[Notifier] handleAutomationEvent 异常:', err);
       });
     });
     unsubscribers.push(unsub);
   }
 
-  console.log('[Notifier] 初始化完成，监听事件：', events);
+  logger.debug('[Notifier] 初始化完成，监听事件：', events);
 }
 
 /**
@@ -406,5 +407,5 @@ export function destroyNotifier(): void {
   }
   unsubscribers.length = 0;
   initialized = false;
-  console.log('[Notifier] 已销毁');
+  logger.debug('[Notifier] 已销毁');
 }

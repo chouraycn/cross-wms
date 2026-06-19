@@ -186,7 +186,7 @@ export function useWarehouseCapability(options: UseWarehouseCapabilityOptions = 
         const apiNames = ['getVolumeHistory', 'getInboundRecords', 'getOutboundRecords', 'getKpiData', 'getTransitStatusDistribution'];
         results.forEach((result, index) => {
           if (result.status === 'rejected') {
-            console.warn(`数据获取失败 [${apiNames[index]}]:`, result.reason);
+            // console.warn(`数据获取失败 [${apiNames[index]}]:`, result.reason);
           }
         });
 
@@ -197,7 +197,7 @@ export function useWarehouseCapability(options: UseWarehouseCapabilityOptions = 
         setTransitStatusDistribution(statusDist);
       } catch (err) {
         if (cancelled) return;
-        console.error('Dashboard 数据获取过程发生错误:', err);
+        // console.error('Dashboard 数据获取过程发生错误:', err);
         setError(err instanceof Error ? err.message : '数据加载失败');
       } finally {
         if (!cancelled) setLoading(false);

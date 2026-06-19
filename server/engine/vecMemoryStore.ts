@@ -21,6 +21,7 @@ import path from 'path';
 import { homedir } from 'os';
 import { existsSync, mkdirSync } from 'fs';
 import { embedText, initOnnxEmbedding, getOnnxStatus } from './onnxEmbedding.js';
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -78,9 +79,9 @@ function getDb(): Database.Database {
   try {
     sqliteVec.load(db);
     vecLoaded = true;
-    console.log('[VecMemory] sqlite-vec 扩展加载成功');
+    logger.debug('[VecMemory] sqlite-vec 扩展加载成功');
   } catch (e) {
-    console.warn('[VecMemory] sqlite-vec 扩展加载失败，降级为关键词搜索:', e);
+    logger.warn('[VecMemory] sqlite-vec 扩展加载失败，降级为关键词搜索:', e);
     vecLoaded = false;
   }
 
@@ -118,9 +119,9 @@ function initSchema(db: Database.Database): void {
           +entry_id INTEGER
         );
       `);
-      console.log('[VecMemory] vec0 虚拟表已创建');
+      logger.debug('[VecMemory] vec0 虚拟表已创建');
     } catch (e) {
-      console.warn('[VecMemory] vec0 虚拟表创建失败:', e);
+      logger.warn('[VecMemory] vec0 虚拟表创建失败:', e);
       vecLoaded = false;
     }
   }
@@ -161,7 +162,7 @@ export async function writeMemory(entry: Omit<VecMemoryEntry, 'id' | 'createdAt'
       ).run(Buffer.from(embedding.buffer), entryId);
 
     } catch (e) {
-      console.warn(`[VecMemory] embedding 生成失败 (entryId=${entryId}):`, e);
+      logger.warn(`[VecMemory] embedding 生成失败 (entryId=${entryId}):`, e);
       // 不影响文本写入，向量缺失时降级为关键词搜索
     }
   }
@@ -248,7 +249,7 @@ export async function searchMemory(
 
       return results.slice(0, topK);
     } catch (e) {
-      console.warn('[VecMemory] 向量搜索失败，降级为关键词搜索:', e);
+      logger.warn('[VecMemory] 向量搜索失败，降级为关键词搜索:', e);
     }
   }
 
@@ -256,8 +257,94 @@ export async function searchMemory(
   return searchByKeyword(db, query, userId, topK);
 }
 
+// ===================== 关键词提取 =====================
+
+/** 中文停用词表 */
+const CN_STOP_WORDS = new Set([
+  '的', '了', '是', '在', '和', '有', '我', '你', '他', '她', '它',
+  '这', '那', '也', '都', '就', '只', '还', '又', '或', '但', '而',
+  '与', '及', '以', '为', '对', '向', '从', '到', '于', '把', '被',
+  '让', '使', '给', '跟', '要', '会', '能', '可', '应', '该', '需',
+  '没', '不', '未', '无', '非', '已', '曾', '正', '将', '已', '如',
+  '什么', '怎么', '为什么', '哪里', '哪个', '哪些', '怎样', '多少',
+  '可以', '需要', '应该', '已经', '正在', '将会', '一个', '一些',
+  '这个', '那个', '这些', '那些', '我们', '你们', '他们', '它们',
+  '自己', '其他', '别的', '所有', '每个', '任何', '某些',
+  '时候', '时间', '现在', '之前', '之后', '期间',
+]);
+
+/** 英文停用词表 */
+const EN_STOP_WORDS = new Set([
+  'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+  'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
+  'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+  'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might',
+  'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we',
+  'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'its',
+  'our', 'their', 'what', 'which', 'who', 'when', 'where', 'why', 'how',
+  'all', 'each', 'every', 'both', 'few', 'more', 'most', 'other', 'some',
+  'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too',
+  'very', 'just', 'also', 'can',
+]);
+
+/**
+ * 从文本中提取关键词（中英文混合支持）
+ *
+ * 策略：
+ * 1. 提取中文词组（2-6 字连续中文）和英文单词
+ * 2. 过滤停用词
+ * 3. 过滤过短/过长的词
+ * 4. 去重并限制数量
+ *
+ * @param text 源文本
+ * @param maxKeywords 最大关键词数量（默认 10）
+ * @returns 空格分隔的关键词字符串
+ */
+export function extractKeywords(text: string, maxKeywords: number = 10): string {
+  if (!text || text.trim().length === 0) return '';
+
+  const normalized = text.toLowerCase().trim();
+  const keywords: string[] = [];
+  const seen = new Set<string>();
+
+  // 提取中文词组（连续 2-6 个中文字符）
+  const cnMatches = normalized.match(/[\u4e00-\u9fff]{2,6}/g) || [];
+  for (const word of cnMatches) {
+    if (CN_STOP_WORDS.has(word)) continue;
+    if (word.length < 2 || word.length > 6) continue;
+    if (!seen.has(word)) {
+      seen.add(word);
+      keywords.push(word);
+    }
+  }
+
+  // 提取英文单词（字母+数字组合，含连字符）
+  const enMatches = normalized.match(/[a-z][a-z0-9_-]{1,30}/g) || [];
+  for (const word of enMatches) {
+    if (EN_STOP_WORDS.has(word)) continue;
+    if (word.length < 2 || word.length > 30) continue;
+    if (!seen.has(word)) {
+      seen.add(word);
+      keywords.push(word);
+    }
+  }
+
+  // 提取数字（版本号、数值等）
+  const numMatches = normalized.match(/\b\d+(?:\.\d+){0,2}\b/g) || [];
+  for (const num of numMatches) {
+    if (!seen.has(num)) {
+      seen.add(num);
+      keywords.push(num);
+    }
+  }
+
+  return keywords.slice(0, maxKeywords).join(' ');
+}
+
 /**
  * 关键词 LIKE 搜索（降级方案）
+ *
+ * 改进：支持中文分词匹配 + 多关键词 OR 查询 + 按匹配数排序
  */
 function searchByKeyword(
   db: Database.Database,
@@ -265,19 +352,40 @@ function searchByKeyword(
   userId: string,
   limit: number,
 ): VecSearchResult[] {
-  const keywords = query.toLowerCase().split(/\s+/).filter(k => k.length > 1);
+  // 使用 extractKeywords 提取查询关键词（比简单 split 更准确）
+  const queryKeywords = extractKeywords(query, 8);
+  if (queryKeywords.length === 0) return [];
+
+  const keywords = queryKeywords.split(/\s+/).filter(k => k.length > 1);
   if (keywords.length === 0) return [];
 
-  const conditions = keywords.map(() => `keywords LIKE ?`).join(' OR ');
-  const params = [userId, ...keywords.map(k => `%${k}%`), limit];
+  // 构建 LIKE 查询条件：每个关键词同时匹配 keywords 和 content 字段
+  const conditions = keywords.map(() => `(keywords LIKE ? OR content LIKE ?)`).join(' OR ');
+  const params = [userId, ...keywords.flatMap(k => [`%${k}%`, `%${k}%`]), limit * 2];
 
   const stmt = db.prepare(
-    `SELECT * FROM memory_entries WHERE userId = ? AND (${conditions}) ORDER BY createdAt DESC LIMIT ?`
+    `SELECT *, (
+      CASE ${keywords.map(() => 'WHEN keywords LIKE ? OR content LIKE ? THEN 1 ELSE 0 END').join(' + ')}
+    ) AS matchCount
+    FROM memory_entries
+    WHERE userId = ? AND (${conditions})
+    ORDER BY matchCount DESC, createdAt DESC
+    LIMIT ?`
   );
-  const entries = stmt.all(...params) as VecMemoryEntry[];
 
-  // 关键词匹配不计算相似度，统一设为 0.5
-  return entries.map(entry => ({ entry, similarity: 0.5 }));
+  // 构建完整参数列表：先 matchCount CASE 的参数，再 WHERE 参数，最后 LIMIT
+  const caseParams = keywords.flatMap(k => [`%${k}%`, `%${k}%`]);
+  const allParams = [...caseParams, userId, ...keywords.flatMap(k => [`%${k}%`, `%${k}%`]), limit];
+
+  const entries = stmt.all(...allParams) as (VecMemoryEntry & { matchCount: number })[];
+
+  // 根据匹配数计算相似度（0.3~0.8 区间）
+  return entries.map(entry => {
+    const maxMatches = keywords.length;
+    const ratio = maxMatches > 0 ? entry.matchCount / (maxMatches * 2) : 0;
+    const similarity = Math.max(0.3, Math.min(0.8, 0.3 + ratio * 0.5));
+    return { entry, similarity };
+  });
 }
 
 // ===================== 混合搜索 =====================

@@ -89,7 +89,7 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
 
       if (cancelled) return;
       if (!wh) {
-        console.warn('[WarehouseDetail] 仓库未找到（Store+API 均无数据），warehouseId:', warehouseId);
+        // console.warn('[WarehouseDetail] 仓库未找到（Store+API 均无数据），warehouseId:', warehouseId);
       }
       setWarehouse(wh);
 
@@ -134,7 +134,7 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
   }
 
   if (!warehouse) {
-    console.error('[WarehouseDetail] 仓库未找到，warehouseId:', warehouseId);
+    // console.error('[WarehouseDetail] 仓库未找到，warehouseId:', warehouseId);
     return (
       <Alert severity="error">
         仓库不存在（ID: {warehouseId || '未知'}）。<Button onClick={() => navigate('/warehouses')}>返回列表</Button>
@@ -144,7 +144,7 @@ const WarehouseDetail: React.FC<WarehouseDetailProps> = ({ warehouseId }) => {
 
   // 防御性检查：确保仓库数据完整
   if (!warehouse.id || !warehouse.name) {
-    console.error('[WarehouseDetail] 仓库数据不完整:', warehouse);
+    // console.error('[WarehouseDetail] 仓库数据不完整:', warehouse);
     return (
       <Alert severity="error">
         仓库数据异常，请联系管理员。<Button onClick={() => navigate('/warehouses')}>返回列表</Button>

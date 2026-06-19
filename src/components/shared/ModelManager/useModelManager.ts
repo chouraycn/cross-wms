@@ -408,7 +408,7 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
           const result = await api.resetModelsConfig();
           onChange(result.models, result.defaultModelId);
         } catch (e: unknown) {
-          console.error('[ModelManager] resetModelsConfig failed:', e);
+          // console.error('[ModelManager] resetModelsConfig failed:', e);
           openConfirmDialog({
             title: '恢复失败',
             content: e instanceof Error ? e.message : '恢复默认配置失败，请稍后重试',

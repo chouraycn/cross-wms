@@ -11,6 +11,7 @@
 import { callAIModel } from '../aiClient.js';
 import type { ModelCallConfig, MessageContent } from '../aiClient.js';
 import type { TaskDecomposition, SubTask, SubTaskPriority } from '../../shared/types/agent.js';
+import { logger } from '../logger.js';
 
 // ===================== 常量 =====================
 
@@ -173,7 +174,7 @@ export class TaskDecomposer {
         signal,
       );
     } catch (err) {
-      console.error('[TaskDecomposer] LLM 调用失败:', err instanceof Error ? err.message : String(err));
+      logger.error('[TaskDecomposer] LLM 调用失败:', err instanceof Error ? err.message : String(err));
       return null;
     }
 
@@ -183,18 +184,18 @@ export class TaskDecomposer {
       // 提取 JSON 数组（兼容 markdown 包裹）
       const jsonMatch = rawResponse.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {
-        console.error('[TaskDecomposer] 响应中未找到 JSON 数组');
+        logger.error('[TaskDecomposer] 响应中未找到 JSON 数组');
         return null;
       }
       rawSubTasks = JSON.parse(jsonMatch[0]);
     } catch (err) {
-      console.error('[TaskDecomposer] JSON 解析失败:', err);
+      logger.error('[TaskDecomposer] JSON 解析失败:', err);
       return null;
     }
 
     // 验证和构建子任务
     if (!Array.isArray(rawSubTasks) || rawSubTasks.length < MIN_SUBTASKS) {
-      console.log(`[TaskDecomposer] 子任务数 ${rawSubTasks?.length ?? 0} < ${MIN_SUBTASKS}，不拆分`);
+      logger.debug(`[TaskDecomposer] 子任务数 ${rawSubTasks?.length ?? 0} < ${MIN_SUBTASKS}，不拆分`);
       return null;
     }
 
@@ -221,7 +222,7 @@ export class TaskDecomposer {
 
     // 验证 DAG 无循环
     if (this.hasCycle(subTasks)) {
-      console.error('[TaskDecomposer] 检测到循环依赖，拆分失败');
+      logger.error('[TaskDecomposer] 检测到循环依赖，拆分失败');
       return null;
     }
 
@@ -312,7 +313,7 @@ export class TaskDecomposer {
 
       if (currentLayer.length === 0) {
         // 死锁：所有剩余任务都有未满足的依赖（不应该发生，已通过 hasCycle 检查）
-        console.error('[TaskDecomposer] 拓扑排序死锁，剩余:', remaining.map(t => t.id));
+        logger.error('[TaskDecomposer] 拓扑排序死锁，剩余:', remaining.map(t => t.id));
         break;
       }
 

@@ -560,7 +560,7 @@ const MainLayout: React.FC = () => {
     React.useEffect(() => {
       setSettingsPopoverOpen(true);
       navigate('/chat', { replace: true });
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      // deps intentionally empty — run once on mount
     }, []);
     return null;
   }

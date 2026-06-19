@@ -28,6 +28,7 @@ import {
 import { getUserSkills } from '../dao/skills.js';
 import { BUILTIN_SKILLS } from '@src/types/skill-core';
 import { embedText, initOnnxEmbedding, getOnnxStatus } from '../engine/onnxEmbedding.js';
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -171,7 +172,7 @@ export async function generateEmbedding(
     embedding = await embedText(content);
   } catch (onnxErr) {
     // ONNX 推理失败时降级为 Mock 向量
-    console.warn(`[EmbeddingService] ONNX 推理失败，降级为 Mock (skillId=${skill.id}):`, onnxErr);
+    logger.warn(`[EmbeddingService] ONNX 推理失败，降级为 Mock (skillId=${skill.id}):`, onnxErr);
     const rawEmbedding = generateMockEmbedding(dimensions);
     embedding = l2NormalizeCopy(rawEmbedding);
   }
@@ -396,7 +397,7 @@ export async function semanticSearch(
     }
     normalizedQuery = await embedText(query);
   } catch (onnxErr) {
-    console.warn('[EmbeddingService] 查询 embedding 降级为 Mock:', onnxErr);
+    logger.warn('[EmbeddingService] 查询 embedding 降级为 Mock:', onnxErr);
     const queryEmbedding = generateMockEmbedding(EMBEDDING_DIMENSIONS);
     normalizedQuery = l2NormalizeCopy(queryEmbedding);
   }

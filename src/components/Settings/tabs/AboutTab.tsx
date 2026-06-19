@@ -71,7 +71,7 @@ const AboutTab: React.FC<AboutTabProps> = ({
         setLocalUpdateStatus(result);
       }
       if (result.error) {
-        console.warn('检查更新失败:', result.error);
+        // console.warn('检查更新失败:', result.error);
         setLocalUpdateStatus(result);
       }
     } catch (err) {

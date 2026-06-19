@@ -13,6 +13,7 @@
 
 import { isLocalModel } from './modelsStore.js';
 import { sanitizeToolMessages } from './engine/contextTruncate.js';
+import { logger } from './logger.js';
 
 /** 消息内容类型（支持 OpenAI Vision 格式） */
 export type MessageContent = string | Array<{
@@ -218,6 +219,20 @@ export async function callOpenAICompatibleStream(
 
   if (!response.ok) {
     const errorText = await response.text();
+    // v1.5.129: 400 错误时记录消息结构，帮助诊断 tool_calls 配对问题
+    if (response.status === 400) {
+      const toolMsgs = messages.filter(m => m.role === 'tool');
+      const assistantWithCalls = messages.filter(m => m.role === 'assistant' && (m as any).tool_calls);
+      logger.error(`[AIClient] 400 错误诊断: ${toolMsgs.length} 条 tool 消息, ${assistantWithCalls.length} 条 assistant(tool_calls)`);
+      for (const m of messages) {
+        if (m.role === 'tool') {
+          logger.error(`  [tool] tool_call_id=${(m as any).tool_call_id || '(missing)'}`);
+        } else if (m.role === 'assistant' && (m as any).tool_calls) {
+          const ids = ((m as any).tool_calls as any[]).map(tc => tc.id || '(no-id)');
+          logger.error(`  [assistant(tool_calls)] ids=[${ids.join(', ')}]`);
+        }
+      }
+    }
     const category = classifyError(response.status, errorText);
     throw new AIAPIError(
       `API 请求失败 (${response.status}): ${errorText.slice(0, 500)}`,
@@ -573,7 +588,7 @@ export async function callAnthropicStream(
     // Anthropic thinking 模式不支持 temperature，移除
     delete body.temperature;
   } else if (reasoningEffort && !supportsThinking) {
-    console.warn(`[AIClient] 模型 ${modelId} 可能不支持 extended thinking，跳过 thinking 参数`);
+    logger.warn(`[AIClient] 模型 ${modelId} 可能不支持 extended thinking，跳过 thinking 参数`);
   }
 
   let response: Response;
@@ -749,7 +764,8 @@ export async function callAIModelStream(
   const apiEndpoint = modelConfig.apiEndpoint || '';
   const modelId = modelConfig.id;
   const temperature = modelConfig.temperature ?? 0.7;
-  const maxTokens = modelConfig.maxTokens || 4096;
+  // v1.5.131: maxTokens 上限 8192，防止 384K 等不合理值发送到 API
+  const maxTokens = Math.min(modelConfig.maxTokens || 4096, 8192);
   const provider = modelConfig.provider;
 
   // v2.2.0: 优先从 modelConfig 获取 capabilities，其次使用传入参数
@@ -822,7 +838,7 @@ export async function callAIModelStream(
           const newKey = await onRateLimit();
           if (newKey) {
             apiKey = newKey.apiKey;
-            console.log(`[AIClient] 429 速率限制，已切换到备用 Key #${newKey.keyIndex}，立即重试...`);
+            logger.debug(`[AIClient] 429 速率限制，已切换到备用 Key #${newKey.keyIndex}，立即重试...`);
             // 不等延时，立即重试（新 Key 有自己的配额）
             continue;
           }
@@ -835,7 +851,7 @@ export async function callAIModelStream(
       if (!isRetryableError(error)) break;
 
       const delay = calculateDelay(attempt);
-      console.log(`[AIClient] 请求失败，${delay.toFixed(0)}ms 后重试 (${attempt + 1}/${RETRY_CONFIG.maxRetries})...`);
+      logger.debug(`[AIClient] 请求失败，${delay.toFixed(0)}ms 后重试 (${attempt + 1}/${RETRY_CONFIG.maxRetries})...`);
       await sleep(delay);
     }
   }

@@ -36,7 +36,6 @@ export default function PluginResultBlock({ results }: PluginResultBlockProps) {
   return (
     <Box sx={{
       my: 0.5,
-      borderRadius: 1,
       borderLeft: `2px solid ${isDark ? '#555555' : '#e0e0e0'}`,
       bgcolor: 'transparent',
       overflow: 'hidden',

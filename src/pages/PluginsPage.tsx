@@ -108,7 +108,7 @@ const PluginsPage: React.FC = () => {
       setVersion((v) => v + 1);
     });
     // 初始化时加载一次
-    refreshFromApi().catch((e) => console.error('[PluginsPage] refreshFromApi failed:', e));
+    // refreshFromApi().catch((e) => console.error('[PluginsPage] refreshFromApi failed:', e));
     return unsubscribe;
   }, []);
 

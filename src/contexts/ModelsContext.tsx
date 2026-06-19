@@ -66,7 +66,7 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             // RC-3: 检测所有模型均未启用的状态，避免前端误认为加载成功但无可选模型
             const enabledModels = validModels.filter((m: any) => m.enabled);
             if (validModels.length > 0 && enabledModels.length === 0) {
-              console.warn('[ModelsContext] 所有模型均未启用，请在设置中启用至少一个模型');
+              // console.warn('[ModelsContext] 所有模型均未启用，请在设置中启用至少一个模型');
             }
             setModels(validModels);
             setDefaultModelId(data.defaultModelId || validModels[0]?.id || '');
@@ -78,13 +78,13 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if (attempt < MAX_RETRIES) {
             // 指数退避：1s, 2s, 4s, 8s, 10s, 10s, 10s...
             const delay = Math.min(INITIAL_DELAY_MS * Math.pow(2, attempt - 1), MAX_DELAY_MS);
-            console.warn(`[ModelsContext] 加载模型配置失败 (第${attempt}/${MAX_RETRIES}次)，${delay}ms后重试...`, e);
+            // console.warn(`[ModelsContext] 加载模型配置失败 (第${attempt}/${MAX_RETRIES}次)，${delay}ms后重试...`, e);
             await new Promise(r => setTimeout(r, delay));
           }
         }
       }
       if (lastError != null) {
-        console.error('[ModelsContext] 加载模型配置失败（已重试' + MAX_RETRIES + '次）:', lastError);
+        // console.error('[ModelsContext] 加载模型配置失败（已重试' + MAX_RETRIES + '次）:', lastError);
         const rawMsg = lastError instanceof Error ? lastError.message : String(lastError);
         setError(`${rawMsg}（后端服务可能尚未就绪，请稍后重试）`);
       }
@@ -107,7 +107,7 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       await api.saveModelsConfig(newModels, validatedDefaultId);
     } catch (e) {
-      console.error('[ModelsContext] 保存模型配置失败:', e);
+      // console.error('[ModelsContext] 保存模型配置失败:', e);
       setError(e instanceof Error ? e.message : '保存失败');
       throw e;
     }

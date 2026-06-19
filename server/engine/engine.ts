@@ -25,6 +25,7 @@ import {
   updateRun,
   updateAutomation,
 } from '../dao/automationDao.js';
+import { logger } from '../logger.js';
 
 // ===================== 内部状态 =====================
 
@@ -97,7 +98,7 @@ export async function executeAndRecord(
 
   // 并发保护
   if (runningAutomations.has(automationId)) {
-    console.warn(`[Engine] 自动化 ${automationId} 正在执行中，跳过此次触发`);
+    logger.warn(`[Engine] 自动化 ${automationId} 正在执行中，跳过此次触发`);
     return null;
   }
 
@@ -179,7 +180,7 @@ export async function executeAndRecord(
   } catch (err) {
     // 意外错误（非 executor 内部的错误）
     const message = err instanceof Error ? err.message : String(err);
-    console.error(`[Engine] executeAndRecord 意外错误 ${automationId}:`, err);
+    logger.error(`[Engine] executeAndRecord 意外错误 ${automationId}:`, err);
 
     const completedAt = new Date().toISOString();
     const duration = Date.now() - startTime;
@@ -235,11 +236,11 @@ async function pollSchedules(): Promise<void> {
 
       // 不 await，避免单个执行阻塞轮询循环
       executeAndRecord(automation, 'schedule').catch((err) => {
-        console.error(`[Engine] 调度执行异常 ${automation.id}:`, err);
+        logger.error(`[Engine] 调度执行异常 ${automation.id}:`, err);
       });
     }
   } catch (err) {
-    console.error('[Engine] 轮询异常:', err);
+    logger.error('[Engine] 轮询异常:', err);
   }
 }
 
@@ -253,19 +254,19 @@ async function pollSchedules(): Promise<void> {
 function handleWebhookEvent(payload: AutomationEventPayload): void {
   const { automationId } = payload;
   if (!automationId) {
-    console.warn('[Engine] webhook 事件缺少 automationId');
+    logger.warn('[Engine] webhook 事件缺少 automationId');
     return;
   }
 
   const automation = getAutomationById(automationId);
   if (!automation) {
-    console.warn(`[Engine] webhook 事件：找不到自动化 ${automationId}`);
+    logger.warn(`[Engine] webhook 事件：找不到自动化 ${automationId}`);
     return;
   }
 
   // 不 await，避免阻塞事件循环
   executeAndRecord(automation, 'webhook').catch((err) => {
-    console.error('[Engine] webhook 执行异常:', err);
+    logger.error('[Engine] webhook 执行异常:', err);
   });
 }
 
@@ -283,11 +284,11 @@ function handleWebhookEvent(payload: AutomationEventPayload): void {
  */
 export function startEngine(pollIntervalMs: number = 30_000): { stop: () => void } {
   if (pollTimer !== null) {
-    console.warn('[Engine] 引擎已在运行中，跳过重复启动');
+    logger.warn('[Engine] 引擎已在运行中，跳过重复启动');
     return { stop: stopEngine };
   }
 
-  console.log(`[Engine] 启动引擎，轮询间隔 ${pollIntervalMs}ms`);
+  logger.debug(`[Engine] 启动引擎，轮询间隔 ${pollIntervalMs}ms`);
 
   // 1. 初始化通知器
   initNotifier();
@@ -303,7 +304,7 @@ export function startEngine(pollIntervalMs: number = 30_000): { stop: () => void
     handleWebhookEvent(payload);
   });
 
-  console.log('[Engine] 引擎启动完成');
+  logger.debug('[Engine] 引擎启动完成');
 
   return { stop: stopEngine };
 }
@@ -325,5 +326,5 @@ export function stopEngine(): void {
   runningAutomations.clear();
   lastExecutionTimes.clear();
 
-  console.log('[Engine] 引擎已停止');
+  logger.debug('[Engine] 引擎已停止');
 }

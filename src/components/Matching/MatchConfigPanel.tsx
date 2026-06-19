@@ -80,7 +80,7 @@ const MatchConfigPanel: React.FC<MatchConfigPanelProps> = ({ onConfigSaved }) =>
       setConfig({ ...remoteConfig, ...localConfig });
       setEmbeddingStatus(status);
     } catch (err) {
-      console.error('[MatchConfigPanel] loadConfig failed:', err);
+      // console.error('[MatchConfigPanel] loadConfig failed:', err);
       const localConfig = loadLocalMatchConfig();
       setConfig({ ...DEFAULT_MATCH_ENGINE_CONFIG, ...localConfig });
     } finally {

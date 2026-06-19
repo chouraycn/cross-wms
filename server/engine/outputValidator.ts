@@ -9,6 +9,7 @@
  */
 
 import Ajv, { type ValidateFunction } from 'ajv';
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -124,7 +125,7 @@ export class OutputValidator {
       try {
         this.schemas.set(name, this.ajv.compile(schema));
       } catch (e) {
-        console.warn(`[OutputValidator] Schema ${name} 编译失败:`, e);
+        logger.warn(`[OutputValidator] Schema ${name} 编译失败:`, e);
       }
     }
   }
@@ -214,7 +215,7 @@ export class OutputValidator {
    */
   private attemptRepair(data: unknown, validate: ValidateFunction): { success: boolean; data: unknown; details: string[] } {
     const details: string[] = [];
-    let repaired = JSON.parse(JSON.stringify(data)) as Record<string, unknown>;
+    const repaired = JSON.parse(JSON.stringify(data)) as Record<string, unknown>;
 
     for (const error of validate.errors ?? []) {
       const path = error.instancePath || '';
@@ -264,10 +265,10 @@ export class OutputValidator {
       if (!schema) return null;
 
       // Navigate to the parent schema
-      let current = schema;
+      let current: Record<string, unknown> = schema as Record<string, unknown>;
       for (const part of pathParts) {
         if (current && typeof current === 'object') {
-          const next = (current as Record<string, unknown>).properties?.[part];
+          const next = ((current as Record<string, unknown>).properties as Record<string, unknown> | undefined)?.[part];
           if (next && typeof next === 'object') {
             current = next as Record<string, unknown>;
           } else {

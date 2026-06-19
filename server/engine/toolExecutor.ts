@@ -83,11 +83,13 @@ const TOOL_RISK_LEVELS: Record<string, ToolRiskLevel> = {
   'desktop_window_focus': 'high-risk',
   'desktop_clipboard': 'high-risk',
   'desktop_scroll': 'high-risk',
-  'desktop_see': 'high-risk',
+  'desktop_see': 'auto',  // v1.5.130: 截图只读，改为自动授权
+  'desktop_click_smart': 'high-risk',  // v1.5.130: 语义点击同样高风险
 
   // v3.0: Browser auto-approve (只读、无副作用)
   'browser_snapshot': 'auto',
   'browser_screenshot': 'auto',
+  'browser_execute_js': 'confirm',  // v1.5.131: JS 执行可能修改页面
 
   // v3.0: Webhook tools
   'web_hook_listen': 'confirm',
@@ -240,7 +242,8 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     // v1.5.73: 每轮调用前截断上下文，防止 tool call 循环中消息膨胀超限
     // v1.5.116: 优先使用智能压缩（LLM 摘要），失败则降级为简单截断
     const ctxWindow = (modelConfig as any).contextWindow || 128000;
-    const ctxMaxTokens = modelConfig.maxTokens || 8192;
+    // v1.5.131: 截断用 maxTokens 上限 8192，避免 384K 浪费输入空间
+    const ctxMaxTokens = Math.min(modelConfig.maxTokens || 8192, 8192);
     const turnTruncated = await compressContextWithSummary(currentMessages, ctxWindow, ctxMaxTokens, tools.length, modelConfig);
     if ((turnTruncated.compressed || turnTruncated.truncated) && currentMessages.length !== turnTruncated.messages.length) {
       // 替换 currentMessages 内容（保持引用不变）

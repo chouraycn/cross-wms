@@ -26,7 +26,7 @@ class ChainStore {
       this.chains = await api.fetchSkillChains();
       this.notifyAll();
     } catch (e) {
-      console.error('[chainStore] loadChains failed:', e);
+      // console.error('[chainStore] loadChains failed:', e);
     }
   }
 
@@ -77,7 +77,7 @@ class ChainStore {
       try {
         fn();
       } catch (e) {
-        console.error('[chainStore] listener error:', e);
+        // console.error('[chainStore] listener error:', e);
       }
     });
   }

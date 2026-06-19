@@ -1,0 +1,20 @@
+#!/bin/sh
+# Pre-commit hook: ESLint on staged files + TypeScript full project check
+# Blocks commits with syntax errors or type errors
+
+# 1. ESLint on staged files (errors block commit, warnings are allowed)
+npx lint-staged
+
+# 2. TypeScript full project check (catches cross-file type errors)
+echo "Running TypeScript check..."
+npx tsc --noEmit 2>&1 | head -30
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+  echo "❌ TypeScript errors found. Fix them before committing."
+  exit 1
+fi
+npx tsc --noEmit --project server/tsconfig.json 2>&1 | head -30
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+  echo "❌ Backend TypeScript errors found. Fix them before committing."
+  exit 1
+fi
+echo "✅ TypeScript check passed"

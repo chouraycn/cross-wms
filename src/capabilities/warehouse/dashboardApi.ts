@@ -68,7 +68,7 @@ function loadConfigFromStorage(): Partial<DataSourceConfig> | null {
       return JSON.parse(stored) as Partial<DataSourceConfig>;
     }
   } catch (error) {
-    console.warn('读取数据源配置失败:', error);
+    // console.warn('读取数据源配置失败:', error);
   }
   return null;
 }
@@ -77,7 +77,7 @@ function saveConfigToStorage(config: DataSourceConfig): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
   } catch (error) {
-    console.warn('保存数据源配置失败:', error);
+    // console.warn('保存数据源配置失败:', error);
   }
 }
 
@@ -122,7 +122,7 @@ export class DashboardApiService {
       try {
         return await this.fetchWarehousesFromDocs();
       } catch (error) {
-        console.warn('从腾讯文档获取仓库数据失败，回退到 mock 数据:', error);
+        // console.warn('从腾讯文档获取仓库数据失败，回退到 mock 数据:', error);
         return mockWarehouses;
       }
     }
@@ -132,7 +132,7 @@ export class DashboardApiService {
       const response = await this.fetchFromApi<Warehouse[]>('/warehouses');
       return response;
     } catch (error) {
-      console.warn('从 API 获取仓库数据失败，回退到 mock 数据:', error);
+      // console.warn('从 API 获取仓库数据失败，回退到 mock 数据:', error);
       return mockWarehouses;
     }
   }
@@ -186,7 +186,7 @@ export class DashboardApiService {
       try {
         return await this.fetchTransitOrdersFromDocs();
       } catch (error) {
-        console.warn('从腾讯文档获取在途订单失败，回退到 mock 数据:', error);
+        // console.warn('从腾讯文档获取在途订单失败，回退到 mock 数据:', error);
         return mockTransitOrders;
       }
     }
@@ -194,7 +194,7 @@ export class DashboardApiService {
     try {
       return await this.fetchFromApi<TransitOrder[]>('/transit-orders');
     } catch (error) {
-      console.warn('从 API 获取在途订单失败，回退到 mock 数据:', error);
+      // console.warn('从 API 获取在途订单失败，回退到 mock 数据:', error);
       return mockTransitOrders;
     }
   }
@@ -248,7 +248,7 @@ export class DashboardApiService {
       try {
         return await this.fetchInventoryFromDocs();
       } catch (error) {
-        console.warn('从腾讯文档获取库存数据失败，回退到 mock 数据:', error);
+        // console.warn('从腾讯文档获取库存数据失败，回退到 mock 数据:', error);
         return mockInventory;
       }
     }
@@ -256,7 +256,7 @@ export class DashboardApiService {
     try {
       return await this.fetchFromApi<InventoryItem[]>('/inventory');
     } catch (error) {
-      console.warn('从 API 获取库存数据失败，回退到 mock 数据:', error);
+      // console.warn('从 API 获取库存数据失败，回退到 mock 数据:', error);
       return mockInventory;
     }
   }
@@ -307,7 +307,7 @@ export class DashboardApiService {
       try {
         return await this.fetchVolumeHistoryFromDocs();
       } catch (error) {
-        console.warn('从腾讯文档获取容积历史失败，回退到 mock 数据:', error);
+        // console.warn('从腾讯文档获取容积历史失败，回退到 mock 数据:', error);
         return mockVolumeHistory;
       }
     }
@@ -315,7 +315,7 @@ export class DashboardApiService {
     try {
       return await this.fetchFromApi<VolumeHistoryPoint[]>('/volume-history');
     } catch (error) {
-      console.warn('从 API 获取容积历史失败，回退到 mock 数据:', error);
+      // console.warn('从 API 获取容积历史失败，回退到 mock 数据:', error);
       return mockVolumeHistory;
     }
   }
@@ -356,7 +356,7 @@ export class DashboardApiService {
       try {
         return await this.fetchInboundRecordsFromDocs();
       } catch (error) {
-        console.warn('从腾讯文档获取入库记录失败，回退到 mock 数据:', error);
+        // console.warn('从腾讯文档获取入库记录失败，回退到 mock 数据:', error);
         return mockInboundRecords;
       }
     }
@@ -364,7 +364,7 @@ export class DashboardApiService {
     try {
       return await this.fetchFromApi<InboundRecord[]>('/inbound-records');
     } catch (error) {
-      console.warn('从 API 获取入库记录失败，回退到 mock 数据:', error);
+      // console.warn('从 API 获取入库记录失败，回退到 mock 数据:', error);
       return mockInboundRecords;
     }
   }
@@ -412,7 +412,7 @@ export class DashboardApiService {
       try {
         return await this.fetchOutboundRecordsFromDocs();
       } catch (error) {
-        console.warn('从腾讯文档获取出库记录失败，回退到 mock 数据:', error);
+        // console.warn('从腾讯文档获取出库记录失败，回退到 mock 数据:', error);
         return mockOutboundRecords;
       }
     }
@@ -420,7 +420,7 @@ export class DashboardApiService {
     try {
       return await this.fetchFromApi<OutboundRecord[]>('/outbound-records');
     } catch (error) {
-      console.warn('从 API 获取出库记录失败，回退到 mock 数据:', error);
+      // console.warn('从 API 获取出库记录失败，回退到 mock 数据:', error);
       return mockOutboundRecords;
     }
   }
@@ -468,7 +468,7 @@ export class DashboardApiService {
       try {
         return await this.calculateKpiFromDocs();
       } catch (error) {
-        console.warn('从腾讯文档计算 KPI 失败，回退到 mock 数据:', error);
+        // console.warn('从腾讯文档计算 KPI 失败，回退到 mock 数据:', error);
         return mockKpiData;
       }
     }
@@ -476,7 +476,7 @@ export class DashboardApiService {
     try {
       return await this.fetchFromApi<KpiData>('/kpi');
     } catch (error) {
-      console.warn('从 API 获取 KPI 失败，回退到 mock 数据:', error);
+      // console.warn('从 API 获取 KPI 失败，回退到 mock 数据:', error);
       return mockKpiData;
     }
   }
@@ -525,7 +525,7 @@ export class DashboardApiService {
         const transitOrders = await this.fetchTransitOrdersFromDocs();
         return this.calculateStatusDistribution(transitOrders);
       } catch (error) {
-        console.warn('从腾讯文档计算状态分布失败，回退到 mock 数据:', error);
+        // console.warn('从腾讯文档计算状态分布失败，回退到 mock 数据:', error);
         return mockTransitStatusDistribution;
       }
     }
@@ -533,7 +533,7 @@ export class DashboardApiService {
     try {
       return await this.fetchFromApi<typeof mockTransitStatusDistribution>('/transit-status-distribution');
     } catch (error) {
-      console.warn('从 API 获取状态分布失败，回退到 mock 数据:', error);
+      // console.warn('从 API 获取状态分布失败，回退到 mock 数据:', error);
       return mockTransitStatusDistribution;
     }
   }

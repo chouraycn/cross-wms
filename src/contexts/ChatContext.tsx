@@ -24,6 +24,8 @@ interface ChatSessionValue {
   setActiveSessionId: (id: string) => void;
   /** 更新会话数据（供子组件回调，如权限确认后更新消息） */
   handleSessionUpdate: (session: Session) => void;
+  /** 轻量更新会话模型字段（不触发标题检查/sidebar 同步） */
+  updateSessionModel: (model: string) => void;
   /** 新建对话 */
   handleNewChat: () => void;
 }
@@ -71,31 +73,6 @@ interface ChatMetaValue {
 const ChatSessionContext = createContext<ChatSessionValue | null>(null);
 const ChatSidebarContext = createContext<ChatSidebarValue | null>(null);
 const ChatMetaContext = createContext<ChatMetaValue | null>(null);
-
-// ===================== 兼容旧的统一 Context（弃用，仅供过渡） =====================
-
-interface LegacyChatContextValue {
-  sessions: Session[];
-  folders: Folder[];
-  activeSessionId: string;
-  session: Session;
-  setActiveSessionId: (id: string) => void;
-  handleSessionUpdate: (session: Session) => void;
-  handleNewChat: () => void;
-  handleDeleteSession: (id: string) => void;
-  togglePinSession: (id: string) => void;
-  isLoading: boolean;
-  isInitializing: boolean;
-  sendMessage: (content: string, options?: SendMessageOptions) => void;
-  stopGeneration: () => void;
-  defaultModel: string;
-  createFolder: (name: string) => Promise<Folder | null>;
-  updateFolder: (id: string, name: string) => Promise<boolean>;
-  deleteFolder: (id: string) => Promise<boolean>;
-  moveSessionToFolder: (sessionId: string, folderId: string | null) => Promise<boolean>;
-}
-
-const LegacyChatContext = createContext<LegacyChatContextValue | null>(null);
 
 // ===================== 常量 =====================
 
@@ -175,7 +152,7 @@ function saveSessionsToCache(sessions: Session[]): void {
     }));
     getDebouncedStorage(500).setItem(SESSIONS_CACHE_KEY, JSON.stringify(serializable));
   } catch (e) {
-    console.warn('[ChatProvider] 缓存保存失败:', e);
+    // console.warn('[ChatProvider] 缓存保存失败:', e);
   }
 }
 
@@ -200,10 +177,10 @@ async function fetchSessionsFromAPI(retries = 5): Promise<Session[]> {
       return [];
     } catch (e) {
       if (attempt < retries) {
-        console.warn(`[ChatProvider] 后端 API 不可用 (第${attempt}/${retries}次)，2秒后重试...`);
+        // console.warn(`[ChatProvider] 后端 API 不可用 (第${attempt}/${retries}次)，2秒后重试...`);
         await new Promise((r) => setTimeout(r, 2000));
       } else {
-        console.warn('[ChatProvider] 后端 API 不可用，已用尽重试次数，使用本地缓存:', e);
+        // console.warn('[ChatProvider] 后端 API 不可用，已用尽重试次数，使用本地缓存:', e);
       }
     }
   }
@@ -222,7 +199,7 @@ async function fetchSessionMessagesFromAPI(sessionId: string): Promise<Message[]
       })) as Message[];
     }
   } catch (e) {
-    console.warn('[ChatProvider] 加载消息失败:', e);
+    // console.warn('[ChatProvider] 加载消息失败:', e);
   }
   return [];
 }
@@ -245,7 +222,7 @@ async function createSessionViaAPI(title: string, model: string): Promise<Sessio
       } as Session;
     }
   } catch (e) {
-    console.warn('[ChatProvider] 创建会话 API 失败:', e);
+    // console.warn('[ChatProvider] 创建会话 API 失败:', e);
   }
   return null;
 }
@@ -257,7 +234,7 @@ async function deleteSessionViaAPI(id: string): Promise<boolean> {
     const data = await response.json();
     return data.ok === true;
   } catch (e) {
-    console.warn('[ChatProvider] 删除会话 API 失败:', e);
+    // console.warn('[ChatProvider] 删除会话 API 失败:', e);
   }
   return false;
 }
@@ -273,7 +250,7 @@ async function updateSessionTitleViaAPI(id: string, title: string): Promise<bool
     const data = await response.json();
     return data.ok === true;
   } catch (e) {
-    console.warn('[ChatProvider] 更新会话标题 API 失败:', e);
+    // console.warn('[ChatProvider] 更新会话标题 API 失败:', e);
   }
   return false;
 }
@@ -288,7 +265,7 @@ async function fetchFoldersFromAPI(): Promise<Folder[]> {
       return data.folders as Folder[];
     }
   } catch (e) {
-    console.warn('[ChatProvider] 加载文件夹失败:', e);
+    // console.warn('[ChatProvider] 加载文件夹失败:', e);
   }
   return [];
 }
@@ -303,7 +280,7 @@ async function createFolderViaAPI(name: string): Promise<Folder | null> {
     const data = await response.json();
     if (data.folder) return data.folder as Folder;
   } catch (e) {
-    console.warn('[ChatProvider] 创建文件夹失败:', e);
+    // console.warn('[ChatProvider] 创建文件夹失败:', e);
   }
   return null;
 }
@@ -318,7 +295,7 @@ async function updateFolderViaAPI(id: string, name: string): Promise<boolean> {
     const data = await response.json();
     return !!data.folder;
   } catch (e) {
-    console.warn('[ChatProvider] 更新文件夹失败:', e);
+    // console.warn('[ChatProvider] 更新文件夹失败:', e);
   }
   return false;
 }
@@ -329,7 +306,7 @@ async function deleteFolderViaAPI(id: string): Promise<boolean> {
     const data = await response.json();
     return data.ok === true;
   } catch (e) {
-    console.warn('[ChatProvider] 删除文件夹失败:', e);
+    // console.warn('[ChatProvider] 删除文件夹失败:', e);
   }
   return false;
 }
@@ -344,7 +321,7 @@ async function moveSessionViaAPI(sessionId: string, folderId: string | null): Pr
     const data = await response.json();
     return data.ok === true;
   } catch (e) {
-    console.warn('[ChatProvider] 移动会话失败:', e);
+    // console.warn('[ChatProvider] 移动会话失败:', e);
   }
   return false;
 }
@@ -469,7 +446,7 @@ export function ChatProvider({
       }
     })();
     return () => { cancelled = true; };
-  }, [activeSessionId, initialized]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeSessionId, initialized]); // deps intentionally limited
 
   // ===================== 会话变化时同步缓存 =====================
   useEffect(() => {
@@ -491,9 +468,19 @@ export function ChatProvider({
   }, [syncSidebar]);
 
   // ===================== 更新当前会话 — 只更新 activeSession，不清洗 sessions =====================
-  // 流式渲染时每 ~10ms 调用：仅更新 activeSession（不触发 sidebar 重渲染）
+  // 流式渲染时每 ~16ms 调用：仅更新 activeSession（不触发 sidebar 重渲染）
   // 标题自动生成时：将 title 同步到 sessions（触发 sidebar 更新）
   const handleSessionUpdate = useCallback((originalSession: Session) => {
+    // v2.8.0: Streaming fast-path — skip O(n) title scan + O(m) sidebar lookup
+    // During streaming, only the last message's content/metadata changes.
+    // Title is already set (or will be set when streaming ends), sidebar doesn't need updating.
+    const lastMsg = originalSession.messages[originalSession.messages.length - 1];
+    if (lastMsg?.isStreaming) {
+      setActiveSession(originalSession);
+      return;
+    }
+
+    // Non-streaming path: full title check + sidebar sync
     // 2. 自动标题：在所有路径之前执行，确保新会话也能生成标题
     let updatedSession = originalSession;
     const firstUserMsg = updatedSession.messages.find((m) => m.role === 'user');
@@ -539,7 +526,6 @@ export function ChatProvider({
 
     // 4. 流式更新：不触及 sessions → sidebar 不重渲染
     // 5. 流式完成后同步消息到 sessions + 更新 updatedAt + 移到顶部
-    const lastMsg = updatedSession.messages[updatedSession.messages.length - 1];
     if (existingIdx !== -1 && lastMsg && lastMsg.role === 'assistant' && !lastMsg.isStreaming) {
       setSessions((prev) => {
         const existing = prev.find((s) => s.id === updatedSession.id);
@@ -554,6 +540,11 @@ export function ChatProvider({
       });
     }
   }, [syncSidebar]);
+
+  // ===================== 轻量更新会话模型 — 仅改 model 字段，不经过 handleSessionUpdate 全流程 =====================
+  const updateSessionModel = useCallback((model: string) => {
+    setActiveSession((prev) => prev.model === model ? prev : { ...prev, model });
+  }, []);
 
   // ===================== 新建对话 =====================
   const handleNewChat = useCallback(() => {
@@ -675,8 +666,9 @@ export function ChatProvider({
     stopGeneration,
     setActiveSessionId,
     handleSessionUpdate,
+    updateSessionModel,
     handleNewChat,
-  }), [activeSession, activeSessionId, isLoading, sendMessage, stopGeneration, setActiveSessionId, handleSessionUpdate, handleNewChat]);
+  }), [activeSession, activeSessionId, isLoading, sendMessage, stopGeneration, setActiveSessionId, handleSessionUpdate, updateSessionModel, handleNewChat]);
 
   // ChatSidebarContext：仅 title/folder 变更时重新创建（不随流式更新）
   const sidebarValue = useMemo<ChatSidebarValue>(() => ({
@@ -699,40 +691,11 @@ export function ChatProvider({
     defaultModel,
   }), [isInitializing, defaultModel]);
 
-  // 兼容旧的统一 Context（供过渡期使用）
-  const legacyValue = useMemo<LegacyChatContextValue>(() => ({
-    sessions,
-    folders,
-    activeSessionId,
-    session: activeSession,
-    setActiveSessionId,
-    handleSessionUpdate,
-    handleNewChat,
-    handleDeleteSession,
-    togglePinSession,
-    isLoading,
-    isInitializing,
-    sendMessage,
-    stopGeneration,
-    defaultModel,
-    createFolder,
-    updateFolder,
-    deleteFolder,
-    moveSessionToFolder,
-  }), [
-    sessions, folders, activeSessionId, activeSession, setActiveSessionId,
-    handleSessionUpdate, handleNewChat, handleDeleteSession, togglePinSession,
-    isLoading, isInitializing, sendMessage, stopGeneration, defaultModel,
-    createFolder, updateFolder, deleteFolder, moveSessionToFolder,
-  ]);
-
   return (
     <ChatMetaContext.Provider value={metaValue}>
       <ChatSidebarContext.Provider value={sidebarValue}>
         <ChatSessionContext.Provider value={sessionValue}>
-          <LegacyChatContext.Provider value={legacyValue}>
-            {children}
-          </LegacyChatContext.Provider>
+          {children}
         </ChatSessionContext.Provider>
       </ChatSidebarContext.Provider>
     </ChatMetaContext.Provider>
@@ -776,17 +739,3 @@ export function useChatMeta(): ChatMetaValue {
   }
   return ctx;
 }
-
-/**
- * @deprecated 请使用 useChatSession / useChatSidebar / useChatMeta
- * 消费统一 ChatContext 的 Hook（兼容旧代码，过渡期保留）
- */
-export function useChatContext(): LegacyChatContextValue {
-  const ctx = useContext(LegacyChatContext);
-  if (!ctx) {
-    throw new Error('useChatContext 必须在 <ChatProvider> 内部使用');
-  }
-  return ctx;
-}
-
-export default LegacyChatContext;
