@@ -1683,9 +1683,13 @@ def main():
         # 2.5 尝试启动 Agent Web 后端和前端服务器
         # 3. 创建 pywebview 窗口，通过 HTTP 加载前端
         api = Api()
+        # v1.5.153: 直接加载 index.html（跳过 splash），诊断白屏问题
+        # frontend_url_splash = frontend_url + 'splash.html'
+        frontend_url_direct = frontend_url + 'index.html'
         window = webview.create_window(
             title=' ',  # 标题设为空字符串，避免标题栏显示软件名称
-            url=frontend_url,       # HTTP 协议（127.0.0.1:9988），彻底解决 WKWebView ES Module 问题
+            # url=frontend_url_splash,  # 暂时跳过 splash，直接加载 index.html
+            url=frontend_url_direct,
             width=WIDTH,
             height=HEIGHT,
             min_size=MIN_SIZE,
@@ -1695,11 +1699,13 @@ def main():
             frameless=False,  # False = 保留系统标题栏和红黄绿按钮（100% 可靠）
             easy_drag=False,  # v1.5.73: 关闭全局拖拽，仅通过 CSS WebkitAppRegion:drag 拖拽条移动窗口，释放内容区文本选择
         )
+        log(f"[Main] 已跳过 splash 动画，直接加载: {frontend_url_direct}")
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
         # 尽早应用红黄绿按钮偏移（在 splash 动画 6.3s 期间完成，避免跳转到主页时抖动）
         # NSWindow 需要短暂时间初始化标准按钮，使用重试线程在 1.5s 内完成
+        log(f"[Main] COCOA_AVAILABLE = {COCOA_AVAILABLE}")
         if COCOA_AVAILABLE:
             def _apply_traffic_lights_early(win):
                 config = load_config()
