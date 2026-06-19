@@ -10,6 +10,7 @@
 ## 关键约定
 - TypeScript 严格模式，tsc --noEmit 通过才可提交
 - 构建脚本: `bash scripts/build-dmg-pywebview.sh`（含自动 bump version + GitHub Release）
+- 默认行为: 每次打包自动 bump 版本号（不使用 `--no-bump`），确保版本号递增
 - 构建依赖: Python 3.14.3 环境需安装 Pillow + pywebview + pyobjc-framework-Cocoa（PyInstaller PNG→ICNS + webview 模块打包），`pip install Pillow pywebview pyobjc-framework-Cocoa`
 - CI 构建: `bash scripts/build-dmg-pywebview.sh --ci --no-bump`（跳过前端构建和 Release，由 workflow 处理）
 - `.npmrc`: `legacy-peer-deps=true`，所有 npm 命令统一生效

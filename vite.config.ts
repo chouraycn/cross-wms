@@ -86,9 +86,11 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 700,
     // WKWebView 兼容：强制转换 node_modules 中的 CommonJS 包为 ESM
     // 防止 Cannot set properties of undefined (setting 'exports') 错误
+    // 关键：strictRequires: 'auto' 确保动态 require() 也被正确转换
     commonjsOptions: {
       include: [/node_modules/],
       transformMixedEsModules: true,
+      strictRequires: 'auto', // 强制转换所有 require() 调用（含动态拼接）
     },
     rollupOptions: {
       input: {

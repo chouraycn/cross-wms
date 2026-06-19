@@ -91,12 +91,17 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
     try:
         # 通过 NSApp.windows() 查找我们的窗口
         target_window = None
-        for w in NSApp.windows():
+        all_windows = NSApp.windows()
+        print(f"[TrafficLight] 找到 {len(all_windows)} 个窗口")
+        for w in all_windows:
             try:
-                if w.isVisible() and w.title() == APP_NAME:
+                title = w.title()
+                is_visible = w.isVisible()
+                print(f"[TrafficLight]   窗口: title='{title}', visible={is_visible}")
+                if is_visible and title == APP_NAME:
                     target_window = w
                     break
-            except Exception:
+            except Exception as e:
                 continue
 
         if target_window is None:
@@ -1607,27 +1612,33 @@ def main():
             resizable=True,
             text_select=True,
             js_api=api,
-            frameless=True,  # 无系统标题栏，使用 CSS 避让红黄绿按钮
+            frameless=True,  # 方案A：无系统标题栏，前端通过 CSS 避让红黄绿按钮
             easy_drag=False,  # v1.5.73: 关闭全局拖拽，仅通过 CSS WebkitAppRegion:drag 拖拽条移动窗口，释放内容区文本选择
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
-        # 尽早应用红黄绿按钮偏移（在 splash 动画 6.3s 期间完成，避免跳转到主页时抖动）
-        # NSWindow 需要短暂时间初始化标准按钮，使用重试线程在 1.5s 内完成
+        # 方案A：frameless=True + 红黄绿按钮偏移
+        # 通过 Cocoa API 平移红黄绿按钮位置，避免被 web 内容遮挡
         if COCOA_AVAILABLE:
-            def _apply_traffic_lights_early(win):
-                config = load_config()
-                offset_x = config.get('traffic_light_offset_x', 5)
-                offset_y = config.get('traffic_light_offset_y', 5)
-                for attempt in range(5):
-                    time.sleep(0.3)
-                    if apply_traffic_light_offset(win, offset_x, offset_y):
-                        log(f"[TrafficLight] ✅ 启动时偏移已应用 (尝试 {attempt + 1} 次, offset={offset_x},{offset_y})")
-                        return
-                    log(f"[TrafficLight] ⏳ 重试 {attempt + 1}/5...")
-                log("[TrafficLight] ⚠️  启动时偏移应用失败，将回退到前端调用")
-            threading.Thread(target=_apply_traffic_lights_early, args=(window,), daemon=True).start()
+            config = load_config()
+            offset_x = config.get('traffic_light_offset_x', 5)
+            offset_y = config.get('traffic_light_offset_y', 5)
+
+            def _offset_traffic_lights():
+                """延迟应用红黄绿按钮偏移（等待窗口完全创建）"""
+                max_retries = 50  # 最多等待 5 秒（50 * 0.1s）
+                for i in range(max_retries):
+                    try:
+                        if apply_traffic_light_offset(window, offset_x, offset_y):
+                            log(f"[TrafficLight] ✅ 红黄绿按钮偏移成功 (offset: {offset_x}, {offset_y})")
+                            return
+                    except Exception as e:
+                        pass
+                    time.sleep(0.1)
+                log(f"[TrafficLight] ⚠️ 红黄绿按钮偏移失败（窗口未就绪？）")
+
+            threading.Thread(target=_offset_traffic_lights, daemon=True).start()
 
         log("[Main] pywebview 窗口已创建，启动事件循环...")
 

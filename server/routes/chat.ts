@@ -4,11 +4,11 @@ import path from 'path';
 import { promises as fsp } from 'fs';
 import os from 'os';
 import { EventEmitter } from 'events';
-import { createRequire } from 'module';
 // 动态 require（用于可选依赖 pdf-parse/mammoth/xlsx）
-// tsx 运行时为 ESM 需要 import.meta.url；tsc 编译目标为 CJS 时报 TS1343
-// @ts-expect-error TS1343: import.meta not in CJS target, needed at runtime
-const require = createRequire(import.meta.url);
+// CJS 环境（tsc 编译后）直接用 require()；ESM 环境（tsx 运行时）需要 createRequire
+// tsc 编译目标为 "commonjs"，编译后 import/createRequire 会被转换成普通 require()
+// 为了通过 TypeScript 类型检查，声明 require 函数（CJS 环境全局可用）
+declare function require(id: string): any;
 import { callAIModel, AIAPIError } from '../aiClient.js';
 import type { MessageContent, ModelCallConfig } from '../aiClient.js';
 import { executeToolLoop, getToolRiskLevel } from '../engine/toolExecutor.js';
