@@ -65,35 +65,62 @@ let initError: string = '';
 // ===================== 模型下载 =====================
 
 /**
- * 下载单个文件到本地
+ * 下载单个文件到本地（带超时和重试）
  */
-function downloadFile(url: string, dest: string): Promise<void> {
+function downloadFile(url: string, dest: string, retries = 2, timeoutMs = 30000): Promise<void> {
   return new Promise((resolve, reject) => {
-    const file = writeFileSync; // 占位，实际用下面的流式写入
-    const chunks: Buffer[] = [];
+    const attempt = (remaining: number): void => {
+      const chunks: Buffer[] = [];
+      let timedOut = false;
 
-    https.get(url, (response) => {
-      // 处理重定向
-      if (response.statusCode === 302 && response.headers.location) {
-        downloadFile(response.headers.location, dest).then(resolve).catch(reject);
-        return;
-      }
-      if (response.statusCode !== 200) {
-        reject(new Error(`下载失败: ${response.statusCode}`));
-        return;
-      }
+      const req = https.get(url, (response) => {
+        // 处理重定向
+        if (response.statusCode === 302 && response.headers.location) {
+          downloadFile(response.headers.location, dest, 0, timeoutMs).then(resolve).catch(reject);
+          return;
+        }
+        if (response.statusCode !== 200) {
+          reject(new Error(`下载失败: ${response.statusCode}`));
+          return;
+        }
 
-      response.on('data', (chunk: Buffer) => chunks.push(chunk));
-      response.on('end', () => {
-        try {
-          writeFileSync(dest, Buffer.concat(chunks));
-          resolve();
-        } catch (e) {
-          reject(e);
+        response.on('data', (chunk: Buffer) => chunks.push(chunk));
+        response.on('end', () => {
+          if (timedOut) return;
+          try {
+            writeFileSync(dest, Buffer.concat(chunks));
+            resolve();
+          } catch (e) {
+            reject(e);
+          }
+        });
+        response.on('error', reject);
+      });
+
+      // 超时控制
+      req.setTimeout(timeoutMs, () => {
+        timedOut = true;
+        req.destroy();
+        if (remaining > 0) {
+          logger.debug(`[OnnxEmbedding] 下载超时，剩余重试 ${remaining} 次...`);
+          attempt(remaining - 1);
+        } else {
+          reject(new Error(`下载超时 (${timeoutMs}ms)，已重试 ${retries} 次: ${url}`));
         }
       });
-      response.on('error', reject);
-    }).on('error', reject);
+
+      req.on('error', (err) => {
+        if (timedOut) return;
+        if (remaining > 0) {
+          logger.debug(`[OnnxEmbedding] 下载失败，剩余重试 ${remaining} 次: ${err.message}`);
+          attempt(remaining - 1);
+        } else {
+          reject(err);
+        }
+      });
+    };
+
+    attempt(retries);
   });
 }
 

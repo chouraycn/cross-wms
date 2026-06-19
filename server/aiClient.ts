@@ -236,8 +236,12 @@ export async function callOpenAICompatibleStream(
 
   // v1.5.173: 判断是否支持 reasoning + 模型分类
   // 分类决定了发送哪些参数（不同 API 的 thinking 启用方式不同）
-  const supportsReasoning = modelCapabilities?.includes('reasoning') ||
-    /deepseek|reasoner|o3|o4|r1|moonshot|kimi|k2[.-]|qwq|qwen3/i.test(modelId);
+  // Bugfix: 本地模型（Ollama/LM Studio/vLLM 等）不支持 reasoning_effort，跳过
+  const isLocalEndpoint = /localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.|:11434/.test(apiEndpoint);
+  const supportsReasoning = !isLocalEndpoint && (
+    modelCapabilities?.includes('reasoning') ||
+    /deepseek|reasoner|o3|o4|r1|moonshot|kimi|k2[.-]|qwq|qwen3/i.test(modelId)
+  );
 
   // 模型分类（用于参数差异化处理）
   const isDeepSeekModel = /deepseek|reasoner|r1/i.test(modelId);
@@ -303,8 +307,9 @@ export async function callOpenAICompatibleStream(
       `${isOpenAIReasoner ? ' [OpenAI:reasoning_effort]' : ''}`);
   } else if (reasoningEffort === 'off') {
     logger.debug(`[AIClient] reasoning_effort=off，跳过 thinking 参数 (model=${modelId})`);
-  } else if (!supportsReasoning && reasoningEffort && reasoningEffort !== 'off') {
+  } else if (!supportsReasoning && !isLocalEndpoint && reasoningEffort && reasoningEffort !== 'off') {
     // 用户请求了 reasoning 但模型不在支持列表中 — 发送尝试（某些新模型可能已支持）
+    // Bugfix: 本地模型不发送 reasoning_effort
     body.reasoning_effort = normalizedEffort || reasoningEffort;
     logger.debug(`[AIClient] 模型 ${modelId} 不在已知支持列表中，仍尝试发送 reasoning_effort=${reasoningEffort}`);
   }
