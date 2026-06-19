@@ -5,8 +5,10 @@ import { promises as fsp } from 'fs';
 import os from 'os';
 import { EventEmitter } from 'events';
 import { createRequire } from 'module';
-// 动态 require（用于可选依赖 pdf-parse/mammoth/xlsx）— CJS 兼容
-const require = createRequire(__filename);
+// 动态 require（用于可选依赖 pdf-parse/mammoth/xlsx）
+// tsx 运行时为 ESM 需要 import.meta.url；tsc 编译目标为 CJS 时报 TS1343
+// @ts-expect-error TS1343: import.meta not in CJS target, needed at runtime
+const require = createRequire(import.meta.url);
 import { callAIModel, AIAPIError } from '../aiClient.js';
 import type { MessageContent, ModelCallConfig } from '../aiClient.js';
 import { executeToolLoop, getToolRiskLevel } from '../engine/toolExecutor.js';
