@@ -1632,7 +1632,7 @@ def main():
         log("[Main] pywebview 窗口已创建，启动事件循环...")
 
         # 4. 启动事件循环（阻塞直到窗口关闭）
-        webview.start(debug=False, private_mode=False)  # debug=False 关闭 Safari Web Inspector（生产环境不显示调试窗口）
+        webview.start(debug=True, private_mode=False)  # debug=True 启用 Safari Web Inspector（WKWebView 远程调试）
 
         log("[Main] CDF Know Clow 窗口已关闭，退出")
     except FileNotFoundError as e:
