@@ -12,6 +12,7 @@ import os from 'os';
 import { extractAndSaveApiKey, injectApiKeys, deleteAllApiKeys } from './keychainStore.js';
 import { clearRotationState } from './keyRotator.js';
 import type { ModelProvider, ModelCapability, ModelConfig } from '../shared/types/models.js';
+import { logger } from './logger.js';
 
 // 重新导出共享类型，供其他 server 模块使用
 export type { ModelProvider, ModelCapability, ModelConfig };
@@ -58,13 +59,13 @@ function startFileWatcher(): void {
   try {
     fileWatcher = fs.watch(MODELS_FILE, (eventType) => {
       if (eventType === 'change') {
-        console.log('[modelsStore] models.json 发生变化，清除缓存');
+        logger.info('[modelsStore] models.json 发生变化，清除缓存');
         cachedModelsFile = null;
         cacheTimestamp = 0;
       }
     });
   } catch (e) {
-    console.warn('[modelsStore] 无法监听 models.json:', e);
+    logger.warn('[modelsStore] 无法监听 models.json:', e);
   }
 }
 
@@ -98,7 +99,8 @@ const BUILTIN_MODELS: ModelConfig[] = [
     isDefault: false,
     description: 'DeepSeek V4 Pro，支持 1M 上下文、工具调用、推理（API 不支持 image_url 格式）',
     contextWindow: 1_000_000,
-    maxTokens: 384_000,
+    // v1.5.131: maxTokens 从 384K 降到 8192（实际 API max_tokens 上限）
+    maxTokens: 8_192,
     capabilities: ['reasoning', 'general'],
   },
   {
@@ -110,7 +112,8 @@ const BUILTIN_MODELS: ModelConfig[] = [
     isDefault: false,
     description: 'DeepSeek V4 Flash，1M 上下文、工具调用，高性价比',
     contextWindow: 1_000_000,
-    maxTokens: 384_000,
+    // v1.5.131: maxTokens 从 384K 降到 8192
+    maxTokens: 8_192,
     capabilities: ['costEffective', 'fast', 'general'],
   },
   // === Ollama (本地) ===
@@ -148,9 +151,9 @@ function migrateFromOldPath(): void {
     ensureDir();
     fs.writeFileSync(MODELS_FILE, raw, 'utf-8');
     fs.unlinkSync(OLD_MODELS_FILE);
-    console.log('[modelsStore] Migrated models.json from ~/.cdf-know-clow/ to ~/.cdf-know-clow/ai-models/');
+    logger.info('[modelsStore] Migrated models.json from ~/.cdf-know-clow/ to ~/.cdf-know-clow/ai-models/');
   } catch (e) {
-    console.error('[modelsStore] Migration from old path failed:', e);
+    logger.error('[modelsStore] Migration from old path failed:', e);
   }
 }
 
@@ -163,13 +166,13 @@ export async function readModelsFile(): Promise<ModelsFile | null> {
     const raw = await readFile(MODELS_FILE, 'utf-8');
     const data = JSON.parse(raw) as ModelsFile;
     if (!data || !Array.isArray(data.models)) {
-      console.error('[modelsStore] models.json 格式无效');
+      logger.error('[modelsStore] models.json 格式无效');
       return null;
     }
     return data;
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    console.error('[modelsStore] models.json 解析失败，将使用默认配置:', e);
+    logger.error('[modelsStore] models.json 解析失败，将使用默认配置:', e);
     return null;
   }
 }
@@ -186,7 +189,7 @@ export async function writeModelsFile(data: ModelsFile): Promise<void> {
         invalidateCache();
         resolve();
       } catch (e) {
-        console.error('[modelsStore] 写入 models.json 失败:', e);
+        logger.error('[modelsStore] 写入 models.json 失败:', e);
         reject(e);
       }
     });
@@ -223,7 +226,7 @@ function migrateProviderData(models: ModelConfig[]): { models: ModelConfig[]; ch
   }
 
   if (changed) {
-    console.log('[modelsStore] Migrated provider data for built-in models');
+    logger.info('[modelsStore] Migrated provider data for built-in models');
   }
   return { models: migrated, changed };
 }
@@ -243,8 +246,18 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
     if (saved && saved.models.length > 0) {
       // 自动迁移旧 provider 数据
       const { models: migrated, changed } = migrateProviderData(saved.models);
-      if (changed) {
-        saved = { ...saved, models: migrated };
+      // v1.5.131: 迁移 — maxTokens > 8192 的模型自动降到 8192
+      // 旧版 DeepSeek 配置 maxTokens=384000 导致截断逻辑浪费 384K 输入空间
+      let maxTokensChanged = false;
+      const migrated2 = migrated.map((m) => {
+        if (m.maxTokens && m.maxTokens > 8192) {
+          maxTokensChanged = true;
+          return { ...m, maxTokens: 8192 };
+        }
+        return m;
+      });
+      if (changed || maxTokensChanged) {
+        saved = { ...saved, models: migrated2 };
         await writeModelsFile(saved);
       }
       // RC-2: 注入 Keychain 中的 API Key — 单独 try/catch，防止 execSync 抛出非 Error 对象导致整体加载失败
@@ -252,7 +265,7 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
       try {
         saved.models = injectApiKeys(saved.models);
       } catch (keychainErr) {
-        console.warn('[modelsStore] Keychain API Key 注入失败（可能 Keychain 不可用），保持已有配置:', String(keychainErr));
+        logger.warn('[modelsStore] Keychain API Key 注入失败（可能 Keychain 不可用），保持已有配置:', String(keychainErr));
         keychainFailed = true;
         // Keychain 不可用时保留已有配置，不强制禁用模型
       }
@@ -286,7 +299,7 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
       return saved;
     }
   } catch (e) {
-    console.error('[modelsStore] 加载模型配置失败:', e);
+    logger.error('[modelsStore] 加载模型配置失败:', e);
   }
 
   // 兜底：返回内置模型，并立即写入磁盘（确保首次启动时内置模型被持久化）
@@ -302,7 +315,7 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
   };
   // 立即持久化到磁盘，避免每次启动都走内存兜底
   writeModelsFile(fallback).catch((e) => {
-    console.error('[modelsStore] 写入内置模型兜底配置失败:', e);
+    logger.error('[modelsStore] 写入内置模型兜底配置失败:', e);
   });
   cachedModelsFile = fallback;
   cacheTimestamp = Date.now();
@@ -313,7 +326,7 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
 export async function saveModelsConfig(models: ModelConfig[], defaultModelId: string): Promise<ModelsFile> {
   // 验证 defaultModelId 是否存在于 models 中
   if (defaultModelId && models.length > 0 && !models.some(m => m.id === defaultModelId)) {
-    console.warn(`[modelsStore] defaultModelId "${defaultModelId}" 不存在于 models 中，将使用第一个已启用模型`);
+    logger.warn(`[modelsStore] defaultModelId "${defaultModelId}" 不存在于 models 中，将使用第一个已启用模型`);
     const firstEnabled = models.find(m => m.enabled);
     defaultModelId = firstEnabled ? firstEnabled.id : models[0].id;
   }
@@ -375,14 +388,14 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
           name: 'DeepSeek V4 Pro',
           capabilities: ['reasoning', 'general'],
           contextWindow: 1_000_000,
-          maxTokens: 384_000,
+          maxTokens: 8_192,
           description: 'DeepSeek V4 Pro，1M 上下文、工具调用、推理（API 不支持 image_url 格式）',
         },
         'deepseek-v4-flash': {
           name: 'DeepSeek V4 Flash',
           capabilities: ['costEffective', 'fast', 'general'],
           contextWindow: 1_000_000,
-          maxTokens: 384_000,
+          maxTokens: 8_192,
           description: 'DeepSeek V4 Flash，1M 上下文、工具调用，高性价比',
         },
       };
@@ -1133,7 +1146,7 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
           name: 'DeepSeek V4 Pro (OpenRouter)',
           capabilities: ['reasoning', 'general'],
           contextWindow: 1_000_000,
-          maxTokens: 384_000,
+          maxTokens: 8_192,
           description: '通过 OpenRouter 路由的 DeepSeek V4 Pro',
         },
       };
@@ -1260,7 +1273,7 @@ async function fetchModelsFromProvider(
     }
     return models;
   } catch (e) {
-    console.log(`[ModelDiscovery] 从 ${discovery.provider} 拉取模型列表失败:`, (e as Error).message);
+    logger.info(`[ModelDiscovery] 从 ${discovery.provider} 拉取模型列表失败:`, (e as Error).message);
     return [];
   }
 }
@@ -1299,7 +1312,7 @@ export async function syncModelsFromApi(): Promise<void> {
         if (!existingIds.has(model.id)) {
           hasNewModels = true;
           newModels.push(model);
-          console.log(`[ModelDiscovery] 发现新模型: ${model.id} (${model.name})`);
+          logger.info(`[ModelDiscovery] 发现新模型: ${model.id} (${model.name})`);
         } else {
           // 已存在的模型：更新 capabilities/contextWindow 等元数据
           const existing = config.models.find(m => m.id === model.id);
@@ -1341,11 +1354,11 @@ export async function syncModelsFromApi(): Promise<void> {
         return rest;
       });
       await writeModelsFile({ ...config, models: sanitized });
-      console.log(`[ModelDiscovery] 已合并 ${newModels.length} 个新模型到本地配置`);
+      logger.info(`[ModelDiscovery] 已合并 ${newModels.length} 个新模型到本地配置`);
     } else {
-      console.log('[ModelDiscovery] 模型列表已是最新，无需更新');
+      logger.info('[ModelDiscovery] 模型列表已是最新，无需更新');
     }
   } catch (e) {
-    console.error('[ModelDiscovery] 自动发现失败（不影响正常使用）:', e);
+    logger.error('[ModelDiscovery] 自动发现失败（不影响正常使用）:', e);
   }
 }

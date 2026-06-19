@@ -247,7 +247,8 @@ const SkillMdImportPanel: React.FC<{
       const result: SkillConflictCheckResponse = await fetchSkillConflictCheck(
         skill.name,
         undefined,
-        [skill.dirName, 'workbuddy']
+        [skill.dirName, 'workbuddy'],
+        skill.description,
       );
       if (result.conflicts.length > 0) {
         // 有冲突：暂存，弹窗让用户确认
@@ -261,7 +262,7 @@ const SkillMdImportPanel: React.FC<{
       }
     } catch {
       // 冲突检查 API 失败时不阻塞导入
-      console.warn('[SkillMdImportPanel] Conflict check failed, proceeding with import');
+      // console.warn('[SkillMdImportPanel] Conflict check failed, proceeding with import');
       await onImport(skill);
       setImported((prev) => new Set(prev).add(skill.dirName));
     } finally {
@@ -501,7 +502,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : '未知错误';
-      console.error('安全审查失败', e);
+      // console.error('安全审查失败', e);
       showToast(`「${skillName}」安全审查失败：${msg}`, 'error');
     }
   };
@@ -572,7 +573,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       try {
         buf = await file.arrayBuffer();
       } catch (readErr) {
-        console.error('[AddSkillDialog] Failed to read file:', readErr);
+        // console.error('[AddSkillDialog] Failed to read file:', readErr);
         setError(`读取文件失败：${readErr instanceof Error ? readErr.message : '未知错误'}`);
         setLoading(false);
         return;
@@ -583,7 +584,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       try {
         parsed = parseSkillZip(buf);
       } catch (zipErr) {
-        console.warn('[AddSkillDialog] ZIP parse failed, using fallback:', zipErr);
+        // console.warn('[AddSkillDialog] ZIP parse failed, using fallback:', zipErr);
       }
 
       let name: string;
@@ -603,7 +604,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       // Step 3: T04 冲突检测 — 在导入前检查
       let conflictChecked = false;
       try {
-        const conflictResult = await fetchSkillConflictCheck(name, undefined, ['zip-import']);
+        const conflictResult = await fetchSkillConflictCheck(name, undefined, ['zip-import'], desc);
         if (conflictResult.conflicts.length > 0) {
           // 有冲突：暂存安装函数，弹窗确认
           const doInstall = async () => {
@@ -620,7 +621,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
               detail: desc,
               tags: ['zip-import'],
             });
-            console.log('[AddSkillDialog] Skill installed successfully:', newSkill.id);
+            // console.log('[AddSkillDialog] Skill installed successfully:', newSkill.id);
             // T04: 触发安全审查
             await triggerAuditAfterImport(newSkill.id, newSkill.name);
             onAdded(newSkill.name);
@@ -636,14 +637,14 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         conflictChecked = true;
       } catch {
         // 冲突检查 API 失败时不阻塞安装
-        console.warn('[AddSkillDialog] Conflict check failed, proceeding with install');
+        // console.warn('[AddSkillDialog] Conflict check failed, proceeding with install');
         conflictChecked = true;
       }
 
       if (!conflictChecked) return;
 
       // Step 4: 无冲突，直接调用 API 创建技能
-      console.log('[AddSkillDialog] Installing skill:', name, 'hasPromptTemplate:', !!promptTemplate);
+      // console.log('[AddSkillDialog] Installing skill:', name, 'hasPromptTemplate:', !!promptTemplate);
       const newSkill = await addSkill({
         name,
         desc,
@@ -657,7 +658,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
         detail: desc,
         tags: ['zip-import'],
       });
-      console.log('[AddSkillDialog] Skill installed successfully:', newSkill.id);
+      // console.log('[AddSkillDialog] Skill installed successfully:', newSkill.id);
       onAdded(newSkill.name);
       // T04: 触发安全审查
       await triggerAuditAfterImport(newSkill.id, newSkill.name);
@@ -665,7 +666,7 @@ const AddSkillDialog: React.FC<AddSkillDialogProps> = ({ open, onClose, onAdded 
       onClose();
     } catch (err) {
       const msg = err instanceof Error ? err.message : '未知错误';
-      console.error('[AddSkillDialog] Install failed:', err);
+      // console.error('[AddSkillDialog] Install failed:', err);
       setError(`安装失败：${msg}`);
     } finally {
       setLoading(false);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Box, Typography, IconButton, Tooltip, useTheme, Collapse,
@@ -13,7 +13,7 @@ import { getAllSkills } from '../../stores/skillStore';
 import type { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
 import { getCategoryLabel, getCategoryGradient } from '../../constants/skillCategories';
-import { getGrayScale } from '../../constants/theme';
+import { getGrayScale, CHAT_MAX_WIDTH } from '../../constants/theme';
 import { useToast } from '../../contexts/ToastContext';
 import { useChatSession } from '../../contexts/ChatContext';
 
@@ -38,7 +38,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
   const isPage = variant === 'page';
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const gs = getGrayScale(isDark);
+  const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const { showToast } = useToast();
 
   // 从 ChatSessionContext 获取活跃会话状态
@@ -46,6 +46,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
     session,
     setActiveSessionId,
     handleSessionUpdate,
+    updateSessionModel,
     handleNewChat,
     isLoading,
     sendMessage,
@@ -54,6 +55,11 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // sessionRef: 让回调访问最新 session 而不将其列为 useCallback 依赖
+  // 避免 session 每次流式更新变更引用导致回调重建 → BotMessageContent memo 失效
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
 
   // 从 URL 参数解析技能（仅 page 模式）
   const [initialSkill, setInitialSkill] = useState<Skill | null>(() => {
@@ -131,41 +137,86 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
 
   /** 重新生成：移除当前 assistant 消息，重新发送上一条用户消息 */
   const handleRegenerate = useCallback((msg: Message) => {
-    const msgIndex = session.messages.findIndex((m) => m.id === msg.id);
+    const currentSession = sessionRef.current;
+    const msgIndex = currentSession.messages.findIndex((m) => m.id === msg.id);
     if (msgIndex === -1) return;
 
     let userContent: string | null = null;
     let userAttachments: Message['attachments'] = undefined;
     let userModel: string | undefined;
     for (let i = msgIndex - 1; i >= 0; i--) {
-      if (session.messages[i].role === 'user') {
-        userContent = session.messages[i].content;
+      if (currentSession.messages[i].role === 'user') {
+        userContent = currentSession.messages[i].content;
         // v1.5.85: 重新生成时保留原始附件和模型
-        userAttachments = session.messages[i].attachments;
-        userModel = session.messages[i].model;
+        userAttachments = currentSession.messages[i].attachments;
+        userModel = currentSession.messages[i].model;
         break;
       }
     }
     if (!userContent) return;
 
-    const trimmedMessages = session.messages.slice(0, msgIndex);
-    const updatedSession = { ...session, messages: trimmedMessages };
+    const trimmedMessages = currentSession.messages.slice(0, msgIndex);
+    const updatedSession = { ...currentSession, messages: trimmedMessages };
     handleSessionUpdate(updatedSession);
 
     setTimeout(() => {
       sendMessage(userContent!, {
         attachments: userAttachments,
-        model: userModel || session.model,
+        model: userModel || currentSession.model,
       });
     }, 100);
-  }, [session, handleSessionUpdate, sendMessage]);
+  }, [handleSessionUpdate, sendMessage]);
+
+  /** 删除消息 */
+  const handleDelete = useCallback((msgId: string) => {
+    const currentSession = sessionRef.current;
+    const msgIndex = currentSession.messages.findIndex((m) => m.id === msgId);
+    if (msgIndex === -1) return;
+
+    const updatedMessages = currentSession.messages.filter((m) => m.id !== msgId);
+    handleSessionUpdate({ ...currentSession, messages: updatedMessages });
+    showToast('消息已删除', 'success', 1500);
+  }, [handleSessionUpdate, showToast]);
+
+  /** 编辑消息：将内容填回输入框并发送 */
+  const handleEdit = useCallback((msg: Message) => {
+    // v1.5.135: 编辑消息 - 将内容填回输入框
+    // 对于用户消息，直接填回输入框
+    // 对于助手消息，复制内容到剪贴板并提示
+    if (msg.role === 'user') {
+      // TODO: 需要通过 ref 或 context 来设置输入框内容
+      // 当前简化实现：复制到剪贴板
+      navigator.clipboard.writeText(msg.content).then(() => {
+        showToast('消息内容已复制，请粘贴到输入框', 'info', 2000);
+      }).catch(() => {
+        showToast('消息内容：' + msg.content.substring(0, 50) + '...', 'info', 3000);
+      });
+    } else {
+      navigator.clipboard.writeText(msg.content).then(() => {
+        showToast('AI 回复已复制', 'info', 2000);
+      }).catch(() => {
+        showToast('AI 回复内容已显示在通知中', 'info', 3000);
+      });
+    }
+  }, [showToast]);
+
+  /** 引用消息：在输入框中添加引用标记 */
+  const handleQuote = useCallback((msg: Message) => {
+    // v1.5.135: 引用消息 - 简化实现：复制内容并提示
+    const quoteText = `> ${msg.role === 'user' ? '用户' : 'AI'}：${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`;
+    navigator.clipboard.writeText(quoteText).then(() => {
+      showToast('引用内容已复制，请粘贴到输入框', 'info', 2000);
+    }).catch(() => {
+      showToast('引用功能开发中', 'info', 2000);
+    });
+  }, [showToast]);
 
   /** 补货确认成功回调 */
   const handleConfirmReplenishment = useCallback(async (suggestionId: number) => {
     try {
       showToast(`补货建议 #${suggestionId} 已确认`, 'success', 2000);
     } catch (e) {
-      console.error('[ChatContainer] 确认补货回调异常:', e);
+      // console.error('[ChatContainer] 确认补货回调异常:', e);
       throw new Error(
         e instanceof Error ? e.message : '确认补货建议失败，请重试',
       );
@@ -179,29 +230,107 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reqId, approved, alwaysAllow, toolCategory }),
-    }).catch((e) => console.error('[ChatContainer] 发送权限响应失败:', e));
+    }).catch((_e) => { /* silent: permission response failure */ });
 
     // 更新本地消息状态，标记为已处理
-    const updatedMessages = session.messages.map((msg) => {
+    const currentSession = sessionRef.current;
+    const updatedMessages = currentSession.messages.map((msg) => {
       if (msg.permissionRequest && msg.permissionRequest.reqId === reqId) {
         return { ...msg, permissionRequest: { ...msg.permissionRequest, approved } };
       }
       return msg;
     });
-    handleSessionUpdate({ ...session, messages: updatedMessages });
-  }, [session, handleSessionUpdate]);
+    handleSessionUpdate({ ...currentSession, messages: updatedMessages });
+  }, [handleSessionUpdate]);
 
-  // v1.9.5: pendingPermissions Map 化，key=reqId，支持多并发权限请求
+  // 权限指纹 — 仅在权限数据变化时改变，流式更新 content 不影响
+  // 格式: "reqId1:?,reqId2:1" (? = pending, 1 = approved, 0 = denied)
+  // v2.8.0: O(1) during streaming — cache non-streaming key, only check last message
+  const nonStreamingPermKeyRef = useRef('');
+  const permissionKey = useMemo(() => {
+    const msgs = session.messages;
+    const lastMsg = msgs[msgs.length - 1];
+
+    // During streaming: only check last message (non-streaming messages don't change)
+    if (lastMsg?.isStreaming) {
+      const pr = lastMsg.permissionRequest;
+      return pr
+        ? nonStreamingPermKeyRef.current + pr.reqId + ':' + (pr.approved === undefined ? '?' : pr.approved ? '1' : '0') + ','
+        : nonStreamingPermKeyRef.current;
+    }
+
+    // Full scan when not streaming: cache result for next streaming phase
+    let key = '';
+    for (const msg of msgs) {
+      const pr = msg.permissionRequest;
+      if (pr) {
+        key += pr.reqId + ':' + (pr.approved === undefined ? '?' : pr.approved ? '1' : '0') + ',';
+      }
+    }
+    nonStreamingPermKeyRef.current = key;
+    return key;
+  }, [session.messages]);
+
+  // v2.8.0: pendingPermissions — O(1) during streaming, O(n) when not streaming
+  // 流式期间使用 ref 缓存 + 仅检查 last message；非流式全量扫描并更新缓存
+  const cachedPendingPermsRef = useRef<Map<string, NonNullable<Message['permissionRequest']>>>(new Map());
+  const lastMsgIdRef = useRef<string | null>(null);
+  const lastMsgPendingReqIdRef = useRef<string | null>(null);
+
   const pendingPermissions = useMemo(() => {
+    const msgs = session.messages;
+    const lastMsg = msgs[msgs.length - 1];
+    const lastMsgId = lastMsg?.id ?? null;
+
+    // During streaming: O(1) — cached map + last message's current permission state
+    if (lastMsg?.isStreaming) {
+      const pr = lastMsg.permissionRequest;
+      const currentReqId = (pr && pr.approved === undefined) ? pr.reqId : null;
+      const cached = cachedPendingPermsRef.current;
+
+      // Last message changed (new message started streaming) — just add its pending perm
+      if (lastMsgId !== lastMsgIdRef.current) {
+        lastMsgIdRef.current = lastMsgId;
+        lastMsgPendingReqIdRef.current = currentReqId;
+        if (currentReqId && pr) {
+          const map = new Map(cached);
+          map.set(currentReqId, pr);
+          return map;
+        }
+        return cached;
+      }
+
+      // Same last message — check if pending permission state changed
+      if (currentReqId === lastMsgPendingReqIdRef.current) {
+        return cached; // No change — return same reference, pendingRequestsArray skips re-compute
+      }
+
+      // Permission state changed (new reqId, resolved, or cleared) — update map
+      const map = new Map(cached);
+      if (lastMsgPendingReqIdRef.current) {
+        map.delete(lastMsgPendingReqIdRef.current); // Remove old pending entry
+      }
+      if (currentReqId && pr) {
+        map.set(currentReqId, pr); // Add new pending entry
+      }
+      lastMsgPendingReqIdRef.current = currentReqId;
+      return map;
+    }
+
+    // Not streaming: O(n) full scan, cache result for next streaming phase
     const map = new Map<string, NonNullable<Message['permissionRequest']>>();
-    for (const msg of session.messages) {
+    for (const msg of msgs) {
       const pr = msg.permissionRequest;
       if (pr && pr.approved === undefined) {
         map.set(pr.reqId, pr);
       }
     }
+    cachedPendingPermsRef.current = map;
+    lastMsgIdRef.current = lastMsgId;
+    const lastPr = lastMsg?.permissionRequest;
+    lastMsgPendingReqIdRef.current = (lastPr && lastPr.approved === undefined) ? lastPr.reqId : null;
     return map;
-  }, [session.messages]);
+  }, [permissionKey]);
 
   // v2.5.0: 所有 pending 权限请求（批量展示）
   const pendingRequestsArray = useMemo(() => {
@@ -337,6 +466,10 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
                 session={session}
                 copiedId={copiedId}
                 onCopy={handleCopy}
+                onRegenerate={handleRegenerate}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onQuote={handleQuote}
                 onPermissionRespond={handlePermissionRespond}
               />
             </Box>
@@ -344,7 +477,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
 
           {/* 输入框 */}
           <Box sx={{ px: 3, py: 2, flexShrink: 0, borderTop: 'none' }}>
-            <Box sx={{ maxWidth: 960, mx: 'auto', position: 'relative' }}>
+            <Box sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', position: 'relative' }}>
               {/* v2.5.0: 批量权限确认浮动面板 */}
               <ToolPermissionDialog
                 open={pendingRequestsArray.length > 0}
@@ -360,8 +493,8 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
               />
 
               <TopBarChatInput
-                session={session}
-                onSessionUpdate={handleSessionUpdate}
+                isEmpty={session.messages.length === 0}
+                updateSessionModel={updateSessionModel}
                 initialSkill={initialSkill}
                 isLoading={isLoading}
                 sendMessage={sendMessage}
@@ -402,6 +535,9 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
           copiedId={copiedId}
           onCopy={handleCopy}
           onRegenerate={handleRegenerate}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onQuote={handleQuote}
           showRegenerate={true}
           onConfirmReplenishment={handleConfirmReplenishment}
           onPermissionRespond={handlePermissionRespond}
@@ -424,8 +560,8 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
           onDenyAll={handleDenyAll}
         />
         <TopBarChatInput
-          session={session}
-          onSessionUpdate={handleSessionUpdate}
+          isEmpty={session.messages.length === 0}
+          updateSessionModel={updateSessionModel}
           isLoading={isLoading}
           sendMessage={sendMessage}
           stopGeneration={stopGeneration}

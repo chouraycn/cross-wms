@@ -120,6 +120,28 @@ const browserScreenshotDef: ToolDefinition = {
   },
 };
 
+const browserExecuteJsDef: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'browser_execute_js',
+    description: 'Execute JavaScript code on the current browser page. Use this to interact with dynamic SPA content, extract data from rendered pages, scroll to load lazy content, click elements programmatically, or read DOM state. Must call browser_navigate first to open a page.',
+    parameters: {
+      type: 'object',
+      properties: {
+        script: {
+          type: 'string',
+          description: 'JavaScript code to execute on the page. Runs in the page context (has access to document, window, etc.). Must return a value (use `return` statement). Example: "return document.querySelector(\'#content\').innerText"',
+        },
+        returnHtml: {
+          type: 'boolean',
+          description: 'Whether to also return the full page HTML after JS execution (default: false)',
+        },
+      },
+      required: ['script'],
+    },
+  },
+};
+
 // ===================== 工具 Handler 实现 =====================
 
 /**
@@ -236,6 +258,27 @@ async function handleBrowserScreenshot(args: Record<string, unknown>): Promise<s
   });
 }
 
+/**
+ * browser_execute_js handler
+ * v1.5.131: 在当前页面上执行 JavaScript
+ */
+async function handleBrowserExecuteJs(args: Record<string, unknown>): Promise<string> {
+  const { executeJs } = await import('../services/browserHostClient.js');
+  const result = await executeJs({
+    script: String(args.script || ''),
+    returnHtml: args.returnHtml === true,
+  });
+  if (!result.ok) {
+    return JSON.stringify({ error: result.error || 'JS execution failed' });
+  }
+  return JSON.stringify({
+    success: true,
+    result: result.result,
+    url: result.url,
+    ...(result.html ? { htmlLength: result.html.length } : {}),
+  });
+}
+
 // ===================== 注册接口 =====================
 
 /**
@@ -249,6 +292,7 @@ export function getBrowserToolDefinitions(): ToolDefinition[] {
     browserClickDef,
     browserTypeDef,
     browserScreenshotDef,
+    browserExecuteJsDef,
   ];
 }
 
@@ -263,6 +307,7 @@ export function getBrowserToolHandlers(): Map<string, ToolHandler> {
   handlers.set('browser_click', handleBrowserClick);
   handlers.set('browser_type', handleBrowserType);
   handlers.set('browser_screenshot', handleBrowserScreenshot);
+  handlers.set('browser_execute_js', handleBrowserExecuteJs);
   return handlers;
 }
 
@@ -276,4 +321,5 @@ export const BROWSER_TOOL_RISK_LEVELS: Record<string, 'auto' | 'confirm' | 'high
   browser_click: 'confirm',
   browser_type: 'confirm',
   browser_screenshot: 'auto',
+  browser_execute_js: 'confirm',  // v1.5.131: JS 执行可能修改页面，需确认
 };

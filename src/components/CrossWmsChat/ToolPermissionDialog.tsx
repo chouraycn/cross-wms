@@ -9,7 +9,7 @@
  * - 结构化参数展示
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Typography,
   Box,
@@ -263,6 +263,13 @@ const ToolPermissionDialog: React.FC<ToolPermissionDialogProps> = ({
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
   const [alwaysAllow, setAlwaysAllow] = useState(false);
+  // v8.7: 用 transition 替代 @keyframes，WKWebView 兼容
+  const [dialogEntered, setDialogEntered] = useState(false);
+  useEffect(() => {
+    if (!open) { setDialogEntered(false); return; }
+    const raf = requestAnimationFrame(() => setDialogEntered(true));
+    return () => cancelAnimationFrame(raf);
+  }, [open]);
 
   // 计算整体风险等级
   const overallRisk = useMemo(() => {
@@ -294,11 +301,10 @@ const ToolPermissionDialog: React.FC<ToolPermissionDialogProps> = ({
           ? '0 -4px 24px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.05)'
           : '0 -4px 24px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.05)',
         overflow: 'hidden',
-        animation: 'permissionSlideUp 0.25s cubic-bezier(0.4,0,0.2,1)',
-        '@keyframes permissionSlideUp': {
-          from: { opacity: 0, transform: 'translateY(12px)' },
-          to: { opacity: 1, transform: 'translateY(0)' },
-        },
+        // v8.7: 用 transition 替代 @keyframes（WKWebView 兼容）
+        opacity: dialogEntered ? 1 : 0,
+        transform: dialogEntered ? 'translateY(0)' : 'translateY(12px)',
+        transition: 'opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
         maxHeight: '50vh',
         display: 'flex',
         flexDirection: 'column',

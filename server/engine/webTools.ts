@@ -85,15 +85,30 @@ function htmlToMarkdown(html: string): string {
 /**
  * 动态导入 renderContent（Playwright 可能未安装）
  * 返回 null 表示不可用
+ * v1.5.131: 支持 selector / waitUntil / executeJs
  */
-async function tryRenderContent(url: string, selector?: string): Promise<{
+async function tryRenderContent(
+  url: string,
+  options?: {
+    selector?: string;
+    waitUntil?: 'domcontentloaded' | 'networkidle' | 'load';
+    executeJs?: string;
+  },
+): Promise<{
   html: string;
   title: string;
   finalUrl: string;
+  jsResult?: unknown;
 } | null> {
   try {
     const { renderContent } = await import('../services/browserHostClient.js');
-    const result = await renderContent({ url, waitUntil: 'networkidle', selector, timeout: 20000 });
+    const result = await renderContent({
+      url,
+      waitUntil: options?.waitUntil || 'networkidle',
+      selector: options?.selector,
+      timeout: 20000,
+      ...(options?.executeJs ? { executeJs: options.executeJs } : {}),
+    });
     if (result.ok && result.html) {
       return { html: result.html, title: result.title || '', finalUrl: result.url || url };
     }
@@ -234,10 +249,13 @@ export async function handleWebFetch(args: Record<string, unknown>): Promise<str
 
   const maxLength = Math.min(Number(args.maxLength) || 80000, 200000);
   const renderJs = args.renderJs === true;
+  const selector = args.selector ? String(args.selector) : undefined;
+  const waitUntil = (args.waitUntil as 'domcontentloaded' | 'networkidle' | 'load') || undefined;
+  const executeJs = args.executeJs ? String(args.executeJs) : undefined;
 
   // ---- JS 渲染模式 ----
   if (renderJs) {
-    const rendered = await tryRenderContent(rawUrl);
+    const rendered = await tryRenderContent(rawUrl, { selector, waitUntil, executeJs });
     if (rendered) {
       const markdown = htmlToMarkdown(rendered.html);
 

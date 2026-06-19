@@ -6,18 +6,14 @@
  * - assessTrigger: 纯规则引擎，判断是否需要规划
  * - generatePlan: 调用 LLM 生成执行计划
  * - adjustPlan: 基于规则动态调整计划（不调用 LLM）
- * - detectDrift: 检测执行偏离（v5.0 新增）
- * - replan: 重规划（v5.0 新增）
- * - topologicalSort: DAG 拓扑排序（v5.0 新增）
- *
- * v5.0.0: ReAct 循环优化
  */
 
 import { callAIModelStream } from '../aiClient.js';
-import type { ModelCallConfig, ToolCall, MessageContent } from '../aiClient.js';
+import type { ModelCallConfig, MessageContent } from '../aiClient.js';
 import { getToolDefinitions } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
 import { mcpClientManager } from './mcpClientManager.js';
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -68,18 +64,6 @@ export interface PlannerOptions {
   maxPlanSteps?: number;
   /** 最大重试次数（默认 2） */
   maxRetries?: number;
-}
-
-/** 偏离检测结果（v5.0 新增） */
-export interface DriftDetectionResult {
-  /** 是否偏离 */
-  hasDrifted: boolean;
-  /** 检测原因 */
-  reason: string;
-  /** 原始意图 */
-  originalIntent: string;
-  /** 当前执行方向 */
-  currentDirection: string;
 }
 
 // ===================== 规则引擎关键词 =====================
@@ -230,7 +214,7 @@ export class Planner {
     // 提取用户消息
     const userMessage = this.extractUserMessage(messages);
     if (!userMessage) {
-      console.warn('[Planner] 无法提取用户消息，跳过规划');
+      logger.warn('[Planner] 无法提取用户消息，跳过规划');
       return null;
     }
 
@@ -273,7 +257,7 @@ export class Planner {
       // 使用完整响应内容
       rawContent = response.content || rawContent;
     } catch (error) {
-      console.error('[Planner] LLM 调用失败:', error instanceof Error ? error.message : String(error));
+      logger.error('[Planner] LLM 调用失败:', error instanceof Error ? error.message : String(error));
       return null;
     }
 
@@ -299,7 +283,7 @@ export class Planner {
     // 找到失败的步骤
     const failedStep = adjustedPlan.steps.find(s => s.step === failedStepIndex + 1);
     if (!failedStep) {
-      console.warn(`[Planner] adjustPlan: 找不到步骤 ${failedStepIndex + 1}`);
+      logger.warn(`[Planner] adjustPlan: 找不到步骤 ${failedStepIndex + 1}`);
       return adjustedPlan;
     }
 
@@ -316,7 +300,7 @@ export class Planner {
         status: 'pending',
       };
       this.insertStepAfter(adjustedPlan, failedStepIndex, insertStep);
-      console.log(`[Planner] adjustPlan: SQL 失败，插入 schema 查询步骤`);
+      logger.debug(`[Planner] adjustPlan: SQL 失败，插入 schema 查询步骤`);
     }
 
     // 规则 2：文件不存在 → 插入"列出目录"步骤
@@ -329,7 +313,7 @@ export class Planner {
         status: 'pending',
       };
       this.insertStepAfter(adjustedPlan, failedStepIndex, insertStep);
-      console.log(`[Planner] adjustPlan: 文件不存在，插入目录列表步骤`);
+      logger.debug(`[Planner] adjustPlan: 文件不存在，插入目录列表步骤`);
     }
 
     // 规则 3：网络超时 → 标记当前步骤为可重试
@@ -343,171 +327,10 @@ export class Planner {
         status: 'pending',
       };
       this.insertStepAfter(adjustedPlan, failedStepIndex, retryStep);
-      console.log(`[Planner] adjustPlan: 网络超时，插入重试步骤`);
+      logger.debug(`[Planner] adjustPlan: 网络超时，插入重试步骤`);
     }
 
     return adjustedPlan;
-  }
-
-  /**
-   * 检测执行偏离（v5.0 新增）。
-   * 比较当前执行方向与原始意图的相似度。
-   *
-   * @param messages - 当前消息上下文
-   * @param plan - 当前执行计划（可选）
-   * @returns 偏离检测结果
-   */
-  detectDrift(
-    messages: Array<{ role: string; content: MessageContent }>,
-    plan?: ExecutionPlan,
-  ): DriftDetectionResult {
-    if (!plan) {
-      return {
-        hasDrifted: false,
-        reason: '无执行计划',
-        originalIntent: '',
-        currentDirection: '',
-      };
-    }
-
-    // 提取最近 3 轮工具调用方向
-    const recentTools = messages.filter(m => m.role === 'tool').slice(-3);
-    const currentDirection = recentTools
-      .map(m => (typeof m.content === 'string' ? m.content.slice(0, 100) : ''))
-      .join(' ');
-
-    // 与 plan.intent 比较（简单字符串匹配）
-    const intentKeywords = plan.intent.split(/\s+/).filter(w => w.length > 1);
-    const matchCount = intentKeywords.filter(w => currentDirection.includes(w)).length;
-    const similarity = intentKeywords.length > 0 ? matchCount / intentKeywords.length : 0;
-
-    if (similarity < 0.3) {
-      return {
-        hasDrifted: true,
-        reason: `执行方向偏离原意图（相似度: ${similarity.toFixed(2)}）`,
-        originalIntent: plan.intent,
-        currentDirection: currentDirection.slice(0, 200),
-      };
-    }
-
-    return {
-      hasDrifted: false,
-      reason: '执行方向与意图一致',
-      originalIntent: plan.intent,
-      currentDirection: currentDirection.slice(0, 200),
-    };
-  }
-
-  /**
-   * 重规划（v5.0 新增）。
-   * 当死循环检测或偏离检测触发时，调用 LLM 重新生成执行计划。
-   *
-   * @param modelConfig - 模型调用配置
-   * @param messages - 当前消息上下文
-   * @param oldPlan - 旧执行计划
-   * @param reason - 重规划原因
-   * @param signal - 取消信号
-   * @returns 新执行计划，失败返回 null
-   */
-  async replan(
-    modelConfig: ModelCallConfig,
-    messages: Array<{ role: string; content: MessageContent }>,
-    oldPlan: ExecutionPlan,
-    reason: string,
-    signal?: AbortSignal,
-  ): Promise<ExecutionPlan | null> {
-    // 构造重规划 system prompt（含旧计划和失败原因）
-    const systemPrompt = `任务需要重新规划。原计划意图: ${oldPlan.intent}\n重规划原因: ${reason}\n请生成新的执行计划。`;
-
-    const userMessage = this.extractUserMessage(messages);
-    if (!userMessage) {
-      return null;
-    }
-
-    const builtinTools = getToolDefinitions();
-    const pluginTools = pluginRegistry.getActiveTools();
-    const mcpTools = mcpClientManager.getMcpTools();
-    const tools = [...builtinTools, ...pluginTools, ...mcpTools];
-    const toolDescriptions = tools
-      .map(t => `- ${t.function.name}: ${t.function.description}`)
-      .join('\n');
-
-    const replanMessages: Array<{ role: string; content: MessageContent }> = [
-      { role: 'system', content: systemPrompt + '\n\n可用工具:\n' + toolDescriptions },
-      { role: 'user', content: userMessage },
-    ];
-
-    // 调用 LLM
-    let rawContent = '';
-    try {
-      const response = await callAIModelStream(
-        modelConfig,
-        replanMessages,
-        (text: string) => {
-          rawContent += text;
-        },
-        signal,
-        undefined,
-        undefined,
-        undefined,
-        'low',
-        modelConfig.capabilities,
-      );
-      rawContent = response.content || rawContent;
-      return this.parsePlanResponse(rawContent);
-    } catch (err) {
-      console.error('[Planner] replan 失败:', err instanceof Error ? err.message : String(err));
-      return null;
-    }
-  }
-
-  /**
-   * DAG 拓扑排序（v5.0 新增）。
-   * 使用 Kahn 算法对计划步骤按依赖关系排序。
-   *
-   * @param steps - 计划步骤列表
-   * @returns 拓扑排序后的步骤列表，有环时返回原顺序
-   */
-  topologicalSort(steps: PlanStep[]): PlanStep[] {
-    if (steps.length === 0) {
-      return [];
-    }
-
-    const sorted: PlanStep[] = [];
-    const inDegree = new Map<number, number>();
-    const adj = new Map<number, number[]>();
-
-    for (const step of steps) {
-      inDegree.set(step.step, 0);
-      adj.set(step.step, []);
-    }
-
-    for (const step of steps) {
-      for (const dep of step.dependsOn) {
-        adj.get(dep)?.push(step.step);
-        inDegree.set(step.step, (inDegree.get(step.step) || 0) + 1);
-      }
-    }
-
-    const queue: number[] = [];
-    for (const [step, degree] of inDegree) {
-      if (degree === 0) queue.push(step);
-    }
-
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      const step = steps.find(s => s.step === current);
-      if (step) sorted.push(step);
-
-      for (const neighbor of adj.get(current) || []) {
-        const newDegree = (inDegree.get(neighbor) || 0) - 1;
-        inDegree.set(neighbor, newDegree);
-        if (newDegree === 0) queue.push(neighbor);
-      }
-    }
-
-    // 有环时返回原顺序
-    return sorted.length === steps.length ? sorted : steps;
   }
 
   // ===================== 私有方法 =====================
@@ -572,7 +395,7 @@ ${toolDescriptions}
       const jsonStart = jsonStr.indexOf('{');
       const jsonEnd = jsonStr.lastIndexOf('}');
       if (jsonStart === -1 || jsonEnd === -1 || jsonEnd <= jsonStart) {
-        console.warn('[Planner] 响应中未找到有效 JSON');
+        logger.warn('[Planner] 响应中未找到有效 JSON');
         return null;
       }
 
@@ -582,14 +405,14 @@ ${toolDescriptions}
 
       // 验证必要字段
       if (!parsed.intent || !Array.isArray(parsed.steps) || parsed.steps.length === 0) {
-        console.warn('[Planner] 解析结果缺少必要字段 (intent/steps)');
+        logger.warn('[Planner] 解析结果缺少必要字段 (intent/steps)');
         return null;
       }
 
       // 验证步骤字段
       for (const step of parsed.steps) {
         if (typeof step.step !== 'number' || !step.description) {
-          console.warn('[Planner] 步骤缺少必要字段 (step/description)');
+          logger.warn('[Planner] 步骤缺少必要字段 (step/description)');
           return null;
         }
       }
@@ -614,8 +437,8 @@ ${toolDescriptions}
 
       return plan;
     } catch (parseErr) {
-      console.error('[Planner] JSON 解析失败:', parseErr instanceof Error ? parseErr.message : String(parseErr));
-      console.error('[Planner] 原始响应:', rawContent.slice(0, 500));
+      logger.error('[Planner] JSON 解析失败:', parseErr instanceof Error ? parseErr.message : String(parseErr));
+      logger.error('[Planner] 原始响应:', rawContent.slice(0, 500));
       return null;
     }
   }

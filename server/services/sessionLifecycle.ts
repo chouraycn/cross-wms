@@ -10,7 +10,8 @@
 
 import { initDb, type Session, type SessionStatus } from '../db.js';
 import { v4 as uuidv4 } from 'uuid';
-import { writeMemory } from '../engine/vecMemoryStore.js';
+import { writeMemory, extractKeywords } from '../engine/vecMemoryStore.js';
+import { logger } from '../logger.js';
 
 // ===================== 常量 =====================
 
@@ -95,8 +96,8 @@ export function archiveSession(sessionId: string, summary?: string): boolean {
       sessionId,
       category: 'conversation',
       content: `[会话摘要] ${summary}`,
-      keywords: summary.substring(0, 80).toLowerCase(),
-    }).catch(e => console.warn('[SessionLifecycle] 会话摘要 embedding 失败:', e));
+      keywords: extractKeywords(summary, 15),
+    }).catch(e => logger.warn('[SessionLifecycle] 会话摘要 embedding 失败:', e));
   }
 
   return info.changes > 0;
@@ -216,15 +217,24 @@ function generateSessionSummary(sessionId: string): string {
 
     if (messages.length === 0) return '';
 
+    // v1.5.132: 过滤工具执行结果和过短消息，提高摘要质量
+    const meaningfulMessages = messages.filter(m => {
+      if (m.role !== 'user' && m.role !== 'assistant') return false;
+      if (!m.content || m.content.length < 5) return false;
+      // 过滤纯工具输出
+      if (m.content.startsWith('{') || m.content.startsWith('[')) return false;
+      return true;
+    });
+
     // 取第一条用户消息作为摘要基础
-    const firstUserMsg = messages.find(m => m.role === 'user');
-    const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
+    const firstUserMsg = meaningfulMessages.find(m => m.role === 'user');
+    const lastAssistantMsg = [...meaningfulMessages].reverse().find(m => m.role === 'assistant');
 
     let summary = '';
     if (firstUserMsg) {
       summary = firstUserMsg.content.slice(0, 100);
     }
-    if (lastAssistantMsg && messages.length > 2) {
+    if (lastAssistantMsg && meaningfulMessages.length > 2) {
       summary += ` → ${lastAssistantMsg.content.slice(0, 80)}`;
     }
     return summary.slice(0, 200);
@@ -265,7 +275,7 @@ export class SessionLifecycleManager {
       this.dailyResetTimer.unref();
     }
 
-    console.log(`[SessionLifecycle] 守护已启动 (idleThreshold=${IDLE_ARCHIVE_THRESHOLD_MS / 60000}min, checkInterval=${IDLE_CHECK_INTERVAL_MS / 60000}min)`);
+    logger.info(`[SessionLifecycle] 守护已启动 (idleThreshold=${IDLE_ARCHIVE_THRESHOLD_MS / 60000}min, checkInterval=${IDLE_CHECK_INTERVAL_MS / 60000}min)`);
   }
 
   /** 停止守护 */
@@ -279,7 +289,7 @@ export class SessionLifecycleManager {
       this.dailyResetTimer = null;
     }
     this.isRunning = false;
-    console.log('[SessionLifecycle] 守护已停止');
+    logger.info('[SessionLifecycle] 守护已停止');
   }
 
   /** 检测空闲会话并自动归档 */
@@ -298,16 +308,16 @@ export class SessionLifecycleManager {
 
       if (idleSessions.length === 0) return;
 
-      console.log(`[SessionLifecycle] 发现 ${idleSessions.length} 个空闲会话，自动归档...`);
+      logger.info(`[SessionLifecycle] 发现 ${idleSessions.length} 个空闲会话，自动归档...`);
 
       for (const session of idleSessions) {
         const success = archiveSession(session.id);
         if (success) {
-          console.log(`[SessionLifecycle] 已归档空闲会话: "${session.title}" (idle since ${session.lastActiveAt})`);
+          logger.info(`[SessionLifecycle] 已归档空闲会话: "${session.title}" (idle since ${session.lastActiveAt})`);
         }
       }
     } catch (e) {
-      console.error('[SessionLifecycle] 空闲检测异常:', e);
+      logger.error('[SessionLifecycle] 空闲检测异常:', e);
     }
   }
 
@@ -316,7 +326,7 @@ export class SessionLifecycleManager {
     const today = new Date().toISOString().split('T')[0];
     if (today === this.lastKnownDate) return;
 
-    console.log(`[SessionLifecycle] 检测到日期变更: ${this.lastKnownDate} → ${today}，执行每日重置...`);
+    logger.info(`[SessionLifecycle] 检测到日期变更: ${this.lastKnownDate} → ${today}，执行每日重置...`);
     this.lastKnownDate = today;
 
     try {
@@ -331,7 +341,7 @@ export class SessionLifecycleManager {
           AND sessionDate < ?
       `).run(new Date().toISOString(), today);
 
-      console.log(`[SessionLifecycle] ✅ 每日重置完成: ${result.changes} 个会话标记为 daily_reset`);
+      logger.info(`[SessionLifecycle] ✅ 每日重置完成: ${result.changes} 个会话标记为 daily_reset`);
 
       // 自动为今日创建新会话（仅当今日无活跃会话时）
       const todaySessions = getTodaySessions();
@@ -342,10 +352,10 @@ export class SessionLifecycleManager {
           INSERT INTO sessions (id, title, model, createdAt, updatedAt, status, lastActiveAt, sessionDate)
           VALUES (?, ?, 'auto', ?, ?, 'active', ?, DATE(?))
         `).run(newId, `对话 ${today}`, now, now, now, now);
-        console.log(`[SessionLifecycle] 已为 ${today} 创建新会话: ${newId}`);
+        logger.info(`[SessionLifecycle] 已为 ${today} 创建新会话: ${newId}`);
       }
     } catch (e) {
-      console.error('[SessionLifecycle] 每日重置异常:', e);
+      logger.error('[SessionLifecycle] 每日重置异常:', e);
     }
   }
 

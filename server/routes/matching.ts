@@ -27,6 +27,7 @@ import {
   rebuildAllEmbeddings,
 } from '../services/matchingService.js';
 import { getAllEmbeddings } from '../services/embeddingService.js';
+import { logger } from '../logger.js';
 
 const router = Router();
 
@@ -85,7 +86,7 @@ router.post('/match', async (req: Request, res: Response) => {
 
     res.json({ success: true, data: results });
   } catch (e) {
-    console.error('[Matching API] match error:', e);
+    logger.error('[Matching API] match error:', e);
     res.status(500).json({ success: false, error: (e as Error).message });
   }
 });
@@ -100,7 +101,7 @@ router.get('/config', (_req: Request, res: Response) => {
     const config = getRuntimeConfig();
     res.json({ success: true, data: config });
   } catch (e) {
-    console.error('[Matching API] get config error:', e);
+    logger.error('[Matching API] get config error:', e);
     res.status(500).json({ success: false, error: (e as Error).message });
   }
 });
@@ -137,7 +138,7 @@ router.put('/config', (req: Request, res: Response) => {
     const config = updateRuntimeConfig(updates);
     res.json({ success: true, data: config });
   } catch (e) {
-    console.error('[Matching API] update config error:', e);
+    logger.error('[Matching API] update config error:', e);
     res.status(500).json({ success: false, error: (e as Error).message });
   }
 });
@@ -152,7 +153,7 @@ router.post('/config/reset', (_req: Request, res: Response) => {
     const config = resetConfig();
     res.json({ success: true, data: config });
   } catch (e) {
-    console.error('[Matching API] reset config error:', e);
+    logger.error('[Matching API] reset config error:', e);
     res.status(500).json({ success: false, error: (e as Error).message });
   }
 });
@@ -207,7 +208,7 @@ router.post('/feedback', (req: Request, res: Response) => {
 
     res.status(201).json({ success: true, data: { id } });
   } catch (e) {
-    console.error('[Matching API] feedback error:', e);
+    logger.error('[Matching API] feedback error:', e);
     res.status(500).json({ success: false, error: (e as Error).message });
   }
 });
@@ -236,7 +237,7 @@ router.get('/feedback', (req: Request, res: Response) => {
 
     res.json({ success: true, data: feedback });
   } catch (e) {
-    console.error('[Matching API] get feedback error:', e);
+    logger.error('[Matching API] get feedback error:', e);
     res.status(500).json({ success: false, error: (e as Error).message });
   }
 });
@@ -251,7 +252,7 @@ router.post('/embeddings/rebuild', async (_req: Request, res: Response) => {
     const stats = await rebuildAllEmbeddings();
     res.json({ success: true, data: stats });
   } catch (e) {
-    console.error('[Matching API] rebuild embeddings error:', e);
+    logger.error('[Matching API] rebuild embeddings error:', e);
     res.status(500).json({ success: false, error: (e as Error).message });
   }
 });
@@ -285,7 +286,7 @@ router.get('/status', (_req: Request, res: Response) => {
       },
     });
   } catch (e) {
-    console.error('[Matching API] status error:', e);
+    logger.error('[Matching API] status error:', e);
     res.status(500).json({ success: false, error: (e as Error).message });
   }
 });

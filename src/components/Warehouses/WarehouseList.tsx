@@ -132,7 +132,7 @@ const WarehouseList: React.FC = () => {
       await addGlobalWarehouse(newWh); // 等待后端持久化完成再跳转
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '未知错误';
-      console.error('[WarehouseList] addGlobalWarehouse failed:', e);
+      // console.error('[WarehouseList] addGlobalWarehouse failed:', e);
       setCreateError(`创建失败：${msg}`);
       setCreating(false);
       return;

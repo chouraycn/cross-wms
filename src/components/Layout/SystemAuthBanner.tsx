@@ -7,7 +7,7 @@
  * - 结构化权限标签展示
  */
 
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Typography, Button, useTheme } from '@mui/material';
 import ShieldIcon from '@mui/icons-material/Shield';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -75,12 +75,18 @@ const SystemAuthBanner: React.FC<SystemAuthBannerProps> = ({ onOpenSettings }) =
     return null;
   }
 
-  // 确定风险级别颜色
+  // 确定风险级别颜色（中性灰蓝，不用黄色）
   const isNotEnabled = !status.isEnabled;
-  const accentColor = isNotEnabled ? '#F59E0B' : '#F59E0B';
-  const accentBg = isNotEnabled ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.08)';
-  const accentBorder = isNotEnabled ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.2)';
+  const accentColor = isDark ? '#60A5FA' : '#3B82F6';
+  const accentBg = isDark ? 'rgba(96,165,250,0.08)' : 'rgba(59,130,246,0.06)';
+  const accentBorder = isDark ? 'rgba(96,165,250,0.18)' : 'rgba(59,130,246,0.15)';
 
+  // v8.7: transition 替代 @keyframes
+  const [bannerEntered, setBannerEntered] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setBannerEntered(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
   return (
     <Box
       sx={{
@@ -89,18 +95,17 @@ const SystemAuthBanner: React.FC<SystemAuthBannerProps> = ({ onOpenSettings }) =
         bgcolor: gs.bgPanel,
         border: `1px solid ${accentBorder}`,
         overflow: 'hidden',
-        animation: 'authBannerIn 0.25s cubic-bezier(0.4,0,0.2,1)',
-        '@keyframes authBannerIn': {
-          from: { opacity: 0, transform: 'translateY(-8px)' },
-          to: { opacity: 1, transform: 'translateY(0)' },
-        },
+        // v8.7: transition 替代 @keyframes（WKWebView 兼容）
+        opacity: bannerEntered ? 1 : 0,
+        transform: bannerEntered ? 'translateY(0)' : 'translateY(-8px)',
+        transition: 'opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
       {/* 顶部渐变条 */}
       <Box
         sx={{
           height: 3,
-          background: 'linear-gradient(90deg, #F59E0B, #FBBF24)',
+          background: 'linear-gradient(90deg, #3B82F6, #60A5FA)',
         }}
       />
 

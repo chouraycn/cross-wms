@@ -332,7 +332,7 @@ export async function executeApiTemplate(params: ExecuteTemplateParams): Promise
         extractedPreview: JSON.stringify(result.extracted).substring(0, 500),
         error: result.error,
         requestHeaders: requestHeadersJson,
-        requestBody: requestBodyStr,
+        requestBody: requestBodyStr ?? undefined,
         responseHeaders: responseHeadersJson,
         responseBody: responseBodyStr,
       });
@@ -378,7 +378,7 @@ export async function executeApiTemplate(params: ExecuteTemplateParams): Promise
         isSuccess: false,
         error: errorMessage,
         requestHeaders: requestHeadersJson,
-        requestBody: requestBodyStr,
+        requestBody: requestBodyStr ?? undefined,
       });
     } catch {
       /* 不影响主流程 */

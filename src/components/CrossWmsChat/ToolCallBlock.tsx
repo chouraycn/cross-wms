@@ -170,6 +170,8 @@ function isToolCallFailed(toolCall: ToolCallInfo): boolean {
 
 /** v1.9.5-fix: 用 JS 定时器模拟脉冲动画，避免 WKWebView 不兼容 CSS @keyframes */
 const PulseIndicator: React.FC = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
   const [scale, setScale] = useState(0.8);
   const [opacity, setOpacity] = useState(0.3);
 
@@ -200,14 +202,14 @@ const PulseIndicator: React.FC = () => {
           width: 8,
           height: 8,
           borderRadius: '50%',
-          bgcolor: '#6366F1',
+          bgcolor: isDark ? '#9CA3AF' : '#6B7280',
           transform: `scale(${scale})`,
           opacity: opacity,
           transition: 'transform 0.75s ease-in-out, opacity 0.75s ease-in-out',
-          boxShadow: opacity > 0.6 ? `0 0 6px rgba(99, 102, 241, ${opacity - 0.3})` : 'none',
+          boxShadow: opacity > 0.6 ? `0 0 6px rgba(156,163,175,${opacity - 0.3})` : 'none',
         }}
       />
-      <Typography sx={{ fontSize: 11, color: '#6366F1', fontWeight: 500 }}>
+      <Typography sx={{ fontSize: 11, color: isDark ? '#9CA3AF' : '#6B7280', fontWeight: 500 }}>
         执行中
       </Typography>
     </Box>
@@ -238,7 +240,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ total, currentIndex }) =>
         px: 0.25,
       }}
     >
-      <Typography sx={{ fontSize: 11, color: gs.textMuted, mr: 0.5, fontWeight: 500 }}>
+      <Typography sx={{ fontSize: 11, color: gs.textMuted, mr: 0.5, fontWeight: 600 }}>
         步骤 {currentIndex + 1}/{total}
       </Typography>
       {Array.from({ length: total }, (_, i) => {
@@ -255,7 +257,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ total, currentIndex }) =>
                   height: 2,
                   borderRadius: 1,
                   bgcolor: isCompleted
-                    ? '#6366F1'
+                    ? (isDark ? '#9CA3AF' : '#6B7280')
                     : isDark
                       ? 'rgba(255,255,255,0.1)'
                       : 'rgba(0,0,0,0.1)',
@@ -272,11 +274,10 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ total, currentIndex }) =>
                   ? `2px solid ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'}`
                   : 'none',
                 bgcolor: isCompleted
-                  ? '#6366F1'
+                  ? (isDark ? '#9CA3AF' : '#6B7280')
                   : isCurrent
-                    ? '#6366F1'
+                    ? (isDark ? '#9CA3AF' : '#6B7280')
                     : 'transparent',
-                // v1.9.5-fix: 移除 CSS animation，改用 JS 定时器（见下方 useEffect）
                 transition: 'all 0.3s ease',
               }}
               {...(isCurrent ? { 'data-pulse': 'true' } : {})}
@@ -365,7 +366,6 @@ const ToolCallItem = React.memo<ToolCallItemProps>(function ToolCallItem({ toolC
         bgcolor: 'transparent',
         border: 'none',
         borderLeft: `2px solid ${isDark ? '#555555' : '#e0e0e0'}`,
-        borderRadius: '8px',
         overflow: 'hidden',
         '& + &': { mt: 0.5 },
       }}

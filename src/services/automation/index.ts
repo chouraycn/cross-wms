@@ -211,7 +211,7 @@ class AutomationEngine implements AutomationEngineAPI {
     if (this.running) return;
     this.running = true;
     // eslint-disable-next-line no-console
-    console.log('[AutomationEngine] 引擎已启动');
+    // console.log('[AutomationEngine] 引擎已启动');
 
     // 请求通知权限
     if ('Notification' in window && Notification.permission === 'default') {
@@ -235,7 +235,7 @@ class AutomationEngine implements AutomationEngineAPI {
     }
     this.running = false;
     // eslint-disable-next-line no-console
-    console.log('[AutomationEngine] 引擎已停止');
+    // console.log('[AutomationEngine] 引擎已停止');
   }
 
   /** 是否正在运行 */
@@ -304,7 +304,7 @@ class AutomationEngine implements AutomationEngineAPI {
   getExecutionResults(type: 'snapshots' | 'reports' | 'alerts'): unknown[] {
     // v2.0: 执行结果不再存储在 localStorage，改为通过 API 获取
     // 临时返回空数组，后续可通过 /api/automation/executions 获取
-    console.warn('[AutomationEngine] getExecutionResults 已废弃，请通过 API 获取执行结果');
+    // console.warn('[AutomationEngine] getExecutionResults 已废弃，请通过 API 获取执行结果');
     return [];
   }
 
@@ -335,7 +335,7 @@ class AutomationEngine implements AutomationEngineAPI {
       try {
         cb(exec);
       } catch (err) {
-        console.error('[AutomationEngine] 回调执行错误:', err);
+        // console.error('[AutomationEngine] 回调执行错误:', err);
       }
     });
   }
@@ -346,7 +346,7 @@ class AutomationEngine implements AutomationEngineAPI {
       try {
         cb(event);
       } catch (err) {
-        console.error('[AutomationEngine] 状态回调错误:', err);
+        // console.error('[AutomationEngine] 状态回调错误:', err);
       }
     });
   }
@@ -372,7 +372,7 @@ class AutomationEngine implements AutomationEngineAPI {
           this.runTask(auto).then((exec) => {
             this.notifyCallbacks(exec);
           }).catch((err) => {
-            console.error('[AutomationEngine] 任务执行失败:', err);
+            // console.error('[AutomationEngine] 任务执行失败:', err);
           });
 
           // 更新任务状态（通过 API）
@@ -384,7 +384,7 @@ class AutomationEngine implements AutomationEngineAPI {
         }
       }
     } catch (err) {
-      console.error('[AutomationEngine] 检查任务失败:', err);
+      // console.error('[AutomationEngine] 检查任务失败:', err);
     }
   }
 
@@ -427,7 +427,7 @@ class AutomationEngine implements AutomationEngineAPI {
       exec.steps = steps;
 
       // eslint-disable-next-line no-console
-      console.log(`[AutomationEngine] 任务 ${auto.name}(${auto.id}) 执行成功, 耗时 ${duration}ms`);
+      // console.log(`[AutomationEngine] 任务 ${auto.name}(${auto.id}) 执行成功, 耗时 ${duration}ms`);
     } catch (err) {
       const duration = Date.now() - startTime;
       const message = err instanceof Error ? err.message : String(err);
@@ -437,12 +437,12 @@ class AutomationEngine implements AutomationEngineAPI {
       exec.duration = duration;
       exec.result = `执行失败: ${message}`;
 
-      console.error(`[AutomationEngine] 任务 ${auto.name}(${auto.id}) 执行失败:`, err);
+      // console.error(`[AutomationEngine] 任务 ${auto.name}(${auto.id}) 执行失败:`, err);
 
       // 🔑 自动重试 1 次（仅非重试的首次失败）
       if (!isRetry) {
         // eslint-disable-next-line no-console
-        console.log(`[AutomationEngine] 任务 ${auto.name} 自动重试 1 次...`);
+        // console.log(`[AutomationEngine] 任务 ${auto.name} 自动重试 1 次...`);
         try {
           const retryResult = await executeByTypeWithSteps(auto.taskType, auto.taskConfig);
           const retryDuration = Date.now() - startTime;
@@ -453,7 +453,7 @@ class AutomationEngine implements AutomationEngineAPI {
           exec.steps = [...(exec.steps || []), ...retryResult.steps];
           exec.isRetry = true;
           // eslint-disable-next-line no-console
-          console.log(`[AutomationEngine] 任务 ${auto.name} 重试成功`);
+          // console.log(`[AutomationEngine] 任务 ${auto.name} 重试成功`);
         } catch (retryErr) {
           const retryDuration = Date.now() - startTime;
           const retryMessage = retryErr instanceof Error ? retryErr.message : String(retryErr);
@@ -461,7 +461,7 @@ class AutomationEngine implements AutomationEngineAPI {
           exec.completedAt = new Date().toISOString();
           exec.duration = retryDuration;
           exec.result = `首次失败: ${message}; 重试失败: ${retryMessage}`;
-          console.error(`[AutomationEngine] 任务 ${auto.name} 重试也失败:`, retryErr);
+          // console.error(`[AutomationEngine] 任务 ${auto.name} 重试也失败:`, retryErr);
         }
       }
     }

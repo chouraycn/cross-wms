@@ -8,6 +8,7 @@
 #   bash build-dmg-pywebview.sh --bump-minor   # bump minor 版本（1.3.7 → 1.4.0）
 #   bash build-dmg-pywebview.sh --bump-major   # bump major 版本（1.3.7 → 2.0.0）
 #   bash build-dmg-pywebview.sh --no-bump      # 不 bump，保持当前版本号
+#   bash build-dmg-pywebview.sh --ci --no-bump  # CI 模式：跳过前端构建和 GitHub Release（由 workflow 处理）
 
 set -e
 set -o pipefail
@@ -28,8 +29,9 @@ VERSION_FILE="$PROJECT_DIR/version.txt"
 # 从 package.json 读取当前版本
 CURRENT_VERSION=$(node -e "console.log(require('./package.json').version)")
 
-# 处理 bump 参数（默认 bump patch，除非显式指定 --no-bump）
+# 处理参数
 BUMP_TYPE=""
+CI_MODE=false
 for arg in "$@"; do
   case "$arg" in
     --bump-patch|--bump-minor|--bump-major)
@@ -37,6 +39,9 @@ for arg in "$@"; do
       ;;
     --no-bump)
       BUMP_TYPE="none"
+      ;;
+    --ci)
+      CI_MODE=true
       ;;
   esac
 done
@@ -121,7 +126,8 @@ if [ -n "$CI" ]; then
   fi
 else
   # 本地环境：使用指定的 venv（支持通过环境变量覆盖）
-  PYWEBVIEW_VENV="${PYWEBVIEW_VENV:-/Users/chouray/.workbuddy/binaries/python/envs/crosswms-pywebview}"
+  # 默认路径兼容常见 venv 位置，用户可通过 PYWEBVIEW_VENV 环境变量指定
+  PYWEBVIEW_VENV="${PYWEBVIEW_VENV:-$(python3 -c "import os,sysconfig; print(os.path.dirname(sysconfig.get_path('scripts')))")}"
   if [ ! -d "$PYWEBVIEW_VENV" ]; then
     echo "❌ 错误：Python 虚拟环境未找到: $PYWEBVIEW_VENV"
     echo "   请设置环境变量 PYWEBVIEW_VENV 指向正确的虚拟环境路径"
@@ -130,6 +136,32 @@ else
   fi
   PYINSTALLER="$PYWEBVIEW_VENV/bin/pyinstaller"
   PYTHON="$PYWEBVIEW_VENV/bin/python3"
+  PIP="$PYWEBVIEW_VENV/bin/pip"
+  # 自动安装必需的 Python 依赖（首次运行或依赖丢失时）
+  # 必需包: pyinstaller (打包工具), pywebview (webview 窗口), Pillow (PNG→ICNS), pyobjc-framework-Cocoa (macOS native)
+  REQUIRED_PACKAGES=("pyinstaller" "pywebview" "Pillow" "pyobjc-framework-Cocoa")
+  MISSING_PACKAGES=()
+  for pkg in "${REQUIRED_PACKAGES[@]}"; do
+    # 将包名转换为 import 名（pyobjc-framework-Cocoa → objc）
+    case "$pkg" in
+      pyinstaller) import_name="PyInstaller" ;;
+      pywebview) import_name="webview" ;;
+      Pillow) import_name="PIL" ;;
+      pyobjc-framework-Cocoa) import_name="objc" ;;
+      *) import_name="$pkg" ;;
+    esac
+    if ! "$PYTHON" -c "import $import_name" &>/dev/null; then
+      MISSING_PACKAGES+=("$pkg")
+    fi
+  done
+  if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
+    echo "📦 自动安装缺少的 Python 依赖: ${MISSING_PACKAGES[*]}"
+    "$PIP" install "${MISSING_PACKAGES[@]}" || {
+      echo "❌ 依赖安装失败，请手动运行: $PIP install ${MISSING_PACKAGES[*]}"
+      exit 1
+    }
+    echo "✅ 依赖安装完成"
+  fi
 fi
 
 # Node.js 后端配置
@@ -141,14 +173,24 @@ echo "=== CDF Know Clow DMG Builder (pywebview + PyInstaller + Node.js) ==="
 echo "版本: $VERSION"
 echo ""
 
-# 1. 构建前端（始终重新构建，确保版本号是最新的）
-echo ">>> 构建前端 (版本: $VERSION) ..."
-cd "$PROJECT_DIR" && npm run build
-echo "✅ 前端构建完成"
+# 1. 构建前端（CI 模式下跳过，CI 已预先构建）
+if [ "$CI_MODE" = true ]; then
+  echo "⏭️  跳过前端构建（--ci 模式，CI 已预构建）"
+  if [ ! -d "$FRONTEND_DIST" ]; then
+    echo "❌ 错误：前端产物目录 $FRONTEND_DIST 不存在"
+    echo "   CI 模式要求先执行 npm run build"
+    exit 1
+  fi
+else
+  echo ">>> 构建前端 (版本: $VERSION) ..."
+  cd "$PROJECT_DIR" && npm run build
+  echo "✅ 前端构建完成"
+fi
 
 if [ ! -x "$PYINSTALLER" ]; then
   echo "❌ PyInstaller 未找到: $PYINSTALLER"
-  echo "   请先运行: $PYWEBVIEW_VENV/bin/pip install pyinstaller pywebview Pillow"
+  echo "   本地环境会自动安装依赖，请检查 PYWEBVIEW_VENV 环境变量是否指向正确的 Python 环境"
+  echo "   手动安装: pip install pyinstaller pywebview Pillow pyobjc-framework-Cocoa"
   exit 1
 fi
 
@@ -195,7 +237,7 @@ if command -v npx &>/dev/null; then
     --external:mammoth \
     --external:pdf-parse \
     --external:uuid \
-    --external:xlsx \
+    --external:@e965/xlsx \
     --external:onnxruntime-node \
     --external:sqlite-vec
   echo "✅ 后端编译完成 (index.cjs)"
@@ -227,8 +269,8 @@ cat > package.json << 'PKGJSON'
     "onnxruntime-node": "^1.26.0",
     "pdf-parse": "^1.1.1",
     "sqlite-vec": "^0.1.9",
-    "uuid": "^9.0.0",
-    "xlsx": "^0.18.5"
+    "uuid": "^11.1.1",
+    "@e965/xlsx": "^0.20.3"
   }
 }
 PKGJSON
@@ -373,7 +415,6 @@ DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:version_txt "
   --collect-all Cocoa \
   --collect-all objc \
   --collect-all PyObjCTools \
-  --collect-all pyobjc_framework_Cocoa \
   --hidden-import objc \
   --hidden-import Cocoa \
   --exclude-module matplotlib \
@@ -583,8 +624,11 @@ PYEOF2
 
 echo ""
 
-# 11. 上传到 GitHub Releases
-echo "🚀 上传到 GitHub Releases..."
+# 11. 上传到 GitHub Releases（CI 模式下跳过，由 CI workflow 处理）
+if [ "$CI_MODE" = true ]; then
+  echo "⏭️  跳过 GitHub Release 上传（--ci 模式，CI workflow 处理）"
+else
+  echo "🚀 上传到 GitHub Releases..."
 
 # 如果 tag 已存在，先删除远程 tag 再重建（确保 Release 可重新创建）
 if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
@@ -706,6 +750,7 @@ if [ "$UPLOAD_OK" = false ] && command -v gh &>/dev/null; then
       && echo "✅ Release v${VERSION} 已发布!" || echo "⚠️  上传失败"
   fi
 fi
+fi # end of CI_MODE else block
 
 echo ""
 echo "=== 完成 ==="

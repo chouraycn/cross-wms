@@ -1,10 +1,6 @@
-/* eslint-disable no-console */
 import express from 'express';
+import http from 'http';
 import { initDb } from './db.js';
-import { v4 as uuidv4 } from 'uuid';
-import path from 'path';
-import fs from 'fs';
-import os from 'os';
 import skillWatcher from './services/skillWatcher.js';
 import { initDefaultTools, listTools } from './engine/toolRegistry.js';
 import { agentRegistry } from './engine/agentRegistry.js';
@@ -12,21 +8,21 @@ import { initDefaultSoulFiles } from './engine/soulLoader.js';
 import { EventEmitter } from 'events';
 
 // v1.5.88: 全局异常兜底 — Node.js v15+ 未处理 rejection 默认崩溃进程
-process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
+process.on('unhandledRejection', (reason: unknown, _promise: Promise<unknown>) => {
   const msg = reason instanceof Error ? reason.stack || reason.message : String(reason);
-  console.error('[Process] ⚠️ unhandledRejection:', msg);
+  logger.error('[Process] ⚠️ unhandledRejection:', msg);
   // 不调用 process.exit()，桌面应用保持运行比崩溃更合理
 });
 
 process.on('uncaughtException', (err: Error) => {
-  console.error('[Process] ❌ uncaughtException:', err.stack || err.message);
+  logger.error('[Process] ❌ uncaughtException:', err.stack || err.message);
   // uncaughtException 通常更严重，但仍保持运行 (Node 文档建议此时进程状态不确定，尽快优雅退出)
   // 对于桌面应用，记录错误并继续运行，避免静默崩溃
-  console.error('[Process] 进程状态可能异常，建议重启应用。继续运行中...');
+  logger.error('[Process] 进程状态可能异常，建议重启应用。继续运行中...');
 });
 
-// v1.9.2: 工具权限请求全局 EventEmitter
-const permissionEmitter = new EventEmitter();
+// v1.9.2: 工具权限请求全局 EventEmitter (reserved for future cross-route events)
+const _permissionEmitter = new EventEmitter(); void _permissionEmitter;
 
 // Business data routes
 import warehousesRouter from './routes/warehouses.js';
@@ -46,7 +42,6 @@ import automationRoutes from './routes/automation.js';
 import projectsRouter from './routes/projects.js';
 import tasksRouter from './routes/tasks.js';
 
-import { findByQuery, countByQuery } from './dao/inventoryTransactionDao.js';
 import { ensureWmsTables } from './dao/wmsSkillDao.js';
 
 // WMS skill routes
@@ -77,13 +72,13 @@ import healthRouter from './routes/health.js';
 import inventoryTransactionsRouter from './routes/inventory-transactions.js';
 
 // Services
-import { addClient, removeClient } from './services/chainExecutor.js';
+import './services/chainExecutor.js'; // side-effect: registers chain event handlers
 import { batchAuditSkills } from './services/securityAuditor.js';
 import { initMatchingEngine } from './services/matchingService.js';
-import { loadModelsConfig, syncModelsFromApi } from './modelsStore.js';
+import { syncModelsFromApi } from './modelsStore.js';
 
 // Automation Engine v2.0
-import { startEngine, stopEngine } from './engine/engine.js';
+import { startEngine } from './engine/engine.js';
 
 // v3.0: Plugin & API Domain Whitelist routes
 import pluginsRouter from './routes/plugins.js';
@@ -118,6 +113,7 @@ import { sessionLifecycleManager } from './services/sessionLifecycle.js';
 
 // v7.0: Message Queue (队列与并发控制)
 import { messageQueue } from './engine/messageQueue.js';
+import { logger } from './logger.js';
 
 const app = express();
 // CORS: 开发环境允许所有本地来源
@@ -218,13 +214,26 @@ app.use('/api/api-history', apiHistoryRouter);
 app.use('/api/mcp', mcpRouter);
 
 const PORT = 3001;
-const server = app.listen(PORT, async () => {
-  console.log(`CDF Know Clow Chat Server running on port ${PORT}`);
+
+// v8.7: error 监听器必须在 listen() 之前注册，防止边缘情况下 error 事件丢失
+const server = http.createServer(app);
+server.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    logger.error(`[Server] ❌ 端口 ${PORT} 已被占用，2 秒后退出并等待重启...`);
+    setTimeout(() => process.exit(1), 2000);
+  } else {
+    logger.error('[Server] ❌ 启动失败:', err.message);
+    process.exit(1);
+  }
+});
+
+server.listen(PORT, async () => {
+  logger.info(`CDF Know Clow Chat Server running on port ${PORT}`);
   const db = initDb();
 
   // 初始化 Tool Registry
   await initDefaultTools();
-  console.log('[Tool Registry] 工具注册完成:', listTools().join(', '));
+  logger.info('[Tool Registry] 工具注册完成:', listTools().join(', '));
 
   // v8.0: 初始化 Agent Registry（加载内置 Agent 模板）
   agentRegistry.initialize();
@@ -236,7 +245,7 @@ const server = app.listen(PORT, async () => {
   await pluginRegistry.loadEnabledPlugins();
   const pluginToolNames = listPluginTools();
   if (pluginToolNames.length > 0) {
-    console.log('[Plugin Registry] 插件工具已加载:', pluginToolNames.join(', '));
+    logger.info('[Plugin Registry] 插件工具已加载:', pluginToolNames.join(', '));
   }
 
   // v4.0: 启动时连接所有已启用的 MCP Server（异步，不阻塞主流程）
@@ -244,7 +253,7 @@ const server = app.listen(PORT, async () => {
     try {
       await mcpClientManager.connectAllEnabled();
     } catch (err) {
-      console.error('[McpClientManager] 启动连接失败:', err instanceof Error ? err.message : String(err));
+      logger.error('[McpClientManager] 启动连接失败:', err instanceof Error ? err.message : String(err));
     }
   }, 5000);
 
@@ -254,19 +263,19 @@ const server = app.listen(PORT, async () => {
       const result = await startBrowserHost();
       if (result.ok) {
         const health = await getBrowserHostHealth();
-        console.log(`[BrowserHost] 进程已启动, status=${health.status}`);
+        logger.info(`[BrowserHost] 进程已启动, status=${health.status}`);
       } else {
-        console.warn(`[BrowserHost] 启动失败: ${result.error} (Browser tools will be unavailable)`);
+        logger.warn(`[BrowserHost] 启动失败: ${result.error} (Browser tools will be unavailable)`);
       }
     } catch (err) {
-      console.warn('[BrowserHost] 启动异常:', err instanceof Error ? err.message : String(err));
+      logger.warn('[BrowserHost] 启动异常:', err instanceof Error ? err.message : String(err));
     }
   }, 3000);
 
   // 自动发现新模型（异步，不阻塞启动）
   setTimeout(() => {
     syncModelsFromApi().catch(e => {
-      console.error('[ModelDiscovery] 启动同步失败:', e);
+      logger.error('[ModelDiscovery] 启动同步失败:', e);
     });
   }, 5000);
 
@@ -277,9 +286,9 @@ const server = app.listen(PORT, async () => {
   setTimeout(async () => {
     try {
       const stats = await initMatchingEngine();
-      console.log(`[Matching] 嵌入初始化完成: total=${stats.embeddingStats.total}, new=${stats.embeddingStats.newCount}, updated=${stats.embeddingStats.updatedCount}, skipped=${stats.embeddingStats.skippedCount}`);
+      logger.info(`[Matching] 嵌入初始化完成: total=${stats.embeddingStats.total}, new=${stats.embeddingStats.newCount}, updated=${stats.embeddingStats.updatedCount}, skipped=${stats.embeddingStats.skippedCount}`);
     } catch (e) {
-      console.error('[Matching] 嵌入初始化失败:', e);
+      logger.error('[Matching] 嵌入初始化失败:', e);
     }
   }, 3000);
 
@@ -294,7 +303,7 @@ const server = app.listen(PORT, async () => {
 
   // 绑定优雅关闭 — 在进程退出时停止引擎
   const gracefulShutdown = () => {
-    console.log('[Server] 正在关闭自动化引擎...');
+    logger.info('[Server] 正在关闭自动化引擎...');
     stop();
     // v6.0: 停止会话生命周期守护
     sessionLifecycleManager.stop();
@@ -302,11 +311,11 @@ const server = app.listen(PORT, async () => {
     messageQueue.stop();
     // v3.0: 关闭 BrowserHost 进程
     stopBrowserHost().catch(err => {
-      console.warn('[Server] BrowserHost 关闭异常:', err);
+      logger.warn('[Server] BrowserHost 关闭异常:', err);
     });
     // v4.0: 关闭 MCP Client Manager
     mcpClientManager.shutdown().catch(err => {
-      console.warn('[Server] MCP Client Manager 关闭异常:', err);
+      logger.warn('[Server] MCP Client Manager 关闭异常:', err);
     });
     // v1.5.68: 在退出前做 WAL checkpoint — 避免进程被 kill 时 WAL 未刷盘，
     // 下次启动时虽然 initDb 会尝试恢复，但提前 checkpoint 可以减少数据丢失风险。
@@ -315,11 +324,11 @@ const server = app.listen(PORT, async () => {
     try {
       const dbInstance = initDb();
       const ckpt = dbInstance.pragma('wal_checkpoint(TRUNCATE)');
-      console.log('[Server] ✅ WAL checkpoint 完成:', JSON.stringify(ckpt));
+      logger.info('[Server] ✅ WAL checkpoint 完成:', JSON.stringify(ckpt));
       dbInstance.close();
-      console.log('[Server] ✅ 数据库连接已安全关闭');
+      logger.info('[Server] ✅ 数据库连接已安全关闭');
     } catch (err) {
-      console.warn('[Server] WAL checkpoint 失败:', err instanceof Error ? err.message : String(err));
+      logger.warn('[Server] WAL checkpoint 失败:', err instanceof Error ? err.message : String(err));
     }
     process.exit(0);
   };
@@ -329,16 +338,7 @@ const server = app.listen(PORT, async () => {
 
 // 异步批量审查预置技能（不阻塞启动，延迟 5 秒执行）
 setTimeout(() => {
-  batchAuditSkills().catch((e: Error) => console.error('[Startup] 批量审查失败:', e));
+  batchAuditSkills().catch((e: Error) => logger.error('[Startup] 批量审查失败:', e));
 }, 5000);
 
-// 端口冲突时优雅退出（让 pywebview 的进程监控 3 秒后重启，彼时端口已释放）
-server.on('error', (err: NodeJS.ErrnoException) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`[Server] ❌ 端口 ${PORT} 已被占用，2 秒后退出并等待重启...`);
-    setTimeout(() => process.exit(1), 2000);
-  } else {
-    console.error('[Server] ❌ 启动失败:', err.message);
-    process.exit(1);
-  }
-});
+// v8.7: error 监听器已移至 server.listen() 之前（第 220 行），此处删除重复监听器

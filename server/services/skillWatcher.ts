@@ -14,6 +14,7 @@ import { scanWorkbuddySkills } from '../routes/skills.js';
 import { auditSkillMd, generateMarkdownReport } from './securityAuditor.js';
 import { initDb } from '../db.js';
 import { createSkillAudit } from '../dao/chains.js';
+import { logger } from '../logger.js';
 
 // ===================== Types =====================
 
@@ -39,16 +40,16 @@ class SkillWatcher {
    */
   init(): void {
     if (this.watcher) {
-      console.log('[SkillWatcher] Already initialized, skipping.');
+      logger.info('[SkillWatcher] Already initialized, skipping.');
       return;
     }
 
     const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
-    console.log(`[SkillWatcher] Initializing watcher for ${skillsDir}`);
+    logger.info(`[SkillWatcher] Initializing watcher for ${skillsDir}`);
 
     // 如果目录不存在，先创建
     if (!fs.existsSync(skillsDir)) {
-      console.log(`[SkillWatcher] Skills directory does not exist, creating: ${skillsDir}`);
+      logger.info(`[SkillWatcher] Skills directory does not exist, creating: ${skillsDir}`);
       fs.mkdirSync(skillsDir, { recursive: true });
     }
 
@@ -65,14 +66,14 @@ class SkillWatcher {
         clearTimeout(this.debounceTimer);
       }
       this.debounceTimer = setTimeout(() => {
-        console.log('[SkillWatcher] Debounced scan triggered');
+        logger.info('[SkillWatcher] Debounced scan triggered');
         scanWorkbuddySkills();
       }, 500);
     };
 
     this.watcher
       .on('add', (filePath: string) => {
-        console.log(`[SkillWatcher] Skill added: ${filePath}`);
+        logger.info(`[SkillWatcher] Skill added: ${filePath}`);
         const dirName = this.extractDirName(filePath);
         if (dirName) {
           this.broadcast({
@@ -85,7 +86,7 @@ class SkillWatcher {
         }
       })
       .on('change', (filePath: string) => {
-        console.log(`[SkillWatcher] Skill changed: ${filePath}`);
+        logger.info(`[SkillWatcher] Skill changed: ${filePath}`);
         const dirName = this.extractDirName(filePath);
         if (dirName) {
           this.broadcast({
@@ -101,7 +102,7 @@ class SkillWatcher {
         }
       })
       .on('unlink', (filePath: string) => {
-        console.log(`[SkillWatcher] Skill removed: ${filePath}`);
+        logger.info(`[SkillWatcher] Skill removed: ${filePath}`);
         const dirName = this.extractDirName(filePath);
         if (dirName) {
           this.broadcast({
@@ -114,10 +115,10 @@ class SkillWatcher {
         }
       })
       .on('error', (error: Error) => {
-        console.error('[SkillWatcher] Watcher error:', error);
+        logger.error('[SkillWatcher] Watcher error:', error);
       });
 
-    console.log('[SkillWatcher] Watcher initialized successfully');
+    logger.info('[SkillWatcher] Watcher initialized successfully');
   }
 
   /**
@@ -138,7 +139,7 @@ class SkillWatcher {
    */
   addClient(res: Response): void {
     this.clients.add(res);
-    console.log(`[SkillWatcher] SSE client connected, total clients: ${this.clients.size}`);
+    logger.info(`[SkillWatcher] SSE client connected, total clients: ${this.clients.size}`);
   }
 
   /**
@@ -146,7 +147,7 @@ class SkillWatcher {
    */
   removeClient(res: Response): void {
     this.clients.delete(res);
-    console.log(`[SkillWatcher] SSE client disconnected, total clients: ${this.clients.size}`);
+    logger.info(`[SkillWatcher] SSE client disconnected, total clients: ${this.clients.size}`);
   }
 
   /**
@@ -158,7 +159,7 @@ class SkillWatcher {
       try {
         client.write(data);
       } catch (e) {
-        console.error('[SkillWatcher] Failed to send event to client:', e);
+        logger.error('[SkillWatcher] Failed to send event to client:', e);
         this.clients.delete(client);
       }
     }
@@ -202,12 +203,12 @@ class SkillWatcher {
           timestamp: Date.now(),
         });
 
-        console.log(
+        logger.info(
           `[SkillWatcher] Auto-audit complete for "${dirName}": score=${result.summary.score}, level=${result.summary.level}`
         );
       }
     } catch (e) {
-      console.error(`[SkillWatcher] Auto-audit failed for ${filePath}:`, e);
+      logger.error(`[SkillWatcher] Auto-audit failed for ${filePath}:`, e);
     }
   }
 
@@ -224,7 +225,7 @@ class SkillWatcher {
       this.debounceTimer = null;
     }
     this.clients.clear();
-    console.log('[SkillWatcher] Watcher destroyed');
+    logger.info('[SkillWatcher] Watcher destroyed');
   }
 }
 

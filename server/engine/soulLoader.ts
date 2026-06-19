@@ -11,6 +11,7 @@
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import { logger } from '../logger.js';
 
 // ===================== 常量 =====================
 
@@ -321,23 +322,23 @@ export function initDefaultSoulFiles(): void {
     if (fs.existsSync(templatePath)) {
       try {
         content = fs.readFileSync(templatePath, 'utf-8');
-        console.log(`[SoulLoader] 从模板读取 ${fileName}`);
+        logger.debug(`[SoulLoader] 从模板读取 ${fileName}`);
       } catch (err) {
-        console.warn(`[SoulLoader] 读取模板 ${fileName} 失败:`, err);
+        logger.warn(`[SoulLoader] 读取模板 ${fileName} 失败:`, err);
       }
     }
 
     // 策略2: 内联默认内容（打包环境 fallback）
     if (!content) {
       content = fileName === SOUL_FILE ? DEFAULT_SOUL_CONTENT : DEFAULT_USER_CONTENT;
-      console.log(`[SoulLoader] 使用内联默认 ${fileName}`);
+      logger.debug(`[SoulLoader] 使用内联默认 ${fileName}`);
     }
 
     try {
       fs.writeFileSync(targetPath, content, 'utf-8');
-      console.log(`[SoulLoader] 初始化默认 ${fileName} → ${targetPath}`);
+      logger.debug(`[SoulLoader] 初始化默认 ${fileName} → ${targetPath}`);
     } catch (err) {
-      console.warn(`[SoulLoader] 写入 ${fileName} 失败:`, err);
+      logger.warn(`[SoulLoader] 写入 ${fileName} 失败:`, err);
     }
   }
 }

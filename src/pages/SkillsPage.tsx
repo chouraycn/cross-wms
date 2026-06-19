@@ -65,7 +65,7 @@ const SkillsPage: React.FC = () => {
     loadAllUsageStats().then(() => {
       setSkillVersion((v) => v + 1);
     }).catch((e) => {
-      console.error('[SkillsPage] loadAllUsageStats failed:', e);
+      // console.error('[SkillsPage] loadAllUsageStats failed:', e);
     });
   }, []);
 
@@ -74,7 +74,7 @@ const SkillsPage: React.FC = () => {
     loadAuditStatuses().then(() => {
       setSkillVersion((v) => v + 1);
     }).catch((e) => {
-      console.error('[SkillsPage] loadAuditStatuses failed:', e);
+      // console.error('[SkillsPage] loadAuditStatuses failed:', e);
     });
   }, []);
 
@@ -87,15 +87,15 @@ const SkillsPage: React.FC = () => {
     const handleMessage = (event: MessageEvent) => {
       try {
         const data: SkillWatchEvent = JSON.parse(event.data);
-        console.log('[SkillsPage] SSE event:', data);
+        // console.log('[SkillsPage] SSE event:', data);
         refreshFromRemote().then(() => {
           setSkillVersion((v) => v + 1);
           showToast('技能列表已更新', 'info');
         }).catch((e) => {
-          console.error('[SkillsPage] refreshFromRemote failed:', e);
+          // console.error('[SkillsPage] refreshFromRemote failed:', e);
         });
       } catch (e) {
-        console.error('[SkillsPage] SSE parse error:', e);
+        // console.error('[SkillsPage] SSE parse error:', e);
       }
     };
 
@@ -128,7 +128,7 @@ const SkillsPage: React.FC = () => {
       chainStore.loadChains().then(() => {
         setChains(chainStore.getChains());
       }).catch((e) => {
-        console.error('[SkillsPage] loadChains failed:', e);
+        // console.error('[SkillsPage] loadChains failed:', e);
       });
     }
   }, [activeTab, chainVersion]);
@@ -289,7 +289,7 @@ const SkillsPage: React.FC = () => {
         }
         setLatestExecByType(map);
       } catch (err) {
-        console.error('Failed to load automations', err);
+        // console.error('Failed to load automations', err);
       }
     };
     load();

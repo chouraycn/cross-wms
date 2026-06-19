@@ -42,7 +42,7 @@ function saveSessions(sessions: Session[]): void {
     }));
     debouncedStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(serializable));
   } catch (e) {
-    console.error(`[${SESSIONS_STORAGE_KEY}] 保存失败:`, e);
+    // console.error(`[${SESSIONS_STORAGE_KEY}] 保存失败:`, e);
     if (e instanceof DOMException && e.name === 'QuotaExceededError') {
       window.dispatchEvent(new CustomEvent('cdf-know-clow-storage-warning', {
         detail: { key: SESSIONS_STORAGE_KEY },

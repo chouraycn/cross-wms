@@ -129,7 +129,7 @@ vi.mock('../../src/services/skill/embeddingUtils.js', () => ({
   }),
 }));
 
-const mockSemanticSearch = vi.fn<() => Array<{ skillId: string; similarity: number }>>();
+const mockSemanticSearch = vi.fn<() => Promise<Array<{ skillId: string; similarity: number }>>>();
 const mockBatchGenerateEmbeddings = vi.fn(() => ({
   total: 4,
   newCount: 4,
@@ -212,6 +212,8 @@ describe('Matching Service', () => {
       return defaults[key] ?? null;
     });
     mockGetAverageFeedbackScore.mockReturnValue(0.5);
+    // semanticSearch 默认返回空 Promise
+    mockSemanticSearch.mockResolvedValue([]);
   });
 
   // ===================== 配置读写 =====================
@@ -251,8 +253,8 @@ describe('Matching Service', () => {
   // ===================== keyword 模式匹配 =====================
 
   describe('match() - keyword 模式', () => {
-    it('输入匹配 trigger 时应返回对应技能', () => {
-      const results = match({
+    it('输入匹配 trigger 时应返回对应技能', async () => {
+      const results = await match({
         query: '查看库存',
         matchMode: 'keyword',
         topK: 5,
@@ -264,8 +266,8 @@ describe('Matching Service', () => {
       expect(inventoryMatch!.matchMode).toBe('keyword');
     });
 
-    it('输入匹配 name 时应返回对应技能', () => {
-      const results = match({
+    it('输入匹配 name 时应返回对应技能', async () => {
+      const results = await match({
         query: '库存管理',
         matchMode: 'keyword',
         topK: 5,
@@ -276,8 +278,8 @@ describe('Matching Service', () => {
       expect(inventoryMatch).toBeDefined();
     });
 
-    it('空查询应返回空结果', () => {
-      const results = match({
+    it('空查询应返回空结果', async () => {
+      const results = await match({
         query: '   ',
         matchMode: 'keyword',
         topK: 5,
@@ -286,8 +288,8 @@ describe('Matching Service', () => {
       expect(results.length).toBe(0);
     });
 
-    it('不相关的查询应返回空或低分结果', () => {
-      const results = match({
+    it('不相关的查询应返回空或低分结果', async () => {
+      const results = await match({
         query: 'xyz不存在的技能abc',
         matchMode: 'keyword',
         topK: 5,
@@ -298,8 +300,8 @@ describe('Matching Service', () => {
       }
     });
 
-    it('结果应包含 skillName', () => {
-      const results = match({
+    it('结果应包含 skillName', async () => {
+      const results = await match({
         query: '库存',
         matchMode: 'keyword',
         topK: 5,
@@ -311,8 +313,8 @@ describe('Matching Service', () => {
       }
     });
 
-    it('结果应包含 reasons', () => {
-      const results = match({
+    it('结果应包含 reasons', async () => {
+      const results = await match({
         query: '库存',
         matchMode: 'keyword',
         topK: 5,
@@ -327,12 +329,12 @@ describe('Matching Service', () => {
   // ===================== semantic 模式匹配 =====================
 
   describe('match() - semantic 模式', () => {
-    it('应调用 semanticSearch 并返回结果', () => {
-      mockSemanticSearch.mockReturnValueOnce([
+    it('应调用 semanticSearch 并返回结果', async () => {
+      mockSemanticSearch.mockResolvedValueOnce([
         { skillId: 'builtin-inventory', similarity: 0.85 },
       ]);
 
-      const results = match({
+      const results = await match({
         query: '查询库存状态',
         matchMode: 'semantic',
         topK: 5,
@@ -346,10 +348,10 @@ describe('Matching Service', () => {
       expect(results[0].score).toBeCloseTo(0.85, 3);
     });
 
-    it('语义搜索无结果时应返回空', () => {
-      mockSemanticSearch.mockReturnValueOnce([]);
+    it('语义搜索无结果时应返回空', async () => {
+      mockSemanticSearch.mockResolvedValueOnce([]);
 
-      const results = match({
+      const results = await match({
         query: '不存在的查询',
         matchMode: 'semantic',
         topK: 5,
@@ -363,13 +365,13 @@ describe('Matching Service', () => {
   // ===================== hybrid 模式匹配 =====================
 
   describe('match() - hybrid 模式', () => {
-    it('应融合语义和关键词搜索结果', () => {
-      mockSemanticSearch.mockReturnValueOnce([
+    it('应融合语义和关键词搜索结果', async () => {
+      mockSemanticSearch.mockResolvedValueOnce([
         { skillId: 'builtin-inventory', similarity: 0.85 },
         { skillId: 'builtin-inbound', similarity: 0.4 },
       ]);
 
-      const results = match({
+      const results = await match({
         query: '库存',
         matchMode: 'hybrid',
         topK: 5,
@@ -381,12 +383,12 @@ describe('Matching Service', () => {
       expect(results[0].matchMode).toBe('hybrid');
     });
 
-    it('应支持反馈学习', () => {
-      mockSemanticSearch.mockReturnValueOnce([
+    it('应支持反馈学习', async () => {
+      mockSemanticSearch.mockResolvedValueOnce([
         { skillId: 'builtin-inventory', similarity: 0.8 },
       ]);
 
-      match({
+      await match({
         query: '库存',
         matchMode: 'hybrid',
         topK: 5,
@@ -400,12 +402,12 @@ describe('Matching Service', () => {
   // ===================== context 模式匹配 =====================
 
   describe('match() - context 模式', () => {
-    it('应使用上下文增强搜索', () => {
-      mockSemanticSearch.mockReturnValueOnce([
+    it('应使用上下文增强搜索', async () => {
+      mockSemanticSearch.mockResolvedValueOnce([
         { skillId: 'builtin-inventory', similarity: 0.75 },
       ]);
 
-      const results = match(
+      const results = await match(
         {
           query: '查看状态',
           matchMode: 'context',
@@ -422,12 +424,12 @@ describe('Matching Service', () => {
       expect(results[0].matchMode).toBe('context');
     });
 
-    it('无上下文消息时应仍可正常查询', () => {
-      mockSemanticSearch.mockReturnValueOnce([
+    it('无上下文消息时应仍可正常查询', async () => {
+      mockSemanticSearch.mockResolvedValueOnce([
         { skillId: 'builtin-inventory', similarity: 0.7 },
       ]);
 
-      const results = match(
+      const results = await match(
         {
           query: '库存',
           matchMode: 'context',
@@ -444,12 +446,12 @@ describe('Matching Service', () => {
   // ===================== 降级策略 =====================
 
   describe('match() - 降级策略', () => {
-    it('未知匹配模式应降级到 hybrid', () => {
-      mockSemanticSearch.mockReturnValueOnce([
+    it('未知匹配模式应降级到 hybrid', async () => {
+      mockSemanticSearch.mockResolvedValueOnce([
         { skillId: 'builtin-inventory', similarity: 0.8 },
       ]);
 
-      const results = match({
+      const results = await match({
         query: '库存',
         matchMode: 'unknown' as any,
         topK: 5,
@@ -463,8 +465,8 @@ describe('Matching Service', () => {
   // ===================== 过滤和排除 =====================
 
   describe('match() - 过滤与排除', () => {
-    it('excludeSkillIds 应排除指定技能', () => {
-      const results = match({
+    it('excludeSkillIds 应排除指定技能', async () => {
+      const results = await match({
         query: '库存',
         matchMode: 'keyword',
         topK: 10,
@@ -475,8 +477,8 @@ describe('Matching Service', () => {
       expect(excluded).toBeUndefined();
     });
 
-    it('categoryFilter 应只保留指定分类', () => {
-      const results = match({
+    it('categoryFilter 应只保留指定分类', async () => {
+      const results = await match({
         query: '库存',
         matchMode: 'keyword',
         topK: 10,
@@ -508,16 +510,16 @@ describe('Matching Service', () => {
   // ===================== 初始化 =====================
 
   describe('initMatchingEngine', () => {
-    it('应返回嵌入统计', () => {
-      const stats = initMatchingEngine();
+    it('应返回嵌入统计', async () => {
+      const stats = await initMatchingEngine();
       expect(stats.embeddingStats).toBeDefined();
       expect(stats.embeddingStats.total).toBe(4); // 4 个 mock BUILTIN_SKILLS
     });
   });
 
   describe('rebuildAllEmbeddings', () => {
-    it('应强制重建嵌入向量', () => {
-      const stats = rebuildAllEmbeddings();
+    it('应强制重建嵌入向量', async () => {
+      const stats = await rebuildAllEmbeddings();
       expect(stats).toBeDefined();
       expect(stats.total).toBe(4); // 4 个 mock BUILTIN_SKILLS
     });

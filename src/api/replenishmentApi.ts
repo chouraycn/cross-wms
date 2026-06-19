@@ -68,7 +68,7 @@ export async function fetchReplenishmentSuggestions(
     const resp = await fetch(url);
     return await handleResponse<PaginatedData<ReplenishmentSuggestion>>(resp);
   } catch (error) {
-    console.warn('[ReplenishmentAPI] 获取补货建议列表失败:', error);
+    // console.warn('[ReplenishmentAPI] 获取补货建议列表失败:', error);
     return { items: [], total: 0, page: 1, pageSize: 20 };
   }
 }
@@ -88,7 +88,7 @@ export async function generateReplenishmentSuggestions(
     });
     return await handleResponse<{ created: number; suggestions: ReplenishmentSuggestion[] }>(resp);
   } catch (error) {
-    console.warn('[ReplenishmentAPI] 生成补货建议失败:', error);
+    // console.warn('[ReplenishmentAPI] 生成补货建议失败:', error);
     return { created: 0, suggestions: [] };
   }
 }
@@ -109,7 +109,7 @@ export async function updateSuggestionStatus(
     });
     return await handleResponse<ReplenishmentSuggestion>(resp);
   } catch (error) {
-    console.warn('[ReplenishmentAPI] 更新建议状态失败:', error);
+    // console.warn('[ReplenishmentAPI] 更新建议状态失败:', error);
     return null;
   }
 }
@@ -130,7 +130,7 @@ export async function createTransferFromSuggestion(
     });
     return await handleResponse<{ suggestion: ReplenishmentSuggestion; transferOrderId: string }>(resp);
   } catch (error) {
-    console.warn('[ReplenishmentAPI] 创建调拨单失败:', error);
+    // console.warn('[ReplenishmentAPI] 创建调拨单失败:', error);
     return null;
   }
 }
@@ -163,7 +163,7 @@ export async function fetchSourceRecommendations(
     const resp = await fetch(`${BASE_URL}/${id}/sources`);
     return await handleResponse<SourceRecommendation[]>(resp);
   } catch (error) {
-    console.warn('[ReplenishmentAPI] 获取来源仓库推荐失败:', error);
+    // console.warn('[ReplenishmentAPI] 获取来源仓库推荐失败:', error);
     return [];
   }
 }

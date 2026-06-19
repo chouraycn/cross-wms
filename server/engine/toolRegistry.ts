@@ -25,6 +25,7 @@ const isLinux = PLATFORM === 'linux';
 import type { ToolDefinition, ToolCall } from '../aiClient.js';
 import { isMcpToolName } from './mcpTypes.js';
 import { handleWebSearch, handleWebFetch, handleWebApiCall } from './webTools.js'; // v2.4.0
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -407,19 +408,19 @@ async function handleDesktopScreenshot(args: Record<string, unknown>): Promise<s
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
 
-    // Check if file exists
-    if (!fs.existsSync(screenshotPath)) {
+    // Read and convert to base64 (async to avoid blocking event loop)
+    let imageBuffer: Buffer;
+    try {
+      imageBuffer = await fs.promises.readFile(screenshotPath);
+    } catch {
       return JSON.stringify({ success: false, error: 'Screenshot file not created' });
     }
-
-    // Read and convert to base64
-    const imageBuffer = fs.readFileSync(screenshotPath);
     const base64 = imageBuffer.toString('base64');
     const dataUrl = `data:image/png;base64,${base64}`;
 
-    // Clean up temp file
+    // Clean up temp file (async)
     try {
-      fs.unlinkSync(screenshotPath);
+      await fs.promises.unlink(screenshotPath);
     } catch {
       // Ignore cleanup errors
     }
@@ -434,7 +435,7 @@ async function handleDesktopScreenshot(args: Record<string, unknown>): Promise<s
   }
 }
 
-/** desktop_click — 点击元素（ref 优先）或坐标 */
+/** desktop_click — 点击元素（ref 优先）或坐标（支持归一化坐标） */
 async function handleDesktopClick(args: Record<string, unknown>): Promise<string> {
   const { execSync } = await import('child_process');
 
@@ -442,7 +443,10 @@ async function handleDesktopClick(args: Record<string, unknown>): Promise<string
     const ref = args.ref ? String(args.ref) : null;
     let x = args.x !== undefined ? Number(args.x) : null;
     let y = args.y !== undefined ? Number(args.y) : null;
+    const nx = args.nx !== undefined ? Number(args.nx) : null;
+    const ny = args.ny !== undefined ? Number(args.ny) : null;
     let resolvedFromRef = false;
+    let resolvedFromNormalized = false;
 
     // ref 模式：从缓存查找元素 bounds，计算中心坐标
     if (ref) {
@@ -456,11 +460,60 @@ async function handleDesktopClick(args: Record<string, unknown>): Promise<string
       x = Math.round(elem.bounds.x + elem.bounds.w / 2);
       y = Math.round(elem.bounds.y + elem.bounds.h / 2);
       resolvedFromRef = true;
+    } else if (nx !== null && ny !== null) {
+      // v1.5.130: 归一化坐标模式 — 分辨率无关点击
+      // nx, ny 在 0.0~1.0 范围，转换为屏幕绝对坐标
+      if (nx < 0 || nx > 1 || ny < 0 || ny > 1) {
+        return JSON.stringify({
+          success: false,
+          error: `归一化坐标 nx/ny 必须在 0.0~1.0 范围内，当前 nx=${nx}, ny=${ny}`,
+        });
+      }
+
+      // 获取屏幕分辨率
+      let screenW = 0;
+      let screenH = 0;
+      try {
+        if (isMac) {
+          const resolution = execSync(
+            `python3 -c "import Quartz; m=Quartz.CGDisplayBounds(Quartz.CGMainDisplayID()); print(f'{m.size.width},{m.size.height}')"`,
+            { encoding: 'utf8', timeout: 3000 }
+          ).trim();
+          const [w, h] = resolution.split(',');
+          screenW = parseInt(w) || 0;
+          screenH = parseInt(h) || 0;
+        } else if (isLinux) {
+          const resolution = execSync('xdpyinfo | grep dimensions', { encoding: 'utf8', timeout: 3000 }).trim();
+          const match = resolution.match(/(\d+)x(\d+)/);
+          if (match) {
+            screenW = parseInt(match[1]) || 0;
+            screenH = parseInt(match[2]) || 0;
+          }
+        }
+      } catch {
+        // 降级：使用默认分辨率
+      }
+
+      if (screenW > 0 && screenH > 0) {
+        x = Math.round(nx * screenW);
+        y = Math.round(ny * screenH);
+        resolvedFromNormalized = true;
+      } else {
+        return JSON.stringify({
+          success: false,
+          error: '无法获取屏幕分辨率，归一化坐标转换失败。请使用绝对坐标 x/y 或 ref。',
+        });
+      }
     }
 
     if (x === null || y === null) {
-      return JSON.stringify({ success: false, error: '需要提供 ref 或 x/y 坐标' });
+      return JSON.stringify({ success: false, error: '需要提供 ref、x/y 坐标或 nx/ny 归一化坐标' });
     }
+
+    // 构建返回值附加信息
+    const extraInfo: Record<string, unknown> = {};
+    if (ref) { extraInfo.ref = ref; extraInfo.resolvedFromRef = resolvedFromRef; }
+    if (resolvedFromNormalized) { extraInfo.nx = nx; extraInfo.ny = ny; extraInfo.resolvedFromNormalized = true; }
 
     if (isMac) {
       // macOS: 使用 Python + Quartz 精确点击
@@ -486,13 +539,13 @@ except Exception as e:
         const tmpFile = `/tmp/desktop-click-${Date.now()}.py`;
         fs.writeFileSync(tmpFile, pythonScript);
         const output = execSync(`python3 "${tmpFile}"`, { encoding: 'utf8', timeout: 3000 }).toString();
-        try { fs.unlinkSync(tmpFile); } catch {}
-        return JSON.stringify({ success: true, output: output.trim(), x, y, ...(ref ? { ref, resolvedFromRef } : {}) });
+        try { await fs.promises.unlink(tmpFile); } catch {}
+        return JSON.stringify({ success: true, output: output.trim(), x, y, ...extraInfo });
       } catch {
         // Fallback: cliclick
         try {
           execSync(`cliclick c:${x},${y}`, { encoding: 'utf8', timeout: 3000 });
-          return JSON.stringify({ success: true, method: 'cliclick', x, y, ...(ref ? { ref, resolvedFromRef } : {}) });
+          return JSON.stringify({ success: true, method: 'cliclick', x, y, ...extraInfo });
         } catch {
           return JSON.stringify({ success: false, error: 'Click failed. Grant Accessibility permissions or install cliclick.' });
         }
@@ -500,7 +553,7 @@ except Exception as e:
     } else if (isLinux) {
       // Linux: xdotool
       execSync(`xdotool mousemove ${x} ${y} click 1`, { encoding: 'utf8', timeout: 3000 });
-      return JSON.stringify({ success: true, x, y, ...(ref ? { ref, resolvedFromRef } : {}) });
+      return JSON.stringify({ success: true, x, y, ...extraInfo });
     } else {
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
@@ -1130,28 +1183,54 @@ async function handleDesktopSee(args: Record<string, unknown>): Promise<string> 
       return JSON.stringify({ success: false, error: `Unsupported platform: ${PLATFORM}` });
     }
 
-    // Check if file exists
-    if (!fs.existsSync(screenshotPath)) {
+    // Read and convert to base64 (async to avoid blocking event loop)
+    let imageBuffer: Buffer;
+    try {
+      imageBuffer = await fs.promises.readFile(screenshotPath);
+    } catch {
       return JSON.stringify({ success: false, error: 'Screenshot file not created' });
     }
-
-    // Read and convert to base64
-    const imageBuffer = fs.readFileSync(screenshotPath);
     const base64 = imageBuffer.toString('base64');
     const dataUrl = `data:image/png;base64,${base64}`;
 
-    // Clean up temp file
+    // Clean up temp file (async)
     try {
-      fs.unlinkSync(screenshotPath);
+      await fs.promises.unlink(screenshotPath);
     } catch {
       // Ignore cleanup errors
+    }
+
+    // v1.5.130: 获取屏幕分辨率，支持归一化坐标点击
+    let screenWidth = 0;
+    let screenHeight = 0;
+    try {
+      if (isMac) {
+        const resolution = execSync(
+          `python3 -c "import Quartz; m=Quartz.CGDisplayBounds(Quartz.CGMainDisplayID()); print(f'{m.size.width},{m.size.height}')"`,
+          { encoding: 'utf8', timeout: 3000 }
+        ).trim();
+        const [w, h] = resolution.split(',');
+        screenWidth = parseInt(w) || 0;
+        screenHeight = parseInt(h) || 0;
+      } else if (isLinux) {
+        const resolution = execSync('xdpyinfo | grep dimensions', { encoding: 'utf8', timeout: 3000 }).trim();
+        const match = resolution.match(/(\d+)x(\d+)/);
+        if (match) {
+          screenWidth = parseInt(match[1]) || 0;
+          screenHeight = parseInt(match[2]) || 0;
+        }
+      }
+    } catch {
+      // 屏幕尺寸获取失败不影响截图返回
     }
 
     return JSON.stringify({
       success: true,
       image: dataUrl,
-      message: 'Screenshot captured. Use this image to visually identify UI elements, click targets, text fields, and other interactive elements. Provide coordinates for clicking or describe elements you want to interact with.',
-      instructions: 'Analyze the screenshot and identify: 1) Clickable buttons (provide x,y coordinates), 2) Text input fields, 3) Menu items, 4) Any labels or text content needed for automation.',
+      screenWidth,
+      screenHeight,
+      message: 'Screenshot captured. Use this image to visually identify UI elements. You can provide normalized coordinates (nx, ny in 0.0~1.0 range) to desktop_click for resolution-independent clicking. Example: nx=0.5, ny=0.5 clicks the center of the screen.',
+      instructions: `Analyze the screenshot and identify: 1) Clickable buttons, 2) Text input fields, 3) Menu items, 4) Any labels or text content. Screen resolution: ${screenWidth}x${screenHeight}. When clicking, use normalized coordinates (nx, ny in 0~1 range) for resolution independence, or call desktop_click_smart with a semantic description.`,
     });
   } catch (e: any) {
     return JSON.stringify({ success: false, error: e.message || 'See analysis failed' });
@@ -1333,6 +1412,180 @@ async function handleDesktopFind(args: Record<string, unknown>): Promise<string>
       ? `使用 ref (${matches[0].ref}, ...) 调用 desktop_click 或 desktop_type 操作匹配的元素。`
       : '未找到匹配元素，可尝试调整搜索条件或重新调用 desktop_snapshot。',
   });
+}
+
+// ===================== 语义元素匹配 (v1.5.130) =====================
+
+/**
+ * desktop_click_smart — 语义点击：用 ONNX embedding 匹配 UI 元素
+ *
+ * 工作流程：
+ * 1. 调用 desktop_snapshot 获取前台应用 UI 元素树
+ * 2. 为每个元素的 "role name description" 文本生成 embedding
+ * 3. 为用户描述生成 embedding，计算余弦相似度
+ * 4. 找到最佳匹配元素，点击其中心坐标
+ *
+ * 优势：
+ * - 分辨率无关（基于元素 bounds，不是像素坐标）
+ * - 语义理解（"提交按钮" 能匹配 "Submit"）
+ * - 无需记住 ref ID
+ */
+async function handleDesktopClickSmart(args: Record<string, unknown>): Promise<string> {
+  const description = String(args.description || '').trim();
+  const autoSnapshot = args.auto_snapshot !== false; // 默认 true
+
+  if (!description) {
+    return JSON.stringify({ success: false, error: 'description 参数必填，描述要点击的元素（如"提交按钮"、"搜索输入框"）' });
+  }
+
+  try {
+    // 1. 自动获取最新快照（如果缓存不存在或 auto_snapshot=true）
+    if (autoSnapshot || !desktopSnapshotCache || desktopSnapshotCache.size === 0) {
+      const snapshotResult = await handleDesktopSnapshot();
+      const snapshotParsed = JSON.parse(snapshotResult);
+      if (!snapshotParsed.success) {
+        return JSON.stringify({
+          success: false,
+          error: `无法获取 UI 元素快照: ${snapshotParsed.error}`,
+          hint: '请确保已在系统设置中授予辅助功能权限',
+        });
+      }
+    }
+
+    if (!desktopSnapshotCache || desktopSnapshotCache.size === 0) {
+      return JSON.stringify({ success: false, error: 'UI 元素快照为空' });
+    }
+
+    // 2. 收集所有候选元素的可搜索文本
+    const elements = Array.from(desktopSnapshotCache.values());
+    const candidates = elements
+      .filter(e => e.bounds.w > 0 && e.bounds.h > 0) // 过滤无 bounds 的元素
+      .map(elem => ({
+        elem,
+        text: [elem.role, elem.name, elem.description].filter(Boolean).join(' ').trim(),
+      }))
+      .filter(c => c.text.length > 0);
+
+    if (candidates.length === 0) {
+      return JSON.stringify({ success: false, error: '快照中没有可匹配的元素' });
+    }
+
+    // 3. 尝试使用 ONNX embedding 进行语义匹配
+    let bestMatch: { elem: DesktopElement; similarity: number; method: string } | null = null;
+
+    try {
+      // 动态导入 ONNX embedding（避免在不需要时加载模型）
+      const { embedText, initOnnxEmbedding, getOnnxStatus } = await import('./onnxEmbedding.js');
+
+      const status = getOnnxStatus();
+      if (status.status !== 'ready') {
+        await initOnnxEmbedding();
+      }
+
+      // 生成查询 embedding
+      const queryEmb = await embedText(description);
+
+      // 为每个候选元素生成 embedding 并计算余弦相似度
+      let bestSim = -1;
+      for (const candidate of candidates) {
+        const elemEmb = await embedText(candidate.text);
+
+        // 余弦相似度（两个 L2 归一化向量的点积）
+        let dot = 0;
+        for (let i = 0; i < queryEmb.length; i++) {
+          dot += queryEmb[i] * elemEmb[i];
+        }
+
+        if (dot > bestSim) {
+          bestSim = dot;
+          bestMatch = { elem: candidate.elem, similarity: dot, method: 'onnx_embedding' };
+        }
+      }
+
+      // 相似度阈值：低于 0.3 认为不匹配
+      if (bestMatch && bestMatch.similarity < 0.3) {
+        bestMatch = null;
+      }
+    } catch (e) {
+      logger.warn('[DesktopClickSmart] ONNX embedding 匹配失败，降级为关键词匹配:', e);
+    }
+
+    // 4. 降级：关键词匹配（如果 ONNX 不可用或匹配失败）
+    if (!bestMatch) {
+      const descLower = description.toLowerCase();
+      let bestScore = 0;
+
+      for (const candidate of candidates) {
+        const textLower = candidate.text.toLowerCase();
+        let score = 0;
+
+        // 精确包含匹配
+        if (textLower.includes(descLower)) {
+          score = 1.0;
+        } else {
+          // 分词匹配
+          const descWords = descLower.split(/\s+/).filter(w => w.length > 1);
+          for (const word of descWords) {
+            if (textLower.includes(word)) {
+              score += 0.3;
+            }
+          }
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = { elem: candidate.elem, similarity: score, method: 'keyword_fallback' };
+        }
+      }
+
+      // 关键词匹配阈值
+      if (bestMatch && bestScore < 0.2) {
+        bestMatch = null;
+      }
+    }
+
+    if (!bestMatch) {
+      // 返回候选元素列表供 AI 选择
+      return JSON.stringify({
+        success: false,
+        error: `未找到与 "${description}" 匹配的 UI 元素`,
+        candidates: candidates.slice(0, 10).map(c => ({
+          ref: c.elem.ref,
+          role: c.elem.role,
+          name: c.elem.name,
+          description: c.elem.description || '',
+          text: c.text,
+        })),
+        hint: '可尝试：1) 重新描述元素 2) 使用 desktop_snapshot 查看完整元素列表 3) 使用 desktop_see 截图后用归一化坐标点击',
+      });
+    }
+
+    // 5. 点击最佳匹配元素的中心
+    const elem = bestMatch.elem;
+    const clickX = Math.round(elem.bounds.x + elem.bounds.w / 2);
+    const clickY = Math.round(elem.bounds.y + elem.bounds.h / 2);
+
+    // 调用已有的 click 逻辑
+    const clickResult = await handleDesktopClick({ x: clickX, y: clickY });
+
+    return JSON.stringify({
+      success: true,
+      matchedElement: {
+        ref: elem.ref,
+        role: elem.role,
+        name: elem.name,
+        description: elem.description || '',
+        bounds: elem.bounds,
+      },
+      similarity: Math.round(bestMatch.similarity * 100) / 100,
+      matchMethod: bestMatch.method,
+      clickX,
+      clickY,
+      clickResult: JSON.parse(clickResult),
+    });
+  } catch (e: any) {
+    return JSON.stringify({ success: false, error: `语义点击失败: ${e.message || e}` });
+  }
 }
 
 // ===================== 工具注册表 =====================
@@ -1518,13 +1771,15 @@ export async function initDefaultTools(): Promise<void> {
       type: 'function',
       function: {
         name: 'desktop_click',
-        description: '点击桌面 UI 元素或坐标。推荐使用 ref（来自 desktop_snapshot）精确定位元素，也可提供 x/y 坐标点击。ref 优先于坐标。',
+        description: '点击桌面 UI 元素或坐标。三种定位方式：1) ref（来自 desktop_snapshot，最精确）2) nx/ny 归一化坐标（0.0~1.0，分辨率无关，推荐用于截图后点击）3) x/y 绝对坐标。优先级：ref > nx/ny > x/y。',
         parameters: {
           type: 'object',
           properties: {
-            ref: { type: 'string', description: '元素引用 ID（如 "d1"、"d2"），来自 desktop_snapshot 的返回结果。提供 ref 时自动计算元素中心坐标点击。' },
-            x: { type: 'number', description: '点击位置的 X 坐标（当不使用 ref 时必填）' },
-            y: { type: 'number', description: '点击位置的 Y 坐标（当不使用 ref 时必填）' },
+            ref: { type: 'string', description: '元素引用 ID（如 "d1"、"d2"），来自 desktop_snapshot。优先级最高。' },
+            nx: { type: 'number', description: '归一化 X 坐标（0.0~1.0），基于屏幕宽度自动转换。分辨率无关，推荐用于截图后点击。' },
+            ny: { type: 'number', description: '归一化 Y 坐标（0.0~1.0），基于屏幕高度自动转换。分辨率无关，推荐用于截图后点击。' },
+            x: { type: 'number', description: '点击位置的绝对 X 坐标（像素）。当不使用 ref 或 nx/ny 时使用。' },
+            y: { type: 'number', description: '点击位置的绝对 Y 坐标（像素）。当不使用 ref 或 nx/ny 时使用。' },
           },
           required: [],
         },
@@ -1680,7 +1935,7 @@ export async function initDefaultTools(): Promise<void> {
       type: 'function',
       function: {
         name: 'desktop_see',
-        description: '截取当前屏幕截图并返回 base64 图片。用于 AI 视觉分析屏幕内容，识别可点击元素、文本框、菜单等，然后决定下一步操作（如点击坐标、输入文本等）。',
+        description: '截取当前屏幕截图并返回 base64 图片及屏幕分辨率。用于 AI 视觉分析屏幕内容，识别可点击元素、文本框、菜单等。返回的 screenWidth/screenHeight 用于归一化坐标转换。点击时推荐使用 desktop_click(nx, ny) 归一化坐标或 desktop_click_smart(description) 语义点击，避免分辨率变化导致坐标偏移。',
         parameters: {
           type: 'object',
           properties: {},
@@ -1726,6 +1981,26 @@ export async function initDefaultTools(): Promise<void> {
       },
     },
     handler: handleDesktopFind,
+  });
+
+  // desktop_click_smart — 语义点击（ONNX embedding 匹配 UI 元素）
+  registerTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'desktop_click_smart',
+        description: '语义点击：用自然语言描述要点击的元素（如"提交按钮"、"搜索框"、"取消"），自动获取 UI 元素快照并用 ONNX 语义匹配找到最佳元素后点击。分辨率无关，无需提供坐标。如果匹配失败会返回候选元素列表。',
+        parameters: {
+          type: 'object',
+          properties: {
+            description: { type: 'string', description: '要点击的元素的自然语言描述（如"提交按钮"、"搜索输入框"、"关闭"）' },
+            auto_snapshot: { type: 'boolean', description: '是否自动刷新 UI 快照（默认 true）。设为 false 可复用上次快照缓存。', default: true },
+          },
+          required: ['description'],
+        },
+      },
+    },
+    handler: handleDesktopClickSmart,
   });
 
   // app_setBotName — 修改 AI 助手显示名称
@@ -1781,13 +2056,16 @@ export async function initDefaultTools(): Promise<void> {
       type: 'function',
       function: {
         name: 'web_fetch',
-        description: '抓取指定 URL 的网页内容，将 HTML 转换为 Markdown 格式返回。适用于获取文章、文档、API 响应等网页内容。仅支持 http/https。renderJs=true 时使用 Playwright 渲染 JS 动态页面（SPA/React/Vue 等），不可用时自动降级到原生 fetch。',
+        description: '抓取指定 URL 的网页内容，将 HTML 转换为 Markdown 格式返回。适用于获取文章、文档、API 响应等网页内容。仅支持 http/https。renderJs=true 时使用 Playwright 渲染 JS 动态页面（SPA/React/Vue 等），不可用时自动降级到原生 fetch。可配合 selector 等待特定元素加载，或用 executeJs 在页面上执行自定义 JavaScript 后再提取内容。',
         parameters: {
           type: 'object',
           properties: {
             url: { type: 'string', description: '要抓取的网页 URL（支持 http/https）' },
             maxLength: { type: 'number', description: '最大返回内容长度（字节，默认 80000，最大 200000）' },
             renderJs: { type: 'boolean', description: '是否使用 Playwright JS 渲染（适用于 SPA/动态页面，默认 false）' },
+            selector: { type: 'string', description: 'CSS 选择器，renderJs=true 时等待该元素出现在页面上再提取内容（如 "#content"、".article-body"）' },
+            waitUntil: { type: 'string', enum: ['domcontentloaded', 'networkidle', 'load'], description: 'renderJs=true 时的页面加载等待策略。domcontentloaded=DOM 解析完成即返回（快），networkidle=网络空闲后返回（慢但更完整，默认），load=load 事件触发后返回' },
+            executeJs: { type: 'string', description: 'renderJs=true 时在页面上执行的 JavaScript 代码（在提取 HTML 前执行）。可用于滚动加载更多内容、点击展开按钮、提取特定数据等。代码在页面上下文中运行，返回值会包含在响应中。' },
           },
           required: ['url'],
         },
@@ -1831,10 +2109,10 @@ export async function initDefaultTools(): Promise<void> {
         registerTool({ definition: def, handler });
       }
     }
-    console.log('[Tool Registry] Browser tools registered:', browserDefs.map(d => d.function.name).join(', '));
+    logger.debug('[Tool Registry] Browser tools registered:', browserDefs.map(d => d.function.name).join(', '));
   } catch (err) {
     // Playwright 可能未安装，优雅降级
-    console.warn('[Tool Registry] Browser tools not registered (playwright may not be installed):', err instanceof Error ? err.message : String(err));
+    logger.warn('[Tool Registry] Browser tools not registered (playwright may not be installed):', err instanceof Error ? err.message : String(err));
   }
 
   // v3.0: Webhook 工具注册
@@ -1846,9 +2124,9 @@ export async function initDefaultTools(): Promise<void> {
       const handler = whHandlers.get(def.function.name);
       if (handler) registerTool({ definition: def, handler });
     }
-    console.log('[Tool Registry] Webhook tools registered:', whDefs.map(d => d.function.name).join(', '));
+    logger.debug('[Tool Registry] Webhook tools registered:', whDefs.map(d => d.function.name).join(', '));
   } catch (err) {
-    console.warn('[Tool Registry] Webhook tools not registered:', err instanceof Error ? err.message : String(err));
+    logger.warn('[Tool Registry] Webhook tools not registered:', err instanceof Error ? err.message : String(err));
   }
 }
 

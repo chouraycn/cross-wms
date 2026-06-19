@@ -3,6 +3,7 @@ import path from 'path';
 import os from 'os';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from './logger.js';
 
 const DB_DIR = path.join(os.homedir(), '.cdf-know-clow');
 const DB_PATH = path.join(DB_DIR, 'chat.db');
@@ -13,10 +14,10 @@ function backupDatabase(): void {
   try {
     if (fs.existsSync(DB_PATH)) {
       fs.copyFileSync(DB_PATH, DB_BACKUP_PATH);
-      console.log('[DB] 数据库已备份到 chat.db.bak');
+      logger.info('[DB] 数据库已备份到 chat.db.bak');
     }
   } catch (e) {
-    console.warn('[DB] 数据库备份失败:', e);
+    logger.warn('[DB] 数据库备份失败:', e);
   }
 }
 
@@ -32,7 +33,7 @@ function restoreDatabaseFromBackup(): boolean {
       if (!mainExists) {
         // 主文件完全丢失，从备份恢复
         fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
-        console.log('[DB] 数据库已从备份恢复（主文件丢失）');
+        logger.info('[DB] 数据库已从备份恢复（主文件丢失）');
         return true;
       }
       
@@ -42,18 +43,18 @@ function restoreDatabaseFromBackup(): boolean {
         const mainSize = fs.statSync(DB_PATH).size;
         // WAL 大于主 DB 的 50% 且没有 SHM → 可能是崩溃残留
         if (walSize > mainSize * 0.5 && !fs.existsSync(shmPath)) {
-          console.log('[DB] 检测到 WAL 崩溃残留，从备份恢复:', { walSize, mainSize });
+          logger.info('[DB] 检测到 WAL 崩溃残留，从备份恢复:', { walSize, mainSize });
           // 删除损坏的主文件和 WAL
           fs.unlinkSync(DB_PATH);
           fs.unlinkSync(walPath);
           fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
-          console.log('[DB] 数据库已从备份恢复（WAL 崩溃残留）');
+          logger.info('[DB] 数据库已从备份恢复（WAL 崩溃残留）');
           return true;
         }
       }
     }
   } catch (e) {
-    console.warn('[DB] 从备份恢复数据库失败:', e);
+    logger.warn('[DB] 从备份恢复数据库失败:', e);
   }
   return false;
 }
@@ -366,15 +367,15 @@ function startPeriodicCheckpoint(database: Database.Database): void {
       if (Array.isArray(result) && result.length > 0) {
         const row = result[0] as { busy: number; log: number; checkpointed: number };
         if (row.busy === 0 && row.checkpointed >= 0) {
-          console.log(`[DB] ✅ 周期 WAL checkpoint 完成 (${reason}): checkpointed=${row.checkpointed}, log=${row.log}`);
+          logger.info(`[DB] ✅ 周期 WAL checkpoint 完成 (${reason}): checkpointed=${row.checkpointed}, log=${row.log}`);
         } else if (row.busy === 1) {
-          console.warn(`[DB] ⚠️  WAL checkpoint busy (${reason}), 跳过`);
+          logger.warn(`[DB] ⚠️  WAL checkpoint busy (${reason}), 跳过`);
         }
       } else {
-        console.log(`[DB] ✅ 周期 WAL checkpoint 完成 (${reason})`);
+        logger.info(`[DB] ✅ 周期 WAL checkpoint 完成 (${reason})`);
       }
     } catch (e) {
-      console.warn(`[DB] 周期 WAL checkpoint 异常 (${reason}):`, e);
+      logger.warn(`[DB] 周期 WAL checkpoint 异常 (${reason}):`, e);
     } finally {
       writeCountSinceLastCheckpoint = 0;
     }
@@ -391,7 +392,7 @@ function startPeriodicCheckpoint(database: Database.Database): void {
   if (typeof checkpointTimer.unref === 'function') {
     checkpointTimer.unref();
   }
-  console.log(`[DB] 周期 WAL checkpoint 已启动 (interval=${intervalMs}ms, writeThreshold=${intervalWrites})`);
+  logger.info(`[DB] 周期 WAL checkpoint 已启动 (interval=${intervalMs}ms, writeThreshold=${intervalWrites})`);
 }
 
 export function initDb(): Database.Database {
@@ -410,13 +411,13 @@ export function initDb(): Database.Database {
       tempDb.close();
     } catch {
       // checkpoint 失败，可能是 DB 损坏，尝试从备份恢复
-      console.log('[DB] WAL checkpoint 失败，尝试恢复...');
+      logger.info('[DB] WAL checkpoint 失败，尝试恢复...');
       if (fs.existsSync(DB_BACKUP_PATH)) {
         fs.unlinkSync(DB_PATH);
         try { fs.unlinkSync(DB_PATH + '-wal'); } catch {}
         try { fs.unlinkSync(DB_PATH + '-shm'); } catch {}
         fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
-        console.log('[DB] 数据库已从备份恢复（WAL checkpoint 失败）');
+        logger.info('[DB] 数据库已从备份恢复（WAL checkpoint 失败）');
       }
     }
   }
@@ -439,19 +440,19 @@ export function initDb(): Database.Database {
     if (typeof integrityResult === 'string') {
       isOk = integrityResult === 'ok';
       if (!isOk) {
-        console.error('[DB] ❌ integrity_check 失败:', integrityResult);
+        logger.error('[DB] ❌ integrity_check 失败:', integrityResult);
       }
     } else if (Array.isArray(integrityResult) && integrityResult.length > 0) {
       const first = integrityResult[0]?.integrity_check;
       isOk = first === 'ok';
       if (!isOk) {
-        console.error('[DB] ❌ integrity_check 失败:', first);
+        logger.error('[DB] ❌ integrity_check 失败:', first);
       }
     }
 
     // v4.0: 完整性检查失败时，尝试通过 WAL checkpoint(TRUNCATE) 恢复
     if (!isOk) {
-      console.warn('[ChatDB] 数据库完整性检查失败，尝试从 WAL 恢复...');
+      logger.warn('[ChatDB] 数据库完整性检查失败，尝试从 WAL 恢复...');
       db.pragma('wal_checkpoint(TRUNCATE)');
       // 重新检查
       const recheck = db.pragma('integrity_check') as Array<{ integrity_check: string }> | string;
@@ -462,15 +463,15 @@ export function initDb(): Database.Database {
         recheckOk = recheck[0]?.integrity_check === 'ok';
       }
       if (recheckOk) {
-        console.log('[DB] ✅ WAL 恢复成功，完整性检查通过');
+        logger.info('[DB] ✅ WAL 恢复成功，完整性检查通过');
       } else {
-        console.error('[ChatDB] 数据库无法恢复，需手动修复');
+        logger.error('[ChatDB] 数据库无法恢复，需手动修复');
       }
     } else {
-      console.log('[DB] ✅ integrity_check 通过');
+      logger.info('[DB] ✅ integrity_check 通过');
     }
   } catch (e) {
-    console.warn('[DB] integrity_check 异常:', e);
+    logger.warn('[DB] integrity_check 异常:', e);
   }
 
   // v1.5.68: 启动周期 checkpoint（每 5 分钟或累计 100 次写操作触发一次），
@@ -733,7 +734,7 @@ export function initDb(): Database.Database {
   const v150CheckMigrationKey = 'migration_v1.5.0_inv_txn_check';
   const v150CheckMigrationExists = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(v150CheckMigrationKey) as { value: string } | undefined;
   if (!v150CheckMigrationExists) {
-    console.log('[Migrate v1.5.0] 扩展 inventory_transactions CHECK 约束...');
+    logger.info('[Migrate v1.5.0] 扩展 inventory_transactions CHECK 约束...');
     db.exec(`
       CREATE TABLE inventory_transactions_new (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -760,7 +761,7 @@ export function initDb(): Database.Database {
       CREATE INDEX IF NOT EXISTS idx_inv_trans_created ON inventory_transactions(createdAt);
     `);
     db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?)').run(v150CheckMigrationKey, JSON.stringify({ migratedAt: new Date().toISOString() }));
-    console.log('[Migrate v1.5.0] ✅ CHECK 约束扩展完成');
+    logger.info('[Migrate v1.5.0] ✅ CHECK 约束扩展完成');
   }
 
   // ===================== v1.6.0: Replenishment Suggestions =====================
@@ -796,7 +797,7 @@ export function initDb(): Database.Database {
   const minStockExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('inventory_items') WHERE name='minStock'`).get() as { cnt: number };
   if (minStockExists.cnt === 0) {
     db.exec(`ALTER TABLE inventory_items ADD COLUMN minStock INTEGER NOT NULL DEFAULT 0`);
-    console.log('[Migrate v1.6.0] ✅ 添加 minStock 列到 inventory_items');
+    logger.info('[Migrate v1.6.0] ✅ 添加 minStock 列到 inventory_items');
   }
 
   // ===================== v1.4.0: Partners Table =====================
@@ -841,7 +842,7 @@ export function initDb(): Database.Database {
   const migrationExists = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(migrationKey) as { value: string } | undefined;
 
   if (!migrationExists) {
-    console.log('[Migrate v1.4.0] 开始客商数据迁移...');
+    logger.info('[Migrate v1.4.0] 开始客商数据迁移...');
 
     // --- Normalization helper ---
     const normalize = (s: string): string => {
@@ -891,8 +892,8 @@ export function initDb(): Database.Database {
     const supplierMap = groupByName(supplierRows);
     const customerMap = groupByName(customerRows);
 
-    console.log(`[Migrate v1.4.0] 扫描: 入库供应商 ${supplierRows.length} 条, 出库客户 ${customerRows.length} 条`);
-    console.log(`[Migrate v1.4.0] 去重: 唯一供应商 ${supplierMap.size} 个, 唯一客户 ${customerMap.size} 个`);
+    logger.info(`[Migrate v1.4.0] 扫描: 入库供应商 ${supplierRows.length} 条, 出库客户 ${customerRows.length} 条`);
+    logger.info(`[Migrate v1.4.0] 去重: 唯一供应商 ${supplierMap.size} 个, 唯一客户 ${customerMap.size} 个`);
 
     // ---- Phase B: Create partners & backfill ----
 
@@ -918,7 +919,7 @@ export function initDb(): Database.Database {
       if (info.changes > 0) customerCreated++;
     }
 
-    console.log(`[Migrate v1.4.0] 创建: 供应商 ${supplierCreated} 个, 客户 ${customerCreated} 个`);
+    logger.info(`[Migrate v1.4.0] 创建: 供应商 ${supplierCreated} 个, 客户 ${customerCreated} 个`);
 
     // Backfill supplier_id in inbound_records
     const backfillSupplier = db.prepare(
@@ -931,7 +932,7 @@ export function initDb(): Database.Database {
        WHERE supplier IS NOT NULL AND supplier != '' AND supplier_id IS NULL`
     );
     const supplierBackfillResult = backfillSupplier.run();
-    console.log(`[Migrate v1.4.0] 回填入库供应商外键: ${supplierBackfillResult.changes} 条`);
+    logger.info(`[Migrate v1.4.0] 回填入库供应商外键: ${supplierBackfillResult.changes} 条`);
 
     // Backfill customer_id in outbound_records
     const backfillCustomer = db.prepare(
@@ -944,7 +945,7 @@ export function initDb(): Database.Database {
        WHERE customer IS NOT NULL AND customer != '' AND customer_id IS NULL`
     );
     const customerBackfillResult = backfillCustomer.run();
-    console.log(`[Migrate v1.4.0] 回填出库客户外键: ${customerBackfillResult.changes} 条`);
+    logger.info(`[Migrate v1.4.0] 回填出库客户外键: ${customerBackfillResult.changes} 条`);
 
     // ---- Phase C: Write migration marker ----
     const stats = {
@@ -958,9 +959,9 @@ export function initDb(): Database.Database {
       migrationKey,
       JSON.stringify(stats)
     );
-    console.log('[Migrate v1.4.0] ✅ 迁移完成:', JSON.stringify(stats));
+    logger.info('[Migrate v1.4.0] ✅ 迁移完成:', JSON.stringify(stats));
   } else {
-    console.log('[Migrate v1.4.0] 迁移已执行，跳过');
+    logger.info('[Migrate v1.4.0] 迁移已执行，跳过');
   }
 
   // Skill chain tables (v1.1.0)
@@ -1230,10 +1231,10 @@ export function initDb(): Database.Database {
     const folderIdColExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('sessions') WHERE name='folderId'`).get() as { cnt: number };
     if (folderIdColExists.cnt === 0) {
       db.exec(`ALTER TABLE sessions ADD COLUMN folderId TEXT`);
-      console.log('[Migrate v1.9.3] 添加 folderId 列到 sessions 表');
+      logger.info('[Migrate v1.9.3] 添加 folderId 列到 sessions 表');
     }
   } catch (e) {
-    console.warn('[Migrate v1.9.3] 添加 folderId 列失败（可能表不存在）:', e);
+    logger.warn('[Migrate v1.9.3] 添加 folderId 列失败（可能表不存在）:', e);
   }
 
   // v1.9.3: Add agentId column to sessions if missing (idempotent migration)
@@ -1241,10 +1242,10 @@ export function initDb(): Database.Database {
     const agentIdColExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('sessions') WHERE name='agentId'`).get() as { cnt: number };
     if (agentIdColExists.cnt === 0) {
       db.exec(`ALTER TABLE sessions ADD COLUMN agentId TEXT`);
-      console.log('[Migrate v1.9.3] 添加 agentId 列到 sessions 表');
+      logger.info('[Migrate v1.9.3] 添加 agentId 列到 sessions 表');
     }
   } catch (e) {
-    console.warn('[Migrate v1.9.3] 添加 agentId 列失败（可能表不存在）:', e);
+    logger.warn('[Migrate v1.9.3] 添加 agentId 列失败（可能表不存在）:', e);
   }
 
   // ===================== v6.0: Session Lifecycle Columns =====================
@@ -1263,10 +1264,10 @@ export function initDb(): Database.Database {
       const colExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('sessions') WHERE name='${column}'`).get() as { cnt: number };
       if (colExists.cnt === 0) {
         db.exec(`ALTER TABLE sessions ADD COLUMN ${column} ${definition}`);
-        console.log(`[Migrate v6.0] 添加 ${column} 列到 sessions 表`);
+        logger.info(`[Migrate v6.0] 添加 ${column} 列到 sessions 表`);
       }
     } catch (e) {
-      console.warn(`[Migrate v6.0] 添加 ${column} 列失败:`, e);
+      logger.warn(`[Migrate v6.0] 添加 ${column} 列失败:`, e);
     }
   }
 
@@ -1282,7 +1283,7 @@ export function initDb(): Database.Database {
   const lifecycleMigrationKey = 'migration_v6.0_session_lifecycle';
   const lifecycleMigrationExists = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(lifecycleMigrationKey) as { value: string } | undefined;
   if (!lifecycleMigrationExists) {
-    console.log('[Migrate v6.0] 补充现有会话的 lastActiveAt / sessionDate...');
+    logger.info('[Migrate v6.0] 补充现有会话的 lastActiveAt / sessionDate...');
     db.exec(`
       UPDATE sessions SET
         lastActiveAt = COALESCE(lastActiveAt, updatedAt, createdAt),
@@ -1293,7 +1294,7 @@ export function initDb(): Database.Database {
       lifecycleMigrationKey,
       JSON.stringify({ migratedAt: new Date().toISOString() })
     );
-    console.log('[Migrate v6.0] ✅ 会话生命周期字段迁移完成');
+    logger.info('[Migrate v6.0] ✅ 会话生命周期字段迁移完成');
   }
 
   // ===================== v3.0: Tools v3 Plugin & HTTP Tables =====================
@@ -1405,7 +1406,7 @@ export function initDb(): Database.Database {
     const colExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('api_request_history') WHERE name='${column}'`).get() as { cnt: number };
     if (colExists.cnt === 0) {
       db.exec(`ALTER TABLE api_request_history ADD COLUMN ${column} ${definition}`);
-      console.log(`[Migrate v3.0] 添加 ${column} 列到 api_request_history`);
+      logger.info(`[Migrate v3.0] 添加 ${column} 列到 api_request_history`);
     }
   }
 
@@ -1429,7 +1430,7 @@ export function initDb(): Database.Database {
       insertTemplate.run(t.id, t.name, t.description, t.domain, t.method, t.path_template, now, now);
     }
     db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?)').run(v300SeedKey, JSON.stringify({ migratedAt: now, count: builtinTemplates.length }));
-    console.log(`[Migrate v3.0] 已植入 ${builtinTemplates.length} 个内置 API 模板`);
+    logger.info(`[Migrate v3.0] 已植入 ${builtinTemplates.length} 个内置 API 模板`);
   }
 
   // v3.0: Seed built-in domain whitelist (11 hardcoded domains → DB)
@@ -1458,10 +1459,10 @@ export function initDb(): Database.Database {
       insertDomain.run(uuidv4(), d.hostname, d.desc, now);
     }
     db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?)').run(v300DomainKey, JSON.stringify({ migratedAt: now, count: builtinDomains.length }));
-    console.log(`[Migrate v3.0] 已植入 ${builtinDomains.length} 个内置域名白名单`);
+    logger.info(`[Migrate v3.0] 已植入 ${builtinDomains.length} 个内置域名白名单`);
   }
 
-  console.log('[Migrate v3.0] Tools v3 数据库迁移完成');
+  logger.info('[Migrate v3.0] Tools v3 数据库迁移完成');
 
   // ===================== v3.0: Browser Profiles =====================
 
@@ -1486,7 +1487,7 @@ export function initDb(): Database.Database {
       v3BrowserProfilesKey,
       JSON.stringify({ migratedAt: new Date().toISOString() })
     );
-    console.log('[Migrate v3.0] 已植入默认 browser_profile');
+    logger.info('[Migrate v3.0] 已植入默认 browser_profile');
   }
 
   return db;

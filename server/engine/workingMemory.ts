@@ -16,6 +16,7 @@
 import { callAIModelStream } from '../aiClient.js';
 import type { ModelCallConfig, MessageContent } from '../aiClient.js';
 import type { Observation } from './observer.js';
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -190,11 +191,11 @@ ${this.summaryCache ? `已有摘要: ${this.summaryCache}` : ''}
       // 移除已压缩的旧轮
       this.turns = this.turns.slice(this.turns.length - this.windowSize);
 
-      console.log(`[WorkingMemory] 压缩完成: ${oldTurns.length} 轮 → ${this.summaryCache.length} 字摘要`);
+      logger.debug(`[WorkingMemory] 压缩完成: ${oldTurns.length} 轮 → ${this.summaryCache.length} 字摘要`);
       return this.summaryCache;
     } catch (err) {
       // 压缩失败，降级为直接截断
-      console.error('[WorkingMemory] 压缩失败（降级为直接截断）:', err instanceof Error ? err.message : String(err));
+      logger.error('[WorkingMemory] 压缩失败（降级为直接截断）:', err instanceof Error ? err.message : String(err));
 
       // 降级策略：取旧轮的关键信息拼接
       const fallbackSummary = oldTurns

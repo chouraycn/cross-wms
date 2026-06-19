@@ -92,7 +92,7 @@ const WmsReportPage: React.FC = () => {
             const filename = `report-${report.reportType}-${report.id}.${report.fileFormat}`;
             await api.save_file(filename, base64, 'application/octet-stream');
             } catch (e) {
-              console.warn('[WmsReportPage] pywebview save_file failed', e);
+              // console.warn('[WmsReportPage] pywebview save_file failed', e);
             }
           };
           reader.readAsDataURL(blob);

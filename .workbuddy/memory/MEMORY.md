@@ -10,9 +10,20 @@
 ## 关键约定
 - TypeScript 严格模式，tsc --noEmit 通过才可提交
 - 构建脚本: `bash scripts/build-dmg-pywebview.sh`（含自动 bump version + GitHub Release）
+- 构建依赖: Python 3.14.3 环境需安装 Pillow + pywebview + pyobjc-framework-Cocoa（PyInstaller PNG→ICNS + webview 模块打包），`pip install Pillow pywebview pyobjc-framework-Cocoa`
+- CI 构建: `bash scripts/build-dmg-pywebview.sh --ci --no-bump`（跳过前端构建和 Release，由 workflow 处理）
+- `.npmrc`: `legacy-peer-deps=true`，所有 npm 命令统一生效
 - 主题系统: `getGrayScale(isDark)` 统一灰阶，语义色用 CSS 常量
 - WKWebView 兼容: 不用 CSS @keyframes 动画，用 inline transition 代替
 - SSE 事件: 15+ 种，前端 useChat.ts 集中处理，新增事件需同步 Message 类型
+- 日志系统: `server/logger.ts` 统一 logger，禁止裸 console.*（ESLint no-console allow:[]，仅 logger.ts 豁免）
+  - 4 级: error/warn/info/debug，`LOG_LEVEL` 环境变量过滤，`LOG_DEBUG=1` 启用 debug
+  - 热路径（engine/、chat.ts、aiClient.ts、keyRotator.ts）用 logger.debug（默认静默）
+  - 非热路径用 logger.info（生命周期事件）
+- CI/CD: `pr-quality-gate.yml` 为可复用 workflow（workflow_call），`build-and-release.yml` 引用而非重复
+  - lint 覆盖 `src/ server/`，no-console 规则仅 logger.ts 豁免
+  - 安全扫描: `npm audit --audit-level=high --omit=dev`
+  - macOS 构建: PyInstaller 缓存 `actions/cache@v4`，key 基于 pywebview_app.py + requirements
 
 ## 权限系统 v2.5.0
 - MCP 工具自动风险分级: 后缀规则 (get/list→auto, create/update→confirm, delete→high-risk)
@@ -31,5 +42,38 @@
 - sqlite-vec 扩展: `sqliteVec.load(db)` 加载，vec0 虚拟表 KNN 搜索
 - ONNX 本地推理: onnxruntime-node + all-MiniLM-L6-v2 (384维)，模型自动下载到 `~/.cdf-know-clow/models/`
 - vecMemoryStore.ts: 向量写入/搜索/混合搜索/回填，降级为 LIKE 关键词搜索
+- `extractKeywords()` 导出函数: 中英文停用词表 + 词组提取，替代 substring(0,N) 粗暴截取
+- `searchByKeyword()` 按 matchCount 排序，相似度按匹配比例计算（0.3~0.8）
 - 会话归档时自动写入摘要 embedding (sessionLifecycle.ts)
 - API: `/api/memory/search`、`/api/memory/stats`、`/api/memory/backfill`
+
+## 桌面自动化 v1.5.130
+- `desktop_see`: 截图 + 返回屏幕分辨率 (screenWidth/screenHeight)
+- `desktop_click`: 三种定位方式 ref > nx/ny(归一化0~1) > x/y(绝对坐标)
+- `desktop_click_smart`: 语义点击 — ONNX embedding 匹配 accessibility tree 元素，分辨率无关
+- `desktop_snapshot`: JXA 遍历 macOS Accessibility API 元素树，返回 ref + bounds
+- 匹配降级链: ONNX embedding(阈值0.3) → 关键词精确/分词匹配(阈值0.2) → 返回候选列表
+
+## 技能冲突检测 v1.5.131
+- 后端 `server/routes/skills.ts` `checkConflict()`: async, 5 维评分
+  - 名称 bigram Jaccard (0.35) + 触发词 token Jaccard (0.25) + 标签 Jaccard (0.15) + 描述 bigram Jaccard (0.10) + embedding 语义 (0.15)
+  - `bigramSet()`: 字符 bigram 替代单字符 Jaccard（中文更准确）
+  - `tokenizeTrigger()`: 按 `/,，;；、\s|｜` 多分隔符分词
+  - embedding 仅在 Jaccard > 0.15 时计算（性能优化），best-effort + 100 条缓存
+- 前端 `src/utils/skillConflict.ts`: bigram + token 对齐后端权重
+- API: `POST /api/skill-conflict-check` 接收 `{name, trigger, tags, desc}`，阈值 0.35
+
+## 浏览器 JS 渲染 v1.5.131
+- `web_fetch` 新增参数: `selector`(等待CSS元素) / `waitUntil`(domcontentloaded|networkidle|load) / `executeJs`(渲染后执行JS)
+- `browser_execute_js`: 新工具 — 在当前页面执行任意 JS，返回结果 + 可选 HTML
+- IPC: `browser-host.mjs` 新增 `handleExecuteJs()` + `handleRenderContent` 支持 `executeJs`
+- `browserHostClient.ts`: `renderContent()` 支持 executeJs，新增 `executeJs()` 导出
+- 降级链: Playwright 渲染 → 原生 fetch + htmlToMarkdown
+
+## 上下文截断 v1.5.131
+- `estimateTokens`: CJK 1.5, JSON标点 0.8, ASCII 0.35, 全局 1.3x 安全系数
+- `estimateMessagesTokens`: tool_calls JSON ×1.5, tool 结果 ×1.3 额外加权
+- 硬安全网: 消息数 >80 强制截断（防止估算偏差导致 API 400）
+- maxTokens 上限 8192: 所有截断调用点 + API 调用 + modelsStore 配置
+- DeepSeek maxTokens: 384K → 8K（384K 导致截断浪费 384K 输入空间）
+- 迁移: `loadModelsConfig()` 自动将已保存 models.json 中 maxTokens > 8192 降级

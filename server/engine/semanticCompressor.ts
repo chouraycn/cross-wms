@@ -11,6 +11,7 @@
 import { callAIModelStream } from '../aiClient.js';
 import type { ModelCallConfig, MessageContent } from '../aiClient.js';
 import type { Observation } from './observer.js';
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -117,7 +118,7 @@ export class SemanticCompressor {
         };
       }
     } catch (err) {
-      console.warn('[SemanticCompressor] 语义压缩失败，降级为提取式:', err instanceof Error ? err.message : String(err));
+      logger.warn('[SemanticCompressor] 语义压缩失败，降级为提取式:', err instanceof Error ? err.message : String(err));
     }
 
     // 策略2：提取式压缩（规则）
