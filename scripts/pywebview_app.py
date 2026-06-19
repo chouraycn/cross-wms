@@ -25,35 +25,6 @@ import traceback
 
 import webview
 
-# ===================== 日志文件（DMG 调试用）=====================
-_LOG_FILE = None
-
-
-def get_log_file():
-    """返回日志文件路径，优先写到 ~/Library/Logs/CDF-Know-Clow.log"""
-    global _LOG_FILE
-    if _LOG_FILE is not None:
-        return _LOG_FILE
-    try:
-        home = os.path.expanduser('~')
-        log_dir = os.path.join(home, 'Library', 'Logs')
-        os.makedirs(log_dir, exist_ok=True)
-        _LOG_FILE = os.path.join(log_dir, 'CDF-Know-Clow.log')
-    except Exception:
-        _LOG_FILE = '/tmp/cdf-know-clow.log'
-    return _LOG_FILE
-
-
-def log(msg):
-    """写日志到 stdout + 文件（DMG 环境 stdout 不可见，文件日志是唯一调试手段）"""
-    print(msg)
-    try:
-        with open(get_log_file(), 'a', encoding='utf-8') as f:
-            f.write(time.strftime('%H:%M:%S') + ' ' + str(msg) + '\n')
-    except Exception:
-        pass
-
-
 # ===================== Cocoa 支持（macOS 红黄绿按钮控制）=====================
 try:
     from Cocoa import NSApp
@@ -329,10 +300,7 @@ def get_index_path():
     ])
 
     for f in candidates:
-        exists = os.path.isfile(f)
-        log(f"[get_index_path] check: {f} -> {exists}")
-        if exists:
-            log(f"[get_index_path] ✅ found: {f}")
+        if os.path.isfile(f):
             return f
 
     log("ERROR: index.html not found!")
@@ -340,13 +308,6 @@ def get_index_path():
     if getattr(sys, 'frozen', False):
         log(f"  sys._MEIPASS = {sys._MEIPASS}")
         log(f"  sys.executable = {sys.executable}")
-        # 列出 MEIPASS 下的目录，帮助调试
-        try:
-            for root, dirs, files in os.walk(sys._MEIPASS):
-                if 'index.html' in files:
-                    log(f"  FOUND in walk: {os.path.join(root, 'index.html')}")
-        except Exception as e:
-            log(f"  walk error: {e}")
     log(f"  __file__ = {__file__}")
     log(f"  Candidates tried: {candidates}")
     raise FileNotFoundError(f"index.html not found. Candidates: {candidates}")
@@ -1556,7 +1517,6 @@ def start_http_server(dist_dir: str, port: int = 9988):
     try:
         httpd = socketserver.ThreadingTCPServer(("127.0.0.1", port), QuietHandler)
         httpd.daemon_threads = True  # 退出时自动终止工作线程
-        log(f"[HTTP Server] 已启动 http://127.0.0.1:{port}/ (dist_dir={dist_dir})")
     except OSError as e:
         # 端口被占用时，kill 旧进程后重试（仅开发环境）
         if getattr(sys, 'frozen', False):
