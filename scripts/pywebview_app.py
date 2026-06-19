@@ -89,6 +89,35 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
         return False
 
     try:
+        print(f"[DEBUG] COCOA_AVAILABLE = {COCOA_AVAILABLE}")
+        print(f"[DEBUG] target_window = {target_window}")
+        print(f"[DEBUG] frameless = True (红黄绿按钮应由 pywebview 保留)")
+        
+        # 调试：检查 NSWindow 的标准按钮是否存在
+        try:
+            ns_window = None
+            for w in NSApp.windows():
+                try:
+                    if w.isVisible():
+                        ns_window = w
+                        print(f"[DEBUG] 找到可见 NSWindow: title='{w.title()}', frame={w.frame()}")
+                        break
+                except Exception:
+                    continue
+            
+            if ns_window:
+                close_btn = ns_window.standardWindowButton_(0)  # NSWindowCloseButton
+                zoom_btn = ns_window.standardWindowButton_(1)   # NSWindowZoomButton
+                mini_btn = ns_window.standardWindowButton_(2)   # NSWindowMiniaturizeButton
+                print(f"[DEBUG] standardWindowButton_(0) [关闭] = {close_btn}")
+                print(f"[DEBUG] standardWindowButton_(1) [缩放] = {zoom_btn}")
+                print(f"[DEBUG] standardWindowButton_(2) [最小化] = {mini_btn}")
+                
+                if not close_btn:
+                    print("[WARNING] 关闭按钮为 None！frameless 窗口可能没有标准按钮")
+        except Exception as e:
+            print(f"[DEBUG] 检查标准按钮失败: {e}")
+        
         # 通过 NSApp.windows() 查找我们的窗口
         target_window = None
         for w in NSApp.windows():
