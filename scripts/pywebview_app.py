@@ -106,27 +106,6 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
         if target_window is None:
             return False
         
-        # 配置标题栏（透明 + 无标题 + 内容可延伸至标题栏区域）
-        # 必须在主线程中执行（AppKit 要求）
-        try:
-            def _configure_titlebar_main_thread():
-                """在主线程中配置标题栏（安全）"""
-                try:
-                    # 设置窗口样式：允许内容延伸至标题栏区域
-                    target_window.setStyleMask_(NSWindowStyleMaskFullSizeContentView)
-                    # 隐藏标题
-                    target_window.setTitleVisibility_(NSWindowTitleHidden)
-                    # 使标题栏透明
-                    target_window.setTitlebarAppearsTransparent_(True)
-                    print("[Titlebar] ✅ 标题栏已配置：透明 + 无标题")
-                except Exception as e:
-                    print(f"[Titlebar] ⚠️ 主线程配置失败: {e}")
-            
-            # 在主线程中执行配置
-            dispatch_async(dispatch_get_main_queue(), _configure_titlebar_main_thread)
-        except Exception as e:
-            print(f"[Titlebar] ⚠️ 调度标题栏配置失败: {e}")
-        
         # 按钮类型常量
         NSWindowCloseButton = 0
         NSWindowMiniaturizeButton = 1
@@ -1678,7 +1657,7 @@ def main():
         # 3. 创建 pywebview 窗口，通过 HTTP 加载前端
         api = Api()
         window = webview.create_window(
-            title='',  # 标题设为空，避免标题栏显示软件名称
+            title=APP_NAME,
             url=frontend_url,       # HTTP 协议（127.0.0.1:9988），彻底解决 WKWebView ES Module 问题
             width=WIDTH,
             height=HEIGHT,
@@ -1686,7 +1665,7 @@ def main():
             resizable=True,
             text_select=True,
             js_api=api,
-            frameless=False,  # False = 保留系统标题栏和红黄绿按钮（100% 可靠）
+            frameless=True,  # 无系统标题栏，红黄绿按钮由 Cocoa API 偏移（对比 v1.5.133 工作版本）
             easy_drag=False,  # v1.5.73: 关闭全局拖拽，仅通过 CSS WebkitAppRegion:drag 拖拽条移动窗口，释放内容区文本选择
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
