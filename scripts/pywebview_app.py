@@ -82,11 +82,6 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
     应用红黄绿按钮偏移量（macOS only）
     通过 Cocoa API 整体平移红黄绿三个按钮的位置。
     基于按钮的原始位置计算，不会因重复调用而累加偏移。
-    
-    新方案 (v1.5.142): frameless=False + NSWindowStyleMaskFullSizeContentView
-    - 100% 保留红黄绿按钮（标准窗口）
-    - 标题栏透明 + 无标题
-    - 内容可延伸至标题栏区域
     """
     if not COCOA_AVAILABLE:
         return False
@@ -95,7 +90,7 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
 
     try:
         print(f"[DEBUG] COCOA_AVAILABLE = {COCOA_AVAILABLE}")
-        print(f"[DEBUG] frameless = False (标准窗口，100% 保留红黄绿按钮)")
+        print(f"[DEBUG] frameless = True (无边框窗口，红黄绿按钮由 Cocoa API 偏移)")
         
         # 调试：检查 NSWindow 的标准按钮是否存在
         try:
@@ -1687,7 +1682,7 @@ def main():
         # 3. 创建 pywebview 窗口，通过 HTTP 加载前端
         api = Api()
         window = webview.create_window(
-            title="",  # 标题设为空，避免标题栏显示软件名称
+            title=APP_NAME,
             url=frontend_url,       # HTTP 协议（127.0.0.1:9988），彻底解决 WKWebView ES Module 问题
             width=WIDTH,
             height=HEIGHT,
@@ -1695,44 +1690,15 @@ def main():
             resizable=True,
             text_select=True,
             js_api=api,
-            frameless=False,  # 改为 False，100% 保留红黄绿按钮
+            frameless=True,  # 无系统标题栏，保留红黄绿按钮，使用 CSS 避让
             easy_drag=False,  # v1.5.73: 关闭全局拖拽，仅通过 CSS WebkitAppRegion:drag 拖拽条移动窗口，释放内容区文本选择
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
-        # 配置标题栏（透明 + 无标题 + 内容可延伸至标题栏区域）
-        if COCOA_AVAILABLE:
-            def _configure_titlebar():
-                time.sleep(0.3)  # 等待窗口初始化
-                try:
-                    from Cocoa import (
-                        NSWindowStyleMaskFullSizeContentView,
-                        NSWindowTitleHidden,
-                    )
-                    
-                    for w in NSApp.windows():
-                        try:
-                            if w.isVisible():
-                                # 设置窗口样式：允许内容延伸至标题栏区域
-                                w.setStyleMask_(NSWindowStyleMaskFullSizeContentView)
-                                # 隐藏标题
-                                w.setTitleVisibility_(NSWindowTitleHidden)
-                                # 使标题栏透明
-                                w.setTitlebarAppearsTransparent_(True)
-                                print("[Titlebar] ✅ 标题栏已配置：透明 + 无标题 + 内容可延伸至标题栏")
-                                break
-                        except Exception:
-                            continue
-                except Exception as e:
-                    print(f"[Titlebar] ⚠️ 配置标题栏失败: {e}")
-            
-            threading.Thread(target=_configure_titlebar, daemon=True).start()
-            log("[Main] 已启动标题栏配置线程")
-
         # 调试：输出 Cocoa 可用性
         print(f"[DEBUG] COCOA_AVAILABLE = {COCOA_AVAILABLE}")
-        print(f"[DEBUG] frameless = False (标准窗口，100% 保留红黄绿按钮)")
+        print(f"[DEBUG] frameless = True (无边框窗口，红黄绿按钮由 Cocoa API 偏移)")
         if COCOA_AVAILABLE:
             try:
                 import Cocoa
