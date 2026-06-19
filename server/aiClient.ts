@@ -971,6 +971,22 @@ export async function callAIModelStream(
       // 此处最后一次检查并自动修复，同时记录诊断日志
       validateToolMessages(effectiveMessages);
 
+      // v1.5.187: 诊断日志 — 发请求前记录消息结构摘要
+      if (logger.debug) {
+        const summary = effectiveMessages.map((m, idx) => {
+          const base = `[${idx}]${m.role}`;
+          if (m.role === 'assistant' && (m as any).tool_calls?.length > 0) {
+            const ids = ((m as any).tool_calls as any[]).map((tc: any) => tc.id || '(no-id)').join(',');
+            return `${base}(tool_calls:[${ids}])`;
+          }
+          if (m.role === 'tool') {
+            return `${base}(tool_call_id=${(m as any).tool_call_id || '(missing)'})`;
+          }
+          return base;
+        });
+        logger.debug(`[AIClient] 发请求 messages 摘要(${effectiveMessages.length}条): ${summary.join(' → ')}`);
+      }
+
       return await callOpenAICompatibleStream(
         apiEndpoint, apiKey, modelId,
         effectiveMessages as Array<{ role: string; content: string | OpenAIVisionContent[] }>,
