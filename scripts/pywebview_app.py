@@ -1650,8 +1650,13 @@ def main():
         frontend_path = get_index_path()
         dist_dir = os.path.dirname(frontend_path)
         httpd, http_port = start_http_server(dist_dir, 9988)
-        frontend_url = f'http://127.0.0.1:{http_port}/splash.html'
-        log(f"[Frontend] 通过 HTTP 加载: {frontend_url}")
+        # 基础 URL（带尾部斜杠），后续拼接 splash.html 或 index.html
+        base_url = f'http://127.0.0.1:{http_port}/'
+        splash_url = base_url + 'splash.html'
+        index_url = base_url + 'index.html'
+        log(f"[Frontend] 基础 URL: {base_url}")
+        log(f"[Frontend] Splash URL: {splash_url}")
+        log(f"[Frontend] Index URL: {index_url}")
 
         # 1.5 等待 HTTP 服务器就绪（避免竞态：WKWebView 在服务器线程启动前加载导致白屏）
         log("[Frontend] 等待 HTTP 服务器就绪...")
@@ -1684,12 +1689,10 @@ def main():
         # 3. 创建 pywebview 窗口，通过 HTTP 加载前端
         api = Api()
         # v1.5.153: 直接加载 index.html（跳过 splash），诊断白屏问题
-        # frontend_url_splash = frontend_url + 'splash.html'
-        frontend_url_direct = frontend_url + 'index.html'
+        # 注意：index_url 现在是正确的 http://127.0.0.1:PORT/index.html
         window = webview.create_window(
             title=' ',  # 标题设为空字符串，避免标题栏显示软件名称
-            # url=frontend_url_splash,  # 暂时跳过 splash，直接加载 index.html
-            url=frontend_url_direct,
+            url=index_url,  # 直接加载 index.html（跳过 splash）
             width=WIDTH,
             height=HEIGHT,
             min_size=MIN_SIZE,
@@ -1699,7 +1702,7 @@ def main():
             frameless=False,  # False = 保留系统标题栏和红黄绿按钮（100% 可靠）
             easy_drag=False,  # v1.5.73: 关闭全局拖拽，仅通过 CSS WebkitAppRegion:drag 拖拽条移动窗口，释放内容区文本选择
         )
-        log(f"[Main] 已跳过 splash 动画，直接加载: {frontend_url_direct}")
+        log(f"[Main] 已跳过 splash 动画，直接加载: {index_url}")
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
