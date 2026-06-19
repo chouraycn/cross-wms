@@ -1662,15 +1662,22 @@ def main():
             resizable=True,
             text_select=True,
             js_api=api,
-            frameless=False,  # 保留系统标题栏（红黄绿按钮），后续设为透明
+            frameless=True,  # 无系统标题栏，保留红黄绿按钮，使用 CSS 避让
             easy_drag=False,  # v1.5.73: 关闭全局拖拽，仅通过 CSS WebkitAppRegion:drag 拖拽条移动窗口，释放内容区文本选择
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
-        # v1.5.134: 标题栏透明化，保留红黄绿按钮
+        # 调试：输出 Cocoa 可用性
+        print(f"[DEBUG] COCOA_AVAILABLE = {COCOA_AVAILABLE}")
+        print(f"[DEBUG] frameless = True (红黄绿按钮应由 pywebview 保留)")
         if COCOA_AVAILABLE:
-            make_titlebar_transparent(window)
+            try:
+                import Cocoa
+                print(f"[DEBUG] Cocoa module imported successfully")
+                print(f"[DEBUG] NSWindowStyleMaskFullSizeContentView = {Cocoa.NSWindowStyleMaskFullSizeContentView}")
+            except Exception as e:
+                print(f"[DEBUG] Cocoa import failed: {e}")
 
         # 尽早应用红黄绿按钮偏移（在 splash 动画 6.3s 期间完成，避免跳转到主页时抖动）
         # NSWindow 需要短暂时间初始化标准按钮，使用重试线程在 1.5s 内完成
