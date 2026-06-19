@@ -143,10 +143,10 @@ export default defineConfig(({ mode }) => ({
             return 'vendor-js-yaml';
           }
           // react-syntax-highlighter — 代码高亮（MarkdownRenderer 使用）
-          // NOTE: prismjs 不单独拆分，其 worker/web worker 模块与 MUI 有共享依赖会产生循环 chunk
-          if (id.includes('node_modules/react-syntax-highlighter/')) {
-            return 'vendor-syntax-highlighter';
-          }
+          // NOTE: 不移出 manualChunk，CJS 转换由 commonjsOptions.include 处理
+          // if (id.includes('node_modules/react-syntax-highlighter/')) {
+          //   return 'vendor-syntax-highlighter';
+          // }
           // KaTeX — LaTeX 数学公式渲染
           if (id.includes('node_modules/katex/')) {
             return 'vendor-katex';
