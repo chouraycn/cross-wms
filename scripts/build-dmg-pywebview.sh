@@ -415,7 +415,6 @@ DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:version_txt "
   --collect-all Cocoa \
   --collect-all objc \
   --collect-all PyObjCTools \
-  --collect-all pyobjc_framework_Cocoa \
   --hidden-import objc \
   --hidden-import Cocoa \
   --exclude-module matplotlib \

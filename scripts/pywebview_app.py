@@ -1686,13 +1686,15 @@ def main():
                 config = load_config()
                 offset_x = config.get('traffic_light_offset_x', 5)
                 offset_y = config.get('traffic_light_offset_y', 5)
-                for attempt in range(5):
-                    time.sleep(0.3)
+                # 增加重试次数：20 次 x 0.4s = 8s 总重试时间
+                for attempt in range(20):
+                    time.sleep(0.4)
                     if apply_traffic_light_offset(win, offset_x, offset_y):
                         log(f"[TrafficLight] ✅ 启动时偏移已应用 (尝试 {attempt + 1} 次, offset={offset_x},{offset_y})")
                         return
-                    log(f"[TrafficLight] ⏳ 重试 {attempt + 1}/5...")
-                log("[TrafficLight] ⚠️  启动时偏移应用失败，将回退到前端调用")
+                    if attempt % 5 == 4:  # 每 5 次输出一次日志（减少日志量）
+                        log(f"[TrafficLight] ⏳ 重试中 {attempt + 1}/20...")
+                log("[TrafficLight] ⚠️ 启动时偏移应用失败（已重试 20 次），将回退到前端调用")
             threading.Thread(target=_apply_traffic_lights_early, args=(window,), daemon=True).start()
 
         log("[Main] pywebview 窗口已创建，启动事件循环...")
