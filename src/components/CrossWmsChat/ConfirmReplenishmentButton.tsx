@@ -61,7 +61,7 @@ export const ConfirmReplenishmentButton = React.memo<ConfirmReplenishmentButtonP
         setErrorMessage(result.message || '确认失败');
       }
     } catch (e) {
-      console.error('[ConfirmReplenishmentButton] 确认失败:', e);
+      // console.error('[ConfirmReplenishmentButton] 确认失败:', e);
       setState('error');
       setErrorMessage('网络请求失败，请重试');
     }

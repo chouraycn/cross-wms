@@ -9,6 +9,7 @@
 import { initDb, type ApiCredentialRow } from '../db.js';
 import { v4 as uuidv4 } from 'uuid';
 import { encryptCredential, decryptCredential } from '../services/credentialService.js';
+import { logger } from '../logger.js';
 
 // ===================== Safe View Type (不含明文值) =====================
 
@@ -88,7 +89,7 @@ export function getCredentialValue(id: string): string | null {
     const fullEncrypted = row.encrypted_value + row.auth_tag;
     return decryptCredential(fullEncrypted, row.iv);
   } catch {
-    console.warn(`[CredentialService] 解密凭证失败: ${id}`);
+    logger.warn(`[CredentialService] 解密凭证失败: ${id}`);
     return null;
   }
 }

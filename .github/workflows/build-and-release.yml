@@ -19,39 +19,21 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: build-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   quality-gate:
     name: Quality Gate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
-
-      - name: Lint (non-blocking)
-        run: npx eslint . --ext .ts,.tsx --max-warnings 1000 || echo "Lint skipped (pre-existing issues)"
-
-      - name: Type check frontend
-        run: npx tsc --noEmit
-
-      - name: Type check backend (non-blocking)
-        run: npx tsc --noEmit --project server/tsconfig.json
-
-      - name: Test
-        run: npm run test -- --passWithNoTests
+    uses: ./.github/workflows/pr-quality-gate.yml
+    # Reuse the same lint + typecheck + build + test + audit jobs — no duplication
 
   build:
     name: Build DMG
     needs: quality-gate
     runs-on: macos-latest
+    timeout-minutes: 30
 
     steps:
       - name: Check out code
@@ -69,14 +51,26 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+          cache: 'pip'
+          cache-dependency-path: scripts/requirements-build.txt
 
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
-          pip install pywebview pyinstaller Pillow
+          pip install -r scripts/requirements-build.txt
 
       - name: Install Node.js dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci
+
+      - name: Cache PyInstaller build
+        uses: actions/cache@v4
+        with:
+          path: |
+            build-pywebview/pyinstaller-cache
+            build-pywebview/work
+          key: pyinstaller-${{ runner.os }}-${{ hashFiles('scripts/pywebview_app.py', 'scripts/requirements-build.txt') }}
+          restore-keys: |
+            pyinstaller-${{ runner.os }}-
 
       - name: Bump version (manual dispatch only)
         if: github.event_name == 'workflow_dispatch'
@@ -119,9 +113,35 @@ jobs:
         run: npm run build
 
       - name: Build DMG
-        run: bash scripts/build-dmg-pywebview.sh --no-bump
+        run: bash scripts/build-dmg-pywebview.sh --ci --no-bump
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: true
+
+      - name: Verify build artifacts
+        run: |
+          DMG_FILE="release/CDF-Know-Clow-${VERSION}-mac.dmg"
+          JSON_FILE="release/release.json"
+
+          if [ ! -f "$DMG_FILE" ]; then
+            echo "::error::DMG not found at $DMG_FILE"
+            echo "Contents of release/:"
+            ls -la release/ 2>/dev/null || echo "(directory missing)"
+            exit 1
+          fi
+
+          if [ ! -f "$JSON_FILE" ]; then
+            echo "::error::release.json not found at $JSON_FILE"
+            exit 1
+          fi
+
+          DMG_SIZE=$(stat -f%z "$DMG_FILE" 2>/dev/null || stat -c%s "$DMG_FILE" 2>/dev/null)
+          if [ "$DMG_SIZE" -lt 1000000 ]; then
+            echo "::error::DMG is suspiciously small (${DMG_SIZE} bytes < 1MB) — build may have failed"
+            exit 1
+          fi
+
+          echo "DMG: $DMG_FILE ($DMG_SIZE bytes)"
+          echo "JSON: $JSON_FILE"
 
       - name: Generate release notes
         id: release_notes
@@ -154,7 +174,9 @@ jobs:
           tag_name: v${{ env.VERSION }}
           name: CDF Know Clow v${{ env.VERSION }}
           body: ${{ env.RELEASE_NOTES }}
-          files: release/CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
+          files: |
+            release/CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
+            release/release.json
           draft: false
           prerelease: false
         env:
@@ -164,5 +186,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
-          path: release/CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
+          path: |
+            release/CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
+            release/release.json
           retention-days: 90

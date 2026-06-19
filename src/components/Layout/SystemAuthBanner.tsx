@@ -75,11 +75,11 @@ const SystemAuthBanner: React.FC<SystemAuthBannerProps> = ({ onOpenSettings }) =
     return null;
   }
 
-  // 确定风险级别颜色
+  // 确定风险级别颜色（中性灰蓝，不用黄色）
   const isNotEnabled = !status.isEnabled;
-  const accentColor = isNotEnabled ? '#F59E0B' : '#F59E0B';
-  const accentBg = isNotEnabled ? 'rgba(245,158,11,0.08)' : 'rgba(245,158,11,0.08)';
-  const accentBorder = isNotEnabled ? 'rgba(245,158,11,0.2)' : 'rgba(245,158,11,0.2)';
+  const accentColor = isDark ? '#60A5FA' : '#3B82F6';
+  const accentBg = isDark ? 'rgba(96,165,250,0.08)' : 'rgba(59,130,246,0.06)';
+  const accentBorder = isDark ? 'rgba(96,165,250,0.18)' : 'rgba(59,130,246,0.15)';
 
   return (
     <Box
@@ -100,7 +100,7 @@ const SystemAuthBanner: React.FC<SystemAuthBannerProps> = ({ onOpenSettings }) =
       <Box
         sx={{
           height: 3,
-          background: 'linear-gradient(90deg, #F59E0B, #FBBF24)',
+          background: 'linear-gradient(90deg, #3B82F6, #60A5FA)',
         }}
       />
 

@@ -3,6 +3,7 @@ import {
   AgentEventType as AgentEventTypeConst,
   type AgentEventPayload,
 } from '../../shared/types/agent.js';
+import { logger } from '../logger.js';
 
 // ===================== 自动化事件类型常量 =====================
 
@@ -43,7 +44,7 @@ export interface AutomationEventPayload {
  *   });
  *
  *   const unsubscribe = onAutomationEvent(AutomationEventType.AUTOMATION_COMPLETED, (payload) => {
- *     console.log('自动化完成:', payload);
+ *     logger.debug('自动化完成:', payload);
  *   });
  *   unsubscribe(); // 取消订阅
  */
@@ -64,7 +65,7 @@ export function emitAutomationEvent(
   try {
     eventBus.emit(event, payload);
   } catch (err) {
-    console.error(`[EventBus] 发布事件 ${event} 失败:`, err);
+    logger.error(`[EventBus] 发布事件 ${event} 失败:`, err);
   }
 }
 
@@ -102,7 +103,7 @@ export function emitAgentEvent(payload: AgentEventPayload): void {
     // 同时发布到通配符通道，方便全局监听
     eventBus.emit('agent:*', payload);
   } catch (err) {
-    console.error(`[EventBus] 发布 Agent 事件 ${payload.type} 失败:`, err);
+    logger.error(`[EventBus] 发布 Agent 事件 ${payload.type} 失败:`, err);
   }
 }
 

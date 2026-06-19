@@ -28,7 +28,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('[ErrorBoundary] 捕获到渲染错误:', error, errorInfo);
+    // console.error('[ErrorBoundary] 捕获到渲染错误:', error, errorInfo);
     // 保存到全局方便调试
     (window as unknown as Record<string, unknown>).__lastError = { error: error.toString(), stack: errorInfo.componentStack };
     this.setState({ errorInfo: errorInfo.componentStack || '' });

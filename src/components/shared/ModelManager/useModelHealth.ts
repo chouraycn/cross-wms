@@ -92,7 +92,7 @@ export function useModelHealth(): UseModelHealthReturn {
       setLastCheckedAt(new Date().toISOString());
       setCheckError(null);
     } catch (e) {
-      console.error('[useModelHealth] check failed:', e);
+      // console.error('[useModelHealth] check failed:', e);
       setCheckError((e instanceof Error ? e.message : '健康检查失败') || '健康检查失败');
     } finally {
       setIsChecking(false);

@@ -38,6 +38,7 @@ import {
 } from '../dao/chains.js';
 import { auditSkillMd, generateMarkdownReport } from '../services/securityAuditor.js';
 import { parseSkillMdContent } from '../services/skillMdParser.js';
+import { logger } from '../logger.js';
 
 // ===================== SKILL.md 解析工具（基于 js-yaml） =====================
 
@@ -86,7 +87,7 @@ function syncSkillMdToDisk(skillId: string, promptTemplate: string | null | unde
     const mdPath = path.join(skillDir, 'SKILL.md');
     fs.writeFileSync(mdPath, promptTemplate, 'utf-8');
   } catch (e) {
-    console.error(`[skills] syncSkillMdToDisk failed for ${skillId}:`, e);
+    logger.error(`[skills] syncSkillMdToDisk failed for ${skillId}:`, e);
   }
 }
 
@@ -319,54 +320,151 @@ router.get('/skill-md-read/:dirName', (req: Request, res: Response) => {
 
 // ===================== Skill Usage Statistics =====================
 
-/** Jaccard 相似度计算 */
+// ===================== 冲突检测算法 v2 =====================
+
+/** Jaccard 相似度计算（集合级别） */
 function jaccardSimilarity(setA: string[], setB: string[]): number {
-  const a = new Set(setA.map(s => s.toLowerCase()));
-  const b = new Set(setB.map(s => s.toLowerCase()));
+  const a = new Set(setA.map(s => s.toLowerCase().trim()).filter(Boolean));
+  const b = new Set(setB.map(s => s.toLowerCase().trim()).filter(Boolean));
+  if (a.size === 0 && b.size === 0) return 0;
+  if (a.size === 0 || b.size === 0) return 0;
   const intersection = new Set([...a].filter(x => b.has(x)));
   const union = new Set([...a, ...b]);
   return union.size === 0 ? 0 : intersection.size / union.size;
 }
 
-/** 检查两个技能是否冲突 */
-function checkConflict(skillA: Record<string, unknown>, skillB: Record<string, unknown>): { score: number; reasons: string[] } {
+/** 触发词多分隔符分词 */
+function tokenizeTrigger(trigger: string): string[] {
+  return trigger
+    .split(/[/,，;；、\s|｜]+/)
+    .map(t => t.toLowerCase().trim())
+    .filter(t => t.length > 0);
+}
+
+/** 生成字符 bigram 集合（适合中文/混合文本的相似度计算） */
+function bigramSet(text: string): string[] {
+  const normalized = text.toLowerCase().replace(/\s+/g, '');
+  if (normalized.length < 2) return [normalized];
+  const bigrams: string[] = [];
+  for (let i = 0; i < normalized.length - 1; i++) {
+    bigrams.push(normalized.substring(i, i + 2));
+  }
+  return bigrams;
+}
+
+/** bigram Jaccard 相似度（比单字符 Jaccard 更准确） */
+function bigramSimilarity(strA: string, strB: string): number {
+  if (!strA || !strB) return 0;
+  return jaccardSimilarity(bigramSet(strA), bigramSet(strB));
+}
+
+/** 余弦相似度（向量已 L2 归一化时 = 点积） */
+function cosineSimilarity(a: Float32Array, b: Float32Array): number {
+  let dot = 0;
+  for (let i = 0; i < a.length && i < b.length; i++) {
+    dot += a[i] * b[i];
+  }
+  return dot;
+}
+
+/** embedding 缓存（避免重复计算） */
+const embeddingCache = new Map<string, Float32Array>();
+
+/** 生成文本 embedding（best-effort，模型不可用时返回 null） */
+async function tryGetEmbedding(text: string, cacheKey: string): Promise<Float32Array | null> {
+  if (embeddingCache.has(cacheKey)) return embeddingCache.get(cacheKey)!;
+  try {
+    const { embedText } = await import('../engine/onnxEmbedding.js');
+    const embedding = await embedText(text);
+    embeddingCache.set(cacheKey, embedding);
+    // 缓存上限 100 条，防止内存膨胀
+    if (embeddingCache.size > 100) {
+      const firstKey = embeddingCache.keys().next().value;
+      if (firstKey) embeddingCache.delete(firstKey);
+    }
+    return embedding;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 检查两个技能是否冲突（v2: bigram + embedding 语义相似度）
+ */
+async function checkConflict(
+  skillA: { name?: string; trigger?: string; tags?: string[]; desc?: string },
+  skillB: { name?: string; trigger?: string; tags?: string[]; desc?: string; id?: string },
+): Promise<{ score: number; reasons: string[] }> {
   const reasons: string[] = [];
   let score = 0;
 
-  // 1. 名称相似度
-  const nameA = (skillA.name as string || '').toLowerCase();
-  const nameB = (skillB.name as string || '').toLowerCase();
+  // 1. 名称相似度（bigram Jaccard，权重 0.35）
+  const nameA = (skillA.name || '').toLowerCase();
+  const nameB = (skillB.name || '').toLowerCase();
   if (nameA && nameB) {
-    const nameSimilarity = jaccardSimilarity(nameA.split(''), nameB.split(''));
-    if (nameSimilarity > 0.5) {
-      score += nameSimilarity * 0.4;
-      reasons.push(`名称相似度: ${(nameSimilarity * 100).toFixed(1)}%`);
+    const nameSim = bigramSimilarity(nameA, nameB);
+    if (nameSim > 0.4) {
+      score += nameSim * 0.35;
+      reasons.push(`名称相似度: ${(nameSim * 100).toFixed(1)}%`);
     }
   }
 
-  // 2. 触发词相似度
-  const triggerA = (skillA.trigger as string || '').toLowerCase();
-  const triggerB = (skillB.trigger as string || '').toLowerCase();
+  // 2. 触发词相似度（多分隔符 token Jaccard，权重 0.25）
+  const triggerA = skillA.trigger || '';
+  const triggerB = skillB.trigger || '';
   if (triggerA && triggerB) {
-    const triggerSimilarity = jaccardSimilarity(triggerA.split(' '), triggerB.split(' '));
-    if (triggerSimilarity > 0.3) {
-      score += triggerSimilarity * 0.3;
-      reasons.push(`触发词相似度: ${(triggerSimilarity * 100).toFixed(1)}%`);
+    const tokensA = tokenizeTrigger(triggerA);
+    const tokensB = tokenizeTrigger(triggerB);
+    const triggerSim = jaccardSimilarity(tokensA, tokensB);
+    if (triggerSim > 0.25) {
+      score += triggerSim * 0.25;
+      reasons.push(`触发词相似度: ${(triggerSim * 100).toFixed(1)}%`);
     }
   }
 
-  // 3. 标签重叠度
-  const tagsA = Array.isArray(skillA.tags) ? skillA.tags as string[] : [];
-  const tagsB = Array.isArray(skillB.tags) ? skillB.tags as string[] : [];
+  // 3. 标签重叠度（Jaccard，权重 0.15）
+  const tagsA = Array.isArray(skillA.tags) ? skillA.tags : [];
+  const tagsB = Array.isArray(skillB.tags) ? skillB.tags : [];
   if (tagsA.length > 0 && tagsB.length > 0) {
-    const tagSimilarity = jaccardSimilarity(tagsA, tagsB);
-    if (tagSimilarity > 0.3) {
-      score += tagSimilarity * 0.3;
-      reasons.push(`标签重叠度: ${(tagSimilarity * 100).toFixed(1)}%`);
+    const tagSim = jaccardSimilarity(tagsA, tagsB);
+    if (tagSim > 0.3) {
+      score += tagSim * 0.15;
+      reasons.push(`标签重叠度: ${(tagSim * 100).toFixed(1)}%`);
     }
   }
 
-  return { score, reasons };
+  // 4. 描述相似度（bigram Jaccard，权重 0.10）
+  const descA = skillA.desc || '';
+  const descB = skillB.desc || '';
+  if (descA && descB) {
+    const descSim = bigramSimilarity(descA, descB);
+    if (descSim > 0.3) {
+      score += descSim * 0.10;
+      reasons.push(`描述相似度: ${(descSim * 100).toFixed(1)}%`);
+    }
+  }
+
+  // 5. embedding 语义相似度（权重 0.15，best-effort）
+  // 仅在 Jaccard 分数 > 0.15 时才计算 embedding（性能优化）
+  if (score > 0.15) {
+    const textA = `${skillA.name || ''} ${skillA.trigger || ''} ${descA}`.trim();
+    const textB = `${skillB.name || ''} ${skillB.trigger || ''} ${descB}`.trim();
+    if (textA && textB) {
+      const [embA, embB] = await Promise.all([
+        tryGetEmbedding(textA, `new:${textA}`),
+        skillB.id ? tryGetEmbedding(textB, `skill:${skillB.id}`) : tryGetEmbedding(textB, `text:${textB}`),
+      ]);
+      if (embA && embB) {
+        const embSim = cosineSimilarity(embA, embB);
+        if (embSim > 0.5) {
+          score += embSim * 0.15;
+          reasons.push(`语义相似度: ${(embSim * 100).toFixed(1)}%`);
+        }
+      }
+    }
+  }
+
+  return { score: Math.min(score, 1), reasons };
 }
 
 // GET /api/skill-usage-stats?skillId=xxx — 获取技能使用统计
@@ -391,8 +489,8 @@ router.get('/skill-usage-stats', (req: Request, res: Response) => {
 });
 
 // POST /api/skill-conflict-check — 检查技能冲突
-router.post('/skill-conflict-check', (req: Request, res: Response) => {
-  const { name, trigger, tags } = req.body;
+router.post('/skill-conflict-check', async (req: Request, res: Response) => {
+  const { name, trigger, tags, desc } = req.body;
 
   if (!name && !trigger && (!tags || !Array.isArray(tags) || tags.length === 0)) {
     res.status(400).json({ error: 'At least one of name, trigger, or tags must be provided' });
@@ -402,20 +500,27 @@ router.post('/skill-conflict-check', (req: Request, res: Response) => {
   // 获取所有现有技能
   const allSkills = dbGetSkills();
 
-  // 计算与每个现有技能的冲突分数
+  // 计算与每个现有技能的冲突分数（v2: async, embedding-enhanced）
   const conflicts: Array<{ skillId: string; skillName: string; score: number; reasons: string[] }> = [];
-  const THRESHOLD = 0.4; // 冲突阈值
+  const THRESHOLD = 0.35; // 冲突阈值（v2 降低，因权重重新分配）
 
   for (const skill of allSkills) {
-    const { score, reasons } = checkConflict(
-      { name, trigger, tags },
-      { name: skill.name, trigger: skill.trigger, tags: skill.tags }
+    const skillRecord = skill as Record<string, unknown>;
+    const { score, reasons } = await checkConflict(
+      { name, trigger, tags, desc },
+      {
+        name: skillRecord.name as string,
+        trigger: skillRecord.trigger as string,
+        tags: skillRecord.tags as string[] | undefined,
+        desc: skillRecord.desc as string | undefined,
+        id: skillRecord.id as string,
+      },
     );
 
     if (score >= THRESHOLD) {
       conflicts.push({
-        skillId: (skill as Record<string, unknown>).id as string,
-        skillName: (skill as Record<string, unknown>).name as string,
+        skillId: skillRecord.id as string,
+        skillName: skillRecord.name as string,
         score,
         reasons,
       });
@@ -425,7 +530,7 @@ router.post('/skill-conflict-check', (req: Request, res: Response) => {
   // 按冲突分数降序排序
   conflicts.sort((a, b) => b.score - a.score);
 
-  const isHighRisk = conflicts.length > 0 && conflicts[0].score >= 0.7;
+  const isHighRisk = conflicts.length > 0 && conflicts[0].score >= 0.65;
 
   res.json({
     data: {
@@ -662,7 +767,7 @@ router.get('/skills/:id/export', async (req: Request, res: Response) => {
     try {
       await execAsync(`cd "${skillDir}" && zip -r "${zipFilePath}" .`);
     } catch (zipError) {
-      console.error('[Export] ZIP creation failed:', zipError);
+      logger.error('[Export] ZIP creation failed:', zipError);
       res.status(500).json({ error: 'Failed to create ZIP file' });
       return;
     }
@@ -679,15 +784,15 @@ router.get('/skills/:id/export', async (req: Request, res: Response) => {
         try {
           fs.unlinkSync(zipFilePath);
         } catch (cleanupError) {
-          console.error('[Export] Failed to cleanup temp ZIP:', cleanupError);
+          logger.error('[Export] Failed to cleanup temp ZIP:', cleanupError);
         }
       }
       if (err) {
-        console.error('[Export] Download failed:', err);
+        logger.error('[Export] Download failed:', err);
       }
     });
   } catch (e) {
-    console.error('[Export] Export failed:', e);
+    logger.error('[Export] Export failed:', e);
     res.status(500).json({ error: (e as Error).message });
   }
 });
@@ -719,7 +824,7 @@ router.post('/skills/:id/audit-export', async (req: Request, res: Response) => {
     }
     res.status(500).json({ error: 'No report data available' });
   } catch (e) {
-    console.error('[Audit Export] Failed:', e);
+    logger.error('[Audit Export] Failed:', e);
     res.status(500).json({ error: (e as Error).message });
   }
 });

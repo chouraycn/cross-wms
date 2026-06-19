@@ -62,7 +62,7 @@ const SkillDependencyChecker: React.FC<SkillDependencyCheckerProps> = ({ depende
       const result = checkDependencies(dependencies, installed);
       setCheckResult(result);
     } catch (error) {
-      console.error('Failed to check dependencies:', error);
+      // console.error('Failed to check dependencies:', error);
       setCheckResult({
         satisfied: false,
         missing: dependencies,

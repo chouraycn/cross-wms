@@ -84,7 +84,7 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateSta
         releaseInfo = parsed;
       } catch (pywebviewError) {
         // pywebview 调用失败，降级到 fetch（兼容旧版 pywebview 或未就绪情况）
-        console.warn('[updateService] pywebview API 失败，降级到 fetch:', pywebviewError);
+        // console.warn('[updateService] pywebview API 失败，降级到 fetch:', pywebviewError);
         try {
           let response = await fetchWithTimeout(RELEASE_URL, {
             method: 'GET',

@@ -1,15 +1,13 @@
 /**
  * Execution Strategy — 执行策略框架
  *
- * 提供不同的工具执行策略，支持 Legacy / Observer / Planner / ReAct 模式。
+ * 提供不同的工具执行策略，支持 Legacy / Observer / ReAct 模式。
  * 通过工厂模式创建策略实例，确保与现有 executeToolLoop 接口兼容。
  *
  * 策略说明：
  * - LegacyStrategy: 直接调用 executeToolLoop，行为与现有完全一致
  * - ObserverStrategy: 增强版工具循环，内嵌 Observer 反思节点
- * - PlannerStrategy / ReActStrategy: T02+ 实现
- *
- * v5.0.0: ReAct 循环优化 — 新增 budgetConfig + assessComplexity
+ * - ReactStrategy: ReAct 循环
  */
 
 import {
@@ -19,10 +17,10 @@ import {
   getToolRiskLevel,
 } from './toolExecutor.js';
 import { Observer, type Observation, type ObserverEvent } from './observer.js';
-import { Planner, type ExecutionPlan, type PlanStep } from './planner.js';
 import { ReActExecutor, type ReActPhaseEvent } from './reactExecutor.js';
+import { Planner } from './planner.js';
 import { callAIModelStream } from '../aiClient.js';
-import type { ModelCallConfig, ToolCall, MessageContent } from '../aiClient.js';
+import type { ModelCallConfig, ToolCall } from '../aiClient.js';
 import { getToolDefinitions } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
 import { truncateContextForModel } from './contextTruncate.js';
@@ -32,7 +30,8 @@ import { type BudgetConfig, DEFAULT_BUDGET_CONFIG } from './budgetManager.js';
 import { mcpClientManager } from './mcpClientManager.js';
 import { isMcpToolName, getMcpServerPrefix } from './mcpTypes.js';
 import { CircuitBreaker } from './circuitBreaker.js';
-import { getMergedStrategyPreferences, type StrategyPreferences, type PersonalityMode } from './soulLoader.js';
+import { getMergedStrategyPreferences } from './soulLoader.js';
+import { logger } from '../logger.js';
 
 // ===================== 执行模式枚举 =====================
 
@@ -42,12 +41,8 @@ export enum ExecutionMode {
   LEGACY = 'legacy',
   /** 观察者模式：增强版工具循环，内嵌 Observer 反思节点 */
   OBSERVER = 'observer',
-  /** 计划器模式：T02 实现 */
-  PLANNER = 'planner',
-  /** ReAct 模式：T02 实现 */
+  /** ReAct 模式：推理-行动-观察-反思循环 */
   REACT = 'react',
-  /** 编排器模式：v8.0 多 Agent 架构 */
-  ORCHESTRATOR = 'orchestrator',
 }
 
 // ===================== 策略选项 =====================
@@ -60,20 +55,6 @@ export interface ExecutionStrategyOptions extends ToolExecutorOptions {
   onSSEEvent?: (event: Record<string, unknown>) => void;
   /** v5.0: 预算配置（传递给 ReActExecutor） */
   budgetConfig?: Partial<BudgetConfig>;
-}
-
-// ===================== 复杂度评估 =====================
-
-/** 复杂度评估结果 */
-export interface ComplexityAssessment {
-  /** 复杂度等级 */
-  level: 'simple' | 'moderate' | 'complex';
-  /** 估计步骤数 */
-  estimatedSteps: number;
-  /** 评估原因 */
-  reason: string;
-  /** 推荐执行模式 */
-  recommendedMode: string;
 }
 
 // ===================== 策略接口 =====================
@@ -172,7 +153,8 @@ export class ObserverStrategy implements IExecutionStrategy {
 
       // 截断上下文防止超限（v1.5.116: 优先智能压缩）
       const ctxWindow = (modelConfig as unknown as Record<string, unknown>).contextWindow as number || 128000;
-      const ctxMaxTokens = modelConfig.maxTokens || 8192;
+      // v1.5.131: 截断用 maxTokens 上限 8192，避免 384K 浪费输入空间
+      const ctxMaxTokens = Math.min(modelConfig.maxTokens || 8192, 8192);
       const turnTruncated = await compressContextWithSummary(currentMessages, ctxWindow, ctxMaxTokens, tools.length, modelConfig);
       if ((turnTruncated.compressed || turnTruncated.truncated) && currentMessages.length !== turnTruncated.messages.length) {
         currentMessages.length = 0;
@@ -417,7 +399,7 @@ export class ObserverStrategy implements IExecutionStrategy {
             );
           } catch (observerErr) {
             // Observer 内部错误不传播
-            console.error('[ObserverStrategy] Observer 错误（已忽略）:', observerErr instanceof Error ? observerErr.message : String(observerErr));
+            logger.error('[ObserverStrategy] Observer 错误（已忽略）:', observerErr instanceof Error ? observerErr.message : String(observerErr));
             observation = {
               toolCall: { name: toolName, arguments: {} },
               result,
@@ -458,7 +440,7 @@ export class ObserverStrategy implements IExecutionStrategy {
         }
 
         // 添加工具结果到消息上下文
-        let toolResultContent = result;
+        const toolResultContent = result;
 
         // 当 shouldRetry 时：注入反思 system 消息
         if (shouldRetry && observation.reflectionHint) {
@@ -481,7 +463,7 @@ export class ObserverStrategy implements IExecutionStrategy {
           // 注入反思提示
           currentMessages.push(reflectionSystemMsg as typeof currentMessages[number]);
 
-          console.log(`[ObserverStrategy] 工具 ${toolName} 将重试（第 ${retryIndex + 1}/${observation.assessment.maxRetries} 次），原因：${observation.assessment.reason}`);
+          logger.debug(`[ObserverStrategy] 工具 ${toolName} 将重试（第 ${retryIndex + 1}/${observation.assessment.maxRetries} 次），原因：${observation.assessment.reason}`);
         } else {
           // 不重试，正常添加工具结果
           currentMessages.push({
@@ -500,264 +482,6 @@ export class ObserverStrategy implements IExecutionStrategy {
 
     // 达到最大轮数
     return { content: finalContent, toolCalls: executedToolCalls };
-  }
-}
-
-// ===================== PlannerStrategy =====================
-
-/**
- * 计划器策略 — 评估复杂任务并生成结构化执行计划。
- *
- * 核心流程：
- * 1. 提取用户消息
- * 2. 调用 planner.assessTrigger() 判断是否需要规划
- * 3. 不触发 → 委托给 ObserverStrategy
- * 4. 触发 → 调用 planner.generatePlan()，失败则降级为 Observer
- * 5. 生成计划成功 → 通过 SSE 推送 execution_plan 事件
- * 6. 按步骤顺序执行：将步骤描述注入 messages，然后调用 ObserverStrategy
- * 7. 每步完成后更新 plan.step.status，推送 SSE 更新
- * 8. 步骤失败且 plan.isDynamic → 调用 planner.adjustPlan()
- * 9. 返回 ToolExecutionResult
- */
-export class PlannerStrategy implements IExecutionStrategy {
-  private planner: Planner;
-  private observerStrategy: ObserverStrategy;
-
-  constructor(planner?: Planner, observerStrategy?: ObserverStrategy) {
-    this.planner = planner ?? new Planner();
-    this.observerStrategy = observerStrategy ?? new ObserverStrategy();
-  }
-
-  async execute(options: ExecutionStrategyOptions): Promise<ToolExecutionResult> {
-    const {
-      modelConfig,
-      messages,
-      signal,
-      onSSEEvent,
-    } = options;
-
-    // 1. 提取用户消息
-    const userMessage = this.extractUserMessage(messages);
-    if (!userMessage) {
-      // 无法提取用户消息，降级为 Observer
-      console.log('[PlannerStrategy] 无法提取用户消息，降级为 Observer');
-      return this.observerStrategy.execute(options);
-    }
-
-    // 2. 评估是否触发 Planner
-    const assessment = this.planner.assessTrigger(messages, userMessage);
-    console.log(`[PlannerStrategy] assessTrigger: shouldTrigger=${assessment.shouldTrigger}, reason=${assessment.reason}`);
-
-    // 3. 不触发 → 委托给 ObserverStrategy
-    if (!assessment.shouldTrigger) {
-      return this.observerStrategy.execute(options);
-    }
-
-    // 4. 触发 → 调用 LLM 生成计划
-    let plan: ExecutionPlan | null = null;
-    try {
-      plan = await this.planner.generatePlan(modelConfig, messages, signal);
-    } catch (planErr) {
-      console.error('[PlannerStrategy] generatePlan 失败:', planErr instanceof Error ? planErr.message : String(planErr));
-    }
-
-    // 生成计划失败 → 降级为 Observer
-    if (!plan) {
-      console.log('[PlannerStrategy] 计划生成失败，降级为 Observer');
-      return this.observerStrategy.execute(options);
-    }
-
-    const activePlan = plan; // TypeScript narrowing — plan is guaranteed non-null after this point
-    console.log(`[PlannerStrategy] 计划生成成功: intent="${activePlan.intent}", steps=${activePlan.steps.length}`);
-
-    // 5. 生成计划成功 → 推送 execution_plan SSE 事件
-    if (onSSEEvent) {
-      onSSEEvent({
-        type: 'execution_plan',
-        plan: {
-          id: activePlan.id,
-          intent: activePlan.intent,
-          steps: activePlan.steps.map(s => ({
-            step: s.step,
-            description: s.description,
-            toolName: s.toolName,
-            dependsOn: s.dependsOn,
-            status: s.status,
-          })),
-          isDynamic: activePlan.isDynamic,
-          createdAt: activePlan.createdAt,
-        },
-      });
-    }
-
-    // 6. 按步骤顺序执行
-    let finalContent = '';
-    const allExecutedToolCalls: Array<{ name: string; arguments: string; result: string }> = [];
-
-    for (let stepIdx = 0; stepIdx < activePlan.steps.length; stepIdx++) {
-      const currentStep = activePlan.steps[stepIdx];
-
-      // 跳过已完成的步骤
-      if (currentStep.status === 'completed' || currentStep.status === 'skipped') {
-        continue;
-      }
-
-      // 跳过依赖未完成的步骤
-      const unmetDeps = currentStep.dependsOn.filter(
-        depStep => activePlan.steps.find(s => s.step === depStep && s.status !== 'completed'),
-      );
-      if (unmetDeps.length > 0) {
-        currentStep.status = 'skipped';
-        if (onSSEEvent) {
-          onSSEEvent({
-            type: 'plan_step_update',
-            planId: activePlan.id,
-            step: currentStep.step,
-            status: 'skipped',
-            reason: `依赖步骤 ${unmetDeps.join(', ')} 未完成`,
-          });
-        }
-        continue;
-      }
-
-      // 标记步骤为 in_progress
-      currentStep.status = 'in_progress';
-      if (onSSEEvent) {
-        onSSEEvent({
-          type: 'plan_step_update',
-          planId: activePlan.id,
-          step: currentStep.step,
-          status: 'in_progress',
-        });
-      }
-
-      // 将当前步骤描述注入到 messages 中作为 system 提示
-      const stepSystemMessage = {
-        role: 'system' as const,
-        content: `[执行计划] 当前步骤 ${currentStep.step}/${activePlan.steps.length}: ${currentStep.description}${currentStep.toolName ? `\n推荐工具: ${currentStep.toolName}` : ''}`,
-      };
-
-      // 构造带步骤注入的消息列表
-      const stepMessages = [...messages, stepSystemMessage];
-
-      // 构造 ObserverStrategy 的执行选项
-      const stepOptions: ExecutionStrategyOptions = {
-        ...options,
-        messages: stepMessages,
-      };
-
-      // 调用 ObserverStrategy 执行当前步骤
-      let stepResult: ToolExecutionResult;
-      try {
-        stepResult = await this.observerStrategy.execute(stepOptions);
-      } catch (stepErr) {
-        // 执行失败
-        const errorMsg = stepErr instanceof Error ? stepErr.message : String(stepErr);
-        console.error(`[PlannerStrategy] 步骤 ${currentStep.step} 执行失败:`, errorMsg);
-
-        currentStep.status = 'failed';
-
-        // 推送失败更新
-        if (onSSEEvent) {
-          onSSEEvent({
-            type: 'plan_step_update',
-            planId: activePlan.id,
-            step: currentStep.step,
-            status: 'failed',
-            error: errorMsg,
-          });
-        }
-
-        // 动态重规划
-        if (activePlan.isDynamic) {
-          const adjustedPlan = this.planner.adjustPlan(plan, {
-            failedStepIndex: stepIdx,
-            error: errorMsg,
-            toolName: currentStep.toolName,
-          });
-
-          // 如果调整后产生了新步骤，推送更新
-          if (adjustedPlan.steps.length > activePlan.steps.length) {
-            plan = adjustedPlan;
-            if (onSSEEvent) {
-              onSSEEvent({
-                type: 'execution_plan',
-                plan: {
-                  id: activePlan.id,
-                  intent: activePlan.intent,
-                  steps: activePlan.steps.map(s => ({
-                    step: s.step,
-                    description: s.description,
-                    toolName: s.toolName,
-                    dependsOn: s.dependsOn,
-                    status: s.status,
-                  })),
-                  isDynamic: activePlan.isDynamic,
-                  createdAt: activePlan.createdAt,
-                },
-              });
-            }
-          }
-        }
-
-        // 继续执行后续步骤（非致命错误不中断整个计划）
-        continue;
-      }
-
-      // 步骤执行成功
-      currentStep.status = 'completed';
-      finalContent += (finalContent && !finalContent.endsWith('\n') ? '\n\n' : '') + stepResult.content;
-      allExecutedToolCalls.push(...stepResult.toolCalls);
-
-      // 推送步骤完成更新
-      if (onSSEEvent) {
-        onSSEEvent({
-          type: 'plan_step_update',
-          planId: activePlan.id,
-          step: currentStep.step,
-          status: 'completed',
-        });
-      }
-
-      console.log(`[PlannerStrategy] 步骤 ${currentStep.step}/${activePlan.steps.length} 完成`);
-    }
-
-    // 推送计划完成事件
-    if (onSSEEvent) {
-      onSSEEvent({
-        type: 'plan_step_update',
-        planId: activePlan.id,
-        step: 0, // 0 表示整体计划
-        status: 'completed',
-        summary: {
-          total: activePlan.steps.length,
-          completed: activePlan.steps.filter(s => s.status === 'completed').length,
-          failed: activePlan.steps.filter(s => s.status === 'failed').length,
-          skipped: activePlan.steps.filter(s => s.status === 'skipped').length,
-        },
-      });
-    }
-
-    // 9. 返回最终结果
-    return {
-      content: finalContent,
-      toolCalls: allExecutedToolCalls,
-    };
-  }
-
-  /**
-   * 从消息列表中提取最后一条用户消息。
-   */
-  private extractUserMessage(
-    messages: Array<{ role: string; content: MessageContent }>,
-  ): string | null {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === 'user') {
-        const content = messages[i].content;
-        return typeof content === 'string' ? content : JSON.stringify(content);
-      }
-    }
-    return null;
   }
 }
 
@@ -802,26 +526,9 @@ export class ReactStrategy implements IExecutionStrategy {
       };
     } catch (error) {
       // 降级：ReAct 失败 → Observer → Legacy
-      console.error('[ReActStrategy] 执行失败，降级为 Observer:', error instanceof Error ? error.message : String(error));
+      logger.error('[ReActStrategy] 执行失败，降级为 Observer:', error instanceof Error ? error.message : String(error));
       return new ObserverStrategy().execute(options);
     }
-  }
-}
-
-// ===================== OrchestratorStrategy (v8.0) =====================
-
-/**
- * 编排器策略 — 多 Agent 架构入口
- *
- * 使用 AgentOrchestrator 实现任务拆分 + 并行子 Agent 执行。
- * 单 Agent 模式下降级为 ReActStrategy。
- */
-export class OrchestratorStrategy implements IExecutionStrategy {
-  async execute(options: ExecutionStrategyOptions): Promise<ToolExecutionResult> {
-    // 动态导入避免循环依赖
-    const { AgentOrchestrator } = await import('./agentOrchestrator.js');
-    const orchestrator = new AgentOrchestrator();
-    return orchestrator.execute(options);
   }
 }
 
@@ -840,12 +547,8 @@ export class ExecutionStrategyFactory {
         return new LegacyStrategy();
       case ExecutionMode.OBSERVER:
         return new ObserverStrategy();
-      case ExecutionMode.PLANNER:
-        return new PlannerStrategy();
       case ExecutionMode.REACT:
         return new ReactStrategy();
-      case ExecutionMode.ORCHESTRATOR:
-        return new OrchestratorStrategy();
       default:
         return new LegacyStrategy();
     }
@@ -856,50 +559,6 @@ export class ExecutionStrategyFactory {
    */
   static getDefaultMode(): ExecutionMode {
     return ExecutionMode.LEGACY;
-  }
-
-  /**
-   * 评估消息复杂度（v5.0 新增，v8.5 人格联动）。
-   * 根据工具调用数量和用户消息关键词判断复杂度等级。
-   * 人格层 SOUL.md 中的 plannerThreshold 会调整触发阈值。
-   *
-   * @param messages - 消息列表
-   * @returns 复杂度评估结果
-   */
-  static assessComplexity(messages: Array<{ role: string; content: unknown }>): ComplexityAssessment {
-    const toolCallCount = messages.filter(m => m.role === 'tool').length;
-
-    let userText = '';
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === 'user') {
-        const content = messages[i].content;
-        userText = typeof content === 'string' ? content : JSON.stringify(content);
-        break;
-      }
-    }
-
-    // v8.5: 从人格层获取策略偏好
-    const soulPrefs = getMergedStrategyPreferences();
-    const threshold = soulPrefs.plannerThreshold;
-
-    if (toolCallCount >= 5 || /先.*再.*然后/.test(userText)) {
-      return { level: 'complex', estimatedSteps: 6, reason: '多步骤复杂任务', recommendedMode: 'react' };
-    }
-
-    // v8.5: 人格联动 — plannerThreshold 控制何时触发 moderate/Planner
-    // - 'simple': 几乎所有非简单任务都走 Planner
-    // - 'moderate': 默认行为，2+ 工具或查询/分析关键词
-    // - 'complex': 只有明确复杂时才走 Planner
-    const isModerate = threshold === 'simple'
-      ? (toolCallCount >= 1 || /查询|分析|查看|获取/.test(userText))
-      : threshold === 'complex'
-        ? (toolCallCount >= 3 || (/先.*再/.test(userText) && /查询|分析/.test(userText)))
-        : (toolCallCount >= 2 || /查询|分析/.test(userText));
-
-    if (isModerate) {
-      return { level: 'moderate', estimatedSteps: 3, reason: '中等复杂任务', recommendedMode: 'planner' };
-    }
-    return { level: 'simple', estimatedSteps: 1, reason: '简单任务', recommendedMode: 'observer' };
   }
 
   /**

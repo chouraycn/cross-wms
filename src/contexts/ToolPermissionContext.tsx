@@ -95,7 +95,7 @@ export const ToolPermissionProvider: React.FC<{ children: React.ReactNode }> = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-    }).catch((e) => console.error('[ToolPermission] 发送权限响应失败:', e));
+    }).catch((_e) => { /* silent: permission response send failure */ });
 
     // 从待处理列表中移除
     setPendingRequests(prev => prev.filter(r => r.reqId !== reqId));

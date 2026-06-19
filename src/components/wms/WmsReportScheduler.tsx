@@ -71,7 +71,7 @@ const WmsReportScheduler: React.FC = () => {
           setWarehouses(data.data || data || []);
         }
       } catch (err) {
-        console.error('加载仓库列表失败:', err);
+        // console.error('加载仓库列表失败:', err);
         showToast('加载仓库列表失败', 'error');
       }
     };

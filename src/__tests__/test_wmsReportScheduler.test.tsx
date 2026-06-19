@@ -51,7 +51,7 @@ async function selectOption(selectEl: HTMLElement, optionText: string) {
 }
 
 function setupFetch(handlers: Record<string, () => Promise<Response>>, fallbackReject = true) {
-  vi.spyOn(global, 'fetch').mockImplementation((input, init?) => {
+  return vi.spyOn(global, 'fetch').mockImplementation((input, init?) => {
     const url = typeof input === 'string' ? input : input.toString();
     // Check for exact match first, then check if any handler key matches as prefix
     if (handlers[url]) return handlers[url]();
@@ -337,8 +337,7 @@ describe('WmsReportScheduler', () => {
 
   describe('Create task API', () => {
     it('should POST to /api/automation on create with correct body', async () => {
-      const fetchSpy = vi.spyOn(global, 'fetch');
-      setupFetch({
+      const fetchSpy = setupFetch({
         '/api/warehouses': () =>
           Promise.resolve({
             ok: true,
@@ -372,8 +371,7 @@ describe('WmsReportScheduler', () => {
     });
 
     it('should include correct RRULE in POST body with defaults', async () => {
-      const fetchSpy = vi.spyOn(global, 'fetch');
-      setupFetch({
+      const fetchSpy = setupFetch({
         '/api/warehouses': () =>
           Promise.resolve({
             ok: true,
@@ -401,8 +399,7 @@ describe('WmsReportScheduler', () => {
     });
 
     it('should update RRULE when frequency changes to WEEKLY', async () => {
-      const fetchSpy = vi.spyOn(global, 'fetch');
-      setupFetch({
+      const fetchSpy = setupFetch({
         '/api/warehouses': () =>
           Promise.resolve({
             ok: true,
@@ -431,8 +428,7 @@ describe('WmsReportScheduler', () => {
     });
 
     it('should update RRULE when hour changes', async () => {
-      const fetchSpy = vi.spyOn(global, 'fetch');
-      setupFetch({
+      const fetchSpy = setupFetch({
         '/api/warehouses': () =>
           Promise.resolve({
             ok: true,

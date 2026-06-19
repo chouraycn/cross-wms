@@ -215,13 +215,13 @@ export interface SystemAuthorizationConfig {
 
 // ===================== AI 引擎配置 =====================
 
-export type ExecutionMode = 'legacy' | 'observer' | 'planner' | 'react' | 'orchestrator';
+export type ExecutionMode = 'legacy' | 'observer' | 'react';
 
 /** v7.0: 队列模式 — 高频交互消息竞争控制 */
 export type QueueMode = 'collect' | 'steer' | 'followup';
 
 export interface AiEngineConfig {
-  /** 默认执行模式：legacy(原始) / observer(观察反思) / planner(规划) / react(完整ReAct) */
+  /** 默认执行模式：legacy(原始) / observer(观察反思) / react(完整ReAct) */
   defaultExecutionMode: ExecutionMode;
   /** v7.0: 默认队列模式：collect(合并) / steer(转向) / followup(追加) */
   defaultQueueMode: QueueMode;
@@ -373,7 +373,7 @@ const AiEngineSettingsContext = createContext<DomainSettingsValue<AiEngineConfig
 export function openExternalLink(url: string): void {
   if (window.electronAPI?.openExternalLink) {
     window.electronAPI.openExternalLink(url).catch((err: unknown) => {
-      console.error('Failed to open external link:', err);
+      // console.error('Failed to open external link:', err);
     });
   } else {
     // Fallback for browser environment (non-Electron)
@@ -391,7 +391,7 @@ async function loadSettingsFromApi(): Promise<AppSettings | null> {
       return mergeWithDefaults(data as Partial<AppSettings>);
     }
   } catch (e) {
-    console.error('[AppSettings] loadFromApi failed, falling back to localStorage:', e);
+    // console.error('[AppSettings] loadFromApi failed, falling back to localStorage:', e);
   }
   return null;
 }
@@ -528,7 +528,7 @@ async function saveSettingsToApi(settings: AppSettings): Promise<void> {
   try {
     await api.updateAppSettings(settings);
   } catch (e) {
-    console.error('[AppSettings] saveToApi failed, falling back to localStorage:', e);
+    // console.error('[AppSettings] saveToApi failed, falling back to localStorage:', e);
     // Fallback: save to localStorage if API fails
     saveSettingsToLocalStorage(settings);
   }

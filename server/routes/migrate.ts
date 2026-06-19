@@ -16,6 +16,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../logger.js';
 
 const router = Router();
 
@@ -71,13 +72,13 @@ async function auditAllSkills(): Promise<void> {
 
         count++;
       } catch (auditErr) {
-        console.error(`[Migrate] Audit failed for ${entry.name}:`, auditErr);
+        logger.error(`[Migrate] Audit failed for ${entry.name}:`, auditErr);
       }
     }
 
-    console.log(`[Migrate] Security audit completed: ${count} skills audited`);
+    logger.info(`[Migrate] Security audit completed: ${count} skills audited`);
   } catch (err) {
-    console.error('[Migrate] Security audit error:', err);
+    logger.error('[Migrate] Security audit error:', err);
   }
 }
 
@@ -89,13 +90,13 @@ router.post('/', (req: Request, res: Response) => {
     // 异步触发所有技能的安全审计（不阻塞响应）
     setImmediate(() => {
       auditAllSkills().catch((err) => {
-        console.error('[Migrate] Background audit failed:', err);
+        logger.error('[Migrate] Background audit failed:', err);
       });
     });
 
     res.json({ data: result });
   } catch (e) {
-    console.error('[Migrate API] Migration failed:', e);
+    logger.error('[Migrate API] Migration failed:', e);
     res.status(500).json({ error: (e as Error).message });
   }
 });

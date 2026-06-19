@@ -12,6 +12,7 @@
 import path from 'path';
 import fs from 'fs';
 import type { ModelConfig } from './modelsStore.js';
+import { logger } from './logger.js';
 
 /** 轮询策略类型 */
 export type KeyStrategy = 'round-robin' | 'random' | 'failover';
@@ -94,7 +95,7 @@ function saveRotationStates(): void {
     }
     fs.writeFileSync(ROTATION_STATE_FILE, JSON.stringify(persisted, null, 2), 'utf-8');
   } catch (e) {
-    console.error('[keyRotator] 保存轮询状态失败:', e);
+    logger.error('[keyRotator] 保存轮询状态失败:', e);
   }
 }
 
@@ -132,9 +133,9 @@ function loadRotationStates(): void {
         _persistedKeyStates: state.keyStates,
       } as ModelRotationState & { _persistedKeyStates?: Record<number, PersistedKeyState> });
     }
-    console.log(`[keyRotator] 恢复了 ${Object.keys(persisted.states).length} 个模型的轮询状态`);
+    logger.debug(`[keyRotator] 恢复了 ${Object.keys(persisted.states).length} 个模型的轮询状态`);
   } catch (e) {
-    console.error('[keyRotator] 加载轮询状态失败:', e);
+    logger.error('[keyRotator] 加载轮询状态失败:', e);
   }
 }
 
@@ -300,7 +301,7 @@ export function reportKeyResult(modelId: string, keyIndex: number, success: bool
       const nextPrimary = (state.primaryIndex + 1) % state.keys.length;
       if (nextPrimary !== state.primaryIndex) {
         state.primaryIndex = nextPrimary;
-        console.log(`[KeyRotator] 模型 ${modelId} 主 Key 故障，切换到 Key ${nextPrimary}`);
+        logger.debug(`[KeyRotator] 模型 ${modelId} 主 Key 故障，切换到 Key ${nextPrimary}`);
       }
     }
   }
@@ -349,7 +350,7 @@ export function clearRotationState(modelId: string): void {
       }
     }
   } catch (e) {
-    console.error('[keyRotator] 清理持久化状态失败:', e);
+    logger.error('[keyRotator] 清理持久化状态失败:', e);
   }
 }
 

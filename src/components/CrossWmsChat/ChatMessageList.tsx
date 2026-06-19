@@ -17,7 +17,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { Message, Session, ObserverReflectionInfo, ExecutionPlanInfo, PlanStepInfo, ReactPhaseInfo } from '../../types/chat';
-import { getGrayScale, GrayScale } from '../../constants/theme';
+import { getGrayScale, GrayScale, CHAT_MAX_WIDTH } from '../../constants/theme';
 
 import { useAppearanceSettings } from '../../contexts/AppSettingsContext';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -143,13 +143,12 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const gs = getGrayScale(isDark);
+  const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const { settings, updateSettings } = useAppearanceSettings();
   const botName = settings.botName || 'CDF Bot';
   const [isEditingBotName, setIsEditingBotName] = useState(false);
   const [editingBotName, setEditingBotName] = useState('');
   const botNameInputRef = useRef<HTMLInputElement>(null);
-
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const isUserScrolledUp = useRef(false);
 
@@ -221,13 +220,13 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
           <Box
             key={msg.id}
             sx={{
-              py: 1,
+              py: 1.5,
               display: 'flex',
               flexDirection: 'column',
               alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
               gap: 0.5,
               px: 3,
-              maxWidth: 960,
+              maxWidth: CHAT_MAX_WIDTH,
               width: '100%',
               mx: 'auto',
             }}
@@ -448,8 +447,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
                   px: 2,
                   py: 1.5,
                   borderRadius: '16px',
-                  maxWidth: '75%',
-                  bgcolor: isDark ? '#374151' : '#F3F4F6',
+                  maxWidth: '85%',
+                  bgcolor: isDark ? '#262626' : '#F0F0F0',
                   color: gs.textPrimary,
                   wordBreak: 'break-word',
                   userSelect: 'text',
@@ -504,7 +503,7 @@ const InlinePermissionRequest: React.FC<InlinePermissionRequestProps> = ({
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const gs = getGrayScale(isDark);
+  const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const [alwaysAllow, setAlwaysAllow] = React.useState(false);
   const [collapsed, setCollapsed] = React.useState(false);
   const [isExiting, setIsExiting] = React.useState(false);
@@ -793,14 +792,16 @@ const BotMessageContent = React.memo<BotMessageContentProps>(({
 }) => {
   return (
     <Box
+      className="msg-hover-zone"
       sx={{
-        maxWidth: '75%',
+        width: '100%',
         color: gs.textPrimary,
         fontSize: 14,
         lineHeight: 1.7,
         wordBreak: 'break-word',
         userSelect: 'text',
         WebkitUserSelect: 'text',
+        position: 'relative',
         '& .markdown-body h1, & .markdown-body h2, & .markdown-body h3': {
           fontSize: 'inherit',
           fontWeight: 600,
@@ -963,7 +964,7 @@ const BotMessageContent = React.memo<BotMessageContentProps>(({
       )}
       {/* 消息内容渲染 */}
       {msg.content && msg.content.trim() ? (
-        <MarkdownRenderer content={msg.content} />
+        <MarkdownRenderer content={msg.content} isStreaming={msg.isStreaming} />
       ) : msg.isStreaming ? (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
           <CircularProgress size={14} thickness={5} sx={{ color: gs.textDisabled }} />
@@ -1021,9 +1022,16 @@ const BotMessageContent = React.memo<BotMessageContentProps>(({
           );
         })()
       ) : null}
-      {/* 操作按钮：复制 + 重新生成（非流式输出时显示） */}
+      {/* 操作按钮：复制 + 重新生成（hover 显示，非流式输出时） */}
       {!msg.isStreaming && (
-        <Box sx={{ display: 'flex', gap: 0.5, mt: 1 }}>
+        <Box sx={{
+          display: 'flex',
+          gap: 0.5,
+          mt: 0.5,
+          opacity: 0,
+          transition: 'opacity 0.15s',
+          '.msg-hover-zone:hover &': { opacity: 1 },
+        }}>
           <Tooltip title={copiedId === msg.id ? '已复制' : '复制'}>
             <IconButton
               size="small"
@@ -1058,6 +1066,75 @@ const BotMessageContent = React.memo<BotMessageContentProps>(({
       )}
     </Box>
   );
+}, (prev, next) => {
+  // v2.8.1: 字段级比较替代引用比较
+  // 旧方案 prev.msg !== next.msg 对流式消息完全无效 — 每帧创建新对象引用 → memo 失效
+  // 新方案：先检查引用相等（快速路径），不等时逐字段比较
+  const pm = prev.msg, nm = next.msg;
+
+  // 快速路径：引用相等 — 非流式消息走此路径
+  if (pm === nm) {
+    if ((prev.copiedId === pm.id || next.copiedId === nm.id) && prev.copiedId !== next.copiedId) return false;
+    return prev.gs === next.gs
+      && prev.isDark === next.isDark
+      && prev.onCopy === next.onCopy
+      && prev.onRegenerate === next.onRegenerate
+      && prev.showRegenerate === next.showRegenerate
+      && prev.onConfirmReplenishment === next.onConfirmReplenishment
+      && prev.onPermissionRespond === next.onPermissionRespond;
+  }
+
+  // 慢路径：引用不等 — 逐字段比较（流式消息每帧走此路径）
+  // 值类型字段（string/number/boolean）— 值比较
+  if (pm.content !== nm.content) return false;
+  if (pm.thinking !== nm.thinking) return false;
+  if (pm.isStreaming !== nm.isStreaming) return false;
+  if (pm.model !== nm.model) return false;
+  if (pm.fallbackModel !== nm.fallbackModel) return false;
+  if (pm.thinkingDuration !== nm.thinkingDuration) return false;
+  if (pm.thinkingElapsed !== nm.thinkingElapsed) return false;
+  if (pm.thinkingType !== nm.thinkingType) return false;
+  if (pm.cacheHit !== nm.cacheHit) return false;
+  if (pm.reasoningEffort !== nm.reasoningEffort) return false;
+  if (pm.autoReason !== nm.autoReason) return false;
+  if (pm.autoReasonType !== nm.autoReasonType) return false;
+  if (pm.fallbackReason !== nm.fallbackReason) return false;
+
+  // 引用类型字段（object/array）— 引用比较
+  // SSE handler 更新时创建新引用，未更新的字段保持原引用
+  if (pm.toolCalls !== nm.toolCalls) return false;
+  if (pm.pluginResults !== nm.pluginResults) return false;
+  if (pm.reactPhase !== nm.reactPhase) return false;
+  if (pm.executionPlan !== nm.executionPlan) return false;
+  if (pm.observerReflections !== nm.observerReflections) return false;
+  if (pm.reflectionConfidence !== nm.reflectionConfidence) return false;
+  if (pm.budgetExceeded !== nm.budgetExceeded) return false;
+  if (pm.complexityAssessment !== nm.complexityAssessment) return false;
+  if (pm.contextCompressed !== nm.contextCompressed) return false;
+  if (pm.planStepCompleted !== nm.planStepCompleted) return false;
+  if (pm.circuitBreakerTriggered !== nm.circuitBreakerTriggered) return false;
+  if (pm.complexityUpgraded !== nm.complexityUpgraded) return false;
+  if (pm.llmReflection !== nm.llmReflection) return false;
+  if (pm.memoryRetrieved !== nm.memoryRetrieved) return false;
+  if (pm.outputRepaired !== nm.outputRepaired) return false;
+  if (pm.budgetAdjusted !== nm.budgetAdjusted) return false;
+  if (pm.permissionRequest !== nm.permissionRequest) return false;
+  if (pm.queueState !== nm.queueState) return false;
+  if (pm.metadata !== nm.metadata) return false;
+  if (pm.usage !== nm.usage) return false;
+  if (pm.replanTriggered !== nm.replanTriggered) return false;
+
+  // copiedId — 仅在涉及本消息时才比较
+  if ((prev.copiedId === pm.id || next.copiedId === nm.id) && prev.copiedId !== next.copiedId) return false;
+
+  // 稳定 props（gs/isDark/callbacks 应为稳定引用）
+  return prev.gs === next.gs
+    && prev.isDark === next.isDark
+    && prev.onCopy === next.onCopy
+    && prev.onRegenerate === next.onRegenerate
+    && prev.showRegenerate === next.showRegenerate
+    && prev.onConfirmReplenishment === next.onConfirmReplenishment
+    && prev.onPermissionRespond === next.onPermissionRespond;
 });
 BotMessageContent.displayName = 'BotMessageContent';
 

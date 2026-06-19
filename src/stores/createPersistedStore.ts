@@ -61,7 +61,7 @@ export function createPersistedStore<T>(
       try {
         fn(data);
       } catch (e) {
-        console.error(`[${storageKey}] listener error:`, e);
+        // console.error(`[${storageKey}] listener error:`, e);
       }
     });
   }
@@ -71,7 +71,7 @@ export function createPersistedStore<T>(
     try {
       localStorage.setItem(storageKey, serialize(data));
     } catch (e) {
-      console.error(`[${storageKey}] 保存失败:`, e);
+      // console.error(`[${storageKey}] 保存失败:`, e);
       if (e instanceof DOMException && e.name === 'QuotaExceededError') {
         window.dispatchEvent(new CustomEvent('cdf-know-clow-storage-warning', {
           detail: { key: storageKey },

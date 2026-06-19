@@ -163,7 +163,7 @@ const SkillDetailPage: React.FC = () => {
           setLatestExec(result.data[0] || null);
         }
       } catch (err) {
-        console.error('Failed to load', err);
+        // console.error('Failed to load', err);
       }
     };
     load();
@@ -178,7 +178,7 @@ const SkillDetailPage: React.FC = () => {
     const handleMessage = (event: MessageEvent) => {
       try {
         const data: SkillWatchEvent = JSON.parse(event.data);
-        console.log('[SkillDetailPage] SSE event:', data);
+        // console.log('[SkillDetailPage] SSE event:', data);
 
         // 检查当前技能是否受影响
         if (!skill) return;
@@ -200,7 +200,7 @@ const SkillDetailPage: React.FC = () => {
           }
         }
       } catch (e) {
-        console.error('[SkillDetailPage] SSE parse error:', e);
+        // console.error('[SkillDetailPage] SSE parse error:', e);
       }
     };
 

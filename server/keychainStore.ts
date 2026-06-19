@@ -21,6 +21,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { logger } from './logger.js';
 
 const KEYCHAIN_SERVICE = 'cdf-know-clow';
 const ENCRYPTED_PREFIX = 'encrypted:';
@@ -38,7 +39,7 @@ function backupEncryptionKey(key: string): void {
     fs.writeFileSync(ENCRYPTION_KEY_BACKUP_FILE, key, 'utf-8');
     fs.chmodSync(ENCRYPTION_KEY_BACKUP_FILE, 0o600);
   } catch (e) {
-    console.warn('[keychainStore] 备份加密密钥失败:', e);
+    logger.warn('[keychainStore] 备份加密密钥失败:', e);
   }
 }
 
@@ -48,7 +49,7 @@ function restoreEncryptionKey(): string | null {
     if (fs.existsSync(ENCRYPTION_KEY_BACKUP_FILE)) {
       const key = fs.readFileSync(ENCRYPTION_KEY_BACKUP_FILE, 'utf-8').trim();
       if (Buffer.from(key, 'base64').length === KEY_LENGTH) {
-        console.log('[keychainStore] 从备份恢复加密密钥');
+        logger.info('[keychainStore] 从备份恢复加密密钥');
         // 恢复主文件
         fs.writeFileSync(ENCRYPTION_KEY_FILE, key, 'utf-8');
         fs.chmodSync(ENCRYPTION_KEY_FILE, 0o600);
@@ -56,7 +57,7 @@ function restoreEncryptionKey(): string | null {
       }
     }
   } catch (e) {
-    console.warn('[keychainStore] 从备份恢复加密密钥失败:', e);
+    logger.warn('[keychainStore] 从备份恢复加密密钥失败:', e);
   }
   return null;
 }
@@ -81,7 +82,7 @@ function getEncryptionKey(): string {
   }
 
   // 生成新密钥（会丢失之前加密的 Key，但避免完全无法使用）
-  console.warn('[keychainStore] 加密密钥文件丢失且无法恢复，生成新密钥。之前保存的 API Key 将失效，需要重新配置。');
+  logger.warn('[keychainStore] 加密密钥文件丢失且无法恢复，生成新密钥。之前保存的 API Key 将失效，需要重新配置。');
   const newKey = crypto.randomBytes(KEY_LENGTH).toString('base64');
   try {
     const dir = path.dirname(ENCRYPTION_KEY_FILE);
@@ -90,7 +91,7 @@ function getEncryptionKey(): string {
     fs.chmodSync(ENCRYPTION_KEY_FILE, 0o600);
     backupEncryptionKey(newKey);
   } catch (e) {
-    console.error('[keychainStore] 无法写入加密密钥文件:', e);
+    logger.error('[keychainStore] 无法写入加密密钥文件:', e);
   }
   return newKey;
 }
@@ -115,7 +116,7 @@ function aesDecrypt(encryptedBase64: string): string | null {
     const decrypted = Buffer.concat([decipher.update(Buffer.from(ct, 'base64')), decipher.final()]);
     return decrypted.toString('utf8');
   } catch (e) {
-    console.error('[keychainStore] AES 解密失败:', e);
+    logger.error('[keychainStore] AES 解密失败:', e);
     return null;
   }
 }
@@ -163,11 +164,11 @@ export function saveApiKey(modelId: string, apiKey: string): boolean {
     fs.writeFileSync(backupFile, encrypted, 'utf-8');
     fs.chmodSync(backupFile, 0o600);
   } catch (e) {
-    console.warn('[keychainStore] AES 备份 API Key 失败:', e);
+    logger.warn('[keychainStore] AES 备份 API Key 失败:', e);
   }
 
   if (!isKeychainAvailable()) {
-    console.warn('[keychainStore] security 命令不可用，API Key 将回退到 AES 加密存储');
+    logger.warn('[keychainStore] security 命令不可用，API Key 将回退到 AES 加密存储');
     return false;
   }
   try {
@@ -186,7 +187,7 @@ export function saveApiKey(modelId: string, apiKey: string): boolean {
     );
     return true;
   } catch (e) {
-    console.error('[keychainStore] 保存 API Key 到 Keychain 失败，已回退到 AES 加密:', e);
+    logger.error('[keychainStore] 保存 API Key 到 Keychain 失败，已回退到 AES 加密:', e);
     return false;
   }
 }
@@ -197,7 +198,7 @@ export function saveApiKey(modelId: string, apiKey: string): boolean {
  */
 export function saveApiKeys(modelId: string, apiKeys: string[]): number[] {
   if (!isKeychainAvailable()) {
-    console.warn('[keychainStore] security 命令不可用，API Key 将回退到明文存储');
+    logger.warn('[keychainStore] security 命令不可用，API Key 将回退到明文存储');
     return [];
   }
   const saved: number[] = [];
@@ -214,7 +215,7 @@ export function saveApiKeys(modelId: string, apiKeys: string[]): number[] {
           );
           saved.push(i);
         } catch (e) {
-          console.error(`[keychainStore] 保存 API Key [${i}] 失败:`, e);
+          logger.error(`[keychainStore] 保存 API Key [${i}] 失败:`, e);
         // 清理已保存的临时 Key
         for (const idx of saved) {
           try {
@@ -250,11 +251,11 @@ export function saveApiKeys(modelId: string, apiKeys: string[]): number[] {
           { stdio: 'ignore' }
         );
       } catch (e) {
-        console.error(`[keychainStore] 移动 API Key [${idx}] 到正式索引失败:`, e);
+        logger.error(`[keychainStore] 移动 API Key [${idx}] 到正式索引失败:`, e);
       }
     }
   } catch (e) {
-    console.error('[keychainStore] 批量保存 API Key 失败:', e);
+    logger.error('[keychainStore] 批量保存 API Key 失败:', e);
   }
   return saved;
 }
@@ -269,12 +270,12 @@ function loadApiKeyFromBackup(modelId: string): string | null {
       const encrypted = fs.readFileSync(backupFile, 'utf-8');
       const key = aesDecrypt(encrypted);
       if (key) {
-        console.log(`[keychainStore] 从 AES 备份恢复 API Key (modelId=${modelId})`);
+        logger.info(`[keychainStore] 从 AES 备份恢复 API Key (modelId=${modelId})`);
         return key;
       }
     }
   } catch (e) {
-    console.warn(`[keychainStore] 从 AES 备份读取 API Key 失败 (modelId=${modelId}):`, e);
+    logger.warn(`[keychainStore] 从 AES 备份读取 API Key 失败 (modelId=${modelId}):`, e);
   }
   return null;
 }
@@ -293,7 +294,8 @@ export function loadApiKey(modelId: string): string | null {
       );
       return result.trim();
     } catch (e) {
-      console.warn(`[keychainStore] Keychain 读取失败 (modelId=${modelId})，尝试 AES 备份...`);
+      // v1.5.132: 降级为 debug — Keychain 失败时 AES 备份正常工作，warn 噪音过大
+      logger.debug(`[keychainStore] Keychain 读取失败 (modelId=${modelId})，尝试 AES 备份...`);
     }
   }
   // Keychain 失败或不可用时，尝试 AES 备份
@@ -313,7 +315,8 @@ export function loadApiKeyByIndex(modelId: string, index: number): string | null
     );
     return result.trim();
   } catch (e) {
-    console.warn(`[keychainStore] 读取 API Key 失败 (modelId=${modelId}, idx=${index}):`, (e as Error).message || e);
+    // v1.5.132: 降级为 debug — 多模型批量读取时 warn 噪音过大
+    logger.debug(`[keychainStore] 读取 API Key 失败 (modelId=${modelId}, idx=${index})`);
     return null;
   }
 }
@@ -488,12 +491,12 @@ export function extractAndSaveApiKey<T extends { id: string; apiKey?: string; ap
       if (savedIndices.length > 0) {
         // Keychain 成功
         const apiKeyRefs = savedIndices.map(i => `keychain:${model.id}:${i}`);
-        const { apiKey, apiKeys, apiKeyRef, ...rest } = model as any;
+        const { apiKey: _apiKey, apiKeys: _apiKeys, apiKeyRef: _apiKeyRef, ...rest } = model as any;
         return { ...rest, apiKeyRefs } as T;
       }
       // Keychain 失败，回退到 AES 加密
       const apiKeyRefs = keysToSave.map(k => `${ENCRYPTED_PREFIX}${aesEncrypt(k)}`);
-      const { apiKey, apiKeys, apiKeyRef, ...rest } = model as any;
+      const { apiKey: _apiKey, apiKeys: _apiKeys, apiKeyRef: _apiKeyRef, ...rest } = model as any;
       return { ...rest, apiKeyRefs } as T;
     }
   }
@@ -503,11 +506,11 @@ export function extractAndSaveApiKey<T extends { id: string; apiKey?: string; ap
     const saved = saveApiKey(model.id, model.apiKey.trim());
     if (saved) {
       // Keychain 成功
-      const { apiKey, apiKeys, apiKeyRefs, ...rest } = model as any;
+      const { apiKey: _apiKey, apiKeys: _apiKeys, apiKeyRefs: _apiKeyRefs, ...rest } = model as any;
       return { ...rest, apiKeyRef: `keychain:${model.id}` } as T;
     }
     // Keychain 失败，回退到 AES 加密
-    const { apiKey, apiKeys, apiKeyRefs, ...rest } = model as any;
+    const { apiKey: _apiKey, apiKeys: _apiKeys, apiKeyRefs: _apiKeyRefs, ...rest } = model as any;
     return { ...rest, apiKeyRef: `${ENCRYPTED_PREFIX}${aesEncrypt(model.apiKey.trim())}` } as T;
   }
 

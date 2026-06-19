@@ -1,10 +1,12 @@
 /**
- * v3: AI 深度思考展示组件（极简黑白灰风格）
+ * v8: AI 深度思考展示组件（参考 DeepSeek 深度思考样式）
  *
- * 设计理念：
- * - 折叠态：一行，左侧竖线 + 标签 + 耗时 + 箭头
- * - 展开态：内容区域，可滚动，支持复制
- * - 流式态：CSS 呼吸灯动画（无 JS 定时器，WKWebView 友好）
+ * 设计理念（参考截图）：
+ * - 无背景框、无圆角卡片 — 透明底，仅左侧竖线
+ * - "深度思考"标签：加粗深灰色（非橘色）
+ * - 内容区域：浅灰文字，左对齐，无额外包裹
+ * - 折叠态：一行（标签 + 耗时 + 箭头）
+ * - 流式态：呼吸灯动画
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, IconButton, Collapse, useTheme, Tooltip, CircularProgress } from '@mui/material';
@@ -86,14 +88,9 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
     <Box
       sx={{
         mb: 1,
-        borderRadius: '8px',
-        overflow: 'hidden',
-        bgcolor: isDark ? 'rgba(128,128,128,0.06)' : 'rgba(0,0,0,0.02)',
-        border: `1px solid ${isDark ? 'rgba(128,128,128,0.12)' : 'rgba(0,0,0,0.07)'}`,
-        transition: 'border-color 0.15s ease',
-        '&:hover': {
-          borderColor: isDark ? 'rgba(128,128,128,0.25)' : 'rgba(0,0,0,0.14)',
-        },
+        borderLeft: `2px solid ${isDark ? 'rgba(128,128,128,0.35)' : 'rgba(0,0,0,0.12)'}`,
+        pl: 1.5,
+        py: 0.25,
       }}
     >
       {/* 头部栏 */}
@@ -103,42 +100,40 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
           display: 'flex',
           alignItems: 'center',
           gap: 0.75,
-          px: 1.25,
-          py: 0.6,
+          py: 0.4,
           cursor: 'pointer',
           userSelect: 'none',
         }}
       >
-        {/* v7: 呼吸灯 — CSS 动画替代 JS 定时器，WKWebView 更流畅 */}
+        {/* 呼吸灯竖线 — 流式时动画 */}
         <Box
           sx={{
             width: 2,
             height: 13,
             borderRadius: 1,
-            bgcolor: isStreaming ? 'rgba(128,128,128,0.7)' : gs.textMuted,
-            opacity: 0.7,
+            bgcolor: isStreaming ? (isDark ? 'rgba(128,128,128,0.7)' : 'rgba(0,0,0,0.3)') : (isDark ? 'rgba(128,128,128,0.4)' : 'rgba(0,0,0,0.15)'),
+            opacity: 0.8,
             ...(isStreaming ? { animation: 'thinking-breathe 2s ease-in-out infinite' } : {}),
             flexShrink: 0,
           }}
         />
 
-        {/* v7: 旋转圈 — 流式时显示，作为思考中的视觉提示 */}
+        {/* 流式旋转圈 */}
         {isStreaming && (
           <CircularProgress
             size={12}
             thickness={5}
-            sx={{ color: gs.textMuted, flexShrink: 0 }}
+            sx={{ color: isDark ? '#777' : '#aaa', flexShrink: 0 }}
           />
         )}
 
-        {/* 标签 */}
+        {/* 标签 — 加粗深灰，参考截图 "深度思考" 样式 */}
         <Typography
           sx={{
-            fontSize: '11px',
-            fontWeight: 500,
+            fontSize: '12px',
+            fontWeight: 600,
             color: isDark ? '#9CA3AF' : '#6B7280',
             flexShrink: 0,
-            letterSpacing: '-0.01em',
           }}
         >
           {isStreaming ? '正在思考...' : label}
@@ -196,29 +191,27 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
         />
       </Box>
 
-      {/* 展开内容 */}
+      {/* 展开内容 — 无背景框，透明底 */}
       <Collapse in={expanded} unmountOnExit>
         <Box
           ref={contentRef}
           sx={{
-            px: 1.25,
-            pb: 1,
-            pt: 0.4,
-            borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'}`,
+            pb: 0.5,
+            pt: 0.25,
             maxHeight: 280,
             overflowY: 'auto',
             // 自定义滚动条
             '&::-webkit-scrollbar': { width: 3 },
             '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
             '&::-webkit-scrollbar-thumb': {
-              bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+              bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
               borderRadius: 2,
             },
-            // Markdown 样式覆盖 — 极简黑白灰
+            // Markdown 样式 — 浅灰文字，无背景包裹
             '& .markdown-body': {
-              fontSize: '12.5px',
+              fontSize: '13px',
               lineHeight: 1.85,
-              color: isDark ? '#9CA3AF' : '#555',
+              color: isDark ? '#9CA3AF' : '#6B7280',
               p: 0,
               m: 0,
             },
@@ -227,9 +220,9 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
               '& + p': { mt: 0.65 },
             },
             '& .markdown-body h1, & .markdown-body h2, & .markdown-body h3': {
-              fontSize: '12.5px',
+              fontSize: '13px',
               fontWeight: 600,
-              color: isDark ? '#D1D5DB' : '#333',
+              color: isDark ? '#D1D5DB' : '#374151',
               mt: 1,
               mb: 0.35,
               '&:first-child': { mt: 0 },
@@ -242,7 +235,7 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
             },
             '& .markdown-body code': {
               fontSize: '11.5px',
-              bgcolor: isDark ? 'rgba(80,80,80,0.3)' : 'rgba(0,0,0,0.05)',
+              bgcolor: isDark ? 'rgba(80,80,80,0.2)' : 'rgba(0,0,0,0.04)',
               px: 0.4,
               py: 0.08,
               borderRadius: 3,
@@ -251,8 +244,8 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
             '& .markdown-body pre': {
               my: 0.75,
               borderRadius: 6,
-              bgcolor: isDark ? 'rgba(40,40,40,0.6)' : 'rgba(0,0,0,0.03)',
-              border: `1px solid ${isDark ? 'rgba(80,80,80,0.25)' : 'rgba(0,0,0,0.06)'}`,
+              bgcolor: isDark ? 'rgba(40,40,40,0.5)' : 'rgba(0,0,0,0.03)',
+              border: `1px solid ${isDark ? 'rgba(80,80,80,0.2)' : 'rgba(0,0,0,0.06)'}`,
             },
             '& .markdown-body pre code': {
               bgcolor: 'transparent',
@@ -261,7 +254,7 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
               fontSize: '11.5px',
             },
             '& .markdown-body blockquote': {
-              borderLeft: `2px solid ${isDark ? 'rgba(100,100,100,0.35)' : 'rgba(0,0,0,0.09)'}`,
+              borderLeft: `2px solid ${isDark ? 'rgba(100,100,100,0.25)' : 'rgba(0,0,0,0.08)'}`,
               pl: 1.2,
               my: 0.65,
               color: isDark ? '#777' : '#999',
@@ -269,7 +262,7 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
             },
             '& .markdown-body strong, & .markdown-body b': {
               fontWeight: 600,
-              color: isDark ? '#E5E7EB' : '#222',
+              color: isDark ? '#E5E7EB' : '#374151',
             },
             '& .markdown-body em, & .markdown-body i': {
               color: isDark ? '#B0B3B8' : '#666',
@@ -279,19 +272,19 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
               width: '100%',
               borderCollapse: 'collapse',
               th: {
-                bgcolor: isDark ? 'rgba(60,60,60,0.4)' : 'rgba(0,0,0,0.03)',
+                bgcolor: isDark ? 'rgba(60,60,60,0.3)' : 'rgba(0,0,0,0.02)',
                 px: 0.6, py: 0.35,
                 textAlign: 'left', fontWeight: 500,
-                borderBottom: `1px solid ${isDark ? 'rgba(70,70,70,0.3)' : 'rgba(0,0,0,0.07)'}`,
+                borderBottom: `1px solid ${isDark ? 'rgba(70,70,70,0.25)' : 'rgba(0,0,0,0.06)'}`,
               },
               td: {
                 px: 0.6, py: 0.35,
-                borderBottom: `1px solid ${isDark ? 'rgba(50,50,50,0.25)' : 'rgba(0,0,0,0.04)'}`,
+                borderBottom: `1px solid ${isDark ? 'rgba(50,50,50,0.2)' : 'rgba(0,0,0,0.04)'}`,
               },
             },
           }}
         >
-          <MarkdownRenderer content={thinking} />
+          <MarkdownRenderer content={thinking} isStreaming={isStreaming} />
         </Box>
       </Collapse>
     </Box>

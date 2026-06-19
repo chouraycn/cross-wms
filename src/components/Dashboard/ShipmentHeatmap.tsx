@@ -248,7 +248,7 @@ const ShipmentHeatmap: React.FC<ShipmentHeatmapProps> = ({ warehouseId }) => {
           setOutboundRecords(outbound);
         }
       } catch (err) {
-        console.warn('热力图数据加载失败:', err);
+        // console.warn('热力图数据加载失败:', err);
       }
     }
 

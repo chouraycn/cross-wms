@@ -250,20 +250,6 @@ export interface Message {
     newMaxTokens?: number;
     reason: string;
   };
-  /** v6.0: 子会话创建建议 */
-  subSessionSuggested?: {
-    parentSessionId: string;
-    stepIndex: number;
-    title: string;
-    toolName?: string;
-  };
-  /** v6.0: PDCA 检查结果 */
-  pdcaCheck?: {
-    decision: string;
-    reason: string;
-    progressPercent: number;
-    confidence: number;
-  };
   /** v7.0: 队列状态（Collect/Steer/Followup 模式下的实时状态反馈） */
   queueState?: QueueStateInfo;
   /** v8.0: 多 Agent 编排状态 */

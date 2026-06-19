@@ -34,7 +34,7 @@ function removeCrossorigin(): Plugin {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     removeCrossorigin(),
@@ -44,6 +44,10 @@ export default defineConfig({
     alias: {
       '@': '/src',
     },
+  },
+  // v1.5.132: 生产构建自动剥离 console.log/debug，保留 console.warn/error
+  esbuild: {
+    pure: mode === 'production' ? ['console.log', 'console.debug'] : [],
   },
   // v1.9.3: 开发模式下将 /api 请求代理到后端，避免跨域问题（Electron/浏览器均兼容）
   server: {
@@ -86,7 +90,15 @@ export default defineConfig({
       },
       output: {
         manualChunks(id: string) {
-          // MUI (Material UI) + @emotion 运行时 — 最大的单库
+          // MUI icons — 单独拆分（非常大，但懒加载不影响首屏）
+          if (id.includes('node_modules/@mui/icons-material/')) {
+            return 'vendor-mui-icons';
+          }
+          // MUI X DataGrid — 单独拆分（高级数据展示组件）
+          if (id.includes('node_modules/@mui/x-data-grid/') || id.includes('node_modules/@mui/x-date-pickers/') || id.includes('node_modules/@mui/x-charts/')) {
+            return 'vendor-mui-x';
+          }
+          // MUI core + @emotion 运行时 — 最大的单库
           if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/') || id.includes('node_modules/property-information/')) {
             return 'vendor-mui';
           }
@@ -124,6 +136,27 @@ export default defineConfig({
           if (id.includes('node_modules/js-yaml/')) {
             return 'vendor-js-yaml';
           }
+          // react-syntax-highlighter — 代码高亮（MarkdownRenderer 使用）
+          // NOTE: prismjs 不单独拆分，其 worker/web worker 模块与 MUI 有共享依赖会产生循环 chunk
+          if (id.includes('node_modules/react-syntax-highlighter/')) {
+            return 'vendor-syntax-highlighter';
+          }
+          // KaTeX — LaTeX 数学公式渲染
+          if (id.includes('node_modules/katex/')) {
+            return 'vendor-katex';
+          }
+          // react-markdown + remark/rehype 生态包
+          if (
+            id.includes('node_modules/react-markdown/') ||
+            id.includes('node_modules/remark') ||
+            id.includes('node_modules/rehype') ||
+            id.includes('node_modules/hast') ||
+            id.includes('node_modules/mdast') ||
+            id.includes('node_modules/micromark') ||
+            id.includes('node_modules/unified/')
+          ) {
+            return 'vendor-markdown';
+          }
           // 不设 catch-all vendor-misc（会导致循环依赖），其余小包留在 main chunk
           return undefined;
         },
@@ -131,4 +164,4 @@ export default defineConfig({
     },
     target: 'esnext',
   },
-})
+}))

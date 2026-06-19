@@ -135,7 +135,7 @@ const AutomationPage: React.FC = () => {
         }))
       );
     } catch (err) {
-      console.error('[AutomationPage] 加载自动化失败:', err);
+      // console.error('[AutomationPage] 加载自动化失败:', err);
       showToast('加载自动化失败: ' + (err instanceof Error ? err.message : ''), 'error');
     } finally {
       setLoading(false);
@@ -147,7 +147,7 @@ const AutomationPage: React.FC = () => {
       const result = await fetchAllExecutions(200);
       setAllLogs(result.data);
     } catch (err) {
-      console.error('[AutomationPage] 加载执行历史失败:', err);
+      // console.error('[AutomationPage] 加载执行历史失败:', err);
     }
   }, []);
 

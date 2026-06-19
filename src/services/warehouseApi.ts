@@ -30,7 +30,7 @@ class WarehouseApiService {
       const json: ApiResponse<Warehouse> = await resp.json();
       return json.code === 0 && json.data ? json.data : null;
     } catch (error) {
-      console.warn('[WarehouseAPI] 获取仓库详情失败:', error);
+      // console.warn('[WarehouseAPI] 获取仓库详情失败:', error);
       return null;
     }
   }
@@ -49,7 +49,7 @@ class WarehouseApiService {
       // 兼容分页格式 { list: [...] } 或原始数组
       return json.data.list || json.data;
     } catch (error) {
-      console.warn('[WarehouseAPI] 获取入库记录失败，使用 mock 数据:', error);
+      // console.warn('[WarehouseAPI] 获取入库记录失败，使用 mock 数据:', error);
       return warehouseId
         ? mockInboundRecords.filter(r => r.warehouseId === warehouseId)
         : mockInboundRecords;
@@ -70,7 +70,7 @@ class WarehouseApiService {
       // 兼容分页格式 { list: [...] } 或原始数组
       return json.data.list || json.data;
     } catch (error) {
-      console.warn('[WarehouseAPI] 获取出库记录失败，使用 mock 数据:', error);
+      // console.warn('[WarehouseAPI] 获取出库记录失败，使用 mock 数据:', error);
       return warehouseId
         ? mockOutboundRecords.filter(r => r.warehouseId === warehouseId)
         : mockOutboundRecords;
@@ -92,7 +92,7 @@ class WarehouseApiService {
       const data = json.data;
       return data.inventory || data.list || data;
     } catch (error) {
-      console.warn('[WarehouseAPI] 获取库存数据失败，使用 mock 数据:', error);
+      // console.warn('[WarehouseAPI] 获取库存数据失败，使用 mock 数据:', error);
       return warehouseId
         ? mockInventory.filter(i => i.warehouseId === warehouseId)
         : mockInventory;

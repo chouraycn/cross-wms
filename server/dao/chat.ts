@@ -1,8 +1,89 @@
 import { v4 as uuidv4 } from 'uuid';
 import { initDb } from '../db.js';
 import type { Session, Folder, Message } from '../db.js';
+import Database from 'better-sqlite3';
+import { logger } from '../logger.js';
 
 // ===================== Chat Session DAO =====================
+
+// v2.8.2: 预编译 prepared statements — 避免每次 addMessage 调用都重新解析 SQL
+const stmtCache: {
+  insertMessage?: Database.Statement;
+  updateSessionMeta?: Database.Statement;
+  selectSessionTitle?: Database.Statement;
+  countSessionMessages?: Database.Statement;
+  updateSessionTitle?: Database.Statement;
+} = {};
+
+function getStmts(db: Database.Database): typeof stmtCache {
+  if (!stmtCache.insertMessage) {
+    stmtCache.insertMessage = db.prepare(
+      'INSERT INTO messages (id, sessionId, role, content, model, timestamp, toolCalls, skillId, thinking, thinkingDuration, attachments) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+    );
+    stmtCache.updateSessionMeta = db.prepare(
+      'UPDATE sessions SET updatedAt = ?, lastActiveAt = ?, sessionDate = DATE(?) WHERE id = ?'
+    );
+    stmtCache.selectSessionTitle = db.prepare('SELECT title FROM sessions WHERE id = ?');
+    stmtCache.countSessionMessages = db.prepare('SELECT COUNT(*) as count FROM messages WHERE sessionId = ?');
+    stmtCache.updateSessionTitle = db.prepare('UPDATE sessions SET title = ? WHERE id = ?');
+  }
+  return stmtCache;
+}
+
+// v2.8.2: 延迟会话元数据更新 — 批量合并同一 tick 内的多个更新
+interface PendingSessionUpdate {
+  sessionId: string;
+  now: string;
+  role: string;
+  content: string;
+}
+let pendingUpdates: PendingSessionUpdate[] = [];
+let deferredScheduled = false;
+
+/**
+ * 延迟执行会话元数据更新 + 首条消息标题生成
+ * 多个 addMessage 调用在同一 tick 内触发时，合并为单次 setImmediate + 单个事务
+ */
+function scheduleSessionUpdate(sessionId: string, now: string, role: string, content: string): void {
+  pendingUpdates.push({ sessionId, now, role, content });
+  if (!deferredScheduled) {
+    deferredScheduled = true;
+    setImmediate(flushSessionUpdates);
+  }
+}
+
+function flushSessionUpdates(): void {
+  const batch = pendingUpdates;
+  pendingUpdates = [];
+  deferredScheduled = false;
+  if (batch.length === 0) return;
+
+  try {
+    const db = initDb();
+    const stmts = getStmts(db);
+    const tx = db.transaction(() => {
+      for (const upd of batch) {
+        // 1. 更新会话元数据（updatedAt, lastActiveAt, sessionDate）
+        stmts.updateSessionMeta!.run(upd.now, upd.now, upd.now, upd.sessionId);
+
+        // 2. 首条用户消息自动生成标题
+        if (upd.role === 'user') {
+          const session = stmts.selectSessionTitle!.get(upd.sessionId) as { title: string } | undefined;
+          if (session && (session.title === '新对话' || !session.title)) {
+            const msgCount = stmts.countSessionMessages!.get(upd.sessionId) as { count: number };
+            if (msgCount.count <= 1) {
+              const autoTitle = upd.content.slice(0, 30).replace(/\n/g, ' ').trim() || '新对话';
+              stmts.updateSessionTitle!.run(autoTitle, upd.sessionId);
+            }
+          }
+        }
+      }
+    });
+    tx();
+  } catch (e) {
+    logger.error('[DAO] flushSessionUpdates 失败:', e);
+  }
+}
 
 export function getSessions(): Session[] {
   const db = initDb();
@@ -53,24 +134,20 @@ export function addMessage(msg: Omit<Message, 'id' | 'timestamp'> & { id?: strin
   const id = msg.id || uuidv4();
   const now = new Date().toISOString();
   const db = initDb();
-  db.prepare('INSERT INTO messages (id, sessionId, role, content, model, timestamp, toolCalls, skillId, thinking, thinkingDuration, attachments) VALUES (?,?,?,?,?,?,?,?,?,?,?)').run(
-    id, msg.sessionId, msg.role, msg.content, msg.model || null, now, msg.toolCalls || null, msg.skillId || null, msg.thinking || null, msg.thinkingDuration ?? null, msg.attachments ? JSON.stringify(msg.attachments) : null
-  );
-  // v6.0: 更新 lastActiveAt 和 sessionDate（会话生命周期）
-  db.prepare('UPDATE sessions SET updatedAt = ?, lastActiveAt = ?, sessionDate = DATE(?) WHERE id = ?').run(now, now, now, msg.sessionId);
+  const stmts = getStmts(db);
 
-  // v6.0: 首条用户消息自动生成标题（替代默认的"新对话"）
-  if (msg.role === 'user') {
-    const session = db.prepare('SELECT title FROM sessions WHERE id = ?').get(msg.sessionId) as { title: string } | undefined;
-    if (session && (session.title === '新对话' || !session.title)) {
-      // 检查是否为该会话的第一条消息
-      const msgCount = db.prepare('SELECT COUNT(*) as count FROM messages WHERE sessionId = ?').get(msg.sessionId) as { count: number };
-      if (msgCount.count <= 1) {
-        const autoTitle = msg.content.slice(0, 30).replace(/\n/g, ' ').trim() || '新对话';
-        db.prepare('UPDATE sessions SET title = ? WHERE id = ?').run(autoTitle, msg.sessionId);
-      }
-    }
-  }
+  // v2.8.2: 仅 INSERT 同步执行（WAL 模式下追加写入，~0.1ms）
+  // 返回值需要 id + timestamp，所以 INSERT 不能延迟
+  stmts.insertMessage!.run(
+    id, msg.sessionId, msg.role, msg.content, msg.model || null, now,
+    msg.toolCalls || null, msg.skillId || null, msg.thinking || null,
+    msg.thinkingDuration ?? null, msg.attachments ? JSON.stringify(msg.attachments) : null
+  );
+
+  // v2.8.2: 延迟会话元数据更新 + 标题生成 — 不阻塞 SSE 响应
+  // 原来: 3-5 次同步 SQL（INSERT + UPDATE + SELECT + SELECT + UPDATE）
+  // 现在: 1 次同步 INSERT + 延迟的批量事务（setImmediate 合并同一 tick 的多个更新）
+  scheduleSessionUpdate(msg.sessionId, now, msg.role, msg.content);
 
   return { ...msg, id, timestamp: now };
 }

@@ -35,7 +35,7 @@ function notifyAll(): void {
     try {
       fn();
     } catch (e) {
-      console.error('[skillStore] listener error:', e);
+      // console.error('[skillStore] listener error:', e);
     }
   });
 }
@@ -71,7 +71,7 @@ export async function loadAllUsageStats(): Promise<void> {
     }
     notifyAll();
   } catch (e) {
-    console.error('[skillStore] loadAllUsageStats failed:', e);
+    // console.error('[skillStore] loadAllUsageStats failed:', e);
   }
 }
 
@@ -87,7 +87,7 @@ export async function refreshFromRemote(): Promise<void> {
     await loadAllUsageStats();
     notifyAll();
   } catch (e) {
-    console.error('[skillStore] refreshFromRemote failed:', e);
+    // console.error('[skillStore] refreshFromRemote failed:', e);
   }
 }
 
@@ -99,27 +99,15 @@ export async function addSkill(skill: Omit<Skill, 'id' | 'source' | 'installedAt
     source: 'user',
     installedAt: Date.now(),
   };
-  console.log('[skillStore] addSkill: creating skill', {
-    id: newSkill.id,
-    name: newSkill.name,
-    hasPromptTemplate: !!newSkill.promptTemplate,
-    promptTemplateLength: newSkill.promptTemplate?.length ?? 0,
-    executionMode: newSkill.executionMode,
-  });
+  // console.log('[skillStore] addSkill: creating skill', { id: newSkill.id, name: newSkill.name, hasPromptTemplate: !!newSkill.promptTemplate, promptTemplateLength: newSkill.promptTemplate?.length ?? 0, executionMode: newSkill.executionMode });
   try {
     const created = await api.createUserSkill(newSkill);
-    console.log('[skillStore] addSkill: server response', {
-      id: created.id,
-      name: created.name,
-      hasPromptTemplate: !!created.promptTemplate,
-      promptTemplateLength: created.promptTemplate?.length ?? 0,
-      executionMode: created.executionMode,
-    });
+    // console.log('[skillStore] addSkill: server response', { id: created.id, name: created.name, hasPromptTemplate: !!created.promptTemplate, promptTemplateLength: created.promptTemplate?.length ?? 0, executionMode: created.executionMode });
     userSkills = [...userSkills, created];
     notifyAll();
     return created;
   } catch (e) {
-    console.error('[skillStore] addSkill failed:', e);
+    // console.error('[skillStore] addSkill failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'addSkill', error: e } }));
     throw e;
   }
@@ -135,7 +123,7 @@ export async function updateSkill(id: string, updates: Partial<Omit<Skill, 'id' 
     notifyAll();
     return true;
   } catch (e) {
-    console.error('[skillStore] updateSkill failed:', e);
+    // console.error('[skillStore] updateSkill failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'updateSkill', error: e } }));
     throw e;
   }
@@ -152,7 +140,7 @@ export async function setSkillStatus(id: string, status: Skill['status']): Promi
       notifyAll();
       return true;
     } catch (e) {
-      console.error('[skillStore] setSkillStatus (user) failed:', e);
+      // console.error('[skillStore] setSkillStatus (user) failed:', e);
       window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'setSkillStatus', error: e } }));
       throw e;
     }
@@ -164,7 +152,7 @@ export async function setSkillStatus(id: string, status: Skill['status']): Promi
     notifyAll();
     return true;
   } catch (e) {
-    console.error('[skillStore] setSkillStatus (builtin) failed:', e);
+    // console.error('[skillStore] setSkillStatus (builtin) failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'setSkillStatus', error: e } }));
     throw e;
   }
@@ -175,7 +163,7 @@ export async function removeSkill(id: string): Promise<boolean> {
   const skill = userSkills.find((s) => s.id === id);
   if (!skill) return false;
   if (skill.source === 'builtin') {
-    console.warn('[skillStore] removeSkill: 内置技能禁止删除', id);
+    // console.warn('[skillStore] removeSkill: 内置技能禁止删除', id);
     return false;
   }
   try {
@@ -184,7 +172,7 @@ export async function removeSkill(id: string): Promise<boolean> {
     notifyAll();
     return true;
   } catch (e) {
-    console.error('[skillStore] removeSkill failed:', e);
+    // console.error('[skillStore] removeSkill failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'removeSkill', error: e } }));
     throw e;
   }
@@ -302,6 +290,6 @@ export async function initFromApi(): Promise<void> {
     // T02: 初始化后批量加载使用统计
     await loadAllUsageStats();
   } catch (e) {
-    console.error('[skillStore] initFromApi failed:', e);
+    // console.error('[skillStore] initFromApi failed:', e);
   }
 }
