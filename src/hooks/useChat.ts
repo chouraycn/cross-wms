@@ -383,13 +383,23 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       let currentThinkingDuration: number | undefined;
       let currentThinkingType: 'deep' | 'local' = 'deep';
 
-      // v1.5.185: visibilitychange 监听器引用 — 必须在 for 循环外部声明，
+      // v1.5.185: 事件监听器引用 — 必须在 for 循环外部声明，
       // 以便 catch 块和重试路径都能正确清理
       let visibilityHandler: ((e: Event) => void) | null = null;
-      const removeVisibilityHandler = () => {
+      let focusHandler: (() => void) | null = null;
+      let pageshowHandler: ((e: PageTransitionEvent) => void) | null = null;
+      const removeAllHandlers = () => {
         if (visibilityHandler) {
           try { document.removeEventListener('visibilitychange', visibilityHandler); } catch {}
           visibilityHandler = null;
+        }
+        if (focusHandler) {
+          try { window.removeEventListener('focus', focusHandler); } catch {}
+          focusHandler = null;
+        }
+        if (pageshowHandler) {
+          try { window.removeEventListener('pageshow', pageshowHandler); } catch {}
+          pageshowHandler = null;
         }
       };
 
@@ -481,7 +491,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
           // v1.5.185: visibilitychange 监听 — WKWebView 后台暂停 rAF，
           // 页面重新可见时立即 flush，避免"一直思考中"卡死
-          removeVisibilityHandler();
+          // v1.5.189: 补充 focus/pageshow 监听 — 覆盖更多"应用切回"场景
+          removeAllHandlers();
           visibilityHandler = () => {
             if (document.visibilityState === 'visible') {
               try { flushRender(); } catch {}
@@ -489,6 +500,22 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           };
           if (typeof document !== 'undefined') {
             document.addEventListener('visibilitychange', visibilityHandler);
+          }
+
+          // v1.5.189: focus — 切换应用后切回 CrossWMS 时触发
+          if (typeof window !== 'undefined') {
+            focusHandler = () => {
+              try { flushRender(); } catch {}
+            };
+            window.addEventListener('focus', focusHandler);
+
+            // v1.5.189: pageshow — 页面从 bfcache 恢复时触发
+            pageshowHandler = (e: PageTransitionEvent) => {
+              if (e.persisted) {
+                try { flushRender(); } catch {}
+              }
+            };
+            window.addEventListener('pageshow', pageshowHandler);
           }
 
           // v1.8.0: 使用 AbortController signal 支持用户中断
@@ -874,7 +901,7 @@ scheduleRender();
             if (stoppedRef.current) {
               // 用户手动停止，保留已生成内容
             } else {
-              removeVisibilityHandler();
+              removeAllHandlers();
               throw readErr;
             }
           }
@@ -887,7 +914,7 @@ scheduleRender();
           currentThinkingDuration = thinkingDuration;
 
           // 成功，跳出重试循环
-          removeVisibilityHandler();
+          removeAllHandlers();
           break;
         } catch (fetchErr) {
           const errMsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
@@ -900,12 +927,12 @@ scheduleRender();
             onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...messagesPrefix, { ...streamingMsg, content: '', thinking: '' }] });
             continue;
           }
-          removeVisibilityHandler();
+          removeAllHandlers();
           throw fetchErr;
         }
       }
 
-      removeVisibilityHandler();
+      removeAllHandlers();
 
       // v1.8.0: 流结束，将占位消息替换为最终消息
       streamingMsgIdRef.current = null;

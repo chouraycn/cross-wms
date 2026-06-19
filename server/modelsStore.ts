@@ -285,7 +285,14 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
       }
       if (needSave) {
         // 保存前：先将明文 API Key 提取到 Keychain/AES 加密
-        const protectedModels = saved.models.map((m) => extractAndSaveApiKey(m));
+        // Bugfix: extractAndSaveApiKey 可能因 Keychain/AES 异常而抛出，用 try/catch 包裹防止整体加载失败
+        let protectedModels: typeof saved.models;
+        try {
+          protectedModels = saved.models.map((m) => extractAndSaveApiKey(m));
+        } catch (protectErr) {
+          logger.warn('[modelsStore] extractAndSaveApiKey 失败，使用原始模型数据:', String(protectErr));
+          protectedModels = saved.models;
+        }
         // 脱敏（移除注入的 Key，保留 apiKeyRef/apiKeyRefs）
         const sanitized = protectedModels.map((m) => {
           const { apiKey, apiKeys, ...rest } = m as any;
