@@ -106,18 +106,25 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
         if target_window is None:
             return False
         
-        # 配置标题栏（透明 + 无标题 + 内容可延伸至标题栏区域）
+        # 配置标题栏（透明 + 内容可延伸至标题栏区域）
         # 必须在主线程中执行（AppKit 要求）
+        # 注意：setStyleMask_() 是覆盖式设置，必须先读取当前样式再追加标志位
         try:
             def _configure_titlebar_main_thread():
                 """在主线程中配置标题栏（安全）"""
                 try:
-                    # 设置窗口样式：允许内容延伸至标题栏区域
-                    target_window.setStyleMask_(NSWindowStyleMaskFullSizeContentView)
-                    # 隐藏标题
-                    target_window.setTitleVisibility_(NSWindowTitleHidden)
-                    # 使标题栏透明
+                    # 正确做法：先读取当前样式，再追加标志位（避免覆盖）
+                    current_mask = target_window.styleMask()
+                    new_mask = current_mask | NSWindowStyleMaskFullSizeContentView
+                    target_window.setStyleMask_(new_mask)
+                    print(f"[Titlebar] ✅ 窗口样式已更新: {current_mask} → {new_mask}")
+                    
+                    # 使标题栏透明（保留高度，不隐藏标题栏）
                     target_window.setTitlebarAppearsTransparent_(True)
+                    print(f"[Titlebar] ✅ 标题栏已设为透明")
+                    
+                    # 注意：不调用 setTitleVisibility_() — 保留标题栏高度，避免白屏
+                    # 注意：title 设为空格（创建窗口时），避免显示软件名称
                 except Exception as e:
                     print(f"[Titlebar] ⚠️ 主线程配置失败: {e}")
             
