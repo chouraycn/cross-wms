@@ -1691,23 +1691,15 @@ def main():
             resizable=True,
             text_select=True,
             js_api=api,
-            frameless=False,  # 改为 False，保留系统标题栏和红黄绿按钮
+            frameless=True,  # 无系统标题栏，保留红黄绿按钮，使用 CSS 避让
             easy_drag=False,  # v1.5.73: 关闭全局拖拽，仅通过 CSS WebkitAppRegion:drag 拖拽条移动窗口，释放内容区文本选择
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
 
-        # 使标题栏透明（保留红黄绿按钮，避免白条）
-        if COCOA_AVAILABLE:
-            def _make_titlebar_transparent():
-                time.sleep(0.5)  # 等待窗口初始化
-                make_titlebar_transparent(window)
-            threading.Thread(target=_make_titlebar_transparent, daemon=True).start()
-            log("[Main] 已启动标题栏透明化线程")
-
         # 调试：输出 Cocoa 可用性
         print(f"[DEBUG] COCOA_AVAILABLE = {COCOA_AVAILABLE}")
-        print(f"[DEBUG] frameless = True (红黄绿按钮应由 pywebview 保留)")
+        print(f"[DEBUG] frameless = True (无边框窗口，红黄绿按钮由 Cocoa API 偏移)")
         if COCOA_AVAILABLE:
             try:
                 import Cocoa
@@ -1737,8 +1729,8 @@ def main():
         log("[Main] pywebview 窗口已创建，启动事件循环...")
 
         # 4. 启动事件循环（阻塞直到窗口关闭）
-        # debug=True 启用 Safari Web Inspector（用于调试白屏问题）
-        webview.start(debug=True, private_mode=False)
+        # debug=False 关闭 Safari Web Inspector（生产环境不显示调试窗口）
+        webview.start(debug=False, private_mode=False)
 
         log("[Main] CDF Know Clow 窗口已关闭，退出")
     except FileNotFoundError as e:
