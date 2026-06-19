@@ -139,7 +139,8 @@ else
   PIP="$PYWEBVIEW_VENV/bin/pip"
   # 自动安装必需的 Python 依赖（首次运行或依赖丢失时）
   # 必需包: pyinstaller (打包工具), pywebview (webview 窗口), Pillow (PNG→ICNS), pyobjc-framework-Cocoa (macOS native)
-  REQUIRED_PACKAGES=("pyinstaller" "pywebview" "Pillow" "pyobjc-framework-Cocoa")
+  # ⚠️ pywebview 锁定 4.4.1（方案A frameless=True 在此版本行为稳定）
+  REQUIRED_PACKAGES=("pyinstaller" "pywebview==4.4.1" "Pillow" "pyobjc-framework-Cocoa")
   MISSING_PACKAGES=()
   for pkg in "${REQUIRED_PACKAGES[@]}"; do
     # 将包名转换为 import 名（pyobjc-framework-Cocoa → objc）
