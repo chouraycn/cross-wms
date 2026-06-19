@@ -63,7 +63,7 @@
         // 全局 JS 错误捕获
         window.onerror = function(msg, url, line, col, err) {
           showError('JS 错误: ' + msg + '\\n' + (url || '') + ':' + (line || '') + ':' + (col || ''));
-          return true;
+          return false;
         };
         window.addEventListener('error', function(e) {
           if (e.error) showError('Error: ' + (e.error.stack || e.error.message));

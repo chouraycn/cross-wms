@@ -88,6 +88,7 @@ interface PyWebViewApi {
   window_close: () => Promise<string>;
   window_minimize: () => Promise<string>;
   window_maximize: () => Promise<string>;
+  window_toggle_fullscreen: () => Promise<string>;
   get_traffic_light_offset: () => Promise<string>;
   set_traffic_light_offset: (x: number, y: number) => Promise<string>;
 
@@ -161,7 +162,7 @@ function waitForApi(timeout = 5000): Promise<PyWebViewApi> {
 /**
  * 调用 pywebview API 方法并解析 JSON 结果
  */
-async function callApi<T>(method: keyof PyWebViewApi, ...args: unknown[]): Promise<T> {
+export async function callApi<T>(method: keyof PyWebViewApi, ...args: unknown[]): Promise<T> {
   const api = await waitForApi();
   const fn = api[method] as (...a: unknown[]) => Promise<string>;
   let jsonStr: string;

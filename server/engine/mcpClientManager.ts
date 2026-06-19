@@ -126,8 +126,13 @@ class McpClientManager {
         { capabilities: {} },
       );
 
-      // 3. 连接
-      await client.connect(transport);
+      // 3. 连接（带超时，防止 MCP Server 无响应时永久挂起）
+      await Promise.race([
+        client.connect(transport),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('MCP 连接超时（30s）')), 30000)
+        ),
+      ]);
 
       // 4. listTools
       const toolsResult = await client.listTools();

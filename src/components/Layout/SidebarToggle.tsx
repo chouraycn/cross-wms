@@ -50,8 +50,8 @@ const SidebarToggle = React.memo<SidebarToggleProps>(function SidebarToggle({
         top: '10px',
         left: collapsed ? collapsedWidth + 7 : expandedWidth - 33,
         right: 'auto',
-        // v2.5.1-fix: zIndex 必须高于 WindowDragBar(9999)，否则拖拽条覆盖按钮导致无法点击
-        zIndex: 10001,
+        // v1.5.166: zIndex 高于 WindowDragBar(1300)，确保按钮可点击
+        zIndex: 1400,
         color: gs.textPrimary,
         borderRadius: '6.48px',
         p: 0.45,

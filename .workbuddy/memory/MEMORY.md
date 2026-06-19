@@ -78,3 +78,16 @@
 - maxTokens 上限 8192: 所有截断调用点 + API 调用 + modelsStore 配置
 - DeepSeek maxTokens: 384K → 8K（384K 导致截断浪费 384K 输入空间）
 - 迁移: `loadModelsConfig()` 自动将已保存 models.json 中 maxTokens > 8192 降级
+
+## 窗口控制按钮 v1.5.166
+
+- **v1.5.166 起：红黄绿按钮改为前端自定义渲染**，不再尝试偏移系统按钮
+- 原因：`frameless=True` 时 pywebview 不创建系统红黄绿按钮，`standardWindowButton_()` 返回 `nil`
+- 实现：`src/components/Layout/WindowDragBar.tsx` 渲染三个圆点（红/黄/绿），hover 显示图标
+- 按钮行为（调 `pywebview.api`）：
+  - 红 × → `window_close()`（关闭窗口，先停 Node 后端）
+  - 黄 − → `window_minimize()`（最小化）
+  - 绿 ＋ → `window_maximize()`（切换全屏，pywebview 无 zoom API）
+- 拖拽：CSS `-webkit-app-region:drag`（系统原生拖拽，零 JS）
+- **禁止修改**：`WindowDragBar.tsx` 的按钮渲染逻辑、`pywebview_app.py` 的 `Api` 窗口控制方法
+- 移除代码：`apply_traffic_light_offset()` 及相关 Cocoa 偏移逻辑（v1.5.166 清理）
