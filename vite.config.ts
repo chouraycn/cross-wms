@@ -84,6 +84,12 @@ export default defineConfig(({ mode }) => ({
     // 路由组件通过 React.lazy() + import() 自动拆分为独立 chunk（Vite 内置代码分割）
     // manualChunks 仅处理第三方依赖拆分，应用代码由动态导入自动分割
     chunkSizeWarningLimit: 700,
+    // WKWebView 兼容：强制转换 node_modules 中的 CommonJS 包为 ESM
+    // 防止 Cannot set properties of undefined (setting 'exports') 错误
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       input: {
         main: 'index.html',
