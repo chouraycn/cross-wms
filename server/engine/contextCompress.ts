@@ -10,6 +10,7 @@
 import { estimateTokens, estimateMessagesTokens, sanitizeToolMessages } from './contextTruncate.js';
 import { callAIModel } from '../aiClient.js';
 import type { ModelCallConfig } from '../aiClient.js';
+import { logger } from '../logger.js';
 
 /**
  * 压缩回调类型
@@ -50,7 +51,7 @@ ${conversationText}
     );
     return `[历史对话摘要，供参考]：\n${summary.trim()}`;
   } catch (err) {
-    console.warn('[ContextCompress] LLM 摘要失败，降级为简单截断：', err);
+    logger.warn('[ContextCompress] LLM 摘要失败，降级为简单截断：', err);
     return '[历史对话已截断，内容过长已省略]';
   }
 }
@@ -95,8 +96,13 @@ export async function compressContextWithSummary(
   }
 
   const currentTokens = estimateMessagesTokens(apiMessages);
-  if (currentTokens <= maxInputTokens) {
+  // v1.5.131: 硬安全网 — 消息数过多时强制截断，防止估算偏差导致超限
+  const forceTruncate = apiMessages.length > 80;
+  if (currentTokens <= maxInputTokens && !forceTruncate) {
     return { messages: apiMessages, compressed: false, truncated: false };
+  }
+  if (forceTruncate && currentTokens <= maxInputTokens) {
+    logger.debug(`[ContextCompress] 消息数 ${apiMessages.length} > 80，强制截断（估算 ${currentTokens} 未超限）`);
   }
 
   // 识别会被丢弃的消息（从前往后，直到 token 用完）
@@ -143,7 +149,7 @@ export async function compressContextWithSummary(
     return { ...result, compressed: false };
   }
 
-  console.log(`[ContextCompress] 开始压缩 ${toCompress.length} 条消息...`);
+  logger.debug(`[ContextCompress] 开始压缩 ${toCompress.length} 条消息...`);
 
   try {
     const callback = compressCallback || defaultCompressCallback;
@@ -161,11 +167,11 @@ export async function compressContextWithSummary(
 
     // 压缩后再次检查是否超出限制
     const afterTokens = estimateMessagesTokens(sanitizedMessages);
-    console.log(`[ContextCompress] ✅ 压缩完成: ~${currentTokens} → ~${afterTokens} tokens（摘要 ${estimateTokens(summary)} tokens）`);
+    logger.debug(`[ContextCompress] ✅ 压缩完成: ~${currentTokens} → ~${afterTokens} tokens（摘要 ${estimateTokens(summary)} tokens）`);
 
     if (afterTokens > maxInputTokens) {
       // 压缩后仍然超出，降级为简单截断
-      console.log('[ContextCompress] 压缩后仍然超出限制，降级为简单截断');
+      logger.debug('[ContextCompress] 压缩后仍然超出限制，降级为简单截断');
       const { truncateContextForModel } = await import('./contextTruncate.js');
       const result = truncateContextForModel(sanitizedMessages, contextWindow, maxOutputTokens, toolsCount);
       return { ...result, compressed: true };
@@ -173,7 +179,7 @@ export async function compressContextWithSummary(
 
     return { messages: sanitizedMessages, compressed: true, truncated: false };
   } catch (err) {
-    console.warn('[ContextCompress] 压缩失败，降级为简单截断：', err);
+    logger.warn('[ContextCompress] 压缩失败，降级为简单截断：', err);
     const { truncateContextForModel } = await import('./contextTruncate.js');
     const result = truncateContextForModel(apiMessages, contextWindow, maxOutputTokens, toolsCount);
     return { ...result, compressed: false };

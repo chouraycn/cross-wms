@@ -13,6 +13,7 @@
 
 import vm from 'node:vm';
 import type { PluginManifest } from '../../shared/pluginManifest.js';
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -134,11 +135,11 @@ export async function executeInSandbox(
     const sandbox: Record<string, unknown> = {
       // 基础全局对象
       console: {
-        log: (...args: unknown[]) => console.log('[Plugin Sandbox]', ...args),
-        warn: (...args: unknown[]) => console.warn('[Plugin Sandbox]', ...args),
-        error: (...args: unknown[]) => console.error('[Plugin Sandbox]', ...args),
-        info: (...args: unknown[]) => console.info('[Plugin Sandbox]', ...args),
-        debug: (...args: unknown[]) => console.debug('[Plugin Sandbox]', ...args),
+        log: (...args: unknown[]) => logger.debug('[Plugin Sandbox]', ...args),
+        warn: (...args: unknown[]) => logger.warn('[Plugin Sandbox]', ...args),
+        error: (...args: unknown[]) => logger.error('[Plugin Sandbox]', ...args),
+        info: (...args: unknown[]) => logger.debug('[Plugin Sandbox]', ...args),
+        debug: (...args: unknown[]) => logger.debug('[Plugin Sandbox]', ...args),
       },
       // 代理 require
       require: sandboxedRequire,
@@ -212,7 +213,6 @@ export async function executeInSandbox(
 
     const script = new vm.Script(wrappedCode, {
       filename: `plugin://${manifest.id}/${manifest.entry}`,
-      timeout: timeoutMs,
     });
 
     const maybePromise = script.runInContext(sandbox, {
@@ -239,7 +239,7 @@ export async function executeInSandbox(
     let errorMessage: string;
     if (e instanceof Error) {
       // 区分超时错误和其他错误
-      if (e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') {
+      if ((e as NodeJS.ErrnoException).code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') {
         errorMessage = `执行超时: 插件 '${manifest.id}' 执行时间超过 ${timeoutMs}ms`;
       } else if (e.message.includes('[Sandbox] 权限拒绝')) {
         errorMessage = e.message;

@@ -39,7 +39,7 @@ export interface SendMessageOptions {
   /** 推理强度（'high' 深度思考 / 'max' 极致推理） */
   reasoningEffort?: string;
   /** 执行模式（覆盖全局默认值） */
-  executionMode?: 'legacy' | 'observer' | 'planner' | 'react' | 'orchestrator';
+  executionMode?: 'legacy' | 'observer' | 'react';
   /** v7.0: 队列模式（覆盖全局默认值）：collect(合并) / steer(转向) / followup(追加) */
   queueMode?: 'collect' | 'steer' | 'followup';
 }
@@ -254,7 +254,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         onSessionUpdateRef.current(finalSession);
       }
     } catch (e) {
-      console.error('[useChat] Auto-retry failed:', e);
+      // console.error('[useChat] Auto-retry failed:', e);
     }
   }, []);
 
@@ -307,6 +307,13 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
     };
     const sessionWithStreaming = { ...session, messages: [...session.messages, userMsg, streamingMsg] };
     onSessionUpdateRef.current(sessionWithStreaming);
+
+    // v2.8.3: Cache the messages prefix (all messages except the streaming placeholder).
+    // During streaming, sessionWithStreaming.messages never changes — only streamingMsg is mutated in-place.
+    // Caching the prefix avoids calling slice(0, -1) every rAF frame, which allocates a new array
+    // and copies N-1 elements each time. For a 100-message conversation at 60fps, this saves
+    // ~6,000 array element copies per second.
+    const messagesPrefix = sessionWithStreaming.messages.slice(0, -1);
 
     // v1.8.4: 声明在外层 try 之前，使 catch 块也能访问
     let fullContent = '';
@@ -390,37 +397,73 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           let pendingContent = '';
           let displayedContent = '';
           let renderHandle: number | null = null;
+          let dirty = false; // v2.8.0: skip no-op renders (e.g. keep_alive without mutations)
           // v2.2.3: 提速渲染 — 深度思考产生大量文本，6字/20ms 太慢
           const BASE_CHUNK_SIZE = 24;
+          // v2.8.5: 元数据渲染节流 — 纯 thinking/元数据事件时限制为 10fps
+          // text 事件有 pendingContent 分块天然节流；元数据事件每帧都创建新对象引用，
+          // 触发 React reconciliation + areEqual 34 字段比较，但 MarkdownRenderer 已有 150ms 节流，
+          // 60fps 的状态更新纯属浪费。降至 10fps 足够 UI 响应。
+          const METADATA_THROTTLE_MS = 100;
+          let lastMetadataFlush = 0;
 
           const flushRender = () => {
-            if (pendingContent.length === 0) {
-              renderHandle = null;
-              return;
+            renderHandle = null;
+            let shouldReschedule = false;
+
+            // Process pending text content (chunked for typewriter effect)
+            if (pendingContent.length > 0) {
+              const adaptiveChunk = Math.min(
+                Math.max(BASE_CHUNK_SIZE, Math.ceil(pendingContent.length / 15)),
+                pendingContent.length
+              );
+              const chunk = pendingContent.slice(0, adaptiveChunk);
+              pendingContent = pendingContent.slice(adaptiveChunk);
+              displayedContent += chunk;
+              streamingMsg.content = displayedContent;
+              dirty = true;
+              if (pendingContent.length > 0) {
+                shouldReschedule = true;
+              }
             }
-            const adaptiveChunk = Math.min(
-              Math.max(BASE_CHUNK_SIZE, Math.ceil(pendingContent.length / 15)),
-              pendingContent.length
-            );
-            const chunk = pendingContent.slice(0, adaptiveChunk);
-            pendingContent = pendingContent.slice(adaptiveChunk);
-            displayedContent += chunk;
-            streamingMsg.content = displayedContent;
+
+            // Skip render if nothing changed since last flush (e.g. keep_alive with no mutations)
+            if (!dirty && !shouldReschedule) return;
+
+            // v2.8.5: 纯元数据渲染节流 — 无 pending text 时限制为 10fps
+            // text 事件始终立即渲染（用户体验关键），元数据可降频
+            const isMetadataOnly = pendingContent.length === 0 && !shouldReschedule;
+            if (isMetadataOnly) {
+              const now = Date.now();
+              if (now - lastMetadataFlush < METADATA_THROTTLE_MS) {
+                // 节流窗口内 — 保持 dirty，下一帧重试
+                renderHandle = requestAnimationFrame(flushRender);
+                return;
+              }
+              lastMetadataFlush = now;
+            }
+
+            dirty = false;
+
+            // Unified session update — coalesces text content + all metadata mutations
+            // (thinking, tool_calls, react_phase, etc.) into a single React state update per frame.
+            // SSE event handlers mutate streamingMsg in-place then call scheduleRender();
+            // this flushRender picks up ALL mutations in one shot.
             onSessionUpdateRef.current({
               ...sessionWithStreaming,
               messages: [
-                ...sessionWithStreaming.messages.slice(0, -1),
-                { ...streamingMsg, content: displayedContent },
+                ...messagesPrefix,
+                { ...streamingMsg },
               ],
             });
-            if (pendingContent.length > 0) {
+
+            if (shouldReschedule) {
               renderHandle = requestAnimationFrame(flushRender);
-            } else {
-              renderHandle = null;
             }
           };
 
           const scheduleRender = () => {
+            dirty = true;
             if (renderHandle === null) {
               renderHandle = requestAnimationFrame(flushRender);
             }
@@ -489,7 +532,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                 onSessionUpdateRef.current({
                   ...sessionWithStreaming,
                   messages: [
-                    ...sessionWithStreaming.messages.slice(0, -1),
+                    ...messagesPrefix,
                     { ...streamingMsg, content: result },
                   ],
                 });
@@ -525,23 +568,26 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                       if (data.cacheHit) {
                         streamingMsg.cacheHit = true;
                       }
+                      scheduleRender();
                     }
                     if (data.type === 'thinking') {
                       streamingMsg.thinking = (streamingMsg.thinking || '') + data.content;
                       if (data.thinkingType) {
                         streamingMsg.thinkingType = data.thinkingType;
                       }
-                      onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
+                      scheduleRender();
                     }
                     if (data.type === 'thinking_heartbeat') {
                       streamingMsg.thinkingElapsed = data.elapsed;
-                      onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
+                      scheduleRender();
                     }
                     if (data.type === 'cache_hit') {
                       streamingMsg.cacheHit = true;
+                      scheduleRender();
                     }
                     if (data.type === 'keep_alive') {
                       streamingMsg.thinkingElapsed = data.elapsed;
+                      scheduleRender();
                     }
                     if (data.type === 'tool_call') {
                       const toolCall: ToolCallInfo = {
@@ -559,7 +605,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                           }
                         } catch { /* JSON 解析失败，忽略 */ }
                       }
-                      onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }] });
+                      scheduleRender();
                     }
                     if (data.type === 'permission_request') {
                       // v2.5.0: 免确认模式下自动通过，不显示弹窗
@@ -576,17 +622,11 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                           toolArgs: data.toolArgs,
                           riskLevel: data.riskLevel,
                         };
-                        onSessionUpdateRef.current({
-                          ...sessionWithStreaming,
-                          messages: [
-                            ...sessionWithStreaming.messages.slice(0, -1),
-                            { ...streamingMsg },
-                          ],
-                        });
+                        scheduleRender();
                       }
                     }
                     if (data.type === 'tool_audit') {
-                      console.log('[useChat] tool_audit:', data);
+                      // console.log('[useChat] tool_audit:', data);
                     }
                     // v4.0: observer_reflection — Observer 反思提示
                     if (data.type === 'observer_reflection') {
@@ -599,18 +639,12 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         maxRetries: data.maxRetries ?? 0,
                       };
                       streamingMsg.observerReflections = [...(streamingMsg.observerReflections || []), reflection];
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v4.0: execution_plan — 执行计划
                     if (data.type === 'execution_plan') {
                       streamingMsg.executionPlan = data.plan as ExecutionPlanInfo;
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v4.0: plan_step_update — 计划步骤状态变更
                     if (data.type === 'plan_step_update' && streamingMsg.executionPlan) {
@@ -622,10 +656,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         );
                       }
                       streamingMsg.executionPlan = updatedPlan;
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v4.0: react_phase — ReAct 阶段切换
                     if (data.type === 'react_phase') {
@@ -635,10 +666,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         totalSteps: data.totalSteps,
                         description: data.description,
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v5.0: reflection_confidence — 反思置信度
                     if (data.type === 'reflection_confidence') {
@@ -648,10 +676,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         shouldEarlyStop: data.shouldEarlyStop,
                         reason: data.reason,
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v5.0: budget_exceeded — 预算超出
                     if (data.type === 'budget_exceeded') {
@@ -662,10 +687,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         maxTurns: data.maxTurns,
                         maxTokens: data.maxTokens,
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v5.0: complexity_assessment — 复杂度评估
                     if (data.type === 'complexity_assessment') {
@@ -675,10 +697,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         reason: data.reason,
                         recommendedMode: data.recommendedMode,
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v5.0: replan_triggered — 重规划触发
                     if (data.type === 'replan_triggered') {
@@ -687,10 +706,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         oldPlanId: data.oldPlanId,
                         newPlanId: data.newPlanId,
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v6.0: context_compressed — 语义压缩
                     if (data.type === 'context_compressed') {
@@ -701,10 +717,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         ratio: data.ratio ?? 0,
                         keyInfoPreserved: data.keyInfoPreserved,
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v6.0: plan_step_completed — 计划步骤完成
                     if (data.type === 'plan_step_completed') {
@@ -714,10 +727,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         description: data.description || '',
                         toolName: data.toolName,
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v6.0: circuit_breaker_triggered — 熔断器触发
                     if (data.type === 'circuit_breaker_triggered') {
@@ -727,10 +737,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         state: data.state || 'open',
                         alternativeTool: data.alternativeTool,
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v6.0: complexity_upgraded — 复杂度升级
                     if (data.type === 'complexity_upgraded') {
@@ -739,10 +746,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         newLevel: data.newLevel || 'moderate',
                         reason: data.reason || '',
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v6.0: llm_reflection — LLM 辅助反思
                     if (data.type === 'llm_reflection') {
@@ -750,10 +754,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         insight: data.insight || '',
                         confidenceScore: data.confidenceScore ?? 0,
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v6.0: memory_retrieved — 长期记忆检索
                     if (data.type === 'memory_retrieved') {
@@ -761,10 +762,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         count: data.count ?? 0,
                         summaries: data.summaries || [],
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v6.0: output_repaired — 输出修复
                     if (data.type === 'output_repaired') {
@@ -772,10 +770,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         toolName: data.toolName || 'unknown',
                         repairDetails: data.repairDetails || '',
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v6.0: budget_adjusted — 预算调整
                     if (data.type === 'budget_adjusted') {
@@ -786,40 +781,11 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         newMaxTokens: data.newMaxTokens,
                         reason: data.reason || '',
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
-                    }
-                    // v6.0: sub_session_suggested — 子会话创建建议
-                    if (data.type === 'sub_session_suggested') {
-                      streamingMsg.subSessionSuggested = {
-                        parentSessionId: data.parentSessionId || '',
-                        stepIndex: data.stepIndex ?? 0,
-                        title: data.title || '',
-                        toolName: data.toolName,
-                      };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
-                    }
-                    // v6.0: pdca_check — PDCA 检查结果
-                    if (data.type === 'pdca_check') {
-                      streamingMsg.pdcaCheck = {
-                        decision: data.decision || '',
-                        reason: data.reason || '',
-                        progressPercent: data.progressPercent ?? 0,
-                        confidence: data.confidence ?? 0,
-                      };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v3.0: client_tool 事件 — 服务端通知前端有插件需要在 reasoning 流中自动调用
                     if (data.type === 'client_tool') {
-                      console.log('[useChat] client_tool event received:', data.tool, data.args);
+                      // console.log('[useChat] client_tool event received:', data.tool, data.args);
                     }
                     // v3.0: plugin_result 事件 — 插件执行结果插入 thinking 流
                     if (data.type === 'plugin_result') {
@@ -833,10 +799,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                       if (streamingMsg.thinking) {
                         streamingMsg.thinking += `\n\n[Plugin: ${pluginResult.tool}] ${pluginResult.output}\n\n`;
                       }
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     // v7.0: 队列事件处理 — 实时反馈队列状态变化
                     if (data.type === 'queue_event' || data.type === 'queue_status') {
@@ -847,10 +810,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         queueLength: data.queueLength,
                         type: data.type === 'queue_event' ? data.eventType : 'status',
                       };
-                      onSessionUpdateRef.current({
-                        ...sessionWithStreaming,
-                        messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg }],
-                      });
+scheduleRender();
                     }
                     if (data.type === 'queue_rejected') {
                       // 队列拒绝消息（已满）
@@ -858,6 +818,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                       doneReceived = true;
                       errorCode = 'QUEUE_REJECTED';
                       errorMessage = data.reason;
+                      scheduleRender();
                     }
                     if (data.type === 'done') {
                       doneReceived = true;
@@ -879,7 +840,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         result = errorMessage;
                         fullContent = errorMessage;
                         streamingMsg.content = errorMessage;
-                        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: errorMessage }] });
+                        scheduleRender();
                       }
                     }
                   } catch { /* parse error */ }
@@ -907,12 +868,12 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         } catch (fetchErr) {
           const errMsg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
           if ((/abort|failed to fetch/i.test(errMsg)) && attempt < MAX_RETRIES - 1 && !stoppedRef.current) {
-            console.warn(`[useChat] stream fetch failed (attempt ${attempt + 1}/${MAX_RETRIES}), retrying...`);
+            // console.warn(`[useChat] stream fetch failed (attempt ${attempt + 1}/${MAX_RETRIES}), retrying...`);
             fullContent = '';
             // 重置流式消息内容，避免重试时 UI 显示旧内容
             streamingMsg.content = '';
             streamingMsg.thinking = '';
-            onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, content: '', thinking: '' }] });
+            onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...messagesPrefix, { ...streamingMsg, content: '', thinking: '' }] });
             continue;
           }
           throw fetchErr;
@@ -969,7 +930,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
         // 先用 cleanContent 创建 assistant 消息（带 loading 状态）
         streamingMsg.metadata = { loading: true };
-        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), { ...streamingMsg, metadata: { loading: true } }] });
+        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...messagesPrefix, { ...streamingMsg, metadata: { loading: true } }] });
 
         // 异步调用后端 API 执行查询
         (async () => {
@@ -1017,7 +978,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             }
           } catch (apiErr) {
             // API 调用异常
-            console.error('[useChat] inventory_query API error:', apiErr);
+            // console.error('[useChat] inventory_query API error:', apiErr);
             streamingMsg.content = cleanContent + '\n\n> ⚠️ 库存查询请求失败，请稍后重试。';
             streamingMsg.metadata = {
               loading: false,
@@ -1039,8 +1000,13 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       } else {
         // 无 inventory_query JSON 块，直接更新最终消息
         // v1.9.3: 确保 content 是完整的（渲染队列可能还没消化完）
+        // v2.8.4: 有错误码但无内容时（如 queue_rejected），用错误消息兜底
+        // 避免 done=true 处理器用 result='' 覆盖 queue_rejected 设置的错误消息
+        if (!fullContent && currentErrorCode && currentErrorMessage) {
+          fullContent = currentErrorMessage;
+        }
         streamingMsg.content = fullContent;
-        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), streamingMsg] });
+        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...messagesPrefix, streamingMsg] });
       }
 
       // v1.7.0: 重置 autoRetried 标记（新对话开始时）
@@ -1048,7 +1014,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         autoRetriedRef.current = false;
       }
     } catch (e) {
-      console.error('[useChat] sendMessage error:', e);
+      // console.error('[useChat] sendMessage error:', e);
       streamingMsgIdRef.current = null;
 
       // v1.8.4: 区分取消错误、ERR_ABORTED 和其他错误
@@ -1060,7 +1026,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
         errorContent = fullContent || '已取消生成。';
         streamingMsg.isStreaming = false;
         streamingMsg.content = errorContent;
-        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), streamingMsg] });
+        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...messagesPrefix, streamingMsg] });
       } else if (/abort/i.test(errorMsg)) {
         // ERR_ABORTED — 所有重试均失败
         errorContent = 'AI 服务连接中断，请稍后重试';
@@ -1070,7 +1036,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           error: errorMsg,
           errorCode: 'NETWORK_ERROR',
         };
-        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), streamingMsg] });
+        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...messagesPrefix, streamingMsg] });
       } else {
         // 根据错误类型生成用户友好的提示
         if (errorMsg.includes('spawn') || errorMsg.includes('ENOENT')) {
@@ -1086,7 +1052,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           error: errorMsg,
           errorCode: 'NETWORK_ERROR',
         };
-        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...sessionWithStreaming.messages.slice(0, -1), streamingMsg] });
+        onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...messagesPrefix, streamingMsg] });
       }
     }
     setIsLoading(false);

@@ -38,41 +38,45 @@ export function checkConflict(skillA: Skill, skillB: Skill): ConflictResult {
   const reasons: string[] = [];
   let score = 0;
 
-  // 1. 名称相似度（权重 0.4）
+  // 1. 名称相似度（bigram Jaccard，权重 0.35）
   const nameSimilarity = calculateStringSimilarity(skillA.name, skillB.name);
-  if (nameSimilarity > 0.5) {
-    score += nameSimilarity * 0.4;
+  if (nameSimilarity > 0.4) {
+    score += nameSimilarity * 0.35;
     reasons.push(`名称相似度: ${(nameSimilarity * 100).toFixed(1)}%`);
   }
 
-  // 2. 触发词相似度（权重 0.3）
+  // 2. 触发词相似度（多分隔符 token Jaccard，权重 0.25）
   if (skillA.trigger && skillB.trigger) {
-    const triggerSimilarity = calculateStringSimilarity(skillA.trigger, skillB.trigger);
-    if (triggerSimilarity > 0.3) {
-      score += triggerSimilarity * 0.3;
+    const tokensA = tokenizeTrigger(skillA.trigger);
+    const tokensB = tokenizeTrigger(skillB.trigger);
+    const triggerSimilarity = jaccard(tokensA, tokensB);
+    if (triggerSimilarity > 0.25) {
+      score += triggerSimilarity * 0.25;
       reasons.push(`触发词相似度: ${(triggerSimilarity * 100).toFixed(1)}%`);
     }
   }
 
-  // 3. 标签重叠度（权重 0.3）
+  // 3. 标签重叠度（Jaccard，权重 0.15）
   const tagsA = skillA.tags || [];
   const tagsB = skillB.tags || [];
   if (tagsA.length > 0 && tagsB.length > 0) {
     const tagSimilarity = jaccard(tagsA, tagsB);
     if (tagSimilarity > 0.3) {
-      score += tagSimilarity * 0.3;
+      score += tagSimilarity * 0.15;
       reasons.push(`标签重叠度: ${(tagSimilarity * 100).toFixed(1)}%`);
     }
   }
 
-  // 4. 描述相似度（权重 0.2）
+  // 4. 描述相似度（bigram Jaccard，权重 0.10）
   if (skillA.desc && skillB.desc) {
     const descSimilarity = calculateStringSimilarity(skillA.desc, skillB.desc);
-    if (descSimilarity > 0.4) {
-      score += descSimilarity * 0.2;
+    if (descSimilarity > 0.3) {
+      score += descSimilarity * 0.10;
       reasons.push(`描述相似度: ${(descSimilarity * 100).toFixed(1)}%`);
     }
   }
+
+  // 注: embedding 语义相似度仅在服务端计算，前端无 ONNX 推理能力
 
   return {
     skillId: skillB.id,
@@ -92,7 +96,7 @@ export function checkConflict(skillA: Skill, skillB: Skill): ConflictResult {
 export function findAllConflicts(
   skill: Skill,
   allSkills: Skill[],
-  threshold: number = 0.4
+  threshold: number = 0.35
 ): ConflictResult[] {
   const conflicts: ConflictResult[] = [];
 
@@ -176,15 +180,34 @@ export function getCloseCandidates(
 // ===================== 辅助函数 =====================
 
 /**
- * 计算两个字符串的相似度（基于字符级别的 Jaccard）
+ * 生成字符 bigram 集合（适合中文/混合文本）
+ */
+function bigramSet(text: string): string[] {
+  const normalized = text.toLowerCase().replace(/\s+/g, '');
+  if (normalized.length < 2) return [normalized];
+  const bigrams: string[] = [];
+  for (let i = 0; i < normalized.length - 1; i++) {
+    bigrams.push(normalized.substring(i, i + 2));
+  }
+  return bigrams;
+}
+
+/**
+ * 触发词多分隔符分词
+ */
+function tokenizeTrigger(trigger: string): string[] {
+  return trigger
+    .split(/[/,，;；、\s|｜]+/)
+    .map(t => t.toLowerCase().trim())
+    .filter(t => t.length > 0);
+}
+
+/**
+ * 计算两个字符串的相似度（基于 bigram Jaccard，比单字符更准确）
  */
 function calculateStringSimilarity(strA: string, strB: string): number {
   if (!strA || !strB) return 0;
-
-  const a = strA.toLowerCase().split('');
-  const b = strB.toLowerCase().split('');
-
-  return jaccard(a, b);
+  return jaccard(bigramSet(strA), bigramSet(strB));
 }
 
 /**

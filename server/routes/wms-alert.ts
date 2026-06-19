@@ -33,6 +33,7 @@ import type {
   AlertThresholds,
 } from '../models/wms-skill.js';
 import { DEFAULT_PREDICTION_CONFIG } from '../models/wms-skill.js';
+import { logger } from '../logger.js';
 
 const router = Router();
 
@@ -57,7 +58,7 @@ function readJsonFile<T>(filePath: string): T | null {
       return JSON.parse(raw) as T;
     }
   } catch (e) {
-    console.error(`读取配置文件失败 ${filePath}:`, e);
+    logger.error(`读取配置文件失败 ${filePath}:`, e);
   }
   return null;
 }

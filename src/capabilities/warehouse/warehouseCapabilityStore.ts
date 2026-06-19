@@ -44,7 +44,7 @@ function notifyAll(): void {
     try {
       fn(state);
     } catch (e) {
-      console.error('[warehouseCapabilityStore] listener error:', e);
+      // console.error('[warehouseCapabilityStore] listener error:', e);
     }
   });
 }
@@ -110,7 +110,7 @@ export async function addWarehouse(warehouse: Warehouse): Promise<void> {
     warehouseCache = [...warehouseCache, created];
     notifyAll();
   } catch (e) {
-    console.error('[warehouseCapabilityStore] addWarehouse failed:', e);
+    // console.error('[warehouseCapabilityStore] addWarehouse failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'addWarehouse', error: e } }));
     throw e;
   }
@@ -123,7 +123,7 @@ export async function updateWarehouse(updated: Warehouse): Promise<void> {
     warehouseCache = warehouseCache.map((w) => (w.id === updated.id ? saved : w));
     notifyAll();
   } catch (e) {
-    console.error('[warehouseCapabilityStore] updateWarehouse failed:', e);
+    // console.error('[warehouseCapabilityStore] updateWarehouse failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'updateWarehouse', error: e } }));
     throw e;
   }
@@ -136,7 +136,7 @@ export async function removeWarehouse(warehouseId: string): Promise<void> {
     warehouseCache = warehouseCache.filter((w) => w.id !== warehouseId);
     notifyAll();
   } catch (e) {
-    console.error('[warehouseCapabilityStore] removeWarehouse failed:', e);
+    // console.error('[warehouseCapabilityStore] removeWarehouse failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'removeWarehouse', error: e } }));
     throw e;
   }
@@ -170,7 +170,7 @@ export async function addTransitOrder(order: TransitOrder): Promise<void> {
     transitCache = [...transitCache, created];
     notifyAll();
   } catch (e) {
-    console.error('[warehouseCapabilityStore] addTransitOrder failed:', e);
+    // console.error('[warehouseCapabilityStore] addTransitOrder failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'addTransitOrder', error: e } }));
     throw e;
   }
@@ -183,7 +183,7 @@ export async function updateTransitOrder(updated: TransitOrder): Promise<void> {
     transitCache = transitCache.map((o) => (o.id === updated.id ? saved : o));
     notifyAll();
   } catch (e) {
-    console.error('[warehouseCapabilityStore] updateTransitOrder failed:', e);
+    // console.error('[warehouseCapabilityStore] updateTransitOrder failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'updateTransitOrder', error: e } }));
     throw e;
   }
@@ -196,7 +196,7 @@ export async function removeTransitOrder(orderId: string): Promise<void> {
     transitCache = transitCache.filter((o) => o.id !== orderId);
     notifyAll();
   } catch (e) {
-    console.error('[warehouseCapabilityStore] removeTransitOrder failed:', e);
+    // console.error('[warehouseCapabilityStore] removeTransitOrder failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'removeTransitOrder', error: e } }));
     throw e;
   }
@@ -230,7 +230,7 @@ export async function addInventoryItem(item: InventoryItem): Promise<void> {
     inventoryCache = [...inventoryCache, created];
     notifyAll();
   } catch (e) {
-    console.error('[warehouseCapabilityStore] addInventoryItem failed:', e);
+    // console.error('[warehouseCapabilityStore] addInventoryItem failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'addInventoryItem', error: e } }));
     throw e;
   }
@@ -243,7 +243,7 @@ export async function updateInventoryItem(updated: InventoryItem): Promise<void>
     inventoryCache = inventoryCache.map((item) => (item.id === updated.id ? saved : item));
     notifyAll();
   } catch (e) {
-    console.error('[warehouseCapabilityStore] updateInventoryItem failed:', e);
+    // console.error('[warehouseCapabilityStore] updateInventoryItem failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'updateInventoryItem', error: e } }));
     throw e;
   }
@@ -256,7 +256,7 @@ export async function removeInventoryItem(itemId: string): Promise<void> {
     inventoryCache = inventoryCache.filter((item) => item.id !== itemId);
     notifyAll();
   } catch (e) {
-    console.error('[warehouseCapabilityStore] removeInventoryItem failed:', e);
+    // console.error('[warehouseCapabilityStore] removeInventoryItem failed:', e);
     window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'removeInventoryItem', error: e } }));
     throw e;
   }
@@ -283,6 +283,6 @@ export async function initFromApi(): Promise<void> {
     inventoryCache = inventoryItems;
     notifyAll();
   } catch (e) {
-    console.error('[warehouseCapabilityStore] initFromApi failed:', e);
+    // console.error('[warehouseCapabilityStore] initFromApi failed:', e);
   }
 }

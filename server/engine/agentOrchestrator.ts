@@ -20,13 +20,14 @@ import { Planner } from './planner.js';
 import { TaskDecomposer, type DecomposeAssessment } from './taskDecomposer.js';
 import { agentRegistry, type AgentProfile } from './agentRegistry.js';
 import { emitAgentEvent, onAgentEvent } from './eventBus.js';
-import { AgentEventType } from './eventBus.js';
+import { AgentEventType } from '../../shared/types/agent.js';
 import { callAIModel } from '../aiClient.js';
-import type { ModelCallConfig, MessageContent } from '../aiClient.js';
+import type { ModelCallConfig, MessageContent, ToolCall } from '../aiClient.js';
 import { getToolDefinitions } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
 import { mcpClientManager } from './mcpClientManager.js';
-import type { ExecutionStrategyOptions, ToolExecutionResult } from './executionStrategy.js';
+import { ExecutionMode, type ExecutionStrategyOptions } from './executionStrategy.js';
+import type { ToolExecutionResult } from './toolExecutor.js';
 import type {
   TaskDecomposition,
   SubTask,
@@ -35,6 +36,7 @@ import type {
   SubTaskProgressData,
   AgentEventPayload,
 } from '../../shared/types/agent.js';
+import { logger } from '../logger.js';
 
 // ===================== 常量 =====================
 
@@ -88,7 +90,7 @@ export class AgentOrchestrator {
     // 1. 提取用户消息
     const userMessage = this.extractUserMessage(messages);
     if (!userMessage) {
-      console.log('[Orchestrator] 无用户消息，降级为 ReAct');
+      logger.debug('[Orchestrator] 无用户消息，降级为 ReAct');
       return this.executeWithReAct(options);
     }
 
@@ -96,10 +98,10 @@ export class AgentOrchestrator {
 
     // 2. 评估是否拆分
     const assessment: DecomposeAssessment = this.decomposer.assessComplexity(userMessage);
-    console.log(`[Orchestrator] 复杂度评估: shouldDecompose=${assessment.shouldDecompose}, reason=${assessment.reason}`);
+    logger.debug(`[Orchestrator] 复杂度评估: shouldDecompose=${assessment.shouldDecompose}, reason=${assessment.reason}`);
 
     if (!assessment.shouldDecompose || assessment.estimatedSubTasks < 2) {
-      console.log('[Orchestrator] 无需拆分，降级为 ReAct');
+      logger.debug('[Orchestrator] 无需拆分，降级为 ReAct');
       return this.executeWithReAct(options);
     }
 
@@ -108,11 +110,11 @@ export class AgentOrchestrator {
     try {
       decomposition = await this.decomposer.decompose(modelConfig, userMessage, sessionId, signal);
     } catch (err) {
-      console.error('[Orchestrator] 任务拆分失败:', err instanceof Error ? err.message : String(err));
+      logger.error('[Orchestrator] 任务拆分失败:', err instanceof Error ? err.message : String(err));
     }
 
     if (!decomposition) {
-      console.log('[Orchestrator] 拆分结果为空，降级为 ReAct');
+      logger.debug('[Orchestrator] 拆分结果为空，降级为 ReAct');
       return this.executeWithReAct(options);
     }
 
@@ -208,9 +210,9 @@ export class AgentOrchestrator {
       if (agent) {
         subTask.assignedAgentId = agent.id;
         agentRegistry.updateStatus(agent.id, 'busy');
-        console.log(`[Orchestrator] 子任务 ${subTask.id} 分配给 Agent ${agent.id} (${agent.role})`);
+        logger.debug(`[Orchestrator] 子任务 ${subTask.id} 分配给 Agent ${agent.id} (${agent.role})`);
       } else {
-        console.warn(`[Orchestrator] 子任务 ${subTask.id} 无可用 Agent`);
+        logger.warn(`[Orchestrator] 子任务 ${subTask.id} 无可用 Agent`);
       }
     }
   }
@@ -236,13 +238,13 @@ export class AgentOrchestrator {
     const allToolCalls: ToolExecutionResult['toolCalls'] = [];
     let completed = 0;
     let failed = 0;
-    let cancelled = 0;
+    const cancelled = 0;
 
     decomposition.status = 'executing';
 
     for (let layerIdx = 0; layerIdx < layers.length; layerIdx++) {
       const layer = layers[layerIdx];
-      console.log(`[Orchestrator] 执行层级 ${layerIdx + 1}/${layers.length}，共 ${layer.length} 个子任务（并行）`);
+      logger.debug(`[Orchestrator] 执行层级 ${layerIdx + 1}/${layers.length}，共 ${layer.length} 个子任务（并行）`);
 
       // 并行执行当前层的所有子任务
       const layerPromises = layer.map(subTask =>
@@ -329,7 +331,7 @@ export class AgentOrchestrator {
     const agent = agentId ? agentRegistry.get(agentId) : null;
 
     // 构造子 Agent 的消息上下文
-    const agentMessages = this.buildAgentMessages(subTask, agent, parentMessages);
+    const agentMessages = this.buildAgentMessages(subTask, agent ?? null, parentMessages);
 
     // 获取过滤后的工具
     const allTools = [
@@ -362,6 +364,7 @@ export class AgentOrchestrator {
       const timeoutSignal = this.createTimeoutSignal(SUBTASK_TIMEOUT_MS, signal);
 
       const result = await executor.execute({
+        executionMode: ExecutionMode.REACT,
         modelConfig: agent?.modelId ? { ...modelConfig, id: agent.modelId } : modelConfig,
         messages: agentMessages,
         maxToolTurns: 15,
@@ -396,7 +399,7 @@ export class AgentOrchestrator {
       return { content: result.content, toolCalls: result.toolCalls };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error(`[Orchestrator] 子任务 ${subTask.id} 执行失败:`, errorMsg);
+      logger.error(`[Orchestrator] 子任务 ${subTask.id} 执行失败:`, errorMsg);
       throw err; // 让调用方处理
     }
   }
@@ -452,7 +455,7 @@ ${resultsText}
       );
       return synthesis;
     } catch (err) {
-      console.error('[Orchestrator] 结果合成失败，使用原始拼接:', err);
+      logger.error('[Orchestrator] 结果合成失败，使用原始拼接:', err);
       // 降级：直接拼接子任务结果
       return subTaskResults
         .filter(r => r.status === 'completed' && r.result)
@@ -475,13 +478,13 @@ ${resultsText}
     subTask: SubTask,
     agent: AgentProfile | null,
     parentMessages: Array<{ role: string; content: MessageContent }>,
-  ): Array<{ role: string; content: MessageContent; tool_calls?: unknown; tool_call_id?: string }> {
+  ): Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }> {
     const soul = agent?.soul || '';
     const systemContent = soul
       ? `${soul}\n\n你正在执行一个子任务。请专注于完成以下任务，不要关心其他子任务。`
       : '你正在执行一个子任务。请专注于完成以下任务。';
 
-    const messages: Array<{ role: string; content: MessageContent; tool_calls?: unknown; tool_call_id?: string }> = [
+    const messages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }> = [
       { role: 'system', content: systemContent },
       { role: 'user', content: subTask.prompt },
     ];

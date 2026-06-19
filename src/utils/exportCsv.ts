@@ -37,13 +37,13 @@ export function exportToCsv(filename: string, headers: string[], rows: string[][
       const result = typeof resultJson === 'string' ? JSON.parse(resultJson) : resultJson;
       if (result.ok) {
         // eslint-disable-next-line no-console
-      console.log(`[CSV Export] 已保存到: ${result.path}`);
+      // console.log(`[CSV Export] 已保存到: ${result.path}`);
       } else {
-        console.error(`[CSV Export] 保存失败: ${result.error}`);
+        // console.error(`[CSV Export] 保存失败: ${result.error}`);
         alert(`CSV 导出失败: ${result.error}`);
       }
     } catch (e: any) {
-      console.error('[CSV Export] pywebview API 调用失败:', e);
+      // console.error('[CSV Export] pywebview API 调用失败:', e);
       alert(`CSV 导出失败: ${e.message || e}`);
     }
     return;
@@ -139,12 +139,12 @@ export function exportCsvWithMetadata(
       );
       const result = typeof resultJson === 'string' ? JSON.parse(resultJson) : resultJson;
       if (result.ok) {
-        console.log(`[CSV Export] 已保存到: ${result.path}`);
+        // console.log(`[CSV Export] 已保存到: ${result.path}`);
       } else {
-        console.error(`[CSV Export] 保存失败: ${result.error}`);
+        // console.error(`[CSV Export] 保存失败: ${result.error}`);
       }
     } catch (e: any) {
-      console.error('[CSV Export] pywebview API 调用失败:', e);
+      // console.error('[CSV Export] pywebview API 调用失败:', e);
     }
     return;
   }

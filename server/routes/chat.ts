@@ -1,35 +1,63 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
-import fs from 'fs';
+import { promises as fsp } from 'fs';
 import os from 'os';
 import { EventEmitter } from 'events';
-// 动态 require（用于可选依赖 pdf-parse/mammoth/xlsx）
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-declare const require: any;
-import { callAIModelStream, callAIModel, AIAPIError } from '../aiClient.js';
+import { createRequire } from 'module';
+// 动态 require（用于可选依赖 pdf-parse/mammoth/xlsx）— CJS 兼容
+const require = createRequire(__filename);
+import { callAIModel, AIAPIError } from '../aiClient.js';
 import type { MessageContent, ModelCallConfig } from '../aiClient.js';
 import { executeToolLoop, getToolRiskLevel } from '../engine/toolExecutor.js';
-import { ExecutionStrategyFactory, ExecutionMode, type ExecutionStrategyOptions } from '../engine/executionStrategy.js';
-import { buildSoulSystemMessage, getMergedStrategyPreferences, loadSoulProfile } from '../engine/soulLoader.js';
+import { ExecutionStrategyFactory, ExecutionMode } from '../engine/executionStrategy.js';
+import type { ExecutionStrategyOptions } from '../engine/executionStrategy.js';
+import { buildSoulSystemMessage } from '../engine/soulLoader.js';
 import { estimateMessagesTokens, truncateContextForModel } from '../engine/contextTruncate.js';
 import { compressContextWithSummary } from '../engine/contextCompress.js';
-import { loadModelsConfig, ModelsFile, isLocalModel, syncModelsFromApi } from '../modelsStore.js';
+import { loadModelsConfig, ModelsFile, isLocalModel } from '../modelsStore.js';
 import { selectKey, reportKeyResult } from '../keyRotator.js';
 import {
   getSessions,
-  searchSessions,
   createSession,
   getSessionMessages,
   addMessage,
-  deleteSession,
 } from '../dao/chat.js';
+import { getAppSettings, setAppSettings } from '../dao/settings.js';
 import { matchTriggers, executePluginTrigger } from '../services/pluginAutoInvoke.js';
 import { messageQueue, type QueueMode, type QueueEvent } from '../engine/messageQueue.js';
+import { writeMemory, searchMemory, extractKeywords, type VecSearchResult } from '../engine/vecMemoryStore.js';
+import { logger } from '../logger.js';
 
 // MEMORY.md 路径
 const CDF_KNOW_CLOW_DIR = path.join(os.homedir(), '.cdf-know-clow');
 const MEMORY_MD_PATH = path.join(CDF_KNOW_CLOW_DIR, 'MEMORY.md');
+
+// v2.8.2: 记忆提取 LLM 调用节流 — 避免短时间内频繁调用 LLM 浪费资源
+const MEMORY_EXTRACT_COOLDOWN_MS = 60_000; // 60s 冷却期
+let lastMemoryExtractTime = 0;
+let lastMemoryExtractMsgHash = '';
+
+// v2.8.2: 简易 hash — 用于检测相同/相似用户消息，跳过重复提取
+function quickHash(s: string): string {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  }
+  return h.toString(36);
+}
+
+// v2.8.2: Pre-LLM 启发式 — 检测对话是否以工具输出为主（不值得提取记忆）
+function isToolOutputDominant(assistantMessage: string): boolean {
+  // 工具输出特征：高密度的 JSON 标点、路径、日志标记
+  const toolMarkers = (assistantMessage.match(/[{}[\]":,\\/]/g) || []).length;
+  const punctRatio = assistantMessage.length > 0 ? toolMarkers / assistantMessage.length : 0;
+  // 标点密度 > 15% 且消息长度 > 200 → 很可能是工具输出
+  if (punctRatio > 0.15 && assistantMessage.length > 200) return true;
+  // 检查典型工具输出开头模式
+  if (/^(执行|工具|结果|输出|成功|失败|错误|Error|Result|Output)/.test(assistantMessage.trim())) return true;
+  return false;
+}
 
 // v1.9.2: 工具权限请求全局 EventEmitter
 export const permissionEmitter = new EventEmitter();
@@ -66,7 +94,6 @@ messageQueue.on('queue', (event: QueueEvent) => {
 function loadAlwaysAllowedTools(): Set<string> {
   if (globalAlwaysAllowed) return globalAlwaysAllowed;
   try {
-    const { getAppSettings } = require('../dao/settings');
     const val = getAppSettings('always_allowed_tools');
     globalAlwaysAllowed = val ? new Set(JSON.parse(val)) : new Set();
   } catch {
@@ -91,7 +118,6 @@ function isToolAlwaysAllowed(toolName: string): boolean {
 /** v1.5.66: 检查系统授权是否已启用 */
 function isSystemAuthorized(): boolean {
   try {
-    const { getAppSettings } = require('../dao/settings');
     const val = getAppSettings('systemAuthorization');
     if (!val) return false;
     const config = JSON.parse(val);
@@ -173,7 +199,7 @@ async function extractFileContent(filePath: string, ext: string, fileName: strin
   ]);
 
   if (textExts.has(ext)) {
-    const content = fs.readFileSync(filePath, 'utf-8');
+    const content = await fsp.readFile(filePath, 'utf-8');
     const isTruncated = content.length > MAX_SIZE;
     const truncated = isTruncated
       ? content.slice(0, MAX_SIZE) + buildTruncatedNotice(content.length, MAX_SIZE, '文本文件')
@@ -185,7 +211,7 @@ async function extractFileContent(filePath: string, ext: string, fileName: strin
   if (ext === 'pdf') {
     try {
       const pdfParse = require('pdf-parse');
-      const dataBuffer = fs.readFileSync(filePath);
+      const dataBuffer = await fsp.readFile(filePath);
       const pdfData = await pdfParse(dataBuffer);
       const text = pdfData.text || '';
       const isTruncated = text.length > MAX_SIZE;
@@ -222,7 +248,7 @@ async function extractFileContent(filePath: string, ext: string, fileName: strin
   // XLSX：尝试用 xlsx 提取文本
   if (ext === 'xlsx') {
     try {
-      const xlsx = require('xlsx');
+      const xlsx = require('@e965/xlsx');
       const workbook = xlsx.readFile(filePath);
       let text = '';
       for (const sheetName of workbook.SheetNames) {
@@ -246,7 +272,7 @@ async function extractFileContent(filePath: string, ext: string, fileName: strin
   }
 
   // 未知类型：返回文件信息
-  const stats = fs.statSync(filePath);
+  const stats = await fsp.stat(filePath);
   return `\n---\n[附件: ${fileName} (${(stats.size / 1024).toFixed(1)}KB)]\n注: 此文件类型暂不支持内容预览\n---\n`;
 }
 
@@ -402,26 +428,25 @@ export const MODEL_PRESETS: Record<string, { temperature: number; topP: number; 
 };
 
 /** 读取 MEMORY.md 内容，不存在则返回空字符串 */
-export function readMemoryMd(): string {
+export async function readMemoryMd(): Promise<string> {
   try {
-    if (fs.existsSync(MEMORY_MD_PATH)) {
-      return fs.readFileSync(MEMORY_MD_PATH, 'utf-8');
+    return await fsp.readFile(MEMORY_MD_PATH, 'utf-8');
+  } catch (e: any) {
+    if (e.code !== 'ENOENT') {
+      logger.error('[Memory] 读取失败:', e);
     }
-  } catch (e) {
-    console.error('[Memory] 读取失败:', e);
   }
   return '';
 }
 
-/** 写入 MEMORY.md 内容 */
-export function writeMemoryMd(content: string): void {
+/** 写入 MEMORY.md 内容（异步，不阻塞事件循环） */
+export async function writeMemoryMd(content: string): Promise<void> {
   try {
-    if (!fs.existsSync(CDF_KNOW_CLOW_DIR)) {
-      fs.mkdirSync(CDF_KNOW_CLOW_DIR, { recursive: true });
-    }
-    fs.writeFileSync(MEMORY_MD_PATH, content, 'utf-8');
+    // v2.8.2: 异步 mkdir — recursive 选项保证幂等，无需 existsSync 预检查
+    await fsp.mkdir(CDF_KNOW_CLOW_DIR, { recursive: true });
+    await fsp.writeFile(MEMORY_MD_PATH, content, 'utf-8');
   } catch (e) {
-    console.error('[Memory] 写入失败:', e);
+    logger.error('[Memory] 写入失败:', e);
     throw e;
   }
 }
@@ -434,6 +459,9 @@ export function writeMemoryMd(content: string): void {
  * 2. 异步执行，不阻塞主对话流程
  * 3. 提取前读取现有记忆，避免重复
  * 4. 只追加新内容，不覆盖用户手动编写的内容
+ * 5. v2.8.2: 60s 冷却期 + 消息 hash 去重 — 避免短时间内重复 LLM 调用
+ * 6. v2.8.2: Pre-LLM 启发式过滤 — 工具输出为主的对话直接跳过，节省 LLM 调用
+ * 7. v2.8.2: 全异步文件 I/O — readMemoryMd/writeMemoryMd 均使用 fsp API
  */
 export async function extractAndAppendMemory(
   userMessage: string,
@@ -441,10 +469,37 @@ export async function extractAndAppendMemory(
   conversationHistory: Array<{ role: string; content: string }>,
 ): Promise<{ updated: boolean; count: number }> {
   try {
-    // 至少有一定长度的对话才提取
-    if (userMessage.length < 5 || assistantMessage.length < 10) return { updated: false, count: 0 };
+    // v1.5.132: 提高最小对话长度阈值，避免短对话产生噪音记忆
+    if (userMessage.length < 10 || assistantMessage.length < 20) return { updated: false, count: 0 };
 
-    const existingMemory = readMemoryMd();
+    // v1.5.132: 至少需要 3 轮对话才触发记忆提取
+    if (conversationHistory.length < 4) return { updated: false, count: 0 };
+
+    // v2.8.2: 冷却期检查 — 60s 内不重复调用 LLM
+    const now = Date.now();
+    if (now - lastMemoryExtractTime < MEMORY_EXTRACT_COOLDOWN_MS) {
+      logger.debug('[AutoMemory] 冷却期内，跳过提取');
+      return { updated: false, count: 0 };
+    }
+
+    // v2.8.2: 用户消息去重 — 相同/高度相似的消息跳过
+    const msgHash = quickHash(userMessage.slice(0, 200));
+    if (msgHash === lastMemoryExtractMsgHash) {
+      logger.debug('[AutoMemory] 用户消息与上次相同，跳过提取');
+      return { updated: false, count: 0 };
+    }
+
+    // v2.8.2: Pre-LLM 启发式 — 工具输出为主的对话不值得提取
+    if (isToolOutputDominant(assistantMessage)) {
+      logger.debug('[AutoMemory] 助手回复以工具输出为主，跳过提取');
+      return { updated: false, count: 0 };
+    }
+
+    // v2.8.2: 更新冷却时间戳和消息 hash（在 LLM 调用前设置，防止并发重复）
+    lastMemoryExtractTime = now;
+    lastMemoryExtractMsgHash = msgHash;
+
+    const existingMemory = await readMemoryMd();
 
     // 构建提取 prompt
     const historySummary = conversationHistory
@@ -452,7 +507,7 @@ export async function extractAndAppendMemory(
       .map((m) => `${m.role === 'user' ? '用户' : '助手'}: ${m.content.slice(0, 200)}`)
       .join('\n');
 
-    const extractPrompt = `你是一个记忆提取助手。请从以下对话中提取值得长期记住的关键信息。\n\n## 提取规则\n1. 只提取以下类型的信息：\n   - 用户的偏好、习惯、喜好\n   - 用户提到的个人事实（名字、角色、环境等）\n   - 用户明确要求记住的指令或规则\n   - 重要的项目上下文（技术栈、配置、约定）\n2. 不要提取：\n   - 临时性问题（如"今天天气怎么样"）\n   - 已经在现有记忆中存在的重复信息\n   - 对话中的闲聊、客套\n   - AI 助手自己的回复内容\n3. 每条记忆用一行简洁的 Markdown 格式表示\n4. 如果没有值得记住的新信息，返回空字符串\n\n## 现有记忆\n${existingMemory || '（无现有记忆）'}\n\n## 最近对话\n${historySummary}\n\n## 本次对话\n用户: ${userMessage.slice(0, 500)}\n助手: ${assistantMessage.slice(0, 500)}\n\n请只输出提取到的记忆条目，每条一行。如果没有新信息，输出空字符串。不要输出任何解释。`;
+    const extractPrompt = `你是一个记忆提取助手。请从以下对话中提取值得长期记住的关键信息。\n\n## 提取规则\n1. 只提取以下类型的信息：\n   - 用户的偏好、习惯、喜好\n   - 用户提到的个人事实（名字、角色、环境等）\n   - 用户明确要求记住的指令或规则\n   - 重要的项目上下文（技术栈、配置、约定）\n2. 严禁提取：\n   - 工具执行的输出结果、文件内容、代码片段\n   - 文件路径、URL、命令行输出\n   - 临时性问题（如"今天天气怎么样"）\n   - 已经在现有记忆中存在的重复信息\n   - 对话中的闲聊、客套\n   - AI 助手自己的回复内容\n   - JSON 数据、日志输出、堆栈跟踪\n3. 每条记忆用一行简洁的中文描述，10-100 字\n4. 如果没有值得记住的新信息，返回空字符串\n5. 宁可少提取，也不要提取噪音信息\n\n## 现有记忆\n${existingMemory || '（无现有记忆）'}\n\n## 最近对话\n${historySummary}\n\n## 本次对话\n用户: ${userMessage.slice(0, 500)}\n助手: ${assistantMessage.slice(0, 500)}\n\n请只输出提取到的记忆条目，每条一行。如果没有新信息，输出空字符串。不要输出任何解释。`;
 
     // 使用当前可用的模型进行提取
     const modelsConfig = await loadModelsConfig();
@@ -460,7 +515,7 @@ export async function extractAndAppendMemory(
     const targetModel = availableModels[0];
 
     if (!targetModel) {
-      console.log('[AutoMemory] 无可用模型，跳过记忆提取');
+      logger.debug('[AutoMemory] 无可用模型，跳过记忆提取');
       return { updated: false, count: 0 };
     }
 
@@ -468,7 +523,7 @@ export async function extractAndAppendMemory(
     const effectiveApiKey = keyResult ? keyResult.key : undefined;
 
     if (!effectiveApiKey && !isLocalModel(targetModel)) {
-      console.log('[AutoMemory] 无可用 API Key，跳过记忆提取');
+      logger.debug('[AutoMemory] 无可用 API Key，跳过记忆提取');
       return { updated: false, count: 0 };
     }
 
@@ -491,7 +546,7 @@ export async function extractAndAppendMemory(
     );
 
     if (!extractedContent?.trim()) {
-      console.log('[AutoMemory] 未提取到新记忆');
+      logger.debug('[AutoMemory] 未提取到新记忆');
       return { updated: false, count: 0 };
     }
 
@@ -504,9 +559,36 @@ export async function extractAndAppendMemory(
       .join('\n');
 
     if (!cleanedExtraction) {
-      console.log('[AutoMemory] 清理后无有效记忆');
+      logger.debug('[AutoMemory] 清理后无有效记忆');
       return { updated: false, count: 0 };
     }
+
+    // v1.5.132: 噪音过滤 — 过滤掉工具输出、文件路径、JSON 等非语义记忆
+    const NOISE_PATTERNS = [
+      /^(\/|\.\/|~\/|C:\\)/,          // 文件路径
+      /^\s*[{[]/,                      // JSON/数组开头
+      /^\s*(error|warn|info|debug)\b/i, // 日志级别
+      /^\s*(git|npm|yarn|pnpm|npx|pip|python|node|bash|sh)\s/, // 命令行
+      /^\s*(import|export|const|let|var|function|class)\s/, // 代码
+      /^\s*\d{4}-\d{2}-\d{2}/,         // 日期开头
+      /^\s*<(html|head|body|div|span|script|style)/, // HTML 标签
+      /^\s*(http|https|ftp):\/\//,     // URL
+      /^\s*\[.{50,}\]/,                // 长数组/工具调用结果
+      /[{}]{3,}/,                      // 多层 JSON 嵌套
+    ];
+
+    const isNoise = (line: string): boolean => {
+      // 过短或过长
+      if (line.length < 8 || line.length > 150) return true;
+      // 匹配噪音模式
+      for (const pattern of NOISE_PATTERNS) {
+        if (pattern.test(line)) return true;
+      }
+      // 包含大量标点（工具输出特征）
+      const punctCount = (line.match(/[{}[\]":,\\/]/g) || []).length;
+      if (punctCount > line.length * 0.2) return true;
+      return false;
+    };
 
     // 去重：检查每条新记忆是否已存在于现有记忆中
     const existingLines = new Set(
@@ -515,10 +597,11 @@ export async function extractAndAppendMemory(
     const newLines = cleanedExtraction
       .split('\n')
       .map((l) => l.trim())
-      .filter((l) => l.length > 3 && !existingLines.has(l.toLowerCase()));
+      .filter((l) => l.length > 3 && !existingLines.has(l.toLowerCase()))
+      .filter((l) => !isNoise(l)); // v1.5.132: 噪音过滤
 
     if (newLines.length === 0) {
-      console.log('[AutoMemory] 所有提取的记忆已存在，跳过');
+      logger.debug('[AutoMemory] 过滤后无有效记忆（可能均为噪音）');
       return { updated: false, count: 0 };
     }
 
@@ -529,12 +612,29 @@ export async function extractAndAppendMemory(
       ? existingMemory.trimEnd() + '\n' + newSection
       : `# AI 记忆 (MEMORY.md)\n\n本文件由 AI 自动学习和用户手动编辑共同维护。\n${newSection}`;
 
-    writeMemoryMd(updatedMemory);
-    console.log(`[AutoMemory] 成功追加 ${newLines.length} 条记忆`);
+    await writeMemoryMd(updatedMemory);
+    logger.debug(`[AutoMemory] 成功追加 ${newLines.length} 条记忆`);
+
+    // 同步写入 vecMemoryStore（向量语义索引）
+    // 使用 extractKeywords 提取关键词，提升降级搜索准确率
+    for (const line of newLines) {
+      try {
+        await writeMemory({
+          userId: 'default',
+          sessionId: 'auto-memory',
+          category: 'insight',
+          content: line,
+          keywords: extractKeywords(`${userMessage} ${line}`, 10),
+        });
+      } catch (e) {
+        logger.error('[Memory] Failed to store to vecMemoryStore:', e);
+      }
+    }
+
     return { updated: true, count: newLines.length };
   } catch (e) {
     // 记忆提取失败不应影响主对话流程
-    console.error('[AutoMemory] 提取失败:', e instanceof Error ? e.message : e);
+    logger.error('[AutoMemory] 提取失败:', e instanceof Error ? e.message : e);
     return { updated: false, count: 0 };
   }
 }
@@ -574,7 +674,7 @@ async function executeFromQueue(
   res: import('express').Response,
   params: QueueExecuteParams,
 ): Promise<void> {
-  console.log(`[MessageQueue] 执行出队消息: sessionId=${sessionId}, mode=${event.mode}, messageId=${event.messageId}`);
+  logger.debug(`[MessageQueue] 执行出队消息: sessionId=${sessionId}, mode=${event.mode}, messageId=${event.messageId}`);
 
   // v1.5.116: 在 try 外部声明，使 catch 块内能访问
   let apiMessages: Array<Record<string, any>> = [];
@@ -610,7 +710,7 @@ async function executeFromQueue(
     }
 
     // 注入 MEMORY.md（补充记忆上下文）
-    const memoryContent = readMemoryMd();
+    const memoryContent = await readMemoryMd();
     if (memoryContent.trim()) {
       apiMessages.push({ role: 'system', content: memoryContent.trim() });
     }
@@ -630,7 +730,7 @@ async function executeFromQueue(
       'kimi-k2.6', 'kimi-k2.5',
     ].some(id => modelConfig.id.toLowerCase().includes(id.toLowerCase()));
     const isFalsePositiveVision = /deepseek/i.test(modelConfig.id);
-    const supportsVision = (isMultimodalModel || isKnownVisionModel) && !isFalsePositiveVision;
+    const _supportsVision = (isMultimodalModel || isKnownVisionModel) && !isFalsePositiveVision;
 
     for (const msg of dbMessages) {
       if (msg.role === 'user' || msg.role === 'assistant') {
@@ -665,7 +765,8 @@ async function executeFromQueue(
 
     // 截断/压缩上下文
     const ctxWindow = (finalModelConfig as any).contextWindow || 128000;
-    const ctxMaxTokens = (finalModelConfig as any).maxTokens || 8192;
+    // v1.5.131: 截断用 maxTokens 上限 8192，避免 384K 浪费输入空间
+    const ctxMaxTokens = Math.min((finalModelConfig as any).maxTokens || 8192, 8192);
     // v1.5.116: 优先尝试智能压缩，失败则降级为简单截断
     let truncated: { messages: typeof apiMessages; truncated: boolean };
     try {
@@ -674,7 +775,7 @@ async function executeFromQueue(
       );
       truncated = { messages: compressResult.messages as any, truncated: compressResult.truncated || compressResult.compressed };
       if (compressResult.compressed) {
-        console.log('[Chat API] 上下文已智能压缩（非流式）');
+        logger.debug('[Chat API] 上下文已智能压缩（非流式）');
       }
     } catch {
       truncated = truncateContextForModel(apiMessages as any, ctxWindow, ctxMaxTokens, 30);
@@ -692,7 +793,6 @@ async function executeFromQueue(
       : undefined;
     if (!effectiveMode) {
       try {
-        const { getAppSettings } = require('../dao/settings');
         const settingsVal = getAppSettings('default');
         if (settingsVal) {
           const parsed = JSON.parse(settingsVal);
@@ -731,7 +831,46 @@ async function executeFromQueue(
     let thinkingContent = '';
     let hasThinking = false;
     let thinkingStartTime: number | null = null;
-    let usageData: any = undefined;
+    const usageData: any = undefined;
+
+    // v8.6: 语义记忆检索 — 统一入口，所有策略（Legacy/Observer/ReAct）共享
+    // 在 strategy.execute() 之前注入历史记忆到 messages
+    const latestUserMessage = truncated.messages
+      .slice().reverse().find((m: any) => m.role === 'user');
+    if (latestUserMessage && typeof latestUserMessage.content === 'string') {
+      try {
+        const memoryResults: VecSearchResult[] = await searchMemory(
+          latestUserMessage.content, 'default', 5, 0.35,
+        );
+        if (memoryResults.length > 0) {
+          const totalChars = memoryResults.reduce((sum, r) => sum + r.entry.content.length, 0);
+          const totalTokens = Math.ceil(totalChars / 1.5);
+          if (totalTokens <= 500) {
+            const memoryContext = memoryResults
+              .map(r => `[${r.entry.category}] ${r.entry.content} (相似度: ${r.similarity.toFixed(2)})`)
+              .join('\n');
+            truncated.messages.push({
+              role: 'system',
+              content: `[历史记忆]\n${memoryContext}`,
+            } as typeof truncated.messages[number]);
+
+            if (!res.writableEnded) {
+              try {
+                res.write(`data: ${JSON.stringify({
+                  type: 'memory_retrieved',
+                  count: memoryResults.length,
+                  summaries: memoryResults.map(r => r.entry.content.substring(0, 50)),
+                })}\n\n`);
+              } catch { /* ignore */ }
+            }
+
+            logger.debug(`[Chat API] 语义记忆注入: ${memoryResults.length} 条, 估算 ${totalTokens} tokens`);
+          }
+        }
+      } catch (memErr) {
+        logger.warn('[Chat API] 语义记忆检索失败（已跳过）:', memErr instanceof Error ? memErr.message : String(memErr));
+      }
+    }
 
     const toolResult = await strategy.execute({
       modelConfig: finalModelConfig as any,
@@ -843,7 +982,7 @@ async function executeFromQueue(
     activeSSEConnections.delete(sessionId);
 
   } catch (error) {
-    console.error('[MessageQueue executeFromQueue] 执行失败:', error);
+    logger.error('[MessageQueue executeFromQueue] 执行失败:', error);
 
     // v1.5.116: 模型降级逻辑 — 与 /chat 路由一致的降级链
     const isModelUnsupported =
@@ -866,7 +1005,7 @@ async function executeFromQueue(
 
       if (fbModel) {
         const reasonLabel = isModelUnsupported ? '模型不支持' : '请求失败';
-        console.log(`[MessageQueue] ${reasonLabel}，降级到 ${fbModel.id}...`);
+        logger.debug(`[MessageQueue] ${reasonLabel}，降级到 ${fbModel.id}...`);
 
         if (!res.writableEnded) {
           try {
@@ -881,7 +1020,7 @@ async function executeFromQueue(
           const fbKey = selectKey(fbModel);
           const fbApiKey = fbKey ? fbKey.key : (fbModel.apiKey || '');
           const fbModelConfig: ModelCallConfig = {
-            model: fbModel.id,
+            id: fbModel.id,
             apiKey: fbApiKey,
             apiEndpoint: fbModel.apiEndpoint || '',
             provider: fbModel.provider || '',
@@ -891,7 +1030,7 @@ async function executeFromQueue(
           };
 
           const strategy = ExecutionStrategyFactory.create(params.executionMode as ExecutionMode || ExecutionMode.REACT);
-          const fbResult = await strategy.execute({
+          void strategy.execute({
             modelConfig: fbModelConfig,
             messages: apiMessages as any,
             maxToolTurns: 10,
@@ -914,7 +1053,7 @@ async function executeFromQueue(
           activeSSEConnections.delete(sessionId);
           return;
         } catch (fbErr) {
-          console.warn(`[MessageQueue] 降级模型 ${fbModel.id} 也失败:`, fbErr);
+          logger.warn(`[MessageQueue] 降级模型 ${fbModel.id} 也失败:`, fbErr);
         }
       }
     }
@@ -942,9 +1081,9 @@ async function executeFromQueue(
 // 发送消息（SSE）
 router.post('/chat', async (req, res) => {
   const { sessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory, attachments, reasoningEffort, executionMode, queueMode } = req.body;
-  console.log(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, message="${message?.slice(0, 30)}", queueMode=${queueMode || 'default'}`);
+  logger.debug(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, message="${message?.slice(0, 30)}", queueMode=${queueMode || 'default'}`);
   if (attachments && Array.isArray(attachments) && attachments.length > 0) {
-    console.log(`[Chat API] 附件数量: ${attachments.length}`);
+    logger.debug(`[Chat API] 附件数量: ${attachments.length}`);
   }
 
   // v1.5.116: 在 try 外部声明关键变量，使 catch 块内降级逻辑可访问
@@ -977,7 +1116,7 @@ router.post('/chat', async (req, res) => {
       effectiveModelName = autoResult.modelName;
       autoReason = `${autoResult.modelName} · ${autoResult.reason}`;
       autoReasonType = autoResult.reasonType;
-      console.log(`[Auto Model] ${autoResult.reasonType} → ${autoResult.modelName} (${autoResult.modelId})`);
+      logger.debug(`[Auto Model] ${autoResult.reasonType} → ${autoResult.modelName} (${autoResult.modelId})`);
     } else {
       effectiveModel = model;
       const found = modelsConfig.models.find(m => m.id === model);
@@ -995,7 +1134,7 @@ router.post('/chat', async (req, res) => {
     }
 
     // 保存用户消息（不回显到 SSE 流，避免前端将用户输入混入 AI 回复内容）
-    const userMsg = addMessage({ sessionId, role: 'user', content: message, model: effectiveModel, skillId: skillId || null, attachments: attachments || undefined });
+    addMessage({ sessionId, role: 'user', content: message, model: effectiveModel, skillId: skillId || null, attachments: attachments || undefined });
 
     // 发送初始化事件（Auto 模式附加选择原因 + 预设信息）
     const assistantId = uuidv4();
@@ -1180,7 +1319,7 @@ router.post('/chat', async (req, res) => {
       }
 
       // 注入 MEMORY.md 上下文（补充记忆）
-      const memoryContent = readMemoryMd();
+      const memoryContent = await readMemoryMd();
       if (memoryContent.trim()) {
         apiMessages.push({ role: 'system', content: memoryContent.trim() });
       }
@@ -1242,16 +1381,16 @@ router.post('/chat', async (req, res) => {
                 if (att.type === 'image') {
                   try {
                     const filePath = path.join(CDF_KNOW_CLOW_DIR, 'uploads', path.basename(att.url));
-                    if (fs.existsSync(filePath)) {
-                      const fileBuffer = fs.readFileSync(filePath);
-                      const base64 = fileBuffer.toString('base64');
-                      contentParts.push({
-                        type: 'image_url',
-                        image_url: { url: `data:${att.mimeType};base64,${base64}`, detail: 'auto' },
-                      });
+                    const fileBuffer = await fsp.readFile(filePath);
+                    const base64 = fileBuffer.toString('base64');
+                    contentParts.push({
+                      type: 'image_url',
+                      image_url: { url: `data:${att.mimeType};base64,${base64}`, detail: 'auto' },
+                    });
+                  } catch (err: any) {
+                    if (err.code !== 'ENOENT') {
+                      logger.error(`[Chat API] 读取历史图片附件失败: ${att.fileName}`, err);
                     }
-                  } catch (err) {
-                    console.error(`[Chat API] 读取历史图片附件失败: ${att.fileName}`, err);
                   }
                 }
               }
@@ -1328,19 +1467,19 @@ router.post('/chat', async (req, res) => {
             if (supportsVision) {
               try {
                 const filePath = path.join(CDF_KNOW_CLOW_DIR, 'uploads', path.basename(att.url));
-                if (fs.existsSync(filePath)) {
-                  const fileBuffer = fs.readFileSync(filePath);
-                  const base64 = fileBuffer.toString('base64');
-                  contentParts.push({
-                    type: 'image_url',
-                    image_url: {
-                      url: `data:${att.mimeType};base64,${base64}`,
-                      detail: 'auto',
-                    },
-                  });
+                const fileBuffer = await fsp.readFile(filePath);
+                const base64 = fileBuffer.toString('base64');
+                contentParts.push({
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${att.mimeType};base64,${base64}`,
+                    detail: 'auto',
+                  },
+                });
+              } catch (err: any) {
+                if (err.code !== 'ENOENT') {
+                  logger.error(`[Chat API] 读取图片附件失败: ${att.fileName}`, err);
                 }
-              } catch (err) {
-                console.error(`[Chat API] 读取图片附件失败: ${att.fileName}`, err);
               }
             }
             // 不支持多模态的模型：跳过图片，已在上方添加提示文本
@@ -1348,20 +1487,20 @@ router.post('/chat', async (req, res) => {
             // 文件：读取内容并作为文本注入
             try {
               const filePath = path.join(CDF_KNOW_CLOW_DIR, 'uploads', path.basename(att.url));
-              if (fs.existsSync(filePath)) {
-                const ext = path.extname(att.fileName).toLowerCase().replace('.', '');
-                const fileContent = await extractFileContent(filePath, ext, att.fileName);
-                contentParts.push({
-                  type: 'text',
-                  text: fileContent,
-                });
-              }
-            } catch (err) {
-              console.error(`[Chat API] 读取文件附件失败: ${att.fileName}`, err);
+              const ext = path.extname(att.fileName).toLowerCase().replace('.', '');
+              const fileContent = await extractFileContent(filePath, ext, att.fileName);
               contentParts.push({
                 type: 'text',
-                text: `\n---\n[附件: ${att.fileName} - 读取失败]\n---\n`,
+                text: fileContent,
               });
+            } catch (err: any) {
+              if (err.code !== 'ENOENT') {
+                logger.error(`[Chat API] 读取文件附件失败: ${att.fileName}`, err);
+                contentParts.push({
+                  type: 'text',
+                  text: `\n---\n[附件: ${att.fileName} - 读取失败]\n---\n`,
+                });
+              }
             }
           }
         }
@@ -1405,7 +1544,7 @@ router.post('/chat', async (req, res) => {
       try {
         // 无 API Key 且非本地模型时使用模拟模式
         if (!effectiveApiKey && !isLocalModel(modelConfig)) {
-          console.log(`[Chat API] 模型 ${effectiveModel} 未配置 API Key，使用模拟模式`);
+          logger.debug(`[Chat API] 模型 ${effectiveModel} 未配置 API Key，使用模拟模式`);
           const mockResponse = generateMockResponse(message);
           const segments = mockResponse.match(/[\s\S]{1,5}/g) || [mockResponse];
           for (const segment of segments) {
@@ -1432,7 +1571,7 @@ router.post('/chat', async (req, res) => {
             const cacheKey = getThinkingCacheKey(effectiveModel, message, reasoningEffort);
             const cached = getThinkingCache(cacheKey);
             if (cached) {
-              console.log('[Chat API] Thinking cache hit for', effectiveModel);
+              logger.debug('[Chat API] Thinking cache hit for', effectiveModel);
               cacheHit = true;
               fullContent = cached.content;
               thinkingContent = cached.thinking;
@@ -1450,7 +1589,8 @@ router.post('/chat', async (req, res) => {
           if (!cacheHit) {
           // v1.5.73: 截断/压缩上下文以适配模型 token 限制
           const ctxWindow = (finalModelConfig as any).contextWindow || 128000;
-          const ctxMaxTokens = (finalModelConfig as any).maxTokens || 8192;
+          // v1.5.131: 截断用 maxTokens 上限 8192，避免 384K 浪费输入空间
+          const ctxMaxTokens = Math.min((finalModelConfig as any).maxTokens || 8192, 8192);
           const estimatedToolsCount = 30;
           // v1.5.116: 优先尝试智能压缩
           let compressed = false;
@@ -1461,7 +1601,7 @@ router.post('/chat', async (req, res) => {
             apiMessages = compressResult.messages as any;
             compressed = compressResult.compressed;
             if (compressed) {
-              console.log('[Chat API] 上下文已智能压缩（流式）');
+              logger.debug('[Chat API] 上下文已智能压缩（流式）');
             }
           } catch {
             // 压缩失败，降级为简单截断
@@ -1485,7 +1625,6 @@ router.post('/chat', async (req, res) => {
           // 如果请求未指定 executionMode，从 app_settings 读取全局默认值
           if (!effectiveMode) {
             try {
-              const { getAppSettings } = require('../dao/settings');
               const settingsVal = getAppSettings('default');
               if (settingsVal) {
                 const parsed = JSON.parse(settingsVal);
@@ -1502,6 +1641,40 @@ router.post('/chat', async (req, res) => {
           }
 
           const strategy = ExecutionStrategyFactory.create(effectiveMode);
+
+          // v8.6: 语义记忆检索 — 统一入口，所有策略共享
+          const latestUserMsg = truncated.messages
+            .slice().reverse().find((m: any) => m.role === 'user');
+          if (latestUserMsg && typeof latestUserMsg.content === 'string') {
+            try {
+              const memResults: VecSearchResult[] = await searchMemory(
+                latestUserMsg.content, 'default', 5, 0.35,
+              );
+              if (memResults.length > 0) {
+                const memChars = memResults.reduce((sum, r) => sum + r.entry.content.length, 0);
+                const memTokens = Math.ceil(memChars / 1.5);
+                if (memTokens <= 500) {
+                  const memCtx = memResults
+                    .map(r => `[${r.entry.category}] ${r.entry.content} (相似度: ${r.similarity.toFixed(2)})`)
+                    .join('\n');
+                  truncated.messages.push({
+                    role: 'system',
+                    content: `[历史记忆]\n${memCtx}`,
+                  } as typeof truncated.messages[number]);
+
+                  res.write(`data: ${JSON.stringify({
+                    type: 'memory_retrieved',
+                    count: memResults.length,
+                    summaries: memResults.map(r => r.entry.content.substring(0, 50)),
+                  })}\n\n`);
+
+                  logger.debug(`[Chat API] 语义记忆注入（流式）: ${memResults.length} 条, 估算 ${memTokens} tokens`);
+                }
+              }
+            } catch (memErr) {
+              logger.warn('[Chat API] 语义记忆检索失败（流式，已跳过）:', memErr instanceof Error ? memErr.message : String(memErr));
+            }
+          }
 
           const toolResult = await strategy.execute({
             modelConfig: finalModelConfig,
@@ -1547,11 +1720,11 @@ router.post('/chat', async (req, res) => {
                         pluginId: match.pluginId,
                       })}\n\n`);
                     }).catch((err) => {
-                      console.error('[Chat API] plugin trigger execution failed:', err);
+                      logger.error('[Chat API] plugin trigger execution failed:', err);
                     });
                   }
                 }).catch((err) => {
-                  console.error('[Chat API] trigger matching failed:', err);
+                  logger.error('[Chat API] trigger matching failed:', err);
                 });
               }
             },
@@ -1580,7 +1753,7 @@ router.post('/chat', async (req, res) => {
             onPermissionRequest: (toolCall) => {
               // v1.5.66: 系统授权启用时自动通过所有权限请求，无需前端弹窗
               if (isSystemAuthorized()) {
-                console.log('[Chat API] 系统授权已启用，自动通过工具权限:', toolCall.function.name);
+                logger.debug('[Chat API] 系统授权已启用，自动通过工具权限:', toolCall.function.name);
                 return Promise.resolve(true);
               }
               return new Promise((resolve) => {
@@ -1627,7 +1800,7 @@ router.post('/chat', async (req, res) => {
               const nextKey = selectKey(modelConfig);
               if (nextKey) {
                 selectedKeyIndex = nextKey.index;
-                console.log(`[Chat API] 429 速率限制，切换到备用 Key #${nextKey.index}`);
+                logger.debug(`[Chat API] 429 速率限制，切换到备用 Key #${nextKey.index}`);
                 return { apiKey: nextKey.key, keyIndex: nextKey.index };
               }
               return null;
@@ -1657,7 +1830,7 @@ router.post('/chat', async (req, res) => {
           }
           // v1.5.57: 双空保护 — 模型既无文本输出也无思考过程
           if (!fullContent && !thinkingContent?.trim()) {
-            console.warn('[Chat API] 模型返回空内容，无文本也无思考，sessionId=%s model=%s', sessionId, effectiveModel);
+            logger.warn('[Chat API] 模型返回空内容，无文本也无思考，sessionId=%s model=%s', sessionId, effectiveModel);
             fullContent = '（模型未返回内容，可能是请求超时或服务异常，请重试）';
           }
           toolCallsJson = toolResult.toolCalls.length > 0 ? JSON.stringify(toolResult.toolCalls) : undefined;
@@ -1688,8 +1861,8 @@ router.post('/chat', async (req, res) => {
       // 异步自动记忆学习（不阻塞主流程，不 await）
       extractAndAppendMemory(message, fullContent, apiMessages.map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) }))).catch(() => {});
     } catch (apiError) {
-      console.error('[Chat API] AI API error:', apiError);
-      console.error('[Chat API] Stack trace:', apiError instanceof Error ? apiError.stack : 'N/A');
+      logger.error('[Chat API] AI API error:', apiError);
+      logger.error('[Chat API] Stack trace:', apiError instanceof Error ? apiError.stack : 'N/A');
 
       // v1.5.116: 降级重试逻辑（executeFromQueue 简化版）
       // 降级链：按优先级寻找备用模型（同 provider 非推理 → 任意非推理 → 任意可用）
@@ -1713,7 +1886,7 @@ router.post('/chat', async (req, res) => {
 
         if (fbModel) {
           const reasonLabel = isModelUnsupported ? '模型不支持' : '请求失败';
-          console.log(`[Chat API] ${reasonLabel}，降级到 ${fbModel.id}...`);
+          logger.debug(`[Chat API] ${reasonLabel}，降级到 ${fbModel.id}...`);
           res.write(`data: ${JSON.stringify({
             type: 'text',
             content: `\n\n> ⚠️ ${reasonLabel}，已自动切换到 **${fbModel.name || fbModel.id}** 重试...\n\n`,
@@ -1757,7 +1930,7 @@ router.post('/chat', async (req, res) => {
             res.end();
             return;
           } catch (fbErr) {
-            console.warn(`[Chat API] 降级模型 ${fbModel.id} 也失败:`, fbErr);
+            logger.warn(`[Chat API] 降级模型 ${fbModel.id} 也失败:`, fbErr);
           }
         }
       }
@@ -1867,7 +2040,7 @@ router.post('/chat', async (req, res) => {
       // 响应流可能已关闭，忽略
     }
   } catch (error) {
-    console.error('Chat API error:', error);
+    logger.error('Chat API error:', error);
     if (!res.headersSent) {
       res.status(500).json({ error: 'Internal server error' });
     } else {
@@ -1897,7 +2070,6 @@ router.post('/permission-response', (req, res) => {
         if (toolCategory && toolCategory !== toolName) {
           globalAlwaysAllowed!.add(toolName);
         }
-        const { setAppSettings } = require('../dao/settings');
         setAppSettings('always_allowed_tools', JSON.stringify([...globalAlwaysAllowed!]));
         // 同时注入当前会话缓存
         const sessionCache = sessionApprovedToolsCache.get(sessionId);
@@ -1908,7 +2080,7 @@ router.post('/permission-response', (req, res) => {
           }
         }
       } catch (e) {
-        console.warn('[permission-response] 持久化 alwaysAllow 失败:', e);
+        logger.warn('[permission-response] 持久化 alwaysAllow 失败:', e);
       }
     }
     reqIdToolMap.delete(reqId);

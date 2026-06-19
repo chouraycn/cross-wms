@@ -14,6 +14,7 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs';
 import { ChildProcess, spawn } from 'child_process';
+import { logger } from '../logger.js';
 
 // ===================== 配置 =====================
 
@@ -87,11 +88,11 @@ let isShuttingDown = false;
 // ===================== 日志 =====================
 
 function log(msg: string) {
-  console.log(`[BrowserHostClient] ${msg}`);
+  logger.info(`[BrowserHostClient] ${msg}`);
 }
 
 function error(msg: string) {
-  console.error(`[BrowserHostClient] ${msg}`);
+  logger.error(`[BrowserHostClient] ${msg}`);
 }
 
 // ===================== IPC 通信 =====================
@@ -168,6 +169,7 @@ export async function sendCommand(type: string, args: Record<string, unknown> = 
     return { id, ok: false, error: 'IPC socket not available' };
   }
 
+  const sock = ipcSocket; // local reference for type narrowing inside Promise
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       pendingRequests.delete(id);
@@ -177,7 +179,7 @@ export async function sendCommand(type: string, args: Record<string, unknown> = 
     pendingRequests.set(id, { resolve, reject, timer });
 
     const msg = JSON.stringify({ id, type, args }) + '\n';
-    ipcSocket.write(msg, (err) => {
+    sock.write(msg, (err) => {
       if (err) {
         clearTimeout(timer);
         pendingRequests.delete(id);
@@ -379,18 +381,21 @@ export interface RenderContentResult {
  * 使用 Playwright 渲染页面并返回渲染后的 HTML
  * — 供 web_fetch / web_search / web_api_call 的 renderJs 模式使用
  * — 使用独立临时页面，不影响当前活跃页面
+ * v1.5.131: 支持 executeJs 参数
  */
 export async function renderContent(options: {
   url: string;
   waitUntil?: 'domcontentloaded' | 'networkidle' | 'load';
   selector?: string;
   timeout?: number;
+  executeJs?: string;
 }): Promise<RenderContentResult> {
   const response = await sendCommand('browser_render_content', {
     url: options.url,
     waitUntil: options.waitUntil || 'networkidle',
     selector: options.selector,
     timeout: options.timeout || 15000,
+    ...(options.executeJs ? { executeJs: options.executeJs } : {}),
   });
 
   if (response.ok && response.output) {
@@ -404,4 +409,28 @@ export async function renderContent(options: {
     };
   }
   return { ok: false, error: response.error || 'Render failed' };
+}
+
+/**
+ * 在当前活跃浏览器页面上执行 JavaScript
+ * v1.5.131: 新增
+ */
+export async function executeJs(options: {
+  script: string;
+  returnHtml?: boolean;
+}): Promise<{ ok: boolean; result?: unknown; html?: string; url?: string; error?: string }> {
+  const response = await sendCommand('browser_execute_js', {
+    script: options.script,
+    returnHtml: options.returnHtml || false,
+  });
+
+  if (response.ok && response.output) {
+    return {
+      ok: true,
+      result: response.output.result,
+      url: response.output.url,
+      ...(response.output.html ? { html: response.output.html } : {}),
+    };
+  }
+  return { ok: false, error: response.error || 'JS execution failed' };
 }

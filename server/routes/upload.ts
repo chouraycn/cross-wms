@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import type { Request } from 'express';
+import { logger } from '../logger.js';
 
 const CDF_KNOW_CLOW_DIR = path.join(os.homedir(), '.cdf-know-clow');
 export const UPLOADS_DIR = path.join(CDF_KNOW_CLOW_DIR, 'uploads');
@@ -54,7 +55,7 @@ export function parseMultipartFormData(
     const boundary = boundaryMatch[1] || boundaryMatch[2];
     const delimiter = Buffer.from(`--${boundary}`);
     const endDelimiter = Buffer.from(`--${boundary}--`);
-    console.log('[upload] multipart 解析开始, boundary:', boundary);
+    logger.info('[upload] multipart 解析开始, boundary:', boundary);
 
     const chunks: Buffer[] = [];
     let totalSize = 0;
@@ -89,7 +90,7 @@ export function parseMultipartFormData(
           if (headerEnd === -1) break;
 
           const headerSection = body.subarray(delimIdx + delimiter.length, headerEnd).toString();
-          console.log('[upload] header section:', headerSection.substring(0, 200));
+          logger.info('[upload] header section:', headerSection.substring(0, 200));
           headerEnd += 4; // 跳过 \r\n\r\n
 
           // 查找下一个 delimiter（即当前 part 的结束位置）
@@ -125,7 +126,7 @@ export function parseMultipartFormData(
           if (body.subarray(pos, pos + 2).equals(Buffer.from('--'))) break;
         }
 
-        console.log('[upload] 解析完成, foundFile:', foundFile, 'fileTotalSize:', fileTotalSize, 'fileName:', parsedFileName);
+        logger.info('[upload] 解析完成, foundFile:', foundFile, 'fileTotalSize:', fileTotalSize, 'fileName:', parsedFileName);
 
         if (foundFile && fileTotalSize <= MAX_UPLOAD_SIZE) {
           resolve({
@@ -157,8 +158,8 @@ router.options('/', (req, res) => {
 // POST /upload — 文件上传接口
 // 注意：此路由需要原始请求 body，express.json() 不应在其之前处理 multipart 请求
 router.post('/', async (req, res) => {
-  console.log('[Upload Route] Received POST /api/upload');
-  console.log('[Upload Route] Content-Type:', req.headers['content-type']);
+  logger.info('[Upload Route] Received POST /api/upload');
+  logger.info('[Upload Route] Content-Type:', req.headers['content-type']);
   try {
     const parsed = await parseMultipartFormData(req);
     if (!parsed) {
@@ -205,10 +206,10 @@ router.post('/', async (req, res) => {
       url: `/api/uploads/${savedFileName}`,
     };
 
-    console.log(`[Upload] 文件已保存: ${fileName} (${(data.length / 1024).toFixed(1)}KB) -> ${savedFileName}`);
+    logger.info(`[Upload] 文件已保存: ${fileName} (${(data.length / 1024).toFixed(1)}KB) -> ${savedFileName}`);
     res.json({ data: result });
   } catch (error) {
-    console.error('[Upload] 上传失败:', error);
+    logger.error('[Upload] 上传失败:', error);
     const msg = error instanceof Error ? error.message : '上传失败';
     res.status(500).json({ error: msg });
   }

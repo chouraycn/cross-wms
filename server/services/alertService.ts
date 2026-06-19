@@ -7,6 +7,7 @@
 
 import Database from 'better-sqlite3';
 import type { AlertThresholds, AlertCheckResult, WmsAlert } from '../models/wms-skill.js';
+import { logger } from '../logger.js';
 
 // ===================== 默认阈值配置 =====================
 
@@ -154,7 +155,7 @@ async function checkLowStock(
 
       count++;
     } catch (err) {
-      console.error(`创建低库存预警失败 (SKU: ${item.sku}):`, err);
+      logger.error(`创建低库存预警失败 (SKU: ${item.sku}):`, err);
     }
   }
 
@@ -238,7 +239,7 @@ async function checkExpiry(
 
       count++;
     } catch (err) {
-      console.error(`创建临期预警失败 (SKU: ${item.sku}):`, err);
+      logger.error(`创建临期预警失败 (SKU: ${item.sku}):`, err);
     }
   }
 
@@ -327,7 +328,7 @@ async function checkStagnant(
 
       count++;
     } catch (err) {
-      console.error(`创建呆滞库存预警失败 (SKU: ${item.sku}):`, err);
+      logger.error(`创建呆滞库存预警失败 (SKU: ${item.sku}):`, err);
     }
   }
 

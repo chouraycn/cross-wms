@@ -15,6 +15,7 @@
  */
 
 import { ObserverRule, OBSERVER_RULES, ObservationLevel } from './observerRules.js';
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -251,7 +252,7 @@ export class Observer {
       return observation;
     } catch (err) {
       // 错误容忍：Observer 内部错误 → console.error + 视为 success
-      console.error('[Observer] observe() 内部错误:', err instanceof Error ? err.message : String(err));
+      logger.error('[Observer] observe() 内部错误:', err instanceof Error ? err.message : String(err));
       return {
         toolCall,
         result,
@@ -288,7 +289,7 @@ export class Observer {
       // 截断到 200 字符
       return hint.length > 200 ? hint.slice(0, 200) : hint;
     } catch (err) {
-      console.error('[Observer] generateReflectionHint() 错误:', err instanceof Error ? err.message : String(err));
+      logger.error('[Observer] generateReflectionHint() 错误:', err instanceof Error ? err.message : String(err));
       return '';
     }
   }

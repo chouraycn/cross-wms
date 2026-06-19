@@ -45,7 +45,7 @@ const SkillAuditPage: React.FC = () => {
       // 同步到全局缓存，确保返回技能列表页时审计状态已更新
       if (a) setAuditStatus(skillId, a);
     } catch (e) {
-      console.error('加载审查数据失败', e);
+      // console.error('加载审查数据失败', e);
     }
     setLoading(false);
   };
@@ -61,7 +61,7 @@ const SkillAuditPage: React.FC = () => {
       setAuditStatus(skillId, a);
       showToast('重新审查完成', 'success');
     } catch (e: any) {
-      console.error('重新审查失败', e);
+      // console.error('重新审查失败', e);
       showToast(`重新审查失败: ${e?.message || e}`, 'error');
     } finally {
       setLoading(false);
@@ -82,7 +82,7 @@ const SkillAuditPage: React.FC = () => {
       URL.revokeObjectURL(url);
       showToast('导出成功', 'success');
     } catch (e: any) {
-      console.error('导出失败', e);
+      // console.error('导出失败', e);
       showToast(`导出失败: ${e?.message || e}`, 'error');
     }
   };

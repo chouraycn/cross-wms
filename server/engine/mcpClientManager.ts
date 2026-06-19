@@ -12,14 +12,13 @@
  * 5. 连接失败 → 标记 error 状态 + 记录错误信息
  */
 
-/* eslint-disable no-console */
-
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import type { McpServerConfig, McpServerState, McpToolInfo, McpConnectionState } from './mcpTypes.js';
 import { sanitizeServerName, makeMcpToolName, parseMcpToolName } from './mcpTypes.js';
 import { addServer, getServer, updateServer, deleteServer, listServers } from './mcpConfigStore.js';
 import type { ToolDefinition } from '../aiClient.js';
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -150,7 +149,7 @@ class McpClientManager {
       this.clients.set(config.id, entry);
 
       const mcpToolNames = tools.map(t => makeMcpToolName(config.name, t.name));
-      console.log(`[McpClientManager] 连接成功: ${config.name} (${config.id}), 工具: ${mcpToolNames.join(', ')}`);
+      logger.debug(`[McpClientManager] 连接成功: ${config.name} (${config.id}), 工具: ${mcpToolNames.join(', ')}`);
 
       return {
         config,
@@ -160,7 +159,7 @@ class McpClientManager {
       };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error(`[McpClientManager] 连接失败: ${config.name} (${config.id}):`, errorMsg);
+      logger.error(`[McpClientManager] 连接失败: ${config.name} (${config.id}):`, errorMsg);
 
       // 标记 error 状态（不存 entry，仅记录错误）
       this.nameToIdMap.delete(serverPrefix);
@@ -185,13 +184,13 @@ class McpClientManager {
     try {
       await entry.client.close();
     } catch (err) {
-      console.warn(`[McpClientManager] 断开连接异常 (${serverId}):`, err instanceof Error ? err.message : String(err));
+      logger.warn(`[McpClientManager] 断开连接异常 (${serverId}):`, err instanceof Error ? err.message : String(err));
     }
 
     const serverPrefix = sanitizeServerName(entry.config.name);
     this.nameToIdMap.delete(serverPrefix);
     this.clients.delete(serverId);
-    console.log(`[McpClientManager] 已断开: ${entry.config.name} (${serverId})`);
+    logger.debug(`[McpClientManager] 已断开: ${entry.config.name} (${serverId})`);
   }
 
   /**
@@ -317,22 +316,22 @@ class McpClientManager {
   async connectAllEnabled(): Promise<void> {
     const enabledConfigs = listServers(true);
     if (enabledConfigs.length === 0) {
-      console.log('[McpClientManager] 无已启用的 MCP Server');
+      logger.debug('[McpClientManager] 无已启用的 MCP Server');
       return;
     }
 
-    console.log(`[McpClientManager] 开始连接 ${enabledConfigs.length} 个已启用的 MCP Server...`);
+    logger.debug(`[McpClientManager] 开始连接 ${enabledConfigs.length} 个已启用的 MCP Server...`);
 
     for (const config of enabledConfigs) {
       try {
         await this.connectServer(config);
       } catch (err) {
-        console.error(`[McpClientManager] 启动连接 '${config.name}' 失败:`, err instanceof Error ? err.message : String(err));
+        logger.error(`[McpClientManager] 启动连接 '${config.name}' 失败:`, err instanceof Error ? err.message : String(err));
       }
     }
 
     const connectedCount = Array.from(this.clients.values()).filter(e => e.connectionState === 'connected').length;
-    console.log(`[McpClientManager] 启动连接完成: ${connectedCount}/${enabledConfigs.length} 成功`);
+    logger.debug(`[McpClientManager] 启动连接完成: ${connectedCount}/${enabledConfigs.length} 成功`);
   }
 
   /**
@@ -402,7 +401,7 @@ class McpClientManager {
     for (const id of serverIds) {
       await this.disconnectServer(id);
     }
-    console.log('[McpClientManager] 所有 MCP Server 连接已关闭');
+    logger.debug('[McpClientManager] 所有 MCP Server 连接已关闭');
   }
 }
 

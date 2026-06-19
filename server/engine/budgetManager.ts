@@ -17,6 +17,7 @@
  */
 
 import { estimateTokens } from './contextTruncate.js';
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -216,7 +217,7 @@ export class BudgetManager {
         });
       }
 
-      console.log(`[BudgetManager] 自适应预算调整: maxTurns ${oldMaxTurns}→${newMaxTurns}, maxTokens ${oldMaxTokens}→${this.maxTokens} (level=${level})`);
+      logger.debug(`[BudgetManager] 自适应预算调整: maxTurns ${oldMaxTurns}→${newMaxTurns}, maxTokens ${oldMaxTokens}→${this.maxTokens} (level=${level})`);
     }
   }
 }

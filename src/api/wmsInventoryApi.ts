@@ -48,7 +48,7 @@ export async function fetchInventoryCounts(filter?: InventoryCountFilter): Promi
     const resp = await fetch(url);
     return await handleResponse<InventoryCount[]>(resp);
   } catch (error) {
-    console.warn('[InventoryAPI] 获取盘点列表失败:', error);
+    // console.warn('[InventoryAPI] 获取盘点列表失败:', error);
     return [];
   }
 }
@@ -62,7 +62,7 @@ export async function fetchInventoryCountById(id: number): Promise<InventoryCoun
     const resp = await fetch(`${BASE_URL}/${id}`);
     return await handleResponse<InventoryCount>(resp);
   } catch (error) {
-    console.warn('[InventoryAPI] 获取盘点详情失败:', error);
+    // console.warn('[InventoryAPI] 获取盘点详情失败:', error);
     return null;
   }
 }
@@ -72,17 +72,12 @@ export async function fetchInventoryCountById(id: number): Promise<InventoryCoun
  * POST /api/wms/inventory-count
  */
 export async function createInventoryCount(data: InventoryCount | InventoryCount[]): Promise<InventoryCount | InventoryCount[]> {
-  try {
-    const resp = await fetch(BASE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return await handleResponse<InventoryCount | InventoryCount[]>(resp);
-  } catch (error) {
-    console.error('[InventoryAPI] 创建盘点单失败:', error);
-    throw error;
-  }
+  const resp = await fetch(BASE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return await handleResponse<InventoryCount | InventoryCount[]>(resp);
 }
 
 /**
@@ -90,17 +85,12 @@ export async function createInventoryCount(data: InventoryCount | InventoryCount
  * PUT /api/wms/inventory-count/:id
  */
 export async function updateInventoryCount(id: number, data: Partial<InventoryCount>): Promise<InventoryCount> {
-  try {
-    const resp = await fetch(`${BASE_URL}/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    return await handleResponse<InventoryCount>(resp);
-  } catch (error) {
-    console.error('[InventoryAPI] 更新盘点记录失败:', error);
-    throw error;
-  }
+  const resp = await fetch(`${BASE_URL}/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return await handleResponse<InventoryCount>(resp);
 }
 
 /**
@@ -120,7 +110,7 @@ export async function adjustInventoryCount(id: number, adjustBy: string): Promis
     }
     return { success: false, message: json.message || '调整失败' };
   } catch (error) {
-    console.error('[InventoryAPI] 差异调整失败:', error);
+    // console.error('[InventoryAPI] 差异调整失败:', error);
     return { success: false, message: error instanceof Error ? error.message : '网络错误' };
   }
 }
@@ -135,7 +125,7 @@ export async function deleteInventoryCount(id: number): Promise<boolean> {
     const json = await resp.json();
     return json.code === 0;
   } catch (error) {
-    console.error('[InventoryAPI] 删除盘点记录失败:', error);
+    // console.error('[InventoryAPI] 删除盘点记录失败:', error);
     return false;
   }
 }

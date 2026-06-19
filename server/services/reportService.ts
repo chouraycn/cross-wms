@@ -9,6 +9,7 @@ import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logger } from '../logger.js';
 
 // ===================== 常量定义 =====================
 
@@ -388,7 +389,7 @@ export function deleteReport(db: Database.Database, reportId: number): boolean {
       fs.unlinkSync(record.file_path);
     }
   } catch (err) {
-    console.error('删除报表文件失败:', err);
+    logger.error('删除报表文件失败:', err);
   }
 
   // 删除数据库记录

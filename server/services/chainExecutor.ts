@@ -20,6 +20,7 @@ import {
 } from '../dao/chains.js';
 import type { SkillChainNodeRow } from '../db.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
+import { logger } from '../logger.js';
 
 // ===================== v3.0: ChainExecutor Hooks =====================
 
@@ -673,7 +674,7 @@ export async function executeChain(chainId: string, hooks?: ChainExecutorHooks):
       duration: totalDuration,
     });
   } catch (e) {
-    console.error(`[ChainExecutor] Failed to persist execution ${executionId}:`, e);
+    logger.error(`[ChainExecutor] Failed to persist execution ${executionId}:`, e);
   }
 
   // 9. Cleanup abort signal

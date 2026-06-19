@@ -25,7 +25,7 @@ try {
     observer.observe(document.body, { childList: true, subtree: true });
   }
 } catch (e: any) {
-  console.error('[CrossWMS] React 渲染异常:', e?.message || String(e), e?.stack)
+  // console.error('[CrossWMS] React 渲染异常:', e?.message || String(e), e?.stack)
 }
 
 // 异步初始化：迁移 + Store 数据加载（不阻塞 UI 渲染）
@@ -34,7 +34,7 @@ async function bootstrap() {
     await checkAndMigrate()
     await Promise.all([initWarehouseCapability(), initSkills()])
   } catch (e) {
-    console.error('[Bootstrap] Store 初始化失败:', e)
+    // console.error('[Bootstrap] Store 初始化失败:', e)
   }
 }
 

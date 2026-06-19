@@ -13,6 +13,7 @@ import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { initDb } from '../db.js';
 import { createSkillAudit } from '../dao/chains.js';
+import { logger } from '../logger.js';
 
 // ===================== Types =====================
 
@@ -805,7 +806,7 @@ export async function batchAuditSkills(): Promise<void> {
   const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
 
   if (!fs.existsSync(skillsDir)) {
-    console.log('[SecurityAuditor] Skills directory does not exist, skipping batch audit');
+    logger.info('[SecurityAuditor] Skills directory does not exist, skipping batch audit');
     return;
   }
 
@@ -813,7 +814,7 @@ export async function batchAuditSkills(): Promise<void> {
   try {
     entries = fs.readdirSync(skillsDir, { withFileTypes: true }) as Array<{ name: string; isDirectory: () => boolean }>;
   } catch {
-    console.error('[SecurityAuditor] Failed to read skills directory');
+    logger.error('[SecurityAuditor] Failed to read skills directory');
     return;
   }
 
@@ -872,12 +873,12 @@ export async function batchAuditSkills(): Promise<void> {
       });
 
       auditedCount++;
-      console.log(`[SecurityAuditor] Audited "${entry.name}": score=${result.summary.score}, level=${result.summary.level}`);
+      logger.info(`[SecurityAuditor] Audited "${entry.name}": score=${result.summary.score}, level=${result.summary.level}`);
     } catch (e) {
       errorCount++;
-      console.error(`[SecurityAuditor] Failed to audit "${entry.name}":`, e instanceof Error ? e.message : e);
+      logger.error(`[SecurityAuditor] Failed to audit "${entry.name}":`, e instanceof Error ? e.message : e);
     }
   }
 
-  console.log(`[SecurityAuditor] Batch audit complete: ${auditedCount} audited, ${skippedCount} skipped, ${errorCount} errors`);
+  logger.info(`[SecurityAuditor] Batch audit complete: ${auditedCount} audited, ${skippedCount} skipped, ${errorCount} errors`);
 }

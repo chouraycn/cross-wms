@@ -49,7 +49,7 @@ export async function checkAndMigrate(): Promise<boolean> {
         hasData = true;
       } catch {
         // 跳过损坏数据
-        console.warn(`[Migration] 跳过损坏的 localStorage key: ${lsKey}`);
+        // console.warn(`[Migration] 跳过损坏的 localStorage key: ${lsKey}`);
       }
     }
   }
@@ -65,10 +65,10 @@ export async function checkAndMigrate(): Promise<boolean> {
     const result = await migrate(payload);
     localStorage.setItem(MIGRATED_KEY, '1');
     // eslint-disable-next-line no-console
-    console.log('[Migration] localStorage → SQLite 迁移成功:', result);
+    // console.log('[Migration] localStorage → SQLite 迁移成功:', result);
     return true;
   } catch (e) {
-    console.error('[Migration] 迁移失败，下次启动将重试:', e);
+    // console.error('[Migration] 迁移失败，下次启动将重试:', e);
     return false;
   }
 }

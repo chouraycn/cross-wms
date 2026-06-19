@@ -41,11 +41,11 @@ const TrafficLightOffset: React.FC<TrafficLightOffsetProps> = () => {
             setTrafficLightOffset({ x: data.offset_x || 0, y: data.offset_y || 0 });
           }
         } catch (e) {
-          console.warn('获取红黄绿按钮偏移量失败:', e);
+          // console.warn('获取红黄绿按钮偏移量失败:', e);
         }
       })
       .catch((err: any) => {
-        console.warn('调用 get_traffic_light_offset 失败:', err);
+        // console.warn('调用 get_traffic_light_offset 失败:', err);
       })
       .finally(() => setLoadingTrafficLight(false));
   }, []);

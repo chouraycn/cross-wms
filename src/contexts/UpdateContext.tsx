@@ -60,7 +60,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
           const ready = await waitForApi();
           if (!ready) {
-            console.warn('[UpdateContext] pywebview API 未在超时内就绪，使用 Vite 注入版本号');
+            // console.warn('[UpdateContext] pywebview API 未在超时内就绪，使用 Vite 注入版本号');
             if (!cancelled) versionInitDone.current = true;
             return;
           }
@@ -74,7 +74,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             }
           }
         } catch (e) {
-          console.warn('[UpdateContext] 获取 pywebview 版本号失败，使用 Vite 注入版本:', e);
+          // console.warn('[UpdateContext] 获取 pywebview 版本号失败，使用 Vite 注入版本:', e);
         }
       }
       if (!cancelled) versionInitDone.current = true;
@@ -136,15 +136,15 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       autoCheckTimer.current = setTimeout(async () => {
         if (cancelled) return;
         try {
-          console.log('[UpdateContext] 开始自动检查更新，版本:', currentVersion);
+          // console.log('[UpdateContext] 开始自动检查更新，版本:', currentVersion);
           const status = await checkForUpdatesService(currentVersion);
-          console.log('[UpdateContext] 更新检查结果:', status);
+          // console.log('[UpdateContext] 更新检查结果:', status);
           if (status.hasUpdate && status.releaseInfo) {
             setUpdateStatus(status);
             setShowUpdateNotification(true);
           }
         } catch (error) {
-          console.error('[UpdateContext] 自动更新检查失败:', error);
+          // console.error('[UpdateContext] 自动更新检查失败:', error);
         }
       }, 2000);
     }

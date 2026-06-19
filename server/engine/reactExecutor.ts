@@ -56,14 +56,13 @@ import { WorkingMemory } from './workingMemory.js';
 import { fewShotTemplates } from './fewShotTemplates.js';
 import { ObservationCompressor, needsCompression } from './observationCompressor.js';
 import { CircuitBreaker } from './circuitBreaker.js';
-import { searchMemory, writeMemory, type VecSearchResult } from './vecMemoryStore.js';
+import { writeMemory, extractKeywords } from './vecMemoryStore.js';
 import { OutputValidator } from './outputValidator.js';
 import { ToolPermissionSandbox, type PermissionContext, type PermissionDecision } from './toolPermissionSandbox.js';
-import { PlanDoCheck, type PDCACheckResult } from './planDoCheck.js';
-import { ABTestFramework, type ExperimentVariant, type ExperimentResult } from './abTestFramework.js';
 import { ToolDependencyGraph, type ToolCallNode, type TopologyLayer } from './toolDependencyGraph.js';
 import { SemanticCompressor, type CompressionResult } from './semanticCompressor.js';
 import { MultilingualIntent, type IntentResult } from './multilingualIntent.js';
+import { logger } from '../logger.js';
 
 /** v2.5.0: 检查工具是否在已授权集合中（支持通配符前缀匹配，如 mcp__server__*） */
 function isToolInApprovedSet(toolName: string, approvedSet: Set<string>): boolean {
@@ -181,8 +180,6 @@ export class ReActExecutor {
   // v8.6: 向量记忆由 vecMemoryStore 单例管理，无需实例属性
   private _outputValidator?: OutputValidator;
   private _permissionSandbox?: ToolPermissionSandbox;
-  private _planDoCheck?: PlanDoCheck;
-  private _abTestFramework?: ABTestFramework;
   private _dependencyGraph?: ToolDependencyGraph;
   private _semanticCompressor?: SemanticCompressor;
   private _multilingualIntent?: MultilingualIntent;
@@ -222,12 +219,6 @@ export class ReActExecutor {
   }
   private get permissionSandbox(): ToolPermissionSandbox {
     return this._permissionSandbox ?? (this._permissionSandbox = new ToolPermissionSandbox());
-  }
-  private get planDoCheck(): PlanDoCheck {
-    return this._planDoCheck ?? (this._planDoCheck = new PlanDoCheck());
-  }
-  private get abTestFramework(): ABTestFramework {
-    return this._abTestFramework ?? (this._abTestFramework = new ABTestFramework());
   }
   private get dependencyGraph(): ToolDependencyGraph {
     return this._dependencyGraph ?? (this._dependencyGraph = new ToolDependencyGraph());
@@ -299,16 +290,9 @@ export class ReActExecutor {
     this._circuitBreaker?.reset();
     this._workingMemory?.reset();
     this._outputValidator?.reset();
-    this._planDoCheck?.reset();
 
     // v6.0: P1-1 会话 ID（用于长期记忆写入）
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-
-    // v6.0: P2-3 A/B 测试（选择实验变体）
-    const experimentId = 'react_v6_optimization';
-    const selectedVariant = this.abTestFramework.selectVariant(experimentId, sessionId);
-    const variantName = selectedVariant?.name ?? 'default';
-    const executionStartTime = Date.now();
 
     // 获取工具定义（内置 + 插件 + MCP）
     const builtinTools = getToolDefinitions();
@@ -336,7 +320,7 @@ export class ReActExecutor {
         const injected = fewShotTemplates.injectTemplate(currentMessages, matchedTemplate);
         currentMessages.length = 0;
         currentMessages.push(...injected as typeof currentMessages);
-        console.log(`[ReActExecutor] FewShot 模板注入: ${matchedTemplate.name}`);
+        logger.debug(`[ReActExecutor] FewShot 模板注入: ${matchedTemplate.name}`);
       }
     }
 
@@ -356,36 +340,7 @@ export class ReActExecutor {
     // v6.0: P1-3 自适应预算（按复杂度等级动态调整 maxTurns）
     this.budgetManager.setAdaptiveMaxTurns(complexityAssessment.level, onSSEEvent);
 
-    // v6.0→v8.6: 语义记忆检索（sqlite-vec 向量搜索 + 关键词降级）
-    // 性能优化：try-catch 包裹，记忆检索失败不阻塞主流程
-    try {
-      const memoryResults: VecSearchResult[] = await searchMemory(userMessage ?? '', 'default', 5, 0.35);
-      if (memoryResults.length > 0) {
-        const totalChars = memoryResults.reduce((sum, r) => sum + r.entry.content.length, 0);
-        const totalTokens = Math.ceil(totalChars / 1.5);
-        if (totalTokens <= 500) {
-          const memoryContext = memoryResults
-            .map(r => `[${r.entry.category}] ${r.entry.content} (相似度: ${r.similarity.toFixed(2)})`)
-            .join('\n');
-          currentMessages.push({
-            role: 'system',
-            content: `[历史记忆]\n${memoryContext}`,
-          } as typeof currentMessages[number]);
-
-          if (onSSEEvent) {
-            onSSEEvent({
-              type: 'memory_retrieved',
-              count: memoryResults.length,
-              summaries: memoryResults.map(r => r.entry.content.substring(0, 50)),
-            });
-          }
-
-          console.log(`[ReActExecutor] 语义记忆注入: ${memoryResults.length} 条, 估算 ${totalTokens} tokens`);
-        }
-      }
-    } catch (memErr) {
-      console.warn('[ReActExecutor] 语义记忆检索失败（已跳过）:', memErr instanceof Error ? memErr.message : String(memErr));
-    }
+    // v8.6: 语义记忆检索已提升到 chat.ts 统一入口，所有策略共享，此处不再重复
 
     // ============== P1-1: 简单任务（v6.0: P0-3 支持 handoff） ==============
     // 如果复杂度为 simple，先尝试快速路径；置信度不足时 handoff 到主循环
@@ -478,12 +433,12 @@ export class ReActExecutor {
             } as typeof currentMessages[number]);
           }
 
-          console.log(`[ReActExecutor] 简单路径 handoff: confidenceScore=${simpleDecision.confidenceScore}，升级为 moderate`);
+          logger.debug(`[ReActExecutor] 简单路径 handoff: confidenceScore=${simpleDecision.confidenceScore}，升级为 moderate`);
         } else {
           // 置信度足够 → 生成最终响应
           // 性能优化：如果首次调用已产生足够的文本内容（>20字符），跳过第二次 LLM 调用
           if (simpleContent && simpleContent.trim().length > 20) {
-            console.log(`[ReActExecutor] 简单路径跳过二次 LLM 调用：首次响应已含 ${simpleContent.length} 字符`);
+            logger.debug(`[ReActExecutor] 简单路径跳过二次 LLM 调用：首次响应已含 ${simpleContent.length} 字符`);
           } else {
             this.emitPhase(onSSEEvent, 'reasoning', 1, 1, '简单任务：生成最终响应');
             const finalResponse = await this.callModelSimple(currentMessages, {
@@ -532,7 +487,7 @@ export class ReActExecutor {
           try {
             plan = await this.planner.generatePlan(modelConfig, messages, signal) ?? undefined;
           } catch (planErr) {
-            console.error('[ReActExecutor] 规划失败（已忽略）:', planErr instanceof Error ? planErr.message : String(planErr));
+            logger.error('[ReActExecutor] 规划失败（已忽略）:', planErr instanceof Error ? planErr.message : String(planErr));
           }
 
           // 推送执行计划
@@ -554,18 +509,6 @@ export class ReActExecutor {
               },
             });
 
-            // v6.0: 为计划中的每个步骤发送子会话创建通知
-            if (plan.steps.length > 1) {
-              for (const step of plan.steps) {
-                onSSEEvent({
-                  type: 'sub_session_suggested',
-                  parentSessionId: sessionId,
-                  stepIndex: step.step,
-                  title: `步骤${step.step}: ${step.description}`,
-                  toolName: step.toolName,
-                });
-              }
-            }
           }
         }
       }
@@ -605,8 +548,9 @@ export class ReActExecutor {
       // ============== v5.0: Context truncation with working memory ==============
       // v1.5.116: 优先智能压缩（LLM 摘要），失败则降级为简单截断
       const workingMemoryMessages = this.workingMemory.getContextMessages();
-      const ctxWindow = (modelConfig as Record<string, unknown>).contextWindow as number || 128000;
-      const ctxMaxTokens = modelConfig.maxTokens || 8192;
+      const ctxWindow = (modelConfig as unknown as Record<string, unknown>).contextWindow as number || 128000;
+      // v1.5.131: 截断用 maxTokens 上限 8192，避免 384K 浪费输入空间
+      const ctxMaxTokens = Math.min(modelConfig.maxTokens || 8192, 8192);
       const turnTruncated = await compressContextWithSummary(
         currentMessages,
         ctxWindow,
@@ -831,7 +775,7 @@ export class ReActExecutor {
           };
 
           if (onSSEEvent) {
-            onSSEEvent(observerEvent as Record<string, unknown>);
+            onSSEEvent(observerEvent as unknown as Record<string, unknown>);
           }
         }
       }
@@ -852,57 +796,22 @@ export class ReActExecutor {
               content: reflectionMsg,
             } as typeof currentMessages[number]);
 
-            console.log(`[ReActExecutor] 工具 ${obs.toolCall.name} 将重试（第 ${retryIndex + 1}/${obs.assessment.maxRetries} 次）`);
+            logger.debug(`[ReActExecutor] 工具 ${obs.toolCall.name} 将重试（第 ${retryIndex + 1}/${obs.assessment.maxRetries} 次）`);
           }
         }
-      }
-
-      // v6.0: P2-2 PDCA Check（每轮反思后评估计划进度）
-      const pdcaResult = this.planDoCheck.check(plan, decision.confidenceScore);
-      if (onSSEEvent) {
-        onSSEEvent({
-          type: 'pdca_check',
-          decision: pdcaResult.decision,
-          reason: pdcaResult.reason,
-          progressPercent: pdcaResult.progressPercent,
-          confidence: pdcaResult.confidence,
-        });
-      }
-
-      // PDCA 决策处理
-      if (pdcaResult.decision === 'abort') {
-        this.state.shouldTerminate = true;
-        this.state.terminateReason = `PDCA 中止: ${pdcaResult.reason}`;
-        console.warn(`[ReActExecutor] PDCA 中止: ${pdcaResult.reason}`);
-      } else if (pdcaResult.decision === 'adjust' && plan) {
-        // 标记失败步骤为 skipped，调整后续步骤
-        for (const step of plan.steps) {
-          if (step.status === 'failed') {
-            step.status = 'skipped';
-          }
-        }
-        if (pdcaResult.adjustmentSuggestion) {
-          currentMessages.push({
-            role: 'system',
-            content: `[PDCA 调整建议] ${pdcaResult.adjustmentSuggestion}`,
-          } as typeof currentMessages[number]);
-        }
-        console.log(`[ReActExecutor] PDCA 调整: ${pdcaResult.reason}`);
       }
 
       // ============== v5.0: Loop detection ==============
       const loopResult = this.loopDetector.detectLoop(observations, turn);
       if (loopResult.isLoop) {
         const strategy = this.loopDetector.getEscalationStrategy(loopResult);
-        console.warn(`[ReActExecutor] 检测到死循环: ${strategy.reason}`);
+        logger.warn(`[ReActExecutor] 检测到死循环: ${strategy.reason}`);
 
         if (strategy.action === 'replan' && this.planner && plan) {
-          const newPlan = await this.planner.replan(
-            modelConfig,
-            currentMessages,
+          // v8.5: replan 已移除，改用 adjustPlan
+          const adjustedPlan = this.planner.adjustPlan(
             plan,
-            strategy.reason,
-            signal,
+            { failedStepIndex: -1, error: strategy.reason },
           );
 
           // v5.0: 推送 replan_triggered SSE 事件
@@ -911,12 +820,12 @@ export class ReActExecutor {
               type: 'replan_triggered',
               reason: strategy.reason,
               oldPlanId: plan.id,
-              newPlanId: newPlan?.id ?? '',
+              newPlanId: adjustedPlan?.id ?? '',
             });
           }
 
-          if (newPlan) {
-            plan = newPlan;
+          if (adjustedPlan) {
+            plan = adjustedPlan;
           }
         }
 
@@ -939,14 +848,6 @@ export class ReActExecutor {
         },
         timestamp: Date.now(),
       });
-
-      // ============== v5.0: Planner detectDrift ==============
-      if (this.planner) {
-        const driftResult = this.planner.detectDrift(currentMessages, plan);
-        if (driftResult.hasDrifted) {
-          console.warn(`[ReActExecutor] 检测到执行偏离: ${driftResult.reason}`);
-        }
-      }
 
       // ============== v5.0: Early stop check ==============
       if (decision.confidenceScore >= 7 && decision.decision === 'early_stop') {
@@ -997,7 +898,7 @@ export class ReActExecutor {
                 alternativeTool: record?.alternativeTool,
               });
             }
-            console.warn(`[ReActExecutor] 工具 ${obs.toolCall.name} 已熔断，后续轮次将跳过`);
+            logger.warn(`[ReActExecutor] 工具 ${obs.toolCall.name} 已熔断，后续轮次将跳过`);
           }
         }
       }
@@ -1067,8 +968,8 @@ export class ReActExecutor {
             sessionId,
             category: decision.confidenceScore < 5 ? 'insight' : 'summary',
             content: insight,
-            keywords: (userMessage ?? '').substring(0, 50).toLowerCase(),
-          }).catch(e => console.warn('[ReActExecutor] 向量记忆写入失败:', e));
+            keywords: extractKeywords(`${userMessage ?? ''} ${insight}`),
+          }).catch(e => logger.warn('[ReActExecutor] 向量记忆写入失败:', e));
         }
       }
 
@@ -1147,25 +1048,6 @@ export class ReActExecutor {
 
     // v6.0: P2-3 更新 earlyTermination 状态
     this.state.earlyTermination = this.state.shouldTerminate && this.state.terminateReason !== 'task_completed';
-
-    // v6.0: P2-3 A/B 测试（记录实验结果）
-    this.abTestFramework.recordResult({
-      experimentId,
-      variantName,
-      sessionId,
-      metrics: {
-        totalTurns: this.state.turn,
-        toolCallCount: executedToolCalls.length,
-        toolSuccessRate: executedToolCalls.length > 0
-          ? executedToolCalls.filter(tc => !tc.result.includes('"error"')).length / executedToolCalls.length
-          : 0,
-        finalConfidence: this.state.lastConfidenceScore,
-        executionTimeMs: Date.now() - executionStartTime,
-        earlyTermination: this.state.earlyTermination,
-        complexityLevel: complexityAssessment.level,
-      },
-      timestamp: Date.now(),
-    });
 
     return {
       content: finalContent,
@@ -1544,7 +1426,7 @@ export class ReActExecutor {
         observations.push(observation);
       } catch (observerErr) {
         // Observer 内部错误容忍：视为 success
-        console.error('[ReActExecutor] Observer 错误（已忽略）:', observerErr instanceof Error ? observerErr.message : String(observerErr));
+        logger.error('[ReActExecutor] Observer 错误（已忽略）:', observerErr instanceof Error ? observerErr.message : String(observerErr));
         let toolArgs: Record<string, unknown> = {};
         try {
           toolArgs = JSON.parse(toolCall.function.arguments);
@@ -1734,7 +1616,7 @@ export class ReActExecutor {
       return insight && insight.length > 0 ? insight : null;
     } catch (err) {
       // LLM 反思失败时静默降级，不阻塞主循环
-      console.warn('[ReActExecutor] LLM 反思调用失败，降级为规则引擎:', err instanceof Error ? err.message : String(err));
+      logger.warn('[ReActExecutor] LLM 反思调用失败，降级为规则引擎:', err instanceof Error ? err.message : String(err));
       return null;
     }
   }
@@ -1808,7 +1690,7 @@ export class ReActExecutor {
       description,
     };
 
-    onSSEEvent(event as Record<string, unknown>);
+    onSSEEvent(event as unknown as Record<string, unknown>);
   }
 
   /**
@@ -1827,8 +1709,5 @@ export class ReActExecutor {
   }
 }
 
-// ===================== P3 接口预留 =====================
-// - 长期记忆向量检索：sqlite-vss 替代关键词匹配
-// - 结构化输出深度校验：更多 WMS schema + 自定义 schema
+// ===================== 接口预留 =====================
 // - 工具权限沙箱动态规则热加载
-// - PDCA 多轮策略自动调优

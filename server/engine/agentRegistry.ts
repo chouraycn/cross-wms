@@ -16,6 +16,7 @@ import {
   type AgentCapability,
   BUILTIN_AGENT_TEMPLATES,
 } from '../../shared/types/agent.js';
+import { logger } from '../logger.js';
 
 // ===================== 常量 =====================
 
@@ -76,7 +77,7 @@ class AgentRegistry {
     this.loadCustomAgents();
 
     this.initialized = true;
-    console.log(`[AgentRegistry] 初始化完成，共 ${this.agents.size} 个 Agent`);
+    logger.debug(`[AgentRegistry] 初始化完成，共 ${this.agents.size} 个 Agent`);
   }
 
   // ===================== 注册 / 注销 =====================
@@ -102,7 +103,7 @@ class AgentRegistry {
     this.saveAgentFile(agent.id, MEMORY_FILE, agent.memory);
 
     this.agents.set(agent.id, agent);
-    console.log(`[AgentRegistry] 注册 Agent: ${agent.id} (${agent.role})`);
+    logger.debug(`[AgentRegistry] 注册 Agent: ${agent.id} (${agent.role})`);
     return agent;
   }
 
@@ -115,13 +116,13 @@ class AgentRegistry {
 
     // 内置 Agent 不允许注销
     if (BUILTIN_AGENT_TEMPLATES.some(t => t.id === agentId)) {
-      console.warn(`[AgentRegistry] 内置 Agent ${agentId} 不允许注销`);
+      logger.warn(`[AgentRegistry] 内置 Agent ${agentId} 不允许注销`);
       return false;
     }
 
     // Agent 正忙时不允许注销
     if (agent.status === 'busy') {
-      console.warn(`[AgentRegistry] Agent ${agentId} 正忙，不允许注销`);
+      logger.warn(`[AgentRegistry] Agent ${agentId} 正忙，不允许注销`);
       return false;
     }
 
@@ -135,7 +136,7 @@ class AgentRegistry {
       // 忽略清理失败
     }
 
-    console.log(`[AgentRegistry] 注销 Agent: ${agentId}`);
+    logger.debug(`[AgentRegistry] 注销 Agent: ${agentId}`);
     return true;
   }
 
@@ -331,7 +332,7 @@ class AgentRegistry {
       fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(path.join(dir, fileName), content, 'utf-8');
     } catch (err) {
-      console.error(`[AgentRegistry] 保存 ${agentId}/${fileName} 失败:`, err);
+      logger.error(`[AgentRegistry] 保存 ${agentId}/${fileName} 失败:`, err);
     }
   }
 
@@ -371,13 +372,13 @@ class AgentRegistry {
           if (memory) profile.memory = memory;
 
           this.agents.set(profile.id, profile);
-          console.log(`[AgentRegistry] 加载自定义 Agent: ${profile.id} (${profile.role})`);
+          logger.debug(`[AgentRegistry] 加载自定义 Agent: ${profile.id} (${profile.role})`);
         } catch (err) {
-          console.error(`[AgentRegistry] 加载自定义 Agent ${dir.name} 失败:`, err);
+          logger.error(`[AgentRegistry] 加载自定义 Agent ${dir.name} 失败:`, err);
         }
       }
     } catch (err) {
-      console.error('[AgentRegistry] 扫描自定义 Agent 失败:', err);
+      logger.error('[AgentRegistry] 扫描自定义 Agent 失败:', err);
     }
   }
 }

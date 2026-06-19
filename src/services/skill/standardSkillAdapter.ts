@@ -197,7 +197,7 @@ export async function getInstalledSkills(): Promise<string[]> {
     // 提取技能名称列表
     return skills.map((skill) => skill.name);
   } catch (error) {
-    console.error('Failed to get installed skills:', error);
+    // console.error('Failed to get installed skills:', error);
     // 返回空数组，让调用者处理
     return [];
   }
@@ -243,7 +243,7 @@ export async function installStandardSkill(
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error('Failed to install standard skill:', error);
+    // console.error('Failed to install standard skill:', error);
     return {
       success: false,
       error: `安装失败: ${message}`,

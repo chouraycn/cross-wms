@@ -1,3 +1,5 @@
+import { logger } from '../logger.js';
+
 /**
  * ToolDependencyGraph — 工具依赖图 + 拓扑排序
  *
@@ -215,7 +217,7 @@ export class ToolDependencyGraph {
 
     // 循环依赖检测
     if (processedCount !== this.nodes.size) {
-      console.warn('[ToolDependencyGraph] 检测到循环依赖，降级为全串行执行');
+      logger.warn('[ToolDependencyGraph] 检测到循环依赖，降级为全串行执行');
       // 降级：所有节点放一层，串行执行
       return [{
         layerIndex: 0,
