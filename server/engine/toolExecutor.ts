@@ -14,7 +14,7 @@
 import { callAIModelStream, type ModelCallConfig, type ToolCall, type AIResponse, type MessageContent, type OnRateLimitCallback } from '../aiClient.js';
 import { getToolDefinitions, executeToolCall } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
-import { truncateContextForModel } from './contextTruncate.js';
+import { truncateContextForModel, sanitizeToolMessages } from './contextTruncate.js';
 import { compressContextWithSummary } from './contextCompress.js';
 import { mcpClientManager } from './mcpClientManager.js';
 import { isMcpToolName, getMcpServerPrefix } from './mcpTypes.js';
@@ -251,10 +251,14 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       currentMessages.push(...turnTruncated.messages as any[]);
     }
 
+    // v1.5.187: 调 AI 前硬校验 tool_calls/tool 消息配对
+    // 防止截断/压缩后配对丢失导致 DeepSeek 400 错误
+    const sanitizedForApi = sanitizeToolMessages(currentMessages as any[]) as any[];
+
     // 调用 AI，传入 tools
     const response = await callAIModelStream(
       modelConfig,
-      currentMessages,
+      sanitizedForApi,
       (text) => {
         if (onChunk) onChunk(text);
         finalContent += text;
