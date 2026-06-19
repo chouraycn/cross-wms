@@ -1,7 +1,7 @@
 {
   "name": "cdf-know-clow",
   "private": true,
-  "version": "1.5.132",
+  "version": "1.5.135",
   "type": "module",
   "scripts": {
     "dev:server": "tsx watch --tsconfig server/tsconfig.json server/index.ts",
@@ -21,7 +21,6 @@
     "test:watch": "vitest",
     "lint": "eslint src/ server/ --ext .ts,.tsx",
     "lint:fix": "eslint src/ server/ --ext .ts,.tsx --fix",
-    "prepare": "husky",
     "prepare": "husky"
   },
   "dependencies": {
