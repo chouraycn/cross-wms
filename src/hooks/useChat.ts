@@ -388,6 +388,13 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       let visibilityHandler: ((e: Event) => void) | null = null;
       let focusHandler: (() => void) | null = null;
       let pageshowHandler: ((e: PageTransitionEvent) => void) | null = null;
+      let renderCheckTimer: ReturnType<typeof setInterval> | null = null;
+      const stopRenderCheck = () => {
+        if (renderCheckTimer) {
+          clearInterval(renderCheckTimer);
+          renderCheckTimer = null;
+        }
+      };
       const removeAllHandlers = () => {
         if (visibilityHandler) {
           try { document.removeEventListener('visibilitychange', visibilityHandler); } catch {}
@@ -401,6 +408,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           try { window.removeEventListener('pageshow', pageshowHandler); } catch {}
           pageshowHandler = null;
         }
+        stopRenderCheck();
       };
 
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -491,7 +499,23 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
           // v1.5.185: visibilitychange 监听 — WKWebView 后台暂停 rAF，
           // 页面重新可见时立即 flush，避免"一直思考中"卡死
-          // v1.5.189: 补充 focus/pageshow 监听 — 覆盖更多"应用切回"场景
+          // v1.5.190: 补充 focus/pageshow 监听 — 覆盖更多"应用切回"场景
+          // v1.5.190: 周期性渲染检查（兜底）— 每 2 秒强制检查一次，防止所有事件都未触发
+          let renderCheckTimer: ReturnType<typeof setInterval> | null = null;
+          const startRenderCheck = () => {
+            if (renderCheckTimer) return;
+            renderCheckTimer = setInterval(() => {
+              if (dirty || pendingContent.length > 0) {
+                try { flushRender(); } catch {}
+              }
+            }, 2000);
+          };
+          const stopRenderCheck = () => {
+            if (renderCheckTimer) {
+              clearInterval(renderCheckTimer);
+              renderCheckTimer = null;
+            }
+          };
           removeAllHandlers();
           visibilityHandler = () => {
             if (document.visibilityState === 'visible') {
@@ -502,14 +526,14 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             document.addEventListener('visibilitychange', visibilityHandler);
           }
 
-          // v1.5.189: focus — 切换应用后切回 CrossWMS 时触发
+          // v1.5.190: focus — 切换应用后切回 CrossWMS 时触发
           if (typeof window !== 'undefined') {
             focusHandler = () => {
               try { flushRender(); } catch {}
             };
             window.addEventListener('focus', focusHandler);
 
-            // v1.5.189: pageshow — 页面从 bfcache 恢复时触发
+            // v1.5.190: pageshow — 页面从 bfcache 恢复时触发
             pageshowHandler = (e: PageTransitionEvent) => {
               if (e.persisted) {
                 try { flushRender(); } catch {}
@@ -517,6 +541,9 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             };
             window.addEventListener('pageshow', pageshowHandler);
           }
+
+          // 启动周期性渲染检查（兜底）
+          startRenderCheck();
 
           // v1.8.0: 使用 AbortController signal 支持用户中断
           const response = await fetch(`${CHAT_API_URL}?_t=${Date.now()}`, {
