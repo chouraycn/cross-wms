@@ -1692,7 +1692,7 @@ def main():
             resizable=True,
             text_select=True,
             js_api=api,
-            frameless=False,  # 保留系统标题栏和红黄绿按钮
+            frameless=True,  # 无系统标题栏，红黄绿按钮由 Cocoa API 偏移
             easy_drag=False,  # v1.5.73: 关闭全局拖拽，仅通过 CSS WebkitAppRegion:drag 拖拽条移动窗口，释放内容区文本选择
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
