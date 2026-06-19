@@ -27,8 +27,7 @@ import webview
 
 # ===================== Cocoa 支持（macOS 红黄绿按钮控制）=====================
 try:
-    from Cocoa import NSApp, NSWindowStyleMaskFullSizeContentView, NSWindowTitleHidden
-    from Foundation import dispatch_async, dispatch_get_main_queue
+    from Cocoa import NSApp
     COCOA_AVAILABLE = True
 except ImportError:
     COCOA_AVAILABLE = False
@@ -118,17 +117,20 @@ def apply_traffic_light_offset(window, offset_x: int, offset_y: int):
             print(f"[DEBUG] 检查标准按钮失败: {e}")
         
         # 通过 NSApp.windows() 查找我们的窗口
+        # 策略：查找有标准按钮的可见窗口（不依赖标题匹配）
         target_window = None
         for w in NSApp.windows():
             try:
-                if w.isVisible() and w.title() == APP_NAME:
-                    target_window = w
-                    break
+                if w.isVisible():
+                    # 检查是否有标准按钮（红黄绿按钮）
+                    btn = w.standardWindowButton_(0)  # NSWindowCloseButton
+                    if btn is not None:
+                        target_window = w
+                        break
             except Exception:
                 continue
 
         if target_window is None:
-            print("[TrafficLight] 未找到匹配的 NSWindow")
             return False
 
         # 按钮类型常量
@@ -1682,7 +1684,7 @@ def main():
         # 3. 创建 pywebview 窗口，通过 HTTP 加载前端
         api = Api()
         window = webview.create_window(
-            title="",  # 标题设为空，避免标题栏显示软件名称
+            title=APP_NAME,
             url=frontend_url,       # HTTP 协议（127.0.0.1:9988），彻底解决 WKWebView ES Module 问题
             width=WIDTH,
             height=HEIGHT,
@@ -1690,57 +1692,11 @@ def main():
             resizable=True,
             text_select=True,
             js_api=api,
-            frameless=False,  # False = 保留系统标题栏和红黄绿按钮
+            frameless=True,  # 无系统标题栏，红黄绿按钮由 Cocoa API 偏移
             easy_drag=False,  # v1.5.73: 关闭全局拖拽，仅通过 CSS WebkitAppRegion:drag 拖拽条移动窗口，释放内容区文本选择
         )
         # 将窗口引用传给 Api，用于窗口控制（关闭/最小化/全屏）
         api.set_window(window)
-
-        # 配置标题栏（在主线程中执行，避免闪退）
-        if COCOA_AVAILABLE:
-            def _configure_titlebar_main_thread():
-                """在主线程中配置标题栏（透明 + 无标题）"""
-                try:
-                    for w in NSApp.windows():
-                        try:
-                            if w.isVisible():
-                                # 设置窗口样式：允许内容延伸至标题栏区域
-                                w.setStyleMask_(NSWindowStyleMaskFullSizeContentView)
-                                # 隐藏标题
-                                w.setTitleVisibility_(NSWindowTitleHidden)
-                                # 使标题栏透明
-                                w.setTitlebarAppearsTransparent_(True)
-                                print("[Titlebar] ✅ 标题栏已配置：透明 + 无标题 + 内容可延伸至标题栏")
-                                break
-                        except Exception:
-                            continue
-                except Exception as e:
-                    print(f"[Titlebar] ⚠️ 配置标题栏失败: {e}")
-            
-            # 在后台线程中等待窗口初始化，然后通过 dispatch_async 在主线程中执行
-            def _schedule_titlebar_config():
-                time.sleep(0.5)  # 等待窗口初始化
-                try:
-                    from Foundation import dispatch_async, dispatch_get_main_queue
-                    # 在主线程中执行配置
-                    dispatch_async(dispatch_get_main_queue(), _configure_titlebar_main_thread)
-                    print("[Titlebar] ✅ 已调度标题栏配置（主线程）")
-                except Exception as e:
-                    print(f"[Titlebar] ⚠️ 调度标题栏配置失败: {e}")
-            
-            threading.Thread(target=_schedule_titlebar_config, daemon=True).start()
-            log("[Main] 已启动标题栏配置调度线程")
-
-        # 调试：输出 Cocoa 可用性
-        print(f"[DEBUG] COCOA_AVAILABLE = {COCOA_AVAILABLE}")
-        print(f"[DEBUG] frameless = False (标准窗口，100% 保留红黄绿按钮)")
-        if COCOA_AVAILABLE:
-            try:
-                import Cocoa
-                print(f"[DEBUG] Cocoa module imported successfully")
-                print(f"[DEBUG] NSWindowStyleMaskFullSizeContentView = {Cocoa.NSWindowStyleMaskFullSizeContentView}")
-            except Exception as e:
-                print(f"[DEBUG] Cocoa import failed: {e}")
 
         # 尽早应用红黄绿按钮偏移（在 splash 动画 6.3s 期间完成，避免跳转到主页时抖动）
         # NSWindow 需要短暂时间初始化标准按钮，使用重试线程在 1.5s 内完成
