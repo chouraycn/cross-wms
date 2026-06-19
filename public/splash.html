@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CDF Know Clow - 启动中</title>
+    <title>CDF Know Claw - 启动中</title>
     <style>
         * {
             margin: 0;
@@ -29,54 +29,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            animation: splashFadeOut 0.5s ease-in 2.8s forwards;
         }
 
-        /* 背景微光 — transition 替代 @keyframes */
-        .bg-gradient {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at center, rgba(0,0,0,0.03) 0%, transparent 70%);
-            opacity: 0;
-            transition: opacity 2s ease-in-out 0.8s;
-        }
-        .bg-gradient.visible {
-            opacity: 0.5;
-        }
-
-        /* 光晕 — transition 替代 @keyframes */
-        .glow-ring {
-            position: absolute;
-            width: 112px;
-            height: 112px;
-            border-radius: 50%;
-            border: 1px solid rgba(0, 0, 0, 0);
-            opacity: 0;
-            transform: scale(0.8);
-            transition: transform 1.5s ease-in-out 1.8s, border-color 1.5s ease-in-out 1.8s, opacity 1.5s ease-in-out 1.8s;
-        }
-        .glow-ring.visible {
-            transform: scale(1.3);
-            border-color: rgba(0, 0, 0, 0);
-            opacity: 0;
-        }
-
-        /* SVG 容器 — transition 替代 @keyframes */
+        /* SVG 容器 — 缩放弹入 */
         .logo-svg {
             width: 96px;
             height: 96px;
-            opacity: 0;
             transform: scale(0);
-            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s, opacity 0.6s ease-out 0.2s;
-        }
-        .logo-svg.visible {
-            transform: scale(1);
-            opacity: 1;
+            animation: logoScaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards;
         }
 
-        /* 主路径描边 — 用 transition + stroke-dashoffset 初始值 */
+        /* 主路径描边动画 */
         .logo-svg .path-main {
             fill: none;
             stroke: #1a1a1a;
@@ -85,25 +49,27 @@
             stroke-linejoin: round;
             stroke-dasharray: 600;
             stroke-dashoffset: 600;
-            transition: stroke-dashoffset 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.4s, opacity 0.05s ease-out 0.4s;
-            opacity: 0;
-        }
-        .logo-svg.visible .path-main {
-            stroke-dashoffset: 0;
-            opacity: 1;
+            animation: drawPath 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.4s forwards;
         }
 
-        /* 填充渐入 — transition 替代 @keyframes */
+        /* 填充渐入 */
         .logo-svg .path-fill {
             fill: #1a1a1a;
             opacity: 0;
-            transition: opacity 0.4s ease-out 1.4s;
-        }
-        .logo-svg.visible .path-fill {
-            opacity: 1;
+            animation: fillIn 0.4s ease-out 1.4s forwards;
         }
 
-        /* 品牌文字 — transition 替代 @keyframes */
+        /* 光晕效果 */
+        .glow-ring {
+            position: absolute;
+            width: 112px;
+            height: 112px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0);
+            animation: glowPulse 1.5s ease-in-out 1.8s forwards;
+        }
+
+        /* 品牌文字 */
         .brand-text {
             position: absolute;
             bottom: -40px;
@@ -113,28 +79,113 @@
             letter-spacing: 1.5px;
             white-space: nowrap;
             opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.7s ease-out 2.0s, transform 0.7s ease-out 2.0s;
-        }
-        .brand-text.visible {
-            opacity: 0.6;
-            transform: translateY(0);
+            animation: textFadeIn 0.7s ease-out 2.0s forwards;
         }
 
-        /* 淡出 — transition 替代 @keyframes splashFadeOut */
-        .splash-container.fade-out {
+        /* 背景微光 */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(0,0,0,0.03) 0%, transparent 70%);
             opacity: 0;
-            transform: scale(0.95);
-            transition: opacity 0.5s ease-in 0s, transform 0.5s ease-in 0s;
+            animation: bgGlow 2s ease-in-out 0.8s forwards;
+        }
+
+        /* ===== Keyframes ===== */
+
+        @keyframes logoScaleIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            60% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes drawPath {
+            0% {
+                stroke-dashoffset: 600;
+                opacity: 0;
+            }
+            5% {
+                opacity: 1;
+            }
+            100% {
+                stroke-dashoffset: 0;
+                opacity: 1;
+            }
+        }
+
+        @keyframes fillIn {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes glowPulse {
+            0% {
+                transform: scale(0.8);
+                border-color: rgba(0, 0, 0, 0);
+                opacity: 0;
+            }
+            50% {
+                border-color: rgba(0, 0, 0, 0.15);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.3);
+                border-color: rgba(0, 0, 0, 0);
+                opacity: 0;
+            }
+        }
+
+        @keyframes textFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            100% {
+                opacity: 0.6;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes splashFadeOut {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+        }
+
+        @keyframes bgGlow {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
         }
     </style>
 </head>
 <body>
-    <div class="bg-gradient" id="bgGradient"></div>
+    <div class="bg-gradient"></div>
     <div class="splash-container" id="splashContainer">
-        <div class="glow-ring" id="glowRing"></div>
+        <div class="glow-ring"></div>
 
-        <svg class="logo-svg" id="logoSvg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
             <!-- 主路径 - 描边动画层 -->
             <path class="path-main" d="M93.45,36.53l-11.5,16.57,10.03,14.41c2.25-5.4,3.5-11.32,3.5-17.53,0-4.68-.71-9.2-2.02-13.45Z"/>
             <path class="path-main" d="M57.48,88.15c-2.65.57-5.4.88-8.23.88-6.04,0-11.77-1.37-16.88-3.83V18.56c0-2.38,1.47-4.54,3.71-5.34,4.11-1.47,8.55-2.28,13.17-2.28.91,0,1.81.03,2.71.1v44.36c0,2.49,3.21,3.5,4.64,1.45l26.5-38.08c-7.87-8.37-18.87-13.77-31.13-14.32v.03c-.9-.05-1.8-.08-2.71-.08C24.07,4.39,3.66,24.8,3.66,49.99s20.41,45.59,45.59,45.59c1.04,0,2.07-.04,3.09-.11l-.03.04c10.67-.56,20.36-4.8,27.85-11.46l-6.65-9.55c-1.56-2.25-4.89-2.25-6.46-.01l-9.57,13.65Z"/>
@@ -144,53 +195,94 @@
             <path class="path-fill" d="M57.48,88.15c-2.65.57-5.4.88-8.23.88-6.04,0-11.77-1.37-16.88-3.83V18.56c0-2.38,1.47-4.54,3.71-5.34,4.11-1.47,8.55-2.28,13.17-2.28.91,0,1.81.03,2.71.1v44.36c0,2.49,3.21,3.5,4.64,1.45l26.5-38.08c-7.87-8.37-18.87-13.77-31.13-14.32v.03c-.9-.05-1.8-.08-2.71-.08C24.07,4.39,3.66,24.8,3.66,49.99s20.41,45.59,45.59,45.59c1.04,0,2.07-.04,3.09-.11l-.03.04c10.67-.56,20.36-4.8,27.85-11.46l-6.65-9.55c-1.56-2.25-4.89-2.25-6.46-.01l-9.57,13.65Z"/>
         </svg>
 
-        <div class="brand-text" id="brandText">CDF Know Clow</div>
+        <div class="brand-text">CDF Know Claw</div>
     </div>
 
     <script>
-        // ========== 动画控制（用 class toggle 触发 transition）==========
-        var SPLASH_DURATION = 3300;  // 3.3 秒后开始淡出
-        var FADE_DURATION = 500;     // 淡出 0.5 秒
-        var _navigated = false;
+        // ========== 跳转逻辑（最先注册，确保不被其他代码阻塞）==========
+        // 动画完成后自动跳转到主页面
+        // v2.3.1: 总时长从 6.3s 降到 3.3s，动画更快，启动更灵敏
+        var SPLASH_DURATION = 3500; // 3.5 秒（fadeOut 0.5s 在 3.0s 开始，3.5s 完成）
+
+        var MAIN_PAGE = './index.html';
+        var _navigated = false; // 防止重复跳转
 
         function navigateToMain() {
             if (_navigated) return;
             _navigated = true;
             try {
-                window.location.replace('./index.html');
+                window.location.replace(MAIN_PAGE);
             } catch(e) {
-                window.location = './index.html';
+                try {
+                    window.location.href = MAIN_PAGE;
+                } catch(e2) {
+                    window.location = MAIN_PAGE;
+                }
             }
         }
 
-        function startTransitions() {
-            // 依次添加 .visible class，触发 transition 动画
-            document.getElementById('bgGradient').classList.add('visible');
-            document.getElementById('logoSvg').classList.add('visible');
-            // glow-ring 延时添加（CSS transition-delay 已处理）
-            document.getElementById('glowRing').classList.add('visible');
-            document.getElementById('brandText').classList.add('visible');
-        }
+        // 方法 1: setTimeout 兜底（主路径）
+        setTimeout(navigateToMain, SPLASH_DURATION);
 
-        function scheduleFadeOut() {
-            setTimeout(function() {
-                document.getElementById('splashContainer').classList.add('fade-out');
-                // 淡出动画完成后跳转
-                setTimeout(navigateToMain, FADE_DURATION);
-            }, SPLASH_DURATION);
-        }
-
-        // ========== 启动 ==========
-        // DOMContentLoaded 后开始动画
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                startTransitions();
-                scheduleFadeOut();
+        // 方法 2: animationend 事件 — splashFadeOut 动画结束时立即跳转（更精确）
+        var splashContainer = document.getElementById('splashContainer');
+        if (splashContainer) {
+            splashContainer.addEventListener('animationend', function(e) {
+                // 只响应 splashFadeOut 动画
+                if (e.animationName === 'splashFadeOut') {
+                    navigateToMain();
+                }
             });
-        } else {
-            startTransitions();
-            scheduleFadeOut();
         }
+
+        // ========== 预加载主页面资源 ==========
+        // 在 splash 动画进行的同时，后台预加载 index.html 及其依赖
+        (function preloadMainApp() {
+            var preloadedResources = [];
+
+            function prefetch(url, as) {
+                if (preloadedResources.indexOf(url) !== -1) return;
+                preloadedResources.push(url);
+
+                var link = document.createElement('link');
+                link.rel = 'prefetch';
+                link.href = url;
+                if (as) link.as = as;
+                document.head.appendChild(link);
+            }
+
+            // 直接 fetch index.html 解析资源列表（加超时，避免 Python HTTP 服务未就绪时永久挂起）
+            var FETCH_TIMEOUT = 5000; // 5 秒
+            var fetchController = new AbortController();
+            var fetchTimer = setTimeout(function() { fetchController.abort(); }, FETCH_TIMEOUT);
+            try {
+                fetch(MAIN_PAGE, { signal: fetchController.signal })
+                    .then(function(resp) { clearTimeout(fetchTimer); return resp.text(); })
+                    .then(function(html) {
+                        clearTimeout(fetchTimer);
+                        var parser = new DOMParser();
+                        var doc = parser.parseFromString(html, 'text/html');
+
+                        doc.querySelectorAll('script[src]').forEach(function(s) {
+                            prefetch(s.getAttribute('src'), 'script');
+                        });
+                        doc.querySelectorAll('link[rel="stylesheet"]').forEach(function(l) {
+                            prefetch(l.getAttribute('href'), 'style');
+                        });
+                        doc.querySelectorAll('link[rel="modulepreload"]').forEach(function(l) {
+                            prefetch(l.getAttribute('href'), 'script');
+                        });
+
+                        console.log('[Splash] 预加载了 ' + preloadedResources.length + ' 个主页面资源');
+                    })
+                    .catch(function(err) {
+                        console.warn('[Splash] 预加载失败:', err);
+                    });
+            } catch(e) {
+                // DOMParser 等 API 不可用时的静默降级
+                console.warn('[Splash] 预加载不可用，将在动画完成后直接跳转');
+            }
+        })();
     </script>
 </body>
 </html>

@@ -365,9 +365,12 @@ export class ReActExecutor {
         this.emitPhase(onSSEEvent, 'acting', 1, 1, '简单任务：执行工具调用');
 
         // 添加 assistant 消息（含 tool_calls）
+        // v1.5.174: OpenAI 规范 — 有 tool_calls 时 content 必须是 null（不能是 ''）
         currentMessages.push({
           role: 'assistant',
-          content: simpleResponse.content || '',
+          content: simpleResponse.toolCalls && simpleResponse.toolCalls.length > 0
+            ? (simpleResponse.content || null)
+            : (simpleResponse.content || ''),
           reasoning_content: simpleResponse.reasoningContent,
           tool_calls: simpleResponse.toolCalls.map((tc: ToolCall) => ({
             id: tc.id,
@@ -611,9 +614,13 @@ export class ReActExecutor {
       }
 
       // 添加 assistant 消息（含 tool_calls）
+      // v1.5.174: OpenAI 规范 — 有 tool_calls 时 content 必须是 null（不能是 ''）
+      const assistantContent = response.toolCalls && response.toolCalls.length > 0
+        ? (response.content || null)
+        : (response.content || '');
       currentMessages.push({
         role: 'assistant',
-        content: response.content || '',
+        content: assistantContent,
         reasoning_content: response.reasoningContent,
         tool_calls: response.toolCalls.map((tc: ToolCall) => ({
           id: tc.id,
@@ -1261,6 +1268,19 @@ export class ReActExecutor {
       results.set(tc, result);
     }
 
+    // v1.5.176: 完整性校验 — 确保所有 tool_call_id 都有对应结果
+    // OpenAI 规范：assistant(tool_calls) 后必须有每个 tool_call_id 的 tool 消息
+    for (const tc of toolCalls) {
+      if (!results.has(tc)) {
+        logger.error(`[ReActExecutor] tool_call_id=${tc.id} (${tc.function.name}) 缺少执行结果，自动补全错误消息`);
+        const errorResult = JSON.stringify({
+          error: `工具 '${tc.function.name}' 执行失败：结果缺失，可能原因：权限拒绝未返回结果、工具执行器异常未捕获`,
+          tool_call_id: tc.id,
+        });
+        results.set(tc, errorResult);
+      }
+    }
+
     return results;
   }
 
@@ -1372,7 +1392,14 @@ export class ReActExecutor {
         }
       }
     } else {
-      result = await executeToolCall(toolCall);
+      // v1.5.176: 内置工具执行必须捕获异常，否则 results 会缺失该 tool_call_id
+      try {
+        result = await executeToolCall(toolCall);
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        logger.error(`[ReActExecutor] executeToolCall 异常: ${errMsg}`);
+        result = JSON.stringify({ error: `工具 '${toolName}' 执行异常: ${errMsg}` });
+      }
     }
     context.executedToolCalls.push({
       name: toolName,

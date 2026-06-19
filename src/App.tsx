@@ -12,7 +12,7 @@ import { getGrayScale } from './constants/theme';
 import { UpdateProvider } from './contexts/UpdateContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import UpdateNotification from './components/UpdateNotification';
-import { WindowDragBar } from './components/Layout/WindowDragBar';
+import WindowDragBar from './components/Layout/WindowDragBar';
 import { ChatContainer } from './components/CrossWmsChat/ChatContainer';
 import { ChatProvider, useChatSession } from './contexts/ChatContext';
 import { ToolPermissionProvider } from './contexts/ToolPermissionContext';
@@ -483,60 +483,22 @@ const MainLayout: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const location = useLocation();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('cdf-know-clow-sidebar-collapsed');
-      // 第一次使用（无保存值）默认展开，之后尊重用户选择
-      return saved === null ? false : saved === 'true';
-    } catch { return false; }
-  });
-  // pywebview 检测 — frameless 模式下需要 --pw-top 避让红黄绿按钮
-  // 红黄绿按钮下移5px + 右移5px + 额外5px内容间距，总避让高度 = 28(默认) + 5 + 5 = 38px
+  // v1.5.175: 启动时始终展开侧边栏（忽略历史保存值）
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  // pywebview 检测 — frameless 模式下红黄绿按钮悬浮在左上角（透明无背景条）
+  // 只需少量顶部边距（8px），不再需要全宽标题栏避让
   const [isPy, setIsPy] = useState(() => isPyWebView());
   useEffect(() => {
     if (isPy) {
       // pywebview 环境立即注入 CSS 变量，避免布局闪烁
-      document.documentElement.style.setProperty('--pw-top', '38px');
-      // 红黄绿按钮偏移：通过 Cocoa API 移动（必须在窗口完全加载后调用）
-      const applyTrafficLightOffset = async () => {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const api = (window as any).pywebview?.api;
-          if (api?.set_traffic_light_offset) {
-            // 读取保存的偏移量（或使用默认值）
-            const saved = await api.get_traffic_light_offset();
-            const offset = typeof saved === 'string' ? JSON.parse(saved) : saved;
-            if (offset?.ok !== false) {
-              const x = offset?.offset_x ?? 5;
-              const y = offset?.offset_y ?? 5;
-              await api.set_traffic_light_offset(x, y);
-            }
-          }
-        } catch { /* 非关键功能，静默失败 */ }
-      };
-      // 延迟 500ms 确保 NSWindow 完全初始化
-      setTimeout(applyTrafficLightOffset, 500);
-
-      // 窗口 resize 后重新应用红黄绿偏移（点击绿色 zoom 按钮后 macOS 会重置按钮位置）
-      const reapplyOnResize = () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const api = (window as any).pywebview?.api;
-        if (api?.reapply_traffic_light_offset) {
-          // 延迟 200ms 等待 macOS 完成窗口动画
-          setTimeout(() => {
-            api.reapply_traffic_light_offset().catch(() => {});
-          }, 200);
-        }
-      };
-      window.addEventListener('resize', reapplyOnResize);
-      return () => {
-        window.removeEventListener('resize', reapplyOnResize);
-      };
+      // BUTTON_TOP(10) + BUTTON_SIZE(12) + 间距(6) = 28px
+      document.documentElement.style.setProperty('--pw-top', '28px');
+      // 红黄绿按钮偏移已由 WindowDragBar 组件自行处理，无需额外 JS 注入
     }
     const id = setInterval(() => {
       if (isPyWebView()) {
         setIsPy(true);
-        document.documentElement.style.setProperty('--pw-top', '38px');
+        document.documentElement.style.setProperty('--pw-top', '28px');
         clearInterval(id);
       }
     }, 100);
@@ -585,16 +547,16 @@ const MainLayout: React.FC = () => {
     emitWarehouseChange(warehouseId);
   }, []);
 
-  // 系统红黄绿按钮区域高度由 CSS 变量 --pw-top 控制（frameless 模式下 JS 注入 43px）
-  // 两侧（Sidebar + 工具栏）均使用 calc(40px + var(--pw-top, 0px)) 统一高度
+  // 系统红黄绿按钮区域高度由 CSS 变量 --pw-top 控制（frameless 模式下 JS 注入 8px）
+  // v1.5.182: 红黄绿改为透明悬浮，不再需要全宽标题栏避让
 
   return (
     <ToastProvider sidebarCollapsed={sidebarCollapsed}>
       <StorageWarningListener />
       {/* v1.5.107: 路由级会话同步 — 从非聊天页切回 /chat 时自动创建新会话 */}
       <ChatRouteSync />
-      {/* v1.5.64: 窗口拖拽条 — frameless pywebview 窗口移动入口 */}
-      <WindowDragBar height={38} />
+      {/* v1.5.182: 窗口控制按钮 — 透明悬浮于左上角，与 Logo 同行（WorkBuddy 风格） */}
+      <WindowDragBar />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Sidebar — 单栏布局 */}
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} settingsOpen={settingsPopoverOpen} onSettingsOpenChange={setSettingsPopoverOpen} />

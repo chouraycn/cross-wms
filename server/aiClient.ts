@@ -142,6 +142,48 @@ function classifyError(statusCode: number, responseBody: string): AIAPIError['ca
   return 'unknown';
 }
 
+// v1.5.187: 发请求前硬校验 tool_calls/tool 消息配对
+// 如果 sanitizeToolMessages 仍有遗漏，此处最后一次检查并自动修复
+function validateToolMessages(messages: Array<{ role: string; content?: unknown; tool_calls?: unknown[]; tool_call_id?: string }>): void {
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    if (msg.role === 'assistant' && Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0) {
+      const expectedIds = new Set<string>();
+      for (const tc of msg.tool_calls as Array<{ id?: string }>) {
+        if (tc.id) expectedIds.add(tc.id);
+      }
+      if (expectedIds.size === 0) continue;
+
+      // 向前扫描是否有对应的 tool 消息
+      const foundIds = new Set<string>();
+      for (let j = i + 1; j < messages.length; j++) {
+        if (messages[j].role === 'assistant') break;
+        if (messages[j].role === 'tool' && messages[j].tool_call_id && expectedIds.has(messages[j].tool_call_id!)) {
+          foundIds.add(messages[j].tool_call_id!);
+        }
+      }
+
+      if (foundIds.size < expectedIds.size) {
+        // 有缺失的 tool 结果 — 记录并修复
+        const missing = [...expectedIds].filter(id => !foundIds.has(id));
+        logger.error(`[validateToolMessages] 检测到不完整的 tool_calls 配对！assistantIdx=${i}, ` +
+          `expected=${[...expectedIds].join(',')}, found=${[...foundIds].join(',')}, missing=${missing.join(',')}`);
+        // 自动修复：移除没有对应 tool 消息的 tool_calls
+        (msg as any).tool_calls = (msg.tool_calls as Array<{ id?: string }>).filter(
+          (tc: any) => tc.id && foundIds.has(tc.id),
+        );
+        if ((msg as any).tool_calls.length === 0) {
+          // 所有 tool_calls 都被移除 — 删除 tool_calls 字段
+          delete (msg as any).tool_calls;
+          logger.error(`[validateToolMessages] 已清空 assistant[${i}] 的 tool_calls（无对应 tool 消息）`);
+        } else {
+          logger.error(`[validateToolMessages] 已移除 assistant[${i}] 中 ${missing.length} 个无响应的 tool_calls`);
+        }
+      }
+    }
+  }
+}
+
 // ===================== OpenAI 兼容格式（含 Tool Calling）====================
 
 /**
@@ -192,10 +234,79 @@ export async function callOpenAICompatibleStream(
     body.tool_choice = 'auto';
   }
 
-  // v2.2.0: 优先使用 capabilities 判断，正则作为 fallback
-  const supportsReasoning = modelCapabilities?.includes('reasoning') || /deepseek|reasoner|o3|o4|r1/i.test(modelId);
-  if (reasoningEffort && supportsReasoning) {
-    body.reasoning_effort = reasoningEffort;
+  // v1.5.173: 判断是否支持 reasoning + 模型分类
+  // 分类决定了发送哪些参数（不同 API 的 thinking 启用方式不同）
+  const supportsReasoning = modelCapabilities?.includes('reasoning') ||
+    /deepseek|reasoner|o3|o4|r1|moonshot|kimi|k2[.-]|qwq|qwen3/i.test(modelId);
+
+  // 模型分类（用于参数差异化处理）
+  const isDeepSeekModel = /deepseek|reasoner|r1/i.test(modelId);
+  const isMoonshotModel = /moonshot|kimi|k2[.-]/i.test(modelId);
+  const isQwenModel = /qwq|qwen3/i.test(modelId);
+  const isOpenAIReasoner = /o3|o4/i.test(modelId);
+
+  // v1.5.173: reasoning_effort 值映射
+  //   "off"  → 跳过所有 thinking/reasoning 参数
+  //   "max"  → 映射为 "high"（DeepSeek/Kimi 只支持 low/medium/high）
+  //   "low"/"medium"/"high" → 保持原样
+  const normalizedEffort = reasoningEffort === 'off'
+    ? null
+    : reasoningEffort === 'max'
+      ? 'high'
+      : reasoningEffort;
+
+  if (normalizedEffort && supportsReasoning) {
+    // ---- 各 API 的 thinking 参数策略 ----
+    //
+    // 1. DeepSeek (R1/V3/Reasoner):
+    //    - 标准 OpenAI 兼容：reasoning_effort=low|medium|high
+    //    - R1 系列始终推理，reasoning_effort 控制深度
+    //    - 无需额外参数 ✅
+    //
+    // 2. Kimi K2 (Moonshot):
+    //    - OpenAI 兼容：reasoning_effort 即可触发思考模式
+    //    - 无需额外参数 ✅
+    //
+    // 3. Qwen3 / QwQ (阿里):
+    //    - OpenAI 兼容端点：reasoning_effort
+    //    - 部分旧版本可能需要 enable_thinking（通过 extra body 透传）
+    //
+    // 4. OpenAI o3/o4:
+    //    - 官方标准：reasoning_effort
+    //    - 无需额外参数 ✅
+    //
+    // 5. Claude (Anthropic):
+    //    - 不在此函数处理，由 callAnthropicStream() 单独处理
+    //    - 使用 thinking: { type: 'enabled', budget_tokens: N }
+
+    body.reasoning_effort = normalizedEffort;
+
+    // v1.5.175: 按模型分类精确传递 thinking 参数
+    //   DeepSeek: 通过 extra_body 透传（部分部署版本需要）
+    //   Kimi K2: 通过 extra_body 透传 thinking 参数
+    //   Qwen3/QwQ: 不支持 thinking 参数，只支持 reasoning_effort（移除 enable_thinking）
+    //   OpenAI o3/o4: 只支持 reasoning_effort
+    //   Claude: 不在此函数处理（由 callAnthropicStream 单独处理）
+    if (isDeepSeekModel) {
+      (body as any).extra_body = { reasoning_effort: normalizedEffort };
+    } else if (isMoonshotModel) {
+      (body as any).extra_body = { thinking: { type: 'enabled' } };
+    } else if (isQwenModel) {
+      // Qwen3: 只保留 reasoning_effort，不发送 enable_thinking / thinking
+      // body.reasoning_effort 已在上方设置，此处无需额外操作
+    }
+
+    logger.debug(`[AIClient] 已启用推理模式: model=${modelId} effort=${normalizedEffort}` +
+      `${isDeepSeekModel ? ' [DeepSeek:extra_body]' : ''}` +
+      `${isMoonshotModel ? ' [Moonshot:extra_body]' : ''}` +
+      `${isQwenModel ? ' [Qwen:reasoning_effort]' : ''}` +
+      `${isOpenAIReasoner ? ' [OpenAI:reasoning_effort]' : ''}`);
+  } else if (reasoningEffort === 'off') {
+    logger.debug(`[AIClient] reasoning_effort=off，跳过 thinking 参数 (model=${modelId})`);
+  } else if (!supportsReasoning && reasoningEffort && reasoningEffort !== 'off') {
+    // 用户请求了 reasoning 但模型不在支持列表中 — 发送尝试（某些新模型可能已支持）
+    body.reasoning_effort = normalizedEffort || reasoningEffort;
+    logger.debug(`[AIClient] 模型 ${modelId} 不在已知支持列表中，仍尝试发送 reasoning_effort=${reasoningEffort}`);
   }
 
   let response: Response;
@@ -219,6 +330,28 @@ export async function callOpenAICompatibleStream(
 
   if (!response.ok) {
     const errorText = await response.text();
+    // v1.5.173: thinking/reasoning 参数格式错误检测
+    if (response.status === 400) {
+      const et = errorText.toLowerCase();
+      const isThinkingError = et.includes('thinking') || et.includes('reasoning') || et.includes('budget_tokens')
+        || et.includes('unknown parameter') || et.includes('invalid parameter')
+        || et.includes('extra field') || et.includes('unexpected');
+      if (isThinkingError) {
+        // 记录发送的推理相关参数（用于调试）
+        const reasoningKeys = Object.keys(body).filter(k =>
+          k.includes('reasoning') || k.includes('thinking') || k.includes('enable_think'));
+        logger.error(`[AIClient] 推理参数可能不被此 API 支持: model=${modelId}` +
+          ` 发送的参数=${JSON.stringify(reasoningKeys)} ` +
+          `API返回: ${errorText.slice(0, 500)}`);
+        throw new AIAPIError(
+          `模型 ${modelId} 不支持当前推理参数 (${reasoningKeys.join(',')})。` +
+          `可尝试在模型设置中关闭"深度思考"。API 返回: ${errorText.slice(0, 300)}`,
+          'unknown',
+          response.status,
+          errorText,
+        );
+      }
+    }
     // v1.5.129: 400 错误时记录消息结构，帮助诊断 tool_calls 配对问题
     if (response.status === 400) {
       const toolMsgs = messages.filter(m => m.role === 'tool');
@@ -291,8 +424,24 @@ export async function callOpenAICompatibleStream(
           const parsed = JSON.parse(data);
           const delta = parsed.choices?.[0]?.delta;
 
-          // 解析 reasoning_content（DeepSeek-R1 等推理模型）和 reasoning（OpenAI o3/o4-mini）
-          const reasoningDelta = delta?.reasoning_content || delta?.reasoning;
+          // 解析 reasoning_content（支持多种字段路径，按优先级排列）
+          // 优先级1: delta.reasoning_content（DeepSeek V3/R1, Kimi K2 标准格式）
+          // 优先级2: delta.reasoning（OpenAI o3/o4）
+          // 优先级3: parsed.reasoning_content（某些 API 放在 chunk 顶层，如 Qwen3）
+          // 优先级4: parsed.choices[0].reasoning_content（某些 API 放在 choice 层）
+          // 优先级5: delta.thinking（部分实现）
+          // 优先级6: parsed.choices[0].delta?.reasoning_content（防御性读取）
+          // 优先级7: parsed.reasoning（部分 API 直接在 parsed 层）
+          // 使用 ?? 而非 ||，正确区分 null/undefined 与空字符串（空字符串是有效的 thinking delta）
+          const reasoningDelta =
+            delta?.reasoning_content ??
+            delta?.reasoning ??
+            parsed.reasoning_content ??
+            parsed.choices?.[0]?.reasoning_content ??
+            (parsed.choices?.[0] as any)?.delta?.reasoning_content ??
+            delta?.thinking ??
+            (parsed as any).reasoning ??
+            (parsed as any).thinking;
           if (reasoningDelta) {
             reasoningContent += reasoningDelta;
             if (onThinking) onThinking(reasoningDelta);
@@ -817,6 +966,10 @@ export async function callAIModelStream(
         : messages;
 
       const effectiveMessages = sanitizeToolMessages(rawMessages as Parameters<typeof sanitizeToolMessages>[0]);
+
+      // v1.5.187: 发请求前硬校验 — 如果 sanitizeToolMessages 仍有遗漏，
+      // 此处最后一次检查并自动修复，同时记录诊断日志
+      validateToolMessages(effectiveMessages);
 
       return await callOpenAICompatibleStream(
         apiEndpoint, apiKey, modelId,

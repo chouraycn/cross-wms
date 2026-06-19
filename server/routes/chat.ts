@@ -15,7 +15,7 @@ import { executeToolLoop, getToolRiskLevel } from '../engine/toolExecutor.js';
 import { ExecutionStrategyFactory, ExecutionMode } from '../engine/executionStrategy.js';
 import type { ExecutionStrategyOptions } from '../engine/executionStrategy.js';
 import { buildSoulSystemMessage } from '../engine/soulLoader.js';
-import { estimateMessagesTokens, truncateContextForModel } from '../engine/contextTruncate.js';
+import { estimateMessagesTokens, truncateContextForModel, sanitizeToolMessages } from '../engine/contextTruncate.js';
 import { compressContextWithSummary } from '../engine/contextCompress.js';
 import { loadModelsConfig, ModelsFile, isLocalModel } from '../modelsStore.js';
 import { selectKey, reportKeyResult } from '../keyRotator.js';
@@ -753,7 +753,7 @@ async function executeFromQueue(
               for (let i = 0; i < toolCalls.length; i++) {
                 apiMessages.push({
                   role: 'tool',
-                  content: toolCalls[i].result,
+                  content: toolCalls[i].result ?? "(tool result unavailable)",
                   tool_call_id: callIds[i],
                 });
               }
@@ -781,6 +781,68 @@ async function executeFromQueue(
       }
     } catch {
       truncated = truncateContextForModel(apiMessages as any, ctxWindow, ctxMaxTokens, 30);
+    }
+
+    // v1.5.176: tool_calls 消息配对校验 — 防止 API 返回 400 "insufficient tool messages"
+    // OpenAI/DeepSeek 要求：assistant(tool_calls) 后必须紧跟 role=tool 消息，且每个 call_id 都要有响应
+    // v1.5.184: 修复 — 只在连续 tool 消息中搜索，遇到非 tool 消息立即停止（避免生成错误顺序）
+    const msgs = truncated.messages as any[];
+    const fixedMessages: any[] = [];
+    for (let i = 0; i < msgs.length; i++) {
+      const m = msgs[i];
+      if (m.role === 'assistant' && m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
+        // 收集这个 assistant 消息的所有 tool_call_id
+        const neededIds = new Set<string>();
+        for (const tc of m.tool_calls) {
+          if (tc.id) neededIds.add(tc.id);
+        }
+        // v1.5.184: 只在连续 tool 消息中搜索（遇到非 tool 消息立即停止）
+        for (let j = i + 1; j < msgs.length; j++) {
+          if (msgs[j].role === 'tool' && msgs[j].tool_call_id && neededIds.has(msgs[j].tool_call_id)) {
+            neededIds.delete(msgs[j].tool_call_id);
+            if (neededIds.size === 0) break;  // 所有 tool_call_id 都找到了，提前退出
+          } else if (msgs[j].role !== 'tool') {
+            break;  // 遇到非 tool 消息，停止搜索（OpenAI 要求 tool 消息必须紧跟）
+          }
+        }
+        if (neededIds.size > 0) {
+          // 缺少对应的 tool 响应消息 → 补齐空响应（插入到 assistant 后面）
+          logger.warn(`[Chat API] tool_calls 配对不完整，补齐 ${neededIds.size} 条空 tool 响应: ${[...neededIds].join(', ')}`);
+          fixedMessages.push(m);
+          for (const missingId of neededIds) {
+            fixedMessages.push({
+              role: 'tool',
+              content: '[工具结果未保存]',
+              tool_call_id: missingId,
+            });
+          }
+          continue;
+        }
+      }
+      // 清理：如果出现孤立的 tool 消息（前面没有 assistant(tool_calls) 包含此 tool_call_id），跳过
+      if (m.role === 'tool' && m.tool_call_id) {
+        let foundParent = false;
+        // 向前查找是否有 assistant(tool_calls) 包含此 tool_call_id
+        for (let k = fixedMessages.length - 1; k >= 0; k--) {
+          const prev = fixedMessages[k];
+          if (prev.role === 'assistant' && prev.tool_calls && Array.isArray(prev.tool_calls)) {
+            if (prev.tool_calls.some((tc: any) => tc.id === m.tool_call_id)) {
+              foundParent = true;
+              break;
+            }
+          }
+        }
+        if (!foundParent) {
+          logger.warn(`[Chat API] 跳过孤立 tool 消息 (call_id=${m.tool_call_id})`);
+          continue;
+        }
+      }
+      fixedMessages.push(m);
+    }
+    // 如果修复了消息，使用修复后的版本
+    if (fixedMessages.length !== msgs.length) {
+      logger.info(`[Chat API] tool_calls 校验: ${msgs.length} → ${fixedMessages.length} 条消息`);
+      truncated.messages = fixedMessages;
     }
 
     // 获取会话级 AbortController
@@ -820,14 +882,20 @@ async function executeFromQueue(
       sessionApprovedToolsCache.set(sessionId, params.sessionApprovedSet);
     }
 
-    // Keep-alive
-    let keepAliveTimer: NodeJS.Timeout | null = setInterval(() => {
+    // v2.2.0: 全局 keep-alive — 每 15 秒发送一次 SSE 注释，防止 WKWebView 因长时间无数据关闭 SSE 连接
+    // 使用 SSE 标准注释格式（以 ":" 开头），所有 SSE 客户端都会忽略，但会保持连接活跃
+    // v1.5.165: WKWebView 兼容 — 通过 queryParam _nowk=1 禁用（WKWebView 可能对 keep_alive 处理有 bug）
+    // executeFromQueue 没有 req 参数，所以不能直接读取 query；如果需要禁用，通过 params 传递
+    let keepAliveTimer: NodeJS.Timeout | null = null;
+    keepAliveTimer = setInterval(() => {
       if (!res.writableEnded) {
         try {
-          res.write(`data: ${JSON.stringify({ type: 'keep_alive', timestamp: Date.now() })}\n\n`);
+          // SSE 注释格式：":" 开头的行是注释，客户端必须忽略
+          // 部分浏览器/引擎要求注释至少有一个字符，所以加个空格
+          res.write(': keep-alive\n\n');
         } catch { /* ignore */ }
       }
-    }, 10000);
+    }, 15000); // 15 秒，给 AI 足够时间思考
 
     let fullContent = '';
     let thinkingContent = '';
@@ -841,9 +909,13 @@ async function executeFromQueue(
       .slice().reverse().find((m: any) => m.role === 'user');
     if (latestUserMessage && typeof latestUserMessage.content === 'string') {
       try {
-        const memoryResults: VecSearchResult[] = await searchMemory(
-          latestUserMessage.content, 'default', 5, 0.35,
-        );
+        // 给 searchMemory 添加 5 秒超时，避免 ONNX 模型下载阻塞 chat 请求
+        const memoryResults: VecSearchResult[] = await Promise.race([
+          searchMemory(
+            latestUserMessage.content, 'default', 5, 0.35,
+          ),
+          new Promise<VecSearchResult[]>(resolve => setTimeout(() => resolve([]), 5000)),
+        ]);
         if (memoryResults.length > 0) {
           const totalChars = memoryResults.reduce((sum, r) => sum + r.entry.content.length, 0);
           const totalTokens = Math.ceil(totalChars / 1.5);
@@ -874,9 +946,12 @@ async function executeFromQueue(
       }
     }
 
+    // 在 strategy.execute 前清理孤儿 tool 消息，避免 API 400 错误
+    const sanitizedMessages = sanitizeToolMessages(truncated.messages as any) as Array<{ role: string; content: MessageContent; tool_calls?: any[]; tool_call_id?: string }>;
+
     const toolResult = await strategy.execute({
       modelConfig: finalModelConfig as any,
-      messages: truncated.messages as any,
+      messages: sanitizedMessages,
       maxToolTurns: 10,
       signal: messageQueue.getCurrentAbortController(sessionId)?.signal ?? new AbortController().signal,
       executionMode: effectiveMode,
@@ -1422,7 +1497,7 @@ router.post('/chat', async (req, res) => {
               for (let i = 0; i < msg.toolCalls.length; i++) {
                 apiMessages.push({
                   role: 'tool',
-                  content: msg.toolCalls[i].result,
+                  content: msg.toolCalls[i].result ?? "(tool result unavailable)",
                   tool_call_id: callIds[i],
                 } as any);
               }
@@ -1430,17 +1505,9 @@ router.post('/chat', async (req, res) => {
               apiMessages.push({ role: msg.role, content: msg.content });
             }
           }
-          // 如果历史消息包含 toolCalls 且不是 assistant（assistant 已在上方处理），转换为 tool 角色消息
-          // v1.9.3-fix: assistant 的 toolCalls 已在上方连同 tool_calls 字段一起处理，此处仅处理 user 消息的 toolCalls
-          if (msg.role !== 'assistant' && msg.toolCalls && Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0) {
-            for (const tc of msg.toolCalls) {
-              apiMessages.push({
-                role: 'tool',
-                content: tc.result,
-                tool_call_id: tc.id || `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-              } as any);
-            }
-          }
+          // [已移除] 孤儿 tool 消息代码 — assistant 的 toolCalls 已在上方连同 tool_calls 字段一起处理
+          // sanitizeToolMessages 安全网会在 contextTruncate 中清理残留的孤儿 tool 消息
+          // if (msg.role !== 'assistant' && msg.toolCalls && Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0) { ... }
         }
       }
 
@@ -1538,10 +1605,14 @@ router.post('/chat', async (req, res) => {
 
       // v2.2.0: 启动全局 keep-alive — 每 10 秒发送一次，防止 WKWebView 因长时间无数据关闭 SSE 连接
       // 这在 thinking 阶段尤其重要（AI 思考时可能数十秒无输出）
-      keepAliveTimer = setInterval(() => {
-        res.write(`data: ${JSON.stringify({ type: 'keep_alive', timestamp: Date.now(), thinking: hasThinking, elapsed: thinkingStartTime ? Date.now() - thinkingStartTime : 0 })}
-\n\n`);
-      }, 10000);
+      // v1.5.165: WKWebView 兼容 — 通过 queryParam _nowk=1 禁用（WKWebView 可能对 keep_alive 处理有 bug）
+  // const noKeepAlive = req.query._nowk === "1";
+  // if (!noKeepAlive) {
+  // keepAliveTimer = setInterval(() => {
+  // res.write(`data: ${JSON.stringify({ type: 'keep_alive', timestamp: Date.now(), thinking: hasThinking, elapsed: thinkingStartTime ? Date.now() - thinkingStartTime : 0 })}
+  // \n\n`);
+  // }, 10000);
+  // }
 
       try {
         // 无 API Key 且非本地模型时使用模拟模式
@@ -1649,9 +1720,13 @@ router.post('/chat', async (req, res) => {
             .slice().reverse().find((m: any) => m.role === 'user');
           if (latestUserMsg && typeof latestUserMsg.content === 'string') {
             try {
-              const memResults: VecSearchResult[] = await searchMemory(
-                latestUserMsg.content, 'default', 5, 0.35,
-              );
+              // 给 searchMemory 添加 5 秒超时，避免 ONNX 模型下载阻塞 chat 请求
+              const memResults: VecSearchResult[] = await Promise.race([
+                searchMemory(
+                  latestUserMsg.content, 'default', 5, 0.35,
+                ),
+                new Promise<VecSearchResult[]>(resolve => setTimeout(() => resolve([]), 5000)),
+              ]);
               if (memResults.length > 0) {
                 const memChars = memResults.reduce((sum, r) => sum + r.entry.content.length, 0);
                 const memTokens = Math.ceil(memChars / 1.5);
@@ -1678,9 +1753,12 @@ router.post('/chat', async (req, res) => {
             }
           }
 
+          // 在 strategy.execute 前清理孤儿 tool 消息，避免 API 400 错误
+          const sanitizedStreamMessages = sanitizeToolMessages(truncated.messages as any) as Array<{ role: string; content: MessageContent; tool_calls?: any[]; tool_call_id?: string }>;
+
           const toolResult = await strategy.execute({
             modelConfig: finalModelConfig,
-            messages: truncated.messages as any,
+            messages: sanitizedStreamMessages,
             maxToolTurns: 10,
             signal: abortController.signal,
             executionMode: effectiveMode,
@@ -1915,7 +1993,14 @@ router.post('/chat', async (req, res) => {
               onChunk: (chunk) => {
                 res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
               },
-              onThinking: () => {},
+              // v1.5.168: fallback 路径也要正确传递 thinking 事件（某些 fallback 模型仍可能返回 reasoning_content）
+              onThinking: (thinkingChunk: string) => {
+                if (!hasThinking) { hasThinking = true; thinkingStartTime = Date.now(); }
+                thinkingContent += thinkingChunk;
+                if (!res.writableEnded) {
+                  try { res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`); } catch { /* ignore */ }
+                }
+              },
               onPermissionRequest: () => Promise.resolve(isSystemAuthorized()),
               reasoningEffort: undefined,
               modelCapabilities: fbModelConfig.capabilities || [],

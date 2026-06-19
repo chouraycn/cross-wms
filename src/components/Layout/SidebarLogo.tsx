@@ -25,7 +25,7 @@ const SidebarLogo = React.memo<SidebarLogoProps>(function SidebarLogo({ collapse
       sx={{
         px: collapsed ? 0.5 : 2,
         height: 28,
-        mt: '12px',
+        mt: '23px',  // v1.5.184: 增加上边距，避免与红黄绿按钮重叠（按钮下边缘在 ~22px）
         mb: 2,
         display: 'flex',
         alignItems: 'center',

@@ -425,7 +425,32 @@ export function initDb(): Database.Database {
   // v1.9.3: 如果数据库存在，先备份
   backupDatabase();
 
-  db = new Database(DB_PATH);
+  try {
+    db = new Database(DB_PATH);
+  } catch (e: any) {
+    const msg = e?.message ?? String(e);
+    logger.error('[DB] 数据库初始化失败:', msg);
+    // 常见锁定错误：SQLITE_BUSY / SQLITE_LOCKED / permission denied
+    if (/busy|locked|permission|cannot open/i.test(msg)) {
+      logger.error('[DB] 数据库文件可能被其他进程占用或权限不足，请关闭所有可能访问 ~/.cdf-know-clow/chat.db 的程序');
+      // 尝试从备份恢复
+      if (fs.existsSync(DB_BACKUP_PATH)) {
+        try {
+          fs.unlinkSync(DB_PATH);
+          fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
+          logger.info('[DB] 已从备份恢复数据库，重试初始化...');
+          db = new Database(DB_PATH);
+        } catch (e2: any) {
+          logger.error('[DB] 从备份恢复失败:', e2?.message ?? e2);
+          throw e;
+        }
+      } else {
+        throw e;
+      }
+    } else {
+      throw e;
+    }
+  }
 
   // Enable foreign keys
   db.pragma('journal_mode = WAL');
