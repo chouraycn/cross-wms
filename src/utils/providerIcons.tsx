@@ -250,10 +250,17 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
           style={{ flexShrink: 0 }}
         >
           <rect width="24" height="24" rx="5" fill="#FF4D4F" />
-          <path
-            d="M7 6.5h2.5v11H7v-11zm4 0h2.5v7h-2.5v-7zm4 0h2.5v11h-2.5v-11z"
-            fill="#FFFFFF"
-          />
+          <text
+            x="12"
+            y="17.5"
+            textAnchor="middle"
+            fill="white"
+            fontSize="14"
+            fontWeight="700"
+            fontFamily="system-ui, -apple-system, sans-serif"
+          >
+            M
+          </text>
         </svg>
       );
 
@@ -424,10 +431,17 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
           style={{ flexShrink: 0 }}
         >
           <rect width="24" height="24" rx="5" fill="#1E88E5" />
-          <path
-            d="M6 6h5v2H8.5v3h3.5v2H8.5v3H11v2H6V6zm7 0h5v2h-2.5v8H13V6z"
-            fill="#FFFFFF"
-          />
+          <text
+            x="12"
+            y="17.5"
+            textAnchor="middle"
+            fill="white"
+            fontSize="14"
+            fontWeight="700"
+            fontFamily="system-ui, -apple-system, sans-serif"
+          >
+            智
+          </text>
         </svg>
       );
 
@@ -535,34 +549,39 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
   }
 }
 
-/** 所有可选的 provider 列表（用于下拉菜单） */
+/** 所有可选的 provider 列表（用于下拉菜单）
+ * v2.8.7: 国产模型优先排序
+ */
 export const ALL_PROVIDERS: string[] = [
-  'openai',
-  'anthropic',
-  'tencent',
+  // 国产模型（优先）
   'deepseek',
-  'google',
   'qwen',
-  'xai',
-  'zai',
-  'minimax',
   'kimi',
-  'byteplus',
-  'openrouter',
-  'novita',
-  'wwqglobal',
-  'wwqcn',
-  'aws',
-  'azure',
-  'vercel',
-  'ollama',
   'bigmodel',
-  'minimaxcn',
-  'kimicn',
+  'minimax',
+  'tencent',
   'volcengine',
   'aliyun',
   'siliconflow',
+  'byteplus',
+  'wwqglobal',
+  'wwqcn',
   'modelark',
   'ppio',
+  // 海外模型
+  'openai',
+  'anthropic',
+  'google',
+  'xai',
+  'zai',
+  'openrouter',
+  'novita',
+  'aws',
+  'azure',
+  'vercel',
+  // 本地/其他
+  'ollama',
+  'minimaxcn',
+  'kimicn',
   'custom',
 ];

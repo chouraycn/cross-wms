@@ -558,8 +558,12 @@ export async function callOpenAICompatibleStream(
     }
   }
 
+  // v2.8.7: 当 AI 只返回 thinking 内容而不返回 text 内容时，将 thinking 作为 content 返回
+  // 避免前端显示"思考中"但没有任何内容
+  const effectiveContent = fullContent || reasoningContent || '';
+
   return {
-    content: fullContent,
+    content: effectiveContent,
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     reasoningContent: reasoningContent || undefined,
     usage: usageData,
