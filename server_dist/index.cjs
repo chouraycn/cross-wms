@@ -12841,10 +12841,16 @@ async function callOpenAICompatibleStream(apiEndpoint, apiKey, modelId, messages
   if (normalizedEffort && supportsReasoning) {
     body.reasoning_effort = normalizedEffort;
     if (isMoonshotModel) {
-      body.extra_body = { thinking: { type: "enabled" } };
+      delete body.reasoning_effort;
+      const isK27Code = /k2\.7/i.test(modelId);
+      if (isK27Code) {
+        body.thinking = { type: "enabled", keep: "all" };
+      } else {
+        body.thinking = { type: "enabled" };
+      }
     } else if (isQwenModel) {
     }
-    logger.debug(`[AIClient] \u5DF2\u542F\u7528\u63A8\u7406\u6A21\u5F0F: model=${modelId} effort=${normalizedEffort}${isDeepSeekModel ? " [DeepSeek:reasoning_effort]" : ""}${isMoonshotModel ? " [Moonshot:extra_body]" : ""}${isQwenModel ? " [Qwen:reasoning_effort]" : ""}${isOpenAIReasoner ? " [OpenAI:reasoning_effort]" : ""}`);
+    logger.debug(`[AIClient] \u5DF2\u542F\u7528\u63A8\u7406\u6A21\u5F0F: model=${modelId} effort=${normalizedEffort}${isDeepSeekModel ? " [DeepSeek:reasoning_effort]" : ""}${isMoonshotModel ? " [Moonshot:thinking]" : ""}${isQwenModel ? " [Qwen:reasoning_effort]" : ""}${isOpenAIReasoner ? " [OpenAI:reasoning_effort]" : ""}`);
   } else if (reasoningEffort === "off") {
     logger.debug(`[AIClient] reasoning_effort=off\uFF0C\u8DF3\u8FC7 thinking \u53C2\u6570 (model=${modelId})`);
   } else if (!supportsReasoning && !isLocalEndpoint && reasoningEffort && reasoningEffort !== "off") {
