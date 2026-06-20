@@ -19,6 +19,17 @@ const BLOCKED_KEYWORDS = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|EXE
 /** SELECT 正则：只允许以 SELECT 开头的语句 */
 const SELECT_ONLY_REGEX = /^\s*SELECT\s/i;
 
+/** v2.8.7: 允许查询的表白名单 — 防止信息泄露和未授权表访问 */
+const ALLOWED_TABLES = new Set([
+  'inventory_items', 'warehouses', 'inbound_records', 'outbound_records',
+  'inventory_transfers', 'wms_quality_checks', 'partners', 'projects', 'tasks',
+  'messages', 'sessions', 'memory_entries', 'plugins', 'skills', 'automations',
+  'api_credentials', 'api_templates', 'api_domain_whitelist', 'api_request_history',
+]);
+
+/** 从 SQL 中提取表名的正则（简化版，覆盖常见 FROM/JOIN 场景） */
+const TABLE_NAME_REGEX = /\b(FROM|JOIN)\s+([a-zA-Z_][a-zA-Z0-9_]*)/gi;
+
 /** 最大允许 LIMIT 值 */
 const MAX_LIMIT = 500;
 
@@ -112,6 +123,15 @@ export class InventoryQueryService {
       // 检查多语句注入
       if (semicolonParts.length > 1) {
         return '仅允许单条 SELECT 查询';
+      }
+    }
+
+    // v2.8.7: 表名白名单校验 — 防止查询未授权表
+    const tableMatches = sql.matchAll(TABLE_NAME_REGEX);
+    for (const match of tableMatches) {
+      const tableName = match[2].toLowerCase();
+      if (!ALLOWED_TABLES.has(tableName)) {
+        return `禁止查询未授权表: ${tableName}`;
       }
     }
 

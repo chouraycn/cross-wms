@@ -185,6 +185,7 @@ export async function writeMemory(entry: Omit<VecMemoryEntry, 'id' | 'createdAt'
  * @param userId 用户 ID
  * @param topK 返回数量
  * @param threshold 最低相似度阈值（0~1）
+ * @param sessionId 会话 ID（可选，传入时只检索当前会话的记忆）
  * @returns 搜索结果列表
  */
 export async function searchMemory(
@@ -192,6 +193,7 @@ export async function searchMemory(
   userId: string = 'default',
   topK: number = DEFAULT_TOP_K,
   threshold: number = DEFAULT_THRESHOLD,
+  sessionId?: string,
 ): Promise<VecSearchResult[]> {
   const db = getDb();
 
@@ -220,12 +222,16 @@ export async function searchMemory(
         return [];
       }
 
-      // 获取完整记忆条目
+      // 获取完整记忆条目（支持 sessionId 过滤）
       const entryIds = vecResults.map(r => r.entryId);
       const placeholders = entryIds.map(() => '?').join(',');
-      const entries = db.prepare(
-        `SELECT * FROM memory_entries WHERE id IN (${placeholders}) AND userId = ?`
-      ).all(...entryIds, userId) as VecMemoryEntry[];
+      const sql = sessionId
+        ? `SELECT * FROM memory_entries WHERE id IN (${placeholders}) AND userId = ? AND sessionId = ?`
+        : `SELECT * FROM memory_entries WHERE id IN (${placeholders}) AND userId = ?`;
+      const params = sessionId
+        ? [...entryIds, userId, sessionId]
+        : [...entryIds, userId];
+      const entries = db.prepare(sql).all(...params) as VecMemoryEntry[];
 
       // 构建 entryId → entry 映射
       const entryMap = new Map(entries.map(e => [e.id!, e]));
@@ -254,7 +260,7 @@ export async function searchMemory(
   }
 
   // ============ 降级：关键词 LIKE 搜索 ============
-  return searchByKeyword(db, query, userId, topK);
+  return searchByKeyword(db, query, userId, topK, sessionId);
 }
 
 // ===================== 关键词提取 =====================
@@ -351,6 +357,7 @@ function searchByKeyword(
   query: string,
   userId: string,
   limit: number,
+  sessionId?: string,
 ): VecSearchResult[] {
   // 使用 extractKeywords 提取查询关键词（比简单 split 更准确）
   const queryKeywords = extractKeywords(query, 8);
@@ -361,21 +368,28 @@ function searchByKeyword(
 
   // 构建 LIKE 查询条件：每个关键词同时匹配 keywords 和 content 字段
   const conditions = keywords.map(() => `(keywords LIKE ? OR content LIKE ?)`).join(' OR ');
-  const params = [userId, ...keywords.flatMap(k => [`%${k}%`, `%${k}%`]), limit * 2];
+
+  // v2.8.7: 支持 sessionId 过滤
+  const whereClause = sessionId
+    ? `userId = ? AND sessionId = ? AND (${conditions})`
+    : `userId = ? AND (${conditions})`;
+  const whereParams = sessionId
+    ? [userId, sessionId]
+    : [userId];
 
   const stmt = db.prepare(
     `SELECT *, (
       CASE ${keywords.map(() => 'WHEN keywords LIKE ? OR content LIKE ? THEN 1 ELSE 0 END').join(' + ')}
     ) AS matchCount
     FROM memory_entries
-    WHERE userId = ? AND (${conditions})
+    WHERE ${whereClause}
     ORDER BY matchCount DESC, createdAt DESC
     LIMIT ?`
   );
 
   // 构建完整参数列表：先 matchCount CASE 的参数，再 WHERE 参数，最后 LIMIT
   const caseParams = keywords.flatMap(k => [`%${k}%`, `%${k}%`]);
-  const allParams = [...caseParams, userId, ...keywords.flatMap(k => [`%${k}%`, `%${k}%`]), limit];
+  const allParams = [...caseParams, ...whereParams, ...keywords.flatMap(k => [`%${k}%`, `%${k}%`]), limit];
 
   const entries = stmt.all(...allParams) as (VecMemoryEntry & { matchCount: number })[];
 

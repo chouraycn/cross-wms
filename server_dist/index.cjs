@@ -10807,7 +10807,7 @@ var import_express9 = require("express");
 // server/dao/settings.ts
 var import_uuid15 = require("uuid");
 init_db();
-function getAppSettings2(key) {
+function getAppSettings(key) {
   const db7 = initDb();
   const row = db7.prepare("SELECT value FROM app_settings WHERE key = ?").get(key);
   return row ? row.value : null;
@@ -10881,7 +10881,7 @@ function migrateData(payload) {
 // server/routes/settings.ts
 var router9 = (0, import_express9.Router)();
 router9.get("/:key", (req, res) => {
-  const value = getAppSettings2(req.params.key);
+  const value = getAppSettings(req.params.key);
   if (value === null) {
     res.status(404).json({ error: "Settings not found" });
     return;
@@ -12840,13 +12840,11 @@ async function callOpenAICompatibleStream(apiEndpoint, apiKey, modelId, messages
   const normalizedEffort = reasoningEffort === "off" ? null : reasoningEffort === "max" ? "high" : reasoningEffort;
   if (normalizedEffort && supportsReasoning) {
     body.reasoning_effort = normalizedEffort;
-    if (isDeepSeekModel) {
-      body.extra_body = { reasoning_effort: normalizedEffort };
-    } else if (isMoonshotModel) {
+    if (isMoonshotModel) {
       body.extra_body = { thinking: { type: "enabled" } };
     } else if (isQwenModel) {
     }
-    logger.debug(`[AIClient] \u5DF2\u542F\u7528\u63A8\u7406\u6A21\u5F0F: model=${modelId} effort=${normalizedEffort}${isDeepSeekModel ? " [DeepSeek:extra_body]" : ""}${isMoonshotModel ? " [Moonshot:extra_body]" : ""}${isQwenModel ? " [Qwen:reasoning_effort]" : ""}${isOpenAIReasoner ? " [OpenAI:reasoning_effort]" : ""}`);
+    logger.debug(`[AIClient] \u5DF2\u542F\u7528\u63A8\u7406\u6A21\u5F0F: model=${modelId} effort=${normalizedEffort}${isDeepSeekModel ? " [DeepSeek:reasoning_effort]" : ""}${isMoonshotModel ? " [Moonshot:extra_body]" : ""}${isQwenModel ? " [Qwen:reasoning_effort]" : ""}${isOpenAIReasoner ? " [OpenAI:reasoning_effort]" : ""}`);
   } else if (reasoningEffort === "off") {
     logger.debug(`[AIClient] reasoning_effort=off\uFF0C\u8DF3\u8FC7 thinking \u53C2\u6570 (model=${modelId})`);
   } else if (!supportsReasoning && !isLocalEndpoint && reasoningEffort && reasoningEffort !== "off") {
@@ -20175,6 +20173,28 @@ var import_express23 = require("express");
 // server/services/inventoryQueryService.ts
 var BLOCKED_KEYWORDS = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|EXEC|EXECUTE|ATTACH|PRAGMA|REINDEX|VACUUM)\b/i;
 var SELECT_ONLY_REGEX = /^\s*SELECT\s/i;
+var ALLOWED_TABLES = /* @__PURE__ */ new Set([
+  "inventory_items",
+  "warehouses",
+  "inbound_records",
+  "outbound_records",
+  "inventory_transfers",
+  "wms_quality_checks",
+  "partners",
+  "projects",
+  "tasks",
+  "messages",
+  "sessions",
+  "memory_entries",
+  "plugins",
+  "skills",
+  "automations",
+  "api_credentials",
+  "api_templates",
+  "api_domain_whitelist",
+  "api_request_history"
+]);
+var TABLE_NAME_REGEX = /\b(FROM|JOIN)\s+([a-zA-Z_][a-zA-Z0-9_]*)/gi;
 var MAX_LIMIT = 500;
 var DEFAULT_LIMIT = 200;
 var InventoryQueryService = class {
@@ -20235,6 +20255,13 @@ var InventoryQueryService = class {
       }
       if (semicolonParts.length > 1) {
         return "\u4EC5\u5141\u8BB8\u5355\u6761 SELECT \u67E5\u8BE2";
+      }
+    }
+    const tableMatches = sql.matchAll(TABLE_NAME_REGEX);
+    for (const match2 of tableMatches) {
+      const tableName = match2[2].toLowerCase();
+      if (!ALLOWED_TABLES.has(tableName)) {
+        return `\u7981\u6B62\u67E5\u8BE2\u672A\u6388\u6743\u8868: ${tableName}`;
       }
     }
     return null;
@@ -27830,7 +27857,7 @@ async function writeMemory(entry) {
   }
   return entryId;
 }
-async function searchMemory(query, userId = "default", topK = DEFAULT_TOP_K, threshold = DEFAULT_THRESHOLD) {
+async function searchMemory(query, userId = "default", topK = DEFAULT_TOP_K, threshold = DEFAULT_THRESHOLD, sessionId) {
   const db7 = getDb2();
   if (vecLoaded) {
     try {
@@ -27853,9 +27880,9 @@ async function searchMemory(query, userId = "default", topK = DEFAULT_TOP_K, thr
       }
       const entryIds = vecResults.map((r) => r.entryId);
       const placeholders = entryIds.map(() => "?").join(",");
-      const entries = db7.prepare(
-        `SELECT * FROM memory_entries WHERE id IN (${placeholders}) AND userId = ?`
-      ).all(...entryIds, userId);
+      const sql = sessionId ? `SELECT * FROM memory_entries WHERE id IN (${placeholders}) AND userId = ? AND sessionId = ?` : `SELECT * FROM memory_entries WHERE id IN (${placeholders}) AND userId = ?`;
+      const params = sessionId ? [...entryIds, userId, sessionId] : [...entryIds, userId];
+      const entries = db7.prepare(sql).all(...params);
       const entryMap = new Map(entries.map((e) => [e.id, e]));
       const results = [];
       for (const vr of vecResults) {
@@ -27873,7 +27900,7 @@ async function searchMemory(query, userId = "default", topK = DEFAULT_TOP_K, thr
       logger.warn("[VecMemory] \u5411\u91CF\u641C\u7D22\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A\u5173\u952E\u8BCD\u641C\u7D22:", e);
     }
   }
-  return searchByKeyword(db7, query, userId, topK);
+  return searchByKeyword(db7, query, userId, topK, sessionId);
 }
 var CN_STOP_WORDS = /* @__PURE__ */ new Set([
   "\u7684",
@@ -28094,24 +28121,25 @@ function extractKeywords(text, maxKeywords = 10) {
   }
   return keywords.slice(0, maxKeywords).join(" ");
 }
-function searchByKeyword(db7, query, userId, limit) {
+function searchByKeyword(db7, query, userId, limit, sessionId) {
   const queryKeywords = extractKeywords(query, 8);
   if (queryKeywords.length === 0) return [];
   const keywords = queryKeywords.split(/\s+/).filter((k) => k.length > 1);
   if (keywords.length === 0) return [];
   const conditions = keywords.map(() => `(keywords LIKE ? OR content LIKE ?)`).join(" OR ");
-  const params = [userId, ...keywords.flatMap((k) => [`%${k}%`, `%${k}%`]), limit * 2];
+  const whereClause = sessionId ? `userId = ? AND sessionId = ? AND (${conditions})` : `userId = ? AND (${conditions})`;
+  const whereParams = sessionId ? [userId, sessionId] : [userId];
   const stmt = db7.prepare(
     `SELECT *, (
       CASE ${keywords.map(() => "WHEN keywords LIKE ? OR content LIKE ? THEN 1 ELSE 0 END").join(" + ")}
     ) AS matchCount
     FROM memory_entries
-    WHERE userId = ? AND (${conditions})
+    WHERE ${whereClause}
     ORDER BY matchCount DESC, createdAt DESC
     LIMIT ?`
   );
   const caseParams = keywords.flatMap((k) => [`%${k}%`, `%${k}%`]);
-  const allParams = [...caseParams, userId, ...keywords.flatMap((k) => [`%${k}%`, `%${k}%`]), limit];
+  const allParams = [...caseParams, ...whereParams, ...keywords.flatMap((k) => [`%${k}%`, `%${k}%`]), limit];
   const entries = stmt.all(...allParams);
   return entries.map((entry) => {
     const maxMatches = keywords.length;
@@ -31189,7 +31217,7 @@ async function executePluginTrigger(match2) {
 init_logger();
 
 // server/routes/modelSelector.ts
-function isModelAvailable2(model) {
+function isModelAvailable(model) {
   if (isLocalModel(model)) return true;
   if (model.apiKey?.trim()) return true;
   if (model.apiKeys?.some((k) => k.enabled !== false && k.key?.trim())) return true;
@@ -31239,7 +31267,7 @@ var MODEL_PRESETS = {
 };
 function autoSelectModel(message, modelsConfig, hasImageAttachment = false) {
   const enabledModels = modelsConfig.models.filter((m) => m.enabled);
-  const availableModels = enabledModels.filter(isModelAvailable2);
+  const availableModels = enabledModels.filter(isModelAvailable);
   const candidateModels = availableModels.length > 0 ? availableModels : enabledModels;
   if (candidateModels.length === 0) {
     const defaultModel2 = modelsConfig.models.find((m) => m.id === modelsConfig.defaultModelId && m.enabled !== false);
@@ -31520,7 +31548,7 @@ var globalAlwaysAllowed = null;
 function loadAlwaysAllowedTools() {
   if (globalAlwaysAllowed) return globalAlwaysAllowed;
   try {
-    const val = getAppSettings2("always_allowed_tools");
+    const val = getAppSettings("always_allowed_tools");
     globalAlwaysAllowed = val ? new Set(JSON.parse(val)) : /* @__PURE__ */ new Set();
   } catch {
     globalAlwaysAllowed = /* @__PURE__ */ new Set();
@@ -31529,7 +31557,7 @@ function loadAlwaysAllowedTools() {
 }
 function isSystemAuthorized() {
   try {
-    const val = getAppSettings2("systemAuthorization");
+    const val = getAppSettings("systemAuthorization");
     if (!val) return false;
     const config = JSON.parse(val);
     return config.enabled === true;
@@ -31998,7 +32026,8 @@ async function executeFromQueue(sessionId, event, res, params) {
             latestUserMessage.content,
             "default",
             5,
-            0.35
+            0.35,
+            sessionId
           ),
           new Promise((resolve) => setTimeout(() => resolve([]), 5e3))
         ]);
