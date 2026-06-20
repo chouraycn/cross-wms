@@ -13,7 +13,7 @@
  */
 
 import type { ToolDefinition } from '../aiClient.js';
-import type { RegisteredTool, ToolHandler } from './toolRegistry.js';
+import type { RegisteredTool, ToolHandler } from './toolTypes.js';
 import { sendCommand } from '../services/browserHostClient.js';
 
 // ===================== 工具 Schema 定义 =====================

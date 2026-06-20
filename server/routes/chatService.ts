@@ -501,7 +501,8 @@ async function executeFromQueue(
 // ===================== Main Chat Handler =====================
 
 export async function handleChat(req: import('express').Request, res: import('express').Response): Promise<void> {
-  const { sessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory, attachments, reasoningEffort, executionMode, queueMode } = req.body;
+  const { sessionId: reqSessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory, attachments, reasoningEffort, executionMode, queueMode } = req.body;
+  const sessionId = reqSessionId || uuidv4();
   logger.debug(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, message="${message?.slice(0, 30)}", queueMode=${queueMode || 'default'}`);
   if (attachments && Array.isArray(attachments) && attachments.length > 0) {
     logger.debug(`[Chat API] 附件数量: ${attachments.length}`);

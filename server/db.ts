@@ -457,12 +457,29 @@ export function initDb(): Database.Database {
   }
 
   // Enable foreign keys
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  try { db.pragma('journal_mode = WAL'); } catch { /* readonly mode */ }
+  try { db.pragma('foreign_keys = ON'); } catch { /* readonly mode */ }
+
+  // v2.8.9: 检测数据库是否只读（macOS com.apple.provenance 安全限制）
+  let isMemoryDb = false;
+  try {
+    db.pragma('wal_checkpoint(RESTART)');
+  } catch {
+    logger.warn('[DB] 数据库只读（可能是 macOS 安全限制），切换到内存数据库');
+    try { db.close(); } catch {}
+    db = new Database(':memory:');
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+    isMemoryDb = true;
+    logger.info('[DB] 已切换到内存数据库（数据不会持久化）');
+  }
+  try { db.pragma('foreign_keys = ON'); } catch { /* readonly mode */ }
 
   // v1.5.68: 启动时做完整性检查 — 提前发现 DB 损坏，配合 chat.db.bak 备份做更可靠的恢复
   // v4.0: 先做 WAL checkpoint(RESTART) 将未刷盘的事务写入主 DB，再进行完整性检查
-  db.pragma('wal_checkpoint(RESTART)');
+  try { db.pragma('wal_checkpoint(RESTART)'); } catch {
+    logger.warn('[DB] WAL checkpoint 失败（可能是只读模式），跳过');
+  }
   try {
     const integrityResult = db.pragma('integrity_check') as Array<{ integrity_check: string }> | string;
     let isOk = false;
