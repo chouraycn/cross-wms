@@ -20,8 +20,8 @@ import { isMcpToolName } from './mcpTypes.js';
 import { handleWebSearch, handleWebFetch, handleWebApiCall } from './webTools.js';
 import { logger } from '../logger.js';
 
-import { ToolHandler, RegisteredTool } from './toolTypes.js';
-export { ToolHandler, RegisteredTool } from './toolTypes.js';
+import { ToolHandler, type RegisteredTool } from './toolTypes.js';
+export type { ToolHandler, RegisteredTool } from './toolTypes.js';
 
 import { handleSystemInfo } from './systemTools.js';
 import { handleListDir, handleReadFile, handleWriteFile, handleExecCommand } from './fileTools.js';
