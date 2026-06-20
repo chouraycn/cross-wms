@@ -230,7 +230,16 @@ export async function callOpenAICompatibleStream(
     stream: true,
   };
   if (tools && tools.length > 0) {
-    body.tools = tools;
+    // v2.8.7: 本地模型工具策略 — ollama 等本地推理引擎处理 tool_choice="auto" 时
+    // 需要对每个 tool 计算调用概率。20 个 tools 就需要 14 秒首响应（7B 模型），
+    // 185 个 tools 则完全卡住。解决方案：本地模型不发送 tools，让第一轮纯文本回复。
+    // 工具调用由 ReAct/Observer 策略的多轮对话机制在后续轮次中处理。
+    const isLocal = /localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.|:11434/.test(apiEndpoint);
+    if (isLocal) {
+      logger.debug(`[AIClient] 本地模型跳过 tools 参数 (model=${modelId}, tools=${tools.length})`);
+    } else {
+      body.tools = tools;
+    }
     body.tool_choice = 'auto';
   }
 
