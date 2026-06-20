@@ -14,7 +14,7 @@ import { callApi, isPyWebView } from '../../services/tencentDocsApi';
 // macOS 标准红黄绿按钮尺寸和位置（与 WorkBuddy 对齐）
 const BUTTON_SIZE = 12;     // 按钮直径 12px
 const BUTTON_GAP = '6px';  // 按钮间距 6px（边缘到边缘，macOS 标准）
-const LEFT = 16;            // 距离侧边栏左边缘（往右4px）
+const LEFT = 17;            // 距离侧边栏左边缘（往右5px）
 const TOP = 14;             // 距离窗口顶部（往下4px）
 
 type WindowState = 'normal' | 'maximized';

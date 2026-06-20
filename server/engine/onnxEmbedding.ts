@@ -398,9 +398,16 @@ export async function embedText(text: string): Promise<Float32Array> {
   }
 
   // P0: 缓存命中检查
-  const cacheKey = text.length > 200 ? text.slice(0, 200) : text;
+  // P1 fix: 使用完整文本的 SHA-256 哈希作为缓存键，避免长文本截断导致错误命中
+  const cacheKey = text.length > 200
+    ? createHash('sha256').update(text).digest('hex')
+    : text;
   const cached = embeddingCache.get(cacheKey);
   if (cached) {
+    // P0 fix: 缓存命中时删除并重新插入，将条目移到 Map 末尾（最近使用），
+    // 实现真正的 LRU 语义而非 FIFO
+    embeddingCache.delete(cacheKey);
+    embeddingCache.set(cacheKey, cached);
     return cached;
   }
 
