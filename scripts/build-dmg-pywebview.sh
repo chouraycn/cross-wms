@@ -240,7 +240,17 @@ if command -v npx &>/dev/null; then
     --external:uuid \
     --external:@e965/xlsx \
     --external:onnxruntime-node \
-    --external:sqlite-vec
+    --external:sqlite-vec \
+    --external:ajv \
+    --external:cheerio \
+    --external:zod \
+    --external:jszip \
+    --external:iconv-lite \
+    --external:playwright \
+    --external:fflate \
+    --external:jsonpath-plus \
+    --external:js-yaml \
+    --external:katex
   echo "✅ 后端编译完成 (index.cjs)"
 else
   echo "⚠️  esbuild 不可用，尝试手动复制..."
