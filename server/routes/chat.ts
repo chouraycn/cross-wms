@@ -1775,8 +1775,7 @@ router.post('/chat', async (req, res) => {
               }
               thinkingContent += thinkingChunk;
               thinkingChunkCount++;
-              res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}
-\n\n`);
+              res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`);
 
               // v3.0: 检查插件触发器匹配（每 5 个 chunk 检查一次，避免高频匹配）
               if (thinkingChunkCount % 5 === 0 && thinkingContent.length > 20) {

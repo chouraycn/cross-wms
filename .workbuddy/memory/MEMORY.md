@@ -48,6 +48,14 @@
 - 会话归档时自动写入摘要 embedding (sessionLifecycle.ts)
 - API: `/api/memory/search`、`/api/memory/stats`、`/api/memory/backfill`
 
+## ONNX 性能优化 (v1.5.192+)
+- P0 LRU 推理缓存: `embedText()` 内置 256 条 Map 缓存，key=文本前200字符，相同文本零推理
+- P1 真批量推理: `embedBatch()` 构建 [batch, 256] tensor 一次推理，非 for 循环逐条
+- P1 Tensor 内存池: `pooledInputIdsTensor` 预分配复用，减少 GC 压力
+- P1 tokenizer.json 预编译: `loadTokenizerJson()` 合并 vocab 到 vocabMap
+- P1 调用点批量改造: `toolRegistry.ts` desktop_click_smart 用 embedBatch（31次→1次），`vecMemoryStore.ts` backfillEmbeddings 分批16条
+- P4 Session 配置: `executionMode: 'parallel'`, `intraOpNumThreads: 4`, `interOpNumThreads: 2`
+
 ## 桌面自动化 v1.5.130
 - `desktop_see`: 截图 + 返回屏幕分辨率 (screenWidth/screenHeight)
 - `desktop_click`: 三种定位方式 ref > nx/ny(归一化0~1) > x/y(绝对坐标)
