@@ -13090,8 +13090,9 @@ async function callOpenAICompatibleStream(apiEndpoint, apiKey, modelId, messages
       }
     }
   }
+  const effectiveContent = fullContent || reasoningContent || "";
   return {
-    content: fullContent,
+    content: effectiveContent,
     toolCalls: toolCalls.length > 0 ? toolCalls : void 0,
     reasoningContent: reasoningContent || void 0,
     usage: usageData

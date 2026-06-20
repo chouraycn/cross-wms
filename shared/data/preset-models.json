@@ -362,16 +362,6 @@
       "capabilities": ["reasoning", "code", "general"]
     },
     {
-      "id": "siliconflow-qwen2.5-72b",
-      "name": "Qwen2.5 72B (SiliconFlow)",
-      "provider": "siliconflow",
-      "apiEndpoint": "https://api.siliconflow.cn/v1",
-      "description": "通过 SiliconFlow 路由的 Qwen2.5 72B",
-      "contextWindow": 32000,
-      "maxTokens": 4096,
-      "capabilities": ["general", "code"]
-    },
-    {
       "id": "ollama-llama3.1",
       "name": "Llama 3.1",
       "provider": "ollama",
