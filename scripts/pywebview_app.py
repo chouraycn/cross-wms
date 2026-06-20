@@ -384,6 +384,9 @@ def start_server():
     env['PORT'] = str(SERVER_PORT)
     env['CDF_KNOW_CLOW_DATA_DIR'] = os.path.expanduser('~/.cdf-know-clow')
     env['CDF_KNOW_CLOW_NODE_PATH'] = node_path
+    # v2.8.7: 用户环境存在自签名证书链，Node.js fetch 会失败
+    # 设置此环境变量禁用 TLS 证书验证，确保 DeepSeek/Kimi 等云模型 API 可正常访问
+    env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
 
     node_dir = os.path.dirname(node_path)
     if node_dir not in env.get('PATH', '').split(os.pathsep):

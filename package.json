@@ -4,8 +4,8 @@
   "version": "1.5.196",
   "type": "module",
   "scripts": {
-    "dev:server": "tsx watch --tsconfig server/tsconfig.json server/index.ts",
-    "server": "tsx --tsconfig server/tsconfig.json server/index.ts",
+    "dev:server": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx watch --tsconfig server/tsconfig.json server/index.ts",
+    "server": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx --tsconfig server/tsconfig.json server/index.ts",
     "dev": "concurrently \"npm run dev:server\" \"vite\"",
     "build": "tsc && vite build",
     "preview": "vite preview",
