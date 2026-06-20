@@ -11601,7 +11601,7 @@ var BUILTIN_MODELS = [
   {
     id: "glm-4.7",
     name: "GLM-4.7",
-    provider: "zhipu",
+    provider: "bigmodel",
     apiEndpoint: "https://open.bigmodel.cn/api/paas/v4",
     enabled: false,
     isDefault: false,
@@ -11613,7 +11613,7 @@ var BUILTIN_MODELS = [
   {
     id: "glm-5",
     name: "GLM-5",
-    provider: "zhipu",
+    provider: "bigmodel",
     apiEndpoint: "https://open.bigmodel.cn/api/paas/v4",
     enabled: false,
     isDefault: false,
@@ -11776,17 +11776,14 @@ async function loadModelsConfig() {
   } catch (e) {
     logger.error("[modelsStore] \u52A0\u8F7D\u6A21\u578B\u914D\u7F6E\u5931\u8D25:", e);
   }
-  const fallbackModels = BUILTIN_MODELS.map(
-    (m, i) => i === 0 ? { ...m, enabled: true, isDefault: true } : { ...m }
-  );
   const fallback = {
     version: 1,
-    models: fallbackModels,
-    defaultModelId: BUILTIN_MODELS[0]?.id || "",
+    models: [],
+    defaultModelId: "",
     updatedAt: (/* @__PURE__ */ new Date()).toISOString()
   };
   writeModelsFile(fallback).catch((e) => {
-    logger.error("[modelsStore] \u5199\u5165\u5185\u7F6E\u6A21\u578B\u515C\u5E95\u914D\u7F6E\u5931\u8D25:", e);
+    logger.error("[modelsStore] \u5199\u5165\u7A7A\u6A21\u578B\u515C\u5E95\u914D\u7F6E\u5931\u8D25:", e);
   });
   cachedModelsFile = fallback;
   cacheTimestamp2 = Date.now();
@@ -12169,6 +12166,29 @@ var PROVIDER_DISCOVERY_LIST = [
     modelsEndpoint: "https://api.minimax.chat/v1",
     mapper: (id) => {
       const known = {
+        // v2.8.7: 更新为 2026 年最新模型
+        "minimax-m3": {
+          name: "MiniMax M3",
+          capabilities: ["reasoning", "code", "multimodal", "general"],
+          contextWindow: 1e6,
+          maxTokens: 32768,
+          description: "MiniMax M3 \u65D7\u8230\u6A21\u578B\uFF0CMSA\u7A00\u758F\u6CE8\u610F\u529B\u67B6\u6784\uFF0C1M\u4E0A\u4E0B\u6587\uFF0C\u539F\u751F\u591A\u6A21\u6001"
+        },
+        "minimax-m2.5": {
+          name: "MiniMax M2.5",
+          capabilities: ["reasoning", "general", "costEffective"],
+          contextWindow: 128e3,
+          maxTokens: 8192,
+          description: "MiniMax M2.5\uFF0CMOE\u67B6\u6784\uFF0C128K\u4E0A\u4E0B\u6587\uFF0C\u5747\u8861\u80FD\u529B"
+        },
+        "minimax-m2.1": {
+          name: "MiniMax M2.1",
+          capabilities: ["general", "costEffective"],
+          contextWindow: 128e3,
+          maxTokens: 4096,
+          description: "MiniMax M2.1\uFF0C\u5F00\u6E90\u6A21\u578B\uFF0C\u9002\u5408\u672C\u5730\u90E8\u7F72"
+        },
+        // 保留旧版模型名兼容
         "MiniMax-Text-01": {
           name: "MiniMax Text-01",
           capabilities: ["longContext", "general"],
@@ -32617,26 +32637,36 @@ ${sessionContext}
               } else {
                 apiMessages.push({ role: msg.role, content: msg.content });
               }
-            } else if (msg.role === "assistant" && msg.toolCalls && msg.toolCalls.length > 0) {
-              const callIds = msg.toolCalls.map(() => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
-              apiMessages.push({
-                role: "assistant",
-                content: msg.content || null,
-                tool_calls: msg.toolCalls.map((tc, i) => ({
-                  id: callIds[i],
-                  type: "function",
-                  function: {
-                    name: tc.name,
-                    arguments: tc.arguments
+            } else if (msg.role === "assistant" && msg.toolCalls) {
+              try {
+                const toolCalls = typeof msg.toolCalls === "string" ? JSON.parse(msg.toolCalls) : msg.toolCalls;
+                if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+                  const callIds = toolCalls.map(() => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+                  apiMessages.push({
+                    role: "assistant",
+                    content: msg.content || null,
+                    tool_calls: toolCalls.map((tc, i) => ({
+                      id: callIds[i],
+                      type: "function",
+                      function: {
+                        name: tc.name,
+                        arguments: tc.arguments
+                      }
+                    }))
+                  });
+                  for (let i = 0; i < toolCalls.length; i++) {
+                    apiMessages.push({
+                      role: "tool",
+                      content: toolCalls[i].result ?? "(tool result unavailable)",
+                      tool_call_id: callIds[i]
+                    });
                   }
-                }))
-              });
-              for (let i = 0; i < msg.toolCalls.length; i++) {
-                apiMessages.push({
-                  role: "tool",
-                  content: msg.toolCalls[i].result ?? "(tool result unavailable)",
-                  tool_call_id: callIds[i]
-                });
+                } else {
+                  apiMessages.push({ role: msg.role, content: msg.content });
+                }
+              } catch (parseErr) {
+                logger.warn("[Chat API] \u6D41\u5F0F\u8DEF\u5F84 toolCalls \u89E3\u6790\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A\u666E\u901A\u6D88\u606F:", parseErr);
+                apiMessages.push({ role: msg.role, content: msg.content });
               }
             } else {
               apiMessages.push({ role: msg.role, content: msg.content });

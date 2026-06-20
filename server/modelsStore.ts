@@ -334,20 +334,17 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
     logger.error('[modelsStore] 加载模型配置失败:', e);
   }
 
-  // 兜底：返回内置模型，并立即写入磁盘（确保首次启动时内置模型被持久化）
-  // RC-1: 自动启用第一个内置模型，避免首次启动时所有模型均禁用
-  const fallbackModels = BUILTIN_MODELS.map((m, i) =>
-    i === 0 ? { ...m, enabled: true, isDefault: true } : { ...m }
-  );
+  // 兜底：首次安装时返回空模型列表（用户通过"添加模型"自行配置）
+  // v2.8.7: 不再预置 BUILTIN_MODELS，避免首次打开模型管理看到大量关闭的模型
   const fallback: ModelsFile = {
     version: 1,
-    models: fallbackModels,
-    defaultModelId: BUILTIN_MODELS[0]?.id || '',
+    models: [],
+    defaultModelId: '',
     updatedAt: new Date().toISOString(),
   };
   // 立即持久化到磁盘，避免每次启动都走内存兜底
   writeModelsFile(fallback).catch((e) => {
-    logger.error('[modelsStore] 写入内置模型兜底配置失败:', e);
+    logger.error('[modelsStore] 写入空模型兜底配置失败:', e);
   });
   cachedModelsFile = fallback;
   cacheTimestamp = Date.now();
