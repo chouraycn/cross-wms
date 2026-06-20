@@ -11,6 +11,8 @@ export default defineConfig({
     include: [
       'src/__tests__/**/*.test.{ts,tsx}',
       'src/components/**/__tests__/**/*.test.{ts,tsx}',
+      'src/services/**/__tests__/**/*.test.{ts,tsx}',
+      'src/stores/**/__tests__/**/*.test.{ts,tsx}',
       'server/__tests__/**/*.test.{ts,tsx}',
       'server/**/__tests__/**/*.test.{ts,tsx}',
     ],
