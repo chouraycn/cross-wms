@@ -81,12 +81,16 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
     };
   }, [isStreaming]);
 
-  // 流式开始时自动展开
+  // v2.8.7: 流式开始时自动展开；历史消息（有 thinkingDuration 但非流式）也默认展开
   const prevRef = useRef(false);
   useEffect(() => {
     if (isStreaming && !prevRef.current) setExpanded(true);
-    prevRef.current = !!isStreaming;
-  }, [isStreaming]);
+    // 历史消息：有 thinking 内容且有 duration 时默认展开
+    if (!isStreaming && !prevRef.current && thinking && thinking.trim() && duration != null && duration > 0) {
+      setExpanded(true);
+    }
+    prevRef.current = true;
+  }, [isStreaming, thinking, duration]);
 
   // 右侧元信息
   const metaParts: string[] = [];
