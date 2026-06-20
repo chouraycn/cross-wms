@@ -42,10 +42,9 @@ import {
 } from '../aiClient.js';
 import { Observer, type Observation, type ObserverEvent } from './observer.js';
 import { Planner, type ExecutionPlan } from './planner.js';
-import { getToolDefinitions, executeToolCall } from './toolRegistry.js';
+import { getToolDefinitions } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
 import { mcpClientManager } from './mcpClientManager.js';
-import { isMcpToolName, getMcpServerPrefix } from './mcpTypes.js';
 import { truncateContextForModel } from './contextTruncate.js';
 import { compressContextWithSummary } from './contextCompress.js';
 import type { ToolExecutionResult } from './toolExecutor.js';
@@ -58,22 +57,12 @@ import { ObservationCompressor, needsCompression } from './observationCompressor
 import { CircuitBreaker } from './circuitBreaker.js';
 import { writeMemory, extractKeywords } from './vecMemoryStore.js';
 import { OutputValidator } from './outputValidator.js';
-import { ToolPermissionSandbox, type PermissionContext, type PermissionDecision } from './toolPermissionSandbox.js';
-import { ToolDependencyGraph, type ToolCallNode, type TopologyLayer } from './toolDependencyGraph.js';
-import { SemanticCompressor, type CompressionResult } from './semanticCompressor.js';
-import { MultilingualIntent, type IntentResult } from './multilingualIntent.js';
+import { ToolPermissionSandbox } from './toolPermissionSandbox.js';
+import { ToolDependencyGraph } from './toolDependencyGraph.js';
+import { SemanticCompressor } from './semanticCompressor.js';
+import { MultilingualIntent } from './multilingualIntent.js';
+import { ActionPhaseExecutor } from './actionPhaseExecutor.js';
 import { logger } from '../logger.js';
-
-/** v2.5.0: 检查工具是否在已授权集合中（支持通配符前缀匹配，如 mcp__server__*） */
-function isToolInApprovedSet(toolName: string, approvedSet: Set<string>): boolean {
-  if (approvedSet.has(toolName)) return true;
-  for (const pattern of approvedSet) {
-    if (pattern.endsWith('*') && toolName.startsWith(pattern.slice(0, -1))) {
-      return true;
-    }
-  }
-  return false;
-}
 
 // ===================== 类型定义 =====================
 
@@ -184,6 +173,7 @@ export class ReActExecutor {
   private _semanticCompressor?: SemanticCompressor;
   private _multilingualIntent?: MultilingualIntent;
   private _budgetConfig?: Partial<BudgetConfig>;
+  private _actionPhaseExecutor?: ActionPhaseExecutor;
 
   // 懒加载访问器 — 避免构造函数中一次性创建 13 个对象（含 SQLite 连接）
   private get observer(): Observer {
@@ -228,6 +218,18 @@ export class ReActExecutor {
   }
   private get multilingualIntent(): MultilingualIntent {
     return this._multilingualIntent ?? (this._multilingualIntent = new MultilingualIntent());
+  }
+  private get actionPhaseExecutor(): ActionPhaseExecutor {
+    return this._actionPhaseExecutor ?? (this._actionPhaseExecutor = new ActionPhaseExecutor({
+      circuitBreaker: this.circuitBreaker,
+      permissionSandbox: this.permissionSandbox,
+      dependencyGraph: this.dependencyGraph,
+      extractUserMessage: (messages) => this.extractUserMessage(messages),
+      getState: () => ({
+        currentComplexityLevel: this.state.currentComplexityLevel,
+        turn: this.state.turn,
+      }),
+    }));
   }
 
   constructor(observer?: Observer, planner?: Planner, budgetConfig?: Partial<BudgetConfig>) {
@@ -1132,14 +1134,7 @@ export class ReActExecutor {
   }
 
   /**
-   * ACTING 阶段（v5.0 重构：分组并行执行）。
-   *
-   * 按工具风险等级分组：
-   * - auto 组：Promise.all 并行执行（无需权限确认）
-   * - confirm 组：串行逐个确认执行
-   * - high-risk 组：串行逐个确认执行
-   *
-   * 返回工具调用和结果的映射。
+   * ACTING 阶段 — 委托给 ActionPhaseExecutor。
    */
   private async actionPhase(
     response: AIResponse,
@@ -1151,142 +1146,11 @@ export class ReActExecutor {
       currentMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;
     },
   ): Promise<Map<ToolCall, string>> {
-    const results = new Map<ToolCall, string>();
-
-    if (!response.toolCalls || response.toolCalls.length === 0) {
-      return results;
-    }
-
-    const toolCalls = response.toolCalls;
-
-    // v6.0: P2-1 使用 ToolPermissionSandbox 分组
-    const permissionContext: PermissionContext = {
-      complexityLevel: this.state.currentComplexityLevel,
-      currentTurn: this.state.turn,
-      executedTools: context.executedToolCalls.map(tc => tc.name),
-      userMessage: this.extractUserMessage(context.currentMessages) ?? '',
-    };
-    const allowGroup = toolCalls.filter(tc => {
-      const decision = this.permissionSandbox.getPermission(tc.function.name, permissionContext);
-      return decision.permission === 'allow';
-    });
-    const confirmGroup = toolCalls.filter(tc => {
-      const decision = this.permissionSandbox.getPermission(tc.function.name, permissionContext);
-      return decision.permission === 'confirm';
-    });
-    const highRiskGroup = toolCalls.filter(tc => {
-      const decision = this.permissionSandbox.getPermission(tc.function.name, permissionContext);
-      return decision.permission === 'high-risk';
-    });
-    const denyGroup = toolCalls.filter(tc => {
-      const decision = this.permissionSandbox.getPermission(tc.function.name, permissionContext);
-      return decision.permission === 'deny';
-    });
-
-    // deny 组：跳过执行，返回禁止结果
-    for (const tc of denyGroup) {
-      const denyResult = JSON.stringify({ error: `工具 '${tc.function.name}' 已被权限沙箱禁止执行。` });
-      results.set(tc, denyResult);
-      context.executedToolCalls.push({
-        name: tc.function.name,
-        arguments: tc.function.arguments,
-        result: denyResult,
-      });
-      if (context.onToolCall) {
-        context.onToolCall(tc, denyResult);
-      }
-    }
-
-    // v6.0: P2-4 构建工具依赖图（仅对 allow 组使用 DAG 优化）
-    if (allowGroup.length > 1) {
-      this.dependencyGraph.reset();
-      allowGroup.forEach((tc, idx) => {
-        const decision = this.permissionSandbox.getPermission(tc.function.name, permissionContext);
-        this.dependencyGraph.addNode({
-          id: `allow_${idx}`,
-          toolName: tc.function.name,
-          arguments: tc.function.arguments,
-          index: idx,
-          permission: decision.permission,
-        });
-      });
-      this.dependencyGraph.inferDependencies();
-    }
-
-    // v6.0: P2-4 allow 组：按 DAG 拓扑层级执行
-    if (allowGroup.length > 0) {
-      if (allowGroup.length === 1 || this.dependencyGraph.getEdges().length === 0) {
-        // 单个工具或无依赖：直接 Promise.all 并行
-        const allowResults = await Promise.all(
-          allowGroup.map(async (tc) => {
-            const result = await this.executeToolWithPermission(tc, context);
-            return { toolCall: tc, result };
-          }),
-        );
-        for (const { toolCall, result } of allowResults) {
-          results.set(toolCall, result);
-        }
-      } else {
-        // 多工具有依赖：按拓扑层级执行
-        const layers = this.dependencyGraph.topologicalSort();
-        for (const layer of layers) {
-          if (layer.parallelizable && layer.nodes.length > 1) {
-            // 同层可并行
-            const layerResults = await Promise.all(
-              layer.nodes.map(async (node) => {
-                const tc = allowGroup[node.index];
-                const result = tc ? await this.executeToolWithPermission(tc, context) : '';
-                return { toolCall: tc, result };
-              }),
-            );
-            for (const { toolCall, result } of layerResults) {
-              if (toolCall) results.set(toolCall, result);
-            }
-          } else {
-            // 同层串行
-            for (const node of layer.nodes) {
-              const tc = allowGroup[node.index];
-              if (tc) {
-                const result = await this.executeToolWithPermission(tc, context);
-                results.set(tc, result);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // confirm 组：串行逐个确认执行
-    for (const tc of confirmGroup) {
-      const result = await this.executeToolWithPermission(tc, context);
-      results.set(tc, result);
-    }
-
-    // high-risk 组：串行逐个确认执行
-    for (const tc of highRiskGroup) {
-      const result = await this.executeToolWithPermission(tc, context);
-      results.set(tc, result);
-    }
-
-    // v1.5.176: 完整性校验 — 确保所有 tool_call_id 都有对应结果
-    // OpenAI 规范：assistant(tool_calls) 后必须有每个 tool_call_id 的 tool 消息
-    for (const tc of toolCalls) {
-      if (!results.has(tc)) {
-        logger.error(`[ReActExecutor] tool_call_id=${tc.id} (${tc.function.name}) 缺少执行结果，自动补全错误消息`);
-        const errorResult = JSON.stringify({
-          error: `工具 '${tc.function.name}' 执行失败：结果缺失，可能原因：权限拒绝未返回结果、工具执行器异常未捕获`,
-          tool_call_id: tc.id,
-        });
-        results.set(tc, errorResult);
-      }
-    }
-
-    return results;
+    return this.actionPhaseExecutor.actionPhase(response, context);
   }
 
   /**
-   * 执行单个工具调用（含权限检查）。
-   * v5.0 从 actionPhase 中提取为独立方法，支持分组并行。
+   * 执行单个工具调用 — 委托给 ActionPhaseExecutor。
    */
   private async executeToolWithPermission(
     toolCall: ToolCall,
@@ -1297,122 +1161,7 @@ export class ReActExecutor {
       executedToolCalls: Array<{ name: string; arguments: string; result: string }>;
     },
   ): Promise<string> {
-    const toolName = toolCall.function.name;
-
-    // v6.0: P0-2 熔断检查 — 如果工具已熔断则跳过
-    if (this.circuitBreaker.isOpen(toolCall.function.name)) {
-      const skipResult = JSON.stringify({
-        error: `工具 '${toolCall.function.name}' 已被熔断（连续失败过多），已跳过执行。`,
-        circuitBreakerState: 'open',
-      });
-      context.executedToolCalls.push({
-        name: toolCall.function.name,
-        arguments: toolCall.function.arguments,
-        result: skipResult,
-      });
-      if (context.onToolCall) {
-        context.onToolCall(toolCall, skipResult);
-      }
-      return skipResult;
-    }
-
-    // MCP Server 级熔断检查
-    if (isMcpToolName(toolName)) {
-      const prefix = getMcpServerPrefix(toolName);
-      if (prefix && this.circuitBreaker.isMcpServerOpen(prefix)) {
-        const skipResult = JSON.stringify({
-          error: `MCP Server '${prefix}' 已被熔断（连续失败过多），已跳过执行。`,
-          circuitBreakerState: 'open',
-        });
-        context.executedToolCalls.push({
-          name: toolName,
-          arguments: toolCall.function.arguments,
-          result: skipResult,
-        });
-        if (context.onToolCall) {
-          context.onToolCall(toolCall, skipResult);
-        }
-        return skipResult;
-      }
-    }
-
-    // 权限检查（confirm 和 high-risk 工具需要确认）
-    if (this.needsPermission(toolName, {
-      complexityLevel: this.state.currentComplexityLevel,
-      currentTurn: this.state.turn,
-      executedTools: context.executedToolCalls.map(tc => tc.name),
-      userMessage: '',
-    })) {
-      let hasPermission: boolean;
-
-      if (isToolInApprovedSet(toolName, context.approvedTools)) {
-        hasPermission = true;
-      } else {
-        hasPermission = context.onPermissionRequest
-          ? await context.onPermissionRequest(toolCall)
-          : false;
-        if (hasPermission) {
-          context.approvedTools.add(toolName);
-        }
-      }
-
-      if (!hasPermission) {
-        const denyResult = JSON.stringify({ error: `用户拒绝了工具 '${toolName}' 的执行请求。` });
-        context.executedToolCalls.push({
-          name: toolName,
-          arguments: toolCall.function.arguments,
-          result: denyResult,
-        });
-        if (context.onToolCall) {
-          context.onToolCall(toolCall, denyResult);
-        }
-        return denyResult;
-      }
-    }
-
-    // 执行工具（区分 MCP 工具和内置工具）
-    let result: string;
-    if (isMcpToolName(toolName)) {
-      // MCP 工具：委托给 mcpClientManager
-      try {
-        const parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
-        result = await mcpClientManager.executeMcpTool(toolName, parsedArgs);
-        // 记录 MCP Server 级成功
-        const prefix = getMcpServerPrefix(toolName);
-        if (prefix) {
-          this.circuitBreaker.recordMcpServerSuccess(prefix);
-        }
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        result = JSON.stringify({ error: `MCP 工具执行异常: ${errMsg}` });
-        // 记录 MCP Server 级失败
-        const prefix2 = getMcpServerPrefix(toolName);
-        if (prefix2) {
-          this.circuitBreaker.recordMcpServerFailure(prefix2, errMsg);
-        }
-      }
-    } else {
-      // v1.5.176: 内置工具执行必须捕获异常，否则 results 会缺失该 tool_call_id
-      try {
-        result = await executeToolCall(toolCall);
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        logger.error(`[ReActExecutor] executeToolCall 异常: ${errMsg}`);
-        result = JSON.stringify({ error: `工具 '${toolName}' 执行异常: ${errMsg}` });
-      }
-    }
-    context.executedToolCalls.push({
-      name: toolName,
-      arguments: toolCall.function.arguments,
-      result,
-    });
-
-    // 通知调用方
-    if (context.onToolCall) {
-      context.onToolCall(toolCall, result);
-    }
-
-    return result;
+    return this.actionPhaseExecutor.executeToolWithPermission(toolCall, context);
   }
 
   /**
@@ -1687,15 +1436,6 @@ export class ReActExecutor {
   }
 
   // ===================== 原有辅助方法 =====================
-
-  /**
-   * 判断工具是否需要权限确认。
-   * v6.0: P2-1 委托给 ToolPermissionSandbox
-   */
-  private needsPermission(name: string, context?: PermissionContext): boolean {
-    const decision = this.permissionSandbox.getPermission(name, context);
-    return decision.needsConfirmation || decision.permission === 'deny';
-  }
 
   /**
    * 发送 ReAct 阶段切换 SSE 事件。
