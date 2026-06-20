@@ -920,26 +920,36 @@ export async function handleChat(req: import('express').Request, res: import('ex
               } else {
                 apiMessages.push({ role: msg.role, content: msg.content });
               }
-            } else if (msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0) {
-              const callIds = msg.toolCalls.map(() => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
-              apiMessages.push({
-                role: 'assistant',
-                content: msg.content || null,
-                tool_calls: msg.toolCalls.map((tc: any, i: number) => ({
-                  id: callIds[i],
-                  type: 'function',
-                  function: {
-                    name: tc.name,
-                    arguments: tc.arguments,
-                  },
-                })),
-              } as any);
-              for (let i = 0; i < msg.toolCalls.length; i++) {
-                apiMessages.push({
-                  role: 'tool',
-                  content: msg.toolCalls[i].result ?? "(tool result unavailable)",
-                  tool_call_id: callIds[i],
-                } as any);
+            } else if (msg.role === 'assistant' && msg.toolCalls) {
+              try {
+                const toolCalls = typeof msg.toolCalls === 'string' ? JSON.parse(msg.toolCalls) : msg.toolCalls;
+                if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+                  const callIds = toolCalls.map(() => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+                  apiMessages.push({
+                    role: 'assistant',
+                    content: msg.content || null,
+                    tool_calls: toolCalls.map((tc: any, i: number) => ({
+                      id: callIds[i],
+                      type: 'function',
+                      function: {
+                        name: tc.name,
+                        arguments: tc.arguments,
+                      },
+                    })),
+                  } as any);
+                  for (let i = 0; i < toolCalls.length; i++) {
+                    apiMessages.push({
+                      role: 'tool',
+                      content: toolCalls[i].result ?? "(tool result unavailable)",
+                      tool_call_id: callIds[i],
+                    } as any);
+                  }
+                } else {
+                  apiMessages.push({ role: msg.role, content: msg.content });
+                }
+              } catch (parseErr) {
+                logger.warn('[Chat API] 流式路径 toolCalls 解析失败，降级为普通消息:', parseErr);
+                apiMessages.push({ role: msg.role, content: msg.content });
               }
             } else {
               apiMessages.push({ role: msg.role, content: msg.content });
