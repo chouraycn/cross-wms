@@ -144,7 +144,7 @@ function classifyError(statusCode: number, responseBody: string): AIAPIError['ca
 
 // v1.5.187: 发请求前硬校验 tool_calls/tool 消息配对
 // 如果 sanitizeToolMessages 仍有遗漏，此处最后一次检查并自动修复
-function validateToolMessages(messages: Array<{ role: string; content?: unknown; tool_calls?: unknown[]; tool_call_id?: string }>): void {
+function validateToolMessages(messages: Array<{ role: string; content?: unknown; tool_calls?: Array<{ id?: string }> | unknown[]; tool_call_id?: string }>): void {
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
     if (msg.role === 'assistant' && Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0) {
@@ -169,12 +169,12 @@ function validateToolMessages(messages: Array<{ role: string; content?: unknown;
         logger.error(`[validateToolMessages] 检测到不完整的 tool_calls 配对！assistantIdx=${i}, ` +
           `expected=${[...expectedIds].join(',')}, found=${[...foundIds].join(',')}, missing=${missing.join(',')}`);
         // 自动修复：移除没有对应 tool 消息的 tool_calls
-        (msg as any).tool_calls = (msg.tool_calls as Array<{ id?: string }>).filter(
-          (tc: any) => tc.id && foundIds.has(tc.id),
+        msg.tool_calls = (msg.tool_calls as Array<{ id?: string }>).filter(
+          (tc) => tc.id && foundIds.has(tc.id),
         );
-        if ((msg as any).tool_calls.length === 0) {
+        if (msg.tool_calls.length === 0) {
           // 所有 tool_calls 都被移除 — 删除 tool_calls 字段
-          delete (msg as any).tool_calls;
+          delete msg.tool_calls;
           logger.error(`[validateToolMessages] 已清空 assistant[${i}] 的 tool_calls（无对应 tool 消息）`);
         } else {
           logger.error(`[validateToolMessages] 已移除 assistant[${i}] 中 ${missing.length} 个无响应的 tool_calls`);
@@ -321,15 +321,15 @@ export async function callOpenAICompatibleStream(
       const isK27Code = /k2\.7/i.test(modelId);
       if (isK27Code) {
         // K2.7 Code: 始终开启思考，keep=all 保留推理内容
-        (body as any).thinking = { type: 'enabled', keep: 'all' };
+        body.thinking = { type: 'enabled', keep: 'all' };
       } else {
         // K2.6/K2.5: 支持启用/禁用思考
-        (body as any).thinking = { type: 'enabled' };
+        body.thinking = { type: 'enabled' };
       }
     } else if (isZhipuModel) {
       // 智谱 AI: 移除 reasoning_effort（智谱不支持），设置顶层 thinking 参数
       delete body.reasoning_effort;
-      (body as any).thinking = { type: 'enabled' };
+      body.thinking = { type: 'enabled' };
     } else if (isQwenModel) {
       // Qwen3: 只保留 reasoning_effort，不发送 enable_thinking / thinking
       // body.reasoning_effort 已在上方设置，此处无需额外操作
@@ -396,12 +396,16 @@ export async function callOpenAICompatibleStream(
     // v1.5.129: 400 错误时记录消息结构，帮助诊断 tool_calls 配对问题
     if (response.status === 400) {
       const toolMsgs = messages.filter(m => m.role === 'tool');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const assistantWithCalls = messages.filter(m => m.role === 'assistant' && (m as any).tool_calls);
       logger.error(`[AIClient] 400 错误诊断: ${toolMsgs.length} 条 tool 消息, ${assistantWithCalls.length} 条 assistant(tool_calls)`);
       for (const m of messages) {
         if (m.role === 'tool') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           logger.error(`  [tool] tool_call_id=${(m as any).tool_call_id || '(missing)'}`);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } else if (m.role === 'assistant' && (m as any).tool_calls) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const ids = ((m as any).tool_calls as any[]).map(tc => tc.id || '(no-id)');
           logger.error(`  [assistant(tool_calls)] ids=[${ids.join(', ')}]`);
         }
@@ -426,7 +430,6 @@ export async function callOpenAICompatibleStream(
 
   // Tool Calling 状态追踪
   const toolCalls: ToolCall[] = [];
-  const currentToolCall: ToolCall | null = null;
 
   // v2.2.0: token 使用统计
   let usageData: AIResponse['usage'];
@@ -479,9 +482,12 @@ export async function callOpenAICompatibleStream(
             delta?.reasoning ??
             parsed.reasoning_content ??
             parsed.choices?.[0]?.reasoning_content ??
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (parsed.choices?.[0] as any)?.delta?.reasoning_content ??
             delta?.thinking ??
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (parsed as any).reasoning ??
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (parsed as any).thinking;
           if (reasoningDelta) {
             reasoningContent += reasoningDelta;
@@ -963,7 +969,7 @@ export async function callAIModelStream(
   const provider = modelConfig.provider;
 
   // v2.2.0: 优先从 modelConfig 获取 capabilities，其次使用传入参数
-  const capabilities = (modelConfig as any).capabilities || modelCapabilities || [];
+  const capabilities = modelConfig.capabilities || modelCapabilities || [];
 
   if (!apiKey && !isLocalModel(modelConfig)) {
     throw new AIAPIError(
@@ -1020,11 +1026,14 @@ export async function callAIModelStream(
       if (logger.debug) {
         const summary = effectiveMessages.map((m, idx) => {
           const base = `[${idx}]${m.role}`;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           if (m.role === 'assistant' && (m as any).tool_calls?.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const ids = ((m as any).tool_calls as any[]).map((tc: any) => tc.id || '(no-id)').join(',');
             return `${base}(tool_calls:[${ids}])`;
           }
           if (m.role === 'tool') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return `${base}(tool_call_id=${(m as any).tool_call_id || '(missing)'})`;
           }
           return base;
