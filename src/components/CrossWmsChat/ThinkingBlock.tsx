@@ -81,15 +81,22 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
     };
   }, [isStreaming]);
 
-  // v2.8.7: 流式开始时自动展开；历史消息（有 thinkingDuration 但非流式）也默认展开
-  const prevRef = useRef(false);
+  // v2.8.8: 流式时自动展开并持续显示 thinking 内容，让用户实时感知模型运行
+  const prevStreamingRef = useRef(false);
   useEffect(() => {
-    if (isStreaming && !prevRef.current) setExpanded(true);
-    // 历史消息：有 thinking 内容且有 duration 时默认展开
-    if (!isStreaming && !prevRef.current && thinking && thinking.trim() && duration != null && duration > 0) {
+    if (isStreaming && !prevStreamingRef.current) {
       setExpanded(true);
     }
-    prevRef.current = true;
+    prevStreamingRef.current = !!isStreaming;
+  }, [isStreaming]);
+
+  // 历史消息：有 thinking 内容且有 duration 时默认展开
+  const prevInitRef = useRef(false);
+  useEffect(() => {
+    if (!prevInitRef.current && !isStreaming && thinking && thinking.trim() && duration != null && duration > 0) {
+      setExpanded(true);
+    }
+    prevInitRef.current = true;
   }, [isStreaming, thinking, duration]);
 
   // 右侧元信息

@@ -225,7 +225,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
 
   /** v2.5.0: 检查工具是否在授权缓存中（支持通配符前缀匹配，如 mcp__server__*） */
   const isToolApproved = (toolName: string): boolean => {
-    if (isToolApproved(toolName)) return true;
+    if (approvedToolsCache.has(toolName)) return true;
     for (const pattern of approvedToolsCache) {
       if (pattern.endsWith('*') && toolName.startsWith(pattern.slice(0, -1))) {
         return true;
