@@ -1,7 +1,7 @@
 {
-  "version": "1.5.189",
+  "version": "1.5.191",
   "pubDate": "2026-06-20",
   "notes": "# CDF Know Clow v1.5.112\n\n## 新功能\n\n### MCP Client 集成\n- 支持 Model Context Protocol (MCP) 外部工具协议\n- MCP Server 管理：添加/删除/连接/断开 MCP Server\n- MCP 工具自动注册：已连接的 MCP Server 工具自动合并到 AI 引擎工具列表\n- MCP 工具命名规范：`mcp__{serverName}__{toolName}`\n- MCP Server 级熔断保护：单个 Server 故障不影响其他工具\n- MCP 工具权限集成：`mcp__*` 默认 confirm 级别，支持 per-server 覆盖\n- SQLite 持久化：MCP Server 配置存储在 `~/.cdf-know-clow/mcp/mcp_servers.db`\n- 前端 MCP 设置面板：AI 设置对话框中新增 MCP tab\n\n### Tool Loop 授权样式重构\n- 浅灰中性背景 + 大圆角设计\n- 左侧 3px 彩色强调线（橙色=需确认，红色=高风险）\n- 轻量化文字按钮替代传统 MUI Button\n- 工具名以圆角 badge 展示\n- 已审批状态用彩色圆点替代符号\n\n## 技术改进\n- 新增 `@modelcontextprotocol/sdk` 依赖\n- 新增后端模块：`mcpTypes.ts`, `mcpConfigStore.ts`, `mcpClientManager.ts`, `routes/mcp.ts`\n- 新增前端组件：MCPSettingsTab（7个组件文件）\n- `server/index.ts` 注册 MCP 路由 + 启动连接 + 优雅关闭\n- `reactExecutor.ts` MCP 工具合并 + 执行路由 + 熔断检查\n- `toolPermissionSandbox.ts` MCP 权限规则\n- `circuitBreaker.ts` MCP Server 级熔断方法",
-  "dmgUrl": "https://github.com/chouraycn/cross-wms/releases/download/v1.5.189/CDF-Know-Clow-1.5.189-mac.dmg",
+  "dmgUrl": "https://github.com/chouraycn/cross-wms/releases/download/v1.5.191/CDF-Know-Clow-1.5.191-mac.dmg",
   "minVersion": "1.0.0"
 }
