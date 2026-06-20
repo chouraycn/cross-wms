@@ -413,11 +413,15 @@ export function initDb(): Database.Database {
       // checkpoint 失败，可能是 DB 损坏，尝试从备份恢复
       logger.info('[DB] WAL checkpoint 失败，尝试恢复...');
       if (fs.existsSync(DB_BACKUP_PATH)) {
-        fs.unlinkSync(DB_PATH);
+        try { fs.unlinkSync(DB_PATH); } catch {}
         try { fs.unlinkSync(DB_PATH + '-wal'); } catch {}
         try { fs.unlinkSync(DB_PATH + '-shm'); } catch {}
-        fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
-        logger.info('[DB] 数据库已从备份恢复（WAL checkpoint 失败）');
+        try {
+          fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
+          logger.info('[DB] 数据库已从备份恢复（WAL checkpoint 失败）');
+        } catch (e: any) {
+          logger.error('[DB] 从备份恢复失败:', e?.message ?? String(e));
+        }
       }
     }
   }
