@@ -32,7 +32,7 @@ global.IntersectionObserver = class IntersectionObserver {
   disconnect() {}
 } as unknown as typeof IntersectionObserver;
 
-// v2.8.7: Mock localStorage for skillStore tests
+// v2.8.8: Mock localStorage for skillStore tests
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
@@ -48,3 +48,11 @@ Object.defineProperty(global, 'localStorage', {
   value: localStorageMock,
   writable: true,
 });
+
+// v2.8.8: Polyfill AbortController for jsdom (required by fetchWithTimeout)
+if (typeof globalThis.AbortController === 'undefined') {
+  globalThis.AbortController = class AbortController {
+    signal = { aborted: false, reason: undefined, addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => false };
+    abort() { (this.signal as any).aborted = true; }
+  } as any;
+}
