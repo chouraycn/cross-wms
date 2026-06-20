@@ -5,6 +5,9 @@ import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../type
 import { CHAT_API_URL, INVENTORY_QUERY_API_URL } from '../constants/api';
 import { useAppSettings, useAppearanceSettings } from '../contexts/AppSettingsContext';
 import { useToolPermission } from '../contexts/ToolPermissionContext';
+// v2.8.9: 子 hooks 已提取为独立模块，未来可逐步迁移：
+// import { useRenderScheduler } from './useRenderScheduler';
+// import { useAbortControl } from './useAbortControl';
 
 /** 从 localStorage 读取默认模型 ID */
 function getDefaultModelId(): string {
@@ -72,8 +75,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   const { requestPermission, trustMode } = useToolPermission();
   /** v1.7.0: 每个会话级别限制一次 SQL 失败自动重试 */
   const autoRetriedRef = useRef<boolean>(false);
-  /** v1.8.0: AbortController 用于中断请求 */
-  const abortControllerRef = useRef<AbortController | null>(null);
   /** v1.8.0: 当前正在流式输出的消息 ID */
   const streamingMsgIdRef = useRef<string | null>(null);
   /** v1.8.1: 使用 ref 存储 session 和 callback，避免引用变化导致 sendMessage 重新创建 */
@@ -82,10 +83,13 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   const isLoadingRef = useRef<boolean>(isLoading);
   /** v1.9.2: 使用 ref 保存最新的 settings，避免 sendMessage 闭包中引用旧值 */
   const settingsRef = useRef(appearance);
-  /** v1.8.2: 用户手动停止标志（不使用 AbortController signal，避免 Electron ERR_ABORTED） */
-  const stoppedRef = useRef(false);
   /** v2.5.0: 免确认模式 ref，SSE 回调中使用 */
   const trustModeRef = useRef(trustMode);
+
+  /** v1.8.0: AbortController 用于中断请求 */
+  const abortControllerRef = useRef<AbortController | null>(null);
+  /** v1.8.2: 用户手动停止标志（不使用 AbortController signal，避免 Electron ERR_ABORTED） */
+  const stoppedRef = useRef(false);
 
   // v1.8.1: 使用 useEffect 同步 ref 值，避免渲染时直接赋值导致 Fast Refresh 问题
   useEffect(() => {
