@@ -118,16 +118,29 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     );
   }, [handleContainerCopy]);
 
-  // v1.5.86: 流式内容变化时自动滚动（仅当用户未主动上翻）
+  // v2.8.9: 用户发送新消息时，强制滚动到底部（无论用户是否上翻过）
+  const prevMsgCountRef = useRef(session.messages.length);
   useEffect(() => {
     const lastMsg = session.messages[session.messages.length - 1];
     if (!lastMsg) return;
-    if (lastMsg.role === 'user') {
-      isUserScrolledUp.current = false;
+    // 检测到新增消息
+    if (session.messages.length > prevMsgCountRef.current) {
+      if (lastMsg.role === 'user') {
+        // 用户发送新消息：重置上翻标志，强制滚动到底部
+        isUserScrolledUp.current = false;
+        // 延迟一帧确保 Virtuoso 已渲染新消息
+        requestAnimationFrame(() => {
+          virtuosoRef.current?.scrollToIndex({
+            index: session.messages.length - 1,
+            align: 'end',
+            behavior: 'smooth',
+          });
+        });
+      } else if (!isUserScrolledUp.current) {
+        virtuosoRef.current?.autoscrollToBottom();
+      }
     }
-    if (!isUserScrolledUp.current && virtuosoRef.current) {
-      virtuosoRef.current.autoscrollToBottom();
-    }
+    prevMsgCountRef.current = session.messages.length;
   }, [session.messages.length, session.messages[session.messages.length - 1]?.content]);
 
   return (
@@ -149,6 +162,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         data={session.messages}
         followOutput={(isAtBottom) => {
           const lastMsg = session.messages[session.messages.length - 1];
+          // v2.8.9: 用户发送新消息时始终滚动到底部，无论当前滚动位置
           if (lastMsg?.role === 'user') return 'smooth';
           return isAtBottom ? 'smooth' : false;
         }}
