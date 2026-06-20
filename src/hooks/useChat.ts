@@ -47,6 +47,23 @@ export interface SendMessageOptions {
 /** inventory_query JSON 块正则 */
 const QUERY_BLOCK_REGEX = /```inventory_query\s*\n([\s\S]*?)\n```/;
 
+/**
+ * v2.8.6: 自适应渲染调度器 — WKWebView 兼容
+ * WKWebView 在窗口可见但未交互时会暂停 requestAnimationFrame，
+ * 导致 SSE 流式内容堆积不渲染。在 pywebview 环境中降级为 setTimeout(fn, 16)，
+ * 确保渲染不被暂停。浏览器环境仍使用 rAF 以保持与显示器刷新率对齐。
+ */
+const IS_PYWEBVIEW = typeof window !== 'undefined' &&
+  !!(window as any).webkit?.messageHandlers;
+
+const scheduleFrame = IS_PYWEBVIEW
+  ? (fn: FrameRequestCallback): number => window.setTimeout(() => fn(Date.now()), 16)
+  : (fn: FrameRequestCallback): number => requestAnimationFrame(fn);
+
+const cancelFrame = IS_PYWEBVIEW
+  ? (id: number): void => window.clearTimeout(id)
+  : (id: number): void => cancelAnimationFrame(id);
+
 export function useChat(currentSession: Session | undefined, onSessionUpdate: (session: Session) => void) {
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -388,13 +405,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       let visibilityHandler: ((e: Event) => void) | null = null;
       let focusHandler: (() => void) | null = null;
       let pageshowHandler: ((e: PageTransitionEvent) => void) | null = null;
-      let renderCheckTimer: ReturnType<typeof setInterval> | null = null;
-      const stopRenderCheck = () => {
-        if (renderCheckTimer) {
-          clearInterval(renderCheckTimer);
-          renderCheckTimer = null;
-        }
-      };
       const removeAllHandlers = () => {
         if (visibilityHandler) {
           try { document.removeEventListener('visibilitychange', visibilityHandler); } catch {}
@@ -408,7 +418,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           try { window.removeEventListener('pageshow', pageshowHandler); } catch {}
           pageshowHandler = null;
         }
-        stopRenderCheck();
       };
 
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -421,7 +430,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           let thinkingDuration: number | undefined;
           let doneReceived = false;
 
-          // v2.8.0: requestAnimationFrame 渲染队列 — 与显示器刷新率对齐
+          // v2.8.0: 渲染队列 — 与显示器刷新率对齐（pywebview 用 setTimeout 16ms 代替 rAF）
           let pendingContent = '';
           let displayedContent = '';
           let renderHandle: number | null = null;
@@ -465,7 +474,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               const now = Date.now();
               if (now - lastMetadataFlush < METADATA_THROTTLE_MS) {
                 // 节流窗口内 — 保持 dirty，下一帧重试
-                renderHandle = requestAnimationFrame(flushRender);
+                renderHandle = scheduleFrame(flushRender);
                 return;
               }
               lastMetadataFlush = now;
@@ -486,36 +495,21 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             });
 
             if (shouldReschedule) {
-              renderHandle = requestAnimationFrame(flushRender);
+              renderHandle = scheduleFrame(flushRender);
             }
           };
 
           const scheduleRender = () => {
             dirty = true;
             if (renderHandle === null) {
-              renderHandle = requestAnimationFrame(flushRender);
+              renderHandle = scheduleFrame(flushRender);
             }
           };
 
-          // v1.5.185: visibilitychange 监听 — WKWebView 后台暂停 rAF，
-          // 页面重新可见时立即 flush，避免"一直思考中"卡死
+          // v1.5.185: visibilitychange 监听 — 页面重新可见时立即 flush
           // v1.5.190: 补充 focus/pageshow 监听 — 覆盖更多"应用切回"场景
-          // v1.5.190: 周期性渲染检查（兜底）— 每 2 秒强制检查一次，防止所有事件都未触发
-          let renderCheckTimer: ReturnType<typeof setInterval> | null = null;
-          const startRenderCheck = () => {
-            if (renderCheckTimer) return;
-            renderCheckTimer = setInterval(() => {
-              if (dirty || pendingContent.length > 0) {
-                try { flushRender(); } catch {}
-              }
-            }, 2000);
-          };
-          const stopRenderCheck = () => {
-            if (renderCheckTimer) {
-              clearInterval(renderCheckTimer);
-              renderCheckTimer = null;
-            }
-          };
+          // v2.8.6: 移除 2s setInterval 兜底 — scheduleFrame 已用 setTimeout 16ms，
+          // 不再受 WKWebView rAF 暂停影响，无需额外轮询
           removeAllHandlers();
           visibilityHandler = () => {
             if (document.visibilityState === 'visible') {
@@ -541,9 +535,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             };
             window.addEventListener('pageshow', pageshowHandler);
           }
-
-          // 启动周期性渲染检查（兜底）
-          startRenderCheck();
 
           // v1.8.0: 使用 AbortController signal 支持用户中断
           const response = await fetch(`${CHAT_API_URL}?_t=${Date.now()}`, {
@@ -600,7 +591,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                   }
                 }
                 if (renderHandle !== null) {
-                  cancelAnimationFrame(renderHandle);
+                  cancelFrame(renderHandle);
                   renderHandle = null;
                 }
                 pendingContent = '';
