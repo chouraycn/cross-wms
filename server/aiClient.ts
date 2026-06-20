@@ -295,14 +295,31 @@ export async function callOpenAICompatibleStream(
     body.reasoning_effort = normalizedEffort;
 
     // v2.8.7: 按模型分类精确传递 thinking 参数
-    //   DeepSeek: 只发送标准 reasoning_effort（第295行已设置），不发送 extra_body
-    //     — DeepSeek 官方 API 不支持 extra_body 透传，重复发送会导致 400 错误
-    //   Kimi K2: 通过 extra_body 透传 thinking 参数
-    //   Qwen3/QwQ: 只保留 reasoning_effort，不发送 enable_thinking / thinking
-    //   OpenAI o3/o4: 只支持 reasoning_effort
-    //   Claude: 不在此函数处理（由 callAnthropicStream 单独处理）
+    //
+    // 1. DeepSeek: 只发送标准 reasoning_effort（上方已设置），不发送 extra_body
+    //     — DeepSeek 官方 API 不支持 extra_body 透传
+    //
+    // 2. Kimi K2 (Moonshot): thinking 是顶层参数，不是 extra_body
+    //    — K2.7 Code: { type: "enabled", keep: "all" }（始终开启，不支持 disabled）
+    //    — K2.6/K2.5: { type: "enabled" } 或 { type: "disabled" }
+    //    — 不发送 reasoning_effort（Kimi 不支持此参数）
+    //
+    // 3. Qwen3/QwQ: 只保留 reasoning_effort，不发送 enable_thinking / thinking
+    //
+    // 4. OpenAI o3/o4: 只支持 reasoning_effort
+    //
+    // 5. Claude: 不在此函数处理（由 callAnthropicStream 单独处理）
     if (isMoonshotModel) {
-      (body as any).extra_body = { thinking: { type: 'enabled' } };
+      // Kimi: 移除 reasoning_effort（Kimi 不支持），设置顶层 thinking 参数
+      delete body.reasoning_effort;
+      const isK27Code = /k2\.7/i.test(modelId);
+      if (isK27Code) {
+        // K2.7 Code: 始终开启思考，keep=all 保留推理内容
+        (body as any).thinking = { type: 'enabled', keep: 'all' };
+      } else {
+        // K2.6/K2.5: 支持启用/禁用思考
+        (body as any).thinking = { type: 'enabled' };
+      }
     } else if (isQwenModel) {
       // Qwen3: 只保留 reasoning_effort，不发送 enable_thinking / thinking
       // body.reasoning_effort 已在上方设置，此处无需额外操作
@@ -310,7 +327,7 @@ export async function callOpenAICompatibleStream(
 
     logger.debug(`[AIClient] 已启用推理模式: model=${modelId} effort=${normalizedEffort}` +
       `${isDeepSeekModel ? ' [DeepSeek:reasoning_effort]' : ''}` +
-      `${isMoonshotModel ? ' [Moonshot:extra_body]' : ''}` +
+      `${isMoonshotModel ? ' [Moonshot:thinking]' : ''}` +
       `${isQwenModel ? ' [Qwen:reasoning_effort]' : ''}` +
       `${isOpenAIReasoner ? ' [OpenAI:reasoning_effort]' : ''}`);
   } else if (reasoningEffort === 'off') {
