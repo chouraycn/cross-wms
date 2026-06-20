@@ -364,12 +364,12 @@ describe('InventoryQueryService', () => {
 
     it('should return friendly message for table/column not found errors', () => {
       const { mockDb } = createMockDb({
-        allError: new Error('no such table: nonexistent_table'),
+        allError: new Error('no such table: inventory_items'),
       });
       service = new InventoryQueryService(mockDb);
 
       const result = service.validateAndExecute({
-        sql: 'SELECT * FROM nonexistent_table LIMIT 10',
+        sql: 'SELECT * FROM inventory_items LIMIT 10',
         chartType: 'table',
       });
 
@@ -446,7 +446,7 @@ describe('InventoryQueryService', () => {
 
       const chartConfig = { xKey: 'date', yKey: 'total', xLabel: '日期', yLabel: '总量' };
       const result = service.validateAndExecute({
-        sql: 'SELECT date, total FROM test LIMIT 200',
+        sql: 'SELECT date, total FROM inventory_items LIMIT 200',
         chartType: 'bar',
         chartConfig,
       });

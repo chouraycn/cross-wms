@@ -25,5 +25,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@src': path.resolve(__dirname, './src'),
     },
+    conditions: ['node'],
+  },
+  ssr: {
+    noExternal: ['@e965/xlsx'],
   },
 });
