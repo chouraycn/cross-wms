@@ -294,15 +294,14 @@ export async function callOpenAICompatibleStream(
 
     body.reasoning_effort = normalizedEffort;
 
-    // v1.5.175: 按模型分类精确传递 thinking 参数
-    //   DeepSeek: 通过 extra_body 透传（部分部署版本需要）
+    // v2.8.7: 按模型分类精确传递 thinking 参数
+    //   DeepSeek: 只发送标准 reasoning_effort（第295行已设置），不发送 extra_body
+    //     — DeepSeek 官方 API 不支持 extra_body 透传，重复发送会导致 400 错误
     //   Kimi K2: 通过 extra_body 透传 thinking 参数
-    //   Qwen3/QwQ: 不支持 thinking 参数，只支持 reasoning_effort（移除 enable_thinking）
+    //   Qwen3/QwQ: 只保留 reasoning_effort，不发送 enable_thinking / thinking
     //   OpenAI o3/o4: 只支持 reasoning_effort
     //   Claude: 不在此函数处理（由 callAnthropicStream 单独处理）
-    if (isDeepSeekModel) {
-      (body as any).extra_body = { reasoning_effort: normalizedEffort };
-    } else if (isMoonshotModel) {
+    if (isMoonshotModel) {
       (body as any).extra_body = { thinking: { type: 'enabled' } };
     } else if (isQwenModel) {
       // Qwen3: 只保留 reasoning_effort，不发送 enable_thinking / thinking
@@ -310,7 +309,7 @@ export async function callOpenAICompatibleStream(
     }
 
     logger.debug(`[AIClient] 已启用推理模式: model=${modelId} effort=${normalizedEffort}` +
-      `${isDeepSeekModel ? ' [DeepSeek:extra_body]' : ''}` +
+      `${isDeepSeekModel ? ' [DeepSeek:reasoning_effort]' : ''}` +
       `${isMoonshotModel ? ' [Moonshot:extra_body]' : ''}` +
       `${isQwenModel ? ' [Qwen:reasoning_effort]' : ''}` +
       `${isOpenAIReasoner ? ' [OpenAI:reasoning_effort]' : ''}`);

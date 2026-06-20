@@ -265,11 +265,23 @@ MODEL_DIR="$HOME/.cdf-know-clow/models/all-MiniLM-L6-v2"
 mkdir -p "$MODEL_DIR"
 if [ ! -f "$MODEL_DIR/model.onnx" ]; then
   echo "📥 预下载 ONNX 模型文件..."
-  curl --connect-timeout 10 --max-time 60 -L -o "$MODEL_DIR/model.onnx" "https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/onnx/model_quantized.onnx" || true
-  curl --connect-timeout 10 --max-time 60 -L -o "$MODEL_DIR/tokenizer.json" "https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/tokenizer.json" || true
-  curl --connect-timeout 10 --max-time 60 -L -o "$MODEL_DIR/vocab.txt" "https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/vocab.txt" || true
-  curl --connect-timeout 10 --max-time 60 -L -o "$MODEL_DIR/config.json" "https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/config.json" || true
-  echo "✅ ONNX 模型文件预下载完成"
+  # v2.8.7: 优先使用国内镜像源，失败时回退到官方 HuggingFace
+  HF_MIRROR="https://hf-mirror.com"
+  HF_ORIGIN="https://huggingface.co"
+  for url_base in "$HF_MIRROR" "$HF_ORIGIN"; do
+    echo "  尝试: $url_base"
+    curl --connect-timeout 10 --max-time 60 -L -o "$MODEL_DIR/model.onnx" "$url_base/Xenova/all-MiniLM-L6-v2/resolve/main/onnx/model_quantized.onnx" && \
+    curl --connect-timeout 10 --max-time 60 -L -o "$MODEL_DIR/tokenizer.json" "$url_base/Xenova/all-MiniLM-L6-v2/resolve/main/tokenizer.json" && \
+    curl --connect-timeout 10 --max-time 60 -L -o "$MODEL_DIR/vocab.txt" "$url_base/Xenova/all-MiniLM-L6-v2/resolve/main/vocab.txt" && \
+    curl --connect-timeout 10 --max-time 60 -L -o "$MODEL_DIR/config.json" "$url_base/Xenova/all-MiniLM-L6-v2/resolve/main/config.json" && \
+    break
+    echo "  $url_base 失败，尝试下一个源..."
+  done
+  if [ -f "$MODEL_DIR/model.onnx" ]; then
+    echo "✅ ONNX 模型文件预下载完成"
+  else
+    echo "⚠️ ONNX 模型预下载全部失败，将在运行时尝试下载（可能阻塞）"
+  fi
 fi
 
 echo ""

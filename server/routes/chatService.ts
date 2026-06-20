@@ -416,7 +416,7 @@ async function executeFromQueue(
       try {
         const memoryResults: VecSearchResult[] = await Promise.race([
           searchMemory(
-            latestUserMessage.content, 'default', 5, 0.35,
+            latestUserMessage.content, 'default', 5, 0.35, sessionId,
           ),
           new Promise<VecSearchResult[]>(resolve => setTimeout(() => resolve([]), 5000)),
         ]);
