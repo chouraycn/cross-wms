@@ -20,7 +20,7 @@ import * as sqliteVec from 'sqlite-vec';
 import path from 'path';
 import { homedir } from 'os';
 import { existsSync, mkdirSync } from 'fs';
-import { embedText, initOnnxEmbedding, getOnnxStatus } from './onnxEmbedding.js';
+import { embedText, embedBatch, initOnnxEmbedding, getOnnxStatus } from './onnxEmbedding.js';
 import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
@@ -488,20 +488,41 @@ export async function backfillEmbeddings(): Promise<{ total: number; success: nu
   let success = 0;
   let failed = 0;
 
-  for (const entry of entriesWithoutVec) {
+  // P1: 分批批量推理，每批 16 条
+  const BATCH_SIZE = 16;
+  for (let start = 0; start < entriesWithoutVec.length; start += BATCH_SIZE) {
+    const batch = entriesWithoutVec.slice(start, start + BATCH_SIZE);
     try {
       const status = getOnnxStatus();
       if (status.status !== 'ready') {
         await initOnnxEmbedding();
       }
 
-      const embedding = await embedText(entry.content);
-      db.prepare(
-        'INSERT INTO memory_vec_index (embedding, entry_id) VALUES (?, ?)'
-      ).run(Buffer.from(embedding.buffer), entry.id!);
-      success++;
+      const embeddings = await embedBatch(batch.map(e => e.content));
+
+      for (let i = 0; i < batch.length; i++) {
+        try {
+          db.prepare(
+            'INSERT INTO memory_vec_index (embedding, entry_id) VALUES (?, ?)'
+          ).run(Buffer.from(embeddings[i].buffer), batch[i].id!);
+          success++;
+        } catch {
+          failed++;
+        }
+      }
     } catch {
-      failed++;
+      // 整批失败，逐条重试
+      for (const entry of batch) {
+        try {
+          const embedding = await embedText(entry.content);
+          db.prepare(
+            'INSERT INTO memory_vec_index (embedding, entry_id) VALUES (?, ?)'
+          ).run(Buffer.from(embedding.buffer), entry.id!);
+          success++;
+        } catch {
+          failed++;
+        }
+      }
     }
   }
 

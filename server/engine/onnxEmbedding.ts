@@ -62,6 +62,10 @@ let initStatus: 'idle' | 'loading' | 'ready' | 'failed' = 'idle';
 /** 初始化错误信息 */
 let initError: string = '';
 
+// P0: LRU 推理结果缓存 — 避免相同文本重复 ONNX 推理
+const embeddingCache = new Map<string, Float32Array>();
+const EMBEDDING_CACHE_MAX = 256;
+
 // P1: Tensor 内存池 — 预分配并复用，减少 GC 压力
 let pooledInputIdsTensor: ort.Tensor | null = null;
 let pooledAttentionMaskTensor: ort.Tensor | null = null;
@@ -393,6 +397,13 @@ export async function embedText(text: string): Promise<Float32Array> {
     await initOnnxEmbedding();
   }
 
+  // P0: 缓存命中检查
+  const cacheKey = text.length > 200 ? text.slice(0, 200) : text;
+  const cached = embeddingCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const { inputIds, attentionMask } = tokenize(text);
 
   // P1: Tensor 内存池复用 — 直接更新 data 而不是重新创建 Tensor
@@ -454,6 +465,13 @@ export async function embedText(text: string): Promise<Float32Array> {
       pooled[j] /= norm;
     }
   }
+
+  // P0: 写入 LRU 缓存
+  if (embeddingCache.size >= EMBEDDING_CACHE_MAX) {
+    const firstKey = embeddingCache.keys().next().value;
+    if (firstKey) embeddingCache.delete(firstKey);
+  }
+  embeddingCache.set(cacheKey, pooled);
 
   return pooled;
 }

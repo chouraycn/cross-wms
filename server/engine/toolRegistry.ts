@@ -1475,30 +1475,29 @@ async function handleDesktopClickSmart(args: Record<string, unknown>): Promise<s
 
     try {
       // 动态导入 ONNX embedding（避免在不需要时加载模型）
-      const { embedText, initOnnxEmbedding, getOnnxStatus } = await import('./onnxEmbedding.js');
+      const { embedBatch, initOnnxEmbedding, getOnnxStatus } = await import('./onnxEmbedding.js');
 
       const status = getOnnxStatus();
       if (status.status !== 'ready') {
         await initOnnxEmbedding();
       }
 
-      // 生成查询 embedding
-      const queryEmb = await embedText(description);
+      // P1: 一次批量推理 — query + 所有候选元素
+      const allTexts = [description, ...candidates.map(c => c.text)];
+      const allEmbs = await embedBatch(allTexts);
+      const queryEmb = allEmbs[0];
 
-      // 为每个候选元素生成 embedding 并计算余弦相似度
+      // 计算余弦相似度（两个 L2 归一化向量的点积）
       let bestSim = -1;
-      for (const candidate of candidates) {
-        const elemEmb = await embedText(candidate.text);
-
-        // 余弦相似度（两个 L2 归一化向量的点积）
+      for (let i = 0; i < candidates.length; i++) {
+        const elemEmb = allEmbs[i + 1];
         let dot = 0;
-        for (let i = 0; i < queryEmb.length; i++) {
-          dot += queryEmb[i] * elemEmb[i];
+        for (let j = 0; j < queryEmb.length; j++) {
+          dot += queryEmb[j] * elemEmb[j];
         }
-
         if (dot > bestSim) {
           bestSim = dot;
-          bestMatch = { elem: candidate.elem, similarity: dot, method: 'onnx_embedding' };
+          bestMatch = { elem: candidates[i].elem, similarity: dot, method: 'onnx_embedding' };
         }
       }
 
