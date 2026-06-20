@@ -62,6 +62,20 @@ let initStatus: 'idle' | 'loading' | 'ready' | 'failed' = 'idle';
 /** 初始化错误信息 */
 let initError: string = '';
 
+// P1: Tensor 内存池 — 预分配并复用，减少 GC 压力
+let pooledInputIdsTensor: ort.Tensor | null = null;
+let pooledAttentionMaskTensor: ort.Tensor | null = null;
+let pooledInputIdsData: BigInt64Array | null = null;
+let pooledAttentionMaskData: BigInt64Array | null = null;
+
+// P1: tokenizer.json 预编译缓存
+let tokenizerJsonLoaded = false;
+let tokenizerPrecompiled: {
+  vocab: Record<string, number>;
+  normalizer?: { pattern?: string; replacement?: string };
+  preTokenizer?: { pattern?: string };
+} | null = null;
+
 // ===================== 模型下载 =====================
 
 /**
@@ -202,7 +216,40 @@ function loadConfig(): void {
 }
 
 /**
+ * P1: 加载 tokenizer.json 预编译规则
+ */
+function loadTokenizerJson(): void {
+  if (tokenizerJsonLoaded) return;
+  try {
+    const raw = readFileSync(TOKENIZER_PATH, 'utf-8');
+    const parsed = JSON.parse(raw);
+    tokenizerPrecompiled = {
+      vocab: parsed.model?.vocab ?? {},
+      normalizer: parsed.normalizer?.type === 'BertNormalizer'
+        ? { pattern: 'BertNormalizer', replacement: '' }
+        : undefined,
+      preTokenizer: parsed.pre_tokenizer?.type === 'BertPreTokenizer'
+        ? { pattern: 'BertPreTokenizer' }
+        : undefined,
+    };
+    // 将 tokenizer.json 的 vocab 合并到 vocabMap（作为后备）
+    const tVocab = tokenizerPrecompiled.vocab;
+    for (const [token, id] of Object.entries(tVocab)) {
+      if (!vocabMap.has(token)) {
+        vocabMap.set(token, id);
+      }
+    }
+    logger.debug(`[OnnxEmbedding] tokenizer.json 预编译完成: ${Object.keys(tVocab).length} 个 token`);
+  } catch (e) {
+    logger.warn('[OnnxEmbedding] tokenizer.json 加载失败，回退到 vocab.txt:', e instanceof Error ? e.message : String(e));
+    tokenizerPrecompiled = null;
+  }
+  tokenizerJsonLoaded = true;
+}
+
+/**
  * WordPiece 分词（BERT 风格）
+ * P1: vocabMap 已在 init 时构建，不再每次重新创建
  */
 function tokenize(text: string): { inputIds: number[]; attentionMask: number[] } {
   // 基础预处理：小写化、去除多余空格
@@ -302,12 +349,21 @@ export async function initOnnxEmbedding(): Promise<void> {
 
     loadVocab();
     loadConfig();
+    loadTokenizerJson();
 
-    // 创建 ONNX 推理会话
+    // P2: ONNX parallel 执行模式，利用多核 CPU
     inferenceSession = await ort.InferenceSession.create(ONNX_MODEL_PATH, {
-      executionMode: 'sequential',
+      executionMode: 'parallel',
       graphOptimizationLevel: 'all',
+      intraOpNumThreads: 4,
+      interOpNumThreads: 2,
     });
+
+    // P1: 预分配 Tensor 内存池
+    pooledInputIdsData = new BigInt64Array(MAX_SEQ_LENGTH);
+    pooledAttentionMaskData = new BigInt64Array(MAX_SEQ_LENGTH);
+    pooledInputIdsTensor = new ort.Tensor('int64', pooledInputIdsData, [1, MAX_SEQ_LENGTH]);
+    pooledAttentionMaskTensor = new ort.Tensor('int64', pooledAttentionMaskData, [1, MAX_SEQ_LENGTH]);
 
     initStatus = 'ready';
     logger.debug('[OnnxEmbedding] 初始化完成, 输入:', inferenceSession.inputNames, '输出:', inferenceSession.outputNames);
@@ -339,16 +395,24 @@ export async function embedText(text: string): Promise<Float32Array> {
 
   const { inputIds, attentionMask } = tokenize(text);
 
-  // 创建 ONNX 输入 tensor
-  const inputIdsTensor = new ort.Tensor('int64', BigInt64Array.from(inputIds.map(n => BigInt(n))), [1, MAX_SEQ_LENGTH]);
-  const attentionMaskTensor = new ort.Tensor('int64', BigInt64Array.from(attentionMask.map(n => BigInt(n))), [1, MAX_SEQ_LENGTH]);
+  // P1: Tensor 内存池复用 — 直接更新 data 而不是重新创建 Tensor
+  if (pooledInputIdsData && pooledAttentionMaskData && pooledInputIdsTensor && pooledAttentionMaskTensor) {
+    for (let i = 0; i < MAX_SEQ_LENGTH; i++) {
+      pooledInputIdsData[i] = BigInt(inputIds[i]);
+      pooledAttentionMaskData[i] = BigInt(attentionMask[i]);
+    }
+  } else {
+    // 回退：重新创建 Tensor（理论上不会走到这里）
+    pooledInputIdsTensor = new ort.Tensor('int64', BigInt64Array.from(inputIds.map(n => BigInt(n))), [1, MAX_SEQ_LENGTH]);
+    pooledAttentionMaskTensor = new ort.Tensor('int64', BigInt64Array.from(attentionMask.map(n => BigInt(n))), [1, MAX_SEQ_LENGTH]);
+  }
 
   // 推理
   const inputName0 = inferenceSession!.inputNames[0]; // input_ids
   const inputName1 = inferenceSession!.inputNames[1]; // attention_mask
   const feeds: Record<string, ort.Tensor> = {};
-  feeds[inputName0] = inputIdsTensor;
-  feeds[inputName1] = attentionMaskTensor;
+  feeds[inputName0] = pooledInputIdsTensor;
+  feeds[inputName1] = pooledAttentionMaskTensor;
 
   const output = await inferenceSession!.run(feeds);
 
@@ -395,15 +459,96 @@ export async function embedText(text: string): Promise<Float32Array> {
 }
 
 /**
- * 批量生成 embedding
+ * P1: 批量生成 embedding — 真正的批量推理
+ * 将多条文本 padding 到相同长度后拼接为 [batch, 256] tensor，一次推理完成
  *
  * @param texts 输入文本数组
  * @returns 384 维 L2 归一化 Float32Array 数组
  */
 export async function embedBatch(texts: string[]): Promise<Float32Array[]> {
-  const results: Float32Array[] = [];
-  for (const text of texts) {
-    results.push(await embedText(text));
+  if (texts.length === 0) return [];
+  if (initStatus !== 'ready' || !inferenceSession) {
+    await initOnnxEmbedding();
   }
+
+  // 单条时直接走 embedText（复用内存池）
+  if (texts.length === 1) {
+    return [await embedText(texts[0])];
+  }
+
+  const batchSize = texts.length;
+
+  // 1. 对所有文本分词
+  const tokenized = texts.map(t => tokenize(t));
+
+  // 2. 构建 batch tensor [batchSize, MAX_SEQ_LENGTH]
+  const batchInputIds = new BigInt64Array(batchSize * MAX_SEQ_LENGTH);
+  const batchAttentionMask = new BigInt64Array(batchSize * MAX_SEQ_LENGTH);
+
+  for (let b = 0; b < batchSize; b++) {
+    const { inputIds, attentionMask } = tokenized[b];
+    const offset = b * MAX_SEQ_LENGTH;
+    for (let i = 0; i < MAX_SEQ_LENGTH; i++) {
+      batchInputIds[offset + i] = BigInt(inputIds[i]);
+      batchAttentionMask[offset + i] = BigInt(attentionMask[i]);
+    }
+  }
+
+  const inputIdsTensor = new ort.Tensor('int64', batchInputIds, [batchSize, MAX_SEQ_LENGTH]);
+  const attentionMaskTensor = new ort.Tensor('int64', batchAttentionMask, [batchSize, MAX_SEQ_LENGTH]);
+
+  // 3. 一次推理
+  const inputName0 = inferenceSession!.inputNames[0];
+  const inputName1 = inferenceSession!.inputNames[1];
+  const feeds: Record<string, ort.Tensor> = {};
+  feeds[inputName0] = inputIdsTensor;
+  feeds[inputName1] = attentionMaskTensor;
+
+  const output = await inferenceSession!.run(feeds);
+
+  // 4. 解析输出 [batchSize, seqLen, 384]
+  const outputName = inferenceSession!.outputNames[0];
+  const hiddenStates = output[outputName];
+  const data = hiddenStates.data as Float32Array;
+  const dim = ONNX_EMBEDDING_DIMENSIONS;
+
+  const results: Float32Array[] = [];
+
+  for (let b = 0; b < batchSize; b++) {
+    const { attentionMask } = tokenized[b];
+    const pooled = new Float32Array(dim);
+    let validCount = 0;
+
+    for (let i = 0; i < MAX_SEQ_LENGTH; i++) {
+      if (attentionMask[i] === 1) {
+        const idx = (b * MAX_SEQ_LENGTH + i) * dim;
+        for (let j = 0; j < dim; j++) {
+          pooled[j] += data[idx + j];
+        }
+        validCount++;
+      }
+    }
+
+    if (validCount > 0) {
+      for (let j = 0; j < dim; j++) {
+        pooled[j] /= validCount;
+      }
+    }
+
+    // L2 归一化
+    let norm = 0;
+    for (let j = 0; j < dim; j++) {
+      norm += pooled[j] * pooled[j];
+    }
+    norm = Math.sqrt(norm);
+    if (norm > 0) {
+      for (let j = 0; j < dim; j++) {
+        pooled[j] /= norm;
+      }
+    }
+
+    results.push(pooled);
+  }
+
   return results;
 }

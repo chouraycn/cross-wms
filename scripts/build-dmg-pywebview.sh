@@ -250,6 +250,20 @@ fi
 
 echo ""
 
+# P0: 预下载 ONNX 模型文件，避免运行时首次下载阻塞
+MODEL_DIR="$HOME/.cdf-know-clow/models/all-MiniLM-L6-v2"
+mkdir -p "$MODEL_DIR"
+if [ ! -f "$MODEL_DIR/model.onnx" ]; then
+  echo "📥 预下载 ONNX 模型文件..."
+  curl -L -o "$MODEL_DIR/model.onnx" "https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/onnx/model_quantized.onnx" || true
+  curl -L -o "$MODEL_DIR/tokenizer.json" "https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/tokenizer.json" || true
+  curl -L -o "$MODEL_DIR/vocab.txt" "https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/vocab.txt" || true
+  curl -L -o "$MODEL_DIR/config.json" "https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/config.json" || true
+  echo "✅ ONNX 模型文件预下载完成"
+fi
+
+echo ""
+
 # 4. 安装共享 node_modules（两个 server 共用，节省 ~154MB）
 echo "📦 安装共享 node_modules..."
 SHARED_NODE_MODULES="$BUILD_DIR/shared_node_modules"

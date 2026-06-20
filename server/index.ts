@@ -301,6 +301,15 @@ server.listen(PORT, async () => {
   // v7.0: 启动消息队列（空闲会话清理 + 全局并发度控制）
   messageQueue.start();
 
+  // P0: 启动时异步预热 ONNX 模型，避免首次 chat 请求阻塞
+  import('./engine/onnxEmbedding.js').then(({ initOnnxEmbedding }) => {
+    initOnnxEmbedding().catch(err => {
+      logger.warn('[Server] ONNX 模型预热失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+    });
+  }).catch(err => {
+    logger.warn('[Server] ONNX 模块加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+  });
+
   // 绑定优雅关闭 — 在进程退出时停止引擎
   const gracefulShutdown = () => {
     logger.info('[Server] 正在关闭自动化引擎...');
