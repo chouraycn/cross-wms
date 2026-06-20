@@ -770,6 +770,29 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
     modelsEndpoint: 'https://api.minimax.chat/v1',
     mapper: (id: string) => {
       const known: Record<string, Partial<ModelConfig>> = {
+        // v2.8.7: 更新为 2026 年最新模型
+        'minimax-m3': {
+          name: 'MiniMax M3',
+          capabilities: ['reasoning', 'code', 'multimodal', 'general'],
+          contextWindow: 1_000_000,
+          maxTokens: 32_768,
+          description: 'MiniMax M3 旗舰模型，MSA稀疏注意力架构，1M上下文，原生多模态',
+        },
+        'minimax-m2.5': {
+          name: 'MiniMax M2.5',
+          capabilities: ['reasoning', 'general', 'costEffective'],
+          contextWindow: 128_000,
+          maxTokens: 8_192,
+          description: 'MiniMax M2.5，MOE架构，128K上下文，均衡能力',
+        },
+        'minimax-m2.1': {
+          name: 'MiniMax M2.1',
+          capabilities: ['general', 'costEffective'],
+          contextWindow: 128_000,
+          maxTokens: 4_096,
+          description: 'MiniMax M2.1，开源模型，适合本地部署',
+        },
+        // 保留旧版模型名兼容
         'MiniMax-Text-01': {
           name: 'MiniMax Text-01',
           capabilities: ['longContext', 'general'],

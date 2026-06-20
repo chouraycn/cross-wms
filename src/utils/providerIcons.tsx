@@ -62,7 +62,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   azure: 'Azure OpenAI',
   vercel: 'Vercel AI Gateway',
   ollama: 'Ollama Cloud',
-  bigmodel: 'Bigmodel',
+  bigmodel: '智谱 AI',
   minimaxcn: 'MiniMax CN',
   kimicn: 'Kimi CN',
   volcengine: '火山引擎',
@@ -237,7 +237,7 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
         </svg>
       );
 
-    // ── MiniMax — 品牌色 #FF6B6B ─────────────────────────────
+    // ── MiniMax — 品牌色 #FF4D4F ─────────────────────────────
     case 'minimax':
     case 'minimaxcn':
       return (
@@ -249,8 +249,11 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
           xmlns="http://www.w3.org/2000/svg"
           style={{ flexShrink: 0 }}
         >
-          <rect width="24" height="24" rx="5" fill="#FF6B6B" />
-          <path d="M6 8h3v8H6zm4.5 0h3v5h-3zm4.5 0h3v8h-3z" fill="#FFFFFF" />
+          <rect width="24" height="24" rx="5" fill="#FF4D4F" />
+          <path
+            d="M7 6.5h2.5v11H7v-11zm4 0h2.5v7h-2.5v-7zm4 0h2.5v11h-2.5v-11z"
+            fill="#FFFFFF"
+          />
         </svg>
       );
 
@@ -409,7 +412,7 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
         </svg>
       );
 
-    // ── Bigmodel (智谱) — 品牌色 #3B82F6 ─────────────────────
+    // ── 智谱 AI (Zhipu) — 品牌色 #1E88E5 ─────────────────────
     case 'bigmodel':
       return (
         <svg
@@ -420,8 +423,11 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
           xmlns="http://www.w3.org/2000/svg"
           style={{ flexShrink: 0 }}
         >
-          <rect width="24" height="24" rx="4" fill="#3B82F6" />
-          <path d="M7 7h10v2H9v3h6v2H9v3h8v2H7z" fill="#FFFFFF" />
+          <rect width="24" height="24" rx="5" fill="#1E88E5" />
+          <path
+            d="M6 6h5v2H8.5v3h3.5v2H8.5v3H11v2H6V6zm7 0h5v2h-2.5v8H13V6z"
+            fill="#FFFFFF"
+          />
         </svg>
       );
 
