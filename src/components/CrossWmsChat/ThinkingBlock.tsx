@@ -109,7 +109,6 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
     <Box
       sx={{
         mb: 1,
-        borderLeft: `2px solid ${isDark ? 'rgba(128,128,128,0.35)' : 'rgba(0,0,0,0.12)'}`,
         pl: 1.5,
         py: 0.25,
       }}
