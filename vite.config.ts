@@ -7,7 +7,7 @@ import type { Plugin } from 'vite'
  * 修复 file:// 协议下的白屏问题
  * 1. 移除 crossorigin 属性（file:// 下会导致加载失败）
  * 2. 将 type="module" 改为 defer（file:// 下 WKWebView 不支持 ES Module）
- * 3. 移除无意义的 modulepreload（file:// 下无意义）
+ * 3. 保留 modulepreload（HTTP 模式下可显著加速模块加载，file:// 下无意义但无害）
  *
  * NOTE: 应用使用 React.lazy() + import() 实现路由级懒加载，
  *       Vite 会自动为动态导入生成独立 chunk。
@@ -24,8 +24,10 @@ function removeCrossorigin(): Plugin {
           // 1. 移除 crossorigin 属性（file:// 下加载失败，HTTP 模式下可保留但不影响）
           source = source.replace(/\s+crossorigin(?:="[^"]*")?/g, '')
           // 2. 保留 type="module"（HTTP 服务器模式下 WKWebView 支持 ES Module，不再改为 defer）
-          // 3. 去掉 modulepreload（file:// 下无意义，HTTP 模式下也无需保留以保证兼容性）
-          source = source.replace(/<link\s+rel="modulepreload"[^>]*>/g, '')
+          // 3. 保留 modulepreload — Vite 自动生成的 modulepreload 对首屏性能至关重要。
+          //    在 HTTP 模式下（pywebview 使用内置 HTTP 服务器），modulepreload 让浏览器
+          //    可以并行预加载关键 JS 模块，避免串行解析导致的白屏。file:// 模式下无意义
+          //    但无害，因此统一保留。
           chunk.source = source
         }
       }
