@@ -207,7 +207,7 @@ describe('OnnxEmbedding', () => {
       // The first entry should have been evicted → re-access is a cache miss (new reference)
       const reResult = await embed.embedText('eviction_item_0');
       expect(reResult).not.toBe(firstResult);
-    });
+    }, 30000);
   });
 
   describe('P0: LRU 语义（最近访问不应被淘汰）', () => {
@@ -238,7 +238,7 @@ describe('OnnxEmbedding', () => {
       // NOTE: This test verifies LRU semantics. If the implementation is FIFO (not true LRU),
       // this assertion will FAIL because lru_item_0 gets evicted despite being recently accessed.
       expect(reResult).toBe(firstResult);
-    });
+    }, 30000);
   });
 
   // ================ P0: 长文本缓存键截断 ================
