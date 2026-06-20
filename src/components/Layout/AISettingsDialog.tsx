@@ -199,9 +199,8 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
 // ===================== Execution Mode Selector =====================
 
 const EXECUTION_MODE_OPTIONS: { value: ExecutionMode; label: string; desc: string }[] = [
-  { value: 'legacy', label: '经典', desc: 'AI 直接调用工具并返回结果，无额外规划或反思' },
-  { value: 'observer', label: '观察者', desc: '工具执行后自动评估结果，失败时注入反思提示并重试' },
-  { value: 'react', label: 'ReAct', desc: '完整推理-行动-观察-反思循环，AI 具备真正的思考能力' },
+  { value: 'react', label: 'ReAct（推荐）', desc: '完整推理-行动-观察-反思循环，AI 具备真正的思考能力' },
+  { value: 'legacy', label: '经典（轻量）', desc: 'AI 直接调用工具并返回结果，无额外规划或反思，适合简单任务' },
 ];
 
 function ExecutionModeSelector() {

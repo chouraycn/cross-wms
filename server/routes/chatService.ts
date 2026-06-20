@@ -1124,7 +1124,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
               try {
                 const memResults: VecSearchResult[] = await Promise.race([
                   searchMemory(
-                    latestUserMsg.content, 'default', 5, 0.35,
+                    latestUserMsg.content, 'default', 5, 0.35, sessionId,
                   ),
                   new Promise<VecSearchResult[]>(resolve => setTimeout(() => resolve([]), 5000)),
                 ]);
