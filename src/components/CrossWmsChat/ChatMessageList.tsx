@@ -9,8 +9,6 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 import FolderZipIcon from '@mui/icons-material/FolderZip';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import EditIcon from '@mui/icons-material/Edit';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
-import PersonIcon from '@mui/icons-material/Person';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { Message, Session } from '../../types/chat.js';
 import { getGrayScale, CHAT_MAX_WIDTH } from '../../constants/theme.js';
@@ -385,60 +383,40 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
               </Box>
             )}
 
-            {/* 消息内容 — v2.8.9: Trae 风格重新设计 */}
+            {/* 消息内容 */}
             {msg.role === 'user' ? (
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, maxWidth: '88%', flexDirection: 'row-reverse' }}>
-                {/* 用户头像 */}
-                <Box sx={{
-                  width: 28, height: 28, borderRadius: '8px',
-                  bgcolor: isDark ? '#2563EB' : '#3B82F6',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, mt: 0.5,
-                }}>
-                  <PersonIcon sx={{ fontSize: 16, color: '#fff' }} />
-                </Box>
-                <Box sx={{
-                  px: 2.5, py: 1.5,
-                  borderRadius: '18px 18px 4px 18px',
-                  bgcolor: isDark ? '#1E3A5F' : '#DBEAFE',
-                  color: isDark ? '#BFDBFE' : '#1E40AF',
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  borderRadius: '16px',
+                  maxWidth: '85%',
+                  bgcolor: isDark ? '#262626' : '#F0F0F0',
+                  color: gs.textPrimary,
                   wordBreak: 'break-word',
                   userSelect: 'text',
                   WebkitUserSelect: 'text',
-                }}>
-                  <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap', userSelect: 'text', WebkitUserSelect: 'text' }}>
-                    {msg.content}
-                  </Typography>
-                </Box>
+                }}
+              >
+                <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap', userSelect: 'text', WebkitUserSelect: 'text' }}>
+                  {msg.content}
+                </Typography>
               </Box>
             ) : (
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, width: '100%' }}>
-                {/* AI 头像 */}
-                <Box sx={{
-                  width: 28, height: 28, borderRadius: '8px',
-                  bgcolor: isDark ? '#2A2A2A' : '#E5E7EB',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, mt: 0.5,
-                }}>
-                  <SmartToyIcon sx={{ fontSize: 16, color: gs.textMuted }} />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <BotMessageContent
-                    msg={msg}
-                    gs={gs}
-                    isDark={isDark}
-                    copiedId={copiedId}
-                    onCopy={onCopy}
-                    onRegenerate={onRegenerate}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    onQuote={onQuote}
-                    showRegenerate={showRegenerate}
-                    onConfirmReplenishment={onConfirmReplenishment}
-                    onPermissionRespond={onPermissionRespond}
-                  />
-                </Box>
-              </Box>
+              <BotMessageContent
+                msg={msg}
+                gs={gs}
+                isDark={isDark}
+                copiedId={copiedId}
+                onCopy={onCopy}
+                onRegenerate={onRegenerate}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onQuote={onQuote}
+                showRegenerate={showRegenerate}
+                onConfirmReplenishment={onConfirmReplenishment}
+                onPermissionRespond={onPermissionRespond}
+              />
             )}
           </Box>
         )}
