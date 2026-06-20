@@ -11597,6 +11597,31 @@ var BUILTIN_MODELS = [
     maxTokens: 8192,
     capabilities: ["costEffective", "fast", "general"]
   },
+  // === 智谱 AI (Zhipu) ===
+  {
+    id: "glm-4.7",
+    name: "GLM-4.7",
+    provider: "zhipu",
+    apiEndpoint: "https://open.bigmodel.cn/api/paas/v4",
+    enabled: false,
+    isDefault: false,
+    description: "\u667A\u8C31 GLM-4.7\uFF0C\u9AD8\u667A\u80FD Agentic Coding \u6A21\u578B\uFF0C200K \u4E0A\u4E0B\u6587",
+    contextWindow: 2e5,
+    maxTokens: 128e3,
+    capabilities: ["reasoning", "code", "general"]
+  },
+  {
+    id: "glm-5",
+    name: "GLM-5",
+    provider: "zhipu",
+    apiEndpoint: "https://open.bigmodel.cn/api/paas/v4",
+    enabled: false,
+    isDefault: false,
+    description: "\u667A\u8C31 GLM-5 \u65D7\u8230\u6A21\u578B\uFF0C\u63A8\u7406\u4E0E\u4EE3\u7801",
+    contextWindow: 128e3,
+    maxTokens: 8192,
+    capabilities: ["reasoning", "code", "general"]
+  },
   // === Ollama (本地) ===
   {
     id: "ollama-llama3.1",
@@ -11951,6 +11976,37 @@ var PROVIDER_DISCOVERY_LIST = [
     modelsEndpoint: "https://open.bigmodel.cn/api/paas/v4",
     mapper: (id) => {
       const known = {
+        // v2.8.7: 新增 GLM-4.7 系列（2026年最新）
+        "glm-4.7": {
+          name: "GLM-4.7",
+          capabilities: ["reasoning", "code", "general"],
+          contextWindow: 2e5,
+          maxTokens: 128e3,
+          description: "\u667A\u8C31 GLM-4.7\uFF0C\u9AD8\u667A\u80FD Agentic Coding \u6A21\u578B\uFF0C200K \u4E0A\u4E0B\u6587"
+        },
+        "glm-4.7-flashx": {
+          name: "GLM-4.7 FlashX",
+          capabilities: ["fast", "costEffective", "general"],
+          contextWindow: 2e5,
+          maxTokens: 128e3,
+          description: "\u667A\u8C31 GLM-4.7 FlashX\uFF0C\u8F7B\u91CF\u9AD8\u901F\u7248\uFF0C200K \u4E0A\u4E0B\u6587"
+        },
+        // v2.8.7: 新增 GLM-5 系列
+        "glm-5": {
+          name: "GLM-5",
+          capabilities: ["reasoning", "code", "general"],
+          contextWindow: 128e3,
+          maxTokens: 8192,
+          description: "\u667A\u8C31 GLM-5 \u65D7\u8230\u6A21\u578B\uFF0C\u63A8\u7406\u4E0E\u4EE3\u7801"
+        },
+        "glm-5-turbo": {
+          name: "GLM-5 Turbo",
+          capabilities: ["fast", "costEffective", "general"],
+          contextWindow: 128e3,
+          maxTokens: 8192,
+          description: "\u667A\u8C31 GLM-5 Turbo\uFF0C\u6781\u901F\u7248"
+        },
+        // 保留旧版模型
         "glm-4-plus": {
           name: "GLM-4 Plus",
           capabilities: ["reasoning", "code", "general"],
@@ -12832,11 +12888,12 @@ async function callOpenAICompatibleStream(apiEndpoint, apiKey, modelId, messages
     body.tool_choice = "auto";
   }
   const isLocalEndpoint = /localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.|:11434/.test(apiEndpoint);
-  const supportsReasoning = !isLocalEndpoint && (modelCapabilities?.includes("reasoning") || /deepseek|reasoner|o3|o4|r1|moonshot|kimi|k2[.-]|qwq|qwen3/i.test(modelId));
+  const supportsReasoning = !isLocalEndpoint && (modelCapabilities?.includes("reasoning") || /deepseek|reasoner|o3|o4|r1|moonshot|kimi|k2[.-]|qwq|qwen3|glm|zhipu/i.test(modelId));
   const isDeepSeekModel = /deepseek|reasoner|r1/i.test(modelId);
   const isMoonshotModel = /moonshot|kimi|k2[.-]/i.test(modelId);
   const isQwenModel = /qwq|qwen3/i.test(modelId);
   const isOpenAIReasoner = /o3|o4/i.test(modelId);
+  const isZhipuModel = /glm|zhipu/i.test(modelId);
   const normalizedEffort = reasoningEffort === "off" ? null : reasoningEffort === "max" ? "high" : reasoningEffort;
   if (normalizedEffort && supportsReasoning) {
     body.reasoning_effort = normalizedEffort;
@@ -12848,9 +12905,12 @@ async function callOpenAICompatibleStream(apiEndpoint, apiKey, modelId, messages
       } else {
         body.thinking = { type: "enabled" };
       }
+    } else if (isZhipuModel) {
+      delete body.reasoning_effort;
+      body.thinking = { type: "enabled" };
     } else if (isQwenModel) {
     }
-    logger.debug(`[AIClient] \u5DF2\u542F\u7528\u63A8\u7406\u6A21\u5F0F: model=${modelId} effort=${normalizedEffort}${isDeepSeekModel ? " [DeepSeek:reasoning_effort]" : ""}${isMoonshotModel ? " [Moonshot:thinking]" : ""}${isQwenModel ? " [Qwen:reasoning_effort]" : ""}${isOpenAIReasoner ? " [OpenAI:reasoning_effort]" : ""}`);
+    logger.debug(`[AIClient] \u5DF2\u542F\u7528\u63A8\u7406\u6A21\u5F0F: model=${modelId} effort=${normalizedEffort}${isDeepSeekModel ? " [DeepSeek:reasoning_effort]" : ""}${isMoonshotModel ? " [Moonshot:thinking]" : ""}${isZhipuModel ? " [Zhipu:thinking]" : ""}${isQwenModel ? " [Qwen:reasoning_effort]" : ""}${isOpenAIReasoner ? " [OpenAI:reasoning_effort]" : ""}`);
   } else if (reasoningEffort === "off") {
     logger.debug(`[AIClient] reasoning_effort=off\uFF0C\u8DF3\u8FC7 thinking \u53C2\u6570 (model=${modelId})`);
   } else if (!supportsReasoning && !isLocalEndpoint && reasoningEffort && reasoningEffort !== "off") {

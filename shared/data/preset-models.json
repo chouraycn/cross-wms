@@ -152,6 +152,46 @@
       "capabilities": ["multimodal", "general"]
     },
     {
+      "id": "glm-4.7",
+      "name": "GLM-4.7",
+      "provider": "zhipu",
+      "apiEndpoint": "https://open.bigmodel.cn/api/paas/v4",
+      "description": "智谱 GLM-4.7，高智能 Agentic Coding 模型，200K 上下文",
+      "contextWindow": 200000,
+      "maxTokens": 128000,
+      "capabilities": ["reasoning", "code", "general"]
+    },
+    {
+      "id": "glm-4.7-flashx",
+      "name": "GLM-4.7 FlashX",
+      "provider": "zhipu",
+      "apiEndpoint": "https://open.bigmodel.cn/api/paas/v4",
+      "description": "智谱 GLM-4.7 FlashX，轻量高速版，200K 上下文",
+      "contextWindow": 200000,
+      "maxTokens": 128000,
+      "capabilities": ["fast", "costEffective", "general"]
+    },
+    {
+      "id": "glm-5",
+      "name": "GLM-5",
+      "provider": "zhipu",
+      "apiEndpoint": "https://open.bigmodel.cn/api/paas/v4",
+      "description": "智谱 GLM-5 旗舰模型，推理与代码",
+      "contextWindow": 128000,
+      "maxTokens": 8192,
+      "capabilities": ["reasoning", "code", "general"]
+    },
+    {
+      "id": "glm-5-turbo",
+      "name": "GLM-5 Turbo",
+      "provider": "zhipu",
+      "apiEndpoint": "https://open.bigmodel.cn/api/paas/v4",
+      "description": "智谱 GLM-5 Turbo，极速版",
+      "contextWindow": 128000,
+      "maxTokens": 8192,
+      "capabilities": ["fast", "costEffective", "general"]
+    },
+    {
       "id": "hunyuan-pro",
       "name": "腾讯混元 Pro",
       "provider": "tencent",

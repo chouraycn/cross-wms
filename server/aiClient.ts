@@ -243,13 +243,13 @@ export async function callOpenAICompatibleStream(
     body.tool_choice = 'auto';
   }
 
-  // v1.5.173: 判断是否支持 reasoning + 模型分类
+  // v2.8.7: 判断是否支持 reasoning + 模型分类
   // 分类决定了发送哪些参数（不同 API 的 thinking 启用方式不同）
   // Bugfix: 本地模型（Ollama/LM Studio/vLLM 等）不支持 reasoning_effort，跳过
   const isLocalEndpoint = /localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.|:11434/.test(apiEndpoint);
   const supportsReasoning = !isLocalEndpoint && (
     modelCapabilities?.includes('reasoning') ||
-    /deepseek|reasoner|o3|o4|r1|moonshot|kimi|k2[.-]|qwq|qwen3/i.test(modelId)
+    /deepseek|reasoner|o3|o4|r1|moonshot|kimi|k2[.-]|qwq|qwen3|glm|zhipu/i.test(modelId)
   );
 
   // 模型分类（用于参数差异化处理）
@@ -257,6 +257,7 @@ export async function callOpenAICompatibleStream(
   const isMoonshotModel = /moonshot|kimi|k2[.-]/i.test(modelId);
   const isQwenModel = /qwq|qwen3/i.test(modelId);
   const isOpenAIReasoner = /o3|o4/i.test(modelId);
+  const isZhipuModel = /glm|zhipu/i.test(modelId);
 
   // v1.5.173: reasoning_effort 值映射
   //   "off"  → 跳过所有 thinking/reasoning 参数
@@ -304,11 +305,16 @@ export async function callOpenAICompatibleStream(
     //    — K2.6/K2.5: { type: "enabled" } 或 { type: "disabled" }
     //    — 不发送 reasoning_effort（Kimi 不支持此参数）
     //
-    // 3. Qwen3/QwQ: 只保留 reasoning_effort，不发送 enable_thinking / thinking
+    // 3. 智谱 AI (Zhipu/GLM): thinking 是顶层参数
+    //    — GLM-4.7/GLM-5: { type: "enabled" }
+    //    — 流式响应中 thinking 内容在 delta.reasoning_content
+    //    — 不发送 reasoning_effort（智谱不支持此参数）
     //
-    // 4. OpenAI o3/o4: 只支持 reasoning_effort
+    // 4. Qwen3/QwQ: 只保留 reasoning_effort，不发送 enable_thinking / thinking
     //
-    // 5. Claude: 不在此函数处理（由 callAnthropicStream 单独处理）
+    // 5. OpenAI o3/o4: 只支持 reasoning_effort
+    //
+    // 6. Claude: 不在此函数处理（由 callAnthropicStream 单独处理）
     if (isMoonshotModel) {
       // Kimi: 移除 reasoning_effort（Kimi 不支持），设置顶层 thinking 参数
       delete body.reasoning_effort;
@@ -320,6 +326,10 @@ export async function callOpenAICompatibleStream(
         // K2.6/K2.5: 支持启用/禁用思考
         (body as any).thinking = { type: 'enabled' };
       }
+    } else if (isZhipuModel) {
+      // 智谱 AI: 移除 reasoning_effort（智谱不支持），设置顶层 thinking 参数
+      delete body.reasoning_effort;
+      (body as any).thinking = { type: 'enabled' };
     } else if (isQwenModel) {
       // Qwen3: 只保留 reasoning_effort，不发送 enable_thinking / thinking
       // body.reasoning_effort 已在上方设置，此处无需额外操作
@@ -328,6 +338,7 @@ export async function callOpenAICompatibleStream(
     logger.debug(`[AIClient] 已启用推理模式: model=${modelId} effort=${normalizedEffort}` +
       `${isDeepSeekModel ? ' [DeepSeek:reasoning_effort]' : ''}` +
       `${isMoonshotModel ? ' [Moonshot:thinking]' : ''}` +
+      `${isZhipuModel ? ' [Zhipu:thinking]' : ''}` +
       `${isQwenModel ? ' [Qwen:reasoning_effort]' : ''}` +
       `${isOpenAIReasoner ? ' [OpenAI:reasoning_effort]' : ''}`);
   } else if (reasoningEffort === 'off') {

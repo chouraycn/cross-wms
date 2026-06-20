@@ -116,6 +116,31 @@ const BUILTIN_MODELS: ModelConfig[] = [
     maxTokens: 8_192,
     capabilities: ['costEffective', 'fast', 'general'],
   },
+  // === 智谱 AI (Zhipu) ===
+  {
+    id: 'glm-4.7',
+    name: 'GLM-4.7',
+    provider: 'bigmodel',
+    apiEndpoint: 'https://open.bigmodel.cn/api/paas/v4',
+    enabled: false,
+    isDefault: false,
+    description: '智谱 GLM-4.7，高智能 Agentic Coding 模型，200K 上下文',
+    contextWindow: 200_000,
+    maxTokens: 128_000,
+    capabilities: ['reasoning', 'code', 'general'],
+  },
+  {
+    id: 'glm-5',
+    name: 'GLM-5',
+    provider: 'bigmodel',
+    apiEndpoint: 'https://open.bigmodel.cn/api/paas/v4',
+    enabled: false,
+    isDefault: false,
+    description: '智谱 GLM-5 旗舰模型，推理与代码',
+    contextWindow: 128_000,
+    maxTokens: 8_192,
+    capabilities: ['reasoning', 'code', 'general'],
+  },
   // === Ollama (本地) ===
   {
     id: 'ollama-llama3.1',
@@ -547,6 +572,37 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
     modelsEndpoint: 'https://open.bigmodel.cn/api/paas/v4',
     mapper: (id: string) => {
       const known: Record<string, Partial<ModelConfig>> = {
+        // v2.8.7: 新增 GLM-4.7 系列（2026年最新）
+        'glm-4.7': {
+          name: 'GLM-4.7',
+          capabilities: ['reasoning', 'code', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 128_000,
+          description: '智谱 GLM-4.7，高智能 Agentic Coding 模型，200K 上下文',
+        },
+        'glm-4.7-flashx': {
+          name: 'GLM-4.7 FlashX',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 200_000,
+          maxTokens: 128_000,
+          description: '智谱 GLM-4.7 FlashX，轻量高速版，200K 上下文',
+        },
+        // v2.8.7: 新增 GLM-5 系列
+        'glm-5': {
+          name: 'GLM-5',
+          capabilities: ['reasoning', 'code', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 8_192,
+          description: '智谱 GLM-5 旗舰模型，推理与代码',
+        },
+        'glm-5-turbo': {
+          name: 'GLM-5 Turbo',
+          capabilities: ['fast', 'costEffective', 'general'],
+          contextWindow: 128_000,
+          maxTokens: 8_192,
+          description: '智谱 GLM-5 Turbo，极速版',
+        },
+        // 保留旧版模型
         'glm-4-plus': {
           name: 'GLM-4 Plus',
           capabilities: ['reasoning', 'code', 'general'],
