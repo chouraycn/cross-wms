@@ -226,7 +226,7 @@ export function getGrayScale(isDark: boolean): GrayScale {
  * ChatContainer 输入框 + ChatMessageList 消息列表共享此值
  * 修改此常量即可统一调整整个聊天区域宽度
  */
-export const CHAT_MAX_WIDTH = 1024;
+export const CHAT_MAX_WIDTH = 920;
 
 // ===================== 兼容旧代码的常量（已废弃） =====================
 
