@@ -30783,7 +30783,6 @@ ${toolDescriptions}
 init_logger();
 var ExecutionMode = /* @__PURE__ */ ((ExecutionMode2) => {
   ExecutionMode2["LEGACY"] = "legacy";
-  ExecutionMode2["OBSERVER"] = "observer";
   ExecutionMode2["REACT"] = "react";
   return ExecutionMode2;
 })(ExecutionMode || {});
@@ -30798,317 +30797,6 @@ var LegacyStrategy = class {
       circuitBreaker: this.circuitBreaker,
       onSSEEvent
     });
-  }
-};
-var ObserverStrategy = class {
-  constructor(observer) {
-    this.circuitBreaker = new CircuitBreaker();
-    this.observer = observer ?? new Observer();
-  }
-  async execute(options) {
-    const {
-      modelConfig: modelConfig2,
-      messages,
-      maxToolTurns = 10,
-      signal,
-      onChunk,
-      onThinking,
-      onToolCall,
-      onPermissionRequest,
-      reasoningEffort,
-      modelCapabilities,
-      approvedToolsCache,
-      onSSEEvent
-    } = options;
-    const builtinTools = getToolDefinitions();
-    const pluginTools = pluginRegistry.getActiveTools();
-    const mcpTools = mcpClientManager.getMcpTools();
-    const tools = [...builtinTools, ...pluginTools, ...mcpTools];
-    const currentMessages = [...messages];
-    let finalContent = "";
-    const executedToolCalls = [];
-    const approvedTools = approvedToolsCache ?? /* @__PURE__ */ new Set();
-    const retryCounters = /* @__PURE__ */ new Map();
-    function needsPermission2(name) {
-      const level = getToolRiskLevel(name);
-      return level === "confirm" || level === "high-risk";
-    }
-    for (let turn = 0; turn < maxToolTurns; turn++) {
-      if (signal?.aborted) {
-        throw new Error("\u8BF7\u6C42\u5DF2\u53D6\u6D88");
-      }
-      const ctxWindow = modelConfig2.contextWindow || 128e3;
-      const ctxMaxTokens = Math.min(modelConfig2.maxTokens || 8192, 8192);
-      const turnTruncated = await compressContextWithSummary(currentMessages, ctxWindow, ctxMaxTokens, tools.length, modelConfig2);
-      if ((turnTruncated.compressed || turnTruncated.truncated) && currentMessages.length !== turnTruncated.messages.length) {
-        currentMessages.length = 0;
-        currentMessages.push(...turnTruncated.messages);
-      }
-      const response = await callAIModelStream(
-        modelConfig2,
-        currentMessages,
-        (text) => {
-          if (onChunk) onChunk(text);
-          finalContent += text;
-        },
-        signal,
-        onThinking,
-        tools,
-        void 0,
-        reasoningEffort,
-        modelCapabilities
-      );
-      if (!response.toolCalls || response.toolCalls.length === 0) {
-        return { content: response.content || finalContent, toolCalls: executedToolCalls };
-      }
-      currentMessages.push({
-        role: "assistant",
-        content: response.content || "",
-        reasoning_content: response.reasoningContent,
-        tool_calls: response.toolCalls.map((tc) => ({
-          id: tc.id,
-          type: tc.type,
-          function: {
-            name: tc.function.name,
-            arguments: tc.function.arguments
-          }
-        }))
-      });
-      for (const toolCall of response.toolCalls) {
-        const toolName = toolCall.function.name;
-        if (needsPermission2(toolName)) {
-          let hasPermission;
-          if (approvedTools.has(toolName)) {
-            hasPermission = true;
-          } else {
-            hasPermission = onPermissionRequest ? await onPermissionRequest(toolCall) : false;
-            if (hasPermission) {
-              approvedTools.add(toolName);
-            }
-          }
-          if (!hasPermission) {
-            const denyResult = JSON.stringify({ error: `\u7528\u6237\u62D2\u7EDD\u4E86\u5DE5\u5177 '${toolName}' \u7684\u6267\u884C\u8BF7\u6C42\u3002` });
-            executedToolCalls.push({
-              name: toolName,
-              arguments: toolCall.function.arguments,
-              result: denyResult
-            });
-            if (onToolCall) {
-              onToolCall(toolCall, denyResult);
-            }
-            currentMessages.push({
-              role: "tool",
-              content: denyResult,
-              tool_call_id: toolCall.id
-            });
-            continue;
-          }
-        }
-        if (this.circuitBreaker.isOpen(toolName)) {
-          const skipResult = JSON.stringify({
-            error: `\u5DE5\u5177 '${toolName}' \u5DF2\u88AB\u7194\u65AD\uFF08\u8FDE\u7EED\u5931\u8D25\u8FC7\u591A\uFF09\uFF0C\u5DF2\u8DF3\u8FC7\u6267\u884C\u3002`,
-            circuitBreakerState: "open"
-          });
-          executedToolCalls.push({
-            name: toolName,
-            arguments: toolCall.function.arguments,
-            result: skipResult
-          });
-          if (onToolCall) {
-            onToolCall(toolCall, skipResult);
-          }
-          currentMessages.push({
-            role: "tool",
-            content: skipResult,
-            tool_call_id: toolCall.id
-          });
-          continue;
-        }
-        if (isMcpToolName(toolName)) {
-          const prefix = getMcpServerPrefix(toolName);
-          if (prefix && this.circuitBreaker.isMcpServerOpen(prefix)) {
-            const skipResult = JSON.stringify({
-              error: `MCP Server '${prefix}' \u5DF2\u88AB\u7194\u65AD\uFF08\u8FDE\u7EED\u5931\u8D25\u8FC7\u591A\uFF09\uFF0C\u5DF2\u8DF3\u8FC7\u6267\u884C\u3002`,
-              circuitBreakerState: "open"
-            });
-            executedToolCalls.push({
-              name: toolName,
-              arguments: toolCall.function.arguments,
-              result: skipResult
-            });
-            if (onToolCall) {
-              onToolCall(toolCall, skipResult);
-            }
-            currentMessages.push({
-              role: "tool",
-              content: skipResult,
-              tool_call_id: toolCall.id
-            });
-            continue;
-          }
-        }
-        let result;
-        let mcpExecutionSucceeded = true;
-        if (isMcpToolName(toolName)) {
-          try {
-            const parsedArgs = JSON.parse(toolCall.function.arguments || "{}");
-            result = await mcpClientManager.executeMcpTool(toolName, parsedArgs);
-            const prefix = getMcpServerPrefix(toolName);
-            if (prefix) {
-              this.circuitBreaker.recordMcpServerSuccess(prefix);
-            }
-          } catch (err) {
-            mcpExecutionSucceeded = false;
-            const errMsg = err instanceof Error ? err.message : String(err);
-            result = JSON.stringify({ error: `MCP \u5DE5\u5177\u6267\u884C\u5F02\u5E38: ${errMsg}` });
-            const prefix = getMcpServerPrefix(toolName);
-            if (prefix) {
-              const mcpState = this.circuitBreaker.recordMcpServerFailure(prefix, errMsg);
-              if (mcpState === "open" && onSSEEvent) {
-                onSSEEvent({
-                  type: "circuit_breaker_triggered",
-                  toolName,
-                  failureCount: this.circuitBreaker.getRecord(`mcp__${prefix}__*`)?.consecutiveFailures ?? 0,
-                  state: "open"
-                });
-              }
-            }
-          }
-        } else {
-          result = await executeToolCall(toolCall);
-        }
-        if (!isMcpToolName(toolName)) {
-          const hasError = result.includes('"error"') || result.includes('"error":');
-          if (hasError) {
-            const circuitState = this.circuitBreaker.recordFailure(toolName, result.slice(0, 100));
-            if (circuitState === "half_open") {
-              const suggestion = this.circuitBreaker.getAlternativeSuggestion(toolName);
-              if (suggestion) {
-                currentMessages.push({
-                  role: "system",
-                  content: `[\u7194\u65AD\u5668] ${suggestion}`
-                });
-              }
-            }
-            if (circuitState === "open" && onSSEEvent) {
-              const record2 = this.circuitBreaker.getRecord(toolName);
-              onSSEEvent({
-                type: "circuit_breaker_triggered",
-                toolName,
-                failureCount: record2?.consecutiveFailures ?? 0,
-                state: "open",
-                alternativeTool: record2?.alternativeTool
-              });
-            }
-          } else {
-            this.circuitBreaker.recordSuccess(toolName);
-          }
-        } else if (!mcpExecutionSucceeded) {
-          const circuitState = this.circuitBreaker.recordFailure(toolName, result.slice(0, 100));
-          if (circuitState === "half_open") {
-            const suggestion = this.circuitBreaker.getAlternativeSuggestion(toolName);
-            if (suggestion) {
-              currentMessages.push({
-                role: "system",
-                content: `[\u7194\u65AD\u5668] ${suggestion}`
-              });
-            }
-          }
-        } else {
-          this.circuitBreaker.recordSuccess(toolName);
-        }
-        executedToolCalls.push({
-          name: toolName,
-          arguments: toolCall.function.arguments,
-          result
-        });
-        if (onToolCall) {
-          onToolCall(toolCall, result);
-        }
-        let toolArgs = {};
-        try {
-          toolArgs = JSON.parse(toolCall.function.arguments);
-        } catch {
-        }
-        let observation;
-        if (ExecutionStrategyFactory.getPersonalityObserverFastPath()) {
-          observation = {
-            toolCall: { name: toolName, arguments: toolArgs },
-            result,
-            assessment: {
-              level: "success",
-              reason: "\u9AD8\u6548\u6A21\u5F0F\u8DF3\u8FC7\u53CD\u601D",
-              shouldRetry: false,
-              shouldAdjustStrategy: false,
-              maxRetries: 0
-            }
-          };
-        } else {
-          try {
-            observation = this.observer.observe(
-              { name: toolName, arguments: toolArgs },
-              result
-            );
-          } catch (observerErr) {
-            logger.error("[ObserverStrategy] Observer \u9519\u8BEF\uFF08\u5DF2\u5FFD\u7565\uFF09:", observerErr instanceof Error ? observerErr.message : String(observerErr));
-            observation = {
-              toolCall: { name: toolName, arguments: {} },
-              result,
-              assessment: {
-                level: "success",
-                reason: "Observer \u9519\u8BEF\u5DF2\u5FFD\u7565",
-                shouldRetry: false,
-                shouldAdjustStrategy: false,
-                maxRetries: 0
-              }
-            };
-          }
-        }
-        const retryKey = `${toolName}:${toolCall.function.arguments}`;
-        const retryIndex = retryCounters.get(retryKey) ?? 0;
-        const shouldRetry = this.observer.shouldRetry(observation, retryIndex);
-        if (observation.assessment.level !== "success" && observation.reflectionHint) {
-          const observerEvent = {
-            type: "observer_reflection",
-            toolName,
-            level: observation.assessment.level,
-            hint: observation.reflectionHint,
-            willRetry: shouldRetry,
-            retryIndex,
-            maxRetries: observation.assessment.maxRetries
-          };
-          if (onSSEEvent) {
-            onSSEEvent(observerEvent);
-          }
-        }
-        const toolResultContent = result;
-        if (shouldRetry && observation.reflectionHint) {
-          retryCounters.set(retryKey, retryIndex + 1);
-          const reflectionSystemMsg = {
-            role: "system",
-            content: `[\u53CD\u601D\u63D0\u793A] ${observation.reflectionHint}${observation.assessment.shouldAdjustStrategy && observation.assessment.strategyHint ? `
-\u7B56\u7565\u5EFA\u8BAE\uFF1A${observation.assessment.strategyHint}` : ""}`
-          };
-          currentMessages.push({
-            role: "tool",
-            content: toolResultContent,
-            tool_call_id: toolCall.id
-          });
-          currentMessages.push(reflectionSystemMsg);
-          logger.debug(`[ObserverStrategy] \u5DE5\u5177 ${toolName} \u5C06\u91CD\u8BD5\uFF08\u7B2C ${retryIndex + 1}/${observation.assessment.maxRetries} \u6B21\uFF09\uFF0C\u539F\u56E0\uFF1A${observation.assessment.reason}`);
-        } else {
-          currentMessages.push({
-            role: "tool",
-            content: toolResultContent,
-            tool_call_id: toolCall.id
-          });
-        }
-      }
-      if (finalContent && !finalContent.endsWith("\n")) {
-        finalContent += "\n\n";
-      }
-    }
-    return { content: finalContent, toolCalls: executedToolCalls };
   }
 };
 var ReactStrategy = class _ReactStrategy {
@@ -31144,8 +30832,8 @@ var ReactStrategy = class _ReactStrategy {
         toolCalls: result.toolCalls
       };
     } catch (error2) {
-      logger.error("[ReActStrategy] \u6267\u884C\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A Observer:", error2 instanceof Error ? error2.message : String(error2));
-      return new ObserverStrategy().execute(options);
+      logger.error("[ReActStrategy] \u6267\u884C\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A Legacy:", error2 instanceof Error ? error2.message : String(error2));
+      return new LegacyStrategy().execute(options);
     }
   }
 };
@@ -31157,19 +30845,18 @@ var ExecutionStrategyFactory = class {
     switch (mode) {
       case "legacy" /* LEGACY */:
         return new LegacyStrategy();
-      case "observer" /* OBSERVER */:
-        return new ObserverStrategy();
       case "react" /* REACT */:
         return new ReactStrategy();
       default:
-        return new LegacyStrategy();
+        return new ReactStrategy();
     }
   }
   /**
    * 获取默认执行模式。
+   * v2.8.7: 默认使用 REACT（更智能），简单任务由内部复杂度评估自动降级。
    */
   static getDefaultMode() {
-    return "legacy" /* LEGACY */;
+    return "react" /* REACT */;
   }
   /**
    * v8.5: 获取人格层影响的预算配置覆盖。
@@ -32853,7 +32540,8 @@ ${sessionContext}
                     latestUserMsg.content,
                     "default",
                     5,
-                    0.35
+                    0.35,
+                    sessionId
                   ),
                   new Promise((resolve) => setTimeout(() => resolve([]), 5e3))
                 ]);

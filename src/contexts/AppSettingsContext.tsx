@@ -215,13 +215,13 @@ export interface SystemAuthorizationConfig {
 
 // ===================== AI 引擎配置 =====================
 
-export type ExecutionMode = 'legacy' | 'observer' | 'react';
+export type ExecutionMode = 'legacy' | 'react';
 
 /** v7.0: 队列模式 — 高频交互消息竞争控制 */
 export type QueueMode = 'collect' | 'steer' | 'followup';
 
 export interface AiEngineConfig {
-  /** 默认执行模式：legacy(原始) / observer(观察反思) / react(完整ReAct) */
+  /** 默认执行模式：legacy(轻量) / react(完整ReAct) */
   defaultExecutionMode: ExecutionMode;
   /** v7.0: 默认队列模式：collect(合并) / steer(转向) / followup(追加) */
   defaultQueueMode: QueueMode;
