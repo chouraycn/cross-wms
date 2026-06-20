@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { readMemoryMd, writeMemoryMd } from './chat.js';
+import { readMemoryMd, writeMemoryMd } from './memoryExtractor.js';
 import { searchMemory, getMemoryStats, backfillEmbeddings } from '../engine/vecMemoryStore.js';
 import { logger } from '../logger.js';
 
