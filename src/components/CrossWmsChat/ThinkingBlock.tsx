@@ -108,11 +108,10 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
   return (
     <Box
       sx={{
-        mb: 1.5,
-        borderRadius: '10px',
-        bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-        border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
-        overflow: 'hidden',
+        mb: 1,
+        borderLeft: `2px solid ${isDark ? 'rgba(128,128,128,0.35)' : 'rgba(0,0,0,0.12)'}`,
+        pl: 1.5,
+        py: 0.25,
       }}
     >
       {/* 头部栏 */}
@@ -122,20 +121,18 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
           display: 'flex',
           alignItems: 'center',
           gap: 0.75,
-          py: 0.6,
-          px: 1.2,
+          py: 0.4,
           cursor: 'pointer',
           userSelect: 'none',
-          bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
         }}
       >
         {/* 呼吸灯竖线 — 流式时用 JS 切换 opacity + CSS transition */}
         <Box
           sx={{
-            width: 3,
-            height: 14,
-            borderRadius: '2px',
-            bgcolor: isStreaming ? (isDark ? '#F59E0B' : '#D97706') : (isDark ? 'rgba(128,128,128,0.4)' : 'rgba(0,0,0,0.15)'),
+            width: 2,
+            height: 13,
+            borderRadius: 1,
+            bgcolor: isStreaming ? (isDark ? 'rgba(128,128,128,0.7)' : 'rgba(0,0,0,0.3)') : (isDark ? 'rgba(128,128,128,0.4)' : 'rgba(0,0,0,0.15)'),
             opacity: isStreaming ? breathOpacity : 0.8,
             transition: isStreaming ? 'opacity 2s ease-in-out' : 'opacity 0.3s ease',
             flexShrink: 0,
@@ -215,14 +212,13 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
         />
       </Box>
 
-      {/* 展开内容 — v2.8.9: Trae 风格卡片内嵌 */}
+      {/* 展开内容 */}
       <Collapse in={expanded} unmountOnExit>
         <Box
           ref={contentRef}
           sx={{
-            pb: 1,
-            pt: 0.5,
-            px: 1.2,
+            pb: 0.5,
+            pt: 0.25,
             maxHeight: 280,
             overflowY: 'auto',
             // 自定义滚动条
