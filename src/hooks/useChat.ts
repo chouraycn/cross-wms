@@ -57,7 +57,7 @@ const QUERY_BLOCK_REGEX = /```inventory_query\s*\n([\s\S]*?)\n```/;
  * 确保渲染不被暂停。浏览器环境仍使用 rAF 以保持与显示器刷新率对齐。
  */
 const IS_PYWEBVIEW = typeof window !== 'undefined' &&
-  !!(window as any).webkit?.messageHandlers;
+  ('pywebview' in window || !!(window as any).webkit?.messageHandlers);
 
 const scheduleFrame = IS_PYWEBVIEW
   ? (fn: FrameRequestCallback): number => window.setTimeout(() => fn(Date.now()), 16)
