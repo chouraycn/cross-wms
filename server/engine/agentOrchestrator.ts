@@ -265,6 +265,8 @@ export class AgentOrchestrator {
           subTask.completedAt = new Date().toISOString();
           completed++;
 
+          const duration = Date.now() - new Date(subTask.startedAt || subTask.createdAt).getTime();
+
           allToolCalls.push(...toolCalls);
           subTaskResults.push({
             subTaskId: subTask.id,
@@ -272,8 +274,19 @@ export class AgentOrchestrator {
             status: 'completed',
             result: content,
             agentId: subTask.assignedAgentId || 'unknown',
-            duration: Date.now() - new Date(subTask.startedAt || subTask.createdAt).getTime(),
+            duration,
           });
+
+          // 记录执行结果到 Agent 历史
+          if (subTask.assignedAgentId) {
+            agentRegistry.recordExecution(subTask.assignedAgentId, {
+              agentId: subTask.assignedAgentId,
+              subTaskId: subTask.id,
+              taskDescription: subTask.description,
+              status: 'success',
+              duration,
+            });
+          }
         } else {
           const errorMsg = result.reason instanceof Error ? result.reason.message : String(result.reason);
           subTask.status = 'failed';
@@ -281,14 +294,28 @@ export class AgentOrchestrator {
           subTask.completedAt = new Date().toISOString();
           failed++;
 
+          const duration = Date.now() - new Date(subTask.startedAt || subTask.createdAt).getTime();
+
           subTaskResults.push({
             subTaskId: subTask.id,
             description: subTask.description,
             status: 'failed',
             result: null,
             agentId: subTask.assignedAgentId || 'unknown',
-            duration: 0,
+            duration,
           });
+
+          // 记录执行结果到 Agent 历史
+          if (subTask.assignedAgentId) {
+            const isTimeout = errorMsg.includes('超时') || errorMsg.includes('timeout');
+            agentRegistry.recordExecution(subTask.assignedAgentId, {
+              agentId: subTask.assignedAgentId,
+              subTaskId: subTask.id,
+              taskDescription: subTask.description,
+              status: isTimeout ? 'timeout' : 'failure',
+              duration,
+            });
+          }
         }
 
         // 释放 Agent

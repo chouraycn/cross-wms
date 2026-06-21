@@ -170,14 +170,11 @@ const SkillDetailPage: React.FC = () => {
   }, [skill?.automationTaskType]);
 
   // T03: SSE 连接 — 监听技能变更事件
-  const evtRef = useRef<EventSource | null>(null);
+  const evtRef = useRef<import('../services/api').SSEConnection | null>(null);
   useEffect(() => {
-    evtRef.current = api.connectSkillEvents();
-    const es = evtRef.current;
-
-    const handleMessage = (event: MessageEvent) => {
+    const sse = api.connectSkillEvents((rawData) => {
       try {
-        const data: SkillWatchEvent = JSON.parse(event.data);
+        const data: SkillWatchEvent = JSON.parse(rawData);
         // console.log('[SkillDetailPage] SSE event:', data);
 
         // 检查当前技能是否受影响
@@ -202,13 +199,11 @@ const SkillDetailPage: React.FC = () => {
       } catch (e) {
         // console.error('[SkillDetailPage] SSE parse error:', e);
       }
-    };
-
-    es.addEventListener('message', handleMessage);
+    });
+    evtRef.current = sse;
 
     return () => {
-      es.removeEventListener('message', handleMessage);
-      es.close();
+      sse.close();
     };
   }, [skill?.name]);
 

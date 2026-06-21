@@ -5,6 +5,7 @@ import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../type
 import { CHAT_API_URL, INVENTORY_QUERY_API_URL } from '../constants/api';
 import { useAppSettings, useAppearanceSettings } from '../contexts/AppSettingsContext';
 import { useToolPermission } from '../contexts/ToolPermissionContext';
+import { isDesktopApp } from '../utils/env';
 // v2.8.9: 子 hooks 已提取为独立模块，未来可逐步迁移：
 // import { useRenderScheduler } from './useRenderScheduler';
 // import { useAbortControl } from './useAbortControl';
@@ -56,8 +57,7 @@ const QUERY_BLOCK_REGEX = /```inventory_query\s*\n([\s\S]*?)\n```/;
  * 导致 SSE 流式内容堆积不渲染。在 pywebview 环境中降级为 setTimeout(fn, 16)，
  * 确保渲染不被暂停。浏览器环境仍使用 rAF 以保持与显示器刷新率对齐。
  */
-const IS_PYWEBVIEW = typeof window !== 'undefined' &&
-  ('pywebview' in window || !!(window as any).webkit?.messageHandlers);
+const IS_PYWEBVIEW = isDesktopApp();
 
 const scheduleFrame = IS_PYWEBVIEW
   ? (fn: FrameRequestCallback): number => window.setTimeout(() => fn(Date.now()), 16)
@@ -564,16 +564,51 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           const decoder = new TextDecoder();
           let buffer = '';
 
+          // 心跳超时检测：30 秒内无数据则认为连接断开
+          const HEARTBEAT_TIMEOUT_MS = 30000;
+          let heartbeatTimer: ReturnType<typeof setTimeout> | null = null;
+
+          const clearHeartbeat = () => {
+            if (heartbeatTimer) {
+              clearTimeout(heartbeatTimer);
+              heartbeatTimer = null;
+            }
+          };
+
+          const readWithHeartbeat = (): Promise<ReadableStreamReadResult<Uint8Array>> => {
+            clearHeartbeat();
+            return Promise.race([
+              reader.read(),
+              new Promise<never>((_, reject) => {
+                heartbeatTimer = setTimeout(
+                  () => reject(new Error('SSE 心跳超时（30s 无数据）')),
+                  HEARTBEAT_TIMEOUT_MS,
+                );
+              }),
+            ]);
+          };
+
           try {
             while (true) {
-              const { done, value } = await reader.read();
+              let readResult: ReadableStreamReadResult<Uint8Array>;
+              try {
+                readResult = await readWithHeartbeat();
+              } catch (readErr) {
+                if (readErr instanceof Error && readErr.message.includes('心跳超时')) {
+                  throw new Error('SSE 连接超时：30 秒内未收到数据');
+                }
+                throw readErr;
+              }
+              const { done, value } = readResult;
 
               if (stoppedRef.current) {
+                clearHeartbeat();
                 await reader.cancel();
                 break;
               }
 
               if (done) {
+                clearHeartbeat();
                 // 流自然结束 — v1.5.57: 流未正常结束保护
                 if (!doneReceived && !result.trim()) {
                   const hasThinking = !!(streamingMsg.thinking && streamingMsg.thinking.trim());
@@ -919,6 +954,7 @@ scheduleRender();
               }
             }
           } catch (readErr: any) {
+            clearHeartbeat();
             // reader.read() 异常 — 仅用户手动停止时吞掉错误
             if (stoppedRef.current) {
               // 用户手动停止，保留已生成内容

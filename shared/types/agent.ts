@@ -28,6 +28,24 @@ export interface AgentCapability {
   taskKeywords: string[];
 }
 
+/** Agent 执行历史记录 */
+export interface AgentExecutionRecord {
+  /** 记录 ID */
+  id: string;
+  /** Agent ID */
+  agentId: string;
+  /** 子任务 ID */
+  subTaskId: string;
+  /** 任务描述 */
+  taskDescription: string;
+  /** 执行结果 */
+  status: 'success' | 'failure' | 'timeout';
+  /** 执行时长 ms */
+  duration: number;
+  /** 时间戳 */
+  timestamp: string;
+}
+
 /** Agent 配置 */
 export interface AgentProfile {
   /** 唯一 ID */
@@ -56,6 +74,12 @@ export interface AgentProfile {
   createdAt: string;
   /** 最后活跃时间 */
   lastActiveAt: string;
+  /** 最近执行记录（内存中保留最近 50 条） */
+  recentExecutions: AgentExecutionRecord[];
+  /** 成功次数（累计） */
+  successCount: number;
+  /** 失败次数（累计） */
+  failureCount: number;
 }
 
 // ===================== Task Decomposition =====================
@@ -220,7 +244,7 @@ export interface OrchestratorResult {
 // ===================== Built-in Agent Templates =====================
 
 /** 内置 Agent 模板 */
-export const BUILTIN_AGENT_TEMPLATES: Array<Omit<AgentProfile, 'status' | 'createdAt' | 'lastActiveAt'>> = [
+export const BUILTIN_AGENT_TEMPLATES: Array<Omit<AgentProfile, 'status' | 'createdAt' | 'lastActiveAt' | 'recentExecutions' | 'successCount' | 'failureCount'>> = [
   {
     id: 'orchestrator',
     name: '统筹 Agent',
