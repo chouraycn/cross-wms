@@ -17,6 +17,14 @@ export default defineConfig({
       'server/__tests__/**/*.test.{ts,tsx}',
       'server/**/__tests__/**/*.test.{ts,tsx}',
     ],
+    deps: {
+      // Force vitest to process (and thus mock) onnxruntime-node
+      // even if it's a native CJS module
+      optimizer: {
+        // Exclude onnxruntime-node from dependency optimization
+        exclude: ['onnxruntime-node'],
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
