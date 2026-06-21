@@ -112,6 +112,7 @@ const EMPTY_FORM = {
   description: '',
   status: 'active' as string,
   category: 'custom' as string,
+  agentId: '' as string,
 };
 
 const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose, onSave }) => {
@@ -120,6 +121,30 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
   const gs = getGrayScale(isDark);
   const [form, setForm] = useState(EMPTY_FORM);
   const [nameError, setNameError] = useState('');
+  const [agentOptions, setAgentOptions] = useState<Array<{ id: string; name: string; description: string }>>([]);
+
+  // 获取可用 Agent 列表
+  React.useEffect(() => {
+    if (!open) return;
+    const fetchAgents = async () => {
+      try {
+        const resp = await fetch('/api/agents');
+        if (resp.ok) {
+          const json = await resp.json();
+          if (json.data && Array.isArray(json.data)) {
+            setAgentOptions(json.data.map((a: { id: string; name: string; description: string }) => ({
+              id: a.id,
+              name: a.name,
+              description: a.description,
+            })));
+          }
+        }
+      } catch {
+        // 静默失败
+      }
+    };
+    fetchAgents();
+  }, [open]);
 
   React.useEffect(() => {
     if (open) {
@@ -129,6 +154,7 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
           description: initial.description,
           status: initial.status,
           category: initial.category,
+          agentId: (initial as any).agentId || '',
         });
       } else {
         setForm(EMPTY_FORM);
@@ -144,6 +170,7 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
       description: form.description.trim() || undefined,
       status: form.status as 'active' | 'archived' | 'completed',
       category: form.category as 'custom' | 'template' | 'fixed',
+      agentId: form.agentId || undefined,
     });
     onClose();
   };
@@ -186,6 +213,37 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
             </Select>
           </FormControl>
         </Box>
+        {/* Agent 选择 */}
+        {agentOptions.length > 0 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <FormControl size="small" fullWidth>
+              <InputLabel>专业 Agent</InputLabel>
+              <Select
+                label="专业 Agent"
+                value={form.agentId}
+                onChange={(e) => setForm((f) => ({ ...f, agentId: e.target.value }))}
+              >
+                <MenuItem value="">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500 }}>无（使用默认 AI）</Typography>
+                  </Box>
+                </MenuItem>
+                {agentOptions.map((agent) => (
+                  <MenuItem key={agent.id} value={agent.id}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500 }}>{agent.name}</Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {form.agentId && (
+              <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, pl: 0.5 }}>
+                {agentOptions.find(a => a.id === form.agentId)?.description || ''}
+              </Typography>
+            )}
+          </Box>
+        )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} sx={{ color: gs.textMuted }}>取消</Button>

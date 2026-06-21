@@ -30,7 +30,7 @@ router.get('/', (_req: Request, res: Response) => {
  */
 router.post('/', (req: Request, res: Response) => {
   try {
-    const { name, description, status, category } = req.body;
+    const { name, description, status, category, agentId } = req.body;
     if (!name) {
       res.status(400).json({ error: 'name is required' });
       return;
@@ -41,6 +41,7 @@ router.post('/', (req: Request, res: Response) => {
       description: description || '',
       status: status || 'active',
       category: category || 'custom',
+      agent_id: agentId || null,
     });
 
     res.status(201).json(project);
@@ -85,6 +86,7 @@ router.put('/:id', (req: Request, res: Response) => {
     if (req.body.description !== undefined) updateData.description = req.body.description;
     if (req.body.status !== undefined) updateData.status = req.body.status;
     if (req.body.category !== undefined) updateData.category = req.body.category;
+    if (req.body.agentId !== undefined) updateData.agent_id = req.body.agentId || null;
 
     const updated = updateProject(req.params.id, updateData);
     if (!updated) {

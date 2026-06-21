@@ -22,6 +22,7 @@ function rowToProject(row: ProjectRow): Record<string, unknown> {
     description: row.description,
     status: row.status,
     category: row.category,
+    agentId: row.agent_id,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -49,19 +50,21 @@ export function createProject(data: {
   description?: string;
   status?: string;
   category?: string;
+  agent_id?: string | null;
 }): Record<string, unknown> {
   const id = data.id || `proj_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   const now = new Date().toISOString();
 
   db().prepare(`
-    INSERT INTO projects (id, name, description, status, category, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO projects (id, name, description, status, category, agent_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     data.name,
     data.description || '',
     data.status || 'active',
     data.category || 'custom',
+    data.agent_id ?? null,
     now,
     now
   );
@@ -74,6 +77,7 @@ export function updateProject(id: string, data: {
   description?: string;
   status?: string;
   category?: string;
+  agent_id?: string | null;
 }): Record<string, unknown> | null {
   const existing = db().prepare('SELECT * FROM projects WHERE id = ?').get(id) as ProjectRow | undefined;
   if (!existing) return null;
@@ -97,6 +101,10 @@ export function updateProject(id: string, data: {
   if (data.category !== undefined) {
     setClauses.push('category = ?');
     params.push(data.category);
+  }
+  if (data.agent_id !== undefined) {
+    setClauses.push('agent_id = ?');
+    params.push(data.agent_id);
   }
 
   setClauses.push('updated_at = ?');
