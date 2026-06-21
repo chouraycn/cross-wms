@@ -15,6 +15,7 @@ import {
   saveModelsConfig,
   getBuiltinModels,
   isLocalModel,
+  deleteModelConfig,
 } from '../modelsStore.js';
 
 const router = Router();
@@ -65,6 +66,15 @@ router.put('/', async (req: Request, res: Response) => {
         keyStrategy: m.keyStrategy ?? (existing as any).keyStrategy,
       };
     });
+
+    // 检测被删除的模型（物理删除或 hidden），清理 Keychain 中的 API Key
+    const newIds = new Set(mergedModels.map((m: any) => m.id));
+    for (const oldModel of currentConfig.models) {
+      if (!newIds.has(oldModel.id)) {
+        // 模型被物理删除，清理 Keychain
+        deleteModelConfig(oldModel.id);
+      }
+    }
 
     const config = await saveModelsConfig(mergedModels, defaultModelId || mergedModels[0]?.id || '');
     res.json({ data: config });

@@ -22,6 +22,15 @@ import type {
 import { PRESET_MODELS, type PresetModel } from './ModelSelectDialog';
 import { modelToForm, formToModel } from './modelFormUtils';
 
+/** 内置模型 ID 集合（删除时标记为 hidden 而非物理删除） */
+const BUILTIN_MODEL_IDS = new Set([
+  'deepseek-v4-pro',
+  'deepseek-v4-flash',
+  'glm-4.7',
+  'glm-5',
+  'ollama-llama3.1',
+]);
+
 /** 创建空白模型表单 */
 function createEmptyForm(): ModelFormState {
   return {
@@ -272,13 +281,29 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
   /** 确认删除 */
   const confirmDelete = useCallback(() => {
     if (!deleteTarget) return;
-    const newModels = models.filter(m => m.id !== deleteTarget.id);
-    let newDefaultId = defaultModelId;
-    if (deleteTarget.id === defaultModelId && newModels.length > 0) {
-      const firstEnabled = newModels.find(m => m.enabled);
-      newDefaultId = firstEnabled ? firstEnabled.id : newModels[0].id;
+
+    let newModels: ModelConfig[];
+    if (BUILTIN_MODEL_IDS.has(deleteTarget.id)) {
+      // 内置模型：标记为 hidden，保留配置以便迁移时识别用户删除意图
+      newModels = models.map(m =>
+        m.id === deleteTarget.id ? { ...m, hidden: true, enabled: false } : m
+      );
+    } else {
+      // 自定义模型：物理删除
+      newModels = models.filter(m => m.id !== deleteTarget.id);
     }
-    if (newModels.length === 0) {
+
+    let newDefaultId = defaultModelId;
+    if (deleteTarget.id === defaultModelId) {
+      const visibleModels = newModels.filter(m => !m.hidden);
+      if (visibleModels.length > 0) {
+        const firstEnabled = visibleModels.find(m => m.enabled);
+        newDefaultId = firstEnabled ? firstEnabled.id : visibleModels[0].id;
+      } else {
+        newDefaultId = '';
+      }
+    }
+    if (newModels.filter(m => !m.hidden).length === 0) {
       newDefaultId = '';
     }
     onChange(newModels, newDefaultId);

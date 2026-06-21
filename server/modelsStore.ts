@@ -245,12 +245,21 @@ function migrateProviderData(models: ModelConfig[]): { models: ModelConfig[]; ch
     return m;
   });
 
-  // 补上已存在于 BUILTIN_MODELS 但本地缺失的模型
-  const existingIds = new Set(migrated.map((m) => m.id));
+  // 补上已存在于 BUILTIN_MODELS 但本地缺失且未被用户隐藏的模型
+  const existingMap = new Map(migrated.map((m) => [m.id, m]));
   for (const bm of BUILTIN_MODELS) {
-    if (!existingIds.has(bm.id)) {
+    const existing = existingMap.get(bm.id);
+    if (!existing) {
+      // 本地完全缺失，补充内置模型
       migrated.push(bm);
       changed = true;
+    } else if (existing.hidden) {
+      // 用户曾删除（隐藏）此内置模型，保持隐藏状态，不恢复
+      // 但更新 provider 等元数据（如果内置模板有变化）
+      if (existing.provider === 'custom' && ID_TO_PROVIDER[bm.id]) {
+        existing.provider = ID_TO_PROVIDER[bm.id];
+        changed = true;
+      }
     }
   }
 
