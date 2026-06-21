@@ -57,6 +57,17 @@ export interface ModelOption {
   enabled?: boolean;
 }
 
+export interface AgentOption {
+  /** Agent ID */
+  id: string;
+  /** Agent 显示名称 */
+  name: string;
+  /** Agent 描述 */
+  description: string;
+  /** Agent 图标（可选） */
+  icon?: string;
+}
+
 export interface ChatToolbarProps {
   /** Currently selected model name */
   selectedModel: string;
@@ -90,11 +101,17 @@ export interface ChatToolbarProps {
   reasoningEffort?: string;
   /** v1.9.1: 推理强度切换回调 */
   onReasoningEffortChange?: (effort: string) => void;
+  /** 当前选中的 Agent ID（空字符串表示不使用 Agent） */
+  selectedAgent?: string;
+  /** Agent 选择回调 */
+  onAgentChange?: (agentId: string) => void;
+  /** 可用的 Agent 列表 */
+  agentOptions?: AgentOption[];
 }
 
 // ===================== Constants =====================
 
-type DropdownType = 'model' | 'skills' | null;
+type DropdownType = 'model' | 'skills' | 'agent' | null;
 
 // ===================== Component =====================
 
@@ -115,6 +132,9 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   hasAttachments = false,
   reasoningEffort,
   onReasoningEffortChange,
+  selectedAgent = '',
+  onAgentChange,
+  agentOptions = [],
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -125,6 +145,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
 
   const modelBtnRef = useRef<HTMLDivElement>(null);
   const skillsBtnRef = useRef<HTMLDivElement>(null);
+  const agentBtnRef = useRef<HTMLDivElement>(null);
 
   // 点击弹窗外部自动关闭（兜底处理，确保透明 backdrop 下也能关闭）
   useEffect(() => {
@@ -133,7 +154,8 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
       const target = e.target as Node;
       if (
         modelBtnRef.current?.contains(target) ||
-        skillsBtnRef.current?.contains(target)
+        skillsBtnRef.current?.contains(target) ||
+        agentBtnRef.current?.contains(target)
       ) return;
       // 如果点击在 Menu 的 Paper 内部，不关闭
       const menuPaper = document.querySelector('.MuiMenu-root .MuiPaper-root');
@@ -278,8 +300,39 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           </Tooltip>
         </Box>
 
-        {/* Right: Model selector (ghost text), Memory, Mic, Send */}
+        {/* Right: Agent selector, Model selector, Memory, Mic, Send */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          {/* Agent selector — 药丸按钮 */}
+          {onAgentChange && agentOptions.length > 0 && (
+            <Box
+              ref={agentBtnRef as React.RefObject<HTMLDivElement>}
+              onClick={(e) => { e.stopPropagation(); handleDropdownClick('agent'); }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: '20px',
+                bgcolor: selectedAgent
+                  ? (isDark ? '#3D2A10' : '#FFF7ED')
+                  : (activeDropdown === 'agent' ? gs.bgHover : 'transparent'),
+                cursor: 'pointer',
+                transition: 'background-color 0.15s',
+                '&:hover': { bgcolor: selectedAgent ? (isDark ? '#4A3518' : '#FFEDD5') : gs.bgActive },
+                userSelect: 'none',
+              }}
+            >
+              <PsychologyIcon sx={{ fontSize: 15, color: selectedAgent ? ACCENT : gs.textMuted }} />
+              <Typography sx={{ fontSize: 13, fontWeight: 500, color: selectedAgent ? ACCENT : gs.textPrimary, lineHeight: 1 }}>
+                {selectedAgent
+                  ? (agentOptions.find(a => a.id === selectedAgent)?.name || 'Agent')
+                  : 'Agent'}
+              </Typography>
+              <KeyboardArrowUpIcon sx={{ fontSize: 18, color: gs.textMuted }} />
+            </Box>
+          )}
+
           {/* Model selector — 默认无背景，点击后显示灰色背景 */}
           <Box
             ref={modelBtnRef as React.RefObject<HTMLDivElement>}
@@ -611,6 +664,110 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           <ListItemIcon><SettingsIcon sx={{ fontSize: 16, color: gs.textMuted }} /></ListItemIcon>
           <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>查看全部技能 →</Typography>
         </MenuItem>
+      </Menu>
+
+      {/* ====== Agent Menu — 弹窗在按钮上方，无背景遮罩 ====== */}
+      <Menu
+        anchorEl={agentBtnRef.current}
+        open={activeDropdown === 'agent'}
+        onClose={() => setActiveDropdown(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: 280,
+              maxHeight: 400,
+              mt: -0.5,
+              borderRadius: '14px',
+              border: `1px solid ${gs.border}`,
+              boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+              bgcolor: gs.bgPanel,
+            },
+          },
+        }}
+        sx={{
+          '& .MuiBackdrop-root': {
+            backgroundColor: 'transparent',
+          },
+        }}
+      >
+        {/* 默认（无 Agent）选项 */}
+        <MenuItem
+          onClick={() => { onAgentChange?.(''); setActiveDropdown(null); }}
+          sx={{
+            py: 1, px: 2, mx: 0.5, borderRadius: '10px',
+            backgroundColor: selectedAgent === '' ? SELECTED_BG : 'transparent',
+            '&:hover': { backgroundColor: selectedAgent === '' ? SELECTED_BG : (isDark ? '#2A2A2A' : '#F5F5F5') },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+            <PsychologyIcon sx={{ fontSize: 20, color: selectedAgent === '' ? ACCENT : gs.textMuted, flexShrink: 0 }} />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: selectedAgent === '' ? ACCENT : gs.textPrimary }}>
+                默认（无 Agent）
+              </Typography>
+              <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, mt: 0.15 }}>
+                使用标准 AI 对话模式
+              </Typography>
+            </Box>
+            {selectedAgent === '' && (
+              <CheckIcon sx={{ fontSize: 18, color: ACCENT, flexShrink: 0 }} />
+            )}
+          </Box>
+        </MenuItem>
+
+        <Divider sx={{ mx: 1.5, my: 0.5, borderColor: gs.border }} />
+
+        {/* 分组标题 */}
+        <Typography sx={{ px: 2, py: 0.5, fontSize: '0.6875rem', fontWeight: 600, color: gs.textMuted, letterSpacing: '0.02em' }}>
+          可用 Agent
+        </Typography>
+
+        {/* Agent 列表 */}
+        {agentOptions.map((agent) => {
+          const isSelected = selectedAgent === agent.id;
+          return (
+            <MenuItem
+              key={agent.id}
+              onClick={() => { onAgentChange?.(agent.id); setActiveDropdown(null); }}
+              sx={{
+                py: 1, px: 2, mx: 0.5, borderRadius: '10px',
+                backgroundColor: isSelected ? SELECTED_BG : 'transparent',
+                '&:hover': { backgroundColor: isSelected ? SELECTED_BG : (isDark ? '#2A2A2A' : '#F5F5F5') },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                <PsychologyIcon sx={{ fontSize: 20, color: isSelected ? ACCENT : gs.textMuted, flexShrink: 0 }} />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{
+                    fontSize: '0.8125rem',
+                    fontWeight: isSelected ? 600 : 500,
+                    color: isSelected ? ACCENT : gs.textPrimary,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {agent.name}
+                  </Typography>
+                  <Typography sx={{
+                    fontSize: '0.7rem',
+                    color: gs.textMuted,
+                    mt: 0.15,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {agent.description}
+                  </Typography>
+                </Box>
+                {isSelected && (
+                  <CheckIcon sx={{ fontSize: 18, color: ACCENT, flexShrink: 0 }} />
+                )}
+              </Box>
+            </MenuItem>
+          );
+        })}
       </Menu>
 
 

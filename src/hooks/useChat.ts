@@ -46,6 +46,8 @@ export interface SendMessageOptions {
   executionMode?: 'legacy' | 'observer' | 'react';
   /** v7.0: 队列模式（覆盖全局默认值）：collect(合并) / steer(转向) / followup(追加) */
   queueMode?: 'collect' | 'steer' | 'followup';
+  /** v8.0: 指定使用的 Agent ID（空=不使用 Agent） */
+  agentId?: string;
 }
 
 /** inventory_query JSON 块正则 */
@@ -373,6 +375,10 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       // v7.0: 如果有队列模式设置，传递给后端
       if (options?.queueMode) {
         body.queueMode = options.queueMode;
+      }
+      // v8.0: 如果有 Agent ID，传递给后端
+      if (options?.agentId) {
+        body.agentId = options.agentId;
       }
       // 如果有历史消息，添加到请求体（用于多轮对话）
       // v1.9.0: 包含 toolCalls 信息，确保多轮工具调用上下文不丢失

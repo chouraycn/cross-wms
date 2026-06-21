@@ -287,6 +287,8 @@ export interface Session {
   tags?: string | null;
   /** v6.0: 摘要（归档时自动生成） */
   summary?: string | null;
+  /** v8.0: 关联的 Agent ID */
+  agentId?: string | null;
 }
 
 export interface Folder {

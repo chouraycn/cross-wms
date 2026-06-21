@@ -501,9 +501,9 @@ async function executeFromQueue(
 // ===================== Main Chat Handler =====================
 
 export async function handleChat(req: import('express').Request, res: import('express').Response): Promise<void> {
-  const { sessionId: reqSessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory, attachments, reasoningEffort, executionMode, queueMode } = req.body;
+  const { sessionId: reqSessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory, attachments, reasoningEffort, executionMode, queueMode, agentId } = req.body;
   const sessionId = reqSessionId || uuidv4();
-  logger.debug(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, message="${message?.slice(0, 30)}", queueMode=${queueMode || 'default'}`);
+  logger.debug(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, agentId=${agentId || 'none'}, message="${message?.slice(0, 30)}", queueMode=${queueMode || 'default'}`);
   if (attachments && Array.isArray(attachments) && attachments.length > 0) {
     logger.debug(`[Chat API] 附件数量: ${attachments.length}`);
   }
@@ -546,7 +546,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
     const sessions = getSessions();
     const sessionExists = sessions.some(s => s.id === sessionId);
     if (!sessionExists) {
-      createSession(sessionId, '新对话', effectiveModel, undefined);
+      createSession(sessionId, '新对话', effectiveModel, agentId);
     }
 
     addMessage({ sessionId, role: 'user', content: message, model: effectiveModel, skillId: skillId || null, attachments: attachments || undefined });
