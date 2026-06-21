@@ -1708,3 +1708,18 @@ export interface BrowserProfileRow {
   is_default: number; // 0 or 1
   created_at: string;
 }
+
+// ===================== v2.9: Worker Thread Pool（异步 API） =====================
+
+import { DbWorkerPool } from './dbWorkerPool.js';
+
+let dbPool: DbWorkerPool | null = null;
+
+/** 获取异步数据库连接池（用于高并发场景） */
+export function getDbPool(): DbWorkerPool {
+  if (!dbPool) {
+    dbPool = new DbWorkerPool(DB_PATH);
+    dbPool.init();
+  }
+  return dbPool;
+}

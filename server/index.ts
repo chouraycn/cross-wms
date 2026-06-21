@@ -71,6 +71,9 @@ import uploadRouter, { UPLOADS_DIR, ensureUploadsDir } from './routes/upload.js'
 import healthRouter from './routes/health.js';
 import inventoryTransactionsRouter from './routes/inventory-transactions.js';
 
+// Agent routes
+import agentsRouter from './routes/agents.js';
+
 // Services
 import './services/chainExecutor.js'; // side-effect: registers chain event handlers
 import { batchAuditSkills } from './services/securityAuditor.js';
@@ -151,6 +154,9 @@ app.use('/api/memory', memoryRouter);
 app.use('/api', eventsRouter);
 app.use('/api/health', healthRouter);
 app.use('/api/inventory-transactions', inventoryTransactionsRouter);
+
+// Agent routes
+app.use('/api/agents', agentsRouter);
 
 // ========== Business Data API Routes ==========
 
