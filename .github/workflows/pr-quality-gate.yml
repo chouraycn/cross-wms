@@ -78,6 +78,8 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      ONNX_DISABLE_NATIVE_DOWNLOAD: '1'
     steps:
       - name: Check out code
         uses: actions/checkout@v4
