@@ -26,7 +26,6 @@ import { SkillSelector } from './SkillSelector';
 import { useModels } from '../../contexts/ModelsContext';
 import { useToast } from '../../contexts/ToastContext';
 import ChatToolbar from './ChatToolbar';
-import type { AgentOption } from './ChatToolbar';
 import AISettingsDialog from '../Layout/AISettingsDialog';
 import { SessionReferenceSelector } from './SessionReferenceSelector';
 import type { SendMessageOptions } from '../../hooks/useChat';
@@ -169,43 +168,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       return localStorage.getItem('cdf-reasoning-effort') || 'high';
     } catch { return 'high'; }
   });
-
-  // Agent 选择状态
-  const [selectedAgent, setSelectedAgent] = useState<string>(() => {
-    try {
-      return localStorage.getItem('cdf-selected-agent') || '';
-    } catch { return ''; }
-  });
-  const [agentOptions, setAgentOptions] = useState<AgentOption[]>([]);
-
-  // 获取可用 Agent 列表
-  useEffect(() => {
-    const fetchAgents = async () => {
-      try {
-        const baseUrl = API_BASE_URL || '';
-        const resp = await fetch(`${baseUrl}/api/agents`);
-        if (resp.ok) {
-          const json = await resp.json();
-          if (json.data && Array.isArray(json.data)) {
-            setAgentOptions(json.data.map((a: { id: string; name: string; description: string }) => ({
-              id: a.id,
-              name: a.name,
-              description: a.description,
-            })));
-          }
-        }
-      } catch {
-        // 静默失败，Agent 列表不可用
-      }
-    };
-    fetchAgents();
-  }, []);
-
-  // 持久化 Agent 选择
-  const handleAgentChange = useCallback((agentId: string) => {
-    setSelectedAgent(agentId);
-    try { localStorage.setItem('cdf-selected-agent', agentId); } catch { /* ignore */ }
-  }, []);
 
   // 持久化推理强度选择
   const handleReasoningEffortChange = useCallback((effort: string) => {
@@ -537,7 +499,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       reasoningEffort: reasoningEffort || undefined,
       executionMode: aiEngineSettings.defaultExecutionMode !== 'legacy' ? aiEngineSettings.defaultExecutionMode : undefined,
       queueMode: aiEngineSettings.defaultQueueMode !== 'followup' ? aiEngineSettings.defaultQueueMode : undefined,
-      agentId: selectedAgent || undefined,
     });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
@@ -979,9 +940,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           hasAttachments={pendingAttachments.length > 0}
           reasoningEffort={reasoningEffort}
           onReasoningEffortChange={handleReasoningEffortChange}
-          selectedAgent={selectedAgent}
-          onAgentChange={handleAgentChange}
-          agentOptions={agentOptions}
         />
         {/* v2.3.0: 文件夹选择区域 — 作为 Paper 内部元素，避免圆角颜色不一致 */}
         <Collapse in={isEmpty} timeout={300}>

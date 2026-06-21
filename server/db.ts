@@ -1223,6 +1223,7 @@ export function initDb(): Database.Database {
       description TEXT DEFAULT '',
       status TEXT DEFAULT 'active' CHECK(status IN ('active','archived','completed')),
       category TEXT DEFAULT 'custom' CHECK(category IN ('custom','template','fixed')),
+      agent_id TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
@@ -1536,6 +1537,17 @@ export function initDb(): Database.Database {
     logger.info('[Migrate v3.0] 已植入默认 browser_profile');
   }
 
+  // Add agent_id column to projects table (idempotent migration)
+  try {
+    const projectAgentIdExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('projects') WHERE name='agent_id'`).get() as { cnt: number };
+    if (projectAgentIdExists.cnt === 0) {
+      db.exec(`ALTER TABLE projects ADD COLUMN agent_id TEXT`);
+      logger.info('[Migrate] 添加 agent_id 列到 projects 表');
+    }
+  } catch (e) {
+    logger.warn('[Migrate] 添加 projects.agent_id 列失败:', e);
+  }
+
   return db;
 }
 
@@ -1547,6 +1559,7 @@ export interface ProjectRow {
   description: string;
   status: string;
   category: string;
+  agent_id: string | null;
   created_at: string;
   updated_at: string;
 }
