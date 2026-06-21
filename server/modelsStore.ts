@@ -53,6 +53,16 @@ let cacheTimestamp = 0;
 const CACHE_TTL_MS = 5000; // 5 秒缓存
 let fileWatcher: fs.FSWatcher | null = null;
 
+/** EPERM 降级模式：当文件系统不可写时，完全使用内存存储 */
+let memoryFallbackMode = false;
+let memoryModelsFile: ModelsFile | null = null;
+
+/** 检测是否为 EPERM/权限类错误 */
+function isPermissionError(e: unknown): boolean {
+  const code = (e as NodeJS.ErrnoException).code;
+  return code === 'EPERM' || code === 'EACCES' || code === 'EROFS';
+}
+
 /** 启动文件监听 */
 function startFileWatcher(): void {
   if (fileWatcher) return;
@@ -158,11 +168,17 @@ const BUILTIN_MODELS: ModelConfig[] = [
 
 /** 确保 ~/.cdf-know-clow/ai-models 目录存在 */
 function ensureDir(): void {
+  if (memoryFallbackMode) return;
   if (!fs.existsSync(AI_MODELS_DIR)) {
     try {
       fs.mkdirSync(AI_MODELS_DIR, { recursive: true });
     } catch (e) {
-      logger.warn(`[modelsStore] 无法创建目录 ${AI_MODELS_DIR}: ${(e as Error).message}`);
+      if (isPermissionError(e)) {
+        memoryFallbackMode = true;
+        logger.warn(`[modelsStore] EPERM 创建目录失败，切换到内存降级模式`);
+      } else {
+        logger.warn(`[modelsStore] 无法创建目录 ${AI_MODELS_DIR}: ${(e as Error).message}`);
+      }
     }
   }
 }
@@ -188,6 +204,10 @@ function migrateFromOldPath(): void {
 
 /** 读取 models.json，不存在则返回 null */
 export async function readModelsFile(): Promise<ModelsFile | null> {
+  // 内存降级模式下直接返回内存数据
+  if (memoryFallbackMode) {
+    return memoryModelsFile;
+  }
   migrateFromOldPath();
   try {
     ensureDir();
@@ -198,9 +218,17 @@ export async function readModelsFile(): Promise<ModelsFile | null> {
       logger.error('[modelsStore] models.json 格式无效');
       return null;
     }
+    // 同步到内存缓存（用于降级模式切换时无缝过渡）
+    memoryModelsFile = data;
     return data;
   } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    const errCode = (e as NodeJS.ErrnoException).code;
+    if (errCode === 'ENOENT') return null;
+    if (isPermissionError(e)) {
+      memoryFallbackMode = true;
+      logger.warn('[modelsStore] EPERM 读取 models.json 失败，切换到内存降级模式');
+      return memoryModelsFile;
+    }
     logger.error('[modelsStore] models.json 解析失败，将使用默认配置:', e);
     return null;
   }
@@ -211,13 +239,32 @@ export async function writeModelsFile(data: ModelsFile): Promise<void> {
   return withWriteLock(() => {
     return new Promise<void>((resolve, reject) => {
       data.updatedAt = new Date().toISOString();
+      // 内存降级模式：只更新内存，不写入磁盘
+      if (memoryFallbackMode) {
+        memoryModelsFile = data;
+        cachedModelsFile = data;
+        cacheTimestamp = Date.now();
+        resolve();
+        return;
+      }
       try {
         ensureDir();
         fs.writeFileSync(MODELS_FILE, JSON.stringify(data, null, 2), 'utf-8');
+        // 同步到内存（用于降级模式切换时无缝过渡）
+        memoryModelsFile = data;
         // 写入后使缓存失效（文件监听会重新加载）
         invalidateCache();
         resolve();
       } catch (e) {
+        if (isPermissionError(e)) {
+          memoryFallbackMode = true;
+          memoryModelsFile = data;
+          cachedModelsFile = data;
+          cacheTimestamp = Date.now();
+          logger.warn('[modelsStore] EPERM 写入 models.json 失败，切换到内存降级模式');
+          resolve();
+          return;
+        }
         logger.error('[modelsStore] 写入 models.json 失败:', e);
         reject(e);
       }
