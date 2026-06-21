@@ -291,6 +291,14 @@ export function getMergedStrategyPreferences(): StrategyPreferences {
 }
 
 /**
+ * 加载指定 Agent 的 SOUL 文件
+ */
+export function loadAgentSoul(agentSoulFile: string): string {
+  const soulPath = path.join(CDF_KNOW_CLOW_DIR, 'agents', agentSoulFile);
+  return safeReadFile(soulPath);
+}
+
+/**
  * 刷新缓存（SOUL.md / USER.md 被修改时调用）
  */
 export function invalidateSoulCache(): void {
@@ -310,6 +318,10 @@ export function initDefaultSoulFiles(): void {
   const projectSoulDir = path.join(process.cwd(), '.cdf-know-clow');
 
   fs.mkdirSync(CDF_KNOW_CLOW_DIR, { recursive: true });
+
+  // 创建 agents 子目录
+  const agentsDir = path.join(CDF_KNOW_CLOW_DIR, 'agents');
+  fs.mkdirSync(agentsDir, { recursive: true });
 
   for (const fileName of [SOUL_FILE, USER_FILE]) {
     const targetPath = path.join(CDF_KNOW_CLOW_DIR, fileName);

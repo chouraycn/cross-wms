@@ -111,6 +111,8 @@ export interface ModelConfig {
     lastUsedAt: string | null;
     avgResponseTime: number | null;
   };
+  /** 是否被用户隐藏（删除内置模型时标记为隐藏而非物理删除） */
+  hidden?: boolean;
 }
 
 /** 模型管理配置 */

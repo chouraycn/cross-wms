@@ -615,9 +615,11 @@ const ModelList: React.FC<ModelListProps> = (props) => {
     setDragOverIndex(null);
   };
 
-  // 搜索和能力标签筛选，同时保留原始索引
+  // 搜索和能力标签筛选，同时保留原始索引（过滤掉 hidden 模型）
   const filteredModelsWithIndex = React.useMemo(() => {
-    let result = props.models.map((m, idx) => ({ model: m, originalIndex: idx }));
+    let result = props.models
+      .filter(m => !m.hidden)
+      .map((m, idx) => ({ model: m, originalIndex: idx }));
     // 按搜索关键词过滤
     if (props.searchQuery) {
       const q = props.searchQuery.toLowerCase();

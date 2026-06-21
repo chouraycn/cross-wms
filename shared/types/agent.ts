@@ -70,6 +70,8 @@ export interface AgentProfile {
   maxConcurrency: number;
   /** 使用的模型 ID（空=跟随主会话模型） */
   modelId: string;
+  /** 自定义 SOUL 文件名（从 ~/.cdf-know-clow/agents/ 加载） */
+  soulFile?: string;
   /** 创建时间 */
   createdAt: string;
   /** 最后活跃时间 */
@@ -349,5 +351,74 @@ export const BUILTIN_AGENT_TEMPLATES: Array<Omit<AgentProfile, 'status' | 'creat
     deniedTools: [],
     maxConcurrency: 2,
     modelId: '',
+  },
+  {
+    id: 'mian_cang_cang',
+    name: '免仓伧',
+    role: 'custom',
+    soul: `你是"免仓伧"，CDF Know Clow 仓库管理系统的专业数据专员。
+你精通仓储管理的每一个环节：库存监控、出入库分析、调拨优化、补货预测、预警处理。
+你的核心使命：让仓库数据说话，让库存管理从容不迫。
+
+价值观：
+1. 数据准确第一：所有结论必须基于实时库存数据，绝不猜测
+2. 主动预警：发现低库存、呆滞、临期等问题时立即提醒
+3. 效率至上：查询结果直接、actionable，不给冗余信息
+4. 全局视野：分析时考虑在途、调拨、多仓联动
+
+禁区：
+- 不执行未经确认的库存修改操作
+- 不猜测不存在的数据
+- 不给出与实时数据矛盾的结论
+- 不忽略在途库存对可用库存的影响`,
+    memory: '',
+    capabilities: [
+      {
+        name: 'inventory_query',
+        description: '库存全景查询与分析',
+        toolPatterns: ['db_*', 'wms_*', 'system_*'],
+        taskKeywords: ['库存', '查询', 'sku', '仓库', '数量', '存量', '余量', '可用'],
+      },
+      {
+        name: 'inbound_outbound_analysis',
+        description: '出入库记录查询与趋势分析',
+        toolPatterns: ['db_*', 'wms_*', 'system_*'],
+        taskKeywords: ['入库', '出库', '出入库', '记录', '流水', '交易', '变动'],
+      },
+      {
+        name: 'transfer_optimization',
+        description: '多仓调拨优化与在途跟踪',
+        toolPatterns: ['db_*', 'wms_*', 'system_*'],
+        taskKeywords: ['调拨', '转移', '移仓', '在途', 'transfer'],
+      },
+      {
+        name: 'replenishment_prediction',
+        description: '基于 EMA 消耗的补货预测',
+        toolPatterns: ['db_*', 'wms_*', 'system_*'],
+        taskKeywords: ['补货', '建议', '预测', '采购', 'reorder', '补充'],
+      },
+      {
+        name: 'alert_management',
+        description: '库存预警扫描与报告',
+        toolPatterns: ['db_*', 'wms_*', 'system_*'],
+        taskKeywords: ['预警', '告警', '低库存', '临期', '呆滞', '异常'],
+      },
+      {
+        name: 'warehouse_report',
+        description: '仓库数据报表生成与导出',
+        toolPatterns: ['db_*', 'wms_*', 'file_*', 'system_*'],
+        taskKeywords: ['报表', '报告', '统计', '汇总', '导出', 'excel', 'csv'],
+      },
+    ],
+    allowedTools: [
+      'db_query', 'db_listTables', 'db_describeTable',
+      'file_readFile', 'file_writeFile',
+      'web_search', 'web_fetch',
+      'system_info', 'system_time',
+    ],
+    deniedTools: ['browser_open', 'browser_click', 'browser_screenshot'],
+    maxConcurrency: 4,
+    modelId: '',
+    soulFile: 'SOUL_mian_cang_cang.md',
   },
 ];

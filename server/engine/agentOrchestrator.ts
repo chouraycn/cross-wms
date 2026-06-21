@@ -37,6 +37,7 @@ import type {
   AgentEventPayload,
 } from '../../shared/types/agent.js';
 import { logger } from '../logger.js';
+import { loadAgentSoul } from './soulLoader.js';
 
 // ===================== 常量 =====================
 
@@ -506,7 +507,54 @@ ${resultsText}
     agent: AgentProfile | null,
     parentMessages: Array<{ role: string; content: MessageContent }>,
   ): Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }> {
-    const soul = agent?.soul || '';
+    let soul = agent?.soul || '';
+
+    // 如果子 Agent 有自定义 soulFile，加载并注入
+    if (agent?.soulFile) {
+      const agentSoulContent = loadAgentSoul(agent.soulFile);
+      if (agentSoulContent) {
+        const parts: string[] = [];
+        // 提取身份描述
+        const identityMatch = agentSoulContent.match(/## 身份\s*\n\s*([^\n]+)/);
+        if (identityMatch) {
+          parts.push(`[身份] ${identityMatch[1].trim()}`);
+        }
+        // 提取价值观
+        const valuesMatch = agentSoulContent.match(/## 价值观\s*\n([\s\S]*?)(?=##|$)/);
+        if (valuesMatch) {
+          const values = valuesMatch[1]
+            .split('\n')
+            .filter(l => /^\s*\d+\./.test(l))
+            .map(l => l.replace(/^\s*\d+\.\s*/, '').trim())
+            .join('；');
+          if (values) parts.push(`[价值观] ${values}`);
+        }
+        // 提取禁区
+        const forbiddenMatch = agentSoulContent.match(/## 禁区\s*\n([\s\S]*?)(?=##|$)/);
+        if (forbiddenMatch) {
+          const forbidden = forbiddenMatch[1]
+            .split('\n')
+            .filter(l => /^\s*[-*]\s+/.test(l))
+            .map(l => l.replace(/^\s*[-*]\s+/, '').trim())
+            .join('；');
+          if (forbidden) parts.push(`[禁区] ${forbidden}`);
+        }
+        // 提取专业能力
+        const skillsMatch = agentSoulContent.match(/## 专业能力\s*\n([\s\S]*?)(?=##|$)/);
+        if (skillsMatch) {
+          const skills = skillsMatch[1]
+            .split('\n')
+            .filter(l => /^\s*[-*]\s+/.test(l))
+            .map(l => l.replace(/^\s*[-*]\s+/, '').trim())
+            .join('；');
+          if (skills) parts.push(`[专业能力] ${skills}`);
+        }
+        if (parts.length > 0) {
+          soul = `${soul}\n\n${parts.join('\n')}`;
+        }
+      }
+    }
+
     const systemContent = soul
       ? `${soul}\n\n你正在执行一个子任务。请专注于完成以下任务，不要关心其他子任务。`
       : '你正在执行一个子任务。请专注于完成以下任务。';
