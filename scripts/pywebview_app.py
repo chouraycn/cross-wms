@@ -1065,6 +1065,10 @@ def start_http_server(dist_dir: str, port: int = 9988):
             _, ext = os.path.splitext(self.path)
             if ext in _MIME_OVERRIDES:
                 self.send_header('Content-Type', _MIME_OVERRIDES[ext])
+            # v1.5.199: 禁止 WKWebView 缓存本地资源，防止升级后仍显示旧版本
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.send_header('Pragma', 'no-cache')
+            self.send_header('Expires', '0')
             super().end_headers()
 
         def _proxy_to_backend(self):
