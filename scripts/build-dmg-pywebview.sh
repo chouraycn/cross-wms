@@ -308,6 +308,7 @@ cat > package.json << 'PKGJSON'
     "sqlite-vec": "^0.1.9",
     "uuid": "^11.1.1",
     "@e965/xlsx": "^0.20.3",
+    "fsevents": "^2.3.3",
     "ajv": "^8.20.0",
     "cheerio": "^1.2.0",
     "zod": "^4.4.3",
@@ -327,7 +328,11 @@ sed -i '' "s/\\\"version\\\": \\\"1.0.0\\\"/\\\"version\\\": \\\"${VERSION}\\\"/
 
 # 确保 npm 子进程能找到 sh（sandbox 环境下 PATH 可能不含 /bin）
 export PATH="/bin:/usr/bin:/usr/local/bin:$PATH"
-npm install --production --no-optional 2>&1 | tail -5
+npm install --production --no-optional --ignore-scripts 2>&1 | tail -5
+
+# fsevents 自带预编译二进制，--ignore-scripts 跳过了 better-sqlite3 的编译，需要手动触发
+cd "$SHARED_NODE_MODULES/node_modules/better-sqlite3" && npx prebuild-install || npx node-gyp rebuild --release 2>&1 | tail -3
+cd "$SHARED_NODE_MODULES"
 echo "✅ 共享 node_modules 安装完成"
 
 # 4.1 清理 node_modules 中非运行时必需文件（节省空间）
