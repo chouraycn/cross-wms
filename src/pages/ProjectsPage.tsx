@@ -4,19 +4,15 @@ import {
   Typography,
   Button,
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   IconButton,
   Tooltip,
   CircularProgress,
   Alert,
   useTheme,
+  Chip,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
@@ -33,11 +29,14 @@ import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import CloseIcon from '@mui/icons-material/Close';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useToast } from '../contexts/ToastContext';
 import { getProjects, createProject, updateProject, deleteProject, getWarehouses } from '../services/api';
 import type { Project } from '../types/project';
 import type { Warehouse } from '../types';
 import { getGrayScale } from '../constants/theme';
+import { ExpertSelector, type ExpertOption } from '../components/CrossWmsChat/ExpertSelector';
 
 // ===================== Styles =====================
 
@@ -48,58 +47,30 @@ const CARD_STYLE = {
   transition: 'border-color 0.2s, box-shadow 0.2s',
   cursor: 'pointer',
   '&:hover': {
-    borderColor: 'divider',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    borderColor: '#E5E7EB',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
   },
 };
 
-const SECTION_TITLE_STYLE = { fontSize: 18, fontWeight: 700, color: 'text.primary' };
+const SECTION_TITLE_STYLE = {
+  fontSize: '15px',
+  fontWeight: 600,
+  color: '#111827',
+  letterSpacing: '-0.01em',
+};
 
-// ===================== Fixed Repos =====================
-
-interface FixedRepo {
-  key: string;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  path: string;
-  meta?: string;
-}
-
-const FIXED_REPOS: FixedRepo[] = [
-  {
-    key: 'warehouse',
-    name: '仓库管理',
-    description: '跨境仓库数据管理，包含仓库、在途、库存、报表',
-    icon: <WarehouseOutlinedIcon sx={{ fontSize: 22 }} />,
-    path: '/warehouses',
-    meta: '仪表盘 · 仓库列表 · 在途跟踪 · 库存查询',
-  },
+const TEMPLATES: Array<{ name: string; description: string; icon: React.ReactNode; color: string; category: string }> = [
+  { name: 'WMS 实施', description: '仓库管理系统实施项目', icon: <WarehouseOutlinedIcon />, color: '#7C3AED', category: 'fixed' },
+  { name: '库存优化', description: '库存水平优化与预测', icon: <InventoryOutlinedIcon />, color: '#059669', category: 'fixed' },
+  { name: '入库流程', description: '入库流程设计与优化', icon: <DescriptionOutlinedIcon />, color: '#2563EB', category: 'fixed' },
+  { name: '出库流程', description: '出库流程设计与优化', icon: <AssessmentOutlinedIcon />, color: '#DC2626', category: 'fixed' },
+  { name: '调拨管理', description: '仓库间调拨流程管理', icon: <AutoFixHighIcon />, color: '#D97706', category: 'fixed' },
+  { name: '质检流程', description: '质量检验流程设计', icon: <SettingsOutlinedIcon />, color: '#0891B2', category: 'fixed' },
+  { name: '盘点管理', description: '库存盘点流程优化', icon: <ScheduleIcon />, color: '#7C3AED', category: 'fixed' },
+  { name: '数据分析', description: '仓储数据分析与报表', icon: <DashboardOutlinedIcon />, color: '#059669', category: 'fixed' },
 ];
 
-// ===================== Templates (全部功能) =====================
-
-interface TemplateCard {
-  key: string;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  path?: string;
-}
-
-const TEMPLATES: TemplateCard[] = [
-  { key: 'dashboard', name: '仪表盘', description: '仓库总览、容积率、在途统计', icon: <DashboardOutlinedIcon sx={{ fontSize: 22 }} />, path: '/dashboard' },
-  { key: 'inventory', name: '库存管理', description: '库存查询、出入库记录、库存流水', icon: <InventoryOutlinedIcon sx={{ fontSize: 22 }} />, path: '/inventory' },
-  { key: 'skills', name: '技能系统', description: 'AI 技能管理、导入导出、安全审查', icon: <AutoFixHighIcon sx={{ fontSize: 22 }} />, path: '/skills' },
-  { key: 'automation', name: '自动化引擎', description: '定时任务、Webhook 触发、事件驱动', icon: <ScheduleIcon sx={{ fontSize: 22 }} />, path: '/automation' },
-  { key: 'agent', name: 'Agent 应用', description: '智能体管理与配置', icon: <SmartToyOutlinedIcon sx={{ fontSize: 22 }} />, path: '/agent' },
-  { key: 'docs', name: '腾讯文档', description: '在线文档授权与管理', icon: <DescriptionOutlinedIcon sx={{ fontSize: 22 }} />, path: '/tencent-docs' },
-  { key: 'reports', name: '统计报表', description: '数据报表与导出', icon: <AssessmentOutlinedIcon sx={{ fontSize: 22 }} />, path: '/reports' },
-  { key: 'chat', name: 'AI 对话', description: '智能助手、历史对话、上下文引用', icon: <ChatBubbleOutlineIcon sx={{ fontSize: 22 }} />, path: '/chat' },
-  { key: 'settings', name: '系统设置', description: '外观主题、模型配置、仪表盘参数', icon: <SettingsOutlinedIcon sx={{ fontSize: 22 }} />, path: '/settings' },
-];
-
-// ===================== Project Form Dialog =====================
+// ===================== Project Form Dialog (Screenshot-matching) =====================
 
 interface ProjectFormProps {
   open: boolean;
@@ -118,36 +89,11 @@ const EMPTY_FORM = {
 };
 
 const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose, onSave }) => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const gs = getGrayScale(isDark);
   const [form, setForm] = useState(EMPTY_FORM);
   const [nameError, setNameError] = useState('');
-  const [agentOptions, setAgentOptions] = useState<Array<{ id: string; name: string; description: string }>>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-
-  // 获取可用 Agent 列表
-  React.useEffect(() => {
-    if (!open) return;
-    const fetchAgents = async () => {
-      try {
-        const resp = await fetch('/api/agents');
-        if (resp.ok) {
-          const json = await resp.json();
-          if (json.data && Array.isArray(json.data)) {
-            setAgentOptions(json.data.map((a: { id: string; name: string; description: string }) => ({
-              id: a.id,
-              name: a.name,
-              description: a.description,
-            })));
-          }
-        }
-      } catch {
-        // 静默失败
-      }
-    };
-    fetchAgents();
-  }, [open]);
+  const [showExpertSelector, setShowExpertSelector] = useState(false);
+  const [selectedExpert, setSelectedExpert] = useState<ExpertOption | null>(null);
 
   // 获取仓库列表
   React.useEffect(() => {
@@ -176,19 +122,11 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
         });
       } else {
         setForm(EMPTY_FORM);
+        setSelectedExpert(null);
       }
       setNameError('');
     }
   }, [open, initial]);
-
-  const toggleWarehouse = (id: string) => {
-    setForm((f) => {
-      const ids = f.warehouseIds.includes(id)
-        ? f.warehouseIds.filter((wid) => wid !== id)
-        : [...f.warehouseIds, id];
-      return { ...f, warehouseIds: ids };
-    });
-  };
 
   const handleSave = () => {
     if (!form.name.trim()) { setNameError('项目名称不能为空'); return; }
@@ -197,41 +135,42 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
       description: form.description.trim() || undefined,
       status: form.status as 'active' | 'archived' | 'completed',
       category: form.category as 'custom' | 'template' | 'fixed',
-      agentId: form.agentId || undefined,
+      agentId: selectedExpert?.id || form.agentId || undefined,
       warehouseIds: form.warehouseIds.length > 0 ? form.warehouseIds : undefined,
     });
     onClose();
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth={false}
-      PaperProps={{
-        sx: {
-          width: 900,
-          maxWidth: 'calc(100vw - 48px)',
-          borderRadius: '16px',
-          bgcolor: '#ffffff',
-          overflow: 'hidden',
-        },
-      }}
-    >
-      {/* Title */}
-      <Box sx={{ px: 3, pt: 3, pb: 2 }}>
-        <Typography sx={{ fontSize: '20px', fontWeight: 600, color: '#111827' }}>
-          {initial ? '编辑项目' : '新建项目'}
-        </Typography>
-      </Box>
+    <>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth={false}
+        PaperProps={{
+          sx: {
+            width: 560,
+            maxWidth: 'calc(100vw - 48px)',
+            borderRadius: '16px',
+            bgcolor: '#ffffff',
+            overflow: 'hidden',
+          },
+        }}
+      >
+        {/* Header */}
+        <Box sx={{ px: 3, pt: 3, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography sx={{ fontSize: '18px', fontWeight: 600, color: '#111827' }}>
+            {initial ? '编辑项目' : '新建项目'}
+          </Typography>
+          <IconButton onClick={onClose} sx={{ color: '#9CA3AF', p: 0.5 }}>
+            <CloseIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Box>
 
-      {/* Content - Two columns */}
-      <DialogContent sx={{ px: 3, py: 0, display: 'flex', gap: 3, '&.MuiDialogContent-root': { pb: 0 } }}>
-        {/* Left Column - Form */}
-        <Box sx={{ flex: '0 0 45%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <DialogContent sx={{ px: 3, py: 0, '&.MuiDialogContent-root': { pb: 0 } }}>
           {/* 项目名称 */}
-          <Box>
-            <Typography sx={{ fontSize: '13px', color: '#6B7280', mb: 0.75, fontWeight: 500 }}>
+          <Box sx={{ mb: 2.5 }}>
+            <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#111827', mb: 0.75 }}>
               项目名称
             </Typography>
             <TextField
@@ -245,7 +184,7 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
               sx={{
                 '& .MuiOutlinedInput-root': {
                   height: 44,
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   bgcolor: '#ffffff',
                   '& fieldset': { borderColor: '#E5E7EB' },
                   '&:hover fieldset': { borderColor: '#D1D5DB' },
@@ -257,230 +196,206 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
             />
           </Box>
 
-          {/* 项目描述 */}
-          <Box>
-            <Typography sx={{ fontSize: '13px', color: '#6B7280', mb: 0.75, fontWeight: 500 }}>
-              项目描述
-            </Typography>
+          {/* 指令 */}
+          <Box sx={{ mb: 2.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+              <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#111827' }}>
+                指令
+              </Typography>
+              <Button
+                size="small"
+                endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 16 }} />}
+                sx={{
+                  fontSize: '13px',
+                  color: '#6B7280',
+                  textTransform: 'none',
+                  bgcolor: '#F3F4F6',
+                  borderRadius: '6px',
+                  px: 1.5,
+                  py: 0.5,
+                  '&:hover': { bgcolor: '#E5E7EB' },
+                }}
+              >
+                选择模板
+              </Button>
+            </Box>
             <TextField
               fullWidth
-              placeholder="请输入项目描述"
+              placeholder="提供当前项目的背景信息和规范，让 Workbuddy 的回复更精准、更符合要求。比如：项目目标、团队习惯、风格偏好、输出约束等"
               multiline
-              rows={3}
+              rows={4}
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   bgcolor: '#ffffff',
                   '& fieldset': { borderColor: '#E5E7EB' },
                   '&:hover fieldset': { borderColor: '#D1D5DB' },
                   '&.Mui-focused fieldset': { borderColor: '#111827', borderWidth: '1px' },
                 },
-                '& .MuiInputBase-input': { fontSize: '14px', color: '#111827' },
+                '& .MuiInputBase-input': { fontSize: '14px', color: '#111827', lineHeight: 1.6 },
               }}
             />
           </Box>
 
-          {/* 专业 Agent */}
-          <Box>
-            <Typography sx={{ fontSize: '13px', color: '#6B7280', mb: 0.75, fontWeight: 500 }}>
-              专业 Agent
+          {/* 连接器 */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              py: 1.5,
+              px: 2,
+              borderRadius: '10px',
+              border: '1px solid #E5E7EB',
+              mb: 1.5,
+              cursor: 'pointer',
+              '&:hover': { borderColor: '#D1D5DB', bgcolor: '#F9FAFB' },
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#111827' }}>
+                连接器
+              </Typography>
+              <Typography sx={{ fontSize: '13px', color: '#9CA3AF' }}>
+                （可选）
+              </Typography>
+            </Box>
+            <Typography sx={{ fontSize: '14px', color: '#6B7280', fontWeight: 500 }}>
+              + 添加
             </Typography>
-            <FormControl fullWidth>
-              <Select
-                value={form.agentId}
-                onChange={(e) => setForm((f) => ({ ...f, agentId: e.target.value }))}
-                displayEmpty
+          </Box>
+
+          {/* 专家 */}
+          <Box
+            onClick={() => setShowExpertSelector(true)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              py: 1.5,
+              px: 2,
+              borderRadius: '10px',
+              border: '1px solid #E5E7EB',
+              mb: 1.5,
+              cursor: 'pointer',
+              '&:hover': { borderColor: '#D1D5DB', bgcolor: '#F9FAFB' },
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#111827' }}>
+                专家
+              </Typography>
+              <Typography sx={{ fontSize: '13px', color: '#9CA3AF' }}>
+                （可选）
+              </Typography>
+            </Box>
+            {selectedExpert ? (
+              <Chip
+                size="small"
+                label={selectedExpert.name}
+                onDelete={() => setSelectedExpert(null)}
                 sx={{
-                  height: 44,
-                  borderRadius: '8px',
-                  bgcolor: '#ffffff',
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E5E7EB' },
-                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#D1D5DB' },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#111827', borderWidth: '1px' },
-                  '& .MuiSelect-select': { fontSize: '14px', color: '#111827' },
+                  height: 28,
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  bgcolor: '#EDE9FE',
+                  color: '#7C3AED',
+                  '& .MuiChip-deleteIcon': { color: '#7C3AED', fontSize: 16 },
                 }}
-              >
-                <MenuItem value="">
-                  <Typography sx={{ fontSize: '14px', color: '#9CA3AF' }}>无（使用默认 AI）</Typography>
-                </MenuItem>
-                {agentOptions.map((agent) => (
-                  <MenuItem key={agent.id} value={agent.id}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                      <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#111827' }}>
-                        {agent.name}
-                      </Typography>
-                      {agent.description && (
-                        <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
-                          {agent.description}
-                        </Typography>
-                      )}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-        </Box>
-
-        {/* Right Column - Warehouse Selection */}
-        <Box sx={{ flex: '0 0 55%', display: 'flex', flexDirection: 'column' }}>
-          <Typography sx={{ fontSize: '13px', color: '#6B7280', mb: 0.5, fontWeight: 500 }}>
-            关联仓库
-          </Typography>
-          <Typography sx={{ fontSize: '13px', color: '#9CA3AF', mb: 1.5 }}>
-            选择一个或多个仓库关联到该项目
-          </Typography>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, maxHeight: 320, overflowY: 'auto', pr: 0.5 }}>
-            {warehouses.map((wh) => {
-              const selected = form.warehouseIds.includes(wh.id);
-              return (
-                <Box
-                  key={wh.id}
-                  onClick={() => toggleWarehouse(wh.id)}
-                  sx={{
-                    position: 'relative',
-                    p: 2,
-                    borderRadius: '12px',
-                    bgcolor: '#F9FAFB',
-                    border: '1px solid',
-                    borderColor: selected ? '#111827' : '#E5E7EB',
-                    cursor: 'pointer',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                      borderColor: selected ? '#111827' : '#D1D5DB',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                    },
-                  }}
-                >
-                  {/* Checkmark */}
-                  {selected && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        width: 20,
-                        height: 20,
-                        borderRadius: '50%',
-                        bgcolor: '#111827',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path d="M2.5 6L5 8.5L9.5 4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </Box>
-                  )}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box
-                      sx={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: '8px',
-                        bgcolor: '#ffffff',
-                        border: '1px solid #E5E7EB',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        color: '#6B7280',
-                      }}
-                    >
-                      <WarehouseOutlinedIcon sx={{ fontSize: 18 }} />
-                    </Box>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography
-                        sx={{
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          color: '#111827',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {wh.name}
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontSize: '12px',
-                          color: '#6B7280',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {wh.city || wh.country || wh.address || '暂无地址'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              );
-            })}
+              />
+            ) : (
+              <Typography sx={{ fontSize: '14px', color: '#6B7280', fontWeight: 500 }}>
+                + 添加
+              </Typography>
+            )}
           </Box>
 
-          {warehouses.length === 0 && (
-            <Box
+          {/* 技能 */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              py: 1.5,
+              px: 2,
+              borderRadius: '10px',
+              border: '1px solid #E5E7EB',
+              mb: 1.5,
+              cursor: 'pointer',
+              '&:hover': { borderColor: '#D1D5DB', bgcolor: '#F9FAFB' },
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#111827' }}>
+                技能
+              </Typography>
+              <Typography sx={{ fontSize: '13px', color: '#9CA3AF' }}>
+                （可选）
+              </Typography>
+            </Box>
+            <Typography sx={{ fontSize: '14px', color: '#6B7280', fontWeight: 500 }}>
+              + 添加
+            </Typography>
+          </Box>
+        </DialogContent>
+
+        {/* Footer */}
+        <DialogActions sx={{ px: 3, py: 2.5, gap: 1.5, justifyContent: 'space-between' }}>
+          <Typography sx={{ fontSize: '12px', color: '#9CA3AF' }}>
+            切换模版会覆盖当前编辑内容
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <Button
+              onClick={onClose}
               sx={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#9CA3AF',
-                gap: 1,
-                minHeight: 160,
+                color: '#111827',
+                fontSize: '14px',
+                fontWeight: 500,
+                textTransform: 'none',
+                px: 3,
+                py: 1,
+                borderRadius: '8px',
+                border: '1px solid #E5E7EB',
+                '&:hover': { bgcolor: '#F3F4F6' },
               }}
             >
-              <WarehouseOutlinedIcon sx={{ fontSize: 32, color: '#D1D5DB' }} />
-              <Typography sx={{ fontSize: '13px' }}>暂无仓库数据</Typography>
-            </Box>
-          )}
-        </Box>
-      </DialogContent>
+              取消
+            </Button>
+            <Button
+              onClick={handleSave}
+              variant="contained"
+              disableElevation
+              sx={{
+                bgcolor: '#111827',
+                color: '#ffffff',
+                fontSize: '14px',
+                fontWeight: 500,
+                textTransform: 'none',
+                px: 3,
+                py: 1,
+                borderRadius: '8px',
+                '&:hover': { bgcolor: '#374151' },
+              }}
+            >
+              确定
+            </Button>
+          </Box>
+        </DialogActions>
+      </Dialog>
 
-      {/* Footer Buttons */}
-      <DialogActions sx={{ px: 3, py: 2.5, gap: 1.5 }}>
-        <Button
-          onClick={onClose}
-          sx={{
-            color: '#6B7280',
-            fontSize: '14px',
-            fontWeight: 500,
-            textTransform: 'none',
-            px: 2,
-            py: 1,
-            borderRadius: '8px',
-            '&:hover': { bgcolor: '#F3F4F6' },
-          }}
-        >
-          取消
-        </Button>
-        <Button
-          onClick={handleSave}
-          variant="contained"
-          disableElevation
-          sx={{
-            bgcolor: '#111827',
-            color: '#ffffff',
-            fontSize: '14px',
-            fontWeight: 500,
-            textTransform: 'none',
-            px: 3,
-            py: 1,
-            borderRadius: '8px',
-            '&:hover': { bgcolor: '#374151' },
-          }}
-        >
-          创建项目
-        </Button>
-      </DialogActions>
-    </Dialog>
+      {/* Expert Selector Modal */}
+      <ExpertSelector
+        open={showExpertSelector}
+        onClose={() => setShowExpertSelector(false)}
+        onSelect={(expert) => {
+          setSelectedExpert(expert);
+          setForm((f) => ({ ...f, agentId: expert.id }));
+        }}
+        selectedId={selectedExpert?.id}
+      />
+    </>
   );
 };
 
@@ -491,21 +406,15 @@ const ProjectsPage: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+  const { showToast } = useToast();
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [templateSearch, setTemplateSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const { showToast } = useToast();
-
-  // Theme helpers - use unified gray scale
-  const textMuted = gs.textMuted;
-  const borderColor = gs.border;
-  const cardBg = gs.bgPanel;
-  const repoSectionBg = gs.bgHover;
+  const [templateSearch, setTemplateSearch] = useState('');
 
   const loadProjects = useCallback(async () => {
     try {
@@ -514,13 +423,11 @@ const ProjectsPage: React.FC = () => {
       const data = await getProjects();
       setProjects(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : '加载项目失败';
-      setError(message);
-      showToast(message, 'error');
+      setError(err instanceof Error ? err.message : '加载失败');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, []);
 
   useEffect(() => {
     loadProjects();
@@ -649,15 +556,14 @@ const ProjectsPage: React.FC = () => {
             {/* Robot eyes (teal glow) */}
             <circle cx="175" cy="84" r="3" fill="#2dd4a8"/>
             <circle cx="185" cy="84" r="3" fill="#2dd4a8"/>
-            {/* Headphones */}
-            <path d="M166 78 Q168 66 180 66 Q192 66 194 78" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
-            <rect x="164" y="76" width="4" height="8" rx="2" fill="#1a1a1a"/>
-            <rect x="192" y="76" width="4" height="8" rx="2" fill="#1a1a1a"/>
-            {/* Robot body */}
-            <path d="M160 130 Q160 108 180 108 Q200 108 200 130" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
-            {/* Antenna */}
+            {/* Robot antenna */}
             <line x1="180" y1="72" x2="180" y2="64" stroke="#1a1a1a" strokeWidth="1.5"/>
-            <circle cx="180" cy="62" r="3" fill="#2dd4a8"/>
+            <circle cx="180" cy="62" r="2" fill="#2dd4a8"/>
+            {/* Robot body */}
+            <path d="M168 100 L168 120 Q168 125 173 125 L187 125 Q192 125 192 120 L192 100" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+            {/* Robot arms */}
+            <path d="M168 108 Q160 112 160 120" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+            <path d="M192 108 Q200 112 200 120" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
 
             {/* Desk 3 (right) */}
             <rect x="260" y="140" width="80" height="4" rx="2" fill="#1a1a1a"/>
@@ -669,119 +575,42 @@ const ProjectsPage: React.FC = () => {
             {/* Person 3 */}
             <circle cx="300" cy="90" r="16" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
             <path d="M280 130 Q280 110 300 110 Q320 110 320 130" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
+            {/* Plant */}
+            <rect x="332" y="120" width="8" height="20" rx="2" fill="#1a1a1a"/>
+            <ellipse cx="336" cy="116" rx="6" ry="8" fill="#2dd4a8" opacity="0.3"/>
+            <ellipse cx="336" cy="116" rx="4" ry="6" stroke="#1a1a1a" strokeWidth="1" fill="none"/>
 
-            {/* Floating elements */}
-            {/* Checkmark bubble */}
-            <rect x="100" y="50" width="30" height="24" rx="6" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
-            <path d="M110 62 L114 66 L120 58" stroke="#1a1a1a" strokeWidth="1.5" fill="none"/>
-            {/* Document bubble */}
-            <rect x="230" y="40" width="26" height="30" rx="4" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
-            <line x1="236" y1="50" x2="250" y2="50" stroke="#1a1a1a" strokeWidth="1"/>
-            <line x1="236" y1="55" x2="248" y2="55" stroke="#1a1a1a" strokeWidth="1"/>
-            <line x1="236" y1="60" x2="245" y2="60" stroke="#1a1a1a" strokeWidth="1"/>
-            {/* Folder bubble */}
-            <rect x="130" y="30" width="28" height="22" rx="4" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
-            <path d="M134 34 L134 48 L154 48 L154 37 L146 37 L144 34 Z" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
-            {/* Image bubble */}
-            <rect x="200" y="55" width="24" height="20" rx="3" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
-            <circle cx="208" cy="63" r="3" fill="none" stroke="#1a1a1a" strokeWidth="1"/>
-            <path d="M200 72 L208 66 L216 72" stroke="#1a1a1a" strokeWidth="1" fill="none"/>
-            {/* Person 4 (small, back) */}
-            <circle cx="130" cy="82" r="10" stroke="#e0e0e0" strokeWidth="1" fill="none"/>
-            <path d="M118 108 Q118 96 130 96 Q142 96 142 108" stroke="#e0e0e0" strokeWidth="1" fill="none"/>
+            {/* Connection lines between desks */}
+            <path d="M100 142 Q120 142 140 142" stroke="#1a1a1a" strokeWidth="1" strokeDasharray="4 4" fill="none" opacity="0.3"/>
+            <path d="M220 142 Q240 142 260 142" stroke="#1a1a1a" strokeWidth="1" strokeDasharray="4 4" fill="none" opacity="0.3"/>
+
+            {/* Speech bubbles */}
+            <rect x="95" y="55" width="24" height="14" rx="4" stroke="#1a1a1a" strokeWidth="1" fill="none"/>
+            <circle cx="102" cy="62" r="1.5" fill="#1a1a1a"/>
+            <circle cx="108" cy="62" r="1.5" fill="#1a1a1a"/>
+            <circle cx="114" cy="62" r="1.5" fill="#1a1a1a"/>
+
+            <rect x="205" y="50" width="24" height="14" rx="4" stroke="#1a1a1a" strokeWidth="1" fill="none"/>
+            <circle cx="212" cy="57" r="1.5" fill="#1a1a1a"/>
+            <circle cx="218" cy="57" r="1.5" fill="#1a1a1a"/>
+            <circle cx="224" cy="57" r="1.5" fill="#1a1a1a"/>
+
+            <rect x="315" y="55" width="24" height="14" rx="4" stroke="#1a1a1a" strokeWidth="1" fill="none"/>
+            <circle cx="322" cy="62" r="1.5" fill="#1a1a1a"/>
+            <circle cx="328" cy="62" r="1.5" fill="#1a1a1a"/>
+            <circle cx="334" cy="62" r="1.5" fill="#1a1a1a"/>
           </svg>
         </Box>
       </Box>
 
-      {/* ===== Fixed Repos Section ===== */}
-      <Box
-        sx={{
-          mb: 5,
-          p: 3,
-          backgroundColor: repoSectionBg,
-          borderRadius: '14px',
-          border: `1px solid ${borderColor}`,
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <FolderOutlinedIcon sx={{ fontSize: 20, color: gs.textMuted }} />
-            <Typography sx={SECTION_TITLE_STYLE}>固定项目仓库</Typography>
-          </Box>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<AddIcon sx={{ fontSize: 14 }} />}
-            onClick={() => navigate('/warehouses')}
-            sx={{
-              borderColor: gs.borderDarker,
-              color: gs.textSecondary,
-              fontSize: 12,
-              textTransform: 'none',
-              borderRadius: '8px',
-              '&:hover': {
-                borderColor: gs.textMuted,
-                backgroundColor: gs.bgHover,
-              },
-            }}
-          >
-            关联仓库
-          </Button>
-        </Box>
-
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-          {FIXED_REPOS.map((repo) => (
-            <Box
-              key={repo.key}
-              onClick={() => navigate(repo.path)}
-              sx={{
-                ...CARD_STYLE,
-                backgroundColor: cardBg,
-                borderColor,
-                p: 2.5,
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: '10px',
-                    backgroundColor: gs.bgHover,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    color: gs.textMuted,
-                  }}
-                >
-                  {repo.icon}
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
-                    {repo.name}
-                  </Typography>
-                  <Typography sx={{ fontSize: 12, color: textMuted, lineHeight: 1.5 }}>
-                    {repo.description}
-                  </Typography>
-                </Box>
-              </Box>
-              {repo.meta && (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
-                    pt: 1.5,
-                    borderTop: `1px solid ${gs.border}`,
-                  }}
-                >
-                  <Typography sx={{ fontSize: 11, color: textMuted }}>{repo.meta}</Typography>
-                </Box>
-              )}
-            </Box>
-          ))}
-        </Box>
+      {/* ===== Search Bar ===== */}
+      <Box sx={{ mb: 4 }}>
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="搜索项目..."
+          sx={{ maxWidth: 400 }}
+        />
       </Box>
 
       {/* Error Alert */}
@@ -798,125 +627,142 @@ const ProjectsPage: React.FC = () => {
             <FolderOutlinedIcon sx={{ fontSize: 20, color: gs.textMuted }} />
             <Typography sx={SECTION_TITLE_STYLE}>自定义项目</Typography>
           </Box>
+          <Button
+            variant="text"
+            startIcon={<AddIcon sx={{ fontSize: 18 }} />}
+            onClick={() => { setEditingProject(null); setDialogOpen(true); }}
+            sx={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: gs.textPrimary,
+              textTransform: 'none',
+              '&:hover': { bgcolor: gs.bgHover },
+            }}
+          >
+            新建项目
+          </Button>
         </Box>
 
-        {/* Search */}
-        <Box sx={{ mb: 2, maxWidth: 400 }}>
-          <SearchInput
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="搜索项目"
-            width={400}
-          />
-        </Box>
-
-        {/* Projects Grid */}
         {filteredProjects.length === 0 ? (
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
+              textAlign: 'center',
               py: 6,
               color: gs.textMuted,
-              gap: 1,
             }}
           >
-            <FolderOutlinedIcon sx={{ fontSize: 40, color: gs.borderDarker }} />
-            <Typography sx={{ fontSize: '0.9375rem', color: gs.textMuted }}>
-              {searchQuery ? '没有匹配的项目' : '还没有自定义项目'}
+            <FolderOutlinedIcon sx={{ fontSize: 48, color: gs.border, mb: 2 }} />
+            <Typography sx={{ fontSize: 15, fontWeight: 500, mb: 0.5 }}>
+              {searchQuery ? '未找到匹配的项目' : '暂无自定义项目'}
             </Typography>
-            {!searchQuery && (
-              <Button
-                size="small" startIcon={<AddIcon />}
-                onClick={() => { setEditingProject(null); setDialogOpen(true); }}
-                sx={{ mt: 0.5, color: gs.textMuted, '&:hover': { bgcolor: gs.bgHover } }}
-              >
-                创建第一个项目
-              </Button>
-            )}
+            <Typography sx={{ fontSize: 13 }}>
+              {searchQuery ? '尝试其他搜索词' : '点击上方按钮创建第一个项目'}
+            </Typography>
           </Box>
         ) : (
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' }, gap: 2 }}>
             {filteredProjects.map((project) => (
               <Box
                 key={project.id}
                 onClick={() => navigate(`/projects/${project.id}`)}
                 sx={{
                   ...CARD_STYLE,
-                  backgroundColor: cardBg,
-                  borderColor,
                   p: 2.5,
+                  bgcolor: gs.bgPanel,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1.5,
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
-                  <Box
-                    sx={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: '10px',
-                      backgroundColor: gs.bgHover,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      color: gs.textMuted,
-                    }}
-                  >
-                    <FolderOutlinedIcon sx={{ fontSize: 22 }} />
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '10px',
+                        bgcolor: `${gs.bgHover}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        color: gs.textPrimary,
+                      }}
+                    >
+                      <FolderOutlinedIcon sx={{ fontSize: 20 }} />
+                    </Box>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography
+                        sx={{
+                          fontSize: 15,
+                          fontWeight: 600,
+                          color: gs.textPrimary,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {project.name}
+                      </Typography>
+                      <Typography sx={{ fontSize: 12, color: gs.textMuted }}>
+                        {project.status === 'active' ? '进行中' : project.status === 'completed' ? '已完成' : '已归档'}
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
-                      {project.name}
-                    </Typography>
-                    <Typography sx={{ fontSize: 12, color: textMuted, lineHeight: 1.5 }}>
-                      {project.description || '暂无描述'}
-                    </Typography>
-                  </Box>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingProject(project);
-                      setDialogOpen(true);
-                    }}
-                    sx={{ p: 0.5, color: gs.textMuted, '&:hover': { color: gs.textPrimary } }}
-                  >
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
                     <Tooltip title="编辑">
-                      <span>✏️</span>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingProject(project);
+                          setDialogOpen(true);
+                        }}
+                        sx={{ color: gs.textMuted, '&:hover': { color: gs.textPrimary } }}
+                      >
+                        <SettingsOutlinedIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
                     </Tooltip>
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm('确定要删除这个项目吗？')) {
-                        handleDelete(project.id);
-                      }
-                    }}
-                    sx={{ p: 0.5, color: gs.textMuted, '&:hover': { color: '#DC2626' } }}
-                  >
                     <Tooltip title="删除">
-                      <span>🗑️</span>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(project.id);
+                        }}
+                        sx={{ color: gs.textMuted, '&:hover': { color: '#DC2626' } }}
+                      >
+                        <InventoryOutlinedIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
                     </Tooltip>
-                  </IconButton>
+                  </Box>
                 </Box>
-                <Box
+                {project.description && (
+                  <Typography
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                      pt: 1.5,
-                      borderTop: `1px solid ${gs.border}`,
+                      fontSize: 13,
+                      color: gs.textMuted,
+                      lineHeight: 1.5,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
                     }}
                   >
-                  <Typography sx={{ fontSize: 11, color: textMuted }}>
-                    状态: {project.status === 'active' ? '活跃' : project.status === 'archived' ? '已归档' : '已完成'}
+                    {project.description}
                   </Typography>
-                  <Typography sx={{ fontSize: 11, color: textMuted }}>
-                    分类: {project.category === 'custom' ? '自定义' : project.category === 'template' ? '模板' : '固定'}
-                  </Typography>
+                )}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 'auto' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, color: gs.textMuted }}>
+                    <ScheduleIcon sx={{ fontSize: 14 }} />
+                    {new Date(project.created_at).toLocaleDateString('zh-CN')}
+                  </Box>
+                  {(project as any).warehouseIds && (project as any).warehouseIds.length > 0 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontSize: 12, color: gs.textMuted }}>
+                      <WarehouseOutlinedIcon sx={{ fontSize: 14 }} />
+                      {(project as any).warehouseIds.length} 仓库
+                    </Box>
+                  )}
                 </Box>
               </Box>
             ))}
@@ -924,81 +770,85 @@ const ProjectsPage: React.FC = () => {
         )}
       </Box>
 
-      {/* ===== Template Gallery Section (全部功能) ===== */}
+      {/* ===== Templates Section ===== */}
       <Box sx={{ mb: 5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Typography sx={SECTION_TITLE_STYLE}>全部功能</Typography>
-          <Box sx={{ position: 'relative', width: 240 }}>
-            <SearchIcon
-              sx={{
-                position: 'absolute',
-                left: 10,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                fontSize: 16,
-                color: textMuted,
-              }}
-            />
-            <Box
-              component="input"
-              placeholder="搜索功能"
-              value={templateSearch}
-              onChange={(e) => setTemplateSearch((e.target as HTMLInputElement).value)}
-              sx={{
-                width: '100%',
-                height: 38,
-                pl: 4.5,
-                pr: 1.5,
-                border: `1px solid ${gs.borderDarker}`,
-                borderRadius: '8px',
-                fontSize: 13,
-                color: 'text.primary',
-                bgcolor: gs.bgInput,
-                outline: 'none',
-                '&::placeholder': { color: textMuted },
-                '&:focus': { borderColor: gs.textMuted },
-              }}
-            />
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AutoFixHighIcon sx={{ fontSize: 20, color: gs.textMuted }} />
+            <Typography sx={SECTION_TITLE_STYLE}>项目模板</Typography>
           </Box>
+          <SearchInput
+            value={templateSearch}
+            onChange={setTemplateSearch}
+            placeholder="搜索模板..."
+            sx={{ maxWidth: 240 }}
+          />
         </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' }, gap: 2 }}>
-          {filteredTemplates.map((tpl) => (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr 1fr' }, gap: 2 }}>
+          {filteredTemplates.map((template) => (
             <Box
-              key={tpl.key}
-              onClick={() => tpl.path && navigate(tpl.path)}
+              key={template.name}
+              onClick={() => {
+                setEditingProject(null);
+                setDialogOpen(true);
+              }}
               sx={{
                 ...CARD_STYLE,
-                backgroundColor: cardBg,
-                borderColor,
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 1.75,
                 p: 2.5,
+                bgcolor: gs.bgPanel,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.5,
               }}
             >
-              <Box
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '10px',
+                    bgcolor: `${template.color}15`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    color: template.color,
+                  }}
+                >
+                  {React.cloneElement(template.icon as React.ReactElement, { sx: { fontSize: 20 } })}
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    sx={{
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: gs.textPrimary,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {template.name}
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography
                 sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: '10px',
-                  backgroundColor: gs.bgHover,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
+                  fontSize: 13,
                   color: gs.textMuted,
+                  lineHeight: 1.5,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
                 }}
               >
-                {tpl.icon}
-              </Box>
-              <Box>
-                <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
-                  {tpl.name}
-                </Typography>
-                <Typography sx={{ fontSize: 12, color: textMuted, lineHeight: 1.5 }}>
-                  {tpl.description}
-                </Typography>
+                {template.description}
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 'auto', fontSize: 12, color: gs.textMuted }}>
+                <AddIcon sx={{ fontSize: 14 }} />
+                使用模板
               </Box>
             </Box>
           ))}
