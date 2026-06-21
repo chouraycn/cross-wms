@@ -1,3 +1,4 @@
+import './i18n';
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
@@ -5,6 +6,10 @@ import './index.css'
 import { checkAndMigrate } from './services/migration'
 import { initFromApi as initWarehouseCapability } from './capabilities/warehouse'
 import { initFromApi as initSkills } from './stores/skillStore'
+import { initSentryReact } from './sentry'
+
+// Initialize Sentry error monitoring (no-op if VITE_SENTRY_DSN is not set)
+initSentryReact();
 
 // 先渲染 UI，再异步初始化后端数据。
 // 后端 crash 时 fetch 可能长时间挂起，如果 render() 放在 await 之后会导致永久白屏。

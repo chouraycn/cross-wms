@@ -1,5 +1,10 @@
+import { initSentry } from './sentry.js';
+initSentry();
+
 import express from 'express';
 import http from 'http';
+import { API_PREFIX } from './apiVersion.js';
+import { apiVersionMiddleware } from './middleware/apiVersionMiddleware.js';
 import { initDb } from './db.js';
 import skillWatcher from './services/skillWatcher.js';
 import { initDefaultTools, listTools } from './engine/toolRegistry.js';
@@ -133,6 +138,9 @@ app.use((req, res, next) => {
   }
   next();
 });
+// API version middleware — adds X-API-Version header and deprecation warnings
+app.use(apiVersionMiddleware);
+
 // 静态文件服务：提供已上传文件的访问（必须在 express.json() 之前）
 ensureUploadsDir();
 app.use('/api/uploads', express.static(UPLOADS_DIR));
@@ -218,6 +226,49 @@ app.use('/api/api-history', apiHistoryRouter);
 
 // ========== v4.0: MCP Routes ==========
 app.use('/api/mcp', mcpRouter);
+
+// ========== Versioned API Routes (v1) ==========
+// All routes are also mounted under /api/v1 for versioned access
+app.use(`${API_PREFIX}`, chatRouter);
+app.use(`${API_PREFIX}/sessions`, sessionsRouter);
+app.use(`${API_PREFIX}/folders`, foldersRouter);
+app.use(`${API_PREFIX}/memory`, memoryRouter);
+app.use(`${API_PREFIX}`, eventsRouter);
+app.use(`${API_PREFIX}/health`, healthRouter);
+app.use(`${API_PREFIX}/inventory-transactions`, inventoryTransactionsRouter);
+app.use(`${API_PREFIX}/agents`, agentsRouter);
+app.use(`${API_PREFIX}/warehouses`, warehousesRouter);
+app.use(`${API_PREFIX}/inventory`, inventoryRouter);
+app.use(`${API_PREFIX}/transit-orders`, transitRouter);
+app.use(`${API_PREFIX}/inbound-records`, inboundRouter);
+app.use(`${API_PREFIX}/outbound-records`, outboundRouter);
+app.use(`${API_PREFIX}/transfer-orders`, transferOrderRouter);
+app.use(`${API_PREFIX}/partners`, partnersRouter);
+app.use(`${API_PREFIX}`, skillsRouter);
+app.use(`${API_PREFIX}/app-settings`, settingsRouter);
+app.use(`${API_PREFIX}/migrate`, migrateRouter);
+app.use(`${API_PREFIX}/projects`, projectsRouter);
+app.use(`${API_PREFIX}/tasks`, tasksRouter);
+app.use(`${API_PREFIX}/automation`, automationRoutes);
+app.use(`${API_PREFIX}/skill-chains`, chainRoutes);
+app.use(`${API_PREFIX}/chain-executions`, chainRoutes);
+app.use(`${API_PREFIX}/wms/quality`, wmsQualityRoutes);
+app.use(`${API_PREFIX}/wms/inventory-count`, wmsInventoryRoutes);
+app.use(`${API_PREFIX}/wms/outbound-review`, wmsOutboundRoutes);
+app.use(`${API_PREFIX}/wms/alerts`, wmsAlertRoutes);
+app.use(`${API_PREFIX}/wms/reports`, wmsReportRoutes);
+app.use(`${API_PREFIX}/wms/replenishment`, wmsReplenishmentRoutes);
+app.use(`${API_PREFIX}/matching`, matchingRoutes);
+app.use(`${API_PREFIX}/models`, modelsRoutes);
+app.use(`${API_PREFIX}/inventory`, inventoryNlQueryRouter);
+app.use(`${API_PREFIX}/plugins`, pluginsRouter);
+app.use(`${API_PREFIX}/api-domain-whitelist`, apiDomainWhitelistRouter);
+app.use(`${API_PREFIX}/browser`, browserRouter);
+app.use(`${API_PREFIX}/browser/profiles`, browserProfilesRouter);
+app.use(`${API_PREFIX}/api-templates`, apiTemplatesRouter);
+app.use(`${API_PREFIX}/api-credentials`, apiCredentialsRouter);
+app.use(`${API_PREFIX}/api-history`, apiHistoryRouter);
+app.use(`${API_PREFIX}/mcp`, mcpRouter);
 
 const PORT = 3001;
 
