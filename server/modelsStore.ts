@@ -50,7 +50,7 @@ function withWriteLock<T>(fn: () => Promise<T>): Promise<T> {
 /** 内存缓存 */
 let cachedModelsFile: ModelsFile | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL_MS = 5000; // 5 秒缓存
+const CACHE_TTL_MS = 30000; // 30 秒缓存（v1.5.203: 从 5s 增大至 30s，减少 Keychain 阻塞）
 let fileWatcher: fs.FSWatcher | null = null;
 
 /** EPERM 降级模式：当文件系统不可写时，完全使用内存存储 */
@@ -317,9 +317,19 @@ function migrateProviderData(models: ModelConfig[]): { models: ModelConfig[]; ch
 }
 
 /** 读取模型配置（含内置模型兜底） */
-export async function loadModelsConfig(): Promise<ModelsFile> {
-  // 检查缓存是否有效
+export async function loadModelsConfig(options?: { skipKeyInjection?: boolean }): Promise<ModelsFile> {
+  // 快速路径：主缓存有效时，skipKeyInjection 直接返回脱敏副本
   if (cachedModelsFile && Date.now() - cacheTimestamp < CACHE_TTL_MS) {
+    if (options?.skipKeyInjection) {
+      // 主缓存已含注入的 key，脱敏后返回（不更新主缓存）
+      return {
+        ...cachedModelsFile,
+        models: cachedModelsFile.models.map((m) => {
+          const { apiKey, apiKeys, ...rest } = m as any;
+          return rest;
+        }),
+      };
+    }
     return cachedModelsFile;
   }
 
@@ -345,6 +355,13 @@ export async function loadModelsConfig(): Promise<ModelsFile> {
         saved = { ...saved, models: migrated2 };
         await writeModelsFile(saved);
       }
+      if (options?.skipKeyInjection) {
+        // GET /api/models 路径：不需要 API Key，跳过 Keychain 注入
+        // 不更新主缓存（主缓存预期包含注入的 key）
+        return saved;
+      }
+
+      // 以下逻辑仅在完整加载时执行（AI 推理、模型管理等需要 API Key 的场景）
       // RC-2: 注入 Keychain 中的 API Key — 单独 try/catch，防止 execSync 抛出非 Error 对象导致整体加载失败
       let keychainFailed = false;
       try {

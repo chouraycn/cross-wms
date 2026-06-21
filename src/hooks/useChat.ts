@@ -664,6 +664,11 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                       if (result === '' && data.content === content) {
                         continue;
                       }
+                      // v8.2-fix: 收到第一个 text 事件时标记 thinking 阶段结束
+                      // 避免 ThinkingBlock 在内容生成阶段仍显示"正在思考..."
+                      if (!streamingMsg.thinkingDone && streamingMsg.thinking) {
+                        streamingMsg.thinkingDone = true;
+                      }
                       result += data.content;
                       pendingContent += data.content;
                       scheduleRender();

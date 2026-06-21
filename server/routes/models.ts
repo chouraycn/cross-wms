@@ -23,8 +23,11 @@ const router = Router();
 // GET /api/models — 读取当前模型配置（返回时脱敏 API Key）
 router.get('/', async (_req: Request, res: Response) => {
   try {
-    const config = await loadModelsConfig();
+    // v1.5.203: skipKeyInjection 跳过 Keychain execSync 调用，避免阻塞事件循环
+    // 此端点返回时本就脱敏移除 apiKey/apiKeys，不需要注入
+    const config = await loadModelsConfig({ skipKeyInjection: true });
     // 脱敏：移除明文 apiKey 和 apiKeys，只保留引用信息
+    // （skipKeyInjection 路径已不含 key，但保留此脱敏作为安全兜底）
     const sanitized = {
       ...config,
       models: config.models.map((m) => {

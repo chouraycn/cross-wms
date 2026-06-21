@@ -109,3 +109,9 @@
   - `Pragma: no-cache` + `Expires: 0`
 - **清除缓存**：`rm -rf ~/Library/Caches/com.cdf.knowclow.desktop/WebKit/NetworkCache/`
 - **教训**：pywebview 本地 HTTP 服务器必须禁用缓存，否则版本升级后 WKWebView 不刷新
+
+## fsevents 打包修复 v1.5.201
+- fsevents 2.3.3 自带预编译 `fsevents.node`，**不含** `binding.gyp`
+- npm 默认触发 `node-gyp rebuild` → binding.gyp not found → 编译失败
+- **修复**：构建脚本 `npm install --ignore-scripts`，手动为 better-sqlite3 运行 `prebuild-install`
+- `npm install fsevents --ignore-scripts` 可正常安装预编译二进制

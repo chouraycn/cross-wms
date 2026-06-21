@@ -129,6 +129,8 @@ export interface Message {
   model?: string;
   timestamp: Date;
   isStreaming?: boolean;
+  /** v8.2-fix: thinking 阶段是否已完成（text 内容已开始生成），用于区分"正在思考"和"正在生成内容" */
+  thinkingDone?: boolean;
   /** 用户发送此消息时引用的历史会话（仅 user 消息携带） */
   referencedSessions?: ReferencedSession[];
   /** Auto 模式选型原因（如 "Claude Sonnet 4 · 检测到代码内容"） */
@@ -254,6 +256,8 @@ export interface Message {
   queueState?: QueueStateInfo;
   /** v8.0: 多 Agent 编排状态 */
   orchestrationState?: OrchestrationState;
+  /** v8.1: Agent 状态列表（用于 AgentStatusIndicator 展示） */
+  agentStatuses?: AgentStatusInfo[];
   /** v1.5.116: 模型降级信息 */
   fallbackModel?: string;
   fallbackReason?: 'model_not_supported' | 'request_failed';
@@ -528,4 +532,124 @@ export interface BudgetAdjustedEvent {
   oldMaxTokens?: number;
   newMaxTokens?: number;
   reason: string;
+}
+
+// ===== v8.1: Agent 编排 + 子任务 + 反思 + 计划 SSE 事件类型 =====
+
+/** Agent 任务开始事件 */
+export interface AgentStartEvent {
+  type: 'agent_start';
+  /** Agent ID */
+  agentId: string;
+  /** Agent 角色名 */
+  agentRole: string;
+  /** 任务描述 */
+  taskDescription: string;
+  /** 子任务 ID（如果是子任务执行） */
+  subTaskId?: string;
+}
+
+/** Agent 任务结束事件 */
+export interface AgentEndEvent {
+  type: 'agent_end';
+  /** Agent ID */
+  agentId: string;
+  /** Agent 角色名 */
+  agentRole: string;
+  /** 执行状态 */
+  status: 'success' | 'failed' | 'timeout';
+  /** 执行耗时（毫秒） */
+  duration?: number;
+  /** 错误信息（失败时） */
+  error?: string;
+}
+
+/** 子任务创建事件 */
+export interface SubtaskCreateEvent {
+  type: 'subtask_create';
+  /** 子任务 ID */
+  subTaskId: string;
+  /** 子任务描述 */
+  description: string;
+  /** 依赖的子任务 ID 列表 */
+  dependsOn: string[];
+  /** 优先级 */
+  priority: number;
+}
+
+/** 子任务分配事件 */
+export interface SubtaskAssignEvent {
+  type: 'subtask_assign';
+  /** 子任务 ID */
+  subTaskId: string;
+  /** 分配的 Agent ID */
+  agentId: string;
+  /** Agent 角色名 */
+  agentRole: string;
+}
+
+/** 子任务完成事件 */
+export interface SubtaskCompleteEvent {
+  type: 'subtask_complete';
+  /** 子任务 ID */
+  subTaskId: string;
+  /** 子任务描述 */
+  description: string;
+  /** 执行状态 */
+  status: 'completed' | 'failed';
+  /** Agent ID */
+  agentId: string;
+  /** 执行耗时（毫秒） */
+  duration?: number;
+  /** 结果摘要 */
+  resultSummary?: string;
+}
+
+/** 反思评估结果事件（增强版 observer_reflection） */
+export interface ReflectEvent {
+  type: 'reflect';
+  /** 反思来源（observer / llm / self_evaluation） */
+  source: 'observer' | 'llm' | 'self_evaluation';
+  /** 工具名称 */
+  toolName?: string;
+  /** 评估等级 */
+  level: 'success' | 'warning' | 'error' | 'retry_suggested';
+  /** 反思洞察 */
+  insight: string;
+  /** 置信度评分 (1-10) */
+  confidenceScore?: number;
+  /** 自评分等级 */
+  selfGrade?: 'A' | 'B' | 'C' | 'D';
+}
+
+/** 执行计划生成事件（增强版 execution_plan） */
+export interface PlanEvent {
+  type: 'plan';
+  /** 计划 ID */
+  planId: string;
+  /** 计划意图 */
+  intent: string;
+  /** 步骤列表 */
+  steps: Array<{
+    step: number;
+    description: string;
+    toolName?: string;
+    status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped';
+  }>;
+  /** 是否动态计划 */
+  isDynamic: boolean;
+}
+
+/** Agent 状态信息（用于前端 AgentStatusIndicator 展示） */
+export interface AgentStatusInfo {
+  /** Agent ID */
+  agentId: string;
+  /** Agent 角色名 */
+  agentRole: string;
+  /** Agent 显示名 */
+  agentName: string;
+  /** 状态 */
+  status: 'idle' | 'busy' | 'error' | 'terminated';
+  /** 当前执行的任务描述（busy 时） */
+  currentTask?: string;
 }

@@ -243,10 +243,13 @@ async function executeFromQueue(
     initSessionApprovedTools(sessionId);
 
     let keepAliveTimer: NodeJS.Timeout | null = null;
+    const thinkingStartRef = { value: Date.now() };
     keepAliveTimer = setInterval(() => {
       if (!res.writableEnded) {
         try {
-          res.write(': keep-alive\n\n');
+          // v8.2-fix: 使用 JSON 格式发送 keep_alive，让前端能解析并更新 thinkingElapsed
+          const elapsed = Date.now() - thinkingStartRef.value;
+          res.write(`data: ${JSON.stringify({ type: 'keep_alive', elapsed })}\n\n`);
         } catch { /* ignore */ }
       }
     }, 15000);

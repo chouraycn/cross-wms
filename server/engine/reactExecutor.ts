@@ -514,6 +514,19 @@ export class ReActExecutor {
               },
             });
 
+            // v8.1: 推送 plan 事件（标准化格式）
+            onSSEEvent({
+              type: 'plan',
+              planId: plan.id,
+              intent: plan.intent,
+              steps: plan.steps.map(s => ({
+                step: s.step,
+                description: s.description,
+                toolName: s.toolName,
+                status: s.status,
+              })),
+              isDynamic: plan.isDynamic,
+            });
           }
         }
       }
@@ -757,6 +770,16 @@ export class ReActExecutor {
           sseEvent.selfEvaluation = decision.selfEvaluation;
         }
         onSSEEvent(sseEvent);
+
+        // v8.1: 推送 reflect 事件（标准化格式）
+        onSSEEvent({
+          type: 'reflect',
+          source: 'observer',
+          level: decision.confidenceScore >= 7 ? 'success' : decision.confidenceScore < 3 ? 'error' : 'warning',
+          insight: decision.reason,
+          confidenceScore: decision.confidenceScore,
+          selfGrade: decision.selfEvaluation?.grade,
+        });
       }
 
       // 注入反思消息到上下文
@@ -996,6 +1019,14 @@ export class ReActExecutor {
         if (llmReflectionInsight && onSSEEvent) {
           onSSEEvent({
             type: 'llm_reflection',
+            insight: llmReflectionInsight,
+            confidenceScore: decision.confidenceScore,
+          });
+
+          // v8.1: 推送 reflect 事件（LLM 来源）
+          onSSEEvent({
+            type: 'reflect',
+            source: 'llm',
             insight: llmReflectionInsight,
             confidenceScore: decision.confidenceScore,
           });

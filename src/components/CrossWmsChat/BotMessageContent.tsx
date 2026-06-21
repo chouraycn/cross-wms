@@ -15,6 +15,8 @@ import { InlinePermissionRequest } from './InlinePermissionRequest.js';
 import { ReactPhaseIndicator } from './ReactPhaseIndicator.js';
 import { ExecutionPlanCard } from './ExecutionPlanCard.js';
 import { ComplexityAssessmentBadge } from './ComplexityAssessmentBadge.js';
+import { ExecutionTrace } from './ExecutionTrace.js';
+import { AgentStatusIndicator } from './AgentStatusIndicator.js';
 import {
   ContextCompressedNotice,
   BudgetExceededIndicator,
@@ -286,16 +288,25 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
           onConfirmReplenishment={onConfirmReplenishment}
         />
       )}
+      {/* v8.1: Agent 状态指示器（消息顶部） */}
+      <AgentStatusIndicator msg={msg} gs={gs} isDark={isDark} />
+      {/* v8.1: 执行轨迹组件（thinking 内容之前） */}
+      <ExecutionTrace msg={msg} gs={gs} isDark={isDark} />
       {/* AI 思考过程展示 */}
       {msg.thinking && (
         <ThinkingBlock
           thinking={msg.thinking}
           isStreaming={msg.isStreaming}
+          thinkingDone={msg.thinkingDone}
           duration={msg.thinkingDuration}
           reasoningEffort={msg.reasoningEffort}
           thinkingElapsed={msg.thinkingElapsed}
           cacheHit={msg.cacheHit}
           usage={msg.usage}
+          reactPhase={msg.reactPhase}
+          complexityAssessment={msg.complexityAssessment}
+          reflectionConfidence={msg.reflectionConfidence}
+          executionPlan={msg.executionPlan}
         />
       )}
       {/* AI 工具调用展示（Tool Calling） */}
@@ -558,6 +569,7 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
   if (pm.content !== nm.content) return false;
   if (pm.thinking !== nm.thinking) return false;
   if (pm.isStreaming !== nm.isStreaming) return false;
+  if (pm.thinkingDone !== nm.thinkingDone) return false;
   if (pm.model !== nm.model) return false;
   if (pm.fallbackModel !== nm.fallbackModel) return false;
   if (pm.thinkingDuration !== nm.thinkingDuration) return false;
@@ -590,6 +602,7 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
   if (pm.metadata !== nm.metadata) return false;
   if (pm.usage !== nm.usage) return false;
   if (pm.replanTriggered !== nm.replanTriggered) return false;
+  if (pm.agentStatuses !== nm.agentStatuses) return false;
 
   if ((prev.copiedId === pm.id || next.copiedId === nm.id) && prev.copiedId !== next.copiedId) return false;
 
