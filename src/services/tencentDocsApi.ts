@@ -108,10 +108,10 @@ declare global {
   }
 }
 
+import { isPyWebView as _isPyWebView } from '../utils/env';
+
 /** 是否在 pywebview 环境中运行 */
-export function isPyWebView(): boolean {
-  return typeof window !== 'undefined' && 'pywebview' in window;
-}
+export const isPyWebView = _isPyWebView;
 
 /**
  * pywebview 首次注入的是核心 JS 桥接对象（'pywebview' in window 可用），

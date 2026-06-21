@@ -84,7 +84,7 @@ const ChainExecutionPanel: React.FC<ChainExecutionPanelProps> = ({
 }) => {
   const [steps, setSteps] = useState<ChainExecutionStep[]>([]);
   const [completed, setCompleted] = useState(false);
-  const evtRef = useRef<EventSource | null>(null);
+  const evtRef = useRef<import('../../services/api').SSEConnection | null>(null);
 
   useEffect(() => {
     if (!executionId) return;
@@ -105,13 +105,10 @@ const ChainExecutionPanel: React.FC<ChainExecutionPanelProps> = ({
       });
 
     // 然后连接 SSE 获取实时更新
-    evtRef.current = connectChainExecutionEvents(executionId);
-    const es = evtRef.current;
-
-    const handleMessage = (e: MessageEvent) => {
+    const sse = connectChainExecutionEvents(executionId, (rawData) => {
       let data: Record<string, unknown>;
       try {
-        data = JSON.parse(e.data);
+        data = JSON.parse(rawData);
       } catch {
         return;
       }
@@ -149,13 +146,11 @@ const ChainExecutionPanel: React.FC<ChainExecutionPanelProps> = ({
       } else if (data.type === 'chain-completed' || data.type === 'chain-failed' || data.type === 'chain-aborted') {
         setCompleted(true);
       }
-    };
-
-    es.addEventListener('message', handleMessage);
+    });
+    evtRef.current = sse;
 
     return () => {
-      es.removeEventListener('message', handleMessage);
-      es.close();
+      sse.close();
     };
   }, [executionId]);
 

@@ -14,9 +14,11 @@ import {
   type AgentProfile,
   type AgentRole,
   type AgentCapability,
+  type AgentExecutionRecord,
   BUILTIN_AGENT_TEMPLATES,
 } from '../../shared/types/agent.js';
 import { logger } from '../logger.js';
+import { v4 as uuidv4 } from 'uuid';
 
 // ===================== 常量 =====================
 
@@ -62,6 +64,9 @@ class AgentRegistry {
         status: 'idle',
         createdAt: now,
         lastActiveAt: now,
+        recentExecutions: [],
+        successCount: 0,
+        failureCount: 0,
       };
 
       // 尝试从磁盘加载自定义 SOUL/MEMORY
@@ -96,6 +101,9 @@ class AgentRegistry {
       status: 'idle',
       createdAt: now,
       lastActiveAt: now,
+      recentExecutions: [],
+      successCount: 0,
+      failureCount: 0,
     };
 
     // 持久化 SOUL/MEMORY
@@ -175,11 +183,12 @@ class AgentRegistry {
   /**
    * 为任务匹配合适的 Agent
    *
-   * 匹配策略：
-   * 1. 遍历所有非 orchestrator Agent 的 capabilities
-   * 2. 检查 taskKeywords 是否匹配任务描述
-   * 3. 检查 allowedTools / deniedTools 是否覆盖所需工具
-   * 4. 优先返回空闲 Agent
+   * 增强评分策略（满分 100）：
+   * 1. 关键词匹配 (0-30): 任务描述命中 Agent capability 中的 taskKeywords
+   * 2. 工具覆盖度 (0-20): Agent 可用工具覆盖任务所需工具的比例
+   * 3. 历史成功率 (0-25): Agent 历史执行成功次数 / 总执行次数
+   * 4. 空闲加分 (0-5): 空闲状态的 Agent 额外加分
+   * 5. 角色匹配加分 (0-20): Agent 角色与任务类型的语义亲和度
    */
   findBestAgent(taskDescription: string, requiredTools: string[] = []): AgentProfile | null {
     let bestMatch: AgentProfile | null = null;
@@ -193,7 +202,7 @@ class AgentRegistry {
 
       let score = 0;
 
-      // 关键词匹配
+      // 1. 关键词匹配 (0-30)
       for (const cap of agent.capabilities) {
         for (const kw of cap.taskKeywords) {
           if (taskDescription.includes(kw)) {
@@ -202,7 +211,7 @@ class AgentRegistry {
         }
       }
 
-      // 工具覆盖度
+      // 2. 工具覆盖度 (0-20)
       if (requiredTools.length > 0) {
         const coveredCount = requiredTools.filter(t => {
           if (agent.deniedTools.some(d => this.matchToolPattern(t, d))) return false;
@@ -212,8 +221,18 @@ class AgentRegistry {
         score += (coveredCount / requiredTools.length) * 20;
       }
 
-      // 空闲加分
+      // 3. 历史成功率 (0-25)
+      const total = agent.successCount + agent.failureCount;
+      if (total > 0) {
+        score += (agent.successCount / total) * 25;
+      }
+
+      // 4. 空闲加分 (0-5)
       if (agent.status === 'idle') score += 5;
+
+      // 5. 角色匹配加分 (0-20)
+      const roleTaskAffinity = this.getRoleTaskAffinity(agent.role, taskDescription);
+      score += roleTaskAffinity * 20;
 
       if (score > bestScore) {
         bestScore = score;
@@ -288,7 +307,61 @@ class AgentRegistry {
     });
   }
 
+  // ===================== 执行记录 =====================
+
+  /**
+   * 记录 Agent 执行结果
+   *
+   * 更新 Agent 的成功/失败计数，并将执行记录追加到 recentExecutions（最多保留 50 条）。
+   */
+  recordExecution(agentId: string, record: Omit<AgentExecutionRecord, 'id' | 'timestamp'>): void {
+    const agent = this.agents.get(agentId);
+    if (!agent) return;
+
+    const executionRecord: AgentExecutionRecord = {
+      ...record,
+      id: uuidv4(),
+      timestamp: new Date().toISOString(),
+    };
+
+    // 更新计数
+    if (record.status === 'success') agent.successCount++;
+    else agent.failureCount++;
+
+    // 保留最近 50 条
+    agent.recentExecutions.push(executionRecord);
+    if (agent.recentExecutions.length > 50) {
+      agent.recentExecutions = agent.recentExecutions.slice(-50);
+    }
+
+    agent.lastActiveAt = new Date().toISOString();
+  }
+
   // ===================== 私有方法 =====================
+
+  /**
+   * 角色与任务类型的亲和度（0-1）
+   *
+   * 根据角色定义的任务关键词，计算任务描述与角色的语义匹配度。
+   * 匹配 3 个关键词即满分。
+   */
+  private getRoleTaskAffinity(role: AgentRole, taskDescription: string): number {
+    const affinities: Record<AgentRole, string[]> = {
+      researcher: ['搜索', '查询', '分析', '研究', '调研', '查找', '对比', '了解', '调查'],
+      coder: ['编写', '修改', '创建', '实现', '开发', '代码', '脚本', '配置', '部署'],
+      analyst: ['统计', '报表', '汇总', '趋势', '数据', '计算', '图表', '指标'],
+      planner: ['计划', '规划', '安排', '制定', '方案', '策略'],
+      reviewer: ['检查', '审查', '审计', '验证', '测试'],
+      orchestrator: [],
+      custom: [],
+    };
+
+    const keywords = affinities[role] || [];
+    if (keywords.length === 0) return 0;
+
+    const matchCount = keywords.filter(kw => taskDescription.includes(kw)).length;
+    return Math.min(matchCount / 3, 1); // 匹配 3 个关键词即满分
+  }
 
   /**
    * 工具名模式匹配（支持 * 通配符）
@@ -363,6 +436,9 @@ class AgentRegistry {
             status: 'idle',
             createdAt: now,
             lastActiveAt: now,
+            recentExecutions: [],
+            successCount: 0,
+            failureCount: 0,
           };
 
           // 加载 SOUL/MEMORY

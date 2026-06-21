@@ -349,9 +349,74 @@ export async function fetchSkillConflictCheck(
 
 // ===================== Skill Events SSE API =====================
 
+/**
+ * WKWebView 兼容的 SSE 连接（使用 fetch + ReadableStream 替代 EventSource）
+ * EventSource 在 WKWebView 中可能不触发 onmessage，使用 fetch 更可靠。
+ */
+export interface SSEConnection {
+  close: () => void;
+}
+
+export function connectSSE(
+  url: string,
+  handlers: {
+    onMessage?: (data: string) => void;
+    onError?: (error: Event) => void;
+    onOpen?: () => void;
+  }
+): SSEConnection {
+  const controller = new AbortController();
+  let closed = false;
+
+  const connect = async () => {
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok || !response.body) {
+        handlers.onError?.(new Event('error'));
+        return;
+      }
+      handlers.onOpen?.();
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (!closed) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+            handlers.onMessage?.(data);
+          }
+        }
+      }
+    } catch (err) {
+      if (!closed) {
+        handlers.onError?.(err instanceof Event ? err : new Event('error'));
+      }
+    }
+  };
+
+  connect();
+
+  return {
+    close: () => {
+      closed = true;
+      controller.abort();
+    },
+  };
+}
+
 /** 连接技能事件 SSE 流 */
-export function connectSkillEvents(): EventSource {
-  return new EventSource(`${BASE_URL}/api/skill-events`);
+export function connectSkillEvents(onMessage?: (data: string) => void): SSEConnection {
+  return connectSSE(`${BASE_URL}/api/skill-events`, { onMessage });
 }
 
 // ===================== Skill Chain API =====================
@@ -399,8 +464,8 @@ export async function duplicateSkillChain(id: string): Promise<SkillChain> {
 }
 
 /** 连接链执行事件流（需传入 executionId 订阅特定执行） */
-export function connectChainExecutionEvents(executionId: string): EventSource {
-  return new EventSource(`${BASE_URL}/api/chain-execution-events?execId=${encodeURIComponent(executionId)}`);
+export function connectChainExecutionEvents(executionId: string, onMessage?: (data: string) => void): SSEConnection {
+  return connectSSE(`${BASE_URL}/api/chain-execution-events?execId=${encodeURIComponent(executionId)}`, { onMessage });
 }
 
 // ===================== 安全审查 API =====================

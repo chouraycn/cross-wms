@@ -79,14 +79,11 @@ const SkillsPage: React.FC = () => {
   }, []);
 
   // T03: SSE 连接
-  const evtRef = useRef<EventSource | null>(null);
+  const evtRef = useRef<import('../services/api').SSEConnection | null>(null);
   useEffect(() => {
-    evtRef.current = api.connectSkillEvents();
-    const es = evtRef.current;
-
-    const handleMessage = (event: MessageEvent) => {
+    const sse = api.connectSkillEvents((rawData) => {
       try {
-        const data: SkillWatchEvent = JSON.parse(event.data);
+        const data: SkillWatchEvent = JSON.parse(rawData);
         // console.log('[SkillsPage] SSE event:', data);
         refreshFromRemote().then(() => {
           setSkillVersion((v) => v + 1);
@@ -97,13 +94,11 @@ const SkillsPage: React.FC = () => {
       } catch (e) {
         // console.error('[SkillsPage] SSE parse error:', e);
       }
-    };
-
-    es.addEventListener('message', handleMessage);
+    });
+    evtRef.current = sse;
 
     return () => {
-      es.removeEventListener('message', handleMessage);
-      es.close();
+      sse.close();
     };
   }, []);
 

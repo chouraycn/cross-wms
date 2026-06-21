@@ -1,4 +1,5 @@
 import { useRef, useCallback } from 'react';
+import { isDesktopApp } from '../utils/env';
 
 /**
  * v2.8.6: 自适应渲染调度器 — WKWebView 兼容
@@ -6,8 +7,7 @@ import { useRef, useCallback } from 'react';
  * 导致 SSE 流式内容堆积不渲染。在 pywebview 环境中降级为 setTimeout(fn, 16)，
  * 确保渲染不被暂停。浏览器环境仍使用 rAF 以保持与显示器刷新率对齐。
  */
-const IS_PYWEBVIEW = typeof window !== 'undefined' &&
-  !!(window as any).webkit?.messageHandlers;
+const IS_PYWEBVIEW = isDesktopApp();
 
 const scheduleFrame = IS_PYWEBVIEW
   ? (fn: FrameRequestCallback): number => window.setTimeout(() => fn(Date.now()), 16)
