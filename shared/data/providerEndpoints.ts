@@ -30,7 +30,6 @@ export const PROVIDER_ENDPOINTS: Record<string, string> = {
   kimicn: 'https://api.moonshot.cn/v1',
   volcengine: 'https://ark.cn-beijing.volces.com/api/v3',
   aliyun: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-  siliconflow: 'https://api.siliconflow.cn/v1',
   modelark: 'https://api.modelark.cn/v1',
   ppio: 'https://api.ppinfra.com/v3/openai',
   // v1.9.3: 新增中国模型提供商

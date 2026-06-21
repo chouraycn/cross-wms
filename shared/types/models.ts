@@ -28,7 +28,6 @@ export type ModelProvider =
   | 'kimicn'
   | 'volcengine'
   | 'aliyun'
-  | 'siliconflow'
   | 'modelark'
   | 'ppio'
   | 'custom';

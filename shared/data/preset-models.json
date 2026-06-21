@@ -352,16 +352,6 @@
       "capabilities": ["fast", "costEffective", "reasoning", "general"]
     },
     {
-      "id": "siliconflow-deepseek-v3",
-      "name": "DeepSeek V3 (SiliconFlow)",
-      "provider": "siliconflow",
-      "apiEndpoint": "https://api.siliconflow.cn/v1",
-      "description": "通过 SiliconFlow 路由的 DeepSeek V3",
-      "contextWindow": 64000,
-      "maxTokens": 4096,
-      "capabilities": ["reasoning", "code", "general"]
-    },
-    {
       "id": "ollama-llama3.1",
       "name": "Llama 3.1",
       "provider": "ollama",

@@ -1049,7 +1049,7 @@ scheduleRender();
               onSessionUpdateRef.current(failedSession);
 
               // 异步自动重试（不阻塞当前 UI 更新，基于包含原始 userMsg 的会话）
-              retryOnSqlFailure(updatedSession, content, apiData, onSessionUpdateRef.current);
+              retryOnSqlFailure(updatedSession, content, apiData, onSessionUpdateRef.current).catch(() => {});
               return; // 跳过下方的 onSessionUpdate（已在此处更新）
             }
           } catch (apiErr) {
@@ -1072,7 +1072,7 @@ scheduleRender();
             ],
           };
           onSessionUpdateRef.current(finalSession);
-        })();
+        })().catch(() => {});
       } else {
         // 无 inventory_query JSON 块，直接更新最终消息
         // v1.9.3: 确保 content 是完整的（渲染队列可能还没消化完）

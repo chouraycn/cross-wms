@@ -159,7 +159,11 @@ const BUILTIN_MODELS: ModelConfig[] = [
 /** 确保 ~/.cdf-know-clow/ai-models 目录存在 */
 function ensureDir(): void {
   if (!fs.existsSync(AI_MODELS_DIR)) {
-    fs.mkdirSync(AI_MODELS_DIR, { recursive: true });
+    try {
+      fs.mkdirSync(AI_MODELS_DIR, { recursive: true });
+    } catch (e) {
+      logger.warn(`[modelsStore] 无法创建目录 ${AI_MODELS_DIR}: ${(e as Error).message}`);
+    }
   }
 }
 
@@ -185,8 +189,8 @@ function migrateFromOldPath(): void {
 /** 读取 models.json，不存在则返回 null */
 export async function readModelsFile(): Promise<ModelsFile | null> {
   migrateFromOldPath();
-  ensureDir();
   try {
+    ensureDir();
     if (!fs.existsSync(MODELS_FILE)) return null;
     const raw = await readFile(MODELS_FILE, 'utf-8');
     const data = JSON.parse(raw) as ModelsFile;
@@ -206,9 +210,9 @@ export async function readModelsFile(): Promise<ModelsFile | null> {
 export async function writeModelsFile(data: ModelsFile): Promise<void> {
   return withWriteLock(() => {
     return new Promise<void>((resolve, reject) => {
-      ensureDir();
       data.updatedAt = new Date().toISOString();
       try {
+        ensureDir();
         fs.writeFileSync(MODELS_FILE, JSON.stringify(data, null, 2), 'utf-8');
         // 写入后使缓存失效（文件监听会重新加载）
         invalidateCache();
@@ -629,45 +633,6 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
         name: info.name || id,
         provider: 'bigmodel' as ModelProvider,
         apiEndpoint: 'https://open.bigmodel.cn/api/paas/v4',
-        enabled: false,
-        isDefault: false,
-        description: info.description,
-        contextWindow: info.contextWindow,
-        maxTokens: info.maxTokens,
-        capabilities: info.capabilities,
-      };
-    },
-  },
-
-  // === 硅基流动 SiliconFlow ===
-  {
-    provider: 'siliconflow',
-    modelsEndpoint: 'https://api.siliconflow.cn/v1',
-    mapper: (id: string) => {
-      // SiliconFlow 托管多种模型，仅映射热门模型
-      const known: Record<string, Partial<ModelConfig>> = {
-        'deepseek-ai/DeepSeek-V3': {
-          name: 'DeepSeek V3 (SiliconFlow)',
-          capabilities: ['general', 'costEffective'],
-          contextWindow: 64_000,
-          maxTokens: 8_192,
-          description: 'SiliconFlow 托管 DeepSeek V3',
-        },
-        'Qwen/Qwen2.5-72B-Instruct': {
-          name: 'Qwen2.5 72B (SiliconFlow)',
-          capabilities: ['general', 'longContext'],
-          contextWindow: 128_000,
-          maxTokens: 8_192,
-          description: 'SiliconFlow 托管 Qwen2.5 72B',
-        },
-      };
-      const info = known[id];
-      if (!info) return null;
-      return {
-        id,
-        name: info.name || id,
-        provider: 'siliconflow' as ModelProvider,
-        apiEndpoint: 'https://api.siliconflow.cn/v1',
         enabled: false,
         isDefault: false,
         description: info.description,

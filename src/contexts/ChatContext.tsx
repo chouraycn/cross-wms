@@ -115,15 +115,11 @@ function loadSessionsFromCache(): Session[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed.map((s: Record<string, unknown>) => ({
+        return (parsed.map((s: Record<string, unknown>) => ({
           ...s,
-          messages: Array.isArray(s.messages)
-            ? s.messages.map((m: Record<string, unknown>) => ({
-                ...m,
-                timestamp: new Date(m.timestamp as string),
-              }))
-            : [],
-        })) as Session[];
+          // 缓存不保存消息内容，确保 messages 为空数组
+          messages: [],
+        })) as unknown) as Session[];
       }
     }
   } catch { /* 数据损坏时静默返回空数组 */ }
@@ -142,13 +138,15 @@ function saveSessionsToCache(sessions: Session[]): void {
   try {
     const serializable = sessions.slice(0, MAX_SESSIONS).map((s) => ({
       ...s,
-      // 缓存只保留最近 2 条消息的摘要，不存完整消息
-      messages: s.messages.slice(-2).map((m) => ({
-        ...m,
-        // 截断长内容
-        content: m.content.length > 200 ? m.content.slice(0, 200) + '...' : m.content,
-        timestamp: timestampToISO(m.timestamp),
-      })),
+      // 缓存不保存消息内容，消息通过 API 按需加载
+      messages: [],
+      lastMessage: s.messages.length > 0 ? {
+        role: s.messages[s.messages.length - 1].role,
+        content: s.messages[s.messages.length - 1].content.length > 100
+          ? s.messages[s.messages.length - 1].content.slice(0, 100) + '...'
+          : s.messages[s.messages.length - 1].content,
+        timestamp: timestampToISO(s.messages[s.messages.length - 1].timestamp),
+      } : null,
     }));
     getDebouncedStorage(500).setItem(SESSIONS_CACHE_KEY, JSON.stringify(serializable));
   } catch (e) {
