@@ -83,7 +83,7 @@ import agentsRouter from './routes/agents.js';
 import './services/chainExecutor.js'; // side-effect: registers chain event handlers
 import { batchAuditSkills } from './services/securityAuditor.js';
 import { initMatchingEngine } from './services/matchingService.js';
-import { syncModelsFromApi } from './modelsStore.js';
+import { syncModelsFromApi, loadModelsConfig } from './modelsStore.js';
 
 // Automation Engine v2.0
 import { startEngine } from './engine/engine.js';
@@ -287,6 +287,10 @@ server.on('error', (err: NodeJS.ErrnoException) => {
 server.listen(PORT, async () => {
   logger.info(`CDF Know Clow Chat Server running on port ${PORT}`);
   const db = initDb();
+
+  // v1.5.203: 预热模型配置缓存（含 Keychain 注入），避免首次 GET /api/models 阻塞
+  // 不 await，不阻塞启动流程；失败仅 warn
+  loadModelsConfig().catch(e => logger.warn('[Server] 模型缓存预热失败:', e instanceof Error ? e.message : String(e)));
 
   // 初始化 Tool Registry
   await initDefaultTools();

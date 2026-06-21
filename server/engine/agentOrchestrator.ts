@@ -134,10 +134,21 @@ export class AgentOrchestrator {
           hasParallelism: decomposition.hasParallelism,
         },
       });
+
+      // v8.1: 推送每个子任务的创建事件
+      for (const st of decomposition.subTasks) {
+        onSSEEvent({
+          type: 'subtask_create',
+          subTaskId: st.id,
+          description: st.description,
+          dependsOn: st.dependsOn,
+          priority: st.priority,
+        });
+      }
     }
 
     // 5. 分配 Agent
-    this.assignAgents(decomposition);
+    this.assignAgents(decomposition, onSSEEvent);
 
     // 6. 执行子任务
     const startTime = Date.now();
@@ -180,7 +191,7 @@ export class AgentOrchestrator {
   /**
    * 为子任务分配合适的 Agent
    */
-  private assignAgents(decomposition: TaskDecomposition): void {
+  private assignAgents(decomposition: TaskDecomposition, onSSEEvent?: (event: Record<string, unknown>) => void): void {
     for (const subTask of decomposition.subTasks) {
       // 已经有分配（LLM 返回的 requiredRole）则按角色查找
       let agent: AgentProfile | null = null;
@@ -209,6 +220,16 @@ export class AgentOrchestrator {
         subTask.assignedAgentId = agent.id;
         agentRegistry.updateStatus(agent.id, 'busy');
         logger.debug(`[Orchestrator] 子任务 ${subTask.id} 分配给 Agent ${agent.id} (${agent.role})`);
+
+        // v8.1: 推送子任务分配事件
+        if (onSSEEvent) {
+          onSSEEvent({
+            type: 'subtask_assign',
+            subTaskId: subTask.id,
+            agentId: agent.id,
+            agentRole: agent.role,
+          });
+        }
       } else {
         logger.warn(`[Orchestrator] 子任务 ${subTask.id} 无可用 Agent`);
       }
@@ -320,6 +341,32 @@ export class AgentOrchestrator {
         if (subTask.assignedAgentId) {
           agentRegistry.updateStatus(subTask.assignedAgentId, 'idle');
         }
+
+        // v8.1: 推送子任务完成事件 + Agent 结束事件
+        if (onSSEEvent) {
+          const isFulfilled = result.status === 'fulfilled';
+          const duration = Date.now() - new Date(subTask.startedAt || subTask.createdAt).getTime();
+          const agent = subTask.assignedAgentId ? agentRegistry.get(subTask.assignedAgentId) : null;
+
+          onSSEEvent({
+            type: 'subtask_complete',
+            subTaskId: subTask.id,
+            description: subTask.description,
+            status: isFulfilled ? 'completed' : 'failed',
+            agentId: subTask.assignedAgentId || 'unknown',
+            duration,
+            resultSummary: isFulfilled ? result.value.content?.substring(0, 100) : undefined,
+          });
+
+          onSSEEvent({
+            type: 'agent_end',
+            agentId: subTask.assignedAgentId || 'unknown',
+            agentRole: agent?.role || 'unknown',
+            status: isFulfilled ? 'success' : (result.reason instanceof Error && (result.reason.message.includes('超时') || result.reason.message.includes('timeout')) ? 'timeout' : 'failed'),
+            duration,
+            error: isFulfilled ? undefined : (result.reason instanceof Error ? result.reason.message : String(result.reason)),
+          });
+        }
       }
     }
 
@@ -375,6 +422,15 @@ export class AgentOrchestrator {
         subTaskId: subTask.id,
         description: subTask.description,
         agentId: agentId || 'unknown',
+      });
+
+      // v8.1: 推送 Agent 开始事件
+      onSSEEvent({
+        type: 'agent_start',
+        agentId: agentId || 'unknown',
+        agentRole: agent?.role || 'unknown',
+        taskDescription: subTask.description,
+        subTaskId: subTask.id,
       });
     }
 

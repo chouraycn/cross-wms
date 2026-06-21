@@ -14,11 +14,18 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { getGrayScale } from '../../constants/theme';
+import type {
+  ReactPhaseInfo,
+  ExecutionPlanInfo,
+  ComplexityAssessment as ComplexityAssessmentType,
+} from '../../types/chat';
 
 interface ThinkingBlockProps {
   thinking: string;
   duration?: number;
   isStreaming?: boolean;
+  /** v8.2-fix: thinking 阶段是否已完成（text 内容已开始生成） */
+  thinkingDone?: boolean;
   reasoningEffort?: string;
   thinkingElapsed?: number;
   cacheHit?: boolean;
@@ -28,6 +35,19 @@ interface ThinkingBlockProps {
     thinkingTokens?: number;
     totalTokens?: number;
   };
+  /** v8.1: 当前 ReAct 阶段信息 */
+  reactPhase?: ReactPhaseInfo;
+  /** v8.1: 复杂度评估结果 */
+  complexityAssessment?: ComplexityAssessmentType;
+  /** v8.1: 反思置信度 */
+  reflectionConfidence?: {
+    confidenceScore: number;
+    selfScore: number;
+    shouldEarlyStop: boolean;
+    reason: string;
+  };
+  /** v8.1: 执行计划 */
+  executionPlan?: ExecutionPlanInfo;
 }
 
 function formatDuration(ms?: number): string {
@@ -47,7 +67,7 @@ function getLabel(effort?: string): string {
   }
 }
 
-export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort, thinkingElapsed, cacheHit, usage }: ThinkingBlockProps) {
+export function ThinkingBlock({ thinking, duration, isStreaming, thinkingDone, reasoningEffort, thinkingElapsed, cacheHit, usage, reactPhase, complexityAssessment, reflectionConfidence, executionPlan }: ThinkingBlockProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -55,13 +75,16 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
   const label = getLabel(reasoningEffort);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // v8.2-fix: "正在思考"只在 thinking 阶段显示；thinking 完成后即使 isStreaming=true 也不显示
+  const isActuallyThinking = !!(isStreaming && !thinkingDone);
+
   // v8: 呼吸灯用 JS 定时 + transition 替代 @keyframes（WKWebView 不兼容 @keyframes）
   // 用 ref 存 timer ID，组件卸载时清理
   const breathTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [breathOpacity, setBreathOpacity] = useState(1);
 
   useEffect(() => {
-    if (!isStreaming) {
+    if (!isActuallyThinking) {
       if (breathTimerRef.current) {
         clearInterval(breathTimerRef.current);
         breathTimerRef.current = null;
@@ -79,16 +102,16 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
         breathTimerRef.current = null;
       }
     };
-  }, [isStreaming]);
+  }, [isActuallyThinking]);
 
   // v2.8.8: 流式时自动展开并持续显示 thinking 内容，让用户实时感知模型运行
   const prevStreamingRef = useRef(false);
   useEffect(() => {
-    if (isStreaming && !prevStreamingRef.current) {
+    if (isActuallyThinking && !prevStreamingRef.current) {
       setExpanded(true);
     }
-    prevStreamingRef.current = !!isStreaming;
-  }, [isStreaming]);
+    prevStreamingRef.current = !!isActuallyThinking;
+  }, [isActuallyThinking]);
 
   // 历史消息：有 thinking 内容且有 duration 时默认展开
   const prevInitRef = useRef(false);
@@ -125,21 +148,21 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
           userSelect: 'none',
         }}
       >
-        {/* 呼吸灯竖线 — 流式时用 JS 切换 opacity + CSS transition */}
+        {/* 呼吸灯竖线 — 流式思考时用 JS 切换 opacity + CSS transition */}
         <Box
           sx={{
             width: 2,
             height: 13,
             borderRadius: 1,
-            bgcolor: isStreaming ? (isDark ? 'rgba(128,128,128,0.7)' : 'rgba(0,0,0,0.3)') : (isDark ? 'rgba(128,128,128,0.4)' : 'rgba(0,0,0,0.15)'),
-            opacity: isStreaming ? breathOpacity : 0.8,
-            transition: isStreaming ? 'opacity 2s ease-in-out' : 'opacity 0.3s ease',
+            bgcolor: isActuallyThinking ? (isDark ? 'rgba(128,128,128,0.7)' : 'rgba(0,0,0,0.3)') : (isDark ? 'rgba(128,128,128,0.4)' : 'rgba(0,0,0,0.15)'),
+            opacity: isActuallyThinking ? breathOpacity : 0.8,
+            transition: isActuallyThinking ? 'opacity 2s ease-in-out' : 'opacity 0.3s ease',
             flexShrink: 0,
           }}
         />
 
-        {/* 流式旋转圈 */}
-        {isStreaming && (
+        {/* 流式旋转圈 — 仅在 thinking 阶段显示 */}
+        {isActuallyThinking && (
           <CircularProgress
             size={12}
             thickness={5}
@@ -156,14 +179,14 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
             flexShrink: 0,
           }}
         >
-          {isStreaming ? '正在思考...' : label}
+          {isActuallyThinking ? '正在思考...' : label}
         </Typography>
 
         {/* 弹性空间 */}
         <Box sx={{ flex: 1 }} />
 
         {/* 元信息 */}
-        {(metaParts.length > 0 || (isStreaming && thinkingElapsed != null)) && (
+        {(metaParts.length > 0 || (isActuallyThinking && thinkingElapsed != null)) && (
           <Typography
             sx={{
               fontSize: '11px',
@@ -172,12 +195,12 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
               fontFamily: '"SF Mono","Menlo","Monaco",monospace',
             }}
           >
-            {isStreaming && thinkingElapsed != null ? formatDuration(thinkingElapsed) : metaParts.join(' · ')}
+            {isActuallyThinking && thinkingElapsed != null ? formatDuration(thinkingElapsed) : metaParts.join(' · ')}
           </Typography>
         )}
 
-        {/* 复制按钮 */}
-        {!isStreaming && thinking && (
+        {/* 复制按钮 — thinking 完成后显示 */}
+        {!isActuallyThinking && thinking && (
           <Tooltip title="复制">
             <IconButton
               size="small"
@@ -304,6 +327,117 @@ export function ThinkingBlock({ thinking, duration, isStreaming, reasoningEffort
             },
           }}
         >
+          {/* v8.1: 状态信息标签行（显示在 thinking 内容上方） */}
+          {(reactPhase || complexityAssessment || reflectionConfidence || executionPlan) && (
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 0.5,
+                mb: 0.5,
+                pb: 0.5,
+                borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+              }}
+            >
+              {/* ReAct 阶段信息 */}
+              {reactPhase && reactPhase.phase !== 'done' && (
+                <Typography
+                  component="span"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    height: 20,
+                    fontSize: 10,
+                    px: 0.75,
+                    borderRadius: 0.5,
+                    color: reactPhase.phase === 'reasoning' ? '#3B82F6'
+                      : reactPhase.phase === 'acting' ? '#F59E0B'
+                      : reactPhase.phase === 'observing' ? '#22C55E'
+                      : '#A855F7',
+                    bgcolor: reactPhase.phase === 'reasoning' ? 'rgba(59,130,246,0.08)'
+                      : reactPhase.phase === 'acting' ? 'rgba(245,158,11,0.08)'
+                      : reactPhase.phase === 'observing' ? 'rgba(34,197,94,0.08)'
+                      : 'rgba(168,85,247,0.08)',
+                    fontWeight: 500,
+                  }}
+                >
+                  {reactPhase.phase === 'reasoning' ? '正在推理...'
+                    : reactPhase.phase === 'acting' ? '正在调用工具...'
+                    : reactPhase.phase === 'observing' ? '正在观察结果...'
+                    : '正在反思...'}
+                </Typography>
+              )}
+
+              {/* 复杂度评估 */}
+              {complexityAssessment && (
+                <Typography
+                  component="span"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    height: 20,
+                    fontSize: 10,
+                    px: 0.75,
+                    borderRadius: 0.5,
+                    color: complexityAssessment.level === 'complex' ? '#EF4444'
+                      : complexityAssessment.level === 'moderate' ? '#F59E0B'
+                      : '#22C55E',
+                    bgcolor: complexityAssessment.level === 'complex' ? 'rgba(239,68,68,0.06)'
+                      : complexityAssessment.level === 'moderate' ? 'rgba(245,158,11,0.06)'
+                      : 'rgba(34,197,94,0.06)',
+                  }}
+                >
+                  复杂度：{complexityAssessment.level === 'complex' ? '高' : complexityAssessment.level === 'moderate' ? '中' : '低'}，预计 {complexityAssessment.estimatedSteps} 步
+                </Typography>
+              )}
+
+              {/* 反思置信度 */}
+              {reflectionConfidence && (
+                <Typography
+                  component="span"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    height: 20,
+                    fontSize: 10,
+                    px: 0.75,
+                    borderRadius: 0.5,
+                    color: reflectionConfidence.confidenceScore >= 7 ? '#22C55E'
+                      : reflectionConfidence.confidenceScore >= 4 ? '#F59E0B'
+                      : '#EF4444',
+                    bgcolor: reflectionConfidence.confidenceScore >= 7 ? 'rgba(34,197,94,0.06)'
+                      : reflectionConfidence.confidenceScore >= 4 ? 'rgba(245,158,11,0.06)'
+                      : 'rgba(239,68,68,0.06)',
+                  }}
+                >
+                  置信度：{Math.round(reflectionConfidence.confidenceScore * 10)}%，自评：{reflectionConfidence.selfScore >= 8 ? 'A' : reflectionConfidence.selfScore >= 6 ? 'B' : reflectionConfidence.selfScore >= 4 ? 'C' : 'D'}
+                </Typography>
+              )}
+
+              {/* 执行计划步骤进度 */}
+              {executionPlan && executionPlan.steps.length > 0 && (() => {
+                const completed = executionPlan.steps.filter(s => s.status === 'completed').length;
+                const current = executionPlan.steps.find(s => s.status === 'in_progress');
+                return (
+                  <Typography
+                    component="span"
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      height: 20,
+                      fontSize: 10,
+                      px: 0.75,
+                      borderRadius: 0.5,
+                      color: '#6366F1',
+                      bgcolor: 'rgba(99,102,241,0.06)',
+                    }}
+                  >
+                    步骤 {completed + (current ? 1 : 0)}/{executionPlan.steps.length}{current ? `：${current.description}` : ''}
+                  </Typography>
+                );
+              })()}
+            </Box>
+          )}
           <MarkdownRenderer content={thinking} isStreaming={isStreaming} />
         </Box>
       </Collapse>
