@@ -295,9 +295,19 @@ def get_server_script_path():
         ])
 
     base = os.path.dirname(os.path.abspath(__file__))
+    # scripts/ 同级目录（开发模式）
     candidates.extend([
         os.path.join(base, 'server_dist', 'index.cjs'),
         os.path.join(base, 'server', 'index.ts'),
+    ])
+    # 项目根目录（开发模式，server_dist 在根目录下）
+    project_root = os.path.dirname(base)
+    # ⚠️ 开发模式下优先使用 server/index.ts 源码运行（通过 tsx）
+    # 原因：server_dist/index.cjs 是 esbuild 打包产物，better-sqlite3 等原生模块
+    # 的路径在打包后会失效，导致 ERR_DLOPEN_FAILED 错误
+    candidates.extend([
+        os.path.join(project_root, 'server', 'index.ts'),
+        os.path.join(project_root, 'server_dist', 'index.cjs'),
     ])
 
     for p in candidates:
@@ -393,6 +403,10 @@ def start_server():
         env['PATH'] = node_dir + os.pathsep + env.get('PATH', '')
         print(f"[Server] PATH += {node_dir}")
 
+    # 设置 NODE_PATH，确保外部依赖模块可被加载
+    # 打包模式：使用 shared_node_modules
+    # 开发模式：使用项目根目录的 node_modules
+    shared_nm = None
     if getattr(sys, 'frozen', False):
         meipass = sys._MEIPASS
         shared_nm_candidates = [
@@ -405,7 +419,6 @@ def start_server():
         shared_nm_candidates.append(os.path.join(server_dist_parent, 'shared_node_modules'))
         shared_nm_candidates.append(os.path.join(server_dist_parent, 'node_modules'))
 
-        shared_nm = None
         for candidate in shared_nm_candidates:
             if os.path.isdir(candidate):
                 shared_nm = candidate
@@ -426,6 +439,14 @@ def start_server():
                 env['FRONTEND_DIST_PATH'] = fe_cand
                 print(f"[Server] FRONTEND_DIST_PATH={fe_cand}")
                 break
+    else:
+        # 开发模式：从项目根目录查找 node_modules
+        base = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(base)
+        root_node_modules = os.path.join(project_root, 'node_modules')
+        if os.path.isdir(root_node_modules):
+            env['NODE_PATH'] = root_node_modules
+            print(f"[Server] NODE_PATH={root_node_modules} (dev)")
 
     if server_script.endswith('.ts'):
         base = os.path.dirname(os.path.abspath(__file__))
@@ -434,12 +455,19 @@ def start_server():
         if tsx_path:
             cmd = [tsx_path, '--tsconfig', tsconfig_path, server_script]
         else:
-            local_tsx = os.path.join(base, 'node_modules', '.bin', 'tsx')
+            # 开发模式：优先查找项目根目录的 node_modules/.bin/tsx
+            project_root = os.path.dirname(base)
+            local_tsx = os.path.join(project_root, 'node_modules', '.bin', 'tsx')
             if os.path.isfile(local_tsx):
                 cmd = [local_tsx, '--tsconfig', tsconfig_path, server_script]
             else:
-                print("[Server] ⚠️ tsx 未找到，无法运行 TypeScript 服务器")
-                return None
+                # 兼容旧路径（scripts/ 子目录）
+                local_tsx = os.path.join(base, 'node_modules', '.bin', 'tsx')
+                if os.path.isfile(local_tsx):
+                    cmd = [local_tsx, '--tsconfig', tsconfig_path, server_script]
+                else:
+                    print("[Server] ⚠️ tsx 未找到，无法运行 TypeScript 服务器")
+                    return None
     else:
         cmd = [node_path, server_script]
 
@@ -612,10 +640,10 @@ class Api:
         return json.dumps({'ok': True})
 
     def window_minimize(self):
-        """最小化窗口（frameless 模式下用 hide 替代 minimize）"""
+        """最小化窗口 — v1.5.201: 使用 minimize() 而非 hide()，Dock 栏保留图标"""
         try:
             if self._window:
-                self._window.hide()
+                self._window.minimize()
         except Exception as e:
             log(f"[window_minimize] 异常: {e}")
         return json.dumps({'ok': True})

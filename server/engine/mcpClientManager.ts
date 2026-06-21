@@ -325,13 +325,19 @@ class McpClientManager {
       return;
     }
 
-    logger.debug(`[McpClientManager] 开始连接 ${enabledConfigs.length} 个已启用的 MCP Server...`);
+    logger.debug(`[McpClientManager] 开始并行连接 ${enabledConfigs.length} 个已启用的 MCP Server...`);
 
-    for (const config of enabledConfigs) {
-      try {
-        await this.connectServer(config);
-      } catch (err) {
-        logger.error(`[McpClientManager] 启动连接 '${config.name}' 失败:`, err instanceof Error ? err.message : String(err));
+    // 并行连接所有 server，避免单个慢 server 阻塞其他 server
+    const results = await Promise.allSettled(
+      enabledConfigs.map(config => this.connectServer(config))
+    );
+
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      if (result.status === 'rejected') {
+        const reason = (result as PromiseRejectedResult).reason;
+        logger.error(`[McpClientManager] 启动连接 '${enabledConfigs[i].name}' 失败:`,
+          reason instanceof Error ? reason.message : String(reason));
       }
     }
 

@@ -307,7 +307,18 @@ cat > package.json << 'PKGJSON'
     "pdf-parse": "^1.1.1",
     "sqlite-vec": "^0.1.9",
     "uuid": "^11.1.1",
-    "@e965/xlsx": "^0.20.3"
+    "@e965/xlsx": "^0.20.3",
+    "fsevents": "^2.3.3",
+    "ajv": "^8.20.0",
+    "cheerio": "^1.2.0",
+    "zod": "^4.4.3",
+    "jszip": "^3.10.1",
+    "iconv-lite": "^0.6.3",
+    "playwright": "^1.60.0",
+    "fflate": "^0.8.3",
+    "jsonpath-plus": "^10.4.0",
+    "js-yaml": "^4.2.0",
+    "katex": "^0.17.0"
   }
 }
 PKGJSON

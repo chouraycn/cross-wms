@@ -44,13 +44,18 @@ export function useMCPServers(): UseMCPServersResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 刷新列表
-  const refresh = useCallback(async () => {
+  // 刷新列表（支持 502 自动重试）
+  const refresh = useCallback(async (attempt = 0): Promise<void> => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(`${API_BASE}/servers`);
       if (!res.ok) {
+        // 502 = 后端尚未就绪，自动重试（最多 3 次，间隔 2s）
+        if (res.status === 502 && attempt < 3) {
+          await new Promise(r => setTimeout(r, 2000));
+          return refresh(attempt + 1);
+        }
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
       const data: McpServersResponse = await res.json();

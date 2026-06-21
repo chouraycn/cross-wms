@@ -43,7 +43,7 @@ export interface SendMessageOptions {
   /** 推理强度（'high' 深度思考 / 'max' 极致推理） */
   reasoningEffort?: string;
   /** 执行模式（覆盖全局默认值） */
-  executionMode?: 'legacy' | 'observer' | 'react';
+  executionMode?: 'legacy' | 'observer' | 'react' | 'agent';
   /** v7.0: 队列模式（覆盖全局默认值）：collect(合并) / steer(转向) / followup(追加) */
   queueMode?: 'collect' | 'steer' | 'followup';
   /** v8.0: 指定使用的 Agent ID（空=不使用 Agent） */
