@@ -27,7 +27,6 @@ import {
   FormHelperText,
 } from '@mui/material';
 import { useToast } from '../../contexts/ToastContext';
-import { createTransferOrder, updateTransferOrder } from '../../api/transferApi';
 import type { TransferOrder } from '../../types/wms';
 
 // ===================== Types =====================
@@ -159,6 +158,7 @@ const TransferFormDialog: React.FC<TransferFormDialogProps> = ({ open, onClose, 
   const handleSaveDraft = async () => {
     if (!validate()) return;
     try {
+      const { updateTransferOrder, createTransferOrder } = await import('../../api/transferApi');
       if (isEdit && initialData) {
         await updateTransferOrder(initialData.id, {
           fromWarehouseId, toWarehouseId, sku, name, quantity, volume, remark,
@@ -183,12 +183,12 @@ const TransferFormDialog: React.FC<TransferFormDialogProps> = ({ open, onClose, 
   const handleSaveAndSubmit = async () => {
     if (!validate()) return;
     try {
+      const { updateTransferOrder, createTransferOrder, submitTransferOrder } = await import('../../api/transferApi');
       if (isEdit && initialData) {
         // Update draft first, then submit
         await updateTransferOrder(initialData.id, {
           fromWarehouseId, toWarehouseId, sku, name, quantity, volume, remark,
         });
-        const { submitTransferOrder } = await import('../../api/transferApi');
         await submitTransferOrder(initialData.id, createdBy || '当前用户');
       } else {
         await createTransferOrder({

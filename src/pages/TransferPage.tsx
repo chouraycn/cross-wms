@@ -50,12 +50,6 @@ import ConfirmReceiveDialog from '../components/wms/ConfirmReceiveDialog';
 import BindTransitDialog from '../components/wms/BindTransitDialog';
 import { subscribeRefresh } from '../App';
 import { useToast } from '../contexts/ToastContext';
-import {
-  fetchTransferOrders,
-  deleteTransferOrder,
-  submitTransferOrder,
-  calculateTransferStats,
-} from '../api/transferApi';
 import { STATUS_CONFIG, STATUS_ACTIONS } from '../constants/transferStatus';
 import type { TransferOrder, TransferStats } from '../types/wms';
 
@@ -97,6 +91,7 @@ const TransferPage: React.FC = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      const { fetchTransferOrders, calculateTransferStats } = await import('../api/transferApi');
       const currentPage = page + 1; // API uses 1-based page
       const result = await fetchTransferOrders({
         status: filterStatus === 'all' ? undefined : filterStatus as TransferOrder['status'],
@@ -147,6 +142,7 @@ const TransferPage: React.FC = () => {
   const handleDeleteConfirm = async () => {
     if (!deletingId) return;
     try {
+      const { deleteTransferOrder } = await import('../api/transferApi');
       const success = await deleteTransferOrder(deletingId);
       if (success) {
         showToast('删除成功', 'success');
@@ -170,6 +166,7 @@ const TransferPage: React.FC = () => {
   const handleSubmitConfirm = async () => {
     if (!submittingId) return;
     try {
+      const { submitTransferOrder } = await import('../api/transferApi');
       await submitTransferOrder(submittingId, '当前用户');
       showToast('提交成功，已扣减出库仓库存', 'success');
       fetchData();

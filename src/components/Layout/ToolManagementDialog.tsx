@@ -52,12 +52,12 @@ import {
 import type { PluginInfo } from '../../services/plugins/api';
 import { useToast } from '../../contexts/ToastContext';
 
-// ---- Lazy page imports (avoid dynamic import() for pywebview) ----
-import ApiDomainWhitelistPage from '../../pages/ApiDomainWhitelistPage';
-import ApiTemplatesPage from '../../pages/ApiTemplatesPage';
-import ApiCredentialsPage from '../../pages/ApiCredentialsPage';
-import ApiHistoryPage from '../../pages/ApiHistoryPage';
-import BrowserPage from '../../pages/BrowserPage';
+// ---- Lazy page imports ----
+const ApiDomainWhitelistPage = lazy(() => import('../../pages/ApiDomainWhitelistPage'));
+const ApiTemplatesPage = lazy(() => import('../../pages/ApiTemplatesPage'));
+const ApiCredentialsPage = lazy(() => import('../../pages/ApiCredentialsPage'));
+const ApiHistoryPage = lazy(() => import('../../pages/ApiHistoryPage'));
+const BrowserPage = lazy(() => import('../../pages/BrowserPage'));
 
 /* ------------------------------------------------------------------ */
 /*  Props / Types                                                      */
@@ -308,31 +308,41 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
       case 'whitelist':
         return (
           <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
-            <ApiDomainWhitelistPage />
+            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
+              <ApiDomainWhitelistPage />
+            </Suspense>
           </Box>
         );
       case 'templates':
         return (
           <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
-            <ApiTemplatesPage />
+            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
+              <ApiTemplatesPage />
+            </Suspense>
           </Box>
         );
       case 'credentials':
         return (
           <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
-            <ApiCredentialsPage />
+            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
+              <ApiCredentialsPage />
+            </Suspense>
           </Box>
         );
       case 'history':
         return (
           <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
-            <ApiHistoryPage />
+            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
+              <ApiHistoryPage />
+            </Suspense>
           </Box>
         );
       case 'browser':
         return (
           <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
-            <BrowserPage />
+            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
+              <BrowserPage />
+            </Suspense>
           </Box>
         );
       default:
