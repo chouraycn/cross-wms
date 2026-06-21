@@ -24,6 +24,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
@@ -89,6 +90,10 @@ export interface ChatToolbarProps {
   reasoningEffort?: string;
   /** v1.9.1: 推理强度切换回调 */
   onReasoningEffortChange?: (effort: string) => void;
+  /** v8.0: 专家选择回调 */
+  onExpertClick?: () => void;
+  /** v8.0: 当前选中的专家名称 */
+  selectedExpertName?: string;
 }
 
 // ===================== Constants =====================
@@ -114,6 +119,8 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   hasAttachments = false,
   reasoningEffort,
   onReasoningEffortChange,
+  onExpertClick,
+  selectedExpertName,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -275,6 +282,40 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
               </Typography>
             </Box>
           </Tooltip>
+
+          {/* v8.0: Expert selector pill */}
+          {onExpertClick && (
+            <Tooltip title={selectedExpertName ? `当前专家：${selectedExpertName}` : '选择 AI 专家'}>
+              <Box
+                onClick={(e) => { e.stopPropagation(); onExpertClick(); }}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: '20px',
+                  bgcolor: selectedExpertName ? (isDark ? '#2A1A4A' : '#F3E8FF') : gs.bgHover,
+                  border: selectedExpertName ? `1px solid ${isDark ? '#7C3AED40' : '#DDD6FE'}` : '1px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  '&:hover': { bgcolor: selectedExpertName ? (isDark ? '#3A1A5A' : '#E9D5FF') : gs.bgActive },
+                  userSelect: 'none',
+                }}
+              >
+                <SmartToyIcon sx={{
+                  fontSize: 15,
+                  color: selectedExpertName ? '#7C3AED' : gs.textMuted,
+                }} />
+                <Typography sx={{
+                  fontSize: 13, fontWeight: 500, lineHeight: 1,
+                  color: selectedExpertName ? '#7C3AED' : gs.textPrimary,
+                }}>
+                  {selectedExpertName || '专家'}
+                </Typography>
+              </Box>
+            </Tooltip>
+          )}
         </Box>
 
         {/* Right: Model selector, Memory, Mic, Send */}
