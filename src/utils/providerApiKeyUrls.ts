@@ -33,7 +33,6 @@ export const PROVIDER_API_KEY_URLS: Record<string, string> = {
   kimicn: 'https://platform.moonshot.cn/console/api-keys',
   volcengine: 'https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey',
   aliyun: 'https://dashscope.console.aliyun.com/apiKey',
-  siliconflow: 'https://cloud.siliconflow.cn/account/ak',
   modelark: 'https://www.modelark.cn/console/api-keys',
   ppio: 'https://ppinfra.com/settings/key-management',
   custom: '',

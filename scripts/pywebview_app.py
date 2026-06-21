@@ -612,10 +612,10 @@ class Api:
         return json.dumps({'ok': True})
 
     def window_minimize(self):
-        """最小化窗口"""
+        """最小化窗口（frameless 模式下用 hide 替代 minimize）"""
         try:
             if self._window:
-                self._window.minimize()
+                self._window.hide()
         except Exception as e:
             log(f"[window_minimize] 异常: {e}")
         return json.dumps({'ok': True})

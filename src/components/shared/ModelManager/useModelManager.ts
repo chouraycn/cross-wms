@@ -609,7 +609,7 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
       case 'domestic':
         newModels = models.map(m => ({
           ...m,
-          enabled: ['tencent', 'qwen', 'deepseek', 'bigmodel', 'kimi', 'minimax', 'volcengine', 'aliyun', 'siliconflow', 'byteplus'].includes(m.provider),
+          enabled: ['tencent', 'qwen', 'deepseek', 'bigmodel', 'kimi', 'minimax', 'volcengine', 'aliyun', 'byteplus'].includes(m.provider),
         }));
         break;
       case 'overseas':

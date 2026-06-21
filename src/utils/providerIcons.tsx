@@ -4,10 +4,10 @@
  * SVG path 来源：
  *   - simple-icons（https://github.com/simple-icons/simple-icons），CC0-1.0 许可证
  *     openai, anthropic, deepseek, google, ollama, vercel,
- *     openrouter, minimax, aliyun (alibabacloud),
+ *     openrouter, minimax, aliyun (alibabacloud), qwen,
  *     volcengine & byteplus (bytedance)
- *   - 自定义 SVG：kimi, bigmodel (zhipu), siliconflow, ppio, zai, novita,
- *     tencent, wwqglobal, wwqcn, modelark, qwen, xai, aws, azure
+ *   - 自定义 SVG：kimi, bigmodel (zhipu), ppio, zai, novita,
+ *     tencent (腾讯云), wwqglobal, wwqcn, modelark, xai, aws, azure
  */
 
 import React from 'react';
@@ -40,7 +40,6 @@ export type ProviderIconType =
   | 'kimicn'
   | 'volcengine'
   | 'aliyun'
-  | 'siliconflow'
   | 'modelark'
   | 'ppio'
   | 'custom';
@@ -72,7 +71,6 @@ const PROVIDER_LABELS: Record<string, string> = {
   kimicn: 'Kimi CN',
   volcengine: '火山引擎',
   aliyun: '阿里云',
-  siliconflow: '硅基流动',
   modelark: '模力方舟',
   ppio: 'PPIO',
   custom: '自定义',
@@ -132,20 +130,22 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
         </svg>
       );
 
-    // ── Tencent QQ — simple-icons/tencentqq ──────────────────
+    // ── 腾讯云 (Tencent Cloud) — 品牌色 #006EFF ──────────────
     case 'tencent':
       return (
         <svg
-          role="img"
           width={s}
           height={s}
           viewBox="0 0 24 24"
-          fill="currentColor"
+          fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          style={{ flexShrink: 0, color: '#000000' }}
+          style={{ flexShrink: 0 }}
         >
-          <title>Tencent QQ</title>
-          <path d="M21.395 15.035a40 40 0 0 0-.803-2.264l-1.079-2.695c.001-.032.014-.562.014-.836C19.526 4.632 17.351 0 12 0S4.474 4.632 4.474 9.241c0 .274.013.804.014.836l-1.08 2.695a39 39 0 0 0-.802 2.264c-1.021 3.283-.69 4.643-.438 4.673.54.065 2.103-2.472 2.103-2.472 0 1.469.756 3.387 2.394 4.771-.612.188-1.363.479-1.845.835-.434.32-.379.646-.301.778.343.578 5.883.369 7.482.189 1.6.18 7.14.389 7.483-.189.078-.132.132-.458-.301-.778-.483-.356-1.233-.646-1.846-.836 1.637-1.384 2.393-3.302 2.393-4.771 0 0 1.563 2.537 2.103 2.472.251-.03.581-1.39-.438-4.673" />
+          <rect width="24" height="24" rx="5" fill="#006EFF" />
+          <path
+            d="M12 6.5c-2.5 0-4.5 1-5.5 2.5-.4.6-.2 1.2.3 1.5.5.3 1.1.1 1.4-.4C9 9.3 10.4 8.5 12 8.5c1.6 0 3 .8 3.8 1.6.4.4 1 .5 1.4.2.5-.3.6-.9.3-1.4C16.5 7.5 14.5 6.5 12 6.5zm0 4c-1.5 0-2.7.7-3.4 1.6-.3.4-.2 1 .2 1.3.4.3 1 .2 1.3-.2.4-.5 1.1-.9 1.9-.9s1.5.4 1.9.9c.3.4.9.5 1.3.2.4-.3.5-.9.2-1.3C14.7 11.2 13.5 10.5 12 10.5zm0 3.5a1.25 1.25 0 100 2.5 1.25 1.25 0 000-2.5z"
+            fill="#FFFFFF"
+          />
         </svg>
       );
 
@@ -183,29 +183,20 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
         </svg>
       );
 
-    // ── 通义千问 (Qwen) — 官方品牌色 #615CED ─────────────────
+    // ── 通义千问 (Qwen) — simple-icons/qwen ──────────────────
     case 'qwen':
       return (
         <svg
+          role="img"
           width={s}
           height={s}
           viewBox="0 0 24 24"
-          fill="none"
+          fill="currentColor"
           xmlns="http://www.w3.org/2000/svg"
-          style={{ flexShrink: 0 }}
+          style={{ flexShrink: 0, color: '#615CED' }}
         >
-          <rect width="24" height="24" rx="5" fill="#615CED" />
-          <text
-            x="12"
-            y="17.5"
-            textAnchor="middle"
-            fill="white"
-            fontSize="15"
-            fontWeight="700"
-            fontFamily="system-ui, -apple-system, sans-serif"
-          >
-            Q
-          </text>
+          <title>Qwen</title>
+          <path d="M23.919 14.545 20.817 9.17l1.47-2.544a.56.56 0 0 0 0-.566l-1.633-2.83a.57.57 0 0 0-.49-.283h-6.207L12.487.402a.57.57 0 0 0-.49-.284H8.732a.56.56 0 0 0-.49.284L5.139 5.775h-2.94a.56.56 0 0 0-.49.284L.077 8.887a.56.56 0 0 0 0 .567L3.18 14.83l-1.47 2.545a.56.56 0 0 0 0 .566l1.634 2.83a.57.57 0 0 0 .49.283h6.205l1.47 2.545a.57.57 0 0 0 .49.284h3.266a.57.57 0 0 0 .49-.284l3.104-5.375h2.94a.57.57 0 0 0 .49-.283l1.634-2.828a.55.55 0 0 0-.004-.568M8.733.686l1.634 2.828-1.634 2.828H21.8L20.164 9.17H7.425L5.63 6.06Zm1.306 19.801-6.205-.002 1.634-2.83h3.265L2.201 6.344h3.267q3.182 5.517 6.367 11.032zm10.124-5.66L18.53 12l-6.532 11.315-1.634-2.83c2.129-3.673 4.25-7.351 6.373-11.028h3.592l3.102 5.374z" />
         </svg>
       );
 
@@ -417,7 +408,7 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
         </svg>
       );
 
-    // ── 智谱 AI (Zhipu) — 品牌色 #1E88E5 ─────────────────────
+    // ── 智谱 AI (BigModel / GLM) — 品牌色 #1E88E5 ────────────
     case 'bigmodel':
       return (
         <svg
@@ -429,17 +420,10 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
           style={{ flexShrink: 0 }}
         >
           <rect width="24" height="24" rx="5" fill="#1E88E5" />
-          <text
-            x="12"
-            y="17.5"
-            textAnchor="middle"
-            fill="white"
-            fontSize="14"
-            fontWeight="700"
-            fontFamily="system-ui, -apple-system, sans-serif"
-          >
-            智
-          </text>
+          <path
+            d="M6 7.5h12v2H6zm0 3.5h8.5v2H6zm0 3.5h12v2H6z"
+            fill="#FFFFFF"
+          />
         </svg>
       );
 
@@ -474,22 +458,6 @@ export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.Reac
         >
           <title>Aliyun</title>
           <path d="M3.996 4.517h5.291L8.01 6.324 4.153 7.506a1.668 1.668 0 0 0-1.165 1.601v5.786a1.668 1.668 0 0 0 1.165 1.6l3.857 1.183 1.277 1.807H3.996A3.996 3.996 0 0 1 0 15.487V8.513a3.996 3.996 0 0 1 3.996-3.996m16.008 0h-5.291l1.277 1.807 3.857 1.182c.715.227 1.17.889 1.165 1.601v5.786a1.668 1.668 0 0 1-1.165 1.6l-3.857 1.183-1.277 1.807h5.291A3.996 3.996 0 0 0 24 15.487V8.513a3.996 3.996 0 0 0-3.996-3.996m-4.007 8.345H8.002v-1.804h7.995Z" />
-        </svg>
-      );
-
-    // ── 硅基流动 (SiliconFlow) — 品牌色 #8B5CF6 ──────────────
-    case 'siliconflow':
-      return (
-        <svg
-          width={s}
-          height={s}
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          style={{ flexShrink: 0 }}
-        >
-          <rect width="24" height="24" rx="5" fill="#8B5CF6" />
-          <path d="M7 8h3v8H7zm4 2h3v6h-3zm4-2h3v8h-3z" fill="#FFFFFF" />
         </svg>
       );
 
@@ -562,7 +530,6 @@ export const ALL_PROVIDERS: string[] = [
   'tencent',
   'volcengine',
   'aliyun',
-  'siliconflow',
   'byteplus',
   'wwqglobal',
   'wwqcn',

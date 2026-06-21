@@ -99,3 +99,13 @@
 - 拖拽：CSS `-webkit-app-region:drag`（系统原生拖拽，零 JS）
 - **禁止修改**：`WindowDragBar.tsx` 的按钮渲染逻辑、`pywebview_app.py` 的 `Api` 窗口控制方法
 - 移除代码：`apply_traffic_light_offset()` 及相关 Cocoa 偏移逻辑（v1.5.166 清理）
+
+## WKWebView 缓存问题 v1.5.199
+- **问题**：pywebview 本地 HTTP 服务器 (http://127.0.0.1:9988) 未设置 Cache-Control headers
+- **影响**：WKWebView 缓存旧版 index.html + JS，升级后仍显示旧版本号/旧 UI
+- **缓存位置**：`~/Library/Caches/<bundle_id>/WebKit/NetworkCache/`（可达 133M+）
+- **修复**：`pywebview_app.py` `QuietHandler.end_headers()` 添加 no-cache headers
+  - `Cache-Control: no-cache, no-store, must-revalidate`
+  - `Pragma: no-cache` + `Expires: 0`
+- **清除缓存**：`rm -rf ~/Library/Caches/com.cdf.knowclow.desktop/WebKit/NetworkCache/`
+- **教训**：pywebview 本地 HTTP 服务器必须禁用缓存，否则版本升级后 WKWebView 不刷新
