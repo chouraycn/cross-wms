@@ -34,8 +34,9 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import { useToast } from '../contexts/ToastContext';
-import { getProjects, createProject, updateProject, deleteProject } from '../services/api';
+import { getProjects, createProject, updateProject, deleteProject, getWarehouses } from '../services/api';
 import type { Project } from '../types/project';
+import type { Warehouse } from '../types';
 import { getGrayScale } from '../constants/theme';
 
 // ===================== Styles =====================
@@ -104,7 +105,7 @@ interface ProjectFormProps {
   open: boolean;
   initial?: Project | null;
   onClose: () => void;
-  onSave: (data: Partial<Project> & { name: string }) => void;
+  onSave: (data: Partial<Project> & { name: string; warehouseIds?: string[] }) => void;
 }
 
 const EMPTY_FORM = {
@@ -113,6 +114,7 @@ const EMPTY_FORM = {
   status: 'active' as string,
   category: 'custom' as string,
   agentId: '' as string,
+  warehouseIds: [] as string[],
 };
 
 const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose, onSave }) => {
@@ -122,6 +124,7 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
   const [form, setForm] = useState(EMPTY_FORM);
   const [nameError, setNameError] = useState('');
   const [agentOptions, setAgentOptions] = useState<Array<{ id: string; name: string; description: string }>>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
 
   // 获取可用 Agent 列表
   React.useEffect(() => {
@@ -146,6 +149,20 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
     fetchAgents();
   }, [open]);
 
+  // 获取仓库列表
+  React.useEffect(() => {
+    if (!open) return;
+    const fetchWarehouses = async () => {
+      try {
+        const data = await getWarehouses();
+        setWarehouses(data);
+      } catch {
+        // 静默失败
+      }
+    };
+    fetchWarehouses();
+  }, [open]);
+
   React.useEffect(() => {
     if (open) {
       if (initial) {
@@ -155,6 +172,7 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
           status: initial.status,
           category: initial.category,
           agentId: (initial as any).agentId || '',
+          warehouseIds: (initial as any).warehouseIds || [],
         });
       } else {
         setForm(EMPTY_FORM);
@@ -162,6 +180,15 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
       setNameError('');
     }
   }, [open, initial]);
+
+  const toggleWarehouse = (id: string) => {
+    setForm((f) => {
+      const ids = f.warehouseIds.includes(id)
+        ? f.warehouseIds.filter((wid) => wid !== id)
+        : [...f.warehouseIds, id];
+      return { ...f, warehouseIds: ids };
+    });
+  };
 
   const handleSave = () => {
     if (!form.name.trim()) { setNameError('项目名称不能为空'); return; }
@@ -171,85 +198,286 @@ const ProjectFormDialog: React.FC<ProjectFormProps> = ({ open, initial, onClose,
       status: form.status as 'active' | 'archived' | 'completed',
       category: form.category as 'custom' | 'template' | 'fixed',
       agentId: form.agentId || undefined,
+      warehouseIds: form.warehouseIds.length > 0 ? form.warehouseIds : undefined,
     });
     onClose();
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth
-      PaperProps={{ sx: { borderRadius: '12px' } }}>
-      <DialogTitle sx={{ fontSize: '1rem', fontWeight: 600, pb: 1 }}>
-        {initial ? '编辑项目' : '新建项目'}
-      </DialogTitle>
-      <DialogContent sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <TextField
-          label="项目名称" fullWidth size="small" autoFocus
-          value={form.name}
-          onChange={(e) => { setForm((f) => ({ ...f, name: e.target.value })); setNameError(''); }}
-          error={Boolean(nameError)} helperText={nameError}
-        />
-        <TextField
-          label="描述（可选）" fullWidth size="small" multiline rows={2}
-          value={form.description}
-          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-        />
-        <Box sx={{ display: 'flex', gap: 1.5 }}>
-          <FormControl size="small" sx={{ flex: 1 }}>
-            <InputLabel>状态</InputLabel>
-            <Select label="状态" value={form.status}
-              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
-              <MenuItem value="active">活跃</MenuItem>
-              <MenuItem value="archived">已归档</MenuItem>
-              <MenuItem value="completed">已完成</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ flex: 1 }}>
-            <InputLabel>分类</InputLabel>
-            <Select label="分类" value={form.category}
-              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
-              <MenuItem value="custom">自定义</MenuItem>
-              <MenuItem value="template">模板</MenuItem>
-              <MenuItem value="fixed">固定</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-        {/* Agent 选择 */}
-        {agentOptions.length > 0 && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <FormControl size="small" fullWidth>
-              <InputLabel>专业 Agent</InputLabel>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth={false}
+      PaperProps={{
+        sx: {
+          width: 900,
+          maxWidth: 'calc(100vw - 48px)',
+          borderRadius: '16px',
+          bgcolor: '#ffffff',
+          overflow: 'hidden',
+        },
+      }}
+    >
+      {/* Title */}
+      <Box sx={{ px: 3, pt: 3, pb: 2 }}>
+        <Typography sx={{ fontSize: '20px', fontWeight: 600, color: '#111827' }}>
+          {initial ? '编辑项目' : '新建项目'}
+        </Typography>
+      </Box>
+
+      {/* Content - Two columns */}
+      <DialogContent sx={{ px: 3, py: 0, display: 'flex', gap: 3, '&.MuiDialogContent-root': { pb: 0 } }}>
+        {/* Left Column - Form */}
+        <Box sx={{ flex: '0 0 45%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* 项目名称 */}
+          <Box>
+            <Typography sx={{ fontSize: '13px', color: '#6B7280', mb: 0.75, fontWeight: 500 }}>
+              项目名称
+            </Typography>
+            <TextField
+              fullWidth
+              placeholder="请输入项目名称"
+              autoFocus
+              value={form.name}
+              onChange={(e) => { setForm((f) => ({ ...f, name: e.target.value })); setNameError(''); }}
+              error={Boolean(nameError)}
+              helperText={nameError}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  height: 44,
+                  borderRadius: '8px',
+                  bgcolor: '#ffffff',
+                  '& fieldset': { borderColor: '#E5E7EB' },
+                  '&:hover fieldset': { borderColor: '#D1D5DB' },
+                  '&.Mui-focused fieldset': { borderColor: '#111827', borderWidth: '1px' },
+                },
+                '& .MuiInputBase-input': { fontSize: '14px', color: '#111827' },
+                '& .MuiFormHelperText-root': { fontSize: '12px', ml: 0 },
+              }}
+            />
+          </Box>
+
+          {/* 项目描述 */}
+          <Box>
+            <Typography sx={{ fontSize: '13px', color: '#6B7280', mb: 0.75, fontWeight: 500 }}>
+              项目描述
+            </Typography>
+            <TextField
+              fullWidth
+              placeholder="请输入项目描述"
+              multiline
+              rows={3}
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  bgcolor: '#ffffff',
+                  '& fieldset': { borderColor: '#E5E7EB' },
+                  '&:hover fieldset': { borderColor: '#D1D5DB' },
+                  '&.Mui-focused fieldset': { borderColor: '#111827', borderWidth: '1px' },
+                },
+                '& .MuiInputBase-input': { fontSize: '14px', color: '#111827' },
+              }}
+            />
+          </Box>
+
+          {/* 专业 Agent */}
+          <Box>
+            <Typography sx={{ fontSize: '13px', color: '#6B7280', mb: 0.75, fontWeight: 500 }}>
+              专业 Agent
+            </Typography>
+            <FormControl fullWidth>
               <Select
-                label="专业 Agent"
                 value={form.agentId}
                 onChange={(e) => setForm((f) => ({ ...f, agentId: e.target.value }))}
+                displayEmpty
+                sx={{
+                  height: 44,
+                  borderRadius: '8px',
+                  bgcolor: '#ffffff',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E5E7EB' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#D1D5DB' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#111827', borderWidth: '1px' },
+                  '& .MuiSelect-select': { fontSize: '14px', color: '#111827' },
+                }}
               >
                 <MenuItem value="">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500 }}>无（使用默认 AI）</Typography>
-                  </Box>
+                  <Typography sx={{ fontSize: '14px', color: '#9CA3AF' }}>无（使用默认 AI）</Typography>
                 </MenuItem>
                 {agentOptions.map((agent) => (
                   <MenuItem key={agent.id} value={agent.id}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500 }}>{agent.name}</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                      <Typography sx={{ fontSize: '14px', fontWeight: 500, color: '#111827' }}>
+                        {agent.name}
+                      </Typography>
+                      {agent.description && (
+                        <Typography sx={{ fontSize: '12px', color: '#6B7280' }}>
+                          {agent.description}
+                        </Typography>
+                      )}
                     </Box>
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
-            {form.agentId && (
-              <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, pl: 0.5 }}>
-                {agentOptions.find(a => a.id === form.agentId)?.description || ''}
-              </Typography>
-            )}
           </Box>
-        )}
+        </Box>
+
+        {/* Right Column - Warehouse Selection */}
+        <Box sx={{ flex: '0 0 55%', display: 'flex', flexDirection: 'column' }}>
+          <Typography sx={{ fontSize: '13px', color: '#6B7280', mb: 0.5, fontWeight: 500 }}>
+            关联仓库
+          </Typography>
+          <Typography sx={{ fontSize: '13px', color: '#9CA3AF', mb: 1.5 }}>
+            选择一个或多个仓库关联到该项目
+          </Typography>
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, maxHeight: 320, overflowY: 'auto', pr: 0.5 }}>
+            {warehouses.map((wh) => {
+              const selected = form.warehouseIds.includes(wh.id);
+              return (
+                <Box
+                  key={wh.id}
+                  onClick={() => toggleWarehouse(wh.id)}
+                  sx={{
+                    position: 'relative',
+                    p: 2,
+                    borderRadius: '12px',
+                    bgcolor: '#F9FAFB',
+                    border: '1px solid',
+                    borderColor: selected ? '#111827' : '#E5E7EB',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      borderColor: selected ? '#111827' : '#D1D5DB',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    },
+                  }}
+                >
+                  {/* Checkmark */}
+                  {selected && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        bgcolor: '#111827',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2.5 6L5 8.5L9.5 4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </Box>
+                  )}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: '8px',
+                        bgcolor: '#ffffff',
+                        border: '1px solid #E5E7EB',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        color: '#6B7280',
+                      }}
+                    >
+                      <WarehouseOutlinedIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography
+                        sx={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: '#111827',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {wh.name}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: '12px',
+                          color: '#6B7280',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {wh.city || wh.country || wh.address || '暂无地址'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              );
+            })}
+          </Box>
+
+          {warehouses.length === 0 && (
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#9CA3AF',
+                gap: 1,
+                minHeight: 160,
+              }}
+            >
+              <WarehouseOutlinedIcon sx={{ fontSize: 32, color: '#D1D5DB' }} />
+              <Typography sx={{ fontSize: '13px' }}>暂无仓库数据</Typography>
+            </Box>
+          )}
+        </Box>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} sx={{ color: gs.textMuted }}>取消</Button>
-        <Button onClick={handleSave} variant="contained"
-          sx={{ bgcolor: gs.textPrimary, '&:hover': { bgcolor: gs.textSecondary }, borderRadius: '6px' }}>
-          保存
+
+      {/* Footer Buttons */}
+      <DialogActions sx={{ px: 3, py: 2.5, gap: 1.5 }}>
+        <Button
+          onClick={onClose}
+          sx={{
+            color: '#6B7280',
+            fontSize: '14px',
+            fontWeight: 500,
+            textTransform: 'none',
+            px: 2,
+            py: 1,
+            borderRadius: '8px',
+            '&:hover': { bgcolor: '#F3F4F6' },
+          }}
+        >
+          取消
+        </Button>
+        <Button
+          onClick={handleSave}
+          variant="contained"
+          disableElevation
+          sx={{
+            bgcolor: '#111827',
+            color: '#ffffff',
+            fontSize: '14px',
+            fontWeight: 500,
+            textTransform: 'none',
+            px: 3,
+            py: 1,
+            borderRadius: '8px',
+            '&:hover': { bgcolor: '#374151' },
+          }}
+        >
+          创建项目
         </Button>
       </DialogActions>
     </Dialog>
