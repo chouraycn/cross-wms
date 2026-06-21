@@ -308,7 +308,6 @@ cat > package.json << 'PKGJSON'
     "sqlite-vec": "^0.1.9",
     "uuid": "^11.1.1",
     "@e965/xlsx": "^0.20.3",
-    "fsevents": "^2.3.3",
     "ajv": "^8.20.0",
     "cheerio": "^1.2.0",
     "zod": "^4.4.3",
