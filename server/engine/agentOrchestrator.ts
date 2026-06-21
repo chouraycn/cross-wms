@@ -19,22 +19,19 @@ import { Observer } from './observer.js';
 import { Planner } from './planner.js';
 import { TaskDecomposer, type DecomposeAssessment } from './taskDecomposer.js';
 import { agentRegistry, type AgentProfile } from './agentRegistry.js';
-import { emitAgentEvent, onAgentEvent } from './eventBus.js';
-import { AgentEventType } from '../../shared/types/agent.js';
+// EventBus imports removed - not currently used but reserved for future event-driven features
 import { callAIModel } from '../aiClient.js';
 import type { ModelCallConfig, MessageContent, ToolCall } from '../aiClient.js';
-import { getToolDefinitions } from './toolRegistry.js';
-import { pluginRegistry } from './pluginRegistry.js';
-import { mcpClientManager } from './mcpClientManager.js';
+// Tool registry imports reserved for future agent-specific tool filtering
+// import { getToolDefinitions } from './toolRegistry.js';
+// import { pluginRegistry } from './pluginRegistry.js';
+// import { mcpClientManager } from './mcpClientManager.js';
 import { ExecutionMode, type ExecutionStrategyOptions } from './executionStrategy.js';
 import type { ToolExecutionResult } from './toolExecutor.js';
 import type {
   TaskDecomposition,
   SubTask,
-  SubTaskStatus,
   OrchestratorResult,
-  SubTaskProgressData,
-  AgentEventPayload,
 } from '../../shared/types/agent.js';
 import { logger } from '../logger.js';
 import { loadAgentSoul } from './soulLoader.js';
@@ -361,15 +358,15 @@ export class AgentOrchestrator {
     // 构造子 Agent 的消息上下文
     const agentMessages = this.buildAgentMessages(subTask, agent ?? null, parentMessages);
 
-    // 获取过滤后的工具
-    const allTools = [
-      ...getToolDefinitions(),
-      ...pluginRegistry.getActiveTools(),
-      ...mcpClientManager.getMcpTools(),
-    ];
-    const filteredTools = agentId
-      ? agentRegistry.filterToolsForAgent(agentId, allTools)
-      : allTools;
+    // 获取过滤后的工具（预留：可按 Agent 权限过滤）
+    // const allTools = [
+    //   ...getToolDefinitions(),
+    //   ...pluginRegistry.getActiveTools(),
+    //   ...mcpClientManager.getMcpTools(),
+    // ];
+    // const filteredTools = agentId
+    //   ? agentRegistry.filterToolsForAgent(agentId, allTools)
+    //   : allTools;
 
     // 推送子任务开始事件
     if (onSSEEvent) {
@@ -399,7 +396,7 @@ export class AgentOrchestrator {
         signal: timeoutSignal,
         onChunk: undefined,
         onThinking: undefined,
-        onToolCall: (toolCall, result) => {
+        onToolCall: (toolCall, _result) => {
           // 推送子任务工具调用事件
           if (onSSEEvent) {
             onSSEEvent({
@@ -505,7 +502,7 @@ ${resultsText}
   private buildAgentMessages(
     subTask: SubTask,
     agent: AgentProfile | null,
-    parentMessages: Array<{ role: string; content: MessageContent }>,
+    _parentMessages: Array<{ role: string; content: MessageContent }>,
   ): Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }> {
     let soul = agent?.soul || '';
 
