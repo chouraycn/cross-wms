@@ -20,7 +20,19 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/services/**', 'src/stores/**', 'src/capabilities/**'],
+      include: [
+        'src/services/**',
+        'src/stores/**',
+        'src/capabilities/**',
+        'server/aiClient.ts',
+        'server/engine/reactExecutor.ts',
+        'server/routes/chatService.ts',
+        'server/engine/toolRegistry.ts',
+        'server/engine/budgetManager.ts',
+        'server/engine/loopDetector.ts',
+        'server/engine/multilingualIntent.ts',
+        'server/engine/contextTruncate.ts',
+      ],
     },
   },
   resolve: {
