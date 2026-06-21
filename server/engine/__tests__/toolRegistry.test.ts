@@ -10,6 +10,11 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// ===================== Platform Guard =====================
+
+// desktop_snapshot 仅支持 macOS，在非 macOS 平台上跳过相关测试
+const describeIfMac = process.platform === 'darwin' ? describe : describe.skip;
+
 // ===================== Hoisted Mocks =====================
 
 const mocks = vi.hoisted(() => ({
@@ -119,7 +124,7 @@ function mockSnapshotResult(elements: Array<Record<string, unknown>>): string {
 
 // ===================== Tests =====================
 
-describe('ToolRegistry — desktop_click_smart 批量调用 (P1)', () => {
+describeIfMac('ToolRegistry — desktop_click_smart 批量调用 (P1)', () => {
   let toolRegistry: typeof import('../toolRegistry.js');
 
   beforeEach(async () => {

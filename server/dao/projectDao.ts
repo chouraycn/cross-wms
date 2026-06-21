@@ -115,11 +115,13 @@ export function deleteProject(id: string): boolean {
 }
 
 export function getProjectTasks(projectId: string): Record<string, unknown>[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows = db().prepare('SELECT * FROM tasks WHERE project_id = ? ORDER BY created_at DESC').all(projectId) as any[];
   return rows.map(rowToTask);
 }
 
 // Helper to convert task row to frontend format
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function rowToTask(row: any): Record<string, unknown> {
   let tags: string[] = [];
   try {

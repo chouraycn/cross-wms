@@ -136,7 +136,7 @@ class McpClientManager {
 
       // 4. listTools
       const toolsResult = await client.listTools();
-      const tools: McpToolInfo[] = (toolsResult.tools || []).map((tool) => ({
+      const tools: McpToolInfo[] = (toolsResult.tools || []).map((tool: { name: string; description?: string; inputSchema?: Record<string, unknown> }) => ({
         name: tool.name,
         description: tool.description || '',
         inputSchema: (tool.inputSchema || { type: 'object', properties: {} }) as Record<string, unknown>,
@@ -368,7 +368,7 @@ class McpClientManager {
       await client.connect(transport);
 
       const toolsResult = await client.listTools();
-      const tools: McpToolInfo[] = (toolsResult.tools || []).map((tool) => ({
+      const tools: McpToolInfo[] = (toolsResult.tools || []).map((tool: { name: string; description?: string; inputSchema?: Record<string, unknown> }) => ({
         name: tool.name,
         description: tool.description || '',
         inputSchema: (tool.inputSchema || { type: 'object', properties: {} }) as Record<string, unknown>,
