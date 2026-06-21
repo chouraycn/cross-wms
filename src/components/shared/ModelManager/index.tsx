@@ -144,7 +144,7 @@ const ModelManager: React.FC<ModelManagerProps> = (props) => {
         open={state.showModelSelectDialog}
         onClose={actions.closeModelSelectDialog}
         onSelect={actions.handlePresetSelect}
-        existingModelIds={models.map(m => m.id)}
+        existingModelIds={models.filter(m => !m.hidden).map(m => m.id)}
       />
 
       {/* Step 2: 补全信息 / 编辑弹窗 */}
@@ -155,7 +155,7 @@ const ModelManager: React.FC<ModelManagerProps> = (props) => {
         open={showDiscoverDialog}
         onClose={() => setShowDiscoverDialog(false)}
         onAddModels={handleAddDiscoveredModels}
-        existingModelIds={models.map(m => m.id)}
+        existingModelIds={models.filter(m => !m.hidden).map(m => m.id)}
       />
 
       {/* 删除确认弹窗 */}

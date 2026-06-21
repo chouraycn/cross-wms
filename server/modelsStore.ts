@@ -1390,8 +1390,7 @@ export async function syncModelsFromApi(): Promise<void> {
   try {
     const config = await loadModelsConfig();
     const existingIds = new Set(config.models.map(m => m.id));
-    let hasNewModels = false;
-    const newModels: ModelConfig[] = [];
+    let hasUpdates = false;
 
     for (const discovery of PROVIDER_DISCOVERY_LIST) {
       // v1.9.3: Ollama 是本地模型，不需要 API Key，直接发现
@@ -1414,9 +1413,9 @@ export async function syncModelsFromApi(): Promise<void> {
       const discovered = await fetchModelsFromProvider(discovery, apiKey);
       for (const model of discovered) {
         if (!existingIds.has(model.id)) {
-          hasNewModels = true;
-          newModels.push(model);
-          logger.info(`[ModelDiscovery] 发现新模型: ${model.id} (${model.name})`);
+          // v1.5.201: 不再自动添加新模型，避免用户删除的模型被重新添加
+          // 用户可以通过"添加模型"对话框手动添加新模型
+          logger.info(`[ModelDiscovery] 发现新模型（未自动添加）: ${model.id} (${model.name})`);
         } else {
           // 已存在的模型：更新 capabilities/contextWindow 等元数据
           const existing = config.models.find(m => m.id === model.id);
@@ -1433,32 +1432,20 @@ export async function syncModelsFromApi(): Promise<void> {
             if (model.contextWindow && (!existing.contextWindow || model.contextWindow > existing.contextWindow)) {
               existing.contextWindow = model.contextWindow;
             }
+            hasUpdates = true;
           }
         }
       }
     }
 
-    if (hasNewModels && newModels.length > 0) {
-      // 注入 API Key 到新模型（复用同提供商已有 Key）
-      for (const nm of newModels) {
-        const sameProvider = config.models.find(
-          m => m.provider === nm.provider && (m.apiKey?.trim() || m.apiKeys?.some(k => k.key?.trim())),
-        );
-        if (sameProvider) {
-          if (sameProvider.apiKey) nm.apiKey = sameProvider.apiKey;
-          if (sameProvider.apiKeys) nm.apiKeys = sameProvider.apiKeys;
-          if (sameProvider.apiKeyRef) nm.apiKeyRef = sameProvider.apiKeyRef;
-          if (sameProvider.apiKeyRefs) nm.apiKeyRefs = sameProvider.apiKeyRefs;
-        }
-      }
-      config.models.push(...newModels);
+    if (hasUpdates) {
       // 脱敏保存
       const sanitized = config.models.map((m) => {
         const { apiKey, apiKeys, ...rest } = m as any;
         return rest;
       });
       await writeModelsFile({ ...config, models: sanitized });
-      logger.info(`[ModelDiscovery] 已合并 ${newModels.length} 个新模型到本地配置`);
+      logger.info('[ModelDiscovery] 已更新模型元数据');
     } else {
       logger.info('[ModelDiscovery] 模型列表已是最新，无需更新');
     }

@@ -11,6 +11,7 @@ import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PsychologyIcon from '@mui/icons-material/Psychology';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import { useModels } from '../../contexts/ModelsContext';
 import { getGrayScale } from '../../constants/theme';
 import ModelManager from '../shared/ModelManager';
@@ -200,6 +201,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
 
 const EXECUTION_MODE_OPTIONS: { value: ExecutionMode; label: string; desc: string }[] = [
   { value: 'react', label: 'ReAct（推荐）', desc: '完整推理-行动-观察-反思循环，AI 具备真正的思考能力' },
+  { value: 'agent', label: '多 Agent 编排', desc: '复杂任务自动拆分为子任务，多个专业 Agent 并行执行，结果智能合成' },
   { value: 'legacy', label: '经典（轻量）', desc: 'AI 直接调用工具并返回结果，无额外规划或反思，适合简单任务' },
 ];
 
@@ -247,6 +249,7 @@ function ExecutionModeSelector() {
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
             {opt.value === 'react' && <PsychologyIcon sx={{ fontSize: 18, color: aiEngine.defaultExecutionMode === opt.value ? 'rgba(99,102,241,1)' : gs.textSecondary }} />}
+            {opt.value === 'agent' && <AccountTreeIcon sx={{ fontSize: 18, color: aiEngine.defaultExecutionMode === opt.value ? 'rgba(99,102,241,1)' : gs.textSecondary }} />}
             <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: aiEngine.defaultExecutionMode === opt.value ? gs.textPrimary : gs.textSecondary }}>
               {opt.label}
             </Typography>

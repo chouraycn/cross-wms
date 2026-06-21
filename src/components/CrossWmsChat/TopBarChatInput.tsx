@@ -25,7 +25,7 @@ import { getAllSkills } from '../../stores/skillStore';
 import { SkillSelector } from './SkillSelector';
 import { useModels } from '../../contexts/ModelsContext';
 import { useToast } from '../../contexts/ToastContext';
-import ChatToolbar from './ChatToolbar';
+import ChatToolbar, { type ModelOption } from './ChatToolbar';
 import AISettingsDialog from '../Layout/AISettingsDialog';
 import { SessionReferenceSelector } from './SessionReferenceSelector';
 import type { SendMessageOptions } from '../../hooks/useChat';
@@ -137,7 +137,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const slashFilteredCount = slashFilteredSkills.length;
 
   // 从 ModelsContext 中读取模型列表（仅启用的模型），Auto 作为首选项
-  const MODEL_OPTIONS: import('./ChatToolbar').ModelOption[] = [
+  const MODEL_OPTIONS: ModelOption[] = [
     { id: 'auto', name: 'Auto', provider: 'auto', description: '根据任务自动选择最合适的模型' },
     ...modelList
       .filter((m) => m.enabled)

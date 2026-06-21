@@ -59,14 +59,23 @@ export default defineConfig(({ mode }) => ({
         changeOrigin: true,
         // v1.9.3: 确保 multipart/form-data 请求正确转发
         configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.log('proxy error', err);
+          proxy.on('error', (err, _req, res) => {
+            console.error('[proxy] Backend connection error:', err.message);
+            if (res && 'writeHead' in res) {
+              res.writeHead(502, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Backend server unavailable', code: 'BACKEND_UNAVAILABLE' }));
+            }
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request to the Target:', req.method, req.url);
+            // 仅在 debug 模式打印
+            if (process.env.DEBUG_PROXY) {
+              console.log('[proxy]', req.method, req.url);
+            }
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+            if (process.env.DEBUG_PROXY) {
+              console.log('[proxy]', proxyRes.statusCode, req.url);
+            }
           });
         },
       },
@@ -109,7 +118,7 @@ export default defineConfig(({ mode }) => ({
             return 'vendor-mui-x';
           }
           // MUI core + @emotion 运行时 — 最大的单库
-          if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/') || id.includes('node_modules/property-information/')) {
+          if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/')) {
             return 'vendor-mui';
           }
           // React 核心 + 调度器（scheduler）+ react-dom
@@ -151,13 +160,16 @@ export default defineConfig(({ mode }) => ({
             return 'vendor-js-yaml';
           }
           // react-syntax-highlighter + refractor — 代码高亮（MarkdownRenderer 使用）
-          // v8.0: 取消注释，将 27 个模块从 main chunk 拆出（约 200KB）
-          if (
-            id.includes('node_modules/react-syntax-highlighter/') ||
-            id.includes('node_modules/refractor/')
-          ) {
-            return 'vendor-syntax-highlighter';
-          }
+          // ⚠️ 不再单独拆分 vendor-syntax-highlighter chunk
+          // 原因：react-syntax-highlighter/refractor 与 MUI/@emotion 存在共享依赖
+          // 强制拆分会产生 vendor-mui ↔ vendor-syntax-highlighter 循环依赖，导致运行时白屏
+          // 让 Vite 自动处理这些包的归属，避免循环依赖
+          // if (
+          //   id.includes('node_modules/react-syntax-highlighter/') ||
+          //   id.includes('node_modules/refractor/')
+          // ) {
+          //   return 'vendor-syntax-highlighter';
+          // }
           // KaTeX — LaTeX 数学公式渲染
           if (id.includes('node_modules/katex/')) {
             return 'vendor-katex';

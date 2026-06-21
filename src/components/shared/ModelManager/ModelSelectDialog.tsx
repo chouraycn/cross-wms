@@ -8,10 +8,9 @@
 
 import React, { useState, useMemo } from 'react';
 import {
-  Box, Typography, TextField, Dialog, Chip, InputAdornment, IconButton, Button,
+  Box, Typography, Dialog, Chip, Button,
   Collapse, List, ListItemButton, ListItemText, ListItemIcon, Divider, useTheme,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -55,7 +54,6 @@ const ModelSelectDialog: React.FC<ModelSelectDialogProps> = ({
   const isDark = theme.palette.mode === 'dark';
   const styles = getModelManagerStyles(isDark);
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
 
   // 按提供商分组
@@ -68,21 +66,9 @@ const ModelSelectDialog: React.FC<ModelSelectDialogProps> = ({
     return groups;
   }, []);
 
-  // 搜索过滤
-  const filteredProviders = useMemo(() => {
-    const query = searchQuery.toLowerCase().trim();
-    if (!query) return ALL_PROVIDERS.filter(p => groupedModels[p]?.length > 0);
-    return ALL_PROVIDERS.filter(p => {
-      const models = groupedModels[p] || [];
-      return models.some(
-        m =>
-          m.id.toLowerCase().includes(query) ||
-          m.name.toLowerCase().includes(query) ||
-          m.description.toLowerCase().includes(query) ||
-          providerLabel(p).toLowerCase().includes(query)
-      );
-    });
-  }, [searchQuery, groupedModels]);
+  const availableProviders = useMemo(() => {
+    return ALL_PROVIDERS.filter(p => groupedModels[p]?.length > 0);
+  }, [groupedModels]);
 
   const toggleProvider = (provider: string) => {
     setExpandedProviders(prev => {
@@ -95,8 +81,6 @@ const ModelSelectDialog: React.FC<ModelSelectDialogProps> = ({
 
   const handleSelect = (preset: PresetModel) => {
     onSelect(preset);
-    // 重置搜索状态
-    setSearchQuery('');
   };
 
   return (
@@ -118,49 +102,19 @@ const ModelSelectDialog: React.FC<ModelSelectDialogProps> = ({
           </Typography>
         </Box>
 
-        {/* 搜索框 */}
-        <Box sx={{ px: 2.5, pb: 1 }}>
-          <TextField
-            placeholder="搜索模型名称、ID 或提供商..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            size="small"
-            fullWidth
-            autoFocus
-            sx={styles.input}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ fontSize: 18, color: styles.textMuted }} />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Box>
-
         <Divider />
 
         {/* 模型列表 */}
-        <Box sx={{ flex: 1, overflow: 'auto', px: 1 }}>
-          {filteredProviders.map(provider => {
+        <Box sx={{ flex: 1, overflow: 'auto', px: 1, pt: 1 }}>
+          {availableProviders.map(provider => {
             const models = groupedModels[provider] || [];
-            const isExpanded = expandedProviders.has(provider) || searchQuery.length > 0;
-            const filteredModels = searchQuery
-              ? models.filter(
-                  m =>
-                    m.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    m.description.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-              : models;
-
-            if (filteredModels.length === 0) return null;
+            const isExpanded = expandedProviders.has(provider);
 
             return (
               <Box key={provider} sx={{ mb: 0.5 }}>
                 {/* 提供商标题（可折叠） */}
                 <ListItemButton
-                  onClick={() => !searchQuery && toggleProvider(provider)}
+                  onClick={() => toggleProvider(provider)}
                   sx={{
                     borderRadius: 1.5,
                     py: 0.75,
@@ -178,21 +132,20 @@ const ModelSelectDialog: React.FC<ModelSelectDialogProps> = ({
                     }
                     secondary={
                       <Typography sx={{ fontSize: '0.7rem', color: styles.textMuted }}>
-                        {filteredModels.length} 个模型
+                        {models.length} 个模型
                       </Typography>
                     }
                   />
-                  {!searchQuery && (
-                    isExpanded
-                      ? <ExpandLessIcon sx={{ fontSize: 18, color: styles.textMuted }} />
-                      : <ExpandMoreIcon sx={{ fontSize: 18, color: styles.textMuted }} />
-                  )}
+                  {isExpanded
+                    ? <ExpandLessIcon sx={{ fontSize: 18, color: styles.textMuted }} />
+                    : <ExpandMoreIcon sx={{ fontSize: 18, color: styles.textMuted }} />
+                  }
                 </ListItemButton>
 
                 {/* 模型列表 */}
                 <Collapse in={isExpanded}>
                   <List dense sx={{ py: 0, pl: 1 }}>
-                    {filteredModels.map(model => {
+                    {models.map(model => {
                       const alreadyAdded = existingModelIds.includes(model.id);
                       return (
                         <ListItemButton

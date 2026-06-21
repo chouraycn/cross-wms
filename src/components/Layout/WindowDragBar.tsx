@@ -22,6 +22,7 @@ type WindowState = 'normal' | 'maximized';
 const WindowDragBar: React.FC<{ height?: number }> = ({ height: _h }) => {
   const [ready, setReady] = useState(() => isPyWebView());
   const [windowState, setWindowState] = useState<WindowState>('normal');
+  const [focused, setFocused] = useState(true);
 
   // 检测 pywebview 环境就绪
   useEffect(() => {
@@ -33,6 +34,19 @@ const WindowDragBar: React.FC<{ height?: number }> = ({ height: _h }) => {
       }
     }, 100);
     return () => clearInterval(id);
+  }, [ready]);
+
+  // v1.5.201: 监听窗口失焦/聚焦，按钮颜色跟随系统状态
+  useEffect(() => {
+    if (!ready) return;
+    const onFocus = () => setFocused(true);
+    const onBlur = () => setFocused(false);
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('blur', onBlur);
+    };
   }, [ready]);
 
   if (!ready) return null;
@@ -79,30 +93,36 @@ const WindowDragBar: React.FC<{ height?: number }> = ({ height: _h }) => {
       {/* 红：关闭 */}
       <TrafficButton
         color="#ff5f57"
+        dimColor="#bf4942"
         hoverColor="#e0554e"
         icon="✕"
         title="关闭"
         onClick={handleClose}
         marginRight={BUTTON_GAP}
+        focused={focused}
       />
 
       {/* 黄：最小化 */}
       <TrafficButton
         color="#febc2e"
+        dimColor="#bf8e23"
         hoverColor="#e5a820"
         icon="−"
         title="最小化"
         onClick={handleMinimize}
         marginRight={BUTTON_GAP}
+        focused={focused}
       />
 
       {/* 绿：最大化/还原 */}
       <TrafficButton
         color="#28c840"
+        dimColor="#1e9630"
         hoverColor="#1fa835"
         icon={windowState === 'maximized' ? '⊡' : '+'}
         title={windowState === 'maximized' ? '还原' : '最大化'}
         onClick={handleMaximize}
+        focused={focused}
       />
     </Box>
   );
@@ -112,15 +132,17 @@ const WindowDragBar: React.FC<{ height?: number }> = ({ height: _h }) => {
 
 interface TrafficButtonProps {
   color: string;
+  dimColor: string;
   hoverColor: string;
   icon: string;
   title: string;
   onClick: (e: React.MouseEvent) => void;
   marginRight?: string;
+  focused?: boolean;
 }
 
 const TrafficButton: React.FC<TrafficButtonProps> = ({
-  color, hoverColor, icon, title, onClick, marginRight = 0,
+  color, dimColor, hoverColor, icon, title, onClick, marginRight = 0, focused = true,
 }) => {
   const [hovered, setHovered] = useState(false);
 
@@ -138,7 +160,7 @@ const TrafficButton: React.FC<TrafficButtonProps> = ({
         width: BUTTON_SIZE,
         height: BUTTON_SIZE,
         borderRadius: '50%',
-        backgroundColor: hovered ? hoverColor : color,
+        backgroundColor: hovered ? hoverColor : (focused ? color : dimColor),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
