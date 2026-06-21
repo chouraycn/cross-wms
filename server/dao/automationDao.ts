@@ -56,16 +56,6 @@ export interface AutomationExecutionData {
 
 // ===================== JSON Field Helpers =====================
 
-const JSON_FIELDS: (keyof AutomationRow)[] = [
-  'task_config',
-  'event_trigger',
-  'webhook_config',
-  'execution_policy',
-  'notification_config',
-];
-
-const JSON_FIELDS_RUN: (keyof AutomationRunRow)[] = ['steps', 'trigger_detail'];
-
 function serializeJson(value: unknown): string {
   try {
     return JSON.stringify(value);

@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { initDb } from '../db.js';
-import type { AppSettingsRow, WarehouseRow, InventoryItemRow, TransitOrderRow, InboundRecordRow, OutboundRecordRow, UserSkillRow, BuiltinStatusPatchRow } from '../db.js';
+import type { WarehouseRow } from '../db.js';
 
 export interface MigrateResult {
   warehouses: number;
