@@ -105,7 +105,7 @@ export default defineConfig(({ mode }) => ({
             return 'vendor-mui-icons';
           }
           // MUI X DataGrid — 单独拆分（高级数据展示组件）
-          if (id.includes('node_modules/@mui/x-data-grid/') || id.includes('node_modules/@mui/x-date-pickers/') || id.includes('node_modules/@mui/x-charts/')) {
+          if (id.includes('node_modules/@mui/x-data-grid/')) {
             return 'vendor-mui-x';
           }
           // MUI core + @emotion 运行时 — 最大的单库
@@ -133,6 +133,10 @@ export default defineConfig(({ mode }) => ({
           // 原因：markdown 生态包（hast-util-*、property-information 等）与 MUI/@emotion 存在共享依赖
           // 强制拆分会产生 vendor-mui ↔ vendor-markdown 循环依赖，导致运行时白屏
           // 让 Vite 自动处理这些包的归属，避免循环依赖
+          // react-virtuoso — 虚拟滚动列表（ChatMessageList 使用）
+          if (id.includes('node_modules/react-virtuoso/')) {
+            return 'vendor-virtuoso';
+          }
           // 工具库（dayjs/uuid/fflate/clsx 等）
           if (
             id.includes('node_modules/dayjs/') ||
@@ -146,11 +150,14 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('node_modules/js-yaml/')) {
             return 'vendor-js-yaml';
           }
-          // react-syntax-highlighter — 代码高亮（MarkdownRenderer 使用）
-          // NOTE: 不移出 manualChunk，CJS 转换由 commonjsOptions.include 处理
-          // if (id.includes('node_modules/react-syntax-highlighter/')) {
-          //   return 'vendor-syntax-highlighter';
-          // }
+          // react-syntax-highlighter + refractor — 代码高亮（MarkdownRenderer 使用）
+          // v8.0: 取消注释，将 27 个模块从 main chunk 拆出（约 200KB）
+          if (
+            id.includes('node_modules/react-syntax-highlighter/') ||
+            id.includes('node_modules/refractor/')
+          ) {
+            return 'vendor-syntax-highlighter';
+          }
           // KaTeX — LaTeX 数学公式渲染
           if (id.includes('node_modules/katex/')) {
             return 'vendor-katex';
