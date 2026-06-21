@@ -28,7 +28,6 @@ import { useToast } from '../../contexts/ToastContext';
 import ChatToolbar from './ChatToolbar';
 import AISettingsDialog from '../Layout/AISettingsDialog';
 import { SessionReferenceSelector } from './SessionReferenceSelector';
-import { ExpertSelector, type ExpertOption } from './ExpertSelector';
 import type { SendMessageOptions } from '../../hooks/useChat';
 import { uploadFile } from '../../services/api';
 import { API_BASE_URL } from '../../constants/api';
@@ -110,10 +109,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   // v1.7.0: 意图分类 Popover 状态
   const [intentAnchorEl, setIntentAnchorEl] = useState<HTMLElement | null>(null);
   const [expandedIntent, setExpandedIntent] = useState<IntentCategory | null>(null);
-
-  // v8.0: 专家选择弹窗状态
-  const [showExpertSelector, setShowExpertSelector] = useState(false);
-  const [selectedExpert, setSelectedExpert] = useState<ExpertOption | null>(null);
 
   // 当 initialSkill 从外部变化时同步到 selectedSkill（如 SkillDetailPage 跳转过来）
   useEffect(() => {
@@ -504,7 +499,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       reasoningEffort: reasoningEffort || undefined,
       executionMode: aiEngineSettings.defaultExecutionMode !== 'legacy' ? aiEngineSettings.defaultExecutionMode : undefined,
       queueMode: aiEngineSettings.defaultQueueMode !== 'followup' ? aiEngineSettings.defaultQueueMode : undefined,
-      agentId: selectedExpert?.id || undefined,
     });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
@@ -946,8 +940,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           hasAttachments={pendingAttachments.length > 0}
           reasoningEffort={reasoningEffort}
           onReasoningEffortChange={handleReasoningEffortChange}
-          onExpertClick={() => setShowExpertSelector(true)}
-          selectedExpertName={selectedExpert?.name}
         />
         {/* v2.3.0: 文件夹选择区域 — 作为 Paper 内部元素，避免圆角颜色不一致 */}
         <Collapse in={isEmpty} timeout={300}>
@@ -1108,13 +1100,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         )}
       </Popover>
 
-      {/* v8.0: 专家选择弹窗 */}
-      <ExpertSelector
-        open={showExpertSelector}
-        onClose={() => setShowExpertSelector(false)}
-        onSelect={setSelectedExpert}
-        selectedId={selectedExpert?.id}
-      />
     </Box>
   );
 });
