@@ -1,14 +1,15 @@
 /**
  * SSE 事件类型定义 — 统一事件类型系统
  *
- * 将原有 24 种 SSE 事件精简为 7 种核心事件：
+ * 将原有 24 种 SSE 事件精简为 8 种核心事件：
  * 1. init — 初始化元数据
  * 2. text — 文本内容流式输出
  * 3. thinking — 深度思考内容
  * 4. tool_call — 工具调用通知
  * 5. permission_request — 工具权限请求
- * 6. done — 流结束信号
- * 7. debug — 可选调试事件（合并原 ReAct 内部事件，通过 LOG_DEBUG=1 启用）
+ * 6. error — 后端错误通知（确保前端能收到，避免卡在"思考中"）
+ * 7. done — 流结束信号
+ * 8. debug — 可选调试事件（合并原 ReAct 内部事件，通过 LOG_DEBUG=1 启用）
  *
  * 向后兼容：旧事件类型通过 sendDebugSSE 发送，前端仍能接收但不在 UI 上展示。
  */
@@ -64,6 +65,15 @@ export interface SSEPermissionRequestEvent {
   riskLevel?: string;
 }
 
+/** error 事件 — 后端错误通知（确保前端能收到，避免卡在"思考中"） */
+export interface SSEErrorEvent {
+  type: 'error';
+  /** 错误代码（如 AUTH_FAILED, RATE_LIMITED, SERVER_ERROR 等） */
+  code: string;
+  /** 用户友好的错误消息 */
+  message: string;
+}
+
 /** done 事件 — 流结束信号 */
 export interface SSEDoneEvent {
   type: 'done';
@@ -83,25 +93,27 @@ export interface SSEDebugEvent {
 
 // ===================== 联合类型 =====================
 
-/** 7 种核心 SSE 事件联合类型 */
+/** 8 种核心 SSE 事件联合类型 */
 export type SSEEvent =
   | SSEInitEvent
   | SSETextEvent
   | SSEThinkingEvent
   | SSEToolCallEvent
   | SSEPermissionRequestEvent
+  | SSEErrorEvent
   | SSEDoneEvent
   | SSEDebugEvent;
 
 // ===================== 核心事件类型集合 =====================
 
-/** 7 种核心事件类型字面量 */
+/** 8 种核心事件类型字面量 */
 export const CORE_EVENT_TYPES = [
   'init',
   'text',
   'thinking',
   'tool_call',
   'permission_request',
+  'error',
   'done',
   'debug',
 ] as const;
@@ -110,7 +122,7 @@ export const CORE_EVENT_TYPES = [
 export type CoreEventType = (typeof CORE_EVENT_TYPES)[number];
 
 /**
- * 判断事件类型是否属于核心 7 种。
+ * 判断事件类型是否属于核心 8 种。
  * 非核心事件类型需要通过 sendDebugSSE 发送。
  */
 export function isCoreEventType(type: string): boolean {

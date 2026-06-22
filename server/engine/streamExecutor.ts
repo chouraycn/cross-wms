@@ -164,7 +164,7 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
       onSSEEvent: (event: Record<string, unknown>) => {
         // 策略内部事件：核心类型直接发送，非核心类型走 debug 通道
         const eventType = event.type as string;
-        if (['init', 'text', 'thinking', 'tool_call', 'permission_request', 'done'].includes(eventType)) {
+        if (['init', 'text', 'thinking', 'tool_call', 'permission_request', 'done', 'error'].includes(eventType)) {
           sendSSE(res, event);
         } else {
           sendDebugSSE(res, event);

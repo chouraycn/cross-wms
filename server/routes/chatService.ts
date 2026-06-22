@@ -358,7 +358,7 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
       approvedToolsCache: sessionApprovedSet,
       onSSEEvent: (evt: Record<string, unknown>) => {
         const evtType = evt.type as string;
-        if (['init', 'text', 'thinking', 'tool_call', 'permission_request', 'done'].includes(evtType)) {
+        if (['init', 'text', 'thinking', 'tool_call', 'permission_request', 'done', 'error'].includes(evtType)) {
           sendSSE(res, evt);
         } else {
           sendDebugSSE(res, evt);
