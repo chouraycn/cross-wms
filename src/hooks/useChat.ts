@@ -54,34 +54,39 @@ export interface SendMessageOptions {
 const QUERY_BLOCK_REGEX = /```inventory_query\s*\n([\s\S]*?)\n```/;
 
 /**
- * v2.8.6: 自适应渲染调度器 — WKWebView 兼容 + 后台标签页修复
- * 
+ * v2.9.0: 自适应渲染调度器 — WKWebView 兼容 + 后台标签页修复
+ *
  * 问题1: WKWebView 在窗口可见但未交互时会暂停 requestAnimationFrame
  * 问题2: 浏览器在标签页不可见（切到其他标签页）时会完全暂停 rAF（降至 0fps），
  *         导致 SSE 流式内容持续到达但 flushRender 永不执行，UI 卡在"思考中"。
  *         用户切回标签页时内容才突然出现。
- * 
+ *
  * 修复: 前台用 rAF（vsync 对齐，打字机效果流畅），后台/桌面用 setTimeout（不受暂停影响）。
+ *
+ * v2.9.0-fix: IS_PYWEBVIEW 从模块级常量改为动态检查。
+ * 根因: 原实现 `const IS_PYWEBVIEW = isDesktopApp()` 在模块加载时求值，
+ * 但 pywebview 在 window.onload 之后才向 window 注入 window.pywebview。
+ * 若模块在注入前被 JS 引擎缓存，IS_PYWEBVIEW 永远为 false，
+ * scheduleFrame 使用 rAF，在 WKWebView 空闲时被暂停 → SSE 内容积压 → 卡在"思考中"。
+ * 改为每次调用 scheduleFrame 时动态检查 isDesktopApp()，确保检测准确。
  */
-const IS_PYWEBVIEW = isDesktopApp();
+const scheduleFrame = (fn: FrameRequestCallback): number => {
+  if (isDesktopApp()) {
+    // 桌面端（pywebview / Electron）：用 setTimeout 16ms 绕过 rAF 节流
+    return window.setTimeout(() => fn(Date.now()), 16);
+  }
+  // 浏览器环境：标签页可见时用 rAF（vsync 对齐，打字机效果流畅），不可见时降级 setTimeout
+  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+    return requestAnimationFrame(fn);
+  }
+  return window.setTimeout(() => fn(Date.now()), 16);
+};
 
-const scheduleFrame = IS_PYWEBVIEW
-  ? (fn: FrameRequestCallback): number => window.setTimeout(() => fn(Date.now()), 16)
-  : (fn: FrameRequestCallback): number => {
-      // 浏览器环境：标签页可见时用 rAF，不可见时降级 setTimeout
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        return requestAnimationFrame(fn);
-      }
-      return window.setTimeout(() => fn(Date.now()), 16);
-    };
-
-const cancelFrame = IS_PYWEBVIEW
-  ? (id: number): void => window.clearTimeout(id)
-  : (id: number): void => {
-      // 同时清理 rAF 和 setTimeout（clearTimeout 对 rAF id 是无害的 no-op）
-      window.clearTimeout(id);
-      cancelAnimationFrame(id);
-    };
+const cancelFrame = (id: number): void => {
+  // clearTimeout 对 rAF id 是无害的 no-op，统一用双清理
+  window.clearTimeout(id);
+  cancelAnimationFrame(id);
+};
 
 export function useChat(currentSession: Session | undefined, onSessionUpdate: (session: Session) => void) {
   const [isLoading, setIsLoading] = useState(false);
