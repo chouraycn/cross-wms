@@ -966,6 +966,11 @@ scheduleRender();
                     }
                     // v8.2: Agent 编排事件 — agent_start / agent_end / subtask_create / subtask_assign / subtask_complete / reflect / plan
                     if (data.type === 'agent_start' || data.type === 'agent_end' || data.type === 'subtask_create' || data.type === 'subtask_assign' || data.type === 'subtask_complete' || data.type === 'reflect' || data.type === 'plan') {
+                      // v8.2-fix: Agent 编排事件在 thinking 之后到达，标记 thinking 阶段结束
+                      // 避免 ThinkingBlock 在 Agent 事件阶段仍显示"正在思考..."
+                      if (!streamingMsg.thinkingDone && streamingMsg.thinking) {
+                        streamingMsg.thinkingDone = true;
+                      }
                       const event = data as AgentEvent;
                       streamingMsg.agentEvents = [...(streamingMsg.agentEvents || []), event];
                       // 同步更新 orchestrationState（如果存在）
