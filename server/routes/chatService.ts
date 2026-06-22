@@ -244,6 +244,7 @@ async function executeFromQueue(
 
     let keepAliveTimer: NodeJS.Timeout | null = null;
     const thinkingStartRef = { value: Date.now() };
+    // v3.0.0: 缩短 keep_alive 间隔 15s → 5s，让用户更快感知连接活跃
     keepAliveTimer = setInterval(() => {
       if (!res.writableEnded) {
         try {
@@ -252,7 +253,7 @@ async function executeFromQueue(
           res.write(`data: ${JSON.stringify({ type: 'keep_alive', elapsed })}\n\n`);
         } catch { /* ignore */ }
       }
-    }, 15000);
+    }, 5000);
 
     let fullContent = '';
     let thinkingContent = '';
