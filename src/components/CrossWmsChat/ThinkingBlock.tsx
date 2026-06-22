@@ -8,7 +8,7 @@
  * - 折叠态：一行（标签 + 耗时 + 箭头）
  * - 流式态：呼吸灯动画
  */
-import React, { useState, useEffect, useRef, memo } from 'react';
+import React, { useState, useEffect, useRef, memo, useMemo } from 'react';
 import { Box, Typography, IconButton, Collapse, useTheme, Tooltip, CircularProgress } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -67,10 +67,31 @@ function getLabel(effort?: string): string {
   }
 }
 
-export const ThinkingBlock = memo(function ThinkingBlock({ thinking, duration, isStreaming, thinkingDone, reasoningEffort, thinkingElapsed, cacheHit, usage, reactPhase, complexityAssessment, reflectionConfidence, executionPlan }: ThinkingBlockProps) {
+function areThinkingBlockPropsEqual(
+  prevProps: ThinkingBlockProps,
+  nextProps: ThinkingBlockProps
+): boolean {
+  // 高频 props — 必须比较
+  if (prevProps.thinking !== nextProps.thinking) return false;
+  if (prevProps.isStreaming !== nextProps.isStreaming) return false;
+  if (prevProps.thinkingDone !== nextProps.thinkingDone) return false;
+  if (prevProps.thinkingElapsed !== nextProps.thinkingElapsed) return false;
+  // 中频 props
+  if (prevProps.duration !== nextProps.duration) return false;
+  if (prevProps.reasoningEffort !== nextProps.reasoningEffort) return false;
+  if (prevProps.cacheHit !== nextProps.cacheHit) return false;
+  // 低频 props — 引用比较即可（只在 done 事件时变化）
+  if (prevProps.usage !== nextProps.usage) return false;
+  if (prevProps.reactPhase !== nextProps.reactPhase) return false;
+  // 以下 props 在流式期间不会变化，跳过深度比较
+  // complexityAssessment, reflectionConfidence, executionPlan 只在 done 时设置
+  return true;
+}
+
+function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, reasoningEffort, thinkingElapsed, cacheHit, usage, reactPhase, complexityAssessment, reflectionConfidence, executionPlan }: ThinkingBlockProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const gs = getGrayScale(isDark);
+  const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const [expanded, setExpanded] = useState(false);
   const label = getLabel(reasoningEffort);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -443,8 +464,7 @@ export const ThinkingBlock = memo(function ThinkingBlock({ thinking, duration, i
       </Collapse>
     </Box>
   );
-});
+}
 
-// v8.3: 自定义比较函数 — 只在 thinking/isStreaming/thinkingDone 等关键 props 变化时重渲染
-// 跳过 executionPlan/reactPhase 等低频 props 的深度比较
+export const ThinkingBlock = memo(ThinkingBlockInner, areThinkingBlockPropsEqual);
 ThinkingBlock.displayName = 'ThinkingBlock';

@@ -373,7 +373,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
         />
       );
     },
-  }), [gs, isDark, copied]);
+  }), [gs, isDark]);
 
   // v2.8.1: memoize ReactMarkdown 元素 — 仅在 renderedContent 或 markdownComponents 变化时重建
   // 流式时 renderedContent 每 150ms 更新一次，而非每帧 → Markdown 解析频率从 60fps 降至 ~7fps

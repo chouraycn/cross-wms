@@ -141,7 +141,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       }
     }
     prevMsgCountRef.current = session.messages.length;
-  }, [session.messages.length, session.messages[session.messages.length - 1]?.content]);
+  }, [session.messages.length]);
 
   return (
     <Box
