@@ -147,8 +147,6 @@ export interface ModelManagerActions {
   closeTemplateDialog: () => void;
   /** 应用模板 */
   applyTemplate: (templateId: string) => void;
-  /** 重新排序模型列表 */
-  reorderModels: (fromIndex: number, toIndex: number) => void;
   /** 关闭确认对话框 */
   closeConfirmDialog: () => void;
 }
@@ -165,7 +163,6 @@ export interface ModelListProps {
     | 'handleSetDefaultModel'
     | 'handleToggleModelEnabled'
     | 'toggleModelSelection'
-    | 'reorderModels'
   >;
   /** 批量选中的模型 ID */
   selectedModelIds: string[];

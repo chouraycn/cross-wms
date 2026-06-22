@@ -6,7 +6,7 @@
  * - variant="compact": 用 <List> 精简版渲染（类似 SettingsModelManagement）
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box, Typography, Button, Chip, Switch, IconButton, Tooltip, Checkbox,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -15,7 +15,6 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import TuneIcon from '@mui/icons-material/Tune';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { providerLabel, providerIcon } from '../../../utils/providerIcons';
 import { CAPABILITY_LABELS, CAPABILITY_COLORS } from '../../../types/models';
 import { getModelManagerStyles } from './styles';
@@ -92,35 +91,15 @@ const HealthDot: React.FC<HealthDotProps> = ({ status = 'unknown', latency, size
 
 // ===================== Table 变体 =====================
 
-interface DragProps {
-  isFiltered: boolean;
-  draggingIndex: number | null;
-  dragOverIndex: number | null;
-  handleDragStart: (index: number) => (e: React.DragEvent) => void;
-  handleDragOver: (index: number) => (e: React.DragEvent) => void;
-  handleDragLeave: () => void;
-  handleDrop: (index: number) => (e: React.DragEvent) => void;
-  handleDragEnd: () => void;
-}
-
-const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typeof getModelManagerStyles>; isDark: boolean }> = ({
+const ModelTable: React.FC<ModelListProps & { styles: ReturnType<typeof getModelManagerStyles>; isDark: boolean }> = ({
   models, defaultModelId, actions, selectedModelIds, healthStatuses, healthLatencies,
-  isFiltered, draggingIndex, dragOverIndex, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
   styles, isDark,
 }) => (
   <Box sx={{ flex: 1, overflow: 'auto' }}>
-    <TableContainer>
-      <Table size="small">
+    <TableContainer sx={{ overflowX: 'auto' }}>
+      <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
         <TableHead>
-          <TableRow>
-            {!isFiltered && (
-              <TableCell sx={{
-                fontSize: '0.75rem', fontWeight: 500, color: styles.textMuted,
-                py: 1, px: 1, borderBottom: `1px solid ${styles.borderLight}`,
-                backgroundColor: styles.bgHover, width: 28,
-              }}>
-              </TableCell>
-            )}
+          <TableRow sx={{ backgroundColor: styles.bgHover }}>
             <TableCell sx={{
               fontSize: '0.75rem', fontWeight: 500, color: styles.textMuted,
               py: 1, px: 1, borderBottom: `1px solid ${styles.borderLight}`,
@@ -136,8 +115,8 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
             </TableCell>
             <TableCell align="right" sx={{
               fontSize: '0.75rem', fontWeight: 500, color: styles.textMuted,
-              py: 1, px: 1.5, borderBottom: `1px solid ${styles.borderLight}`,
-              backgroundColor: styles.bgHover, width: 140,
+              py: 1, px: 1, borderBottom: `1px solid ${styles.borderLight}`,
+              backgroundColor: styles.bgHover, width: 200,
             }}>
               操作
             </TableCell>
@@ -146,7 +125,7 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
         <TableBody>
           {models.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={isFiltered ? 3 : 4} align="center" sx={{ py: 8 }}>
+              <TableCell colSpan={3} align="center" sx={{ py: 8 }}>
                 <Typography sx={{ fontSize: '0.8125rem', color: styles.textDisabled }}>
                   暂无自定义模型，你可以
                   <Box
@@ -166,29 +145,15 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
               </TableCell>
             </TableRow>
           ) : (
-            models.map((model, index) => (
+            models.map((model) => (
               <TableRow
                 key={model.id}
-                draggable={!isFiltered}
-                onDragStart={handleDragStart(index)}
-                onDragOver={handleDragOver(index)}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop(index)}
-                onDragEnd={handleDragEnd}
                 sx={{
-                  opacity: draggingIndex === index ? 0.5 : 1,
-                  backgroundColor: dragOverIndex === index ? (isDark ? 'rgba(96, 165, 250, 0.12)' : (isDark ? 'rgba(96, 165, 250, 0.12)' : 'rgba(25, 118, 210, 0.08)')) : 'inherit',
                   transition: 'background-color 0.15s ease',
-                  cursor: isFiltered ? 'default' : 'move',
-                  '&:nth-of-type(even)': { backgroundColor: dragOverIndex === index ? (isDark ? 'rgba(96, 165, 250, 0.12)' : (isDark ? 'rgba(96, 165, 250, 0.12)' : 'rgba(25, 118, 210, 0.08)')) : styles.bgHover },
-                  '&:hover': { backgroundColor: dragOverIndex === index ? (isDark ? 'rgba(96, 165, 250, 0.12)' : (isDark ? 'rgba(96, 165, 250, 0.12)' : 'rgba(25, 118, 210, 0.08)')) : styles.bgHover },
+                  '&:nth-of-type(even)': { backgroundColor: styles.bgHover },
+                  '&:hover': { backgroundColor: styles.bgHover },
                 }}
               >
-                {!isFiltered && (
-                  <TableCell padding="checkbox" sx={{ width: 28, cursor: 'grab', borderBottom: `1px solid ${styles.borderLight}`, py: 1 }}>
-                    <DragIndicatorIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-                  </TableCell>
-                )}
                 <TableCell sx={{ py: 1, px: 1, borderBottom: `1px solid ${styles.borderLight}` }}>
                   <Checkbox
                     size="small"
@@ -198,23 +163,23 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
                   />
                 </TableCell>
                 <TableCell sx={{ py: 1, px: 1.5, borderBottom: `1px solid ${styles.borderLight}` }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
                     <HealthDot
                       status={healthStatuses?.[model.id]}
                       latency={healthLatencies?.[model.id]}
                     />
                     {providerIcon(model.provider)}
-                    <Typography sx={{ fontSize: '0.75rem', color: styles.textSecondary, whiteSpace: 'nowrap' }}>
+                    <Typography sx={{ fontSize: '0.75rem', color: styles.textSecondary, whiteSpace: 'nowrap', flexShrink: 0 }}>
                       {providerLabel(model.provider)}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: styles.textPrimary, ml: 0.5 }}>
+                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: styles.textPrimary, ml: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
                       {model.name}
                     </Typography>
                     {model.id === defaultModelId && (
-                      <Chip label="默认" size="small" sx={{ backgroundColor: styles.semantic.badgeSuccess, color: '#FFFFFF', fontSize: '0.6rem', height: 16, fontWeight: 600 }} />
+                      <Chip label="默认" size="small" sx={{ backgroundColor: styles.semantic.badgeSuccess, color: '#FFFFFF', fontSize: '0.6rem', height: 16, fontWeight: 600, flexShrink: 0 }} />
                     )}
                     {!model.enabled && (
-                      <Chip label="禁用" size="small" sx={{ backgroundColor: styles.semantic.errorBg, color: styles.semantic.errorText, fontSize: '0.6rem', height: 16 }} />
+                      <Chip label="禁用" size="small" sx={{ backgroundColor: styles.semantic.errorBg, color: styles.semantic.errorText, fontSize: '0.6rem', height: 16, flexShrink: 0 }} />
                     )}
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25, flexWrap: 'wrap' }}>
@@ -239,15 +204,27 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
                     )}
                   </Box>
                 </TableCell>
-                <TableCell align="right" sx={{ py: 1, px: 1.5, borderBottom: `1px solid ${styles.borderLight}` }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
+                <TableCell align="right" sx={{ py: 1, px: 1, borderBottom: `1px solid ${styles.borderLight}`, whiteSpace: 'nowrap' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.25 }}>
                     {model.id !== defaultModelId && (
                       <Tooltip title="设为默认">
                         <Button
                           size="small"
-                          variant="outlined"
+                          variant="contained"
+                          color="inherit"
                           onClick={() => actions.handleSetDefaultModel(model.id)}
-                          sx={{ borderColor: styles.semantic.success, color: styles.semantic.success, fontSize: '0.65rem', py: 0.1, minWidth: 36, height: 24, '&:hover': { borderColor: styles.semantic.success } }}
+                          sx={{
+                            backgroundColor: `${styles.semantic.success} !important`,
+                            color: '#FFFFFF !important',
+                            fontSize: '0.7rem',
+                            px: 1,
+                            py: 0.3,
+                            minWidth: 52,
+                            height: 28,
+                            boxShadow: 'none',
+                            whiteSpace: 'nowrap',
+                            '&:hover': { backgroundColor: `${styles.semantic.success} !important`, boxShadow: 'none', opacity: 0.9 },
+                          }}
                         >
                           默认
                         </Button>
@@ -260,12 +237,12 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
                       sx={{ '& .MuiSwitch-root': { width: 36, height: 20 } }}
                     />
                     <Tooltip title="编辑">
-                      <IconButton size="small" onClick={() => actions.openModelDialog('edit', model)} sx={{ color: styles.textMuted, p: 0.4 }}>
+                      <IconButton size="small" onClick={() => actions.openModelDialog('edit', model)} sx={{ color: styles.textMuted, p: 0.3 }}>
                         <EditIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="删除">
-                      <IconButton size="small" onClick={() => actions.handleDeleteModel(model)} sx={{ color: styles.semantic.error, p: 0.4 }}>
+                      <IconButton size="small" onClick={() => actions.handleDeleteModel(model)} sx={{ color: styles.semantic.error, p: 0.3 }}>
                         <DeleteOutlineIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     </Tooltip>
@@ -282,29 +259,20 @@ const ModelTable: React.FC<ModelListProps & DragProps & { styles: ReturnType<typ
 
 // ===================== List 变体（详细版） =====================
 
-const ModelListDetailed: React.FC<ModelListProps & DragProps & { styles: ReturnType<typeof getModelManagerStyles>; isDark: boolean }> = ({
+const ModelListDetailed: React.FC<ModelListProps & { styles: ReturnType<typeof getModelManagerStyles>; isDark: boolean }> = ({
   models, defaultModelId, actions, selectedModelIds, healthStatuses, healthLatencies,
-  isFiltered, draggingIndex, dragOverIndex, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
   styles, isDark,
 }) => (
   <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 1, border: `1px solid ${styles.border}` }}>
-    {models.map((model, index) => (
+    {models.map((model) => (
       <ListItem
         key={model.id}
-        draggable={!isFiltered}
-        onDragStart={handleDragStart(index)}
-        onDragOver={handleDragOver(index)}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop(index)}
-        onDragEnd={handleDragEnd}
         sx={{
           py: 1.5,
           px: 2,
           borderBottom: `1px solid ${styles.border}`,
-          backgroundColor: dragOverIndex === index ? (isDark ? 'rgba(96, 165, 250, 0.12)' : 'rgba(25, 118, 210, 0.08)') : (model.id === defaultModelId ? styles.semantic.successBg : 'transparent'),
-          opacity: draggingIndex === index ? 0.5 : 1,
+          backgroundColor: model.id === defaultModelId ? styles.semantic.successBg : 'transparent',
           transition: 'background-color 0.15s ease',
-          cursor: isFiltered ? 'default' : 'move',
           '&:last-child': { borderBottom: 'none' },
         }}
         secondaryAction={
@@ -313,14 +281,20 @@ const ModelListDetailed: React.FC<ModelListProps & DragProps & { styles: ReturnT
               <Tooltip title="设为默认">
                 <Button
                   size="small"
-                  variant="outlined"
+                  variant="contained"
+                  color="inherit"
                   onClick={() => actions.handleSetDefaultModel(model.id)}
                   sx={{
-                    borderColor: styles.semantic.success,
-                    color: styles.semantic.success,
-                    fontSize: '0.7rem',
-                    py: 0.2,
-                    '&:hover': { borderColor: styles.semantic.success, backgroundColor: styles.semantic.successBg },
+                    backgroundColor: `${styles.semantic.success} !important`,
+                    color: '#FFFFFF !important',
+                    fontSize: '0.75rem',
+                    px: 1.5,
+                    py: 0.4,
+                    minWidth: 60,
+                    height: 30,
+                    boxShadow: 'none',
+                    whiteSpace: 'nowrap',
+                    '&:hover': { backgroundColor: `${styles.semantic.success} !important`, boxShadow: 'none', opacity: 0.9 },
                   }}
                 >
                   默认
@@ -351,11 +325,6 @@ const ModelListDetailed: React.FC<ModelListProps & DragProps & { styles: ReturnT
         <ListItemText
           primary={
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              {!isFiltered && (
-                <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'grab' }}>
-                  <DragIndicatorIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
-                </Box>
-              )}
               <Checkbox
                 size="small"
                 checked={selectedModelIds.includes(model.id)}
@@ -441,9 +410,8 @@ const ModelListDetailed: React.FC<ModelListProps & DragProps & { styles: ReturnT
 
 // ===================== Compact 变体 =====================
 
-const ModelListCompact: React.FC<ModelListProps & DragProps & { styles: ReturnType<typeof getModelManagerStyles>; isDark: boolean }> = ({
+const ModelListCompact: React.FC<ModelListProps & { styles: ReturnType<typeof getModelManagerStyles>; isDark: boolean }> = ({
   models, defaultModelId, actions, selectedModelIds, healthStatuses, healthLatencies,
-  isFiltered, draggingIndex, dragOverIndex, handleDragStart, handleDragOver, handleDragLeave, handleDrop, handleDragEnd,
   styles, isDark,
 }) => (
   <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 1, border: `1px solid ${styles.border}`, p: 0 }}>
@@ -458,23 +426,15 @@ const ModelListCompact: React.FC<ModelListProps & DragProps & { styles: ReturnTy
         />
       </ListItem>
     )}
-    {models.map((model, index) => (
+    {models.map((model) => (
       <ListItem
         key={model.id}
-        draggable={!isFiltered}
-        onDragStart={handleDragStart(index)}
-        onDragOver={handleDragOver(index)}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop(index)}
-        onDragEnd={handleDragEnd}
         sx={{
           py: 1,
           px: 1.5,
           borderBottom: `1px solid ${styles.borderLight}`,
-          backgroundColor: dragOverIndex === index ? (isDark ? 'rgba(96, 165, 250, 0.12)' : 'rgba(25, 118, 210, 0.08)') : (model.id === defaultModelId ? styles.semantic.successBg : 'transparent'),
-          opacity: draggingIndex === index ? 0.5 : 1,
+          backgroundColor: model.id === defaultModelId ? styles.semantic.successBg : 'transparent',
           transition: 'background-color 0.15s ease',
-          cursor: isFiltered ? 'default' : 'move',
           '&:last-child': { borderBottom: 'none' },
         }}
         secondaryAction={
@@ -483,9 +443,21 @@ const ModelListCompact: React.FC<ModelListProps & DragProps & { styles: ReturnTy
               <Tooltip title="设为默认">
                 <Button
                   size="small"
-                  variant="outlined"
+                  variant="contained"
+                  color="inherit"
                   onClick={() => actions.handleSetDefaultModel(model.id)}
-                  sx={{ borderColor: styles.semantic.success, color: styles.semantic.success, fontSize: '0.6rem', py: 0.1, minWidth: 32, '&:hover': { borderColor: styles.semantic.success } }}
+                  sx={{
+                    backgroundColor: `${styles.semantic.success} !important`,
+                    color: '#FFFFFF !important',
+                    fontSize: '0.7rem',
+                    px: 1.5,
+                    py: 0.4,
+                    minWidth: 60,
+                    height: 30,
+                    boxShadow: 'none',
+                    whiteSpace: 'nowrap',
+                    '&:hover': { backgroundColor: `${styles.semantic.success} !important`, boxShadow: 'none', opacity: 0.9 },
+                  }}
                 >
                   默认
                 </Button>
@@ -509,11 +481,6 @@ const ModelListCompact: React.FC<ModelListProps & DragProps & { styles: ReturnTy
         <ListItemText
           primary={
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
-              {!isFiltered && (
-                <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'grab' }}>
-                  <DragIndicatorIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
-                </Box>
-              )}
               <Checkbox
                 size="small"
                 checked={selectedModelIds.includes(model.id)}
@@ -575,55 +542,17 @@ const ModelListCompact: React.FC<ModelListProps & DragProps & { styles: ReturnTy
 // ===================== 导出 =====================
 
 const ModelList: React.FC<ModelListProps> = (props) => {
-  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const isFiltered = !!(props.searchQuery || (props.selectedCapabilities && props.selectedCapabilities.length > 0));
-
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const styles = getModelManagerStyles(isDark);
 
-  const handleDragStart = (index: number) => (e: React.DragEvent) => {
-    setDraggingIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', String(index));
-  };
-
-  const handleDragOver = (index: number) => (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (draggingIndex !== null && draggingIndex !== index) {
-      setDragOverIndex(index);
-    }
-  };
-
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
-  };
-
-  const handleDrop = (index: number) => (e: React.DragEvent) => {
-    e.preventDefault();
-    if (draggingIndex !== null && draggingIndex !== index) {
-      props.actions.reorderModels(draggingIndex, index);
-    }
-    setDraggingIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggingIndex(null);
-    setDragOverIndex(null);
-  };
-
-  // 搜索和能力标签筛选，同时保留原始索引（过滤掉 hidden 模型）
-  const filteredModelsWithIndex = React.useMemo(() => {
-    let result = props.models
-      .filter(m => !m.hidden)
-      .map((m, idx) => ({ model: m, originalIndex: idx }));
+  // 搜索和能力标签筛选（过滤掉 hidden 模型）
+  const filteredModels = React.useMemo(() => {
+    let result = props.models.filter(m => !m.hidden);
     // 按搜索关键词过滤
     if (props.searchQuery) {
       const q = props.searchQuery.toLowerCase();
-      result = result.filter(({ model: m }) =>
+      result = result.filter(m =>
         m.name.toLowerCase().includes(q) ||
         m.id.toLowerCase().includes(q) ||
         m.provider.toLowerCase().includes(q) ||
@@ -632,34 +561,23 @@ const ModelList: React.FC<ModelListProps> = (props) => {
     }
     // 按能力标签过滤
     if (props.selectedCapabilities && props.selectedCapabilities.length > 0) {
-      result = result.filter(({ model: m }) =>
+      result = result.filter(m =>
         props.selectedCapabilities!.some(cap => m.capabilities?.includes(cap as any))
       );
     }
     return result;
   }, [props.models, props.searchQuery, props.selectedCapabilities]);
 
-  const dragProps = {
-    isFiltered,
-    draggingIndex,
-    dragOverIndex,
-    handleDragStart,
-    handleDragOver,
-    handleDragLeave,
-    handleDrop,
-    handleDragEnd,
-  };
-
-  const filteredProps = { ...props, models: filteredModelsWithIndex.map(({ model }) => model) };
+  const filteredProps = { ...props, models: filteredModels };
 
   switch (props.variant) {
     case 'table':
-      return <ModelTable {...filteredProps} {...dragProps} styles={styles} isDark={isDark} />;
+      return <ModelTable {...filteredProps} styles={styles} isDark={isDark} />;
     case 'compact':
-      return <ModelListCompact {...filteredProps} {...dragProps} styles={styles} isDark={isDark} />;
+      return <ModelListCompact {...filteredProps} styles={styles} isDark={isDark} />;
     case 'list':
     default:
-      return <ModelListDetailed {...filteredProps} {...dragProps} styles={styles} isDark={isDark} />;
+      return <ModelListDetailed {...filteredProps} styles={styles} isDark={isDark} />;
   }
 };
 

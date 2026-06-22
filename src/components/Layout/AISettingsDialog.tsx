@@ -77,10 +77,12 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
         sx: {
           borderRadius: 2.5,
           boxShadow: isDark ? '0 24px 64px rgba(0,0,0,0.5)' : '0 24px 64px rgba(0,0,0,0.18)',
-          width: 880,
-          height: 580,
+          width: 960,
+          height: 620,
           maxHeight: 'none',
           margin: 'auto',
+          backgroundColor: gs.bgPanel,
+          overflow: 'hidden',
         },
       }}
     >
@@ -146,7 +148,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
         </Box>
 
         {/* Right content area */}
-        <Box sx={{ flex: 1, px: 4, pt: 3, pr: 5, pb: 4, overflow: 'auto', minWidth: 0, position: 'relative' }}>
+        <Box sx={{ flex: 1, px: 3, pt: 3, pr: 3, pb: 4, overflow: 'hidden', minWidth: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
           {activeTab === 'model' && (
             <>
               <SystemAuthBanner onOpenSettings={onOpenSystemAuthorization} />

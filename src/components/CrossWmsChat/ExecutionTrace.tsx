@@ -515,9 +515,10 @@ export const ExecutionTrace: React.FC<ExecutionTraceProps> = React.memo(({ msg, 
                     key={`${tc.name}-${idx}`}
                     sx={{
                       display: 'flex',
-                      alignItems: 'center',
+                      alignItems: 'flex-start',
                       gap: 0.5,
                       pl: 0.5,
+                      minWidth: 0,
                     }}
                   >
                     <Typography
@@ -526,6 +527,11 @@ export const ExecutionTrace: React.FC<ExecutionTraceProps> = React.memo(({ msg, 
                         fontFamily: 'monospace',
                         color: gs.textSecondary,
                         fontWeight: 500,
+                        flexShrink: 0,
+                        maxWidth: 120,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       {tc.name}
@@ -537,7 +543,8 @@ export const ExecutionTrace: React.FC<ExecutionTraceProps> = React.memo(({ msg, 
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        maxWidth: 200,
+                        flex: 1,
+                        minWidth: 0,
                       }}
                     >
                       {tc.arguments?.substring(0, 60)}

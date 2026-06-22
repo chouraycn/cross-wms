@@ -54,20 +54,34 @@ export interface SendMessageOptions {
 const QUERY_BLOCK_REGEX = /```inventory_query\s*\n([\s\S]*?)\n```/;
 
 /**
- * v2.8.6: 自适应渲染调度器 — WKWebView 兼容
- * WKWebView 在窗口可见但未交互时会暂停 requestAnimationFrame，
- * 导致 SSE 流式内容堆积不渲染。在 pywebview 环境中降级为 setTimeout(fn, 16)，
- * 确保渲染不被暂停。浏览器环境仍使用 rAF 以保持与显示器刷新率对齐。
+ * v2.8.6: 自适应渲染调度器 — WKWebView 兼容 + 后台标签页修复
+ * 
+ * 问题1: WKWebView 在窗口可见但未交互时会暂停 requestAnimationFrame
+ * 问题2: 浏览器在标签页不可见（切到其他标签页）时会完全暂停 rAF（降至 0fps），
+ *         导致 SSE 流式内容持续到达但 flushRender 永不执行，UI 卡在"思考中"。
+ *         用户切回标签页时内容才突然出现。
+ * 
+ * 修复: 前台用 rAF（vsync 对齐，打字机效果流畅），后台/桌面用 setTimeout（不受暂停影响）。
  */
 const IS_PYWEBVIEW = isDesktopApp();
 
 const scheduleFrame = IS_PYWEBVIEW
   ? (fn: FrameRequestCallback): number => window.setTimeout(() => fn(Date.now()), 16)
-  : (fn: FrameRequestCallback): number => requestAnimationFrame(fn);
+  : (fn: FrameRequestCallback): number => {
+      // 浏览器环境：标签页可见时用 rAF，不可见时降级 setTimeout
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        return requestAnimationFrame(fn);
+      }
+      return window.setTimeout(() => fn(Date.now()), 16);
+    };
 
 const cancelFrame = IS_PYWEBVIEW
   ? (id: number): void => window.clearTimeout(id)
-  : (id: number): void => cancelAnimationFrame(id);
+  : (id: number): void => {
+      // 同时清理 rAF 和 setTimeout（clearTimeout 对 rAF id 是无害的 no-op）
+      window.clearTimeout(id);
+      cancelAnimationFrame(id);
+    };
 
 export function useChat(currentSession: Session | undefined, onSessionUpdate: (session: Session) => void) {
   const [isLoading, setIsLoading] = useState(false);
@@ -823,6 +837,11 @@ scheduleRender();
                         totalSteps: data.totalSteps,
                         description: data.description,
                       };
+                      // v1.5.188-fix: ReAct 阶段从 reasoning 切换到 acting/done 时，标记 thinking 阶段结束
+                      // 避免深度思考模式下工具调用后 ThinkingBlock 一直显示"正在思考..."
+                      if (data.phase !== 'reasoning' && !streamingMsg.thinkingDone && streamingMsg.thinking) {
+                        streamingMsg.thinkingDone = true;
+                      }
 scheduleRender();
                     }
                     // v5.0: reflection_confidence — 反思置信度

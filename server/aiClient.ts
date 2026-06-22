@@ -144,6 +144,7 @@ function classifyError(statusCode: number, responseBody: string): AIAPIError['ca
 
 // v1.5.187: 发请求前硬校验 tool_calls/tool 消息配对
 // 如果 sanitizeToolMessages 仍有遗漏，此处最后一次检查并自动修复
+// v1.5.188: 增强 — 不仅移除无匹配的 tool_calls，还补齐缺失的 tool 消息
 function validateToolMessages(messages: Array<{ role: string; content?: unknown; tool_calls?: Array<{ id?: string }> | unknown[]; tool_call_id?: string }>): void {
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
@@ -168,17 +169,25 @@ function validateToolMessages(messages: Array<{ role: string; content?: unknown;
         const missing = [...expectedIds].filter(id => !foundIds.has(id));
         logger.error(`[validateToolMessages] 检测到不完整的 tool_calls 配对！assistantIdx=${i}, ` +
           `expected=${[...expectedIds].join(',')}, found=${[...foundIds].join(',')}, missing=${missing.join(',')}`);
-        // 自动修复：移除没有对应 tool 消息的 tool_calls
-        msg.tool_calls = (msg.tool_calls as Array<{ id?: string }>).filter(
-          (tc) => tc.id && foundIds.has(tc.id),
-        );
-        if (msg.tool_calls.length === 0) {
-          // 所有 tool_calls 都被移除 — 删除 tool_calls 字段
-          delete msg.tool_calls;
-          logger.error(`[validateToolMessages] 已清空 assistant[${i}] 的 tool_calls（无对应 tool 消息）`);
-        } else {
-          logger.error(`[validateToolMessages] 已移除 assistant[${i}] 中 ${missing.length} 个无响应的 tool_calls`);
+
+        // v1.5.188: 策略选择 — 补齐缺失的 tool 消息（而非移除 tool_calls）
+        // 补齐比移除更安全，因为移除 tool_calls 可能导致 AI 丢失已执行工具的上下文
+        // 找到插入位置：在 assistant[i] 之后、下一个 assistant 之前
+        let insertPos = i + 1;
+        while (insertPos < messages.length && messages[insertPos].role !== 'assistant') {
+          insertPos++;
         }
+
+        // 为每个缺失的 tool_call_id 补齐 tool 消息
+        const missingToolMsgs: Array<{ role: string; content: string; tool_call_id: string }> = [];
+        for (const missingId of missing) {
+          const fallbackMsg = { role: 'tool' as const, content: '(tool result unavailable - message was truncated)', tool_call_id: missingId };
+          missingToolMsgs.push(fallbackMsg);
+        }
+
+        // 在插入位置批量插入补齐的 tool 消息
+        messages.splice(insertPos, 0, ...missingToolMsgs);
+        logger.error(`[validateToolMessages] 已在 assistant[${i}] 后补齐 ${missing.length} 条缺失的 tool 消息`);
       }
     }
   }
@@ -501,8 +510,10 @@ export async function callOpenAICompatibleStream(
               const index = tc.index ?? 0;
               // 初始化新的 tool call
               if (!toolCalls[index]) {
+                // v1.5.188: 生成确定性 id，避免空字符串导致 sanitizeToolMessages 过滤掉配对
+                const fallbackId = tc.id || `call_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`;
                 toolCalls[index] = {
-                  id: tc.id || '',
+                  id: fallbackId,
                   type: 'function',
                   function: { name: '', arguments: '' },
                 };
