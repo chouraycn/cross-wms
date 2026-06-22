@@ -5,7 +5,7 @@ import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../type
 import { CHAT_API_URL, INVENTORY_QUERY_API_URL } from '../constants/api';
 import { useAppSettings, useAppearanceSettings } from '../contexts/AppSettingsContext';
 import { useToolPermission } from '../contexts/ToolPermissionContext';
-import { isDesktopApp } from '../utils/env';
+// v3.0.0: isDesktopApp 不再需要 — scheduleFrame 统一用 setTimeout，无环境检测
 // v2.8.9: 子 hooks 已提取为独立模块，未来可逐步迁移：
 // import { useRenderScheduler } from './useRenderScheduler';
 // import { useAbortControl } from './useAbortControl';
@@ -54,38 +54,28 @@ export interface SendMessageOptions {
 const QUERY_BLOCK_REGEX = /```inventory_query\s*\n([\s\S]*?)\n```/;
 
 /**
- * v2.9.0: 自适应渲染调度器 — WKWebView 兼容 + 后台标签页修复
+ * v3.0.0: 统一用 setTimeout 渲染调度 — 彻底消除 rAF 暂停问题
  *
- * 问题1: WKWebView 在窗口可见但未交互时会暂停 requestAnimationFrame
- * 问题2: 浏览器在标签页不可见（切到其他标签页）时会完全暂停 rAF（降至 0fps），
- *         导致 SSE 流式内容持续到达但 flushRender 永不执行，UI 卡在"思考中"。
- *         用户切回标签页时内容才突然出现。
+ * 历史问题链:
+ * v2.9.0: IS_PYWEBVIEW 模块级常量在 pywebview 注入前求值 → 永远 false → 用 rAF
+ * v2.9.0-fix: 改为动态检查 isDesktopApp()，但仍有漏洞:
+ *   首次 SSE 事件到达时若 isDesktopApp() 返回 false（pywebview 未注入），
+ *   scheduleFrame 用 rAF 调度 flushRender。WKWebView 暂停 rAF 后，
+ *   renderHandle 永远不会清空，后续 scheduleRender() 因 renderHandle !== null
+ *   全部变成空操作 → SSE 数据持续到达但 UI 永不更新 → 卡在"思考中"。
  *
- * 修复: 前台用 rAF（vsync 对齐，打字机效果流畅），后台/桌面用 setTimeout（不受暂停影响）。
- *
- * v2.9.0-fix: IS_PYWEBVIEW 从模块级常量改为动态检查。
- * 根因: 原实现 `const IS_PYWEBVIEW = isDesktopApp()` 在模块加载时求值，
- * 但 pywebview 在 window.onload 之后才向 window 注入 window.pywebview。
- * 若模块在注入前被 JS 引擎缓存，IS_PYWEBVIEW 永远为 false，
- * scheduleFrame 使用 rAF，在 WKWebView 空闲时被暂停 → SSE 内容积压 → 卡在"思考中"。
- * 改为每次调用 scheduleFrame 时动态检查 isDesktopApp()，确保检测准确。
+ * v3.0.0 修复: 移除 rAF 路径，全部用 setTimeout(fn, 16)。
+ * - 不受 WKWebView rAF 暂停影响
+ * - 不受浏览器标签页不可见时 rAF 降频影响
+ * - 16ms ≈ 60fps，打字机效果无感知差异
+ * - isDesktopApp() 检测不再关键 — 消除所有环境检测漏洞
  */
 const scheduleFrame = (fn: FrameRequestCallback): number => {
-  if (isDesktopApp()) {
-    // 桌面端（pywebview / Electron）：用 setTimeout 16ms 绕过 rAF 节流
-    return window.setTimeout(() => fn(Date.now()), 16);
-  }
-  // 浏览器环境：标签页可见时用 rAF（vsync 对齐，打字机效果流畅），不可见时降级 setTimeout
-  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-    return requestAnimationFrame(fn);
-  }
   return window.setTimeout(() => fn(Date.now()), 16);
 };
 
 const cancelFrame = (id: number): void => {
-  // clearTimeout 对 rAF id 是无害的 no-op，统一用双清理
   window.clearTimeout(id);
-  cancelAnimationFrame(id);
 };
 
 export function useChat(currentSession: Session | undefined, onSessionUpdate: (session: Session) => void) {
