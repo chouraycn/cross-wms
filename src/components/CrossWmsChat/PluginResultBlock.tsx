@@ -7,7 +7,7 @@
  * v1.5.68: 样式与 ToolCallItem 对齐 — 透明背景 + 浅灰左侧描边 + 灰色文本/图标。
  */
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Box, Typography, Chip, Collapse, IconButton, useTheme } from '@mui/material';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -25,7 +25,7 @@ interface PluginResultBlockProps {
  * - 默认折叠，点击标题行展开/折叠
  * - 展示工具名 Chip 列表、执行耗时、输出内容
  */
-export default function PluginResultBlock({ results }: PluginResultBlockProps) {
+export default memo(function PluginResultBlock({ results }: PluginResultBlockProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -106,4 +106,4 @@ export default function PluginResultBlock({ results }: PluginResultBlockProps) {
       </Collapse>
     </Box>
   );
-}
+});
