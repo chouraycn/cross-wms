@@ -18,6 +18,7 @@ import type {
   ReactPhaseInfo,
   ExecutionPlanInfo,
   ComplexityAssessment as ComplexityAssessmentType,
+  AgentEvent,
 } from '../../types/chat';
 
 interface ThinkingBlockProps {
@@ -48,6 +49,8 @@ interface ThinkingBlockProps {
   };
   /** v8.1: 执行计划 */
   executionPlan?: ExecutionPlanInfo;
+  /** v8.2: Agent 编排事件 */
+  agentEvents?: AgentEvent[];
 }
 
 function formatDuration(ms?: number): string {
@@ -83,12 +86,13 @@ function areThinkingBlockPropsEqual(
   // 低频 props — 引用比较即可（只在 done 事件时变化）
   if (prevProps.usage !== nextProps.usage) return false;
   if (prevProps.reactPhase !== nextProps.reactPhase) return false;
+  if (prevProps.agentEvents !== nextProps.agentEvents) return false;
   // 以下 props 在流式期间不会变化，跳过深度比较
   // complexityAssessment, reflectionConfidence, executionPlan 只在 done 时设置
   return true;
 }
 
-function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, reasoningEffort, thinkingElapsed, cacheHit, usage, reactPhase, complexityAssessment, reflectionConfidence, executionPlan }: ThinkingBlockProps) {
+function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, reasoningEffort, thinkingElapsed, cacheHit, usage, reactPhase, complexityAssessment, reflectionConfidence, executionPlan, agentEvents }: ThinkingBlockProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
@@ -349,7 +353,7 @@ function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, rea
           }}
         >
           {/* v8.1: 状态信息标签行（显示在 thinking 内容上方） */}
-          {(reactPhase || complexityAssessment || reflectionConfidence || executionPlan) && (
+          {(reactPhase || complexityAssessment || reflectionConfidence || executionPlan || agentEvents?.length) && (
             <Box
               sx={{
                 display: 'flex',
@@ -454,6 +458,46 @@ function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, rea
                     }}
                   >
                     步骤 {completed + (current ? 1 : 0)}/{executionPlan.steps.length}{current ? `：${current.description}` : ''}
+                  </Typography>
+                );
+              })()}
+
+              {/* v8.2: Agent 编排事件标签 */}
+              {agentEvents && agentEvents.length > 0 && (() => {
+                const lastEvt = agentEvents[agentEvents.length - 1];
+                const evtColors: Record<string, { color: string; bg: string }> = {
+                  agent_start: { color: '#3B82F6', bg: 'rgba(59,130,246,0.08)' },
+                  agent_end: { color: '#6B7280', bg: 'rgba(107,114,128,0.08)' },
+                  subtask_create: { color: '#8B5CF6', bg: 'rgba(139,92,246,0.08)' },
+                  subtask_assign: { color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
+                  subtask_complete: { color: '#22C55E', bg: 'rgba(34,197,94,0.08)' },
+                  reflect: { color: '#A855F7', bg: 'rgba(168,85,247,0.08)' },
+                  plan: { color: '#6366F1', bg: 'rgba(99,102,241,0.08)' },
+                };
+                const cfg = evtColors[lastEvt.type] || { color: '#6B7280', bg: 'rgba(107,114,128,0.08)' };
+                const labels: Record<string, string> = {
+                  agent_start: 'Agent 启动', agent_end: 'Agent 结束',
+                  subtask_create: '创建子任务', subtask_assign: '分配子任务',
+                  subtask_complete: '子任务完成', reflect: '反思评估', plan: '执行计划',
+                };
+                return (
+                  <Typography
+                    component="span"
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      height: 20,
+                      fontSize: 10,
+                      px: 0.75,
+                      borderRadius: 0.5,
+                      color: cfg.color,
+                      bgcolor: cfg.bg,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {labels[lastEvt.type] || lastEvt.type}
+                    {lastEvt.type === 'agent_start' && ` · ${lastEvt.agentRole}`}
+                    {lastEvt.type === 'subtask_complete' && ` · ${lastEvt.status === 'completed' ? '已完成' : '失败'}`}
                   </Typography>
                 );
               })()}
