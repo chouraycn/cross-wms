@@ -602,8 +602,9 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           const decoder = new TextDecoder();
           let buffer = '';
 
-          // 心跳超时检测：30 秒内无数据则认为连接断开
-          const HEARTBEAT_TIMEOUT_MS = 30000;
+          // v3.1.0: 心跳超时检测 30s → 60s — 推理模型首 token 可达 30-40s
+          // 后端 keep_alive 每 5s 一次，正常情况不会触发超时
+          const HEARTBEAT_TIMEOUT_MS = 60000;
           let heartbeatTimer: ReturnType<typeof setTimeout> | null = null;
 
           const clearHeartbeat = () => {
@@ -1267,6 +1268,9 @@ scheduleRender();
     } catch (e) {
       // console.error('[useChat] sendMessage error:', e);
       streamingMsgIdRef.current = null;
+
+      // v3.1.0: 错误路径确保 thinkingDone = true，防止 ThinkingBlock 卡在"正在思考..."
+      streamingMsg.thinkingDone = true;
 
       // v1.8.4: 区分取消错误、ERR_ABORTED 和其他错误
       let errorContent: string;
