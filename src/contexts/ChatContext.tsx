@@ -479,14 +479,21 @@ export function ChatProvider({
     const lastMsg = originalSession.messages[originalSession.messages.length - 1];
     if (lastMsg?.isStreaming) {
       // v8.3: 流式优化 — 始终用 ref 存储最新 session（供外部读取），
-      // 但只在 content/thinking 变化时才触发 React setState（减少 Context 级联重渲染）
+      // 但只在有意义的变化时才触发 React setState（减少 Context 级联重渲染）
       const prev = streamingSessionRef.current;
       const prevLastMsg = prev?.messages[prev.messages.length - 1];
-      // 先比较再更新 ref
+      // v8.4-fix: 扩展变化检测 — 不仅 content/thinking，还包括 model、metadata、reactPhase 等
+      // 之前只检测 content/thinking 导致 init 事件（设置 model）、react_phase 事件、
+      // error 事件等纯元数据变更不触发 UI 更新，用户看到空白
       const contentChanged = !prevLastMsg || prevLastMsg.content !== lastMsg.content;
       const thinkingChanged = !prevLastMsg || prevLastMsg.thinking !== lastMsg.thinking;
+      const modelChanged = !prevLastMsg || prevLastMsg.model !== lastMsg.model;
+      const metadataChanged = !prevLastMsg || prevLastMsg.metadata !== lastMsg.metadata;
+      const reactPhaseChanged = !prevLastMsg || prevLastMsg.reactPhase !== lastMsg.reactPhase;
+      const thinkingDoneChanged = !prevLastMsg || prevLastMsg.thinkingDone !== lastMsg.thinkingDone;
+      const hasMeaningfulChange = contentChanged || thinkingChanged || modelChanged || metadataChanged || reactPhaseChanged || thinkingDoneChanged;
       streamingSessionRef.current = originalSession;
-      if (contentChanged || thinkingChanged) {
+      if (hasMeaningfulChange) {
         setActiveSession(originalSession);
       }
       return;

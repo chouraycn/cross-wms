@@ -527,11 +527,11 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             // (thinking, tool_calls, react_phase, etc.) into a single React state update per frame.
             // SSE event handlers mutate streamingMsg in-place then call scheduleRender();
             // this flushRender picks up ALL mutations in one shot.
-            // v8.3: 对象复用优化 — content 变化时创建新 msg 引用（触发 BotMessageContent 重渲染），
-            // 纯元数据变化时复用 streamingMsg 引用（areEqual 的 === 快速路径生效，跳过 41 字段比较）
-            const msgRef = contentChangedThisFrame
-              ? { ...streamingMsg }
-              : streamingMsg;
+            // v8.4-fix: 始终创建新 msg 引用（浅拷贝），确保 handleSessionUpdate 的
+            // streaming fast-path 能通过引用比较（!==）检测到变化。
+            // 之前纯元数据变化时复用 streamingMsg 引用，导致 prevLastMsg === lastMsg，
+            // 所有字段比较（model, metadata, reactPhase 等）永远返回 true，UI 不更新。
+            const msgRef = { ...streamingMsg };
 
             onSessionUpdateRef.current({
               ...sessionWithStreaming,
@@ -1310,11 +1310,15 @@ scheduleRender();
         };
         onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...messagesPrefix, streamingMsg] });
       }
+    } finally {
+      // v8.4-fix: 使用 finally 确保 isLoading 状态始终被重置
+      // 之前如果 sendMessage 内部有未捕获异常，isLoadingRef.current 会卡在 true，
+      // 导致后续所有消息发送被拦截（line 302 的 early return）
+      setIsLoading(false);
+      isLoadingRef.current = false;
+      abortControllerRef.current = null;
+      setInputValue('');
     }
-    setIsLoading(false);
-    isLoadingRef.current = false;
-    abortControllerRef.current = null;
-    setInputValue('');
   }, []);
 
   /** v1.7.0: 重置 autoRetriedRef（切换会话或新对话时调用） */
