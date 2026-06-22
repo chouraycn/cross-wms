@@ -258,6 +258,8 @@ export interface Message {
   orchestrationState?: OrchestrationState;
   /** v8.1: Agent 状态列表（用于 AgentStatusIndicator 展示） */
   agentStatuses?: AgentStatusInfo[];
+  /** v8.2: Agent 编排事件流（agent_start / agent_end / subtask_create / subtask_assign / subtask_complete / reflect / plan） */
+  agentEvents?: AgentEvent[];
   /** v1.5.116: 模型降级信息 */
   fallbackModel?: string;
   fallbackReason?: 'model_not_supported' | 'request_failed';
@@ -639,6 +641,16 @@ export interface PlanEvent {
   /** 是否动态计划 */
   isDynamic: boolean;
 }
+
+/** v8.2: Agent 编排事件联合类型 */
+export type AgentEvent =
+  | AgentStartEvent
+  | AgentEndEvent
+  | SubtaskCreateEvent
+  | SubtaskAssignEvent
+  | SubtaskCompleteEvent
+  | ReflectEvent
+  | PlanEvent;
 
 /** Agent 状态信息（用于前端 AgentStatusIndicator 展示） */
 export interface AgentStatusInfo {
