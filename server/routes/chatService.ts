@@ -720,6 +720,19 @@ export async function handleChat(req: import('express').Request, res: import('ex
     let toolCallsJson: string | undefined;
     const modelConfig = modelsConfig.models.find((m) => m.id === effectiveModel);
 
+    // v3.1.0: 主路径启动 keep_alive 心跳 — 防止前端 30s 心跳超时
+    // 之前只有 executeFromQueue 路径启动了 keepAliveTimer，主路径遗漏
+    // 导致推理模型（20-30s 首 token）触发前端 SSE 心跳超时
+    const thinkingStartRef = { value: Date.now() };
+    keepAliveTimer = setInterval(() => {
+      if (!res.writableEnded) {
+        try {
+          const elapsed = Date.now() - thinkingStartRef.value;
+          res.write(`data: ${JSON.stringify({ type: 'keep_alive', elapsed })}\n\n`);
+        } catch { /* ignore */ }
+      }
+    }, 5000);
+
     try {
       if (!modelConfig) {
         throw new Error(`未找到模型配置: ${effectiveModel}`);
