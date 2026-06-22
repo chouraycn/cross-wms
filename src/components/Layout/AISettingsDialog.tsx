@@ -102,7 +102,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
         <CloseIcon sx={{ fontSize: 20 }} />
       </IconButton>
 
-      <Box sx={{ display: 'flex', height: '100%', pt: 0.5 }}>
+      <Box sx={{ display: 'flex', height: '100%' }}>
         {/* Left sidebar — strict match to screenshot */}
         <Box
           sx={{
