@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Message, ReferencedSession, Session, ToolCallInfo, Attachment, PluginResultInfo, ObserverReflectionInfo, ExecutionPlanInfo, PlanStepInfo, ReactPhaseInfo, QueueStateInfo } from '../types/chat';
+import { Message, ReferencedSession, Session, ToolCallInfo, Attachment, PluginResultInfo, ObserverReflectionInfo, ExecutionPlanInfo, PlanStepInfo, ReactPhaseInfo, QueueStateInfo, AgentEvent, AgentStatusInfo } from '../types/chat';
 import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../types/inventory-query';
 import { CHAT_API_URL, INVENTORY_QUERY_API_URL } from '../constants/api';
 import { useAppSettings, useAppearanceSettings } from '../contexts/AppSettingsContext';
@@ -962,6 +962,70 @@ scheduleRender();
                       doneReceived = true;
                       errorCode = 'QUEUE_REJECTED';
                       errorMessage = data.reason;
+                      scheduleRender();
+                    }
+                    // v8.2: Agent 编排事件 — agent_start / agent_end / subtask_create / subtask_assign / subtask_complete / reflect / plan
+                    if (data.type === 'agent_start' || data.type === 'agent_end' || data.type === 'subtask_create' || data.type === 'subtask_assign' || data.type === 'subtask_complete' || data.type === 'reflect' || data.type === 'plan') {
+                      const event = data as AgentEvent;
+                      streamingMsg.agentEvents = [...(streamingMsg.agentEvents || []), event];
+                      // 同步更新 orchestrationState（如果存在）
+                      if (data.type === 'subtask_create' && streamingMsg.orchestrationState) {
+                        const st = data as { subTaskId: string; description: string; dependsOn: string[]; priority: number };
+                        streamingMsg.orchestrationState = {
+                          ...streamingMsg.orchestrationState,
+                          subTasks: [
+                            ...streamingMsg.orchestrationState.subTasks,
+                            {
+                              id: st.subTaskId,
+                              description: st.description,
+                              assignedAgentId: null,
+                              status: 'pending' as const,
+                            },
+                          ],
+                        };
+                      }
+                      if (data.type === 'subtask_assign' && streamingMsg.orchestrationState) {
+                        const st = data as { subTaskId: string; agentId: string };
+                        streamingMsg.orchestrationState = {
+                          ...streamingMsg.orchestrationState,
+                          subTasks: streamingMsg.orchestrationState.subTasks.map(t =>
+                            t.id === st.subTaskId ? { ...t, assignedAgentId: st.agentId, status: 'running' as const } : t
+                          ),
+                        };
+                      }
+                      if (data.type === 'subtask_complete' && streamingMsg.orchestrationState) {
+                        const st = data as { subTaskId: string; status: 'completed' | 'failed' };
+                        streamingMsg.orchestrationState = {
+                          ...streamingMsg.orchestrationState,
+                          subTasks: streamingMsg.orchestrationState.subTasks.map(t =>
+                            t.id === st.subTaskId ? { ...t, status: st.status } : t
+                          ),
+                        };
+                      }
+                      if (data.type === 'agent_start' || data.type === 'agent_end') {
+                        const agentEvt = data as { agentId: string; agentRole: string };
+                        const existing = streamingMsg.agentStatuses || [];
+                        const idx = existing.findIndex(a => a.agentId === agentEvt.agentId);
+                        let updatedStatuses: AgentStatusInfo[];
+                        if (data.type === 'agent_start') {
+                          const newStatus: AgentStatusInfo = {
+                            agentId: agentEvt.agentId,
+                            agentRole: agentEvt.agentRole,
+                            agentName: agentEvt.agentRole,
+                            status: 'busy',
+                            currentTask: (data as { taskDescription?: string }).taskDescription,
+                          };
+                          updatedStatuses = idx >= 0
+                            ? existing.map((a, i) => i === idx ? newStatus : a)
+                            : [...existing, newStatus];
+                        } else {
+                          const endEvt = data as { status: 'success' | 'failed' | 'timeout'; error?: string };
+                          updatedStatuses = idx >= 0
+                            ? existing.map((a, i) => i === idx ? { ...a, status: endEvt.status === 'success' ? 'idle' as const : 'error' as const, currentTask: endEvt.error || undefined } : a)
+                            : existing;
+                        }
+                        streamingMsg.agentStatuses = updatedStatuses;
+                      }
                       scheduleRender();
                     }
                     if (data.type === 'done') {

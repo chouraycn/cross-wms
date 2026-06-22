@@ -371,6 +371,41 @@ async function executeFromQueue(
           } catch { /* ignore */ }
         }
       },
+      onAgentStart: (agentId: string, task: string) => {
+        if (!res.writableEnded) {
+          try { res.write(`data: ${JSON.stringify({ type: 'agent_start', agentId, task })}\n\n`); } catch { /* ignore */ }
+        }
+      },
+      onAgentEnd: (agentId: string, result?: string) => {
+        if (!res.writableEnded) {
+          try { res.write(`data: ${JSON.stringify({ type: 'agent_end', agentId, result })}\n\n`); } catch { /* ignore */ }
+        }
+      },
+      onSubtaskCreate: (subtaskId: string, description: string) => {
+        if (!res.writableEnded) {
+          try { res.write(`data: ${JSON.stringify({ type: 'subtask_create', subtaskId, description })}\n\n`); } catch { /* ignore */ }
+        }
+      },
+      onSubtaskAssign: (subtaskId: string, agentId: string) => {
+        if (!res.writableEnded) {
+          try { res.write(`data: ${JSON.stringify({ type: 'subtask_assign', subtaskId, agentId })}\n\n`); } catch { /* ignore */ }
+        }
+      },
+      onSubtaskComplete: (subtaskId: string, result?: string) => {
+        if (!res.writableEnded) {
+          try { res.write(`data: ${JSON.stringify({ type: 'subtask_complete', subtaskId, result })}\n\n`); } catch { /* ignore */ }
+        }
+      },
+      onReflect: (reflection: any) => {
+        if (!res.writableEnded) {
+          try { res.write(`data: ${JSON.stringify({ type: 'reflect', ...reflection })}\n\n`); } catch { /* ignore */ }
+        }
+      },
+      onPlan: (plan: any) => {
+        if (!res.writableEnded) {
+          try { res.write(`data: ${JSON.stringify({ type: 'plan', ...plan })}\n\n`); } catch { /* ignore */ }
+        }
+      },
       approvedToolsCache: params.sessionApprovedSet,
       reasoningEffort: params.reasoningEffort,
     });
@@ -1072,6 +1107,41 @@ export async function handleChat(req: import('express').Request, res: import('ex
                   result: auditResult,
                   timestamp: Date.now(),
                 })}\n\n`);
+              },
+              onAgentStart: (agentId: string, task: string) => {
+                if (!res.writableEnded) {
+                  try { res.write(`data: ${JSON.stringify({ type: 'agent_start', agentId, task })}\n\n`); } catch { /* ignore */ }
+                }
+              },
+              onAgentEnd: (agentId: string, result?: string) => {
+                if (!res.writableEnded) {
+                  try { res.write(`data: ${JSON.stringify({ type: 'agent_end', agentId, result })}\n\n`); } catch { /* ignore */ }
+                }
+              },
+              onSubtaskCreate: (subtaskId: string, description: string) => {
+                if (!res.writableEnded) {
+                  try { res.write(`data: ${JSON.stringify({ type: 'subtask_create', subtaskId, description })}\n\n`); } catch { /* ignore */ }
+                }
+              },
+              onSubtaskAssign: (subtaskId: string, agentId: string) => {
+                if (!res.writableEnded) {
+                  try { res.write(`data: ${JSON.stringify({ type: 'subtask_assign', subtaskId, agentId })}\n\n`); } catch { /* ignore */ }
+                }
+              },
+              onSubtaskComplete: (subtaskId: string, result?: string) => {
+                if (!res.writableEnded) {
+                  try { res.write(`data: ${JSON.stringify({ type: 'subtask_complete', subtaskId, result })}\n\n`); } catch { /* ignore */ }
+                }
+              },
+              onReflect: (reflection: any) => {
+                if (!res.writableEnded) {
+                  try { res.write(`data: ${JSON.stringify({ type: 'reflect', ...reflection })}\n\n`); } catch { /* ignore */ }
+                }
+              },
+              onPlan: (plan: any) => {
+                if (!res.writableEnded) {
+                  try { res.write(`data: ${JSON.stringify({ type: 'plan', ...plan })}\n\n`); } catch { /* ignore */ }
+                }
               },
               onPermissionRequest: (toolCall) => {
                 if (isSystemAuthorized()) {
