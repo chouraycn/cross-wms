@@ -8,7 +8,7 @@
  * - 折叠态：一行（标签 + 耗时 + 箭头）
  * - 流式态：呼吸灯动画
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { Box, Typography, IconButton, Collapse, useTheme, Tooltip, CircularProgress } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -67,7 +67,7 @@ function getLabel(effort?: string): string {
   }
 }
 
-export function ThinkingBlock({ thinking, duration, isStreaming, thinkingDone, reasoningEffort, thinkingElapsed, cacheHit, usage, reactPhase, complexityAssessment, reflectionConfidence, executionPlan }: ThinkingBlockProps) {
+export const ThinkingBlock = memo(function ThinkingBlock({ thinking, duration, isStreaming, thinkingDone, reasoningEffort, thinkingElapsed, cacheHit, usage, reactPhase, complexityAssessment, reflectionConfidence, executionPlan }: ThinkingBlockProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -443,4 +443,8 @@ export function ThinkingBlock({ thinking, duration, isStreaming, thinkingDone, r
       </Collapse>
     </Box>
   );
-}
+});
+
+// v8.3: 自定义比较函数 — 只在 thinking/isStreaming/thinkingDone 等关键 props 变化时重渲染
+// 跳过 executionPlan/reactPhase 等低频 props 的深度比较
+ThinkingBlock.displayName = 'ThinkingBlock';

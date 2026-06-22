@@ -115,3 +115,19 @@
 - npm 默认触发 `node-gyp rebuild` → binding.gyp not found → 编译失败
 - **修复**：构建脚本 `npm install --ignore-scripts`，手动为 better-sqlite3 运行 `prebuild-install`
 - `npm install fsevents --ignore-scripts` 可正常安装预编译二进制
+
+## 模型加载卡顿根因修复 v1.5.203 (commit 4fc2b575)
+- **根因**: `loadModelsConfig()` → `injectApiKeys()` → `execSync('security find-generic-password')` 同步调用 Keychain，每个 50-200ms，N 模型阻塞 1-2s
+- `GET /api/models` 拿到 key 后立即脱敏丢弃 — 纯浪费
+- **修复**: `loadModelsConfig(options?: { skipKeyInjection?: boolean })` 新增参数
+  - `skipKeyInjection: true` 跳过 Keychain 注入（GET /api/models 使用）
+  - AI 推理路径（chainExecutor/chatService/memoryExtractor）仍用完整版本
+  - `CACHE_TTL_MS` 从 5s 增至 30s
+  - 启动时预热缓存（非阻塞）
+- **同 commit 其他修复**: ThinkingBlock thinkingDone 标志、Electron rAF 降级 setTimeout、keep_alive JSON 格式、Agent 可视化组件
+
+## Electron/桌面端渲染调度修复 (commit 4fc2b575)
+- **问题**: Electron 打包后 SSE 数据到达但页面不刷新，点击后才出现
+- **根因**: `isDesktopApp()` 只检测 pywebview 不检测 Electron；macOS `backgroundThrottling` 节流 rAF
+- **修复**: `src/utils/env.ts` `isDesktopApp()` 增加 Electron 检测，降级为 `setTimeout(fn, 16)`
+- ThinkingBlock: 新增 `thinkingDone` 标志，收到首个 text 事件标记 thinking 结束（之前 isStreaming 全程 true）
