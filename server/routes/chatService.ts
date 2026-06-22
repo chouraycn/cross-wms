@@ -371,29 +371,29 @@ async function executeFromQueue(
           } catch { /* ignore */ }
         }
       },
-      onAgentStart: (agentId: string, task: string) => {
+      onAgentStart: (agentId: string, agentRole: string, taskDescription: string, subTaskId?: string) => {
         if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'agent_start', agentId, task })}\n\n`); } catch { /* ignore */ }
+          try { res.write(`data: ${JSON.stringify({ type: 'agent_start', agentId, agentRole, taskDescription, subTaskId })}\n\n`); } catch { /* ignore */ }
         }
       },
-      onAgentEnd: (agentId: string, result?: string) => {
+      onAgentEnd: (agentId: string, agentRole: string, status: 'success' | 'failed' | 'timeout', duration?: number, error?: string) => {
         if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'agent_end', agentId, result })}\n\n`); } catch { /* ignore */ }
+          try { res.write(`data: ${JSON.stringify({ type: 'agent_end', agentId, agentRole, status, duration, error })}\n\n`); } catch { /* ignore */ }
         }
       },
-      onSubtaskCreate: (subtaskId: string, description: string) => {
+      onSubtaskCreate: (subTaskId: string, description: string, dependsOn: string[] = [], priority: number = 1) => {
         if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'subtask_create', subtaskId, description })}\n\n`); } catch { /* ignore */ }
+          try { res.write(`data: ${JSON.stringify({ type: 'subtask_create', subTaskId, description, dependsOn, priority })}\n\n`); } catch { /* ignore */ }
         }
       },
-      onSubtaskAssign: (subtaskId: string, agentId: string) => {
+      onSubtaskAssign: (subTaskId: string, agentId: string, agentRole: string) => {
         if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'subtask_assign', subtaskId, agentId })}\n\n`); } catch { /* ignore */ }
+          try { res.write(`data: ${JSON.stringify({ type: 'subtask_assign', subTaskId, agentId, agentRole })}\n\n`); } catch { /* ignore */ }
         }
       },
-      onSubtaskComplete: (subtaskId: string, result?: string) => {
+      onSubtaskComplete: (subTaskId: string, description: string, status: 'completed' | 'failed', agentId: string, duration?: number, resultSummary?: string) => {
         if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'subtask_complete', subtaskId, result })}\n\n`); } catch { /* ignore */ }
+          try { res.write(`data: ${JSON.stringify({ type: 'subtask_complete', subTaskId, description, status, agentId, duration, resultSummary })}\n\n`); } catch { /* ignore */ }
         }
       },
       onReflect: (reflection: any) => {
@@ -1108,29 +1108,29 @@ export async function handleChat(req: import('express').Request, res: import('ex
                   timestamp: Date.now(),
                 })}\n\n`);
               },
-              onAgentStart: (agentId: string, task: string) => {
+              onAgentStart: (agentId: string, agentRole: string, taskDescription: string, subTaskId?: string) => {
                 if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'agent_start', agentId, task })}\n\n`); } catch { /* ignore */ }
+                  try { res.write(`data: ${JSON.stringify({ type: 'agent_start', agentId, agentRole, taskDescription, subTaskId })}\n\n`); } catch { /* ignore */ }
                 }
               },
-              onAgentEnd: (agentId: string, result?: string) => {
+              onAgentEnd: (agentId: string, agentRole: string, status: 'success' | 'failed' | 'timeout', duration?: number, error?: string) => {
                 if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'agent_end', agentId, result })}\n\n`); } catch { /* ignore */ }
+                  try { res.write(`data: ${JSON.stringify({ type: 'agent_end', agentId, agentRole, status, duration, error })}\n\n`); } catch { /* ignore */ }
                 }
               },
-              onSubtaskCreate: (subtaskId: string, description: string) => {
+              onSubtaskCreate: (subTaskId: string, description: string, dependsOn: string[] = [], priority: number = 1) => {
                 if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'subtask_create', subtaskId, description })}\n\n`); } catch { /* ignore */ }
+                  try { res.write(`data: ${JSON.stringify({ type: 'subtask_create', subTaskId, description, dependsOn, priority })}\n\n`); } catch { /* ignore */ }
                 }
               },
-              onSubtaskAssign: (subtaskId: string, agentId: string) => {
+              onSubtaskAssign: (subTaskId: string, agentId: string, agentRole: string) => {
                 if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'subtask_assign', subtaskId, agentId })}\n\n`); } catch { /* ignore */ }
+                  try { res.write(`data: ${JSON.stringify({ type: 'subtask_assign', subTaskId, agentId, agentRole })}\n\n`); } catch { /* ignore */ }
                 }
               },
-              onSubtaskComplete: (subtaskId: string, result?: string) => {
+              onSubtaskComplete: (subTaskId: string, description: string, status: 'completed' | 'failed', agentId: string, duration?: number, resultSummary?: string) => {
                 if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'subtask_complete', subtaskId, result })}\n\n`); } catch { /* ignore */ }
+                  try { res.write(`data: ${JSON.stringify({ type: 'subtask_complete', subTaskId, description, status, agentId, duration, resultSummary })}\n\n`); } catch { /* ignore */ }
                 }
               },
               onReflect: (reflection: any) => {
