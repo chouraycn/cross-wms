@@ -567,12 +567,22 @@ export async function handleChat(req: import('express').Request, res: import('ex
     let autoReasonType: string | undefined;
     if (model === 'auto') {
       const hasImageAttachment = attachments && Array.isArray(attachments) && attachments.some((att: { type: string }) => att.type === 'image');
-      const autoResult = autoSelectModel(message, modelsConfig, hasImageAttachment);
-      effectiveModel = autoResult.modelId;
-      effectiveModelName = autoResult.modelName;
-      autoReason = `${autoResult.modelName} · ${autoResult.reason}`;
-      autoReasonType = autoResult.reasonType;
-      logger.debug(`[Auto Model] ${autoResult.reasonType} → ${autoResult.modelName} (${autoResult.modelId})`);
+      try {
+        const autoResult = autoSelectModel(message, modelsConfig, hasImageAttachment);
+        effectiveModel = autoResult.modelId;
+        effectiveModelName = autoResult.modelName;
+        autoReason = `${autoResult.modelName} · ${autoResult.reason}`;
+        autoReasonType = autoResult.reasonType;
+        logger.debug(`[Auto Model] ${autoResult.reasonType} → ${autoResult.modelName} (${autoResult.modelId})`);
+      } catch (autoErr: any) {
+        // v8.2-fix: autoSelectModel 失败时发送 SSE error 事件，防止前端白屏
+        const errMsg = autoErr instanceof Error ? autoErr.message : '无可用模型';
+        const errCode = autoErr.code || 'NO_AVAILABLE_MODELS';
+        res.write(`data: ${JSON.stringify({ type: 'error', code: errCode, message: errMsg })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'done', errorCode: errCode, errorMessage: errMsg, thinkingDuration: 0 })}\n\n`);
+        res.end();
+        return;
+      }
     } else {
       effectiveModel = model;
       const found = modelsConfig.models.find(m => m.id === model);
