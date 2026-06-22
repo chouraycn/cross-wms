@@ -230,9 +230,8 @@ describe('ReActExecutor', () => {
       expect(state.turn).toBe(0);
       expect(state.shouldTerminate).toBe(false);
       expect(state.terminateReason).toBe('');
-      expect(state.currentStepIndex).toBe(0);
+      // v7.0: currentStepIndex 已移除（3 步循环不再需要步骤索引）
       expect(state.currentComplexityLevel).toBe('moderate');
-      expect(state.lastConfidenceScore).toBe(0);
       expect(state.earlyTermination).toBe(false);
     });
   });
@@ -399,152 +398,14 @@ describe('ReActExecutor', () => {
     });
   });
 
-  // ===================== 3. SelfEvaluation 测试 =====================
-  describe('SelfEvaluation / reflectionPhase', () => {
-    it('should return grade A when all observations are successful', () => {
-      const executor = new ReActExecutor();
-      const observations = [
-        makeObservation('tool_a', 'success'),
-        makeObservation('tool_b', 'success'),
-        makeObservation('tool_c', 'success'),
-      ];
-
-      const decision = (executor as any).reflectionPhase(observations);
-
-      expect(decision.selfEvaluation).toBeDefined();
-      expect(decision.selfEvaluation!.grade).toBe('A');
-      expect(decision.selfEvaluation!.reason).toContain('所有工具执行成功');
-      expect(decision.confidenceScore).toBe(9);
-      expect(decision.decision).toBe('early_stop');
-      expect(decision.shouldContinue).toBe(true);
-    });
-
-    it('should return grade D when all observations fail unrecoverably', () => {
-      const executor = new ReActExecutor();
-      const observations = [
-        makeObservation('tool_a', 'error', {
-          assessment: { level: 'error', reason: 'failed hard', shouldRetry: false, shouldAdjustStrategy: false, maxRetries: 0 },
-        }),
-        makeObservation('tool_b', 'error', {
-          assessment: { level: 'error', reason: 'failed too', shouldRetry: false, shouldAdjustStrategy: false, maxRetries: 0 },
-        }),
-      ];
-
-      const decision = (executor as any).reflectionPhase(observations);
-
-      expect(decision.selfEvaluation).toBeDefined();
-      expect(decision.selfEvaluation!.grade).toBe('D');
-      expect(decision.confidenceScore).toBe(2);
-      expect(decision.shouldContinue).toBe(false);
-    });
-
-    it('should return grade C when all failed but some recoverable', () => {
-      const executor = new ReActExecutor();
-      const observations = [
-        makeObservation('tool_a', 'error', {
-          assessment: { level: 'error', reason: 'retryable', shouldRetry: true, shouldAdjustStrategy: false, maxRetries: 3 },
-          reflectionHint: 'try again',
-        }),
-        makeObservation('tool_b', 'error', {
-          assessment: { level: 'error', reason: 'retryable', shouldRetry: true, shouldAdjustStrategy: false, maxRetries: 3 },
-          reflectionHint: 'adjust params',
-        }),
-      ];
-
-      const decision = (executor as any).reflectionPhase(observations);
-
-      expect(decision.selfEvaluation).toBeDefined();
-      expect(decision.selfEvaluation!.grade).toBe('C');
-      expect(decision.confidenceScore).toBe(2);
-      expect(decision.shouldContinue).toBe(true);
-    });
-
-    it('should return grade B when >70% success ratio', () => {
-      const executor = new ReActExecutor();
-      const observations = [
-        makeObservation('tool_a', 'success'),
-        makeObservation('tool_b', 'success'),
-        makeObservation('tool_c', 'success'),
-        makeObservation('tool_d', 'error', {
-          assessment: { level: 'error', reason: 'minor', shouldRetry: true, shouldAdjustStrategy: false, maxRetries: 3 },
-          reflectionHint: 'retry',
-        }),
-      ];
-
-      const decision = (executor as any).reflectionPhase(observations);
-
-      expect(decision.selfEvaluation).toBeDefined();
-      expect(decision.selfEvaluation!.grade).toBe('B');
-      expect(decision.confidenceScore).toBe(6);
-      expect(decision.decision).toBe('continue');
-      expect(decision.shouldContinue).toBe(true);
-    });
-
-    it('should return grade C when partial failure (high failure ratio)', () => {
-      const executor = new ReActExecutor();
-      const observations = [
-        makeObservation('tool_a', 'success'),
-        makeObservation('tool_b', 'error', {
-          assessment: { level: 'error', reason: 'failed', shouldRetry: true, shouldAdjustStrategy: false, maxRetries: 3 },
-          reflectionHint: 'retry',
-        }),
-        makeObservation('tool_c', 'error', {
-          assessment: { level: 'error', reason: 'failed', shouldRetry: true, shouldAdjustStrategy: false, maxRetries: 3 },
-          reflectionHint: 'retry',
-        }),
-      ];
-
-      const decision = (executor as any).reflectionPhase(observations);
-
-      expect(decision.selfEvaluation).toBeDefined();
-      expect(decision.selfEvaluation!.grade).toBe('C');
-      expect(decision.confidenceScore).toBe(6);
-    });
-
-    it('should return default SelfEvaluation when observations are empty', () => {
-      const executor = new ReActExecutor();
-      const decision = (executor as any).reflectionPhase([]);
-
-      expect(decision.selfEvaluation).toBeDefined();
-      expect(decision.selfEvaluation!.grade).toBe('C');
-      expect(decision.selfEvaluation!.reason).toBe('无观察结果，无法评估');
-      expect(decision.confidenceScore).toBe(5);
-      expect(decision.decision).toBe('continue');
-      expect(decision.shouldContinue).toBe(true);
-    });
-
-    it('should include reflectionMessage for all-success case', () => {
-      const executor = new ReActExecutor();
-      const observations = [makeObservation('file_read', 'success')];
-
-      const decision = (executor as any).reflectionPhase(observations);
-      expect(decision.reflectionMessage).toBeDefined();
-      expect(decision.reflectionMessage).toContain('已完成步骤');
-      expect(decision.reflectionMessage).toContain('file_read');
-    });
-
-    it('should include reflectionMessage for unrecoverable failure', () => {
-      const executor = new ReActExecutor();
-      const observations = [makeObservation('api_call', 'error', {
-        assessment: { level: 'error', reason: 'API returned 500', shouldRetry: false, shouldAdjustStrategy: false, maxRetries: 0 },
-      })];
-
-      const decision = (executor as any).reflectionPhase(observations);
-      expect(decision.reflectionMessage).toBeDefined();
-      expect(decision.reflectionMessage).toContain('[ReAct 终止]');
-    });
-
-    it('should truncate long reflectionMessage to ~200 chars', () => {
-      const executor = new ReActExecutor();
-      const longHint = 'A'.repeat(300);
-      const observations = [makeObservation('tool_a', 'error', {
-        assessment: { level: 'error', reason: longHint, shouldRetry: true, shouldAdjustStrategy: false, maxRetries: 3 },
-        reflectionHint: longHint,
-      })];
-
-      const decision = (executor as any).reflectionPhase(observations);
-      expect(decision.reflectionMessage!.length).toBeLessThanOrEqual(300); // ~200 + prefix "[ReAct 反思] "
-      expect(decision.reflectionMessage).toContain('[ReAct 反思]');
+  // ===================== 3. SelfEvaluation 接口测试 =====================
+  // 注意：reflectionPhase 方法已在 v7.0 简化重构中移除（3 步循环不再包含反思阶段）
+  // SelfEvaluation 接口保留用于类型兼容，但不再有运行时反思逻辑
+  describe('SelfEvaluation interface', () => {
+    it('should preserve SelfEvaluation type structure for backward compatibility', () => {
+      const evalInstance: SelfEvaluation = { grade: 'A', reason: 'All good' };
+      expect(evalInstance.grade).toBe('A');
+      expect(evalInstance.reason).toBe('All good');
     });
   });
 
@@ -745,7 +606,7 @@ describe('ReActExecutor', () => {
       expect(result.earlyTermination).toBe(false);
     });
 
-    it('should handle simple task with tool calls and sufficient confidence', async () => {
+    it('should handle simple task with tool calls in 2 turns (v7.0 3-step loop)', async () => {
       vi.mocked(callAIModelStream)
         .mockResolvedValueOnce(makeAIResponse({
           content: '',
@@ -766,14 +627,19 @@ describe('ReActExecutor', () => {
       const result = await executor.execute(createMinimalOptions());
 
       expect(result).toBeDefined();
-      expect(result.totalTurns).toBe(1);
+      // v7.0: 简单路径优化已移除，工具调用后循环继续到第 2 轮
+      expect(result.totalTurns).toBe(2);
     });
 
-    it('should skip second LLM call when first response has >20 chars (simple path optimization)', async () => {
-      vi.mocked(callAIModelStream).mockResolvedValueOnce(makeAIResponse({
-        content: 'This is a long enough response that should skip the second LLM call.',
-        toolCalls: [makeToolCall('db_query', '{"sql":"SELECT 1"}', 'call_1')],
-      }));
+    it('should continue to second LLM call after tool execution (v7.0 removed simple path optimization)', async () => {
+      vi.mocked(callAIModelStream)
+        .mockResolvedValueOnce(makeAIResponse({
+          content: 'This is a long enough response that should skip the second LLM call.',
+          toolCalls: [makeToolCall('db_query', '{"sql":"SELECT 1"}', 'call_1')],
+        }))
+        .mockResolvedValueOnce(makeAIResponse({
+          content: 'Final answer after tool execution.',
+        }));
 
       vi.mocked(ActionPhaseExecutor).mockImplementation((() => ({
         actionPhase: vi.fn().mockResolvedValue(
@@ -786,7 +652,8 @@ describe('ReActExecutor', () => {
       const result = await executor.execute(createMinimalOptions());
 
       expect(result).toBeDefined();
-      expect(result.totalTurns).toBe(1);
+      // v7.0: 简单路径优化已移除，工具调用后循环继续到第 2 轮
+      expect(result.totalTurns).toBe(2);
     });
 
     it('should handoff to main loop when simple path confidence < 5', async () => {

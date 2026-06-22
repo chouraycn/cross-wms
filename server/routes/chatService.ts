@@ -1,16 +1,28 @@
+/**
+ * Chat Service — 聊天服务核心
+ *
+ * v9.0: AI 对话流程简化重构
+ * - 合并 handleChat + executeFromQueue 为统一的 executeChat 调用
+ * - SSE 事件精简：24 种 → 7 种核心事件
+ * - 降级逻辑统一：提取 handleFallback 公共函数
+ * - Timer 管理统一：使用 TimerManager
+ * - 公共函数提取：rebuildToolCalls, hasImageAttachment, detectVisionModel
+ * - 语义记忆检索提取：使用 contextEnhancer 的结果
+ */
+
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import { promises as fsp } from 'fs';
 import os from 'os';
-import { callAIModel, AIAPIError } from '../aiClient.js';
-import type { MessageContent, ModelCallConfig } from '../aiClient.js';
-import { executeToolLoop, getToolRiskLevel } from '../engine/toolExecutor.js';
+import { AIAPIError, type MessageContent, type ModelCallConfig, type ToolCall } from '../aiClient.js';
 import { ExecutionStrategyFactory, ExecutionMode } from '../engine/executionStrategy.js';
 import type { ExecutionStrategyOptions } from '../engine/executionStrategy.js';
+import type { ToolExecutionResult } from '../engine/toolExecutor.js';
+import { getToolRiskLevel } from '../engine/toolExecutor.js';
 import { buildSoulSystemMessage } from '../engine/soulLoader.js';
 import { estimateMessagesTokens, truncateContextForModel, sanitizeToolMessages } from '../engine/contextTruncate.js';
 import { compressContextWithSummary } from '../engine/contextCompress.js';
-import { loadModelsConfig, ModelsFile, isLocalModel } from '../modelsStore.js';
+import { loadModelsConfig, type ModelsFile, isLocalModel, type ModelConfig } from '../modelsStore.js';
 import { selectKey, reportKeyResult } from '../keyRotator.js';
 import {
   getSessions,
@@ -20,7 +32,6 @@ import {
 } from '../dao/chat.js';
 import { matchTriggers, executePluginTrigger } from '../services/pluginAutoInvoke.js';
 import { messageQueue, type QueueMode, type QueueEvent } from '../engine/messageQueue.js';
-import { searchMemory, type VecSearchResult } from '../engine/vecMemoryStore.js';
 import { logger } from '../logger.js';
 import { autoSelectModel, generateMockResponse, isModelAvailable, MODEL_PRESETS } from './modelSelector.js';
 import { extractAndAppendMemory, readMemoryMd } from './memoryExtractor.js';
@@ -34,11 +45,380 @@ import { getAppSettings } from '../dao/settings.js';
 import { extractFileContent } from './chatHelpers/fileExtractor.js';
 import { getThinkingCacheKey, getThinkingCache, setThinkingCache } from './chatHelpers/thinkingCache.js';
 import { activeSSEConnections } from './chatHelpers/sseHelper.js';
+import { sendSSE, sendDebugSSE, sendDoneAndEnd } from '../sse/sseTypes.js';
+import { TimerManager } from '../sse/timerManager.js';
+import { executeChat as streamExecuteChat, finishStream, type ExecuteChatCallbacks } from '../engine/streamExecutor.js';
+import { formatMemoryContext } from '../engine/contextEnhancer.js';
 
 const CDF_KNOW_CLOW_DIR = path.join(os.homedir(), '.cdf-know-clow');
 
-// ===================== Queue Execution =====================
+// ===================== 公共辅助函数 =====================
 
+/**
+ * 检测附件中是否包含图片
+ *
+ * 提取为公共函数，消除 handleChat 和 executeFromQueue 中的重复。
+ */
+function hasImageAttachment(attachments: unknown[] | undefined): boolean {
+  return !!(attachments && Array.isArray(attachments) && attachments.some((att) => (att as { type: string }).type === 'image'));
+}
+
+/** 已知视觉模型 ID 列表 */
+const KNOWN_VISION_MODEL_IDS = [
+  'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4-vision',
+  'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'claude-3-5-sonnet',
+  'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision',
+  'qwen-vl', 'qwen-vl-max',
+  'kimi-k2.6', 'kimi-k2.5',
+];
+
+/**
+ * 检测模型是否支持视觉（图片理解）
+ *
+ * 提取为公共函数，消除 handleChat 和 executeFromQueue 中的重复。
+ */
+function detectVisionModel(modelConfig: { id: string; capabilities?: string[] }): boolean {
+  const isMultimodalModel = modelConfig.capabilities?.includes('multimodal');
+  const isKnownVisionModel = KNOWN_VISION_MODEL_IDS.some((id) =>
+    modelConfig.id.toLowerCase().includes(id.toLowerCase()),
+  );
+  const isFalsePositiveVision = /deepseek/i.test(modelConfig.id);
+  return (isMultimodalModel || isKnownVisionModel) && !isFalsePositiveVision;
+}
+
+/**
+ * 从 DB 消息重建 tool_calls 到 API 消息格式
+ *
+ * 提取为公共函数，消除行120-149 和行903-933 的重复。
+ * 如果消息包含有效的 toolCalls，将 assistant 消息和对应的 tool 结果消息推入 apiMessages。
+ *
+ * @returns true 如果成功重建（调用方应 continue 跳过后续处理），false 如果不包含 toolCalls
+ */
+function rebuildToolCallsFromMessage(
+  msg: { role: string; content: string; toolCalls?: string | Array<{ name: string; arguments: string; result?: string }> },
+  apiMessages: Array<{ role: string; content: MessageContent | null; tool_calls?: unknown[]; tool_call_id?: string }>,
+): boolean {
+  if (msg.role !== 'assistant' || !msg.toolCalls) return false;
+
+  try {
+    const toolCalls = typeof msg.toolCalls === 'string' ? JSON.parse(msg.toolCalls) : msg.toolCalls;
+    if (!Array.isArray(toolCalls) || toolCalls.length === 0) return false;
+
+    const callIds = toolCalls.map(() => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+    apiMessages.push({
+      role: 'assistant',
+      content: msg.content || null,
+      tool_calls: toolCalls.map((tc: { name: string; arguments: string }, i: number) => ({
+        id: callIds[i],
+        type: 'function',
+        function: { name: tc.name, arguments: tc.arguments },
+      })),
+    });
+    for (let i = 0; i < toolCalls.length; i++) {
+      apiMessages.push({
+        role: 'tool',
+        content: (toolCalls[i] as { result?: string }).result ?? '(tool result unavailable)',
+        tool_call_id: callIds[i],
+      });
+    }
+    return true;
+  } catch {
+    // toolCalls 解析失败，按普通消息处理
+    return false;
+  }
+}
+
+/**
+ * 验证并修复 tool_calls 配对
+ *
+ * 确保 assistant(tool_calls) 后面有对应的 tool 消息，
+ * 移除孤立的 tool 消息。
+ */
+function validateToolCallsPairing<T extends Array<{ role: string; content: unknown; tool_calls?: Array<{ id?: string }>; tool_call_id?: string }>>(
+  messages: T,
+): T {
+  const fixedMessages: T[number][] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i];
+
+    // 检查 assistant(tool_calls) 是否有对应的 tool 消息
+    if (m.role === 'assistant' && m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
+      const neededIds = new Set<string>();
+      for (const tc of m.tool_calls) {
+        if (tc.id) neededIds.add(tc.id);
+      }
+      // 向后扫描是否有对应的 tool 消息
+      for (let j = i + 1; j < messages.length; j++) {
+        if (messages[j].role === 'tool' && messages[j].tool_call_id && neededIds.has(messages[j].tool_call_id!)) {
+          neededIds.delete(messages[j].tool_call_id!);
+          if (neededIds.size === 0) break;
+        } else if (messages[j].role !== 'tool') {
+          break;
+        }
+      }
+      if (neededIds.size > 0) {
+        logger.warn(`[Chat API] tool_calls 配对不完整，补齐 ${neededIds.size} 条空 tool 响应: ${[...neededIds].join(', ')}`);
+        fixedMessages.push(m);
+        for (const missingId of neededIds) {
+          fixedMessages.push({
+            role: 'tool',
+            content: '[工具结果未保存]',
+            tool_call_id: missingId,
+          });
+        }
+        continue;
+      }
+    }
+
+    // 检查 tool 消息是否有对应的 assistant(tool_calls)
+    if (m.role === 'tool' && m.tool_call_id) {
+      let foundParent = false;
+      for (let k = fixedMessages.length - 1; k >= 0; k--) {
+        const prev = fixedMessages[k] as { role: string; tool_calls?: Array<{ id?: string }> };
+        if (prev.role === 'assistant' && prev.tool_calls && Array.isArray(prev.tool_calls)) {
+          if (prev.tool_calls.some((tc) => tc.id === m.tool_call_id)) {
+            foundParent = true;
+            break;
+          }
+        }
+      }
+      if (!foundParent) {
+        logger.warn(`[Chat API] 跳过孤立 tool 消息 (call_id=${m.tool_call_id})`);
+        continue;
+      }
+    }
+
+    fixedMessages.push(m);
+  }
+
+  if (fixedMessages.length !== messages.length) {
+    logger.info(`[Chat API] tool_calls 校验: ${messages.length} → ${fixedMessages.length} 条消息`);
+  }
+  return fixedMessages as T;
+}
+
+/**
+ * 错误分类与格式化
+ *
+ * 将 AI API 错误分类为用户友好的错误消息和错误代码。
+ */
+function classifyAndFormatError(
+  error: unknown,
+  modelConfig?: ModelConfig,
+  effectiveModel?: string,
+): { code: string; message: string } {
+  if (error instanceof AIAPIError) {
+    switch (error.category) {
+      case 'auth':
+        return { code: 'AUTH_FAILED', message: 'API Key 无效或已过期，请在「模型管理」中检查密钥配置。' };
+      case 'rate_limit':
+        return { code: 'RATE_LIMITED', message: '请求过于频繁，已达到速率限制，请稍后再试。' };
+      case 'network': {
+        const isLocal = modelConfig ? isLocalModel(modelConfig) : false;
+        if (isLocal) {
+          const modelName = modelConfig?.id?.replace('ollama-', '') || '';
+          return {
+            code: 'MODEL_UNAVAILABLE',
+            message: `无法连接到本地 AI 模型服务（${effectiveModel}）。\n\n请检查以下事项：\n1. 确认 Ollama 或其他本地模型服务已启动\n2. 运行 'ollama serve' 启动服务（如使用 Ollama）\n3. 确认模型已下载：ollama pull ${modelName}\n4. 检查端口是否正确（默认 11434）\n\n或者切换到云模型（如 DeepSeek、OpenAI）使用。`,
+          };
+        }
+        return { code: 'NETWORK_ERROR', message: '网络连接失败，请检查网络或 API 端点配置。' };
+      }
+      case 'timeout':
+        return { code: 'TIMEOUT', message: '请求超时，模型响应时间过长，请稍后重试。' };
+      case 'server':
+        return { code: 'SERVER_ERROR', message: 'AI 服务商暂时不可用，请稍后重试。' };
+      default:
+        return { code: 'UNKNOWN_ERROR', message: `AI 服务暂时不可用：${error.message}` };
+    }
+  }
+
+  if (error instanceof Error && error.name === 'AbortError') {
+    return { code: 'ABORTED', message: '请求已取消。' };
+  }
+
+  const errMessage = error instanceof Error ? error.message : '未知错误';
+  if (errMessage.includes('stdout closed') || errMessage.includes('ENOENT') || errMessage.includes('ECONNREFUSED') || errMessage.includes('connect') || errMessage.includes('fetch failed')) {
+    const isLocal = modelConfig ? isLocalModel(modelConfig) : false;
+    if (isLocal) {
+      const modelName = modelConfig?.id?.replace('ollama-', '') || '';
+      return {
+        code: 'MODEL_UNAVAILABLE',
+        message: `无法连接到本地 AI 模型服务（${effectiveModel}）。\n\n请检查以下事项：\n1. 确认 Ollama 或其他本地模型服务已启动\n2. 运行 'ollama serve' 启动服务（如使用 Ollama）\n3. 确认模型已下载：ollama pull ${modelName}\n4. 检查端口是否正确（默认 11434）\n\n或者切换到云模型（如 DeepSeek、OpenAI）使用。`,
+      };
+    }
+    return {
+      code: 'MODEL_UNAVAILABLE',
+      message: `无法连接到 AI 模型服务（${effectiveModel}）。请确认模型服务已启动。\n提示：如果使用 Ollama，请先运行 'ollama serve' 启动服务。`,
+    };
+  }
+
+  return { code: 'UNKNOWN_ERROR', message: `抱歉，AI 服务暂时不可用，请稍后重试。\n错误：${errMessage}` };
+}
+
+// ===================== 降级处理 =====================
+
+/** 降级处理参数 */
+interface FallbackParams {
+  /** 原始错误 */
+  error: unknown;
+  /** 原始 API 消息列表（用于降级重试） */
+  apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;
+  /** 模型配置文件 */
+  modelsConfig: ModelsFile;
+  /** 当前模型 ID */
+  currentModel: string;
+  /** 当前模型配置 */
+  modelConfig: ModelConfig | undefined;
+  /** Express 响应对象 */
+  res: import('express').Response;
+  /** Timer 管理器 */
+  timerManager: TimerManager;
+  /** AbortSignal */
+  signal?: AbortSignal;
+  /** 已授权工具缓存 */
+  sessionApprovedSet: Set<string>;
+  /** 执行模式 */
+  executionMode: ExecutionMode;
+  /** 会话 ID */
+  sessionId: string;
+  /** 技能 ID */
+  skillId?: string;
+  /** 是否来自队列模式 */
+  fromQueue?: boolean;
+}
+
+/**
+ * 统一降级处理 — 提取公共函数
+ *
+ * 消除 handleChat 和 executeFromQueue 中的重复降级逻辑。
+ * 统一使用 strategy.execute（修复原 handleChat 用 executeToolLoop 的不一致）。
+ *
+ * @returns true 如果降级成功（done 已发送），false 如果降级失败（调用方需发送错误 done）
+ */
+async function handleFallback(params: FallbackParams): Promise<boolean> {
+  const { error, apiMessages, modelsConfig, currentModel, modelConfig, res, timerManager, signal, sessionApprovedSet, executionMode, sessionId, skillId } = params;
+  const tag = params.fromQueue ? '[MessageQueue]' : '[Chat API]';
+
+  const isModelUnsupported = error instanceof AIAPIError && error.category === 'model_not_supported';
+  const isRecoverable = isModelUnsupported || (
+    error instanceof AIAPIError && (
+      error.category === 'timeout' ||
+      error.category === 'network' ||
+      error.category === 'server'
+    )
+  );
+
+  if (!isRecoverable || !modelConfig) return false;
+
+  // 查找降级模型：优先同 provider 非推理模型，其次任意可用模型
+  const fbModel = modelsConfig.models.find((m) =>
+    m.enabled && m.id !== currentModel && !m.capabilities?.includes('reasoning') && m.provider === modelConfig.provider && isModelAvailable(m),
+  ) || modelsConfig.models.find((m) =>
+    m.enabled && m.id !== currentModel && isModelAvailable(m),
+  );
+
+  if (!fbModel) return false;
+
+  const reasonLabel = isModelUnsupported ? '模型不支持' : '请求失败';
+  logger.debug(`${tag} ${reasonLabel}，降级到 ${fbModel.id}...`);
+
+  // 发送降级通知
+  sendSSE(res, {
+    type: 'text',
+    content: `\n\n> ⚠️ ${reasonLabel}，已自动切换到 **${fbModel.name || fbModel.id}** 重试...\n\n`,
+  });
+
+  // 降级期间重启心跳
+  timerManager.restart('fallback');
+
+  try {
+    const fbKey = selectKey(fbModel);
+    const fbApiKey = fbKey ? fbKey.key : (fbModel.apiKey || '');
+    const fbModelConfig: ModelCallConfig = {
+      id: fbModel.id,
+      apiKey: fbApiKey,
+      apiEndpoint: fbModel.apiEndpoint || '',
+      provider: fbModel.provider,
+      temperature: fbModel.temperature ?? 0.7,
+      topP: fbModel.topP ?? 1,
+      maxTokens: fbModel.maxTokens,
+      capabilities: (fbModel.capabilities || []).filter((c: string) => c !== 'reasoning'),
+    };
+
+    // 统一使用 strategy.execute（修复原 handleChat 用 executeToolLoop 的不一致）
+    const strategy = ExecutionStrategyFactory.create(executionMode);
+    const fbResult: ToolExecutionResult = await strategy.execute({
+      modelConfig: fbModelConfig,
+      messages: sanitizeToolMessages(apiMessages) as Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>,
+      maxToolTurns: 10,
+      signal: signal ?? new AbortController().signal,
+      executionMode,
+      approvedToolsCache: sessionApprovedSet,
+      onSSEEvent: (evt: Record<string, unknown>) => {
+        const evtType = evt.type as string;
+        if (['init', 'text', 'thinking', 'tool_call', 'permission_request', 'done'].includes(evtType)) {
+          sendSSE(res, evt);
+        } else {
+          sendDebugSSE(res, evt);
+        }
+      },
+      onChunk: (chunk: string) => {
+        sendSSE(res, { type: 'text', content: chunk });
+      },
+      onThinking: (thinkingChunk: string) => {
+        sendSSE(res, { type: 'thinking', content: thinkingChunk });
+      },
+      onPermissionRequest: () => Promise.resolve(isSystemAuthorized()),
+      onToolCall: (toolCall: ToolCall, result: string) => {
+        sendSSE(res, {
+          type: 'tool_call',
+          toolCallId: toolCall.id,
+          toolName: toolCall.function?.name || '',
+          toolArgs: toolCall.function?.arguments || '',
+          toolResult: result,
+        });
+      },
+    });
+
+    // 降级成功，清理心跳
+    timerManager.stop('fallback');
+
+    // 保存降级模型回复到 DB
+    if (fbResult.content) {
+      addMessage({
+        sessionId,
+        role: 'assistant',
+        content: fbResult.content,
+        model: fbModel.id,
+        skillId: skillId || null,
+        toolCalls: fbResult.toolCalls?.length > 0 ? JSON.stringify(fbResult.toolCalls) : undefined,
+      });
+    }
+
+    if (fbKey && fbKey.index >= 0) {
+      reportKeyResult(fbModel.id, fbKey.index, true);
+    }
+
+    // 发送 done 事件
+    await finishStream(res, timerManager, {
+      fallbackModel: fbModel.id,
+      fallbackReason: isModelUnsupported ? 'model_not_supported' : 'request_failed',
+    });
+
+    return true;
+  } catch (fbErr) {
+    // 降级失败，清理心跳
+    timerManager.stop('fallback');
+    logger.warn(`${tag} 降级模型 ${fbModel.id} 也失败:`, fbErr instanceof Error ? fbErr.message : String(fbErr));
+    return false;
+  }
+}
+
+// ===================== 队列执行 =====================
+
+/** 队列执行参数 */
 interface QueueExecuteParams {
   model: string;
   modelName: string;
@@ -57,7 +437,13 @@ interface QueueExecuteParams {
   sessionApprovedSet: Set<string>;
 }
 
-async function executeFromQueue(
+/**
+ * 队列消息执行 — 替代原 executeFromQueue
+ *
+ * 统一调用 streamExecutor.executeChat()，消除重复代码。
+ * 队列模式通过 fromQueue=true 标记，影响日志和 Phase 2 行为。
+ */
+async function executeQueuedMessage(
   sessionId: string,
   event: QueueEvent,
   res: import('express').Response,
@@ -65,13 +451,12 @@ async function executeFromQueue(
 ): Promise<void> {
   logger.debug(`[MessageQueue] 执行出队消息: sessionId=${sessionId}, mode=${event.mode}, messageId=${event.messageId}`);
 
-  let apiMessages: Array<Record<string, any>> = [];
-  let abortController: AbortController | null = null;
-  // v3.1.1: 提到 try 外声明，使 catch 块也能访问并清理
-  let keepAliveTimer: NodeJS.Timeout | null = null;
+  const timerManager = new TimerManager(res);
+
+  let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }> = [];
 
   try {
-    const modelConfig = params.modelsConfig.models.find(m => m.id === params.model);
+    const modelConfig = params.modelsConfig.models.find((m) => m.id === params.model);
     if (!modelConfig) {
       throw new Error(`未找到模型配置: ${params.model}`);
     }
@@ -82,13 +467,14 @@ async function executeFromQueue(
       effectiveApiKey = keyResult.key;
     }
 
-    const finalModelConfig = {
+    const finalModelConfig: ModelCallConfig = {
       ...modelConfig,
       apiKey: effectiveApiKey,
       temperature: params.preset ? params.preset.temperature : modelConfig.temperature,
       topP: params.preset ? params.preset.topP : modelConfig.topP,
     };
 
+    // 构建 API 消息
     const dbMessages = getSessionMessages(sessionId);
     apiMessages = [];
 
@@ -106,50 +492,17 @@ async function executeFromQueue(
       apiMessages.push({ role: 'system', content: params.skillContext.trim() });
     }
 
-    const isMultimodalModel = modelConfig.capabilities?.includes('multimodal');
-    const isKnownVisionModel = [
-      'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4-vision',
-      'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'claude-3-5-sonnet',
-      'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision',
-      'qwen-vl', 'qwen-vl-max',
-      'kimi-k2.6', 'kimi-k2.5',
-    ].some(id => modelConfig.id.toLowerCase().includes(id.toLowerCase()));
-    const isFalsePositiveVision = /deepseek/i.test(modelConfig.id);
-    const _supportsVision = (isMultimodalModel || isKnownVisionModel) && !isFalsePositiveVision;
-
+    // 从 DB 消息重建（使用提取的公共函数）
     for (const msg of dbMessages) {
       if (msg.role === 'user' || msg.role === 'assistant') {
-        if (msg.role === 'assistant' && msg.toolCalls) {
-          try {
-            const toolCalls = typeof msg.toolCalls === 'string' ? JSON.parse(msg.toolCalls) : msg.toolCalls;
-            if (Array.isArray(toolCalls) && toolCalls.length > 0) {
-              const callIds = toolCalls.map(() => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
-              apiMessages.push({
-                role: 'assistant',
-                content: msg.content || null,
-                tool_calls: toolCalls.map((tc: any, i: number) => ({
-                  id: callIds[i],
-                  type: 'function',
-                  function: { name: tc.name, arguments: tc.arguments },
-                })),
-              });
-              for (let i = 0; i < toolCalls.length; i++) {
-                apiMessages.push({
-                  role: 'tool',
-                  content: toolCalls[i].result ?? "(tool result unavailable)",
-                  tool_call_id: callIds[i],
-                });
-              }
-              continue;
-            }
-          } catch { /* toolCalls 解析失败，按普通消息处理 */ }
-        }
+        if (rebuildToolCallsFromMessage(msg, apiMessages)) continue;
         apiMessages.push({ role: msg.role, content: msg.content });
       }
     }
 
-    const ctxWindow = (finalModelConfig as any).contextWindow || 128000;
-    const ctxMaxTokens = Math.min((finalModelConfig as any).maxTokens || 8192, 8192);
+    // 上下文压缩
+    const ctxWindow = (finalModelConfig as ModelCallConfig).contextWindow || 128000;
+    const ctxMaxTokens = Math.min((finalModelConfig as ModelCallConfig).maxTokens || 8192, 8192);
     let truncated: { messages: typeof apiMessages; truncated: boolean };
     try {
       const compressResult = await compressContextWithSummary(
@@ -157,70 +510,21 @@ async function executeFromQueue(
       );
       truncated = { messages: compressResult.messages as any, truncated: compressResult.truncated || compressResult.compressed };
       if (compressResult.compressed) {
-        logger.debug('[Chat API] 上下文已智能压缩（非流式）');
+        logger.debug('[Chat API] 上下文已智能压缩（队列模式）');
       }
     } catch {
-      truncated = truncateContextForModel(apiMessages as any, ctxWindow, ctxMaxTokens, 30);
+      truncated = truncateContextForModel(apiMessages as any, ctxWindow, ctxMaxTokens, 30) as { messages: typeof apiMessages; truncated: boolean };
     }
 
-    const msgs = truncated.messages as any[];
-    const fixedMessages: any[] = [];
-    for (let i = 0; i < msgs.length; i++) {
-      const m = msgs[i];
-      if (m.role === 'assistant' && m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
-        const neededIds = new Set<string>();
-        for (const tc of m.tool_calls) {
-          if (tc.id) neededIds.add(tc.id);
-        }
-        for (let j = i + 1; j < msgs.length; j++) {
-          if (msgs[j].role === 'tool' && msgs[j].tool_call_id && neededIds.has(msgs[j].tool_call_id)) {
-            neededIds.delete(msgs[j].tool_call_id);
-            if (neededIds.size === 0) break;
-          } else if (msgs[j].role !== 'tool') {
-            break;
-          }
-        }
-        if (neededIds.size > 0) {
-          logger.warn(`[Chat API] tool_calls 配对不完整，补齐 ${neededIds.size} 条空 tool 响应: ${[...neededIds].join(', ')}`);
-          fixedMessages.push(m);
-          for (const missingId of neededIds) {
-            fixedMessages.push({
-              role: 'tool',
-              content: '[工具结果未保存]',
-              tool_call_id: missingId,
-            });
-          }
-          continue;
-        }
-      }
-      if (m.role === 'tool' && m.tool_call_id) {
-        let foundParent = false;
-        for (let k = fixedMessages.length - 1; k >= 0; k--) {
-          const prev = fixedMessages[k];
-          if (prev.role === 'assistant' && prev.tool_calls && Array.isArray(prev.tool_calls)) {
-            if (prev.tool_calls.some((tc: any) => tc.id === m.tool_call_id)) {
-              foundParent = true;
-              break;
-            }
-          }
-        }
-        if (!foundParent) {
-          logger.warn(`[Chat API] 跳过孤立 tool 消息 (call_id=${m.tool_call_id})`);
-          continue;
-        }
-      }
-      fixedMessages.push(m);
-    }
-    if (fixedMessages.length !== msgs.length) {
-      logger.info(`[Chat API] tool_calls 校验: ${msgs.length} → ${fixedMessages.length} 条消息`);
-      truncated.messages = fixedMessages;
-    }
+    // 验证 tool_calls 配对（使用提取的公共函数）
+    truncated.messages = validateToolCallsPairing(truncated.messages as any) as typeof truncated.messages;
 
-    abortController = messageQueue.getCurrentAbortController(sessionId);
+    const abortController = messageQueue.getCurrentAbortController(sessionId);
     if (!abortController) {
       throw new Error('未找到会话级 AbortController');
     }
 
+    // 确定执行模式
     let effectiveMode = (params.executionMode && Object.values(ExecutionMode).includes(params.executionMode as ExecutionMode))
       ? (params.executionMode as ExecutionMode)
       : undefined;
@@ -240,117 +544,29 @@ async function executeFromQueue(
       effectiveMode = ExecutionStrategyFactory.getDefaultMode();
     }
 
-    const strategy = ExecutionStrategyFactory.create(effectiveMode);
-
     initSessionApprovedTools(sessionId);
 
-    const thinkingStartRef = { value: Date.now() };
-    // v3.0.0: 缩短 keep_alive 间隔 15s → 5s，让用户更快感知连接活跃
-    keepAliveTimer = setInterval(() => {
-      if (!res.writableEnded) {
-        try {
-          // v8.2-fix: 使用 JSON 格式发送 keep_alive，让前端能解析并更新 thinkingElapsed
-          const elapsed = Date.now() - thinkingStartRef.value;
-          res.write(`data: ${JSON.stringify({ type: 'keep_alive', elapsed })}\n\n`);
-        } catch { /* ignore */ }
-      }
-    }, 5000);
-
-    let fullContent = '';
-    let thinkingContent = '';
-    let hasThinking = false;
-    let thinkingStartTime: number | null = null;
-    const usageData: any = undefined;
-
-    const latestUserMessage = truncated.messages
-      .slice().reverse().find((m: any) => m.role === 'user');
-    if (latestUserMessage && typeof latestUserMessage.content === 'string') {
-      try {
-        const memoryResults: VecSearchResult[] = await Promise.race([
-          searchMemory(
-            latestUserMessage.content, 'default', 5, 0.35, sessionId,
-          ),
-          new Promise<VecSearchResult[]>(resolve => setTimeout(() => resolve([]), 5000)),
-        ]);
-        if (memoryResults.length > 0) {
-          const totalChars = memoryResults.reduce((sum, r) => sum + r.entry.content.length, 0);
-          const totalTokens = Math.ceil(totalChars / 1.5);
-          if (totalTokens <= 500) {
-            const memoryContext = memoryResults
-              .map(r => `[${r.entry.category}] ${r.entry.content} (相似度: ${r.similarity.toFixed(2)})`)
-              .join('\n');
-            truncated.messages.push({
-              role: 'system',
-              content: `[历史记忆]\n${memoryContext}`,
-            } as typeof truncated.messages[number]);
-
-            if (!res.writableEnded) {
-              try {
-                res.write(`data: ${JSON.stringify({
-                  type: 'memory_retrieved',
-                  count: memoryResults.length,
-                  summaries: memoryResults.map(r => r.entry.content.substring(0, 50)),
-                })}\n\n`);
-              } catch { /* ignore */ }
-            }
-
-            logger.debug(`[Chat API] 语义记忆注入: ${memoryResults.length} 条, 估算 ${totalTokens} tokens`);
-          }
-        }
-      } catch (memErr) {
-        logger.warn('[Chat API] 语义记忆检索失败（已跳过）:', memErr instanceof Error ? memErr.message : String(memErr));
-      }
-    }
-
-    const sanitizedMessages = sanitizeToolMessages(truncated.messages as any) as Array<{ role: string; content: MessageContent; tool_calls?: any[]; tool_call_id?: string }>;
-
-    const toolResult = await strategy.execute({
-      modelConfig: finalModelConfig as any,
-      messages: sanitizedMessages,
-      maxToolTurns: 10,
-      signal: messageQueue.getCurrentAbortController(sessionId)?.signal ?? new AbortController().signal,
-      executionMode: effectiveMode,
-      onSSEEvent: (evt: Record<string, unknown>) => {
-        if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify(evt)}\n\n`); } catch { /* ignore */ }
-        }
-      },
-      onChunk: (chunk: string) => {
-        fullContent += chunk;
-        if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`); } catch { /* ignore */ }
-        }
-      },
-      onThinking: (thinkingChunk: string) => {
-        if (!hasThinking) { hasThinking = true; thinkingStartTime = Date.now(); }
-        thinkingContent += thinkingChunk;
-        if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`); } catch { /* ignore */ }
-        }
-      },
-      onPermissionRequest: (toolCall: any) => {
+    // 设置权限请求回调
+    const callbacks: ExecuteChatCallbacks = {
+      onPermissionRequest: (toolCall: ToolCall) => {
         const reqId = `perm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const toolName = toolCall.function?.name || toolCall.name || 'unknown';
-        const args = toolCall.function?.arguments || toolCall.args || '';
+        const toolName = toolCall.function?.name || 'unknown';
+        const args = toolCall.function?.arguments || '';
         const riskLevel = getToolRiskLevel(toolName);
         const sessionSet = initSessionApprovedTools(sessionId);
         if (sessionSet?.has(toolName)) return Promise.resolve(true);
         registerPermissionRequest(reqId, toolName, sessionId);
-        if (!res.writableEnded) {
-          try {
-            res.write(`data: ${JSON.stringify({
-              type: 'permission_request',
-              reqId,
-              toolName,
-              args,
-              riskLevel,
-            })}\n\n`);
-          } catch { /* ignore */ }
-        }
+        sendSSE(res, {
+          type: 'permission_request',
+          reqId,
+          toolName,
+          args,
+          riskLevel,
+        });
         return new Promise<boolean>((resolve) => {
-          const timeout = setTimeout(() => resolve(false), 60000);
+          const permTimeout = setTimeout(() => resolve(false), 60000);
           const handler = (approved: boolean) => {
-            clearTimeout(timeout);
+            clearTimeout(permTimeout);
             permissionEmitter.removeListener(reqId, handler);
             if (approved) {
               sessionSet?.add(toolName);
@@ -360,237 +576,82 @@ async function executeFromQueue(
           permissionEmitter.once(reqId, handler);
         });
       },
-      onToolCall: (toolCall: any, result: string) => {
-        if (!res.writableEnded) {
-          try {
-            res.write(`data: ${JSON.stringify({
-              type: 'tool_call',
-              tool: toolCall.function?.name || toolCall.name,
-              args: toolCall.function?.arguments || toolCall.args,
-              result,
-              id: toolCall.id,
-            })}\n\n`);
-          } catch { /* ignore */ }
-        }
-      },
-      onAgentStart: (agentId: string, agentRole: string, taskDescription: string, subTaskId?: string) => {
-        if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'agent_start', agentId, agentRole, taskDescription, subTaskId })}\n\n`); } catch { /* ignore */ }
-        }
-      },
-      onAgentEnd: (agentId: string, agentRole: string, status: 'success' | 'failed' | 'timeout', duration?: number, error?: string) => {
-        if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'agent_end', agentId, agentRole, status, duration, error })}\n\n`); } catch { /* ignore */ }
-        }
-      },
-      onSubtaskCreate: (subTaskId: string, description: string, dependsOn: string[] = [], priority: number = 1) => {
-        if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'subtask_create', subTaskId, description, dependsOn, priority })}\n\n`); } catch { /* ignore */ }
-        }
-      },
-      onSubtaskAssign: (subTaskId: string, agentId: string, agentRole: string) => {
-        if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'subtask_assign', subTaskId, agentId, agentRole })}\n\n`); } catch { /* ignore */ }
-        }
-      },
-      onSubtaskComplete: (subTaskId: string, description: string, status: 'completed' | 'failed', agentId: string, duration?: number, resultSummary?: string) => {
-        if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'subtask_complete', subTaskId, description, status, agentId, duration, resultSummary })}\n\n`); } catch { /* ignore */ }
-        }
-      },
-      onReflect: (reflection: any) => {
-        if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'reflect', ...reflection })}\n\n`); } catch { /* ignore */ }
-        }
-      },
-      onPlan: (plan: any) => {
-        if (!res.writableEnded) {
-          try { res.write(`data: ${JSON.stringify({ type: 'plan', ...plan })}\n\n`); } catch { /* ignore */ }
-        }
-      },
-      approvedToolsCache: params.sessionApprovedSet,
+    };
+
+    // 调用统一执行器
+    const result = await streamExecuteChat({
+      sessionId,
+      message: params.message,
+      model: params.model,
+      modelName: params.modelName,
+      modelConfig: finalModelConfig,
+      apiMessages: truncated.messages,
+      res,
+      executionMode: effectiveMode,
+      timerManager,
+      signal: abortController.signal,
       reasoningEffort: params.reasoningEffort,
+      approvedToolsCache: params.sessionApprovedSet,
+      modelCapabilities: modelConfig.capabilities || [],
+      ctxWindow,
+      ctxMaxTokens,
+      estimatedToolsCount: 30,
+      callbacks,
+      fromQueue: true,
     });
 
+    // 保存助手消息到 DB
     addMessage({
       sessionId,
       role: 'assistant',
-      content: toolResult.content,
+      content: result.content,
       model: params.model,
-      toolCalls: toolResult.toolCalls?.length ? JSON.stringify(toolResult.toolCalls) : undefined,
-      thinking: thinkingContent || undefined,
-      thinkingDuration: hasThinking && thinkingStartTime ? Date.now() - thinkingStartTime : undefined,
+      toolCalls: result.toolCalls?.length ? JSON.stringify(result.toolCalls) : undefined,
+      thinking: result.thinkingContent || undefined,
+      thinkingDuration: result.thinkingDuration || undefined,
     });
 
-    extractAndAppendMemory(params.message, toolResult.content, dbMessages.map(m => ({ role: m.role, content: m.content }))).catch(() => {});
+    // 后台提取记忆
+    extractAndAppendMemory(params.message, result.content, dbMessages.map((m) => ({ role: m.role, content: m.content }))).catch(() => {});
 
-    if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
-
-    if (!res.writableEnded) {
-      try {
-        res.write(`data: ${JSON.stringify({
-          type: 'done',
-          errorCode: null,
-          errorMessage: null,
-          thinkingDuration: (hasThinking && thinkingStartTime) ? Date.now() - thinkingStartTime : 0,
-          usage: usageData || null,
-        })}\n\n`);
-        await new Promise(r => setTimeout(r, 200));
-        res.end();
-      } catch { /* ignore */ }
-    }
+    // 发送 done 事件
+    await finishStream(res, timerManager, {
+      thinkingDuration: result.thinkingDuration,
+      usage: result.usage,
+    });
 
     messageQueue.markCompleted(sessionId);
     activeSSEConnections.delete(sessionId);
 
   } catch (error) {
-    logger.error('[MessageQueue executeFromQueue] 执行失败:', error);
+    logger.error('[MessageQueue executeQueuedMessage] 执行失败:', error);
 
-    // v3.1.1: 确保 keepAliveTimer 被清理（防止 error 发生在 line 426 之前时定时器泄漏）
-    if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
+    // 尝试降级
+    const modelConfig = params.modelsConfig.models.find((m) => m.id === params.model);
+    const fallbackSuccess = await handleFallback({
+      error,
+      apiMessages,
+      modelsConfig: params.modelsConfig,
+      currentModel: params.model,
+      modelConfig,
+      res,
+      timerManager,
+      signal: messageQueue.getCurrentAbortController(sessionId)?.signal,
+      sessionApprovedSet: params.sessionApprovedSet,
+      executionMode: (params.executionMode as ExecutionMode) || ExecutionMode.REACT,
+      sessionId,
+      skillId: params.skillId,
+      fromQueue: true,
+    });
 
-    const isModelUnsupported =
-      error instanceof AIAPIError && error.category === 'model_not_supported';
-    const isRecoverable = isModelUnsupported || (
-      error instanceof AIAPIError && (
-        error.category === 'timeout' ||
-        error.category === 'network' ||
-        error.category === 'server'
-      )
-    );
-
-    if (isRecoverable) {
-      const currentModelConfig = params.modelsConfig.models.find(m => m.id === params.model);
-      const fbModel = params.modelsConfig.models.find(m =>
-        m.enabled && m.id !== params.model && !m.capabilities?.includes('reasoning') && currentModelConfig && m.provider === currentModelConfig.provider && isModelAvailable(m)
-      ) || params.modelsConfig.models.find(m =>
-        m.enabled && m.id !== params.model && isModelAvailable(m)
-      );
-
-      if (fbModel) {
-        const reasonLabel = isModelUnsupported ? '模型不支持' : '请求失败';
-        logger.debug(`[MessageQueue] ${reasonLabel}，降级到 ${fbModel.id}...`);
-
-        if (!res.writableEnded) {
-          try {
-            res.write(`data: ${JSON.stringify({
-              type: 'text',
-              content: `\n\n> ⚠️ ${reasonLabel}，已自动切换到 **${fbModel.name || fbModel.id}** 重试...\n\n`,
-            })}\n\n`);
-          } catch { /* ignore */ }
-        }
-
-        try {
-          const fbKey = selectKey(fbModel);
-          const fbApiKey = fbKey ? fbKey.key : (fbModel.apiKey || '');
-          const fbModelConfig: ModelCallConfig = {
-            id: fbModel.id,
-            apiKey: fbApiKey,
-            apiEndpoint: fbModel.apiEndpoint || '',
-            provider: fbModel.provider || '',
-            maxTokens: fbModel.maxTokens || 4096,
-            temperature: fbModel.temperature ?? 0.7,
-            contextWindow: (fbModel as any).contextWindow || 128000,
-          };
-
-          // v3.1.2: 重启 keepAliveTimer — 降级执行期间也需要心跳
-          const fbThinkingStart = { value: Date.now() };
-          keepAliveTimer = setInterval(() => {
-            if (!res.writableEnded) {
-              try {
-                const elapsed = Date.now() - fbThinkingStart.value;
-                res.write(`data: ${JSON.stringify({ type: 'keep_alive', elapsed })}\n\n`);
-              } catch { /* ignore */ }
-            }
-          }, 5000);
-
-          const strategy = ExecutionStrategyFactory.create(params.executionMode as ExecutionMode || ExecutionMode.REACT);
-          // v3.1.2: 修复 fire-and-forget bug — 之前 void strategy.execute() 不 await 且无 SSE 回调
-          // 导致降级输出丢失 + done 事件在降级完成前发送
-          const fbToolResult = await strategy.execute({
-            modelConfig: fbModelConfig,
-            messages: apiMessages as any,
-            maxToolTurns: 10,
-            signal: abortController?.signal ?? new AbortController().signal,
-            executionMode: (params.executionMode as ExecutionMode) || ExecutionMode.REACT,
-            approvedToolsCache: params.sessionApprovedSet,
-            onSSEEvent: (evt: Record<string, unknown>) => {
-              if (!res.writableEnded) {
-                try { res.write(`data: ${JSON.stringify(evt)}\n\n`); } catch { /* ignore */ }
-              }
-            },
-            onChunk: (chunk: string) => {
-              if (!res.writableEnded) {
-                try { res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`); } catch { /* ignore */ }
-              }
-            },
-            onThinking: (thinkingChunk: string) => {
-              if (!res.writableEnded) {
-                try { res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`); } catch { /* ignore */ }
-              }
-            },
-            onPermissionRequest: () => Promise.resolve(true),
-            onToolCall: (toolCall: any, result: string) => {
-              if (!res.writableEnded) {
-                try {
-                  res.write(`data: ${JSON.stringify({
-                    type: 'tool_call',
-                    toolCallId: toolCall.id,
-                    toolName: toolCall.function?.name || toolCall.name,
-                    toolArgs: toolCall.function?.arguments || toolCall.args,
-                    toolResult: result,
-                  })}\n\n`);
-                } catch { /* ignore */ }
-              }
-            },
-          });
-
-          // v3.1.2: 降级完成清理 keepAliveTimer
-          if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
-
-          // v3.1.2: 保存降级模型回复到 DB（之前 fire-and-forget 模式不保存）
-          if (fbToolResult?.content) {
-            addMessage({
-              sessionId, role: 'assistant',
-              content: fbToolResult.content,
-              model: fbModel.id,
-              toolCalls: fbToolResult.toolCalls?.length > 0 ? JSON.stringify(fbToolResult.toolCalls) : undefined,
-            });
-          }
-
-          if (fbKey && fbKey.index >= 0) { reportKeyResult(fbModel.id, fbKey.index, true); }
-
-          if (!res.writableEnded) {
-            try {
-              res.write(`data: ${JSON.stringify({ type: 'done', errorCode: null, errorMessage: null, thinkingDuration: 0, fallbackModel: fbModel.id, fallbackReason: isModelUnsupported ? 'model_not_supported' : 'request_failed' })}\n\n`);
-              await new Promise(r => setTimeout(r, 200));
-              res.end();
-            } catch { /* ignore */ }
-          }
-
-          messageQueue.markCompleted(sessionId);
-          activeSSEConnections.delete(sessionId);
-          return;
-        } catch (fbErr) {
-          // v3.1.2: 降级失败也清理 keepAliveTimer
-          if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
-          logger.warn(`[MessageQueue] 降级模型 ${fbModel.id} 也失败:`, fbErr);
-        }
-      }
-    }
-
-    if (!res.writableEnded) {
-      try {
-        const errMsg = error instanceof Error ? error.message : '服务器内部错误';
-        res.write(`data: ${JSON.stringify({
-          type: 'done',
-          errorCode: 'QUEUE_EXEC_ERROR',
-          errorMessage: errMsg,
-          thinkingDuration: 0,
-        })}\n\n`);
-        await new Promise(r => setTimeout(r, 200));
-        res.end();
-      } catch { /* ignore */ }
+    if (!fallbackSuccess) {
+      // 降级失败，发送错误 done
+      const { code, message: errMsg } = classifyAndFormatError(error, modelConfig, params.model);
+      sendSSE(res, { type: 'text', content: errMsg });
+      await finishStream(res, timerManager, {
+        errorCode: code === 'UNKNOWN_ERROR' ? 'QUEUE_EXEC_ERROR' : code,
+        errorMessage: errMsg,
+      });
     }
 
     messageQueue.markCompleted(sessionId);
@@ -598,23 +659,45 @@ async function executeFromQueue(
   }
 }
 
-// ===================== Main Chat Handler =====================
+// ===================== 主聊天处理器 =====================
 
+/**
+ * 主聊天处理器 — 薄封装
+ *
+ * 解析请求 → 构建 apiMessages → 调用 streamExecutor.executeChat()
+ * 队列模式也走统一路径，通过回调区分。
+ */
 export async function handleChat(req: import('express').Request, res: import('express').Response): Promise<void> {
-  const { sessionId: reqSessionId, message, model = 'auto', skillContext, skillId, preset, conversationHistory, attachments, reasoningEffort, executionMode, queueMode, agentId } = req.body;
+  const {
+    sessionId: reqSessionId,
+    message,
+    model = 'auto',
+    skillContext,
+    skillId,
+    preset,
+    conversationHistory,
+    attachments,
+    reasoningEffort,
+    executionMode,
+    queueMode,
+    agentId,
+  } = req.body;
+
   const sessionId = reqSessionId || uuidv4();
   logger.debug(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, agentId=${agentId || 'none'}, message="${message?.slice(0, 30)}", queueMode=${queueMode || 'default'}`);
   if (attachments && Array.isArray(attachments) && attachments.length > 0) {
     logger.debug(`[Chat API] 附件数量: ${attachments.length}`);
   }
 
-  let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: any[]; tool_call_id?: string }> = [];
+  const timerManager = new TimerManager(res);
+
+  let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }> = [];
   let sessionApprovedSet: Set<string> = new Set();
   let abortController: AbortController = new AbortController();
-  // v3.1.1: 提到 try 外声明，使 catch 块也能访问并清理
-  let keepAliveTimer: NodeJS.Timeout | null = null;
+  let selectedKeyIndex = -1;
 
   try {
+    // 设置 SSE 响应头
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -624,47 +707,50 @@ export async function handleChat(req: import('express').Request, res: import('ex
       req.socket.setNoDelay(true);
     }
 
+    // 加载模型配置
     const modelsConfig = await loadModelsConfig();
     let effectiveModel: string;
     let effectiveModelName: string;
     let autoReason: string | undefined;
     let autoReasonType: string | undefined;
+
     if (model === 'auto') {
-      const hasImageAttachment = attachments && Array.isArray(attachments) && attachments.some((att: { type: string }) => att.type === 'image');
+      const hasImg = hasImageAttachment(attachments);
       try {
-        const autoResult = autoSelectModel(message, modelsConfig, hasImageAttachment);
+        const autoResult = autoSelectModel(message, modelsConfig, hasImg);
         effectiveModel = autoResult.modelId;
         effectiveModelName = autoResult.modelName;
         autoReason = `${autoResult.modelName} · ${autoResult.reason}`;
         autoReasonType = autoResult.reasonType;
         logger.debug(`[Auto Model] ${autoResult.reasonType} → ${autoResult.modelName} (${autoResult.modelId})`);
       } catch (autoErr: any) {
-        // v8.2-fix: autoSelectModel 失败时发送 SSE error 事件，防止前端白屏
         const errMsg = autoErr instanceof Error ? autoErr.message : '无可用模型';
         const errCode = autoErr.code || 'NO_AVAILABLE_MODELS';
-        res.write(`data: ${JSON.stringify({ type: 'error', code: errCode, message: errMsg })}\n\n`);
-        res.write(`data: ${JSON.stringify({ type: 'done', errorCode: errCode, errorMessage: errMsg, thinkingDuration: 0 })}\n\n`);
-        res.end();
+        sendSSE(res, { type: 'error', code: errCode, message: errMsg });
+        await sendDoneAndEnd(res, { errorCode: errCode, errorMessage: errMsg, thinkingDuration: 0 });
         return;
       }
     } else {
       effectiveModel = model;
-      const found = modelsConfig.models.find(m => m.id === model);
+      const found = modelsConfig.models.find((m) => m.id === model);
       effectiveModelName = found?.name || model;
     }
 
     const activePreset = preset && MODEL_PRESETS[preset] ? MODEL_PRESETS[preset] : null;
 
+    // 创建会话（如果不存在）
     const sessions = getSessions();
-    const sessionExists = sessions.some(s => s.id === sessionId);
+    const sessionExists = sessions.some((s) => s.id === sessionId);
     if (!sessionExists) {
       createSession(sessionId, '新对话', effectiveModel, agentId);
     }
 
+    // 保存用户消息
     addMessage({ sessionId, role: 'user', content: message, model: effectiveModel, skillId: skillId || null, attachments: attachments || undefined });
 
+    // 发送 init 事件
     const assistantId = uuidv4();
-    res.write(`data: ${JSON.stringify({
+    sendSSE(res, {
       type: 'init',
       sessionId,
       assistantMessageId: assistantId,
@@ -674,8 +760,9 @@ export async function handleChat(req: import('express').Request, res: import('ex
       autoReasonType,
       preset: activePreset ? { id: preset, label: activePreset.label } : null,
       reasoningEffort: reasoningEffort || null,
-    })}\n\n`);
+    });
 
+    // ============== 队列模式 ==============
     const effectiveQueueMode = queueMode as QueueMode | undefined;
     if (effectiveQueueMode) {
       activeSSEConnections.set(sessionId, { res, assistantMessageId: assistantId });
@@ -695,29 +782,27 @@ export async function handleChat(req: import('express').Request, res: import('ex
       });
 
       if (!result.accepted) {
-        res.write(`data: ${JSON.stringify({
-          type: 'queue_rejected',
-          reason: result.reason,
-        })}\n\n`);
-        await new Promise(r => setTimeout(r, 200));
-        res.end();
+        // 队列拒绝 — 合并到 debug 通道
+        sendDebugSSE(res, { type: 'queue_rejected', reason: result.reason });
+        await sendDoneAndEnd(res, { errorCode: 'QUEUE_REJECTED', errorMessage: result.reason, thinkingDuration: 0 });
         activeSSEConnections.delete(sessionId);
         return;
       }
 
-      res.write(`data: ${JSON.stringify({
+      // 队列状态 — 合并到 debug 通道
+      sendDebugSSE(res, {
         type: 'queue_status',
         mode: effectiveQueueMode,
         state: messageQueue.getSessionState(sessionId),
         queueLength: messageQueue.getQueueLength(sessionId),
         assistantMessageId: result.assistantMessageId,
-      })}\n\n`);
+      });
 
       const executeHandler = (event: QueueEvent) => {
         if (event.sessionId !== sessionId) return;
         if (event.type === 'executing' && event.messageId === result.messageId) {
           messageQueue.off('queue', executeHandler);
-          executeFromQueue(sessionId, event, res, {
+          executeQueuedMessage(sessionId, event, res, {
             model: effectiveModel,
             modelName: effectiveModelName,
             assistantId: result.assistantMessageId,
@@ -739,10 +824,11 @@ export async function handleChat(req: import('express').Request, res: import('ex
 
       messageQueue.on('queue', executeHandler);
 
+      // 如果已经在执行中，直接触发
       const currentState = messageQueue.getSessionState(sessionId);
       if (currentState === 'executing' && messageQueue.getCurrentAssistantId(sessionId) === result.assistantMessageId) {
         messageQueue.off('queue', executeHandler);
-        executeFromQueue(sessionId, {
+        executeQueuedMessage(sessionId, {
           type: 'executing',
           sessionId,
           messageId: result.messageId,
@@ -772,767 +858,455 @@ export async function handleChat(req: import('express').Request, res: import('ex
       return;
     }
 
+    // ============== 直接模式 ==============
     let fullContent = '';
-    let selectedKeyIndex = -1;
     let thinkingStartTime: number | null = null;
     let hasThinking = false;
     let thinkingContent = '';
     let thinkingChunkCount = 0;
-    let usageData: { promptTokens?: number; completionTokens?: number; thinkingTokens?: number; totalTokens?: number } | undefined;
     let toolCallsJson: string | undefined;
     const modelConfig = modelsConfig.models.find((m) => m.id === effectiveModel);
 
-    // v3.1.0: 主路径启动 keep_alive 心跳 — 防止前端 30s 心跳超时
-    // 之前只有 executeFromQueue 路径启动了 keepAliveTimer，主路径遗漏
-    // 导致推理模型（20-30s 首 token）触发前端 SSE 心跳超时
-    const thinkingStartRef = { value: Date.now() };
-    keepAliveTimer = setInterval(() => {
-      if (!res.writableEnded) {
-        try {
-          const elapsed = Date.now() - thinkingStartRef.value;
-          res.write(`data: ${JSON.stringify({ type: 'keep_alive', elapsed })}\n\n`);
-        } catch { /* ignore */ }
-      }
-    }, 5000);
+    if (!modelConfig) {
+      throw new Error(`未找到模型配置: ${effectiveModel}`);
+    }
 
-    // v3.1.2: 统一 SSE 安全写入 — 检查 writableEnded + try-catch
-    // 放在 try 外定义，确保 inner catch 和 success path 也能访问
-    const safeWrite = (data: string) => {
-      if (!res.writableEnded) {
-        try { res.write(data); } catch { /* 连接已断开，忽略 */ }
-      }
-    };
+    const keyResult = selectKey(modelConfig);
+    let effectiveApiKey = modelConfig.apiKey || '';
+    if (keyResult) {
+      effectiveApiKey = keyResult.key;
+      selectedKeyIndex = keyResult.index;
+    }
 
-    try {
-      if (!modelConfig) {
-        throw new Error(`未找到模型配置: ${effectiveModel}`);
-      }
+    // 构建 API 消息
+    apiMessages = [];
 
-      const keyResult = selectKey(modelConfig);
-      let effectiveApiKey = modelConfig.apiKey || '';
-      if (keyResult) {
-        effectiveApiKey = keyResult.key;
-        selectedKeyIndex = keyResult.index;
-      }
+    // 图片系统消息
+    if (hasImageAttachment(attachments)) {
+      apiMessages.push({
+        role: 'system',
+        content: `你是一个具备视觉理解能力的AI助手，当前用户上传了图片。请遵循以下规则处理图片：\n\n1. **意图识别**：首先识别图片内容（单据、截图、商品、库存、报表等），理解用户上传图片的意图。\n2. **数据提取**：如果图片包含结构化信息（如订单号、商品名称、数量、金额等），请提取关键数据。\n3. **主动执行**：根据图片内容和提取的数据，主动调用相关工具执行操作（如查询库存、创建订单、更新数据等）。\n4. **业务关联**：将图片内容与仓储管理系统（WMS）业务关联，提供有价值的分析和建议。\n5. **清晰回复**：先简要说明你从图片中识别到的内容，然后说明你执行了什么操作或建议什么操作。\n\n注意：不要只是简单描述图片内容，要理解用户意图并采取实际行动。`,
+      });
+    }
 
-      apiMessages = [];
+    // Soul 系统消息
+    const soulSystemMsg = buildSoulSystemMessage();
+    if (soulSystemMsg.trim()) {
+      apiMessages.push({ role: 'system', content: soulSystemMsg.trim() });
+    }
 
-      const hasImageInRequest = attachments && Array.isArray(attachments) && attachments.some((att: { type: string }) => att.type === 'image');
-      if (hasImageInRequest) {
-        apiMessages.push({
-          role: 'system',
-          content: `你是一个具备视觉理解能力的AI助手，当前用户上传了图片。请遵循以下规则处理图片：\n\n1. **意图识别**：首先识别图片内容（单据、截图、商品、库存、报表等），理解用户上传图片的意图。\n2. **数据提取**：如果图片包含结构化信息（如订单号、商品名称、数量、金额等），请提取关键数据。\n3. **主动执行**：根据图片内容和提取的数据，主动调用相关工具执行操作（如查询库存、创建订单、更新数据等）。\n4. **业务关联**：将图片内容与仓储管理系统（WMS）业务关联，提供有价值的分析和建议。\n5. **清晰回复**：先简要说明你从图片中识别到的内容，然后说明你执行了什么操作或建议什么操作。\n\n注意：不要只是简单描述图片内容，要理解用户意图并采取实际行动。`,
-        });
-      }
+    // Memory.md 内容
+    const memoryContent = await readMemoryMd();
+    if (memoryContent.trim()) {
+      apiMessages.push({ role: 'system', content: memoryContent.trim() });
+    }
 
-      const soulSystemMsg = buildSoulSystemMessage();
-      if (soulSystemMsg.trim()) {
-        apiMessages.push({ role: 'system', content: soulSystemMsg.trim() });
-      }
+    // 技能上下文
+    if (skillContext && typeof skillContext === 'string' && skillContext.trim()) {
+      apiMessages.push({ role: 'system', content: skillContext.trim() });
+    }
 
-      const memoryContent = await readMemoryMd();
-      if (memoryContent.trim()) {
-        apiMessages.push({ role: 'system', content: memoryContent.trim() });
-      }
-
-      if (skillContext && typeof skillContext === 'string' && skillContext.trim()) {
-        apiMessages.push({ role: 'system', content: skillContext.trim() });
-      }
-
-      const referencedSessionIds = req.body.referencedSessionIds;
-      if (Array.isArray(referencedSessionIds) && referencedSessionIds.length > 0) {
-        let sessionContext = '';
-        for (const refId of referencedSessionIds) {
-          const refMessages = getSessionMessages(refId);
-          if (refMessages.length > 0) {
-            const sessionInfo = getSessions().find((s: { id: string }) => s.id === refId);
-            const sessionTitle = sessionInfo ? sessionInfo.title : refId;
-            sessionContext += `\n## 会话：${sessionTitle}\n`;
-            for (const msg of refMessages.slice(-10)) {
-              const role = msg.role === 'user' ? 'User' : 'Assistant';
-              sessionContext += `${role}: ${msg.content}\n`;
-            }
+    // 引用会话
+    const referencedSessionIds = req.body.referencedSessionIds;
+    if (Array.isArray(referencedSessionIds) && referencedSessionIds.length > 0) {
+      let sessionContext = '';
+      for (const refId of referencedSessionIds) {
+        const refMessages = getSessionMessages(refId);
+        if (refMessages.length > 0) {
+          const sessionInfo = getSessions().find((s: { id: string }) => s.id === refId);
+          const sessionTitle = sessionInfo ? sessionInfo.title : refId;
+          sessionContext += `\n## 会话：${sessionTitle}\n`;
+          for (const msg of refMessages.slice(-10)) {
+            const role = msg.role === 'user' ? 'User' : 'Assistant';
+            sessionContext += `${role}: ${msg.content}\n`;
           }
         }
-        if (sessionContext) {
-          apiMessages.push({ role: 'system', content: `<referenced-sessions>\n${sessionContext}\n</referenced-sessions>` });
-        }
       }
+      if (sessionContext) {
+        apiMessages.push({ role: 'system', content: `<referenced-sessions>\n${sessionContext}\n</referenced-sessions>` });
+      }
+    }
 
-      const isMultimodalModel = modelConfig.capabilities?.includes('multimodal');
-      const isKnownVisionModel = [
-        'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4-vision',
-        'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'claude-3-5-sonnet',
-        'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision',
-        'qwen-vl', 'qwen-vl-max',
-        'kimi-k2.6', 'kimi-k2.5',
-      ].some(id => modelConfig.id.toLowerCase().includes(id.toLowerCase()));
-      const isFalsePositiveVision = /deepseek/i.test(modelConfig.id);
-      const supportsVision = (isMultimodalModel || isKnownVisionModel) && !isFalsePositiveVision;
+    // 视觉模型检测（使用提取的公共函数）
+    const supportsVision = detectVisionModel(modelConfig);
 
-      if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
-        for (const msg of conversationHistory) {
-          if (msg.role === 'user' || msg.role === 'assistant') {
-            if (msg.role === 'user' && msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0 && supportsVision) {
-              const contentParts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'auto' | 'low' | 'high' } }> = [];
-              if (msg.content) {
-                contentParts.push({ type: 'text', text: msg.content });
-              }
-              for (const att of msg.attachments) {
-                if (att.type === 'image') {
-                  try {
-                    const filePath = path.join(CDF_KNOW_CLOW_DIR, 'uploads', path.basename(att.url));
-                    const fileBuffer = await fsp.readFile(filePath);
-                    const base64 = fileBuffer.toString('base64');
-                    contentParts.push({
-                      type: 'image_url',
-                      image_url: { url: `data:${att.mimeType};base64,${base64}`, detail: 'auto' },
-                    });
-                  } catch (err: any) {
-                    if (err.code !== 'ENOENT') {
-                      logger.error(`[Chat API] 读取历史图片附件失败: ${att.fileName}`, err);
-                    }
+    // 从 conversationHistory 构建消息（使用提取的公共函数重建 tool_calls）
+    if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
+      for (const msg of conversationHistory) {
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          if (msg.role === 'user' && msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0 && supportsVision) {
+            const contentParts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'auto' | 'low' | 'high' } }> = [];
+            if (msg.content) {
+              contentParts.push({ type: 'text', text: msg.content });
+            }
+            for (const att of msg.attachments) {
+              if (att.type === 'image') {
+                try {
+                  const filePath = path.join(CDF_KNOW_CLOW_DIR, 'uploads', path.basename(att.url));
+                  const fileBuffer = await fsp.readFile(filePath);
+                  const base64 = fileBuffer.toString('base64');
+                  contentParts.push({
+                    type: 'image_url',
+                    image_url: { url: `data:${att.mimeType};base64,${base64}`, detail: 'auto' },
+                  });
+                } catch (err: any) {
+                  if (err.code !== 'ENOENT') {
+                    logger.error(`[Chat API] 读取历史图片附件失败: ${att.fileName}`, err);
                   }
                 }
               }
-              if (contentParts.length > 0) {
-                apiMessages.push({ role: msg.role, content: contentParts });
-              } else {
-                apiMessages.push({ role: msg.role, content: msg.content });
-              }
-            } else if (msg.role === 'assistant' && msg.toolCalls) {
-              try {
-                const toolCalls = typeof msg.toolCalls === 'string' ? JSON.parse(msg.toolCalls) : msg.toolCalls;
-                if (Array.isArray(toolCalls) && toolCalls.length > 0) {
-                  const callIds = toolCalls.map(() => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
-                  apiMessages.push({
-                    role: 'assistant',
-                    content: msg.content || null,
-                    tool_calls: toolCalls.map((tc: any, i: number) => ({
-                      id: callIds[i],
-                      type: 'function',
-                      function: {
-                        name: tc.name,
-                        arguments: tc.arguments,
-                      },
-                    })),
-                  } as any);
-                  for (let i = 0; i < toolCalls.length; i++) {
-                    apiMessages.push({
-                      role: 'tool',
-                      content: toolCalls[i].result ?? "(tool result unavailable)",
-                      tool_call_id: callIds[i],
-                    } as any);
-                  }
-                } else {
-                  apiMessages.push({ role: msg.role, content: msg.content });
-                }
-              } catch (parseErr) {
-                logger.warn('[Chat API] 流式路径 toolCalls 解析失败，降级为普通消息:', parseErr);
-                apiMessages.push({ role: msg.role, content: msg.content });
-              }
+            }
+            if (contentParts.length > 0) {
+              apiMessages.push({ role: msg.role, content: contentParts });
             } else {
               apiMessages.push({ role: msg.role, content: msg.content });
             }
+          } else if (rebuildToolCallsFromMessage(msg, apiMessages)) {
+            // tool_calls 已重建，继续下一条
+            continue;
+          } else {
+            apiMessages.push({ role: msg.role, content: msg.content });
           }
         }
       }
+    }
 
-      if (attachments && Array.isArray(attachments) && attachments.length > 0) {
-        const contentParts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'auto' | 'low' | 'high' } }> = [];
-        const effectiveMessage = message?.trim() || '请仔细识别并分析这张图片的内容，理解用户的意图，然后根据图片内容和你的能力采取相应的行动（如调用工具查询数据、生成报表、执行操作等）。如果图片包含单据、订单、库存、商品等信息，请提取关键数据并执行相关业务操作。';
-        contentParts.push({ type: 'text', text: effectiveMessage });
+    // 当前消息附件处理
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      const contentParts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'auto' | 'low' | 'high' } }> = [];
+      const effectiveMessage = message?.trim() || '请仔细识别并分析这张图片的内容，理解用户的意图，然后根据图片内容和你的能力采取相应的行动（如调用工具查询数据、生成报表、执行操作等）。如果图片包含单据、订单、库存、商品等信息，请提取关键数据并执行相关业务操作。';
+      contentParts.push({ type: 'text', text: effectiveMessage });
 
-        const hasImageAttachments = attachments.some((att: { type: string }) => att.type === 'image');
-        if (hasImageAttachments && !supportsVision) {
-          contentParts.push({
-            type: 'text',
-            text: `\n⚠️ [系统提示] 当前模型 "${modelConfig.name}" (${modelConfig.id}) 不支持图片理解。已上传图片但模型无法识别内容。如需分析图片，请切换到支持多模态的模型，如：\n- GPT-4o (OpenAI)\n- Claude 3 Sonnet/Opus (Anthropic)\n- Gemini 1.5 Pro (Google)\n- Qwen-VL (阿里云)\n`,
-          });
-        }
+      if (hasImageAttachment(attachments) && !supportsVision) {
+        contentParts.push({
+          type: 'text',
+          text: `\n⚠️ [系统提示] 当前模型 "${modelConfig.name}" (${modelConfig.id}) 不支持图片理解。已上传图片但模型无法识别内容。如需分析图片，请切换到支持多模态的模型，如：\n- GPT-4o (OpenAI)\n- Claude 3 Sonnet/Opus (Anthropic)\n- Gemini 1.5 Pro (Google)\n- Qwen-VL (阿里云)\n`,
+        });
+      }
 
-        for (const att of attachments) {
-          if (att.type === 'image') {
-            if (supportsVision) {
-              try {
-                const filePath = path.join(CDF_KNOW_CLOW_DIR, 'uploads', path.basename(att.url));
-                const fileBuffer = await fsp.readFile(filePath);
-                const base64 = fileBuffer.toString('base64');
-                contentParts.push({
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:${att.mimeType};base64,${base64}`,
-                    detail: 'auto',
-                  },
-                });
-              } catch (err: any) {
-                if (err.code !== 'ENOENT') {
-                  logger.error(`[Chat API] 读取图片附件失败: ${att.fileName}`, err);
-                }
-              }
-            }
-          } else {
+      for (const att of attachments) {
+        if (att.type === 'image') {
+          if (supportsVision) {
             try {
               const filePath = path.join(CDF_KNOW_CLOW_DIR, 'uploads', path.basename(att.url));
-              const ext = path.extname(att.fileName).toLowerCase().replace('.', '');
-              const fileContent = await extractFileContent(filePath, ext, att.fileName);
+              const fileBuffer = await fsp.readFile(filePath);
+              const base64 = fileBuffer.toString('base64');
               contentParts.push({
-                type: 'text',
-                text: fileContent,
+                type: 'image_url',
+                image_url: { url: `data:${att.mimeType};base64,${base64}`, detail: 'auto' },
               });
             } catch (err: any) {
               if (err.code !== 'ENOENT') {
-                logger.error(`[Chat API] 读取文件附件失败: ${att.fileName}`, err);
-                contentParts.push({
-                  type: 'text',
-                  text: `\n---\n[附件: ${att.fileName} - 读取失败]\n---\n`,
-                });
+                logger.error(`[Chat API] 读取图片附件失败: ${att.fileName}`, err);
               }
             }
           }
-        }
-
-        apiMessages.push({ role: 'user', content: contentParts });
-      } else {
-        apiMessages.push({ role: 'user', content: message });
-      }
-
-      const finalModelConfig = {
-        ...modelConfig,
-        apiKey: effectiveApiKey,
-        temperature: activePreset ? activePreset.temperature : modelConfig.temperature,
-        topP: activePreset ? activePreset.topP : modelConfig.topP,
-      };
-
-      abortController = new AbortController();
-      let timeoutMs: number;
-      if (isLocalModel(modelConfig)) {
-        timeoutMs = 300000;
-      } else if (reasoningEffort === 'max') {
-        timeoutMs = 600000;
-      } else if (reasoningEffort === 'high') {
-        timeoutMs = 300000;
-      } else {
-        timeoutMs = 120000;
-      }
-      let timeout = setTimeout(() => abortController.abort(), timeoutMs);
-
-      try {
-        if (!effectiveApiKey && !isLocalModel(modelConfig)) {
-          logger.debug(`[Chat API] 模型 ${effectiveModel} 未配置 API Key，使用模拟模式`);
-          const mockResponse = generateMockResponse(message);
-          const segments = mockResponse.match(/[\s\S]{1,5}/g) || [mockResponse];
-          for (const segment of segments) {
-            safeWrite(`data: ${JSON.stringify({ type: 'text', content: segment })}\n\n`);
-            await new Promise(r => setTimeout(r, 15));
-          }
-          fullContent = mockResponse;
         } else {
-          sessionApprovedSet = initSessionApprovedTools(sessionId);
-
-          let cacheHit = false;
-          if (reasoningEffort) {
-            const cacheKey = getThinkingCacheKey(effectiveModel, message, reasoningEffort);
-            const cached = getThinkingCache(cacheKey);
-            if (cached) {
-              logger.debug('[Chat API] Thinking cache hit for', effectiveModel);
-              cacheHit = true;
-              fullContent = cached.content;
-              thinkingContent = cached.thinking;
-              hasThinking = !!thinkingContent;
-              if (hasThinking) thinkingStartTime = 0;
-              if (thinkingContent) {
-                safeWrite(`data: ${JSON.stringify({ type: 'thinking', content: thinkingContent })}\n\n`);
-              }
-              safeWrite(`data: ${JSON.stringify({ type: 'text', content: fullContent })}\n\n`);
-              safeWrite(`data: ${JSON.stringify({ type: 'cache_hit', cached: true })}\n\n`);
-            }
-          }
-
-          if (!cacheHit) {
-            const ctxWindow = (finalModelConfig as any).contextWindow || 128000;
-            const ctxMaxTokens = Math.min((finalModelConfig as any).maxTokens || 8192, 8192);
-            const estimatedToolsCount = 30;
-            let compressed = false;
-            try {
-              const compressResult = await compressContextWithSummary(
-                apiMessages, ctxWindow, ctxMaxTokens, estimatedToolsCount, finalModelConfig,
-              );
-              apiMessages = compressResult.messages as any;
-              compressed = compressResult.compressed;
-              if (compressed) {
-                logger.debug('[Chat API] 上下文已智能压缩（流式）');
-              }
-            } catch {
-              // 压缩失败，降级为简单截断
-            }
-            const truncated = truncateContextForModel(apiMessages, ctxWindow, ctxMaxTokens, estimatedToolsCount);
-            if (truncated.truncated || compressed) {
-              res.write(`data: ${JSON.stringify({
-                type: 'context_truncated',
-                originalTokens: estimateMessagesTokens(apiMessages),
-                truncatedTokens: estimateMessagesTokens(truncated.messages),
-                modelLimit: ctxWindow,
-                compressed,
-              })}\n\n`);
-            }
-
-            let effectiveMode = (executionMode && Object.values(ExecutionMode).includes(executionMode as ExecutionMode))
-              ? (executionMode as ExecutionMode)
-              : undefined;
-            if (!effectiveMode) {
-              try {
-                const settingsVal = getAppSettings('default');
-                if (settingsVal) {
-                  const parsed = JSON.parse(settingsVal);
-                  const defaultMode = parsed?.aiEngine?.defaultExecutionMode;
-                  if (defaultMode && Object.values(ExecutionMode).includes(defaultMode as ExecutionMode)) {
-                    effectiveMode = defaultMode as ExecutionMode;
-                  }
-                }
-              } catch { /* ignore */ }
-            }
-            if (!effectiveMode) {
-              effectiveMode = ExecutionStrategyFactory.getDefaultMode();
-            }
-
-            const strategy = ExecutionStrategyFactory.create(effectiveMode);
-
-            const latestUserMsg = truncated.messages
-              .slice().reverse().find((m: any) => m.role === 'user');
-            if (latestUserMsg && typeof latestUserMsg.content === 'string') {
-              try {
-                const memResults: VecSearchResult[] = await Promise.race([
-                  searchMemory(
-                    latestUserMsg.content, 'default', 5, 0.35, sessionId,
-                  ),
-                  new Promise<VecSearchResult[]>(resolve => setTimeout(() => resolve([]), 5000)),
-                ]);
-                if (memResults.length > 0) {
-                  const memChars = memResults.reduce((sum, r) => sum + r.entry.content.length, 0);
-                  const memTokens = Math.ceil(memChars / 1.5);
-                  if (memTokens <= 500) {
-                    const memCtx = memResults
-                      .map(r => `[${r.entry.category}] ${r.entry.content} (相似度: ${r.similarity.toFixed(2)})`)
-                      .join('\n');
-                    truncated.messages.push({
-                      role: 'system',
-                      content: `[历史记忆]\n${memCtx}`,
-                    } as typeof truncated.messages[number]);
-
-                    res.write(`data: ${JSON.stringify({
-                      type: 'memory_retrieved',
-                      count: memResults.length,
-                      summaries: memResults.map(r => r.entry.content.substring(0, 50)),
-                    })}\n\n`);
-
-                    logger.debug(`[Chat API] 语义记忆注入（流式）: ${memResults.length} 条, 估算 ${memTokens} tokens`);
-                  }
-                }
-              } catch (memErr) {
-                logger.warn('[Chat API] 语义记忆检索失败（流式，已跳过）:', memErr instanceof Error ? memErr.message : String(memErr));
-              }
-            }
-
-            const sanitizedStreamMessages = sanitizeToolMessages(truncated.messages as any) as Array<{ role: string; content: MessageContent; tool_calls?: any[]; tool_call_id?: string }>;
-
-            const toolResult = await strategy.execute({
-              modelConfig: finalModelConfig,
-              messages: sanitizedStreamMessages,
-              maxToolTurns: 10,
-              signal: abortController.signal,
-              executionMode: effectiveMode,
-              onSSEEvent: (event) => {
-                safeWrite(`data: ${JSON.stringify(event)}\n\n`);
-              },
-              onChunk: (chunk) => {
-                safeWrite(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
-              },
-              onThinking: (thinkingChunk) => {
-                if (!hasThinking) {
-                  hasThinking = true;
-                  thinkingStartTime = Date.now();
-                }
-                thinkingContent += thinkingChunk;
-                thinkingChunkCount++;
-                safeWrite(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`);
-
-                if (thinkingChunkCount % 5 === 0 && thinkingContent.length > 20) {
-                  matchTriggers(thinkingContent, sessionId).then((matches) => {
-                    for (const match of matches) {
-                      safeWrite(`data: ${JSON.stringify({
-                        type: 'client_tool',
-                        tool: match.toolName,
-                        args: match.args,
-                        pluginId: match.pluginId,
-                      })}\n\n`);
-
-                      executePluginTrigger(match).then((result) => {
-                        safeWrite(`data: ${JSON.stringify({
-                          type: 'plugin_result',
-                          tool: match.toolName,
-                          output: result.output,
-                          durationMs: result.durationMs,
-                          pluginId: match.pluginId,
-                        })}\n\n`);
-                      }).catch((err) => {
-                        logger.error('[Chat API] plugin trigger execution failed:', err);
-                      });
-                    }
-                  }).catch((err) => {
-                    logger.error('[Chat API] trigger matching failed:', err);
-                  });
-                }
-              },
-              onToolCall: (toolCall, result) => {
-                safeWrite(`data: ${JSON.stringify({
-                  type: 'tool_call',
-                  toolCallId: toolCall.id,
-                  toolName: toolCall.function.name,
-                  toolArgs: toolCall.function.arguments,
-                  toolResult: result,
-                })}\n\n`);
-                const isDenied = result.includes('用户拒绝了工具');
-                const isError = !isDenied && result.includes('"error"');
-                const auditResult = isDenied ? 'denied' : isError ? 'error' : 'success';
-                safeWrite(`data: ${JSON.stringify({
-                  type: 'tool_audit',
-                  toolName: toolCall.function.name,
-                  result: auditResult,
-                  timestamp: Date.now(),
-                })}\n\n`);
-              },
-              onAgentStart: (agentId: string, agentRole: string, taskDescription: string, subTaskId?: string) => {
-                if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'agent_start', agentId, agentRole, taskDescription, subTaskId })}\n\n`); } catch { /* ignore */ }
-                }
-              },
-              onAgentEnd: (agentId: string, agentRole: string, status: 'success' | 'failed' | 'timeout', duration?: number, error?: string) => {
-                if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'agent_end', agentId, agentRole, status, duration, error })}\n\n`); } catch { /* ignore */ }
-                }
-              },
-              onSubtaskCreate: (subTaskId: string, description: string, dependsOn: string[] = [], priority: number = 1) => {
-                if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'subtask_create', subTaskId, description, dependsOn, priority })}\n\n`); } catch { /* ignore */ }
-                }
-              },
-              onSubtaskAssign: (subTaskId: string, agentId: string, agentRole: string) => {
-                if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'subtask_assign', subTaskId, agentId, agentRole })}\n\n`); } catch { /* ignore */ }
-                }
-              },
-              onSubtaskComplete: (subTaskId: string, description: string, status: 'completed' | 'failed', agentId: string, duration?: number, resultSummary?: string) => {
-                if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'subtask_complete', subTaskId, description, status, agentId, duration, resultSummary })}\n\n`); } catch { /* ignore */ }
-                }
-              },
-              onReflect: (reflection: any) => {
-                if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'reflect', ...reflection })}\n\n`); } catch { /* ignore */ }
-                }
-              },
-              onPlan: (plan: any) => {
-                if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'plan', ...plan })}\n\n`); } catch { /* ignore */ }
-                }
-              },
-              onPermissionRequest: (toolCall) => {
-                if (isSystemAuthorized()) {
-                  logger.debug('[Chat API] 系统授权已启用，自动通过工具权限:', toolCall.function.name);
-                  return Promise.resolve(true);
-                }
-                return new Promise((resolve) => {
-                  const reqId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-                  registerPermissionRequest(reqId, toolCall.function.name, sessionId);
-                  res.write(`data: ${JSON.stringify({
-                    type: 'permission_request',
-                    reqId,
-                    toolName: toolCall.function.name,
-                    toolArgs: toolCall.function.arguments,
-                    riskLevel: getToolRiskLevel(toolCall.function.name),
-                  })}\n\n`);
-                  clearTimeout(timeout);
-                  timeout = null as any;
-                  const handler = (approved: boolean) => {
-                    permissionEmitter.removeListener(reqId, handler);
-                    timeout = setTimeout(() => abortController.abort(), timeoutMs);
-                    res.write(`data: ${JSON.stringify({
-                      type: 'tool_audit',
-                      toolName: toolCall.function.name,
-                      result: approved ? 'approved' : 'denied',
-                      timestamp: Date.now(),
-                    })}\n\n`);
-                    resolve(approved);
-                  };
-                  permissionEmitter.once(reqId, handler);
-                });
-              },
-              reasoningEffort,
-              modelCapabilities: modelConfig.capabilities || [],
-              approvedToolsCache: sessionApprovedSet,
-              onRateLimit: async () => {
-                if (selectedKeyIndex >= 0 && effectiveModel) {
-                  reportKeyResult(effectiveModel, selectedKeyIndex, false);
-                }
-                const nextKey = selectKey(modelConfig);
-                if (nextKey) {
-                  selectedKeyIndex = nextKey.index;
-                  logger.debug(`[Chat API] 429 速率限制，切换到备用 Key #${nextKey.index}`);
-                  return { apiKey: nextKey.key, keyIndex: nextKey.index };
-                }
-                return null;
-              },
-            });
-            fullContent = toolResult.content;
-            if (reasoningEffort && thinkingContent) {
-              const cacheKey = getThinkingCacheKey(effectiveModel, message, reasoningEffort);
-              setThinkingCache(cacheKey, fullContent, thinkingContent);
-            }
-            if (!fullContent && thinkingContent) {
-              const trimmedThinking = thinkingContent.trim();
-              if (trimmedThinking) {
-                const paragraphs = trimmedThinking.split(/\n{2,}|\n(?=[A-Z\u4e00-\u9fff])/);
-                const lastParagraph = paragraphs.filter(p => p.trim().length > 20).pop() || trimmedThinking;
-                const summary = lastParagraph.length > 800
-                  ? '（思考摘要）\n\n' + lastParagraph.slice(-800)
-                  : '（思考摘要）\n\n' + lastParagraph;
-                fullContent = summary;
-              }
-            }
-            if (!fullContent && !thinkingContent?.trim()) {
-              logger.warn('[Chat API] 模型返回空内容，无文本也无思考，sessionId=%s model=%s', sessionId, effectiveModel);
-              fullContent = '（模型未返回内容，可能是请求超时或服务异常，请重试）';
-            }
-            toolCallsJson = toolResult.toolCalls.length > 0 ? JSON.stringify(toolResult.toolCalls) : undefined;
-          }
-        }
-      } finally {
-        clearTimeout(timeout);
-        if (keepAliveTimer) {
-          clearInterval(keepAliveTimer);
-          keepAliveTimer = null;
-        }
-      }
-
-      const thinkingDuration = (hasThinking && thinkingStartTime) ? Date.now() - thinkingStartTime : 0;
-      addMessage({
-        sessionId, role: 'assistant', content: fullContent, model: effectiveModel,
-        skillId: skillId || null, toolCalls: toolCallsJson,
-        thinking: thinkingContent || null,
-        thinkingDuration: thinkingDuration || null,
-      });
-      if (selectedKeyIndex >= 0 && effectiveModel) {
-        reportKeyResult(effectiveModel, selectedKeyIndex, true);
-      }
-
-      extractAndAppendMemory(message, fullContent, apiMessages.map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) }))).catch(() => {});
-    } catch (apiError) {
-      logger.error('[Chat API] AI API error:', apiError);
-      logger.error('[Chat API] Stack trace:', apiError instanceof Error ? apiError.stack : 'N/A');
-
-      const isModelUnsupported =
-        apiError instanceof AIAPIError && apiError.category === 'model_not_supported';
-      const isRecoverable = isModelUnsupported || (
-        apiError instanceof AIAPIError && (
-          apiError.category === 'timeout' ||
-          apiError.category === 'network' ||
-          apiError.category === 'server'
-        )
-      );
-
-      if (isRecoverable && modelConfig) {
-        const fbModel = modelsConfig.models.find(m =>
-          m.enabled && m.id !== effectiveModel && !m.capabilities?.includes('reasoning') && m.provider === modelConfig.provider && isModelAvailable(m)
-        ) || modelsConfig.models.find(m =>
-          m.enabled && m.id !== effectiveModel && isModelAvailable(m)
-        );
-
-        if (fbModel) {
-          const reasonLabel = isModelUnsupported ? '模型不支持' : '请求失败';
-          logger.debug(`[Chat API] ${reasonLabel}，降级到 ${fbModel.id}...`);
-          safeWrite(`data: ${JSON.stringify({
-            type: 'text',
-            content: `\n\n> ⚠️ ${reasonLabel}，已自动切换到 **${fbModel.name || fbModel.id}** 重试...\n\n`,
-          })}\n\n`);
-
-          // v3.1.2: 降级模型重启 keepAliveTimer — 防止降级执行期间前端心跳超时
-          const fbThinkingStart = { value: Date.now() };
-          keepAliveTimer = setInterval(() => {
-            if (!res.writableEnded) {
-              try {
-                const elapsed = Date.now() - fbThinkingStart.value;
-                res.write(`data: ${JSON.stringify({ type: 'keep_alive', elapsed })}\n\n`);
-              } catch { /* ignore */ }
-            }
-          }, 5000);
-
           try {
-            const fbKey = selectKey(fbModel);
-            const fbApiKey = fbKey ? fbKey.key : (fbModel.apiKey || '');
-            const fbModelConfig: ModelCallConfig = {
-              id: fbModel.id,
-              apiKey: fbApiKey,
-              apiEndpoint: fbModel.apiEndpoint || '',
-              provider: fbModel.provider,
-              temperature: fbModel.temperature ?? 0.7,
-              topP: fbModel.topP ?? 1,
-              maxTokens: fbModel.maxTokens,
-              capabilities: (fbModel.capabilities || []).filter((c: string) => c !== 'reasoning'),
-            };
-            const fbResult = await executeToolLoop({
-              modelConfig: fbModelConfig,
-              messages: apiMessages,
-              maxToolTurns: 10,
-              signal: abortController?.signal ?? new AbortController().signal,
-              onChunk: (chunk) => {
-                safeWrite(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
-              },
-              onThinking: (thinkingChunk: string) => {
-                if (!hasThinking) { hasThinking = true; thinkingStartTime = Date.now(); }
-                thinkingContent += thinkingChunk;
-                safeWrite(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`);
-              },
-              onPermissionRequest: () => Promise.resolve(isSystemAuthorized()),
-              reasoningEffort: undefined,
-              modelCapabilities: fbModelConfig.capabilities || [],
-              approvedToolsCache: sessionApprovedSet,
-            });
-
-            // v3.1.2: 降级成功后清理 keepAliveTimer
-            if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
-
-            fullContent = fbResult.content;
-            toolCallsJson = fbResult.toolCalls.length > 0 ? JSON.stringify(fbResult.toolCalls) : undefined;
-            addMessage({ sessionId, role: 'assistant', content: fullContent, model: fbModel.id, skillId: skillId || null, toolCalls: toolCallsJson });
-            if (fbKey && fbKey.index >= 0) { reportKeyResult(fbModel.id, fbKey.index, true); }
-
-            safeWrite(`data: ${JSON.stringify({ type: 'done', errorCode: null, errorMessage: null, thinkingDuration: 0, fallbackModel: fbModel.id, fallbackReason: isModelUnsupported ? 'model_not_supported' : 'request_failed' })}\n\n`);
-            await new Promise(r => setTimeout(r, 200));
-            try { res.end(); } catch { /* ignore */ }
-            return;
-          } catch (fbErr) {
-            // v3.1.2: 降级失败也清理 keepAliveTimer
-            if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
-            logger.warn(`[Chat API] 降级模型 ${fbModel.id} 也失败:`, fbErr);
-          }
-        }
-      }
-
-      fullContent = '';
-
-      let errorMsg: string;
-      let errorCode: string | null = null;
-
-      if (apiError instanceof AIAPIError) {
-        switch (apiError.category) {
-          case 'auth':
-            errorMsg = 'API Key 无效或已过期，请在「模型管理」中检查密钥配置。';
-            errorCode = 'AUTH_FAILED';
-            break;
-          case 'rate_limit':
-            errorMsg = '请求过于频繁，已达到速率限制，请稍后再试。';
-            errorCode = 'RATE_LIMITED';
-            break;
-          case 'network': {
-            const isLocal = modelConfig ? isLocalModel(modelConfig) : false;
-            if (isLocal) {
-              const modelName = modelConfig?.id?.replace('ollama-', '') || '';
-              errorMsg = `无法连接到本地 AI 模型服务（${effectiveModel}）。\n\n请检查以下事项：\n1. 确认 Ollama 或其他本地模型服务已启动\n2. 运行 'ollama serve' 启动服务（如使用 Ollama）\n3. 确认模型已下载：ollama pull ${modelName}\n4. 检查端口是否正确（默认 11434）\n\n或者切换到云模型（如 DeepSeek、OpenAI）使用。`;
-              errorCode = 'MODEL_UNAVAILABLE';
-            } else {
-              errorMsg = '网络连接失败，请检查网络或 API 端点配置。';
-              errorCode = 'NETWORK_ERROR';
+            const filePath = path.join(CDF_KNOW_CLOW_DIR, 'uploads', path.basename(att.url));
+            const ext = path.extname(att.fileName).toLowerCase().replace('.', '');
+            const fileContent = await extractFileContent(filePath, ext, att.fileName);
+            contentParts.push({ type: 'text', text: fileContent });
+          } catch (err: any) {
+            if (err.code !== 'ENOENT') {
+              logger.error(`[Chat API] 读取文件附件失败: ${att.fileName}`, err);
+              contentParts.push({ type: 'text', text: `\n---\n[附件: ${att.fileName} - 读取失败]\n---\n` });
             }
-            break;
           }
-          case 'timeout':
-            errorMsg = '请求超时，模型响应时间过长，请稍后重试。';
-            errorCode = 'TIMEOUT';
-            break;
-          case 'server':
-            errorMsg = 'AI 服务商暂时不可用，请稍后重试。';
-            errorCode = 'SERVER_ERROR';
-            break;
-          default:
-            errorMsg = `AI 服务暂时不可用：${apiError.message}`;
-            errorCode = 'UNKNOWN_ERROR';
-        }
-      } else if (apiError instanceof Error && apiError.name === 'AbortError') {
-        errorMsg = '请求已取消。';
-        errorCode = 'ABORTED';
-      } else {
-        const errMessage = apiError instanceof Error ? apiError.message : '未知错误';
-        if (errMessage.includes('stdout closed') || errMessage.includes('ENOENT') || errMessage.includes('ECONNREFUSED') || errMessage.includes('connect') || errMessage.includes('fetch failed')) {
-          const isLocal = modelConfig ? isLocalModel(modelConfig) : false;
-          if (isLocal) {
-            const modelName = modelConfig?.id?.replace('ollama-', '') || '';
-            errorMsg = `无法连接到本地 AI 模型服务（${effectiveModel}）。\n\n请检查以下事项：\n1. 确认 Ollama 或其他本地模型服务已启动\n2. 运行 'ollama serve' 启动服务（如使用 Ollama）\n3. 确认模型已下载：ollama pull ${modelName}\n4. 检查端口是否正确（默认 11434）\n\n或者切换到云模型（如 DeepSeek、OpenAI）使用。`;
-          } else {
-            errorMsg = `无法连接到 AI 模型服务（${effectiveModel}）。请确认模型服务已启动。\n提示：如果使用 Ollama，请先运行 'ollama serve' 启动服务。`;
-          }
-          errorCode = 'MODEL_UNAVAILABLE';
-        } else {
-          errorMsg = `抱歉，AI 服务暂时不可用，请稍后重试。\n错误：${errMessage}`;
-          errorCode = 'UNKNOWN_ERROR';
         }
       }
 
-      safeWrite(`data: ${JSON.stringify({ type: 'text', content: errorMsg })}\n\n`);
-      addMessage({ sessionId, role: 'assistant', content: errorMsg, model: effectiveModel, skillId: skillId || null });
-      if (selectedKeyIndex >= 0 && effectiveModel) {
-        reportKeyResult(effectiveModel, selectedKeyIndex, false);
-      }
-
-      try {
-        safeWrite(`data: ${JSON.stringify({
-          type: 'done',
-          errorCode,
-          errorMessage: errorMsg,
-          thinkingDuration: 0,
-        })}\n\n`);
-        await new Promise(r => setTimeout(r, 200));
-        try { res.end(); } catch { /* ignore */ }
-      } catch {
-        // 响应流可能已关闭，忽略
-      }
-      return;
+      apiMessages.push({ role: 'user', content: contentParts });
+    } else {
+      apiMessages.push({ role: 'user', content: message });
     }
+
+    // 构建最终模型配置
+    const finalModelConfig: ModelCallConfig = {
+      ...modelConfig,
+      apiKey: effectiveApiKey,
+      temperature: activePreset ? activePreset.temperature : modelConfig.temperature,
+      topP: activePreset ? activePreset.topP : modelConfig.topP,
+    };
+
+    // 创建 AbortController + 超时
+    abortController = new AbortController();
+    let timeoutMs: number;
+    if (isLocalModel(modelConfig)) {
+      timeoutMs = 300000;
+    } else if (reasoningEffort === 'max') {
+      timeoutMs = 600000;
+    } else if (reasoningEffort === 'high') {
+      timeoutMs = 300000;
+    } else {
+      timeoutMs = 120000;
+    }
+    let timeout = setTimeout(() => abortController.abort(), timeoutMs);
 
     try {
-      const thinkingDuration = (hasThinking && thinkingStartTime) ? Date.now() - thinkingStartTime : 0;
-      safeWrite(`data: ${JSON.stringify({
-        type: 'done',
-        errorCode: null,
-        errorMessage: null,
-        thinkingDuration,
-        usage: usageData || null,
-      })}\n\n`);
-      await new Promise(r => setTimeout(r, 200));
-      try { res.end(); } catch { /* 响应流可能已关闭，忽略 */ }
-    } catch {
-      // 响应流可能已关闭，忽略
+      // 无 API Key 且非本地模型 → 模拟模式
+      if (!effectiveApiKey && !isLocalModel(modelConfig)) {
+        logger.debug(`[Chat API] 模型 ${effectiveModel} 未配置 API Key，使用模拟模式`);
+        const mockResponse = generateMockResponse(message);
+        const segments = mockResponse.match(/[\s\S]{1,5}/g) || [mockResponse];
+        for (const segment of segments) {
+          sendSSE(res, { type: 'text', content: segment });
+          await new Promise((r) => setTimeout(r, 15));
+        }
+        fullContent = mockResponse;
+      } else {
+        sessionApprovedSet = initSessionApprovedTools(sessionId);
+
+        // Thinking 缓存检查
+        let cacheHit = false;
+        if (reasoningEffort) {
+          const cacheKey = getThinkingCacheKey(effectiveModel, message, reasoningEffort);
+          const cached = getThinkingCache(cacheKey);
+          if (cached) {
+            logger.debug('[Chat API] Thinking cache hit for', effectiveModel);
+            cacheHit = true;
+            fullContent = cached.content;
+            thinkingContent = cached.thinking;
+            hasThinking = !!thinkingContent;
+            if (hasThinking) thinkingStartTime = 0;
+            if (thinkingContent) {
+              sendSSE(res, { type: 'thinking', content: thinkingContent });
+            }
+            sendSSE(res, { type: 'text', content: fullContent });
+            sendDebugSSE(res, { type: 'cache_hit', cached: true });
+          }
+        }
+
+        if (!cacheHit) {
+          // 确定执行模式
+          let effectiveMode = (executionMode && Object.values(ExecutionMode).includes(executionMode as ExecutionMode))
+            ? (executionMode as ExecutionMode)
+            : undefined;
+          if (!effectiveMode) {
+            try {
+              const settingsVal = getAppSettings('default');
+              if (settingsVal) {
+                const parsed = JSON.parse(settingsVal);
+                const defaultMode = parsed?.aiEngine?.defaultExecutionMode;
+                if (defaultMode && Object.values(ExecutionMode).includes(defaultMode as ExecutionMode)) {
+                  effectiveMode = defaultMode as ExecutionMode;
+                }
+              }
+            } catch { /* ignore */ }
+          }
+          if (!effectiveMode) {
+            effectiveMode = ExecutionStrategyFactory.getDefaultMode();
+          }
+
+          const ctxWindow = (finalModelConfig as ModelCallConfig).contextWindow || 128000;
+          const ctxMaxTokens = Math.min((finalModelConfig as ModelCallConfig).maxTokens || 8192, 8192);
+          const estimatedToolsCount = 30;
+
+          // 设置回调
+          const callbacks: ExecuteChatCallbacks = {
+            onThinking: (thinkingChunk: string) => {
+              // 插件自动触发匹配（保留原有功能）
+              thinkingChunkCount++;
+              if (thinkingChunkCount % 5 === 0 && thinkingContent.length > 20) {
+                matchTriggers(thinkingContent, sessionId).then((matches) => {
+                  for (const match of matches) {
+                    sendDebugSSE(res, {
+                      type: 'client_tool',
+                      tool: match.toolName,
+                      args: match.args,
+                      pluginId: match.pluginId,
+                    });
+                    executePluginTrigger(match).then((result) => {
+                      sendDebugSSE(res, {
+                        type: 'plugin_result',
+                        tool: match.toolName,
+                        output: result.output,
+                        durationMs: result.durationMs,
+                        pluginId: match.pluginId,
+                      });
+                    }).catch((err) => {
+                      logger.error('[Chat API] plugin trigger execution failed:', err);
+                    });
+                  }
+                }).catch((err) => {
+                  logger.error('[Chat API] trigger matching failed:', err);
+                });
+              }
+            },
+            onPermissionRequest: (toolCall: ToolCall) => {
+              if (isSystemAuthorized()) {
+                logger.debug('[Chat API] 系统授权已启用，自动通过工具权限:', toolCall.function.name);
+                return Promise.resolve(true);
+              }
+              return new Promise<boolean>((resolve) => {
+                const reqId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+                registerPermissionRequest(reqId, toolCall.function.name, sessionId);
+                sendSSE(res, {
+                  type: 'permission_request',
+                  reqId,
+                  toolName: toolCall.function.name,
+                  toolArgs: toolCall.function.arguments,
+                  riskLevel: getToolRiskLevel(toolCall.function.name),
+                });
+                // 暂停 abort 超时
+                clearTimeout(timeout);
+                timeout = null as any;
+                const handler = (approved: boolean) => {
+                  permissionEmitter.removeListener(reqId, handler);
+                  // 恢复 abort 超时
+                  timeout = setTimeout(() => abortController.abort(), timeoutMs);
+                  sendDebugSSE(res, {
+                    type: 'tool_audit',
+                    toolName: toolCall.function.name,
+                    result: approved ? 'approved' : 'denied',
+                    timestamp: Date.now(),
+                  });
+                  resolve(approved);
+                };
+                permissionEmitter.once(reqId, handler);
+              });
+            },
+            onRateLimit: async () => {
+              if (selectedKeyIndex >= 0 && effectiveModel) {
+                reportKeyResult(effectiveModel, selectedKeyIndex, false);
+              }
+              const nextKey = selectKey(modelConfig);
+              if (nextKey) {
+                selectedKeyIndex = nextKey.index;
+                logger.debug(`[Chat API] 429 速率限制，切换到备用 Key #${nextKey.index}`);
+                return { apiKey: nextKey.key, keyIndex: nextKey.index };
+              }
+              return null;
+            },
+          };
+
+          // 调用统一执行器
+          const result = await streamExecuteChat({
+            sessionId,
+            message,
+            model: effectiveModel,
+            modelName: effectiveModelName,
+            modelConfig: finalModelConfig,
+            apiMessages,
+            res,
+            executionMode: effectiveMode,
+            timerManager,
+            signal: abortController.signal,
+            reasoningEffort,
+            approvedToolsCache: sessionApprovedSet,
+            modelCapabilities: modelConfig.capabilities || [],
+            ctxWindow,
+            ctxMaxTokens,
+            estimatedToolsCount,
+            callbacks,
+          });
+
+          fullContent = result.content;
+          thinkingContent = result.thinkingContent;
+          hasThinking = result.hasThinking;
+          thinkingStartTime = result.thinkingDuration > 0 ? Date.now() - result.thinkingDuration : null;
+          toolCallsJson = result.toolCalls?.length > 0 ? JSON.stringify(result.toolCalls) : undefined;
+
+          // Thinking 缓存
+          if (reasoningEffort && thinkingContent) {
+            const cacheKey = getThinkingCacheKey(effectiveModel, message, reasoningEffort);
+            setThinkingCache(cacheKey, fullContent, thinkingContent);
+          }
+
+          // 注入语义记忆到结果（通过 contextEnhancer 的结果）
+          if (result.enhancement.memories && result.enhancement.memories.length > 0) {
+            const memCtx = formatMemoryContext(result.enhancement.memories);
+            if (memCtx) {
+              logger.debug(`[Chat API] 语义记忆检索: ${result.enhancement.memories.length} 条 (后台增强)`);
+              sendDebugSSE(res, {
+                type: 'memory_retrieved',
+                count: result.enhancement.memories.length,
+                summaries: result.enhancement.memories.map((r) => r.entry.content.substring(0, 50)),
+              });
+            }
+          }
+        }
+      }
+    } finally {
+      clearTimeout(timeout);
+      timerManager.stopAll();
     }
+
+    // 保存助手消息到 DB
+    const thinkingDuration = (hasThinking && thinkingStartTime) ? Date.now() - thinkingStartTime : 0;
+    addMessage({
+      sessionId,
+      role: 'assistant',
+      content: fullContent,
+      model: effectiveModel,
+      skillId: skillId || null,
+      toolCalls: toolCallsJson,
+      thinking: thinkingContent || null,
+      thinkingDuration: thinkingDuration || null,
+    });
+
+    if (selectedKeyIndex >= 0 && effectiveModel) {
+      reportKeyResult(effectiveModel, selectedKeyIndex, true);
+    }
+
+    // 后台提取记忆
+    extractAndAppendMemory(
+      message,
+      fullContent,
+      apiMessages.map((m) => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) })),
+    ).catch(() => {});
+
+    // 发送 done 事件
+    await finishStream(res, timerManager, {
+      thinkingDuration,
+    });
+
   } catch (error) {
     logger.error('Chat API error:', error);
     logger.error('[Chat API] Stack trace:', error instanceof Error ? error.stack : 'N/A');
-    // v3.1.1: 确保 keepAliveTimer 被清理（防止 error 发生在 innermost finally 之前时定时器泄漏）
-    if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Internal server error' });
-    } else {
-      // v3.1.1: 外层 catch 始终发送 error + done 事件，确保前端收到后停止 thinking 状态
-      // 之前只发 error 不发 done，若 res.write() 抛异常则前端永远收不到结束信号 → 卡在思考中
-      try {
-        const errCode = 'SERVER_ERROR';
-        const errMsg = error instanceof Error ? error.message : '服务器内部错误';
-        res.write(`data: ${JSON.stringify({ type: 'error', code: errCode, message: errMsg })}\n\n`);
-        res.write(`data: ${JSON.stringify({ type: 'done', errorCode: errCode, errorMessage: errMsg, thinkingDuration: 0 })}\n\n`);
-        await new Promise(r => setTimeout(r, 200));
-      } catch {
-        // 响应流可能已关闭，忽略
+
+    timerManager.stopAll();
+
+    // 尝试降级
+    const modelsConfig = await loadModelsConfig().catch(() => null);
+    const modelConfig = modelsConfig?.models.find((m) => m.id === (req.body.model === 'auto' ? '' : req.body.model));
+
+    const fallbackSuccess = modelsConfig ? await handleFallback({
+      error,
+      apiMessages,
+      modelsConfig,
+      currentModel: req.body.model === 'auto' ? '' : req.body.model,
+      modelConfig,
+      res,
+      timerManager,
+      signal: abortController?.signal,
+      sessionApprovedSet,
+      executionMode: ExecutionMode.REACT,
+      sessionId,
+      skillId,
+    }) : false;
+
+    if (!fallbackSuccess) {
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Internal server error' });
+      } else {
+        const { code, message: errMsg } = classifyAndFormatError(error, modelConfig, req.body.model);
+        sendSSE(res, { type: 'text', content: errMsg });
+
+        // 保存错误消息到 DB
+        try {
+          addMessage({ sessionId, role: 'assistant', content: errMsg, model: req.body.model || 'unknown', skillId: skillId || null });
+        } catch { /* ignore */ }
+
+        if (selectedKeyIndex >= 0) {
+          reportKeyResult(req.body.model, selectedKeyIndex, false);
+        }
+
+        await finishStream(res, timerManager, {
+          errorCode: code,
+          errorMessage: errMsg,
+        });
       }
-      try { res.end(); } catch { /* ignore */ }
     }
   }
 }

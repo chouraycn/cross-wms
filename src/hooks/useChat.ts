@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Message, ReferencedSession, Session, ToolCallInfo, Attachment, PluginResultInfo, ObserverReflectionInfo, ExecutionPlanInfo, PlanStepInfo, ReactPhaseInfo, QueueStateInfo, AgentEvent, AgentStatusInfo } from '../types/chat';
+import { Message, ReferencedSession, Session, ToolCallInfo, Attachment } from '../types/chat';
 import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../types/inventory-query';
 import { CHAT_API_URL, INVENTORY_QUERY_API_URL } from '../constants/api';
 import { useAppSettings, useAppearanceSettings } from '../contexts/AppSettingsContext';
@@ -670,6 +670,11 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                     streamingMsg.metadata = { error: '连接已断开', errorCode: 'STREAM_INCOMPLETE' };
                   }
                 }
+                // Flush thinking buffer before final update
+                if (thinkingBuffer.length > 0) {
+                  streamingMsg.thinking = (streamingMsg.thinking || '') + thinkingBuffer;
+                  thinkingBuffer = '';
+                }
                 if (renderHandle !== null) {
                   cancelFrame(renderHandle);
                   renderHandle = null;
@@ -695,399 +700,131 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                 if (line.startsWith('data: ')) {
                   try {
                     const data = JSON.parse(line.slice(6));
-                    if (data.type === 'text') {
-                      if (result === '' && data.content === content) {
-                        continue;
-                      }
-                      // v8.2-fix: 收到第一个 text 事件时标记 thinking 阶段结束
-                      // 避免 ThinkingBlock 在内容生成阶段仍显示"正在思考..."
-                      if (!streamingMsg.thinkingDone && streamingMsg.thinking) {
-                        streamingMsg.thinkingDone = true;
-                      }
-                      result += data.content;
-                      pendingContent += data.content;
-                      scheduleRender();
-                    }
-                    if (data.type === 'init') {
-                      if (data.autoReason) autoReason = data.autoReason;
-                      if (data.autoReasonType) autoReasonType = data.autoReasonType;
-                      if (data.reasoningEffort) {
-                        streamingMsg.reasoningEffort = data.reasoningEffort;
-                      }
-                      if (data.model) {
-                        streamingMsg.model = data.modelName || data.model;
-                      }
-                      if (data.cacheHit) {
-                        streamingMsg.cacheHit = true;
-                      }
-                      scheduleRender();
-                    }
-                    if (data.type === 'thinking') {
-                      // v8.3: 写入 buffer 而非直接拼接，由 flushRender 统一消费
-                      thinkingBuffer += data.content;
-                      if (data.thinkingType) {
-                        streamingMsg.thinkingType = data.thinkingType;
-                      }
-                      // 仅在未调度时才调度（避免重复调度）
-                      if (renderHandle === null) {
-                        scheduleRender();
-                      }
-                    }
-                    if (data.type === 'thinking_heartbeat') {
-                      streamingMsg.thinkingElapsed = data.elapsed;
-                      scheduleRender();
-                    }
-                    if (data.type === 'cache_hit') {
-                      streamingMsg.cacheHit = true;
-                      scheduleRender();
-                    }
-                    if (data.type === 'keep_alive') {
-                      streamingMsg.thinkingElapsed = data.elapsed;
-                      dirty = true; // v8.2-fix: 确保 keep_alive 触发渲染，防止 thinking 阶段 UI 不更新
-                      scheduleRender();
-                    }
-                    // v8.2-fix: 处理后端 error 事件，防止白屏
-                    if (data.type === 'error') {
-                      doneReceived = true;
-                      errorCode = (data.code as string) || 'SERVER_ERROR';
-                      errorMessage = (data.message as string) || '服务器内部错误';
-                      result = errorMessage;
-                      streamingMsg.content = errorMessage;
-                      streamingMsg.thinkingDone = true;
-                      scheduleRender();
-                    }
-                    if (data.type === 'tool_call') {
-                      const toolCall: ToolCallInfo = {
-                        id: data.toolCallId,
-                        name: data.toolName || 'unknown',
-                        arguments: data.toolArgs || '{}',
-                        result: data.toolResult || '',
-                      };
-                      streamingMsg.toolCalls = [...(streamingMsg.toolCalls || []), toolCall];
-                      if (data.toolName === 'app:setBotName' && data.toolResult) {
-                        try {
-                          const parsed = JSON.parse(data.toolResult);
-                          if (parsed.success && parsed.name) {
-                            updateSettings({ appearance: { ...settingsRef.current, botName: parsed.name } });
-                          }
-                        } catch { /* JSON 解析失败，忽略 */ }
-                      }
-                      scheduleRender();
-                    }
-                    if (data.type === 'permission_request') {
-                      // v2.5.0: 免确认模式下自动通过，不显示弹窗
-                      if (trustModeRef.current) {
-                        fetch('/api/permission-response', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ reqId: data.reqId, approved: true }),
-                        }).catch(() => {});
-                      } else {
-                        streamingMsg.permissionRequest = {
-                          reqId: data.reqId,
-                          toolName: data.toolName,
-                          toolArgs: data.toolArgs,
-                          riskLevel: data.riskLevel,
-                        };
-                        scheduleRender();
-                      }
-                    }
-                    if (data.type === 'tool_audit') {
-                      // console.log('[useChat] tool_audit:', data);
-                    }
-                    // v4.0: observer_reflection — Observer 反思提示
-                    if (data.type === 'observer_reflection') {
-                      const reflection: ObserverReflectionInfo = {
-                        toolName: data.toolName || 'unknown',
-                        level: data.level || 'error',
-                        hint: data.hint || '',
-                        willRetry: data.willRetry ?? false,
-                        retryIndex: data.retryIndex ?? 0,
-                        maxRetries: data.maxRetries ?? 0,
-                      };
-                      streamingMsg.observerReflections = [...(streamingMsg.observerReflections || []), reflection];
-scheduleRender();
-                    }
-                    // v4.0: execution_plan — 执行计划
-                    if (data.type === 'execution_plan') {
-                      streamingMsg.executionPlan = data.plan as ExecutionPlanInfo;
-scheduleRender();
-                    }
-                    // v4.0: plan_step_update — 计划步骤状态变更
-                    if (data.type === 'plan_step_update' && streamingMsg.executionPlan) {
-                      const updatedPlan = { ...streamingMsg.executionPlan };
-                      const stepIdx = updatedPlan.steps.findIndex(s => s.step === data.step);
-                      if (stepIdx !== -1) {
-                        updatedPlan.steps = updatedPlan.steps.map((s, i) =>
-                          i === stepIdx ? { ...s, status: data.status || s.status } : s
-                        );
-                      }
-                      streamingMsg.executionPlan = updatedPlan;
-scheduleRender();
-                    }
-                    // v4.0: react_phase — ReAct 阶段切换
-                    if (data.type === 'react_phase') {
-                      streamingMsg.reactPhase = {
-                        phase: data.phase,
-                        step: data.step,
-                        totalSteps: data.totalSteps,
-                        description: data.description,
-                      };
-                      // v1.5.188-fix: ReAct 阶段从 reasoning 切换到 acting/done 时，标记 thinking 阶段结束
-                      // 避免深度思考模式下工具调用后 ThinkingBlock 一直显示"正在思考..."
-                      if (data.phase !== 'reasoning' && !streamingMsg.thinkingDone && streamingMsg.thinking) {
-                        streamingMsg.thinkingDone = true;
-                      }
-scheduleRender();
-                    }
-                    // v5.0: reflection_confidence — 反思置信度
-                    if (data.type === 'reflection_confidence') {
-                      streamingMsg.reflectionConfidence = {
-                        confidenceScore: data.confidenceScore,
-                        selfScore: data.selfScore,
-                        shouldEarlyStop: data.shouldEarlyStop,
-                        reason: data.reason,
-                      };
-scheduleRender();
-                    }
-                    // v5.0: budget_exceeded — 预算超出
-                    if (data.type === 'budget_exceeded') {
-                      streamingMsg.budgetExceeded = {
-                        reason: data.reason,
-                        consumedTurns: data.consumedTurns,
-                        consumedTokens: data.consumedTokens,
-                        maxTurns: data.maxTurns,
-                        maxTokens: data.maxTokens,
-                      };
-scheduleRender();
-                    }
-                    // v5.0: complexity_assessment — 复杂度评估
-                    if (data.type === 'complexity_assessment') {
-                      streamingMsg.complexityAssessment = {
-                        level: data.level,
-                        estimatedSteps: data.estimatedSteps,
-                        reason: data.reason,
-                        recommendedMode: data.recommendedMode,
-                      };
-scheduleRender();
-                    }
-                    // v5.0: replan_triggered — 重规划触发
-                    if (data.type === 'replan_triggered') {
-                      streamingMsg.replanTriggered = {
-                        reason: data.reason,
-                        oldPlanId: data.oldPlanId,
-                        newPlanId: data.newPlanId,
-                      };
-scheduleRender();
-                    }
-                    // v6.0: context_compressed — 语义压缩
-                    if (data.type === 'context_compressed') {
-                      streamingMsg.contextCompressed = {
-                        strategy: data.strategy || 'semantic',
-                        originalTokens: data.originalTokens ?? 0,
-                        compressedTokens: data.compressedTokens ?? 0,
-                        ratio: data.ratio ?? 0,
-                        keyInfoPreserved: data.keyInfoPreserved,
-                      };
-scheduleRender();
-                    }
-                    // v6.0: plan_step_completed — 计划步骤完成
-                    if (data.type === 'plan_step_completed') {
-                      streamingMsg.planStepCompleted = {
-                        planId: data.planId || '',
-                        step: data.step || 0,
-                        description: data.description || '',
-                        toolName: data.toolName,
-                      };
-scheduleRender();
-                    }
-                    // v6.0: circuit_breaker_triggered — 熔断器触发
-                    if (data.type === 'circuit_breaker_triggered') {
-                      streamingMsg.circuitBreakerTriggered = {
-                        toolName: data.toolName || 'unknown',
-                        failureCount: data.failureCount || 0,
-                        state: data.state || 'open',
-                        alternativeTool: data.alternativeTool,
-                      };
-scheduleRender();
-                    }
-                    // v6.0: complexity_upgraded — 复杂度升级
-                    if (data.type === 'complexity_upgraded') {
-                      streamingMsg.complexityUpgraded = {
-                        oldLevel: data.oldLevel || 'simple',
-                        newLevel: data.newLevel || 'moderate',
-                        reason: data.reason || '',
-                      };
-scheduleRender();
-                    }
-                    // v6.0: llm_reflection — LLM 辅助反思
-                    if (data.type === 'llm_reflection') {
-                      streamingMsg.llmReflection = {
-                        insight: data.insight || '',
-                        confidenceScore: data.confidenceScore ?? 0,
-                      };
-scheduleRender();
-                    }
-                    // v6.0: memory_retrieved — 长期记忆检索
-                    if (data.type === 'memory_retrieved') {
-                      streamingMsg.memoryRetrieved = {
-                        count: data.count ?? 0,
-                        summaries: data.summaries || [],
-                      };
-scheduleRender();
-                    }
-                    // v6.0: output_repaired — 输出修复
-                    if (data.type === 'output_repaired') {
-                      streamingMsg.outputRepaired = {
-                        toolName: data.toolName || 'unknown',
-                        repairDetails: data.repairDetails || '',
-                      };
-scheduleRender();
-                    }
-                    // v6.0: budget_adjusted — 预算调整
-                    if (data.type === 'budget_adjusted') {
-                      streamingMsg.budgetAdjusted = {
-                        oldMaxTurns: data.oldMaxTurns ?? 0,
-                        newMaxTurns: data.newMaxTurns ?? 0,
-                        oldMaxTokens: data.oldMaxTokens,
-                        newMaxTokens: data.newMaxTokens,
-                        reason: data.reason || '',
-                      };
-scheduleRender();
-                    }
-                    // v3.0: client_tool 事件 — 服务端通知前端有插件需要在 reasoning 流中自动调用
-                    if (data.type === 'client_tool') {
-                      // console.log('[useChat] client_tool event received:', data.tool, data.args);
-                    }
-                    // v3.0: plugin_result 事件 — 插件执行结果插入 thinking 流
-                    if (data.type === 'plugin_result') {
-                      const pluginResult: PluginResultInfo = {
-                        tool: data.tool || 'unknown',
-                        output: data.output || '',
-                        durationMs: data.durationMs,
-                      };
-                      streamingMsg.pluginResults = [...(streamingMsg.pluginResults || []), pluginResult];
-                      // 将插件结果拼接到 thinking 内容中，以特殊标记包裹
-                      if (streamingMsg.thinking) {
-                        streamingMsg.thinking += `\n\n[Plugin: ${pluginResult.tool}] ${pluginResult.output}\n\n`;
-                      }
-scheduleRender();
-                    }
-                    // v7.0: 队列事件处理 — 实时反馈队列状态变化
-                    if (data.type === 'queue_event' || data.type === 'queue_status') {
-                      // 将队列状态存储到 streamingMsg 上，供 UI 组件渲染
-                      streamingMsg.queueState = {
-                        mode: data.mode,
-                        state: data.state,
-                        queueLength: data.queueLength,
-                        type: data.type === 'queue_event' ? data.eventType : 'status',
-                      };
-scheduleRender();
-                    }
-                    if (data.type === 'queue_rejected') {
-                      // 队列拒绝消息（已满）
-                      streamingMsg.content = `⚠️ ${data.reason || '消息队列已满，请稍后再试'}`;
-                      doneReceived = true;
-                      errorCode = 'QUEUE_REJECTED';
-                      errorMessage = data.reason;
-                      scheduleRender();
-                    }
-                    // v8.2: Agent 编排事件 — agent_start / agent_end / subtask_create / subtask_assign / subtask_complete / reflect / plan
-                    if (data.type === 'agent_start' || data.type === 'agent_end' || data.type === 'subtask_create' || data.type === 'subtask_assign' || data.type === 'subtask_complete' || data.type === 'reflect' || data.type === 'plan') {
-                      // v8.2-fix: Agent 编排事件在 thinking 之后到达，标记 thinking 阶段结束
-                      // 避免 ThinkingBlock 在 Agent 事件阶段仍显示"正在思考..."
-                      if (!streamingMsg.thinkingDone && streamingMsg.thinking) {
-                        streamingMsg.thinkingDone = true;
-                      }
-                      const event = data as AgentEvent;
-                      streamingMsg.agentEvents = [...(streamingMsg.agentEvents || []), event];
-                      // 同步更新 orchestrationState（如果存在）
-                      if (data.type === 'subtask_create' && streamingMsg.orchestrationState) {
-                        const st = data as { subTaskId: string; description: string; dependsOn: string[]; priority: number };
-                        streamingMsg.orchestrationState = {
-                          ...streamingMsg.orchestrationState,
-                          subTasks: [
-                            ...streamingMsg.orchestrationState.subTasks,
-                            {
-                              id: st.subTaskId,
-                              description: st.description,
-                              assignedAgentId: null,
-                              status: 'pending' as const,
-                            },
-                          ],
-                        };
-                      }
-                      if (data.type === 'subtask_assign' && streamingMsg.orchestrationState) {
-                        const st = data as { subTaskId: string; agentId: string };
-                        streamingMsg.orchestrationState = {
-                          ...streamingMsg.orchestrationState,
-                          subTasks: streamingMsg.orchestrationState.subTasks.map(t =>
-                            t.id === st.subTaskId ? { ...t, assignedAgentId: st.agentId, status: 'running' as const } : t
-                          ),
-                        };
-                      }
-                      if (data.type === 'subtask_complete' && streamingMsg.orchestrationState) {
-                        const st = data as { subTaskId: string; status: 'completed' | 'failed' };
-                        streamingMsg.orchestrationState = {
-                          ...streamingMsg.orchestrationState,
-                          subTasks: streamingMsg.orchestrationState.subTasks.map(t =>
-                            t.id === st.subTaskId ? { ...t, status: st.status } : t
-                          ),
-                        };
-                      }
-                      if (data.type === 'agent_start' || data.type === 'agent_end') {
-                        const agentEvt = data as { agentId: string; agentRole: string };
-                        const existing = streamingMsg.agentStatuses || [];
-                        const idx = existing.findIndex(a => a.agentId === agentEvt.agentId);
-                        let updatedStatuses: AgentStatusInfo[];
-                        if (data.type === 'agent_start') {
-                          const newStatus: AgentStatusInfo = {
-                            agentId: agentEvt.agentId,
-                            agentRole: agentEvt.agentRole,
-                            agentName: agentEvt.agentRole,
-                            status: 'busy',
-                            currentTask: (data as { taskDescription?: string }).taskDescription,
-                          };
-                          updatedStatuses = idx >= 0
-                            ? existing.map((a, i) => i === idx ? newStatus : a)
-                            : [...existing, newStatus];
-                        } else {
-                          const endEvt = data as { status: 'success' | 'failed' | 'timeout'; error?: string };
-                          updatedStatuses = idx >= 0
-                            ? existing.map((a, i) => i === idx ? { ...a, status: endEvt.status === 'success' ? 'idle' as const : 'error' as const, currentTask: endEvt.error || undefined } : a)
-                            : existing;
+                    // v9.0: SSE 事件精简 — 7 种核心事件 + error + debug
+                    // 非核心事件（react_phase, keep_alive, complexity_assessment 等）
+                    // 已由后端合并到 debug 通道，仅在 LOG_DEBUG=1 时发送，不影响 UI
+                    switch (data.type) {
+                      case 'text': {
+                        if (result === '' && data.content === content) {
+                          break;
                         }
-                        streamingMsg.agentStatuses = updatedStatuses;
-                      }
-                      scheduleRender();
-                    }
-                    if (data.type === 'done') {
-                      doneReceived = true;
-                      errorCode = data.errorCode ?? null;
-                      errorMessage = data.errorMessage ?? null;
-                      thinkingDuration = data.thinkingDuration;
-                      // v8.2-fix: 流结束，确保 thinkingDone 标记为 true
-                      // 避免 AI 只有 thinking 没有 text 时 thinkingDone 未设置
-                      if (!streamingMsg.thinkingDone) {
-                        streamingMsg.thinkingDone = true;
-                      }
-                      // v1.5.116: 模型降级信息
-                      if (data.fallbackModel) {
-                        streamingMsg.fallbackModel = data.fallbackModel;
-                        streamingMsg.fallbackReason = data.fallbackReason;
-                      }
-                      if (data.thinkingType) {
-                        currentThinkingType = data.thinkingType;
-                      }
-                      if (data.usage) {
-                        streamingMsg.usage = data.usage;
-                      }
-                      if (errorCode && errorMessage) {
-                        result = errorMessage;
-                        fullContent = errorMessage;
-                        streamingMsg.content = errorMessage;
+                        // 收到第一个 text 事件时标记 thinking 阶段结束
+                        if (!streamingMsg.thinkingDone && streamingMsg.thinking) {
+                          streamingMsg.thinkingDone = true;
+                        }
+                        result += data.content;
+                        pendingContent += data.content;
                         scheduleRender();
+                        break;
                       }
+                      case 'init': {
+                        if (data.autoReason) autoReason = data.autoReason;
+                        if (data.autoReasonType) autoReasonType = data.autoReasonType;
+                        if (data.reasoningEffort) {
+                          streamingMsg.reasoningEffort = data.reasoningEffort;
+                        }
+                        if (data.model) {
+                          streamingMsg.model = data.modelName || data.model;
+                        }
+                        if (data.cacheHit) {
+                          streamingMsg.cacheHit = true;
+                        }
+                        scheduleRender();
+                        break;
+                      }
+                      case 'thinking': {
+                        // 写入 buffer 而非直接拼接，由 flushRender 统一消费
+                        thinkingBuffer += data.content;
+                        if (data.thinkingType) {
+                          streamingMsg.thinkingType = data.thinkingType;
+                        }
+                        // 仅在未调度时才调度（避免重复调度）
+                        if (renderHandle === null) {
+                          scheduleRender();
+                        }
+                        break;
+                      }
+                      case 'tool_call': {
+                        const toolCall: ToolCallInfo = {
+                          id: data.toolCallId,
+                          name: data.toolName || 'unknown',
+                          arguments: data.toolArgs || '{}',
+                          result: data.toolResult || '',
+                        };
+                        streamingMsg.toolCalls = [...(streamingMsg.toolCalls || []), toolCall];
+                        if (data.toolName === 'app:setBotName' && data.toolResult) {
+                          try {
+                            const parsed = JSON.parse(data.toolResult);
+                            if (parsed.success && parsed.name) {
+                              updateSettings({ appearance: { ...settingsRef.current, botName: parsed.name } });
+                            }
+                          } catch { /* JSON 解析失败，忽略 */ }
+                        }
+                        scheduleRender();
+                        break;
+                      }
+                      case 'permission_request': {
+                        // 免确认模式下自动通过，不显示弹窗
+                        if (trustModeRef.current) {
+                          fetch('/api/permission-response', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reqId: data.reqId, approved: true }),
+                          }).catch(() => {});
+                        } else {
+                          streamingMsg.permissionRequest = {
+                            reqId: data.reqId,
+                            toolName: data.toolName,
+                            toolArgs: data.toolArgs,
+                            riskLevel: data.riskLevel,
+                          };
+                          scheduleRender();
+                        }
+                        break;
+                      }
+                      case 'done': {
+                        doneReceived = true;
+                        errorCode = data.errorCode ?? null;
+                        errorMessage = data.errorMessage ?? null;
+                        thinkingDuration = data.thinkingDuration;
+                        // 流结束，确保 thinkingDone 标记为 true
+                        if (!streamingMsg.thinkingDone) {
+                          streamingMsg.thinkingDone = true;
+                        }
+                        // 模型降级信息
+                        if (data.fallbackModel) {
+                          streamingMsg.fallbackModel = data.fallbackModel;
+                          streamingMsg.fallbackReason = data.fallbackReason;
+                        }
+                        if (data.thinkingType) {
+                          currentThinkingType = data.thinkingType;
+                        }
+                        if (data.usage) {
+                          streamingMsg.usage = data.usage;
+                        }
+                        if (errorCode && errorMessage) {
+                          result = errorMessage;
+                          fullContent = errorMessage;
+                          streamingMsg.content = errorMessage;
+                          scheduleRender();
+                        }
+                        break;
+                      }
+                      case 'error': {
+                        // 后端 error 事件，防止白屏
+                        doneReceived = true;
+                        errorCode = (data.code as string) || 'SERVER_ERROR';
+                        errorMessage = (data.message as string) || '服务器内部错误';
+                        result = errorMessage;
+                        streamingMsg.content = errorMessage;
+                        streamingMsg.thinkingDone = true;
+                        scheduleRender();
+                        break;
+                      }
+                      default:
+                        // 调试事件（react_phase, keep_alive, complexity_assessment 等）
+                        // 仅在 LOG_DEBUG=1 时由后端发送，不影响 UI
+                        break;
                     }
                   } catch { /* parse error */ }
                 }
