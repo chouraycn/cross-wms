@@ -77,7 +77,7 @@ const ModelManager: React.FC<ModelManagerProps> = (props) => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: variant === 'table' ? '100%' : 'auto' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: variant === 'table' ? '100%' : 'auto', overflow: 'hidden' }}>
       {/* 隐藏的文件 input（导入用） */}
       <input
         ref={fileInputRef}
@@ -105,7 +105,7 @@ const ModelManager: React.FC<ModelManagerProps> = (props) => {
         healthCheckError={checkError}
       />
 
-      {/* 筛选栏 */}
+      {/* 能力标签筛选栏 */}
       <ModelFilterBar
         searchQuery={state.searchQuery}
         selectedCapabilities={state.selectedCapabilities}
@@ -127,17 +127,19 @@ const ModelManager: React.FC<ModelManagerProps> = (props) => {
       )}
 
       {/* 模型列表（含健康状态指示灯） */}
-      <ModelList
-        models={models}
-        defaultModelId={defaultModelId}
-        variant={variant}
-        actions={actions}
-        selectedModelIds={state.selectedModelIds}
-        searchQuery={state.searchQuery}
-        selectedCapabilities={state.selectedCapabilities}
-        healthStatuses={healthStatuses}
-        healthLatencies={healthLatencies}
-      />
+      <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+        <ModelList
+          models={models}
+          defaultModelId={defaultModelId}
+          variant={variant}
+          actions={actions}
+          selectedModelIds={state.selectedModelIds}
+          searchQuery={state.searchQuery}
+          selectedCapabilities={state.selectedCapabilities}
+          healthStatuses={healthStatuses}
+          healthLatencies={healthLatencies}
+        />
+      </Box>
 
       {/* Step 1: 模型选择弹窗 */}
       <ModelSelectDialog

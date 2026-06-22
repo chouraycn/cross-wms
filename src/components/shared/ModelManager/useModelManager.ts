@@ -673,17 +673,6 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     setSelectedModelIds([]);
   }, [models, onChange]);
 
-  /** 重新排序模型列表（拖拽后调用） */
-  const handleReorderModels = useCallback((fromIndex: number, toIndex: number) => {
-    if (fromIndex === toIndex) return;
-    if (fromIndex < 0 || fromIndex >= models.length) return;
-    if (toIndex < 0 || toIndex >= models.length) return;
-    const newModels = [...models];
-    const [moved] = newModels.splice(fromIndex, 1);
-    newModels.splice(toIndex, 0, moved);
-    onChange(newModels, defaultModelId);
-  }, [models, defaultModelId, onChange]);
-
   // ---- 组装返回 ----
   const state: ModelManagerState = {
     modelForm,
@@ -733,7 +722,6 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     openTemplateDialog: handleOpenTemplateDialog,
     closeTemplateDialog: handleCloseTemplateDialog,
     applyTemplate: handleApplyTemplate,
-    reorderModels: handleReorderModels,
     closeConfirmDialog,
   };
 
