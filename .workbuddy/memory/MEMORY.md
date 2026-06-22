@@ -88,14 +88,16 @@
 - 迁移: `loadModelsConfig()` 自动将已保存 models.json 中 maxTokens > 8192 降级
 - **v1.5.207 新增 Pass 3.5 重排序**: 截断后自动将 tool 消息移到 assistant(tool_calls) 之后，防止 system/user 消息打断 tool_calls 配对序列
 
-## tool_calls 消息配对 v1.5.207
+## tool_calls 消息配对 v1.5.208
 - OpenAI API 要求: `assistant(tool_calls)` 后必须紧跟每个 `tool_call_id` 对应的 `tool` 消息，中间不能有其他消息类型
 - **三层防御**:
   1. `reactExecutor.ts`: P1-2 输出校验用 `pendingSystemMessages[]` 收集 system 提示，先推 tool 消息再注入 system
   2. `contextTruncate.ts` Pass 3.5: 重排序确保 tool 消息紧跟 assistant(tool_calls)
-  3. `aiClient.ts`: 400 tool_calls 错误时 strip 所有 tool_calls 后重试（最终安全网）
+  3. `aiClient.ts`: 400 tool_calls 错误时 strip 所有 tool_calls + reasoning_content 后重试；重试失败返回降级响应（不 throw）
 - `sanitizeToolMessages` 多层安全网: Pass 0 预处理 → Pass 1 配对扫描 → Pass 2 构建结果 → Pass 3 验证 → Pass 3.5 重排序 → Pass 4 content 规范化
 - `validateToolMessages`: aiClient.ts 发送前最后硬校验，补齐缺失 tool 消息
+- **v1.5.208 改进**: 400 重试失败后返回降级响应（友好提示 + 空 toolCalls），用户不再看到原始 400 错误
+- **重要**: DMG 打包后必须验证 `grep -c "tool calls stripped" server_dist/index.cjs` 确认修复已包含
 
 ## SSE 错误处理 v1.5.207
 - **所有 catch 块必须发送 `done` 事件**（带 errorCode/errorMessage），确保前端收到后停止 thinking 状态

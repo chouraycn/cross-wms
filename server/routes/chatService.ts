@@ -493,15 +493,70 @@ async function executeFromQueue(
             contextWindow: (fbModel as any).contextWindow || 128000,
           };
 
+          // v3.1.2: 重启 keepAliveTimer — 降级执行期间也需要心跳
+          const fbThinkingStart = { value: Date.now() };
+          keepAliveTimer = setInterval(() => {
+            if (!res.writableEnded) {
+              try {
+                const elapsed = Date.now() - fbThinkingStart.value;
+                res.write(`data: ${JSON.stringify({ type: 'keep_alive', elapsed })}\n\n`);
+              } catch { /* ignore */ }
+            }
+          }, 5000);
+
           const strategy = ExecutionStrategyFactory.create(params.executionMode as ExecutionMode || ExecutionMode.REACT);
-          void strategy.execute({
+          // v3.1.2: 修复 fire-and-forget bug — 之前 void strategy.execute() 不 await 且无 SSE 回调
+          // 导致降级输出丢失 + done 事件在降级完成前发送
+          const fbToolResult = await strategy.execute({
             modelConfig: fbModelConfig,
             messages: apiMessages as any,
             maxToolTurns: 10,
             signal: abortController?.signal ?? new AbortController().signal,
             executionMode: (params.executionMode as ExecutionMode) || ExecutionMode.REACT,
             approvedToolsCache: params.sessionApprovedSet,
+            onSSEEvent: (evt: Record<string, unknown>) => {
+              if (!res.writableEnded) {
+                try { res.write(`data: ${JSON.stringify(evt)}\n\n`); } catch { /* ignore */ }
+              }
+            },
+            onChunk: (chunk: string) => {
+              if (!res.writableEnded) {
+                try { res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`); } catch { /* ignore */ }
+              }
+            },
+            onThinking: (thinkingChunk: string) => {
+              if (!res.writableEnded) {
+                try { res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`); } catch { /* ignore */ }
+              }
+            },
+            onPermissionRequest: () => Promise.resolve(true),
+            onToolCall: (toolCall: any, result: string) => {
+              if (!res.writableEnded) {
+                try {
+                  res.write(`data: ${JSON.stringify({
+                    type: 'tool_call',
+                    toolCallId: toolCall.id,
+                    toolName: toolCall.function?.name || toolCall.name,
+                    toolArgs: toolCall.function?.arguments || toolCall.args,
+                    toolResult: result,
+                  })}\n\n`);
+                } catch { /* ignore */ }
+              }
+            },
           });
+
+          // v3.1.2: 降级完成清理 keepAliveTimer
+          if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
+
+          // v3.1.2: 保存降级模型回复到 DB（之前 fire-and-forget 模式不保存）
+          if (fbToolResult?.content) {
+            addMessage({
+              sessionId, role: 'assistant',
+              content: fbToolResult.content,
+              model: fbModel.id,
+              toolCalls: fbToolResult.toolCalls?.length > 0 ? JSON.stringify(fbToolResult.toolCalls) : undefined,
+            });
+          }
 
           if (fbKey && fbKey.index >= 0) { reportKeyResult(fbModel.id, fbKey.index, true); }
 
@@ -517,6 +572,8 @@ async function executeFromQueue(
           activeSSEConnections.delete(sessionId);
           return;
         } catch (fbErr) {
+          // v3.1.2: 降级失败也清理 keepAliveTimer
+          if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
           logger.warn(`[MessageQueue] 降级模型 ${fbModel.id} 也失败:`, fbErr);
         }
       }
@@ -738,6 +795,14 @@ export async function handleChat(req: import('express').Request, res: import('ex
       }
     }, 5000);
 
+    // v3.1.2: 统一 SSE 安全写入 — 检查 writableEnded + try-catch
+    // 放在 try 外定义，确保 inner catch 和 success path 也能访问
+    const safeWrite = (data: string) => {
+      if (!res.writableEnded) {
+        try { res.write(data); } catch { /* 连接已断开，忽略 */ }
+      }
+    };
+
     try {
       if (!modelConfig) {
         throw new Error(`未找到模型配置: ${effectiveModel}`);
@@ -958,7 +1023,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
           const mockResponse = generateMockResponse(message);
           const segments = mockResponse.match(/[\s\S]{1,5}/g) || [mockResponse];
           for (const segment of segments) {
-            res.write(`data: ${JSON.stringify({ type: 'text', content: segment })}\n\n`);
+            safeWrite(`data: ${JSON.stringify({ type: 'text', content: segment })}\n\n`);
             await new Promise(r => setTimeout(r, 15));
           }
           fullContent = mockResponse;
@@ -977,10 +1042,10 @@ export async function handleChat(req: import('express').Request, res: import('ex
               hasThinking = !!thinkingContent;
               if (hasThinking) thinkingStartTime = 0;
               if (thinkingContent) {
-                res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingContent })}\n\n`);
+                safeWrite(`data: ${JSON.stringify({ type: 'thinking', content: thinkingContent })}\n\n`);
               }
-              res.write(`data: ${JSON.stringify({ type: 'text', content: fullContent })}\n\n`);
-              res.write(`data: ${JSON.stringify({ type: 'cache_hit', cached: true })}\n\n`);
+              safeWrite(`data: ${JSON.stringify({ type: 'text', content: fullContent })}\n\n`);
+              safeWrite(`data: ${JSON.stringify({ type: 'cache_hit', cached: true })}\n\n`);
             }
           }
 
@@ -1078,10 +1143,10 @@ export async function handleChat(req: import('express').Request, res: import('ex
               signal: abortController.signal,
               executionMode: effectiveMode,
               onSSEEvent: (event) => {
-                res.write(`data: ${JSON.stringify(event)}\n\n`);
+                safeWrite(`data: ${JSON.stringify(event)}\n\n`);
               },
               onChunk: (chunk) => {
-                res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
+                safeWrite(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
               },
               onThinking: (thinkingChunk) => {
                 if (!hasThinking) {
@@ -1090,12 +1155,12 @@ export async function handleChat(req: import('express').Request, res: import('ex
                 }
                 thinkingContent += thinkingChunk;
                 thinkingChunkCount++;
-                res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`);
+                safeWrite(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`);
 
                 if (thinkingChunkCount % 5 === 0 && thinkingContent.length > 20) {
                   matchTriggers(thinkingContent, sessionId).then((matches) => {
                     for (const match of matches) {
-                      res.write(`data: ${JSON.stringify({
+                      safeWrite(`data: ${JSON.stringify({
                         type: 'client_tool',
                         tool: match.toolName,
                         args: match.args,
@@ -1103,7 +1168,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
                       })}\n\n`);
 
                       executePluginTrigger(match).then((result) => {
-                        res.write(`data: ${JSON.stringify({
+                        safeWrite(`data: ${JSON.stringify({
                           type: 'plugin_result',
                           tool: match.toolName,
                           output: result.output,
@@ -1120,7 +1185,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
                 }
               },
               onToolCall: (toolCall, result) => {
-                res.write(`data: ${JSON.stringify({
+                safeWrite(`data: ${JSON.stringify({
                   type: 'tool_call',
                   toolCallId: toolCall.id,
                   toolName: toolCall.function.name,
@@ -1130,7 +1195,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
                 const isDenied = result.includes('用户拒绝了工具');
                 const isError = !isDenied && result.includes('"error"');
                 const auditResult = isDenied ? 'denied' : isError ? 'error' : 'success';
-                res.write(`data: ${JSON.stringify({
+                safeWrite(`data: ${JSON.stringify({
                   type: 'tool_audit',
                   toolName: toolCall.function.name,
                   result: auditResult,
@@ -1286,10 +1351,21 @@ export async function handleChat(req: import('express').Request, res: import('ex
         if (fbModel) {
           const reasonLabel = isModelUnsupported ? '模型不支持' : '请求失败';
           logger.debug(`[Chat API] ${reasonLabel}，降级到 ${fbModel.id}...`);
-          res.write(`data: ${JSON.stringify({
+          safeWrite(`data: ${JSON.stringify({
             type: 'text',
             content: `\n\n> ⚠️ ${reasonLabel}，已自动切换到 **${fbModel.name || fbModel.id}** 重试...\n\n`,
           })}\n\n`);
+
+          // v3.1.2: 降级模型重启 keepAliveTimer — 防止降级执行期间前端心跳超时
+          const fbThinkingStart = { value: Date.now() };
+          keepAliveTimer = setInterval(() => {
+            if (!res.writableEnded) {
+              try {
+                const elapsed = Date.now() - fbThinkingStart.value;
+                res.write(`data: ${JSON.stringify({ type: 'keep_alive', elapsed })}\n\n`);
+              } catch { /* ignore */ }
+            }
+          }, 5000);
 
           try {
             const fbKey = selectKey(fbModel);
@@ -1310,14 +1386,12 @@ export async function handleChat(req: import('express').Request, res: import('ex
               maxToolTurns: 10,
               signal: abortController?.signal ?? new AbortController().signal,
               onChunk: (chunk) => {
-                res.write(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
+                safeWrite(`data: ${JSON.stringify({ type: 'text', content: chunk })}\n\n`);
               },
               onThinking: (thinkingChunk: string) => {
                 if (!hasThinking) { hasThinking = true; thinkingStartTime = Date.now(); }
                 thinkingContent += thinkingChunk;
-                if (!res.writableEnded) {
-                  try { res.write(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`); } catch { /* ignore */ }
-                }
+                safeWrite(`data: ${JSON.stringify({ type: 'thinking', content: thinkingChunk })}\n\n`);
               },
               onPermissionRequest: () => Promise.resolve(isSystemAuthorized()),
               reasoningEffort: undefined,
@@ -1325,16 +1399,21 @@ export async function handleChat(req: import('express').Request, res: import('ex
               approvedToolsCache: sessionApprovedSet,
             });
 
+            // v3.1.2: 降级成功后清理 keepAliveTimer
+            if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
+
             fullContent = fbResult.content;
             toolCallsJson = fbResult.toolCalls.length > 0 ? JSON.stringify(fbResult.toolCalls) : undefined;
             addMessage({ sessionId, role: 'assistant', content: fullContent, model: fbModel.id, skillId: skillId || null, toolCalls: toolCallsJson });
             if (fbKey && fbKey.index >= 0) { reportKeyResult(fbModel.id, fbKey.index, true); }
 
-            res.write(`data: ${JSON.stringify({ type: 'done', errorCode: null, errorMessage: null, thinkingDuration: 0, fallbackModel: fbModel.id, fallbackReason: isModelUnsupported ? 'model_not_supported' : 'request_failed' })}\n\n`);
+            safeWrite(`data: ${JSON.stringify({ type: 'done', errorCode: null, errorMessage: null, thinkingDuration: 0, fallbackModel: fbModel.id, fallbackReason: isModelUnsupported ? 'model_not_supported' : 'request_failed' })}\n\n`);
             await new Promise(r => setTimeout(r, 200));
-            res.end();
+            try { res.end(); } catch { /* ignore */ }
             return;
           } catch (fbErr) {
+            // v3.1.2: 降级失败也清理 keepAliveTimer
+            if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
             logger.warn(`[Chat API] 降级模型 ${fbModel.id} 也失败:`, fbErr);
           }
         }
@@ -1399,21 +1478,21 @@ export async function handleChat(req: import('express').Request, res: import('ex
         }
       }
 
-      res.write(`data: ${JSON.stringify({ type: 'text', content: errorMsg })}\n\n`);
+      safeWrite(`data: ${JSON.stringify({ type: 'text', content: errorMsg })}\n\n`);
       addMessage({ sessionId, role: 'assistant', content: errorMsg, model: effectiveModel, skillId: skillId || null });
       if (selectedKeyIndex >= 0 && effectiveModel) {
         reportKeyResult(effectiveModel, selectedKeyIndex, false);
       }
 
       try {
-        res.write(`data: ${JSON.stringify({
+        safeWrite(`data: ${JSON.stringify({
           type: 'done',
           errorCode,
           errorMessage: errorMsg,
           thinkingDuration: 0,
         })}\n\n`);
         await new Promise(r => setTimeout(r, 200));
-        res.end();
+        try { res.end(); } catch { /* ignore */ }
       } catch {
         // 响应流可能已关闭，忽略
       }
@@ -1422,7 +1501,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
 
     try {
       const thinkingDuration = (hasThinking && thinkingStartTime) ? Date.now() - thinkingStartTime : 0;
-      res.write(`data: ${JSON.stringify({
+      safeWrite(`data: ${JSON.stringify({
         type: 'done',
         errorCode: null,
         errorMessage: null,
@@ -1430,7 +1509,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
         usage: usageData || null,
       })}\n\n`);
       await new Promise(r => setTimeout(r, 200));
-      res.end();
+      try { res.end(); } catch { /* 响应流可能已关闭，忽略 */ }
     } catch {
       // 响应流可能已关闭，忽略
     }

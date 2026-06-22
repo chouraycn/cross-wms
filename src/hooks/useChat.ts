@@ -620,7 +620,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               reader.read(),
               new Promise<never>((_, reject) => {
                 heartbeatTimer = setTimeout(
-                  () => reject(new Error('SSE 心跳超时（30s 无数据）')),
+                  () => reject(new Error('SSE 心跳超时（60s 无数据）')),
                   HEARTBEAT_TIMEOUT_MS,
                 );
               }),
@@ -634,7 +634,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                 readResult = await readWithHeartbeat();
               } catch (readErr) {
                 if (readErr instanceof Error && readErr.message.includes('心跳超时')) {
-                  throw new Error('SSE 连接超时：30 秒内未收到数据');
+                  throw new Error('SSE 连接超时：60 秒内未收到数据');
                 }
                 throw readErr;
               }
@@ -1122,7 +1122,9 @@ scheduleRender();
             // 重置流式消息内容，避免重试时 UI 显示旧内容
             streamingMsg.content = '';
             streamingMsg.thinking = '';
-            onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...messagesPrefix, { ...streamingMsg, content: '', thinking: '' }] });
+            // v3.1.2: 重置 thinkingDone — 重试时 ThinkingBlock 应重新显示"正在思考..."
+            streamingMsg.thinkingDone = false;
+            onSessionUpdateRef.current({ ...sessionWithStreaming, messages: [...messagesPrefix, { ...streamingMsg, content: '', thinking: '', thinkingDone: false }] });
             continue;
           }
           removeAllHandlers();
