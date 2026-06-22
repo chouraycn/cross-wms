@@ -364,6 +364,10 @@ export function ChatProvider({
   const sessionsRef = useRef(sessions);
   sessionsRef.current = sessions;
 
+  // v8.3: 流式 session ref — 流式期间用 ref 存储最新 session，
+  // 只有 content 变化时才触发 setActiveSession（减少 Context value 重建频率）
+  const streamingSessionRef = useRef<Session | null>(null);
+
   // Bug Fix: 跟踪本地临时会话到 API 会话的 ID 映射，防止新建对话时出现重复条目
   const pendingApiSessionRef = useRef<{ localId: string; apiId: string } | null>(null);
 
@@ -474,11 +478,23 @@ export function ChatProvider({
     // Title is already set (or will be set when streaming ends), sidebar doesn't need updating.
     const lastMsg = originalSession.messages[originalSession.messages.length - 1];
     if (lastMsg?.isStreaming) {
-      setActiveSession(originalSession);
+      // v8.3: 流式优化 — 始终用 ref 存储最新 session（供外部读取），
+      // 但只在 content/thinking 变化时才触发 React setState（减少 Context 级联重渲染）
+      const prev = streamingSessionRef.current;
+      const prevLastMsg = prev?.messages[prev.messages.length - 1];
+      // 先比较再更新 ref
+      const contentChanged = !prevLastMsg || prevLastMsg.content !== lastMsg.content;
+      const thinkingChanged = !prevLastMsg || prevLastMsg.thinking !== lastMsg.thinking;
+      streamingSessionRef.current = originalSession;
+      if (contentChanged || thinkingChanged) {
+        setActiveSession(originalSession);
+      }
       return;
     }
 
     // Non-streaming path: full title check + sidebar sync
+    // v8.3: 清理流式 ref
+    streamingSessionRef.current = null;
     // 2. 自动标题：在所有路径之前执行，确保新会话也能生成标题
     let updatedSession = originalSession;
     const firstUserMsg = updatedSession.messages.find((m) => m.role === 'user');

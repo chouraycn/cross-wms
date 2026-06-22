@@ -454,12 +454,19 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           const METADATA_THROTTLE_MS = 100;
           let lastMetadataFlush = 0;
 
+          // v8.3: 高频事件客户端聚合 — thinking 事件到达时先缓冲，
+          // 由 flushRender 统一消费，避免每个 chunk 都触发 scheduleRender
+          let thinkingBuffer = '';
+          let thinkingBufferFlushed = false;
+
           const flushRender = () => {
             renderHandle = null;
             let shouldReschedule = false;
 
             // Process pending text content (chunked for typewriter effect)
+            let contentChangedThisFrame = false;
             if (pendingContent.length > 0) {
+              contentChangedThisFrame = true;
               const adaptiveChunk = Math.min(
                 Math.max(BASE_CHUNK_SIZE, Math.ceil(pendingContent.length / 15)),
                 pendingContent.length
@@ -474,12 +481,22 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
               }
             }
 
+            // v8.3-fix: 消费 thinking buffer — 必须在元数据节流检查之前执行！
+            // 否则 thinking 内容在节流窗口内永远不会被写入 streamingMsg，导致"思考中卡住"
+            const hasThinkingBuffer = thinkingBuffer.length > 0;
+            if (hasThinkingBuffer) {
+              streamingMsg.thinking = (streamingMsg.thinking || '') + thinkingBuffer;
+              thinkingBuffer = '';
+              thinkingBufferFlushed = true;
+              dirty = true;
+            }
+
             // Skip render if nothing changed since last flush (e.g. keep_alive with no mutations)
             if (!dirty && !shouldReschedule) return;
 
-            // v2.8.5: 纯元数据渲染节流 — 无 pending text 时限制为 10fps
+            // v2.8.5: 纯元数据渲染节流 — 无 pending text/thinking 时限制为 10fps
             // text 事件始终立即渲染（用户体验关键），元数据可降频
-            const isMetadataOnly = pendingContent.length === 0 && !shouldReschedule;
+            const isMetadataOnly = pendingContent.length === 0 && !shouldReschedule && !hasThinkingBuffer;
             if (isMetadataOnly) {
               const now = Date.now();
               if (now - lastMetadataFlush < METADATA_THROTTLE_MS) {
@@ -496,11 +513,17 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             // (thinking, tool_calls, react_phase, etc.) into a single React state update per frame.
             // SSE event handlers mutate streamingMsg in-place then call scheduleRender();
             // this flushRender picks up ALL mutations in one shot.
+            // v8.3: 对象复用优化 — content 变化时创建新 msg 引用（触发 BotMessageContent 重渲染），
+            // 纯元数据变化时复用 streamingMsg 引用（areEqual 的 === 快速路径生效，跳过 41 字段比较）
+            const msgRef = contentChangedThisFrame
+              ? { ...streamingMsg }
+              : streamingMsg;
+
             onSessionUpdateRef.current({
               ...sessionWithStreaming,
               messages: [
                 ...messagesPrefix,
-                { ...streamingMsg },
+                msgRef,
               ],
             });
 
@@ -688,11 +711,15 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                       scheduleRender();
                     }
                     if (data.type === 'thinking') {
-                      streamingMsg.thinking = (streamingMsg.thinking || '') + data.content;
+                      // v8.3: 写入 buffer 而非直接拼接，由 flushRender 统一消费
+                      thinkingBuffer += data.content;
                       if (data.thinkingType) {
                         streamingMsg.thinkingType = data.thinkingType;
                       }
-                      scheduleRender();
+                      // 仅在未调度时才调度（避免重复调度）
+                      if (renderHandle === null) {
+                        scheduleRender();
+                      }
                     }
                     if (data.type === 'thinking_heartbeat') {
                       streamingMsg.thinkingElapsed = data.elapsed;
@@ -942,6 +969,11 @@ scheduleRender();
                       errorCode = data.errorCode ?? null;
                       errorMessage = data.errorMessage ?? null;
                       thinkingDuration = data.thinkingDuration;
+                      // v8.2-fix: 流结束，确保 thinkingDone 标记为 true
+                      // 避免 AI 只有 thinking 没有 text 时 thinkingDone 未设置
+                      if (!streamingMsg.thinkingDone) {
+                        streamingMsg.thinkingDone = true;
+                      }
                       // v1.5.116: 模型降级信息
                       if (data.fallbackModel) {
                         streamingMsg.fallbackModel = data.fallbackModel;
