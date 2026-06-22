@@ -30,16 +30,16 @@ export interface ToolExecutorOptions {
   onToolCall?: (toolCall: ToolCall, result: string) => void;
   /** v1.9.2: 敏感工具权限请求回调。返回 true 表示允许执行，false 表示拒绝 */
   onPermissionRequest?: (toolCall: ToolCall) => Promise<boolean>;
-  /** Agent 任务开始 */
-  onAgentStart?: (agentId: string, task: string) => void;
-  /** Agent 任务结束 */
-  onAgentEnd?: (agentId: string, result?: string) => void;
-  /** 子任务创建 */
-  onSubtaskCreate?: (subtaskId: string, description: string) => void;
-  /** 子任务分配给 Agent */
-  onSubtaskAssign?: (subtaskId: string, agentId: string) => void;
-  /** 子任务完成 */
-  onSubtaskComplete?: (subtaskId: string, result?: string) => void;
+  /** v8.2: Agent 任务开始 */
+  onAgentStart?: (agentId: string, agentRole: string, taskDescription: string, subTaskId?: string) => void;
+  /** v8.2: Agent 任务结束 */
+  onAgentEnd?: (agentId: string, agentRole: string, status: 'success' | 'failed' | 'timeout', duration?: number, error?: string) => void;
+  /** v8.2: 子任务创建 */
+  onSubtaskCreate?: (subTaskId: string, description: string, dependsOn?: string[], priority?: number) => void;
+  /** v8.2: 子任务分配给 Agent */
+  onSubtaskAssign?: (subTaskId: string, agentId: string, agentRole: string) => void;
+  /** v8.2: 子任务完成 */
+  onSubtaskComplete?: (subTaskId: string, description: string, status: 'completed' | 'failed', agentId: string, duration?: number, resultSummary?: string) => void;
   /** 反思评估结果 */
   onReflect?: (reflection: any) => void;
   /** 执行计划生成 */

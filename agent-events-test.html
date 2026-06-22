@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent 编排事件测试 - 7 种 SSE 事件类型</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { font-size: 20px; margin-bottom: 8px; color: #333; }
+    .subtitle { color: #666; font-size: 14px; margin-bottom: 24px; }
+
+    /* 模拟消息卡片 */
+    .message-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .message-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 12px; font-weight: 600;
+    }
+    .message-title { font-size: 14px; font-weight: 600; color: #333; }
+    .message-time { font-size: 12px; color: #999; margin-left: auto; }
+
+    /* Agent 状态指示器 */
+    .agent-status-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .agent-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .agent-badge.idle { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .agent-badge.busy { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+    .agent-badge.error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+    /* 执行轨迹 */
+    .execution-trace {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: #fafafa;
+    }
+    .trace-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .trace-title { font-size: 12px; font-weight: 600; color: #6b7280; }
+    .trace-phase {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .trace-phase.done { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
+
+    /* 时间线 */
+    .timeline { display: flex; flex-direction: column; gap: 0; }
+    .timeline-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      position: relative;
+    }
+    .timeline-dot {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px; font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 2px;
+      color: white;
+    }
+    .timeline-line {
+      position: absolute;
+      left: 7px;
+      top: 18px;
+      bottom: -4px;
+      width: 2px;
+      background: #e5e7eb;
+    }
+    .timeline-item:last-child .timeline-line { display: none; }
+    .timeline-content {
+      flex: 1;
+      padding-bottom: 8px;
+    }
+    .timeline-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #374151;
+    }
+    .timeline-detail {
+      font-size: 10px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    /* 事件类型颜色 */
+    .evt-plan { background: #6366f1; }
+    .evt-subtask-create { background: #8b5cf6; }
+    .evt-agent-start { background: #3b82f6; }
+    .evt-subtask-assign { background: #f59e0b; }
+    .evt-reflect { background: #a855f7; }
+    .evt-subtask-complete { background: #22c55e; }
+    .evt-agent-end { background: #6b7280; }
+
+    /* Agent 事件徽章（流式时显示） */
+    .streaming-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    /* 思考块 */
+    .thinking-block {
+      border-left: 2px solid #d1d5db;
+      padding-left: 12px;
+      margin-bottom: 12px;
+    }
+    .thinking-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .thinking-label { font-size: 12px; font-weight: 600; color: #6b7280; }
+    .thinking-meta { font-size: 11px; color: #bbb; margin-left: auto; font-family: monospace; }
+    .thinking-content {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.7;
+    }
+    .status-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      height: 20px;
+      font-size: 10px;
+      padding: 0 8px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    /* 内容区域 */
+    .content-area {
+      font-size: 14px;
+      color: #374151;
+      line-height: 1.7;
+    }
+
+    /* 测试控制面板 */
+    .control-panel {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .control-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+    .event-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .evt-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      color: white;
+      transition: opacity 0.2s;
+    }
+    .evt-btn:hover { opacity: 0.85; }
+    .evt-btn.plan { background: #6366f1; }
+    .evt-btn.subtask_create { background: #8b5cf6; }
+    .evt-btn.agent_start { background: #3b82f6; }
+    .evt-btn.subtask_assign { background: #f59e0b; }
+    .evt-btn.reflect { background: #a855f7; }
+    .evt-btn.subtask_complete { background: #22c55e; }
+    .evt-btn.agent_end { background: #6b7280; }
+    .evt-btn.all { background: #333; }
+    .evt-btn.clear { background: #ef4444; }
+
+    .event-counter {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .counter-tag {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    /* 响应式 */
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      .message-card { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Agent 编排事件测试面板</h1>
+    <p class="subtitle">验证 7 种新 SSE 事件类型的前端展示效果：agent_start / agent_end / subtask_create / subtask_assign / subtask_complete / reflect / plan</p>
+
+    <!-- 控制面板 -->
+    <div class="control-panel">
+      <div class="control-title">事件注入控制</div>
+      <div class="event-buttons">
+        <button class="evt-btn plan" onclick="addEvent('plan')">☰ plan</button>
+        <button class="evt-btn subtask_create" onclick="addEvent('subtask_create')">⊕ subtask_create</button>
+        <button class="evt-btn agent_start" onclick="addEvent('agent_start')">▶ agent_start</button>
+        <button class="evt-btn subtask_assign" onclick="addEvent('subtask_assign')">→ subtask_assign</button>
+        <button class="evt-btn reflect" onclick="addEvent('reflect')">◈ reflect</button>
+        <button class="evt-btn subtask_complete" onclick="addEvent('subtask_complete')">✓ subtask_complete</button>
+        <button class="evt-btn agent_end" onclick="addEvent('agent_end')">■ agent_end</button>
+        <button class="evt-btn all" onclick="addAllEvents()">全部注入</button>
+        <button class="evt-btn clear" onclick="clearEvents()">清空</button>
+      </div>
+      <div class="event-counter" id="eventCounter"></div>
+    </div>
+
+    <!-- 模拟消息卡片 -->
+    <div class="message-card" id="messageCard">
+      <div class="message-header">
+        <div class="avatar">AI</div>
+        <span class="message-title">智能助手</span>
+        <span class="message-time" id="msgTime">刚刚</span>
+      </div>
+
+      <!-- Agent 状态指示器 -->
+      <div class="agent-status-bar" id="agentStatusBar">
+        <span class="agent-badge idle">DataCollector · 空闲</span>
+        <span class="agent-badge idle">Analyst · 空闲</span>
+        <span class="agent-badge idle">Reporter · 空闲</span>
+      </div>
+
+      <!-- 流式事件徽章 -->
+      <div id="streamingBadge"></div>
+
+      <!-- 执行轨迹 -->
+      <div class="execution-trace">
+        <div class="trace-header" onclick="toggleTrace()">
+          <span class="trace-title">📋 执行轨迹</span>
+          <span class="trace-phase done" id="tracePhase">完成</span>
+          <span style="margin-left:auto;font-size:11px;color:#999;" id="traceCount"></span>
+        </div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+
+      <!-- 思考块 -->
+      <div class="thinking-block">
+        <div class="thinking-header">
+          <div style="width:2px;height:13px;background:#9ca3af;border-radius:1px;"></div>
+          <span class="thinking-label">深度思考</span>
+          <span class="thinking-meta">3.5s</span>
+        </div>
+        <div class="status-tags" id="thinkingTags">
+          <span class="status-tag" style="color:#6366f1;background:rgba(99,102,241,0.08);">步骤 3/3</span>
+        </div>
+        <div class="thinking-content">
+          1. 分析任务复杂度：高复杂度，需要多 Agent 协作<br>
+          2. 创建执行计划：查询 → 分析 → 报表<br>
+          3. 分解为子任务并分配给不同 Agent<br>
+          4. 监控执行过程并进行反思评估<br>
+          5. 所有子任务完成，汇总结果
+        </div>
+      </div>
+
+      <!-- 消息内容 -->
+      <div class="content-area">
+        Agent 编排执行完成。已协调 3 个 Agent 完成仓库库存分析：<br><br>
+        1. <strong>DataCollector</strong> 查询到 1,234 条库存记录<br>
+        2. <strong>Analyst</strong> 发现 15 个 SKU 库存偏低<br>
+        3. <strong>Reporter</strong> 生成完整报表<br><br>
+        建议：对库存偏低的 SKU 进行补货。
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let agentEvents = [];
+    let eventCounters = {};
+
+    const eventTemplates = {
+      plan: () => ({
+        type: 'plan',
+        planId: 'plan-' + Date.now(),
+        intent: '分析仓库库存并生成报表',
+        steps: [
+          { step: 1, description: '查询库存数据', toolName: 'inventory_query', status: 'completed' },
+          { step: 2, description: '分析库存趋势', toolName: 'data_analysis', status: 'completed' },
+          { step: 3, description: '生成报表', toolName: 'report_generator', status: 'completed' },
+        ],
+        isDynamic: false
+      }),
+      subtask_create: () => ({
+        type: 'subtask_create',
+        subTaskId: 'st-' + Math.floor(Math.random() * 1000),
+        description: ['查询库存数据', '分析库存趋势', '生成报表'][Math.floor(Math.random() * 3)],
+        dependsOn: [],
+        priority: 1
+      }),
+      agent_start: () => ({
+        type: 'agent_start',
+        agentId: 'agent-' + Math.floor(Math.random() * 100),
+        agentRole: ['DataCollector', 'Analyst', 'Reporter'][Math.floor(Math.random() * 3)],
+        taskDescription: '执行任务',
+        subTaskId: 'st-' + Math.floor(Math.random() * 1000)
+      }),
+      subtask_assign: () => ({
+        type: 'subtask_assign',
+        subTaskId: 'st-' + Math.floor(Math.random() * 1000),
+        agentId: 'agent-' + Math.floor(Math.random() * 100),
+        agentRole: ['DataCollector', 'Analyst', 'Reporter'][Math.floor(Math.random() * 3)]
+      }),
+      reflect: () => ({
+        type: 'reflect',
+        source: ['observer', 'llm', 'self_evaluation'][Math.floor(Math.random() * 3)],
+        toolName: 'inventory_query',
+        level: ['success', 'warning', 'error', 'retry_suggested'][Math.floor(Math.random() * 4)],
+        insight: ['查询成功，返回 1,234 条库存记录', '发现部分 SKU 库存异常偏低，建议补货', '执行结果符合预期'][Math.floor(Math.random() * 3)],
+        confidenceScore: Math.floor(Math.random() * 10) + 1
+      }),
+      subtask_complete: () => ({
+        type: 'subtask_complete',
+        subTaskId: 'st-' + Math.floor(Math.random() * 1000),
+        description: ['查询库存数据', '分析库存趋势', '生成报表'][Math.floor(Math.random() * 3)],
+        status: Math.random() > 0.2 ? 'completed' : 'failed',
+        agentId: 'agent-' + Math.floor(Math.random() * 100),
+        duration: Math.floor(Math.random() * 3000) + 500,
+        resultSummary: ['返回 1,234 条记录', '发现 15 个 SKU 偏低', '报表已生成'][Math.floor(Math.random() * 3)]
+      }),
+      agent_end: () => ({
+        type: 'agent_end',
+        agentId: 'agent-' + Math.floor(Math.random() * 100),
+        agentRole: ['DataCollector', 'Analyst', 'Reporter'][Math.floor(Math.random() * 3)],
+        status: Math.random() > 0.2 ? 'success' : 'failed',
+        duration: Math.floor(Math.random() * 3000) + 500
+      })
+    };
+
+    const evtConfig = {
+      plan: { color: '#6366f1', icon: '☰', label: '执行计划' },
+      subtask_create: { color: '#8b5cf6', icon: '⊕', label: '创建子任务' },
+      agent_start: { color: '#3b82f6', icon: '▶', label: 'Agent 启动' },
+      subtask_assign: { color: '#f59e0b', icon: '→', label: '分配子任务' },
+      reflect: { color: '#a855f7', icon: '◈', label: '反思评估' },
+      subtask_complete: { color: '#22c55e', icon: '✓', label: '子任务完成' },
+      agent_end: { color: '#6b7280', icon: '■', label: 'Agent 结束' }
+    };
+
+    function addEvent(type) {
+      const evt = eventTemplates[type]();
+      agentEvents.push(evt);
+      eventCounters[type] = (eventCounters[type] || 0) + 1;
+      render();
+    }
+
+    function addAllEvents() {
+      Object.keys(eventTemplates).forEach(type => addEvent(type));
+    }
+
+    function clearEvents() {
+      agentEvents = [];
+      eventCounters = {};
+      render();
+    }
+
+    function render() {
+      renderTimeline();
+      renderStreamingBadge();
+      renderThinkingTags();
+      renderCounter();
+      renderTraceCount();
+    }
+
+    function renderTimeline() {
+      const timeline = document.getElementById('timeline');
+      if (agentEvents.length === 0) {
+        timeline.innerHTML = '<div style="color:#999;font-size:12px;padding:8px;">暂无事件，点击上方按钮注入</div>';
+        return;
+      }
+
+      timeline.innerHTML = agentEvents.map((evt, idx) => {
+        const cfg = evtConfig[evt.type];
+        const isLast = idx === agentEvents.length - 1;
+        let detail = '';
+
+        switch(evt.type) {
+          case 'agent_start':
+            detail = evt.agentRole + (evt.subTaskId ? ' · ' + evt.subTaskId.slice(0, 8) : '');
+            break;
+          case 'agent_end':
+            detail = (evt.status === 'success' ? '成功' : evt.status === 'failed' ? '失败' : '超时') +
+                     (evt.duration ? ' · ' + (evt.duration / 1000).toFixed(1) + 's' : '');
+            break;
+          case 'subtask_create':
+            detail = evt.description;
+            break;
+          case 'subtask_assign':
+            detail = evt.agentRole;
+            break;
+          case 'subtask_complete':
+            detail = (evt.status === 'completed' ? '已完成' : '失败') +
+                     (evt.resultSummary ? ' · ' + evt.resultSummary : '');
+            break;
+          case 'reflect':
+            detail = evt.insight.substring(0, 40) + (evt.insight.length > 40 ? '...' : '');
+            break;
+          case 'plan':
+            detail = evt.steps.length + ' 步 · ' + evt.intent.substring(0, 30);
+            break;
+        }
+
+        return `
+          <div class="timeline-item">
+            <div class="timeline-dot evt-${evt.type.replace('_', '-')}" style="background:${cfg.color}">${cfg.icon}</div>
+            <div class="timeline-line" style="background:${isLast ? 'transparent' : cfg.color + '30'}"></div>
+            <div class="timeline-content">
+              <div class="timeline-label" style="color:${isLast ? '#111' : '#666'}">${cfg.label}</div>
+              <div class="timeline-detail">${detail}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderStreamingBadge() {
+      const badge = document.getElementById('streamingBadge');
+      if (agentEvents.length === 0) {
+        badge.innerHTML = '';
+        return;
+      }
+      const lastEvt = agentEvents[agentEvents.length - 1];
+      const cfg = evtConfig[lastEvt.type];
+      let extra = '';
+      if (lastEvt.type === 'agent_start') extra = ' · ' + lastEvt.agentRole;
+      if (lastEvt.type === 'subtask_create') extra = ' · ' + lastEvt.description.substring(0, 20);
+      if (lastEvt.type === 'subtask_complete') extra = ' · ' + (lastEvt.status === 'completed' ? '已完成' : '失败');
+      if (lastEvt.type === 'plan') extra = ' · ' + lastEvt.steps.length + ' 步';
+
+      badge.innerHTML = `
+        <div class="streaming-badge" style="background:${cfg.color}10;border:1px solid ${cfg.color}20;color:${cfg.color}">
+          ${cfg.label}${extra}
+        </div>
+      `;
+    }
+
+    function renderThinkingTags() {
+      const tags = document.getElementById('thinkingTags');
+      if (agentEvents.length === 0) {
+        tags.innerHTML = '<span class="status-tag" style="color:#6366f1;background:rgba(99,102,241,0.08);">步骤 3/3</span>';
+        return;
+      }
+      const lastEvt = agentEvents[agentEvents.length - 1];
+      const cfg = evtConfig[lastEvt.type];
+      let extra = '';
+      if (lastEvt.type === 'agent_start') extra = ' · ' + lastEvt.agentRole;
+      if (lastEvt.type === 'subtask_complete') extra = ' · ' + (lastEvt.status === 'completed' ? '已完成' : '失败');
+
+      tags.innerHTML = `
+        <span class="status-tag" style="color:#6366f1;background:rgba(99,102,241,0.08);">步骤 3/3</span>
+        <span class="status-tag" style="color:${cfg.color};background:${cfg.color}10;">${cfg.label}${extra}</span>
+      `;
+    }
+
+    function renderCounter() {
+      const counter = document.getElementById('eventCounter');
+      const types = Object.keys(eventCounters);
+      if (types.length === 0) {
+        counter.innerHTML = '';
+        return;
+      }
+      counter.innerHTML = types.map(t => {
+        const cfg = evtConfig[t];
+        return `<span class="counter-tag" style="background:${cfg.color}15;color:${cfg.color}">${cfg.label} (${eventCounters[t]})</span>`;
+      }).join('');
+    }
+
+    function renderTraceCount() {
+      const count = document.getElementById('traceCount');
+      count.textContent = agentEvents.length > 0 ? `(${agentEvents.length} 个事件)` : '';
+    }
+
+    function toggleTrace() {
+      const timeline = document.getElementById('timeline');
+      timeline.style.display = timeline.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    // 初始化
+    render();
+
+    // 自动注入一组完整事件用于展示
+    setTimeout(() => {
+      addAllEvents();
+    }, 500);
+  </script>
+</body>
+</html>
