@@ -1066,18 +1066,21 @@ export async function callAIModelStream(
         throw error;
       }
 
-      // v3.1.1: 400 tool_calls 错误 — 最终安全网重试
+      // v3.1.2: 400 tool_calls 错误 — 最终安全网重试
       // 尽管 sanitizeToolMessages + validateToolMessages 已做 6 层防护，
       // 某些 API 实现可能对 tool_calls 序列有更严格的要求
       // 策略：strip 所有 tool_calls/tool 消息，将 assistant(tool_calls) 降级为普通文本
+      // v3.1.3: 重试失败时返回降级响应而非 throw，避免用户看到原始 400 错误
       if (error instanceof AIAPIError && error.statusCode === 400 &&
           error.responseBody && error.responseBody.includes('tool_calls')) {
         logger.error('[AIClient] 400 tool_calls 错误，尝试 strip 所有 tool_calls 后重试...');
 
-        // Strip 所有 tool_calls 和 tool 消息
+        // Strip 所有 tool_calls、tool 消息、reasoning_content（某些 API 不兼容）
         const strippedMessages = messages.map(m => {
           if (m.role === 'assistant' && m.tool_calls) {
-            const { tool_calls: _stripped, ...rest } = m;
+            const rest = { ...m };
+            delete (rest as Record<string, unknown>).tool_calls;
+            delete (rest as Record<string, unknown>).reasoning_content;
             return { ...rest, content: m.content || '(tool calls stripped)' };
           }
           return m;
@@ -1092,7 +1095,7 @@ export async function callAIModelStream(
               apiEndpoint, apiKey, modelId,
               retryMessages as Array<{ role: string; content: string | OpenAIVisionContent[]; tool_calls?: ToolCall[]; tool_call_id?: string }>,
               temperature, maxTokens, onChunk, signal,
-              onThinking, tools, onToolCall, reasoningEffort,
+              onThinking, undefined, onToolCall, reasoningEffort,
               capabilities,
             );
           }
@@ -1105,8 +1108,14 @@ export async function callAIModelStream(
             capabilities,
           );
         } catch (retryErr) {
-          logger.error('[AIClient] strip tool_calls 重试也失败:', retryErr instanceof Error ? retryErr.message : String(retryErr));
-          throw retryErr;
+          logger.error('[AIClient] strip tool_calls 重试也失败，返回降级响应:', retryErr instanceof Error ? retryErr.message : String(retryErr));
+          // v3.1.3: 返回降级响应而非 throw，让用户看到友好消息而非原始 400 错误
+          onChunk('\n\n⚠️ 上下文中的工具调用历史格式异常，已自动清理并重试。请重新发送你的问题。');
+          return {
+            content: '\n\n⚠️ 上下文中的工具调用历史格式异常，已自动清理并重试。请重新发送你的问题。',
+            toolCalls: [],
+            reasoningContent: undefined,
+          };
         }
       }
 
