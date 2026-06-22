@@ -194,7 +194,9 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       setSelectedModelId(modelId);
       updateSessionModel(modelId);
       // 根据模型能力自动调整推理强度
-      const supportsReasoning = found?.capabilities?.includes('reasoning');
+      // v8.2-fix: 扩展 supportsReasoning 判断，与后端 aiClient.ts 保持一致
+      const supportsReasoning = found?.capabilities?.includes('reasoning') ||
+        /deepseek|reasoner|o3|o4|r1|moonshot|kimi|k2[.\-]|qwq|qwen3|glm|zhipu/i.test(found?.id || '');
       if (!supportsReasoning) {
         handleReasoningEffortChange('');
       } else if (!reasoningEffort) {

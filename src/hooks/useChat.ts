@@ -638,6 +638,8 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
 
               if (done) {
                 clearHeartbeat();
+                // v8.2-fix: 流结束时标记 thinkingDone，防止 ThinkingBlock 永远显示"正在思考..."
+                streamingMsg.thinkingDone = true;
                 // 流自然结束 — v1.5.57: 流未正常结束保护
                 if (!doneReceived && !result.trim()) {
                   const hasThinking = !!(streamingMsg.thinking && streamingMsg.thinking.trim());
@@ -731,6 +733,17 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                     }
                     if (data.type === 'keep_alive') {
                       streamingMsg.thinkingElapsed = data.elapsed;
+                      dirty = true; // v8.2-fix: 确保 keep_alive 触发渲染，防止 thinking 阶段 UI 不更新
+                      scheduleRender();
+                    }
+                    // v8.2-fix: 处理后端 error 事件，防止白屏
+                    if (data.type === 'error') {
+                      doneReceived = true;
+                      errorCode = (data.code as string) || 'SERVER_ERROR';
+                      errorMessage = (data.message as string) || '服务器内部错误';
+                      result = errorMessage;
+                      streamingMsg.content = errorMessage;
+                      streamingMsg.thinkingDone = true;
                       scheduleRender();
                     }
                     if (data.type === 'tool_call') {

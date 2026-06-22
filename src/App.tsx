@@ -245,6 +245,8 @@ function buildTheme(appearance: AppearanceConfig) {
           body: {
             backgroundColor: gs.bgPage,
             color: gs.textPrimary,
+            // v8.2-fix: 强制覆盖系统 prefers-color-scheme，防止 Electron 窗口失焦时主题变色
+            colorScheme: isDark ? 'dark' : 'light',
           },
         },
       },
