@@ -290,6 +290,52 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
       )}
       {/* v8.1: Agent 状态指示器（消息顶部） */}
       <AgentStatusIndicator msg={msg} gs={gs} isDark={isDark} />
+      {/* v8.2: Agent 编排事件徽章（流式时显示最新事件） */}
+      {msg.agentEvents && msg.agentEvents.length > 0 && msg.isStreaming && (() => {
+        const lastEvt = msg.agentEvents[msg.agentEvents.length - 1];
+        const evtConfig: Record<string, { color: string; bg: string; label: string }> = {
+          agent_start: { color: '#3B82F6', bg: 'rgba(59,130,246,0.08)', label: 'Agent 启动' },
+          agent_end: { color: '#6B7280', bg: 'rgba(107,114,128,0.08)', label: 'Agent 结束' },
+          subtask_create: { color: '#8B5CF6', bg: 'rgba(139,92,246,0.08)', label: '创建子任务' },
+          subtask_assign: { color: '#F59E0B', bg: 'rgba(245,158,11,0.08)', label: '分配子任务' },
+          subtask_complete: { color: '#22C55E', bg: 'rgba(34,197,94,0.08)', label: '子任务完成' },
+          reflect: { color: '#A855F7', bg: 'rgba(168,85,247,0.08)', label: '反思评估' },
+          plan: { color: '#6366F1', bg: 'rgba(99,102,241,0.08)', label: '执行计划' },
+        };
+        const cfg = evtConfig[lastEvt.type];
+        if (!cfg) return null;
+        return (
+          <Box sx={{
+            display: 'flex', alignItems: 'center', gap: 0.5,
+            px: 1, py: 0.35, borderRadius: 1, mb: 0.5,
+            bgcolor: cfg.bg, border: `1px solid ${cfg.color}20`,
+          }}>
+            <Typography sx={{ fontSize: 11, color: cfg.color, fontWeight: 600, lineHeight: 1 }}>
+              {cfg.label}
+            </Typography>
+            {lastEvt.type === 'agent_start' && (
+              <Typography sx={{ fontSize: 10, color: cfg.color + '99', lineHeight: 1 }}>
+                {lastEvt.agentRole}
+              </Typography>
+            )}
+            {lastEvt.type === 'subtask_create' && (
+              <Typography sx={{ fontSize: 10, color: cfg.color + '99', lineHeight: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
+                {lastEvt.description}
+              </Typography>
+            )}
+            {lastEvt.type === 'subtask_complete' && (
+              <Typography sx={{ fontSize: 10, color: lastEvt.status === 'completed' ? '#22C55E' : '#EF4444', lineHeight: 1 }}>
+                {lastEvt.status === 'completed' ? '已完成' : '失败'}
+              </Typography>
+            )}
+            {lastEvt.type === 'plan' && (
+              <Typography sx={{ fontSize: 10, color: cfg.color + '99', lineHeight: 1 }}>
+                {lastEvt.steps.length} 步
+              </Typography>
+            )}
+          </Box>
+        );
+      })()}
       {/* v8.1: 执行轨迹组件（thinking 内容之前） */}
       <ExecutionTrace msg={msg} gs={gs} isDark={isDark} />
       {/* AI 思考过程展示 */}
@@ -307,6 +353,7 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
           complexityAssessment={msg.complexityAssessment}
           reflectionConfidence={msg.reflectionConfidence}
           executionPlan={msg.executionPlan}
+          agentEvents={msg.agentEvents}
         />
       )}
       {/* AI 工具调用展示（Tool Calling） */}
@@ -603,6 +650,7 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
   if (pm.usage !== nm.usage) return false;
   if (pm.replanTriggered !== nm.replanTriggered) return false;
   if (pm.agentStatuses !== nm.agentStatuses) return false;
+  if (pm.agentEvents !== nm.agentEvents) return false;
 
   if ((prev.copiedId === pm.id || next.copiedId === nm.id) && prev.copiedId !== next.copiedId) return false;
 

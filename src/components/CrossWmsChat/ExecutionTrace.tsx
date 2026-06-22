@@ -28,6 +28,7 @@ import type {
   ObserverReflectionInfo,
   PlanStepInfo,
   ToolCallInfo,
+  AgentEvent,
 } from '../../types/chat.js';
 
 interface ExecutionTraceProps {
@@ -72,6 +73,17 @@ const STEP_STATUS_ICONS: Record<string, string> = {
   completed: '●',
   failed: '✕',
   skipped: '—',
+};
+
+/** Agent 事件类型配置 */
+const AGENT_EVENT_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
+  agent_start: { color: '#3B82F6', icon: '▶', label: 'Agent 启动' },
+  agent_end: { color: '#6B7280', icon: '■', label: 'Agent 结束' },
+  subtask_create: { color: '#8B5CF6', icon: '⊕', label: '创建子任务' },
+  subtask_assign: { color: '#F59E0B', icon: '→', label: '分配子任务' },
+  subtask_complete: { color: '#22C55E', icon: '✓', label: '子任务完成' },
+  reflect: { color: '#A855F7', icon: '◈', label: '反思评估' },
+  plan: { color: '#6366F1', icon: '☰', label: '执行计划' },
 };
 
 // ===================== 脉冲动画组件 =====================
@@ -304,10 +316,11 @@ export const ExecutionTrace: React.FC<ExecutionTraceProps> = React.memo(({ msg, 
     toolCalls,
     thinking,
     isStreaming,
+    agentEvents,
   } = msg;
 
   // 如果没有任何轨迹数据，不渲染
-  if (!reactPhase && !executionPlan && !observerReflections?.length && !reflectionConfidence && !complexityAssessment && !toolCalls?.length && !thinking) {
+  if (!reactPhase && !executionPlan && !observerReflections?.length && !reflectionConfidence && !complexityAssessment && !toolCalls?.length && !thinking && !agentEvents?.length) {
     return null;
   }
 
@@ -599,8 +612,99 @@ export const ExecutionTrace: React.FC<ExecutionTraceProps> = React.memo(({ msg, 
             </TimelineNode>
           )}
 
+          {/* v8.2: Agent 编排事件时间线 */}
+          {agentEvents && agentEvents.length > 0 && (
+            <TimelineNode
+              color="#6366F1"
+              icon="A"
+              isActive={!!(isStreaming && agentEvents[agentEvents.length - 1]?.type !== 'agent_end')}
+              isCompleted={!isStreaming || agentEvents.some(e => e.type === 'agent_end')}
+              isLast={!reflectionConfidence}
+              isStreaming={!!isStreaming}
+              label={`Agent 编排 (${agentEvents.length})`}
+              isDark={isDark}
+              gs={gs}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.35 }}>
+                {agentEvents.map((evt: AgentEvent, idx: number) => {
+                  const cfg = AGENT_EVENT_CONFIG[evt.type] || { color: '#6B7280', icon: '•', label: evt.type };
+                  const isLastEvt = idx === agentEvents.length - 1;
+                  return (
+                    <Box
+                      key={`${evt.type}-${idx}`}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        pl: 0.5,
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: 10,
+                          color: cfg.color,
+                          fontWeight: 600,
+                          minWidth: 14,
+                          textAlign: 'center',
+                        }}
+                      >
+                        {cfg.icon}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: 10,
+                          color: isLastEvt && isStreaming ? gs.textPrimary : gs.textMuted,
+                          fontWeight: isLastEvt && isStreaming ? 500 : 400,
+                        }}
+                      >
+                        {cfg.label}
+                      </Typography>
+                      {/* 事件详情 */}
+                      {evt.type === 'agent_start' && (
+                        <Typography sx={{ fontSize: 10, color: gs.textDisabled }}>
+                          {evt.agentRole}{evt.subTaskId ? ` · ${evt.subTaskId.slice(0, 8)}` : ''}
+                        </Typography>
+                      )}
+                      {evt.type === 'agent_end' && (
+                        <Typography sx={{ fontSize: 10, color: evt.status === 'success' ? '#22C55E' : evt.status === 'failed' ? '#EF4444' : '#F59E0B' }}>
+                          {evt.status === 'success' ? '成功' : evt.status === 'failed' ? '失败' : '超时'}
+                          {evt.duration ? ` · ${(evt.duration / 1000).toFixed(1)}s` : ''}
+                        </Typography>
+                      )}
+                      {evt.type === 'subtask_create' && (
+                        <Typography sx={{ fontSize: 10, color: gs.textDisabled, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
+                          {evt.description}
+                        </Typography>
+                      )}
+                      {evt.type === 'subtask_assign' && (
+                        <Typography sx={{ fontSize: 10, color: gs.textDisabled }}>
+                          {evt.agentRole}
+                        </Typography>
+                      )}
+                      {evt.type === 'subtask_complete' && (
+                        <Typography sx={{ fontSize: 10, color: evt.status === 'completed' ? '#22C55E' : '#EF4444' }}>
+                          {evt.status === 'completed' ? '已完成' : '失败'}
+                        </Typography>
+                      )}
+                      {evt.type === 'reflect' && (
+                        <Typography sx={{ fontSize: 10, color: gs.textDisabled, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
+                          {evt.insight}
+                        </Typography>
+                      )}
+                      {evt.type === 'plan' && (
+                        <Typography sx={{ fontSize: 10, color: gs.textDisabled }}>
+                          {evt.steps.length} 步 · {evt.intent.substring(0, 30)}{evt.intent.length > 30 ? '...' : ''}
+                        </Typography>
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
+            </TimelineNode>
+          )}
+
           {/* 如果没有任何子节点，显示完成节点 */}
-          {currentPhase === 'done' && !executionPlan && !observerReflections?.length && !reflectionConfidence && !toolCalls?.length && (
+          {currentPhase === 'done' && !executionPlan && !observerReflections?.length && !reflectionConfidence && !toolCalls?.length && !agentEvents?.length && (
             <TimelineNode
               color={PHASE_COLORS.done.color}
               icon={PHASE_COLORS.done.icon}
