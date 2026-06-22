@@ -1066,6 +1066,50 @@ export async function callAIModelStream(
         throw error;
       }
 
+      // v3.1.1: 400 tool_calls 错误 — 最终安全网重试
+      // 尽管 sanitizeToolMessages + validateToolMessages 已做 6 层防护，
+      // 某些 API 实现可能对 tool_calls 序列有更严格的要求
+      // 策略：strip 所有 tool_calls/tool 消息，将 assistant(tool_calls) 降级为普通文本
+      if (error instanceof AIAPIError && error.statusCode === 400 &&
+          error.responseBody && error.responseBody.includes('tool_calls')) {
+        logger.error('[AIClient] 400 tool_calls 错误，尝试 strip 所有 tool_calls 后重试...');
+
+        // Strip 所有 tool_calls 和 tool 消息
+        const strippedMessages = messages.map(m => {
+          if (m.role === 'assistant' && m.tool_calls) {
+            const { tool_calls: _stripped, ...rest } = m;
+            return { ...rest, content: m.content || '(tool calls stripped)' };
+          }
+          return m;
+        }).filter(m => m.role !== 'tool') as typeof messages;
+
+        // 重新 sanitize
+        const retryMessages = sanitizeToolMessages(strippedMessages as Parameters<typeof sanitizeToolMessages>[0]);
+
+        try {
+          if (provider === 'anthropic') {
+            return await callAnthropicStream(
+              apiEndpoint, apiKey, modelId,
+              retryMessages as Array<{ role: string; content: string | OpenAIVisionContent[]; tool_calls?: ToolCall[]; tool_call_id?: string }>,
+              temperature, maxTokens, onChunk, signal,
+              onThinking, tools, onToolCall, reasoningEffort,
+              capabilities,
+            );
+          }
+          validateToolMessages(retryMessages);
+          return await callOpenAICompatibleStream(
+            apiEndpoint, apiKey, modelId,
+            retryMessages as Array<{ role: string; content: string | OpenAIVisionContent[] }>,
+            temperature, maxTokens, onChunk, signal,
+            onThinking, undefined, onToolCall, reasoningEffort,
+            capabilities,
+          );
+        } catch (retryErr) {
+          logger.error('[AIClient] strip tool_calls 重试也失败:', retryErr instanceof Error ? retryErr.message : String(retryErr));
+          throw retryErr;
+        }
+      }
+
       // v1.5.116: 速率限制时自动切换备用 Key
       if (error instanceof AIAPIError && error.category === 'rate_limit' && onRateLimit) {
         try {

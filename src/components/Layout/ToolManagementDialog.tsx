@@ -4,10 +4,10 @@
  * 左侧：页面标签页栏（工具查看 / 白名单 / API模板 / API凭证 / API历史 / 浏览器）
  * 右侧：对应页面内容
  *
- * 参照 AISettingsDialog 的标签页交互模式。
+ * 使用 SettingsDialogShell 统一弹窗外壳，与 AISettingsDialog 共享样式。
  */
 
-import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import {
   Box,
   Typography,
@@ -23,6 +23,7 @@ import {
   LinearProgress,
   TextField,
   InputAdornment,
+  useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -31,10 +32,6 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
-import AppsIcon from '@mui/icons-material/Apps';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import BlockIcon from '@mui/icons-material/Block';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import VpnLockIcon from '@mui/icons-material/VpnLock';
 import ApiIcon from '@mui/icons-material/Api';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
@@ -51,6 +48,8 @@ import {
 } from '../../stores/pluginStore';
 import type { PluginInfo } from '../../services/plugins/api';
 import { useToast } from '../../contexts/ToastContext';
+import { getGrayScale, getSemanticColors } from '../../constants/theme';
+import SettingsDialogShell, { type TabDef } from '../shared/SettingsDialogShell';
 
 // ---- Lazy page imports ----
 const ApiDomainWhitelistPage = lazy(() => import('../../pages/ApiDomainWhitelistPage'));
@@ -70,13 +69,7 @@ export interface ToolManagementDialogProps {
 
 type PageTab = 'tools' | 'whitelist' | 'templates' | 'credentials' | 'history' | 'browser';
 
-interface PageTabDef {
-  key: PageTab;
-  label: string;
-  icon: React.ReactNode;
-}
-
-const PAGE_TABS: PageTabDef[] = [
+const PAGE_TABS: TabDef[] = [
   { key: 'tools',       label: '工具查看', icon: <ExtensionOutlinedIcon sx={{ fontSize: 18 }} /> },
   { key: 'whitelist',   label: '白名单',   icon: <VpnLockIcon sx={{ fontSize: 18 }} /> },
   { key: 'templates',   label: 'API 模板', icon: <ApiIcon sx={{ fontSize: 18 }} /> },
@@ -101,15 +94,18 @@ const PLUGIN_FILTERS: PluginFilterDef[] = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  状态色配置                                                         */
+/*  状态色配置 — 使用语义化颜色                                         */
 /* ------------------------------------------------------------------ */
 
-const STATUS_COLORS: Record<string, { bg: string; color: string; label: string }> = {
-  installed: { bg: '#F3F4F6', color: '#6B7280', label: '已安装' },
-  enabled:   { bg: '#F0FDF4', color: '#059669', label: '已启用' },
-  disabled:  { bg: '#FEF3C7', color: '#D97706', label: '已禁用' },
-  error:     { bg: '#FEE2E2', color: '#DC2626', label: '异常' },
-};
+function getStatusColors(isDark: boolean) {
+  const sc = getSemanticColors(isDark);
+  return {
+    installed: { bg: isDark ? '#252525' : '#F3F4F6', color: isDark ? '#9CA3AF' : '#6B7280', label: '已安装' },
+    enabled:   { bg: sc.successBg, color: sc.success, label: '已启用' },
+    disabled:  { bg: sc.warningBg, color: sc.warning, label: '已禁用' },
+    error:     { bg: sc.errorBg, color: sc.error, label: '异常' },
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /*  添加/安装 Dialog                                                   */
@@ -121,18 +117,28 @@ const InstallDialog: React.FC<{
   onInstall: (file: File) => void;
   uploading: boolean;
 }> = ({ open, onClose, onInstall, uploading }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          overflow: 'hidden',
+          backgroundColor: gs.bgPanel,
+        },
+      }}
     >
       <Box sx={{ px: 3, pt: 2.5, pb: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontSize: '1rem', fontWeight: 600 }}>安装插件（.zip）</Typography>
-          <IconButton size="small" onClick={onClose} sx={{ color: '#6B7280' }}>
+          <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: gs.textPrimary }}>安装插件（.zip）</Typography>
+          <IconButton size="small" onClick={onClose} sx={{ color: gs.textMuted }}>
             <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Box>
@@ -148,9 +154,9 @@ const InstallDialog: React.FC<{
             textTransform: 'none',
             py: 1.5,
             borderStyle: 'dashed',
-            borderColor: '#D1D5DB',
-            color: '#374151',
-            '&:hover': { borderColor: '#6B7280', backgroundColor: '#F9FAFB' },
+            borderColor: gs.borderDarker,
+            color: gs.textSecondary,
+            '&:hover': { borderColor: gs.textMuted, backgroundColor: gs.bgHover },
           }}
         >
           {uploading ? '安装中...' : '选择 .zip 文件'}
@@ -170,6 +176,11 @@ const InstallDialog: React.FC<{
 /* ------------------------------------------------------------------ */
 
 const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClose }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+  const statusColors = getStatusColors(isDark);
+
   // ---- 页面标签 ----
   const [activePage, setActivePage] = useState<PageTab>('tools');
 
@@ -358,7 +369,7 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
       <Box
         sx={{
           width: 272,
-          borderRight: '1px solid #EDEDED',
+          borderRight: `1px solid ${gs.border}`,
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0,
@@ -375,7 +386,7 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ fontSize: 14, color: '#9CA3AF' }} />
+                  <SearchIcon sx={{ fontSize: 14, color: gs.textDisabled }} />
                 </InputAdornment>
               ),
             }}
@@ -384,18 +395,18 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
               '& .MuiOutlinedInput-root': {
                 borderRadius: '6px',
                 fontSize: '0.75rem',
-                backgroundColor: '#fff',
-                '& fieldset': { borderColor: '#E5E7EB' },
+                backgroundColor: gs.bgInput,
+                '& fieldset': { borderColor: gs.border },
               },
             }}
           />
           <Tooltip title="刷新">
-            <IconButton size="small" onClick={handleRefresh} disabled={loading} sx={{ color: '#6B7280' }}>
+            <IconButton size="small" onClick={handleRefresh} disabled={loading} sx={{ color: gs.textMuted }}>
               <RefreshIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="安装插件">
-            <IconButton size="small" onClick={() => setInstallOpen(true)} sx={{ color: '#6B7280' }}>
+            <IconButton size="small" onClick={() => setInstallOpen(true)} sx={{ color: gs.textMuted }}>
               <AddIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>
@@ -415,10 +426,10 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
                 height: 22,
                 cursor: 'pointer',
                 backgroundColor: activeFilter === f.key ? '#7C3AED' : 'transparent',
-                color: activeFilter === f.key ? '#fff' : '#6B7280',
-                borderColor: '#E5E7EB',
+                color: activeFilter === f.key ? '#fff' : gs.textMuted,
+                borderColor: gs.border,
                 '&:hover': {
-                  backgroundColor: activeFilter === f.key ? '#6D28D9' : '#F3F4F6',
+                  backgroundColor: activeFilter === f.key ? '#6D28D9' : gs.bgHover,
                 },
                 '& .MuiChip-label': { px: 0.75 },
               }}
@@ -426,14 +437,14 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
           ))}
         </Box>
 
-        <Divider sx={{ borderColor: '#EDEDED' }} />
+        <Divider sx={{ borderColor: gs.border }} />
 
         {/* 工具列表 */}
         <Box sx={{ flex: 1, overflow: 'auto' }}>
           {loading && tools.length === 0 ? (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6, gap: 1 }}>
               <CircularProgress size={16} />
-              <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>加载中...</Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>加载中...</Typography>
             </Box>
           ) : error && tools.length === 0 ? (
             <Box sx={{ p: 2 }}>
@@ -441,7 +452,7 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
             </Box>
           ) : filteredTools.length === 0 ? (
             <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography sx={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+              <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled }}>
                 {searchQuery ? '未找到匹配的工具' : '暂无工具'}
               </Typography>
             </Box>
@@ -449,7 +460,7 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
             <Box>
               {filteredTools.map((tool) => {
                 const isSelected = selectedToolId === tool.id;
-                const statusCfg = STATUS_COLORS[tool.status] || STATUS_COLORS.installed;
+                const statusCfg = statusColors[tool.status] || statusColors.installed;
                 return (
                   <Box
                     key={tool.id}
@@ -457,20 +468,20 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
                     sx={{
                       px: 1.5,
                       py: 1,
-                      borderBottom: '1px solid #F3F4F6',
+                      borderBottom: `1px solid ${gs.borderLighter}`,
                       cursor: 'pointer',
-                      backgroundColor: isSelected ? '#EDE9FE' : 'transparent',
-                      '&:hover': { backgroundColor: isSelected ? '#EDE9FE' : '#F5F5F5' },
+                      backgroundColor: isSelected ? (isDark ? 'rgba(124,58,237,0.15)' : '#EDE9FE') : 'transparent',
+                      '&:hover': { backgroundColor: isSelected ? (isDark ? 'rgba(124,58,237,0.15)' : '#EDE9FE') : gs.bgHover },
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
-                        <ExtensionOutlinedIcon sx={{ fontSize: 14, color: '#6B7280', flexShrink: 0 }} />
+                        <ExtensionOutlinedIcon sx={{ fontSize: 14, color: gs.textMuted, flexShrink: 0 }} />
                         <Typography
                           sx={{
                             fontSize: '0.75rem',
                             fontWeight: isSelected ? 600 : 400,
-                            color: '#111827',
+                            color: gs.textPrimary,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -497,7 +508,7 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
                     <Typography
                       sx={{
                         fontSize: '0.6875rem',
-                        color: '#9CA3AF',
+                        color: gs.textDisabled,
                         mt: 0.25,
                         ml: 2.75,
                         overflow: 'hidden',
@@ -528,8 +539,8 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
               gap: 1,
             }}
           >
-            <ExtensionOutlinedIcon sx={{ fontSize: 40, color: '#D1D5DB' }} />
-            <Typography sx={{ fontSize: '0.8125rem', color: '#9CA3AF' }}>
+            <ExtensionOutlinedIcon sx={{ fontSize: 40, color: gs.borderDarker }} />
+            <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
               请选择工具查看详情
             </Typography>
           </Box>
@@ -540,10 +551,10 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                 <ExtensionOutlinedIcon sx={{ fontSize: 22, color: '#7C3AED' }} />
                 <Box>
-                  <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: '#111827' }}>
+                  <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: gs.textPrimary }}>
                     {selectedTool.name}
                   </Typography>
-                  <Typography sx={{ fontSize: '0.6875rem', color: '#6B7280', mt: 0.25 }}>
+                  <Typography sx={{ fontSize: '0.6875rem', color: gs.textMuted, mt: 0.25 }}>
                     ID: {selectedTool.id} · v{selectedTool.version}
                   </Typography>
                 </Box>
@@ -553,7 +564,7 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
                   <IconButton
                     size="small"
                     onClick={() => handleUninstall(selectedTool)}
-                    sx={{ color: '#EF4444', '&:hover': { backgroundColor: '#FEE2E2' } }}
+                    sx={{ color: '#EF4444', '&:hover': { backgroundColor: isDark ? 'rgba(239,68,68,0.15)' : '#FEE2E2' } }}
                   >
                     <DeleteOutlineIcon sx={{ fontSize: 16 }} />
                   </IconButton>
@@ -561,42 +572,42 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
               </Box>
             </Box>
 
-            <Divider sx={{ borderColor: '#E5E7EB', mb: 2 }} />
+            <Divider sx={{ borderColor: gs.border, mb: 2 }} />
 
             {/* 详情字段 */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
               <Box>
-                <Typography sx={{ fontSize: '0.6875rem', fontWeight: 500, color: '#6B7280', mb: 0.375 }}>
+                <Typography sx={{ fontSize: '0.6875rem', fontWeight: 500, color: gs.textMuted, mb: 0.375 }}>
                   状态
                 </Typography>
                 <Chip
-                  label={STATUS_COLORS[selectedTool.status]?.label || selectedTool.status}
+                  label={statusColors[selectedTool.status]?.label || selectedTool.status}
                   size="small"
                   sx={{
                     fontSize: '0.6875rem',
                     height: 22,
-                    backgroundColor: STATUS_COLORS[selectedTool.status]?.bg || '#F3F4F6',
-                    color: STATUS_COLORS[selectedTool.status]?.color || '#6B7280',
+                    backgroundColor: statusColors[selectedTool.status]?.bg || gs.bgHover,
+                    color: statusColors[selectedTool.status]?.color || gs.textMuted,
                     fontWeight: 500,
                   }}
                 />
               </Box>
 
               <Box>
-                <Typography sx={{ fontSize: '0.6875rem', fontWeight: 500, color: '#6B7280', mb: 0.375 }}>
+                <Typography sx={{ fontSize: '0.6875rem', fontWeight: 500, color: gs.textMuted, mb: 0.375 }}>
                   描述
                 </Typography>
-                <Typography sx={{ fontSize: '0.75rem', color: '#374151', lineHeight: 1.55 }}>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary, lineHeight: 1.55 }}>
                   {selectedTool.description || '暂无描述'}
                 </Typography>
               </Box>
 
               {selectedTool.author && (
                 <Box>
-                  <Typography sx={{ fontSize: '0.6875rem', fontWeight: 500, color: '#6B7280', mb: 0.375 }}>
+                  <Typography sx={{ fontSize: '0.6875rem', fontWeight: 500, color: gs.textMuted, mb: 0.375 }}>
                     作者
                   </Typography>
-                  <Typography sx={{ fontSize: '0.75rem', color: '#374151' }}>
+                  <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary }}>
                     {selectedTool.author}
                   </Typography>
                 </Box>
@@ -604,10 +615,10 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
 
               {selectedTool.installedPath && (
                 <Box>
-                  <Typography sx={{ fontSize: '0.6875rem', fontWeight: 500, color: '#6B7280', mb: 0.375 }}>
+                  <Typography sx={{ fontSize: '0.6875rem', fontWeight: 500, color: gs.textMuted, mb: 0.375 }}>
                     安装路径
                   </Typography>
-                  <Typography sx={{ fontSize: '0.6875rem', color: '#9CA3AF', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  <Typography sx={{ fontSize: '0.6875rem', color: gs.textDisabled, fontFamily: 'monospace', wordBreak: 'break-all' }}>
                     {selectedTool.installedPath}
                   </Typography>
                 </Box>
@@ -616,20 +627,20 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
               <Box sx={{ display: 'flex', gap: 4 }}>
                 {selectedTool.installedAt && (
                   <Box>
-                    <Typography sx={{ fontSize: '0.6875rem', fontWeight: 500, color: '#6B7280', mb: 0.375 }}>
+                    <Typography sx={{ fontSize: '0.6875rem', fontWeight: 500, color: gs.textMuted, mb: 0.375 }}>
                       安装时间
                     </Typography>
-                    <Typography sx={{ fontSize: '0.75rem', color: '#374151' }}>
+                    <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary }}>
                       {new Date(selectedTool.installedAt).toLocaleString('zh-CN')}
                     </Typography>
                   </Box>
                 )}
                 {selectedTool.updatedAt && (
                   <Box>
-                    <Typography sx={{ fontSize: '0.6875rem', fontWeight: 500, color: '#6B7280', mb: 0.375 }}>
+                    <Typography sx={{ fontSize: '0.6875rem', fontWeight: 500, color: gs.textMuted, mb: 0.375 }}>
                       更新时间
                     </Typography>
-                    <Typography sx={{ fontSize: '0.75rem', color: '#374151' }}>
+                    <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary }}>
                       {new Date(selectedTool.updatedAt).toLocaleString('zh-CN')}
                     </Typography>
                   </Box>
@@ -652,7 +663,7 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
                     '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#7C3AED' },
                   }}
                 />
-                <Typography sx={{ fontSize: '0.75rem', color: '#374151' }}>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary }}>
                   {selectedTool.status === 'enabled' ? '已启用' : '已禁用'}
                 </Typography>
               </Box>
@@ -667,93 +678,22 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
 
   return (
     <>
-      <Dialog
+      <SettingsDialogShell
         open={open}
         onClose={onClose}
-        maxWidth={false}
-        PaperProps={{
-          sx: {
-            borderRadius: 2.5,
-            boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
-            width: 880,
-            height: 580,
-            maxHeight: 'none',
-            margin: 'auto',
-            overflow: 'hidden',
-          },
-        }}
+        tabs={PAGE_TABS}
+        activeTab={activePage}
+        onTabChange={(key) => setActivePage(key as PageTab)}
+        width={880}
+        height={580}
+        sidebarWidth={128}
+        iconSize={18}
+        fontSize="0.75rem"
+        contentPadding={{ px: 0, pt: 0, pb: 0 }}
+        contentSelfOverflow
       >
-        {/* 关闭按钮 */}
-        <IconButton
-          size="small"
-          onClick={onClose}
-          sx={{
-            position: 'absolute',
-            top: 14,
-            right: 14,
-            zIndex: 10,
-            color: '#6B7280',
-            '&:hover': { color: '#111827', backgroundColor: '#F3F4F6' },
-          }}
-        >
-          <CloseIcon sx={{ fontSize: 20 }} />
-        </IconButton>
-
-        <Box sx={{ display: 'flex', height: '100%', pt: 0.5 }}>
-          {/* ========== 左侧：页面标签页栏 ========== */}
-          <Box
-            sx={{
-              width: 128,
-              borderRight: '1px solid #EDEDED',
-              backgroundColor: '#F5F5F5',
-              py: 2,
-              px: 0.75,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 0.125,
-              flexShrink: 0,
-            }}
-          >
-            {PAGE_TABS.map(tab => {
-              const isSelected = activePage === tab.key;
-              return (
-                <Box
-                  key={tab.key}
-                  onClick={() => setActivePage(tab.key)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    px: 1,
-                    py: 0.875,
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    transition: 'all 0.12s ease',
-                    backgroundColor: isSelected ? '#ECECEC' : 'transparent',
-                    color: isSelected ? '#1F2937' : '#6B7280',
-                    '&:hover': {
-                      backgroundColor: isSelected ? '#ECECEC' : '#EBEBEB',
-                      color: '#1F2937',
-                    },
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', opacity: isSelected ? 1 : 0.5 }}>
-                    {tab.icon}
-                  </Box>
-                  <Typography sx={{ fontSize: '0.75rem', fontWeight: isSelected ? 500 : 400, letterSpacing: '-0.01em' }}>
-                    {tab.label}
-                  </Typography>
-                </Box>
-              );
-            })}
-          </Box>
-
-          {/* ========== 右侧：页面内容 ========== */}
-          <Box sx={{ flex: 1, display: 'flex', minWidth: 0 }}>
-            {renderPageContent()}
-          </Box>
-        </Box>
-      </Dialog>
+        {renderPageContent()}
+      </SettingsDialogShell>
 
       {/* 安装弹窗 */}
       <InstallDialog

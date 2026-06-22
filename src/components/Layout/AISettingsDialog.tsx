@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
 import {
-  Box, Typography, IconButton,
-  Dialog, Alert, Button, CircularProgress, useTheme,
+  Box, Typography, Alert, Button, CircularProgress, useTheme,
   ToggleButtonGroup, ToggleButton,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import LinkIcon from '@mui/icons-material/Link';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import PsychologyIcon from '@mui/icons-material/Psychology';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import { useModels } from '../../contexts/ModelsContext';
 import { getGrayScale } from '../../constants/theme';
 import ModelManager from '../shared/ModelManager';
+import SettingsDialogShell, { type TabDef } from '../shared/SettingsDialogShell';
 import SystemAuthBanner from './SystemAuthBanner';
 import MCPSettingsTab from './MCPSettingsTab';
 import { useAiEngineSettings, type ExecutionMode, type QueueMode } from '../../contexts/AppSettingsContext';
@@ -23,12 +22,6 @@ import { useAiEngineSettings, type ExecutionMode, type QueueMode } from '../../c
 /*  Sidebar tabs                                                        */
 /* ------------------------------------------------------------------ */
 type AITab = 'mcp' | 'model' | 'chat' | 'auth';
-
-interface TabDef {
-  key: AITab;
-  label: string;
-  icon: React.ReactNode;
-}
 
 const SIDEBAR_TABS: TabDef[] = [
   { key: 'mcp', label: 'MCP', icon: <LinkIcon sx={{ fontSize: 17 }} /> },
@@ -69,133 +62,58 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
   const { models: modelList, defaultModelId, updateModels, isLoading, error, reload } = useModels();
 
   return (
-    <Dialog
+    <SettingsDialogShell
       open={open}
       onClose={onClose}
-      maxWidth={false}
-      PaperProps={{
-        sx: {
-          borderRadius: 2.5,
-          boxShadow: isDark ? '0 24px 64px rgba(0,0,0,0.5)' : '0 24px 64px rgba(0,0,0,0.18)',
-          width: 960,
-          height: 620,
-          maxHeight: 'none',
-          margin: 'auto',
-          backgroundColor: gs.bgPanel,
-          overflow: 'hidden',
-        },
-      }}
+      tabs={SIDEBAR_TABS}
+      activeTab={activeTab}
+      onTabChange={(key) => setActiveTab(key as AITab)}
     >
-      {/* Close button — absolute top-right */}
-      <IconButton
-        size="small"
-        onClick={onClose}
-        sx={{
-          position: 'absolute',
-          top: 14,
-          right: 14,
-          zIndex: 10,
-          color: gs.textMuted,
-          '&:hover': { color: gs.textPrimary, backgroundColor: gs.bgHover },
-        }}
-      >
-        <CloseIcon sx={{ fontSize: 20 }} />
-      </IconButton>
-
-      <Box sx={{ display: 'flex', height: '100%' }}>
-        {/* Left sidebar — strict match to screenshot */}
-        <Box
-          sx={{
-            width: 156,
-            borderRight: `1px solid ${gs.border}`,
-            backgroundColor: gs.bgSidebar,
-            py: 2,
-            px: 1.25,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 0.125,
-            flexShrink: 0,
-          }}
-        >
-          {SIDEBAR_TABS.map(tab => {
-            const isSelected = activeTab === tab.key;
-            return (
-              <Box
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.25,
-                  px: 1.25,
-                  py: 1,
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 0.12s ease',
-                  backgroundColor: isSelected ? gs.bgActive : 'transparent',
-                  color: isSelected ? gs.textPrimary : gs.textMuted,
-                  '&:hover': {
-                    backgroundColor: isSelected ? gs.bgActive : gs.bgHover,
-                    color: gs.textPrimary,
-                  },
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', opacity: isSelected ? 1 : 0.55 }}>{tab.icon}</Box>
-                <Typography sx={{ fontSize: '0.8125rem', fontWeight: isSelected ? 500 : 400, letterSpacing: '-0.01em' }}>{tab.label}</Typography>
-              </Box>
-            );
-          })}
-        </Box>
-
-        {/* Right content area */}
-        <Box sx={{ flex: 1, px: 3, pt: 3, pr: 3, pb: 4, overflow: 'hidden', minWidth: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
-          {activeTab === 'model' && (
-            <>
-              <SystemAuthBanner onOpenSettings={onOpenSystemAuthorization} />
-              {isLoading && (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, gap: 1 }}>
-                  <CircularProgress size={20} />
-                  <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted }}>正在加载模型配置...</Typography>
-                </Box>
-              )}
-              {error && (
-                <Alert
-                  severity="error"
-                  sx={{ mb: 2, borderRadius: 1.5 }}
-                  action={
-                    <Button color="inherit" size="small" startIcon={<RefreshIcon />} onClick={() => reload()}>
-                      重试
-                    </Button>
-                  }
-                >
-                  加载模型配置失败：{error}
-                </Alert>
-              )}
-              {!isLoading && !error && (
-                <ModelManager
-                  models={modelList}
-                  defaultModelId={defaultModelId}
-                  variant="table"
-                  onChange={(models, newDefaultModelId) => updateModels(models, newDefaultModelId)}
-                />
-              )}
-            </>
-          )}
-          {activeTab === 'mcp' && <MCPSettingsTab />}
-          {activeTab === 'chat' && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>对话引擎</Typography>
-              <Typography sx={{ fontSize: '0.8rem', color: gs.textSecondary, mb: 3 }}>
-                选择 AI 工具执行的策略模式
-              </Typography>
-              <ExecutionModeSelector />
-              <QueueModeSelector />
+      {activeTab === 'model' && (
+        <>
+          <SystemAuthBanner onOpenSettings={onOpenSystemAuthorization} />
+          {isLoading && (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, gap: 1 }}>
+              <CircularProgress size={20} />
+              <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted }}>正在加载模型配置...</Typography>
             </Box>
           )}
-          {activeTab === 'auth' && <PlaceholderTab title="外部应用授权" description="外部应用授权管理功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
+          {error && (
+            <Alert
+              severity="error"
+              sx={{ mb: 2, borderRadius: 1.5 }}
+              action={
+                <Button color="inherit" size="small" startIcon={<RefreshIcon />} onClick={() => reload()}>
+                  重试
+                </Button>
+              }
+            >
+              加载模型配置失败：{error}
+            </Alert>
+          )}
+          {!isLoading && !error && (
+            <ModelManager
+              models={modelList}
+              defaultModelId={defaultModelId}
+              variant="table"
+              onChange={(models, newDefaultModelId) => updateModels(models, newDefaultModelId)}
+            />
+          )}
+        </>
+      )}
+      {activeTab === 'mcp' && <MCPSettingsTab />}
+      {activeTab === 'chat' && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>对话引擎</Typography>
+          <Typography sx={{ fontSize: '0.8rem', color: gs.textSecondary, mb: 3 }}>
+            选择 AI 工具执行的策略模式
+          </Typography>
+          <ExecutionModeSelector />
+          <QueueModeSelector />
         </Box>
-      </Box>
-    </Dialog>
+      )}
+      {activeTab === 'auth' && <PlaceholderTab title="外部应用授权" description="外部应用授权管理功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
+    </SettingsDialogShell>
   );
 };
 

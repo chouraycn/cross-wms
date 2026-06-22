@@ -67,6 +67,8 @@ async function executeFromQueue(
 
   let apiMessages: Array<Record<string, any>> = [];
   let abortController: AbortController | null = null;
+  // v3.1.1: 提到 try 外声明，使 catch 块也能访问并清理
+  let keepAliveTimer: NodeJS.Timeout | null = null;
 
   try {
     const modelConfig = params.modelsConfig.models.find(m => m.id === params.model);
@@ -242,7 +244,6 @@ async function executeFromQueue(
 
     initSessionApprovedTools(sessionId);
 
-    let keepAliveTimer: NodeJS.Timeout | null = null;
     const thinkingStartRef = { value: Date.now() };
     // v3.0.0: 缩短 keep_alive 间隔 15s → 5s，让用户更快感知连接活跃
     keepAliveTimer = setInterval(() => {
@@ -445,6 +446,9 @@ async function executeFromQueue(
   } catch (error) {
     logger.error('[MessageQueue executeFromQueue] 执行失败:', error);
 
+    // v3.1.1: 确保 keepAliveTimer 被清理（防止 error 发生在 line 426 之前时定时器泄漏）
+    if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
+
     const isModelUnsupported =
       error instanceof AIAPIError && error.category === 'model_not_supported';
     const isRecoverable = isModelUnsupported || (
@@ -550,6 +554,8 @@ export async function handleChat(req: import('express').Request, res: import('ex
   let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: any[]; tool_call_id?: string }> = [];
   let sessionApprovedSet: Set<string> = new Set();
   let abortController: AbortController = new AbortController();
+  // v3.1.1: 提到 try 外声明，使 catch 块也能访问并清理
+  let keepAliveTimer: NodeJS.Timeout | null = null;
 
   try {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -715,7 +721,6 @@ export async function handleChat(req: import('express').Request, res: import('ex
     let hasThinking = false;
     let thinkingContent = '';
     let thinkingChunkCount = 0;
-    let keepAliveTimer: NodeJS.Timeout | null = null;
     let usageData: { promptTokens?: number; completionTokens?: number; thinkingTokens?: number; totalTokens?: number } | undefined;
     let toolCallsJson: string | undefined;
     const modelConfig = modelsConfig.models.find((m) => m.id === effectiveModel);
@@ -1431,11 +1436,24 @@ export async function handleChat(req: import('express').Request, res: import('ex
     }
   } catch (error) {
     logger.error('Chat API error:', error);
+    logger.error('[Chat API] Stack trace:', error instanceof Error ? error.stack : 'N/A');
+    // v3.1.1: 确保 keepAliveTimer 被清理（防止 error 发生在 innermost finally 之前时定时器泄漏）
+    if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
     if (!res.headersSent) {
       res.status(500).json({ error: 'Internal server error' });
     } else {
-      res.write(`data: ${JSON.stringify({ type: 'error', message: '服务器内部错误' })}\n\n`);
-      res.end();
+      // v3.1.1: 外层 catch 始终发送 error + done 事件，确保前端收到后停止 thinking 状态
+      // 之前只发 error 不发 done，若 res.write() 抛异常则前端永远收不到结束信号 → 卡在思考中
+      try {
+        const errCode = 'SERVER_ERROR';
+        const errMsg = error instanceof Error ? error.message : '服务器内部错误';
+        res.write(`data: ${JSON.stringify({ type: 'error', code: errCode, message: errMsg })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'done', errorCode: errCode, errorMessage: errMsg, thinkingDuration: 0 })}\n\n`);
+        await new Promise(r => setTimeout(r, 200));
+      } catch {
+        // 响应流可能已关闭，忽略
+      }
+      try { res.end(); } catch { /* ignore */ }
     }
   }
 }

@@ -110,6 +110,14 @@
 - **清除缓存**：`rm -rf ~/Library/Caches/com.cdf.knowclow.desktop/WebKit/NetworkCache/`
 - **教训**：pywebview 本地 HTTP 服务器必须禁用缓存，否则版本升级后 WKWebView 不刷新
 
+## SSE keepAliveTimer 双路径修复 v1.5.206
+- **根因**: `chatService.ts` 有两条路径 — `executeFromQueue`(队列) 和 `handleChat`(主/默认)
+  - `executeFromQueue` line 248 启动了 keepAliveTimer (5s 间隔)
+  - `handleChat` line 718 声明了 keepAliveTimer 但**从未 setInterval** — 遗漏！
+- **后果**: auto 模式走主路径，推理模型首 token 20-30s，前端 30s 心跳超时 → "SSE 连接超时"
+- **修复**: 主路径 init 后启动 keepAliveTimer + 前端心跳 30s→60s + 错误路径设 thinkingDone
+- **教训**: 两条代码路径需要完全对齐心跳/清理逻辑，否则非默认路径会有静默遗漏
+
 ## fsevents 打包修复 v1.5.201
 - fsevents 2.3.3 自带预编译 `fsevents.node`，**不含** `binding.gyp`
 - npm 默认触发 `node-gyp rebuild` → binding.gyp not found → 编译失败

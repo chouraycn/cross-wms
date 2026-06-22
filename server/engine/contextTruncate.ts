@@ -306,8 +306,54 @@ export function sanitizeToolMessages(messages: ApiMessage[]): ApiMessage[] {
     }
   }
 
+  // ---- Pass 3.5: 重排序 — 确保 tool 消息紧跟 assistant(tool_calls) ----
+  // OpenAI API 要求 tool 消息必须立即跟随 assistant(tool_calls)，中间不能有其他消息类型
+  // 如果 system/user 消息被插入到 assistant(tool_calls) 和 tool 消息之间，API 返回 400
+  const reordered: ApiMessage[] = [];
+  for (let i = 0; i < validated.length; i++) {
+    const msg = validated[i];
+    reordered.push(msg);
+
+    if (hasToolCalls(msg)) {
+      // 收集这个 assistant(tool_calls) 的所有 tool 消息（可能在后面的非 tool 消息之后）
+      const expectedIds = new Set<string>();
+      for (const tc of msg.tool_calls!) {
+        const id = (tc as { id?: string }).id;
+        if (id) expectedIds.add(id);
+      }
+
+      // 向前扫描，收集属于这个 assistant 的 tool 消息，跳过非 tool 消息
+      const collectedTools: ApiMessage[] = [];
+      const remainingMsgs: ApiMessage[] = [];
+      let scanIdx = i + 1;
+      while (scanIdx < validated.length) {
+        const nextMsg = validated[scanIdx];
+        if (nextMsg.role === 'assistant') break; // 到达下一个 assistant，停止
+        if (nextMsg.role === 'tool' && nextMsg.tool_call_id && expectedIds.has(nextMsg.tool_call_id)) {
+          collectedTools.push(nextMsg);
+          expectedIds.delete(nextMsg.tool_call_id);
+        } else {
+          // 非 tool 消息或属于其他 assistant 的 tool 消息 — 保留到 remaining
+          remainingMsgs.push(nextMsg);
+        }
+        scanIdx++;
+      }
+
+      // 先推送所有 tool 消息（紧跟 assistant(tool_calls)）
+      for (const toolMsg of collectedTools) {
+        reordered.push(toolMsg);
+      }
+      // 再推送其他消息（system/user 等）
+      for (const remainingMsg of remainingMsgs) {
+        reordered.push(remainingMsg);
+      }
+
+      i = scanIdx - 1; // 跳过已处理的消息
+    }
+  }
+
   // ---- Pass 4: content 规范化 — 确保所有 tool 消息的 content 是 string ----
-  const finalResult: ApiMessage[] = validated.map(m => {
+  const finalResult: ApiMessage[] = reordered.map(m => {
     if (m.role === 'tool' && (m.content == null || typeof m.content !== 'string')) {
       return { ...m, content: m.content == null ? '(no result)' : String(m.content) };
     }

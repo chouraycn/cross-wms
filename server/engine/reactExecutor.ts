@@ -667,6 +667,9 @@ export class ReActExecutor {
       allObservations.push(...observations);
 
       // v6.0: P1-2 结构化输出校验（对 JSON 格式的工具返回结果进行校验和修复）
+      // v3.1.1: 先做修复（修改 actionResults），再推送 tool 消息，最后注入 system 提示
+      // 之前 system 消息在 tool 消息之前注入，导致 OpenAI API 400 "insufficient tool messages"
+      const pendingSystemMessages: string[] = [];
       for (const obs of observations) {
         // 只校验 JSON 格式的返回结果
         if (obs.result && obs.result.trim().startsWith('{')) {
@@ -700,24 +703,31 @@ export class ReActExecutor {
               _reflection_hint: `返回数据结构异常: ${validation.errors.join('; ')}。建议检查参数或换用其他工具。`,
             });
 
-            // 自动重试（最多 1 次） — 注入反思提示引导下一轮重试
+            // 自动重试（最多 1 次） — 收集 system 提示，在 tool 消息之后注入
             if (this.outputValidator.canRetry(obs.toolCall.name)) {
               this.outputValidator.recordRetry(obs.toolCall.name);
-              currentMessages.push({
-                role: 'system',
-                content: `[输出校验] 工具 ${obs.toolCall.name} 返回数据结构异常，请调整参数重试。错误: ${validation.errors.join('; ')}`,
-              } as typeof currentMessages[number]);
+              pendingSystemMessages.push(
+                `[输出校验] 工具 ${obs.toolCall.name} 返回数据结构异常，请调整参数重试。错误: ${validation.errors.join('; ')}`,
+              );
             }
           }
         }
       }
 
-      // 将工具结果添加到消息上下文
+      // 将工具结果添加到消息上下文（必须在 assistant(tool_calls) 之后立即推送）
       for (const [toolCall, result] of actionResults) {
         currentMessages.push({
           role: 'tool',
           content: result,
           tool_call_id: toolCall.id,
+        } as typeof currentMessages[number]);
+      }
+
+      // v3.1.1: 在 tool 消息之后注入收集的 system 提示（不打断 tool_calls 序列）
+      for (const sysMsg of pendingSystemMessages) {
+        currentMessages.push({
+          role: 'system',
+          content: sysMsg,
         } as typeof currentMessages[number]);
       }
 
