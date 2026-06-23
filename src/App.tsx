@@ -14,6 +14,7 @@ import { ToastProvider, useToast } from './contexts/ToastContext';
 import UpdateNotification from './components/UpdateNotification';
 import WindowDragBar from './components/Layout/WindowDragBar';
 import { ChatContainer } from './components/CrossWmsChat/ChatContainer';
+import { ChatThread as CDFChatThread } from './components/CDFChat/index.js';
 import { ChatProvider, useChatSession } from './contexts/ChatContext';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
@@ -649,6 +650,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/skills/:skillId/audit" element={<SkillAuditPage />} />
 
                     <Route path="/chat" element={<ChatContainer variant="page" />} />
+                    <Route path="/chat-v2" element={<CDFChatThread />} />
                     <Route path="/warehouses" element={<WarehousesPage />} />
                     <Route path="/warehouses/:warehouseId" element={<WarehousesPage />} />
                     <Route path="/partners" element={<PartnersPage />} />
