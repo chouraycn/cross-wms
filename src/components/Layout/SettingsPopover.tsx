@@ -40,7 +40,7 @@ const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本' },
 ];
 
-const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; onOpenSystemAuthorization?: () => void }> = ({ onClose, onOpenModelManagement, onOpenToolManagement, onOpenSystemAuthorization }) => {
+const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void }> = ({ onClose, onOpenModelManagement, onOpenToolManagement }) => {
   const { settings, updateSettings, resetSettings } = useAppSettings();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -100,7 +100,6 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
                   onClick={() => {
                     if (item.key === 'modelManagement') { onClose?.(); onOpenModelManagement?.(); }
                     else if (item.key === 'toolManagement') { onClose?.(); onOpenToolManagement?.(); }
-                    else if (item.key === 'systemAuthorization') { onClose?.(); onOpenSystemAuthorization?.(); }
                     else if (!isAppearance) { setActiveTab(item.key); }
                   }}
                   sx={{
@@ -213,9 +212,9 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   );
 };
 
-export interface SettingsPopoverProps { open: boolean; onClose: () => void; anchorEl: HTMLElement | null; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; onOpenSystemAuthorization?: () => void; }
+export interface SettingsPopoverProps { open: boolean; onClose: () => void; anchorEl: HTMLElement | null; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; }
 
-const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchorEl, onOpenModelManagement, onOpenToolManagement, onOpenSystemAuthorization }) => {
+const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchorEl, onOpenModelManagement, onOpenToolManagement }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -258,7 +257,7 @@ const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchor
       }}
       hideBackdrop
     >
-      <SettingsPanel onClose={onClose} onOpenModelManagement={onOpenModelManagement} onOpenToolManagement={onOpenToolManagement} onOpenSystemAuthorization={onOpenSystemAuthorization} />
+      <SettingsPanel onClose={onClose} onOpenModelManagement={onOpenModelManagement} onOpenToolManagement={onOpenToolManagement} />
     </Popover>
   );
 };

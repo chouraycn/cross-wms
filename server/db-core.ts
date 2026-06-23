@@ -12,6 +12,11 @@ import { initMarketplaceTables } from './db-marketplace.js';
 import { initProjectTables } from './db-project.js';
 import { initPluginTables } from './db-plugin.js';
 
+import { SQLiteEngine, createSQLiteEngine } from './storage/SQLiteEngine.js';
+import { FileStorage } from './storage/FileStorage.js';
+import { migrateSessionsToJsonl } from './storage/migration.js';
+import type { IStorageEngine } from './storage/StorageEngine.js';
+
 export * from './db-wms.js';
 export * from './db-chat.js';
 export * from './db-automation.js';
@@ -49,6 +54,7 @@ const DB_PATH = path.join(DB_DIR, 'chat.db');
 const DB_BACKUP_PATH = path.join(DB_DIR, 'chat.db.bak');
 
 let db: Database.Database | null = null;
+let engine: SQLiteEngine | null = null;
 
 /** v1.9.3: 备份数据库 */
 function backupDatabase(): void {
@@ -171,6 +177,8 @@ export function initDb(): Database.Database {
 
   try {
     db = new Database(DB_PATH);
+    engine = createSQLiteEngine(DB_PATH);
+    engine.connect();
   } catch (e: any) {
     const msg = e?.message ?? String(e);
     logger.error('[DB] 数据库初始化失败:', msg);
@@ -182,6 +190,8 @@ export function initDb(): Database.Database {
           fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
           logger.info('[DB] 已从备份恢复数据库，重试初始化...');
           db = new Database(DB_PATH);
+          engine = createSQLiteEngine(DB_PATH);
+          engine.connect();
         } catch (e2: any) {
           logger.error('[DB] 从备份恢复失败:', e2?.message ?? e2);
           throw e;
@@ -261,6 +271,8 @@ export function initDb(): Database.Database {
   }
 
   // Initialize all domain tables
+  // v9.0: 从 SQLite 迁移会话到 JSONL（在重建表结构之前迁移，避免数据丢失）
+  migrateSessionsToJsonl(db);
   initChatTables(db);
   initWmsTables(db);
   initAutomationTables(db);
@@ -287,8 +299,18 @@ let dbPool: DbWorkerPool | null = null;
 /** 获取异步数据库连接池（用于高并发场景） */
 export function getDbPool(): DbWorkerPool {
   if (!dbPool) {
+    // v9.0: 确保 FileStorage 目录存在
+    FileStorage.ensureDirectories();
     dbPool = new DbWorkerPool(DB_PATH);
     dbPool.init();
   }
   return dbPool;
 }
+
+/** 获取存储引擎实例 */
+export function getStorageEngine(): SQLiteEngine | null {
+  return engine;
+}
+
+/** 获取 FileStorage 工具类 */
+export function getFileStorage() { return FileStorage; }

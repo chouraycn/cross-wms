@@ -175,7 +175,6 @@ ${this.summaryCache ? `已有摘要: ${this.summaryCache}` : ''}
         undefined,
         undefined,
         undefined,
-        'low', // reasoningEffort='low' 节省 token
         modelConfig.capabilities,
       );
 

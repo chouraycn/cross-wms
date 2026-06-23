@@ -1,252 +1,301 @@
 /**
- * Transfer Order Service — Transactional business logic for warehouse transfer operations.
+ * Transfer Service
  *
- * Core flow: draft → submitted (outbound deduction) → in_transit (bind transit, optional) → completed (inbound addition)
+ * 库存调拨服务，负责创建调拨单、执行调拨、查询调拨记录。
+ * 核心流程：创建调拨单 → 提交（出库扣减）→ 收货（入库增加）→ 记录调拨历史
  *
- * All write operations are wrapped in better-sqlite3 transactions to ensure
- * atomicity across transfer_orders, inventory_items, and inventory_transactions tables.
+ * v10.0: 改为使用 DAO 层（warehouse.ts）操作库存数据
  */
-import { v4 as uuidv4 } from 'uuid';
-import { initDb } from '../db.js';
-import type { TransferOrderRow, InventoryItemRow } from '../db.js';
+
+import type { TransferOrderRow } from '../db.js';
+import { logger } from '../logger.js';
 import {
-  getTransferOrderById as dbGetById,
-  createTransferOrder as dbCreate,
-  updateTransferOrder as dbUpdate,
+  getTransferOrderById,
+  getTransferOrders,
+  updateTransferOrder,
+  createOutboundRecord,
+  createInboundRecord,
+  getInventoryItems,
+  updateInventoryItem,
+  createInventoryItem,
 } from '../dao/warehouse.js';
-import * as txnDao from '../dao/inventoryTransactionDao.js';
 
-// ===================== Helper =====================
+// ===================== 常量定义 =====================
 
-/** Generate a transfer order number: TF-YYYYMMDD-XXXX */
-export function generateTransferNo(): string {
-  const now = new Date();
-  const dateStr = now.getFullYear().toString()
-    + String(now.getMonth() + 1).padStart(2, '0')
-    + String(now.getDate()).padStart(2, '0');
-  const seq = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
-  return `TF-${dateStr}-${seq}`;
-}
+/** 调拨单号前缀 */
+const TRANSFER_NO_PREFIX = 'TF';
 
-// ===================== Submit (Outbound Deduction) =====================
+// ===================== 工具函数 =====================
 
 /**
- * Submit a draft transfer order — deducts inventory from the source warehouse.
+ * 获取当前时间戳（ISO 格式）
+ */
+function now(): string {
+  return new Date().toISOString();
+}
+
+// ===================== 核心函数 =====================
+
+/**
+ * 生成调拨单号
+ * 格式：TF + 日期 + 4位序号
+ */
+export function generateTransferNo(): string {
+  const date = new Date();
+  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+
+  // 查询所有调拨单，在 JavaScript 中筛选当日最大序号
+  const { items } = getTransferOrders({ page: 1, pageSize: 1000 });
+  const todayOrders = items.filter((o) => o.transferNo.startsWith(`${TRANSFER_NO_PREFIX}${dateStr}`));
+
+  let seq = 1;
+  if (todayOrders.length > 0) {
+    const maxNo = todayOrders
+      .map((o) => o.transferNo)
+      .sort()
+      .pop();
+    if (maxNo) {
+      const match = maxNo.match(/(\d{4})$/);
+      if (match) {
+        seq = parseInt(match[1], 10) + 1;
+      }
+    }
+  }
+
+  return `${TRANSFER_NO_PREFIX}${dateStr}${String(seq).padStart(4, '0')}`;
+}
+
+/**
+ * 提交调拨单（出库扣减）
  *
- * Within a single DB transaction:
- * 1. Verify transfer order exists and is in 'draft' status
- * 2. Verify source warehouse has sufficient inventory
- * 3. Deduct inventory from source warehouse
- * 4. Insert inventory_transactions audit row (type='transfer_out')
- * 5. Update transfer order status to 'submitted'
+ * 流程：
+ * 1. 查询调拨单（状态必须为 draft）
+ * 2. 源仓库出库（扣减库存）
+ * 3. 创建出库记录
+ * 4. 更新调拨单状态为 submitted
  *
- * @throws Error if order not found, not in draft status, or insufficient inventory
+ * @param id 调拨单 ID
+ * @param submittedBy 提交人
+ * @returns 更新后的调拨单
  */
 export function submit(id: string, submittedBy: string): TransferOrderRow {
-  const db = initDb();
+  // 1. 查询调拨单
+  const transfer = getTransferOrderById(id);
 
-  const execute = db.transaction(() => {
-    const now = new Date().toISOString();
+  if (!transfer) {
+    throw new Error(`调拨单 ${id} 不存在`);
+  }
 
-    // 1. Verify transfer order exists and is draft
-    const order = db.prepare('SELECT * FROM transfer_orders WHERE id = ?').get(id) as TransferOrderRow | undefined;
-    if (!order) throw new Error('调拨单不存在');
-    if (order.status !== 'draft') throw new Error('只有草稿状态的调拨单可以提交');
+  if (transfer.status !== 'draft') {
+    throw new Error(`调拨单状态为 ${transfer.status}，无法提交`);
+  }
 
-    // 2. Verify source warehouse has sufficient inventory
-    const item = db.prepare(
-      'SELECT * FROM inventory_items WHERE sku = ? AND warehouseId = ?'
-    ).get(order.sku, order.fromWarehouseId) as InventoryItemRow | undefined;
+  // 2. 源仓库出库（扣减库存）
+  const allItems = getInventoryItems(transfer.fromWarehouseId) as Array<Record<string, unknown>>;
+  const fromInventory = allItems.find(
+    (i) => i.sku === transfer.sku
+  ) as { id: string; quantity: number } | undefined;
 
-    if (!item || item.quantity < order.quantity) {
-      throw new Error('出库仓库存不足');
-    }
+  if (!fromInventory) {
+    throw new Error(`商品 ${transfer.sku} 在源仓库不存在`);
+  }
 
-    // 3. Deduct inventory from source warehouse
-    const newQuantity = item.quantity - order.quantity;
-    const newTotalVolume = newQuantity * item.volumePerUnit;
-    const newTotalValue = newQuantity * item.valuePerUnit;
-    db.prepare(
-      'UPDATE inventory_items SET quantity = ?, totalVolume = ?, totalValue = ? WHERE id = ?'
-    ).run(newQuantity, newTotalVolume, newTotalValue, item.id);
+  if (fromInventory.quantity < transfer.quantity) {
+    throw new Error(
+      `库存不足：源仓库当前库存 ${fromInventory.quantity}，需要调拨 ${transfer.quantity}`
+    );
+  }
 
-    // 4. Insert inventory transaction audit record
-    txnDao.insert({
-      sku: order.sku,
-      type: 'transfer_out',
-      quantity: order.quantity,
-      warehouseId: order.fromWarehouseId,
-      operator: submittedBy,
-      sourceId: order.id,
-      sourceType: 'transfer_order',
-      remark: `调拨出库: ${order.transferNo || order.id}`,
-    });
+  const newQuantity = fromInventory.quantity - transfer.quantity;
+  const fromItem = allItems.find((i) => i.sku === transfer.sku) as Record<string, unknown>;
+  const valuePerUnit = (fromItem.valuePerUnit as number) ?? 0;
+  const newTotalValue = valuePerUnit * newQuantity;
 
-    // 5. Update transfer order status
-    db.prepare(
-      `UPDATE transfer_orders SET status = 'submitted', submittedAt = ?, submittedBy = ?, updatedAt = ? WHERE id = ?`
-    ).run(now, submittedBy, now, id);
-
-    return db.prepare('SELECT * FROM transfer_orders WHERE id = ?').get(id) as TransferOrderRow;
+  updateInventoryItem(fromInventory.id, {
+    quantity: newQuantity,
+    totalValue: newTotalValue,
+    inboundDate: now(),
   });
 
-  return execute();
+  // 3. 创建出库记录
+  createOutboundRecord({
+    warehouseId: transfer.fromWarehouseId,
+    sku: transfer.sku,
+    name: transfer.name,
+    quantity: transfer.quantity,
+    volume: transfer.volume,
+    createdAt: now(),
+    operator: submittedBy,
+    destination: transfer.toWarehouseId,
+    customer: '',
+    orderNo: transfer.transferNo,
+    customer_id: null,
+  });
+
+  // 4. 更新调拨单状态
+  const updated = updateTransferOrder(id, {
+    status: 'submitted',
+    submittedAt: now(),
+    submittedBy,
+  });
+
+  if (!updated) {
+    throw new Error(`更新调拨单 ${id} 失败`);
+  }
+
+  logger.info(
+    `[Transfer] 提交调拨单: id=${id}, sku=${transfer.sku}, from=${transfer.fromWarehouseId}, to=${transfer.toWarehouseId}, quantity=${transfer.quantity}`
+  );
+
+  return updated as TransferOrderRow;
 }
 
-// ===================== Receive (Inbound Addition) =====================
-
 /**
- * Confirm receipt of a transfer order — adds inventory to the destination warehouse.
+ * 确认收货（入库增加）
  *
- * Within a single DB transaction:
- * 1. Verify transfer order exists and is in 'submitted' or 'in_transit' status
- * 2. Find or auto-create inventory_item at destination warehouse
- * 3. Add inventory to destination warehouse
- * 4. Insert inventory_transactions audit row (type='transfer_in')
- * 5. Update transfer order status to 'completed'
+ * 流程：
+ * 1. 查询调拨单（状态必须为 submitted）
+ * 2. 目标仓库入库（增加库存）
+ * 3. 创建入库记录
+ * 4. 更新调拨单状态为 completed
  *
- * @throws Error if order not found or not in receivable status
+ * @param id 调拨单 ID
+ * @param receivedBy 收货人
+ * @returns 更新后的调拨单
  */
 export function receive(id: string, receivedBy: string): TransferOrderRow {
-  const db = initDb();
+  // 1. 查询调拨单
+  const transfer = getTransferOrderById(id);
 
-  const execute = db.transaction(() => {
-    const now = new Date().toISOString();
+  if (!transfer) {
+    throw new Error(`调拨单 ${id} 不存在`);
+  }
 
-    // 1. Verify transfer order exists and is in receivable status
-    const order = db.prepare('SELECT * FROM transfer_orders WHERE id = ?').get(id) as TransferOrderRow | undefined;
-    if (!order) throw new Error('调拨单不存在');
-    if (order.status !== 'submitted' && order.status !== 'in_transit') {
-      throw new Error('只有已提交或在途状态的调拨单可以确认收货');
-    }
+  if (transfer.status !== 'submitted') {
+    throw new Error(`调拨单状态为 ${transfer.status}，无法收货`);
+  }
 
-    // 2. Find or auto-create inventory item at destination
-    let item = db.prepare(
-      'SELECT * FROM inventory_items WHERE sku = ? AND warehouseId = ?'
-    ).get(order.sku, order.toWarehouseId) as InventoryItemRow | undefined;
+  // 2. 目标仓库入库（增加库存）
+  const toItems = getInventoryItems(transfer.toWarehouseId) as Array<Record<string, unknown>>;
+  const toInventory = toItems.find(
+    (i) => i.sku === transfer.sku
+  ) as { id: string; quantity: number; valuePerUnit: number } | undefined;
 
-    if (!item) {
-      // Auto-create inventory item at destination warehouse
-      const itemId = uuidv4();
-      // Read volumePerUnit from source item if available
-      const sourceItem = db.prepare(
-        'SELECT * FROM inventory_items WHERE sku = ? AND warehouseId = ?'
-      ).get(order.sku, order.fromWarehouseId) as InventoryItemRow | undefined;
+  if (toInventory) {
+    // 已有库存，增加数量
+    const newQuantity = toInventory.quantity + transfer.quantity;
+    const newTotalValue = (toInventory.valuePerUnit || 0) * newQuantity;
 
-      const volumePerUnit = sourceItem?.volumePerUnit ?? (order.quantity > 0 ? order.volume / order.quantity : 0);
-      const valuePerUnit = sourceItem?.valuePerUnit ?? 0;
-      const category = sourceItem?.category ?? '';
-
-      db.prepare(
-        `INSERT INTO inventory_items (id, sku, name, warehouseId, quantity, volumePerUnit, totalVolume, inboundDate, valuePerUnit, totalValue, category, isAgeWarning, autoCreated)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      ).run(
-        itemId, order.sku, order.name, order.toWarehouseId,
-        0, // quantity starts at 0, will be incremented below
-        volumePerUnit,
-        0, // totalVolume starts at 0
-        now,
-        valuePerUnit,
-        0, // totalValue starts at 0
-        category,
-        0,
-        1  // autoCreated = 1
-      );
-      item = db.prepare('SELECT * FROM inventory_items WHERE id = ?').get(itemId) as InventoryItemRow;
-    }
-
-    // 3. Add inventory to destination warehouse
-    const newQuantity = item.quantity + order.quantity;
-    const newTotalVolume = newQuantity * item.volumePerUnit;
-    const newTotalValue = newQuantity * item.valuePerUnit;
-    db.prepare(
-      'UPDATE inventory_items SET quantity = ?, totalVolume = ?, totalValue = ?, inboundDate = ? WHERE id = ?'
-    ).run(newQuantity, newTotalVolume, newTotalValue, now, item.id);
-
-    // 4. Insert inventory transaction audit record
-    txnDao.insert({
-      sku: order.sku,
-      type: 'transfer_in',
-      quantity: order.quantity,
-      warehouseId: order.toWarehouseId,
-      operator: receivedBy,
-      sourceId: order.id,
-      sourceType: 'transfer_order',
-      remark: `调拨入库: ${order.transferNo || order.id}`,
+    updateInventoryItem(toInventory.id, {
+      quantity: newQuantity,
+      totalValue: newTotalValue,
+      inboundDate: now(),
     });
+  } else {
+    // 新库存，需要复制商品信息
+    const fromItems = getInventoryItems(transfer.fromWarehouseId) as Array<Record<string, unknown>>;
+    const sourceItem = fromItems.find((i) => i.sku === transfer.sku);
 
-    // 5. Update transfer order status to completed
-    db.prepare(
-      `UPDATE transfer_orders SET status = 'completed', receivedAt = ?, receivedBy = ?, completedAt = ?, completedBy = ?, updatedAt = ? WHERE id = ?`
-    ).run(now, receivedBy, now, receivedBy, now, id);
+    if (sourceItem) {
+      const valuePerUnit = (sourceItem.valuePerUnit as number) ?? 0;
+      createInventoryItem({
+        sku: sourceItem.sku as string,
+        name: sourceItem.name as string,
+        warehouseId: transfer.toWarehouseId,
+        quantity: transfer.quantity,
+        valuePerUnit,
+        totalValue: valuePerUnit * transfer.quantity,
+        totalVolume: (sourceItem.totalVolume as number) ?? 0,
+        inboundDate: now(),
+        volumePerUnit: (sourceItem.volumePerUnit as number) ?? 0,
+        category: (sourceItem.category as string) ?? '',
+        autoCreated: 1,
+      });
+    }
+  }
 
-    return db.prepare('SELECT * FROM transfer_orders WHERE id = ?').get(id) as TransferOrderRow;
+  // 3. 创建入库记录
+  createInboundRecord({
+    warehouseId: transfer.toWarehouseId,
+    sku: transfer.sku,
+    name: transfer.name,
+    quantity: transfer.quantity,
+    volume: transfer.volume,
+    createdAt: now(),
+    operator: receivedBy,
+    status: 'completed',
+    supplier: transfer.fromWarehouseId,
+    batchNo: transfer.transferNo,
+    supplier_id: null,
   });
 
-  return execute();
+  // 4. 更新调拨单状态
+  const updated = updateTransferOrder(id, {
+    status: 'completed',
+    receivedAt: now(),
+    receivedBy,
+    completedAt: now(),
+    completedBy: receivedBy,
+  });
+
+  if (!updated) {
+    throw new Error(`更新调拨单 ${id} 失败`);
+  }
+
+  logger.info(
+    `[Transfer] 确认收货: id=${id}, sku=${transfer.sku}, to=${transfer.toWarehouseId}, quantity=${transfer.quantity}`
+  );
+
+  return updated as TransferOrderRow;
 }
 
-// ===================== Bind / Unbind Transit =====================
-
 /**
- * Bind a transit order to a transfer order and update status to 'in_transit'.
+ * 绑定物流单
  *
- * Validates that:
- * - Transfer order exists and is in 'submitted' status
- * - Transit order exists and from/to warehouses match
- *
- * @throws Error if validation fails
+ * @param id 调拨单 ID
+ * @param transitOrderId 物流单 ID
+ * @returns 更新后的调拨单
  */
 export function bindTransit(id: string, transitOrderId: string): TransferOrderRow {
-  const db = initDb();
+  const transfer = getTransferOrderById(id);
 
-  const execute = db.transaction(() => {
-    const now = new Date().toISOString();
+  if (!transfer) {
+    throw new Error(`调拨单 ${id} 不存在`);
+  }
 
-    // 1. Verify transfer order exists and is submitted
-    const order = db.prepare('SELECT * FROM transfer_orders WHERE id = ?').get(id) as TransferOrderRow | undefined;
-    if (!order) throw new Error('调拨单不存在');
-    if (order.status !== 'submitted') throw new Error('只有已提交状态的调拨单可以绑定物流');
-
-    // 2. Verify transit order exists and warehouses match
-    const transitOrder = db.prepare('SELECT * FROM transit_orders WHERE id = ?').get(transitOrderId) as { id: string; fromWarehouseId: string; toWarehouseId: string; trackingNo: string } | undefined;
-    if (!transitOrder) throw new Error('物流单不存在');
-    if (transitOrder.fromWarehouseId !== order.fromWarehouseId || transitOrder.toWarehouseId !== order.toWarehouseId) {
-      throw new Error('物流单的起止仓库与调拨单不匹配');
-    }
-
-    // 3. Bind transit order and update status
-    db.prepare(
-      `UPDATE transfer_orders SET transitOrderId = ?, status = 'in_transit', updatedAt = ? WHERE id = ?`
-    ).run(transitOrderId, now, id);
-
-    return db.prepare('SELECT * FROM transfer_orders WHERE id = ?').get(id) as TransferOrderRow;
+  const updated = updateTransferOrder(id, {
+    transitOrderId,
   });
 
-  return execute();
+  if (!updated) {
+    throw new Error(`更新调拨单 ${id} 失败`);
+  }
+
+  logger.info(`[Transfer] 绑定物流: id=${id}, transitOrderId=${transitOrderId}`);
+  return updated as TransferOrderRow;
 }
 
 /**
- * Unbind a transit order from a transfer order and revert status to 'submitted'.
+ * 解绑物流单
  *
- * @throws Error if order not found or not in 'in_transit' status
+ * @param id 调拨单 ID
+ * @returns 更新后的调拨单
  */
 export function unbindTransit(id: string): TransferOrderRow {
-  const db = initDb();
+  const transfer = getTransferOrderById(id);
 
-  const execute = db.transaction(() => {
-    const now = new Date().toISOString();
+  if (!transfer) {
+    throw new Error(`调拨单 ${id} 不存在`);
+  }
 
-    const order = db.prepare('SELECT * FROM transfer_orders WHERE id = ?').get(id) as TransferOrderRow | undefined;
-    if (!order) throw new Error('调拨单不存在');
-    if (order.status !== 'in_transit') throw new Error('只有在途状态的调拨单可以解绑物流');
-
-    db.prepare(
-      `UPDATE transfer_orders SET transitOrderId = NULL, status = 'submitted', updatedAt = ? WHERE id = ?`
-    ).run(now, id);
-
-    return db.prepare('SELECT * FROM transfer_orders WHERE id = ?').get(id) as TransferOrderRow;
+  const updated = updateTransferOrder(id, {
+    transitOrderId: null,
   });
 
-  return execute();
+  if (!updated) {
+    throw new Error(`更新调拨单 ${id} 失败`);
+  }
+
+  logger.info(`[Transfer] 解绑物流: id=${id}`);
+  return updated as TransferOrderRow;
 }

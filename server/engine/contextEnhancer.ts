@@ -200,7 +200,7 @@ async function searchMemoryInBackground(params: EnhanceParams): Promise<VecSearc
   }
 
   return Promise.race([
-    searchMemory(params.userMessage, 'default', 5, 0.35, params.sessionId),
+    searchMemory(params.userMessage, 5, { sessionId: params.sessionId }),
     new Promise<VecSearchResult[]>((resolve) => setTimeout(() => resolve([]), 5000)),
   ]);
 }
@@ -213,11 +213,17 @@ async function searchMemoryInBackground(params: EnhanceParams): Promise<VecSearc
 export function formatMemoryContext(memories: VecSearchResult[]): string | null {
   if (!memories || memories.length === 0) return null;
 
-  const totalChars = memories.reduce((sum, r) => sum + r.entry.content.length, 0);
+  const totalChars = memories.reduce((sum, r) => {
+    const text = r.text || '';
+    return sum + text.length;
+  }, 0);
   const totalTokens = Math.ceil(totalChars / 1.5);
   if (totalTokens > 500) return null;
 
   return memories
-    .map((r) => `[${r.entry.category}] ${r.entry.content} (相似度: ${r.similarity.toFixed(2)})`)
+    .map((r) => {
+      const category = (r.metadata?.category as string) || 'memory';
+      return `[${category}] ${r.text} (相似度: ${r.similarity.toFixed(2)})`;
+    })
     .join('\n');
 }

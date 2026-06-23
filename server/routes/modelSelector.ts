@@ -1,4 +1,21 @@
+/**
+ * CDF Auto Model — 智能模型路由引擎 v2.0
+ *
+ * 删除旧版简化逻辑，重新定义完整的 5 维度加权评分系统。
+ *
+ * 核心设计：
+ * - 5 大判定维度（加权打分 0~10 分）
+ * - 4 层自动分流（Tier1 轻量 / Tier2 均衡 / Tier3 强推理 / Vision 多模态）
+ * - 故障 Fallback 降级（主模型报错 → 备用模型）
+ * - 多厂商统一抽象（Claude / OpenAI / Ollama / DeepSeek）
+ * - Tool / MCP 联动（批量调用自动升级推理模型）
+ * - 模型标签体系（code / reasoning / multimodal / fast / longContext / costEffective / general）
+ */
+
 import { loadModelsConfig, ModelsFile, isLocalModel } from '../modelsStore.js';
+import type { ModelCapability } from '../../shared/types/models.js';
+
+// ===================== 类型定义 =====================
 
 /** Auto 选型结果 */
 export interface AutoSelectResult {
@@ -7,21 +24,439 @@ export interface AutoSelectResult {
   /** 选型原因中文描述 */
   reason: string;
   /** 选型原因类型标签 */
-  reasonType: 'code' | 'complex' | 'simple' | 'longContext' | 'default' | 'vision';
+  reasonType: 'tier1' | 'tier2' | 'tier3' | 'vision' | 'code' | 'fallback';
+  /** 各维度评分明细（调试用） */
+  scores?: DimensionScores;
+  /** 总评分（0~10） */
+  totalScore?: number;
+}
+
+/** 5 大维度评分 */
+export interface DimensionScores {
+  /** 媒体类型评分（0~10）— 权重 10% */
+  media: number;
+  /** 上下文 Token 长度评分（0~10）— 权重 30% */
+  contextLength: number;
+  /** 关键词意图评分（0~10）— 权重 40% */
+  intent: number;
+  /** 代码特征评分（0~10）— 权重 20% */
+  code: number;
+  /** 工具调用特征评分（0~10）— 额外加分 */
+  toolCall: number;
+}
+
+/** 模型路由配置 */
+export interface ModelRoutingConfig {
+  default: string;
+  simple_tasks: string;
+  code_generation: string;
+  complex_reasoning: string;
+  vision: string;
+  long_context?: string;
+  threshold: {
+    complexityScore: number;
+    longContextRatio: number;
+  };
+}
+
+/** 模型标签过滤条件 */
+export interface ModelTagFilter {
+  /** 必须包含的标签（全部匹配） */
+  requireAll?: ModelCapability[];
+  /** 必须包含的标签（任一匹配） */
+  requireAny?: ModelCapability[];
+  /** 必须排除的标签 */
+  exclude?: ModelCapability[];
+  /** 排除的 provider */
+  excludeProviders?: string[];
+}
+
+/** 路由层级 */
+export type RoutingTier = 'tier1' | 'tier2' | 'tier3' | 'vision';
+
+/** 路由规则 */
+export interface RoutingRule {
+  tier: RoutingTier;
+  /** 触发条件：总评分 >= 此值 */
+  minScore?: number;
+  /** 触发条件：特定维度评分 >= 此值 */
+  dimensionThreshold?: { dimension: keyof DimensionScores; min: number };
+  /** 模型标签过滤 */
+  tagFilter: ModelTagFilter;
+  /** 优先级（数字越小越优先） */
+  priority: number;
+  /** 规则描述 */
+  description: string;
+}
+
+// ===================== 常量定义 =====================
+
+/** 维度权重 */
+const DIMENSION_WEIGHTS = {
+  media: 0.10,
+  contextLength: 0.30,
+  intent: 0.40,
+  code: 0.20,
+  toolCall: 0.0,  // 额外加分，不占权重
+} as const;
+
+/** 默认路由配置 */
+export const DEFAULT_ROUTING_CONFIG: ModelRoutingConfig = {
+  default: 'anthropic/claude-haiku-4',
+  simple_tasks: 'ollama/qwen3.5:8b',
+  code_generation: 'deepseek-r1',
+  complex_reasoning: 'anthropic/claude-opus-4',
+  vision: 'anthropic/claude-sonnet-vision',
+  long_context: 'anthropic/claude-sonnet',
+  threshold: {
+    complexityScore: 0.65,
+    longContextRatio: 0.85,
+  },
+};
+
+/** 4 层路由规则（按优先级排序） */
+const ROUTING_RULES: RoutingRule[] = [
+  // Vision 多模态层 — 最高优先级
+  {
+    tier: 'vision',
+    dimensionThreshold: { dimension: 'media', min: 8 },
+    tagFilter: { requireAny: ['multimodal'], excludeProviders: ['deepseek'] },
+    priority: 0,
+    description: '上传图片、截图、PDF 解析 → 多模态模型',
+  },
+  // Tier3 强推理层 — 复杂任务
+  {
+    tier: 'tier3',
+    minScore: 6.5,
+    tagFilter: { requireAny: ['reasoning', 'code'] },
+    priority: 1,
+    description: '架构设计、深度分析、长代码重构、多步骤 MCP 串联 → 强推理模型',
+  },
+  // Code 代码专用层 — 代码特征突出
+  {
+    tier: 'tier2',
+    dimensionThreshold: { dimension: 'code', min: 7 },
+    tagFilter: { requireAny: ['code'] },
+    priority: 2,
+    description: '含完整代码块、编译报错 → 代码专用模型',
+  },
+  // Tier2 均衡层 — 中等任务
+  {
+    tier: 'tier2',
+    minScore: 3.5,
+    tagFilter: { requireAny: ['general', 'code', 'reasoning'] },
+    priority: 3,
+    description: '普通写作、单文件代码、常规文档处理 → 均衡中端模型',
+  },
+  // Tier1 轻量层 — 简单任务
+  {
+    tier: 'tier1',
+    minScore: 0,
+    tagFilter: { requireAny: ['fast', 'costEffective', 'general'] },
+    priority: 4,
+    description: '心跳、简单问答、文本检索、短指令 → 轻量廉价模型',
+  },
+];
+
+/** 简单意图关键词（Tier1 轻量层） */
+const SIMPLE_INTENT_KEYWORDS = [
+  // 中文
+  '你好', 'hello', 'hi', '在吗', '谢谢', '感谢', '再见', '拜拜',
+  '计算', '多少', '几', '翻译', '是什么', '什么是', '定义',
+  '天气', '时间', '日期',
+  // 英文
+  'hello', 'hi', 'hey', 'thanks', 'thank you', 'bye', 'goodbye',
+  'calculate', 'compute', 'translate', 'define', 'what is', 'who is',
+  'weather', 'time', 'date',
+];
+
+/** 复杂意图关键词（Tier3 强推理层） */
+const COMPLEX_INTENT_KEYWORDS = [
+  // 中文
+  '架构', '设计', '重构', '优化', '调试', 'debug', '排错',
+  '分析', '评估', '对比', '比较', '证明', '推导',
+  '多步骤', '流程', '方案', '策略', '规划',
+  '数学', '算法', '公式', '证明',
+  // 英文
+  'architecture', 'design', 'refactor', 'optimize', 'debug', 'troubleshoot',
+  'analyze', 'evaluate', 'compare', 'benchmark', 'prove', 'derive',
+  'multi-step', 'workflow', 'pipeline', 'strategy', 'plan',
+  'math', 'algorithm', 'formula', 'proof',
+];
+
+/** 代码特征正则 */
+const CODE_PATTERNS = [
+  /```[\s\S]*?```/,           // 代码块
+  /(?:function|class|const|let|var|import|export|def|async|await)\s+\w+/,
+  /(?:error|Error|ERROR|exception|Exception|failed|Failed)\s*:/,
+  /(?:TypeError|ReferenceError|SyntaxError|CompileError)/,
+  /(?:npm|yarn|pnpm|pip|cargo|go build|mvn|gradle)\s+(?:install|run|build|test)/,
+  /(?:stack trace|stacktrace|at\s+\w+\.\w+\()/i,
+];
+
+/** 上下文长度阈值 */
+const CONTEXT_LENGTH_THRESHOLDS = {
+  short: 0.3,     // < 30% → 低分
+  medium: 0.6,    // 30%~60% → 中分
+  long: 0.85,     // 60%~85% → 高分
+  veryLong: 1.0,  // > 85% → 最高分
+} as const;
+
+// ===================== 5 维度评分引擎 =====================
+
+/**
+ * 维度 1：媒体类型评分（权重 10%）
+ * 图片 / PDF / 视频 → 强制切换多模态模型
+ */
+function scoreMediaType(hasImageAttachment: boolean, hasPdfAttachment: boolean, hasVideoAttachment: boolean): number {
+  if (hasImageAttachment || hasVideoAttachment) return 10;  // 强制多模态
+  if (hasPdfAttachment) return 8;                            // PDF 也需要多模态
+  return 0;
 }
 
 /**
+ * 维度 2：上下文 Token 长度评分（权重 30%）
+ * 上下文占窗口比例越高，评分越高
+ */
+function scoreContextLength(contextTokenCount: number, contextWindowSize: number): number {
+  if (contextWindowSize <= 0) return 0;
+  const ratio = contextTokenCount / contextWindowSize;
+
+  if (ratio >= CONTEXT_LENGTH_THRESHOLDS.veryLong) return 10;
+  if (ratio >= CONTEXT_LENGTH_THRESHOLDS.long) return 7;
+  if (ratio >= CONTEXT_LENGTH_THRESHOLDS.medium) return 4;
+  return 1;
+}
+
+/**
+ * 维度 3：关键词意图评分（权重 40%，最高权重）
+ * 简单意图 → 低分（轻量模型）
+ * 中等意图 → 中分（均衡模型）
+ * 复杂意图 → 高分（强推理模型）
+ */
+function scoreIntent(message: string): number {
+  const lower = message.toLowerCase();
+  const trimmed = message.trim();
+
+  // 空消息或极短消息 → 简单
+  if (trimmed.length <= 5) return 1;
+
+  // 检测复杂意图
+  const complexMatches = COMPLEX_INTENT_KEYWORDS.filter(kw => lower.includes(kw.toLowerCase()));
+  if (complexMatches.length >= 2) return 9;   // 多个复杂关键词
+  if (complexMatches.length >= 1) return 7;    // 单个复杂关键词
+
+  // 检测中等意图
+  const mediumKeywords = [
+    '写', '写一个', '帮我', '创建', '生成', '修改', '更新',
+    'write', 'create', 'generate', 'modify', 'update', 'build', 'make',
+    '整理', '汇总', '总结', 'summarize', 'organize',
+    '表格', '数据', '报告', 'report', 'table', 'chart',
+  ];
+  const mediumMatches = mediumKeywords.filter(kw => lower.includes(kw.toLowerCase()));
+  if (mediumMatches.length >= 2) return 6;
+  if (mediumMatches.length >= 1) return 5;
+
+  // 检测简单意图
+  const simpleMatches = SIMPLE_INTENT_KEYWORDS.filter(kw => lower.includes(kw.toLowerCase()));
+  if (simpleMatches.length >= 1) return 2;
+
+  // 默认中等偏简单
+  return 4;
+}
+
+/**
+ * 维度 4：代码特征评分（权重 20%）
+ * 含完整代码块、编译报错 → 代码专用模型
+ */
+function scoreCodeFeature(message: string): number {
+  let score = 0;
+
+  for (const pattern of CODE_PATTERNS) {
+    if (pattern.test(message)) {
+      score += 3;
+    }
+  }
+
+  // 检测代码语言关键词
+  const codeLangKeywords = [
+    'javascript', 'typescript', 'python', 'java', 'go', 'rust', 'c++', 'cpp',
+    'react', 'vue', 'angular', 'node', 'express', 'sql', 'html', 'css',
+    'function', 'class', 'interface', 'return', 'console.log', 'print(',
+  ];
+  const langMatches = codeLangKeywords.filter(kw => message.toLowerCase().includes(kw));
+  score += Math.min(langMatches.length, 3);
+
+  return Math.min(score, 10);
+}
+
+/**
+ * 维度 5：工具调用特征评分（额外加分）
+ * 批量 MCP / 多 Skill 并行 → 自动升级推理模型
+ */
+function scoreToolCallFeature(
+  toolCallCount: number,
+  activeMcpCount: number,
+  activeSkillCount: number,
+): number {
+  let score = 0;
+
+  // 已有工具调用历史
+  if (toolCallCount >= 5) score += 5;
+  else if (toolCallCount >= 3) score += 3;
+  else if (toolCallCount >= 1) score += 1;
+
+  // 活跃 MCP 连接
+  if (activeMcpCount >= 3) score += 3;
+  else if (activeMcpCount >= 1) score += 1;
+
+  // 活跃 Skill
+  if (activeSkillCount >= 2) score += 2;
+  else if (activeSkillCount >= 1) score += 1;
+
+  return Math.min(score, 10);
+}
+
+// ===================== 综合评分 =====================
+
+/** 评分输入参数 */
+export interface ScoringInput {
+  /** 用户消息 */
+  message: string;
+  /** 是否有图片附件 */
+  hasImageAttachment?: boolean;
+  /** 是否有 PDF 附件 */
+  hasPdfAttachment?: boolean;
+  /** 是否有视频附件 */
+  hasVideoAttachment?: boolean;
+  /** 上下文 Token 数 */
+  contextTokenCount?: number;
+  /** 上下文窗口大小 */
+  contextWindowSize?: number;
+  /** 历史工具调用次数 */
+  toolCallCount?: number;
+  /** 活跃 MCP 连接数 */
+  activeMcpCount?: number;
+  /** 活跃 Skill 数 */
+  activeSkillCount?: number;
+}
+
+/**
+ * 综合评分：5 大维度加权计算
+ * @returns 各维度评分 + 总评分（0~10）
+ */
+export function computeComplexityScore(input: ScoringInput): { scores: DimensionScores; totalScore: number } {
+  const scores: DimensionScores = {
+    media: scoreMediaType(input.hasImageAttachment ?? false, input.hasPdfAttachment ?? false, input.hasVideoAttachment ?? false),
+    contextLength: scoreContextLength(input.contextTokenCount ?? 0, input.contextWindowSize ?? 128000),
+    intent: scoreIntent(input.message),
+    code: scoreCodeFeature(input.message),
+    toolCall: scoreToolCallFeature(input.toolCallCount ?? 0, input.activeMcpCount ?? 0, input.activeSkillCount ?? 0),
+  };
+
+  // 加权总分（toolCall 作为额外加分）
+  const weightedTotal =
+    scores.media * DIMENSION_WEIGHTS.media +
+    scores.contextLength * DIMENSION_WEIGHTS.contextLength +
+    scores.intent * DIMENSION_WEIGHTS.intent +
+    scores.code * DIMENSION_WEIGHTS.code;
+
+  // 工具调用额外加分（最高 +2 分）
+  const toolBonus = Math.min(scores.toolCall * 0.2, 2);
+
+  const totalScore = Math.min(Math.round((weightedTotal + toolBonus) * 10) / 10, 10);
+
+  return { scores, totalScore };
+}
+
+// ===================== 模型选择 =====================
+
+/**
  * 判断模型是否实际可用（有 API Key 或为本地模型）
- * 用于 auto 模式选型时过滤掉不可用的模型
  */
 export function isModelAvailable(model: { provider?: string; apiKey?: string; apiKeys?: Array<{ key?: string; enabled?: boolean }>; apiEndpoint?: string }): boolean {
-  // 本地模型不需要 API Key
   if (isLocalModel(model)) return true;
-  // 有单 Key
   if (model.apiKey?.trim()) return true;
-  // 有多 Key（至少一个启用且有值）
   if (model.apiKeys?.some(k => k.enabled !== false && k.key?.trim())) return true;
   return false;
+}
+
+/**
+ * 按标签过滤模型
+ */
+function filterModelsByTag(
+  models: ModelsFile['models'],
+  tagFilter: ModelTagFilter,
+): ModelsFile['models'] {
+  return models.filter(m => {
+    const caps = m.capabilities ?? [];
+
+    // 必须全部包含
+    if (tagFilter.requireAll?.length) {
+      for (const cap of tagFilter.requireAll) {
+        if (!caps.includes(cap)) return false;
+      }
+    }
+
+    // 必须包含任一
+    if (tagFilter.requireAny?.length) {
+      if (!tagFilter.requireAny.some(cap => caps.includes(cap))) return false;
+    }
+
+    // 必须排除
+    if (tagFilter.exclude?.length) {
+      if (tagFilter.exclude.some(cap => caps.includes(cap))) return false;
+    }
+
+    // 排除 provider
+    if (tagFilter.excludeProviders?.length) {
+      if (tagFilter.excludeProviders.some(p => m.provider === p)) return false;
+    }
+
+    return true;
+  });
+}
+
+/**
+ * 根据路由规则选择模型
+ */
+function selectModelByRoutingRules(
+  candidateModels: ModelsFile['models'],
+  scores: DimensionScores,
+  totalScore: number,
+  routingConfig: ModelRoutingConfig,
+): AutoSelectResult | null {
+  // 按优先级排序的路由规则
+  const sortedRules = [...ROUTING_RULES].sort((a, b) => a.priority - b.priority);
+
+  for (const rule of sortedRules) {
+    // 检查总评分阈值
+    if (rule.minScore !== undefined && totalScore < rule.minScore) continue;
+
+    // 检查维度阈值
+    if (rule.dimensionThreshold) {
+      const dim = rule.dimensionThreshold.dimension;
+      if (scores[dim] < rule.dimensionThreshold.min) continue;
+    }
+
+    // 按标签过滤
+    const matched = filterModelsByTag(candidateModels, rule.tagFilter);
+    if (matched.length === 0) continue;
+
+    // 选择最佳匹配
+    const selected = matched[0];
+
+    return {
+      modelId: selected.id,
+      modelName: selected.name,
+      reason: rule.description,
+      reasonType: rule.tier === 'vision' ? 'vision' : rule.tier,
+      scores,
+      totalScore,
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -56,93 +491,198 @@ export const MODEL_PRESETS: Record<string, { temperature: number; topP: number; 
   creative: { temperature: 1.3, topP: 0.95, label: '创意写作', description: '高温度，适合创意、头脑风暴' },
   code:     { temperature: 0.2, topP: 0.8,  label: '代码生成', description: '低温度，确保代码准确性' },
   translate:{ temperature: 0.3, topP: 0.85, label: '翻译', description: '适中温度，保持翻译一致性' },
-  analysis: { temperature: 0.5, topP: 0.9, label: '分析推理', description: '平衡温度，适合逻辑分析' },
-  precise:  { temperature: 0.1, topP: 0.7, label: '精确问答', description: '极低温度，追求事实准确性' },
+  analysis: { temperature: 0.5, topP: 0.9,  label: '分析推理', description: '平衡温度，适合逻辑分析' },
+  precise:  { temperature: 0.1, topP: 0.7,  label: '精确问答', description: '极低温度，追求事实准确性' },
 };
+
+// ===================== Auto Model 主入口 =====================
 
 /**
  * Auto 模式：根据用户输入智能选择最合适的模型。
  *
- * 选型逻辑（按优先级）：
- * 1. 代码相关 → 代码专用 / 强力模型
- * 2. 超长文本 → 长上下文模型
- * 3. 复杂分析 → 强力模型
- * 4. 简单短对话 → 快速/轻量模型
- * 5. 默认 → 配置的默认模型
+ * v2.0: 完全重写 — 5 维度加权评分 + 4 层路由
  *
- * 只从实际可用的模型（有 Key 或本地模型）中选择。
+ * 流程：
+ * 1. 计算 5 维度评分
+ * 2. 按路由规则匹配最佳层级
+ * 3. 在匹配的模型池中选择可用模型
+ * 4. 无匹配时 Fallback 到默认模型
  *
- * @returns 选中的模型 ID + 选型原因
+ * @returns 选中的模型 ID + 选型原因 + 评分明细
  */
-export function autoSelectModel(message: string, modelsConfig: ModelsFile, hasImageAttachment = false): AutoSelectResult {
+export function autoSelectModel(
+  message: string,
+  modelsConfig: ModelsFile,
+  hasImageAttachment = false,
+  input?: Partial<ScoringInput>,
+): AutoSelectResult {
   const enabledModels = modelsConfig.models.filter((m) => m.enabled);
-  // 只保留实际可用的模型（有 API Key 或本地模型）
   const availableModels = enabledModels.filter(isModelAvailable);
-
-  // 如果没有可用模型，回退到所有已启用模型（让后端报错提示用户配置 Key）
   const candidateModels = availableModels.length > 0 ? availableModels : enabledModels;
 
   if (candidateModels.length === 0) {
-    // 尝试使用默认模型配置
     const defaultModel = modelsConfig.models.find(m => m.id === modelsConfig.defaultModelId && m.enabled !== false);
     if (defaultModel) {
       return {
         modelId: defaultModel.id,
         modelName: defaultModel.name || defaultModel.id,
         reason: '无可用模型，使用默认模型',
-        reasonType: 'default',
+        reasonType: 'fallback',
       };
     }
-    // 最后回退：取配置文件中的第一个已启用模型
     const firstEnabled = modelsConfig.models.find(m => m.enabled !== false);
     if (firstEnabled) {
       return {
         modelId: firstEnabled.id,
         modelName: firstEnabled.name || firstEnabled.id,
         reason: '无可用模型，使用第一个已启用模型',
-        reasonType: 'default',
+        reasonType: 'fallback',
       };
     }
-    // 完全无可用模型：抛出明确错误
     throw Object.assign(
       new Error('无可用模型：请先前往"设置 → 模型管理"启用至少一个模型并配置 API Key'),
       { code: 'NO_AVAILABLE_MODELS' }
     );
   }
 
-  // v1.9.3: 如果有图片附件，优先选择支持多模态的模型
-  if (hasImageAttachment) {
-    const visionModels = candidateModels.filter(m => {
-      const isMultimodal = m.capabilities?.includes('multimodal');
-      const isKnownVisionModel = [
-        'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4-vision',
-        'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'claude-3-5-sonnet',
-        'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision',
-        'qwen-vl', 'qwen-vl-max',
-        'kimi-k2.6', 'kimi-k2.5',
-      ].some(id => m.id.toLowerCase().includes(id.toLowerCase()));
-      // ⚠️ DeepSeek API 不支持 image_url 格式，即使有 multimodal 标签也排除
-      const isFalsePositiveVision = /deepseek/i.test(m.id);
-      return (isMultimodal || isKnownVisionModel) && !isFalsePositiveVision;
-    });
-    if (visionModels.length > 0) {
-      const defaultVision = visionModels.find(m => m.id === modelsConfig.defaultModelId) || visionModels[0];
+  // Step 1: 计算 5 维度评分
+  const { scores, totalScore } = computeComplexityScore({
+    message,
+    hasImageAttachment,
+    hasPdfAttachment: input?.hasPdfAttachment,
+    hasVideoAttachment: input?.hasVideoAttachment,
+    contextTokenCount: input?.contextTokenCount,
+    contextWindowSize: input?.contextWindowSize,
+    toolCallCount: input?.toolCallCount,
+    activeMcpCount: input?.activeMcpCount,
+    activeSkillCount: input?.activeSkillCount,
+  });
+
+  // Step 2: 按路由规则匹配
+  const routingConfig = DEFAULT_ROUTING_CONFIG;
+  const routed = selectModelByRoutingRules(candidateModels, scores, totalScore, routingConfig);
+
+  if (routed) {
+    return routed;
+  }
+
+  // Step 3: Fallback — 使用默认模型
+  const defaultModel = candidateModels.find((m) => m.id === modelsConfig.defaultModelId) || candidateModels[0];
+  return {
+    modelId: defaultModel.id,
+    modelName: defaultModel.name,
+    reason: `评分 ${totalScore}/10，使用默认模型`,
+    reasonType: 'fallback',
+    scores,
+    totalScore,
+  };
+}
+
+// ===================== Fallback 降级 =====================
+
+/**
+ * Fallback 降级：当主模型失败时，选择备用模型
+ *
+ * 策略：
+ * 1. 优先选择同 provider、非当前模型、已启用、可用
+ * 2. 其次选择任意已启用、可用、非当前模型
+ * 3. 最后使用默认模型
+ *
+ * @param failedModelId 失败的模型 ID
+ * @param modelsConfig 模型配置
+ * @param errorCategory 错误类别（用于日志）
+ * @returns 备用模型选择结果，或 null（无可用备用模型）
+ */
+export function selectFallbackModel(
+  failedModelId: string,
+  modelsConfig: ModelsFile,
+  errorCategory?: string,
+): AutoSelectResult | null {
+  const enabledModels = modelsConfig.models.filter((m) => m.enabled);
+  const availableModels = enabledModels.filter(isModelAvailable);
+  const candidates = availableModels.filter(m => m.id !== failedModelId);
+
+  if (candidates.length === 0) return null;
+
+  // 找到失败模型的 provider
+  const failedModel = modelsConfig.models.find(m => m.id === failedModelId);
+  const failedProvider = failedModel?.provider;
+
+  // 策略 1：同 provider 备用
+  if (failedProvider) {
+    const sameProvider = candidates.filter(m => m.provider === failedProvider);
+    if (sameProvider.length > 0) {
+      const selected = sameProvider[0];
       return {
-        modelId: defaultVision.id,
-        modelName: defaultVision.name,
-        reason: candidateModels.length === 1 ? '唯一可用模型' : '支持图片理解',
-        reasonType: 'vision',
+        modelId: selected.id,
+        modelName: selected.name,
+        reason: `主模型 ${failedModelId} 失败 (${errorCategory || 'unknown'})，降级到同 provider 备用模型`,
+        reasonType: 'fallback',
       };
     }
   }
 
-  // 优先使用配置的默认模型（如果它在可用列表中）
-  const defaultModel = candidateModels.find((m) => m.id === modelsConfig.defaultModelId) || candidateModels[0];
+  // 策略 2：任意可用备用
+  const selected = candidates[0];
+  return {
+    modelId: selected.id,
+    modelName: selected.name,
+    reason: `主模型 ${failedModelId} 失败 (${errorCategory || 'unknown'})，降级到备用模型`,
+    reasonType: 'fallback',
+  };
+}
+
+// ===================== Tool / MCP 联动 =====================
+
+/**
+ * Tool / MCP 联动：根据工具调用情况动态调整模型选择
+ *
+ * 当检测到以下情况时，自动升级到更强推理模型：
+ * - 批量 MCP 调用（>= 3 个活跃 MCP）
+ * - 多 Skill 并行（>= 2 个活跃 Skill）
+ * - 工具调用链较长（>= 5 次历史调用）
+ *
+ * @param currentModelId 当前使用的模型 ID
+ * @param modelsConfig 模型配置
+ * @param toolCallCount 历史工具调用次数
+ * @param activeMcpCount 活跃 MCP 数
+ * @param activeSkillCount 活跃 Skill 数
+ * @returns 升级后的模型选择结果，或 null（无需升级）
+ */
+export function maybeUpgradeForToolUsage(
+  currentModelId: string,
+  modelsConfig: ModelsFile,
+  toolCallCount: number,
+  activeMcpCount: number,
+  activeSkillCount: number,
+): AutoSelectResult | null {
+  // 判断是否需要升级
+  const needsUpgrade = toolCallCount >= 5 || activeMcpCount >= 3 || activeSkillCount >= 2;
+  if (!needsUpgrade) return null;
+
+  // 当前模型是否已经是强推理模型
+  const currentModel = modelsConfig.models.find(m => m.id === currentModelId);
+  const isAlreadyStrong = currentModel?.capabilities?.includes('reasoning');
+  if (isAlreadyStrong) return null;
+
+  // 查找强推理模型
+  const enabledModels = modelsConfig.models.filter(m => m.enabled).filter(isModelAvailable);
+  const reasoningModels = enabledModels.filter(m =>
+    m.capabilities?.includes('reasoning') && m.id !== currentModelId
+  );
+
+  if (reasoningModels.length === 0) return null;
+
+  const selected = reasoningModels[0];
+  const reasons: string[] = [];
+  if (toolCallCount >= 5) reasons.push(`工具调用 ${toolCallCount} 次`);
+  if (activeMcpCount >= 3) reasons.push(`活跃 MCP ${activeMcpCount} 个`);
+  if (activeSkillCount >= 2) reasons.push(`活跃 Skill ${activeSkillCount} 个`);
 
   return {
-    modelId: defaultModel.id,
-    modelName: defaultModel.name,
-    reason: candidateModels.length === 1 ? '唯一可用模型' : '使用默认模型',
-    reasonType: 'default',
+    modelId: selected.id,
+    modelName: selected.name,
+    reason: `检测到复杂工具使用场景（${reasons.join('，')}），升级到强推理模型`,
+    reasonType: 'tier3',
   };
 }

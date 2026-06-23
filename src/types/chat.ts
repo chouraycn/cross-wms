@@ -137,7 +137,7 @@ export interface Message {
   autoReason?: string;
   /** Auto 选型原因类型 */
   autoReasonType?: 'code' | 'complex' | 'simple' | 'default';
-  /** 消息元数据（可扩展，用于承载查询结果等附加信息） */
+  /** 消息元数据（v1.9.2: 存储 token 用量等扩展信息） */
   metadata?: MessageMetadata;
   /** v1.8.6: AI 思考过程内容（如 DeepSeek-R1 reasoning_content / Claude thinking） */
   thinking?: string;
@@ -149,8 +149,6 @@ export interface Message {
   toolCalls?: ToolCallInfo[];
   /** 附件列表（图片、文件等） */
   attachments?: Attachment[];
-  /** 推理强度（'high' 深度思考 / 'max' 极致推理） */
-  reasoningEffort?: string;
   /** v2.2.0: 思考已等待时间（毫秒，心跳更新） */
   thinkingElapsed?: number;
   /** v2.2.0: 是否命中 thinking 缓存 */
@@ -170,15 +168,6 @@ export interface Message {
   executionPlan?: ExecutionPlanInfo;
   /** v4.0: ReAct 阶段信息 */
   reactPhase?: ReactPhaseInfo;
-  /** v1.9.3: 内联权限请求（敏感工具执行确认） */
-  permissionRequest?: {
-    reqId: string;
-    toolName: string;
-    toolArgs: string;
-    approved?: boolean;
-    /** v2.2.1: 风险等级 */
-    riskLevel?: 'auto' | 'confirm' | 'high-risk';
-  };
   /** v5.0: 反思置信度信息 */
   reflectionConfidence?: {
     confidenceScore: number;

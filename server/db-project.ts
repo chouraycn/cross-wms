@@ -49,6 +49,7 @@ export interface SkillChainRow {
   name: string;
   description: string;
   fail_strategy: string;
+  skill_ids: string;
   created_at: string;
   updated_at: string;
 }

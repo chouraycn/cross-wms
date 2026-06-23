@@ -19,10 +19,10 @@ import {
   getAlerts,
   getAlertById,
   resolveAlert,
+  getPredictionDashboard,
 } from '../dao/wmsSkillDao.js';
 import { checkAllAlerts } from '../services/alertService.js';
 import { checkAllPredictions, getPredictionDetail } from '../services/predictionService.js';
-import { initDb } from '../db.js';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -135,8 +135,6 @@ router.post('/check', (req: Request, res: Response) => {
     const warehouseId = req.body.warehouseId as string | undefined;
     const lowStockThreshold = req.body.lowStockThreshold as number | undefined;
 
-    const db = initDb();
-
     // 构建阈值配置
     const thresholds: AlertThresholds = {};
     if (lowStockThreshold !== undefined) {
@@ -144,13 +142,13 @@ router.post('/check', (req: Request, res: Response) => {
     }
 
     // 1. 规则扫描
-    checkAllAlerts(db, thresholds).then(async (ruleResult: AlertCheckResult) => {
+    checkAllAlerts(thresholds).then(async (ruleResult: AlertCheckResult) => {
       // 2. 如果启用预测，执行预测扫描
       if (includePrediction) {
         try {
           const predConfig = readJsonFile<PredictionConfig>(PREDICTION_CONFIG_FILE)
             ?? DEFAULT_PREDICTION_CONFIG;
-          const predResult = await checkAllPredictions(db, predConfig);
+          const predResult = await checkAllPredictions(predConfig);
 
           // 合并结果
           const merged: AlertCheckResult = {
@@ -229,56 +227,12 @@ router.post('/config', (req: Request, res: Response) => {
 // GET /prediction/dashboard — 预测看板汇总数据
 router.get('/prediction/dashboard', (_req: Request, res: Response) => {
   try {
-    const db = initDb();
-
-    // 统计预测型活跃预警数量
-    const shortageCount = db.prepare(`
-      SELECT COUNT(*) AS cnt FROM wms_alerts
-      WHERE alert_type = 'predicted_shortage' AND status = 'active'
-    `).get() as { cnt: number };
-
-    const overstockCount = db.prepare(`
-      SELECT COUNT(*) AS cnt FROM wms_alerts
-      WHERE alert_type = 'predicted_overstock' AND status = 'active'
-    `).get() as { cnt: number };
-
-    // 待补货 SKU 数（有预测短缺预警的不同 SKU 数）
-    const pendingReplenish = db.prepare(`
-      SELECT COUNT(DISTINCT sku) AS cnt FROM wms_alerts
-      WHERE alert_type = 'predicted_shortage' AND status = 'active' AND sku IS NOT NULL
-    `).get() as { cnt: number };
-
-    // 数据覆盖率：有足够出库记录的 SKU 占比
-    const totalSkus = db.prepare(`
-      SELECT COUNT(*) AS cnt FROM inventory_items WHERE quantity > 0
-    `).get() as { cnt: number };
-
     const config = readJsonFile<PredictionConfig>(PREDICTION_CONFIG_FILE) ?? DEFAULT_PREDICTION_CONFIG;
-    const minDays = config.minHistoryDays;
-
-    const skusWithEnoughHistory = db.prepare(`
-      SELECT COUNT(DISTINCT it.sku) AS cnt FROM (
-        SELECT sku, warehouse_id, COUNT(DISTINCT DATE(created_at)) AS days
-        FROM inventory_transactions
-        WHERE type IN ('outbound', 'transfer_out')
-          AND created_at >= DATE('now', '-30 days')
-        GROUP BY sku, warehouse_id
-        HAVING days >= ?
-      )
-    `).get(minDays) as { cnt: number };
-
-    const coverageRate = totalSkus.cnt > 0
-      ? Math.round((skusWithEnoughHistory.cnt / totalSkus.cnt) * 100)
-      : 0;
+    const data = getPredictionDashboard(config.minHistoryDays);
 
     res.json({
       code: 0,
-      data: {
-        predictedShortageCount: shortageCount.cnt,
-        predictedOverstockCount: overstockCount.cnt,
-        pendingReplenishSkuCount: pendingReplenish.cnt,
-        dataCoverageRate: coverageRate,
-      },
+      data,
       message: 'ok',
     });
   } catch (e) {
@@ -329,10 +283,9 @@ router.get('/prediction/:sku', (req: Request, res: Response) => {
       return;
     }
 
-    const db = initDb();
     const config = readJsonFile<PredictionConfig>(PREDICTION_CONFIG_FILE) ?? DEFAULT_PREDICTION_CONFIG;
 
-    const detail: PredictionDetail | null = getPredictionDetail(db, sku, warehouseId, config);
+    const detail: PredictionDetail | null = getPredictionDetail(sku, warehouseId, config);
 
     if (!detail) {
       res.status(404).json({ code: 404, data: null, message: '未找到该 SKU 的预测数据（可能库存为0或无出库记录）' });

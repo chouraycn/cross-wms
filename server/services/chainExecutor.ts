@@ -11,13 +11,13 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { Response } from 'express';
 import { callAIModel } from '../aiClient.js';
-import { initDb } from '../db.js';
 import {
   getSkillChain,
   getChainNodes,
   createSkillExecution,
   updateSkillExecution,
 } from '../dao/chains.js';
+import { getUserSkillById } from '../dao/skills.js';
 import type { SkillChainNodeRow } from '../db.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
 import { logger } from '../logger.js';
@@ -192,11 +192,9 @@ async function executeNodeWithTimeout(
   });
 
   const executePromise = (async (): Promise<{ success: boolean; output?: unknown; error?: string }> => {
-    const db = initDb();
-
-    // Read skill's promptTemplate from user_skills
-    const skillRow = db.prepare('SELECT promptTemplate FROM user_skills WHERE id = ?').get(node.skill_id) as { promptTemplate: string | null } | undefined;
-    const promptTemplate = skillRow?.promptTemplate;
+    // Read skill's promptTemplate from user_skills (via DAO)
+    const skillRow = getUserSkillById(node.skill_id);
+    const promptTemplate = (skillRow as { promptTemplate?: string } | undefined)?.promptTemplate ?? null;
 
     if (!promptTemplate || promptTemplate.trim() === '') {
       // No promptTemplate — return a basic result without calling AI
@@ -292,8 +290,6 @@ async function executeNodeWithTimeout(
  * @returns The execution ID for SSE subscription
  */
 export async function executeChain(chainId: string, hooks?: ChainExecutorHooks): Promise<{ executionId: string }> {
-  const db = initDb();
-
   // 1. Read chain + nodes from DB
   const chain = getSkillChain(chainId);
   if (!chain) {
@@ -304,6 +300,8 @@ export async function executeChain(chainId: string, hooks?: ChainExecutorHooks):
   if (!nodes || nodes.length === 0) {
     throw new Error(`Chain has no nodes: ${chainId}`);
   }
+
+  const skillIds: string[] = JSON.parse(chain.skill_ids);
 
   // 2. Generate executionId and start time
   const executionId = uuidv4();

@@ -21,7 +21,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
 import CheckIcon from '@mui/icons-material/Check';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 
@@ -32,7 +31,6 @@ import { getCategoryLabel, CATEGORY_ORDER } from '../../constants/skillCategorie
 import { getGrayScale } from '../../constants/theme';
 import { providerIcon } from '../../utils/providerIcons';
 import { CAPABILITY_LABELS, CAPABILITY_COLORS, type ModelCapability } from '../../types/models';
-import { useToolPermission } from '../../contexts/ToolPermissionContext';
 
 // ===================== Types =====================
 
@@ -85,10 +83,6 @@ export interface ChatToolbarProps {
   onAttachClick?: () => void;
   /** v1.9.0: 是否有待上传附件 */
   hasAttachments?: boolean;
-  /** v1.9.1: 推理强度（'high' / 'max'） */
-  reasoningEffort?: string;
-  /** v1.9.1: 推理强度切换回调 */
-  onReasoningEffortChange?: (effort: string) => void;
 }
 
 // ===================== Constants =====================
@@ -112,14 +106,11 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   modelsLoading = false,
   onAttachClick,
   hasAttachments = false,
-  reasoningEffort,
-  onReasoningEffortChange,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
   const navigate = useNavigate();
-  const { trustMode, toggleTrustMode } = useToolPermission();
   const [activeDropdown, setActiveDropdown] = useState<DropdownType>(null);
 
   const modelBtnRef = useRef<HTMLDivElement>(null);
@@ -214,69 +205,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             </Box>
           )}
 
-          {/* Reasoning effort toggle — 药丸 */}
-          {onReasoningEffortChange && (
-            <Box
-              onClick={(e) => {
-                e.stopPropagation();
-                // 循环切换: '' -> 'high' -> 'max' -> ''
-                const next = reasoningEffort === 'high' ? 'max' : reasoningEffort === 'max' ? '' : 'high';
-                onReasoningEffortChange(next);
-              }}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                px: 1.5,
-                py: 0.5,
-                borderRadius: '20px',
-                bgcolor: reasoningEffort ? (reasoningEffort === 'max' ? (isDark ? '#3D2A10' : '#FFF7ED') : (isDark ? '#2A1A3A' : '#F3E8FF')) : gs.bgHover,
-                cursor: 'pointer',
-                transition: 'background-color 0.15s',
-                '&:hover': { bgcolor: reasoningEffort ? (reasoningEffort === 'max' ? (isDark ? '#4A3518' : '#FFEDD5') : (isDark ? '#3A1A4A' : '#E9D5FF')) : gs.bgActive },
-                userSelect: 'none',
-              }}
-            >
-              <AutoAwesomeIcon sx={{ fontSize: 15, color: reasoningEffort ? (reasoningEffort === 'max' ? '#F59E0B' : '#8B5CF6') : gs.textMuted }} />
-              <Typography sx={{ fontSize: 13, fontWeight: 500, color: reasoningEffort ? (reasoningEffort === 'max' ? '#F59E0B' : '#8B5CF6') : gs.textPrimary, lineHeight: 1 }}>
-                {reasoningEffort === 'max' ? '极致推理' : reasoningEffort === 'high' ? '深度思考' : '思考'}
-              </Typography>
-            </Box>
-          )}
-
-          {/* v2.5.0: Trust mode toggle — 免确认模式 */}
-          <Tooltip title={trustMode ? '免确认模式已开启：工具自动执行' : '开启免确认模式：跳过工具授权弹窗'}>
-            <Box
-              onClick={(e) => { e.stopPropagation(); toggleTrustMode(); }}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-                px: 1.5,
-                py: 0.5,
-                borderRadius: '20px',
-                bgcolor: trustMode ? (isDark ? '#0A2E1A' : '#ECFDF5') : gs.bgHover,
-                border: trustMode ? `1px solid ${isDark ? '#10B98140' : '#10B98130'}` : '1px solid transparent',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-                '&:hover': { bgcolor: trustMode ? (isDark ? '#0D3A20' : '#D1FAE5') : gs.bgActive },
-                userSelect: 'none',
-              }}
-            >
-              {trustMode
-                ? <VerifiedUserIcon sx={{ fontSize: 15, color: '#10B981' }} />
-                : <ShieldOutlinedIcon sx={{ fontSize: 15, color: gs.textMuted }} />
-              }
-              <Typography sx={{
-                fontSize: 13, fontWeight: 500, lineHeight: 1,
-                color: trustMode ? '#10B981' : gs.textPrimary,
-              }}>
-                {trustMode ? '免确认' : '授权'}
-              </Typography>
-            </Box>
-          </Tooltip>
-
-        </Box>
+          </Box>
 
         {/* Right: Model selector, Memory, Mic, Send */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>

@@ -15,7 +15,6 @@ import UpdateNotification from './components/UpdateNotification';
 import WindowDragBar from './components/Layout/WindowDragBar';
 import { ChatContainer } from './components/CrossWmsChat/ChatContainer';
 import { ChatProvider, useChatSession } from './contexts/ChatContext';
-import { ToolPermissionProvider } from './contexts/ToolPermissionContext';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
 import { automationEngine } from './services/automation';
@@ -732,7 +731,6 @@ const App: React.FC = () => {
       <AppSettingsProvider>
         <ModelsProvider>
           <ChatProvider defaultModel="auto">
-            <ToolPermissionProvider>
               <ThemedApp>
                 <HashRouter>
                   <UpdateProvider>
@@ -740,7 +738,6 @@ const App: React.FC = () => {
                   </UpdateProvider>
                 </HashRouter>
               </ThemedApp>
-            </ToolPermissionProvider>
           </ChatProvider>
         </ModelsProvider>
       </AppSettingsProvider>

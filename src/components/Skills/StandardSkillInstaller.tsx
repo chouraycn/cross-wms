@@ -30,7 +30,6 @@ import { parseSkillMd } from '../../services/skill/skillMdParser';
 import { installStandardSkill } from '../../services/skill/standardSkillAdapter';
 import SkillMdPreview from './SkillMdPreview';
 import SkillDependencyChecker from './SkillDependencyChecker';
-import SkillPermissionDialog from './SkillPermissionDialog';
 import CategoryMapper from './CategoryMapper';
 import { mapCategory } from '../../services/skill/standardSkillAdapter';
 
@@ -77,9 +76,9 @@ const StandardSkillInstaller: React.FC<StandardSkillInstallerProps> = ({
   const [fileName, setFileName] = useState<string>('');
   const [parsed, setParsed] = useState<any>(null);
   const [mappedCategory, setMappedCategory] = useState<string>('tool');
-  const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [installError, setInstallError] = useState<string>('');
+  const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
 
   /**
    * 处理文件选择
@@ -172,14 +171,6 @@ const StandardSkillInstaller: React.FC<StandardSkillInstallerProps> = ({
     event.preventDefault();
     event.stopPropagation();
   };
-
-  /**
-   * 处理权限确认
-   */
-  const handlePermissionConfirm = useCallback(async () => {
-    setPermissionDialogOpen(false);
-    await performInstall();
-  }, []);
 
   /**
    * 执行安装
@@ -435,17 +426,6 @@ const StandardSkillInstaller: React.FC<StandardSkillInstallerProps> = ({
           </DialogActions>
         )}
       </Dialog>
-
-      {/* 权限确认对话框 */}
-      {parsed && (
-        <SkillPermissionDialog
-          open={permissionDialogOpen}
-          permissions={parsed.permissions || []}
-          skillName={parsed.name || fileName}
-          onClose={() => setPermissionDialogOpen(false)}
-          onConfirm={handlePermissionConfirm}
-        />
-      )}
     </>
   );
 };

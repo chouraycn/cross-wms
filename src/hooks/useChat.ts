@@ -4,7 +4,6 @@ import { Message, ReferencedSession, Session, ToolCallInfo, Attachment } from '.
 import type { InventoryQueryPayload, QueryResult, DataSourceType } from '../types/inventory-query';
 import { CHAT_API_URL, INVENTORY_QUERY_API_URL } from '../constants/api';
 import { useAppSettings, useAppearanceSettings } from '../contexts/AppSettingsContext';
-import { useToolPermission } from '../contexts/ToolPermissionContext';
 // v3.0.0: isDesktopApp 不再需要 — scheduleFrame 统一用 setTimeout，无环境检测
 // v2.8.9: 子 hooks 已提取为独立模块，未来可逐步迁移：
 // import { useRenderScheduler } from './useRenderScheduler';
@@ -40,8 +39,6 @@ export interface SendMessageOptions {
   model?: string;
   /** 附件列表（图片、文件等） */
   attachments?: Attachment[];
-  /** 推理强度（'high' 深度思考 / 'max' 极致推理） */
-  reasoningEffort?: string;
   /** 执行模式（覆盖全局默认值） */
   executionMode?: 'legacy' | 'observer' | 'react' | 'agent';
   /** v7.0: 队列模式（覆盖全局默认值）：collect(合并) / steer(转向) / followup(追加) */
@@ -83,7 +80,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   const [inputValue, setInputValue] = useState('');
   const { updateSettings } = useAppSettings();
   const { settings: appearance } = useAppearanceSettings();
-  const { requestPermission, trustMode } = useToolPermission();
   /** v1.7.0: 每个会话级别限制一次 SQL 失败自动重试 */
   const autoRetriedRef = useRef<boolean>(false);
   /** v1.8.0: 当前正在流式输出的消息 ID */
@@ -94,8 +90,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   const isLoadingRef = useRef<boolean>(isLoading);
   /** v1.9.2: 使用 ref 保存最新的 settings，避免 sendMessage 闭包中引用旧值 */
   const settingsRef = useRef(appearance);
-  /** v2.5.0: 免确认模式 ref，SSE 回调中使用 */
-  const trustModeRef = useRef(trustMode);
 
   /** v1.8.0: AbortController 用于中断请求 */
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -118,11 +112,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
   useEffect(() => {
     settingsRef.current = appearance;
   }, [appearance]);
-
-  // v2.5.0: 同步 trustMode 到 ref（SSE 回调中使用）
-  useEffect(() => {
-    trustModeRef.current = trustMode;
-  }, [trustMode]);
 
   /**
    * v1.8.0: 中断当前 AI 生成
@@ -373,10 +362,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
       if (options?.attachments && options.attachments.length > 0) {
         body.attachments = options.attachments;
       }
-      // 如果有推理强度设置，传递给后端
-      if (options?.reasoningEffort) {
-        body.reasoningEffort = options.reasoningEffort;
-      }
       // 如果有执行模式设置，传递给后端
       if (options?.executionMode) {
         body.executionMode = options.executionMode;
@@ -544,6 +529,13 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
           const scheduleRender = () => {
             dirty = true;
             if (renderHandle === null) {
+              renderHandle = scheduleFrame(flushRender);
+            }
+            // v8.5-fix: 如果已有渲染调度但 thinkingBuffer 有未消费内容，
+            // 说明 flushRender 可能因节流提前返回而未消费 buffer。
+            // 此时需要强制重新调度一帧，确保 thinking 内容被刷新。
+            else if (thinkingBuffer.length > 0) {
+              cancelFrame(renderHandle);
               renderHandle = scheduleFrame(flushRender);
             }
           };
@@ -720,9 +712,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                       case 'init': {
                         if (data.autoReason) autoReason = data.autoReason;
                         if (data.autoReasonType) autoReasonType = data.autoReasonType;
-                        if (data.reasoningEffort) {
-                          streamingMsg.reasoningEffort = data.reasoningEffort;
-                        }
                         if (data.model) {
                           streamingMsg.model = data.modelName || data.model;
                         }
@@ -738,10 +727,10 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                         if (data.thinkingType) {
                           streamingMsg.thinkingType = data.thinkingType;
                         }
-                        // 仅在未调度时才调度（避免重复调度）
-                        if (renderHandle === null) {
-                          scheduleRender();
-                        }
+                        // v8.5-fix: 始终调度渲染，确保 thinking 内容及时刷新到 UI
+                        // 之前仅在 renderHandle === null 时调度，如果 flushRender 因节流返回
+                        // 而未清空 renderHandle，后续 thinking 事件全部被忽略 → 卡在"思考中"
+                        scheduleRender();
                         break;
                       }
                       case 'tool_call': {
@@ -761,25 +750,6 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
                           } catch { /* JSON 解析失败，忽略 */ }
                         }
                         scheduleRender();
-                        break;
-                      }
-                      case 'permission_request': {
-                        // 免确认模式下自动通过，不显示弹窗
-                        if (trustModeRef.current) {
-                          fetch('/api/permission-response', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ reqId: data.reqId, approved: true }),
-                          }).catch(() => {});
-                        } else {
-                          streamingMsg.permissionRequest = {
-                            reqId: data.reqId,
-                            toolName: data.toolName,
-                            toolArgs: data.toolArgs,
-                            riskLevel: data.riskLevel,
-                          };
-                          scheduleRender();
-                        }
                         break;
                       }
                       case 'done': {

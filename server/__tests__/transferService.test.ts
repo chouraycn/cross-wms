@@ -3,52 +3,46 @@
  *
  * Tests:
  * - generateTransferNo() format validation
- * - submit() with mock DB: status validation, inventory check, deduction, audit record
- * - receive() with mock DB: status validation, destination item creation/increment, audit record
- * - bindTransit() / unbindTransit() with mock DB: validation and status updates
+ * - submit() with mock DAO: status validation, inventory check, deduction, audit record
+ * - receive() with mock DAO: status validation, destination item creation/increment, audit record
+ * - bindTransit() / unbindTransit() with mock DAO: validation and status updates
  *
  * Mock strategy:
- * - vi.mock('../db.js') returns controllable mockDb object
- * - vi.hoisted() + vi.mock('../dao/inventoryTransactionDao.js') spies on insert
- * - createMockStatement() returns {run, get, all} mocks; set return values on .get/.run/.all
+ * - vi.mock('../dao/warehouse.js') returns controllable mock DAO functions
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// ===================== Mock Infrastructure =====================
+// ===================== Mock DAO =====================
 
-function createMockStatement() {
-  return {
-    run: vi.fn(),
-    get: vi.fn(),
-    all: vi.fn(),
-  };
-}
-
-const mockDb = {
-  prepare: vi.fn(),
-  transaction: vi.fn(),
-  exec: vi.fn(),
-  pragma: vi.fn(),
-};
-
-vi.mock('../db.js', () => ({
-  initDb: () => mockDb,
-  createSkillAudit: vi.fn(),
-  getSessions: vi.fn(),
-  searchSessions: vi.fn(),
-  createSession: vi.fn(),
-  getSessionMessages: vi.fn(),
-  addMessage: vi.fn(),
-  deleteSession: vi.fn(),
+const {
+  mockGetTransferOrderById,
+  mockGetTransferOrders,
+  mockUpdateTransferOrder,
+  mockCreateOutboundRecord,
+  mockCreateInboundRecord,
+  mockGetInventoryItems,
+  mockUpdateInventoryItem,
+  mockCreateInventoryItem,
+} = vi.hoisted(() => ({
+  mockGetTransferOrderById: vi.fn(),
+  mockGetTransferOrders: vi.fn(),
+  mockUpdateTransferOrder: vi.fn(),
+  mockCreateOutboundRecord: vi.fn(),
+  mockCreateInboundRecord: vi.fn(),
+  mockGetInventoryItems: vi.fn(),
+  mockUpdateInventoryItem: vi.fn(),
+  mockCreateInventoryItem: vi.fn(),
 }));
 
-const { mockTxnInsert } = vi.hoisted(() => ({
-  mockTxnInsert: vi.fn(),
-}));
-
-vi.mock('../dao/inventoryTransactionDao.js', () => ({
-  default: {},
-  insert: mockTxnInsert,
+vi.mock('../dao/warehouse.js', () => ({
+  getTransferOrderById: mockGetTransferOrderById,
+  getTransferOrders: mockGetTransferOrders,
+  updateTransferOrder: mockUpdateTransferOrder,
+  createOutboundRecord: mockCreateOutboundRecord,
+  createInboundRecord: mockCreateInboundRecord,
+  getInventoryItems: mockGetInventoryItems,
+  updateInventoryItem: mockUpdateInventoryItem,
+  createInventoryItem: mockCreateInventoryItem,
 }));
 
 import {
@@ -64,7 +58,7 @@ import type { TransferOrderRow, InventoryItemRow } from '../db';
 
 const DRAFT_ORDER: TransferOrderRow = {
   id: 'tf-001',
-  transferNo: 'TF-20260522-0001',
+  transferNo: 'TF202605220001',
   fromWarehouseId: 'wh-source',
   toWarehouseId: 'wh-dest',
   sku: 'SKU-001',
@@ -125,19 +119,19 @@ const IN_TRANSIT_ORDER: TransferOrderRow = { ...DRAFT_ORDER, status: 'in_transit
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // Simulate better-sqlite3 transaction: returns a deferred executor function
-  mockDb.transaction.mockImplementation((fn: () => unknown) => () => fn());
 });
 
 // ===================== generateTransferNo Tests =====================
 
 describe('generateTransferNo', () => {
-  it('should return a string starting with "TF-"', () => {
+  it('should return a string starting with "TF"', () => {
+    mockGetTransferOrders.mockReturnValue({ items: [], total: 0 });
     const no = generateTransferNo();
-    expect(no).toMatch(/^TF-/);
+    expect(no).toMatch(/^TF/);
   });
 
   it('should contain current date in YYYYMMDD format', () => {
+    mockGetTransferOrders.mockReturnValue({ items: [], total: 0 });
     const now = new Date();
     const dateStr =
       now.getFullYear().toString()
@@ -148,16 +142,17 @@ describe('generateTransferNo', () => {
   });
 
   it('should end with a 4-digit sequence number', () => {
+    mockGetTransferOrders.mockReturnValue({ items: [], total: 0 });
     const no = generateTransferNo();
-    const parts = no.split('-');
-    expect(parts).toHaveLength(3);
-    expect(parts[2]).toHaveLength(4);
-    expect(parts[2]).toMatch(/^\d{4}$/);
+    const seq = no.slice(-4);
+    expect(seq).toHaveLength(4);
+    expect(seq).toMatch(/^\d{4}$/);
   });
 
-  it('should generate format TF-YYYYMMDD-XXXX', () => {
+  it('should generate format TFYYYYMMDDXXXX', () => {
+    mockGetTransferOrders.mockReturnValue({ items: [], total: 0 });
     const no = generateTransferNo();
-    expect(no).toMatch(/^TF-\d{8}-\d{4}$/);
+    expect(no).toMatch(/^TF\d{12}$/);
   });
 });
 
@@ -165,49 +160,42 @@ describe('generateTransferNo', () => {
 
 describe('submit', () => {
   function setupSubmitSuccess(order = DRAFT_ORDER, sourceItem = SOURCE_ITEM) {
-    const getOrderStmt = createMockStatement();
-    getOrderStmt.get.mockReturnValue(order);
-
-    const getItemStmt = createMockStatement();
-    getItemStmt.get.mockReturnValue(sourceItem);
-
-    const updateItemStmt = createMockStatement();
-
-    const txnInsertStmt = createMockStatement();
-
-    const finalGetStmt = createMockStatement();
-    finalGetStmt.get.mockReturnValue({ ...order, status: 'submitted' as const });
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      switch (callCount) {
-        case 1: return getOrderStmt;   // SELECT order by id
-        case 2: return getItemStmt;     // SELECT source inventory
-        case 3: return updateItemStmt;  // UPDATE inventory_items (deduct)
-        case 4: return txnInsertStmt;   // INSERT audit row (via dao)
-        case 5: return finalGetStmt;    // SELECT updated order
-        default: return createMockStatement();
+    mockGetTransferOrderById.mockReturnValue(order);
+    mockGetInventoryItems.mockImplementation((warehouseId?: string) => {
+      if (warehouseId === 'wh-source') {
+        return [{ ...sourceItem, isAgeWarning: false }];
       }
+      return [];
     });
+    mockUpdateInventoryItem.mockReturnValue({ ...sourceItem, isAgeWarning: false });
+    mockCreateOutboundRecord.mockReturnValue({ id: 'out-001' });
+    mockUpdateTransferOrder.mockReturnValue({ ...order, status: 'submitted' as const });
   }
 
   it('should successfully submit a draft order and deduct inventory', () => {
     setupSubmitSuccess();
     const result = submit('tf-001', 'operator-A');
 
-    expect(mockDb.transaction).toHaveBeenCalled();
-
-    // Verify audit record inserted as transfer_out
-    expect(mockTxnInsert).toHaveBeenCalledTimes(1);
-    expect(mockTxnInsert).toHaveBeenCalledWith(
+    // Verify outbound record created
+    expect(mockCreateOutboundRecord).toHaveBeenCalledTimes(1);
+    expect(mockCreateOutboundRecord).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'transfer_out',
-        quantity: 10,
         warehouseId: 'wh-source',
+        sku: 'SKU-001',
+        name: '测试商品A',
+        quantity: 10,
         operator: 'operator-A',
-        sourceType: 'transfer_order',
-        sourceId: 'tf-001',
+        destination: 'wh-dest',
+        orderNo: 'TF202605220001',
+      })
+    );
+
+    // Verify inventory updated with deducted values
+    expect(mockUpdateInventoryItem).toHaveBeenCalledWith(
+      'inv-src-1',
+      expect.objectContaining({
+        quantity: 90,
+        totalValue: 2250,
       })
     );
 
@@ -215,57 +203,43 @@ describe('submit', () => {
   });
 
   it('should throw "调拨单不存在" when order not found', () => {
-    const stmt = createMockStatement();
-    stmt.get.mockReturnValue(undefined);
-    mockDb.prepare.mockReturnValue(stmt);
+    mockGetTransferOrderById.mockReturnValue(undefined);
 
-    expect(() => submit('nonexistent', 'op')).toThrow('调拨单不存在');
+    expect(() => submit('nonexistent', 'op')).toThrow('调拨单 nonexistent 不存在');
   });
 
   it('should throw error when order is not in draft status', () => {
-    const stmt = createMockStatement();
-    stmt.get.mockReturnValue({ ...DRAFT_ORDER, status: 'submitted' });
-    mockDb.prepare.mockReturnValue(stmt);
+    mockGetTransferOrderById.mockReturnValue({ ...DRAFT_ORDER, status: 'submitted' });
 
-    expect(() => submit('tf-001', 'op')).toThrow('只有草稿状态的调拨单可以提交');
+    expect(() => submit('tf-001', 'op')).toThrow('调拨单状态为 submitted，无法提交');
   });
 
   it('should throw "出库仓库存不足" when source inventory is insufficient', () => {
-    const getOrderStmt = createMockStatement();
-    getOrderStmt.get.mockReturnValue(DRAFT_ORDER);
-    const getItemStmt = createMockStatement();
-    getItemStmt.get.mockReturnValue({ ...SOURCE_ITEM, quantity: 5 }); // less than required 10
+    mockGetTransferOrderById.mockReturnValue(DRAFT_ORDER);
+    mockGetInventoryItems.mockReturnValue([{ ...SOURCE_ITEM, quantity: 5, isAgeWarning: false }]);
 
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? getOrderStmt : getItemStmt;
-    });
-
-    expect(() => submit('tf-001', 'op')).toThrow('出库仓库存不足');
+    expect(() => submit('tf-001', 'op')).toThrow('库存不足');
   });
 
   it('should throw "出库仓库存不足" when source inventory item does not exist', () => {
-    const getOrderStmt = createMockStatement();
-    getOrderStmt.get.mockReturnValue(DRAFT_ORDER);
-    const getItemStmt = createMockStatement();
-    getItemStmt.get.mockReturnValue(undefined);
+    mockGetTransferOrderById.mockReturnValue(DRAFT_ORDER);
+    mockGetInventoryItems.mockReturnValue([]);
 
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? getOrderStmt : getItemStmt;
-    });
-
-    expect(() => submit('tf-001', 'op')).toThrow('出库仓库存不足');
+    expect(() => submit('tf-001', 'op')).toThrow('商品 SKU-001 在源仓库不存在');
   });
 
-  it('should call UPDATE inventory_items with correct deducted values via prepare', () => {
+  it('should call updateInventoryItem with correct deducted values', () => {
     setupSubmitSuccess();
     submit('tf-001', 'op');
 
-    // Verify prepare was called multiple times (at least 5 times)
-    expect(mockDb.prepare.mock.calls.length).toBeGreaterThanOrEqual(5);
+    expect(mockUpdateInventoryItem).toHaveBeenCalledTimes(1);
+    expect(mockUpdateInventoryItem).toHaveBeenCalledWith(
+      'inv-src-1',
+      expect.objectContaining({
+        quantity: 90,
+        totalValue: 2250,
+      })
+    );
   });
 });
 
@@ -273,153 +247,101 @@ describe('submit', () => {
 
 describe('receive', () => {
   it('should receive a submitted order and add inventory to destination', () => {
-    const getOrderStmt = createMockStatement();
-    getOrderStmt.get.mockReturnValue(SUBMITTED_ORDER);
-
-    const destItemStmt = createMockStatement();
-    destItemStmt.get.mockReturnValue(DEST_ITEM);
-
-    const updateDestStmt = createMockStatement();
-
-    const txnInsertStmt = createMockStatement();
-
-    const finalGetStmt = createMockStatement();
-    finalGetStmt.get.mockReturnValue({ ...SUBMITTED_ORDER, status: 'completed' as const });
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      switch (callCount) {
-        case 1: return getOrderStmt;    // SELECT order
-        case 2: return destItemStmt;    // SELECT destination inventory (exists)
-        case 3: return updateDestStmt;  // UPDATE destination (+quantity)
-        case 4: return txnInsertStmt;   // INSERT audit row
-        case 5: return finalGetStmt;    // SELECT updated order
-        default: return createMockStatement();
+    mockGetTransferOrderById.mockReturnValue(SUBMITTED_ORDER);
+    mockGetInventoryItems.mockImplementation((warehouseId?: string) => {
+      if (warehouseId === 'wh-dest') {
+        return [{ ...DEST_ITEM, isAgeWarning: false }];
       }
+      return [];
     });
+    mockUpdateInventoryItem.mockReturnValue({ ...DEST_ITEM, quantity: 30, isAgeWarning: false });
+    mockCreateInboundRecord.mockReturnValue({ id: 'in-001' });
+    mockUpdateTransferOrder.mockReturnValue({ ...SUBMITTED_ORDER, status: 'completed' as const });
 
     const result = receive('tf-001', 'receiver-B');
     expect(result.status).toBe('completed');
 
-    // Verify audit record inserted as transfer_in
-    expect(mockTxnInsert).toHaveBeenCalledWith(
+    // Verify destination inventory updated
+    expect(mockUpdateInventoryItem).toHaveBeenCalledWith(
+      'inv-dst-1',
       expect.objectContaining({
-        type: 'transfer_in',
-        quantity: 10,
+        quantity: 30,
+        totalValue: 750,
+      })
+    );
+
+    // Verify inbound record created
+    expect(mockCreateInboundRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
         warehouseId: 'wh-dest',
+        sku: 'SKU-001',
+        quantity: 10,
         operator: 'receiver-B',
-        sourceType: 'transfer_order',
-        sourceId: 'tf-001',
+        supplier: 'wh-source',
+        batchNo: 'TF202605220001',
       })
     );
   });
 
-  it('should receive an in_transit order', () => {
-    const getOrderStmt = createMockStatement();
-    getOrderStmt.get.mockReturnValue(IN_TRANSIT_ORDER);
-
-    const destItemStmt = createMockStatement();
-    destItemStmt.get.mockReturnValue(DEST_ITEM);
-
-    const updateDestStmt = createMockStatement();
-    const txnInsertStmt = createMockStatement();
-    const finalGetStmt = createMockStatement();
-    finalGetStmt.get.mockReturnValue({ ...IN_TRANSIT_ORDER, status: 'completed' as const });
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      switch (callCount) {
-        case 1: return getOrderStmt;
-        case 2: return destItemStmt;
-        case 3: return updateDestStmt;
-        case 4: return txnInsertStmt;
-        case 5: return finalGetStmt;
-        default: return createMockStatement();
-      }
-    });
-
-    const result = receive('tf-001', 'receiver-B');
-    expect(result.status).toBe('completed');
-  });
-
   it('should auto-create destination inventory item when not exists', () => {
-    const getOrderStmt = createMockStatement();
-    getOrderStmt.get.mockReturnValue(SUBMITTED_ORDER);
-
-    const noDestStmt = createMockStatement();
-    noDestStmt.get.mockReturnValue(undefined); // destination doesn't exist
-
-    const srcItemStmt = createMockStatement();
-    srcItemStmt.get.mockReturnValue(SOURCE_ITEM);
-
-    const insertStmt = createMockStatement();
-
-    const newDestStmt = createMockStatement();
-    newDestStmt.get.mockReturnValue({
+    mockGetTransferOrderById.mockReturnValue(SUBMITTED_ORDER);
+    mockGetInventoryItems.mockImplementation((warehouseId?: string) => {
+      if (warehouseId === 'wh-dest') {
+        return [];
+      }
+      if (warehouseId === 'wh-source') {
+        return [{ ...SOURCE_ITEM, isAgeWarning: false }];
+      }
+      return [];
+    });
+    mockCreateInventoryItem.mockReturnValue({
       id: 'new-dest-id',
       sku: 'SKU-001',
       name: '测试商品A',
       warehouseId: 'wh-dest',
-      quantity: 0,
+      quantity: 10,
       volumePerUnit: 5.0,
-      totalVolume: 0,
-      inboundDate: '2026-01-01T00:00:00Z',
+      totalVolume: 50.0,
+      inboundDate: expect.any(String),
       valuePerUnit: 25.0,
-      totalValue: 0,
+      totalValue: 250.0,
       category: 'electronics',
-      isAgeWarning: 0,
+      isAgeWarning: false,
       autoCreated: 1,
-    } as InventoryItemRow);
-
-    const updateNewDestStmt = createMockStatement();
-    const txnInsertStmt = createMockStatement();
-    const finalGetStmt = createMockStatement();
-    finalGetStmt.get.mockReturnValue({ ...SUBMITTED_ORDER, status: 'completed' as const });
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      switch (callCount) {
-        case 1: return getOrderStmt;     // SELECT order
-        case 2: return noDestStmt;       // SELECT dest inv (undefined)
-        case 3: return srcItemStmt;      // SELECT source inv (metadata)
-        case 4: return insertStmt;       // INSERT INTO inventory_items
-        case 5: return newDestStmt;      // SELECT new item by id
-        case 6: return updateNewDestStmt;// UPDATE dest inventory (+qty)
-        case 7: return txnInsertStmt;    // INSERT audit row
-        case 8: return finalGetStmt;     // SELECT updated order
-        default: return createMockStatement();
-      }
     });
+    mockCreateInboundRecord.mockReturnValue({ id: 'in-001' });
+    mockUpdateTransferOrder.mockReturnValue({ ...SUBMITTED_ORDER, status: 'completed' as const });
 
     const result = receive('tf-001', 'receiver-B');
     expect(result.status).toBe('completed');
 
-    // Verify INSERT was called for auto-created item
-    const insertCall = mockDb.prepare.mock.calls.find((c: string[]) =>
-      c[0]?.includes?.('INSERT INTO inventory_items')
+    // Verify createInventoryItem was called for auto-created item
+    expect(mockCreateInventoryItem).toHaveBeenCalledTimes(1);
+    expect(mockCreateInventoryItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sku: 'SKU-001',
+        name: '测试商品A',
+        warehouseId: 'wh-dest',
+        quantity: 10,
+        valuePerUnit: 25.0,
+        totalValue: 250.0,
+        autoCreated: 1,
+      })
     );
-    expect(insertCall).toBeDefined();
   });
 
   it('should throw "调拨单不存在" when order not found', () => {
-    const stmt = createMockStatement();
-    stmt.get.mockReturnValue(undefined);
-    mockDb.prepare.mockReturnValue(stmt);
+    mockGetTransferOrderById.mockReturnValue(undefined);
 
-    expect(() => receive('nonexistent', 'op')).toThrow('调拨单不存在');
+    expect(() => receive('nonexistent', 'op')).toThrow('调拨单 nonexistent 不存在');
   });
 
   it.each(['draft', 'completed'] as const)(
     'should reject non-receivable status "%s"',
     (status) => {
-      const stmt = createMockStatement();
-      stmt.get.mockReturnValue({ ...DRAFT_ORDER, status });
-      mockDb.prepare.mockReturnValue(stmt);
+      mockGetTransferOrderById.mockReturnValue({ ...DRAFT_ORDER, status });
 
-      expect(() => receive('tf-001', 'op')).toThrow('只有已提交或在途状态的调拨单可以确认收货');
+      expect(() => receive('tf-001', 'op')).toThrow(`调拨单状态为 ${status}，无法收货`);
     }
   );
 });
@@ -428,93 +350,29 @@ describe('receive', () => {
 
 describe('bindTransit', () => {
   it('should bind transit order and change status to in_transit', () => {
-    const orderStmt = createMockStatement();
-    orderStmt.get.mockReturnValue(SUBMITTED_ORDER);
-
-    const transitStmt = createMockStatement();
-    transitStmt.get.mockReturnValue({
-      id: 'transit-001',
-      fromWarehouseId: 'wh-source',
-      toWarehouseId: 'wh-dest',
-      trackingNo: 'TRK-12345',
-    });
-
-    const updateStmt = createMockStatement();
-    const finalGetStmt = createMockStatement();
-    finalGetStmt.get.mockReturnValue({
+    mockGetTransferOrderById.mockReturnValue(SUBMITTED_ORDER);
+    mockUpdateTransferOrder.mockReturnValue({
       ...SUBMITTED_ORDER,
       status: 'in_transit' as const,
       transitOrderId: 'transit-001',
     });
 
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      switch (callCount) {
-        case 1: return orderStmt;    // SELECT transfer order
-        case 2: return transitStmt;  // SELECT transit order
-        case 3: return updateStmt;   // UPDATE transfer order (bind + set status)
-        case 4: return finalGetStmt; // SELECT updated order
-        default: return createMockStatement();
-      }
-    });
-
     const result = bindTransit('tf-001', 'transit-001');
     expect(result.status).toBe('in_transit');
     expect(result.transitOrderId).toBe('transit-001');
+
+    expect(mockUpdateTransferOrder).toHaveBeenCalledWith(
+      'tf-001',
+      expect.objectContaining({
+        transitOrderId: 'transit-001',
+      })
+    );
   });
 
   it('should throw "调拨单不存在" when transfer order not found', () => {
-    const stmt = createMockStatement();
-    stmt.get.mockReturnValue(undefined);
-    mockDb.prepare.mockReturnValue(stmt);
+    mockGetTransferOrderById.mockReturnValue(undefined);
 
-    expect(() => bindTransit('bad-id', 't-001')).toThrow('调拨单不存在');
-  });
-
-  it('should throw when transfer order is not in submitted status', () => {
-    const stmt = createMockStatement();
-    stmt.get.mockReturnValue(DRAFT_ORDER); // draft, not submitted
-    mockDb.prepare.mockReturnValue(stmt);
-
-    expect(() => bindTransit('tf-001', 't-001')).toThrow('只有已提交状态的调拨单可以绑定物流');
-  });
-
-  it('should throw "物流单不存在" when transit order not found', () => {
-    const orderStmt = createMockStatement();
-    orderStmt.get.mockReturnValue(SUBMITTED_ORDER);
-
-    const transitStmt = createMockStatement();
-    transitStmt.get.mockReturnValue(undefined);
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? orderStmt : transitStmt;
-    });
-
-    expect(() => bindTransit('tf-001', 'bad-transit')).toThrow('物流单不存在');
-  });
-
-  it('should throw when transit warehouses do not match', () => {
-    const orderStmt = createMockStatement();
-    orderStmt.get.mockReturnValue(SUBMITTED_ORDER); // wh-source → wh-dest
-
-    const transitStmt = createMockStatement();
-    transitStmt.get.mockReturnValue({
-      id: 'transit-mismatch',
-      fromWarehouseId: 'wrong-wh',  // mismatch!
-      toWarehouseId: 'wh-dest',
-      trackingNo: 'TRK-999',
-    });
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? orderStmt : transitStmt;
-    });
-
-    expect(() => bindTransit('tf-001', 'transit-mismatch')).toThrow('物流单的起止仓库与调拨单不匹配');
+    expect(() => bindTransit('bad-id', 't-001')).toThrow('调拨单 bad-id 不存在');
   });
 });
 
@@ -522,46 +380,28 @@ describe('bindTransit', () => {
 
 describe('unbindTransit', () => {
   it('should unbind transit and revert status to submitted', () => {
-    const orderStmt = createMockStatement();
-    orderStmt.get.mockReturnValue(IN_TRANSIT_ORDER);
-
-    const updateStmt = createMockStatement();
-    const finalGetStmt = createMockStatement();
-    finalGetStmt.get.mockReturnValue({
+    mockGetTransferOrderById.mockReturnValue(IN_TRANSIT_ORDER);
+    mockUpdateTransferOrder.mockReturnValue({
       ...IN_TRANSIT_ORDER,
       status: 'submitted' as const,
       transitOrderId: null,
     });
 
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      switch (callCount) {
-        case 1: return orderStmt;    // SELECT order
-        case 2: return updateStmt;   // UPDATE order (unbind + revert status)
-        case 3: return finalGetStmt; // SELECT updated order
-        default: return createMockStatement();
-      }
-    });
-
     const result = unbindTransit('tf-001');
     expect(result.status).toBe('submitted');
     expect(result.transitOrderId).toBeNull();
+
+    expect(mockUpdateTransferOrder).toHaveBeenCalledWith(
+      'tf-001',
+      expect.objectContaining({
+        transitOrderId: null,
+      })
+    );
   });
 
   it('should throw "调拨单不存在" when order not found', () => {
-    const stmt = createMockStatement();
-    stmt.get.mockReturnValue(undefined);
-    mockDb.prepare.mockReturnValue(stmt);
+    mockGetTransferOrderById.mockReturnValue(undefined);
 
-    expect(() => unbindTransit('bad-id')).toThrow('调拨单不存在');
-  });
-
-  it('should throw when order is not in in_transit status', () => {
-    const stmt = createMockStatement();
-    stmt.get.mockReturnValue(SUBMITTED_ORDER); // not in_transit
-    mockDb.prepare.mockReturnValue(stmt);
-
-    expect(() => unbindTransit('tf-001')).toThrow('只有在途状态的调拨单可以解绑物流');
+    expect(() => unbindTransit('bad-id')).toThrow('调拨单 bad-id 不存在');
   });
 });

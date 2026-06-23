@@ -1,393 +1,505 @@
 /**
  * Prediction Service
  *
- * 智能库存预测引擎，基于 EMA（指数平滑法）预测未来库存趋势。
- * 支持预测短缺和预测积压两种预警类型。
+ * 需求预测服务，基于历史出库数据预测未来需求。
+ * 核心算法：移动平均 + 趋势分析 + 季节性调整
  *
- * 设计原则：
- * - 零新增依赖（EMA 纯 JS 实现 ~15 行）
- * - 去重逻辑严格对齐 alertService.ts
- * - 函数签名对齐 alertService：checkAllPredictions(db, config) → AlertCheckResult
+ * v10.0: 改为使用 DAO 层（wmsSkillDao.ts / warehouse.ts）获取数据。
  */
 
-import Database from 'better-sqlite3';
-import type {
-  AlertCheckResult,
-  PredictionConfig,
-  DailyOutbound,
-  SkuPrediction,
-  PredictionDetail,
-  WmsAlert,
-} from '../models/wms-skill.js';
-import { DEFAULT_PREDICTION_CONFIG } from '../models/wms-skill.js';
+import type { DemandForecast, ForecastPeriod } from '../types/prediction.js';
+import { logger } from '../logger.js';
+import {
+  createDemandForecast,
+  getDemandForecasts,
+  getDemandForecastById,
+  updateDemandForecastStatus,
+  deleteDemandForecast,
+} from '../dao/wmsSkillDao.js';
+import {
+  getInventoryItems,
+  getOutboundRecords,
+} from '../dao/warehouse.js';
 
-// ===================== EMA 指数平滑算法 =====================
+// ===================== 常量定义 =====================
+
+/** 默认历史数据天数 */
+const DEFAULT_HISTORY_DAYS = 90;
+
+/** 默认预测天数 */
+const DEFAULT_FORECAST_DAYS = 30;
+
+/** 移动平均窗口大小 */
+const MOVING_AVERAGE_WINDOW = 7;
+
+/** 季节性周期（天） */
+const SEASONALITY_PERIOD = 7;
+
+// ===================== 工具函数 =====================
 
 /**
- * 计算指数加权移动平均 (Exponential Moving Average)
- *
- * @param values - 按时间顺序排列的每日出库量数组（oldest first）
- * @param alpha - 平滑系数，默认 0.3（权重偏向近期数据）
- * @returns EMA 值（日均消耗速率）
+ * 获取当前时间戳（ISO 格式）
  */
-export function computeEMA(values: number[], alpha: number = 0.3): number {
-  if (values.length === 0) return 0;
-  let ema = values[0]; // 初始值为第一个数据点
-  for (let i = 1; i < values.length; i++) {
-    ema = alpha * values[i] + (1 - alpha) * ema;
+function now(): string {
+  return new Date().toISOString();
+}
+
+/**
+ * 计算移动平均
+ */
+function movingAverage(data: number[], window: number): number[] {
+  const result: number[] = [];
+  for (let i = 0; i < data.length; i++) {
+    if (i < window - 1) {
+      result.push(data[i]);
+      continue;
+    }
+    let sum = 0;
+    for (let j = 0; j < window; j++) {
+      sum += data[i - j];
+    }
+    result.push(sum / window);
   }
-  return ema;
+  return result;
+}
+
+/**
+ * 计算趋势（线性回归斜率）
+ */
+function calculateTrend(data: number[]): number {
+  const n = data.length;
+  if (n < 2) return 0;
+
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumX2 = 0;
+
+  for (let i = 0; i < n; i++) {
+    sumX += i;
+    sumY += data[i];
+    sumXY += i * data[i];
+    sumX2 += i * i;
+  }
+
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  return slope;
+}
+
+/**
+ * 计算季节性因子
+ */
+function calculateSeasonality(data: number[], period: number): number[] {
+  const seasonalFactors: number[] = new Array(period).fill(1);
+
+  if (data.length < period * 2) {
+    return seasonalFactors;
+  }
+
+  // 计算每个周期的平均值
+  const periodAverages: number[] = [];
+  for (let i = 0; i < period; i++) {
+    let sum = 0;
+    let count = 0;
+    for (let j = i; j < data.length; j += period) {
+      sum += data[j];
+      count++;
+    }
+    periodAverages.push(count > 0 ? sum / count : 1);
+  }
+
+  // 计算全局平均值
+  const globalAverage = periodAverages.reduce((a, b) => a + b, 0) / period;
+
+  // 计算季节性因子
+  for (let i = 0; i < period; i++) {
+    seasonalFactors[i] = globalAverage > 0 ? periodAverages[i] / globalAverage : 1;
+  }
+
+  return seasonalFactors;
 }
 
 // ===================== 核心函数 =====================
 
 /**
- * 执行完整预测扫描
+ * 生成需求预测
  *
- * @param db - 数据库实例
- * @param config - 预测配置（可选，使用默认值）
- * @returns 扫描结果（含新预测预警计数）
+ * 流程：
+ * 1. 获取历史出库数据
+ * 2. 计算移动平均、趋势、季节性
+ * 3. 生成未来预测
+ * 4. 保存预测结果
+ *
+ * @param sku 商品 SKU
+ * @param warehouseId 仓库 ID
+ * @param forecastDays 预测天数
+ * @param historyDays 历史数据天数
+ * @returns 预测结果
  */
-export async function checkAllPredictions(
-  db: Database.Database,
-  config?: PredictionConfig
-): Promise<AlertCheckResult> {
-  const cfg: PredictionConfig = {
-    enabled: config?.enabled ?? DEFAULT_PREDICTION_CONFIG.enabled,
-    predictionDays: config?.predictionDays ?? DEFAULT_PREDICTION_CONFIG.predictionDays,
-    shortageThreshold: config?.shortageThreshold ?? DEFAULT_PREDICTION_CONFIG.shortageThreshold,
-    overstockDays: config?.overstockDays ?? DEFAULT_PREDICTION_CONFIG.overstockDays,
-    minHistoryDays: config?.minHistoryDays ?? DEFAULT_PREDICTION_CONFIG.minHistoryDays,
-  };
+export function generateForecast(
+  sku: string,
+  warehouseId: string,
+  forecastDays: number = DEFAULT_FORECAST_DAYS,
+  historyDays: number = DEFAULT_HISTORY_DAYS
+): DemandForecast {
+  // 1. 获取历史出库数据
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - historyDays);
+  const endDate = new Date();
 
-  const result: AlertCheckResult = {
-    newAlerts: 0,
-    lowStockAlerts: 0,
-    expiryAlerts: 0,
-    stagnantAlerts: 0,
-    predictedShortageAlerts: 0,
-    predictedOverstockAlerts: 0,
-    errors: [],
-  };
+  const records = getOutboundRecords(
+    warehouseId,
+    startDate.toISOString(),
+    endDate.toISOString(),
+  ).filter((r) => r.sku === sku);
 
-  if (!cfg.enabled) {
-    return result;
+  // 按日期聚合出库量
+  const dailyMap = new Map<string, number>();
+  for (const r of records) {
+    const dateStr = r.createdAt.slice(0, 10);
+    dailyMap.set(dateStr, (dailyMap.get(dateStr) ?? 0) + r.quantity);
   }
 
-  try {
-    // 1. 查询每日出库聚合数据（过去 30 天）
-    const dailyOutbounds = db.prepare(`
-      SELECT
-        it.sku,
-        it.warehouse_id AS warehouseId,
-        DATE(it.created_at) AS date,
-        SUM(ABS(it.quantity)) AS dailyOutbound
-      FROM inventory_transactions it
-      WHERE it.type IN ('outbound', 'transfer_out')
-        AND it.created_at >= DATE('now', '-30 days')
-      GROUP BY it.sku, it.warehouse_id, DATE(it.created_at)
-      ORDER BY it.sku, it.warehouse_id, date ASC
-    `).all() as DailyOutbound[];
+  // 构建完整的时间序列（填充缺失日期为 0）
+  const dailyDemand: number[] = [];
+  const dates: string[] = [];
+  const currentDate = new Date(startDate);
+  const today = new Date();
 
-    if (dailyOutbounds.length === 0) {
-      return result;
-    }
+  while (currentDate <= today) {
+    const dateStr = currentDate.toISOString().slice(0, 10);
+    dates.push(dateStr);
+    dailyDemand.push(dailyMap.get(dateStr) ?? 0);
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
 
-    // 2. 查询所有 SKU 的当前库存和仓库信息
-    const inventoryItems = db.prepare(`
-      SELECT
-        ii.sku,
-        ii.warehouseId AS warehouse_id,
-        ii.quantity AS current_stock,
-        w.name AS warehouse_name
-      FROM inventory_items ii
-      LEFT JOIN warehouses w ON ii.warehouseId = w.id
-      WHERE ii.quantity > 0
-    `).all() as Array<{
-      sku: string;
-      warehouse_id: string;
-      current_stock: number;
-      warehouse_name: string | null;
-    }>;
+  if (dailyDemand.length === 0) {
+    throw new Error(`商品 ${sku} 在历史期间无出库数据`);
+  }
 
-    // 构建库存索引：`sku|warehouseId` → 库存信息
-    const stockIndex = new Map<string, { currentStock: number; warehouseName: string }>();
-    for (const item of inventoryItems) {
-      const key = `${item.sku}|${item.warehouse_id}`;
-      stockIndex.set(key, {
-        currentStock: item.current_stock,
-        warehouseName: item.warehouse_name ?? item.warehouse_id,
-      });
-    }
+  // 2. 计算趋势
+  const trend = calculateTrend(dailyDemand);
 
-    // 3. 按 (sku, warehouseId) 分组出库数据
-    const groupingKey = (d: DailyOutbound) => `${d.sku}|${d.warehouseId}`;
-    const groups = new Map<string, DailyOutbound[]>();
+  // 3. 计算季节性因子
+  const seasonality = calculateSeasonality(dailyDemand, SEASONALITY_PERIOD);
 
-    for (const d of dailyOutbounds) {
-      const key = groupingKey(d);
-      if (!groups.has(key)) {
-        groups.set(key, []);
-      }
-      groups.get(key)!.push(d);
-    }
+  // 4. 计算移动平均
+  const smoothed = movingAverage(dailyDemand, MOVING_AVERAGE_WINDOW);
 
-    // 4. 对每组进行 EMA 预测和预警判定
-    const insertStmt = db.prepare(`
-      INSERT INTO wms_alerts (
-        warehouse_id,
-        alert_type,
-        severity,
-        sku,
-        message,
-        triggered_at,
-        status,
-        created_at,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, datetime('now'), 'active', datetime('now'), datetime('now'))
-    `);
+  // 5. 生成预测
+  const lastValue = smoothed[smoothed.length - 1];
+  const forecasts: Array<{ date: string; predictedDemand: number; confidence: number }> = [];
 
-    const predictAll = db.transaction(() => {
-      for (const [key, outbounds] of groups) {
-        const [sku, warehouseId] = key.split('|');
-        const stock = stockIndex.get(key);
-        if (!stock || stock.currentStock <= 0) continue;
+  for (let i = 1; i <= forecastDays; i++) {
+    const forecastDate = new Date();
+    forecastDate.setDate(forecastDate.getDate() + i);
+    const dateStr = forecastDate.toISOString().slice(0, 10);
 
-        // 计算历史出库天数和 EMA
-        const historyDays = outbounds.length;
-        if (historyDays < cfg.minHistoryDays) continue; // 数据不足，跳过
+    // 基础预测 = 最后移动平均值 + 趋势
+    let predicted = lastValue + trend * i;
 
-        const dailyValues = outbounds.map((d) => d.dailyOutbound);
-        const dailyConsumption = computeEMA(dailyValues, 0.3);
+    // 应用季节性调整
+    const dayOfWeek = forecastDate.getDay();
+    const seasonalFactor = seasonality[dayOfWeek] || 1;
+    predicted *= seasonalFactor;
 
-        if (dailyConsumption <= 0) continue; // 无效消耗速率，跳过
+    // 确保非负
+    predicted = Math.max(0, predicted);
 
-        // 预测库存 = 当前库存 - 日均消耗 × 预测天数
-        const predictedStock = stock.currentStock - dailyConsumption * cfg.predictionDays;
-        const daysUntilZero = dailyConsumption > 0
-          ? Math.round(stock.currentStock / dailyConsumption)
-          : Number.MAX_SAFE_INTEGER;
+    // 置信度随预测天数递减
+    const confidence = Math.max(0.3, 1 - i * 0.02);
 
-        // 置信度判定
-        let confidence: 'high' | 'medium' | 'low' = 'low';
-        if (historyDays >= 28) {
-          confidence = 'high';
-        } else if (historyDays >= 14) {
-          confidence = 'medium';
-        }
-
-        // === 预测短缺判定 ===
-        if (predictedStock <= cfg.shortageThreshold || daysUntilZero <= cfg.predictionDays) {
-          // 去重：检查是否已有活跃的 predicted_shortage 预警
-          const existing = db.prepare(`
-            SELECT COUNT(*) AS cnt FROM wms_alerts
-            WHERE alert_type = 'predicted_shortage'
-              AND status = 'active'
-              AND sku = ?
-              AND warehouse_id = ?
-          `).get(sku, warehouseId) as { cnt: number };
-
-          if (existing.cnt === 0) {
-            // 严重程度判定
-            let severity: WmsAlert['severity'] = 'medium';
-            if (daysUntilZero <= 3) {
-              severity = 'critical';
-            } else if (daysUntilZero <= 7) {
-              severity = 'high';
-            } else if (daysUntilZero <= 14) {
-              severity = 'medium';
-            } else {
-              severity = 'low';
-            }
-
-            const warehouseName = stock.warehouseName;
-            insertStmt.run(
-              warehouseId,
-              'predicted_shortage',
-              severity,
-              sku,
-              `[预测短缺] SKU ${sku} 预计 ${daysUntilZero} 天后缺货（当前库存 ${stock.currentStock}，日耗 ${dailyConsumption.toFixed(1)}，置信度: ${confidence}，仓库: ${warehouseName}）`
-            );
-            result.predictedShortageAlerts++;
-            result.newAlerts++;
-          }
-        }
-
-        // === 预测积压判定 ===
-        if (daysUntilZero > cfg.overstockDays) {
-          // 去重：检查是否已有活跃的 predicted_overstock 预警
-          const existing = db.prepare(`
-            SELECT COUNT(*) AS cnt FROM wms_alerts
-            WHERE alert_type = 'predicted_overstock'
-              AND status = 'active'
-              AND sku = ?
-              AND warehouse_id = ?
-          `).get(sku, warehouseId) as { cnt: number };
-
-          if (existing.cnt === 0) {
-            // 严重程度判定（超过 overstockDays 越多越严重）
-            let severity: WmsAlert['severity'] = 'medium';
-            const excessRatio = daysUntilZero / cfg.overstockDays;
-            if (excessRatio >= 3) {
-              severity = 'critical';
-            } else if (excessRatio >= 2) {
-              severity = 'high';
-            } else if (excessRatio >= 1.5) {
-              severity = 'medium';
-            } else {
-              severity = 'low';
-            }
-
-            const warehouseName = stock.warehouseName;
-            insertStmt.run(
-              warehouseId,
-              'predicted_overstock',
-              severity,
-              sku,
-              `[预测积压] SKU ${sku} 按当前消耗速率可使用 ${daysUntilZero} 天（超出阈值 ${cfg.overstockDays} 天，置信度: ${confidence}，仓库: ${warehouseName}）`
-            );
-            result.predictedOverstockAlerts++;
-            result.newAlerts++;
-          }
-        }
-      }
+    forecasts.push({
+      date: dateStr,
+      predictedDemand: Math.round(predicted * 100) / 100,
+      confidence: Math.round(confidence * 100) / 100,
     });
-
-    predictAll();
-  } catch (err) {
-    result.errors.push(`预测扫描失败: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  return result;
+  // 6. 计算统计信息
+  const totalPredictedDemand = forecasts.reduce((sum, f) => sum + f.predictedDemand, 0);
+  const avgDailyDemand = dailyDemand.reduce((sum, d) => sum + d, 0) / dailyDemand.length;
+
+  // 7. 保存预测结果（使用 DAO 层）
+  const forecastId = createDemandForecast({
+    sku,
+    warehouseId,
+    forecastDate: now(),
+    forecastDays,
+    predictedDemand: totalPredictedDemand,
+    confidenceLevel: forecasts[0]?.confidence ?? 0.8,
+    modelVersion: 'v1.0_moving_average',
+    status: 'active',
+  });
+
+  return {
+    id: forecastId,
+    sku,
+    warehouseId,
+    forecastDate: now(),
+    forecastDays,
+    predictedDemand: totalPredictedDemand,
+    confidenceLevel: forecasts[0]?.confidence ?? 0.8,
+    modelVersion: 'v1.0_moving_average',
+    status: 'active',
+    createdAt: now(),
+    updatedAt: now(),
+    details: {
+      dailyForecasts: forecasts,
+      avgDailyDemand: Math.round(avgDailyDemand * 100) / 100,
+      trend: Math.round(trend * 100) / 100,
+      historyDays: dailyDemand.length,
+    },
+  };
 }
 
 /**
- * 获取单个 SKU 的预测详情（用于前端图表渲染）
+ * 获取预测列表
  *
- * @param db - 数据库实例
- * @param sku - SKU 编号
- * @param warehouseId - 仓库 ID
- * @param config - 预测配置（可选）
- * @returns 预测详情，若无数据返回 null
+ * @param filters 筛选条件
+ * @returns 预测列表
  */
-export function getPredictionDetail(
-  db: Database.Database,
-  sku: string,
-  warehouseId: string,
-  config?: PredictionConfig
-): PredictionDetail | null {
-  const cfg: PredictionConfig = {
-    enabled: config?.enabled ?? DEFAULT_PREDICTION_CONFIG.enabled,
-    predictionDays: config?.predictionDays ?? DEFAULT_PREDICTION_CONFIG.predictionDays,
-    shortageThreshold: config?.shortageThreshold ?? DEFAULT_PREDICTION_CONFIG.shortageThreshold,
-    overstockDays: config?.overstockDays ?? DEFAULT_PREDICTION_CONFIG.overstockDays,
-    minHistoryDays: config?.minHistoryDays ?? DEFAULT_PREDICTION_CONFIG.minHistoryDays,
-  };
-
-  // 查询当前库存和仓库名
-  const stockRow = db.prepare(`
-    SELECT
-      ii.quantity AS current_stock,
-      w.name AS warehouse_name
-    FROM inventory_items ii
-    LEFT JOIN warehouses w ON ii.warehouseId = w.id
-    WHERE ii.sku = ? AND ii.warehouseId = ?
-  `).get(sku, warehouseId) as { current_stock: number; warehouse_name: string | null } | undefined;
-
-  if (!stockRow || stockRow.current_stock <= 0) {
-    return null;
-  }
-
-  // 查询过去 30 天的每日出库和库存快照
-  const historyOutbounds = db.prepare(`
-    SELECT
-      DATE(it.created_at) AS date,
-      SUM(ABS(it.quantity)) AS outbound
-    FROM inventory_transactions it
-    WHERE it.sku = ?
-      AND it.warehouse_id = ?
-      AND it.type IN ('outbound', 'transfer_out')
-      AND it.created_at >= DATE('now', '-30 days')
-    GROUP BY DATE(it.created_at)
-    ORDER BY date ASC
-  `).all(sku, warehouseId) as Array<{ date: string; outbound: number }>;
-
-  // 查询过去 30 天的库存快照（用于历史库存线）
-  const historySnapshots = db.prepare(`
-    SELECT
-      DATE(created_at) AS date,
-      quantity AS stock
-    FROM inventory_items
-    WHERE sku = ? AND warehouseId = ?
-      AND created_at >= DATE('now', '-30 days')
-    ORDER BY date ASC
-  `).all(sku, warehouseId) as Array<{ date: string; stock: number }>;
-
-  // 合并历史出库到日期索引
-  const outboundByDate = new Map<string, number>();
-  for (const row of historyOutbounds) {
-    outboundByDate.set(row.date, row.outbound);
-  }
-
-  // 合并历史库存到日期索引
-  const stockByDate = new Map<string, number>();
-  for (const row of historySnapshots) {
-    stockByDate.set(row.date, row.stock);
-  }
-
-  // 构建全量日期列表（过去 30 天所有有数据的日期）
-  const allDates = new Set<string>();
-  historyOutbounds.forEach((r) => allDates.add(r.date));
-  historySnapshots.forEach((r) => allDates.add(r.date));
-  const sortedDates = Array.from(allDates).sort();
-
-  // 构建历史数据数组
-  const historyData: Array<{ date: string; stock: number; outbound: number }> = sortedDates.map((date) => ({
-    date,
-    stock: stockByDate.get(date) ?? stockRow.current_stock,
-    outbound: outboundByDate.get(date) ?? 0,
+export function getForecasts(filters?: {
+  sku?: string;
+  warehouseId?: string;
+  status?: string;
+}): DemandForecast[] {
+  const rows = getDemandForecasts(filters);
+  return rows.map((row) => ({
+    id: row.id as number,
+    sku: row.sku as string,
+    warehouseId: row.warehouse_id as string,
+    forecastDate: row.forecast_date as string,
+    forecastDays: row.forecast_days as number,
+    predictedDemand: row.predicted_demand as number,
+    confidenceLevel: row.confidence_level as number,
+    modelVersion: row.model_version as string,
+    status: row.status as string,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
   }));
+}
 
-  // 计算 EMA 日均消耗
-  const dailyValues = historyOutbounds.map((r) => r.outbound);
-  const dailyConsumption = computeEMA(dailyValues, 0.3);
-  const daysUntilZero = dailyConsumption > 0
-    ? Math.round(stockRow.current_stock / dailyConsumption)
-    : Number.MAX_SAFE_INTEGER;
+/**
+ * 获取预测详情
+ *
+ * @param forecastId 预测 ID
+ * @returns 预测详情
+ */
+export function getForecastDetail(forecastId: number): DemandForecast | null {
+  const row = getDemandForecastById(forecastId);
+  if (!row) return null;
+  return {
+    id: row.id as number,
+    sku: row.sku as string,
+    warehouseId: row.warehouse_id as string,
+    forecastDate: row.forecast_date as string,
+    forecastDays: row.forecast_days as number,
+    predictedDemand: row.predicted_demand as number,
+    confidenceLevel: row.confidence_level as number,
+    modelVersion: row.model_version as string,
+    status: row.status as string,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
+}
 
-  // 置信度
-  const historyDays = historyOutbounds.length;
-  let confidence: 'high' | 'medium' | 'low' = 'low';
-  if (historyDays >= 28) {
-    confidence = 'high';
-  } else if (historyDays >= 14) {
-    confidence = 'medium';
+/**
+ * 更新预测状态
+ *
+ * @param forecastId 预测 ID
+ * @param status 新状态
+ * @returns 是否更新成功
+ */
+export function updateForecastStatus(forecastId: number, status: string): boolean {
+  return updateDemandForecastStatus(forecastId, status);
+}
+
+/**
+ * 删除预测
+ *
+ * @param forecastId 预测 ID
+ * @returns 是否删除成功
+ */
+export function deleteForecast(forecastId: number): boolean {
+  return deleteDemandForecast(forecastId);
+}
+
+/**
+ * 获取预测统计
+ *
+ * @param warehouseId 仓库 ID（可选）
+ * @returns 预测统计信息
+ */
+export function getForecastStats(warehouseId?: string): {
+  totalForecasts: number;
+  activeForecasts: number;
+  avgConfidence: number;
+  totalPredictedDemand: number;
+} {
+  const forecasts = getForecasts(warehouseId ? { warehouseId } : undefined);
+
+  const activeForecasts = forecasts.filter((f) => f.status === 'active');
+  const totalPredictedDemand = activeForecasts.reduce((sum, f) => sum + f.predictedDemand, 0);
+  const avgConfidence = activeForecasts.length > 0
+    ? activeForecasts.reduce((sum, f) => sum + f.confidenceLevel, 0) / activeForecasts.length
+    : 0;
+
+  return {
+    totalForecasts: forecasts.length,
+    activeForecasts: activeForecasts.length,
+    avgConfidence: Math.round(avgConfidence * 100) / 100,
+    totalPredictedDemand: Math.round(totalPredictedDemand * 100) / 100,
+  };
+}
+
+/**
+ * 批量生成预测
+ *
+ * 为指定仓库的所有商品生成预测
+ *
+ * @param warehouseId 仓库 ID
+ * @param forecastDays 预测天数
+ * @returns 生成的预测列表
+ */
+export function batchGenerateForecasts(
+  warehouseId: string,
+  forecastDays: number = DEFAULT_FORECAST_DAYS
+): DemandForecast[] {
+  // 获取仓库中的所有 SKU
+  const items = getInventoryItems(warehouseId);
+  const skuSet = new Set<string>();
+  for (const item of items) {
+    if (item.sku) skuSet.add(item.sku as string);
   }
 
-  // 构建预测曲线（未来 N 天）
-  const predictionCurve: Array<{ date: string; predictedStock: number }> = [];
-  const today = new Date();
-  for (let i = 1; i <= cfg.predictionDays; i++) {
-    const futureDate = new Date(today);
-    futureDate.setDate(futureDate.getDate() + i);
-    const dateStr = futureDate.toISOString().split('T')[0];
-    const predictedStock = Math.max(0, stockRow.current_stock - dailyConsumption * i);
-    predictionCurve.push({
-      date: dateStr,
-      predictedStock: Math.round(predictedStock * 100) / 100,
-    });
+  const results: DemandForecast[] = [];
+
+  for (const sku of skuSet) {
+    try {
+      const forecast = generateForecast(sku, warehouseId, forecastDays);
+      results.push(forecast);
+    } catch (e) {
+      logger.warn(`[Prediction] 生成预测失败: sku=${sku}, error=${(e as Error).message}`);
+    }
+  }
+
+  return results;
+}
+
+// ===================== 兼容导出 =====================
+
+import type { AlertCheckResult, PredictionConfig, PredictionDetail } from '../models/wms-skill.js';
+
+/**
+ * 检查所有预测（兼容旧 API）
+ * @deprecated 使用 batchGenerateForecasts() 替代
+ */
+export async function checkAllPredictions(config: PredictionConfig): Promise<AlertCheckResult> {
+  // 获取所有仓库
+  const items = getInventoryItems();
+  const warehouseSet = new Set<string>();
+  for (const item of items) {
+    if (item.warehouseId) warehouseSet.add(item.warehouseId as string);
+  }
+
+  let newAlerts = 0;
+  const errors: string[] = [];
+
+  for (const warehouseId of warehouseSet) {
+    try {
+      const forecasts = batchGenerateForecasts(warehouseId, config.predictionDays);
+      for (const f of forecasts) {
+        if (f.predictedDemand > 0) {
+          newAlerts++;
+        }
+      }
+    } catch (e) {
+      errors.push(`仓库 ${warehouseId}: ${(e as Error).message}`);
+    }
   }
 
   return {
-    sku,
-    warehouseId,
-    warehouseName: stockRow.warehouse_name ?? undefined,
-    currentStock: stockRow.current_stock,
-    dailyConsumption: Math.round(dailyConsumption * 100) / 100,
-    daysUntilZero,
-    confidence,
-    historyData,
-    predictionCurve,
-    safetyStockLine: cfg.shortageThreshold,
+    newAlerts,
+    lowStockAlerts: 0,
+    expiryAlerts: 0,
+    stagnantAlerts: 0,
+    predictedShortageAlerts: newAlerts,
+    predictedOverstockAlerts: 0,
+    errors,
   };
+}
+
+/**
+ * 获取预测详情（兼容旧 API）
+ * @deprecated 使用 getForecastDetail() 替代
+ */
+export function getPredictionDetail(sku: string, warehouseId: string, _config: PredictionConfig): PredictionDetail | null {
+  try {
+    // 获取当前库存
+    const items = getInventoryItems(warehouseId);
+    const item = items.find((i) => i.sku === sku) as { quantity: number } | undefined;
+
+    if (!item) return null;
+
+    // 获取历史出库数据（最近 30 天）
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const historyRecords = getOutboundRecords(
+      warehouseId,
+      thirtyDaysAgo.toISOString(),
+    ).filter((r) => r.sku === sku);
+
+    // 按日期聚合
+    const dailyMap = new Map<string, number>();
+    for (const r of historyRecords) {
+      const dateStr = r.createdAt.slice(0, 10);
+      dailyMap.set(dateStr, (dailyMap.get(dateStr) ?? 0) + r.quantity);
+    }
+
+    const history = Array.from(dailyMap.entries()).map(([date, outbound]) => ({ date, outbound }));
+    history.sort((a, b) => a.date.localeCompare(b.date));
+
+    // 计算日均消耗
+    const totalOutbound = history.reduce((sum, h) => sum + h.outbound, 0);
+    const dailyConsumption = history.length > 0 ? totalOutbound / history.length : 0;
+
+    // 计算预测归零天数
+    const daysUntilZero = dailyConsumption > 0
+      ? Math.round(item.quantity / dailyConsumption)
+      : 999;
+
+    // 构建历史数据
+    const historyData = history.map((h) => ({
+      date: h.date,
+      stock: item.quantity,
+      outbound: h.outbound,
+    }));
+
+    // 构建预测曲线
+    const predictionCurve: Array<{ date: string; predictedStock: number }> = [];
+    for (let i = 1; i <= 14; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      predictionCurve.push({
+        date: d.toISOString().slice(0, 10),
+        predictedStock: Math.max(0, Math.round(item.quantity - dailyConsumption * i)),
+      });
+    }
+
+    return {
+      sku,
+      warehouseId,
+      currentStock: item.quantity,
+      dailyConsumption: Math.round(dailyConsumption * 100) / 100,
+      daysUntilZero,
+      confidence: history.length >= 7 ? 'high' : history.length >= 3 ? 'medium' : 'low',
+      historyData,
+      predictionCurve,
+      safetyStockLine: 10,
+    };
+  } catch (e) {
+    logger.error(`[Prediction] 获取预测详情失败: sku=${sku}, warehouse=${warehouseId}`, e);
+    return null;
+  }
 }

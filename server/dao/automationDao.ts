@@ -391,6 +391,40 @@ export function getRunsByAutomationId(
   };
 }
 
+/** 获取所有执行记录（全局，不分 automation） */
+export function getAllRuns(
+  limit?: number,
+  offset?: number,
+): { data: AutomationExecutionData[]; total: number } {
+  const countRow = db().prepare(
+    'SELECT COUNT(*) as total FROM automation_runs'
+  ).get() as { total: number };
+
+  let query = 'SELECT * FROM automation_runs ORDER BY started_at DESC';
+  const params: unknown[] = [];
+
+  if (limit !== undefined && limit > 0) {
+    query += ' LIMIT ?';
+    params.push(limit);
+  }
+  if (offset !== undefined && offset > 0) {
+    query += ' OFFSET ?';
+    params.push(offset);
+  }
+
+  const rows = db().prepare(query).all(...params) as AutomationRunRow[];
+  return {
+    data: rows.map(rowToExecution),
+    total: countRow.total,
+  };
+}
+
+/** 按 automation_id 删除执行记录 */
+export function deleteRunsByAutomationId(automationId: string): number {
+  const result = db().prepare('DELETE FROM automation_runs WHERE automation_id = ?').run(automationId);
+  return result.changes;
+}
+
 /** 清空所有执行记录 */
 export function clearAllExecutions(): number {
   const result = db().prepare('DELETE FROM automation_runs').run();

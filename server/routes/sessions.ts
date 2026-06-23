@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { initDb } from '../db.js';
 import {
   getSessions,
   searchSessions,
@@ -8,6 +7,7 @@ import {
   getSessionMessages,
   deleteSession,
   moveSessionToFolder,
+  updateSession,
 } from '../dao/chat.js';
 import {
   getActiveSessions,
@@ -92,14 +92,17 @@ router.delete('/:id', (req, res) => {
 // 更新会话标题
 router.patch('/:id', (req, res) => {
   const { title, tags } = req.body;
-  const db = initDb();
-  const now = new Date().toISOString();
+  const updates: { title?: string; tags?: string } = {};
 
   if (title) {
-    db.prepare('UPDATE sessions SET title = ?, updatedAt = ? WHERE id = ?').run(title, now, req.params.id);
+    updates.title = title;
   }
   if (tags) {
-    db.prepare('UPDATE sessions SET tags = ?, updatedAt = ? WHERE id = ?').run(JSON.stringify(tags), now, req.params.id);
+    updates.tags = JSON.stringify(tags);
+  }
+
+  if (Object.keys(updates).length > 0) {
+    updateSession(req.params.id, updates);
   }
 
   res.json({ ok: true });

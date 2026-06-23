@@ -162,19 +162,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const [selectedPermission, setSelectedPermission] = useState('默认权限');
   const [showAISettings, setShowAISettings] = useState(false);
 
-  // v1.9.1: 推理强度（默认 high，持久化到 localStorage）
-  const [reasoningEffort, setReasoningEffort] = useState<string>(() => {
-    try {
-      return localStorage.getItem('cdf-reasoning-effort') || 'high';
-    } catch { return 'high'; }
-  });
-
-  // 持久化推理强度选择
-  const handleReasoningEffortChange = useCallback((effort: string) => {
-    setReasoningEffort(effort);
-    try { localStorage.setItem('cdf-reasoning-effort', effort); } catch { /* ignore */ }
-  }, []);
-
   // 附件状态
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -186,24 +173,13 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     if (name === 'Auto') {
       setSelectedModelId('auto');
       updateSessionModel('auto');
-      // Auto 模式：恢复默认推理强度
-      handleReasoningEffortChange('high');
     } else {
       const found = enabledModels.find((m) => m.name === name);
       const modelId = found?.id || name;
       setSelectedModelId(modelId);
       updateSessionModel(modelId);
-      // 根据模型能力自动调整推理强度
-      // v8.2-fix: 扩展 supportsReasoning 判断，与后端 aiClient.ts 保持一致
-      const supportsReasoning = found?.capabilities?.includes('reasoning') ||
-        /deepseek|reasoner|o3|o4|r1|moonshot|kimi|k2[.\-]|qwq|qwen3|glm|zhipu/i.test(found?.id || '');
-      if (!supportsReasoning) {
-        handleReasoningEffortChange('');
-      } else if (!reasoningEffort) {
-        handleReasoningEffortChange('high');
-      }
     }
-  }, [enabledModels, updateSessionModel, handleReasoningEffortChange, reasoningEffort]);
+  }, [enabledModels, updateSessionModel]);
 
   /** 格式化文件大小 */
   const formatFileSize = (bytes: number): string => {
@@ -498,7 +474,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       referencedSessions,
       model: effectiveModelId,
       attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
-      reasoningEffort: reasoningEffort || undefined,
       executionMode: aiEngineSettings.defaultExecutionMode !== 'legacy' ? aiEngineSettings.defaultExecutionMode : undefined,
       queueMode: aiEngineSettings.defaultQueueMode !== 'followup' ? aiEngineSettings.defaultQueueMode : undefined,
     });
@@ -940,8 +915,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           modelsLoading={modelsLoading}
           onAttachClick={() => fileInputRef.current?.click()}
           hasAttachments={pendingAttachments.length > 0}
-          reasoningEffort={reasoningEffort}
-          onReasoningEffortChange={handleReasoningEffortChange}
         />
         {/* v2.3.0: 文件夹选择区域 — 作为 Paper 内部元素，避免圆角颜色不一致 */}
         <Collapse in={isEmpty} timeout={300}>

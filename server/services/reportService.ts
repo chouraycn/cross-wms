@@ -3,13 +3,15 @@
  *
  * CSV 报表生成服务，负责生成库存、入库、出库报表。
  * 支持按仓库、日期范围筛选，CSV 文件保存至 ~/.cdf-know-clow/reports/ 目录。
+ *
+ * v10.0: 改为使用 DAO 层，彻底弃用 SQLite 直接查询
  */
 
-import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { logger } from '../logger.js';
+import { createReport, getReports, getReportById, deleteReport as daoDeleteReport } from '../dao/wmsSkillDao.js';
+import { getInventoryItems, getInboundRecords, getOutboundRecords, getWarehouseById } from '../dao/warehouse.js';
 
 // ===================== 常量定义 =====================
 
@@ -62,322 +64,239 @@ function toCSV(headers: string[], rows: Record<string, unknown>[]): string {
   return UTF8_BOM + [headerRow, ...dataRows].join('\n');
 }
 
-/**
- * 写入报表记录到数据库
- * @param db 数据库实例
- * @param reportType 报表类型
- * @param warehouseId 仓库 ID
- * @param filePath 文件路径
- * @param recordCount 记录数
- */
-function saveReportRecord(
-  db: Database.Database,
-  reportType: string,
-  warehouseId: string | null,
-  filePath: string,
-  recordCount: number
-): void {
-  const stmt = db.prepare(`
-    INSERT INTO wms_reports (
-      report_type,
-      warehouse_id,
-      file_path,
-      record_count,
-      generated_at,
-      created_at,
-      updated_at
-    ) VALUES (?, ?, ?, ?, datetime('now'), datetime('now'), datetime('now'))
-  `);
-
-  stmt.run(
-    reportType,
-    warehouseId,
-    filePath,
-    recordCount
-  );
-}
-
 // ===================== 核心函数 =====================
 
 /**
  * 生成库存报表
- * @param db 数据库实例
  * @param warehouseId 仓库 ID（可选，不传则查询所有仓库）
  * @param startDate 开始日期（可选）
  * @param endDate 结束日期（可选）
  * @returns 生成的报表文件路径
  */
 export function generateInventoryReport(
-  db: Database.Database,
   warehouseId?: string,
   startDate?: string,
   endDate?: string
 ): string {
   ensureReportsDir();
 
-  // 构建查询
-  let query = `
-    SELECT
-      ii.sku,
-      ii.name,
-      ii.warehouse_id,
-      w.name as warehouse_name,
-      ii.quantity,
-      ii.unit_price,
-      ii.total_value,
-      ii.total_volume,
-      ii.location,
-      ii.expiry_date,
-      ii.updated_at
-    FROM inventory_items ii
-    LEFT JOIN warehouses w ON ii.warehouse_id = w.id
-    WHERE 1=1
-  `;
+  // 使用 DAO 获取库存数据
+  const items = getInventoryItems(warehouseId).filter((item) => {
+    const updatedAt = String(item.updatedAt || '');
+    if (startDate && updatedAt < startDate) return false;
+    if (endDate && updatedAt > endDate + 'T23:59:59.999Z') return false;
+    return true;
+  });
 
-  const params: unknown[] = [];
+  // 构建报表行（JOIN warehouses 获取仓库名称）
+  const rows = items.map((item) => {
+    const warehouse = getWarehouseById(String(item.warehouseId || ''));
+    return {
+      sku: item.sku,
+      name: item.name,
+      warehouse_id: item.warehouseId,
+      warehouse_name: warehouse?.name || '',
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+      total_value: item.totalValue,
+      total_volume: item.totalVolume,
+      location: item.location,
+      expiry_date: item.expiryDate,
+      updated_at: item.updatedAt,
+    };
+  });
 
-  if (warehouseId) {
-    query += ` AND ii.warehouse_id = ?`;
-    params.push(warehouseId);
-  }
-
-  if (startDate) {
-    query += ` AND ii.updated_at >= ?`;
-    params.push(startDate);
-  }
-
-  if (endDate) {
-    query += ` AND ii.updated_at <= ?`;
-    params.push(endDate);
-  }
-
-  query += ` ORDER BY ii.warehouse_id, ii.sku`;
-
-  const items = db.prepare(query).all(...params) as Array<Record<string, unknown>>;
+  // 按仓库+SKU排序
+  rows.sort((a, b) => {
+    const wa = String(a.warehouse_id);
+    const wb = String(b.warehouse_id);
+    if (wa !== wb) return wa.localeCompare(wb);
+    return String(a.sku).localeCompare(String(b.sku));
+  });
 
   // 定义表头
   const headers = [
-    'sku',
-    'name',
-    'warehouse_id',
-    'warehouse_name',
-    'quantity',
-    'unit_price',
-    'total_value',
-    'total_volume',
-    'location',
-    'expiry_date',
-    'updated_at',
+    'sku', 'name', 'warehouse_id', 'warehouse_name', 'quantity',
+    'unit_price', 'total_value', 'total_volume', 'location',
+    'expiry_date', 'updated_at',
   ];
 
   // 生成 CSV
-  const csv = toCSV(headers, items);
+  const csv = toCSV(headers, rows);
   const fileName = generateFileName('inventory', warehouseId);
   const filePath = path.join(REPORTS_DIR, fileName);
 
   fs.writeFileSync(filePath, csv, 'utf-8');
 
-  // 保存记录到数据库
-  saveReportRecord(db, 'inventory', warehouseId || null, filePath, items.length);
+  // 保存记录到数据库（使用 DAO）
+  createReport({
+    reportType: 'inventory',
+    warehouseId: warehouseId || undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    filePath,
+    fileFormat: 'csv',
+    generatedBy: undefined,
+    generatedAt: new Date().toISOString(),
+    status: 'completed',
+  });
 
   return filePath;
 }
 
 /**
  * 生成入库报表
- * @param db 数据库实例
  * @param warehouseId 仓库 ID（可选）
  * @param startDate 开始日期（可选）
  * @param endDate 结束日期（可选）
  * @returns 生成的报表文件路径
  */
 export function generateInboundReport(
-  db: Database.Database,
   warehouseId?: string,
   startDate?: string,
   endDate?: string
 ): string {
   ensureReportsDir();
 
-  // 构建查询
-  let query = `
-    SELECT
-      ir.id,
-      ir.warehouse_id,
-      w.name as warehouse_name,
-      ir.sku,
-      ii.name as product_name,
-      ir.quantity,
-      ir.operator,
-      ir.remarks,
-      ir.created_at
-    FROM inbound_records ir
-    LEFT JOIN warehouses w ON ir.warehouse_id = w.id
-    LEFT JOIN inventory_items ii ON ir.sku = ii.sku
-    WHERE 1=1
-  `;
+  // 使用 DAO 获取入库记录
+  const records = getInboundRecords(warehouseId, startDate, endDate);
 
-  const params: unknown[] = [];
-
-  if (warehouseId) {
-    query += ` AND ir.warehouse_id = ?`;
-    params.push(warehouseId);
-  }
-
-  if (startDate) {
-    query += ` AND ir.created_at >= ?`;
-    params.push(startDate);
-  }
-
-  if (endDate) {
-    query += ` AND ir.created_at <= ?`;
-    params.push(endDate);
-  }
-
-  query += ` ORDER BY ir.created_at DESC`;
-
-  const items = db.prepare(query).all(...params) as Array<Record<string, unknown>>;
+  // 构建报表行（JOIN warehouses + inventory_items）
+  const rows = records.map((record) => {
+    const warehouse = getWarehouseById(record.warehouseId);
+    const items = getInventoryItems(record.warehouseId);
+    const product = items.find((i) => i.sku === record.sku);
+    return {
+      id: record.id,
+      warehouse_id: record.warehouseId,
+      warehouse_name: warehouse?.name || '',
+      sku: record.sku,
+      product_name: product?.name || '',
+      quantity: record.quantity,
+      operator: record.operator,
+      remarks: (record as unknown as Record<string, unknown>).remarks ?? '',
+      created_at: record.createdAt,
+    };
+  });
 
   // 定义表头
   const headers = [
-    'id',
-    'warehouse_id',
-    'warehouse_name',
-    'sku',
-    'product_name',
-    'quantity',
-    'operator',
-    'remarks',
-    'created_at',
+    'id', 'warehouse_id', 'warehouse_name', 'sku', 'product_name',
+    'quantity', 'operator', 'remarks', 'created_at',
   ];
 
   // 生成 CSV
-  const csv = toCSV(headers, items);
+  const csv = toCSV(headers, rows);
   const fileName = generateFileName('inbound', warehouseId);
   const filePath = path.join(REPORTS_DIR, fileName);
 
   fs.writeFileSync(filePath, csv, 'utf-8');
 
-  // 保存记录到数据库
-  saveReportRecord(db, 'inbound', warehouseId || null, filePath, items.length);
+  // 保存记录到数据库（使用 DAO）
+  createReport({
+    reportType: 'inbound',
+    warehouseId: warehouseId || undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    filePath,
+    fileFormat: 'csv',
+    generatedBy: undefined,
+    generatedAt: new Date().toISOString(),
+    status: 'completed',
+  });
 
   return filePath;
 }
 
 /**
  * 生成出库报表
- * @param db 数据库实例
  * @param warehouseId 仓库 ID（可选）
  * @param startDate 开始日期（可选）
  * @param endDate 结束日期（可选）
  * @returns 生成的报表文件路径
  */
 export function generateOutboundReport(
-  db: Database.Database,
   warehouseId?: string,
   startDate?: string,
   endDate?: string
 ): string {
   ensureReportsDir();
 
-  // 构建查询
-  let query = `
-    SELECT
-      or.id,
-      or.warehouse_id,
-      w.name as warehouse_name,
-      or.sku,
-      ii.name as product_name,
-      or.quantity,
-      or.operator,
-      or.remarks,
-      or.created_at
-    FROM outbound_records or
-    LEFT JOIN warehouses w ON or.warehouse_id = w.id
-    LEFT JOIN inventory_items ii ON or.sku = ii.sku
-    WHERE 1=1
-  `;
+  // 使用 DAO 获取出库记录
+  const records = getOutboundRecords(warehouseId, startDate, endDate);
 
-  const params: unknown[] = [];
-
-  if (warehouseId) {
-    query += ` AND or.warehouse_id = ?`;
-    params.push(warehouseId);
-  }
-
-  if (startDate) {
-    query += ` AND or.created_at >= ?`;
-    params.push(startDate);
-  }
-
-  if (endDate) {
-    query += ` AND or.created_at <= ?`;
-    params.push(endDate);
-  }
-
-  query += ` ORDER BY or.created_at DESC`;
-
-  const items = db.prepare(query).all(...params) as Array<Record<string, unknown>>;
+  // 构建报表行（JOIN warehouses + inventory_items）
+  const rows = records.map((record) => {
+    const warehouse = getWarehouseById(record.warehouseId);
+    const items = getInventoryItems(record.warehouseId);
+    const product = items.find((i) => i.sku === record.sku);
+    return {
+      id: record.id,
+      warehouse_id: record.warehouseId,
+      warehouse_name: warehouse?.name || '',
+      sku: record.sku,
+      product_name: product?.name || '',
+      quantity: record.quantity,
+      operator: record.operator,
+      remarks: (record as unknown as Record<string, unknown>).remarks ?? '',
+      created_at: record.createdAt,
+    };
+  });
 
   // 定义表头
   const headers = [
-    'id',
-    'warehouse_id',
-    'warehouse_name',
-    'sku',
-    'product_name',
-    'quantity',
-    'operator',
-    'remarks',
-    'created_at',
+    'id', 'warehouse_id', 'warehouse_name', 'sku', 'product_name',
+    'quantity', 'operator', 'remarks', 'created_at',
   ];
 
   // 生成 CSV
-  const csv = toCSV(headers, items);
+  const csv = toCSV(headers, rows);
   const fileName = generateFileName('outbound', warehouseId);
   const filePath = path.join(REPORTS_DIR, fileName);
 
   fs.writeFileSync(filePath, csv, 'utf-8');
 
-  // 保存记录到数据库
-  saveReportRecord(db, 'outbound', warehouseId || null, filePath, items.length);
+  // 保存记录到数据库（使用 DAO）
+  createReport({
+    reportType: 'outbound',
+    warehouseId: warehouseId || undefined,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
+    filePath,
+    fileFormat: 'csv',
+    generatedBy: undefined,
+    generatedAt: new Date().toISOString(),
+    status: 'completed',
+  });
 
   return filePath;
 }
 
 /**
  * 获取报表列表
- * @param db 数据库实例
  * @returns 报表记录列表
  */
-export function getReportList(db: Database.Database): Array<Record<string, unknown>> {
-  const stmt = db.prepare(`
-    SELECT
-      id,
-      report_type,
-      warehouse_id,
-      file_path,
-      record_count,
-      generated_at,
-      created_at
-    FROM wms_reports
-    ORDER BY generated_at DESC
-    LIMIT 100
-  `);
-
-  return stmt.all() as Array<Record<string, unknown>>;
+export function getReportList(): Array<Record<string, unknown>> {
+  const reports = getReports();
+  return reports.map(r => ({
+    id: r.id,
+    report_type: r.reportType,
+    warehouse_id: r.warehouseId,
+    file_path: r.filePath,
+    record_count: null,
+    generated_at: r.generatedAt,
+    created_at: r.createdAt,
+  }));
 }
 
 /**
  * 删除报表记录及文件
- * @param db 数据库实例
  * @param reportId 报表 ID
  * @returns 是否删除成功
  */
-export function deleteReport(db: Database.Database, reportId: number): boolean {
+export function deleteReport(reportId: number): boolean {
   // 先查询文件路径
-  const stmt = db.prepare('SELECT file_path FROM wms_reports WHERE id = ?');
-  const record = stmt.get(reportId) as { file_path: string } | undefined;
+  const record = getReportById(reportId);
 
   if (!record) {
     return false;
@@ -385,16 +304,13 @@ export function deleteReport(db: Database.Database, reportId: number): boolean {
 
   // 删除文件
   try {
-    if (fs.existsSync(record.file_path)) {
-      fs.unlinkSync(record.file_path);
+    if (record.filePath && fs.existsSync(record.filePath)) {
+      fs.unlinkSync(record.filePath);
     }
   } catch (err) {
     logger.error('删除报表文件失败:', err);
   }
 
-  // 删除数据库记录
-  const deleteStmt = db.prepare('DELETE FROM wms_reports WHERE id = ?');
-  const result = deleteStmt.run(reportId);
-
-  return result.changes > 0;
+  // 删除数据库记录（使用 DAO）
+  return daoDeleteReport(reportId);
 }

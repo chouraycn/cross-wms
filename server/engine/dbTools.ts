@@ -1,10 +1,13 @@
 /**
  * DB Tools — 数据库查询与 WMS 库存操作
+ *
+ * v9.0: 改为使用 getDb() 获取数据库连接
  */
+
+import { getDb } from '../db.js';
 
 /** 查询 SQLite 数据库（安全限制：仅允许 SELECT 语句） */
 export async function handleDbQuery(args: Record<string, unknown>): Promise<string> {
-  const { initDb } = await import('../db.js');
   const sql = String(args.sql || '').trim();
 
   // 安全检查：仅允许 SELECT 语句
@@ -29,7 +32,7 @@ export async function handleDbQuery(args: Record<string, unknown>): Promise<stri
   const limitedSql = normalizedSql.includes('LIMIT') ? sql : `${sql} LIMIT 100`;
 
   try {
-    const db = initDb();
+    const db = getDb();
     const results = db.prepare(limitedSql).all();
     return JSON.stringify(results);
   } catch (e) {
@@ -39,9 +42,8 @@ export async function handleDbQuery(args: Record<string, unknown>): Promise<stri
 
 /** 获取 WMS 库存概览 */
 export async function handleWmsInventory(): Promise<string> {
-  const { initDb } = await import('../db.js');
   try {
-    const db = initDb();
+    const db = getDb();
     const total = db.prepare('SELECT COUNT(*) as count FROM inventory').get() as { count: number };
     const warehouses = db.prepare('SELECT COUNT(DISTINCT warehouse_id) as count FROM inventory').get() as { count: number };
     const lowStock = db.prepare('SELECT COUNT(*) as count FROM inventory WHERE quantity < safety_stock').get() as { count: number };

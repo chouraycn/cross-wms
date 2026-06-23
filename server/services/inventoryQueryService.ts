@@ -1,8 +1,10 @@
 /**
  * InventoryQueryService — SQL 安全校验 + 执行服务
  * 四层校验：SELECT 正则 + 关键词黑名单 + LIMIT 强制 + 超时兜底
+ *
+ * v9.0: 改为使用 getDb() 获取数据库连接，不再通过构造函数注入
  */
-import type Database from 'better-sqlite3';
+import { getDb } from '../db.js';
 import type { NlQueryRequest, NlQueryResponse, QueryResult } from '../../src/types/inventory-query.js';
 
 /** 安全查询结果（内部使用） */
@@ -40,12 +42,6 @@ const DEFAULT_LIMIT = 200;
 const EXECUTION_TIMEOUT_MS = 5000;
 
 export class InventoryQueryService {
-  private db: Database.Database;
-
-  constructor(db: Database.Database) {
-    this.db = db;
-  }
-
   /**
    * 主入口：校验并执行 SQL 查询
    * @param request 自然语言查询请求
@@ -202,11 +198,12 @@ export class InventoryQueryService {
    * 带超时的 SQL 执行（better-sqlite3 同步 API 包装）
    */
   private executeWithTimeout(sql: string): SafeQueryResult {
+    const db = getDb();
     // better-sqlite3 是同步 API，设置 busyTimeout 作为超时兜底
-    const prevBusyTimeout = this.db.pragma('busy_timeout', { simple: true });
+    const prevBusyTimeout = db.pragma('busy_timeout', { simple: true });
 
     try {
-      const stmt = this.db.prepare(sql);
+      const stmt = db.prepare(sql);
 
       // v1.5.88: 核心安全门 — SQLite 原生 readonly 检查
       // INSERT/UPDATE/DELETE/DROP/ALTER/PRAGMA/ATTACH/REINDEX/VACUUM
@@ -230,7 +227,7 @@ export class InventoryQueryService {
       return { columns, rows, rowCount, truncated };
     } finally {
       // 恢复原始 busy_timeout
-      this.db.pragma(`busy_timeout = ${prevBusyTimeout}`);
+      db.pragma(`busy_timeout = ${prevBusyTimeout}`);
     }
   }
 

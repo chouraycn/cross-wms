@@ -30,17 +30,17 @@ import {
 } from '../aiClient.js';
 import { Observer, type Observation } from './observer.js';
 import { Planner, type ExecutionPlan } from './planner.js';
-import { getToolDefinitions } from './toolRegistry.js';
+import { getBuiltinToolDefinitions } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
 import { mcpClientManager } from './mcpClientManager.js';
 import { compressContextWithSummary } from './contextCompress.js';
+import { truncateContextForModel, estimateMessagesTokens } from './contextTruncate.js';
 import type { ToolExecutionResult } from './toolExecutor.js';
 import type { ExecutionStrategyOptions } from './executionStrategy.js';
 import { BudgetManager, type BudgetConfig } from './budgetManager.js';
 import { LoopDetector } from './loopDetector.js';
 import { ObservationCompressor, needsCompression } from './observationCompressor.js';
 import { CircuitBreaker } from './circuitBreaker.js';
-import { ToolPermissionSandbox } from './toolPermissionSandbox.js';
 import { ToolDependencyGraph } from './toolDependencyGraph.js';
 import { ActionPhaseExecutor } from './actionPhaseExecutor.js';
 import { logger } from '../logger.js';
@@ -134,7 +134,6 @@ export class ReActExecutor {
   private _loopDetector?: LoopDetector;
   private _observationCompressor?: ObservationCompressor;
   private _circuitBreaker?: CircuitBreaker;
-  private _permissionSandbox?: ToolPermissionSandbox;
   private _dependencyGraph?: ToolDependencyGraph;
   private _budgetConfig?: Partial<BudgetConfig>;
   private _actionPhaseExecutor?: ActionPhaseExecutor;
@@ -164,16 +163,12 @@ export class ReActExecutor {
   private get circuitBreaker(): CircuitBreaker {
     return this._circuitBreaker ?? (this._circuitBreaker = new CircuitBreaker());
   }
-  private get permissionSandbox(): ToolPermissionSandbox {
-    return this._permissionSandbox ?? (this._permissionSandbox = new ToolPermissionSandbox());
-  }
   private get dependencyGraph(): ToolDependencyGraph {
     return this._dependencyGraph ?? (this._dependencyGraph = new ToolDependencyGraph());
   }
   private get actionPhaseExecutor(): ActionPhaseExecutor {
     return this._actionPhaseExecutor ?? (this._actionPhaseExecutor = new ActionPhaseExecutor({
       circuitBreaker: this.circuitBreaker,
-      permissionSandbox: this.permissionSandbox,
       dependencyGraph: this.dependencyGraph,
       extractUserMessage: (messages) => this.extractUserMessage(messages),
       getState: () => ({
@@ -224,10 +219,7 @@ export class ReActExecutor {
       onChunk,
       onThinking,
       onToolCall,
-      onPermissionRequest,
-      reasoningEffort,
       modelCapabilities,
-      approvedToolsCache,
       onSSEEvent,
     } = options;
 
@@ -248,7 +240,7 @@ export class ReActExecutor {
     this._circuitBreaker?.reset();
 
     // 获取工具定义（内置 + 插件 + MCP）
-    const builtinTools = getToolDefinitions();
+    const builtinTools = getBuiltinToolDefinitions();
     const pluginTools = pluginRegistry.getActiveTools();
     const mcpTools = mcpClientManager.getMcpTools();
     const tools = [...builtinTools, ...pluginTools, ...mcpTools];
@@ -258,9 +250,6 @@ export class ReActExecutor {
     let finalContent = '';
     const executedToolCalls: Array<{ name: string; arguments: string; result: string }> = [];
     const allObservations: Observation[] = [];
-
-    // 工具授权缓存
-    const approvedTools = approvedToolsCache ?? new Set<string>();
 
     // ============== 3 步循环：推理 → 执行 → 观察 ==============
     for (let turn = 0; turn < maxToolTurns; turn++) {
@@ -293,10 +282,22 @@ export class ReActExecutor {
         break;
       }
 
-      // ============== 每 5 轮进行一次上下文压缩 ==============
-      if (turn > 0 && turn % CONTEXT_COMPRESS_INTERVAL === 0) {
-        const ctxWindow = (modelConfig as unknown as Record<string, unknown>).contextWindow as number || 128000;
-        const ctxMaxTokens = Math.min(modelConfig.maxTokens || 8192, 8192);
+      // ============== 上下文截断（双重防护）=============
+      const ctxWindow = (modelConfig as unknown as Record<string, unknown>).contextWindow as number || 128000;
+      const ctxMaxTokens = Math.min(modelConfig.maxTokens || 8192, 8192);
+      const estimatedTokens = estimateMessagesTokens(currentMessages);
+      const tokenThreshold = ctxWindow * 0.8;
+
+      // v7.1-fix: 每轮检查 token 估算，接近阈值时立即截断（替代仅每 5 轮检查）
+      const shouldCompress = turn > 0 && turn % CONTEXT_COMPRESS_INTERVAL === 0;
+      const shouldTruncate = estimatedTokens > tokenThreshold;
+
+      if (shouldCompress || shouldTruncate) {
+        if (shouldTruncate && !shouldCompress) {
+          logger.warn(
+            `[ReActExecutor] 第 ${turn} 轮 token 估算(${estimatedTokens})超过阈值(${tokenThreshold})，触发紧急截断`,
+          );
+        }
         try {
           const turnTruncated = await compressContextWithSummary(
             currentMessages,
@@ -309,13 +310,25 @@ export class ReActExecutor {
             && currentMessages.length !== turnTruncated.messages.length) {
             currentMessages.length = 0;
             currentMessages.push(...turnTruncated.messages as typeof currentMessages);
+            logger.debug(`[ReActExecutor] 第 ${turn} 轮上下文智能压缩完成`);
           }
-          logger.debug(`[ReActExecutor] 第 ${turn} 轮上下文压缩完成`);
         } catch (compressErr) {
           logger.warn(
-            '[ReActExecutor] 上下文压缩失败（已跳过）:',
+            '[ReActExecutor] 上下文智能压缩失败，降级为硬截断:',
             compressErr instanceof Error ? compressErr.message : String(compressErr),
           );
+          // v7.1-fix: 智能压缩失败时降级为硬截断，确保不超限
+          const hardTruncated = truncateContextForModel(
+            currentMessages as any,
+            ctxWindow,
+            ctxMaxTokens,
+            tools.length,
+          );
+          if (hardTruncated.truncated && currentMessages.length !== hardTruncated.messages.length) {
+            currentMessages.length = 0;
+            currentMessages.push(...hardTruncated.messages as typeof currentMessages);
+            logger.debug(`[ReActExecutor] 第 ${turn} 轮上下文硬截断完成`);
+          }
         }
       }
 
@@ -329,7 +342,6 @@ export class ReActExecutor {
         onChunk,
         onThinking,
         tools,
-        reasoningEffort,
         modelCapabilities,
       });
 
@@ -376,8 +388,6 @@ export class ReActExecutor {
       this.emitPhase(onSSEEvent, 'acting', turn + 1, maxToolTurns);
 
       const actionResults = await this.actionPhase(response, {
-        approvedTools,
-        onPermissionRequest,
         onToolCall,
         executedToolCalls,
         currentMessages,
@@ -491,8 +501,7 @@ export class ReActExecutor {
       signal?: AbortSignal;
       onChunk?: (text: string) => void;
       onThinking?: (text: string) => void;
-      tools: ReturnType<typeof getToolDefinitions>;
-      reasoningEffort?: string;
+      tools: ReturnType<typeof getBuiltinToolDefinitions>;
       modelCapabilities?: string[];
     },
   ): Promise<AIResponse> {
@@ -506,7 +515,6 @@ export class ReActExecutor {
       context.onThinking,
       context.tools,
       undefined,
-      context.reasoningEffort,
       context.modelCapabilities,
     );
   }
@@ -521,8 +529,6 @@ export class ReActExecutor {
   private async actionPhase(
     response: AIResponse,
     context: {
-      approvedTools: Set<string>;
-      onPermissionRequest?: (toolCall: ToolCall) => Promise<boolean>;
       onToolCall?: (toolCall: ToolCall, result: string) => void;
       executedToolCalls: Array<{ name: string; arguments: string; result: string }>;
       currentMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;

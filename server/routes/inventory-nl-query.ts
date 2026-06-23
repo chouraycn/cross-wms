@@ -6,13 +6,11 @@
 import { Router, type Request, type Response } from 'express';
 import type { NlQueryRequest, NlQueryResponse } from '../../src/types/inventory-query.js';
 import { InventoryQueryService } from '../services/inventoryQueryService.js';
-import { initDb } from '../db.js';
 
 const router = Router();
 
-// 初始化数据库实例和查询服务（单例）
-const db = initDb();
-const queryService = new InventoryQueryService(db);
+// 初始化查询服务（单例，数据库连接在 Service 内部通过 getDb() 获取）
+const queryService = new InventoryQueryService();
 
 // ===================== v1.7.0: LRU 查询缓存 =====================
 

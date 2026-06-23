@@ -7,9 +7,10 @@
  * - 批量嵌入生成
  * - 嵌入向量 L2 归一化
  * - sqlite-vec KNN 搜索（替代暴力搜索）
+ *
+ * v9.0: 改为使用 dao/matchingDao.ts 操作数据库
  */
 
-import { initDb } from '../db.js';
 import {
   generateMockEmbedding,
   contentHash,
@@ -29,6 +30,13 @@ import { getUserSkills } from '../dao/skills.js';
 import { BUILTIN_SKILLS } from '@src/types/skill-core';
 import { embedText, initOnnxEmbedding, getOnnxStatus } from '../engine/onnxEmbedding.js';
 import { logger } from '../logger.js';
+import {
+  getSkillEmbedding,
+  upsertSkillEmbedding,
+  deleteSkillEmbedding,
+  getAllSkillEmbeddings,
+  getMatchEngineConfigValue,
+} from '../dao/matchingDao.js';
 
 // ===================== 类型定义 =====================
 
@@ -63,21 +71,15 @@ let cacheExpiry = 0;
 
 /** 获取匹配引擎配置 */
 function getEngineConfig(): MatchEngineRuntimeConfig {
-  const db = initDb();
   try {
-    const rows = db.prepare('SELECT key, value FROM match_engine_config').all() as Array<{ key: string; value: string }>;
-    const configMap = new Map<string, string>();
-    for (const row of rows) {
-      configMap.set(row.key, row.value);
-    }
     return {
-      semanticWeight: parseFloat(configMap.get('semantic_weight') ?? '0.6'),
-      keywordWeight: parseFloat(configMap.get('keyword_weight') ?? '0.4'),
-      defaultThreshold: parseFloat(configMap.get('default_threshold') ?? '0.3'),
-      defaultTopK: parseInt(configMap.get('default_top_k') ?? '10', 10),
-      cacheTtlMs: parseInt(configMap.get('cache_ttl_ms') ?? '300000', 10),
-      enableFeedbackLearning: configMap.get('enable_feedback_learning') === '1',
-      contextWindowSize: parseInt(configMap.get('context_window_size') ?? '5', 10),
+      semanticWeight: parseFloat(getMatchEngineConfigValue('semantic_weight') ?? '0.6'),
+      keywordWeight: parseFloat(getMatchEngineConfigValue('keyword_weight') ?? '0.4'),
+      defaultThreshold: parseFloat(getMatchEngineConfigValue('default_threshold') ?? '0.3'),
+      defaultTopK: parseInt(getMatchEngineConfigValue('default_top_k') ?? '10', 10),
+      cacheTtlMs: parseInt(getMatchEngineConfigValue('cache_ttl_ms') ?? '300000', 10),
+      enableFeedbackLearning: getMatchEngineConfigValue('enable_feedback_learning') === '1',
+      contextWindowSize: parseInt(getMatchEngineConfigValue('context_window_size') ?? '5', 10),
     };
   } catch {
     return DEFAULT_MATCH_ENGINE_CONFIG;
@@ -135,20 +137,17 @@ export async function generateEmbedding(
   },
   force: boolean = false
 ): Promise<EmbeddingResult> {
-  const db = initDb();
   const content = buildEmbeddingContent(skill);
   const hash = contentHash(content);
   const modelName = DEFAULT_EMBEDDING_MODEL;
   const dimensions = EMBEDDING_DIMENSIONS;
 
   // 查询已有嵌入
-  const existingRow = db.prepare(
-    'SELECT * FROM skill_embeddings WHERE skill_id = ? AND model_name = ?'
-  ).get(skill.id, modelName) as SkillEmbeddingRow | undefined;
+  const existingRow = getSkillEmbedding(skill.id, modelName);
 
   // 增量更新检测：contentHash 一致则跳过
-  if (!force && existingRow && existingRow.content_hash === hash) {
-    const existingEmb = blobToFloat32Array(existingRow.embedding);
+  if (!force && existingRow && existingRow.contentHash === hash) {
+    const existingEmb = existingRow.embedding;
     // 更新内存缓存
     embeddingCache.set(skill.id, existingEmb);
     return {
@@ -178,28 +177,16 @@ export async function generateEmbedding(
   }
   const now = new Date().toISOString();
 
-  // 写入数据库（INSERT OR REPLACE）
-  const row: Omit<SkillEmbeddingRow, 'id'> = {
-    skill_id: skill.id,
-    content_hash: hash,
-    embedding: float32ArrayToBlob(embedding),
-    model_name: modelName,
+  // 写入数据库（使用 DAO）
+  upsertSkillEmbedding({
+    skillId: skill.id,
+    contentHash: hash,
+    embedding,
+    modelName,
     dimensions,
-    created_at: existingRow ? existingRow.created_at : now,
-    updated_at: now,
-  };
-
-  if (existingRow) {
-    db.prepare(
-      `UPDATE skill_embeddings SET content_hash = ?, embedding = ?, dimensions = ?, updated_at = ?
-       WHERE skill_id = ? AND model_name = ?`
-    ).run(row.content_hash, row.embedding, row.dimensions, row.updated_at, skill.id, modelName);
-  } else {
-    db.prepare(
-      `INSERT INTO skill_embeddings (skill_id, content_hash, embedding, model_name, dimensions, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    ).run(row.skill_id, row.content_hash, row.embedding, row.model_name, row.dimensions, row.created_at, row.updated_at);
-  }
+    createdAt: existingRow ? existingRow.createdAt : now,
+    updatedAt: now,
+  });
 
   // 更新内存缓存
   embeddingCache.set(skill.id, embedding);
@@ -313,15 +300,12 @@ export function getEmbedding(skillId: string): Float32Array | null {
     return embeddingCache.get(skillId)!;
   }
 
-  // 从数据库加载
-  const db = initDb();
-  const row = db.prepare(
-    'SELECT * FROM skill_embeddings WHERE skill_id = ? AND model_name = ?'
-  ).get(skillId, DEFAULT_EMBEDDING_MODEL) as SkillEmbeddingRow | undefined;
+  // 从数据库加载（使用 DAO）
+  const row = getSkillEmbedding(skillId, DEFAULT_EMBEDDING_MODEL);
 
   if (!row) return null;
 
-  const embedding = blobToFloat32Array(row.embedding);
+  const embedding = row.embedding;
   embeddingCache.set(skillId, embedding);
   return embedding;
 }
@@ -341,17 +325,13 @@ export function getAllEmbeddings(): Map<string, Float32Array> {
     return new Map(embeddingCache);
   }
 
-  // 从数据库全量加载
-  const db = initDb();
-  const rows = db.prepare(
-    'SELECT * FROM skill_embeddings WHERE model_name = ?'
-  ).all(DEFAULT_EMBEDDING_MODEL) as SkillEmbeddingRow[];
+  // 从数据库全量加载（使用 DAO）
+  const rows = getAllSkillEmbeddings(DEFAULT_EMBEDDING_MODEL);
 
   // 清空旧缓存，重新填充
   embeddingCache.clear();
   for (const row of rows) {
-    const embedding = blobToFloat32Array(row.embedding);
-    embeddingCache.set(row.skill_id, embedding);
+    embeddingCache.set(row.skillId, row.embedding);
   }
 
   // 设置缓存过期
@@ -416,13 +396,11 @@ export async function semanticSearch(
  * @returns 是否删除成功
  */
 export function deleteEmbedding(skillId: string): boolean {
-  const db = initDb();
-  const result = db.prepare(
-    'DELETE FROM skill_embeddings WHERE skill_id = ?'
-  ).run(skillId);
+  // 使用 DAO 删除
+  const result = deleteSkillEmbedding(skillId);
 
   // 清除内存缓存
   embeddingCache.delete(skillId);
 
-  return result.changes > 0;
+  return result;
 }

@@ -6,10 +6,9 @@
  * 2. text — 文本内容流式输出
  * 3. thinking — 深度思考内容
  * 4. tool_call — 工具调用通知
- * 5. permission_request — 工具权限请求
- * 6. error — 后端错误通知（确保前端能收到，避免卡在"思考中"）
- * 7. done — 流结束信号
- * 8. debug — 可选调试事件（合并原 ReAct 内部事件，通过 LOG_DEBUG=1 启用）
+ * 5. error — 后端错误通知（确保前端能收到，避免卡在"思考中"）
+ * 6. done — 流结束信号
+ * 7. debug — 可选调试事件（合并原 ReAct 内部事件，通过 LOG_DEBUG=1 启用）
  *
  * 向后兼容：旧事件类型通过 sendDebugSSE 发送，前端仍能接收但不在 UI 上展示。
  */
@@ -28,7 +27,6 @@ export interface SSEInitEvent {
   autoReason?: string;
   autoReasonType?: string;
   preset?: { id: string; label: string } | null;
-  reasoningEffort?: string | null;
 }
 
 /** text 事件 — 文本内容流式输出 */
@@ -53,16 +51,6 @@ export interface SSEToolCallEvent {
   args?: string;
   result?: string;
   id?: string;
-}
-
-/** permission_request 事件 — 工具权限请求 */
-export interface SSEPermissionRequestEvent {
-  type: 'permission_request';
-  reqId: string;
-  toolName: string;
-  toolArgs?: string;
-  args?: string;
-  riskLevel?: string;
 }
 
 /** error 事件 — 后端错误通知（确保前端能收到，避免卡在"思考中"） */
@@ -93,26 +81,24 @@ export interface SSEDebugEvent {
 
 // ===================== 联合类型 =====================
 
-/** 8 种核心 SSE 事件联合类型 */
+/** 7 种核心 SSE 事件联合类型 */
 export type SSEEvent =
   | SSEInitEvent
   | SSETextEvent
   | SSEThinkingEvent
   | SSEToolCallEvent
-  | SSEPermissionRequestEvent
   | SSEErrorEvent
   | SSEDoneEvent
   | SSEDebugEvent;
 
 // ===================== 核心事件类型集合 =====================
 
-/** 8 种核心事件类型字面量 */
+/** 7 种核心事件类型字面量 */
 export const CORE_EVENT_TYPES = [
   'init',
   'text',
   'thinking',
   'tool_call',
-  'permission_request',
   'error',
   'done',
   'debug',

@@ -48,8 +48,6 @@ export interface ExecuteChatCallbacks {
   onToolCall?: (toolCall: ToolCall, result: string) => void;
   /** SSE 事件回调（由策略内部触发的事件） */
   onSSEEvent?: (event: Record<string, unknown>) => void;
-  /** 权限请求回调 */
-  onPermissionRequest?: (toolCall: ToolCall) => Promise<boolean>;
   /** Agent 相关回调 */
   onAgentStart?: (agentId: string, agentRole: string, taskDescription: string, subTaskId?: string) => void;
   onAgentEnd?: (agentId: string, agentRole: string, status: 'success' | 'failed' | 'timeout', duration?: number, error?: string) => void;
@@ -84,8 +82,6 @@ export interface ExecuteChatParams {
   timerManager: TimerManager;
   /** AbortSignal */
   signal?: AbortSignal;
-  /** 推理强度 */
-  reasoningEffort?: string;
   /** 已授权工具缓存 */
   approvedToolsCache?: Set<string>;
   /** 模型能力标签 */
@@ -164,7 +160,7 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
       onSSEEvent: (event: Record<string, unknown>) => {
         // 策略内部事件：核心类型直接发送，非核心类型走 debug 通道
         const eventType = event.type as string;
-        if (['init', 'text', 'thinking', 'tool_call', 'permission_request', 'done', 'error'].includes(eventType)) {
+        if (['init', 'text', 'thinking', 'tool_call', 'done', 'error'].includes(eventType)) {
           sendSSE(res, event);
         } else {
           sendDebugSSE(res, event);
@@ -206,7 +202,6 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
         });
         callbacks.onToolCall?.(toolCall, result);
       },
-      onPermissionRequest: callbacks.onPermissionRequest ?? (() => Promise.resolve(true)),
       onAgentStart: callbacks.onAgentStart,
       onAgentEnd: callbacks.onAgentEnd,
       onSubtaskCreate: callbacks.onSubtaskCreate,
@@ -214,7 +209,6 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
       onSubtaskComplete: callbacks.onSubtaskComplete,
       onReflect: callbacks.onReflect,
       onPlan: callbacks.onPlan,
-      reasoningEffort: params.reasoningEffort,
       modelCapabilities: params.modelCapabilities ?? modelConfig.capabilities ?? [],
       approvedToolsCache: params.approvedToolsCache,
       onRateLimit: callbacks.onRateLimit,

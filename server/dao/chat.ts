@@ -1,216 +1,304 @@
 import { v4 as uuidv4 } from 'uuid';
-import { initDb } from '../db.js';
 import type { Session, Folder, Message } from '../db.js';
-import Database from 'better-sqlite3';
 import { logger } from '../logger.js';
+import { FileStorage } from '../storage/FileStorage.js';
 
-// ===================== Chat Session DAO =====================
+// ===================== Chat Session DAO (JSONL-based) =====================
 
-// v2.8.2: 预编译 prepared statements — 避免每次 addMessage 调用都重新解析 SQL
-const stmtCache: {
-  insertMessage?: Database.Statement;
-  updateSessionMeta?: Database.Statement;
-  selectSessionTitle?: Database.Statement;
-  countSessionMessages?: Database.Statement;
-  updateSessionTitle?: Database.Statement;
-} = {};
-
-function getStmts(db: Database.Database): typeof stmtCache {
-  if (!stmtCache.insertMessage) {
-    stmtCache.insertMessage = db.prepare(
-      'INSERT INTO messages (id, sessionId, role, content, model, timestamp, toolCalls, skillId, thinking, thinkingDuration, attachments) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
-    );
-    stmtCache.updateSessionMeta = db.prepare(
-      'UPDATE sessions SET updatedAt = ?, lastActiveAt = ?, sessionDate = DATE(?) WHERE id = ?'
-    );
-    stmtCache.selectSessionTitle = db.prepare('SELECT title FROM sessions WHERE id = ?');
-    stmtCache.countSessionMessages = db.prepare('SELECT COUNT(*) as count FROM messages WHERE sessionId = ?');
-    stmtCache.updateSessionTitle = db.prepare('UPDATE sessions SET title = ? WHERE id = ?');
-  }
-  return stmtCache;
-}
-
-// v2.8.2: 延迟会话元数据更新 — 批量合并同一 tick 内的多个更新
-interface PendingSessionUpdate {
-  sessionId: string;
-  now: string;
-  role: string;
-  content: string;
-}
-let pendingUpdates: PendingSessionUpdate[] = [];
-let deferredScheduled = false;
+// ==========================================================================
+// JSONL 数据格式说明
+// 每个会话一个文件 ~/.cdf-know-clow/sessions/{sessionId}.jsonl
+//
+// 第 1 行: { session: Session, messages: Message[] }    ← 迁移后的全量数据
+// 第 2+ 行: { message: Message }                         ← 后续新增的消息（逐个追加）
+//
+// readSessionLines 返回所有行的 object 数组，按行序号索引。
+// ==========================================================================
 
 /**
- * 延迟执行会话元数据更新 + 首条消息标题生成
- * 多个 addMessage 调用在同一 tick 内触发时，合并为单次 setImmediate + 单个事务
+ * 从 JSONL 文件中解析会话和消息数据。
+ * 第 0 行包含 { session, messages }，后续每行为 { message }。
  */
-function scheduleSessionUpdate(sessionId: string, now: string, role: string, content: string): void {
-  pendingUpdates.push({ sessionId, now, role, content });
-  if (!deferredScheduled) {
-    deferredScheduled = true;
-    setImmediate(flushSessionUpdates);
-  }
-}
-
-function flushSessionUpdates(): void {
-  const batch = pendingUpdates;
-  pendingUpdates = [];
-  deferredScheduled = false;
-  if (batch.length === 0) return;
-
+function parseSessionFile(sessionId: string): { session: Session | null; messages: Message[] } {
   try {
-    const db = initDb();
-    const stmts = getStmts(db);
-    const tx = db.transaction(() => {
-      for (const upd of batch) {
-        // 1. 更新会话元数据（updatedAt, lastActiveAt, sessionDate）
-        stmts.updateSessionMeta!.run(upd.now, upd.now, upd.now, upd.sessionId);
+    const lines = FileStorage.readSessionLines(sessionId);
+    if (lines.length === 0) return { session: null, messages: [] };
 
-        // 2. 首条用户消息自动生成标题
-        if (upd.role === 'user') {
-          const session = stmts.selectSessionTitle!.get(upd.sessionId) as { title: string } | undefined;
-          if (session && (session.title === '新对话' || !session.title)) {
-            const msgCount = stmts.countSessionMessages!.get(upd.sessionId) as { count: number };
-            if (msgCount.count <= 1) {
-              const autoTitle = upd.content.slice(0, 30).replace(/\n/g, ' ').trim() || '新对话';
-              stmts.updateSessionTitle!.run(autoTitle, upd.sessionId);
-            }
-          }
-        }
+    // 第 0 行：session + 初始消息
+    const firstLine = lines[0] as any;
+    const session = firstLine.session as Session;
+    const initialMessages: Message[] = firstLine.messages || [];
+
+    // 第 1+ 行：后续追加的消息
+    const subsequentMessages: Message[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i] as any;
+      if (line.message) {
+        subsequentMessages.push(line.message as Message);
       }
-    });
-    tx();
-  } catch (e) {
-    logger.error('[DAO] flushSessionUpdates 失败:', e);
+    }
+
+    return { session, messages: [...initialMessages, ...subsequentMessages] };
+  } catch {
+    return { session: null, messages: [] };
   }
 }
+
+// ===================== Session DAO =====================
 
 export function getSessions(): Session[] {
-  const db = initDb();
-  return db.prepare(`
-    SELECT s.*, COUNT(m.id) as messageCount
-    FROM sessions s
-    LEFT JOIN messages m ON s.id = m.sessionId
-    GROUP BY s.id
-    ORDER BY s.updatedAt DESC
-  `).all() as Session[];
+  const sessionIds = FileStorage.listSessionFiles();
+  const result: Session[] = [];
+
+  for (const id of sessionIds) {
+    const { session, messages } = parseSessionFile(id);
+    if (session) {
+      (session as any).messageCount = messages.length;
+      result.push(session);
+    }
+  }
+
+  // 按 updatedAt 降序排列
+  result.sort((a, b) => {
+    const aTime = a.updatedAt || a.createdAt || '';
+    const bTime = b.updatedAt || b.createdAt || '';
+    return bTime.localeCompare(aTime);
+  });
+
+  return result;
 }
 
 /** 搜索会话（按标题模糊匹配） */
 export function searchSessions(query: string): Session[] {
-  const db = initDb();
-  const q = `%${query}%`;
-  return db.prepare(`
-    SELECT s.*, COUNT(m.id) as messageCount
-    FROM sessions s
-    LEFT JOIN messages m ON s.id = m.sessionId
-    WHERE s.title LIKE ?
-    GROUP BY s.id
-    ORDER BY s.updatedAt DESC
-  `).all(q) as Session[];
+  const all = getSessions();
+  const q = query.toLowerCase();
+  return all.filter((s) => s.title.toLowerCase().includes(q));
 }
 
-export function createSession(id: string, title: string, model: string, agentId?: string, folderId?: string | null, parentSessionId?: string | null, tags?: string[]): Session {
+export function createSession(
+  id: string,
+  title: string,
+  model: string,
+  agentId?: string,
+  folderId?: string | null,
+  parentSessionId?: string | null,
+  tags?: string[]
+): Session {
   const now = new Date().toISOString();
-  const db = initDb();
-  db.prepare(`
-    INSERT INTO sessions (id, title, model, agentId, folderId, createdAt, updatedAt, status, lastActiveAt, sessionDate, parentSessionId, tags)
-    VALUES (?,?,?,?,?,?,?, 'active', ?, DATE(?), ?, ?)
-  `).run(
-    id, title, model, agentId || null, folderId || null, now, now,
-    now, now,
-    parentSessionId || null,
-    JSON.stringify(tags || [])
-  );
-  return { id, title, model, agentId, folderId: folderId || null, createdAt: now, updatedAt: now, status: 'active', lastActiveAt: now, sessionDate: now.split('T')[0], parentSessionId: parentSessionId || null, tags: JSON.stringify(tags || []) };
+  const session: Session = {
+    id,
+    title,
+    model,
+    agentId,
+    folderId: folderId || null,
+    createdAt: now,
+    updatedAt: now,
+    status: 'active',
+    lastActiveAt: now,
+    sessionDate: now.split('T')[0],
+    parentSessionId: parentSessionId || null,
+    tags: JSON.stringify(tags || []),
+  } as Session;
+
+  const sessionData = { session, messages: [] };
+  FileStorage.appendSessionLine(id, sessionData);
+  return session;
 }
 
 export function getSessionMessages(sessionId: string): Message[] {
-  const db = initDb();
-  return db.prepare('SELECT * FROM messages WHERE sessionId = ? ORDER BY timestamp ASC').all(sessionId) as Message[];
+  const { messages } = parseSessionFile(sessionId);
+  return messages;
 }
 
 export function addMessage(msg: Omit<Message, 'id' | 'timestamp'> & { id?: string }): Message {
   const id = msg.id || uuidv4();
   const now = new Date().toISOString();
-  const db = initDb();
-  const stmts = getStmts(db);
+  const message: Message = {
+    ...msg,
+    id,
+    timestamp: now,
+  } as Message;
 
-  // v2.8.2: 仅 INSERT 同步执行（WAL 模式下追加写入，~0.1ms）
-  // 返回值需要 id + timestamp，所以 INSERT 不能延迟
-  stmts.insertMessage!.run(
-    id, msg.sessionId, msg.role, msg.content, msg.model || null, now,
-    msg.toolCalls || null, msg.skillId || null, msg.thinking || null,
-    msg.thinkingDuration ?? null, msg.attachments ? JSON.stringify(msg.attachments) : null
-  );
+  // 追加消息到 JSONL
+  FileStorage.appendSessionLine(msg.sessionId, { message });
 
-  // v2.8.2: 延迟会话元数据更新 + 标题生成 — 不阻塞 SSE 响应
-  // 原来: 3-5 次同步 SQL（INSERT + UPDATE + SELECT + SELECT + UPDATE）
-  // 现在: 1 次同步 INSERT + 延迟的批量事务（setImmediate 合并同一 tick 的多个更新）
-  scheduleSessionUpdate(msg.sessionId, now, msg.role, msg.content);
+  // 自动更新会话元数据 + 标题生成（同步操作）
+  try {
+    const lines = FileStorage.readSessionLines(msg.sessionId);
+    if (lines.length > 0) {
+      const firstLine = lines[0] as any;
+      if (firstLine.session) {
+        firstLine.session.updatedAt = now;
+        firstLine.session.lastActiveAt = now;
 
-  return { ...msg, id, timestamp: now };
+        // 首条用户消息自动生成标题
+        if (msg.role === 'user') {
+          const initialMsgCount = (firstLine.messages || []).length;
+          const totalMsgCount = initialMsgCount + (lines.length - 1); // 第 0 行初始消息 + 追加行
+          if (totalMsgCount <= 1 && (firstLine.session.title === '新对话' || !firstLine.session.title)) {
+            const autoTitle = msg.content.slice(0, 30).replace(/\n/g, ' ').trim() || '新对话';
+            firstLine.session.title = autoTitle;
+          }
+        }
+
+        // 重写第一行（用新数据覆盖）
+        // 由于 JSONL 只能追加，删除旧文件后重新写入
+        // 保存除第 0 行外的所有消息行
+        const subsequentLines = lines.slice(1);
+        FileStorage.deleteSessionFile(msg.sessionId);
+        FileStorage.appendSessionLine(msg.sessionId, firstLine);
+        for (const line of subsequentLines) {
+          FileStorage.appendSessionLine(msg.sessionId, line);
+        }
+      }
+    }
+  } catch (e) {
+    logger.error('[DAO] 更新会话元数据失败:', e);
+  }
+
+  return message;
 }
 
 export function deleteSession(id: string): void {
-  const db = initDb();
-  db.prepare('DELETE FROM sessions WHERE id = ?').run(id);
+  FileStorage.deleteSessionFile(id);
 }
 
-// ===================== Folder DAO =====================
+/** 更新会话元数据（标题、标签等） */
+export function updateSession(
+  id: string,
+  updates: { title?: string; tags?: string }
+): void {
+  try {
+    const lines = FileStorage.readSessionLines(id);
+    if (lines.length === 0) return;
+    const firstLine = lines[0] as any;
+    if (!firstLine.session) return;
+
+    const now = new Date().toISOString();
+    if (updates.title !== undefined) {
+      firstLine.session.title = updates.title;
+    }
+    if (updates.tags !== undefined) {
+      firstLine.session.tags = updates.tags;
+    }
+    firstLine.session.updatedAt = now;
+
+    // 重写文件
+    const subsequentLines = lines.slice(1);
+    FileStorage.deleteSessionFile(id);
+    FileStorage.appendSessionLine(id, firstLine);
+    for (const line of subsequentLines) {
+      FileStorage.appendSessionLine(id, line);
+    }
+  } catch (e) {
+    logger.error('[DAO] updateSession 失败:', e);
+  }
+}
+
+// ===================== Folder DAO (JSON config-based) =====================
+
+const FOLDERS_CONFIG_FILE = 'folders.json';
+
+function readFoldersFromFile(): Folder[] {
+  try {
+    return FileStorage.readConfig<Folder[]>(FOLDERS_CONFIG_FILE);
+  } catch {
+    return [];
+  }
+}
+
+function writeFoldersToFile(folders: Folder[]): void {
+  FileStorage.writeConfig(FOLDERS_CONFIG_FILE, folders);
+}
 
 export function getFolders(): Folder[] {
-  const db = initDb();
-  return db.prepare('SELECT * FROM folders ORDER BY sortOrder ASC, createdAt ASC').all() as Folder[];
+  return readFoldersFromFile();
 }
 
 export function createFolder(name: string, parentId?: string | null): Folder {
   const id = uuidv4();
   const now = new Date().toISOString();
-  const db = initDb();
-  // 计算当前最大 sortOrder
-  const max = db.prepare('SELECT MAX(sortOrder) as maxSort FROM folders WHERE parentId IS ?').get(parentId || null) as { maxSort: number | null };
-  const sortOrder = (max?.maxSort ?? -1) + 1;
-  db.prepare('INSERT INTO folders (id, name, parentId, sortOrder, createdAt, updatedAt) VALUES (?,?,?,?,?,?)').run(
-    id, name, parentId || null, sortOrder, now, now
-  );
-  return { id, name, parentId: parentId || null, sortOrder, createdAt: now, updatedAt: now };
+  const folders = readFoldersFromFile();
+  const maxSort = folders
+    .filter((f) => f.parentId === (parentId || null))
+    .reduce((max, f) => Math.max(max, f.sortOrder), -1);
+  const sortOrder = maxSort + 1;
+  const folder: Folder = {
+    id,
+    name,
+    parentId: parentId || null,
+    sortOrder,
+    createdAt: now,
+    updatedAt: now,
+  };
+  folders.push(folder);
+  writeFoldersToFile(folders);
+  return folder;
 }
 
 export function updateFolder(id: string, name: string): Folder | undefined {
   const now = new Date().toISOString();
-  const db = initDb();
-  db.prepare('UPDATE folders SET name = ?, updatedAt = ? WHERE id = ?').run(name, now, id);
-  return db.prepare('SELECT * FROM folders WHERE id = ?').get(id) as Folder | undefined;
+  const folders = readFoldersFromFile();
+  const idx = folders.findIndex((f) => f.id === id);
+  if (idx === -1) return undefined;
+  folders[idx].name = name;
+  folders[idx].updatedAt = now;
+  writeFoldersToFile(folders);
+  return folders[idx];
 }
 
 export function deleteFolder(id: string): void {
-  const db = initDb();
-  // 关联的会话 folderId 会被 SET NULL（外键约束）
-  db.prepare('DELETE FROM folders WHERE id = ?').run(id);
+  const folders = readFoldersFromFile();
+  const filtered = folders.filter((f) => f.id !== id);
+  writeFoldersToFile(filtered);
 }
 
 export function moveSessionToFolder(sessionId: string, folderId: string | null): void {
-  const now = new Date().toISOString();
-  const db = initDb();
-  db.prepare('UPDATE sessions SET folderId = ?, updatedAt = ? WHERE id = ?').run(folderId || null, now, sessionId);
+  // 会话存储在 JSONL 中，更新其 folderId 字段
+  try {
+    const lines = FileStorage.readSessionLines(sessionId);
+    if (lines.length === 0) return;
+    const firstLine = lines[0] as any;
+    if (firstLine.session) {
+      firstLine.session.folderId = folderId || null;
+      // 重写文件
+      const subsequentLines = lines.slice(1);
+      FileStorage.deleteSessionFile(sessionId);
+      FileStorage.appendSessionLine(sessionId, firstLine);
+      for (const line of subsequentLines) {
+        FileStorage.appendSessionLine(sessionId, line);
+      }
+    }
+  } catch (e) {
+    logger.error('[DAO] moveSessionToFolder 失败:', e);
+  }
 }
 
-// ===================== Skill Usage Statistics DAO =====================
+// ===================== Skill Usage Statistics DAO (JSONL-based) =====================
 
 /** 获取单个技能的使用统计 */
 export function getSkillUsageStats(skillId: string): { totalUses: number; lastUsedAt: string | null } {
-  const db = initDb();
-  const result = db.prepare(`SELECT COUNT(*) as count, MAX(timestamp) as lastUsed FROM messages WHERE skillId = ?`).get(skillId) as { count: number; lastUsed: string | null };
-  return {
-    totalUses: result.count,
-    lastUsedAt: result.lastUsed,
-  };
+  const sessionIds = FileStorage.listSessionFiles();
+  let count = 0;
+  let lastUsed: string | null = null;
+
+  for (const id of sessionIds) {
+    const { messages } = parseSessionFile(id);
+    for (const msg of messages) {
+      if ((msg as any).skillId === skillId) {
+        count++;
+        if (!lastUsed || msg.timestamp > lastUsed) {
+          lastUsed = msg.timestamp;
+        }
+      }
+    }
+  }
+
+  return { totalUses: count, lastUsedAt: lastUsed };
 }
 
 /** 批量获取多个技能的使用统计 */
 export function getBatchSkillUsageStats(skillIds: string[]): Map<string, { totalUses: number; lastUsedAt: string | null }> {
-  const db = initDb();
   const statsMap = new Map<string, { totalUses: number; lastUsedAt: string | null }>();
 
   // 初始化所有技能 ID 为 0
@@ -218,21 +306,22 @@ export function getBatchSkillUsageStats(skillIds: string[]): Map<string, { total
     statsMap.set(id, { totalUses: 0, lastUsedAt: null });
   }
 
-  if (skillIds.length === 0) {
-    return statsMap;
-  }
+  if (skillIds.length === 0) return statsMap;
 
-  // 批量查询
-  const placeholders = skillIds.map(() => '?').join(',');
-  const rows = db.prepare(`SELECT skillId, COUNT(*) as count, MAX(timestamp) as lastUsed FROM messages WHERE skillId IN (${placeholders}) GROUP BY skillId`).all(...skillIds) as Array<{ skillId: string; count: number; lastUsed: string | null }>;
+  const skillSet = new Set(skillIds);
+  const sessionIds = FileStorage.listSessionFiles();
 
-  // 更新统计结果
-  for (const row of rows) {
-    if (row.skillId) {
-      statsMap.set(row.skillId, {
-        totalUses: row.count,
-        lastUsedAt: row.lastUsed,
-      });
+  for (const sid of sessionIds) {
+    const { messages } = parseSessionFile(sid);
+    for (const msg of messages) {
+      const sId = (msg as any).skillId;
+      if (sId && skillSet.has(sId)) {
+        const current = statsMap.get(sId)!;
+        current.totalUses++;
+        if (!current.lastUsedAt || msg.timestamp > current.lastUsedAt) {
+          current.lastUsedAt = msg.timestamp;
+        }
+      }
     }
   }
 

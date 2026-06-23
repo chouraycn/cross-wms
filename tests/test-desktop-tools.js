@@ -4,7 +4,7 @@
  * Tests tool registration, handler structure, and code quality
  */
 
-import { initDefaultTools, getToolDefinitions, listTools } from './server/engine/toolRegistry.js';
+import { initDefaultTools, getBuiltinToolDefinitions, listTools } from './server/engine/toolRegistry.js';
 
 console.log('=== CrossWMS Desktop Tools QA Verification ===\n');
 
@@ -67,7 +67,7 @@ if (missingTools.length === 0) {
 
 // Test 4: Check tool definitions structure
 console.log('\n[Test 4] Validating tool definitions...');
-const definitions = getToolDefinitions();
+const definitions = getBuiltinToolDefinitions();
 const desktopDefinitions = definitions.filter(d => d.function.name.startsWith('desktop:'));
 
 let definitionErrors = 0;

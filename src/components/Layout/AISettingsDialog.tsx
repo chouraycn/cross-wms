@@ -14,7 +14,6 @@ import { useModels } from '../../contexts/ModelsContext';
 import { getGrayScale } from '../../constants/theme';
 import ModelManager from '../shared/ModelManager';
 import SettingsDialogShell, { type TabDef } from '../shared/SettingsDialogShell';
-import SystemAuthBanner from './SystemAuthBanner';
 import MCPSettingsTab from './MCPSettingsTab';
 import { useAiEngineSettings, type ExecutionMode, type QueueMode } from '../../contexts/AppSettingsContext';
 
@@ -50,11 +49,9 @@ const PlaceholderTab: React.FC<{ title: string; description?: string; colors: { 
 export interface AISettingsDialogProps {
   open: boolean;
   onClose: () => void;
-  /** 当用户点击「前往设置」时，打开系统授权配置 */
-  onOpenSystemAuthorization?: () => void;
 }
 
-const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOpenSystemAuthorization }) => {
+const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -71,7 +68,6 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, onOp
     >
       {activeTab === 'model' && (
         <>
-          <SystemAuthBanner onOpenSettings={onOpenSystemAuthorization} />
           {isLoading && (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, gap: 1 }}>
               <CircularProgress size={20} />
