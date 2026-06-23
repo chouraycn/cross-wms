@@ -1,7 +1,9 @@
 /**
- * McpClientManager — MCP Server 连接生命周期管理（Module-level Singleton）
+ * McpClientManager — 第三方工具 MCP 协议入口（Module-level Singleton）
  *
- * 管理 MCP Server 的连接/断开/重连，以及工具发现与执行代理。
+ * 管理所有外部第三方工具的 MCP Server 连接/断开/重连，以及工具发现与执行代理。
+ * 与 toolRegistry（内置本地工具）完全独立，二者代码层面清晰隔离。
+ *
  * 工具名在内部使用 mcp__{serverName}__{toolName} 格式。
  *
  * 连接流程：

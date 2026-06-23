@@ -12,7 +12,7 @@
  */
 
 import { callAIModelStream, type ModelCallConfig, type ToolCall, type AIResponse, type MessageContent, type OnRateLimitCallback } from '../aiClient.js';
-import { getToolDefinitions, executeToolCall } from './toolRegistry.js';
+import { getBuiltinToolDefinitions, executeToolCall } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
 import { truncateContextForModel, sanitizeToolMessages } from './contextTruncate.js';
 import { compressContextWithSummary } from './contextCompress.js';
@@ -28,8 +28,6 @@ export interface ToolExecutorOptions {
   onChunk?: (text: string) => void;
   onThinking?: (text: string) => void;
   onToolCall?: (toolCall: ToolCall, result: string) => void;
-  /** v1.9.2: 敏感工具权限请求回调。返回 true 表示允许执行，false 表示拒绝 */
-  onPermissionRequest?: (toolCall: ToolCall) => Promise<boolean>;
   /** v8.2: Agent 任务开始 */
   onAgentStart?: (agentId: string, agentRole: string, taskDescription: string, subTaskId?: string) => void;
   /** v8.2: Agent 任务结束 */
@@ -44,152 +42,13 @@ export interface ToolExecutorOptions {
   onReflect?: (reflection: any) => void;
   /** 执行计划生成 */
   onPlan?: (plan: any) => void;
-  reasoningEffort?: string;
   /** v2.2.0: 模型能力标签，透传到 callAIModelStream */
   modelCapabilities?: string[];
-  /**
-   * v1.9.6: 外部传入的已授权工具缓存（Session 级别）。
-   * 如果传入，则使用该缓存代替函数内部新建的 Set，实现同一会话内授权一次、全局生效。
-   * 如果不传，则回退到函数内部的局部 Set（保持向后兼容）。
-   */
-  approvedToolsCache?: Set<string>;
-  /** v1.5.116: 外部传入的熔断器实例（可选，不传则使用模块级单例） */
   circuitBreaker?: CircuitBreaker;
   /** v1.5.116: SSE 事件回调（用于熔断告警推送） */
   onSSEEvent?: (event: Record<string, unknown>) => void;
   /** v1.5.116: 速率限制回调 — 429 时切换备用 Key */
   onRateLimit?: OnRateLimitCallback;
-}
-
-/** v2.2.1: 工具风险等级 */
-export type ToolRiskLevel = 'auto' | 'confirm' | 'high-risk';
-
-/** v2.2.1: 工具风险分级映射 */
-const TOOL_RISK_LEVELS: Record<string, ToolRiskLevel> = {
-  // auto-approve: 只读、无副作用
-  'system_info': 'auto',
-  'file_listDir': 'auto',
-  'file_readFile': 'auto',
-  'db_query': 'auto',
-  'desktop_health': 'auto',
-  'desktop_screenshot': 'auto',
-  'desktop_snapshot': 'auto',   // v3.1: 只读 UI 元素树，无副作用
-  'desktop_find': 'auto',       // v3.1: 搜索缓存快照，无副作用
-  'app_setBotName': 'auto',
-  'wms_inventory': 'auto',     // v2.3.2: 只读库存概览，无需确认
-  'web_search': 'auto',        // v2.4.0: 只读搜索，无副作用
-  'web_fetch': 'auto',         // v2.4.0: 只读抓取，无副作用
-
-  // confirm: 写入、有副作用（需用户确认）
-  'file_writeFile': 'confirm',
-  'shell_exec': 'confirm',
-  'web_api_call': 'confirm',   // v2.4.0: 可能写入外部系统，需确认
-  'browser_navigate': 'confirm',  // v3.0: 导航到新 URL
-  'browser_click': 'confirm',     // v3.0: 点击页面元素
-  'browser_type': 'confirm',      // v3.0: 输入文本
-
-  // high-risk: 不可逆、系统级（需确认 + 显示高风险警告）
-  'desktop_click': 'high-risk',
-  'desktop_type': 'high-risk',
-  'desktop_key_press': 'high-risk',
-  'desktop_app_launch': 'auto',  // v2.3.4: 改为自动授权，URL 在应用内窗口打开
-  'desktop_app_quit': 'high-risk',
-  'desktop_window_focus': 'high-risk',
-  'desktop_clipboard': 'high-risk',
-  'desktop_scroll': 'high-risk',
-  'desktop_see': 'auto',  // v1.5.130: 截图只读，改为自动授权
-  'desktop_click_smart': 'high-risk',  // v1.5.130: 语义点击同样高风险
-
-  // v3.0: Browser auto-approve (只读、无副作用)
-  'browser_snapshot': 'auto',
-  'browser_screenshot': 'auto',
-  'browser_execute_js': 'confirm',  // v1.5.131: JS 执行可能修改页面
-
-  // v3.0: Webhook tools
-  'web_hook_listen': 'confirm',
-  'web_hook_poll': 'auto',
-  'web_hook_stop': 'auto',
-};
-
-/** v2.5.0: MCP 工具风险自动分级规则 — 按工具名后缀判断 */
-const MCP_AUTO_SUFFIXES = [
-  'get', 'list', 'search', 'read', 'fetch', 'query', 'find', 'info',
-  'check', 'count', 'exists', 'describe', 'health', 'status', 'ping',
-  'preview', 'outline', 'progress', 'scrape', 'export_progress',
-  'import_progress', 'get_content', 'get_info', 'get_page_info',
-  'get_user_info', 'list_recent', 'list_fields', 'list_records',
-  'list_tables', 'list_views', 'get_cell_data', 'get_sheet_info',
-  'get_merged_cells', 'fetch_media_content', 'get_knowledge_base_list',
-  'get_knowledge_list', 'search_knowledge', 'check_skill_update',
-];
-const MCP_CONFIRM_SUFFIXES = [
-  'create', 'insert', 'update', 'write', 'send', 'post', 'put', 'patch',
-  'add', 'set', 'modify', 'edit', 'rename', 'move', 'copy', 'upload',
-  'insert_paragraph', 'insert_text', 'insert_image', 'insert_markdown',
-  'insert_table', 'insert_cols', 'insert_rows', 'set_cell_value',
-  'set_cell_style', 'set_range_value', 'merge_cell', 'set_filter',
-  'set_freeze', 'set_link', 'set_dimension_size', 'add_sheet',
-  'add_fields', 'add_records', 'add_table', 'add_view',
-  'create_space', 'create_space_node', 'create_file', 'create_slide',
-  'create_mind', 'create_flowchart', 'create_smartcanvas',
-  'doc.insert_paragraph', 'doc.insert_text', 'doc.insert_image',
-  'doc.insert_markdown', 'doc.insert_table', 'doc.insert_code_block',
-  'doc.insert_header', 'doc.insert_footer', 'doc.insert_footnote',
-  'doc.insert_comment', 'doc.insert_task', 'doc.insert_page_break',
-  'doc.insert_attachment', 'doc.replace_text', 'doc.replace_image',
-  'sheet.set_cell_value', 'sheet.add_sheet', 'sheet.insert_dimension',
-  'slide_add_slide', 'slide_add_text', 'slide_add_image',
-  'slide_add_shape', 'slide_add_table', 'slide_add_chart',
-  'manage.copy_file', 'manage.move_file', 'manage.rename_file',
-  'smartsheet.add_fields', 'smartsheet.add_records', 'smartsheet.add_table',
-  'smartcanvas.edit',
-];
-const MCP_HIGH_RISK_SUFFIXES = [
-  'delete', 'remove', 'drop', 'destroy', 'purge', 'erase', 'truncate',
-  'doc.accept_all_revisions', 'doc.revert_revision',
-  'sheet.delete_sheet', 'sheet.delete_dimension', 'sheet.clear_range_all',
-  'slide_remove_slide', 'slide_remove_shapes', 'slide_remove_section_with_slides',
-  'manage.delete_file', 'smartsheet.delete_records', 'smartsheet.delete_table',
-  'smartsheet.delete_fields', 'smartsheet.delete_view',
-  'delete_space_node',
-];
-
-/** v2.5.0: MCP 工具风险等级自动推断 */
-function getMcpToolRiskLevel(toolName: string): ToolRiskLevel | null {
-  if (!isMcpToolName(toolName)) return null;
-  const lower = toolName.toLowerCase();
-  // 优先匹配 high-risk
-  for (const suffix of MCP_HIGH_RISK_SUFFIXES) {
-    if (lower.endsWith(suffix)) return 'high-risk';
-  }
-  // 其次匹配 confirm
-  for (const suffix of MCP_CONFIRM_SUFFIXES) {
-    if (lower.endsWith(suffix)) return 'confirm';
-  }
-  // 最后匹配 auto
-  for (const suffix of MCP_AUTO_SUFFIXES) {
-    if (lower.endsWith(suffix)) return 'auto';
-  }
-  // 无法推断的 MCP 工具，默认 confirm
-  return 'confirm';
-}
-
-/** v2.2.1: 获取工具风险等级 */
-export function getToolRiskLevel(name: string): ToolRiskLevel {
-  // 1. 先查内置工具表
-  const builtin = TOOL_RISK_LEVELS[name];
-  if (builtin) return builtin;
-  // 2. MCP 工具自动推断
-  const mcpLevel = getMcpToolRiskLevel(name);
-  if (mcpLevel) return mcpLevel;
-  // 3. 未知内置工具默认 confirm
-  return 'confirm';
-}
-
-/** v2.2.1: 判断工具是否需要权限确认 */
-function needsPermission(name: string): boolean {
-  const level = getToolRiskLevel(name);
-  return level === 'confirm' || level === 'high-risk';
 }
 
 /**
@@ -214,10 +73,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     onChunk,
     onThinking,
     onToolCall,
-    onPermissionRequest,
-    reasoningEffort,
     modelCapabilities,
-    approvedToolsCache: externalApprovedToolsCache,
     circuitBreaker: externalCircuitBreaker,
     onSSEEvent,
     onRateLimit,
@@ -226,27 +82,13 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
   // v1.5.116: 熔断器 — 优先使用外部传入实例，否则使用模块级单例
   const circuitBreaker = externalCircuitBreaker ?? defaultCircuitBreaker;
 
-  const builtinTools = getToolDefinitions();
+  const builtinTools = getBuiltinToolDefinitions();
   const pluginTools = pluginRegistry.getActiveTools();
   const mcpTools = mcpClientManager.getMcpTools();
   const tools = [...builtinTools, ...pluginTools, ...mcpTools];
   const currentMessages = [...messages];
   let finalContent = '';
   const executedToolCalls: Array<{ name: string; arguments: string; result: string }> = [];
-
-  // v1.9.6: 优先使用外部传入的 Session 级缓存，否则使用函数内部的局部缓存（向后兼容）
-  const approvedToolsCache = externalApprovedToolsCache ?? new Set<string>();
-
-  /** v2.5.0: 检查工具是否在授权缓存中（支持通配符前缀匹配，如 mcp__server__*） */
-  const isToolApproved = (toolName: string): boolean => {
-    if (approvedToolsCache.has(toolName)) return true;
-    for (const pattern of approvedToolsCache) {
-      if (pattern.endsWith('*') && toolName.startsWith(pattern.slice(0, -1))) {
-        return true;
-      }
-    }
-    return false;
-  };
 
   for (let turn = 0; turn < maxToolTurns; turn++) {
     if (signal?.aborted) {
@@ -281,7 +123,6 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       onThinking,
       tools,
       undefined,
-      reasoningEffort,
       modelCapabilities,
       onRateLimit,
     );
@@ -307,73 +148,9 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       })),
     } as any);
 
-    // v2.5.0: 批量权限收集 — 先收集所有需确认的工具，一次性请求用户审批
-    const permissionNeeded: ToolCall[] = [];
-    const permissionAlreadyApproved: Set<number> = new Set(); // index into response.toolCalls
-
-    for (let i = 0; i < response.toolCalls.length; i++) {
-      const toolName = response.toolCalls[i].function.name;
-      if (needsPermission(toolName) && !isToolApproved(toolName)) {
-        permissionNeeded.push(response.toolCalls[i]);
-      } else if (needsPermission(toolName) && isToolApproved(toolName)) {
-        permissionAlreadyApproved.add(i);
-      }
-    }
-
-    // 批量请求权限
-    const batchApproved = new Set<string>(); // 本轮新批准的工具名
-    if (permissionNeeded.length > 0 && onPermissionRequest) {
-      // 单个工具：直接调用原有 onPermissionRequest（兼容前端单个弹窗）
-      if (permissionNeeded.length === 1) {
-        const approved = await onPermissionRequest(permissionNeeded[0]);
-        if (approved) {
-          batchApproved.add(permissionNeeded[0].function.name);
-        }
-      } else {
-        // 多个工具：逐个请求（前端已有队列机制），但优化为并发
-        // v2.5.0: 使用 onPermissionRequestBatch 回调（如果支持）
-        const batchResults = await Promise.all(
-          permissionNeeded.map(tc => onPermissionRequest!(tc))
-        );
-        for (let i = 0; i < batchResults.length; i++) {
-          if (batchResults[i]) {
-            batchApproved.add(permissionNeeded[i].function.name);
-          }
-        }
-      }
-    }
-
-    // 将新批准的工具加入 Session 级缓存
-    for (const name of batchApproved) {
-      approvedToolsCache.add(name);
-    }
-
     // 执行每个 tool call
     for (const toolCall of response.toolCalls) {
       const toolName = toolCall.function.name;
-
-      // v2.5.0: 权限检查（使用批量审批结果 + Session 缓存）
-      if (needsPermission(toolName)) {
-        const hasPermission = isToolApproved(toolName);
-
-        if (!hasPermission) {
-          const denyResult = JSON.stringify({ error: `用户拒绝了工具 '${toolName}' 的执行请求。` });
-          executedToolCalls.push({
-            name: toolName,
-            arguments: toolCall.function.arguments,
-            result: denyResult,
-          });
-          if (onToolCall) {
-            onToolCall(toolCall, denyResult);
-          }
-          currentMessages.push({
-            role: 'tool',
-            content: denyResult,
-            tool_call_id: toolCall.id,
-          } as any);
-          continue;
-        }
-      }
 
       // v1.5.116: 熔断检查 — 工具已熔断则跳过执行
       if (circuitBreaker.isOpen(toolName)) {
@@ -422,9 +199,13 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
         }
       }
 
+      // ===================== 工具执行分发 =====================
+      // [内置工具路径] 通过 toolRegistry.executeToolCall() 直接执行
+      // [MCP工具路径] 通过 mcpClientManager.executeMcpTool() 委托执行
       // v1.5.116: MCP 工具路由 — 区分 MCP 工具和内置工具
       let result: string;
       let mcpExecutionSucceeded = true;
+      // [MCP工具路径] 委托给 mcpClientManager 执行
       if (isMcpToolName(toolName)) {
         try {
           const parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
@@ -453,6 +234,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
           }
         }
       } else {
+        // [内置工具路径] 通过 toolRegistry.executeToolCall() 直接执行
         result = await executeToolCall(toolCall);
       }
 

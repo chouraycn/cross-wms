@@ -15,7 +15,6 @@ import SidebarToggle from './SidebarToggle';
 import SettingsPopover from './SettingsPopover';
 import AISettingsDialog from './AISettingsDialog';
 import ToolManagementDialog from './ToolManagementDialog';
-import SystemAuthorizationDialog from './SystemAuthorizationDialog';
 
 
 // ===================== Constants =====================
@@ -49,7 +48,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
 
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [toolManagementDialogOpen, setToolManagementDialogOpen] = useState(false);
-  const [systemAuthDialogOpen, setSystemAuthDialogOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLDivElement>(null);
 
   const [activeSessionId, setActiveSessionId] = useState('');
@@ -199,11 +197,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
           anchorEl={settingsBtnRef.current}
           onOpenModelManagement={() => setAiDialogOpen(true)}
           onOpenToolManagement={() => setToolManagementDialogOpen(true)}
-          onOpenSystemAuthorization={() => setSystemAuthDialogOpen(true)}
         />
-        <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} onOpenSystemAuthorization={() => { setAiDialogOpen(false); setSystemAuthDialogOpen(true); }} />
+        <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} />
         <ToolManagementDialog open={toolManagementDialogOpen} onClose={() => setToolManagementDialogOpen(false)} />
-        <SystemAuthorizationDialog open={systemAuthDialogOpen} onClose={() => setSystemAuthDialogOpen(false)} />
       </Box>
     </Box>
   );

@@ -14,8 +14,9 @@
  * - 匹配反馈记录与学习
  */
 
-import { initDb } from '../db.js';
+import { getUserSkills, getUserSkillById } from '../dao/skills.js';
 import { BUILTIN_SKILLS } from '@src/types/skill-core';
+import { logger } from '../logger.js';
 import type {
   MatchMode,
   MatchResult,
@@ -162,32 +163,22 @@ function collectAllSkills(): Array<{
 
   // 用户自建技能
   try {
-    const db = initDb();
-    const rows = db.prepare('SELECT * FROM user_skills ORDER BY installedAt DESC').all() as Array<{
-      id: string;
-      name: string;
-      desc: string;
-      trigger: string | null;
-      tags: string | null;
-      detail: string | null;
-      category: string;
-      status: string;
-    }>;
+    const rows = getUserSkills();
     for (const row of rows) {
       let tags: string[] = [];
       try {
-        if (row.tags) tags = JSON.parse(row.tags);
+        if (row.tags) tags = JSON.parse(String(row.tags));
       } catch { /* ignore */ }
 
       skills.push({
-        id: row.id,
-        name: row.name,
-        desc: row.desc ?? '',
-        trigger: row.trigger ?? undefined,
+        id: row.id as string,
+        name: row.name as string,
+        desc: (row.desc as string) ?? '',
+        trigger: (row.trigger as string) ?? undefined,
         tags: tags.length > 0 ? tags : undefined,
-        detail: row.detail ?? undefined,
-        category: row.category,
-        status: row.status,
+        detail: (row.detail as string) ?? undefined,
+        category: row.category as string,
+        status: row.status as string,
       });
     }
   } catch {
@@ -389,10 +380,9 @@ function buildSkillNameMap(): Map<string, string> {
     nameMap.set(s.id, s.name);
   }
   try {
-    const db = initDb();
-    const rows = db.prepare('SELECT id, name FROM user_skills').all() as Array<{ id: string; name: string }>;
-    for (const row of rows) {
-      nameMap.set(row.id, row.name);
+    const userSkills = getUserSkills();
+    for (const skill of userSkills) {
+      nameMap.set(skill.id as string, skill.name as string);
     }
   } catch {
     // 忽略

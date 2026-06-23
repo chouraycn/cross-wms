@@ -13,16 +13,23 @@
 - 构建依赖: Python 3.14.3 + Pillow + pywebview + pyobjc-framework-Cocoa
 - 日志: `server/logger.ts` 统一，禁止裸 console.*，4 级 error/warn/info/debug
 - WKWebView 兼容: 不用 CSS @keyframes，用 inline transition；不用 rAF，统一 setTimeout(fn,16)
-- SSE 事件 15+ 种，前端 useChat.ts 集中处理
+- SSE 事件 8 种核心 (init/text/thinking/tool_call/permission_request/done/error/debug)，非核心走 sendDebugSSE
+- **关键**: error 事件必须走 sendSSE（核心），不能走 sendDebugSSE，否则前端卡在"思考中"
 - DMG 验证: `grep -c "关键修复字符串" server_dist/index.cjs`
 
-## SSE 稳定性要点 (v1.5.206~209)
-- `chatService.ts` 有两条路径: `handleChat`(主) 和 `executeFromQueue`(队列)，心跳/清理逻辑必须对齐
-- `keepAliveTimer` 在 try 外声明，catch 中 clearInterval；降级路径必须重启 timer
-- 所有 `res.write()` 必须用 `safeWrite()` 包裹（检查 writableEnded + try-catch）
-- 所有 catch 块必须发 `error + done` 事件；外层 catch 用 try-catch 包裹 res.write()
-- 前端心跳超时 60s；重试时重置 thinkingDone = false
-- **教训**: SSE 回调无保护 → 连接断开崩溃 → done 丢失 → 卡在思考中
+## v9.0 流式优先架构
+- **三阶段**: Phase 0 立即流式(原始消息直调 LLM) → Phase 1 后台增强(压缩+记忆+复杂度) → Phase 2 ReAct 补充(仅 complex)
+- **统一执行器**: `streamExecutor.ts` → `executeChat()`，替代 handleChat + executeFromQueue 双路径
+- **SSE 基础设施**: `sseTypes.ts`(sendSSE/sendDebugSSE/sendDoneAndEnd) + `timerManager.ts`(统一 keepAliveTimer)
+- **后台增强器**: `contextEnhancer.ts` → Promise.all 并行压缩+检索+评估，不阻塞流式
+- **ReAct 3 步**: reason→act→observe（从 7 步简化），保留 BudgetManager/LoopDetector/CircuitBreaker
+- 上下文压缩每 5 轮一次 (CONTEXT_COMPRESS_INTERVAL = 5)
+
+## SSE 稳定性要点 (v1.5.206~209, v9.0 重构)
+- v9.0 起双路径合并为 `streamExecutor.ts` → `executeChat()`，TimerManager 统一管理
+- `safeWrite()` 已由 `sseTypes.ts` 的 `sendSSE()`/`sendDoneAndEnd()` 封装
+- 所有 catch 块必须发 `error + done` 事件；前端心跳超时 60s；重试时重置 thinkingDone
+- 前端 useChat: done 处理器中 cancelFrame 前必须同步刷新 thinkingBuffer
 
 ## tool_calls 消息配对 (v1.5.207~208)
 - OpenAI 要求: `assistant(tool_calls)` 后必须紧跟对应 `tool` 消息，中间不能有 system/user

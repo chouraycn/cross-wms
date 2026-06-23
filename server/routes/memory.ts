@@ -43,7 +43,7 @@ router.get('/search', async (req, res) => {
   }
 
   try {
-    const results = await searchMemory(query, 'default', topK, threshold);
+    const results = await searchMemory(query, topK);
     res.json({ results });
   } catch (e) {
     logger.error('[Memory API] 语义搜索失败:', e);

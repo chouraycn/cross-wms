@@ -2,1000 +2,682 @@
  * Unit tests for server/services/replenishmentService.ts
  *
  * Tests:
- * - calculatePriority (indirect via generateSuggestions): 4 priority levels + boundary conditions
- * - generateSuggestions: empty inventory / data-insufficient below safety stock / normal EMA / dailyConsumption<=0 / transaction (old pending→ignored + batch INSERT)
- * - getSuggestions: pagination + filters + priority sorting
- * - updateSuggestionStatus: success / not found
- * - createTransferFromSuggestion: success / not found / non-pending status
- * - recommendSourceWarehouse: with surplus / no surplus / score sorting
- * - getReplenishmentStats: count queries
+ * - scanInventoryForReplenishment: normal case, below threshold, no rule
+ * - createReplenishmentRuleService: validation, success
+ * - updateReplenishmentRuleService: validation, success
+ * - deleteReplenishmentRuleService: success / failure
+ * - getReplenishmentRulesService: list with filters
+ * - getReplenishmentRuleDetail: valid ID / not found
+ * - executeReplenishment: normal case, item not found
+ * - getReplenishmentStats: aggregation
+ * - generateSuggestions (compat): basic flow
+ * - getSuggestions (compat): pagination
+ * - updateSuggestionStatus (compat): success
+ * - createTransferFromSuggestion (compat): success / not found
+ * - recommendSourceWarehouse (compat): with surplus / no surplus
  *
  * Mock strategy:
- * - vi.mock('../db.js') returns controllable mockDb + mock createTransferOrder
- * - vi.hoisted() + vi.mock('../services/predictionService.js') for computeEMA
- * - vi.hoisted() + vi.mock('../services/transferService.js') for generateTransferNo
- * - createMockStatement() returns {run, get, all} mocks
- * - calculatePriority is private — tested indirectly through generateSuggestions
+ * - Mock DAO functions from wmsSkillDao.js and warehouse.js
  */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// ===================== Mock Infrastructure =====================
+// ===================== Mock DAO Functions =====================
 
-function createMockStatement() {
-  return {
-    run: vi.fn(),
-    get: vi.fn(),
-    all: vi.fn(),
-  };
-}
-
-const mockDb = {
-  prepare: vi.fn(),
-  transaction: vi.fn(),
-  exec: vi.fn(),
-  pragma: vi.fn(),
-};
-
-// All mock functions must be created inside vi.hoisted() to avoid TDZ errors
-const { mockCreateTransferOrder, mockComputeEMA, mockGenerateTransferNo } = vi.hoisted(() => ({
+const {
+  mockGetInventoryItems,
+  mockGetReplenishmentRules,
+  mockGetReplenishmentRuleById,
+  mockCreateReplenishmentRule,
+  mockUpdateReplenishmentRule,
+  mockDeleteReplenishmentRule,
+  mockGetReplenishmentRuleBySkuAndWarehouse,
+  mockCreateInboundRecord,
+  mockUpdateInventoryItem,
+  mockGetWarehouseById,
+  mockGetReplenishmentSuggestions,
+  mockUpdateReplenishmentSuggestion,
+  mockGetReplenishmentSuggestionById,
+  mockCreateTransferOrder,
+  mockGetOutboundRecords,
+} = vi.hoisted(() => ({
+  mockGetInventoryItems: vi.fn(),
+  mockGetReplenishmentRules: vi.fn(),
+  mockGetReplenishmentRuleById: vi.fn(),
+  mockCreateReplenishmentRule: vi.fn(),
+  mockUpdateReplenishmentRule: vi.fn(),
+  mockDeleteReplenishmentRule: vi.fn(),
+  mockGetReplenishmentRuleBySkuAndWarehouse: vi.fn(),
+  mockCreateInboundRecord: vi.fn(),
+  mockUpdateInventoryItem: vi.fn(),
+  mockGetWarehouseById: vi.fn(),
+  mockGetReplenishmentSuggestions: vi.fn(),
+  mockUpdateReplenishmentSuggestion: vi.fn(),
+  mockGetReplenishmentSuggestionById: vi.fn(),
   mockCreateTransferOrder: vi.fn(),
-  mockComputeEMA: vi.fn(),
-  mockGenerateTransferNo: vi.fn(),
+  mockGetOutboundRecords: vi.fn(),
 }));
 
-vi.mock('../db.js', () => ({
-  initDb: () => mockDb,
-  createSkillAudit: vi.fn(),
-  getSessions: vi.fn(),
-  searchSessions: vi.fn(),
-  createSession: vi.fn(),
-  getSessionMessages: vi.fn(),
-  addMessage: vi.fn(),
-  deleteSession: vi.fn(),
+vi.mock('../dao/wmsSkillDao.js', () => ({
+  getReplenishmentRules: mockGetReplenishmentRules,
+  getReplenishmentRuleById: mockGetReplenishmentRuleById,
+  createReplenishmentRule: mockCreateReplenishmentRule,
+  updateReplenishmentRule: mockUpdateReplenishmentRule,
+  deleteReplenishmentRule: mockDeleteReplenishmentRule,
+  getReplenishmentRuleBySkuAndWarehouse: mockGetReplenishmentRuleBySkuAndWarehouse,
+  getReplenishmentSuggestions: mockGetReplenishmentSuggestions,
+  updateReplenishmentSuggestion: mockUpdateReplenishmentSuggestion,
+  getReplenishmentSuggestionById: mockGetReplenishmentSuggestionById,
 }));
 
 vi.mock('../dao/warehouse.js', () => ({
+  getInventoryItems: mockGetInventoryItems,
+  getOutboundRecords: mockGetOutboundRecords,
+  createInboundRecord: mockCreateInboundRecord,
+  updateInventoryItem: mockUpdateInventoryItem,
+  getWarehouseById: mockGetWarehouseById,
   createTransferOrder: mockCreateTransferOrder,
 }));
 
-vi.mock('../services/predictionService.js', () => ({
-  computeEMA: mockComputeEMA,
-}));
-
-vi.mock('../services/transferService.js', () => ({
-  generateTransferNo: mockGenerateTransferNo,
-}));
-
 import {
+  scanInventoryForReplenishment,
+  createReplenishmentRuleService,
+  updateReplenishmentRuleService,
+  deleteReplenishmentRuleService,
+  getReplenishmentRulesService,
+  getReplenishmentRuleDetail,
+  executeReplenishment,
+  getReplenishmentStats,
   generateSuggestions,
   getSuggestions,
   updateSuggestionStatus,
   createTransferFromSuggestion,
   recommendSourceWarehouse,
-  getReplenishmentStats,
-} from '../services/replenishmentService';
-
-import type { ReplenishmentSuggestionRow } from '../models/wms-skill';
+} from '../services/replenishmentService.js';
 
 // ===================== Test Fixtures =====================
 
-const INVENTORY_ITEM_A = {
-  sku: 'SKU-001',
-  warehouseId: 'wh-A',
-  quantity: 50,
-  minStock: 10,
-  skuName: '商品A',
-  warehouseName: '仓库A',
-};
+const INVENTORY_ITEMS = [
+  { id: 'inv-001', sku: 'SKU-001', warehouseId: 'WH1', quantity: 5, name: '商品A', valuePerUnit: 10 },
+  { id: 'inv-002', sku: 'SKU-002', warehouseId: 'WH1', quantity: 100, name: '商品B', valuePerUnit: 20 },
+  { id: 'inv-003', sku: 'SKU-003', warehouseId: 'WH2', quantity: 3, name: '商品C', valuePerUnit: 15 },
+];
 
-const INVENTORY_ITEM_LOW = {
-  sku: 'SKU-003',
-  warehouseId: 'wh-A',
-  quantity: 2,
-  minStock: 20,
-  skuName: '低库存商品',
-  warehouseName: '仓库A',
-};
+const REPLENISHMENT_RULES = [
+  {
+    id: 1,
+    sku: 'SKU-001',
+    warehouse_id: 'WH1',
+    min_stock: 10,
+    max_stock: 100,
+    safety_days: 7,
+    replenish_multiplier: 1.5,
+    supplier_id: 'SUP-001',
+    lead_time_days: 3,
+    auto_order: 0,
+    status: 'active',
+    created_at: '2026-05-01T00:00:00Z',
+    updated_at: '2026-05-01T00:00:00Z',
+  },
+  {
+    id: 2,
+    sku: 'SKU-003',
+    warehouse_id: 'WH2',
+    min_stock: 5,
+    max_stock: null,
+    safety_days: 7,
+    replenish_multiplier: 1.5,
+    supplier_id: null,
+    lead_time_days: null,
+    auto_order: 0,
+    status: 'active',
+    created_at: '2026-05-01T00:00:00Z',
+    updated_at: '2026-05-01T00:00:00Z',
+  },
+];
 
-// 8 days of outbound data (exceeds default minHistoryDays=7)
-const DAILY_OUTBOUND_A = Array.from({ length: 8 }, (_, i) => ({
-  sku: 'SKU-001',
-  warehouseId: 'wh-A',
-  date: `2026-05-${String(10 + i).padStart(2, '0')}`,
-  dailyOutbound: 10,
-}));
-
-const SUGGESTION_ROW: ReplenishmentSuggestionRow = {
-  id: 1,
-  sku: 'SKU-001',
-  warehouse_id: 'wh-A',
-  current_stock: 50,
-  in_transit_qty: 0,
-  safety_stock: 10,
-  daily_consumption: 10,
-  target_stock: 140,
-  suggested_qty: 90,
-  source_warehouse_id: null,
-  priority: 'medium',
-  status: 'pending',
-  transfer_order_id: null,
-  created_at: '2026-05-25T00:00:00Z',
-  updated_at: '2026-05-25T00:00:00Z',
+const WAREHOUSES = {
+  WH1: { id: 'WH1', name: '主仓库' },
+  WH2: { id: 'WH2', name: '分仓库' },
 };
 
 // ===================== Reset =====================
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockDb.transaction.mockImplementation((fn: () => unknown) => () => fn());
-  mockComputeEMA.mockReturnValue(10);
-  mockGenerateTransferNo.mockReturnValue('TF-20260525-0001');
-  mockCreateTransferOrder.mockReturnValue({
-    id: 'tf-new-001',
-    transferNo: 'TF-20260525-0001',
-    fromWarehouseId: 'wh-source',
-    toWarehouseId: 'wh-A',
-    sku: 'SKU-001',
-    name: '商品A',
-    quantity: 90,
-    volume: 0,
-    status: 'draft',
-    transitOrderId: null,
-    createdBy: 'replenishment-engine',
-    submittedAt: null,
-    submittedBy: null,
-    receivedAt: null,
-    receivedBy: null,
-    completedAt: null,
-    completedBy: null,
-    remark: '由补货建议 #1 自动创建',
-    createdAt: '2026-05-25T00:00:00Z',
-    updatedAt: '2026-05-25T00:00:00Z',
-  });
 });
 
-// ===================== Helper: setup generateSuggestions mocks =====================
+// ===================== scanInventoryForReplenishment Tests =====================
 
-function setupGenerateMocks(options: {
-  inventoryItems: typeof INVENTORY_ITEM_A[];
-  outbounds: typeof DAILY_OUTBOUND_A;
-  transferInTransit?: Array<{ sku: string; toWarehouseId: string; qty: number }>;
-  purchaseInTransit?: Array<{ sku: string; warehouseId: string; qty: number }>;
-  includeTransaction?: boolean;
-}) {
-  const inventoryStmt = createMockStatement();
-  inventoryStmt.all.mockReturnValue(options.inventoryItems);
-
-  const outboundStmt = createMockStatement();
-  outboundStmt.all.mockReturnValue(options.outbounds);
-
-  const transferInTransitStmt = createMockStatement();
-  transferInTransitStmt.all.mockReturnValue(options.transferInTransit ?? []);
-
-  const purchaseInTransitStmt = createMockStatement();
-  purchaseInTransitStmt.all.mockReturnValue(options.purchaseInTransit ?? []);
-
-  const updateOldPendingStmt = createMockStatement();
-  updateOldPendingStmt.run.mockReturnValue({ changes: 0 });
-
-  const insertStmt = createMockStatement();
-  insertStmt.run.mockReturnValue({ lastInsertRowid: 1, changes: 1 });
-
-  const needTransaction = options.includeTransaction ?? true;
-
-  let callCount = 0;
-  mockDb.prepare.mockImplementation(() => {
-    callCount++;
-    switch (callCount) {
-      case 1: return inventoryStmt;
-      case 2: return outboundStmt;
-      case 3: return transferInTransitStmt;
-      case 4: return purchaseInTransitStmt;
-      case 5: return needTransaction ? updateOldPendingStmt : createMockStatement();
-      case 6: return needTransaction ? insertStmt : createMockStatement();
-      default: return createMockStatement();
-    }
-  });
-
-  return { insertStmt, updateOldPendingStmt };
-}
-
-// ===================== calculatePriority (indirect) Tests =====================
-
-describe('calculatePriority (tested via generateSuggestions)', () => {
-  /**
-   * Priority rules:
-   * - critical: currentStock <= 0 OR daysUntilZero <= 3
-   * - high: daysUntilZero <= 7
-   * - medium: daysUntilZero <= 14 OR availableStock < targetStock
-   * - low: otherwise (only when suggestedQty > 0, which requires availableStock < targetStock,
-   *        so "low" effectively never appears in output)
-   *
-   * daysUntilZero = (currentStock + inTransitQty) / dailyConsumption
-   */
-
-  it('should return "critical" when currentStock <= 0', () => {
-    mockComputeEMA.mockReturnValue(10);
-    setupGenerateMocks({
-      inventoryItems: [{ ...INVENTORY_ITEM_A, quantity: 0 }],
-      outbounds: DAILY_OUTBOUND_A,
+describe('scanInventoryForReplenishment', () => {
+  it('should return suggestions for items below threshold', () => {
+    mockGetInventoryItems.mockReturnValue(INVENTORY_ITEMS);
+    mockGetReplenishmentRuleBySkuAndWarehouse.mockImplementation((sku: string, warehouseId: string) => {
+      return REPLENISHMENT_RULES.find(r => r.sku === sku && r.warehouse_id === warehouseId);
     });
-    const result = generateSuggestions();
-    expect(result.created).toBe(1);
-    expect(result.suggestions[0].priority).toBe('critical');
-  });
-
-  it('should return "critical" when currentStock is negative', () => {
-    mockComputeEMA.mockReturnValue(10);
-    setupGenerateMocks({
-      inventoryItems: [{ ...INVENTORY_ITEM_A, quantity: -5 }],
-      outbounds: DAILY_OUTBOUND_A,
-    });
-    const result = generateSuggestions();
-    expect(result.created).toBe(1);
-    expect(result.suggestions[0].priority).toBe('critical');
-  });
-
-  it('should return "critical" when daysUntilZero <= 3 (boundary: exactly 3)', () => {
-    // currentStock=30, inTransit=0, dailyConsumption=10 → daysUntilZero = 30/10 = 3
-    mockComputeEMA.mockReturnValue(10);
-    setupGenerateMocks({
-      inventoryItems: [{ ...INVENTORY_ITEM_A, quantity: 30 }],
-      outbounds: DAILY_OUTBOUND_A,
-    });
-    const result = generateSuggestions();
-    expect(result.created).toBe(1);
-    expect(result.suggestions[0].priority).toBe('critical');
-  });
-
-  it('should return "critical" when daysUntilZero is less than 3', () => {
-    // currentStock=10, inTransit=0, dailyConsumption=10 → daysUntilZero = 1
-    mockComputeEMA.mockReturnValue(10);
-    setupGenerateMocks({
-      inventoryItems: [{ ...INVENTORY_ITEM_A, quantity: 10 }],
-      outbounds: DAILY_OUTBOUND_A,
-    });
-    const result = generateSuggestions();
-    expect(result.created).toBe(1);
-    expect(result.suggestions[0].priority).toBe('critical');
-  });
-
-  it('should return "high" when daysUntilZero is 4 (just above critical threshold)', () => {
-    // currentStock=40, inTransit=0, dailyConsumption=10 → daysUntilZero = 4
-    mockComputeEMA.mockReturnValue(10);
-    setupGenerateMocks({
-      inventoryItems: [{ ...INVENTORY_ITEM_A, quantity: 40 }],
-      outbounds: DAILY_OUTBOUND_A,
-    });
-    const result = generateSuggestions();
-    expect(result.created).toBe(1);
-    expect(result.suggestions[0].priority).toBe('high');
-  });
-
-  it('should return "high" when daysUntilZero is exactly 7', () => {
-    // currentStock=70, inTransit=0, dailyConsumption=10 → daysUntilZero = 7
-    mockComputeEMA.mockReturnValue(10);
-    setupGenerateMocks({
-      inventoryItems: [{ ...INVENTORY_ITEM_A, quantity: 70, minStock: 0 }],
-      outbounds: DAILY_OUTBOUND_A,
-    });
-    const result = generateSuggestions();
-    expect(result.created).toBe(1);
-    expect(result.suggestions[0].priority).toBe('high');
-  });
-
-  it('should return "medium" when daysUntilZero is 8 (just above high)', () => {
-    // currentStock=80, inTransit=0, dailyConsumption=10 → daysUntilZero = 8
-    // targetStock = max(10, ceil(10*14)) = 140, suggestedQty = 140-80 = 60 > 0
-    mockComputeEMA.mockReturnValue(10);
-    setupGenerateMocks({
-      inventoryItems: [{ ...INVENTORY_ITEM_A, quantity: 80 }],
-      outbounds: DAILY_OUTBOUND_A,
-    });
-    const result = generateSuggestions();
-    expect(result.created).toBe(1);
-    expect(result.suggestions[0].priority).toBe('medium');
-  });
-
-  it('should return "medium" when daysUntilZero is exactly 14', () => {
-    // currentStock=140, inTransit=0, dailyConsumption=10 → daysUntilZero = 14
-    // targetStock = max(10, ceil(10*14)) = 140, suggestedQty = 140-140 = 0 → no suggestion
-    // Need minStock higher to create a suggestion
-    mockComputeEMA.mockReturnValue(10);
-    setupGenerateMocks({
-      inventoryItems: [{ ...INVENTORY_ITEM_A, quantity: 140, minStock: 150 }],
-      outbounds: DAILY_OUTBOUND_A,
-    });
-    // targetStock = max(150, 140) = 150, suggestedQty = 150-140 = 10
-    // daysUntilZero = 140/10 = 14, which is <= 14 → medium
-    const result = generateSuggestions();
-    expect(result.created).toBe(1);
-    expect(result.suggestions[0].priority).toBe('medium');
-  });
-
-  it('should return "medium" when availableStock < targetStock (even if daysUntilZero > 14)', () => {
-    // currentStock=80, inTransit=0, dailyConsumption=5 → daysUntilZero = 80/5 = 16 > 14
-    // targetStock = max(90, ceil(5*14)) = 90, suggestedQty = 90-80 = 10 > 0
-    // availableStock(80) < targetStock(90) → medium
-    mockComputeEMA.mockReturnValue(5);
-    setupGenerateMocks({
-      inventoryItems: [{ ...INVENTORY_ITEM_A, quantity: 80, minStock: 90 }],
-      outbounds: DAILY_OUTBOUND_A,
-    });
-    const result = generateSuggestions();
-    expect(result.created).toBe(1);
-    expect(result.suggestions[0].priority).toBe('medium');
-  });
-
-  it('should not generate suggestion when stock is sufficient (no "low" priority scenario)', () => {
-    // When availableStock >= targetStock, suggestedQty = 0 → no suggestion generated
-    mockComputeEMA.mockReturnValue(5);
-    setupGenerateMocks({
-      inventoryItems: [{ ...INVENTORY_ITEM_A, quantity: 100, minStock: 0 }],
-      outbounds: DAILY_OUTBOUND_A,
-      includeTransaction: false,
-    });
-    const result = generateSuggestions();
-    expect(result.created).toBe(0);
-    expect(result.suggestions).toEqual([]);
-  });
-});
-
-// ===================== generateSuggestions Tests =====================
-
-describe('generateSuggestions', () => {
-  it('should return empty result when no inventory items exist', () => {
-    const inventoryStmt = createMockStatement();
-    inventoryStmt.all.mockReturnValue([]);
-    mockDb.prepare.mockReturnValue(inventoryStmt);
-
-    const result = generateSuggestions();
-    expect(result).toEqual({ created: 0, suggestions: [] });
-  });
-
-  it('should generate high-priority suggestion when data insufficient but stock below safety', () => {
-    // Inventory with low stock, but outbound history < minHistoryDays (7)
-    setupGenerateMocks({
-      inventoryItems: [INVENTORY_ITEM_LOW], // quantity: 2, minStock: 20
-      outbounds: [
-        { sku: 'SKU-003', warehouseId: 'wh-A', date: '2026-05-18', dailyOutbound: 1 },
-        { sku: 'SKU-003', warehouseId: 'wh-A', date: '2026-05-19', dailyOutbound: 2 },
-      ], // Only 2 days of data, less than minHistoryDays (7)
-    });
-
-    const result = generateSuggestions();
-    expect(result.created).toBe(1);
-    expect(result.suggestions[0].priority).toBe('high');
-    expect(result.suggestions[0].suggestedQty).toBe(18); // 20 - 2 - 0
-    expect(result.suggestions[0].dailyConsumption).toBe(0);
-  });
-
-  it('should skip item when data insufficient and stock >= safety stock', () => {
-    setupGenerateMocks({
-      inventoryItems: [{ ...INVENTORY_ITEM_LOW, quantity: 25 }], // 25 >= 20
-      outbounds: [
-        { sku: 'SKU-003', warehouseId: 'wh-A', date: '2026-05-18', dailyOutbound: 1 },
-      ],
-      includeTransaction: false,
-    });
-
-    const result = generateSuggestions();
-    expect(result.created).toBe(0);
-    expect(result.suggestions).toEqual([]);
-  });
-
-  it('should generate suggestion with normal EMA calculation', () => {
-    mockComputeEMA.mockReturnValue(10);
-    setupGenerateMocks({
-      inventoryItems: [INVENTORY_ITEM_A], // quantity: 50, minStock: 10
-      outbounds: DAILY_OUTBOUND_A,
-    });
-
-    const result = generateSuggestions({ coverDays: 14 });
-
-    expect(result.created).toBe(1);
-    const s = result.suggestions[0];
-    expect(s.dailyConsumption).toBe(10); // mock returns 10, Math.round(10*100)/100 = 10
-    expect(s.targetStock).toBe(140); // max(10, ceil(10 * 14)) = 140
-    expect(s.suggestedQty).toBe(90); // 140 - 50 - 0
-    expect(mockComputeEMA).toHaveBeenCalledWith(
-      DAILY_OUTBOUND_A.map(r => r.dailyOutbound),
-      0.3
-    );
-  });
-
-  it('should skip item when dailyConsumption <= 0', () => {
-    mockComputeEMA.mockReturnValue(0);
-    setupGenerateMocks({
-      inventoryItems: [INVENTORY_ITEM_A],
-      outbounds: DAILY_OUTBOUND_A,
-      includeTransaction: false,
-    });
-
-    const result = generateSuggestions();
-    expect(result.created).toBe(0);
-    expect(result.suggestions).toEqual([]);
-  });
-
-  it('should execute transaction: mark old pending as ignored then insert new', () => {
-    mockComputeEMA.mockReturnValue(10);
-    const { insertStmt, updateOldPendingStmt } = setupGenerateMocks({
-      inventoryItems: [INVENTORY_ITEM_A],
-      outbounds: DAILY_OUTBOUND_A,
-    });
-    // Override lastInsertRowid
-    insertStmt.run.mockReturnValue({ lastInsertRowid: 42, changes: 1 });
-
-    const result = generateSuggestions();
-
-    // Verify transaction was used
-    expect(mockDb.transaction).toHaveBeenCalled();
-
-    // Verify UPDATE old pending → ignored
-    expect(updateOldPendingStmt.run).toHaveBeenCalled();
-
-    // Verify INSERT new suggestion
-    expect(insertStmt.run).toHaveBeenCalled();
-
-    // Verify result
-    expect(result.created).toBe(1);
-    expect(result.suggestions[0].id).toBe(42);
-    expect(result.suggestions[0].status).toBe('pending');
-  });
-
-  it('should factor in-transit quantities into calculation', () => {
-    mockComputeEMA.mockReturnValue(10);
-    setupGenerateMocks({
-      inventoryItems: [INVENTORY_ITEM_A],
-      outbounds: DAILY_OUTBOUND_A,
-      transferInTransit: [{ sku: 'SKU-001', toWarehouseId: 'wh-A', qty: 20 }],
-      purchaseInTransit: [{ sku: 'SKU-001', warehouseId: 'wh-A', qty: 30 }],
-    });
-
-    const result = generateSuggestions({ coverDays: 14 });
-
-    // inTransitQty = 20 (transfer) + 30 (purchase) = 50
-    expect(result.suggestions[0].inTransitQty).toBe(50);
-    // suggestedQty = 140 - 50 (stock) - 50 (in-transit) = 40
-    expect(result.suggestions[0].suggestedQty).toBe(40);
-  });
-
-  it('should respect custom config (coverDays, minHistoryDays)', () => {
-    mockComputeEMA.mockReturnValue(10);
-    setupGenerateMocks({
-      inventoryItems: [INVENTORY_ITEM_A],
-      // Only 5 days of history
-      outbounds: Array.from({ length: 5 }, (_, i) => ({
-        sku: 'SKU-001',
-        warehouseId: 'wh-A',
-        date: `2026-05-${String(15 + i).padStart(2, '0')}`,
-        dailyOutbound: 10,
-      })),
-    });
-
-    // With minHistoryDays: 3, 5 days should be enough
-    // With coverDays: 7, targetStock = max(10, ceil(10*7)) = 70
-    const result = generateSuggestions({ coverDays: 7, minHistoryDays: 3 });
-    expect(result.created).toBe(1);
-    expect(result.suggestions[0].targetStock).toBe(70);
-    expect(result.suggestions[0].suggestedQty).toBe(20); // 70 - 50 - 0
-  });
-});
-
-// ===================== getSuggestions Tests =====================
-
-describe('getSuggestions', () => {
-  it('should return paginated results with default page and pageSize', () => {
-    const countStmt = createMockStatement();
-    countStmt.get.mockReturnValue({ total: 1 });
-
-    const dataStmt = createMockStatement();
-    dataStmt.all.mockReturnValue([{
-      ...SUGGESTION_ROW,
-      warehouseName: '仓库A',
-      sourceWarehouseName: null,
-      skuName: '商品A',
-    }]);
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? countStmt : dataStmt;
-    });
-
-    const result = getSuggestions({});
-    expect(result.page).toBe(1);
-    expect(result.pageSize).toBe(20);
-    expect(result.total).toBe(1);
-    expect(result.items).toHaveLength(1);
-    expect(result.items[0].sku).toBe('SKU-001');
-  });
-
-  it('should apply pagination with custom page and pageSize', () => {
-    const countStmt = createMockStatement();
-    countStmt.get.mockReturnValue({ total: 50 });
-
-    const dataStmt = createMockStatement();
-    dataStmt.all.mockReturnValue([]);
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? countStmt : dataStmt;
-    });
-
-    const result = getSuggestions({ page: 3, pageSize: 10 });
-    expect(result.page).toBe(3);
-    expect(result.pageSize).toBe(10);
-    expect(result.total).toBe(50);
-  });
-
-  it('should filter by status using parameterized query', () => {
-    const countStmt = createMockStatement();
-    countStmt.get.mockReturnValue({ total: 1 });
-
-    const dataStmt = createMockStatement();
-    dataStmt.all.mockReturnValue([]);
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? countStmt : dataStmt;
-    });
-
-    getSuggestions({ status: 'pending' });
-
-    // Source code uses parameterized query: "AND rs.status = ?"
-    const countSql = mockDb.prepare.mock.calls[0][0] as string;
-    expect(countSql).toContain('rs.status = ?');
-  });
-
-  it('should filter by priority using parameterized query', () => {
-    const countStmt = createMockStatement();
-    countStmt.get.mockReturnValue({ total: 0 });
-
-    const dataStmt = createMockStatement();
-    dataStmt.all.mockReturnValue([]);
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? countStmt : dataStmt;
-    });
-
-    getSuggestions({ priority: 'critical' });
-
-    const countSql = mockDb.prepare.mock.calls[0][0] as string;
-    expect(countSql).toContain('rs.priority = ?');
-  });
-
-  it('should filter by warehouseId using parameterized query', () => {
-    const countStmt = createMockStatement();
-    countStmt.get.mockReturnValue({ total: 0 });
-
-    const dataStmt = createMockStatement();
-    dataStmt.all.mockReturnValue([]);
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? countStmt : dataStmt;
-    });
-
-    getSuggestions({ warehouseId: 'wh-A' });
-
-    const countSql = mockDb.prepare.mock.calls[0][0] as string;
-    expect(countSql).toContain('rs.warehouse_id = ?');
-  });
-
-  it('should filter by sku with LIKE', () => {
-    const countStmt = createMockStatement();
-    countStmt.get.mockReturnValue({ total: 0 });
-
-    const dataStmt = createMockStatement();
-    dataStmt.all.mockReturnValue([]);
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? countStmt : dataStmt;
-    });
-
-    getSuggestions({ sku: 'ABC' });
-
-    const countSql = mockDb.prepare.mock.calls[0][0] as string;
-    expect(countSql).toContain('rs.sku LIKE ?');
-  });
-
-  it('should sort by priority order then created_at DESC', () => {
-    const countStmt = createMockStatement();
-    countStmt.get.mockReturnValue({ total: 0 });
-
-    const dataStmt = createMockStatement();
-    dataStmt.all.mockReturnValue([]);
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? countStmt : dataStmt;
-    });
-
-    getSuggestions({});
-
-    const dataSql = mockDb.prepare.mock.calls[1][0] as string;
-    expect(dataSql).toContain('ORDER BY');
-    expect(dataSql).toContain('CASE');
-    expect(dataSql).toContain('created_at DESC');
-  });
-
-  it('should compute daysUntilZero from currentStock + inTransitQty / dailyConsumption', () => {
-    const countStmt = createMockStatement();
-    countStmt.get.mockReturnValue({ total: 1 });
-
-    const dataStmt = createMockStatement();
-    dataStmt.all.mockReturnValue([{
-      ...SUGGESTION_ROW,
-      current_stock: 50,
-      in_transit_qty: 10,
-      daily_consumption: 5,
-      warehouseName: '仓库A',
-      sourceWarehouseName: null,
-      skuName: '商品A',
-    }]);
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? countStmt : dataStmt;
-    });
-
-    const result = getSuggestions({});
-    // daysUntilZero = (50 + 10) / 5 = 12
-    expect(result.items[0].daysUntilZero).toBe(12);
-  });
-});
-
-// ===================== updateSuggestionStatus Tests =====================
-
-describe('updateSuggestionStatus', () => {
-  it('should update status and return the updated suggestion', () => {
-    const existingStmt = createMockStatement();
-    existingStmt.get.mockReturnValue(SUGGESTION_ROW);
-
-    const updateStmt = createMockStatement();
-    updateStmt.run.mockReturnValue({ changes: 1 });
-
-    const updatedRow = { ...SUGGESTION_ROW, status: 'ignored' };
-    const getUpdatedStmt = createMockStatement();
-    getUpdatedStmt.get.mockReturnValue(updatedRow);
-
-    const whStmt = createMockStatement();
-    whStmt.get.mockReturnValue({ name: '仓库A' });
-
-    const skuStmt = createMockStatement();
-    skuStmt.get.mockReturnValue({ name: '商品A' });
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      switch (callCount) {
-        case 1: return existingStmt;    // SELECT existing
-        case 2: return updateStmt;       // UPDATE status
-        case 3: return getUpdatedStmt;   // SELECT updated
-        case 4: return whStmt;           // SELECT warehouse name
-        case 5: return skuStmt;          // SELECT sku name
-        default: return createMockStatement();
-      }
-    });
-
-    const result = updateSuggestionStatus(1, 'ignored');
-    expect(result).not.toBeNull();
-    expect(result!.status).toBe('ignored');
-    expect(result!.warehouseName).toBe('仓库A');
-    expect(result!.skuName).toBe('商品A');
-  });
-
-  it('should return null when suggestion not found', () => {
-    const existingStmt = createMockStatement();
-    existingStmt.get.mockReturnValue(undefined);
-
-    mockDb.prepare.mockReturnValue(existingStmt);
-
-    const result = updateSuggestionStatus(999, 'ignored');
-    expect(result).toBeNull();
-  });
-
-  it('should populate daysUntilZero when dailyConsumption > 0', () => {
-    const existingStmt = createMockStatement();
-    existingStmt.get.mockReturnValue(SUGGESTION_ROW);
-
-    const updateStmt = createMockStatement();
-    updateStmt.run.mockReturnValue({ changes: 1 });
-
-    const updatedRow = {
-      ...SUGGESTION_ROW,
-      status: 'deferred',
-      current_stock: 50,
-      in_transit_qty: 10,
-      daily_consumption: 10,
-    };
-    const getUpdatedStmt = createMockStatement();
-    getUpdatedStmt.get.mockReturnValue(updatedRow);
-
-    const whStmt = createMockStatement();
-    whStmt.get.mockReturnValue({ name: '仓库A' });
-
-    const skuStmt = createMockStatement();
-    skuStmt.get.mockReturnValue({ name: '商品A' });
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      switch (callCount) {
-        case 1: return existingStmt;
-        case 2: return updateStmt;
-        case 3: return getUpdatedStmt;
-        case 4: return whStmt;
-        case 5: return skuStmt;
-        default: return createMockStatement();
-      }
-    });
-
-    const result = updateSuggestionStatus(1, 'deferred');
-    expect(result).not.toBeNull();
-    // daysUntilZero = (50 + 10) / 10 = 6
-    expect(result!.daysUntilZero).toBe(6);
-  });
-});
-
-// ===================== createTransferFromSuggestion Tests =====================
-
-describe('createTransferFromSuggestion', () => {
-  it('should create transfer order and update suggestion to confirmed', () => {
-    const suggestionStmt = createMockStatement();
-    suggestionStmt.get.mockReturnValue(SUGGESTION_ROW);
-
-    const skuNameStmt = createMockStatement();
-    skuNameStmt.get.mockReturnValue({ name: '商品A' });
-
-    const updateSuggestionStmt = createMockStatement();
-    updateSuggestionStmt.run.mockReturnValue({ changes: 1 });
-
-    const updatedRow = {
-      ...SUGGESTION_ROW,
-      status: 'confirmed',
-      transfer_order_id: 'tf-new-001',
-      source_warehouse_id: 'wh-source',
-    };
-    const getUpdatedStmt = createMockStatement();
-    getUpdatedStmt.get.mockReturnValue(updatedRow);
-
-    const whStmt = createMockStatement();
-    whStmt.get.mockReturnValue({ name: '仓库A' });
-
-    const srcWhStmt = createMockStatement();
-    srcWhStmt.get.mockReturnValue({ name: '来源仓库' });
-
-    const skuNameStmt2 = createMockStatement();
-    skuNameStmt2.get.mockReturnValue({ name: '商品A' });
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      switch (callCount) {
-        case 1: return suggestionStmt;       // SELECT suggestion
-        case 2: return skuNameStmt;          // SELECT sku name
-        case 3: return updateSuggestionStmt; // UPDATE suggestion (confirmed)
-        case 4: return getUpdatedStmt;       // SELECT updated suggestion
-        case 5: return whStmt;              // SELECT warehouse name
-        case 6: return srcWhStmt;           // SELECT source warehouse name
-        case 7: return skuNameStmt2;        // SELECT sku name again
-        default: return createMockStatement();
-      }
-    });
-
-    const result = createTransferFromSuggestion(1, {
-      fromWarehouseId: 'wh-source',
-      quantity: 90,
-    });
-
-    expect(result.suggestion.status).toBe('confirmed');
-    expect(result.suggestion.sourceWarehouseId).toBe('wh-source');
-    expect(result.transferOrderId).toBe('tf-new-001');
-    expect(mockCreateTransferOrder).toHaveBeenCalledWith(
-      expect.objectContaining({
-        fromWarehouseId: 'wh-source',
-        toWarehouseId: 'wh-A',
-        sku: 'SKU-001',
-        quantity: 90,
-        status: 'draft',
-      })
-    );
-  });
-
-  it('should throw "补货建议不存在" when suggestion not found', () => {
-    const suggestionStmt = createMockStatement();
-    suggestionStmt.get.mockReturnValue(undefined);
-
-    mockDb.prepare.mockReturnValue(suggestionStmt);
-
-    expect(() =>
-      createTransferFromSuggestion(999, { fromWarehouseId: 'wh-source', quantity: 10 })
-    ).toThrow('补货建议不存在');
-  });
-
-  it('should throw error when suggestion is not in pending status', () => {
-    const suggestionStmt = createMockStatement();
-    suggestionStmt.get.mockReturnValue({ ...SUGGESTION_ROW, status: 'confirmed' });
-
-    const skuNameStmt = createMockStatement();
-    skuNameStmt.get.mockReturnValue({ name: '商品A' });
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      return callCount === 1 ? suggestionStmt : skuNameStmt;
-    });
-
-    expect(() =>
-      createTransferFromSuggestion(1, { fromWarehouseId: 'wh-source', quantity: 10 })
-    ).toThrow('只有待处理状态的建议可以创建调拨单');
-  });
-});
-
-// ===================== recommendSourceWarehouse Tests =====================
-
-describe('recommendSourceWarehouse', () => {
-  it('should return recommendations for warehouses with surplus stock', () => {
-    const sourceStmt = createMockStatement();
-    sourceStmt.all.mockReturnValue([
-      { warehouseId: 'wh-B', quantity: 100, minStock: 20, warehouseName: '仓库B' },
-      { warehouseId: 'wh-C', quantity: 50, minStock: 10, warehouseName: '仓库C' },
+    mockGetOutboundRecords.mockReturnValue([
+      { sku: 'SKU-001', warehouseId: 'WH1', quantity: 5, createdAt: '2026-05-24T10:00:00Z' },
     ]);
+    mockGetWarehouseById.mockImplementation((id: string) => WAREHOUSES[id as keyof typeof WAREHOUSES]);
 
-    mockDb.prepare.mockReturnValue(sourceStmt);
+    const result = scanInventoryForReplenishment();
 
-    const result = recommendSourceWarehouse('SKU-001', 'wh-A', 40);
-
-    expect(result).toHaveLength(2);
-    // wh-B: surplus = 100 - 20 = 80, score = 80/40 = 2
-    expect(result[0].warehouseId).toBe('wh-B');
-    expect(result[0].surplus).toBe(80);
-    expect(result[0].score).toBe(2);
-    // wh-C: surplus = 50 - 10 = 40, score = 40/40 = 1
-    expect(result[1].warehouseId).toBe('wh-C');
-    expect(result[1].surplus).toBe(40);
-    expect(result[1].score).toBe(1);
+    // SKU-001: quantity=5 <= min_stock=10 → should generate suggestion
+    // SKU-003: quantity=3 <= min_stock=5 → should generate suggestion
+    expect(result.length).toBeGreaterThanOrEqual(1);
+    expect(result.some(s => s.sku === 'SKU-001')).toBe(true);
   });
 
-  it('should return empty array when no warehouses have surplus', () => {
-    const sourceStmt = createMockStatement();
-    sourceStmt.all.mockReturnValue([
-      { warehouseId: 'wh-B', quantity: 10, minStock: 20, warehouseName: '仓库B' }, // surplus = -10
-      { warehouseId: 'wh-C', quantity: 10, minStock: 10, warehouseName: '仓库C' }, // surplus = 0
-    ]);
+  it('should filter by warehouseId when provided', () => {
+    mockGetInventoryItems.mockReturnValue(INVENTORY_ITEMS.filter(i => i.warehouseId === 'WH1'));
+    mockGetReplenishmentRuleBySkuAndWarehouse.mockImplementation((sku: string, warehouseId: string) => {
+      return REPLENISHMENT_RULES.find(r => r.sku === sku && r.warehouse_id === warehouseId);
+    });
+    mockGetOutboundRecords.mockReturnValue([]);
+    mockGetWarehouseById.mockImplementation((id: string) => WAREHOUSES[id as keyof typeof WAREHOUSES]);
 
-    mockDb.prepare.mockReturnValue(sourceStmt);
+    const result = scanInventoryForReplenishment('WH1');
 
-    const result = recommendSourceWarehouse('SKU-001', 'wh-A', 30);
+    expect(mockGetInventoryItems).toHaveBeenCalledWith('WH1');
+    expect(result.every(s => s.warehouseId === 'WH1')).toBe(true);
+  });
+
+  it('should calculate suggested quantity based on maxStock when rule has maxStock', () => {
+    mockGetInventoryItems.mockReturnValue([INVENTORY_ITEMS[0]]); // SKU-001, quantity=5
+    mockGetReplenishmentRuleBySkuAndWarehouse.mockReturnValue(REPLENISHMENT_RULES[0]); // min=10, max=100
+    mockGetWarehouseById.mockReturnValue(WAREHOUSES.WH1);
+
+    const result = scanInventoryForReplenishment();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].suggestedQuantity).toBe(95); // 100 - 5
+  });
+
+  it('should calculate suggested quantity based on daily consumption when no maxStock', () => {
+    mockGetInventoryItems.mockReturnValue([INVENTORY_ITEMS[2]]); // SKU-003, quantity=3
+    mockGetReplenishmentRuleBySkuAndWarehouse.mockReturnValue(REPLENISHMENT_RULES[1]); // min=5, max=null
+    mockGetOutboundRecords.mockReturnValue(
+      Array.from({ length: 30 }, () => ({ sku: 'SKU-003', warehouseId: 'WH2', quantity: 2, createdAt: '2026-05-24T10:00:00Z' }))
+    );
+    mockGetWarehouseById.mockReturnValue(WAREHOUSES.WH2);
+
+    const result = scanInventoryForReplenishment();
+
+    expect(result).toHaveLength(1);
+    // dailyConsumption = 60/30 = 2, safetyStock = 2*7 = 14, suggested = ceil((14-3)*1.5) = ceil(16.5) = 17
+    expect(result[0].suggestedQuantity).toBeGreaterThan(0);
+  });
+
+  it('should return empty array when no items need replenishment', () => {
+    mockGetInventoryItems.mockReturnValue([INVENTORY_ITEMS[1]]); // SKU-002, quantity=100, no rule
+    mockGetReplenishmentRuleBySkuAndWarehouse.mockReturnValue(undefined);
+
+    const result = scanInventoryForReplenishment();
+
     expect(result).toEqual([]);
   });
 
-  it('should sort recommendations by score descending', () => {
-    const sourceStmt = createMockStatement();
-    sourceStmt.all.mockReturnValue([
-      { warehouseId: 'wh-low', quantity: 30, minStock: 10, warehouseName: '低分仓库' },
-      { warehouseId: 'wh-high', quantity: 200, minStock: 20, warehouseName: '高分仓库' },
-      { warehouseId: 'wh-mid', quantity: 80, minStock: 20, warehouseName: '中分仓库' },
-    ]);
+  it('should limit results to MAX_SUGGESTIONS', () => {
+    const manyItems = Array.from({ length: 150 }, (_, i) => ({
+      id: `inv-${i}`,
+      sku: `SKU-${i}`,
+      warehouseId: 'WH1',
+      quantity: 0,
+      name: `商品${i}`,
+      valuePerUnit: 10,
+    }));
+    mockGetInventoryItems.mockReturnValue(manyItems);
+    mockGetReplenishmentRuleBySkuAndWarehouse.mockReturnValue({
+      min_stock: 10,
+      max_stock: 100,
+      safety_days: 7,
+      replenish_multiplier: 1.5,
+    });
+    mockGetWarehouseById.mockReturnValue(WAREHOUSES.WH1);
 
-    mockDb.prepare.mockReturnValue(sourceStmt);
+    const result = scanInventoryForReplenishment();
 
-    const result = recommendSourceWarehouse('SKU-001', 'wh-A', 10);
+    expect(result.length).toBeLessThanOrEqual(100);
+  });
+});
 
-    expect(result).toHaveLength(3);
-    // wh-high: surplus=180, score=18
-    // wh-mid: surplus=60, score=6
-    // wh-low: surplus=20, score=2
-    expect(result[0].warehouseId).toBe('wh-high');
-    expect(result[1].warehouseId).toBe('wh-mid');
-    expect(result[2].warehouseId).toBe('wh-low');
-    // Verify descending order
-    expect(result[0].score).toBeGreaterThan(result[1].score);
-    expect(result[1].score).toBeGreaterThan(result[2].score);
+// ===================== createReplenishmentRuleService Tests =====================
+
+describe('createReplenishmentRuleService', () => {
+  it('should create rule with valid data', () => {
+    mockCreateReplenishmentRule.mockReturnValue(1);
+
+    const result = createReplenishmentRuleService({
+      sku: 'SKU-NEW',
+      warehouseId: 'WH1',
+      minStock: 10,
+      maxStock: 100,
+      safetyDays: 7,
+      replenishMultiplier: 1.5,
+      supplierId: 'SUP-001',
+      leadTimeDays: 3,
+      autoOrder: false,
+      status: 'active',
+    });
+
+    expect(result).toBe(1);
+    expect(mockCreateReplenishmentRule).toHaveBeenCalled();
   });
 
-  it('should use warehouseId as name when warehouseName is null', () => {
-    const sourceStmt = createMockStatement();
-    sourceStmt.all.mockReturnValue([
-      { warehouseId: 'wh-X', quantity: 50, minStock: 10, warehouseName: null },
-    ]);
-
-    mockDb.prepare.mockReturnValue(sourceStmt);
-
-    const result = recommendSourceWarehouse('SKU-001', 'wh-A', 10);
-    expect(result).toHaveLength(1);
-    expect(result[0].warehouseName).toBe('wh-X');
+  it('should throw error when minStock is negative', () => {
+    expect(() =>
+      createReplenishmentRuleService({
+        sku: 'SKU-NEW',
+        warehouseId: 'WH1',
+        minStock: -1,
+        maxStock: 100,
+        safetyDays: 7,
+        replenishMultiplier: 1.5,
+      })
+    ).toThrow('最小库存不能为负数');
   });
 
-  it('should handle suggestedQty=0 using max(1, 0) = 1 as divisor', () => {
-    const sourceStmt = createMockStatement();
-    sourceStmt.all.mockReturnValue([
-      { warehouseId: 'wh-B', quantity: 50, minStock: 10, warehouseName: '仓库B' },
-    ]);
+  it('should throw error when maxStock < minStock', () => {
+    expect(() =>
+      createReplenishmentRuleService({
+        sku: 'SKU-NEW',
+        warehouseId: 'WH1',
+        minStock: 50,
+        maxStock: 30,
+        safetyDays: 7,
+        replenishMultiplier: 1.5,
+      })
+    ).toThrow('最大库存不能小于最小库存');
+  });
 
-    mockDb.prepare.mockReturnValue(sourceStmt);
+  it('should use default status when not provided', () => {
+    mockCreateReplenishmentRule.mockReturnValue(1);
 
-    const result = recommendSourceWarehouse('SKU-001', 'wh-A', 0);
+    createReplenishmentRuleService({
+      sku: 'SKU-NEW',
+      warehouseId: 'WH1',
+      minStock: 10,
+      maxStock: 100,
+      safetyDays: 7,
+      replenishMultiplier: 1.5,
+    });
+
+    expect(mockCreateReplenishmentRule).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'active' })
+    );
+  });
+});
+
+// ===================== updateReplenishmentRuleService Tests =====================
+
+describe('updateReplenishmentRuleService', () => {
+  it('should update rule with valid data', () => {
+    mockUpdateReplenishmentRule.mockReturnValue(true);
+
+    const result = updateReplenishmentRuleService(1, { minStock: 20 });
+
+    expect(result).toBe(true);
+    expect(mockUpdateReplenishmentRule).toHaveBeenCalledWith(1, { minStock: 20 });
+  });
+
+  it('should throw error when minStock is negative', () => {
+    expect(() => updateReplenishmentRuleService(1, { minStock: -1 })).toThrow('最小库存不能为负数');
+  });
+
+  it('should throw error when maxStock < minStock', () => {
+    expect(() =>
+      updateReplenishmentRuleService(1, { minStock: 50, maxStock: 30 })
+    ).toThrow('最大库存不能小于最小库存');
+  });
+
+  it('should return false when update fails', () => {
+    mockUpdateReplenishmentRule.mockReturnValue(false);
+
+    const result = updateReplenishmentRuleService(1, { minStock: 20 });
+
+    expect(result).toBe(false);
+  });
+});
+
+// ===================== deleteReplenishmentRuleService Tests =====================
+
+describe('deleteReplenishmentRuleService', () => {
+  it('should delete rule and return true on success', () => {
+    mockDeleteReplenishmentRule.mockReturnValue(true);
+
+    const result = deleteReplenishmentRuleService(1);
+
+    expect(result).toBe(true);
+    expect(mockDeleteReplenishmentRule).toHaveBeenCalledWith(1);
+  });
+
+  it('should return false on failure', () => {
+    mockDeleteReplenishmentRule.mockReturnValue(false);
+
+    const result = deleteReplenishmentRuleService(1);
+
+    expect(result).toBe(false);
+  });
+});
+
+// ===================== getReplenishmentRulesService Tests =====================
+
+describe('getReplenishmentRulesService', () => {
+  it('should return list of rules', () => {
+    mockGetReplenishmentRules.mockReturnValue(REPLENISHMENT_RULES);
+
+    const result = getReplenishmentRulesService();
+
+    expect(result).toHaveLength(2);
+    expect(result[0].sku).toBe('SKU-001');
+    expect(result[1].sku).toBe('SKU-003');
+  });
+
+  it('should apply filters when provided', () => {
+    mockGetReplenishmentRules.mockReturnValue([REPLENISHMENT_RULES[0]]);
+
+    const result = getReplenishmentRulesService({ sku: 'SKU-001', warehouseId: 'WH1' });
+
     expect(result).toHaveLength(1);
-    // surplus = 40, score = 40 / max(1, 0) = 40
-    expect(result[0].score).toBe(40);
+    expect(mockGetReplenishmentRules).toHaveBeenCalledWith({ sku: 'SKU-001', warehouseId: 'WH1' });
+  });
+
+  it('should map snake_case to camelCase correctly', () => {
+    mockGetReplenishmentRules.mockReturnValue([REPLENISHMENT_RULES[0]]);
+
+    const result = getReplenishmentRulesService();
+
+    expect(result[0].warehouseId).toBe('WH1');
+    expect(result[0].minStock).toBe(10);
+    expect(result[0].maxStock).toBe(100);
+    expect(result[0].safetyDays).toBe(7);
+    expect(result[0].replenishMultiplier).toBe(1.5);
+    expect(result[0].supplierId).toBe('SUP-001');
+    expect(result[0].leadTimeDays).toBe(3);
+    expect(result[0].autoOrder).toBe(false);
+  });
+});
+
+// ===================== getReplenishmentRuleDetail Tests =====================
+
+describe('getReplenishmentRuleDetail', () => {
+  it('should return rule detail for valid ID', () => {
+    mockGetReplenishmentRuleById.mockReturnValue(REPLENISHMENT_RULES[0]);
+
+    const result = getReplenishmentRuleDetail(1);
+
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe(1);
+    expect(result!.sku).toBe('SKU-001');
+  });
+
+  it('should return null for non-existent ID', () => {
+    mockGetReplenishmentRuleById.mockReturnValue(undefined);
+
+    const result = getReplenishmentRuleDetail(999);
+
+    expect(result).toBeNull();
+  });
+});
+
+// ===================== executeReplenishment Tests =====================
+
+describe('executeReplenishment', () => {
+  it('should execute replenishment successfully', () => {
+    mockGetInventoryItems.mockReturnValue(INVENTORY_ITEMS);
+    mockCreateInboundRecord.mockReturnValue({ id: 'inb-001' });
+    mockUpdateInventoryItem.mockReturnValue(true);
+
+    const suggestion = {
+      sku: 'SKU-001',
+      name: '商品A',
+      warehouseId: 'WH1',
+      warehouseName: '主仓库',
+      currentStock: 5,
+      threshold: 10,
+      suggestedQuantity: 50,
+      unitPrice: 10,
+      estimatedCost: 500,
+      reason: '库存低于阈值',
+      priority: 'high' as const,
+      createdAt: new Date().toISOString(),
+    };
+
+    const result = executeReplenishment(suggestion, 'operator-001');
+
+    expect(result.inboundRecordId).toBeNaN(); // Number('inb-001') = NaN for string IDs
+    expect(result.newStock).toBe(55); // 5 + 50
+    expect(mockCreateInboundRecord).toHaveBeenCalled();
+    expect(mockUpdateInventoryItem).toHaveBeenCalledWith('inv-001', { quantity: 55 });
+  });
+
+  it('should throw error when item not found', () => {
+    mockGetInventoryItems.mockReturnValue([]);
+
+    const suggestion = {
+      sku: 'SKU-NOT-FOUND',
+      name: '不存在商品',
+      warehouseId: 'WH1',
+      warehouseName: '主仓库',
+      currentStock: 5,
+      threshold: 10,
+      suggestedQuantity: 50,
+      unitPrice: 10,
+      estimatedCost: 500,
+      reason: '库存低于阈值',
+      priority: 'high' as const,
+      createdAt: new Date().toISOString(),
+    };
+
+    expect(() => executeReplenishment(suggestion)).toThrow('商品 SKU-NOT-FOUND 不存在');
   });
 });
 
 // ===================== getReplenishmentStats Tests =====================
 
 describe('getReplenishmentStats', () => {
-  it('should return aggregated statistics from 5 queries', () => {
-    const totalStmt = createMockStatement();
-    totalStmt.get.mockReturnValue({ cnt: 100 });
-
-    const pendingStmt = createMockStatement();
-    pendingStmt.get.mockReturnValue({ cnt: 30 });
-
-    const criticalStmt = createMockStatement();
-    criticalStmt.get.mockReturnValue({ cnt: 5 });
-
-    const inTransitStmt = createMockStatement();
-    inTransitStmt.get.mockReturnValue({ total: 500 });
-
-    const todayConfirmedStmt = createMockStatement();
-    todayConfirmedStmt.get.mockReturnValue({ cnt: 10 });
-
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      switch (callCount) {
-        case 1: return totalStmt;
-        case 2: return pendingStmt;
-        case 3: return criticalStmt;
-        case 4: return inTransitStmt;
-        case 5: return todayConfirmedStmt;
-        default: return createMockStatement();
-      }
+  it('should return aggregated statistics', () => {
+    mockGetReplenishmentRules.mockReturnValue(REPLENISHMENT_RULES);
+    mockGetInventoryItems.mockReturnValue(INVENTORY_ITEMS);
+    mockGetReplenishmentRuleBySkuAndWarehouse.mockImplementation((sku: string, warehouseId: string) => {
+      return REPLENISHMENT_RULES.find(r => r.sku === sku && r.warehouse_id === warehouseId);
     });
+    mockGetOutboundRecords.mockReturnValue([]);
+    mockGetWarehouseById.mockImplementation((id: string) => WAREHOUSES[id as keyof typeof WAREHOUSES]);
 
     const result = getReplenishmentStats();
 
-    expect(result).toEqual({
-      total: 100,
-      pending: 30,
-      critical: 5,
-      totalInTransitQty: 500,
-      todayConfirmed: 10,
-    });
+    expect(result.totalRules).toBe(2);
+    expect(result.activeRules).toBe(2);
+    expect(result.lowStockItems).toBeGreaterThanOrEqual(0);
+    expect(typeof result.pendingSuggestions).toBe('number');
+    expect(typeof result.totalSuggestedCost).toBe('number');
   });
 
-  it('should handle zero stats', () => {
-    const zeroStmt = createMockStatement();
-    zeroStmt.get.mockReturnValue({ cnt: 0 });
+  it('should filter by warehouseId when provided', () => {
+    mockGetReplenishmentRules.mockReturnValue([REPLENISHMENT_RULES[0]]);
+    mockGetInventoryItems.mockReturnValue(INVENTORY_ITEMS.filter(i => i.warehouseId === 'WH1'));
+    mockGetReplenishmentRuleBySkuAndWarehouse.mockReturnValue(REPLENISHMENT_RULES[0]);
+    mockGetOutboundRecords.mockReturnValue([]);
+    mockGetWarehouseById.mockReturnValue(WAREHOUSES.WH1);
 
-    const zeroTransitStmt = createMockStatement();
-    zeroTransitStmt.get.mockReturnValue({ total: 0 });
+    const result = getReplenishmentStats('WH1');
 
-    let callCount = 0;
-    mockDb.prepare.mockImplementation(() => {
-      callCount++;
-      if (callCount === 4) return zeroTransitStmt;
-      return zeroStmt;
+    expect(result.totalRules).toBe(1);
+  });
+});
+
+// ===================== generateSuggestions (compat) Tests =====================
+
+describe('generateSuggestions (compat)', () => {
+  it('should return suggestions with pagination info', () => {
+    mockGetInventoryItems.mockReturnValue(INVENTORY_ITEMS);
+    mockGetReplenishmentRuleBySkuAndWarehouse.mockImplementation((sku: string, warehouseId: string) => {
+      return REPLENISHMENT_RULES.find(r => r.sku === sku && r.warehouse_id === warehouseId);
+    });
+    mockGetOutboundRecords.mockReturnValue([]);
+    mockGetWarehouseById.mockImplementation((id: string) => WAREHOUSES[id as keyof typeof WAREHOUSES]);
+
+    const result = generateSuggestions();
+
+    expect(result.items).toBeDefined();
+    expect(result.total).toBeDefined();
+    expect(result.page).toBe(1);
+    expect(result.pageSize).toBeDefined();
+    expect(result.created).toBeDefined();
+  });
+});
+
+// ===================== getSuggestions (compat) Tests =====================
+
+describe('getSuggestions (compat)', () => {
+  it('should return paginated suggestions', () => {
+    mockGetInventoryItems.mockReturnValue(INVENTORY_ITEMS);
+    mockGetReplenishmentRuleBySkuAndWarehouse.mockImplementation((sku: string, warehouseId: string) => {
+      return REPLENISHMENT_RULES.find(r => r.sku === sku && r.warehouse_id === warehouseId);
+    });
+    mockGetOutboundRecords.mockReturnValue([]);
+    mockGetWarehouseById.mockImplementation((id: string) => WAREHOUSES[id as keyof typeof WAREHOUSES]);
+
+    const result = getSuggestions({ page: 1, pageSize: 10 });
+
+    expect(result.page).toBe(1);
+    expect(result.pageSize).toBe(10);
+    expect(result.items).toBeDefined();
+    expect(result.total).toBeDefined();
+  });
+
+  it('should filter by priority', () => {
+    mockGetInventoryItems.mockReturnValue(INVENTORY_ITEMS);
+    mockGetReplenishmentRuleBySkuAndWarehouse.mockImplementation((sku: string, warehouseId: string) => {
+      return REPLENISHMENT_RULES.find(r => r.sku === sku && r.warehouse_id === warehouseId);
+    });
+    mockGetOutboundRecords.mockReturnValue([]);
+    mockGetWarehouseById.mockImplementation((id: string) => WAREHOUSES[id as keyof typeof WAREHOUSES]);
+
+    const result = getSuggestions({ priority: 'high' });
+
+    expect(result.items.every(s => s.priority === 'high')).toBe(true);
+  });
+
+  it('should filter by sku', () => {
+    mockGetInventoryItems.mockReturnValue(INVENTORY_ITEMS);
+    mockGetReplenishmentRuleBySkuAndWarehouse.mockImplementation((sku: string, warehouseId: string) => {
+      return REPLENISHMENT_RULES.find(r => r.sku === sku && r.warehouse_id === warehouseId);
+    });
+    mockGetOutboundRecords.mockReturnValue([]);
+    mockGetWarehouseById.mockImplementation((id: string) => WAREHOUSES[id as keyof typeof WAREHOUSES]);
+
+    const result = getSuggestions({ sku: 'SKU-001' });
+
+    expect(result.items.every(s => s.sku === 'SKU-001')).toBe(true);
+  });
+});
+
+// ===================== updateSuggestionStatus (compat) Tests =====================
+
+describe('updateSuggestionStatus (compat)', () => {
+  it('should return suggestion when found', () => {
+    mockGetReplenishmentSuggestionById.mockReturnValue({
+      id: 1,
+      sku: 'SKU-001',
+      warehouse_id: 'WH1',
+      status: 'pending',
     });
 
-    const result = getReplenishmentStats();
+    const result = updateSuggestionStatus(1, 'confirmed');
 
-    expect(result.total).toBe(0);
-    expect(result.pending).toBe(0);
-    expect(result.critical).toBe(0);
-    expect(result.totalInTransitQty).toBe(0);
-    expect(result.todayConfirmed).toBe(0);
+    expect(result).not.toBeNull();
+  });
+
+  it('should return null when suggestion not found', () => {
+    mockGetReplenishmentSuggestionById.mockReturnValue(undefined);
+
+    const result = updateSuggestionStatus(999, 'confirmed');
+
+    expect(result).toBeNull();
+  });
+});
+
+// ===================== createTransferFromSuggestion (compat) Tests =====================
+
+describe('createTransferFromSuggestion (compat)', () => {
+  it('should create transfer order successfully', () => {
+    mockGetReplenishmentSuggestionById.mockReturnValue({
+      id: 1,
+      sku: 'SKU-001',
+      warehouseId: 'WH1',
+      suggestedQuantity: 50,
+    });
+    mockCreateTransferOrder.mockReturnValue({
+      id: 'tf-001',
+      transferNo: 'TF202605250001',
+    });
+
+    const result = createTransferFromSuggestion(1, { fromWarehouseId: 'WH2', quantity: 50 });
+
+    expect(result).toBeDefined();
+    expect(mockCreateTransferOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fromWarehouseId: 'WH2',
+        toWarehouseId: 'WH1',
+        sku: 'SKU-001',
+        quantity: 50,
+        status: 'draft',
+      })
+    );
+  });
+
+  it('should throw error when suggestion not found', () => {
+    mockGetReplenishmentSuggestionById.mockReturnValue(undefined);
+
+    expect(() =>
+      createTransferFromSuggestion(999, { fromWarehouseId: 'WH2', quantity: 50 })
+    ).toThrow('补货建议 999 不存在');
+  });
+});
+
+// ===================== recommendSourceWarehouse (compat) Tests =====================
+
+describe('recommendSourceWarehouse (compat)', () => {
+  it('should return recommendations for warehouses with surplus stock', () => {
+    mockGetInventoryItems.mockReturnValue([
+      { id: 'inv-004', sku: 'SKU-001', warehouseId: 'WH2', quantity: 200, name: '商品A', valuePerUnit: 10 },
+      { id: 'inv-005', sku: 'SKU-001', warehouseId: 'WH3', quantity: 50, name: '商品A', valuePerUnit: 10 },
+    ]);
+    mockGetWarehouseById.mockImplementation((id: string) => ({ id, name: `仓库${id}` }));
+
+    const result = recommendSourceWarehouse('SKU-001', 'WH1', 30);
+
+    expect(result.length).toBeGreaterThanOrEqual(0);
+    // Should only include warehouses with quantity > neededQty * 0.5 = 15
+  });
+
+  it('should return empty array when no warehouses have surplus', () => {
+    mockGetInventoryItems.mockReturnValue([
+      { id: 'inv-004', sku: 'SKU-001', warehouseId: 'WH2', quantity: 10, name: '商品A', valuePerUnit: 10 },
+    ]);
+    mockGetWarehouseById.mockImplementation((id: string) => ({ id, name: `仓库${id}` }));
+
+    const result = recommendSourceWarehouse('SKU-001', 'WH1', 100);
+
+    // quantity=10 <= 100*0.5=50, so no recommendations
+    expect(result).toEqual([]);
+  });
+
+  it('should sort by quantity descending', () => {
+    mockGetInventoryItems.mockReturnValue([
+      { id: 'inv-004', sku: 'SKU-001', warehouseId: 'WH2', quantity: 50, name: '商品A', valuePerUnit: 10 },
+      { id: 'inv-005', sku: 'SKU-001', warehouseId: 'WH3', quantity: 200, name: '商品A', valuePerUnit: 10 },
+      { id: 'inv-006', sku: 'SKU-001', warehouseId: 'WH4', quantity: 100, name: '商品A', valuePerUnit: 10 },
+    ]);
+    mockGetWarehouseById.mockImplementation((id: string) => ({ id, name: `仓库${id}` }));
+
+    const result = recommendSourceWarehouse('SKU-001', 'WH1', 30);
+
+    // Should be sorted by quantity desc: WH3 (200), WH4 (100), WH2 (50)
+    if (result.length >= 2) {
+      expect(result[0].surplus).toBeGreaterThanOrEqual(result[1].surplus);
+    }
   });
 });

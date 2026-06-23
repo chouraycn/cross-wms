@@ -31,7 +31,6 @@ vi.mock('../../aiClient.js', () => ({
 
 vi.mock('../../engine/toolExecutor.js', () => ({
   executeToolLoop: vi.fn(),
-  getToolRiskLevel: vi.fn(),
 }));
 
 vi.mock('../../engine/executionStrategy.js', () => ({
@@ -109,13 +108,6 @@ vi.mock('../memoryExtractor.js', () => ({
   readMemoryMd: vi.fn().mockResolvedValue(''),
 }));
 
-vi.mock('../toolPermissionService.js', () => ({
-  permissionEmitter: { on: vi.fn(), off: vi.fn(), emit: vi.fn(), once: vi.fn(), removeListener: vi.fn() },
-  isSystemAuthorized: vi.fn(),
-  initSessionApprovedTools: vi.fn(),
-  registerPermissionRequest: vi.fn(),
-}));
-
 vi.mock('../../dao/settings.js', () => ({
   getAppSettings: vi.fn(),
 }));
@@ -154,7 +146,6 @@ import * as vecMemoryStoreModule from '../../engine/vecMemoryStore.js';
 import * as loggerModule from '../../logger.js';
 import * as modelSelectorModule from '../modelSelector.js';
 import * as memoryExtractorModule from '../memoryExtractor.js';
-import * as toolPermissionServiceModule from '../toolPermissionService.js';
 import * as daoSettingsModule from '../../dao/settings.js';
 import * as fileExtractorModule from '../chatHelpers/fileExtractor.js';
 import * as thinkingCacheModule from '../chatHelpers/thinkingCache.js';
@@ -282,7 +273,6 @@ describe('chatService.ts — Module Structure', () => {
       expect(params).toHaveProperty('skillId');
       expect(params).toHaveProperty('preset');
       expect(params).toHaveProperty('attachments');
-      expect(params).toHaveProperty('reasoningEffort');
       expect(params).toHaveProperty('executionMode');
       expect(params).toHaveProperty('conversationHistory');
       expect(params).toHaveProperty('autoReason');
@@ -341,9 +331,8 @@ describe('chatService.ts — Module Structure', () => {
       expect(err.statusCode).toBe(401);
     });
 
-    it('toolExecutor.js mock: executeToolLoop and getToolRiskLevel are vi.fn', () => {
+    it('toolExecutor.js mock: executeToolLoop is vi.fn', () => {
       expect(vi.isMockFunction(toolExecutorModule.executeToolLoop)).toBe(true);
-      expect(vi.isMockFunction(toolExecutorModule.getToolRiskLevel)).toBe(true);
     });
 
     it('executionStrategy.js mock: ExecutionStrategyFactory has create and getDefaultMode', () => {
@@ -418,17 +407,6 @@ describe('chatService.ts — Module Structure', () => {
     it('memoryExtractor.js mock: extractAndAppendMemory is vi.fn, readMemoryMd resolves to empty string', () => {
       expect(vi.isMockFunction(memoryExtractorModule.extractAndAppendMemory)).toBe(true);
       expect(vi.isMockFunction(memoryExtractorModule.readMemoryMd)).toBe(true);
-    });
-
-    it('toolPermissionService.js mock: all exports are properly mocked', () => {
-      expect(vi.isMockFunction(toolPermissionServiceModule.permissionEmitter.on)).toBe(true);
-      expect(vi.isMockFunction(toolPermissionServiceModule.permissionEmitter.off)).toBe(true);
-      expect(vi.isMockFunction(toolPermissionServiceModule.permissionEmitter.emit)).toBe(true);
-      expect(vi.isMockFunction(toolPermissionServiceModule.permissionEmitter.once)).toBe(true);
-      expect(vi.isMockFunction(toolPermissionServiceModule.permissionEmitter.removeListener)).toBe(true);
-      expect(vi.isMockFunction(toolPermissionServiceModule.isSystemAuthorized)).toBe(true);
-      expect(vi.isMockFunction(toolPermissionServiceModule.initSessionApprovedTools)).toBe(true);
-      expect(vi.isMockFunction(toolPermissionServiceModule.registerPermissionRequest)).toBe(true);
     });
 
     it('dao/settings.js mock: getAppSettings is vi.fn', () => {

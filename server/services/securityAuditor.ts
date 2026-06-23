@@ -11,8 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
-import { initDb } from '../db.js';
-import { createSkillAudit } from '../dao/chains.js';
+import { createSkillAudit, getSkillAuditByVersion } from '../dao/chains.js';
 import { logger } from '../logger.js';
 
 // ===================== Types =====================
@@ -818,7 +817,6 @@ export async function batchAuditSkills(): Promise<void> {
     return;
   }
 
-  const db = initDb();
   let auditedCount = 0;
   let skippedCount = 0;
   let errorCount = 0;
@@ -847,9 +845,7 @@ export async function batchAuditSkills(): Promise<void> {
       const version = crypto.createHash('sha256').update(content).digest('hex');
 
       // Check if already audited for this version
-      const existing = db.prepare(
-        'SELECT id FROM skill_audits WHERE skill_id = ? AND skill_version = ?'
-      ).get(entry.name, version) as { id: string } | undefined;
+      const existing = getSkillAuditByVersion(entry.name, version);
 
       if (existing) {
         skippedCount++;

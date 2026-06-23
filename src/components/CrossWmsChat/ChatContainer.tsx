@@ -7,7 +7,6 @@ import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import CdfLogoAnimation from '../../assets/cdf-logo-animation.svg';
 import { TopBarChatInput } from './TopBarChatInput';
 import ChatMessageList from './ChatMessageList';
-import ToolPermissionDialog, { getToolCategory } from './ToolPermissionDialog';
 import { Message } from '../../types/chat';
 import { getAllSkills } from '../../stores/skillStore';
 import type { Skill } from '../../types/skill';
@@ -211,6 +210,10 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
     });
   }, [showToast]);
 
+  const handlePermissionRespond = useCallback((_reqId: string, _approved: boolean, _alwaysAllow?: boolean) => {
+    // Permission response handling - placeholder for future implementation
+  }, []);
+
   /** 补货确认成功回调 */
   const handleConfirmReplenishment = useCallback(async (suggestionId: number) => {
     try {
@@ -222,140 +225,6 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
       );
     }
   }, [showToast]);
-
-  /** v1.9.3: 权限请求响应 — 发送给后端并更新消息状态 */
-  const handlePermissionRespond = useCallback((reqId: string, approved: boolean, alwaysAllow?: boolean, toolCategory?: string) => {
-    // 发送响应到后端
-    fetch('/api/permission-response', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reqId, approved, alwaysAllow, toolCategory }),
-    }).catch((_e) => { /* silent: permission response failure */ });
-
-    // 更新本地消息状态，标记为已处理
-    const currentSession = sessionRef.current;
-    const updatedMessages = currentSession.messages.map((msg) => {
-      if (msg.permissionRequest && msg.permissionRequest.reqId === reqId) {
-        return { ...msg, permissionRequest: { ...msg.permissionRequest, approved } };
-      }
-      return msg;
-    });
-    handleSessionUpdate({ ...currentSession, messages: updatedMessages });
-  }, [handleSessionUpdate]);
-
-  // 权限指纹 — 仅在权限数据变化时改变，流式更新 content 不影响
-  // 格式: "reqId1:?,reqId2:1" (? = pending, 1 = approved, 0 = denied)
-  // v2.8.0: O(1) during streaming — cache non-streaming key, only check last message
-  const nonStreamingPermKeyRef = useRef('');
-  const permissionKey = useMemo(() => {
-    const msgs = session.messages;
-    const lastMsg = msgs[msgs.length - 1];
-
-    // During streaming: only check last message (non-streaming messages don't change)
-    if (lastMsg?.isStreaming) {
-      const pr = lastMsg.permissionRequest;
-      return pr
-        ? nonStreamingPermKeyRef.current + pr.reqId + ':' + (pr.approved === undefined ? '?' : pr.approved ? '1' : '0') + ','
-        : nonStreamingPermKeyRef.current;
-    }
-
-    // Full scan when not streaming: cache result for next streaming phase
-    let key = '';
-    for (const msg of msgs) {
-      const pr = msg.permissionRequest;
-      if (pr) {
-        key += pr.reqId + ':' + (pr.approved === undefined ? '?' : pr.approved ? '1' : '0') + ',';
-      }
-    }
-    nonStreamingPermKeyRef.current = key;
-    return key;
-  }, [session.messages]);
-
-  // v2.8.0: pendingPermissions — O(1) during streaming, O(n) when not streaming
-  // 流式期间使用 ref 缓存 + 仅检查 last message；非流式全量扫描并更新缓存
-  const cachedPendingPermsRef = useRef<Map<string, NonNullable<Message['permissionRequest']>>>(new Map());
-  const lastMsgIdRef = useRef<string | null>(null);
-  const lastMsgPendingReqIdRef = useRef<string | null>(null);
-
-  const pendingPermissions = useMemo(() => {
-    const msgs = session.messages;
-    const lastMsg = msgs[msgs.length - 1];
-    const lastMsgId = lastMsg?.id ?? null;
-
-    // During streaming: O(1) — cached map + last message's current permission state
-    if (lastMsg?.isStreaming) {
-      const pr = lastMsg.permissionRequest;
-      const currentReqId = (pr && pr.approved === undefined) ? pr.reqId : null;
-      const cached = cachedPendingPermsRef.current;
-
-      // Last message changed (new message started streaming) — just add its pending perm
-      if (lastMsgId !== lastMsgIdRef.current) {
-        lastMsgIdRef.current = lastMsgId;
-        lastMsgPendingReqIdRef.current = currentReqId;
-        if (currentReqId && pr) {
-          const map = new Map(cached);
-          map.set(currentReqId, pr);
-          return map;
-        }
-        return cached;
-      }
-
-      // Same last message — check if pending permission state changed
-      if (currentReqId === lastMsgPendingReqIdRef.current) {
-        return cached; // No change — return same reference, pendingRequestsArray skips re-compute
-      }
-
-      // Permission state changed (new reqId, resolved, or cleared) — update map
-      const map = new Map(cached);
-      if (lastMsgPendingReqIdRef.current) {
-        map.delete(lastMsgPendingReqIdRef.current); // Remove old pending entry
-      }
-      if (currentReqId && pr) {
-        map.set(currentReqId, pr); // Add new pending entry
-      }
-      lastMsgPendingReqIdRef.current = currentReqId;
-      return map;
-    }
-
-    // Not streaming: O(n) full scan, cache result for next streaming phase
-    const map = new Map<string, NonNullable<Message['permissionRequest']>>();
-    for (const msg of msgs) {
-      const pr = msg.permissionRequest;
-      if (pr && pr.approved === undefined) {
-        map.set(pr.reqId, pr);
-      }
-    }
-    cachedPendingPermsRef.current = map;
-    lastMsgIdRef.current = lastMsgId;
-    const lastPr = lastMsg?.permissionRequest;
-    lastMsgPendingReqIdRef.current = (lastPr && lastPr.approved === undefined) ? lastPr.reqId : null;
-    return map;
-  }, [permissionKey]);
-
-  // v2.5.0: 所有 pending 权限请求（批量展示）
-  const pendingRequestsArray = useMemo(() => {
-    return Array.from(pendingPermissions.values()).map(pr => ({
-      reqId: pr.reqId,
-      toolName: pr.toolName,
-      toolArgs: pr.toolArgs,
-      riskLevel: pr.riskLevel,
-    }));
-  }, [pendingPermissions]);
-
-  /** v2.5.0: 批量允许所有待审批工具 */
-  const handleApproveAll = useCallback((alwaysAllow?: boolean) => {
-    for (const req of pendingRequestsArray) {
-      const toolCategory = alwaysAllow ? getToolCategory(req.toolName) : undefined;
-      handlePermissionRespond(req.reqId, true, alwaysAllow, toolCategory);
-    }
-  }, [pendingRequestsArray, handlePermissionRespond]);
-
-  /** v2.5.0: 批量拒绝所有待审批工具 */
-  const handleDenyAll = useCallback(() => {
-    for (const req of pendingRequestsArray) {
-      handlePermissionRespond(req.reqId, false);
-    }
-  }, [pendingRequestsArray, handlePermissionRespond]);
 
   // 自动聚焦输入框（仅 page 模式，监听 cdf-know-clow-navigate-chat / focus-chat 事件）
   useEffect(() => {
@@ -478,20 +347,6 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
           {/* 输入框 */}
           <Box sx={{ px: 3, py: 2, flexShrink: 0, borderTop: 'none' }}>
             <Box sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', position: 'relative' }}>
-              {/* v2.5.0: 批量权限确认浮动面板 */}
-              <ToolPermissionDialog
-                open={pendingRequestsArray.length > 0}
-                requests={pendingRequestsArray}
-                onApprove={(reqId, alwaysAllow) => {
-            const req = pendingRequestsArray.find(r => r.reqId === reqId);
-            const toolCategory = alwaysAllow && req ? getToolCategory(req.toolName) : undefined;
-            handlePermissionRespond(reqId, true, alwaysAllow, toolCategory);
-          }}
-                onDeny={(reqId) => handlePermissionRespond(reqId, false)}
-                onApproveAll={handleApproveAll}
-                onDenyAll={handleDenyAll}
-              />
-
               <TopBarChatInput
                 isEmpty={session.messages.length === 0}
                 updateSessionModel={updateSessionModel}
@@ -540,25 +395,11 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
           onQuote={handleQuote}
           showRegenerate={true}
           onConfirmReplenishment={handleConfirmReplenishment}
-          onPermissionRespond={handlePermissionRespond}
           maxHeight="calc(70vh - 130px)"
         />
       )}
 
-      {/* v2.5.0: 批量权限确认 — 浮动面板覆盖在输入框上方 */}
       <Box sx={{ position: 'relative', flexShrink: 0 }}>
-        <ToolPermissionDialog
-          open={pendingRequestsArray.length > 0}
-          requests={pendingRequestsArray}
-          onApprove={(reqId, alwaysAllow) => {
-            const req = pendingRequestsArray.find(r => r.reqId === reqId);
-            const toolCategory = alwaysAllow && req ? getToolCategory(req.toolName) : undefined;
-            handlePermissionRespond(reqId, true, alwaysAllow, toolCategory);
-          }}
-          onDeny={(reqId) => handlePermissionRespond(reqId, false)}
-          onApproveAll={handleApproveAll}
-          onDenyAll={handleDenyAll}
-        />
         <TopBarChatInput
           isEmpty={session.messages.length === 0}
           updateSessionModel={updateSessionModel}

@@ -22,6 +22,7 @@ vi.mock('../../aiClient.js', () => ({
 vi.mock('../observer.js', () => ({ Observer: vi.fn() }));
 vi.mock('../planner.js', () => ({ Planner: vi.fn() }));
 vi.mock('../toolRegistry.js', () => ({
+  getBuiltinToolDefinitions: vi.fn().mockReturnValue([]),
   getToolDefinitions: vi.fn().mockReturnValue([]),
   executeToolCall: vi.fn(),
 }));
@@ -39,6 +40,7 @@ vi.mock('../contextTruncate.js', () => ({
   truncateContextForModel: vi.fn(),
   sanitizeToolMessages: vi.fn(),
   estimateTokens: vi.fn().mockReturnValue(10),
+  estimateMessagesTokens: vi.fn().mockReturnValue(100),
 }));
 vi.mock('../contextCompress.js', () => ({
   compressContextWithSummary: vi.fn().mockResolvedValue({
@@ -77,9 +79,6 @@ vi.mock('../vecMemoryStore.js', () => ({
 }));
 vi.mock('../outputValidator.js', () => ({
   OutputValidator: vi.fn(),
-}));
-vi.mock('../toolPermissionSandbox.js', () => ({
-  ToolPermissionSandbox: vi.fn(),
 }));
 vi.mock('../toolDependencyGraph.js', () => ({
   ToolDependencyGraph: vi.fn(),

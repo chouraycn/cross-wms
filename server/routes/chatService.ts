@@ -18,7 +18,6 @@ import { AIAPIError, type MessageContent, type ModelCallConfig, type ToolCall } 
 import { ExecutionStrategyFactory, ExecutionMode } from '../engine/executionStrategy.js';
 import type { ExecutionStrategyOptions } from '../engine/executionStrategy.js';
 import type { ToolExecutionResult } from '../engine/toolExecutor.js';
-import { getToolRiskLevel } from '../engine/toolExecutor.js';
 import { buildSoulSystemMessage } from '../engine/soulLoader.js';
 import { estimateMessagesTokens, truncateContextForModel, sanitizeToolMessages } from '../engine/contextTruncate.js';
 import { compressContextWithSummary } from '../engine/contextCompress.js';
@@ -35,12 +34,6 @@ import { messageQueue, type QueueMode, type QueueEvent } from '../engine/message
 import { logger } from '../logger.js';
 import { autoSelectModel, generateMockResponse, isModelAvailable, MODEL_PRESETS } from './modelSelector.js';
 import { extractAndAppendMemory, readMemoryMd } from './memoryExtractor.js';
-import {
-  permissionEmitter,
-  isSystemAuthorized,
-  initSessionApprovedTools,
-  registerPermissionRequest,
-} from './toolPermissionService.js';
 import { getAppSettings } from '../dao/settings.js';
 import { extractFileContent } from './chatHelpers/fileExtractor.js';
 import { getThinkingCacheKey, getThinkingCache, setThinkingCache } from './chatHelpers/thinkingCache.js';
@@ -214,6 +207,20 @@ function classifyAndFormatError(
         return { code: 'AUTH_FAILED', message: 'API Key 无效或已过期，请在「模型管理」中检查密钥配置。' };
       case 'rate_limit':
         return { code: 'RATE_LIMITED', message: '请求过于频繁，已达到速率限制，请稍后再试。' };
+      case 'model_not_supported': {
+        // v1.5.208: 402 余额不足等支付类错误会被归类为 model_not_supported 以触发降级
+        const body = error.responseBody?.toLowerCase() || '';
+        if (body.includes('insufficient balance') || body.includes('billing') || body.includes('payment') || body.includes('quota')) {
+          return {
+            code: 'INSUFFICIENT_BALANCE',
+            message: `当前模型（${effectiveModel}）API 余额不足，已自动尝试切换到备用模型。如果所有模型均余额不足，请充值或配置新的 API Key。`,
+          };
+        }
+        return {
+          code: 'MODEL_NOT_SUPPORTED',
+          message: `当前模型（${effectiveModel}）暂不可用，已自动尝试切换到备用模型。`,
+        };
+      }
       case 'network': {
         const isLocal = modelConfig ? isLocalModel(modelConfig) : false;
         if (isLocal) {
@@ -277,8 +284,6 @@ interface FallbackParams {
   timerManager: TimerManager;
   /** AbortSignal */
   signal?: AbortSignal;
-  /** 已授权工具缓存 */
-  sessionApprovedSet: Set<string>;
   /** 执行模式 */
   executionMode: ExecutionMode;
   /** 会话 ID */
@@ -298,7 +303,7 @@ interface FallbackParams {
  * @returns true 如果降级成功（done 已发送），false 如果降级失败（调用方需发送错误 done）
  */
 async function handleFallback(params: FallbackParams): Promise<boolean> {
-  const { error, apiMessages, modelsConfig, currentModel, modelConfig, res, timerManager, signal, sessionApprovedSet, executionMode, sessionId, skillId } = params;
+  const { error, apiMessages, modelsConfig, currentModel, modelConfig, res, timerManager, signal, executionMode, sessionId, skillId } = params;
   const tag = params.fromQueue ? '[MessageQueue]' : '[Chat API]';
 
   const isModelUnsupported = error instanceof AIAPIError && error.category === 'model_not_supported';
@@ -355,10 +360,9 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
       maxToolTurns: 10,
       signal: signal ?? new AbortController().signal,
       executionMode,
-      approvedToolsCache: sessionApprovedSet,
       onSSEEvent: (evt: Record<string, unknown>) => {
         const evtType = evt.type as string;
-        if (['init', 'text', 'thinking', 'tool_call', 'permission_request', 'done', 'error'].includes(evtType)) {
+        if (['init', 'text', 'thinking', 'tool_call', 'done', 'error'].includes(evtType)) {
           sendSSE(res, evt);
         } else {
           sendDebugSSE(res, evt);
@@ -370,7 +374,6 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
       onThinking: (thinkingChunk: string) => {
         sendSSE(res, { type: 'thinking', content: thinkingChunk });
       },
-      onPermissionRequest: () => Promise.resolve(isSystemAuthorized()),
       onToolCall: (toolCall: ToolCall, result: string) => {
         sendSSE(res, {
           type: 'tool_call',
@@ -424,7 +427,6 @@ interface QueueExecuteParams {
   modelName: string;
   assistantId: string;
   preset: typeof MODEL_PRESETS[string] | null;
-  reasoningEffort?: string;
   executionMode?: string;
   conversationHistory?: any[];
   skillContext?: string;
@@ -434,7 +436,6 @@ interface QueueExecuteParams {
   autoReasonType?: string;
   message: string;
   modelsConfig: ModelsFile;
-  sessionApprovedSet: Set<string>;
 }
 
 /**
@@ -544,40 +545,6 @@ async function executeQueuedMessage(
       effectiveMode = ExecutionStrategyFactory.getDefaultMode();
     }
 
-    initSessionApprovedTools(sessionId);
-
-    // 设置权限请求回调
-    const callbacks: ExecuteChatCallbacks = {
-      onPermissionRequest: (toolCall: ToolCall) => {
-        const reqId = `perm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const toolName = toolCall.function?.name || 'unknown';
-        const args = toolCall.function?.arguments || '';
-        const riskLevel = getToolRiskLevel(toolName);
-        const sessionSet = initSessionApprovedTools(sessionId);
-        if (sessionSet?.has(toolName)) return Promise.resolve(true);
-        registerPermissionRequest(reqId, toolName, sessionId);
-        sendSSE(res, {
-          type: 'permission_request',
-          reqId,
-          toolName,
-          args,
-          riskLevel,
-        });
-        return new Promise<boolean>((resolve) => {
-          const permTimeout = setTimeout(() => resolve(false), 60000);
-          const handler = (approved: boolean) => {
-            clearTimeout(permTimeout);
-            permissionEmitter.removeListener(reqId, handler);
-            if (approved) {
-              sessionSet?.add(toolName);
-            }
-            resolve(approved);
-          };
-          permissionEmitter.once(reqId, handler);
-        });
-      },
-    };
-
     // 调用统一执行器
     const result = await streamExecuteChat({
       sessionId,
@@ -590,13 +557,10 @@ async function executeQueuedMessage(
       executionMode: effectiveMode,
       timerManager,
       signal: abortController.signal,
-      reasoningEffort: params.reasoningEffort,
-      approvedToolsCache: params.sessionApprovedSet,
       modelCapabilities: modelConfig.capabilities || [],
       ctxWindow,
       ctxMaxTokens,
       estimatedToolsCount: 30,
-      callbacks,
       fromQueue: true,
     });
 
@@ -637,7 +601,6 @@ async function executeQueuedMessage(
       res,
       timerManager,
       signal: messageQueue.getCurrentAbortController(sessionId)?.signal,
-      sessionApprovedSet: params.sessionApprovedSet,
       executionMode: (params.executionMode as ExecutionMode) || ExecutionMode.REACT,
       sessionId,
       skillId: params.skillId,
@@ -677,7 +640,6 @@ export async function handleChat(req: import('express').Request, res: import('ex
     preset,
     conversationHistory,
     attachments,
-    reasoningEffort,
     executionMode,
     queueMode,
     agentId,
@@ -692,7 +654,6 @@ export async function handleChat(req: import('express').Request, res: import('ex
   const timerManager = new TimerManager(res);
 
   let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }> = [];
-  let sessionApprovedSet: Set<string> = new Set();
   let abortController: AbortController = new AbortController();
   let selectedKeyIndex = -1;
 
@@ -759,7 +720,6 @@ export async function handleChat(req: import('express').Request, res: import('ex
       autoReason,
       autoReasonType,
       preset: activePreset ? { id: preset, label: activePreset.label } : null,
-      reasoningEffort: reasoningEffort || null,
     });
 
     // ============== 队列模式 ==============
@@ -774,7 +734,6 @@ export async function handleChat(req: import('express').Request, res: import('ex
         skillId,
         preset,
         attachments,
-        reasoningEffort,
         executionMode,
         conversationHistory,
         autoReason,
@@ -807,7 +766,6 @@ export async function handleChat(req: import('express').Request, res: import('ex
             modelName: effectiveModelName,
             assistantId: result.assistantMessageId,
             preset: activePreset,
-            reasoningEffort,
             executionMode,
             conversationHistory,
             skillContext,
@@ -817,7 +775,6 @@ export async function handleChat(req: import('express').Request, res: import('ex
             autoReasonType,
             message,
             modelsConfig,
-            sessionApprovedSet: initSessionApprovedTools(sessionId),
           });
         }
       };
@@ -841,7 +798,6 @@ export async function handleChat(req: import('express').Request, res: import('ex
           modelName: effectiveModelName,
           assistantId: result.assistantMessageId,
           preset: activePreset,
-          reasoningEffort,
           executionMode,
           conversationHistory,
           skillContext,
@@ -851,7 +807,6 @@ export async function handleChat(req: import('express').Request, res: import('ex
           autoReasonType,
           message,
           modelsConfig,
-          sessionApprovedSet: initSessionApprovedTools(sessionId),
         });
       }
 
@@ -1034,14 +989,10 @@ export async function handleChat(req: import('express').Request, res: import('ex
     let timeoutMs: number;
     if (isLocalModel(modelConfig)) {
       timeoutMs = 300000;
-    } else if (reasoningEffort === 'max') {
-      timeoutMs = 600000;
-    } else if (reasoningEffort === 'high') {
-      timeoutMs = 300000;
     } else {
       timeoutMs = 120000;
     }
-    let timeout = setTimeout(() => abortController.abort(), timeoutMs);
+    const timeout = setTimeout(() => abortController.abort(), timeoutMs);
 
     try {
       // 无 API Key 且非本地模型 → 模拟模式
@@ -1055,26 +1006,22 @@ export async function handleChat(req: import('express').Request, res: import('ex
         }
         fullContent = mockResponse;
       } else {
-        sessionApprovedSet = initSessionApprovedTools(sessionId);
-
         // Thinking 缓存检查
         let cacheHit = false;
-        if (reasoningEffort) {
-          const cacheKey = getThinkingCacheKey(effectiveModel, message, reasoningEffort);
-          const cached = getThinkingCache(cacheKey);
-          if (cached) {
-            logger.debug('[Chat API] Thinking cache hit for', effectiveModel);
-            cacheHit = true;
-            fullContent = cached.content;
-            thinkingContent = cached.thinking;
-            hasThinking = !!thinkingContent;
-            if (hasThinking) thinkingStartTime = 0;
-            if (thinkingContent) {
-              sendSSE(res, { type: 'thinking', content: thinkingContent });
-            }
-            sendSSE(res, { type: 'text', content: fullContent });
-            sendDebugSSE(res, { type: 'cache_hit', cached: true });
+        const cacheKey = getThinkingCacheKey(effectiveModel, message);
+        const cached = getThinkingCache(cacheKey);
+        if (cached) {
+          logger.debug('[Chat API] Thinking cache hit for', effectiveModel);
+          cacheHit = true;
+          fullContent = cached.content;
+          thinkingContent = cached.thinking;
+          hasThinking = !!thinkingContent;
+          if (hasThinking) thinkingStartTime = 0;
+          if (thinkingContent) {
+            sendSSE(res, { type: 'thinking', content: thinkingContent });
           }
+          sendSSE(res, { type: 'text', content: fullContent });
+          sendDebugSSE(res, { type: 'cache_hit', cached: true });
         }
 
         if (!cacheHit) {
@@ -1133,39 +1080,6 @@ export async function handleChat(req: import('express').Request, res: import('ex
                 });
               }
             },
-            onPermissionRequest: (toolCall: ToolCall) => {
-              if (isSystemAuthorized()) {
-                logger.debug('[Chat API] 系统授权已启用，自动通过工具权限:', toolCall.function.name);
-                return Promise.resolve(true);
-              }
-              return new Promise<boolean>((resolve) => {
-                const reqId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-                registerPermissionRequest(reqId, toolCall.function.name, sessionId);
-                sendSSE(res, {
-                  type: 'permission_request',
-                  reqId,
-                  toolName: toolCall.function.name,
-                  toolArgs: toolCall.function.arguments,
-                  riskLevel: getToolRiskLevel(toolCall.function.name),
-                });
-                // 暂停 abort 超时
-                clearTimeout(timeout);
-                timeout = null as any;
-                const handler = (approved: boolean) => {
-                  permissionEmitter.removeListener(reqId, handler);
-                  // 恢复 abort 超时
-                  timeout = setTimeout(() => abortController.abort(), timeoutMs);
-                  sendDebugSSE(res, {
-                    type: 'tool_audit',
-                    toolName: toolCall.function.name,
-                    result: approved ? 'approved' : 'denied',
-                    timestamp: Date.now(),
-                  });
-                  resolve(approved);
-                };
-                permissionEmitter.once(reqId, handler);
-              });
-            },
             onRateLimit: async () => {
               if (selectedKeyIndex >= 0 && effectiveModel) {
                 reportKeyResult(effectiveModel, selectedKeyIndex, false);
@@ -1192,8 +1106,6 @@ export async function handleChat(req: import('express').Request, res: import('ex
             executionMode: effectiveMode,
             timerManager,
             signal: abortController.signal,
-            reasoningEffort,
-            approvedToolsCache: sessionApprovedSet,
             modelCapabilities: modelConfig.capabilities || [],
             ctxWindow,
             ctxMaxTokens,
@@ -1208,8 +1120,8 @@ export async function handleChat(req: import('express').Request, res: import('ex
           toolCallsJson = result.toolCalls?.length > 0 ? JSON.stringify(result.toolCalls) : undefined;
 
           // Thinking 缓存
-          if (reasoningEffort && thinkingContent) {
-            const cacheKey = getThinkingCacheKey(effectiveModel, message, reasoningEffort);
+          if (thinkingContent) {
+            const cacheKey = getThinkingCacheKey(effectiveModel, message);
             setThinkingCache(cacheKey, fullContent, thinkingContent);
           }
 
@@ -1221,7 +1133,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
               sendDebugSSE(res, {
                 type: 'memory_retrieved',
                 count: result.enhancement.memories.length,
-                summaries: result.enhancement.memories.map((r) => r.entry.content.substring(0, 50)),
+                summaries: result.enhancement.memories.map((r) => r.text.substring(0, 50)),
               });
             }
           }
@@ -1280,7 +1192,6 @@ export async function handleChat(req: import('express').Request, res: import('ex
       res,
       timerManager,
       signal: abortController?.signal,
-      sessionApprovedSet,
       executionMode: ExecutionMode.REACT,
       sessionId,
       skillId,

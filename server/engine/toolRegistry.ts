@@ -1,13 +1,13 @@
 /**
- * Tool Registry — 工具注册表核心
+ * Tool Registry — 内置本地工具注册表核心
  *
- * 统一管理所有可用工具的 schema 定义和执行 handler。
- * 工具按命名空间分组：
- * - system.* — 系统信息查询
- * - file.* — 文件系统操作
- * - db.* — 数据库查询
- * - wms.* — WMS 业务操作
- * - desktop.* — 桌面自动化操作（macOS 原生工具 / Linux 工具）
+ * 此文件仅管理**内置本地工具**（system.* / file.* / db.* / wms.* / desktop.* / web.* 等）。
+ * MCP 工具通过 mcpClientManager 独立管理，不在此注册表中。
+ * Plugin 工具通过 registerPluginTool() 动态注册到此注册表（Plugin 算内置本地扩展）。
+ *
+ * 架构分工：
+ * - [内置本地工具] → 通过 toolRegistry.executeToolCall() 直接执行
+ * - [外部第三方工具] → 统一走 MCP 协议（mcpClientManager.executeMcpTool()）
  *
  * v1.9.0: 新增 Tool Calling 支持
  * v2.0.0: 新增 desktop:* 命名空间，支持 macOS 桌面自动化
@@ -33,18 +33,18 @@ import { handleDesktopScreenshot, handleDesktopSee, handleDesktopSnapshot, handl
 import { handleDesktopClipboard } from './desktop/clipboardTools.js';
 import { handleAppSetBotName } from './appTools.js';
 
-// ===================== 工具注册表 =====================
+// ===================== 内置工具注册表 =====================
 
-const registry = new Map<string, RegisteredTool>();
+const builtinRegistry = new Map<string, RegisteredTool>();
 
-function registerTool(tool: RegisteredTool): void {
-  registry.set(tool.definition.function.name, tool);
+function registerBuiltinTool(tool: RegisteredTool): void {
+  builtinRegistry.set(tool.definition.function.name, tool);
 }
 
-/** 初始化默认工具集 */
+/** 初始化默认工具集（内置本地工具） */
 export async function initDefaultTools(): Promise<void> {
   // system_info
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -61,7 +61,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // file_listDir
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -80,7 +80,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // file_readFile
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -99,7 +99,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // file_writeFile
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -119,7 +119,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // shell_exec
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -139,7 +139,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // db_query
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -158,7 +158,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // wms_inventory
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -177,7 +177,7 @@ export async function initDefaultTools(): Promise<void> {
   // ===================== Desktop Automation Tools (macOS Native) =====================
 
   // desktop_health
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -194,7 +194,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_screenshot
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -211,7 +211,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_click
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -234,7 +234,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_type
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -255,7 +255,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_key_press
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -275,7 +275,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_app_launch
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -295,7 +295,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_app_quit
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -314,7 +314,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_window_focus
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -334,7 +334,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_clipboard
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -354,7 +354,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_scroll
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -375,7 +375,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_see
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -392,7 +392,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_snapshot — 获取前台应用 UI 元素树（基于 macOS Accessibility API）
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -409,7 +409,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_find — 从缓存快照中搜索元素
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -429,7 +429,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // desktop_click_smart — 语义点击（ONNX embedding 匹配 UI 元素）
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -449,7 +449,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // app_setBotName — 修改 AI 助手显示名称
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -470,7 +470,7 @@ export async function initDefaultTools(): Promise<void> {
   // ===================== Web Tools (v2.4.0) =====================
 
   // web_search — 互联网搜索（DuckDuckGo，免 API Key）
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -491,7 +491,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // web_fetch — 抓取网页并转换 Markdown
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -515,7 +515,7 @@ export async function initDefaultTools(): Promise<void> {
   });
 
   // web_api_call — 调用外部 REST API（域名白名单）/ API 模板
-  registerTool({
+  registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
@@ -546,7 +546,7 @@ export async function initDefaultTools(): Promise<void> {
     for (const def of browserDefs) {
       const handler = browserHandlers.get(def.function.name);
       if (handler) {
-        registerTool({ definition: def, handler });
+        registerBuiltinTool({ definition: def, handler });
       }
     }
     logger.debug('[Tool Registry] Browser tools registered:', browserDefs.map(d => d.function.name).join(', '));
@@ -562,7 +562,7 @@ export async function initDefaultTools(): Promise<void> {
     const whHandlers = getWebhookToolHandlers();
     for (const def of whDefs) {
       const handler = whHandlers.get(def.function.name);
-      if (handler) registerTool({ definition: def, handler });
+      if (handler) registerBuiltinTool({ definition: def, handler });
     }
     logger.debug('[Tool Registry] Webhook tools registered:', whDefs.map(d => d.function.name).join(', '));
   } catch (err) {
@@ -570,19 +570,24 @@ export async function initDefaultTools(): Promise<void> {
   }
 }
 
-/** 获取所有已注册工具的 definitions（用于传给 LLM） */
-export function getToolDefinitions(): ToolDefinition[] {
-  return Array.from(registry.values()).map(t => t.definition);
+/** 获取所有已注册内置工具的 definitions（用于传给 LLM） */
+export function getBuiltinToolDefinitions(): ToolDefinition[] {
+  return Array.from(builtinRegistry.values()).map(t => t.definition);
 }
 
-/** 执行单个 tool call */
+/** @deprecated 使用 getBuiltinToolDefinitions 替代 */
+export function getToolDefinitions(): ToolDefinition[] {
+  return getBuiltinToolDefinitions();
+}
+
+/** 执行单个内置 tool call（断言：MCP 工具不应路由到此处） */
 export async function executeToolCall(toolCall: ToolCall): Promise<string> {
-  // 防御性检查：MCP 工具不应路由到此处
+  // 断言：MCP 工具不应路由到此处，应通过 mcpClientManager 执行
   if (isMcpToolName(toolCall.function.name)) {
-    return JSON.stringify({ error: `内部错误: MCP 工具 '${toolCall.function.name}' 被错误路由到 toolRegistry，应通过 mcpClientManager 执行。` });
+    throw new Error(`内部错误: MCP 工具 '${toolCall.function.name}' 被错误路由到 toolRegistry，应通过 mcpClientManager 执行。`);
   }
 
-  const tool = registry.get(toolCall.function.name);
+  const tool = builtinRegistry.get(toolCall.function.name);
   if (!tool) {
     return JSON.stringify({ error: `未知工具: ${toolCall.function.name}` });
   }
@@ -601,20 +606,20 @@ export async function executeToolCall(toolCall: ToolCall): Promise<string> {
   }
 }
 
-/** 检查工具是否存在 */
+/** 检查内置工具是否存在 */
 export function hasTool(name: string): boolean {
-  return registry.has(name);
+  return builtinRegistry.has(name);
 }
 
-/** 获取工具列表（调试用） */
+/** 获取内置工具列表（调试用） */
 export function listTools(): string[] {
-  return Array.from(registry.keys());
+  return Array.from(builtinRegistry.keys());
 }
 
 // ===================== Plugin Tool 动态注册（v3.0） =====================
 
 /**
- * 注册 Plugin 工具（动态）。
+ * 注册 Plugin 工具（动态注册到内置注册表，Plugin 算内置本地扩展）。
  * 返回 unregister 函数，可用于清理。
  */
 export function registerPluginTool(
@@ -623,20 +628,20 @@ export function registerPluginTool(
   handler: ToolHandler
 ): () => void {
   const tool: RegisteredTool = { definition, handler };
-  registry.set(name, tool);
-  return () => { registry.delete(name); };
+  builtinRegistry.set(name, tool);
+  return () => { builtinRegistry.delete(name); };
 }
 
 /**
  * 注销 Plugin 工具。
  */
 export function unregisterPluginTool(name: string): boolean {
-  return registry.delete(name);
+  return builtinRegistry.delete(name);
 }
 
 /**
  * 列出所有 Plugin 工具名（以 plugin_ 前缀的）。
  */
 export function listPluginTools(): string[] {
-  return Array.from(registry.keys()).filter(name => name.startsWith('plugin_'));
+  return Array.from(builtinRegistry.keys()).filter(name => name.startsWith('plugin_'));
 }

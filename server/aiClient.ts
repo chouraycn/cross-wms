@@ -130,6 +130,14 @@ function sleep(ms: number): Promise<void> {
 function classifyError(statusCode: number, responseBody: string): AIAPIError['category'] {
   if (statusCode === 401 || statusCode === 403) return 'auth';
   if (statusCode === 429) return 'rate_limit';
+  if (statusCode === 402) {
+    // v1.5.208: 402 Payment Required — 余额不足，应触发降级而非报错
+    const body = responseBody.toLowerCase();
+    if (body.includes('insufficient balance') || body.includes('billing') || body.includes('payment') || body.includes('quota')) {
+      return 'model_not_supported';
+    }
+    return 'unknown';
+  }
   if (statusCode >= 500) return 'server';
   if (statusCode >= 400) {
     // v1.5.116: 识别模型不支持错误
@@ -216,7 +224,6 @@ export async function callOpenAICompatibleStream(
   onThinking?: (text: string) => void,
   tools?: ToolDefinition[],
   onToolCall?: (toolCall: ToolCall) => void,
-  reasoningEffort?: string,
   modelCapabilities?: string[],
 ): Promise<AIResponse> {
   let endpoint = apiEndpoint.replace(/\/+$/, '');
@@ -252,113 +259,6 @@ export async function callOpenAICompatibleStream(
     body.tool_choice = 'auto';
   }
 
-  // v2.8.7: 判断是否支持 reasoning + 模型分类
-  // 分类决定了发送哪些参数（不同 API 的 thinking 启用方式不同）
-  // Bugfix: 本地模型（Ollama/LM Studio/vLLM 等）不支持 reasoning_effort，跳过
-  const isLocalEndpoint = /localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.|:11434/.test(apiEndpoint);
-  const supportsReasoning = !isLocalEndpoint && (
-    modelCapabilities?.includes('reasoning') ||
-    /deepseek|reasoner|o3|o4|r1|moonshot|kimi|k2[.-]|qwq|qwen3|glm|zhipu/i.test(modelId)
-  );
-
-  // 模型分类（用于参数差异化处理）
-  const isDeepSeekModel = /deepseek|reasoner|r1/i.test(modelId);
-  const isMoonshotModel = /moonshot|kimi|k2[.-]/i.test(modelId);
-  const isQwenModel = /qwq|qwen3/i.test(modelId);
-  const isOpenAIReasoner = /o3|o4/i.test(modelId);
-  const isZhipuModel = /glm|zhipu/i.test(modelId);
-
-  // v1.5.173: reasoning_effort 值映射
-  //   "off"  → 跳过所有 thinking/reasoning 参数
-  //   "max"  → 映射为 "high"（DeepSeek/Kimi 只支持 low/medium/high）
-  //   "low"/"medium"/"high" → 保持原样
-  const normalizedEffort = reasoningEffort === 'off'
-    ? null
-    : reasoningEffort === 'max'
-      ? 'high'
-      : reasoningEffort;
-
-  if (normalizedEffort && supportsReasoning) {
-    // ---- 各 API 的 thinking 参数策略 ----
-    //
-    // 1. DeepSeek (R1/V3/Reasoner):
-    //    - 标准 OpenAI 兼容：reasoning_effort=low|medium|high
-    //    - R1 系列始终推理，reasoning_effort 控制深度
-    //    - 无需额外参数 ✅
-    //
-    // 2. Kimi K2 (Moonshot):
-    //    - OpenAI 兼容：reasoning_effort 即可触发思考模式
-    //    - 无需额外参数 ✅
-    //
-    // 3. Qwen3 / QwQ (阿里):
-    //    - OpenAI 兼容端点：reasoning_effort
-    //    - 部分旧版本可能需要 enable_thinking（通过 extra body 透传）
-    //
-    // 4. OpenAI o3/o4:
-    //    - 官方标准：reasoning_effort
-    //    - 无需额外参数 ✅
-    //
-    // 5. Claude (Anthropic):
-    //    - 不在此函数处理，由 callAnthropicStream() 单独处理
-    //    - 使用 thinking: { type: 'enabled', budget_tokens: N }
-
-    body.reasoning_effort = normalizedEffort;
-
-    // v2.8.7: 按模型分类精确传递 thinking 参数
-    //
-    // 1. DeepSeek: 只发送标准 reasoning_effort（上方已设置），不发送 extra_body
-    //     — DeepSeek 官方 API 不支持 extra_body 透传
-    //
-    // 2. Kimi K2 (Moonshot): thinking 是顶层参数，不是 extra_body
-    //    — K2.7 Code: { type: "enabled", keep: "all" }（始终开启，不支持 disabled）
-    //    — K2.6/K2.5: { type: "enabled" } 或 { type: "disabled" }
-    //    — 不发送 reasoning_effort（Kimi 不支持此参数）
-    //
-    // 3. 智谱 AI (Zhipu/GLM): thinking 是顶层参数
-    //    — GLM-4.7/GLM-5: { type: "enabled" }
-    //    — 流式响应中 thinking 内容在 delta.reasoning_content
-    //    — 不发送 reasoning_effort（智谱不支持此参数）
-    //
-    // 4. Qwen3/QwQ: 只保留 reasoning_effort，不发送 enable_thinking / thinking
-    //
-    // 5. OpenAI o3/o4: 只支持 reasoning_effort
-    //
-    // 6. Claude: 不在此函数处理（由 callAnthropicStream 单独处理）
-    if (isMoonshotModel) {
-      // Kimi: 移除 reasoning_effort（Kimi 不支持），设置顶层 thinking 参数
-      delete body.reasoning_effort;
-      const isK27Code = /k2\.7/i.test(modelId);
-      if (isK27Code) {
-        // K2.7 Code: 始终开启思考，keep=all 保留推理内容
-        body.thinking = { type: 'enabled', keep: 'all' };
-      } else {
-        // K2.6/K2.5: 支持启用/禁用思考
-        body.thinking = { type: 'enabled' };
-      }
-    } else if (isZhipuModel) {
-      // 智谱 AI: 移除 reasoning_effort（智谱不支持），设置顶层 thinking 参数
-      delete body.reasoning_effort;
-      body.thinking = { type: 'enabled' };
-    } else if (isQwenModel) {
-      // Qwen3: 只保留 reasoning_effort，不发送 enable_thinking / thinking
-      // body.reasoning_effort 已在上方设置，此处无需额外操作
-    }
-
-    logger.debug(`[AIClient] 已启用推理模式: model=${modelId} effort=${normalizedEffort}` +
-      `${isDeepSeekModel ? ' [DeepSeek:reasoning_effort]' : ''}` +
-      `${isMoonshotModel ? ' [Moonshot:thinking]' : ''}` +
-      `${isZhipuModel ? ' [Zhipu:thinking]' : ''}` +
-      `${isQwenModel ? ' [Qwen:reasoning_effort]' : ''}` +
-      `${isOpenAIReasoner ? ' [OpenAI:reasoning_effort]' : ''}`);
-  } else if (reasoningEffort === 'off') {
-    logger.debug(`[AIClient] reasoning_effort=off，跳过 thinking 参数 (model=${modelId})`);
-  } else if (!supportsReasoning && !isLocalEndpoint && reasoningEffort && reasoningEffort !== 'off') {
-    // 用户请求了 reasoning 但模型不在支持列表中 — 发送尝试（某些新模型可能已支持）
-    // Bugfix: 本地模型不发送 reasoning_effort
-    body.reasoning_effort = normalizedEffort || reasoningEffort;
-    logger.debug(`[AIClient] 模型 ${modelId} 不在已知支持列表中，仍尝试发送 reasoning_effort=${reasoningEffort}`);
-  }
-
   let response: Response;
   try {
     response = await fetch(endpoint, {
@@ -380,28 +280,6 @@ export async function callOpenAICompatibleStream(
 
   if (!response.ok) {
     const errorText = await response.text();
-    // v1.5.173: thinking/reasoning 参数格式错误检测
-    if (response.status === 400) {
-      const et = errorText.toLowerCase();
-      const isThinkingError = et.includes('thinking') || et.includes('reasoning') || et.includes('budget_tokens')
-        || et.includes('unknown parameter') || et.includes('invalid parameter')
-        || et.includes('extra field') || et.includes('unexpected');
-      if (isThinkingError) {
-        // 记录发送的推理相关参数（用于调试）
-        const reasoningKeys = Object.keys(body).filter(k =>
-          k.includes('reasoning') || k.includes('thinking') || k.includes('enable_think'));
-        logger.error(`[AIClient] 推理参数可能不被此 API 支持: model=${modelId}` +
-          ` 发送的参数=${JSON.stringify(reasoningKeys)} ` +
-          `API返回: ${errorText.slice(0, 500)}`);
-        throw new AIAPIError(
-          `模型 ${modelId} 不支持当前推理参数 (${reasoningKeys.join(',')})。` +
-          `可尝试在模型设置中关闭"深度思考"。API 返回: ${errorText.slice(0, 300)}`,
-          'unknown',
-          response.status,
-          errorText,
-        );
-      }
-    }
     // v1.5.129: 400 错误时记录消息结构，帮助诊断 tool_calls 配对问题
     if (response.status === 400) {
       const toolMsgs = messages.filter(m => m.role === 'tool');
@@ -761,7 +639,6 @@ export async function callAnthropicStream(
   onThinking?: (text: string) => void,
   tools?: ToolDefinition[],
   onToolCall?: (toolCall: ToolCall) => void,
-  reasoningEffort?: string,
   modelCapabilities?: string[],
 ): Promise<AIResponse> {
   let endpoint = apiEndpoint.replace(/\/+$/, '');
@@ -784,22 +661,6 @@ export async function callAnthropicStream(
   if (tools && tools.length > 0) {
     body.tools = convertToolsToAnthropic(tools);
     body.tool_choice = { type: 'auto' };
-  }
-
-  // Anthropic thinking budget（推理模型）
-  // 仅对明确支持 extended thinking 的模型发送 thinking 参数
-  // Claude 3.7+, Claude 4+ 支持；旧版 Opus/Sonnet 不支持
-  // v2.2.0: 优先使用 capabilities 判断，正则作为 fallback
-  const supportsThinking = modelCapabilities?.includes('reasoning') || /claude.*(3[-.]7|4|sonnet[-.]4)/i.test(modelId);
-  if (reasoningEffort && supportsThinking) {
-    // v2.2.0: budget_tokens 可配置，默认值映射
-    const budgetMap: Record<string, number> = { high: 10000, max: 32000 };
-    const budgetTokens = budgetMap[reasoningEffort] || 10000;
-    body.thinking = { type: 'enabled', budget_tokens: budgetTokens };
-    // Anthropic thinking 模式不支持 temperature，移除
-    delete body.temperature;
-  } else if (reasoningEffort && !supportsThinking) {
-    logger.warn(`[AIClient] 模型 ${modelId} 可能不支持 extended thinking，跳过 thinking 参数`);
   }
 
   let response: Response;
@@ -967,7 +828,6 @@ export async function callAIModelStream(
   onThinking?: (text: string) => void,
   tools?: ToolDefinition[],
   onToolCall?: (toolCall: ToolCall) => void,
-  reasoningEffort?: string,
   modelCapabilities?: string[],
   onRateLimit?: OnRateLimitCallback,
 ): Promise<AIResponse> {
@@ -1007,7 +867,7 @@ export async function callAIModelStream(
           apiEndpoint, apiKey, modelId,
           messages as Array<{ role: string; content: string | OpenAIVisionContent[]; tool_calls?: ToolCall[]; tool_call_id?: string }>,
           temperature, maxTokens, onChunk, signal,
-          onThinking, tools, onToolCall, reasoningEffort,
+          onThinking, tools, onToolCall,
           capabilities,
         );
       }
@@ -1056,7 +916,7 @@ export async function callAIModelStream(
         apiEndpoint, apiKey, modelId,
         effectiveMessages as Array<{ role: string; content: string | OpenAIVisionContent[] }>,
         temperature, maxTokens, onChunk, signal,
-        onThinking, tools, onToolCall, reasoningEffort,
+        onThinking, tools, onToolCall,
         capabilities,
       );
     } catch (error) {
@@ -1095,7 +955,7 @@ export async function callAIModelStream(
               apiEndpoint, apiKey, modelId,
               retryMessages as Array<{ role: string; content: string | OpenAIVisionContent[]; tool_calls?: ToolCall[]; tool_call_id?: string }>,
               temperature, maxTokens, onChunk, signal,
-              onThinking, undefined, onToolCall, reasoningEffort,
+              onThinking, undefined, onToolCall,
               capabilities,
             );
           }
@@ -1104,7 +964,7 @@ export async function callAIModelStream(
             apiEndpoint, apiKey, modelId,
             retryMessages as Array<{ role: string; content: string | OpenAIVisionContent[] }>,
             temperature, maxTokens, onChunk, signal,
-            onThinking, undefined, onToolCall, reasoningEffort,
+            onThinking, undefined, onToolCall,
             capabilities,
           );
         } catch (retryErr) {

@@ -17,7 +17,7 @@ import {
   getReplenishmentStats,
   recommendSourceWarehouse,
 } from '../services/replenishmentService.js';
-import { initDb } from '../db.js';
+import { getReplenishmentSuggestionById } from '../dao/wmsSkillDao.js';
 import type { ReplenishmentConfig } from '../models/wms-skill.js';
 import { DEFAULT_REPLENISHMENT_CONFIG } from '../models/wms-skill.js';
 import { logger } from '../logger.js';
@@ -113,14 +113,13 @@ router.get('/:id/sources', (req: Request, res: Response) => {
       return;
     }
 
-    const db = initDb();
-    const suggestion = db.prepare('SELECT sku, warehouse_id, suggested_qty FROM replenishment_suggestions WHERE id = ?').get(id) as { sku: string; warehouse_id: string; suggested_qty: number } | undefined;
+    const suggestion = getReplenishmentSuggestionById(id);
     if (!suggestion) {
       res.status(404).json({ code: 1, message: '建议记录不存在' });
       return;
     }
 
-    const recommendations = recommendSourceWarehouse(suggestion.sku, suggestion.warehouse_id, suggestion.suggested_qty);
+    const recommendations = recommendSourceWarehouse(suggestion.sku, suggestion.warehouseId, suggestion.suggestedQty);
     res.json({ code: 0, data: recommendations, message: 'ok' });
   } catch (e) {
     logger.error('[ReplenishmentRoute] 获取来源仓库推荐失败:', e);
@@ -137,10 +136,7 @@ router.post('/:id/confirm', (req: Request, res: Response) => {
       return;
     }
 
-    const db = initDb();
-    const suggestion = db.prepare(
-      'SELECT id, status FROM replenishment_suggestions WHERE id = ?'
-    ).get(id) as { id: number; status: string } | undefined;
+    const suggestion = getReplenishmentSuggestionById(id);
 
     if (!suggestion) {
       res.status(404).json({ code: 1, message: '补货建议记录不存在' });

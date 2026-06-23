@@ -12,8 +12,7 @@ import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { scanWorkbuddySkills } from '../routes/skills.js';
 import { auditSkillMd, generateMarkdownReport } from './securityAuditor.js';
-import { initDb } from '../db.js';
-import { createSkillAudit } from '../dao/chains.js';
+import { createSkillAudit, getLatestSkillAudit } from '../dao/chains.js';
 import { logger } from '../logger.js';
 
 // ===================== Types =====================
@@ -173,10 +172,7 @@ class SkillWatcher {
       const content = fs.readFileSync(filePath, 'utf-8');
       const newVersion = crypto.createHash('sha256').update(content).digest('hex');
 
-      const db = initDb();
-      const existingAudit = db.prepare(
-        'SELECT skill_version FROM skill_audits WHERE skill_id = ? ORDER BY created_at DESC LIMIT 1'
-      ).get(dirName) as { skill_version: string } | undefined;
+      const existingAudit = getLatestSkillAudit(dirName);
 
       if (!existingAudit || existingAudit.skill_version !== newVersion) {
         // Version changed, trigger re-audit

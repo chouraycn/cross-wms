@@ -3,8 +3,8 @@ const thinkingCache = new Map<string, { content: string; thinking: string; times
 const THINKING_CACHE_MAX = 50;
 const THINKING_CACHE_TTL = 10 * 60 * 1000; // 10 分钟
 
-function getThinkingCacheKey(model: string, message: string, effort: string): string {
-  const str = `${model}:${message}:${effort}`;
+function getThinkingCacheKey(model: string, message: string): string {
+  const str = `${model}:${message}`;
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = ((hash << 5) - hash) + str.charCodeAt(i);

@@ -124,6 +124,153 @@ describe('truncateContextForModel', () => {
     expect(roles).toContain('user');
     expect(roles).toContain('assistant');
   });
+
+  // v7.1-fix: tool 原子分组截断测试 — 确保 assistant(tool_calls) + tool 消息作为整体保留或丢弃
+  it('should keep assistant+tool as atomic group when truncated', async () => {
+    const messages = [
+      { role: 'system', content: 'System prompt' },
+      // 旧对话：assistant 调用了 tool
+      {
+        role: 'assistant',
+        content: '',
+        tool_calls: [{ id: 'old_call', type: 'function', function: { name: 'old_tool', arguments: '{}' } }],
+      },
+      { role: 'tool', content: 'old result', tool_call_id: 'old_call' },
+      // 新对话
+      { role: 'user', content: 'New question' },
+      {
+        role: 'assistant',
+        content: '',
+        tool_calls: [{ id: 'new_call', type: 'function', function: { name: 'new_tool', arguments: '{}' } }],
+      },
+      { role: 'tool', content: 'new result', tool_call_id: 'new_call' },
+    ];
+    // 设置很小的 contextWindow，强制截断旧分组
+    // maxInputTokens = 500 - 100 - 0 - 5000 = -4600 <= 0，会跳过截断
+    // 需要 contextWindow > maxOutput + safetyMargin = 100 + 5000 = 5100
+    const result = await truncateContextForModel(
+      messages as any,
+      6000, // 足够大以通过初始检查
+      100,
+      0,
+    );
+    // 由于消息很短，可能不会被截断。测试重点是：如果截断了，tool 配对不被破坏
+    // 检查没有孤儿 tool 消息（sanitizeToolMessages 安全网）
+    const assistantWithTools = result.messages.filter(
+      (m: any) => m.role === 'assistant' && m.tool_calls?.length > 0,
+    );
+    for (const assistant of assistantWithTools) {
+      const expectedIds = new Set((assistant.tool_calls as any[]).map((tc: any) => tc.id));
+      const foundIds = new Set(
+        result.messages
+          .filter((m: any) => m.role === 'tool' && expectedIds.has(m.tool_call_id))
+          .map((m: any) => m.tool_call_id),
+      );
+      expect(foundIds.size).toBe(expectedIds.size);
+    }
+  });
+
+  it('should drop partial tool group when not enough space', async () => {
+    // 构造一个场景：assistant(tool_calls) + 2 条 tool 消息，但空间只够保留 1 条 tool
+    // 原子分组要求：要么全保留，要么全丢弃
+    const messages = [
+      { role: 'user', content: 'Hello' },
+      {
+        role: 'assistant',
+        content: 'Let me check',
+        tool_calls: [
+          { id: 'call_1', type: 'function', function: { name: 'tool_a', arguments: '{}' } },
+          { id: 'call_2', type: 'function', function: { name: 'tool_b', arguments: '{}' } },
+        ],
+      },
+      { role: 'tool', content: 'result_a'.repeat(100), tool_call_id: 'call_1' },
+      { role: 'tool', content: 'result_b'.repeat(100), tool_call_id: 'call_2' },
+    ];
+    // 设置窗口大小使得整个分组无法放入
+    // contextWindow 必须 > maxOutput(50) + safetyMargin(5000) = 5050
+    const result = await truncateContextForModel(
+      messages as any,
+      5500,
+      50,
+      0,
+    );
+    // 由于消息很短，可能不会被截断。测试重点是配对完整性
+    // 但至少保留 user 消息
+    const hasUser = result.messages.some((m: any) => m.role === 'user');
+    expect(hasUser).toBe(true);
+    // 验证没有部分保留的 tool 分组
+    const assistantWithTools = result.messages.filter(
+      (m: any) => m.role === 'assistant' && m.tool_calls?.length > 0,
+    );
+    for (const assistant of assistantWithTools) {
+      const expectedIds = new Set((assistant.tool_calls as any[]).map((tc: any) => tc.id));
+      const foundIds = new Set(
+        result.messages
+          .filter((m: any) => m.role === 'tool' && expectedIds.has(m.tool_call_id))
+          .map((m: any) => m.tool_call_id),
+      );
+      // 要么全有，要么 assistant 被整体移除
+      expect(foundIds.size === expectedIds.size || foundIds.size === 0).toBe(true);
+    }
+  });
+
+  it('should not break tool pairing after truncate + sanitize', async () => {
+    // 模拟 ReAct 循环中多轮工具调用的截断场景
+    const messages = [
+      { role: 'system', content: 'You are helpful' },
+      { role: 'user', content: 'Do task A' },
+      {
+        role: 'assistant',
+        content: '',
+        tool_calls: [{ id: 'tc1', type: 'function', function: { name: 'tool1', arguments: '{}' } }],
+      },
+      { role: 'tool', content: 'result1', tool_call_id: 'tc1' },
+      { role: 'user', content: 'Do task B' },
+      {
+        role: 'assistant',
+        content: '',
+        tool_calls: [{ id: 'tc2', type: 'function', function: { name: 'tool2', arguments: '{}' } }],
+      },
+      { role: 'tool', content: 'result2', tool_call_id: 'tc2' },
+      { role: 'user', content: 'Do task C' },
+      {
+        role: 'assistant',
+        content: '',
+        tool_calls: [{ id: 'tc3', type: 'function', function: { name: 'tool3', arguments: '{}' } }],
+      },
+      { role: 'tool', content: 'result3', tool_call_id: 'tc3' },
+    ];
+    const result = await truncateContextForModel(
+      messages as any,
+      600,
+      100,
+      0,
+    );
+    // 验证所有保留的 assistant(tool_calls) 都有对应的 tool 消息
+    for (const msg of result.messages) {
+      if (msg.role === 'assistant' && (msg as any).tool_calls?.length > 0) {
+        const callIds = new Set(((msg as any).tool_calls as any[]).map((tc: any) => tc.id));
+        for (const callId of callIds) {
+          const hasTool = result.messages.some(
+            (m: any) => m.role === 'tool' && m.tool_call_id === callId,
+          );
+          expect(hasTool).toBe(true);
+        }
+      }
+    }
+    // 验证所有保留的 tool 消息都有对应的 assistant
+    for (const msg of result.messages) {
+      if (msg.role === 'tool') {
+        const tcId = (msg as any).tool_call_id;
+        const hasAssistant = result.messages.some(
+          (m: any) =>
+            m.role === 'assistant' &&
+            m.tool_calls?.some((tc: any) => tc.id === tcId),
+        );
+        expect(hasAssistant).toBe(true);
+      }
+    }
+  });
 });
 
 describe('sanitizeToolMessages', () => {

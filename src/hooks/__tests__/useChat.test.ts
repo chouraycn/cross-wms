@@ -13,6 +13,9 @@ const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
 // Mock requestAnimationFrame / cancelAnimationFrame
+// 注意：useChat.ts v3.0.0 已用 setTimeout(fn, 16) 替代 rAF，
+// 因此此处 mock 的 rAF 实际是死代码，仅为保持兼容性。
+// 真正的渲染调度通过 window.setTimeout / clearTimeout 实现。
 const rafCallbacks: Map<number, FrameRequestCallback> = new Map();
 let rafIdCounter = 0;
 vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => {
@@ -31,14 +34,6 @@ vi.mock('../../contexts/AppSettingsContext', () => ({
   }),
   useAppearanceSettings: () => ({
     settings: {},
-  }),
-}));
-
-// Mock ToolPermissionContext
-vi.mock('../../contexts/ToolPermissionContext', () => ({
-  useToolPermission: () => ({
-    requestPermission: vi.fn(),
-    trustMode: false,
   }),
 }));
 
@@ -657,27 +652,6 @@ describe('useChat', () => {
       expect(body.attachments[0].fileName).toBe('test.png');
     });
 
-    it('D3. options.reasoningEffort 应传递到请求体', async () => {
-      mockFetch.mockResolvedValueOnce(
-        createMockResponse([
-          'data: {"type":"done"}\n',
-        ])
-      );
-
-      const { useChat } = await import('../useChat');
-      const onSessionUpdate = vi.fn();
-
-      const { result } = renderHook(() => useChat(undefined, onSessionUpdate));
-
-      await act(async () => {
-        await result.current.sendMessage('think deeply', { reasoningEffort: 'high' });
-      });
-
-      const callArgs = mockFetch.mock.calls[0];
-      const body = JSON.parse(callArgs[1].body);
-      expect(body.reasoningEffort).toBe('high');
-    });
-
     it('D4. options.skillContext 和 skillId 应传递到请求体', async () => {
       mockFetch.mockResolvedValueOnce(
         createMockResponse([
@@ -734,6 +708,214 @@ describe('useChat', () => {
       expect(body.conversationHistory).toHaveLength(2);
       expect(body.conversationHistory[0].role).toBe('user');
       expect(body.conversationHistory[1].role).toBe('assistant');
+    });
+  });
+
+  // ==================== E. v8.5-fix: thinking 渲染修复 ====================
+  // 修复内容:
+  //   1. scheduleRender() 在 thinkingBuffer > 0 且 renderHandle !== null 时强制重调度
+  //   2. thinking 事件始终调用 scheduleRender()，不再检查 renderHandle
+  // 核心验证: 无论多少 thinking 事件、无论事件顺序如何，所有 thinking 内容最终被消费
+
+  describe('E. v8.5-fix: thinking 渲染修复', () => {
+    it('E1. 多个连续 thinking 事件应全部累积到 thinking 字段', async () => {
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse([
+          'data: {"type":"thinking","content":"Let me analyze"}\n',
+          'data: {"type":"thinking","content":" the data step by step."}\n',
+          'data: {"type":"thinking","content":" First, check the database."}\n',
+          'data: {"type":"text","content":"Here is the result:"}\n',
+          'data: {"type":"text","content":" Table A has 100 rows."}\n',
+          'data: {"type":"done"}\n',
+        ])
+      );
+
+      const { useChat } = await import('../useChat');
+      const onSessionUpdate = vi.fn();
+
+      const { result } = renderHook(() => useChat(undefined, onSessionUpdate));
+
+      await act(async () => {
+        await result.current.sendMessage('test');
+      });
+
+      // done 事件直接清空 thinkingBuffer 到 streamingMsg.thinking
+      const lastCall = onSessionUpdate.mock.calls[onSessionUpdate.mock.calls.length - 1][0];
+      const assistantMsg = lastCall.messages.find((m: any) => m.role === 'assistant');
+      // 所有 thinking 分片被累积
+      expect(assistantMsg.thinking).toBe('Let me analyze the data step by step. First, check the database.');
+      expect(assistantMsg.content).toBe('Here is the result: Table A has 100 rows.');
+      // thinkingDone 被标记
+      expect(assistantMsg.thinkingDone).toBe(true);
+    });
+
+    it('E2. 仅 thinking 事件后接 done（无 text），thinking 被用做兜底内容', async () => {
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse([
+          'data: {"type":"thinking","content":"First thought"}\n',
+          'data: {"type":"thinking","content":" Second thought"}\n',
+          'data: {"type":"done"}\n',
+        ])
+      );
+
+      const { useChat } = await import('../useChat');
+      const onSessionUpdate = vi.fn();
+
+      const { result } = renderHook(() => useChat(undefined, onSessionUpdate));
+
+      await act(async () => {
+        await result.current.sendMessage('test');
+      });
+
+      const lastCall = onSessionUpdate.mock.calls[onSessionUpdate.mock.calls.length - 1][0];
+      const assistantMsg = lastCall.messages.find((m: any) => m.role === 'assistant');
+      // thinking 字段完整
+      expect(assistantMsg.thinking).toBe('First thought Second thought');
+      // content 用思考内容兜底（useChat.ts line ~898-908 逻辑）
+      expect(assistantMsg.content).toContain('First thought');
+      expect(assistantMsg.thinkingDone).toBe(true);
+    });
+
+    it('E3. thinking 事件大量快速到达时不应丢失内容', async () => {
+      // 构造 30 个小型 thinking 事件（模拟深度思考场景）
+      const lines: string[] = [];
+      for (let i = 0; i < 30; i++) {
+        lines.push(`data: {"type":"thinking","content":"Chunk ${i},"}\n`);
+      }
+      lines.push('data: {"type":"text","content":"Final answer"}\n');
+      lines.push('data: {"type":"done"}\n');
+
+      mockFetch.mockResolvedValueOnce(createMockResponse(lines));
+
+      const { useChat } = await import('../useChat');
+      const onSessionUpdate = vi.fn();
+
+      const { result } = renderHook(() => useChat(undefined, onSessionUpdate));
+
+      await act(async () => {
+        await result.current.sendMessage('test');
+      });
+
+      const lastCall = onSessionUpdate.mock.calls[onSessionUpdate.mock.calls.length - 1][0];
+      const assistantMsg = lastCall.messages.find((m: any) => m.role === 'assistant');
+      // 验证所有 30 个 chunk 都在
+      for (let i = 0; i < 30; i++) {
+        expect(assistantMsg.thinking).toContain(`Chunk ${i},`);
+      }
+      expect(assistantMsg.content).toBe('Final answer');
+    });
+
+    it('E4. thinking 事件与 init/tool_call 等其他元数据事件交织不应阻塞', async () => {
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse([
+          'data: {"type":"init","model":"gpt-4o","modelName":"GPT-4o"}\n',
+          'data: {"type":"thinking","content":"Thinking step 1"}\n',
+          'data: {"type":"tool_call","toolCallId":"tc-1","toolName":"search","toolArgs":"{}"}\n',
+          'data: {"type":"thinking","content":" Thinking step 2"}\n',
+          'data: {"type":"tool_call","toolCallId":"tc-2","toolName":"read","toolArgs":"{}","toolResult":"data"}\n',
+          'data: {"type":"text","content":"Based on analysis, here is the answer."}\n',
+          'data: {"type":"done"}\n',
+        ])
+      );
+
+      const { useChat } = await import('../useChat');
+      const onSessionUpdate = vi.fn();
+
+      const { result } = renderHook(() => useChat(undefined, onSessionUpdate));
+
+      await act(async () => {
+        await result.current.sendMessage('test');
+      });
+
+      const lastCall = onSessionUpdate.mock.calls[onSessionUpdate.mock.calls.length - 1][0];
+      const assistantMsg = lastCall.messages.find((m: any) => m.role === 'assistant');
+      // thinking 完整
+      expect(assistantMsg.thinking).toBe('Thinking step 1 Thinking step 2');
+      // toolCalls 存在
+      expect(assistantMsg.toolCalls).toHaveLength(2);
+      expect(assistantMsg.toolCalls[0].name).toBe('search');
+      expect(assistantMsg.toolCalls[1].name).toBe('read');
+      expect(assistantMsg.toolCalls[1].result).toBe('data');
+      // content 完整
+      expect(assistantMsg.content).toBe('Based on analysis, here is the answer.');
+      // 模型信息正确
+      expect(assistantMsg.model).toBe('GPT-4o');
+    });
+
+    it('E5. thinking 事件中 thinkingType 应被正确设置', async () => {
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse([
+          'data: {"type":"thinking","content":"Deep reasoning...","thinkingType":"deep"}\n',
+          'data: {"type":"text","content":"Answer"}\n',
+          'data: {"type":"done"}\n',
+        ])
+      );
+
+      const { useChat } = await import('../useChat');
+      const onSessionUpdate = vi.fn();
+
+      const { result } = renderHook(() => useChat(undefined, onSessionUpdate));
+
+      await act(async () => {
+        await result.current.sendMessage('test');
+      });
+
+      const lastCall = onSessionUpdate.mock.calls[onSessionUpdate.mock.calls.length - 1][0];
+      const assistantMsg = lastCall.messages.find((m: any) => m.role === 'assistant');
+      expect(assistantMsg.thinking).toBe('Deep reasoning...');
+      expect(assistantMsg.thinkingType).toBe('deep');
+    });
+
+    it('E6. 思考 + 首次 text 事件应自动标记 thinkingDone', async () => {
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse([
+          'data: {"type":"thinking","content":"Thinking..."}\n',
+          // 收到首个 text 事件 → thinkingDone 设为 true
+          'data: {"type":"text","content":"First output"}\n',
+          'data: {"type":"text","content":" More output"}\n',
+          'data: {"type":"done"}\n',
+        ])
+      );
+
+      const { useChat } = await import('../useChat');
+      const onSessionUpdate = vi.fn();
+
+      const { result } = renderHook(() => useChat(undefined, onSessionUpdate));
+
+      await act(async () => {
+        await result.current.sendMessage('test');
+      });
+
+      const lastCall = onSessionUpdate.mock.calls[onSessionUpdate.mock.calls.length - 1][0];
+      const assistantMsg = lastCall.messages.find((m: any) => m.role === 'assistant');
+      expect(assistantMsg.thinkingDone).toBe(true);
+      expect(assistantMsg.content).toBe('First output More output');
+    });
+
+    it('E7. 仅 text 无 thinking 事件时应无 thinking 且 thinkingDone=true', async () => {
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse([
+          'data: {"type":"text","content":"Hello"}\n',
+          'data: {"type":"text","content":" World"}\n',
+          'data: {"type":"done"}\n',
+        ])
+      );
+
+      const { useChat } = await import('../useChat');
+      const onSessionUpdate = vi.fn();
+
+      const { result } = renderHook(() => useChat(undefined, onSessionUpdate));
+
+      await act(async () => {
+        await result.current.sendMessage('test');
+      });
+
+      const lastCall = onSessionUpdate.mock.calls[onSessionUpdate.mock.calls.length - 1][0];
+      const assistantMsg = lastCall.messages.find((m: any) => m.role === 'assistant');
+      expect(assistantMsg.thinking).toBeFalsy();
+      // done 事件总会标记 thinkingDone
+      expect(assistantMsg.thinkingDone).toBe(true);
+      expect(assistantMsg.content).toBe('Hello World');
     });
   });
 });

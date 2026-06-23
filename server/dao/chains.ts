@@ -1,6 +1,21 @@
 import { initDb } from '../db.js';
 import type { SkillChainRow, SkillChainNodeRow, SkillChainExecutionRow, SkillAuditRow } from '../db.js';
 
+// ===================== Skill Chain Execution Query DAO =====================
+
+/** Get a skill execution by ID */
+export function getSkillExecutionById(id: string): SkillChainExecutionRow | undefined {
+  const db = initDb();
+  return db.prepare('SELECT * FROM skill_chain_executions WHERE id = ?').get(id) as SkillChainExecutionRow | undefined;
+}
+
+/** Get chain name by ID */
+export function getSkillChainNameById(id: string): string | undefined {
+  const db = initDb();
+  const row = db.prepare('SELECT name FROM skill_chains WHERE id = ?').get(id) as { name: string } | undefined;
+  return row?.name;
+}
+
 // ===================== Skill Chain DAO =====================
 
 /** Create a new skill chain */
@@ -111,6 +126,82 @@ export function deleteChainNodes(chainId: string): void {
   db.prepare('DELETE FROM skill_chain_nodes WHERE chain_id = ?').run(chainId);
 }
 
+// ===================== Transaction Helpers =====================
+
+/** Create chain with nodes in a transaction */
+export function createChainWithNodes(
+  chain: Parameters<typeof createSkillChain>[0],
+  nodes: Parameters<typeof createChainNode>[0][]
+): SkillChainRow {
+  const db = initDb();
+  const tx = db.transaction(() => {
+    createSkillChain(chain);
+    for (const node of nodes) {
+      createChainNode(node);
+    }
+  });
+  tx();
+  return getSkillChain(chain.id)!;
+}
+
+/** Update chain and replace all nodes in a transaction */
+export function updateChainWithNodes(
+  chainId: string,
+  chainData: Parameters<typeof updateSkillChain>[1],
+  nodes: Parameters<typeof createChainNode>[0][]
+): void {
+  const db = initDb();
+  const tx = db.transaction(() => {
+    updateSkillChain(chainId, chainData);
+    deleteChainNodes(chainId);
+    for (const node of nodes) {
+      createChainNode(node);
+    }
+  });
+  tx();
+}
+
+/** Duplicate a chain with all its nodes in a transaction */
+export function duplicateChain(
+  sourceChainId: string,
+  newChainId: string,
+  newName: string
+): SkillChainRow {
+  const db = initDb();
+  const source = getSkillChain(sourceChainId);
+  if (!source) throw new Error('Source chain not found');
+
+  const tx = db.transaction(() => {
+    createSkillChain({
+      id: newChainId,
+      name: newName,
+      description: source.description,
+      failStrategy: source.fail_strategy,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    const nodes = getChainNodes(sourceChainId);
+    for (const node of nodes) {
+      createChainNode({
+        id: `node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        chainId: newChainId,
+        skillId: node.skill_id || '',
+        skillName: node.skill_name || '',
+        skillIcon: node.skill_icon,
+        dataPassMode: node.data_pass_mode,
+        selectedFields: node.selected_fields as string,
+        customMapping: node.custom_mapping as string,
+        timeout: node.timeout,
+        retryCount: node.retry_count,
+        nodeOrder: node.node_order,
+      });
+    }
+  });
+  tx();
+  return getSkillChain(newChainId)!;
+}
+
 // ===================== Skill Audit DAO =====================
 
 /** Create a skill audit record */
@@ -150,6 +241,12 @@ export function getLatestSkillAudit(skillId: string): SkillAuditRow | undefined 
 export function getSkillAuditHistory(skillId: string): SkillAuditRow[] {
   const db = initDb();
   return db.prepare('SELECT * FROM skill_audits WHERE skill_id = ? ORDER BY created_at DESC').all(skillId) as SkillAuditRow[];
+}
+
+/** Check if a specific skill version has been audited */
+export function getSkillAuditByVersion(skillId: string, skillVersion: string): SkillAuditRow | undefined {
+  const db = initDb();
+  return db.prepare('SELECT * FROM skill_audits WHERE skill_id = ? AND skill_version = ?').get(skillId, skillVersion) as SkillAuditRow | undefined;
 }
 
 // ===================== Skill Chain Execution DAO =====================

@@ -27,7 +27,6 @@ interface ThinkingBlockProps {
   isStreaming?: boolean;
   /** v8.2-fix: thinking 阶段是否已完成（text 内容已开始生成） */
   thinkingDone?: boolean;
-  reasoningEffort?: string;
   thinkingElapsed?: number;
   cacheHit?: boolean;
   usage?: {
@@ -62,12 +61,8 @@ function formatDuration(ms?: number): string {
   return `${min}m${sec}s`;
 }
 
-function getLabel(effort?: string): string {
-  switch (effort) {
-    case 'max': return '极致推理';
-    case 'high': return '深度思考';
-    default: return '思考过程';
-  }
+function getLabel(): string {
+  return '思考过程';
 }
 
 function areThinkingBlockPropsEqual(
@@ -81,7 +76,6 @@ function areThinkingBlockPropsEqual(
   if (prevProps.thinkingElapsed !== nextProps.thinkingElapsed) return false;
   // 中频 props
   if (prevProps.duration !== nextProps.duration) return false;
-  if (prevProps.reasoningEffort !== nextProps.reasoningEffort) return false;
   if (prevProps.cacheHit !== nextProps.cacheHit) return false;
   // 低频 props — 引用比较即可（只在 done 事件时变化）
   if (prevProps.usage !== nextProps.usage) return false;
@@ -92,12 +86,12 @@ function areThinkingBlockPropsEqual(
   return true;
 }
 
-function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, reasoningEffort, thinkingElapsed, cacheHit, usage, reactPhase, complexityAssessment, reflectionConfidence, executionPlan, agentEvents }: ThinkingBlockProps) {
+function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, thinkingElapsed, cacheHit, usage, reactPhase, complexityAssessment, reflectionConfidence, executionPlan, agentEvents }: ThinkingBlockProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const [expanded, setExpanded] = useState(false);
-  const label = getLabel(reasoningEffort);
+  const label = getLabel();
   const contentRef = useRef<HTMLDivElement>(null);
 
   // v8.2-fix: "正在思考"只在 thinking 阶段显示；thinking 完成后即使 isStreaming=true 也不显示

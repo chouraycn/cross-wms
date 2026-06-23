@@ -396,7 +396,7 @@ async function executeInventoryPrediction(
       minHistoryDays: typeof taskConfig.minHistoryDays === 'number' ? taskConfig.minHistoryDays : 7,
     };
 
-    const result = await checkAllPredictions(db, predictionConfig);
+    const result = await checkAllPredictions(predictionConfig);
 
     const totalPredicted = result.predictedShortageAlerts + result.predictedOverstockAlerts;
     if (totalPredicted === 0) {

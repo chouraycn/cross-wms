@@ -9,12 +9,13 @@ import {
   deleteAutomation,
   createRun,
   getRunsByAutomationId,
+  getAllRuns,
+  deleteRunsByAutomationId,
   findAutomationsByEvent,
   clearAllExecutions,
 } from '../dao/automationDao.js';
 import { emitAutomationEvent, AutomationEventType } from '../engine/eventBus.js';
 import { executeAndRecord } from '../engine/engine.js';
-import { initDb } from '../db.js';
 
 const router = Router();
 
@@ -42,32 +43,11 @@ router.get('/', (_req: Request, res: Response) => {
  */
 router.get('/executions', (req: Request, res: Response) => {
   try {
-    const db = initDb();
     const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit, 10) : 100;
     const offset = typeof req.query.offset === 'string' ? parseInt(req.query.offset, 10) : 0;
 
-    const countRow = db.prepare('SELECT COUNT(*) as total FROM automation_runs').get() as { total: number };
-    const rows = db.prepare(
-      'SELECT * FROM automation_runs ORDER BY started_at DESC LIMIT ? OFFSET ?'
-    ).all(limit, offset);
-
-    const data = (rows as any[]).map((row: any) => ({
-      id: row.id,
-      automationId: row.automation_id,
-      taskType: row.task_type,
-      status: row.status,
-      startedAt: row.started_at,
-      completedAt: row.completed_at,
-      duration: row.duration,
-      result: row.result,
-      steps: row.steps ? (() => { try { return JSON.parse(row.steps as string); } catch { return []; } })() : [],
-      isRetry: row.is_retry === 1,
-      triggerSource: row.trigger_source,
-      triggerDetail: row.trigger_detail ? (() => { try { return JSON.parse(row.trigger_detail as string); } catch { return null; } })() : null,
-      retryCount: row.retry_count,
-    }));
-
-    res.json({ data, total: countRow.total });
+    const result = getAllRuns(limit, offset);
+    res.json({ data: result.data, total: result.total });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(500).json({ error: message });
@@ -273,8 +253,7 @@ router.delete('/:id', (req: Request, res: Response) => {
       return;
     }
     // 级联删除关联的执行记录
-    const db = initDb();
-    db.prepare('DELETE FROM automation_runs WHERE automation_id = ?').run(req.params.id);
+    deleteRunsByAutomationId(req.params.id);
     const deleted = deleteAutomation(req.params.id);
     if (!deleted) {
       res.status(404).json({ error: 'Automation not found' });

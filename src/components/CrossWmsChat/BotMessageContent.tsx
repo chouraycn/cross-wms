@@ -11,7 +11,6 @@ import { ThinkingBlock } from './ThinkingBlock.js';
 import { QueryResultRenderer } from './QueryResultRenderer.js';
 import ToolCallBlock from './ToolCallBlock.js';
 import PluginResultBlock from './PluginResultBlock.js';
-import { InlinePermissionRequest } from './InlinePermissionRequest.js';
 import { ReactPhaseIndicator } from './ReactPhaseIndicator.js';
 import { ExecutionPlanCard } from './ExecutionPlanCard.js';
 import { ComplexityAssessmentBadge } from './ComplexityAssessmentBadge.js';
@@ -345,7 +344,6 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
           isStreaming={msg.isStreaming}
           thinkingDone={msg.thinkingDone}
           duration={msg.thinkingDuration}
-          reasoningEffort={msg.reasoningEffort}
           thinkingElapsed={msg.thinkingElapsed}
           cacheHit={msg.cacheHit}
           usage={msg.usage}
@@ -451,13 +449,6 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
           </Box>
         );
       })()}
-      {/* v1.9.3: 内联权限请求 */}
-      {msg.permissionRequest && onPermissionRespond && (
-        <InlinePermissionRequest
-          permissionRequest={msg.permissionRequest}
-          onRespond={onPermissionRespond}
-        />
-      )}
       {/* 消息内容渲染 */}
       {msg.content && msg.content.trim() ? (
         <MarkdownRenderer content={msg.content} isStreaming={msg.isStreaming} />
@@ -623,7 +614,6 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
   if (pm.thinkingElapsed !== nm.thinkingElapsed) return false;
   if (pm.thinkingType !== nm.thinkingType) return false;
   if (pm.cacheHit !== nm.cacheHit) return false;
-  if (pm.reasoningEffort !== nm.reasoningEffort) return false;
   if (pm.autoReason !== nm.autoReason) return false;
   if (pm.autoReasonType !== nm.autoReasonType) return false;
   if (pm.fallbackReason !== nm.fallbackReason) return false;
@@ -644,7 +634,6 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
   if (pm.memoryRetrieved !== nm.memoryRetrieved) return false;
   if (pm.outputRepaired !== nm.outputRepaired) return false;
   if (pm.budgetAdjusted !== nm.budgetAdjusted) return false;
-  if (pm.permissionRequest !== nm.permissionRequest) return false;
   if (pm.queueState !== nm.queueState) return false;
   if (pm.metadata !== nm.metadata) return false;
   if (pm.usage !== nm.usage) return false;

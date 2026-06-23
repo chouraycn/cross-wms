@@ -6,9 +6,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { InventoryQueryService } from '../inventoryQueryService.js';
-import type Database from 'better-sqlite3';
 
-// ===================== Mock Database Helpers =====================
+// ===================== Mock getDb =====================
 
 interface MockStatement {
   all: ReturnType<typeof vi.fn>;
@@ -16,10 +15,14 @@ interface MockStatement {
   readonly: boolean;
 }
 
+let mockDbInstance: ReturnType<typeof createMockDb>['mockDb'] | null = null;
+
+vi.mock('../db.js', () => ({
+  getDb: () => mockDbInstance,
+}));
+
 /**
  * Creates a mock better-sqlite3 Database instance.
- * `stmt.all()` is called once by `executeWithTimeout()` inside `executeSafely()`.
- * If `allError` is provided, `stmt.all()` throws the error on that single call.
  */
 function createMockDb(options: {
   rows?: Record<string, unknown>[];
@@ -44,16 +47,14 @@ function createMockDb(options: {
     : vi.fn(() => mockStmt);
 
   const mockPragma = vi.fn((input: string | [string], options?: { simple?: boolean }) => {
-    // When called as getter: db.pragma('busy_timeout', { simple: true })
     if (options?.simple) return pragmaValue;
-    // When called as setter: db.pragma('busy_timeout = 5000')
     return [];
   });
 
   const mockDb = {
     prepare: mockPrepare,
     pragma: mockPragma,
-  } as unknown as Database.Database;
+  };
 
   return { mockDb, mockStmt, mockPrepare, mockPragma };
 }
@@ -63,12 +64,16 @@ function createMockDb(options: {
 describe('InventoryQueryService', () => {
   let service: InventoryQueryService;
 
+  beforeEach(() => {
+    service = new InventoryQueryService();
+  });
+
   describe('SQL Security Validation (validateAndExecute)', () => {
     // ---- SELECT-only enforcement ----
 
     it('should accept a valid SELECT statement', () => {
       const { mockDb } = createMockDb({ rows: [{ sku: 'SKU001', name: 'Test' }] });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku, name FROM inventory_items LIMIT 10',
@@ -82,7 +87,7 @@ describe('InventoryQueryService', () => {
 
     it('should reject INSERT statements', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'INSERT INTO inventory_items (sku) VALUES ("hack")',
@@ -95,7 +100,7 @@ describe('InventoryQueryService', () => {
 
     it('should reject UPDATE statements', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'UPDATE inventory_items SET quantity = 0',
@@ -107,7 +112,7 @@ describe('InventoryQueryService', () => {
 
     it('should reject DELETE statements', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'DELETE FROM inventory_items',
@@ -119,7 +124,7 @@ describe('InventoryQueryService', () => {
 
     it('should reject DROP statements', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'DROP TABLE inventory_items',
@@ -131,7 +136,7 @@ describe('InventoryQueryService', () => {
 
     it('should reject ALTER statements', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'ALTER TABLE inventory_items ADD COLUMN test TEXT',
@@ -143,7 +148,7 @@ describe('InventoryQueryService', () => {
 
     it('should reject TRUNCATE statements', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'TRUNCATE TABLE inventory_items',
@@ -155,7 +160,7 @@ describe('InventoryQueryService', () => {
 
     it('should reject CREATE statements', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'CREATE TABLE hack (id TEXT)',
@@ -167,7 +172,7 @@ describe('InventoryQueryService', () => {
 
     it('should reject statements that do not start with SELECT', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'EXPLAIN SELECT * FROM inventory_items',
@@ -181,7 +186,7 @@ describe('InventoryQueryService', () => {
 
     it('should detect blocked keywords in mixed case', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'Insert INTO inventory_items (sku) VALUES ("hack")',
@@ -193,7 +198,7 @@ describe('InventoryQueryService', () => {
 
     it('should detect blocked keywords in uppercase', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'DELETE FROM inventory_items',
@@ -207,7 +212,7 @@ describe('InventoryQueryService', () => {
 
     it('should reject multi-statement injection via semicolons', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT * FROM inventory_items; DROP TABLE inventory_items;',
@@ -221,7 +226,7 @@ describe('InventoryQueryService', () => {
 
     it('should reject ATTACH DATABASE in SELECT context', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT * FROM inventory_items WHERE 1=1; ATTACH DATABASE "/etc/passwd" AS hack',
@@ -233,7 +238,7 @@ describe('InventoryQueryService', () => {
 
     it('should reject PRAGMA statements', () => {
       const { mockDb } = createMockDb({});
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'PRAGMA table_info(inventory_items)',
@@ -247,7 +252,7 @@ describe('InventoryQueryService', () => {
   describe('LIMIT Enforcement', () => {
     it('should auto-append LIMIT 200 when SQL has no LIMIT', () => {
       const { mockDb } = createMockDb({ rows: [{ sku: 'SKU001' }] });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku FROM inventory_items',
@@ -260,7 +265,7 @@ describe('InventoryQueryService', () => {
 
     it('should replace LIMIT > 500 with LIMIT 500', () => {
       const { mockDb } = createMockDb({ rows: [{ sku: 'SKU001' }] });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku FROM inventory_items LIMIT 1000',
@@ -274,7 +279,7 @@ describe('InventoryQueryService', () => {
 
     it('should keep LIMIT <= 500 unchanged', () => {
       const { mockDb } = createMockDb({ rows: [{ sku: 'SKU001' }] });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku FROM inventory_items LIMIT 50',
@@ -287,7 +292,7 @@ describe('InventoryQueryService', () => {
 
     it('should keep LIMIT 500 unchanged (boundary value)', () => {
       const { mockDb } = createMockDb({ rows: [{ sku: 'SKU001' }] });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku FROM inventory_items LIMIT 500',
@@ -300,7 +305,7 @@ describe('InventoryQueryService', () => {
 
     it('should replace LIMIT 501 with LIMIT 500 (boundary + 1)', () => {
       const { mockDb } = createMockDb({ rows: [{ sku: 'SKU001' }] });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku FROM inventory_items LIMIT 501',
@@ -313,7 +318,7 @@ describe('InventoryQueryService', () => {
 
     it('should handle SQL with trailing semicolon and no LIMIT', () => {
       const { mockDb } = createMockDb({ rows: [{ sku: 'SKU001' }] });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku FROM inventory_items;',
@@ -334,7 +339,7 @@ describe('InventoryQueryService', () => {
         { sku: 'SKU002', name: 'Widget B', quantity: 200 },
       ];
       const { mockDb } = createMockDb({ rows, source: 'SELECT sku, name, quantity FROM inventory_items LIMIT 200' });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku, name, quantity FROM inventory_items LIMIT 200',
@@ -351,7 +356,7 @@ describe('InventoryQueryService', () => {
       const { mockDb } = createMockDb({
         allError: new Error('near "SELEC": syntax error'),
       });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku FROM inventory_items LIMIT 10',
@@ -366,7 +371,7 @@ describe('InventoryQueryService', () => {
       const { mockDb } = createMockDb({
         allError: new Error('no such table: inventory_items'),
       });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT * FROM inventory_items LIMIT 10',
@@ -381,7 +386,7 @@ describe('InventoryQueryService', () => {
       // Create 200 rows (matching the auto-appended LIMIT 200)
       const rows = Array.from({ length: 200 }, (_, i) => ({ sku: `SKU${i}`, name: `Item${i}` }));
       const { mockDb } = createMockDb({ rows });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku, name FROM inventory_items',
@@ -396,7 +401,7 @@ describe('InventoryQueryService', () => {
     it('should set truncated=false when rowCount is less than LIMIT', () => {
       const rows = [{ sku: 'SKU001', name: 'Widget A' }];
       const { mockDb } = createMockDb({ rows });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku, name FROM inventory_items LIMIT 10',
@@ -408,9 +413,8 @@ describe('InventoryQueryService', () => {
     });
 
     it('should infer columns from stmt.source when query returns no rows', () => {
-      // When rows are empty, the service falls back to inferColumnsFromStatement(stmt.source)
       const { mockDb } = createMockDb({ rows: [], source: 'SELECT sku, name FROM inventory_items LIMIT 200' });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku, name FROM inventory_items WHERE 1=0 LIMIT 200',
@@ -418,16 +422,15 @@ describe('InventoryQueryService', () => {
       });
 
       expect(result.code).toBe(0);
-      // inferColumnsFromStatement parses "SELECT sku, name FROM" → ['sku', 'name']
+      // inferColumnsFromStatement parses "SELECT sku, name FROM" -> ['sku', 'name']
       expect(result.data!.columns).toEqual(['sku', 'name']);
       expect(result.data!.rows).toEqual([]);
       expect(result.data!.rowCount).toBe(0);
     });
 
     it('should return empty columns when no rows and stmt.source is unavailable', () => {
-      // When source is empty/undefined, no columns can be inferred
       const { mockDb } = createMockDb({ rows: [], source: '' });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT 1 LIMIT 200',
@@ -442,7 +445,7 @@ describe('InventoryQueryService', () => {
 
     it('should pass chartType and chartConfig through to result', () => {
       const { mockDb } = createMockDb({ rows: [{ date: '2026-01', total: 100 }] });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const chartConfig = { xKey: 'date', yKey: 'total', xLabel: '日期', yLabel: '总量' };
       const result = service.validateAndExecute({
@@ -458,7 +461,7 @@ describe('InventoryQueryService', () => {
 
     it('should default chartType to table when not specified', () => {
       const { mockDb } = createMockDb({ rows: [{ sku: 'SKU001' }] });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku FROM inventory_items LIMIT 10',
@@ -470,7 +473,7 @@ describe('InventoryQueryService', () => {
 
     it('should include the safe SQL in the response', () => {
       const { mockDb } = createMockDb({ rows: [{ sku: 'SKU001' }] });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku FROM inventory_items',
@@ -485,7 +488,7 @@ describe('InventoryQueryService', () => {
       const { mockDb } = createMockDb({
         allError: new Error('disk I/O error'),
       });
-      service = new InventoryQueryService(mockDb);
+      mockDbInstance = mockDb;
 
       const result = service.validateAndExecute({
         sql: 'SELECT sku FROM inventory_items LIMIT 10',
