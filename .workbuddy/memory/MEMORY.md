@@ -55,5 +55,16 @@
 - embedText LRU 256 条缓存；embedBatch 真批量推理
 - 降级为 LIKE 关键词搜索；extractKeywords() 中英文停用词表
 
+## WMS 文件存储 (v9.1)
+- WMS 业务数据迁移到 JSON 文件存储 (`~/.cdf-know-clow/wms-data/`)
+- DAO 层: `warehouse.ts` + `wmsSkillDao.ts`，服务层 6 个文件全面适配
+- `WmsFileStorage` 引擎支持 CRUD + 查询 + 分页 + 排序
+
+## Auto Model v2.0 智能路由 (v9.1)
+- 5 维度加权评分: 媒体(10%) + Token(30%) + 意图(40%) + 代码(20%) + 工具(加分)
+- 4 层分流: Vision → Tier3(强推理) → Tier2(均衡) → Tier1(轻量)
+- 故障 Fallback 降级 + Tool/MCP 联动升级 + 多厂商统一抽象
+- 模型标签体系: `multimodal`/`reasoning`/`code`/`fast`/`costEffective`/`general`
+
 ## 详细修复历史
 - 见 `.workbuddy/memory/YYYY-MM-DD.md` 每日工作日志
