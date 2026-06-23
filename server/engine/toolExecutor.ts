@@ -19,6 +19,8 @@ import { compressContextWithSummary } from './contextCompress.js';
 import { mcpClientManager } from './mcpClientManager.js';
 import { isMcpToolName, getMcpServerPrefix } from './mcpTypes.js';
 import { CircuitBreaker } from './circuitBreaker.js';
+import { isSkillToolName, handleSkillToolCall } from './skillToolBridge.js';
+import type { SkillPermissionConfig } from '../types/skill-runtime.js';
 
 export interface ToolExecutorOptions {
   modelConfig: ModelCallConfig;
@@ -49,6 +51,8 @@ export interface ToolExecutorOptions {
   onSSEEvent?: (event: Record<string, unknown>) => void;
   /** v1.5.116: 速率限制回调 — 429 时切换备用 Key */
   onRateLimit?: OnRateLimitCallback;
+  /** v9.1: Skill 权限配置（Skill 四层架构） */
+  skillPermissionConfig?: SkillPermissionConfig;
 }
 
 /**
@@ -85,7 +89,11 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
   const builtinTools = getBuiltinToolDefinitions();
   const pluginTools = pluginRegistry.getActiveTools();
   const mcpTools = mcpClientManager.getMcpTools();
-  const tools = [...builtinTools, ...pluginTools, ...mcpTools];
+  // v9.1: Skill 工具定义注入（Skill 四层架构）
+  const skillPermissionConfig = options.skillPermissionConfig ?? { allow: ['*'], deny: [], elevated: { enabled: 'ask' } };
+  const { getSkillToolDefinitions } = await import('./skillToolBridge.js');
+  const skillTools = getSkillToolDefinitions(skillPermissionConfig);
+  const tools = [...builtinTools, ...pluginTools, ...mcpTools, ...skillTools];
   const currentMessages = [...messages];
   let finalContent = '';
   const executedToolCalls: Array<{ name: string; arguments: string; result: string }> = [];
@@ -205,8 +213,24 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       // v1.5.116: MCP 工具路由 — 区分 MCP 工具和内置工具
       let result: string;
       let mcpExecutionSucceeded = true;
+      // v9.1: Skill 工具路由 — 区分 Skill / MCP / 内置工具
+      // [Skill 工具路径] 通过 skillToolBridge 执行（Skill 四层架构）
+      if (isSkillToolName(toolName)) {
+        try {
+          const parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
+          const skillResult = await handleSkillToolCall(
+            { id: toolCall.id, type: 'function', function: { name: toolName, arguments: JSON.stringify(parsedArgs) } },
+            skillPermissionConfig,
+            `session-${Date.now()}`,
+          );
+          result = skillResult.content;
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          result = JSON.stringify({ error: `Skill 执行异常: ${errMsg}` });
+        }
+      }
       // [MCP工具路径] 委托给 mcpClientManager 执行
-      if (isMcpToolName(toolName)) {
+      else if (isMcpToolName(toolName)) {
         try {
           const parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
           result = await mcpClientManager.executeMcpTool(toolName, parsedArgs);
@@ -239,7 +263,8 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       }
 
       // v1.5.116: 熔断器 — 记录内置工具成功/失败
-      if (!isMcpToolName(toolName)) {
+      // v9.1: Skill 工具也走熔断器（非 MCP 工具）
+      if (!isMcpToolName(toolName) && !isSkillToolName(toolName)) {
         const hasError = result.includes('"error"') || result.includes('"error":');
         if (hasError) {
           const circuitState = circuitBreaker.recordFailure(toolName, result.slice(0, 100));
