@@ -5,6 +5,8 @@
  * 用于前端渲染，与后端类型保持一致但面向 UI 需求。
  */
 
+import type { Attachment } from '../types/chat.js';
+
 export type MessageRole = 'user' | 'assistant' | 'system' | 'skill' | 'mcp';
 
 /** 工具调用追踪记录 */
@@ -46,7 +48,9 @@ export interface MessageEnvelope {
   meta?: MessageMeta;
   toolBlocks?: ToolBlock[];
   isStreaming: boolean;
-  thinking?: string;
-  thinkingDone?: boolean;
   timestamp: number;
+  /** 附件列表（图片、文件等） */
+  attachments?: Attachment[];
+  /** 思考过程内容（仅 assistant 消息有） */
+  thinking?: string;
 }

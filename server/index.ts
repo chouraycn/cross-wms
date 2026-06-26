@@ -3,6 +3,8 @@ initSentry();
 
 import express from 'express';
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
 import { API_PREFIX } from './apiVersion.js';
 import { apiVersionMiddleware } from './middleware/apiVersionMiddleware.js';
 import { initDb } from './db.js';
@@ -78,6 +80,7 @@ import inventoryTransactionsRouter from './routes/inventory-transactions.js';
 
 // Agent routes
 import agentsRouter from './routes/agents.js';
+import agentChatRouter from './routes/agentChat.js';
 
 // Services
 import './services/chainExecutor.js'; // side-effect: registers chain event handlers
@@ -156,6 +159,7 @@ skillWatcher.init();
 // ========== Extracted API Routes ==========
 
 app.use('/api', chatRouter);
+app.use('/api', agentChatRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/folders', foldersRouter);
 app.use('/api/memory', memoryRouter);
@@ -269,6 +273,24 @@ app.use(`${API_PREFIX}/api-templates`, apiTemplatesRouter);
 app.use(`${API_PREFIX}/api-credentials`, apiCredentialsRouter);
 app.use(`${API_PREFIX}/api-history`, apiHistoryRouter);
 app.use(`${API_PREFIX}/mcp`, mcpRouter);
+
+// ========== v1.5.220: 前端静态文件服务（供 Swift 原生 App 使用） ==========
+// 优先从 dist/ 加载前端构建产物（开发环境），其次从 process.env.FRONTEND_DIR 加载
+const FRONTEND_DIST_DIR = process.env.FRONTEND_DIR
+  ? path.resolve(process.env.FRONTEND_DIR)
+  : path.join(process.cwd(), 'dist');
+
+if (fs.existsSync(FRONTEND_DIST_DIR) && fs.existsSync(path.join(FRONTEND_DIST_DIR, 'index.html'))) {
+  logger.info(`[Server] 前端静态目录: ${FRONTEND_DIST_DIR}`);
+  app.use(express.static(FRONTEND_DIST_DIR, { index: false }));
+
+  // SPA fallback — 所有非 API 的 GET 请求都返回 index.html
+  app.get(/^\/(?!api\/).*/, (_req, res) => {
+    res.sendFile(path.join(FRONTEND_DIST_DIR, 'index.html'));
+  });
+} else {
+  logger.warn(`[Server] 前端静态目录不存在: ${FRONTEND_DIST_DIR}（仅 API 模式）`);
+}
 
 const PORT = 3001;
 

@@ -43,6 +43,9 @@ import { ObservationCompressor, needsCompression } from './observationCompressor
 import { CircuitBreaker } from './circuitBreaker.js';
 import { ToolDependencyGraph } from './toolDependencyGraph.js';
 import { ActionPhaseExecutor } from './actionPhaseExecutor.js';
+import { AutoCompressor } from './autoCompressor.js';
+import { getModelFailoverManager, type ModelFailoverOptions } from './modelFailover.js';
+import pluginHooks from './pluginHooks.js';
 import { logger } from '../logger.js';
 
 // ===================== 类型定义（向后兼容） =====================
@@ -137,6 +140,8 @@ export class ReActExecutor {
   private _dependencyGraph?: ToolDependencyGraph;
   private _budgetConfig?: Partial<BudgetConfig>;
   private _actionPhaseExecutor?: ActionPhaseExecutor;
+  private _autoCompressor?: AutoCompressor;
+  private _modelFailoverOptions?: ModelFailoverOptions;
 
   // 懒加载访问器 — 避免构造函数中一次性创建所有对象
   private get observer(): Observer {
@@ -175,6 +180,14 @@ export class ReActExecutor {
         currentComplexityLevel: this.state.currentComplexityLevel,
         turn: this.state.turn,
       }),
+    }));
+  }
+  private get autoCompressor(): AutoCompressor {
+    return this._autoCompressor ?? (this._autoCompressor = new AutoCompressor({
+      trigger: 'turn_interval',
+      turnInterval: 5,
+      preserveRecent: 5,
+      preserveSystem: true,
     }));
   }
 
@@ -221,6 +234,7 @@ export class ReActExecutor {
       onToolCall,
       modelCapabilities,
       onSSEEvent,
+      sessionId,
     } = options;
 
     // 推送初始 SSE 反馈 — 让用户在首 token 到达前就看到"AI 正在处理"
@@ -238,6 +252,7 @@ export class ReActExecutor {
     this._state = this.createInitialState();
     this._loopDetector?.reset();
     this._circuitBreaker?.reset();
+    this._autoCompressor?.reset();
 
     // 获取工具定义（内置 + 插件 + MCP）
     const builtinTools = getBuiltinToolDefinitions();
@@ -288,8 +303,12 @@ export class ReActExecutor {
       const estimatedTokens = estimateMessagesTokens(currentMessages);
       const tokenThreshold = ctxWindow * 0.8;
 
+      // 追踪当前轮次（用于 autoCompressor）
+      this.autoCompressor.trackTurn(currentMessages, estimatedTokens);
+
       // v7.1-fix: 每轮检查 token 估算，接近阈值时立即截断（替代仅每 5 轮检查）
-      const shouldCompress = turn > 0 && turn % CONTEXT_COMPRESS_INTERVAL === 0;
+      // v9.2: 同时检查 autoCompressor 的 shouldCompress
+      const shouldCompress = (turn > 0 && turn % CONTEXT_COMPRESS_INTERVAL === 0) || this.autoCompressor.shouldCompress();
       const shouldTruncate = estimatedTokens > tokenThreshold;
 
       if (shouldCompress || shouldTruncate) {
@@ -298,6 +317,21 @@ export class ReActExecutor {
             `[ReActExecutor] 第 ${turn} 轮 token 估算(${estimatedTokens})超过阈值(${tokenThreshold})，触发紧急截断`,
           );
         }
+        
+        // v9.2: 如果 autoCompressor 判断需要压缩，先获取压缩计划
+        let compressionPlan = null;
+        if (this.autoCompressor.shouldCompress()) {
+          try {
+            compressionPlan = this.autoCompressor.getCompressionPlan(currentMessages);
+            logger.debug(
+              `[ReActExecutor] 第 ${turn} 轮 AutoCompressor 触发压缩计划，级别: ${compressionPlan.level}, ` +
+              `预估节省: ${(compressionPlan.estimatedSavingsRatio * 100).toFixed(1)}%`,
+            );
+          } catch (planErr) {
+            logger.warn('[ReActExecutor] 获取压缩计划失败，使用默认压缩:', planErr);
+          }
+        }
+        
         try {
           const turnTruncated = await compressContextWithSummary(
             currentMessages,
@@ -310,6 +344,8 @@ export class ReActExecutor {
             && currentMessages.length !== turnTruncated.messages.length) {
             currentMessages.length = 0;
             currentMessages.push(...turnTruncated.messages as typeof currentMessages);
+            // 标记压缩已执行
+            this.autoCompressor.markCompressed();
             logger.debug(`[ReActExecutor] 第 ${turn} 轮上下文智能压缩完成`);
           }
         } catch (compressErr) {
@@ -336,6 +372,13 @@ export class ReActExecutor {
       this.state.phase = 'reasoning';
       this.emitPhase(onSSEEvent, 'reasoning', turn + 1, maxToolTurns);
 
+      // 触发 before_ai_call 钩子
+      await pluginHooks.executeHooks('before_ai_call', {
+        sessionId,
+        messages: currentMessages as Array<Record<string, unknown>>,
+        extra: { phase: 'reasoning', turn: turn + 1 },
+      });
+
       const response = await this.reasoningPhase(currentMessages, {
         modelConfig,
         signal,
@@ -343,6 +386,15 @@ export class ReActExecutor {
         onThinking,
         tools,
         modelCapabilities,
+        sessionId,
+      });
+
+      // 触发 after_ai_call 钩子
+      await pluginHooks.executeHooks('after_ai_call', {
+        sessionId,
+        messages: currentMessages as Array<Record<string, unknown>>,
+        aiResult: response as unknown as Record<string, unknown>,
+        extra: { phase: 'reasoning', turn: turn + 1 },
       });
 
       // 累积文本输出
@@ -476,13 +528,21 @@ export class ReActExecutor {
     this.state.earlyTermination = this.state.shouldTerminate
       && this.state.terminateReason !== 'task_completed';
 
-    return {
+    const finalResult = {
       content: finalContent,
       toolCalls: executedToolCalls,
       observations: allObservations,
       totalTurns: this.state.turn,
       earlyTermination: this.state.earlyTermination,
     };
+
+    // 触发任务完成钩子
+    await pluginHooks.executeHooks('on_completion', {
+      sessionId,
+      result: finalResult as unknown as Record<string, unknown>,
+    });
+
+    return finalResult;
   }
 
   // ===================== 阶段方法 =====================
@@ -503,20 +563,79 @@ export class ReActExecutor {
       onThinking?: (text: string) => void;
       tools: ReturnType<typeof getBuiltinToolDefinitions>;
       modelCapabilities?: string[];
+      sessionId?: string;
     },
   ): Promise<AIResponse> {
-    return callAIModelStream(
-      context.modelConfig,
-      currentMessages,
-      (text: string) => {
-        if (context.onChunk) context.onChunk(text);
-      },
-      context.signal,
-      context.onThinking,
-      context.tools,
-      undefined,
-      context.modelCapabilities,
-    );
+    const failoverManager = getModelFailoverManager(this._modelFailoverOptions);
+    let currentModelConfig = context.modelConfig;
+    let lastError: unknown;
+    const maxAttempts = 3;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const response = await callAIModelStream(
+          currentModelConfig,
+          currentMessages,
+          (text: string) => {
+            if (context.onChunk) context.onChunk(text);
+          },
+          context.signal,
+          context.onThinking,
+          context.tools,
+          undefined,
+          context.modelCapabilities,
+        );
+
+        const modelId = (currentModelConfig as unknown as Record<string, unknown>).id as string | undefined;
+        if (modelId) {
+          failoverManager.recordSuccess(modelId);
+        }
+
+        return response;
+      } catch (error) {
+        lastError = error;
+        const modelId = (currentModelConfig as unknown as Record<string, unknown>).id as string | undefined;
+        
+        if (modelId) {
+          let errorCategory: 'auth' | 'rate_limit' | 'network' | 'timeout' | 'server' | 'model_not_supported' | 'unknown' = 'unknown';
+          const errMsg = error instanceof Error ? error.message : String(error);
+          if (errMsg.includes('401') || errMsg.includes('unauthorized') || errMsg.includes('auth')) {
+            errorCategory = 'auth';
+          } else if (errMsg.includes('429') || errMsg.includes('rate limit')) {
+            errorCategory = 'rate_limit';
+          } else if (errMsg.includes('timeout') || errMsg.includes('timed out')) {
+            errorCategory = 'timeout';
+          } else if (errMsg.includes('network') || errMsg.includes('ECONNREFUSED') || errMsg.includes('ENOTFOUND')) {
+            errorCategory = 'network';
+          } else if (errMsg.includes('500') || errMsg.includes('502') || errMsg.includes('503') || errMsg.includes('server')) {
+            errorCategory = 'server';
+          }
+          
+          failoverManager.recordFailure(modelId, error, errorCategory);
+          
+          const nextModel = failoverManager.getNextModel(
+            modelId,
+            errorCategory,
+            context.modelCapabilities as string[] | undefined,
+          );
+          
+          if (nextModel) {
+            logger.info(
+              `[ReActExecutor] 模型故障转移: 从 ${modelId} 切换到 ${nextModel.id} (第 ${attempt + 1} 次尝试)`,
+            );
+            currentModelConfig = {
+              ...currentModelConfig,
+              ...(nextModel as unknown as Partial<ModelCallConfig>),
+            };
+            continue;
+          }
+        }
+        
+        break;
+      }
+    }
+
+    throw lastError;
   }
 
   /**

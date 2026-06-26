@@ -916,19 +916,25 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           onAttachClick={() => fileInputRef.current?.click()}
           hasAttachments={pendingAttachments.length > 0}
         />
-        {/* v2.3.0: 文件夹选择区域 — 作为 Paper 内部元素，避免圆角颜色不一致 */}
-        <Collapse in={isEmpty} timeout={300}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              px: 2,
-              py: 0.75,
-              bgcolor: isDark ? 'rgba(0,0,0,0.2)' : '#F5F5F5',
-              borderTop: `1px solid ${gs.border}`,
-            }}
-          >
+      </Paper>
+      {/* v2.3.0: 文件夹选择区域 — Paper 外部，白色区域保持四角圆角 */}
+      <Collapse in={isEmpty} timeout={300}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            px: 2,
+            py: 0.75,
+            mt: -1,
+            bgcolor: isDark ? 'rgba(0,0,0,0.2)' : '#F5F5F5',
+            borderBottomLeftRadius: '12px',
+            borderBottomRightRadius: '12px',
+            borderLeft: `1px solid ${gs.border}`,
+            borderRight: `1px solid ${gs.border}`,
+            borderBottom: `1px solid ${gs.border}`,
+          }}
+        >
             {/* 选择文件夹下拉 */}
             <Box
               sx={{
@@ -950,7 +956,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             </Box>
           </Box>
         </Collapse>
-      </Paper>
 
       {/* AI 设置弹窗（模型管理） */}
       <AISettingsDialog

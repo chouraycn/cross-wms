@@ -21,6 +21,9 @@ import { isMcpToolName, getMcpServerPrefix } from './mcpTypes.js';
 import { CircuitBreaker } from './circuitBreaker.js';
 import { isSkillToolName, handleSkillToolCall } from './skillToolBridge.js';
 import type { SkillPermissionConfig } from '../types/skill-runtime.js';
+import toolPolicyEngine from './toolPolicyEngine.js';
+import approvalManager from './approvalManager.js';
+import pluginHooks from './pluginHooks.js';
 
 export interface ToolExecutorOptions {
   modelConfig: ModelCallConfig;
@@ -53,6 +56,8 @@ export interface ToolExecutorOptions {
   onRateLimit?: OnRateLimitCallback;
   /** v9.1: Skill 权限配置（Skill 四层架构） */
   skillPermissionConfig?: SkillPermissionConfig;
+  /** 会话 ID（用于审批流和插件钩子） */
+  sessionId?: string;
 }
 
 /**
@@ -81,6 +86,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     circuitBreaker: externalCircuitBreaker,
     onSSEEvent,
     onRateLimit,
+    sessionId,
   } = options;
 
   // v1.5.116: 熔断器 — 优先使用外部传入实例，否则使用模块级单例
@@ -120,6 +126,12 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     const sanitizedForApi = sanitizeToolMessages(currentMessages as any[]) as any[];
 
     // 调用 AI，传入 tools
+    await pluginHooks.executeHooks('before_ai_call', {
+      sessionId,
+      messages: currentMessages as Array<Record<string, unknown>>,
+      extra: { modelConfig: modelConfig as unknown as Record<string, unknown> },
+    });
+
     const response = await callAIModelStream(
       modelConfig,
       sanitizedForApi,
@@ -134,6 +146,12 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       modelCapabilities,
       onRateLimit,
     );
+
+    await pluginHooks.executeHooks('after_ai_call', {
+      sessionId,
+      messages: currentMessages as Array<Record<string, unknown>>,
+      aiResult: response as unknown as Record<string, unknown>,
+    });
 
     // 如果没有 tool_calls，直接返回结果
     if (!response.toolCalls || response.toolCalls.length === 0) {
@@ -207,6 +225,125 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
         }
       }
 
+      // ===================== 工具策略评估 + 审批流 =====================
+      let parsedArgs: Record<string, unknown> = {};
+      try {
+        parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
+      } catch {
+        // 参数解析失败，使用空对象
+      }
+
+      // 确定工具来源
+      let toolSource: 'builtin' | 'mcp' | 'plugin' = 'builtin';
+      if (isMcpToolName(toolName)) {
+        toolSource = 'mcp';
+      } else if (toolName.startsWith('plugin_')) {
+        toolSource = 'plugin';
+      }
+
+      // 调用策略引擎评估工具
+      const policyResult = toolPolicyEngine.evaluateTool(toolName, parsedArgs, {
+        source: toolSource,
+        sessionId,
+      });
+
+      // 策略不允许，直接返回错误
+      if (!policyResult.allowed) {
+        const denyResult = JSON.stringify({
+          error: policyResult.reason || `工具 '${toolName}' 被策略拒绝`,
+          policyDenied: true,
+          riskLevel: policyResult.riskLevel,
+          deniedParams: policyResult.deniedParams,
+        });
+        executedToolCalls.push({
+          name: toolName,
+          arguments: toolCall.function.arguments,
+          result: denyResult,
+        });
+        if (onToolCall) {
+          onToolCall(toolCall, denyResult);
+        }
+        currentMessages.push({
+          role: 'tool',
+          content: denyResult,
+          tool_call_id: toolCall.id,
+        } as any);
+        continue;
+      }
+
+      // 需要审批的工具
+      if (policyResult.requireApproval) {
+        try {
+          const approvalRequest = approvalManager.createRequest(
+            toolName,
+            parsedArgs,
+            policyResult.riskLevel,
+            policyResult.matchedRule?.description || `工具 '${toolName}' 需要用户审批`,
+            sessionId,
+          );
+          const approvalResult = await approvalManager.waitForApproval(approvalRequest.id);
+          
+          if (approvalResult.status !== 'approved') {
+            const rejectReason = approvalResult.rejectReason || 
+              (approvalResult.status === 'timeout' ? '审批超时' : 
+               approvalResult.status === 'cancelled' ? '审批已取消' : '审批被拒绝');
+            const denyResult = JSON.stringify({
+              error: `工具 '${toolName}' ${rejectReason}`,
+              approvalDenied: true,
+              approvalStatus: approvalResult.status,
+              riskLevel: policyResult.riskLevel,
+            });
+            executedToolCalls.push({
+              name: toolName,
+              arguments: toolCall.function.arguments,
+              result: denyResult,
+            });
+            if (onToolCall) {
+              onToolCall(toolCall, denyResult);
+            }
+            currentMessages.push({
+              role: 'tool',
+              content: denyResult,
+              tool_call_id: toolCall.id,
+            } as any);
+            continue;
+          }
+        } catch (approvalErr) {
+          const errMsg = approvalErr instanceof Error ? approvalErr.message : String(approvalErr);
+          const errorResult = JSON.stringify({
+            error: `审批流程异常: ${errMsg}`,
+            approvalError: true,
+          });
+          executedToolCalls.push({
+            name: toolName,
+            arguments: toolCall.function.arguments,
+            result: errorResult,
+          });
+          if (onToolCall) {
+            onToolCall(toolCall, errorResult);
+          }
+          currentMessages.push({
+            role: 'tool',
+            content: errorResult,
+            tool_call_id: toolCall.id,
+          } as any);
+          continue;
+        }
+      }
+
+      // 记录工具调用（用于速率限制统计）
+      toolPolicyEngine.recordCall(toolName);
+
+      // 触发 before_tool_call 钩子
+      await pluginHooks.executeHooks('before_tool_call', {
+        sessionId,
+        toolCall: {
+          toolName,
+          args: parsedArgs,
+        },
+        extra: { riskLevel: policyResult.riskLevel },
+      });
+
       // ===================== 工具执行分发 =====================
       // [内置工具路径] 通过 toolRegistry.executeToolCall() 直接执行
       // [MCP工具路径] 通过 mcpClientManager.executeMcpTool() 委托执行
@@ -217,11 +354,10 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       // [Skill 工具路径] 通过 skillToolBridge 执行（Skill 四层架构）
       if (isSkillToolName(toolName)) {
         try {
-          const parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
           const skillResult = await handleSkillToolCall(
             { id: toolCall.id, type: 'function', function: { name: toolName, arguments: JSON.stringify(parsedArgs) } },
             skillPermissionConfig,
-            `session-${Date.now()}`,
+            sessionId || `session-${Date.now()}`,
           );
           result = skillResult.content;
         } catch (err) {
@@ -232,7 +368,6 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       // [MCP工具路径] 委托给 mcpClientManager 执行
       else if (isMcpToolName(toolName)) {
         try {
-          const parsedArgs = JSON.parse(toolCall.function.arguments || '{}');
           result = await mcpClientManager.executeMcpTool(toolName, parsedArgs);
           // MCP Server 级成功记录
           const prefix = getMcpServerPrefix(toolName);
@@ -305,6 +440,16 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       } else {
         circuitBreaker.recordSuccess(toolName);
       }
+
+      // 触发 after_tool_call 钩子
+      await pluginHooks.executeHooks('after_tool_call', {
+        sessionId,
+        toolCall: {
+          toolName,
+          args: parsedArgs,
+        },
+        toolResult: result,
+      });
 
       // 记录工具调用
       executedToolCalls.push({
