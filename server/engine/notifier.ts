@@ -19,6 +19,7 @@ import eventBus, {
 import { getAutomationById } from '../dao/automationDao.js';
 import crypto from 'crypto';
 import { logger } from '../logger.js';
+import { ipcClient } from '../ipcClient.js';
 
 // ===================== 本地类型定义 =====================
 
@@ -141,14 +142,13 @@ async function sendWebhookNotification(
 }
 
 /**
- * Desktop 通知：输出到服务器日志
- * （服务器环境无法弹出系统通知，由前端收到 in-app 事件后自行弹出）
+ * Desktop 通知：通过 IPC 调用 Swift 原生层发送 macOS 系统通知
  */
-function sendDesktopNotification(
+async function sendDesktopNotification(
   payload: AutomationEventPayload,
   automationName: string,
   template?: string,
-): void {
+): Promise<void> {
   const message = template
     ? renderTemplate(template, payload, automationName)
     : `自动化「${automationName}」${payload.status === 'success' ? '执行成功' : '执行失败'}`;
@@ -156,6 +156,22 @@ function sendDesktopNotification(
   logger.debug(
     `[Desktop Notification] ${message} (time: ${payload.timestamp})`,
   );
+
+  try {
+    const success = await ipcClient.notify(
+      payload.status === 'success' ? '自动化执行成功' : '自动化执行失败',
+      message,
+      {
+        sound: payload.status === 'success' ? 'Glass' : 'Basso',
+        priority: payload.status === 'success' ? 'active' : 'timeSensitive',
+      },
+    );
+    if (success) {
+      logger.debug('[Desktop Notification] System notification sent successfully');
+    }
+  } catch (err) {
+    logger.debug('[Desktop Notification] IPC notification failed (may not running in Swift app):', err);
+  }
 }
 
 /**

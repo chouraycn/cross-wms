@@ -32,6 +32,7 @@ import type { SendMessageOptions } from '../../hooks/useChat';
 import { uploadFile } from '../../services/api';
 import { API_BASE_URL } from '../../constants/api';
 import { useAiEngineSettings } from '../../contexts/AppSettingsContext';
+import { SLASH_COMMANDS } from '../../hooks/useSlashCommands';
 
 
 // ===================== Props =====================
@@ -439,9 +440,22 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     const hasAttachments = pendingAttachments.length > 0;
     if ((!effectiveInput.trim() && !hasAttachments) || isLoading) return;
 
-    // 如果以 / 或 @ 开头，不触发发送（等用户完成选择）
     const trimmedInput = effectiveInput.trimStart();
-    if (trimmedInput.startsWith('/') || trimmedInput.startsWith('@')) {
+
+    // 如果是斜杠命令，允许发送（上层 handleSendMessage 会处理命令）
+    if (trimmedInput.startsWith('/')) {
+      const firstWord = trimmedInput.slice(1).split(' ')[0].toLowerCase();
+      const isSlashCommand = SLASH_COMMANDS.some(cmd => cmd.name.toLowerCase() === firstWord);
+      if (isSlashCommand) {
+        // 是已知的斜杠命令，继续发送流程
+      } else if (showSkillSelector) {
+        // 不是已知命令且显示了技能选择器，等待技能选择
+        return;
+      }
+    }
+
+    // 如果以 @ 开头且显示了会话引用选择器，不触发发送（等用户完成选择）
+    if (trimmedInput.startsWith('@') && showSessionReference) {
       return;
     }
 

@@ -1,110 +1,279 @@
 /**
  * Agent Chat API — 基于 OpenClaw 事件驱动架构
  *
- * 与旧版 /chat 的区别：
- * 1. 使用 AgentRuntime + AgentEvents 事件系统
- * 2. 传输层与业务逻辑解耦
- * 3. 丰富的事件类型（item/approval/command_output/patch 等）
- * 4. 支持多订阅者模式
+ * v1.0: 基于现有 chatService 封装，输出标准 Agent 事件格式
+ * - 拦截 chatService 的 SSE 输出，转换为 AgentEventPayload 格式
+ * - 支持思考流与正文流独立序列号
  *
- * 向后兼容：通过 SSE 传输 Agent 事件，前端可逐步迁移
+ * 后续版本将逐步替换底层为完整的 AgentRuntime。
  */
 
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  startAgentRun,
-  abortAgentRun,
-  getActiveRunCount,
-  bridgeAgentEventsToSSE,
-} from '../engine/agentRuntime.js';
-import {
-  listAgentRunsForSession,
-  getAgentRunContext,
-} from '../engine/agentEvents.js';
 import { logger } from '../logger.js';
-import { ExecutionMode } from '../engine/executionStrategy.js';
+import { handleChat } from './chatService.js';
 import {
-  getSessions,
-  createSession,
-  getSessionMessages,
-  addMessage,
-} from '../dao/chat.js';
-import { loadModelsConfig, type ModelConfig } from '../modelsStore.js';
-import { selectKey, reportKeyResult } from '../keyRotator.js';
-import { autoSelectModel, isModelAvailable } from './modelSelector.js';
-import { extractFileContent } from './chatHelpers/fileExtractor.js';
-import { buildSoulSystemMessage } from '../engine/soulLoader.js';
-import { formatMemoryContext } from '../engine/contextEnhancer.js';
-import { AIAPIError, type MessageContent } from '../aiClient.js';
-import type { Attachment } from '../types/chat.js';
+  registerAgentRunContext,
+  clearAgentRunContext,
+  nextSeqForRun,
+  nextSeqForRunAndStream,
+  getAgentRunContext,
+  listAgentRunsForSession,
+  type AgentEventPayload,
+  type AgentEventStream,
+} from '../engine/agentEvents.js';
+import type { Response, Request } from 'express';
+import { getSessionMessages } from '../dao/chat.js';
+import { FileStorage } from '../storage/FileStorage.js';
 
 const router = Router();
 
-// ===================== 类型定义 =====================
+// ===================== 块缓冲合并器 =====================
 
-export interface AgentChatRequest {
-  sessionId?: string;
-  message: string;
-  model?: string;
-  attachments?: Attachment[];
-  skillContext?: string;
-  skillId?: string;
-  referencedSessionIds?: string[];
-  executionMode?: 'legacy' | 'observer' | 'react' | 'agent';
-  agentId?: string;
-  userId?: string;
-  queueMode?: 'collect' | 'steer' | 'followup';
+interface BlockBuffer {
+  content: string;
+  timer: ReturnType<typeof setTimeout> | null;
+  lastEnqueueAt: number;
 }
 
-export interface AgentChatInitResponse {
-  runId: string;
-  sessionId: string;
-  assistantMessageId: string;
-  model: string;
-  modelName: string;
+const BLOCK_CONFIG = {
+  minChars: 200,
+  maxChars: 1000,
+  idleMs: 150,
+};
+
+const THINKING_BLOCK_CONFIG = {
+  minChars: 150,
+  maxChars: 800,
+  idleMs: 100,
+};
+
+function createBlockBuffer(
+  stream: AgentEventStream,
+  sendFn: (content: string) => void,
+  config: typeof BLOCK_CONFIG,
+): { enqueue: (content: string) => void; flush: () => void; dispose: () => void } {
+  const buffer: BlockBuffer = {
+    content: '',
+    timer: null,
+    lastEnqueueAt: 0,
+  };
+
+  const flush = () => {
+    if (buffer.timer) {
+      clearTimeout(buffer.timer);
+      buffer.timer = null;
+    }
+    if (!buffer.content) return;
+    const content = buffer.content;
+    buffer.content = '';
+    sendFn(content);
+  };
+
+  const scheduleFlush = () => {
+    if (buffer.timer) clearTimeout(buffer.timer);
+
+    const delay = buffer.content.length < config.minChars
+      ? config.idleMs * 1.5
+      : config.idleMs;
+
+    buffer.timer = setTimeout(() => {
+      flush();
+    }, delay);
+  };
+
+  const enqueue = (content: string) => {
+    if (!content) return;
+    buffer.content += content;
+    buffer.lastEnqueueAt = Date.now();
+
+    if (buffer.content.length >= config.maxChars) {
+      flush();
+      return;
+    }
+
+    scheduleFlush();
+  };
+
+  const dispose = () => {
+    flush();
+    if (buffer.timer) {
+      clearTimeout(buffer.timer);
+      buffer.timer = null;
+    }
+  };
+
+  return { enqueue, flush, dispose };
 }
 
-// ===================== 工具函数 =====================
+// ===================== 事件转换工具 =====================
 
-function hasImageAttachment(attachments: unknown[] | undefined): boolean {
-  return !!(
-    attachments &&
-    Array.isArray(attachments) &&
-    attachments.some((att) => (att as { type: string }).type === 'image')
+function createEventTransformProxy(
+  originalRes: Response,
+  params: {
+    runId: string;
+    sessionKey?: string;
+    sessionId?: string;
+    agentId?: string;
+    userId?: string;
+  },
+): { proxyRes: Response; dispose: () => void } {
+  const { runId, sessionKey, sessionId, agentId, userId } = params;
+
+  const sendAgentEvent = (
+    stream: AgentEventStream,
+    data: Record<string, unknown>,
+    useStreamSeq: boolean = false,
+  ) => {
+    const seq = useStreamSeq
+      ? nextSeqForRunAndStream(runId, stream)
+      : nextSeqForRun(runId);
+
+    const payload: AgentEventPayload = {
+      runId,
+      seq,
+      stream,
+      ts: Date.now(),
+      data,
+      ...(sessionKey ? { sessionKey } : {}),
+      ...(sessionId ? { sessionId } : {}),
+      ...(agentId ? { agentId } : {}),
+      ...(userId ? { userId } : {}),
+    };
+
+    if (!originalRes.writableEnded) {
+      try {
+        originalRes.write(`data: ${JSON.stringify(payload)}\n\n`);
+      } catch {
+        // 连接已断开，忽略
+      }
+    }
+  };
+
+  // 正文流块缓冲
+  const textBlockBuffer = createBlockBuffer(
+    'assistant',
+    (content) => {
+      sendAgentEvent('assistant', { content }, true);
+    },
+    BLOCK_CONFIG,
   );
-}
 
-const KNOWN_VISION_MODEL_IDS = [
-  'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4-vision',
-  'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'claude-3-5-sonnet',
-  'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision',
-  'qwen-vl', 'qwen-vl-max',
-  'kimi-k2.6', 'kimi-k2.5',
-];
-
-function detectVisionModel(modelConfig: { id: string; capabilities?: string[] }): boolean {
-  const isMultimodalModel = modelConfig.capabilities?.includes('multimodal');
-  const isKnownVisionModel = KNOWN_VISION_MODEL_IDS.some((id) =>
-    modelConfig.id.toLowerCase().includes(id.toLowerCase()),
+  // 思考流块缓冲
+  const thinkingBlockBuffer = createBlockBuffer(
+    'thinking',
+    (content) => {
+      sendAgentEvent('thinking', { content }, true);
+    },
+    THINKING_BLOCK_CONFIG,
   );
-  const isFalsePositiveVision = /deepseek/i.test(modelConfig.id);
-  return (isMultimodalModel || isKnownVisionModel) && !isFalsePositiveVision;
+
+  const flushAllBuffers = () => {
+    textBlockBuffer.flush();
+    thinkingBlockBuffer.flush();
+  };
+
+  const dispose = () => {
+    textBlockBuffer.dispose();
+    thinkingBlockBuffer.dispose();
+  };
+
+  // 创建代理 res 对象，拦截 write 方法
+  const proxyRes = new Proxy(originalRes, {
+    get(target, prop, receiver) {
+      if (prop === 'write') {
+        return (chunk: any, encoding?: any, callback?: any) => {
+          try {
+            const text = typeof chunk === 'string' ? chunk : chunk?.toString?.();
+            if (!text) return true;
+
+            // 解析 SSE 事件
+            const lines = text.split('\n\n').filter(Boolean);
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const jsonStr = line.slice(6);
+              let event: any;
+              try {
+                event = JSON.parse(jsonStr);
+              } catch {
+                continue;
+              }
+
+              const eventType = event.type;
+              switch (eventType) {
+                case 'init':
+                  sendAgentEvent('lifecycle', {
+                    phase: 'init',
+                    assistantMessageId: event.assistantMessageId,
+                    model: event.model,
+                    modelName: event.modelName,
+                    autoReason: event.autoReason,
+                    autoReasonType: event.autoReasonType,
+                  });
+                  break;
+                case 'text':
+                  textBlockBuffer.enqueue(event.content || '');
+                  break;
+                case 'thinking':
+                  thinkingBlockBuffer.enqueue(event.content || '');
+                  break;
+                case 'tool_call':
+                  flushAllBuffers();
+                  sendAgentEvent('tool', {
+                    toolCallId: event.toolCallId || event.id,
+                    name: event.toolName || event.tool,
+                    args: event.toolArgs || event.args,
+                    result: event.result,
+                  });
+                  break;
+                case 'error':
+                  flushAllBuffers();
+                  sendAgentEvent('error', {
+                    code: event.code || 'UNKNOWN_ERROR',
+                    message: event.message || '发生错误',
+                  });
+                  break;
+                case 'done':
+                  flushAllBuffers();
+                  sendAgentEvent('lifecycle', {
+                    phase: 'done',
+                    thinkingDuration: event.thinkingDuration,
+                    usage: event.usage,
+                    errorCode: event.errorCode,
+                    errorMessage: event.errorMessage,
+                    fallbackModel: event.fallbackModel,
+                    fallbackReason: event.fallbackReason,
+                  });
+                  break;
+                default:
+                  // 调试事件
+                  sendAgentEvent('debug' as AgentEventStream, event);
+                  break;
+              }
+            }
+            return true;
+          } catch (e) {
+            logger.error('[AgentChat] 事件转换失败:', e);
+            return true;
+          }
+        };
+      }
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+
+  return { proxyRes, dispose };
 }
 
 // ===================== 主接口：Agent Chat (SSE) =====================
 
-export async function handleAgentChat(req: import('express').Request, res: import('express').Response) {
+export async function handleAgentChat(req: Request, res: Response) {
   const sessionId = req.body.sessionId || `sess_${uuidv4().slice(0, 8)}`;
   const message = req.body.message || '';
-  const requestedModel = req.body.model || 'auto';
-  const attachments = req.body.attachments as Attachment[] | undefined;
-  const skillContext = req.body.skillContext as string | undefined;
-  const skillId = req.body.skillId as string | undefined;
-  const referencedSessionIds = req.body.referencedSessionIds as string[] | undefined;
-  const executionMode = (req.body.executionMode as ExecutionMode) || ExecutionMode.REACT;
-  const agentId = req.body.agentId as string | undefined;
-  const userId = req.body.userId as string | undefined;
+  const runId = `run_${uuidv4().slice(0, 12)}`;
+  const sessionKey = sessionId;
+  const agentId = req.body.agentId;
+  const userId = req.body.userId;
 
   if (!message.trim()) {
     res.status(400).json({ error: '消息内容不能为空' });
@@ -119,198 +288,81 @@ export async function handleAgentChat(req: import('express').Request, res: impor
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders?.();
 
-    const hasVision = hasImageAttachment(attachments);
-
-    const modelsConfig = loadModelsConfig();
-    const modelResult = autoSelectModel(message, modelsConfig, hasVision);
-    const modelId = modelResult.modelId;
-    const modelName = modelResult.modelName;
-    const modelConfig = modelsConfig.models.find(m => m.id === modelId);
-    if (!modelConfig) {
-      throw new Error(`模型 ${modelId} 不存在或未启用`);
-    }
-
-    let session = getSessions().find((s) => s.id === sessionId);
-    const isNewSession = !session;
-    if (isNewSession) {
-      session = createSession({
-        id: sessionId,
-        title: message.slice(0, 30),
-        model: modelId,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        messages: [],
-      });
-    }
-
-    const userMessageId = `msg_${uuidv4().slice(0, 8)}`;
-    const assistantMessageId = `msg_${uuidv4().slice(0, 8)}`;
-
-    const userMsg = {
-      id: userMessageId,
-      role: 'user' as const,
-      content: message,
-      model: modelId,
-      timestamp: Date.now(),
-      attachments: attachments?.map((a) => ({
-        id: a.id,
-        type: a.type,
-        name: a.name,
-        url: a.url,
-        size: a.size,
-      })),
-      skillId: skillId,
-    };
-    addMessage(sessionId, userMsg);
-
-    const sessionMessages = getSessionMessages(sessionId) || [];
-    const apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: unknown[]; tool_call_id?: string }> = [];
-
-    const soulSystemMessage = buildSoulSystemMessage();
-    if (soulSystemMessage) {
-      apiMessages.push({ role: 'system', content: soulSystemMessage });
-    }
-
-    // referencedSessionIds 暂未实现，直接跳过
-    if (referencedSessionIds && referencedSessionIds.length > 0) {
-      // TODO: 实现引用会话的上下文注入
-    }
-
-    if (skillContext) {
-      apiMessages.push({
-        role: 'system',
-        content: skillContext,
-      });
-    }
-
-    let hasVisionAttachment = false;
-    for (const msg of sessionMessages) {
-      if (msg.role === 'user') {
-        let content: MessageContent = msg.content;
-        if (msg.attachments && msg.attachments.length > 0 && hasVision) {
-          hasVisionAttachment = true;
-          const parts: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
-            { type: 'text', text: msg.content },
-          ];
-          for (const att of msg.attachments) {
-            if (att.type === 'image' && att.url) {
-              parts.push({
-                type: 'image_url',
-                image_url: { url: att.url },
-              });
-            }
-          }
-          content = parts as unknown as MessageContent;
-        }
-        apiMessages.push({ role: 'user', content });
-      } else if (msg.role === 'assistant') {
-        apiMessages.push({ role: 'assistant', content: msg.content });
-      }
-    }
-
-    const sanitizedMessages = sanitizeToolMessages(
-      apiMessages as Array<{ role: string; content: MessageContent | null; tool_calls?: unknown[]; tool_call_id?: string }>,
-      hasVisionAttachment,
-    );
-
-    const apiKeyResult = selectKey(modelConfig, hasVisionAttachment);
-    if (!apiKeyResult) {
-      throw new Error('没有可用的 API Key');
-    }
-
-    const modelCallConfig = {
-      ...modelConfig,
-      apiKey: apiKeyResult.key,
-      baseURL: apiKeyResult.baseUrl || modelConfig.baseURL,
-    };
-
-    const sessionKey = sessionId;
-
-    const runHandle = startAgentRun({
-      sessionId,
+    // 注册运行上下文
+    registerAgentRunContext(runId, {
       sessionKey,
-      message,
-      model: modelId,
-      modelName,
-      modelConfig: modelCallConfig,
-      apiMessages: sanitizedMessages as Array<{ role: string; content: MessageContent; tool_calls?: unknown[]; tool_call_id?: string }>,
-      executionMode,
-      attachments: attachments?.map((a) => ({
-        type: a.type,
-        url: a.url,
-        name: a.name,
-      })),
-      skillContext,
-      skillId,
+      sessionId,
       agentId,
       userId,
-      metadata: {
-        keyIndex: apiKeyResult.index,
-        autoReason: modelResult.reason,
-        autoReasonType: modelResult.reasonType,
+      registeredAt: Date.now(),
+      lastActiveAt: Date.now(),
+    });
+
+    // 发送 lifecycle.start 事件
+    const startPayload: AgentEventPayload = {
+      runId,
+      seq: nextSeqForRun(runId),
+      stream: 'lifecycle',
+      ts: Date.now(),
+      data: {
+        phase: 'start',
+        message,
+        sessionId,
       },
+      sessionKey,
+      sessionId,
+      ...(agentId ? { agentId } : {}),
+      ...(userId ? { userId } : {}),
+    };
+    res.write(`data: ${JSON.stringify(startPayload)}\n\n`);
+
+    // 创建代理 res，将 chatService 的 SSE 事件转换为 Agent 事件格式
+    const { proxyRes, dispose: disposeBuffers } = createEventTransformProxy(res, {
+      runId,
+      sessionKey,
+      sessionId,
+      agentId,
+      userId,
     });
-    const { runId, abort: abortRun } = runHandle;
 
-    const unsubscribe = bridgeAgentEventsToSSE(runId, res);
-
+    // 处理客户端断开
     req.on('close', () => {
-      unsubscribe();
-      abortRun();
+      disposeBuffers();
+      clearAgentRunContext(runId);
     });
 
-    runHandle.waitForCompletion()
-      .then((result) => {
-        reportKeyResult(apiKeyResult.index, true);
+    // 调用 chatService 的 handleChat
+    await handleChat(req, proxyRes);
 
-        const assistantMsg = {
-          id: assistantMessageId,
-          role: 'assistant' as const,
-          content: result.content,
-          model: modelId,
-          timestamp: Date.now(),
-          thinkingContent: result.thinkingContent,
-          thinkingDuration: result.thinkingDuration,
-          toolCalls: result.toolCalls,
-          usage: result.usage,
-        };
-        addMessage(sessionId, assistantMsg);
-
-        unsubscribe();
-        if (!res.writableEnded) {
-          try { res.end(); } catch { /* ignore */ }
-        }
-      })
-      .catch((error) => {
-        reportKeyResult(apiKeyResult.index, false);
-        logger.error('[AgentChat] 执行失败:', error);
-
-        unsubscribe();
-        if (!res.writableEnded) {
-          try {
-            res.write(`data: ${JSON.stringify({
-              type: 'error',
-              code: error.code || 'EXECUTION_ERROR',
-              message: error.message || '执行失败',
-            })}\n\n`);
-            res.end();
-          } catch { /* ignore */ }
-        }
-      });
+    disposeBuffers();
+    clearAgentRunContext(runId);
 
   } catch (error) {
     logger.error('[AgentChat] 处理请求失败:', error);
 
+    const errorPayload: AgentEventPayload = {
+      runId,
+      seq: nextSeqForRun(runId),
+      stream: 'error',
+      ts: Date.now(),
+      data: {
+        code: (error as any).code || 'SERVER_ERROR',
+        message: (error as Error).message || '服务器内部错误',
+      },
+      sessionKey,
+      sessionId,
+      ...(agentId ? { agentId } : {}),
+      ...(userId ? { userId } : {}),
+    };
+
     if (!res.writableEnded) {
       try {
-        res.write(`data: ${JSON.stringify({
-          type: 'error',
-          code: (error as any).code || 'SERVER_ERROR',
-          message: (error as Error).message || '服务器内部错误',
-        })}\n\n`);
+        res.write(`data: ${JSON.stringify(errorPayload)}\n\n`);
         res.end();
       } catch { /* ignore */ }
     }
+
+    clearAgentRunContext(runId);
   }
 }
 
@@ -334,20 +386,150 @@ router.get('/agent-run/session/:sessionId', (req, res) => {
   res.json({
     sessionId,
     runs,
-    activeCount: getActiveRunCount(),
   });
 });
 
-router.post('/agent-run/abort/:runId', (req, res) => {
-  const { runId } = req.params;
-  const success = abortAgentRun(runId);
-  res.json({ ok: true, runId, aborted: success });
-});
+// ===================== 对话压缩 API =====================
 
-router.get('/agent/active-count', (_req, res) => {
-  res.json({
-    activeRuns: getActiveRunCount(),
-  });
+function generateSmartSummary(messages: Array<{ role: string; content: string }>): string {
+  const userMsgs = messages.filter(m => m.role === 'user');
+  const assistantMsgs = messages.filter(m => m.role === 'assistant');
+
+  const keyPoints: string[] = [];
+
+  if (userMsgs.length > 0) {
+    keyPoints.push(`**用户需求**：${userMsgs[0].content.slice(0, 100)}${userMsgs[0].content.length > 100 ? '...' : ''}`);
+  }
+
+  let totalQueries = 0;
+  let totalOperations = 0;
+  const topics = new Set<string>();
+
+  for (const msg of messages) {
+    const content = msg.content || '';
+    if (content.includes('查询') || content.includes('库存') || content.includes('查询')) totalQueries++;
+    if (content.includes('创建') || content.includes('更新') || content.includes('删除') || content.includes('操作')) totalOperations++;
+
+    const topicMatches = content.match(/库存|入库|出库|调拨|盘点|补货|预警|报表/gi);
+    if (topicMatches) {
+      topicMatches.forEach(t => topics.add(t));
+    }
+  }
+
+  keyPoints.push(`**对话统计**：共 ${messages.length} 条消息（用户 ${userMsgs.length} 条，AI ${assistantMsgs.length} 条）`);
+
+  if (totalQueries > 0 || totalOperations > 0) {
+    keyPoints.push(`**操作概览**：查询类 ${totalQueries} 次，操作类 ${totalOperations} 次`);
+  }
+
+  if (topics.size > 0) {
+    keyPoints.push(`**涉及主题**：${Array.from(topics).slice(0, 5).join('、')}`);
+  }
+
+  if (userMsgs.length > 1) {
+    const lastUser = userMsgs[userMsgs.length - 1];
+    keyPoints.push(`**最后用户问题**：${lastUser.content.slice(0, 80)}${lastUser.content.length > 80 ? '...' : ''}`);
+  }
+
+  if (assistantMsgs.length > 0) {
+    const lastAssistant = assistantMsgs[assistantMsgs.length - 1];
+    keyPoints.push(`**最新进展**：${lastAssistant.content.slice(0, 80)}${lastAssistant.content.length > 80 ? '...' : ''}`);
+  }
+
+  return keyPoints.join('\n\n');
+}
+
+router.post('/agent-compact', async (req: Request, res: Response) => {
+  const sessionId = req.body.sessionId;
+  const preserveCount = req.body.preserveCount ?? 6;
+
+  if (!sessionId) {
+    res.status(400).json({ error: 'sessionId 不能为空' });
+    return;
+  }
+
+  try {
+    const messages = getSessionMessages(sessionId);
+    if (messages.length < preserveCount + 2) {
+      res.json({
+        success: true,
+        compressed: false,
+        reason: '消息数量不足，无需压缩',
+        messageCount: messages.length,
+      });
+      return;
+    }
+
+    const preserveStart = Math.max(0, messages.length - preserveCount);
+    const toCompress = messages.slice(0, preserveStart);
+    const toKeep = messages.slice(preserveStart);
+
+    if (toCompress.length === 0) {
+      res.json({
+        success: true,
+        compressed: false,
+        reason: '没有需要压缩的消息',
+        messageCount: messages.length,
+      });
+      return;
+    }
+
+    const compressMsgs = toCompress.map(m => ({
+      role: m.role,
+      content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+    }));
+
+    const summary = generateSmartSummary(compressMsgs);
+
+    const summaryMessage = {
+      id: `msg_${uuidv4().slice(0, 8)}`,
+      role: 'assistant',
+      content: `**📝 对话压缩摘要**\n\n${summary}\n\n---\n*已压缩 ${toCompress.length} 条历史消息，保留最近 ${toKeep.length} 条消息*`,
+      model: '',
+      timestamp: new Date().toISOString(),
+      thinking: '',
+      thinkingDone: false,
+      isCompressedSummary: true,
+    };
+
+    const newMessages = [summaryMessage as any, ...toKeep];
+
+    try {
+      const lines = FileStorage.readSessionLines(sessionId);
+      if (lines.length === 0) {
+        res.status(404).json({ error: '会话不存在' });
+        return;
+      }
+      const firstLine = lines[0] as any;
+      if (firstLine.session) {
+        firstLine.session.updatedAt = new Date().toISOString();
+      }
+      firstLine.messages = newMessages;
+
+      FileStorage.deleteSessionFile(sessionId);
+      FileStorage.appendSessionLine(sessionId, firstLine);
+    } catch (writeErr) {
+      logger.error('[AgentCompact] 写入压缩后消息失败：', writeErr);
+      res.status(500).json({ error: '写入压缩结果失败' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      compressed: true,
+      beforeCount: messages.length,
+      afterCount: newMessages.length,
+      compressedCount: toCompress.length,
+      preservedCount: toKeep.length,
+      summary,
+    });
+  } catch (error) {
+    logger.error('[AgentCompact] 压缩失败:', error);
+    res.status(500).json({
+      error: '对话压缩失败',
+      details: (error as Error).message,
+    });
+  }
 });
 
 export default router;
