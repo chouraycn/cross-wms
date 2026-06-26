@@ -1,50 +1,52 @@
 // swift-tools-version: 6.0
-// Package manifest for CrossWMS macOS companion (menu bar app + IPC library).
+// Package manifest for CDF Know Clow macOS app.
 
 import PackageDescription
 
 let package = Package(
-    name: "CrossWMS",
+    name: "CDFKnowClow",
     platforms: [
         .macOS(.v14),
     ],
     products: [
+        .executable(name: "CDFKnowClow", targets: ["CDFKnowClow"]),
         .library(name: "CrossWMSIPC", targets: ["CrossWMSIPC"]),
-        .executable(name: "CrossWMS", targets: ["CrossWMS"]),
     ],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.9.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.10.1"),
     ],
     targets: [
-        .target(
-            name: "CrossWMSIPC",
-            dependencies: [],
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
-            ]),
         .executableTarget(
-            name: "CrossWMS",
+            name: "CDFKnowClow",
             dependencies: [
                 "CrossWMSIPC",
                 .product(name: "Sparkle", package: "Sparkle"),
                 .product(name: "Logging", package: "swift-log"),
             ],
-            path: "Sources/CrossWMS",
+            path: "Sources/CDFKnowClow",
             resources: [
-                .copy("Resources"),
+                .process("Resources"),
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ]),
-        .testTarget(
-            name: "CrossWmsTests",
-            dependencies: [
-                "CrossWMSIPC",
-                "CrossWMS",
-            ],
+        .target(
+            name: "CrossWMSIPC",
+            dependencies: [],
+            path: "Sources/CrossWmsIPC",
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
-                .enableExperimentalFeature("SwiftTesting"),
+            ]),
+        .testTarget(
+            name: "CrossWMSIPCTests",
+            dependencies: ["CrossWMSIPC"],
+            path: "Tests/CrossWMSIPCTests"),
+        .testTarget(
+            name: "CDFKnowClowTests",
+            dependencies: ["CrossWMSIPC"],
+            path: "Tests/CDFKnowClowTests",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
             ]),
     ])

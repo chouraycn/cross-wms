@@ -5,6 +5,7 @@ import express from 'express';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { API_PREFIX } from './apiVersion.js';
 import { apiVersionMiddleware } from './middleware/apiVersionMiddleware.js';
 import { initDb } from './db.js';
@@ -76,6 +77,7 @@ import memoryRouter from './routes/memory.js';
 import eventsRouter from './routes/events.js';
 import uploadRouter, { UPLOADS_DIR, ensureUploadsDir } from './routes/upload.js';
 import healthRouter from './routes/health.js';
+import healthEnhancedRouter from './routes/healthEnhanced.js';
 import inventoryTransactionsRouter from './routes/inventory-transactions.js';
 
 // Agent routes
@@ -87,6 +89,8 @@ import './services/chainExecutor.js'; // side-effect: registers chain event hand
 import { batchAuditSkills } from './services/securityAuditor.js';
 import { initMatchingEngine } from './services/matchingService.js';
 import { syncModelsFromApi, loadModelsConfig } from './modelsStore.js';
+import { channelHealthMonitor } from './services/channelHealthMonitor.js';
+import { configHotReload } from './services/configHotReload.js';
 
 // Automation Engine v2.0
 import { startEngine } from './engine/engine.js';
@@ -156,6 +160,14 @@ app.use(express.json({ limit: '3mb' }));
 // 初始化 Skill Watcher
 skillWatcher.init();
 
+// 启动渠道健康监控
+channelHealthMonitor.start();
+
+// 启动配置热重载
+configHotReload.start([
+  path.join(os.homedir(), '.cdf-know-clow', 'models.json'),
+]);
+
 // ========== Extracted API Routes ==========
 
 app.use('/api', chatRouter);
@@ -165,6 +177,7 @@ app.use('/api/folders', foldersRouter);
 app.use('/api/memory', memoryRouter);
 app.use('/api', eventsRouter);
 app.use('/api/health', healthRouter);
+app.use('/api/health', healthEnhancedRouter);
 app.use('/api/inventory-transactions', inventoryTransactionsRouter);
 
 // Agent routes
@@ -239,6 +252,7 @@ app.use(`${API_PREFIX}/folders`, foldersRouter);
 app.use(`${API_PREFIX}/memory`, memoryRouter);
 app.use(`${API_PREFIX}`, eventsRouter);
 app.use(`${API_PREFIX}/health`, healthRouter);
+app.use(`${API_PREFIX}/health`, healthEnhancedRouter);
 app.use(`${API_PREFIX}/inventory-transactions`, inventoryTransactionsRouter);
 app.use(`${API_PREFIX}/agents`, agentsRouter);
 app.use(`${API_PREFIX}/warehouses`, warehousesRouter);

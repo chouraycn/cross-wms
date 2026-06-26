@@ -1,0 +1,116 @@
+name: Swift CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'apps/macos/**'
+      - '.github/workflows/swift-ci.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'apps/macos/**'
+      - '.github/workflows/swift-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
+
+jobs:
+  test:
+    name: Swift Test (${{ matrix.swift }})
+    runs-on: macos-14
+
+    strategy:
+      fail-fast: false
+      matrix:
+        swift: ['5.10', '6.0']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: ${{ matrix.swift }}
+
+      - name: Cache Swift Package
+        uses: actions/cache@v4
+        with:
+          path: apps/macos/.build
+          key: ${{ runner.os }}-swift-${{ matrix.swift }}-spm-${{ hashFiles('apps/macos/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-${{ matrix.swift }}-spm-
+
+      - name: Resolve Dependencies
+        run: swift package resolve
+        working-directory: apps/macos
+
+      - name: Build
+        run: swift build --build-tests
+        working-directory: apps/macos
+
+      - name: Run Tests
+        run: swift test --disable-sandbox 2>&1 | tee test-output.log
+        working-directory: apps/macos
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: swift-test-results-${{ matrix.swift }}
+          path: apps/macos/test-output.log
+          retention-days: 7
+
+  lint:
+    name: SwiftLint
+    runs-on: macos-14
+    if: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run SwiftLint
+        uses: norio-nomura/action-swiftlint@3.2.1
+        with:
+          args: --strict
+          workDirectory: apps/macos
+
+  build-release:
+    name: Build Release
+    runs-on: macos-14
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.0'
+
+      - name: Cache Swift Package
+        uses: actions/cache@v4
+        with:
+          path: apps/macos/.build
+          key: ${{ runner.os }}-swift-6.0-spm-release-${{ hashFiles('apps/macos/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-6.0-spm-release-
+
+      - name: Build Release
+        run: swift build -c release
+        working-directory: apps/macos
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: swift-release-build
+          path: apps/macos/.build/release/
+          retention-days: 7

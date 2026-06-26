@@ -4,7 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box, useTheme } from '@mui/material';
 import Sidebar from './components/Layout/Sidebar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
-import { AppSettingsProvider, useAppSettings, useAppearanceSettings } from './contexts/AppSettingsContext';
+import { AppSettingsProvider, useAppearanceSettings } from './contexts/AppSettingsContext';
 import type { AppearanceConfig, AccentColor } from './contexts/AppSettingsContext';
 import { ModelsProvider } from './contexts/ModelsContext';
 import { isPyWebView } from './services/tencentDocsApi';

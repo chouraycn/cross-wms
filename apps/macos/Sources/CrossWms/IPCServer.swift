@@ -9,6 +9,16 @@ actor IPCServer {
     private var isRunning = false
     private var onRequest: ((Request) async -> Response)?
 
+    private var eventClients: [Int32: EventClient] = [:]
+    private let keychainManager = KeychainManager.shared
+    private let fileWatcherManager = FileWatcherManager()
+    private let embeddingManager = EmbeddingManager.shared
+    private let databaseManager = DatabaseManager.shared
+
+    private struct EventClient {
+        let fd: Int32
+    }
+
     init(socketPath: String = controlSocketPath) {
         self.socketPath = socketPath
     }
@@ -64,6 +74,10 @@ actor IPCServer {
             close(listener)
             self.listener = nil
         }
+        for (fd, _) in eventClients {
+            close(fd)
+        }
+        eventClients.removeAll()
         try? FileManager.default.removeItem(atPath: socketPath)
         logger.info("IPC server stopped")
     }
@@ -87,7 +101,10 @@ actor IPCServer {
     }
 
     private func handleClient(_ clientFd: Int32) async {
-        defer { close(clientFd) }
+        defer {
+            close(clientFd)
+            eventClients.removeValue(forKey: clientFd)
+        }
         logger.debug("client connected")
 
         var buffer = Data()
@@ -127,10 +144,95 @@ actor IPCServer {
     }
 
     private func handleRequest(_ request: Request) async -> Response {
-        guard let handler = onRequest else {
-            return Response(ok: false, message: "No request handler")
+        switch request {
+        case .notify, .playSound, .status, .checkForUpdates, .openURL, .quit:
+            guard let handler = onRequest else {
+                return Response(ok: false, message: "No request handler")
+            }
+            return await handler(request)
+
+        case .keychainSave(let item):
+            let success = await keychainManager.save(
+                service: item.service,
+                account: item.account,
+                value: item.value,
+                label: item.label,
+                comment: item.comment
+            )
+            return Response(ok: success, message: success ? "Saved" : "Failed to save")
+
+        case .keychainLoad(let service, let account):
+            if let value = await keychainManager.load(service: service, account: account) {
+                let item = KeychainItem(service: service, account: account, value: value)
+                if let payload = try? JSONEncoder().encode(item) {
+                    return Response(ok: true, payload: payload)
+                }
+            }
+            return Response(ok: false, message: "Not found")
+
+        case .keychainDelete(let service, let account):
+            let success = await keychainManager.delete(service: service, account: account)
+            return Response(ok: success, message: success ? "Deleted" : "Failed to delete")
+
+        case .keychainList(let service):
+            let items = await keychainManager.list(service: service)
+            if let payload = try? JSONEncoder().encode(items) {
+                return Response(ok: true, payload: payload)
+            }
+            return Response(ok: false, message: "Failed to encode")
+
+        case .fileWatchStart(let config):
+            let success = await fileWatcherManager.startWatch(config: config) { [weak self] event in
+                Task { [weak self] in
+                    await self?.broadcastEvent(.fileChanged(event: event))
+                }
+            }
+            return Response(ok: success, message: success ? "Watch started" : "Failed to start watch")
+
+        case .fileWatchStop(let watchID):
+            let success = await fileWatcherManager.stopWatch(watchID: watchID)
+            return Response(ok: success, message: success ? "Watch stopped" : "Watch not found")
+
+        case .fileWatchList:
+            let watches = await fileWatcherManager.listWatches()
+            if let payload = try? JSONEncoder().encode(watches) {
+                return Response(ok: true, payload: payload)
+            }
+            return Response(ok: false, message: "Failed to encode")
+
+        case .embeddingCompute(let request):
+            let result = await embeddingManager.computeEmbeddings(
+                texts: request.texts,
+                model: request.model,
+                dimensions: request.dimensions
+            )
+            if let payload = try? JSONEncoder().encode(result) {
+                return Response(ok: true, payload: payload)
+            }
+            return Response(ok: false, message: "Failed to encode")
+
+        case .databaseExecute(let query):
+            let result = await databaseManager.execute(
+                dbName: query.dbName,
+                sql: query.sql,
+                params: query.params
+            )
+            if let payload = try? JSONEncoder().encode(result) {
+                return Response(ok: true, payload: payload)
+            }
+            return Response(ok: false, message: "Failed to encode")
+
+        case .databaseQuery(let query):
+            let result = await databaseManager.query(
+                dbName: query.dbName,
+                sql: query.sql,
+                params: query.params
+            )
+            if let payload = try? JSONEncoder().encode(result) {
+                return Response(ok: true, payload: payload)
+            }
+            return Response(ok: false, message: "Failed to encode")
         }
-        return await handler(request)
     }
 
     private func sendResponse(_ clientFd: Int32, response: Response) throws {
@@ -145,5 +247,22 @@ actor IPCServer {
         if bytesSent < 0 {
             logger.error("failed to send response: \(errno)")
         }
+    }
+
+    private func broadcastEvent(_ event: IPCEvent) {
+        guard let data = try? JSONEncoder().encode(event) else { return }
+        var dataWithNewline = data
+        dataWithNewline.append(0x0A)
+
+        for (fd, _) in eventClients {
+            dataWithNewline.withUnsafeBytes { ptr in
+                _ = send(fd, ptr.baseAddress, dataWithNewline.count, 0)
+            }
+        }
+    }
+
+    func registerEventClient(_ fd: Int32) {
+        eventClients[fd] = EventClient(fd: fd)
+        logger.debug("Registered event client: \(fd)")
     }
 }
