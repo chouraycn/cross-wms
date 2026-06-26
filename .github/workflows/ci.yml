@@ -14,69 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run lint
-
-  typecheck:
-    name: Type Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - run: npx tsc --noEmit
-      - run: npx tsc --noEmit --project server/tsconfig.json
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      ONNX_DISABLE_NATIVE_DOWNLOAD: '1'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run test -- --coverage --passWithNoTests
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 30
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: [lint, typecheck, test]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: build-dist
-          path: dist/
-          retention-days: 7
+  quality-gate:
+    name: Quality Gate
+    uses: ./.github/workflows/pr-quality-gate.yml
+    secrets: inherit

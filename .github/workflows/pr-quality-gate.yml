@@ -18,7 +18,7 @@ on:
       - '.gitignore'
       - 'LICENSE'
   workflow_call:
-    # Reusable by build-and-release.yml — avoids duplicating quality gate jobs
+    # Reusable by build-and-release.yml and ci.yml — avoids duplicating quality gate jobs
 
 permissions:
   contents: read
@@ -48,10 +48,10 @@ jobs:
       - name: Run ESLint (src + server)
         run: npm run lint
 
-  typecheck-and-build:
-    name: Type Check & Build
+  typecheck:
+    name: Type Check
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -70,9 +70,6 @@ jobs:
 
       - name: Type check backend
         run: npx tsc --noEmit --project server/tsconfig.json
-
-      - name: Build frontend (vite)
-        run: npm run build
 
   test:
     name: Test
@@ -93,12 +90,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm run test -- --passWithNoTests
-
       - name: Run tests with coverage
         run: npm run test -- --coverage --passWithNoTests
-        if: github.event_name == 'pull_request'
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -114,6 +107,34 @@ jobs:
         with:
           name: test-results
           path: test-results/
+          retention-days: 7
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, typecheck, test]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend (vite)
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-dist
+          path: dist/
           retention-days: 7
 
   audit:
@@ -135,3 +156,7 @@ jobs:
 
       - name: Run npm audit (fail on critical)
         run: npm audit --audit-level=critical --omit=dev
+
+      - name: Check for outdated dependencies (info only)
+        run: npm outdated || true
+        if: always()
