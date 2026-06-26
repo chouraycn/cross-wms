@@ -425,6 +425,7 @@ export interface UseAgentChatResult {
   stopGeneration: () => void;
   clearMessages: () => void;
   appendMessage: (message: Message) => void;
+  compactSession: (preserveCount?: number) => Promise<{ success: boolean; compressed: boolean; summary?: string }>;
 }
 
 export function useAgentChat(
@@ -877,6 +878,67 @@ export function useAgentChat(
     setMessages((prev) => [...prev, message]);
   }, []);
 
+  // ===================== 对话压缩 =====================
+
+  const compactSession = useCallback(async (preserveCount: number = 6): Promise<{ success: boolean; compressed: boolean; summary?: string }> => {
+    if (!currentSession?.id) {
+      return { success: false, compressed: false };
+    }
+
+    if (isLoading) {
+      return { success: false, compressed: false };
+    }
+
+    try {
+      const response = await fetch(`${CHAT_API_URL}/agent-compact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: currentSession.id,
+          model: currentSession.model || 'auto',
+          preserveCount,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success && data.compressed) {
+        const summaryMsg: Message = {
+          id: `msg_compact_${Date.now()}`,
+          role: 'assistant',
+          content: data.summary || '对话已压缩',
+          model: currentSession.model || '',
+          timestamp: new Date(),
+          thinking: '',
+          thinkingDone: false,
+        };
+
+        const keptMessages = messages.slice(-preserveCount);
+        const newMessages = [summaryMsg, ...keptMessages];
+        setMessages(newMessages);
+
+        if (currentSession) {
+          const updatedSession = {
+            ...currentSession,
+            messages: newMessages,
+            updatedAt: new Date().toISOString(),
+          };
+          onSessionUpdate(updatedSession);
+        }
+      }
+
+      return {
+        success: data.success,
+        compressed: data.compressed,
+        summary: data.summary,
+      };
+    } catch (err) {
+      console.error('[useAgentChat] 压缩对话失败:', err);
+      return { success: false, compressed: false };
+    }
+  }, [currentSession, isLoading, messages, onSessionUpdate]);
+
   // 计算思考文本
   const thinkingText = useMemo(() => {
     const state = blockStateRef.current;
@@ -933,6 +995,7 @@ export function useAgentChat(
     stopGeneration,
     clearMessages,
     appendMessage,
+    compactSession,
   };
 }
 

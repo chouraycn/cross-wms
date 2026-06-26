@@ -34,8 +34,9 @@ import { useToast } from '../../contexts/ToastContext.js';
 import { useChatSession } from '../../contexts/ChatContext.js';
 import type { AgentIdentity } from './AgentProfile.js';
 import { AGENT_SCENARIOS } from './AgentProfile.js';
-import type { AgentItemEventData } from '../../hooks/useAgentChat.js';
+import type { AgentItemEventData, SendAgentMessageOptions } from '../../hooks/useAgentChat.js';
 import { useAgentChat } from '../../hooks/useAgentChat.js';
+import { formatHelpText } from '../../hooks/useSlashCommands.js';
 
 /** 从 URL 参数解析技能上下文 */
 function resolveSkillFromParams(skillId: string | null): Skill | null {
@@ -169,6 +170,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     sendMessage,
     stopGeneration,
     error,
+    compactSession,
   } = useAgentChat(session, handleSessionUpdate);
 
   // 显示错误提示
@@ -177,6 +179,140 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       showToast(error, 'error', 5000);
     }
   }, [error, showToast]);
+
+  // ===================== 斜杠命令处理 =====================
+
+  const handleSlashCommand = useCallback((input: string, options?: SendAgentMessageOptions): boolean => {
+    const trimmed = input.trim();
+    if (!trimmed.startsWith('/')) return false;
+
+    const parts = trimmed.slice(1).split(' ');
+    const command = parts[0].toLowerCase();
+    const args = parts.slice(1).join(' ');
+
+    const currentSession = sessionRef.current;
+
+    switch (command) {
+      case 'help': {
+        const helpMsg: Message = {
+          id: `msg_${Date.now()}`,
+          role: 'assistant',
+          content: formatHelpText(),
+          model: currentSession?.model || '',
+          timestamp: new Date(),
+          thinking: '',
+          thinkingDone: false,
+        };
+        handleSessionUpdate({
+          ...currentSession,
+          messages: [...currentSession.messages, helpMsg],
+        });
+        return true;
+      }
+      case 'clear': {
+        handleSessionUpdate({
+          ...currentSession,
+          messages: [],
+        });
+        showToast('对话已清空', 'success', 1500);
+        return true;
+      }
+      case 'new': {
+        handleNewChat();
+        return true;
+      }
+      case 'model': {
+        if (args) {
+          updateSessionModel(args);
+          showToast(`已切换到模型: ${args}`, 'success', 2000);
+        } else {
+          showToast('用法: /model <模型ID>', 'info', 3000);
+        }
+        return true;
+      }
+      case 'models': {
+        const modelList = ((options as any)?.models as Array<{ id: string; name: string }> || [])
+          .map((m) => `- \`${m.id}\` — ${m.name}`)
+          .join('\n');
+        const modelsMsg: Message = {
+          id: `msg_${Date.now()}`,
+          role: 'assistant',
+          content: `**可用模型：**\n\n${modelList || '暂无可用模型'}`,
+          model: currentSession?.model || '',
+          timestamp: new Date(),
+          thinking: '',
+          thinkingDone: false,
+        };
+        handleSessionUpdate({
+          ...currentSession,
+          messages: [...currentSession.messages, modelsMsg],
+        });
+        return true;
+      }
+      case 'context': {
+        const msgCount = currentSession.messages.length;
+        const totalChars = currentSession.messages.reduce((sum, m) => sum + (m.content?.length || 0), 0);
+        const contextMsg: Message = {
+          id: `msg_${Date.now()}`,
+          role: 'assistant',
+          content: `**上下文使用情况：**\n\n- 消息数量: ${msgCount}\n- 总字符数: ${totalChars}\n- 当前模型: ${currentSession.model || 'auto'}`,
+          model: currentSession?.model || '',
+          timestamp: new Date(),
+          thinking: '',
+          thinkingDone: false,
+        };
+        handleSessionUpdate({
+          ...currentSession,
+          messages: [...currentSession.messages, contextMsg],
+        });
+        return true;
+      }
+      case 'compact': {
+        const messages = currentSession.messages;
+        if (messages.length < 8) {
+          showToast('消息数量不足 8 条，无需压缩', 'info', 2000);
+          return true;
+        }
+
+        showToast('正在压缩对话...', 'info', 2000);
+        compactSession(6).then((result) => {
+          if (result.success && result.compressed) {
+            showToast('对话压缩成功', 'success', 2000);
+          } else if (result.success && !result.compressed) {
+            showToast('消息数量不足，无需压缩', 'info', 2000);
+          } else {
+            showToast('压缩失败，请重试', 'error', 3000);
+          }
+        }).catch(() => {
+          showToast('压缩失败，请重试', 'error', 3000);
+        });
+        return true;
+      }
+      case 'thinking': {
+        const mode = args.toLowerCase();
+        if (mode === 'on' || mode === 'off') {
+          showToast(`深度思考模式已${mode === 'on' ? '开启' : '关闭'}`, 'success', 2000);
+        } else {
+          showToast('用法: /thinking on|off', 'info', 3000);
+        }
+        return true;
+      }
+      case 'debug': {
+        showToast('调试模式切换功能开发中', 'info', 2000);
+        return true;
+      }
+      default:
+        return false;
+    }
+  }, [handleSessionUpdate, handleNewChat, showToast, updateSessionModel, compactSession]);
+
+  // 包装 sendMessage，先处理斜杠命令
+  const handleSendMessage = useCallback((content: string, options?: SendAgentMessageOptions) => {
+    if (handleSlashCommand(content, options)) {
+      return;
+    }
+    sendMessage(content, options);
+  }, [handleSlashCommand, sendMessage]);
 
   useEffect(() => {
     if (!isPage) return;
@@ -475,7 +611,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 updateSessionModel={updateSessionModel}
                 initialSkill={initialSkill}
                 isLoading={isLoading}
-                sendMessage={sendMessage}
+                sendMessage={handleSendMessage as any}
                 stopGeneration={stopGeneration}
               />
               <Collapse in={session.messages.length === 0} timeout={300}>
@@ -528,7 +664,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
           isEmpty={session.messages.length === 0}
           updateSessionModel={updateSessionModel}
           isLoading={isLoading}
-          sendMessage={sendMessage}
+          sendMessage={handleSendMessage as any}
           stopGeneration={stopGeneration}
         />
       </Box>

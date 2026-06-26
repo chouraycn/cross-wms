@@ -276,14 +276,14 @@ export function sweepStaleRunContexts(maxAgeMs = 30 * 60 * 1000): number {
 
 // ===================== 序列号管理 =====================
 
-function nextSeqForRun(runId: string): number {
+export function nextSeqForRun(runId: string): number {
   const current = AGENT_EVENT_STATE.seqByRun.get(runId) ?? 0;
   const next = current + 1;
   AGENT_EVENT_STATE.seqByRun.set(runId, next);
   return next;
 }
 
-function nextSeqForRunAndStream(runId: string, stream: string): number {
+export function nextSeqForRunAndStream(runId: string, stream: string): number {
   let streamMap = AGENT_EVENT_STATE.seqByRunAndStream.get(runId);
   if (!streamMap) {
     streamMap = new Map();

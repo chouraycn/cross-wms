@@ -110,7 +110,7 @@ cd "$ROOT_DIR"
     --outfile="$SERVER_DIST_DIR/index.cjs" \
     --alias:@src="$ROOT_DIR/src" \
     --external:better-sqlite3 \
-    --external:@openclaw/* \
+    --external:@cdfclaw/* \
     --external:@modelcontextprotocol/sdk \
     --external:json5 \
     --external:onnxruntime-node \

@@ -86,7 +86,8 @@ dist-server/
 
 # Desktop app build artifacts
 dist-app/
-apps/macos/
+apps/macos/.build/
+apps/macos/Package.resolved
 
 # Package lock (using pnpm workspace now)
 package-lock.json

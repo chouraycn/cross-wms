@@ -9,6 +9,7 @@
 
 import type { Alert, AlertType, AlertSeverity } from '../types/alert.js';
 import { logger } from '../logger.js';
+import { ipcClient } from '../ipcClient.js';
 import {
   createAlert,
   getAlerts,
@@ -243,7 +244,46 @@ export function scanAndGenerateAlerts(warehouseId?: string): Alert[] {
   }
 
   logger.info(`[Alert] 生成 ${alerts.length} 条预警`);
+
+  if (alerts.length > 0) {
+    sendAlertNotifications(alerts).catch((err) => {
+      logger.debug('[Alert] System notification failed (may not running in Swift app):', err);
+    });
+  }
+
   return alerts;
+}
+
+/**
+ * 通过 IPC 发送系统预警通知
+ */
+async function sendAlertNotifications(alerts: Alert[]): Promise<void> {
+  const criticalAlerts = alerts.filter((a) => a.severity === 'critical' || a.severity === 'high');
+  const otherAlerts = alerts.filter((a) => a.severity === 'medium' || a.severity === 'low');
+
+  if (criticalAlerts.length > 0) {
+    const title = `⚠️ 库存紧急预警：${criticalAlerts.length} 条`;
+    const body = criticalAlerts
+      .slice(0, 3)
+      .map((a) => `• ${a.sku}: ${a.message}`)
+      .join('\n');
+
+    await ipcClient.notify(title, body, {
+      sound: 'Sosumi',
+      priority: 'timeSensitive',
+    });
+  } else if (otherAlerts.length > 0) {
+    const title = `📦 库存预警：${alerts.length} 条新预警`;
+    const body = otherAlerts
+      .slice(0, 3)
+      .map((a) => `• ${a.sku}: ${a.message}`)
+      .join('\n');
+
+    await ipcClient.notify(title, body, {
+      sound: 'Glass',
+      priority: 'active',
+    });
+  }
 }
 
 /**
