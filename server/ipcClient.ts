@@ -80,7 +80,7 @@ class CrossWMSIPCClient {
           resolve();
         });
 
-        this.socket.on('data', (data) => {
+        this.socket.on('data', (data: Buffer) => {
           this.handleData(data);
         });
 

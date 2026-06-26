@@ -539,9 +539,10 @@ export function ChatProvider({
       setActiveSessionIdState(updatedSession.id);
       setSessions((prev) => {
         const next = [{ ...updatedSession, messages: [] }, ...prev].slice(0, MAX_SESSIONS);
-        syncSidebar(updatedSession.id);
         return next;
       });
+      // 同步到 sidebar（移出 setState updater，避免渲染阶段更新）
+      syncSidebar(updatedSession.id);
       return;
     }
 

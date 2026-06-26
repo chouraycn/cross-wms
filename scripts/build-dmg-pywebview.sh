@@ -458,6 +458,15 @@ DATA_ARGS="$DATA_ARGS --add-data $NODE_RUNTIME_DIR:node "
 DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:version_txt "
 
 
+# 应用图标（使用 AppIcon.icns 格式）
+ICON_SOURCE="$PROJECT_DIR/apps/macos/Icon.icon/AppIcon.icns"
+if [ -f "$ICON_SOURCE" ]; then
+  echo "🔧 使用 macOS 应用图标: $ICON_SOURCE"
+else
+  echo "⚠️  AppIcon.icns 不存在，回退到 public/icon.png"
+  ICON_SOURCE="$PROJECT_DIR/public/icon.png"
+fi
+
 "$PYINSTALLER" \
   --name "CDF Know Clow" \
   --windowed \
@@ -485,7 +494,7 @@ DATA_ARGS="$DATA_ARGS --add-data $VERSION_FILE:version_txt "
   --exclude-module PIL \
   --exclude-module Pillow \
   $DATA_ARGS \
-  --icon "$PROJECT_DIR/public/icon.png" \
+  --icon "$ICON_SOURCE" \
   --distpath "$BUILD_DIR/dist" \
   --workpath "$BUILD_DIR/work" \
   --specpath "$BUILD_DIR" \
@@ -544,11 +553,19 @@ cp -r "$APP_PATH" "$DMG_STAGING/"
 # 9.2 创建 Applications 快捷方式（标准 macOS DMG 做法）
 ln -sf /Applications "$DMG_STAGING/Applications"
 
-# 9.3 生成 DMG 背景图（浅灰底 + 箭头提示）
+# 9.3 使用 DMG 背景图（优先使用 apps/macos/Packaging/dmg-background.png）
 DMG_BG_DIR="$BUILD_DIR/dmg-bg"
 mkdir -p "$DMG_BG_DIR/.background"
 BG_PATH="$DMG_BG_DIR/.background/install-bg.png"
-python3 << 'PYEOF_BG'
+
+# 优先使用 apps/macos/Packaging/dmg-background.png
+DMG_BG_SOURCE="$PROJECT_DIR/apps/macos/Packaging/dmg-background.png"
+if [ -f "$DMG_BG_SOURCE" ]; then
+  cp "$DMG_BG_SOURCE" "$DMG_BG_DIR/.background/install-bg.png"
+  echo "🔧 使用自定义 DMG 背景图: $DMG_BG_SOURCE"
+else
+  echo "⚠️  dmg-background.png 不存在，生成默认背景图"
+  python3 << 'PYEOF_BG'
 import os, sys
 bg_dir = os.environ.get("DMG_BG_DIR", "")
 if not bg_dir:
@@ -566,6 +583,7 @@ try:
 except Exception:
     pass
 PYEOF_BG
+fi
 
 # 将背景图复制到暂存目录
 if [ -f "$DMG_BG_DIR/.background/install-bg.png" ]; then

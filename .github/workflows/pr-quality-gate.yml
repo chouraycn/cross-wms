@@ -160,3 +160,46 @@ jobs:
       - name: Check for outdated dependencies (info only)
         run: npm outdated || true
         if: always()
+
+  swift-test:
+    name: Swift Test
+    runs-on: macos-14
+    timeout-minutes: 20
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.0'
+
+      - name: Cache Swift Package
+        uses: actions/cache@v4
+        with:
+          path: apps/macos/.build
+          key: ${{ runner.os }}-swift-6.0-spm-${{ hashFiles('apps/macos/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-6.0-spm-
+
+      - name: Resolve Dependencies
+        run: swift package resolve
+        working-directory: apps/macos
+
+      - name: Build
+        run: swift build --build-tests
+        working-directory: apps/macos
+
+      - name: Run Tests
+        run: swift test --disable-sandbox 2>&1 | tee test-output.log
+        working-directory: apps/macos
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: swift-test-results
+          path: apps/macos/test-output.log
+          retention-days: 7
