@@ -1,14 +1,13 @@
 import { Router } from 'express';
 import { messageQueue } from '../engine/messageQueue.js';
 import { logger } from '../logger.js';
-import { handleAgentChat } from './agentChat.js';
-import { activeSSEConnections } from './chatService.js';
+import { handleChat, activeSSEConnections } from './chatService.js';
 
 const router = Router();
 
-// 发送消息（SSE）— 已迁移到 Agent Chat 架构
+// 发送消息（SSE）
 router.post('/chat', async (req, res) => {
-  await handleAgentChat(req, res);
+  await handleChat(req, res);
 });
 
 // v7.0: 获取队列状态

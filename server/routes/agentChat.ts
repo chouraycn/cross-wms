@@ -34,9 +34,7 @@ import { loadModelsConfig, type ModelConfig } from '../modelsStore.js';
 import { selectKey, reportKeyResult } from '../keyRotator.js';
 import { autoSelectModel, isModelAvailable } from './modelSelector.js';
 import { extractFileContent } from './chatHelpers/fileExtractor.js';
-import { extractAndAppendMemory } from './memoryExtractor.js';
 import { buildSoulSystemMessage } from '../engine/soulLoader.js';
-import { sanitizeToolMessages } from '../engine/contextTruncate.js';
 import { formatMemoryContext } from '../engine/contextEnhancer.js';
 import { AIAPIError, type MessageContent } from '../aiClient.js';
 import type { Attachment } from '../types/chat.js';
@@ -124,10 +122,13 @@ export async function handleAgentChat(req: import('express').Request, res: impor
     const hasVision = hasImageAttachment(attachments);
 
     const modelsConfig = loadModelsConfig();
-    const modelResult = autoSelectModel(requestedModel, modelsConfig, hasVision);
-    const modelConfig = modelResult.config;
-    const modelId = modelConfig.id;
-    const modelName = modelConfig.name || modelConfig.id;
+    const modelResult = autoSelectModel(message, modelsConfig, hasVision);
+    const modelId = modelResult.modelId;
+    const modelName = modelResult.modelName;
+    const modelConfig = modelsConfig.models.find(m => m.id === modelId);
+    if (!modelConfig) {
+      throw new Error(`模型 ${modelId} 不存在或未启用`);
+    }
 
     let session = getSessions().find((s) => s.id === sessionId);
     const isNewSession = !session;
@@ -170,14 +171,9 @@ export async function handleAgentChat(req: import('express').Request, res: impor
       apiMessages.push({ role: 'system', content: soulSystemMessage });
     }
 
+    // referencedSessionIds 暂未实现，直接跳过
     if (referencedSessionIds && referencedSessionIds.length > 0) {
-      const memoryContext = await extractAndAppendMemory(referencedSessionIds, message);
-      if (memoryContext) {
-        apiMessages.push({
-          role: 'system',
-          content: formatMemoryContext(memoryContext),
-        });
-      }
+      // TODO: 实现引用会话的上下文注入
     }
 
     if (skillContext) {
@@ -230,7 +226,7 @@ export async function handleAgentChat(req: import('express').Request, res: impor
 
     const sessionKey = sessionId;
 
-    const { runId, abort: abortRun } = startAgentRun({
+    const runHandle = startAgentRun({
       sessionId,
       sessionKey,
       message,
@@ -254,32 +250,13 @@ export async function handleAgentChat(req: import('express').Request, res: impor
         autoReasonType: modelResult.reasonType,
       },
     });
+    const { runId, abort: abortRun } = runHandle;
 
     const unsubscribe = bridgeAgentEventsToSSE(runId, res);
 
     req.on('close', () => {
       unsubscribe();
       abortRun();
-    });
-
-    const runHandle = startAgentRun({
-      sessionId,
-      sessionKey,
-      message,
-      model: modelId,
-      modelName,
-      modelConfig: modelCallConfig,
-      apiMessages: sanitizedMessages as Array<{ role: string; content: MessageContent; tool_calls?: unknown[]; tool_call_id?: string }>,
-      executionMode,
-      attachments: attachments?.map((a) => ({
-        type: a.type,
-        url: a.url,
-        name: a.name,
-      })),
-      skillContext,
-      skillId,
-      agentId,
-      userId,
     });
 
     runHandle.waitForCompletion()

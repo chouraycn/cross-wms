@@ -168,7 +168,15 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     activeItems,
     sendMessage,
     stopGeneration,
+    error,
   } = useAgentChat(session, handleSessionUpdate);
+
+  // 显示错误提示
+  useEffect(() => {
+    if (error) {
+      showToast(error, 'error', 5000);
+    }
+  }, [error, showToast]);
 
   useEffect(() => {
     if (!isPage) return;

@@ -35,6 +35,7 @@ BUILD_DIR="$ROOT_DIR/dist"
 mkdir -p "$BUILD_DIR"
 
 APP_NAME="CDFKnowClow"
+APP_BUNDLE_FILENAME="$(basename "$APP_PATH")"  # e.g. CDFKnowClow.app
 VERSION="1.0.0"
 if [[ -f "$APP_PATH/Contents/Info.plist" ]]; then
   if command -v /usr/libexec/PlistBuddy >/dev/null 2>&1; then
@@ -208,6 +209,7 @@ tell application "Finder"
   set dmgDisk to disk of dmgRoot
   tell dmgDisk
     open
+    delay 3
     set current view of container window to icon view
     set toolbar visible of container window to false
     set statusbar visible of container window to false
@@ -222,8 +224,12 @@ tell application "Finder"
     set label position of viewOptions to bottom
     set shows item info of viewOptions to false
     set shows icon preview of viewOptions to true
-    set position of item "${APP_NAME}.app" of container window to {$(to_applescript_pair "$DMG_APP_POS")}
-    set position of item "Applications" of container window to {$(to_applescript_pair "$DMG_APPS_POS")}
+    try
+      set position of item "${APP_BUNDLE_FILENAME}" of container window to {$(to_applescript_pair "$DMG_APP_POS")}
+    end try
+    try
+      set position of item "Applications" of container window to {$(to_applescript_pair "$DMG_APPS_POS")}
+    end try
     update without registering applications
     delay 2
     close
