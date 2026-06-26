@@ -1,6 +1,10 @@
 /**
  * v1.5.182: macOS pywebview 红黄绿窗口控制按钮
  *
+ * v1.5.220: Swift 原生 App 模式下隐藏此组件
+ * - pywebview 模式：HTML 自绘红黄绿按钮
+ * - Swift 原生 App 模式：使用系统自带红黄绿按钮（由 Swift WindowManager 控制）
+ *
  * 布局：透明悬浮于侧边栏左上角，与 Logo 同一行（参考 WorkBuddy 风格）
  * - 仅包含三个按钮，无背景条、无全宽覆盖
  * - 按钮区域可拖拽窗口（-webkit-app-region:drag）
@@ -10,6 +14,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box } from '@mui/material';
 import { callApi, isPyWebView } from '../../services/tencentDocsApi';
+
+// 检测是否在 Swift 原生 App 模式下
+// v1.5.220: Swift 端会注入 window.cdfAppNative.isNative = true
+const isNativeApp = (): boolean => {
+  // @ts-ignore
+  return !!(window.cdfAppNative && window.cdfAppNative.isNative);
+};
 
 // macOS 标准红黄绿按钮尺寸和位置（与 WorkBuddy 对齐）
 const BUTTON_SIZE = 12;     // 按钮直径 12px
@@ -23,6 +34,11 @@ const WindowDragBar: React.FC<{ height?: number }> = ({ height: _h }) => {
   const [ready, setReady] = useState(() => isPyWebView());
   const [windowState, setWindowState] = useState<WindowState>('normal');
   const [focused, setFocused] = useState(true);
+
+  // v1.5.220: Swift 原生 App 模式下不渲染 HTML 红黄绿按钮
+  if (isNativeApp()) {
+    return null;
+  }
 
   // 检测 pywebview 环境就绪
   useEffect(() => {

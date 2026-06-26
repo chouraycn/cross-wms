@@ -9,6 +9,7 @@ import type { AppSettings } from '../contexts/AppSettingsContext';
 import type { ModelConfig, ModelsConfig } from '../types/models';
 import type { Task } from '../types/task';
 import type { Project } from '../types/project';
+import type { Session } from '../types/chat';
 import type {
   Partner,
   PartnerOption,
@@ -791,4 +792,36 @@ export async function quickCreatePartner(
   data: QuickCreatePartnerPayload,
 ): Promise<PartnerOption> {
   return request<PartnerOption>('POST', '/api/partners/quick', data);
+}
+
+// ===================== Sessions API =====================
+
+export interface SessionListResponse {
+  sessions: Session[];
+}
+
+export async function getSessions(status?: 'active' | 'archived' | 'today', q?: string): Promise<Session[]> {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (q) params.set('q', q);
+  const query = params.toString();
+  const res = await request<SessionListResponse>('GET', `/api/sessions${query ? `?${query}` : ''}`);
+  return res.sessions;
+}
+
+export async function createSession(data?: { title?: string; model?: string; agentId?: string }): Promise<Session> {
+  return request<Session>('POST', '/api/sessions', data || {});
+}
+
+export async function deleteSession(id: string): Promise<void> {
+  await request<void>('DELETE', `/api/sessions/${id}`);
+}
+
+export async function updateSession(id: string, data: Partial<Session>): Promise<Session> {
+  return request<Session>('PUT', `/api/sessions/${id}`, data);
+}
+
+export async function getSessionMessages(id: string): Promise<any[]> {
+  const res = await request<{ messages: any[] }>('GET', `/api/sessions/${id}/messages`);
+  return res.messages;
 }

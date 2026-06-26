@@ -1,129 +1,545 @@
 /**
- * CDFChat 对话容器（轻量版）
+ * CDFChat 新版对话容器（基于 OpenClaw 事件驱动架构）
  *
- * - 消息列表（使用简单的 div 滚动，不引入 react-virtuoso）
- * - 新消息自动滚动到底部
- * - 输入区域（textarea + 发送按钮）
- * - 通过 useChatV2 hook 管理消息状态
- * - 纯 CSS + React，无 MUI 依赖
+ * 特性：
+ * - 沿用旧版chat (CrossWmsChat) 的MUI样式
+ * - 基于 OpenClaw 风格的 Agent 事件系统
+ * - 整合 Agent 身份系统（5 个预定义 Agent）
+ * - 整合 Skills 技能选择器
+ * - 整合 Session 会话引用
+ * - Item 活动流展示（工具调用、子任务进度等）
+ * - 消息列表（虚拟滚动）
+ * - 输入区域（技能"/"、会话引用"@"、附件）
  */
-import React, { useRef, useEffect, useCallback, useState, memo } from 'react';
-import type { MessageEnvelope } from '../../types/message-envelope.js';
-import MessageBubble from './MessageBubble.js';
-import { useChatV2 } from './useChatV2.js';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import {
+  Box, Typography, IconButton, Tooltip, useTheme, Collapse,
+  Paper, Chip, List, ListItem, ListItemText, CircularProgress,
+} from '@mui/material';
+import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import CdfLogoAnimation from '../../assets/cdf-logo-animation.svg';
+import { ChatMessageList } from '../CrossWmsChat/ChatMessageList.js';
+import { TopBarChatInput } from '../CrossWmsChat/TopBarChatInput.js';
+import type { Message } from '../../types/chat.js';
+import { getAllSkills } from '../../stores/skillStore';
+import type { Skill } from '../../types/skill.js';
+import { ICON_MAP } from '../../types/skill.js';
+import { getCategoryLabel, getCategoryGradient } from '../../constants/skillCategories';
+import { getGrayScale, CHAT_MAX_WIDTH } from '../../constants/theme.js';
+import { useToast } from '../../contexts/ToastContext.js';
+import { useChatSession } from '../../contexts/ChatContext.js';
+import type { AgentIdentity } from './AgentProfile.js';
+import { AGENT_SCENARIOS } from './AgentProfile.js';
+import type { AgentItemEventData } from '../../hooks/useAgentChat.js';
+import { useAgentChat } from '../../hooks/useAgentChat.js';
 
-interface Props {
+/** 从 URL 参数解析技能上下文 */
+function resolveSkillFromParams(skillId: string | null): Skill | null {
+  if (!skillId) return null;
+  return getAllSkills().find(s => s.id === skillId && s.status === 'active') ?? null;
+}
+
+export interface ChatThreadProps {
+  /** 布局变体：page=全屏独立页面, embedded=内嵌组件 */
+  variant?: 'page' | 'embedded';
   /** API 端点 */
   apiEndpoint?: string;
   /** 默认模型 */
   defaultModel?: string;
-  /** 是否深色模式 */
+  /** 暗色模式 */
   darkMode?: boolean;
-  /** 输入框占位符 */
+  /** 占位符文本 */
   placeholder?: string;
 }
 
-const ChatThread: React.FC<Props> = memo(function ChatThread({
-  apiEndpoint = '/api/chat/stream',
+/**
+ * Item 活动流组件 — 展示 Agent 执行过程中的活动
+ */
+const AgentActivityFeed: React.FC<{
+  items: AgentItemEventData[];
+  isDark: boolean;
+  gs: ReturnType<typeof getGrayScale>;
+}> = ({ items, isDark, gs }) => {
+  if (items.length === 0) return null;
+
+  const getStatusIcon = (status: AgentItemEventData['status']) => {
+    switch (status) {
+      case 'running':
+        return <CircularProgress size={14} sx={{ color: gs.textMuted }} />;
+      case 'completed':
+        return <CheckCircleOutlineIcon sx={{ fontSize: 14, color: '#22c55e' }} />;
+      case 'failed':
+        return <ErrorOutlineIcon sx={{ fontSize: 14, color: '#ef4444' }} />;
+      case 'blocked':
+        return <ErrorOutlineIcon sx={{ fontSize: 14, color: '#f59e0b' }} />;
+      default:
+        return <PlayCircleOutlineIcon sx={{ fontSize: 14, color: gs.textMuted }} />;
+    }
+  };
+
+  return (
+    <Box sx={{
+      maxWidth: CHAT_MAX_WIDTH,
+      mx: 'auto',
+      px: 3,
+      py: 1.5,
+      borderBottom: `1px solid ${gs.border}`,
+    }}>
+      <Typography sx={{
+        fontSize: '0.6875rem',
+        fontWeight: 500,
+        color: gs.textDisabled,
+        mb: 0.5,
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+      }}>
+        Agent 活动
+      </Typography>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+        {items.slice(0, 8).map((item) => (
+          <Chip
+            key={item.itemId}
+            icon={getStatusIcon(item.status)}
+            label={item.title}
+            size="small"
+            variant="outlined"
+            sx={{
+              fontSize: '0.7rem',
+              height: 24,
+              borderRadius: '12px',
+              borderColor: gs.border,
+              bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+              '& .MuiChip-icon': { ml: 0.5 },
+              '& .MuiChip-label': { px: 1 },
+            }}
+          />
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
+/**
+ * CDFChat 新版对话容器（基于 OpenClaw 事件驱动架构）
+ */
+export const ChatThread: React.FC<ChatThreadProps> = ({
+  variant = 'page',
+  apiEndpoint = '/api/agent-chat',
   defaultModel = '',
   darkMode = false,
   placeholder = '输入您的问题...',
-}) {
-  const { messages, state, sendMessage, stopGeneration, error } = useChatV2({
-    apiEndpoint,
-    defaultModel,
+}) => {
+  const isPage = variant === 'page';
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = useMemo(() => getGrayScale(isDark), [isDark]);
+  const { showToast } = useToast();
+
+  const {
+    session,
+    setActiveSessionId,
+    handleSessionUpdate,
+    updateSessionModel,
+    handleNewChat,
+  } = useChatSession();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const [currentAgent, setCurrentAgent] = useState<AgentIdentity>(
+    AGENT_SCENARIOS.find(a => a.isDefault) || AGENT_SCENARIOS[0]
+  );
+
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+
+  const [initialSkill, setInitialSkill] = useState<Skill | null>(() => {
+    if (!isPage) return null;
+    const skillId = searchParams.get('skill');
+    return resolveSkillFromParams(skillId);
   });
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [inputValue, setInputValue] = useState('');
+  const {
+    isLoading,
+    activeItems,
+    sendMessage,
+    stopGeneration,
+  } = useAgentChat(session, handleSessionUpdate);
 
-  // 自动滚动到底部
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  // 发送消息
-  const handleSend = useCallback(() => {
-    const trimmed = inputValue.trim();
-    if (!trimmed || state === 'streaming') return;
-    sendMessage(trimmed);
-    setInputValue('');
-  }, [inputValue, state, sendMessage]);
-
-  // 键盘事件：Enter 发送，Shift+Enter 换行
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSend();
+    if (!isPage) return;
+    const skillId = searchParams.get('skill');
+    if (skillId) {
+      const skill = resolveSkillFromParams(skillId);
+      if (skill) {
+        setInitialSkill(skill);
+        handleNewChat();
       }
-    },
-    [handleSend],
-  );
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, handleNewChat, isPage]);
 
-  const isStreaming = state === 'streaming';
+  useEffect(() => {
+    if (!isPage) return;
+    const sessionId = searchParams.get('session');
+    if (sessionId) {
+      setActiveSessionId(sessionId);
+    }
+  }, [searchParams, setActiveSessionId, isPage]);
+
+  useEffect(() => {
+    if (!isPage) return;
+    if (searchParams.has('session')) {
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, isPage]);
+
+  useEffect(() => {
+    if (!isPage) return;
+    const timer = setTimeout(() => {
+      const editable = document.querySelector('[contenteditable="true"]') as HTMLElement;
+      if (editable) editable.focus();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [isPage]);
+
+  const handleCopy = useCallback((msg: Message) => {
+    const doCopy = async () => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(msg.content);
+        } else {
+          const el = document.createElement('textarea');
+          el.value = msg.content;
+          el.style.position = 'fixed';
+          el.style.opacity = '0';
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+        }
+      } catch {
+        // 静默失败
+      }
+    };
+    doCopy();
+    setCopiedId(msg.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }, []);
+
+  const handleRegenerate = useCallback((msg: Message) => {
+    const currentSession = sessionRef.current;
+    const msgIndex = currentSession.messages.findIndex((m) => m.id === msg.id);
+    if (msgIndex === -1) return;
+
+    let userContent: string | null = null;
+    let userAttachments: Message['attachments'] = undefined;
+    let userModel: string | undefined;
+    for (let i = msgIndex - 1; i >= 0; i--) {
+      if (currentSession.messages[i].role === 'user') {
+        userContent = currentSession.messages[i].content;
+        userAttachments = currentSession.messages[i].attachments;
+        userModel = currentSession.messages[i].model;
+        break;
+      }
+    }
+    if (!userContent) return;
+
+    const trimmedMessages = currentSession.messages.slice(0, msgIndex);
+    const updatedSession = { ...currentSession, messages: trimmedMessages };
+    handleSessionUpdate(updatedSession);
+
+    setTimeout(() => {
+      sendMessage(userContent!, {
+        attachments: userAttachments,
+        model: userModel || currentSession.model,
+        agentId: currentAgent.id,
+      });
+    }, 100);
+  }, [handleSessionUpdate, sendMessage, currentAgent]);
+
+  const handleDelete = useCallback((msgId: string) => {
+    const currentSession = sessionRef.current;
+    const msgIndex = currentSession.messages.findIndex((m) => m.id === msgId);
+    if (msgIndex === -1) return;
+
+    const updatedMessages = currentSession.messages.filter((m) => m.id !== msgId);
+    handleSessionUpdate({ ...currentSession, messages: updatedMessages });
+    showToast('消息已删除', 'success', 1500);
+  }, [handleSessionUpdate, showToast]);
+
+  const handleEdit = useCallback((msg: Message) => {
+    if (msg.role === 'user') {
+      navigator.clipboard.writeText(msg.content).then(() => {
+        showToast('消息内容已复制，请粘贴到输入框', 'info', 2000);
+      }).catch(() => {
+        showToast('消息内容：' + msg.content.substring(0, 50) + '...', 'info', 3000);
+      });
+    } else {
+      navigator.clipboard.writeText(msg.content).then(() => {
+        showToast('AI 回复已复制', 'info', 2000);
+      }).catch(() => {
+        showToast('AI 回复内容已显示在通知中', 'info', 3000);
+      });
+    }
+  }, [showToast]);
+
+  const handleQuote = useCallback((msg: Message) => {
+    const quoteText = `> ${msg.role === 'user' ? '用户' : 'AI'}：${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`;
+    navigator.clipboard.writeText(quoteText).then(() => {
+      showToast('引用内容已复制，请粘贴到输入框', 'info', 2000);
+    }).catch(() => {
+      showToast('引用功能开发中', 'info', 2000);
+    });
+  }, [showToast]);
+
+  const handlePermissionRespond = useCallback((_reqId: string, _approved: boolean, _alwaysAllow?: boolean) => {
+    // Placeholder for permission response
+  }, []);
+
+  const handleConfirmReplenishment = useCallback(async (suggestionId: number) => {
+    try {
+      showToast(`补货建议 #${suggestionId} 已确认`, 'success', 2000);
+    } catch (e) {
+      throw new Error(
+        e instanceof Error ? e.message : '确认补货建议失败，请重试',
+      );
+    }
+  }, [showToast]);
+
+  const handleAgentChange = useCallback((agent: AgentIdentity) => {
+    setCurrentAgent(agent);
+    showToast(`已切换到 ${agent.name}`, 'info', 1500);
+  }, [showToast]);
+
+  useEffect(() => {
+    if (!isPage) return;
+    const focusInput = () => {
+      setTimeout(() => {
+        const editable = document.querySelector('[contenteditable="true"]') as HTMLElement;
+        if (editable) {
+          editable.focus();
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(editable);
+          range.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      }, 200);
+    };
+    const handleNavigateToChat = () => focusInput();
+    const handleFocusChat = () => focusInput();
+    window.addEventListener('cdf-know-clow-navigate-chat', handleNavigateToChat);
+    window.addEventListener('cdf-know-clow-focus-chat', handleFocusChat);
+    return () => {
+      window.removeEventListener('cdf-know-clow-navigate-chat', handleNavigateToChat);
+      window.removeEventListener('cdf-know-clow-focus-chat', handleFocusChat);
+    };
+  }, [isPage]);
+
+  const isEmpty = session.messages.length === 0;
+  const showActivityFeed = isLoading && activeItems.length > 0;
+
+  if (isPage) {
+    return (
+      <Box sx={{
+        height: 'calc(100vh - 40px - var(--pw-top, 0px))',
+        mx: -3,
+        mt: -2,
+        mb: -3,
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: gs.bgPanel,
+        overflow: 'hidden',
+      }}>
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          {isEmpty ? (
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <Box sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                px: 3,
+              }}>
+                {initialSkill ? (
+                  <>
+                    <Box sx={{
+                      width: 56, height: 56, borderRadius: '16px',
+                      background: getCategoryGradient(initialSkill.category),
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3,
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', '& .MuiSvgIcon-root': { fontSize: 28, color: '#fff' } }}>
+                        {ICON_MAP[initialSkill.icon]}
+                      </Box>
+                    </Box>
+                    <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: gs.textPrimary, mb: 0.5 }}>
+                      {initialSkill.name}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled, mb: 1 }}>
+                      {getCategoryLabel(initialSkill.category)}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted, textAlign: 'center', maxWidth: 400 }}>
+                      {initialSkill.desc}
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <Box sx={{
+                      width: 160, height: 56,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3,
+                      ml: '20px',
+                      filter: isDark ? 'invert(1)' : 'none',
+                    }}>
+                      <object
+                        data={CdfLogoAnimation}
+                        type="image/svg+xml"
+                        style={{ width: 140, height: 48, pointerEvents: 'none' }}
+                        aria-label="CDF Know Clow"
+                      />
+                    </Box>
+
+                    <Typography sx={{ fontSize: '1.25rem', fontWeight: 600, color: gs.textPrimary, mb: 1 }}>
+                      时刻可视，实时感知，尽在掌握
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted, textAlign: 'center', maxWidth: 400 }}>
+                      See anytime, know anytime
+                    </Typography>
+
+                    <Box sx={{ mt: 3, display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 500 }}>
+                      {AGENT_SCENARIOS.filter(a => !a.isDefault).slice(0, 4).map((agent) => (
+                        <Chip
+                          key={agent.id}
+                          label={agent.name}
+                          size="small"
+                          onClick={() => handleAgentChange(agent)}
+                          sx={{
+                            fontSize: '0.75rem',
+                            height: 28,
+                            borderRadius: '14px',
+                            cursor: 'pointer',
+                            bgcolor: currentAgent.id === agent.id
+                              ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)')
+                              : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'),
+                            borderColor: currentAgent.id === agent.id ? '#3b82f6' : gs.border,
+                            color: currentAgent.id === agent.id ? '#3b82f6' : gs.textSecondary,
+                            '&:hover': {
+                              bgcolor: isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(59, 130, 246, 0.15)',
+                            },
+                          }}
+                          variant="outlined"
+                        />
+                      ))}
+                    </Box>
+                  </>
+                )}
+              </Box>
+            </Box>
+          ) : (
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <Collapse in={showActivityFeed}>
+                <AgentActivityFeed items={activeItems} isDark={isDark} gs={gs} />
+              </Collapse>
+
+              <ChatMessageList
+                session={session}
+                copiedId={copiedId}
+                onCopy={handleCopy}
+                onRegenerate={handleRegenerate}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onQuote={handleQuote}
+                onPermissionRespond={handlePermissionRespond}
+              />
+            </Box>
+          )}
+
+          <Box sx={{ px: 3, py: 2, flexShrink: 0, borderTop: 'none' }}>
+            <Box sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', position: 'relative' }}>
+              <TopBarChatInput
+                isEmpty={session.messages.length === 0}
+                updateSessionModel={updateSessionModel}
+                initialSkill={initialSkill}
+                isLoading={isLoading}
+                sendMessage={sendMessage}
+                stopGeneration={stopGeneration}
+              />
+              <Collapse in={session.messages.length === 0} timeout={300}>
+                <Typography sx={{ fontSize: '0.6875rem', color: gs.textDisabled, textAlign: 'center', pt: 0.5 }}>
+                  内容由AI生成，请核实重要信息
+                </Typography>
+              </Collapse>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
-    <div className={`cdf-thread ${darkMode ? 'cdf-dark' : ''}`}>
-      {/* 错误提示 */}
-      {error && (
-        <div className="cdf-error-bar">
-          <span className="cdf-error-bar__text">{error}</span>
-          <button
-            className="cdf-error-bar__close"
-            onClick={() => {/* error 会在下次发送时清除 */}}
+    <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', px: 2, py: 0.5 }}>
+        <Tooltip title="新对话">
+          <IconButton
+            size="small"
+            onClick={handleNewChat}
+            sx={{ color: gs.textDisabled, '&:hover': { color: gs.textSecondary, backgroundColor: gs.bgHover } }}
           >
-            &#10005;
-          </button>
-        </div>
+            <AddCommentOutlinedIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      <Collapse in={showActivityFeed}>
+        <AgentActivityFeed items={activeItems} isDark={isDark} gs={gs} />
+      </Collapse>
+
+      {session.messages.length > 0 && (
+        <ChatMessageList
+          session={session}
+          copiedId={copiedId}
+          onCopy={handleCopy}
+          onRegenerate={handleRegenerate}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onQuote={handleQuote}
+          showRegenerate={true}
+          onConfirmReplenishment={handleConfirmReplenishment}
+          maxHeight="calc(70vh - 130px)"
+        />
       )}
 
-      {/* 消息列表 */}
-      <div className="cdf-thread__list" ref={scrollRef}>
-        {messages.length === 0 ? (
-          <div className="cdf-empty">
-            <div className="cdf-empty__icon">&#128172;</div>
-            <div className="cdf-empty__title">开始一段新的对话</div>
-            <div className="cdf-empty__desc">输入您的问题，我将为您提供智能回答</div>
-          </div>
-        ) : (
-          messages.map(msg => (
-            <MessageBubble key={msg.id} msg={msg} darkMode={darkMode} />
-          ))
-        )}
-      </div>
+      <Box sx={{ position: 'relative', flexShrink: 0 }}>
+        <TopBarChatInput
+          isEmpty={session.messages.length === 0}
+          updateSessionModel={updateSessionModel}
+          isLoading={isLoading}
+          sendMessage={sendMessage}
+          stopGeneration={stopGeneration}
+        />
+      </Box>
 
-      {/* 输入区域 */}
-      <div className="cdf-input-area">
-        <div className="cdf-input-area__inner">
-          <textarea
-            className="cdf-input-area__textarea"
-            value={inputValue}
-            onChange={e => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            disabled={isStreaming}
-            rows={1}
-          />
-          {isStreaming ? (
-            <button className="cdf-input-area__btn cdf-input-area__btn--stop" onClick={stopGeneration}>
-              &#9632; 停止
-            </button>
-          ) : (
-            <button
-              className="cdf-input-area__btn cdf-input-area__btn--send"
-              onClick={handleSend}
-              disabled={!inputValue.trim()}
-            >
-              &#10148; 发送
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+      <Collapse in={session.messages.length === 0} timeout={300}>
+        <Typography
+          sx={{
+            fontSize: '0.6875rem',
+            color: gs.textDisabled,
+            textAlign: 'center',
+            py: 0.5,
+            flexShrink: 0,
+          }}
+        >
+          内容由AI生成，请核实重要信息
+        </Typography>
+      </Collapse>
+    </Box>
   );
-});
+};
 
 export default ChatThread;

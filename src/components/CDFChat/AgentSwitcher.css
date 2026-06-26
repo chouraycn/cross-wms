@@ -1,0 +1,450 @@
+/**
+ * Agent 切换器样式
+ * 包含 Agent 头像、选择器弹出面板、场景推荐卡片样式
+ */
+
+/* ===================== Agent 头像 ===================== */
+
+.cdf-agent-avatar {
+  user-select: none;
+}
+
+.cdf-agent-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ===================== Agent 切换器 ===================== */
+
+.cdf-agent-switcher {
+  position: relative;
+  font-family: var(--cdf-font);
+}
+
+/* 触发按钮 */
+.cdf-agent-switcher__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--cdf-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--cdf-text-primary);
+  font-size: 13px;
+  font-family: var(--cdf-font);
+  font-weight: 500;
+}
+
+.cdf-agent-switcher__trigger:hover:not(:disabled) {
+  background: var(--cdf-bg-hover);
+  border-color: var(--cdf-border-darker);
+}
+
+.cdf-agent-switcher__trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cdf-agent-switcher__trigger-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cdf-agent-switcher__trigger-arrow {
+  color: var(--cdf-text-muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.cdf-agent-switcher__trigger-arrow--open {
+  transform: rotate(180deg);
+}
+
+/* 弹出面板 */
+.cdf-agent-switcher__panel {
+  position: fixed;
+  background: var(--cdf-bg-panel);
+  border: 1px solid var(--cdf-border);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 480px;
+}
+
+/* 搜索框 */
+.cdf-agent-switcher__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--cdf-border);
+  color: var(--cdf-text-muted);
+  flex-shrink: 0;
+}
+
+.cdf-agent-switcher__search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--cdf-font);
+  font-size: 13px;
+  color: var(--cdf-text-primary);
+  min-width: 0;
+}
+
+.cdf-agent-switcher__search-input::placeholder {
+  color: var(--cdf-text-disabled);
+}
+
+.cdf-agent-switcher__search-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--cdf-text-disabled);
+  font-size: 16px;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.cdf-agent-switcher__search-clear:hover {
+  color: var(--cdf-text-primary);
+  background: var(--cdf-bg-hover);
+}
+
+/* 列表区域 */
+.cdf-agent-switcher__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.cdf-agent-switcher__list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cdf-agent-switcher__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cdf-agent-switcher__list::-webkit-scrollbar-thumb {
+  background: var(--cdf-border-darker);
+  border-radius: 3px;
+}
+
+.cdf-agent-switcher__list::-webkit-scrollbar-thumb:hover {
+  background: var(--cdf-text-disabled);
+}
+
+/* 分组标题 */
+.cdf-agent-switcher__section-title {
+  padding: 8px 14px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cdf-text-muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Agent 项 */
+.cdf-agent-switcher__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 2px 6px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border: none;
+  background: transparent;
+  width: calc(100% - 12px);
+  text-align: left;
+  font-family: var(--cdf-font);
+}
+
+.cdf-agent-switcher__item:hover:not(.cdf-agent-switcher__item--disabled) {
+  background: var(--cdf-bg-hover);
+}
+
+.cdf-agent-switcher__item--selected {
+  background: #FFF7ED;
+}
+
+.cdf-agent-switcher__item--selected:hover {
+  background: #FFF7ED;
+}
+
+.cdf-agent-switcher__item--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cdf-agent-switcher__item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cdf-agent-switcher__item-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+  flex-wrap: wrap;
+}
+
+.cdf-agent-switcher__item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cdf-text-primary);
+}
+
+.cdf-agent-switcher__item--selected .cdf-agent-switcher__item-name {
+  color: #F97316;
+}
+
+.cdf-agent-switcher__item-role {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.cdf-agent-switcher__item-default {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #FEF3C7;
+  color: #D97706;
+  flex-shrink: 0;
+}
+
+.cdf-agent-switcher__item-disabled-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--cdf-bg-hover);
+  color: var(--cdf-text-disabled);
+  flex-shrink: 0;
+}
+
+.cdf-agent-switcher__item-desc {
+  font-size: 12px;
+  color: var(--cdf-text-muted);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cdf-agent-switcher__item-caps {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.cdf-agent-switcher__item-cap {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(107, 114, 128, 0.08);
+  color: var(--cdf-text-muted);
+}
+
+.cdf-agent-switcher__item-cap-more {
+  font-size: 10px;
+  color: var(--cdf-text-disabled);
+}
+
+.cdf-agent-switcher__item-check {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* 空状态 */
+.cdf-agent-switcher__empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--cdf-text-muted);
+  font-size: 13px;
+}
+
+.cdf-agent-switcher__empty-hint {
+  font-size: 12px;
+  color: var(--cdf-text-disabled);
+  margin-top: 4px;
+}
+
+/* 底部操作 */
+.cdf-agent-switcher__footer {
+  padding: 8px;
+  border-top: 1px solid var(--cdf-border);
+  flex-shrink: 0;
+}
+
+.cdf-agent-switcher__manage-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--cdf-text-muted);
+  font-size: 13px;
+  font-family: var(--cdf-font);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cdf-agent-switcher__manage-btn:hover {
+  background: var(--cdf-bg-hover);
+  color: var(--cdf-text-primary);
+}
+
+/* 快捷键提示 */
+.cdf-agent-switcher__hint {
+  padding: 8px 14px;
+  font-size: 11px;
+  color: var(--cdf-text-disabled);
+  text-align: center;
+  border-top: 1px solid var(--cdf-border-lighter);
+  flex-shrink: 0;
+}
+
+.cdf-agent-switcher__hint kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--cdf-bg-hover);
+  border: 1px solid var(--cdf-border);
+  font-size: 10px;
+  font-family: var(--cdf-mono);
+  margin: 0 2px;
+}
+
+/* ===================== 场景推荐卡片 ===================== */
+
+.cdf-scenario-matcher {
+  background: var(--cdf-bg-panel);
+  border: 1px solid var(--cdf-border);
+  border-radius: 12px;
+  padding: 12px;
+  font-family: var(--cdf-font);
+  margin: 8px 0;
+}
+
+.cdf-scenario-matcher__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cdf-text-muted);
+  margin-bottom: 8px;
+}
+
+.cdf-scenario-matcher__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cdf-scenario-matcher__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  text-align: left;
+  font-family: var(--cdf-font);
+}
+
+.cdf-scenario-matcher__item:hover {
+  background: var(--cdf-bg-hover);
+}
+
+.cdf-scenario-matcher__item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cdf-scenario-matcher__item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cdf-text-primary);
+}
+
+.cdf-scenario-matcher__item-reason {
+  font-size: 11px;
+  color: var(--cdf-text-muted);
+}
+
+.cdf-scenario-matcher__item-arrow {
+  color: var(--cdf-text-disabled);
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.cdf-scenario-matcher__item:hover .cdf-scenario-matcher__item-arrow {
+  color: #F97316;
+  transform: translateX(2px);
+}
+
+/* ===================== 深色模式适配 ===================== */
+
+.cdf-dark .cdf-agent-switcher__trigger {
+  border-color: var(--cdf-border);
+}
+
+.cdf-dark .cdf-agent-switcher__trigger:hover:not(:disabled) {
+  border-color: var(--cdf-border-darker);
+}
+
+.cdf-dark .cdf-agent-switcher__panel {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.cdf-dark .cdf-agent-switcher__item--selected {
+  background: rgba(249, 115, 22, 0.15);
+}
+
+.cdf-dark .cdf-agent-switcher__item--selected:hover {
+  background: rgba(249, 115, 22, 0.15);
+}
+
+.cdf-dark .cdf-scenario-matcher__item:hover {
+  background: var(--cdf-bg-hover);
+}
+
+.cdf-dark .cdf-agent-switcher__search-clear:hover {
+  background: var(--cdf-bg-active);
+}
+
+.cdf-dark .cdf-agent-switcher__manage-btn:hover {
+  background: var(--cdf-bg-hover);
+}

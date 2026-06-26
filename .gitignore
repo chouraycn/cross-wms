@@ -43,6 +43,10 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# OpenClaw embedded copy (use workspace dependency instead)
+openclaw/
+openclow-ai-computer-control/
+
 # Misc
 version.txt
 
@@ -79,3 +83,10 @@ test-app/
 test-electron.cjs
 test-main.cjs
 dist-server/
+
+# Desktop app build artifacts
+dist-app/
+apps/macos/
+
+# Package lock (using pnpm workspace now)
+package-lock.json
