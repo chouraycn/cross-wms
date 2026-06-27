@@ -63,6 +63,7 @@ export interface AgentItemEventData {
   toolCallId?: string;
   startedAt?: number;
   endedAt?: number;
+  durationMs?: number;
   error?: string;
   summary?: string;
   progressText?: string;

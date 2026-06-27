@@ -5,7 +5,7 @@
 // 适用于语义检索与高精度相似度匹配。
 // ============================================================================
 
-import type { IStorageEngine, IPreparedStatement } from 'server/storage/StorageEngine';
+import type { IStorageEngine, IPreparedStatement } from '../StorageEngine.js';
 
 /**
  * Qdrant 向量数据库存储引擎适配器。

@@ -16,6 +16,9 @@ import {
   getBuiltinModels,
   isLocalModel,
   deleteModelConfig,
+  getRecommendedModels,
+  getRecommendedModelById,
+  isFirstLaunch,
 } from '../modelsStore.js';
 
 const router = Router();
@@ -536,6 +539,103 @@ router.post('/test-connection', async (req: Request, res: Response) => {
     }
   } catch (e) {
     res.status(500).json({ success: false, message: (e as Error).message });
+  }
+});
+
+// GET /api/models/recommended — 获取推荐模型列表
+router.get('/recommended', async (_req: Request, res: Response) => {
+  try {
+    const recommended = getRecommendedModels();
+    const sanitized = recommended.map((m) => {
+      const { apiKey, apiKeys, ...rest } = m as any;
+      return rest;
+    });
+    res.json({ data: sanitized });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// GET /api/models/is-first-launch — 检测是否为首次启动（模型列表为空）
+router.get('/is-first-launch', async (_req: Request, res: Response) => {
+  try {
+    const firstLaunch = await isFirstLaunch();
+    res.json({ data: { isFirstLaunch: firstLaunch } });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// POST /api/models/recommended/:id — 添加单个推荐模型
+router.post('/recommended/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const recommendedModel = getRecommendedModelById(id);
+    if (!recommendedModel) {
+      res.status(404).json({ error: `推荐模型 "${id}" 不存在` });
+      return;
+    }
+
+    const currentConfig = await loadModelsConfig();
+    const existingIds = new Set(currentConfig.models.map((m) => m.id));
+
+    if (existingIds.has(id)) {
+      res.status(409).json({ error: `模型 "${id}" 已存在` });
+      return;
+    }
+
+    const newModel = { ...recommendedModel };
+    const updatedModels = [...currentConfig.models, newModel];
+    const newDefaultModelId = currentConfig.defaultModelId || newModel.id;
+
+    const config = await saveModelsConfig(updatedModels, newDefaultModelId);
+    const sanitized = {
+      ...config,
+      models: config.models.map((m) => {
+        const { apiKey, apiKeys, ...rest } = m as any;
+        return rest;
+      }),
+    };
+    res.json({ data: sanitized });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// POST /api/models/add-recommended — 一键添加所有推荐模型
+router.post('/add-recommended', async (_req: Request, res: Response) => {
+  try {
+    const currentConfig = await loadModelsConfig();
+    const existingIds = new Set(currentConfig.models.map((m) => m.id));
+    const recommended = getRecommendedModels();
+
+    const modelsToAdd = recommended.filter((m) => !existingIds.has(m.id));
+    if (modelsToAdd.length === 0) {
+      const sanitized = {
+        ...currentConfig,
+        models: currentConfig.models.map((m) => {
+          const { apiKey, apiKeys, ...rest } = m as any;
+          return rest;
+        }),
+      };
+      res.json({ data: sanitized, added: 0, message: '所有推荐模型已存在' });
+      return;
+    }
+
+    const updatedModels = [...currentConfig.models, ...modelsToAdd];
+    const newDefaultModelId = currentConfig.defaultModelId || modelsToAdd[0].id;
+
+    const config = await saveModelsConfig(updatedModels, newDefaultModelId);
+    const sanitized = {
+      ...config,
+      models: config.models.map((m) => {
+        const { apiKey, apiKeys, ...rest } = m as any;
+        return rest;
+      }),
+    };
+    res.json({ data: sanitized, added: modelsToAdd.length, message: `成功添加 ${modelsToAdd.length} 个推荐模型` });
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message });
   }
 });
 

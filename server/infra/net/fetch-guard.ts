@@ -189,7 +189,8 @@ export async function fetchWithSsrFGuard(
   const hostname = parsedUrl.hostname;
   const isHttps = parsedUrl.protocol === 'https:';
 
-  const resolution = await resolveHostname(hostname);
+  const dnsTimeout = Math.min(timeoutMs * 0.3, 10000);
+  const resolution = await resolveHostname(hostname, dnsTimeout);
 
   const ssrfResult = checkSsrf(hostname, resolution.allAddresses, policy);
   if (!ssrfResult.allowed) {
@@ -205,8 +206,6 @@ export async function fetchWithSsrFGuard(
   if (!pinnedIp) {
     throw new Error('DNS 解析未返回任何 IP 地址');
   }
-
-  const agent = createPinnedAgent(hostname, pinnedIp, isHttps);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
@@ -224,13 +223,6 @@ export async function fetchWithSsrFGuard(
       headers,
       signal: controller.signal,
       redirect: 'follow',
-      // @ts-expect-error - Node.js fetch 支持 dispatcher 选项
-      dispatcher: isHttps
-        ? {
-            // 对于 HTTPS，我们使用自定义 lookup 来实现 IP 钉扎
-            // 这里通过 agent 方式在 Node.js 环境中工作
-          }
-        : undefined,
     });
 
     const contentLength = response.headers.get('content-length');
@@ -300,7 +292,7 @@ export async function fetchWithSsrFGuard(
       finalUrl: response.url,
       resolution,
       release: () => {
-        agent.destroy();
+        // no-op: 资源由 GC 自动管理
       },
     };
   } catch (error) {

@@ -155,7 +155,6 @@ export class SemanticCompressor {
       undefined,
       undefined,
       undefined,
-      'low',
       modelConfig.capabilities,
     );
 

@@ -5,9 +5,9 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>CDFKnow</string>
+    <string>CDFKnowClow</string>
     <key>CFBundleIdentifier</key>
-    <string>ai.cdfknow.mac</string>
+    <string>com.cdf.knowclow.desktop</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
@@ -19,7 +19,7 @@
     <key>CFBundleVersion</key>
     <string>2026060900</string>
     <key>CFBundleIconFile</key>
-    <string>CDFKnow</string>
+    <string>AppIcon</string>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
@@ -34,7 +34,7 @@
     <key>LSMinimumSystemVersion</key>
     <string>15.0</string>
     <key>LSUIElement</key>
-    <true/>
+    <false/>
 
     <key>CDFKnowBuildTimestamp</key>
     <string></string>

@@ -75,7 +75,7 @@ export class ChannelHealthMonitor extends EventEmitter {
   private checkTimers: Map<ChannelType, NodeJS.Timeout> = new Map();
   private sseClients: Set<{
     write: (data: string) => void;
-    destroy: () => void;
+    destroy?: () => void;
   }> = new Set();
   private globalInterval: NodeJS.Timeout | null = null;
 
@@ -131,6 +131,7 @@ export class ChannelHealthMonitor extends EventEmitter {
     this.emitEvent({
       type: 'config_change',
       channel: type,
+      timestamp: Date.now(),
       details: { previous: previousConfig, current: health.config },
     });
   }
@@ -215,6 +216,7 @@ export class ChannelHealthMonitor extends EventEmitter {
           channel: type,
           previousStatus,
           currentStatus: 'healthy',
+          timestamp: Date.now(),
         });
       }
 
@@ -239,6 +241,7 @@ export class ChannelHealthMonitor extends EventEmitter {
             channel: type,
             previousStatus,
             currentStatus: 'unhealthy',
+            timestamp: Date.now(),
             details: { consecutiveFailures: health.consecutiveFailures },
           });
         }
@@ -250,6 +253,7 @@ export class ChannelHealthMonitor extends EventEmitter {
             channel: type,
             previousStatus,
             currentStatus: 'degraded',
+            timestamp: Date.now(),
           });
         }
       }
@@ -476,7 +480,7 @@ export class ChannelHealthMonitor extends EventEmitter {
   /**
    * 注册 SSE 客户端
    */
-  addSSEClient(client: { write: (data: string) => void; destroy: () => void }): () => void {
+  addSSEClient(client: { write: (data: string) => void; destroy?: () => void }): () => void {
     this.sseClients.add(client);
 
     // 立即发送当前状态
@@ -514,11 +518,11 @@ export class ChannelHealthMonitor extends EventEmitter {
   /**
    * 发送数据给单个客户端
    */
-  private emitToClient(client: { write: (data: string) => void }, data: unknown): void {
+  private emitToClient(client: { write: (data: string) => void; destroy?: () => void }, data: unknown): void {
     try {
       client.write(`data: ${JSON.stringify(data)}\n\n`);
     } catch {
-      this.sseClients.delete(client as typeof client & { destroy?: () => void });
+      this.sseClients.delete(client);
     }
   }
 

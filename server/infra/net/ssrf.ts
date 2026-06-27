@@ -272,10 +272,11 @@ export interface DnsResolutionResult {
  * 用于 SSRF 防护时，需要检查所有解析到的 IP 是否都在允许范围内。
  *
  * @param hostname - 主机名
+ * @param timeoutMs - 超时时间（毫秒），默认 5000ms
  * @returns 解析结果
- * @throws 如果解析失败
+ * @throws 如果解析失败或超时
  */
-export async function resolveHostname(hostname: string): Promise<DnsResolutionResult> {
+export async function resolveHostname(hostname: string, timeoutMs: number = 5000): Promise<DnsResolutionResult> {
   const trimmedHostname = hostname.trim().toLowerCase();
 
   if (isIPv4(trimmedHostname) || isIPv6(trimmedHostname)) {
@@ -288,35 +289,54 @@ export async function resolveHostname(hostname: string): Promise<DnsResolutionRe
     };
   }
 
-  const [ipv4Result, ipv6Result] = await Promise.allSettled([
-    resolve4(trimmedHostname),
-    resolve6(trimmedHostname),
-  ]);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const ipv4Addresses = ipv4Result.status === 'fulfilled' ? ipv4Result.value : [];
-  const ipv6Addresses = ipv6Result.status === 'fulfilled' ? ipv6Result.value : [];
+  try {
+    const ipv4Promise = resolve4(trimmedHostname);
+    const ipv6Promise = resolve6(trimmedHostname);
 
-  const allAddresses = [...ipv4Addresses, ...ipv6Addresses];
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      controller.signal.addEventListener('abort', () => {
+        reject(new Error(`DNS 解析超时（${timeoutMs}ms）`));
+      }, { once: true });
+    });
 
-  if (allAddresses.length === 0) {
-    const error =
-      ipv4Result.status === 'rejected'
-        ? ipv4Result.reason
-        : ipv6Result.status === 'rejected'
-          ? ipv6Result.reason
-          : new Error('DNS 解析返回空结果');
+    const [ipv4Result, ipv6Result] = await Promise.allSettled([
+      Promise.race([ipv4Promise, timeoutPromise]),
+      Promise.race([ipv6Promise, timeoutPromise]),
+    ]);
 
-    logger.warn('[SSRF] DNS 解析失败:', trimmedHostname, error instanceof Error ? error.message : String(error));
-    throw new Error(`DNS 解析失败: ${trimmedHostname}`);
+    clearTimeout(timeoutId);
+
+    const ipv4Addresses = ipv4Result.status === 'fulfilled' ? ipv4Result.value : [];
+    const ipv6Addresses = ipv6Result.status === 'fulfilled' ? ipv6Result.value : [];
+
+    const allAddresses = [...ipv4Addresses, ...ipv6Addresses];
+
+    if (allAddresses.length === 0) {
+      const error =
+        ipv4Result.status === 'rejected'
+          ? ipv4Result.reason
+          : ipv6Result.status === 'rejected'
+            ? ipv6Result.reason
+            : new Error('DNS 解析返回空结果');
+
+      logger.warn('[SSRF] DNS 解析失败:', trimmedHostname, error instanceof Error ? error.message : String(error));
+      throw new Error(`DNS 解析失败: ${trimmedHostname}`);
+    }
+
+    return {
+      hostname: trimmedHostname,
+      ipv4Addresses,
+      ipv6Addresses,
+      allAddresses,
+      resolvedAt: Date.now(),
+    };
+  } catch (e) {
+    clearTimeout(timeoutId);
+    throw e;
   }
-
-  return {
-    hostname: trimmedHostname,
-    ipv4Addresses,
-    ipv6Addresses,
-    allAddresses,
-    resolvedAt: Date.now(),
-  };
 }
 
 // ===================== 白名单检查 =====================

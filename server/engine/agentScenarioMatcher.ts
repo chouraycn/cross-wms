@@ -505,5 +505,3 @@ class AgentScenarioMatcher {
 
 /** AgentScenarioMatcher 单例 */
 export const agentScenarioMatcher = new AgentScenarioMatcher();
-
-export type { MatchResult, ExtractedIntent, RecommendedScenario };

@@ -545,6 +545,17 @@ async function executeQueuedMessage(
       effectiveMode = ExecutionStrategyFactory.getDefaultMode();
     }
 
+    const callbacks: ExecuteChatCallbacks = {
+      onRateLimit: async () => {
+        const nextKey = selectKey(modelConfig);
+        if (nextKey) {
+          logger.debug(`[MessageQueue] 429 速率限制，切换到备用 Key #${nextKey.index}`);
+          return { apiKey: nextKey.key, keyIndex: nextKey.index };
+        }
+        return null;
+      },
+    };
+
     // 调用统一执行器
     const result = await streamExecuteChat({
       sessionId,
@@ -562,6 +573,7 @@ async function executeQueuedMessage(
       ctxMaxTokens,
       estimatedToolsCount: 30,
       fromQueue: true,
+      callbacks,
     });
 
     // 保存助手消息到 DB

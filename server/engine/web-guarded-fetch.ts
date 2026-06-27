@@ -431,7 +431,7 @@ export async function isWebToolsUrlAllowed(
 
     const { resolveHostname, checkSsrf } = await import('../infra/net/ssrf.js');
     const parsed = new URL(url);
-    const resolution = await resolveHostname(parsed.hostname);
+    const resolution = await resolveHostname(parsed.hostname, 5000);
     const result = checkSsrf(parsed.hostname, resolution.allAddresses, options.policy || DEFAULT_SSRF_POLICY);
 
     return {

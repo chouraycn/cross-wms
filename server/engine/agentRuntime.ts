@@ -35,7 +35,6 @@ import type { ToolExecutionResult } from './toolExecutor.js';
 import { enhanceInBackground, type EnhancementResult } from './contextEnhancer.js';
 import { logger } from '../logger.js';
 import type { ModelCallConfig, MessageContent, ToolCall, AIResponse } from '../aiClient.js';
-import type { SendMessageRequest } from '../routes/chatService.js';
 
 // ===================== 类型定义 =====================
 
@@ -217,34 +216,50 @@ async function executeWithStrategy(
 ): Promise<Omit<AgentRunResult, 'runId'>> {
   const callbacks = createRunCallbacks(runId, params.sessionKey);
 
-  const strategy = ExecutionStrategyFactory.createStrategy(params.executionMode);
+  const strategy = ExecutionStrategyFactory.create(params.executionMode);
   const strategyOptions: ExecutionStrategyOptions = {
     sessionId: params.sessionId,
-    message: params.message,
-    model: params.model,
-    modelName: params.modelName,
     modelConfig: params.modelConfig,
-    apiMessages: params.apiMessages,
-    res: null as unknown as Response,
+    messages: params.apiMessages,
+    maxToolTurns: 10,
     executionMode: params.executionMode,
-    skillContext: params.skillContext,
-    skillId: params.skillId,
     signal,
-    callbacks,
+    onChunk: callbacks.onChunk,
+    onThinking: callbacks.onThinking,
+    onToolCall: callbacks.onToolCall,
+    onSSEEvent: callbacks.onSSEEvent,
+    onAgentStart: callbacks.onAgentStart,
+    onAgentEnd: callbacks.onAgentEnd,
+    onSubtaskCreate: callbacks.onSubtaskCreate,
+    onSubtaskComplete: callbacks.onSubtaskComplete,
   };
 
   const result = await strategy.execute(strategyOptions);
 
+  const thinkingContent = '';
+  const hasThinking = false;
+  const thinkingDuration = 0;
+
+  const enhancement = await enhanceInBackground({
+    messages: params.apiMessages,
+    userMessage: params.message,
+    sessionId: params.sessionId,
+    modelConfig: params.modelConfig,
+    ctxWindow: 128000,
+    ctxMaxTokens: 8192,
+    estimatedToolsCount: 30,
+  }).catch(() => ({}));
+
   return {
     content: result.content,
-    thinkingContent: result.thinkingContent,
-    hasThinking: result.hasThinking,
-    thinkingDuration: result.thinkingDuration,
+    thinkingContent,
+    hasThinking,
+    thinkingDuration,
     toolCalls: result.toolCalls,
-    usage: result.usage,
-    enhancement: result.enhancement,
-    fallbackModel: result.fallbackModel,
-    fallbackReason: result.fallbackReason,
+    usage: undefined,
+    enhancement,
+    fallbackModel: undefined,
+    fallbackReason: undefined,
   };
 }
 

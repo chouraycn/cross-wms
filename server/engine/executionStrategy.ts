@@ -43,6 +43,10 @@ export interface ExecutionStrategyOptions extends ToolExecutorOptions {
   onSSEEvent?: (event: Record<string, unknown>) => void;
   /** v5.0: 预算配置（传递给 ReActExecutor） */
   budgetConfig?: Partial<BudgetConfig>;
+  /** v8.2: 权限请求回调 */
+  onPermissionRequest?: (toolName: string, toolArgs: Record<string, unknown>) => Promise<boolean> | boolean;
+  /** v9.0: 已授权工具缓存 */
+  approvedToolsCache?: Set<string>;
 }
 
 // ===================== 策略接口 =====================
@@ -115,7 +119,18 @@ export class ReactStrategy implements IExecutionStrategy {
       };
     } catch (error) {
       // 降级：ReAct 失败 → Legacy
-      logger.error('[ReActStrategy] 执行失败，降级为 Legacy:', error instanceof Error ? error.message : String(error));
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logger.error('[ReActStrategy] 执行失败，降级为 Legacy:', errorMsg);
+
+      // 发送 SSE 事件通知前端执行策略切换
+      options.onSSEEvent?.({
+        type: 'strategy_fallback',
+        from: 'react',
+        to: 'legacy',
+        reason: errorMsg,
+        message: '执行遇到问题，已切换到轻量模式重试',
+      });
+
       return new LegacyStrategy().execute(options);
     }
   }
@@ -149,7 +164,18 @@ export class AgentStrategy implements IExecutionStrategy {
       };
     } catch (error) {
       // 降级：Agent 编排失败 → ReAct
-      logger.error('[AgentStrategy] 编排失败，降级为 ReAct:', error instanceof Error ? error.message : String(error));
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logger.error('[AgentStrategy] 编排失败，降级为 ReAct:', errorMsg);
+
+      // 发送 SSE 事件通知前端执行策略切换
+      options.onSSEEvent?.({
+        type: 'strategy_fallback',
+        from: 'agent',
+        to: 'react',
+        reason: errorMsg,
+        message: '复杂任务执行遇到问题，已简化处理',
+      });
+
       return new ReactStrategy().execute(options);
     }
   }

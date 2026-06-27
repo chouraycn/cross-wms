@@ -1,7 +1,7 @@
 /**
  * Brave Web Search Provider — Brave 搜索 Provider 实现
  *
- * 基于 Brave Search API 的隐私保护搜索 Provider。
+ * 基于 Brave Search API 的搜索 Provider。
  */
 
 import type {
@@ -20,7 +20,7 @@ interface CacheEntry {
   timestamp: number;
 }
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 10 * 60 * 1000;
 const MAX_CACHE_SIZE = 200;
 const cache = new Map<string, CacheEntry>();
 
@@ -28,11 +28,10 @@ function getCacheKey(
   query: string,
   count: number,
   country: string,
-  language: string,
-  freshness: string,
-  safe_search: string,
+  search_lang: string,
+  safesearch: string,
 ): string {
-  return `${query.toLowerCase()}:${count}:${country}:${language}:${freshness}:${safe_search}`;
+  return `${query.toLowerCase()}:${count}:${country}:${search_lang}:${safesearch}`;
 }
 
 function getFromCache(key: string): WebSearchResultList | null {
@@ -91,13 +90,12 @@ async function performSearch(
   apiKey: string,
   query: string,
   count: number,
-  country?: string,
-  language?: string,
-  freshness?: string,
-  safe_search?: string,
+  country: string,
+  search_lang: string,
+  safesearch: string,
   signal?: AbortSignal,
 ): Promise<WebSearchResultList> {
-  const cacheKey = getCacheKey(query, count, country || "", language || "", freshness || "", safe_search || "");
+  const cacheKey = getCacheKey(query, count, country, search_lang, safesearch);
   const cached = getFromCache(cacheKey);
   if (cached) {
     return cached;
@@ -110,21 +108,19 @@ async function performSearch(
   signal?.addEventListener("abort", abortHandler);
 
   try {
-    const params = new URLSearchParams();
-    params.set("q", query);
-    params.set("count", String(count));
+    const params = new URLSearchParams({
+      q: query,
+      count: String(count),
+    });
 
-    if (country) {
+    if (country && country !== "ALL") {
       params.set("country", country);
     }
-    if (language) {
-      params.set("search_lang", language);
+    if (search_lang) {
+      params.set("search_lang", search_lang);
     }
-    if (freshness) {
-      params.set("freshness", freshness);
-    }
-    if (safe_search) {
-      params.set("safesearch", safe_search);
+    if (safesearch && safesearch !== "moderate") {
+      params.set("safesearch", safesearch);
     }
 
     const url = `https://api.search.brave.com/res/v1/web/search?${params.toString()}`;
@@ -176,8 +172,8 @@ async function performSearch(
 function normalizeResults(data: Record<string, unknown>): WebSearchResult[] {
   const results: WebSearchResult[] = [];
 
-  const web = data.web as Record<string, unknown> | undefined;
-  const items = web?.results || data.results || data.data || data.items;
+  const web = (data as any).web;
+  const items = web?.results;
   if (!Array.isArray(items)) {
     return results;
   }
@@ -186,8 +182,8 @@ function normalizeResults(data: Record<string, unknown>): WebSearchResult[] {
     if (!item || typeof item !== "object") continue;
 
     const title = String(item.title || "").trim();
-    const url = String(item.url || item.link || "").trim();
-    const snippet = String(item.description || item.snippet || item.content || "").trim();
+    const url = String(item.url || "").trim();
+    const snippet = String(item.description || item.snippet || "").trim();
 
     if (title && url) {
       results.push({ title, url, snippet });
@@ -202,14 +198,14 @@ function normalizeResults(data: Record<string, unknown>): WebSearchResult[] {
 const plugin: WebSearchProviderPlugin = {
   id: "brave",
   label: "Brave Search",
-  hint: "Privacy-focused search API",
+  hint: "Brave Search API - 隐私优先的搜索引擎",
   requiresCredential: true,
   credentialLabel: "API Key",
-  envVars: ["BRAVE_API_KEY", "BRAVE_SEARCH_API_KEY"],
-  placeholder: "BSA-...",
+  envVars: ["BRAVE_API_KEY"],
+  placeholder: "BSAN...",
   signupUrl: "https://brave.com/search/api/",
   docsUrl: "https://api.search.brave.com/app/documentation",
-  autoDetectOrder: 20,
+  autoDetectOrder: 5,
   credentialPath: "tools.web.search.providers.brave.apiKey",
   inactiveSecretPaths: [],
 
@@ -252,7 +248,7 @@ const plugin: WebSearchProviderPlugin = {
     }
 
     return {
-      description: "Search the web using Brave Search, a privacy-focused search engine.",
+      description: "Search the web using Brave Search API, a privacy-focused search engine.",
       parameters: {
         type: "object",
         properties: {
@@ -263,24 +259,20 @@ const plugin: WebSearchProviderPlugin = {
           count: {
             type: "number",
             description: "Maximum number of results to return",
-            default: 8,
+            default: 10,
           },
           country: {
             type: "string",
-            description: "Country code for localized results (e.g. US, GB, CN)",
+            description: "Country code for search results (e.g., US, CN, JP)",
+            default: "ALL",
           },
-          language: {
+          search_lang: {
             type: "string",
-            description: "Language code for results (e.g. en, zh)",
+            description: "Language for search results (e.g., en, zh)",
           },
-          freshness: {
+          safesearch: {
             type: "string",
-            description: "Filter results by freshness: pd (past day), pw (past week), pm (past month), py (past year)",
-            enum: ["pd", "pw", "pm", "py"],
-          },
-          safe_search: {
-            type: "string",
-            description: "Safe search level: off, moderate, strict",
+            description: "Safe search level",
             enum: ["off", "moderate", "strict"],
             default: "moderate",
           },
@@ -296,20 +288,22 @@ const plugin: WebSearchProviderPlugin = {
           throw new Error("搜索关键词不能为空");
         }
 
-        const count = Math.min(Number(args.count) || 8, 20);
-        const country = args.country ? String(args.country) : undefined;
-        const language = args.language ? String(args.language) : undefined;
-        const freshness = args.freshness ? String(args.freshness) : undefined;
-        const safe_search = args.safe_search ? String(args.safe_search) : undefined;
+        const count = Math.min(Number(args.count || args.maxResults || 10), 20);
+        const country = String(args.country || "ALL");
+        const search_lang = String(args.search_lang || args.language || "");
+        const safesearch = args.safesearch === "strict"
+          ? "strict"
+          : args.safesearch === "off"
+            ? "off"
+            : "moderate";
 
         return performSearch(
           apiKey!,
           query,
           count,
           country,
-          language,
-          freshness,
-          safe_search,
+          search_lang,
+          safesearch,
           context?.signal,
         );
       },

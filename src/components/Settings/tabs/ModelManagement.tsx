@@ -1,9 +1,10 @@
-import React from 'react';
-import { Box, Typography, CircularProgress, Alert, Button } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, CircularProgress, Alert, Button, Divider, useTheme } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ModelManager from '../../shared/ModelManager';
 import { useModels } from '../../../contexts/ModelsContext';
 import SystemAuthBanner from '../../Layout/SystemAuthBanner';
+import { getGrayScale } from '../../../constants/theme';
 
 interface ModelManagementProps {
   /** 点击「前往设置」时，切换到系统授权 Tab */
@@ -12,12 +13,15 @@ interface ModelManagementProps {
 
 const ModelManagement: React.FC<ModelManagementProps> = ({ onOpenSystemAuthorization }) => {
   const { models: modelList, defaultModelId, updateModels, isLoading, error, reload } = useModels();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
 
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, gap: 1 }}>
         <CircularProgress size={20} />
-        <Typography sx={{ fontSize: '0.875rem', color: '#6B7280' }}>正在加载模型配置...</Typography>
+        <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted }}>正在加载模型配置...</Typography>
       </Box>
     );
   }
@@ -39,15 +43,26 @@ const ModelManagement: React.FC<ModelManagementProps> = ({ onOpenSystemAuthoriza
   }
 
   return (
-    <>
+    <Box>
       <SystemAuthBanner onOpenSettings={onOpenSystemAuthorization} />
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 2 }}>
+        <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: gs.textPrimary }}>
+          我的模型
+        </Typography>
+        <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
+          已添加 {modelList.length} 个模型
+        </Typography>
+        <Divider sx={{ flex: 1, borderColor: gs.border }} />
+      </Box>
+
       <ModelManager
         models={modelList}
         defaultModelId={defaultModelId}
         variant="list"
         onChange={(models, newDefaultModelId) => updateModels(models, newDefaultModelId)}
       />
-    </>
+    </Box>
   );
 };
 
