@@ -41,6 +41,7 @@ vi.mock('sqlite-vec', () => ({
 // ===================== Mock: onnxEmbedding =====================
 
 vi.mock('../onnxEmbedding.js', () => ({
+  ONNX_EMBEDDING_DIMENSIONS: 384,
   embedText: vi.fn(async (text: string) => {
     if (mockState.embedTextShouldFail) throw new Error('embedText failed');
     const vec = new Float32Array(384);
@@ -154,8 +155,8 @@ describe('VecMemoryStore — backfillEmbeddings 分批回填 (P1)', () => {
     vecMemoryStore = await import('../vecMemoryStore.js');
   });
 
-  it('批量推理正确写入 vec_index 表（20 条，2 批）', async () => {
-    // Arrange: 20 entries → 2 batches (16 + 4)
+  it('批量推理正确写入 vec_index 表（20 条）', async () => {
+    // Arrange: 20 entries
     mockState.entries = makeEntries(20);
 
     // Act
@@ -175,27 +176,9 @@ describe('VecMemoryStore — backfillEmbeddings 分批回填 (P1)', () => {
     }
   });
 
-  it('整批失败时降级为逐条 embedText 重试', async () => {
-    // Arrange: 5 entries, embedBatch throws, embedText succeeds
-    mockState.entries = makeEntries(5);
-    mockState.embedBatchShouldFail = true;
-
-    // Act
-    const result = await vecMemoryStore.backfillEmbeddings();
-
-    // Assert: all 5 should succeed via fallback
-    expect(result.total).toBe(5);
-    expect(result.success).toBe(5);
-    expect(result.failed).toBe(0);
-
-    // All 5 vectors should have been inserted (via embedText fallback)
-    expect(mockState.insertCalls).toHaveLength(5);
-  });
-
-  it('整批失败且逐条重试也失败时，failed 计数正确', async () => {
-    // Arrange: 3 entries, embedBatch throws, embedText also throws
+  it('全部失败时，failed 计数正确', async () => {
+    // Arrange: 3 entries, embedText throws
     mockState.entries = makeEntries(3);
-    mockState.embedBatchShouldFail = true;
     mockState.embedTextShouldFail = true;
 
     // Act
@@ -209,7 +192,7 @@ describe('VecMemoryStore — backfillEmbeddings 分批回填 (P1)', () => {
   });
 
   it('部分插入失败时，failed 计数正确', async () => {
-    // Arrange: 3 entries, embedBatch succeeds, but insert for index 1 fails
+    // Arrange: 3 entries, embedText succeeds, but insert for index 1 fails
     mockState.entries = makeEntries(3);
     mockState.insertFailIndices = new Set([1]); // Second insert fails
 
@@ -242,7 +225,7 @@ describe('VecMemoryStore — backfillEmbeddings 分批回填 (P1)', () => {
   });
 
   it('无待回填条目时返回零值', async () => {
-    // Arrange: no entries without vectors
+    // Arrange: no entries
     mockState.entries = [];
 
     // Act
@@ -254,7 +237,7 @@ describe('VecMemoryStore — backfillEmbeddings 分批回填 (P1)', () => {
     expect(result.failed).toBe(0);
   });
 
-  it('大批量回填（35 条 = 3 批：16 + 16 + 3）', async () => {
+  it('大批量回填（35 条）', async () => {
     // Arrange
     mockState.entries = makeEntries(35);
 
@@ -268,35 +251,18 @@ describe('VecMemoryStore — backfillEmbeddings 分批回填 (P1)', () => {
     expect(mockState.insertCalls).toHaveLength(35);
   });
 
-  it('第一批成功第二批失败，第二批降级为逐条重试', async () => {
-    // Arrange: 20 entries (2 batches)
-    // First batch (16) succeeds, second batch (4) fails, fallback succeeds
+  it('部分失败时，success 和 failed 计数正确', async () => {
+    // Arrange: 20 entries, insert for indices 5, 10, 15 fail
     mockState.entries = makeEntries(20);
-
-    // Make embedBatch fail only on the second call
-    const onnxEmbedding = await import('../onnxEmbedding.js');
-    const embedBatchMock = onnxEmbedding.embedBatch as ReturnType<typeof vi.fn>;
-    embedBatchMock.mockReset();
-    embedBatchMock.mockImplementationOnce(async (texts: string[]) => {
-      // First batch succeeds
-      return texts.map(text => {
-        const vec = new Float32Array(384);
-        for (let i = 0; i < 384; i++) vec[i] = Math.sin(text.charCodeAt(0) + i * 0.01) * 0.01;
-        return vec;
-      });
-    });
-    embedBatchMock.mockImplementationOnce(async () => {
-      // Second batch fails
-      throw new Error('Second batch failed');
-    });
+    mockState.insertFailIndices = new Set([5, 10, 15]);
 
     // Act
     const result = await vecMemoryStore.backfillEmbeddings();
 
-    // Assert: first batch (16) succeeds via embedBatch, second batch (4) succeeds via embedText fallback
+    // Assert: 17 success, 3 failed
     expect(result.total).toBe(20);
-    expect(result.success).toBe(20);
-    expect(result.failed).toBe(0);
-    expect(mockState.insertCalls).toHaveLength(20);
+    expect(result.success).toBe(17);
+    expect(result.failed).toBe(3);
+    expect(mockState.insertCalls).toHaveLength(17);
   });
 });

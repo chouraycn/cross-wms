@@ -5,23 +5,27 @@
  * 负责将对话记忆以向量形式存入 SQLite，支持语义搜索。
  *
  * v9.0: 改为使用 SQLiteEngine 封装独立数据库（long_term_memory.db）
- * - 使用 FLOAT32[1536] 向量维度
+ * - 使用 FLOAT32[384] 向量维度（ONNX all-MiniLM-L6-v2）
  * - 保留原有 API 兼容性
+ *
+ * v9.1: 使用真实 ONNX 语义嵌入替代 mock embedding
+ * - 调用 onnxEmbedding.embedText 生成真实语义向量
+ * - 记忆搜索具备真正的语义相关性
  */
 
 import path from 'path';
-import os from 'os';
 import { SQLiteEngine } from '../storage/SQLiteEngine.js';
 import { logger } from '../logger.js';
-import { generateMockEmbedding } from '@src/services/skill/embeddingUtils';
+import { embedText, ONNX_EMBEDDING_DIMENSIONS } from './onnxEmbedding.js';
+import { AppPaths } from '../config/appPaths.js';
 
 // ===================== 常量定义 =====================
 
-const MEMORY_DIR = path.join(os.homedir(), '.cdf-know-clow', 'memory');
+const MEMORY_DIR = AppPaths.memoryDir;
 const DB_PATH = path.join(MEMORY_DIR, 'long_term_memory.db');
 
-/** 向量维度 */
-const VECTOR_DIMENSIONS = 1536;
+/** 向量维度（all-MiniLM-L6-v2: 384 维） */
+const VECTOR_DIMENSIONS = ONNX_EMBEDDING_DIMENSIONS;
 
 /** 最大返回记忆数 */
 const DEFAULT_TOP_K = 5;
@@ -51,9 +55,12 @@ setTimeout(() => {
         metadata    TEXT,               -- JSON object
         created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
       );
-
+    `);
+    // v9.1: 重建向量索引表（维度从 1536 改为 384）
+    db.migrate('1.1.0', `
+      DROP TABLE IF EXISTS memory_vec_index;
       CREATE VIRTUAL TABLE IF NOT EXISTS memory_vec_index USING vec0(
-        embedding FLOAT32[1536] distance_metric=cosine
+        embedding FLOAT32[${VECTOR_DIMENSIONS}] distance_metric=cosine
       );
     `);
   } catch (err) {
@@ -100,8 +107,8 @@ export async function insertMemory(
     );
     const id = Number(result.lastInsertRowid);
 
-    // 2. 生成 mock embedding（1536 维）
-    const embedding = generateMockEmbedding(VECTOR_DIMENSIONS);
+    // 2. 生成真实语义向量（ONNX all-MiniLM-L6-v2, 384维）
+    const embedding = await embedText(text);
     const embeddingBuf = Buffer.from(
       embedding.buffer,
       embedding.byteOffset,
@@ -124,17 +131,18 @@ export async function insertMemory(
 
 /**
  * 批量回填已有记忆的 embedding（升级迁移用）
+ * 使用真实 ONNX 语义向量重新生成
  */
 export async function backfillEmbeddings(): Promise<{ total: number; success: number; failed: number }> {
   try {
     const db = ensureEngine();
 
-    // 查询没有向量索引的记忆
+    // v9.1: 由于维度变更（1536→384），先清空旧的向量索引，全量重新生成
+    db.run(`DELETE FROM memory_vec_index`);
+
+    // 查询所有记忆
     const rows = db.all<{ id: number; text: string }>(`
-      SELECT e.id, e.text
-      FROM memory_entries e
-      LEFT JOIN memory_vec_index v ON e.id = v.rowid
-      WHERE v.rowid IS NULL
+      SELECT id, text FROM memory_entries ORDER BY id
     `);
 
     let success = 0;
@@ -142,7 +150,7 @@ export async function backfillEmbeddings(): Promise<{ total: number; success: nu
 
     for (const row of rows) {
       try {
-        const embedding = generateMockEmbedding(VECTOR_DIMENSIONS);
+        const embedding = await embedText(row.text);
         const embeddingBuf = Buffer.from(
           embedding.buffer,
           embedding.byteOffset,
@@ -187,8 +195,8 @@ export async function searchMemory(
   try {
     const db = ensureEngine();
 
-    // 生成查询向量
-    const queryEmbedding = generateMockEmbedding(VECTOR_DIMENSIONS);
+    // 生成查询的真实语义向量
+    const queryEmbedding = await embedText(query);
     const embeddingBuf = Buffer.from(
       queryEmbedding.buffer,
       queryEmbedding.byteOffset,
