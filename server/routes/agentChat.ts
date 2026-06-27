@@ -178,12 +178,25 @@ function createEventTransformProxy(
     thinkingBlockBuffer.dispose();
   };
 
-  // 创建代理 res 对象，拦截 write 方法
+  // 跟踪是否已设置响应头
+  let headersSet = false;
+
+  // 创建代理 res 对象，拦截 write 和 setHeader/flushHeaders 方法
   const proxyRes = new Proxy(originalRes, {
     get(target, prop, receiver) {
       if (prop === 'write') {
         return (chunk: any, encoding?: any, callback?: any) => {
           try {
+            // 确保响应头已设置（在第一次 write 时）
+            if (!headersSet) {
+              headersSet = true;
+              // 发送 lifecycle.start 事件（通过 handleChat 的 init 事件转换）
+              sendAgentEvent('lifecycle', {
+                phase: 'start',
+                sessionId: params.sessionId,
+              });
+            }
+
             const text = typeof chunk === 'string' ? chunk : chunk?.toString?.();
             if (!text) return true;
 
@@ -258,6 +271,8 @@ function createEventTransformProxy(
           }
         };
       }
+
+      // 转发其他方法到原始 res
       return Reflect.get(target, prop, receiver);
     },
   });
@@ -281,13 +296,6 @@ export async function handleAgentChat(req: Request, res: Response) {
   }
 
   try {
-    // 设置 SSE 响应头
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache, no-transform');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
-    res.flushHeaders?.();
-
     // 注册运行上下文
     registerAgentRunContext(runId, {
       sessionKey,
@@ -298,25 +306,8 @@ export async function handleAgentChat(req: Request, res: Response) {
       lastActiveAt: Date.now(),
     });
 
-    // 发送 lifecycle.start 事件
-    const startPayload: AgentEventPayload = {
-      runId,
-      seq: nextSeqForRun(runId),
-      stream: 'lifecycle',
-      ts: Date.now(),
-      data: {
-        phase: 'start',
-        message,
-        sessionId,
-      },
-      sessionKey,
-      sessionId,
-      ...(agentId ? { agentId } : {}),
-      ...(userId ? { userId } : {}),
-    };
-    res.write(`data: ${JSON.stringify(startPayload)}\n\n`);
-
     // 创建代理 res，将 chatService 的 SSE 事件转换为 Agent 事件格式
+    // 代理会拦截 setHeader/flushHeaders 调用，确保只设置一次
     const { proxyRes, dispose: disposeBuffers } = createEventTransformProxy(res, {
       runId,
       sessionKey,
@@ -332,6 +323,7 @@ export async function handleAgentChat(req: Request, res: Response) {
     });
 
     // 调用 chatService 的 handleChat
+    // handleChat 会设置响应头并发送 init 事件
     await handleChat(req, proxyRes);
 
     disposeBuffers();

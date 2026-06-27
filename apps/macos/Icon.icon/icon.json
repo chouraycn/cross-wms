@@ -6,11 +6,17 @@
     {
       "layers" : [
         {
-          "blend-mode" : "normal",
-          "glass" : false,
-          "hidden" : false,
-          "image-name" : "icon02 3.png",
-          "name" : "icon02 3"
+          "glass-specializations" : [
+            {
+              "value" : true
+            },
+            {
+              "idiom" : "square",
+              "value" : true
+            }
+          ],
+          "image-name" : "App Icon Template3-恢复的 拷贝.png",
+          "name" : "App Icon Template3-恢复的 拷贝"
         }
       ],
       "shadow" : {

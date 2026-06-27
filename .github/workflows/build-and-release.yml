@@ -27,13 +27,12 @@ jobs:
   quality-gate:
     name: Quality Gate
     uses: ./.github/workflows/pr-quality-gate.yml
-    # Reuse the same lint + typecheck + build + test + audit jobs — no duplication
 
   build:
-    name: Build DMG
+    name: Build DMG (Swift)
     needs: quality-gate
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Check out code
@@ -47,30 +46,8 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-          cache: 'pip'
-          cache-dependency-path: scripts/requirements-build.txt
-
-      - name: Install Python dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip install -r scripts/requirements-build.txt
-
       - name: Install Node.js dependencies
         run: npm ci
-
-      - name: Cache PyInstaller build
-        uses: actions/cache@v4
-        with:
-          path: |
-            build-pywebview/pyinstaller-cache
-            build-pywebview/work
-          key: pyinstaller-${{ runner.os }}-${{ hashFiles('scripts/pywebview_app.py', 'scripts/requirements-build.txt') }}
-          restore-keys: |
-            pyinstaller-${{ runner.os }}-
 
       - name: Bump version (manual dispatch only)
         if: github.event_name == 'workflow_dispatch'
@@ -114,6 +91,20 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.0'
+
+      - name: Cache Swift Package
+        uses: actions/cache@v4
+        with:
+          path: apps/macos/.build
+          key: ${{ runner.os }}-swift-6.0-spm-release-${{ hashFiles('apps/macos/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-6.0-spm-release-
+            ${{ runner.os }}-swift-6.0-spm-
+
       - name: Pre-download ONNX model files
         run: |
           MODEL_DIR="$HOME/.cdf-know-clow/models/all-MiniLM-L6-v2"
@@ -127,8 +118,8 @@ jobs:
             echo "✅ ONNX 模型文件预下载完成"
           fi
 
-      - name: Build DMG
-        run: bash scripts/build-dmg-pywebview.sh --ci --no-bump
+      - name: Build Swift macOS app
+        run: bash scripts/package-mac-dist.sh --no-bump --skip-release
         env:
           CI: true
 
@@ -171,7 +162,7 @@ jobs:
             echo "RELEASE_NOTES=Initial release" >> $GITHUB_ENV
           fi
 
-      - name: Create Git Tag (manual dispatch only)
+      - name: Create Git Tag and Push Version Bump (manual dispatch only)
         if: github.event_name == 'workflow_dispatch'
         run: |
           git config user.name "github-actions[bot]"
@@ -180,6 +171,7 @@ jobs:
           git commit -m "Bump version to ${{ env.VERSION }}" || true
           git tag "v${{ env.VERSION }}"
           git push origin "v${{ env.VERSION }}"
+          git push origin HEAD:${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

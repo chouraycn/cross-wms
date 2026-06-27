@@ -50,10 +50,10 @@ DMG_BACKGROUND_SMALL="${DMG_BACKGROUND_SMALL:-$ROOT_DIR/apps/macos/Packaging/dmg
 DMG_BACKGROUND_PATH="${DMG_BACKGROUND_PATH:-$ROOT_DIR/apps/macos/Packaging/dmg-background.png}"
 DMG_ICON_PATH="${DMG_ICON_PATH:-$ROOT_DIR/apps/macos/Icon.icon/AppIcon.icns}"
 
-DMG_WINDOW_BOUNDS="${DMG_WINDOW_BOUNDS:-400 100 900 420}"
-DMG_ICON_SIZE="${DMG_ICON_SIZE:-128}"
-DMG_APP_POS="${DMG_APP_POS:-125 160}"
-DMG_APPS_POS="${DMG_APPS_POS:-375 160}"
+DMG_WINDOW_BOUNDS="${DMG_WINDOW_BOUNDS:-200 100 1300 792}"
+DMG_ICON_SIZE="${DMG_ICON_SIZE:-160}"
+DMG_APP_POS="${DMG_APP_POS:-300 360}"
+DMG_APPS_POS="${DMG_APPS_POS:-780 360}"
 DMG_EXTRA_SECTORS="${DMG_EXTRA_SECTORS:-2048}"
 
 require_integer_list() {
@@ -184,12 +184,12 @@ MOUNTED=1
 
 if [[ "${SKIP_DMG_STYLE:-0}" != "1" ]]; then
   mkdir -p "$MOUNT_POINT/.background"
-  if [[ -f "$DMG_BACKGROUND_SMALL" ]]; then
-    cp "$DMG_BACKGROUND_SMALL" "$MOUNT_POINT/.background/background.png"
-  elif [[ -f "$DMG_BACKGROUND_PATH" ]]; then
+  if [[ -f "$DMG_BACKGROUND_PATH" ]]; then
     cp "$DMG_BACKGROUND_PATH" "$MOUNT_POINT/.background/background.png"
+  elif [[ -f "$DMG_BACKGROUND_SMALL" ]]; then
+    cp "$DMG_BACKGROUND_SMALL" "$MOUNT_POINT/.background/background.png"
   else
-    echo "WARN: DMG background missing: $DMG_BACKGROUND_SMALL / $DMG_BACKGROUND_PATH" >&2
+    echo "WARN: DMG background missing: $DMG_BACKGROUND_PATH / $DMG_BACKGROUND_SMALL" >&2
   fi
 
   if [[ -f "$DMG_ICON_PATH" ]]; then

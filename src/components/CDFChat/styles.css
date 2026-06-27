@@ -809,10 +809,6 @@
   padding: 4px 16px;
 }
 
-.cdf-msg-wrapper:hover .cdf-msg-actions-bar {
-  opacity: 1;
-}
-
 .cdf-msg-actions-bar {
   position: absolute;
   top: 50%;
@@ -820,7 +816,7 @@
   transform: translateY(-50%);
   display: flex;
   gap: 2px;
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.15s ease;
   background: var(--cdf-bg-panel);
   border: 1px solid var(--cdf-border);

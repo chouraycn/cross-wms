@@ -19,6 +19,14 @@ const TOOL_LABELS: Record<string, string> = {
   'shell:exec': '执行命令',
   'db:query': '数据库查询',
   'wms:inventory': '库存查询',
+  'web_search': '网页搜索',
+  'web_fetch': '网页抓取',
+  'web_api_call': 'API 调用',
+  'browser_navigate': '浏览器导航',
+  'browser_click': '浏览器点击',
+  'browser_type': '浏览器输入',
+  'browser_screenshot': '浏览器截图',
+  'browser_evaluate': '浏览器执行脚本',
 };
 
 const TOOL_ICONS: Record<string, string> = {
@@ -29,6 +37,14 @@ const TOOL_ICONS: Record<string, string> = {
   'shell:exec': '⌨️',
   'db:query': '🗄️',
   'wms:inventory': '📦',
+  'web_search': '🔍',
+  'web_fetch': '🌐',
+  'web_api_call': '🔌',
+  'browser_navigate': '🧭',
+  'browser_click': '👆',
+  'browser_type': '⌨️',
+  'browser_screenshot': '📸',
+  'browser_evaluate': '⚙️',
 };
 
 function getToolLabel(name: string): string {
@@ -37,6 +53,72 @@ function getToolLabel(name: string): string {
 
 function getToolIcon(name: string): string {
   return TOOL_ICONS[name] || '🔧';
+}
+
+// ===================== 工具摘要提取 =====================
+
+function extractToolSummary(name: string, args: Record<string, unknown> | null): string {
+  if (!args) return '';
+  
+  switch (name) {
+    case 'web_search':
+      const query = args.q || args.query || args.keyword;
+      return query ? `搜索: ${String(query)}` : '';
+    case 'web_fetch':
+      const url = args.url || args.link;
+      return url ? `抓取: ${String(url).slice(0, 60)}${String(url).length > 60 ? '...' : ''}` : '';
+    case 'web_api_call':
+      const apiUrl = args.url || args.endpoint;
+      const method = args.method || 'GET';
+      return apiUrl ? `${method}: ${String(apiUrl).slice(0, 60)}${String(apiUrl).length > 60 ? '...' : ''}` : '';
+    case 'db:query':
+      const sql = args.sql || args.query;
+      if (sql) {
+        const sqlStr = String(sql).replace(/\s+/g, ' ').trim();
+        return sqlStr.length > 80 ? sqlStr.slice(0, 80) + '...' : sqlStr;
+      }
+      return '';
+    case 'file:readFile':
+    case 'file:writeFile':
+      const filePath = args.path || args.file || args.filePath;
+      return filePath ? String(filePath) : '';
+    case 'shell:exec':
+      const cmd = args.command || args.cmd;
+      if (cmd) {
+        const cmdStr = String(cmd).replace(/\s+/g, ' ').trim();
+        return cmdStr.length > 80 ? cmdStr.slice(0, 80) + '...' : cmdStr;
+      }
+      return '';
+    default:
+      return '';
+  }
+}
+
+function extractResultPreview(result: string, toolName: string): string {
+  if (!result || !result.trim()) return '';
+  
+  const trimmed = result.trim();
+  
+  if (isJsonString(trimmed)) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (toolName === 'web_search' && Array.isArray(parsed.results)) {
+        const count = parsed.results.length;
+        const firstTitle = parsed.results[0]?.title || '';
+        return `找到 ${count} 条结果${firstTitle ? `: ${firstTitle}` : ''}`;
+      }
+      if (parsed.title) return String(parsed.title);
+      if (parsed.summary) return String(parsed.summary);
+      if (parsed.message) return String(parsed.message);
+      if (parsed.items && Array.isArray(parsed.items)) return `共 ${parsed.items.length} 条记录`;
+      if (parsed.data && Array.isArray(parsed.data)) return `共 ${parsed.data.length} 条记录`;
+    } catch {
+      // fall through
+    }
+  }
+  
+  const preview = trimmed.replace(/\s+/g, ' ').slice(0, 120);
+  return preview.length < trimmed.length ? preview + '...' : preview;
 }
 
 // ===================== JSON 语法高亮 =====================
@@ -363,11 +445,15 @@ const ToolCallItem = React.memo<ToolCallItemProps>(function ToolCallItem({ toolC
   return (
     <Box
       sx={{
-        bgcolor: 'transparent',
-        border: 'none',
-        borderLeft: `2px solid ${isDark ? '#555555' : '#e0e0e0'}`,
+        borderRadius: '10px',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+        bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
         overflow: 'hidden',
-        '& + &': { mt: 0.5 },
+        transition: 'all 0.15s ease',
+        '&:hover': {
+          borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
+        },
+        '& + &': { mt: 0.75 },
       }}
     >
       {/* 标题行 */}
@@ -376,57 +462,101 @@ const ToolCallItem = React.memo<ToolCallItemProps>(function ToolCallItem({ toolC
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 0.75,
+          gap: 1,
           px: 1.25,
-          py: 0.625,
+          py: 0.875,
           cursor: 'pointer',
           '&:hover': {
-            bgcolor: isDark ? 'rgba(255,255,255,0.05)' : '#f5f5f5',
+            bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
           },
           transition: 'background-color 0.15s ease',
         }}
       >
-        <BuildIcon sx={{ fontSize: 14, color: gs.textSecondary }} />
-        <Typography sx={{ fontSize: 13, fontWeight: 500, color: gs.textSecondary, flex: 1 }}>
-          {getToolLabel(toolCall.name)}
-        </Typography>
+        <Box
+          sx={{
+            fontSize: 16,
+            lineHeight: '20px',
+            width: 20,
+            height: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          {getToolIcon(toolCall.name)}
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Typography
+              sx={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: isFailed ? '#EF4444' : gs.textPrimary,
+                lineHeight: 1.3,
+              }}
+            >
+              {getToolLabel(toolCall.name)}
+            </Typography>
+          </Box>
+          {!expanded && (
+            <Typography
+              sx={{
+                fontSize: 12,
+                color: gs.textMuted,
+                lineHeight: 1.3,
+                mt: 0.25,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {isRunning
+                ? '执行中...'
+                : isFailed
+                ? '执行失败'
+                : extractToolSummary(toolCall.name, parsedArgs) || extractResultPreview(formattedResult, toolCall.name)}
+            </Typography>
+          )}
+        </Box>
 
         {/* 状态指示 */}
         {isRunning && <PulseIndicator />}
         {isCompleted && (
-          <CheckCircleIcon sx={{ fontSize: 16, color: '#22C55E' }} />
+          <CheckCircleIcon sx={{ fontSize: 16, color: '#22C55E', flexShrink: 0 }} />
         )}
         {isFailed && (
-          <ErrorCircleIcon sx={{ fontSize: 16, color: '#EF4444' }} />
+          <ErrorCircleIcon sx={{ fontSize: 16, color: '#EF4444', flexShrink: 0 }} />
         )}
 
-        <IconButton size="small" sx={{ p: 0.25, color: gs.textMuted }}>
+        <IconButton size="small" sx={{ p: 0.25, color: gs.textMuted, flexShrink: 0 }}>
           {expanded ? <ExpandLessIcon sx={{ fontSize: 16 }} /> : <ExpandMoreIcon sx={{ fontSize: 16 }} />}
         </IconButton>
       </Box>
 
       {/* 展开详情 */}
       <Collapse in={expanded}>
-        <Box sx={{ px: 1.25, pb: 1, pt: 0 }}>
+        <Box sx={{ px: 1.25, pb: 1.25, pt: 0.25 }}>
           {/* 参数 */}
           {parsedArgs && Object.keys(parsedArgs).length > 0 && (
-            <Box sx={{ mb: 0.75 }}>
-              <Typography sx={{ fontSize: 11, fontWeight: 600, color: gs.textMuted, mb: 0.25, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <Box sx={{ mb: 1 }}>
+              <Typography sx={{ fontSize: 11, fontWeight: 600, color: gs.textMuted, mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 参数
               </Typography>
               <Box
                 sx={{
-                  bgcolor: isDark ? '#1A1A1A' : '#F9FAFB',
-                  borderRadius: '6px',
-                  px: 1,
-                  py: 0.75,
+                  bgcolor: isDark ? 'rgba(0,0,0,0.2)' : '#F9FAFB',
+                  borderRadius: '8px',
+                  px: 1.25,
+                  py: 1,
                   fontFamily: 'monospace',
                   fontSize: 12,
                   color: gs.textSecondary,
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-all',
-                  maxHeight: 120,
+                  maxHeight: 160,
                   overflowY: 'auto',
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
                 }}
               >
                 {formattedArgs}
@@ -437,9 +567,9 @@ const ToolCallItem = React.memo<ToolCallItemProps>(function ToolCallItem({ toolC
           {/* 结果 */}
           {toolCall.result && (
             <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.25 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                 <Typography sx={{ fontSize: 11, fontWeight: 600, color: gs.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', flex: 1 }}>
-                  结果
+                  {isFailed ? '错误' : '结果'}
                 </Typography>
                 <IconButton size="small" onClick={handleCopy} sx={{ p: 0.25, color: gs.textMuted, '&:hover': { color: gs.textPrimary } }}>
                   <ContentCopyIcon sx={{ fontSize: 12 }} />
@@ -447,17 +577,22 @@ const ToolCallItem = React.memo<ToolCallItemProps>(function ToolCallItem({ toolC
               </Box>
               <Box
                 sx={{
-                  bgcolor: isDark ? '#1A1A1A' : '#F9FAFB',
-                  borderRadius: '6px',
-                  px: 1,
-                  py: 0.75,
+                  bgcolor: isFailed
+                    ? (isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.04)')
+                    : (isDark ? 'rgba(0,0,0,0.2)' : '#F9FAFB'),
+                  borderRadius: '8px',
+                  px: 1.25,
+                  py: 1,
                   fontFamily: 'monospace',
                   fontSize: 12,
-                  color: gs.textSecondary,
+                  color: isFailed ? '#EF4444' : gs.textSecondary,
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-all',
-                  maxHeight: 200,
+                  maxHeight: 240,
                   overflowY: 'auto',
+                  border: `1px solid ${isFailed
+                    ? (isDark ? 'rgba(239,68,68,0.2)' : 'rgba(239,68,68,0.2)')
+                    : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)')}`,
                 }}
               >
                 {isResultJson ? highlightJson(displayResult) : displayResult}
@@ -480,16 +615,8 @@ const ToolCallBlock = React.memo<ToolCallBlockProps>(function ToolCallBlock({ to
   // 防御性检查：toolCalls 可能不是数组（如后端返回 JSON string 未被解析）
   if (!toolCalls || !Array.isArray(toolCalls) || toolCalls.length === 0) return null;
 
-  // 找到当前正在执行的工具索引（第一个没有 result 的）
-  const runningIndex = toolCalls.findIndex((tc) => !tc.result);
-  // 如果全部完成，则当前步骤指向最后一个
-  const currentStepIndex = runningIndex >= 0 ? runningIndex : toolCalls.length - 1;
-
   return (
     <Box sx={{ mb: 1.5 }}>
-      {/* 步骤进度指示器 */}
-      <StepIndicator total={toolCalls.length} currentIndex={currentStepIndex} />
-
       {toolCalls.map((tc, i) => (
         <ToolCallItem
           key={`${tc.name}-${i}`}

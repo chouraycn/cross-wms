@@ -1,17 +1,10 @@
-name: Swift CI
+name: Swift CI (DEPRECATED)
 
+# 已废弃 — Swift 测试已合并到 pr-quality-gate.yml
+# 保留此文件仅作参考，不再自动触发
 on:
-  push:
-    branches: [main, master]
-    paths:
-      - 'apps/macos/**'
-      - '.github/workflows/swift-ci.yml'
-  pull_request:
-    branches: [main, master]
-    paths:
-      - 'apps/macos/**'
-      - '.github/workflows/swift-ci.yml'
   workflow_dispatch:
+    # 仅允许手动触发
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

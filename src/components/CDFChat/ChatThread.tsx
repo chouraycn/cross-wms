@@ -536,7 +536,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 ) : (
                   <>
                     <Box sx={{
-                      width: 160, height: 56,
+                      width: 184, height: 64.4,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3,
                       ml: '20px',
                       filter: isDark ? 'invert(1)' : 'none',
@@ -544,7 +544,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                       <object
                         data={CdfLogoAnimation}
                         type="image/svg+xml"
-                        style={{ width: 140, height: 48, pointerEvents: 'none' }}
+                        style={{ width: 161, height: 55.2, pointerEvents: 'none' }}
                         aria-label="CDF Know Clow"
                       />
                     </Box>
@@ -604,7 +604,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             </Box>
           )}
 
-          <Box sx={{ px: 3, py: 2, flexShrink: 0, borderTop: 'none' }}>
+          <Box sx={{ px: 3, pb: 3, pt: 1, flexShrink: 0, borderTop: 'none' }}>
             <Box sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', position: 'relative' }}>
               <TopBarChatInput
                 isEmpty={session.messages.length === 0}
@@ -613,9 +613,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 isLoading={isLoading}
                 sendMessage={handleSendMessage as any}
                 stopGeneration={stopGeneration}
+                variant="card"
               />
               <Collapse in={session.messages.length === 0} timeout={300}>
-                <Typography sx={{ fontSize: '0.6875rem', color: gs.textDisabled, textAlign: 'center', pt: 0.5 }}>
+                <Typography sx={{ fontSize: '0.6875rem', color: gs.textDisabled, textAlign: 'center', pt: 1 }}>
                   内容由AI生成，请核实重要信息
                 </Typography>
               </Collapse>

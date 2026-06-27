@@ -30,7 +30,18 @@ try {
     observer.observe(document.body, { childList: true, subtree: true });
   }
 } catch (e: any) {
-  // console.error('[CrossWMS] React 渲染异常:', e?.message || String(e), e?.stack)
+  const errMsg = e?.message || String(e);
+  const errStack = e?.stack || '';
+  const errorEl = document.getElementById('root-error');
+  const loadingEl = document.getElementById('root-loading');
+  if (errorEl) {
+    errorEl.textContent = 'React 渲染异常: ' + errMsg + '\n' + errStack;
+    errorEl.className = 'show';
+  }
+  if (loadingEl) {
+    loadingEl.className = 'hide';
+  }
+  console.error('[CrossWMS] React 渲染异常:', errMsg, errStack);
 }
 
 // 异步初始化：迁移 + Store 数据加载（不阻塞 UI 渲染）

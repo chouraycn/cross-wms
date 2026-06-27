@@ -305,7 +305,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
                 ) : (
                   <>
                     <Box sx={{
-                      width: 160, height: 56,
+                      width: 184, height: 64.4,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3,
                       ml: '20px',
                       filter: isDark ? 'invert(1)' : 'none',
@@ -313,7 +313,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ variant }) => {
                       <object
                         data={CdfLogoAnimation}
                         type="image/svg+xml"
-                        style={{ width: 140, height: 48, pointerEvents: 'none' }}
+                        style={{ width: 161, height: 55.2, pointerEvents: 'none' }}
                         aria-label="CDF Know Clow"
                       />
                     </Box>

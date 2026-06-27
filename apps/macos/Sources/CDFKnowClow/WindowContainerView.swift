@@ -11,39 +11,69 @@ import Foundation
 /// 2. WKWebView 作为子视图放在容器内
 /// 3. 在容器上添加 NSPressGestureRecognizer（长按 0.2s 才触发）
 /// 4. 短按（单击）事件不会触发 gesture，自然透传给 WebView
+/// 5. 支持两种拖动模式：全屏拖动 / 仅顶部区域拖动
+/// 6. 双击顶部区域可缩放/最大化窗口（macOS 标准行为）
 @MainActor
 final class WindowContainerView: NSView {
+
+    // MARK: - 拖动模式
+
+    /// 拖动区域模式
+    enum DragMode {
+        /// 全屏可拖动
+        case fullScreen
+        /// 仅顶部区域可拖动
+        case topOnly(height: CGFloat)
+    }
+
+    // MARK: - 常量
+
+    /// 默认长按触发时间（秒）
+    static let defaultPressDuration: TimeInterval = 0.2
+
+    /// 默认顶部拖动区域高度
+    static let defaultTopDragHeight: CGFloat = 30.0
+
+    // MARK: - 属性
 
     /// WebView 子视图
     let webView: NSView
 
+    /// 拖动模式
+    let dragMode: DragMode
+
     /// 长按手势识别器
     private var pressGesture: NSPressGestureRecognizer?
 
-    init(webView: NSView) {
+    /// 双击手势识别器
+    private var doubleClickGesture: NSClickGestureRecognizer?
+
+    /// 拖动起始屏幕位置
+    private var dragStartScreenLocation: NSPoint = .zero
+
+    /// 拖动起始窗口位置
+    private var dragStartWindowOrigin: NSPoint = .zero
+
+    /// 是否正在拖动
+    private var isDragging = false
+
+    // MARK: - 初始化
+
+    /// 创建窗口容器视图
+    /// - Parameters:
+    ///   - webView: 要嵌入的 WebView
+    ///   - dragMode: 拖动模式，默认为仅顶部 30px 区域拖动
+    init(webView: NSView, dragMode: DragMode = .topOnly(height: defaultTopDragHeight)) {
         self.webView = webView
+        self.dragMode = dragMode
         super.init(frame: .zero)
 
-        self.wantsLayer = true
-        self.layer?.backgroundColor = .clear
+        wantsLayer = true
+        layer?.backgroundColor = .clear
 
-        // 1. WebView 占满容器
-        self.webView.translatesAutoresizingMaskIntoConstraints = false
-        self.addSubview(self.webView)
-
-        NSLayoutConstraint.activate([
-            self.webView.leadingAnchor.constraint(equalTo: self.leadingAnchor),
-            self.webView.trailingAnchor.constraint(equalTo: self.trailingAnchor),
-            self.webView.topAnchor.constraint(equalTo: self.topAnchor),
-            self.webView.bottomAnchor.constraint(equalTo: self.bottomAnchor),
-        ])
-
-        // 2. 添加长按手势（0.2s 才触发，不影响短按/单击）
-        let gesture = NSPressGestureRecognizer(target: self, action: #selector(handlePressGesture(_:)))
-        gesture.minimumPressDuration = 0.2
-        gesture.allowedTouchTypes = [.direct]  // 仅响应鼠标（不响应触摸板）
-        self.addGestureRecognizer(gesture)
-        self.pressGesture = gesture
+        setupWebView()
+        setupPressGesture()
+        setupDoubleClickGesture()
     }
 
     @available(*, unavailable)
@@ -51,39 +81,104 @@ final class WindowContainerView: NSView {
         fatalError("init(coder:) is not supported")
     }
 
+    // MARK: - 设置
+
+    private func setupWebView() {
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(webView)
+
+        NSLayoutConstraint.activate([
+            webView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            webView.topAnchor.constraint(equalTo: topAnchor),
+            webView.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+    }
+
+    private func setupPressGesture() {
+        let gesture = NSPressGestureRecognizer(
+            target: self,
+            action: #selector(handlePressGesture(_:))
+        )
+        gesture.minimumPressDuration = Self.defaultPressDuration
+        gesture.allowedTouchTypes = [.direct]
+        addGestureRecognizer(gesture)
+        pressGesture = gesture
+    }
+
+    private func setupDoubleClickGesture() {
+        let gesture = NSClickGestureRecognizer(
+            target: self,
+            action: #selector(handleDoubleClick(_:))
+        )
+        gesture.numberOfClicksRequired = 2
+        addGestureRecognizer(gesture)
+        doubleClickGesture = gesture
+    }
+
     // 让容器本身也可拖动
     override var mouseDownCanMoveWindow: Bool {
         true
     }
 
+    // MARK: - 拖动区域判断
+
+    /// 判断点是否在可拖动区域内
+    private func isInDragArea(_ point: NSPoint) -> Bool {
+        switch dragMode {
+        case .fullScreen:
+            return true
+        case .topOnly(let height):
+            let dragAreaY = bounds.height - height
+            return point.y >= dragAreaY
+        }
+    }
+
     // MARK: - 长按手势
 
     @objc private func handlePressGesture(_ recognizer: NSPressGestureRecognizer) {
-        guard let window = self.window else { return }
+        guard let window = window else { return }
+
         let location = recognizer.location(in: self)
-        let screenLocation = self.window?.convertPoint(toScreen: location) ?? .zero
 
         switch recognizer.state {
         case .began:
-            // 长按开始：记录初始位置
-            self.dragStartScreenLocation = screenLocation
-            self.dragStartWindowOrigin = window.frame.origin
+            guard isInDragArea(location) else {
+                recognizer.state = .failed
+                return
+            }
+            isDragging = true
+            dragStartScreenLocation = NSEvent.mouseLocation
+            dragStartWindowOrigin = window.frame.origin
+
         case .changed:
-            // 拖动中：移动窗口
+            guard isDragging else { return }
+
             let currentScreenLocation = NSEvent.mouseLocation
-            let dx = currentScreenLocation.x - self.dragStartScreenLocation.x
-            let dy = currentScreenLocation.y - self.dragStartScreenLocation.y
-            var newOrigin = self.dragStartWindowOrigin
+            let dx = currentScreenLocation.x - dragStartScreenLocation.x
+            let dy = currentScreenLocation.y - dragStartScreenLocation.y
+
+            var newOrigin = dragStartWindowOrigin
             newOrigin.x += dx
             newOrigin.y += dy
             window.setFrameOrigin(newOrigin)
+
         case .ended, .cancelled, .failed:
-            break
+            isDragging = false
+
         default:
             break
         }
     }
 
-    private var dragStartScreenLocation: NSPoint = .zero
-    private var dragStartWindowOrigin: NSPoint = .zero
+    // MARK: - 双击手势
+
+    @objc private func handleDoubleClick(_ recognizer: NSClickGestureRecognizer) {
+        guard let window = window else { return }
+
+        let location = recognizer.location(in: self)
+        guard isInDragArea(location) else { return }
+
+        window.zoom(nil)
+    }
 }
