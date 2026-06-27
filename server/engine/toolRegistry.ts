@@ -18,7 +18,11 @@
 import type { ToolDefinition, ToolCall } from '../aiClient.js';
 import { isMcpToolName } from './mcpTypes.js';
 import { handleWebSearch, handleWebFetch, handleWebApiCall } from './webTools.js';
+import { handleWebSearchV3, getWebSearchToolDefinition } from './web-search-new.js';
+import { handleWebFetchV3, getWebFetchToolDefinition } from './web-fetch.js';
 import { logger } from '../logger.js';
+import { initWebProviders } from '../plugins/providers/index.js';
+import { initContentExtractors } from '../plugins/extractors/index.js';
 
 import { ToolHandler, type RegisteredTool } from './toolTypes.js';
 export type { ToolHandler, RegisteredTool } from './toolTypes.js';
@@ -43,6 +47,11 @@ function registerBuiltinTool(tool: RegisteredTool): void {
 
 /** 初始化默认工具集（内置本地工具） */
 export async function initDefaultTools(): Promise<void> {
+  // 初始化 Web Provider 和内容提取器插件系统
+  initWebProviders();
+  initContentExtractors();
+  logger.debug('[Tool Registry] Web providers and content extractors initialized');
+
   // system_info
   registerBuiltinTool({
     definition: {
@@ -467,15 +476,15 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleAppSetBotName,
   });
 
-  // ===================== Web Tools (v2.4.0) =====================
+  // ===================== Web Tools =====================
 
-  // web_search — 互联网搜索（DuckDuckGo，免 API Key）
+  // web_search_legacy — 旧版搜索工具（已弃用，保留用于向后兼容）
   registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
-        name: 'web_search',
-        description: '搜索互联网获取最新信息。返回标题、摘要和链接列表。当 AI 需要查询实时信息、新闻、或知识库中没有的内容时使用。renderJs=true 时使用 Playwright 渲染搜索页（适用于 JS 动态渲染的搜索引擎），不可用时自动降级。',
+        name: 'web_search_legacy',
+        description: '[LEGACY] 旧版搜索工具（DuckDuckGo HTML 解析）。已被 web_search 替代，新工具支持 15+ 搜索 Provider、智能缓存、更好的错误处理。仅用于向后兼容。',
         parameters: {
           type: 'object',
           properties: {
@@ -490,22 +499,36 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleWebSearch,
   });
 
-  // web_fetch — 抓取网页并转换 Markdown
+  // web_search — 新版搜索（Provider 插件系统 + 15+ Provider + 回退链 + 缓存）
+  const webSearchV2Def = getWebSearchToolDefinition();
   registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
-        name: 'web_fetch',
-        description: '抓取指定 URL 的网页内容，将 HTML 转换为 Markdown 格式返回。适用于获取文章、文档、API 响应等网页内容。仅支持 http/https。renderJs=true 时使用 Playwright 渲染 JS 动态页面（SPA/React/Vue 等），不可用时自动降级到原生 fetch。可配合 selector 等待特定元素加载，或用 executeJs 在页面上执行自定义 JavaScript 后再提取内容。',
+        name: 'web_search',
+        description: webSearchV2Def.function.description,
+        parameters: webSearchV2Def.function.parameters,
+      },
+    },
+    handler: handleWebSearchV3,
+  });
+
+  // web_fetch_legacy — 旧版抓取工具（已弃用，保留用于向后兼容）
+  registerBuiltinTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'web_fetch_legacy',
+        description: '[LEGACY] 旧版抓取工具（正则表达式转换）。已被 web_fetch 替代，新工具支持 Readability 正文提取、SSRF 安全防护、多 Provider 回退、高质量 Markdown 转换。仅用于向后兼容。',
         parameters: {
           type: 'object',
           properties: {
             url: { type: 'string', description: '要抓取的网页 URL（支持 http/https）' },
             maxLength: { type: 'number', description: '最大返回内容长度（字节，默认 80000，最大 200000）' },
             renderJs: { type: 'boolean', description: '是否使用 Playwright JS 渲染（适用于 SPA/动态页面，默认 false）' },
-            selector: { type: 'string', description: 'CSS 选择器，renderJs=true 时等待该元素出现在页面上再提取内容（如 "#content"、".article-body"）' },
-            waitUntil: { type: 'string', enum: ['domcontentloaded', 'networkidle', 'load'], description: 'renderJs=true 时的页面加载等待策略。domcontentloaded=DOM 解析完成即返回（快），networkidle=网络空闲后返回（慢但更完整，默认），load=load 事件触发后返回' },
-            executeJs: { type: 'string', description: 'renderJs=true 时在页面上执行的 JavaScript 代码（在提取 HTML 前执行）。可用于滚动加载更多内容、点击展开按钮、提取特定数据等。代码在页面上下文中运行，返回值会包含在响应中。' },
+            selector: { type: 'string', description: 'CSS 选择器，renderJs=true 时等待该元素出现在页面上再提取内容' },
+            waitUntil: { type: 'string', enum: ['domcontentloaded', 'networkidle', 'load'], description: 'renderJs=true 时的页面加载等待策略' },
+            executeJs: { type: 'string', description: 'renderJs=true 时在页面上执行的 JavaScript 代码' },
           },
           required: ['url'],
         },
@@ -514,7 +537,21 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleWebFetch,
   });
 
-  // web_api_call — 调用外部 REST API（域名白名单）/ API 模板
+  // web_fetch — 新版抓取（Provider 插件系统 + SSRF 防护 + Readability 内容提取 + 缓存）
+  const webFetchV2Def = getWebFetchToolDefinition();
+  registerBuiltinTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'web_fetch',
+        description: webFetchV2Def.function.description,
+        parameters: webFetchV2Def.function.parameters,
+      },
+    },
+    handler: handleWebFetchV3,
+  });
+
+  // web_api_call — 调用外部 REST API（域名白名单）/ API 模板（保留向后兼容）
   registerBuiltinTool({
     definition: {
       type: 'function',

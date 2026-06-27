@@ -39,6 +39,8 @@ const TOOL_ALTERNATIVES: Record<string, string> = {
   'web_api_call': 'web_fetch',
   'web_fetch': 'web_search',
   'web_search': 'web_fetch',
+  'web_fetch_legacy': 'web_fetch',
+  'web_search_legacy': 'web_search',
   'browser_navigate': 'web_fetch',
   'file_readFile': 'shell_exec',
   'db_query': 'web_api_call',

@@ -55,19 +55,74 @@ cp "$SWIFT_BIN" "$MACOS_DIR/$PRODUCT"
 chmod +x "$MACOS_DIR/$PRODUCT"
 # SwiftPM outputs ad-hoc signed binaries; strip before install_name_tool
 /usr/bin/codesign --remove-signature "$MACOS_DIR/$PRODUCT" 2>/dev/null || true
+
+# Add Frameworks rpath so bundled frameworks (e.g. Sparkle) can be found
+install_name_tool -add_rpath "@loader_path/../Frameworks" "$MACOS_DIR/$PRODUCT" 2>/dev/null || true
+
+# Copy embedded frameworks (e.g. Sparkle) from SwiftPM build dir
+SWIFT_BIN_DIR="$(dirname "$SWIFT_BIN")"
+for fw in "$SWIFT_BIN_DIR"/*.framework; do
+  if [ -d "$fw" ]; then
+    fw_name="$(basename "$fw")"
+    echo "📦 Copying framework: $fw_name"
+    cp -R "$fw" "$FRAMEWORKS_DIR/"
+  fi
+done
+
 echo "✅ Swift app built ($SWIFT_BIN)"
 
 cd "$ROOT_DIR"
 
-# ===================== 2. Copy app icon =====================
+# ===================== 2. Generate app icon from Icon.icon =====================
 
-echo "🖼  Copying app icon..."
-ICON_PATH="$ROOT_DIR/apps/macos/Icon.icon/AppIcon.icns"
-if [ -f "$ICON_PATH" ]; then
-    cp "$ICON_PATH" "$RESOURCES_DIR/AppIcon.icns"
-    echo "✅ App icon copied"
+echo "🖼  Generating app icon from Icon.icon..."
+ICON_SOURCE_DIR="$ROOT_DIR/apps/macos/Icon.icon"
+ICON_SOURCE_PNG="$ICON_SOURCE_DIR/Assets/App Icon Template3-恢复的 拷贝.png"
+ICONSET_DIR="$ROOT_DIR/apps/macos/AppIcon.iconset"
+ICNS_OUTPUT="$ICON_SOURCE_DIR/AppIcon.icns"
+
+if [ -f "$ICON_SOURCE_PNG" ]; then
+    mkdir -p "$ICONSET_DIR"
+
+    generate_icon() {
+        local size="$1"
+        local filename="$2"
+        sips -z "$size" "$size" "$ICON_SOURCE_PNG" --out "$ICONSET_DIR/$filename" >/dev/null 2>&1
+    }
+
+    generate_icon 16 "icon_16x16.png"
+    generate_icon 32 "icon_16x16@2x.png"
+    generate_icon 32 "icon_32x32.png"
+    generate_icon 64 "icon_32x32@2x.png"
+    generate_icon 128 "icon_128x128.png"
+    generate_icon 256 "icon_128x128@2x.png"
+    generate_icon 256 "icon_256x256.png"
+    generate_icon 512 "icon_256x256@2x.png"
+    generate_icon 512 "icon_512x512.png"
+    generate_icon 1024 "icon_512x512@2x.png"
+
+    iconutil -c icns "$ICONSET_DIR" -o "$ICNS_OUTPUT" 2>/dev/null || true
+
+    if [ -f "$ICNS_OUTPUT" ]; then
+        cp "$ICNS_OUTPUT" "$RESOURCES_DIR/AppIcon.icns"
+        echo "✅ App icon generated and copied"
+    else
+        echo "⚠️  Failed to generate AppIcon.icns, trying CDFKnowClow.iconset..."
+        FALLBACK_ICONSET="$ROOT_DIR/apps/macos/CDFKnowClow.iconset"
+        if [ -d "$FALLBACK_ICONSET" ]; then
+            iconutil -c icns "$FALLBACK_ICONSET" -o "$ICNS_OUTPUT" 2>/dev/null || true
+            if [ -f "$ICNS_OUTPUT" ]; then
+                cp "$ICNS_OUTPUT" "$RESOURCES_DIR/AppIcon.icns"
+                echo "✅ App icon generated from fallback iconset"
+            else
+                echo "⚠️  App icon generation failed"
+            fi
+        else
+            echo "⚠️  No fallback iconset found"
+        fi
+    fi
 else
-    echo "⚠️  App icon not found: $ICON_PATH"
+    echo "⚠️  Icon source not found: $ICON_SOURCE_PNG"
 fi
 
 # ===================== 3. Build frontend =====================
@@ -115,6 +170,13 @@ cd "$ROOT_DIR"
     --external:json5 \
     --external:onnxruntime-node \
     --external:fsevents \
+    --external:@mozilla/readability \
+    --external:turndown \
+    --external:jsdom \
+    --external:@mixmark-io/domino \
+    --external:cheerio \
+    --external:tr46 \
+    --external:whatwg-url \
     --sourcemap=inline \
     2>&1
 
@@ -158,9 +220,13 @@ cat > "$NM_TMP_DIR/package.json" <<'PKGJSON'
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "better-sqlite3": "^11.0.0",
+    "better-sqlite3": "^12.11.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "json5": "^2.2.3"
+    "json5": "^2.2.3",
+    "@mozilla/readability": "^0.5.0",
+    "turndown": "^7.2.0",
+    "jsdom": "^24.0.0",
+    "cheerio": "^1.0.0"
   }
 }
 PKGJSON

@@ -51,6 +51,21 @@ export function getAllSkills(): Skill[] {
   return [...patchedBuiltins, ...userSkills];
 }
 
+/** 获取所有技能，按使用次数从多到少排序（使用次数相同则按最近使用时间排序） */
+export function getAllSkillsSortedByUsage(): Skill[] {
+  const all = getAllSkills();
+  return [...all].sort((a, b) => {
+    const statsA = usageStatsCache.get(a.id);
+    const statsB = usageStatsCache.get(b.id);
+    const usesA = statsA?.totalUses ?? 0;
+    const usesB = statsB?.totalUses ?? 0;
+    if (usesB !== usesA) return usesB - usesA;
+    const lastA = statsA?.lastUsedAt ? new Date(statsA.lastUsedAt).getTime() : 0;
+    const lastB = statsB?.lastUsedAt ? new Date(statsB.lastUsedAt).getTime() : 0;
+    return lastB - lastA;
+  });
+}
+
 /** 根据 ID 获取单个技能 */
 export function getSkillById(id: string): Skill | undefined {
   return getAllSkills().find((s) => s.id === id);

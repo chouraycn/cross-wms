@@ -32,7 +32,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Message, Session, Attachment, ReferencedSession } from '../types/chat';
-import { CHAT_API_URL } from '../constants/api';
+import { API_BASE } from '../constants/api';
 
 // ===================== 类型定义 =====================
 
@@ -454,10 +454,33 @@ export function useAgentChat(
     thinkingAccumulator: '',
   });
 
-  // 当 session 变化时，同步 messages
+  // 当 session 变化时，同步 messages 并清理残留的流式状态
   useEffect(() => {
     if (currentSession?.messages) {
-      setMessages(currentSession.messages);
+      const hasStreamingMessage = currentSession.messages.some(
+        (msg) => msg.isStreaming
+      );
+      if (hasStreamingMessage) {
+        const cleanedMessages = currentSession.messages.map((msg) =>
+          msg.isStreaming
+            ? {
+                ...msg,
+                isStreaming: false,
+                thinkingDone: !!msg.thinking,
+                metadata: {
+                  ...msg.metadata,
+                  error:
+                    (msg.metadata as any)?.error ||
+                    (msg.content && msg.content.trim() ? undefined : '请求已中断'),
+                  errorCode: (msg.metadata as any)?.errorCode || 'ABORTED',
+                },
+              }
+            : msg
+        );
+        setMessages(cleanedMessages);
+      } else {
+        setMessages(currentSession.messages);
+      }
     }
   }, [currentSession?.id]);
 
@@ -553,6 +576,7 @@ export function useAgentChat(
         timestamp: new Date(),
         thinking: '',
         thinkingDone: false,
+        isStreaming: true,
       };
 
       const newMessages = [...prev, newMsg];
@@ -572,16 +596,11 @@ export function useAgentChat(
       startAssistantMessage(isReasoning);
     }
 
-    if (isReasoning !== state.isReasoning && state.assistantMessageIndex >= 0) {
+    if (isReasoning !== state.isReasoning) {
       textCoalescerRef.current?.flush({ force: true });
       thinkingCoalescerRef.current?.flush({ force: true });
       schedulerRef.current?.flushAll();
-
-      if (isReasoning) {
-        startAssistantMessage(true);
-      } else {
-        startAssistantMessage(false);
-      }
+      state.isReasoning = isReasoning;
     }
 
     if (isReasoning) {
@@ -608,33 +627,98 @@ export function useAgentChat(
     return true;
   }, []);
 
-  // 事件处理
+  // 事件处理 — 处理 AgentEventPayload 格式
   const handleAgentEvent = useCallback((event: { event?: string; data: unknown }) => {
-    const data = (event.data as Record<string, unknown>) || {};
-    const type = (data.type as string) || (event.event as string) || 'unknown';
-    const stream = (data.stream as string) || type;
-    const seq = (data.streamSeq as number) || (data.seq as number) || 0;
+    const payload = (event.data as Record<string, unknown>) || {};
+    const stream = (payload.stream as string) || (event.event as string) || 'unknown';
+    const seq = (payload.seq as number) || 0;
+    const data = (payload.data as Record<string, unknown>) || {};
+    const runId = (payload.runId as string) || '';
 
     if (seq > 0 && !checkAndUpdateSeq(stream, seq)) {
       return;
     }
 
-    switch (type) {
-      case 'init': {
-        setCurrentRunId((data.runId as string) || null);
-        setError(null);
-        lastSeqRef.current.clear();
-        itemsMapRef.current.clear();
-        setActiveItems([]);
+    switch (stream) {
+      case 'lifecycle': {
+        const phase = (data.phase as string) || '';
+        if (phase === 'start') {
+          if (runId) {
+            setCurrentRunId(runId);
+          }
+          setError(null);
+          lastSeqRef.current.clear();
+          itemsMapRef.current.clear();
+          setActiveItems([]);
+          initializeStreaming();
+        } else if (phase === 'init') {
+          if (runId) {
+            setCurrentRunId(runId);
+          }
+          setError(null);
 
-        initializeStreaming();
+          if (data.modelName || data.model) {
+            const state = blockStateRef.current;
+            if (state.assistantMessageIndex < 0) {
+              startAssistantMessage(false);
+            }
+            setMessages((prev) => {
+              const idx = blockStateRef.current.assistantMessageIndex;
+              if (idx < 0 || idx >= prev.length) return prev;
+              const msg = prev[idx];
+              if (msg.role !== 'assistant') return prev;
+              const updated: Message = {
+                ...msg,
+                model: (data.modelName as string) || (data.model as string) || msg.model,
+              };
+              const newMessages = [...prev];
+              newMessages[idx] = updated;
+              return newMessages;
+            });
+          }
+        } else if (phase === 'done') {
+          textCoalescerRef.current?.dispose();
+          thinkingCoalescerRef.current?.dispose();
+          flushAllBuffers();
+
+          const state = blockStateRef.current;
+          if (state.assistantMessageIndex >= 0) {
+            setMessages((prev) => {
+              if (state.assistantMessageIndex >= prev.length) return prev;
+              const msg = prev[state.assistantMessageIndex];
+              if (msg.role !== 'assistant') return prev;
+
+              const updated: Message = {
+                ...msg,
+                isStreaming: false,
+                thinkingDone: true,
+                thinkingDuration: data.thinkingDuration as number | undefined,
+                usage: data.usage as Record<string, unknown> | undefined,
+              };
+
+              const newMessages = [...prev];
+              newMessages[state.assistantMessageIndex] = updated;
+              return newMessages;
+            });
+          }
+
+          setIsLoading(false);
+          setCurrentRunId(null);
+
+          const errorCode = data.errorCode as string | undefined;
+          const errorMessage = data.errorMessage as string | undefined;
+          if (errorCode && errorMessage) {
+            setError(errorMessage);
+          } else {
+            setError(null);
+          }
+        }
         break;
       }
 
-      case 'text': {
+      case 'assistant': {
         const content = (data.content as string) || '';
-        const isReasoning = (data.isReasoning as boolean) || false;
-        handleTextContent(content, isReasoning);
+        handleTextContent(content, false);
         break;
       }
 
@@ -644,11 +728,12 @@ export function useAgentChat(
         break;
       }
 
-      case 'tool_call': {
+      case 'tool': {
         flushAllBuffers();
 
-        const toolName = (data.toolName as string) || (data.tool as string) || '';
-        const toolArgs = (data.toolArgs as string) || (data.args as string) || '{}';
+        const toolName = (data.name as string) || (data.toolName as string) || '';
+        const toolArgs = (data.args as string) || (data.toolArgs as string) || '{}';
+        const toolResult = (data.result as string) || '';
 
         const state = blockStateRef.current;
         if (state.assistantMessageIndex < 0) {
@@ -668,8 +753,8 @@ export function useAgentChat(
               id: (data.toolCallId as string) || `tc_${Date.now()}`,
               name: toolName,
               arguments: toolArgs,
-              result: (data.result as string) || '',
-              status: 'calling' as const,
+              result: toolResult,
+              status: toolResult ? 'completed' as const : 'calling' as const,
             },
           ];
 
@@ -694,59 +779,50 @@ export function useAgentChat(
         break;
       }
 
-      case 'done': {
-        textCoalescerRef.current?.dispose();
-        thinkingCoalescerRef.current?.dispose();
-        flushAllBuffers();
-
-        setIsLoading(false);
-        setCurrentRunId(null);
-
-        if (!data.errorCode) {
-          setError(null);
-        }
-        break;
-      }
-
+      case 'item':
       case 'debug': {
-        const debugStream = (data.stream as string) || '';
-        if (debugStream === 'item') {
-          const itemData = data as unknown as AgentItemEventData & { type: string; stream: string };
-          const itemId = itemData.itemId;
+        const itemData = data as unknown as AgentItemEventData & { phase: string; stream: string };
+        const itemId = itemData.itemId;
+        if (!itemId) break;
 
-          if (itemData.phase === 'start' || itemData.phase === 'update') {
-            itemsMapRef.current.set(itemId, {
-              itemId: itemData.itemId,
-              phase: itemData.phase,
-              kind: itemData.kind,
-              title: itemData.title,
-              status: itemData.status,
-              name: itemData.name,
-              meta: itemData.meta,
-              toolCallId: itemData.toolCallId,
-              startedAt: itemData.startedAt,
-              endedAt: itemData.endedAt,
-              error: itemData.error,
-              summary: itemData.summary,
-              progressText: itemData.progressText,
-              progressPercent: itemData.progressPercent,
-            });
-          } else if (itemData.phase === 'end') {
-            const existing = itemsMapRef.current.get(itemId);
-            if (existing) {
-              itemsMapRef.current.set(itemId, { ...existing, ...itemData });
-              setTimeout(() => {
-                itemsMapRef.current.delete(itemId);
-                setActiveItems(Array.from(itemsMapRef.current.values()));
-              }, 2000);
-            }
-          }
+        if (itemData.phase === 'start' || itemData.phase === 'update') {
+          itemsMapRef.current.set(itemId, {
+            itemId: itemData.itemId,
+            phase: itemData.phase,
+            kind: itemData.kind,
+            title: itemData.title,
+            status: itemData.status,
+            name: itemData.name,
+            meta: itemData.meta,
+            toolCallId: itemData.toolCallId,
+            startedAt: itemData.startedAt,
+            endedAt: itemData.endedAt,
+            error: itemData.error,
+            summary: itemData.summary,
+            progressText: itemData.progressText,
+            progressPercent: itemData.progressPercent,
+          });
           setActiveItems(Array.from(itemsMapRef.current.values()));
+        } else if (itemData.phase === 'end') {
+          const existing = itemsMapRef.current.get(itemId);
+          if (existing) {
+            itemsMapRef.current.set(itemId, { ...existing, ...itemData });
+            setActiveItems(Array.from(itemsMapRef.current.values()));
+            setTimeout(() => {
+              itemsMapRef.current.delete(itemId);
+              setActiveItems(Array.from(itemsMapRef.current.values()));
+            }, 2000);
+          }
         }
         break;
       }
 
       case 'heartbeat':
+      case 'compaction':
+      case 'plan':
+      case 'command_output':
+      case 'patch':
+      case 'approval':
       default:
         break;
     }
@@ -758,6 +834,7 @@ export function useAgentChat(
     content: string,
     options: SendAgentMessageOptions = {},
   ): Promise<void> => {
+    console.log('[useAgentChat] sendMessage called, content:', content.slice(0, 50));
     if (!content.trim() || isLoading) return;
 
     const userMsgId = `msg_${uuidv4().slice(0, 8)}`;
@@ -784,7 +861,7 @@ export function useAgentChat(
     abortControllerRef.current = abortController;
 
     try {
-      const response = await fetch(`${CHAT_API_URL}/agent-chat`, {
+      const response = await fetch(`${API_BASE}/agent-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -835,9 +912,64 @@ export function useAgentChat(
     } catch (err: any) {
       if (err.name === 'AbortError') {
         console.log('[useAgentChat] 请求已取消');
+        textCoalescerRef.current?.dispose();
+        thinkingCoalescerRef.current?.dispose();
+        flushAllBuffers();
+
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex >= 0) {
+          setMessages((prev) => {
+            if (state.assistantMessageIndex >= prev.length) return prev;
+            const msg = prev[state.assistantMessageIndex];
+            if (msg.role !== 'assistant') return prev;
+
+            const updated: Message = {
+              ...msg,
+              isStreaming: false,
+              thinkingDone: !!msg.thinking,
+              metadata: {
+                ...msg.metadata,
+                error: '请求已取消',
+                errorCode: 'ABORTED',
+              },
+            };
+
+            const newMessages = [...prev];
+            newMessages[state.assistantMessageIndex] = updated;
+            return newMessages;
+          });
+        }
       } else {
         console.error('[useAgentChat] 发送消息失败:', err);
         setError(err.message || '发送失败');
+
+        textCoalescerRef.current?.dispose();
+        thinkingCoalescerRef.current?.dispose();
+        flushAllBuffers();
+
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex >= 0) {
+          setMessages((prev) => {
+            if (state.assistantMessageIndex >= prev.length) return prev;
+            const msg = prev[state.assistantMessageIndex];
+            if (msg.role !== 'assistant') return prev;
+
+            const updated: Message = {
+              ...msg,
+              isStreaming: false,
+              thinkingDone: !!msg.thinking,
+              metadata: {
+                ...msg.metadata,
+                error: err.message || '发送失败',
+                errorCode: (err as any).code || 'UNKNOWN_ERROR',
+              },
+            };
+
+            const newMessages = [...prev];
+            newMessages[state.assistantMessageIndex] = updated;
+            return newMessages;
+          });
+        }
       }
     } finally {
       setIsLoading(false);
@@ -857,6 +989,25 @@ export function useAgentChat(
     textCoalescerRef.current?.dispose();
     thinkingCoalescerRef.current?.dispose();
     flushAllBuffers();
+
+    const state = blockStateRef.current;
+    if (state.assistantMessageIndex >= 0) {
+      setMessages((prev) => {
+        if (state.assistantMessageIndex >= prev.length) return prev;
+        const msg = prev[state.assistantMessageIndex];
+        if (msg.role !== 'assistant') return prev;
+
+        const updated: Message = {
+          ...msg,
+          isStreaming: false,
+          thinkingDone: !!msg.thinking,
+        };
+
+        const newMessages = [...prev];
+        newMessages[state.assistantMessageIndex] = updated;
+        return newMessages;
+      });
+    }
 
     setIsLoading(false);
     setCurrentRunId(null);
@@ -890,7 +1041,7 @@ export function useAgentChat(
     }
 
     try {
-      const response = await fetch(`${CHAT_API_URL}/agent-compact`, {
+      const response = await fetch(`${API_BASE}/agent-compact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -956,18 +1107,30 @@ export function useAgentChat(
     return thinkingText.length > 0;
   }, [thinkingText]);
 
-  // 同步 messages 到 session（节流）
+  // 同步 messages 到 session
   useEffect(() => {
     if (messages.length > 0 && currentSession) {
-      const timer = setTimeout(() => {
+      const lastMsg = messages[messages.length - 1];
+      const isStreaming = lastMsg?.isStreaming;
+
+      if (isStreaming) {
+        const timer = setTimeout(() => {
+          const updatedSession = {
+            ...currentSession,
+            messages,
+            updatedAt: new Date().toISOString(),
+          };
+          onSessionUpdate(updatedSession);
+        }, 100);
+        return () => clearTimeout(timer);
+      } else {
         const updatedSession = {
           ...currentSession,
           messages,
           updatedAt: new Date().toISOString(),
         };
         onSessionUpdate(updatedSession);
-      }, 800);
-      return () => clearTimeout(timer);
+      }
     }
   }, [messages, currentSession, onSessionUpdate]);
 

@@ -26,8 +26,14 @@ VERSION_FILE="$PROJECT_DIR/version.txt"
 
 # ===================== 版本管理 =====================
 
+# 切换到项目根目录，确保所有相对路径正确
+cd "$PROJECT_DIR" || { echo "❌ 错误：无法切换到项目目录 $PROJECT_DIR"; exit 1; }
+
 # 从 package.json 读取当前版本
-CURRENT_VERSION=$(node -e "console.log(require('./package.json').version)")
+CURRENT_VERSION=$(node -e "console.log(require('./package.json').version)") || {
+  echo "❌ 错误：无法读取 package.json 中的版本号"
+  exit 1
+}
 
 # 处理参数
 BUMP_TYPE=""
@@ -115,53 +121,26 @@ if ! command -v codesign &>/dev/null; then
   echo "   安装 Xcode Command Line Tools: xcode-select --install"
 fi
 
-if [ -n "$CI" ]; then
+if [ -n "$CI" ] || [ "$CI_MODE" = true ]; then
   # CI 环境：使用系统 Python 和 pip 安装的 pyinstaller
-  PYTHON="$(which python3)"
-  PYINSTALLER="$(which pyinstaller)"
-  if [ -z "$PYINSTALLER" ]; then
-    echo "Installing PyInstaller in CI..."
-    pip3 install pyinstaller pywebview Pillow
-    PYINSTALLER="$(which pyinstaller)"
+  PYTHON="/usr/bin/python3"
+  PYINSTALLER=$(which pyinstaller 2>/dev/null || echo "/Users/chouray/Library/Python/3.9/bin/pyinstaller")
+  if [ ! -x "$PYINSTALLER" ]; then
+    echo "Installing PyInstaller..."
+    pip3 install pyinstaller
+    PYINSTALLER=$(which pyinstaller 2>/dev/null || echo "/Users/chouray/Library/Python/3.9/bin/pyinstaller")
   fi
 else
-  # 本地环境：使用指定的 venv（支持通过环境变量覆盖）
-  # 默认路径兼容常见 venv 位置，用户可通过 PYWEBVIEW_VENV 环境变量指定
-  PYWEBVIEW_VENV="${PYWEBVIEW_VENV:-$(python3 -c "import os,sysconfig; print(os.path.dirname(sysconfig.get_path('scripts')))")}"
-  if [ ! -d "$PYWEBVIEW_VENV" ]; then
-    echo "❌ 错误：Python 虚拟环境未找到: $PYWEBVIEW_VENV"
-    echo "   请设置环境变量 PYWEBVIEW_VENV 指向正确的虚拟环境路径"
-    echo "   例如: export PYWEBVIEW_VENV=/path/to/your/venv"
-    exit 1
-  fi
-  PYINSTALLER="$PYWEBVIEW_VENV/bin/pyinstaller"
-  PYTHON="$PYWEBVIEW_VENV/bin/python3"
-  PIP="$PYWEBVIEW_VENV/bin/pip"
-  # 自动安装必需的 Python 依赖（首次运行或依赖丢失时）
-  # 必需包: pyinstaller (打包工具), pywebview (webview 窗口), Pillow (PNG→ICNS), pyobjc-framework-Cocoa (macOS native)
-  # ⚠️ pywebview 锁定 4.4.1（方案A frameless=True 在此版本行为稳定）
-  REQUIRED_PACKAGES=("pyinstaller" "pywebview==4.4.1" "Pillow" "pyobjc-framework-Cocoa")
-  MISSING_PACKAGES=()
-  for pkg in "${REQUIRED_PACKAGES[@]}"; do
-    # 将包名转换为 import 名（pyobjc-framework-Cocoa → objc）
-    case "$pkg" in
-      pyinstaller) import_name="PyInstaller" ;;
-      pywebview) import_name="webview" ;;
-      Pillow) import_name="PIL" ;;
-      pyobjc-framework-Cocoa) import_name="objc" ;;
-      *) import_name="$pkg" ;;
-    esac
-    if ! "$PYTHON" -c "import $import_name" &>/dev/null; then
-      MISSING_PACKAGES+=("$pkg")
-    fi
-  done
-  if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
-    echo "📦 自动安装缺少的 Python 依赖: ${MISSING_PACKAGES[*]}"
-    "$PIP" install "${MISSING_PACKAGES[@]}" || {
-      echo "❌ 依赖安装失败，请手动运行: $PIP install ${MISSING_PACKAGES[*]}"
-      exit 1
-    }
-    echo "✅ 依赖安装完成"
+  # 本地环境：使用系统 Python（优先使用 pip3 安装的包）
+  echo "⚠️  本地模式：使用系统 Python ($(which python3))"
+  PYTHON="$(which python3)"
+  PIP="$(which pip3 || which pip)"
+  PYINSTALLER="$(which pyinstaller || echo '')"
+  
+  if [ -z "$PYINSTALLER" ]; then
+    echo "Installing PyInstaller..."
+    pip3 install pyinstaller
+    PYINSTALLER="$(which pyinstaller)"
   fi
 fi
 

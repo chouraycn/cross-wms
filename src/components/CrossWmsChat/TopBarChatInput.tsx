@@ -50,6 +50,8 @@ interface TopBarChatInputProps {
   sendMessage: (content: string, options?: SendMessageOptions) => void;
   /** 停止生成函数（从外部注入，避免重复实例化 useChat） */
   stopGeneration: () => void;
+  /** 样式变体：default=默认带边框，cardless=无边框无背景（外层有卡片），card=白色圆角卡片带阴影 */
+  variant?: 'default' | 'cardless' | 'card';
 }
 
 // ===================== v1.9.3: 文件类型图标工具 =====================
@@ -87,7 +89,7 @@ function getFileTypeColor(mimeType: string, fileName: string): string {
 
 // ===================== Component =====================
 
-export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, updateSessionModel, initialSkill, isLoading, sendMessage, stopGeneration }: TopBarChatInputProps) {
+export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, updateSessionModel, initialSkill, isLoading, sendMessage, stopGeneration, variant = 'default' }: TopBarChatInputProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
@@ -631,6 +633,8 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
 
   // ---- Render ----
 
+  const isCardVariant = variant === 'card';
+
   return (
     <Box
       ref={containerRef}
@@ -640,6 +644,16 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         display: 'flex',
         flexDirection: 'column',
         pr: 1.25,
+        ...(isCardVariant && {
+          pr: 0,
+          borderRadius: '24px',
+          bgcolor: isDark ? 'rgba(255,255,255,0.06)' : '#E8E8E8',
+          padding: '2px 2px 4px 2px',
+          border: 'none',
+          boxShadow: isDark
+            ? '0 8px 32px rgba(0,0,0,0.4)'
+            : '0 8px 32px rgba(0,0,0,0.08)',
+        }),
       }}
     >
       <Paper
@@ -648,9 +662,9 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         onDrop={handleDrop}
         sx={{
           width: '100%',
-          borderRadius: '12px',
-          border: `1px solid ${gs.border}`,
-          bgcolor: gs.bgPanel,
+          borderRadius: variant === 'cardless' ? 0 : (isCardVariant ? '22px' : '12px'),
+          border: variant === 'cardless' || isCardVariant ? 'none' : `1px solid ${gs.border}`,
+          bgcolor: variant === 'cardless' ? 'transparent' : '#FFFFFF',
           boxShadow: 'none',
           display: 'flex',
           flexDirection: 'column',
@@ -931,7 +945,8 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           hasAttachments={pendingAttachments.length > 0}
         />
       </Paper>
-      {/* v2.3.0: 文件夹选择区域 — Paper 外部，白色区域保持四角圆角 */}
+
+      {/* v2.3.0: 文件夹选择区域 — Paper 外部，与外层灰色融为一体 */}
       <Collapse in={isEmpty} timeout={300}>
         <Box
           sx={{
@@ -940,13 +955,17 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             gap: 1.5,
             px: 2,
             py: 0.75,
-            mt: -1,
-            bgcolor: isDark ? 'rgba(0,0,0,0.2)' : '#F5F5F5',
-            borderBottomLeftRadius: '12px',
-            borderBottomRightRadius: '12px',
-            borderLeft: `1px solid ${gs.border}`,
-            borderRight: `1px solid ${gs.border}`,
-            borderBottom: `1px solid ${gs.border}`,
+            mt: isCardVariant ? 0 : -1,
+            bgcolor: isCardVariant
+              ? 'transparent'
+              : ((variant === 'cardless')
+                ? (isDark ? 'rgba(255,255,255,0.05)' : '#F0F0F0')
+                : (isDark ? 'rgba(0,0,0,0.2)' : '#F5F5F5')),
+            borderBottomLeftRadius: isCardVariant ? '22px' : (variant === 'default' ? '12px' : 0),
+            borderBottomRightRadius: isCardVariant ? '22px' : (variant === 'default' ? '12px' : 0),
+            borderLeft: variant === 'default' && !isCardVariant ? `1px solid ${gs.border}` : 'none',
+            borderRight: variant === 'default' && !isCardVariant ? `1px solid ${gs.border}` : 'none',
+            borderBottom: variant === 'default' && !isCardVariant ? `1px solid ${gs.border}` : 'none',
           }}
         >
             {/* 选择文件夹下拉 */}
@@ -955,13 +974,15 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5,
-                px: 1,
-                py: 0.4,
-                borderRadius: '6px',
+                px: 1.5,
+                py: 0.5,
+                borderRadius: '8px',
                 cursor: 'pointer',
                 color: gs.textMuted,
                 fontSize: 13,
-                '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : '#E8E8E8' },
+                bgcolor: 'transparent',
+                border: 'none',
+                '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
               }}
             >
               <FolderOpenIcon sx={{ fontSize: 16 }} />

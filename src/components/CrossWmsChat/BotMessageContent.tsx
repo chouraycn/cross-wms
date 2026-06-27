@@ -452,11 +452,11 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
       {/* 消息内容渲染 */}
       {msg.content && msg.content.trim() ? (
         <MarkdownRenderer content={msg.content} isStreaming={msg.isStreaming} />
-      ) : msg.isStreaming ? (
+      ) : msg.isStreaming && !msg.thinking ? (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
           <CircularProgress size={14} thickness={5} sx={{ color: gs.textDisabled }} />
           <Typography sx={{ fontSize: 13, color: gs.textDisabled, fontStyle: 'italic' }}>
-            {msg.thinking ? '深度思考中...' : '思考中...'}
+            思考中...
           </Typography>
         </Box>
       ) : msg.role === 'assistant' ? (
@@ -509,15 +509,13 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
           );
         })()
       ) : null}
-      {/* 操作按钮：复制 + 编辑 + 删除 + 引用 + 重新生成（hover 显示，非流式输出时） */}
+      {/* 操作按钮：复制 + 编辑 + 删除 + 引用 + 重新生成（一直显示，非流式输出时） */}
       {!msg.isStreaming && (
         <Box sx={{
           display: 'flex',
           gap: 0.5,
           mt: 0.5,
-          opacity: 0,
-          transition: 'opacity 0.15s',
-          '.msg-hover-zone:hover &': { opacity: 1 },
+          opacity: 1,
         }}>
           <Tooltip title={copiedId === msg.id ? '已复制' : '复制'}>
             <IconButton

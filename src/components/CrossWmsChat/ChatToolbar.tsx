@@ -26,8 +26,7 @@ import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
-import { getAllSkills } from '../../stores/skillStore';
-import { getCategoryLabel, CATEGORY_ORDER } from '../../constants/skillCategories';
+import { getAllSkillsSortedByUsage } from '../../stores/skillStore';
 import { getGrayScale } from '../../constants/theme';
 import { providerIcon } from '../../utils/providerIcons';
 import { CAPABILITY_LABELS, CAPABILITY_COLORS, type ModelCapability } from '../../types/models';
@@ -150,65 +149,71 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '6px 12px',
+          padding: '3px 12px 6px 12px',
           flexShrink: 0,
         }}
       >
         {/* Left: Skills + Attach */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {/* Skills button — 药丸 */}
+          {/* Skills button — 仅图标 */}
           <Box
             ref={skillsBtnRef as React.RefObject<HTMLDivElement>}
             onClick={(e) => { e.stopPropagation(); handleDropdownClick('skills'); }}
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: 0.5,
-              px: 1.5,
-              py: 0.5,
-              borderRadius: '20px',
-              bgcolor: gs.bgHover,
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              bgcolor: isDark ? 'rgba(0,0,0,0.2)' : '#F5F5F5',
               cursor: 'pointer',
               transition: 'background-color 0.15s',
               '&:hover': { bgcolor: gs.bgActive },
               userSelect: 'none',
             }}
           >
-            <AutoFixHighIcon sx={{ fontSize: 15, color: gs.textMuted }} />
-            <Typography sx={{ fontSize: 13, fontWeight: 500, color: gs.textPrimary, lineHeight: 1 }}>
-              Skills
-            </Typography>
+            <AutoFixHighIcon sx={{ fontSize: 18, color: gs.textMuted }} />
           </Box>
 
-          {/* Attach button — 药丸 */}
+          {/* Attach button — 仅图标 */}
           {onAttachClick && (
             <Box
               onClick={(e) => { e.stopPropagation(); onAttachClick(); }}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 0.5,
-                px: 1.5,
-                py: 0.5,
-                borderRadius: '20px',
-                bgcolor: gs.bgHover,
+                justifyContent: 'center',
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                bgcolor: isDark ? 'rgba(0,0,0,0.2)' : '#F5F5F5',
                 cursor: 'pointer',
                 transition: 'background-color 0.15s',
                 '&:hover': { bgcolor: gs.bgActive },
                 userSelect: 'none',
+                position: 'relative',
               }}
             >
-              <AttachFileIcon sx={{ fontSize: 15, color: gs.textMuted }} />
-              <Typography sx={{ fontSize: 13, fontWeight: 500, color: gs.textPrimary, lineHeight: 1 }}>
-                附件
-              </Typography>
+              <AttachFileIcon sx={{ fontSize: 18, color: gs.textMuted }} />
+              {hasAttachments && (
+                <Box sx={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: ACCENT,
+                }} />
+              )}
             </Box>
           )}
 
           </Box>
 
         {/* Right: Model selector, Memory, Mic, Send */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mr: 0.5 }}>
           {/* Model selector — 默认无背景，点击后显示灰色背景 */}
           <Box
             ref={modelBtnRef as React.RefObject<HTMLDivElement>}
@@ -247,7 +252,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             </IconButton>
           </Tooltip>
 
-          {/* Send / Stop button — 紫色方形圆角 */}
+          {/* Send / Stop button — 圆形 */}
           <IconButton
             onClick={(e) => {
               e.stopPropagation();
@@ -259,7 +264,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             }}
             disabled={!isLoading && !inputValue.trim()}
             sx={{
-              width: 34, height: 34, borderRadius: '10px', p: 0,
+              width: 34, height: 34, borderRadius: '50%', p: 0,
               bgcolor: ACCENT,
               color: '#fff',
               flexShrink: 0,
@@ -276,20 +281,19 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
         </Box>
       </Box>
 
-      {/* ====== Model Menu — 弹窗在按钮上方，无背景遮罩 ====== */}
+      {/* ====== Model Menu — 弹窗在按钮上方，右对齐，无背景遮罩 ====== */}
       <Menu
         anchorEl={modelBtnRef.current}
         open={activeDropdown === 'model'}
         onClose={() => setActiveDropdown(null)}
-        // 关键：弹窗出现在按钮上方
-        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         slotProps={{
           paper: {
             sx: {
               width: 320,
               maxHeight: 520,
-              mt: -0.5, // 紧贴按钮
+              mt: -0.5,
               borderRadius: '14px',
               border: `1px solid ${gs.border}`,
               boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
@@ -299,7 +303,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           },
           root: {
             sx: {
-              '& .MuiMenu-list': { py: 0.5 },
+              '& .MuiMenu-list': { py: 0, display: 'flex', flexDirection: 'column' },
             },
           },
         }}
@@ -310,167 +314,170 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           },
         }}
       >
-        {/* Auto 选项 */}
-        {(() => {
-          const autoOption = modelOptions.find(o => o.provider === 'auto');
-          if (!autoOption) return null;
-          const isSelected = selectedModel === autoOption.name;
-          return (
-            <MenuItem
-              key="auto"
-              onClick={() => { onModelChange(autoOption.name); setActiveDropdown(null); }}
-              sx={{
-                py: 1.25, px: 2, mx: 0.5, borderRadius: '10px',
-                backgroundColor: isSelected ? SELECTED_BG : 'transparent',
-                '&:hover': { backgroundColor: isSelected ? SELECTED_BG : (isDark ? '#2A2A2A' : '#F5F5F5') },
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, width: '100%' }}>
-                <AutoModeIcon sx={{ fontSize: 20, color: ACCENT, flexShrink: 0 }} />
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: isSelected ? ACCENT : gs.textPrimary }}>
-                      CDF Auto Model
-                    </Typography>
-                    <Chip
-                      label="智能"
-                      size="small"
-                      sx={{
-                        fontSize: '0.6rem', height: 18,
-                        backgroundColor: isDark ? '#3D2A10' : '#FFF7ED',
-                        color: ACCENT, fontWeight: 600,
-                        borderRadius: '6px',
-                      }}
-                    />
-                  </Box>
-                  <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, mt: 0.25 }}>
-                    根据任务自动选择最合适的模型
-                  </Typography>
-                </Box>
-                {isSelected && (
-                  <CheckIcon sx={{ fontSize: 18, color: ACCENT, flexShrink: 0 }} />
-                )}
-              </Box>
-            </MenuItem>
-          );
-        })()}
-
-        <Divider sx={{ mx: 1.5, my: 0.5, borderColor: gs.border }} />
-
-        {/* 分组标题 */}
-        <Typography sx={{ px: 2, py: 0.5, fontSize: '0.6875rem', fontWeight: 600, color: gs.textMuted, letterSpacing: '0.02em' }}>
-          可用模型
-        </Typography>
-
-        {/* 模型列表 */}
-        {modelOptions
-          .filter(o => o.provider !== 'auto')
-          .map((option) => {
-            const isSelected = selectedModel === option.name;
-            return (
-              <MenuItem
-                key={option.id}
-                onClick={() => { onModelChange(option.name); setActiveDropdown(null); }}
-                sx={{
-                  py: 1, px: 2, mx: 0.5, borderRadius: '10px',
-                  backgroundColor: isSelected ? SELECTED_BG : 'transparent',
-                  '&:hover': { backgroundColor: isSelected ? SELECTED_BG : (isDark ? '#2A2A2A' : '#F5F5F5') },
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                  {/* Provider 图标 */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                    {providerIcon(option.provider, 18)}
-                  </Box>
-
-                  {/* 模型信息 */}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Typography sx={{
-                        fontSize: '0.8125rem',
-                        fontWeight: isSelected ? 600 : 500,
-                        color: isSelected ? ACCENT : gs.textPrimary,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {option.name}
-                      </Typography>
-                      {option.isDefault && (
-                        <Chip
-                          label="默认"
-                          size="small"
-                          sx={{
-                            fontSize: '0.55rem', height: 16,
-                            backgroundColor: isDark ? '#3D3520' : '#FEF3C7',
-                            color: '#D97706', fontWeight: 600,
-                            borderRadius: '4px',
-                          }}
-                        />
-                      )}
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.15, flexWrap: 'wrap' }}>
-                      {option.capabilities?.map(cap => (
-                        <Chip
-                          key={cap}
-                          label={CAPABILITY_LABELS[cap]}
-                          size="small"
-                          sx={{
-                            fontSize: '0.55rem',
-                            height: 14,
-                            backgroundColor: `${CAPABILITY_COLORS[cap]}15`,
-                            color: CAPABILITY_COLORS[cap],
-                            fontWeight: 500,
-                          }}
-                        />
-                      ))}
-                      {option.description && (
-                        <Typography sx={{
-                          fontSize: '0.7rem',
-                          color: gs.textMuted,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}>
-                          {option.description}
+        <Box sx={{ display: 'flex', flexDirection: 'column', maxHeight: 520 }}>
+          {/* 顶部：Auto 选项 + 分割线 + 分组标题 */}
+          <Box sx={{ flexShrink: 0, pt: 0.5 }}>
+            {/* Auto 选项 */}
+            {(() => {
+              const autoOption = modelOptions.find(o => o.provider === 'auto');
+              if (!autoOption) return null;
+              const isSelected = selectedModel === autoOption.name;
+              return (
+                <MenuItem
+                  key="auto"
+                  onClick={() => { onModelChange(autoOption.name); setActiveDropdown(null); }}
+                  sx={{
+                    py: 1.25, px: 2, mx: 0.5, borderRadius: '10px',
+                    backgroundColor: isSelected ? SELECTED_BG : 'transparent',
+                    '&:hover': { backgroundColor: isSelected ? SELECTED_BG : (isDark ? '#2A2A2A' : '#F5F5F5') },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, width: '100%' }}>
+                    <AutoModeIcon sx={{ fontSize: 20, color: ACCENT, flexShrink: 0 }} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: isSelected ? ACCENT : gs.textPrimary }}>
+                          CDF Auto Model
                         </Typography>
-                      )}
+                        <Chip
+                          label="智能"
+                          size="small"
+                          sx={{
+                            fontSize: '0.6rem', height: 18,
+                            backgroundColor: isDark ? '#3D2A10' : '#FFF7ED',
+                            color: ACCENT, fontWeight: 600,
+                            borderRadius: '6px',
+                          }}
+                        />
+                      </Box>
+                      <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, mt: 0.25 }}>
+                        根据任务自动选择最合适的模型
+                      </Typography>
                     </Box>
+                    {isSelected && (
+                      <CheckIcon sx={{ fontSize: 18, color: ACCENT, flexShrink: 0 }} />
+                    )}
                   </Box>
+                </MenuItem>
+              );
+            })()}
 
-                  {/* 选中勾 */}
-                  {isSelected && (
-                    <CheckIcon sx={{ fontSize: 18, color: ACCENT, flexShrink: 0 }} />
-                  )}
-                </Box>
-              </MenuItem>
-            );
-          })}
+            <Divider sx={{ mx: 1.5, my: 0.5, borderColor: gs.border }} />
 
-        <Divider sx={{ mx: 1.5, my: 0.5, borderColor: gs.border }} />
-
-        {/* 无已启用模型提示 */}
-        {modelOptions.filter(o => o.provider !== 'auto').length === 0 && !modelsLoading && (
-          <Box sx={{ px: 2, py: 1, mx: 0.5, borderRadius: '10px', bgcolor: isDark ? '#2A1A0A' : '#FFF7ED' }}>
-            <Typography sx={{ fontSize: '0.75rem', color: ACCENT, fontWeight: 500 }}>
-              尚未启用任何模型
-            </Typography>
-            <Typography sx={{ fontSize: '0.6875rem', color: gs.textMuted, mt: 0.25 }}>
-              请在模型管理中添加 API Key 并启用模型
+            {/* 分组标题 */}
+            <Typography sx={{ px: 2, py: 0.5, fontSize: '0.6875rem', fontWeight: 600, color: gs.textMuted, letterSpacing: '0.02em' }}>
+              可用模型
             </Typography>
           </Box>
-        )}
 
-        {/* 管理模型入口 */}
-        <MenuItem
-          onClick={() => { setActiveDropdown(null); onOpenAISettings?.(); }}
-          sx={{ py: 1, mx: 0.5, borderRadius: '10px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
-        >
-          <ListItemIcon sx={{ minWidth: 32 }}>
-            <SettingsIcon sx={{ fontSize: 16, color: gs.textMuted }} />
-          </ListItemIcon>
-          <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>添加模型</Typography>
-        </MenuItem>
+          {/* 中间：可滚动的模型列表 */}
+          <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }}>
+            {/* 模型列表 */}
+            {modelOptions
+              .filter(o => o.provider !== 'auto')
+              .map((option) => {
+                const isSelected = selectedModel === option.name;
+                return (
+                  <MenuItem
+                    key={option.id}
+                    onClick={() => { onModelChange(option.name); setActiveDropdown(null); }}
+                    sx={{
+                      py: 1, px: 2, mx: 0.5, borderRadius: '10px',
+                      backgroundColor: isSelected ? SELECTED_BG : 'transparent',
+                      '&:hover': { backgroundColor: isSelected ? SELECTED_BG : (isDark ? '#2A2A2A' : '#F5F5F5') },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                        {providerIcon(option.provider, 18)}
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Typography sx={{
+                            fontSize: '0.8125rem',
+                            fontWeight: isSelected ? 600 : 500,
+                            color: isSelected ? ACCENT : gs.textPrimary,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {option.name}
+                          </Typography>
+                          {option.isDefault && (
+                            <Chip
+                              label="默认"
+                              size="small"
+                              sx={{
+                                fontSize: '0.55rem', height: 16,
+                                backgroundColor: isDark ? '#3D3520' : '#FEF3C7',
+                                color: '#D97706', fontWeight: 600,
+                                borderRadius: '4px',
+                              }}
+                            />
+                          )}
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.15, flexWrap: 'wrap' }}>
+                          {option.capabilities?.map(cap => (
+                            <Chip
+                              key={cap}
+                              label={CAPABILITY_LABELS[cap]}
+                              size="small"
+                              sx={{
+                                fontSize: '0.55rem',
+                                height: 14,
+                                backgroundColor: `${CAPABILITY_COLORS[cap]}15`,
+                                color: CAPABILITY_COLORS[cap],
+                                fontWeight: 500,
+                              }}
+                            />
+                          ))}
+                          {option.description && (
+                            <Typography sx={{
+                              fontSize: '0.7rem',
+                              color: gs.textMuted,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}>
+                              {option.description}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                      {isSelected && (
+                        <CheckIcon sx={{ fontSize: 18, color: ACCENT, flexShrink: 0 }} />
+                      )}
+                    </Box>
+                  </MenuItem>
+                );
+              })}
+
+            {/* 无已启用模型提示 */}
+            {modelOptions.filter(o => o.provider !== 'auto').length === 0 && !modelsLoading && (
+              <Box sx={{ px: 2, py: 1, mx: 0.5, borderRadius: '10px', bgcolor: isDark ? '#2A1A0A' : '#FFF7ED' }}>
+                <Typography sx={{ fontSize: '0.75rem', color: ACCENT, fontWeight: 500 }}>
+                  尚未启用任何模型
+                </Typography>
+                <Typography sx={{ fontSize: '0.6875rem', color: gs.textMuted, mt: 0.25 }}>
+                  请在模型管理中添加 API Key 并启用模型
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          {/* 底部：固定的添加模型按钮 */}
+          <Box sx={{ flexShrink: 0, pb: 0.5, pt: 0.5, bgcolor: gs.bgPanel, borderTop: `1px solid ${gs.border}` }}>
+            <MenuItem
+              onClick={() => { setActiveDropdown(null); onOpenAISettings?.(); }}
+              sx={{ py: 1, mx: 0.5, borderRadius: '10px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
+            >
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                <SettingsIcon sx={{ fontSize: 16, color: gs.textMuted }} />
+              </ListItemIcon>
+              <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>添加模型</Typography>
+            </MenuItem>
+          </Box>
+        </Box>
       </Menu>
 
       {/* ====== Skills Menu — 弹窗在按钮上方，无背景遮罩 ====== */}
@@ -500,35 +507,24 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
         }}
       >
         {(() => {
-          const activeSkills = getAllSkills().filter(s => s.status === 'active');
-          const grouped: Record<string, Skill[]> = {};
-          for (const s of activeSkills) {
-            if (!grouped[s.category]) grouped[s.category] = [];
-            grouped[s.category].push(s);
-          }
+          const activeSkills = getAllSkillsSortedByUsage().filter(s => s.status === 'active');
           const result: React.ReactNode[] = [];
-          for (const cat of CATEGORY_ORDER) {
-            const items = grouped[cat];
-            if (!items || items.length === 0) continue;
+          const displaySkills = activeSkills.slice(0, 8);
+          for (const skill of displaySkills) {
             result.push(
-              <Typography key={`cat-${cat}`} sx={{ px: 2, py: 0.5, fontSize: '0.6875rem', fontWeight: 600, color: gs.textMuted }}>
-                {getCategoryLabel(cat)}
-              </Typography>
-            );
-            for (const skill of items.slice(0, 4)) {
-              result.push(
-                <MenuItem
-                  key={skill.id}
-                  onClick={() => { onSkillSelect(skill); setActiveDropdown(null); }}
-                  sx={{ py: 0.75, px: 2, mx: 0.5, borderRadius: '8px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
-                >
-                  <ListItemIcon sx={{ minWidth: 32 }}>
-                    {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 18 }} />}
-                  </ListItemIcon>
+              <MenuItem
+                key={skill.id}
+                onClick={() => { onSkillSelect(skill); setActiveDropdown(null); }}
+                sx={{ py: 0.75, px: 2, mx: 0.5, borderRadius: '8px', '&:hover': { bgcolor: isDark ? '#2A2A2A' : '#F5F5F5' } }}
+              >
+                <ListItemIcon sx={{ minWidth: 32 }}>
+                  {ICON_MAP[skill.icon] || <AutoFixHighIcon sx={{ fontSize: 18 }} />}
+                </ListItemIcon>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontSize: '0.8125rem', color: gs.textPrimary }}>{skill.name}</Typography>
-                </MenuItem>
-              );
-            }
+                </Box>
+              </MenuItem>
+            );
           }
           return result;
         })()}

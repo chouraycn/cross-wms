@@ -162,7 +162,7 @@ jobs:
         if: always()
 
   swift-test:
-    name: Swift Test
+    name: Swift Test (6.0)
     runs-on: macos-14
     timeout-minutes: 20
     env:
@@ -171,12 +171,26 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
+      - name: Check for Swift changes
+        id: swift_changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            swift:
+              - 'apps/macos/**'
+              - 'scripts/package-mac*.sh'
+              - 'scripts/build-macos-swift.sh'
+              - 'scripts/create-dmg.sh'
+              - 'scripts/codesign-mac-app.sh'
+
       - name: Set up Swift
+        if: steps.swift_changes.outputs.swift == 'true'
         uses: swift-actions/setup-swift@v2
         with:
           swift-version: '6.0'
 
       - name: Cache Swift Package
+        if: steps.swift_changes.outputs.swift == 'true'
         uses: actions/cache@v4
         with:
           path: apps/macos/.build
@@ -185,20 +199,27 @@ jobs:
             ${{ runner.os }}-swift-6.0-spm-
 
       - name: Resolve Dependencies
+        if: steps.swift_changes.outputs.swift == 'true'
         run: swift package resolve
         working-directory: apps/macos
 
       - name: Build
+        if: steps.swift_changes.outputs.swift == 'true'
         run: swift build --build-tests
         working-directory: apps/macos
 
       - name: Run Tests
+        if: steps.swift_changes.outputs.swift == 'true'
         run: swift test --disable-sandbox 2>&1 | tee test-output.log
         working-directory: apps/macos
 
+      - name: Skip (no Swift changes)
+        if: steps.swift_changes.outputs.swift != 'true'
+        run: echo "No Swift-related changes detected, skipping Swift tests."
+
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.swift_changes.outputs.swift == 'true'
         with:
           name: swift-test-results
           path: apps/macos/test-output.log

@@ -165,7 +165,7 @@ channelHealthMonitor.start();
 
 // 启动配置热重载
 configHotReload.start([
-  path.join(os.homedir(), '.cdf-know-clow', 'models.json'),
+  path.join(os.homedir(), '.cdf-know-clow', 'ai-models', 'models.json'),
 ]);
 
 // ========== Extracted API Routes ==========

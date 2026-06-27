@@ -1,7 +1,7 @@
 {
   "name": "cdf-know-clow",
   "private": true,
-  "version": "1.7.0",
+  "version": "1.7.3",
   "type": "module",
   "scripts": {
     "dev:server": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx watch --tsconfig server/tsconfig.json server/index.ts",
@@ -13,10 +13,11 @@
     "bump:patch": "node scripts/bump-version.cjs patch",
     "bump:minor": "node scripts/bump-version.cjs minor",
     "bump:major": "node scripts/bump-version.cjs major",
-    "build:all": "npm run build && bash build-dmg-pywebview.sh",
-    "build:bump-patch": "bash build-dmg-pywebview.sh --bump-patch",
-    "build:bump-minor": "bash build-dmg-pywebview.sh --bump-minor",
-    "build:bump-major": "bash build-dmg-pywebview.sh --bump-major",
+    "build:mac": "bash scripts/package-mac-dist.sh --skip-release",
+    "build:mac:patch": "bash scripts/package-mac-dist.sh --bump-patch",
+    "build:mac:minor": "bash scripts/package-mac-dist.sh --bump-minor",
+    "build:mac:major": "bash scripts/package-mac-dist.sh --bump-major",
+    "build:mac:app": "bash scripts/package-mac-app.sh",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src/ server/ --ext .ts,.tsx",
@@ -96,7 +97,7 @@
     "@vitest/coverage-v8": "^3.2.6",
     "autoprefixer": "^10.5.2",
     "concurrently": "^8.2.2",
-    "electron": "^42.5.0",
+
     "esbuild": "^0.28.0",
     "eslint": "^8.56.0",
     "husky": "^9.1.7",
@@ -110,50 +111,6 @@
     "vite": "^7.3.6",
     "vitest": "^3.2.6"
   },
-  "build": {
-    "appId": "com.cdf.knowclow.desktop",
-    "productName": "CDF Know Clow",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**/*",
-      "electron/**/*"
-    ],
-    "mac": {
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "arm64"
-          ]
-        }
-      ],
-      "category": "public.app-category.business",
-      "artifactName": "CDF-Know-Clow-${version}-mac.${ext}",
-      "electronLanguages": [
-        "zh-CN"
-      ],
-      "hardenedRuntime": true,
-      "entitlements": "entitlements.mac.plist",
-      "entitlementsInheritPolicy": "entitlements.mac.plist"
-    },
-    "dmg": {
-      "contents": [
-        {
-          "x": 130,
-          "y": 220
-        },
-        {
-          "x": 410,
-          "y": 220,
-          "type": "link",
-          "path": "/Applications"
-        }
-      ]
-    }
-  },
-  "main": "electron/main.mjs",
   "msw": {
     "workerDirectory": [
       "public"

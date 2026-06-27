@@ -205,6 +205,14 @@ if [ -d "$APP_BUNDLE/Contents/Resources" ]; then
   done
 fi
 
+# Sign embedded frameworks
+if [ -d "$APP_BUNDLE/Contents/Frameworks" ]; then
+  find "$APP_BUNDLE/Contents/Frameworks" -type d -name "*.framework" | while read -r fw; do
+    echo "Signing framework: $(basename "$fw")"
+    sign_plain_item "$fw"
+  done
+fi
+
 # Sign main Swift binary
 MAIN_BIN="$APP_BUNDLE/Contents/MacOS/CDFKnowClow"
 if [ -f "$MAIN_BIN" ]; then

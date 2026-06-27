@@ -473,6 +473,7 @@ export function ChatProvider({
   // 流式渲染时每 ~16ms 调用：仅更新 activeSession（不触发 sidebar 重渲染）
   // 标题自动生成时：将 title 同步到 sessions（触发 sidebar 更新）
   const handleSessionUpdate = useCallback((originalSession: Session) => {
+    console.log('[ChatContext] handleSessionUpdate called, messages length:', originalSession.messages.length);
     // v2.8.0: Streaming fast-path — skip O(n) title scan + O(m) sidebar lookup
     // During streaming, only the last message's content/metadata changes.
     // Title is already set (or will be set when streaming ends), sidebar doesn't need updating.

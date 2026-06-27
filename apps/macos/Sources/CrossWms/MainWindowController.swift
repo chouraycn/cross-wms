@@ -51,15 +51,9 @@ final class MainWindowController: NSWindowController, WKNavigationDelegate, WKUI
     private func setupContent() {
         guard let window = window else { return }
 
-        webView.translatesAutoresizingMaskIntoConstraints = false
-        window.contentView?.addSubview(webView)
-
-        NSLayoutConstraint.activate([
-            webView.topAnchor.constraint(equalTo: window.contentView!.topAnchor),
-            webView.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor),
-            webView.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor),
-            webView.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor),
-        ])
+        let containerView = WindowDragContainerView(webView: webView)
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        window.contentView = containerView
     }
 
     func load() {

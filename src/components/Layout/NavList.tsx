@@ -609,6 +609,11 @@ const NavList: React.FC<NavListProps> = ({
                       handleNavClick(item.path);
                       window.dispatchEvent(new CustomEvent('cdf-know-clow-clear-session'));
                       window.dispatchEvent(new CustomEvent('cdf-know-clow-navigate-chat'));
+                      if (activePath === '/chat' || activePath.startsWith('/chat')) {
+                        setTimeout(() => {
+                          window.dispatchEvent(new CustomEvent('cdf-know-clow-navigate-chat'));
+                        }, 0);
+                      }
                     } else {
                       handleNavClick(item.path);
                     }
@@ -645,6 +650,11 @@ const NavList: React.FC<NavListProps> = ({
                     handleNavClick(item.path);
                     window.dispatchEvent(new CustomEvent('cdf-know-clow-clear-session'));
                     window.dispatchEvent(new CustomEvent('cdf-know-clow-navigate-chat'));
+                    if (activePath === '/chat' || activePath.startsWith('/chat')) {
+                      setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('cdf-know-clow-navigate-chat'));
+                      }, 0);
+                    }
                   } else {
                     handleNavClick(item.path);
                   }

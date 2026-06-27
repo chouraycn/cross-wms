@@ -41,13 +41,18 @@
     <!-- v8.7: 全局错误捕获（WKWebView 兼容） -->
     <script>
       (function() {
-        var MAX_WAIT = 8000;  // 8 秒后 React 还未挂载就认为失败
+        var MAX_WAIT = 8000;
+        var errors = [];
         var timer = setTimeout(function() {
           var loading = document.getElementById('root-loading');
           var root = document.getElementById('root');
           if (root && root.children.length <= 1) {
-            // React 未挂载
-            showError('React 挂载超时（8秒）。可能原因：\\n1. JavaScript 执行出错\\n2. WKWebView 不兼容某些语法\\n3. 资源加载失败\\n\\n请打开控制台查看详细错误。');
+            var errorText = 'React 挂载超时（8秒）。\n\n可能原因：\n1. JavaScript 执行出错\n2. WKWebView 不兼容某些语法\n3. 资源加载失败\n\n';
+            if (errors.length > 0) {
+              errorText += '错误详情：\n' + errors.slice(0, 5).join('\n---\n') + '\n\n';
+            }
+            errorText += '请打开控制台查看详细错误。\n提示：在 macOS 应用中可通过菜单「显示」→「显示检查器」打开开发者工具。';
+            showError(errorText);
           }
         }, MAX_WAIT);
 
@@ -62,14 +67,20 @@
 
         // 全局 JS 错误捕获
         window.onerror = function(msg, url, line, col, err) {
-          showError('JS 错误: ' + msg + '\\n' + (url || '') + ':' + (line || '') + ':' + (col || ''));
+          var errorMsg = 'JS 错误: ' + msg + '\n' + (url || '') + ':' + (line || '') + ':' + (col || '');
+          if (err && err.stack) errorMsg += '\n' + err.stack;
+          errors.push(errorMsg);
           return false;
         };
         window.addEventListener('error', function(e) {
-          if (e.error) showError('Error: ' + (e.error.stack || e.error.message));
+          if (e.error) {
+            var errorMsg = 'Error: ' + (e.error.stack || e.error.message);
+            errors.push(errorMsg);
+          }
         }, true);
         window.addEventListener('unhandledrejection', function(e) {
-          showError('Unhandled Rejection: ' + (e.reason?.stack || String(e.reason)));
+          var errorMsg = 'Unhandled Rejection: ' + (e.reason?.stack || String(e.reason));
+          errors.push(errorMsg);
         });
 
         function showError(msg) {
