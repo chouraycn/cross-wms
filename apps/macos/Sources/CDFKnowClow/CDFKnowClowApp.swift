@@ -20,14 +20,23 @@ struct CDFKnowClowApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow!
     var serverManager: ServerProcessManager!
+    var splashController: SplashScreenController!
 
     nonisolated func applicationDidFinishLaunching(_ notification: Notification) {
         Task { @MainActor in
             logger.info("CDF Know Clow starting...")
 
+            // 初始化 Splash Screen 控制器
+            self.splashController = SplashScreenController()
+            logger.info("SplashScreenController initialized")
+
             self.serverManager = ServerProcessManager()
+            logger.info("ServerProcessManager initialized")
 
             let config = ConfigStore.shared.config
+            logger.info("Config loaded: port=\(config.serverPort), autoStart=\(config.autoStartServer)")
+
+            // v1.6.0: 先创建主窗口（但不立即显示）
             let windowSize = NSSize(width: config.windowWidth, height: config.windowHeight)
             let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1280, height: 800)
             let windowRect = NSRect(
@@ -64,20 +73,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 5. v1.5.220: 把红黄绿按钮往右推 4px、往下推 9px
             self.adjustTrafficLightPosition(horizontalOffset: 4, verticalOffset: 9)
 
-            self.window.makeKeyAndOrderFront(nil)
-            self.window.center()
             self.window.delegate = self
 
-            NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
-
             setupMenu()
+            NSApp.setActivationPolicy(.regular)
 
+            // v1.6.0: 如果配置了自动启动服务器，显示原生 Splash Screen
+            // Splash Screen 在服务器就绪后自动关闭，然后显示主窗口并加载 WebView
             if config.autoStartServer {
-                await self.serverManager.start()
-            }
+                logger.info("Showing splash screen and starting server...")
+                splashController.showAndStartServer(
+                    serverManager: self.serverManager,
+                    config: config,
+                    onClose: {
+                        Task { @MainActor in
+                            logger.info("Splash screen closed, showing main window")
+                            // 服务器就绪后：显示主窗口 + 加载 WebView（跳过 splash.html）
+                            self.window.makeKeyAndOrderFront(nil)
+                            self.window.center()
+                            NSApp.activate(ignoringOtherApps: true)
 
-            WebViewManager.shared.loadMainApp()
+                            // v1.6.0: 直接加载主应用，跳过 splash.html（原生 Splash Screen 已完成动画）
+                            WebViewManager.shared.loadMainAppDirect()
+                        }
+                    }
+                )
+            } else {
+                // 不自动启动服务器：直接显示主窗口
+                logger.info("Auto-start disabled, showing main window directly")
+                self.window.makeKeyAndOrderFront(nil)
+                self.window.center()
+                NSApp.activate(ignoringOtherApps: true)
+                WebViewManager.shared.loadMainAppDirect()
+            }
         }
     }
 
@@ -330,17 +358,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 extension AppDelegate: NSWindowDelegate {
-    nonisolated func windowWillClose(_ notification: Notification) {
-        let windowNumber = (notification.object as? NSWindow)?.windowNumber
-        Task { @MainActor in
-            if let windowNumber = windowNumber,
-               let window = NSApp.windows.first(where: { $0.windowNumber == windowNumber }) {
-                let frame = window.frame
-                ConfigStore.shared.update { config in
-                    config.windowWidth = frame.width
-                    config.windowHeight = frame.height
-                }
-            }
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        let frame = window.frame
+        ConfigStore.shared.update { config in
+            config.windowWidth = frame.width
+            config.windowHeight = frame.height
+        }
+        Task {
             await serverManager?.stop()
         }
     }

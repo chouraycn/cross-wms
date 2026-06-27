@@ -5,7 +5,7 @@
 // 适用于大规模向量检索与 Embedding 存储。
 // ============================================================================
 
-import type { IStorageEngine, IPreparedStatement } from 'server/storage/StorageEngine';
+import type { IStorageEngine, IPreparedStatement } from '../StorageEngine.js';
 
 /**
  * LanceDB 存储引擎适配器。

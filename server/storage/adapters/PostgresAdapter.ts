@@ -5,7 +5,7 @@
 // 适用于生产环境多进程共享数据场景。
 // ============================================================================
 
-import type { IStorageEngine, IPreparedStatement } from 'server/storage/StorageEngine';
+import type { IStorageEngine, IPreparedStatement } from '../StorageEngine.js';
 
 /**
  * PostgreSQL 存储引擎适配器。

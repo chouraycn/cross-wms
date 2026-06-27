@@ -14,6 +14,7 @@ import type {
   WebSearchResult,
 } from "../web-provider-types.js";
 import { registerWebSearchProvider } from "../web-search-providers.js";
+import * as cheerio from "cheerio";
 
 // ==================== 缓存 ====================
 
@@ -113,67 +114,90 @@ function extractBaiduRedirectUrl(redirectUrl: string): string {
 
 function parseBaiduHtml(html: string, maxResults: number): WebSearchResult[] {
   const results: WebSearchResult[] = [];
+  const $ = cheerio.load(html);
 
-  const resultRegex = /<div[^>]*class="result[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/gi;
-  const titleRegex = /<h3[^>]*class="[^"]*t[^"]*"[^>]*>([\s\S]*?)<\/h3>/i;
-  const linkRegex = /<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/i;
-  const snippetRegex = /<span[^>]*class="[^"]*content-right[^"]*"[^>]*>([\s\S]*?)<\/span>/i;
-  const altSnippetRegex = /<div[^>]*class="[^"]*c-abstract[^"]*"[^>]*>([\s\S]*?)<\/div>/i;
+  $(".result").each((_, elem) => {
+    if (results.length >= maxResults) return;
 
-  let match;
-  while ((match = resultRegex.exec(html)) !== null && results.length < maxResults) {
-    const resultBlock = match[1];
+    const $elem = $(elem);
+    const $h3 = $elem.find("h3");
+    if ($h3.length === 0) return;
 
-    const titleMatch = resultBlock.match(titleRegex);
-    if (!titleMatch) continue;
+    const $link = $h3.find("a");
+    if ($link.length === 0) return;
 
-    const linkMatch = titleMatch[1].match(linkRegex);
-    if (!linkMatch) continue;
+    let rawUrl = $link.attr("href") || "";
+    if (!rawUrl) return;
 
-    let rawUrl = linkMatch[1];
     if (rawUrl.startsWith("//")) rawUrl = "https:" + rawUrl;
-    if (rawUrl.includes("baidu.com/link?url=")) {
+    if (rawUrl.includes("baidu.com/link?url=") || rawUrl.includes("baidu.com/link?wd=")) {
       rawUrl = extractBaiduRedirectUrl(rawUrl);
     }
 
-    const title = decodeHtmlEntities(stripTags(linkMatch[2]).trim());
+    const title = decodeHtmlEntities(stripTags($link.text()).trim());
 
     let snippet = "";
-    const snippetMatch = resultBlock.match(snippetRegex);
-    if (snippetMatch) {
-      snippet = decodeHtmlEntities(stripTags(snippetMatch[1]).trim());
-    } else {
-      const altSnippetMatch = resultBlock.match(altSnippetRegex);
-      if (altSnippetMatch) {
-        snippet = decodeHtmlEntities(stripTags(altSnippetMatch[1]).trim());
+    const snippetSelectors = [
+      ".c-abstract",
+      ".content-right",
+      ".c-span-last",
+      ".abstract",
+      ".c-gap-top-small",
+      "div[class*='abstract']",
+      "div[class*='content']",
+    ];
+
+    for (const sel of snippetSelectors) {
+      const $snippet = $elem.find(sel);
+      if ($snippet.length > 0) {
+        const text = decodeHtmlEntities(stripTags($snippet.text()).trim());
+        if (text.length > 10) {
+          snippet = text;
+          break;
+        }
+      }
+    }
+
+    if (snippet.length < 10) {
+      const $divs = $elem.find("div");
+      let bestText = "";
+      $divs.each((_, div) => {
+        const text = decodeHtmlEntities(stripTags($(div).text()).trim());
+        if (text.length > bestText.length && text.length < 300) {
+          bestText = text;
+        }
+      });
+      if (bestText.length > 10) {
+        snippet = bestText;
       }
     }
 
     if (title && rawUrl && !results.some((r) => r.url === rawUrl)) {
       results.push({ title, url: rawUrl, snippet });
     }
-  }
+  });
 
   if (results.length === 0) {
-    const fallbackRegex = /<h3[^>]*class="[^"]*t[^"]*"[^>]*>([\s\S]*?)<\/h3>/gi;
-    let fallbackMatch;
-    while ((fallbackMatch = fallbackRegex.exec(html)) !== null && results.length < maxResults) {
-      const h3Content = fallbackMatch[1];
-      const linkMatch = h3Content.match(linkRegex);
-      if (!linkMatch) continue;
+    $("h3").each((_, elem) => {
+      if (results.length >= maxResults) return;
+      const $h3 = $(elem);
+      const $link = $h3.find("a");
+      if ($link.length === 0) return;
 
-      let rawUrl = linkMatch[1];
+      let rawUrl = $link.attr("href") || "";
+      if (!rawUrl) return;
+
       if (rawUrl.startsWith("//")) rawUrl = "https:" + rawUrl;
-      if (rawUrl.includes("baidu.com/link?url=")) {
+      if (rawUrl.includes("baidu.com/link?url=") || rawUrl.includes("baidu.com/link?wd=")) {
         rawUrl = extractBaiduRedirectUrl(rawUrl);
       }
 
-      const title = decodeHtmlEntities(stripTags(linkMatch[2]).trim());
+      const title = decodeHtmlEntities(stripTags($link.text()).trim());
 
       if (title && rawUrl && !results.some((r) => r.url === rawUrl)) {
         results.push({ title, url: rawUrl, snippet: "" });
       }
-    }
+    });
   }
 
   return results;
@@ -304,6 +328,89 @@ function normalizeApiResults(data: Record<string, unknown>): WebSearchResult[] {
 
 // ==================== HTML 模式（Fallback） ====================
 
+function detectJsRedirect(html: string, currentUrl: string): string | null {
+  if (
+    html.includes('location.href.replace("https://","http://")') ||
+    html.includes("location.href.replace('https://','http://')")
+  ) {
+    return currentUrl.replace("https://", "http://");
+  }
+  if (
+    html.includes('location.href.replace("http://","https://")') ||
+    html.includes("location.href.replace('http://','https://')")
+  ) {
+    return currentUrl.replace("http://", "https://");
+  }
+
+  const locationReplaceMatch = html.match(/location\.replace\s*\(\s*["']([^"']+)["']\s*\)/i);
+  if (locationReplaceMatch) {
+    return locationReplaceMatch[1];
+  }
+  
+  const metaMatch = html.match(/<meta[^>]*http-equiv=["']refresh["'][^>]*content=["'][^"']*url=([^"']+)["']/i);
+  if (metaMatch) {
+    return metaMatch[1];
+  }
+  
+  return null;
+}
+
+function isCaptchaPage(html: string, url: string): boolean {
+  if (url.includes("wappass.baidu.com") || url.includes("passport.baidu.com")) {
+    return true;
+  }
+  if (html.includes("验证") && html.includes("captcha")) {
+    return true;
+  }
+  if (html.includes('id="captcha"') || html.includes('class="captcha"')) {
+    return true;
+  }
+  return false;
+}
+
+async function fetchBaiduHtml(
+  url: string,
+  signal?: AbortSignal,
+  maxRedirects: number = 3,
+): Promise<{ html: string; finalUrl: string }> {
+  if (maxRedirects <= 0) {
+    throw new Error("百度搜索重定向次数过多");
+  }
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+    },
+    signal,
+    redirect: "follow",
+  });
+
+  if (!response.ok) {
+    throw new Error(`百度搜索请求失败: HTTP ${response.status}`);
+  }
+
+  const html = await response.text();
+  
+  if (isCaptchaPage(html, response.url)) {
+    throw new Error("百度搜索触发验证码验证，无法获取结果");
+  }
+  
+  const redirectUrl = detectJsRedirect(html, url);
+  if (redirectUrl) {
+    let finalRedirectUrl = redirectUrl;
+    if (finalRedirectUrl.startsWith("/")) {
+      const parsed = new URL(url);
+      finalRedirectUrl = `${parsed.protocol}//${parsed.host}${finalRedirectUrl}`;
+    }
+    return fetchBaiduHtml(finalRedirectUrl, signal, maxRedirects - 1);
+  }
+
+  return { html, finalUrl: response.url };
+}
+
 async function performHtmlSearch(
   query: string,
   count: number,
@@ -332,25 +439,7 @@ async function performHtmlSearch(
   signal?.addEventListener("abort", abortHandler);
 
   try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-      },
-      signal: controller.signal,
-      redirect: "follow",
-    });
-
-    clearTimeout(timeoutId);
-    signal?.removeEventListener("abort", abortHandler);
-
-    if (!response.ok) {
-      throw new Error(`百度搜索请求失败: HTTP ${response.status}`);
-    }
-
-    const html = await response.text();
+    const { html } = await fetchBaiduHtml(url, controller.signal);
     const results = parseBaiduHtml(html, count);
 
     const resultList: WebSearchResultList = {

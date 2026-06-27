@@ -7,7 +7,6 @@
  */
 
 import { Readability } from "@mozilla/readability";
-import TurndownService from "turndown";
 import { JSDOM } from "jsdom";
 import * as cheerio from "cheerio";
 import type {
@@ -17,6 +16,23 @@ import type {
   WebContentExtractMode,
 } from "../web-content-extractor-types.js";
 import { registerWebContentExtractor } from "../web-content-extractors.js";
+
+// 用 JSDOM 模拟浏览器环境，避免 turndown 依赖 domino
+function setupDomGlobals() {
+  const g = globalThis as any;
+  if (typeof g.DOMParser === "undefined") {
+    const dom = new JSDOM("");
+    g.window = dom.window;
+    g.DOMParser = dom.window.DOMParser;
+    g.Node = dom.window.Node;
+    g.Element = dom.window.Element;
+    g.HTMLElement = dom.window.HTMLElement;
+    g.Text = dom.window.Text;
+    g.Document = dom.window.Document;
+    g.DocumentFragment = dom.window.DocumentFragment;
+  }
+}
+setupDomGlobals();
 
 // ==================== 智能截断 ====================
 
@@ -116,22 +132,29 @@ function parseWithReadability(
 
 // ==================== Turndown Markdown 转换 ====================
 
-let turndownService: TurndownService | null = null;
+type TurndownServiceType = {
+  turndown(input: string | any): string;
+};
 
-function getTurndownService(): TurndownService {
+let turndownService: TurndownServiceType | null = null;
+
+async function getTurndownService(): Promise<TurndownServiceType> {
   if (!turndownService) {
+    setupDomGlobals();
+    const mod = await import("turndown");
+    const TurndownService = (mod as any).default || mod;
     turndownService = new TurndownService({
       headingStyle: "atx",
       codeBlockStyle: "fenced",
       bulletListMarker: "-",
-    });
+    }) as TurndownServiceType;
   }
   return turndownService;
 }
 
-function htmlToMarkdown(html: string): string {
+async function htmlToMarkdown(html: string): Promise<string> {
   try {
-    const service = getTurndownService();
+    const service = await getTurndownService();
     return service.turndown(html);
   } catch {
     return html;
@@ -140,10 +163,10 @@ function htmlToMarkdown(html: string): string {
 
 // ==================== 内容格式化 ====================
 
-function formatContent(
+async function formatContent(
   parsed: ParsedResult,
   mode: WebContentExtractMode,
-): { content: string; contentType: string } {
+): Promise<{ content: string; contentType: string }> {
   switch (mode) {
     case "markdown": {
       let md = "";
@@ -153,7 +176,7 @@ function formatContent(
       if (parsed.byline) {
         md += `*${parsed.byline}*\n\n`;
       }
-      md += htmlToMarkdown(parsed.content);
+      md += await htmlToMarkdown(parsed.content);
       return { content: md, contentType: "text/markdown" };
     }
     case "text": {
@@ -208,7 +231,7 @@ const extractor: WebContentExtractorPlugin = {
       return null;
     }
 
-    const formatted = formatContent(parsed, extractMode);
+    const formatted = await formatContent(parsed, extractMode);
 
     let finalContent = formatted.content;
     let truncated = false;

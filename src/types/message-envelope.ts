@@ -38,6 +38,10 @@ export interface ToolBlock {
   result?: string;
   error?: string;
   status: 'pending' | 'running' | 'done' | 'error';
+  /** 开始时间戳 */
+  startedAt?: number;
+  /** 完成时间戳 */
+  completedAt?: number;
 }
 
 /** 统一消息信封（所有渠道通用） */

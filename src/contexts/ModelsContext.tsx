@@ -21,6 +21,12 @@ interface ModelsContextValue {
   isLoading: boolean;
   /** 加载错误 */
   error: string | null;
+  /** 推荐模型列表 */
+  recommendedModels: ModelConfig[];
+  /** 推荐模型是否加载中 */
+  isLoadingRecommended: boolean;
+  /** 是否为首次启动（模型列表为空） */
+  isFirstLaunch: boolean;
   /** 更新模型配置 */
   updateModels: (models: ModelConfig[], defaultModelId?: string) => Promise<void>;
   /** 重新加载 */
@@ -29,6 +35,12 @@ interface ModelsContextValue {
   getDefaultModel: () => ModelConfig | undefined;
   /** 获取已启用的模型列表 */
   getEnabledModels: () => ModelConfig[];
+  /** 获取推荐模型列表 */
+  fetchRecommendedModels: () => Promise<void>;
+  /** 添加单个推荐模型 */
+  addRecommendedModel: (modelId: string) => Promise<void>;
+  /** 一键添加所有推荐模型 */
+  addAllRecommendedModels: () => Promise<number>;
 }
 
 const ModelsContext = createContext<ModelsContextValue | null>(null);
@@ -44,6 +56,9 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [defaultModelId, setDefaultModelId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recommendedModels, setRecommendedModels] = useState<ModelConfig[]>([]);
+  const [isLoadingRecommended, setIsLoadingRecommended] = useState(false);
+  const [isFirstLaunch, setIsFirstLaunch] = useState(false);
   const isFirstLoad = useRef(true);
 
   /** 从后端加载模型配置（含自动重试：后端可能尚未就绪，使用指数退避） */
@@ -116,24 +131,78 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return models.filter(m => m.enabled);
   }, [models]);
 
+  /** 获取推荐模型列表 */
+  const fetchRecommendedModels = useCallback(async () => {
+    try {
+      setIsLoadingRecommended(true);
+      const data = await api.getRecommendedModels();
+      if (Array.isArray(data)) {
+        setRecommendedModels(data);
+      }
+    } catch (e) {
+      console.warn('[ModelsContext] 获取推荐模型失败:', e);
+    } finally {
+      setIsLoadingRecommended(false);
+    }
+  }, []);
+
+  /** 添加单个推荐模型 */
+  const addRecommendedModel = useCallback(async (modelId: string) => {
+    const result = await api.addRecommendedModel(modelId);
+    if (result && Array.isArray(result.models)) {
+      setModels(result.models);
+      setDefaultModelId(result.defaultModelId || result.models[0]?.id || '');
+    }
+  }, []);
+
+  /** 一键添加所有推荐模型 */
+  const addAllRecommendedModels = useCallback(async (): Promise<number> => {
+    const result = await api.addAllRecommendedModels();
+    if (result && Array.isArray(result.models)) {
+      setModels(result.models);
+      setDefaultModelId(result.defaultModelId || result.models[0]?.id || '');
+      setIsFirstLaunch(false);
+    }
+    return result.added || 0;
+  }, []);
+
+  /** 检查是否为首次启动 */
+  const checkFirstLaunch = useCallback(async () => {
+    try {
+      const result = await api.checkIsFirstLaunch();
+      setIsFirstLaunch(result.isFirstLaunch);
+    } catch (e) {
+      console.warn('[ModelsContext] 检查首次启动状态失败:', e);
+    }
+  }, []);
+
   // 初始加载
   useEffect(() => {
     if (isFirstLoad.current) {
       isFirstLoad.current = false;
-      loadModels();
+      loadModels().then(() => {
+        fetchRecommendedModels();
+        checkFirstLaunch();
+      });
     }
-  }, [loadModels]);
+  }, [loadModels, fetchRecommendedModels, checkFirstLaunch]);
 
   const value = useMemo<ModelsContextValue>(() => ({
     models,
     defaultModelId,
     isLoading,
     error,
+    recommendedModels,
+    isLoadingRecommended,
+    isFirstLaunch,
     updateModels,
     reload: loadModels,
     getDefaultModel,
     getEnabledModels,
-  }), [models, defaultModelId, isLoading, error, updateModels, loadModels, getDefaultModel, getEnabledModels]);
+    fetchRecommendedModels,
+    addRecommendedModel,
+    addAllRecommendedModels,
+  }), [models, defaultModelId, isLoading, error, recommendedModels, isLoadingRecommended, isFirstLaunch, updateModels, loadModels, getDefaultModel, getEnabledModels, fetchRecommendedModels, addRecommendedModel, addAllRecommendedModels]);
 
   return <ModelsContext.Provider value={value}>{children}</ModelsContext.Provider>;
 };

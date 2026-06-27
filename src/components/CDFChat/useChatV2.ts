@@ -195,7 +195,10 @@ export function useChatV2(options: UseChatV2Options = {}): UseChatV2Return {
             });
 
             try {
-              const event = JSON.parse(data) as {
+              const event = {
+                type: 'unknown',
+                ...(JSON.parse(data) as Record<string, unknown>),
+              } as {
                 type: string;
                 content?: string;
                 toolBlock?: ToolBlock;
@@ -207,6 +210,10 @@ export function useChatV2(options: UseChatV2Options = {}): UseChatV2Return {
                 tokenOut?: number;
                 autoReason?: string;
                 error?: string;
+                message?: string;
+                from?: string;
+                to?: string;
+                reason?: string;
               };
 
               switch (event.type) {
@@ -279,6 +286,30 @@ export function useChatV2(options: UseChatV2Options = {}): UseChatV2Return {
 
                 case 'message-error':
                   throw new Error(event.error || 'Unknown error from server');
+
+                case 'strategy_fallback':
+                  // 执行策略降级（如 ReAct → Legacy），通知用户
+                  if (event.message) {
+                    const fallbackBlock = {
+                      id: `strategy_${Date.now()}`,
+                      type: 'skill' as const,
+                      name: '__strategy_fallback__',
+                      input: { from: event.from, to: event.to, reason: event.reason },
+                      result: event.message,
+                      status: 'done' as const,
+                    };
+                    setMessages(prev =>
+                      prev.map(m =>
+                        m.id === assistantId
+                          ? {
+                              ...m,
+                              toolBlocks: [...(m.toolBlocks || []), fallbackBlock],
+                            }
+                          : m,
+                      ),
+                    );
+                  }
+                  break;
 
                 default:
                   // keep-alive 或其他事件 — 忽略

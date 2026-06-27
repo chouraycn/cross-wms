@@ -617,8 +617,14 @@ export function getToolDefinitions(): ToolDefinition[] {
   return getBuiltinToolDefinitions();
 }
 
+/** 默认工具调用超时（毫秒） */
+const DEFAULT_TOOL_TIMEOUT_MS = 30_000;
+
 /** 执行单个内置 tool call（断言：MCP 工具不应路由到此处） */
-export async function executeToolCall(toolCall: ToolCall): Promise<string> {
+export async function executeToolCall(
+  toolCall: ToolCall,
+  timeoutMs: number = DEFAULT_TOOL_TIMEOUT_MS,
+): Promise<string> {
   // 断言：MCP 工具不应路由到此处，应通过 mcpClientManager 执行
   if (isMcpToolName(toolCall.function.name)) {
     throw new Error(`内部错误: MCP 工具 '${toolCall.function.name}' 被错误路由到 toolRegistry，应通过 mcpClientManager 执行。`);
@@ -637,8 +643,24 @@ export async function executeToolCall(toolCall: ToolCall): Promise<string> {
   }
 
   try {
-    return await tool.handler(args);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    const result = await Promise.race([
+      tool.handler(args),
+      new Promise<never>((_, reject) => {
+        controller.signal.addEventListener('abort', () => {
+          reject(new Error(`工具 '${toolCall.function.name}' 执行超时（${timeoutMs}ms）`));
+        });
+      }),
+    ]);
+
+    clearTimeout(timeoutId);
+    return result;
   } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') {
+      return JSON.stringify({ error: `工具 '${toolCall.function.name}' 执行超时（${timeoutMs}ms）` });
+    }
     return JSON.stringify({ error: `工具执行失败: ${e instanceof Error ? e.message : String(e)}` });
   }
 }

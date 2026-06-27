@@ -25,9 +25,6 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log"),
             ],
             path: "Sources/CDFKnowClow",
-            resources: [
-                .process("Resources"),
-            ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ]),

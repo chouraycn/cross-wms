@@ -83,11 +83,12 @@ const parsers: Record<string, ConfigParser> = {
       if (kvMatch) {
         const key = kvMatch[1].trim();
         let value: unknown = kvMatch[2].trim();
+        const valueStr = value as string;
 
         // 移除引号
-        if ((value.startsWith('"') && value.endsWith('"')) ||
-            (value.startsWith("'") && value.endsWith("'"))) {
-          value = value.slice(1, -1);
+        if ((valueStr.startsWith('"') && valueStr.endsWith('"')) ||
+            (valueStr.startsWith("'") && valueStr.endsWith("'"))) {
+          value = valueStr.slice(1, -1);
         }
 
         // 布尔值
@@ -174,7 +175,7 @@ export class ConfigHotReload extends EventEmitter {
   private debounceMs = 300;
   private sseClients: Set<{
     write: (data: string) => void;
-    destroy: () => void;
+    destroy?: () => void;
   }> = new Set();
   private validators: Map<string, ConfigValidator<unknown>> = new Map();
 
@@ -297,7 +298,7 @@ export class ConfigHotReload extends EventEmitter {
             });
             return;
           }
-          validated = result.parsed || parsed;
+          validated = (result.parsed as Record<string, unknown>) || parsed;
         }
 
         // 保存快照（如果是变化）
@@ -450,7 +451,7 @@ export class ConfigHotReload extends EventEmitter {
   /**
    * 注册 SSE 客户端
    */
-  addSSEClient(client: { write: (data: string) => void; destroy: () => void }): () => void {
+  addSSEClient(client: { write: (data: string) => void; destroy?: () => void }): () => void {
     this.sseClients.add(client);
 
     // 发送当前状态
@@ -490,11 +491,11 @@ export class ConfigHotReload extends EventEmitter {
   /**
    * 发送数据给单个客户端
    */
-  private emitToClient(client: { write: (data: string) => void }, data: unknown): void {
+  private emitToClient(client: { write: (data: string) => void; destroy?: () => void }, data: unknown): void {
     try {
       client.write(`data: ${JSON.stringify(data)}\n\n`);
     } catch {
-      this.sseClients.delete(client as typeof client & { destroy?: () => void });
+      this.sseClients.delete(client);
     }
   }
 

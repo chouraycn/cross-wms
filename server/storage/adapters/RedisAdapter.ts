@@ -5,7 +5,7 @@
 // 适用于缓存 / 会话 / 实时计数器等场景。
 // ============================================================================
 
-import type { IStorageEngine, IPreparedStatement } from 'server/storage/StorageEngine';
+import type { IStorageEngine, IPreparedStatement } from '../StorageEngine.js';
 
 /**
  * Redis 存储引擎适配器。

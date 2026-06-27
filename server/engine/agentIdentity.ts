@@ -658,5 +658,3 @@ class AgentIdentityManager {
 
 /** AgentIdentityManager 单例 */
 export const agentIdentityManager = new AgentIdentityManager();
-
-export type { AgentIdentityConfig, AgentScenario };

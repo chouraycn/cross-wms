@@ -49,6 +49,9 @@ jobs:
       - name: Install Node.js dependencies
         run: npm ci
 
+      - name: Pre-build check (打包前预检)
+        run: bash scripts/pre-build-check.sh --quick
+
       - name: Bump version (manual dispatch only)
         if: github.event_name == 'workflow_dispatch'
         run: |

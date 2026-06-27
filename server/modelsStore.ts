@@ -467,6 +467,134 @@ export function getBuiltinModels(): ModelConfig[] {
   return BUILTIN_MODELS;
 }
 
+/** 推荐模型列表 — 精选常用模型，便于用户快速开始 */
+const RECOMMENDED_MODELS: ModelConfig[] = [
+  {
+    id: 'deepseek-v4-flash',
+    name: 'DeepSeek V4 Flash',
+    provider: 'deepseek',
+    apiEndpoint: 'https://api.deepseek.com/v1',
+    enabled: false,
+    isDefault: false,
+    description: 'DeepSeek V4 Flash，1M 上下文、工具调用，高性价比',
+    contextWindow: 1_000_000,
+    maxTokens: 8_192,
+    capabilities: ['costEffective', 'fast', 'general'],
+  },
+  {
+    id: 'deepseek-v4-pro',
+    name: 'DeepSeek V4 Pro',
+    provider: 'deepseek',
+    apiEndpoint: 'https://api.deepseek.com/v1',
+    enabled: false,
+    isDefault: false,
+    description: 'DeepSeek V4 Pro，支持 1M 上下文、工具调用、推理',
+    contextWindow: 1_000_000,
+    maxTokens: 8_192,
+    capabilities: ['reasoning', 'general'],
+  },
+  {
+    id: 'moonshot-v1-128k',
+    name: 'Kimi Moonshot V1 128K',
+    provider: 'kimi',
+    apiEndpoint: 'https://api.moonshot.cn/v1',
+    enabled: false,
+    isDefault: false,
+    description: '月之暗面 Kimi，128K 长文本上下文',
+    contextWindow: 128_000,
+    maxTokens: 8_192,
+    capabilities: ['longContext', 'general'],
+  },
+  {
+    id: 'qwen-plus',
+    name: '通义千问 Qwen Plus',
+    provider: 'qwen',
+    apiEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    enabled: false,
+    isDefault: false,
+    description: '阿里通义千问 Plus，均衡能力、高性价比',
+    contextWindow: 128_000,
+    maxTokens: 32_768,
+    capabilities: ['general', 'costEffective'],
+  },
+  {
+    id: 'glm-4.7',
+    name: '智谱 GLM-4.7',
+    provider: 'bigmodel',
+    apiEndpoint: 'https://open.bigmodel.cn/api/paas/v4',
+    enabled: false,
+    isDefault: false,
+    description: '智谱 GLM-4.7，高智能 Agentic Coding 模型，200K 上下文',
+    contextWindow: 200_000,
+    maxTokens: 128_000,
+    capabilities: ['reasoning', 'code', 'general'],
+  },
+  {
+    id: 'gpt-4o-mini',
+    name: 'GPT-4o Mini',
+    provider: 'openai',
+    apiEndpoint: 'https://api.openai.com/v1',
+    enabled: false,
+    isDefault: false,
+    description: 'OpenAI GPT-4o Mini，轻量快速、高性价比',
+    contextWindow: 128_000,
+    maxTokens: 16_384,
+    capabilities: ['fast', 'costEffective', 'general'],
+  },
+  {
+    id: 'claude-3-5-sonnet-20241022',
+    name: 'Claude 3.5 Sonnet',
+    provider: 'anthropic',
+    apiEndpoint: 'https://api.anthropic.com/v1',
+    enabled: false,
+    isDefault: false,
+    description: 'Anthropic Claude 3.5 Sonnet，代码与长文本',
+    contextWindow: 200_000,
+    maxTokens: 8_192,
+    capabilities: ['code', 'longContext', 'general'],
+  },
+  {
+    id: 'gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
+    provider: 'google',
+    apiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    enabled: false,
+    isDefault: false,
+    description: 'Google Gemini 2.5 Flash，1M 上下文、快速、高性价比',
+    contextWindow: 1_000_000,
+    maxTokens: 65_536,
+    capabilities: ['fast', 'multimodal', 'longContext', 'costEffective', 'general'],
+  },
+  {
+    id: 'ollama-llama3.1',
+    name: 'Llama 3.1 (本地)',
+    provider: 'ollama',
+    apiEndpoint: 'http://localhost:11434/v1',
+    enabled: false,
+    isDefault: false,
+    description: 'Ollama 本地部署 Llama 3.1，无需 API Key',
+    contextWindow: 128_000,
+    maxTokens: 4_096,
+    capabilities: ['general'],
+  },
+];
+
+/** 获取推荐模型列表 */
+export function getRecommendedModels(): ModelConfig[] {
+  return RECOMMENDED_MODELS;
+}
+
+/** 根据 ID 获取单个推荐模型 */
+export function getRecommendedModelById(id: string): ModelConfig | undefined {
+  return RECOMMENDED_MODELS.find(m => m.id === id);
+}
+
+/** 检查是否为首次启动（模型列表为空） */
+export async function isFirstLaunch(): Promise<boolean> {
+  const config = await loadModelsConfig({ skipKeyInjection: true });
+  return config.models.length === 0;
+}
+
 // ============================================================
 // 模型自动发现：启动时从 API 提供商拉取最新模型列表
 // ============================================================

@@ -377,7 +377,7 @@ server.listen(PORT, async () => {
   }, 5000);
 
   // 初始化 WMS 行业技能表
-  ensureWmsTables(db);
+  ensureWmsTables();
 
   // 初始化语义匹配引擎（异步，不阻塞启动）
   setTimeout(async () => {

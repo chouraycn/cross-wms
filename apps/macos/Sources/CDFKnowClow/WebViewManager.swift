@@ -47,6 +47,31 @@ final class WebViewManager: NSObject {
         // 注入原生 App 标识会在 didFinish 时触发（每次页面加载完成都会注入）
     }
 
+    /// v1.6.0: 直接加载主应用（跳过 splash.html）
+    /// 用于原生 Splash Screen 已完成动画的场景
+    func loadMainAppDirect() {
+        let mainURL = detectMainAppURL()
+        webViewLogger.info("Loading main app directly from: \(mainURL.absoluteString, privacy: .public)")
+
+        var request = URLRequest(url: mainURL)
+        request.timeoutInterval = 30
+        webView.load(request)
+    }
+
+    /// v1.6.0: 检测主应用 URL（直接加载 index.html，跳过 splash.html）
+    private func detectMainAppURL() -> URL {
+        // 优先从服务器加载 index.html
+        if let serverURL = checkURL("http://localhost:3001/index.html") {
+            return serverURL
+        }
+        // 开发环境：vite 开发服务器
+        if let viteURL = checkURL("http://localhost:5173/index.html") {
+            return viteURL
+        }
+        // 兜底：直接加载根路径
+        return URL(string: "http://localhost:3001/")!
+    }
+
     private func detectSplashURL() -> URL {
         // 优先从服务器加载 splash.html（服务器已配置静态文件服务）
         if let serverURL = checkURL("http://localhost:3001/splash.html") {

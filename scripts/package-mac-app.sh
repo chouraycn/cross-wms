@@ -165,7 +165,7 @@ cd "$ROOT_DIR"
     --outfile="$SERVER_DIST_DIR/index.cjs" \
     --alias:@src="$ROOT_DIR/src" \
     --external:better-sqlite3 \
-    --external:@cdfclaw/* \
+    '--external:@cdfclaw/*' \
     --external:@modelcontextprotocol/sdk \
     --external:json5 \
     --external:onnxruntime-node \
@@ -177,6 +177,7 @@ cd "$ROOT_DIR"
     --external:cheerio \
     --external:tr46 \
     --external:whatwg-url \
+    --external:sqlite-vec \
     --sourcemap=inline \
     2>&1
 
@@ -226,7 +227,9 @@ cat > "$NM_TMP_DIR/package.json" <<'PKGJSON'
     "@mozilla/readability": "^0.5.0",
     "turndown": "^7.2.0",
     "jsdom": "^24.0.0",
-    "cheerio": "^1.0.0"
+    "cheerio": "^1.0.0",
+    "sqlite-vec": "^0.1.9",
+    "onnxruntime-node": "^1.27.0"
   }
 }
 PKGJSON
@@ -240,6 +243,31 @@ cp -R "$NM_TMP_DIR/node_modules/"* "$SHARED_NM/" 2>/dev/null || true
 
 # Clean temp directory
 rm -rf "$NM_TMP_DIR"
+
+# Copy workspace packages from project node_modules (workspace:* packages can't be installed via npm)
+echo "📦 Copying workspace packages from project node_modules..."
+WORKSPACE_PACKAGES=(
+    "@cdfclaw/agent-core"
+    "@cdfclaw/gateway-client"
+    "@cdfclaw/gateway-protocol"
+    "@cdfclaw/media-core"
+    "@cdfclaw/normalization-core"
+    "@cdfclaw/plugin-sdk"
+)
+
+for pkg in "${WORKSPACE_PACKAGES[@]}"; do
+    pkg_path="$ROOT_DIR/node_modules/$pkg"
+    if [ -d "$pkg_path" ]; then
+        pkg_name=$(basename "$pkg")
+        pkg_parent=$(dirname "$pkg")
+        dest_dir="$SHARED_NM/$pkg_parent"
+        mkdir -p "$dest_dir"
+        cp -R "$pkg_path" "$dest_dir/$pkg_name"
+        echo "   ✅ $pkg copied"
+    else
+        echo "   ⚠️  $pkg not found in project node_modules"
+    fi
+done
 
 # Clean non-runtime files from shared_node_modules
 echo "🧹 Cleaning shared_node_modules non-runtime files..."

@@ -124,7 +124,7 @@ async function performSearch(
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   const abortHandler = () => controller.abort();
   signal?.addEventListener("abort", abortHandler);
@@ -166,7 +166,7 @@ async function performSearch(
       if (signal?.aborted) {
         throw e;
       }
-      throw new Error("搜索超时（5秒）");
+      throw new Error("搜索超时（10秒）");
     }
     throw e;
   }

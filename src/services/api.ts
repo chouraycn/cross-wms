@@ -702,6 +702,31 @@ export async function discoverLocalModels(): Promise<DiscoveredLocalModel[]> {
   return request<DiscoveredLocalModel[]>('POST', '/api/models/discover-local', {});
 }
 
+/** 获取推荐模型列表 */
+export async function getRecommendedModels(): Promise<ModelConfig[]> {
+  return request<ModelConfig[]>('GET', '/api/models/recommended');
+}
+
+/** 检测是否为首次启动（模型列表为空） */
+export async function checkIsFirstLaunch(): Promise<{ isFirstLaunch: boolean }> {
+  return request<{ isFirstLaunch: boolean }>('GET', '/api/models/is-first-launch');
+}
+
+/** 添加单个推荐模型 */
+export async function addRecommendedModel(modelId: string): Promise<ModelsFileResponse> {
+  return request<ModelsFileResponse>('POST', `/api/models/recommended/${encodeURIComponent(modelId)}`);
+}
+
+/** 一键添加所有推荐模型 */
+export interface AddAllRecommendedResponse extends ModelsFileResponse {
+  added: number;
+  message: string;
+}
+
+export async function addAllRecommendedModels(): Promise<AddAllRecommendedResponse> {
+  return request<AddAllRecommendedResponse>('POST', '/api/models/add-recommended');
+}
+
 // ===================== File Upload API =====================
 
 /** 文件上传结果 */

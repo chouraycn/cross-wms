@@ -619,10 +619,17 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       handleSend();
       return;
     }
-    // v2.3.2-fix: 如果 IME 已结束（nativeEvent.isComposing=false, justEndedComposition=false），
-    // 但 isComposingRef/compositionTextInsertedRef 被 beforeinput(insertCompositionText) 残留置为 true，
-    // 导致上面的 send 条件未命中 → Enter 未被 preventDefault → contentEditable 原生换行
-    // 修复：第二个 Enter（plain Enter）时，清除残留标记，触发发送
+    // v2.3.2-fix: 兜底清除残留标记并发送消息。
+    // 场景1：nativeEvent.isComposing=false（标准浏览器），但 compositionTextInsertedRef=true
+    // 场景2：nativeEvent.isComposing=true（某些 WKWebView），且 compositionTextInsertedRef=true
+    // 两者都检查，确保在各种浏览器实现中都能正确处理残留状态
+    if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent as any)?.isComposing && compositionTextInsertedRef.current && !justEndedComposition) {
+      isComposingRef.current = false;
+      compositionTextInsertedRef.current = false;
+      e.preventDefault();
+      handleSend();
+    }
+    // 场景3：nativeEvent.isComposing=false 且 compositionTextInsertedRef=false，但之前有残留
     if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent as any)?.isComposing && !justEndedComposition) {
       isComposingRef.current = false;
       compositionTextInsertedRef.current = false;

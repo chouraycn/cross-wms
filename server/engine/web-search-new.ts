@@ -28,7 +28,7 @@ import * as cheerio from "cheerio";
 // ==================== 常量 ====================
 
 export const DEFAULT_SEARCH_MAX_RESULTS = 10;
-export const DEFAULT_SEARCH_TIMEOUT_MS = 10000;
+export const DEFAULT_SEARCH_TIMEOUT_MS = 30000;
 export const DEFAULT_SEARCH_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -448,6 +448,12 @@ async function executeWithSearchFallback(
   const errors: Array<{ providerId: string; error: string }> = [];
 
   for (const provider of chain) {
+    if (signal?.aborted) {
+      const error = new Error("搜索已取消");
+      error.name = "AbortError";
+      throw error;
+    }
+
     try {
       const tool = provider.createTool({
         searchConfig,
@@ -484,15 +490,18 @@ async function executeWithSearchFallback(
 
       const result = await tool.execute(providerArgs, { signal });
 
-      if (result && result.results.length > 0) {
+      if (result) {
         return { result, providerUsed: provider.id, errors };
       }
 
       errors.push({
         providerId: provider.id,
-        error: "No results returned",
+        error: "No result returned",
       });
     } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        throw e;
+      }
       const errorMsg = e instanceof Error ? e.message : String(e);
       errors.push({ providerId: provider.id, error: errorMsg });
       logger.warn(`[WebSearch] Provider ${provider.id} failed:`, errorMsg);
@@ -512,6 +521,39 @@ export interface WebSearchOptions {
 }
 
 export async function webSearch(
+  params: WebSearchParams,
+  options: WebSearchOptions = {},
+): Promise<WebSearchResultList> {
+  const { signal: externalSignal, onProgress, searchConfig, config } = options;
+
+  const totalTimeoutMs = params.timeoutMs || DEFAULT_SEARCH_TIMEOUT_MS;
+  const totalController = new AbortController();
+  const totalTimeoutId = setTimeout(() => {
+    totalController.abort();
+  }, totalTimeoutMs);
+
+  const signal = externalSignal
+    ? AbortSignal.any([externalSignal, totalController.signal])
+    : totalController.signal;
+
+  const cleanup = () => {
+    clearTimeout(totalTimeoutId);
+  };
+
+  try {
+    return await webSearchInternal(params, { signal, onProgress, searchConfig, config });
+  } catch (e) {
+    cleanup();
+    if (e instanceof DOMException && e.name === "AbortError") {
+      if (totalController.signal.aborted && !externalSignal?.aborted) {
+        throw new Error(`搜索超时（${totalTimeoutMs / 1000}秒），请稍后重试或缩短搜索范围`);
+      }
+    }
+    throw e;
+  }
+}
+
+async function webSearchInternal(
   params: WebSearchParams,
   options: WebSearchOptions = {},
 ): Promise<WebSearchResultList> {
@@ -616,6 +658,11 @@ export async function webSearch(
   }
 
   if (!result) {
+    if (signal?.aborted) {
+      const error = new Error("搜索已取消");
+      error.name = "AbortError";
+      throw error;
+    }
     logger.debug("[WebSearch] No provider succeeded, falling back to DuckDuckGo");
     result = await duckDuckGoSearch(validated, signal, onProgress);
     providerUsed = "duckduckgo";
@@ -686,7 +733,110 @@ export function getWebSearchToolDefinition() {
       name: "web_search",
       description:
         "Search the web for up-to-date information. Uses a provider plugin system with automatic fallback, result normalization, caching, and progress tracking. Supports multiple search providers with automatic selection based on available credentials.",
-      parameters: webSearchParamsSchema.shape,
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "The search query string",
+          },
+          maxResults: {
+            type: "number",
+            description: `Maximum number of search results (default: ${DEFAULT_SEARCH_MAX_RESULTS})`,
+            default: DEFAULT_SEARCH_MAX_RESULTS,
+          },
+          timeoutMs: {
+            type: "number",
+            description: `Request timeout in milliseconds (default: ${DEFAULT_SEARCH_TIMEOUT_MS})`,
+            default: DEFAULT_SEARCH_TIMEOUT_MS,
+          },
+          userAgent: {
+            type: "string",
+            description: "User-Agent header value",
+            default: DEFAULT_SEARCH_USER_AGENT,
+          },
+          preferredProvider: {
+            type: "string",
+            description: "Preferred search provider ID to use first",
+          },
+          useCache: {
+            type: "boolean",
+            description: "Whether to use response cache (default: true)",
+            default: true,
+          },
+          cacheTtlMs: {
+            type: "number",
+            description: `Cache TTL in milliseconds (default: ${DEFAULT_CACHE_TTL_MS})`,
+            default: DEFAULT_CACHE_TTL_MS,
+          },
+          renderJs: {
+            type: "boolean",
+            description: "Whether to render JavaScript for search results (default: false)",
+            default: false,
+          },
+          safeSearch: {
+            type: "string",
+            enum: ["off", "moderate", "strict"],
+            description: "Safe search level (default: moderate)",
+            default: "moderate",
+          },
+          language: {
+            type: "string",
+            description: "Search result language (default: en)",
+            default: "en",
+          },
+          region: {
+            type: "string",
+            description: "Search region/country code",
+          },
+          timeRange: {
+            type: "string",
+            enum: ["day", "week", "month", "year", "any"],
+            description: "Time range for results (default: any)",
+            default: "any",
+          },
+          site: {
+            type: "string",
+            description: "Limit results to a specific site/domain",
+          },
+          fileType: {
+            type: "string",
+            description: "Limit results to a specific file type (e.g., pdf, docx)",
+          },
+          onlyPluginIds: {
+            type: "array",
+            items: { type: "string" },
+            description: "Only use providers from these plugin IDs",
+          },
+          retries: {
+            type: "number",
+            description: "Number of retries on failure (default: 1)",
+            default: 1,
+          },
+          retryDelayMs: {
+            type: "number",
+            description: "Delay between retries in milliseconds (default: 500)",
+            default: 500,
+          },
+          priority: {
+            type: "string",
+            enum: ["low", "normal", "high"],
+            description: "Request priority (default: normal)",
+            default: "normal",
+          },
+          metadata: {
+            type: "object",
+            additionalProperties: {},
+            description: "Additional metadata to pass to providers",
+          },
+          includeRawResults: {
+            type: "boolean",
+            description: "Whether to include raw provider results (default: false)",
+            default: false,
+          },
+        },
+        required: ["query"],
+      },
     },
   };
 }

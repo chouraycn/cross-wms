@@ -82,6 +82,16 @@ export APP_VERSION="$CURRENT_VERSION"
 echo "版本: $APP_VERSION"
 echo ""
 
+# ===================== Pre-build check =====================
+
+echo "🔍 Running pre-build check..."
+if ! "$ROOT_DIR/scripts/pre-build-check.sh" --skip-swift; then
+  echo "❌ Pre-build check failed, aborting packaging" >&2
+  exit 1
+fi
+echo "✅ Pre-build check passed"
+echo ""
+
 # ===================== Build .app bundle =====================
 
 export BUILD_CONFIG="${BUILD_CONFIG:-release}"

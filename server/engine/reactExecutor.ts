@@ -45,6 +45,7 @@ import { ToolDependencyGraph } from './toolDependencyGraph.js';
 import { ActionPhaseExecutor } from './actionPhaseExecutor.js';
 import { AutoCompressor } from './autoCompressor.js';
 import { getModelFailoverManager, type ModelFailoverOptions } from './modelFailover.js';
+import type { ModelCapability } from '../modelsStore.js';
 import pluginHooks from './pluginHooks.js';
 import { logger } from '../logger.js';
 
@@ -616,7 +617,7 @@ export class ReActExecutor {
           const nextModel = failoverManager.getNextModel(
             modelId,
             errorCategory,
-            context.modelCapabilities as string[] | undefined,
+            context.modelCapabilities as ModelCapability[] | undefined,
           );
           
           if (nextModel) {

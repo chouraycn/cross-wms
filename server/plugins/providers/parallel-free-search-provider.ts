@@ -1,7 +1,7 @@
 /**
- * Exa Web Search Provider — Exa 神经搜索 Provider 实现
+ * Parallel Search API Provider — Parallel 搜索 API Provider 实现
  *
- * 基于 Exa Neural Search API 的搜索 Provider。
+ * 基于 Parallel Search API 的搜索 Provider，支持免费模式。
  */
 
 import type {
@@ -20,21 +20,17 @@ interface CacheEntry {
   timestamp: number;
 }
 
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 10 * 60 * 1000;
 const MAX_CACHE_SIZE = 200;
 const cache = new Map<string, CacheEntry>();
 
 function getCacheKey(
   query: string,
-  num_results: number,
-  use_autoprompt: boolean,
-  type: string,
-  start_published_date: string,
-  end_published_date: string,
-  include_domains: string,
-  exclude_domains: string,
+  maxResults: number,
+  lang: string,
+  premium: boolean,
 ): string {
-  return `${query.toLowerCase()}:${num_results}:${use_autoprompt}:${type}:${start_published_date}:${end_published_date}:${include_domains}:${exclude_domains}`;
+  return `${query.toLowerCase()}:${maxResults}:${lang}:${premium}`;
 }
 
 function getFromCache(key: string): WebSearchResultList | null {
@@ -88,29 +84,17 @@ function setNestedValue(obj: Record<string, unknown>, path: string, value: unkno
 // ==================== API 调用 ====================
 
 const DEFAULT_TIMEOUT = 10000;
+const API_BASE_URL = "https://api.search.parallel.so";
 
 async function performSearch(
-  apiKey: string,
+  apiKey: string | undefined,
   query: string,
-  num_results: number,
-  use_autoprompt: boolean,
-  type: string,
-  start_published_date?: string,
-  end_published_date?: string,
-  include_domains?: string[],
-  exclude_domains?: string[],
+  maxResults: number,
+  lang: string,
   signal?: AbortSignal,
 ): Promise<WebSearchResultList> {
-  const cacheKey = getCacheKey(
-    query,
-    num_results,
-    use_autoprompt,
-    type,
-    start_published_date || "",
-    end_published_date || "",
-    (include_domains || []).join(","),
-    (exclude_domains || []).join(","),
-  );
+  const premium = !!apiKey;
+  const cacheKey = getCacheKey(query, maxResults, lang, premium);
   const cached = getFromCache(cacheKey);
   if (cached) {
     return cached;
@@ -125,31 +109,25 @@ async function performSearch(
   try {
     const body: Record<string, unknown> = {
       query,
-      numResults: num_results,
-      useAutoprompt: use_autoprompt,
-      type,
+      maxResults,
     };
 
-    if (start_published_date) {
-      body.startPublishedDate = start_published_date;
-    }
-    if (end_published_date) {
-      body.endPublishedDate = end_published_date;
-    }
-    if (include_domains && include_domains.length > 0) {
-      body.includeDomains = include_domains;
-    }
-    if (exclude_domains && exclude_domains.length > 0) {
-      body.excludeDomains = exclude_domains;
+    if (lang) {
+      body.lang = lang;
     }
 
-    const response = await fetch("https://api.exa.ai/search", {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
+
+    if (apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/v1/search`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "x-api-key": apiKey,
-      },
+      headers,
       body: JSON.stringify(body),
       signal: controller.signal,
     });
@@ -159,7 +137,7 @@ async function performSearch(
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
-      throw new Error(`Exa 搜索请求失败: HTTP ${response.status} ${errorText}`);
+      throw new Error(`Parallel Search 请求失败: HTTP ${response.status} ${errorText}`);
     }
 
     const data = (await response.json()) as Record<string, unknown>;
@@ -169,7 +147,7 @@ async function performSearch(
       query,
       results,
       count: results.length,
-      provider: "exa",
+      provider: premium ? "parallel" : "parallel-free",
     };
 
     setInCache(cacheKey, resultList);
@@ -182,7 +160,7 @@ async function performSearch(
       if (signal?.aborted) {
         throw e;
       }
-      throw new Error("Exa 搜索超时（10秒）");
+      throw new Error("Parallel Search 超时（10秒）");
     }
     throw e;
   }
@@ -199,9 +177,9 @@ function normalizeResults(data: Record<string, unknown>): WebSearchResult[] {
   for (const item of items) {
     if (!item || typeof item !== "object") continue;
 
-    const title = String(item.title || item.url || "").trim();
+    const title = String(item.title || "").trim();
     const url = String(item.url || item.link || "").trim();
-    const snippet = String(item.snippet || item.summary || item.description || item.content || "").trim();
+    const snippet = String(item.snippet || item.description || item.content || "").trim();
 
     if (title && url) {
       results.push({ title, url, snippet });
@@ -211,20 +189,20 @@ function normalizeResults(data: Record<string, unknown>): WebSearchResult[] {
   return results;
 }
 
-// ==================== Provider 定义 ====================
+// ==================== Provider 定义（Free 模式） ====================
 
-const plugin: WebSearchProviderPlugin = {
-  id: "exa",
-  label: "Exa",
-  hint: "Neural search engine",
-  requiresCredential: true,
-  credentialLabel: "API Key",
-  envVars: ["EXA_API_KEY"],
-  placeholder: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  signupUrl: "https://exa.ai/",
-  docsUrl: "https://docs.exa.ai/",
-  autoDetectOrder: 30,
-  credentialPath: "tools.web.search.providers.exa.apiKey",
+const freePlugin: WebSearchProviderPlugin = {
+  id: "parallel-free",
+  label: "Parallel Search (Free)",
+  hint: "Parallel Search API - 免费模式，无需 API Key",
+  requiresCredential: false,
+  credentialLabel: "API Key (可选)",
+  envVars: ["PARALLEL_API_KEY"],
+  placeholder: "sk-parallel-...",
+  signupUrl: "https://parallel.so/",
+  docsUrl: "https://docs.parallel.so/",
+  autoDetectOrder: 20,
+  credentialPath: "tools.web.search.providers.parallel.apiKey",
   inactiveSecretPaths: [],
 
   getCredentialValue(searchConfig?: Record<string, unknown>): unknown {
@@ -261,12 +239,9 @@ const plugin: WebSearchProviderPlugin = {
       }
     }
 
-    if (!apiKey) {
-      return null;
-    }
-
     return {
-      description: "Search the web using Exa, a neural search engine.",
+      description:
+        "Search the web using Parallel Search API. Works without an API key in free tier mode.",
       parameters: {
         type: "object",
         properties: {
@@ -274,45 +249,14 @@ const plugin: WebSearchProviderPlugin = {
             type: "string",
             description: "The search query",
           },
-          num_results: {
+          maxResults: {
             type: "number",
-            description: "Number of results to return",
+            description: "Maximum number of results to return",
             default: 8,
           },
-          use_autoprompt: {
-            type: "boolean",
-            description: "Whether to use autoprompt to convert query to Exa-optimized query",
-            default: false,
-          },
-          type: {
+          lang: {
             type: "string",
-            description: "Search type: neural or keyword",
-            enum: ["neural", "keyword"],
-            default: "neural",
-          },
-          start_published_date: {
-            type: "string",
-            description: "Start date for published results (ISO 8601 format, e.g. 2024-01-01)",
-          },
-          end_published_date: {
-            type: "string",
-            description: "End date for published results (ISO 8601 format, e.g. 2024-12-31)",
-          },
-          include_domains: {
-            type: "array",
-            description: "List of domains to include in search results",
-            items: {
-              type: "string",
-            },
-            default: [],
-          },
-          exclude_domains: {
-            type: "array",
-            description: "List of domains to exclude from search results",
-            items: {
-              type: "string",
-            },
-            default: [],
+            description: "Language for search results (e.g., en, zh)",
           },
         },
         required: ["query"],
@@ -326,28 +270,14 @@ const plugin: WebSearchProviderPlugin = {
           throw new Error("搜索关键词不能为空");
         }
 
-        const num_results = Math.min(Number(args.num_results) || 8, 20);
-        const use_autoprompt = Boolean(args.use_autoprompt);
-        const type = args.type === "keyword" ? "keyword" : "neural";
-        const start_published_date = args.start_published_date ? String(args.start_published_date) : undefined;
-        const end_published_date = args.end_published_date ? String(args.end_published_date) : undefined;
-        const include_domains = Array.isArray(args.include_domains)
-          ? args.include_domains.filter((d): d is string => typeof d === "string")
-          : undefined;
-        const exclude_domains = Array.isArray(args.exclude_domains)
-          ? args.exclude_domains.filter((d): d is string => typeof d === "string")
-          : undefined;
+        const maxResults = Math.min(Number(args.maxResults || 8), 20);
+        const lang = String(args.lang || args.language || "");
 
         return performSearch(
-          apiKey!,
+          apiKey,
           query,
-          num_results,
-          use_autoprompt,
-          type,
-          start_published_date,
-          end_published_date,
-          include_domains,
-          exclude_domains,
+          maxResults,
+          lang,
           context?.signal,
         );
       },
@@ -357,6 +287,6 @@ const plugin: WebSearchProviderPlugin = {
 
 // ==================== 自动注册 ====================
 
-registerWebSearchProvider("exa", plugin);
+registerWebSearchProvider("parallel-free", freePlugin);
 
-export default plugin;
+export default freePlugin;
