@@ -378,5 +378,23 @@ echo ""
 echo "=== Build complete ==="
 echo "App: $APP_ROOT"
 echo "Size: $(du -sh "$APP_ROOT" | cut -f1)"
+
+# ===================== 9. 刷新 Finder 图标缓存 =====================
+echo ""
+echo "🔄 Refreshing Finder icon cache..."
+
+# touch .app 强制 Finder 重新读取图标
+touch "$APP_ROOT"
+
+# 尝试重建 Launch Services 缓存（需要用户权限，失败则跳过）
+if command -v lsregister &>/dev/null; then
+  /System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -f "$APP_ROOT" 2>/dev/null || true
+fi
+
+echo "✅ Icon cache refreshed"
 echo ""
 echo "To run: open $APP_ROOT"
+echo ""
+echo "如果 Finder 仍显示旧图标，请运行:"
+echo "  sudo rm -rf /Library/Caches/com.apple.iconservices.store"
+echo "  killall Finder Dock"
