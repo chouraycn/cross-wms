@@ -1,15 +1,14 @@
 import path from 'path';
-import os from 'os';
 import { promises as fsp } from 'fs';
 import { callAIModel } from '../aiClient.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
 import { selectKey } from '../keyRotator.js';
 import { writeMemory, searchMemory, extractKeywords } from '../engine/vecMemoryStore.js';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 
 // MEMORY.md 路径
-const CDF_KNOW_CLOW_DIR = path.join(os.homedir(), '.cdf-know-clow');
-const MEMORY_MD_PATH = path.join(CDF_KNOW_CLOW_DIR, 'MEMORY.md');
+const MEMORY_MD_PATH = path.join(AppPaths.rootDir, 'MEMORY.md');
 
 // v2.8.2: 记忆提取 LLM 调用节流 — 避免短时间内频繁调用 LLM 浪费资源
 const MEMORY_EXTRACT_COOLDOWN_MS = 60_000; // 60s 冷却期
@@ -53,7 +52,7 @@ export async function readMemoryMd(): Promise<string> {
 export async function writeMemoryMd(content: string): Promise<void> {
   try {
     // v2.8.2: 异步 mkdir — recursive 选项保证幂等，无需 existsSync 预检查
-    await fsp.mkdir(CDF_KNOW_CLOW_DIR, { recursive: true });
+    await fsp.mkdir(AppPaths.rootDir, { recursive: true });
     await fsp.writeFile(MEMORY_MD_PATH, content, 'utf-8');
   } catch (e) {
     logger.error('[Memory] 写入失败:', e);

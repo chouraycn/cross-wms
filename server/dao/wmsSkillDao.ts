@@ -32,7 +32,7 @@ import {
 } from '../models/wms-skill.js';
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
+import { AppPaths } from '../config/appPaths.js';
 
 const wms = WmsFileStorage.getInstance();
 
@@ -243,8 +243,7 @@ export function adjustInventoryCount(id: number, adjustedBy?: string): Inventory
     wms.list<Record<string, unknown>>('inventory_items'); // trigger read to get file ref
     const fs2 = require('fs');
     const path2 = require('path');
-    const os2 = require('os');
-    const filePath = path2.join(os2.homedir(), '.cdf-know-clow', 'wms-data', 'inventory_items.json');
+    const filePath = path2.join(AppPaths.wmsDataDir, 'inventory_items.json');
     const raw = JSON.parse(fs2.readFileSync(filePath, 'utf-8') || '{"items":[]}') as { items: Record<string, unknown>[]; lastId?: number };
     raw.items[itemIndex] = items[itemIndex];
     fs2.writeFileSync(filePath, JSON.stringify(raw, null, 2) + '\n', 'utf-8');
@@ -1003,7 +1002,7 @@ export function generateInventoryReport(params?: {
   endDate?: string;
   generatedBy?: string;
 }): WmsReport {
-  const reportsDir = path.join(os.homedir(), '.cdf-know-clow', 'reports');
+  const reportsDir = AppPaths.reportsDir;
   if (!fs.existsSync(reportsDir)) {
     fs.mkdirSync(reportsDir, { recursive: true });
   }

@@ -41,9 +41,9 @@ async function tryRenderWithPlaywright(
     const { renderContent } = await import("../../services/browserHostClient.js");
     const result = await renderContent({
       url,
-      waitUntil: options?.waitUntil || "networkidle",
+      waitUntil: options?.waitUntil || "domcontentloaded",
       selector: options?.selector,
-      timeout: options?.timeoutMs || 20000,
+      timeout: options?.timeoutMs || 15000,
       ...(options?.executeJs ? { executeJs: options.executeJs } : {}),
     });
     if (result.ok && result.html) {

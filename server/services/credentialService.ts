@@ -10,9 +10,9 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
+import { AppPaths } from '../config/appPaths.js';
 
-const KEY_DIR = path.join(os.homedir(), '.cdf-know-clow');
+const KEY_DIR = AppPaths.rootDir;
 const KEY_FILE = path.join(KEY_DIR, '.master.key');
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;

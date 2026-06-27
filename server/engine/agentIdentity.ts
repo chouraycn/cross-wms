@@ -13,6 +13,7 @@
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 
 // ===================== 类型定义 =====================
 
@@ -83,7 +84,7 @@ interface BuiltinAgentEntry {
 // ===================== 常量 =====================
 
 /** 身份数据存储根目录 */
-const IDENTITY_DATA_ROOT = path.join(process.env.HOME || '~', '.cdf-know-clow', 'identity');
+const IDENTITY_DATA_ROOT = AppPaths.identityDir;
 
 /** 身份配置文件名 */
 const IDENTITY_FILE = 'agents.json';

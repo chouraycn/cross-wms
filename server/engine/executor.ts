@@ -7,6 +7,7 @@
  */
 
 import { initDb } from '../db.js';
+import { getServerBaseUrl } from '../config/serverConfig.js';
 import {
   getWarehouses,
   getInventoryItems,
@@ -471,8 +472,9 @@ async function executeSkillChain(
     checkTimeout(startTime, automation);
 
     // 后端对后端的内部调用，使用 localhost
+    const baseUrl = getServerBaseUrl();
     const res = await fetch(
-      `http://localhost:3001/api/skill-chains/${encodeURIComponent(chainId)}/execute`,
+      `${baseUrl}/api/skill-chains/${encodeURIComponent(chainId)}/execute`,
       { method: 'POST' },
     );
 

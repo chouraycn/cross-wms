@@ -5,15 +5,19 @@
  */
 
 import "./duckduckgo-search-provider.js";
+import "./tavily-search-provider.js";
 import "./perplexity-search-provider.js";
 import "./brave-search-provider.js";
 import "./google-search-provider.js";
+import "./exa-search-provider.js";
 import "./kimi-search-provider.js";
 import "./baidu-search-provider.js";
 import "./moonshot-search-provider.js";
 import "./minimax-search-provider.js";
 import "./grok-search-provider.js";
 import "./ollama-search-provider.js";
+import "./searxng-search-provider.js";
+import "./firecrawl-search-provider.js";
 import "./parallel-search-provider.js";
 import "./parallel-free-search-provider.js";
 import "./native-fetch-provider.js";

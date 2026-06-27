@@ -11,10 +11,10 @@
 
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
 import { EventEmitter } from 'events';
 import chokidar, { FSWatcher } from 'chokidar';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 
 // ===================== 类型定义 =====================
 
@@ -181,7 +181,7 @@ export class ConfigHotReload extends EventEmitter {
 
   constructor(configDir?: string) {
     super();
-    this.configDir = configDir || path.join(os.homedir(), '.cdf-know-clow');
+    this.configDir = configDir || AppPaths.rootDir;
   }
 
   /**

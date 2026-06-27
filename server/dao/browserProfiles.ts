@@ -8,10 +8,10 @@
 import { initDb, type BrowserProfileRow } from '../db.js';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
-import os from 'os';
+import { AppPaths } from '../config/appPaths.js';
 
 /** browser_profiles 数据目录根路径 */
-const BROWSER_DATA_ROOT = path.join(os.homedir(), '.cdf-know-clow', 'browser-profiles');
+const BROWSER_DATA_ROOT = AppPaths.browserProfilesDir;
 
 /**
  * 列出所有浏览器配置文件

@@ -13,8 +13,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import { promises as fsp } from 'fs';
-import os from 'os';
 import { AIAPIError, type MessageContent, type ModelCallConfig, type ToolCall } from '../aiClient.js';
+import { AppPaths } from '../config/appPaths.js';
 import { ExecutionStrategyFactory, ExecutionMode } from '../engine/executionStrategy.js';
 import type { ExecutionStrategyOptions } from '../engine/executionStrategy.js';
 import type { ToolExecutionResult } from '../engine/toolExecutor.js';
@@ -42,8 +42,7 @@ import { sendSSE, sendDebugSSE, sendDoneAndEnd } from '../sse/sseTypes.js';
 import { TimerManager } from '../sse/timerManager.js';
 import { executeChat as streamExecuteChat, finishStream, type ExecuteChatCallbacks } from '../engine/streamExecutor.js';
 import { formatMemoryContext } from '../engine/contextEnhancer.js';
-
-const CDF_KNOW_CLOW_DIR = path.join(os.homedir(), '.cdf-know-clow');
+import { recordTurnStarted, recordTurnCompleted, recordTurnFailed, recordMessageCreated } from '../engine/eventRecorder.js';
 
 // ===================== 公共辅助函数 =====================
 
@@ -457,6 +456,9 @@ async function executeQueuedMessage(
   let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }> = [];
 
   try {
+    // v9.0: 生成 runId 用于事件追踪
+    const runId = `run-${Date.now()}`;
+
     const modelConfig = params.modelsConfig.models.find((m) => m.id === params.model);
     if (!modelConfig) {
       throw new Error(`未找到模型配置: ${params.model}`);
@@ -556,6 +558,14 @@ async function executeQueuedMessage(
       },
     };
 
+    // v9.0: 记录回合开始事件
+    await recordTurnStarted(sessionId, {
+      userMessage: params.message,
+      model: params.model,
+      executionMode: effectiveMode,
+      runId,
+    });
+
     // 调用统一执行器
     const result = await streamExecuteChat({
       sessionId,
@@ -587,6 +597,16 @@ async function executeQueuedMessage(
       thinkingDuration: result.thinkingDuration || undefined,
     });
 
+    // v9.0: 记录回合完成事件
+    await recordTurnCompleted(sessionId, {
+      assistantContent: result.content,
+      model: params.model,
+      toolCallsCount: result.toolCalls?.length,
+      thinkingDuration: result.thinkingDuration,
+      usage: result.usage,
+      runId,
+    });
+
     // 后台提取记忆
     extractAndAppendMemory(params.message, result.content, dbMessages.map((m) => ({ role: m.role, content: m.content }))).catch(() => {});
 
@@ -601,6 +621,12 @@ async function executeQueuedMessage(
 
   } catch (error) {
     logger.error('[MessageQueue executeQueuedMessage] 执行失败:', error);
+
+    // v9.0: 记录回合失败事件
+    await recordTurnFailed(sessionId, error instanceof Error ? error : String(error), {
+      model: params.model,
+      context: 'executeQueuedMessage',
+    });
 
     // 尝试降级
     const modelConfig = params.modelsConfig.models.find((m) => m.id === params.model);
@@ -720,6 +746,13 @@ export async function handleChat(req: import('express').Request, res: import('ex
 
     // 保存用户消息
     addMessage({ sessionId, role: 'user', content: message, model: effectiveModel, skillId: skillId || null, attachments: attachments || undefined });
+
+    // v9.0: 记录用户消息创建事件
+    const userMessageId = uuidv4();
+    await recordMessageCreated(sessionId, userMessageId, 'user', message, {
+      model: effectiveModel,
+      attachments,
+    });
 
     // 发送 init 事件
     const assistantId = uuidv4();
@@ -909,7 +942,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
             for (const att of msg.attachments) {
               if (att.type === 'image') {
                 try {
-                  const filePath = path.join(CDF_KNOW_CLOW_DIR, 'uploads', path.basename(att.url));
+                  const filePath = path.join(AppPaths.uploadsDir, path.basename(att.url));
                   const fileBuffer = await fsp.readFile(filePath);
                   const base64 = fileBuffer.toString('base64');
                   contentParts.push({
@@ -955,7 +988,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
         if (att.type === 'image') {
           if (supportsVision) {
             try {
-              const filePath = path.join(CDF_KNOW_CLOW_DIR, 'uploads', path.basename(att.url));
+              const filePath = path.join(AppPaths.uploadsDir, path.basename(att.url));
               const fileBuffer = await fsp.readFile(filePath);
               const base64 = fileBuffer.toString('base64');
               contentParts.push({
@@ -970,7 +1003,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
           }
         } else {
           try {
-            const filePath = path.join(CDF_KNOW_CLOW_DIR, 'uploads', path.basename(att.url));
+            const filePath = path.join(AppPaths.uploadsDir, path.basename(att.url));
             const ext = path.extname(att.fileName).toLowerCase().replace('.', '');
             const fileContent = await extractFileContent(filePath, ext, att.fileName);
             contentParts.push({ type: 'text', text: fileContent });
