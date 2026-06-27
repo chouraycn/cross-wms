@@ -19,6 +19,11 @@ final class WebViewManager: NSObject {
         self.webView.uiDelegate = self
     }
 
+    /// 获取 WebView 引用（用于单窗口模式）
+    func getWebView() -> WKWebView {
+        return webView
+    }
+
     private func makeConfiguration() -> WKWebViewConfiguration {
         let config = WKWebViewConfiguration()
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
@@ -60,8 +65,10 @@ final class WebViewManager: NSObject {
 
     /// v1.6.0: 检测主应用 URL（直接加载 index.html，跳过 splash.html）
     private func detectMainAppURL() -> URL {
+        let port = ConfigStore.shared.config.serverPort
+
         // 优先从服务器加载 index.html
-        if let serverURL = checkURL("http://localhost:3001/index.html") {
+        if let serverURL = checkURL("http://localhost:\(port)/index.html") {
             return serverURL
         }
         // 开发环境：vite 开发服务器
@@ -69,12 +76,14 @@ final class WebViewManager: NSObject {
             return viteURL
         }
         // 兜底：直接加载根路径
-        return URL(string: "http://localhost:3001/")!
+        return URL(string: "http://localhost:\(port)/")!
     }
 
     private func detectSplashURL() -> URL {
+        let port = ConfigStore.shared.config.serverPort
+
         // 优先从服务器加载 splash.html（服务器已配置静态文件服务）
-        if let serverURL = checkURL("http://localhost:3001/splash.html") {
+        if let serverURL = checkURL("http://localhost:\(port)/splash.html") {
             return serverURL
         }
         // 开发环境：vite 开发服务器
@@ -82,7 +91,7 @@ final class WebViewManager: NSObject {
             return viteURL
         }
         // 兜底：直接加载主应用
-        return URL(string: "http://localhost:3001/index.html")!
+        return URL(string: "http://localhost:\(port)/index.html")!
     }
 
     /// 注入原生 App 标识到 window.cdfAppNative，告知前端当前是 Swift 原生 App

@@ -27,6 +27,9 @@ let package = Package(
             path: "Sources/CDFKnowClow",
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
+            ],
+            linkerSettings: [
+                .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"]),
             ]),
         .target(
             name: "CrossWMSIPC",

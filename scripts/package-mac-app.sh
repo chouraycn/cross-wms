@@ -53,11 +53,11 @@ fi
 
 cp "$SWIFT_BIN" "$MACOS_DIR/$PRODUCT"
 chmod +x "$MACOS_DIR/$PRODUCT"
-# SwiftPM outputs ad-hoc signed binaries; strip before install_name_tool
+# SwiftPM outputs ad-hoc signed binaries; strip before re-signing
 /usr/bin/codesign --remove-signature "$MACOS_DIR/$PRODUCT" 2>/dev/null || true
 
-# Add Frameworks rpath so bundled frameworks (e.g. Sparkle) can be found
-install_name_tool -add_rpath "@loader_path/../Frameworks" "$MACOS_DIR/$PRODUCT" 2>/dev/null || true
+# RPATH is already set by SwiftPM via linkerSettings in Package.swift
+# No need for install_name_tool
 
 # Copy embedded frameworks (e.g. Sparkle) from SwiftPM build dir
 SWIFT_BIN_DIR="$(dirname "$SWIFT_BIN")"
@@ -238,6 +238,15 @@ cd "$NM_TMP_DIR"
 npm install --production --omit=dev 2>&1 | tail -10
 echo "✅ npm install completed"
 
+# 确保 better-sqlite3 有预编译二进制
+if [ -d "node_modules/better-sqlite3" ]; then
+    echo "🔧 Building better-sqlite3 prebuild..."
+    cd "node_modules/better-sqlite3"
+    npx prebuild-install || npx node-gyp rebuild --release 2>&1 | tail -5
+    cd "$NM_TMP_DIR"
+    echo "✅ better-sqlite3 build done"
+fi
+
 # Copy installed node_modules into shared_node_modules
 cp -R "$NM_TMP_DIR/node_modules/"* "$SHARED_NM/" 2>/dev/null || true
 
@@ -282,10 +291,10 @@ find "$SHARED_NM" -type f \( -name "*.md" -o -name "*.txt" -o -name "*.map" -o -
     -o -name "CHANGELOG*" -o -name "*.ts" ! -name "*.d.ts" \
     -o -name "Makefile" -o -name "*.yml" -o -name "*.yaml" ! -name "package.json" \) -delete 2>/dev/null || true
 
-# Clean better-sqlite3 source/build files (prebuild only)
+# Clean better-sqlite3 source files (keep prebuilds and build artifacts)
 BSQL_DIR="$SHARED_NM/better-sqlite3"
 if [ -d "$BSQL_DIR" ]; then
-    find "$BSQL_DIR" -type d \( -name "deps" -o -name "src" -o -name "build" \) -exec rm -rf {} + 2>/dev/null || true
+    find "$BSQL_DIR" -type d \( -name "deps" -o -name "src" \) -exec rm -rf {} + 2>/dev/null || true
     BSQL_SIZE=$(du -sm "$BSQL_DIR" 2>/dev/null | awk '{print $1}' || echo "?")
     echo "   ✅ better-sqlite3 cleaned (now ${BSQL_SIZE}M)"
 fi
