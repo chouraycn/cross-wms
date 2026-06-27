@@ -7,17 +7,16 @@
  * - 兼容 mcpTypes.ts 中的 McpServerConfig 类型
  */
 
-import path from 'path';
-import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { SQLiteEngine } from '../storage/SQLiteEngine.js';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 import type { McpServerConfig, McpTransportType } from './mcpTypes.js';
 
 // ===================== 常量定义 =====================
 
-const MCP_DIR = path.join(os.homedir(), '.cdf-know-clow', 'mcp');
-const DB_PATH = path.join(MCP_DIR, 'mcp_servers.db');
+const MCP_DIR = AppPaths.mcpDir;
+const DB_PATH = AppPaths.mcpDbFile;
 
 // ===================== 数据库初始化 =====================
 

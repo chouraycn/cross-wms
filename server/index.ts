@@ -5,7 +5,8 @@ import express from 'express';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
+import { AppPaths } from './config/appPaths.js';
+import { setServerPort } from './config/serverConfig.js';
 import { API_PREFIX } from './apiVersion.js';
 import { apiVersionMiddleware } from './middleware/apiVersionMiddleware.js';
 import { initDb } from './db.js';
@@ -123,12 +124,26 @@ import { startBrowserHost, stopBrowserHost, getBrowserHostHealth } from './servi
 import mcpRouter from './routes/mcp.js';
 import { mcpClientManager } from './engine/mcpClientManager.js';
 
+// v4.0: Image Generation
+import imageGenerationRouter from './routes/image-generation.js';
+
+// v9.0: Event Ledger (事件溯源查询)
+import eventLedgerRouter from './routes/eventLedger.js';
+
+// v10.0: Gateway (API 兼容网关)
+import gatewayRouter from './gateway/gateway.js';
+import { configureGatewayAuth, addApiKey, generateDevApiKey } from './gateway/gatewayAuth.js';
+import { registerGatewayRoutes } from './gateway/gatewayRoutes.js';
+
 // v6.0: Session Lifecycle Manager
 import { sessionLifecycleManager } from './services/sessionLifecycle.js';
 
 // v7.0: Message Queue (队列与并发控制)
 import { messageQueue } from './engine/messageQueue.js';
 import { logger } from './logger.js';
+
+// v9.0: Event Ledger (事件溯源)
+import { initEventLedger, getEventLedger } from './engine/eventLedger.js';
 
 const app = express();
 // CORS: 开发环境允许所有本地来源
@@ -165,7 +180,7 @@ channelHealthMonitor.start();
 
 // 启动配置热重载
 configHotReload.start([
-  path.join(os.homedir(), '.cdf-know-clow', 'ai-models', 'models.json'),
+  AppPaths.modelsFile,
 ]);
 
 // ========== Extracted API Routes ==========
@@ -244,6 +259,31 @@ app.use('/api/api-history', apiHistoryRouter);
 // ========== v4.0: MCP Routes ==========
 app.use('/api/mcp', mcpRouter);
 
+// ========== v4.0: Image Generation Routes ==========
+app.use('/api/image-generation', imageGenerationRouter);
+
+// ========== v9.0: Event Ledger Routes ==========
+app.use('/api/event-ledger', eventLedgerRouter);
+
+// ========== v10.0: Gateway Routes (OpenAI/MCP 兼容) ==========
+// 从环境变量或配置文件读取 API Keys
+const gatewayApiKeys = (process.env.GATEWAY_API_KEYS || '').split(',').filter(Boolean);
+if (gatewayApiKeys.length > 0) {
+  configureGatewayAuth({ apiKeys: gatewayApiKeys });
+  logger.info(`[Gateway] 已加载 ${gatewayApiKeys.length} 个 API Keys`);
+} else {
+  // 开发模式：生成一个临时的 API Key
+  const devKey = generateDevApiKey();
+  addApiKey(devKey);
+  logger.info(`[Gateway] 开发模式 API Key: ${devKey}`);
+}
+
+app.use('/v1', gatewayRouter);           // OpenAI 兼容 API: /v1/chat/completions, /v1/models
+app.use('/gateway', gatewayRouter);       // Gateway 专属端点: /gateway/health
+
+// v10.1: Gateway Server Routes (方法注册中心 + REST API)
+registerGatewayRoutes(app);
+
 // ========== Versioned API Routes (v1) ==========
 // All routes are also mounted under /api/v1 for versioned access
 app.use(`${API_PREFIX}`, chatRouter);
@@ -287,6 +327,7 @@ app.use(`${API_PREFIX}/api-templates`, apiTemplatesRouter);
 app.use(`${API_PREFIX}/api-credentials`, apiCredentialsRouter);
 app.use(`${API_PREFIX}/api-history`, apiHistoryRouter);
 app.use(`${API_PREFIX}/mcp`, mcpRouter);
+app.use(`${API_PREFIX}/image-generation`, imageGenerationRouter);
 
 // ========== v1.5.220: 前端静态文件服务（供 Swift 原生 App 使用） ==========
 // 优先从 dist/ 加载前端构建产物（开发环境），其次从 process.env.FRONTEND_DIR 加载
@@ -306,7 +347,7 @@ if (fs.existsSync(FRONTEND_DIST_DIR) && fs.existsSync(path.join(FRONTEND_DIST_DI
   logger.warn(`[Server] 前端静态目录不存在: ${FRONTEND_DIST_DIR}（仅 API 模式）`);
 }
 
-const PORT = 3001;
+const PORT = parseInt(process.env.PORT || '3001', 10);
 
 // v8.7: error 监听器必须在 listen() 之前注册，防止边缘情况下 error 事件丢失
 const server = http.createServer(app);
@@ -321,7 +362,10 @@ server.on('error', (err: NodeJS.ErrnoException) => {
 });
 
 server.listen(PORT, async () => {
-  logger.info(`CDF Know Clow Chat Server running on port ${PORT}`);
+  const addr = server.address();
+  const actualPort = typeof addr === 'object' && addr ? addr.port : PORT;
+  setServerPort(actualPort);
+  logger.info(`CDF Know Clow Chat Server running on port ${actualPort}`);
   const db = initDb();
 
   // v1.5.203: 预热模型配置缓存（含 Keychain 注入），避免首次 GET /api/models 阻塞
@@ -378,6 +422,38 @@ server.listen(PORT, async () => {
 
   // 初始化 WMS 行业技能表
   ensureWmsTables();
+
+  // v9.0: 初始化 Event Ledger (事件溯源)
+  try {
+    await initEventLedger();
+    const ledgerStats = await getEventLedger().getStats();
+    logger.info(
+      `[EventLedger] 初始化完成: ${ledgerStats.totalSessions} 个会话, ` +
+      `${ledgerStats.totalEvents} 个事件, ` +
+      `${(ledgerStats.dbSizeBytes / 1024 / 1024).toFixed(2)} MB`
+    );
+
+    // 检查并恢复不完整的会话（崩溃恢复）
+    const incompleteSessions = await getEventLedger().findIncompleteSessions();
+    if (incompleteSessions.length > 0) {
+      logger.warn(
+        `[EventLedger] 发现 ${incompleteSessions.length} 个不完整会话，正在标记恢复...`
+      );
+      for (const session of incompleteSessions) {
+        try {
+          await getEventLedger().markSessionIncomplete(
+            session.sessionId,
+            `恢复自上次中断，最后事件: ${session.lastEventType}`
+          );
+        } catch (e) {
+          logger.warn(`[EventLedger] 标记会话失败: ${session.sessionId}`, e);
+        }
+      }
+      logger.info(`[EventLedger] 崩溃恢复完成`);
+    }
+  } catch (err) {
+    logger.warn('[EventLedger] 初始化失败，继续运行中:', err instanceof Error ? err.message : String(err));
+  }
 
   // 初始化语义匹配引擎（异步，不阻塞启动）
   setTimeout(async () => {

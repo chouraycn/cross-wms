@@ -605,6 +605,34 @@ export async function initDefaultTools(): Promise<void> {
   } catch (err) {
     logger.warn('[Tool Registry] Webhook tools not registered:', err instanceof Error ? err.message : String(err));
   }
+
+  // v4.0: Document 工具注册（PDF、Word、Excel 等文档提取）
+  try {
+    const { getDocumentToolDefinitions, getDocumentToolHandlers } = await import('./documentTools.js');
+    const docDefs = getDocumentToolDefinitions();
+    const docHandlers = getDocumentToolHandlers();
+    for (const def of docDefs) {
+      const handler = docHandlers.get(def.function.name);
+      if (handler) registerBuiltinTool({ definition: def, handler });
+    }
+    logger.debug('[Tool Registry] Document tools registered:', docDefs.map(d => d.function.name).join(', '));
+  } catch (err) {
+    logger.warn('[Tool Registry] Document tools not registered:', err instanceof Error ? err.message : String(err));
+  }
+
+  // v4.0: Image 工具注册（图片生成）
+  try {
+    const { getImageToolDefinitions, getImageToolHandlers } = await import('./imageTools.js');
+    const imgDefs = getImageToolDefinitions();
+    const imgHandlers = getImageToolHandlers();
+    for (const def of imgDefs) {
+      const handler = imgHandlers.get(def.function.name);
+      if (handler) registerBuiltinTool({ definition: def, handler });
+    }
+    logger.debug('[Tool Registry] Image tools registered:', imgDefs.map(d => d.function.name).join(', '));
+  } catch (err) {
+    logger.warn('[Tool Registry] Image tools not registered:', err instanceof Error ? err.message : String(err));
+  }
 }
 
 /** 获取所有已注册内置工具的 definitions（用于传给 LLM） */

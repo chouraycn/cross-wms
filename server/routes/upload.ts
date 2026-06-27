@@ -2,12 +2,11 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs';
-import os from 'os';
 import type { Request } from 'express';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 
-const CDF_KNOW_CLOW_DIR = path.join(os.homedir(), '.cdf-know-clow');
-export const UPLOADS_DIR = path.join(CDF_KNOW_CLOW_DIR, 'uploads');
+export const UPLOADS_DIR = AppPaths.uploadsDir;
 
 /** 确保上传目录存在 */
 export function ensureUploadsDir(): void {

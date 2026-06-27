@@ -7,12 +7,11 @@
 
 import fs from 'fs';
 import { writeFile, readFile } from 'fs/promises';
-import path from 'path';
-import os from 'os';
 import { extractAndSaveApiKey, injectApiKeys, deleteAllApiKeys } from './keychainStore.js';
 import { clearRotationState } from './keyRotator.js';
 import type { ModelProvider, ModelCapability, ModelConfig } from '../shared/types/models.js';
 import { logger } from './logger.js';
+import { AppPaths } from './config/appPaths.js';
 
 // 重新导出共享类型，供其他 server 模块使用
 export type { ModelProvider, ModelCapability, ModelConfig };
@@ -85,9 +84,9 @@ function invalidateCache(): void {
   cacheTimestamp = 0;
 }
 
-const AI_MODELS_DIR = path.join(os.homedir(), '.cdf-know-clow', 'ai-models');
-const MODELS_FILE = path.join(AI_MODELS_DIR, 'models.json');
-const OLD_MODELS_FILE = path.join(os.homedir(), '.cdf-know-clow', 'models.json');
+const AI_MODELS_DIR = AppPaths.modelsDir;
+const MODELS_FILE = AppPaths.modelsFile;
+const OLD_MODELS_FILE = AppPaths.oldModelsFile;
 
 /** models.json 文件结构 */
 export interface ModelsFile {

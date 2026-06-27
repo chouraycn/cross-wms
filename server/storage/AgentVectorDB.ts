@@ -8,12 +8,12 @@
 // ============================================================================
 
 import * as path from 'path';
-import * as os from 'os';
 import * as fs from 'fs';
 import Database from 'better-sqlite3';
+import { AppPaths } from '../config/appPaths.js';
 
 /** CDF Know Clow 记忆根目录 */
-const MEMORY_ROOT = path.join(os.homedir(), '.cdf-know-clow', 'memory');
+const MEMORY_ROOT = AppPaths.memoryDir;
 
 /**
  * Agent 向量索引库实例。

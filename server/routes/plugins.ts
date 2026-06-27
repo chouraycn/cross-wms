@@ -8,15 +8,15 @@
 import { Router } from 'express';
 import path from 'path';
 import fs from 'fs';
-import os from 'os';
 import { pluginRegistry } from '../engine/pluginRegistry.js';
 import { listPlugins, getPlugin } from '../dao/plugins.js';
 import { parseMultipartFormData, MAX_UPLOAD_SIZE } from './upload.js';
+import { AppPaths } from '../config/appPaths.js';
 
 const router = Router();
 
 /** 插件临时上传目录 */
-const PLUGIN_UPLOADS_DIR = path.join(os.homedir(), '.cdf-know-claw', 'plugins', '.uploads');
+const PLUGIN_UPLOADS_DIR = path.join(AppPaths.pluginsDir, '.uploads');
 
 function ensurePluginUploadsDir(): void {
   if (!fs.existsSync(PLUGIN_UPLOADS_DIR)) {

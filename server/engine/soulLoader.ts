@@ -10,12 +10,12 @@
 
 import path from 'path';
 import fs from 'fs';
-import os from 'os';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 
 // ===================== 常量 =====================
 
-const CDF_KNOW_CLOW_DIR = path.join(os.homedir(), '.cdf-know-clow');
+const CDF_KNOW_CLOW_DIR = AppPaths.rootDir;
 const SOUL_FILE = 'SOUL.md';
 const USER_FILE = 'USER.md';
 

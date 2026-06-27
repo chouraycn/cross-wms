@@ -9,12 +9,9 @@
 // ============================================================================
 
 import * as path from 'path';
-import * as os from 'os';
 import * as fs from 'fs';
 import JSON5 from 'json5';
-
-/** CDF Know Clow 数据根目录 */
-const CDF_CLOW_ROOT = path.join(os.homedir(), '.cdf-know-clow');
+import { AppPaths } from '../config/appPaths.js';
 
 /** 确保目录存在，不存在则递归创建 */
 function ensureDir(dir: string): void {
@@ -46,7 +43,7 @@ export class FileStorage {
   // ==========================================================================
 
   /** 会话文件存放目录 ~/.cdf-know-clow/sessions/ */
-  static sessionsDir: string = path.join(CDF_CLOW_ROOT, 'sessions');
+  static sessionsDir: string = AppPaths.sessionsDir;
 
   /**
    * 向指定会话文件追加一行 JSON。
@@ -94,7 +91,7 @@ export class FileStorage {
   // ==========================================================================
 
   /** 记忆文件存放目录 ~/.cdf-know-clow/memory/ */
-  static memoryDir: string = path.join(CDF_CLOW_ROOT, 'memory');
+  static memoryDir: string = AppPaths.memoryDir;
 
   /**
    * 写入记忆文件（Markdown）。
@@ -127,7 +124,7 @@ export class FileStorage {
   // ==========================================================================
 
   /** 配置文件存放目录 ~/.cdf-know-clow/config/ */
-  static configDir: string = path.join(CDF_CLOW_ROOT, 'config');
+  static configDir: string = AppPaths.configDir;
 
   /**
    * 写入配置文件。

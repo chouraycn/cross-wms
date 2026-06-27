@@ -35,6 +35,7 @@ export const DEFAULT_FETCH_MAX_CHARS = 20000;
 export const DEFAULT_FETCH_MAX_RESPONSE_BYTES = 750000;
 export const DEFAULT_FETCH_MAX_REDIRECTS = 3;
 export const DEFAULT_TIMEOUT_MS = 10000;
+export const DEFAULT_TOTAL_TIMEOUT_MS = 30000;
 export const DEFAULT_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
@@ -56,6 +57,7 @@ export interface WebFetchParams {
   maxChars?: number;
   maxResponseBytes?: number;
   timeoutMs?: number;
+  totalTimeoutMs?: number;
   renderJs?: boolean;
   selector?: string;
   waitUntil?: WebFetchWaitUntil;
@@ -125,6 +127,18 @@ function validateWebFetchParams(params: WebFetchParams): WebFetchParams {
     throw new Error("timeoutMs must be a number between 1000 and 120000");
   }
 
+  result.totalTimeoutMs = result.totalTimeoutMs ?? DEFAULT_TOTAL_TIMEOUT_MS;
+  if (
+    typeof result.totalTimeoutMs !== "number" ||
+    result.totalTimeoutMs < 5000 ||
+    result.totalTimeoutMs > 300000
+  ) {
+    throw new Error("totalTimeoutMs must be a number between 5000 and 300000");
+  }
+  if (result.totalTimeoutMs < result.timeoutMs) {
+    result.totalTimeoutMs = result.timeoutMs;
+  }
+
   result.renderJs = result.renderJs ?? false;
   if (typeof result.renderJs !== "boolean") {
     throw new Error("renderJs must be a boolean");
@@ -134,7 +148,7 @@ function validateWebFetchParams(params: WebFetchParams): WebFetchParams {
     throw new Error("selector must be a string");
   }
 
-  result.waitUntil = result.waitUntil ?? "networkidle";
+  result.waitUntil = result.waitUntil ?? "domcontentloaded";
   if (!["domcontentloaded", "networkidle", "load"].includes(result.waitUntil)) {
     throw new Error("waitUntil must be one of: domcontentloaded, networkidle, load");
   }
@@ -354,7 +368,7 @@ function getCacheKey(url: string, params: WebFetchParams): string {
     String(params.maxChars || DEFAULT_FETCH_MAX_CHARS),
     String(params.renderJs || false),
     params.selector || "",
-    params.waitUntil || "networkidle",
+    params.waitUntil || "domcontentloaded",
     params.executeJs || "",
     params.userAgent || DEFAULT_USER_AGENT,
   ];
@@ -650,13 +664,56 @@ export async function webFetch(
   params: WebFetchParams,
   options: WebFetchOptions = {},
 ): Promise<WebFetchResult> {
-  const { signal, onProgress, fetchConfig, config } = options;
-
-  onProgress?.({ stage: "validating", url: params.url, message: "Validating URL..." });
+  const { signal: externalSignal, onProgress, fetchConfig, config } = options;
 
   const validated = validateWebFetchParams(params) as Required<WebFetchParams>;
 
-  if (signal?.aborted) {
+  const totalTimeoutMs = params.totalTimeoutMs ?? DEFAULT_TOTAL_TIMEOUT_MS;
+  const totalController = new AbortController();
+  const totalTimeoutId = setTimeout(() => {
+    totalController.abort(new Error(`Total timeout after ${totalTimeoutMs}ms`));
+  }, totalTimeoutMs);
+
+  const combinedSignal = totalController.signal;
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      clearTimeout(totalTimeoutId);
+      throw new Error("Request aborted");
+    }
+    const externalListener = () => {
+      totalController.abort(externalSignal.reason);
+    };
+    externalSignal.addEventListener("abort", externalListener, { once: true });
+    totalController.signal.addEventListener("abort", () => {
+      externalSignal.removeEventListener("abort", externalListener);
+    });
+  }
+
+  const cleanup = () => {
+    clearTimeout(totalTimeoutId);
+  };
+
+  try {
+    return await webFetchInternal(validated, {
+      signal: combinedSignal,
+      onProgress,
+      fetchConfig,
+      config,
+    });
+  } finally {
+    cleanup();
+  }
+}
+
+async function webFetchInternal(
+  validated: Required<WebFetchParams>,
+  options: WebFetchOptions & { signal: AbortSignal },
+): Promise<WebFetchResult> {
+  const { signal, onProgress, fetchConfig, config } = options;
+
+  onProgress?.({ stage: "validating", url: validated.url, message: "Validating URL..." });
+
+  if (signal.aborted) {
     throw new Error("Request aborted");
   }
 

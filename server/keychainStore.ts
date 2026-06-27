@@ -20,8 +20,8 @@ import { execSync } from 'child_process';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
 import { logger } from './logger.js';
+import { AppPaths } from './config/appPaths.js';
 
 const KEYCHAIN_SERVICE = 'cdf-know-clow';
 const ENCRYPTED_PREFIX = 'encrypted:';
@@ -29,8 +29,8 @@ const KEYCHAIN_PREFIX = 'keychain:';
 
 // ===================== AES 加密回退 =====================
 
-const ENCRYPTION_KEY_FILE = path.join(os.homedir(), '.cdf-know-clow', '.encryption_key');
-const ENCRYPTION_KEY_BACKUP_FILE = path.join(os.homedir(), '.cdf-know-clow', '.encryption_key.bak');
+const ENCRYPTION_KEY_FILE = path.join(AppPaths.rootDir, '.encryption_key');
+const ENCRYPTION_KEY_BACKUP_FILE = path.join(AppPaths.rootDir, '.encryption_key.bak');
 const KEY_LENGTH = 32;
 
 /** 备份加密密钥 */
@@ -159,7 +159,7 @@ export function saveApiKey(modelId: string, apiKey: string): boolean {
   // 无论 Keychain 是否可用，都先备份到 AES 加密
   try {
     const encrypted = aesEncrypt(apiKey);
-    const backupFile = path.join(os.homedir(), '.cdf-know-clow', '.apikey_backup', `${modelId}.enc`);
+    const backupFile = path.join(AppPaths.rootDir, '.apikey_backup', `${modelId}.enc`);
     fs.mkdirSync(path.dirname(backupFile), { recursive: true });
     fs.writeFileSync(backupFile, encrypted, 'utf-8');
     fs.chmodSync(backupFile, 0o600);
@@ -265,7 +265,7 @@ export function saveApiKeys(modelId: string, apiKeys: string[]): number[] {
  */
 function loadApiKeyFromBackup(modelId: string): string | null {
   try {
-    const backupFile = path.join(os.homedir(), '.cdf-know-clow', '.apikey_backup', `${modelId}.enc`);
+    const backupFile = path.join(AppPaths.rootDir, '.apikey_backup', `${modelId}.enc`);
     if (fs.existsSync(backupFile)) {
       const encrypted = fs.readFileSync(backupFile, 'utf-8');
       const key = aesDecrypt(encrypted);

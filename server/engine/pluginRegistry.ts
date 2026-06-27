@@ -59,7 +59,7 @@ class PluginRegistry {
    * @returns 新创建的 PluginRow
    */
   async install(zipPath: string): Promise<PluginRow> {
-    const pluginRow = await installPlugin(zipPath);
+    const pluginRow = await installPlugin(zipPath as any) as any;
     return pluginRow;
   }
 

@@ -25,7 +25,6 @@ import { checkAllAlerts } from '../services/alertService.js';
 import { checkAllPredictions, getPredictionDetail } from '../services/predictionService.js';
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
 import type {
   AlertCheckResult,
   PredictionConfig,
@@ -34,12 +33,13 @@ import type {
 } from '../models/wms-skill.js';
 import { DEFAULT_PREDICTION_CONFIG } from '../models/wms-skill.js';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 
 const router = Router();
 
 // ===================== 配置持久化辅助函数 =====================
 
-const CONFIG_DIR = path.join(os.homedir(), '.cdf-know-clow');
+const CONFIG_DIR = AppPaths.rootDir;
 const ALERT_CONFIG_FILE = path.join(CONFIG_DIR, 'wms-alert-config.json');
 const PREDICTION_CONFIG_FILE = path.join(CONFIG_DIR, 'wms-prediction-config.json');
 

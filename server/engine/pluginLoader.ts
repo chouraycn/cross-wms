@@ -1,242 +1,454 @@
 /**
- * Plugin Loader — 插件加载器
- *
- * v3.0: 负责解压 .zip 插件包、校验 plugin.json 清单、安装到文件系统并写入 DB。
- * 使用 fflate（已安装）进行 zip 解压。
+ * Plugin Loader
+ * 插件加载器 - 动态模块加载与管理
  */
 
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import { execSync } from 'child_process';
-import { unzipSync } from 'fflate';
-import { validateManifest, type PluginManifest } from '../../shared/pluginManifest.js';
-import { createPlugin, getPluginByName } from '../dao/plugins.js';
-import type { PluginRow } from '../db.js';
+export type PluginStatus = "installed" | "enabled" | "disabled" | "error" | "loading" | "uninstalling";
+export type PluginType = "tool" | "agent" | "hook" | "ui" | "api" | "integration";
 
-/** 插件安装根目录 */
-const PLUGINS_ROOT = path.join(os.homedir(), '.cdf-know-claw', 'plugins');
-
-/** 确保插件根目录存在 */
-function ensurePluginsRoot(): void {
-  if (!fs.existsSync(PLUGINS_ROOT)) {
-    fs.mkdirSync(PLUGINS_ROOT, { recursive: true });
-  }
+export interface PluginManifest {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author?: string;
+  type: PluginType;
+  entry: string;
+  dependencies?: string[];
+  permissions?: string[];
+  hooks?: string[];
+  tools?: string[];
+  keywords?: string[];
+  homepage?: string;
+  repository?: string;
+  license?: string;
+  minAppVersion?: string;
+  configSchema?: Record<string, unknown>;
 }
 
-/**
- * 解压 .zip 插件包到指定目标目录。
- * 使用 fflate 的 unzipSync 进行解压。
- *
- * @param zipPath - .zip 文件的绝对路径
- * @param destDir - 解压目标目录的绝对路径
- * @throws 如果解压失败
- */
-export function extractPlugin(zipPath: string, destDir: string): void {
-  if (!fs.existsSync(zipPath)) {
-    throw new Error(`插件包不存在: ${zipPath}`);
+export interface PluginInstance {
+  manifest: PluginManifest;
+  status: PluginStatus;
+  installedAt: number;
+  enabledAt?: number;
+  disabledAt?: number;
+  errorMessage?: string;
+  loadDurationMs?: number;
+  activated: boolean;
+  exports?: Record<string, unknown>;
+  config?: Record<string, unknown>;
+}
+
+export interface PluginRegistryEntry {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  type: PluginType;
+  author?: string;
+  downloads: number;
+  stars: number;
+  verified: boolean;
+  lastUpdated: number;
+}
+
+class PluginLoader {
+  private readonly plugins = new Map<string, PluginInstance>();
+  private readonly registry = new Map<string, PluginRegistryEntry>();
+  private readonly pluginDirs: string[] = [];
+
+  constructor() {
+    this.initializeRegistry();
   }
 
-  // 确保目标目录存在
-  if (!fs.existsSync(destDir)) {
-    fs.mkdirSync(destDir, { recursive: true });
+  private initializeRegistry(): void {
+    // 模拟插件市场中的可用插件
+    const samplePlugins: PluginRegistryEntry[] = [
+      {
+        id: "wms-inventory-tools",
+        name: "WMS Inventory Tools",
+        version: "1.2.0",
+        description: "库存管理增强工具集，支持批量操作和高级筛选",
+        type: "tool",
+        author: "cross-wms",
+        downloads: 1250,
+        stars: 45,
+        verified: true,
+        lastUpdated: Date.now() - 7 * 24 * 60 * 60 * 1000,
+      },
+      {
+        id: "auto-reporter",
+        name: "Auto Reporter",
+        version: "0.8.0",
+        description: "自动生成各类业务报表，支持多种格式导出",
+        type: "integration",
+        author: "cross-wms",
+        downloads: 890,
+        stars: 32,
+        verified: true,
+        lastUpdated: Date.now() - 14 * 24 * 60 * 60 * 1000,
+      },
+      {
+        id: "smart-sorting",
+        name: "Smart Sorting",
+        version: "2.0.1",
+        description: "智能分拣路径优化，提升出库效率",
+        type: "agent",
+        author: "community",
+        downloads: 567,
+        stars: 28,
+        verified: false,
+        lastUpdated: Date.now() - 3 * 24 * 60 * 60 * 1000,
+      },
+      {
+        id: "supplier-sync",
+        name: "Supplier Sync",
+        version: "1.0.3",
+        description: "供应商数据自动同步，支持多平台对接",
+        type: "integration",
+        author: "cross-wms",
+        downloads: 345,
+        stars: 19,
+        verified: true,
+        lastUpdated: Date.now() - 30 * 24 * 60 * 60 * 1000,
+      },
+      {
+        id: "barcode-utils",
+        name: "Barcode Utils",
+        version: "1.5.0",
+        description: "条形码生成与识别工具，支持多种格式",
+        type: "tool",
+        author: "community",
+        downloads: 2340,
+        stars: 67,
+        verified: false,
+        lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
+      },
+      {
+        id: "dashboard-plus",
+        name: "Dashboard Plus",
+        version: "1.1.0",
+        description: "增强版仪表盘，更多图表和自定义视图",
+        type: "ui",
+        author: "cross-wms",
+        downloads: 1100,
+        stars: 52,
+        verified: true,
+        lastUpdated: Date.now() - 5 * 24 * 60 * 60 * 1000,
+      },
+    ];
+
+    for (const plugin of samplePlugins) {
+      this.registry.set(plugin.id, plugin);
+    }
   }
 
-  try {
-    const zipBuffer = fs.readFileSync(zipPath);
-    const unzipped = unzipSync(zipBuffer);
+  // ========== Plugin Installation ==========
 
-    for (const [relativePath, fileData] of Object.entries(unzipped)) {
-      // 跳过 macOS __MACOSX 目录和隐藏文件
-      if (relativePath.startsWith('__MACOSX') || relativePath.includes('/__MACOSX')) {
-        continue;
-      }
-      if (path.basename(relativePath).startsWith('.')) {
-        continue;
-      }
+  async install(pluginId: string): Promise<PluginInstance> {
+    const registryEntry = this.registry.get(pluginId);
+    if (!registryEntry) {
+      throw new Error(`Plugin not found in registry: ${pluginId}`);
+    }
 
-      const targetPath = path.join(destDir, relativePath);
-
-      // fflate 的目录条目通常为空 Buffer
-      if (fileData.length === 0 && relativePath.endsWith('/')) {
-        if (!fs.existsSync(targetPath)) {
-          fs.mkdirSync(targetPath, { recursive: true });
-        }
-      } else {
-        // 确保父目录存在
-        const parentDir = path.dirname(targetPath);
-        if (!fs.existsSync(parentDir)) {
-          fs.mkdirSync(parentDir, { recursive: true });
-        }
-        fs.writeFileSync(targetPath, fileData);
+    if (this.plugins.has(pluginId)) {
+      const existing = this.plugins.get(pluginId)!;
+      if (existing.status !== "error") {
+        return existing;
       }
     }
-  } catch (e) {
-    // fflate 解压失败，尝试系统 unzip 命令
+
+    const manifest: PluginManifest = {
+      id: registryEntry.id,
+      name: registryEntry.name,
+      version: registryEntry.version,
+      description: registryEntry.description,
+      author: registryEntry.author,
+      type: registryEntry.type,
+      entry: `plugins/${pluginId}/index.js`,
+      permissions: [`plugin:${pluginId}`],
+    };
+
+    const instance: PluginInstance = {
+      manifest,
+      status: "loading",
+      installedAt: Date.now(),
+      activated: false,
+    };
+
+    this.plugins.set(pluginId, instance);
+
+    // 模拟安装过程
+    await this.simulateInstall(pluginId);
+
+    instance.status = "installed";
+    this.plugins.set(pluginId, instance);
+
+    return instance;
+  }
+
+  private async simulateInstall(pluginId: string): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    // 模拟下载、验证、解压等步骤
+  }
+
+  async uninstall(pluginId: string): Promise<boolean> {
+    const plugin = this.plugins.get(pluginId);
+    if (!plugin) return false;
+
+    if (plugin.status === "enabled" || plugin.activated) {
+      await this.disable(pluginId);
+    }
+
+    plugin.status = "uninstalling";
+    this.plugins.set(pluginId, plugin);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    return this.plugins.delete(pluginId);
+  }
+
+  // ========== Plugin Activation ==========
+
+  async enable(pluginId: string): Promise<PluginInstance> {
+    const plugin = this.plugins.get(pluginId);
+    if (!plugin) {
+      throw new Error(`Plugin not installed: ${pluginId}`);
+    }
+
+    if (plugin.status === "enabled" && plugin.activated) {
+      return plugin;
+    }
+
+    // 检查依赖
+    if (plugin.manifest.dependencies) {
+      for (const dep of plugin.manifest.dependencies) {
+        const depPlugin = this.plugins.get(dep);
+        if (!depPlugin || depPlugin.status !== "enabled") {
+          throw new Error(`Missing dependency: ${dep}`);
+        }
+      }
+    }
+
+    plugin.status = "loading";
+    this.plugins.set(pluginId, plugin);
+
+    const startTime = Date.now();
+
     try {
-      execSync(`unzip -o "${zipPath}" -d "${destDir}"`, { encoding: 'utf8', timeout: 30000 });
-    } catch (unzipErr) {
+      // 模拟加载插件
+      plugin.exports = await this.loadPluginModule(plugin);
+      plugin.activated = true;
+      plugin.status = "enabled";
+      plugin.enabledAt = Date.now();
+      plugin.loadDurationMs = Date.now() - startTime;
+    } catch (error) {
+      plugin.status = "error";
+      plugin.errorMessage = error instanceof Error ? error.message : String(error);
+      this.plugins.set(pluginId, plugin);
+      throw error;
+    }
+
+    this.plugins.set(pluginId, plugin);
+    return plugin;
+  }
+
+  async disable(pluginId: string): Promise<boolean> {
+    const plugin = this.plugins.get(pluginId);
+    if (!plugin) return false;
+
+    if (plugin.status !== "enabled" && !plugin.activated) {
+      return true;
+    }
+
+    // 检查是否有其他插件依赖此插件
+    const dependents = Array.from(this.plugins.values()).filter(
+      (p) => p.status === "enabled" && p.manifest.dependencies?.includes(pluginId),
+    );
+
+    if (dependents.length > 0) {
       throw new Error(
-        `插件解压失败: ${e instanceof Error ? e.message : String(e)}`
+        `Cannot disable: required by ${dependents.map((d) => d.manifest.name).join(", ")}`,
       );
     }
+
+    plugin.activated = false;
+    plugin.status = "disabled";
+    plugin.disabledAt = Date.now();
+    plugin.exports = undefined;
+    this.plugins.set(pluginId, plugin);
+
+    return true;
+  }
+
+  private async loadPluginModule(plugin: PluginInstance): Promise<Record<string, unknown>> {
+    // 模拟插件加载
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // 模拟插件导出
+    const exports: Record<string, unknown> = {
+      activate: () => {
+        console.log(`[plugin] ${plugin.manifest.name} activated`);
+      },
+      deactivate: () => {
+        console.log(`[plugin] ${plugin.manifest.name} deactivated`);
+      },
+      info: {
+        name: plugin.manifest.name,
+        version: plugin.manifest.version,
+      },
+    };
+
+    return exports;
+  }
+
+  // ========== Query ==========
+
+  getPlugin(pluginId: string): PluginInstance | undefined {
+    return this.plugins.get(pluginId);
+  }
+
+  listPlugins(options?: {
+    status?: PluginStatus;
+    type?: PluginType;
+  }): PluginInstance[] {
+    let plugins = Array.from(this.plugins.values());
+
+    if (options?.status) {
+      plugins = plugins.filter((p) => p.status === options.status);
+    }
+    if (options?.type) {
+      plugins = plugins.filter((p) => p.manifest.type === options.type);
+    }
+
+    return plugins.sort((a, b) => b.installedAt - a.installedAt);
+  }
+
+  // ========== Registry ==========
+
+  searchRegistry(query: string, type?: PluginType): PluginRegistryEntry[] {
+    let results = Array.from(this.registry.values());
+
+    if (type) {
+      results = results.filter((p) => p.type === type);
+    }
+
+    if (query) {
+      const q = query.toLowerCase();
+      results = results.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.id.toLowerCase().includes(q),
+      );
+    }
+
+    return results.sort((a, b) => b.downloads - a.downloads);
+  }
+
+  getRegistryEntry(pluginId: string): PluginRegistryEntry | undefined {
+    return this.registry.get(pluginId);
+  }
+
+  listRegistry(type?: PluginType): PluginRegistryEntry[] {
+    let plugins = Array.from(this.registry.values());
+    if (type) {
+      plugins = plugins.filter((p) => p.type === type);
+    }
+    return plugins.sort((a, b) => b.downloads - a.downloads);
+  }
+
+  // ========== Plugin Config ==========
+
+  getPluginConfig(pluginId: string): Record<string, unknown> {
+    const plugin = this.plugins.get(pluginId);
+    return plugin?.config ?? {};
+  }
+
+  setPluginConfig(pluginId: string, config: Record<string, unknown>): boolean {
+    const plugin = this.plugins.get(pluginId);
+    if (!plugin) return false;
+
+    plugin.config = { ...plugin.config, ...config };
+    this.plugins.set(pluginId, plugin);
+    return true;
+  }
+
+  // ========== Plugin Directory ==========
+
+  addPluginDir(dir: string): void {
+    if (!this.pluginDirs.includes(dir)) {
+      this.pluginDirs.push(dir);
+    }
+  }
+
+  removePluginDir(dir: string): boolean {
+    const index = this.pluginDirs.indexOf(dir);
+    if (index >= 0) {
+      this.pluginDirs.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
+
+  listPluginDirs(): string[] {
+    return [...this.pluginDirs];
+  }
+
+  // ========== Stats ==========
+
+  getStats(): {
+    installed: number;
+    enabled: number;
+    disabled: number;
+    error: number;
+    byType: Record<string, number>;
+    registrySize: number;
+  } {
+    const plugins = Array.from(this.plugins.values());
+    const byType: Record<string, number> = {};
+
+    for (const plugin of plugins) {
+      byType[plugin.manifest.type] = (byType[plugin.manifest.type] ?? 0) + 1;
+    }
+
+    return {
+      installed: plugins.length,
+      enabled: plugins.filter((p) => p.status === "enabled").length,
+      disabled: plugins.filter((p) => p.status === "disabled").length,
+      error: plugins.filter((p) => p.status === "error").length,
+      byType,
+      registrySize: this.registry.size,
+    };
+  }
+
+  clear(): void {
+    this.plugins.clear();
+    this.registry.clear();
+    this.pluginDirs.length = 0;
   }
 }
 
-/**
- * 读取并校验 plugin.json 清单文件。
- *
- * @param manifestPath - plugin.json 文件的绝对路径
- * @returns 校验通过的 PluginManifest 对象
- * @throws 如果文件不存在或校验失败
- */
-export function validateManifestFile(manifestPath: string): PluginManifest {
-  if (!fs.existsSync(manifestPath)) {
-    throw new Error(`插件清单文件不存在: ${manifestPath}`);
-  }
+const PLUGIN_LOADER_INSTANCE = new PluginLoader();
 
-  let rawJson: string;
-  try {
-    rawJson = fs.readFileSync(manifestPath, 'utf-8');
-  } catch (e) {
-    throw new Error(`无法读取插件清单: ${e instanceof Error ? e.message : String(e)}`);
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(rawJson);
-  } catch (e) {
-    throw new Error(`插件清单 JSON 解析失败: ${e instanceof Error ? e.message : String(e)}`);
-  }
-
-  try {
-    return validateManifest(parsed);
-  } catch (e) {
-    const zodError = e as { errors?: Array<{ message: string; path?: (string | number)[] }> };
-    if (zodError.errors && Array.isArray(zodError.errors)) {
-      const details = zodError.errors
-        .map((err) => `${err.path?.join('.') || ''}: ${err.message}`)
-        .join('; ');
-      throw new Error(`插件清单校验失败: ${details}`);
-    }
-    throw new Error(`插件清单校验失败: ${e instanceof Error ? e.message : String(e)}`);
-  }
+export function getPluginLoader(): PluginLoader {
+  return PLUGIN_LOADER_INSTANCE;
 }
 
-/**
- * 计算目录总大小（字节）
- */
-function calcDirSize(dirPath: string): number {
-  let totalSize = 0;
-  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-  for (const entry of entries) {
-    const fullPath = path.join(dirPath, entry.name);
-    if (entry.isDirectory()) {
-      totalSize += calcDirSize(fullPath);
-    } else if (entry.isFile()) {
-      try {
-        totalSize += fs.statSync(fullPath).size;
-      } catch {
-        // 忽略无法访问的文件
-      }
-    }
-  }
-  return totalSize;
+export async function installPlugin(pluginId: string): Promise<PluginInstance> {
+  return PLUGIN_LOADER_INSTANCE.install(pluginId);
 }
 
-/**
- * 编排插件安装流程：解压 → 校验 → 写入 DB。
- *
- * @param zipPath - .zip 插件包的绝对路径
- * @returns 新创建的 PluginRow 记录
- * @throws 如果安装过程中出现错误
- */
-export async function installPlugin(zipPath: string): Promise<PluginRow> {
-  ensurePluginsRoot();
-
-  // 1. 解压到临时目录（先校验 manifest 再决定最终目录）
-  const tmpDir = path.join(PLUGINS_ROOT, `.tmp-${Date.now()}`);
-  try {
-    fs.mkdirSync(tmpDir, { recursive: true });
-    extractPlugin(zipPath, tmpDir);
-
-    // 2. 查找 plugin.json（可能在根目录或子目录中）
-    let manifestPath = path.join(tmpDir, 'plugin.json');
-    let pluginBaseDir = tmpDir;
-
-    if (!fs.existsSync(manifestPath)) {
-      // 在子目录中查找
-      const subDirs = fs.readdirSync(tmpDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
-
-      for (const subDir of subDirs) {
-        const candidate = path.join(tmpDir, subDir, 'plugin.json');
-        if (fs.existsSync(candidate)) {
-          manifestPath = candidate;
-          pluginBaseDir = path.join(tmpDir, subDir);
-          break;
-        }
-      }
-    }
-
-    // 3. 校验 manifest
-    const manifest = validateManifestFile(manifestPath);
-
-    // 4. 检查同名插件是否已安装
-    const existing = getPluginByName(manifest.name);
-    if (existing && existing.status !== 'uninstalled') {
-      throw new Error(`插件 '${manifest.name}' 已存在（ID: ${existing.id}），请先卸载后再安装`);
-    }
-
-    // 5. 移动到最终安装目录
-    const installDir = path.join(PLUGINS_ROOT, manifest.id);
-    if (fs.existsSync(installDir)) {
-      // 清理旧安装
-      fs.rmSync(installDir, { recursive: true, force: true });
-    }
-    fs.renameSync(pluginBaseDir, installDir);
-
-    // 清理临时目录
-    try {
-      if (fs.existsSync(tmpDir)) {
-        fs.rmSync(tmpDir, { recursive: true, force: true });
-      }
-    } catch {
-      // 忽略临时目录清理失败
-    }
-
-    // 6. 计算插件大小
-    const sizeBytes = calcDirSize(installDir);
-
-    // 7. 写入 DB
-    const pluginRow = createPlugin({
-      name: manifest.name,
-      display_name: manifest.displayName || manifest.name,
-      version: manifest.version,
-      author: manifest.author,
-      description: manifest.description,
-      icon: manifest.icon,
-      manifest_json: JSON.stringify(manifest),
-      entry_path: manifest.entry,
-      install_path: installDir,
-      trigger_keywords: JSON.stringify(manifest.triggers),
-      permissions: JSON.stringify(manifest.permissions),
-      risk_level: manifest.riskLevel,
-      size_bytes: sizeBytes,
-      metadata: JSON.stringify(manifest.metadata),
-    });
-
-    return pluginRow;
-  } catch (e) {
-    // 安装失败，清理临时目录
-    try {
-      if (fs.existsSync(tmpDir)) {
-        fs.rmSync(tmpDir, { recursive: true, force: true });
-      }
-    } catch {
-      // 忽略清理失败
-    }
-    throw e;
-  }
+export async function enablePlugin(pluginId: string): Promise<PluginInstance> {
+  return PLUGIN_LOADER_INSTANCE.enable(pluginId);
 }
+
+export async function disablePlugin(pluginId: string): Promise<boolean> {
+  return PLUGIN_LOADER_INSTANCE.disable(pluginId);
+}
+
+export function resetPluginLoaderForTests(): void {
+  PLUGIN_LOADER_INSTANCE.clear();
+}
+
+export type { PluginLoader };

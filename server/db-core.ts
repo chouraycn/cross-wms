@@ -1,9 +1,9 @@
 import Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
-import os from 'os';
 import fs from 'fs';
 import { logger } from './logger.js';
+import { AppPaths } from './config/appPaths.js';
 
 import { initWmsTables } from './db-wms.js';
 import { initChatTables } from './db-chat.js';
@@ -49,9 +49,8 @@ export interface BuiltinStatusPatchRow {
   status: string;
 }
 
-const DB_DIR = path.join(os.homedir(), '.cdf-know-clow');
-const DB_PATH = path.join(DB_DIR, 'chat.db');
-const DB_BACKUP_PATH = path.join(DB_DIR, 'chat.db.bak');
+const DB_PATH = AppPaths.chatDbFile;
+const DB_BACKUP_PATH = AppPaths.chatDbFile + '.bak';
 
 let db: Database.Database | null = null;
 let engine: SQLiteEngine | null = null;

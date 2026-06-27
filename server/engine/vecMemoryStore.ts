@@ -30,6 +30,26 @@ const VECTOR_DIMENSIONS = ONNX_EMBEDDING_DIMENSIONS;
 /** 最大返回记忆数 */
 const DEFAULT_TOP_K = 5;
 
+/** 混合搜索默认配置 */
+const DEFAULT_HYBRID_SEARCH = {
+  enabled: true,
+  vectorWeight: 0.7,
+  textWeight: 0.3,
+  candidateMultiplier: 3,
+};
+
+/** 文本分块默认配置 */
+const DEFAULT_CHUNKING = {
+  maxChars: 1000,
+  overlapChars: 200,
+};
+
+/** MMR 去重默认配置 */
+const DEFAULT_MMR = {
+  enabled: true,
+  lambda: 0.5,
+};
+
 // ===================== 初始化 =====================
 
 let engine: SQLiteEngine | null = null;
@@ -63,6 +83,25 @@ setTimeout(() => {
         embedding FLOAT32[${VECTOR_DIMENSIONS}] distance_metric=cosine
       );
     `);
+    // v9.2: 添加 FTS 全文搜索索引表（支持混合搜索）
+    db.migrate('1.2.0', `
+      CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts USING fts5(
+        text,
+        content='memory_entries',
+        content_rowid='id',
+        tokenize='unicode61'
+      );
+      CREATE TRIGGER IF NOT EXISTS memory_ai AFTER INSERT ON memory_entries BEGIN
+        INSERT INTO memory_fts(rowid, text) VALUES (new.id, new.text);
+      END;
+      CREATE TRIGGER IF NOT EXISTS memory_ad AFTER DELETE ON memory_entries BEGIN
+        INSERT INTO memory_fts(memory_fts, rowid, text) VALUES('delete', old.id, old.text);
+      END;
+      CREATE TRIGGER IF NOT EXISTS memory_au AFTER UPDATE ON memory_entries BEGIN
+        INSERT INTO memory_fts(memory_fts, rowid, text) VALUES('delete', old.id, old.text);
+        INSERT INTO memory_fts(rowid, text) VALUES (new.id, new.text);
+      END;
+    `);
   } catch (err) {
     logger.error('[VecMemory] 初始化 schema 失败:', err);
   }
@@ -75,6 +114,141 @@ export interface VecSearchResult {
   text: string;
   metadata: Record<string, unknown>;
   similarity: number;
+}
+
+export interface HybridSearchOptions {
+  topK?: number;
+  vectorWeight?: number;
+  textWeight?: number;
+  candidateMultiplier?: number;
+  useMMR?: boolean;
+  mmrLambda?: number;
+  filters?: Record<string, unknown>;
+}
+
+export interface ChunkOptions {
+  maxChars?: number;
+  overlapChars?: number;
+}
+
+// ===================== 工具函数 =====================
+
+/**
+ * 智能文本分块 —— 按句子/段落边界切分，保留重叠
+ */
+export function chunkText(text: string, options: ChunkOptions = {}): string[] {
+  const { maxChars = DEFAULT_CHUNKING.maxChars, overlapChars = DEFAULT_CHUNKING.overlapChars } =
+    options;
+
+  if (text.length <= maxChars) {
+    return [text];
+  }
+
+  const chunks: string[] = [];
+  const sentenceEndings = ['。', '！', '？', '.', '!', '?', '\n'];
+  let start = 0;
+
+  while (start < text.length) {
+    let end = Math.min(start + maxChars, text.length);
+
+    if (end < text.length) {
+      let bestCut = -1;
+      const searchStart = Math.max(start + maxChars * 0.5, start);
+      const searchEnd = end;
+
+      for (const ending of sentenceEndings) {
+        const idx = text.lastIndexOf(ending, searchEnd);
+        if (idx >= searchStart && idx > bestCut) {
+          bestCut = idx + ending.length;
+        }
+      }
+
+      if (bestCut > start) {
+        end = bestCut;
+      }
+    }
+
+    chunks.push(text.slice(start, end).trim());
+
+    if (end >= text.length) {
+      break;
+    }
+
+    start = Math.max(end - overlapChars, start + 1);
+  }
+
+  return chunks.filter((c) => c.length > 0);
+}
+
+/**
+ * MMR (Maximal Marginal Relevance) 最大边界相关性去重
+ * 平衡相关性和多样性，避免返回内容高度相似的结果
+ */
+function mmrReRank(
+  results: Array<VecSearchResult & { embedding?: Float32Array }>,
+  lambda: number = DEFAULT_MMR.lambda,
+  topK: number = DEFAULT_TOP_K
+): VecSearchResult[] {
+  if (results.length <= topK) return results;
+
+  const selected: VecSearchResult[] = [];
+  const remaining = [...results];
+
+  const getEmbedding = (r: typeof results[0]): Float32Array | null => {
+    return r.embedding || null;
+  };
+
+  const cosineSimilarity = (a: Float32Array, b: Float32Array): number => {
+    if (a.length !== b.length) return 0;
+    let dot = 0;
+    let normA = 0;
+    let normB = 0;
+    for (let i = 0; i < a.length; i++) {
+      dot += a[i] * b[i];
+      normA += a[i] * a[i];
+      normB += b[i] * b[i];
+    }
+    const denom = Math.sqrt(normA) * Math.sqrt(normB);
+    return denom > 0 ? dot / denom : 0;
+  };
+
+  while (selected.length < topK && remaining.length > 0) {
+    let bestIdx = -1;
+    let bestScore = -Infinity;
+
+    for (let i = 0; i < remaining.length; i++) {
+      const candidate = remaining[i];
+      const relevance = candidate.similarity;
+
+      let maxDiversity = 0;
+      if (selected.length > 0 && candidate.embedding) {
+        const candEmb = getEmbedding(candidate);
+        if (candEmb) {
+          for (const sel of selected) {
+            const selEmb = (sel as any).embedding;
+            if (selEmb) {
+              const sim = cosineSimilarity(candEmb, selEmb);
+              maxDiversity = Math.max(maxDiversity, sim);
+            }
+          }
+        }
+      }
+
+      const mmrScore = lambda * relevance - (1 - lambda) * maxDiversity;
+
+      if (mmrScore > bestScore) {
+        bestScore = mmrScore;
+        bestIdx = i;
+      }
+    }
+
+    if (bestIdx === -1) break;
+
+    selected.push(remaining[bestIdx]);
+    remaining.splice(bestIdx, 1);
+  }
+
+  return selected;
 }
 
 // ===================== 核心函数 =====================
@@ -248,6 +422,215 @@ export async function searchMemory(
     logger.error('[VecMemory] 搜索记忆失败:', err);
     throw new Error(`搜索记忆失败: ${(err as Error).message}`);
   }
+}
+
+/**
+ * 混合搜索 —— 向量语义搜索 + FTS 全文搜索双路召回
+ *
+ * 参考 OpenClaw memory-search 架构：
+ * 1. 向量搜索召回语义相关结果
+ * 2. FTS 全文搜索召回关键词匹配结果
+ * 3. 加权融合并使用 MMR 去重
+ *
+ * @param query 查询文本
+ * @param options 混合搜索选项
+ * @returns 融合排序后的记忆列表
+ */
+export async function hybridSearchMemory(
+  query: string,
+  options: HybridSearchOptions = {}
+): Promise<VecSearchResult[]> {
+  const {
+    topK = DEFAULT_TOP_K,
+    vectorWeight = DEFAULT_HYBRID_SEARCH.vectorWeight,
+    textWeight = DEFAULT_HYBRID_SEARCH.textWeight,
+    candidateMultiplier = DEFAULT_HYBRID_SEARCH.candidateMultiplier,
+    useMMR = DEFAULT_MMR.enabled,
+    mmrLambda = DEFAULT_MMR.lambda,
+    filters = {},
+  } = options;
+
+  try {
+    const db = ensureEngine();
+    const candidateCount = topK * candidateMultiplier;
+
+    const [vectorResults, ftsResults] = await Promise.allSettled([
+      searchMemory(query, candidateCount, filters),
+      ftsSearchMemory(query, candidateCount, filters),
+    ]);
+
+    const merged = new Map<number, { vectorScore: number; textScore: number; result: VecSearchResult }>();
+
+    if (vectorResults.status === "fulfilled") {
+      for (let i = 0; i < vectorResults.value.length; i++) {
+        const r = vectorResults.value[i];
+        const normalizedScore = 1 - i / vectorResults.value.length;
+        merged.set(r.id, {
+          vectorScore: Math.max(r.similarity, normalizedScore * 0.5),
+          textScore: 0,
+          result: r,
+        });
+      }
+    }
+
+    if (ftsResults.status === "fulfilled") {
+      for (let i = 0; i < ftsResults.value.length; i++) {
+        const r = ftsResults.value[i];
+        const normalizedScore = 1 - i / ftsResults.value.length;
+        const existing = merged.get(r.id);
+        if (existing) {
+          existing.textScore = Math.max(r.similarity, normalizedScore);
+        } else {
+          merged.set(r.id, {
+            vectorScore: 0,
+            textScore: Math.max(r.similarity, normalizedScore),
+            result: r,
+          });
+        }
+      }
+    }
+
+    let scoredResults: VecSearchResult[] = [];
+    for (const entry of merged.values()) {
+      const combinedScore = entry.vectorScore * vectorWeight + entry.textScore * textWeight;
+      scoredResults.push({
+        ...entry.result,
+        similarity: combinedScore,
+      });
+    }
+
+    scoredResults.sort((a, b) => b.similarity - a.similarity);
+
+    if (useMMR && scoredResults.length > topK) {
+      scoredResults = mmrReRank(scoredResults, mmrLambda, topK);
+    }
+
+    const finalResults = scoredResults.slice(0, topK);
+
+    logger.debug(
+      `[VecMemory] 混合搜索: query="${query.slice(0, 50)}..., ` +
+      `vector=${vectorResults.status === "fulfilled" ? vectorResults.value.length : "fail"}, ` +
+      `fts=${ftsResults.status === "fulfilled" ? ftsResults.value.length : "fail"}, ` +
+      `merged=${merged.size}, final=${finalResults.length}`
+    );
+
+    return finalResults;
+  } catch (err) {
+    logger.warn('[VecMemory] 混合搜索失败，降级到纯向量搜索:', err);
+    return searchMemory(query, topK, filters);
+  }
+}
+
+/**
+ * FTS 全文搜索记忆
+ *
+ * @param query 查询文本
+ * @param topK 返回数量
+ * @param filters 过滤条件
+ * @returns 匹配的记忆列表
+ */
+function ftsSearchMemory(
+  query: string,
+  topK: number = DEFAULT_TOP_K,
+  filters: Record<string, unknown> = {}
+): Promise<VecSearchResult[]> {
+  return new Promise((resolve) => {
+    try {
+      const db = ensureEngine();
+
+      const ftsQuery = query
+        .split(/\s+/)
+        .filter((w) => w.length > 0)
+        .map((w) => `"${w.replace(/"/g, '""')}"`)
+        .join(" OR ");
+
+      if (!ftsQuery) {
+        resolve([]);
+        return;
+      }
+
+      const rows = db.all<{
+        id: number;
+        text: string;
+        metadata: string;
+        rank: number;
+      }>(`
+        SELECT e.id, e.text, e.metadata, f.rank
+        FROM memory_fts f
+        JOIN memory_entries e ON e.id = f.rowid
+        WHERE memory_fts MATCH ?
+        ORDER BY f.rank
+        LIMIT ?
+      `, [ftsQuery, topK]);
+
+      const results: VecSearchResult[] = [];
+      for (const row of rows) {
+        const metadata = JSON.parse(row.metadata || '{}') as Record<string, unknown>;
+
+        let match = true;
+        for (const [key, value] of Object.entries(filters)) {
+          if (metadata[key] !== value) {
+            match = false;
+            break;
+          }
+        }
+
+        if (match) {
+          results.push({
+            id: row.id,
+            text: row.text,
+            metadata,
+            similarity: Math.max(0, 1 - row.rank / 10),
+          });
+        }
+      }
+
+      resolve(results);
+    } catch (err) {
+      logger.warn('[VecMemory] FTS 搜索失败:', err);
+      resolve([]);
+    }
+  });
+}
+
+/**
+ * 批量插入带分块的记忆
+ * 大文本自动分块后分别存储，保持上下文关联
+ *
+ * @param text 原始文本
+ * @param metadata 元数据
+ * @param chunkOptions 分块选项
+ * @returns 所有插入的记忆 ID
+ */
+export async function insertMemoryWithChunks(
+  text: string,
+  metadata: Record<string, unknown> = {},
+  chunkOptions: ChunkOptions = {}
+): Promise<number[]> {
+  const chunks = chunkText(text, chunkOptions);
+
+  if (chunks.length === 1) {
+    const id = await insertMemory(text, metadata);
+    return [id];
+  }
+
+  const ids: number[] = [];
+  const parentId = metadata.parentId || `chunk-group-${Date.now()}`;
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunkMetadata = {
+      ...metadata,
+      parentId,
+      chunkIndex: i,
+      totalChunks: chunks.length,
+      isChunk: true,
+    };
+    const id = await insertMemory(chunks[i], chunkMetadata);
+    ids.push(id);
+  }
+
+  logger.debug(`[VecMemory] 分块插入: 原文 ${text.length} 字, 分成 ${chunks.length} 块`);
+  return ids;
 }
 
 /**

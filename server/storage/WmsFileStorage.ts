@@ -7,10 +7,10 @@
 // ============================================================================
 
 import * as path from 'path';
-import * as os from 'os';
 import * as fs from 'fs';
+import { AppPaths } from '../config/appPaths.js';
 
-const WMS_DATA_DIR = path.join(os.homedir(), '.cdf-know-clow', 'wms-data');
+const WMS_DATA_DIR = AppPaths.wmsDataDir;
 
 function ensureDir(dir: string): void {
   if (!fs.existsSync(dir)) {

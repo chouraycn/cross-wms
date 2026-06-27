@@ -10,21 +10,24 @@ import LinkIcon from '@mui/icons-material/Link';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import { useModels } from '../../contexts/ModelsContext';
 import { getGrayScale } from '../../constants/theme';
 import ModelManager from '../shared/ModelManager';
 import SettingsDialogShell, { type TabDef } from '../shared/SettingsDialogShell';
 import MCPSettingsTab from './MCPSettingsTab';
+import ImageGenerationSettingsTab from './ImageGenerationSettingsTab';
 import { useAiEngineSettings, type ExecutionMode, type QueueMode } from '../../contexts/AppSettingsContext';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar tabs                                                        */
 /* ------------------------------------------------------------------ */
-type AITab = 'mcp' | 'model' | 'chat' | 'auth';
+type AITab = 'mcp' | 'model' | 'chat' | 'auth' | 'image';
 
 const SIDEBAR_TABS: TabDef[] = [
   { key: 'mcp', label: 'MCP', icon: <LinkIcon sx={{ fontSize: 17 }} /> },
   { key: 'model', label: '模型', icon: <FormatListBulletedIcon sx={{ fontSize: 17 }} /> },
+  { key: 'image', label: '图片生成', icon: <ImageOutlinedIcon sx={{ fontSize: 17 }} /> },
   { key: 'chat', label: '对话', icon: <ChatOutlinedIcon sx={{ fontSize: 17 }} /> },
   { key: 'auth', label: '外部应用授权', icon: <VpnKeyOutlinedIcon sx={{ fontSize: 17 }} /> },
 ];
@@ -98,6 +101,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) =>
         </>
       )}
       {activeTab === 'mcp' && <MCPSettingsTab />}
+      {activeTab === 'image' && <ImageGenerationSettingsTab />}
       {activeTab === 'chat' && (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>对话引擎</Typography>
