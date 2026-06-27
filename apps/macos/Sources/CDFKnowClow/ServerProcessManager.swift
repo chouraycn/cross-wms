@@ -61,12 +61,15 @@ actor ServerProcessManager {
             return envNode
         }
 
-        let searchPaths = [
+        var searchPaths = [
             "/usr/local/bin/node",
             "/opt/homebrew/bin/node",
             "/usr/bin/node",
             "\(ProcessInfo.processInfo.environment["HOME"] ?? "")/.nvm/versions/node/*/bin/node",
         ]
+
+        let bundleNodePath = "\(resourcesDir)/node/bin/node"
+        searchPaths.append(bundleNodePath)
 
         let fm = FileManager.default
         for path in searchPaths {
@@ -182,8 +185,18 @@ actor ServerProcessManager {
         env["NODE_ENV"] = isAppBundle ? "production" : "development"
         env["PORT"] = String(port)
         env["CDF_DATA_DIR"] = AppPaths.dataDirectory.path
-        // v1.5.220: 告诉 Node 服务器前端静态文件目录
         env["FRONTEND_DIR"] = "\(resourcesDir)/frontend_dist"
+
+        let sharedNodeModules = "\(resourcesDir)/shared_node_modules"
+        let fm = FileManager.default
+        if fm.fileExists(atPath: sharedNodeModules) {
+            if let existingNodePath = env["NODE_PATH"], !existingNodePath.isEmpty {
+                env["NODE_PATH"] = "\(sharedNodeModules):\(existingNodePath)"
+            } else {
+                env["NODE_PATH"] = sharedNodeModules
+            }
+        }
+
         proc.environment = env
 
         let pipe = Pipe()

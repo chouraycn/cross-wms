@@ -21,100 +21,139 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow!
     var serverManager: ServerProcessManager!
     var splashController: SplashScreenController!
+    var webViewManager: WebViewManager!
 
     nonisolated func applicationDidFinishLaunching(_ notification: Notification) {
         Task { @MainActor in
             logger.info("CDF Know Clow starting...")
 
-            // 初始化 Splash Screen 控制器
-            self.splashController = SplashScreenController()
-            logger.info("SplashScreenController initialized")
+            // 初始化 WebViewManager
+            self.webViewManager = WebViewManager.shared
+            logger.info("WebViewManager initialized")
 
+            // 初始化服务器管理器
             self.serverManager = ServerProcessManager()
             logger.info("ServerProcessManager initialized")
+
+            // 初始化 Splash Screen 控制器（单窗口模式）
+            self.splashController = SplashScreenController()
+            logger.info("SplashScreenController initialized (single window mode)")
 
             let config = ConfigStore.shared.config
             logger.info("Config loaded: port=\(config.serverPort), autoStart=\(config.autoStartServer)")
 
-            // v1.6.0: 先创建主窗口（但不立即显示）
-            let windowSize = NSSize(width: config.windowWidth, height: config.windowHeight)
-            let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1280, height: 800)
-            let windowRect = NSRect(
-                x: screenFrame.midX - windowSize.width / 2,
-                y: screenFrame.midY - windowSize.height / 2,
-                width: windowSize.width,
-                height: windowSize.height
-            )
-
-            self.window = NSWindow(
-                contentRect: windowRect,
-                styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
-                backing: .buffered,
-                defer: false
-            )
-            self.window.title = "CDF Know Clow"
-            self.window.minSize = NSSize(width: 900, height: 600)
-
-            // v1.5.220: 使用 WindowContainerView 包装 WebView
-            // 让长按 0.2s 触发窗口拖动，短按（单击）正常透传给 WebView
-            let containerView = WindowContainerView(webView: WebViewManager.shared.webView)
-            self.window.contentView = containerView
-
-            // 透明标题栏：消除顶部白色背景条
-            // 1. 标题栏透明（关键：解决顶部白色背景条）
-            self.window.titlebarAppearsTransparent = true
-            // 2. 隐藏窗口标题文本（不显示软件名）
-            self.window.titleVisibility = .hidden
-            // 3. fullSizeContentView 已通过 styleMask 启用：让 web 内容延伸到标题栏区域（与红黄绿按钮同层）
-            // 4. v1.5.220: 关键！让窗口背景可拖动（参考 OpenClaw）
-            //    即使标题栏透明，用户仍可在 WebView 任意位置长按拖动窗口
-            self.window.isMovableByWindowBackground = true
-
-            // 5. v1.5.220: 把红黄绿按钮往右推 4px、往下推 9px
-            self.adjustTrafficLightPosition(horizontalOffset: 4, verticalOffset: 9)
-
-            self.window.delegate = self
-
             setupMenu()
             NSApp.setActivationPolicy(.regular)
 
-            // v1.6.0: 如果配置了自动启动服务器，显示原生 Splash Screen
-            // Splash Screen 在服务器就绪后自动关闭，然后显示主窗口并加载 WebView
+            // v1.7.9: 刷新应用图标缓存，确保 Finder 显示最新图标
+            refreshAppIcon()
+
+            // v1.7.16: 单窗口模式 - 使用 160x160 尺寸的原生动画启动画面
+            // 服务器就绪后在此窗口加载 WebView，无需切换窗口
             if config.autoStartServer {
-                logger.info("Showing splash screen and starting server...")
+                logger.info("Starting server with single-window splash mode...")
+
+                // 设置服务器就绪后的回调
+                splashController.onServerReady = { [weak self] mainWindow in
+                    guard let self else { return }
+                    Task { @MainActor in
+                        logger.info("Server ready, main window active")
+                        self.window = mainWindow
+                        self.window.delegate = self
+                        self.adjustTrafficLightPosition(horizontalOffset: 4, verticalOffset: 9)
+                        NSApp.activate(ignoringOtherApps: true)
+                    }
+                }
+
+                // 显示启动画面并启动服务器
                 splashController.showAndStartServer(
                     serverManager: self.serverManager,
-                    config: config,
-                    onClose: {
-                        Task { @MainActor in
-                            logger.info("Splash screen closed, showing main window")
-                            // 服务器就绪后：显示主窗口 + 加载 WebView（跳过 splash.html）
-                            self.window.makeKeyAndOrderFront(nil)
-                            self.window.center()
-                            NSApp.activate(ignoringOtherApps: true)
-
-                            // v1.6.0: 直接加载主应用，跳过 splash.html（原生 Splash Screen 已完成动画）
-                            WebViewManager.shared.loadMainAppDirect()
-                        }
-                    }
+                    webViewManager: self.webViewManager,
+                    config: config
                 )
             } else {
-                // 不自动启动服务器：直接显示主窗口
-                logger.info("Auto-start disabled, showing main window directly")
-                self.window.makeKeyAndOrderFront(nil)
-                self.window.center()
+                // 不自动启动服务器：显示主窗口
+                logger.info("Auto-start disabled, showing main window")
+                createMainWindow(config: config)
+                window.makeKeyAndOrderFront(nil)
+                window.center()
                 NSApp.activate(ignoringOtherApps: true)
-                WebViewManager.shared.loadMainAppDirect()
+                webViewManager.loadMainAppDirect()
             }
         }
     }
 
+    /// 创建主窗口
+    private func createMainWindow(config: AppConfig) {
+        let windowSize = NSSize(width: config.windowWidth, height: config.windowHeight)
+        let screenFrame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1280, height: 800)
+        let windowRect = NSRect(
+            x: screenFrame.midX - windowSize.width / 2,
+            y: screenFrame.midY - windowSize.height / 2,
+            width: windowSize.width,
+            height: windowSize.height
+        )
+
+        window = NSWindow(
+            contentRect: windowRect,
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "CDF Know Clow"
+        window.minSize = NSSize(width: 900, height: 600)
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isMovableByWindowBackground = true
+
+        let containerView = WindowContainerView(webView: webViewManager.webView)
+        window.contentView = containerView
+
+        adjustTrafficLightPosition(horizontalOffset: 4, verticalOffset: 9)
+        window.delegate = self
+    }
+
     nonisolated func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        true
+        false
     }
 
     nonisolated func applicationWillTerminate(_ notification: Notification) {
         logger.info("CDF Know Clow terminating...")
+    }
+
+    // MARK: - 图标刷新
+
+    /// 刷新应用图标缓存，确保 Finder 显示最新图标
+    /// macOS 会缓存应用图标，安装新版本后可能显示旧图标
+    /// 此方法在应用启动时调用，通知 Finder 刷新图标
+    private func refreshAppIcon() {
+        let appURL = Bundle.main.bundleURL
+        let appPath = appURL.path
+
+        logger.info("Refreshing app icon cache for: \(appPath, privacy: .public)")
+
+        // 方法1: 通知 Finder 文件系统变化
+        NSWorkspace.shared.noteFileSystemChanged(appPath)
+
+        // 方法2: touch .app 包（更新修改时间）
+        let fm = FileManager.default
+        do {
+            var attrs = try fm.attributesOfItem(atPath: appPath)
+            attrs[.modificationDate] = Date()
+            try fm.setAttributes(attrs, ofItemAtPath: appPath)
+        } catch {
+            logger.warning("Failed to touch app bundle: \(error.localizedDescription, privacy: .public)")
+        }
+
+        // 方法3: 异步刷新 Dock 图标
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // 触发 Dock 图标刷新
+            if let bundleIdentifier = Bundle.main.bundleIdentifier {
+                NSWorkspace.shared.runningApplications
+                    .filter { $0.bundleIdentifier == bundleIdentifier }
+                    .forEach { $0.activate(options: []) }
+            }
+        }
     }
 
     private func setupMenu() {
