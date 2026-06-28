@@ -132,27 +132,83 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         logger.info("Refreshing app icon cache for: \(appPath, privacy: .public)")
 
-        // 方法1: 通知 Finder 文件系统变化
+        // 方法1: 通知 Finder 文件系统变化 - 递归通知整个 .app 包
         NSWorkspace.shared.noteFileSystemChanged(appPath)
+        // 额外通知 Contents 目录和 Info.plist
+        let contentsPath = (appPath as NSString).appendingPathComponent("Contents")
+        let infoPlistPath = (contentsPath as NSString).appendingPathComponent("Info.plist")
+        let resourcesPath = (contentsPath as NSString).appendingPathComponent("Resources")
+        NSWorkspace.shared.noteFileSystemChanged(contentsPath)
+        NSWorkspace.shared.noteFileSystemChanged(infoPlistPath)
+        NSWorkspace.shared.noteFileSystemChanged(resourcesPath)
 
-        // 方法2: touch .app 包（更新修改时间）
+        // 方法2: touch .app 包及其关键文件（更新修改时间）
         let fm = FileManager.default
+        let now = Date()
         do {
             var attrs = try fm.attributesOfItem(atPath: appPath)
-            attrs[.modificationDate] = Date()
+            attrs[.modificationDate] = now
             try fm.setAttributes(attrs, ofItemAtPath: appPath)
+
+            // 同时更新 Contents 和 Info.plist 的修改时间
+            if fm.fileExists(atPath: contentsPath) {
+                var contentsAttrs = try fm.attributesOfItem(atPath: contentsPath)
+                contentsAttrs[.modificationDate] = now
+                try fm.setAttributes(contentsAttrs, ofItemAtPath: contentsPath)
+            }
+            if fm.fileExists(atPath: infoPlistPath) {
+                var plistAttrs = try fm.attributesOfItem(atPath: infoPlistPath)
+                plistAttrs[.modificationDate] = now
+                try fm.setAttributes(plistAttrs, ofItemAtPath: infoPlistPath)
+            }
         } catch {
             logger.warning("Failed to touch app bundle: \(error.localizedDescription, privacy: .public)")
         }
 
-        // 方法3: 异步刷新 Dock 图标
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            // 触发 Dock 图标刷新
+        // 方法3: 使用 touch 命令行工具（更强力的刷新）
+        let task = Process()
+        task.launchPath = "/usr/bin/touch"
+        task.arguments = ["-h", appPath]
+        do {
+            try task.run()
+            task.waitUntilExit()
+        } catch {
+            logger.warning("Failed to run touch command: \(error.localizedDescription, privacy: .public)")
+        }
+
+        // 方法4: 刷新 Dock 图标缓存
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            // 重置应用图标
+            NSApp.applicationIconImage = nil
+            
+            // 重新设置 Dock 徽章以触发刷新
             if let bundleIdentifier = Bundle.main.bundleIdentifier {
                 NSWorkspace.shared.runningApplications
                     .filter { $0.bundleIdentifier == bundleIdentifier }
-                    .forEach { $0.activate(options: []) }
+                    .forEach { app in
+                        _ = app.bundleIdentifier
+                    }
             }
+        }
+
+        // 方法5: 延迟后再次通知 Finder 变化（双重保险）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            NSWorkspace.shared.noteFileSystemChanged(appPath)
+            logger.info("Second icon cache refresh sent")
+        }
+
+        // 方法6: 尝试清除 LaunchServices 缓存（需要用户权限，仅尝试）
+        let lsTask = Process()
+        lsTask.launchPath = "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister"
+        lsTask.arguments = ["-f", "-v", appPath]
+        lsTask.standardOutput = FileHandle.nullDevice
+        lsTask.standardError = FileHandle.nullDevice
+        do {
+            try lsTask.run()
+            lsTask.waitUntilExit()
+            logger.info("LaunchServices cache refresh attempted")
+        } catch {
+            logger.info("lsregister not available or failed, skipping LaunchServices refresh")
         }
     }
 
@@ -179,6 +235,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         serverStatusItem.isEnabled = false
         appMenu.addItem(serverStatusItem)
+        appMenu.addItem(NSMenuItem.separator())
+
+        // 权限检查菜单
+        appMenu.addItem(withTitle: "检查权限状态...", action: #selector(checkPermissions), keyEquivalent: "p")
         appMenu.addItem(NSMenuItem.separator())
 
         appMenu.addItem(
@@ -327,6 +387,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func showHelp() {
         if let url = URL(string: "https://github.com/cdf/cross-wms") {
             NSWorkspace.shared.open(url)
+        }
+    }
+
+    @objc private func checkPermissions() {
+        Task { @MainActor in
+            let status = await PermissionManager.status()
+            let statusText = status
+                .sorted(by: { $0.key.rawValue < $1.key.rawValue })
+                .map { "\($0.key.rawValue): \($0.value ? "✅ 已授权" : "❌ 未授权")" }
+                .joined(separator: "\n")
+
+            let alert = NSAlert()
+            alert.messageText = "权限状态"
+            alert.informativeText = statusText
+            alert.addButton(withTitle: "请求所有权限")
+            alert.addButton(withTitle: "关闭")
+
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                _ = await PermissionManager.ensure(
+                    [.notifications, .microphone, .camera, .screenRecording, .accessibility],
+                    interactive: true
+                )
+                // 刷新状态
+                checkPermissions()
+            }
         }
     }
 

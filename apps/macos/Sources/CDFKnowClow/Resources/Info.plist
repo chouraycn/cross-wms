@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>zh_CN</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.cdf.knowclow.desktop</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>CDF Know Clow</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.7.12</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2026 CDF. All rights reserved.</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.business</string>
+    <key>NSUserNotificationAlertStyle</key>
+    <string>alert</string>
+
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>ai.cdfknow.mac.deeplink</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>cdfknow</string>
+            </array>
+        </dict>
+    </array>
+
+    <key>SUFeedURL</key>
+    <string>https://raw.githubusercontent.com/chouraycn/cross-wms/main/release/appcast.xml</string>
+    <key>SUAutomaticallyUpdate</key>
+    <true/>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUCheckAtStartup</key>
+    <true/>
+
+    <key>NSUserNotificationUsageDescription</key>
+    <string>CDF Know Clow 需要通知权限来显示 Agent 操作的提醒。</string>
+    <key>NSScreenCaptureDescription</key>
+    <string>CDF Know Clow 在 Agent 需要截图作为上下文时会捕获屏幕。</string>
+    <key>NSCameraUsageDescription</key>
+    <string>CDF Know Clow 可以在 Agent 请求时拍摄照片或短视频。</string>
+    <key>NSLocationUsageDescription</key>
+    <string>CDF Know Clow 可以在 Agent 请求时分享您的位置。</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>CDF Know Clow 可以在 Agent 请求时分享您的位置。</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>CDF Know Clow 可以在 Agent 请求时分享您的位置。</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>CDF Know Clow 使用本地网络通过 LAN、Tailnet 或 SSH 连接到远程网关。</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>CDF Know Clow 需要麦克风用于语音唤醒测试和 Agent 音频捕获。</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>CDF Know Clow 使用语音识别来检测您的语音唤醒触发词。</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>CDF Know Clow 需要自动化（AppleScript）权限来驱动终端和其他应用以执行 Agent 操作。</string>
+    <key>NSRemindersUsageDescription</key>
+    <string>CDF Know Clow 可以在 Agent 请求时访问提醒事项，用于 apple-reminders 技能。</string>
+
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoadsInWebContent</key>
+        <true/>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>100.100.100.100</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+            </dict>
+        </dict>
+    </dict>
+</dict>
+</plist>
