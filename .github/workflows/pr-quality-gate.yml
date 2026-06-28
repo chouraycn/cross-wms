@@ -36,21 +36,16 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile || pnpm install
+        run: npm ci
 
       - name: Run ESLint (src + server)
-        run: pnpm run lint
+        run: npm run lint
 
   typecheck:
     name: Type Check
@@ -60,24 +55,19 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile || pnpm install
+        run: npm ci
 
       - name: Type check frontend
-        run: pnpm exec tsc --noEmit
+        run: npx tsc --noEmit
 
       - name: Type check backend
-        run: pnpm exec tsc --noEmit --project server/tsconfig.json
+        run: npx tsc --noEmit --project server/tsconfig.json
 
   test:
     name: Test
@@ -89,21 +79,16 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile || pnpm install
+        run: npm ci
 
       - name: Run tests with coverage
-        run: pnpm run test -- --coverage --passWithNoTests
+        run: npm run test -- --coverage --passWithNoTests
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -130,21 +115,16 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile || pnpm install
+        run: npm ci
 
       - name: Build frontend (vite)
-        run: pnpm run build
+        run: npm run build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -161,24 +141,19 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile || pnpm install
+        run: npm ci
 
       - name: Run npm audit (fail on critical)
-        run: pnpm audit --audit-level=critical
+        run: npm audit --audit-level=critical
 
       - name: Check for outdated dependencies (info only)
-        run: pnpm outdated || true
+        run: npm outdated || true
         if: always()
 
   swift-test:
