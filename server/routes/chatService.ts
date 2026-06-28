@@ -244,6 +244,11 @@ function classifyAndFormatError(
     return { code: 'ABORTED', message: '请求已取消。' };
   }
 
+  // 检查 AIAPIError 抛出的 "请求已取消" 错误
+  if (error instanceof Error && error.name === 'AIAPIError' && error.message === '请求已取消') {
+    return { code: 'ABORTED', message: '请求已取消。' };
+  }
+
   const errMessage = error instanceof Error ? error.message : '未知错误';
   if (errMessage.includes('stdout closed') || errMessage.includes('ENOENT') || errMessage.includes('ECONNREFUSED') || errMessage.includes('connect') || errMessage.includes('fetch failed')) {
     const isLocal = modelConfig ? isLocalModel(modelConfig) : false;
