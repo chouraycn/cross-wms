@@ -1,0 +1,54 @@
+name: Build DMG Only
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-dmg-only-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build DMG (Swift)
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Node.js dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Pre-build check (打包前预检)
+        run: bash scripts/pre-build-check.sh --quick
+
+      - name: Build macOS app
+        run: bash scripts/package-mac-app.sh
+
+      - name: Build DMG
+        run: bash scripts/create-dmg.sh
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdf-know-clow-dmg
+          path: dist/*.dmg
+          retention-days: 7
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdf-know-clow-app
+          path: dist-app/*.app
+          retention-days: 7
