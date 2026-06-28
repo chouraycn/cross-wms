@@ -281,7 +281,7 @@ cd "$ROOT_DIR"
 # ===================== 7. Create Info.plist =====================
 
 echo "📄 Creating Info.plist..."
-INFO_PLIST_SRC="$ROOT_DIR/apps/macos/Sources/CDFKnow/Resources/Info.plist"
+INFO_PLIST_SRC="$ROOT_DIR/apps/macos/Sources/CDFKnowClow/Resources/Info.plist"
 if [ -f "$INFO_PLIST_SRC" ]; then
     echo "📄 Using template Info.plist from: $INFO_PLIST_SRC"
     cp "$INFO_PLIST_SRC" "$CONTENTS/Info.plist"
