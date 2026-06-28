@@ -13,6 +13,18 @@ export type {
   ReplyDispatcher,
   ReplyCoalescedUpdate,
   ReplyCoalescerFlushHandler,
+  BlockBreakPreference,
+  BlockStreamingChunkingConfig,
+  BlockStreamingCoalescingConfig,
+  BlockReplyEventType,
+  BlockReplyTextEvent,
+  BlockReplyToolEvent,
+  BlockReplyFinalEvent,
+  ReasoningEvent,
+  BlockReplyEvent,
+  BlockReplyEventHandler,
+  FenceSpan,
+  FenceScanState,
 } from "./types.js";
 
 // Reply Dispatcher
@@ -45,3 +57,28 @@ export type {
   DirectiveResult,
   DirectiveProcessor,
 } from "./directiveProcessor.js";
+
+// Foreground Reply Fence
+export {
+  ForegroundReplyFence,
+  getForegroundReplyFence,
+  resetForegroundReplyFenceForTests,
+} from "./foregroundReplyFence.js";
+export type { ForegroundReplyFenceManager } from "./foregroundReplyFence.js";
+
+// Markdown Aware Chunker
+export {
+  MarkdownAwareChunker,
+  scanFenceSpans,
+  parseFenceSpans,
+  findFenceSpanAt,
+  isSafeFenceBreak,
+  stripReasoningTagsFromText,
+} from "./markdownAwareChunker.js";
+
+// Block Streaming
+export {
+  BlockStreamingPipeline,
+  createBlockStreamingPipeline,
+  resolveEffectiveBlockStreamingConfig,
+} from "./blockStreaming.js";
