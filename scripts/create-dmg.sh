@@ -52,16 +52,15 @@ DMG_NAME="${APP_NAME}-${VERSION}.dmg"
 DMG_VOLUME_NAME="${DMG_VOLUME_NAME:-$APP_NAME}"
 DMG_BACKGROUND_SMALL="${DMG_BACKGROUND_SMALL:-$ROOT_DIR/apps/macos/Packaging/dmg-background-small.png}"
 DMG_BACKGROUND_PATH="${DMG_BACKGROUND_PATH:-$ROOT_DIR/apps/macos/Packaging/dmg-background.png}"
-DMG_ICON_PATH="${DMG_ICON_PATH:-$ROOT_DIR/apps/macos/Icon.icon/AppIcon.icns}"
 
-# 窗口大小需要匹配背景图尺寸 (1100x692)
-# bounds 格式: {left, top, right, bottom}
-# 窗口宽度 = right-left = 1200-100 = 1100
-# 窗口高度 = bottom-top = 792-100 = 692
+# 窗口大小需要匹配背景图尺寸
+# small 背景图 (500x320): bounds = {400, 100, 900, 420}
+# 大背景图 (1100x692): bounds = {100, 100, 1200, 792}
+# 优先使用大背景图 (1100x692) 匹配当前窗口设置
 DMG_WINDOW_BOUNDS="${DMG_WINDOW_BOUNDS:-100 100 1200 792}"
 DMG_ICON_SIZE="${DMG_ICON_SIZE:-96}"
-DMG_APP_POS="${DMG_APP_POS:-125 160}"
-DMG_APPS_POS="${DMG_APPS_POS:-375 160}"
+DMG_APP_POS="${DMG_APP_POS:-240 300}"
+DMG_APPS_POS="${DMG_APPS_POS:-680 300}"
 DMG_EXTRA_SECTORS="${DMG_EXTRA_SECTORS:-2048}"
 
 require_integer_list() {
@@ -192,6 +191,7 @@ MOUNTED=1
 
 if [[ "${SKIP_DMG_STYLE:-0}" != "1" ]]; then
   mkdir -p "$MOUNT_POINT/.background"
+  # 优先使用大背景图 (1100x692) 匹配窗口 bounds
   if [[ -f "$DMG_BACKGROUND_PATH" ]]; then
     cp "$DMG_BACKGROUND_PATH" "$MOUNT_POINT/.background/background.png"
   elif [[ -f "$DMG_BACKGROUND_SMALL" ]]; then
@@ -200,15 +200,13 @@ if [[ "${SKIP_DMG_STYLE:-0}" != "1" ]]; then
     echo "WARN: DMG background missing: $DMG_BACKGROUND_PATH / $DMG_BACKGROUND_SMALL" >&2
   fi
 
-  if [[ -f "$DMG_ICON_PATH" ]]; then
-    echo "Setting DMG volume icon: $DMG_ICON_PATH"
-    cp "$DMG_ICON_PATH" "$MOUNT_POINT/.VolumeIcon.icns"
+  # Volume icon: reuse the app icon if available.
+  ICON_SRC="$ROOT_DIR/apps/macos/Icon.icon/AppIcon.icns"
+  if [[ -f "$ICON_SRC" ]]; then
+    cp "$ICON_SRC" "$MOUNT_POINT/.VolumeIcon.icns"
     if command -v SetFile >/dev/null 2>&1; then
       SetFile -a C "$MOUNT_POINT" 2>/dev/null || true
-      echo "Volume icon attribute set via SetFile"
     fi
-  else
-    echo "WARN: DMG icon not found: $DMG_ICON_PATH" >&2
   fi
 
   osascript <<EOF
@@ -216,9 +214,7 @@ tell application "Finder"
   set dmgRoot to POSIX file "$MOUNT_POINT" as alias
   set dmgDisk to disk of dmgRoot
   tell dmgDisk
-    activate
     open
-    delay 2
     set current view of container window to icon view
     set toolbar visible of container window to false
     set statusbar visible of container window to false
@@ -226,27 +222,20 @@ tell application "Finder"
     set viewOptions to the icon view options of container window
     set arrangement of viewOptions to not arranged
     set icon size of viewOptions to ${DMG_ICON_SIZE}
+    if exists file ".background:background.png" then
+      set background picture of viewOptions to file ".background:background.png"
+    end if
     set text size of viewOptions to 12
     set label position of viewOptions to bottom
     set shows item info of viewOptions to false
     set shows icon preview of viewOptions to true
-    -- 设置背景图（使用 alias 格式）
-    try
-      set bgPath to "$MOUNT_POINT/.background/background.png"
-      set bgAlias to POSIX file bgPath as alias
-      set background picture of viewOptions to bgAlias
-    on error errMsg
-      log "Background error: " & errMsg
-    end try
-    -- 设置图标位置
-    try
-      set position of item "${APP_BUNDLE_FILENAME}" of container window to {$(to_applescript_pair "$DMG_APP_POS")}
-    end try
-    try
-      set position of item "Applications" of container window to {$(to_applescript_pair "$DMG_APPS_POS")}
-    end try
+    set position of item "${APP_BUNDLE_FILENAME}" of container window to {$(to_applescript_pair "$DMG_APP_POS")}
+    set position of item "Applications" of container window to {$(to_applescript_pair "$DMG_APPS_POS")}
     update without registering applications
     delay 2
+    close
+    open
+    delay 1
     close container window
   end tell
 end tell
