@@ -10,6 +10,8 @@ import type {
   ReplyDispatchOptions,
   ReplyDispatcher,
 } from "./types.js";
+import { getForegroundReplyFence } from "./foregroundReplyFence.js";
+import { logger } from "../../logger.js";
 
 const DEFAULT_HUMAN_DELAY_MIN_MS = 500;
 const DEFAULT_HUMAN_DELAY_MAX_MS = 1500;
@@ -54,10 +56,30 @@ class ReplyDispatcherManager {
       return;
     }
 
+    // 前台回复栅栏检查
+    if (options.fenceKey && options.fenceGeneration !== undefined) {
+      const fence = getForegroundReplyFence(options.fenceKey);
+      const shouldCancel = await fence.shouldCancelDelivery(options.fenceGeneration);
+      if (shouldCancel) {
+        this.dispatched.add(payload.id);
+        return;
+      }
+    }
+
     // 模拟人类延迟
     const delayMs = options.delayMs ?? this.randomDelay();
     if (delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+
+    // 延迟后再次检查栅栏
+    if (options.fenceKey && options.fenceGeneration !== undefined) {
+      const fence = getForegroundReplyFence(options.fenceKey);
+      const shouldCancel = await fence.shouldCancelDelivery(options.fenceGeneration);
+      if (shouldCancel) {
+        this.dispatched.add(payload.id);
+        return;
+      }
     }
 
     // 打字机效果
@@ -65,6 +87,14 @@ class ReplyDispatcherManager {
       await this.dispatchWithTyping(payload, info, options.typing);
     } else {
       await this.dispatchToHandlers(payload, info);
+    }
+
+    // 标记可见回复
+    if (options.fenceKey && options.fenceGeneration !== undefined && options.visible !== false) {
+      if (payload.content && payload.content.trim().length > 0) {
+        const fence = getForegroundReplyFence(options.fenceKey);
+        fence.markVisibleSent(options.fenceGeneration);
+      }
     }
 
     this.dispatched.add(payload.id);
@@ -104,7 +134,7 @@ class ReplyDispatcherManager {
           await dispatcher.dispatch(payload, info);
         }
       } catch (error) {
-        console.error(`[reply-dispatcher] Dispatcher ${dispatcher.name} failed:`, error);
+        logger.error(`[reply-dispatcher] Dispatcher ${dispatcher.name} failed:`, error);
       }
     }
   }

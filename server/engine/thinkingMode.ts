@@ -5,10 +5,11 @@
  * 配置解析和运行时决策功能。
  *
  * 功能：
- * 1. ThinkLevel 类型定义（off, low, medium, high, xhigh, max）
+ * 1. ThinkLevel 类型定义（off, minimal, low, medium, adaptive, high, xhigh, max）
  * 2. resolveThinkingProfile - 根据模型和提供者确定支持的思考级别
  * 3. listThinkingLevels - 列出支持的思考级别
  * 4. normalizeThinkLevel - 规范化思考级别
+ * 5. Verbose/Trace/Reasoning 指令维度
  */
 
 import { logger } from '../logger.js';
@@ -20,7 +21,15 @@ import { logger } from '../logger.js';
  *
  * 从 off (无思考) 到 max (最大思考)，级别越高模型思考时间越长
  */
-export type ThinkLevel = 'off' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+export type ThinkLevel =
+  | 'off'
+  | 'minimal'
+  | 'low'
+  | 'medium'
+  | 'adaptive'
+  | 'high'
+  | 'xhigh'
+  | 'max';
 
 /**
  * 思考级别选项（UI 显示用）
@@ -35,8 +44,10 @@ export type ThinkingLevelOption = {
  */
 export const THINKING_LEVEL_RANKS: Record<ThinkLevel, number> = {
   off: 0,
+  minimal: 10,
   low: 20,
   medium: 30,
+  adaptive: 30,
   high: 40,
   xhigh: 60,
   max: 70,
@@ -45,7 +56,27 @@ export const THINKING_LEVEL_RANKS: Record<ThinkLevel, number> = {
 /**
  * 基础思考级别列表
  */
-export const BASE_THINKING_LEVELS: ThinkLevel[] = ['off', 'low', 'medium', 'high'];
+export const BASE_THINKING_LEVELS: ThinkLevel[] = [
+  'off',
+  'minimal',
+  'low',
+  'medium',
+  'high',
+];
+
+/**
+ * 完整思考级别列表
+ */
+export const ALL_THINKING_LEVELS: ThinkLevel[] = [
+  'off',
+  'minimal',
+  'low',
+  'medium',
+  'adaptive',
+  'high',
+  'xhigh',
+  'max',
+];
 
 /**
  * 模型目录条目（用于思考级别决策）
@@ -74,6 +105,23 @@ export interface ResolvedThinkingProfile {
   defaultLevel?: ThinkLevel | null;
 }
 
+// ===================== 指令维度类型 =====================
+
+/**
+ * Verbose 级别：控制输出详细程度
+ */
+export type VerboseLevel = 'off' | 'on' | 'full';
+
+/**
+ * Trace 级别：控制追踪信息显示
+ */
+export type TraceLevel = 'off' | 'on' | 'raw';
+
+/**
+ * Reasoning 级别：控制推理过程显示
+ */
+export type ReasoningLevel = 'off' | 'on' | 'stream';
+
 // ===================== 思考级别规范化 =====================
 
 /**
@@ -86,34 +134,76 @@ export function normalizeThinkLevel(raw?: string | null): ThinkLevel | undefined
   if (!raw) return undefined;
 
   const key = raw.toLowerCase().trim();
+  const collapsed = key.replace(/[\s_-]+/g, '');
 
-  // 处理特殊别名
-  if (key === 'on' || key === 'enable' || key === 'enabled') {
-    return 'low';
+  // adaptive / auto
+  if (collapsed === 'adaptive' || collapsed === 'auto') {
+    return 'adaptive';
   }
-  if (key === 'min' || key === 'minimal') {
-    return 'low';
-  }
-  if (key === 'mid' || key === 'med') {
-    return 'medium';
-  }
-  if (key === 'ultra' || key === 'high') {
-    return 'high';
-  }
-  if (key === 'extrahigh' || key === 'xhigh') {
-    return 'xhigh';
-  }
-  if (key === 'max' || key === 'maximum') {
+
+  // max
+  if (collapsed === 'max' || collapsed === 'maximum') {
     return 'max';
   }
 
+  // xhigh / extrahigh
+  if (collapsed === 'xhigh' || collapsed === 'extrahigh') {
+    return 'xhigh';
+  }
+
+  // off
+  if (key === 'off' || key === 'disable' || key === 'disabled' || key === 'false' || key === 'no' || key === '0') {
+    return 'off';
+  }
+
+  // on / enable → 默认 low
+  if (key === 'on' || key === 'enable' || key === 'enabled' || key === 'true' || key === 'yes' || key === '1') {
+    return 'low';
+  }
+
+  // minimal / min / think
+  if (['min', 'minimal', 'think'].includes(key) || ['min', 'minimal', 'think'].includes(collapsed)) {
+    return 'minimal';
+  }
+
+  // low
+  if (['low', 'thinkhard', 'think-hard', 'think_hard'].includes(key) || collapsed === 'low') {
+    return 'low';
+  }
+
+  // medium
+  if (
+    ['mid', 'med', 'medium', 'thinkharder', 'think-harder', 'harder'].includes(key) ||
+    collapsed === 'medium'
+  ) {
+    return 'medium';
+  }
+
+  // high
+  if (
+    ['high', 'ultra', 'ultrathink', 'thinkhardest', 'highest'].includes(key) ||
+    collapsed === 'high'
+  ) {
+    return 'high';
+  }
+
   // 精确匹配
-  const validLevels: ThinkLevel[] = ['off', 'low', 'medium', 'high', 'xhigh', 'max'];
-  if (validLevels.includes(key as ThinkLevel)) {
+  if (ALL_THINKING_LEVELS.includes(key as ThinkLevel)) {
     return key as ThinkLevel;
   }
 
   return undefined;
+}
+
+/**
+ * 字符串到 rank 值映射
+ *
+ * @param raw - 原始思考级别字符串
+ * @returns rank 值，无效则返回 0
+ */
+export function thinkLevelToRank(raw?: string | null): number {
+  const level = normalizeThinkLevel(raw);
+  return level ? THINKING_LEVEL_RANKS[level] : 0;
 }
 
 // ===================== 思考级别判断 =====================
@@ -170,6 +260,28 @@ function catalogSupportsXHigh(compat: ThinkingCatalogEntry['compat']): boolean {
   return efforts.some((effort) => normalizeThinkLevel(effort) === 'xhigh');
 }
 
+/**
+ * 检查目录条目是否支持 adaptive 级别
+ */
+function catalogSupportsAdaptive(compat: ThinkingCatalogEntry['compat']): boolean {
+  const efforts = compat?.supportedReasoningEfforts;
+  if (!Array.isArray(efforts)) {
+    return false;
+  }
+  return efforts.some((effort) => normalizeThinkLevel(effort) === 'adaptive');
+}
+
+/**
+ * 检查目录条目是否支持 max 级别
+ */
+function catalogSupportsMax(compat: ThinkingCatalogEntry['compat']): boolean {
+  const efforts = compat?.supportedReasoningEfforts;
+  if (!Array.isArray(efforts)) {
+    return false;
+  }
+  return efforts.some((effort) => normalizeThinkLevel(effort) === 'max');
+}
+
 // ===================== Provider 思考配置映射 =====================
 
 /**
@@ -185,33 +297,38 @@ interface ProviderThinkingSupport {
 
 /**
  * Provider 思考配置注册表
+ *
+ * Anthropic: extended(high)/high/medium/low/off → 实际支持 xhigh/adaptive/high/medium/low/minimal/off
+ * OpenAI: high/medium/low/off
+ * Google: high/medium/low/off
+ * DeepSeek: high/low/off
+ * Moonshot: high/medium/low/off
+ * Minimax: high/medium/low/off
  */
 const PROVIDER_THINKING_PROFILES: Record<string, ProviderThinkingSupport> = {
-  'anthropic': {
+  anthropic: {
     defaultLevel: 'medium',
-    supportedLevels: ['off', 'low', 'medium', 'high', 'xhigh', 'max'],
+    supportedLevels: ['off', 'minimal', 'low', 'medium', 'adaptive', 'high', 'xhigh', 'max'],
   },
-  'openai': {
+  openai: {
     defaultLevel: 'low',
     supportedLevels: ['off', 'low', 'medium', 'high'],
   },
-  'google': {
+  google: {
     defaultLevel: 'low',
     supportedLevels: ['off', 'low', 'medium', 'high'],
   },
-  'deepseek': {
+  deepseek: {
     defaultLevel: 'medium',
-    supportedLevels: ['off', 'low', 'medium', 'high'],
+    supportedLevels: ['off', 'low', 'high'],
   },
-  'moonshot': {
+  moonshot: {
     defaultLevel: 'low',
     supportedLevels: ['off', 'low', 'medium', 'high'],
-    binary: false,
   },
-  'minimax': {
+  minimax: {
     defaultLevel: 'low',
     supportedLevels: ['off', 'low', 'medium', 'high'],
-    binary: false,
   },
 };
 
@@ -257,17 +374,31 @@ export function resolveThinkingProfile(params: {
         return buildOffOnlyProfile();
       }
 
-      // 检查是否支持 xhigh
-      const supportsXHigh = catalogSupportsXHigh(catalogEntry.compat);
-      const levels: Array<{ id: ThinkLevel; label: string; rank: number }> = BASE_THINKING_LEVELS.map((id) => ({
-        id,
-        label: id,
-        rank: THINKING_LEVEL_RANKS[id],
-      }));
+      // 基于基础级别构建
+      const levels: Array<{ id: ThinkLevel; label: string; rank: number }> =
+        BASE_THINKING_LEVELS.map((id) => ({
+          id,
+          label: id,
+          rank: THINKING_LEVEL_RANKS[id],
+        }));
 
-      if (supportsXHigh) {
-        levels.push({ id: 'xhigh', label: 'xhigh', rank: THINKING_LEVEL_RANKS.xhigh });
+      // 检查是否支持 adaptive
+      if (catalogSupportsAdaptive(catalogEntry.compat)) {
+        appendProfileLevel(levels, 'adaptive');
       }
+
+      // 检查是否支持 xhigh
+      if (catalogSupportsXHigh(catalogEntry.compat)) {
+        appendProfileLevel(levels, 'xhigh');
+      }
+
+      // 检查是否支持 max
+      if (catalogSupportsMax(catalogEntry.compat)) {
+        appendProfileLevel(levels, 'max');
+      }
+
+      // 按 rank 排序
+      levels.sort((a, b) => a.rank - b.rank);
 
       return {
         levels,
@@ -277,18 +408,21 @@ export function resolveThinkingProfile(params: {
   }
 
   // 使用 Provider 配置
-  if (providerId) {
-    const providerProfile = getProviderThinkingProfile(providerId);
+  const effectiveProvider = providerId || provider?.toLowerCase().trim() || '';
+  if (effectiveProvider) {
+    const providerProfile = getProviderThinkingProfile(effectiveProvider);
     if (providerProfile) {
       if (providerProfile.binary) {
         return buildBinaryProfile(providerProfile.defaultLevel);
       }
 
-      const levels = providerProfile.supportedLevels.map((id) => ({
-        id,
-        label: id,
-        rank: THINKING_LEVEL_RANKS[id],
-      }));
+      const levels = providerProfile.supportedLevels
+        .map((id) => ({
+          id,
+          label: id,
+          rank: THINKING_LEVEL_RANKS[id],
+        }))
+        .sort((a, b) => a.rank - b.rank);
 
       return {
         levels,
@@ -302,6 +436,19 @@ export function resolveThinkingProfile(params: {
 }
 
 /**
+ * 向 profile 中添加一个级别（如果不存在）
+ */
+function appendProfileLevel(
+  levels: Array<{ id: ThinkLevel; label: string; rank: number }>,
+  id: ThinkLevel,
+) {
+  if (levels.some((level) => level.id === id)) {
+    return;
+  }
+  levels.push({ id, label: id, rank: THINKING_LEVEL_RANKS[id] });
+}
+
+/**
  * 构建基础思考配置
  */
 function buildBaseProfile(defaultLevel?: ThinkLevel | null): ResolvedThinkingProfile {
@@ -310,7 +457,7 @@ function buildBaseProfile(defaultLevel?: ThinkLevel | null): ResolvedThinkingPro
       id,
       label: id,
       rank: THINKING_LEVEL_RANKS[id],
-    })),
+    })).sort((a, b) => a.rank - b.rank),
     defaultLevel: defaultLevel ?? 'medium',
   };
 }
@@ -386,6 +533,8 @@ export function isThinkingLevelSupported(params: {
 
 /**
  * 解析并验证思考级别，如果不支持则降级到最近的支持级别
+ *
+ * 降级策略：请求的级别不支持时向下寻找最接近的已支持级别
  */
 export function resolveSupportedThinkingLevel(params: {
   provider?: string | null;
@@ -403,7 +552,7 @@ export function resolveSupportedThinkingLevel(params: {
   const supportedLevels = listThinkingLevels(provider, model, catalog);
   const requestedRank = THINKING_LEVEL_RANKS[level];
 
-  // 优先找 rank <= 请求级别的最高级别
+  // 优先找 rank <= 请求级别的最高级别（向下寻找最接近的）
   const downgraded = supportedLevels
     .filter((l) => l !== 'off' && THINKING_LEVEL_RANKS[l] <= requestedRank)
     .sort((a, b) => THINKING_LEVEL_RANKS[b] - THINKING_LEVEL_RANKS[a])[0];
@@ -467,14 +616,13 @@ export function validateThinkingConfig(config: {
   if (!normalized) {
     return {
       valid: false,
-      error: `无效的思考级别: ${level}。支持的级别: off, low, medium, high, xhigh, max`,
+      error: `无效的思考级别: ${level}。支持的级别: off, minimal, low, medium, adaptive, high, xhigh, max`,
     };
   }
 
   // 检查是否支持
   if (provider && model) {
     if (!isThinkingLevelSupported({ provider, model, level: normalized })) {
-      const supported = listThinkingLevels(provider, model);
       const nearest = resolveSupportedThinkingLevel({ provider, model, level: normalized });
       logger.warn(
         `思考级别 ${normalized} 不被 ${provider}/${model} 支持，将使用 ${nearest}`,
@@ -483,4 +631,98 @@ export function validateThinkingConfig(config: {
   }
 
   return { valid: true, normalizedLevel: normalized };
+}
+
+// ===================== Verbose 级别规范化 =====================
+
+/**
+ * 规范化 Verbose 级别
+ */
+export function normalizeVerboseLevel(raw?: string | null): VerboseLevel | undefined {
+  if (!raw) return undefined;
+
+  const key = raw.toLowerCase().trim();
+
+  if (['off', 'false', 'no', '0', 'disable', 'disabled'].includes(key)) {
+    return 'off';
+  }
+  if (['full', 'all', 'everything'].includes(key)) {
+    return 'full';
+  }
+  if (['on', 'minimal', 'true', 'yes', '1', 'enable', 'enabled'].includes(key)) {
+    return 'on';
+  }
+
+  return undefined;
+}
+
+/**
+ * 检查是否为有效的 Verbose 级别
+ */
+export function isValidVerboseLevel(raw?: string | null): raw is string {
+  return normalizeVerboseLevel(raw) !== undefined;
+}
+
+// ===================== Trace 级别规范化 =====================
+
+/**
+ * 规范化 Trace 级别
+ */
+export function normalizeTraceLevel(raw?: string | null): TraceLevel | undefined {
+  if (!raw) return undefined;
+
+  const key = raw.toLowerCase().trim();
+
+  if (['off', 'false', 'no', '0', 'disable', 'disabled'].includes(key)) {
+    return 'off';
+  }
+  if (['on', 'true', 'yes', '1', 'enable', 'enabled'].includes(key)) {
+    return 'on';
+  }
+  if (['raw', 'unfiltered'].includes(key)) {
+    return 'raw';
+  }
+
+  return undefined;
+}
+
+/**
+ * 检查是否为有效的 Trace 级别
+ */
+export function isValidTraceLevel(raw?: string | null): raw is string {
+  return normalizeTraceLevel(raw) !== undefined;
+}
+
+// ===================== Reasoning 级别规范化 =====================
+
+/**
+ * 规范化 Reasoning 级别
+ */
+export function normalizeReasoningLevel(raw?: string | null): ReasoningLevel | undefined {
+  if (!raw) return undefined;
+
+  const key = raw.toLowerCase().trim();
+
+  if (
+    ['off', 'false', 'no', '0', 'hide', 'hidden', 'disable', 'disabled'].includes(key)
+  ) {
+    return 'off';
+  }
+  if (
+    ['on', 'true', 'yes', '1', 'show', 'visible', 'enable', 'enabled'].includes(key)
+  ) {
+    return 'on';
+  }
+  if (['stream', 'streaming', 'draft', 'live'].includes(key)) {
+    return 'stream';
+  }
+
+  return undefined;
+}
+
+/**
+ * 检查是否为有效的 Reasoning 级别
+ */
+export function isValidReasoningLevel(raw?: string | null): raw is string {
+  return normalizeReasoningLevel(raw) !== undefined;
 }

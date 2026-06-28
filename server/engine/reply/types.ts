@@ -59,6 +59,9 @@ export interface ReplyDispatchOptions {
     maxSpeed?: number;
   };
   silent?: boolean;
+  fenceKey?: string;
+  fenceGeneration?: number;
+  visible?: boolean;
 }
 
 export interface ReplyDispatcher {
@@ -82,3 +85,88 @@ export interface ReplyCoalescedUpdate {
 export type ReplyCoalescerFlushHandler = (
   updates: ReplyCoalescedUpdate[],
 ) => void | Promise<void>;
+
+// ==================== Block Streaming Types ====================
+
+export type BlockBreakPreference = "paragraph" | "newline" | "sentence";
+
+export interface BlockStreamingChunkingConfig {
+  minChars: number;
+  maxChars: number;
+  breakPreference: BlockBreakPreference;
+  flushOnParagraph?: boolean;
+}
+
+export interface BlockStreamingCoalescingConfig {
+  minChars: number;
+  maxChars: number;
+  idleMs: number;
+  joiner: string;
+  flushOnEnqueue?: boolean;
+}
+
+export type BlockReplyEventType =
+  | "block_reply_text"
+  | "block_reply_tool"
+  | "block_reply_final"
+  | "reasoning";
+
+export interface BlockReplyTextEvent {
+  type: "block_reply_text";
+  content: string;
+  blockIndex: number;
+  isFinal: boolean;
+  timestamp: number;
+}
+
+export interface BlockReplyToolEvent {
+  type: "block_reply_tool";
+  toolCallId: string;
+  toolName: string;
+  toolInput?: string;
+  toolResult?: unknown;
+  isError?: boolean;
+  timestamp: number;
+}
+
+export interface BlockReplyFinalEvent {
+  type: "block_reply_final";
+  content: string;
+  totalBlocks: number;
+  metadata?: Record<string, unknown>;
+  timestamp: number;
+}
+
+export interface ReasoningEvent {
+  type: "reasoning";
+  content: string;
+  done: boolean;
+  timestamp: number;
+}
+
+export type BlockReplyEvent =
+  | BlockReplyTextEvent
+  | BlockReplyToolEvent
+  | BlockReplyFinalEvent
+  | ReasoningEvent;
+
+export type BlockReplyEventHandler = (event: BlockReplyEvent) => void | Promise<void>;
+
+export interface FenceSpan {
+  start: number;
+  end: number;
+  openLine: string;
+  marker: string;
+  indent: string;
+}
+
+export interface FenceScanState {
+  atLineStart?: boolean;
+  open?: {
+    markerChar: string;
+    markerLen: number;
+    openLine: string;
+    marker: string;
+    indent: string;
+  };
+}
