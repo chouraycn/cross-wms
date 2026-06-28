@@ -89,6 +89,6 @@ dist-app/
 apps/macos/.build/
 apps/macos/Package.resolved
 
-# Package lock (using pnpm workspace now)
-package-lock.json
+# Package lock
+# package-lock.json
 .wip-unfinished/
