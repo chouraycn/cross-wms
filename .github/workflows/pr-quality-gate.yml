@@ -36,16 +36,22 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: pnpm install --frozen-lockfile || pnpm install
 
       - name: Run ESLint (src + server)
-        run: npm run lint
+        run: pnpm run lint
 
   typecheck:
     name: Type Check
@@ -55,19 +61,25 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: pnpm install --frozen-lockfile || pnpm install
 
       - name: Type check frontend
-        run: npx tsc --noEmit
+        run: pnpm exec tsc --noEmit
 
       - name: Type check backend
-        run: npx tsc --noEmit --project server/tsconfig.json
+        run: pnpm exec tsc --noEmit --project server/tsconfig.json
 
   test:
     name: Test
@@ -79,16 +91,22 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: pnpm install --frozen-lockfile || pnpm install
 
       - name: Run tests with coverage
-        run: npm run test -- --coverage --passWithNoTests
+        run: pnpm run test -- --coverage --passWithNoTests
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -115,16 +133,22 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: pnpm install --frozen-lockfile || pnpm install
 
       - name: Build frontend (vite)
-        run: npm run build
+        run: pnpm run build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -141,25 +165,25 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: pnpm install --frozen-lockfile || pnpm install
 
       - name: Run npm audit (fail on critical)
-        run: |
-          if [ -f package-lock.json ]; then
-            npm audit --audit-level=critical --omit=dev
-          else
-            echo "No lock file found, skipping audit"
-            npm audit --audit-level=high --omit=dev || true
-          fi
+        run: pnpm audit --audit-level=critical
 
       - name: Check for outdated dependencies (info only)
-        run: npm outdated || true
+        run: pnpm outdated || true
         if: always()
 
   swift-test:
