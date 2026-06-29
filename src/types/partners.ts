@@ -1,7 +1,7 @@
 /**
  * Partner (供应商/客户) Type Definitions
  *
- * CrossWMS v1.4.0 — Unified partner management for suppliers and customers.
+ * CDFKnow v1.4.0 — Unified partner management for suppliers and customers.
  */
 
 /** Partner type discriminator */

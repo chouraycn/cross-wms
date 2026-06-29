@@ -29,7 +29,7 @@
     <key>NSUserNotificationAlertStyle</key>
     <string>alert</string>
     <key>SUFeedURL</key>
-    <string>https://raw.githubusercontent.com/chouraycn/cross-wms/main/release/appcast.xml</string>
+    <string>https://raw.githubusercontent.com/chouraycn/CDFKnow/main/release/appcast.xml</string>
     <key>SUPublicEDKey</key>
     <string></string>
     <key>SUAutomaticallyUpdate</key>

@@ -31,7 +31,7 @@ interface IPCResponse {
 
 type RequestCallback = (response: IPCResponse) => void;
 
-class CrossWMSIPCClient {
+class CDFKnowIPCClient {
   private socketPath: string;
   private socket: net.Socket | null = null;
   private connected = false;
@@ -255,6 +255,37 @@ class CrossWMSIPCClient {
     return response.ok;
   }
 
+  async permissionCheck(capabilities?: string[]): Promise<Record<string, boolean> | null> {
+    const response = await this.sendRequest({
+      type: 'permissionCheck',
+      capabilities,
+    });
+    if (response.ok && response.payload) {
+      try {
+        return JSON.parse(Buffer.from(response.payload, 'base64').toString('utf8'));
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  async permissionRequest(capability: string): Promise<boolean> {
+    const response = await this.sendRequest({
+      type: 'permissionRequest',
+      capability,
+    });
+    return response.ok;
+  }
+
+  async permissionOpenSettings(capability: string): Promise<boolean> {
+    const response = await this.sendRequest({
+      type: 'permissionOpenSettings',
+      capability,
+    });
+    return response.ok;
+  }
+
   disconnect(): void {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -267,6 +298,6 @@ class CrossWMSIPCClient {
   }
 }
 
-export const ipcClient = new CrossWMSIPCClient();
+export const ipcClient = new CDFKnowIPCClient();
 
 export default ipcClient;

@@ -42,7 +42,7 @@
     </array>
 
     <key>SUFeedURL</key>
-    <string>https://raw.githubusercontent.com/chouraycn/cross-wms/main/release/appcast.xml</string>
+    <string>https://raw.githubusercontent.com/chouraycn/CDFKnow/main/release/appcast.xml</string></function><function name="Edit"><parameter name="file_path" string="true">/Users/chouray/WorkBuddy/2026-05-25-10-01-22/cross-wms/apps/macos/Sources/CrossWms/Resources/Info.plist
     <key>SUAutomaticallyUpdate</key>
     <true/>
     <key>SUEnableAutomaticChecks</key>

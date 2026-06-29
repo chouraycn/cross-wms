@@ -91,7 +91,7 @@ function formatJsonOutput(report: DoctorReport): string {
 function formatTextOutput(report: DoctorReport): string {
   const lines: string[] = [];
   lines.push("");
-  lines.push(`  Cross-WMS 诊断报告 (${report.timestamp})`);
+  lines.push(`  CDFKnow 诊断报告 (${report.timestamp})`);
   lines.push("");
   lines.push("  检查项:");
   lines.push("");

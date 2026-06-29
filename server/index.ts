@@ -130,6 +130,9 @@ import imageGenerationRouter from './routes/image-generation.js';
 // v9.0: Event Ledger (事件溯源查询)
 import eventLedgerRouter from './routes/eventLedger.js';
 
+// System Permissions
+import permissionsRouter from './routes/permissions.js';
+
 // v10.0: Gateway (API 兼容网关)
 import gatewayRouter from './gateway/gateway.js';
 import { configureGatewayAuth, addApiKey, generateDevApiKey } from './gateway/gatewayAuth.js';
@@ -328,6 +331,7 @@ app.use(`${API_PREFIX}/api-credentials`, apiCredentialsRouter);
 app.use(`${API_PREFIX}/api-history`, apiHistoryRouter);
 app.use(`${API_PREFIX}/mcp`, mcpRouter);
 app.use(`${API_PREFIX}/image-generation`, imageGenerationRouter);
+app.use(`${API_PREFIX}/permissions`, permissionsRouter);
 
 // ========== v1.5.220: 前端静态文件服务（供 Swift 原生 App 使用） ==========
 // 优先从 dist/ 加载前端构建产物（开发环境），其次从 process.env.FRONTEND_DIR 加载

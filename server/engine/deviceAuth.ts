@@ -96,7 +96,7 @@ class DeviceAuthManager {
       id: tokenId,
       type: "jwt",
       subject: params.subject,
-      issuer: params.issuer ?? "cross-wms",
+      issuer: params.issuer ?? "cdfknow",
       issuedAt: now,
       expiresAt: now + expiresInMs,
       status: "active",

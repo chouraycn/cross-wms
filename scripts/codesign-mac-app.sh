@@ -1,22 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Code-sign the CDF Know Clow .app bundle with entitlements.
-# Adapted from OpenClaw's codesign-mac-app.sh.
-#
-# Usage:
-#   scripts/codesign-mac-app.sh [app-bundle]
-#
-# Env:
-#   SIGN_IDENTITY="Apple Development: Your Name (TEAMID)"
-#   ALLOW_ADHOC_SIGNING=1
-#   CODESIGN_TIMESTAMP=auto|on|off
-#   DISABLE_LIBRARY_VALIDATION=1      # dev-only workaround
-
-APP_BUNDLE="${1:-dist-app/CDFKnowClow.app}"
+APP_BUNDLE="dist-app/CDFKnowClow.app"
 IDENTITY="${SIGN_IDENTITY:-}"
 TIMESTAMP_MODE="${CODESIGN_TIMESTAMP:-auto}"
 DISABLE_LIBRARY_VALIDATION="${DISABLE_LIBRARY_VALIDATION:-0}"
+SKIP_TEAM_ID_CHECK="${SKIP_TEAM_ID_CHECK:-1}"
 ENT_TMP_DIR=""
 
 cleanup() {
@@ -33,7 +22,8 @@ Env:
   SIGN_IDENTITY="Apple Development: Your Name (TEAMID)"
   ALLOW_ADHOC_SIGNING=1
   CODESIGN_TIMESTAMP=auto|on|off
-  DISABLE_LIBRARY_VALIDATION=1
+  DISABLE_LIBRARY_VALIDATION=1      # dev-only Sparkle Team ID workaround
+  SKIP_TEAM_ID_CHECK=1              # bypass Team ID audit
 HELP
   exit 0
 fi
@@ -60,34 +50,30 @@ fi
 select_identity() {
   local preferred available first
 
-  # Prefer a Developer ID Application cert.
   preferred="$(security find-identity -p codesigning -v 2>/dev/null \
-    | awk -F'\"' '/Developer ID Application/ { print $2; exit }')"
+    | awk -F'"' '/Developer ID Application/ { print $2; exit }')"
 
   if [ -n "$preferred" ]; then
     echo "$preferred"
     return
   fi
 
-  # Next, try Apple Distribution.
   preferred="$(security find-identity -p codesigning -v 2>/dev/null \
-    | awk -F'\"' '/Apple Distribution/ { print $2; exit }')"
+    | awk -F'"' '/Apple Distribution/ { print $2; exit }')"
   if [ -n "$preferred" ]; then
     echo "$preferred"
     return
   fi
 
-  # Then, try Apple Development.
   preferred="$(security find-identity -p codesigning -v 2>/dev/null \
-    | awk -F'\"' '/Apple Development/ { print $2; exit }')"
+    | awk -F'"' '/Apple Development/ { print $2; exit }')"
   if [ -n "$preferred" ]; then
     echo "$preferred"
     return
   fi
 
-  # Fallback to the first valid signing identity.
   available="$(security find-identity -p codesigning -v 2>/dev/null \
-    | sed -n 's/.*\"\\(.*\\)\"/\\1/p')"
+    | sed -n 's/.*"\(.*\)"/\1/p')"
 
   if [ -n "$available" ]; then
     first="$(printf '%s\n' "$available" | head -n1)"
@@ -102,16 +88,38 @@ if [ -z "$IDENTITY" ]; then
   if ! IDENTITY="$(select_identity)"; then
     if [[ "${ALLOW_ADHOC_SIGNING:-}" == "1" ]]; then
       echo "WARN: No signing identity found. Falling back to ad-hoc signing (-)." >&2
-      echo "      !!! Ad-hoc signed apps do NOT persist TCC permissions !!!" >&2
+      echo "      !!! WARNING: Ad-hoc signed apps do NOT persist TCC permissions (Accessibility, etc) !!!" >&2
+      echo "      !!! You will need to re-grant permissions every time you restart the app.         !!!" >&2
       IDENTITY="-"
     else
-      echo "ERROR: No signing identity found. Set SIGN_IDENTITY or ALLOW_ADHOC_SIGNING=1." >&2
+      echo "ERROR: No signing identity found. Set SIGN_IDENTITY to a valid codesigning certificate." >&2
+      echo "       Alternatively, set ALLOW_ADHOC_SIGNING=1 to fallback to ad-hoc signing (limitations apply)." >&2
       exit 1
     fi
   fi
 fi
 
 echo "Using signing identity: $IDENTITY"
+if [[ "$IDENTITY" == "-" ]]; then
+  cat <<'WARN' >&2
+
+================================================================================
+!!! AD-HOC SIGNING IN USE - PERMISSIONS WILL NOT STICK (macOS RESTRICTION) !!!
+
+macOS ties permissions to the code signature, bundle ID, and app path.
+Ad-hoc signing generates a new signature every build, so macOS treats the app
+as a different binary and will forget permissions (prompts may vanish).
+
+For correct permission behavior you MUST sign with a real Apple Development or
+Developer ID certificate.
+
+If prompts disappear: remove the app entry in System Settings -> Privacy & Security,
+relaunch the app, and re-grant. Some permissions only reappear after a full
+macOS restart.
+================================================================================
+
+WARN
+fi
 
 timestamp_arg="--timestamp=none"
 case "$TIMESTAMP_MODE" in
@@ -127,7 +135,7 @@ case "$TIMESTAMP_MODE" in
     fi
     ;;
   *)
-    echo "ERROR: Unknown CODESIGN_TIMESTAMP: $TIMESTAMP_MODE (use auto|on|off)" >&2
+    echo "ERROR: Unknown CODESIGN_TIMESTAMP value: $TIMESTAMP_MODE (use auto|on|off)" >&2
     exit 1
     ;;
 esac
@@ -176,7 +184,6 @@ fi
 
 APP_ENTITLEMENTS="$ENT_TMP_APP"
 
-# Clear extended attributes to avoid stale signatures
 xattr -cr "$APP_BUNDLE" 2>/dev/null || true
 
 sign_item() {
@@ -190,36 +197,103 @@ sign_plain_item() {
   codesign --force ${options_args+"${options_args[@]}"} "${timestamp_args[@]}" --sign "$IDENTITY" "$target"
 }
 
-# Sign bundled Node.js binary before signing the app bundle
+team_id_for() {
+  codesign -dv --verbose=4 "$1" 2>&1 | awk -F= '/^TeamIdentifier=/{print $2; exit}'
+}
+
+verify_team_ids() {
+  if [[ "$SKIP_TEAM_ID_CHECK" == "1" ]]; then
+    echo "Note: skipping Team ID audit (SKIP_TEAM_ID_CHECK=1)."
+    return 0
+  fi
+
+  local expected
+  expected="$(team_id_for "$APP_BUNDLE" || true)"
+  if [[ -z "$expected" ]]; then
+    echo "WARN: TeamIdentifier missing on app bundle; skipping Team ID audit."
+    return 0
+  fi
+
+  local mismatches=()
+  while IFS= read -r -d '' f; do
+    if /usr/bin/file "$f" | /usr/bin/grep -q "Mach-O"; then
+      local team
+      team="$(team_id_for "$f" || true)"
+      if [[ -z "$team" ]]; then
+        team="not set"
+      fi
+      if [[ "$expected" == "not set" ]]; then
+        if [[ "$team" != "not set" ]]; then
+          mismatches+=("$f (TeamIdentifier=$team)")
+        fi
+      elif [[ "$team" != "$expected" ]]; then
+        mismatches+=("$f (TeamIdentifier=$team)")
+      fi
+    fi
+  done < <(find "$APP_BUNDLE" -type f -print0)
+
+  if [[ "${#mismatches[@]}" -gt 0 ]]; then
+    echo "ERROR: Team ID mismatch detected (expected: $expected)"
+    for entry in "${mismatches[@]}"; do
+      echo " - $entry"
+    done
+    echo "Hint: re-sign embedded frameworks or set DISABLE_LIBRARY_VALIDATION=1 for dev builds."
+    exit 1
+  fi
+}
+
 NODE_BIN="$APP_BUNDLE/Contents/Resources/node/bin/node"
 if [ -f "$NODE_BIN" ]; then
   echo "Signing Node.js binary"; sign_plain_item "$NODE_BIN"
 fi
 
-# Sign any other embedded binaries in Resources
 if [ -d "$APP_BUNDLE/Contents/Resources" ]; then
-  find "$APP_BUNDLE/Contents/Resources" -type f -print0 | while IFS= read -r -d '' f; do
-    if /usr/bin/file "$f" | /usr/bin/grep -q "Mach-O"; then
+  find "$APP_BUNDLE/Contents/Resources" -type f -print0 2>/dev/null | while IFS= read -r -d '' f; do
+    if /usr/bin/file "$f" 2>/dev/null | /usr/bin/grep -q "Mach-O"; then
       echo "Signing binary: $f"; sign_plain_item "$f"
     fi
-  done
+  done || true
 fi
 
-# Sign embedded frameworks
+SPARKLE="$APP_BUNDLE/Contents/Frameworks/Sparkle.framework"
+if [ -d "$SPARKLE" ]; then
+  echo "Signing Sparkle framework and helpers"
+  find "$SPARKLE" -type f -print0 2>/dev/null | while IFS= read -r -d '' f; do
+    if /usr/bin/file "$f" 2>/dev/null | /usr/bin/grep -q "Mach-O"; then
+      sign_plain_item "$f"
+    fi
+  done || true
+  sign_plain_item "$SPARKLE/Versions/B/Sparkle" 2>/dev/null || true
+  sign_plain_item "$SPARKLE/Versions/B/Autoupdate" 2>/dev/null || true
+  if [ -f "$SPARKLE/Versions/B/Updater.app/Contents/MacOS/Updater" ]; then
+    sign_plain_item "$SPARKLE/Versions/B/Updater.app/Contents/MacOS/Updater"
+  fi
+  sign_plain_item "$SPARKLE/Versions/B/Updater.app" 2>/dev/null || true
+  if [ -f "$SPARKLE/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader" ]; then
+    sign_plain_item "$SPARKLE/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader"
+  fi
+  sign_plain_item "$SPARKLE/Versions/B/XPCServices/Downloader.xpc" 2>/dev/null || true
+  if [ -f "$SPARKLE/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer" ]; then
+    sign_plain_item "$SPARKLE/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer"
+  fi
+  sign_plain_item "$SPARKLE/Versions/B/XPCServices/Installer.xpc" 2>/dev/null || true
+  sign_plain_item "$SPARKLE/Versions/B"
+  sign_plain_item "$SPARKLE"
+fi
+
 if [ -d "$APP_BUNDLE/Contents/Frameworks" ]; then
-  find "$APP_BUNDLE/Contents/Frameworks" -type d -name "*.framework" | while read -r fw; do
-    echo "Signing framework: $(basename "$fw")"
-    sign_plain_item "$fw"
-  done
+  find "$APP_BUNDLE/Contents/Frameworks" \( -name "*.framework" -o -name "*.dylib" \) ! -path "*Sparkle.framework*" -print0 2>/dev/null | while IFS= read -r -d '' f; do
+    echo "Signing framework: $f"; sign_plain_item "$f"
+  done || true
 fi
 
-# Sign main Swift binary
 MAIN_BIN="$APP_BUNDLE/Contents/MacOS/CDFKnowClow"
 if [ -f "$MAIN_BIN" ]; then
   echo "Signing main binary"; sign_item "$MAIN_BIN" "$APP_ENTITLEMENTS"
 fi
 
-# Finally sign the bundle
 sign_item "$APP_BUNDLE" "$APP_ENTITLEMENTS"
+
+verify_team_ids
 
 echo "Codesign complete for $APP_BUNDLE"

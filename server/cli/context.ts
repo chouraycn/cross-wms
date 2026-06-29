@@ -5,7 +5,7 @@
 
 import type { Command } from "commander";
 
-const PROGRAM_CONTEXT_SYMBOL: unique symbol = Symbol.for("crosswms.cli.programContext");
+const PROGRAM_CONTEXT_SYMBOL: unique symbol = Symbol.for("cdfknow.cli.programContext");
 
 /** 根 CLI 程序上下文 */
 export type ProgramContext = {

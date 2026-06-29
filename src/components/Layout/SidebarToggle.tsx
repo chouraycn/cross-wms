@@ -1,6 +1,13 @@
 import React from 'react';
 import { IconButton, useTheme } from '@mui/material';
 import { getGrayScale } from '../../constants/theme';
+import { isPyWebView } from '../../services/tencentDocsApi';
+
+const isNativeApp = (): boolean => {
+  // @ts-ignore
+  if (window.cdfAppNative && window.cdfAppNative.isNative) return true;
+  return isPyWebView();
+};
 
 // ===================== 自定义 SVG 图标 =====================
 
@@ -40,6 +47,7 @@ const SidebarToggle = React.memo<SidebarToggleProps>(function SidebarToggle({
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+  const nativeApp = isNativeApp();
 
   return (
     <IconButton
@@ -47,8 +55,8 @@ const SidebarToggle = React.memo<SidebarToggleProps>(function SidebarToggle({
       size="small"
       sx={{
         position: 'fixed',
-        top: '10px',
-        left: collapsed ? collapsedWidth + 7 : expandedWidth - 33,
+        top: nativeApp ? '7px' : '10px',
+        left: collapsed ? 46 : expandedWidth - 33,
         right: 'auto',
         // v1.5.166: zIndex 高于 WindowDragBar(1300)，确保按钮可点击
         zIndex: 1400,

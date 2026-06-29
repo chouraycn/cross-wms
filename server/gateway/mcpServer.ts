@@ -34,9 +34,9 @@ export class MCPServer {
   constructor() {
     this.server = new Server(
       {
-        name: 'cross-wms-mcp',
+        name: 'cdfknow-mcp',
         version: '1.0.0',
-        description: 'Cross-WMS MCP Server for WMS operations and AI capabilities',
+        description: 'CDFKnow MCP Server for WMS operations and AI capabilities',
       },
       {
         capabilities: {

@@ -313,7 +313,7 @@ const commands: Array<{
       data: {
         version: "1.0.0",
         build: "2026.06.28",
-        engine: "cross-wms",
+        engine: "cdfknow",
       },
     }),
   },

@@ -12,7 +12,7 @@ final class MainWindowController: NSWindowController, WKNavigationDelegate, WKUI
 
     var onWindowWillClose: (() -> Void)?
 
-    init(url: URL, title: String, frame: NSRect = NSRect(x: 0, y: 0, width: 1280, height: 800)) {
+    init(url: URL, title: String, frame: NSRect = NSRect(x: 0, y: 0, width: 1340, height: 860)) {
         self.initialURL = url
 
         let config = WKWebViewConfiguration()
@@ -30,7 +30,7 @@ final class MainWindowController: NSWindowController, WKNavigationDelegate, WKUI
             defer: false
         )
         window.title = title
-        window.minSize = NSSize(width: 900, height: 600)
+        window.minSize = NSSize(width: 1024, height: 700)
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = false

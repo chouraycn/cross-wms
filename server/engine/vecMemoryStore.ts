@@ -65,9 +65,10 @@ function ensureEngine(): SQLiteEngine {
 }
 
 // 延迟建表
-setTimeout(() => {
+setTimeout(async () => {
   try {
     const db = ensureEngine();
+    await db.connect();
     db.migrate('1.0.0', `
       CREATE TABLE IF NOT EXISTS memory_entries (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
