@@ -232,6 +232,53 @@ actor IPCServer {
                 return Response(ok: true, payload: payload)
             }
             return Response(ok: false, message: "Failed to encode")
+
+        case .permissionCheck(let capabilities):
+            let caps = capabilities?.compactMap { Capability(rawValue: $0) } ?? Capability.allCases
+            let status = await PermissionManager.status(caps)
+            var permStatus: [PermissionStatus] = []
+            var allGranted = true
+            for (cap, granted) in status {
+                permStatus.append(PermissionStatus(capability: cap.rawValue, granted: granted))
+                if !granted { allGranted = false }
+            }
+            let result = PermissionCheckResult(permissions: permStatus, allGranted: allGranted)
+            if let payload = try? JSONEncoder().encode(result) {
+                return Response(ok: true, payload: payload)
+            }
+            return Response(ok: false, message: "Failed to encode permission status")
+
+        case .permissionRequest(let capability):
+            guard let cap = Capability(rawValue: capability) else {
+                return Response(ok: false, message: "Unknown capability: \(capability)")
+            }
+            let results = await PermissionManager.ensure([cap], interactive: true)
+            if let granted = results[cap] {
+                return Response(ok: granted, message: granted ? "Permission granted" : "Permission denied")
+            }
+            return Response(ok: false, message: "Failed to request permission")
+
+        case .permissionOpenSettings(let capability):
+            guard let cap = Capability(rawValue: capability) else {
+                return Response(ok: false, message: "Unknown capability: \(capability)")
+            }
+            await MainActor.run {
+                switch cap {
+                case .notifications:
+                    NotificationPermissionHelper.openSettings()
+                case .microphone:
+                    MicrophonePermissionHelper.openSettings()
+                case .camera:
+                    CameraPermissionHelper.openSettings()
+                case .location:
+                    LocationPermissionHelper.openSettings()
+                default:
+                    SystemSettingsURLSupport.openFirst([
+                        "x-apple.systempreferences:com.apple.preference.security",
+                    ])
+                }
+            }
+            return Response(ok: true, message: "Opened settings")
         }
     }
 

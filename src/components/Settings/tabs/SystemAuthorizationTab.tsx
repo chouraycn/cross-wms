@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -8,6 +8,8 @@ import {
   IconButton,
   Tooltip,
   useTheme,
+  Button,
+  CircularProgress,
 } from '@mui/material';
 import SecurityIcon from '@mui/icons-material/Security';
 import MicIcon from '@mui/icons-material/Mic';
@@ -22,6 +24,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import type { AppSettings, TccPermissionItem } from '../../../contexts/AppSettingsContext';
 import { isPyWebView } from '../../../services/tencentDocsApi';
 import { switchSx } from '../sharedStyles';
@@ -103,6 +106,17 @@ const TCC_PERMISSIONS: TccPermissionDef[] = [
   },
 ];
 
+const TCC_PERMISSIONS_MAP: Record<string, string> = {
+  screenRecording: 'screenRecording',
+  accessibility: 'accessibility',
+  inputMonitoring: 'inputMonitoring',
+  fullDiskAccess: 'fullDiskAccess',
+  microphone: 'microphone',
+  camera: 'camera',
+  notifications: 'notifications',
+  automation: 'automation',
+};
+
 // ===================== Status Badge =====================
 
 const StatusBadge: React.FC<{ status: TccPermissionItem['status']; isDark: boolean }> = ({ status, isDark }) => {
@@ -136,6 +150,53 @@ const SystemAuthorizationTab: React.FC<SystemAuthorizationTabProps> = ({ draft, 
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
   const enabled = draft.systemAuthorization?.enabled ?? false;
+  const [checking, setChecking] = useState(false);
+  const [ipcAvailable, setIpcAvailable] = useState<boolean | null>(null);
+
+  const checkPermissions = useCallback(async () => {
+    setChecking(true);
+    try {
+      const res = await fetch('/api/permissions/status');
+      const data = await res.json();
+      setIpcAvailable(data.available);
+      if (data.available && data.permissions) {
+        const updatedPerms: typeof DEFAULT_PERMS = { ...DEFAULT_PERMS };
+        for (const key of Object.keys(TCC_PERMISSIONS_MAP) as Array<keyof typeof DEFAULT_PERMS>) {
+          const cap = TCC_PERMISSIONS_MAP[key];
+          const granted = data.permissions[cap];
+          if (granted !== undefined) {
+            updatedPerms[key] = {
+              ...updatedPerms[key],
+              status: granted ? 'granted' : 'denied',
+              lastChecked: Date.now(),
+            };
+          }
+        }
+        setDraft((prev) => ({
+          ...prev,
+          systemAuthorization: {
+            ...prev.systemAuthorization,
+            permissions: updatedPerms,
+          },
+        }));
+      }
+    } catch {
+      setIpcAvailable(false);
+    } finally {
+      setChecking(false);
+    }
+  }, [setDraft]);
+
+  const requestPermission = useCallback(async (key: keyof AppSettings['systemAuthorization']['permissions']) => {
+    const cap = TCC_PERMISSIONS_MAP[key];
+    if (!cap) return;
+    try {
+      await fetch(`/api/permissions/request/${cap}`, { method: 'POST' });
+      await checkPermissions();
+    } catch {
+      /* ignore */
+    }
+  }, [checkPermissions]);
 
   const openSystemPrefs = useCallback(async (prefPane: string) => {
     const isPy = isPyWebView();
@@ -155,6 +216,22 @@ const SystemAuthorizationTab: React.FC<SystemAuthorizationTabProps> = ({ draft, 
       try { await window.pywebview.api.open_in_browser(fallbackUrl); } catch { /* silent */ }
     }
   }, []);
+
+  const openSystemSettings = useCallback(async (key: keyof AppSettings['systemAuthorization']['permissions']) => {
+    const cap = TCC_PERMISSIONS_MAP[key];
+    if (cap && ipcAvailable) {
+      try {
+        await fetch(`/api/permissions/open-settings/${cap}`, { method: 'POST' });
+        return;
+      } catch { /* fallback to old method */ }
+    }
+    const perm = TCC_PERMISSIONS.find(p => p.key === key);
+    if (perm) openSystemPrefs(perm.prefPane);
+  }, [ipcAvailable, openSystemPrefs]);
+
+  useEffect(() => {
+    checkPermissions();
+  }, [checkPermissions]);
 
   const handleMasterToggle = () => {
     setDraft((prev) => ({
@@ -192,11 +269,23 @@ const SystemAuthorizationTab: React.FC<SystemAuthorizationTabProps> = ({ draft, 
   return (
     <Box sx={{ maxWidth: 680 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-        <AdminPanelSettingsIcon sx={{ fontSize: 28, color: gs.textPrimary }} />
-        <Typography variant="h6" sx={{ fontWeight: 700, color: gs.textPrimary }}>
-          系统授权
-        </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <AdminPanelSettingsIcon sx={{ fontSize: 28, color: gs.textPrimary }} />
+          <Typography variant="h6" sx={{ fontWeight: 700, color: gs.textPrimary }}>
+            系统授权
+          </Typography>
+        </Box>
+        <Tooltip title="刷新权限状态">
+          <IconButton
+            size="small"
+            onClick={checkPermissions}
+            disabled={checking}
+            sx={{ color: gs.textMuted, '&:hover': { color: gs.textPrimary, backgroundColor: gs.bgHover } }}
+          >
+            {checking ? <CircularProgress size={18} /> : <RefreshIcon sx={{ fontSize: 20 }} />}
+          </IconButton>
+        </Tooltip>
       </Box>
       <Typography sx={{ fontSize: '0.8rem', color: gs.textMuted, mb: 3 }}>
         管理 macOS 安全与隐私（TCC）权限。点击各权限卡片右侧的图标可打开系统设置进行授权。
@@ -289,7 +378,7 @@ const SystemAuthorizationTab: React.FC<SystemAuthorizationTabProps> = ({ draft, 
                 <Tooltip title="打开系统设置" placement="left">
                   <IconButton
                     size="small"
-                    onClick={() => openSystemPrefs(perm.prefPane)}
+                    onClick={() => openSystemSettings(perm.key)}
                     sx={{
                       color: gs.textMuted,
                       '&:hover': { color: gs.textPrimary, backgroundColor: gs.bgHover },
@@ -298,6 +387,27 @@ const SystemAuthorizationTab: React.FC<SystemAuthorizationTabProps> = ({ draft, 
                     <OpenInNewIcon sx={{ fontSize: 18 }} />
                   </IconButton>
                 </Tooltip>
+                {ipcAvailable && permData.status !== 'granted' && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => requestPermission(perm.key)}
+                    sx={{
+                      fontSize: '0.65rem',
+                      py: 0.25,
+                      minWidth: 'auto',
+                      textTransform: 'none',
+                      borderColor: gs.border,
+                      color: gs.textSecondary,
+                      '&:hover': {
+                        borderColor: gs.textPrimary,
+                        backgroundColor: gs.bgHover,
+                      },
+                    }}
+                  >
+                    授权
+                  </Button>
+                )}
                 <Switch
                   checked={isEnabled}
                   size="small"

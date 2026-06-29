@@ -554,7 +554,7 @@ export function useChat(currentSession: Session | undefined, onSessionUpdate: (s
             document.addEventListener('visibilitychange', visibilityHandler);
           }
 
-          // v1.5.190: focus — 切换应用后切回 CrossWMS 时触发
+          // v1.5.190: focus — 切换应用后切回 CDFKnow 时触发
           if (typeof window !== 'undefined') {
             focusHandler = () => {
               try { flushRender(); } catch {}

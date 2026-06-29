@@ -8,18 +8,14 @@ set -euo pipefail
 #
 # Env:
 #   DMG_VOLUME_NAME        default: CFBundleName
-#   DMG_BACKGROUND_PATH    default: apps/macos/Packaging/dmg-background.png (1100x692)
-#   DMG_BACKGROUND_SMALL   default: apps/macos/Packaging/dmg-background-small.png (500x320)
-#   DMG_WINDOW_BOUNDS      default: "100 100 1200 792" (匹配 1100x692 背景)
-#   DMG_ICON_SIZE          default: 96
+#   DMG_BACKGROUND_PATH    default: apps/macos/Packaging/dmg-background.png
+#   DMG_BACKGROUND_SMALL   default: apps/macos/Packaging/dmg-background-small.png (recommended)
+#   DMG_WINDOW_BOUNDS      default: "400 100 900 420" (500x320)
+#   DMG_ICON_SIZE          default: 128
 #   DMG_APP_POS            default: "125 160"
 #   DMG_APPS_POS           default: "375 160"
 #   SKIP_DMG_STYLE=1       skip Finder styling
 #   DMG_EXTRA_SECTORS      extra sectors to keep when shrinking RW image (default: 2048)
-#
-# Note: DMG_WINDOW_BOUNDS 格式为 {left, top, right, bottom}
-#       窗口宽度 = right - left，窗口高度 = bottom - top
-#       应与背景图尺寸匹配以确保背景图正确显示
 
 APP_PATH="${1:-}"
 OUT_PATH="${2:-}"
@@ -34,33 +30,24 @@ if [[ ! -d "$APP_PATH" ]]; then
 fi
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+source "$ROOT_DIR/scripts/lib/plistbuddy.sh"
 
 BUILD_DIR="$ROOT_DIR/dist"
 mkdir -p "$BUILD_DIR"
 
-APP_NAME="CDFKnowClow"
-APP_BUNDLE_FILENAME="$(basename "$APP_PATH")"  # e.g. CDFKnowClow.app
-VERSION="1.0.0"
-if [[ -f "$APP_PATH/Contents/Info.plist" ]]; then
-  if command -v /usr/libexec/PlistBuddy >/dev/null 2>&1; then
-    APP_NAME=$(/usr/libexec/PlistBuddy -c "Print CFBundleName" "$APP_PATH/Contents/Info.plist" 2>/dev/null || echo "$APP_NAME")
-    VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP_PATH/Contents/Info.plist" 2>/dev/null || echo "$VERSION")
-  fi
-fi
+APP_NAME="$(plist_print_required "$APP_PATH/Contents/Info.plist" CFBundleName)"
+APP_BUNDLE_NAME="$(basename "$APP_PATH")"
+VERSION="$(plist_print_required "$APP_PATH/Contents/Info.plist" CFBundleShortVersionString)"
 
 DMG_NAME="${APP_NAME}-${VERSION}.dmg"
 DMG_VOLUME_NAME="${DMG_VOLUME_NAME:-$APP_NAME}"
 DMG_BACKGROUND_SMALL="${DMG_BACKGROUND_SMALL:-$ROOT_DIR/apps/macos/Packaging/dmg-background-small.png}"
 DMG_BACKGROUND_PATH="${DMG_BACKGROUND_PATH:-$ROOT_DIR/apps/macos/Packaging/dmg-background.png}"
 
-# 窗口大小需要匹配背景图尺寸
-# small 背景图 (500x320): bounds = {400, 100, 900, 420}
-# 大背景图 (1100x692): bounds = {100, 100, 1200, 792}
-# 优先使用大背景图 (1100x692) 匹配当前窗口设置
-DMG_WINDOW_BOUNDS="${DMG_WINDOW_BOUNDS:-100 100 1200 792}"
-DMG_ICON_SIZE="${DMG_ICON_SIZE:-96}"
-DMG_APP_POS="${DMG_APP_POS:-240 300}"
-DMG_APPS_POS="${DMG_APPS_POS:-680 300}"
+DMG_WINDOW_BOUNDS="${DMG_WINDOW_BOUNDS:-400 100 900 420}"
+DMG_ICON_SIZE="${DMG_ICON_SIZE:-128}"
+DMG_APP_POS="${DMG_APP_POS:-125 160}"
+DMG_APPS_POS="${DMG_APPS_POS:-375 160}"
 DMG_EXTRA_SECTORS="${DMG_EXTRA_SECTORS:-2048}"
 
 require_integer_list() {
@@ -131,16 +118,16 @@ mkdir -p "$OUT_DIR"
 
 echo "Creating DMG: $OUT_PATH"
 
-DMG_TEMP="$(mktemp -d "${TMPDIR:-/tmp}/cdfknowclow-dmg.XXXXXX")"
+DMG_TEMP="$(mktemp -d "${TMPDIR:-/tmp}/openclaw-dmg.XXXXXX")"
 DMG_SOURCE="$DMG_TEMP/source"
-MOUNT_POINT="$DMG_TEMP/mount"
+MOUNT_POINT=""
 DMG_RW_PATH="$DMG_TEMP/image-rw.dmg"
 DMG_OUTPUT_TEMP=""
 DMG_FINAL_PATH=""
 MOUNTED=0
 
 cleanup_dmg() {
-  if [[ "$MOUNTED" == "1" ]]; then
+  if [[ "$MOUNTED" == "1" && -n "$MOUNT_POINT" ]]; then
     if hdiutil detach "$MOUNT_POINT" -force 2>/dev/null; then
       MOUNTED=0
     else
@@ -166,12 +153,13 @@ detach_dmg() {
       MOUNTED=0
       return
     fi
+    # Finder can retain the just-closed volume briefly on macOS runners.
     sleep 2
   done
   return 1
 }
 
-mkdir -p "$DMG_SOURCE" "$MOUNT_POINT"
+mkdir -p "$DMG_SOURCE"
 cp -R "$APP_PATH" "$DMG_SOURCE/"
 ln -s /Applications "$DMG_SOURCE/Applications"
 
@@ -183,25 +171,29 @@ hdiutil create \
   -srcfolder "$DMG_SOURCE" \
   -ov \
   -format UDRW \
+  -fs HFS+ \
   -size "${DMG_SIZE_MB}m" \
   "$DMG_RW_PATH"
 
-hdiutil attach "$DMG_RW_PATH" -mountpoint "$MOUNT_POINT" -nobrowse
+hdiutil attach "$DMG_RW_PATH"
+MOUNT_POINT="/Volumes/$DMG_VOLUME_NAME"
 MOUNTED=1
 
 if [[ "${SKIP_DMG_STYLE:-0}" != "1" ]]; then
   mkdir -p "$MOUNT_POINT/.background"
-  # 优先使用大背景图 (1100x692) 匹配窗口 bounds
-  if [[ -f "$DMG_BACKGROUND_PATH" ]]; then
-    cp "$DMG_BACKGROUND_PATH" "$MOUNT_POINT/.background/background.png"
-  elif [[ -f "$DMG_BACKGROUND_SMALL" ]]; then
+  if [[ -f "$DMG_BACKGROUND_SMALL" ]]; then
     cp "$DMG_BACKGROUND_SMALL" "$MOUNT_POINT/.background/background.png"
+  elif [[ -f "$DMG_BACKGROUND_PATH" ]]; then
+    cp "$DMG_BACKGROUND_PATH" "$MOUNT_POINT/.background/background.png"
   else
-    echo "WARN: DMG background missing: $DMG_BACKGROUND_PATH / $DMG_BACKGROUND_SMALL" >&2
+    echo "WARN: DMG background missing: $DMG_BACKGROUND_SMALL / $DMG_BACKGROUND_PATH" >&2
   fi
 
   # Volume icon: reuse the app icon if available.
-  ICON_SRC="$ROOT_DIR/apps/macos/Icon.icon/AppIcon.icns"
+  ICON_SRC="$APP_PATH/Contents/Resources/AppIcon.icns"
+  if [[ ! -f "$ICON_SRC" ]]; then
+    ICON_SRC="$APP_PATH/Contents/Resources/CDFKnowClow.icns"
+  fi
   if [[ -f "$ICON_SRC" ]]; then
     cp "$ICON_SRC" "$MOUNT_POINT/.VolumeIcon.icns"
     if command -v SetFile >/dev/null 2>&1; then
@@ -215,6 +207,7 @@ tell application "Finder"
   set dmgDisk to disk of dmgRoot
   tell dmgDisk
     open
+    delay 1
     set current view of container window to icon view
     set toolbar visible of container window to false
     set statusbar visible of container window to false
@@ -229,7 +222,7 @@ tell application "Finder"
     set label position of viewOptions to bottom
     set shows item info of viewOptions to false
     set shows icon preview of viewOptions to true
-    set position of item "${APP_BUNDLE_FILENAME}" of container window to {$(to_applescript_pair "$DMG_APP_POS")}
+    set position of item "${APP_BUNDLE_NAME}" of container window to {$(to_applescript_pair "$DMG_APP_POS")}
     set position of item "Applications" of container window to {$(to_applescript_pair "$DMG_APPS_POS")}
     update without registering applications
     delay 2
@@ -256,7 +249,7 @@ if [[ "$MIN_SECTORS" =~ ^[0-9]+$ ]] && [[ "$DMG_EXTRA_SECTORS" =~ ^[0-9]+$ ]]; t
   hdiutil resize -sectors "$TARGET_SECTORS" "$DMG_RW_PATH" >/dev/null 2>&1 || true
 fi
 
-DMG_OUTPUT_TEMP="$(mktemp -d "$(dirname "$OUT_PATH")/.cdfknowclow-dmg.XXXXXX")"
+DMG_OUTPUT_TEMP="$(mktemp -d "$(dirname "$OUT_PATH")/.openclaw-dmg.XXXXXX")"
 DMG_FINAL_PATH="$DMG_OUTPUT_TEMP/final.dmg"
 
 hdiutil convert "$DMG_RW_PATH" -format ULMO -o "$DMG_FINAL_PATH" -ov

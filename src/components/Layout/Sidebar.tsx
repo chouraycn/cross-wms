@@ -5,8 +5,10 @@ import {
   ListItemIcon,
   Typography,
   useTheme,
+  IconButton,
 } from '@mui/material';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getGrayScale } from '../../constants/theme';
 import SidebarLogo from './SidebarLogo';
@@ -15,12 +17,37 @@ import SidebarToggle from './SidebarToggle';
 import SettingsPopover from './SettingsPopover';
 import AISettingsDialog from './AISettingsDialog';
 import ToolManagementDialog from './ToolManagementDialog';
+import CommandPalette from './CommandPalette';
+import { isPyWebView } from '../../services/tencentDocsApi';
+
+// 检测是否为原生 App 模式（pywebview 或 Swift 原生）
+const isNativeApp = (): boolean => {
+  // @ts-ignore
+  if (window.cdfAppNative && window.cdfAppNative.isNative) return true;
+  return isPyWebView();
+};
+
+// ===================== Toggle Icons =====================
+
+const CollapseIcon: React.FC = () => (
+  <svg width="19.44" height="19.44" viewBox="0 0 24 24" fill="none">
+    <rect x="4" y="4" width="16" height="16" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none"/>
+    <line x1="9" y1="8" x2="9" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+const ExpandIcon: React.FC = () => (
+  <svg width="19.44" height="19.44" viewBox="0 0 24 24" fill="none">
+    <rect x="4" y="4" width="16" height="16" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none"/>
+    <line x1="15" y1="8" x2="15" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
 
 
 // ===================== Constants =====================
 
 const SIDEBAR_WIDTH_EXPANDED = 260;
-const SIDEBAR_WIDTH_COLLAPSED = 83;
+const SIDEBAR_WIDTH_COLLAPSED = 0;
 
 // ===================== Sidebar Component =====================
 
@@ -48,7 +75,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
 
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [toolManagementDialogOpen, setToolManagementDialogOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLDivElement>(null);
+  const searchBtnRef = useRef<HTMLDivElement>(null);
 
   const [activeSessionId, setActiveSessionId] = useState('');
   // 点击「AI 对话」新建会话后，短暂忽略 chat-updated 事件，避免新会话 ID 覆盖清空状态
@@ -82,6 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
   }, []);
 
   const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
+  const nativeApp = isNativeApp();
 
   return (
     <Box
@@ -101,48 +131,195 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
         borderRight: 'none',
         userSelect: 'none',
         WebkitUserSelect: 'none',
+        transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
       // v1.5.107: 侧边栏整体作为窗口拖拽区域（pywebview frameless 窗口）
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
-      {/* Sidebar toggle button — fixed position */}
-      {onToggle && (
-        <SidebarToggle
-          collapsed={collapsed}
-          onToggle={onToggle}
-          expandedWidth={SIDEBAR_WIDTH_EXPANDED}
-          collapsedWidth={SIDEBAR_WIDTH_COLLAPSED}
-        />
+      {/* 原生 App 模式：搜索 + Toggle 按钮绝对定位在顶部 padding 区域内，与红黄绿对齐 */}
+      {/* 红黄绿: top=14px, size=12px, 中心线=20px; 我们的按钮 size=25.92px, top = 20 - 25.92/2 ≈ 7px */}
+      {nativeApp && !collapsed && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '7px',
+            right: 8,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            zIndex: 1400,
+          }}
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        >
+          <IconButton
+            onClick={() => setSearchOpen(true)}
+            size="small"
+            sx={{
+              color: gs.textPrimary,
+              borderRadius: '6.48px',
+              p: 0.45,
+              width: 25.92,
+              height: 25.92,
+              flexShrink: 0,
+              '&:hover': {
+                backgroundColor: gs.bgHover,
+              },
+              '&:focus': { outline: 'none' },
+            }}
+          >
+            <SearchOutlinedIcon sx={{ fontSize: '18px' }} />
+          </IconButton>
+
+          {onToggle && (
+            <IconButton
+              onClick={onToggle}
+              size="small"
+              sx={{
+                color: gs.textPrimary,
+                borderRadius: '6.48px',
+                p: 0.45,
+                width: 25.92,
+                height: 25.92,
+                flexShrink: 0,
+                '&:hover': {
+                  backgroundColor: gs.bgHover,
+                },
+                '&:focus': { outline: 'none' },
+              }}
+            >
+              <CollapseIcon />
+            </IconButton>
+          )}
+        </Box>
       )}
 
-      {/* Logo area */}
-      <SidebarLogo
-        collapsed={collapsed}
-      />
+      {/* 网页端模式：Logo + 按钮在同一行，按钮右对齐（旧布局） */}
+      {!nativeApp && !collapsed && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 1,
+            pt: 1,
+            pb: 0.5,
+            flexShrink: 0,
+          }}
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        >
+          <SidebarLogo collapsed={collapsed} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <IconButton
+              onClick={() => setSearchOpen(true)}
+              size="small"
+              sx={{
+                color: gs.textPrimary,
+                borderRadius: '6.48px',
+                p: 0.45,
+                width: 25.92,
+                height: 25.92,
+                flexShrink: 0,
+                '&:hover': {
+                  backgroundColor: gs.bgHover,
+                },
+                '&:focus': { outline: 'none' },
+              }}
+            >
+              <SearchOutlinedIcon sx={{ fontSize: '18px' }} />
+            </IconButton>
+
+            {onToggle && (
+              <IconButton
+                onClick={onToggle}
+                size="small"
+                sx={{
+                  color: gs.textPrimary,
+                  borderRadius: '6.48px',
+                  p: 0.45,
+                  width: 25.92,
+                  height: 25.92,
+                  flexShrink: 0,
+                  '&:hover': {
+                    backgroundColor: gs.bgHover,
+                  },
+                  '&:focus': { outline: 'none' },
+                }}
+              >
+                <CollapseIcon />
+              </IconButton>
+            )}
+          </Box>
+        </Box>
+      )}
+
+      {/* 收起状态：搜索 + toggle 悬浮按钮（原生 App 与红黄绿对齐，网页端保持原有位置） */}
+      {collapsed && (
+        <>
+          <IconButton
+            onClick={() => setSearchOpen(true)}
+            size="small"
+            sx={{
+              position: 'fixed',
+              top: nativeApp ? '7px' : '10px',
+              left: 10,
+              zIndex: 1400,
+              color: 'text.primary',
+              borderRadius: '6.48px',
+              p: 0.45,
+              width: 25.92,
+              height: 25.92,
+              backgroundColor: isDark ? 'rgba(20, 20, 20, 0.6)' : 'rgba(240, 240, 240, 0.6)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
+              '&:hover': {
+                backgroundColor: isDark ? 'rgba(20, 20, 20, 0.8)' : 'rgba(240, 240, 240, 0.8)',
+              },
+              '&:focus': { outline: 'none' },
+            }}
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          >
+            <SearchOutlinedIcon sx={{ fontSize: '18px' }} />
+          </IconButton>
+
+          {onToggle && (
+            <SidebarToggle
+              collapsed={collapsed}
+              onToggle={onToggle}
+              expandedWidth={SIDEBAR_WIDTH_EXPANDED}
+              collapsedWidth={SIDEBAR_WIDTH_COLLAPSED}
+            />
+          )}
+        </>
+      )}
+
+      {/* Logo — 原生 App 模式下单独显示（避让顶部按钮区域），网页端模式下已包含在 top bar 中 */}
+      {nativeApp && !collapsed && <SidebarLogo collapsed={collapsed} />}
 
       {/* Navigation list (含历史对话) */}
-      <NavList
-        collapsed={collapsed}
-        activePath={activePath}
-        onNavigate={(path) => {
-          // 点击导航项时清除历史对话选中态，白条回到导航项
-          setActiveSessionId('');
-          navigate(path);
-        }}
-        activeSessionId={activeSessionId}
-        onSelectSession={(sessionId) => {
-          setActiveSessionId(sessionId);
-          navigate(`/chat?session=${encodeURIComponent(sessionId)}`);
-        }}
-        onDeleteSession={(sessionId) => {
-          setActiveSessionId((prev: string) => prev === sessionId ? '' : prev);
-        }}
-      />
+      <Box sx={{ flex: 1, minHeight: 0, display: collapsed ? 'none' : 'block', overflow: 'hidden' }}>
+        <NavList
+          collapsed={collapsed}
+          activePath={activePath}
+          onNavigate={(path) => {
+            // 点击导航项时清除历史对话选中态，白条回到导航项
+            setActiveSessionId('');
+            navigate(path);
+          }}
+          activeSessionId={activeSessionId}
+          onSelectSession={(sessionId) => {
+            setActiveSessionId(sessionId);
+            navigate(`/chat?session=${encodeURIComponent(sessionId)}`);
+          }}
+          onDeleteSession={(sessionId) => {
+            setActiveSessionId((prev: string) => prev === sessionId ? '' : prev);
+          }}
+        />
+      </Box>
 
       {/* Bottom: Settings button */}
       <Box
-        sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 0.25 }}
-        // v1.5.107: 排除底部按钮区出窗口拖拽
+        sx={{ px: collapsed ? 0.5 : 1, pb: 1.5, flexShrink: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', gap: 0.25 }}
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
         <ListItemButton
@@ -201,6 +378,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
         <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} />
         <ToolManagementDialog open={toolManagementDialogOpen} onClose={() => setToolManagementDialogOpen(false)} />
       </Box>
+      <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
     </Box>
   );
 };

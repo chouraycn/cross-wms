@@ -385,7 +385,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showHelp() {
-        if let url = URL(string: "https://github.com/cdf/cross-wms") {
+        if let url = URL(string: "https://github.com/cdf/CDFKnow") {
             NSWorkspace.shared.open(url)
         }
     }

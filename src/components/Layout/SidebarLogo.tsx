@@ -23,15 +23,13 @@ const SidebarLogo = React.memo<SidebarLogoProps>(function SidebarLogo({ collapse
   return (
     <Box
       sx={{
-        px: collapsed ? 0.5 : 2,
+        px: collapsed ? 0.5 : 0,
         height: 28,
-        // v1.5.220: Swift 原生 App 模式下，Logo 需要让出系统红黄绿按钮位置
-        // 红黄绿按钮在标题栏顶部，下移 5px 后约在 13px 位置，加上 5px 间距
         mt: '28px',
         mb: 2,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'space-between',
+        justifyContent: collapsed ? 'center' : 'flex-start',
         gap: 1.25,
         flexShrink: 0,
       }}

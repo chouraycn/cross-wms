@@ -8,6 +8,25 @@
 import Database from 'better-sqlite3';
 import type { IStorageEngine, IPreparedStatement } from './StorageEngine.js';
 import { logger } from '../logger.js';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+
+let vecLoadError: string | null = null;
+
+function tryLoadVecExtension(db: Database.Database): boolean {
+  if (vecLoadError === 'not-available') return false;
+  try {
+    const sqliteVec = require('sqlite-vec');
+    sqliteVec.load(db);
+    return true;
+  } catch (e) {
+    vecLoadError = 'not-available';
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.warn(`[SQLiteEngine] sqlite-vec 扩展加载失败，向量记忆功能不可用: ${msg}`);
+    return false;
+  }
+}
 
 /**
  * 基于 better-sqlite3 的默认存储引擎实现。
@@ -28,11 +47,19 @@ export class SQLiteEngine implements IStorageEngine {
   // ==========================================================================
 
   async connect(): Promise<void> {
+    if (this.db && this.db.open) {
+      return;
+    }
     this.db = new Database(this.dbPath);
     // 启用 WAL 模式以提升并发读性能
     this.db.pragma('journal_mode = WAL');
     // 启用外键约束
     this.db.pragma('foreign_keys = ON');
+    // 尝试加载 sqlite-vec 向量扩展
+    const vecOk = tryLoadVecExtension(this.db);
+    if (vecOk) {
+      logger.info('[SQLiteEngine] sqlite-vec 向量扩展已加载');
+    }
     logger.info('[SQLiteEngine] connected to', this.dbPath);
   }
 
@@ -74,6 +101,10 @@ export class SQLiteEngine implements IStorageEngine {
 
   exec(sql: string): void {
     this.db!.exec(sql);
+  }
+
+  pragma(sql: string, options?: Database.PragmaOptions): unknown {
+    return this.db!.pragma(sql, options);
   }
 
   get<T>(sql: string, params?: unknown[]): T | undefined {

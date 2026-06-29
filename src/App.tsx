@@ -483,6 +483,7 @@ const StorageWarningListener: React.FC = () => {
 const MainLayout: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const location = useLocation();
   // v1.5.175: 启动时始终展开侧边栏（忽略历史保存值）
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
@@ -558,7 +559,7 @@ const MainLayout: React.FC = () => {
       <ChatRouteSync />
       {/* v1.5.182: 窗口控制按钮 — 透明悬浮于左上角，与 Logo 同行（WorkBuddy 风格） */}
       <WindowDragBar />
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: gs.bgSidebar }}>
         {/* Sidebar — 单栏布局 */}
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} settingsOpen={settingsPopoverOpen} onSettingsOpenChange={setSettingsPopoverOpen} />
 
@@ -571,9 +572,14 @@ const MainLayout: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: 'background.paper',
-          minHeight: '100vh',
-          paddingTop: 'var(--pw-top, 0px)',
+          minHeight: 'calc(100vh - 12px)',
+          margin: '6px 6px 6px 0',
+          border: `1px solid ${gs.borderLighter}`,
+          paddingTop: 0,
           position: 'relative',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          transition: 'margin 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           // v2.3.0: 内容区排除拖拽，允许文本选择/复制
           WebkitAppRegion: 'no-drag',
         }}
@@ -627,7 +633,7 @@ const MainLayout: React.FC = () => {
             <Box
               sx={{
                 px: 3, // 与 logo 对齐，增加左右 padding
-                pt: 1.75, // 顶部间距：10px 下移
+                pt: 0.375, // 顶部间距：约3px
                 pb: 3,
                 paddingBottom: showChatBar ? '120px' : 3, // 为底部固定的对话框留出空间
                 '& .full-width-page': {
@@ -685,11 +691,12 @@ const MainLayout: React.FC = () => {
         <Box
           sx={{
             position: 'fixed',
-            bottom: 20,
-            left: sidebarCollapsed ? '104px' : '304px',
-            right: 32,
+            bottom: 'calc(6px + 20px)',
+            left: sidebarCollapsed ? 'calc(80px + 6px)' : 'calc(270px + 6px)',
+            right: 'calc(6px + 12px)',
             zIndex: 1200,
             filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.12))',
+            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), right 0.3s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
           <CDFChatThread variant="embedded" />

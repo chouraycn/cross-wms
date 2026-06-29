@@ -85,9 +85,9 @@ def log(msg):
 # ===================== 配置 =====================
 
 APP_NAME = "CDF Know Clow"
-WIDTH = 1280
-HEIGHT = 800
-MIN_SIZE = (900, 600)
+WIDTH = 1340
+HEIGHT = 860
+MIN_SIZE = (1024, 700)
 
 # 腾讯文档 API
 TDOC_API_BASE = "https://docs.qq.com/openapi"

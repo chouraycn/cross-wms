@@ -84,7 +84,7 @@ class CliSystem {
       category: "general",
       action: () => ({
         success: true,
-        output: `cross-wms v1.0.0\nEngine: cross-wms-core\nPlatform: ${process.platform}`,
+        output: `CDFKnow v1.0.0\nEngine: CDFKnow-core\nPlatform: ${process.platform}`,
       }),
     });
 

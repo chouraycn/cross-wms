@@ -80,6 +80,24 @@ function genId() {
 // ===================== 浏览器生命周期 =====================
 
 /**
+ * 查找系统 Chrome 浏览器路径
+ */
+function findSystemChrome() {
+  const candidates = [
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+/**
  * 启动 Playwright 浏览器实例
  * 优先使用 CDP 连接已有 Chrome，否则 spawn 新的 Chromium
  */
@@ -102,8 +120,8 @@ async function launchBrowser(options = {}) {
       const profileDir = path.join(PROFILES_DIR, profileId);
       ensureDir(profileDir);
 
-      log(`Launching Chromium (headless=${headless}, profile=${profileId})`);
-      browser = await chromium.launch({
+      const systemChrome = findSystemChrome();
+      const launchOptions = {
         headless,
         args: [
           '--no-sandbox',
@@ -114,7 +132,21 @@ async function launchBrowser(options = {}) {
           '--window-position=200,200',
           '--app',
         ],
-      });
+      };
+
+      // 优先尝试 Playwright 自带的 Chromium，如果失败则使用系统 Chrome
+      try {
+        log(`Launching Chromium (headless=${headless}, profile=${profileId})`);
+        browser = await chromium.launch(launchOptions);
+      } catch (launchErr) {
+        if (systemChrome) {
+          log(`Playwright Chromium 不可用，使用系统 Chrome: ${systemChrome}`);
+          launchOptions.executablePath = systemChrome;
+          browser = await chromium.launch(launchOptions);
+        } else {
+          throw launchErr;
+        }
+      }
 
       context = await browser.newContext({
         viewport: DEFAULT_VIEWPORT,
@@ -122,7 +154,7 @@ async function launchBrowser(options = {}) {
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       });
 
-      log('Chromium launched successfully');
+      log('Browser launched successfully');
     }
 
     // 创建默认页面

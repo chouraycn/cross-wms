@@ -37,8 +37,90 @@ ensureEngine();
 
 // ===================== 建表迁移 =====================
 
+function migrateOldColumnNames(): void {
+  const db = ensureEngine();
+  try {
+    const columns = db.pragma('table_info(mcp_servers)') as Array<{ name: string }>;
+    const colNames = columns.map(c => c.name);
+    
+    const hasOldCamelCase = 
+      colNames.includes('createdAt') || 
+      colNames.includes('updatedAt') || 
+      colNames.includes('transportType');
+    
+    const hasNewSnakeCase = 
+      colNames.includes('created_at') || 
+      colNames.includes('updated_at') || 
+      colNames.includes('transport_type');
+    
+    if (!hasOldCamelCase || hasNewSnakeCase) return;
+    
+    logger.info('[MCPStore] 检测到旧列名（驼峰命名），开始迁移到下划线命名...');
+    
+    const hasTransportType = colNames.includes('transportType');
+    const hasCreatedAt = colNames.includes('createdAt');
+    const hasUpdatedAt = colNames.includes('updatedAt');
+    
+    const newTableCols = ['id', 'name', 'command', 'args', 'env', 'enabled', 'transport_type', 'created_at', 'updated_at'];
+    const selectExprs: string[] = [
+      'id', 'name', 'command', 'args', 'env', 'enabled',
+    ];
+    
+    if (hasTransportType) {
+      selectExprs.push('transportType AS transport_type');
+    } else {
+      selectExprs.push("'stdio' AS transport_type");
+    }
+    
+    if (hasCreatedAt) {
+      selectExprs.push('createdAt AS created_at');
+    } else {
+      selectExprs.push('0 AS created_at');
+    }
+    
+    if (hasUpdatedAt) {
+      selectExprs.push('updatedAt AS updated_at');
+    } else {
+      selectExprs.push('0 AS updated_at');
+    }
+    
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS mcp_servers_new (
+        id          TEXT PRIMARY KEY,
+        name        TEXT    NOT NULL UNIQUE,
+        command     TEXT    NOT NULL,
+        args        TEXT,
+        env         TEXT,
+        enabled     INTEGER NOT NULL DEFAULT 1,
+        transport_type TEXT NOT NULL DEFAULT 'stdio',
+        created_at  INTEGER NOT NULL,
+        updated_at  INTEGER NOT NULL
+      );
+      
+      INSERT INTO mcp_servers_new (${newTableCols.join(', ')})
+      SELECT ${selectExprs.join(', ')}
+      FROM mcp_servers;
+      
+      DROP TABLE mcp_servers;
+      ALTER TABLE mcp_servers_new RENAME TO mcp_servers;
+    `);
+    
+    logger.info('[MCPStore] 列名迁移完成');
+  } catch (e) {
+    logger.error('[MCPStore] 列名迁移失败:', e);
+  }
+}
+
 function initSchema(): void {
   const db = ensureEngine();
+  
+  // 先尝试迁移旧列名
+  try {
+    migrateOldColumnNames();
+  } catch (e) {
+    logger.warn('[MCPStore] 迁移旧列名跳过:', e);
+  }
+  
   db.migrate('1.0.0', `
     CREATE TABLE IF NOT EXISTS mcp_servers (
       id          TEXT PRIMARY KEY,
@@ -64,8 +146,10 @@ function initSchema(): void {
 }
 
 // 延迟执行建表，确保 engine 已连接
-setTimeout(() => {
+setTimeout(async () => {
   try {
+    const db = ensureEngine();
+    await db.connect();
     initSchema();
   } catch (err) {
     logger.error('[MCPStore] 初始化 schema 失败:', err);
@@ -75,16 +159,46 @@ setTimeout(() => {
 // ===================== 序列化/反序列化 =====================
 
 function rowToConfig(row: Record<string, unknown>): McpServerConfig {
+  const envRaw = row.env as string;
+  let env: Record<string, string> = {};
+  if (envRaw) {
+    try {
+      env = JSON.parse(envRaw);
+    } catch {
+      try {
+        const decoded = Buffer.from(envRaw, 'base64').toString('utf8');
+        env = JSON.parse(decoded);
+      } catch {
+        env = {};
+      }
+    }
+  }
+
+  const argsRaw = row.args as string;
+  let args: string[] = [];
+  if (argsRaw) {
+    try {
+      args = JSON.parse(argsRaw);
+    } catch {
+      try {
+        const decoded = Buffer.from(argsRaw, 'base64').toString('utf8');
+        args = JSON.parse(decoded);
+      } catch {
+        args = [];
+      }
+    }
+  }
+
   return {
     id: row.id as string,
     name: row.name as string,
     command: row.command as string,
-    args: row.args ? JSON.parse(row.args as string) : [],
-    env: row.env ? JSON.parse(row.env as string) : {},
+    args,
+    env,
     enabled: Boolean(row.enabled),
-    transportType: (row.transport_type as McpTransportType) || 'stdio',
-    createdAt: row.created_at as number,
-    updatedAt: row.updated_at as number,
+    transportType: ((row.transport_type || row.transportType) as McpTransportType) || 'stdio',
+    createdAt: (row.created_at || row.createdAt) as number,
+    updatedAt: (row.updated_at || row.updatedAt) as number,
   };
 }
 

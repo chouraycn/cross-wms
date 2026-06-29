@@ -143,11 +143,14 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     prevMsgCountRef.current = session.messages.length;
   }, [session.messages.length]);
 
+  const hasMessages = session.messages.length > 0;
+
   return (
     <Box
       sx={{
         flex: 1,
-        py: 1,
+        pt: hasMessages ? 0 : 1,
+        pb: 1,
         minHeight: 0,
         userSelect: 'text',
         WebkitUserSelect: 'text',
@@ -173,11 +176,12 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         increaseViewportBy={{ top: 200, bottom: 400 }}
         components={{ List: ListComponent }}
         computeItemKey={(_index: number, msg: Message) => msg.id}
-        itemContent={(_index: number, msg: Message) => (
+        itemContent={(index: number, msg: Message) => (
           <Box
             key={msg.id}
             sx={{
-              py: 1.5,
+              pt: index === 0 ? 0 : 1.5,
+              pb: 1.5,
               display: 'flex',
               flexDirection: 'column',
               alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',

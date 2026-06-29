@@ -102,7 +102,7 @@ const QUARANTINE_SUFFIX = "-quarantine.json";
 /** 解析默认的 cron 存储目录 */
 function resolveDefaultCronDir(): string {
   const homeDir = process.env.HOME ?? process.env.USERPROFILE ?? ".";
-  return path.join(homeDir, ".config", "cross-wms", DEFAULT_CRON_DIR);
+  return path.join(homeDir, ".config", "cdfknow", DEFAULT_CRON_DIR);
 }
 
 /** 解析默认的存储文件路径 */

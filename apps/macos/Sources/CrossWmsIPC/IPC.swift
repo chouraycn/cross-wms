@@ -9,6 +9,13 @@ public enum Capability: String, Codable, CaseIterable, Sendable {
     case fileWatcher
     case embedding
     case database
+    case appleScript
+    case accessibility
+    case screenRecording
+    case microphone
+    case speechRecognition
+    case camera
+    case location
 }
 
 // MARK: - Notification
@@ -143,6 +150,28 @@ public struct DatabaseResult: Codable, Sendable {
     }
 }
 
+// MARK: - Permission
+
+public struct PermissionStatus: Codable, Sendable {
+    public var capability: String
+    public var granted: Bool
+
+    public init(capability: String, granted: Bool) {
+        self.capability = capability
+        self.granted = granted
+    }
+}
+
+public struct PermissionCheckResult: Codable, Sendable {
+    public var permissions: [PermissionStatus]
+    public var allGranted: Bool
+
+    public init(permissions: [PermissionStatus], allGranted: Bool) {
+        self.permissions = permissions
+        self.allGranted = allGranted
+    }
+}
+
 // MARK: - Requests
 
 public enum Request: Sendable {
@@ -175,6 +204,11 @@ public enum Request: Sendable {
     // MARK: Database
     case databaseExecute(query: DatabaseQuery)
     case databaseQuery(query: DatabaseQuery)
+
+    // MARK: Permissions
+    case permissionCheck(capabilities: [String]?)
+    case permissionRequest(capability: String)
+    case permissionOpenSettings(capability: String)
 }
 
 // MARK: - Responses
@@ -253,6 +287,8 @@ extension Request: Codable {
         case watchID
         case request
         case query
+        case capabilities
+        case capability
     }
 
     private enum Kind: String, Codable {
@@ -272,6 +308,9 @@ extension Request: Codable {
         case embeddingCompute
         case databaseExecute
         case databaseQuery
+        case permissionCheck
+        case permissionRequest
+        case permissionOpenSettings
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -342,6 +381,18 @@ extension Request: Codable {
         case let .databaseQuery(query):
             try container.encode(Kind.databaseQuery, forKey: .type)
             try container.encode(query, forKey: .query)
+
+        case let .permissionCheck(capabilities):
+            try container.encode(Kind.permissionCheck, forKey: .type)
+            try container.encodeIfPresent(capabilities, forKey: .capabilities)
+
+        case let .permissionRequest(capability):
+            try container.encode(Kind.permissionRequest, forKey: .type)
+            try container.encode(capability, forKey: .capability)
+
+        case let .permissionOpenSettings(capability):
+            try container.encode(Kind.permissionOpenSettings, forKey: .type)
+            try container.encode(capability, forKey: .capability)
         }
     }
 
@@ -414,6 +465,18 @@ extension Request: Codable {
         case .databaseQuery:
             let query = try container.decode(DatabaseQuery.self, forKey: .query)
             self = .databaseQuery(query: query)
+
+        case .permissionCheck:
+            let capabilities = try container.decodeIfPresent([String].self, forKey: .capabilities)
+            self = .permissionCheck(capabilities: capabilities)
+
+        case .permissionRequest:
+            let capability = try container.decode(String.self, forKey: .capability)
+            self = .permissionRequest(capability: capability)
+
+        case .permissionOpenSettings:
+            let capability = try container.decode(String.self, forKey: .capability)
+            self = .permissionOpenSettings(capability: capability)
         }
     }
 }

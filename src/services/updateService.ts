@@ -5,8 +5,8 @@
 
 // GitHub Releases release.json：优先使用 raw.githubusercontent.com（直连，无重定向）
 // 回退到 /releases/latest/download/ 作为备用
-const RELEASE_URL = 'https://raw.githubusercontent.com/chouraycn/cross-wms/main/release/release.json';
-const RELEASE_URL_FALLBACK = 'https://github.com/chouraycn/cross-wms/releases/latest/download/release.json';
+const RELEASE_URL = 'https://raw.githubusercontent.com/chouraycn/CDFKnow/main/release/release.json';
+const RELEASE_URL_FALLBACK = 'https://github.com/chouraycn/CDFKnow/releases/latest/download/release.json';
 
 export interface ReleaseInfo {
   version: string;

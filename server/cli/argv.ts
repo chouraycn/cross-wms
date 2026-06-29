@@ -293,13 +293,12 @@ export function buildParseArgv(params: {
   const programName = params.programName ?? "";
   const normalizedArgv =
     programName && baseArgv[0] === programName
-      ? baseArgv.slice(1)
-      : baseArgv[0]?.endsWith("cross-wms") || baseArgv[0]?.endsWith("crosswms")
+      ? baseArgv[0]?.endsWith("cdfknow") || baseArgv[0]?.endsWith("cdfknow")
         ? baseArgv.slice(1)
         : baseArgv;
 
   if (normalizedArgv.length >= 2) {
     return normalizedArgv;
   }
-  return ["node", programName || "cross-wms", ...normalizedArgv];
+  return ["node", programName || "cdfknow", ...normalizedArgv];
 }

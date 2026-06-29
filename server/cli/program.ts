@@ -22,7 +22,7 @@ import { logger } from "../logger.js";
  */
 export function buildCLIProgram(): Command {
   const program = new Command();
-  program.name("cross-wms").description("Cross-WMS CLI");
+  program.name("cdfknow").description("CDFKnow CLI");
 
   // 创建并设置程序上下文
   const ctx = createProgramContext();
@@ -59,7 +59,7 @@ export function buildCLIProgram(): Command {
     .aliases(["v", "ver"])
     .description("显示版本信息")
     .action(() => {
-      logger.info(`cross-wms v${ctx.programVersion}`);
+      logger.info(`cdfknow v${ctx.programVersion}`);
       logger.info(`Platform: ${process.platform}`);
       logger.info(`Node: ${process.version}`);
     });

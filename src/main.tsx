@@ -41,7 +41,7 @@ try {
   if (loadingEl) {
     loadingEl.className = 'hide';
   }
-  console.error('[CrossWMS] React 渲染异常:', errMsg, errStack);
+  console.error('[CDFKnow] React 渲染异常:', errMsg, errStack);
 }
 
 // 异步初始化：迁移 + Store 数据加载（不阻塞 UI 渲染）

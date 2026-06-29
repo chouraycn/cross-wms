@@ -145,7 +145,7 @@ cat > "$ROOT_DIR/release/release.json" <<RELJSON
 {
   "version": "$VERSION",
   "pubDate": "$(date -u +"%Y-%m-%d")",
-  "dmgUrl": "https://github.com/chouraycn/cross-wms/releases/download/v${VERSION}/CDF-Know-Clow-${VERSION}-mac.dmg",
+  "dmgUrl": "https://github.com/chouraycn/CDFKnow/releases/download/v${VERSION}/CDF-Know-Clow-${VERSION}-mac.dmg",
   "minVersion": "1.0.0"
 }
 RELJSON
@@ -199,7 +199,7 @@ SHA256: $(shasum -a 256 "$DMG" 2>/dev/null | awk '{print $1}' || echo 'N/A')" \
     echo "  上传 DMG..."
     gh release upload "$TAG" "$DMG" --clobber 2>/dev/null || {
       # Fallback: use GitHub API directly
-      UPLOAD_URL=$(gh api repos/chouraycn/cross-wms/releases/tags/$TAG --jq '.upload_url' 2>/dev/null || true)
+      UPLOAD_URL=$(gh api repos/chouraycn/CDFKnow/releases/tags/$TAG --jq '.upload_url' 2>/dev/null || true)
       if [ -n "$UPLOAD_URL" ]; then
         UPLOAD_URL="${UPLOAD_URL%\{*\}"
         DMG_FILENAME="CDF-Know-Clow-${VERSION}-mac.dmg"
@@ -220,7 +220,7 @@ SHA256: $(shasum -a 256 "$DMG" 2>/dev/null | awk '{print $1}' || echo 'N/A')" \
   fi
 
   echo "✅ Release v${VERSION} 已发布!"
-  echo "   https://github.com/chouraycn/cross-wms/releases/tag/v${VERSION}"
+  echo "   https://github.com/chouraycn/CDFKnow/releases/tag/v${VERSION}"
 else
   echo "🚀 Skipping GitHub Release (--skip-release)"
 fi
