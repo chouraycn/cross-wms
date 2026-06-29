@@ -28,7 +28,6 @@
     <string>public.app-category.business</string>
     <key>NSUserNotificationAlertStyle</key>
     <string>alert</string>
-
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
@@ -40,16 +39,14 @@
             </array>
         </dict>
     </array>
-
     <key>SUFeedURL</key>
-    <string>https://raw.githubusercontent.com/chouraycn/CDFKnow/main/release/appcast.xml</string></function><function name="Edit"><parameter name="file_path" string="true">/Users/chouray/WorkBuddy/2026-05-25-10-01-22/cross-wms/apps/macos/Sources/CrossWms/Resources/Info.plist
+    <string>https://raw.githubusercontent.com/chouraycn/CDFKnow/main/release/appcast.xml</string>
     <key>SUAutomaticallyUpdate</key>
     <true/>
     <key>SUEnableAutomaticChecks</key>
     <true/>
     <key>SUCheckAtStartup</key>
     <true/>
-
     <key>NSUserNotificationUsageDescription</key>
     <string>CDF Know Clow 需要通知权限来显示 Agent 操作的提醒。</string>
     <key>NSScreenCaptureDescription</key>
@@ -72,7 +69,6 @@
     <string>CDF Know Clow 需要自动化（AppleScript）权限来驱动终端和其他应用以执行 Agent 操作。</string>
     <key>NSRemindersUsageDescription</key>
     <string>CDF Know Clow 可以在 Agent 请求时访问提醒事项，用于 apple-reminders 技能。</string>
-
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoadsInWebContent</key>
