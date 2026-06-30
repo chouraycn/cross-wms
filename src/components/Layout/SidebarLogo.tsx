@@ -23,7 +23,7 @@ const SidebarLogo = React.memo<SidebarLogoProps>(function SidebarLogo({ collapse
   return (
     <Box
       sx={{
-        px: collapsed ? 0.5 : 0,
+        px: collapsed ? 0.5 : 1, // v1.7.15: 往右移动10px
         height: 28,
         mt: '28px',
         mb: 2,

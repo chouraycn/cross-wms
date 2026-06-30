@@ -6,15 +6,7 @@
     {
       "layers" : [
         {
-          "glass-specializations" : [
-            {
-              "value" : true
-            },
-            {
-              "idiom" : "square",
-              "value" : true
-            }
-          ],
+          "glass" : true,
           "image-name" : "App Icon Template3-恢复的 拷贝.png",
           "name" : "App Icon Template3-恢复的 拷贝"
         }

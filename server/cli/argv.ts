@@ -293,9 +293,10 @@ export function buildParseArgv(params: {
   const programName = params.programName ?? "";
   const normalizedArgv =
     programName && baseArgv[0] === programName
-      ? baseArgv[0]?.endsWith("cdfknow") || baseArgv[0]?.endsWith("cdfknow")
+      ? (baseArgv[0]?.endsWith("cdfknow") || baseArgv[0]?.endsWith("cdfknow")
         ? baseArgv.slice(1)
-        : baseArgv;
+        : baseArgv)
+      : baseArgv;
 
   if (normalizedArgv.length >= 2) {
     return normalizedArgv;

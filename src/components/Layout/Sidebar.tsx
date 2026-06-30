@@ -68,6 +68,18 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
 
   const SIDEBAR_BG = gs.bgSidebar;
 
+  // v1.7.15: 监听窗口最大化/恢复事件，自动展开侧边栏
+  useEffect(() => {
+    const onMaximized = () => {
+      // 点击绿按钮最大化窗口时，如果侧边栏是收起状态，自动展开
+      if (collapsed && onToggle) {
+        onToggle();
+      }
+    };
+    window.addEventListener('cdf-window-maximized', onMaximized);
+    return () => window.removeEventListener('cdf-window-maximized', onMaximized);
+  }, [collapsed, onToggle]);
+
   // v1.5.73: settingsOpen 提升到 MainLayout，通过 props 传入；无 props 时回退本地 state（兼容旧调用）
   const [localSettingsOpen, localSetSettingsOpen] = useState(false);
   const settingsOpen = settingsOpenProp ?? localSettingsOpen;
@@ -137,12 +149,12 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       {/* 原生 App 模式：搜索 + Toggle 按钮绝对定位在顶部 padding 区域内，与红黄绿对齐 */}
-      {/* 红黄绿: top=14px, size=12px, 中心线=20px; 我们的按钮 size=25.92px, top = 20 - 25.92/2 ≈ 7px */}
+      {/* v1.7.15: 红黄绿往下移5px，top=19，中心线=25；按钮 size=25.92px, top = 25 - 25.92/2 ≈ 12px */}
       {nativeApp && !collapsed && (
         <Box
           sx={{
             position: 'absolute',
-            top: '7px',
+            top: '12px',
             right: 8,
             display: 'flex',
             alignItems: 'center',
@@ -253,15 +265,24 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       )}
 
       {/* 收起状态：搜索 + toggle 悬浮按钮（原生 App 与红黄绿对齐，网页端保持原有位置） */}
+      {/* v1.7.15: 
+           1. 往下移5px（top从7px改为12px）
+           2. DMG模式下按钮移到红黄绿后面（left从10改为60，避免遮挡红黄绿）
+           3. 点击绿按钮后自动展开侧边栏（通过最大化状态检测）
+      */}
       {collapsed && (
         <>
           <IconButton
-            onClick={() => setSearchOpen(true)}
+            onClick={() => {
+              // v1.7.15: 点击搜索按钮时，临时展开侧边栏以显示搜索界面
+              if (onToggle) onToggle();
+              setTimeout(() => setSearchOpen(true), 50);
+            }}
             size="small"
             sx={{
               position: 'fixed',
-              top: nativeApp ? '7px' : '10px',
-              left: 10,
+              top: nativeApp ? '12px' : '10px',
+              left: nativeApp ? 60 : 10, // v1.7.15: DMG模式下移到红黄绿后面
               zIndex: 1400,
               color: 'text.primary',
               borderRadius: '6.48px',

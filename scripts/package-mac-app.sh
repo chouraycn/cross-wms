@@ -199,11 +199,10 @@ mkdir -p "$NODE_DEST_DIR"
 cp "$NODE_SRC" "$NODE_DEST_DIR/node"
 chmod +x "$NODE_DEST_DIR/node"
 
-# Strip debug symbols to reduce size
-NODE_SIZE_BEFORE=$(du -sm "$NODE_DEST_DIR/node" | awk '{print $1}')
-strip "$NODE_DEST_DIR/node" 2>/dev/null || true
-NODE_SIZE_AFTER=$(du -sm "$NODE_DEST_DIR/node" | awk '{print $1}')
-echo "✅ Node.js runtime: $NODE_SRC (${NODE_SIZE_BEFORE}M → ${NODE_SIZE_AFTER}M)"
+# v1.7.15: 不对 Node.js 二进制执行 strip，因为 strip 会破坏代码签名，
+# 导致 better-sqlite3 / sqlite-vec 等原生模块加载时被 macOS 系统杀掉 (SIGKILL)
+NODE_SIZE=$(du -sm "$NODE_DEST_DIR/node" | awk '{print $1}')
+echo "✅ Node.js runtime: $NODE_SRC (${NODE_SIZE}M, skipped strip to preserve code signature)"
 
 # ===================== 6. Install shared node_modules =====================
 

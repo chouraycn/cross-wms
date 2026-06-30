@@ -46,8 +46,8 @@ DMG_BACKGROUND_PATH="${DMG_BACKGROUND_PATH:-$ROOT_DIR/apps/macos/Packaging/dmg-b
 
 DMG_WINDOW_BOUNDS="${DMG_WINDOW_BOUNDS:-400 100 900 420}"
 DMG_ICON_SIZE="${DMG_ICON_SIZE:-128}"
-DMG_APP_POS="${DMG_APP_POS:-125 160}"
-DMG_APPS_POS="${DMG_APPS_POS:-375 160}"
+DMG_APP_POS="${DMG_APP_POS:-130 165}"
+DMG_APPS_POS="${DMG_APPS_POS:-380 165}"
 DMG_EXTRA_SECTORS="${DMG_EXTRA_SECTORS:-2048}"
 
 require_integer_list() {
@@ -130,6 +130,10 @@ cleanup_dmg() {
   if [[ "$MOUNTED" == "1" && -n "$MOUNT_POINT" ]]; then
     if hdiutil detach "$MOUNT_POINT" -force 2>/dev/null; then
       MOUNTED=0
+      # v1.7.15: 如果挂载点是我们在 /tmp 下创建的，卸载后清理目录
+      if [[ -n "${DMG_MOUNT_POINT:-}" && "$MOUNT_POINT" == "$DMG_MOUNT_POINT" ]]; then
+        rmdir "$MOUNT_POINT" 2>/dev/null || true
+      fi
     else
       echo "WARN: Preserving DMG temp root because mount is still attached: $DMG_TEMP" >&2
       return
@@ -147,10 +151,18 @@ detach_dmg() {
   for attempt in {1..15}; do
     if hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null; then
       MOUNTED=0
+      # v1.7.15: 清理自定义挂载点目录
+      if [[ -n "${DMG_MOUNT_POINT:-}" && "$MOUNT_POINT" == "$DMG_MOUNT_POINT" ]]; then
+        rmdir "$MOUNT_POINT" 2>/dev/null || true
+      fi
       return
     fi
     if (( attempt >= 3 )) && hdiutil detach "$MOUNT_POINT" -force 2>/dev/null; then
       MOUNTED=0
+      # v1.7.15: 清理自定义挂载点目录
+      if [[ -n "${DMG_MOUNT_POINT:-}" && "$MOUNT_POINT" == "$DMG_MOUNT_POINT" ]]; then
+        rmdir "$MOUNT_POINT" 2>/dev/null || true
+      fi
       return
     fi
     # Finder can retain the just-closed volume briefly on macOS runners.
@@ -175,8 +187,11 @@ hdiutil create \
   -size "${DMG_SIZE_MB}m" \
   "$DMG_RW_PATH"
 
-hdiutil attach "$DMG_RW_PATH"
-MOUNT_POINT="/Volumes/$DMG_VOLUME_NAME"
+# v1.7.15: 使用自定义挂载点在 /tmp 下，避免 /Volumes 不在 Sandbox allowlist 中的问题
+DMG_MOUNT_POINT="/tmp/openclaw-dmg-mount-$$"
+mkdir -p "$DMG_MOUNT_POINT"
+hdiutil attach "$DMG_RW_PATH" -mountpoint "$DMG_MOUNT_POINT"
+MOUNT_POINT="$DMG_MOUNT_POINT"
 MOUNTED=1
 
 if [[ "${SKIP_DMG_STYLE:-0}" != "1" ]]; then
@@ -201,11 +216,14 @@ if [[ "${SKIP_DMG_STYLE:-0}" != "1" ]]; then
     fi
   fi
 
+  echo "Applying DMG visual style with Finder..."
+  
+  # v1.7.15: 使用磁盘名直接引用，比 disk of dmgRoot 更可靠
+  DISK_NAME="$(basename "$MOUNT_POINT")"
+  
   osascript <<EOF
 tell application "Finder"
-  set dmgRoot to POSIX file "$MOUNT_POINT" as alias
-  set dmgDisk to disk of dmgRoot
-  tell dmgDisk
+  tell disk "$DISK_NAME"
     open
     delay 1
     set current view of container window to icon view
@@ -233,6 +251,16 @@ tell application "Finder"
   end tell
 end tell
 EOF
+  osascript_status=$?
+  if [[ $osascript_status -ne 0 ]]; then
+    echo "WARN: osascript failed (status=$osascript_status)" >&2
+  fi
+
+  # v1.7.15: 确保 .DS_Store 写入磁盘后再卸载
+  if [[ -f "$MOUNT_POINT/.DS_Store" ]]; then
+    sync
+    sleep 2
+  fi
 fi
 
 if ! detach_dmg; then

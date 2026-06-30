@@ -55,7 +55,8 @@ const SidebarToggle = React.memo<SidebarToggleProps>(function SidebarToggle({
       size="small"
       sx={{
         position: 'fixed',
-        top: nativeApp ? '7px' : '10px',
+        // v1.7.15: top=12px 与红黄绿和搜索按钮对齐（往下移5px）
+        top: nativeApp ? '12px' : '10px',
         left: collapsed ? 46 : expandedWidth - 33,
         right: 'auto',
         // v1.5.166: zIndex 高于 WindowDragBar(1300)，确保按钮可点击
