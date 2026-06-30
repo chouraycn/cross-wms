@@ -81,6 +81,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func startNodeBackend(dataDir: String) async {
         let nodePath = findNodePath()
         let scriptPath = findServerScriptPath()
+        let frontendDir = findFrontendDir()
+        let nodeModulesPath = findSharedNodeModulesPath()
 
         guard let nodePath = nodePath else {
             logger.error("node.js not found")
@@ -94,12 +96,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         logger.info("node path: \(nodePath)")
         logger.info("server script: \(scriptPath)")
+        if let frontendDir = frontendDir {
+            logger.info("frontend dir: \(frontendDir)")
+        }
+        if let nodeModulesPath = nodeModulesPath {
+            logger.info("shared node_modules: \(nodeModulesPath)")
+        }
 
         nodeManager = NodeProcessManager(
             port: serverPort,
             nodePath: nodePath,
             scriptPath: scriptPath,
-            dataDir: dataDir
+            dataDir: dataDir,
+            frontendDir: frontendDir,
+            sharedNodeModulesPath: nodeModulesPath
         )
 
         nodeManager?.onProcessExit = { [weak self] code in
@@ -211,6 +221,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        let bundlePath = Bundle.main.bundlePath
+        let resourcePath = Bundle.main.resourcePath ?? bundlePath
+        let bundledCandidates = [
+            (resourcePath as NSString).appendingPathComponent("node/bin/node"),
+            (bundlePath as NSString).appendingPathComponent("Contents/Resources/node/bin/node"),
+        ]
+
+        for path in bundledCandidates {
+            if FileManager.default.isExecutableFile(atPath: path) {
+                return path
+            }
+        }
+
         return nil
     }
 
@@ -227,6 +250,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         for path in candidates {
             if FileManager.default.fileExists(atPath: path) {
+                return path
+            }
+        }
+
+        return nil
+    }
+
+    private func findFrontendDir() -> String? {
+        let bundlePath = Bundle.main.bundlePath
+        let resourcePath = Bundle.main.resourcePath ?? bundlePath
+
+        let candidates = [
+            (resourcePath as NSString).appendingPathComponent("frontend_dist"),
+            (bundlePath as NSString).appendingPathComponent("Contents/Resources/frontend_dist"),
+        ]
+
+        for path in candidates {
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: path, isDirectory: &isDir), isDir.boolValue {
+                return path
+            }
+        }
+
+        return nil
+    }
+
+    private func findSharedNodeModulesPath() -> String? {
+        let bundlePath = Bundle.main.bundlePath
+        let resourcePath = Bundle.main.resourcePath ?? bundlePath
+
+        let candidates = [
+            (resourcePath as NSString).appendingPathComponent("shared_node_modules"),
+            (bundlePath as NSString).appendingPathComponent("Contents/Resources/shared_node_modules"),
+        ]
+
+        for path in candidates {
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: path, isDirectory: &isDir), isDir.boolValue {
                 return path
             }
         }

@@ -26,7 +26,8 @@ const isNativeApp = (): boolean => {
 const BUTTON_SIZE = 12;     // 按钮直径 12px
 const BUTTON_GAP = '6px';  // 按钮间距 6px（边缘到边缘，macOS 标准）
 const LEFT = 18;            // 距离侧边栏左边缘（往右5px）
-const TOP = 14;             // 距离窗口顶部（往下4px）
+// v1.7.15: 往下移动5px，从14改为19
+const TOP = 19;             // 距离窗口顶部（往下4px + 5px = 9px）
 
 type WindowState = 'normal' | 'maximized';
 
@@ -82,11 +83,19 @@ const WindowDragBar: React.FC<{ height?: number }> = ({ height: _h }) => {
   const handleMaximize = useCallback(() => {
     if (windowState === 'normal') {
       callApi('window_maximize')
-        .then(() => setWindowState('maximized'))
+        .then(() => {
+          setWindowState('maximized');
+          // v1.7.15: 派发窗口最大化事件，让侧边栏按钮自动左对齐
+          window.dispatchEvent(new CustomEvent('cdf-window-maximized'));
+        })
         .catch(() => {});
     } else {
       callApi('window_toggle_fullscreen')
-        .then(() => setWindowState(s => s === 'normal' ? 'maximized' : 'normal'))
+        .then(() => {
+          setWindowState(s => s === 'normal' ? 'maximized' : 'normal');
+          // v1.7.15: 派发窗口恢复正常事件
+          window.dispatchEvent(new CustomEvent('cdf-window-restored'));
+        })
         .catch(() => {});
     }
   }, [windowState]);

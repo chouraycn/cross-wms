@@ -12,14 +12,18 @@ final class NodeProcessManager {
     let nodePath: String
     let scriptPath: String
     let dataDir: String
+    let frontendDir: String?
+    let sharedNodeModulesPath: String?
 
     var onProcessExit: ((Int32) -> Void)?
 
-    init(port: Int = 3001, nodePath: String, scriptPath: String, dataDir: String) {
+    init(port: Int = 3001, nodePath: String, scriptPath: String, dataDir: String, frontendDir: String? = nil, sharedNodeModulesPath: String? = nil) {
         self.port = port
         self.nodePath = nodePath
         self.scriptPath = scriptPath
         self.dataDir = dataDir
+        self.frontendDir = frontendDir
+        self.sharedNodeModulesPath = sharedNodeModulesPath
     }
 
     func start() async throws {
@@ -34,6 +38,18 @@ final class NodeProcessManager {
         env["CDF_KNOW_CLOW_DATA_DIR"] = dataDir
         env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
         env["CROSSWMS_IPC_SOCKET"] = controlSocketPath
+
+        if let frontendDir = frontendDir {
+            env["FRONTEND_DIR"] = frontendDir
+        }
+        if let sharedNodeModulesPath = sharedNodeModulesPath {
+            if let existingNodePath = env["NODE_PATH"] {
+                env["NODE_PATH"] = "\(sharedNodeModulesPath):\(existingNodePath)"
+            } else {
+                env["NODE_PATH"] = sharedNodeModulesPath
+            }
+        }
+
         proc.environment = env
 
         let stdoutPipe = Pipe()

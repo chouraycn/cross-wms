@@ -564,6 +564,7 @@ const MainLayout: React.FC = () => {
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} settingsOpen={settingsPopoverOpen} onSettingsOpenChange={setSettingsPopoverOpen} />
 
       {/* Main content area */}
+      {/* v1.7.15: 收起侧边栏后左边距也要保持，让灰色背景可见 */}
       <Box
         component="main"
         sx={{
@@ -573,8 +574,9 @@ const MainLayout: React.FC = () => {
           flexDirection: 'column',
           backgroundColor: 'background.paper',
           minHeight: 'calc(100vh - 12px)',
-          margin: '6px 6px 6px 0',
-          border: `1px solid ${gs.borderLighter}`,
+          margin: '6px 6px 6px 6px', // v1.7.15: 保持6px左边距，让灰色背景可见
+          // v1.7.15: 描边颜色改为 #eeeeee
+          border: '1px solid #eeeeee',
           paddingTop: 0,
           position: 'relative',
           borderRadius: '12px',

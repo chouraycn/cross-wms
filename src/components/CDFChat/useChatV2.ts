@@ -143,6 +143,13 @@ export function useChatV2(options: UseChatV2Options = {}): UseChatV2Return {
         abortController.abort();
       });
 
+      // 构建历史消息（排除当前正在发送的用户消息和 AI 回复）
+      const conversationHistory = messages.map(m => ({
+        role: m.role,
+        content: m.content,
+        attachments: m.attachments,
+      }));
+
       try {
         const response = await fetch(apiEndpoint, {
           method: 'POST',
@@ -150,6 +157,7 @@ export function useChatV2(options: UseChatV2Options = {}): UseChatV2Return {
           body: JSON.stringify({
             message: userContent,
             sessionId: sessionIdRef.current,
+            conversationHistory,
           }),
           signal: abortController.signal,
         });
