@@ -14,7 +14,7 @@ module.exports = {
   ],
   rules: {
     '@typescript-eslint/no-explicit-any': 'warn',
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' }],
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
     // Use server/logger.ts instead of raw console — warn on any console.* in server code
