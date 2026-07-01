@@ -861,6 +861,14 @@ export function useAgentChat(
     abortControllerRef.current = abortController;
 
     try {
+      const conversationHistory = messages
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .map(m => ({
+          role: m.role,
+          content: m.content,
+          attachments: m.attachments,
+        }));
+
       const response = await fetch(`${API_BASE}/agent-chat`, {
         method: 'POST',
         headers: {
@@ -877,6 +885,7 @@ export function useAgentChat(
           executionMode: options.executionMode,
           agentId: options.agentId,
           queueMode: options.queueMode,
+          conversationHistory,
         }),
         signal: abortController.signal,
       });
@@ -976,7 +985,7 @@ export function useAgentChat(
       setCurrentRunId(null);
       abortControllerRef.current = null;
     }
-  }, [currentSession, isLoading, initializeStreaming, handleAgentEvent, flushAllBuffers]);
+  }, [currentSession, isLoading, messages, initializeStreaming, handleAgentEvent, flushAllBuffers]);
 
   // ===================== 停止生成 =====================
 

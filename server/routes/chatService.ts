@@ -20,6 +20,8 @@ import type { ExecutionStrategyOptions } from '../engine/executionStrategy.js';
 import type { ToolExecutionResult } from '../engine/toolExecutor.js';
 import { buildSoulSystemMessage } from '../engine/soulLoader.js';
 import { estimateMessagesTokens, truncateContextForModel, sanitizeToolMessages } from '../engine/contextTruncate.js';
+import { sanitizeHistoryMessages } from '../engine/historySanitizer.js';
+import { resolveImageSanitizationLimits } from '../engine/imageSanitization.js';
 import { compressContextWithSummary } from '../engine/contextCompress.js';
 import { loadModelsConfig, type ModelsFile, isLocalModel, type ModelConfig } from '../modelsStore.js';
 import { selectKey, reportKeyResult } from '../keyRotator.js';
@@ -45,6 +47,26 @@ import { formatMemoryContext } from '../engine/contextEnhancer.js';
 import { recordTurnStarted, recordTurnCompleted, recordTurnFailed, recordMessageCreated } from '../engine/eventRecorder.js';
 
 // ===================== 公共辅助函数 =====================
+
+/**
+ * 安全解析消息的附件字段（可能是 JSON 字符串或数组）
+ *
+ * DB 中 Message.attachments 类型是 string | null，但实际保存时可能传入数组。
+ * 读取历史消息时需要统一解析为数组格式。
+ */
+function parseMessageAttachments(attachments: unknown): Array<Record<string, unknown>> {
+  if (!attachments) return [];
+  if (Array.isArray(attachments)) return attachments as Array<Record<string, unknown>>;
+  if (typeof attachments === 'string') {
+    try {
+      const parsed = JSON.parse(attachments);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
 
 /**
  * 检测附件中是否包含图片
@@ -84,11 +106,15 @@ function detectVisionModel(modelConfig: { id: string; capabilities?: string[] })
  * 提取为公共函数，消除行120-149 和行903-933 的重复。
  * 如果消息包含有效的 toolCalls，将 assistant 消息和对应的 tool 结果消息推入 apiMessages。
  *
+ * @param msg DB 消息
+ * @param apiMessages API 消息数组
+ * @param reasoningContent 可选，thinking 推理内容（支持 reasoning 的模型）
  * @returns true 如果成功重建（调用方应 continue 跳过后续处理），false 如果不包含 toolCalls
  */
 function rebuildToolCallsFromMessage(
   msg: { role: string; content: string; toolCalls?: string | Array<{ name: string; arguments: string; result?: string }> },
-  apiMessages: Array<{ role: string; content: MessageContent | null; tool_calls?: unknown[]; tool_call_id?: string }>,
+  apiMessages: Array<{ role: string; content: MessageContent | null; tool_calls?: unknown[]; tool_call_id?: string; reasoning_content?: string }>,
+  reasoningContent?: string,
 ): boolean {
   if (msg.role !== 'assistant' || !msg.toolCalls) return false;
 
@@ -97,7 +123,7 @@ function rebuildToolCallsFromMessage(
     if (!Array.isArray(toolCalls) || toolCalls.length === 0) return false;
 
     const callIds = toolCalls.map(() => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
-    apiMessages.push({
+    const assistantMsg: { role: string; content: MessageContent | null; tool_calls: unknown[]; reasoning_content?: string } = {
       role: 'assistant',
       content: msg.content || null,
       tool_calls: toolCalls.map((tc: { name: string; arguments: string }, i: number) => ({
@@ -105,7 +131,11 @@ function rebuildToolCallsFromMessage(
         type: 'function',
         function: { name: tc.name, arguments: tc.arguments },
       })),
-    });
+    };
+    if (reasoningContent) {
+      assistantMsg.reasoning_content = reasoningContent;
+    }
+    apiMessages.push(assistantMsg);
     for (let i = 0; i < toolCalls.length; i++) {
       apiMessages.push({
         role: 'tool',
@@ -458,7 +488,7 @@ async function executeQueuedMessage(
 
   const timerManager = new TimerManager(res);
 
-  let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }> = [];
+  let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string; reasoning_content?: string }> = [];
 
   try {
     // v9.0: 生成 runId 用于事件追踪
@@ -501,12 +531,84 @@ async function executeQueuedMessage(
     }
 
     // 从 DB 消息重建（使用提取的公共函数）
+    const supportsVisionQueue = detectVisionModel(modelConfig);
     for (const msg of dbMessages) {
       if (msg.role === 'user' || msg.role === 'assistant') {
-        if (rebuildToolCallsFromMessage(msg, apiMessages)) continue;
-        apiMessages.push({ role: msg.role, content: msg.content });
+        // v1.7.19: 安全解析附件字段（DB 中可能是 JSON 字符串）
+        const msgAttachments = parseMessageAttachments((msg as { attachments?: unknown }).attachments);
+        if (msg.role === 'user' && msgAttachments.length > 0 && supportsVisionQueue) {
+          const contentParts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'auto' | 'low' | 'high' } }> = [];
+          if (msg.content) {
+            contentParts.push({ type: 'text', text: msg.content });
+          }
+          for (const att of msgAttachments) {
+            if ((att as { type?: string }).type === 'image') {
+              try {
+                const attRecord = att as { url?: string; fileName?: string; mimeType?: string };
+                const filePath = path.join(AppPaths.uploadsDir, path.basename(attRecord.url || ''));
+                const fileBuffer = await fsp.readFile(filePath);
+                const base64 = fileBuffer.toString('base64');
+                contentParts.push({
+                  type: 'image_url',
+                  image_url: { url: `data:${attRecord.mimeType};base64,${base64}`, detail: 'auto' },
+                });
+              } catch (err: any) {
+                if (err.code !== 'ENOENT') {
+                  logger.error(`[Chat API] 读取历史图片附件失败: ${(att as { fileName?: string }).fileName}`, err);
+                }
+              }
+            }
+          }
+          if (contentParts.length > 0) {
+            apiMessages.push({ role: msg.role, content: contentParts });
+          } else {
+            apiMessages.push({ role: msg.role, content: msg.content });
+          }
+        } else if (rebuildToolCallsFromMessage(msg, apiMessages, modelConfig.capabilities?.includes('reasoning') ? (msg as { thinking?: string | null }).thinking || undefined : undefined)) {
+          continue;
+        } else {
+          // v1.7.20: 传递 thinking 内容（仅支持 reasoning 的模型）
+          const supportsReasoning = modelConfig.capabilities?.includes('reasoning');
+          const thinkingContent = supportsReasoning ? (msg as { thinking?: string | null }).thinking || undefined : undefined;
+          if (thinkingContent) {
+            apiMessages.push({ role: msg.role, content: msg.content, reasoning_content: thinkingContent });
+          } else {
+            apiMessages.push({ role: msg.role, content: msg.content });
+          }
+        }
       }
     }
+
+    // v1.7.20: 历史消息消毒
+    // - 合并连续用户消息
+    // - 清理空助手轮次
+    // - 校验 tool 配对
+    // - 规范化 tool call 输入
+    // - 重复用户消息去重
+    // - 图片附件尺寸限制
+    // - reasoning 内容兼容性处理
+    // - 按轮次截断（可配置）
+    let maxHistoryTurns = 0;
+    let imageLimits = {};
+    let dropReasoning = false;
+    try {
+      const settingsVal = getAppSettings('default');
+      if (settingsVal) {
+        const parsed = JSON.parse(settingsVal);
+        if (parsed?.aiEngine?.maxHistoryTurns && parsed.aiEngine.maxHistoryTurns > 0) {
+          maxHistoryTurns = parsed.aiEngine.maxHistoryTurns;
+        }
+        imageLimits = resolveImageSanitizationLimits(parsed);
+        if (modelConfig.capabilities && !modelConfig.capabilities.includes('reasoning')) {
+          dropReasoning = true;
+        }
+      }
+    } catch { /* ignore */ }
+    apiMessages = sanitizeHistoryMessages(apiMessages as any, {
+      maxTurns: maxHistoryTurns,
+      imageLimits,
+      dropReasoning,
+    }) as typeof apiMessages;
 
     // 上下文压缩
     const ctxWindow = (finalModelConfig as ModelCallConfig).contextWindow || 128000;
@@ -696,7 +798,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
 
   const timerManager = new TimerManager(res);
 
-  let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }> = [];
+  let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string; reasoning_content?: string }> = [];
   let abortController: AbortController = new AbortController();
   let selectedKeyIndex = -1;
 
@@ -748,6 +850,9 @@ export async function handleChat(req: import('express').Request, res: import('ex
     if (!sessionExists) {
       createSession(sessionId, '新对话', effectiveModel, agentId);
     }
+
+    // v1.7.18: 先从 DB 读取历史消息（保存当前用户消息之前），作为上下文的权威来源
+    const dbMessages = getSessionMessages(sessionId);
 
     // 保存用户消息
     addMessage({ sessionId, role: 'user', content: message, model: effectiveModel, skillId: skillId || null, attachments: attachments || undefined });
@@ -935,28 +1040,36 @@ export async function handleChat(req: import('express').Request, res: import('ex
     // 视觉模型检测（使用提取的公共函数）
     const supportsVision = detectVisionModel(modelConfig);
 
-    // 从 conversationHistory 构建消息（使用提取的公共函数重建 tool_calls）
-    if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
-      for (const msg of conversationHistory) {
+    // v1.7.18: 优先使用 DB 中的历史消息作为上下文权威来源
+    // 前端 conversationHistory 仅在 DB 无历史消息时作为备用
+    const historySource = (dbMessages && dbMessages.length > 0)
+      ? dbMessages
+      : (Array.isArray(conversationHistory) ? conversationHistory : []);
+
+    if (historySource.length > 0) {
+      for (const msg of historySource) {
         if (msg.role === 'user' || msg.role === 'assistant') {
-          if (msg.role === 'user' && msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0 && supportsVision) {
+          // v1.7.19: 安全解析附件字段（DB 中可能是 JSON 字符串）
+          const msgAttachments = parseMessageAttachments((msg as { attachments?: unknown }).attachments);
+          if (msg.role === 'user' && msgAttachments.length > 0 && supportsVision) {
             const contentParts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'auto' | 'low' | 'high' } }> = [];
             if (msg.content) {
               contentParts.push({ type: 'text', text: msg.content });
             }
-            for (const att of msg.attachments) {
-              if (att.type === 'image') {
+            for (const att of msgAttachments) {
+              if ((att as { type?: string }).type === 'image') {
                 try {
-                  const filePath = path.join(AppPaths.uploadsDir, path.basename(att.url));
+                  const attRecord = att as { url?: string; fileName?: string; mimeType?: string };
+                  const filePath = path.join(AppPaths.uploadsDir, path.basename(attRecord.url || ''));
                   const fileBuffer = await fsp.readFile(filePath);
                   const base64 = fileBuffer.toString('base64');
                   contentParts.push({
                     type: 'image_url',
-                    image_url: { url: `data:${att.mimeType};base64,${base64}`, detail: 'auto' },
+                    image_url: { url: `data:${attRecord.mimeType};base64,${base64}`, detail: 'auto' },
                   });
                 } catch (err: any) {
                   if (err.code !== 'ENOENT') {
-                    logger.error(`[Chat API] 读取历史图片附件失败: ${att.fileName}`, err);
+                    logger.error(`[Chat API] 读取历史图片附件失败: ${(att as { fileName?: string }).fileName}`, err);
                   }
                 }
               }
@@ -966,11 +1079,18 @@ export async function handleChat(req: import('express').Request, res: import('ex
             } else {
               apiMessages.push({ role: msg.role, content: msg.content });
             }
-          } else if (rebuildToolCallsFromMessage(msg, apiMessages)) {
+          } else if (rebuildToolCallsFromMessage(msg, apiMessages, modelConfig.capabilities?.includes('reasoning') ? (msg as { thinking?: string | null }).thinking || undefined : undefined)) {
             // tool_calls 已重建，继续下一条
             continue;
           } else {
-            apiMessages.push({ role: msg.role, content: msg.content });
+            // v1.7.20: 传递 thinking 内容（仅支持 reasoning 的模型）
+            const supportsReasoning = modelConfig.capabilities?.includes('reasoning');
+            const thinkingContent = supportsReasoning ? (msg as { thinking?: string | null }).thinking || undefined : undefined;
+            if (thinkingContent) {
+              apiMessages.push({ role: msg.role, content: msg.content, reasoning_content: thinkingContent });
+            } else {
+              apiMessages.push({ role: msg.role, content: msg.content });
+            }
           }
         }
       }
@@ -1025,6 +1145,37 @@ export async function handleChat(req: import('express').Request, res: import('ex
     } else {
       apiMessages.push({ role: 'user', content: message });
     }
+
+    // v1.7.20: 历史消息消毒
+    // - 合并连续用户消息
+    // - 清理空助手轮次
+    // - 校验 tool 配对
+    // - 规范化 tool call 输入
+    // - 重复用户消息去重
+    // - 图片附件尺寸限制
+    // - reasoning 内容兼容性处理
+    // - 按轮次截断（可配置）
+    let maxHistoryTurns = 0;
+    let imageLimits = {};
+    let dropReasoning = false;
+    try {
+      const settingsVal = getAppSettings('default');
+      if (settingsVal) {
+        const parsed = JSON.parse(settingsVal);
+        if (parsed?.aiEngine?.maxHistoryTurns && parsed.aiEngine.maxHistoryTurns > 0) {
+          maxHistoryTurns = parsed.aiEngine.maxHistoryTurns;
+        }
+        imageLimits = resolveImageSanitizationLimits(parsed);
+        if (modelConfig.capabilities && !modelConfig.capabilities.includes('reasoning')) {
+          dropReasoning = true;
+        }
+      }
+    } catch { /* ignore */ }
+    apiMessages = sanitizeHistoryMessages(apiMessages as any, {
+      maxTurns: maxHistoryTurns,
+      imageLimits,
+      dropReasoning,
+    }) as typeof apiMessages;
 
     // 构建最终模型配置
     const finalModelConfig: ModelCallConfig = {

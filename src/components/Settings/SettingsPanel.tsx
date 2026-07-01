@@ -206,6 +206,7 @@ const SettingsPanel: React.FC = () => {
       aiEngine: {
         defaultExecutionMode: 'legacy',
         defaultQueueMode: 'followup',
+        maxHistoryTurns: 0,
       },
     });
     setErrors({});

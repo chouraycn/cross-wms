@@ -60,7 +60,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         logger.info("Server ready, main window active")
                         self.window = mainWindow
                         self.window.delegate = self
-                        self.adjustTrafficLightPosition(horizontalOffset: 4, verticalOffset: 9)
+                        // v1.7.17: 再往下3px，再往右5px（累计往右9px，往下12px）
+                        self.adjustTrafficLightPosition(horizontalOffset: 9, verticalOffset: 12)
                         NSApp.activate(ignoringOtherApps: true)
                     }
                 }
@@ -109,7 +110,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let containerView = WindowContainerView(webView: webViewManager.webView)
         window.contentView = containerView
 
-        adjustTrafficLightPosition(horizontalOffset: 4, verticalOffset: 9)
+        // v1.7.17: 再往下3px，再往右5px（累计往右9px，往下12px）
+        adjustTrafficLightPosition(horizontalOffset: 9, verticalOffset: 12)
         window.delegate = self
     }
 
