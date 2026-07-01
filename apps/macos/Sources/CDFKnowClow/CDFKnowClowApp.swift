@@ -496,4 +496,23 @@ extension AppDelegate: NSWindowDelegate {
             await serverManager?.stop()
         }
     }
+
+    // v1.7.18: 退出全屏后重新应用红黄绿按钮偏移（系统会重置位置）
+    func windowDidExitFullScreen(_ notification: Notification) {
+        // 延迟执行，等系统完成全屏退出动画后再调整
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.adjustTrafficLightPosition(horizontalOffset: 9, verticalOffset: 12)
+        }
+        // 通知前端退出全屏，按钮归位
+        WebViewManager.shared.webView.evaluateJavaScript(
+            "window.dispatchEvent(new CustomEvent('cdf-window-fullscreen-changed', { detail: { fullscreen: false } }))"
+        ) { _, _ in }
+    }
+
+    // v1.7.18: 进入全屏时通知前端，搜索和侧边栏按钮前移（红黄绿隐藏后无需避让）
+    func windowDidEnterFullScreen(_ notification: Notification) {
+        WebViewManager.shared.webView.evaluateJavaScript(
+            "window.dispatchEvent(new CustomEvent('cdf-window-fullscreen-changed', { detail: { fullscreen: true } }))"
+        ) { _, _ in }
+    }
 }

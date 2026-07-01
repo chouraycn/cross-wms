@@ -817,12 +817,35 @@ export function useAgentChat(
         break;
       }
 
+      case 'approval': {
+        // 处理审批请求事件
+        flushAllBuffers();
+
+        const approvalData = {
+          requestId: (data.requestId as string) || `appr_${Date.now()}`,
+          type: (data.type as string) || 'tool_call',
+          description: (data.description as string) || '',
+          toolName: (data.toolName as string) || undefined,
+          command: (data.command as string) || undefined,
+          filePath: (data.filePath as string) || undefined,
+          details: (data.details as Record<string, unknown>) || {},
+          riskLevel: (data.riskLevel as string) || undefined,
+          reason: (data.reason as string) || undefined,
+          timeout: (data.timeout as number) || 30000,
+          expiresAt: (data.expiresAt as number) || undefined,
+        };
+
+        // 发送全局审批事件
+        window.dispatchEvent(new CustomEvent('approval_event', { detail: approvalData }));
+
+        break;
+      }
+
       case 'heartbeat':
       case 'compaction':
       case 'plan':
       case 'command_output':
       case 'patch':
-      case 'approval':
       default:
         break;
     }

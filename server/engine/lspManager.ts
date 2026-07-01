@@ -484,6 +484,193 @@ class LspManager {
     };
   }
 
+  // ========== 工作区配置和项目检测（v7.0 新增） ==========
+
+  /**
+   * 检测项目类型
+   * 根据工作区文件判断项目类型和推荐的语言服务器
+   */
+  async detectProject(workspaceRoot: string): Promise<{
+    type: LspLanguage | "mixed" | "unknown";
+    configFiles: string[];
+    recommendedServers: string[];
+    dependenciesInstalled: boolean;
+  }> {
+    const fs = await import("fs/promises");
+    const path = await import("path");
+
+    const configFiles: string[] = [];
+    const recommendedServers: string[] = [];
+    let dependenciesInstalled = false;
+
+    try {
+      // 检测 TypeScript/JavaScript 项目
+      const tsconfig = path.join(workspaceRoot, "tsconfig.json");
+      const packageJson = path.join(workspaceRoot, "package.json");
+
+      try {
+        await fs.access(tsconfig);
+        configFiles.push("tsconfig.json");
+        recommendedServers.push("typescript-language-server");
+      } catch {}
+
+      try {
+        await fs.access(packageJson);
+        configFiles.push("package.json");
+
+        // 检查 node_modules 是否存在
+        const nodeModules = path.join(workspaceRoot, "node_modules");
+        try {
+          await fs.access(nodeModules);
+          dependenciesInstalled = true;
+        } catch {}
+
+        // 如果没有 tsconfig.json，但有 package.json，也可能是 JS 项目
+        if (!configFiles.includes("tsconfig.json")) {
+          recommendedServers.push("typescript-language-server");
+        }
+      } catch {}
+
+      // 检测 Python 项目
+      const pyprojectToml = path.join(workspaceRoot, "pyproject.toml");
+      const setupPy = path.join(workspaceRoot, "setup.py");
+      const requirementsTxt = path.join(workspaceRoot, "requirements.txt");
+
+      try {
+        await fs.access(pyprojectToml);
+        configFiles.push("pyproject.toml");
+        recommendedServers.push("pyright");
+      } catch {}
+
+      try {
+        await fs.access(setupPy);
+        configFiles.push("setup.py");
+        if (!recommendedServers.includes("pyright")) {
+          recommendedServers.push("pyright");
+        }
+      } catch {}
+
+      try {
+        await fs.access(requirementsTxt);
+        configFiles.push("requirements.txt");
+        if (!recommendedServers.includes("pyright")) {
+          recommendedServers.push("pyright");
+        }
+      } catch {}
+
+      // 检测 Go 项目
+      const goMod = path.join(workspaceRoot, "go.mod");
+      try {
+        await fs.access(goMod);
+        configFiles.push("go.mod");
+        recommendedServers.push("gopls");
+      } catch {}
+
+      // 检测 Rust 项目
+      const cargoToml = path.join(workspaceRoot, "Cargo.toml");
+      try {
+        await fs.access(cargoToml);
+        configFiles.push("Cargo.toml");
+        recommendedServers.push("rust-analyzer");
+      } catch {}
+
+      // 检测 Java 项目
+      const pomXml = path.join(workspaceRoot, "pom.xml");
+      const buildGradle = path.join(workspaceRoot, "build.gradle");
+      const buildGradleKts = path.join(workspaceRoot, "build.gradle.kts");
+
+      try {
+        await fs.access(pomXml);
+        configFiles.push("pom.xml");
+        recommendedServers.push("jdtls");
+      } catch {}
+
+      try {
+        await fs.access(buildGradle);
+        configFiles.push("build.gradle");
+        if (!recommendedServers.includes("jdtls")) {
+          recommendedServers.push("jdtls");
+        }
+      } catch {}
+
+      try {
+        await fs.access(buildGradleKts);
+        configFiles.push("build.gradle.kts");
+        if (!recommendedServers.includes("jdtls")) {
+          recommendedServers.push("jdtls");
+        }
+      } catch {}
+
+      // 判断项目类型
+      let type: LspLanguage | "mixed" | "unknown" = "unknown";
+
+      if (recommendedServers.length === 1) {
+        const serverId = recommendedServers[0];
+        if (serverId === "typescript-language-server") type = "typescript";
+        else if (serverId === "pyright") type = "python";
+        else if (serverId === "gopls") type = "go";
+        else if (serverId === "rust-analyzer") type = "rust";
+        else if (serverId === "jdtls") type = "java";
+      } else if (recommendedServers.length > 1) {
+        type = "mixed";
+      }
+
+      return {
+        type,
+        configFiles,
+        recommendedServers,
+        dependenciesInstalled,
+      };
+    } catch (error) {
+      return {
+        type: "unknown",
+        configFiles: [],
+        recommendedServers: [],
+        dependenciesInstalled: false,
+      };
+    }
+  }
+
+  /**
+   * 获取工作区配置
+   */
+  getWorkspaceConfig(workspaceRoot: string): {
+    rootPath: string;
+    rootUri: string;
+    projectType?: LspLanguage | "mixed" | "unknown";
+    activeServers: string[];
+  } {
+    const runningServers = this.listServers("running").map((s) => s.id);
+
+    return {
+      rootPath: workspaceRoot,
+      rootUri: `file://${workspaceRoot}`,
+      activeServers: runningServers,
+    };
+  }
+
+  /**
+   * 根据项目检测自动启动推荐的语言服务器
+   */
+  async autoStartForWorkspace(workspaceRoot: string): Promise<string[]> {
+    const detection = await this.detectProject(workspaceRoot);
+    const startedServers: string[] = [];
+
+    for (const serverId of detection.recommendedServers) {
+      const config = this.defaultServers.find((s) => s.id === serverId);
+      if (config) {
+        try {
+          await this.startServer(config);
+          startedServers.push(serverId);
+        } catch (error) {
+          // 启动失败，跳过
+        }
+      }
+    }
+
+    return startedServers;
+  }
+
   clear(): void {
     for (const server of this.servers.values()) {
       if (server.status === "running" || server.status === "starting") {

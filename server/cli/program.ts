@@ -15,6 +15,10 @@ import {
 import { registerStatusCommand } from "./commands/status.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerConfigCommand } from "./commands/config.js";
+import { registerChatCommand } from "./commands/chat.js";
+import { registerMemoryCommand } from "./commands/memory.js";
+import { registerWikiCommand } from "./commands/wiki.js";
+import { registerToolCommand } from "./commands/tool.js";
 import { logger } from "../logger.js";
 
 /**
@@ -75,6 +79,18 @@ export function buildCLIProgram(): Command {
 
   // 注册 config 命令 (带子命令)
   registerConfigCommand(program);
+
+  // 注册 chat 命令
+  registerChatCommand(program);
+
+  // 注册 memory 命令 (带子命令)
+  registerMemoryCommand(program);
+
+  // 注册 wiki 命令 (带子命令)
+  registerWikiCommand(program);
+
+  // 注册 tool 命令 (带子命令)
+  registerToolCommand(program);
 
   return program;
 }

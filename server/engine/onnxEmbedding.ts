@@ -48,7 +48,13 @@ const HF_BASE_URL = 'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main
 // ===================== 单例状态 =====================
 
 /** ONNX 推理会话 */
-let inferenceSession: ort.InferenceSession | null = null;
+let session: ort.InferenceSession | null = null;
+
+/** 初始化 Promise — 避免并发初始化 */
+let initPromise: Promise<void> | null = null;
+
+/** 是否已完成初始化 */
+let isInitialized = false;
 
 /** vocab 映射 */
 const vocabMap: Map<string, number> = new Map();
@@ -56,11 +62,14 @@ const vocabMap: Map<string, number> = new Map();
 /** 模型配置 */
 let modelConfig: { max_position_embeddings?: number; hidden_size?: number } = {};
 
-/** 初始化状态 */
-let initStatus: 'idle' | 'loading' | 'ready' | 'failed' = 'idle';
-
 /** 初始化错误信息 */
 let initError: string = '';
+
+/** 最后使用时间戳（用于空闲自动释放） */
+let lastUsedAt = 0;
+
+/** 空闲超时：30 分钟 */
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 
 // P0: LRU 推理结果缓存 — 避免相同文本重复 ONNX 推理
 const embeddingCache = new Map<string, Float32Array>();
@@ -79,6 +88,21 @@ let tokenizerPrecompiled: {
   normalizer?: { pattern?: string; replacement?: string };
   preTokenizer?: { pattern?: string };
 } | null = null;
+
+// ===================== 空闲自动释放定时器 =====================
+
+/** 更新最后使用时间 */
+function touchLastUsed(): void {
+  lastUsedAt = Date.now();
+}
+
+const idleCheckTimer = setInterval(() => {
+  if (session && lastUsedAt > 0 && Date.now() - lastUsedAt > IDLE_TIMEOUT_MS) {
+    disposeEmbeddingModel();
+    logger.info('[ONNX] Embedding 模型因空闲超过30分钟已自动释放');
+  }
+}, 5 * 60 * 1000);
+idleCheckTimer.unref();
 
 // ===================== 模型下载 =====================
 
@@ -332,50 +356,79 @@ function tokenize(text: string): { inputIds: number[]; attentionMask: number[] }
 // ===================== 推理 =====================
 
 /**
- * 初始化 ONNX 推理会话
+ * 确保推理会话已初始化（懒加载 + 并发安全）
+ * 首次调用时才创建 ONNX InferenceSession，避免模块加载时占用内存
  */
-export async function initOnnxEmbedding(): Promise<void> {
-  if (initStatus === 'ready') return;
-  if (initStatus === 'loading') {
-    // 等待其他调用完成初始化
-    while (initStatus === 'loading') {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    return;
+async function ensureSession(): Promise<ort.InferenceSession> {
+  if (session && isInitialized) return session;
+  if (initPromise) {
+    await initPromise;
+    return session!;
   }
 
-  initStatus = 'loading';
-  initError = '';
-
-  try {
-    logger.debug('[OnnxEmbedding] 初始化中...');
+  initPromise = (async () => {
+    logger.debug('[OnnxEmbedding] 懒加载初始化中...');
     await ensureModelFiles();
 
     loadVocab();
     loadConfig();
     loadTokenizerJson();
 
-    // P2: ONNX parallel 执行模式，利用多核 CPU
-    inferenceSession = await ort.InferenceSession.create(ONNX_MODEL_PATH, {
+    session = await ort.InferenceSession.create(ONNX_MODEL_PATH, {
       executionMode: 'parallel',
       graphOptimizationLevel: 'all',
-      intraOpNumThreads: 4,
-      interOpNumThreads: 2,
+      intraOpNumThreads: 2,
+      interOpNumThreads: 1,
     });
 
-    // P1: 预分配 Tensor 内存池
+    // 预分配 Tensor 内存池
     pooledInputIdsData = new BigInt64Array(MAX_SEQ_LENGTH);
     pooledAttentionMaskData = new BigInt64Array(MAX_SEQ_LENGTH);
     pooledInputIdsTensor = new ort.Tensor('int64', pooledInputIdsData, [1, MAX_SEQ_LENGTH]);
     pooledAttentionMaskTensor = new ort.Tensor('int64', pooledAttentionMaskData, [1, MAX_SEQ_LENGTH]);
 
-    initStatus = 'ready';
-    logger.debug('[OnnxEmbedding] 初始化完成, 输入:', inferenceSession.inputNames, '输出:', inferenceSession.outputNames);
+    isInitialized = true;
+    touchLastUsed();
+    logger.debug('[OnnxEmbedding] 初始化完成, 输入:', session.inputNames, '输出:', session.outputNames);
+  })();
+
+  try {
+    await initPromise;
   } catch (e) {
-    initStatus = 'failed';
+    initPromise = null;
     initError = e instanceof Error ? e.message : String(e);
     logger.error('[OnnxEmbedding] 初始化失败:', initError);
     throw e;
+  }
+
+  return session!;
+}
+
+/**
+ * 初始化 ONNX 推理会话（向后兼容入口）
+ */
+export async function initOnnxEmbedding(): Promise<void> {
+  await ensureSession();
+}
+
+/**
+ * 释放 ONNX 推理会话，回收内存
+ */
+export function disposeEmbeddingModel(): void {
+  if (session) {
+    session.release();
+    session = null;
+    isInitialized = false;
+    initPromise = null;
+    lastUsedAt = 0;
+
+    // 同时释放内存池
+    pooledInputIdsTensor = null;
+    pooledAttentionMaskTensor = null;
+    pooledInputIdsData = null;
+    pooledAttentionMaskData = null;
+
+    logger.info('[ONNX] Embedding 模型已释放');
   }
 }
 
@@ -383,7 +436,9 @@ export async function initOnnxEmbedding(): Promise<void> {
  * 获取初始化状态
  */
 export function getOnnxStatus(): { status: string; error: string } {
-  return { status: initStatus, error: initError };
+  if (isInitialized) return { status: 'ready', error: '' };
+  if (initPromise) return { status: 'loading', error: '' };
+  return { status: 'idle', error: initError };
 }
 
 /**
@@ -393,9 +448,8 @@ export function getOnnxStatus(): { status: string; error: string } {
  * @returns 384 维 L2 归一化 Float32Array
  */
 export async function embedText(text: string): Promise<Float32Array> {
-  if (initStatus !== 'ready' || !inferenceSession) {
-    await initOnnxEmbedding();
-  }
+  const sess = await ensureSession();
+  touchLastUsed();
 
   // P0: 缓存命中检查
   // P1 fix: 使用完整文本的 SHA-256 哈希作为缓存键，避免长文本截断导致错误命中
@@ -426,16 +480,16 @@ export async function embedText(text: string): Promise<Float32Array> {
   }
 
   // 推理
-  const inputName0 = inferenceSession!.inputNames[0]; // input_ids
-  const inputName1 = inferenceSession!.inputNames[1]; // attention_mask
+  const inputName0 = sess.inputNames[0]; // input_ids
+  const inputName1 = sess.inputNames[1]; // attention_mask
   const feeds: Record<string, ort.Tensor> = {};
   feeds[inputName0] = pooledInputIdsTensor;
   feeds[inputName1] = pooledAttentionMaskTensor;
 
-  const output = await inferenceSession!.run(feeds);
+  const output = await sess.run(feeds);
 
   // 获取 last_hidden_state（输出名通常是 last_hidden_state）
-  const outputName = inferenceSession!.outputNames[0];
+  const outputName = sess.outputNames[0];
   const hiddenStates = output[outputName];
   const data = hiddenStates.data as Float32Array;
 
@@ -492,9 +546,8 @@ export async function embedText(text: string): Promise<Float32Array> {
  */
 export async function embedBatch(texts: string[]): Promise<Float32Array[]> {
   if (texts.length === 0) return [];
-  if (initStatus !== 'ready' || !inferenceSession) {
-    await initOnnxEmbedding();
-  }
+  const sess = await ensureSession();
+  touchLastUsed();
 
   // 单条时直接走 embedText（复用内存池）
   if (texts.length === 1) {
@@ -523,16 +576,16 @@ export async function embedBatch(texts: string[]): Promise<Float32Array[]> {
   const attentionMaskTensor = new ort.Tensor('int64', batchAttentionMask, [batchSize, MAX_SEQ_LENGTH]);
 
   // 3. 一次推理
-  const inputName0 = inferenceSession!.inputNames[0];
-  const inputName1 = inferenceSession!.inputNames[1];
+  const inputName0 = sess.inputNames[0];
+  const inputName1 = sess.inputNames[1];
   const feeds: Record<string, ort.Tensor> = {};
   feeds[inputName0] = inputIdsTensor;
   feeds[inputName1] = attentionMaskTensor;
 
-  const output = await inferenceSession!.run(feeds);
+  const output = await sess.run(feeds);
 
   // 4. 解析输出 [batchSize, seqLen, 384]
-  const outputName = inferenceSession!.outputNames[0];
+  const outputName = sess.outputNames[0];
   const hiddenStates = output[outputName];
   const data = hiddenStates.data as Float32Array;
   const dim = ONNX_EMBEDDING_DIMENSIONS;

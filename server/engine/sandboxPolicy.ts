@@ -114,14 +114,86 @@ const LEVEL_CONFIGS: Record<SandboxLevel, Partial<SandboxConfig>> = {
 };
 
 const DANGEROUS_COMMANDS = [
+  // 系统破坏命令
   "rm -rf /",
+  "rm -rf /*",
   "dd if=",
   "mkfs",
   ":(){ :|:& };:",
+  "echo.*> /dev/sda",
+  "chmod 777 /",
+  "chmod 777 /*",
+  // Fork bomb
+  "fork bomb",
+  // 权限提升
   "sudo",
   "su -",
-  "chmod 777 /",
-  "echo.*> /dev/sda",
+  "su root",
+  "doas",
+  // 系统配置修改
+  "systemctl",
+  "service",
+  "initctl",
+  // 网络危险操作
+  "iptables",
+  "ip6tables",
+  "ufw disable",
+  // 进程危险操作
+  "killall",
+  "pkill -9",
+  // 敏感文件访问
+  "cat /etc/shadow",
+  "cat /etc/passwd",
+  "vim /etc/shadow",
+  // 磁盘操作
+  "fdisk",
+  "parted",
+  "mount",
+  "umount",
+  // 系统重启/关机
+  "reboot",
+  "shutdown",
+  "halt",
+  "poweroff",
+  // 用户管理
+  "userdel",
+  "useradd",
+  "passwd",
+  // 包管理器危险操作
+  "apt-get remove",
+  "yum remove",
+  "dnf remove",
+  "brew uninstall",
+  "npm uninstall -g",
+];
+
+/** 正则表达式模式检测危险命令 */
+const DANGEROUS_PATTERNS = [
+  // rm -rf 递归删除
+  /\brm\s+(-[a-zA-Z]*r[a-zA-Z]*\s+)*(-[a-zA-Z]*f[a-zA-Z]*\s+)*\//i,
+  // sudo 相关
+  /\bsudo\s+/i,
+  // chmod 777
+  /\bchmod\s+[0-7]*777\s+/i,
+  // dd 写入
+  /\bdd\s+.*if=.*of=/i,
+  // fork bomb
+  /:\(\)\s*\{\s*:\s*\|\s*:&\s*\}\s*;/i,
+  // 写入设备文件
+  />\s*\/dev\/(sda|hda|nvme|sd[a-z])/i,
+  // 系统服务操作
+  /\b(systemctl|service|initctl)\s+(start|stop|restart|disable|enable)/i,
+  // 网络防火墙修改
+  /\b(iptables|ip6tables|ufw)\s+/i,
+  // 强制终止进程
+  /\bkillall\s+-9\b/i,
+  /\bpkill\s+-9\b/i,
+  // 访问敏感文件
+  /\b(cat|vim|nano|less|more|head|tail)\s+\/etc\/(shadow|passwd|sudoers)/i,
+  // 系统重启/关机
+  /\b(reboot|shutdown|halt|poweroff)\b/i,
+  // 用户管理
+  /\b(useradd|userdel|passwd)\s+/i,
 ];
 
 class SandboxPolicyManager {
@@ -180,7 +252,7 @@ class SandboxPolicyManager {
     const warnings: string[] = [];
     const restrictions: string[] = [];
 
-    // 检查危险命令
+    // 检查危险命令（字符串匹配）
     const commandLower = context.command.toLowerCase();
     for (const dangerous of DANGEROUS_COMMANDS) {
       if (commandLower.includes(dangerous.toLowerCase())) {
@@ -188,6 +260,20 @@ class SandboxPolicyManager {
         return {
           allowed: false,
           reason: `Dangerous command detected: ${dangerous}`,
+          config,
+          auditRequired: config.enableAuditLog,
+          warnings: [],
+        };
+      }
+    }
+
+    // 检查危险命令（正则表达式匹配）
+    for (const pattern of DANGEROUS_PATTERNS) {
+      if (pattern.test(context.command)) {
+        this.logAudit(context.command, false, "Dangerous command pattern detected", context.sessionKey);
+        return {
+          allowed: false,
+          reason: `Dangerous command pattern detected: ${pattern.source}`,
           config,
           auditRequired: config.enableAuditLog,
           warnings: [],
@@ -221,6 +307,22 @@ class SandboxPolicyManager {
         auditRequired: config.enableAuditLog,
         warnings: [],
       };
+    }
+
+    // 检查工作目录限制
+    if (context.cwd) {
+      const cwdAllowed = this.isPathAllowed(context.cwd, config);
+      if (!cwdAllowed) {
+        this.logAudit(context.command, false, "Working directory not allowed", context.sessionKey);
+        return {
+          allowed: false,
+          reason: `Working directory not allowed: ${context.cwd}`,
+          config,
+          restrictions: [`Blocked path: ${context.cwd}`],
+          auditRequired: config.enableAuditLog,
+          warnings: [],
+        };
+      }
     }
 
     // 添加限制说明
@@ -276,6 +378,38 @@ class SandboxPolicyManager {
       }
       return cmd === commandName;
     });
+  }
+
+  /**
+   * 检查路径是否被允许
+   * @param cwd - 工作目录路径
+   * @param config - 沙箱配置
+   * @returns 是否允许
+   */
+  private isPathAllowed(cwd: string, config: SandboxConfig): boolean {
+    // 如果没有配置允许路径，则默认允许所有路径
+    if (config.allowedPaths.length === 0 && config.blockedPaths.length === 0) {
+      return true;
+    }
+
+    // 检查是否在阻止路径中
+    for (const blockedPath of config.blockedPaths) {
+      if (cwd.startsWith(blockedPath) || cwd.includes(blockedPath)) {
+        return false;
+      }
+    }
+
+    // 检查是否在允许路径中（如果配置了允许路径列表）
+    if (config.allowedPaths.length > 0) {
+      for (const allowedPath of config.allowedPaths) {
+        if (cwd.startsWith(allowedPath) || allowedPath === '*') {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    return true;
   }
 
   private logAudit(command: string, allowed: boolean, reason: string, sessionKey?: string): void {

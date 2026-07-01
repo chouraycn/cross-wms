@@ -1,6 +1,15 @@
 import { Router } from 'express';
 import { readMemoryMd, writeMemoryMd } from './memoryExtractor.js';
-import { searchMemory, getMemoryStats, backfillEmbeddings } from '../engine/vecMemoryStore.js';
+import {
+  searchMemory,
+  getMemoryStats,
+  backfillEmbeddings,
+  getRecentMemories,
+  insertMemory,
+  deleteMemory,
+  getMemory,
+  hybridSearchMemory,
+} from '../engine/vecMemoryStore.js';
 import { logger } from '../logger.js';
 
 const router = Router();
@@ -68,6 +77,111 @@ router.post('/backfill', async (_req, res) => {
     res.json(result);
   } catch (e) {
     logger.error('[Memory API] embedding 回填失败:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// v9.0: 获取记忆列表（分页）
+router.get('/list', (req, res) => {
+  const limit = parseInt(req.query.limit as string) || 20;
+  const offset = parseInt(req.query.offset as string) || 0;
+
+  try {
+    const allMemories = getRecentMemories(limit + offset);
+    const memories = allMemories.slice(offset, offset + limit);
+    const total = allMemories.length;
+
+    res.json({
+      memories,
+      total,
+      limit,
+      offset,
+      hasMore: offset + limit < total,
+    });
+  } catch (e) {
+    logger.error('[Memory API] 获取记忆列表失败:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// v9.0: 添加记忆
+router.post('/add', async (req, res) => {
+  const { text, metadata } = req.body;
+
+  if (!text || typeof text !== 'string') {
+    res.status(400).json({ error: 'text is required and must be a string' });
+    return;
+  }
+
+  try {
+    const id = await insertMemory(text, metadata || {});
+    res.json({ id, success: true });
+  } catch (e) {
+    logger.error('[Memory API] 添加记忆失败:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// v9.0: 删除记忆
+router.delete('/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (!id || id <= 0) {
+    res.status(400).json({ error: 'invalid id' });
+    return;
+  }
+
+  try {
+    const success = deleteMemory(id);
+    if (success) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'memory not found' });
+    }
+  } catch (e) {
+    logger.error('[Memory API] 删除记忆失败:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// v9.0: 获取单个记忆详情
+router.get('/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (!id || id <= 0) {
+    res.status(400).json({ error: 'invalid id' });
+    return;
+  }
+
+  try {
+    const memory = getMemory(id);
+    if (memory) {
+      res.json(memory);
+    } else {
+      res.status(404).json({ error: 'memory not found' });
+    }
+  } catch (e) {
+    logger.error('[Memory API] 获取记忆详情失败:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// v9.0: 混合搜索（向量 + FTS）
+router.post('/search', async (req, res) => {
+  const { query, topK, useHybrid } = req.body;
+
+  if (!query || typeof query !== 'string') {
+    res.status(400).json({ error: 'query is required and must be a string' });
+    return;
+  }
+
+  try {
+    const results = useHybrid
+      ? await hybridSearchMemory(query, { topK: topK || 5 })
+      : await searchMemory(query, topK || 5);
+    res.json({ results });
+  } catch (e) {
+    logger.error('[Memory API] 搜索记忆失败:', e);
     res.status(500).json({ error: (e as Error).message });
   }
 });

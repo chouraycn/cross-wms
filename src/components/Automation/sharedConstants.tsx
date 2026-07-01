@@ -18,6 +18,8 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import LinkIcon from '@mui/icons-material/Link';
+import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
 import type { TaskType, ActionType, TriggerType } from '../../services/automation';
 
 // ===================== 任务类型配置 =====================
@@ -79,12 +81,24 @@ export const TRIGGER_TYPE_LABELS: Record<TriggerType, string> = {
   schedule: '定时',
   event: '事件',
   webhook: 'Webhook',
+  file_change: '文件变化',
+  threshold: '阈值',
 };
 
 export const TRIGGER_TYPE_ICONS: Record<TriggerType, React.ReactNode> = {
   schedule: <ScheduleIcon sx={{ fontSize: 16 }} />,
   event: <NotificationsIcon sx={{ fontSize: 16 }} />,
   webhook: <LinkIcon sx={{ fontSize: 16 }} />,
+  file_change: <FolderOutlinedIcon sx={{ fontSize: 16 }} />,
+  threshold: <ShowChartIcon sx={{ fontSize: 16 }} />,
+};
+
+export const TRIGGER_TYPE_DESC: Record<TriggerType, string> = {
+  schedule: '使用 cron 表达式定时触发',
+  event: '监听系统事件触发',
+  webhook: '外部 HTTP 请求触发',
+  file_change: '监听文件修改触发',
+  threshold: '监控指标超过阈值触发',
 };
 
 export const EXEC_STATUS_CONFIG = {

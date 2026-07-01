@@ -14,7 +14,7 @@
 // ===================== 触发类型 =====================
 
 /** 触发方式 */
-export type TriggerType = 'schedule' | 'event' | 'webhook';
+export type TriggerType = 'schedule' | 'event' | 'webhook' | 'file_change' | 'threshold';
 
 /** 触发条件 */
 export interface TriggerCondition {
@@ -42,6 +42,40 @@ export interface WebhookConfig {
   enabled: boolean;
   /** 后端加密存储，前端仅可重置不可查看明文 */
   secret?: string;
+  /** Webhook 路径（自动生成） */
+  path?: string;
+}
+
+/** 文件变化触发配置 */
+export interface FileChangeTriggerConfig {
+  /** 监听的文件路径模式（glob） */
+  pathPattern: string;
+  /** 监听的事件类型 */
+  events?: ('add' | 'change' | 'unlink')[];
+  /** 是否监听目录 */
+  watchDir?: boolean;
+  /** 排除模式 */
+  ignorePattern?: string;
+  /** 防抖时间（毫秒） */
+  debounceMs?: number;
+}
+
+/** 阈值触发配置 */
+export interface ThresholdTriggerConfig {
+  /** 监控的指标名称 */
+  metric: string;
+  /** 阈值类型 */
+  thresholdType: 'upper' | 'lower';
+  /** 阈值值 */
+  thresholdValue: number;
+  /** 检查间隔（毫秒） */
+  checkIntervalMs?: number;
+  /** 触发后的冷却时间（毫秒） */
+  cooldownMs?: number;
+  /** 聚合窗口（毫秒），用于平滑数据 */
+  aggregationWindowMs?: number;
+  /** 聚合方式 */
+  aggregationMethod?: 'avg' | 'max' | 'min' | 'sum';
 }
 
 /** 执行策略 */
@@ -156,6 +190,10 @@ export interface Automation {
   eventTrigger?: EventTriggerConfig;
   /** Webhook 配置 */
   webhookConfig?: WebhookConfig;
+  /** 文件变化触发配置 */
+  fileChangeTrigger?: FileChangeTriggerConfig;
+  /** 阈值触发配置 */
+  thresholdTrigger?: ThresholdTriggerConfig;
   /** 执行策略 */
   executionPolicy?: ExecutionPolicy;
   /** 通知配置 */
@@ -181,9 +219,9 @@ export interface AutomationExecution {
 
   // --- v2.0 新增字段（可选，向后兼容）---
   /** 触发来源 */
-  triggerSource?: 'schedule' | 'event' | 'webhook' | 'manual';
-  /** 触发详情（JSON 字符串：事件详情 / Webhook payload） */
-  triggerDetail?: string;
+  triggerSource?: 'schedule' | 'event' | 'webhook' | 'file_change' | 'threshold' | 'manual';
+  /** 触发详情（JSON 字符串：事件详情 / Webhook payload / 文件变化详情 / 阈值详情） */
+  triggerDetail?: string | Record<string, unknown>;
   /** 本次执行实际重试次数 */
   retryCount?: number;
 }
@@ -246,3 +284,81 @@ export const EXECUTION_LOG_KEY = 'cdf-know-clow-automation-logs';
 /** v2.0: MAX_LOG_ENTRIES 已废弃，后端管理日志保留策略 */
 export const MAX_LOG_ENTRIES = 100;
 export const CHECK_INTERVAL_MS = 30_000; // 30 秒
+
+// ===================== 触发器系统类型 =====================
+
+/** 触发器配置（统一接口） */
+export interface Trigger {
+  id: string;
+  type: TriggerType;
+  /** 触发器名称 */
+  name: string;
+  /** 关联的自动化 ID 列表 */
+  automationIds: string[];
+  /** 触发器配置（根据 type 不同） */
+  config: {
+    /** schedule: cron expression */
+    cronExpression?: string;
+    /** event: event name pattern */
+    eventName?: string;
+    /** event: 触发条件组 */
+    condition?: TriggerConditionGroup;
+    /** event: 防抖时间（毫秒） */
+    debounceMs?: number;
+    /** webhook: webhook path */
+    webhookPath?: string;
+    /** file_change: file path pattern */
+    pathPattern?: string;
+    /** file_change: 监听事件类型 */
+    events?: ('add' | 'change' | 'unlink')[];
+    /** file_change: 排除模式 */
+    ignorePattern?: string;
+    /** threshold: metric name */
+    metric?: string;
+    /** threshold: threshold value */
+    thresholdValue?: number;
+    /** threshold: threshold type */
+    thresholdType?: 'upper' | 'lower';
+    /** threshold: 检查间隔（毫秒） */
+    checkIntervalMs?: number;
+    /** threshold: 冷却时间（毫秒） */
+    cooldownMs?: number;
+  };
+  /** 是否启用 */
+  enabled: boolean;
+  /** 创建时间 */
+  createdAt: number;
+  /** 更新时间 */
+  updatedAt: number;
+  /** 上次触发时间 */
+  lastTriggeredAt?: number;
+  /** 触发次数 */
+  triggerCount: number;
+}
+
+/** 触发器统计信息 */
+export interface TriggerStats {
+  triggerId: string;
+  /** 总触发次数 */
+  totalTriggers: number;
+  /** 成功触发次数 */
+  successTriggers: number;
+  /** 失败触发次数 */
+  failedTriggers: number;
+  /** 上次触发时间 */
+  lastTriggeredAt?: number;
+  /** 上次触发结果 */
+  lastTriggerResult?: 'success' | 'failed';
+  /** 平均执行耗时（ms） */
+  avgDurationMs?: number;
+}
+
+/** 触发器执行结果 */
+export interface TriggerExecutionResult {
+  triggerId: string;
+  automationId: string;
+  triggeredAt: number;
+  success: boolean;
+  error?: string;
+  executionId?: string;
+}

@@ -4,9 +4,10 @@
  * 使用 @mozilla/readability 提取网页正文内容，
  * 支持 markdown / text / html 三种输出模式，
  * markdown 模式使用 turndown 进行 HTML → Markdown 转换。
+ *
+ * 注意：@mozilla/readability 为可选依赖，未安装时降级为 cheerio 提取。
  */
 
-import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import * as cheerio from "cheerio";
 import type {
@@ -16,6 +17,22 @@ import type {
   WebContentExtractMode,
 } from "../web-content-extractor-types.js";
 import { registerWebContentExtractor } from "../web-content-extractors.js";
+
+// @mozilla/readability 为可选依赖，延迟加载避免缺失时启动崩溃
+let ReadabilityCtor: any = null;
+let _readabilityChecked = false;
+function getReadability(): any {
+  if (_readabilityChecked) return ReadabilityCtor;
+  _readabilityChecked = true;
+  try {
+    // 使用 require 同步加载，避免顶层 await 问题
+    const mod = require("@mozilla/readability");
+    ReadabilityCtor = mod.Readability;
+  } catch {
+    // 降级：未安装时返回 null，extract 方法中走 cheerio 降级路径
+  }
+  return ReadabilityCtor;
+}
 
 // 用 JSDOM 模拟浏览器环境，避免 turndown 依赖 domino
 function setupDomGlobals() {
@@ -103,6 +120,9 @@ function parseWithReadability(
   url: string,
 ): ParsedResult | null {
   try {
+    const Readability = getReadability();
+    if (!Readability) return null; // 依赖未安装，走降级路径
+
     const cleanedHtml = cleanHtmlForReadability(html);
     const dom = new JSDOM(cleanedHtml, { url });
     const doc = dom.window.document;

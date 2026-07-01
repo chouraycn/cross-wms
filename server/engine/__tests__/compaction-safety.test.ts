@@ -74,7 +74,7 @@ describe('compaction-safety', () => {
     it('应该包含原因', () => {
       const cause = new Error('cause');
       const err = createAbortError(cause);
-      expect(err.cause).toBe(cause);
+      expect((err as any).cause).toBe(cause);
     });
   });
 

@@ -18,7 +18,7 @@
 import { Router } from 'express';
 import {
   sendCommand,
-  startBrowserHost,
+  ensureBrowserHost,
   stopBrowserHost,
   getBrowserHostHealth,
 } from '../services/browserHostClient.js';
@@ -56,7 +56,7 @@ router.post('/launch', async (req, res) => {
     const { headless = true, profileId = 'default', cdpUrl } = req.body;
 
     // 先确保 BrowserHost 进程在运行
-    const startResult = await startBrowserHost();
+    const startResult = await ensureBrowserHost();
     if (!startResult.ok) {
       res.json({ ok: false, error: startResult.error });
       return;

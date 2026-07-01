@@ -13,7 +13,7 @@ import { createConnection } from 'net';
 import os from 'os';
 import path from 'path';
 import fs from 'fs';
-import { ChildProcess, spawn } from 'child_process';
+import { ChildProcess, spawn, execSync } from 'child_process';
 import { logger } from '../logger.js';
 
 // ===================== 配置 =====================
@@ -85,6 +85,9 @@ let restartAttempts = 0;
 /** 是否正在关闭 */
 let isShuttingDown = false;
 
+/** 启动 Promise（防止并发启动） */
+let startPromise: Promise<{ ok: boolean; error?: string }> | null = null;
+
 // ===================== 日志 =====================
 
 function log(msg: string) {
@@ -94,6 +97,56 @@ function log(msg: string) {
 function error(msg: string) {
   logger.error(`[BrowserHostClient] ${msg}`);
 }
+
+// ===================== 残留进程清理 =====================
+
+/** BrowserHost 脚本文件名（用于 pgrep 匹配） */
+const HOST_SCRIPT_NAME = 'browser-host.mjs';
+
+/**
+ * 杀残留的 BrowserHost 进程
+ * 在启动新进程前调用，防止多个 BrowserHost 实例同时运行占用内存
+ */
+async function killStaleBrowserHost(): Promise<void> {
+  try {
+    const output = execSync(
+      `pgrep -f "${HOST_SCRIPT_NAME}" | grep -v ${process.pid}`,
+      { encoding: 'utf-8', timeout: 3000 }
+    ).trim();
+    if (output) {
+      const pids = output.split('\n').filter(Boolean);
+      for (const pid of pids) {
+        try {
+          process.kill(Number(pid), 'SIGTERM');
+          log(`杀残留进程: PID=${pid}`);
+        } catch { /* 进程可能已退出 */ }
+      }
+      // 等待进程退出
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  } catch {
+    // pgrep 无匹配时返回非零退出码，忽略
+  }
+}
+
+// ===================== 进程退出清理 =====================
+
+/**
+ * 同步强制杀掉 BrowserHost 子进程（用于 process.on('exit')）
+ * process.on('exit') 回调中不能执行异步操作，因此使用同步方式
+ */
+function forceKillBrowserHost(): void {
+  if (hostProcess && !hostProcess.killed) {
+    try { hostProcess.kill('SIGKILL'); } catch { /* 忽略 */ }
+  }
+  // 清理 socket 文件
+  if (os.platform() !== 'win32') {
+    try { fs.unlinkSync(SOCKET_PATH); } catch { /* 忽略 */ }
+  }
+}
+
+// 注册退出清理 — 确保子进程不会成为孤儿进程
+process.on('exit', forceKillBrowserHost);
 
 // ===================== IPC 通信 =====================
 
@@ -158,11 +211,25 @@ export async function sendCommand(type: string, args: Record<string, unknown> = 
   try {
     await connectIpc();
   } catch (err) {
-    return {
-      id,
-      ok: false,
-      error: `IPC connection failed: ${err instanceof Error ? err.message : String(err)}`,
-    };
+    // IPC 连接失败，尝试通过 ensureBrowserHost 启动 BrowserHost 进程
+    const startResult = await ensureBrowserHost();
+    if (!startResult.ok) {
+      return {
+        id,
+        ok: false,
+        error: `BrowserHost unavailable: ${startResult.error}`,
+      };
+    }
+    // 重试连接
+    try {
+      await connectIpc();
+    } catch (retryErr) {
+      return {
+        id,
+        ok: false,
+        error: `IPC connection failed: ${retryErr instanceof Error ? retryErr.message : String(retryErr)}`,
+      };
+    }
   }
 
   if (!ipcSocket || ipcSocket.destroyed) {
@@ -199,6 +266,9 @@ export async function startBrowserHost(): Promise<{ ok: boolean; error?: string 
     log('BrowserHost already running');
     return { ok: true };
   }
+
+  // 启动前先杀残留进程，防止多个 BrowserHost 实例同时运行
+  await killStaleBrowserHost();
 
   // 打包环境无 import.meta.url，用 process.cwd() 兜底查找 scripts 目录
   const scriptPath = path.resolve(process.cwd(), 'scripts/browser-host.mjs');
@@ -267,6 +337,25 @@ export async function startBrowserHost(): Promise<{ ok: boolean; error?: string 
 }
 
 /**
+ * 确保 BrowserHost 进程在运行（延迟启动）
+ * 首次需要时才启动，避免服务启动时占用资源
+ * 使用 startPromise 防止并发启动
+ */
+export async function ensureBrowserHost(): Promise<{ ok: boolean; error?: string }> {
+  if (hostProcess && !hostProcess.killed) {
+    return { ok: true };
+  }
+  if (!startPromise) {
+    startPromise = startBrowserHost();
+  }
+  try {
+    return await startPromise;
+  } finally {
+    startPromise = null;
+  }
+}
+
+/**
  * 等待 IPC Socket 文件出现
  */
 function waitForIpcSocket(timeoutMs: number): Promise<boolean> {
@@ -305,18 +394,20 @@ export async function stopBrowserHost(): Promise<void> {
   }
 
   if (hostProcess && !hostProcess.killed) {
-    // 先尝试优雅关闭
+    // 先尝试优雅关闭（IPC shutdown 消息）
     try {
       hostProcess.send({ type: 'shutdown' });
     } catch {
-      // IPC 不可用，直接 kill
+      // IPC 不可用，直接 SIGTERM
+      try { hostProcess.kill('SIGTERM'); } catch { /* 忽略 */ }
     }
 
-    // 等待 3 秒
+    // 等待进程退出，最多 3 秒后 SIGKILL
     await new Promise<void>((resolve) => {
       const timeout = setTimeout(() => {
         if (hostProcess && !hostProcess.killed) {
           hostProcess.kill('SIGKILL');
+          log('BrowserHost 未在 3s 内退出，已 SIGKILL');
         }
         resolve();
       }, 3000);

@@ -633,6 +633,91 @@ export async function initDefaultTools(): Promise<void> {
   } catch (err) {
     logger.warn('[Tool Registry] Image tools not registered:', err instanceof Error ? err.message : String(err));
   }
+
+  // v5.0: Goal 工具注册（目标管理系统）
+  try {
+    const { getGoalToolDefinitions, getGoalToolHandlers } = await import('./goalTools.js');
+    const goalDefs = getGoalToolDefinitions();
+    const goalHandlers = getGoalToolHandlers({ sessionKey: 'default' }); // 默认 sessionKey，实际使用时动态注入
+    for (const def of goalDefs) {
+      const handler = goalHandlers.get(def.function.name);
+      if (handler) registerBuiltinTool({ definition: def, handler });
+    }
+    logger.debug('[Tool Registry] Goal tools registered:', goalDefs.map(d => d.function.name).join(', '));
+  } catch (err) {
+    logger.warn('[Tool Registry] Goal tools not registered:', err instanceof Error ? err.message : String(err));
+  }
+
+  // v6.0: Bash/Exec 工具注册（代码执行工具 + 沙箱安全策略）
+  try {
+    const { getBashToolDefinitions, getBashToolHandlers } = await import('./bashTools.js');
+    const bashDefs = getBashToolDefinitions();
+    const bashHandlers = getBashToolHandlers();
+    for (const def of bashDefs) {
+      const handler = bashHandlers.get(def.function.name);
+      if (handler) registerBuiltinTool({ definition: def, handler });
+    }
+    logger.debug('[Tool Registry] Bash tools registered:', bashDefs.map(d => d.function.name).join(', '));
+  } catch (err) {
+    logger.warn('[Tool Registry] Bash tools not registered:', err instanceof Error ? err.message : String(err));
+  }
+
+  // v8.0: PDF 深度处理工具注册（提取/总结/合并/拆分/转换）
+  try {
+    const { getPdfToolDefinitions, getPdfToolHandlers, initPdfTools } = await import('./pdfTools.js');
+    initPdfTools(); // 初始化 PDF 提供商
+    const pdfDefs = getPdfToolDefinitions();
+    const pdfHandlers = getPdfToolHandlers();
+    for (const def of pdfDefs) {
+      const handler = pdfHandlers.get(def.function.name);
+      if (handler) registerBuiltinTool({ definition: def, handler });
+    }
+    logger.debug('[Tool Registry] PDF tools registered:', pdfDefs.map(d => d.function.name).join(', '));
+  } catch (err) {
+    logger.warn('[Tool Registry] PDF tools not registered:', err instanceof Error ? err.message : String(err));
+  }
+
+  // v7.0: LSP 工具注册（Language Server Protocol 深度集成）
+  try {
+    const { getLspToolDefinitions, getLspToolHandlers } = await import('./lspTools.js');
+    const lspDefs = getLspToolDefinitions();
+    const lspHandlers = getLspToolHandlers();
+    for (const def of lspDefs) {
+      const handler = lspHandlers.get(def.function.name);
+      if (handler) registerBuiltinTool({ definition: def, handler });
+    }
+    logger.debug('[Tool Registry] LSP tools registered:', lspDefs.map(d => d.function.name).join(', '));
+  } catch (err) {
+    logger.warn('[Tool Registry] LSP tools not registered:', err instanceof Error ? err.message : String(err));
+  }
+
+  // v9.0: Wiki 知识库工具注册（记忆 Wiki/知识库模块）
+  try {
+    const { getWikiToolDefinitions, getWikiToolHandlers } = await import('./wikiTools.js');
+    const wikiDefs = getWikiToolDefinitions();
+    const wikiHandlers = getWikiToolHandlers();
+    for (const def of wikiDefs) {
+      const handler = wikiHandlers.get(def.function.name);
+      if (handler) registerBuiltinTool({ definition: def, handler });
+    }
+    logger.debug('[Tool Registry] Wiki tools registered:', wikiDefs.map(d => d.function.name).join(', '));
+  } catch (err) {
+    logger.warn('[Tool Registry] Wiki tools not registered:', err instanceof Error ? err.message : String(err));
+  }
+
+  // v10.0: Git 工具注册（代码集成基础功能）
+  try {
+    const { getGitToolDefinitions, getGitToolHandlers } = await import('./gitTools.js');
+    const gitDefs = getGitToolDefinitions();
+    const gitHandlers = getGitToolHandlers();
+    for (const def of gitDefs) {
+      const handler = gitHandlers.get(def.function.name);
+      if (handler) registerBuiltinTool({ definition: def, handler });
+    }
+    logger.debug('[Tool Registry] Git tools registered:', gitDefs.map(d => d.function.name).join(', '));
+  } catch (err) {
+    logger.warn('[Tool Registry] Git tools not registered:', err instanceof Error ? err.message : String(err));
+  }
 }
 
 /** 获取所有已注册内置工具的 definitions（用于传给 LLM） */

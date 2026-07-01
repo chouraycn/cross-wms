@@ -4,10 +4,20 @@
  * 提供 AI 可调用的文档内容提取工具：
  *   document_extractText — 从文档中提取文本内容（支持 PDF、Word、Excel、纯文本）
  *
+ * PDF 深度处理功能已迁移到 pdfTools.ts：
+ *   pdf_extract — 提取文本/表格/图片（支持 OCR）
+ *   pdf_summarize — AI 智能总结
+ *   pdf_merge — 合并多个 PDF
+ *   pdf_split — 拆分 PDF
+ *   pdf_convert — 转换为图片/Markdown
+ *
  * 依赖：
  *   - pdf-parse: PDF 文本提取
  *   - mammoth: Word 文档 (.docx) 转 Markdown/文本
  *   - @e965/xlsx: Excel 电子表格解析
+ *   - pdf-lib: PDF 操作（合并、拆分）
+ *   - pdf2pic: PDF 转图片（可选）
+ *   - tesseract.js/PaddleOCR: OCR 支持（可选）
  */
 
 import type { ToolDefinition } from '../aiClient.js';

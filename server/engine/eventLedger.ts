@@ -27,14 +27,15 @@
  *   await ledger.recordEvent(sessionId, 'message.created', { messageId, role, content });
  *   const events = await ledger.getSessionEvents(sessionId);
  *   const session = await ledger.reconstructSession(sessionId);
+ *
+ * v10.0: 合并入主库 chat.db，使用 DatabaseManager 统一管理
+ * - 不再使用独立 event-ledger.db
+ * - 通过 DatabaseManager.getMainDb() 获取主库连接
  */
 
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../logger.js';
-import { AppPaths } from '../config/appPaths.js';
-import path from 'path';
-import fs from 'fs';
-import Database from 'better-sqlite3';
+import { DatabaseManager } from '../storage/databaseManager.js';
 
 // ==================== 类型定义 ====================
 
@@ -120,13 +121,11 @@ const DEFAULT_MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
 // ==================== EventLedger 类 ====================
 
 export class EventLedger {
-  private db: Database.Database | null = null;
-  private dbPath: string;
   private initialized = false;
   private sessionCache = new Map<string, LedgerSessionMeta>();
 
-  constructor(dbPath?: string) {
-    this.dbPath = dbPath || path.join(AppPaths.dataDir, 'event-ledger.db');
+  private getDb() {
+    return DatabaseManager.getMainDb();
   }
 
   // ==========================================================================
@@ -137,20 +136,11 @@ export class EventLedger {
     if (this.initialized) return;
 
     try {
-      const dir = path.dirname(this.dbPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-
-      this.db = new Database(this.dbPath);
-      this.db.pragma('journal_mode = WAL');
-      this.db.pragma('synchronous = NORMAL');
-      this.db.pragma('foreign_keys = ON');
-
+      const db = this.getDb();
       this.createSchema();
       this.initialized = true;
 
-      logger.info(`[EventLedger] 初始化完成: ${this.dbPath}`);
+      logger.info(`[EventLedger] 初始化完成（主库 chat.db）`);
     } catch (err) {
       logger.error('[EventLedger] 初始化失败:', err);
       throw err;
@@ -158,9 +148,9 @@ export class EventLedger {
   }
 
   private createSchema(): void {
-    if (!this.db) throw new Error('Database not initialized');
+    const db = this.getDb();
 
-    this.db.exec(`
+    db.exec(`
       CREATE TABLE IF NOT EXISTS ledger_sessions (
         session_id       TEXT PRIMARY KEY,
         created_at       INTEGER NOT NULL,
@@ -195,7 +185,7 @@ export class EventLedger {
   }
 
   private ensureInit(): void {
-    if (!this.initialized || !this.db) {
+    if (!this.initialized) {
       throw new Error('EventLedger not initialized');
     }
   }
@@ -211,7 +201,7 @@ export class EventLedger {
     options?: { runId?: string; actor?: string }
   ): Promise<LedgerEvent> {
     this.ensureInit();
-    const db = this.db!;
+    const db = this.getDb();
 
     const now = Date.now();
     const eventId = uuidv4();
@@ -321,7 +311,7 @@ export class EventLedger {
     options: EventQueryOptions = {}
   ): Promise<LedgerEvent[]> {
     this.ensureInit();
-    const db = this.db!;
+    const db = this.getDb();
 
     let sql = 'SELECT * FROM ledger_events WHERE session_id = ?';
     const params: unknown[] = [sessionId];
@@ -379,7 +369,7 @@ export class EventLedger {
 
   async getSessionMeta(sessionId: string): Promise<LedgerSessionMeta | null> {
     this.ensureInit();
-    const db = this.db!;
+    const db = this.getDb();
 
     const row = db
       .prepare('SELECT * FROM ledger_sessions WHERE session_id = ?')
@@ -419,7 +409,7 @@ export class EventLedger {
     sortBy?: 'updated_at' | 'created_at';
   }): Promise<LedgerSessionMeta[]> {
     this.ensureInit();
-    const db = this.db!;
+    const db = this.getDb();
 
     let sql = 'SELECT * FROM ledger_sessions';
     const params: unknown[] = [];
@@ -572,7 +562,7 @@ export class EventLedger {
 
   async findIncompleteSessions(): Promise<LedgerSessionMeta[]> {
     this.ensureInit();
-    const db = this.db!;
+    const db = this.getDb();
 
     const rows = db
       .prepare(
@@ -632,7 +622,7 @@ export class EventLedger {
 
   async pruneOldSessions(maxSessions: number = DEFAULT_MAX_SESSIONS): Promise<number> {
     this.ensureInit();
-    const db = this.db!;
+    const db = this.getDb();
 
     const rows = db
       .prepare(
@@ -665,7 +655,7 @@ export class EventLedger {
     dbSizeBytes: number;
   }> {
     this.ensureInit();
-    const db = this.db!;
+    const db = this.getDb();
 
     const sessionCount = (db.prepare('SELECT COUNT(*) as c FROM ledger_sessions').get() as { c: number }).c;
     const activeCount = (
@@ -676,20 +666,13 @@ export class EventLedger {
     ).c;
     const eventCount = (db.prepare('SELECT COUNT(*) as c FROM ledger_events').get() as { c: number }).c;
 
-    let dbSize = 0;
-    try {
-      const stat = fs.statSync(this.dbPath);
-      dbSize = stat.size;
-    } catch {
-      // ignore
-    }
-
+    // 主库的 dbSize 不再单独统计 event-ledger，返回 0
     return {
       totalSessions: sessionCount,
       activeSessions: activeCount,
       archivedSessions: archivedCount,
       totalEvents: eventCount,
-      dbSizeBytes: dbSize,
+      dbSizeBytes: 0,
     };
   }
 
@@ -713,12 +696,9 @@ export class EventLedger {
   }
 
   close(): void {
-    if (this.db) {
-      this.db.close();
-      this.db = null;
-      this.initialized = false;
-      logger.info('[EventLedger] 已关闭');
-    }
+    // 不再需要手动关闭数据库，由 DatabaseManager 统一管理
+    this.initialized = false;
+    logger.info('[EventLedger] 已关闭（连接由 DatabaseManager 管理）');
   }
 }
 
