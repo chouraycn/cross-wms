@@ -225,6 +225,8 @@ export interface AiEngineConfig {
   defaultExecutionMode: ExecutionMode;
   /** v7.0: 默认队列模式：collect(合并) / steer(转向) / followup(追加) */
   defaultQueueMode: QueueMode;
+  /** v1.7.19: 最大历史对话轮次（0 表示不限制） */
+  maxHistoryTurns: number;
 }
 
 export interface AppSettings {
@@ -327,6 +329,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   aiEngine: {
     defaultExecutionMode: 'legacy',
     defaultQueueMode: 'followup',
+    maxHistoryTurns: 0,
   },
 };
 

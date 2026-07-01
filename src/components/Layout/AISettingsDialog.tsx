@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Box, Typography, Alert, Button, CircularProgress, useTheme,
-  ToggleButtonGroup, ToggleButton,
+  ToggleButtonGroup, ToggleButton, TextField, Slider,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PsychologyIcon from '@mui/icons-material/Psychology';
@@ -11,6 +11,7 @@ import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import HistoryIcon from '@mui/icons-material/History';
 import { useModels } from '../../contexts/ModelsContext';
 import { getGrayScale } from '../../constants/theme';
 import ModelManager from '../shared/ModelManager';
@@ -110,6 +111,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) =>
           </Typography>
           <ExecutionModeSelector />
           <QueueModeSelector />
+          <MaxHistoryTurnsSelector />
         </Box>
       )}
       {activeTab === 'auth' && <PlaceholderTab title="外部应用授权" description="外部应用授权管理功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
@@ -133,7 +135,7 @@ function ExecutionModeSelector() {
 
   const handleChange = (_: React.MouseEvent<HTMLElement>, newMode: string | null) => {
     if (newMode && newMode !== aiEngine.defaultExecutionMode) {
-      updateSettings({ aiEngine: { defaultExecutionMode: newMode as ExecutionMode, defaultQueueMode: aiEngine.defaultQueueMode } });
+      updateSettings({ aiEngine: { ...aiEngine, defaultExecutionMode: newMode as ExecutionMode } });
     }
   };
 
@@ -202,7 +204,7 @@ function QueueModeSelector() {
 
   const handleChange = (_: React.MouseEvent<HTMLElement>, newMode: string | null) => {
     if (newMode && newMode !== aiEngine.defaultQueueMode) {
-      updateSettings({ aiEngine: { defaultQueueMode: newMode as QueueMode, defaultExecutionMode: aiEngine.defaultExecutionMode } });
+      updateSettings({ aiEngine: { ...aiEngine, defaultQueueMode: newMode as QueueMode } });
     }
   };
 
@@ -252,6 +254,97 @@ function QueueModeSelector() {
           </Typography>
         </Box>
       ))}
+    </Box>
+  );
+}
+
+// ===================== v1.7.19: Max History Turns Selector =====================
+
+const MAX_TURNS_OPTIONS = [
+  { value: 0, label: '不限制' },
+  { value: 5, label: '5 轮' },
+  { value: 10, label: '10 轮' },
+  { value: 20, label: '20 轮' },
+  { value: 30, label: '30 轮' },
+  { value: 50, label: '50 轮' },
+];
+
+function MaxHistoryTurnsSelector() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+  const { settings: aiEngine, updateSettings } = useAiEngineSettings();
+
+  const handleSliderChange = (_: Event, newValue: number | number[]) => {
+    const value = newValue as number;
+    updateSettings({
+      aiEngine: {
+        ...aiEngine,
+        maxHistoryTurns: value,
+      },
+    });
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value >= 0 && value <= 100) {
+      updateSettings({
+        aiEngine: {
+          ...aiEngine,
+          maxHistoryTurns: value,
+        },
+      });
+    }
+  };
+
+  return (
+    <Box sx={{ mt: 4 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+        <HistoryIcon sx={{ fontSize: 18, color: gs.textSecondary }} />
+        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: gs.textPrimary }}>
+          上下文轮次限制
+        </Typography>
+      </Box>
+      <Typography sx={{ fontSize: '0.78rem', color: gs.textSecondary, mb: 2, lineHeight: 1.5 }}>
+        限制发送给模型的历史对话轮次，减少 token 消耗并加快响应速度。设置为 0 表示不限制。
+      </Typography>
+
+      <Box sx={{ px: 1, mb: 2 }}>
+        <Slider
+          value={aiEngine.maxHistoryTurns}
+          onChange={handleSliderChange}
+          step={5}
+          min={0}
+          max={50}
+          marks={MAX_TURNS_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }))}
+          valueLabelDisplay="auto"
+          valueLabelFormat={(value) => value === 0 ? '不限制' : `${value} 轮`}
+          sx={{
+            color: isDark ? 'rgba(99,102,241,0.8)' : 'rgba(99,102,241,1)',
+            '& .MuiSlider-markLabel': {
+              fontSize: '0.65rem',
+              color: gs.textDisabled,
+            },
+          }}
+        />
+      </Box>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <TextField
+          type="number"
+          size="small"
+          label="自定义轮次"
+          value={aiEngine.maxHistoryTurns}
+          onChange={handleInputChange}
+          InputProps={{ inputProps: { min: 0, max: 100 } }}
+          sx={{ width: 140 }}
+        />
+        <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary }}>
+          {aiEngine.maxHistoryTurns === 0
+            ? '当前：不限制历史轮次，完整上下文将被发送给模型'
+            : `当前：仅保留最近 ${aiEngine.maxHistoryTurns} 轮对话作为上下文`}
+        </Typography>
+      </Box>
     </Box>
   );
 }

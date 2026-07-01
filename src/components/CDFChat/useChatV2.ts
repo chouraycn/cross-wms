@@ -88,7 +88,8 @@ export function useChatV2(options: UseChatV2Options = {}): UseChatV2Return {
     setState('done');
   }, [clearTimeout_]);
 
-  // SSE 流式处理核心
+  // v1.7.17: 添加 messages 到依赖数组，确保 conversationHistory 包含最新的历史消息
+  // 修复二次对话上下文不承接的问题
   const processStream = useCallback(
     async (userContent: string, retryAttempt = 0) => {
       // 防止重复发送
@@ -396,7 +397,7 @@ export function useChatV2(options: UseChatV2Options = {}): UseChatV2Return {
         abortRef.current = null;
       }
     },
-    [apiEndpoint, defaultModel, state, startTimeout, clearTimeout_],
+    [messages, apiEndpoint, defaultModel, state, startTimeout, clearTimeout_],
   );
 
   // 发送消息

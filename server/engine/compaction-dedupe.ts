@@ -133,7 +133,6 @@ export function deduplicateUserMessages(
           reason: 'consecutive_duplicate',
         });
         duplicatesRemoved++;
-        consecutiveUserCount++;
         logger.debug(`[Deduplication] Removed consecutive duplicate at index ${i}`);
         continue;
       }
