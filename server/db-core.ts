@@ -11,11 +11,16 @@ import { initAutomationTables } from './db-automation.js';
 import { initMarketplaceTables } from './db-marketplace.js';
 import { initProjectTables } from './db-project.js';
 import { initPluginTables } from './db-plugin.js';
+import { initGoalTables } from './engine/goalStore.js';
+import { initWebhookTables } from './dao/webhookDao.js';
+import { initArchiveTables } from './engine/messageArchive.js';
 
-import { SQLiteEngine, createSQLiteEngine } from './storage/SQLiteEngine.js';
+import { SQLiteEngine } from './storage/SQLiteEngine.js';
 import { FileStorage } from './storage/FileStorage.js';
 import { migrateSessionsToJsonl } from './storage/migration.js';
 import type { IStorageEngine } from './storage/StorageEngine.js';
+import { configureSqliteConnectionPragmas } from './storage/sqliteWalMaintenance.js';
+import type { SqliteWalMaintenance } from './storage/sqliteWalMaintenance.js';
 
 export * from './db-wms.js';
 export * from './db-chat.js';
@@ -53,7 +58,7 @@ const DB_PATH = AppPaths.chatDbFile;
 const DB_BACKUP_PATH = AppPaths.chatDbFile + '.bak';
 
 let db: Database.Database | null = null;
-let engine: SQLiteEngine | null = null;
+let walMaintenance: SqliteWalMaintenance | null = null;
 
 /** v1.9.3: 备份数据库 */
 function backupDatabase(): void {
@@ -105,42 +110,6 @@ function restoreDatabaseFromBackup(): boolean {
   return false;
 }
 
-/** v1.5.68: 启动周期 WAL checkpoint 守护 */
-function startPeriodicCheckpoint(dbInstance: Database.Database): void {
-  const intervalMs = 5 * 60 * 1000; // 5 分钟
-  const intervalWrites = 100;
-  let writeCounter = 0;
-
-  // Hook run() to count writes
-  const originalRun = dbInstance.prepare.bind(dbInstance);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  dbInstance.prepare = function (sql: string): any {
-    const stmt = originalRun(sql);
-    const origRun = stmt.run.bind(stmt);
-    stmt.run = function (...args: unknown[]) {
-      writeCounter++;
-      return origRun(...args);
-    };
-    return stmt;
-  };
-
-  const checkpointTimer = setInterval(() => {
-    try {
-      if (writeCounter >= intervalWrites) {
-        dbInstance.pragma('wal_checkpoint(TRUNCATE)');
-        writeCounter = 0;
-      }
-    } catch {
-      // ignore
-    }
-  }, intervalMs);
-
-  if (typeof checkpointTimer.unref === 'function') {
-    checkpointTimer.unref();
-  }
-  logger.info(`[DB] 周期 WAL checkpoint 已启动 (interval=${intervalMs}ms, writeThreshold=${intervalWrites})`);
-}
-
 export function initDb(): Database.Database {
   if (db) return db;
   const dir = path.dirname(DB_PATH);
@@ -176,8 +145,6 @@ export function initDb(): Database.Database {
 
   try {
     db = new Database(DB_PATH);
-    engine = createSQLiteEngine(DB_PATH);
-    engine.connect();
   } catch (e: any) {
     const msg = e?.message ?? String(e);
     logger.error('[DB] 数据库初始化失败:', msg);
@@ -189,8 +156,6 @@ export function initDb(): Database.Database {
           fs.copyFileSync(DB_BACKUP_PATH, DB_PATH);
           logger.info('[DB] 已从备份恢复数据库，重试初始化...');
           db = new Database(DB_PATH);
-          engine = createSQLiteEngine(DB_PATH);
-          engine.connect();
         } catch (e2: any) {
           logger.error('[DB] 从备份恢复失败:', e2?.message ?? e2);
           throw e;
@@ -203,9 +168,18 @@ export function initDb(): Database.Database {
     }
   }
 
-  // Enable foreign keys
-  try { db.pragma('journal_mode = WAL'); } catch { /* readonly mode */ }
-  try { db.pragma('foreign_keys = ON'); } catch { /* readonly mode */ }
+  // v2.10: 使用统一 PRAGMA 配置（WAL + foreign_keys + busy_timeout + cache_size + mmap_size）
+  try {
+    walMaintenance = configureSqliteConnectionPragmas(db, {
+      profile: 'large',
+      databaseLabel: 'chat.db',
+      foreignKeys: true,
+      busyTimeoutMs: 30_000,
+      synchronous: 'NORMAL',
+    });
+  } catch {
+    // readonly mode — fallback below
+  }
 
   // v2.8.9: 检测数据库是否只读（macOS com.apple.provenance 安全限制）
   let isMemoryDb = false;
@@ -215,12 +189,17 @@ export function initDb(): Database.Database {
     logger.warn('[DB] 数据库只读（可能是 macOS 安全限制），切换到内存数据库');
     try { db.close(); } catch {}
     db = new Database(':memory:');
-    db.pragma('journal_mode = WAL');
-    db.pragma('foreign_keys = ON');
+    walMaintenance = configureSqliteConnectionPragmas(db, {
+      profile: 'large',
+      databaseLabel: 'chat.db:memory',
+      foreignKeys: true,
+      busyTimeoutMs: 30_000,
+      synchronous: 'NORMAL',
+      mmapSize: 0,
+    });
     isMemoryDb = true;
     logger.info('[DB] 已切换到内存数据库（数据不会持久化）');
   }
-  try { db.pragma('foreign_keys = ON'); } catch { /* readonly mode */ }
 
   // v1.5.68: 启动时做完整性检查
   try { db.pragma('wal_checkpoint(RESTART)'); } catch {
@@ -264,10 +243,7 @@ export function initDb(): Database.Database {
     logger.warn('[DB] integrity_check 异常:', e);
   }
 
-  // v1.5.68: 启动周期 checkpoint
-  if (!isMemoryDb) {
-    startPeriodicCheckpoint(db);
-  }
+  // v2.10: 周期 checkpoint 已由 configureSqliteConnectionPragmas 内部定时器管理
 
   // Initialize all domain tables
   // v9.0: 从 SQLite 迁移会话到 JSONL（在重建表结构之前迁移，避免数据丢失）
@@ -278,6 +254,9 @@ export function initDb(): Database.Database {
   initMarketplaceTables(db);
   initProjectTables(db);
   initPluginTables(db);
+  initGoalTables(db);
+  initWebhookTables(db);
+  initArchiveTables(db);
 
   return db;
 }
@@ -287,6 +266,26 @@ export function getDb(): Database.Database {
     return initDb();
   }
   return db;
+}
+
+/** v2.10: 优雅关闭数据库（清理 WAL 定时器 + 最终 TRUNCATE checkpoint） */
+export function closeDb(): void {
+  // 先关闭 DatabaseManager 管理的连接（向量库等）
+  try {
+    const { DatabaseManager } = require('./storage/databaseManager.js') as { DatabaseManager: { closeAll: () => void } };
+    DatabaseManager.closeAll();
+  } catch { /* ignore */ }
+
+  if (walMaintenance) {
+    walMaintenance.close();
+    walMaintenance = null;
+    logger.info('[DB] WAL 维护已关闭，最终 checkpoint 完成');
+  }
+  if (db) {
+    try { db.close(); } catch { /* ignore */ }
+    db = null;
+  }
+
 }
 
 // ===================== v2.9: Worker Thread Pool（异步 API） =====================
@@ -306,9 +305,9 @@ export function getDbPool(): DbWorkerPool {
   return dbPool;
 }
 
-/** 获取存储引擎实例 */
-export function getStorageEngine(): SQLiteEngine | null {
-  return engine;
+/** 获取存储引擎实例（已废弃，使用 getDb() 获取原生 better-sqlite3 连接） */
+export function getStorageEngine(): null {
+  return null;
 }
 
 /** 获取 FileStorage 工具类 */

@@ -100,6 +100,31 @@ const CORE_COMMAND_DESCRIPTORS = defineCommandDescriptorCatalog([
     hasSubcommands: false,
   },
   {
+    name: "chat",
+    description: "启动交互式聊天会话",
+    hasSubcommands: false,
+    aliases: ["ch"],
+  },
+  {
+    name: "memory",
+    description: "记忆管理 (list/search/add/delete/sync)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+    aliases: ["mem"],
+  },
+  {
+    name: "wiki",
+    description: "Wiki 管理 (list/search/view/create)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "tool",
+    description: "工具管理 (list/exec/info)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
     name: "help",
     description: "显示帮助信息",
     hasSubcommands: false,

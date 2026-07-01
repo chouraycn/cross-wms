@@ -11,18 +11,41 @@
  * v9.1: 使用真实 ONNX 语义嵌入替代 mock embedding
  * - 调用 onnxEmbedding.embedText 生成真实语义向量
  * - 记忆搜索具备真正的语义相关性
+ *
+ * v9.3: 增强混合搜索系统
+ * - MMR 去重算法（避免返回相似结果）
+ * - 时间衰减权重（最近访问权重更高）
+ * - 记忆分类系统（自动识别记忆类型）
+ * - 可配置权重参数
+ *
+ * v10.0: 合并入向量库 vec_memory.db，使用 DatabaseManager 统一管理
+ * - 通过 DatabaseManager.getVecDb() 获取向量库连接
  */
 
-import path from 'path';
-import { SQLiteEngine } from '../storage/SQLiteEngine.js';
 import { logger } from '../logger.js';
 import { embedText, ONNX_EMBEDDING_DIMENSIONS } from './onnxEmbedding.js';
-import { AppPaths } from '../config/appPaths.js';
+import { DatabaseManager } from '../storage/databaseManager.js';
+import { mmrSelect, mmrReRankSimple } from './memory/mmr.js';
+import type { MemoryEntry } from './memory/mmr.js';
+import {
+  computeTimeWeight,
+  computeTimeWeights,
+  DEFAULT_TIME_DECAY_CONFIG,
+  TIME_DECAY_PRESETS,
+} from './memory/timeDecay.js';
+import type { TimeDecayConfig } from './memory/timeDecay.js';
+import {
+  classifyMemory,
+  getCategoryDescription,
+} from './memory/classifier.js';
+import type { MemoryCategory } from './memory/classifier.js';
+import {
+  quickHybridSearch,
+  HYBRID_SEARCH_PRESETS,
+} from './memory/hybridSearch.js';
+import type { SearchResult, HybridSearchOptions as EnhancedHybridSearchOptions } from './memory/hybridSearch.js';
 
 // ===================== 常量定义 =====================
-
-const MEMORY_DIR = AppPaths.memoryDir;
-const DB_PATH = path.join(MEMORY_DIR, 'long_term_memory.db');
 
 /** 向量维度（all-MiniLM-L6-v2: 384 维） */
 const VECTOR_DIMENSIONS = ONNX_EMBEDDING_DIMENSIONS;
@@ -50,26 +73,39 @@ const DEFAULT_MMR = {
   lambda: 0.5,
 };
 
-// ===================== 初始化 =====================
+/** 时间衰减默认配置 */
+const DEFAULT_TIME_DECAY = {
+  enabled: true,
+  decayFactor: 0.3,
+  halfLifeDays: 30,
+};
 
-let engine: SQLiteEngine | null = null;
+/** 分类系统默认配置 */
+const DEFAULT_CLASSIFY = {
+  enabled: true,
+};
 
-function ensureEngine(): SQLiteEngine {
-  if (!engine) {
-    engine = new SQLiteEngine(DB_PATH);
-    engine.connect().catch((err) => {
-      logger.error('[VecMemory] 数据库连接失败:', err);
-    });
-  }
-  return engine;
+/** 增强混合搜索默认配置 */
+const DEFAULT_ENHANCED_SEARCH = {
+  vectorWeight: 0.7,
+  fullTextWeight: 0.3,
+  timeDecayWeight: 0.2,
+  mmrLambda: 0.5,
+};
+
+// ===================== 数据库访问 =====================
+
+function getDb() {
+  return DatabaseManager.getVecDb();
 }
 
 // 延迟建表
-setTimeout(async () => {
+setTimeout(() => {
   try {
-    const db = ensureEngine();
-    await db.connect();
-    db.migrate('1.0.0', `
+    const db = getDb();
+
+    // 1. memory_entries 表
+    db.exec(`
       CREATE TABLE IF NOT EXISTS memory_entries (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
         text        TEXT    NOT NULL,
@@ -77,15 +113,20 @@ setTimeout(async () => {
         created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
       );
     `);
-    // v9.1: 重建向量索引表（维度从 1536 改为 384）
-    db.migrate('1.1.0', `
-      DROP TABLE IF EXISTS memory_vec_index;
-      CREATE VIRTUAL TABLE IF NOT EXISTS memory_vec_index USING vec0(
-        embedding FLOAT32[${VECTOR_DIMENSIONS}] distance_metric=cosine
-      );
-    `);
-    // v9.2: 添加 FTS 全文搜索索引表（支持混合搜索）
-    db.migrate('1.2.0', `
+
+    // 2. memory_vec_index 表（向量索引）
+    try {
+      db.exec(`
+        CREATE VIRTUAL TABLE IF NOT EXISTS memory_vec_index USING vec0(
+          embedding FLOAT32[${VECTOR_DIMENSIONS}] distance_metric=cosine
+        );
+      `);
+    } catch (e) {
+      logger.warn('[VecMemory] memory_vec_index 创建跳过（可能已存在或 sqlite-vec 不可用）:', e instanceof Error ? e.message : String(e));
+    }
+
+    // 3. memory_fts 表（全文搜索索引）
+    db.exec(`
       CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts USING fts5(
         text,
         content='memory_entries',
@@ -103,6 +144,10 @@ setTimeout(async () => {
         INSERT INTO memory_fts(rowid, text) VALUES (new.id, new.text);
       END;
     `);
+
+    // 版本标记
+    db.exec(`CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
+    db.prepare(`INSERT OR REPLACE INTO app_settings (key, value) VALUES ('vec_schema_version', ?)`).run('1.2.0');
   } catch (err) {
     logger.error('[VecMemory] 初始化 schema 失败:', err);
   }
@@ -115,6 +160,14 @@ export interface VecSearchResult {
   text: string;
   metadata: Record<string, unknown>;
   similarity: number;
+  /** 记忆分类 */
+  category?: MemoryCategory;
+  /** 创建时间 */
+  createdAt?: string;
+  /** 时间衰减权重 */
+  timeWeight?: number;
+  /** 是否经过 MMR 处理 */
+  mmrProcessed?: boolean;
 }
 
 export interface HybridSearchOptions {
@@ -125,6 +178,16 @@ export interface HybridSearchOptions {
   useMMR?: boolean;
   mmrLambda?: number;
   filters?: Record<string, unknown>;
+  /** 是否启用时间衰减 */
+  useTimeDecay?: boolean;
+  /** 时间衰减配置 */
+  timeDecayConfig?: TimeDecayConfig;
+  /** 是否启用分类 */
+  useClassify?: boolean;
+  /** 分类过滤器 */
+  categories?: MemoryCategory[];
+  /** 时间衰减权重 */
+  timeDecayWeight?: number;
 }
 
 export interface ChunkOptions {
@@ -271,15 +334,14 @@ export async function insertMemory(
   metadata: Record<string, unknown> = {}
 ): Promise<number> {
   try {
-    const db = ensureEngine();
+    const db = getDb();
 
     // 1. 插入记忆记录
     const metaJson = JSON.stringify(metadata);
-    const result = db.run(
+    const result = db.prepare(
       `INSERT INTO memory_entries (text, metadata, created_at)
-       VALUES (?, ?, datetime('now'))`,
-      [text, metaJson]
-    );
+       VALUES (?, ?, datetime('now'))`
+    ).run(text, metaJson);
     const id = Number(result.lastInsertRowid);
 
     // 2. 生成真实语义向量（ONNX all-MiniLM-L6-v2, 384维）
@@ -291,10 +353,9 @@ export async function insertMemory(
     );
 
     // 3. 插入向量索引
-    db.run(
-      `INSERT INTO memory_vec_index (rowid, embedding) VALUES (?, ?)`,
-      [id, embeddingBuf]
-    );
+    db.prepare(
+      `INSERT INTO memory_vec_index (rowid, embedding) VALUES (?, ?)`
+    ).run(id, embeddingBuf);
 
     logger.debug(`[VecMemory] 插入记忆: id=${id}, text="${text.slice(0, 50)}..."`);
     return id;
@@ -310,15 +371,15 @@ export async function insertMemory(
  */
 export async function backfillEmbeddings(): Promise<{ total: number; success: number; failed: number }> {
   try {
-    const db = ensureEngine();
+    const db = getDb();
 
     // v9.1: 由于维度变更（1536→384），先清空旧的向量索引，全量重新生成
-    db.run(`DELETE FROM memory_vec_index`);
+    db.prepare(`DELETE FROM memory_vec_index`).run();
 
     // 查询所有记忆
-    const rows = db.all<{ id: number; text: string }>(`
+    const rows = db.prepare(`
       SELECT id, text FROM memory_entries ORDER BY id
-    `);
+    `).all() as Array<{ id: number; text: string }>;
 
     let success = 0;
     let failed = 0;
@@ -332,10 +393,9 @@ export async function backfillEmbeddings(): Promise<{ total: number; success: nu
           embedding.byteLength
         );
 
-        db.run(
-          `INSERT INTO memory_vec_index (rowid, embedding) VALUES (?, ?)`,
-          [row.id, embeddingBuf]
-        );
+        db.prepare(
+          `INSERT INTO memory_vec_index (rowid, embedding) VALUES (?, ?)`
+        ).run(row.id, embeddingBuf);
         success++;
       } catch {
         failed++;
@@ -368,7 +428,7 @@ export async function searchMemory(
   filters: Record<string, unknown> = {}
 ): Promise<VecSearchResult[]> {
   try {
-    const db = ensureEngine();
+    const db = getDb();
 
     // 生成查询的真实语义向量
     const queryEmbedding = await embedText(query);
@@ -379,19 +439,19 @@ export async function searchMemory(
     );
 
     // 向量搜索
-    const rows = db.all<{
-      id: number;
-      text: string;
-      metadata: string;
-      distance: number;
-    }>(`
+    const rows = db.prepare(`
       SELECT e.id, e.text, e.metadata, v.distance
       FROM memory_vec_index v
       JOIN memory_entries e ON e.id = v.rowid
       WHERE v.embedding MATCH ?
       ORDER BY v.distance
       LIMIT ?
-    `, [embeddingBuf, topK]);
+    `).all(embeddingBuf, topK) as Array<{
+      id: number;
+      text: string;
+      metadata: string;
+      distance: number;
+    }>;
 
     // 应用过滤条件并反序列化
     const results: VecSearchResult[] = [];
@@ -432,6 +492,8 @@ export async function searchMemory(
  * 1. 向量搜索召回语义相关结果
  * 2. FTS 全文搜索召回关键词匹配结果
  * 3. 加权融合并使用 MMR 去重
+ * 4. 应用时间衰减权重
+ * 5. 按分类过滤
  *
  * @param query 查询文本
  * @param options 混合搜索选项
@@ -443,16 +505,21 @@ export async function hybridSearchMemory(
 ): Promise<VecSearchResult[]> {
   const {
     topK = DEFAULT_TOP_K,
-    vectorWeight = DEFAULT_HYBRID_SEARCH.vectorWeight,
-    textWeight = DEFAULT_HYBRID_SEARCH.textWeight,
+    vectorWeight = DEFAULT_ENHANCED_SEARCH.vectorWeight,
+    textWeight = DEFAULT_ENHANCED_SEARCH.fullTextWeight,
     candidateMultiplier = DEFAULT_HYBRID_SEARCH.candidateMultiplier,
     useMMR = DEFAULT_MMR.enabled,
-    mmrLambda = DEFAULT_MMR.lambda,
+    mmrLambda = DEFAULT_ENHANCED_SEARCH.mmrLambda,
     filters = {},
+    useTimeDecay = DEFAULT_TIME_DECAY.enabled,
+    timeDecayConfig = DEFAULT_TIME_DECAY_CONFIG,
+    useClassify = DEFAULT_CLASSIFY.enabled,
+    categories,
+    timeDecayWeight = DEFAULT_ENHANCED_SEARCH.timeDecayWeight,
   } = options;
 
   try {
-    const db = ensureEngine();
+    const db = getDb();
     const candidateCount = topK * candidateMultiplier;
 
     const [vectorResults, ftsResults] = await Promise.allSettled([
@@ -491,31 +558,109 @@ export async function hybridSearchMemory(
       }
     }
 
+    // 转换为数组并获取详细信息
     let scoredResults: VecSearchResult[] = [];
     for (const entry of merged.values()) {
-      const combinedScore = entry.vectorScore * vectorWeight + entry.textScore * textWeight;
+      const memoryDetail = getMemory(entry.result.id);
+
+      // 应用分类
+      let category: MemoryCategory | undefined;
+      if (useClassify) {
+        const classification = classifyMemory(entry.result.text);
+        category = classification.category;
+      }
+
+      // 应用时间衰减
+      let timeWeight = 1.0;
+      if (useTimeDecay && memoryDetail) {
+        const createdAt = new Date(memoryDetail.createdAt).getTime();
+        timeWeight = computeTimeWeight({
+          createdAt,
+          lastAccessedAt: createdAt,
+          decayFactor: timeDecayConfig.decayFactor,
+          halfLifeDays: timeDecayConfig.halfLifeDays,
+        });
+      }
+
+      const combinedScore =
+        entry.vectorScore * vectorWeight +
+        entry.textScore * textWeight +
+        timeWeight * timeDecayWeight;
+
       scoredResults.push({
         ...entry.result,
+        category,
+        createdAt: memoryDetail?.createdAt,
+        timeWeight,
         similarity: combinedScore,
       });
     }
 
-    scoredResults.sort((a, b) => b.similarity - a.similarity);
-
-    if (useMMR && scoredResults.length > topK) {
-      scoredResults = mmrReRank(scoredResults, mmrLambda, topK);
+    // 按分类过滤
+    if (useClassify && categories && categories.length > 0) {
+      scoredResults = scoredResults.filter((r) => r.category && categories.includes(r.category));
     }
 
-    const finalResults = scoredResults.slice(0, topK);
+    scoredResults.sort((a, b) => b.similarity - a.similarity);
+
+    // 应用 MMR 去重（需要 embedding）
+    if (useMMR && scoredResults.length > topK) {
+      // 获取查询向量
+      const queryEmbedding = await embedText(query);
+
+      // 获取候选 embedding
+      const embeddings = new Map<number, number[] | Float32Array>();
+      for (const result of scoredResults) {
+        // 从数据库获取 embedding
+        const row = db.prepare(
+          `SELECT embedding FROM memory_vec_index WHERE rowid = ?`
+        ).get(result.id) as { embedding: Buffer } | undefined;
+        if (row) {
+          const embedding = new Float32Array(row.embedding.buffer, row.embedding.byteOffset, VECTOR_DIMENSIONS);
+          embeddings.set(result.id, embedding);
+        }
+      }
+
+      // 转换为 MemoryEntry 格式
+      const memoryEntries: MemoryEntry[] = scoredResults.map((r) => ({
+        id: r.id,
+        text: r.text,
+        metadata: r.metadata,
+        similarity: r.similarity,
+        embedding: embeddings.get(r.id),
+        createdAt: r.createdAt,
+        category: r.category,
+      }));
+
+      // 执行 MMR 选择
+      const mmrResults = mmrSelect({
+        queryVector: Array.from(queryEmbedding),
+        candidates: memoryEntries,
+        lambda: mmrLambda,
+        k: topK,
+        embeddings,
+      });
+
+      // 转换回 VecSearchResult
+      scoredResults = mmrResults.map((r) => {
+        const original = scoredResults.find((sr) => sr.id === r.id);
+        return {
+          ...original!,
+          mmrProcessed: true,
+        };
+      });
+    } else {
+      scoredResults = scoredResults.slice(0, topK);
+    }
 
     logger.debug(
       `[VecMemory] 混合搜索: query="${query.slice(0, 50)}..., ` +
       `vector=${vectorResults.status === "fulfilled" ? vectorResults.value.length : "fail"}, ` +
       `fts=${ftsResults.status === "fulfilled" ? ftsResults.value.length : "fail"}, ` +
-      `merged=${merged.size}, final=${finalResults.length}`
+      `merged=${merged.size}, final=${scoredResults.length}`
     );
 
-    return finalResults;
+    return scoredResults;
   } catch (err) {
     logger.warn('[VecMemory] 混合搜索失败，降级到纯向量搜索:', err);
     return searchMemory(query, topK, filters);
@@ -537,7 +682,7 @@ function ftsSearchMemory(
 ): Promise<VecSearchResult[]> {
   return new Promise((resolve) => {
     try {
-      const db = ensureEngine();
+      const db = getDb();
 
       const ftsQuery = query
         .split(/\s+/)
@@ -550,19 +695,19 @@ function ftsSearchMemory(
         return;
       }
 
-      const rows = db.all<{
-        id: number;
-        text: string;
-        metadata: string;
-        rank: number;
-      }>(`
+      const rows = db.prepare(`
         SELECT e.id, e.text, e.metadata, f.rank
         FROM memory_fts f
         JOIN memory_entries e ON e.id = f.rowid
         WHERE memory_fts MATCH ?
         ORDER BY f.rank
         LIMIT ?
-      `, [ftsQuery, topK]);
+      `).all(ftsQuery, topK) as Array<{
+        id: number;
+        text: string;
+        metadata: string;
+        rank: number;
+      }>;
 
       const results: VecSearchResult[] = [];
       for (const row of rows) {
@@ -642,13 +787,13 @@ export async function insertMemoryWithChunks(
  */
 export function deleteMemory(id: number): boolean {
   try {
-    const db = ensureEngine();
+    const db = getDb();
 
     // 删除向量索引
-    db.run(`DELETE FROM memory_vec_index WHERE rowid = ?`, [id]);
+    db.prepare(`DELETE FROM memory_vec_index WHERE rowid = ?`).run(id);
 
     // 删除记忆记录
-    const result = db.run(`DELETE FROM memory_entries WHERE id = ?`, [id]);
+    const result = db.prepare(`DELETE FROM memory_entries WHERE id = ?`).run(id);
 
     logger.debug(`[VecMemory] 删除记忆: id=${id}`);
     return result.changes > 0;
@@ -671,13 +816,13 @@ export function getMemory(id: number): {
   createdAt: string;
 } | null {
   try {
-    const db = ensureEngine();
-    const row = db.get<{
+    const db = getDb();
+    const row = db.prepare(`SELECT * FROM memory_entries WHERE id = ?`).get(id) as {
       id: number;
       text: string;
       metadata: string;
       created_at: string;
-    }>(`SELECT * FROM memory_entries WHERE id = ?`, [id]);
+    } | undefined;
 
     if (!row) return null;
 
@@ -710,19 +855,19 @@ export function getRecentMemories(
   createdAt: string;
 }> {
   try {
-    const db = ensureEngine();
+    const db = getDb();
 
     // 如果有过滤条件，需要全量加载后过滤
     if (Object.keys(filters).length > 0) {
-      const rows = db.all<{
+      const rows = db.prepare(`
+        SELECT * FROM memory_entries
+        ORDER BY created_at DESC
+      `).all() as Array<{
         id: number;
         text: string;
         metadata: string;
         created_at: string;
-      }>(`
-        SELECT * FROM memory_entries
-        ORDER BY created_at DESC
-      `);
+      }>;
 
       const results: Array<{
         id: number;
@@ -757,16 +902,16 @@ export function getRecentMemories(
     }
 
     // 无过滤条件，直接查询
-    const rows = db.all<{
+    const rows = db.prepare(`
+      SELECT * FROM memory_entries
+      ORDER BY created_at DESC
+      LIMIT ?
+    `).all(limit) as Array<{
       id: number;
       text: string;
       metadata: string;
       created_at: string;
-    }>(`
-      SELECT * FROM memory_entries
-      ORDER BY created_at DESC
-      LIMIT ?
-    `, [limit]);
+    }>;
 
     return rows.map((row) => ({
       id: row.id,
@@ -787,9 +932,9 @@ export function getRecentMemories(
  */
 export function clearAllMemories(): boolean {
   try {
-    const db = ensureEngine();
-    db.run(`DELETE FROM memory_vec_index`);
-    db.run(`DELETE FROM memory_entries`);
+    const db = getDb();
+    db.prepare(`DELETE FROM memory_vec_index`).run();
+    db.prepare(`DELETE FROM memory_entries`).run();
     logger.info('[VecMemory] 清空所有记忆');
     return true;
   } catch (err) {
@@ -808,16 +953,13 @@ export function getMemoryStats(): {
   avgTextLength: number;
 } {
   try {
-    const db = ensureEngine();
-    const row = db.get<{
-      total: number;
-      avg_length: number;
-    }>(`
+    const db = getDb();
+    const row = db.prepare(`
       SELECT
         COUNT(*) as total,
         COALESCE(AVG(LENGTH(text)), 0) as avg_length
       FROM memory_entries
-    `);
+    `).get() as { total: number; avg_length: number } | undefined;
 
     return {
       totalMemories: row?.total ?? 0,
@@ -894,3 +1036,41 @@ export function extractKeywords(_text: string, _maxCount?: number): string[] {
   // 简单分词实现
   return _text.split(/\s+/).filter((w) => w.length > 2);
 }
+
+// ===================== 增强功能导出 =====================
+
+/**
+ * 导出分类相关函数
+ */
+export {
+  classifyMemory,
+  MemoryCategory,
+  getCategoryDescription,
+};
+
+/**
+ * 导出时间衰减相关函数和配置
+ */
+export {
+  computeTimeWeight,
+  computeTimeWeights,
+  TimeDecayConfig,
+  DEFAULT_TIME_DECAY_CONFIG,
+  TIME_DECAY_PRESETS,
+};
+
+/**
+ * 导出 MMR 相关函数
+ */
+export {
+  mmrSelect,
+  mmrReRankSimple,
+  MemoryEntry,
+};
+
+/**
+ * 导出混合搜索预设
+ */
+export {
+  HYBRID_SEARCH_PRESETS,
+};

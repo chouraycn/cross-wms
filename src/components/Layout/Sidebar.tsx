@@ -80,6 +80,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
     return () => window.removeEventListener('cdf-window-maximized', onMaximized);
   }, [collapsed, onToggle]);
 
+  // v1.7.18: 监听全屏状态变化，全屏时按钮前移（红黄绿隐藏后无需避让）
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const onFullscreenChanged = ((e: CustomEvent) => {
+      setIsFullscreen(e.detail?.fullscreen ?? false);
+    }) as EventListener;
+    window.addEventListener('cdf-window-fullscreen-changed', onFullscreenChanged);
+    return () => window.removeEventListener('cdf-window-fullscreen-changed', onFullscreenChanged);
+  }, []);
+
   // v1.5.73: settingsOpen 提升到 MainLayout，通过 props 传入；无 props 时回退本地 state（兼容旧调用）
   const [localSettingsOpen, localSetSettingsOpen] = useState(false);
   const settingsOpen = settingsOpenProp ?? localSettingsOpen;
@@ -150,12 +160,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
     >
       {/* 原生 App 模式：搜索 + Toggle 按钮绝对定位在顶部 padding 区域内，与红黄绿对齐 */}
       {/* v1.7.15: 红黄绿往下移5px，top=19，中心线=25；按钮 size=25.92px, top = 25 - 25.92/2 ≈ 12px */}
+      {/* v1.7.18: 全屏时红黄绿隐藏，按钮组从右侧移到左侧 */}
       {nativeApp && !collapsed && (
         <Box
           sx={{
             position: 'absolute',
             top: '12px',
-            right: 8,
+            ...(isFullscreen ? { left: 10 } : { right: 3 }),
             display: 'flex',
             alignItems: 'center',
             gap: 0.5,
@@ -281,20 +292,23 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
             size="small"
             sx={{
               position: 'fixed',
-              top: nativeApp ? '12px' : '10px',
-              left: nativeApp ? 60 : 10, // v1.7.15: DMG模式下移到红黄绿后面
+              top: nativeApp ? '15px' : '10px', // v1.7.18: 往上1px
+              left: nativeApp ? (isFullscreen ? 80 : 96) : 10, // v1.7.18: 搜索按钮再右移5px
               zIndex: 1400,
               color: 'text.primary',
               borderRadius: '6.48px',
               p: 0.45,
               width: 25.92,
               height: 25.92,
-              backgroundColor: isDark ? 'rgba(20, 20, 20, 0.6)' : 'rgba(240, 240, 240, 0.6)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
+              // v1.7.18: macOS 收起时去掉玻璃背景和描边，网页端保持玻璃效果
+              backgroundColor: nativeApp ? 'transparent' : (isDark ? 'rgba(20, 20, 20, 0.6)' : 'rgba(240, 240, 240, 0.6)'),
+              ...(nativeApp ? {} : {
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+              }),
+              border: nativeApp ? 'none' : `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
               '&:hover': {
-                backgroundColor: isDark ? 'rgba(20, 20, 20, 0.8)' : 'rgba(240, 240, 240, 0.8)',
+                backgroundColor: nativeApp ? gs.bgHover : (isDark ? 'rgba(20, 20, 20, 0.8)' : 'rgba(240, 240, 240, 0.8)'),
               },
               '&:focus': { outline: 'none' },
             }}

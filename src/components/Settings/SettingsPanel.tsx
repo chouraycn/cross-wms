@@ -19,6 +19,7 @@ import ViewTimelineIcon from '@mui/icons-material/ViewTimeline';
 import ComputerIcon from '@mui/icons-material/Computer';
 import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import WebhookIcon from '@mui/icons-material/Webhook';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { isPyWebView } from '../../services/tencentDocsApi';
@@ -30,12 +31,13 @@ import ModelManagement from './tabs/ModelManagement';
 import AboutTab from './tabs/AboutTab';
 import TrafficLightOffsetSection from './tabs/TrafficLightOffsetSection';
 import SystemAuthorizationTab from './tabs/SystemAuthorizationTab';
+import WebhookPanel from '../Webhook/WebhookPanel';
 import { useToast } from '../../contexts/ToastContext';
 import { getGrayScale } from '../../constants/theme';
 
 // ===================== Tab Definitions =====================
 
-type SettingsTab = 'tencentDocs' | 'dashboardParams' | 'metricsControl' | 'volumeDoc' | 'modelManagement' | 'dmgSettings' | 'systemAuthorization' | 'about';
+type SettingsTab = 'tencentDocs' | 'dashboardParams' | 'metricsControl' | 'volumeDoc' | 'modelManagement' | 'dmgSettings' | 'systemAuthorization' | 'webhook' | 'about';
 
 interface TabItem {
   key: SettingsTab;
@@ -51,6 +53,7 @@ const TABS: TabItem[] = [
   { key: 'modelManagement', label: '模型管理', icon: <SmartToyIcon sx={{ fontSize: 20 }} /> },
   { key: 'dmgSettings', label: 'DMG 设置', icon: <ComputerIcon sx={{ fontSize: 20 }} /> },
   { key: 'systemAuthorization', label: '系统授权', icon: <AdminPanelSettingsIcon sx={{ fontSize: 20 }} /> },
+  { key: 'webhook', label: 'Webhook', icon: <WebhookIcon sx={{ fontSize: 20 }} /> },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} /> },
 ];
 
@@ -242,6 +245,8 @@ const SettingsPanel: React.FC = () => {
         );
       case 'systemAuthorization':
         return <SystemAuthorizationTab draft={draft} setDraft={setDraft} />;
+      case 'webhook':
+        return <WebhookPanel />;
       case 'about':
         return <AboutTab draft={draft} setDraft={setDraft} errors={errors} setErrors={setErrors} />;
     }

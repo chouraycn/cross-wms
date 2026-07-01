@@ -8,16 +8,19 @@
 import Database from 'better-sqlite3';
 import type { IStorageEngine, IPreparedStatement } from './StorageEngine.js';
 import { logger } from '../logger.js';
+import { configureSqliteConnectionPragmas } from './sqliteWalMaintenance.js';
+import type { SqliteWalMaintenance, SqlitePragmaOptions } from './sqliteWalMaintenance.js';
 import { createRequire } from 'node:module';
 
-const require = createRequire(import.meta.url);
+// commonjs 环境下直接使用全局 require
+const localRequire = typeof require !== 'undefined' ? require : createRequire('file:///dummy.js');
 
 let vecLoadError: string | null = null;
 
 function tryLoadVecExtension(db: Database.Database): boolean {
   if (vecLoadError === 'not-available') return false;
   try {
-    const sqliteVec = require('sqlite-vec');
+    const sqliteVec = localRequire('sqlite-vec');
     sqliteVec.load(db);
     return true;
   } catch (e) {
@@ -34,12 +37,22 @@ function tryLoadVecExtension(db: Database.Database): boolean {
 export class SQLiteEngine implements IStorageEngine {
   private db: Database.Database | null = null;
   private dbPath: string;
+  private pragmaOptions: SqlitePragmaOptions;
+  private walMaintenance: SqliteWalMaintenance | null = null;
 
   /**
    * @param dbPath SQLite 数据库文件路径
+   * @param pragmaOptions PRAGMA 配置选项（可选，默认启用 WAL + 外键）
    */
-  constructor(dbPath: string) {
+  constructor(dbPath: string, pragmaOptions?: SqlitePragmaOptions) {
     this.dbPath = dbPath;
+    this.pragmaOptions = pragmaOptions ?? {
+      foreignKeys: true,
+      busyTimeoutMs: 30_000,
+      synchronous: 'NORMAL',
+      cacheSizeKB: 4000,
+      mmapSize: 64 * 1024 * 1024,
+    };
   }
 
   // ==========================================================================
@@ -51,10 +64,14 @@ export class SQLiteEngine implements IStorageEngine {
       return;
     }
     this.db = new Database(this.dbPath);
-    // 启用 WAL 模式以提升并发读性能
-    this.db.pragma('journal_mode = WAL');
-    // 启用外键约束
-    this.db.pragma('foreign_keys = ON');
+
+    // v2.10: 使用统一 PRAGMA 配置
+    const label = this.pragmaOptions.databaseLabel ?? this.dbPath;
+    this.walMaintenance = configureSqliteConnectionPragmas(this.db, {
+      ...this.pragmaOptions,
+      databaseLabel: label,
+    });
+
     // 尝试加载 sqlite-vec 向量扩展
     const vecOk = tryLoadVecExtension(this.db);
     if (vecOk) {
@@ -64,6 +81,11 @@ export class SQLiteEngine implements IStorageEngine {
   }
 
   disconnect(): Promise<void> {
+    // v2.10: 优雅关闭 WAL 维护（清理定时器 + 最终 TRUNCATE checkpoint）
+    if (this.walMaintenance) {
+      this.walMaintenance.close();
+      this.walMaintenance = null;
+    }
     if (this.db) {
       this.db.close();
       this.db = null;

@@ -12,6 +12,8 @@ import { Router } from 'express';
 import { channelHealthMonitor } from '../services/channelHealthMonitor.js';
 import { configHotReload } from '../services/configHotReload.js';
 import { API_PREFIX } from '../apiVersion.js';
+import { getMemorySummary } from '../logging/diagnostic-memory.js';
+import { TimerManager } from '../core/timerManager.js';
 
 const router = Router();
 
@@ -44,8 +46,8 @@ router.get('/detailed', (_req, res) => {
       unhealthyChannels: systemHealth.unhealthyChannels,
       uptime: process.uptime(),
       memory: {
-        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+        ...getMemorySummary(),
+        arrayBuffersMB: Math.round(process.memoryUsage().arrayBuffers / 1024 / 1024),
         unit: 'MB',
       },
       nodeVersion: process.version,
@@ -71,6 +73,10 @@ router.get('/detailed', (_req, res) => {
         lastModified: new Date(e.lastModified).toISOString(),
         version: e.version,
       })),
+    },
+    timers: {
+      count: TimerManager.count,
+      entries: TimerManager.getStatus(),
     },
   });
 });

@@ -15,6 +15,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { writeMemory, extractKeywords } from '../engine/vecMemoryStore.js';
 import { logger } from '../logger.js';
 import { FileStorage } from '../storage/FileStorage.js';
+import { TimerManager } from '../core/timerManager.js';
 
 // ===================== 常量 =====================
 
@@ -331,8 +332,6 @@ function generateSessionSummary(sessionId: string): string {
 // ===================== 生命周期管理器 =====================
 
 export class SessionLifecycleManager {
-  private idleCheckTimer: NodeJS.Timeout | null = null;
-  private dailyResetTimer: NodeJS.Timeout | null = null;
   private lastKnownDate: string = '';
   private isRunning = false;
 
@@ -343,36 +342,32 @@ export class SessionLifecycleManager {
     this.lastKnownDate = new Date().toISOString().split('T')[0];
 
     // 空闲归档检测
-    this.idleCheckTimer = setInterval(() => {
-      this.checkIdleSessions();
-    }, IDLE_CHECK_INTERVAL_MS);
+    TimerManager.register({
+      name: 'session-lifecycle-cleanup',
+      intervalMs: IDLE_CHECK_INTERVAL_MS,
+      callback: () => {
+        this.checkIdleSessions();
+      },
+      unref: true,
+    });
 
     // 每日重置检测
-    this.dailyResetTimer = setInterval(() => {
-      this.checkDailyReset();
-    }, DAILY_RESET_CHECK_INTERVAL_MS);
-
-    // 不阻止进程退出
-    if (this.idleCheckTimer && typeof this.idleCheckTimer.unref === 'function') {
-      this.idleCheckTimer.unref();
-    }
-    if (this.dailyResetTimer && typeof this.dailyResetTimer.unref === 'function') {
-      this.dailyResetTimer.unref();
-    }
+    TimerManager.register({
+      name: 'session-daily-reset',
+      intervalMs: DAILY_RESET_CHECK_INTERVAL_MS,
+      callback: () => {
+        this.checkDailyReset();
+      },
+      unref: true,
+    });
 
     logger.info(`[SessionLifecycle] 守护已启动 (idleThreshold=${IDLE_ARCHIVE_THRESHOLD_MS / 60000}min, checkInterval=${IDLE_CHECK_INTERVAL_MS / 60000}min)`);
   }
 
   /** 停止守护 */
   stop(): void {
-    if (this.idleCheckTimer) {
-      clearInterval(this.idleCheckTimer);
-      this.idleCheckTimer = null;
-    }
-    if (this.dailyResetTimer) {
-      clearInterval(this.dailyResetTimer);
-      this.dailyResetTimer = null;
-    }
+    TimerManager.unregister('session-lifecycle-cleanup');
+    TimerManager.unregister('session-daily-reset');
     this.isRunning = false;
     logger.info('[SessionLifecycle] 守护已停止');
   }

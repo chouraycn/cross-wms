@@ -57,7 +57,7 @@ EventLedger 历史数据迁移工具
 
 async function migrate() {
   const chatDbPath = AppPaths.chatDbFile;
-  const eventLedgerPath = path.join(AppPaths.dataDir, 'event-ledger.db');
+  const eventLedgerPath = AppPaths.chatDbFile; // Event Ledger 已合入主库 chat.db
 
   console.log('='.repeat(60));
   console.log('EventLedger 历史数据迁移工具');

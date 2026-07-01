@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { IconButton, useTheme } from '@mui/material';
 import { getGrayScale } from '../../constants/theme';
 import { isPyWebView } from '../../services/tencentDocsApi';
@@ -49,15 +49,25 @@ const SidebarToggle = React.memo<SidebarToggleProps>(function SidebarToggle({
   const gs = getGrayScale(isDark);
   const nativeApp = isNativeApp();
 
+  // v1.7.18: 监听全屏状态变化，全屏时收起状态按钮前移
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const onFullscreenChanged = ((e: CustomEvent) => {
+      setIsFullscreen(e.detail?.fullscreen ?? false);
+    }) as EventListener;
+    window.addEventListener('cdf-window-fullscreen-changed', onFullscreenChanged);
+    return () => window.removeEventListener('cdf-window-fullscreen-changed', onFullscreenChanged);
+  }, []);
+
   return (
     <IconButton
       onClick={onToggle}
       size="small"
       sx={{
         position: 'fixed',
-        // v1.7.17: top=15px 与红黄绿和搜索按钮对齐（再往下移3px）
+        // v1.7.18: top=15px (往上1px)，left=72 (再右移5px)
         top: nativeApp ? '15px' : '10px',
-        left: collapsed ? 46 : expandedWidth - 33,
+        left: collapsed ? (nativeApp && !isFullscreen ? 77 : 41) : expandedWidth - 30,
         right: 'auto',
         // v1.5.166: zIndex 高于 WindowDragBar(1300)，确保按钮可点击
         zIndex: 1400,
@@ -66,17 +76,15 @@ const SidebarToggle = React.memo<SidebarToggleProps>(function SidebarToggle({
         p: 0.45,
         width: 25.92,
         height: 25.92,
-        // Glass effect when collapsed (button sits on content area)
-        ...(collapsed ? {
-          backgroundColor: isDark ? 'rgba(20, 20, 20, 0.6)' : 'rgba(240, 240, 240, 0.6)',
+        // v1.7.18: macOS 收起时去掉玻璃背景和描边，网页端保持玻璃效果
+        backgroundColor: collapsed && nativeApp ? 'transparent' : (isDark ? 'rgba(20, 20, 20, 0.6)' : 'rgba(240, 240, 240, 0.6)'),
+        ...(collapsed && nativeApp ? {} : {
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
-        } : {}),
+        }),
+        border: collapsed && nativeApp ? 'none' : `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
         '&:hover': {
-          backgroundColor: collapsed
-            ? (isDark ? 'rgba(20, 20, 20, 0.8)' : 'rgba(240, 240, 240, 0.8)')
-            : gs.bgHover,
+          backgroundColor: collapsed && nativeApp ? gs.bgHover : (isDark ? 'rgba(20, 20, 20, 0.8)' : 'rgba(240, 240, 240, 0.8)'),
         },
         '&:focus': { outline: 'none' },
       }}

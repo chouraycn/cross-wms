@@ -30,6 +30,9 @@ export type ModelProvider =
   | 'aliyun'
   | 'modelark'
   | 'ppio'
+  | 'groq'
+  | 'mistral'
+  | 'nvidia'
   | 'custom';
 
 /** 模型能力标签 */

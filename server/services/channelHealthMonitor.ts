@@ -10,6 +10,7 @@
 
 import { EventEmitter } from 'events';
 import { logger } from '../logger.js';
+import { TimerManager } from '../core/timerManager.js';
 
 // ===================== 类型定义 =====================
 
@@ -72,12 +73,10 @@ const DEFAULT_RETRY_INTERVAL = 30000; // 30 秒
 
 export class ChannelHealthMonitor extends EventEmitter {
   private channels: Map<ChannelType, ChannelHealth> = new Map();
-  private checkTimers: Map<ChannelType, NodeJS.Timeout> = new Map();
   private sseClients: Set<{
     write: (data: string) => void;
     destroy?: () => void;
   }> = new Set();
-  private globalInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     super();
@@ -403,10 +402,7 @@ export class ChannelHealthMonitor extends EventEmitter {
    */
   private scheduleHealthCheck(type: ChannelType): void {
     // 清除现有定时器
-    const existingTimer = this.checkTimers.get(type);
-    if (existingTimer) {
-      clearInterval(existingTimer);
-    }
+    TimerManager.unregister(`channel-health-${type}`);
 
     const health = this.channels.get(type);
     if (!health || !health.config.enabled) return;
@@ -417,11 +413,14 @@ export class ChannelHealthMonitor extends EventEmitter {
     this.performHealthCheck(type);
 
     // 设置定期检查
-    const timer = setInterval(() => {
-      this.performHealthCheck(type);
-    }, interval);
-
-    this.checkTimers.set(type, timer);
+    TimerManager.register({
+      name: `channel-health-${type}`,
+      intervalMs: interval,
+      callback: () => {
+        this.performHealthCheck(type);
+      },
+      unref: true,
+    });
 
     logger.info(`[ChannelHealthMonitor] Scheduled health check for ${type} every ${interval}ms`);
   }
@@ -430,31 +429,30 @@ export class ChannelHealthMonitor extends EventEmitter {
    * 暂停健康检查
    */
   private pauseHealthCheck(type: ChannelType): void {
-    const timer = this.checkTimers.get(type);
-    if (timer) {
-      clearInterval(timer);
-      this.checkTimers.delete(type);
-    }
+    TimerManager.unregister(`channel-health-${type}`);
   }
 
   /**
    * 启动监控
    */
   start(): void {
-    if (this.globalInterval) return;
-
     // 启动所有启用的渠道检查
     for (const type of this.channels.keys()) {
       this.scheduleHealthCheck(type);
     }
 
     // 设置全局检查（确保至少每 5 分钟检查一次）
-    this.globalInterval = setInterval(() => {
-      const systemHealth = this.getSystemHealth();
-      if (systemHealth.status !== 'healthy') {
-        logger.warn('[ChannelHealthMonitor] System health degraded:', systemHealth);
-      }
-    }, 300000);
+    TimerManager.register({
+      name: 'channel-health-monitor',
+      intervalMs: 300000,
+      callback: () => {
+        const systemHealth = this.getSystemHealth();
+        if (systemHealth.status !== 'healthy') {
+          logger.warn('[ChannelHealthMonitor] System health degraded:', systemHealth);
+        }
+      },
+      unref: true,
+    });
 
     logger.info('[ChannelHealthMonitor] Started monitoring');
   }
@@ -463,16 +461,13 @@ export class ChannelHealthMonitor extends EventEmitter {
    * 停止监控
    */
   stop(): void {
-    // 清除所有定时器
-    for (const timer of this.checkTimers.values()) {
-      clearInterval(timer);
+    // 清除所有渠道定时器
+    for (const type of this.channels.keys()) {
+      TimerManager.unregister(`channel-health-${type}`);
     }
-    this.checkTimers.clear();
 
-    if (this.globalInterval) {
-      clearInterval(this.globalInterval);
-      this.globalInterval = null;
-    }
+    // 清除全局定时器
+    TimerManager.unregister('channel-health-monitor');
 
     logger.info('[ChannelHealthMonitor] Stopped monitoring');
   }

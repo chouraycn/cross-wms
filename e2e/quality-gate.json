@@ -1,0 +1,246 @@
+{
+  "version": "1.0.0",
+  "name": "Cross-WMS E2E Quality Gate",
+  "description": "E2E 测试质量门禁规则配置",
+
+  "测试覆盖率阈值": {
+    "全局覆盖率": {
+      "minimum": 70,
+      "target": 85,
+      "critical": true,
+      "description": "整体 E2E 测试覆盖率必须达到 70%，目标为 85%"
+    },
+    "关键路径覆盖率": {
+      "minimum": 90,
+      "target": 100,
+      "critical": true,
+      "description": "核心业务流程（聊天、Wiki、记忆、工具）必须 100% 覆盖",
+      "paths": [
+        "chat",
+        "wiki",
+        "memory",
+        "tools"
+      ]
+    },
+    "API 覆盖率": {
+      "minimum": 80,
+      "target": 95,
+      "critical": true,
+      "description": "后端 API 接口测试覆盖率"
+    },
+    "UI 组件覆盖率": {
+      "minimum": 60,
+      "target": 80,
+      "critical": false,
+      "description": "UI 组件交互测试覆盖率"
+    }
+  },
+
+  "性能阈值": {
+    "页面加载时间": {
+      "maximum": 3000,
+      "target": 1500,
+      "unit": "ms",
+      "critical": true,
+      "description": "页面首次加载时间不超过 3 秒"
+    },
+    "API 响应时间": {
+      "maximum": 1000,
+      "target": 500,
+      "unit": "ms",
+      "critical": true,
+      "description": "API 平均响应时间不超过 1 秒"
+    },
+    "流式输出延迟": {
+      "maximum": 100,
+      "target": 50,
+      "unit": "ms",
+      "critical": false,
+      "description": "流式输出首字节延迟不超过 100ms"
+    },
+    "工具执行时间": {
+      "pdfReader": {
+        "maximum": 5000,
+        "target": 2000,
+        "unit": "ms",
+        "description": "PDF 读取工具执行时间"
+      },
+      "fileOperations": {
+        "maximum": 1000,
+        "target": 300,
+        "unit": "ms",
+        "description": "文件操作工具执行时间"
+      },
+      "browserControl": {
+        "maximum": 3000,
+        "target": 1000,
+        "unit": "ms",
+        "description": "浏览器控制工具执行时间"
+      }
+    },
+    "并发性能": {
+      "maximumResponseTime": 2000,
+      "target": 1000,
+      "unit": "ms",
+      "concurrentUsers": 10,
+      "description": "10 个并发用户时的最大响应时间"
+    }
+  },
+
+  "可用性阈值": {
+    "测试成功率": {
+      "minimum": 95,
+      "target": 100,
+      "unit": "%",
+      "critical": true,
+      "description": "测试通过率必须达到 95%"
+    },
+    "测试稳定性": {
+      "minimum": 90,
+      "target": 95,
+      "unit": "%",
+      "critical": true,
+      "description": "测试结果稳定性（多次运行通过率）"
+    },
+    "缺陷检测率": {
+      "minimum": 80,
+      "target": 90,
+      "unit": "%",
+      "critical": false,
+      "description": "已知缺陷的检测率"
+    },
+    "错误恢复率": {
+      "minimum": 100,
+      "target": 100,
+      "unit": "%",
+      "critical": true,
+      "description": "错误场景必须被正确处理"
+    }
+  },
+
+  "测试执行限制": {
+    "超时设置": {
+      "单个测试": {
+        "maximum": 30000,
+        "target": 10000,
+        "unit": "ms",
+        "description": "单个测试最大执行时间"
+      },
+      "测试套件": {
+        "maximum": 300000,
+        "target": 180000,
+        "unit": "ms",
+        "description": "单个测试套件最大执行时间"
+      },
+      "全量测试": {
+        "maximum": 600000,
+        "target": 300000,
+        "unit": "ms",
+        "description": "全量测试最大执行时间"
+      }
+    },
+    "重试次数": {
+      "CI 环境": 2,
+      "本地环境": 0,
+      "description": "CI 环境失败后重试次数"
+    },
+    "并发限制": {
+      "最大并发": 4,
+      "推荐并发": 2,
+      "description": "并发执行测试的最大数量"
+    }
+  },
+
+  "质量门禁规则": {
+    "强制规则": [
+      {
+        "name": "关键路径必须全部通过",
+        "condition": "关键路径覆盖率.minimum == 100 AND 测试成功率.minimum >= 95",
+        "action": "block",
+        "description": "关键路径测试失败时阻止部署"
+      },
+      {
+        "name": "性能必须在阈值内",
+        "condition": "页面加载时间.maximum <= 3000 AND API 响应时间.maximum <= 1000",
+        "action": "block",
+        "description": "性能超出阈值时阻止部署"
+      },
+      {
+        "name": "错误处理必须完整",
+        "condition": "错误恢复率.minimum == 100",
+        "action": "block",
+        "description": "错误处理不完整时阻止部署"
+      }
+    ],
+    "警告规则": [
+      {
+        "name": "覆盖率低于目标",
+        "condition": "全局覆盖率.minimum < 85",
+        "action": "warn",
+        "description": "覆盖率低于目标时发出警告"
+      },
+      {
+        "name": "性能低于目标",
+        "condition": "页面加载时间.target < 1500 OR API 响应时间.target < 500",
+        "action": "warn",
+        "description": "性能低于目标时发出警告"
+      },
+      {
+        "name": "测试稳定性不足",
+        "condition": "测试稳定性.minimum < 95",
+        "action": "warn",
+        "description": "测试稳定性不足时发出警告"
+      }
+    ]
+  },
+
+  "报告配置": {
+    "输出格式": [
+      "html",
+      "json",
+      "junit"
+    ],
+    "详细程度": "medium",
+    "失败截图": true,
+    "失败视频": true,
+    "失败跟踪": true,
+    "性能图表": true,
+    "覆盖率报告": true
+  },
+
+  "CI/CD 集成": {
+    "触发条件": [
+      "push to main/master",
+      "pull request",
+      "scheduled (daily)",
+      "manual trigger"
+    ],
+    "通知方式": [
+      "github-actions-summary",
+      "slack-webhook",
+      "email"
+    ],
+    "失败处理": {
+      "自动重试": true,
+      "重试次数": 2,
+      "通知团队": true
+    }
+  },
+
+  "维护规则": {
+    "定期审查": {
+      "频率": "monthly",
+      "内容": [
+        "更新测试用例",
+        "调整阈值",
+        "优化性能",
+        "清理过时测试"
+      ]
+    },
+    "测试数据管理": {
+      "清理频率": "weekly",
+      "备份策略": "before-cleanup",
+      "测试数据隔离": true
+    }
+  }
+}

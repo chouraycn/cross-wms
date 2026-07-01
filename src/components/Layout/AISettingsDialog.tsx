@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Box, Typography, Alert, Button, CircularProgress, useTheme,
   ToggleButtonGroup, ToggleButton, TextField, Slider,
+  Dialog, DialogTitle, DialogContent, IconButton,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PsychologyIcon from '@mui/icons-material/Psychology';
@@ -11,25 +12,39 @@ import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
 import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import HistoryIcon from '@mui/icons-material/History';
+import CodeIcon from '@mui/icons-material/Code';
+import DescriptionIcon from '@mui/icons-material/Description';
+import CloseIcon from '@mui/icons-material/Close';
+import BranchIcon from '@mui/icons-material/CallSplit';
 import { useModels } from '../../contexts/ModelsContext';
 import { getGrayScale } from '../../constants/theme';
 import ModelManager from '../shared/ModelManager';
 import SettingsDialogShell, { type TabDef } from '../shared/SettingsDialogShell';
 import MCPSettingsTab from './MCPSettingsTab';
 import ImageGenerationSettingsTab from './ImageGenerationSettingsTab';
+import GitSettingsTab from './GitSettingsTab';
+import SettingsSecrets from './SettingsSecrets';
+import LspPanel from '../LSP/LspPanel';
+import SoulDebugPanel from '../Soul/SoulDebugPanel';
+import SoulEditor from '../Soul/SoulEditor';
 import { useAiEngineSettings, type ExecutionMode, type QueueMode } from '../../contexts/AppSettingsContext';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar tabs                                                        */
 /* ------------------------------------------------------------------ */
-type AITab = 'mcp' | 'model' | 'chat' | 'auth' | 'image';
+type AITab = 'mcp' | 'model' | 'chat' | 'auth' | 'image' | 'secrets' | 'lsp' | 'soul' | 'git';
 
 const SIDEBAR_TABS: TabDef[] = [
   { key: 'mcp', label: 'MCP', icon: <LinkIcon sx={{ fontSize: 17 }} /> },
   { key: 'model', label: '模型', icon: <FormatListBulletedIcon sx={{ fontSize: 17 }} /> },
   { key: 'image', label: '图片生成', icon: <ImageOutlinedIcon sx={{ fontSize: 17 }} /> },
   { key: 'chat', label: '对话', icon: <ChatOutlinedIcon sx={{ fontSize: 17 }} /> },
+  { key: 'git', label: 'Git', icon: <BranchIcon sx={{ fontSize: 17 }} /> },
+  { key: 'soul', label: '规则', icon: <DescriptionIcon sx={{ fontSize: 17 }} /> },
+  { key: 'secrets', label: '密钥管理', icon: <LockOutlinedIcon sx={{ fontSize: 17 }} /> },
+  { key: 'lsp', label: 'LSP', icon: <CodeIcon sx={{ fontSize: 17 }} /> },
   { key: 'auth', label: '外部应用授权', icon: <VpnKeyOutlinedIcon sx={{ fontSize: 17 }} /> },
 ];
 
@@ -61,61 +76,119 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) =>
   const gs = getGrayScale(isDark);
   const [activeTab, setActiveTab] = useState<AITab>('model');
   const { models: modelList, defaultModelId, updateModels, isLoading, error, reload } = useModels();
+  const [soulEditorOpen, setSoulEditorOpen] = useState(false);
+  const [soulEditorFileType, setSoulEditorFileType] = useState<'soul' | 'user'>('soul');
+
+  // 处理编辑规则
+  const handleEditSoul = (fileType: 'soul' | 'user') => {
+    setSoulEditorFileType(fileType);
+    setSoulEditorOpen(true);
+  };
+
+  // 保存规则文件
+  const handleSaveSoul = async (content: string) => {
+    const response = await fetch('/api/soul/file', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileType: soulEditorFileType, content }),
+    });
+    if (!response.ok) {
+      throw new Error('保存失败');
+    }
+  };
 
   return (
-    <SettingsDialogShell
-      open={open}
-      onClose={onClose}
-      tabs={SIDEBAR_TABS}
-      activeTab={activeTab}
-      onTabChange={(key) => setActiveTab(key as AITab)}
-    >
-      {activeTab === 'model' && (
-        <>
-          {isLoading && (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, gap: 1 }}>
-              <CircularProgress size={20} />
-              <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted }}>正在加载模型配置...</Typography>
-            </Box>
-          )}
-          {error && (
-            <Alert
-              severity="error"
-              sx={{ mb: 2, borderRadius: 1.5 }}
-              action={
-                <Button color="inherit" size="small" startIcon={<RefreshIcon />} onClick={() => reload()}>
-                  重试
-                </Button>
-              }
-            >
-              加载模型配置失败：{error}
-            </Alert>
-          )}
-          {!isLoading && !error && (
-            <ModelManager
-              models={modelList}
-              defaultModelId={defaultModelId}
-              variant="table"
-              onChange={(models, newDefaultModelId) => updateModels(models, newDefaultModelId)}
-            />
-          )}
-        </>
-      )}
-      {activeTab === 'mcp' && <MCPSettingsTab />}
-      {activeTab === 'image' && <ImageGenerationSettingsTab />}
-      {activeTab === 'chat' && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>对话引擎</Typography>
-          <Typography sx={{ fontSize: '0.8rem', color: gs.textSecondary, mb: 3 }}>
-            选择 AI 工具执行的策略模式
+    <>
+      <SettingsDialogShell
+        open={open}
+        onClose={onClose}
+        tabs={SIDEBAR_TABS}
+        activeTab={activeTab}
+        onTabChange={(key) => setActiveTab(key as AITab)}
+      >
+        {activeTab === 'model' && (
+          <>
+            {isLoading && (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, gap: 1 }}>
+                <CircularProgress size={20} />
+                <Typography sx={{ fontSize: '0.875rem', color: gs.textMuted }}>正在加载模型配置...</Typography>
+              </Box>
+            )}
+            {error && (
+              <Alert
+                severity="error"
+                sx={{ mb: 2, borderRadius: 1.5 }}
+                action={
+                  <Button color="inherit" size="small" startIcon={<RefreshIcon />} onClick={() => reload()}>
+                    重试
+                  </Button>
+                }
+              >
+                加载模型配置失败：{error}
+              </Alert>
+            )}
+            {!isLoading && !error && (
+              <ModelManager
+                models={modelList}
+                defaultModelId={defaultModelId}
+                variant="table"
+                onChange={(models, newDefaultModelId) => updateModels(models, newDefaultModelId)}
+              />
+            )}
+          </>
+        )}
+        {activeTab === 'mcp' && <MCPSettingsTab />}
+        {activeTab === 'lsp' && <LspPanel />}
+        {activeTab === 'image' && <ImageGenerationSettingsTab />}
+        {activeTab === 'chat' && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>对话引擎</Typography>
+            <Typography sx={{ fontSize: '0.8rem', color: gs.textSecondary, mb: 3 }}>
+              选择 AI 工具执行的策略模式
+            </Typography>
+            <ExecutionModeSelector />
+            <QueueModeSelector />
+            <MaxHistoryTurnsSelector />
+          </Box>
+        )}
+        {activeTab === 'git' && <GitSettingsTab />}
+        {activeTab === 'soul' && (
+          <SoulDebugPanel onEdit={handleEditSoul} />
+        )}
+        {activeTab === 'secrets' && <SettingsSecrets />}
+        {activeTab === 'auth' && <PlaceholderTab title="外部应用授权" description="外部应用授权管理功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
+      </SettingsDialogShell>
+
+      {/* Soul Editor Dialog */}
+      <Dialog
+        open={soulEditorOpen}
+        onClose={() => setSoulEditorOpen(false)}
+        maxWidth="md"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            height: '80vh',
+            borderRadius: 2,
+          },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
+          <Typography sx={{ fontSize: '1rem', fontWeight: 600 }}>
+            {soulEditorFileType === 'soul' ? '编辑 SOUL.md' : '编辑 USER.md'}
           </Typography>
-          <ExecutionModeSelector />
-          <QueueModeSelector />
-          <MaxHistoryTurnsSelector />
-        </Box>
-      )}
-      {activeTab === 'auth' && <PlaceholderTab title="外部应用授权" description="外部应用授权管理功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
-    </SettingsDialogShell>
+          <IconButton size="small" onClick={() => setSoulEditorOpen(false)}>
+            <CloseIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          <SoulEditor
+            fileType={soulEditorFileType}
+            onSave={handleSaveSoul}
+            onClose={() => setSoulEditorOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

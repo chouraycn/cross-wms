@@ -46,6 +46,10 @@ const WmsReportPage = React.lazy(() => import('./pages/WmsReportPage'));
 const WmsReplenishmentPage = React.lazy(() => import('./pages/WmsReplenishmentPage'));
 const TransferPage = React.lazy(() => import('./pages/TransferPage'));
 const ProjectDetailPage = React.lazy(() => import('./pages/ProjectDetailPage'));
+const PdfToolsPage = React.lazy(() => import('./pages/PdfToolsPage'));
+const MemoryPage = React.lazy(() => import('./pages/MemoryPage'));
+const FileExplorerPage = React.lazy(() => import('./pages/FileExplorerPage'));
+const EventLedgerPage = React.lazy(() => import('./pages/EventLedgerPage'));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
 const PluginsPage = React.lazy(() => import('./pages/PluginsPage'));
 const ApiDomainWhitelistPage = React.lazy(() => import('./pages/ApiDomainWhitelistPage'));
@@ -53,6 +57,8 @@ const ApiTemplatesPage = React.lazy(() => import('./pages/ApiTemplatesPage'));
 const BrowserPage = React.lazy(() => import('./pages/BrowserPage'));
 const ApiCredentialsPage = React.lazy(() => import('./pages/ApiCredentialsPage'));
 const ApiHistoryPage = React.lazy(() => import('./pages/ApiHistoryPage'));
+const ExecutionHistoryPage = React.lazy(() => import('./pages/ExecutionHistoryPage'));
+const TemplateMarketPage = React.lazy(() => import('./pages/TemplateMarketPage'));
 
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
@@ -671,6 +677,9 @@ const MainLayout: React.FC = () => {
                     <Route path="/wms/reports" element={<WmsReportPage />} />
                     <Route path="/wms/replenishment" element={<Suspense fallback={<LoadingFallback />}><WmsReplenishmentPage /></Suspense>} />
                     <Route path="/transfer" element={<TransferPage />} />
+                    <Route path="/pdf-tools" element={<PdfToolsPage />} />
+                    <Route path="/memory" element={<MemoryPage />} />
+                    <Route path="/event-ledger" element={<EventLedgerPage />} />
                     <Route path="/settings" element={<SettingsRedirect />} />
                     <Route path="/automation" element={<AutomationPage />} />
                     <Route path="/plugins" element={<PluginsPage />} />
@@ -679,6 +688,8 @@ const MainLayout: React.FC = () => {
                     <Route path="/browser" element={<BrowserPage />} />
                     <Route path="/api-credentials" element={<ApiCredentialsPage />} />
                     <Route path="/api-history" element={<ApiHistoryPage />} />
+                    <Route path="/execution-history" element={<ExecutionHistoryPage />} />
+                    <Route path="/template-market" element={<TemplateMarketPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Suspense>

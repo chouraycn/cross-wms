@@ -9,7 +9,7 @@ import { AppPaths } from './config/appPaths.js';
 import { setServerPort } from './config/serverConfig.js';
 import { API_PREFIX } from './apiVersion.js';
 import { apiVersionMiddleware } from './middleware/apiVersionMiddleware.js';
-import { initDb } from './db.js';
+import { initDb, getDb } from './db.js';
 import skillWatcher from './services/skillWatcher.js';
 import { initDefaultTools, listTools } from './engine/toolRegistry.js';
 import { agentRegistry } from './engine/agentRegistry.js';
@@ -33,6 +33,8 @@ process.on('uncaughtException', (err: Error) => {
 // v1.9.2: 工具权限请求全局 EventEmitter (reserved for future cross-route events)
 const _permissionEmitter = new EventEmitter(); void _permissionEmitter;
 
+import { startMemoryMonitor } from './logging/diagnostic-memory.js';
+
 // Business data routes
 import warehousesRouter from './routes/warehouses.js';
 import inventoryRouter from './routes/inventory.js';
@@ -46,6 +48,7 @@ import settingsRouter from './routes/settings.js';
 import migrateRouter from './routes/migrate.js';
 import chainRoutes from './routes/chainRoutes.js';
 import automationRoutes from './routes/automation.js';
+import triggerRoutes from './routes/trigger.js';
 
 // Projects & Tasks routes
 import projectsRouter from './routes/projects.js';
@@ -96,6 +99,11 @@ import { configHotReload } from './services/configHotReload.js';
 // Automation Engine v2.0
 import { startEngine } from './engine/engine.js';
 
+// Trigger Engine v2.0 (触发器系统)
+import { startTriggerEngine, stopTriggerEngine } from './engine/triggerEngine.js';
+import { initTriggerManager } from './engine/triggerManager.js';
+import { startEventListener, stopEventListener } from './engine/eventListener.js';
+
 // v3.0: Plugin & API Domain Whitelist routes
 import pluginsRouter from './routes/plugins.js';
 import apiDomainWhitelistRouter from './routes/apiDomainWhitelist.js';
@@ -103,6 +111,12 @@ import apiDomainWhitelistRouter from './routes/apiDomainWhitelist.js';
 // v3.0: Browser routes
 import browserRouter from './routes/browser.js';
 import browserProfilesRouter from './routes/browserProfiles.js';
+
+// v3.0: PDF, LSP, File, Webhook routes
+import pdfRouter from './routes/pdf.js';
+import lspRouter from './routes/lsp.js';
+import fileRouter from './routes/file.js';
+import webhookRouter from './routes/webhook.js';
 
 // v3.0: API Templates routes
 import apiTemplatesRouter from './routes/apiTemplates.js';
@@ -117,8 +131,8 @@ import apiHistoryRouter from './routes/apiHistory.js';
 import { pluginRegistry } from './engine/pluginRegistry.js';
 import { listPluginTools } from './engine/toolRegistry.js';
 
-// v3.0: BrowserHost Client
-import { startBrowserHost, stopBrowserHost, getBrowserHostHealth } from './services/browserHostClient.js';
+// v3.0: BrowserHost Client（延迟启动，首次使用时自动启动）
+import { stopBrowserHost } from './services/browserHostClient.js';
 
 // v4.0: MCP Client Manager
 import mcpRouter from './routes/mcp.js';
@@ -130,8 +144,20 @@ import imageGenerationRouter from './routes/image-generation.js';
 // v9.0: Event Ledger (事件溯源查询)
 import eventLedgerRouter from './routes/eventLedger.js';
 
+// Goals & Wiki & Secrets routes
+import goalsRouter from './routes/goalsService.js';
+import wikiRouter from './routes/wikiService.js';
+import secretsRouter from './routes/secretsService.js';
+
 // System Permissions
 import permissionsRouter from './routes/permissions.js';
+
+// Soul Rules (人格规则管理)
+import soulRouter from './routes/soul.js';
+import soulWatcher from './engine/soul/watcher.js';
+
+// Git integration routes
+import gitRouter from './routes/git.js';
 
 // v10.0: Gateway (API 兼容网关)
 import gatewayRouter from './gateway/gateway.js';
@@ -144,6 +170,9 @@ import { sessionLifecycleManager } from './services/sessionLifecycle.js';
 // v7.0: Message Queue (队列与并发控制)
 import { messageQueue } from './engine/messageQueue.js';
 import { logger } from './logger.js';
+
+// TimerManager (定时器统一管理)
+import { TimerManager } from './core/timerManager.js';
 
 // v9.0: Event Ledger (事件溯源)
 import { initEventLedger, getEventLedger } from './engine/eventLedger.js';
@@ -177,6 +206,9 @@ app.use(express.json({ limit: '3mb' }));
 
 // 初始化 Skill Watcher
 skillWatcher.init();
+
+// 初始化 Soul Watcher（人格规则热更新）
+soulWatcher.init();
 
 // 启动渠道健康监控
 channelHealthMonitor.start();
@@ -221,6 +253,9 @@ app.use('/api/tasks', tasksRouter);
 // Automation webhook routes
 app.use('/api/automation', automationRoutes);
 
+// Trigger routes (触发器系统)
+app.use('/api/triggers', triggerRoutes);
+
 // Skill chain routes
 app.use('/api/skill-chains', chainRoutes);
 app.use('/api/chain-executions', chainRoutes);
@@ -250,6 +285,12 @@ app.use('/api/api-domain-whitelist', apiDomainWhitelistRouter);
 app.use('/api/browser', browserRouter);
 app.use('/api/browser/profiles', browserProfilesRouter);
 
+// ========== v3.0: PDF, LSP, File, Webhook Routes ==========
+app.use('/api/pdf', pdfRouter);
+app.use('/api/lsp', lspRouter);
+app.use('/api/file', fileRouter);
+app.use('/api/webhook', webhookRouter);
+
 // ========== v3.0: API Templates Routes ==========
 app.use('/api/api-templates', apiTemplatesRouter);
 
@@ -267,6 +308,14 @@ app.use('/api/image-generation', imageGenerationRouter);
 
 // ========== v9.0: Event Ledger Routes ==========
 app.use('/api/event-ledger', eventLedgerRouter);
+
+// ========== Goals & Wiki & Secrets Routes ==========
+app.use('/api/goals', goalsRouter);
+app.use('/api/wiki', wikiRouter);
+app.use('/api/secrets', secretsRouter);
+
+// ========== Soul Rules Routes (人格规则管理) ==========
+app.use('/api/soul', soulRouter);
 
 // ========== v10.0: Gateway Routes (OpenAI/MCP 兼容) ==========
 // 从环境变量或配置文件读取 API Keys
@@ -332,6 +381,8 @@ app.use(`${API_PREFIX}/api-history`, apiHistoryRouter);
 app.use(`${API_PREFIX}/mcp`, mcpRouter);
 app.use(`${API_PREFIX}/image-generation`, imageGenerationRouter);
 app.use(`${API_PREFIX}/permissions`, permissionsRouter);
+app.use(`${API_PREFIX}/soul`, soulRouter);
+app.use(`${API_PREFIX}/git`, gitRouter);
 
 // ========== v1.5.220: 前端静态文件服务（供 Swift 原生 App 使用） ==========
 // 优先从 dist/ 加载前端构建产物（开发环境），其次从 process.env.FRONTEND_DIR 加载
@@ -402,20 +453,14 @@ server.listen(PORT, async () => {
     }
   }, 5000);
 
-  // v3.0: 启动 BrowserHost 进程（异步，不阻塞主流程）
-  setTimeout(async () => {
-    try {
-      const result = await startBrowserHost();
-      if (result.ok) {
-        const health = await getBrowserHostHealth();
-        logger.info(`[BrowserHost] 进程已启动, status=${health.status}`);
-      } else {
-        logger.warn(`[BrowserHost] 启动失败: ${result.error} (Browser tools will be unavailable)`);
-      }
-    } catch (err) {
-      logger.warn('[BrowserHost] 启动异常:', err instanceof Error ? err.message : String(err));
-    }
-  }, 3000);
+  // v3.0: BrowserHost 已改为延迟启动，首次调用 browser tool 时自动启动（节省 ~114MB 内存）
+
+  // 启动消息归档定时任务
+  import('./engine/messageArchive.js').then(({ startArchiveScheduler }) => {
+    startArchiveScheduler(getDb);
+  }).catch(err => {
+    logger.warn('[Server] 消息归档调度器启动失败:', err instanceof Error ? err.message : String(err));
+  });
 
   // 自动发现新模型（异步，不阻塞启动）
   setTimeout(() => {
@@ -423,6 +468,9 @@ server.listen(PORT, async () => {
       logger.error('[ModelDiscovery] 启动同步失败:', e);
     });
   }, 5000);
+
+  // 启动内存压力监控（60s 采样间隔）
+  startMemoryMonitor(60_000);
 
   // 初始化 WMS 行业技能表
   ensureWmsTables();
@@ -459,7 +507,7 @@ server.listen(PORT, async () => {
     logger.warn('[EventLedger] 初始化失败，继续运行中:', err instanceof Error ? err.message : String(err));
   }
 
-  // 初始化语义匹配引擎（异步，不阻塞启动）
+  // 初始化语义匹配引擎（延迟 60s，避免启动时加载 ONNX 模型占用内存）
   setTimeout(async () => {
     try {
       const stats = await initMatchingEngine();
@@ -467,10 +515,15 @@ server.listen(PORT, async () => {
     } catch (e) {
       logger.error('[Matching] 嵌入初始化失败:', e);
     }
-  }, 3000);
+  }, 60_000).unref();
 
   // 启动自动化引擎 v2.0（30s 轮询）
   const { stop } = startEngine(30_000);
+
+  // 启动触发器引擎 v2.0（触发器系统）
+  startTriggerEngine();
+  initTriggerManager();
+  startEventListener();
 
   // v6.0: 启动会话生命周期管理器（空闲归档 + 每日重置）
   sessionLifecycleManager.start();
@@ -491,10 +544,16 @@ server.listen(PORT, async () => {
   const gracefulShutdown = () => {
     logger.info('[Server] 正在关闭自动化引擎...');
     stop();
+    // v2.0: 停止触发器引擎和事件监听器
+    stopTriggerEngine();
+    stopEventListener();
     // v6.0: 停止会话生命周期守护
     sessionLifecycleManager.stop();
     // v7.0: 停止消息队列
     messageQueue.stop();
+    // 清理所有 TimerManager 管理的定时器
+    const timerCount = TimerManager.clearAll();
+    logger.info(`[Server] 已清理 ${timerCount} 个定时器`);
     // v3.0: 关闭 BrowserHost 进程
     stopBrowserHost().catch(err => {
       logger.warn('[Server] BrowserHost 关闭异常:', err);

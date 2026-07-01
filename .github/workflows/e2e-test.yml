@@ -1,0 +1,392 @@
+name: E2E Tests
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+  schedule:
+    # 每天凌晨 2 点执行
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # 允许手动触发
+    inputs:
+      test_type:
+        description: '测试类型'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - ui
+          - api
+          - smoke
+
+env:
+  NODE_VERSION: '20'
+  CI: true
+  E2E_BASE_URL: 'http://localhost:5173'
+
+jobs:
+  # 安装依赖和构建
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache build
+        uses: actions/cache@v4
+        with:
+          path: |
+            dist
+            node_modules
+          key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
+      - name: Build application
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist
+            node_modules
+          retention-days: 1
+
+  # UI E2E 测试 (Playwright)
+  ui-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium]
+        # 可选：启用更多浏览器
+        # browser: [chromium, firefox, webkit]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Start server
+        run: npm run preview &
+        env:
+          PORT: 5173
+
+      - name: Wait for server ready
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:5173 > /dev/null; then
+              echo "Server is ready"
+              break
+            fi
+            echo "Waiting for server... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run Playwright tests
+        run: npm run test:e2e -- --project=${{ matrix.browser }}
+        env:
+          CI: true
+          E2E_BASE_URL: http://localhost:5173
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-${{ matrix.browser }}
+          path: |
+            e2e-results/
+            e2e-report/
+            test-results/
+          retention-days: 7
+
+      - name: Upload screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots-${{ matrix.browser }}
+          path: e2e-results/screenshots/
+          retention-days: 7
+
+      - name: Upload videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-videos-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 7
+
+      - name: Generate test report
+        if: always()
+        run: npm run test:e2e:report
+
+  # API E2E 测试 (Vitest)
+  api-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Start server
+        run: npm run server &
+        env:
+          PORT: 3000
+
+      - name: Wait for server ready
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:3000/health > /dev/null; then
+              echo "API server is ready"
+              break
+            fi
+            echo "Waiting for API server... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run API tests
+        run: npm run test:e2e:api
+        env:
+          CI: true
+          E2E_API_URL: http://localhost:3000
+
+      - name: Upload API test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-results
+          path: e2e-results/
+          retention-days: 7
+
+  # 烟雾测试 (快速验证)
+  smoke-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start server
+        run: npm run preview &
+        env:
+          PORT: 5173
+
+      - name: Wait for server ready
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:5173 > /dev/null; then
+              echo "Server is ready"
+              break
+            fi
+            echo "Waiting for server... ($i/30)"
+            sleep 2
+          done
+
+      - name: Run smoke tests
+        run: npm run test:e2e -- --grep "@smoke"
+        env:
+          CI: true
+
+      - name: Upload smoke test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-results
+          path: e2e-results/
+          retention-days: 3
+
+  # 质量门禁检查
+  quality-gate:
+    needs: [ui-tests, api-tests]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          path: all-results/
+
+      - name: Check quality gate
+        id: quality-check
+        run: |
+          # 解析测试结果
+          ui_passed=$(cat all-results/playwright-results-chromium/results.json | jq '.stats.passed')
+          ui_failed=$(cat all-results/playwright-results-chromium/results.json | jq '.stats.failed')
+          ui_total=$((ui_passed + ui_failed))
+
+          api_passed=$(cat all-results/api-test-results/api-results.json | jq '.numPassedTests')
+          api_failed=$(cat all-results/api-test-results/api-results.json | jq '.numFailedTests')
+          api_total=$((api_passed + api_failed))
+
+          # 计算成功率
+          ui_success_rate=$((ui_passed * 100 / ui_total))
+          api_success_rate=$((api_passed * 100 / api_total))
+
+          echo "UI Tests: $ui_passed/$ui_total passed ($ui_success_rate%)"
+          echo "API Tests: $api_passed/$api_total passed ($api_success_rate%)"
+
+          # 检查质量门禁
+          if [ $ui_success_rate -lt 95 ] || [ $api_success_rate -lt 95 ]; then
+            echo "quality_gate_passed=false" >> $GITHUB_OUTPUT
+            echo "::error::Quality gate failed: Success rate below 95%"
+            exit 1
+          else
+            echo "quality_gate_passed=true" >> $GITHUB_OUTPUT
+            echo "::notice::Quality gate passed"
+          fi
+
+      - name: Generate quality report
+        if: always()
+        run: |
+          # 创建质量报告
+          cat > quality-report.md <<EOF
+          # E2E 测试质量报告
+
+          ## 测试执行概览
+
+          - **UI 测试**: 通过率 $ui_success_rate%
+          - **API 测试**: 通过率 $api_success_rate%
+          - **质量门禁**: ${{ steps.quality-check.outputs.quality_gate_passed == 'true' && '✅ 通过' || '❌ 失败' }}
+
+          ## 详细结果
+
+          请查看上传的测试报告 artifacts。
+          EOF
+
+      - name: Upload quality report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-report
+          path: quality-report.md
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('quality-report.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+  # 清理工作
+  cleanup:
+    needs: [ui-tests, api-tests, quality-gate]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Delete build artifacts
+        uses: geekyeggo/delete-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Clean up old artifacts
+        run: |
+          # 删除超过 7 天的 artifacts
+          # GitHub Actions 会自动清理，但可以手动加速
+          echo "Cleanup completed"
+
+  # 通知
+  notify:
+    needs: [quality-gate]
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name != 'pull_request'
+
+    steps:
+      - name: Send Slack notification
+        if: env.SLACK_WEBHOOK_URL != ''
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Send email notification
+        if: env.EMAIL_RECIPIENTS != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: E2E Tests Failed - ${{ github.repository }}
+          body: |
+            E2E tests failed in repository ${{ github.repository }}.
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            Workflow: ${{ github.workflow }}
+            Run URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          to: ${{ secrets.EMAIL_RECIPIENTS }}
+          from: E2E Test Bot
