@@ -81,8 +81,18 @@ const DEFAULT_USER_AGENT = 'CrossWMS-AI/1.0';
 /**
  * 默认可信服务域名（搜索 API 等）
  * 这些是 Web 工具内置的第三方服务，默认视为可信
+ *
+ * 国内搜索引擎优先：
+ * - cn.bing.com: 必应国内版
+ * - so.com: 360搜索
+ * - baidu.com: 百度（需特殊处理反爬）
  */
 const DEFAULT_TRUSTED_HOSTS = [
+  'cn.bing.com',
+  'bing.com',
+  'so.com',
+  'baidu.com',
+  // 保留 DuckDuckGo 作为海外回退
   'duckduckgo.com',
   'html.duckduckgo.com',
   'api.duckduckgo.com',

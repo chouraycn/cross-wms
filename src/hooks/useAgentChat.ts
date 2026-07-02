@@ -33,6 +33,8 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Message, Session, Attachment, ReferencedSession } from '../types/chat';
 import { API_BASE } from '../constants/api';
+import { useStreamReconciliation } from './useStreamReconciliation';
+import type { StreamReconciliationState } from './useStreamReconciliation';
 
 // ===================== 类型定义 =====================
 
@@ -66,6 +68,14 @@ export interface AgentItemEventData {
   summary?: string;
   progressText?: string;
   progressPercent?: number;
+}
+
+export interface PendingMessage {
+  id: string;
+  content: string;
+  attachments?: Attachment[];
+  state: 'queued' | 'sending' | 'failed';
+  error?: string;
 }
 
 export interface AgentEventPayload {
@@ -421,11 +431,25 @@ export interface UseAgentChatResult {
   activeItems: AgentItemEventData[];
   thinkingText: string;
   hasThinking: boolean;
+  streamState: StreamReconciliationState;
+  pendingMessages: PendingMessage[];
+  getStreamTextContent: () => string;
+  getStreamThinkingContent: () => string;
+  getStreamToolCalls: () => Array<{
+    id: string;
+    name: string;
+    args: string;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    result?: unknown;
+  }>;
   sendMessage: (content: string, options?: SendAgentMessageOptions) => Promise<void>;
   stopGeneration: () => void;
   clearMessages: () => void;
   appendMessage: (message: Message) => void;
   compactSession: (preserveCount?: number) => Promise<{ success: boolean; compressed: boolean; summary?: string }>;
+  addPendingMessage: (content: string, options?: SendAgentMessageOptions) => string;
+  removePendingMessage: (id: string) => void;
+  updatePendingMessage: (id: string, updates: Partial<Pick<PendingMessage, 'state' | 'error'>>) => void;
 }
 
 export function useAgentChat(
@@ -437,6 +461,19 @@ export function useAgentChat(
   const [error, setError] = useState<string | null>(null);
   const [currentRunId, setCurrentRunId] = useState<string | null>(null);
   const [activeItems, setActiveItems] = useState<AgentItemEventData[]>([]);
+  const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
+  const currentPendingMsgIdRef = useRef<string | null>(null);
+
+  // 流协调器 — 独立维护流段状态，与现有渲染逻辑并行
+  const {
+    state: streamState,
+    processEvent: processReconciliationEvent,
+    reset: resetReconciliation,
+    complete: completeReconciliation,
+    getTextContent: getStreamTextContent,
+    getThinkingContent: getStreamThinkingContent,
+    getToolCalls: getStreamToolCalls,
+  } = useStreamReconciliation();
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const parserRef = useRef<SSEStreamParser>(new SSEStreamParser());
@@ -483,6 +520,32 @@ export function useAgentChat(
       }
     }
   }, [currentSession?.id]);
+
+  const addPendingMessage = useCallback((content: string, options?: SendAgentMessageOptions): string => {
+    const pendingId = `pending_${uuidv4().slice(0, 8)}`;
+    const pendingMsg: PendingMessage = {
+      id: pendingId,
+      content,
+      attachments: options?.attachments,
+      state: 'sending',
+    };
+    setPendingMessages((prev) => [...prev, pendingMsg]);
+    currentPendingMsgIdRef.current = pendingId;
+    return pendingId;
+  }, []);
+
+  const removePendingMessage = useCallback((id: string) => {
+    setPendingMessages((prev) => prev.filter((msg) => msg.id !== id));
+    if (currentPendingMsgIdRef.current === id) {
+      currentPendingMsgIdRef.current = null;
+    }
+  }, []);
+
+  const updatePendingMessage = useCallback((id: string, updates: Partial<Pick<PendingMessage, 'state' | 'error'>>) => {
+    setPendingMessages((prev) =>
+      prev.map((msg) => (msg.id === id ? { ...msg, ...updates } : msg))
+    );
+  }, []);
 
   // 初始化 coalescer 和 scheduler
   const initializeStreaming = useCallback(() => {
@@ -651,6 +714,7 @@ export function useAgentChat(
           itemsMapRef.current.clear();
           setActiveItems([]);
           initializeStreaming();
+          resetReconciliation();
         } else if (phase === 'init') {
           if (runId) {
             setCurrentRunId(runId);
@@ -680,6 +744,7 @@ export function useAgentChat(
           textCoalescerRef.current?.dispose();
           thinkingCoalescerRef.current?.dispose();
           flushAllBuffers();
+          completeReconciliation();
 
           const state = blockStateRef.current;
           if (state.assistantMessageIndex >= 0) {
@@ -709,8 +774,14 @@ export function useAgentChat(
           const errorMessage = data.errorMessage as string | undefined;
           if (errorCode && errorMessage) {
             setError(errorMessage);
+            if (currentPendingMsgIdRef.current) {
+              updatePendingMessage(currentPendingMsgIdRef.current, { state: 'failed', error: errorMessage });
+            }
           } else {
             setError(null);
+            if (currentPendingMsgIdRef.current) {
+              removePendingMessage(currentPendingMsgIdRef.current);
+            }
           }
         }
         break;
@@ -719,12 +790,39 @@ export function useAgentChat(
       case 'assistant': {
         const content = (data.content as string) || '';
         handleTextContent(content, false);
+        processReconciliationEvent({ type: 'text_delta', content, contentIndex: 0 });
         break;
       }
 
       case 'thinking': {
         const content = (data.content as string) || '';
         handleTextContent(content, true);
+        processReconciliationEvent({ type: 'thinking_delta', content, contentIndex: 0 });
+
+        // v9.0: 处理 thinkingSignature / redacted 字段，保存到当前 assistant 消息的 metadata
+        const thinkingSignature = data.thinkingSignature as string | undefined;
+        const redacted = data.redacted as boolean | undefined;
+        if (thinkingSignature !== undefined || redacted !== undefined) {
+          const sigState = blockStateRef.current;
+          if (sigState.assistantMessageIndex >= 0) {
+            setMessages((prev) => {
+              if (sigState.assistantMessageIndex >= prev.length) return prev;
+              const msg = prev[sigState.assistantMessageIndex];
+              if (msg.role !== 'assistant') return prev;
+              const updated: Message = {
+                ...msg,
+                metadata: {
+                  ...msg.metadata,
+                  ...(thinkingSignature !== undefined ? { thinkingSignature } : {}),
+                  ...(redacted !== undefined ? { thinkingRedacted: redacted } : {}),
+                },
+              };
+              const newMessages = [...prev];
+              newMessages[sigState.assistantMessageIndex] = updated;
+              return newMessages;
+            });
+          }
+        }
         break;
       }
 
@@ -776,6 +874,9 @@ export function useAgentChat(
         setError(errorMsg);
         setIsLoading(false);
         setCurrentRunId(null);
+        if (currentPendingMsgIdRef.current) {
+          updatePendingMessage(currentPendingMsgIdRef.current, { state: 'failed', error: errorMsg });
+        }
         break;
       }
 
@@ -849,7 +950,7 @@ export function useAgentChat(
       default:
         break;
     }
-  }, [checkAndUpdateSeq, initializeStreaming, handleTextContent, flushAllBuffers, startAssistantMessage]);
+  }, [checkAndUpdateSeq, initializeStreaming, handleTextContent, flushAllBuffers, startAssistantMessage, processReconciliationEvent, resetReconciliation, completeReconciliation, removePendingMessage, updatePendingMessage]);
 
   // ===================== 发送消息 =====================
 
@@ -859,6 +960,8 @@ export function useAgentChat(
   ): Promise<void> => {
     console.log('[useAgentChat] sendMessage called, content:', content.slice(0, 50));
     if (!content.trim() || isLoading) return;
+
+    addPendingMessage(content, options);
 
     const userMsgId = `msg_${uuidv4().slice(0, 8)}`;
     const userMsg: Message = {
@@ -1008,7 +1111,7 @@ export function useAgentChat(
       setCurrentRunId(null);
       abortControllerRef.current = null;
     }
-  }, [currentSession, isLoading, messages, initializeStreaming, handleAgentEvent, flushAllBuffers]);
+  }, [currentSession, isLoading, messages, initializeStreaming, handleAgentEvent, flushAllBuffers, addPendingMessage]);
 
   // ===================== 停止生成 =====================
 
@@ -1186,11 +1289,19 @@ export function useAgentChat(
     activeItems,
     thinkingText,
     hasThinking,
+    streamState,
+    pendingMessages,
+    getStreamTextContent,
+    getStreamThinkingContent,
+    getStreamToolCalls,
     sendMessage,
     stopGeneration,
     clearMessages,
     appendMessage,
     compactSession,
+    addPendingMessage,
+    removePendingMessage,
+    updatePendingMessage,
   };
 }
 

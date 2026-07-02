@@ -44,6 +44,10 @@ import { useApprovalEvents } from '../../hooks/useApprovalEvents.js';
 import BatchMessageToolbar from './BatchMessageToolbar.js';
 import MessageContextMenu from './MessageContextMenu.js';
 import { useMessageActionShortcuts } from '../../hooks/useMessageActionShortcuts.js';
+import { ReadingIndicator } from './ReadingIndicator.js';
+import { CompactionDivider } from './CompactionDivider.js';
+import { PendingSendMessage } from './PendingSendMessage.js';
+import { buildChatItems, ChatItem } from '../../types/chat-items.js';
 
 /** 从 URL 参数解析技能上下文 */
 function resolveSkillFromParams(skillId: string | null): Skill | null {
@@ -228,6 +232,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     stopGeneration,
     error,
     compactSession,
+    pendingMessages,
+    addPendingMessage,
+    removePendingMessage,
+    updatePendingMessage,
   } = useAgentChat(session, handleSessionUpdate);
 
   // 显示错误提示
@@ -709,6 +717,60 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   const isEmpty = session.messages.length === 0;
   const showActivityFeed = isLoading && activeItems.length > 0;
 
+  // ReadingIndicator 阶段判断：根据当前加载状态与活动项推断
+  const readingPhase: 'thinking' | 'generating' | 'tool-executing' = useMemo(() => {
+    if (activeItems.length > 0) return 'tool-executing';
+    const lastMsg = session.messages[session.messages.length - 1];
+    if (lastMsg?.role === 'assistant' && lastMsg.isStreaming) {
+      // thinking 阶段未完成且已有 thinking 内容 → 思考中；否则生成中
+      if (lastMsg.thinkingDone === false) return 'thinking';
+      return 'generating';
+    }
+    return 'thinking';
+  }, [activeItems.length, session.messages]);
+
+  // 压缩历史检测：查找消息中携带的压缩标记（contextCompressed 字段）
+  const compactionInfo = useMemo(() => {
+    for (const msg of session.messages) {
+      if (msg.contextCompressed) {
+        return {
+          found: true,
+          originalCount: session.messages.length,
+          compressionRatio: msg.contextCompressed.ratio,
+          summary: msg.contextCompressed.keyInfoPreserved?.join('；'),
+        };
+      }
+    }
+    // 消息数量超过阈值时显示示例分隔符（无实际压缩事件时）
+    if (session.messages.length >= 20) {
+      return {
+        found: false,
+        originalCount: session.messages.length,
+        compressionRatio: undefined,
+        summary: undefined,
+      };
+    }
+    return null;
+  }, [session.messages]);
+
+  const showCompactionDivider = compactionInfo !== null;
+
+  const chatItems = useMemo<ChatItem[]>(() => {
+    const compactionDividers = compactionInfo ? [{
+      insertAfterIndex: 0,
+      label: compactionInfo.found ? '已压缩历史对话' : '历史对话',
+      summary: compactionInfo.summary,
+      originalCount: compactionInfo.originalCount,
+      compressionRatio: compactionInfo.compressionRatio,
+    }] : [];
+
+    return buildChatItems(session.messages, {
+      showReadingIndicator: isLoading,
+      readingIndicatorPhase: readingPhase,
+      compactionDividers,
+    });
+  }, [session.messages, isLoading, readingPhase, compactionInfo]);
+
   if (isPage) {
     return (
       <>
@@ -832,7 +894,26 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 onDelete={handleDelete}
                 onQuote={handleQuote}
                 onPermissionRespond={handlePermissionRespond}
+                items={chatItems}
               />
+
+              {pendingMessages.length > 0 && (
+                <Box sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', px: 3, py: 1 }}>
+                  {pendingMessages.map((msg) => (
+                    <PendingSendMessage
+                      key={msg.id}
+                      text={msg.content}
+                      attachments={msg.attachments}
+                      state={msg.state}
+                      error={msg.error}
+                      onRetry={() => {
+                        removePendingMessage(msg.id);
+                        sendMessage(msg.content, { attachments: msg.attachments });
+                      }}
+                    />
+                  ))}
+                </Box>
+              )}
             </Box>
           )}
 
@@ -933,7 +1014,26 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             showRegenerate={true}
             onConfirmReplenishment={handleConfirmReplenishment}
             maxHeight="calc(70vh - 130px)"
+            items={chatItems}
           />
+        )}
+
+        {pendingMessages.length > 0 && (
+          <Box sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', px: 3, py: 1, width: '100%' }}>
+            {pendingMessages.map((msg) => (
+              <PendingSendMessage
+                key={msg.id}
+                text={msg.content}
+                attachments={msg.attachments}
+                state={msg.state}
+                error={msg.error}
+                onRetry={() => {
+                  removePendingMessage(msg.id);
+                  sendMessage(msg.content, { attachments: msg.attachments });
+                }}
+              />
+            ))}
+          </Box>
         )}
 
         <Box sx={{ position: 'relative', flexShrink: 0 }}>

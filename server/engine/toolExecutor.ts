@@ -98,6 +98,10 @@ export interface ToolExecutorOptions {
 export interface ToolExecutionResult {
   content: string;
   toolCalls: Array<{ name: string; arguments: string; result: string }>;
+  /** thinking 加密签名（Anthropic thinking content block 提取，可回传 API） */
+  thinkingSignature?: string;
+  /** 安全脱敏标记（redacted_thinking 块为 true） */
+  redacted?: boolean;
 }
 
 /**
@@ -135,6 +139,9 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
   const currentMessages = [...messages];
   let finalContent = '';
   const executedToolCalls: Array<{ name: string; arguments: string; result: string }> = [];
+  // thinking signature（从最近一次 AIResponse 上抛，供细粒度 SSE 事件使用）
+  let lastThinkingSignature: string | undefined;
+  let lastRedacted: boolean | undefined;
 
   for (let turn = 0; turn < maxToolTurns; turn++) {
     if (signal?.aborted) {
@@ -185,9 +192,20 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       aiResult: response as unknown as Record<string, unknown>,
     });
 
+    // 上抛 thinking signature（多轮 tool call 取最近一次含签名的响应）
+    if (response.thinkingSignature) {
+      lastThinkingSignature = response.thinkingSignature;
+      lastRedacted = response.redacted;
+    }
+
     // 如果没有 tool_calls，直接返回结果
     if (!response.toolCalls || response.toolCalls.length === 0) {
-      return { content: response.content || finalContent, toolCalls: executedToolCalls };
+      return {
+        content: response.content || finalContent,
+        toolCalls: executedToolCalls,
+        thinkingSignature: lastThinkingSignature,
+        redacted: lastRedacted,
+      };
     }
 
     // 有 tool_calls，需要执行工具并回填
@@ -512,8 +530,26 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
   }
 
   // 达到最大轮数，返回所有轮次累积的内容
-  return { content: finalContent, toolCalls: executedToolCalls };
+  return {
+    content: finalContent,
+    toolCalls: executedToolCalls,
+    thinkingSignature: lastThinkingSignature,
+    redacted: lastRedacted,
+  };
 }
 
 // v1.5.116: Legacy 策略的模块级熔断器单例
-const defaultCircuitBreaker = new CircuitBreaker();
+// v6.1: 导出以便在新会话/新请求时重置（避免搜索工具永久熔断）
+export const defaultCircuitBreaker = new CircuitBreaker();
+
+/**
+ * 重置默认熔断器状态
+ *
+ * 在以下场景调用：
+ * 1. 新会话开始时
+ * 2. 用户手动重试时
+ * 3. 新消息请求开始时（可选）
+ */
+export function resetDefaultCircuitBreaker(): void {
+  defaultCircuitBreaker.reset();
+}

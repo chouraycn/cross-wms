@@ -225,6 +225,10 @@ export interface SSEThinkingStartEvent {
   contentIndex: number;
   /** 思考类型 */
   thinkingType?: 'deep' | 'local';
+  /** 加密签名（可回传 API） */
+  thinkingSignature?: string;
+  /** 安全脱敏标记 */
+  redacted?: boolean;
 }
 
 /** thinking_delta 事件 — 思考内容增量 */
@@ -243,6 +247,10 @@ export interface SSEThinkingEndEvent {
   contentIndex: number;
   /** 思考耗时（毫秒） */
   thinkingDuration?: number;
+  /** 加密签名（可回传 API） */
+  thinkingSignature?: string;
+  /** 安全脱敏标记 */
+  redacted?: boolean;
 }
 
 /** tool_call_start 事件 — 工具调用开始 */
@@ -274,9 +282,73 @@ export interface SSEToolCallEndEvent {
   args: string;
 }
 
+/** image_start 事件 — 图片内容开始（流式传输图片） */
+export interface SSEImageStartEvent {
+  type: 'image_start';
+  /** 多内容块索引 */
+  contentIndex: number;
+  /** 图片 MIME 类型 */
+  mimeType?: string;
+  /** 图片替代文本 */
+  alt?: string;
+}
+
+/** image_delta 事件 — 图片内容增量（base64 分块） */
+export interface SSEImageDeltaEvent {
+  type: 'image_delta';
+  /** 多内容块索引 */
+  contentIndex: number;
+  /** base64 增量分块 */
+  partial?: string;
+}
+
+/** image_end 事件 — 图片内容结束 */
+export interface SSEImageEndEvent {
+  type: 'image_end';
+  /** 多内容块索引 */
+  contentIndex: number;
+  /** 完整图片 URL（如果可用） */
+  url?: string;
+  /** 停止原因 */
+  stopReason?: 'stop' | 'length' | 'error' | 'aborted';
+}
+
+/** audio_start 事件 — 音频内容开始（流式传输音频） */
+export interface SSEAudioStartEvent {
+  type: 'audio_start';
+  /** 多内容块索引 */
+  contentIndex: number;
+  /** 音频 MIME 类型 */
+  mimeType?: string;
+  /** 是否为语音消息 */
+  isVoiceNote?: boolean;
+}
+
+/** audio_delta 事件 — 音频内容增量（base64 分块） */
+export interface SSEAudioDeltaEvent {
+  type: 'audio_delta';
+  /** 多内容块索引 */
+  contentIndex: number;
+  /** base64 增量分块 */
+  partial?: string;
+}
+
+/** audio_end 事件 — 音频内容结束 */
+export interface SSEAudioEndEvent {
+  type: 'audio_end';
+  /** 多内容块索引 */
+  contentIndex: number;
+  /** 完整音频 URL（如果可用） */
+  url?: string;
+  /** 语音转文字内容 */
+  transcript?: string;
+  /** 停止原因 */
+  stopReason?: 'stop' | 'length' | 'error' | 'aborted';
+}
+
 // ===================== 细粒度事件联合类型 =====================
 
-/** 9 种细粒度 SSE 事件联合类型 */
+/** 15 种细粒度 SSE 事件联合类型 */
 export type FineGrainedSSEEvent =
   | SSETextStartEvent
   | SSETextDeltaEvent
@@ -286,14 +358,20 @@ export type FineGrainedSSEEvent =
   | SSEThinkingEndEvent
   | SSEToolCallStartEvent
   | SSEToolCallDeltaEvent
-  | SSEToolCallEndEvent;
+  | SSEToolCallEndEvent
+  | SSEImageStartEvent
+  | SSEImageDeltaEvent
+  | SSEImageEndEvent
+  | SSEAudioStartEvent
+  | SSEAudioDeltaEvent
+  | SSEAudioEndEvent;
 
 /** 全部 SSE 事件联合类型（核心 + 细粒度） */
 export type AllSSEEvent = SSEEvent | FineGrainedSSEEvent;
 
 // ===================== 细粒度事件类型集合 =====================
 
-/** 9 种细粒度事件类型字面量 */
+/** 15 种细粒度事件类型字面量 */
 export const FINE_GRAINED_EVENT_TYPES = [
   'text_start',
   'text_delta',
@@ -304,6 +382,12 @@ export const FINE_GRAINED_EVENT_TYPES = [
   'tool_call_start',
   'tool_call_delta',
   'tool_call_end',
+  'image_start',
+  'image_delta',
+  'image_end',
+  'audio_start',
+  'audio_delta',
+  'audio_end',
 ] as const;
 
 /** 细粒度事件类型 */
@@ -369,4 +453,18 @@ export function isThinkingRelatedEvent(type: string): boolean {
  */
 export function isToolCallRelatedEvent(type: string): boolean {
   return type === 'tool_call' || type === 'tool_call_start' || type === 'tool_call_delta' || type === 'tool_call_end';
+}
+
+/**
+ * 判断事件是否为图片相关事件（image_start/image_delta/image_end）
+ */
+export function isImageRelatedEvent(type: string): boolean {
+  return type === 'image_start' || type === 'image_delta' || type === 'image_end';
+}
+
+/**
+ * 判断事件是否为音频相关事件（audio_start/audio_delta/audio_end）
+ */
+export function isAudioRelatedEvent(type: string): boolean {
+  return type === 'audio_start' || type === 'audio_delta' || type === 'audio_end';
 }

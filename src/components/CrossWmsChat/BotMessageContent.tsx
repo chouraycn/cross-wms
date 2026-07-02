@@ -352,6 +352,7 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
           reflectionConfidence={msg.reflectionConfidence}
           executionPlan={msg.executionPlan}
           agentEvents={msg.agentEvents}
+          redacted={msg.metadata?.thinkingRedacted}
         />
       )}
       {/* AI 工具调用展示（Tool Calling） */}

@@ -31,6 +31,7 @@ vi.mock('../../aiClient.js', () => ({
 
 vi.mock('../../engine/toolExecutor.js', () => ({
   executeToolLoop: vi.fn(),
+  resetDefaultCircuitBreaker: vi.fn(),
 }));
 
 vi.mock('../../engine/executionStrategy.js', () => ({

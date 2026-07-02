@@ -79,7 +79,8 @@ function setNestedValue(obj: Record<string, unknown>, path: string, value: unkno
 
 // ==================== API 调用 ====================
 
-const DEFAULT_TIMEOUT = 10000;
+const DEFAULT_TIMEOUT = 15000;
+const KIMI_SEARCH_MODEL = "moonshot-v1-8k";
 
 async function performSearch(
   apiKey: string,
@@ -100,15 +101,48 @@ async function performSearch(
   signal?.addEventListener("abort", abortHandler);
 
   try {
-    const response = await fetch("https://api.moonshot.cn/v1/search", {
+    // Kimi 通过 chat completions + 内置 web_search tool 实现搜索
+    const response = await fetch("https://api.moonshot.cn/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        query,
-        max_results: count,
+        model: KIMI_SEARCH_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: "你是一个搜索助手。请使用 web_search 工具搜索相关信息，并返回搜索结果的标题、链接和摘要。只返回搜索结果，不要生成额外内容。",
+          },
+          {
+            role: "user",
+            content: `搜索：${query}`,
+          },
+        ],
+        tools: [
+          {
+            type: "builtin_function",
+            function: {
+              name: "web_search",
+              parameters: {
+                type: "object",
+                properties: {
+                  query: {
+                    type: "string",
+                    description: "搜索关键词",
+                  },
+                  count: {
+                    type: "number",
+                    description: "返回结果数量",
+                  },
+                },
+                required: ["query"],
+              },
+            },
+          },
+        ],
+        tool_choice: "auto",
       }),
       signal: controller.signal,
     });
@@ -141,7 +175,7 @@ async function performSearch(
       if (signal?.aborted) {
         throw e;
       }
-      throw new Error("Kimi 搜索超时（10秒）");
+      throw new Error("Kimi 搜索超时（15秒）");
     }
     throw e;
   }
@@ -150,20 +184,80 @@ async function performSearch(
 function normalizeResults(data: Record<string, unknown>): WebSearchResult[] {
   const results: WebSearchResult[] = [];
 
-  const items = data.results || data.data || data.items;
-  if (!Array.isArray(items)) {
-    return results;
+  // 从 chat completion 响应中提取搜索结果
+  // 1. 尝试从 choices[0].message.tool_calls 中提取 web_search 结果
+  const choices = data.choices as Array<Record<string, unknown>> | undefined;
+  if (choices && choices.length > 0) {
+    const message = choices[0].message as Record<string, unknown> | undefined;
+    if (message) {
+      // 从 tool_calls 中提取搜索结果
+      const toolCalls = message.tool_calls as Array<Record<string, unknown>> | undefined;
+      if (toolCalls) {
+        for (const tc of toolCalls) {
+          const fn = tc.function as Record<string, unknown> | undefined;
+          if (fn) {
+            // Kimi web_search tool 返回的结果
+            const args = typeof fn.arguments === "string" ? JSON.parse(fn.arguments) : fn.arguments;
+            const searchResults = args?.results || args?.search_results || args?.web_search_results;
+            if (Array.isArray(searchResults)) {
+              for (const item of searchResults) {
+                if (!item || typeof item !== "object") continue;
+                const title = String(item.title || "").trim();
+                const url = String(item.url || item.link || "").trim();
+                const snippet = String(item.snippet || item.description || item.content || "").trim();
+                if (title && url) {
+                  results.push({ title, url, snippet });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 2. 如果没有 tool_calls 结果，从 content 中解析
+      if (results.length === 0) {
+        const content = String(message.content || "");
+        if (content) {
+          // 从回复内容中提取 Markdown 链接
+          const urlRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+          let match;
+          while ((match = urlRegex.exec(content)) !== null) {
+            results.push({
+              title: match[1],
+              url: match[2],
+              snippet: undefined,
+            });
+          }
+
+          // 备用：提取裸 URL
+          if (results.length === 0) {
+            const bareUrlRegex = /(https?:\/\/[^\s]+)/g;
+            while ((match = bareUrlRegex.exec(content)) !== null) {
+              results.push({
+                title: match[1],
+                url: match[1],
+                snippet: undefined,
+              });
+            }
+          }
+        }
+      }
+    }
   }
 
-  for (const item of items) {
-    if (!item || typeof item !== "object") continue;
-
-    const title = String(item.title || "").trim();
-    const url = String(item.url || item.link || "").trim();
-    const snippet = String(item.snippet || item.description || item.content || "").trim();
-
-    if (title && url) {
-      results.push({ title, url, snippet });
+  // 3. 尝试从顶层字段提取（兼容旧格式）
+  if (results.length === 0) {
+    const items = data.results || data.data || data.items;
+    if (Array.isArray(items)) {
+      for (const item of items) {
+        if (!item || typeof item !== "object") continue;
+        const title = String(item.title || "").trim();
+        const url = String(item.url || item.link || "").trim();
+        const snippet = String(item.snippet || item.description || item.content || "").trim();
+        if (title && url) {
+          results.push({ title, url, snippet });
+        }
+      }
     }
   }
 

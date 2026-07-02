@@ -50,6 +50,8 @@ interface ThinkingBlockProps {
   executionPlan?: ExecutionPlanInfo;
   /** v8.2: Agent 编排事件 */
   agentEvents?: AgentEvent[];
+  /** v9.0: thinking 内容是否被加密/编辑（redacted），渲染时显示 [encrypted] 标记 */
+  redacted?: boolean;
 }
 
 function formatDuration(ms?: number): string {
@@ -81,12 +83,13 @@ function areThinkingBlockPropsEqual(
   if (prevProps.usage !== nextProps.usage) return false;
   if (prevProps.reactPhase !== nextProps.reactPhase) return false;
   if (prevProps.agentEvents !== nextProps.agentEvents) return false;
+  if (prevProps.redacted !== nextProps.redacted) return false;
   // 以下 props 在流式期间不会变化，跳过深度比较
   // complexityAssessment, reflectionConfidence, executionPlan 只在 done 时设置
   return true;
 }
 
-function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, thinkingElapsed, cacheHit, usage, reactPhase, complexityAssessment, reflectionConfidence, executionPlan, agentEvents }: ThinkingBlockProps) {
+function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, thinkingElapsed, cacheHit, usage, reactPhase, complexityAssessment, reflectionConfidence, executionPlan, agentEvents, redacted }: ThinkingBlockProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
@@ -200,6 +203,28 @@ function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, thi
         >
           {isActuallyThinking ? '正在思考...' : label}
         </Typography>
+
+        {/* v9.0: 加密思考标记 — redacted=true 时显示 [encrypted] */}
+        {redacted && (
+          <Typography
+            component="span"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              height: 18,
+              fontSize: 10,
+              px: 0.5,
+              borderRadius: 0.5,
+              color: '#A855F7',
+              bgcolor: 'rgba(168,85,247,0.08)',
+              fontWeight: 500,
+              flexShrink: 0,
+              fontFamily: '"SF Mono","Menlo","Monaco",monospace',
+            }}
+          >
+            [encrypted]
+          </Typography>
+        )}
 
         {/* 弹性空间 */}
         <Box sx={{ flex: 1 }} />

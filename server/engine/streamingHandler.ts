@@ -44,6 +44,10 @@ export interface StreamMessage {
     content: string;
   }>;
   thinking?: string;
+  /** 加密签名（可回传 API） */
+  thinkingSignature?: string;
+  /** 安全脱敏标记 */
+  redacted?: boolean;
   metadata?: Record<string, unknown>;
 }
 
@@ -57,6 +61,10 @@ export interface StreamSession {
   events: StreamEvent[];
   messageBuffer: string;
   thinkingBuffer: string;
+  /** thinking signature buffer（用于多轮对话连续性） */
+  thinkingSignatureBuffer?: string;
+  /** redacted flag buffer */
+  redactedBuffer?: boolean;
   toolCallBuffer: Map<string, { name: string; arguments: string }>;
   eventCount: number;
   errorMessage?: string;
@@ -216,9 +224,27 @@ class StreamingHandler {
           session.messageBuffer += event.data.content;
         }
         break;
+      case "thinking.start":
+        // 保存 thinkingSignature 和 redacted 标记
+        if (typeof event.data.thinkingSignature === "string") {
+          session.thinkingSignatureBuffer = event.data.thinkingSignature;
+        }
+        if (typeof event.data.redacted === "boolean") {
+          session.redactedBuffer = event.data.redacted;
+        }
+        break;
       case "thinking.delta":
         if (typeof event.data.content === "string") {
           session.thinkingBuffer += event.data.content;
+        }
+        break;
+      case "thinking.complete":
+        // 确保签名传递到完成事件
+        if (session.thinkingSignatureBuffer && !event.data.thinkingSignature) {
+          event.data.thinkingSignature = session.thinkingSignatureBuffer;
+        }
+        if (session.redactedBuffer !== undefined && event.data.redacted === undefined) {
+          event.data.redacted = session.redactedBuffer;
         }
         break;
       case "tool.call.delta": {
@@ -249,8 +275,30 @@ class StreamingHandler {
     return this.sendEvent(streamId, "message.delta", { content });
   }
 
+  sendThinkingStart(
+    streamId: string,
+    options?: { thinkingType?: 'deep' | 'local'; thinkingSignature?: string; redacted?: boolean }
+  ): StreamEvent | null {
+    return this.sendEvent(streamId, "thinking.start", {
+      thinkingType: options?.thinkingType ?? 'deep',
+      thinkingSignature: options?.thinkingSignature,
+      redacted: options?.redacted,
+    });
+  }
+
   sendThinkingDelta(streamId: string, content: string): StreamEvent | null {
     return this.sendEvent(streamId, "thinking.delta", { content });
+  }
+
+  sendThinkingComplete(
+    streamId: string,
+    options?: { thinkingDuration?: number; thinkingSignature?: string; redacted?: boolean }
+  ): StreamEvent | null {
+    return this.sendEvent(streamId, "thinking.complete", {
+      thinkingDuration: options?.thinkingDuration ?? 0,
+      thinkingSignature: options?.thinkingSignature,
+      redacted: options?.redacted,
+    });
   }
 
   sendToolCallStart(streamId: string, toolCallId: string, toolName: string): StreamEvent | null {

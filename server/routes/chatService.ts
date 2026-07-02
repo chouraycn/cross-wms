@@ -18,6 +18,7 @@ import { AppPaths } from '../config/appPaths.js';
 import { ExecutionStrategyFactory, ExecutionMode } from '../engine/executionStrategy.js';
 import type { ExecutionStrategyOptions } from '../engine/executionStrategy.js';
 import type { ToolExecutionResult } from '../engine/toolExecutor.js';
+import { resetDefaultCircuitBreaker } from '../engine/toolExecutor.js';
 import { buildSoulSystemMessage } from '../engine/soulLoader.js';
 import { estimateMessagesTokens, truncateContextForModel, sanitizeToolMessages } from '../engine/contextTruncate.js';
 import { sanitizeHistoryMessages } from '../engine/historySanitizer.js';
@@ -45,6 +46,8 @@ import { TimerManager } from '../sse/timerManager.js';
 import { executeChat as streamExecuteChat, finishStream, type ExecuteChatCallbacks } from '../engine/streamExecutor.js';
 import { formatMemoryContext } from '../engine/contextEnhancer.js';
 import { recordTurnStarted, recordTurnCompleted, recordTurnFailed, recordMessageCreated } from '../engine/eventRecorder.js';
+import { TokenBudgetManager } from '../engine/compaction/tokenBudget.js';
+import { CompactionLoopGuard, CompactionSafetyTimeout, CompactionRetryAggregateTimeout } from '../engine/compaction/compactionSafety.js';
 
 // ===================== 公共辅助函数 =====================
 
@@ -388,6 +391,9 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
 
     // 统一使用 strategy.execute（修复原 handleChat 用 executeToolLoop 的不一致）
     const strategy = ExecutionStrategyFactory.create(executionMode);
+    // 细粒度 thinking 事件状态（降级路径）
+    let fbThinkingStarted = false;
+    let fbThinkingStartTime = 0;
     const fbResult: ToolExecutionResult = await strategy.execute({
       modelConfig: fbModelConfig,
       messages: sanitizeToolMessages(apiMessages) as Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>,
@@ -396,7 +402,11 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
       executionMode,
       onSSEEvent: (evt: Record<string, unknown>) => {
         const evtType = evt.type as string;
-        if (['init', 'text', 'thinking', 'tool_call', 'done', 'error'].includes(evtType)) {
+        if ([
+          'init', 'text', 'thinking', 'tool_call', 'done', 'error',
+          'image_start', 'image_delta', 'image_end',
+          'audio_start', 'audio_delta', 'audio_end',
+        ].includes(evtType)) {
           sendSSE(res, evt);
         } else {
           sendDebugSSE(res, evt);
@@ -406,6 +416,15 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
         sendSSE(res, { type: 'text', content: chunk });
       },
       onThinking: (thinkingChunk: string) => {
+        // 细粒度 thinking.start（首个 chunk 一次）
+        if (!fbThinkingStarted) {
+          fbThinkingStarted = true;
+          fbThinkingStartTime = Date.now();
+          sendSSE(res, { type: 'thinking.start', contentIndex: 0 });
+        }
+        // 细粒度 thinking.delta
+        sendSSE(res, { type: 'thinking.delta', contentIndex: 0, content: thinkingChunk });
+        // 保留原有 thinking 事件（向后兼容）
         sendSSE(res, { type: 'thinking', content: thinkingChunk });
       },
       onToolCall: (toolCall: ToolCall, result: string) => {
@@ -418,6 +437,15 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
         });
       },
     });
+
+    // 细粒度 thinking.complete（降级路径收尾）
+    if (fbThinkingStarted) {
+      sendSSE(res, {
+        type: 'thinking.complete',
+        contentIndex: 0,
+        thinkingDuration: Date.now() - fbThinkingStartTime,
+      });
+    }
 
     // 降级成功，清理心跳
     timerManager.stop('fallback');
@@ -796,6 +824,9 @@ export async function handleChat(req: import('express').Request, res: import('ex
     logger.debug(`[Chat API] 附件数量: ${attachments.length}`);
   }
 
+  // v6.1: 每次新请求重置默认熔断器，避免搜索工具因之前会话的失败被永久熔断
+  resetDefaultCircuitBreaker();
+
   const timerManager = new TimerManager(res);
 
   let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string; reasoning_content?: string }> = [];
@@ -970,6 +1001,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
 
     // ============== 直接模式 ==============
     let fullContent = '';
+    let lastUsage: { promptTokens?: number; completionTokens?: number; thinkingTokens?: number; totalTokens?: number } | undefined;
     let thinkingStartTime: number | null = null;
     let hasThinking = false;
     let thinkingContent = '';
@@ -980,6 +1012,13 @@ export async function handleChat(req: import('express').Request, res: import('ex
     if (!modelConfig) {
       throw new Error(`未找到模型配置: ${effectiveModel}`);
     }
+
+    // v1.7.21: Token 预算管理与压缩安全防护（基于 OpenClaw 上下文预算系统）
+    const tokenBudget = new TokenBudgetManager({
+      modelLimit: modelConfig.contextWindow || 128000,
+    });
+    const compactionLoopGuard = new CompactionLoopGuard();
+    const compactionRetryBudget = new CompactionRetryAggregateTimeout();
 
     const keyResult = selectKey(modelConfig);
     let effectiveApiKey = modelConfig.apiKey || '';
@@ -1219,6 +1258,11 @@ export async function handleChat(req: import('express').Request, res: import('ex
           hasThinking = !!thinkingContent;
           if (hasThinking) thinkingStartTime = 0;
           if (thinkingContent) {
+            // 细粒度三段式 thinking 事件（缓存命中，整块输出）
+            sendSSE(res, { type: 'thinking.start', contentIndex: 0 });
+            sendSSE(res, { type: 'thinking.delta', contentIndex: 0, content: thinkingContent });
+            sendSSE(res, { type: 'thinking.complete', contentIndex: 0, thinkingDuration: 0 });
+            // 保留原有 thinking 事件（向后兼容）
             sendSSE(res, { type: 'thinking', content: thinkingContent });
           }
           sendSSE(res, { type: 'text', content: fullContent });
@@ -1315,6 +1359,8 @@ export async function handleChat(req: import('express').Request, res: import('ex
           });
 
           fullContent = result.content;
+          // v1.7.21: 捕获 token 用量用于预算管理
+          lastUsage = result.usage;
           thinkingContent = result.thinkingContent;
           hasThinking = result.hasThinking;
           thinkingStartTime = result.thinkingDuration > 0 ? Date.now() - result.thinkingDuration : null;
@@ -1343,6 +1389,54 @@ export async function handleChat(req: import('express').Request, res: import('ex
     } finally {
       clearTimeout(timeout);
       timerManager.stopAll();
+    }
+
+    // v1.7.21: 基于 Token 预算的响应后压缩
+    // - 更新 token 用量，检查是否达到触发阈值
+    // - 使用 CompactionLoopGuard 防止压缩循环
+    // - 使用 CompactionSafetyTimeout 为压缩操作设置超时
+    // - 使用 CompactionRetryAggregateTimeout 限制累计重试
+    if (lastUsage) {
+      tokenBudget.updateUsage(lastUsage);
+      const tokensBefore = tokenBudget.getSnapshot().currentTokens;
+      if (
+        tokenBudget.shouldCompact() &&
+        compactionLoopGuard.canCompact(tokensBefore) &&
+        compactionRetryBudget.canRetry()
+      ) {
+        const safetyTimeout = new CompactionSafetyTimeout(60_000);
+        const compactionSignal = safetyTimeout.start();
+        const compactionStart = Date.now();
+        try {
+          if (safetyTimeout.isTimedOut()) {
+            throw new Error('压缩操作启动前已超时');
+          }
+          const budgetCtxWindow = (finalModelConfig as ModelCallConfig).contextWindow || 128000;
+          const budgetCtxMaxTokens = Math.min((finalModelConfig as ModelCallConfig).maxTokens || 8192, 8192);
+          const compressResult = await Promise.race([
+            compressContextWithSummary(
+              apiMessages as any, budgetCtxWindow, budgetCtxMaxTokens, 30, finalModelConfig,
+            ),
+            new Promise<never>((_, reject) => {
+              compactionSignal.addEventListener('abort', () => reject(new Error('压缩安全超时')));
+            }),
+          ]);
+          const tokensAfter = estimateMessagesTokens(compressResult.messages as any);
+          compactionLoopGuard.record(tokensBefore, tokensAfter);
+          compactionRetryBudget.recordAttempt(Date.now() - compactionStart);
+          const reductionRatio = tokensBefore > 0 ? (tokensBefore - tokensAfter) / tokensBefore : 0;
+          // 通过 SSE 发送 compaction 事件通知前端
+          res.write(`event: compaction\ndata: ${JSON.stringify({ status: 'completed', tokensBefore, tokensAfter, reductionRatio })}\n\n`);
+          if (compressResult.compressed) {
+            logger.debug(`[Chat API] 响应后预算压缩完成: ${tokensBefore} → ${tokensAfter} (减少 ${(reductionRatio * 100).toFixed(1)}%)`);
+          }
+        } catch (compactionErr) {
+          logger.error('[Chat API] 响应后预算压缩失败:', compactionErr);
+          compactionRetryBudget.recordAttempt(Date.now() - compactionStart);
+        } finally {
+          safetyTimeout.reset();
+        }
+      }
     }
 
     // 保存助手消息到 DB
