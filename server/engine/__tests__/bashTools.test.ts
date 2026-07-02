@@ -341,7 +341,7 @@ describe('bashExecutor', () => {
       });
 
       expect(result.status).toBe('completed');
-      expect(result.exitCode).toBe(2); // ls 错误码
+      expect(result.exitCode).toBeGreaterThan(0); // ls 错误码（macOS=1, Linux=2）
       expect(result.stderr.length).toBeGreaterThan(0);
     }, 10000);
 
@@ -441,7 +441,7 @@ describe('bashTools handlers', () => {
     it('应该处理后台进程请求', async () => {
       setSandboxLevel('none');
       const result = await handleExecCommand({
-        command: 'sleep 5',
+        command: 'sleep 30',
         background: true,
       });
       const parsed = JSON.parse(result);
@@ -514,7 +514,7 @@ describe('bashTools integration', () => {
 
     // 启动后台进程
     const execResult = await handleExecCommand({
-      command: 'sleep 3',
+      command: 'sleep 30',
       background: true,
     });
     const parsedExec = JSON.parse(execResult);

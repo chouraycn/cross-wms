@@ -168,7 +168,7 @@ describe('PDF Tools', () => {
       const handlers = getPdfToolHandlers();
       const handler = handlers.get('pdf_extract')!;
 
-      const result = await handler({ path: '/nonexistent/test.pdf' });
+      const result = await handler({ path: '/tmp/nonexistent-test-file.pdf' });
       const parsed = JSON.parse(result);
 
       expect(parsed.error).toContain('文件不存在');
@@ -203,7 +203,7 @@ describe('PDF Tools', () => {
       const handlers = getPdfToolHandlers();
       const handler = handlers.get('pdf_summarize')!;
 
-      const result = await handler({ path: '/nonexistent/test.pdf' });
+      const result = await handler({ path: '/tmp/nonexistent-test-file.pdf' });
       const parsed = JSON.parse(result);
 
       expect(parsed.error).toContain('文件不存在');
@@ -248,7 +248,7 @@ describe('PDF Tools', () => {
       const handler = handlers.get('pdf_split')!;
 
       const result = await handler({
-        path: '/nonexistent/test.pdf',
+        path: '/tmp/nonexistent-test-file.pdf',
         output_dir: '~/Desktop/output',
       });
       const parsed = JSON.parse(result);
@@ -265,7 +265,7 @@ describe('PDF Tools', () => {
       const handler = handlers.get('pdf_convert')!;
 
       const result = await handler({
-        path: '/nonexistent/test.pdf',
+        path: '/tmp/nonexistent-test-file.pdf',
         output_dir: '~/Desktop/output',
       });
       const parsed = JSON.parse(result);

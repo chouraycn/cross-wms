@@ -21,23 +21,44 @@ const mockState = vi.hoisted(() => ({
   connectError: false,
 }));
 
-// ===================== Mock: SQLiteEngine =====================
+// ===================== Mock: DatabaseManager =====================
+// vecMemoryStore 通过 DatabaseManager.getVecDb() 获取数据库连接，
+// 因此需要 mock databaseManager 而非 SQLiteEngine。
 
-vi.mock('../../storage/SQLiteEngine.js', () => ({
-  SQLiteEngine: vi.fn().mockImplementation(() => ({
-    connect: vi.fn(async () => {
-      if (mockState.connectError) throw new Error('connect failed');
-    }),
-    disconnect: vi.fn(),
-    isConnected: vi.fn(() => true),
-    migrate: vi.fn(),
+vi.mock('../../storage/databaseManager.js', () => {
+  const mockDb = {
     exec: vi.fn(),
     pragma: vi.fn(),
-    prepare: vi.fn(() => ({
-      run: vi.fn(),
-      get: vi.fn(),
-      all: vi.fn(() => []),
-    })),
+    prepare: vi.fn((sql: string) => {
+      const mockRun = vi.fn((...params: unknown[]) => {
+        if (sql.includes('DELETE FROM memory_vec_index')) {
+          return { changes: 0, lastInsertRowid: 0 };
+        }
+        if (sql.includes('INSERT INTO memory_vec_index')) {
+          const callIndex = mockState.runCallCounter++;
+          if (mockState.insertFailIndices.has(callIndex)) {
+            throw new Error('Mock insert failure');
+          }
+          const entryId = params[0] as number;
+          mockState.insertCalls.push({ entryId });
+          return { changes: 1, lastInsertRowid: entryId };
+        }
+        return { changes: 0, lastInsertRowid: 0 };
+      });
+
+      const mockAll = vi.fn(() => {
+        if (sql.includes('SELECT id, text FROM memory_entries')) {
+          return mockState.entries;
+        }
+        return [];
+      });
+
+      return {
+        run: mockRun,
+        get: vi.fn(() => undefined),
+        all: mockAll,
+      };
+    }),
     all: vi.fn((sql: string) => {
       if (sql.includes('SELECT id, text FROM memory_entries')) {
         return mockState.entries;
@@ -60,10 +81,16 @@ vi.mock('../../storage/SQLiteEngine.js', () => ({
       return { changes: 0, lastInsertRowid: 0 };
     }),
     get: vi.fn(() => undefined),
-    transaction: vi.fn((fn: () => unknown) => fn()),
-    getVersion: vi.fn(() => '1.2.0'),
-  })),
-}));
+    close: vi.fn(),
+  };
+  return {
+    DatabaseManager: {
+      getVecDb: () => mockDb,
+      getMainDb: () => mockDb,
+      closeAll: vi.fn(),
+    },
+  };
+});
 
 // ===================== Mock: onnxEmbedding =====================
 

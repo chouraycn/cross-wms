@@ -76,6 +76,15 @@ export function initSecretsStore(): void {
 }
 
 /**
+ * 清理密钥存储表（仅用于测试）
+ */
+export function clearSecretsStoreForTests(): void {
+  const db = initDb();
+  db.exec(`DELETE FROM ${SECRETS_ACCESS_LOG_TABLE}`);
+  db.exec(`DELETE FROM ${SECRETS_TABLE}`);
+}
+
+/**
  * 获取加密密钥
  */
 function getEncryptionKey(): string {
@@ -309,10 +318,12 @@ export function deleteSecret(id: string): boolean {
   const existing = getSecret(id);
   if (!existing) return false;
 
+  // 先记录访问日志（外键约束要求 secret_id 存在）
+  logSecretAccess(id, 'system', 'delete', true);
+
   db.prepare(`DELETE FROM ${SECRETS_TABLE} WHERE id = ?`).run(id);
 
   logger.info('[SecretsStore] 密钥已删除', { id });
-  logSecretAccess(id, 'system', 'delete', true);
 
   return true;
 }

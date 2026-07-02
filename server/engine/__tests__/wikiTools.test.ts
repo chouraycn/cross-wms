@@ -4,7 +4,7 @@
  * 测试 Wiki 知识库工具的核心功能
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import {
   createEntry,
   getEntry,
@@ -29,6 +29,419 @@ import {
   createWikiGetToolHandler,
   createWikiStatsToolHandler,
 } from '../wikiTools.js';
+
+// ===================== Mock 依赖 =====================
+
+// Mock logger
+vi.mock('../../logger.js', () => ({
+  logger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+// Mock onnxEmbedding — 避免加载真实 ONNX 模型
+vi.mock('../onnxEmbedding.js', () => ({
+  ONNX_EMBEDDING_DIMENSIONS: 384,
+  embedText: vi.fn(async (text: string) => {
+    const vec = new Float32Array(384);
+    for (let i = 0; i < 384; i++) {
+      vec[i] = Math.sin(text.charCodeAt(0 % text.length) + i * 0.01) * 0.01;
+    }
+    return vec;
+  }),
+  initOnnxEmbedding: vi.fn().mockResolvedValue(undefined),
+  getOnnxStatus: vi.fn().mockReturnValue({ status: 'ready', error: '' }),
+}));
+
+// Mock DatabaseManager — 避免真实 SQLite 数据库
+vi.mock('../../storage/databaseManager.js', () => {
+  // 内存 mock 数据
+  const mockState = {
+    entries: [] as Array<any>,
+    versions: [] as Array<any>,
+    links: [] as Array<any>,
+    tagDefs: [] as Array<any>, // 标签定义表 wiki_tags: {id, name, category, description, created_at}
+    entryTags: [] as Array<any>, // 条目-标签关联 wiki_entry_tags: {entry_id, tag_id, created_at}
+    nextEntryId: 1,
+    nextVersionId: 1,
+    nextLinkId: 1,
+    nextTagId: 1,
+  };
+
+  const ok = { changes: 0, lastInsertRowid: 0 };
+  const stmt = (extra: Record<string, any>) => ({
+    run: vi.fn(() => ({ changes: 0, lastInsertRowid: 0 })),
+    get: vi.fn(() => undefined),
+    all: vi.fn(() => []),
+    ...extra,
+  });
+
+  return {
+    DatabaseManager: {
+      getVecDb: () => ({
+        prepare: vi.fn((sql: string) => {
+          // ============ DELETE（带 WHERE 的优先匹配）============
+          if (sql.includes('DELETE FROM wiki_entries WHERE id')) {
+            return stmt({
+              run: vi.fn((...params: unknown[]) => {
+                const id = params[0] as number;
+                const idx = mockState.entries.findIndex((e) => e.id === id);
+                if (idx >= 0) {
+                  mockState.entries.splice(idx, 1);
+                  return { changes: 1, lastInsertRowid: 0 };
+                }
+                return ok;
+              }),
+            });
+          }
+          if (sql.includes('DELETE FROM wiki_links WHERE id')) {
+            return stmt({
+              run: vi.fn((...params: unknown[]) => {
+                const id = params[0] as number;
+                const idx = mockState.links.findIndex((l) => l.id === id);
+                if (idx >= 0) {
+                  mockState.links.splice(idx, 1);
+                  return { changes: 1, lastInsertRowid: 0 };
+                }
+                return ok;
+              }),
+            });
+          }
+          if (sql.includes('DELETE FROM wiki_entry_tags WHERE entry_id')) {
+            return stmt({
+              run: vi.fn((...params: unknown[]) => {
+                const entryId = params[0];
+                const tagId = params[1];
+                const before = mockState.entryTags.length;
+                mockState.entryTags = mockState.entryTags.filter(
+                  (et) => !(et.entry_id === entryId && et.tag_id === tagId),
+                );
+                return { changes: before - mockState.entryTags.length, lastInsertRowid: 0 };
+              }),
+            });
+          }
+          if (sql.includes('DELETE FROM wiki_vec_index WHERE rowid')) {
+            return stmt({ run: vi.fn(() => ({ changes: 1, lastInsertRowid: 0 })) });
+          }
+          // 全表删除（clearAllWiki）
+          if (sql.includes('DELETE FROM wiki_vec_index')) {
+            return stmt({ run: vi.fn(() => ok) });
+          }
+          if (sql.includes('DELETE FROM wiki_entry_tags')) {
+            return stmt({
+              run: vi.fn(() => {
+                mockState.entryTags = [];
+                return ok;
+              }),
+            });
+          }
+          if (sql.includes('DELETE FROM wiki_links')) {
+            return stmt({
+              run: vi.fn(() => {
+                mockState.links = [];
+                return ok;
+              }),
+            });
+          }
+          if (sql.includes('DELETE FROM wiki_versions')) {
+            return stmt({
+              run: vi.fn(() => {
+                mockState.versions = [];
+                return ok;
+              }),
+            });
+          }
+          if (sql.includes('DELETE FROM wiki_entries')) {
+            return stmt({
+              run: vi.fn(() => {
+                const count = mockState.entries.length;
+                mockState.entries = [];
+                return { changes: count, lastInsertRowid: 0 };
+              }),
+            });
+          }
+          if (sql.includes('DELETE FROM wiki_tags')) {
+            return stmt({
+              run: vi.fn(() => {
+                mockState.tagDefs = [];
+                return ok;
+              }),
+            });
+          }
+          if (sql.includes('DELETE FROM wiki_fts')) {
+            return stmt({ run: vi.fn(() => ok) });
+          }
+
+          // ============ INSERT ============
+          if (sql.includes('INSERT INTO wiki_entries')) {
+            return stmt({
+              run: vi.fn((...params: unknown[]) => {
+                const id = mockState.nextEntryId++;
+                mockState.entries.push({
+                  id,
+                  title: params[0],
+                  content: params[1],
+                  summary: params[2],
+                  source: params[3] ?? 'manual',
+                  source_path: params[4],
+                  metadata: params[5],
+                  created_at: String(Date.now()),
+                  updated_at: String(Date.now()),
+                });
+                return { changes: 1, lastInsertRowid: id };
+              }),
+            });
+          }
+          if (sql.includes('INSERT INTO wiki_vec_index')) {
+            return stmt({ run: vi.fn(() => ({ changes: 1, lastInsertRowid: 0 })) });
+          }
+          if (sql.includes('INSERT INTO wiki_versions')) {
+            return stmt({
+              run: vi.fn((...params: unknown[]) => {
+                const v = {
+                  id: mockState.nextVersionId++,
+                  entry_id: params[0],
+                  version: params[1],
+                  title: params[2],
+                  content: params[3],
+                  summary: params[4],
+                  change_note: null,
+                  created_at: String(Date.now()),
+                };
+                mockState.versions.push(v);
+                return { changes: 1, lastInsertRowid: v.id };
+              }),
+            });
+          }
+          if (sql.includes('INSERT INTO wiki_links')) {
+            return stmt({
+              run: vi.fn((...params: unknown[]) => {
+                const link = {
+                  id: mockState.nextLinkId++,
+                  source_id: params[0],
+                  target_id: params[1],
+                  link_type: params[2],
+                  weight: params[3],
+                  created_at: String(Date.now()),
+                };
+                mockState.links.push(link);
+                return { changes: 1, lastInsertRowid: link.id };
+              }),
+            });
+          }
+          if (sql.includes('INSERT INTO wiki_tags')) {
+            return stmt({
+              run: vi.fn((...params: unknown[]) => {
+                const tag = {
+                  id: mockState.nextTagId++,
+                  name: params[0],
+                  category: params[1],
+                  description: params[2],
+                  created_at: String(Date.now()),
+                };
+                mockState.tagDefs.push(tag);
+                return { changes: 1, lastInsertRowid: tag.id };
+              }),
+            });
+          }
+          if (sql.includes('INSERT INTO wiki_entry_tags')) {
+            return stmt({
+              run: vi.fn((...params: unknown[]) => {
+                mockState.entryTags.push({
+                  entry_id: params[0],
+                  tag_id: params[1],
+                  created_at: String(Date.now()),
+                });
+                return { changes: 1, lastInsertRowid: 0 };
+              }),
+            });
+          }
+          if (sql.includes('INSERT INTO wiki_fts')) {
+            return stmt({ run: vi.fn(() => ({ changes: 1, lastInsertRowid: 0 })) });
+          }
+          if (sql.includes('INSERT OR REPLACE INTO app_settings')) {
+            return stmt({ run: vi.fn(() => ({ changes: 1, lastInsertRowid: 0 })) });
+          }
+
+          // ============ UPDATE ============
+          if (sql.includes('UPDATE wiki_entries')) {
+            return stmt({
+              run: vi.fn((...params: unknown[]) => {
+                // params: [title, content, summary, metadata, updated_at, id]
+                const id = params[params.length - 1] as number;
+                const idx = mockState.entries.findIndex((e) => e.id === id);
+                if (idx >= 0) {
+                  const cur = mockState.entries[idx];
+                  mockState.entries[idx] = {
+                    ...cur,
+                    title: params[0] ?? cur.title,
+                    content: params[1] ?? cur.content,
+                    summary: params[2] ?? cur.summary,
+                    metadata: params[3] ?? cur.metadata,
+                    updated_at: String(Date.now()),
+                  };
+                  return { changes: 1, lastInsertRowid: 0 };
+                }
+                return ok;
+              }),
+            });
+          }
+
+          // ============ SELECT 单行 (get) ============
+          if (sql.includes('SELECT * FROM wiki_entries WHERE id')) {
+            return stmt({
+              get: vi.fn((...params: unknown[]) => {
+                const id = params[0] as number;
+                return mockState.entries.find((e) => e.id === id);
+              }),
+            });
+          }
+          if (sql.includes('SELECT * FROM wiki_links WHERE id')) {
+            return stmt({
+              get: vi.fn((...params: unknown[]) => {
+                const id = params[0] as number;
+                return mockState.links.find((l) => l.id === id);
+              }),
+            });
+          }
+          if (sql.includes('SELECT * FROM wiki_tags WHERE name')) {
+            return stmt({
+              get: vi.fn((...params: unknown[]) => {
+                const name = params[0] as string;
+                return mockState.tagDefs.find((t) => t.name === name);
+              }),
+            });
+          }
+          if (sql.includes('SELECT * FROM wiki_tags WHERE id')) {
+            return stmt({
+              get: vi.fn((...params: unknown[]) => {
+                const id = params[0] as number;
+                return mockState.tagDefs.find((t) => t.id === id);
+              }),
+            });
+          }
+          if (sql.includes('SELECT MAX(version)')) {
+            return stmt({
+              get: vi.fn((...params: unknown[]) => {
+                const entryId = params[0];
+                const vers = mockState.versions.filter((v) => v.entry_id === entryId);
+                const max = vers.reduce((m, v) => Math.max(m, v.version), 0);
+                return { version: max || null };
+              }),
+            });
+          }
+          if (sql.includes('SELECT COUNT')) {
+            return stmt({
+              get: vi.fn(() => ({
+                count: mockState.entries.length,
+                total: mockState.entries.length,
+                avg_length: mockState.entries.reduce(
+                  (s, e) => s + String(e.content || '').length,
+                  0,
+                ) / Math.max(1, mockState.entries.length),
+              })),
+            });
+          }
+
+          // ============ SELECT 多行 (all) ============
+          // 标签分布（stats）— 优先于 getEntryTags 的 JOIN
+          if (sql.includes('COUNT(et.entry_id)')) {
+            return stmt({
+              all: vi.fn(() =>
+                mockState.tagDefs.map((t) => ({
+                  name: t.name,
+                  count: mockState.entryTags.filter((et) => et.tag_id === t.id).length,
+                })),
+              ),
+            });
+          }
+          // getEntryTags — JOIN wiki_tags / wiki_entry_tags
+          if (sql.includes('WHERE et.entry_id')) {
+            return stmt({
+              all: vi.fn((...params: unknown[]) => {
+                const entryId = params[0];
+                const tagIds = mockState.entryTags
+                  .filter((et) => et.entry_id === entryId)
+                  .map((et) => et.tag_id);
+                return mockState.tagDefs
+                  .filter((t) => tagIds.includes(t.id))
+                  .map((t) => ({ name: t.name }));
+              }),
+            });
+          }
+          // 来源分布（stats）
+          if (sql.includes('SELECT source, COUNT(*) as count FROM wiki_entries')) {
+            return stmt({
+              all: vi.fn(() => {
+                const map: Record<string, number> = {};
+                for (const e of mockState.entries) {
+                  map[e.source] = (map[e.source] || 0) + 1;
+                }
+                return Object.entries(map).map(([source, count]) => ({ source, count }));
+              }),
+            });
+          }
+          if (sql.includes('SELECT * FROM wiki_versions WHERE entry_id')) {
+            return stmt({
+              all: vi.fn((...params: unknown[]) => {
+                const entryId = params[0];
+                return mockState.versions
+                  .filter((v) => v.entry_id === entryId)
+                  .sort((a, b) => b.version - a.version);
+              }),
+            });
+          }
+          if (sql.includes('SELECT * FROM wiki_links WHERE source_id')) {
+            return stmt({
+              all: vi.fn((...params: unknown[]) => {
+                const sourceId = params[0];
+                return mockState.links.filter((l) => l.source_id === sourceId);
+              }),
+            });
+          }
+          if (sql.includes('SELECT * FROM wiki_links WHERE target_id')) {
+            return stmt({
+              all: vi.fn((...params: unknown[]) => {
+                const targetId = params[0];
+                return mockState.links.filter((l) => l.target_id === targetId);
+              }),
+            });
+          }
+          if (sql.includes('SELECT * FROM wiki_entries')) {
+            return stmt({
+              all: vi.fn(() => mockState.entries),
+            });
+          }
+          // FTS 全文搜索 — 返回带 rank 的条目（须在向量搜索之前匹配）
+          if (sql.includes('wiki_fts MATCH')) {
+            return stmt({
+              all: vi.fn(() =>
+                mockState.entries.map((e: any) => ({ ...e, rank: 0.5 })),
+              ),
+            });
+          }
+          // 向量搜索 — 返回带 distance 的条目
+          if (sql.includes('SELECT e.id, e.title, e.content')) {
+            return stmt({
+              all: vi.fn(() =>
+                mockState.entries.map((e: any) => ({ ...e, distance: 0.2 })),
+              ),
+            });
+          }
+
+          // 默认
+          return stmt({});
+        }),
+        exec: vi.fn(),
+        pragma: vi.fn(),
+        transaction: vi.fn((fn: () => unknown) => fn()),
+      }),
+    },
+  };
+});
 
 // ===================== 测试数据 =====================
 

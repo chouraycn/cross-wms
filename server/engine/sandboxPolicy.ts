@@ -369,6 +369,10 @@ class SandboxPolicyManager {
   }
 
   private isCommandBlocked(commandName: string, config: SandboxConfig): boolean {
+    // 如果命令明确在允许列表中，则不受阻止列表影响
+    if (config.allowedCommands.includes(commandName)) {
+      return false;
+    }
     if (config.blockedCommands.includes("*")) {
       return true;
     }

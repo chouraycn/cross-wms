@@ -17,7 +17,7 @@ interface MockStatement {
 
 let mockDbInstance: ReturnType<typeof createMockDb>['mockDb'] | null = null;
 
-vi.mock('../db.js', () => ({
+vi.mock('../../db.js', () => ({
   getDb: () => mockDbInstance,
 }));
 

@@ -249,17 +249,26 @@ export function extractKeywords(text: string, maxCount: number = 10): string[] {
   // 合并所有候选词
   const candidates: string[] = [];
 
-  // 添加英文单词（过滤短词）
+  // 英文停用词（过滤常见无意义词）
+  const stopWords = new Set([
+    'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had',
+    'her', 'was', 'one', 'our', 'out', 'has', 'have', 'from', 'they', 'this',
+    'that', 'with', 'will', 'your', 'which', 'their', 'them', 'would', 'could',
+    'should', 'there', 'these', 'those', 'then', 'than', 'been', 'were', 'what',
+    'when', 'where', 'who', 'how', 'why', 'use', 'used', 'using', 'also',
+  ]);
+
+  // 添加英文单词（过滤短词和停用词）
   for (const word of englishWords) {
-    if (word.length >= 3 && !candidates.includes(word)) {
+    if (word.length >= 3 && !stopWords.has(word.toLowerCase()) && !candidates.some(c => c.toLowerCase() === word.toLowerCase())) {
       candidates.push(word);
     }
   }
 
-  // 添加技术术语（如果文本中包含）
+  // 添加技术术语（如果文本中包含）— 优先添加
   for (const term of techTerms) {
-    if (plainText.toLowerCase().includes(term.toLowerCase()) && !candidates.includes(term)) {
-      candidates.push(term);
+    if (plainText.toLowerCase().includes(term.toLowerCase()) && !candidates.some(c => c.toLowerCase() === term.toLowerCase())) {
+      candidates.unshift(term); // 优先添加到头部
     }
   }
 
@@ -286,11 +295,13 @@ export function extractKeywords(text: string, maxCount: number = 10): string[] {
     }
   }
 
-  // 计算词频（简单实现）
+  // 计算词频（简单实现）— 技术术语获得额外加权
+  const techTermSet = new Set(techTerms.map(t => t.toLowerCase()));
   const wordFreq: Record<string, number> = {};
   for (const word of candidates) {
     const count = plainText.toLowerCase().split(word.toLowerCase()).length - 1;
-    wordFreq[word] = count;
+    // 技术术语加权 100，确保排在普通词前面
+    wordFreq[word] = techTermSet.has(word.toLowerCase()) ? count + 100 : count;
   }
 
   // 按频率排序，取 top N
