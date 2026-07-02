@@ -36,7 +36,7 @@ async function bingCnSearch(
     const html = await response.text();
     const results: Array<{ title: string; url: string; snippet?: string }> = [];
 
-    const titleRegex = /<h2[^>]*><a[^>]*href=["']([^"']+)["'][^>]*>([^<]+)<\/a><\/h2>/gi;
+    const titleRegex = /<h2[^>]*>\s*<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>\s*<\/h2>/gi;
     let match;
     while ((match = titleRegex.exec(html)) !== null) {
       const href = match[1];
