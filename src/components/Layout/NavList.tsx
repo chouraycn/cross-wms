@@ -28,7 +28,6 @@ import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
 import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import ScheduleIcon from '@mui/icons-material/Schedule';
-import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import WebIcon from '@mui/icons-material/Web';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -97,7 +96,6 @@ const navItems: NavItem[] = [
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
   { label: '执行历史', path: '/execution-history', icon: <HistoryIcon />, desc: '执行记录' },
   { label: '模板市场', path: '/template-market', icon: <AutoFixHighIcon />, desc: '工作流模板' },
-  { label: 'PDF 工具', path: '/pdf-tools', icon: <PictureAsPdfOutlinedIcon />, desc: 'PDF 处理' },
   { label: '文件浏览器', path: '/file-explorer', icon: <FolderOpenOutlinedIcon />, desc: '文件管理' },
   { label: '事件溯源', path: '/event-ledger', icon: <HistoryIcon />, desc: '事件查询' },
   { label: '浏览器', path: '/browser', icon: <WebIcon />, desc: '自动化控制' },
