@@ -92,13 +92,7 @@ const navItems: NavItem[] = [
   { label: 'AI 对话', path: '/chat', icon: <ChatBubbleOutlineIcon />, desc: '智能助手' },
   { label: '项目', path: '/projects', icon: <FolderOutlinedIcon />, desc: '项目总览' },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
-  { label: '记忆管理', path: '/memory', icon: <PsychologyIcon />, desc: '向量记忆' },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
-  { label: '执行历史', path: '/execution-history', icon: <HistoryIcon />, desc: '执行记录' },
-  { label: '模板市场', path: '/template-market', icon: <AutoFixHighIcon />, desc: '工作流模板' },
-  { label: '文件浏览器', path: '/file-explorer', icon: <FolderOpenOutlinedIcon />, desc: '文件管理' },
-  { label: '事件溯源', path: '/event-ledger', icon: <HistoryIcon />, desc: '事件查询' },
-  { label: '浏览器', path: '/browser', icon: <WebIcon />, desc: '自动化控制' },
 
   {
     label: '仓储管理',

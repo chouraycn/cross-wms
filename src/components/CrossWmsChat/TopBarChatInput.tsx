@@ -301,6 +301,12 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           if (editableRef.current) {
             editableRef.current.innerHTML = '';
           }
+        } else {
+          // 有输入内容时，派发失焦事件以更新预览
+          const text = editableRef.current?.innerText || '';
+          window.dispatchEvent(new CustomEvent('cdf-chat-input-blur', {
+            detail: { value: text },
+          }));
         }
       }
     };
@@ -497,6 +503,9 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       editableRef.current.innerHTML = '';
     }
     setInputValue('');
+    window.dispatchEvent(new CustomEvent('cdf-chat-input-blur', {
+      detail: { value: '' },
+    }));
     setShowSkillSelector(false);
     setInputExpanded(false);
     setReferencedSessions([]);
@@ -877,6 +886,12 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                   onBeforeInput={handleBeforeInput}
                   onInput={handleInputWithComposition}
                   onKeyDown={handleKeyDown}
+                  onBlur={() => {
+                    const text = editableRef.current?.innerText || '';
+                    window.dispatchEvent(new CustomEvent('cdf-chat-input-blur', {
+                      detail: { value: text },
+                    }));
+                  }}
                   onCompositionStart={() => { isComposingRef.current = true; compositionJustEndedRef.current = false; }}
                   onCompositionEnd={() => {
                     // Bug Fix: 仅在确实正在组合输入时才标记 compositionJustEndedRef

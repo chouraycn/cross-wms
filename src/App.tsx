@@ -47,9 +47,6 @@ const WmsReplenishmentPage = React.lazy(() => import('./pages/WmsReplenishmentPa
 const TransferPage = React.lazy(() => import('./pages/TransferPage'));
 const ProjectDetailPage = React.lazy(() => import('./pages/ProjectDetailPage'));
 const PdfToolsPage = React.lazy(() => import('./pages/PdfToolsPage'));
-const MemoryPage = React.lazy(() => import('./pages/MemoryPage'));
-const FileExplorerPage = React.lazy(() => import('./pages/FileExplorerPage'));
-const EventLedgerPage = React.lazy(() => import('./pages/EventLedgerPage'));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
 const PluginsPage = React.lazy(() => import('./pages/PluginsPage'));
 const ApiDomainWhitelistPage = React.lazy(() => import('./pages/ApiDomainWhitelistPage'));
@@ -57,8 +54,6 @@ const ApiTemplatesPage = React.lazy(() => import('./pages/ApiTemplatesPage'));
 const BrowserPage = React.lazy(() => import('./pages/BrowserPage'));
 const ApiCredentialsPage = React.lazy(() => import('./pages/ApiCredentialsPage'));
 const ApiHistoryPage = React.lazy(() => import('./pages/ApiHistoryPage'));
-const ExecutionHistoryPage = React.lazy(() => import('./pages/ExecutionHistoryPage'));
-const TemplateMarketPage = React.lazy(() => import('./pages/TemplateMarketPage'));
 
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
@@ -538,13 +533,6 @@ const MainLayout: React.FC = () => {
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
   const scrollRef = useAutoHideScrollbar(!isPy);
 
-  // AI 对话框可见性：自动化、Agent、技能、对话、项目页面隐藏
-  // 在设置型页面中不显示 AI 对话框，避免混入 AI 浮层。
-  const showChatBar = !location.pathname.startsWith('/automation') &&
-    !location.pathname.startsWith('/skills') &&
-    !location.pathname.startsWith('/chat') &&
-    !location.pathname.startsWith('/projects');
-
   const actions = getToolbarActions(location.pathname);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const pageKey = getPageRefreshKey(location.pathname);
@@ -643,7 +631,6 @@ const MainLayout: React.FC = () => {
                 px: 3, // 与 logo 对齐，增加左右 padding
                 pt: 0.375, // 顶部间距：约3px
                 pb: 3,
-                paddingBottom: showChatBar ? '120px' : 3, // 为底部固定的对话框留出空间
                 '& .full-width-page': {
                   mx: -3, // 抵消 px: 3，让全宽组件保持全宽
                   mt: -0.5, // 抵消 pt: 0.5
@@ -678,8 +665,6 @@ const MainLayout: React.FC = () => {
                     <Route path="/wms/replenishment" element={<Suspense fallback={<LoadingFallback />}><WmsReplenishmentPage /></Suspense>} />
                     <Route path="/transfer" element={<TransferPage />} />
                     <Route path="/pdf-tools" element={<PdfToolsPage />} />
-                    <Route path="/memory" element={<MemoryPage />} />
-                    <Route path="/event-ledger" element={<EventLedgerPage />} />
                     <Route path="/settings" element={<SettingsRedirect />} />
                     <Route path="/automation" element={<AutomationPage />} />
                     <Route path="/plugins" element={<PluginsPage />} />
@@ -688,8 +673,6 @@ const MainLayout: React.FC = () => {
                     <Route path="/browser" element={<BrowserPage />} />
                     <Route path="/api-credentials" element={<ApiCredentialsPage />} />
                     <Route path="/api-history" element={<ApiHistoryPage />} />
-                    <Route path="/execution-history" element={<ExecutionHistoryPage />} />
-                    <Route path="/template-market" element={<TemplateMarketPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Suspense>
@@ -698,23 +681,6 @@ const MainLayout: React.FC = () => {
           </Box>
         </Box>
       </Box>
-
-      {/* AI 对话框 — 固定在页面中下方，自动化/Agent/技能页面隐藏 */}
-      {showChatBar && (
-        <Box
-          sx={{
-            position: 'fixed',
-            bottom: 'calc(6px + 20px)',
-            left: sidebarCollapsed ? 'calc(80px + 6px)' : 'calc(270px + 6px)',
-            right: 'calc(6px + 12px)',
-            zIndex: 1200,
-            filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.12))',
-            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), right 0.3s cubic-bezier(0.4, 0, 0.2, 1), bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
-        >
-          <CDFChatThread variant="embedded" />
-        </Box>
-      )}
 
       {/* 自动更新通知 — 左下角 */}
       <UpdateNotification />
