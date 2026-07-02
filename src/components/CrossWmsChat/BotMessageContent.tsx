@@ -453,11 +453,11 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
       {/* 消息内容渲染 */}
       {msg.content && msg.content.trim() ? (
         <MarkdownRenderer content={msg.content} isStreaming={msg.isStreaming} />
-      ) : msg.isStreaming && !msg.thinking ? (
+      ) : msg.isStreaming ? (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
           <CircularProgress size={14} thickness={5} sx={{ color: gs.textDisabled }} />
           <Typography sx={{ fontSize: 13, color: gs.textDisabled, fontStyle: 'italic' }}>
-            思考中...
+            {msg.thinking ? '思考中...' : '发送中...'}
           </Typography>
         </Box>
       ) : msg.role === 'assistant' ? (

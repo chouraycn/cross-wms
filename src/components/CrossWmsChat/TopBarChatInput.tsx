@@ -577,10 +577,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   }, [handleInputChange]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // v2.3.1-fix: 保存并立即清除 compositionJustEndedRef，防止死锁
-    // 问题：compositionend → 设置 compositionJustEndedRef=true → Enter 被该标记阻塞
-    // → 标记永不重置 → 后续所有回车永久失效
-    // 解决：在 keydown 开头快照该值后立即清除，用快照值做判断
     const justEndedComposition = compositionJustEndedRef.current;
     compositionJustEndedRef.current = false;
 
@@ -601,7 +597,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         setSkillFocusIndex(prev => prev <= 0 ? slashFilteredCount - 1 : prev - 1);
         return;
       }
-      if (e.key === 'Enter' && !isComposing(e) && !compositionTextInsertedRef.current && !justEndedComposition) {
+      if (e.key === 'Enter' && !isComposing(e) && !justEndedComposition) {
         e.preventDefault();
         if (skillFocusIndex >= 0 && skillFocusIndex < slashFilteredCount) {
           if (slashFilteredSkills[skillFocusIndex]) {
@@ -614,23 +610,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         return;
       }
     }
-    if (e.key === 'Enter' && !e.shiftKey && !isComposing(e) && !compositionTextInsertedRef.current && !justEndedComposition) {
-      e.preventDefault();
-      handleSend();
-      return;
-    }
-    // v2.3.2-fix: 兜底清除残留标记并发送消息。
-    // 场景1：nativeEvent.isComposing=false（标准浏览器），但 compositionTextInsertedRef=true
-    // 场景2：nativeEvent.isComposing=true（某些 WKWebView），且 compositionTextInsertedRef=true
-    // 两者都检查，确保在各种浏览器实现中都能正确处理残留状态
-    if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent as any)?.isComposing && compositionTextInsertedRef.current && !justEndedComposition) {
-      isComposingRef.current = false;
-      compositionTextInsertedRef.current = false;
-      e.preventDefault();
-      handleSend();
-    }
-    // 场景3：nativeEvent.isComposing=false 且 compositionTextInsertedRef=false，但之前有残留
-    if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent as any)?.isComposing && !justEndedComposition) {
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing(e) && !justEndedComposition) {
       isComposingRef.current = false;
       compositionTextInsertedRef.current = false;
       e.preventDefault();

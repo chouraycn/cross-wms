@@ -389,12 +389,7 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, 
 
   const empty = !content || content.trim() === '';
   if (empty) {
-    // 流式输出时 content 可能为空 — 显示占位
-    return (
-      <span style={{ fontSize: 14, lineHeight: 1.6, color: gs.textDisabled }}>
-        思考中...
-      </span>
-    );
+    return null;
   }
 
   return (
