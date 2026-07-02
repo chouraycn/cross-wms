@@ -36,7 +36,7 @@ async function soSearch(
     const html = await response.text();
     const results: Array<{ title: string; url: string; snippet?: string }> = [];
 
-    const titleRegex = /<h3[^>]*><a[^>]*href=["']([^"']+)["'][^>]*>([^<]+)<\/a><\/h3>/gi;
+    const titleRegex = /<h3[^>]*>\s*<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>\s*<\/h3>/gi;
     let match;
     while ((match = titleRegex.exec(html)) !== null) {
       const href = match[1];
