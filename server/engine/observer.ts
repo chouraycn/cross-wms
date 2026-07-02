@@ -89,6 +89,30 @@ function matchesPattern(toolName: string, pattern: string): boolean {
   return regex.test(toolName);
 }
 
+// ===================== JSON 错误检测工具 =====================
+
+function resultHasErrorField(result: string): boolean {
+  const trimmed = result.trim();
+  if (!trimmed) return false;
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+    return false;
+  }
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (parsed && typeof parsed === 'object') {
+      if ('success' in parsed) {
+        return parsed.success === false;
+      }
+      if ('error' in parsed && parsed.error != null) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 // ===================== RuleEngine =====================
 
 /**
@@ -122,17 +146,13 @@ class RuleEngine {
         continue;
       }
 
-      // 2. hasError 检查：结果文本需包含 error 相关字段
+      // 2. hasError 检查：JSON 结果中是否存在 error 字段或 success: false
       if (cond.hasError === true) {
-        // 尝试解析 JSON 检查 error 字段，或检查文本中是否含 "error"
-        const hasErrorField = result.includes('"error"') || result.includes('"error":');
-        if (!hasErrorField) {
+        if (!resultHasErrorField(result)) {
           continue;
         }
       } else if (cond.hasError === false) {
-        // 明确要求无 error
-        const hasErrorField = result.includes('"error"') || result.includes('"error":');
-        if (hasErrorField) {
+        if (resultHasErrorField(result)) {
           continue;
         }
       }

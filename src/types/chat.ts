@@ -1,4 +1,5 @@
 import type { QueryResult } from './inventory-query';
+import type { ContentBlock } from './content-blocks';
 
 export interface ReferencedSession {
   id: string;
@@ -252,6 +253,8 @@ export interface Message {
   /** v1.5.116: 模型降级信息 */
   fallbackModel?: string;
   fallbackReason?: 'model_not_supported' | 'request_failed';
+  /** v9.0: Content Block 数组（双轨并行，优先渲染此字段，回退到扁平字段） */
+  contentBlocks?: ContentBlock[];
 }
 
 /** 会话状态 */

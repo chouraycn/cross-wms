@@ -236,7 +236,7 @@ function createEventTransformProxy(
                     toolCallId: event.toolCallId || event.id,
                     name: event.toolName || event.tool,
                     args: event.toolArgs || event.args,
-                    result: event.result,
+                    result: event.toolResult ?? event.result,
                   });
                   break;
                 case 'error':
