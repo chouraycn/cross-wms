@@ -37,6 +37,7 @@ import ApiIcon from '@mui/icons-material/Api';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import HistoryIcon from '@mui/icons-material/History';
 import LanguageIcon from '@mui/icons-material/Language';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import {
   getPlugins,
   onPluginsChange,
@@ -57,6 +58,7 @@ const ApiTemplatesPage = lazy(() => import('../../pages/ApiTemplatesPage'));
 const ApiCredentialsPage = lazy(() => import('../../pages/ApiCredentialsPage'));
 const ApiHistoryPage = lazy(() => import('../../pages/ApiHistoryPage'));
 const BrowserPage = lazy(() => import('../../pages/BrowserPage'));
+const PdfPanel = lazy(() => import('../PDF/PdfPanel'));
 
 /* ------------------------------------------------------------------ */
 /*  Props / Types                                                      */
@@ -67,7 +69,7 @@ export interface ToolManagementDialogProps {
   onClose: () => void;
 }
 
-type PageTab = 'tools' | 'whitelist' | 'templates' | 'credentials' | 'history' | 'browser';
+type PageTab = 'tools' | 'whitelist' | 'templates' | 'credentials' | 'history' | 'browser' | 'pdf';
 
 const PAGE_TABS: TabDef[] = [
   { key: 'tools',       label: '工具查看', icon: <ExtensionOutlinedIcon sx={{ fontSize: 18 }} /> },
@@ -76,6 +78,7 @@ const PAGE_TABS: TabDef[] = [
   { key: 'credentials', label: 'API 凭证', icon: <VpnKeyIcon sx={{ fontSize: 18 }} /> },
   { key: 'history',     label: 'API 历史', icon: <HistoryIcon sx={{ fontSize: 18 }} /> },
   { key: 'browser',     label: '浏览器',   icon: <LanguageIcon sx={{ fontSize: 18 }} /> },
+  { key: 'pdf',         label: 'PDF 工具', icon: <PictureAsPdfOutlinedIcon sx={{ fontSize: 18 }} /> },
 ];
 
 // ---- 工具查看内部筛选标签 ----
@@ -353,6 +356,14 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
           <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
             <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
               <BrowserPage />
+            </Suspense>
+          </Box>
+        );
+      case 'pdf':
+        return (
+          <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
+            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
+              <PdfPanel />
             </Suspense>
           </Box>
         );
