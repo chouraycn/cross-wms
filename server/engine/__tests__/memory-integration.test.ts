@@ -18,21 +18,113 @@ const mockState = vi.hoisted(() => ({
   nextId: 1,
 }));
 
-// ===================== Mock: SQLiteEngine =====================
+// ===================== Mock: DatabaseManager =====================
+// vecMemoryStore 通过 DatabaseManager.getVecDb() 获取数据库连接，
+// 因此需要 mock databaseManager 而非 SQLiteEngine。
 
-vi.mock('../../storage/SQLiteEngine.js', () => ({
-  SQLiteEngine: vi.fn().mockImplementation(() => ({
-    connect: vi.fn().mockResolvedValue(undefined),
-    disconnect: vi.fn(),
-    isConnected: vi.fn(() => true),
-    migrate: vi.fn(),
+vi.mock('../../storage/databaseManager.js', () => {
+  const mockDb = {
     exec: vi.fn(),
     pragma: vi.fn(),
-    prepare: vi.fn(() => ({
-      run: vi.fn(),
-      get: vi.fn(),
-      all: vi.fn(() => []),
-    })),
+    prepare: vi.fn((sql: string) => {
+      const mockRun = vi.fn((...params: unknown[]) => {
+        if (sql.includes('INSERT INTO memory_entries')) {
+          const id = mockState.nextId++;
+          const text = params[0] as string;
+          const metadata = params[1] as string;
+          mockState.entries.push({
+            id,
+            text,
+            metadata,
+            created_at: new Date().toISOString(),
+          });
+          return { changes: 1, lastInsertRowid: id };
+        }
+        if (sql.includes('INSERT INTO memory_vec_index')) {
+          const rowid = params[0] as number;
+          const embedding = params[1] as Buffer;
+          const floatArr = new Float32Array(
+            embedding.buffer,
+            embedding.byteOffset,
+            embedding.byteLength / 4
+          );
+          mockState.vecIndex.set(rowid, floatArr);
+          return { changes: 1, lastInsertRowid: rowid };
+        }
+        if (sql.includes('DELETE FROM memory_vec_index')) {
+          const size = mockState.vecIndex.size;
+          mockState.vecIndex.clear();
+          return { changes: size, lastInsertRowid: 0 };
+        }
+        if (sql.includes('DELETE FROM memory_entries WHERE id =')) {
+          const id = params[0] as number;
+          const idx = mockState.entries.findIndex(e => e.id === id);
+          if (idx >= 0) {
+            mockState.entries.splice(idx, 1);
+            mockState.vecIndex.delete(id);
+            return { changes: 1, lastInsertRowid: 0 };
+          }
+          return { changes: 0, lastInsertRowid: 0 };
+        }
+        if (sql.includes('DELETE FROM memory_entries')) {
+          const size = mockState.entries.length;
+          mockState.entries = [];
+          mockState.vecIndex.clear();
+          return { changes: size, lastInsertRowid: 0 };
+        }
+        return { changes: 0, lastInsertRowid: 0 };
+      });
+
+      const mockGet = vi.fn(() => {
+        if (sql.includes('COUNT(*) as total')) {
+          return { total: mockState.entries.length, avg_length: 100 };
+        }
+        if (sql.includes('SELECT COUNT(*) as count FROM memory_entries')) {
+          return { count: mockState.entries.length };
+        }
+        if (sql.includes('SELECT COUNT(*) as vec_count FROM memory_vec_index')) {
+          return { count: mockState.vecIndex.size };
+        }
+        if (sql.includes('SELECT id, text, metadata, created_at FROM memory_entries WHERE id =')) {
+          return undefined;
+        }
+        return undefined;
+      });
+
+      const mockAll = vi.fn(() => {
+        if (sql.includes('SELECT id, text FROM memory_entries ORDER BY id')) {
+          return mockState.entries.map(e => ({ id: e.id, text: e.text }));
+        }
+        if (sql.includes('SELECT e.id, e.text, e.metadata, v.distance')) {
+          const results: Array<{ id: number; text: string; metadata: string; distance: number }> = [];
+          for (const [rowid] of mockState.vecIndex) {
+            const entry = mockState.entries.find(e => e.id === rowid);
+            if (entry) {
+              results.push({
+                id: entry.id,
+                text: entry.text,
+                metadata: entry.metadata,
+                distance: Math.random() * 0.5,
+              });
+            }
+          }
+          return results.sort((a, b) => a.distance - b.distance).slice(0, 5);
+        }
+        if (sql.includes('SELECT id, text, metadata, created_at FROM memory_entries')) {
+          return mockState.entries
+            .sort((a, b) => b.id - a.id)
+            .slice(0, 10)
+            .map(e => ({ ...e, created_at: e.created_at }));
+        }
+        return [];
+      });
+
+      return {
+        run: mockRun,
+        get: mockGet,
+        all: mockAll,
+      };
+    }),
     all: vi.fn((sql: string, params?: unknown[]) => {
       if (sql.includes('SELECT id, text FROM memory_entries ORDER BY id')) {
         return mockState.entries.map(e => ({ id: e.id, text: e.text }));
@@ -123,10 +215,16 @@ vi.mock('../../storage/SQLiteEngine.js', () => ({
       }
       return undefined;
     }),
-    transaction: vi.fn((fn: () => unknown) => fn()),
-    getVersion: vi.fn(() => '1.2.0'),
-  })),
-}));
+    close: vi.fn(),
+  };
+  return {
+    DatabaseManager: {
+      getVecDb: () => mockDb,
+      getMainDb: () => mockDb,
+      closeAll: vi.fn(),
+    },
+  };
+});
 
 // ===================== Mock: onnxEmbedding =====================
 

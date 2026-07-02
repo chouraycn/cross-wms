@@ -17,6 +17,7 @@ import {
   initSecretsStore,
   cleanupExpiredSecrets,
   getSecretValueByKey,
+  clearSecretsStoreForTests,
 } from '../engine/secretsStore.js';
 import {
   getCachedSecret,
@@ -51,6 +52,9 @@ describe('密钥管理模块', () => {
 
     // 初始化密钥存储
     initSecretsStore();
+
+    // 清理密钥表数据（避免 UNIQUE 约束冲突）
+    clearSecretsStoreForTests();
 
     // 清除所有缓存
     clearAllSecretCache();

@@ -309,10 +309,93 @@ function checkExecApprovalNeeded(params: ExecToolParams): { riskLevel: ApprovalR
     cwd: params.workdir,
   });
 
-  // 如果沙箱策略不允许，直接拒绝
+  // 如果沙箱策略不允许，根据命令类型确定风险等级
   if (!sandboxResult.allowed) {
+    // 先检查是否为高风险命令（真正危险的命令才返回 critical）
+    const criticalPatterns = [
+      /^sudo\s/i,
+      /^su\s/i,
+      /^rm\s+-rf\s+\//i,
+      /^dd\s+if=/i,
+      /^mkfs/i,
+      /^fdisk/i,
+      /^parted/i,
+      /:(){ :|:& };:/,
+      /\bkillall\b/i,
+      /\bpkill\s+-9\b/i,
+    ];
+
+    for (const pattern of criticalPatterns) {
+      if (pattern.test(params.command)) {
+        return {
+          riskLevel: 'critical',
+          reason: `危险命令被沙箱拒绝: ${pattern.source}`,
+        };
+      }
+    }
+
+    // 检查是否为高风险命令
+    const highRiskPatterns = [
+      /^chmod\s/i,
+      /^chown\s/i,
+      /^rm\s+-rf/i,
+      /^dd\s/i,
+      /\|.*sudo/i,
+      /\|.*rm\s+-rf/i,
+    ];
+
+    for (const pattern of highRiskPatterns) {
+      if (pattern.test(params.command)) {
+        return {
+          riskLevel: 'high',
+          reason: `高风险命令被沙箱拒绝: ${pattern.source}`,
+        };
+      }
+    }
+
+    // 检查是否为中等风险命令
+    const mediumRiskPatterns = [
+      /^rm\s/i,
+      /^mv\s/i,
+      /^cp\s/i,
+      /^mkdir\s/i,
+      /^rmdir\s/i,
+      /^npm\s+publish/i,
+      /^git\s+push/i,
+      /^docker\s+rm/i,
+      /^kubectl\s+delete/i,
+    ];
+
+    for (const pattern of mediumRiskPatterns) {
+      if (pattern.test(params.command)) {
+        return {
+          riskLevel: 'medium',
+          reason: `中等风险命令被沙箱拒绝: ${pattern.source}`,
+        };
+      }
+    }
+
+    // 检查是否为网络相关命令
+    const networkPatterns = [
+      /^curl\s/i,
+      /^wget\s/i,
+      /^ssh\s/i,
+      /^scp\s/i,
+      /^rsync\s/i,
+    ];
+
+    for (const pattern of networkPatterns) {
+      if (pattern.test(params.command)) {
+        return {
+          riskLevel: 'medium',
+          reason: `网络命令被沙箱拒绝: ${pattern.source}`,
+        };
+      }
+    }
+
+    // 其他被沙箱拒绝的命令返回 high
     return {
-      riskLevel: 'critical',
+      riskLevel: 'high',
       reason: sandboxResult.reason,
     };
   }
