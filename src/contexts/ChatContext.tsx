@@ -590,13 +590,18 @@ export function ChatProvider({
     const handleNavigateToChat = () => {
       handleNewChat();
     };
+    const handleNewChatEvent = () => {
+      handleNewChat();
+    };
     window.addEventListener('cdf-know-clow-focus-chat', handleFocusChat);
     window.addEventListener('cdf-know-clow-select-session', handleSelectSession);
     window.addEventListener('cdf-know-clow-navigate-chat', handleNavigateToChat);
+    window.addEventListener('cdf-know-clow-new-chat', handleNewChatEvent);
     return () => {
       window.removeEventListener('cdf-know-clow-focus-chat', handleFocusChat);
       window.removeEventListener('cdf-know-clow-select-session', handleSelectSession);
       window.removeEventListener('cdf-know-clow-navigate-chat', handleNavigateToChat);
+      window.removeEventListener('cdf-know-clow-new-chat', handleNewChatEvent);
     };
   }, [handleNewChat, setActiveSessionId]);
 

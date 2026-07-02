@@ -29,18 +29,20 @@ import SettingsSecrets from './SettingsSecrets';
 import LspPanel from '../LSP/LspPanel';
 import SoulDebugPanel from '../Soul/SoulDebugPanel';
 import SoulEditor from '../Soul/SoulEditor';
+import MemoryPanel from '../Memory/MemoryPanel';
 import { useAiEngineSettings, type ExecutionMode, type QueueMode } from '../../contexts/AppSettingsContext';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar tabs                                                        */
 /* ------------------------------------------------------------------ */
-type AITab = 'mcp' | 'model' | 'chat' | 'auth' | 'image' | 'secrets' | 'lsp' | 'soul' | 'git';
+type AITab = 'mcp' | 'model' | 'chat' | 'memory' | 'auth' | 'image' | 'secrets' | 'lsp' | 'soul' | 'git';
 
 const SIDEBAR_TABS: TabDef[] = [
   { key: 'mcp', label: 'MCP', icon: <LinkIcon sx={{ fontSize: 17 }} /> },
   { key: 'model', label: '模型', icon: <FormatListBulletedIcon sx={{ fontSize: 17 }} /> },
   { key: 'image', label: '图片生成', icon: <ImageOutlinedIcon sx={{ fontSize: 17 }} /> },
   { key: 'chat', label: '对话', icon: <ChatOutlinedIcon sx={{ fontSize: 17 }} /> },
+  { key: 'memory', label: '记忆', icon: <PsychologyIcon sx={{ fontSize: 17 }} /> },
   { key: 'git', label: 'Git', icon: <BranchIcon sx={{ fontSize: 17 }} /> },
   { key: 'soul', label: '规则', icon: <DescriptionIcon sx={{ fontSize: 17 }} /> },
   { key: 'secrets', label: '密钥管理', icon: <LockOutlinedIcon sx={{ fontSize: 17 }} /> },
@@ -149,6 +151,17 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) =>
             <ExecutionModeSelector />
             <QueueModeSelector />
             <MaxHistoryTurnsSelector />
+          </Box>
+        )}
+        {activeTab === 'memory' && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>记忆管理</Typography>
+            <Typography sx={{ fontSize: '0.8rem', color: gs.textSecondary, mb: 2 }}>
+              管理向量记忆库
+            </Typography>
+            <Box sx={{ flex: 1, minHeight: 0 }}>
+              <MemoryPanel />
+            </Box>
           </Box>
         )}
         {activeTab === 'git' && <GitSettingsTab />}

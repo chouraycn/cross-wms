@@ -4,7 +4,13 @@ import { AppIdentity } from './appIdentity.js';
 
 const APP_DIR_NAME = AppIdentity.appDirName;
 
-const rootDir = path.join(os.homedir(), APP_DIR_NAME);
+let rootDir: string;
+
+if (process.env.CDF_DATA_DIR) {
+  rootDir = path.dirname(process.env.CDF_DATA_DIR);
+} else {
+  rootDir = path.join(os.homedir(), APP_DIR_NAME);
+}
 
 export const AppPaths = {
   rootDir,

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Box,
   ListItemButton,
@@ -6,9 +6,11 @@ import {
   Typography,
   useTheme,
   IconButton,
+  Tooltip,
 } from '@mui/material';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getGrayScale } from '../../constants/theme';
 import SidebarLogo from './SidebarLogo';
@@ -105,6 +107,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
   // 点击「AI 对话」新建会话后，短暂忽略 chat-updated 事件，避免新会话 ID 覆盖清空状态
   const ignoreChatUpdateRef = useRef(false);
 
+  // 输入内容预览（收起侧边栏时显示）
+  const [chatInputValue, setChatInputValue] = useState('');
+
   // 兼容 hash 路由：从 hash 中提取实际路径
   const activePath = location.hash ? location.hash.replace('#', '') : location.pathname;
 
@@ -124,16 +129,33 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       ignoreChatUpdateRef.current = true;
       setTimeout(() => { ignoreChatUpdateRef.current = false; }, 200);
     };
+    // 监听聊天输入框失焦（输入完成）时的内容
+    const onChatInputBlur = ((e: CustomEvent) => {
+      if (e.detail && typeof e.detail.value === 'string') {
+        setChatInputValue(e.detail.value);
+      }
+    }) as EventListener;
     window.addEventListener('cdf-know-clow-chat-updated', onChatUpdate);
     window.addEventListener('cdf-know-clow-clear-session', onClearSession);
+    window.addEventListener('cdf-chat-input-blur', onChatInputBlur);
     return () => {
       window.removeEventListener('cdf-know-clow-chat-updated', onChatUpdate);
       window.removeEventListener('cdf-know-clow-clear-session', onClearSession);
+      window.removeEventListener('cdf-chat-input-blur', onChatInputBlur);
     };
   }, []);
 
   const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
   const nativeApp = isNativeApp();
+
+  // 新建对话
+  const handleNewChat = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-new-chat'));
+    // 如果在聊天页，也可以直接导航
+    if (!activePath.startsWith('/chat')) {
+      navigate('/chat');
+    }
+  }, [activePath, navigate]);
 
   return (
     <Box
@@ -316,6 +338,75 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
           >
             <SearchOutlinedIcon sx={{ fontSize: '18px' }} />
           </IconButton>
+
+          {/* 新建对话按钮 — 仅收起时显示 */}
+          <Tooltip title="新建对话">
+            <IconButton
+              onClick={handleNewChat}
+              size="small"
+              sx={{
+                position: 'fixed',
+                top: nativeApp ? '15px' : '10px',
+                left: nativeApp ? (isFullscreen ? 112 : 128) : 42,
+                zIndex: 1400,
+                color: 'text.primary',
+                borderRadius: '6.48px',
+                p: 0.45,
+                width: 25.92,
+                height: 25.92,
+                backgroundColor: nativeApp ? 'transparent' : (isDark ? 'rgba(20, 20, 20, 0.6)' : 'rgba(240, 240, 240, 0.6)'),
+                ...(nativeApp ? {} : {
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                }),
+                border: nativeApp ? 'none' : `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
+                '&:hover': {
+                  backgroundColor: nativeApp ? gs.bgHover : (isDark ? 'rgba(20, 20, 20, 0.8)' : 'rgba(240, 240, 240, 0.8)'),
+                },
+                '&:focus': { outline: 'none' },
+              }}
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+            >
+              <AddCommentOutlinedIcon sx={{ fontSize: '18px' }} />
+            </IconButton>
+          </Tooltip>
+
+          {/* 输入内容预览 — 仅收起时且有输入内容时显示 */}
+          {chatInputValue.trim() && (
+            <Box
+              sx={{
+                position: 'fixed',
+                top: nativeApp ? '15px' : '10px',
+                left: nativeApp ? (isFullscreen ? 144 : 160) : 74,
+                zIndex: 1400,
+                display: 'flex',
+                alignItems: 'center',
+                height: 25.92,
+                px: 1.5,
+                borderRadius: '6.48px',
+                backgroundColor: nativeApp ? 'transparent' : (isDark ? 'rgba(20, 20, 20, 0.6)' : 'rgba(240, 240, 240, 0.6)'),
+                ...(nativeApp ? {} : {
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                }),
+                border: nativeApp ? 'none' : `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
+                maxWidth: 200,
+              }}
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+            >
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  color: gs.textSecondary,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {chatInputValue.trim()}
+              </Typography>
+            </Box>
+          )}
 
           {onToggle && (
             <SidebarToggle
