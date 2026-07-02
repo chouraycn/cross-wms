@@ -5,9 +5,11 @@
  * - 2 次连续失败 → half_open（注入备选工具建议）
  * - 3 次连续失败 → open（跳过该工具 + SSE 告警）
  * - 工具成功 → 重置为 closed
- * - 本次会话内不恢复 open 状态（下次会话重置）
+ * - open 状态 60 秒后自动降级为 half_open（冷却恢复，允许重试）
+ * - half_open 状态下成功一次 → 重置为 closed
  *
  * v6.0: P0-2 工具熔断器
+ * v6.1: 添加冷却恢复机制（OPEN_COOLDOWN_MS）
  */
 
 // ===================== 类型定义 =====================
@@ -21,6 +23,8 @@ interface ToolCircuitRecord {
   consecutiveFailures: number;
   lastFailureReason: string;
   alternativeTool?: string;
+  /** 进入 open 状态的时间戳（用于冷却恢复） */
+  openedAt?: number;
 }
 
 /** 熔断器触发事件 */
@@ -55,6 +59,9 @@ const HALF_OPEN_THRESHOLD = 2;
 /** 熔断阈值：连续失败次数达到此值时熔断为 open */
 const OPEN_THRESHOLD = 3;
 
+/** open 状态冷却恢复时间（毫秒）：60 秒后自动降级为 half_open，允许重试 */
+const OPEN_COOLDOWN_MS = 60_000;
+
 // ===================== CircuitBreaker 类 =====================
 
 export class CircuitBreaker {
@@ -79,6 +86,7 @@ export class CircuitBreaker {
 
     if (record.consecutiveFailures >= OPEN_THRESHOLD) {
       record.state = 'open';
+      record.openedAt = Date.now();
     } else if (record.consecutiveFailures >= HALF_OPEN_THRESHOLD) {
       record.state = 'half_open';
     }
@@ -87,9 +95,22 @@ export class CircuitBreaker {
     return record.state;
   }
 
-  /** 获取工具的当前熔断状态 */
+  /** 获取工具的当前熔断状态（含冷却恢复检查） */
   getState(toolName: string): CircuitState {
-    return this.records.get(toolName)?.state ?? 'closed';
+    const record = this.records.get(toolName);
+    if (!record) return 'closed';
+
+    // 冷却恢复：open 状态超过冷却时间后自动降级为 half_open
+    if (record.state === 'open' && record.openedAt) {
+      const elapsed = Date.now() - record.openedAt;
+      if (elapsed >= OPEN_COOLDOWN_MS) {
+        record.state = 'half_open';
+        // 不清零 consecutiveFailures，half_open 仍需一次成功才能完全恢复
+        this.records.set(toolName, record);
+      }
+    }
+
+    return record.state;
   }
 
   /** 获取工具的熔断记录 */

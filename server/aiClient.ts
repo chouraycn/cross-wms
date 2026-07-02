@@ -14,6 +14,7 @@
 import { isLocalModel } from './modelsStore.js';
 import { sanitizeToolMessages } from './engine/contextTruncate.js';
 import { logger } from './logger.js';
+import { extractAnthropicThinkingSignature } from './engine/thinkingSignatureManager.js';
 
 /** 消息内容类型（支持 OpenAI Vision 格式） */
 export type MessageContent = string | Array<{
@@ -67,6 +68,10 @@ export interface AIResponse {
   content: string;
   toolCalls?: ToolCall[];
   reasoningContent?: string;
+  /** thinking 加密签名（Anthropic thinking content block 提取，可回传 API） */
+  thinkingSignature?: string;
+  /** 安全脱敏标记（redacted_thinking 块为 true） */
+  redacted?: boolean;
   // v2.2.0: token 使用统计
   usage?: {
     promptTokens?: number;
@@ -711,6 +716,10 @@ export async function callAnthropicStream(
   let currentToolCall: ToolCall | null = null;
   let currentToolInput = '';
 
+  // thinking signature（从 thinking / redacted_thinking content block 提取，可回传 API）
+  let thinkingSignature: string | undefined;
+  let redactedThinking = false;
+
   // v2.2.0: token 使用统计
   let usageData: AIResponse['usage'];
 
@@ -735,6 +744,14 @@ export async function callAnthropicStream(
             if (contentBlock?.type === 'thinking' && contentBlock?.thinking) {
               reasoningContent += contentBlock.thinking;
               if (onThinking) onThinking(contentBlock.thinking);
+            }
+            // 提取 thinking / redacted_thinking 块的加密签名（供多轮对话回传 + 细粒度 SSE 事件）
+            if (contentBlock?.type === 'thinking' || contentBlock?.type === 'redacted_thinking') {
+              const sigInfo = extractAnthropicThinkingSignature(contentBlock);
+              if (sigInfo?.signature) {
+                thinkingSignature = sigInfo.signature;
+                redactedThinking = !!sigInfo.redacted;
+              }
             }
             // 检测 tool_use 块开始
             if (contentBlock?.type === 'tool_use') {
@@ -804,6 +821,8 @@ export async function callAnthropicStream(
     content: fullContent,
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     reasoningContent: reasoningContent || undefined,
+    thinkingSignature,
+    redacted: redactedThinking || undefined,
     usage: usageData,
   };
 }

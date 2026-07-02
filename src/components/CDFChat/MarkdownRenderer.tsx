@@ -81,6 +81,9 @@ import CodeIcon from '@mui/icons-material/Code';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { getGrayScale } from '../../constants/theme';
+import { extractMediaFromText, removeMediaUrls } from '../../utils/mediaExtractor';
+import { AudioPlayer } from './AudioPlayer';
+import { CanvasPreview } from './CanvasPreview';
 import type { MarkdownRendererProps } from './types';
 
 // 注册常用语言
@@ -870,6 +873,22 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({
     [gs, isDark, showLineNumbersMap, copiedMap, toggleLineNumbers, handleCopy]
   );
 
+  // 多模态媒体提取 — 从渲染文本中提取音频/Canvas URL
+  const audioMedia = useMemo(
+    () => extractMediaFromText(renderedContent).filter((m) => m.type === 'audio'),
+    [renderedContent],
+  );
+  const canvasMedia = useMemo(
+    () => extractMediaFromText(renderedContent).filter((m) => m.type === 'canvas'),
+    [renderedContent],
+  );
+
+  // 从文本中移除音频/Canvas URL，避免与播放器/预览组件重复显示
+  const cleanedContent = useMemo(() => {
+    if (audioMedia.length === 0 && canvasMedia.length === 0) return renderedContent;
+    return removeMediaUrls(renderedContent, [...audioMedia, ...canvasMedia]);
+  }, [renderedContent, audioMedia, canvasMedia]);
+
   // memoize ReactMarkdown element
   const markdownElement = useMemo(
     () => (
@@ -878,10 +897,10 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({
         rehypePlugins={[rehypeKatex]}
         components={markdownComponents}
       >
-        {renderedContent}
+        {cleanedContent}
       </ReactMarkdown>
     ),
-    [renderedContent, markdownComponents]
+    [cleanedContent, markdownComponents]
   );
 
   const empty = !content || content.trim() === '';
@@ -896,6 +915,15 @@ export const MarkdownRenderer = React.memo(function MarkdownRenderer({
   return (
     <div className="cdf-markdown-body" style={{ fontSize: 14, lineHeight: 1.7 }}>
       {markdownElement}
+      {audioMedia.map((m, i) => (
+        <AudioPlayer key={`audio-${i}-${m.url}`} src={m.url} />
+      ))}
+      {canvasMedia.map((m, i) => {
+        const fileName = m.url.split('/').pop()?.split('?')[0] || m.url;
+        return (
+          <CanvasPreview key={`canvas-${i}-${m.url}`} url={m.url} title={fileName} />
+        );
+      })}
     </div>
   );
 });

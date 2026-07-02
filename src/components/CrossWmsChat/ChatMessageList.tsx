@@ -11,10 +11,13 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import EditIcon from '@mui/icons-material/Edit';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { Message, Session } from '../../types/chat.js';
+import { ChatItem, isMessageItem, isDividerItem, isReadingIndicatorItem, isPendingSendItem } from '../../types/chat-items.js';
 import { getGrayScale, CHAT_MAX_WIDTH } from '../../constants/theme.js';
 import { useAppearanceSettings } from '../../contexts/AppSettingsContext.js';
 import { ImageAttachment } from './ImageAttachment.js';
 import { BotMessageContent } from './BotMessageContent.js';
+import { CompactionDivider } from '../CDFChat/CompactionDivider.js';
+import { ReadingIndicator } from '../CDFChat/ReadingIndicator.js';
 
 // ===================== v1.9.3: 文件类型图标工具 =====================
 
@@ -70,6 +73,8 @@ export interface ChatMessageListProps {
   maxHeight?: string;
   /** 额外的 sx 样式 */
   sx?: Record<string, unknown>;
+  /** v3.0: ChatItem 列表（可选，优先使用） */
+  items?: ChatItem[];
 }
 
 /**
@@ -89,6 +94,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   showRegenerate = false,
   maxHeight,
   sx = {},
+  items: chatItems,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -143,7 +149,348 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     prevMsgCountRef.current = session.messages.length;
   }, [session.messages.length]);
 
-  const hasMessages = session.messages.length > 0;
+  const renderMessageItem = (msg: Message, index: number) => (
+    <Box
+      key={msg.id}
+      sx={{
+        pt: index === 0 ? 0 : 1.5,
+        pb: 1.5,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
+        gap: 0.5,
+        px: 3,
+        maxWidth: CHAT_MAX_WIDTH,
+        width: '100%',
+        mx: 'auto',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
+        {msg.role === 'assistant' && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            {isEditingBotName ? (
+              <ClickAwayListener onClickAway={() => {
+                const trimmed = editingBotName.trim();
+                if (trimmed) {
+                  updateSettings({ appearance: { ...settings, botName: trimmed } });
+                }
+                setIsEditingBotName(false);
+              }}>
+                <TextField
+                  inputRef={botNameInputRef}
+                  size="small"
+                  value={editingBotName}
+                  onChange={e => setEditingBotName(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      const trimmed = editingBotName.trim();
+                      if (trimmed) {
+                        updateSettings({ appearance: { ...settings, botName: trimmed } });
+                      }
+                      setIsEditingBotName(false);
+                    }
+                    if (e.key === 'Escape') {
+                      setIsEditingBotName(false);
+                    }
+                  }}
+                  autoFocus
+                  sx={{
+                    '& .MuiInputBase-root': {
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: isDark ? '#E5E7EB' : '#111827',
+                      bgcolor: isDark ? '#2A2A2A' : '#F5F5F5',
+                      borderRadius: '6px',
+                      px: 0.5,
+                      py: 0,
+                      height: 22,
+                    },
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? '#555' : '#CCC' },
+                    width: 120,
+                  }}
+                />
+              </ClickAwayListener>
+            ) : (
+              <Box
+                onClick={() => {
+                  setEditingBotName(botName);
+                  setIsEditingBotName(true);
+                }}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.25,
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  px: 0.5,
+                  py: 0.15,
+                  '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' },
+                  transition: 'background-color 0.15s',
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: isDark ? '#E5E7EB' : '#111827',
+                  }}
+                >
+                  {botName}
+                </Typography>
+                <EditIcon sx={{ fontSize: 11, color: gs.textDisabled, opacity: 0.5 }} />
+              </Box>
+            )}
+            {msg.model && (
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  color: gs.textMuted,
+                  fontWeight: 400,
+                }}
+              >
+                · {msg.model}
+              </Typography>
+            )}
+            {msg.fallbackModel && (
+              <Chip
+                size="small"
+                label={`⚠️ 已降级到 ${msg.fallbackModel}`}
+                sx={{ height: 20, fontSize: 10, color: '#b45309', bgcolor: '#fef3c7', border: '1px solid #fcd34d' }}
+              />
+            )}
+          </Box>
+        )}
+        <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
+          {(msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+        </Typography>
+        {msg.role === 'user' && (
+          <Typography
+            sx={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: gs.textPrimary,
+            }}
+          >
+            你
+          </Typography>
+        )}
+      </Box>
+
+      {msg.role === 'user' && msg.referencedSessions && msg.referencedSessions.length > 0 && (
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 0.5,
+            mb: 0.5,
+            justifyContent: 'flex-end',
+          }}
+        >
+          {msg.referencedSessions.map((ref) => (
+            <Box
+              key={ref.id}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                px: 0.8,
+                py: 0.2,
+                borderRadius: '6px',
+                bgcolor: isDark ? '#1E3A5F' : '#EFF6FF',
+                color: isDark ? '#60A5FA' : '#2563EB',
+                border: `1px solid ${isDark ? '#1E40AF' : '#BFDBFE'}`,
+                fontSize: 11,
+                lineHeight: 1.4,
+                gap: 0.4,
+              }}
+            >
+              <span style={{ fontSize: 13 }}>@</span>
+              <span style={{
+                maxWidth: 120,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {ref.title || '未命名对话'}
+              </span>
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      {msg.role === 'user' && msg.attachments && msg.attachments.length > 0 && (
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 0.75,
+            mb: 0.5,
+            justifyContent: 'flex-end',
+            maxWidth: '75%',
+          }}
+        >
+          {msg.attachments.map((att) => {
+            const FileIcon = getFileTypeIcon(att.mimeType, att.fileName);
+
+            return att.type === 'image' ? (
+              <ImageAttachment
+                key={att.id}
+                att={att}
+                isDark={isDark}
+                gs={gs}
+              />
+            ) : (
+              <Chip
+                key={att.id}
+                icon={<FileIcon sx={{ fontSize: 16 }} />}
+                label={`${att.fileName} (${(att.size / 1024).toFixed(1)}KB)`}
+                size="small"
+                clickable
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = att.url;
+                  link.download = att.fileName;
+                  link.click();
+                }}
+                sx={{
+                  height: 30,
+                  fontSize: 12,
+                  bgcolor: isDark ? '#1E293B' : '#F8FAFC',
+                  border: `1px solid ${gs.border}`,
+                  '& .MuiChip-label': { px: 1 },
+                  '&:hover': { bgcolor: isDark ? '#263348' : '#EFF6FF' },
+                }}
+              />
+            );
+          })}
+        </Box>
+      )}
+
+      {msg.role === 'user' ? (
+        <Box
+          sx={{
+            px: 2,
+            py: 1.5,
+            borderRadius: '16px',
+            maxWidth: '85%',
+            bgcolor: isDark ? '#262626' : '#F0F0F0',
+            color: gs.textPrimary,
+            wordBreak: 'break-word',
+            userSelect: 'text',
+            WebkitUserSelect: 'text',
+          }}
+        >
+          <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap', userSelect: 'text', WebkitUserSelect: 'text' }}>
+            {msg.content}
+          </Typography>
+        </Box>
+      ) : (
+        <BotMessageContent
+          msg={msg}
+          gs={gs}
+          isDark={isDark}
+          copiedId={copiedId}
+          onCopy={onCopy}
+          onRegenerate={onRegenerate}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onQuote={onQuote}
+          showRegenerate={showRegenerate}
+          onConfirmReplenishment={onConfirmReplenishment}
+          onPermissionRespond={onPermissionRespond}
+        />
+      )}
+    </Box>
+  );
+
+  const renderChatItem = (index: number, item: ChatItem) => {
+    if (isMessageItem(item)) {
+      return renderMessageItem(item.message, index);
+    }
+
+    if (isDividerItem(item)) {
+      return (
+        <Box key={item.key} sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', px: 3, py: 0.5 }}>
+          <CompactionDivider
+            label={item.label}
+            summary={item.summary}
+            originalCount={item.originalCount}
+            compressionRatio={item.compressionRatio}
+          />
+        </Box>
+      );
+    }
+
+    if (isReadingIndicatorItem(item)) {
+      return (
+        <Box key={item.key} sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', px: 3, py: 1 }}>
+          <ReadingIndicator phase={item.phase || 'thinking'} />
+        </Box>
+      );
+    }
+
+    if (isPendingSendItem(item)) {
+      return (
+        <Box
+          key={item.key}
+          sx={{
+            pt: index === 0 ? 0 : 1.5,
+            pb: 1.5,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: 0.5,
+            px: 3,
+            maxWidth: CHAT_MAX_WIDTH,
+            width: '100%',
+            mx: 'auto',
+          }}
+        >
+          <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
+            {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+          </Typography>
+          <Typography sx={{ fontSize: 13, fontWeight: 600, color: gs.textPrimary }}>
+            你
+          </Typography>
+          <Box
+            sx={{
+              px: 2,
+              py: 1.5,
+              borderRadius: '16px',
+              maxWidth: '85%',
+              bgcolor: isDark ? '#262626' : '#F0F0F0',
+              color: gs.textPrimary,
+              wordBreak: 'break-word',
+              opacity: item.state === 'sending' ? 0.7 : 1,
+            }}
+          >
+            <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+              {item.text}
+            </Typography>
+          </Box>
+          {item.state === 'sending' && (
+            <Typography sx={{ fontSize: 11, color: gs.textMuted }}>发送中...</Typography>
+          )}
+          {item.state === 'failed' && (
+            <Typography sx={{ fontSize: 11, color: '#ef4444' }}>
+              发送失败 {item.error ? `(${item.error})` : ''}
+            </Typography>
+          )}
+        </Box>
+      );
+    }
+
+    return null;
+  };
+
+  const hasMessages = (chatItems?.length ?? 0) > 0 || session.messages.length > 0;
+  const data = chatItems || session.messages;
+  const useChatItemMode = !!chatItems;
 
   return (
     <Box
@@ -162,282 +509,35 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         ref={virtuosoRef}
         key={session.id}
         style={{ height: '100%' }}
-        data={session.messages}
+        data={data}
         followOutput={(isAtBottom) => {
-          const lastMsg = session.messages[session.messages.length - 1];
-          // v2.8.9: 用户发送新消息时始终滚动到底部，无论当前滚动位置
-          if (lastMsg?.role === 'user') return 'smooth';
+          if (useChatItemMode) {
+            const lastItem = (data as ChatItem[])[(data as ChatItem[]).length - 1];
+            if (isMessageItem(lastItem) && lastItem.message.role === 'user') return 'smooth';
+          } else {
+            const lastMsg = (data as Message[])[(data as Message[]).length - 1];
+            if (lastMsg?.role === 'user') return 'smooth';
+          }
           return isAtBottom ? 'smooth' : false;
         }}
         atBottomStateChange={(atBottom) => {
           isUserScrolledUp.current = !atBottom;
         }}
-        initialTopMostItemIndex={session.messages.length > 0 ? { index: session.messages.length - 1, align: 'end' } : undefined}
+        initialTopMostItemIndex={data.length > 0 ? { index: data.length - 1, align: 'end' } : undefined}
         increaseViewportBy={{ top: 200, bottom: 400 }}
         components={{ List: ListComponent }}
-        computeItemKey={(_index: number, msg: Message) => msg.id}
-        itemContent={(index: number, msg: Message) => (
-          <Box
-            key={msg.id}
-            sx={{
-              pt: index === 0 ? 0 : 1.5,
-              pb: 1.5,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
-              gap: 0.5,
-              px: 3,
-              maxWidth: CHAT_MAX_WIDTH,
-              width: '100%',
-              mx: 'auto',
-            }}
-          >
-            {/* 角色标签 + 时间 */}
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-              }}
-            >
-              {msg.role === 'assistant' && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  {isEditingBotName ? (
-                    <ClickAwayListener onClickAway={() => {
-                      const trimmed = editingBotName.trim();
-                      if (trimmed) {
-                        updateSettings({ appearance: { ...settings, botName: trimmed } });
-                      }
-                      setIsEditingBotName(false);
-                    }}>
-                      <TextField
-                        inputRef={botNameInputRef}
-                        size="small"
-                        value={editingBotName}
-                        onChange={e => setEditingBotName(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            const trimmed = editingBotName.trim();
-                            if (trimmed) {
-                              updateSettings({ appearance: { ...settings, botName: trimmed } });
-                            }
-                            setIsEditingBotName(false);
-                          }
-                          if (e.key === 'Escape') {
-                            setIsEditingBotName(false);
-                          }
-                        }}
-                        autoFocus
-                        sx={{
-                          '& .MuiInputBase-root': {
-                            fontSize: 13,
-                            fontWeight: 600,
-                            color: isDark ? '#E5E7EB' : '#111827',
-                            bgcolor: isDark ? '#2A2A2A' : '#F5F5F5',
-                            borderRadius: '6px',
-                            px: 0.5,
-                            py: 0,
-                            height: 22,
-                          },
-                          '& .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? '#555' : '#CCC' },
-                          width: 120,
-                        }}
-                      />
-                    </ClickAwayListener>
-                  ) : (
-                    <Box
-                      onClick={() => {
-                        setEditingBotName(botName);
-                        setIsEditingBotName(true);
-                      }}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.25,
-                        cursor: 'pointer',
-                        borderRadius: '4px',
-                        px: 0.5,
-                        py: 0.15,
-                        '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' },
-                        transition: 'background-color 0.15s',
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          fontSize: 13,
-                          fontWeight: 600,
-                          color: isDark ? '#E5E7EB' : '#111827',
-                        }}
-                      >
-                        {botName}
-                      </Typography>
-                      <EditIcon sx={{ fontSize: 11, color: gs.textDisabled, opacity: 0.5 }} />
-                    </Box>
-                  )}
-                  {msg.model && (
-                    <Typography
-                      sx={{
-                        fontSize: 11,
-                        color: gs.textMuted,
-                        fontWeight: 400,
-                      }}
-                    >
-                      · {msg.model}
-                    </Typography>
-                  )}
-                  {msg.fallbackModel && (
-                    <Chip
-                      size="small"
-                      label={`⚠️ 已降级到 ${msg.fallbackModel}`}
-                      sx={{ height: 20, fontSize: 10, color: '#b45309', bgcolor: '#fef3c7', border: '1px solid #fcd34d' }}
-                    />
-                  )}
-                </Box>
-              )}
-              <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
-                {(msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-              </Typography>
-              {msg.role === 'user' && (
-                <Typography
-                  sx={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: gs.textPrimary,
-                  }}
-                >
-                  你
-                </Typography>
-              )}
-            </Box>
-
-            {/* 引用会话 chip — 仅在用户消息上展示 */}
-            {msg.role === 'user' && msg.referencedSessions && msg.referencedSessions.length > 0 && (
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 0.5,
-                  mb: 0.5,
-                  justifyContent: 'flex-end',
-                }}
-              >
-                {msg.referencedSessions.map((ref) => (
-                  <Box
-                    key={ref.id}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      px: 0.8,
-                      py: 0.2,
-                      borderRadius: '6px',
-                      bgcolor: isDark ? '#1E3A5F' : '#EFF6FF',
-                      color: isDark ? '#60A5FA' : '#2563EB',
-                      border: `1px solid ${isDark ? '#1E40AF' : '#BFDBFE'}`,
-                      fontSize: 11,
-                      lineHeight: 1.4,
-                      gap: 0.4,
-                    }}
-                  >
-                    <span style={{ fontSize: 13 }}>@</span>
-                    <span style={{
-                      maxWidth: 120,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {ref.title || '未命名对话'}
-                    </span>
-                  </Box>
-                ))}
-              </Box>
-            )}
-
-            {/* 附件展示 — 仅在用户消息上展示 */}
-            {msg.role === 'user' && msg.attachments && msg.attachments.length > 0 && (
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 0.75,
-                  mb: 0.5,
-                  justifyContent: 'flex-end',
-                  maxWidth: '75%',
-                }}
-              >
-                {msg.attachments.map((att) => {
-                  const FileIcon = getFileTypeIcon(att.mimeType, att.fileName);
-
-                  return att.type === 'image' ? (
-                    <ImageAttachment
-                      key={att.id}
-                      att={att}
-                      isDark={isDark}
-                      gs={gs}
-                    />
-                  ) : (
-                    <Chip
-                      key={att.id}
-                      icon={<FileIcon sx={{ fontSize: 16 }} />}
-                      label={`${att.fileName} (${(att.size / 1024).toFixed(1)}KB)`}
-                      size="small"
-                      clickable
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = att.url;
-                        link.download = att.fileName;
-                        link.click();
-                      }}
-                      sx={{
-                        height: 30,
-                        fontSize: 12,
-                        bgcolor: isDark ? '#1E293B' : '#F8FAFC',
-                        border: `1px solid ${gs.border}`,
-                        '& .MuiChip-label': { px: 1 },
-                        '&:hover': { bgcolor: isDark ? '#263348' : '#EFF6FF' },
-                      }}
-                    />
-                  );
-                })}
-              </Box>
-            )}
-
-            {/* 消息内容 */}
-            {msg.role === 'user' ? (
-              <Box
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderRadius: '16px',
-                  maxWidth: '85%',
-                  bgcolor: isDark ? '#262626' : '#F0F0F0',
-                  color: gs.textPrimary,
-                  wordBreak: 'break-word',
-                  userSelect: 'text',
-                  WebkitUserSelect: 'text',
-                }}
-              >
-                <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap', userSelect: 'text', WebkitUserSelect: 'text' }}>
-                  {msg.content}
-                </Typography>
-              </Box>
-            ) : (
-              <BotMessageContent
-                msg={msg}
-                gs={gs}
-                isDark={isDark}
-                copiedId={copiedId}
-                onCopy={onCopy}
-                onRegenerate={onRegenerate}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onQuote={onQuote}
-                showRegenerate={showRegenerate}
-                onConfirmReplenishment={onConfirmReplenishment}
-                onPermissionRespond={onPermissionRespond}
-              />
-            )}
-          </Box>
-        )}
+        computeItemKey={(_index: number, item: Message | ChatItem) => {
+          if (useChatItemMode) {
+            return (item as ChatItem).key;
+          }
+          return (item as Message).id;
+        }}
+        itemContent={(index: number, item: Message | ChatItem) => {
+          if (useChatItemMode) {
+            return renderChatItem(index, item as ChatItem);
+          }
+          return renderMessageItem(item as Message, index);
+        }}
       />
     </Box>
   );

@@ -705,6 +705,20 @@ export async function initDefaultTools(): Promise<void> {
     logger.warn('[Tool Registry] Wiki tools not registered:', err instanceof Error ? err.message : String(err));
   }
 
+  // v11.0: Secrets 密钥管理工具注册（密钥解析/设置/删除/验证）
+  try {
+    const { getSecretsToolDefinitions, getSecretsToolHandlers } = await import('./secretsTools.js');
+    const secretsDefs = getSecretsToolDefinitions();
+    const secretsHandlers = getSecretsToolHandlers();
+    for (const def of secretsDefs) {
+      const handler = secretsHandlers.get(def.function.name);
+      if (handler) registerBuiltinTool({ definition: def, handler });
+    }
+    logger.debug('[Tool Registry] Secrets tools registered:', secretsDefs.map(d => d.function.name).join(', '));
+  } catch (err) {
+    logger.warn('[Tool Registry] Secrets tools not registered:', err instanceof Error ? err.message : String(err));
+  }
+
   // v10.0: Git 工具注册（代码集成基础功能）
   try {
     const { getGitToolDefinitions, getGitToolHandlers } = await import('./gitTools.js');

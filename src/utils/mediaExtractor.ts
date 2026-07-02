@@ -8,7 +8,7 @@
 
 /** 提取的媒体信息 */
 export interface ExtractedMedia {
-  type: 'image' | 'audio' | 'video';
+  type: 'image' | 'audio' | 'video' | 'canvas';
   url: string;
   mimeType?: string;
   position: number;
@@ -19,6 +19,8 @@ export interface ExtractedMedia {
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'];
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'wma'];
 const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv'];
+/** Canvas/Code URL — 可在 iframe 中预览的交互内容（HTML 等） */
+const CANVAS_EXTENSIONS = ['html', 'htm'];
 
 const MIME_MAP: Record<string, string> = {
   jpg: 'image/jpeg',
@@ -39,6 +41,8 @@ const MIME_MAP: Record<string, string> = {
   mov: 'video/quicktime',
   avi: 'video/x-msvideo',
   mkv: 'video/x-matroska',
+  html: 'text/html',
+  htm: 'text/html',
 };
 
 /** URL 匹配正则 */
@@ -64,6 +68,7 @@ export function extractMediaFromText(text: string): ExtractedMedia[] {
     if (IMAGE_EXTENSIONS.includes(ext)) type = 'image';
     else if (AUDIO_EXTENSIONS.includes(ext)) type = 'audio';
     else if (VIDEO_EXTENSIONS.includes(ext)) type = 'video';
+    else if (CANVAS_EXTENSIONS.includes(ext)) type = 'canvas';
 
     if (type) {
       results.push({

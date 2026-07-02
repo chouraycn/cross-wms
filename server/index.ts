@@ -148,6 +148,7 @@ import eventLedgerRouter from './routes/eventLedger.js';
 import goalsRouter from './routes/goalsService.js';
 import wikiRouter from './routes/wikiService.js';
 import secretsRouter from './routes/secretsService.js';
+import webSearchRouter from './routes/webSearchService.js';
 
 // System Permissions
 import permissionsRouter from './routes/permissions.js';
@@ -313,6 +314,7 @@ app.use('/api/event-ledger', eventLedgerRouter);
 app.use('/api/goals', goalsRouter);
 app.use('/api/wiki', wikiRouter);
 app.use('/api/secrets', secretsRouter);
+app.use('/api/web-search', webSearchRouter);
 
 // ========== Soul Rules Routes (人格规则管理) ==========
 app.use('/api/soul', soulRouter);

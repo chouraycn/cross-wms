@@ -1426,6 +1426,115 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+/* ===================== 待发送消息组件 ===================== */
+
+.cdf-pending-send {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin: 8px 0;
+  max-width: 85%;
+  margin-left: auto;
+}
+
+.cdf-pending-send__bubble {
+  padding: 10px 14px;
+  border-radius: var(--cdf-radius) var(--cdf-radius) 4px var(--cdf-radius);
+  background: var(--cdf-user-bubble);
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.cdf-pending-send--sending .cdf-pending-send__bubble {
+  opacity: 0.7;
+}
+
+.cdf-pending-send--failed .cdf-pending-send__bubble {
+  opacity: 1;
+  border: 1px solid var(--cdf-error-border);
+  background: var(--cdf-error-bg);
+}
+
+.cdf-pending-send__content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--cdf-text-primary);
+  word-break: break-word;
+}
+
+.cdf-pending-send__attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.cdf-pending-send__attachment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--cdf-text-muted);
+  padding: 4px 8px;
+  background: var(--cdf-bg-input);
+  border-radius: 6px;
+}
+
+.cdf-pending-send__status {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cdf-pending-send__indicator {
+  font-size: 11px;
+  color: var(--cdf-text-disabled);
+}
+
+.cdf-pending-send__indicator--sending {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cdf-pending-send__indicator--sending::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--cdf-text-disabled);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: cdf-spin 0.8s linear infinite;
+}
+
+.cdf-pending-send__indicator--failed {
+  color: var(--cdf-error-text);
+}
+
+.cdf-pending-send__error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cdf-pending-send__retry-btn {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--cdf-primary);
+  background: transparent;
+  color: var(--cdf-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cdf-pending-send__retry-btn:hover {
+  background: var(--cdf-primary);
+  color: #ffffff;
+}
+
 /* ===================== 响应式 ===================== */
 
 @media (max-width: 640px) {

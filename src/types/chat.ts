@@ -111,6 +111,10 @@ export interface MessageMetadata {
   errorCode?: string;
   /** v1.7.0: 是否已自动重试（每会话仅重试一次） */
   autoRetried?: boolean;
+  /** v9.0: thinking 签名（加密思考块的签名，用于校验/还原） */
+  thinkingSignature?: string;
+  /** v9.0: thinking 内容是否被加密/编辑（redacted），渲染时显示 [encrypted] 标记 */
+  thinkingRedacted?: boolean;
 }
 
 export interface Attachment {

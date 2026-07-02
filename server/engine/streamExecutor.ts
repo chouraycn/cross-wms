@@ -30,6 +30,10 @@ export interface ExecuteChatResult {
   thinkingContent: string;
   hasThinking: boolean;
   thinkingDuration: number;
+  /** thinking 加密签名（Anthropic thinking content block 提取，可回传 API） */
+  thinkingSignature?: string;
+  /** 安全脱敏标记（redacted_thinking 块为 true） */
+  redacted?: boolean;
   /** 工具调用记录（ToolExecutionResult 格式） */
   toolCalls: ToolExecutionResult['toolCalls'];
   usage?: AIResponse['usage'];
@@ -123,6 +127,10 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
   let thinkingStartTime: number | null = null;
   let thinkingChunkCount = 0;
   let toolCallsResult: ToolExecutionResult['toolCalls'] = [];
+  // 细粒度 thinking 事件状态
+  let thinkingStarted = false;
+  let thinkingSignature: string | undefined;
+  let redactedThinking: boolean | undefined;
 
   // ============== Phase 1: 后台增强（与 Phase 0 并行） ==============
   // 提取用户最新消息文本用于增强
@@ -158,9 +166,13 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
       signal: params.signal ?? new AbortController().signal,
       executionMode: params.executionMode,
       onSSEEvent: (event: Record<string, unknown>) => {
-        // 策略内部事件：核心类型直接发送，非核心类型走 debug 通道
+        // 策略内部事件：核心类型与多模态类型直接发送，其余走 debug 通道
         const eventType = event.type as string;
-        if (['init', 'text', 'thinking', 'tool_call', 'done', 'error'].includes(eventType)) {
+        if ([
+          'init', 'text', 'thinking', 'tool_call', 'done', 'error',
+          'image_start', 'image_delta', 'image_end',
+          'audio_start', 'audio_delta', 'audio_end',
+        ].includes(eventType)) {
           sendSSE(res, event);
         } else {
           sendDebugSSE(res, event);
@@ -177,8 +189,21 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
           hasThinking = true;
           thinkingStartTime = Date.now();
         }
+        // 细粒度 thinking.start（首个 chunk 时发送一次，含 signature 如果有）
+        if (!thinkingStarted) {
+          thinkingStarted = true;
+          sendSSE(res, {
+            type: 'thinking.start',
+            contentIndex: 0,
+            ...(thinkingSignature ? { thinkingSignature } : {}),
+            ...(redactedThinking ? { redacted: true } : {}),
+          });
+        }
+        // 细粒度 thinking.delta
+        sendSSE(res, { type: 'thinking.delta', contentIndex: 0, content: thinkingChunk });
         thinkingContent += thinkingChunk;
         thinkingChunkCount++;
+        // 保留原有 thinking 事件（向后兼容）
         sendSSE(res, { type: 'thinking', content: thinkingChunk });
         callbacks.onThinking?.(thinkingChunk);
       },
@@ -218,6 +243,11 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
 
     fullContent = toolResult.content;
     toolCallsResult = toolResult.toolCalls || [];
+    // 上抛 thinking signature（来自 Anthropic thinking content block）
+    if (toolResult.thinkingSignature) {
+      thinkingSignature = toolResult.thinkingSignature;
+      redactedThinking = toolResult.redacted;
+    }
 
     // 处理空内容回退
     if (!fullContent && thinkingContent) {
@@ -260,11 +290,24 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
 
   const thinkingDuration = hasThinking && thinkingStartTime ? Date.now() - thinkingStartTime : 0;
 
+  // 细粒度 thinking.complete（含 thinkingSignature 和 thinkingDuration）
+  if (thinkingStarted) {
+    sendSSE(res, {
+      type: 'thinking.complete',
+      contentIndex: 0,
+      thinkingDuration,
+      ...(thinkingSignature ? { thinkingSignature } : {}),
+      ...(redactedThinking ? { redacted: true } : {}),
+    });
+  }
+
   return {
     content: fullContent,
     thinkingContent,
     hasThinking,
     thinkingDuration,
+    thinkingSignature,
+    redacted: redactedThinking,
     toolCalls: toolCallsResult,
     enhancement,
   };

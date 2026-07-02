@@ -79,7 +79,8 @@ function setNestedValue(obj: Record<string, unknown>, path: string, value: unkno
 
 // ==================== API 调用 ====================
 
-const DEFAULT_TIMEOUT = 10000;
+const DEFAULT_TIMEOUT = 15000;
+const MINIMAX_SEARCH_MODEL = "MiniMax-Text-M1";
 
 async function performSearch(
   apiKey: string,
@@ -101,7 +102,8 @@ async function performSearch(
   signal?.addEventListener("abort", abortHandler);
 
   try {
-    let url = "https://api.minimax.chat/v1/web_search";
+    // MiniMax 通过 chatcompletion_v2 + web_search tool 实现搜索
+    let url = "https://api.minimax.chat/v1/text/chatcompletion_v2";
     if (groupId) {
       url += `?GroupId=${encodeURIComponent(groupId)}`;
     }
@@ -113,8 +115,23 @@ async function performSearch(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        query,
-        max_results: count,
+        model: MINIMAX_SEARCH_MODEL,
+        messages: [
+          {
+            role: "user",
+            content: `请搜索以下内容并提供相关网页链接：${query}`,
+          },
+        ],
+        tools: [
+          {
+            type: "web_search",
+            web_search: {
+              enable: true,
+              search_query: query,
+              max_results: count,
+            },
+          },
+        ],
       }),
       signal: controller.signal,
     });
@@ -147,7 +164,7 @@ async function performSearch(
       if (signal?.aborted) {
         throw e;
       }
-      throw new Error("MiniMax 搜索超时（10秒）");
+      throw new Error("MiniMax 搜索超时（15秒）");
     }
     throw e;
   }
@@ -156,20 +173,79 @@ async function performSearch(
 function normalizeResults(data: Record<string, unknown>): WebSearchResult[] {
   const results: WebSearchResult[] = [];
 
-  const items = data.results || data.data || data.items || (data as { search_results?: unknown[] }).search_results;
-  if (!Array.isArray(items)) {
-    return results;
+  // 从 chat completion 响应中提取搜索结果
+  // 1. 尝试从 choices[0].message.tool_calls 中提取 web_search 结果
+  const choices = data.choices as Array<Record<string, unknown>> | undefined;
+  if (choices && choices.length > 0) {
+    const message = choices[0].message as Record<string, unknown> | undefined;
+    if (message) {
+      // 从 tool_calls 中提取搜索结果
+      const toolCalls = message.tool_calls as Array<Record<string, unknown>> | undefined;
+      if (toolCalls) {
+        for (const tc of toolCalls) {
+          const fn = tc.function as Record<string, unknown> | undefined;
+          if (fn && fn.name === "web_search") {
+            const args = typeof fn.arguments === "string" ? JSON.parse(fn.arguments) : fn.arguments;
+            const searchResults = args?.results || args?.search_results;
+            if (Array.isArray(searchResults)) {
+              for (const item of searchResults) {
+                if (!item || typeof item !== "object") continue;
+                const title = String(item.title || "").trim();
+                const url = String(item.url || item.link || "").trim();
+                const snippet = String(item.snippet || item.description || item.content || "").trim();
+                if (title && url) {
+                  results.push({ title, url, snippet });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 2. 如果没有 tool_calls 结果，从 content 中解析
+      if (results.length === 0) {
+        const content = String(message.content || "");
+        if (content) {
+          // 从回复内容中提取 URL
+          const urlRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+          let match;
+          while ((match = urlRegex.exec(content)) !== null) {
+            results.push({
+              title: match[1],
+              url: match[2],
+              snippet: undefined,
+            });
+          }
+
+          // 备用：提取裸 URL
+          if (results.length === 0) {
+            const bareUrlRegex = /(https?:\/\/[^\s]+)/g;
+            while ((match = bareUrlRegex.exec(content)) !== null) {
+              results.push({
+                title: match[1],
+                url: match[1],
+                snippet: undefined,
+              });
+            }
+          }
+        }
+      }
+    }
   }
 
-  for (const item of items) {
-    if (!item || typeof item !== "object") continue;
-
-    const title = String(item.title || "").trim();
-    const url = String(item.url || item.link || "").trim();
-    const snippet = String(item.snippet || item.description || item.content || item.summary || "").trim();
-
-    if (title && url) {
-      results.push({ title, url, snippet });
+  // 3. 尝试从顶层字段提取（兼容旧格式）
+  if (results.length === 0) {
+    const items = data.results || data.data || data.items || (data as { search_results?: unknown[] }).search_results;
+    if (Array.isArray(items)) {
+      for (const item of items) {
+        if (!item || typeof item !== "object") continue;
+        const title = String(item.title || "").trim();
+        const url = String(item.url || item.link || "").trim();
+        const snippet = String(item.snippet || item.description || item.content || item.summary || "").trim();
+        if (title && url) {
+          results.push({ title, url, snippet });
+        }
+      }
     }
   }
 

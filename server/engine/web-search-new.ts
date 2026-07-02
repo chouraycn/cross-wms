@@ -311,8 +311,255 @@ function normalizeResults(
   return normalized;
 }
 
-// ==================== DuckDuckGo HTML 搜索（无 Provider 时的 fallback）
+// ==================== 国内搜索引擎 fallback（无 Provider 时使用）
 
+/**
+ * 必应国内版搜索（cn.bing.com）
+ * 主要 fallback，国内网络友好
+ */
+async function bingCnSearch(
+  params: WebSearchParams,
+  signal?: AbortSignal,
+  onProgress?: WebSearchProgressCallback,
+): Promise<WebSearchResultList> {
+  const { query, maxResults, timeoutMs, userAgent, language } = params;
+
+  onProgress?.({
+    stage: "searching",
+    query,
+    provider: "bing-cn",
+    message: "正在使用必应国内版搜索...",
+  });
+
+  const encodedQuery = encodeURIComponent(query);
+  // cn.bing.com 搜索 URL
+  const url = `https://cn.bing.com/search?q=${encodedQuery}&count=${maxResults * 2}`;
+
+  const fetchResult = await fetchWithWebToolsNetworkGuard({
+    url,
+    mode: "trusted",
+    options: {
+      headers: {
+        "User-Agent": userAgent,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": language || "zh-CN,zh;q=0.9,en;q=0.8",
+      },
+      signal,
+    },
+    timeoutMs,
+    maxResponseBodySize: 5 * 1024 * 1024,
+    userAgent,
+  });
+
+  const { response, release } = fetchResult;
+
+  if (!response.ok) {
+    release?.();
+    throw new Error(`必应搜索失败: HTTP ${response.status}`);
+  }
+
+  const html = await response.text();
+  release?.();
+  const $ = cheerio.load(html);
+
+  const results: WebSearchResult[] = [];
+
+  // 必应搜索结果选择器
+  $("#b_results > li.b_algo").each((_, elem) => {
+    const $elem = $(elem);
+    const $title = $elem.find("h2 > a");
+    const title = $title.text().trim();
+    const href = $title.attr("href") || "";
+    const snippet = $elem.find(".b_caption p").text().trim() || $elem.find("p").text().trim();
+
+    if (!title || !href) return;
+
+    results.push({
+      title,
+      url: href,
+      snippet: snippet || undefined,
+    });
+  });
+
+  // 备用选择器
+  if (results.length === 0) {
+    $("li.b_algo h2 a").each((_, elem) => {
+      const $elem = $(elem);
+      const title = $elem.text().trim();
+      const href = $elem.attr("href") || "";
+
+      if (!title || !href) return;
+
+      results.push({
+        title,
+        url: href,
+      });
+    });
+  }
+
+  const normalized = normalizeResults(results, maxResults);
+
+  onProgress?.({
+    stage: "normalizing",
+    query,
+    resultCount: normalized.length,
+    message: `找到 ${normalized.length} 个结果`,
+  });
+
+  return {
+    query,
+    results: normalized,
+    count: normalized.length,
+    provider: "bing-cn",
+  };
+}
+
+/**
+ * 360搜索（so.com）
+ * 国内回退搜索引擎
+ */
+async function soSearch(
+  params: WebSearchParams,
+  signal?: AbortSignal,
+  onProgress?: WebSearchProgressCallback,
+): Promise<WebSearchResultList> {
+  const { query, maxResults, timeoutMs, userAgent, language } = params;
+
+  onProgress?.({
+    stage: "searching",
+    query,
+    provider: "so",
+    message: "正在使用360搜索...",
+  });
+
+  const encodedQuery = encodeURIComponent(query);
+  const url = `https://www.so.com/s?q=${encodedQuery}`;
+
+  const fetchResult = await fetchWithWebToolsNetworkGuard({
+    url,
+    mode: "trusted",
+    options: {
+      headers: {
+        "User-Agent": userAgent,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": language || "zh-CN,zh;q=0.9,en;q=0.8",
+      },
+      signal,
+    },
+    timeoutMs,
+    maxResponseBodySize: 5 * 1024 * 1024,
+    userAgent,
+  });
+
+  const { response, release } = fetchResult;
+
+  if (!response.ok) {
+    release?.();
+    throw new Error(`360搜索失败: HTTP ${response.status}`);
+  }
+
+  const html = await response.text();
+  release?.();
+  const $ = cheerio.load(html);
+
+  const results: WebSearchResult[] = [];
+
+  // 360搜索结果选择器
+  $(".result").each((_, elem) => {
+    const $elem = $(elem);
+    const $title = $elem.find("h3 > a");
+    const title = $title.text().trim();
+    const href = $title.attr("href") || "";
+    const snippet = $elem.find(".res-desc").text().trim() || $elem.find("p").text().trim();
+
+    if (!title || !href) return;
+
+    results.push({
+      title,
+      url: href,
+      snippet: snippet || undefined,
+    });
+  });
+
+  // 备用选择器
+  if (results.length === 0) {
+    $("li.res-list h3 a").each((_, elem) => {
+      const $elem = $(elem);
+      const title = $elem.text().trim();
+      const href = $elem.attr("href") || "";
+
+      if (!title || !href) return;
+
+      results.push({
+        title,
+        url: href,
+      });
+    });
+  }
+
+  const normalized = normalizeResults(results, maxResults);
+
+  onProgress?.({
+    stage: "normalizing",
+    query,
+    resultCount: normalized.length,
+    message: `找到 ${normalized.length} 个结果`,
+  });
+
+  return {
+    query,
+    results: normalized,
+    count: normalized.length,
+    provider: "so",
+  };
+}
+
+/**
+ * 国内搜索引擎回退链
+ * 优先级：必应国内版 > 360搜索 > DuckDuckGo（海外回退）
+ */
+async function domesticSearchFallback(
+  params: WebSearchParams,
+  signal?: AbortSignal,
+  onProgress?: WebSearchProgressCallback,
+): Promise<WebSearchResultList> {
+  const searchChain = [
+    { name: "bing-cn", fn: bingCnSearch },
+    { name: "so", fn: soSearch },
+    // DuckDuckGo 作为最后的海外回退
+    { name: "duckduckgo", fn: duckDuckGoSearch },
+  ];
+
+  for (const search of searchChain) {
+    if (signal?.aborted) {
+      throw new Error("搜索已取消");
+    }
+
+    try {
+      const result = await search.fn(params, signal, onProgress);
+      if (result.results.length > 0) {
+        return result;
+      }
+      logger.debug(`[WebSearch] ${search.name} 返回空结果，尝试下一个搜索引擎`);
+    } catch (e) {
+      logger.warn(`[WebSearch] ${search.name} 失败:`, e instanceof Error ? e.message : String(e));
+      // 继续尝试下一个搜索引擎
+    }
+  }
+
+  // 所有搜索引擎都失败
+  return {
+    query: params.query,
+    results: [],
+    count: 0,
+    provider: "none",
+  };
+}
+
+/**
+ * DuckDuckGo HTML 搜索（海外回退）
+ * 保留作为最后的 fallback
+ */
 async function duckDuckGoSearch(
   params: WebSearchParams,
   signal?: AbortSignal,
@@ -663,9 +910,10 @@ async function webSearchInternal(
       error.name = "AbortError";
       throw error;
     }
-    logger.debug("[WebSearch] No provider succeeded, falling back to DuckDuckGo");
-    result = await duckDuckGoSearch(validated, signal, onProgress);
-    providerUsed = "duckduckgo";
+    logger.debug("[WebSearch] No provider succeeded, falling back to domestic search engines");
+    // 使用国内搜索引擎回退链：必应国内版 > 360搜索 > DuckDuckGo
+    result = await domesticSearchFallback(validated, signal, onProgress);
+    providerUsed = result.provider;
   }
 
   onProgress?.({

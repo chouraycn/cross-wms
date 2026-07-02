@@ -32,12 +32,13 @@ import AboutTab from './tabs/AboutTab';
 import TrafficLightOffsetSection from './tabs/TrafficLightOffsetSection';
 import SystemAuthorizationTab from './tabs/SystemAuthorizationTab';
 import WebhookPanel from '../Webhook/WebhookPanel';
+import SearchApiTab from './tabs/SearchApiTab';
 import { useToast } from '../../contexts/ToastContext';
 import { getGrayScale } from '../../constants/theme';
 
 // ===================== Tab Definitions =====================
 
-type SettingsTab = 'tencentDocs' | 'dashboardParams' | 'metricsControl' | 'volumeDoc' | 'modelManagement' | 'dmgSettings' | 'systemAuthorization' | 'webhook' | 'about';
+type SettingsTab = 'tencentDocs' | 'dashboardParams' | 'metricsControl' | 'volumeDoc' | 'modelManagement' | 'dmgSettings' | 'systemAuthorization' | 'webhook' | 'searchApi' | 'about';
 
 interface TabItem {
   key: SettingsTab;
@@ -54,6 +55,7 @@ const TABS: TabItem[] = [
   { key: 'dmgSettings', label: 'DMG 设置', icon: <ComputerIcon sx={{ fontSize: 20 }} /> },
   { key: 'systemAuthorization', label: '系统授权', icon: <AdminPanelSettingsIcon sx={{ fontSize: 20 }} /> },
   { key: 'webhook', label: 'Webhook', icon: <WebhookIcon sx={{ fontSize: 20 }} /> },
+  { key: 'searchApi', label: '搜索 API', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} /> },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} /> },
 ];
 
@@ -247,6 +249,8 @@ const SettingsPanel: React.FC = () => {
         return <SystemAuthorizationTab draft={draft} setDraft={setDraft} />;
       case 'webhook':
         return <WebhookPanel />;
+      case 'searchApi':
+        return <SearchApiTab />;
       case 'about':
         return <AboutTab draft={draft} setDraft={setDraft} errors={errors} setErrors={setErrors} />;
     }
