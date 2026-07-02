@@ -902,8 +902,6 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                   {pendingMessages.map((msg) => (
                     <PendingSendMessage
                       key={msg.id}
-                      text={msg.content}
-                      attachments={msg.attachments}
                       state={msg.state}
                       error={msg.error}
                       onRetry={() => {
@@ -1023,8 +1021,6 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             {pendingMessages.map((msg) => (
               <PendingSendMessage
                 key={msg.id}
-                text={msg.content}
-                attachments={msg.attachments}
                 state={msg.state}
                 error={msg.error}
                 onRetry={() => {

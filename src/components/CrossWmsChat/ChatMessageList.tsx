@@ -427,11 +427,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     }
 
     if (isReadingIndicatorItem(item)) {
-      return (
-        <Box key={item.key} sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', px: 3, py: 1 }}>
-          <ReadingIndicator phase={item.phase || 'thinking'} />
-        </Box>
-      );
+      return null;
     }
 
     if (isPendingSendItem(item)) {
@@ -457,30 +453,6 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
           <Typography sx={{ fontSize: 13, fontWeight: 600, color: gs.textPrimary }}>
             你
           </Typography>
-          <Box
-            sx={{
-              px: 2,
-              py: 1.5,
-              borderRadius: '16px',
-              maxWidth: '85%',
-              bgcolor: isDark ? '#262626' : '#F0F0F0',
-              color: gs.textPrimary,
-              wordBreak: 'break-word',
-              opacity: item.state === 'sending' ? 0.7 : 1,
-            }}
-          >
-            <Typography sx={{ fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-              {item.text}
-            </Typography>
-          </Box>
-          {item.state === 'sending' && (
-            <Typography sx={{ fontSize: 11, color: gs.textMuted }}>发送中...</Typography>
-          )}
-          {item.state === 'failed' && (
-            <Typography sx={{ fontSize: 11, color: '#ef4444' }}>
-              发送失败 {item.error ? `(${item.error})` : ''}
-            </Typography>
-          )}
         </Box>
       );
     }

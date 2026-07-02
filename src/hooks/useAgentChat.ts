@@ -628,7 +628,11 @@ export function useAgentChat(
       textCoalescerRef.current?.flush({ force: true });
       thinkingCoalescerRef.current?.flush({ force: true });
       schedulerRef.current?.flushAll();
+      return;
     }
+
+    // 立即标记，防止同一帧内多个 SSE 事件重复创建 assistant 消息
+    state.assistantMessageIndex = -2; // -2 表示"正在创建中"
 
     setMessages((prev) => {
       const newMsg: Message = {
@@ -655,7 +659,7 @@ export function useAgentChat(
   const handleTextContent = useCallback((content: string, isReasoning: boolean) => {
     const state = blockStateRef.current;
 
-    if (state.assistantMessageIndex < 0) {
+    if (state.assistantMessageIndex === -1) {
       startAssistantMessage(isReasoning);
     }
 
@@ -723,7 +727,7 @@ export function useAgentChat(
 
           if (data.modelName || data.model) {
             const state = blockStateRef.current;
-            if (state.assistantMessageIndex < 0) {
+            if (state.assistantMessageIndex === -1) {
               startAssistantMessage(false);
             }
             setMessages((prev) => {
@@ -834,7 +838,7 @@ export function useAgentChat(
         const toolResult = (data.result as string) || '';
 
         const state = blockStateRef.current;
-        if (state.assistantMessageIndex < 0) {
+        if (state.assistantMessageIndex === -1) {
           startAssistantMessage(false);
         }
 
