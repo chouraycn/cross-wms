@@ -25,6 +25,38 @@ import toolPolicyEngine from './toolPolicyEngine.js';
 import approvalManager from './approvalManager.js';
 import pluginHooks from './pluginHooks.js';
 
+// ===================== 工具结果错误检测 =====================
+
+function isToolResultFailed(result: string): boolean {
+  const trimmed = result.trim();
+  if (!trimmed) return true;
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === 'object') {
+        if ('success' in parsed) {
+          return parsed.success === false;
+        }
+        if ('error' in parsed && parsed.error != null) {
+          return true;
+        }
+      }
+      return false;
+    } catch {
+      // JSON 解析失败，回退到字符串匹配
+    }
+  }
+  const errorPatterns = [
+    '"error":',
+    '"error" :',
+    'Error: ',
+    'TypeError: ',
+    'ReferenceError: ',
+    'throw new Error',
+  ];
+  return errorPatterns.some(p => result.includes(p));
+}
+
 export interface ToolExecutorOptions {
   modelConfig: ModelCallConfig;
   messages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;
@@ -400,7 +432,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       // v1.5.116: 熔断器 — 记录内置工具成功/失败
       // v9.1: Skill 工具也走熔断器（非 MCP 工具）
       if (!isMcpToolName(toolName) && !isSkillToolName(toolName)) {
-        const hasError = result.includes('"error"') || result.includes('"error":');
+        const hasError = isToolResultFailed(result);
         if (hasError) {
           const circuitState = circuitBreaker.recordFailure(toolName, result.slice(0, 100));
           if (circuitState === 'half_open') {

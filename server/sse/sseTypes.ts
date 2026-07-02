@@ -184,3 +184,189 @@ export async function sendDoneAndEnd(
     // 响应流可能已关闭，忽略
   }
 }
+
+// ===================== 细粒度事件类型（v2.0 扩展）=====================
+
+/** text_start 事件 — 文本内容开始 */
+export interface SSETextStartEvent {
+  type: 'text_start';
+  /** 多内容块索引（支持并行流） */
+  contentIndex: number;
+  /** 实际使用的模型 */
+  model?: string;
+  /** 模型响应 ID */
+  responseId?: string;
+}
+
+/** text_delta 事件 — 文本内容增量 */
+export interface SSETextDeltaEvent {
+  type: 'text_delta';
+  /** 多内容块索引 */
+  contentIndex: number;
+  /** 增量文本（可省略以节省带宽） */
+  partial?: string;
+  /** 停止原因 */
+  stopReason?: string;
+}
+
+/** text_end 事件 — 文本内容结束 */
+export interface SSETextEndEvent {
+  type: 'text_end';
+  /** 多内容块索引 */
+  contentIndex: number;
+  /** 停止原因 */
+  stopReason?: 'stop' | 'length' | 'toolUse' | 'error' | 'aborted';
+}
+
+/** thinking_start 事件 — 思考内容开始 */
+export interface SSEThinkingStartEvent {
+  type: 'thinking_start';
+  /** 多内容块索引 */
+  contentIndex: number;
+  /** 思考类型 */
+  thinkingType?: 'deep' | 'local';
+}
+
+/** thinking_delta 事件 — 思考内容增量 */
+export interface SSEThinkingDeltaEvent {
+  type: 'thinking_delta';
+  /** 多内容块索引 */
+  contentIndex: number;
+  /** 增量思考内容 */
+  partial?: string;
+}
+
+/** thinking_end 事件 — 思考内容结束 */
+export interface SSEThinkingEndEvent {
+  type: 'thinking_end';
+  /** 多内容块索引 */
+  contentIndex: number;
+  /** 思考耗时（毫秒） */
+  thinkingDuration?: number;
+}
+
+/** tool_call_start 事件 — 工具调用开始 */
+export interface SSEToolCallStartEvent {
+  type: 'tool_call_start';
+  /** 工具调用 ID */
+  toolCallId: string;
+  /** 工具名称 */
+  toolName: string;
+  /** 多内容块索引 */
+  contentIndex?: number;
+}
+
+/** tool_call_delta 事件 — 工具调用参数增量 */
+export interface SSEToolCallDeltaEvent {
+  type: 'tool_call_delta';
+  /** 工具调用 ID */
+  toolCallId: string;
+  /** 参数 JSON 增量 */
+  argsDelta: string;
+}
+
+/** tool_call_end 事件 — 工具调用结束 */
+export interface SSEToolCallEndEvent {
+  type: 'tool_call_end';
+  /** 工具调用 ID */
+  toolCallId: string;
+  /** 完整参数 JSON */
+  args: string;
+}
+
+// ===================== 细粒度事件联合类型 =====================
+
+/** 9 种细粒度 SSE 事件联合类型 */
+export type FineGrainedSSEEvent =
+  | SSETextStartEvent
+  | SSETextDeltaEvent
+  | SSETextEndEvent
+  | SSEThinkingStartEvent
+  | SSEThinkingDeltaEvent
+  | SSEThinkingEndEvent
+  | SSEToolCallStartEvent
+  | SSEToolCallDeltaEvent
+  | SSEToolCallEndEvent;
+
+/** 全部 SSE 事件联合类型（核心 + 细粒度） */
+export type AllSSEEvent = SSEEvent | FineGrainedSSEEvent;
+
+// ===================== 细粒度事件类型集合 =====================
+
+/** 9 种细粒度事件类型字面量 */
+export const FINE_GRAINED_EVENT_TYPES = [
+  'text_start',
+  'text_delta',
+  'text_end',
+  'thinking_start',
+  'thinking_delta',
+  'thinking_end',
+  'tool_call_start',
+  'tool_call_delta',
+  'tool_call_end',
+] as const;
+
+/** 细粒度事件类型 */
+export type FineGrainedEventType = (typeof FINE_GRAINED_EVENT_TYPES)[number];
+
+/** 全部事件类型字面量 */
+export const ALL_EVENT_TYPES = [...CORE_EVENT_TYPES, ...FINE_GRAINED_EVENT_TYPES] as const;
+
+/** 全部事件类型 */
+export type AllEventType = (typeof ALL_EVENT_TYPES)[number];
+
+/**
+ * 判断事件类型是否属于细粒度类型
+ */
+export function isFineGrainedEventType(type: string): boolean {
+  return (FINE_GRAINED_EVENT_TYPES as readonly string[]).includes(type);
+}
+
+/**
+ * 判断事件类型是否为核心或细粒度类型
+ */
+export function isKnownEventType(type: string): boolean {
+  return isCoreEventType(type) || isFineGrainedEventType(type);
+}
+
+// ===================== 细粒度事件辅助函数 =====================
+
+/**
+ * 发送细粒度 SSE 事件
+ *
+ * 与 sendSSE 相同的写入逻辑，但带类型提示。
+ */
+export function sendFineGrainedSSE(res: Response, event: FineGrainedSSEEvent): void {
+  sendSSE(res, event as unknown as Record<string, unknown>);
+}
+
+/**
+ * 从细粒度事件中提取 contentIndex
+ */
+export function getContentIndex(event: AllSSEEvent): number {
+  if ('contentIndex' in event && typeof event.contentIndex === 'number') {
+    return event.contentIndex;
+  }
+  return 0;
+}
+
+/**
+ * 判断事件是否为文本相关事件（text/text_start/text_delta/text_end）
+ */
+export function isTextRelatedEvent(type: string): boolean {
+  return type === 'text' || type === 'text_start' || type === 'text_delta' || type === 'text_end';
+}
+
+/**
+ * 判断事件是否为思考相关事件（thinking/thinking_start/thinking_delta/thinking_end）
+ */
+export function isThinkingRelatedEvent(type: string): boolean {
+  return type === 'thinking' || type === 'thinking_start' || type === 'thinking_delta' || type === 'thinking_end';
+}
+
+/**
+ * 判断事件是否为工具调用相关事件（tool_call/tool_call_start/tool_call_delta/tool_call_end）
+ */
+export function isToolCallRelatedEvent(type: string): boolean {
+  return type === 'tool_call' || type === 'tool_call_start' || type === 'tool_call_delta' || type === 'tool_call_end';
+}
