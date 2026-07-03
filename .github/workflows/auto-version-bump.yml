@@ -1,0 +1,106 @@
+name: Auto Version Bump
+
+on:
+  push:
+    branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - '**.txt'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'CHANGELOG.md'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: auto-version-bump-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-skip:
+    name: Check if skip bump
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.skip-check.outputs.skip }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check commit message
+        id: skip-check
+        run: |
+          LAST_COMMIT=$(git log -1 --format=%s)
+          echo "Last commit: $LAST_COMMIT"
+          
+          if echo "$LAST_COMMIT" | grep -qi "chore: bump version"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Skipping version bump: commit is already a version bump"
+          elif echo "$LAST_COMMIT" | grep -qi "\[skip bump\]"; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Skipping version bump: [skip bump] flag detected"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Proceeding with version bump"
+          fi
+
+  bump-version:
+    name: Auto Bump Version & Create Tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: check-skip
+    if: needs.check-skip.outputs.skip == 'false'
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump patch version
+        id: bump
+        run: |
+          CURRENT_VERSION=$(node -e "console.log(require('./package.json').version)")
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          
+          npm run bump:patch
+          
+          NEW_VERSION=$(node -e "console.log(require('./package.json').version)")
+          echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          
+          echo "Version bumped: $CURRENT_VERSION → $NEW_VERSION"
+
+      - name: Commit version change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add package.json
+          
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.NEW_VERSION }}" --no-verify
+
+      - name: Create version tag
+        run: |
+          git tag "v${{ steps.bump.outputs.NEW_VERSION }}"
+
+      - name: Push changes and tag
+        run: |
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "v${{ steps.bump.outputs.NEW_VERSION }}"
+
+      - name: Output version info
+        run: |
+          echo "Version bumped from ${{ steps.bump.outputs.CURRENT_VERSION }} to ${{ steps.bump.outputs.NEW_VERSION }}"
+          echo "Tag created: v${{ steps.bump.outputs.NEW_VERSION }}"
