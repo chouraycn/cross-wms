@@ -47,6 +47,15 @@ export interface ExecutionStrategyOptions extends ToolExecutorOptions {
   onPermissionRequest?: (toolName: string, toolArgs: Record<string, unknown>) => Promise<boolean> | boolean;
   /** v9.0: 已授权工具缓存 */
   approvedToolsCache?: Set<string>;
+  /** 工具 Profile */
+  toolProfile?: string;
+  /** 上下文压缩配置 */
+  compaction?: {
+    enabled?: boolean;
+    strategy?: string;
+    thresholdRatio?: number;
+    preserveRecent?: number;
+  };
 }
 
 // ===================== 策略接口 =====================

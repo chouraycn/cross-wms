@@ -157,3 +157,73 @@ export interface SecretsStats {
   /** 最后更新时间 */
   lastUpdated: number;
 }
+
+/**
+ * 密钥审计代码
+ */
+export type SecretsAuditCode =
+  | 'PLAINTEXT_FOUND'
+  | 'REF_UNRESOLVED'
+  | 'REF_SHADOWED'
+  | 'LEGACY_RESIDUE'
+  | 'EXPIRED_SECRET'
+  | 'UNUSED_SECRET';
+
+/**
+ * 密钥审计严重级别
+ */
+export type SecretsAuditSeverity = 'info' | 'warn' | 'error';
+
+/**
+ * 密钥审计发现
+ */
+export interface SecretsAuditFinding {
+  code: SecretsAuditCode;
+  severity: SecretsAuditSeverity;
+  file: string;
+  jsonPath: string;
+  message: string;
+  provider?: string;
+  key?: string;
+}
+
+/**
+ * 密钥审计状态
+ */
+export type SecretsAuditStatus = 'clean' | 'findings' | 'unresolved';
+
+/**
+ * 密钥审计报告
+ */
+export interface SecretsAuditReport {
+  version: number;
+  status: SecretsAuditStatus;
+  filesScanned: string[];
+  summary: {
+    plaintextCount: number;
+    unresolvedRefCount: number;
+    shadowedRefCount: number;
+    legacyResidueCount: number;
+    expiredCount: number;
+    unusedCount: number;
+  };
+  findings: SecretsAuditFinding[];
+}
+
+/**
+ * 密钥目标类型
+ */
+export interface SecretTarget {
+  id: string;
+  targetType: string;
+  configFile: string;
+  pathPattern: string;
+  refPathPattern?: string;
+  secretShape: 'secret_input' | 'sibling_ref';
+  expectedResolvedValue: 'string' | 'string-or-object';
+  includeInPlan: boolean;
+  includeInConfigure: boolean;
+  includeInAudit: boolean;
+  providerIdPathSegmentIndex?: number;
+  trackProviderShadowing?: boolean;
+}

@@ -614,6 +614,66 @@ export interface AuditFinding {
   pattern?: string;
 }
 
+// ===================== Skill Workshop 类型 =====================
+
+/** 提案状态 */
+export type WorkshopProposalStatus = 'pending' | 'applied' | 'rejected' | 'quarantined' | 'stale';
+
+/** 提案类型 */
+export type WorkshopProposalType = 'create' | 'update';
+
+/** 提案扫描结果 */
+export interface WorkshopProposalScan {
+  critical: number;
+  warn: number;
+  info: number;
+  findings: Array<{ level: string; type: string; description: string }>;
+}
+
+/** 技能提案 */
+export interface WorkshopProposal {
+  id: string;
+  type: WorkshopProposalType;
+  skillName: string;
+  skillPath: string;
+  content: string;
+  contentHash: string;
+  status: WorkshopProposalStatus;
+  scan: WorkshopProposalScan;
+  createdAt: number;
+  updatedAt: number;
+  appliedAt?: number;
+  rejectedAt?: number;
+  reviewNote?: string;
+}
+
+/** 提案统计 */
+export interface WorkshopStats {
+  total: number;
+  pending: number;
+  applied: number;
+  rejected: number;
+  quarantined: number;
+  stale: number;
+}
+
+/** 安装进度 */
+export interface SkillInstallProgress {
+  type: 'start' | 'download' | 'extract' | 'scan' | 'register' | 'complete' | 'error';
+  stage: string;
+  message?: string;
+  progress?: number;
+}
+
+/** 安装规格 */
+export interface SkillInstallSpec {
+  source: 'local' | 'git' | 'archive' | 'market' | 'http';
+  url?: string;
+  path?: string;
+  name?: string;
+  version?: string;
+}
+
 // ===================== Skill 接口扩展 =====================
 
 /** 安全等级（可选字段，扩展自 Skill 接口） */

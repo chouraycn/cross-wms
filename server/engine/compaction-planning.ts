@@ -438,6 +438,48 @@ export function pruneHistoryForContextShare(
 }
 
 /**
+ * 历史剪枝计划
+ */
+export interface HistoryPrunePlan {
+  summarizableTokens: number;
+  newContentTokens: number;
+  maxHistoryTokens: number;
+  pruned?: HistoryPruneResult;
+}
+
+/**
+ * 计算历史剪枝计划
+ */
+export function buildHistoryPrunePlan(
+  messagesToSummarize: AgentMessage[],
+  turnPrefixMessages: AgentMessage[],
+  tokensBefore: number,
+  contextWindowTokens: number,
+  maxHistoryShare: number,
+  parts?: number,
+): HistoryPrunePlan {
+  const summarizableTokens =
+    estimateMessagesTokens(messagesToSummarize) + estimateMessagesTokens(turnPrefixMessages);
+  const newContentTokens = Math.max(0, Math.floor(tokensBefore - summarizableTokens));
+  const maxHistoryTokens = Math.floor(contextWindowTokens * maxHistoryShare);
+
+  if (newContentTokens <= maxHistoryTokens) {
+    return {
+      summarizableTokens,
+      newContentTokens,
+      maxHistoryTokens,
+    };
+  }
+
+  return {
+    summarizableTokens,
+    newContentTokens,
+    maxHistoryTokens,
+    pruned: pruneHistoryForContextShare(messagesToSummarize, contextWindowTokens, maxHistoryShare, parts),
+  };
+}
+
+/**
  * 计算压缩后的 token 估算
  */
 export function estimateTokensAfterCompaction(
@@ -445,7 +487,5 @@ export function estimateTokensAfterCompaction(
   compressedChunks: number,
   summaryOverhead: number = SUMMARIZATION_OVERHEAD_TOKENS,
 ): number {
-  // 摘要替换原始内容，节省约 (compressedChunks - 1) * 平均分块大小
-  // 加上摘要本身的 overhead
   return originalTokens + summaryOverhead;
 }

@@ -100,6 +100,15 @@ export interface ExecuteChatParams {
   callbacks: ExecuteChatCallbacks;
   /** 是否使用队列模式（影响日志标记） */
   fromQueue?: boolean;
+  /** 工具 Profile */
+  toolProfile?: string;
+  /** 上下文压缩配置 */
+  compaction?: {
+    enabled?: boolean;
+    strategy?: string;
+    thresholdRatio?: number;
+    preserveRecent?: number;
+  };
 }
 
 // ===================== 统一执行入口 =====================
@@ -237,6 +246,8 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
       modelCapabilities: params.modelCapabilities ?? modelConfig.capabilities ?? [],
       approvedToolsCache: params.approvedToolsCache,
       onRateLimit: callbacks.onRateLimit,
+      toolProfile: params.toolProfile,
+      compaction: params.compaction,
     };
 
     const toolResult: ToolExecutionResult = await strategy.execute(strategyOptions);

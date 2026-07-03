@@ -212,6 +212,13 @@ const SettingsPanel: React.FC = () => {
         defaultExecutionMode: 'legacy',
         defaultQueueMode: 'followup',
         maxHistoryTurns: 0,
+        toolProfile: 'full',
+        compaction: {
+          enabled: true,
+          strategy: 'semantic',
+          thresholdRatio: 0.75,
+          preserveRecent: 6,
+        },
       },
     });
     setErrors({});

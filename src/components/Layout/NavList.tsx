@@ -30,6 +30,9 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import WebIcon from '@mui/icons-material/Web';
+import TerminalIcon from '@mui/icons-material/Terminal';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import MemoryIcon from '@mui/icons-material/Memory';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import HistoryIcon from '@mui/icons-material/History';
@@ -90,8 +93,12 @@ function isGroup(item: NavItem): item is NavItemGroup {
 
 const navItems: NavItem[] = [
   { label: 'AI 对话', path: '/chat', icon: <ChatBubbleOutlineIcon />, desc: '智能助手' },
+  { label: 'TUI 终端', path: '/tui', icon: <TerminalIcon />, desc: '命令行界面' },
   { label: '项目', path: '/projects', icon: <FolderOutlinedIcon />, desc: '项目总览' },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
+  { label: 'Workshop', path: '/skills/workshop', icon: <TerminalIcon />, desc: '提案管理' },
+  { label: '密钥', path: '/secrets', icon: <VpnKeyIcon />, desc: '密钥管理' },
+  { label: '记忆', path: '/memory', icon: <MemoryIcon />, desc: '记忆系统' },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
 
   {

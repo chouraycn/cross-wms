@@ -850,3 +850,248 @@ export async function getSessionMessages(id: string): Promise<any[]> {
   const res = await request<{ messages: any[] }>('GET', `/api/sessions/${id}/messages`);
   return res.messages;
 }
+
+// ===================== Skill Workshop API =====================
+
+import type {
+  WorkshopProposal,
+  WorkshopProposalStatus,
+  WorkshopProposalType,
+  WorkshopStats,
+  SkillInstallSpec,
+  SkillInstallProgress,
+} from '../types/skill-core';
+
+/** 获取提案列表 */
+export async function fetchWorkshopProposals(filter?: {
+  status?: WorkshopProposalStatus;
+  type?: WorkshopProposalType;
+  skillName?: string;
+}): Promise<{ proposals: WorkshopProposal[]; count: number }> {
+  const params = new URLSearchParams();
+  if (filter?.status) params.set('status', filter.status);
+  if (filter?.type) params.set('type', filter.type);
+  if (filter?.skillName) params.set('skillName', filter.skillName);
+  const qs = params.toString();
+  return request<{ proposals: WorkshopProposal[]; count: number }>('GET', `/api/skill-workshop/proposals${qs ? `?${qs}` : ''}`);
+}
+
+/** 获取单个提案 */
+export async function fetchWorkshopProposal(id: string): Promise<WorkshopProposal> {
+  const res = await request<{ proposal: WorkshopProposal }>('GET', `/api/skill-workshop/proposals/${encodeURIComponent(id)}`);
+  return res.proposal;
+}
+
+/** 创建提案 */
+export async function createWorkshopProposal(data: {
+  type: WorkshopProposalType;
+  skillName: string;
+  skillPath?: string;
+  content: string;
+  origin?: { agentId?: string; sessionKey?: string };
+}): Promise<WorkshopProposal> {
+  const res = await request<{ proposal: WorkshopProposal }>('POST', '/api/skill-workshop/proposals', data);
+  return res.proposal;
+}
+
+/** 应用提案 */
+export async function applyWorkshopProposal(id: string, reviewerId?: string): Promise<{ success: boolean; proposal: WorkshopProposal }> {
+  return request<{ success: boolean; proposal: WorkshopProposal }>('POST', `/api/skill-workshop/proposals/${encodeURIComponent(id)}/apply`, { reviewerId });
+}
+
+/** 拒绝提案 */
+export async function rejectWorkshopProposal(id: string, reason: string, reviewerId?: string): Promise<{ success: boolean; proposal: WorkshopProposal }> {
+  return request<{ success: boolean; proposal: WorkshopProposal }>('POST', `/api/skill-workshop/proposals/${encodeURIComponent(id)}/reject`, { reason, reviewerId });
+}
+
+/** 隔离提案 */
+export async function quarantineWorkshopProposal(id: string, reason: string): Promise<{ success: boolean; proposal: WorkshopProposal }> {
+  return request<{ success: boolean; proposal: WorkshopProposal }>('POST', `/api/skill-workshop/proposals/${encodeURIComponent(id)}/quarantine`, { reason });
+}
+
+/** 回滚提案 */
+export async function rollbackWorkshopProposal(id: string): Promise<{ success: boolean; proposal: WorkshopProposal }> {
+  return request<{ success: boolean; proposal: WorkshopProposal }>('POST', `/api/skill-workshop/proposals/${encodeURIComponent(id)}/rollback`);
+}
+
+/** 获取统计 */
+export async function fetchWorkshopStats(): Promise<WorkshopStats> {
+  const res = await request<{ stats: WorkshopStats }>('GET', '/api/skill-workshop/stats');
+  return res.stats;
+}
+
+/** 安装技能（SSE 流式进度） */
+export function connectSkillInstallSSE(
+  spec: SkillInstallSpec,
+  handlers: {
+    onProgress?: (progress: SkillInstallProgress) => void;
+    onResult?: (result: unknown) => void;
+    onError?: (error: string) => void;
+  }
+): SSEConnection {
+  return connectSSE(`${BASE_URL}/api/skill-workshop/install`, {
+    onOpen: () => {
+      // SSE 连接成功后发送请求体（通过 POST 不支持 SSE，这里用特殊方式）
+    },
+    onMessage: (raw) => {
+      try {
+        const data = JSON.parse(raw);
+        if (data.type === 'result') {
+          handlers.onResult?.(data.result);
+        } else if (data.type === 'error') {
+          handlers.onError?.(data.error);
+        } else {
+          handlers.onProgress?.(data as SkillInstallProgress);
+        }
+      } catch {
+        // ignore parse error
+      }
+    },
+    onError: (err) => handlers.onError?.(String(err)),
+  });
+}
+
+/** 取消安装 */
+export async function cancelSkillInstall(installId: string): Promise<boolean> {
+  const res = await request<{ cancelled: boolean }>('POST', '/api/skill-workshop/install/cancel', { installId });
+  return res.cancelled;
+}
+
+// ===================== Secrets API =====================
+
+export interface SecretItem {
+  id: string;
+  provider: string;
+  key: string;
+  type?: string;
+  description?: string;
+  createdAt: number;
+  updatedAt: number;
+  accessCount: number;
+  lastAccessedAt?: number;
+}
+
+export interface SecretAccessLog {
+  id: string;
+  secretId: string;
+  action: string;
+  source: string;
+  timestamp: number;
+  success: boolean;
+  error?: string;
+}
+
+export interface SecretsStats {
+  total: number;
+  byProvider: Record<string, number>;
+  totalAccessCount: number;
+  cacheHitRate: number;
+}
+
+/** 获取密钥列表 */
+export async function fetchSecretsList(provider?: string): Promise<SecretItem[]> {
+  const query = provider ? `?provider=${encodeURIComponent(provider)}` : '';
+  const res = await request<{ data: SecretItem[]; total: number }>('GET', `/api/secrets/list${query}`);
+  return res.data;
+}
+
+/** 获取密钥统计 */
+export async function fetchSecretsStats(): Promise<SecretsStats> {
+  const res = await request<{ data: SecretsStats }>('GET', '/api/secrets/stats');
+  return res.data;
+}
+
+/** 获取密钥访问日志 */
+export async function fetchSecretLogs(secretId?: string, limit?: number): Promise<SecretAccessLog[]> {
+  const path = secretId ? `/api/secrets/logs/${encodeURIComponent(secretId)}` : '/api/secrets/logs';
+  const query = limit ? `?limit=${limit}` : '';
+  const res = await request<{ data: SecretAccessLog[]; total: number }>('GET', `${path}${query}`);
+  return res.data;
+}
+
+/** 设置密钥 */
+export async function setSecretApi(data: {
+  provider: string;
+  key: string;
+  value: string;
+  type?: string;
+  description?: string;
+}): Promise<{ success: boolean; provider: string; key: string }> {
+  const res = await request<{ data: { success: boolean; provider: string; key: string } }>('POST', '/api/secrets/set', data);
+  return res.data;
+}
+
+/** 删除密钥 */
+export async function deleteSecretApi(provider: string, key: string): Promise<{ success: boolean }> {
+  const res = await request<{ data: { success: boolean } }>('DELETE', '/api/secrets/delete', { provider, key });
+  return res.data;
+}
+
+/** 验证密钥 */
+export async function validateSecretApi(provider: string, key: string, type?: string): Promise<{ exists: boolean }> {
+  const res = await request<{ data: { exists: boolean } }>('POST', '/api/secrets/validate', { provider, key, type });
+  return res.data;
+}
+
+/** 清除密钥缓存 */
+export async function clearSecretsCache(): Promise<{ success: boolean }> {
+  const res = await request<{ data: { success: boolean } }>('POST', '/api/secrets/cache/clear', {});
+  return res.data;
+}
+
+// ===================== Memory API =====================
+
+export interface MemoryItem {
+  id: number;
+  text: string;
+  metadata?: Record<string, unknown>;
+  createdAt: number;
+  updatedAt?: number;
+  embedding?: number[];
+}
+
+export interface MemoryStats {
+  total: number;
+  vectorized: number;
+  unvectorized: number;
+  lastUpdated?: number;
+}
+
+export interface MemorySearchResult {
+  id: number;
+  text: string;
+  score: number;
+  metadata?: Record<string, unknown>;
+}
+
+/** 获取记忆列表 */
+export async function fetchMemories(limit = 20, offset = 0): Promise<{ memories: MemoryItem[]; total: number; hasMore: boolean }> {
+  const res = await request<{ memories: MemoryItem[]; total: number; hasMore: boolean }>('GET', `/api/memory/list?limit=${limit}&offset=${offset}`);
+  return res;
+}
+
+/** 搜索记忆 */
+export async function searchMemories(query: string, topK = 5, useHybrid = false): Promise<{ results: MemorySearchResult[] }> {
+  const res = await request<{ results: MemorySearchResult[] }>('POST', '/api/memory/search', { query, topK, useHybrid });
+  return res;
+}
+
+/** 获取记忆统计 */
+export async function fetchMemoryStats(): Promise<MemoryStats> {
+  return request<MemoryStats>('GET', '/api/memory/stats');
+}
+
+/** 添加记忆 */
+export async function addMemory(text: string, metadata?: Record<string, unknown>): Promise<{ id: string; success: boolean }> {
+  return request<{ id: string; success: boolean }>('POST', '/api/memory/add', { text, metadata });
+}
+
+/** 删除记忆 */
+export async function deleteMemoryApi(id: number): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>('DELETE', `/api/memory/${id}`);
+}
+
+/** 获取单个记忆 */
+export async function fetchMemory(id: number): Promise<MemoryItem> {
+  return request<MemoryItem>('GET', `/api/memory/${id}`);
+}
