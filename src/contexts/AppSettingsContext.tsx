@@ -220,6 +220,12 @@ export type ExecutionMode = 'legacy' | 'react' | 'agent';
 /** v7.0: 队列模式 — 高频交互消息竞争控制 */
 export type QueueMode = 'collect' | 'steer' | 'followup';
 
+/** 工具 Profile：控制可用工具集 */
+export type ToolProfile = 'minimal' | 'coding' | 'messaging' | 'full';
+
+/** 压缩策略 */
+export type CompactionStrategy = 'semantic' | 'extractive' | 'truncation';
+
 export interface AiEngineConfig {
   /** 默认执行模式：legacy(轻量) / react(完整ReAct) */
   defaultExecutionMode: ExecutionMode;
@@ -227,6 +233,19 @@ export interface AiEngineConfig {
   defaultQueueMode: QueueMode;
   /** v1.7.19: 最大历史对话轮次（0 表示不限制） */
   maxHistoryTurns: number;
+  /** 工具 Profile：控制可用工具集 */
+  toolProfile: ToolProfile;
+  /** 上下文压缩配置 */
+  compaction: {
+    /** 是否启用自动压缩 */
+    enabled: boolean;
+    /** 压缩策略：semantic(语义) / extractive(摘要) / truncation(截断) */
+    strategy: CompactionStrategy;
+    /** 触发阈值：上下文占比达到多少时触发压缩（0-1） */
+    thresholdRatio: number;
+    /** 保留最近 N 轮对话不压缩 */
+    preserveRecent: number;
+  };
 }
 
 export interface AppSettings {
@@ -243,7 +262,7 @@ export interface AppSettings {
   aiEngine: AiEngineConfig;
 }
 
-const DEFAULT_SETTINGS: AppSettings = {
+export const DEFAULT_SETTINGS: AppSettings = {
   tencentDocs: {
     docLinks: [],
     onlineData: [],
@@ -330,6 +349,13 @@ const DEFAULT_SETTINGS: AppSettings = {
     defaultExecutionMode: 'legacy',
     defaultQueueMode: 'followup',
     maxHistoryTurns: 0,
+    toolProfile: 'full',
+    compaction: {
+      enabled: true,
+      strategy: 'semantic',
+      thresholdRatio: 0.75,
+      preserveRecent: 6,
+    },
   },
 };
 
@@ -414,7 +440,7 @@ function loadSettingsFromLocalStorage(): AppSettings {
 }
 
 /** Merge partial settings with defaults, preserving backward compatibility */
-function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
+export function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
   // Deep merge with defaults to ensure all fields exist even if storage is partial
   // Migrate from old API-based config and remove sync-related fields from docLinks
   const rawDocs = parsed.tencentDocs as { docLinks?: unknown[]; onlineData?: unknown[] } | undefined;
@@ -521,6 +547,10 @@ function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
       aiEngine: {
         ...DEFAULT_SETTINGS.aiEngine,
         ...parsed.aiEngine,
+        compaction: {
+          ...DEFAULT_SETTINGS.aiEngine.compaction,
+          ...(parsed.aiEngine?.compaction ?? {}),
+        },
       },
     };
 }
@@ -634,7 +664,14 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         next.systemAuthorization = { ...prev.systemAuthorization, ...partial.systemAuthorization };
       }
       if (partial.aiEngine) {
-        next.aiEngine = { ...prev.aiEngine, ...partial.aiEngine };
+        next.aiEngine = {
+          ...prev.aiEngine,
+          ...partial.aiEngine,
+          compaction: {
+            ...prev.aiEngine.compaction,
+            ...(partial.aiEngine.compaction ?? {}),
+          },
+        };
       }
       return next;
     });

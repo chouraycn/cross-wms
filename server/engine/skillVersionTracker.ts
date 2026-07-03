@@ -16,6 +16,7 @@ import path from 'path';
 import { logger } from '../logger.js';
 import { skillRegistry } from './skillRegistry.js';
 import { rebuildSkillIndex } from './skillDiscoverySingleton.js';
+import { skillSnapshotManager } from './skillSnapshot.js';
 import type {
   RegisteredSkill,
 } from '../types/skill-runtime.js';
@@ -167,6 +168,7 @@ export class SkillVersionTracker {
     };
 
     this.versions.set(definition.id, info);
+    skillSnapshotManager.bumpVersion('manual', definition.sourcePath);
   }
 
   /**
@@ -176,6 +178,7 @@ export class SkillVersionTracker {
    */
   untrackSkill(skillId: string): void {
     this.versions.delete(skillId);
+    skillSnapshotManager.bumpVersion('manual');
   }
 
   // ===================== 3. 版本检查 =====================
@@ -247,7 +250,8 @@ export class SkillVersionTracker {
       try {
         await skillRegistry.reloadSkill(skillId);
         rebuildSkillIndex();
-        logger.info(`[SkillVersionTracker] Skill '${skillId}' auto-reloaded.`);
+        skillSnapshotManager.bumpVersion('watch', skill.definition.sourcePath);
+        logger.info(`[SkillVersionTracker] Skill '${skillId}' auto-reloaded and snapshot bumped.`);
       } catch (e) {
         logger.error(`[SkillVersionTracker] Auto-reload failed for '${skillId}':`, e);
       }
@@ -336,8 +340,9 @@ export class SkillVersionTracker {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([id, ver]) => `${id}:${ver}`)
       .join('|');
-
-    return this.generateContentHash(sorted);
+    const contentHash = this.generateContentHash(sorted);
+    // 将快照版本号纳入总体签名
+    return `v${skillSnapshotManager.getGlobalVersion()}:${contentHash}`;
   }
 
   /**
@@ -355,6 +360,18 @@ export class SkillVersionTracker {
       checkInterval: this.checkInterval,
       autoCheckRunning: this.autoCheckTimer !== null,
     };
+  }
+
+  /**
+   * 获取 Skill 的 promptVersion（OpenClaw 兼容格式：sha256:<hash>）
+   *
+   * @param skillId - Skill ID
+   * @returns promptVersion 字符串，格式：sha256:<16位hash>
+   */
+  getPromptVersion(skillId: string): string | undefined {
+    const info = this.versions.get(skillId);
+    if (!info) return undefined;
+    return `sha256:${info.contentHash}`;
   }
 
   // ===================== 5. 辅助方法 =====================

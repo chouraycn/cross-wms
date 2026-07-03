@@ -54,6 +54,10 @@ const ApiTemplatesPage = React.lazy(() => import('./pages/ApiTemplatesPage'));
 const BrowserPage = React.lazy(() => import('./pages/BrowserPage'));
 const ApiCredentialsPage = React.lazy(() => import('./pages/ApiCredentialsPage'));
 const ApiHistoryPage = React.lazy(() => import('./pages/ApiHistoryPage'));
+const TuiTerminalPage = React.lazy(() => import('./pages/TuiTerminalPage'));
+const SkillWorkshopPage = React.lazy(() => import('./pages/SkillWorkshopPage'));
+const SecretsPage = React.lazy(() => import('./pages/SecretsPage'));
+const MemoryPage = React.lazy(() => import('./pages/MemoryPage'));
 
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
@@ -648,6 +652,9 @@ const MainLayout: React.FC = () => {
                     <Route path="/skills" element={<SkillsPage />} />
                     <Route path="/skills/:skillId" element={<SkillDetailPage />} />
                     <Route path="/skills/:skillId/audit" element={<SkillAuditPage />} />
+                    <Route path="/skills/workshop" element={<SkillWorkshopPage />} />
+                    <Route path="/secrets" element={<SecretsPage />} />
+                    <Route path="/memory" element={<MemoryPage />} />
 
                     <Route path="/chat" element={<CDFChatThread variant="page" />} />
                     <Route path="/warehouses" element={<WarehousesPage />} />
@@ -673,6 +680,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/browser" element={<BrowserPage />} />
                     <Route path="/api-credentials" element={<ApiCredentialsPage />} />
                     <Route path="/api-history" element={<ApiHistoryPage />} />
+                    <Route path="/tui" element={<TuiTerminalPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Suspense>

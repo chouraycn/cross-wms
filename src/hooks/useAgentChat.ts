@@ -35,6 +35,7 @@ import type { Message, Session, Attachment, ReferencedSession } from '../types/c
 import { API_BASE } from '../constants/api';
 import { useStreamReconciliation } from './useStreamReconciliation';
 import type { StreamReconciliationState } from './useStreamReconciliation';
+import { useAiEngineSettings } from '../contexts/AppSettingsContext';
 
 // ===================== 类型定义 =====================
 
@@ -463,6 +464,9 @@ export function useAgentChat(
   const [activeItems, setActiveItems] = useState<AgentItemEventData[]>([]);
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
   const currentPendingMsgIdRef = useRef<string | null>(null);
+
+  // AI 引擎设置
+  const { settings: aiEngine } = useAiEngineSettings();
 
   // 流协调器 — 独立维护流段状态，与现有渲染逻辑并行
   const {
@@ -1015,6 +1019,8 @@ export function useAgentChat(
           executionMode: options.executionMode,
           agentId: options.agentId,
           queueMode: options.queueMode,
+          toolProfile: aiEngine.toolProfile,
+          compaction: aiEngine.compaction,
           conversationHistory,
         }),
         signal: abortController.signal,

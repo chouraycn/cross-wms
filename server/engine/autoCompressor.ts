@@ -33,82 +33,60 @@
 
 import { estimateMessagesTokens } from './contextTruncate.js';
 import type { ModelCallConfig } from '../aiClient.js';
+import { logger } from '../logger.js';
+import { compactionProviderRegistry, type CompactionProvider } from './compactionProvider.js';
 
-/**
- * 压缩触发方式
- * - 'threshold': 超过 token 阈值比例时触发
- * - 'turn_interval': 每 N 轮对话触发一次
- * - 'manual': 仅手动触发
- */
 export type CompressionTrigger = 'threshold' | 'turn_interval' | 'manual';
-
-/**
- * 压缩级别
- * - 1: 轻量压缩 — 仅摘要早期消息
- * - 2: 中等压缩 — 合并工具调用结果
- * - 3: 深度压缩 — 仅保留关键决策点
- */
 export type CompressionLevel = 1 | 2 | 3;
 
-/**
- * 压缩计划项
- */
 export interface CompressionPlanItem {
-  /** 消息在原数组中的索引 */
   index: number;
-  /** 消息角色 */
   role: string;
-  /** 操作类型：compress=压缩摘要, merge=合并到前一条, keep=原样保留, drop=直接丢弃 */
   action: 'compress' | 'merge' | 'keep' | 'drop';
-  /** 预估当前消息的 token 数 */
   estimatedTokens: number;
 }
 
-/**
- * 压缩计划
- */
 export interface CompressionPlan {
-  /** 压缩级别 */
   level: CompressionLevel;
-  /** 每条消息的处理方案 */
   items: CompressionPlanItem[];
-  /** 需要被压缩/合并的消息索引范围 [start, end) */
   compressRange: { start: number; end: number };
-  /** 压缩前预估总 token */
   beforeTokens: number;
-  /** 压缩后预估 token（粗略估算） */
   estimatedAfterTokens: number;
-  /** 预估节省比例 */
   estimatedSavingsRatio: number;
+  isSafeToExecute: boolean;
+  safetyWarnings: string[];
 }
 
-/**
- * AutoCompressor 配置项
- */
+export interface CompressionHookContext {
+  compressor: AutoCompressor;
+  plan: CompressionPlan;
+  messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>;
+  level: CompressionLevel;
+}
+
+export type CompressionHook = (context: CompressionHookContext) => Promise<void> | void;
+
+export interface CompressionHooks {
+  beforeCompress?: CompressionHook;
+  afterCompress?: CompressionHook;
+  onCompressionPlan?: CompressionHook;
+}
+
 export interface AutoCompressorConfig {
-  /** 触发方式 */
   trigger: CompressionTrigger;
-  /**
-   * 阈值比例（0-1）
-   * 当 estimatedTokens / contextWindow 超过此比例时触发
-   * 仅 trigger='threshold' 时生效
-   */
   thresholdRatio?: number;
-  /**
-   * 轮次间隔
-   * 每多少轮对话触发一次压缩
-   * 仅 trigger='turn_interval' 时生效
-   */
   turnInterval?: number;
-  /** 保留最近 N 条消息不压缩 */
   preserveRecent?: number;
-  /** 是否保留 system 消息不压缩 */
   preserveSystem?: boolean;
-  /**
-   * 模型上下文窗口大小（token）
-   * 用于 threshold 模式的阈值计算
-   */
   contextWindow?: number;
+  safetyCheckEnabled?: boolean;
+  minMessagesBeforeCompression?: number;
+  maxCompressionRatio?: number;
+  hooks?: CompressionHooks;
+  /** 可插拔压缩 Provider ID（可选，使用指定 provider 而非默认） */
+  compressionProviderId?: string;
+  /** 压缩后回调钩子（用于通知用户已压缩） */
+  onCompressed?: (result: { originalTokens: number; compressedTokens: number; savingsRatio: number }) => void;
 }
 
 /**
@@ -136,18 +114,14 @@ interface TurnRecord {
  *                    大部分中间过程和工具调用都被压缩
  */
 export class AutoCompressor {
-  private config: Required<Omit<AutoCompressorConfig, 'contextWindow'>> &
-    Pick<AutoCompressorConfig, 'contextWindow'>;
+  private config: Required<Omit<AutoCompressorConfig, 'contextWindow' | 'hooks' | 'compressionProviderId' | 'onCompressed'>> &
+    Pick<AutoCompressorConfig, 'contextWindow' | 'hooks' | 'compressionProviderId' | 'onCompressed'>;
 
   private turnHistory: TurnRecord[] = [];
   private lastCompressionTurn: number = 0;
   private currentTurn: number = 0;
+  private hooks: CompressionHooks;
 
-  /**
-   * 构造函数
-   *
-   * @param config 压缩器配置
-   */
   constructor(config: AutoCompressorConfig) {
     this.config = {
       trigger: config.trigger,
@@ -156,7 +130,38 @@ export class AutoCompressor {
       preserveRecent: config.preserveRecent ?? 5,
       preserveSystem: config.preserveSystem ?? true,
       contextWindow: config.contextWindow,
+      safetyCheckEnabled: config.safetyCheckEnabled ?? true,
+      minMessagesBeforeCompression: config.minMessagesBeforeCompression ?? 4,
+      maxCompressionRatio: config.maxCompressionRatio ?? 0.9,
+      hooks: config.hooks,
+      compressionProviderId: config.compressionProviderId,
+      onCompressed: config.onCompressed,
     };
+    this.hooks = config.hooks ?? {};
+  }
+
+  registerHook(name: keyof CompressionHooks, hook: CompressionHook): void {
+    this.hooks[name] = hook;
+    logger.debug(`[AutoCompressor] 已注册钩子: ${name}`);
+  }
+
+  unregisterHook(name: keyof CompressionHooks): void {
+    delete this.hooks[name];
+    logger.debug(`[AutoCompressor] 已注销钩子: ${name}`);
+  }
+
+  async executeHook(name: keyof CompressionHooks, context: CompressionHookContext): Promise<void> {
+    const hook = this.hooks[name];
+    if (!hook) return;
+    try {
+      await hook(context);
+      logger.debug(`[AutoCompressor] 钩子执行成功: ${name}`);
+    } catch (error) {
+      logger.error(
+        `[AutoCompressor] 钩子执行失败: ${name}`,
+        error instanceof Error ? error.message : String(error)
+      );
+    }
   }
 
   /**
@@ -223,16 +228,6 @@ export class AutoCompressor {
     this.lastCompressionTurn = 0;
   }
 
-  /**
-   * 获取压缩计划
-   *
-   * 根据当前消息状态和配置，生成详细的压缩计划，
-   * 包含每条消息的处理方式和预估的压缩效果。
-   *
-   * @param messages 当前完整消息数组
-   * @param forcedLevel 强制指定压缩级别（不传则自动计算）
-   * @returns 压缩计划
-   */
   getCompressionPlan(
     messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
     forcedLevel?: CompressionLevel,
@@ -287,14 +282,210 @@ export class AutoCompressor {
       ? 1 - estimatedAfterTokens / totalTokens
       : 0;
 
-    return {
+    const safetyResult = this.performSafetyCheck(messages, items, estimatedAfterTokens, totalTokens);
+
+    const plan: CompressionPlan = {
       level,
       items,
       compressRange: { start: compressStart, end: compressEnd },
       beforeTokens: totalTokens,
       estimatedAfterTokens,
       estimatedSavingsRatio,
+      isSafeToExecute: safetyResult.isSafe,
+      safetyWarnings: safetyResult.warnings,
     };
+
+    this.executeHook('onCompressionPlan', {
+      compressor: this,
+      plan,
+      messages,
+      level,
+    });
+
+    return plan;
+  }
+
+  async executeCompression(
+    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    forcedLevel?: CompressionLevel,
+  ): Promise<{ plan: CompressionPlan; shouldProceed: boolean }> {
+    const plan = this.getCompressionPlan(messages, forcedLevel);
+
+    await this.executeHook('beforeCompress', {
+      compressor: this,
+      plan,
+      messages,
+      level: plan.level,
+    });
+
+    // 如果指定了 Provider，使用可插拔 Provider（如果存在）
+    if (this.config.compressionProviderId) {
+      try {
+        const result = await this.useCompactionProvider(messages);
+        // Provider 成功执行后返回标记
+        return {
+          plan,
+          shouldProceed: true,
+          providerResult: result,
+        } as any;
+      } catch (err) {
+        logger.warn(`[AutoCompressor] Provider compression failed, falling back to plan-only:`, err);
+      }
+    }
+
+    if (!plan.isSafeToExecute && this.config.safetyCheckEnabled) {
+      logger.warn(
+        `[AutoCompressor] 压缩计划不安全，已阻止执行。警告: ${plan.safetyWarnings.join(', ')}`
+      );
+      return { plan, shouldProceed: false };
+    }
+
+    return { plan, shouldProceed: true };
+  }
+
+  /**
+   * 使用可插拔 Provider 执行压缩
+   *
+   * @param messages - 待压缩消息
+   * @param options - 压缩选项
+   * @returns 压缩结果
+   */
+  async useCompactionProvider(
+    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    options: {
+      previousSummary?: string;
+      preserveRecent?: number;
+      providerId?: string;
+    } = {},
+  ): Promise<{
+    summary: string;
+    originalTokenCount: number;
+    compressedTokenCount: number;
+    providerId: string;
+  }> {
+    const providerId = options.providerId ?? this.config.compressionProviderId ?? 'builtin-summarize';
+    const provider = compactionProviderRegistry.get(providerId);
+
+    if (!provider) {
+      // 降级到默认 provider
+      const defaultProvider = compactionProviderRegistry.getDefault();
+      if (!defaultProvider) {
+        throw new Error(`No compression provider available (requested: ${providerId})`);
+      }
+      logger.warn(`[AutoCompressor] Provider '${providerId}' not found, using default '${defaultProvider.id}'`);
+      return this.executeWithProvider(defaultProvider, messages, options);
+    }
+
+    return this.executeWithProvider(provider, messages, options);
+  }
+
+  /**
+   * 使用指定 Provider 执行压缩（内部方法）
+   */
+  private async executeWithProvider(
+    provider: CompactionProvider,
+    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    options: { previousSummary?: string; preserveRecent?: number },
+  ): Promise<{
+    summary: string;
+    originalTokenCount: number;
+    compressedTokenCount: number;
+    providerId: string;
+  }> {
+    try {
+      const result = await provider.compress(messages, {
+        previousSummary: options.previousSummary,
+        preserveRecent: options.preserveRecent ?? this.config.preserveRecent,
+        identifierPolicy: 'strict',
+      });
+
+      // 触发回调
+      if (this.config.onCompressed) {
+        this.config.onCompressed({
+          originalTokens: result.originalTokenCount,
+          compressedTokens: result.compressedTokenCount,
+          savingsRatio: result.originalTokenCount > 0
+            ? 1 - result.compressedTokenCount / result.originalTokenCount
+            : 0,
+        });
+      }
+
+      logger.info(
+        `[AutoCompressor] Provider '${provider.id}' compressed ` +
+        `${result.originalTokenCount} → ${result.compressedTokenCount} tokens ` +
+        `(${(1 - result.compressedTokenCount / Math.max(1, result.originalTokenCount) * 100).toFixed(1)}% savings)`
+      );
+
+      return { ...result, providerId: provider.id };
+    } catch (err) {
+      logger.error(`[AutoCompressor] Provider '${provider.id}' compression failed:`, err);
+      throw err;
+    }
+  }
+
+  async completeCompression(
+    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    plan: CompressionPlan,
+  ): Promise<void> {
+    await this.executeHook('afterCompress', {
+      compressor: this,
+      plan,
+      messages,
+      level: plan.level,
+    });
+    this.markCompressed();
+  }
+
+  private performSafetyCheck(
+    messages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+    items: CompressionPlanItem[],
+    estimatedAfterTokens: number,
+    totalTokens: number,
+  ): { isSafe: boolean; warnings: string[] } {
+    if (!this.config.safetyCheckEnabled) {
+      return { isSafe: true, warnings: [] };
+    }
+
+    const warnings: string[] = [];
+
+    if (messages.length < this.config.minMessagesBeforeCompression) {
+      warnings.push(`消息数量不足 (${messages.length}/${this.config.minMessagesBeforeCompression})`);
+    }
+
+    const keepCount = items.filter(i => i.action === 'keep').length;
+    if (keepCount === 0) {
+      warnings.push('压缩计划将丢弃所有消息');
+    }
+
+    const dropCount = items.filter(i => i.action === 'drop').length;
+    if (dropCount > messages.length * 0.5) {
+      warnings.push(`丢弃消息过多 (${dropCount}/${messages.length})`);
+    }
+
+    const savingsRatio = totalTokens > 0 ? 1 - estimatedAfterTokens / totalTokens : 0;
+    if (savingsRatio > this.config.maxCompressionRatio) {
+      warnings.push(
+        `压缩比例过高 (${(savingsRatio * 100).toFixed(1)}% > ${(this.config.maxCompressionRatio * 100).toFixed(1)}%)`
+      );
+    }
+
+    const toolMessages = messages.filter(m => m.role === 'tool' || (m.role === 'assistant' && m.tool_calls));
+    const toolActions = items.filter(i => {
+      const msg = messages[i.index];
+      return (msg.role === 'tool' || (msg.role === 'assistant' && msg.tool_calls)) && i.action !== 'keep';
+    });
+
+    if (toolMessages.length > 0 && toolActions.length === toolMessages.length) {
+      warnings.push('所有工具调用消息将被压缩或丢弃');
+    }
+
+    const isSafe = warnings.length === 0;
+
+    if (!isSafe) {
+      logger.warn(`[AutoCompressor] 安全检查失败: ${warnings.join(', ')}`);
+    }
+
+    return { isSafe, warnings };
   }
 
   /**

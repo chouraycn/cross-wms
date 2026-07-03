@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Box, Typography, Alert, Button, CircularProgress, useTheme,
-  ToggleButtonGroup, ToggleButton, TextField, Slider,
+  ToggleButtonGroup, ToggleButton, TextField, Slider, Switch, FormControlLabel,
   Dialog, DialogTitle, DialogContent, IconButton,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -16,6 +16,8 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import HistoryIcon from '@mui/icons-material/History';
 import CodeIcon from '@mui/icons-material/Code';
 import DescriptionIcon from '@mui/icons-material/Description';
+import HandymanIcon from '@mui/icons-material/Handyman';
+import CompressIcon from '@mui/icons-material/Compress';
 import CloseIcon from '@mui/icons-material/Close';
 import BranchIcon from '@mui/icons-material/CallSplit';
 import { useModels } from '../../contexts/ModelsContext';
@@ -30,7 +32,7 @@ import LspPanel from '../LSP/LspPanel';
 import SoulDebugPanel from '../Soul/SoulDebugPanel';
 import SoulEditor from '../Soul/SoulEditor';
 import MemoryPanel from '../Memory/MemoryPanel';
-import { useAiEngineSettings, type ExecutionMode, type QueueMode } from '../../contexts/AppSettingsContext';
+import { useAiEngineSettings, type ExecutionMode, type QueueMode, type ToolProfile, type CompactionStrategy } from '../../contexts/AppSettingsContext';
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar tabs                                                        */
@@ -150,7 +152,9 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) =>
             </Typography>
             <ExecutionModeSelector />
             <QueueModeSelector />
+            <ToolProfileSelector />
             <MaxHistoryTurnsSelector />
+            <CompactionSettings />
           </Box>
         )}
         {activeTab === 'memory' && (
@@ -431,6 +435,267 @@ function MaxHistoryTurnsSelector() {
             : `当前：仅保留最近 ${aiEngine.maxHistoryTurns} 轮对话作为上下文`}
         </Typography>
       </Box>
+    </Box>
+  );
+}
+
+// ===================== 工具 Profile 选择器 =====================
+
+const TOOL_PROFILE_OPTIONS: { value: ToolProfile; label: string; desc: string; icon: string }[] = [
+  { value: 'full', label: '完整', desc: '所有可用工具全部开放，适合复杂任务和深度探索', icon: '🔧' },
+  { value: 'coding', label: '编程', desc: '仅开放代码相关工具（文件读写、终端、Git等），专注编码任务', icon: '💻' },
+  { value: 'messaging', label: '消息', desc: '仅开放消息和搜索类工具，适合信息查询和文档整理', icon: '💬' },
+  { value: 'minimal', label: '极简', desc: '最少工具集，仅保留最核心的功能，最大限度减少 token 消耗', icon: '⚡' },
+];
+
+function ToolProfileSelector() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+  const { settings: aiEngine, updateSettings } = useAiEngineSettings();
+
+  const handleChange = (_: React.MouseEvent<HTMLElement>, newProfile: string | null) => {
+    if (newProfile && newProfile !== aiEngine.toolProfile) {
+      updateSettings({ aiEngine: { ...aiEngine, toolProfile: newProfile as ToolProfile } });
+    }
+  };
+
+  return (
+    <Box sx={{ mt: 4 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+        <HandymanIcon sx={{ fontSize: 18, color: gs.textSecondary }} />
+        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: gs.textPrimary }}>
+          工具集 Profile
+        </Typography>
+      </Box>
+      <Typography sx={{ fontSize: '0.78rem', color: gs.textSecondary, mb: 2, lineHeight: 1.5 }}>
+        控制 AI 可使用的工具范围，减少不必要的工具调用以节省 token 和加快响应
+      </Typography>
+      <ToggleButtonGroup
+        value={aiEngine.toolProfile}
+        exclusive
+        onChange={handleChange}
+        size="small"
+        sx={{ mb: 2, flexWrap: 'wrap', gap: 0.5 }}
+      >
+        {TOOL_PROFILE_OPTIONS.map(opt => (
+          <ToggleButton key={opt.value} value={opt.value} sx={{
+            px: 2, py: 0.75, borderRadius: 1.5, border: '1px solid',
+            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+            textTransform: 'none', fontSize: '0.78rem',
+            '&.Mui-selected': { backgroundColor: isDark ? 'rgba(249,115,22,0.2)' : 'rgba(249,115,22,0.08)', borderColor: 'rgba(249,115,22,0.5)' },
+          }}>
+            {opt.icon} {opt.label}
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
+
+      {TOOL_PROFILE_OPTIONS.map(opt => (
+        <Box key={opt.value} sx={{
+          mb: 1.5, p: 1.5, borderRadius: 2, border: '1px solid',
+          borderColor: aiEngine.toolProfile === opt.value ? 'rgba(249,115,22,0.4)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'),
+          backgroundColor: aiEngine.toolProfile === opt.value ? (isDark ? 'rgba(249,115,22,0.06)' : 'rgba(249,115,22,0.03)') : 'transparent',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+            <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: aiEngine.toolProfile === opt.value ? gs.textPrimary : gs.textSecondary }}>
+              {opt.icon} {opt.label}
+            </Typography>
+            <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled, fontFamily: 'monospace' }}>
+              {opt.value}
+            </Typography>
+          </Box>
+          <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary, lineHeight: 1.5 }}>
+            {opt.desc}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+// ===================== 上下文压缩配置 =====================
+
+const COMPACTION_STRATEGY_OPTIONS: { value: CompactionStrategy; label: string; desc: string }[] = [
+  { value: 'semantic', label: '语义摘要', desc: '使用 AI 对历史对话进行语义理解和摘要，保留核心信息，质量最高但需消耗 token' },
+  { value: 'extractive', label: '提取式', desc: '从历史消息中提取关键句子和关键词，保留原文片段，速度快无需额外 token' },
+  { value: 'truncation', label: '截断', desc: '直接截断较早的历史消息，仅保留最近对话，最简单但可能丢失重要上下文' },
+];
+
+function CompactionSettings() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+  const { settings: aiEngine, updateSettings } = useAiEngineSettings();
+
+  const handleEnabledChange = (_: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
+    updateSettings({
+      aiEngine: {
+        ...aiEngine,
+        compaction: { ...aiEngine.compaction, enabled: checked },
+      },
+    });
+  };
+
+  const handleStrategyChange = (_: React.MouseEvent<HTMLElement>, newStrategy: string | null) => {
+    if (newStrategy && newStrategy !== aiEngine.compaction.strategy) {
+      updateSettings({
+        aiEngine: {
+          ...aiEngine,
+          compaction: { ...aiEngine.compaction, strategy: newStrategy as CompactionStrategy },
+        },
+      });
+    }
+  };
+
+  const handleThresholdChange = (_: Event, newValue: number | number[]) => {
+    const value = newValue as number;
+    updateSettings({
+      aiEngine: {
+        ...aiEngine,
+        compaction: { ...aiEngine.compaction, thresholdRatio: value / 100 },
+      },
+    });
+  };
+
+  const handlePreserveChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value >= 0 && value <= 50) {
+      updateSettings({
+        aiEngine: {
+          ...aiEngine,
+          compaction: { ...aiEngine.compaction, preserveRecent: value },
+        },
+      });
+    }
+  };
+
+  const thresholdPercent = Math.round(aiEngine.compaction.thresholdRatio * 100);
+
+  return (
+    <Box sx={{ mt: 4 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+        <CompressIcon sx={{ fontSize: 18, color: gs.textSecondary }} />
+        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: gs.textPrimary }}>
+          上下文自动压缩
+        </Typography>
+      </Box>
+      <Typography sx={{ fontSize: '0.78rem', color: gs.textSecondary, mb: 2, lineHeight: 1.5 }}>
+        当上下文窗口占用过高时自动压缩历史对话，节省 token 并避免超出模型上下文限制
+      </Typography>
+
+      <FormControlLabel
+        control={
+          <Switch
+            checked={aiEngine.compaction.enabled}
+            onChange={handleEnabledChange}
+            size="small"
+            sx={{
+              '& .MuiSwitch-switchBase.Mui-checked': { color: '#10b981' },
+              '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#10b981' },
+            }}
+          />
+        }
+        label={
+          <Typography sx={{ fontSize: '0.8rem', color: gs.textPrimary }}>
+            启用自动压缩
+          </Typography>
+        }
+        sx={{ mb: 2 }}
+      />
+
+      {aiEngine.compaction.enabled && (
+        <>
+          <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: gs.textPrimary, mb: 1.5 }}>
+            压缩策略
+          </Typography>
+          <ToggleButtonGroup
+            value={aiEngine.compaction.strategy}
+            exclusive
+            onChange={handleStrategyChange}
+            size="small"
+            sx={{ mb: 3, flexWrap: 'wrap', gap: 0.5 }}
+          >
+            {COMPACTION_STRATEGY_OPTIONS.map(opt => (
+              <ToggleButton key={opt.value} value={opt.value} sx={{
+                px: 2, py: 0.75, borderRadius: 1.5, border: '1px solid',
+                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                textTransform: 'none', fontSize: '0.78rem',
+                '&.Mui-selected': { backgroundColor: isDark ? 'rgba(16,185,129,0.2)' : 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.5)' },
+              }}>
+                {opt.label}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+
+          {COMPACTION_STRATEGY_OPTIONS.map(opt => (
+            <Box key={opt.value} sx={{
+              mb: 1.5, p: 1.5, borderRadius: 2, border: '1px solid',
+              borderColor: aiEngine.compaction.strategy === opt.value ? 'rgba(16,185,129,0.4)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'),
+              backgroundColor: aiEngine.compaction.strategy === opt.value ? (isDark ? 'rgba(16,185,129,0.06)' : 'rgba(16,185,129,0.03)') : 'transparent',
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: aiEngine.compaction.strategy === opt.value ? gs.textPrimary : gs.textSecondary }}>
+                  {opt.label}
+                </Typography>
+                <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled, fontFamily: 'monospace' }}>
+                  {opt.value}
+                </Typography>
+              </Box>
+              <Typography sx={{ fontSize: '0.73rem', color: gs.textSecondary, lineHeight: 1.5 }}>
+                {opt.desc}
+              </Typography>
+            </Box>
+          ))}
+
+          <Box sx={{ mt: 3 }}>
+            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: gs.textPrimary, mb: 1 }}>
+              触发阈值：{thresholdPercent}%
+            </Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary, mb: 2 }}>
+              当上下文窗口占用达到此比例时触发自动压缩
+            </Typography>
+            <Box sx={{ px: 1, mb: 2 }}>
+              <Slider
+                value={thresholdPercent}
+                onChange={handleThresholdChange}
+                step={5}
+                min={30}
+                max={95}
+                marks={[
+                  { value: 30, label: '30%' },
+                  { value: 50, label: '50%' },
+                  { value: 75, label: '75%' },
+                  { value: 90, label: '90%' },
+                ]}
+                valueLabelDisplay="auto"
+                valueLabelFormat={(value) => `${value}%`}
+                sx={{
+                  color: isDark ? 'rgba(16,185,129,0.8)' : 'rgba(16,185,129,1)',
+                  '& .MuiSlider-markLabel': {
+                    fontSize: '0.65rem',
+                    color: gs.textDisabled,
+                  },
+                }}
+              />
+            </Box>
+          </Box>
+
+          <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <TextField
+              type="number"
+              size="small"
+              label="保留最近轮数"
+              value={aiEngine.compaction.preserveRecent}
+              onChange={handlePreserveChange}
+              InputProps={{ inputProps: { min: 0, max: 50 } }}
+              sx={{ width: 140 }}
+            />
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary }}>
+              压缩时保留最近 {aiEngine.compaction.preserveRecent} 轮对话不被压缩，确保上下文连贯性
+            </Typography>
+          </Box>
+        </>
+      )}
     </Box>
   );
 }

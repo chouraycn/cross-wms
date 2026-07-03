@@ -719,6 +719,8 @@ async function executeQueuedMessage(
       estimatedToolsCount: 30,
       fromQueue: true,
       callbacks,
+      toolProfile: params.toolProfile,
+      compaction: params.compaction,
     });
 
     // 保存助手消息到 DB
@@ -816,6 +818,8 @@ export async function handleChat(req: import('express').Request, res: import('ex
     executionMode,
     queueMode,
     agentId,
+    toolProfile,
+    compaction,
   } = req.body;
 
   const sessionId = reqSessionId || uuidv4();
@@ -1356,6 +1360,8 @@ export async function handleChat(req: import('express').Request, res: import('ex
             ctxMaxTokens,
             estimatedToolsCount,
             callbacks,
+            toolProfile,
+            compaction,
           });
 
           fullContent = result.content;

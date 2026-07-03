@@ -44,6 +44,15 @@ import {
   HYBRID_SEARCH_PRESETS,
 } from './memory/hybridSearch.js';
 import type { SearchResult, HybridSearchOptions as EnhancedHybridSearchOptions } from './memory/hybridSearch.js';
+import { extractKeywords, isQueryStopWordToken } from './memory/queryExpansion.js';
+import {
+  normalizeMemoryMultimodalSettings,
+  isMemoryMultimodalEnabled,
+  classifyMemoryMultimodalPath,
+  isValidMultimodalFile,
+  type MemoryMultimodalSettings,
+  type MemoryMultimodalModality,
+} from './memory/multimodal.js';
 
 // ===================== 常量定义 =====================
 

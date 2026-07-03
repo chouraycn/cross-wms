@@ -1,14 +1,25 @@
 /**
  * Context Window Guard — 上下文窗口守护模块
  *
- * 功能特性：
+ * 功能特性（基于 OpenClaw 架构增强）：
  * - 精确解析每个模型的上下文窗口大小
- * - 配置 > 模型元数据 > 默认值 的优先级
+ * - 多层缓存机制：配置缓存 > 运行时发现缓存 > 模型元数据 > 默认值
+ * - Anthropic GA 1M 模型特殊处理
  * - 硬最小值保护（4K tokens），低于此值拒绝执行
  * - 警告阈值（8K tokens），提前提示用户
  * - Token 预估和安全边际计算
  * - 自动触发压缩的阈值判断
- * - 多模型上下文窗口缓存
+ * - 异步缓存刷新支持
+ * - 运行时状态追踪
+ *
+ * 优先级顺序：
+ * 1. contextTokensOverride（运行时覆盖）
+ * 2. MODEL_CONFIGURED_CONTEXT_TOKEN_CACHE（配置缓存）
+ * 3. MODEL_CONTEXT_TOKEN_CACHE（运行时发现缓存）
+ * 4. 模型元数据
+ * 5. 已知模型映射
+ * 6. Provider 默认值
+ * 7. 默认窗口
  *
  * 集成思路：
  * 1. 在 agentRuntime 开始时，获取当前模型的上下文窗口
@@ -35,9 +46,17 @@ export const DEFAULT_COMPACTION_TRIGGER_RATIO = 0.7;
 /** 压缩目标比例（压缩到 50% 左右） */
 export const DEFAULT_COMPACTION_TARGET_RATIO = 0.5;
 
+/** Anthropic GA 1M 模型上下文窗口 */
+export const ANTHROPIC_CONTEXT_1M_TOKENS = 1_048_576;
+export const ANTHROPIC_VERTEX_CONTEXT_1M_TOKENS = 1_000_000;
+export const ANTHROPIC_FABLE_CONTEXT_TOKENS = 1_000_000;
+
+/** 缓存失效时间（5分钟） */
+export const CACHE_EXPIRY_MS = 5 * 60 * 1000;
+
 // ==================== 类型定义 ====================
 
-export type ContextWindowSource = 'config' | 'model_metadata' | 'default' | 'agent_override';
+export type ContextWindowSource = 'config' | 'model_metadata' | 'default' | 'agent_override' | 'discovery' | 'provider_default';
 
 export interface ContextWindowInfo {
   totalTokens: number;
@@ -62,6 +81,49 @@ export interface ContextGuardDecision {
   reason?: string;
   suggestedAction?: 'none' | 'compact' | 'truncate' | 'switch_model';
   estimatedUsage?: TokenUsageEstimate;
+}
+
+export interface ContextTokenResolutionParams {
+  provider?: string;
+  model?: string;
+  contextTokensOverride?: number;
+  fallbackContextTokens?: number;
+  modelContextWindow?: number;
+  modelContextTokens?: number;
+}
+
+// ==================== 全局缓存（基于 OpenClaw 架构） ====================
+
+export const MODEL_CONTEXT_TOKEN_CACHE = new Map<string, { tokens: number; timestamp: number }>();
+export const MODEL_CONFIGURED_CONTEXT_TOKEN_CACHE = new Map<string, { tokens: number; timestamp: number }>();
+export const MODEL_CONTEXT_WINDOW_CACHE = new Map<string, { tokens: number; timestamp: number }>();
+
+const PROVIDER_CONTEXT_TOKEN_CACHE_PREFIX = '\0provider:';
+
+export function providerContextTokenCacheKey(provider: string, modelId: string): string {
+  return `${PROVIDER_CONTEXT_TOKEN_CACHE_PREFIX}${provider}\0${modelId}`;
+}
+
+export function lookupCachedContextTokens(modelId?: string): number | undefined {
+  if (!modelId) return undefined;
+  const configured = MODEL_CONFIGURED_CONTEXT_TOKEN_CACHE.get(modelId);
+  if (configured && Date.now() - configured.timestamp < CACHE_EXPIRY_MS) {
+    return configured.tokens;
+  }
+  const discovered = MODEL_CONTEXT_TOKEN_CACHE.get(modelId);
+  if (discovered && Date.now() - discovered.timestamp < CACHE_EXPIRY_MS) {
+    return discovered.tokens;
+  }
+  return undefined;
+}
+
+export function minPositiveContextTokens(...values: Array<number | undefined>): number | undefined {
+  let result: number | undefined;
+  for (const value of values) {
+    if (typeof value !== 'number' || value <= 0) continue;
+    result = result === undefined ? value : Math.min(result, value);
+  }
+  return result;
 }
 
 // ==================== 常见模型上下文窗口映射 ====================
@@ -184,6 +246,68 @@ export function estimateMessagesTokens(messages: Array<{ role: string; content: 
   return total;
 }
 
+/** Anthropic GA 1M 模型前缀列表 */
+const ANTHROPIC_GA_1M_MODEL_PREFIXES = [
+  'claude-opus-4-8',
+  'claude-opus-4.8',
+  'claude-opus-4-6',
+  'claude-opus-4.6',
+  'claude-opus-4-7',
+  'claude-opus-4.7',
+  'claude-sonnet-4-6',
+  'claude-sonnet-4.6',
+];
+
+function resolveAnthropicFixedContextWindow(modelId: string): number | undefined {
+  const normalized = modelId.toLowerCase();
+  for (const prefix of ANTHROPIC_GA_1M_MODEL_PREFIXES) {
+    if (normalized.startsWith(prefix)) {
+      return ANTHROPIC_CONTEXT_1M_TOKENS;
+    }
+  }
+  return undefined;
+}
+
+function applyDiscoveredContextWindows(models: Array<{ id: string; provider?: string; contextWindow?: number; contextTokens?: number }>): void {
+  const cacheMinimum = (key: string, contextTokens: number) => {
+    const existing = MODEL_CONTEXT_TOKEN_CACHE.get(key);
+    if (!existing || contextTokens < existing.tokens) {
+      MODEL_CONTEXT_TOKEN_CACHE.set(key, { tokens: contextTokens, timestamp: Date.now() });
+    }
+  };
+
+  for (const model of models) {
+    if (!model?.id) continue;
+
+    const discoveredContextTokens =
+      typeof model.contextTokens === 'number'
+        ? Math.trunc(model.contextTokens)
+        : typeof model.contextWindow === 'number'
+          ? Math.trunc(model.contextWindow)
+          : undefined;
+
+    const contextTokens =
+      resolveAnthropicFixedContextWindow(model.id) ?? discoveredContextTokens;
+
+    if (!contextTokens || contextTokens <= 0) continue;
+
+    cacheMinimum(model.id, contextTokens);
+
+    if (typeof model.provider === 'string') {
+      const lowerProvider = model.provider.toLowerCase();
+      cacheMinimum(providerContextTokenCacheKey(lowerProvider, model.id), contextTokens);
+
+      const slash = model.id.indexOf('/');
+      const prefixedProvider = slash > 0 ? model.id.slice(0, slash).toLowerCase() : '';
+      const bareModelId = slash > 0 ? model.id.slice(slash + 1).trim() : '';
+
+      if (prefixedProvider === lowerProvider && bareModelId) {
+        cacheMinimum(providerContextTokenCacheKey(lowerProvider, bareModelId), contextTokens);
+      }
+    }
+  }
+}
+
 // ==================== ContextWindowGuard ====================
 
 export class ContextWindowGuard {
@@ -208,11 +332,61 @@ export class ContextWindowGuard {
 
   setModelContextWindow(modelId: string, tokens: number): void {
     this.configOverrides.set(modelId, tokens);
+    MODEL_CONFIGURED_CONTEXT_TOKEN_CACHE.set(modelId, { tokens, timestamp: Date.now() });
     logger.debug(`[ContextGuard] 模型 ${modelId} 上下文窗口已配置: ${tokens}`);
   }
 
   setModelMetadata(modelId: string, tokens: number): void {
     this.modelMetadataCache.set(modelId, { tokens, timestamp: Date.now() });
+    MODEL_CONTEXT_TOKEN_CACHE.set(modelId, { tokens, timestamp: Date.now() });
+  }
+
+  applyDiscoveredContextWindows(models: Array<{ id: string; provider?: string; contextWindow?: number; contextTokens?: number }>): void {
+    applyDiscoveredContextWindows(models);
+  }
+
+  resolveContextTokens(params: ContextTokenResolutionParams): number {
+    const { provider, model, contextTokensOverride, fallbackContextTokens } = params;
+
+    if (contextTokensOverride !== undefined && contextTokensOverride > 0) {
+      return contextTokensOverride;
+    }
+
+    if (model) {
+      const cached = lookupCachedContextTokens(model);
+      if (cached) return cached;
+
+      const anthropicFixed = resolveAnthropicFixedContextWindow(model);
+      if (anthropicFixed) return anthropicFixed;
+    }
+
+    if (provider && model) {
+      const providerKey = providerContextTokenCacheKey(provider.toLowerCase(), model);
+      const providerCached = MODEL_CONTEXT_TOKEN_CACHE.get(providerKey);
+      if (providerCached && Date.now() - providerCached.timestamp < CACHE_EXPIRY_MS) {
+        return providerCached.tokens;
+      }
+    }
+
+    if (params.modelContextTokens !== undefined && params.modelContextTokens > 0) {
+      return params.modelContextTokens;
+    }
+
+    if (params.modelContextWindow !== undefined && params.modelContextWindow > 0) {
+      return params.modelContextWindow;
+    }
+
+    if (model) {
+      const knownWindow = lookupKnownModelWindow(model);
+      if (knownWindow) return knownWindow;
+    }
+
+    if (provider) {
+      const providerDefault = lookupProviderDefaultWindow(provider);
+      if (providerDefault) return providerDefault;
+    }
+
+    return fallbackContextTokens ?? 200_000;
   }
 
   getContextWindow(modelId: string, provider?: string): ContextWindowInfo {
@@ -221,6 +395,26 @@ export class ContextWindowGuard {
       return {
         totalTokens: Math.max(configOverride, CONTEXT_WINDOW_HARD_MIN_TOKENS),
         source: 'config',
+        modelId,
+        provider,
+      };
+    }
+
+    const cached = lookupCachedContextTokens(modelId);
+    if (cached) {
+      return {
+        totalTokens: Math.max(cached, CONTEXT_WINDOW_HARD_MIN_TOKENS),
+        source: 'discovery',
+        modelId,
+        provider,
+      };
+    }
+
+    const anthropicFixed = resolveAnthropicFixedContextWindow(modelId);
+    if (anthropicFixed) {
+      return {
+        totalTokens: anthropicFixed,
+        source: 'discovery',
         modelId,
         provider,
       };
@@ -250,7 +444,7 @@ export class ContextWindowGuard {
     if (providerDefault) {
       return {
         totalTokens: providerDefault,
-        source: 'default',
+        source: 'provider_default',
         modelId,
         provider,
       };
@@ -363,7 +557,29 @@ export class ContextWindowGuard {
 
   clearCache(): void {
     this.modelMetadataCache.clear();
-    logger.debug('[ContextGuard] 缓存已清除');
+    MODEL_CONTEXT_TOKEN_CACHE.clear();
+    MODEL_CONFIGURED_CONTEXT_TOKEN_CACHE.clear();
+    MODEL_CONTEXT_WINDOW_CACHE.clear();
+    logger.debug('[ContextGuard] 所有缓存已清除');
+  }
+
+  clearExpiredCache(): void {
+    const now = Date.now();
+    for (const [key, entry] of MODEL_CONTEXT_TOKEN_CACHE.entries()) {
+      if (now - entry.timestamp > CACHE_EXPIRY_MS) {
+        MODEL_CONTEXT_TOKEN_CACHE.delete(key);
+      }
+    }
+    for (const [key, entry] of MODEL_CONFIGURED_CONTEXT_TOKEN_CACHE.entries()) {
+      if (now - entry.timestamp > CACHE_EXPIRY_MS) {
+        MODEL_CONFIGURED_CONTEXT_TOKEN_CACHE.delete(key);
+      }
+    }
+    for (const [key, entry] of MODEL_CONTEXT_WINDOW_CACHE.entries()) {
+      if (now - entry.timestamp > CACHE_EXPIRY_MS) {
+        MODEL_CONTEXT_WINDOW_CACHE.delete(key);
+      }
+    }
   }
 }
 
@@ -377,3 +593,6 @@ export function getContextWindowGuard(): ContextWindowGuard {
   }
   return defaultGuard;
 }
+
+// ANTHROPIC_CONTEXT_1M_TOKENS, ANTHROPIC_VERTEX_CONTEXT_1M_TOKENS, ANTHROPIC_FABLE_CONTEXT_TOKENS
+// already exported at top of file with `export const`

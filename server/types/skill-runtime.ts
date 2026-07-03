@@ -59,6 +59,25 @@ export interface SkillRequires {
   skills?: string[];
 }
 
+// ===================== Skill 安装规格 =====================
+
+/** Skill 安装源类型 */
+export type SkillInstallSourceType = 'local' | 'git' | 'archive' | 'market' | 'http';
+
+/** Skill 安装规格 */
+export interface SkillInstallSpec {
+  source: SkillInstallSourceType;
+  localPath?: string;
+  gitUrl?: string;
+  gitBranch?: string;
+  archiveUrl?: string;
+  marketName?: string;
+  marketVersion?: string;
+  downloadUrl?: string;
+  checksum?: string;
+  targetDir?: string;
+}
+
 /**
  * Skill 定义（与 SKILL.md YAML frontmatter 对齐）
  *
@@ -79,6 +98,20 @@ export interface SkillDefinition {
   requires?: SkillRequires;
   /** 是否允许用户直接调用（默认 true） */
   userInvocable?: boolean;
+
+  // ---- Per-skill exposure 配置（覆盖 group 默认值） ----
+
+  /** 是否包含在运行时注册表中（覆盖 group 默认值） */
+  includeInRuntimeRegistry?: boolean;
+  /** 是否包含在可用 Skill 的 Prompt 中（覆盖 group 默认值） */
+  includeInAvailableSkillsPrompt?: boolean;
+  /** 禁止模型自动调用（仅允许用户调用） */
+  disableModelInvocation?: boolean;
+  /** 始终注入到 Prompt（无论 context） */
+  always?: boolean;
+  /** 规范化键（用于去重和查找） */
+  skillKey?: string;
+
   /** 门控模式（默认 'auto'） */
   gate?: SkillGate;
   /** 沙箱范围（默认 'workspace'） */
@@ -89,6 +122,26 @@ export interface SkillDefinition {
   author?: string;
   /** 标签列表 */
   tags?: string[];
+
+  // ---- 元数据增强 ----
+
+  /** 表情符号（用于 UI 显示） */
+  emoji?: string;
+  /** 主页 URL */
+  homepage?: string;
+  /** 主要环境变量（依赖此 Skill 时需要设置） */
+  primaryEnv?: string;
+  /** 依赖的二进制文件列表（任意一个满足即可） */
+  requiresBinsAny?: string[];
+  /** 依赖的二进制文件列表（全部需要满足） */
+  requiresBins?: string[];
+  /** 依赖的配置项列表 */
+  requiresConfig?: string[];
+
+  // ---- 安装规格（OpenClaw install[] 数组兼容） ----
+
+  /** 安装规格列表（用于自动安装依赖） */
+  install?: SkillInstallSpec[];
 
   // ---- 运行时信息（注册时填充） ----
 

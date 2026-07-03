@@ -129,6 +129,17 @@ const DANGEROUS_COMMANDS = [
   { pattern: />\s*\/dev\/(null|zero)/, level: 'low' as RiskLevel, desc: '输出到空设备' },
 ];
 
+/** Prompt 注入检测规则 */
+const PROMPT_INJECTION_RULES = [
+  { pattern: /ignore\s+(all|previous|prior)\s+(instructions?|prompts?|rules?)/i, level: 'critical' as RiskLevel, desc: 'Prompt 注入：试图忽略指令', ruleId: 'prompt-injection-ignore-instructions' },
+  { pattern: /(system\s+prompt|developer\s+message|hidden\s+instructions?)\s*[:\-]/i, level: 'high' as RiskLevel, desc: 'Prompt 注入：引用系统提示', ruleId: 'prompt-injection-system' },
+  { pattern: /(run|execute|call)\s+(tool|command)\s+(without|bypass|skip)\s+(permission|approval|auth)/i, level: 'critical' as RiskLevel, desc: 'Prompt 注入：绕过权限执行工具', ruleId: 'prompt-injection-tool' },
+  { pattern: /curl\s+[^|]+\|\s*(bash|sh|zsh)/i, level: 'critical' as RiskLevel, desc: 'Shell 管道执行远程脚本', ruleId: 'shell-pipe-to-shell' },
+  { pattern: /process\.env[\s\S]*?(fetch|http|axios|request)/i, level: 'high' as RiskLevel, desc: '环境变量外泄风险', ruleId: 'secret-exfiltration' },
+  { pattern: /rm\s+-rf\s+[/~]/i, level: 'critical' as RiskLevel, desc: '破坏性删除操作', ruleId: 'destructive-delete' },
+  { pattern: /chmod\s+777/i, level: 'high' as RiskLevel, desc: '不安全的权限设置', ruleId: 'unsafe-permissions' },
+];
+
 /** 敏感路径模式 */
 const SENSITIVE_PATHS = [
   { pattern: /\/etc\/passwd/, level: 'high' as RiskLevel, desc: '访问密码文件' },
@@ -278,6 +289,75 @@ export class SkillSecurityScanner {
 
     // 凭证泄露
     findings.push(...this.scanCredentials(content, location));
+
+    // Prompt 注入检测
+    for (const rule of PROMPT_INJECTION_RULES) {
+      if (rule.pattern.test(content)) {
+        findings.push({
+          type: 'code_injection',
+          level: rule.level,
+          description: rule.desc,
+          location,
+          suggestion: '移除 Prompt 注入内容',
+        });
+      }
+    }
+
+    // 组合模式检测
+    findings.push(...this.detectCompositePatterns(content, location));
+
+    return findings;
+  }
+
+  /**
+   * 检测组合风险模式
+   *
+   * 通过组合多个简单模式识别潜在的安全风险，
+   * 例如：文件读取 + 网络发送、大 Base64 + 解码等。
+   */
+  private detectCompositePatterns(content: string, location?: string): RiskFinding[] {
+    const findings: RiskFinding[] = [];
+    const lines = content.split('\n');
+
+    // 检测：文件读取 + 网络发送组合
+    const hasFileRead = /readFile|readFileSync|fs\.read|cat\s+/.test(content);
+    const hasNetworkSend = /fetch\s*\(|http\.post|axios\.post|request\s*\(/.test(content);
+    if (hasFileRead && hasNetworkSend) {
+      findings.push({
+        type: 'credential_leak', level: 'high',
+        description: '组合模式：文件读取与网络发送同时出现（潜在数据外泄）',
+        location, suggestion: '检查是否存在敏感数据外泄路径',
+      });
+    }
+
+    // 检测：大 base64 payload + decode
+    const hasLargeBase64 = /[A-Za-z0-9+/=]{500,}/.test(content);
+    const hasDecode = /atob|Buffer\.from\([^)]*,\s*['"]base64['"]\)|base64Decode/.test(content);
+    if (hasLargeBase64 && hasDecode) {
+      findings.push({
+        type: 'code_injection', level: 'medium',
+        description: '组合模式：大 Base64 负载与解码操作同时出现（潜在混淆代码）',
+        location, suggestion: '检查是否存在混淆代码执行',
+      });
+    }
+
+    // 检测：环境变量收集 + 网络发送
+    const hasEnvHarvest = /process\.env/.test(content);
+    if (hasEnvHarvest && hasNetworkSend) {
+      // 检查是否在同一行窗口内
+      for (let i = 0; i < lines.length - 2; i++) {
+        const window = lines.slice(i, i + 3).join('\n');
+        if (/process\.env/.test(window) && /(fetch|http|axios|request)\s*\(/.test(window)) {
+          findings.push({
+            type: 'credential_leak', level: 'high',
+            description: '组合模式：环境变量收集与网络发送在相近代码区域（潜在凭证外泄）',
+            location: location ? `${location}:line~${i + 1}` : `line~${i + 1}`,
+            suggestion: '避免将环境变量直接发送到外部服务',
+          });
+          break;
+        }
+      }
+    }
 
     return findings;
   }

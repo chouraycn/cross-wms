@@ -24,6 +24,10 @@ import type { SkillPermissionConfig } from '../types/skill-runtime.js';
 import toolPolicyEngine from './toolPolicyEngine.js';
 import approvalManager from './approvalManager.js';
 import pluginHooks from './pluginHooks.js';
+import { validateAndNormalizeToolParams } from './toolParams.js';
+import { toolLoopDetector } from './toolLoopDetection.js';
+import { toolProfileManager, projectToolSchemas, type ToolProfileId } from './toolProfiles.js';
+import { logger } from '../logger.js';
 
 // ===================== 工具结果错误检测 =====================
 
@@ -90,6 +94,17 @@ export interface ToolExecutorOptions {
   skillPermissionConfig?: SkillPermissionConfig;
   /** 会话 ID（用于审批流和插件钩子） */
   sessionId?: string;
+  /** 工具 Profile ID（用于过滤工具集） */
+  toolProfile?: ToolProfileId;
+  /** 是否对工具 Schema 进行投影（裁剪参数） */
+  projectToolSchemas?: boolean;
+  /** 上下文压缩配置 */
+  compaction?: {
+    enabled?: boolean;
+    strategy?: string;
+    thresholdRatio?: number;
+    preserveRecent?: number;
+  };
 }
 
 /**
@@ -136,12 +151,33 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
   const { getSkillToolDefinitions } = await import('./skillToolBridge.js');
   const skillTools = getSkillToolDefinitions(skillPermissionConfig);
   const tools = [...builtinTools, ...pluginTools, ...mcpTools, ...skillTools];
+
+  // 应用 Tool Profile 过滤（如果指定）
+  let filteredTools = tools;
+  if (options.toolProfile) {
+    toolProfileManager.setProfile(options.toolProfile);
+    filteredTools = toolProfileManager.applyProfile(tools as any) as typeof tools;
+    logger.debug(`[ToolExecutor] Applied profile '${options.toolProfile}': ${tools.length} → ${filteredTools.length} tools`);
+  }
+
+  // 应用 Schema 投影（裁剪参数以减少 token 消耗）
+  let processedTools = filteredTools;
+  if (options.projectToolSchemas) {
+    processedTools = projectToolSchemas(filteredTools as any, {
+      maxDescriptionLength: 200,
+      hideOptionalParams: false,
+    }) as typeof filteredTools;
+    logger.debug(`[ToolExecutor] Applied schema projection to ${processedTools.length} tools`);
+  }
   const currentMessages = [...messages];
   let finalContent = '';
   const executedToolCalls: Array<{ name: string; arguments: string; result: string }> = [];
   // thinking signature（从最近一次 AIResponse 上抛，供细粒度 SSE 事件使用）
   let lastThinkingSignature: string | undefined;
   let lastRedacted: boolean | undefined;
+
+  // 重置工具循环检测器（每次新的 Tool Calling 循环独立检测）
+  toolLoopDetector.reset();
 
   for (let turn = 0; turn < maxToolTurns; turn++) {
     if (signal?.aborted) {
@@ -153,7 +189,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     const ctxWindow = (modelConfig as any).contextWindow || 128000;
     // v1.5.131: 截断用 maxTokens 上限 8192，避免 384K 浪费输入空间
     const ctxMaxTokens = Math.min(modelConfig.maxTokens || 8192, 8192);
-    const turnTruncated = await compressContextWithSummary(currentMessages, ctxWindow, ctxMaxTokens, tools.length, modelConfig);
+    const turnTruncated = await compressContextWithSummary(currentMessages, ctxWindow, ctxMaxTokens, processedTools.length, modelConfig);
     if ((turnTruncated.compressed || turnTruncated.truncated) && currentMessages.length !== turnTruncated.messages.length) {
       // 替换 currentMessages 内容（保持引用不变）
       currentMessages.length = 0;
@@ -180,7 +216,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       },
       signal,
       onThinking,
-      tools,
+      processedTools,
       undefined,
       modelCapabilities,
       onRateLimit,
@@ -382,70 +418,126 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       }
 
       // 记录工具调用（用于速率限制统计）
-      toolPolicyEngine.recordCall(toolName);
+    toolPolicyEngine.recordCall(toolName);
 
-      // 触发 before_tool_call 钩子
-      await pluginHooks.executeHooks('before_tool_call', {
-        sessionId,
-        toolCall: {
-          toolName,
-          args: parsedArgs,
-        },
-        extra: { riskLevel: policyResult.riskLevel },
+    // ===================== 工具循环检测 =====================
+    const loopCheck = toolLoopDetector.recordAndDetect(toolName, parsedArgs);
+    if (loopCheck.isLoop) {
+      const loopResult = JSON.stringify({
+        error: `检测到工具调用循环 (${loopCheck.reason})，工具 '${loopCheck.toolName}' 已连续调用 ${loopCheck.count} 次`,
+        loopDetected: true,
+        reason: loopCheck.reason,
       });
+      executedToolCalls.push({
+        name: toolName,
+        arguments: toolCall.function.arguments,
+        result: loopResult,
+      });
+      if (onToolCall) {
+        onToolCall(toolCall, loopResult);
+      }
+      currentMessages.push({
+        role: 'tool',
+        content: loopResult,
+        tool_call_id: toolCall.id,
+      } as any);
+      continue;
+    }
 
-      // ===================== 工具执行分发 =====================
+    // ===================== 工具参数验证和规范化 =====================
+    let normalizedArgs = parsedArgs;
+    try {
+      normalizedArgs = validateAndNormalizeToolParams(toolName, parsedArgs);
+    } catch (validationErr) {
+      const errMsg = validationErr instanceof Error ? validationErr.message : String(validationErr);
+      const validationResult = JSON.stringify({
+        error: `工具参数验证失败: ${errMsg}`,
+        validationFailed: true,
+      });
+      executedToolCalls.push({
+        name: toolName,
+        arguments: toolCall.function.arguments,
+        result: validationResult,
+      });
+      if (onToolCall) {
+        onToolCall(toolCall, validationResult);
+      }
+      currentMessages.push({
+        role: 'tool',
+        content: validationResult,
+        tool_call_id: toolCall.id,
+      } as any);
+      continue;
+    }
+
+    // 触发 before_tool_call 钩子
+    await pluginHooks.executeHooks('before_tool_call', {
+      sessionId,
+      toolCall: {
+        toolName,
+        args: normalizedArgs,
+      },
+      extra: { riskLevel: policyResult.riskLevel },
+    });
+
+    // ===================== 工具执行分发 =====================
+    // [内置工具路径] 通过 toolRegistry.executeToolCall() 直接执行
+    // [MCP工具路径] 通过 mcpClientManager.executeMcpTool() 委托执行
+    // v1.5.116: MCP 工具路由 — 区分 MCP 工具和内置工具
+    let result: string;
+    let mcpExecutionSucceeded = true;
+    // v9.1: Skill 工具路由 — 区分 Skill / MCP / 内置工具
+    // [Skill 工具路径] 通过 skillToolBridge 执行（Skill 四层架构）
+    if (isSkillToolName(toolName)) {
+      try {
+        const skillResult = await handleSkillToolCall(
+          { id: toolCall.id, type: 'function', function: { name: toolName, arguments: JSON.stringify(normalizedArgs) } },
+          skillPermissionConfig,
+          sessionId || `session-${Date.now()}`,
+        );
+        result = skillResult.content;
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        result = JSON.stringify({ error: `Skill 执行异常: ${errMsg}` });
+      }
+    }
+    // [MCP工具路径] 委托给 mcpClientManager 执行
+    else if (isMcpToolName(toolName)) {
+      try {
+        result = await mcpClientManager.executeMcpTool(toolName, normalizedArgs);
+        // MCP Server 级成功记录
+        const prefix = getMcpServerPrefix(toolName);
+        if (prefix) {
+          circuitBreaker.recordMcpServerSuccess(prefix);
+        }
+      } catch (err) {
+        mcpExecutionSucceeded = false;
+        const errMsg = err instanceof Error ? err.message : String(err);
+        result = JSON.stringify({ error: `MCP 工具执行异常: ${errMsg}` });
+        // MCP Server 级失败记录
+        const prefix = getMcpServerPrefix(toolName);
+        if (prefix) {
+          const mcpState = circuitBreaker.recordMcpServerFailure(prefix, errMsg);
+          if (mcpState === 'open' && onSSEEvent) {
+            onSSEEvent({
+              type: 'circuit_breaker_triggered',
+              toolName,
+              failureCount: circuitBreaker.getRecord(`mcp__${prefix}__*`)?.consecutiveFailures ?? 0,
+              state: 'open',
+            });
+          }
+        }
+      }
+    } else {
       // [内置工具路径] 通过 toolRegistry.executeToolCall() 直接执行
-      // [MCP工具路径] 通过 mcpClientManager.executeMcpTool() 委托执行
-      // v1.5.116: MCP 工具路由 — 区分 MCP 工具和内置工具
-      let result: string;
-      let mcpExecutionSucceeded = true;
-      // v9.1: Skill 工具路由 — 区分 Skill / MCP / 内置工具
-      // [Skill 工具路径] 通过 skillToolBridge 执行（Skill 四层架构）
-      if (isSkillToolName(toolName)) {
-        try {
-          const skillResult = await handleSkillToolCall(
-            { id: toolCall.id, type: 'function', function: { name: toolName, arguments: JSON.stringify(parsedArgs) } },
-            skillPermissionConfig,
-            sessionId || `session-${Date.now()}`,
-          );
-          result = skillResult.content;
-        } catch (err) {
-          const errMsg = err instanceof Error ? err.message : String(err);
-          result = JSON.stringify({ error: `Skill 执行异常: ${errMsg}` });
-        }
-      }
-      // [MCP工具路径] 委托给 mcpClientManager 执行
-      else if (isMcpToolName(toolName)) {
-        try {
-          result = await mcpClientManager.executeMcpTool(toolName, parsedArgs);
-          // MCP Server 级成功记录
-          const prefix = getMcpServerPrefix(toolName);
-          if (prefix) {
-            circuitBreaker.recordMcpServerSuccess(prefix);
-          }
-        } catch (err) {
-          mcpExecutionSucceeded = false;
-          const errMsg = err instanceof Error ? err.message : String(err);
-          result = JSON.stringify({ error: `MCP 工具执行异常: ${errMsg}` });
-          // MCP Server 级失败记录
-          const prefix = getMcpServerPrefix(toolName);
-          if (prefix) {
-            const mcpState = circuitBreaker.recordMcpServerFailure(prefix, errMsg);
-            if (mcpState === 'open' && onSSEEvent) {
-              onSSEEvent({
-                type: 'circuit_breaker_triggered',
-                toolName,
-                failureCount: circuitBreaker.getRecord(`mcp__${prefix}__*`)?.consecutiveFailures ?? 0,
-                state: 'open',
-              });
-            }
-          }
-        }
-      } else {
-        // [内置工具路径] 通过 toolRegistry.executeToolCall() 直接执行
-        result = await executeToolCall(toolCall);
-      }
+      result = await executeToolCall({
+        ...toolCall,
+        function: {
+          ...toolCall.function,
+          arguments: JSON.stringify(normalizedArgs),
+        },
+      });
+    }
 
       // v1.5.116: 熔断器 — 记录内置工具成功/失败
       // v9.1: Skill 工具也走熔断器（非 MCP 工具）

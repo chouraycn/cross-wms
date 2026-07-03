@@ -41,9 +41,19 @@ export interface SkillIndexEntry {
     promptVisible: boolean;
     userInvocable: boolean;
   };
+  /** 禁止模型自动调用（仅允许用户调用） */
+  disableModelInvocation?: boolean;
   source: 'builtin' | 'workspace' | 'user';
   version?: string;
   registeredAt: number;
+  /** 使用频率 */
+  useFrequency?: number;
+  /** 最近一次使用时间戳 */
+  lastUsed?: number;
+  /** 成功率（0-1） */
+  successRate?: number;
+  /** 平均执行耗时（毫秒） */
+  avgDurationMs?: number;
 }
 
 /** 构建索引的选项 */
@@ -214,6 +224,7 @@ export class SkillDiscovery {
         promptVisible,
         userInvocable,
       },
+      disableModelInvocation: (definition as any).disableModelInvocation ?? false,
       source: definition.source,
       version: definition.version,
       registeredAt: skill.registeredAt,
@@ -350,7 +361,92 @@ export class SkillDiscovery {
     return this.index.get(skillId);
   }
 
-  // ===================== 3. Agent 过滤 =====================
+  // ===================== 3. 使用统计与推荐 =====================
+
+  /**
+   * 记录 Skill 使用情况
+   *
+   * 更新使用频率、最近使用时间、平均耗时与成功率。
+   * 采用滑动平均算法，避免存储完整历史记录。
+   *
+   * @param skillId - Skill ID
+   * @param success - 是否执行成功
+   * @param durationMs - 执行耗时（毫秒）
+   */
+  recordUsage(skillId: string, success: boolean, durationMs: number): void {
+    const entry = this.index.get(skillId);
+    if (!entry) return;
+    entry.useFrequency = (entry.useFrequency ?? 0) + 1;
+    entry.lastUsed = Date.now();
+    // 滑动平均
+    const prevAvg = entry.avgDurationMs ?? 0;
+    const prevCount = entry.useFrequency - 1;
+    entry.avgDurationMs = prevCount === 0 ? durationMs : (prevAvg * prevCount + durationMs) / entry.useFrequency;
+    // 成功率
+    const prevRate = entry.successRate ?? 1;
+    entry.successRate = (prevRate * prevCount + (success ? 1 : 0)) / entry.useFrequency;
+  }
+
+  /**
+   * 基于相关性评分推荐 Skill
+   *
+   * 综合考虑关键词匹配、使用频率、成功率与最近使用时间，
+   * 返回按相关性排序的 Skill 列表。
+   *
+   * @param query - 查询文本
+   * @param options - 推荐选项（agentId、limit）
+   * @returns 带相关性评分的 Skill 索引条目列表
+   */
+  recommend(query: string, options?: { agentId?: string; limit?: number }): Array<SkillIndexEntry & { relevance: number }> {
+    const limit = options?.limit ?? 10;
+    const queryLower = query.toLowerCase().trim();
+    const tokens = queryLower.split(/\s+/).filter(t => t.length >= 2);
+
+    let candidates = Array.from(this.index.values());
+    if (options?.agentId) {
+      candidates = candidates.filter(e => this.passesAgentFilter(e.skillId, options.agentId!, e));
+    }
+
+    const scored = candidates.map(entry => {
+      let relevance = 0;
+
+      // 关键词匹配（权重 0.5）
+      for (const token of tokens) {
+        if (token.length >= 4) {
+          if (entry.normalizedName.includes(token)) relevance += 0.25;
+          if (entry.description.toLowerCase().includes(token)) relevance += 0.15;
+          if (entry.tags.some(t => t.toLowerCase().includes(token))) relevance += 0.10;
+        }
+      }
+
+      // 名称直接命中（权重 0.1）
+      if (entry.normalizedName === queryLower.replace(/[\s\-_]+/g, '')) {
+        relevance += 0.1;
+      }
+
+      // 使用频率归一化（权重 0.2）
+      const maxFreq = Math.max(1, ...candidates.map(c => c.useFrequency ?? 0));
+      relevance += (entry.useFrequency ?? 0) / maxFreq * 0.2;
+
+      // 成功率（权重 0.15）
+      relevance += (entry.successRate ?? 1) * 0.15;
+
+      // 最近使用加成（权重 0.05）
+      if (entry.lastUsed) {
+        const ageDays = (Date.now() - entry.lastUsed) / (1000 * 60 * 60 * 24);
+        relevance += Math.max(0, 1 - ageDays / 30) * 0.05;
+      }
+
+      return { ...entry, relevance };
+    });
+
+    return scored
+      .filter(s => s.relevance > 0)
+      .sort((a, b) => b.relevance - a.relevance)
+      .slice(0, limit);
+  }
+
+  // ===================== 4. Agent 过滤 =====================
 
   /**
    * 设置 Agent 级别过滤规则
@@ -423,7 +519,7 @@ export class SkillDiscovery {
     return false;
   }
 
-  // ===================== 4. 辅助方法 =====================
+  // ===================== 5. 辅助方法 =====================
 
   /**
    * 根据选项过滤结果
