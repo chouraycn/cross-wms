@@ -4,6 +4,7 @@
  * 无需 API Key，直接使用 HTML 搜索接口
  */
 
+import * as cheerio from 'cheerio';
 import { registerWebSearchProvider } from './web-search-providers.js';
 import type { WebSearchProviderPlugin, WebSearchProviderContext, WebSearchResultList } from './web-provider-types.js';
 
@@ -21,8 +22,9 @@ async function soSearch(
   try {
     const response = await fetch(`https://www.so.com/s?q=${encodeURIComponent(query)}`, {
       headers: {
-        'User-Agent': userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
+        'User-Agent': userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
       },
       signal: controller.signal,
     });
@@ -34,17 +36,52 @@ async function soSearch(
     }
 
     const html = await response.text();
+
+    // 360 搜索反爬检测：返回"访问异常页面"时 HTML 很短且无搜索结果
+    if (html.includes('访问异常页面') || html.length < 8000) {
+      throw new Error('360搜索反爬拦截：服务返回异常页面，请稍后重试或使用必应搜索');
+    }
+
+    const $ = cheerio.load(html);
     const results: Array<{ title: string; url: string; snippet?: string }> = [];
 
-    const titleRegex = /<h3[^>]*>\s*<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>\s*<\/h3>/gi;
-    let match;
-    while ((match = titleRegex.exec(html)) !== null) {
-      const href = match[1];
-      const title = match[2].replace(/<[^>]+>/g, '').trim();
-      
+    // 主选择器：360搜索结果容器
+    $('.result').each((_, elem) => {
+      const $elem = $(elem);
+      const $title = $elem.find('h3 > a');
+      const title = $title.text().trim();
+      const href = $title.attr('href') || '';
+      const snippet = $elem.find('.res-desc').text().trim() || $elem.find('p').text().trim();
+
       if (title && href && href.startsWith('http')) {
-        results.push({ title, url: href });
+        results.push({ title, url: href, snippet: snippet || undefined });
       }
+    });
+
+    // 备用选择器
+    if (results.length === 0) {
+      $('li.res-list h3 a').each((_, elem) => {
+        const $elem = $(elem);
+        const title = $elem.text().trim();
+        const href = $elem.attr('href') || '';
+
+        if (title && href && href.startsWith('http')) {
+          results.push({ title, url: href });
+        }
+      });
+    }
+
+    // 再次备用：通用 h3 > a 选择器
+    if (results.length === 0) {
+      $('h3 a').each((_, elem) => {
+        const $elem = $(elem);
+        const title = $elem.text().trim();
+        const href = $elem.attr('href') || '';
+
+        if (title && href && href.startsWith('http')) {
+          results.push({ title, url: href });
+        }
+      });
     }
 
     return {

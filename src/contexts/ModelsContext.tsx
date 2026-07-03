@@ -51,10 +51,46 @@ export function useModels(): ModelsContextValue {
   return ctx;
 }
 
+/** localStorage 缓存键 */
+const MODELS_CACHE_KEY = 'cross-wms:models-cache';
+const MODELS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 分钟缓存有效期
+
+interface ModelsCachePayload {
+  models: ModelConfig[];
+  defaultModelId: string;
+  timestamp: number;
+}
+
+/** 从 localStorage 读取缓存的模型配置（过期返回 null） */
+function loadModelsFromCache(): ModelsCachePayload | null {
+  try {
+    const raw = localStorage.getItem(MODELS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ModelsCachePayload;
+    if (!parsed || !Array.isArray(parsed.models)) return null;
+    if (Date.now() - parsed.timestamp > MODELS_CACHE_TTL_MS) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/** 将模型配置写入 localStorage 缓存 */
+function saveModelsToCache(models: ModelConfig[], defaultModelId: string): void {
+  try {
+    const payload: ModelsCachePayload = { models, defaultModelId, timestamp: Date.now() };
+    localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // localStorage 配额不足或不可用，忽略
+  }
+}
+
 export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [models, setModels] = useState<ModelConfig[]>([]);
-  const [defaultModelId, setDefaultModelId] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  // 初始状态优先使用 localStorage 缓存，避免首屏空白
+  const cached = typeof window !== 'undefined' ? loadModelsFromCache() : null;
+  const [models, setModels] = useState<ModelConfig[]>(cached?.models ?? []);
+  const [defaultModelId, setDefaultModelId] = useState(cached?.defaultModelId ?? '');
+  const [isLoading, setIsLoading] = useState(!cached); // 有缓存时不显示加载态
   const [error, setError] = useState<string | null>(null);
   const [recommendedModels, setRecommendedModels] = useState<ModelConfig[]>([]);
   const [isLoadingRecommended, setIsLoadingRecommended] = useState(false);
@@ -63,9 +99,10 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   /** 从后端加载模型配置（含自动重试：后端可能尚未就绪，使用指数退避） */
   const loadModels = useCallback(async () => {
-    const MAX_RETRIES = 8;
-    const INITIAL_DELAY_MS = 1000;
-    const MAX_DELAY_MS = 10000;
+    // 减少重试次数从 8 → 4，缩短首屏等待
+    const MAX_RETRIES = 4;
+    const INITIAL_DELAY_MS = 500;
+    const MAX_DELAY_MS = 5000;
     try {
       setIsLoading(true);
       setError(null);
@@ -79,14 +116,17 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               (m: any) => m && typeof m === 'object' && typeof m.id === 'string' && m.id.trim() && typeof m.name === 'string'
             );
             setModels(validModels);
-            setDefaultModelId(data.defaultModelId || validModels[0]?.id || '');
+            const dmid = data.defaultModelId || validModels[0]?.id || '';
+            setDefaultModelId(dmid);
+            // 写入 localStorage 缓存
+            saveModelsToCache(validModels, dmid);
             lastError = null;
             break; // 成功，退出重试循环
           }
         } catch (e) {
           lastError = e;
           if (attempt < MAX_RETRIES) {
-            // 指数退避：1s, 2s, 4s, 8s, 10s, 10s, 10s...
+            // 指数退避：0.5s, 1s, 2s, 4s（上限 5s）
             const delay = Math.min(INITIAL_DELAY_MS * Math.pow(2, attempt - 1), MAX_DELAY_MS);
             await new Promise(r => setTimeout(r, delay));
           }
@@ -176,13 +216,17 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
-  // 初始加载
+  // 初始加载 — 并行化三个请求，消除瀑布请求延迟
   useEffect(() => {
     if (isFirstLoad.current) {
       isFirstLoad.current = false;
-      loadModels().then(() => {
-        fetchRecommendedModels();
-        checkFirstLaunch();
+      // 三个请求并行执行，不互相依赖
+      Promise.all([
+        loadModels(),
+        fetchRecommendedModels(),
+        checkFirstLaunch(),
+      ]).catch(() => {
+        // 各请求内部已有错误处理，此处仅防止 unhandled rejection
       });
     }
   }, [loadModels, fetchRecommendedModels, checkFirstLaunch]);

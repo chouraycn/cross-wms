@@ -18,7 +18,6 @@ on:
       - '.gitignore'
       - 'LICENSE'
   workflow_call:
-    # Reusable by build-and-release.yml and ci.yml — avoids duplicating quality gate jobs
 
 permissions:
   contents: read
@@ -46,6 +45,9 @@ jobs:
 
       - name: Run ESLint (src + server)
         run: npm run lint
+
+      - name: Check for unused dependencies
+        run: npx depcheck || true
 
   typecheck:
     name: Type Check
@@ -106,8 +108,59 @@ jobs:
           path: test-results/
           retention-days: 7
 
-  build:
-    name: Build
+  coverage-threshold:
+    name: Coverage Threshold
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Check coverage thresholds
+        run: |
+          COVERAGE_JSON=$(cat coverage/coverage-summary.json 2>/dev/null || echo '{}')
+          LINES=$(echo "$COVERAGE_JSON" | jq -r '.total.lines.pct // 0')
+          FUNCTIONS=$(echo "$COVERAGE_JSON" | jq -r '.total.functions.pct // 0')
+          BRANCHES=$(echo "$COVERAGE_JSON" | jq -r '.total.branches.pct // 0')
+          STATEMENTS=$(echo "$COVERAGE_JSON" | jq -r '.total.statements.pct // 0')
+
+          echo "Coverage Report:"
+          echo "Lines: $LINES%"
+          echo "Functions: $FUNCTIONS%"
+          echo "Branches: $BRANCHES%"
+          echo "Statements: $STATEMENTS%"
+
+          MIN_LINES=80
+          MIN_FUNCTIONS=75
+          MIN_BRANCHES=70
+          MIN_STATEMENTS=80
+
+          if (( $(echo "$LINES < $MIN_LINES" | bc -l) )); then
+            echo "::error::Lines coverage ($LINES%) below threshold ($MIN_LINES%)"
+            exit 1
+          fi
+          if (( $(echo "$FUNCTIONS < $MIN_FUNCTIONS" | bc -l) )); then
+            echo "::error::Functions coverage ($FUNCTIONS%) below threshold ($MIN_FUNCTIONS%)"
+            exit 1
+          fi
+          if (( $(echo "$BRANCHES < $MIN_BRANCHES" | bc -l) )); then
+            echo "::error::Branches coverage ($BRANCHES%) below threshold ($MIN_BRANCHES%)"
+            exit 1
+          fi
+          if (( $(echo "$STATEMENTS < $MIN_STATEMENTS" | bc -l) )); then
+            echo "::error::Statements coverage ($STATEMENTS%) below threshold ($MIN_STATEMENTS%)"
+            exit 1
+          fi
+
+  frontend-build:
+    name: Frontend Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [lint, typecheck, test]
@@ -124,7 +177,27 @@ jobs:
         run: npm ci
 
       - name: Build frontend (vite)
-        run: npm run build
+        run: npm run build 2>&1 | tee build-output.log
+
+      - name: Check build warnings
+        run: |
+          WARNING_COUNT=$(grep -c "warning" build-output.log || echo 0)
+          ERROR_COUNT=$(grep -c "error" build-output.log || echo 0)
+          echo "Build warnings: $WARNING_COUNT"
+          echo "Build errors: $ERROR_COUNT"
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "::error::Build contains errors"
+            exit 1
+          fi
+
+      - name: Check bundle size
+        run: |
+          TOTAL_SIZE=$(du -sk dist/ | cut -f1)
+          MAX_SIZE=50000
+          echo "Bundle size: ${TOTAL_SIZE}KB"
+          if [ "$TOTAL_SIZE" -gt "$MAX_SIZE" ]; then
+            echo "::warning::Bundle size exceeds ${MAX_SIZE}KB (current: ${TOTAL_SIZE}KB)"
+          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -132,6 +205,34 @@ jobs:
           name: build-dist
           path: dist/
           retention-days: 7
+
+  backend-build:
+    name: Backend Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [lint, typecheck, test]
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build backend
+        run: npx tsc --project server/tsconfig.json --outDir server-dist 2>&1 | tee backend-build.log
+
+      - name: Check backend build errors
+        run: |
+          ERROR_COUNT=$(grep -c "error TS" backend-build.log || echo 0)
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "::error::Backend build contains $ERROR_COUNT errors"
+            exit 1
+          fi
 
   audit:
     name: Security Audit
@@ -152,9 +253,42 @@ jobs:
       - name: Run npm audit (fail on critical)
         run: npm audit --audit-level=critical
 
+      - name: Run dependency vulnerability scan
+        run: npx snyk test --severity-threshold=critical || true
+
       - name: Check for outdated dependencies (info only)
         run: npm outdated || true
         if: always()
+
+  e2e-test:
+    name: E2E API Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [frontend-build, backend-build]
+    env:
+      ONNX_DISABLE_NATIVE_DOWNLOAD: '1'
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run E2E tests
+        run: npm run test:e2e -- --passWithNoTests 2>&1 | tee e2e-output.log
+
+      - name: Upload E2E results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-results
+          path: e2e-output.log
+          retention-days: 7
 
   swift-test:
     name: Swift Test (6.0)

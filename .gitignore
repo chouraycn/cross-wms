@@ -83,6 +83,10 @@ test-app/
 test-electron.cjs
 test-main.cjs
 dist-server/
+test-results/
+e2e-results/
+e2e/e2e-results/
+e2e/e2e-report/
 
 # Desktop app build artifacts
 dist-app/

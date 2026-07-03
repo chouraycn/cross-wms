@@ -19,6 +19,13 @@ import { registerChatCommand } from "./commands/chat.js";
 import { registerMemoryCommand } from "./commands/memory.js";
 import { registerWikiCommand } from "./commands/wiki.js";
 import { registerToolCommand } from "./commands/tool.js";
+import { registerDaemonCommand } from "./commands/daemon.js";
+import { registerSecretsCommand } from "./commands/secrets.js";
+import { registerSkillsCommand } from "./commands/skills.js";
+import { registerModelsCommand } from "./commands/models.js";
+import { registerHooksCommand } from "./commands/hooks.js";
+import { registerCronCommand } from "./commands/cron.js";
+import { registerGatewayCommand } from "./commands/gateway.js";
 import { logger } from "../logger.js";
 
 /**
@@ -44,8 +51,27 @@ export function buildCLIProgram(): Command {
   const descriptors = getCoreCliCommandDescriptors();
 
   // 添加主命令占位符
+  // 直接注册的命令需要跳过占位符创建，否则 commander v12 会因重复命令名抛错
+  const DIRECTLY_REGISTERED = new Set([
+    "config",
+    "version",
+    "help",
+    "status",
+    "doctor",
+    "chat",
+    "memory",
+    "wiki",
+    "tool",
+    "skill",
+    "cron",
+    "daemon",
+    "secrets",
+    "models",
+    "hooks",
+    "gateway",
+  ]);
   for (const descriptor of descriptors) {
-    if (descriptor.name === "config" || descriptor.name === "version" || descriptor.name === "help") {
+    if (DIRECTLY_REGISTERED.has(descriptor.name)) {
       // 这些命令直接注册
       continue;
     }
@@ -91,6 +117,27 @@ export function buildCLIProgram(): Command {
 
   // 注册 tool 命令 (带子命令)
   registerToolCommand(program);
+
+  // 注册 daemon 命令 (带子命令)
+  registerDaemonCommand(program);
+
+  // 注册 secrets 命令 (带子命令)
+  registerSecretsCommand(program);
+
+  // 注册 skill 命令 (带子命令)
+  registerSkillsCommand(program);
+
+  // 注册 models 命令 (带子命令)
+  registerModelsCommand(program);
+
+  // 注册 hooks 命令 (带子命令)
+  registerHooksCommand(program);
+
+  // 注册 cron 命令 (带子命令)
+  registerCronCommand(program);
+
+  // 注册 gateway 命令 (带子命令)
+  registerGatewayCommand(program);
 
   return program;
 }

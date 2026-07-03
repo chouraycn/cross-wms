@@ -959,16 +959,21 @@ export async function cancelSkillInstall(installId: string): Promise<boolean> {
 
 // ===================== Secrets API =====================
 
+export interface SecretItemMetadata {
+  accessCount: number;
+  lastAccessedAt?: number;
+  description?: string;
+  [key: string]: unknown;
+}
+
 export interface SecretItem {
   id: string;
   provider: string;
   key: string;
   type?: string;
-  description?: string;
   createdAt: number;
   updatedAt: number;
-  accessCount: number;
-  lastAccessedAt?: number;
+  metadata: SecretItemMetadata;
 }
 
 export interface SecretAccessLog {
@@ -976,16 +981,17 @@ export interface SecretAccessLog {
   secretId: string;
   action: string;
   source: string;
-  timestamp: number;
+  accessedAt: number;
   success: boolean;
   error?: string;
 }
 
 export interface SecretsStats {
-  total: number;
+  totalSecrets: number;
   byProvider: Record<string, number>;
-  totalAccessCount: number;
+  byType: Record<string, number>;
   cacheHitRate: number;
+  lastUpdated: number;
 }
 
 /** 获取密钥列表 */
@@ -1036,6 +1042,88 @@ export async function validateSecretApi(provider: string, key: string, type?: st
 /** 清除密钥缓存 */
 export async function clearSecretsCache(): Promise<{ success: boolean }> {
   const res = await request<{ data: { success: boolean } }>('POST', '/api/secrets/cache/clear', {});
+  return res.data;
+}
+
+// ===================== Context Engine API =====================
+
+export interface ContextEngineHealth {
+  status: 'healthy' | 'degraded' | 'unhealthy' | 'quarantined' | 'unknown';
+  failureCount?: number;
+  consecutiveSuccesses?: number;
+  lastFailureTime?: number;
+  lastSuccessTime?: number;
+  quarantineReason?: string;
+}
+
+export interface ContextEngineConfig {
+  name?: string;
+  description?: string;
+  maxMemoryBudget?: number;
+  enableEnhancedSearch?: boolean;
+  enableMemorySyncer?: boolean;
+  enablePromptCache?: boolean;
+}
+
+export interface ContextEngineInfo {
+  id: string;
+  config: ContextEngineConfig;
+  isDefault: boolean;
+  owner: string;
+  health: ContextEngineHealth;
+  runtimeSettings?: Record<string, unknown>;
+}
+
+export interface ContextEngineStats {
+  totalEngines: number;
+  activeEngines: number;
+  quarantinedEngines: number;
+  totalOperations: number;
+  avgLatencyMs: number;
+}
+
+export async function fetchContextEngines(): Promise<ContextEngineInfo[]> {
+  const res = await request<{ data: ContextEngineInfo[]; total: number }>('GET', '/api/context-engine/engines');
+  return res.data;
+}
+
+export async function fetchContextEngine(id: string): Promise<ContextEngineInfo> {
+  const res = await request<{ data: ContextEngineInfo }>('GET', `/api/context-engine/engines/${encodeURIComponent(id)}`);
+  return res.data;
+}
+
+export async function updateContextEngineHealth(id: string, status: string, message?: string): Promise<{ success: boolean }> {
+  const res = await request<{ success: boolean }>('POST', `/api/context-engine/engines/${encodeURIComponent(id)}/health`, { status, message });
+  return res;
+}
+
+export async function quarantineContextEngine(id: string, reason?: string): Promise<{ success: boolean }> {
+  const res = await request<{ success: boolean }>('POST', `/api/context-engine/engines/${encodeURIComponent(id)}/quarantine`, { reason });
+  return res;
+}
+
+export async function recoverContextEngine(id: string): Promise<{ success: boolean }> {
+  const res = await request<{ success: boolean }>('POST', `/api/context-engine/engines/${encodeURIComponent(id)}/recover`);
+  return res;
+}
+
+export async function activateContextEngine(id: string): Promise<{ success: boolean }> {
+  const res = await request<{ success: boolean }>('POST', `/api/context-engine/engines/${encodeURIComponent(id)}/activate`);
+  return res;
+}
+
+export async function deactivateContextEngine(id: string): Promise<{ success: boolean }> {
+  const res = await request<{ success: boolean }>('POST', `/api/context-engine/engines/${encodeURIComponent(id)}/deactivate`);
+  return res;
+}
+
+export async function refreshContextEngine(id: string): Promise<{ success: boolean }> {
+  const res = await request<{ success: boolean }>('POST', `/api/context-engine/engines/${encodeURIComponent(id)}/refresh`);
+  return res;
+}
+
+export async function fetchContextEngineStats(): Promise<ContextEngineStats> {
+  const res = await request<{ data: ContextEngineStats }>('GET', '/api/context-engine/stats');
   return res.data;
 }
 
@@ -1094,4 +1182,286 @@ export async function deleteMemoryApi(id: number): Promise<{ success: boolean }>
 /** 获取单个记忆 */
 export async function fetchMemory(id: number): Promise<MemoryItem> {
   return request<MemoryItem>('GET', `/api/memory/${id}`);
+}
+
+// ===================== MCP Server API =====================
+
+export interface McpServerConfig {
+  id?: string;
+  name: string;
+  command: string;
+  args: string[];
+  env: Record<string, string>;
+  enabled: boolean;
+  transportType: string;
+  createdAt?: number;
+  updatedAt?: number;
+}
+
+export interface McpToolInfo {
+  name: string;
+  description: string;
+  inputSchema?: Record<string, unknown>;
+}
+
+export interface McpServerState {
+  config: McpServerConfig;
+  connectionState: 'disconnected' | 'connecting' | 'connected' | 'error';
+  tools: McpToolInfo[];
+  error?: string;
+  lastConnectedAt?: number;
+}
+
+export async function fetchMcpServers(): Promise<McpServerState[]> {
+  const res = await request<{ servers: McpServerState[] }>('GET', '/api/mcp/servers');
+  return res.servers;
+}
+
+export async function createMcpServer(data: Partial<McpServerConfig>): Promise<{ success: boolean; server: McpServerState }> {
+  return request<{ success: boolean; server: McpServerState }>('POST', '/api/mcp/servers', data);
+}
+
+export async function updateMcpServer(id: string, data: Partial<McpServerConfig>): Promise<{ success: boolean; server: McpServerState }> {
+  return request<{ success: boolean; server: McpServerState }>('PUT', `/api/mcp/servers/${encodeURIComponent(id)}`, data);
+}
+
+export async function deleteMcpServer(id: string): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>('DELETE', `/api/mcp/servers/${encodeURIComponent(id)}`);
+}
+
+export async function connectMcpServer(id: string): Promise<{ success: boolean; server: McpServerState }> {
+  return request<{ success: boolean; server: McpServerState }>('POST', `/api/mcp/servers/${encodeURIComponent(id)}/connect`, {});
+}
+
+export async function disconnectMcpServer(id: string): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>('POST', `/api/mcp/servers/${encodeURIComponent(id)}/disconnect`, {});
+}
+
+export async function testMcpConnection(id: string): Promise<{ success: boolean; server: McpServerState }> {
+  return request<{ success: boolean; server: McpServerState }>('POST', `/api/mcp/servers/${encodeURIComponent(id)}/test`, {});
+}
+
+// ===================== Soul Rules API =====================
+
+export interface SoulProfile {
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+}
+
+export interface SoulFile {
+  id: string;
+  name: string;
+  path: string;
+  type: 'system' | 'custom';
+  lastModified: number;
+}
+
+export async function fetchSoulCurrent(): Promise<{ profile: SoulProfile | null; systemMessage: string; strategyPreferences: Record<string, unknown> }> {
+  return request<{ profile: SoulProfile | null; systemMessage: string; strategyPreferences: Record<string, unknown> }>('GET', '/api/soul/current');
+}
+
+export async function fetchSoulFiles(): Promise<SoulFile[]> {
+  const res = await request<{ files: SoulFile[] }>('GET', '/api/soul/files');
+  return res.files;
+}
+
+export async function reloadSoul(): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>('POST', '/api/soul/reload', {});
+}
+
+export async function updateSoulFileContent(fileId: string, content: string): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>('PUT', '/api/soul/file', { fileId, content });
+}
+
+// ===================== Agents API =====================
+
+export interface AgentCapability {
+  name: string;
+  description: string;
+}
+
+export interface AgentInfo {
+  id: string;
+  name: string;
+  role: string;
+  description: string;
+  capabilities: AgentCapability[];
+  status: 'active' | 'inactive';
+}
+
+export interface AgentIdentity {
+  id: string;
+  name: string;
+  role: string;
+  description?: string;
+  avatar?: string;
+  systemPrompt?: string;
+  capabilities?: string[];
+  createdAt?: number;
+  updatedAt?: number;
+}
+
+export interface AgentScenario {
+  id: string;
+  name: string;
+  description: string;
+  agentId: string;
+  keywords: string[];
+}
+
+export async function fetchAgents(): Promise<AgentInfo[]> {
+  const res = await request<{ data: AgentInfo[] }>('GET', '/api/agents');
+  return res.data;
+}
+
+export async function fetchAgentIdentities(): Promise<AgentIdentity[]> {
+  const res = await request<{ data: AgentIdentity[] }>('GET', '/api/agents/identities');
+  return res.data;
+}
+
+export async function fetchAgentIdentity(id: string): Promise<AgentIdentity> {
+  const res = await request<{ data: AgentIdentity }>('GET', `/api/agents/identities/${encodeURIComponent(id)}`);
+  return res.data;
+}
+
+export async function createAgentIdentity(data: Partial<AgentIdentity>): Promise<{ data: AgentIdentity; message: string }> {
+  return request<{ data: AgentIdentity; message: string }>('POST', '/api/agents/identities', data);
+}
+
+export async function updateAgentIdentity(id: string, data: Partial<AgentIdentity>): Promise<{ data: AgentIdentity; message: string }> {
+  return request<{ data: AgentIdentity; message: string }>('PUT', `/api/agents/identities/${encodeURIComponent(id)}`, data);
+}
+
+export async function deleteAgentIdentity(id: string): Promise<{ message: string }> {
+  return request<{ message: string }>('DELETE', `/api/agents/identities/${encodeURIComponent(id)}`);
+}
+
+export async function fetchAgentScenarios(): Promise<AgentScenario[]> {
+  const res = await request<{ data: AgentScenario[] }>('GET', '/api/agents/scenarios');
+  return res.data;
+}
+
+// ===================== Goals API =====================
+
+export interface GoalStep {
+  id: string;
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  startedAt?: number;
+  completedAt?: number;
+  result?: string;
+}
+
+export interface Goal {
+  id: string;
+  sessionKey: string;
+  objective: string;
+  status: 'created' | 'in_progress' | 'completed' | 'failed' | 'aborted';
+  tokenBudget?: number;
+  tokensUsed?: number;
+  steps: GoalStep[];
+  createdAt: number;
+  updatedAt: number;
+  completedAt?: number;
+}
+
+export interface GoalStats {
+  total: number;
+  byStatus: Record<string, number>;
+}
+
+export async function fetchGoalStats(): Promise<GoalStats> {
+  const res = await request<{ data: GoalStats }>('GET', '/api/goals/stats');
+  return res.data;
+}
+
+export async function fetchGoal(sessionKey: string): Promise<Goal | null> {
+  const res = await request<{ data: Goal | null }>('GET', `/api/goals/${encodeURIComponent(sessionKey)}`);
+  return res.data;
+}
+
+export async function createGoal(sessionKey: string, objective: string, tokenBudget?: number): Promise<{ status: string; goal: Goal }> {
+  return request<{ status: string; goal: Goal }>('POST', `/api/goals/${encodeURIComponent(sessionKey)}`, { objective, tokenBudget });
+}
+
+export async function updateGoalStatus(sessionKey: string, status: string, result?: string): Promise<{ success: boolean; goal: Goal }> {
+  return request<{ success: boolean; goal: Goal }>('PUT', `/api/goals/${encodeURIComponent(sessionKey)}`, { status, result });
+}
+
+export async function clearGoal(sessionKey: string): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>('DELETE', `/api/goals/${encodeURIComponent(sessionKey)}`);
+}
+
+// ===================== Image Generation API =====================
+
+export interface ImageGenerationProvider {
+  id: string;
+  label: string;
+  aliases: string[];
+  available: boolean;
+  default_model: string;
+  models: string[];
+  default_timeout_ms: number;
+  capabilities: {
+    generate: {
+      max_count: number;
+      supports_size: boolean;
+      supports_aspect_ratio: boolean;
+      supports_resolution: boolean;
+    };
+    edit: {
+      enabled: boolean;
+      max_input_images: number;
+    };
+    supported_sizes: string[];
+    supported_sizes_by_model: Record<string, string[]>;
+    supported_aspect_ratios: string[];
+    supported_resolutions: string[];
+    supported_qualities: string[];
+    supported_formats: string[];
+    supported_backgrounds: string[];
+  };
+}
+
+export interface ImageGenerationConfig {
+  defaultModel?: string;
+  defaultSize?: string;
+  defaultQuality?: string;
+  defaultCount?: number;
+  defaultOutputFormat?: string;
+  providers?: Record<string, { apiKey?: string; baseUrl?: string }>;
+}
+
+export interface GeneratedImage {
+  url: string;
+  b64_json?: string;
+  revised_prompt?: string;
+  width?: number;
+  height?: number;
+}
+
+export async function fetchImageProviders(): Promise<{ providers: ImageGenerationProvider[]; total: number; available_count: number }> {
+  return request<{ providers: ImageGenerationProvider[]; total: number; available_count: number }>('GET', '/api/image-generation/providers');
+}
+
+export async function fetchImageConfig(): Promise<ImageGenerationConfig> {
+  const res = await request<{ success: boolean; data: ImageGenerationConfig }>('GET', '/api/image-generation/config');
+  return res.data;
+}
+
+export async function updateImageConfig(config: ImageGenerationConfig): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>('PUT', '/api/image-generation/config', config);
+}
+
+export async function generateImage(prompt: string, options?: {
+  model?: string;
+  size?: string;
+  quality?: string;
+  count?: number;
+  outputFormat?: string;
+  background?: string;
+}): Promise<{ images: GeneratedImage[] }> {
+  return request<{ images: GeneratedImage[] }>('POST', '/api/image-generation/generate', { prompt, ...options });
 }

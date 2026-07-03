@@ -1,0 +1,239 @@
+name: Automated Release Workflow
+
+on:
+  push:
+    branches:
+      - main
+    tags-ignore:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type (patch/minor/major)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: automated-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-commits:
+    name: Analyze Commits
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.analyze.outputs.should_release }}
+      bump_type: ${{ steps.analyze.outputs.bump_type }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+
+      - name: Analyze commits
+        id: analyze
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "bump_type=minor" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --no-merges)
+          echo "Commits since ${LAST_TAG}:"
+          echo "$COMMITS"
+
+          if echo "$COMMITS" | grep -qiE "(feat:|feature:|major:)"; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "bump_type=major" >> $GITHUB_OUTPUT
+          elif echo "$COMMITS" | grep -qiE "(fix:|refactor:|minor:)"; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "bump_type=minor" >> $GITHUB_OUTPUT
+          elif echo "$COMMITS" | grep -qiE "(chore:|docs:|patch:)"; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "bump_type=patch" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "bump_type=${{ github.event.inputs.version_bump }}" >> $GITHUB_OUTPUT
+          else
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            echo "bump_type=none" >> $GITHUB_OUTPUT
+          fi
+
+  quality-gate:
+    name: Quality Gate
+    needs: analyze-commits
+    if: needs.analyze-commits.outputs.should_release == 'true'
+    uses: ./.github/workflows/pr-quality-gate.yml
+
+  bump-version:
+    name: Bump Version
+    needs: [analyze-commits, quality-gate]
+    if: needs.analyze-commits.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Bump version
+        id: bump
+        run: |
+          BUMP_TYPE="${{ needs.analyze-commits.outputs.bump_type }}"
+          node -e "
+            const fs = require('fs');
+            const path = './package.json';
+            const pkg = JSON.parse(fs.readFileSync(path, 'utf-8'));
+            const parts = pkg.version.split('.').map(Number);
+            if ('${BUMP_TYPE}' === 'major') {
+              parts[0]++;
+              parts[1] = 0;
+              parts[2] = 0;
+            } else if ('${BUMP_TYPE}' === 'minor') {
+              parts[1]++;
+              parts[2] = 0;
+            } else {
+              parts[2]++;
+            }
+            pkg.version = parts.join('.');
+            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
+            console.log('::set-output name=version::' + pkg.version);
+          "
+
+      - name: Commit version bump
+        run: |
+          VERSION=$(node -e "console.log(require('./package.json').version)")
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: Bump version to v${VERSION}"
+          git push origin HEAD:${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-dmg:
+    name: Build DMG
+    needs: bump-version
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    outputs:
+      version: ${{ needs.bump-version.outputs.version }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build DMG
+        run: bash scripts/package-mac-dist.sh --no-bump --skip-release
+        env:
+          CI: true
+
+      - name: Verify build
+        run: |
+          VERSION="${{ needs.bump-version.outputs.version }}"
+          DMG_FILE="release/CDF-Know-Clow-${VERSION}-mac.dmg"
+          if [ ! -f "$DMG_FILE" ]; then
+            echo "::error::DMG not found"
+            ls -la release/ 2>/dev/null || true
+            exit 1
+          fi
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CDF-Know-Clow-${{ needs.bump-version.outputs.version }}-mac.dmg
+          path: release/CDF-Know-Clow-${{ needs.bump-version.outputs.version }}-mac.dmg
+          retention-days: 30
+
+  create-release:
+    name: Create Release
+    needs: build-dmg
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+
+      - name: Download DMG artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: CDF-Know-Clow-${{ needs.build-dmg.outputs.version }}-mac.dmg
+          path: release/
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          VERSION="${{ needs.build-dmg.outputs.version }}"
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+            echo "## CDF Know Clow v${VERSION}" >> $GITHUB_ENV
+            echo "" >> $GITHUB_ENV
+            echo "### Changes since ${PREV_TAG}" >> $GITHUB_ENV
+            git log ${PREV_TAG}..HEAD --oneline --no-merges | sed 's/^/- /' >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          else
+            echo "RELEASE_NOTES=Initial release of CDF Know Clow v${VERSION}" >> $GITHUB_ENV
+          fi
+
+      - name: Create Git Tag
+        run: |
+          VERSION="${{ needs.build-dmg.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build-dmg.outputs.version }}
+          name: CDF Know Clow v${{ needs.build-dmg.outputs.version }}
+          body: ${{ env.RELEASE_NOTES }}
+          files: |
+            release/CDF-Know-Clow-${{ needs.build-dmg.outputs.version }}-mac.dmg
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

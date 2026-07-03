@@ -151,12 +151,8 @@ const SecretsPage: React.FC = () => {
       {stats && (
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
           <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', minWidth: 100, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Typography sx={{ fontSize: '1.5rem', fontWeight: 700 }}>{stats.total}</Typography>
+            <Typography sx={{ fontSize: '1.5rem', fontWeight: 700 }}>{stats.totalSecrets}</Typography>
             <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>密钥总数</Typography>
-          </Paper>
-          <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', minWidth: 100, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Typography sx={{ fontSize: '1.5rem', fontWeight: 700 }}>{stats.totalAccessCount}</Typography>
-            <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>访问次数</Typography>
           </Paper>
           <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: 'divider', minWidth: 100, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Typography sx={{ fontSize: '1.5rem', fontWeight: 700 }}>{Math.round((stats.cacheHitRate || 0) * 100)}%</Typography>
@@ -199,8 +195,8 @@ const SecretsPage: React.FC = () => {
                 </TableCell>
                 <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{s.key}</TableCell>
                 <TableCell sx={{ fontSize: '0.75rem' }}>{s.type || '-'}</TableCell>
-                <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{s.description || '-'}</TableCell>
-                <TableCell sx={{ fontSize: '0.75rem' }}>{s.accessCount}</TableCell>
+                <TableCell sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>{s.metadata?.description || '-'}</TableCell>
+                <TableCell sx={{ fontSize: '0.75rem' }}>{s.metadata?.accessCount ?? 0}</TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
                     <Tooltip title="查看日志">
@@ -277,7 +273,7 @@ const SecretsPage: React.FC = () => {
                 <TableBody>
                   {logs.map((log) => (
                     <TableRow key={log.id}>
-                      <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>{new Date(log.timestamp).toLocaleString()}</TableCell>
+                      <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>{new Date(log.accessedAt).toLocaleString()}</TableCell>
                       <TableCell sx={{ fontSize: '0.75rem' }}>{log.action}</TableCell>
                       <TableCell sx={{ fontSize: '0.75rem' }}>{log.source}</TableCell>
                       <TableCell>

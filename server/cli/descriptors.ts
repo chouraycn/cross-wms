@@ -164,6 +164,34 @@ const CORE_COMMAND_DESCRIPTORS = defineCommandDescriptorCatalog([
     hasSubcommands: true,
     aliases: ["cr"],
   },
+  {
+    name: "daemon",
+    description: "守护进程管理 (start/stop/restart/status/install/uninstall)",
+    hasSubcommands: true,
+  },
+  {
+    name: "secrets",
+    description: "密钥管理 (list/audit/apply/resolve/scrub)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "models",
+    description: "模型管理 (list/set/test/info)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "hooks",
+    description: "钩子管理 (list/enable/disable/reload/info)",
+    hasSubcommands: true,
+    parentDefaultHelp: true,
+  },
+  {
+    name: "gateway",
+    description: "网关管理 (start/stop/status/probe/info)",
+    hasSubcommands: true,
+  },
 ] as const satisfies ReadonlyArray<CoreCommandDescriptor>);
 
 /** 核心 CLI 命令描述符 */

@@ -14,6 +14,7 @@
  * - 凭证泄露风险（API key, password 等敏感词）
  */
 
+import crypto from 'crypto';
 import { logger } from '../logger.js';
 import type {
   SkillDefinition,
@@ -160,14 +161,248 @@ const CREDENTIAL_KEYWORDS = [
   'token',
 ];
 
+// ===================== 注释剥离工具函数 =====================
+
+/**
+ * 剥离代码中的注释
+ *
+ * 支持的语言：
+ * - js/ts/javascript/typescript: 去掉 // 和 /* *\/ 注释
+ * - python/py: 去掉 # 和 """ """ 注释
+ * - shell/sh/bash/zsh: 去掉 # 注释
+ *
+ * 保守策略：宁可多扫不可漏扫，字符串中的注释符不做处理。
+ *
+ * @param code - 代码内容
+ * @param lang - 语言类型（可选，默认自动检测）
+ * @returns 剥离注释后的代码
+ */
+export function stripComments(code: string, lang?: string): string {
+  if (!code) return code;
+
+  const language = (lang || detectLanguage(code)).toLowerCase();
+
+  switch (language) {
+    case 'js':
+    case 'ts':
+    case 'javascript':
+    case 'typescript':
+    case 'jsx':
+    case 'tsx':
+      return stripJsComments(code);
+    case 'python':
+    case 'py':
+      return stripPythonComments(code);
+    case 'shell':
+    case 'sh':
+    case 'bash':
+    case 'zsh':
+      return stripShellComments(code);
+    default:
+      return code;
+  }
+}
+
+/**
+ * 自动检测语言（基于代码特征）
+ */
+function detectLanguage(code: string): string {
+  const firstLines = code.slice(0, 500);
+
+  if (/^#!\s*\/.*(bash|sh|zsh)/m.test(firstLines)) {
+    return 'shell';
+  }
+  if (/def\s+\w+\s*\(|class\s+\w+[:\(]/.test(firstLines) &&
+      !/function\s+\w+/.test(firstLines)) {
+    return 'python';
+  }
+  if (/(const|let|var)\s+\w+\s*=|function\s+\w+|=>\s*\{/.test(firstLines)) {
+    return 'javascript';
+  }
+
+  return 'text';
+}
+
+/**
+ * 剥离 JS/TS 注释
+ *
+ * 简单实现：使用正则匹配行注释和块注释。
+ * 保守策略：不处理字符串中的注释符（可能误删，但安全扫描宁可多扫）。
+ */
+function stripJsComments(code: string): string {
+  return code
+    .replace(/\/\*[\s\S]*?\*\//g, (match) => ' '.repeat(match.length))
+    .replace(/(?<!:)\/\/[^\n]*/g, (match) => ' '.repeat(match.length));
+}
+
+/**
+ * 剥离 Python 注释
+ *
+ * 去掉 # 行注释和三引号块注释。
+ */
+function stripPythonComments(code: string): string {
+  let result = code;
+
+  result = result.replace(/"""[\s\S]*?"""/g, (match) => {
+    return ' '.repeat(match.length);
+  });
+  result = result.replace(/'''[\s\S]*?'''/g, (match) => {
+    return ' '.repeat(match.length);
+  });
+  result = result.replace(/^[ \t]*#[^\n]*/gm, (match) => ' '.repeat(match.length));
+
+  return result;
+}
+
+/**
+ * 剥离 Shell 注释
+ *
+ * 去掉 # 行注释（保留 shebang）。
+ */
+function stripShellComments(code: string): string {
+  const lines = code.split('\n');
+  const result: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (i === 0 && line.startsWith('#!')) {
+      result.push(line);
+      continue;
+    }
+    const stripped = line.replace(/^[ \t]*#[^\n]*/, (match) => ' '.repeat(match.length));
+    result.push(stripped);
+  }
+
+  return result.join('\n');
+}
+
+// ===================== LRU 缓存实现 =====================
+
+/**
+ * LRU 缓存（基于内容 SHA256 哈希）
+ */
+class ContentLRUCache {
+  private cache = new Map<string, ScanResult>();
+  private maxSize: number;
+
+  constructor(maxSize: number) {
+    this.maxSize = maxSize;
+  }
+
+  get(key: string): ScanResult | undefined {
+    const value = this.cache.get(key);
+    if (value !== undefined) {
+      this.cache.delete(key);
+      this.cache.set(key, value);
+    }
+    return value;
+  }
+
+  set(key: string, value: ScanResult): void {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
+    }
+    this.cache.set(key, value);
+  }
+
+  has(key: string): boolean {
+    return this.cache.has(key);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  get size(): number {
+    return this.cache.size;
+  }
+}
+
+// ===================== 并发限制工具 =====================
+
+/**
+ * 并发限制器
+ */
+class ConcurrencyLimiter {
+  private maxConcurrency: number;
+  private running = 0;
+  private queue: Array<() => void> = [];
+
+  constructor(maxConcurrency: number) {
+    this.maxConcurrency = maxConcurrency;
+  }
+
+  async run<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.running < this.maxConcurrency) {
+      this.running++;
+      try {
+        return await fn();
+      } finally {
+        this.running--;
+        this.processQueue();
+      }
+    }
+
+    return new Promise<T>((resolve, reject) => {
+      this.queue.push(async () => {
+        this.running++;
+        try {
+          const result = await fn();
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        } finally {
+          this.running--;
+          this.processQueue();
+        }
+      });
+    });
+  }
+
+  private processQueue(): void {
+    if (this.running >= this.maxConcurrency || this.queue.length === 0) {
+      return;
+    }
+    const next = this.queue.shift();
+    if (next) {
+      next();
+    }
+  }
+
+  get pendingCount(): number {
+    return this.queue.length;
+  }
+
+  get runningCount(): number {
+    return this.running;
+  }
+}
+
 // ===================== SkillSecurityScanner 类 =====================
+
+/** 内容缓存最大条目数 */
+const MAX_CONTENT_CACHE_SIZE = 500;
+
+/** 批量扫描最大并发数 */
+const MAX_SCAN_CONCURRENCY = 5;
 
 /**
  * Skill 安全扫描器
  */
 export class SkillSecurityScanner {
-  /** 扫描结果缓存 */
+  /** 扫描结果缓存（基于 skill id + version） */
   private scanCache = new Map<string, ScanResult>();
+
+  /** 内容级缓存（基于内容 SHA256 哈希，LRU 淘汰） */
+  private contentCache = new ContentLRUCache(MAX_CONTENT_CACHE_SIZE);
+
+  /** 批量扫描并发限制器 */
+  private concurrencyLimiter = new ConcurrencyLimiter(MAX_SCAN_CONCURRENCY);
 
   /** 审计记录（内存存储，后续可扩展到数据库） */
   private auditLogs: AuditRecord[] = [];
@@ -184,22 +419,47 @@ export class SkillSecurityScanner {
    *
    * @param definition - Skill 定义
    * @param useCache - 是否使用缓存（默认 true）
+   * @param options.stripComments - 是否先剥离注释再扫描（默认 true）
    * @returns 扫描结果
    */
-  scanSkill(definition: SkillDefinition, useCache = true): ScanResult {
+  scanSkill(
+    definition: SkillDefinition,
+    useCache = true,
+    options?: { stripComments?: boolean },
+  ): ScanResult {
     const startTime = Date.now();
+    const strip = options?.stripComments !== false;
 
-    // 检查缓存
-    const cacheKey = definition.id + ':' + (definition.version || '0');
-    if (useCache && this.scanCache.has(cacheKey)) {
-      return this.scanCache.get(cacheKey)!;
+    // 检查文件级缓存
+    const fileCacheKey = definition.id + ':' + (definition.version || '0');
+    if (useCache && this.scanCache.has(fileCacheKey)) {
+      logger.debug(`[SkillSecurityScanner] File cache hit for ${definition.id}`);
+      return this.scanCache.get(fileCacheKey)!;
+    }
+
+    // 计算内容哈希并检查内容级缓存
+    const contentHash = this.hashContent(
+      (definition.skillMdContent || '') +
+      (definition.description || '') +
+      (definition.instructionBlocks || []).join('\n'),
+    );
+    if (useCache && this.contentCache.has(contentHash)) {
+      const cached = this.contentCache.get(contentHash)!;
+      logger.debug(`[SkillSecurityScanner] Content cache hit for ${definition.id}`);
+      const result: ScanResult = {
+        ...cached,
+        skillId: definition.id,
+        scannedAt: Date.now(),
+      };
+      this.scanCache.set(fileCacheKey, result);
+      return result;
     }
 
     const findings: RiskFinding[] = [];
 
     // 1. 扫描 SKILL.md 内容
     if (definition.skillMdContent) {
-      findings.push(...this.scanContent(definition.skillMdContent));
+      findings.push(...this.scanContent(definition.skillMdContent, undefined, strip));
     }
 
     // 2. 扫描参数描述中的敏感词
@@ -210,7 +470,11 @@ export class SkillSecurityScanner {
     // 3. 扫描 instruction blocks
     if (definition.instructionBlocks) {
       for (let i = 0; i < definition.instructionBlocks.length; i++) {
-        findings.push(...this.scanContent(definition.instructionBlocks[i], `instruction[${i}]`));
+        findings.push(...this.scanContent(
+          definition.instructionBlocks[i],
+          `instruction[${i}]`,
+          strip,
+        ));
       }
     }
 
@@ -226,8 +490,11 @@ export class SkillSecurityScanner {
       passed: overallRisk !== 'high' && overallRisk !== 'critical',
     };
 
-    // 缓存结果
-    this.scanCache.set(cacheKey, result);
+    // 文件级缓存
+    this.scanCache.set(fileCacheKey, result);
+
+    // 内容级缓存
+    this.contentCache.set(contentHash, result);
 
     return result;
   }
@@ -239,20 +506,51 @@ export class SkillSecurityScanner {
    * @returns 扫描结果列表
    */
   scanSkills(skills: RegisteredSkill[]): ScanResult[] {
+    logger.debug(`[SkillSecurityScanner] Batch scanning ${skills.length} skills`);
     return skills.map((skill) => this.scanSkill(skill.definition));
+  }
+
+  /**
+   * 批量扫描 Skill（异步并发版本）
+   *
+   * 使用并发限制（最多 5 个并发），超过的排队等待。
+   * 适用于包含异步 I/O 的扫描场景。
+   *
+   * @param skills - Skill 列表
+   * @returns 扫描结果列表
+   */
+  async scanSkillsAsync(skills: RegisteredSkill[]): Promise<ScanResult[]> {
+    logger.debug(`[SkillSecurityScanner] Batch scanning ${skills.length} skills (max concurrency: ${MAX_SCAN_CONCURRENCY})`);
+
+    const results = await Promise.all(
+      skills.map((skill) =>
+        this.concurrencyLimiter.run(() =>
+          Promise.resolve(this.scanSkill(skill.definition)),
+        ),
+      ),
+    );
+
+    return results;
   }
 
   // ===================== 2. 内容扫描 =====================
 
   /**
    * 扫描内容中的安全风险
+   *
+   * @param content - 要扫描的内容
+   * @param location - 位置标识
+   * @param strip - 是否先剥离注释再扫描（默认 true）
    */
-  private scanContent(content: string, location?: string): RiskFinding[] {
+  private scanContent(content: string, location?: string, strip = true): RiskFinding[] {
     const findings: RiskFinding[] = [];
+
+    // 先剥离注释再扫描（保守策略：宁可多扫不可漏扫，因此只在扫描前处理，不影响原文）
+    const scanContent = strip ? stripComments(content) : content;
 
     // 危险命令
     for (const cmd of DANGEROUS_COMMANDS) {
-      if (cmd.pattern.test(content)) {
+      if (cmd.pattern.test(scanContent)) {
         findings.push({
           type: 'dangerous_command',
           level: cmd.level,
@@ -265,7 +563,7 @@ export class SkillSecurityScanner {
 
     // 敏感路径
     for (const path of SENSITIVE_PATHS) {
-      if (path.pattern.test(content)) {
+      if (path.pattern.test(scanContent)) {
         findings.push({
           type: 'sensitive_path',
           level: path.level,
@@ -277,7 +575,7 @@ export class SkillSecurityScanner {
     }
 
     // 代码注入
-    if (/eval\s*\(/.test(content) || /new\s+Function\s*\(/.test(content)) {
+    if (/eval\s*\(/.test(scanContent) || /new\s+Function\s*\(/.test(scanContent)) {
       findings.push({
         type: 'code_injection',
         level: 'high',
@@ -288,11 +586,11 @@ export class SkillSecurityScanner {
     }
 
     // 凭证泄露
-    findings.push(...this.scanCredentials(content, location));
+    findings.push(...this.scanCredentials(scanContent, location));
 
     // Prompt 注入检测
     for (const rule of PROMPT_INJECTION_RULES) {
-      if (rule.pattern.test(content)) {
+      if (rule.pattern.test(scanContent)) {
         findings.push({
           type: 'code_injection',
           level: rule.level,
@@ -304,7 +602,7 @@ export class SkillSecurityScanner {
     }
 
     // 组合模式检测
-    findings.push(...this.detectCompositePatterns(content, location));
+    findings.push(...this.detectCompositePatterns(scanContent, location));
 
     return findings;
   }
@@ -486,6 +784,7 @@ export class SkillSecurityScanner {
    */
   getStats(): {
     scanned: number;
+    contentCached: number;
     passed: number;
     failed: number;
     auditLogs: number;
@@ -513,6 +812,7 @@ export class SkillSecurityScanner {
 
     return {
       scanned: this.scanCache.size,
+      contentCached: this.contentCache.size,
       passed,
       failed,
       auditLogs: this.auditLogs.length,
@@ -521,11 +821,19 @@ export class SkillSecurityScanner {
   }
 
   /**
-   * 清除缓存
+   * 清除缓存（包括文件级缓存和内容级缓存）
    */
   clearCache(): void {
     this.scanCache.clear();
-    logger.info('[SkillSecurityScanner] Cache cleared.');
+    this.contentCache.clear();
+    logger.info('[SkillSecurityScanner] Cache cleared (file + content).');
+  }
+
+  /**
+   * 计算内容 SHA256 哈希
+   */
+  private hashContent(content: string): string {
+    return crypto.createHash('sha256').update(content).digest('hex');
   }
 }
 

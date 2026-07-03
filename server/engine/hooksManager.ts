@@ -1,23 +1,36 @@
 /**
  * Hooks System
  * Hooks 插件系统 - 可扩展的钩子机制
+ *
+ * 重构说明：本文件现为兼容门面，保留原有 HooksManager 类与便捷函数（向后兼容），
+ * 同时重新导出新的 server/engine/hooks/ 模块（对齐 openclaw 架构）。
+ *
+ * 新代码应直接从 ./hooks/index.js 导入；本文件保留以避免破坏既有引用。
  */
 
+import { logger } from '../logger.js';
+
+// 新的钩子系统通过 ./hooks/index.js barrel 导出（对齐 openclaw 架构）。
+// 本文件保留原有 HooksManager 类与便捷函数以维持向后兼容；
+// 新代码应直接从 ./hooks/index.js 导入。
+
+// ========== 向后兼容：原有 HooksManager 类型与实现 ==========
+
 export type HookType =
-  | "before_message_send"
-  | "after_message_send"
-  | "before_tool_call"
-  | "after_tool_call"
-  | "before_turn_start"
-  | "after_turn_complete"
-  | "after_turn_failed"
-  | "session_created"
-  | "session_closed"
-  | "config_changed"
-  | "cron_triggered"
-  | "cron_completed"
-  | "memory_added"
-  | "memory_searched";
+  | 'before_message_send'
+  | 'after_message_send'
+  | 'before_tool_call'
+  | 'after_tool_call'
+  | 'before_turn_start'
+  | 'after_turn_complete'
+  | 'after_turn_failed'
+  | 'session_created'
+  | 'session_closed'
+  | 'config_changed'
+  | 'cron_triggered'
+  | 'cron_completed'
+  | 'memory_added'
+  | 'memory_searched';
 
 export type HookHandler<T = unknown> = (
   context: T,
@@ -145,7 +158,7 @@ class HooksManager {
           currentContext = { ...currentContext, ...(result as Record<string, unknown>) } as T;
         }
       } catch (error) {
-        console.error(`[hooks] Hook ${hook.id} (${type}) failed:`, error);
+        logger.error(`[hooks] Hook ${hook.id} (${type}) failed:`, error);
         // 继续执行其他 hooks
       }
     }
@@ -166,11 +179,11 @@ class HooksManager {
 
       try {
         const result = hook.handler(currentContext);
-        if (result !== undefined && result !== null && typeof result === "object") {
+        if (result !== undefined && result !== null && typeof result === 'object') {
           currentContext = { ...currentContext, ...(result as Record<string, unknown>) } as T;
         }
       } catch (error) {
-        console.error(`[hooks] Hook ${hook.id} (${type}) failed:`, error);
+        logger.error(`[hooks] Hook ${hook.id} (${type}) failed:`, error);
       }
     }
 
@@ -274,7 +287,7 @@ export function getHooksManager(): HooksManager {
 export function registerHook<T extends HookContext>(
   type: HookType,
   handler: HookHandler<T>,
-  options?: Parameters<HooksManager["register"]>[2],
+  options?: Parameters<HooksManager['register']>[2],
 ): string {
   return HOOKS_INSTANCE.register(type, handler, options);
 }
