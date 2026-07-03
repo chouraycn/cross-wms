@@ -11,6 +11,8 @@ let package = Package(
     products: [
         .executable(name: "CDFKnowClow", targets: ["CDFKnowClow"]),
         .library(name: "CrossWMSIPC", targets: ["CrossWMSIPC"]),
+        .library(name: "CDFKnowProtocol", targets: ["CDFKnowProtocol"]),
+        .library(name: "CDFKnow", targets: ["CDFKnow"]),
     ],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.9.0"),
@@ -38,6 +40,20 @@ let package = Package(
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ]),
+        .target(
+            name: "CDFKnowProtocol",
+            dependencies: [],
+            path: "Sources/CDFKnowProtocol",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+            ]),
+        .target(
+            name: "CDFKnow",
+            dependencies: ["CDFKnowProtocol"],
+            path: "Sources/CDFKnow",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+            ]),
         .testTarget(
             name: "CrossWMSIPCTests",
             dependencies: ["CrossWMSIPC"],
@@ -46,6 +62,13 @@ let package = Package(
             name: "CDFKnowClowTests",
             dependencies: ["CrossWMSIPC"],
             path: "Tests/CDFKnowClowTests",
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+            ]),
+        .testTarget(
+            name: "CDFKnowIPCTests",
+            dependencies: ["CDFKnowProtocol", "CDFKnow"],
+            path: "Tests/CDFKnowIPCTests",
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ]),

@@ -16,6 +16,13 @@
 import path from 'path';
 import os from 'os';
 import { logger } from '../logger.js';
+import {
+  getSecretValueByKey,
+  createSecret,
+  updateSecret,
+  secretExists,
+  listSecrets,
+} from './secretsStore.js';
 import type {
   SkillContext,
   SkillLogger,
@@ -267,20 +274,133 @@ function createSkillLock(): SkillLock {
 // ===================== SkillCredentials 实现 =====================
 
 /**
+ * SkillCredentials 实现类
+ *
+ * 凭证存储优先级（从高到低）：
+ * 1. 内存缓存（Memory Map）
+ * 2. 加密存储（secretsStore，SQLite + AES-256-GCM）
+ * 3. 环境变量（SKILL_<SKILL_ID>_<CRED_NAME>）
+ *
+ * 凭证 ID 格式：skill_<skillId>_<credName>
+ */
+class SkillCredentialsImpl implements SkillCredentials {
+  private skillId: string;
+  private cache = new Map<string, string>();
+
+  constructor(skillId: string) {
+    this.skillId = skillId;
+  }
+
+  /**
+   * 加载凭证
+   *
+   * 按优先级查找：内存缓存 → 加密存储 → 环境变量
+   *
+   * @param credName - 凭证名称
+   * @returns 凭证键值对（{ [credName]: value }），未找到返回空对象
+   */
+  async load(credName: string): Promise<Record<string, string>> {
+    const secretKey = this.buildSecretKey(credName);
+    logger.debug(`[SkillCredentials:${this.skillId}] load('${credName}') — key=${secretKey}`);
+
+    // 1. 内存缓存
+    if (this.cache.has(credName)) {
+      logger.debug(`[SkillCredentials:${this.skillId}] load('${credName}') — cache hit`);
+      return { [credName]: this.cache.get(credName)! };
+    }
+
+    // 2. 加密存储
+    try {
+      const value = getSecretValueByKey('encrypted', secretKey, `skill:${this.skillId}`);
+      if (value !== null) {
+        logger.debug(`[SkillCredentials:${this.skillId}] load('${credName}') — secrets store hit`);
+        this.cache.set(credName, value);
+        return { [credName]: value };
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.warn(`[SkillCredentials:${this.skillId}] load('${credName}') — secrets store error: ${msg}`);
+    }
+
+    // 3. 环境变量
+    const envKey = this.buildEnvKey(credName);
+    const envValue = process.env[envKey];
+    if (envValue !== undefined) {
+      logger.debug(`[SkillCredentials:${this.skillId}] load('${credName}') — env var hit (${envKey})`);
+      this.cache.set(credName, envValue);
+      return { [credName]: envValue };
+    }
+
+    logger.debug(`[SkillCredentials:${this.skillId}] load('${credName}') — not found`);
+    return {};
+  }
+
+  /**
+   * 存储凭证
+   *
+   * 同时写入内存缓存和加密存储。
+   * 支持单个值（字符串）或多个键值对（Record）。
+   *
+   * @param credName - 凭证名称
+   * @param values - 凭证值（字符串或键值对）
+   */
+  async set(credName: string, values: string | Record<string, string>): Promise<void> {
+    const entries: Array<{ name: string; value: string }> = [];
+
+    if (typeof values === 'string') {
+      entries.push({ name: credName, value: values });
+    } else {
+      for (const [key, val] of Object.entries(values)) {
+        entries.push({ name: `${credName}_${key}`, value: val });
+      }
+    }
+
+    for (const { name, value } of entries) {
+      const secretKey = this.buildSecretKey(name);
+
+      // 内存缓存
+      this.cache.set(name, value);
+
+      // 加密存储
+      try {
+        if (secretExists('encrypted', secretKey)) {
+          const existing = listSecrets('encrypted').find((s) => s.key === secretKey);
+          if (existing) {
+            updateSecret(existing.id, { value });
+          }
+        } else {
+          createSecret({
+            provider: 'encrypted',
+            key: secretKey,
+            value,
+            type: 'api_key',
+            description: `Skill credential: ${this.skillId} / ${name}`,
+          });
+        }
+        logger.info(`[SkillCredentials:${this.skillId}] set('${name}') — stored`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.error(`[SkillCredentials:${this.skillId}] set('${name}') — store error: ${msg}`);
+      }
+    }
+  }
+
+  private buildSecretKey(credName: string): string {
+    return `skill_${this.skillId}_${credName}`;
+  }
+
+  private buildEnvKey(credName: string): string {
+    return `SKILL_${this.skillId.toUpperCase().replace(/[^A-Z0-9]/g, '_')}_${credName.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`;
+  }
+}
+
+/**
  * 创建 SkillCredentials 实例
  *
- * 当前为占位实现，后续对接 keychainStore.ts 加密存储。
  * 凭证 ID 格式：skill_<skillId>_<credName>
  */
 function createSkillCredentials(skillId: string): SkillCredentials {
-  return {
-    async load(id: string): Promise<Record<string, string>> {
-      // 占位实现：后续对接 keychainStore.ts
-      // 当前返回空对象，Skill 需要凭证时应检查返回值
-      logger.debug(`[SkillCredentials] load('${id}') for skill '${skillId}' — placeholder, no credentials stored`);
-      return {};
-    },
-  };
+  return new SkillCredentialsImpl(skillId);
 }
 
 // ===================== 工厂函数 =====================

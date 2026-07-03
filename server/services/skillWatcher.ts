@@ -1,6 +1,12 @@
 /**
  * Skill Watcher Service
- * chokidar 监听 ~/.workbuddy/skills/ 下 SKILL.md 变化，通过 SSE 广播给前端
+ * chokidar 监听技能目录下 SKILL.md 变化，通过 SSE 广播给前端
+ *
+ * 增强功能：
+ * - 空闲 TTL 自动清理（60 分钟无活动且无客户端时关闭 watcher）
+ * - 多目录共享 watcher（refCount 引用计数）
+ * - 写入稳定性检查（文件大小稳定后再触发）
+ * - 增强忽略规则（.git, node_modules, dist, .venv, __pycache__ 等）
  */
 
 import crypto from 'crypto';
@@ -27,36 +33,144 @@ export interface SkillWatchEvent {
   timestamp: number;
 }
 
+interface WatchDirEntry {
+  watcher: chokidar.FSWatcher;
+  refCount: number;
+  skillsDir: string;
+}
+
+// ===================== Constants =====================
+
+/** 空闲 TTL（毫秒），60 分钟无活动且无客户端则关闭 */
+const IDLE_TTL_MS = 3600000;
+
+/** 空闲检查间隔（毫秒），每 5 分钟检查一次 */
+const IDLE_CHECK_INTERVAL_MS = 300000;
+
+/** 默认忽略的目录模式 */
+const DEFAULT_IGNORED_DIRS = [
+  '.git',
+  'node_modules',
+  'dist',
+  '.venv',
+  '__pycache__',
+];
+
+/** 默认忽略的临时文件后缀 */
+const DEFAULT_IGNORED_TEMP_SUFFIXES = ['.tmp', '.swp', '~'];
+
 // ===================== SkillWatcher Class =====================
 
 class SkillWatcher {
-  private watcher: chokidar.FSWatcher | null = null;
+  /** 多目录 watcher 映射：dir -> WatchDirEntry */
+  private watchers = new Map<string, WatchDirEntry>();
+
+  /** SSE 客户端集合 */
   private clients: Set<Response> = new Set();
+
+  /** 防抖计时器 */
   private debounceTimer: NodeJS.Timeout | null = null;
 
+  /** 最后活动时间 */
+  private lastActivityAt: number = Date.now();
+
+  /** 空闲检查计时器 */
+  private idleCheckTimer: NodeJS.Timeout | null = null;
+
   /**
-   * 初始化 chokidar 监听器
+   * 初始化 chokidar 监听器（默认技能目录）
    */
   init(): void {
-    if (this.watcher) {
-      logger.info('[SkillWatcher] Already initialized, skipping.');
-      return;
+    const defaultSkillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+    this.addWatchDir(defaultSkillsDir);
+    this.startIdleCheck();
+  }
+
+  /**
+   * 添加监听目录
+   *
+   * 如果目录已在监听中，增加引用计数，不重复创建 watcher。
+   *
+   * @param dir - 要监听的目录
+   * @returns 是否成功添加
+   */
+  addWatchDir(dir: string): boolean {
+    const resolvedDir = path.resolve(dir);
+
+    const existing = this.watchers.get(resolvedDir);
+    if (existing) {
+      existing.refCount++;
+      logger.info(`[SkillWatcher] Directory already watched, refCount=${existing.refCount}: ${resolvedDir}`);
+      return true;
     }
 
-    const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+    try {
+      // 如果目录不存在，先创建
+      if (!fs.existsSync(resolvedDir)) {
+        logger.info(`[SkillWatcher] Directory does not exist, creating: ${resolvedDir}`);
+        fs.mkdirSync(resolvedDir, { recursive: true });
+      }
+
+      const watcher = this.createWatcher(resolvedDir);
+
+      this.watchers.set(resolvedDir, {
+        watcher,
+        refCount: 1,
+        skillsDir: resolvedDir,
+      });
+
+      this.updateActivity();
+      logger.info(`[SkillWatcher] Watcher added for directory: ${resolvedDir}`);
+      return true;
+    } catch (error) {
+      logger.error(`[SkillWatcher] Failed to add watch dir ${resolvedDir}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * 移除监听目录
+   *
+   * 减少引用计数，引用计数为 0 时关闭 watcher。
+   *
+   * @param dir - 要移除的目录
+   * @returns 是否成功移除
+   */
+  removeWatchDir(dir: string): boolean {
+    const resolvedDir = path.resolve(dir);
+    const entry = this.watchers.get(resolvedDir);
+
+    if (!entry) {
+      logger.warn(`[SkillWatcher] Directory not watched: ${resolvedDir}`);
+      return false;
+    }
+
+    entry.refCount--;
+
+    if (entry.refCount <= 0) {
+      entry.watcher.close();
+      this.watchers.delete(resolvedDir);
+      logger.info(`[SkillWatcher] Watcher removed for directory: ${resolvedDir}`);
+    } else {
+      logger.info(`[SkillWatcher] Directory refCount decreased to ${entry.refCount}: ${resolvedDir}`);
+    }
+
+    return true;
+  }
+
+  /**
+   * 创建单个目录的 watcher
+   */
+  private createWatcher(skillsDir: string): chokidar.FSWatcher {
     logger.info(`[SkillWatcher] Initializing watcher for ${skillsDir}`);
 
-    // 如果目录不存在，先创建
-    if (!fs.existsSync(skillsDir)) {
-      logger.info(`[SkillWatcher] Skills directory does not exist, creating: ${skillsDir}`);
-      fs.mkdirSync(skillsDir, { recursive: true });
-    }
+    const ignoredPatterns = this.buildIgnoredPatterns();
 
-    this.watcher = chokidar.watch(path.join(skillsDir, '**', 'SKILL.md'), {
-      ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+    const watcher = chokidar.watch(path.join(skillsDir, '**', 'SKILL.md'), {
+      ignored: ignoredPatterns,
       persistent: true,
-      ignoreInitial: false, // 初始扫描也触发事件
-      depth: 2, // 只监听两层深度
+      ignoreInitial: false,
+      depth: 2,
     });
 
     // 防抖：避免短时间内多次文件变化触发多次扫描
@@ -70,10 +184,11 @@ class SkillWatcher {
       }, 500);
     };
 
-    this.watcher
+    watcher
       .on('add', (filePath: string) => {
+        this.updateActivity();
         logger.info(`[SkillWatcher] Skill added: ${filePath}`);
-        const dirName = this.extractDirName(filePath);
+        const dirName = this.extractDirName(filePath, skillsDir);
         if (dirName) {
           this.broadcast({
             type: 'skill-added',
@@ -84,9 +199,21 @@ class SkillWatcher {
           debouncedScan();
         }
       })
-      .on('change', (filePath: string) => {
+      .on('change', async (filePath: string) => {
+        this.updateActivity();
         logger.info(`[SkillWatcher] Skill changed: ${filePath}`);
-        const dirName = this.extractDirName(filePath);
+
+        // 等待文件写入稳定
+        try {
+          const stable = await this.waitForStableFile(filePath);
+          if (!stable) {
+            logger.warn(`[SkillWatcher] File did not stabilize, proceeding anyway: ${filePath}`);
+          }
+        } catch (error) {
+          logger.warn(`[SkillWatcher] waitForStableFile failed, proceeding: ${error}`);
+        }
+
+        const dirName = this.extractDirName(filePath, skillsDir);
         if (dirName) {
           this.broadcast({
             type: 'skill-changed',
@@ -101,8 +228,9 @@ class SkillWatcher {
         }
       })
       .on('unlink', (filePath: string) => {
+        this.updateActivity();
         logger.info(`[SkillWatcher] Skill removed: ${filePath}`);
-        const dirName = this.extractDirName(filePath);
+        const dirName = this.extractDirName(filePath, skillsDir);
         if (dirName) {
           this.broadcast({
             type: 'skill-removed',
@@ -117,14 +245,80 @@ class SkillWatcher {
         logger.error('[SkillWatcher] Watcher error:', error);
       });
 
-    logger.info('[SkillWatcher] Watcher initialized successfully');
+    logger.info(`[SkillWatcher] Watcher initialized successfully for ${skillsDir}`);
+    return watcher;
+  }
+
+  /**
+   * 构建忽略规则
+   */
+  private buildIgnoredPatterns(): RegExp[] {
+    const patterns: RegExp[] = [];
+
+    // 忽略隐藏文件/目录（原有逻辑）
+    patterns.push(/(^|[\/\\])\../);
+
+    // 忽略常见目录
+    for (const dir of DEFAULT_IGNORED_DIRS) {
+      patterns.push(new RegExp(`[\/\\\\]${dir}[\/\\\\]`, 'i'));
+    }
+
+    // 忽略临时文件后缀
+    for (const suffix of DEFAULT_IGNORED_TEMP_SUFFIXES) {
+      const escaped = suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      patterns.push(new RegExp(`${escaped}$`, 'i'));
+    }
+
+    return patterns;
+  }
+
+  /**
+   * 等待文件大小稳定
+   *
+   * 每隔 intervalMs 检查一次文件大小，连续 2 次相同则认为稳定。
+   * 超过 maxWaitMs 强制继续。
+   *
+   * @param filePath - 文件路径
+   * @param intervalMs - 检查间隔（毫秒），默认 200ms
+   * @param maxWaitMs - 最大等待时间（毫秒），默认 2000ms
+   * @returns 是否在超时前稳定
+   */
+  async waitForStableFile(filePath: string, intervalMs = 200, maxWaitMs = 2000): Promise<boolean> {
+    const startTime = Date.now();
+    let lastSize: number | null = null;
+    let stableCount = 0;
+
+    while (Date.now() - startTime < maxWaitMs) {
+      try {
+        const stats = fs.statSync(filePath);
+        const currentSize = stats.size;
+
+        if (lastSize !== null && currentSize === lastSize) {
+          stableCount++;
+          if (stableCount >= 2) {
+            logger.debug(`[SkillWatcher] File stabilized after ${Date.now() - startTime}ms: ${filePath}`);
+            return true;
+          }
+        } else {
+          stableCount = 0;
+          lastSize = currentSize;
+        }
+      } catch (error) {
+        logger.debug(`[SkillWatcher] Failed to stat file during stability check: ${filePath}`, error);
+        return false;
+      }
+
+      await this.sleep(intervalMs);
+    }
+
+    logger.warn(`[SkillWatcher] File stability check timed out after ${maxWaitMs}ms: ${filePath}`);
+    return false;
   }
 
   /**
    * 从文件路径提取技能目录名
    */
-  private extractDirName(filePath: string): string | null {
-    const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+  private extractDirName(filePath: string, skillsDir: string): string | null {
     const relativePath = path.relative(skillsDir, filePath);
     const parts = relativePath.split(path.sep);
     if (parts.length >= 2) {
@@ -138,6 +332,14 @@ class SkillWatcher {
    */
   addClient(res: Response): void {
     this.clients.add(res);
+    this.updateActivity();
+
+    // 如果没有活动的 watcher 但有客户端连接，重新初始化默认目录
+    if (this.watchers.size === 0) {
+      logger.info('[SkillWatcher] Client connected but no watchers active, reinitializing...');
+      this.init();
+    }
+
     logger.info(`[SkillWatcher] SSE client connected, total clients: ${this.clients.size}`);
   }
 
@@ -146,6 +348,7 @@ class SkillWatcher {
    */
   removeClient(res: Response): void {
     this.clients.delete(res);
+    this.updateActivity();
     logger.info(`[SkillWatcher] SSE client disconnected, total clients: ${this.clients.size}`);
   }
 
@@ -208,20 +411,90 @@ class SkillWatcher {
     }
   }
 
+  // ===================== 空闲管理 =====================
+
+  /**
+   * 更新最后活动时间
+   */
+  private updateActivity(): void {
+    this.lastActivityAt = Date.now();
+  }
+
+  /**
+   * 启动空闲检查定时器
+   */
+  private startIdleCheck(): void {
+    if (this.idleCheckTimer) {
+      return;
+    }
+
+    this.idleCheckTimer = setInterval(() => {
+      this.checkIdle();
+    }, IDLE_CHECK_INTERVAL_MS);
+
+    logger.debug('[SkillWatcher] Idle check timer started');
+  }
+
+  /**
+   * 检查是否空闲并清理
+   */
+  private checkIdle(): void {
+    const now = Date.now();
+    const idleTime = now - this.lastActivityAt;
+
+    logger.debug(
+      `[SkillWatcher] Idle check: idleTime=${Math.round(idleTime / 1000)}s, ` +
+      `clients=${this.clients.size}, watchers=${this.watchers.size}`
+    );
+
+    // 超过 TTL 且没有客户端连接，则关闭所有 watcher
+    if (idleTime > IDLE_TTL_MS && this.clients.size === 0 && this.watchers.size > 0) {
+      logger.info('[SkillWatcher] Idle TTL reached, closing all watchers...');
+      this.destroyAllWatchers();
+    }
+  }
+
+  /**
+   * 销毁所有 watcher
+   */
+  private destroyAllWatchers(): void {
+    for (const [dir, entry] of this.watchers) {
+      try {
+        entry.watcher.close();
+        logger.debug(`[SkillWatcher] Closed watcher for: ${dir}`);
+      } catch (error) {
+        logger.error(`[SkillWatcher] Error closing watcher for ${dir}:`, error);
+      }
+    }
+    this.watchers.clear();
+    logger.info('[SkillWatcher] All watchers destroyed');
+  }
+
   /**
    * 销毁监听器，清理资源
    */
   destroy(): void {
-    if (this.watcher) {
-      this.watcher.close();
-      this.watcher = null;
-    }
+    this.destroyAllWatchers();
+
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
       this.debounceTimer = null;
     }
+
+    if (this.idleCheckTimer) {
+      clearInterval(this.idleCheckTimer);
+      this.idleCheckTimer = null;
+    }
+
     this.clients.clear();
-    logger.info('[SkillWatcher] Watcher destroyed');
+    logger.info('[SkillWatcher] Watcher destroyed completely');
+  }
+
+  /**
+   * 简单的 sleep 工具函数
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

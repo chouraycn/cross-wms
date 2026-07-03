@@ -115,7 +115,7 @@ const DEFAULT_PROVIDER_ORDER = [
   'openai',
 ];
 
-function detectProvider(modelId: string): string {
+export function detectProvider(modelId: string): string {
   const lower = modelId.toLowerCase();
 
   for (const [provider, models] of Object.entries(PROVIDER_MODELS)) {
@@ -135,7 +135,7 @@ function detectProvider(modelId: string): string {
   return 'deepseek';
 }
 
-function normalizeModelId(modelId: string): string {
+export function normalizeModelId(modelId: string): string {
   const lower = modelId.toLowerCase();
 
   const modelMap: Record<string, string> = {
@@ -152,7 +152,9 @@ function normalizeModelId(modelId: string): string {
     'gemini': 'gemini-2.0-flash',
   };
 
-  for (const [key, value] of Object.entries(modelMap)) {
+  const sortedEntries = Object.entries(modelMap).sort((a, b) => b[0].length - a[0].length);
+
+  for (const [key, value] of sortedEntries) {
     if (lower.includes(key)) {
       return value;
     }

@@ -21,6 +21,9 @@
  */
 
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 import { logger } from '../logger.js';
 import { skillSecurityScanner } from './skillSecurityScanner.js';
 import type { SkillDefinition } from '../types/skill-runtime.js';
@@ -79,6 +82,8 @@ export interface SkillProposal {
   content: string;
   /** 内容哈希（用于检测内容是否被篡改） */
   contentHash: string;
+  /** 创建 update 提案时目标文件的当前内容哈希（用于 stale 检测） */
+  currentContentHash?: string;
   /** 提案状态 */
   status: ProposalStatus;
   /** 提案来源 */
@@ -113,6 +118,8 @@ export interface CreateProposalParams {
   origin?: ProposalOrigin;
   /** 当前已存在的内容（update 类型时用于回滚） */
   previousContent?: string;
+  /** 当前目标文件内容哈希（update 类型时用于 stale 检测） */
+  currentContentHash?: string;
 }
 
 /** 提案过滤条件 */
@@ -130,6 +137,12 @@ export interface ProposalFilter {
 /** 最大历史记录数 */
 const MAX_PROPOSALS = 1000;
 
+/** 锁超时时间（毫秒），默认 30 秒 */
+const LOCK_TIMEOUT_MS = 30000;
+
+/** 文件锁目录 */
+const FILE_LOCK_DIR = path.join(os.tmpdir(), 'workbuddy-proposal-locks');
+
 // ===================== SkillWorkshop 类 =====================
 
 /**
@@ -141,7 +154,12 @@ export class SkillWorkshop {
   /** 提案存储：id → SkillProposal */
   private proposals = new Map<string, SkillProposal>();
 
-  constructor() {}
+  /** 内存锁：skillPathHash → { promise: Promise<void>, timeout: NodeJS.Timeout } */
+  private targetLocks = new Map<string, { promise: Promise<void>; timeout: NodeJS.Timeout }>();
+
+  constructor() {
+    this.ensureFileLockDir();
+  }
 
   // ===================== 1. 提案创建 =====================
 
@@ -156,7 +174,7 @@ export class SkillWorkshop {
    * @returns 创建的提案
    */
   createProposal(params: CreateProposalParams): SkillProposal {
-    const { type, skillName, skillPath, content, origin, previousContent } = params;
+    const { type, skillName, skillPath, content, origin, previousContent, currentContentHash } = params;
 
     if (!skillName || !skillName.trim()) {
       throw new Error('Skill name is required.');
@@ -183,6 +201,7 @@ export class SkillWorkshop {
       skillPath,
       content,
       contentHash,
+      currentContentHash,
       status,
       ...(origin ? { origin } : {}),
       scan,
@@ -235,6 +254,17 @@ export class SkillWorkshop {
       throw new Error(
         `Only pending proposals can be applied. Current status: ${proposal.status}.`,
       );
+    }
+
+    // Stale 检测：如果是 update 提案且有 currentContentHash，检查文件是否已被修改
+    if (proposal.type === 'update' && proposal.currentContentHash) {
+      const isStale = this.checkStale(proposal);
+      if (isStale) {
+        this.markStale(id);
+        throw new Error(
+          `Proposal '${id}' is stale: target file content has changed since proposal creation.`,
+        );
+      }
     }
 
     // 应用前再次扫描验证（防止内容被篡改后绕过初始扫描）
@@ -616,6 +646,235 @@ export class SkillWorkshop {
     }
 
     logger.debug(`[SkillWorkshop] Trimmed ${toRemove} old proposal(s) to enforce limit.`);
+  }
+
+  // ===================== 10. 目标锁机制 =====================
+
+  /**
+   * 使用目标锁执行异步操作
+   *
+   * 基于 skillPath 的哈希值作为锁 key，同一 skillPath 的并发操作会排队执行。
+   * 锁默认 30 秒后自动释放，防止死锁。
+   *
+   * @param skillPath - 技能文件路径
+   * @param fn - 要执行的异步函数
+   * @returns 函数执行结果
+   */
+  async withTargetLock<T>(skillPath: string, fn: () => Promise<T>): Promise<T> {
+    const lockKey = this.hashSkillPath(skillPath);
+    logger.debug(`[SkillWorkshop] Acquiring target lock for ${skillPath} (key=${lockKey})`);
+
+    const existing = this.targetLocks.get(lockKey);
+    let resultPromise: Promise<T>;
+
+    if (existing) {
+      resultPromise = existing.promise.then(() => fn());
+    } else {
+      resultPromise = fn();
+    }
+
+    const finalPromise = resultPromise
+      .then((result) => {
+        this.releaseTargetLock(lockKey);
+        logger.debug(`[SkillWorkshop] Target lock released for ${skillPath} (success)`);
+        return result;
+      })
+      .catch((error) => {
+        this.releaseTargetLock(lockKey);
+        logger.debug(`[SkillWorkshop] Target lock released for ${skillPath} (error: ${error.message})`);
+        throw error;
+      });
+
+    const timeout = setTimeout(() => {
+      if (this.targetLocks.has(lockKey)) {
+        logger.warn(`[SkillWorkshop] Target lock timeout for ${skillPath}, auto-releasing.`);
+        this.targetLocks.delete(lockKey);
+      }
+    }, LOCK_TIMEOUT_MS);
+
+    this.targetLocks.set(lockKey, {
+      promise: finalPromise.then(() => undefined),
+      timeout,
+    });
+
+    return finalPromise;
+  }
+
+  /**
+   * 释放目标锁
+   */
+  private releaseTargetLock(lockKey: string): void {
+    const lock = this.targetLocks.get(lockKey);
+    if (lock) {
+      clearTimeout(lock.timeout);
+      this.targetLocks.delete(lockKey);
+    }
+  }
+
+  /**
+   * 计算 skillPath 的哈希值作为锁 key
+   */
+  private hashSkillPath(skillPath: string): string {
+    return crypto
+      .createHash('sha256')
+      .update(path.resolve(skillPath))
+      .digest('hex')
+      .slice(0, 16);
+  }
+
+  // ===================== 11. Stale 检测 =====================
+
+  /**
+   * 标记提案为 stale
+   *
+   * @param id - 提案 ID
+   * @returns 更新后的提案
+   */
+  markStale(id: string): SkillProposal {
+    const proposal = this.getProposalRequired(id);
+    const now = Date.now();
+
+    const stale: SkillProposal = {
+      ...proposal,
+      status: 'stale',
+      updatedAt: now,
+      reviewNote: proposal.reviewNote
+        ? `${proposal.reviewNote}\nMarked stale at ${new Date(now).toISOString()}`
+        : `Marked stale at ${new Date(now).toISOString()}`,
+    };
+
+    this.proposals.set(id, stale);
+    logger.warn(`[SkillWorkshop] Proposal '${id}' marked as stale.`);
+    return stale;
+  }
+
+  /**
+   * 检查提案是否为 stale
+   *
+   * @param id - 提案 ID
+   * @returns 是否为 stale
+   */
+  isStale(id: string): boolean {
+    const proposal = this.getProposal(id);
+    return proposal?.status === 'stale';
+  }
+
+  /**
+   * 检查提案是否过时（内部方法）
+   *
+   * 通过读取磁盘上的当前文件内容，与 proposal.currentContentHash 比较。
+   * 如果文件不存在或内容不同，则认为 stale。
+   */
+  private checkStale(proposal: SkillProposal): boolean {
+    if (!proposal.currentContentHash) {
+      return false;
+    }
+
+    try {
+      if (!fs.existsSync(proposal.skillPath)) {
+        logger.warn(`[SkillWorkshop] Stale check: file not found: ${proposal.skillPath}`);
+        return true;
+      }
+
+      const currentContent = fs.readFileSync(proposal.skillPath, 'utf-8');
+      const currentHash = this.hashContent(currentContent);
+      const isStale = currentHash !== proposal.currentContentHash;
+
+      if (isStale) {
+        logger.warn(
+          `[SkillWorkshop] Stale check: hash mismatch for ${proposal.skillPath} ` +
+          `(expected=${proposal.currentContentHash}, actual=${currentHash})`,
+        );
+      }
+
+      return isStale;
+    } catch (error) {
+      logger.error(`[SkillWorkshop] Stale check failed for ${proposal.skillPath}:`, error);
+      return true;
+    }
+  }
+
+  // ===================== 12. 文件锁支持 =====================
+
+  /**
+   * 确保文件锁目录存在
+   */
+  private ensureFileLockDir(): void {
+    try {
+      if (!fs.existsSync(FILE_LOCK_DIR)) {
+        fs.mkdirSync(FILE_LOCK_DIR, { recursive: true });
+        logger.info(`[SkillWorkshop] File lock directory created: ${FILE_LOCK_DIR}`);
+      }
+    } catch (error) {
+      logger.error(`[SkillWorkshop] Failed to create file lock directory:`, error);
+    }
+  }
+
+  /**
+   * 获取文件锁路径
+   */
+  private getFileLockPath(skillPath: string): string {
+    const hash = this.hashSkillPath(skillPath);
+    return path.join(FILE_LOCK_DIR, `${hash}.lock`);
+  }
+
+  /**
+   * 尝试获取文件锁（进程间安全）
+   *
+   * 使用 fs.existsSync + setTimeout 轮询实现简单的文件锁。
+   *
+   * @param skillPath - 技能文件路径
+   * @param timeoutMs - 超时时间（毫秒），默认 5000ms
+   * @returns 是否成功获取锁
+   */
+  async acquireFileLock(skillPath: string, timeoutMs = 5000): Promise<boolean> {
+    const lockPath = this.getFileLockPath(skillPath);
+    const startTime = Date.now();
+    const pollIntervalMs = 50;
+
+    logger.debug(`[SkillWorkshop] Attempting to acquire file lock for ${skillPath}`);
+
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        if (!fs.existsSync(lockPath)) {
+          fs.writeFileSync(lockPath, `${Date.now()}\n${process.pid}`, 'utf-8');
+          logger.debug(`[SkillWorkshop] File lock acquired for ${skillPath}`);
+          return true;
+        }
+
+        await this.sleep(pollIntervalMs);
+      } catch (error) {
+        logger.error(`[SkillWorkshop] File lock acquire error:`, error);
+        return false;
+      }
+    }
+
+    logger.warn(`[SkillWorkshop] File lock acquire timeout for ${skillPath}`);
+    return false;
+  }
+
+  /**
+   * 释放文件锁
+   *
+   * @param skillPath - 技能文件路径
+   */
+  releaseFileLock(skillPath: string): void {
+    const lockPath = this.getFileLockPath(skillPath);
+    try {
+      if (fs.existsSync(lockPath)) {
+        fs.unlinkSync(lockPath);
+        logger.debug(`[SkillWorkshop] File lock released for ${skillPath}`);
+      }
+    } catch (error) {
+      logger.error(`[SkillWorkshop] Failed to release file lock for ${skillPath}:`, error);
+    }
+  }
+
+  /**
+   * 简单的 sleep 工具函数
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

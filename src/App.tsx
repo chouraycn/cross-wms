@@ -58,6 +58,17 @@ const TuiTerminalPage = React.lazy(() => import('./pages/TuiTerminalPage'));
 const SkillWorkshopPage = React.lazy(() => import('./pages/SkillWorkshopPage'));
 const SecretsPage = React.lazy(() => import('./pages/SecretsPage'));
 const MemoryPage = React.lazy(() => import('./pages/MemoryPage'));
+const WorkflowPage = React.lazy(() => import('./pages/WorkflowPage'));
+const TemplateMarketPage = React.lazy(() => import('./pages/TemplateMarketPage'));
+const ExecutionHistoryPage = React.lazy(() => import('./pages/ExecutionHistoryPage'));
+const EventLedgerPage = React.lazy(() => import('./pages/EventLedgerPage'));
+const FileExplorerPage = React.lazy(() => import('./pages/FileExplorerPage'));
+const ContextEngineRegistryPage = React.lazy(() => import('./pages/ContextEngineRegistryPage'));
+const McpServersPage = React.lazy(() => import('./pages/McpServersPage'));
+const SoulPage = React.lazy(() => import('./pages/SoulPage'));
+const AgentsPage = React.lazy(() => import('./pages/AgentsPage'));
+const GoalsPage = React.lazy(() => import('./pages/GoalsPage'));
+const ImageGenerationPage = React.lazy(() => import('./pages/ImageGenerationPage'));
 
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
@@ -681,6 +692,17 @@ const MainLayout: React.FC = () => {
                     <Route path="/api-credentials" element={<ApiCredentialsPage />} />
                     <Route path="/api-history" element={<ApiHistoryPage />} />
                     <Route path="/tui" element={<TuiTerminalPage />} />
+                    <Route path="/workflow" element={<WorkflowPage />} />
+                    <Route path="/templates" element={<TemplateMarketPage />} />
+                    <Route path="/execution-history" element={<ExecutionHistoryPage />} />
+                    <Route path="/event-ledger" element={<EventLedgerPage />} />
+                    <Route path="/files" element={<FileExplorerPage />} />
+                    <Route path="/context-engine" element={<ContextEngineRegistryPage />} />
+                    <Route path="/mcp" element={<McpServersPage />} />
+                    <Route path="/soul" element={<SoulPage />} />
+                    <Route path="/agents" element={<AgentsPage />} />
+                    <Route path="/goals" element={<GoalsPage />} />
+                    <Route path="/image-generation" element={<ImageGenerationPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Suspense>

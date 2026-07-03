@@ -5,6 +5,8 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../../logger.js';
+import { callAIModel } from '../../aiClient.js';
+import { executeToolCall as executeToolCallFromRegistry } from '../toolRegistry.js';
 import type {
   Workflow,
   WorkflowNode,
@@ -17,6 +19,26 @@ import type {
   LoopConfig,
   ExecutionStatus,
 } from './types.js';
+
+type ActionConfig = {
+  type: 'ai_call' | 'tool_execution' | 'notification' | 'data_transform' | 'api_call' | 'script';
+  params: Record<string, unknown>;
+};
+
+async function sendNotification(options: { title: string; body: string; type?: string }): Promise<void> {
+  logger.info(`[Notification] ${options.type || 'info'}: ${options.title} - ${options.body}`);
+  if (process.platform === 'darwin') {
+    try {
+      const { execFile } = await import('child_process');
+      execFile('osascript', [
+        '-e',
+        `display notification "${options.body}" with title "${options.title}" sound name "default"`,
+      ]);
+    } catch {
+      // ignore
+    }
+  }
+}
 
 /**
  * 工作流执行器
@@ -245,33 +267,284 @@ export class WorkflowExecutor {
     node: WorkflowNode,
     context: ExecutionContext
   ): Promise<Record<string, unknown>> {
-    const config = node.config;
-    const timeout = node.timeout || 30000; // 默认 30 秒超时
+    const config = node.config as ActionConfig;
+    const timeout = node.timeout || 30000;
 
-    this.log(context, 'info', `执行动作: ${node.name}`, node.id);
+    this.log(context, 'info', `执行动作: ${node.name} (type: ${config.type})`, node.id);
 
-    // 模拟动作执行（实际项目中需要根据动作类型调用对应服务）
-    const actionPromise = new Promise<Record<string, unknown>>((resolve) => {
-      // 这里应该根据 config.type 调用不同的执行器
-      // 例如: ai_call, tool_execution, notification 等
-      setTimeout(() => {
-        resolve({
-          actionExecuted: true,
-          actionType: config.type,
-          result: '动作执行完成',
-        });
-      }, 1000);
-    });
+    let result: Record<string, unknown>;
 
-    // 超时处理
-    const result = await Promise.race([
-      actionPromise,
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('动作执行超时')), timeout)
-      ),
-    ]);
+    switch (config.type) {
+      case 'ai_call':
+        result = await this.executeAICall(config, context);
+        break;
+      case 'tool_execution':
+        result = await this.executeToolCall(config, context);
+        break;
+      case 'notification':
+        result = await this.executeNotification(config, context);
+        break;
+      case 'data_transform':
+        result = await this.executeDataTransform(config, context);
+        break;
+      case 'api_call':
+        result = await this.executeApiCall(config, context);
+        break;
+      case 'script':
+        result = await this.executeScript(config, context);
+        break;
+      default:
+        throw new Error(`未知动作类型: ${config.type}`);
+    }
 
+    this.log(context, 'info', `动作执行完成: ${node.name}`, node.id);
     return result;
+  }
+
+  /**
+   * 执行 AI 调用
+   */
+  private async executeAICall(
+    config: ActionConfig,
+    context: ExecutionContext
+  ): Promise<Record<string, unknown>> {
+    const { prompt, modelId, systemPrompt } = config.params;
+    if (!prompt) {
+      throw new Error('AI 调用缺少 prompt 参数');
+    }
+
+    try {
+      const response = await callAIModel({
+        model: modelId as string || 'default',
+        messages: [
+          systemPrompt ? { role: 'system', content: String(systemPrompt) } : null,
+          { role: 'user', content: String(prompt) },
+        ].filter(Boolean),
+        options: { maxTokens: 4096 },
+      });
+
+      return {
+        actionExecuted: true,
+        actionType: 'ai_call',
+        result: response.content || response,
+        usage: response.usage,
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.log(context, 'error', `AI 调用失败: ${errorMsg}`, config.type);
+      throw new Error(`AI 调用失败: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * 执行工具调用
+   */
+  private async executeToolCall(
+    config: ActionConfig,
+    context: ExecutionContext
+  ): Promise<Record<string, unknown>> {
+    const { toolName, arguments: args } = config.params;
+    if (!toolName) {
+      throw new Error('工具调用缺少 toolName 参数');
+    }
+
+    try {
+      const result = await executeToolCallFromRegistry({
+        function: {
+          name: String(toolName),
+          arguments: JSON.stringify(args as Record<string, unknown> || {}),
+        },
+      });
+
+      return {
+        actionExecuted: true,
+        actionType: 'tool_execution',
+        result,
+        toolName,
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.log(context, 'error', `工具调用失败: ${errorMsg}`, config.type);
+      throw new Error(`工具调用失败: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * 执行通知
+   */
+  private async executeNotification(
+    config: ActionConfig,
+    context: ExecutionContext
+  ): Promise<Record<string, unknown>> {
+    const { title, message, type } = config.params;
+    if (!title || !message) {
+      throw new Error('通知缺少 title 或 message 参数');
+    }
+
+    try {
+      await sendNotification({
+        title: String(title),
+        body: String(message),
+        type: (type as string) || 'info',
+      });
+
+      return {
+        actionExecuted: true,
+        actionType: 'notification',
+        result: '通知已发送',
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.log(context, 'warn', `通知发送失败: ${errorMsg}`, config.type);
+      return {
+        actionExecuted: false,
+        actionType: 'notification',
+        result: '通知发送失败',
+        error: errorMsg,
+      };
+    }
+  }
+
+  /**
+   * 执行数据转换
+   */
+  private async executeDataTransform(
+    config: ActionConfig,
+    context: ExecutionContext
+  ): Promise<Record<string, unknown>> {
+    const { input, transform } = config.params;
+    if (!input || !transform) {
+      throw new Error('数据转换缺少 input 或 transform 参数');
+    }
+
+    try {
+      const result = this.applyTransform(input, transform, context.variables);
+      return {
+        actionExecuted: true,
+        actionType: 'data_transform',
+        result,
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.log(context, 'error', `数据转换失败: ${errorMsg}`, config.type);
+      throw new Error(`数据转换失败: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * 执行 API 调用
+   */
+  private async executeApiCall(
+    config: ActionConfig,
+    context: ExecutionContext
+  ): Promise<Record<string, unknown>> {
+    const { url, method, headers, body } = config.params;
+    if (!url || !method) {
+      throw new Error('API 调用缺少 url 或 method 参数');
+    }
+
+    try {
+      const response = await fetch(String(url), {
+        method: String(method),
+        headers: headers as Record<string, string> || {},
+        body: body ? JSON.stringify(body) : undefined,
+      });
+
+      const data = await response.json();
+      return {
+        actionExecuted: true,
+        actionType: 'api_call',
+        status: response.status,
+        result: data,
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.log(context, 'error', `API 调用失败: ${errorMsg}`, config.type);
+      throw new Error(`API 调用失败: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * 执行脚本
+   */
+  private async executeScript(
+    config: ActionConfig,
+    context: ExecutionContext
+  ): Promise<Record<string, unknown>> {
+    const { script, language } = config.params;
+    if (!script) {
+      throw new Error('脚本执行缺少 script 参数');
+    }
+
+    try {
+      const result = this.executeScriptCode(String(script), language as string, context.variables);
+      return {
+        actionExecuted: true,
+        actionType: 'script',
+        result,
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.log(context, 'error', `脚本执行失败: ${errorMsg}`, config.type);
+      throw new Error(`脚本执行失败: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * 应用数据转换
+   */
+  private applyTransform(
+    input: unknown,
+    transform: unknown,
+    variables: Record<string, unknown>
+  ): unknown {
+    if (typeof transform === 'object' && transform !== null) {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(transform as Record<string, unknown>)) {
+        if (typeof value === 'string' && value.startsWith('{{') && value.endsWith('}}')) {
+          const expr = value.slice(2, -2).trim();
+          result[key] = this.evaluateExpression(expr, { input, ...variables });
+        } else {
+          result[key] = this.applyTransform(value, value, variables);
+        }
+      }
+      return result;
+    }
+    return input;
+  }
+
+  /**
+   * 评估表达式
+   */
+  private evaluateExpression(
+    expr: string,
+    context: Record<string, unknown>
+  ): unknown {
+    try {
+      const keys = Object.keys(context);
+      const values = keys.map(k => context[k]);
+      const fn = new Function(...keys, `return ${expr};`);
+      return fn(...values);
+    } catch {
+      return context[expr] ?? expr;
+    }
+  }
+
+  /**
+   * 执行脚本代码
+   */
+  private executeScriptCode(
+    script: string,
+    language: string,
+    variables: Record<string, unknown>
+  ): unknown {
+    if (language === 'javascript' || !language) {
+      const keys = Object.keys(variables);
+      const values = keys.map(k => variables[k]);
+      const fn = new Function(...keys, script);
+      return fn(...values);
+    }
+    throw new Error(`不支持的脚本语言: ${language}`);
   }
 
   /**
@@ -465,14 +738,51 @@ export class WorkflowExecutor {
       await new Promise(resolve => setTimeout(resolve, delay));
 
       try {
-        // 重新执行节点（简化版，实际需要根据节点类型重新执行）
+        let output: Record<string, unknown> = {};
+
+        switch (node.type) {
+          case 'trigger':
+            output = await this.executeTrigger(node, context);
+            break;
+          case 'condition':
+            output = await this.executeCondition(this.getWorkflow(context), node, context);
+            break;
+          case 'action':
+            output = await this.executeAction(node, context);
+            break;
+          case 'parallel':
+            output = await this.executeParallel(this.getWorkflow(context), node, context);
+            break;
+          case 'loop':
+            output = await this.executeLoop(this.getWorkflow(context), node, context);
+            break;
+          case 'wait':
+            output = await this.executeWait(node, context);
+            break;
+          default:
+            throw new Error(`未知节点类型: ${node.type}`);
+        }
+
+        context.nodeOutputs.set(node.id, output);
+        Object.assign(context.variables, output);
+
+        this.log(context, 'info', `节点重试成功: ${node.name}`, node.id);
         return retryCount;
       } catch (err) {
         lastError = err;
+        this.log(context, 'warn', `重试 ${retryCount} 失败: ${err instanceof Error ? err.message : String(err)}`, node.id);
       }
     }
 
     throw lastError;
+  }
+
+  private getWorkflow(context: ExecutionContext): Workflow {
+    const exec = this.executions.get(context.executionId);
+    if (!exec) {
+      throw new Error('找不到执行记录');
+    }
+    return { id: exec.workflowId, name: exec.workflowName } as Workflow;
   }
 
   /**

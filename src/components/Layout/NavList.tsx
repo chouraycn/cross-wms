@@ -44,6 +44,12 @@ import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import CircularProgress from '@mui/material/CircularProgress';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ExtensionIcon from '@mui/icons-material/Extension';
+import SelfImprovementIcon from '@mui/icons-material/SelfImprovement';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import FlagIcon from '@mui/icons-material/Flag';
+import ImageIcon from '@mui/icons-material/Image';
+import HubIcon from '@mui/icons-material/Hub';
 import { getGrayScale } from '../../constants/theme';
 import { Session } from '../../types/chat';
 
@@ -97,8 +103,6 @@ const navItems: NavItem[] = [
   { label: '项目', path: '/projects', icon: <FolderOutlinedIcon />, desc: '项目总览' },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
   { label: 'Workshop', path: '/skills/workshop', icon: <TerminalIcon />, desc: '提案管理' },
-  { label: '密钥', path: '/secrets', icon: <VpnKeyIcon />, desc: '密钥管理' },
-  { label: '记忆', path: '/memory', icon: <MemoryIcon />, desc: '记忆系统' },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
 
   {

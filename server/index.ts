@@ -160,6 +160,14 @@ import soulWatcher from './engine/soul/watcher.js';
 // Git integration routes
 import gitRouter from './routes/git.js';
 
+// v11.0: Workflow & Skill Workshop routes
+import workflowRouter from './routes/workflow.js';
+import skillWorkshopRouter from './routes/skillWorkshop.js';
+import codeIndexRouter from './routes/codeIndex.js';
+import templatesRouter from './routes/templates.js';
+import executionHistoryRouter from './routes/executionHistory.js';
+import { contextEngineRouter } from './routes/contextEngine.js';
+
 // v10.0: Gateway (API 兼容网关)
 import gatewayRouter from './gateway/gateway.js';
 import { configureGatewayAuth, addApiKey, generateDevApiKey } from './gateway/gatewayAuth.js';
@@ -319,6 +327,17 @@ app.use('/api/web-search', webSearchRouter);
 // ========== Soul Rules Routes (人格规则管理) ==========
 app.use('/api/soul', soulRouter);
 
+// ========== Git Routes ==========
+app.use('/api/git', gitRouter);
+
+// ========== v11.0: Workflow & Skill Workshop Routes ==========
+app.use('/api/workflow', workflowRouter);
+app.use('/api/skill-workshop', skillWorkshopRouter);
+app.use('/api/code-index', codeIndexRouter);
+app.use('/api/templates', templatesRouter);
+app.use('/api/execution-history', executionHistoryRouter);
+app.use('/api/context-engine', contextEngineRouter);
+
 // ========== v10.0: Gateway Routes (OpenAI/MCP 兼容) ==========
 // 从环境变量或配置文件读取 API Keys
 const gatewayApiKeys = (process.env.GATEWAY_API_KEYS || '').split(',').filter(Boolean);
@@ -386,6 +405,13 @@ app.use(`${API_PREFIX}/permissions`, permissionsRouter);
 app.use(`${API_PREFIX}/soul`, soulRouter);
 app.use(`${API_PREFIX}/git`, gitRouter);
 
+// v11.0: Workflow & Skill Workshop Routes (versioned)
+app.use(`${API_PREFIX}/workflow`, workflowRouter);
+app.use(`${API_PREFIX}/skill-workshop`, skillWorkshopRouter);
+app.use(`${API_PREFIX}/code-index`, codeIndexRouter);
+app.use(`${API_PREFIX}/templates`, templatesRouter);
+app.use(`${API_PREFIX}/execution-history`, executionHistoryRouter);
+
 // ========== v1.5.220: 前端静态文件服务（供 Swift 原生 App 使用） ==========
 // 优先从 dist/ 加载前端构建产物（开发环境），其次从 process.env.FRONTEND_DIR 加载
 const FRONTEND_DIST_DIR = process.env.FRONTEND_DIR
@@ -429,22 +455,24 @@ server.listen(PORT, async () => {
   // 不 await，不阻塞启动流程；失败仅 warn
   loadModelsConfig().catch(e => logger.warn('[Server] 模型缓存预热失败:', e instanceof Error ? e.message : String(e)));
 
-  // 初始化 Tool Registry
-  await initDefaultTools();
-  logger.info('[Tool Registry] 工具注册完成:', listTools().join(', '));
+  // 并行初始化 Tool Registry 和插件加载，减少启动阻塞
+  await Promise.all([
+    initDefaultTools().then(() => {
+      logger.info('[Tool Registry] 工具注册完成:', listTools().join(', '));
+    }),
+    pluginRegistry.loadEnabledPlugins().then(() => {
+      const pluginToolNames = listPluginTools();
+      if (pluginToolNames.length > 0) {
+        logger.info('[Plugin Registry] 插件工具已加载:', pluginToolNames.join(', '));
+      }
+    }),
+  ]);
 
   // v8.0: 初始化 Agent Registry（加载内置 Agent 模板）
   agentRegistry.initialize();
 
   // v8.5: 初始化人格层文件（首次启动时复制 SOUL.md / USER.md 到 ~/.cdf-know-clow/）
   initDefaultSoulFiles();
-
-  // v3.0: 自动加载已启用的插件
-  await pluginRegistry.loadEnabledPlugins();
-  const pluginToolNames = listPluginTools();
-  if (pluginToolNames.length > 0) {
-    logger.info('[Plugin Registry] 插件工具已加载:', pluginToolNames.join(', '));
-  }
 
   // v4.0: 启动时连接所有已启用的 MCP Server（异步，不阻塞主流程）
   setTimeout(async () => {
@@ -477,39 +505,41 @@ server.listen(PORT, async () => {
   // 初始化 WMS 行业技能表
   ensureWmsTables();
 
-  // v9.0: 初始化 Event Ledger (事件溯源)
-  try {
-    await initEventLedger();
-    const ledgerStats = await getEventLedger().getStats();
-    logger.info(
-      `[EventLedger] 初始化完成: ${ledgerStats.totalSessions} 个会话, ` +
-      `${ledgerStats.totalEvents} 个事件, ` +
-      `${(ledgerStats.dbSizeBytes / 1024 / 1024).toFixed(2)} MB`
-    );
-
-    // 检查并恢复不完整的会话（崩溃恢复）
-    const incompleteSessions = await getEventLedger().findIncompleteSessions();
-    if (incompleteSessions.length > 0) {
-      logger.warn(
-        `[EventLedger] 发现 ${incompleteSessions.length} 个不完整会话，正在标记恢复...`
+  // v9.0: 初始化 Event Ledger (事件溯源) — 后台执行，不阻塞启动
+  // 事件账本是辅助系统，延迟初始化不影响核心功能
+  initEventLedger()
+    .then(async () => {
+      const ledgerStats = await getEventLedger().getStats();
+      logger.info(
+        `[EventLedger] 初始化完成: ${ledgerStats.totalSessions} 个会话, ` +
+        `${ledgerStats.totalEvents} 个事件, ` +
+        `${(ledgerStats.dbSizeBytes / 1024 / 1024).toFixed(2)} MB`
       );
-      for (const session of incompleteSessions) {
-        try {
-          await getEventLedger().markSessionIncomplete(
-            session.sessionId,
-            `恢复自上次中断，最后事件: ${session.lastEventType}`
-          );
-        } catch (e) {
-          logger.warn(`[EventLedger] 标记会话失败: ${session.sessionId}`, e);
-        }
-      }
-      logger.info(`[EventLedger] 崩溃恢复完成`);
-    }
-  } catch (err) {
-    logger.warn('[EventLedger] 初始化失败，继续运行中:', err instanceof Error ? err.message : String(err));
-  }
 
-  // 初始化语义匹配引擎（延迟 60s，避免启动时加载 ONNX 模型占用内存）
+      // 检查并恢复不完整的会话（崩溃恢复）
+      const incompleteSessions = await getEventLedger().findIncompleteSessions();
+      if (incompleteSessions.length > 0) {
+        logger.warn(
+          `[EventLedger] 发现 ${incompleteSessions.length} 个不完整会话，正在标记恢复...`
+        );
+        for (const session of incompleteSessions) {
+          try {
+            await getEventLedger().markSessionIncomplete(
+              session.sessionId,
+              `恢复自上次中断，最后事件: ${session.lastEventType}`
+            );
+          } catch (e) {
+            logger.warn(`[EventLedger] 标记会话失败: ${session.sessionId}`, e);
+          }
+        }
+        logger.info(`[EventLedger] 崩溃恢复完成`);
+      }
+    })
+    .catch(err => {
+      logger.warn('[EventLedger] 初始化失败，继续运行中:', err instanceof Error ? err.message : String(err));
+    });
+
+  // 初始化语义匹配引擎（延迟 15s，ONNX 预热已异步开始，缩短等待时间）
   setTimeout(async () => {
     try {
       const stats = await initMatchingEngine();
@@ -517,7 +547,7 @@ server.listen(PORT, async () => {
     } catch (e) {
       logger.error('[Matching] 嵌入初始化失败:', e);
     }
-  }, 60_000).unref();
+  }, 15_000).unref();
 
   // 启动自动化引擎 v2.0（30s 轮询）
   const { stop } = startEngine(30_000);

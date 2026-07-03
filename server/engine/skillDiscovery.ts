@@ -17,6 +17,10 @@
  */
 
 import { logger } from '../logger.js';
+import {
+  renderSkillsPrompt,
+  type RenderOptions,
+} from './skillPromptRenderer.js';
 import type {
   RegisteredSkill,
   SkillDefinition,
@@ -44,6 +48,8 @@ export interface SkillIndexEntry {
   /** 禁止模型自动调用（仅允许用户调用） */
   disableModelInvocation?: boolean;
   source: 'builtin' | 'workspace' | 'user';
+  /** SKILL.md 所在目录的绝对路径 */
+  sourcePath?: string;
   version?: string;
   registeredAt: number;
   /** 使用频率 */
@@ -226,6 +232,7 @@ export class SkillDiscovery {
       },
       disableModelInvocation: (definition as any).disableModelInvocation ?? false,
       source: definition.source,
+      sourcePath: definition.sourcePath,
       version: definition.version,
       registeredAt: skill.registeredAt,
     };
@@ -302,6 +309,35 @@ export class SkillDiscovery {
       visibility: 'promptVisible',
       agentId,
     });
+  }
+
+  /**
+   * 渲染 Prompt 格式的 Skill 列表（XML）
+   *
+   * 支持三级降级：
+   * - Level 1 (full): name + description + location + version
+   * - Level 2 (compact): name + location + version
+   * - Level 3 (binary truncate): 二分查找最大前缀
+   *
+   * @param options - 渲染选项（可选）
+   * @param agentId - Agent ID（可选，用于 Agent 级别过滤）
+   * @returns XML 格式的 Prompt 片段
+   */
+  renderPrompt(options?: RenderOptions, agentId?: string): string {
+    const entries = this.getSkillsForPrompt(agentId);
+
+    const skills: SkillDefinition[] = entries.map((entry) => ({
+      id: entry.skillId,
+      name: entry.displayName,
+      description: entry.description,
+      group: entry.group,
+      source: entry.source,
+      version: entry.version,
+      tags: entry.tags,
+      sourcePath: entry.sourcePath,
+    } as SkillDefinition));
+
+    return renderSkillsPrompt(skills, options);
   }
 
   /**
