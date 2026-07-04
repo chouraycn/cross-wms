@@ -471,6 +471,7 @@ export async function embedText(text: string): Promise<Float32Array> {
   }
 
   const { inputIds, attentionMask } = tokenize(text);
+  const tokenTypeIds = new Array(MAX_SEQ_LENGTH).fill(0);
 
   // P1: Tensor 内存池复用 — 直接更新 data 而不是重新创建 Tensor
   if (pooledInputIdsData && pooledAttentionMaskData && pooledInputIdsTensor && pooledAttentionMaskTensor) {
@@ -484,12 +485,20 @@ export async function embedText(text: string): Promise<Float32Array> {
     pooledAttentionMaskTensor = new ort.Tensor('int64', BigInt64Array.from(attentionMask.map(n => BigInt(n))), [1, MAX_SEQ_LENGTH]);
   }
 
+  // 创建 token_type_ids Tensor（单句文本全为 0）
+  const tokenTypeIdsTensor = new ort.Tensor('int64', BigInt64Array.from(tokenTypeIds.map(n => BigInt(n))), [1, MAX_SEQ_LENGTH]);
+
   // 推理
   const inputName0 = sess.inputNames[0]; // input_ids
   const inputName1 = sess.inputNames[1]; // attention_mask
   const feeds: Record<string, ort.Tensor> = {};
   feeds[inputName0] = pooledInputIdsTensor;
   feeds[inputName1] = pooledAttentionMaskTensor;
+
+  // 检查是否需要 token_type_ids
+  if (sess.inputNames.includes('token_type_ids')) {
+    feeds['token_type_ids'] = tokenTypeIdsTensor;
+  }
 
   const output = await sess.run(feeds);
 
