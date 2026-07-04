@@ -234,8 +234,12 @@ jobs:
           VERSION="${{ needs.build-dmg.outputs.version }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v${VERSION}"
-          git push origin "v${VERSION}"
+          if git tag -l "v${VERSION}" | grep -q "v${VERSION}"; then
+            echo "Tag v${VERSION} already exists locally"
+          else
+            git tag "v${VERSION}"
+          fi
+          git push origin "v${VERSION}" 2>/dev/null || echo "Tag v${VERSION} already exists on remote, continuing"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
