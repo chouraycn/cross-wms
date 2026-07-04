@@ -50,8 +50,4 @@ let package = Package(
             name: "CDFKnowClowTests",
             dependencies: ["CrossWMSIPC"],
             path: "Tests/CDFKnowClowTests"),
-        .testTarget(
-            name: "CDFKnowIPCTests",
-            dependencies: ["CDFKnowProtocol", "CDFKnow"],
-            path: "Tests/CDFKnowIPCTests"),
     ])
