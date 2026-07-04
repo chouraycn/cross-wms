@@ -23,6 +23,11 @@ import {
   isOversizedForSummary,
   type AgentMessage,
 } from './compaction-planning.js';
+import {
+  IDENTIFIER_PRESERVATION_INSTRUCTIONS,
+  resolveIdentifierPreservationInstructions as resolveWmsIdentifierInstructions,
+  type CompactionIdentifierConfig,
+} from './compaction-identifier.js';
 
 /**
  * 压缩回调类型
@@ -34,15 +39,10 @@ export type CompressCallback = (
 ) => Promise<string>;
 
 /**
- * 标识符保留策略
- */
-export type IdentifierPolicy = 'strict' | 'off' | 'custom';
-
-/**
  * 压缩摘要指令配置
  */
 export type CompactionSummarizationInstructions = {
-  identifierPolicy?: IdentifierPolicy;
+  identifierPolicy?: CompactionIdentifierConfig['policy'];
   identifierInstructions?: string;
 };
 
@@ -63,57 +63,13 @@ const MERGE_SUMMARIES_INSTRUCTIONS = [
   'what it was doing, not just what was discussed.',
 ].join('\n');
 
-const IDENTIFIER_PRESERVATION_INSTRUCTIONS =
-  'Preserve all opaque identifiers exactly as written (no shortening or reconstruction), ' +
-  'including UUIDs, hashes, IDs, hostnames, IPs, ports, URLs, and file names.';
-
-/**
- * 默认压缩回调 — 用 LLM 将旧消息压缩为结构化摘要
- */
-export async function defaultCompressCallback(
-  droppedMessages: Array<{ role: string; content: string }>,
-  modelConfig: ModelCallConfig,
-): Promise<string> {
-  const conversationText = droppedMessages
-    .map(m => `${m.role === 'user' ? '用户' : '助手'}: ${m.content.slice(0, 500)}`)
-    .join('\n');
-
-  const summaryPrompt = `请将以下对话历史压缩为一段简洁的结构化摘要，保留：
-1. 用户的核心需求和意图
-2. 已执行的关键操作和结果
-3. 重要的数据或参数
-4. 未完成的任务
-
-对话历史：
-${conversationText}
-
-请直接输出摘要，不要加任何解释或前缀。`;
-
-  try {
-    const summary = await callAIModel(
-      modelConfig,
-      [{ role: 'user', content: summaryPrompt }],
-      undefined,
-    );
-    return `[历史对话摘要，供参考]：\n${summary.trim()}`;
-  } catch (err) {
-    logger.warn('[ContextCompress] LLM 摘要失败，降级为简单截断：', err);
-    return '[历史对话已截断，内容过长已省略]';
-  }
-}
-
 function resolveIdentifierPreservationInstructions(
   instructions?: CompactionSummarizationInstructions,
 ): string | undefined {
-  const policy = instructions?.identifierPolicy ?? 'strict';
-  if (policy === 'off') {
-    return undefined;
-  }
-  if (policy === 'custom') {
-    const custom = instructions?.identifierInstructions?.trim();
-    return custom && custom.length > 0 ? custom : IDENTIFIER_PRESERVATION_INSTRUCTIONS;
-  }
-  return IDENTIFIER_PRESERVATION_INSTRUCTIONS;
+  return resolveWmsIdentifierInstructions({
+    policy: instructions?.identifierPolicy ?? 'wms',
+    customInstructions: instructions?.identifierInstructions,
+  });
 }
 
 export function buildCompactionSummarizationInstructions(

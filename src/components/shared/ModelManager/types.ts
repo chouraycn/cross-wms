@@ -159,6 +159,7 @@ export interface ModelListProps {
   actions: Pick<
     ModelManagerActions,
     | 'openModelDialog'
+    | 'openModelSelectDialog'
     | 'handleDeleteModel'
     | 'handleSetDefaultModel'
     | 'handleToggleModelEnabled'

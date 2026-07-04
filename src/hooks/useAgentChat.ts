@@ -36,6 +36,7 @@ import { API_BASE } from '../constants/api';
 import { useStreamReconciliation } from './useStreamReconciliation';
 import type { StreamReconciliationState } from './useStreamReconciliation';
 import { useAiEngineSettings } from '../contexts/AppSettingsContext';
+import { extractTodos, mergeAutoTodos } from '../utils/extractTodos';
 
 // ===================== 类型定义 =====================
 
@@ -480,6 +481,8 @@ export function useAgentChat(
   } = useStreamReconciliation();
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  // 组件卸载标志：用于区分"用户手动停止"和"组件卸载导致的 abort"
+  const isUnmountedRef = useRef(false);
   const parserRef = useRef<SSEStreamParser>(new SSEStreamParser());
   const itemsMapRef = useRef<Map<string, AgentItemEventData>>(new Map());
   const lastSeqRef = useRef<Map<string, number>>(new Map());
@@ -778,6 +781,44 @@ export function useAgentChat(
           setIsLoading(false);
           setCurrentRunId(null);
 
+          // 自动提取待办：从助手最终回复内容中提取行动项，写入 localStorage 并派发事件
+          const eventSessionKey = (data.sessionKey as string) || (data.sessionId as string) || '';
+          if (eventSessionKey && state.assistantMessageIndex >= 0) {
+            try {
+              setMessages((prev) => {
+                if (state.assistantMessageIndex >= prev.length) return prev;
+                const finalMsg = prev[state.assistantMessageIndex];
+                if (finalMsg?.role !== 'assistant' || !finalMsg.content) return prev;
+
+                const extracted = extractTodos(finalMsg.content);
+                if (extracted.length === 0) return prev;
+
+                const storageKey = `cdf-todos-${eventSessionKey}`;
+                const raw = localStorage.getItem(storageKey);
+                let existing: Array<{ id: string; text: string; done: boolean; createdAt: number }> = [];
+                if (raw) {
+                  try {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) existing = parsed;
+                  } catch {
+                    // 忽略解析失败
+                  }
+                }
+                const merged = mergeAutoTodos(existing, extracted);
+                if (merged.length === existing.length) return prev; // 无新增
+
+                localStorage.setItem(storageKey, JSON.stringify(merged));
+                // 派发事件通知 ChatSidePanel 重新加载
+                window.dispatchEvent(new CustomEvent('cdf-todos-updated', {
+                  detail: { sessionKey: eventSessionKey },
+                }));
+                return prev;
+              });
+            } catch {
+              // 待办提取失败不影响主流程
+            }
+          }
+
           const errorCode = data.errorCode as string | undefined;
           const errorMessage = data.errorMessage as string | undefined;
           if (errorCode && errorMessage) {
@@ -1061,6 +1102,12 @@ export function useAgentChat(
         thinkingCoalescerRef.current?.dispose();
         flushAllBuffers();
 
+        // 组件卸载导致的 abort（如路由切换），不更新消息状态，避免显示"请求已取消"错误
+        if (isUnmountedRef.current) {
+          console.log('[useAgentChat] 组件已卸载，跳过错误状态更新');
+          return;
+        }
+
         const state = blockStateRef.current;
         if (state.assistantMessageIndex >= 0) {
           setMessages((prev) => {
@@ -1282,6 +1329,8 @@ export function useAgentChat(
   // 组件卸载时清理
   useEffect(() => {
     return () => {
+      // 标记组件已卸载，使 catch 块中的 AbortError 处理跳过错误状态更新
+      isUnmountedRef.current = true;
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }

@@ -492,8 +492,12 @@ extension AppDelegate: NSWindowDelegate {
             config.windowWidth = frame.width
             config.windowHeight = frame.height
         }
+        // 停止服务器后退出应用，确保红色关闭按钮真正关闭
         Task {
             await serverManager?.stop()
+            await MainActor.run {
+                NSApp.terminate(nil)
+            }
         }
     }
 

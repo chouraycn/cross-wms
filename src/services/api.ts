@@ -997,22 +997,19 @@ export interface SecretsStats {
 /** 获取密钥列表 */
 export async function fetchSecretsList(provider?: string): Promise<SecretItem[]> {
   const query = provider ? `?provider=${encodeURIComponent(provider)}` : '';
-  const res = await request<{ data: SecretItem[]; total: number }>('GET', `/api/secrets/list${query}`);
-  return res.data;
+  return request<SecretItem[]>('GET', `/api/secrets/list${query}`);
 }
 
 /** 获取密钥统计 */
 export async function fetchSecretsStats(): Promise<SecretsStats> {
-  const res = await request<{ data: SecretsStats }>('GET', '/api/secrets/stats');
-  return res.data;
+  return request<SecretsStats>('GET', '/api/secrets/stats');
 }
 
 /** 获取密钥访问日志 */
 export async function fetchSecretLogs(secretId?: string, limit?: number): Promise<SecretAccessLog[]> {
   const path = secretId ? `/api/secrets/logs/${encodeURIComponent(secretId)}` : '/api/secrets/logs';
   const query = limit ? `?limit=${limit}` : '';
-  const res = await request<{ data: SecretAccessLog[]; total: number }>('GET', `${path}${query}`);
-  return res.data;
+  return request<SecretAccessLog[]>('GET', `${path}${query}`);
 }
 
 /** 设置密钥 */
@@ -1023,26 +1020,22 @@ export async function setSecretApi(data: {
   type?: string;
   description?: string;
 }): Promise<{ success: boolean; provider: string; key: string }> {
-  const res = await request<{ data: { success: boolean; provider: string; key: string } }>('POST', '/api/secrets/set', data);
-  return res.data;
+  return request<{ success: boolean; provider: string; key: string }>('POST', '/api/secrets/set', data);
 }
 
 /** 删除密钥 */
 export async function deleteSecretApi(provider: string, key: string): Promise<{ success: boolean }> {
-  const res = await request<{ data: { success: boolean } }>('DELETE', '/api/secrets/delete', { provider, key });
-  return res.data;
+  return request<{ success: boolean }>('DELETE', '/api/secrets/delete', { provider, key });
 }
 
 /** 验证密钥 */
 export async function validateSecretApi(provider: string, key: string, type?: string): Promise<{ exists: boolean }> {
-  const res = await request<{ data: { exists: boolean } }>('POST', '/api/secrets/validate', { provider, key, type });
-  return res.data;
+  return request<{ exists: boolean }>('POST', '/api/secrets/validate', { provider, key, type });
 }
 
 /** 清除密钥缓存 */
 export async function clearSecretsCache(): Promise<{ success: boolean }> {
-  const res = await request<{ data: { success: boolean } }>('POST', '/api/secrets/cache/clear', {});
-  return res.data;
+  return request<{ success: boolean }>('POST', '/api/secrets/cache/clear', {});
 }
 
 // ===================== Context Engine API =====================
@@ -1083,13 +1076,11 @@ export interface ContextEngineStats {
 }
 
 export async function fetchContextEngines(): Promise<ContextEngineInfo[]> {
-  const res = await request<{ data: ContextEngineInfo[]; total: number }>('GET', '/api/context-engine/engines');
-  return res.data;
+  return request<ContextEngineInfo[]>('GET', '/api/context-engine/engines');
 }
 
 export async function fetchContextEngine(id: string): Promise<ContextEngineInfo> {
-  const res = await request<{ data: ContextEngineInfo }>('GET', `/api/context-engine/engines/${encodeURIComponent(id)}`);
-  return res.data;
+  return request<ContextEngineInfo>('GET', `/api/context-engine/engines/${encodeURIComponent(id)}`);
 }
 
 export async function updateContextEngineHealth(id: string, status: string, message?: string): Promise<{ success: boolean }> {
@@ -1123,8 +1114,7 @@ export async function refreshContextEngine(id: string): Promise<{ success: boole
 }
 
 export async function fetchContextEngineStats(): Promise<ContextEngineStats> {
-  const res = await request<{ data: ContextEngineStats }>('GET', '/api/context-engine/stats');
-  return res.data;
+  return request<ContextEngineStats>('GET', '/api/context-engine/stats');
 }
 
 // ===================== Memory API =====================
@@ -1312,26 +1302,23 @@ export interface AgentScenario {
 }
 
 export async function fetchAgents(): Promise<AgentInfo[]> {
-  const res = await request<{ data: AgentInfo[] }>('GET', '/api/agents');
-  return res.data;
+  return request<AgentInfo[]>('GET', '/api/agents');
 }
 
 export async function fetchAgentIdentities(): Promise<AgentIdentity[]> {
-  const res = await request<{ data: AgentIdentity[] }>('GET', '/api/agents/identities');
-  return res.data;
+  return request<AgentIdentity[]>('GET', '/api/agents/identities');
 }
 
 export async function fetchAgentIdentity(id: string): Promise<AgentIdentity> {
-  const res = await request<{ data: AgentIdentity }>('GET', `/api/agents/identities/${encodeURIComponent(id)}`);
-  return res.data;
+  return request<AgentIdentity>('GET', `/api/agents/identities/${encodeURIComponent(id)}`);
 }
 
-export async function createAgentIdentity(data: Partial<AgentIdentity>): Promise<{ data: AgentIdentity; message: string }> {
-  return request<{ data: AgentIdentity; message: string }>('POST', '/api/agents/identities', data);
+export async function createAgentIdentity(data: Partial<AgentIdentity>): Promise<AgentIdentity> {
+  return request<AgentIdentity>('POST', '/api/agents/identities', data);
 }
 
-export async function updateAgentIdentity(id: string, data: Partial<AgentIdentity>): Promise<{ data: AgentIdentity; message: string }> {
-  return request<{ data: AgentIdentity; message: string }>('PUT', `/api/agents/identities/${encodeURIComponent(id)}`, data);
+export async function updateAgentIdentity(id: string, data: Partial<AgentIdentity>): Promise<AgentIdentity> {
+  return request<AgentIdentity>('PUT', `/api/agents/identities/${encodeURIComponent(id)}`, data);
 }
 
 export async function deleteAgentIdentity(id: string): Promise<{ message: string }> {
@@ -1339,8 +1326,7 @@ export async function deleteAgentIdentity(id: string): Promise<{ message: string
 }
 
 export async function fetchAgentScenarios(): Promise<AgentScenario[]> {
-  const res = await request<{ data: AgentScenario[] }>('GET', '/api/agents/scenarios');
-  return res.data;
+  return request<AgentScenario[]>('GET', '/api/agents/scenarios');
 }
 
 // ===================== Goals API =====================
@@ -1373,13 +1359,11 @@ export interface GoalStats {
 }
 
 export async function fetchGoalStats(): Promise<GoalStats> {
-  const res = await request<{ data: GoalStats }>('GET', '/api/goals/stats');
-  return res.data;
+  return request<GoalStats>('GET', '/api/goals/stats');
 }
 
 export async function fetchGoal(sessionKey: string): Promise<Goal | null> {
-  const res = await request<{ data: Goal | null }>('GET', `/api/goals/${encodeURIComponent(sessionKey)}`);
-  return res.data;
+  return request<Goal | null>('GET', `/api/goals/${encodeURIComponent(sessionKey)}`);
 }
 
 export async function createGoal(sessionKey: string, objective: string, tokenBudget?: number): Promise<{ status: string; goal: Goal }> {
@@ -1447,8 +1431,7 @@ export async function fetchImageProviders(): Promise<{ providers: ImageGeneratio
 }
 
 export async function fetchImageConfig(): Promise<ImageGenerationConfig> {
-  const res = await request<{ success: boolean; data: ImageGenerationConfig }>('GET', '/api/image-generation/config');
-  return res.data;
+  return request<ImageGenerationConfig>('GET', '/api/image-generation/config');
 }
 
 export async function updateImageConfig(config: ImageGenerationConfig): Promise<{ success: boolean }> {

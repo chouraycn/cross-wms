@@ -177,7 +177,7 @@ export function QueryResultRenderer({
     return (
       <Paper
         elevation={1}
-        sx={{ p: 3, mb: 1.5, display: 'flex', alignItems: 'center', gap: 2, borderRadius: '12px' }}
+        sx={{ p: 3, mb: 1.5, display: 'flex', alignItems: 'center', gap: 2, borderRadius: '6px' }}
       >
         <CircularProgress size={20} />
         <Typography variant="body2" color="text.secondary">
@@ -208,7 +208,7 @@ export function QueryResultRenderer({
       elevation={1}
       sx={{
         mb: 1.5,
-        borderRadius: '12px',
+        borderRadius: '6px',
         overflow: 'hidden',
         border: `1px solid ${gs.border}`,
       }}

@@ -12,7 +12,7 @@
  * - 输入区域（技能"/"、会话引用"@"、附件）
  */
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, IconButton, Tooltip, useTheme, Collapse,
   Paper, Chip, List, ListItem, ListItemText, CircularProgress,
@@ -21,7 +21,10 @@ import AddCommentOutlinedIcon from '@mui/icons-material/AddCommentOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import CdfLogoAnimation from '../../assets/cdf-logo-animation.svg';
+import ChatSidePanel from './ChatSidePanel.js';
+import TerminalPanel from './TerminalPanel.js';
 import { ChatMessageList } from '../CrossWmsChat/ChatMessageList.js';
 import { TopBarChatInput } from '../CrossWmsChat/TopBarChatInput.js';
 import type { Message } from '../../types/chat.js';
@@ -136,6 +139,69 @@ const AgentActivityFeed: React.FC<{
 };
 
 /**
+ * 自定义终端图标
+ */
+const TerminalButtonIcon: React.FC<{ fontSize?: number; color?: string }> = ({
+  fontSize = 18,
+  color = 'currentColor',
+}) => (
+  <svg
+    width={fontSize}
+    height={fontSize}
+    viewBox="0 0 600 600"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M547.4,35.9c28.3,0,51.2,22.9,51.2,51.2v460.8c0,28.3-22.9,51.2-51.2,51.2H86.6c-28.3,0-51.2-22.9-51.2-51.2V87.1c0-28.3,22.9-51.2,51.2-51.2h460.8ZM547.4,87.1H86.6v460.8h460.8V87.1ZM184.6,138.3l72.4,72.4-72.4,72.4-36.2-36.2,36.2-36.2-36.2-36.2,36.2-36.2ZM445,189.5v51.2h-102.4v-51.2h102.4Z"
+      fill={color}
+    />
+  </svg>
+);
+
+/**
+ * 自定义侧面板收起图标 — 箭头向右（收起右侧面板）
+ */
+const SidePanelCollapseIcon: React.FC<{ fontSize?: number; color?: string }> = ({
+  fontSize = 18,
+  color = 'currentColor',
+}) => (
+  <svg
+    width={fontSize}
+    height={fontSize}
+    viewBox="0 0 640 640"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M578.6,590.7H32.4c-18.9,0-34.1-15.3-34.1-34.1h0c0-18.9,15.3-34.1,34.1-34.1h546.2c18.9,0,34.1,15.3,34.1,34.1h0c0,18.9-15.3,34.1-34.1,34.1h0ZM622.7,222.3l-108.6,108.6c-13.3,13.3-34.9,13.3-48.3,0h0c-13.3-13.3-13.3-34.9,0-48.3l60.4-60.3c13.3-13.3,13.3-34.9,0-48.3l-60.4-60.3c-13.3-13.3-13.3-34.9,0-48.3h0c13.3-13.3,34.9-13.3,48.3,0l108.6,108.6c13.3,13.3,13.3,34.9,0,48.3h0ZM271.4,351.8H32.5c-18.9,0-34.1-15.3-34.1-34.1h0c0-18.9,15.3-34.1,34.1-34.1h238.9c18.8,0,34.1,15.3,34.1,34.1h0c0,18.9-15.3,34.1-34.1,34.1ZM271.4,112.8H32.5c-18.9,0-34.1-15.3-34.1-34.1h0c0-18.9,15.3-34.1,34.1-34.1h238.9c18.8,0,34.1,15.3,34.1,34.1h0c0,18.9-15.3,34.1-34.1,34.1Z"
+      fill={color}
+    />
+  </svg>
+);
+
+/**
+ * 自定义侧面板展开图标 — 箭头向左（展开右侧面板）
+ */
+const SidePanelExpandIcon: React.FC<{ fontSize?: number; color?: string }> = ({
+  fontSize = 18,
+  color = 'currentColor',
+}) => (
+  <svg
+    width={fontSize}
+    height={fontSize}
+    viewBox="0 0 640 640"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M600.5,590.9H54.4c-18.8,0-34.1-15.3-34.1-34.1h0c0-18.9,15.3-34.1,34.1-34.1h546.1c18.9,0,34.1,15.3,34.1,34.1h0c0,18.9-15.3,34.1-34.1,34.1h0ZM167.1,113.9l-60.3,60.3c-13.3,13.3-13.3,34.9,0,48.3l60.3,60.4c13.3,13.3,13.3,34.9,0,48.3h0c-13.3,13.3-34.9,13.3-48.3,0L10.2,222.6c-13.3-13.3-13.3-34.9,0-48.3l108.6-108.6c13.3-13.3,34.9-13.3,48.3,0h0c13.3,13.3,13.3,34.9,0,48.3h0ZM600.5,352h-238.9c-18.9,0-34.1-15.3-34.1-34.1h0c0-18.9,15.3-34.1,34.1-34.1h238.9c18.9,0,34.1,15.3,34.1,34.1h0c0,18.9-15.3,34.1-34.1,34.1ZM600.5,113h-238.9c-18.9,0-34.1-15.3-34.1-34.1h0c0-18.9,15.3-34.1,34.1-34.1h238.9c18.9,0,34.1,15.3,34.1,34.1h0c0,18.9-15.3,34.1-34.1,34.1Z"
+      fill={color}
+    />
+  </svg>
+);
+
+/**
  * CDFChat 新版对话容器（基于 OpenClaw 事件驱动架构）
  */
 export const ChatThread: React.FC<ChatThreadProps> = ({
@@ -160,7 +226,23 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   } = useChatSession();
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  // 右侧面板（待办+上下文+浏览器）展开状态：AI 对话有内容时自动展开
+  const [sidePanelOpen, setSidePanelOpen] = useState<boolean>(false);
+  // 终端面板展开状态
+  const [terminalOpen, setTerminalOpen] = useState<boolean>(false);
+  // 记录上一次的消息数，仅在 0→N 时自动展开一次，避免与用户手动收起冲突
+  const prevMsgCountRef = useRef<number>(0);
+
+  useEffect(() => {
+    const prev = prevMsgCountRef.current;
+    prevMsgCountRef.current = session.messages.length;
+    // 仅当对话从空变为有内容时自动展开，用户手动收起后不再自动展开
+    if (prev === 0 && session.messages.length > 0) {
+      setSidePanelOpen(true);
+    }
+  }, [session.messages.length]);
 
   // 消息操作增强功能状态
   const [selectedMessages, setSelectedMessages] = useState<Message[]>([]);
@@ -772,19 +854,104 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   }, [session.messages, isLoading, readingPhase, compactionInfo]);
 
   if (isPage) {
+    // 推导会话标题
+    const sessionTitle = session.title === '新对话' || !session.title
+      ? (session.messages[0]?.content?.slice(0, 24) || '新对话')
+      : session.title;
+
     return (
       <>
       <Box sx={{
         height: 'calc(100vh - 40px - var(--pw-top, 0px))',
         mx: -3,
-        mt: -2,
+        mt: isEmpty ? -2 : 1,
         mb: -3,
         display: 'flex',
         flexDirection: 'column',
         bgcolor: gs.bgPanel,
         overflow: 'hidden',
       }}>
-        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        {/* 顶部标题栏：仅在有内容时显示（会话标题 + 文件夹路径 + 右侧按钮），出现时整体下移 3px */}
+        {!isEmpty && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 2,
+            py: 0.75,
+            borderBottom: `1px solid ${gs.border}`,
+            flexShrink: 0,
+            minHeight: 40,
+          }}
+        >
+          <FolderOutlinedIcon sx={{ fontSize: 16, color: gs.textMuted, flexShrink: 0 }} />
+          <Typography
+            sx={{
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              color: gs.textPrimary,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            {sessionTitle}
+          </Typography>
+          {/* 右侧按钮组：简单线条黑图标 + 悬停气泡 */}
+          <Tooltip title={terminalOpen ? '关闭终端' : '打开终端'} arrow>
+            <IconButton
+              size="small"
+              onClick={() => {
+                setTerminalOpen(prev => {
+                  const next = !prev;
+                  // 打开终端时收起侧面板，避免同时显示
+                  if (next) setSidePanelOpen(false);
+                  return next;
+                });
+              }}
+              sx={{
+                color: '#000',
+                p: 0.36,
+                mt: '-1px',
+                bgcolor: 'transparent',
+                '&:hover': { bgcolor: 'transparent', color: '#000' },
+              }}
+            >
+              <TerminalButtonIcon fontSize={13.3} />
+            </IconButton>
+          </Tooltip>
+          <Box sx={{ width: '10px' }} />
+          <Tooltip title={sidePanelOpen ? '收起侧面板' : '展开侧面板'} arrow>
+            <IconButton
+              size="small"
+              onClick={() => {
+                setSidePanelOpen(prev => {
+                  const next = !prev;
+                  // 打开侧面板时收起终端，避免同时显示
+                  if (next) setTerminalOpen(false);
+                  return next;
+                });
+              }}
+              sx={{
+                color: '#000',
+                p: 0.36,
+                bgcolor: 'transparent',
+                '&:hover': { bgcolor: 'transparent', color: '#000' },
+              }}
+            >
+              {sidePanelOpen
+                ? <SidePanelCollapseIcon fontSize={13.3} />
+                : <SidePanelExpandIcon fontSize={13.3} />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+        )}
+
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
+        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           {isEmpty ? (
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <Box sx={{
@@ -933,6 +1100,29 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
               </Collapse>
             </Box>
           </Box>
+        </Box>
+        {/* 右侧面板：待办 + 上下文 + 浏览器（仅在有内容时显示） */}
+        {sidePanelOpen && !isEmpty && (
+          <ChatSidePanel
+            sessionKey={session.id}
+            sessionTitle={sessionTitle}
+            messages={session.messages}
+            createdAt={session.createdAt}
+            updatedAt={session.updatedAt}
+            model={session.model}
+            compactionInfo={compactionInfo}
+          />
+        )}
+        {/* 终端面板（右侧） */}
+        {terminalOpen && (
+          <TerminalPanel onClose={() => {
+            setTerminalOpen(false);
+            // 关闭终端时，如果对话有内容，恢复侧边栏显示
+            if (session.messages.length > 0) {
+              setSidePanelOpen(true);
+            }
+          }} />
+        )}
         </Box>
       </Box>
 

@@ -28,8 +28,8 @@ final class WindowContainerView: NSView {
 
     // MARK: - 常量
 
-    /// 默认长按触发时间（秒）
-    static let defaultPressDuration: TimeInterval = 0.2
+    /// 默认长按触发时间（秒）— 0.1s 几乎无感，兼顾点击与拖动
+    static let defaultPressDuration: TimeInterval = 0.1
 
     /// 默认顶部拖动区域高度
     static let defaultTopDragHeight: CGFloat = 30.0

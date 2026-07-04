@@ -26,6 +26,108 @@
 /** 工具风险等级 */
 export type ToolRiskLevel = 'safe' | 'low' | 'medium' | 'high' | 'critical';
 
+/**
+ * ACP 审批等级（8 级风险分类体系）
+ *
+ * 从 A0 到 A7，风险逐级升高，审批严格程度逐级加强：
+ * - A0: 完全自动 — 纯只读无副作用，自动放行无日志
+ * - A1: 自动低风险 — 低风险操作，自动放行，有审计日志
+ * - A2: 自动中低风险 — 中低风险，自动放行，详细审计
+ * - A3: 半自动中风险 — 首次审批后可自动，会话内记忆
+ * - A4: 用户审批中高风险 — 每次调用需用户审批
+ * - A5: 用户审批高风险 — 高风险，需显式确认 + 二次验证
+ * - A6: 管理员审批关键风险 — 关键操作，需管理员权限审批
+ * - A7: 禁止执行 — 最高风险，完全禁止
+ */
+export type AcpApprovalClass = 'A0' | 'A1' | 'A2' | 'A3' | 'A4' | 'A5' | 'A6' | 'A7';
+
+/** ACP 审批等级元信息 */
+export interface AcpApprovalClassMeta {
+  level: number;
+  label: string;
+  description: string;
+  requireApproval: boolean;
+  requireAdmin: boolean;
+  allowAutoApprove: boolean;
+  blocked: boolean;
+}
+
+/** ACP 审批等级定义 */
+export const ACP_APPROVAL_CLASSES: Record<AcpApprovalClass, AcpApprovalClassMeta> = {
+  A0: {
+    level: 0,
+    label: '完全自动',
+    description: '纯只读无副作用操作，自动放行无日志',
+    requireApproval: false,
+    requireAdmin: false,
+    allowAutoApprove: true,
+    blocked: false,
+  },
+  A1: {
+    level: 1,
+    label: '自动低风险',
+    description: '低风险操作，自动放行，有审计日志',
+    requireApproval: false,
+    requireAdmin: false,
+    allowAutoApprove: true,
+    blocked: false,
+  },
+  A2: {
+    level: 2,
+    label: '自动中低风险',
+    description: '中低风险，自动放行，详细审计',
+    requireApproval: false,
+    requireAdmin: false,
+    allowAutoApprove: true,
+    blocked: false,
+  },
+  A3: {
+    level: 3,
+    label: '半自动中风险',
+    description: '首次审批后可自动，会话内记忆',
+    requireApproval: false,
+    requireAdmin: false,
+    allowAutoApprove: true,
+    blocked: false,
+  },
+  A4: {
+    level: 4,
+    label: '用户审批中高风险',
+    description: '每次调用需用户审批',
+    requireApproval: true,
+    requireAdmin: false,
+    allowAutoApprove: false,
+    blocked: false,
+  },
+  A5: {
+    level: 5,
+    label: '用户审批高风险',
+    description: '高风险，需显式确认 + 二次验证',
+    requireApproval: true,
+    requireAdmin: false,
+    allowAutoApprove: false,
+    blocked: false,
+  },
+  A6: {
+    level: 6,
+    label: '管理员审批关键风险',
+    description: '关键操作，需管理员权限审批',
+    requireApproval: true,
+    requireAdmin: true,
+    allowAutoApprove: false,
+    blocked: false,
+  },
+  A7: {
+    level: 7,
+    label: '禁止执行',
+    description: '最高风险，完全禁止',
+    requireApproval: false,
+    requireAdmin: false,
+    allowAutoApprove: false,
+    blocked: true,
+  },
+};
+
 /** 速率限制配置 */
 export interface ToolRateLimit {
   /** 时间窗口内最大调用次数 */
@@ -40,6 +142,8 @@ export interface ToolPolicyRule {
   toolPattern: string;
   /** 风险等级 */
   riskLevel: ToolRiskLevel;
+  /** ACP 审批等级（8 级分类） */
+  acpClass?: AcpApprovalClass;
   /** 是否需要用户审批 */
   requireApproval: boolean;
   /** 速率限制（可选） */
@@ -60,6 +164,8 @@ export interface ToolPolicyEvaluationResult {
   allowed: boolean;
   /** 风险等级 */
   riskLevel: ToolRiskLevel;
+  /** ACP 审批等级（8 级分类） */
+  acpClass: AcpApprovalClass;
   /** 是否需要用户审批 */
   requireApproval: boolean;
   /** 拒绝/限制原因 */
@@ -84,6 +190,44 @@ export interface ToolPolicyEvaluationContext {
   userId?: string;
 }
 
+// ===================== ACP 等级映射工具 =====================
+
+/**
+ * 风险等级 → ACP 审批等级 默认映射
+ *
+ * 用于规则未显式指定 acpClass 时的降级映射。
+ */
+const RISK_LEVEL_TO_ACP: Record<ToolRiskLevel, AcpApprovalClass> = {
+  safe: 'A0',
+  low: 'A1',
+  medium: 'A3',
+  high: 'A4',
+  critical: 'A5',
+};
+
+/**
+ * 解析规则的 ACP 审批等级
+ * 规则显式指定则使用，否则按风险等级映射
+ */
+export function resolveAcpApprovalClass(rule: ToolPolicyRule): AcpApprovalClass {
+  return rule.acpClass ?? RISK_LEVEL_TO_ACP[rule.riskLevel];
+}
+
+/**
+ * 比较两个 ACP 等级的风险高低
+ * 返回正数表示 a > b（a 风险更高），负数表示 a < b，0 表示相等
+ */
+export function compareAcpClass(a: AcpApprovalClass, b: AcpApprovalClass): number {
+  return ACP_APPROVAL_CLASSES[a].level - ACP_APPROVAL_CLASSES[b].level;
+}
+
+/**
+ * 判断工具是否被 ACP 策略阻止
+ */
+export function isAcpBlocked(acpClass: AcpApprovalClass): boolean {
+  return ACP_APPROVAL_CLASSES[acpClass].blocked;
+}
+
 // ===================== 默认内置规则 =====================
 
 /**
@@ -101,14 +245,25 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'shell_exec',
     riskLevel: 'critical',
+    acpClass: 'A5',
     requireApproval: true,
     rateLimit: { maxCalls: 10, windowMs: 60_000 },
     timeoutMs: 30_000,
     description: '终端命令执行，最高风险',
   },
   {
+    toolPattern: 'file_deleteFile',
+    riskLevel: 'critical',
+    acpClass: 'A5',
+    requireApproval: true,
+    rateLimit: { maxCalls: 20, windowMs: 60_000 },
+    timeoutMs: 10_000,
+    description: '文件删除操作，不可逆',
+  },
+  {
     toolPattern: 'desktop_*',
     riskLevel: 'high',
+    acpClass: 'A4',
     requireApproval: true,
     rateLimit: { maxCalls: 30, windowMs: 60_000 },
     timeoutMs: 15_000,
@@ -117,6 +272,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'browser_*',
     riskLevel: 'high',
+    acpClass: 'A4',
     requireApproval: true,
     rateLimit: { maxCalls: 20, windowMs: 60_000 },
     timeoutMs: 60_000,
@@ -127,6 +283,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'file_writeFile',
     riskLevel: 'high',
+    acpClass: 'A3',
     requireApproval: true,
     rateLimit: { maxCalls: 50, windowMs: 60_000 },
     timeoutMs: 10_000,
@@ -135,6 +292,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'web_api_call',
     riskLevel: 'high',
+    acpClass: 'A4',
     requireApproval: true,
     rateLimit: { maxCalls: 30, windowMs: 60_000 },
     timeoutMs: 30_000,
@@ -145,6 +303,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'file_readFile',
     riskLevel: 'medium',
+    acpClass: 'A2',
     requireApproval: false,
     rateLimit: { maxCalls: 100, windowMs: 60_000 },
     timeoutMs: 10_000,
@@ -153,6 +312,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'db_query',
     riskLevel: 'medium',
+    acpClass: 'A3',
     requireApproval: false,
     rateLimit: { maxCalls: 100, windowMs: 60_000 },
     timeoutMs: 15_000,
@@ -161,6 +321,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'web_fetch',
     riskLevel: 'medium',
+    acpClass: 'A2',
     requireApproval: false,
     rateLimit: { maxCalls: 30, windowMs: 60_000 },
     timeoutMs: 30_000,
@@ -169,6 +330,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'web_search',
     riskLevel: 'medium',
+    acpClass: 'A2',
     requireApproval: false,
     rateLimit: { maxCalls: 20, windowMs: 60_000 },
     timeoutMs: 15_000,
@@ -177,6 +339,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'wms_*',
     riskLevel: 'medium',
+    acpClass: 'A3',
     requireApproval: false,
     rateLimit: { maxCalls: 60, windowMs: 60_000 },
     timeoutMs: 10_000,
@@ -185,6 +348,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'webhook_*',
     riskLevel: 'medium',
+    acpClass: 'A4',
     requireApproval: true,
     rateLimit: { maxCalls: 20, windowMs: 60_000 },
     timeoutMs: 15_000,
@@ -195,6 +359,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'file_listDir',
     riskLevel: 'low',
+    acpClass: 'A1',
     requireApproval: false,
     rateLimit: { maxCalls: 200, windowMs: 60_000 },
     timeoutMs: 5_000,
@@ -203,6 +368,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'app_setBotName',
     riskLevel: 'low',
+    acpClass: 'A2',
     requireApproval: false,
     rateLimit: { maxCalls: 10, windowMs: 60_000 },
     timeoutMs: 5_000,
@@ -213,12 +379,14 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'system_info',
     riskLevel: 'safe',
+    acpClass: 'A0',
     requireApproval: false,
     description: '系统信息查询',
   },
   {
     toolPattern: 'desktop_health',
     riskLevel: 'safe',
+    acpClass: 'A0',
     requireApproval: false,
     description: '桌面工具健康检查',
   },
@@ -227,6 +395,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'mcp:*',
     riskLevel: 'medium',
+    acpClass: 'A4',
     requireApproval: true,
     rateLimit: { maxCalls: 30, windowMs: 60_000 },
     timeoutMs: 30_000,
@@ -235,6 +404,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: 'plugin_*',
     riskLevel: 'medium',
+    acpClass: 'A4',
     requireApproval: true,
     rateLimit: { maxCalls: 30, windowMs: 60_000 },
     timeoutMs: 30_000,
@@ -245,6 +415,7 @@ const DEFAULT_RULES: ToolPolicyRule[] = [
   {
     toolPattern: '*',
     riskLevel: 'medium',
+    acpClass: 'A3',
     requireApproval: true,
     rateLimit: { maxCalls: 20, windowMs: 60_000 },
     timeoutMs: 15_000,
@@ -350,8 +521,22 @@ export class ToolPolicyEngine {
       return {
         allowed: true,
         riskLevel: 'medium',
+        acpClass: 'A3',
         requireApproval: true,
         reason: `未找到匹配规则，使用保守策略`,
+      };
+    }
+
+    const acpClass = resolveAcpApprovalClass(matchedRule);
+
+    if (isAcpBlocked(acpClass)) {
+      return {
+        allowed: false,
+        riskLevel: matchedRule.riskLevel,
+        acpClass,
+        requireApproval: false,
+        reason: `工具 '${toolName}' 被 ACP 策略禁止（${acpClass}）`,
+        matchedRule,
       };
     }
 
@@ -360,6 +545,7 @@ export class ToolPolicyEngine {
       return {
         allowed: false,
         riskLevel: matchedRule.riskLevel,
+        acpClass,
         requireApproval: matchedRule.requireApproval,
         reason: rateLimitCheck.reason,
         matchedRule,
@@ -372,6 +558,7 @@ export class ToolPolicyEngine {
       return {
         allowed: false,
         riskLevel: matchedRule.riskLevel,
+        acpClass,
         requireApproval: matchedRule.requireApproval,
         reason: paramCheck.reason,
         deniedParams: paramCheck.deniedParams,
@@ -383,6 +570,7 @@ export class ToolPolicyEngine {
     return {
       allowed: true,
       riskLevel: matchedRule.riskLevel,
+      acpClass,
       requireApproval: matchedRule.requireApproval,
       matchedRule,
       timeoutMs: matchedRule.timeoutMs,
@@ -463,6 +651,18 @@ export class ToolPolicyEngine {
   getToolRiskLevel(toolName: string): ToolRiskLevel {
     const rule = this.findMatchingRule(toolName);
     return rule?.riskLevel ?? 'medium';
+  }
+
+  /**
+   * 获取工具的 ACP 审批等级
+   *
+   * @param toolName - 工具名称
+   * @returns ACP 审批等级，未匹配时返回 'A3'
+   */
+  getToolAcpClass(toolName: string): AcpApprovalClass {
+    const rule = this.findMatchingRule(toolName);
+    if (!rule) return 'A3';
+    return resolveAcpApprovalClass(rule);
   }
 
   // ===================== 内部方法 =====================

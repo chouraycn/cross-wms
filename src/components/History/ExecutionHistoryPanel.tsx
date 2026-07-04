@@ -398,7 +398,7 @@ const ExecutionHistoryPanel: React.FC = React.memo(() => {
       )}
 
       {/* 数据表格 */}
-      <Paper sx={{ flex: 1, minHeight: 400 }}>
+      <Paper sx={{ flex: 1, minHeight: 400, borderRadius: '6px', overflow: 'hidden' }}>
         <DataGrid
           rows={records}
           columns={columns}

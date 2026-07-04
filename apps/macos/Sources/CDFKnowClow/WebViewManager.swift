@@ -109,7 +109,14 @@ final class WebViewManager: NSObject {
                     window_close: () => window.webkit.messageHandlers.cdfApp.postMessage({action: 'close'}),
                     window_minimize: () => window.webkit.messageHandlers.cdfApp.postMessage({action: 'minimize'}),
                     window_maximize: () => window.webkit.messageHandlers.cdfApp.postMessage({action: 'maximize'}),
-                }
+                },
+                // 选择文件夹（异步，返回 Promise<string|null>）
+                pickFolder: () => new Promise((resolve) => {
+                    const cbId = 'pf_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+                    window.__cdfFolderCallbacks = window.__cdfFolderCallbacks || {};
+                    window.__cdfFolderCallbacks[cbId] = resolve;
+                    window.webkit.messageHandlers.cdfApp.postMessage({action: 'pickFolder', payload: {cbId}});
+                }),
             };
             // 同时设置 pywebview 标识，让现有 isPyWebView() 返回 true
             // 这样前端会注入 --pw-top 变量，让侧边栏顶部让出红黄绿按钮位置
@@ -170,12 +177,12 @@ final class ScriptMessageHandler: NSObject, WKScriptMessageHandler {
         if let body = message.body as? [String: Any],
            let action = body["action"] as? String {
             Task {
-                await handleAction(action, payload: body["payload"])
+                await handleAction(action, payload: body["payload"], webView: message.webView)
             }
         }
     }
 
-    private func handleAction(_ action: String, payload: Any?) async {
+    private func handleAction(_ action: String, payload: Any?, webView: WKWebView?) async {
         switch action {
         case "openExternal":
             if let url = payload as? String, let urlObj = URL(string: url) {
@@ -187,6 +194,40 @@ final class ScriptMessageHandler: NSObject, WKScriptMessageHandler {
             NSApp.keyWindow?.zoom(nil)
         case "close":
             NSApp.keyWindow?.close()
+        case "pickFolder":
+            // 选择文件夹，通过 NSOpenPanel，结果通过 evaluateJavaScript 回传
+            let cbId: String
+            if let payloadDict = payload as? [String: Any], let id = payloadDict["cbId"] as? String {
+                cbId = id
+            } else {
+                webViewLogger.warning("pickFolder: missing cbId")
+                return
+            }
+            await MainActor.run {
+                let panel = NSOpenPanel()
+                panel.canChooseDirectories = true
+                panel.canChooseFiles = false
+                panel.allowsMultipleSelection = false
+                panel.prompt = "选择文件夹"
+                panel.level = .floating
+                let response = panel.runModal()
+                let folderPath: String?
+                if response == .OK, let url = panel.url {
+                    folderPath = url.path
+                } else {
+                    folderPath = nil
+                }
+                // 回传结果给前端
+                let escapedPath = folderPath?.replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "'", with: "\\'")
+                let js: String
+                if let path = escapedPath {
+                    js = "window.__cdfFolderCallbacks['\(cbId)'] && (window.__cdfFolderCallbacks['\(cbId)']('\(path)'), delete window.__cdfFolderCallbacks['\(cbId)']);"
+                } else {
+                    js = "window.__cdfFolderCallbacks['\(cbId)'] && (window.__cdfFolderCallbacks['\(cbId)'](null), delete window.__cdfFolderCallbacks['\(cbId)']);"
+                }
+                webView?.evaluateJavaScript(js, completionHandler: nil)
+            }
         default:
             webViewLogger.warning("Unknown action: \(action, privacy: .public)")
         }

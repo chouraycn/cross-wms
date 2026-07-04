@@ -21,8 +21,8 @@ final class WindowDragContainerView: NSView {
     /// 顶部拖动区域高度（符合 macOS 惯例，约 28-32px）
     static let dragAreaHeight: CGFloat = 30.0
 
-    /// 长按触发时间（秒）
-    static let pressDuration: TimeInterval = 0.2
+    /// 长按触发时间（秒）— 0.1s 几乎无感，兼顾点击与拖动
+    static let pressDuration: TimeInterval = 0.1
 
     // MARK: - 属性
 

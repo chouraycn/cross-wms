@@ -1,12 +1,21 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, TextField, IconButton, useTheme } from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
-import TerminalIcon from '@mui/icons-material/Terminal';
-import { useNavigate } from 'react-router-dom';
-import { getGrayScale } from '../constants/theme';
-import { useChatSession } from '../contexts/ChatContext';
-import { useAgentChat, type SendAgentMessageOptions } from '../hooks/useAgentChat';
-import { useAiEngineSettings } from '../contexts/AppSettingsContext';
+/**
+ * TerminalPanel — AI 对话右侧终端面板
+ *
+ * 参考 OpenClaw 终端样式：
+ * - 左侧对话内容，右侧终端
+ * - 顶部标题栏：终端 zsh + 操作按钮
+ * - 可关闭
+ */
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Box, IconButton, Tooltip, useTheme } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import AddIcon from '@mui/icons-material/Add';
+import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import { getGrayScale } from '../../constants/theme';
+import { useChatSession } from '../../contexts/ChatContext';
+import { useAgentChat, type SendAgentMessageOptions } from '../../hooks/useAgentChat';
+import { useAiEngineSettings } from '../../contexts/AppSettingsContext';
 
 // ===================== ANSI 颜色解析器 =====================
 
@@ -31,7 +40,7 @@ const ANSI_BG_COLORS: Record<string, string> = {
   '44': '#3b82f6', '45': '#a855f7', '46': '#06b6d4', '47': '#e5e5e5',
 };
 
-export function parseAnsi(text: string): AnsiSegment[] {
+function parseAnsi(text: string): AnsiSegment[] {
   const segments: AnsiSegment[] = [];
   const regex = /\x1b\[([0-9;]*)m/g;
   let lastIndex = 0;
@@ -99,9 +108,9 @@ const TerminalLineView: React.FC<{ line: TerminalLine }> = ({ line }) => {
   return (
     <Box sx={{
       fontFamily: '"JetBrains Mono", "Fira Code", "SF Mono", "Cascadia Code", Consolas, monospace',
-      fontSize: '0.85rem',
+      fontSize: '0.8rem',
       lineHeight: 1.6,
-      py: 0.25,
+      py: 0.2,
       whiteSpace: 'pre-wrap',
       wordBreak: 'break-word',
       color: isDark ? '#e5e5e5' : '#1f2937',
@@ -125,27 +134,28 @@ const TerminalLineView: React.FC<{ line: TerminalLine }> = ({ line }) => {
   );
 };
 
-// ===================== Web TUI 终端页面 =====================
+// ===================== 终端面板组件 =====================
+
+export interface TerminalPanelProps {
+  /** 关闭终端面板 */
+  onClose: () => void;
+}
 
 const COMMANDS = [
   { name: 'help', desc: '显示帮助信息', aliases: ['h', '?'] },
   { name: 'clear', desc: '清屏' },
   { name: 'sessions', desc: '列出所有会话' },
-  { name: 'new', desc: '新建会话', usage: '/new [title]' },
-  { name: 'switch', desc: '切换会话', usage: '/switch <id>' },
-  { name: 'delete', desc: '删除会话', usage: '/delete <id>' },
-  { name: 'model', desc: '显示或设置模型', usage: '/model [name]' },
-  { name: 'agent', desc: '显示或设置 Agent', usage: '/agent [id]' },
-  { name: 'theme', desc: '切换主题', usage: '/theme [dark|light]' },
+  { name: 'new', desc: '新建会话' },
+  { name: 'model', desc: '显示或设置模型' },
+  { name: 'agent', desc: '显示或设置 Agent' },
   { name: 'compact', desc: '压缩当前上下文' },
-  { name: 'exit', desc: '返回普通聊天界面' },
+  { name: 'exit', desc: '关闭终端' },
 ];
 
-const TuiTerminalPage: React.FC = () => {
+export const TerminalPanel: React.FC<TerminalPanelProps> = ({ onClose }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  const gs = getGrayScale(isDark);
-  const navigate = useNavigate();
+  const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const { session, handleNewChat, handleSessionUpdate } = useChatSession();
   const { settings: aiEngine } = useAiEngineSettings();
 
@@ -172,7 +182,7 @@ const TuiTerminalPage: React.FC = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [lines, session.messages]);
+  }, [lines]);
 
   // 添加输出行
   const addLine = useCallback((type: TerminalLine['type'], content: string) => {
@@ -189,15 +199,14 @@ const TuiTerminalPage: React.FC = () => {
     if (lines.length === 0) {
       addLine('system', 'Cross-WMS Terminal');
       addLine('system', '输入消息开始对话，或输入 /help 查看命令');
-      addLine('system', `工具 Profile: ${aiEngine.toolProfile} | 压缩: ${aiEngine.compaction.enabled ? aiEngine.compaction.strategy : '关闭'}`);
+      addLine('system', `Profile: ${aiEngine.toolProfile}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 监听 thinking 和 error
+  // 监听 thinking
   useEffect(() => {
     if (thinkingText && hasThinking) {
-      // 更新或添加 thinking 行
       setLines(prev => {
         const last = prev[prev.length - 1];
         if (last && last.type === 'thinking') {
@@ -219,13 +228,11 @@ const TuiTerminalPage: React.FC = () => {
     }
   }, [error, addLine]);
 
-  // 监听 session.messages 变化，添加新的 assistant 消息（联动 ChatThread 等其他组件的对话）
+  // 监听 session.messages 变化，添加新的 assistant 消息
   useEffect(() => {
     const lastMessage = session.messages[session.messages.length - 1];
     if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content) {
-      // 流式期间不重复添加，只在内容稳定后显示
       if (lastMessage.isStreaming) return;
-      // 检查是否已经添加过这一行
       const content = typeof lastMessage.content === 'string'
         ? lastMessage.content
         : JSON.stringify(lastMessage.content);
@@ -235,7 +242,6 @@ const TuiTerminalPage: React.FC = () => {
         if (lastLine && lastLine.type === 'output' && lastLine.content === content) {
           return prev;
         }
-        // 如果有 thinking 行，先移除
         const withoutThinking = lastLine?.type === 'thinking'
           ? prev.slice(0, -1)
           : prev;
@@ -262,10 +268,9 @@ const TuiTerminalPage: React.FC = () => {
         addLine('system', '可用命令:');
         COMMANDS.forEach(c => {
           const aliasStr = c.aliases ? ` (${c.aliases.join(', ')})` : '';
-          const usageStr = c.usage ? ` \x1b[90m${c.usage}\x1b[0m` : '';
-          addLine('system', `  /${c.name}${aliasStr}  ${c.desc}${usageStr}`);
+          addLine('system', `  /${c.name}${aliasStr}  ${c.desc}`);
         });
-        addLine('system', '快捷键: ↑/↓ 浏览历史, Enter 发送, Ctrl+C 中断');
+        addLine('system', '快捷键: ↑/↓ 历史, Enter 发送, Ctrl+C 中断');
         break;
 
       case 'clear':
@@ -274,7 +279,7 @@ const TuiTerminalPage: React.FC = () => {
 
       case 'exit':
       case 'quit':
-        navigate('/chat');
+        onClose();
         break;
 
       case 'new':
@@ -283,7 +288,6 @@ const TuiTerminalPage: React.FC = () => {
         break;
 
       case 'sessions':
-        // 在终端显示当前会话信息
         addLine('system', `当前会话: ${session.id.slice(0, 16)}...`);
         addLine('system', `消息数: ${session.messages.length}`);
         addLine('system', `模型: ${session.model || 'auto'}`);
@@ -305,61 +309,33 @@ const TuiTerminalPage: React.FC = () => {
         }
         break;
 
-      case 'theme':
-        if (args[0] === 'dark' || args[0] === 'light') {
-          addLine('system', `主题切换需要前往设置页面`);
-        } else {
-          addLine('system', `当前主题: ${isDark ? 'dark' : 'light'}`);
-        }
-        break;
-
       case 'compact':
         addLine('system', '正在压缩上下文...');
-        break;
-
-      case 'switch':
-        if (!args[0]) {
-          addLine('error', '用法: /switch <session-id>');
-        } else {
-          addLine('system', `切换到会话: ${args[0]}`);
-        }
-        break;
-
-      case 'delete':
-        if (!args[0]) {
-          addLine('error', '用法: /delete <session-id>');
-        } else {
-          addLine('system', `已删除会话: ${args[0]}`);
-        }
         break;
 
       default:
         addLine('error', `未知命令: /${cmd}，输入 /help 查看可用命令`);
     }
-  }, [addLine, navigate, handleNewChat, session, isDark]);
+  }, [addLine, onClose, handleNewChat, session]);
 
   // 发送消息
   const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || isProcessingRef.current) return;
 
-    // 添加到历史
     if (text && !history.includes(text)) {
       setHistory(prev => [...prev.slice(-49), text]);
     }
     setHistoryIndex(-1);
 
-    // 添加命令行
     addLine('command', text);
     setInput('');
 
-    // 命令处理
     if (text.startsWith('/')) {
       await executeCommand(text);
       return;
     }
 
-    // AI 对话
     isProcessingRef.current = true;
     try {
       const options: SendAgentMessageOptions = {
@@ -416,43 +392,61 @@ const TuiTerminalPage: React.FC = () => {
     inputRef.current?.focus();
   }, []);
 
+  const iconBtnSx = {
+    color: gs.textMuted,
+    p: 0.5,
+    bgcolor: 'transparent',
+    '&:hover': { bgcolor: 'transparent', color: gs.textPrimary },
+  };
+
   return (
     <Box sx={{
+      width: 380,
+      flexShrink: 0,
       display: 'flex',
       flexDirection: 'column',
+      borderLeft: `1px solid ${gs.border}`,
+      bgcolor: '#ffffff',
       height: '100%',
-      bgcolor: isDark ? '#0d1117' : '#f8fafc',
-      borderRadius: '12px',
-      overflow: 'hidden',
     }}>
-      {/* 终端头部 */}
+      {/* 顶部标题栏 */}
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: 1,
         px: 2,
         py: 1,
-        borderBottom: `1px solid ${isDark ? '#30363d' : '#e2e8f0'}`,
-        bgcolor: isDark ? '#161b22' : '#ffffff',
+        borderBottom: `1px solid ${gs.border}`,
+        minHeight: 36,
       }}>
-        <TerminalIcon sx={{ fontSize: 18, color: '#10b981' }} />
         <Box sx={{
           fontFamily: '"JetBrains Mono", monospace',
           fontSize: '0.8rem',
-          color: isDark ? '#8b949e' : '#64748b',
+          fontWeight: 500,
+          color: gs.textPrimary,
         }}>
-          Cross-WMS Terminal
+          终端&nbsp;<span style={{ color: gs.textMuted }}>zsh</span>
         </Box>
         <Box sx={{ flex: 1 }} />
-        {isLoading && (
-          <Box sx={{
-            fontFamily: '"JetBrains Mono", monospace',
-            fontSize: '0.75rem',
-            color: '#f59e0b',
-          }}>
-            ● 处理中...
-          </Box>
-        )}
+        <Tooltip title="新建标签" arrow>
+          <IconButton size="small" sx={iconBtnSx}>
+            <AddIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="通知" arrow>
+          <IconButton size="small" sx={iconBtnSx}>
+            <NotificationsNoneIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="全屏" arrow>
+          <IconButton size="small" sx={iconBtnSx}>
+            <OpenInFullIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="关闭" arrow>
+          <IconButton size="small" onClick={onClose} sx={iconBtnSx}>
+            <CloseIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* 终端输出区域 */}
@@ -476,13 +470,12 @@ const TuiTerminalPage: React.FC = () => {
           <TerminalLineView key={line.id} line={line} />
         ))}
 
-        {/* 正在输入的指示器 */}
         {isLoading && !hasThinking && (
           <Box sx={{
             fontFamily: '"JetBrains Mono", monospace',
-            fontSize: '0.85rem',
+            fontSize: '0.8rem',
             color: '#f59e0b',
-            py: 0.25,
+            py: 0.2,
           }}>
             <span style={{ color: '#f59e0b' }}>● </span>
             <span style={{ animation: 'pulse 1.5s infinite' }}>处理中...</span>
@@ -494,62 +487,39 @@ const TuiTerminalPage: React.FC = () => {
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: 1,
+        gap: 0.5,
         px: 2,
         py: 1,
-        borderTop: `1px solid ${isDark ? '#30363d' : '#e2e8f0'}`,
-        bgcolor: isDark ? '#161b22' : '#ffffff',
+        borderTop: `1px solid ${gs.border}`,
       }}>
         <Box sx={{
           fontFamily: '"JetBrains Mono", monospace',
-          fontSize: '0.9rem',
+          fontSize: '0.85rem',
           color: '#10b981',
           userSelect: 'none',
         }}>
           ❯
         </Box>
-        <TextField
-          inputRef={inputRef}
-          fullWidth
-          variant="standard"
-          placeholder="输入消息或命令 (/help 查看帮助)..."
+        <input
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isLoading}
-          InputProps={{
-            disableUnderline: true,
-            sx: {
-              fontFamily: '"JetBrains Mono", "Fira Code", "SF Mono", monospace',
-              fontSize: '0.85rem',
-              color: isDark ? '#e5e5e5' : '#1f2937',
-              '&::placeholder': {
-                color: isDark ? '#6b7280' : '#9ca3af',
-                opacity: 1,
-              },
-            },
-          }}
-          sx={{
-            '& .MuiInputBase-root': {
-              bgcolor: 'transparent',
-              px: 0,
-            },
+          placeholder="输入命令..."
+          style={{
+            flex: 1,
+            border: 'none',
+            outline: 'none',
+            background: 'transparent',
+            fontFamily: '"JetBrains Mono", "Fira Code", "SF Mono", monospace',
+            fontSize: '0.8rem',
+            color: isDark ? '#e5e5e5' : '#1f2937',
           }}
         />
-        <IconButton
-          onClick={handleSend}
-          disabled={!input.trim() || isLoading}
-          size="small"
-          sx={{
-            color: input.trim() ? '#10b981' : isDark ? '#4b5563' : '#9ca3af',
-            '&:hover': { bgcolor: 'rgba(16,185,129,0.1)' },
-          }}
-        >
-          <SendIcon fontSize="small" />
-        </IconButton>
       </Box>
     </Box>
   );
 };
 
-export default TuiTerminalPage;
+export default TerminalPanel;
