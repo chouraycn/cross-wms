@@ -116,8 +116,8 @@ function downloadFile(url: string, dest: string, retries = 2, timeoutMs = 30000)
       let timedOut = false;
 
       const req = https.get(url, (response) => {
-        // 处理重定向
-        if (response.statusCode === 302 && response.headers.location) {
+        // 处理重定向（301/302/307/308）
+        if ([301, 302, 307, 308].includes(response.statusCode!) && response.headers.location) {
           downloadFile(response.headers.location, dest, 0, timeoutMs).then(resolve).catch(reject);
           return;
         }
