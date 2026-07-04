@@ -42,7 +42,8 @@ const ANSI_BG_COLORS: Record<string, string> = {
 
 function parseAnsi(text: string): AnsiSegment[] {
   const segments: AnsiSegment[] = [];
-  const regex = /\x1b\[([0-9;]*)m/g;
+  const ESCAPE = String.fromCharCode(27);
+  const regex = new RegExp(ESCAPE + '\\[([0-9;]*)m', 'g');
   let lastIndex = 0;
   let current: AnsiSegment = { text: '' };
 
@@ -201,7 +202,6 @@ export const TerminalPanel: React.FC<TerminalPanelProps> = ({ onClose }) => {
       addLine('system', '输入消息开始对话，或输入 /help 查看命令');
       addLine('system', `Profile: ${aiEngine.toolProfile}`);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 监听 thinking

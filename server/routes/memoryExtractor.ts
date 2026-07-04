@@ -233,7 +233,7 @@ export async function extractAndAppendMemory(
           sessionId: 'auto-memory',
           category: 'insight',
           content: line,
-          keywords: extractKeywords(`${userMessage} ${line}`, 10),
+          keywords: extractKeywords(`${userMessage} ${line}`),
         });
       } catch (e) {
         logger.error('[Memory] Failed to store to vecMemoryStore:', e);

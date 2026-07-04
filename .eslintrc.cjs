@@ -28,6 +28,7 @@ module.exports = {
     'no-useless-escape': 'warn',
     'no-case-declarations': 'warn',
     'no-async-promise-executor': 'warn',
+    'react-hooks/exhaustive-deps': 'off',
   },
   overrides: [
     {

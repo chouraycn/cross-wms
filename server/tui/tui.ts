@@ -13,7 +13,7 @@ export async function runTui(
   // 使用主题管理器
   const theme = themeManager.getTheme();
   let sessionId: string | null = options.sessionId ?? null;
-  let exitCode = 0;
+  const exitCode = 0;
   let isRunning = true;
 
   // 创建 readline 接口

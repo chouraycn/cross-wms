@@ -265,7 +265,7 @@ export class HttpBackend implements TuiBackend {
       // 兜底：若服务端未发 assistant_end，补一个
       yield { type: 'assistant_end' };
     } catch (err) {
-      if (this.abortController.signal.aborted) {
+      if (this.abortController?.signal.aborted) {
         return;
       }
       const errMsg = err instanceof Error ? err.message : String(err);

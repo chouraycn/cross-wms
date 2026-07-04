@@ -314,20 +314,20 @@ export class WorkflowExecutor {
     }
 
     try {
-      const response = await callAIModel({
-        model: modelId as string || 'default',
-        messages: [
-          systemPrompt ? { role: 'system', content: String(systemPrompt) } : null,
-          { role: 'user', content: String(prompt) },
-        ].filter(Boolean),
-        options: { maxTokens: 4096 },
-      });
+      const messages: Array<{ role: string; content: string }> = [
+        systemPrompt ? { role: 'system', content: String(systemPrompt) } : null,
+        { role: 'user', content: String(prompt) },
+      ].filter(Boolean) as Array<{ role: string; content: string }>;
+
+      const response = await callAIModel(
+        { id: modelId as string || 'default', provider: 'default', maxTokens: 4096 },
+        messages
+      );
 
       return {
         actionExecuted: true,
         actionType: 'ai_call',
-        result: response.content || response,
-        usage: response.usage,
+        result: response,
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -350,6 +350,8 @@ export class WorkflowExecutor {
 
     try {
       const result = await executeToolCallFromRegistry({
+        id: uuidv4(),
+        type: 'function',
         function: {
           name: String(toolName),
           arguments: JSON.stringify(args as Record<string, unknown> || {}),

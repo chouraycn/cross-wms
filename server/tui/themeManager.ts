@@ -5,7 +5,8 @@
  * 将当前主题写入 OPENCLAW_THEME 环境变量，使子进程能继承
  */
 
-import { getTheme as getThemeBase, type TuiTheme } from './theme.js';
+import { getTheme as getThemeBase } from './theme.js';
+import type { TuiTheme } from './types.js';
 import { logger } from '../logger.js';
 
 export type ThemeName = 'dark' | 'light' | 'auto';

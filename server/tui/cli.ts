@@ -267,7 +267,8 @@ async function main(): Promise<void> {
   if (args.verbose) config.verbose = true;
 
   if (config.verbose) {
-    logger.setLevel?.('debug');
+    const l = logger as any;
+    l.setLevel?.('debug');
   }
 
   // 选择后端
@@ -298,8 +299,7 @@ async function main(): Promise<void> {
 }
 
 // 仅在直接执行时运行（作为模块导入时不会执行）
-const isDirectRun = import.meta.url === `file://${process.argv[1]}` ||
-  (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop() ?? ''));
+const isDirectRun = require.main === module;
 
 if (isDirectRun) {
   main().catch((err) => {
