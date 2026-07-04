@@ -129,7 +129,12 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json
           git commit -m "chore: Bump version to v${VERSION}"
-          git pull --rebase origin ${{ github.ref_name }}
+          git pull --rebase origin ${{ github.ref_name }} || {
+            # 如果 rebase 冲突，强制使用我们的版本
+            git checkout --theirs package.json 2>/dev/null || true
+            git add package.json
+            git rebase --continue || git rebase --skip
+          }
           git push origin HEAD:${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
