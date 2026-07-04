@@ -182,7 +182,7 @@ export function archiveSession(sessionId: string, summary?: string): boolean {
       sessionId,
       category: 'conversation',
       content: `[会话摘要] ${summary}`,
-      keywords: extractKeywords(summary, 15),
+      keywords: extractKeywords(summary),
     }).catch(e => logger.warn('[SessionLifecycle] 会话摘要 embedding 失败:', e));
   }
 

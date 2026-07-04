@@ -21,7 +21,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { logger } from '../logger.js';
-import type { ToolProfile, CompactionStrategy } from '../types/aiEngine.js';
+import type { ToolProfile, CompactionStrategy } from './types/aiEngine.js';
 
 export interface TuiConfig {
   /** 后端类型：embedded（本地直连 DAO）/ http（远程服务） */

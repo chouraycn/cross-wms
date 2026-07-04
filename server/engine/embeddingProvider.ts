@@ -36,7 +36,7 @@ export interface EmbeddingProviderConfig {
   /** 输出维度（仅支持降维的模型） */
   outputDimensionality?: number;
   /** 批量嵌入配置 */
-  batch?: {
+  batch: {
     enabled: boolean;
     maxBatchSize: number;
     concurrency: number;
@@ -67,7 +67,7 @@ const DEFAULT_CONFIG: EmbeddingProviderConfig = {
     enabled: true,
     maxBatchSize: 32,
     concurrency: 2,
-  },
+  } as const,
 };
 
 // ===================== 单例状态 =====================
@@ -86,7 +86,7 @@ const CACHE_MAX_SIZE = 512;
  * 配置嵌入提供者
  */
 export function configureEmbeddingProvider(config: Partial<EmbeddingProviderConfig>): void {
-  const currentBatch = currentConfig.batch || DEFAULT_CONFIG.batch;
+  const currentBatch = currentConfig.batch ?? DEFAULT_CONFIG.batch;
   const newConfig: EmbeddingProviderConfig = {
     ...currentConfig,
     ...config,

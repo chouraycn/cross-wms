@@ -89,7 +89,7 @@ export interface SchemaProjectionOptions {
   maxDescriptionLength?: number;
   /** 排除的参数名 */
   excludeParams?: string[];
-};
+}
 
 /**
  * 将通配符模式转换为正则表达式

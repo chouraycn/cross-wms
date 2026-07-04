@@ -499,6 +499,8 @@ interface QueueExecuteParams {
   autoReasonType?: string;
   message: string;
   modelsConfig: ModelsFile;
+  toolProfile?: string;
+  compaction?: any;
 }
 
 /**
@@ -720,7 +722,7 @@ async function executeQueuedMessage(
       estimatedToolsCount: 30,
       fromQueue: true,
       callbacks,
-      toolProfile: params.toolProfile,
+      toolProfile: params.toolProfile as any,
       compaction: params.compaction,
     });
 
