@@ -1082,8 +1082,12 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             </Box>
           )}
 
-          <Box sx={{ px: 3, pb: 3, pt: 1, flexShrink: 0, borderTop: 'none' }}>
-            <Box sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', position: 'relative' }}>
+          <Box sx={{ px: 3, pb: 3, pt: 'calc(1rem + 30px)', flexShrink: 0, borderTop: 'none' }}>
+            <Box sx={{ 
+              maxWidth: CHAT_MAX_WIDTH, 
+              mx: 'auto', 
+              position: 'relative',
+            }}>
               <TopBarChatInput
                 isEmpty={session.messages.length === 0}
                 updateSessionModel={updateSessionModel}

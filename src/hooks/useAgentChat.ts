@@ -33,8 +33,6 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Message, Session, Attachment, ReferencedSession } from '../types/chat';
 import { API_BASE } from '../constants/api';
-import { useStreamReconciliation } from './useStreamReconciliation';
-import type { StreamReconciliationState } from './useStreamReconciliation';
 import { useAiEngineSettings } from '../contexts/AppSettingsContext';
 import { extractTodos, mergeAutoTodos } from '../utils/extractTodos';
 
@@ -305,9 +303,12 @@ class BlockReplyCoalescer {
 /**
  * 渲染调度器 — 管理不同优先级的 UI 更新
  *
- * 正文流：高优先级 (rAF)
- * 思考流：低优先级 (rIC / setTimeout)
- * 两个流完全独立，互不阻塞
+ * 正文流：高优先级 (setTimeout 16ms)
+ * 思考流：低优先级 (setTimeout 50ms)
+ * 
+ * v3.0.0: 统一用 setTimeout 渲染调度 — 彻底消除 rAF 暂停问题
+ * 在 WKWebView 中，rAF 会在应用后台或某些状态下暂停，导致 UI 无法更新
+ * setTimeout 不受 WKWebView rAF 暂停影响
  */
 class RenderScheduler {
   private textRafId: number | null = null;
@@ -323,54 +324,38 @@ class RenderScheduler {
   scheduleTextUpdate(): void {
     this.pendingText = true;
     if (this.textRafId === null) {
-      this.textRafId = requestAnimationFrame(() => {
+      this.textRafId = window.setTimeout(() => {
         this.textRafId = null;
         if (this.pendingText) {
           this.pendingText = false;
           this.textUpdateFn();
         }
-      });
+      }, 16) as unknown as number;
     }
   }
 
   scheduleThinkingUpdate(): void {
     this.pendingThinking = true;
     if (this.thinkingRicId === null) {
-      const ric = (window as unknown as { requestIdleCallback?: (fn: () => void) => number }).requestIdleCallback;
-      if (ric) {
-        this.thinkingRicId = ric(() => {
-          this.thinkingRicId = null;
-          if (this.pendingThinking) {
-            this.pendingThinking = false;
-            this.thinkingUpdateFn();
-          }
-        });
-      } else {
-        this.thinkingRicId = window.setTimeout(() => {
-          this.thinkingRicId = null;
-          if (this.pendingThinking) {
-            this.pendingThinking = false;
-            this.thinkingUpdateFn();
-          }
-        }, 50) as unknown as number;
-      }
+      this.thinkingRicId = window.setTimeout(() => {
+        this.thinkingRicId = null;
+        if (this.pendingThinking) {
+          this.pendingThinking = false;
+          this.thinkingUpdateFn();
+        }
+      }, 50) as unknown as number;
     }
   }
 
   flushAll(): void {
     if (this.pendingText && this.textRafId !== null) {
-      cancelAnimationFrame(this.textRafId);
+      clearTimeout(this.textRafId);
       this.textRafId = null;
       this.pendingText = false;
       this.textUpdateFn();
     }
     if (this.pendingThinking && this.thinkingRicId !== null) {
-      const ric = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
-      if (ric) {
-        ric(this.thinkingRicId);
-      } else {
-        clearTimeout(this.thinkingRicId);
-      }
+      clearTimeout(this.thinkingRicId);
       this.thinkingRicId = null;
       this.pendingThinking = false;
       this.thinkingUpdateFn();
@@ -379,16 +364,11 @@ class RenderScheduler {
 
   dispose(): void {
     if (this.textRafId !== null) {
-      cancelAnimationFrame(this.textRafId);
+      clearTimeout(this.textRafId);
       this.textRafId = null;
     }
     if (this.thinkingRicId !== null) {
-      const ric = (window as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
-      if (ric) {
-        ric(this.thinkingRicId);
-      } else {
-        clearTimeout(this.thinkingRicId);
-      }
+      clearTimeout(this.thinkingRicId);
       this.thinkingRicId = null;
     }
   }
@@ -433,17 +413,7 @@ export interface UseAgentChatResult {
   activeItems: AgentItemEventData[];
   thinkingText: string;
   hasThinking: boolean;
-  streamState: StreamReconciliationState;
   pendingMessages: PendingMessage[];
-  getStreamTextContent: () => string;
-  getStreamThinkingContent: () => string;
-  getStreamToolCalls: () => Array<{
-    id: string;
-    name: string;
-    args: string;
-    status: 'pending' | 'running' | 'completed' | 'failed';
-    result?: unknown;
-  }>;
   sendMessage: (content: string, options?: SendAgentMessageOptions) => Promise<void>;
   stopGeneration: () => void;
   clearMessages: () => void;
@@ -468,17 +438,6 @@ export function useAgentChat(
 
   // AI 引擎设置
   const { settings: aiEngine } = useAiEngineSettings();
-
-  // 流协调器 — 独立维护流段状态，与现有渲染逻辑并行
-  const {
-    state: streamState,
-    processEvent: processReconciliationEvent,
-    reset: resetReconciliation,
-    complete: completeReconciliation,
-    getTextContent: getStreamTextContent,
-    getThinkingContent: getStreamThinkingContent,
-    getToolCalls: getStreamToolCalls,
-  } = useStreamReconciliation();
 
   const abortControllerRef = useRef<AbortController | null>(null);
   // 组件卸载标志：用于区分"用户手动停止"和"组件卸载导致的 abort"
@@ -556,6 +515,10 @@ export function useAgentChat(
 
   // 初始化 coalescer 和 scheduler
   const initializeStreaming = useCallback(() => {
+    textCoalescerRef.current?.dispose();
+    thinkingCoalescerRef.current?.dispose();
+    schedulerRef.current?.dispose();
+
     blockStateRef.current = {
       assistantMessageIndex: -1,
       isReasoning: false,
@@ -725,7 +688,6 @@ export function useAgentChat(
           itemsMapRef.current.clear();
           setActiveItems([]);
           initializeStreaming();
-          resetReconciliation();
         } else if (phase === 'init') {
           if (runId) {
             setCurrentRunId(runId);
@@ -754,8 +716,8 @@ export function useAgentChat(
         } else if (phase === 'done') {
           textCoalescerRef.current?.dispose();
           thinkingCoalescerRef.current?.dispose();
+          schedulerRef.current?.dispose();
           flushAllBuffers();
-          completeReconciliation();
 
           const state = blockStateRef.current;
           if (state.assistantMessageIndex >= 0) {
@@ -839,14 +801,12 @@ export function useAgentChat(
       case 'assistant': {
         const content = (data.content as string) || '';
         handleTextContent(content, false);
-        processReconciliationEvent({ type: 'text_delta', content, contentIndex: 0 });
         break;
       }
 
       case 'thinking': {
         const content = (data.content as string) || '';
         handleTextContent(content, true);
-        processReconciliationEvent({ type: 'thinking_delta', content, contentIndex: 0 });
 
         // v9.0: 处理 thinkingSignature / redacted 字段，保存到当前 assistant 消息的 metadata
         const thinkingSignature = data.thinkingSignature as string | undefined;
@@ -999,7 +959,7 @@ export function useAgentChat(
       default:
         break;
     }
-  }, [checkAndUpdateSeq, initializeStreaming, handleTextContent, flushAllBuffers, startAssistantMessage, processReconciliationEvent, resetReconciliation, completeReconciliation, removePendingMessage, updatePendingMessage]);
+  }, [checkAndUpdateSeq, initializeStreaming, handleTextContent, flushAllBuffers, startAssistantMessage, removePendingMessage, updatePendingMessage]);
 
   // ===================== 发送消息 =====================
 
@@ -1100,6 +1060,7 @@ export function useAgentChat(
         console.log('[useAgentChat] 请求已取消');
         textCoalescerRef.current?.dispose();
         thinkingCoalescerRef.current?.dispose();
+        schedulerRef.current?.dispose();
         flushAllBuffers();
 
         // 组件卸载导致的 abort（如路由切换），不更新消息状态，避免显示"请求已取消"错误
@@ -1137,6 +1098,7 @@ export function useAgentChat(
 
         textCoalescerRef.current?.dispose();
         thinkingCoalescerRef.current?.dispose();
+        schedulerRef.current?.dispose();
         flushAllBuffers();
 
         const state = blockStateRef.current;
@@ -1348,11 +1310,7 @@ export function useAgentChat(
     activeItems,
     thinkingText,
     hasThinking,
-    streamState,
     pendingMessages,
-    getStreamTextContent,
-    getStreamThinkingContent,
-    getStreamToolCalls,
     sendMessage,
     stopGeneration,
     clearMessages,
