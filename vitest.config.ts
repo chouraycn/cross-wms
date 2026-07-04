@@ -79,6 +79,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
+      reportOnFailure: true,
       include: [
         'src/services/**',
         'src/stores/**',
@@ -91,6 +92,11 @@ export default defineConfig({
         'server/engine/loopDetector.ts',
         'server/engine/multilingualIntent.ts',
         'server/engine/contextTruncate.ts',
+        'server/engine/crypto.ts',
+        'server/engine/secretsStore.ts',
+        'server/storage/migration.ts',
+        'server/engine/messageArchive.ts',
+        'server/channels/access/allowlist.ts',
       ],
     },
   },
