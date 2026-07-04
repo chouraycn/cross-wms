@@ -296,8 +296,6 @@ jobs:
     name: Swift Test (6.0)
     runs-on: macos-14
     timeout-minutes: 20
-    env:
-      DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -313,6 +311,10 @@ jobs:
               - 'scripts/build-macos-swift.sh'
               - 'scripts/create-dmg.sh'
               - 'scripts/codesign-mac-app.sh'
+
+      - name: Select Xcode
+        if: steps.swift_changes.outputs.swift == 'true'
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
       - name: Set up Swift
         if: steps.swift_changes.outputs.swift == 'true'
