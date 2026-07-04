@@ -1,28 +1,27 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { InMemoryChannelRegistry } from '../registry.js';
-import type { ChannelPlugin, ChannelId, ChannelMeta } from '../plugin.js';
+import type { ChannelPlugin } from '../plugin.js';
+import type { ChannelId, ChannelMeta } from '../types.js';
 
 function createMockPlugin(id: ChannelId, enabled: boolean = true): ChannelPlugin {
   return {
     id,
     meta: {
       id,
-      name: `Test Channel ${id}`,
-      description: `Test channel ${id} description`,
-      version: '1.0.0',
-      enabled,
-      capabilities: [],
+      label: `Test Channel ${id}`,
+      selectionLabel: `Test Channel ${id}`,
+      blurb: `Test channel ${id} description`,
     } as ChannelMeta,
-    inbound: {
-      start: () => Promise.resolve(),
-      stop: () => Promise.resolve(),
-      handleMessage: () => Promise.resolve({ accepted: true }),
+    capabilities: { chatTypes: ['direct'] },
+    config: {
+      listAccountIds: () => [],
+      resolveAccount: () => null,
+      isEnabled: () => enabled,
+      isConfigured: () => true,
     },
-    outbound: {
-      send: () => Promise.resolve({ success: true }),
-      start: () => Promise.resolve(),
-      stop: () => Promise.resolve(),
-    },
+    message: {
+      send: (_ctx: any) => Promise.resolve({ success: true }),
+    } as any,
   };
 }
 
