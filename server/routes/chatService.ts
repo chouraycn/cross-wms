@@ -48,6 +48,7 @@ import { formatMemoryContext } from '../engine/contextEnhancer.js';
 import { recordTurnStarted, recordTurnCompleted, recordTurnFailed, recordMessageCreated } from '../engine/eventRecorder.js';
 import { TokenBudgetManager } from '../engine/compaction/tokenBudget.js';
 import { CompactionLoopGuard, CompactionSafetyTimeout, CompactionRetryAggregateTimeout } from '../engine/compaction/compactionSafety.js';
+import { triggerTurnEndSync, triggerPostCompactionSync } from '../engine/sessionMemorySync.js';
 
 // ===================== 公共辅助函数 =====================
 
@@ -1435,6 +1436,8 @@ export async function handleChat(req: import('express').Request, res: import('ex
           res.write(`event: compaction\ndata: ${JSON.stringify({ status: 'completed', tokensBefore, tokensAfter, reductionRatio })}\n\n`);
           if (compressResult.compressed) {
             logger.debug(`[Chat API] 响应后预算压缩完成: ${tokensBefore} → ${tokensAfter} (减少 ${(reductionRatio * 100).toFixed(1)}%)`);
+            // 压缩后强制同步记忆
+            triggerPostCompactionSync(sessionId).catch(() => {});
           }
         } catch (compactionErr) {
           logger.error('[Chat API] 响应后预算压缩失败:', compactionErr);
@@ -1468,6 +1471,9 @@ export async function handleChat(req: import('express').Request, res: import('ex
       fullContent,
       apiMessages.map((m) => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) })),
     ).catch(() => {});
+
+    // 后台触发会话记忆同步（on_turn 策略）
+    triggerTurnEndSync(sessionId).catch(() => {});
 
     // 发送 done 事件
     await finishStream(res, timerManager, {

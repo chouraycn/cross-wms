@@ -99,7 +99,6 @@ function isGroup(item: NavItem): item is NavItemGroup {
 
 const navItems: NavItem[] = [
   { label: 'AI 对话', path: '/chat', icon: <ChatBubbleOutlineIcon />, desc: '智能助手' },
-  { label: 'TUI 终端', path: '/tui', icon: <TerminalIcon />, desc: '命令行界面' },
   { label: '项目', path: '/projects', icon: <FolderOutlinedIcon />, desc: '项目总览' },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
   { label: 'Workshop', path: '/skills/workshop', icon: <TerminalIcon />, desc: '提案管理' },

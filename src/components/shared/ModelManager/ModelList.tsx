@@ -130,7 +130,7 @@ const ModelTable: React.FC<ModelListProps & { styles: ReturnType<typeof getModel
                   暂无自定义模型，你可以
                   <Box
                     component="span"
-                    onClick={() => actions.openModelDialog('add')}
+                    onClick={() => actions.openModelSelectDialog()}
                     sx={{
                       cursor: 'pointer',
                       color: '#2563EB',

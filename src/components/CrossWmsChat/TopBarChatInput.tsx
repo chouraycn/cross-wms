@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Paper, Chip, Typography, Popover, useTheme, IconButton, Collapse,
+  Box, Paper, Chip, Typography, Popover, useTheme, IconButton, Collapse, Tooltip,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
@@ -113,6 +113,10 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const [intentAnchorEl, setIntentAnchorEl] = useState<HTMLElement | null>(null);
   const [expandedIntent, setExpandedIntent] = useState<IntentCategory | null>(null);
 
+  // 选择文件夹状态
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const folderInputRef = useRef<HTMLInputElement | null>(null);
+
   // 当 initialSkill 从外部变化时同步到 selectedSkill（如 SkillDetailPage 跳转过来）
   useEffect(() => {
     if (initialSkill) setSelectedSkill(initialSkill);
@@ -123,6 +127,47 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     setIntentAnchorEl(null);
     setExpandedIntent(null);
   }, [selectedSkill?.id]);
+
+  // 选择文件夹处理：优先使用原生 NSOpenPanel，回退到 input[webkitdirectory]
+  const handleSelectFolder = useCallback(async () => {
+    // @ts-ignore
+    const native = window.cdfAppNative;
+    if (native && typeof native.pickFolder === 'function') {
+      try {
+        const folderPath = await native.pickFolder();
+        if (folderPath) {
+          setSelectedFolder(folderPath);
+        }
+      } catch {
+        // 原生调用失败，回退到 input
+        folderInputRef.current?.click();
+      }
+    } else {
+      // Web 环境：使用 input[webkitdirectory]
+      folderInputRef.current?.click();
+    }
+  }, []);
+
+  // input[webkitdirectory] change 事件处理（Web 回退方案）
+  const handleFolderInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      // webkitdirectory 会返回文件夹下所有文件，第一个文件的 relativePath 包含文件夹名
+      // @ts-ignore - webkitRelativePath 是非标准属性
+      const relPath: string = files[0].webkitRelativePath || '';
+      const folderName = relPath.split('/')[0];
+      if (folderName) {
+        setSelectedFolder(folderName);
+      }
+    }
+    // 重置 input value 以便重复选择同一文件夹
+    e.target.value = '';
+  }, []);
+
+  // 清除选中的文件夹
+  const handleClearFolder = useCallback(() => {
+    setSelectedFolder(null);
+  }, []);
 
   // 获取当前斜杠命令过滤后的技能列表（用于键盘导航，缓存避免每次渲染重新计算）
   const slashFilteredSkills = useMemo(() => {
@@ -970,8 +1015,9 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             borderBottom: variant === 'default' && !isCardVariant ? `1px solid ${gs.border}` : 'none',
           }}
         >
-            {/* 选择文件夹下拉 */}
+            {/* 选择文件夹 */}
             <Box
+              onClick={selectedFolder ? undefined : handleSelectFolder}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -979,18 +1025,68 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 px: 1.5,
                 py: 0.5,
                 borderRadius: '8px',
-                cursor: 'pointer',
-                color: gs.textMuted,
+                cursor: selectedFolder ? 'default' : 'pointer',
+                color: selectedFolder ? '#6366f1' : gs.textMuted,
                 fontSize: 13,
-                bgcolor: 'transparent',
+                bgcolor: selectedFolder ? (isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.06)') : 'transparent',
                 border: 'none',
-                '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
+                maxWidth: 300,
+                '&:hover': selectedFolder ? {} : { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
               }}
             >
-              <FolderOpenIcon sx={{ fontSize: 16 }} />
-              <Typography sx={{ fontSize: 13, color: gs.textMuted }}>选择文件夹（可选）</Typography>
-              <KeyboardArrowDownIcon sx={{ fontSize: 14 }} />
+              <FolderOpenIcon sx={{ fontSize: 16, flexShrink: 0 }} />
+              {selectedFolder ? (
+                <>
+                  <Typography
+                    sx={{
+                      fontSize: 13,
+                      color: '#6366f1',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      maxWidth: 200,
+                    }}
+                  >
+                    {selectedFolder}
+                  </Typography>
+                  <Tooltip title="清除文件夹">
+                    <Box
+                      component="span"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleClearFolder();
+                      }}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        ml: 0.5,
+                        color: gs.textMuted,
+                        '&:hover': { color: '#ef4444' },
+                      }}
+                    >
+                      <CloseIcon sx={{ fontSize: 14 }} />
+                    </Box>
+                  </Tooltip>
+                </>
+              ) : (
+                <>
+                  <Typography sx={{ fontSize: 13, color: gs.textMuted }}>选择文件夹（可选）</Typography>
+                  <KeyboardArrowDownIcon sx={{ fontSize: 14 }} />
+                </>
+              )}
             </Box>
+            {/* 隐藏的文件夹选择 input（Web 回退方案） */}
+            <input
+              ref={folderInputRef}
+              type="file"
+              // @ts-ignore - webkitdirectory 是非标准属性
+              webkitdirectory=""
+              directory=""
+              multiple
+              style={{ display: 'none' }}
+              onChange={handleFolderInputChange}
+            />
           </Box>
         </Collapse>
 
