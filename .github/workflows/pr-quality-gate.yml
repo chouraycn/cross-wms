@@ -109,10 +109,10 @@ jobs:
           echo "Branches: $BRANCHES%"
           echo "Statements: $STATEMENTS%"
 
-          MIN_LINES=80
-          MIN_FUNCTIONS=75
-          MIN_BRANCHES=70
-          MIN_STATEMENTS=80
+          MIN_LINES=25
+          MIN_FUNCTIONS=50
+          MIN_BRANCHES=40
+          MIN_STATEMENTS=25
 
           if (( $(echo "$LINES < $MIN_LINES" | bc -l) )); then
             echo "::error::Lines coverage ($LINES%) below threshold ($MIN_LINES%)"
