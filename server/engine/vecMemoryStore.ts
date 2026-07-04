@@ -108,8 +108,7 @@ function getDb() {
   return DatabaseManager.getVecDb();
 }
 
-// 延迟建表
-setTimeout(() => {
+function initSchema() {
   try {
     const db = getDb();
 
@@ -160,7 +159,9 @@ setTimeout(() => {
   } catch (err) {
     logger.error('[VecMemory] 初始化 schema 失败:', err);
   }
-}, 0);
+}
+
+initSchema();
 
 // ===================== 类型定义 =====================
 
