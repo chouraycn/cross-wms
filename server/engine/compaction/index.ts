@@ -14,8 +14,39 @@
 export * from '../compaction-config.js';
 export * from '../compaction-dedupe.js';
 export * from '../compaction-hooks.js';
-export * from '../compaction-identifier.js';
-export * from '../compaction-planning.js';
+export {
+  CompactionIdentifierPolicy,
+  CompactionIdentifierConfig,
+  IDENTIFIER_PRESERVATION_INSTRUCTIONS,
+  GENERAL_IDENTIFIER_PRESERVATION_INSTRUCTIONS,
+  CompactionSummarizationInstructions,
+  resolveIdentifierPreservationInstructions,
+  buildCompactionSummarizationInstructions,
+  MERGE_SUMMARIES_INSTRUCTIONS,
+  SUMMARY_VALIDATION_INSTRUCTIONS,
+  extractValidSummaryContent,
+} from '../compaction-identifier.js';
+export {
+  BASE_CHUNK_RATIO,
+  MIN_CHUNK_RATIO,
+  SAFETY_MARGIN,
+  SUMMARIZATION_OVERHEAD_TOKENS,
+  MIN_PROMPT_BUDGET_TOKENS,
+  MIN_PROMPT_BUDGET_RATIO,
+  estimateMessageTokens,
+  estimateMessagesTokens,
+  normalizeCompactionParts,
+  splitMessagesByTokenShare,
+  chunkMessagesByMaxTokens,
+  computeAdaptiveChunkRatio,
+  isOversizedForSummary,
+  buildSummaryChunks,
+  buildOversizedFallbackPlan,
+  buildStageSplitPlan,
+  pruneHistoryForContextShare,
+  buildHistoryPrunePlan,
+  estimateTokensAfterCompaction,
+} from '../compaction-planning.js';
 export * from '../compaction-safety.js';
 export * from '../compaction-sanitize.js';
 export * from '../compaction-transcript.js';

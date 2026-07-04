@@ -10,13 +10,14 @@ import {
   buildOversizedFallbackPlan,
   buildStageSplitPlan,
   buildHistoryPrunePlan,
+  pruneHistoryForContextShare,
   computeAdaptiveChunkRatio,
   estimateMessagesTokens,
-  type AgentMessage,
   type OversizedFallbackPlan,
   type StageSplitPlan,
   type HistoryPruneResult,
 } from './compaction-planning.js';
+import type { AgentMessage } from './context-engine/types.js';
 
 export type CompactionPlanningWorkerInput =
   | { kind: 'summaryChunks'; messages: AgentMessage[]; maxChunkTokens: number }
@@ -91,7 +92,7 @@ function execute(input: CompactionPlanningWorkerInput): CompactionPlanningWorker
         };
       }
 
-      const pruned = buildHistoryPrunePlan(input.messagesToSummarize, input.contextWindowTokens, input.maxHistoryShare, input.parts);
+      const pruned = pruneHistoryForContextShare(input.messagesToSummarize, input.contextWindowTokens, input.maxHistoryShare, input.parts);
       return {
         kind: 'historyPrune',
         summarizableTokens,

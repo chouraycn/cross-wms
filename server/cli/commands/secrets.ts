@@ -72,7 +72,7 @@ function auditSecrets(): { findings: SecretFinding[]; summary: { plaintext: numb
   const findings: SecretFinding[] = [];
   let plaintext = 0;
   let unresolved = 0;
-  let shadowed = 0;
+  const shadowed = 0;
 
   for (const entry of SECRETS_STORE.values()) {
     if (entry.ref.startsWith("plaintext:")) {

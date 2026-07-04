@@ -20,6 +20,7 @@ import { enhanceInBackground, type EnhancementResult } from './contextEnhancer.j
 import { sanitizeToolMessages } from './contextTruncate.js';
 import { TimerManager } from '../sse/timerManager.js';
 import { sendSSE, sendDebugSSE, sendDoneAndEnd } from '../sse/sseTypes.js';
+import { type ToolProfileId } from './toolProfiles.js';
 import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
@@ -101,7 +102,7 @@ export interface ExecuteChatParams {
   /** 是否使用队列模式（影响日志标记） */
   fromQueue?: boolean;
   /** 工具 Profile */
-  toolProfile?: string;
+  toolProfile?: ToolProfileId;
   /** 上下文压缩配置 */
   compaction?: {
     enabled?: boolean;

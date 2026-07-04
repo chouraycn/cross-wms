@@ -86,12 +86,14 @@ const CACHE_MAX_SIZE = 512;
  * 配置嵌入提供者
  */
 export function configureEmbeddingProvider(config: Partial<EmbeddingProviderConfig>): void {
-  const newConfig = {
+  const currentBatch = currentConfig.batch || DEFAULT_CONFIG.batch;
+  const newConfig: EmbeddingProviderConfig = {
     ...currentConfig,
     ...config,
     batch: {
-      ...currentConfig.batch,
-      ...config.batch,
+      enabled: config.batch?.enabled ?? currentBatch.enabled,
+      maxBatchSize: config.batch?.maxBatchSize ?? currentBatch.maxBatchSize,
+      concurrency: config.batch?.concurrency ?? currentBatch.concurrency,
     },
   };
 
