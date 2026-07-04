@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 5.10
 // Package manifest for CDF Know Clow macOS app.
 
 import PackageDescription
