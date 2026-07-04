@@ -30,7 +30,7 @@ struct CachedResponse {
 
 // MARK: - Request Interceptor
 
-protocol CanvasRequestInterceptor: AnyObject, @unchecked Sendable {
+protocol CanvasRequestInterceptor: AnyObject {
     /// 拦截请求，返回修改后的数据或 nil 表示不拦截
     func intercept(request: URLRequest, data: Data, mimeType: String) -> (Data, String)?
     /// 是否允许该请求
@@ -253,7 +253,7 @@ final class CanvasSchemeHandler: NSObject, WKURLSchemeHandler {
         }
 
         // 检查拦截器权限
-        let localInterceptors = MainActor.assumeIsolated { interceptors }
+        let localInterceptors = interceptors
         for interceptor in localInterceptors {
             if !interceptor.shouldAllow(request: request) {
                 urlSchemeTask.didFailWithError(
@@ -338,7 +338,7 @@ final class CanvasSchemeHandler: NSObject, WKURLSchemeHandler {
             // 应用拦截器
             var finalData = fileData
             var finalMimeType = mimeType
-            let localInterceptors = MainActor.assumeIsolated { interceptors }
+            let localInterceptors = interceptors
 
             for interceptor in localInterceptors {
                 if let (modifiedData, newMimeType) = interceptor.intercept(
@@ -433,14 +433,14 @@ final class CanvasSchemeHandler: NSObject, WKURLSchemeHandler {
     nonisolated private func getCachedResponse(for path: String, request: URLRequest) -> CachedResponse? {
         // 检查 If-None-Match / If-Modified-Since
         cacheLock.lock()
-        let response = MainActor.assumeIsolated { cache.get(path) }
+        let response = cache.get(path)
         cacheLock.unlock()
         return response
     }
 
     nonisolated private func cacheResponse(path: String, response: CachedResponse) {
         cacheLock.lock()
-        MainActor.assumeIsolated { cache.set(path, value: response) }
+        cache.set(path, value: response)
         cacheLock.unlock()
     }
 
@@ -456,8 +456,7 @@ final class CanvasSchemeHandler: NSObject, WKURLSchemeHandler {
         var headers = response.headers
 
         // 添加拦截器 header
-        let localInterceptors = MainActor.assumeIsolated { interceptors }
-        for interceptor in localInterceptors {
+        for interceptor in interceptors {
             for (key, value) in interceptor.additionalHeaders(for: task.request) {
                 headers[key] = value
             }
