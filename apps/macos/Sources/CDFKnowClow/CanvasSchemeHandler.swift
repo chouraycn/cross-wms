@@ -253,7 +253,7 @@ final class CanvasSchemeHandler: NSObject, WKURLSchemeHandler {
         }
 
         // 检查拦截器权限
-        let localInterceptors = interceptors
+        let localInterceptors = MainActor.assumeIsolated { interceptors }
         for interceptor in localInterceptors {
             if !interceptor.shouldAllow(request: request) {
                 urlSchemeTask.didFailWithError(
@@ -338,7 +338,7 @@ final class CanvasSchemeHandler: NSObject, WKURLSchemeHandler {
             // 应用拦截器
             var finalData = fileData
             var finalMimeType = mimeType
-            let localInterceptors = interceptors
+            let localInterceptors = MainActor.assumeIsolated { interceptors }
 
             for interceptor in localInterceptors {
                 if let (modifiedData, newMimeType) = interceptor.intercept(
@@ -433,14 +433,14 @@ final class CanvasSchemeHandler: NSObject, WKURLSchemeHandler {
     nonisolated private func getCachedResponse(for path: String, request: URLRequest) -> CachedResponse? {
         // 检查 If-None-Match / If-Modified-Since
         cacheLock.lock()
-        let response = cache.get(path)
+        let response = MainActor.assumeIsolated { cache.get(path) }
         cacheLock.unlock()
         return response
     }
 
     nonisolated private func cacheResponse(path: String, response: CachedResponse) {
         cacheLock.lock()
-        cache.set(path, value: response)
+        MainActor.assumeIsolated { cache.set(path, value: response) }
         cacheLock.unlock()
     }
 
@@ -456,7 +456,8 @@ final class CanvasSchemeHandler: NSObject, WKURLSchemeHandler {
         var headers = response.headers
 
         // 添加拦截器 header
-        for interceptor in interceptors {
+        let localInterceptors = MainActor.assumeIsolated { interceptors }
+        for interceptor in localInterceptors {
             for (key, value) in interceptor.additionalHeaders(for: task.request) {
                 headers[key] = value
             }
