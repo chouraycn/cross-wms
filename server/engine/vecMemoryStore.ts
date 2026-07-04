@@ -108,6 +108,8 @@ function getDb() {
   return DatabaseManager.getVecDb();
 }
 
+let vecIndexAvailable = false;
+
 function initSchema() {
   try {
     const db = getDb();
@@ -129,8 +131,10 @@ function initSchema() {
           embedding FLOAT32[${VECTOR_DIMENSIONS}] distance_metric=cosine
         );
       `);
+      vecIndexAvailable = true;
     } catch (e) {
       logger.warn('[VecMemory] memory_vec_index 创建跳过（可能已存在或 sqlite-vec 不可用）:', e instanceof Error ? e.message : String(e));
+      vecIndexAvailable = false;
     }
 
     // 3. memory_fts 表（全文搜索索引）
@@ -362,10 +366,12 @@ export async function insertMemory(
       embedding.byteLength
     );
 
-    // 3. 插入向量索引
-    db.prepare(
-      `INSERT INTO memory_vec_index (rowid, embedding) VALUES (?, ?)`
-    ).run(id, embeddingBuf);
+    // 3. 插入向量索引（如果可用）
+    if (vecIndexAvailable) {
+      db.prepare(
+        `INSERT INTO memory_vec_index (rowid, embedding) VALUES (?, ?)`
+      ).run(id, embeddingBuf);
+    }
 
     logger.debug(`[VecMemory] 插入记忆: id=${id}, text="${text.slice(0, 50)}..."`);
     return id;
@@ -439,6 +445,11 @@ export async function searchMemory(
 ): Promise<VecSearchResult[]> {
   try {
     const db = getDb();
+
+    if (!vecIndexAvailable) {
+      logger.warn('[VecMemory] 向量索引不可用，返回空结果');
+      return [];
+    }
 
     // 生成查询的真实语义向量
     const queryEmbedding = await embedText(query);
