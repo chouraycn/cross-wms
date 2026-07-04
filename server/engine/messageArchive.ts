@@ -46,12 +46,16 @@ export interface ArchiveResult {
  */
 export function initArchiveTables(db: any): void {
   // 添加 archived 列（如果不存在）
-  const columns = db.prepare("PRAGMA table_info(messages)").all() as Array<{ name: string }>;
-  const hasArchived = columns.some(c => c.name === 'archived');
-  if (!hasArchived) {
-    db.exec('ALTER TABLE messages ADD COLUMN archived INTEGER NOT NULL DEFAULT 0');
-    db.exec('CREATE INDEX IF NOT EXISTS idx_messages_archived ON messages(archived, sessionId)');
-    logger.info('[Archive] 已添加 messages.archived 列');
+  try {
+    const columns = db.prepare("PRAGMA table_info(messages)").all() as Array<{ name: string }>;
+    const hasArchived = columns.some(c => c.name === 'archived');
+    if (!hasArchived) {
+      db.exec('ALTER TABLE messages ADD COLUMN archived INTEGER NOT NULL DEFAULT 0');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_messages_archived ON messages(archived, sessionId)');
+      logger.info('[Archive] 已添加 messages.archived 列');
+    }
+  } catch {
+    // messages 表不存在，跳过列添加
   }
 
   // 创建归档摘要表
