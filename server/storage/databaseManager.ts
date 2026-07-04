@@ -12,6 +12,7 @@
  */
 
 import path from 'path';
+import fs from 'node:fs';
 import Database from 'better-sqlite3';
 import { logger } from '../logger.js';
 import { AppPaths } from '../config/appPaths.js';
@@ -36,6 +37,7 @@ class DatabaseManagerImpl {
   getVecDb(): Database.Database {
     if (!this.vecDb) {
       const dbPath = path.join(AppPaths.memoryDir, 'long_term_memory.db');
+      fs.mkdirSync(AppPaths.memoryDir, { recursive: true });
       this.vecDb = new Database(dbPath);
       this.vecMaintenance = configureSqliteConnectionPragmas(this.vecDb, {
         profile: 'small',
