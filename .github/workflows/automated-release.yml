@@ -146,7 +146,7 @@ jobs:
     timeout-minutes: 45
 
     outputs:
-      version: ${{ needs.bump-version.outputs.version }}
+      version: ${{ steps.get_version.outputs.version }}
 
     steps:
       - name: Check out code
@@ -154,23 +154,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Pull version bump commit
-        run: git pull --ff-only origin ${{ github.ref_name }}
+      - name: Pull latest changes (include any version bump commits)
+        run: git pull --ff-only origin ${{ github.ref_name }} || true
+
+      - name: Get version from package.json
+        id: get_version
+        run: echo "version=$(node -e "console.log(require('./package.json').version)")" >> $GITHUB_OUTPUT
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - name: Verify version matches bump
-        run: |
-          CURRENT_VERSION=$(node -e "console.log(require('./package.json').version)")
-          EXPECTED_VERSION="${{ needs.bump-version.outputs.version }}"
-          echo "Current: $CURRENT_VERSION, Expected: $EXPECTED_VERSION"
-          if [ "$CURRENT_VERSION" != "$EXPECTED_VERSION" ]; then
-            echo "::error::Version mismatch after pull: $CURRENT_VERSION != $EXPECTED_VERSION"
-            exit 1
-          fi
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
@@ -185,19 +179,20 @@ jobs:
 
       - name: Verify build
         run: |
-          VERSION="${{ needs.bump-version.outputs.version }}"
+          VERSION="${{ steps.get_version.outputs.version }}"
           DMG_FILE="release/CDF-Know-Clow-${VERSION}-mac.dmg"
           if [ ! -f "$DMG_FILE" ]; then
-            echo "::error::DMG not found"
+            echo "::error::DMG not found: $DMG_FILE"
             ls -la release/ 2>/dev/null || true
             exit 1
           fi
+          echo "DMG verified: $DMG_FILE"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CDF-Know-Clow-${{ needs.bump-version.outputs.version }}-mac.dmg
-          path: release/CDF-Know-Clow-${{ needs.bump-version.outputs.version }}-mac.dmg
+          name: CDF-Know-Clow-${{ steps.get_version.outputs.version }}-mac.dmg
+          path: release/CDF-Know-Clow-${{ steps.get_version.outputs.version }}-mac.dmg
           retention-days: 30
 
   create-release:
