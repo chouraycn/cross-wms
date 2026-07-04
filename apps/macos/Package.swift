@@ -27,33 +27,21 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log"),
             ],
             path: "Sources/CDFKnowClow",
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
-            ],
             linkerSettings: [
                 .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"]),
             ]),
         .target(
             name: "CrossWMSIPC",
             dependencies: [],
-            path: "Sources/CrossWmsIPC",
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
-            ]),
+            path: "Sources/CrossWmsIPC"),
         .target(
             name: "CDFKnowProtocol",
             dependencies: [],
-            path: "Sources/CDFKnowProtocol",
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
-            ]),
+            path: "Sources/CDFKnowProtocol"),
         .target(
             name: "CDFKnow",
             dependencies: ["CDFKnowProtocol"],
-            path: "Sources/CDFKnow",
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
-            ]),
+            path: "Sources/CDFKnow"),
         .testTarget(
             name: "CrossWMSIPCTests",
             dependencies: ["CrossWMSIPC"],
@@ -61,15 +49,9 @@ let package = Package(
         .testTarget(
             name: "CDFKnowClowTests",
             dependencies: ["CrossWMSIPC"],
-            path: "Tests/CDFKnowClowTests",
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
-            ]),
+            path: "Tests/CDFKnowClowTests"),
         .testTarget(
             name: "CDFKnowIPCTests",
             dependencies: ["CDFKnowProtocol", "CDFKnow"],
-            path: "Tests/CDFKnowIPCTests",
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
-            ]),
+            path: "Tests/CDFKnowIPCTests"),
     ])
