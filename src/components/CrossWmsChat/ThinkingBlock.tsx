@@ -94,6 +94,7 @@ function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, thi
   const isDark = theme.palette.mode === 'dark';
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const [expanded, setExpanded] = useState(false);
+  const [userCollapsed, setUserCollapsed] = useState(false);
   const label = getLabel();
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -127,13 +128,18 @@ function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, thi
   }, [isActuallyThinking]);
 
   // v2.8.8: 流式时自动展开并持续显示 thinking 内容，让用户实时感知模型运行
+  // v8.3-fix: 用户手动收起后不再自动展开，除非新的流式响应开始
   const prevStreamingRef = useRef(false);
   useEffect(() => {
-    if (isActuallyThinking && !prevStreamingRef.current) {
+    if (isActuallyThinking && !prevStreamingRef.current && !userCollapsed) {
       setExpanded(true);
     }
     prevStreamingRef.current = !!isActuallyThinking;
-  }, [isActuallyThinking]);
+    // 流式结束后重置用户收起状态，下次流式开始时可自动展开
+    if (!isActuallyThinking) {
+      setUserCollapsed(false);
+    }
+  }, [isActuallyThinking, userCollapsed]);
 
   // 历史消息：有 thinking 内容且有 duration 时默认展开
   const prevInitRef = useRef(false);
@@ -160,7 +166,15 @@ function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, thi
     >
       {/* 头部栏 */}
       <Box
-        onClick={() => setExpanded(v => !v)}
+        onClick={() => {
+          setExpanded(v => {
+            const newValue = !v;
+            if (!newValue) {
+              setUserCollapsed(true);
+            }
+            return newValue;
+          });
+        }}
         sx={{
           display: 'flex',
           alignItems: 'center',

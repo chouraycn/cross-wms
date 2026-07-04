@@ -45,24 +45,10 @@ const LocalModelDiscoverDialog: React.FC<LocalModelDiscoverDialogProps> = ({
   const [error, setError] = useState('');
   const [customUrl, setCustomUrl] = useState('');
 
-  // 弹窗打开时自动检测宿主机 IP
+  // 弹窗打开时自动填充默认地址
   React.useEffect(() => {
     if (!open) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const resp = await fetch('/api/models/host-ip');
-        const data = await resp.json();
-        if (!cancelled && data.hostIp) {
-          setCustomUrl(`http://${data.hostIp}:11434`);
-        } else if (!cancelled) {
-          setCustomUrl('http://localhost:11434');
-        }
-      } catch {
-        if (!cancelled) setCustomUrl('http://localhost:11434');
-      }
-    })();
-    return () => { cancelled = true; };
+    setCustomUrl('http://localhost:11434');
   }, [open]);
 
   // 弹窗关闭时重置状态

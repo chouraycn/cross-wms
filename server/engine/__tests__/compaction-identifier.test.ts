@@ -11,12 +11,14 @@ import {
 
 describe('compaction-identifier', () => {
   describe('resolveIdentifierPreservationInstructions', () => {
-    it('strict 策略应该返回默认指令', () => {
+    it('strict 策略应该返回通用标识符指令', () => {
       const result = resolveIdentifierPreservationInstructions({ policy: 'strict' });
-      expect(result).toBe(IDENTIFIER_PRESERVATION_INSTRUCTIONS);
+      expect(result).toBeDefined();
       expect(result).toContain('UUIDs');
       expect(result).toContain('hostnames');
       expect(result).toContain('URLs');
+      expect(result).not.toContain('WMS DOMAIN');
+      expect(result).not.toContain('SKU');
     });
 
     it('off 策略应该返回 undefined', () => {
@@ -41,9 +43,14 @@ describe('compaction-identifier', () => {
       expect(result).toBe(IDENTIFIER_PRESERVATION_INSTRUCTIONS);
     });
 
-    it('默认应该使用 strict 策略', () => {
+    it('默认应该使用 wms 策略', () => {
       const result = resolveIdentifierPreservationInstructions(undefined);
       expect(result).toBe(IDENTIFIER_PRESERVATION_INSTRUCTIONS);
+      expect(result).toContain('UUIDs');
+      expect(result).toContain('hostnames');
+      expect(result).toContain('URLs');
+      expect(result).toContain('WMS DOMAIN');
+      expect(result).toContain('SKU');
     });
   });
 
@@ -61,13 +68,13 @@ describe('compaction-identifier', () => {
     });
 
     it('只有标识符保留时应该返回标识符指令', () => {
-      const result = buildCompactionSummarizationInstructions(undefined, { policy: 'strict' });
+      const result = buildCompactionSummarizationInstructions(undefined, { policy: 'wms' });
       expect(result).toBe(IDENTIFIER_PRESERVATION_INSTRUCTIONS);
     });
 
     it('两者都有时应该合并', () => {
       const custom = 'Focus on important decisions.';
-      const result = buildCompactionSummarizationInstructions(custom, { policy: 'strict' });
+      const result = buildCompactionSummarizationInstructions(custom, { policy: 'wms' });
       expect(result).toContain(IDENTIFIER_PRESERVATION_INSTRUCTIONS);
       expect(result).toContain(custom);
       expect(result).toContain('Additional focus');
