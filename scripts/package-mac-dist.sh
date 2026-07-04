@@ -201,7 +201,7 @@ SHA256: $(shasum -a 256 "$DMG" 2>/dev/null | awk '{print $1}' || echo 'N/A')" \
       # Fallback: use GitHub API directly
       UPLOAD_URL=$(gh api repos/chouraycn/CDFKnow/releases/tags/$TAG --jq '.upload_url' 2>/dev/null || true)
       if [ -n "$UPLOAD_URL" ]; then
-        UPLOAD_URL="${UPLOAD_URL%\{*\}"
+        UPLOAD_URL="${UPLOAD_URL%%\{*}"
         DMG_FILENAME="CDF-Know-Clow-${VERSION}-mac.dmg"
         curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
           -H "Content-Type: application/octet-stream" \
