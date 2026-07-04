@@ -32,6 +32,14 @@ export function initSecretsStore(): void {
 
   const db = initDb();
 
+  // 确保 app_settings 表存在（其他模块可能依赖）
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `);
+
   // 创建密钥表
   db.exec(`
     CREATE TABLE IF NOT EXISTS ${SECRETS_TABLE} (
