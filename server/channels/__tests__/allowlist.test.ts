@@ -75,8 +75,8 @@ describe('AllowlistManager 模块单元测试', () => {
         channels: {
           'test-channel': {
             allowlist: {
-              dm: [{ kind: 'user', value: 'user1' }, { kind: 'user', value: 'user2' }],
-              group: [{ kind: 'group', value: 'group1' }],
+              dm: [{ kind: 'username', value: 'user1' }, { kind: 'username', value: 'user2' }],
+              group: [{ kind: 'role', value: 'group1' }],
             },
           },
         },

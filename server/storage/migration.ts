@@ -14,6 +14,9 @@ import { logger } from '../logger.js';
  * 幂等：检查 app_settings 中 v9_jsonl_migrated 标记，已迁移则跳过。
  */
 export function migrateSessionsToJsonl(db: Database.Database): void {
+  // 确保 app_settings 表存在
+  db.exec(`CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
+
   // 检查是否已迁移（在 app_settings 中标记）
   const alreadyMigrated = db.prepare(
     "SELECT value FROM app_settings WHERE key='v9_jsonl_migrated'"
