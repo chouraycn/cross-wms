@@ -32,14 +32,14 @@ describe('MethodRegistry 模块单元测试', () => {
       const handler = async (params: unknown) => ({ received: params });
       registerGatewayMethod('test.invoke', handler);
 
-      const result = await getMethodRegistry().invoke('test.invoke', { foo: 'bar' }, { clientId: 'test' });
+      const result = await getMethodRegistry().invoke('test.invoke', { foo: 'bar' }, { requestId: 'test', timestamp: Date.now() });
 
       expect(result.ok).toBe(true);
       expect(result.result).toEqual({ received: { foo: 'bar' } });
     });
 
     it('调用不存在的方法应该返回错误', async () => {
-      const result = await getMethodRegistry().invoke('nonexistent.method', {}, { clientId: 'test' });
+      const result = await getMethodRegistry().invoke('nonexistent.method', {}, { requestId: 'test', timestamp: Date.now() });
 
       expect(result.ok).toBe(false);
       expect(result.error?.code).toBe('METHOD_NOT_FOUND');
@@ -51,7 +51,7 @@ describe('MethodRegistry 模块单元测试', () => {
       };
       registerGatewayMethod('test.error', handler);
 
-      const result = await getMethodRegistry().invoke('test.error', {}, { clientId: 'test' });
+      const result = await getMethodRegistry().invoke('test.error', {}, { requestId: 'test', timestamp: Date.now() });
 
       expect(result.ok).toBe(false);
       expect(result.error?.code).toBe('Error');
