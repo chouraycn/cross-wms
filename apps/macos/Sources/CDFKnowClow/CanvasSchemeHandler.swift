@@ -30,7 +30,7 @@ struct CachedResponse {
 
 // MARK: - Request Interceptor
 
-protocol CanvasRequestInterceptor: AnyObject {
+protocol CanvasRequestInterceptor: AnyObject, @unchecked Sendable {
     /// 拦截请求，返回修改后的数据或 nil 表示不拦截
     func intercept(request: URLRequest, data: Data, mimeType: String) -> (Data, String)?
     /// 是否允许该请求
