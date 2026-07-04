@@ -72,6 +72,8 @@ export function decrypt(encryptedJson: string, keyBase64: string): string {
 export function ensureEncryptionKey(): string {
   const db = initDb();
 
+  db.exec(`CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
+
   const row = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(ENCRYPTION_KEY_SETTING) as
     | { value: string }
     | undefined;
