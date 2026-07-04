@@ -118,7 +118,12 @@ function downloadFile(url: string, dest: string, retries = 2, timeoutMs = 30000)
       const req = https.get(url, (response) => {
         // 处理重定向（301/302/307/308）
         if ([301, 302, 307, 308].includes(response.statusCode!) && response.headers.location) {
-          downloadFile(response.headers.location, dest, 0, timeoutMs).then(resolve).catch(reject);
+          let redirectUrl = response.headers.location;
+          if (redirectUrl.startsWith('/')) {
+            const originalUrl = new URL(url);
+            redirectUrl = `${originalUrl.protocol}//${originalUrl.host}${redirectUrl}`;
+          }
+          downloadFile(redirectUrl, dest, 0, timeoutMs).then(resolve).catch(reject);
           return;
         }
         if (response.statusCode !== 200) {
