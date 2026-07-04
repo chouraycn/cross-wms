@@ -21,8 +21,8 @@ import {
   estimateMessageTokens,
   computeAdaptiveChunkRatio,
   isOversizedForSummary,
-  type AgentMessage,
 } from './compaction-planning.js';
+import type { AgentMessage } from './context-engine/types.js';
 import {
   IDENTIFIER_PRESERVATION_INSTRUCTIONS,
   resolveIdentifierPreservationInstructions as resolveWmsIdentifierInstructions,

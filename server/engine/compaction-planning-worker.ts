@@ -5,7 +5,6 @@
  */
 
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Worker } from 'node:worker_threads';
 import { logger } from '../logger.js';
 import {
@@ -13,13 +12,16 @@ import {
   buildOversizedFallbackPlan,
   buildStageSplitPlan,
   buildHistoryPrunePlan,
+  pruneHistoryForContextShare,
   computeAdaptiveChunkRatio,
   estimateMessagesTokens,
-  type AgentMessage,
   type OversizedFallbackPlan,
   type StageSplitPlan,
   type HistoryPruneResult,
 } from './compaction-planning.js';
+import type { AgentMessage } from './context-engine/types.js';
+
+const __dirname = path.dirname(__filename);
 import type {
   CompactionPlanningWorkerInput,
   CompactionPlanningWorkerValue,
@@ -39,17 +41,15 @@ class CompactionPlanningWorkerError extends Error {
   }
 }
 
-function resolveCompactionPlanningWorkerUrl(currentModuleUrl = import.meta.url): URL {
-  const currentPath = fileURLToPath(currentModuleUrl);
-  const normalized = currentPath.replaceAll(path.sep, '/');
+function resolveCompactionPlanningWorkerUrl(): URL {
+  const currentPath = __dirname.replaceAll(path.sep, '/');
   const distMarker = '/dist/';
-  const distIndex = normalized.lastIndexOf(distMarker);
+  const distIndex = currentPath.lastIndexOf(distMarker);
   if (distIndex >= 0) {
-    const distRoot = currentPath.slice(0, distIndex + distMarker.length);
-    return pathToFileURL(path.join(distRoot, 'engine', 'compaction-planning.worker.js'));
+    const distRoot = __dirname.slice(0, distIndex + distMarker.length);
+    return new URL(`file://${path.join(distRoot, 'engine', 'compaction-planning.worker.js').replaceAll(path.sep, '/')}`);
   }
-  const extension = path.extname(currentPath) || '.js';
-  return new URL(`./compaction-planning.worker${extension}`, currentModuleUrl);
+  return new URL(`file://${path.join(__dirname, 'compaction-planning.worker.js').replaceAll(path.sep, '/')}`);
 }
 
 function runCompactionPlanningWorker(params: {
@@ -294,7 +294,7 @@ export async function buildHistoryPrunePlanWithWorker(params: {
       return { summarizableTokens, newContentTokens, maxHistoryTokens };
     }
 
-    const pruned = buildHistoryPrunePlan(params.messagesToSummarize, params.contextWindowTokens, params.maxHistoryShare, params.parts);
+    const pruned = pruneHistoryForContextShare(params.messagesToSummarize, params.contextWindowTokens, params.maxHistoryShare, params.parts);
     return { summarizableTokens, newContentTokens, maxHistoryTokens, pruned };
   }
 
@@ -324,7 +324,7 @@ export async function buildHistoryPrunePlanWithWorker(params: {
         };
       }
 
-      const pruned = buildHistoryPrunePlan(params.messagesToSummarize, params.contextWindowTokens, params.maxHistoryShare, params.parts);
+      const pruned = pruneHistoryForContextShare(params.messagesToSummarize, params.contextWindowTokens, params.maxHistoryShare, params.parts);
       return {
         kind: 'historyPrune' as const,
         summarizableTokens,

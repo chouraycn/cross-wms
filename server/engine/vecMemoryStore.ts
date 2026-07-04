@@ -1041,8 +1041,7 @@ export async function searchMemoryCompat(
 /**
  * 提取关键词（兼容旧 API）
  */
-export function extractKeywords(_text: string, _maxCount?: number): string[] {
-  // 简单分词实现
+export function extractKeywordsLegacy(_text: string, _maxCount?: number): string[] {
   return _text.split(/\s+/).filter((w) => w.length > 2);
 }
 
@@ -1083,3 +1082,11 @@ export {
 export {
   HYBRID_SEARCH_PRESETS,
 };
+
+/**
+ * 导出关键词提取相关函数
+ */
+export {
+  extractKeywords,
+  isQueryStopWordToken,
+} from './memory/queryExpansion.js';

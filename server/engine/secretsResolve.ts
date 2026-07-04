@@ -36,7 +36,10 @@ export class SecretProviderResolutionError extends Error {
     message: string;
     cause?: unknown;
   }) {
-    super(params.message, params.cause !== undefined ? { cause: params.cause } : undefined);
+    super(params.message);
+    if (params.cause !== undefined) {
+      (this as Error).cause = params.cause;
+    }
     this.name = 'SecretProviderResolutionError';
     this.source = params.source;
     this.provider = params.provider;
@@ -56,7 +59,10 @@ export class SecretRefResolutionError extends Error {
     message: string;
     cause?: unknown;
   }) {
-    super(params.message, params.cause !== undefined ? { cause: params.cause } : undefined);
+    super(params.message);
+    if (params.cause !== undefined) {
+      (this as Error).cause = params.cause;
+    }
     this.name = 'SecretRefResolutionError';
     this.source = params.source;
     this.provider = params.provider;

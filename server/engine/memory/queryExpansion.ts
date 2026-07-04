@@ -68,7 +68,7 @@ const KO_TRAILING_PARTICLES = [
   "에서", "으로", "에게", "한테", "처럼", "같이", "보다", "까지", "부터",
   "마다", "밖에", "대로", "은", "는", "이", "가", "을", "를", "의", "에", "로",
   "와", "과", "도", "만",
-].toSorted((a, b) => b.length - a.length);
+].sort((a: string, b: string) => b.length - a.length);
 
 function stripKoreanTrailingParticle(token: string): string | null {
   for (const particle of KO_TRAILING_PARTICLES) {

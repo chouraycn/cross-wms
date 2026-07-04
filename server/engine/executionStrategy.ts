@@ -19,6 +19,7 @@ import { type BudgetConfig, DEFAULT_BUDGET_CONFIG } from './budgetManager.js';
 import { CircuitBreaker } from './circuitBreaker.js';
 import { getMergedStrategyPreferences } from './soulLoader.js';
 import { AgentOrchestrator } from './agentOrchestrator.js';
+import { type ToolProfileId } from './toolProfiles.js';
 import { logger } from '../logger.js';
 
 // ===================== 执行模式枚举 =====================
@@ -48,7 +49,7 @@ export interface ExecutionStrategyOptions extends ToolExecutorOptions {
   /** v9.0: 已授权工具缓存 */
   approvedToolsCache?: Set<string>;
   /** 工具 Profile */
-  toolProfile?: string;
+  toolProfile?: ToolProfileId;
   /** 上下文压缩配置 */
   compaction?: {
     enabled?: boolean;
