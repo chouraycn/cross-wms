@@ -154,10 +154,23 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Pull version bump commit
+        run: git pull --ff-only origin ${{ github.ref_name }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Verify version matches bump
+        run: |
+          CURRENT_VERSION=$(node -e "console.log(require('./package.json').version)")
+          EXPECTED_VERSION="${{ needs.bump-version.outputs.version }}"
+          echo "Current: $CURRENT_VERSION, Expected: $EXPECTED_VERSION"
+          if [ "$CURRENT_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "::error::Version mismatch after pull: $CURRENT_VERSION != $EXPECTED_VERSION"
+            exit 1
+          fi
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
