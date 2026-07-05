@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 concurrency:
   group: quality-gate-${{ github.ref }}
@@ -171,12 +172,21 @@ jobs:
           path: |
             dist/
             node_modules/.vite/
-          key: ${{ runner.os }}-vite-build-${{ hashFiles('**/package-lock.json', 'src/**', 'vite.config.ts') }}
+          key: ${{ runner.os }}-vite-build-v2-${{ hashFiles('**/package-lock.json', 'src/**', 'vite.config.ts', 'tsconfig.json') }}
           restore-keys: |
-            ${{ runner.os }}-vite-build-${{ hashFiles('**/package-lock.json') }}
+            ${{ runner.os }}-vite-build-v2-${{ hashFiles('**/package-lock.json', 'vite.config.ts', 'tsconfig.json') }}
+            ${{ runner.os }}-vite-build-v2-${{ hashFiles('**/package-lock.json') }}
+            ${{ runner.os }}-vite-build-v2-
 
       - name: Build frontend (vite)
-        run: npm run build 2>&1 | tee build-output.log
+        id: build
+        run: |
+          START_TIME=$(date +%s%N)
+          npm run build 2>&1 | tee build-output.log
+          END_TIME=$(date +%s%N)
+          BUILD_TIME_MS=$(( (END_TIME - START_TIME) / 1000000 ))
+          echo "build_time_ms=$BUILD_TIME_MS" >> "$GITHUB_OUTPUT"
+          echo "Build time: ${BUILD_TIME_MS}ms"
 
       - name: Check build warnings
         run: |
@@ -190,13 +200,81 @@ jobs:
           fi
 
       - name: Check bundle size
+        id: bundle-size
         run: |
           TOTAL_SIZE=$(du -sk dist/ | cut -f1)
           MAX_SIZE=50000
           echo "Bundle size: ${TOTAL_SIZE}KB"
+          echo "total_size_kb=$TOTAL_SIZE" >> "$GITHUB_OUTPUT"
+          
+          # 统计 JS 和 CSS 文件大小
+          JS_SIZE=$(find dist/ -name '*.js' -exec du -sk {} + | awk '{sum+=$1} END {print sum+0}')
+          CSS_SIZE=$(find dist/ -name '*.css' -exec du -sk {} + | awk '{sum+=$1} END {print sum+0}')
+          echo "js_size_kb=$JS_SIZE" >> "$GITHUB_OUTPUT"
+          echo "css_size_kb=$CSS_SIZE" >> "$GITHUB_OUTPUT"
+          echo "JS: ${JS_SIZE}KB, CSS: ${CSS_SIZE}KB"
+          
+          # 统计文件数量
+          FILE_COUNT=$(find dist/ -type f | wc -l)
+          echo "file_count=$FILE_COUNT" >> "$GITHUB_OUTPUT"
+          
           if [ "$TOTAL_SIZE" -gt "$MAX_SIZE" ]; then
             echo "::warning::Bundle size exceeds ${MAX_SIZE}KB (current: ${TOTAL_SIZE}KB)"
           fi
+
+      - name: Post build performance comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const buildTime = parseInt('${{ steps.build.outputs.build_time_ms }}', 10);
+            const totalSize = parseInt('${{ steps.bundle-size.outputs.total_size_kb }}', 10);
+            const jsSize = parseInt('${{ steps.bundle-size.outputs.js_size_kb }}', 10);
+            const cssSize = parseInt('${{ steps.bundle-size.outputs.css_size_kb }}', 10);
+            const fileCount = parseInt('${{ steps.bundle-size.outputs.file_count }}', 10);
+            
+            const formatSize = (kb) => kb >= 1024 ? `${(kb / 1024).toFixed(2)} MB` : `${kb} KB`;
+            const formatTime = (ms) => ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms}ms`;
+            
+            const commentBody = `## 📊 Build Performance Report
+            
+            | Metric | Value |
+            |--------|-------|
+            | **Build Time** | ⏱️ ${formatTime(buildTime)} |
+            | **Total Bundle Size** | 📦 ${formatSize(totalSize)} |
+            | **JavaScript** | 📜 ${formatSize(jsSize)} |
+            | **CSS** | 🎨 ${formatSize(cssSize)} |
+            | **File Count** | 📁 ${fileCount} files |
+            
+            > Generated from commit \`${context.sha.substring(0, 7)}\`
+            `;
+            
+            // 查找已有的性能报告评论并更新
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const existingComment = comments.find(
+              c => c.user.type === 'Bot' && c.body.includes('Build Performance Report')
+            );
+            
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: commentBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody,
+              });
+            }
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

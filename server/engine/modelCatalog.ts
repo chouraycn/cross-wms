@@ -10,7 +10,7 @@
  * - discoverModels: 从提供商 API 自动发现可用模型
  */
 
-import type { ModelProvider, ModelCapability } from '../../shared/types/models.js';
+import type { ModelProvider, ModelCapability, ModelApiType } from '../../shared/types/models.js';
 
 // ============================================================
 // 核心类型定义
@@ -76,8 +76,8 @@ export interface ModelInfo {
   pricing?: ModelPricing;
   /** 是否为推荐模型 */
   isRecommended?: boolean;
-  /** API 兼容类型（openai-completions / anthropic-messages 等） */
-  apiType?: 'openai-completions' | 'anthropic-messages' | 'google-gemini' | 'mistral';
+  /** API 兼容类型（openai-chat / openai-completions / anthropic-messages / google-generative-ai） */
+  apiType?: ModelApiType;
   /** 是否支持工具调用 */
   supportsTools?: boolean;
   /** 是否支持流式输出 */

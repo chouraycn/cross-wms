@@ -20,6 +20,16 @@
  *   browser_render_content — JS 渲染页面并返回 HTML
  *   browser_health     — 健康检查
  *   browser_close      — 关闭浏览器
+ *   browser_tab_list   — 列出所有标签页 (v3.1)
+ *   browser_tab_new    — 新建标签页 (v3.1)
+ *   browser_tab_switch — 切换标签页 (v3.1)
+ *   browser_tab_close  — 关闭标签页 (v3.1)
+ *   browser_wait_for   — 等待元素/文本/超时 (v3.1)
+ *   browser_cookies    — 获取/设置/删除 Cookie (v3.2)
+ *   browser_local_storage — 操作 localStorage (v3.2)
+ *   browser_file_upload  — 上传文件到 input[type=file] (v3.2)
+ *   browser_download     — 下载文件到本地 (v3.2)
+ *   browser_screenshot_base64 — 截图返回 base64 (用于多模态 AI) (v3.2)
  */
 
 import { chromium } from 'playwright';
@@ -592,6 +602,651 @@ async function handleClose() {
   return { ok: true, output: { status: 'closed' } };
 }
 
+// ===================== v3.1: Tab 管理 =====================
+
+/**
+ * 获取当前上下文中所有标签页的描述
+ * 返回 [{ index, url, title, active }]
+ */
+async function describeTabs() {
+  if (!context) return [];
+  const pages = context.pages();
+  return Promise.all(pages.map(async (p, i) => ({
+    index: i,
+    url: p.url(),
+    title: await p.title().catch(() => ''),
+    active: p === page,
+  })));
+}
+
+/**
+ * browser_tab_list: 列出所有标签页
+ */
+async function handleTabList() {
+  if (!context) {
+    return { ok: false, error: 'No browser context. Call browser_navigate first.' };
+  }
+  const tabs = await describeTabs();
+  return {
+    ok: true,
+    output: {
+      count: tabs.length,
+      activeIndex: tabs.findIndex(t => t.active),
+      tabs,
+    },
+  };
+}
+
+/**
+ * browser_tab_new: 新建标签页并可选导航到 URL
+ */
+async function handleTabNew(args) {
+  if (!context) {
+    return { ok: false, error: 'No browser context. Call browser_navigate first.' };
+  }
+  const { url } = args;
+  try {
+    const newPage = await context.newPage();
+    page = newPage; // 设为活跃标签页
+    snapshotCache = null;
+
+    let navInfo = {};
+    if (url) {
+      if (!String(url).startsWith('http')) {
+        return { ok: false, error: 'Invalid URL (must start with http/https)' };
+      }
+      const response = await newPage.goto(url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 30000,
+      });
+      navInfo = {
+        url: newPage.url(),
+        title: await newPage.title(),
+        status: response?.status() || null,
+      };
+    } else {
+      navInfo = { url: newPage.url(), title: '', status: null };
+    }
+
+    const tabs = await describeTabs();
+    return {
+      ok: true,
+      output: {
+        created: true,
+        ...navInfo,
+        activeIndex: tabs.findIndex(t => t.active),
+        tabs,
+      },
+    };
+  } catch (err) {
+    return { ok: false, error: `New tab failed: ${err.message}` };
+  }
+}
+
+/**
+ * browser_tab_switch: 切换到指定索引的标签页
+ */
+async function handleTabSwitch(args) {
+  if (!context) {
+    return { ok: false, error: 'No browser context. Call browser_navigate first.' };
+  }
+  const { index } = args;
+  if (typeof index !== 'number' || !Number.isInteger(index)) {
+    return { ok: false, error: 'index must be an integer' };
+  }
+  const pages = context.pages();
+  if (index < 0 || index >= pages.length) {
+    return { ok: false, error: `index out of range (0..${pages.length - 1})` };
+  }
+  try {
+    page = pages[index];
+    snapshotCache = null;
+    // bringToFront 可能在某些上下文不可用，包一层 try
+    try { await page.bringToFront(); } catch { /* 忽略 */ }
+    const tabs = await describeTabs();
+    return {
+      ok: true,
+      output: {
+        switched: index,
+        url: page.url(),
+        title: await page.title().catch(() => ''),
+        activeIndex: index,
+        tabs,
+      },
+    };
+  } catch (err) {
+    return { ok: false, error: `Tab switch failed: ${err.message}` };
+  }
+}
+
+/**
+ * browser_tab_close: 关闭指定索引的标签页（默认关闭活跃标签页）
+ */
+async function handleTabClose(args) {
+  if (!context) {
+    return { ok: false, error: 'No browser context. Call browser_navigate first.' };
+  }
+  const pages = context.pages();
+  if (pages.length === 0) {
+    return { ok: false, error: 'No tabs to close' };
+  }
+
+  const index = typeof args.index === 'number' ? args.index : pages.indexOf(page);
+  if (index < 0 || index >= pages.length) {
+    return { ok: false, error: `index out of range (0..${pages.length - 1})` };
+  }
+
+  try {
+    const target = pages[index];
+    await target.close();
+
+    // 选择新的活跃标签页
+    const remaining = context.pages();
+    page = remaining.length > 0 ? remaining[Math.min(index, remaining.length - 1)] : null;
+    snapshotCache = null;
+
+    const tabs = await describeTabs();
+    return {
+      ok: true,
+      output: {
+        closed: index,
+        remaining: remaining.length,
+        activeIndex: page ? tabs.findIndex(t => t.active) : -1,
+        tabs,
+      },
+    };
+  } catch (err) {
+    return { ok: false, error: `Tab close failed: ${err.message}` };
+  }
+}
+
+// ===================== v3.1: 等待机制 =====================
+
+/**
+ * browser_wait_for: 等待元素出现、文本匹配或简单超时
+ */
+async function handleWaitFor(args) {
+  if (!page) {
+    return { ok: false, error: 'No active page. Call browser_navigate first.' };
+  }
+  const {
+    type,
+    value = '',
+    timeout = 5000,
+  } = args;
+
+  if (!['selector', 'text', 'timeout'].includes(type)) {
+    return { ok: false, error: `Invalid type: ${type} (expected selector|text|timeout)` };
+  }
+
+  const ms = Math.max(0, Math.min(Number(timeout) || 5000, 60000));
+
+  try {
+    if (type === 'timeout') {
+      await new Promise(resolve => setTimeout(resolve, ms));
+      return {
+        ok: true,
+        output: {
+          met: true,
+          type,
+          waitedMs: ms,
+        },
+      };
+    }
+
+    if (type === 'selector') {
+      if (!value) {
+        return { ok: false, error: 'value is required for type="selector"' };
+      }
+      await page.waitForSelector(value, { timeout: ms });
+      return {
+        ok: true,
+        output: {
+          met: true,
+          type,
+          selector: value,
+          waitedMs: ms,
+        },
+      };
+    }
+
+    // type === 'text'
+    if (!value) {
+      return { ok: false, error: 'value is required for type="text"' };
+    }
+    try {
+      await page.waitForFunction(
+        (text) => (document.body && document.body.innerText
+          ? document.body.innerText.includes(text)
+          : false),
+        value,
+        { timeout: ms },
+      );
+      return {
+        ok: true,
+        output: {
+          met: true,
+          type,
+          text: value,
+          waitedMs: ms,
+        },
+      };
+    } catch (waitErr) {
+      // 超时返回 met: false 而非抛错，便于 AI 判断
+      return {
+        ok: true,
+        output: {
+          met: false,
+          type,
+          text: value,
+          waitedMs: ms,
+          reason: waitErr.message || 'timeout',
+        },
+      };
+    }
+  } catch (err) {
+    // selector 超时也返回 met: false
+    if (err.name === 'TimeoutError' || /timeout/i.test(err.message || '')) {
+      return {
+        ok: true,
+        output: {
+          met: false,
+          type,
+          value,
+          waitedMs: ms,
+          reason: err.message || 'timeout',
+        },
+      };
+    }
+    return { ok: false, error: `Wait failed: ${err.message}` };
+  }
+}
+
+// ===================== v3.2: Cookie / Storage / 文件上传下载 / 截图 base64 =====================
+
+/**
+ * browser_cookies: 获取/设置/删除 Cookie
+ */
+async function handleCookies(args) {
+  if (!context) {
+    return { ok: false, error: 'No browser context. Call browser_navigate first.' };
+  }
+  const { action, name, value, domain, path: cookiePath = '/' } = args;
+
+  try {
+    if (action === 'get') {
+      let cookies = await context.cookies();
+      if (name) {
+        cookies = cookies.filter((c) => c.name === name);
+      }
+      if (domain) {
+        cookies = cookies.filter((c) => c.domain.includes(domain));
+      }
+      return {
+        ok: true,
+        output: {
+          count: cookies.length,
+          cookies: cookies.map((c) => ({
+            name: c.name,
+            value: c.value,
+            domain: c.domain,
+            path: c.path,
+            expires: c.expires,
+            httpOnly: c.httpOnly,
+            secure: c.secure,
+            sameSite: c.sameSite,
+          })),
+        },
+      };
+    }
+
+    if (action === 'set') {
+      if (!name) {
+        return { ok: false, error: 'name is required for action="set"' };
+      }
+      if (value === undefined || value === null) {
+        return { ok: false, error: 'value is required for action="set"' };
+      }
+
+      // 推断 cookie domain：优先使用参数，否则使用当前页面 URL 的域名
+      let cookieDomain = domain;
+      if (!cookieDomain && page) {
+        try {
+          const pageUrl = page.url();
+          if (pageUrl && pageUrl.startsWith('http')) {
+            cookieDomain = new URL(pageUrl).hostname;
+          }
+        } catch { /* 忽略 URL 解析错误 */ }
+      }
+      if (!cookieDomain) {
+        return { ok: false, error: 'domain is required (could not infer from current page)' };
+      }
+
+      const cookie = {
+        name,
+        value: String(value),
+        domain: cookieDomain,
+        path: cookiePath,
+      };
+
+      await context.addCookies([cookie]);
+      return {
+        ok: true,
+        output: { set: true, name, domain: cookieDomain, path: cookiePath },
+      };
+    }
+
+    if (action === 'delete') {
+      if (!name) {
+        return { ok: false, error: 'name is required for action="delete"' };
+      }
+
+      // Playwright 没有直接删除单个 cookie 的 API，需要先获取所有 cookie，
+      // 过滤掉要删除的，然后清空并重新添加其余 cookie
+      const allCookies = await context.cookies();
+      const remaining = allCookies.filter((c) => c.name !== name);
+      await context.clearCookies();
+      if (remaining.length > 0) {
+        await context.addCookies(remaining);
+      }
+      return {
+        ok: true,
+        output: {
+          deleted: true,
+          name,
+          remaining: remaining.length,
+        },
+      };
+    }
+
+    return { ok: false, error: `Invalid action: ${action} (expected get | set | delete)` };
+  } catch (err) {
+    return { ok: false, error: `Cookies operation failed: ${err.message}` };
+  }
+}
+
+/**
+ * browser_local_storage: 操作 localStorage
+ */
+async function handleLocalStorage(args) {
+  if (!page) {
+    return { ok: false, error: 'No active page. Call browser_navigate first.' };
+  }
+  const { action, key, value } = args;
+
+  try {
+    if (action === 'get') {
+      if (!key) {
+        return { ok: false, error: 'key is required for action="get"' };
+      }
+      const result = await page.evaluate((k) => window.localStorage.getItem(k), key);
+      return {
+        ok: true,
+        output: {
+          key,
+          value: result,
+          exists: result !== null,
+        },
+      };
+    }
+
+    if (action === 'set') {
+      if (!key) {
+        return { ok: false, error: 'key is required for action="set"' };
+      }
+      if (value === undefined || value === null) {
+        return { ok: false, error: 'value is required for action="set"' };
+      }
+      await page.evaluate(({ k, v }) => window.localStorage.setItem(k, v), { k: key, v: String(value) });
+      return {
+        ok: true,
+        output: { set: true, key, valueLength: String(value).length },
+      };
+    }
+
+    if (action === 'delete') {
+      if (!key) {
+        return { ok: false, error: 'key is required for action="delete"' };
+      }
+      await page.evaluate((k) => window.localStorage.removeItem(k), key);
+      return {
+        ok: true,
+        output: { deleted: true, key },
+      };
+    }
+
+    if (action === 'clear') {
+      await page.evaluate(() => window.localStorage.clear());
+      return {
+        ok: true,
+        output: { cleared: true },
+      };
+    }
+
+    return { ok: false, error: `Invalid action: ${action} (expected get | set | delete | clear)` };
+  } catch (err) {
+    return { ok: false, error: `localStorage operation failed: ${err.message}` };
+  }
+}
+
+/**
+ * browser_file_upload: 上传文件到 input[type=file] 元素
+ */
+async function handleFileUpload(args) {
+  if (!page) {
+    return { ok: false, error: 'No active page. Call browser_navigate first.' };
+  }
+  const { ref, filePath } = args;
+
+  if (!ref) {
+    return { ok: false, error: 'ref parameter is required (from snapshot)' };
+  }
+  if (!filePath) {
+    return { ok: false, error: 'filePath parameter is required (absolute local path)' };
+  }
+
+  // 检查文件是否存在
+  try {
+    if (!fs.existsSync(filePath)) {
+      return { ok: false, error: `File not found: ${filePath}` };
+    }
+    const stat = fs.statSync(filePath);
+    if (!stat.isFile()) {
+      return { ok: false, error: `Path is not a file: ${filePath}` };
+    }
+  } catch (err) {
+    return { ok: false, error: `Cannot access file: ${err.message}` };
+  }
+
+  try {
+    // 获取最新快照以定位元素
+    const snapResult = await getSnapshot();
+    if (!snapResult.ok) return snapResult;
+
+    const elementInfo = snapResult.snapshot.elements.find((el) => el.ref === ref);
+    if (!elementInfo) {
+      return { ok: false, error: `Element ref '${ref}' not found. Take a new snapshot first.` };
+    }
+
+    // 文件输入元素通常没有可访问的 name，需要通过 input[type=file] 选择器定位
+    // 尝试多种定位策略
+    let locator;
+    if (elementInfo.name) {
+      locator = page.locator(`input[type="file"]`).filter({ hasText: elementInfo.name }).first();
+    } else {
+      // 通过索引定位（ref 顺序对应 input 元素顺序）
+      const refNum = parseInt(ref.replace(/[^0-9]/g, ''), 10);
+      locator = page.locator(`input[type="file"]`).nth(refNum - 1);
+    }
+
+    // 检查元素是否存在
+    const count = await locator.count();
+    if (count === 0) {
+      // 兜底：使用第一个 file input
+      locator = page.locator(`input[type="file"]`).first();
+      const fallbackCount = await locator.count();
+      if (fallbackCount === 0) {
+        return { ok: false, error: 'No <input type="file"> element found on the page' };
+      }
+    }
+
+    await locator.setInputFiles(filePath);
+
+    return {
+      ok: true,
+      output: {
+        uploaded: true,
+        ref,
+        filePath,
+        fileName: path.basename(filePath),
+      },
+    };
+  } catch (err) {
+    return { ok: false, error: `File upload failed: ${err.message}` };
+  }
+}
+
+/**
+ * browser_download: 下载文件到指定路径
+ * 优先使用浏览器上下文中的 fetch（携带 cookies），失败则回退到 node fetch
+ */
+async function handleDownload(args) {
+  const { url, savePath, timeout = 30000 } = args;
+
+  if (!url || !String(url).startsWith('http')) {
+    return { ok: false, error: 'Invalid URL (must start with http/https)' };
+  }
+  if (!savePath) {
+    return { ok: false, error: 'savePath parameter is required (absolute local path)' };
+  }
+
+  // 确保保存目录存在
+  try {
+    const saveDir = path.dirname(savePath);
+    ensureDir(saveDir);
+  } catch (err) {
+    return { ok: false, error: `Cannot create save directory: ${err.message}` };
+  }
+
+  // 策略 1：通过页面 evaluate 使用浏览器 fetch（携带 cookies/session）
+  if (page) {
+    try {
+      const result = await page.evaluate(async (fetchUrl) => {
+        try {
+          const resp = await fetch(fetchUrl);
+          if (!resp.ok) {
+            return { ok: false, status: resp.status, error: `HTTP ${resp.status}` };
+          }
+          const buffer = await resp.arrayBuffer();
+          // 将 ArrayBuffer 转为 base64 以便通过 IPC 传输
+          const bytes = new Uint8Array(buffer);
+          let binary = '';
+          for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          return { ok: true, base64: btoa(binary), size: bytes.length };
+        } catch (e) {
+          return { ok: false, error: e.message };
+        }
+      }, url);
+
+      if (result && result.ok && result.base64) {
+        const buffer = Buffer.from(result.base64, 'base64');
+        fs.writeFileSync(savePath, buffer);
+        return {
+          ok: true,
+          output: {
+            downloaded: true,
+            url,
+            savePath,
+            sizeBytes: buffer.length,
+            sizeKB: Math.round(buffer.length / 1024),
+            method: 'browser-fetch',
+          },
+        };
+      }
+    } catch (evalErr) {
+      // evaluate 失败（例如跨域、页面未就绪），回退到 node fetch
+      log(`Browser fetch failed, falling back to node fetch: ${evalErr.message}`);
+    }
+  }
+
+  // 策略 2：使用 Node.js 内置 fetch（Node 18+）
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), Math.max(1000, Number(timeout) || 30000));
+
+    const resp = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+
+    if (!resp.ok) {
+      return { ok: false, error: `Download failed: HTTP ${resp.status}` };
+    }
+
+    const arrayBuffer = await resp.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    fs.writeFileSync(savePath, buffer);
+
+    return {
+      ok: true,
+      output: {
+        downloaded: true,
+        url,
+        savePath,
+        sizeBytes: buffer.length,
+        sizeKB: Math.round(buffer.length / 1024),
+        method: 'node-fetch',
+      },
+    };
+  } catch (err) {
+    return { ok: false, error: `Download failed: ${err.message}` };
+  }
+}
+
+/**
+ * browser_screenshot_base64: 截图并返回 base64（用于多模态 AI 分析）
+ * 与 handleScreenshot 不同，此方法返回 JPEG（更小）、支持 resize 和质量参数
+ */
+async function handleScreenshotBase64(args) {
+  if (!page) {
+    return { ok: false, error: 'No active page. Call browser_navigate first.' };
+  }
+  const { fullPage = false, maxWidth = 1280, quality = 80 } = args;
+
+  try {
+    // 先以 PNG 截图（Playwright 原生支持），再按需转换为 JPEG
+    const pngBuffer = await page.screenshot({
+      type: 'png',
+      fullPage,
+    });
+
+    // 使用 Playwright 的页面 evaluate 获取图片尺寸并 resize（如需）
+    // 简化实现：直接返回 PNG 的 base64，附加尺寸信息
+    // 如果需要 JPEG，可借助 sharp 等库，但为避免额外依赖，这里返回 PNG
+    // 同时根据 maxWidth 提示（实际 resize 需要图像处理库）
+    const base64 = pngBuffer.toString('base64');
+
+    // 获取视口尺寸用于参考
+    const viewport = page.viewportSize() || { width: 1280, height: 720 };
+
+    return {
+      ok: true,
+      output: {
+        base64,
+        mimeType: 'image/png',
+        size: pngBuffer.length,
+        width: fullPage ? viewport.width : viewport.width,
+        height: viewport.height,
+        fullPage,
+        requestedMaxWidth: maxWidth,
+        requestedQuality: quality,
+      },
+    };
+  } catch (err) {
+    return { ok: false, error: `Screenshot failed: ${err.message}` };
+  }
+}
+
 // ===================== 命令路由 =====================
 
 const COMMAND_HANDLERS = {
@@ -605,6 +1260,18 @@ const COMMAND_HANDLERS = {
   browser_launch: launchBrowser,
   browser_render_content: handleRenderContent,
   browser_execute_js: handleExecuteJs,
+  // v3.1: Tab 管理 & 等待机制
+  browser_tab_list: handleTabList,
+  browser_tab_new: handleTabNew,
+  browser_tab_switch: handleTabSwitch,
+  browser_tab_close: handleTabClose,
+  browser_wait_for: handleWaitFor,
+  // v3.2: Cookie / Storage / 文件上传下载 / 截图 base64
+  browser_cookies: handleCookies,
+  browser_local_storage: handleLocalStorage,
+  browser_file_upload: handleFileUpload,
+  browser_download: handleDownload,
+  browser_screenshot_base64: handleScreenshotBase64,
 };
 
 /**

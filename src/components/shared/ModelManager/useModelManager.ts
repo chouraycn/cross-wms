@@ -37,6 +37,7 @@ function createEmptyForm(): ModelFormState {
     id: `model-${Date.now()}`,
     name: '',
     provider: 'openai',
+    apiType: 'auto',
     apiEndpoint: '',
     apiKey: '',
     apiKeyRef: '',
@@ -46,10 +47,26 @@ function createEmptyForm(): ModelFormState {
     enabled: true,
     description: '',
     contextWindow: '',
+    contextTokens: '',
     maxTokens: '',
     temperature: '1',
     topP: '1',
     capabilities: [],
+    thinkingLevels: [],
+    defaultThinkingLevel: '',
+    authMode: 'api-key',
+    costInput: '',
+    costOutput: '',
+    costCacheRead: '',
+    costCacheWrite: '',
+    localServiceEnabled: false,
+    localServiceCommand: '',
+    localServiceArgs: '',
+    localServiceCwd: '',
+    localServiceEnv: '',
+    localServiceHealthUrl: '',
+    localServiceReadyTimeoutMs: '',
+    localServiceIdleStopMs: '',
   };
 }
 
@@ -164,24 +181,20 @@ export function useModelManager(props: ModelManagerProps): UseModelManagerReturn
     const endpoint = preset.provider === 'custom' ? '' : (PROVIDER_ENDPOINTS[preset.provider] || '');
     setModelDialogMode('add');
     setEditingModel(null);
-    setModelForm({
-      id: preset.id || `model-${Date.now()}`,
-      name: preset.name || '',
-      provider: preset.provider,
-      apiEndpoint: endpoint,
-      apiKey: '',
-      apiKeyRef: '',
-      apiKeys: [],
-      apiKeyRefs: [],
-      keyStrategy: 'round-robin',
-      enabled: true,
-      description: preset.description || '',
-      contextWindow: preset.contextWindow ? String(preset.contextWindow) : '',
-      maxTokens: preset.maxTokens ? String(preset.maxTokens) : '',
-      temperature: '1',
-      topP: '1',
-      capabilities: preset.capabilities || [],
-    });
+    const newForm = createEmptyForm();
+    newForm.id = preset.id || `model-${Date.now()}`;
+    newForm.name = preset.name || '';
+    newForm.provider = preset.provider;
+    newForm.apiEndpoint = endpoint;
+    newForm.description = preset.description || '';
+    newForm.contextWindow = preset.contextWindow ? String(preset.contextWindow) : '';
+    newForm.maxTokens = preset.maxTokens ? String(preset.maxTokens) : '';
+    newForm.capabilities = preset.capabilities || [];
+    if (preset.capabilities?.includes('reasoning')) {
+      newForm.thinkingLevels = ['low', 'medium', 'high'];
+      newForm.defaultThinkingLevel = 'medium';
+    }
+    setModelForm(newForm);
     setModelFormErrors({});
     setTestStatus('idle');
     setTestMessage('');

@@ -125,9 +125,19 @@ final class AnimatedSplashView: NSView {
         progressBar.style = .bar
         progressBar.isIndeterminate = true
         progressBar.controlSize = .mini
+        progressBar.wantsLayer = true
         progressBar.startAnimation(nil)
 
         progressBar.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.2).cgColor
+
+        // 将默认蓝色进度条改为深灰色（降低饱和度 + 调整亮度）
+        if let controlsFilter = CIFilter(name: "CIColorControls", parameters: [
+            "inputSaturation": 0.0,
+            "inputBrightness": -0.25,
+            "inputContrast": 1.1
+        ]) {
+            progressBar.contentFilters = [controlsFilter]
+        }
 
         addSubview(progressBar)
     }

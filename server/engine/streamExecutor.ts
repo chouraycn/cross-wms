@@ -79,8 +79,8 @@ export interface ExecuteChatParams {
   modelConfig: ModelCallConfig;
   /** 构建好的 API 消息列表 */
   apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;
-  /** Express 响应对象 */
-  res: Response;
+  /** Express 响应对象（可选：传入则写 SSE，不传则只走 callbacks） */
+  res?: Response;
   /** 执行模式 */
   executionMode: ExecutionMode;
   /** Timer 管理器 */
@@ -126,6 +126,7 @@ export interface ExecuteChatParams {
  */
 export async function executeChat(params: ExecuteChatParams): Promise<ExecuteChatResult> {
   const { res, timerManager, modelConfig, apiMessages, callbacks } = params;
+  const hasRes = !!res;
   const tag = params.fromQueue ? '[QueueExecutor]' : '[StreamExecutor]';
 
   // 启动 keepAlive 心跳
@@ -178,20 +179,20 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
       onSSEEvent: (event: Record<string, unknown>) => {
         // 策略内部事件：核心类型与多模态类型直接发送，其余走 debug 通道
         const eventType = event.type as string;
-        if ([
+        if (hasRes && [
           'init', 'text', 'thinking', 'tool_call', 'done', 'error',
           'image_start', 'image_delta', 'image_end',
           'audio_start', 'audio_delta', 'audio_end',
         ].includes(eventType)) {
-          sendSSE(res, event);
-        } else {
-          sendDebugSSE(res, event);
+          sendSSE(res!, event);
+        } else if (hasRes) {
+          sendDebugSSE(res!, event);
         }
         callbacks.onSSEEvent?.(event);
       },
       onChunk: (chunk: string) => {
         fullContent += chunk;
-        sendSSE(res, { type: 'text', content: chunk });
+        if (hasRes) sendSSE(res!, { type: 'text', content: chunk });
         callbacks.onChunk?.(chunk);
       },
       onThinking: (thinkingChunk: string) => {
@@ -202,7 +203,7 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
         // 细粒度 thinking.start（首个 chunk 时发送一次，含 signature 如果有）
         if (!thinkingStarted) {
           thinkingStarted = true;
-          sendSSE(res, {
+          if (hasRes) sendSSE(res!, {
             type: 'thinking.start',
             contentIndex: 0,
             ...(thinkingSignature ? { thinkingSignature } : {}),
@@ -210,15 +211,15 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
           });
         }
         // 细粒度 thinking.delta
-        sendSSE(res, { type: 'thinking.delta', contentIndex: 0, content: thinkingChunk });
+        if (hasRes) sendSSE(res!, { type: 'thinking.delta', contentIndex: 0, content: thinkingChunk });
         thinkingContent += thinkingChunk;
         thinkingChunkCount++;
         // 保留原有 thinking 事件（向后兼容）
-        sendSSE(res, { type: 'thinking', content: thinkingChunk });
+        if (hasRes) sendSSE(res!, { type: 'thinking', content: thinkingChunk });
         callbacks.onThinking?.(thinkingChunk);
       },
       onToolCall: (toolCall: ToolCall, result: string) => {
-        sendSSE(res, {
+        if (hasRes) sendSSE(res!, {
           type: 'tool_call',
           toolCallId: toolCall.id,
           toolName: toolCall.function.name,
@@ -229,7 +230,7 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
         const isDenied = result.includes('用户拒绝了工具');
         const isError = !isDenied && result.includes('"error"');
         const auditResult = isDenied ? 'denied' : isError ? 'error' : 'success';
-        sendDebugSSE(res, {
+        if (hasRes) sendDebugSSE(res!, {
           type: 'tool_audit',
           toolName: toolCall.function.name,
           result: auditResult,
@@ -289,7 +290,7 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
   if (enhancement.complexity?.level === 'complex' && !params.fromQueue) {
     logger.info(`${tag} Phase 2: 复杂度评估为 complex (${enhancement.complexity.reason})，后续消息将启动 ReAct 补充`);
     // 发送调试事件通知前端复杂度评估结果
-    sendDebugSSE(res, {
+    if (hasRes) sendDebugSSE(res!, {
       type: 'complexity_assessment',
       level: enhancement.complexity.level,
       reason: enhancement.complexity.reason,
@@ -303,8 +304,8 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
   const thinkingDuration = hasThinking && thinkingStartTime ? Date.now() - thinkingStartTime : 0;
 
   // 细粒度 thinking.complete（含 thinkingSignature 和 thinkingDuration）
-  if (thinkingStarted) {
-    sendSSE(res, {
+  if (thinkingStarted && hasRes) {
+    sendSSE(res!, {
       type: 'thinking.complete',
       contentIndex: 0,
       thinkingDuration,

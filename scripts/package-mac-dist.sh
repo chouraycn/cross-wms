@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 set -euo pipefail
 
 # Build the macOS .app bundle, then create a styled DMG + upload to GitHub Release.
@@ -13,6 +13,7 @@ set -euo pipefail
 #   scripts/package-mac-dist.sh --skip-release  # skip GitHub Release upload
 
 # Load env vars from .zshrc (e.g. GITHUB_TOKEN)
+# zsh 可直接 source .zshrc，无需像 bash 那样用子进程绕路
 if [ -f "$HOME/.zshrc" ]; then
   source "$HOME/.zshrc" 2>/dev/null || true
 fi

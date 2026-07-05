@@ -28,11 +28,14 @@ export interface SandboxResult {
 /** 默认超时时间（毫秒） */
 const DEFAULT_TIMEOUT_MS = 30_000;
 
+/** 默认内存增量限制（字节）：沙箱执行前后 RSS 增量超过此值则拒绝 */
+const DEFAULT_MAX_MEMORY_DELTA_BYTES = 256 * 1024 * 1024; // 256MB
+
 /**
  * 危险模块黑名单 — 即使在 permissions 中声明也拒绝加载。
  * 这些模块可直接访问文件系统、网络、进程等系统资源。
  */
-const DENIED_MODULES: ReadonlySet<string> = new Set([
+export const DENIED_MODULES: ReadonlySet<string> = new Set([
   'fs',
   'fs/promises',
   'child_process',
@@ -58,7 +61,7 @@ const DENIED_MODULES: ReadonlySet<string> = new Set([
  * 安全模块白名单映射 — 这些模块已被安全封装，允许在沙箱中使用。
  * key: 模块名, value: 实际加载的模块
  */
-const SAFE_BUILTIN_MODULES: Record<string, () => unknown> = {
+export const SAFE_BUILTIN_MODULES: Record<string, () => unknown> = {
   'util': () => require('util'),
   'events': () => require('events'),
   'url': () => require('url'),
@@ -71,6 +74,29 @@ const SAFE_BUILTIN_MODULES: Record<string, () => unknown> = {
   'timers': () => require('timers'),
   'timers/promises': () => require('timers/promises'),
 };
+
+/**
+ * 检测代码中是否包含危险的 eval / new Function 调用。
+ *
+ * 使用单词边界正则避免误匹配（如 retrieval( 不会被误判为 eval( ）。
+ * 注释/字符串中出现的也会被拒绝 — 安全优先策略。
+ *
+ * @param code - 待检测的代码字符串
+ * @returns 命中的危险模式描述，无命中返回 null
+ */
+function detectDangerousCode(code: string): string | null {
+  // 匹配 eval( 调用（允许前面有空白、属性访问不通过单词边界）
+  const evalPattern = /\beval\s*\(/;
+  if (evalPattern.test(code)) {
+    return '代码中包含 eval() 调用，禁止在沙箱中使用';
+  }
+  // 匹配 new Function( 调用
+  const newFunctionPattern = /\bnew\s+Function\s*\(/;
+  if (newFunctionPattern.test(code)) {
+    return '代码中包含 new Function() 调用，禁止在沙箱中使用';
+  }
+  return null;
+}
 
 // ===================== sandboxedRequire =====================
 
@@ -127,11 +153,28 @@ export async function executeInSandbox(
   // 解析超时时间 — 优先使用 manifest.metadata.timeoutMs
   const timeoutMs = resolveTimeoutMs(manifest);
 
+  // 解析内存增量限制 — 优先使用 manifest.metadata.maxMemoryDeltaBytes
+  const maxMemoryDelta = resolveMaxMemoryDelta(manifest);
+
+  // 安全检查：执行前检测代码中是否包含 eval( 或 new Function( 调用
+  const dangerousPattern = detectDangerousCode(code);
+  if (dangerousPattern) {
+    return {
+      ok: false,
+      error: `安全策略拒绝: ${dangerousPattern}`,
+      durationMs: 0,
+    };
+  }
+
+  // 记录执行前内存基线
+  const memoryBefore = process.memoryUsage().rss;
+
   try {
     // 1. 构建 sandboxedRequire
     const sandboxedRequire = createSandboxedRequire(manifest.permissions);
 
     // 2. 构建沙箱上下文对象
+    //    安全策略: 不注入 eval 和 Function 构造函数，阻止动态代码执行
     const sandbox: Record<string, unknown> = {
       // 基础全局对象
       console: {
@@ -189,7 +232,16 @@ export async function executeInSandbox(
       Number,
       String,
       Object,
-      Function,
+      // 安全策略: 不注入 Function 构造函数，防止通过 new Function() 动态执行代码
+      // 安全策略: 不注入 eval，防止动态代码执行
+      // 注入一个会抛错的 eval 占位符，防止插件通过隐式全局获取到宿主的 eval
+      eval: () => {
+        throw new Error('[Sandbox] 安全策略: eval 已被禁用');
+      },
+      // 注入一个会抛错的 Function 占位符，防止通过隐式全局获取到宿主的 Function 构造函数
+      Function: (..._args: unknown[]) => {
+        throw new Error('[Sandbox] 安全策略: Function 构造函数已被禁用');
+      },
       // 注入额外上下文
       ...(context ?? {}),
     };
@@ -224,7 +276,18 @@ export async function executeInSandbox(
       await maybePromise;
     }
 
-    // 6. 获取执行结果 — 返回 module.exports
+    // 6. 内存使用限制检查 — 执行后比较 RSS 增量
+    const memoryAfter = process.memoryUsage().rss;
+    const memoryDelta = memoryAfter - memoryBefore;
+    if (memoryDelta > maxMemoryDelta) {
+      return {
+        ok: false,
+        error: `内存使用超限: 插件 '${manifest.id}' 执行后 RSS 增量 ${(memoryDelta / 1024 / 1024).toFixed(1)}MB 超过限制 ${(maxMemoryDelta / 1024 / 1024).toFixed(1)}MB`,
+        durationMs: Date.now() - startTime,
+      };
+    }
+
+    // 7. 获取执行结果 — 返回 module.exports
     const result = moduleObj.exports;
     const durationMs = Date.now() - startTime;
 
@@ -241,7 +304,7 @@ export async function executeInSandbox(
       // 区分超时错误和其他错误
       if ((e as NodeJS.ErrnoException).code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') {
         errorMessage = `执行超时: 插件 '${manifest.id}' 执行时间超过 ${timeoutMs}ms`;
-      } else if (e.message.includes('[Sandbox] 权限拒绝')) {
+      } else if (e.message.includes('[Sandbox] 权限拒绝') || e.message.includes('[Sandbox] 安全策略')) {
         errorMessage = e.message;
       } else {
         errorMessage = `运行时错误: ${e.message}`;
@@ -273,4 +336,19 @@ function resolveTimeoutMs(manifest: PluginManifest): number {
     return metadataTimeout;
   }
   return DEFAULT_TIMEOUT_MS;
+}
+
+/**
+ * 从 manifest 中解析内存增量限制。
+ *
+ * 优先级:
+ * 1. manifest.metadata.maxMemoryDeltaBytes（数字，必须 > 0）
+ * 2. DEFAULT_MAX_MEMORY_DELTA_BYTES（256MB）
+ */
+function resolveMaxMemoryDelta(manifest: PluginManifest): number {
+  const metadataMax = manifest.metadata?.maxMemoryDeltaBytes;
+  if (typeof metadataMax === 'number' && metadataMax > 0) {
+    return metadataMax;
+  }
+  return DEFAULT_MAX_MEMORY_DELTA_BYTES;
 }

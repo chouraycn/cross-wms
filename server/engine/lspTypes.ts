@@ -321,6 +321,13 @@ export interface LSPServerCapabilities {
     workspaceSymbolProvider?: boolean;
   /** 是否支持代码操作 */
   codeActionProvider?: boolean;
+  /** 是否支持文档符号（大纲） */
+  documentSymbolProvider?: boolean;
+  /** 是否支持签名提示 */
+  signatureHelpProvider?: {
+    triggerCharacters?: string[];
+    retriggerCharacters?: string[];
+  };
 }
 
 /**
@@ -443,3 +450,154 @@ export type LSPRenameResultWrapper = LSPToolResult<LSPRenameResult>;
  * LSP 格式化工具结果
  */
 export type LSPFormatResultWrapper = LSPToolResult<LSPFormatResult>;
+
+// ===================== Code Action 相关类型 =====================
+
+/**
+ * LSP Code Action（代码操作建议）
+ */
+export interface LSPCodeAction {
+  /** 操作标题（如 "Fix spelling"、"Extract method"） */
+  title: string;
+  /** 操作类型（quick fix、refactor、source 等） */
+  kind?: string;
+  /** 操作所属的 diagnostics */
+  diagnostics?: LSPDiagnostic[];
+  /** 是否首选 */
+  isPreferred?: boolean;
+  /** 执行后的工作区编辑 */
+  edit?: LSPWorkspaceEdit;
+  /** 执行的命令 */
+  command?: {
+    title: string;
+    command: string;
+    arguments?: unknown[];
+  };
+  /** 附加数据 */
+  data?: unknown;
+}
+
+// ===================== Signature Help 相关类型 =====================
+
+/**
+ * LSP 签名信息
+ */
+export interface LSPSignatureInformation {
+  /** 函数签名标签（如 "myFunc(a: number, b: string): void"） */
+  label: string;
+  /** 文档说明 */
+  documentation?: string | { kind: 'markdown' | 'plaintext'; value: string };
+  /** 参数列表 */
+  parameters?: Array<{
+    /** 参数标签 */
+    label: string | [number, number];
+    /** 参数文档 */
+    documentation?: string | { kind: 'markdown' | 'plaintext'; value: string };
+  }>;
+  /** 活跃参数索引 */
+  activeParameter?: number;
+}
+
+/**
+ * LSP Signature Help（函数参数提示）
+ */
+export interface LSPSignatureHelp {
+  /** 可用的签名列表 */
+  signatures: LSPSignatureInformation[];
+  /** 当前活跃的签名索引 */
+  activeSignature?: number;
+  /** 当前活跃的参数索引 */
+  activeParameter?: number;
+}
+
+// ===================== Document Symbol 相关类型 =====================
+
+/**
+ * LSP 符号类型（SymbolKind）
+ */
+export enum LSPSymbolKind {
+  File = 1,
+  Module = 2,
+  Namespace = 3,
+  Package = 4,
+  Class = 5,
+  Method = 6,
+  Property = 7,
+  Field = 8,
+  Constructor = 9,
+  Enum = 10,
+  Interface = 11,
+  Function = 12,
+  Variable = 13,
+  Constant = 14,
+  String = 15,
+  Number = 16,
+  Boolean = 17,
+  Array = 18,
+  Object = 19,
+  Key = 20,
+  Null = 21,
+  EnumMember = 22,
+  Struct = 23,
+  Event = 24,
+  Operator = 25,
+  TypeParameter = 26,
+}
+
+/**
+ * LSP 文档符号（DocumentSymbol）
+ */
+export interface LSPDocumentSymbol {
+  /** 符号名称 */
+  name: string;
+  /** 符号类型 */
+  kind: LSPSymbolKind;
+  /** 符号范围 */
+  range: LSPRange;
+  /** 符号选择范围（高亮用） */
+  selectionRange: LSPRange;
+  /** 详细信息 */
+  detail?: string;
+  /** 标签（如 deprecated） */
+  tags?: number[];
+  /** 子符号 */
+  children?: LSPDocumentSymbol[];
+}
+
+/**
+ * LSP 工作区符号（WorkspaceSymbol）
+ */
+export interface LSPWorkspaceSymbol {
+  /** 符号名称 */
+  name: string;
+  /** 符号类型 */
+  kind: LSPSymbolKind;
+  /** 符号位置（URI + 范围） */
+  location: LSPLocation | { uri: string };
+  /** 容器名称（如所属类名） */
+  containerName?: string;
+  /** 附加数据 */
+  data?: unknown;
+}
+
+// ===================== 工具调用结果类型（v3.2 新增） =====================
+
+/**
+ * LSP Code Action 工具结果
+ */
+export type LSPCodeActionResult = LSPToolResult<LSPCodeAction[]>;
+
+/**
+ * LSP Signature Help 工具结果
+ */
+export type LSPSignatureHelpResult = LSPToolResult<LSPSignatureHelp | null>;
+
+/**
+ * LSP 文档符号工具结果
+ */
+export type LSPDocumentSymbolsResult = LSPToolResult<LSPDocumentSymbol[]>;
+
+/**
+ * LSP 工作区符号工具结果
+ */
+export type LSPWorkspaceSymbolsResult = LSPToolResult<LSPWorkspaceSymbol[]>;

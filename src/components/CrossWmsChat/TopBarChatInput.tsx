@@ -17,6 +17,7 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import CloseIcon from '@mui/icons-material/Close';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 import { getGrayScale } from '../../constants/theme';
 import { Skill, INTENT_CATEGORY_LABELS, INTENT_QUICK_EXAMPLES, ICON_MAP } from '../../types/skill';
 import type { IntentCategory } from '../../types/skill';
@@ -25,10 +26,11 @@ import { getAllSkills } from '../../stores/skillStore';
 import { SkillSelector } from './SkillSelector';
 import { useModels } from '../../contexts/ModelsContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useChatSession } from '../../contexts/ChatContext';
 import ChatToolbar, { type ModelOption } from './ChatToolbar';
 import AISettingsDialog from '../Layout/AISettingsDialog';
 import { SessionReferenceSelector } from './SessionReferenceSelector';
-import type { SendMessageOptions } from '../../hooks/useChat';
+import type { SendAgentMessageOptions } from '../../hooks/useAgentChat';
 import { uploadFile } from '../../services/api';
 import { API_BASE_URL } from '../../constants/api';
 import { useAiEngineSettings } from '../../contexts/AppSettingsContext';
@@ -47,7 +49,7 @@ interface TopBarChatInputProps {
   /** 是否正在加载中（从外部注入，避免重复实例化 useChat） */
   isLoading: boolean;
   /** 发送消息函数（从外部注入，避免重复实例化 useChat） */
-  sendMessage: (content: string, options?: SendMessageOptions) => void;
+  sendMessage: (content: string, options?: SendAgentMessageOptions) => void;
   /** 停止生成函数（从外部注入，避免重复实例化 useChat） */
   stopGeneration: () => void;
   /** 样式变体：default=默认带边框，cardless=无边框无背景（外层有卡片），card=白色圆角卡片带阴影 */
@@ -97,6 +99,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const { showToast } = useToast();
   const { models: modelList, isLoading: modelsLoading } = useModels();
   const { settings: aiEngineSettings } = useAiEngineSettings();
+  const { session } = useChatSession();
   const [inputExpanded, setInputExpanded] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [showSkillSelector, setShowSkillSelector] = useState(false);
@@ -116,6 +119,69 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   // 选择文件夹状态
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
+
+  // 思考级别基础列表
+  const BASE_THINKING_LEVELS = [
+    { value: 'off', label: '关闭' },
+    { value: 'low', label: '快速' },
+    { value: 'medium', label: '标准' },
+    { value: 'high', label: '深度' },
+  ];
+
+  // v10.0: 根据模型配置动态获取可用思考级别
+  const getAvailableThinkingLevels = useMemo(() => {
+    if (!session?.model) return BASE_THINKING_LEVELS;
+    const modelConfig = modelList.find(m => m.id === session.model);
+    if (!modelConfig) return BASE_THINKING_LEVELS;
+
+    // 检查模型是否支持思考能力
+    const supportsThinking = modelConfig.capabilities?.includes('reasoning');
+    if (!supportsThinking) {
+      return [{ value: 'off', label: '关闭' }];
+    }
+
+    // 如果模型指定了可用的思考级别，则使用模型指定的级别
+    if (modelConfig.thinkingLevels && modelConfig.thinkingLevels.length > 0) {
+      const availableLevels = modelConfig.thinkingLevels.filter(level => 
+        BASE_THINKING_LEVELS.some(base => base.value === level)
+      );
+      if (availableLevels.length > 0) {
+        return availableLevels.map(level => 
+          BASE_THINKING_LEVELS.find(base => base.value === level)!
+        );
+      }
+    }
+
+    return BASE_THINKING_LEVELS;
+  }, [session?.model, modelList]);
+
+  // v10.0: 获取当前模型的默认思考级别
+  const getModelDefaultThinkingLevel = useMemo(() => {
+    if (!session?.model) return 'off';
+    const modelConfig = modelList.find(m => m.id === session.model);
+    return modelConfig?.defaultThinkingLevel || 'off';
+  }, [session?.model, modelList]);
+
+  // 初始化时使用会话中保存的思考级别，如果没有则使用模型默认值
+  const getInitialThinkingLevel = useMemo(() => {
+    if (session?.thinkingLevel) return session.thinkingLevel;
+    return getModelDefaultThinkingLevel;
+  }, [session?.thinkingLevel, getModelDefaultThinkingLevel]);
+
+  // 初始化时使用会话中保存的思考级别
+  const [thinkingLevel, setThinkingLevel] = useState(getInitialThinkingLevel);
+  const [thinkingMenuAnchor, setThinkingMenuAnchor] = useState<HTMLElement | null>(null);
+
+  // v10.0: 会话切换时，从 session.thinkingLevel 恢复思考级别
+  useEffect(() => {
+    if (session?.thinkingLevel) {
+      setThinkingLevel(session.thinkingLevel);
+    } else if (getModelDefaultThinkingLevel) {
+      setThinkingLevel(getModelDefaultThinkingLevel);
+    }
+  }, [session?.id, session?.thinkingLevel, getModelDefaultThinkingLevel]);
+
+  const currentThinking = getAvailableThinkingLevels.find(t => t.value === thinkingLevel) || getAvailableThinkingLevels[0];
 
   // 当 initialSkill 从外部变化时同步到 selectedSkill（如 SkillDetailPage 跳转过来）
   useEffect(() => {
@@ -543,6 +609,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       attachments: pendingAttachments.length > 0 ? pendingAttachments : undefined,
       executionMode: aiEngineSettings.defaultExecutionMode !== 'legacy' ? aiEngineSettings.defaultExecutionMode : undefined,
       queueMode: aiEngineSettings.defaultQueueMode !== 'followup' ? aiEngineSettings.defaultQueueMode : undefined,
+      thinkingLevel: thinkingLevel !== 'off' ? thinkingLevel : undefined,
     });
     if (editableRef.current) {
       editableRef.current.innerHTML = '';
@@ -990,6 +1057,16 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           modelsLoading={modelsLoading}
           onAttachClick={() => fileInputRef.current?.click()}
           hasAttachments={pendingAttachments.length > 0}
+          thinkingLevel={thinkingLevel}
+          onThinkingLevelChange={setThinkingLevel}
+          thinkingLevels={getAvailableThinkingLevels.map(l => ({
+            value: l.value,
+            label: l.value === 'off' ? '关闭思考' : `${l.label}思考`,
+            desc: l.value === 'off' ? '直接输出结果，不进行深度推理' :
+                  l.value === 'low' ? '轻量推理，响应更快' :
+                  l.value === 'medium' ? '平衡推理深度和速度' :
+                  '更深入的推理分析',
+          }))}
         />
       </Paper>
 

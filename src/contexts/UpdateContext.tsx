@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { UpdateStatus } from '../services/updateService';
 import { checkForUpdates as checkForUpdatesService, openDownloadUrl } from '../services/updateService';
 
@@ -156,18 +156,18 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [currentVersion]);
 
+  const contextValue = useMemo(() => ({
+    updateStatus,
+    showUpdateNotification,
+    isChecking,
+    checkForUpdates,
+    hideUpdateNotification,
+    downloadUpdate,
+    currentVersion,
+  }), [updateStatus, showUpdateNotification, isChecking, checkForUpdates, hideUpdateNotification, downloadUpdate, currentVersion]);
+
   return (
-    <UpdateContext.Provider
-      value={{
-        updateStatus,
-        showUpdateNotification,
-        isChecking,
-        checkForUpdates,
-        hideUpdateNotification,
-        downloadUpdate,
-        currentVersion,
-      }}
-    >
+    <UpdateContext.Provider value={contextValue}>
       {children}
     </UpdateContext.Provider>
   );

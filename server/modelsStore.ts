@@ -9,12 +9,13 @@ import fs from 'fs';
 import { writeFile, readFile } from 'fs/promises';
 import { extractAndSaveApiKey, injectApiKeys, deleteAllApiKeys } from './keychainStore.js';
 import { clearRotationState } from './keyRotator.js';
-import type { ModelProvider, ModelCapability, ModelConfig } from '../shared/types/models.js';
+import { warnIfModelsFileInvalid } from './modelConfigSchema.js';
+import type { ModelProvider, ModelCapability, ModelConfig, ProviderConfig } from '../shared/types/models.js';
 import { logger } from './logger.js';
 import { AppPaths } from './config/appPaths.js';
 
 // 重新导出共享类型，供其他 server 模块使用
-export type { ModelProvider, ModelCapability, ModelConfig };
+export type { ModelProvider, ModelCapability, ModelConfig, ProviderConfig };
 
 /**
  * 判断模型是否为本地部署（不需要 API Key）
@@ -91,6 +92,8 @@ const OLD_MODELS_FILE = AppPaths.oldModelsFile;
 /** models.json 文件结构 */
 export interface ModelsFile {
   version: number;
+  /** Provider 配置列表（v2 新增，Provider 级共享配置） */
+  providers?: ProviderConfig[];
   models: ModelConfig[];
   defaultModelId: string;
   updatedAt: string;
@@ -217,6 +220,8 @@ export async function readModelsFile(): Promise<ModelsFile | null> {
       logger.error('[modelsStore] models.json 格式无效');
       return null;
     }
+    // Zod schema 验证（仅警告，不阻断加载）
+    warnIfModelsFileInvalid(data);
     // 同步到内存缓存（用于降级模式切换时无缝过渡）
     memoryModelsFile = data;
     return data;
@@ -315,6 +320,80 @@ function migrateProviderData(models: ModelConfig[]): { models: ModelConfig[]; ch
   return { models: migrated, changed };
 }
 
+/**
+ * 将 Provider 级配置合并到模型配置
+ * 模型级配置优先级高于 Provider 级（模型级会覆盖 Provider 级）
+ * headers 和 params 会深合并，模型级优先级更高
+ */
+export function applyProviderConfig(model: ModelConfig, providers: ProviderConfig[] = []): ModelConfig {
+  if (!model.providerConfigId) return model;
+  const provider = providers.find(p => p.id === model.providerConfigId);
+  if (!provider) return model;
+
+  const merged: ModelConfig = { ...model };
+
+  // Provider 字段继承（模型级优先）
+  if (!merged.apiEndpoint && provider.apiEndpoint) merged.apiEndpoint = provider.apiEndpoint;
+  if (!merged.apiKey && provider.apiKey) merged.apiKey = provider.apiKey;
+  if (!merged.apiKeyRef && provider.apiKeyRef) merged.apiKeyRef = provider.apiKeyRef;
+  if (!merged.apiKeys?.length && provider.apiKeys?.length) merged.apiKeys = provider.apiKeys;
+  if (!merged.apiKeyRefs?.length && provider.apiKeyRefs?.length) merged.apiKeyRefs = provider.apiKeyRefs;
+  if (!merged.keyStrategy && provider.keyStrategy) merged.keyStrategy = provider.keyStrategy;
+  if (!merged.authMode && provider.authMode) merged.authMode = provider.authMode;
+  if (!merged.localService && provider.localService) merged.localService = provider.localService;
+  if (!merged.apiType && provider.apiType) merged.apiType = provider.apiType;
+
+  // headers 浅合并（模型级覆盖 Provider 级）
+  if (provider.headers || merged.headers) {
+    merged.headers = { ...provider.headers, ...merged.headers };
+  }
+
+  // params 浅合并（模型级覆盖 Provider 级的 defaultParams）
+  if (provider.defaultParams || merged.params) {
+    merged.params = { ...provider.defaultParams, ...merged.params };
+  }
+
+  // compatConfig 深合并（模型级覆盖 Provider 级）
+  if (provider.compatConfig || merged.compatConfig) {
+    merged.compatConfig = {
+      ...provider.compatConfig,
+      ...merged.compatConfig,
+      thinking: {
+        ...provider.compatConfig?.thinking,
+        ...merged.compatConfig?.thinking,
+      },
+    };
+  }
+
+  // mediaInputConfig 深合并（模型级覆盖 Provider 级）
+  if (provider.mediaInputConfig || merged.mediaInputConfig) {
+    merged.mediaInputConfig = {
+      ...provider.mediaInputConfig,
+      ...merged.mediaInputConfig,
+      image: {
+        ...provider.mediaInputConfig?.image,
+        ...merged.mediaInputConfig?.image,
+      },
+      video: {
+        ...provider.mediaInputConfig?.video,
+        ...merged.mediaInputConfig?.video,
+      },
+      audio: {
+        ...provider.mediaInputConfig?.audio,
+        ...merged.mediaInputConfig?.audio,
+      },
+    };
+  }
+
+  return merged;
+}
+
+/** 对模型列表批量应用 Provider 配置 */
+export function applyProviderConfigs(models: ModelConfig[], providers: ProviderConfig[] = []): ModelConfig[] {
+  if (!providers?.length) return models;
+  return models.map(m => applyProviderConfig(m, providers));
+}
+
 /** 读取模型配置（含内置模型兜底） */
 export async function loadModelsConfig(options?: { skipKeyInjection?: boolean }): Promise<ModelsFile> {
   // 快速路径：主缓存有效时，skipKeyInjection 直接返回脱敏副本
@@ -354,6 +433,12 @@ export async function loadModelsConfig(options?: { skipKeyInjection?: boolean })
         saved = { ...saved, models: migrated2 };
         await writeModelsFile(saved);
       }
+
+      // 应用 Provider 级配置合并（在注入 Key 之前，确保 Provider 级的 Key 也能被继承）
+      if (saved.providers?.length) {
+        saved.models = applyProviderConfigs(saved.models, saved.providers);
+      }
+
       if (options?.skipKeyInjection) {
         // GET /api/models 路径：不需要 API Key，跳过 Keychain 注入
         // 不更新主缓存（主缓存预期包含注入的 key）
@@ -428,7 +513,11 @@ export async function loadModelsConfig(options?: { skipKeyInjection?: boolean })
 }
 
 /** 保存模型配置 */
-export async function saveModelsConfig(models: ModelConfig[], defaultModelId: string): Promise<ModelsFile> {
+export async function saveModelsConfig(
+  models: ModelConfig[],
+  defaultModelId: string,
+  options?: { providers?: ProviderConfig[] },
+): Promise<ModelsFile> {
   // 验证 defaultModelId 是否存在于 models 中
   if (defaultModelId && models.length > 0 && !models.some(m => m.id === defaultModelId)) {
     logger.warn(`[modelsStore] defaultModelId "${defaultModelId}" 不存在于 models 中，将使用第一个已启用模型`);
@@ -445,8 +534,12 @@ export async function saveModelsConfig(models: ModelConfig[], defaultModelId: st
     isDefault: m.id === defaultModelId,
   }));
 
+  // 处理 Provider 配置的 Keychain 提取
+  const providers = options?.providers?.map(p => extractAndSaveApiKey(p as any) as unknown as ProviderConfig);
+
   const data: ModelsFile = {
     version: 1,
+    providers,
     models: modelsWithDefault,
     defaultModelId,
     updatedAt: new Date().toISOString(),

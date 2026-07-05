@@ -31,6 +31,7 @@ import {
   createSession,
   getSessionMessages,
   addMessage,
+  updateSession,
 } from '../dao/chat.js';
 import { matchTriggers, executePluginTrigger } from '../services/pluginAutoInvoke.js';
 import { messageQueue, type QueueMode, type QueueEvent } from '../engine/messageQueue.js';
@@ -44,192 +45,23 @@ import { activeSSEConnections } from './chatHelpers/sseHelper.js';
 import { sendSSE, sendDebugSSE, sendDoneAndEnd } from '../sse/sseTypes.js';
 import { TimerManager } from '../sse/timerManager.js';
 import { executeChat as streamExecuteChat, finishStream, type ExecuteChatCallbacks } from '../engine/streamExecutor.js';
+import { runChatSession } from '../engine/runChatSession.js';
 import { formatMemoryContext } from '../engine/contextEnhancer.js';
 import { recordTurnStarted, recordTurnCompleted, recordTurnFailed, recordMessageCreated } from '../engine/eventRecorder.js';
 import { TokenBudgetManager } from '../engine/compaction/tokenBudget.js';
 import { CompactionLoopGuard, CompactionSafetyTimeout, CompactionRetryAggregateTimeout } from '../engine/compaction/compactionSafety.js';
 import { triggerTurnEndSync, triggerPostCompactionSync } from '../engine/sessionMemorySync.js';
-
-// ===================== 公共辅助函数 =====================
-
-/**
- * 安全解析消息的附件字段（可能是 JSON 字符串或数组）
- *
- * DB 中 Message.attachments 类型是 string | null，但实际保存时可能传入数组。
- * 读取历史消息时需要统一解析为数组格式。
- */
-function parseMessageAttachments(attachments: unknown): Array<Record<string, unknown>> {
-  if (!attachments) return [];
-  if (Array.isArray(attachments)) return attachments as Array<Record<string, unknown>>;
-  if (typeof attachments === 'string') {
-    try {
-      const parsed = JSON.parse(attachments);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
-
-/**
- * 检测附件中是否包含图片
- *
- * 提取为公共函数，消除 handleChat 和 executeFromQueue 中的重复。
- */
-function hasImageAttachment(attachments: unknown[] | undefined): boolean {
-  return !!(attachments && Array.isArray(attachments) && attachments.some((att) => (att as { type: string }).type === 'image'));
-}
-
-/** 已知视觉模型 ID 列表 */
-const KNOWN_VISION_MODEL_IDS = [
-  'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4-vision',
-  'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'claude-3-5-sonnet',
-  'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro-vision',
-  'qwen-vl', 'qwen-vl-max',
-  'kimi-k2.6', 'kimi-k2.5',
-];
-
-/**
- * 检测模型是否支持视觉（图片理解）
- *
- * 提取为公共函数，消除 handleChat 和 executeFromQueue 中的重复。
- */
-function detectVisionModel(modelConfig: { id: string; capabilities?: string[] }): boolean {
-  const isMultimodalModel = modelConfig.capabilities?.includes('multimodal');
-  const isKnownVisionModel = KNOWN_VISION_MODEL_IDS.some((id) =>
-    modelConfig.id.toLowerCase().includes(id.toLowerCase()),
-  );
-  const isFalsePositiveVision = /deepseek/i.test(modelConfig.id);
-  return (isMultimodalModel || isKnownVisionModel) && !isFalsePositiveVision;
-}
-
-/**
- * 从 DB 消息重建 tool_calls 到 API 消息格式
- *
- * 提取为公共函数，消除行120-149 和行903-933 的重复。
- * 如果消息包含有效的 toolCalls，将 assistant 消息和对应的 tool 结果消息推入 apiMessages。
- *
- * @param msg DB 消息
- * @param apiMessages API 消息数组
- * @param reasoningContent 可选，thinking 推理内容（支持 reasoning 的模型）
- * @returns true 如果成功重建（调用方应 continue 跳过后续处理），false 如果不包含 toolCalls
- */
-function rebuildToolCallsFromMessage(
-  msg: { role: string; content: string; toolCalls?: string | Array<{ name: string; arguments: string; result?: string }> },
-  apiMessages: Array<{ role: string; content: MessageContent | null; tool_calls?: unknown[]; tool_call_id?: string; reasoning_content?: string }>,
-  reasoningContent?: string,
-): boolean {
-  if (msg.role !== 'assistant' || !msg.toolCalls) return false;
-
-  try {
-    const toolCalls = typeof msg.toolCalls === 'string' ? JSON.parse(msg.toolCalls) : msg.toolCalls;
-    if (!Array.isArray(toolCalls) || toolCalls.length === 0) return false;
-
-    const callIds = toolCalls.map(() => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
-    const assistantMsg: { role: string; content: MessageContent | null; tool_calls: unknown[]; reasoning_content?: string } = {
-      role: 'assistant',
-      content: msg.content || null,
-      tool_calls: toolCalls.map((tc: { name: string; arguments: string }, i: number) => ({
-        id: callIds[i],
-        type: 'function',
-        function: { name: tc.name, arguments: tc.arguments },
-      })),
-    };
-    if (reasoningContent) {
-      assistantMsg.reasoning_content = reasoningContent;
-    }
-    apiMessages.push(assistantMsg);
-    for (let i = 0; i < toolCalls.length; i++) {
-      apiMessages.push({
-        role: 'tool',
-        content: (toolCalls[i] as { result?: string }).result ?? '(tool result unavailable)',
-        tool_call_id: callIds[i],
-      });
-    }
-    return true;
-  } catch {
-    // toolCalls 解析失败，按普通消息处理
-    return false;
-  }
-}
-
-/**
- * 验证并修复 tool_calls 配对
- *
- * 确保 assistant(tool_calls) 后面有对应的 tool 消息，
- * 移除孤立的 tool 消息。
- */
-function validateToolCallsPairing<T extends Array<{ role: string; content: unknown; tool_calls?: Array<{ id?: string }>; tool_call_id?: string }>>(
-  messages: T,
-): T {
-  const fixedMessages: T[number][] = [];
-
-  for (let i = 0; i < messages.length; i++) {
-    const m = messages[i];
-
-    // 检查 assistant(tool_calls) 是否有对应的 tool 消息
-    if (m.role === 'assistant' && m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0) {
-      const neededIds = new Set<string>();
-      for (const tc of m.tool_calls) {
-        if (tc.id) neededIds.add(tc.id);
-      }
-      // 向后扫描是否有对应的 tool 消息
-      for (let j = i + 1; j < messages.length; j++) {
-        if (messages[j].role === 'tool' && messages[j].tool_call_id && neededIds.has(messages[j].tool_call_id!)) {
-          neededIds.delete(messages[j].tool_call_id!);
-          if (neededIds.size === 0) break;
-        } else if (messages[j].role !== 'tool') {
-          break;
-        }
-      }
-      if (neededIds.size > 0) {
-        logger.warn(`[Chat API] tool_calls 配对不完整，补齐 ${neededIds.size} 条空 tool 响应: ${[...neededIds].join(', ')}`);
-        fixedMessages.push(m);
-        for (const missingId of neededIds) {
-          fixedMessages.push({
-            role: 'tool',
-            content: '[工具结果未保存]',
-            tool_call_id: missingId,
-          });
-        }
-        continue;
-      }
-    }
-
-    // 检查 tool 消息是否有对应的 assistant(tool_calls)
-    if (m.role === 'tool' && m.tool_call_id) {
-      let foundParent = false;
-      for (let k = fixedMessages.length - 1; k >= 0; k--) {
-        const prev = fixedMessages[k] as { role: string; tool_calls?: Array<{ id?: string }> };
-        if (prev.role === 'assistant' && prev.tool_calls && Array.isArray(prev.tool_calls)) {
-          if (prev.tool_calls.some((tc) => tc.id === m.tool_call_id)) {
-            foundParent = true;
-            break;
-          }
-        }
-      }
-      if (!foundParent) {
-        logger.warn(`[Chat API] 跳过孤立 tool 消息 (call_id=${m.tool_call_id})`);
-        continue;
-      }
-    }
-
-    fixedMessages.push(m);
-  }
-
-  if (fixedMessages.length !== messages.length) {
-    logger.info(`[Chat API] tool_calls 校验: ${messages.length} → ${fixedMessages.length} 条消息`);
-  }
-  return fixedMessages as T;
-}
+import {
+  buildApiMessages,
+  hasImageAttachment,
+} from '../engine/buildApiMessages.js';
 
 /**
  * 错误分类与格式化
  *
  * 将 AI API 错误分类为用户友好的错误消息和错误代码。
  */
-function classifyAndFormatError(
+export function classifyAndFormatError(
   error: unknown,
   modelConfig?: ModelConfig,
   effectiveModel?: string,
@@ -543,122 +375,20 @@ async function executeQueuedMessage(
       topP: params.preset ? params.preset.topP : modelConfig.topP,
     };
 
-    // 构建 API 消息
+    // 构建 API 消息（统一调用 buildApiMessages 公共函数）
     const dbMessages = getSessionMessages(sessionId);
-    apiMessages = [];
-
-    const soulSystemMsg = buildSoulSystemMessage();
-    if (soulSystemMsg.trim()) {
-      apiMessages.push({ role: 'system', content: soulSystemMsg.trim() });
-    }
-
-    const memoryContent = await readMemoryMd();
-    if (memoryContent.trim()) {
-      apiMessages.push({ role: 'system', content: memoryContent.trim() });
-    }
-
-    if (params.skillContext?.trim()) {
-      apiMessages.push({ role: 'system', content: params.skillContext.trim() });
-    }
-
-    // 从 DB 消息重建（使用提取的公共函数）
-    const supportsVisionQueue = detectVisionModel(modelConfig);
-    for (const msg of dbMessages) {
-      if (msg.role === 'user' || msg.role === 'assistant') {
-        // v1.7.19: 安全解析附件字段（DB 中可能是 JSON 字符串）
-        const msgAttachments = parseMessageAttachments((msg as { attachments?: unknown }).attachments);
-        if (msg.role === 'user' && msgAttachments.length > 0 && supportsVisionQueue) {
-          const contentParts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'auto' | 'low' | 'high' } }> = [];
-          if (msg.content) {
-            contentParts.push({ type: 'text', text: msg.content });
-          }
-          for (const att of msgAttachments) {
-            if ((att as { type?: string }).type === 'image') {
-              try {
-                const attRecord = att as { url?: string; fileName?: string; mimeType?: string };
-                const filePath = path.join(AppPaths.uploadsDir, path.basename(attRecord.url || ''));
-                const fileBuffer = await fsp.readFile(filePath);
-                const base64 = fileBuffer.toString('base64');
-                contentParts.push({
-                  type: 'image_url',
-                  image_url: { url: `data:${attRecord.mimeType};base64,${base64}`, detail: 'auto' },
-                });
-              } catch (err: any) {
-                if (err.code !== 'ENOENT') {
-                  logger.error(`[Chat API] 读取历史图片附件失败: ${(att as { fileName?: string }).fileName}`, err);
-                }
-              }
-            }
-          }
-          if (contentParts.length > 0) {
-            apiMessages.push({ role: msg.role, content: contentParts });
-          } else {
-            apiMessages.push({ role: msg.role, content: msg.content });
-          }
-        } else if (rebuildToolCallsFromMessage(msg, apiMessages, modelConfig.capabilities?.includes('reasoning') ? (msg as { thinking?: string | null }).thinking || undefined : undefined)) {
-          continue;
-        } else {
-          // v1.7.20: 传递 thinking 内容（仅支持 reasoning 的模型）
-          const supportsReasoning = modelConfig.capabilities?.includes('reasoning');
-          const thinkingContent = supportsReasoning ? (msg as { thinking?: string | null }).thinking || undefined : undefined;
-          if (thinkingContent) {
-            apiMessages.push({ role: msg.role, content: msg.content, reasoning_content: thinkingContent });
-          } else {
-            apiMessages.push({ role: msg.role, content: msg.content });
-          }
-        }
-      }
-    }
-
-    // v1.7.20: 历史消息消毒
-    // - 合并连续用户消息
-    // - 清理空助手轮次
-    // - 校验 tool 配对
-    // - 规范化 tool call 输入
-    // - 重复用户消息去重
-    // - 图片附件尺寸限制
-    // - reasoning 内容兼容性处理
-    // - 按轮次截断（可配置）
-    let maxHistoryTurns = 0;
-    let imageLimits = {};
-    let dropReasoning = false;
-    try {
-      const settingsVal = getAppSettings('default');
-      if (settingsVal) {
-        const parsed = JSON.parse(settingsVal);
-        if (parsed?.aiEngine?.maxHistoryTurns && parsed.aiEngine.maxHistoryTurns > 0) {
-          maxHistoryTurns = parsed.aiEngine.maxHistoryTurns;
-        }
-        imageLimits = resolveImageSanitizationLimits(parsed);
-        if (modelConfig.capabilities && !modelConfig.capabilities.includes('reasoning')) {
-          dropReasoning = true;
-        }
-      }
-    } catch { /* ignore */ }
-    apiMessages = sanitizeHistoryMessages(apiMessages as any, {
-      maxTurns: maxHistoryTurns,
-      imageLimits,
-      dropReasoning,
-    }) as typeof apiMessages;
-
-    // 上下文压缩
-    const ctxWindow = (finalModelConfig as ModelCallConfig).contextWindow || 128000;
-    const ctxMaxTokens = Math.min((finalModelConfig as ModelCallConfig).maxTokens || 8192, 8192);
-    let truncated: { messages: typeof apiMessages; truncated: boolean };
-    try {
-      const compressResult = await compressContextWithSummary(
-        apiMessages as any, ctxWindow, ctxMaxTokens, 30, finalModelConfig,
-      );
-      truncated = { messages: compressResult.messages as any, truncated: compressResult.truncated || compressResult.compressed };
-      if (compressResult.compressed) {
-        logger.debug('[Chat API] 上下文已智能压缩（队列模式）');
-      }
-    } catch {
-      truncated = truncateContextForModel(apiMessages as any, ctxWindow, ctxMaxTokens, 30) as { messages: typeof apiMessages; truncated: boolean };
-    }
-
-    // 验证 tool_calls 配对（使用提取的公共函数）
-    truncated.messages = validateToolCallsPairing(truncated.messages as any) as typeof truncated.messages;
+    const built = await buildApiMessages({
+      sessionId,
+      message: params.message,
+      modelConfig,
+      finalModelConfig,
+      dbMessages,
+      conversationHistory: params.conversationHistory,
+      skillContext: params.skillContext,
+      attachments: params.attachments,
+      hasImage: hasImageAttachment(params.attachments),
+    });
+    apiMessages = built.apiMessages;
 
     const abortController = messageQueue.getCurrentAbortController(sessionId);
     if (!abortController) {
@@ -705,13 +435,15 @@ async function executeQueuedMessage(
     });
 
     // 调用统一执行器
+    const ctxWindow = (finalModelConfig as ModelCallConfig).contextWindow || 128000;
+    const ctxMaxTokens = Math.min((finalModelConfig as ModelCallConfig).maxTokens || 8192, 8192);
     const result = await streamExecuteChat({
       sessionId,
       message: params.message,
       model: params.model,
       modelName: params.modelName,
       modelConfig: finalModelConfig,
-      apiMessages: truncated.messages,
+      apiMessages,
       res,
       executionMode: effectiveMode,
       timerManager,
@@ -895,6 +627,12 @@ export async function handleChat(req: import('express').Request, res: import('ex
     // 保存用户消息
     addMessage({ sessionId, role: 'user', content: message, model: effectiveModel, skillId: skillId || null, attachments: attachments || undefined });
 
+    // 首条用户消息自动生成标题
+    if (dbMessages.length === 0) {
+      const autoTitle = message.slice(0, 30).replace(/\n/g, ' ').trim() || '新对话';
+      updateSession(sessionId, { title: autoTitle });
+    }
+
     // v9.0: 记录用户消息创建事件
     const userMessageId = uuidv4();
     await recordMessageCreated(sessionId, userMessageId, 'user', message, {
@@ -918,7 +656,7 @@ export async function handleChat(req: import('express').Request, res: import('ex
     // ============== 队列模式 ==============
     const effectiveQueueMode = queueMode as QueueMode | undefined;
     if (effectiveQueueMode) {
-      activeSSEConnections.set(sessionId, { res, assistantMessageId: assistantId });
+      activeSSEConnections.set(sessionId, { res, assistantMessageId: assistantId, createdAt: Date.now(), lastActivityAt: Date.now() });
 
       const result = messageQueue.enqueue(sessionId, message, effectiveQueueMode, {
         model: effectiveModel,
@@ -1006,527 +744,72 @@ export async function handleChat(req: import('express').Request, res: import('ex
       return;
     }
 
-    // ============== 直接模式 ==============
-    let fullContent = '';
-    let lastUsage: { promptTokens?: number; completionTokens?: number; thinkingTokens?: number; totalTokens?: number } | undefined;
-    let thinkingStartTime: number | null = null;
-    let hasThinking = false;
-    let thinkingContent = '';
-    let thinkingChunkCount = 0;
-    let toolCallsJson: string | undefined;
-    const modelConfig = modelsConfig.models.find((m) => m.id === effectiveModel);
-
-    if (!modelConfig) {
-      throw new Error(`未找到模型配置: ${effectiveModel}`);
-    }
-
-    // v1.7.21: Token 预算管理与压缩安全防护（基于 OpenClaw 上下文预算系统）
-    const tokenBudget = new TokenBudgetManager({
-      modelLimit: modelConfig.contextWindow || 128000,
-    });
-    const compactionLoopGuard = new CompactionLoopGuard();
-    const compactionRetryBudget = new CompactionRetryAggregateTimeout();
-
-    const keyResult = selectKey(modelConfig);
-    let effectiveApiKey = modelConfig.apiKey || '';
-    if (keyResult) {
-      effectiveApiKey = keyResult.key;
-      selectedKeyIndex = keyResult.index;
-    }
-
-    // 构建 API 消息
-    apiMessages = [];
-
-    // 图片系统消息
-    if (hasImageAttachment(attachments)) {
-      apiMessages.push({
-        role: 'system',
-        content: `你是一个具备视觉理解能力的AI助手，当前用户上传了图片。请遵循以下规则处理图片：\n\n1. **意图识别**：首先识别图片内容（单据、截图、商品、库存、报表等），理解用户上传图片的意图。\n2. **数据提取**：如果图片包含结构化信息（如订单号、商品名称、数量、金额等），请提取关键数据。\n3. **主动执行**：根据图片内容和提取的数据，主动调用相关工具执行操作（如查询库存、创建订单、更新数据等）。\n4. **业务关联**：将图片内容与仓储管理系统（WMS）业务关联，提供有价值的分析和建议。\n5. **清晰回复**：先简要说明你从图片中识别到的内容，然后说明你执行了什么操作或建议什么操作。\n\n注意：不要只是简单描述图片内容，要理解用户意图并采取实际行动。`,
-      });
-    }
-
-    // Soul 系统消息
-    const soulSystemMsg = buildSoulSystemMessage();
-    if (soulSystemMsg.trim()) {
-      apiMessages.push({ role: 'system', content: soulSystemMsg.trim() });
-    }
-
-    // Memory.md 内容
-    const memoryContent = await readMemoryMd();
-    if (memoryContent.trim()) {
-      apiMessages.push({ role: 'system', content: memoryContent.trim() });
-    }
-
-    // 技能上下文
-    if (skillContext && typeof skillContext === 'string' && skillContext.trim()) {
-      apiMessages.push({ role: 'system', content: skillContext.trim() });
-    }
-
-    // 引用会话
-    const referencedSessionIds = req.body.referencedSessionIds;
-    if (Array.isArray(referencedSessionIds) && referencedSessionIds.length > 0) {
-      let sessionContext = '';
-      for (const refId of referencedSessionIds) {
-        const refMessages = getSessionMessages(refId);
-        if (refMessages.length > 0) {
-          const sessionInfo = getSessions().find((s: { id: string }) => s.id === refId);
-          const sessionTitle = sessionInfo ? sessionInfo.title : refId;
-          sessionContext += `\n## 会话：${sessionTitle}\n`;
-          for (const msg of refMessages.slice(-10)) {
-            const role = msg.role === 'user' ? 'User' : 'Assistant';
-            sessionContext += `${role}: ${msg.content}\n`;
-          }
-        }
-      }
-      if (sessionContext) {
-        apiMessages.push({ role: 'system', content: `<referenced-sessions>\n${sessionContext}\n</referenced-sessions>` });
-      }
-    }
-
-    // 视觉模型检测（使用提取的公共函数）
-    const supportsVision = detectVisionModel(modelConfig);
-
-    // v1.7.18: 优先使用 DB 中的历史消息作为上下文权威来源
-    // 前端 conversationHistory 仅在 DB 无历史消息时作为备用
-    const historySource = (dbMessages && dbMessages.length > 0)
-      ? dbMessages
-      : (Array.isArray(conversationHistory) ? conversationHistory : []);
-
-    if (historySource.length > 0) {
-      for (const msg of historySource) {
-        if (msg.role === 'user' || msg.role === 'assistant') {
-          // v1.7.19: 安全解析附件字段（DB 中可能是 JSON 字符串）
-          const msgAttachments = parseMessageAttachments((msg as { attachments?: unknown }).attachments);
-          if (msg.role === 'user' && msgAttachments.length > 0 && supportsVision) {
-            const contentParts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'auto' | 'low' | 'high' } }> = [];
-            if (msg.content) {
-              contentParts.push({ type: 'text', text: msg.content });
-            }
-            for (const att of msgAttachments) {
-              if ((att as { type?: string }).type === 'image') {
-                try {
-                  const attRecord = att as { url?: string; fileName?: string; mimeType?: string };
-                  const filePath = path.join(AppPaths.uploadsDir, path.basename(attRecord.url || ''));
-                  const fileBuffer = await fsp.readFile(filePath);
-                  const base64 = fileBuffer.toString('base64');
-                  contentParts.push({
-                    type: 'image_url',
-                    image_url: { url: `data:${attRecord.mimeType};base64,${base64}`, detail: 'auto' },
-                  });
-                } catch (err: any) {
-                  if (err.code !== 'ENOENT') {
-                    logger.error(`[Chat API] 读取历史图片附件失败: ${(att as { fileName?: string }).fileName}`, err);
-                  }
-                }
-              }
-            }
-            if (contentParts.length > 0) {
-              apiMessages.push({ role: msg.role, content: contentParts });
-            } else {
-              apiMessages.push({ role: msg.role, content: msg.content });
-            }
-          } else if (rebuildToolCallsFromMessage(msg, apiMessages, modelConfig.capabilities?.includes('reasoning') ? (msg as { thinking?: string | null }).thinking || undefined : undefined)) {
-            // tool_calls 已重建，继续下一条
-            continue;
-          } else {
-            // v1.7.20: 传递 thinking 内容（仅支持 reasoning 的模型）
-            const supportsReasoning = modelConfig.capabilities?.includes('reasoning');
-            const thinkingContent = supportsReasoning ? (msg as { thinking?: string | null }).thinking || undefined : undefined;
-            if (thinkingContent) {
-              apiMessages.push({ role: msg.role, content: msg.content, reasoning_content: thinkingContent });
-            } else {
-              apiMessages.push({ role: msg.role, content: msg.content });
-            }
-          }
-        }
-      }
-    }
-
-    // 当前消息附件处理
-    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
-      const contentParts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string; detail?: 'auto' | 'low' | 'high' } }> = [];
-      const effectiveMessage = message?.trim() || '请仔细识别并分析这张图片的内容，理解用户的意图，然后根据图片内容和你的能力采取相应的行动（如调用工具查询数据、生成报表、执行操作等）。如果图片包含单据、订单、库存、商品等信息，请提取关键数据并执行相关业务操作。';
-      contentParts.push({ type: 'text', text: effectiveMessage });
-
-      if (hasImageAttachment(attachments) && !supportsVision) {
-        contentParts.push({
-          type: 'text',
-          text: `\n⚠️ [系统提示] 当前模型 "${modelConfig.name}" (${modelConfig.id}) 不支持图片理解。已上传图片但模型无法识别内容。如需分析图片，请切换到支持多模态的模型，如：\n- GPT-4o (OpenAI)\n- Claude 3 Sonnet/Opus (Anthropic)\n- Gemini 1.5 Pro (Google)\n- Qwen-VL (阿里云)\n`,
-        });
-      }
-
-      for (const att of attachments) {
-        if (att.type === 'image') {
-          if (supportsVision) {
-            try {
-              const filePath = path.join(AppPaths.uploadsDir, path.basename(att.url));
-              const fileBuffer = await fsp.readFile(filePath);
-              const base64 = fileBuffer.toString('base64');
-              contentParts.push({
-                type: 'image_url',
-                image_url: { url: `data:${att.mimeType};base64,${base64}`, detail: 'auto' },
-              });
-            } catch (err: any) {
-              if (err.code !== 'ENOENT') {
-                logger.error(`[Chat API] 读取图片附件失败: ${att.fileName}`, err);
-              }
-            }
-          }
-        } else {
-          try {
-            const filePath = path.join(AppPaths.uploadsDir, path.basename(att.url));
-            const ext = path.extname(att.fileName).toLowerCase().replace('.', '');
-            const fileContent = await extractFileContent(filePath, ext, att.fileName);
-            contentParts.push({ type: 'text', text: fileContent });
-          } catch (err: any) {
-            if (err.code !== 'ENOENT') {
-              logger.error(`[Chat API] 读取文件附件失败: ${att.fileName}`, err);
-              contentParts.push({ type: 'text', text: `\n---\n[附件: ${att.fileName} - 读取失败]\n---\n` });
-            }
-          }
-        }
-      }
-
-      apiMessages.push({ role: 'user', content: contentParts });
-    } else {
-      apiMessages.push({ role: 'user', content: message });
-    }
-
-    // v1.7.20: 历史消息消毒
-    // - 合并连续用户消息
-    // - 清理空助手轮次
-    // - 校验 tool 配对
-    // - 规范化 tool call 输入
-    // - 重复用户消息去重
-    // - 图片附件尺寸限制
-    // - reasoning 内容兼容性处理
-    // - 按轮次截断（可配置）
-    let maxHistoryTurns = 0;
-    let imageLimits = {};
-    let dropReasoning = false;
-    try {
-      const settingsVal = getAppSettings('default');
-      if (settingsVal) {
-        const parsed = JSON.parse(settingsVal);
-        if (parsed?.aiEngine?.maxHistoryTurns && parsed.aiEngine.maxHistoryTurns > 0) {
-          maxHistoryTurns = parsed.aiEngine.maxHistoryTurns;
-        }
-        imageLimits = resolveImageSanitizationLimits(parsed);
-        if (modelConfig.capabilities && !modelConfig.capabilities.includes('reasoning')) {
-          dropReasoning = true;
-        }
-      }
-    } catch { /* ignore */ }
-    apiMessages = sanitizeHistoryMessages(apiMessages as any, {
-      maxTurns: maxHistoryTurns,
-      imageLimits,
-      dropReasoning,
-    }) as typeof apiMessages;
-
-    // 构建最终模型配置
-    const finalModelConfig: ModelCallConfig = {
-      ...modelConfig,
-      apiKey: effectiveApiKey,
-      temperature: activePreset ? activePreset.temperature : modelConfig.temperature,
-      topP: activePreset ? activePreset.topP : modelConfig.topP,
-    };
-
-    // 创建 AbortController + 超时
-    abortController = new AbortController();
-    let timeoutMs: number;
-    if (isLocalModel(modelConfig)) {
-      timeoutMs = 300000;
-    } else {
-      timeoutMs = 120000;
-    }
-    const timeout = setTimeout(() => abortController.abort(), timeoutMs);
-
-    try {
-      // 无 API Key 且非本地模型 → 模拟模式
-      if (!effectiveApiKey && !isLocalModel(modelConfig)) {
-        logger.debug(`[Chat API] 模型 ${effectiveModel} 未配置 API Key，使用模拟模式`);
-        const mockResponse = generateMockResponse(message);
-        const segments = mockResponse.match(/[\s\S]{1,5}/g) || [mockResponse];
-        for (const segment of segments) {
-          sendSSE(res, { type: 'text', content: segment });
-          await new Promise((r) => setTimeout(r, 15));
-        }
-        fullContent = mockResponse;
-      } else {
-        // Thinking 缓存检查
-        let cacheHit = false;
-        const cacheKey = getThinkingCacheKey(effectiveModel, message);
-        const cached = getThinkingCache(cacheKey);
-        if (cached) {
-          logger.debug('[Chat API] Thinking cache hit for', effectiveModel);
-          cacheHit = true;
-          fullContent = cached.content;
-          thinkingContent = cached.thinking;
-          hasThinking = !!thinkingContent;
-          if (hasThinking) thinkingStartTime = 0;
-          if (thinkingContent) {
-            // 细粒度三段式 thinking 事件（缓存命中，整块输出）
-            sendSSE(res, { type: 'thinking.start', contentIndex: 0 });
-            sendSSE(res, { type: 'thinking.delta', contentIndex: 0, content: thinkingContent });
-            sendSSE(res, { type: 'thinking.complete', contentIndex: 0, thinkingDuration: 0 });
-            // 保留原有 thinking 事件（向后兼容）
-            sendSSE(res, { type: 'thinking', content: thinkingContent });
-          }
-          sendSSE(res, { type: 'text', content: fullContent });
-          sendDebugSSE(res, { type: 'cache_hit', cached: true });
-        }
-
-        if (!cacheHit) {
-          // 确定执行模式
-          let effectiveMode = (executionMode && Object.values(ExecutionMode).includes(executionMode as ExecutionMode))
-            ? (executionMode as ExecutionMode)
-            : undefined;
-          if (!effectiveMode) {
-            try {
-              const settingsVal = getAppSettings('default');
-              if (settingsVal) {
-                const parsed = JSON.parse(settingsVal);
-                const defaultMode = parsed?.aiEngine?.defaultExecutionMode;
-                if (defaultMode && Object.values(ExecutionMode).includes(defaultMode as ExecutionMode)) {
-                  effectiveMode = defaultMode as ExecutionMode;
-                }
-              }
-            } catch { /* ignore */ }
-          }
-          if (!effectiveMode) {
-            effectiveMode = ExecutionStrategyFactory.getDefaultMode();
-          }
-
-          const ctxWindow = (finalModelConfig as ModelCallConfig).contextWindow || 128000;
-          const ctxMaxTokens = Math.min((finalModelConfig as ModelCallConfig).maxTokens || 8192, 8192);
-          const estimatedToolsCount = 30;
-
-          // 设置回调
-          const callbacks: ExecuteChatCallbacks = {
-            onThinking: (thinkingChunk: string) => {
-              // 插件自动触发匹配（保留原有功能）
-              thinkingChunkCount++;
-              if (thinkingChunkCount % 5 === 0 && thinkingContent.length > 20) {
-                matchTriggers(thinkingContent, sessionId).then((matches) => {
-                  for (const match of matches) {
-                    sendDebugSSE(res, {
-                      type: 'client_tool',
-                      tool: match.toolName,
-                      args: match.args,
-                      pluginId: match.pluginId,
-                    });
-                    executePluginTrigger(match).then((result) => {
-                      sendDebugSSE(res, {
-                        type: 'plugin_result',
-                        tool: match.toolName,
-                        output: result.output,
-                        durationMs: result.durationMs,
-                        pluginId: match.pluginId,
-                      });
-                    }).catch((err) => {
-                      logger.error('[Chat API] plugin trigger execution failed:', err);
-                    });
-                  }
-                }).catch((err) => {
-                  logger.error('[Chat API] trigger matching failed:', err);
-                });
-              }
-            },
-            onRateLimit: async () => {
-              if (selectedKeyIndex >= 0 && effectiveModel) {
-                reportKeyResult(effectiveModel, selectedKeyIndex, false);
-              }
-              const nextKey = selectKey(modelConfig);
-              if (nextKey) {
-                selectedKeyIndex = nextKey.index;
-                logger.debug(`[Chat API] 429 速率限制，切换到备用 Key #${nextKey.index}`);
-                return { apiKey: nextKey.key, keyIndex: nextKey.index };
-              }
-              return null;
-            },
-          };
-
-          // 调用统一执行器
-          const result = await streamExecuteChat({
-            sessionId,
-            message,
-            model: effectiveModel,
-            modelName: effectiveModelName,
-            modelConfig: finalModelConfig,
-            apiMessages,
-            res,
-            executionMode: effectiveMode,
-            timerManager,
-            signal: abortController.signal,
-            modelCapabilities: modelConfig.capabilities || [],
-            ctxWindow,
-            ctxMaxTokens,
-            estimatedToolsCount,
-            callbacks,
-            toolProfile,
-            compaction,
+    // ============== 直接模式 — 调用 runChatSession ==============
+    await runChatSession(
+      {
+        sessionId,
+        message,
+        model,
+        skillContext,
+        skillId,
+        preset,
+        conversationHistory,
+        attachments,
+        executionMode,
+        agentId,
+        toolProfile,
+        compaction,
+      },
+      {
+        onEvent: (event) => {
+          sendSSE(res, event);
+        },
+        onChunk: (text) => {
+          sendSSE(res, { type: 'text', content: text });
+        },
+        onThinking: (text) => {
+          sendSSE(res, { type: 'thinking', content: text });
+        },
+        onToolCall: (tc) => {
+          sendSSE(res, {
+            type: 'tool_call',
+            toolCallId: tc.id,
+            toolName: tc.name,
+            toolArgs: tc.args,
+            toolResult: tc.result,
           });
+        },
+        onDone: (result) => {
+          finishStream(res, timerManager, {
+            thinkingDuration: result.thinkingDuration,
+            usage: result.usage,
+            fallbackModel: result.fallbackModel,
+            fallbackReason: result.fallbackReason,
+          }).catch(() => {});
+        },
+        onError: (err) => {
+          logger.error('[handleChat] runChatSession error:', err);
+        },
+      },
+    );
 
-          fullContent = result.content;
-          // v1.7.21: 捕获 token 用量用于预算管理
-          lastUsage = result.usage;
-          thinkingContent = result.thinkingContent;
-          hasThinking = result.hasThinking;
-          thinkingStartTime = result.thinkingDuration > 0 ? Date.now() - result.thinkingDuration : null;
-          toolCallsJson = result.toolCalls?.length > 0 ? JSON.stringify(result.toolCalls) : undefined;
-
-          // Thinking 缓存
-          if (thinkingContent) {
-            const cacheKey = getThinkingCacheKey(effectiveModel, message);
-            setThinkingCache(cacheKey, fullContent, thinkingContent);
-          }
-
-          // 注入语义记忆到结果（通过 contextEnhancer 的结果）
-          if (result.enhancement.memories && result.enhancement.memories.length > 0) {
-            const memCtx = formatMemoryContext(result.enhancement.memories);
-            if (memCtx) {
-              logger.debug(`[Chat API] 语义记忆检索: ${result.enhancement.memories.length} 条 (后台增强)`);
-              sendDebugSSE(res, {
-                type: 'memory_retrieved',
-                count: result.enhancement.memories.length,
-                summaries: result.enhancement.memories.map((r) => r.text.substring(0, 50)),
-              });
-            }
-          }
-        }
-      }
-    } finally {
-      clearTimeout(timeout);
+    // 处理客户端断开
+    req.on('close', () => {
       timerManager.stopAll();
-    }
-
-    // v1.7.21: 基于 Token 预算的响应后压缩
-    // - 更新 token 用量，检查是否达到触发阈值
-    // - 使用 CompactionLoopGuard 防止压缩循环
-    // - 使用 CompactionSafetyTimeout 为压缩操作设置超时
-    // - 使用 CompactionRetryAggregateTimeout 限制累计重试
-    if (lastUsage) {
-      tokenBudget.updateUsage(lastUsage);
-      const tokensBefore = tokenBudget.getSnapshot().currentTokens;
-      if (
-        tokenBudget.shouldCompact() &&
-        compactionLoopGuard.canCompact(tokensBefore) &&
-        compactionRetryBudget.canRetry()
-      ) {
-        const safetyTimeout = new CompactionSafetyTimeout(60_000);
-        const compactionSignal = safetyTimeout.start();
-        const compactionStart = Date.now();
-        try {
-          if (safetyTimeout.isTimedOut()) {
-            throw new Error('压缩操作启动前已超时');
-          }
-          const budgetCtxWindow = (finalModelConfig as ModelCallConfig).contextWindow || 128000;
-          const budgetCtxMaxTokens = Math.min((finalModelConfig as ModelCallConfig).maxTokens || 8192, 8192);
-          const compressResult = await Promise.race([
-            compressContextWithSummary(
-              apiMessages as any, budgetCtxWindow, budgetCtxMaxTokens, 30, finalModelConfig,
-            ),
-            new Promise<never>((_, reject) => {
-              compactionSignal.addEventListener('abort', () => reject(new Error('压缩安全超时')));
-            }),
-          ]);
-          const tokensAfter = estimateMessagesTokens(compressResult.messages as any);
-          compactionLoopGuard.record(tokensBefore, tokensAfter);
-          compactionRetryBudget.recordAttempt(Date.now() - compactionStart);
-          const reductionRatio = tokensBefore > 0 ? (tokensBefore - tokensAfter) / tokensBefore : 0;
-          // 通过 SSE 发送 compaction 事件通知前端
-          res.write(`event: compaction\ndata: ${JSON.stringify({ status: 'completed', tokensBefore, tokensAfter, reductionRatio })}\n\n`);
-          if (compressResult.compressed) {
-            logger.debug(`[Chat API] 响应后预算压缩完成: ${tokensBefore} → ${tokensAfter} (减少 ${(reductionRatio * 100).toFixed(1)}%)`);
-            // 压缩后强制同步记忆
-            triggerPostCompactionSync(sessionId).catch(() => {});
-          }
-        } catch (compactionErr) {
-          logger.error('[Chat API] 响应后预算压缩失败:', compactionErr);
-          compactionRetryBudget.recordAttempt(Date.now() - compactionStart);
-        } finally {
-          safetyTimeout.reset();
-        }
-      }
-    }
-
-    // 保存助手消息到 DB
-    const thinkingDuration = (hasThinking && thinkingStartTime) ? Date.now() - thinkingStartTime : 0;
-    addMessage({
-      sessionId,
-      role: 'assistant',
-      content: fullContent,
-      model: effectiveModel,
-      skillId: skillId || null,
-      toolCalls: toolCallsJson,
-      thinking: thinkingContent || null,
-      thinkingDuration: thinkingDuration || null,
-    });
-
-    if (selectedKeyIndex >= 0 && effectiveModel) {
-      reportKeyResult(effectiveModel, selectedKeyIndex, true);
-    }
-
-    // 后台提取记忆
-    extractAndAppendMemory(
-      message,
-      fullContent,
-      apiMessages.map((m) => ({ role: m.role, content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) })),
-    ).catch(() => {});
-
-    // 后台触发会话记忆同步（on_turn 策略）
-    triggerTurnEndSync(sessionId).catch(() => {});
-
-    // 发送 done 事件
-    await finishStream(res, timerManager, {
-      thinkingDuration,
     });
 
   } catch (error) {
-    logger.error('Chat API error:', error);
-    logger.error('[Chat API] Stack trace:', error instanceof Error ? error.stack : 'N/A');
+    logger.error('[Chat API] 错误:', error);
 
-    timerManager.stopAll();
-
-    // 尝试降级
-    const modelsConfig = await loadModelsConfig().catch(() => null);
-    const modelConfig = modelsConfig?.models.find((m) => m.id === (req.body.model === 'auto' ? '' : req.body.model));
-
-    const fallbackSuccess = modelsConfig ? await handleFallback({
-      error,
-      apiMessages,
-      modelsConfig,
-      currentModel: req.body.model === 'auto' ? '' : req.body.model,
-      modelConfig,
-      res,
-      timerManager,
-      signal: abortController?.signal,
-      executionMode: ExecutionMode.REACT,
-      sessionId,
-      skillId,
-    }) : false;
-
-    if (!fallbackSuccess) {
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Internal server error' });
-      } else {
-        const { code, message: errMsg } = classifyAndFormatError(error, modelConfig, req.body.model);
-        sendSSE(res, { type: 'text', content: errMsg });
-
-        // 保存错误消息到 DB
-        try {
-          addMessage({ sessionId, role: 'assistant', content: errMsg, model: req.body.model || 'unknown', skillId: skillId || null });
-        } catch { /* ignore */ }
-
-        if (selectedKeyIndex >= 0) {
-          reportKeyResult(req.body.model, selectedKeyIndex, false);
-        }
-
-        await finishStream(res, timerManager, {
-          errorCode: code,
-          errorMessage: errMsg,
-        });
-      }
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    } else {
+      const { code, message: errMsg } = classifyAndFormatError(error, undefined, undefined);
+      sendSSE(res, { type: 'text', content: errMsg });
+      await finishStream(res, timerManager, {
+        errorCode: code,
+        errorMessage: errMsg,
+      }).catch(() => {});
     }
   }
 }

@@ -3,6 +3,114 @@ import type { Session, Folder, Message } from '../db.js';
 import { logger } from '../logger.js';
 import { FileStorage } from '../storage/FileStorage.js';
 
+// ===================== 消息大小限制 =====================
+
+/** 单个 tool call 的 result 最大字节数（约 20KB），超出截断 */
+const MAX_TOOL_RESULT_BYTES = 20 * 1024;
+/** 单条消息的 toolCalls 总字节数上限（约 500KB），超出整体截断 */
+const MAX_TOOLCALLS_TOTAL_BYTES = 500 * 1024;
+/** thinking 字段最大字节数（约 100KB），超出截断 */
+const MAX_THINKING_BYTES = 100 * 1024;
+
+/**
+ * 智能截断长文本：head+tail 策略，保留开头和结尾各一部分。
+ * 相比只保留头部，能同时看到上下文头部和结果尾部的关键信息（如错误、最终输出等）。
+ */
+function smartTruncate(text: string, maxBytes: number): string {
+  const textBytes = Buffer.byteLength(text, 'utf-8');
+  if (textBytes <= maxBytes) return text;
+
+  const headBytes = Math.floor(maxBytes * 0.6); // 60% 头部
+  const tailBytes = Math.floor(maxBytes * 0.35); // 35% 尾部，剩余 5% 给截断标记
+
+  // 找到 head 字节位置（按字符切片避免 UTF-8 乱码）
+  let headEnd = Math.min(headBytes, text.length);
+  while (headEnd > 0 && Buffer.byteLength(text.slice(0, headEnd), 'utf-8') > headBytes) {
+    headEnd--;
+  }
+
+  // 找到 tail 字节位置
+  let tailStart = Math.max(0, text.length - tailBytes);
+  while (tailStart < text.length && Buffer.byteLength(text.slice(tailStart), 'utf-8') > tailBytes) {
+    tailStart++;
+  }
+
+  const head = text.slice(0, headEnd);
+  const tail = text.slice(tailStart);
+  const skippedBytes = textBytes - Buffer.byteLength(head, 'utf-8') - Buffer.byteLength(tail, 'utf-8');
+
+  return `${head}\n\n... [中间 ${(skippedBytes / 1024).toFixed(1)} KB 已省略] ...\n\n${tail}\n\n[已截断，原大小 ${(textBytes / 1024).toFixed(1)} KB]`;
+}
+
+/**
+ * 截断 toolCalls 中的大 result，避免单条消息占用数百 MB。
+ * 每个 tool call 的 result 超过 MAX_TOOL_RESULT_BYTES 时使用 head+tail 智能截断。
+ * 总大小超过 MAX_TOOLCALLS_TOTAL_BYTES 时，早期项合并为摘要占位。
+ */
+function truncateToolCalls(toolCallsJson: string | undefined): string | undefined {
+  if (!toolCallsJson) return toolCallsJson;
+
+  // 快速路径：总大小未超限，直接返回
+  if (Buffer.byteLength(toolCallsJson, 'utf-8') <= MAX_TOOLCALLS_TOTAL_BYTES) {
+    return toolCallsJson;
+  }
+
+  try {
+    const toolCalls = JSON.parse(toolCallsJson);
+    if (!Array.isArray(toolCalls)) return toolCallsJson;
+
+    let totalBytes = 0;
+    const truncated: unknown[] = [];
+    let firstDropped = true;
+    let droppedCount = 0;
+
+    for (const tc of toolCalls) {
+      if (!tc || typeof tc !== 'object') continue;
+
+      // 单条 result 智能截断（head+tail）
+      const result = (tc as Record<string, unknown>).result;
+      if (typeof result === 'string' && Buffer.byteLength(result, 'utf-8') > MAX_TOOL_RESULT_BYTES) {
+        const truncatedResult = smartTruncate(result, MAX_TOOL_RESULT_BYTES);
+        (tc as Record<string, unknown>).result = truncatedResult;
+      }
+
+      const entryBytes = Buffer.byteLength(JSON.stringify(tc), 'utf-8');
+      if (totalBytes + entryBytes > MAX_TOOLCALLS_TOTAL_BYTES) {
+        droppedCount++;
+        if (firstDropped) {
+          truncated.push({
+            name: '__dropped__',
+            arguments: '{}',
+            result: `[后续 ${toolCalls.length - truncated.length} 次工具调用结果过大已省略]`,
+            _omitted: true,
+          });
+          firstDropped = false;
+        }
+        continue;
+      }
+
+      totalBytes += entryBytes;
+      truncated.push(tc);
+    }
+
+    return JSON.stringify(truncated);
+  } catch {
+    // 解析失败，直接截断字符串
+    if (toolCallsJson.length > MAX_TOOLCALLS_TOTAL_BYTES) {
+      return toolCallsJson.slice(0, MAX_TOOLCALLS_TOTAL_BYTES) + '...[truncated]';
+    }
+    return toolCallsJson;
+  }
+}
+
+/** 截断 thinking 字段，避免过大 */
+function truncateThinking(thinking: string | null | undefined): string | null | undefined {
+  if (!thinking) return thinking;
+  if (Buffer.byteLength(thinking, 'utf-8') <= MAX_THINKING_BYTES) return thinking;
+  return thinking.slice(0, MAX_THINKING_BYTES) +
+    `\n\n[思考内容已截断，原大小 ${(Buffer.byteLength(thinking, 'utf-8') / 1024).toFixed(1)} KB]`;
+}
+
 // ===================== Chat Session DAO (JSONL-based) =====================
 
 // ==========================================================================
@@ -51,9 +159,26 @@ export function getSessions(): Session[] {
   const result: Session[] = [];
 
   for (const id of sessionIds) {
-    const { session, messages } = parseSessionFile(id);
-    if (session) {
-      (session as any).messageCount = messages.length;
+    // 只读第一行（session 元数据），不全量解析消息
+    const firstLine = FileStorage.readSessionFirstLine(id) as any;
+    if (firstLine && firstLine.session) {
+      const session = { ...firstLine.session } as Session;
+      // 用文件修改时间作为 lastActiveAt，避免每次 addMessage 都重写第一行
+      const fileMtime = FileStorage.getSessionMtime(id);
+      if (fileMtime) {
+        session.updatedAt = fileMtime;
+        session.lastActiveAt = fileMtime;
+      }
+      // 消息数：优先用首行缓存的 _cachedMsgCount（由 addMessage 维护），
+      // 否则用初始消息数 + 行数差（fallback，需遍历文件）
+      const cachedCount = (firstLine as any)._cachedMsgCount;
+      if (typeof cachedCount === 'number' && cachedCount >= 0) {
+        (session as any).messageCount = cachedCount;
+      } else {
+        const initialMsgCount = (firstLine.messages || []).length;
+        const totalLines = FileStorage.countSessionLines(id);
+        (session as any).messageCount = initialMsgCount + Math.max(0, totalLines - 1);
+      }
       result.push(session);
     }
   }
@@ -64,6 +189,11 @@ export function getSessions(): Session[] {
     const bTime = b.updatedAt || b.createdAt || '';
     return bTime.localeCompare(aTime);
   });
+
+  // 预热最近活跃会话的 OS page cache（仅前 5 个，避免启动时 IO 突发）
+  for (let i = 0; i < Math.min(5, result.length); i++) {
+    FileStorage.prewarmSessionFile(result[i].id);
+  }
 
   return result;
 }
@@ -113,48 +243,33 @@ export function getSessionMessages(sessionId: string): Message[] {
 export function addMessage(msg: Omit<Message, 'id' | 'timestamp'> & { id?: string }): Message {
   const id = msg.id || uuidv4();
   const now = new Date().toISOString();
+
+  // 限制 toolCalls 和 thinking 大小，避免单条消息占用数百 MB
+  const truncatedToolCalls = truncateToolCalls(msg.toolCalls);
+  const truncatedThinking = truncateThinking(msg.thinking);
+
+  if (truncatedToolCalls !== msg.toolCalls) {
+    const origSize = msg.toolCalls ? Buffer.byteLength(msg.toolCalls, 'utf-8') : 0;
+    const newSize = truncatedToolCalls ? Buffer.byteLength(truncatedToolCalls, 'utf-8') : 0;
+    logger.warn(
+      `[DAO] toolCalls 已截断: ${(origSize / 1024 / 1024).toFixed(2)} MB → ${(newSize / 1024).toFixed(1)} KB (session=${msg.sessionId})`,
+    );
+  }
+
   const message: Message = {
     ...msg,
+    toolCalls: truncatedToolCalls,
+    thinking: truncatedThinking,
     id,
     timestamp: now,
   } as Message;
 
-  // 追加消息到 JSONL
+  // 追加消息到 JSONL（O(1) 操作，不读取/重写已有内容）
   FileStorage.appendSessionLine(msg.sessionId, { message });
 
-  // 自动更新会话元数据 + 标题生成（同步操作）
-  try {
-    const lines = FileStorage.readSessionLines(msg.sessionId);
-    if (lines.length > 0) {
-      const firstLine = lines[0] as any;
-      if (firstLine.session) {
-        firstLine.session.updatedAt = now;
-        firstLine.session.lastActiveAt = now;
-
-        // 首条用户消息自动生成标题
-        if (msg.role === 'user') {
-          const initialMsgCount = (firstLine.messages || []).length;
-          const totalMsgCount = initialMsgCount + (lines.length - 1); // 第 0 行初始消息 + 追加行
-          if (totalMsgCount <= 1 && (firstLine.session.title === '新对话' || !firstLine.session.title)) {
-            const autoTitle = msg.content.slice(0, 30).replace(/\n/g, ' ').trim() || '新对话';
-            firstLine.session.title = autoTitle;
-          }
-        }
-
-        // 重写第一行（用新数据覆盖）
-        // 由于 JSONL 只能追加，删除旧文件后重新写入
-        // 保存除第 0 行外的所有消息行
-        const subsequentLines = lines.slice(1);
-        FileStorage.deleteSessionFile(msg.sessionId);
-        FileStorage.appendSessionLine(msg.sessionId, firstLine);
-        for (const line of subsequentLines) {
-          FileStorage.appendSessionLine(msg.sessionId, line);
-        }
-      }
-    }
-  } catch (e) {
-    logger.error('[DAO] 更新会话元数据失败:', e);
-  }
+  // 不在 addMessage 中更新会话元数据（updatedAt/lastActiveAt），
+  // getSessions 用文件 mtime 排序，避免每次消息都重写第一行。
+  // 标题生成延后到首次 assistant 回复时，由调用方通过 updateSession 触发。
 
   return message;
 }
@@ -166,30 +281,34 @@ export function deleteSession(id: string): void {
 /** 更新会话元数据（标题、标签等） */
 export function updateSession(
   id: string,
-  updates: { title?: string; tags?: string }
+  updates: { title?: string; tags?: string; thinkingLevel?: string }
 ): void {
   try {
-    const lines = FileStorage.readSessionLines(id);
-    if (lines.length === 0) return;
-    const firstLine = lines[0] as any;
-    if (!firstLine.session) return;
+    const firstLine = FileStorage.readSessionFirstLine(id) as any;
+    if (!firstLine || !firstLine.session) return;
 
-    const now = new Date().toISOString();
     if (updates.title !== undefined) {
       firstLine.session.title = updates.title;
     }
     if (updates.tags !== undefined) {
       firstLine.session.tags = updates.tags;
     }
-    firstLine.session.updatedAt = now;
-
-    // 重写文件
-    const subsequentLines = lines.slice(1);
-    FileStorage.deleteSessionFile(id);
-    FileStorage.appendSessionLine(id, firstLine);
-    for (const line of subsequentLines) {
-      FileStorage.appendSessionLine(id, line);
+    if (updates.thinkingLevel !== undefined) {
+      firstLine.session.thinkingLevel = updates.thinkingLevel;
     }
+
+    // 顺便更新 _cachedMsgCount（搭便车，无需额外 I/O）
+    // 这样 getSessions 下次可以直接读首行，无需 countSessionLines 遍历文件
+    const lines = FileStorage.readSessionLines(id);
+    const initialMsgCount = (lines[0] as any)?.messages?.length || 0;
+    let msgCount = initialMsgCount;
+    for (let i = 1; i < lines.length; i++) {
+      if ((lines[i] as any).message) msgCount++;
+    }
+    (firstLine as any)._cachedMsgCount = msgCount;
+
+    // 只重写第一行，保留后续消息不变
+    FileStorage.rewriteSessionFirstLine(id, firstLine);
   } catch (e) {
     logger.error('[DAO] updateSession 失败:', e);
   }
@@ -254,21 +373,12 @@ export function deleteFolder(id: string): void {
 }
 
 export function moveSessionToFolder(sessionId: string, folderId: string | null): void {
-  // 会话存储在 JSONL 中，更新其 folderId 字段
+  // folderId 在 firstLine.session 中，只需重写首行，避免全文件读写
   try {
-    const lines = FileStorage.readSessionLines(sessionId);
-    if (lines.length === 0) return;
-    const firstLine = lines[0] as any;
-    if (firstLine.session) {
-      firstLine.session.folderId = folderId || null;
-      // 重写文件
-      const subsequentLines = lines.slice(1);
-      FileStorage.deleteSessionFile(sessionId);
-      FileStorage.appendSessionLine(sessionId, firstLine);
-      for (const line of subsequentLines) {
-        FileStorage.appendSessionLine(sessionId, line);
-      }
-    }
+    const firstLine = FileStorage.readSessionFirstLine(sessionId) as any;
+    if (!firstLine || !firstLine.session) return;
+    firstLine.session.folderId = folderId || null;
+    FileStorage.rewriteSessionFirstLine(sessionId, firstLine);
   } catch (e) {
     logger.error('[DAO] moveSessionToFolder 失败:', e);
   }

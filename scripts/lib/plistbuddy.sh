@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 # PlistBuddy helper functions (adapted from OpenClaw)
 

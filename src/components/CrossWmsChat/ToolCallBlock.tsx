@@ -20,6 +20,7 @@ const TOOL_LABELS: Record<string, string> = {
   'db:query': '数据库查询',
   'wms:inventory': '库存查询',
   'web_search': '网页搜索',
+  'web_search_legacy': '网页搜索',
   'web_fetch': '网页抓取',
   'web_api_call': 'API 调用',
   'browser_navigate': '浏览器导航',
@@ -27,6 +28,7 @@ const TOOL_LABELS: Record<string, string> = {
   'browser_type': '浏览器输入',
   'browser_screenshot': '浏览器截图',
   'browser_evaluate': '浏览器执行脚本',
+  '__summary__': '已折叠调用',
 };
 
 const TOOL_ICONS: Record<string, string> = {
@@ -38,6 +40,7 @@ const TOOL_ICONS: Record<string, string> = {
   'db:query': '🗄️',
   'wms:inventory': '📦',
   'web_search': '🔍',
+  'web_search_legacy': '🔍',
   'web_fetch': '🌐',
   'web_api_call': '🔌',
   'browser_navigate': '🧭',
@@ -45,6 +48,7 @@ const TOOL_ICONS: Record<string, string> = {
   'browser_type': '⌨️',
   'browser_screenshot': '📸',
   'browser_evaluate': '⚙️',
+  '__summary__': '📋',
 };
 
 function getToolLabel(name: string): string {
@@ -62,6 +66,7 @@ function extractToolSummary(name: string, args: Record<string, unknown> | null):
   
   switch (name) {
     case 'web_search':
+    case 'web_search_legacy':
       const query = args.q || args.query || args.keyword;
       return query ? `搜索: ${String(query)}` : '';
     case 'web_fetch':
@@ -102,7 +107,7 @@ function extractResultPreview(result: string, toolName: string): string {
   if (isJsonString(trimmed)) {
     try {
       const parsed = JSON.parse(trimmed);
-      if (toolName === 'web_search' && Array.isArray(parsed.results)) {
+      if ((toolName === 'web_search' || toolName === 'web_search_legacy') && Array.isArray(parsed.results)) {
         const count = parsed.results.length;
         const firstTitle = parsed.results[0]?.title || '';
         return `找到 ${count} 条结果${firstTitle ? `: ${firstTitle}` : ''}`;

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import { Session, Message, ReferencedSession, Folder } from '../types/chat';
-import { useChat, SendMessageOptions } from '../hooks/useChat';
 import { API_BASE } from '../constants/api';
 import { getDebouncedStorage } from '../utils/storageDebounce';
 
@@ -14,12 +13,6 @@ interface ChatSessionValue {
   session: Session;
   /** 当前活跃会话 ID */
   activeSessionId: string;
-  /** 是否正在生成 */
-  isLoading: boolean;
-  /** 发送消息 */
-  sendMessage: (content: string, options?: SendMessageOptions) => void;
-  /** 停止生成 */
-  stopGeneration: () => void;
   /** 设置活跃会话 */
   setActiveSessionId: (id: string) => void;
   /** 更新会话数据（供子组件回调，如权限确认后更新消息） */
@@ -28,6 +21,10 @@ interface ChatSessionValue {
   updateSessionModel: (model: string) => void;
   /** 新建对话 */
   handleNewChat: () => void;
+  /** 加载更早的消息（上滚分页加载） */
+  loadOlderMessages: () => Promise<boolean>;
+  /** 是否正在加载更早的消息 */
+  isLoadingOlder: boolean;
 }
 
 /**
@@ -56,6 +53,8 @@ interface ChatSidebarValue {
   restoreSession: (sessionId: string) => void;
   /** v6.0: 归档会话列表 */
   archivedSessions: Session[];
+  /** v10.0: 直接切换活跃会话（不经过路由，更快） */
+  setActiveSessionId: (id: string) => void;
 }
 
 /**
@@ -185,21 +184,46 @@ async function fetchSessionsFromAPI(retries = 5): Promise<Session[]> {
   return [];
 }
 
-/** 从后端 API 加载指定会话的消息 */
-async function fetchSessionMessagesFromAPI(sessionId: string): Promise<Message[]> {
+/** 从后端 API 加载指定会话的消息（分页，首次只拉最近 50 条） */
+async function fetchSessionMessagesFromAPI(sessionId: string): Promise<{ messages: Message[]; hasMore: boolean; totalCount: number }> {
   try {
-    const response = await fetch(`${API_BASE}/sessions/${sessionId}`);
+    const response = await fetch(`${API_BASE}/sessions/${sessionId}/messages?limit=50`);
     const data = await response.json();
     if (data.messages && Array.isArray(data.messages)) {
-      return data.messages.map((m: Record<string, unknown>) => ({
-        ...m,
-        timestamp: new Date(m.timestamp as string),
-      })) as Message[];
+      return {
+        messages: data.messages.map((m: Record<string, unknown>) => ({
+          ...m,
+          timestamp: new Date(m.timestamp as string),
+        })) as Message[],
+        hasMore: data.hasMore ?? false,
+        totalCount: data.totalCount ?? data.messages.length,
+      };
     }
   } catch (e) {
     // console.warn('[ChatProvider] 加载消息失败:', e);
   }
-  return [];
+  return { messages: [], hasMore: false, totalCount: 0 };
+}
+
+/** 从后端 API 加载更早的消息（上滚加载） */
+async function fetchOlderMessagesFromAPI(sessionId: string, beforeIndex: number, limit: number = 50): Promise<{ messages: Message[]; hasMore: boolean; totalCount: number }> {
+  try {
+    const response = await fetch(`${API_BASE}/sessions/${sessionId}/messages?limit=${limit}&before=${beforeIndex}`);
+    const data = await response.json();
+    if (data.messages && Array.isArray(data.messages)) {
+      return {
+        messages: data.messages.map((m: Record<string, unknown>) => ({
+          ...m,
+          timestamp: new Date(m.timestamp as string),
+        })) as Message[],
+        hasMore: data.hasMore ?? false,
+        totalCount: data.totalCount ?? 0,
+      };
+    }
+  } catch (e) {
+    // console.warn('[ChatProvider] 加载更早消息失败:', e);
+  }
+  return { messages: [], hasMore: false, totalCount: 0 };
 }
 
 /** 通过后端 API 创建会话 */
@@ -373,8 +397,6 @@ export function ChatProvider({
 
   // Bug Fix: 跟踪当前渲染周期内已添加到 sidebar 的会话 ID，防止 sendMessage 两次调用 handleSessionUpdate 产生重复
   const recentlyAddedIdsRef = useRef<Set<string>>(new Set());
-  // 每次渲染后清除（handleSessionUpdate 只在事件处理中同步调用）
-  recentlyAddedIdsRef.current = new Set();
 
   // ===================== 初始化：从后端 API 加载会话列表和文件夹 =====================
   useEffect(() => {
@@ -409,8 +431,6 @@ export function ChatProvider({
     const found = sessions.find((s) => s.id === activeSessionId);
     if (found) {
       setActiveSession((prev) => {
-        // 同一会话且 prev 已有消息 → 保留流式消息（不做覆盖）
-        if (prev.id === found.id && prev.messages.length > 0) return prev;
         // Bug Fix: API 会话创建后 ID 从 localId 变为 apiId 时，保留已收到的消息
         const pending = pendingApiSessionRef.current;
         if (pending && prev.id === pending.localId && found.id === pending.apiId && prev.messages.length > 0) {
@@ -435,15 +455,15 @@ export function ChatProvider({
 
     let cancelled = false;
     (async () => {
-      const messages = await fetchSessionMessagesFromAPI(activeSessionId);
+      const { messages, hasMore, totalCount } = await fetchSessionMessagesFromAPI(activeSessionId);
       if (cancelled) return;
       loadedMessageIds.current.add(activeSessionId);
       if (messages.length > 0) {
         setSessions((prev) =>
-          prev.map((s) => s.id === activeSessionId ? { ...s, messages } : s)
+          prev.map((s) => s.id === activeSessionId ? { ...s, messages, hasMoreMessages: hasMore, totalMessageCount: totalCount } : s)
         );
         setActiveSession((prev) =>
-          prev.id === activeSessionId ? { ...prev, messages } : prev
+          prev.id === activeSessionId ? { ...prev, messages, hasMoreMessages: hasMore, totalMessageCount: totalCount } : prev
         );
       }
     })();
@@ -467,13 +487,21 @@ export function ChatProvider({
   const setActiveSessionId = useCallback((id: string) => {
     setActiveSessionIdState(id);
     syncSidebar(id);
+    // v10.0: 直接同步 activeSession，减少一次渲染周期
+    // 原来的 useEffect 依赖 sessions 变化再同步，会多一帧延迟
+    const found = sessionsRef.current.find((s) => s.id === id);
+    if (found) {
+      setActiveSession((prev) => {
+        if (prev.id === found.id && prev.messages.length > 0) return prev;
+        return found;
+      });
+    }
   }, [syncSidebar]);
 
   // ===================== 更新当前会话 — 只更新 activeSession，不清洗 sessions =====================
   // 流式渲染时每 ~16ms 调用：仅更新 activeSession（不触发 sidebar 重渲染）
   // 标题自动生成时：将 title 同步到 sessions（触发 sidebar 更新）
   const handleSessionUpdate = useCallback((originalSession: Session) => {
-    console.log('[ChatContext] handleSessionUpdate called, messages length:', originalSession.messages.length);
     // v2.8.0: Streaming fast-path — skip O(n) title scan + O(m) sidebar lookup
     // During streaming, only the last message's content/metadata changes.
     // Title is already set (or will be set when streaming ends), sidebar doesn't need updating.
@@ -678,10 +706,54 @@ export function ChatProvider({
   }, []);
 
   /** 归档会话列表 */
-  const archivedSessions = sessions.filter(s => s.status === 'archived');
+  const archivedSessions = useMemo(
+    () => sessions.filter(s => s.status === 'archived'),
+    [sessions]
+  );
 
-  // ===================== useChat hook — 传入 activeSession + handleSessionUpdate =====================
-  const { isLoading, sendMessage, stopGeneration } = useChat(activeSession, handleSessionUpdate);
+  // ===================== 上滚加载更早消息 =====================
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
+
+  const loadOlderMessages = useCallback(async (): Promise<boolean> => {
+    if (!activeSessionId || isLoadingOlder) return false;
+    // hasMoreMessages 标记在加载消息时设置
+    const currentSession = activeSession;
+    if (!currentSession || !currentSession.hasMoreMessages) return false;
+    if (currentSession.messages.length === 0) return false;
+
+    setIsLoadingOlder(true);
+    try {
+      // before = 当前最早消息在完整列表中的索引
+      // 当前 messages 是从末尾取的，所以最早消息的 index = totalCount - currentMessages.length
+      const currentCount = currentSession.messages.length;
+      const totalCount = currentSession.totalMessageCount ?? currentCount;
+      const beforeIndex = totalCount - currentCount;
+
+      const { messages: olderMessages, hasMore } = await fetchOlderMessagesFromAPI(activeSessionId, beforeIndex);
+
+      if (olderMessages.length > 0) {
+        const newMessages = [...olderMessages, ...currentSession.messages];
+        const newSession = {
+          ...currentSession,
+          messages: newMessages,
+          hasMoreMessages: hasMore,
+        };
+        setActiveSession(newSession);
+        setSessions((prev) =>
+          prev.map((s) => s.id === activeSessionId ? { ...s, messages: newMessages, hasMoreMessages: hasMore } : s)
+        );
+        return true;
+      } else {
+        // 没有更早的消息了
+        setActiveSession((prev) => prev.id === activeSessionId ? { ...prev, hasMoreMessages: false } : prev);
+        return false;
+      }
+    } catch (e) {
+      return false;
+    } finally {
+      setIsLoadingOlder(false);
+    }
+  }, [activeSessionId, activeSession, isLoadingOlder]);
 
   // ===================== 构建三个 Context 值 =====================
 
@@ -689,14 +761,13 @@ export function ChatProvider({
   const sessionValue = useMemo<ChatSessionValue>(() => ({
     session: activeSession,
     activeSessionId,
-    isLoading,
-    sendMessage,
-    stopGeneration,
     setActiveSessionId,
     handleSessionUpdate,
     updateSessionModel,
     handleNewChat,
-  }), [activeSession, activeSessionId, isLoading, sendMessage, stopGeneration, setActiveSessionId, handleSessionUpdate, updateSessionModel, handleNewChat]);
+    loadOlderMessages,
+    isLoadingOlder,
+  }), [activeSession, activeSessionId, setActiveSessionId, handleSessionUpdate, updateSessionModel, handleNewChat, loadOlderMessages, isLoadingOlder]);
 
   // ChatSidebarContext：仅 title/folder 变更时重新创建（不随流式更新）
   const sidebarValue = useMemo<ChatSidebarValue>(() => ({
@@ -711,7 +782,8 @@ export function ChatProvider({
     archiveSession,
     restoreSession,
     archivedSessions,
-  }), [sessions, folders, handleDeleteSession, togglePinSession, createFolder, updateFolder, deleteFolder, moveSessionToFolder, archiveSession, restoreSession, archivedSessions]);
+    setActiveSessionId,
+  }), [sessions, folders, handleDeleteSession, togglePinSession, createFolder, updateFolder, deleteFolder, moveSessionToFolder, archiveSession, restoreSession, archivedSessions, setActiveSessionId]);
 
   // ChatMetaContext：极少变更
   const metaValue = useMemo<ChatMetaValue>(() => ({

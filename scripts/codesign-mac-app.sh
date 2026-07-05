@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 set -euo pipefail
 
 APP_BUNDLE="dist-app/CDFKnowClow.app"

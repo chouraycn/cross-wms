@@ -87,6 +87,7 @@ export interface AgentEventPayload {
   sessionKey?: string;
   sessionId?: string;
   agentId?: string;
+  userId?: string;
 }
 
 // ===================== 块缓冲配置 =====================
@@ -102,6 +103,10 @@ const REASONING_COALESCER_CONFIG = {
   maxChars: 300,
   idleMs: 80,
 };
+
+// 单条助手消息的 toolCalls 数组上限：超过则将早期项合并为摘要占位
+// 避免长 agentic 循环导致单条消息 toolCalls 数组膨胀到数百条
+const MAX_TOOLCALLS_PER_MESSAGE = 50;
 
 // ===================== SSE 解析器 =====================
 
@@ -403,6 +408,7 @@ export interface SendAgentMessageOptions {
   executionMode?: 'legacy' | 'observer' | 'react' | 'agent';
   queueMode?: 'collect' | 'steer' | 'followup';
   agentId?: string;
+  thinkingLevel?: string;
 }
 
 export interface UseAgentChatResult {
@@ -418,6 +424,8 @@ export interface UseAgentChatResult {
   stopGeneration: () => void;
   clearMessages: () => void;
   appendMessage: (message: Message) => void;
+  /** 用外部消息列表重置内部 messages state（用于上滚加载、会话恢复等场景） */
+  resetMessages: (messages: Message[]) => void;
   compactSession: (preserveCount?: number) => Promise<{ success: boolean; compressed: boolean; summary?: string }>;
   addPendingMessage: (content: string, options?: SendAgentMessageOptions) => string;
   removePendingMessage: (id: string) => void;
@@ -427,7 +435,9 @@ export interface UseAgentChatResult {
 export function useAgentChat(
   currentSession: Session | undefined,
   onSessionUpdate: (session: Session) => void,
+  options?: { syncToSession?: boolean },
 ): UseAgentChatResult {
+  const syncToSession = options?.syncToSession ?? true;
   const [messages, setMessages] = useState<Message[]>(currentSession?.messages || []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -436,13 +446,24 @@ export function useAgentChat(
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
   const currentPendingMsgIdRef = useRef<string | null>(null);
 
+  // messagesRef 保持最新 messages 引用，供 sendMessage 闭包读取，避免闭包过时
+  const messagesRef = useRef<Message[]>(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
   // AI 引擎设置
   const { settings: aiEngine } = useAiEngineSettings();
 
   const abortControllerRef = useRef<AbortController | null>(null);
   // 组件卸载标志：用于区分"用户手动停止"和"组件卸载导致的 abort"
   const isUnmountedRef = useRef(false);
-  const parserRef = useRef<SSEStreamParser>(new SSEStreamParser());
+  // 惰性初始化：避免每次渲染都创建新 SSEStreamParser 实例（only created once）
+  const parserRef = useRef<SSEStreamParser | null>(null);
+  if (parserRef.current === null) {
+    parserRef.current = new SSEStreamParser();
+  }
+  const parser = parserRef.current;
   const itemsMapRef = useRef<Map<string, AgentItemEventData>>(new Map());
   const lastSeqRef = useRef<Map<string, number>>(new Map());
 
@@ -459,6 +480,10 @@ export function useAgentChat(
 
   // 当 session 变化时，同步 messages 并清理残留的流式状态
   useEffect(() => {
+    // 清理上一个会话的流式状态，避免 seq 比较错误和工具卡片残留
+    itemsMapRef.current.clear();
+    lastSeqRef.current.clear();
+
     if (currentSession?.messages) {
       const hasStreamingMessage = currentSession.messages.some(
         (msg) => msg.isStreaming
@@ -714,10 +739,10 @@ export function useAgentChat(
             });
           }
         } else if (phase === 'done') {
+          flushAllBuffers();
           textCoalescerRef.current?.dispose();
           thinkingCoalescerRef.current?.dispose();
           schedulerRef.current?.dispose();
-          flushAllBuffers();
 
           const state = blockStateRef.current;
           if (state.assistantMessageIndex >= 0) {
@@ -732,6 +757,9 @@ export function useAgentChat(
                 thinkingDone: true,
                 thinkingDuration: data.thinkingDuration as number | undefined,
                 usage: data.usage as Record<string, unknown> | undefined,
+                // 读取降级信息：fallbackModel / fallbackReason
+                ...(data.fallbackModel ? { fallbackModel: data.fallbackModel as string } : {}),
+                ...(data.fallbackReason ? { fallbackReason: data.fallbackReason as 'model_not_supported' | 'request_failed' } : {}),
               };
 
               const newMessages = [...prev];
@@ -854,20 +882,37 @@ export function useAgentChat(
           if (lastMsg.role !== 'assistant') return prev;
 
           const toolCalls = lastMsg.toolCalls || [];
-          const newToolCalls = [
-            ...toolCalls,
-            {
-              id: (data.toolCallId as string) || `tc_${Date.now()}`,
-              name: toolName,
-              arguments: toolArgs,
-              result: toolResult,
-              status: toolResult ? 'completed' as const : 'calling' as const,
-            },
-          ];
+          const newEntry = {
+            id: (data.toolCallId as string) || `tc_${Date.now()}`,
+            name: toolName,
+            arguments: toolArgs,
+            result: toolResult,
+            status: toolResult ? 'completed' as const : 'calling' as const,
+          };
+
+          // 上限保护：超过 MAX_TOOLCALLS_PER_MESSAGE 时，将最早的项合并为摘要占位
+          // 保留最近 MAX_TOOLCALLS_PER_MESSAGE - 1 条 + 1 个摘要位
+          let newToolCalls: unknown[];
+          if (toolCalls.length + 1 > MAX_TOOLCALLS_PER_MESSAGE) {
+            const keepCount = MAX_TOOLCALLS_PER_MESSAGE - 1;
+            const dropped = toolCalls.length - keepCount + 1; // 包含本次新增
+            const kept = toolCalls.slice(-keepCount);
+            const summaryEntry = {
+              id: `tc_summary_${Date.now()}`,
+              name: '__summary__',
+              arguments: '{}',
+              result: `[前 ${dropped} 次工具调用已折叠，包含: ${toolCalls.slice(0, dropped).map((tc: any) => tc?.name || 'unknown').join(', ')}]`,
+              status: 'completed' as const,
+              _folded: true,
+            };
+            newToolCalls = [summaryEntry, ...kept, newEntry];
+          } else {
+            newToolCalls = [...toolCalls, newEntry];
+          }
 
           const updated: Message = {
             ...lastMsg,
-            toolCalls: newToolCalls,
+            toolCalls: newToolCalls as Message['toolCalls'],
           };
 
           const newMessages = [...prev];
@@ -951,8 +996,40 @@ export function useAgentChat(
         break;
       }
 
+      case 'compaction': {
+        // 上下文压缩事件：将后端 tokensBefore/tokensAfter/reductionRatio
+        // 映射到 Message.contextCompressed（ContextCompressedData）
+        const tokensBefore = (data.tokensBefore as number) ?? 0;
+        const tokensAfter = (data.tokensAfter as number) ?? 0;
+        const reductionRatio = (data.reductionRatio as number) ?? 0;
+
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex >= 0) {
+          setMessages((prev) => {
+            if (state.assistantMessageIndex >= prev.length) return prev;
+            const msg = prev[state.assistantMessageIndex];
+            if (msg.role !== 'assistant') return prev;
+
+            const updated: Message = {
+              ...msg,
+              contextCompressed: {
+                // 后端 compressContextWithSummary 是基于摘要的语义压缩
+                strategy: 'semantic',
+                originalTokens: tokensBefore,
+                compressedTokens: tokensAfter,
+                ratio: reductionRatio,
+              },
+            };
+
+            const newMessages = [...prev];
+            newMessages[state.assistantMessageIndex] = updated;
+            return newMessages;
+          });
+        }
+        break;
+      }
+
       case 'heartbeat':
-      case 'compaction':
       case 'plan':
       case 'command_output':
       case 'patch':
@@ -960,6 +1037,31 @@ export function useAgentChat(
         break;
     }
   }, [checkAndUpdateSeq, initializeStreaming, handleTextContent, flushAllBuffers, startAssistantMessage, removePendingMessage, updatePendingMessage]);
+
+  // ===================== SSE 自动重试配置 =====================
+
+  const SSE_MAX_RETRIES = 3;
+  const SSE_RETRY_BASE_DELAY_MS = 1000;
+
+  /**
+   * 检测错误是否可重试
+   * - 网络断开（fetch failed、ECONNREFUSED、network error）
+   * - 超时（Timeout）
+   * - 服务器临时不可用（502、503、504）
+   * - 不包括：用户取消（AbortError）、业务错误（400、401、403、404）
+   */
+  const isRetryableError = (err: any): boolean => {
+    if (err.name === 'AbortError') return false;
+
+    const msg = err.message?.toLowerCase() || '';
+    if (msg.includes('fetch failed') || msg.includes('network') || msg.includes('econnrefused') || msg.includes('connect')) return true;
+    if (msg.includes('timeout') || msg.includes('timed out')) return true;
+
+    // HTTP 状态码错误
+    if (err.status === 502 || err.status === 503 || err.status === 504) return true;
+
+    return false;
+  };
 
   // ===================== 发送消息 =====================
 
@@ -988,118 +1090,150 @@ export function useAgentChat(
     setActiveItems([]);
     itemsMapRef.current.clear();
     lastSeqRef.current.clear();
-    parserRef.current.reset();
+    parser.reset();
 
     initializeStreaming();
 
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    try {
-      const conversationHistory = messages
-        .filter(m => m.role === 'user' || m.role === 'assistant')
-        .map(m => ({
-          role: m.role,
-          content: m.content,
-          attachments: m.attachments,
-        }));
+    let retryCount = 0;
 
-      const response = await fetch(`${API_BASE}/agent-chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sessionId: currentSession?.id,
-          message: content,
-          model: options.model || currentSession?.model || 'auto',
-          attachments: options.attachments,
-          skillContext: options.skillContext,
-          skillId: options.skillId,
-          referencedSessionIds: options.referencedSessionIds,
-          executionMode: options.executionMode,
-          agentId: options.agentId,
-          queueMode: options.queueMode,
-          toolProfile: aiEngine.toolProfile,
-          compaction: aiEngine.compaction,
-          conversationHistory,
-        }),
-        signal: abortController.signal,
-      });
+    const conversationHistory = messagesRef.current
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => ({
+        role: m.role,
+        content: m.content,
+        attachments: m.attachments,
+      }));
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error((errorData as any).error || `请求失败 (${response.status})`);
-      }
+    const executeRequest = async (): Promise<void> => {
+      try {
+        const response = await fetch(`${API_BASE}/agent-chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sessionId: currentSession?.id,
+            message: content,
+            model: options.model || currentSession?.model || 'auto',
+            attachments: options.attachments,
+            skillContext: options.skillContext,
+            skillId: options.skillId,
+            referencedSessionIds: options.referencedSessionIds,
+            executionMode: options.executionMode,
+            agentId: options.agentId,
+            queueMode: options.queueMode,
+            toolProfile: aiEngine.toolProfile,
+            compaction: aiEngine.compaction,
+            conversationHistory,
+            thinkingLevel: options.thinkingLevel,
+          }),
+          signal: abortController.signal,
+        });
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('无法读取响应流');
-      }
-
-      const decoder = new TextDecoder('utf-8');
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const events = parserRef.current.feed(chunk);
-
-        for (const event of events) {
-          handleAgentEvent(event);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const err: any = new Error((errorData as any).error || `请求失败 (${response.status})`);
+          err.status = response.status;
+          throw err;
         }
-      }
 
-      textCoalescerRef.current?.dispose();
-      thinkingCoalescerRef.current?.dispose();
-      flushAllBuffers();
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('无法读取响应流');
+        }
 
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        console.log('[useAgentChat] 请求已取消');
+        const decoder = new TextDecoder('utf-8');
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const events = parser.feed(chunk);
+
+          for (const event of events) {
+            handleAgentEvent(event);
+          }
+        }
+
+        flushAllBuffers();
         textCoalescerRef.current?.dispose();
         thinkingCoalescerRef.current?.dispose();
         schedulerRef.current?.dispose();
-        flushAllBuffers();
 
-        // 组件卸载导致的 abort（如路由切换），不更新消息状态，避免显示"请求已取消"错误
-        if (isUnmountedRef.current) {
-          console.log('[useAgentChat] 组件已卸载，跳过错误状态更新');
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          console.log('[useAgentChat] 请求已取消');
+          flushAllBuffers();
+          textCoalescerRef.current?.dispose();
+          thinkingCoalescerRef.current?.dispose();
+          schedulerRef.current?.dispose();
+
+          // 组件卸载导致的 abort（如路由切换），不更新消息状态，避免显示"请求已取消"错误
+          if (isUnmountedRef.current) {
+            console.log('[useAgentChat] 组件已卸载，跳过错误状态更新');
+            return;
+          }
+
+          const state = blockStateRef.current;
+          if (state.assistantMessageIndex >= 0) {
+            setMessages((prev) => {
+              if (state.assistantMessageIndex >= prev.length) return prev;
+              const msg = prev[state.assistantMessageIndex];
+              if (msg.role !== 'assistant') return prev;
+
+              const updated: Message = {
+                ...msg,
+                isStreaming: false,
+                thinkingDone: !!msg.thinking,
+                metadata: {
+                  ...msg.metadata,
+                  error: '请求已取消',
+                  errorCode: 'ABORTED',
+                },
+              };
+
+              const newMessages = [...prev];
+              newMessages[state.assistantMessageIndex] = updated;
+              return newMessages;
+            });
+          }
           return;
         }
 
-        const state = blockStateRef.current;
-        if (state.assistantMessageIndex >= 0) {
-          setMessages((prev) => {
-            if (state.assistantMessageIndex >= prev.length) return prev;
-            const msg = prev[state.assistantMessageIndex];
-            if (msg.role !== 'assistant') return prev;
+        // 可重试错误：自动重试（最多 3 次，指数退避）
+        if (isRetryableError(err) && retryCount < SSE_MAX_RETRIES) {
+          retryCount++;
+          const delayMs = SSE_RETRY_BASE_DELAY_MS * Math.pow(2, retryCount - 1);
+          console.warn(`[useAgentChat] SSE 连接断开，${delayMs}ms 后自动重试（第 ${retryCount} 次）:`, err.message);
 
-            const updated: Message = {
-              ...msg,
-              isStreaming: false,
-              thinkingDone: !!msg.thinking,
-              metadata: {
-                ...msg.metadata,
-                error: '请求已取消',
-                errorCode: 'ABORTED',
-              },
-            };
+          // 重试前清理流式状态
+          parser.reset();
+          initializeStreaming();
 
-            const newMessages = [...prev];
-            newMessages[state.assistantMessageIndex] = updated;
-            return newMessages;
-          });
+          // 延迟后重试
+          await new Promise((r) => setTimeout(r, delayMs));
+
+          // 如果 abortController 已被外部取消，停止重试
+          if (abortController.signal.aborted) {
+            console.log('[useAgentChat] 重试期间请求被取消');
+            return;
+          }
+
+          return executeRequest();
         }
-      } else {
+
+        // 不可重试或重试耗尽：显示错误
         console.error('[useAgentChat] 发送消息失败:', err);
         setError(err.message || '发送失败');
 
+        flushAllBuffers();
         textCoalescerRef.current?.dispose();
         thinkingCoalescerRef.current?.dispose();
         schedulerRef.current?.dispose();
-        flushAllBuffers();
 
         const state = blockStateRef.current;
         if (state.assistantMessageIndex >= 0) {
@@ -1125,12 +1259,14 @@ export function useAgentChat(
           });
         }
       }
-    } finally {
-      setIsLoading(false);
-      setCurrentRunId(null);
-      abortControllerRef.current = null;
-    }
-  }, [currentSession, isLoading, messages, initializeStreaming, handleAgentEvent, flushAllBuffers, addPendingMessage]);
+    };
+
+    await executeRequest();
+
+    setIsLoading(false);
+    setCurrentRunId(null);
+    abortControllerRef.current = null;
+  }, [currentSession, isLoading, initializeStreaming, handleAgentEvent, flushAllBuffers, addPendingMessage, aiEngine]);
 
   // ===================== 停止生成 =====================
 
@@ -1140,9 +1276,10 @@ export function useAgentChat(
       abortControllerRef.current = null;
     }
 
+    flushAllBuffers();
     textCoalescerRef.current?.dispose();
     thinkingCoalescerRef.current?.dispose();
-    flushAllBuffers();
+    schedulerRef.current?.dispose();
 
     const state = blockStateRef.current;
     if (state.assistantMessageIndex >= 0) {
@@ -1181,6 +1318,35 @@ export function useAgentChat(
 
   const appendMessage = useCallback((message: Message) => {
     setMessages((prev) => [...prev, message]);
+  }, []);
+
+  // ===================== 重置 messages（外部同步） =====================
+
+  /**
+   * 用外部消息列表重置内部 messages state
+   *
+   * 使用场景：
+   * - 上滚加载更早消息后，需要把完整消息列表同步到内部 state
+   * - 会话恢复、消息编辑等外部修改场景
+   *
+   * 注意：此函数会清空流式状态，不应在流式输出期间调用。
+   */
+  const resetMessages = useCallback((newMessages: Message[]) => {
+    // 清理流式状态，避免 seq 比较错误
+    itemsMapRef.current.clear();
+    lastSeqRef.current.clear();
+    textCoalescerRef.current?.flush({ force: true });
+    thinkingCoalescerRef.current?.flush({ force: true });
+    schedulerRef.current?.flushAll();
+
+    blockStateRef.current = {
+      assistantMessageIndex: -1,
+      isReasoning: false,
+      textAccumulator: '',
+      thinkingAccumulator: '',
+    };
+
+    setMessages(newMessages);
   }, []);
 
   // ===================== 对话压缩 =====================
@@ -1223,7 +1389,7 @@ export function useAgentChat(
         const newMessages = [summaryMsg, ...keptMessages];
         setMessages(newMessages);
 
-        if (currentSession) {
+        if (currentSession && syncToSession) {
           const updatedSession = {
             ...currentSession,
             messages: newMessages,
@@ -1263,6 +1429,7 @@ export function useAgentChat(
 
   // 同步 messages 到 session
   useEffect(() => {
+    if (!syncToSession) return;
     if (messages.length > 0 && currentSession) {
       const lastMsg = messages[messages.length - 1];
       const isStreaming = lastMsg?.isStreaming;
@@ -1286,7 +1453,59 @@ export function useAgentChat(
         onSessionUpdate(updatedSession);
       }
     }
-  }, [messages, currentSession, onSessionUpdate]);
+  }, [messages, currentSession, onSessionUpdate, syncToSession]);
+
+  // ===================== 内存压力响应 =====================
+  // 监听原生 WKWebView 触发的 cdf-memory-pressure 事件
+  // 清理流式缓冲和已完成工具项的 transient 状态，保留 messages/pendingMessages
+  useEffect(() => {
+    const handleMemoryPressure = () => {
+      // 已完成的工具 item 立即清理；运行中的保留以免卡片消失
+      const runningOnly = new Map<string, AgentItemEventData>();
+      itemsMapRef.current.forEach((item, id) => {
+        if (item.status === 'running' || item.status === 'blocked') {
+          runningOnly.set(id, item);
+        }
+      });
+      itemsMapRef.current.clear();
+      runningOnly.forEach((item, id) => itemsMapRef.current.set(id, item));
+      setActiveItems(Array.from(itemsMapRef.current.values()));
+
+      // 非流式状态下，清理 coalescer / scheduler / parser 缓冲
+      if (!isLoading) {
+        textCoalescerRef.current?.dispose();
+        thinkingCoalescerRef.current?.dispose();
+        schedulerRef.current?.dispose();
+        parser.reset();
+        // 清理已结束会话的 seq 记录（保留运行中的 stream seq）
+        const streamsToKeep = new Set<string>();
+        runningOnly.forEach((item) => {
+          if (item.toolCallId) streamsToKeep.add(`tool_${item.toolCallId}`);
+        });
+        const seqEntries = Array.from(lastSeqRef.current.entries());
+        lastSeqRef.current.clear();
+        seqEntries.forEach(([k, v]) => {
+          if (streamsToKeep.has(k)) lastSeqRef.current.set(k, v);
+        });
+        // 重置 blockState（仅当没有进行中的 assistant 消息时）
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex < 0) {
+          state.textAccumulator = '';
+          state.thinkingAccumulator = '';
+        }
+      }
+
+      // 尝试触发 JS 引擎 GC（部分 WKWebView 配置暴露 window.gc）
+      try {
+        const gc = (window as any).gc;
+        if (typeof gc === 'function') gc();
+      } catch {}
+    };
+    window.addEventListener('cdf-memory-pressure', handleMemoryPressure);
+    return () => {
+      window.removeEventListener('cdf-memory-pressure', handleMemoryPressure);
+    };
+  }, [isLoading]);
 
   // 组件卸载时清理
   useEffect(() => {
@@ -1296,6 +1515,9 @@ export function useAgentChat(
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      textCoalescerRef.current?.flush({ force: true });
+      thinkingCoalescerRef.current?.flush({ force: true });
+      schedulerRef.current?.flushAll();
       textCoalescerRef.current?.dispose();
       thinkingCoalescerRef.current?.dispose();
       schedulerRef.current?.dispose();
@@ -1315,6 +1537,7 @@ export function useAgentChat(
     stopGeneration,
     clearMessages,
     appendMessage,
+    resetMessages,
     compactSession,
     addPendingMessage,
     removePendingMessage,

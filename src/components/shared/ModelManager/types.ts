@@ -3,7 +3,7 @@
  */
 
 import type { Dispatch, SetStateAction } from 'react';
-import type { ModelConfig, ModelProvider, ModelCapability } from '../../../types/models';
+import type { ModelConfig, ModelProvider, ModelCapability, ModelApiType, ModelCompatConfig, ModelMediaInputConfig } from '../../../types/models';
 
 /** 变体：控制 UI 布局 */
 export type ModelManagerVariant = 'table' | 'list' | 'compact';
@@ -45,10 +45,32 @@ export interface ModelFormState {
   enabled: boolean;
   description: string;
   contextWindow: string;
+  contextTokens: string;
   maxTokens: string;
   temperature: string;
   topP: string;
   capabilities: string[];
+  thinkingLevels: string[];
+  defaultThinkingLevel: string;
+  authMode: 'api-key' | 'aws-sdk' | 'oauth' | 'token' | 'none';
+  costInput: string;
+  costOutput: string;
+  costCacheRead: string;
+  costCacheWrite: string;
+  localServiceEnabled: boolean;
+  localServiceCommand: string;
+  localServiceArgs: string;
+  localServiceCwd: string;
+  localServiceEnv: string;
+  localServiceHealthUrl: string;
+  localServiceReadyTimeoutMs: string;
+  localServiceIdleStopMs: string;
+  /** API 适配器类型，auto 表示自动推断 */
+  apiType: ModelApiType | 'auto';
+  /** 兼容性配置 */
+  compatConfig?: ModelCompatConfig;
+  /** 媒体输入配置 */
+  mediaInputConfig?: ModelMediaInputConfig;
 }
 
 /** 测试连接状态 */

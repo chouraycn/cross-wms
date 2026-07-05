@@ -307,13 +307,34 @@ export const OBSERVER_RULES: ObserverRule[] = [
     },
   },
   {
+    // web_search 空结果专用规则：搜索无结果属于正常情况，不应触发熔断
+    // 优先级高于 empty_result（98），避免被误判为工具失败
+    id: 'web_search_empty_result',
+    description: 'web_search 返回空结果（正常情况，不熔断）',
+    priority: 90,
+    condition: {
+      toolNamePattern: 'web_search',
+      hasError: false,
+      resultContains: ['"count":0', '"results":[]'],
+    },
+    action: {
+      hintTemplate: 'web_search 未找到相关结果。建议换用更精确的关键词，或改用 web_fetch 抓取已知 URL。',
+      level: 'success',
+      shouldRetry: false,
+      shouldAdjustStrategy: true,
+      maxRetries: 0,
+      strategyHint: '调整搜索关键词或换用 web_fetch',
+    },
+  },
+  {
     id: 'empty_result',
     description: '工具返回空结果',
     priority: 98,
     condition: {
       toolNamePattern: '*',
       hasError: false,
-      resultContains: ['[]', '{}', '""', 'null', 'empty', '空'],
+      // 注意：移除了单个 '空' 字，避免 snippet 含"空闲/空仓"等正常中文时误匹配
+      resultContains: ['[]', '{}', '""', 'null', 'empty', '结果为空', '无结果'],
     },
     action: {
       hintTemplate: '工具 {toolName} 返回了空结果。请确认查询条件是否合理，或尝试调整参数。',

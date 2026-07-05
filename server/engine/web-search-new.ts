@@ -24,6 +24,7 @@ import type {
 } from "../plugins/web-provider-types.js";
 import { fetchWithWebToolsNetworkGuard } from "./web-guarded-fetch.js";
 import * as cheerio from "cheerio";
+import { getSecretValueByKey } from "./secretsStore.js";
 
 // ==================== 常量 ====================
 
@@ -952,7 +953,35 @@ async function webSearchInternal(
 
 export async function handleWebSearchV3(args: Record<string, unknown>): Promise<string> {
   try {
-    const result = await webSearch(args as WebSearchParams);
+    // 从 secrets DB 加载搜索 API Key，构建 searchConfig 传递给 Provider
+    // Kimi 和 MiniMax 都从 searchConfig.apiKey 读取密钥
+    // MiniMax 还需要 searchConfig.groupId
+    const searchConfig: Record<string, unknown> = {};
+    try {
+      const kimiKey = getSecretValueByKey('encrypted', 'KIMI_API_KEY', 'web_search');
+      if (kimiKey) {
+        searchConfig.apiKey = kimiKey;
+      }
+      const minimaxKey = getSecretValueByKey('encrypted', 'MINIMAX_API_KEY', 'web_search');
+      if (minimaxKey) {
+        // Kimi 和 MiniMax 都从 searchConfig.apiKey 读取
+        // 如果 Kimi key 已设置，MiniMax 会作为备选 provider 使用同一个 apiKey
+        // 但如果只有 MiniMax key，也需要让它能读到
+        if (!searchConfig.apiKey) {
+          searchConfig.apiKey = minimaxKey;
+        }
+      }
+      const minimaxGroupId = getSecretValueByKey('encrypted', 'MINIMAX_GROUP_ID', 'web_search');
+      if (minimaxGroupId) {
+        searchConfig.groupId = minimaxGroupId;
+      }
+    } catch {
+      // secrets DB 未初始化或其他错误，忽略并继续（回退到免费引擎）
+    }
+
+    const result = await webSearch(args as WebSearchParams, {
+      searchConfig: Object.keys(searchConfig).length > 0 ? searchConfig : undefined,
+    });
     return JSON.stringify({
       success: true,
       ...result,

@@ -24,6 +24,39 @@ final class WebViewManager: NSObject {
         return webView
     }
 
+    // MARK: - 内存压力响应
+
+    /// 系统内存吃紧时清理 WKWebView 缓存，释放内存
+    func handleMemoryPressure() {
+        webViewLogger.info("Memory pressure received, clearing WebView cache...")
+
+        // 1. 清理 WKWebsiteDataStore 的缓存数据（不清理 cookies 和 localStorage）
+        let dataTypes: Set<String> = [
+            WKWebsiteDataTypeDiskCache,
+            WKWebsiteDataTypeMemoryCache,
+            WKWebsiteDataTypeOfflineWebApplicationCache,
+            WKWebsiteDataTypeFetchCache,
+        ]
+        let date = Date.distantPast
+        WKWebsiteDataStore.default().removeData(ofTypes: dataTypes, modifiedSince: date) {
+            webViewLogger.info("WKWebsiteDataStore cache cleared")
+        }
+
+        // 2. 通过 JS 主动触发前端 GC（如果可用）
+        webView.evaluateJavaScript("if (window.gc) { window.gc(); }") { _, error in
+            if let error = error {
+                webViewLogger.debug("JS gc() not available: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+
+        // 3. 通知前端清理内存（通过 postMessage）
+        webView.evaluateJavaScript("""
+        if (window.cdfApp && window.cdfApp.onMemoryPressure) {
+            window.cdfApp.onMemoryPressure();
+        }
+        """) { _, _ in }
+    }
+
     private func makeConfiguration() -> WKWebViewConfiguration {
         let config = WKWebViewConfiguration()
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")

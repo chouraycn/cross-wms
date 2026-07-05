@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   ListItemButton,
@@ -28,6 +28,9 @@ const isNativeApp = (): boolean => {
   if (window.cdfAppNative && window.cdfAppNative.isNative) return true;
   return isPyWebView();
 };
+
+// 模块顶层一次性求值，避免每次 MainLayout 渲染重复调用 isNativeApp()
+const IS_NATIVE_APP = isNativeApp();
 
 // ===================== Toggle Icons =====================
 
@@ -146,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
   }, []);
 
   const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
-  const nativeApp = isNativeApp();
+  const nativeApp = IS_NATIVE_APP;
 
   // 新建对话
   const handleNewChat = useCallback(() => {
@@ -156,6 +159,24 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       navigate('/chat');
     }
   }, [activePath, navigate]);
+
+  // NavList 回调 — useCallback 稳定引用，避免 NavList 不必要的重渲染
+  const handleNavigate = useCallback((path: string) => {
+    setActiveSessionId('');
+    navigate(path);
+  }, [navigate]);
+
+  const handleSelectSession = useCallback((sessionId: string) => {
+    setActiveSessionId(sessionId);
+    // 仅当不在聊天页面时才导航（避免不必要的路由重渲染）
+    if (!activePath.startsWith('/chat')) {
+      navigate('/chat');
+    }
+  }, [activePath, navigate]);
+
+  const handleDeleteSession = useCallback((sessionId: string) => {
+    setActiveSessionId((prev: string) => prev === sessionId ? '' : prev);
+  }, []);
 
   return (
     <Box
@@ -427,19 +448,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
         <NavList
           collapsed={collapsed}
           activePath={activePath}
-          onNavigate={(path) => {
-            // 点击导航项时清除历史对话选中态，白条回到导航项
-            setActiveSessionId('');
-            navigate(path);
-          }}
+          onNavigate={handleNavigate}
           activeSessionId={activeSessionId}
-          onSelectSession={(sessionId) => {
-            setActiveSessionId(sessionId);
-            navigate(`/chat?session=${encodeURIComponent(sessionId)}`);
-          }}
-          onDeleteSession={(sessionId) => {
-            setActiveSessionId((prev: string) => prev === sessionId ? '' : prev);
-          }}
+          onSelectSession={handleSelectSession}
+          onDeleteSession={handleDeleteSession}
         />
       </Box>
 
@@ -510,4 +522,4 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
 };
 
 export { SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED };
-export default Sidebar;
+export default React.memo(Sidebar);

@@ -1,6 +1,21 @@
 /**
- * LSP Manager
- * LSP 管理器 - 语言服务协议集成
+ * LSP Manager (模拟实现 / Mock Implementation)
+ *
+ * ⚠️ 注意：本文件中的 `LspManager` 类及其方法（getCompletion / getDefinition /
+ * getHover / getDiagnostics / startServer 等）均为**模拟实现**，
+ * 返回硬编码的占位数据（参见 `simulateServerStart`、`模拟补全结果`、
+ * `模拟生成诊断` 等注释标记），不与真实 LSP 服务器通信。
+ *
+ * ✅ 真实实现请使用 `./lspClient.ts`：
+ *    - `getLspClientManager()` 返回的 `LSPClientManager` 实例
+ *    - `LSPClient` 类封装了真实的 LSP JSON-RPC 通信
+ *    - `lspTools.ts` 已通过 `getLspClientManager()` 调用真实实现
+ *
+ * 本文件目前仅作为**类型定义来源**（`LspServerConfig`、`LspLanguage`、
+ * `LspServerStatus` 等）被 `lspClient.ts` / `lspServerRegistry.ts` /
+ * `lspTypes.ts` 引用。运行时 LSP 功能不应依赖此文件中的 `LspManager` 类。
+ *
+ * 如需扩展 LSP 功能，请修改 `lspClient.ts` 而非本文件。
  */
 
 export type LspServerStatus = "stopped" | "starting" | "running" | "stopping" | "error";
@@ -98,6 +113,11 @@ export interface LspHover {
   range?: LspDiagnostic["range"];
 }
 
+/**
+ * ⚠️ 模拟实现 — 不与真实 LSP 服务器通信。
+ * 真实实现见 `./lspClient.ts` 中的 `LSPClient` / `LSPClientManager`。
+ * 详见文件头部说明。
+ */
 class LspManager {
   private readonly servers = new Map<string, LspServerInstance>();
   private readonly documents = new Map<string, LspDocument>();

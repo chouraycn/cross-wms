@@ -2,6 +2,7 @@
  * Sandbox Policy
  * 沙箱策略系统 - 管理代码执行的安全隔离
  */
+import path from 'node:path';
 
 export type SandboxLevel = "none" | "light" | "medium" | "strict";
 export type FilesystemAccess = "none" | "read_only" | "read_write" | "isolated";
@@ -252,6 +253,40 @@ class SandboxPolicyManager {
     const warnings: string[] = [];
     const restrictions: string[] = [];
 
+    // 命令注入检测：按 ; | & 分割命令，检查每个子命令是否包含危险命令
+    // 防止通过 `ls; rm -rf /` 或 `cat file | sudo sh` 等方式绕过单条命令检测
+    // 仅当命令包含注入字符（分割后有多段）时才触发，避免影响单条命令的既有检测路径
+    const commandParts = context.command.split(/[;|&]/).map(s => s.trim()).filter(s => s.length > 0);
+    if (commandParts.length > 1) {
+      for (const part of commandParts) {
+        const partLower = part.toLowerCase();
+        for (const dangerous of DANGEROUS_COMMANDS) {
+          if (partLower.includes(dangerous.toLowerCase())) {
+            this.logAudit(context.command, false, "Command injection detected", context.sessionKey);
+            return {
+              allowed: false,
+              reason: `Dangerous command injection detected: ${dangerous}`,
+              config,
+              auditRequired: config.enableAuditLog,
+              warnings: [`检测到可能的命令注入: ${part}`],
+            };
+          }
+        }
+        for (const pattern of DANGEROUS_PATTERNS) {
+          if (pattern.test(part)) {
+            this.logAudit(context.command, false, "Dangerous command pattern in injection", context.sessionKey);
+            return {
+              allowed: false,
+              reason: `Dangerous command pattern detected in injection: ${pattern.source}`,
+              config,
+              auditRequired: config.enableAuditLog,
+              warnings: [`检测到可能的命令注入: ${part}`],
+            };
+          }
+        }
+      }
+    }
+
     // 检查危险命令（字符串匹配）
     const commandLower = context.command.toLowerCase();
     for (const dangerous of DANGEROUS_COMMANDS) {
@@ -335,6 +370,19 @@ class SandboxPolicyManager {
     if (config.timeoutMs > 0) {
       restrictions.push(`Timeout: ${config.timeoutMs}ms`);
     }
+    // v6.0: 资源限制 — 将配置中的资源上限暴露到 restrictions，供执行器读取并强制执行
+    if (config.memoryLimitMB > 0) {
+      restrictions.push(`Memory limit: ${config.memoryLimitMB}MB`);
+    }
+    if (config.cpuLimitPercent > 0 && config.cpuLimitPercent < 100) {
+      restrictions.push(`CPU limit: ${config.cpuLimitPercent}%`);
+    }
+    if (config.maxOutputSizeBytes > 0) {
+      restrictions.push(`Max output size: ${config.maxOutputSizeBytes} bytes`);
+    }
+    if (!config.allowSubprocess) {
+      restrictions.push("Subprocess disabled");
+    }
 
     // 添加警告
     if (config.filesystem === "read_only") {
@@ -386,6 +434,10 @@ class SandboxPolicyManager {
 
   /**
    * 检查路径是否被允许
+   *
+   * 使用 path.resolve 规范化路径，防止通过 `..` 等 traversable 片段绕过限制
+   * （例如 `/tmp/../etc` 会被解析为 `/etc`）。
+   *
    * @param cwd - 工作目录路径
    * @param config - 沙箱配置
    * @returns 是否允许
@@ -396,9 +448,13 @@ class SandboxPolicyManager {
       return true;
     }
 
+    // 规范化输入路径，解析 .. 和 . 等
+    const normalizedCwd = path.resolve(cwd);
+
     // 检查是否在阻止路径中
     for (const blockedPath of config.blockedPaths) {
-      if (cwd.startsWith(blockedPath) || cwd.includes(blockedPath)) {
+      const normalizedBlocked = path.resolve(blockedPath);
+      if (normalizedCwd === normalizedBlocked || normalizedCwd.startsWith(normalizedBlocked + path.sep) || normalizedCwd.startsWith(normalizedBlocked)) {
         return false;
       }
     }
@@ -406,7 +462,11 @@ class SandboxPolicyManager {
     // 检查是否在允许路径中（如果配置了允许路径列表）
     if (config.allowedPaths.length > 0) {
       for (const allowedPath of config.allowedPaths) {
-        if (cwd.startsWith(allowedPath) || allowedPath === '*') {
+        if (allowedPath === '*') {
+          return true;
+        }
+        const normalizedAllowed = path.resolve(allowedPath);
+        if (normalizedCwd === normalizedAllowed || normalizedCwd.startsWith(normalizedAllowed + path.sep) || normalizedCwd.startsWith(normalizedAllowed)) {
           return true;
         }
       }

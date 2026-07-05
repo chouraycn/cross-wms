@@ -3,6 +3,10 @@
  * 子代理注册和管理系统
  */
 
+import type { ToolDefinition } from '../aiClient.js';
+import { mcpClientManager } from './mcpClientManager.js';
+import { parseMcpToolName, sanitizeServerName } from './mcpTypes.js';
+
 export type SubagentStatus = "idle" | "spawning" | "running" | "paused" | "completed" | "failed" | "cancelled";
 
 export interface SubagentDefinition {
@@ -11,6 +15,8 @@ export interface SubagentDefinition {
   description: string;
   agentType: string;
   tools: string[];
+  /** 可用的 MCP 服务器名称列表（指定后仅绑定这些服务器的工具；未指定则不绑定 MCP 工具） */
+  mcpServers?: string[];
   systemPrompt?: string;
   capabilities: string[];
   maxConcurrent?: number;
@@ -52,6 +58,14 @@ export interface SubagentSpawnResult {
   instanceId: string;
   status: SubagentStatus;
   sessionKey: string;
+}
+
+/** 子代理可用工具集（内置 + MCP） */
+export interface SubagentAvailableTools {
+  /** 内置工具名列表 */
+  builtin: string[];
+  /** 绑定的 MCP 工具（ToolDefinition 格式，可合并到 LLM tools 列表） */
+  mcp: ToolDefinition[];
 }
 
 class SubagentRegistry {
@@ -156,6 +170,40 @@ class SubagentRegistry {
     }
 
     return defs;
+  }
+
+  /**
+   * 获取子代理可用的工具列表（内置 + MCP）。
+   *
+   * - 内置工具来自定义的 tools 字段
+   * - MCP 工具来自 mcpClientManager，按定义的 mcpServers 过滤
+   *   （mcpServers 未指定或为空时返回空 MCP 工具集，保持原有行为）
+   */
+  getAvailableTools(definitionId: string): SubagentAvailableTools | undefined {
+    const def = this.definitions.get(definitionId);
+    if (!def) return undefined;
+
+    return {
+      builtin: [...def.tools],
+      mcp: this.resolveMcpTools(def.mcpServers),
+    };
+  }
+
+  /** 根据 mcpServers 配置过滤可用的 MCP 工具 */
+  private resolveMcpTools(mcpServers?: string[]): ToolDefinition[] {
+    if (!mcpServers || mcpServers.length === 0) {
+      return [];
+    }
+
+    const allowedPrefixes = new Set(
+      mcpServers.map((s) => sanitizeServerName(s)),
+    );
+    const allMcpTools = mcpClientManager.getMcpTools();
+
+    return allMcpTools.filter((tool) => {
+      const parsed = parseMcpToolName(tool.function.name);
+      return parsed !== null && allowedPrefixes.has(parsed.serverPrefix);
+    });
   }
 
   // ========== Instance Management ==========

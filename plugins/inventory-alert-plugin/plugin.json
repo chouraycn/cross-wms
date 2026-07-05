@@ -1,0 +1,70 @@
+{
+  "id": "inventory-alert-plugin",
+  "name": "inventory-alert-plugin",
+  "displayName": "库存预警",
+  "version": "1.0.0",
+  "author": "Cross-WMS Team",
+  "description": "提供库存预警能力，支持低库存、超储、临期商品检查与阈值配置",
+  "icon": "NotificationsActive",
+  "entry": "index.js",
+  "tools": [
+    {
+      "name": "check_low_stock",
+      "description": "检查低于安全库存阈值的商品，返回预警列表",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "warehouse": { "type": "string", "description": "仓库标识，留空表示全部仓库" },
+          "threshold": { "type": "number", "description": "自定义低库存阈值，未传则使用各 SKU 配置的安全库存" }
+        },
+        "required": []
+      },
+      "riskLevel": "auto"
+    },
+    {
+      "name": "check_overstock",
+      "description": "检查超过最大库存上限的商品，返回超储列表",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "warehouse": { "type": "string", "description": "仓库标识，留空表示全部仓库" },
+          "capacityRatio": { "type": "number", "description": "超储判定比例（当前库存/最大库存），默认 1.0" }
+        },
+        "required": []
+      },
+      "riskLevel": "auto"
+    },
+    {
+      "name": "check_expiring",
+      "description": "检查临期商品，返回在指定天数内将过期的库存",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "daysAhead": { "type": "number", "description": "提前多少天预警，默认 7" },
+          "warehouse": { "type": "string", "description": "仓库标识，留空表示全部仓库" }
+        },
+        "required": []
+      },
+      "riskLevel": "auto"
+    },
+    {
+      "name": "set_alert_threshold",
+      "description": "设置某 SKU 的库存预警阈值（安全库存与最大库存）",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "sku": { "type": "string", "description": "商品 SKU" },
+          "safetyStock": { "type": "number", "description": "安全库存阈值" },
+          "maxStock": { "type": "number", "description": "最大库存上限" }
+        },
+        "required": ["sku"]
+      },
+      "riskLevel": "confirm"
+    }
+  ],
+  "permissions": ["tool:execute"],
+  "riskLevel": "auto",
+  "metadata": {
+    "timeoutMs": 30000
+  }
+}

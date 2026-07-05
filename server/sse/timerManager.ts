@@ -32,9 +32,9 @@ interface TimerState {
  */
 export class TimerManager {
   private timers: Map<string, TimerState> = new Map();
-  private res: Response;
+  private res?: Response;
 
-  constructor(res: Response) {
+  constructor(res?: Response) {
     this.res = res;
   }
 
@@ -51,8 +51,9 @@ export class TimerManager {
     const startTime = Date.now();
     const timer = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      // keep_alive 合并到 debug 通道，通过 LOG_DEBUG=1 启用
-      sendDebugSSE(this.res, { type: 'keep_alive', elapsed, module });
+      if (this.res) {
+        sendDebugSSE(this.res, { type: 'keep_alive', elapsed, module });
+      }
     }, KEEP_ALIVE_INTERVAL_MS);
 
     this.timers.set(module, { timer, startTime });

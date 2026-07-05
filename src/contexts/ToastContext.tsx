@@ -99,8 +99,10 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children, sidebarC
   const sidebarGray = getSidebarGray(isDark);
   const textColor = getTextColor(isDark);
 
+  const contextValue = useMemo(() => ({ showToast }), [showToast]);
+
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <Snackbar
         open={open}

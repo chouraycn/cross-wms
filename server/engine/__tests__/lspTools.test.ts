@@ -49,11 +49,11 @@ describe('LSP Tools — 工具定义和处理器', () => {
     vi.resetModules();
   });
 
-  it('getLspToolDefinitions 返回 7 个工具定义', async () => {
+  it('getLspToolDefinitions 返回 11 个工具定义', async () => {
     const { getLspToolDefinitions } = await import('../lspTools.js');
     const definitions = getLspToolDefinitions();
 
-    expect(definitions).toHaveLength(7);
+    expect(definitions).toHaveLength(11);
     expect(definitions.map(d => d.function.name)).toEqual([
       'lsp_complete',
       'lsp_hover',
@@ -62,14 +62,18 @@ describe('LSP Tools — 工具定义和处理器', () => {
       'lsp_rename',
       'lsp_diagnose',
       'lsp_format',
+      'lsp_code_action',
+      'lsp_signature_help',
+      'lsp_document_symbols',
+      'lsp_workspace_symbols',
     ]);
   });
 
-  it('getLspToolHandlers 返回 7 个处理器映射', async () => {
+  it('getLspToolHandlers 返回 11 个处理器映射', async () => {
     const { getLspToolHandlers } = await import('../lspTools.js');
     const handlers = getLspToolHandlers();
 
-    expect(handlers.size).toBe(7);
+    expect(handlers.size).toBe(11);
     expect(handlers.has('lsp_complete')).toBe(true);
     expect(handlers.has('lsp_hover')).toBe(true);
     expect(handlers.has('lsp_definition')).toBe(true);
@@ -77,6 +81,10 @@ describe('LSP Tools — 工具定义和处理器', () => {
     expect(handlers.has('lsp_rename')).toBe(true);
     expect(handlers.has('lsp_diagnose')).toBe(true);
     expect(handlers.has('lsp_format')).toBe(true);
+    expect(handlers.has('lsp_code_action')).toBe(true);
+    expect(handlers.has('lsp_signature_help')).toBe(true);
+    expect(handlers.has('lsp_document_symbols')).toBe(true);
+    expect(handlers.has('lsp_workspace_symbols')).toBe(true);
   });
 
   it('工具定义包含必需参数', async () => {
@@ -147,6 +155,79 @@ describe('LSP Tools — lsp_format 参数验证', () => {
     expect((formatDef!.function.parameters as any).properties.tabSize.default).toBe(2);
     expect((formatDef!.function.parameters as any).properties.insertSpaces).toBeDefined();
     expect((formatDef!.function.parameters as any).properties.insertSpaces.default).toBe(true);
+  });
+});
+
+describe('LSP Tools — lsp_code_action 参数验证', () => {
+  it('lsp_code_action 需要必需参数 file、line、character', async () => {
+    const { getLspToolDefinitions } = await import('../lspTools.js');
+    const definitions = getLspToolDefinitions();
+
+    const def = definitions.find(d => d.function.name === 'lsp_code_action');
+    expect(def).toBeDefined();
+    expect(def!.function.parameters.required).toEqual(['file', 'line', 'character']);
+  });
+});
+
+describe('LSP Tools — lsp_signature_help 参数验证', () => {
+  it('lsp_signature_help 需要必需参数，triggerCharacter 可选', async () => {
+    const { getLspToolDefinitions } = await import('../lspTools.js');
+    const definitions = getLspToolDefinitions();
+
+    const def = definitions.find(d => d.function.name === 'lsp_signature_help');
+    expect(def).toBeDefined();
+    expect(def!.function.parameters.required).toEqual(['file', 'line', 'character']);
+    expect((def!.function.parameters as any).properties.triggerCharacter).toBeDefined();
+    expect(def!.function.parameters.required).not.toContain('triggerCharacter');
+  });
+});
+
+describe('LSP Tools — lsp_document_symbols 参数验证', () => {
+  it('lsp_document_symbols 只需要 file 参数', async () => {
+    const { getLspToolDefinitions } = await import('../lspTools.js');
+    const definitions = getLspToolDefinitions();
+
+    const def = definitions.find(d => d.function.name === 'lsp_document_symbols');
+    expect(def).toBeDefined();
+    expect(def!.function.parameters.required).toEqual(['file']);
+  });
+});
+
+describe('LSP Tools — lsp_workspace_symbols 参数验证', () => {
+  it('lsp_workspace_symbols 需要 query，limit 可选', async () => {
+    const { getLspToolDefinitions } = await import('../lspTools.js');
+    const definitions = getLspToolDefinitions();
+
+    const def = definitions.find(d => d.function.name === 'lsp_workspace_symbols');
+    expect(def).toBeDefined();
+    expect(def!.function.parameters.required).toEqual(['query']);
+    expect((def!.function.parameters as any).properties.limit).toBeDefined();
+    expect((def!.function.parameters as any).properties.limit.default).toBe(50);
+  });
+});
+
+describe('LSP Types — v3.2 新增类型验证', () => {
+  it('LSPSymbolKind 枚举值正确', async () => {
+    const { LSPSymbolKind } = await import('../lspTypes.js');
+
+    expect(LSPSymbolKind.File).toBe(1);
+    expect(LSPSymbolKind.Module).toBe(2);
+    expect(LSPSymbolKind.Class).toBe(5);
+    expect(LSPSymbolKind.Method).toBe(6);
+    expect(LSPSymbolKind.Function).toBe(12);
+    expect(LSPSymbolKind.Variable).toBe(13);
+    expect(LSPSymbolKind.Interface).toBe(11);
+    expect(LSPSymbolKind.TypeParameter).toBe(26);
+  });
+
+  it('LSPClient 包含新增的 LSP 方法', async () => {
+    const { LSPClient } = await import('../lspClient.js');
+    const prototype = LSPClient.prototype;
+
+    expect(typeof prototype.getCodeActions).toBe('function');
+    expect(typeof prototype.getSignatureHelp).toBe('function');
+    expect(typeof prototype.getDocumentSymbols).toBe('function');
+    expect(typeof prototype.getWorkspaceSymbols).toBe('function');
   });
 });
 

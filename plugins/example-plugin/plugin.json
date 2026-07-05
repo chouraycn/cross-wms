@@ -1,0 +1,26 @@
+{
+  "id": "wms-quick-query",
+  "name": "wms-quick-query",
+  "displayName": "WMS 快速查询",
+  "version": "1.0.0",
+  "author": "Cross-WMS Team",
+  "description": "提供 WMS 库存快速查询功能",
+  "icon": "Package",
+  "entry": "index.js",
+  "tools": [
+    {
+      "name": "quick_stock_check",
+      "description": "快速查询商品库存",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "sku": { "type": "string", "description": "商品 SKU" }
+        },
+        "required": ["sku"]
+      },
+      "riskLevel": "auto"
+    }
+  ],
+  "permissions": ["tool:execute"],
+  "riskLevel": "auto"
+}

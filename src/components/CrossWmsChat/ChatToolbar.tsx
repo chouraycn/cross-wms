@@ -23,6 +23,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
@@ -82,6 +83,12 @@ export interface ChatToolbarProps {
   onAttachClick?: () => void;
   /** v1.9.0: 是否有待上传附件 */
   hasAttachments?: boolean;
+  /** 思考级别（off/low/medium/high），为空表示不支持 */
+  thinkingLevel?: string;
+  /** 思考级别切换回调 */
+  onThinkingLevelChange?: (level: string) => void;
+  /** 可用的思考级别选项 */
+  thinkingLevels?: Array<{ value: string; label: string; desc?: string }>;
 }
 
 // ===================== Constants =====================
@@ -105,6 +112,9 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   modelsLoading = false,
   onAttachClick,
   hasAttachments = false,
+  thinkingLevel,
+  onThinkingLevelChange,
+  thinkingLevels,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -114,6 +124,19 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
 
   const modelBtnRef = useRef<HTMLDivElement>(null);
   const skillsBtnRef = useRef<HTMLDivElement>(null);
+  const thinkingBtnRef = useRef<HTMLDivElement>(null);
+  const [thinkingMenuOpen, setThinkingMenuOpen] = useState(false);
+
+  const BASE_THINKING_LEVELS = [
+    { value: 'off', label: '关闭思考', desc: '直接输出结果，不进行深度推理' },
+    { value: 'low', label: '快速思考', desc: '轻量推理，响应更快' },
+    { value: 'medium', label: '标准思考', desc: '平衡推理深度和速度' },
+    { value: 'high', label: '深度思考', desc: '更深入的推理分析' },
+  ];
+
+  const availableThinkingLevels = thinkingLevels || BASE_THINKING_LEVELS;
+  const currentThinking = availableThinkingLevels.find(t => t.value === (thinkingLevel || 'off')) || availableThinkingLevels[0];
+  const isThinkingOn = thinkingLevel && thinkingLevel !== 'off';
 
   // 点击弹窗外部自动关闭（兜底处理，确保透明 backdrop 下也能关闭）
   useEffect(() => {
@@ -208,6 +231,114 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                 }} />
               )}
             </Box>
+          )}
+
+          {/* Thinking button — 思考模式切换 */}
+          {onThinkingLevelChange && (
+            <>
+              <Box
+                ref={thinkingBtnRef as React.RefObject<HTMLDivElement>}
+                onClick={(e) => { e.stopPropagation(); setThinkingMenuOpen(prev => !prev); }}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  bgcolor: isThinkingOn
+                    ? (isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)')
+                    : (isDark ? 'rgba(0,0,0,0.2)' : '#F5F5F5'),
+                  cursor: 'pointer',
+                  transition: 'background-color 0.15s',
+                  '&:hover': { bgcolor: isThinkingOn
+                    ? (isDark ? 'rgba(139,92,246,0.3)' : 'rgba(139,92,246,0.15)')
+                    : gs.bgActive },
+                  userSelect: 'none',
+                  position: 'relative',
+                }}
+              >
+                <Tooltip title={isThinkingOn ? `思考模式：${currentThinking.label}` : '开启深度思考'}>
+                  <PsychologyIcon sx={{ fontSize: 18, color: isThinkingOn ? '#8B5CF6' : gs.textMuted }} />
+                </Tooltip>
+                {isThinkingOn && (
+                  <Box sx={{
+                    position: 'absolute',
+                    top: 4,
+                    right: 4,
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: '#8B5CF6',
+                  }} />
+                )}
+              </Box>
+              <Menu
+                anchorEl={thinkingBtnRef.current}
+                open={thinkingMenuOpen}
+                onClose={() => setThinkingMenuOpen(false)}
+                anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+                transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      width: 260,
+                      mt: -0.5,
+                      borderRadius: '14px',
+                      border: `1px solid ${gs.border}`,
+                      boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+                      bgcolor: gs.bgPanel,
+                    },
+                  },
+                }}
+                sx={{
+                  '& .MuiBackdrop-root': { backgroundColor: 'transparent' },
+                }}
+              >
+                <Box sx={{ px: 2, py: 1, borderBottom: `1px solid ${gs.border}` }}>
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textPrimary }}>
+                    思考模式
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.65rem', color: gs.textMuted, mt: 0.25 }}>
+                    控制 AI 推理深度，越深越慢但更准确
+                  </Typography>
+                </Box>
+                {availableThinkingLevels.map((level) => {
+                  const isSelected = (thinkingLevel || 'off') === level.value;
+                  return (
+                    <MenuItem
+                      key={level.value}
+                      onClick={() => {
+                        onThinkingLevelChange(level.value);
+                        setThinkingMenuOpen(false);
+                      }}
+                      sx={{
+                        py: 1, mx: 0.5, borderRadius: '10px',
+                        backgroundColor: isSelected ? SELECTED_BG : 'transparent',
+                        '&:hover': { backgroundColor: isSelected ? SELECTED_BG : (isDark ? '#2A2A2A' : '#F5F5F5') },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, width: '100%' }}>
+                        <PsychologyIcon sx={{ fontSize: 18, color: isSelected ? '#8B5CF6' : gs.textMuted, flexShrink: 0 }} />
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography sx={{ fontSize: '0.8125rem', fontWeight: isSelected ? 600 : 500, color: isSelected ? '#8B5CF6' : gs.textPrimary }}>
+                            {level.label}
+                          </Typography>
+                          {level.desc && (
+                            <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, mt: 0.25 }}>
+                              {level.desc}
+                            </Typography>
+                          )}
+                        </Box>
+                        {isSelected && (
+                          <CheckIcon sx={{ fontSize: 18, color: '#8B5CF6', flexShrink: 0 }} />
+                        )}
+                      </Box>
+                    </MenuItem>
+                  );
+                })}
+              </Menu>
+            </>
           )}
 
           </Box>

@@ -31,12 +31,18 @@ router.get('/', async (_req: Request, res: Response) => {
     const config = await loadModelsConfig({ skipKeyInjection: true });
     // 脱敏：移除明文 apiKey 和 apiKeys，只保留引用信息
     // （skipKeyInjection 路径已不含 key，但保留此脱敏作为安全兜底）
+    const sanitizedModels = config.models.map((m) => {
+      const { apiKey, apiKeys, ...rest } = m as any;
+      return rest;
+    });
+    const sanitizedProviders = config.providers?.map((p) => {
+      const { apiKey, apiKeys, ...rest } = p as any;
+      return rest;
+    });
     const sanitized = {
       ...config,
-      models: config.models.map((m) => {
-        const { apiKey, apiKeys, ...rest } = m as any;
-        return rest;
-      }),
+      models: sanitizedModels,
+      providers: sanitizedProviders,
     };
     res.json({ data: sanitized });
   } catch (e) {
@@ -44,12 +50,12 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 });
 
-// PUT /api/models — 全量保存模型配置
+// PUT /api/models — 全量保存模型配置（含 Provider 配置）
 // v1.9.3-fix: 合并前端传来的数据与已有配置，保留 API Key 引用（apiKeyRef/apiKeyRefs）
 // 前端 GET 时拿到的数据不含明文 apiKey（已脱敏），直接覆盖会导致 Key 引用丢失
 router.put('/', async (req: Request, res: Response) => {
   try {
-    const { models, defaultModelId } = req.body;
+    const { models, defaultModelId, providers } = req.body;
     if (!Array.isArray(models)) {
       res.status(400).json({ error: 'models 必须是数组' });
       return;
@@ -82,8 +88,42 @@ router.put('/', async (req: Request, res: Response) => {
       }
     }
 
-    const config = await saveModelsConfig(mergedModels, defaultModelId || mergedModels[0]?.id || '');
-    res.json({ data: config });
+    // 处理 Provider 配置的合并（保留 Key 引用）
+    let mergedProviders: any[] | undefined;
+    if (Array.isArray(providers)) {
+      const currentProviderMap = new Map((currentConfig.providers || []).map(p => [p.id, p]));
+      mergedProviders = providers.map((p: any) => {
+        const existing = currentProviderMap.get(p.id);
+        if (!existing) return p;
+        return {
+          ...existing,
+          ...p,
+          apiKeyRef: p.apiKeyRef ?? (existing as any).apiKeyRef,
+          apiKeyRefs: p.apiKeyRefs ?? (existing as any).apiKeyRefs,
+          keyStrategy: p.keyStrategy ?? (existing as any).keyStrategy,
+        };
+      });
+    }
+
+    const config = await saveModelsConfig(
+      mergedModels,
+      defaultModelId || mergedModels[0]?.id || '',
+      { providers: mergedProviders as any },
+    );
+
+    // 脱敏返回
+    const sanitized = {
+      ...config,
+      models: config.models.map((m) => {
+        const { apiKey, apiKeys, ...rest } = m as any;
+        return rest;
+      }),
+      providers: config.providers?.map((p) => {
+        const { apiKey, apiKeys, ...rest } = p as any;
+        return rest;
+      }),
+    };
+    res.json({ data: sanitized });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }

@@ -4,6 +4,8 @@
  * 存储策略（按优先级）：
  * 1. macOS Keychain（security 命令）— 最安全
  * 2. AES-256-GCM 加密 — Keychain 不可用时的回退方案
+ * 3. 环境变量引用 — 从 process.env 读取
+ * 4. 文件引用 — 从指定文件读取
  *
  * Keychain 模式：
  *   models.json 中只保留 keyRef 引用，不存储明文 Key
@@ -14,6 +16,14 @@
  * 加密模式（非 macOS 或 Keychain 失败时）：
  *   models.json: { apiKeyRef: "encrypted:<base64>" } 或 { apiKeyRefs: ["encrypted:<base64>", ...] }
  *   加密密钥存储在 ~/.cdf-know-clow/.encryption_key（首次自动生成）
+ *
+ * 环境变量模式：
+ *   models.json: { apiKeyRef: "env:OPENAI_API_KEY" }
+ *   从 process.env 中读取指定变量
+ *
+ * 文件模式：
+ *   models.json: { apiKeyRef: "file:/path/to/key.txt" }
+ *   从指定文件路径读取 Key 内容
  */
 
 import { execSync } from 'child_process';
@@ -26,6 +36,8 @@ import { AppPaths } from './config/appPaths.js';
 const KEYCHAIN_SERVICE = 'cdf-know-clow';
 const ENCRYPTED_PREFIX = 'encrypted:';
 const KEYCHAIN_PREFIX = 'keychain:';
+const ENV_PREFIX = 'env:';
+const FILE_PREFIX = 'file:';
 
 // ===================== AES 加密回退 =====================
 
@@ -414,11 +426,57 @@ export function hasKeychainKeyByIndex(modelId: string, index: number): boolean {
 }
 
 /**
+ * 从引用中解析单个 Key
+ * 支持：keychain:, encrypted:, env:, file:
+ */
+function resolveSingleKey(ref: string, modelId: string, index?: number): string | null {
+  if (ref.startsWith(KEYCHAIN_PREFIX)) {
+    if (index !== undefined) {
+      return loadApiKeyByIndex(modelId, index);
+    }
+    return loadApiKey(modelId);
+  }
+
+  if (ref.startsWith(ENCRYPTED_PREFIX)) {
+    const encryptedData = ref.slice(ENCRYPTED_PREFIX.length);
+    return aesDecrypt(encryptedData);
+  }
+
+  if (ref.startsWith(ENV_PREFIX)) {
+    const envVar = ref.slice(ENV_PREFIX.length);
+    const value = process.env[envVar];
+    if (value) {
+      return value.trim();
+    }
+    logger.warn(`[keychainStore] 环境变量 ${envVar} 未设置`);
+    return null;
+  }
+
+  if (ref.startsWith(FILE_PREFIX)) {
+    const filePath = ref.slice(FILE_PREFIX.length);
+    try {
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        return content.trim();
+      }
+      logger.warn(`[keychainStore] Key 文件不存在: ${filePath}`);
+    } catch (e) {
+      logger.error(`[keychainStore] 读取 Key 文件失败: ${filePath}`, e);
+    }
+    return null;
+  }
+
+  return null;
+}
+
+/**
  * 为模型配置注入真实的 API Key
- * 支持三种来源：
+ * 支持多种来源：
  * 1. Keychain（apiKeyRef 以 "keychain:" 开头）
  * 2. AES 加密（apiKeyRef 以 "encrypted:" 开头）
- * 3. 明文（apiKeyRef 不存在，apiKey 直接存在 — 兼容旧数据）
+ * 3. 环境变量（apiKeyRef 以 "env:" 开头）
+ * 4. 文件引用（apiKeyRef 以 "file:" 开头）
+ * 5. 明文（apiKeyRef 不存在，apiKey 直接存在 — 兼容旧数据）
  */
 export function injectApiKeys<T extends { id: string; apiKey?: string; apiKeyRef?: string; apiKeys?: { key: string; label?: string; enabled?: boolean }[]; apiKeyRefs?: string[] }>(
   models: T[]
@@ -427,15 +485,8 @@ export function injectApiKeys<T extends { id: string; apiKey?: string; apiKeyRef
     const updates: Partial<T> = {};
 
     // 单 Key 注入（兼容旧数据）
-    if (m.apiKeyRef?.startsWith(KEYCHAIN_PREFIX)) {
-      const key = loadApiKey(m.id);
-      if (key) {
-        updates.apiKey = key as any;
-      }
-    } else if (m.apiKeyRef?.startsWith(ENCRYPTED_PREFIX)) {
-      // AES 加密的 Key
-      const encryptedData = m.apiKeyRef.slice(ENCRYPTED_PREFIX.length);
-      const key = aesDecrypt(encryptedData);
+    if (m.apiKeyRef) {
+      const key = resolveSingleKey(m.apiKeyRef, m.id);
       if (key) {
         updates.apiKey = key as any;
       }
@@ -446,18 +497,9 @@ export function injectApiKeys<T extends { id: string; apiKey?: string; apiKeyRef
       const injectedKeys: { key: string; label?: string; enabled?: boolean }[] = [];
       for (let i = 0; i < m.apiKeyRefs.length; i++) {
         const ref = m.apiKeyRefs[i];
-        if (ref.startsWith(KEYCHAIN_PREFIX)) {
-          const key = loadApiKeyByIndex(m.id, i);
-          if (key) {
-            injectedKeys.push({ key, label: `Key ${i + 1}`, enabled: true });
-          }
-        } else if (ref.startsWith(ENCRYPTED_PREFIX)) {
-          // AES 加密的 Key
-          const encryptedData = ref.slice(ENCRYPTED_PREFIX.length);
-          const key = aesDecrypt(encryptedData);
-          if (key) {
-            injectedKeys.push({ key, label: `Key ${i + 1}`, enabled: true });
-          }
+        const key = resolveSingleKey(ref, m.id, i);
+        if (key) {
+          injectedKeys.push({ key, label: `Key ${i + 1}`, enabled: true });
         }
       }
       if (injectedKeys.length > 0) {

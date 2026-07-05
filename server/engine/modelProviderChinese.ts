@@ -27,7 +27,7 @@ const GLM_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'code', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     isRecommended: true,
     pricing: {
       inputPerMillion: 0.05,
@@ -45,7 +45,7 @@ const GLM_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'costEffective', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.001,
       outputPerMillion: 0.001,
@@ -62,7 +62,7 @@ const GLM_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'code', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.1,
       outputPerMillion: 0.1,
@@ -79,7 +79,7 @@ const GLM_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'costEffective', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.01,
       outputPerMillion: 0.01,
@@ -96,7 +96,7 @@ const GLM_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'code', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.05,
       outputPerMillion: 0.05,
@@ -113,7 +113,7 @@ const GLM_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'costEffective', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: { isFree: true },
   },
   {
@@ -127,7 +127,7 @@ const GLM_MODELS: ModelInfo[] = [
     capabilities: ['multimodal', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.01,
       outputPerMillion: 0.01,
@@ -175,7 +175,7 @@ const QWEN_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'code', 'longContext', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     isRecommended: true,
     pricing: {
       inputPerMillion: 2,
@@ -193,7 +193,7 @@ const QWEN_MODELS: ModelInfo[] = [
     capabilities: ['general', 'costEffective'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     isRecommended: true,
     pricing: {
       inputPerMillion: 0.8,
@@ -211,7 +211,7 @@ const QWEN_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'costEffective', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.3,
       outputPerMillion: 0.6,
@@ -228,7 +228,7 @@ const QWEN_MODELS: ModelInfo[] = [
     capabilities: ['multimodal', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 2,
       outputPerMillion: 6,
@@ -245,7 +245,7 @@ const QWEN_MODELS: ModelInfo[] = [
     capabilities: ['longContext', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.5,
       outputPerMillion: 2,
@@ -293,7 +293,7 @@ const TENCENT_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'code', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.1,
       outputPerMillion: 0.1,
@@ -310,7 +310,7 @@ const TENCENT_MODELS: ModelInfo[] = [
     capabilities: ['general', 'costEffective'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.01,
       outputPerMillion: 0.01,
@@ -327,7 +327,7 @@ const TENCENT_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'costEffective', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: { isFree: true },
   },
   {
@@ -341,7 +341,7 @@ const TENCENT_MODELS: ModelInfo[] = [
     capabilities: ['multimodal', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.1,
       outputPerMillion: 0.1,
@@ -389,7 +389,7 @@ const VOLCENGINE_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'code', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.8,
       outputPerMillion: 2,
@@ -406,7 +406,7 @@ const VOLCENGINE_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'longContext', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 5,
       outputPerMillion: 5,
@@ -423,7 +423,7 @@ const VOLCENGINE_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'costEffective', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.3,
       outputPerMillion: 0.6,
@@ -471,7 +471,7 @@ const XAI_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'code', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     isRecommended: true,
     pricing: {
       inputPerMillion: 3,
@@ -489,7 +489,7 @@ const XAI_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'costEffective', 'reasoning', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.3,
       outputPerMillion: 1.5,
@@ -506,7 +506,7 @@ const XAI_MODELS: ModelInfo[] = [
     capabilities: ['multimodal', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 2,
       outputPerMillion: 10,

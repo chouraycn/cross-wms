@@ -111,6 +111,41 @@ router.post('/install', async (req, res) => {
   }
 });
 
+// POST /api/plugins/install/git — 从 Git 仓库安装
+router.post('/install/git', async (req, res) => {
+  try {
+    const { gitUrl, branch, subdir } = req.body || {};
+    if (!gitUrl || typeof gitUrl !== 'string') {
+      return res.status(400).json({ error: '缺少 gitUrl 参数' });
+    }
+
+    const pluginRow = await pluginRegistry.installFromGit(gitUrl, {
+      branch: typeof branch === 'string' ? branch : undefined,
+      subdir: typeof subdir === 'string' ? subdir : undefined,
+    });
+    res.json({ data: pluginRow });
+  } catch (e) {
+    res.status(500).json({ error: `Git 插件安装失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+});
+
+// POST /api/plugins/install/npm — 从 npm 安装
+router.post('/install/npm', async (req, res) => {
+  try {
+    const { packageName, version } = req.body || {};
+    if (!packageName || typeof packageName !== 'string') {
+      return res.status(400).json({ error: '缺少 packageName 参数' });
+    }
+
+    const pluginRow = await pluginRegistry.installFromNpm(packageName, {
+      version: typeof version === 'string' ? version : undefined,
+    });
+    res.json({ data: pluginRow });
+  } catch (e) {
+    res.status(500).json({ error: `npm 插件安装失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+});
+
 // POST /api/plugins/:id/enable — 启用
 router.post('/:id/enable', async (req, res) => {
   try {

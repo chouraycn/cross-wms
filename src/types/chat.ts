@@ -291,6 +291,12 @@ export interface Session {
   summary?: string | null;
   /** v8.0: 关联的 Agent ID */
   agentId?: string | null;
+  /** 是否还有更早的消息可加载（分页） */
+  hasMoreMessages?: boolean;
+  /** 消息总数（分页加载时用于计算偏移量） */
+  totalMessageCount?: number;
+  /** v10.0: 思考级别 */
+  thinkingLevel?: string;
 }
 
 export interface Folder {

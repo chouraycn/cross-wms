@@ -36,13 +36,28 @@ export interface CircuitBreakerEvent {
   alternativeTool?: string;
 }
 
+/**
+ * 熔断器可配置阈值。
+ * 所有字段可选，未提供的字段使用默认值。
+ */
+export interface CircuitBreakerConfig {
+  /** 降级阈值：连续失败次数达到此值时降级为 half_open（默认 2） */
+  halfOpenThreshold?: number;
+  /** 熔断阈值：连续失败次数达到此值时熔断为 open（默认 3） */
+  openThreshold?: number;
+  /** open 状态冷却恢复时间（毫秒，默认 60_000） */
+  openCooldownMs?: number;
+  /** half_open 状态下允许的最大并发请求数（默认 1） */
+  maxHalfOpenConcurrent?: number;
+}
+
 // ===================== 工具备选映射 =====================
 
 /** 已知工具的备选映射（失败时建议替代） */
 const TOOL_ALTERNATIVES: Record<string, string> = {
   'web_api_call': 'web_fetch',
   'web_fetch': 'web_search',
-  'web_search': 'web_fetch',
+  'web_search': 'web_search_legacy',
   'web_fetch_legacy': 'web_fetch',
   'web_search_legacy': 'web_search',
   'browser_navigate': 'web_fetch',
@@ -51,25 +66,81 @@ const TOOL_ALTERNATIVES: Record<string, string> = {
   'desktop_screenshot': 'desktop_see',
 };
 
-// ===================== 常量 =====================
+// ===================== 默认常量 =====================
 
-/** 降级阈值：连续失败次数达到此值时降级为 half_open */
-const HALF_OPEN_THRESHOLD = 2;
+/** 默认降级阈值 */
+const DEFAULT_HALF_OPEN_THRESHOLD = 2;
 
-/** 熔断阈值：连续失败次数达到此值时熔断为 open */
-const OPEN_THRESHOLD = 3;
+/** 默认熔断阈值 */
+const DEFAULT_OPEN_THRESHOLD = 3;
 
-/** open 状态冷却恢复时间（毫秒）：60 秒后自动降级为 half_open，允许重试 */
-const OPEN_COOLDOWN_MS = 60_000;
+/** 默认 open 状态冷却恢复时间（毫秒） */
+const DEFAULT_OPEN_COOLDOWN_MS = 60_000;
+
+/** half_open 状态下默认允许的最大并发请求数 */
+const DEFAULT_MAX_HALF_OPEN_CONCURRENT = 1;
 
 // ===================== CircuitBreaker 类 =====================
 
 export class CircuitBreaker {
   private records: Map<string, ToolCircuitRecord> = new Map();
 
+  /** half_open 状态下每个工具的当前并发请求计数 */
+  private halfOpenConcurrent: Map<string, number> = new Map();
+
+  /** 降级阈值：连续失败次数达到此值时降级为 half_open */
+  private halfOpenThreshold: number;
+  /** 熔断阈值：连续失败次数达到此值时熔断为 open */
+  private openThreshold: number;
+  /** open 状态冷却恢复时间（毫秒） */
+  private openCooldownMs: number;
+  /** half_open 状态下允许的最大并发请求数 */
+  private maxHalfOpenConcurrent: number;
+
+  constructor(config?: CircuitBreakerConfig) {
+    this.halfOpenThreshold = config?.halfOpenThreshold ?? DEFAULT_HALF_OPEN_THRESHOLD;
+    this.openThreshold = config?.openThreshold ?? DEFAULT_OPEN_THRESHOLD;
+    this.openCooldownMs = config?.openCooldownMs ?? DEFAULT_OPEN_COOLDOWN_MS;
+    this.maxHalfOpenConcurrent = config?.maxHalfOpenConcurrent ?? DEFAULT_MAX_HALF_OPEN_CONCURRENT;
+  }
+
+  /**
+   * 运行时调整熔断阈值。
+   * 仅更新提供的字段，未提供的字段保持原值。
+   * 注意：已存在的熔断记录不会因阈值变化而立即重新评估状态，
+   * 新阈值在后续的 recordFailure / getState 调用中生效。
+   *
+   * @param config - 要更新的阈值配置（部分字段）
+   */
+  setThresholds(config: Partial<CircuitBreakerConfig>): void {
+    if (config.halfOpenThreshold !== undefined) {
+      this.halfOpenThreshold = config.halfOpenThreshold;
+    }
+    if (config.openThreshold !== undefined) {
+      this.openThreshold = config.openThreshold;
+    }
+    if (config.openCooldownMs !== undefined) {
+      this.openCooldownMs = config.openCooldownMs;
+    }
+    if (config.maxHalfOpenConcurrent !== undefined) {
+      this.maxHalfOpenConcurrent = config.maxHalfOpenConcurrent;
+    }
+  }
+
+  /** 获取当前生效的阈值配置（只读快照） */
+  getThresholds(): Required<CircuitBreakerConfig> {
+    return {
+      halfOpenThreshold: this.halfOpenThreshold,
+      openThreshold: this.openThreshold,
+      openCooldownMs: this.openCooldownMs,
+      maxHalfOpenConcurrent: this.maxHalfOpenConcurrent,
+    };
+  }
+
   /** 记录工具执行成功，重置熔断状态 */
   recordSuccess(toolName: string): void {
     this.records.delete(toolName);
+    this.halfOpenConcurrent.delete(toolName);
   }
 
   /** 记录工具执行失败，更新熔断状态 */
@@ -84,10 +155,10 @@ export class CircuitBreaker {
     record.lastFailureReason = reason;
     record.alternativeTool = TOOL_ALTERNATIVES[toolName];
 
-    if (record.consecutiveFailures >= OPEN_THRESHOLD) {
+    if (record.consecutiveFailures >= this.openThreshold) {
       record.state = 'open';
       record.openedAt = Date.now();
-    } else if (record.consecutiveFailures >= HALF_OPEN_THRESHOLD) {
+    } else if (record.consecutiveFailures >= this.halfOpenThreshold) {
       record.state = 'half_open';
     }
 
@@ -103,7 +174,7 @@ export class CircuitBreaker {
     // 冷却恢复：open 状态超过冷却时间后自动降级为 half_open
     if (record.state === 'open' && record.openedAt) {
       const elapsed = Date.now() - record.openedAt;
-      if (elapsed >= OPEN_COOLDOWN_MS) {
+      if (elapsed >= this.openCooldownMs) {
         record.state = 'half_open';
         // 不清零 consecutiveFailures，half_open 仍需一次成功才能完全恢复
         this.records.set(toolName, record);
@@ -128,6 +199,59 @@ export class CircuitBreaker {
     return this.getState(toolName) === 'half_open';
   }
 
+  /**
+   * 检查工具在 half_open 状态下是否还能接受新的请求（并发限制）。
+   *
+   * half_open 状态下同时只允许有限数量的请求通过（默认 1），
+   * 用于探测工具是否恢复。超出并发限制的请求应被拒绝。
+   *
+   * @param toolName - 工具名
+   * @returns 是否允许新的请求通过
+   */
+  canAttemptHalfOpen(toolName: string): boolean {
+    const state = this.getState(toolName);
+    if (state !== 'half_open') {
+      // 非 half_open 状态不受此限制（closed 全放行，open 全拒绝）
+      return state === 'closed';
+    }
+    const current = this.halfOpenConcurrent.get(toolName) ?? 0;
+    return current < this.maxHalfOpenConcurrent;
+  }
+
+  /**
+   * 在 half_open 状态下占用一个并发请求槽位。
+   * 应在工具调用前调用，配合 releaseHalfOpenSlot 使用。
+   *
+   * @param toolName - 工具名
+   * @returns 是否成功占用槽位（false 表示已达并发上限或状态不允许）
+   */
+  acquireHalfOpenSlot(toolName: string): boolean {
+    if (!this.canAttemptHalfOpen(toolName)) return false;
+    const current = this.halfOpenConcurrent.get(toolName) ?? 0;
+    this.halfOpenConcurrent.set(toolName, current + 1);
+    return true;
+  }
+
+  /**
+   * 释放 half_open 状态下的并发请求槽位。
+   * 应在工具调用结束（无论成功/失败）后调用。
+   *
+   * @param toolName - 工具名
+   */
+  releaseHalfOpenSlot(toolName: string): void {
+    const current = this.halfOpenConcurrent.get(toolName) ?? 0;
+    if (current <= 1) {
+      this.halfOpenConcurrent.delete(toolName);
+    } else {
+      this.halfOpenConcurrent.set(toolName, current - 1);
+    }
+  }
+
+  /** 获取工具当前的 half_open 并发占用数（主要用于测试/监控） */
+  getHalfOpenConcurrent(toolName: string): number {
+    return this.halfOpenConcurrent.get(toolName) ?? 0;
+  }
+
   /** 获取备选工具建议（用于 half_open 时注入 system message） */
   getAlternativeSuggestion(toolName: string): string | null {
     const record = this.records.get(toolName);
@@ -141,6 +265,7 @@ export class CircuitBreaker {
   /** 重置所有熔断状态 */
   reset(): void {
     this.records.clear();
+    this.halfOpenConcurrent.clear();
   }
 
   // ===================== MCP Per-Server 熔断方法 =====================

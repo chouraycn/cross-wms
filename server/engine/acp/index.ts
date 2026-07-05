@@ -1,6 +1,20 @@
 /**
- * ACP Control Plane
- * ACP 控制平面 - 会话管理集中化，回合流转统一管理，多运行时支持
+ * ACP Control Plane — 下一代 Agent 执行引擎
+ *
+ * ⚠️  实验性：当前主流量对话仍通过 chatService + /api/agent-chat 提供
+ *
+ * 架构定位：
+ * - 参照 openclaw ACP 协议设计的统一 Agent 运行时
+ * - 支持多运行时（embedded runtime、子代理、工具执行器等）
+ * - SessionActorQueue 保证同会话串行执行
+ * - turnRunner 管理 attempt 生命周期与失败回退
+ *
+ * 与现有框架的关系：
+ * - chatService（旧）→ /api/chat（兼容层）
+ * - agentChat（当前主入口）→ /api/agent-chat → 调用 chatService
+ * - ACP（未来）→ 直接接管会话管理与回合执行
+ *
+ * 迁移路线：agentChat → 逐步替换底层为 ACP → 最终 chatService 退休
  */
 
 // Types

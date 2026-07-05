@@ -16,19 +16,6 @@ initSentryReact();
 try {
   const root = ReactDOM.createRoot(document.getElementById('root')!)
   root.render(<App />)
-
-  // WKWebView 兼容：监听 .page-fade-in 元素并添加 .visible 类以触发淡入动画
-  if (typeof MutationObserver !== 'undefined') {
-    const observer = new MutationObserver(() => {
-      document.querySelectorAll('.page-fade-in:not(.visible)').forEach((el) => {
-        // 使用 requestAnimationFrame 确保 DOM 更新后再触发 transition
-        requestAnimationFrame(() => {
-          el.classList.add('visible');
-        });
-      });
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
 } catch (e: any) {
   const errMsg = e?.message || String(e);
   const errStack = e?.stack || '';
@@ -54,4 +41,23 @@ async function bootstrap() {
   }
 }
 
-bootstrap()
+bootstrap();
+
+// ===================== 内存压力响应（WKWebView 原生回调） =====================
+// Swift 端在 didReceiveMemoryWarning 时调用 window.cdfApp.onMemoryPressure()
+;(window as any).cdfApp = (window as any).cdfApp || {};
+;(window as any).cdfApp.onMemoryPressure = () => {
+  console.log('[CDFKnow] Memory pressure received, cleaning up...');
+  // 1. 清理 sessionStorage 中非必要数据
+  try {
+    const keysToKeep = ['cdf-know-clow-chat-sessions', 'theme-mode'];
+    const allKeys = Object.keys(sessionStorage);
+    for (const key of allKeys) {
+      if (!keysToKeep.includes(key)) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  } catch {}
+  // 2. 通知 ContextWindowCache 清理（通过自定义事件）
+  window.dispatchEvent(new CustomEvent('cdf-memory-pressure'));
+};

@@ -847,8 +847,22 @@ export async function updateSession(id: string, data: Partial<Session>): Promise
 }
 
 export async function getSessionMessages(id: string): Promise<any[]> {
-  const res = await request<{ messages: any[] }>('GET', `/api/sessions/${id}/messages`);
+  const res = await request<{ messages: any[] }>('GET', `/api/sessions/${id}`);
   return res.messages;
+}
+
+/** 分页获取会话消息（懒加载） */
+export async function getSessionMessagesPaged(
+  id: string,
+  limit: number = 50,
+  before?: number,
+): Promise<{ messages: any[]; hasMore: boolean; totalCount: number }> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (before !== undefined) params.set('before', String(before));
+  const res = await request<{ messages: any[]; hasMore: boolean; totalCount: number }>(
+    'GET', `/api/sessions/${id}/messages?${params}`,
+  );
+  return res;
 }
 
 // ===================== Skill Workshop API =====================
