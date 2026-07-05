@@ -534,22 +534,37 @@ export function isThinkingLevelSupported(params: {
 /**
  * 解析并验证思考级别，如果不支持则降级到最近的支持级别
  *
- * 降级策略：请求的级别不支持时向下寻找最接近的已支持级别
+ * 降级策略：
+ * 1. 优先找 rank <= 请求级别的最高级别（向下寻找最接近的）
+ * 2. 如果没有更低的级别，则找最低的非 off 级别
+ * 3. 如果完全不支持思考，则返回 off
+ *
+ * @returns 降级后的思考级别 + 是否发生了降级
  */
 export function resolveSupportedThinkingLevel(params: {
   provider?: string | null;
   model?: string | null;
   level: ThinkLevel;
   catalog?: ThinkingCatalogEntry[];
-}): ThinkLevel {
+}): { level: ThinkLevel; downgraded: boolean; reason?: string } {
   const { provider, model, level, catalog } = params;
 
   if (isThinkingLevelSupported({ provider, model, level, catalog })) {
-    return level;
+    return { level, downgraded: false };
   }
 
-  // 降级到最接近的支持级别
+  // 请求的级别不支持，需要降级
   const supportedLevels = listThinkingLevels(provider, model, catalog);
+
+  // 检查是否完全不支持思考
+  if (supportedLevels.length === 1 && supportedLevels[0] === 'off') {
+    return {
+      level: 'off',
+      downgraded: true,
+      reason: `模型 ${model} (provider: ${provider}) 不支持思考功能`,
+    };
+  }
+
   const requestedRank = THINKING_LEVEL_RANKS[level];
 
   // 优先找 rank <= 请求级别的最高级别（向下寻找最接近的）
@@ -558,12 +573,29 @@ export function resolveSupportedThinkingLevel(params: {
     .sort((a, b) => THINKING_LEVEL_RANKS[b] - THINKING_LEVEL_RANKS[a])[0];
 
   if (downgraded) {
-    return downgraded;
+    return {
+      level: downgraded,
+      downgraded: true,
+      reason: `请求的思考级别 "${level}" 不被支持，降级到 "${downgraded}"`,
+    };
   }
 
   // 找最低的非 off 级别
   const lowestNonOff = supportedLevels.find((l) => l !== 'off');
-  return lowestNonOff ?? 'off';
+  if (lowestNonOff) {
+    return {
+      level: lowestNonOff,
+      downgraded: true,
+      reason: `请求的思考级别 "${level}" 不被支持，降级到最低支持级别 "${lowestNonOff}"`,
+    };
+  }
+
+  // 最终降级到 off
+  return {
+    level: 'off',
+    downgraded: true,
+    reason: `请求的思考级别 "${level}" 不被支持，降级到 off`,
+  };
 }
 
 // ===================== 思考级别默认值 =====================
@@ -624,9 +656,11 @@ export function validateThinkingConfig(config: {
   if (provider && model) {
     if (!isThinkingLevelSupported({ provider, model, level: normalized })) {
       const nearest = resolveSupportedThinkingLevel({ provider, model, level: normalized });
-      logger.warn(
-        `思考级别 ${normalized} 不被 ${provider}/${model} 支持，将使用 ${nearest}`,
-      );
+      if (nearest.downgraded) {
+        logger.warn(
+          `思考级别 ${normalized} 不被 ${provider}/${model} 支持，将使用 ${nearest.level}: ${nearest.reason}`,
+        );
+      }
     }
   }
 

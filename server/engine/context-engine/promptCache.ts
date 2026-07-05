@@ -1,4 +1,5 @@
 import { logger } from '../../logger.js';
+import { stableStringify } from '../../utils/stableStringify.js';
 import type {
   ContextEnginePromptCacheInfo,
   ContextEnginePromptCacheUsage,
@@ -282,11 +283,16 @@ export function detectCacheBreak(
     });
   }
 
-  if (previousSystemPrompt !== undefined && currentSystemPrompt !== undefined && previousSystemPrompt !== currentSystemPrompt) {
-    changes.push({
-      code: 'systemPrompt',
-      detail: `system prompt changed (length: ${previousSystemPrompt.length} -> ${currentSystemPrompt.length})`,
-    });
+  if (previousSystemPrompt !== undefined && currentSystemPrompt !== undefined) {
+    // 使用 stableStringify 做稳定比较，避免 key 顺序不同导致的误判
+    const prevKey = stableStringify(previousSystemPrompt);
+    const currKey = stableStringify(currentSystemPrompt);
+    if (prevKey !== currKey) {
+      changes.push({
+        code: 'systemPrompt',
+        detail: `system prompt changed (length: ${String(previousSystemPrompt).length} -> ${String(currentSystemPrompt).length})`,
+      });
+    }
   }
 
   if (previousToolCount !== undefined && currentToolCount !== undefined && previousToolCount !== currentToolCount) {

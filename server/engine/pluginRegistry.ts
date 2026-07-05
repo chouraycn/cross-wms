@@ -11,10 +11,10 @@
 
 import path from 'path';
 import fs from 'fs';
-import { getPlugin, listEnabledPlugins, updatePlugin, deletePlugin } from '../dao/plugins.js';
+import { getPlugin, listEnabledPlugins, updatePlugin, deletePlugin, createPlugin } from '../dao/plugins.js';
 import type { PluginRow } from '../db.js';
 import { registerPluginTool, unregisterPluginTool } from './toolRegistry.js';
-import { installPlugin } from './pluginLoader.js';
+import { installFromZip, installFromGit, installFromNpm } from './pluginLoader.js';
 import type { PluginManifest, PluginToolDefinition as PluginToolDef } from '../../shared/pluginManifest.js';
 import type { ToolDefinition } from '../aiClient.js';
 import { executeInSandbox } from './pluginSandbox.js';
@@ -53,13 +53,96 @@ class PluginRegistry {
   }
 
   /**
-   * 安装插件：解压 + 校验 + 写 DB → status = installed
+   * 安装插件：解压 + 校验 manifest + 写 DB → status = installed
+   *
+   * 调用 pluginLoader.installFromZip 执行真实的 zip 解压与 manifest 校验，
+   * 然后使用返回的 manifest 信息在 DB 中创建插件记录。
    *
    * @param zipPath - 插件 .zip 包的绝对路径
    * @returns 新创建的 PluginRow
    */
   async install(zipPath: string): Promise<PluginRow> {
-    const pluginRow = await installPlugin(zipPath as any) as any;
+    // 1. 调用 pluginLoader.installFromZip 进行解压 + manifest 校验
+    const installResult = await installFromZip(zipPath);
+    const { manifest, installPath, entryPath, sizeBytes } = installResult;
+
+    // 2. 在 DB 中创建插件记录
+    const pluginRow = createPlugin({
+      name: manifest.name,
+      display_name: manifest.displayName || manifest.name,
+      version: manifest.version,
+      author: manifest.author,
+      description: manifest.description,
+      icon: manifest.icon,
+      manifest_json: JSON.stringify(manifest),
+      entry_path: entryPath,
+      install_path: installPath,
+      permissions: JSON.stringify(manifest.permissions),
+      risk_level: manifest.riskLevel,
+      size_bytes: sizeBytes,
+      metadata: JSON.stringify(manifest.metadata ?? {}),
+    });
+
+    return pluginRow;
+  }
+
+  /**
+   * 从 Git 仓库安装插件：clone + 校验 manifest + 写 DB → status = installed
+   *
+   * @param gitUrl - Git 仓库 URL
+   * @param options - 可选参数：branch（分支）、subdir（子目录）
+   * @returns 新创建的 PluginRow
+   */
+  async installFromGit(gitUrl: string, options?: { branch?: string; subdir?: string }): Promise<PluginRow> {
+    const installResult = await installFromGit(gitUrl, options);
+    const { manifest, installPath, entryPath, sizeBytes } = installResult;
+
+    const pluginRow = createPlugin({
+      name: manifest.name,
+      display_name: manifest.displayName || manifest.name,
+      version: manifest.version,
+      author: manifest.author,
+      description: manifest.description,
+      icon: manifest.icon,
+      manifest_json: JSON.stringify(manifest),
+      entry_path: entryPath,
+      install_path: installPath,
+      permissions: JSON.stringify(manifest.permissions),
+      risk_level: manifest.riskLevel,
+      size_bytes: sizeBytes,
+      metadata: JSON.stringify(manifest.metadata ?? {}),
+    });
+
+    return pluginRow;
+  }
+
+  /**
+   * 从 npm 安装插件：pack + 解压 + 校验 manifest + 写 DB → status = installed
+   *
+   * @param packageName - npm 包名
+   * @param options - 可选参数：version（版本）
+   * @returns 新创建的 PluginRow
+   */
+  async installFromNpm(packageName: string, options?: { version?: string }): Promise<PluginRow> {
+    const installResult = await installFromNpm(packageName, options);
+    const { manifest, installPath, entryPath, sizeBytes } = installResult;
+
+    const pluginRow = createPlugin({
+      name: manifest.name,
+      display_name: manifest.displayName || manifest.name,
+      version: manifest.version,
+      author: manifest.author,
+      description: manifest.description,
+      icon: manifest.icon,
+      manifest_json: JSON.stringify(manifest),
+      entry_path: entryPath,
+      install_path: installPath,
+      permissions: JSON.stringify(manifest.permissions),
+      risk_level: manifest.riskLevel,
+      size_bytes: sizeBytes,
+      metadata: JSON.stringify(manifest.metadata ?? {}),
+    });
+
     return pluginRow;
   }
 

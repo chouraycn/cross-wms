@@ -1,0 +1,58 @@
+{
+  "id": "wms-report-plugin",
+  "name": "wms-report-plugin",
+  "displayName": "WMS 报表生成",
+  "version": "1.0.0",
+  "author": "Cross-WMS Team",
+  "description": "提供 WMS 报表生成功能，支持库存、出入库、周转等报表查询与导出",
+  "icon": "Assessment",
+  "entry": "index.js",
+  "tools": [
+    {
+      "name": "generate_inventory_report",
+      "description": "生成库存报表，按仓库/分类聚合库存数量与金额",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "warehouse": { "type": "string", "description": "仓库标识，留空表示全部仓库" },
+          "category": { "type": "string", "description": "商品分类，留空表示全部分类" },
+          "format": { "type": "string", "description": "输出格式：summary 或 detail，默认 summary" }
+        },
+        "required": []
+      },
+      "riskLevel": "auto"
+    },
+    {
+      "name": "generate_transaction_report",
+      "description": "生成出入库流水报表，支持按时间段筛选",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "startDate": { "type": "string", "description": "起始日期，格式 YYYY-MM-DD" },
+          "endDate": { "type": "string", "description": "结束日期，格式 YYYY-MM-DD" },
+          "type": { "type": "string", "description": "流水类型：inbound、outbound 或 all，默认 all" }
+        },
+        "required": ["startDate", "endDate"]
+      },
+      "riskLevel": "auto"
+    },
+    {
+      "name": "generate_turnover_report",
+      "description": "生成库存周转报表，计算周转率与周转天数",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "warehouse": { "type": "string", "description": "仓库标识，留空表示全部仓库" },
+          "periodDays": { "type": "number", "description": "统计周期天数，默认 30" }
+        },
+        "required": []
+      },
+      "riskLevel": "auto"
+    }
+  ],
+  "permissions": ["tool:execute"],
+  "riskLevel": "auto",
+  "metadata": {
+    "timeoutMs": 30000
+  }
+}

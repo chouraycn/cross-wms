@@ -898,4 +898,4 @@ const ChatSidePanel: React.FC<ChatSidePanelProps> = ({
   );
 };
 
-export default ChatSidePanel;
+export default React.memo(ChatSidePanel);

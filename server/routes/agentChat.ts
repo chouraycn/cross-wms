@@ -1,17 +1,28 @@
 /**
- * Agent Chat API — 基于 OpenClaw 事件驱动架构
+ * Agent Chat API — 统一的聊天入口（推荐使用）
  *
- * v1.0: 基于现有 chatService 封装，输出标准 Agent 事件格式
- * - 拦截 chatService 的 SSE 输出，转换为 AgentEventPayload 格式
- * - 支持思考流与正文流独立序列号
+ * 架构定位：
+ * - 这是 cross-wms 聊天功能的标准入口
+ * - 输出 AgentEventPayload 格式（与 openclaw 事件模型对齐）
+ * - 底层调用 runChatSession 执行实际的 LLM 对话（纯回调驱动，无 Proxy 转换层）
+ * - 旧版 /api/chat 保留兼容，但新代码应使用本接口
  *
- * 后续版本将逐步替换底层为完整的 AgentRuntime。
+ * 事件格式（AgentEventPayload）：
+ * - lifecycle.start / lifecycle.init / lifecycle.done
+ * - text.delta / text.block（正文流）
+ * - thinking.delta / thinking.block（思考流）
+ * - tool.call / tool.result（工具调用）
+ * - error（错误）
+ *
+ * 执行路径：
+ *   前端 → agentChat.ts → runChatSession → streamExecutor.executeChat
+ *   （无 Proxy 层、无 SSE 解析往返、单层事件转换）
  */
 
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../logger.js';
-import { handleChat } from './chatService.js';
+import { runChatSession } from '../engine/runChatSession.js';
 import {
   registerAgentRunContext,
   clearAgentRunContext,
@@ -28,99 +39,18 @@ import { FileStorage } from '../storage/FileStorage.js';
 
 const router = Router();
 
-// ===================== 块缓冲合并器 =====================
+// ===================== 事件发送工具 =====================
 
-interface BlockBuffer {
-  content: string;
-  timer: ReturnType<typeof setTimeout> | null;
-  lastEnqueueAt: number;
-}
-
-const BLOCK_CONFIG = {
-  minChars: 200,
-  maxChars: 1000,
-  idleMs: 150,
-};
-
-const THINKING_BLOCK_CONFIG = {
-  minChars: 150,
-  maxChars: 800,
-  idleMs: 100,
-};
-
-function createBlockBuffer(
-  stream: AgentEventStream,
-  sendFn: (content: string) => void,
-  config: typeof BLOCK_CONFIG,
-): { enqueue: (content: string) => void; flush: () => void; dispose: () => void } {
-  const buffer: BlockBuffer = {
-    content: '',
-    timer: null,
-    lastEnqueueAt: 0,
-  };
-
-  const flush = () => {
-    if (buffer.timer) {
-      clearTimeout(buffer.timer);
-      buffer.timer = null;
-    }
-    if (!buffer.content) return;
-    const content = buffer.content;
-    buffer.content = '';
-    sendFn(content);
-  };
-
-  const scheduleFlush = () => {
-    if (buffer.timer) clearTimeout(buffer.timer);
-
-    const delay = buffer.content.length < config.minChars
-      ? config.idleMs * 1.5
-      : config.idleMs;
-
-    buffer.timer = setTimeout(() => {
-      flush();
-    }, delay);
-  };
-
-  const enqueue = (content: string) => {
-    if (!content) return;
-    buffer.content += content;
-    buffer.lastEnqueueAt = Date.now();
-
-    if (buffer.content.length >= config.maxChars) {
-      flush();
-      return;
-    }
-
-    scheduleFlush();
-  };
-
-  const dispose = () => {
-    flush();
-    if (buffer.timer) {
-      clearTimeout(buffer.timer);
-      buffer.timer = null;
-    }
-  };
-
-  return { enqueue, flush, dispose };
-}
-
-// ===================== 事件转换工具 =====================
-
-function createEventTransformProxy(
-  originalRes: Response,
-  params: {
-    runId: string;
-    sessionKey?: string;
-    sessionId?: string;
-    agentId?: string;
-    userId?: string;
-  },
-): { proxyRes: Response; dispose: () => void } {
+function createAgentEventSender(res: Response, params: {
+  runId: string;
+  sessionKey?: string;
+  sessionId?: string;
+  agentId?: string;
+  userId?: string;
+}) {
   const { runId, sessionKey, sessionId, agentId, userId } = params;
 
-  const sendAgentEvent = (
+  const send = (
     stream: AgentEventStream,
     data: Record<string, unknown>,
     useStreamSeq: boolean = false,
@@ -141,143 +71,16 @@ function createEventTransformProxy(
       ...(userId ? { userId } : {}),
     };
 
-    if (!originalRes.writableEnded) {
+    if (!res.writableEnded) {
       try {
-        originalRes.write(`data: ${JSON.stringify(payload)}\n\n`);
+        res.write(`data: ${JSON.stringify(payload)}\n\n`);
       } catch {
         // 连接已断开，忽略
       }
     }
   };
 
-  // 正文流块缓冲
-  const textBlockBuffer = createBlockBuffer(
-    'assistant',
-    (content) => {
-      sendAgentEvent('assistant', { content }, true);
-    },
-    BLOCK_CONFIG,
-  );
-
-  // 思考流块缓冲
-  const thinkingBlockBuffer = createBlockBuffer(
-    'thinking',
-    (content) => {
-      sendAgentEvent('thinking', { content }, true);
-    },
-    THINKING_BLOCK_CONFIG,
-  );
-
-  const flushAllBuffers = () => {
-    textBlockBuffer.flush();
-    thinkingBlockBuffer.flush();
-  };
-
-  const dispose = () => {
-    textBlockBuffer.dispose();
-    thinkingBlockBuffer.dispose();
-  };
-
-  // 跟踪是否已设置响应头
-  let headersSet = false;
-
-  // 创建代理 res 对象，拦截 write 和 setHeader/flushHeaders 方法
-  const proxyRes = new Proxy(originalRes, {
-    get(target, prop, receiver) {
-      if (prop === 'write') {
-        return (chunk: any, encoding?: any, callback?: any) => {
-          try {
-            // 确保响应头已设置（在第一次 write 时）
-            if (!headersSet) {
-              headersSet = true;
-              // 发送 lifecycle.start 事件（通过 handleChat 的 init 事件转换）
-              sendAgentEvent('lifecycle', {
-                phase: 'start',
-                sessionId: params.sessionId,
-              });
-            }
-
-            const text = typeof chunk === 'string' ? chunk : chunk?.toString?.();
-            if (!text) return true;
-
-            // 解析 SSE 事件
-            const lines = text.split('\n\n').filter(Boolean);
-            for (const line of lines) {
-              if (!line.startsWith('data: ')) continue;
-              const jsonStr = line.slice(6);
-              let event: any;
-              try {
-                event = JSON.parse(jsonStr);
-              } catch {
-                continue;
-              }
-
-              const eventType = event.type;
-              switch (eventType) {
-                case 'init':
-                  sendAgentEvent('lifecycle', {
-                    phase: 'init',
-                    assistantMessageId: event.assistantMessageId,
-                    model: event.model,
-                    modelName: event.modelName,
-                    autoReason: event.autoReason,
-                    autoReasonType: event.autoReasonType,
-                  });
-                  break;
-                case 'text':
-                  textBlockBuffer.enqueue(event.content || '');
-                  break;
-                case 'thinking':
-                  thinkingBlockBuffer.enqueue(event.content || '');
-                  break;
-                case 'tool_call':
-                  flushAllBuffers();
-                  sendAgentEvent('tool', {
-                    toolCallId: event.toolCallId || event.id,
-                    name: event.toolName || event.tool,
-                    args: event.toolArgs || event.args,
-                    result: event.toolResult ?? event.result,
-                  });
-                  break;
-                case 'error':
-                  flushAllBuffers();
-                  sendAgentEvent('error', {
-                    code: event.code || 'UNKNOWN_ERROR',
-                    message: event.message || '发生错误',
-                  });
-                  break;
-                case 'done':
-                  flushAllBuffers();
-                  sendAgentEvent('lifecycle', {
-                    phase: 'done',
-                    thinkingDuration: event.thinkingDuration,
-                    usage: event.usage,
-                    errorCode: event.errorCode,
-                    errorMessage: event.errorMessage,
-                    fallbackModel: event.fallbackModel,
-                    fallbackReason: event.fallbackReason,
-                  });
-                  break;
-                default:
-                  // 调试事件
-                  sendAgentEvent('debug' as AgentEventStream, event);
-                  break;
-              }
-            }
-            return true;
-          } catch (e) {
-            logger.error('[AgentChat] 事件转换失败:', e);
-            return true;
-          }
-        };
-      }
-
-      // 转发其他方法到原始 res
-      return Reflect.get(target, prop, receiver);
-    },
-  });
-
-  return { proxyRes, dispose };
+  return { send };
 }
 
 // ===================== 主接口：Agent Chat (SSE) =====================
@@ -289,6 +92,15 @@ export async function handleAgentChat(req: Request, res: Response) {
   const sessionKey = sessionId;
   const agentId = req.body.agentId;
   const userId = req.body.userId;
+  const model = req.body.model;
+  const preset = req.body.preset;
+  const skillContext = req.body.skillContext;
+  const skillId = req.body.skillId;
+  const attachments = req.body.attachments;
+  const conversationHistory = req.body.conversationHistory;
+  const executionMode = req.body.executionMode;
+  const referencedSessionIds = req.body.referencedSessionIds;
+  const thinkingLevel = req.body.thinkingLevel;
 
   if (!message.trim()) {
     res.status(400).json({ error: '消息内容不能为空' });
@@ -296,7 +108,6 @@ export async function handleAgentChat(req: Request, res: Response) {
   }
 
   try {
-    // 注册运行上下文
     registerAgentRunContext(runId, {
       sessionKey,
       sessionId,
@@ -306,9 +117,7 @@ export async function handleAgentChat(req: Request, res: Response) {
       lastActiveAt: Date.now(),
     });
 
-    // 创建代理 res，将 chatService 的 SSE 事件转换为 Agent 事件格式
-    // 代理会拦截 setHeader/flushHeaders 调用，确保只设置一次
-    const { proxyRes, dispose: disposeBuffers } = createEventTransformProxy(res, {
+    const { send } = createAgentEventSender(res, {
       runId,
       sessionKey,
       sessionId,
@@ -316,17 +125,110 @@ export async function handleAgentChat(req: Request, res: Response) {
       userId,
     });
 
+    // 设置 SSE 响应头
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders?.();
+
+    // 发送 lifecycle.start
+    send('lifecycle', {
+      phase: 'start',
+      sessionId,
+    });
+
     // 处理客户端断开
+    let aborted = false;
     req.on('close', () => {
-      disposeBuffers();
+      aborted = true;
       clearAgentRunContext(runId);
     });
 
-    // 调用 chatService 的 handleChat
-    // handleChat 会设置响应头并发送 init 事件
-    await handleChat(req, proxyRes);
+    // 直接调用 runChatSession
+    await runChatSession(
+      {
+        sessionId,
+        message,
+        model,
+        preset,
+        skillContext,
+        skillId,
+        attachments,
+        conversationHistory,
+        executionMode,
+        agentId,
+        referencedSessionIds,
+        userId,
+        thinkingLevel,
+      },
+      {
+        onEvent: (event) => {
+          if (aborted) return;
+          const eventType = event.type as string;
+          switch (eventType) {
+            case 'init':
+              send('lifecycle', {
+                phase: 'init',
+                assistantMessageId: event.assistantMessageId,
+                model: event.model,
+                modelName: event.modelName,
+                autoReason: event.autoReason,
+                autoReasonType: event.autoReasonType,
+              });
+              break;
+            case 'text':
+              send('assistant', { content: (event.content as string) || '' }, true);
+              break;
+            case 'thinking':
+              send('thinking', { content: (event.content as string) || '' }, true);
+              break;
+            case 'tool_call':
+              send('tool', {
+                toolCallId: event.toolCallId || event.id,
+                name: event.toolName || event.tool,
+                args: event.toolArgs || event.args,
+                result: event.toolResult ?? event.result,
+              });
+              break;
+            case 'error':
+              send('error', {
+                code: event.code || 'UNKNOWN_ERROR',
+                message: event.message || '发生错误',
+              });
+              break;
+            case 'done':
+              send('lifecycle', {
+                phase: 'done',
+                thinkingDuration: event.thinkingDuration,
+                usage: event.usage,
+                errorCode: event.errorCode,
+                errorMessage: event.errorMessage,
+                fallbackModel: event.fallbackModel,
+                fallbackReason: event.fallbackReason,
+              });
+              break;
+            case 'compaction':
+              send('compaction', {
+                tokensBefore: event.tokensBefore,
+                tokensAfter: event.tokensAfter,
+                reductionRatio: event.reductionRatio,
+              });
+              break;
+            default:
+              // 调试事件
+              send('debug' as AgentEventStream, event);
+              break;
+          }
+        },
+      },
+    );
 
-    disposeBuffers();
+    if (!res.writableEnded) {
+      try {
+        res.end();
+      } catch { /* ignore */ }
+    }
+
     clearAgentRunContext(runId);
 
   } catch (error) {
@@ -431,6 +333,71 @@ function generateSmartSummary(messages: Array<{ role: string; content: string }>
   return keyPoints.join('\n\n');
 }
 
+// ===================== 压缩安全净化 =====================
+
+/** 保留消息中 toolCalls.result 的最大字节数（约 1KB），超出截断 */
+const KEPT_TOOL_RESULT_MAX_BYTES = 1024;
+/** 保留消息中 thinking 的最大字节数（约 2KB），超出截断 */
+const KEPT_THINKING_MAX_BYTES = 2 * 1024;
+
+/**
+ * 压缩后保留消息的安全净化：
+ * 1. 截断 toolCalls 中每条 result 到 KEPT_TOOL_RESULT_MAX_BYTES
+ * 2. 移除 toolCall entry 中的 details 字段（若存在，避免结构化大对象残留）
+ * 3. 截断 thinking 字段到 KEPT_THINKING_MAX_BYTES
+ * 4. 修复孤儿 tool_result：移除没有 name/id 的无效 toolCall 条目
+ *
+ * 注意：此函数不修改原数组，返回新数组。
+ */
+function sanitizeKeptMessages(messages: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  return messages.map((msg) => {
+    const next: Record<string, unknown> = { ...msg };
+
+    // 净化 toolCalls
+    const toolCallsRaw = next.toolCalls;
+    if (typeof toolCallsRaw === 'string' && toolCallsRaw.length > 0) {
+      try {
+        const arr = JSON.parse(toolCallsRaw);
+        if (Array.isArray(arr)) {
+          const sanitized: unknown[] = [];
+          for (const tc of arr) {
+            if (!tc || typeof tc !== 'object') continue;
+            const entry = tc as Record<string, unknown>;
+            // 修复孤儿条目：必须有 name 字段才算有效
+            if (!entry.name || typeof entry.name !== 'string') continue;
+
+            const cleaned: Record<string, unknown> = { ...entry };
+            // 移除 details 字段（结构化大对象，压缩后无需保留）
+            delete cleaned.details;
+
+            // 截断 result
+            const result = cleaned.result;
+            if (typeof result === 'string' && Buffer.byteLength(result, 'utf-8') > KEPT_TOOL_RESULT_MAX_BYTES) {
+              const origKB = (Buffer.byteLength(result, 'utf-8') / 1024).toFixed(1);
+              cleaned.result = result.slice(0, KEPT_TOOL_RESULT_MAX_BYTES) +
+                `\n\n[压缩时已截断，原大小 ${origKB} KB]`;
+            }
+            sanitized.push(cleaned);
+          }
+          next.toolCalls = JSON.stringify(sanitized);
+        }
+      } catch {
+        // 解析失败，保留原值
+      }
+    }
+
+    // 截断 thinking
+    const thinking = next.thinking;
+    if (typeof thinking === 'string' && Buffer.byteLength(thinking, 'utf-8') > KEPT_THINKING_MAX_BYTES) {
+      const origKB = (Buffer.byteLength(thinking, 'utf-8') / 1024).toFixed(1);
+      next.thinking = thinking.slice(0, KEPT_THINKING_MAX_BYTES) +
+        `\n\n[压缩时已截断，原大小 ${origKB} KB]`;
+    }
+
+    return next;
+  });
+}
+
 router.post('/agent-compact', async (req: Request, res: Response) => {
   const sessionId = req.body.sessionId;
   const preserveCount = req.body.preserveCount ?? 6;
@@ -484,7 +451,11 @@ router.post('/agent-compact', async (req: Request, res: Response) => {
       isCompressedSummary: true,
     };
 
-    const newMessages = [summaryMessage as any, ...toKeep];
+    // 安全净化：截断保留消息中的 toolCalls.result 和 thinking，移除 details 字段
+    // 避免压缩后的会话文件仍因大 tool result 而膨胀
+    const sanitizedKept = sanitizeKeptMessages(toKeep as unknown as Array<Record<string, unknown>>);
+
+    const newMessages = [summaryMessage as any, ...sanitizedKept];
 
     try {
       const lines = FileStorage.readSessionLines(sessionId);

@@ -60,23 +60,15 @@ function parseSessionFile(sessionId: string): { session: Session | null; message
   }
 }
 
-/** 重写会话文件的第一行（修改 session 元数据时调用） */
+/** 重写会话文件的第一行（修改 session 元数据时调用）
+ *  直接使用 FileStorage.rewriteSessionFirstLine，避免全文件读写
+ */
 function rewriteSessionFirstLine(sessionId: string, mutate: (firstLine: any) => void): boolean {
   try {
-    const lines = FileStorage.readSessionLines(sessionId);
-    if (lines.length === 0) return false;
-
-    const firstLine = lines[0] as any;
-    if (!firstLine.session) return false;
-
+    const firstLine = FileStorage.readSessionFirstLine(sessionId) as any;
+    if (!firstLine || !firstLine.session) return false;
     mutate(firstLine);
-
-    const subsequentLines = lines.slice(1);
-    FileStorage.deleteSessionFile(sessionId);
-    FileStorage.appendSessionLine(sessionId, firstLine);
-    for (const line of subsequentLines) {
-      FileStorage.appendSessionLine(sessionId, line);
-    }
+    FileStorage.rewriteSessionFirstLine(sessionId, firstLine);
     return true;
   } catch (e) {
     logger.error('[SessionLifecycle] rewriteSessionFirstLine 失败:', e);
@@ -206,14 +198,13 @@ export function restoreSession(sessionId: string): boolean {
   });
 }
 
-/** 更新会话最后活跃时间（每次发送/接收消息时调用） */
-export function touchSession(sessionId: string): void {
-  const now = new Date().toISOString();
-  rewriteSessionFirstLine(sessionId, (firstLine) => {
-    firstLine.session.lastActiveAt = now;
-    firstLine.session.updatedAt = now;
-    firstLine.session.sessionDate = now.split('T')[0];
-  });
+/**
+ * 更新会话最后活跃时间。
+ * no-op: getSessions 已用文件 mtime 排序，不再需要重写首行。
+ * 保留接口签名避免调用方报错。
+ */
+export function touchSession(_sessionId: string): void {
+  // intentionally empty — file mtime drives sort order
 }
 
 /** 获取子会话列表 */

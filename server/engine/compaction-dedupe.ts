@@ -40,7 +40,7 @@ export interface DeduplicationResult {
 /**
  * Levenshtein 编辑距离
  */
-function _levenshteinDistance(str1: string, str2: string): number {
+function levenshteinDistance(str1: string, str2: string): number {
   const m = str1.length;
   const n = str2.length;
 
@@ -65,39 +65,33 @@ function _levenshteinDistance(str1: string, str2: string): number {
 }
 
 /**
- * 检测是否为连续重复消息
+ * 计算两个字符串的相似度（0-1）
+ */
+function computeSimilarity(a: string, b: string): number {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen === 0) return 1;
+
+  const distance = levenshteinDistance(a, b);
+  return 1 - distance / maxLen;
+}
+
+/**
+ * 检测是否为连续重复消息（基于相似度阈值进行模糊匹配）
  */
 function isConsecutiveDuplicate(
-  messages: AgentMessage[],
-  currentIndex: number,
-  consecutiveThreshold: number,
+  msg: { role: string; content: string },
+  prev: { role: string; content: string } | null,
+  threshold: number,
 ): boolean {
-  if (currentIndex === 0) {
-    return false;
-  }
+  if (!prev || prev.role !== msg.role) return false;
+  if (msg.content === prev.content) return true;
 
-  const currentMsg = messages[currentIndex];
-  let consecutiveCount = 1;
-
-  // 向前查找连续的相同消息
-  for (let i = currentIndex - 1; i >= 0; i--) {
-    const prevMsg = messages[i];
-
-    if (prevMsg.role !== currentMsg.role) {
-      break;
-    }
-
-    const content1 = typeof currentMsg.content === 'string' ? currentMsg.content : '';
-    const content2 = typeof prevMsg.content === 'string' ? prevMsg.content : '';
-
-    if (content1 === content2) {
-      consecutiveCount++;
-    } else {
-      break;
-    }
-  }
-
-  return consecutiveCount >= consecutiveThreshold;
+  // 使用相似度阈值进行模糊匹配
+  const similarity = computeSimilarity(msg.content, prev.content);
+  return similarity >= threshold;
 }
 
 /**
@@ -125,8 +119,20 @@ export function deduplicateUserMessages(
     if (msg.role === 'user') {
       const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
 
-      // 检测连续重复
-      if (isConsecutiveDuplicate(messages, i, fullConfig.consecutiveThreshold)) {
+      // 准备前一条消息用于连续重复检测
+      const prevMsg = i > 0 ? messages[i - 1] : null;
+      const prevContent = prevMsg
+        ? (typeof prevMsg.content === 'string' ? prevMsg.content : JSON.stringify(prevMsg.content))
+        : null;
+
+      // 检测连续重复（基于相似度阈值进行模糊匹配）
+      if (
+        isConsecutiveDuplicate(
+          { role: msg.role, content },
+          prevMsg ? { role: prevMsg.role, content: prevContent ?? '' } : null,
+          fullConfig.similarityThreshold,
+        )
+      ) {
         duplicates.push({
           originalIndex: i - 1,
           duplicateIndex: i,
@@ -166,6 +172,39 @@ export function deduplicateUserMessages(
   }
 
   return { messages: deduplicated, duplicatesRemoved, duplicates };
+}
+
+/**
+ * 去重连续重复的 assistant 消息
+ *
+ * 与上一条 assistant 消息内容完全相同的消息会被跳过，
+ * 中间穿插的 user/tool/system 消息不会阻断比较。
+ */
+export function deduplicateAssistantMessages(
+  messages: AgentMessage[],
+): AgentMessage[] {
+  if (messages.length === 0) {
+    return [];
+  }
+
+  const result: AgentMessage[] = [];
+
+  for (const msg of messages) {
+    if (msg.role === 'assistant' && result.length > 0) {
+      const lastAssistant = [...result].reverse().find(m => m.role === 'assistant');
+      const lastContent = lastAssistant
+        ? (typeof lastAssistant.content === 'string' ? lastAssistant.content : '')
+        : '';
+      const currentContent = typeof msg.content === 'string' ? msg.content : '';
+      if (lastAssistant && currentContent === lastContent && currentContent !== '') {
+        logger.debug('[Deduplication] Removed duplicate assistant message');
+        continue; // 跳过重复
+      }
+    }
+    result.push(msg);
+  }
+
+  return result;
 }
 
 /**
@@ -217,6 +256,14 @@ export function preprocessForCompaction(
     const dedupResult = deduplicateUserMessages(processed, options.deduplicate);
     processed = dedupResult.messages;
     logger.debug(`[Deduplication] Removed ${dedupResult.duplicatesRemoved} duplicates`);
+
+    // 1.1 去重连续重复的 assistant 消息
+    const beforeAssistantDedup = processed.length;
+    processed = deduplicateAssistantMessages(processed);
+    const assistantRemoved = beforeAssistantDedup - processed.length;
+    if (assistantRemoved > 0) {
+      logger.debug(`[Deduplication] Removed ${assistantRemoved} duplicate assistant messages`);
+    }
   }
 
   // 2. 合并连续系统消息

@@ -23,6 +23,10 @@ import type {
   LSPTextEdit,
   LSPFormattingOptions,
   LSPServerCapabilities,
+  LSPCodeAction,
+  LSPSignatureHelp,
+  LSPDocumentSymbol,
+  LSPWorkspaceSymbol,
 } from './lspTypes.js';
 import type { LspServerConfig } from './lspManager.js';
 
@@ -561,6 +565,61 @@ export class LSPClient {
     });
 
     return (result as LSPTextEdit[]) ?? [];
+  }
+
+  /**
+   * 获取代码操作建议（quick fix、refactor 等）
+   */
+  async getCodeActions(
+    uri: string,
+    position: LSPPosition,
+  ): Promise<LSPCodeAction[]> {
+    const result = await this.sendRequest('textDocument/codeAction', {
+      textDocument: { uri },
+      range: { start: position, end: position },
+      context: { diagnostics: [] },
+    });
+
+    return (result as LSPCodeAction[]) ?? [];
+  }
+
+  /**
+   * 获取函数参数提示（Signature Help）
+   */
+  async getSignatureHelp(
+    uri: string,
+    position: LSPPosition,
+    triggerCharacter?: string,
+  ): Promise<LSPSignatureHelp | null> {
+    const result = await this.sendRequest('textDocument/signatureHelp', {
+      textDocument: { uri },
+      position,
+      context: triggerCharacter
+        ? { triggerKind: 2, triggerCharacter }
+        : undefined,
+    });
+
+    return result as LSPSignatureHelp | null;
+  }
+
+  /**
+   * 获取文档符号列表（大纲视图）
+   */
+  async getDocumentSymbols(uri: string): Promise<LSPDocumentSymbol[]> {
+    const result = await this.sendRequest('textDocument/documentSymbol', {
+      textDocument: { uri },
+    });
+
+    return (result as LSPDocumentSymbol[]) ?? [];
+  }
+
+  /**
+   * 在工作区中搜索符号
+   */
+  async getWorkspaceSymbols(query: string): Promise<LSPWorkspaceSymbol[]> {
+    const result = await this.sendRequest('workspace/symbol', { query });
+
+    return (result as LSPWorkspaceSymbol[]) ?? [];
   }
 
   // ========== 状态检查 ==========

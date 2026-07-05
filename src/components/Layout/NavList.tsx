@@ -187,6 +187,7 @@ const NavList: React.FC<NavListProps> = ({
     archiveSession: archiveSessionFromContext,
     restoreSession: restoreSessionFromContext,
     archivedSessions,
+    setActiveSessionId,
   } = useChatSidebar();
   const historyListRef = useRef<HTMLDivElement>(null);
 
@@ -241,7 +242,10 @@ const NavList: React.FC<NavListProps> = ({
   }, [onNavigate]);
 
   // 有历史会话选中且历史列表不为空时，"AI 对话"不显示激活态（白条让给历史对话项）
-  const activeSessionHasMessages = chatSessions.some((s) => s.id === activeSessionId);
+  const activeSessionHasMessages = useMemo(
+    () => chatSessions.some((s) => s.id === activeSessionId),
+    [chatSessions, activeSessionId]
+  );
   const isChatWithSession = activeSessionId && activePath === '/chat' && activeSessionHasMessages;
 
   const isActive = (path: string) => {
@@ -320,6 +324,8 @@ const NavList: React.FC<NavListProps> = ({
         <ListItemButton
           onClick={() => {
             setJustClickedSessionId(session.id);
+            // 直接通过 Context 切换会话（不经过路由，更快）
+            setActiveSessionId(session.id);
             onSelectSession(session.id);
           }}
           sx={{
@@ -456,7 +462,7 @@ const NavList: React.FC<NavListProps> = ({
         </ListItemButton>
       </ListItem>
     );
-  }, [justClickedSessionId, activeSessionId, completedSessions, bgActive, bgActiveHover, bgHover, textActive, textSecondary, textMuted, gs, onSelectSession, togglePinSession, handleDeleteSession, archiveSessionFromContext, clearCompletedFlag]);
+  }, [justClickedSessionId, activeSessionId, completedSessions, bgActive, bgActiveHover, bgHover, textActive, textSecondary, textMuted, gs, setActiveSessionId, onSelectSession, togglePinSession, handleDeleteSession, archiveSessionFromContext, clearCompletedFlag]);
 
   return (
     <List
@@ -792,6 +798,7 @@ const NavList: React.FC<NavListProps> = ({
                   <ListItemButton
                     onClick={() => {
                       restoreSessionFromContext(s.id);
+                      setActiveSessionId(s.id);
                       onSelectSession(s.id);
                     }}
                     sx={{
@@ -828,4 +835,4 @@ const NavList: React.FC<NavListProps> = ({
   );
 };
 
-export default NavList;
+export default React.memo(NavList);

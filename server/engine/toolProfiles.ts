@@ -59,7 +59,7 @@ export const TOOL_PROFILES: Record<ToolProfileId, ToolProfile> = {
 /** 内置工具分组 */
 export const TOOL_GROUPS: Record<string, string[]> = {
   fs: ['file_listDir', 'file_readFile', 'file_writeFile', 'file_execCommand'],
-  web: ['web_search', 'web_fetch', 'web_apiCall', 'web_searchV3', 'web_fetchV3'],
+  web: ['web_search', 'web_search_legacy', 'web_fetch', 'web_fetch_legacy', 'web_api_call'],
   db: ['db_query', 'wms_inventory'],
   desktop: [
     'desktop_click', 'desktop_type', 'desktop_keyPress', 'desktop_scroll',

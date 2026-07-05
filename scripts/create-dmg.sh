@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 set -euo pipefail
 
 # Create a styled DMG containing the app bundle + /Applications symlink.
@@ -62,7 +62,8 @@ require_integer_list() {
     exit 1
   fi
 
-  read -r -a values <<< "$raw"
+  # zsh 用 read -A 读入数组（bash 用 -a）
+  read -r -A values <<< "$raw"
   if [[ "${#values[@]}" -ne "$expected_count" ]]; then
     echo "Error: $name must contain $expected_count integer value(s): '$raw'" >&2
     exit 1

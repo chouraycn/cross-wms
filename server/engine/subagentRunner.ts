@@ -12,6 +12,7 @@
 
 import { logger } from '../logger.js';
 import { getSubagentRegistry, type SpawnSubagentParams, type SubagentSpawnResult } from './subagentRegistry.js';
+import type { ToolDefinition } from '../aiClient.js';
 
 // ===================== 类型定义 =====================
 
@@ -220,6 +221,8 @@ export class SubagentRunner {
   private readonly messageChannel = new SubagentMessageChannel();
   private readonly activeInstances = new Map<string, NodeJS.Timeout>();
   private readonly isolationContexts = new Map<string, SubagentIsolationContext>();
+  /** 实例 → 绑定的 MCP 工具列表 */
+  private readonly instanceMcpTools = new Map<string, ToolDefinition[]>();
 
   /**
    * 执行子代理任务
@@ -318,6 +321,15 @@ export class SubagentRunner {
       }, timeoutMs);
       this.activeInstances.set(instanceId, timeoutHandle);
 
+      // 根据定义的 mcpServers 配置过滤可用的 MCP 工具并绑定到实例
+      const availableTools = this.registry.getAvailableTools(definitionId);
+      if (availableTools && availableTools.mcp.length > 0) {
+        this.bindMcpTools(instanceId, availableTools.mcp);
+        logger.debug(
+          `[SubagentRunner] 已为实例 ${instanceId} 绑定 ${availableTools.mcp.length} 个 MCP 工具`,
+        );
+      }
+
       // 如果需要等待完成
       if (waitForCompletion) {
         const completionResult = await this.waitForCompletion(
@@ -395,6 +407,7 @@ export class SubagentRunner {
       unsubscribe?.();
       this.messageChannel.deleteChannel(sessionKey);
       this.isolationContexts.delete(instanceId);
+      this.instanceMcpTools.delete(instanceId);
     }
   }
 
@@ -501,6 +514,33 @@ export class SubagentRunner {
   }
 
   /**
+   * 绑定 MCP 工具到子代理实例。
+   *
+   * 调用后，这些 MCP 工具将对该实例可见（可合并到 LLM 的 tools 列表）。
+   * 通常在 execute 内根据定义的 mcpServers 自动调用，也可外部手动绑定。
+   *
+   * @param instanceId - 子代理实例 ID
+   * @param mcpTools - 要绑定的 MCP 工具列表
+   */
+  bindMcpTools(instanceId: string, mcpTools: ToolDefinition[]): void {
+    if (mcpTools.length === 0) {
+      this.instanceMcpTools.delete(instanceId);
+      return;
+    }
+    this.instanceMcpTools.set(instanceId, [...mcpTools]);
+  }
+
+  /**
+   * 获取实例已绑定的 MCP 工具列表。
+   *
+   * @param instanceId - 子代理实例 ID
+   * @returns 绑定的 MCP 工具列表（未绑定时返回空数组）
+   */
+  getInstanceMcpTools(instanceId: string): ToolDefinition[] {
+    return this.instanceMcpTools.get(instanceId) ?? [];
+  }
+
+  /**
    * 发送消息到子代理
    */
   sendMessage(message: Omit<SubagentMessage, 'timestamp' | 'messageId'>): void {
@@ -536,6 +576,7 @@ export class SubagentRunner {
     }
     this.activeInstances.clear();
     this.isolationContexts.clear();
+    this.instanceMcpTools.clear();
   }
 }
 

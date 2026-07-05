@@ -94,6 +94,7 @@ jobs:
 
       - name: Deploy using SSH
         uses: appleboy/ssh-action@v1.0.3
+        id: deploy
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
@@ -104,27 +105,42 @@ jobs:
             
             cd /opt/cross-wms
             
-            echo "Pulling latest image..."
-            docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+            NEW_IMAGE="ghcr.io/${{ github.repository }}:${{ github.ref_name }}"
+            CONTAINER_NAME="cross-wms-server"
+            PREVIOUS_IMAGE_FILE="/opt/cross-wms/.previous-image"
             
+            # 记录当前使用的镜像（用于回滚）
+            if docker inspect "$CONTAINER_NAME" > /dev/null 2>&1; then
+              CURRENT_IMAGE=$(docker inspect --format='{{.Config.Image}}' "$CONTAINER_NAME")
+              echo "$CURRENT_IMAGE" > "$PREVIOUS_IMAGE_FILE"
+              echo "Previous image saved: $CURRENT_IMAGE"
+            else
+              echo "No existing container found, skipping previous image backup"
+            fi
+            
+            echo "Pulling latest image..."
+            docker pull "$NEW_IMAGE"
+            
+            # 停止旧容器（保留配置用于回滚）
             echo "Stopping old container..."
-            docker stop cross-wms-server || true
-            docker rm cross-wms-server || true
+            docker stop "$CONTAINER_NAME" || true
+            docker rm "$CONTAINER_NAME" || true
             
             echo "Starting new container..."
             docker run -d \
-              --name cross-wms-server \
+              --name "$CONTAINER_NAME" \
               --restart unless-stopped \
               -p 3000:3000 \
               -v /opt/cross-wms/data:/app/data \
               -v /opt/cross-wms/logs:/app/logs \
               -e NODE_ENV=${{ github.event.inputs.environment === 'development' && 'development' || 'production' }} \
               -e PORT=3000 \
-              ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+              "$NEW_IMAGE"
             
             echo "Deployment completed successfully!"
 
       - name: Health check
+        id: health-check
         run: |
           echo "Waiting for service to start..."
           sleep 10
@@ -140,6 +156,57 @@ jobs:
           
           echo "❌ Service failed to start"
           exit 1
+
+      - name: Rollback on failure
+        if: failure() && steps.health-check.outcome == 'failure'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            echo "⚠️ Health check failed! Starting rollback..."
+            
+            CONTAINER_NAME="cross-wms-server"
+            PREVIOUS_IMAGE_FILE="/opt/cross-wms/.previous-image"
+            
+            if [ ! -f "$PREVIOUS_IMAGE_FILE" ]; then
+              echo "❌ No previous image saved, cannot rollback"
+              exit 1
+            fi
+            
+            PREVIOUS_IMAGE=$(cat "$PREVIOUS_IMAGE_FILE")
+            echo "Rolling back to: $PREVIOUS_IMAGE"
+            
+            # 停止失败的新容器
+            docker stop "$CONTAINER_NAME" || true
+            docker rm "$CONTAINER_NAME" || true
+            
+            # 回滚到上一个镜像
+            docker run -d \
+              --name "$CONTAINER_NAME" \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              -v /opt/cross-wms/data:/app/data \
+              -v /opt/cross-wms/logs:/app/logs \
+              -e NODE_ENV=${{ github.event.inputs.environment === 'development' && 'development' || 'production' }} \
+              -e PORT=3000 \
+              "$PREVIOUS_IMAGE"
+            
+            # 验证回滚
+            sleep 5
+            for i in {1..8}; do
+              if curl -s http://${{ secrets.DEPLOY_HOST }}:3000/health > /dev/null; then
+                echo "✅ Rollback successful! Service is healthy on previous version"
+                exit 0
+              fi
+              echo "Verifying rollback... ($i/8)"
+              sleep 5
+            done
+            
+            echo "❌ Rollback failed! Manual intervention required"
+            exit 1
 
   notify:
     name: Send Deployment Notification

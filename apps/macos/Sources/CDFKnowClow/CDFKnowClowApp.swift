@@ -119,6 +119,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         false
     }
 
+    /// 系统内存压力时清理 WKWebView 缓存
+    nonisolated func applicationWillResignActive(_ notification: Notification) {
+        Task { @MainActor in
+            webViewManager?.handleMemoryPressure()
+        }
+    }
+
+    /// macOS 内存警告通知
+    nonisolated func applicationDidReceiveMemoryWarning(_ notification: Notification) {
+        logger.warning("Application received memory warning!")
+        Task { @MainActor in
+            webViewManager?.handleMemoryPressure()
+        }
+    }
+
     nonisolated func applicationWillTerminate(_ notification: Notification) {
         logger.info("CDF Know Clow terminating...")
     }

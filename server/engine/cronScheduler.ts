@@ -1,7 +1,37 @@
 /**
  * Cron Scheduler
  * Cron 调度器 - 完整的定时任务调度系统
+ *
+ * 集成 cron 引擎模块（./cron）的能力：
+ * - withRetry：指数退避重试，替代原简单重试循环
+ * - classifyCronError / shouldRetryCronError：五类瞬态错误分类，过滤不可重试错误
+ * - recordCronRun*：运行日志记录，提供结构化历史查询
+ * - shouldStaggerJob / calculateStaggerWindow：错峰调度，避免整点 thundering herd
+ * - sendCronAnnouncePayloadStrict / sendFailureNotificationAnnounce：投递成功/失败通知
  */
+
+import { withRetry, RETRY_CONFIGS } from "./cron/retry.js";
+import { classifyCronError, shouldRetryCronError } from "./cron/retry-hint.js";
+import {
+  shouldStaggerJob,
+  calculateStaggerWindow,
+  resolveCronStaggerMs,
+} from "./cron/stagger.js";
+import {
+  recordCronRun,
+  recordCronRunSuccess,
+  recordCronRunFailure,
+  getCronRunHistoryPage,
+  type GetCronRunHistoryOptions,
+  type CronRunHistoryPage,
+} from "./cron/run-log.js";
+import {
+  sendCronAnnouncePayloadStrict,
+  sendFailureNotificationAnnounce,
+  resolveFailureDestination,
+  type CronDeliveryAdapter,
+  type CronAnnounceTarget,
+} from "./cron/delivery.js";
 
 export type CronJobStatus = "active" | "paused" | "completed" | "failed" | "disabled";
 
@@ -67,6 +97,8 @@ class CronScheduler {
   private timer: ReturnType<typeof setInterval> | null = null;
   private options: Required<CronSchedulerOptions>;
   private isRunning = false;
+  /** 投递适配器：设置后任务执行结果将通过其投递；未设置则跳过投递 */
+  private deliveryAdapter: CronDeliveryAdapter | null = null;
 
   constructor(options: CronSchedulerOptions = {}) {
     this.options = {
@@ -187,6 +219,15 @@ class CronScheduler {
     return this.executors.delete(taskType);
   }
 
+  /**
+   * 设置投递适配器。
+   * 设置后，任务执行完成（成功/失败）会通过适配器投递结果通知；
+   * 传 null 可清除当前适配器，后续执行将跳过投递。
+   */
+  setDeliveryAdapter(adapter: CronDeliveryAdapter | null): void {
+    this.deliveryAdapter = adapter;
+  }
+
   // ========== Scheduler Control ==========
 
   start(): void {
@@ -264,57 +305,102 @@ class CronScheduler {
 
     this.runningJobs.set(job.id, { runId, startedAt, abort: abortController });
 
-    let result: CronExecutionResult;
-    let retries = 0;
-
-    while (retries <= job.maxRetries) {
-      try {
-        const executor = this.executors.get(job.taskType);
-        if (!executor) {
-          throw new Error(`No executor registered for task type: ${job.taskType}`);
-        }
-
-        const taskResult = await Promise.race([
-          executor(job.taskParams, { jobId: job.id, sessionKey: job.sessionKey }),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => {
-              abortController.abort();
-              reject(new Error(`Task timed out after ${job.timeoutMs}ms`));
-            }, job.timeoutMs),
-          ),
-        ]);
-
-        result = {
-          jobId: job.id,
-          runId,
-          startedAt,
-          completedAt: Date.now(),
-          success: true,
-          result: taskResult,
-          durationMs: Date.now() - startedAt,
-          retryCount: retries,
-        };
-        break;
-      } catch (error) {
-        if (retries >= job.maxRetries) {
-          result = {
-            jobId: job.id,
-            runId,
-            startedAt,
-            completedAt: Date.now(),
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-            durationMs: Date.now() - startedAt,
-            retryCount: retries,
-          };
-          break;
-        }
-        retries++;
-        await new Promise((resolve) => setTimeout(resolve, job.retryDelayMs * retries));
+    // 1. 错峰检查：使用引擎的错峰调度能力，避免整点 thundering herd
+    const staggerMs = resolveCronStaggerMs({ kind: "cron", expr: job.cronExpression });
+    if (staggerMs > 0) {
+      const window = calculateStaggerWindow(staggerMs, startedAt, job.id);
+      const delay = shouldStaggerJob(staggerMs, startedAt, job.id);
+      if (window.isWithinWindow && delay > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
 
-    result = result!;
+    // 2. 记录运行开始
+    recordCronRun({
+      runId,
+      jobId: job.id,
+      jobName: job.name,
+      startTime: startedAt,
+      status: "running",
+    });
+
+    // 3. 使用 withRetry 执行（集成错误分类与重试策略）
+    let result: CronExecutionResult;
+    const executor = this.executors.get(job.taskType);
+
+    try {
+      if (!executor) {
+        throw new Error(`No executor registered for task type: ${job.taskType}`);
+      }
+
+      const retryResult = await withRetry(
+        () =>
+          Promise.race([
+            executor(job.taskParams, { jobId: job.id, sessionKey: job.sessionKey }),
+            new Promise<never>((_, reject) =>
+              setTimeout(
+                () => reject(new Error(`Task timed out after ${job.timeoutMs}ms`)),
+                job.timeoutMs,
+              ),
+            ),
+          ]),
+        {
+          ...RETRY_CONFIGS.standard,
+          maxRetries: job.maxRetries,
+          baseDelayMs: job.retryDelayMs,
+          shouldRetry: (error) => shouldRetryCronError(error),
+        },
+      );
+
+      if (!retryResult.success) {
+        throw new Error(retryResult.error || "Unknown execution error");
+      }
+
+      const completedAt = Date.now();
+      const durationMs = completedAt - startedAt;
+
+      recordCronRunSuccess(runId, completedAt, summarizeResult(retryResult.result));
+
+      // 投递成功通知（严格投递：失败将抛出，进入 catch 分支）
+      await this.deliverAnnounce(job, runId, retryResult.result);
+
+      result = {
+        jobId: job.id,
+        runId,
+        startedAt,
+        completedAt,
+        success: true,
+        result: retryResult.result,
+        durationMs,
+        retryCount: Math.max(0, retryResult.totalAttempts - 1),
+      };
+    } catch (error) {
+      const completedAt = Date.now();
+      const durationMs = completedAt - startedAt;
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const errorCategory = classifyCronError(error);
+
+      recordCronRunFailure(
+        runId,
+        completedAt,
+        errorMsg,
+        errorCategory.category ?? undefined,
+      );
+
+      // 投递失败通知（best-effort，不掩盖原始错误）
+      await this.deliverFailureNotification(job, runId, errorMsg);
+
+      result = {
+        jobId: job.id,
+        runId,
+        startedAt,
+        completedAt,
+        success: false,
+        error: errorMsg,
+        durationMs,
+        retryCount: 0,
+      };
+    }
 
     // 更新 job 状态
     const updatedJob = { ...job };
@@ -346,6 +432,75 @@ class CronScheduler {
     this.runningJobs.delete(job.id);
 
     return result;
+  }
+
+  // ========== Delivery ==========
+
+  /** 从 job.metadata 中解析公告目标 */
+  private extractAnnounceTarget(job: CronJob): CronAnnounceTarget | null {
+    const meta = job.metadata;
+    if (!meta) return null;
+    const raw = (meta as Record<string, unknown>).announceTarget;
+    if (raw && typeof raw === "object") {
+      const t = raw as CronAnnounceTarget;
+      if (t.channel || t.to || t.accountId || t.sessionKey) {
+        return t;
+      }
+    }
+    return null;
+  }
+
+  /** 投递成功公告（严格投递，失败抛出） */
+  private async deliverAnnounce(
+    job: CronJob,
+    runId: string,
+    result: unknown,
+  ): Promise<void> {
+    if (!this.deliveryAdapter) return;
+    const target = this.extractAnnounceTarget(job);
+    if (!target) return;
+
+    const message = JSON.stringify({
+      jobId: job.id,
+      runId,
+      status: "ok",
+      result: safeSerialize(result),
+    });
+
+    const abortController = new AbortController();
+    await sendCronAnnouncePayloadStrict({
+      adapter: this.deliveryAdapter,
+      target,
+      message,
+      abortSignal: abortController.signal,
+    });
+  }
+
+  /** 投递失败通知（best-effort，不抛出） */
+  private async deliverFailureNotification(
+    job: CronJob,
+    runId: string,
+    error: string,
+  ): Promise<void> {
+    if (!this.deliveryAdapter) return;
+    const announceTarget = this.extractAnnounceTarget(job);
+    if (!announceTarget) return;
+
+    const failureTarget =
+      resolveFailureDestination(job.metadata, announceTarget) ?? announceTarget;
+
+    const message = JSON.stringify({
+      jobId: job.id,
+      runId,
+      status: "error",
+      error,
+    });
+
+    await sendFailureNotificationAnnounce({
+      adapter: this.deliveryAdapter,
+      target: failureTarget,
+      message,
+    });
   }
 
   // ========== Cron Parsing ==========
@@ -410,6 +565,14 @@ class CronScheduler {
     return [...history].reverse().slice(0, limit);
   }
 
+  /**
+   * 分页查询运行日志（委托给 cron 引擎的 run-log 模块）。
+   * 支持跨任务、按状态/文本过滤，返回带 total / hasMore 元信息的分页结果。
+   */
+  getRunHistoryPage(options?: GetCronRunHistoryOptions): CronRunHistoryPage {
+    return getCronRunHistoryPage(options ?? {});
+  }
+
   getStats(): {
     totalJobs: number;
     activeJobs: number;
@@ -441,6 +604,33 @@ class CronScheduler {
     this.executors.clear();
     this.runningJobs.clear();
     this.runHistory.clear();
+  }
+}
+
+/** 将执行结果序列化为字符串，避免循环引用/超大对象导致 JSON.stringify 抛错 */
+function safeSerialize(value: unknown): unknown {
+  if (value === undefined || value === null) return value;
+  if (typeof value === "string") return value;
+  try {
+    const str = JSON.stringify(value);
+    return str.length > 4096 ? str.slice(0, 4096) + "...[truncated]" : value;
+  } catch {
+    return String(value);
+  }
+}
+
+/** 生成运行摘要（用于 run-log 的 summary 字段，便于人读与查询） */
+function summarizeResult(value: unknown): string {
+  if (value === undefined || value === null) return "";
+  const str = typeof value === "string" ? value : safeJsonStringify(value);
+  return str.length > 200 ? str.slice(0, 200) + "..." : str;
+}
+
+function safeJsonStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
   }
 }
 

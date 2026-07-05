@@ -459,4 +459,6 @@ class PluginHookManager {
 /** 全局插件钩子管理器实例 */
 const pluginHooks = PluginHookManager.getInstance();
 
+export { pluginHooks };
+
 export default pluginHooks;

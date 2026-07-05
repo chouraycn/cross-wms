@@ -252,6 +252,24 @@ export async function executeCommand(options: ExecOptions): Promise<ExecResult> 
     };
   }
 
+  // v6.0: 从沙箱配置中读取资源限制并强制执行
+  // - maxOutputSizeBytes: 限制输出大小（字节近似为字符数，保守限制）
+  // - timeoutMs: 限制执行超时（取 params 和沙箱配置中的较小值）
+  const sandboxConfig = sandboxResult.config;
+  const sandboxMaxOutputBytes = sandboxConfig?.maxOutputSizeBytes ?? 0;
+  const sandboxTimeoutMs = sandboxConfig?.timeoutMs ?? 0;
+
+  // 计算有效的最大输出字符数
+  // 取 ExecOptions 配置和沙箱配置中的较小值；沙箱限制优先
+  const effectiveMaxOutputChars = sandboxMaxOutputBytes > 0
+    ? Math.min(maxOutputChars, sandboxMaxOutputBytes)
+    : maxOutputChars;
+
+  // 计算有效超时时间（取 params 和沙箱配置中的较小值）
+  const effectiveTimeoutMs = sandboxTimeoutMs > 0
+    ? Math.min(timeoutMs, sandboxTimeoutMs)
+    : timeoutMs;
+
   // 解析工作目录
   const cwd = params.workdir
     ? path.resolve(params.workdir)
@@ -286,7 +304,8 @@ export async function executeCommand(options: ExecOptions): Promise<ExecResult> 
     totalChars: 0,
     outputBuffer: '',
     errorBuffer: '',
-    maxOutputChars,
+    // v6.0: 使用沙箱配置后的有效输出限制
+    maxOutputChars: effectiveMaxOutputChars,
     pendingMaxChars,
     outputEmitter: new EventEmitter(),
     exitNotified: false,
@@ -334,8 +353,8 @@ export async function executeCommand(options: ExecOptions): Promise<ExecResult> 
       aggregated: '',
     });
 
-    // 设置超时
-    if (timeoutMs > 0) {
+    // 设置超时（v6.0: 使用沙箱配置后的有效超时时间）
+    if (effectiveTimeoutMs > 0) {
       timeoutTimer = setTimeout(() => {
         if (!resolved) {
           resolved = true;
@@ -352,13 +371,13 @@ export async function executeCommand(options: ExecOptions): Promise<ExecResult> 
             sessionId,
             pid: session.pid,
             cwd,
-            reason: `命令执行超时（${Math.floor(timeoutMs / 1000)}秒）`,
+            reason: `命令执行超时（${Math.floor(effectiveTimeoutMs / 1000)}秒）`,
             failureKind: 'overall-timeout',
           };
           config?.onExit?.(result);
           resolve(result);
         }
-      }, timeoutMs);
+      }, effectiveTimeoutMs);
     }
 
     // 后台模式：yield 后返回
@@ -466,6 +485,11 @@ export async function executeCommand(options: ExecOptions): Promise<ExecResult> 
         } else if (exitCode !== 0) {
           // 非零退出码但仍返回 completed（包含错误信息）
           status = 'completed';
+        }
+
+        // v6.0: 如果输出因沙箱限制被截断，追加警告信息
+        if (session.truncated && sandboxMaxOutputBytes > 0) {
+          session.outputBuffer += `\n[沙箱限制: 输出已截断至 ${effectiveMaxOutputChars} 字节]`;
         }
 
         const result: ExecResult = {

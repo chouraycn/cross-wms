@@ -1,7 +1,7 @@
 /**
  * LSP Tools — LSP 工具集成
  *
- * 提供 7 个 LSP 工具供 AI 调用：
+ * 提供 11 个 LSP 工具供 AI 调用：
  * - lsp_complete — 代码补全
  * - lsp_hover — 类型/文档提示
  * - lsp_definition — 跳转定义
@@ -9,6 +9,10 @@
  * - lsp_rename — 重命名符号
  * - lsp_diagnose — 诊断问题
  * - lsp_format — 格式化代码
+ * - lsp_code_action — 代码操作建议（quick fix、refactor）
+ * - lsp_signature_help — 函数参数提示
+ * - lsp_document_symbols — 文档符号列表（大纲视图）
+ * - lsp_workspace_symbols — 工作区符号搜索
  */
 
 import { logger } from '../logger.js';
@@ -36,6 +40,10 @@ import type {
   LSPFormattingOptions,
   LSPCompletionItem,
   LSPCompletionList,
+  LSPCodeActionResult,
+  LSPSignatureHelpResult,
+  LSPDocumentSymbolsResult,
+  LSPWorkspaceSymbolsResult,
 } from './lspTypes.js';
 
 // ===================== 工具定义 =====================
@@ -238,6 +246,99 @@ export function getLspToolDefinitions(): ToolDefinition[] {
         },
       },
     },
+    {
+      type: 'function',
+      function: {
+        name: 'lsp_code_action',
+        description: '获取指定位置的代码操作建议（如 quick fix、重构等）。返回可执行的代码操作列表，包括操作标题、类型、关联的诊断信息等。',
+        parameters: {
+          type: 'object',
+          properties: {
+            file: {
+              type: 'string',
+              description: '文件路径（绝对路径）',
+            },
+            line: {
+              type: 'number',
+              description: '行号（0-based）',
+            },
+            character: {
+              type: 'number',
+              description: '列号（0-based）',
+            },
+          },
+          required: ['file', 'line', 'character'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'lsp_signature_help',
+        description: '获取函数参数提示信息。在函数调用的参数位置获取签名提示，显示函数签名、参数列表和当前活跃参数。适用于查看函数用法、参数类型等。',
+        parameters: {
+          type: 'object',
+          properties: {
+            file: {
+              type: 'string',
+              description: '文件路径（绝对路径）',
+            },
+            line: {
+              type: 'number',
+              description: '行号（0-based）',
+            },
+            character: {
+              type: 'number',
+              description: '列号（0-based）',
+            },
+            triggerCharacter: {
+              type: 'string',
+              description: '触发字符（可选，如 "(" 或 ","）',
+            },
+          },
+          required: ['file', 'line', 'character'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'lsp_document_symbols',
+        description: '获取文档中的所有符号（类、函数、变量等），用于大纲视图。返回符号列表，包括名称、类型、范围、子符号等。适用于理解文件结构、快速定位代码位置。',
+        parameters: {
+          type: 'object',
+          properties: {
+            file: {
+              type: 'string',
+              description: '文件路径（绝对路径）',
+            },
+          },
+          required: ['file'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'lsp_workspace_symbols',
+        description: '在工作区中搜索符号。根据查询字符串搜索整个工作区的符号（类、函数、变量等），返回匹配的符号列表，包括名称、类型、位置等。适用于跨文件查找代码。',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: '搜索查询字符串',
+            },
+            limit: {
+              type: 'number',
+              description: '最大返回数量（默认 50）',
+              default: 50,
+            },
+          },
+          required: ['query'],
+        },
+      },
+    },
   ];
 }
 
@@ -256,6 +357,10 @@ export function getLspToolHandlers(): Map<string, ToolHandler> {
   handlers.set('lsp_rename', handleLspRename);
   handlers.set('lsp_diagnose', handleLspDiagnose);
   handlers.set('lsp_format', handleLspFormat);
+  handlers.set('lsp_code_action', handleLspCodeAction);
+  handlers.set('lsp_signature_help', handleLspSignatureHelp);
+  handlers.set('lsp_document_symbols', handleLspDocumentSymbols);
+  handlers.set('lsp_workspace_symbols', handleLspWorkspaceSymbols);
 
   return handlers;
 }
@@ -793,6 +898,247 @@ async function handleLspFormat(args: Record<string, unknown>): Promise<string> {
   }
 }
 
+/**
+ * lsp_code_action — 获取代码操作建议
+ */
+async function handleLspCodeAction(args: Record<string, unknown>): Promise<string> {
+  const file = args.file as string;
+  const line = args.line as number;
+  const character = args.character as number;
+
+  const startTime = Date.now();
+
+  try {
+    const serverInfo = await ensureServerStarted(file);
+    if (!serverInfo) {
+      return JSON.stringify({
+        success: false,
+        error: `未找到支持该文件的语言服务器`,
+      });
+    }
+
+    const { client, serverId } = serverInfo;
+
+    const content = await ensureDocumentOpen(client, file);
+    if (!content) {
+      return JSON.stringify({
+        success: false,
+        error: `无法打开文件: ${file}`,
+      });
+    }
+
+    const uri = getFileUri(file);
+    const position: LSPPosition = { line, character };
+
+    const codeActions = await client.getCodeActions(uri, position);
+
+    const duration = Date.now() - startTime;
+
+    const result: LSPCodeActionResult = {
+      success: true,
+      data: codeActions,
+      serverId,
+      duration,
+    };
+
+    return JSON.stringify(result);
+  } catch (error) {
+    logger.error('[LSP Tools] lsp_code_action 失败:', error);
+    return JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      duration: Date.now() - startTime,
+    });
+  }
+}
+
+/**
+ * lsp_signature_help — 函数参数提示
+ */
+async function handleLspSignatureHelp(args: Record<string, unknown>): Promise<string> {
+  const file = args.file as string;
+  const line = args.line as number;
+  const character = args.character as number;
+  const triggerCharacter = args.triggerCharacter as string | undefined;
+
+  const startTime = Date.now();
+
+  try {
+    const serverInfo = await ensureServerStarted(file);
+    if (!serverInfo) {
+      return JSON.stringify({
+        success: false,
+        error: `未找到支持该文件的语言服务器`,
+      });
+    }
+
+    const { client, serverId } = serverInfo;
+
+    const content = await ensureDocumentOpen(client, file);
+    if (!content) {
+      return JSON.stringify({
+        success: false,
+        error: `无法打开文件: ${file}`,
+      });
+    }
+
+    const uri = getFileUri(file);
+    const position: LSPPosition = { line, character };
+
+    const signatureHelp = await client.getSignatureHelp(uri, position, triggerCharacter);
+
+    const duration = Date.now() - startTime;
+
+    const result: LSPSignatureHelpResult = {
+      success: true,
+      data: signatureHelp,
+      serverId,
+      duration,
+    };
+
+    return JSON.stringify(result);
+  } catch (error) {
+    logger.error('[LSP Tools] lsp_signature_help 失败:', error);
+    return JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      duration: Date.now() - startTime,
+    });
+  }
+}
+
+/**
+ * lsp_document_symbols — 获取文档符号列表
+ */
+async function handleLspDocumentSymbols(args: Record<string, unknown>): Promise<string> {
+  const file = args.file as string;
+
+  const startTime = Date.now();
+
+  try {
+    const serverInfo = await ensureServerStarted(file);
+    if (!serverInfo) {
+      return JSON.stringify({
+        success: false,
+        error: `未找到支持该文件的语言服务器`,
+      });
+    }
+
+    const { client, serverId } = serverInfo;
+
+    const content = await ensureDocumentOpen(client, file);
+    if (!content) {
+      return JSON.stringify({
+        success: false,
+        error: `无法打开文件: ${file}`,
+      });
+    }
+
+    const uri = getFileUri(file);
+
+    const symbols = await client.getDocumentSymbols(uri);
+
+    const duration = Date.now() - startTime;
+
+    const result: LSPDocumentSymbolsResult = {
+      success: true,
+      data: symbols,
+      serverId,
+      duration,
+    };
+
+    return JSON.stringify(result);
+  } catch (error) {
+    logger.error('[LSP Tools] lsp_document_symbols 失败:', error);
+    return JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      duration: Date.now() - startTime,
+    });
+  }
+}
+
+/**
+ * lsp_workspace_symbols — 工作区符号搜索
+ */
+async function handleLspWorkspaceSymbols(args: Record<string, unknown>): Promise<string> {
+  const query = args.query as string;
+  const limit = (args.limit as number) ?? 50;
+
+  const startTime = Date.now();
+
+  try {
+    if (!query) {
+      return JSON.stringify({
+        success: false,
+        error: 'query parameter is required',
+      });
+    }
+
+    // 工作区符号搜索需要一个已启动的服务器
+    // 尝试使用 typescript-language-server（如果可用）
+    const registry = getLspServerRegistry();
+    const configs = registry.getAllConfigs();
+    let client: import('./lspClient.js').LSPClient | null = null;
+    let serverId = '';
+
+    // 优先使用已运行的 TypeScript 服务器
+    const manager = getLspClientManager();
+    const runningServers = manager.getRunningServers();
+    if (runningServers.length > 0) {
+      serverId = runningServers[0];
+      client = manager.getClient(serverId) ?? null;
+    }
+
+    // 如果没有运行中的服务器，尝试启动 TypeScript 服务器
+    if (!client) {
+      const tsConfig = configs.find((c) => c.id === 'typescript-language-server') ||
+        registry.getConfigForFile('/tmp/file.ts');
+      if (tsConfig) {
+        const available = await checkServerAvailability(tsConfig.command);
+        if (available) {
+          try {
+            client = await registry.startServer(tsConfig.id);
+            serverId = tsConfig.id;
+          } catch (err) {
+            logger.warn(`[LSP Tools] 无法启动服务器进行工作区搜索: ${err}`);
+          }
+        }
+      }
+    }
+
+    if (!client) {
+      return JSON.stringify({
+        success: false,
+        error: '未找到可用的语言服务器（需要至少一个运行中的服务器）',
+      });
+    }
+
+    const symbols = await client.getWorkspaceSymbols(query);
+
+    // 应用 limit 限制
+    const limitedSymbols = symbols.slice(0, limit);
+
+    const duration = Date.now() - startTime;
+
+    const result: LSPWorkspaceSymbolsResult = {
+      success: true,
+      data: limitedSymbols,
+      serverId,
+      duration,
+    };
+
+    return JSON.stringify(result);
+  } catch (error) {
+    logger.error('[LSP Tools] lsp_workspace_symbols 失败:', error);
+    return JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      duration: Date.now() - startTime,
+    });
+  }
+}
+
 // ===================== 导出 =====================
 
 export {
@@ -803,4 +1149,8 @@ export {
   handleLspRename,
   handleLspDiagnose,
   handleLspFormat,
+  handleLspCodeAction,
+  handleLspSignatureHelp,
+  handleLspDocumentSymbols,
+  handleLspWorkspaceSymbols,
 };

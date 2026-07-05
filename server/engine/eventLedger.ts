@@ -116,7 +116,7 @@ export interface EventQueryOptions {
 const LEDGER_VERSION = 1;
 const DEFAULT_MAX_SESSIONS = 200;
 const DEFAULT_MAX_EVENTS_PER_SESSION = 5000;
-const DEFAULT_MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
+const DEFAULT_MAX_PAYLOAD_BYTES = 1024 * 1024; // 1 MB
 
 // ==================== EventLedger 类 ====================
 
@@ -205,12 +205,19 @@ export class EventLedger {
 
     const now = Date.now();
     const eventId = uuidv4();
-    const payloadStr = JSON.stringify(payload);
+    let payloadStr = JSON.stringify(payload);
 
     if (payloadStr.length > DEFAULT_MAX_PAYLOAD_BYTES) {
       logger.warn(
-        `[EventLedger] 事件 payload 过大: ${type}, ${payloadStr.length} bytes > ${DEFAULT_MAX_PAYLOAD_BYTES}`
+        `[EventLedger] 事件 payload 过大: ${type}, ${payloadStr.length} bytes > ${DEFAULT_MAX_PAYLOAD_BYTES}，已截断`
       );
+      // 截断 payload 并追加截断标记
+      const truncated = payloadStr.slice(0, DEFAULT_MAX_PAYLOAD_BYTES - 100);
+      payloadStr = truncated + JSON.stringify({
+        _truncated: true,
+        _originalBytes: payloadStr.length,
+        _reason: 'payload_exceeds_limit',
+      });
     }
 
     const result = db.transaction(() => {

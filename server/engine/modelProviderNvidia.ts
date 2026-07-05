@@ -25,7 +25,7 @@ const NVIDIA_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 2,
       outputPerMillion: 2,
@@ -42,7 +42,7 @@ const NVIDIA_MODELS: ModelInfo[] = [
     capabilities: ['general', 'reasoning'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     isRecommended: true,
     pricing: {
       inputPerMillion: 0.2,
@@ -60,7 +60,7 @@ const NVIDIA_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.02,
       outputPerMillion: 0.02,
@@ -77,7 +77,7 @@ const NVIDIA_MODELS: ModelInfo[] = [
     capabilities: ['general', 'fast'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.02,
       outputPerMillion: 0.02,
@@ -94,7 +94,7 @@ const NVIDIA_MODELS: ModelInfo[] = [
     capabilities: ['general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.02,
       outputPerMillion: 0.02,
@@ -111,7 +111,7 @@ const NVIDIA_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     reasoning: true,
     pricing: {
       inputPerMillion: 0.1,

@@ -26,7 +26,7 @@ const MINIMAX_MODELS: ModelInfo[] = [
     supportsTools: true,
     supportsStreaming: true,
     supportsFunctionCall: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     isRecommended: true,
     pricing: {
       inputPerMillion: 0.3,
@@ -44,7 +44,7 @@ const MINIMAX_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'general', 'costEffective'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.2,
       outputPerMillion: 0.8,
@@ -61,7 +61,7 @@ const MINIMAX_MODELS: ModelInfo[] = [
     capabilities: ['general', 'costEffective'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       isFree: true,
       note: '开源模型，可本地部署',
@@ -78,7 +78,7 @@ const MINIMAX_MODELS: ModelInfo[] = [
     capabilities: ['longContext', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.3,
       outputPerMillion: 1.2,

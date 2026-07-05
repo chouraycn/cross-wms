@@ -318,6 +318,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     addPendingMessage,
     removePendingMessage,
     updatePendingMessage,
+    thinkingText,
+    hasThinking,
+    clearMessages,
   } = useAgentChat(session, handleSessionUpdate);
 
   // 显示错误提示
@@ -1119,13 +1122,22 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         )}
         {/* 终端面板（右侧） */}
         {terminalOpen && (
-          <TerminalPanel onClose={() => {
-            setTerminalOpen(false);
-            // 关闭终端时，如果对话有内容，恢复侧边栏显示
-            if (session.messages.length > 0) {
-              setSidePanelOpen(true);
-            }
-          }} />
+          <TerminalPanel
+            onClose={() => {
+              setTerminalOpen(false);
+              // 关闭终端时，如果对话有内容，恢复侧边栏显示
+              if (session.messages.length > 0) {
+                setSidePanelOpen(true);
+              }
+            }}
+            isLoading={isLoading}
+            error={error}
+            thinkingText={thinkingText}
+            hasThinking={hasThinking}
+            sendMessage={sendMessage}
+            stopGeneration={stopGeneration}
+            clearMessages={clearMessages}
+          />
         )}
         </Box>
       </Box>
@@ -1293,4 +1305,4 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   );
 };
 
-export default ChatThread;
+export default React.memo(ChatThread);

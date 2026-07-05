@@ -3,6 +3,17 @@
  * 插件加载器 - 动态模块加载与管理
  */
 
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { validateManifest, type PluginManifest as ValidatedPluginManifest } from '../../shared/pluginManifest.js';
+import { AppPaths } from '../config/appPaths.js';
+import { logger } from '../logger.js';
+
+const execAsync = promisify(exec);
+
 export type PluginStatus = "installed" | "enabled" | "disabled" | "error" | "loading" | "uninstalling";
 export type PluginType = "tool" | "agent" | "hook" | "ui" | "api" | "integration";
 
@@ -50,6 +61,21 @@ export interface PluginRegistryEntry {
   stars: number;
   verified: boolean;
   lastUpdated: number;
+}
+
+/**
+ * installFromZip 的返回结果。
+ * 包含已校验的 manifest、解压后的安装路径、入口文件相对路径、以及包大小。
+ */
+export interface ZipInstallResult {
+  /** 已校验的插件清单（来自 shared/pluginManifest.ts 的 PluginManifest） */
+  manifest: ValidatedPluginManifest;
+  /** 解压后的安装目录绝对路径 */
+  installPath: string;
+  /** 入口文件相对 installPath 的路径 */
+  entryPath: string;
+  /** 插件包大小（字节） */
+  sizeBytes: number;
 }
 
 class PluginLoader {
@@ -190,6 +216,281 @@ class PluginLoader {
   private async simulateInstall(pluginId: string): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 100));
     // 模拟下载、验证、解压等步骤
+  }
+
+  /**
+   * 从 zip 包安装插件（真实文件系统操作）。
+   *
+   * 流程:
+   * 1. 校验 zip 文件存在
+   * 2. 解压到 plugins 目录
+   * 3. 读取并校验 plugin.json / manifest.json
+   * 4. 返回 manifest + 安装路径
+   *
+   * @param zipPath - 插件 .zip 包的绝对路径
+   * @returns 安装结果（manifest、安装路径、入口路径、包大小）
+   */
+  async installFromZip(zipPath: string): Promise<ZipInstallResult> {
+    // 1. 校验 zip 文件存在
+    if (!zipPath) {
+      throw new Error('[PluginLoader] installFromZip 失败: zipPath 不能为空');
+    }
+    if (!fs.existsSync(zipPath)) {
+      throw new Error(`[PluginLoader] installFromZip 失败: 插件包不存在: ${zipPath}`);
+    }
+
+    const lower = zipPath.toLowerCase();
+    if (!lower.endsWith('.zip')) {
+      throw new Error(`[PluginLoader] installFromZip 失败: 仅支持 .zip 格式, 收到: ${path.basename(zipPath)}`);
+    }
+
+    // 2. 计算包大小
+    const sizeBytes = fs.statSync(zipPath).size;
+
+    // 3. 生成唯一的安装目录名（zip 基名 + 时间戳，避免冲突）
+    const baseName = path.basename(zipPath, '.zip').replace(/[^a-zA-Z0-9_-]/g, '-');
+    const dirName = `${baseName}-${Date.now()}`;
+    const installPath = path.join(AppPaths.pluginsDir, dirName);
+
+    // 确保插件根目录存在
+    if (!fs.existsSync(AppPaths.pluginsDir)) {
+      fs.mkdirSync(AppPaths.pluginsDir, { recursive: true });
+    }
+
+    // 4. 解压 zip（使用系统 unzip 命令，与 skillInstall 保持一致）
+    try {
+      if (fs.existsSync(installPath)) {
+        fs.rmSync(installPath, { recursive: true, force: true });
+      }
+      fs.mkdirSync(installPath, { recursive: true });
+      await execAsync(`unzip -q -o ${shellQuote(zipPath)} -d ${shellQuote(installPath)}`, {
+        timeout: 60_000,
+        maxBuffer: 8 * 1024 * 1024,
+      });
+    } catch (e) {
+      // 解压失败清理目录
+      try {
+        if (fs.existsSync(installPath)) {
+          fs.rmSync(installPath, { recursive: true, force: true });
+        }
+      } catch {
+        // 忽略清理失败
+      }
+      throw new Error(`[PluginLoader] installFromZip 解压失败: ${e instanceof Error ? e.message : String(e)}`);
+    }
+
+    // 5. 查找并读取 manifest 文件（plugin.json 或 manifest.json）
+    //    zip 可能解压出一个子目录，也可能直接将文件放在 installPath 根
+    let manifestPath: string | null = null;
+    const candidateNames = ['plugin.json', 'manifest.json'];
+    // 先在根目录查找
+    for (const name of candidateNames) {
+      const p = path.join(installPath, name);
+      if (fs.existsSync(p)) {
+        manifestPath = p;
+        break;
+      }
+    }
+    // 根目录没找到，查找一级子目录
+    if (!manifestPath) {
+      try {
+        const entries = fs.readdirSync(installPath, { withFileTypes: true });
+        for (const entry of entries) {
+          if (!entry.isDirectory()) continue;
+          for (const name of candidateNames) {
+            const p = path.join(installPath, entry.name, name);
+            if (fs.existsSync(p)) {
+              manifestPath = p;
+              break;
+            }
+          }
+          if (manifestPath) break;
+        }
+      } catch {
+        // 忽略目录读取错误
+      }
+    }
+
+    if (!manifestPath) {
+      // 清理后抛出
+      try {
+        fs.rmSync(installPath, { recursive: true, force: true });
+      } catch {
+        // 忽略清理失败
+      }
+      throw new Error('[PluginLoader] installFromZip 失败: 未在插件包中找到 plugin.json 或 manifest.json');
+    }
+
+    // 6. 读取并校验 manifest
+    let manifest: ValidatedPluginManifest;
+    try {
+      const manifestContent = fs.readFileSync(manifestPath, 'utf8');
+      const raw = JSON.parse(manifestContent);
+      manifest = validateManifest(raw);
+    } catch (e) {
+      try {
+        fs.rmSync(installPath, { recursive: true, force: true });
+      } catch {
+        // 忽略清理失败
+      }
+      throw new Error(`[PluginLoader] installFromZip manifest 校验失败: ${e instanceof Error ? e.message : String(e)}`);
+    }
+
+    // 7. 计算入口路径（相对于 installPath）
+    const manifestDir = path.dirname(manifestPath);
+    const entryPath = path.relative(installPath, path.join(manifestDir, manifest.entry || 'index.js'));
+
+    return {
+      manifest,
+      installPath,
+      entryPath,
+      sizeBytes,
+    };
+  }
+
+  /**
+   * 在指定目录中查找 manifest 文件（plugin.json 或 manifest.json）。
+   *
+   * 查找顺序:
+   * 1. 目录根
+   * 2. 一级子目录
+   *
+   * @param dir - 起始查找目录
+   * @returns manifest 文件绝对路径，未找到返回 null
+   */
+  private async findManifest(dir: string): Promise<string | null> {
+    const candidateNames = ['plugin.json', 'manifest.json'];
+    // 先在根目录查找
+    for (const name of candidateNames) {
+      const p = path.join(dir, name);
+      if (fs.existsSync(p)) {
+        return p;
+      }
+    }
+    // 根目录没找到，查找一级子目录
+    try {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        for (const name of candidateNames) {
+          const p = path.join(dir, entry.name, name);
+          if (fs.existsSync(p)) {
+            return p;
+          }
+        }
+      }
+    } catch {
+      // 忽略目录读取错误
+    }
+    return null;
+  }
+
+  /**
+   * 从 Git 仓库安装插件
+   *
+   * @param gitUrl - Git 仓库 URL
+   * @param options - 可选参数：branch（分支，默认 main）、subdir（子目录）
+   * @returns 安装结果
+   */
+  async installFromGit(gitUrl: string, options?: { branch?: string; subdir?: string }): Promise<ZipInstallResult> {
+    const baseName = gitUrl.replace(/\.git$/, '').split('/').pop() || 'plugin';
+    const installPath = path.join(AppPaths.pluginsDir, `${baseName}-${Date.now()}`);
+
+    // 确保插件根目录存在
+    if (!fs.existsSync(AppPaths.pluginsDir)) {
+      fs.mkdirSync(AppPaths.pluginsDir, { recursive: true });
+    }
+
+    try {
+      // 1. git clone
+      const branch = options?.branch || 'main';
+      const cloneCmd = `git clone --depth 1 --branch ${branch} ${shellQuote(gitUrl)} ${shellQuote(installPath)}`;
+      await execAsync(cloneCmd, { timeout: 60000 });
+
+      // 2. 查找 manifest
+      const manifestDir = options?.subdir ? path.join(installPath, options.subdir) : installPath;
+      const manifestPath = await this.findManifest(manifestDir);
+      if (!manifestPath) {
+        throw new Error('未找到 plugin.json 或 manifest.json');
+      }
+
+      // 3. 读取并校验 manifest
+      const raw = JSON.parse(await fs.promises.readFile(manifestPath, 'utf-8'));
+      const manifest = validateManifest(raw);
+
+      // 4. 安装依赖（如果有 package.json）
+      const packageJsonPath = path.join(manifestDir, 'package.json');
+      if (fs.existsSync(packageJsonPath)) {
+        await execAsync('npm install --production', { cwd: manifestDir, timeout: 120000 });
+      }
+
+      const entryPath = path.relative(installPath, path.join(manifestDir, manifest.entry || 'index.js'));
+      const stat = await fs.promises.stat(installPath);
+
+      logger.info(`[PluginLoader] Git 安装成功: ${manifest.name} from ${gitUrl}`);
+      return { manifest, installPath, entryPath, sizeBytes: stat.size };
+    } catch (e) {
+      // 清理
+      try { fs.rmSync(installPath, { recursive: true, force: true }); } catch { /* 忽略清理失败 */ }
+      throw new Error(`Git 安装失败: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  /**
+   * 从 npm 安装插件
+   *
+   * @param packageName - npm 包名
+   * @param options - 可选参数：version（版本，默认 latest）
+   * @returns 安装结果
+   */
+  async installFromNpm(packageName: string, options?: { version?: string }): Promise<ZipInstallResult> {
+    const installPath = path.join(AppPaths.pluginsDir, `${packageName.replace(/[^a-z0-9-]/gi, '-')}-${Date.now()}`);
+
+    // 确保插件根目录存在
+    if (!fs.existsSync(AppPaths.pluginsDir)) {
+      fs.mkdirSync(AppPaths.pluginsDir, { recursive: true });
+    }
+
+    try {
+      // 1. npm pack（下载 tarball）
+      const version = options?.version || 'latest';
+      const packCmd = `npm pack ${shellQuote(packageName)}@${version}`;
+      const { stdout } = await execAsync(packCmd, { cwd: os.tmpdir(), timeout: 60000 });
+      const tarballName = stdout.trim().split('\n').pop();
+      if (!tarballName) throw new Error('npm pack 未返回文件名');
+
+      const tarballPath = path.join(os.tmpdir(), tarballName);
+
+      // 2. 解压
+      fs.mkdirSync(installPath, { recursive: true });
+      await execAsync(`tar -xzf ${shellQuote(tarballPath)} -C ${shellQuote(installPath)}`, { timeout: 30000 });
+
+      // 3. 清理 tarball
+      fs.unlinkSync(tarballPath);
+
+      // 4. npm install 依赖
+      const packageJsonPath = path.join(installPath, 'package', 'package.json');
+      const actualDir = fs.existsSync(packageJsonPath) ? path.join(installPath, 'package') : installPath;
+      if (fs.existsSync(path.join(actualDir, 'package.json'))) {
+        await execAsync('npm install --production', { cwd: actualDir, timeout: 120000 });
+      }
+
+      // 5. 查找 manifest
+      const manifestPath = await this.findManifest(actualDir);
+      if (!manifestPath) throw new Error('未找到 plugin.json 或 manifest.json');
+
+      const raw = JSON.parse(await fs.promises.readFile(manifestPath, 'utf-8'));
+      const manifest = validateManifest(raw);
+
+      const entryPath = path.relative(installPath, path.join(actualDir, manifest.entry || 'index.js'));
+      const stat = await fs.promises.stat(installPath);
+
+      logger.info(`[PluginLoader] npm 安装成功: ${manifest.name} from ${packageName}`);
+      return { manifest, installPath, entryPath, sizeBytes: stat.size };
+    } catch (e) {
+      try { fs.rmSync(installPath, { recursive: true, force: true }); } catch { /* 忽略清理失败 */ }
+      throw new Error(`npm 安装失败: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
   async uninstall(pluginId: string): Promise<boolean> {
@@ -439,6 +740,27 @@ export async function installPlugin(pluginId: string): Promise<PluginInstance> {
   return PLUGIN_LOADER_INSTANCE.install(pluginId);
 }
 
+/**
+ * 从 zip 包安装插件（模块级便捷函数）。
+ *
+ * 与 installPlugin(pluginId) 不同，本函数接收 zip 文件路径，
+ * 执行真实的解压 + manifest 校验流程，返回 ZipInstallResult。
+ *
+ * @param zipPath - 插件 .zip 包的绝对路径
+ * @returns 安装结果（manifest、安装路径、入口路径、包大小）
+ */
+export async function installFromZip(zipPath: string): Promise<ZipInstallResult> {
+  return PLUGIN_LOADER_INSTANCE.installFromZip(zipPath);
+}
+
+export async function installFromGit(gitUrl: string, options?: { branch?: string; subdir?: string }): Promise<ZipInstallResult> {
+  return getPluginLoader().installFromGit(gitUrl, options);
+}
+
+export async function installFromNpm(packageName: string, options?: { version?: string }): Promise<ZipInstallResult> {
+  return getPluginLoader().installFromNpm(packageName, options);
+}
+
 export async function enablePlugin(pluginId: string): Promise<PluginInstance> {
   return PLUGIN_LOADER_INSTANCE.enable(pluginId);
 }
@@ -449,6 +771,13 @@ export async function disablePlugin(pluginId: string): Promise<boolean> {
 
 export function resetPluginLoaderForTests(): void {
   PLUGIN_LOADER_INSTANCE.clear();
+}
+
+/**
+ * 简单的 shell 参数转义（使用单引号包裹，与 skillInstall 保持一致）。
+ */
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
 export type { PluginLoader };

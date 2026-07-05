@@ -14,7 +14,7 @@ import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import { getGrayScale } from '../../constants/theme';
 import { useChatSession } from '../../contexts/ChatContext';
-import { useAgentChat, type SendAgentMessageOptions } from '../../hooks/useAgentChat';
+import type { SendAgentMessageOptions } from '../../hooks/useAgentChat';
 import { useAiEngineSettings } from '../../contexts/AppSettingsContext';
 
 // ===================== ANSI 颜色解析器 =====================
@@ -140,6 +140,14 @@ const TerminalLineView: React.FC<{ line: TerminalLine }> = ({ line }) => {
 export interface TerminalPanelProps {
   /** 关闭终端面板 */
   onClose: () => void;
+  /** 从父组件注入的 useAgentChat 返回值，避免重复实例化 */
+  isLoading: boolean;
+  error: string | null;
+  thinkingText: string;
+  hasThinking: boolean;
+  sendMessage: (content: string, options?: SendAgentMessageOptions) => Promise<void>;
+  stopGeneration: () => void;
+  clearMessages: () => void;
 }
 
 const COMMANDS = [
@@ -153,22 +161,21 @@ const COMMANDS = [
   { name: 'exit', desc: '关闭终端' },
 ];
 
-export const TerminalPanel: React.FC<TerminalPanelProps> = ({ onClose }) => {
+export const TerminalPanel: React.FC<TerminalPanelProps> = ({
+  onClose,
+  isLoading,
+  error,
+  thinkingText,
+  hasThinking,
+  sendMessage,
+  stopGeneration,
+  clearMessages,
+}) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const { session, handleNewChat, handleSessionUpdate } = useChatSession();
   const { settings: aiEngine } = useAiEngineSettings();
-
-  const {
-    isLoading,
-    error,
-    thinkingText,
-    hasThinking,
-    sendMessage,
-    stopGeneration,
-    clearMessages,
-  } = useAgentChat(session, handleSessionUpdate);
 
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [input, setInput] = useState('');

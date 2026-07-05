@@ -191,3 +191,45 @@ export function extractKeywords(
 
   return keywords;
 }
+
+/** 同义词映射表 */
+const SYNONYM_MAP: Record<string, string[]> = {
+  // 中文
+  '入库': ['收货', '入库', '入仓', '接收'],
+  '出库': ['发货', '出库', '出仓', '拣货'],
+  '库存': ['存货', '库存', '余量', '存量'],
+  '调拨': ['转移', '调拨', '调配'],
+  '补货': ['replenishment', '补货', '补充', '进货'],
+  '盘点': ['审计', '盘点', '清点'],
+  '仓库': ['仓', '库', '库房', '仓库'],
+  // 英文
+  'inventory': ['stock', 'inventory', 'goods'],
+  'warehouse': ['storage', 'warehouse', 'depot'],
+  'order': ['request', 'order', 'purchase'],
+  'shipping': ['delivery', 'shipping', 'dispatch'],
+  'receive': ['accept', 'receive', 'inbound'],
+};
+
+/** 扩展查询，添加同义词 */
+export function expandQuery(query: string, options?: { maxExpansions?: number }): string[] {
+  const keywords = extractKeywords(query);
+  const expansions = new Set<string>([query]);
+  const maxExp = options?.maxExpansions || 5;
+
+  for (const kw of keywords) {
+    const synonyms = SYNONYM_MAP[kw.toLowerCase()] || SYNONYM_MAP[kw] || [];
+    for (const syn of synonyms) {
+      if (expansions.size >= maxExpansions) break;
+      expansions.add(syn);
+    }
+  }
+
+  return Array.from(expansions);
+}
+
+/** 构建扩展查询的布尔搜索表达式 */
+export function buildExpandedQuery(query: string): string {
+  const expansions = expandQuery(query);
+  if (expansions.length <= 1) return query;
+  return expansions.join(' OR ');
+}

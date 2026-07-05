@@ -104,28 +104,24 @@ import { startTriggerEngine, stopTriggerEngine } from './engine/triggerEngine.js
 import { initTriggerManager } from './engine/triggerManager.js';
 import { startEventListener, stopEventListener } from './engine/eventListener.js';
 
-// v3.0: Plugin & API Domain Whitelist routes
-import pluginsRouter from './routes/plugins.js';
-import apiDomainWhitelistRouter from './routes/apiDomainWhitelist.js';
+// v3.0: Plugin & API Domain Whitelist routes (延迟加载)
+// import pluginsRouter from './routes/plugins.js';        → lazyRouter
+// import apiDomainWhitelistRouter from './routes/apiDomainWhitelist.js'; → lazyRouter
 
-// v3.0: Browser routes
-import browserRouter from './routes/browser.js';
-import browserProfilesRouter from './routes/browserProfiles.js';
+// v3.0: Browser routes (延迟加载)
+// import browserRouter from './routes/browser.js';       → lazyRouter
+// import browserProfilesRouter from './routes/browserProfiles.js'; → lazyRouter
 
-// v3.0: PDF, LSP, File, Webhook routes
-import pdfRouter from './routes/pdf.js';
-import lspRouter from './routes/lsp.js';
-import fileRouter from './routes/file.js';
-import webhookRouter from './routes/webhook.js';
+// v3.0: PDF, LSP, File, Webhook routes (延迟加载)
+// import pdfRouter from './routes/pdf.js';               → lazyRouter
+// import lspRouter from './routes/lsp.js';               → lazyRouter
+// import fileRouter from './routes/file.js';             → lazyRouter
+// import webhookRouter from './routes/webhook.js';       → lazyRouter
 
-// v3.0: API Templates routes
-import apiTemplatesRouter from './routes/apiTemplates.js';
-
-// v3.0: API Credentials routes
-import apiCredentialsRouter from './routes/apiCredentials.js';
-
-// v3.0: API Request History routes
-import apiHistoryRouter from './routes/apiHistory.js';
+// v3.0: API Templates/Credentials/History routes (延迟加载)
+// import apiTemplatesRouter from './routes/apiTemplates.js';   → lazyRouter
+// import apiCredentialsRouter from './routes/apiCredentials.js'; → lazyRouter
+// import apiHistoryRouter from './routes/apiHistory.js';       → lazyRouter
 
 // v3.0: Plugin Registry
 import { pluginRegistry } from './engine/pluginRegistry.js';
@@ -134,39 +130,32 @@ import { listPluginTools } from './engine/toolRegistry.js';
 // v3.0: BrowserHost Client（延迟启动，首次使用时自动启动）
 import { stopBrowserHost } from './services/browserHostClient.js';
 
-// v4.0: MCP Client Manager
-import mcpRouter from './routes/mcp.js';
+// v4.0: MCP Client Manager (mcpClientManager 保留同步导入，路由延迟加载)
 import { mcpClientManager } from './engine/mcpClientManager.js';
+// mcpRouter → lazyRouter
 
-// v4.0: Image Generation
-import imageGenerationRouter from './routes/image-generation.js';
+// v4.0: Image Generation (延迟加载)
+// imageGenerationRouter → lazyRouter
 
-// v9.0: Event Ledger (事件溯源查询)
-import eventLedgerRouter from './routes/eventLedger.js';
+// v9.0: Event Ledger (事件溯源查询，延迟加载)
+// eventLedgerRouter → lazyRouter
 
-// Goals & Wiki & Secrets routes
-import goalsRouter from './routes/goalsService.js';
-import wikiRouter from './routes/wikiService.js';
-import secretsRouter from './routes/secretsService.js';
-import webSearchRouter from './routes/webSearchService.js';
+// Goals & Wiki & Secrets & WebSearch routes (延迟加载)
+// goalsRouter, wikiRouter, secretsRouter, webSearchRouter → lazyRouter
 
-// System Permissions
-import permissionsRouter from './routes/permissions.js';
+// System Permissions (延迟加载)
+// permissionsRouter → lazyRouter
 
-// Soul Rules (人格规则管理)
-import soulRouter from './routes/soul.js';
+// Soul Rules (人格规则管理，路由延迟加载)
 import soulWatcher from './engine/soul/watcher.js';
+// soulRouter → lazyRouter
 
-// Git integration routes
-import gitRouter from './routes/git.js';
+// Git integration routes (延迟加载)
+// gitRouter → lazyRouter
 
-// v11.0: Workflow & Skill Workshop routes
-import workflowRouter from './routes/workflow.js';
-import skillWorkshopRouter from './routes/skillWorkshop.js';
-import codeIndexRouter from './routes/codeIndex.js';
-import templatesRouter from './routes/templates.js';
-import executionHistoryRouter from './routes/executionHistory.js';
-import { contextEngineRouter } from './routes/contextEngine.js';
+// v11.0: Workflow & Skill Workshop routes (延迟加载)
+// workflowRouter, skillWorkshopRouter, codeIndexRouter, templatesRouter, executionHistoryRouter → lazyRouter
+// contextEngineRouter → lazyRouter
 
 // v10.0: Gateway (API 兼容网关)
 import gatewayRouter from './gateway/gateway.js';
@@ -178,7 +167,14 @@ import { sessionLifecycleManager } from './services/sessionLifecycle.js';
 
 // v7.0: Message Queue (队列与并发控制)
 import { messageQueue } from './engine/messageQueue.js';
+// v10.0: AttemptRunner (统一 attempt 调度器)
+import { getAttemptRunner } from './engine/attemptRunner.js';
+// v11.0: 跨进程文件锁
+import { startWatchdog, stopWatchdog, releaseAllHeldLocks } from './storage/sessionWriteLock.js';
 import { logger } from './logger.js';
+
+// 轻量入口：延迟加载工具（参照 openclaw gateway/server.ts 设计）
+import { lazyRouter } from './utils/lazyRouter.js';
 
 // TimerManager (定时器统一管理)
 import { TimerManager } from './core/timerManager.js';
@@ -286,57 +282,34 @@ app.use('/api/models', modelsRoutes);
 // Inventory NL-Query route (v1.5.0)
 app.use('/api/inventory', inventoryNlQueryRouter);
 
-// ========== v3.0: Plugin & API Domain Whitelist Routes ==========
-app.use('/api/plugins', pluginsRouter);
-app.use('/api/api-domain-whitelist', apiDomainWhitelistRouter);
-
-// ========== v3.0: Browser Routes ==========
-app.use('/api/browser', browserRouter);
-app.use('/api/browser/profiles', browserProfilesRouter);
-
-// ========== v3.0: PDF, LSP, File, Webhook Routes ==========
-app.use('/api/pdf', pdfRouter);
-app.use('/api/lsp', lspRouter);
-app.use('/api/file', fileRouter);
-app.use('/api/webhook', webhookRouter);
-
-// ========== v3.0: API Templates Routes ==========
-app.use('/api/api-templates', apiTemplatesRouter);
-
-// ========== v3.0: API Credentials Routes ==========
-app.use('/api/api-credentials', apiCredentialsRouter);
-
-// ========== v3.0: API Request History Routes ==========
-app.use('/api/api-history', apiHistoryRouter);
-
-// ========== v4.0: MCP Routes ==========
-app.use('/api/mcp', mcpRouter);
-
-// ========== v4.0: Image Generation Routes ==========
-app.use('/api/image-generation', imageGenerationRouter);
-
-// ========== v9.0: Event Ledger Routes ==========
-app.use('/api/event-ledger', eventLedgerRouter);
-
-// ========== Goals & Wiki & Secrets Routes ==========
-app.use('/api/goals', goalsRouter);
-app.use('/api/wiki', wikiRouter);
-app.use('/api/secrets', secretsRouter);
-app.use('/api/web-search', webSearchRouter);
-
-// ========== Soul Rules Routes (人格规则管理) ==========
-app.use('/api/soul', soulRouter);
-
-// ========== Git Routes ==========
-app.use('/api/git', gitRouter);
-
-// ========== v11.0: Workflow & Skill Workshop Routes ==========
-app.use('/api/workflow', workflowRouter);
-app.use('/api/skill-workshop', skillWorkshopRouter);
-app.use('/api/code-index', codeIndexRouter);
-app.use('/api/templates', templatesRouter);
-app.use('/api/execution-history', executionHistoryRouter);
-app.use('/api/context-engine', contextEngineRouter);
+// ========== v3.0+: 低频路由延迟加载（参照 openclaw 轻量入口设计） ==========
+// 这些路由在首次请求时才动态 import，减少启动时间和内存占用
+app.use('/api/plugins', lazyRouter(() => import('./routes/plugins.js'), undefined, 'plugins'));
+app.use('/api/api-domain-whitelist', lazyRouter(() => import('./routes/apiDomainWhitelist.js'), undefined, 'api-domain-whitelist'));
+app.use('/api/browser', lazyRouter(() => import('./routes/browser.js'), undefined, 'browser'));
+app.use('/api/browser/profiles', lazyRouter(() => import('./routes/browserProfiles.js'), undefined, 'browser-profiles'));
+app.use('/api/pdf', lazyRouter(() => import('./routes/pdf.js'), undefined, 'pdf'));
+app.use('/api/lsp', lazyRouter(() => import('./routes/lsp.js'), undefined, 'lsp'));
+app.use('/api/file', lazyRouter(() => import('./routes/file.js'), undefined, 'file'));
+app.use('/api/webhook', lazyRouter(() => import('./routes/webhook.js'), undefined, 'webhook'));
+app.use('/api/api-templates', lazyRouter(() => import('./routes/apiTemplates.js'), undefined, 'api-templates'));
+app.use('/api/api-credentials', lazyRouter(() => import('./routes/apiCredentials.js'), undefined, 'api-credentials'));
+app.use('/api/api-history', lazyRouter(() => import('./routes/apiHistory.js'), undefined, 'api-history'));
+app.use('/api/mcp', lazyRouter(() => import('./routes/mcp.js'), undefined, 'mcp'));
+app.use('/api/image-generation', lazyRouter(() => import('./routes/image-generation.js'), undefined, 'image-generation'));
+app.use('/api/event-ledger', lazyRouter(() => import('./routes/eventLedger.js'), undefined, 'event-ledger'));
+app.use('/api/goals', lazyRouter(() => import('./routes/goalsService.js'), undefined, 'goals'));
+app.use('/api/wiki', lazyRouter(() => import('./routes/wikiService.js'), undefined, 'wiki'));
+app.use('/api/secrets', lazyRouter(() => import('./routes/secretsService.js'), undefined, 'secrets'));
+app.use('/api/web-search', lazyRouter(() => import('./routes/webSearchService.js'), undefined, 'web-search'));
+app.use('/api/soul', lazyRouter(() => import('./routes/soul.js'), undefined, 'soul'));
+app.use('/api/git', lazyRouter(() => import('./routes/git.js'), undefined, 'git'));
+app.use('/api/workflow', lazyRouter(() => import('./routes/workflow.js'), undefined, 'workflow'));
+app.use('/api/skill-workshop', lazyRouter(() => import('./routes/skillWorkshop.js'), undefined, 'skill-workshop'));
+app.use('/api/code-index', lazyRouter(() => import('./routes/codeIndex.js'), undefined, 'code-index'));
+app.use('/api/templates', lazyRouter(() => import('./routes/templates.js'), undefined, 'templates'));
+app.use('/api/execution-history', lazyRouter(() => import('./routes/executionHistory.js'), undefined, 'execution-history'));
+app.use('/api/context-engine', lazyRouter(() => import('./routes/contextEngine.js'), m => m.contextEngineRouter, 'context-engine'));
 
 // ========== v10.0: Gateway Routes (OpenAI/MCP 兼容) ==========
 // 从环境变量或配置文件读取 API Keys
@@ -392,25 +365,25 @@ app.use(`${API_PREFIX}/wms/replenishment`, wmsReplenishmentRoutes);
 app.use(`${API_PREFIX}/matching`, matchingRoutes);
 app.use(`${API_PREFIX}/models`, modelsRoutes);
 app.use(`${API_PREFIX}/inventory`, inventoryNlQueryRouter);
-app.use(`${API_PREFIX}/plugins`, pluginsRouter);
-app.use(`${API_PREFIX}/api-domain-whitelist`, apiDomainWhitelistRouter);
-app.use(`${API_PREFIX}/browser`, browserRouter);
-app.use(`${API_PREFIX}/browser/profiles`, browserProfilesRouter);
-app.use(`${API_PREFIX}/api-templates`, apiTemplatesRouter);
-app.use(`${API_PREFIX}/api-credentials`, apiCredentialsRouter);
-app.use(`${API_PREFIX}/api-history`, apiHistoryRouter);
-app.use(`${API_PREFIX}/mcp`, mcpRouter);
-app.use(`${API_PREFIX}/image-generation`, imageGenerationRouter);
-app.use(`${API_PREFIX}/permissions`, permissionsRouter);
-app.use(`${API_PREFIX}/soul`, soulRouter);
-app.use(`${API_PREFIX}/git`, gitRouter);
+app.use(`${API_PREFIX}/plugins`, lazyRouter(() => import('./routes/plugins.js'), undefined, 'plugins'));
+app.use(`${API_PREFIX}/api-domain-whitelist`, lazyRouter(() => import('./routes/apiDomainWhitelist.js'), undefined, 'api-domain-whitelist'));
+app.use(`${API_PREFIX}/browser`, lazyRouter(() => import('./routes/browser.js'), undefined, 'browser'));
+app.use(`${API_PREFIX}/browser/profiles`, lazyRouter(() => import('./routes/browserProfiles.js'), undefined, 'browser-profiles'));
+app.use(`${API_PREFIX}/api-templates`, lazyRouter(() => import('./routes/apiTemplates.js'), undefined, 'api-templates'));
+app.use(`${API_PREFIX}/api-credentials`, lazyRouter(() => import('./routes/apiCredentials.js'), undefined, 'api-credentials'));
+app.use(`${API_PREFIX}/api-history`, lazyRouter(() => import('./routes/apiHistory.js'), undefined, 'api-history'));
+app.use(`${API_PREFIX}/mcp`, lazyRouter(() => import('./routes/mcp.js'), undefined, 'mcp'));
+app.use(`${API_PREFIX}/image-generation`, lazyRouter(() => import('./routes/image-generation.js'), undefined, 'image-generation'));
+app.use(`${API_PREFIX}/permissions`, lazyRouter(() => import('./routes/permissions.js'), undefined, 'permissions'));
+app.use(`${API_PREFIX}/soul`, lazyRouter(() => import('./routes/soul.js'), undefined, 'soul'));
+app.use(`${API_PREFIX}/git`, lazyRouter(() => import('./routes/git.js'), undefined, 'git'));
 
-// v11.0: Workflow & Skill Workshop Routes (versioned)
-app.use(`${API_PREFIX}/workflow`, workflowRouter);
-app.use(`${API_PREFIX}/skill-workshop`, skillWorkshopRouter);
-app.use(`${API_PREFIX}/code-index`, codeIndexRouter);
-app.use(`${API_PREFIX}/templates`, templatesRouter);
-app.use(`${API_PREFIX}/execution-history`, executionHistoryRouter);
+// v11.0: Workflow & Skill Workshop Routes (versioned, 延迟加载)
+app.use(`${API_PREFIX}/workflow`, lazyRouter(() => import('./routes/workflow.js'), undefined, 'workflow'));
+app.use(`${API_PREFIX}/skill-workshop`, lazyRouter(() => import('./routes/skillWorkshop.js'), undefined, 'skill-workshop'));
+app.use(`${API_PREFIX}/code-index`, lazyRouter(() => import('./routes/codeIndex.js'), undefined, 'code-index'));
+app.use(`${API_PREFIX}/templates`, lazyRouter(() => import('./routes/templates.js'), undefined, 'templates'));
+app.use(`${API_PREFIX}/execution-history`, lazyRouter(() => import('./routes/executionHistory.js'), undefined, 'execution-history'));
 
 // ========== v1.5.220: 前端静态文件服务（供 Swift 原生 App 使用） ==========
 // 优先从 dist/ 加载前端构建产物（开发环境），其次从 process.env.FRONTEND_DIR 加载
@@ -563,6 +536,19 @@ server.listen(PORT, async () => {
   // v7.0: 启动消息队列（空闲会话清理 + 全局并发度控制）
   messageQueue.start();
 
+  // v10.0: 启动 AttemptRunner（统一 attempt 调度器，已完成 attempt 自动清理）
+  getAttemptRunner().start();
+
+  // v11.0: 启动文件锁 watchdog（定期清理过期锁）
+  startWatchdog();
+
+  // v12.0: 注册 ACP ChatService runtime backend（统一聊天框架接入 ACP 引擎）
+  import('./engine/acp/chatServiceRuntime.js').then(({ registerChatServiceRuntime }) => {
+    registerChatServiceRuntime();
+  }).catch(err => {
+    logger.warn('[Server] ACP ChatService runtime 注册失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+  });
+
   // P0: 启动时异步预热 ONNX 模型，避免首次 chat 请求阻塞
   import('./engine/onnxEmbedding.js').then(({ initOnnxEmbedding }) => {
     initOnnxEmbedding().catch(err => {
@@ -583,6 +569,11 @@ server.listen(PORT, async () => {
     sessionLifecycleManager.stop();
     // v7.0: 停止消息队列
     messageQueue.stop();
+    // v10.0: 停止 AttemptRunner
+    getAttemptRunner().stop();
+    // v11.0: 停止 watchdog 并释放所有持有的文件锁
+    stopWatchdog();
+    releaseAllHeldLocks();
     // 清理所有 TimerManager 管理的定时器
     const timerCount = TimerManager.clearAll();
     logger.info(`[Server] 已清理 ${timerCount} 个定时器`);

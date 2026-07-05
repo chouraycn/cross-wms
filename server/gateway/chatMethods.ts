@@ -1,32 +1,38 @@
 /**
- * Chat Gateway Methods
- * Chat 服务方法 - Gateway 的聊天相关服务方法
+ * Chat Gateway Methods — Gateway 协议的聊天方法
+ *
+ * 架构定位：
+ * - 这是 Gateway JSON-RPC 风格的聊天接口（/api/gateway/chat/*）
+ * - 为第三方客户端提供标准方法调用方式访问 cross-wms 聊天能力
+ * - 底层接入 dao/chat.ts 做持久化，并通过 runChatSession 触发实际执行
+ * - 与 /api/chat 和 /api/agent-chat 共享同一份会话数据
+ *
+ * 注意：
+ * - 主应用前端使用 /api/agent-chat（SSE AgentEvent 流）
+ * - 本模块供 gateway 协议客户端使用（REST 风格，非流式）
+ * - chat.send 异步触发 runChatSession，通过 chat.status 查询执行进度
  */
 
 import type { GatewayMethodContext } from "./types.js";
 import { registerGatewayMethod } from "./methodRegistry.js";
+import { getSessionMessages, addMessage, getSessions, deleteSession } from "../dao/chat.js";
+import type { Message } from "../db-chat.js";
+import { runChatSession } from "../engine/runChatSession.js";
+import { logger } from "../logger.js";
 
-// 内存中的聊天历史存储（生产环境应使用数据库）
-const chatHistory = new Map<string, Array<{
-  id: string;
-  role: string;
-  content: string;
-  timestamp: number;
-  metadata?: Record<string, unknown>;
-}>>();
-
-// 活跃的运行中会话
 const activeRuns = new Map<string, {
   runId: string;
   sessionKey: string;
   status: "running" | "aborted" | "completed" | "failed";
   startedAt: number;
+  completedAt?: number;
   abortController?: AbortController;
+  result?: { content: string; errorCode?: string; errorMessage?: string };
 }>();
 
 // ========== Chat Send ==========
 
-async function chatSend(params: unknown, ctx: GatewayMethodContext) {
+async function chatSend(params: unknown, _ctx: GatewayMethodContext) {
   const {
     sessionKey,
     message,
@@ -51,6 +57,17 @@ async function chatSend(params: unknown, ctx: GatewayMethodContext) {
   const runId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const abortController = new AbortController();
 
+  // 保存用户消息
+  addMessage({
+    sessionId: sessionKey,
+    role: "user",
+    content: message,
+    model: model || "",
+    toolCalls: undefined,
+    thinking: "",
+  } as Parameters<typeof addMessage>[0]);
+
+  // 注册 run 状态
   activeRuns.set(runId, {
     runId,
     sessionKey,
@@ -59,19 +76,55 @@ async function chatSend(params: unknown, ctx: GatewayMethodContext) {
     abortController,
   });
 
-  // 添加用户消息到历史
-  const history = chatHistory.get(sessionKey) ?? [];
-  history.push({
-    id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    role: "user",
-    content: message,
-    timestamp: Date.now(),
-    metadata: { runId },
+  // 异步触发 runChatSession 执行（不阻塞 gateway 响应）
+  runChatSession(
+    {
+      sessionId: sessionKey,
+      message,
+      model: model || "auto",
+      agentId: agent,
+    },
+    {
+      onError: (err) => {
+        const run = activeRuns.get(runId);
+        if (run) {
+          run.status = "failed";
+          run.completedAt = Date.now();
+          run.result = { content: "", errorCode: "RUNTIME_ERROR", errorMessage: err.message };
+        }
+        logger.error(`[Gateway chat.send] run ${runId} failed:`, err);
+      },
+    },
+  ).then((result) => {
+    const run = activeRuns.get(runId);
+    if (run && run.status === "running") {
+      run.status = "completed";
+      run.completedAt = Date.now();
+      run.result = {
+        content: result.content,
+        errorCode: result.errorCode,
+        errorMessage: result.errorMessage,
+      };
+    }
+  }).catch((err) => {
+    const run = activeRuns.get(runId);
+    if (run) {
+      run.status = "failed";
+      run.completedAt = Date.now();
+      run.result = { content: "", errorCode: "RUNTIME_ERROR", errorMessage: err.message };
+    }
+    logger.error(`[Gateway chat.send] run ${runId} threw:`, err);
   });
-  chatHistory.set(sessionKey, history);
 
-  // 注意：实际的 LLM 调用由 chatService 处理
-  // 这里只是 Gateway 层面的会话管理入口
+  // 自动清理 30 分钟前的已完成 run（避免内存泄漏）
+  if (activeRuns.size > 100) {
+    const cutoff = Date.now() - 30 * 60 * 1000;
+    for (const [id, run] of activeRuns) {
+      if (run.completedAt && run.completedAt < cutoff) {
+        activeRuns.delete(id);
+      }
+    }
+  }
 
   return {
     ok: true,
@@ -99,14 +152,17 @@ async function chatHistoryGet(params: unknown, _ctx: GatewayMethodContext) {
     return { ok: false, error: { code: "MISSING_SESSION", message: "sessionKey is required" } };
   }
 
-  const history = chatHistory.get(sessionKey) ?? [];
-  const sliced = history.slice(-limit - offset, history.length - offset > 0 ? undefined : 0);
+  const allMessages = getSessionMessages(sessionKey);
+  const total = allMessages.length;
+  const startIdx = Math.max(0, total - limit - offset);
+  const endIdx = total - offset;
+  const messages = allMessages.slice(startIdx, Math.max(startIdx, endIdx));
 
   return {
     ok: true,
-    messages: sliced,
-    total: history.length,
-    hasMore: offset + limit < history.length,
+    messages,
+    total,
+    hasMore: offset + limit < total,
   };
 }
 
@@ -188,16 +244,14 @@ async function chatInject(params: unknown, _ctx: GatewayMethodContext) {
     return { ok: false, error: { code: "MISSING_PARAMS", message: "sessionKey and content are required" } };
   }
 
-  const history = chatHistory.get(sessionKey) ?? [];
-  const message = {
-    id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    role,
+  const message = addMessage({
+    sessionId: sessionKey,
+    role: role as Message["role"],
     content,
-    timestamp: Date.now(),
-    metadata,
-  };
-  history.push(message);
-  chatHistory.set(sessionKey, history);
+    model: "",
+    toolCalls: undefined,
+    thinking: "",
+  } as Parameters<typeof addMessage>[0]);
 
   return {
     ok: true,
@@ -214,8 +268,11 @@ async function chatClear(params: unknown, _ctx: GatewayMethodContext) {
     return { ok: false, error: { code: "MISSING_SESSION", message: "sessionKey is required" } };
   }
 
-  const existed = chatHistory.has(sessionKey);
-  chatHistory.set(sessionKey, []);
+  const sessions = getSessions();
+  const existed = sessions.some((s) => s.id === sessionKey);
+  if (existed) {
+    deleteSession(sessionKey);
+  }
 
   return {
     ok: true,
@@ -226,17 +283,18 @@ async function chatClear(params: unknown, _ctx: GatewayMethodContext) {
 // ========== Chat Stats ==========
 
 async function chatStats(_params: unknown, _ctx: GatewayMethodContext) {
-  const totalMessages = Array.from(chatHistory.values()).reduce(
-    (sum, msgs) => sum + msgs.length,
-    0,
-  );
+  const sessions = getSessions();
+  let totalMessages = 0;
+  for (const s of sessions) {
+    totalMessages += getSessionMessages(s.id).length;
+  }
   const activeCount = Array.from(activeRuns.values()).filter(
     (r) => r.status === "running",
   ).length;
 
   return {
     ok: true,
-    totalSessions: chatHistory.size,
+    totalSessions: sessions.length,
     totalMessages,
     activeRuns: activeCount,
   };
@@ -259,9 +317,9 @@ async function chatSearch(params: unknown, _ctx: GatewayMethodContext) {
     return { ok: false, error: { code: "MISSING_PARAMS", message: "sessionKey and query are required" } };
   }
 
-  const history = chatHistory.get(sessionKey) ?? [];
+  const allMessages = getSessionMessages(sessionKey);
   const lowerQuery = query.toLowerCase();
-  const results = history.filter((msg) =>
+  const results = allMessages.filter((msg) =>
     msg.content.toLowerCase().includes(lowerQuery),
   ).slice(-limit);
 
@@ -286,22 +344,22 @@ export function registerChatMethods(): void {
   registerGatewayMethod("chat.search", chatSearch);
 }
 
-// 导出用于在其他地方管理历史
 export function appendChatMessage(
   sessionKey: string,
   message: { role: string; content: string; metadata?: Record<string, unknown> },
 ): void {
-  const history = chatHistory.get(sessionKey) ?? [];
-  history.push({
-    id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    ...message,
-    timestamp: Date.now(),
-  });
-  chatHistory.set(sessionKey, history);
+  addMessage({
+    sessionId: sessionKey,
+    role: message.role as Message["role"],
+    content: message.content,
+    model: "",
+    toolCalls: undefined,
+    thinking: "",
+  } as Parameters<typeof addMessage>[0]);
 }
 
 export function getChatHistory(sessionKey: string) {
-  return chatHistory.get(sessionKey) ?? [];
+  return getSessionMessages(sessionKey);
 }
 
 export function getActiveRun(runId: string) {
@@ -311,6 +369,6 @@ export function getActiveRun(runId: string) {
 export function updateRunStatus(runId: string, status: string) {
   const run = activeRuns.get(runId);
   if (run) {
-    (run as { status: string }).status = status;
+    (run as { status: string }).status = status as "running" | "aborted" | "completed" | "failed";
   }
 }

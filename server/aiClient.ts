@@ -15,6 +15,13 @@ import { isLocalModel } from './modelsStore.js';
 import { sanitizeToolMessages } from './engine/contextTruncate.js';
 import { logger } from './logger.js';
 import { extractAnthropicThinkingSignature } from './engine/thinkingSignatureManager.js';
+import { startLocalService, touchService } from './localServiceManager.js';
+import { getModelFailoverManager } from './engine/modelFailover.js';
+import { initBuiltinAdapters, getAdapter, inferApiType } from './adapters/registry.js';
+import type { ModelApiType } from '../shared/types/models.js';
+
+// 初始化内置适配器
+initBuiltinAdapters();
 
 /** 消息内容类型（支持 OpenAI Vision 格式） */
 export type MessageContent = string | Array<{
@@ -34,6 +41,66 @@ export interface ModelCallConfig {
   contextWindow?: number;
   /** 模型能力标签（如 ['reasoning', 'multimodal']） */
   capabilities?: string[];
+  /** 思考级别（off/low/medium/high 等），控制模型推理深度 */
+  thinkingLevel?: string;
+  /** 本地服务配置（自动启动/停止本地模型服务） */
+  localService?: {
+    command: string;
+    args?: string[];
+    cwd?: string;
+    env?: Record<string, string>;
+    healthUrl?: string;
+    readyTimeoutMs?: number;
+    idleStopMs?: number;
+  };
+  /** 认证模式 */
+  authMode?: 'api-key' | 'aws-sdk' | 'oauth' | 'token' | 'none';
+  /** API 适配器类型（不设置则自动推断） */
+  apiType?: ModelApiType;
+  /** Provider 兼容性配置 */
+  compatConfig?: {
+    supportsStreaming?: boolean;
+    supportsToolCalls?: boolean;
+    supportsReasoning?: boolean;
+    reasoningField?: string;
+    apiVersion?: string;
+    extraHeaders?: Record<string, string>;
+    extraBodyParams?: Record<string, unknown>;
+    roleMap?: Record<string, string>;
+    supportsSystemMessage?: boolean;
+    systemMessageFallback?: 'merge-to-first-user' | 'ignore';
+    maxImages?: number;
+    supportsVision?: boolean;
+    thinking?: {
+      paramField?: string;
+      levelMap?: Record<string, string>;
+      useBudget?: boolean;
+      budgetRatio?: number;
+    };
+  };
+  /** 媒体输入配置 */
+  mediaInputConfig?: {
+    supportedInputs?: Array<'text' | 'image' | 'video' | 'audio'>;
+    image?: {
+      maxFileSize?: number;
+      formats?: string[];
+      maxPixels?: number;
+      maxWidth?: number;
+      maxHeight?: number;
+      supportsDetail?: boolean;
+      detailLevels?: Array<'auto' | 'low' | 'high'>;
+    };
+    video?: {
+      maxFileSize?: number;
+      formats?: string[];
+      maxDurationSeconds?: number;
+    };
+    audio?: {
+      maxFileSize?: number;
+      formats?: string[];
+      maxDurationSeconds?: number;
+    };
+  };
 }
 
 /** Tool 定义（OpenAI 格式） */
@@ -132,7 +199,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 /** 根据 HTTP 状态码 + 响应体分类错误 */
-function classifyError(statusCode: number, responseBody: string): AIAPIError['category'] {
+export function classifyError(statusCode: number, responseBody: string): AIAPIError['category'] {
   if (statusCode === 401 || statusCode === 403) return 'auth';
   if (statusCode === 429) return 'rate_limit';
   if (statusCode === 402) {
@@ -206,6 +273,44 @@ function validateToolMessages(messages: Array<{ role: string; content?: unknown;
   }
 }
 
+// ===================== 思考级别到 reasoning_effort 映射 =====================
+
+/**
+ * 思考级别到各厂商 reasoning_effort 值的映射
+ *
+ * 不同厂商对思考级别的命名不同：
+ * - OpenAI / DeepSeek / 大多数 OpenAI 兼容: low / medium / high
+ * - Anthropic: 用 thinking budget 控制，这里做近似映射
+ * - Google: 用 thinking_config 控制
+ */
+const THINKING_LEVEL_TO_EFFORT: Record<string, string> = {
+  minimal: 'low',
+  low: 'low',
+  medium: 'medium',
+  adaptive: 'medium',
+  high: 'high',
+  xhigh: 'high',
+  max: 'high',
+};
+
+/**
+ * 判断思考级别是否有效（非 off）
+ */
+function isThinkingEnabled(level?: string | null): boolean {
+  if (!level) return false;
+  const normalized = level.toLowerCase().trim();
+  return normalized !== 'off' && normalized !== 'disable' && normalized !== '0' && normalized !== 'false';
+}
+
+/**
+ * 规范化思考级别为 reasoning_effort 值
+ */
+function normalizeThinkingEffort(level?: string | null): string | null {
+  if (!isThinkingEnabled(level)) return null;
+  const normalized = level!.toLowerCase().trim();
+  return THINKING_LEVEL_TO_EFFORT[normalized] || 'medium';
+}
+
 // ===================== OpenAI 兼容格式（含 Tool Calling）====================
 
 /**
@@ -230,6 +335,8 @@ export async function callOpenAICompatibleStream(
   tools?: ToolDefinition[],
   onToolCall?: (toolCall: ToolCall) => void,
   modelCapabilities?: string[],
+  thinkingLevel?: string,
+  authMode?: string,
 ): Promise<AIResponse> {
   let endpoint = apiEndpoint.replace(/\/+$/, '');
   if (!endpoint.endsWith('/chat/completions')) {
@@ -240,7 +347,12 @@ export async function callOpenAICompatibleStream(
     'Content-Type': 'application/json',
   };
   if (apiKey && apiKey.trim()) {
-    headers['Authorization'] = `Bearer ${apiKey}`;
+    const mode = authMode || 'api-key';
+    if (mode === 'api-key' || mode === 'token') {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    } else if (mode === 'oauth') {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
   }
 
   const body: Record<string, unknown> = {
@@ -250,6 +362,14 @@ export async function callOpenAICompatibleStream(
     max_tokens: maxTokens,
     stream: true,
   };
+
+  // 思考级别控制：仅当模型支持 reasoning 能力且思考级别非 off 时设置
+  const supportsReasoning = modelCapabilities?.includes('reasoning');
+  const reasoningEffort = normalizeThinkingEffort(thinkingLevel);
+  if (supportsReasoning && reasoningEffort) {
+    body.reasoning_effort = reasoningEffort;
+  }
+
   if (tools && tools.length > 0) {
     // v2.8.7: 本地模型工具策略 — ollama 等本地推理引擎处理 tool_choice="auto" 时
     // 需要对每个 tool 计算调用概率。20 个 tools 就需要 14 秒首响应（7B 模型），
@@ -645,6 +765,8 @@ export async function callAnthropicStream(
   tools?: ToolDefinition[],
   onToolCall?: (toolCall: ToolCall) => void,
   modelCapabilities?: string[],
+  thinkingLevel?: string,
+  authMode?: string,
 ): Promise<AIResponse> {
   let endpoint = apiEndpoint.replace(/\/+$/, '');
   if (!endpoint.endsWith('/messages')) {
@@ -663,21 +785,51 @@ export async function callAnthropicStream(
   if (systemPrompt) {
     body.system = systemPrompt;
   }
+
+  // Anthropic 思考控制：使用 thinking 类型的 content block + thinking budget
+  // thinking budget 根据思考级别映射（low→最小，high→最大）
+  const supportsReasoning = modelCapabilities?.includes('reasoning');
+  if (supportsReasoning && isThinkingEnabled(thinkingLevel)) {
+    const level = thinkingLevel!.toLowerCase().trim();
+    // 映射思考级别到 thinking budget（max_tokens 的比例）
+    let thinkingBudget: number;
+    if (level.includes('max') || level.includes('xhigh')) {
+      thinkingBudget = Math.floor(maxTokens * 0.8);
+    } else if (level === 'high') {
+      thinkingBudget = Math.floor(maxTokens * 0.6);
+    } else if (level === 'medium' || level === 'adaptive') {
+      thinkingBudget = Math.floor(maxTokens * 0.4);
+    } else if (level === 'minimal') {
+      thinkingBudget = Math.floor(maxTokens * 0.15);
+    } else {
+      thinkingBudget = Math.floor(maxTokens * 0.3);
+    }
+    body.thinking = { type: 'enabled', thinking_budget_tokens: thinkingBudget };
+  }
+
   if (tools && tools.length > 0) {
     body.tools = convertToolsToAnthropic(tools);
     body.tool_choice = { type: 'auto' };
   }
 
+  const reqHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'anthropic-version': '2023-06-01',
+    'anthropic-dangerous-direct-browser-access': 'true',
+  };
+  if (apiKey) {
+    const mode = authMode || 'api-key';
+    if (mode === 'api-key') {
+      reqHeaders['x-api-key'] = apiKey;
+    } else if (mode === 'bearer' || mode === 'token' || mode === 'oauth') {
+      reqHeaders['Authorization'] = `Bearer ${apiKey}`;
+    }
+  }
   let response: Response;
   try {
     response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers: reqHeaders,
       body: JSON.stringify(body),
       signal,
     });
@@ -827,6 +979,209 @@ export async function callAnthropicStream(
   };
 }
 
+// ===================== 适配器模式统一调用入口 =====================
+
+/**
+ * 使用适配器模式调用 AI 模型（流式）
+ *
+ * v10.0: 基于适配器架构，支持多种 API 格式：
+ * - openai-chat: OpenAI Chat Completions
+ * - openai-completions: OpenAI Completions (legacy)
+ * - anthropic-messages: Anthropic Messages API
+ * - google-generative-ai: Google Generative AI
+ *
+ * 自动推断 API 类型，也可通过 modelConfig.apiType 显式指定。
+ */
+export async function callAIModelStreamWithAdapter(
+  modelConfig: ModelCallConfig,
+  messages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>,
+  onChunk: (text: string) => void,
+  signal?: AbortSignal,
+  onThinking?: (text: string) => void,
+  tools?: ToolDefinition[],
+  onToolCall?: (toolCall: ToolCall) => void,
+  modelCapabilities?: string[],
+  onRateLimit?: OnRateLimitCallback,
+  thinkingLevel?: string,
+): Promise<AIResponse> {
+  let apiKey = modelConfig.apiKey;
+  const apiEndpoint = modelConfig.apiEndpoint || '';
+  const modelId = modelConfig.id;
+  const temperature = modelConfig.temperature ?? 0.7;
+  const topP = modelConfig.topP;
+  const maxTokens = Math.min(modelConfig.maxTokens || 4096, 8192);
+  const provider = modelConfig.provider;
+
+  const capabilities = modelConfig.capabilities || modelCapabilities || [];
+  const effectiveThinkingLevel = thinkingLevel || modelConfig.thinkingLevel;
+
+  if (!apiKey && !isLocalModel(modelConfig)) {
+    throw new AIAPIError(
+      `模型 ${modelId} 未配置 API Key，请在模型管理中设置密钥`,
+      'auth',
+    );
+  }
+  if (!apiEndpoint) {
+    throw new AIAPIError(
+      `模型 ${modelId} 未配置 API 端点`,
+      'unknown',
+    );
+  }
+
+  // 本地服务自动启动
+  if (modelConfig.localService) {
+    const ready = await startLocalService(modelId, modelConfig.localService);
+    if (!ready) {
+      logger.warn(`[AIClient] 本地服务 ${modelId} 启动超时，继续尝试请求`);
+    }
+    touchService(modelId);
+  }
+
+  // 确定 API 类型
+  const apiType = modelConfig.apiType || inferApiType(provider, apiEndpoint);
+  const adapter = getAdapter(apiType);
+
+  if (!adapter) {
+    logger.warn(`[AIClient] 未找到适配器: ${apiType}，回退到 OpenAI Chat 格式`);
+    return callAIModelStream(
+      modelConfig, messages, onChunk, signal, onThinking,
+      tools, onToolCall, modelCapabilities, onRateLimit, thinkingLevel,
+    );
+  }
+
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+    if (signal?.aborted) {
+      throw new AIAPIError('请求已取消', 'unknown');
+    }
+
+    try {
+      // 处理 DeepSeek 等特定 provider 的多模态剥离
+      const rawMessages = provider === 'deepseek'
+        ? (messages as Array<{ role: string; content: string | OpenAIVisionContent[] }>).map(m => {
+            if (Array.isArray(m.content)) {
+              const textParts = m.content
+                .filter((p: OpenAIVisionContent) => p.type === 'text')
+                .map((p: OpenAIVisionContent) => p.text || '')
+                .join('\n');
+              return { ...m, content: textParts || '（图片内容已移除，当前模型不支持图片理解）' };
+            }
+            return m;
+          })
+        : messages;
+
+      const effectiveMessages = sanitizeToolMessages(rawMessages as Parameters<typeof sanitizeToolMessages>[0]);
+      validateToolMessages(effectiveMessages);
+
+      return await adapter.callStream(
+        {
+          apiEndpoint,
+          apiKey,
+          modelId,
+          authMode: modelConfig.authMode,
+          temperature,
+          topP,
+          maxTokens,
+          capabilities,
+          thinkingLevel: effectiveThinkingLevel,
+          signal,
+          compat: modelConfig.compatConfig,
+          mediaInput: modelConfig.mediaInputConfig,
+        },
+        effectiveMessages as Array<{ role: string; content: MessageContent }>,
+        {
+          onChunk,
+          onThinking,
+          onToolCall,
+        },
+        tools,
+      );
+    } catch (error) {
+      lastError = error;
+      if (signal?.aborted) throw error;
+      if (error instanceof AIAPIError && error.category === 'auth') {
+        throw error;
+      }
+
+      // 400 tool_calls 错误降级重试
+      if (error instanceof AIAPIError && error.statusCode === 400 &&
+          error.responseBody && error.responseBody.includes('tool_calls')) {
+        logger.error('[AIClient] 400 tool_calls 错误，尝试 strip 所有 tool_calls 后重试...');
+
+        const strippedMessages = messages.map(m => {
+          if (m.role === 'assistant' && m.tool_calls) {
+            const rest = { ...m };
+            delete (rest as Record<string, unknown>).tool_calls;
+            delete (rest as Record<string, unknown>).reasoning_content;
+            return { ...rest, content: m.content || '(tool calls stripped)' };
+          }
+          return m;
+        }).filter(m => m.role !== 'tool') as typeof messages;
+
+        const retryMessages = sanitizeToolMessages(strippedMessages as Parameters<typeof sanitizeToolMessages>[0]);
+
+        try {
+          return await adapter.callStream(
+            {
+              apiEndpoint,
+              apiKey,
+              modelId,
+              authMode: modelConfig.authMode,
+              temperature,
+              topP,
+              maxTokens,
+              capabilities,
+              thinkingLevel: effectiveThinkingLevel,
+              signal,
+              compat: modelConfig.compatConfig,
+              mediaInput: modelConfig.mediaInputConfig,
+            },
+            retryMessages as Array<{ role: string; content: MessageContent }>,
+            {
+              onChunk,
+              onThinking,
+              onToolCall,
+            },
+            undefined,
+          );
+        } catch (retryErr) {
+          logger.error('[AIClient] strip tool_calls 重试也失败，返回降级响应:', retryErr instanceof Error ? retryErr.message : String(retryErr));
+          onChunk('\n\n⚠️ 上下文中的工具调用历史格式异常，已自动清理并重试。请重新发送你的问题。');
+          return {
+            content: '\n\n⚠️ 上下文中的工具调用历史格式异常，已自动清理并重试。请重新发送你的问题。',
+            toolCalls: [],
+            reasoningContent: undefined,
+          };
+        }
+      }
+
+      // 速率限制时切换备用 Key
+      if (error instanceof AIAPIError && error.category === 'rate_limit' && onRateLimit) {
+        try {
+          const newKey = await onRateLimit();
+          if (newKey) {
+            apiKey = newKey.apiKey;
+            logger.debug(`[AIClient] 429 速率限制，已切换到备用 Key #${newKey.keyIndex}，立即重试...`);
+            continue;
+          }
+        } catch {
+          // 切换 Key 失败，走正常重试逻辑
+        }
+      }
+
+      if (attempt >= RETRY_CONFIG.maxRetries) break;
+      if (!isRetryableError(error)) break;
+
+      const delay = calculateDelay(attempt);
+      logger.debug(`[AIClient] 请求失败，${delay.toFixed(0)}ms 后重试 (${attempt + 1}/${RETRY_CONFIG.maxRetries})...`);
+      await sleep(delay);
+    }
+  }
+
+  throw lastError;
+}
+
 /** Key 切换回调 — 速率限制时由上层切换到备用 Key */
 export type OnRateLimitCallback = () => Promise<{ apiKey: string; keyIndex: number } | null>;
 
@@ -849,6 +1204,7 @@ export async function callAIModelStream(
   onToolCall?: (toolCall: ToolCall) => void,
   modelCapabilities?: string[],
   onRateLimit?: OnRateLimitCallback,
+  thinkingLevel?: string,
 ): Promise<AIResponse> {
   let apiKey = modelConfig.apiKey;
   const apiEndpoint = modelConfig.apiEndpoint || '';
@@ -860,6 +1216,8 @@ export async function callAIModelStream(
 
   // v2.2.0: 优先从 modelConfig 获取 capabilities，其次使用传入参数
   const capabilities = modelConfig.capabilities || modelCapabilities || [];
+  // 思考级别：优先从 modelConfig.thinkingLevel 读取，其次从参数
+  const effectiveThinkingLevel = thinkingLevel || modelConfig.thinkingLevel;
 
   if (!apiKey && !isLocalModel(modelConfig)) {
     throw new AIAPIError(
@@ -872,6 +1230,15 @@ export async function callAIModelStream(
       `模型 ${modelId} 未配置 API 端点`,
       'unknown',
     );
+  }
+
+  // 本地服务自动启动
+  if (modelConfig.localService) {
+    const ready = await startLocalService(modelId, modelConfig.localService);
+    if (!ready) {
+      logger.warn(`[AIClient] 本地服务 ${modelId} 启动超时，继续尝试请求`);
+    }
+    touchService(modelId);
   }
   let lastError: unknown;
 
@@ -888,6 +1255,8 @@ export async function callAIModelStream(
           temperature, maxTokens, onChunk, signal,
           onThinking, tools, onToolCall,
           capabilities,
+          effectiveThinkingLevel,
+          modelConfig.authMode,
         );
       }
       // v1.5.62-fix: DeepSeek API 不支持 image_url 格式，自动剥离多模态内容。
@@ -937,6 +1306,8 @@ export async function callAIModelStream(
         temperature, maxTokens, onChunk, signal,
         onThinking, tools, onToolCall,
         capabilities,
+        effectiveThinkingLevel,
+        modelConfig.authMode,
       );
     } catch (error) {
       lastError = error;
@@ -976,6 +1347,8 @@ export async function callAIModelStream(
               temperature, maxTokens, onChunk, signal,
               onThinking, undefined, onToolCall,
               capabilities,
+              effectiveThinkingLevel,
+              modelConfig.authMode,
             );
           }
           validateToolMessages(retryMessages);
@@ -985,6 +1358,8 @@ export async function callAIModelStream(
             temperature, maxTokens, onChunk, signal,
             onThinking, undefined, onToolCall,
             capabilities,
+            effectiveThinkingLevel,
+            modelConfig.authMode,
           );
         } catch (retryErr) {
           logger.error('[AIClient] strip tool_calls 重试也失败，返回降级响应:', retryErr instanceof Error ? retryErr.message : String(retryErr));
@@ -1034,6 +1409,86 @@ export async function callAIModel(
   messages: Array<{ role: string; content: MessageContent }>,
   signal?: AbortSignal,
 ): Promise<string> {
-  const response = await callAIModelStream(modelConfig, messages, () => {}, signal);
+  const response = await callAIModelStreamWithAdapter(modelConfig, messages, () => {}, signal);
   return response.content;
+}
+
+// ===================== 跨模型故障转移调用 =====================
+
+/**
+ * 带故障转移的 AI 模型调用
+ *
+ * 集成 ModelFailoverManager，当当前模型调用失败时自动切换到备选模型。
+ * 支持两种策略：
+ * - priority: 按 fallbackChain 优先级依次尝试
+ * - capability-match: 按能力匹配选择备选模型
+ *
+ * @param models 候选模型列表
+ * @param messages 消息列表
+ * @param options 调用选项（信号、回调、策略等）
+ */
+export async function callAIModelWithFailover(
+  models: ModelCallConfig[],
+  messages: Array<{ role: string; content: MessageContent }>,
+  options?: {
+    signal?: AbortSignal;
+    fallbackChain?: string[];
+    policy?: 'priority' | 'capability-match';
+    requiredCapabilities?: string[];
+    onModelSwitch?: (oldModel: string, newModel: string, reason: string) => void;
+    onChunk?: (chunk: string) => void;
+    onThinking?: (chunk: string) => void;
+    onToolCall?: (toolCall: ToolCall) => void;
+    onUsage?: (usage: AIResponse['usage']) => void;
+    onRateLimit?: () => string | null;
+  }
+): Promise<AIResponse> {
+  const failoverManager = getModelFailoverManager({
+    fallbackChain: options?.fallbackChain,
+    policy: options?.policy,
+  });
+  // ModelCallConfig 与 ModelConfig 结构兼容，但类型不同，需强制转换
+  failoverManager.setModels(models as unknown as Parameters<typeof failoverManager.setModels>[0]);
+
+  let currentModel = models[0];
+  let lastError: Error | null = null;
+  const maxSwitches = models.length;
+
+  for (let i = 0; i < maxSwitches; i++) {
+    try {
+      const response = await callAIModelStreamWithAdapter(
+        currentModel,
+        messages,
+        options?.onChunk || (() => {}),
+        options?.signal,
+        options?.onThinking,
+        undefined,
+        options?.onToolCall,
+        undefined,
+        undefined,
+        undefined,
+      );
+      failoverManager.recordSuccess(currentModel.id || '');
+      return response;
+    } catch (e: any) {
+      lastError = e;
+      const errorCategory = (e as AIAPIError).category || 'unknown';
+      failoverManager.recordFailure(currentModel.id || '', e.message, errorCategory);
+
+      const nextModel = failoverManager.getNextModel(
+        currentModel.id || '',
+        errorCategory,
+        options?.requiredCapabilities as Parameters<typeof failoverManager.getNextModel>[2],
+      );
+
+      if (!nextModel || nextModel.id === currentModel.id) {
+        break;
+      }
+
+      options?.onModelSwitch?.(currentModel.id || '', nextModel.id || '', errorCategory);
+      currentModel = nextModel as unknown as ModelCallConfig;
+    }
+  }
+
+  throw lastError || new Error('All models failed');
 }

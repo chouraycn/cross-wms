@@ -41,7 +41,7 @@ const OPENAI_MODELS: ModelInfo[] = [
     supportsTools: true,
     supportsStreaming: true,
     supportsFunctionCall: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     isRecommended: true,
     pricing: {
       inputPerMillion: 2.5,
@@ -60,7 +60,7 @@ const OPENAI_MODELS: ModelInfo[] = [
     supportsTools: true,
     supportsStreaming: true,
     supportsFunctionCall: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     isRecommended: true,
     pricing: {
       inputPerMillion: 0.15,
@@ -78,7 +78,7 @@ const OPENAI_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'code', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     thinkingProfile: OPENAI_O_THINKING_PROFILE,
     reasoning: true,
     pricing: {
@@ -97,7 +97,7 @@ const OPENAI_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'fast', 'costEffective', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     thinkingProfile: OPENAI_O_THINKING_PROFILE,
     reasoning: true,
     isRecommended: true,
@@ -117,7 +117,7 @@ const OPENAI_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'fast', 'code', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     thinkingProfile: OPENAI_O_THINKING_PROFILE,
     reasoning: true,
     pricing: {
@@ -136,7 +136,7 @@ const OPENAI_MODELS: ModelInfo[] = [
     capabilities: ['general', 'reasoning'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 10,
       outputPerMillion: 30,

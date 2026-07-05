@@ -496,6 +496,17 @@ const StorageWarningListener: React.FC = () => {
   return null;
 };
 
+/** /settings 路由：打开侧边栏设置弹窗并重定向到 /chat（提升到模块顶层避免每次 MainLayout 重渲染时重新挂载） */
+const SettingsRedirect: React.FC<{ onOpenSettings: (open: boolean) => void }> = ({ onOpenSettings }) => {
+  const navigate = useNavigate();
+  React.useEffect(() => {
+    onOpenSettings(true);
+    navigate('/chat', { replace: true });
+    // deps intentionally empty — run once on mount
+  }, []);
+  return null;
+};
+
 const MainLayout: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -519,7 +530,7 @@ const MainLayout: React.FC = () => {
         document.documentElement.style.setProperty('--pw-top', '28px');
         clearInterval(id);
       }
-    }, 100);
+    }, 500);
     setTimeout(() => clearInterval(id), 3000);
     return () => clearInterval(id);
   }, [isPy]);
@@ -534,23 +545,12 @@ const MainLayout: React.FC = () => {
   // v1.5.73: settingsPopoverOpen 从 Sidebar 提升到 MainLayout，供 /settings 路由触发
   const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
 
-  // /settings 路由：打开侧边栏设置弹窗并重定向到 /chat
-  function SettingsRedirect() {
-    const navigate = useNavigate();
-    React.useEffect(() => {
-      setSettingsPopoverOpen(true);
-      navigate('/chat', { replace: true });
-      // deps intentionally empty — run once on mount
-    }, []);
-    return null;
-  }
-
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
   const scrollRef = useAutoHideScrollbar(!isPy);
 
-  const actions = getToolbarActions(location.pathname);
+  const actions = useMemo(() => getToolbarActions(location.pathname), [location.pathname]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const pageKey = getPageRefreshKey(location.pathname);
+  const pageKey = useMemo(() => getPageRefreshKey(location.pathname), [location.pathname]);
 
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>(ALL_WAREHOUSES);
   const handleWarehouseChange = useCallback((warehouseId: string) => {
@@ -683,7 +683,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/wms/replenishment" element={<Suspense fallback={<LoadingFallback />}><WmsReplenishmentPage /></Suspense>} />
                     <Route path="/transfer" element={<TransferPage />} />
                     <Route path="/pdf-tools" element={<PdfToolsPage />} />
-                    <Route path="/settings" element={<SettingsRedirect />} />
+                    <Route path="/settings" element={<SettingsRedirect onOpenSettings={setSettingsPopoverOpen} />} />
                     <Route path="/automation" element={<AutomationPage />} />
                     <Route path="/plugins" element={<PluginsPage />} />
                     <Route path="/api-domain-whitelist" element={<ApiDomainWhitelistPage />} />

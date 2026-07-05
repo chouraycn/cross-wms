@@ -60,7 +60,7 @@ describe('compaction-planning', () => {
       const msg = createUserMessage(longContent);
       const tokens = estimateMessageTokens(msg as unknown as Parameters<typeof estimateMessageTokens>[0]);
       expect(tokens).toBeGreaterThan(200);
-      expect(tokens).toBeLessThan(300);
+      expect(tokens).toBeLessThan(700);
     });
 
     it('应该考虑 toolCalls 的开销', () => {

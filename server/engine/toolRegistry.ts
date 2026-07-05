@@ -575,7 +575,7 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleWebApiCall,
   });
 
-  // v3.0: Browser 工具注册 (5 tools)
+  // v3.0+ Browser 工具注册 (基础 6 + v3.1 tab/wait 5 = 11 tools)
   try {
     const { getBrowserToolDefinitions, getBrowserToolHandlers } = await import('./browserTools.js');
     const browserDefs = getBrowserToolDefinitions();
@@ -731,6 +731,20 @@ export async function initDefaultTools(): Promise<void> {
     logger.debug('[Tool Registry] Git tools registered:', gitDefs.map(d => d.function.name).join(', '));
   } catch (err) {
     logger.warn('[Tool Registry] Git tools not registered:', err instanceof Error ? err.message : String(err));
+  }
+
+  // v12.0: Code 工具注册（代码执行沙箱 + 进程管理 + 文件搜索）
+  try {
+    const { getCodeToolDefinitions, getCodeToolHandlers } = await import('./codeTools.js');
+    const codeDefs = getCodeToolDefinitions();
+    const codeHandlers = getCodeToolHandlers();
+    for (const def of codeDefs) {
+      const handler = codeHandlers.get(def.function.name);
+      if (handler) registerBuiltinTool({ definition: def, handler });
+    }
+    logger.debug('[Tool Registry] Code tools registered:', codeDefs.map(d => d.function.name).join(', '));
+  } catch (err) {
+    logger.warn('[Tool Registry] Code tools not registered:', err instanceof Error ? err.message : String(err));
   }
 }
 

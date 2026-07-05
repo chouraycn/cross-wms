@@ -27,6 +27,7 @@ import pluginHooks from './pluginHooks.js';
 import { validateAndNormalizeToolParams } from './toolParams.js';
 import { toolLoopDetector } from './toolLoopDetection.js';
 import { toolProfileManager, projectToolSchemas, type ToolProfileId } from './toolProfiles.js';
+import { ToolDependencyGraph } from './toolDependencyGraph.js';
 import { logger } from '../logger.js';
 
 // ===================== 工具结果错误检测 =====================
@@ -259,6 +260,45 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
         },
       })),
     } as any);
+
+    // v6.0: ToolDependencyGraph — 拓扑排序分析
+    // 构建工具调用之间的依赖关系 DAG，分析可并行执行的层级。
+    // 当前实现：仅输出分析日志，实际执行仍保持串行（避免破坏审批/熔断/钩子流程）。
+    // 后续可基于 layers 实现并行执行：parallelizable 层用 Promise.all，其余串行。
+    if (response.toolCalls.length > 1) {
+      const graph = new ToolDependencyGraph();
+      response.toolCalls.forEach((tc, i) => {
+        const tcName = tc.function.name;
+        let tcArgs: Record<string, unknown> = {};
+        try { tcArgs = JSON.parse(tc.function.arguments || '{}'); } catch { /* ignore */ }
+        let tcSource: 'builtin' | 'mcp' | 'plugin' = 'builtin';
+        if (isMcpToolName(tcName)) tcSource = 'mcp';
+        else if (tcName.startsWith('plugin_')) tcSource = 'plugin';
+        const tcPolicy = toolPolicyEngine.evaluateTool(tcName, tcArgs, {
+          source: tcSource,
+          sessionId,
+        });
+        graph.addNode({
+          id: `tc-${i}`,
+          toolName: tcName,
+          arguments: tc.function.arguments,
+          index: i,
+          permission: tcPolicy.requireApproval ? 'confirm' : 'allow',
+        });
+      });
+      graph.inferDependencies();
+      const layers = graph.topologicalSort();
+      const parallelLayers = layers.filter(l => l.parallelizable && l.nodes.length > 1);
+      const edges = graph.getEdges();
+      logger.debug(
+        `[ToolExecutor] 拓扑排序分析: ${response.toolCalls.length} 个工具调用 → ` +
+        `${layers.length} 层 (${parallelLayers.length} 个可并行层, ${layers.length - parallelLayers.length} 个串行层), ` +
+        `${edges.length} 条依赖边` +
+        (parallelLayers.length > 0
+          ? `; 可并行: ${parallelLayers.map(l => `[${l.nodes.map(n => n.toolName).join(', ')}]`).join(' ')}`
+          : '')
+      );
+    }
 
     // 执行每个 tool call
     for (const toolCall of response.toolCalls) {

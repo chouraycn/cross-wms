@@ -75,6 +75,12 @@ export interface ChatMessageListProps {
   sx?: Record<string, unknown>;
   /** v3.0: ChatItem 列表（可选，优先使用） */
   items?: ChatItem[];
+  /** 上滚到顶部时加载更早消息 */
+  onLoadOlder?: () => Promise<boolean>;
+  /** 是否正在加载更早消息 */
+  isLoadingOlder?: boolean;
+  /** 是否还有更早的消息 */
+  hasMoreMessages?: boolean;
 }
 
 /**
@@ -95,6 +101,9 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   maxHeight,
   sx = {},
   items: chatItems,
+  onLoadOlder,
+  isLoadingOlder = false,
+  hasMoreMessages = false,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -126,6 +135,27 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
 
   // v2.8.9: 用户发送新消息时，强制滚动到底部（无论用户是否上翻过）
   const prevMsgCountRef = useRef(session.messages.length);
+  const prevSessionIdRef = useRef(session.id);
+
+  // v10.0: 切换会话时滚动到底部（替代 key={session.id} 的完全重挂载，性能更好）
+  useEffect(() => {
+    if (prevSessionIdRef.current !== session.id) {
+      prevSessionIdRef.current = session.id;
+      prevMsgCountRef.current = session.messages.length;
+      isUserScrolledUp.current = false;
+      // 延迟一帧确保 Virtuoso 已更新数据
+      requestAnimationFrame(() => {
+        if (session.messages.length > 0) {
+          virtuosoRef.current?.scrollToIndex({
+            index: session.messages.length - 1,
+            align: 'end',
+            behavior: 'auto',
+          });
+        }
+      });
+    }
+  }, [session.id, session.messages.length]);
+
   useEffect(() => {
     const lastMsg = session.messages[session.messages.length - 1];
     if (!lastMsg) return;
@@ -147,7 +177,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       }
     }
     prevMsgCountRef.current = session.messages.length;
-  }, [session.messages.length]);
+  }, [session.messages.length, session.id]);
 
   const renderMessageItem = (msg: Message, index: number) => (
     <Box
@@ -464,6 +494,19 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   const data = chatItems || session.messages;
   const useChatItemMode = !!chatItems;
 
+  // v10.0: 切换会话时的淡入效果，提升感知流畅度
+  const [fadeKey, setFadeKey] = useState(session.id);
+  const [fadeIn, setFadeIn] = useState(true);
+  useEffect(() => {
+    if (fadeKey !== session.id) {
+      setFadeKey(session.id);
+      setFadeIn(false);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setFadeIn(true));
+      });
+    }
+  }, [session.id, fadeKey]);
+
   return (
     <Box
       sx={{
@@ -473,15 +516,21 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         minHeight: 0,
         userSelect: 'text',
         WebkitUserSelect: 'text',
+        transition: 'opacity 0.15s ease-out',
+        opacity: fadeIn ? 1 : 0.3,
         ...(maxHeight ? { maxHeight } : {}),
         ...sx,
       }}
     >
       <Virtuoso
         ref={virtuosoRef}
-        key={session.id}
         style={{ height: '100%' }}
         data={data}
+        startReached={() => {
+          if (hasMoreMessages && !isLoadingOlder && onLoadOlder) {
+            onLoadOlder();
+          }
+        }}
         followOutput={(isAtBottom) => {
           if (useChatItemMode) {
             const lastItem = (data as ChatItem[])[(data as ChatItem[]).length - 1];

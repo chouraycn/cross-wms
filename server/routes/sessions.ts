@@ -9,6 +9,7 @@ import {
   moveSessionToFolder,
   updateSession,
 } from '../dao/chat.js';
+import { FileStorage } from '../storage/FileStorage.js';
 import {
   getActiveSessions,
   getArchivedSessions,
@@ -65,15 +66,99 @@ router.post('/', (req, res) => {
   res.json({ session });
 });
 
-// 获取会话消息
+// 分页获取会话消息（懒加载）
+// GET /:id/messages?limit=50&before=N
+router.get('/:id/messages', (req, res) => {
+  const sessionId = req.params.id;
+  const limit = Math.min(parseInt(req.query.limit as string, 10) || 50, 200);
+  const beforeIndex = req.query.before !== undefined
+    ? parseInt(req.query.before as string, 10)
+    : undefined;
+
+  const { messages, hasMore, totalCount } = FileStorage.readSessionMessagesPaged(
+    sessionId, limit, beforeIndex,
+  );
+
+  // 解析 JSON 字符串字段
+  const parsed = messages.map((m: any) => {
+    let toolCalls = m.toolCalls;
+    if (toolCalls && typeof toolCalls === 'string') {
+      const MAX_TOOLCALLS_BYTES = 200 * 1024;
+      if (Buffer.byteLength(toolCalls, 'utf-8') > MAX_TOOLCALLS_BYTES) {
+        try {
+          const arr = JSON.parse(toolCalls);
+          if (Array.isArray(arr)) {
+            toolCalls = JSON.stringify(arr.slice(0, 5).map((tc: any) => ({
+              ...tc,
+              result: typeof tc.result === 'string' && tc.result.length > 5000
+                ? tc.result.slice(0, 5000) + `\n\n[已截断，原大小 ${(Buffer.byteLength(tc.result, 'utf-8') / 1024).toFixed(1)} KB]`
+                : tc.result,
+            })));
+          }
+        } catch {
+          toolCalls = toolCalls.slice(0, MAX_TOOLCALLS_BYTES) + '...[truncated]';
+        }
+      }
+      try {
+        toolCalls = JSON.parse(toolCalls);
+      } catch {
+        toolCalls = undefined;
+      }
+    }
+
+    let attachments = m.attachments;
+    if (attachments && typeof attachments === 'string') {
+      try { attachments = JSON.parse(attachments); } catch { attachments = undefined; }
+    }
+
+    return { ...m, attachments, toolCalls };
+  });
+
+  res.json({ messages: parsed, hasMore, totalCount });
+});
+
+// 获取会话消息（全量，向后兼容）
 router.get('/:id', (req, res) => {
   const messages = getSessionMessages(req.params.id);
   // 解析 JSON 字符串字段为数组/对象（DB 中存储为 TEXT）
-  const parsed = messages.map((m: any) => ({
-    ...m,
-    attachments: m.attachments ? (typeof m.attachments === 'string' ? JSON.parse(m.attachments) : m.attachments) : undefined,
-    toolCalls: m.toolCalls ? (typeof m.toolCalls === 'string' ? JSON.parse(m.toolCalls) : m.toolCalls) : undefined,
-  }));
+  const parsed = messages.map((m: any) => {
+    let toolCalls = m.toolCalls;
+    if (toolCalls && typeof toolCalls === 'string') {
+      // 快速检查大小，超大则直接截断后再 parse，避免内存爆炸
+      const MAX_TOOLCALLS_BYTES = 200 * 1024;
+      if (Buffer.byteLength(toolCalls, 'utf-8') > MAX_TOOLCALLS_BYTES) {
+        try {
+          const arr = JSON.parse(toolCalls);
+          if (Array.isArray(arr)) {
+            toolCalls = JSON.stringify(arr.slice(0, 5).map((tc: any) => ({
+              ...tc,
+              result: typeof tc.result === 'string' && tc.result.length > 5000
+                ? tc.result.slice(0, 5000) + `\n\n[已截断，原大小 ${(Buffer.byteLength(tc.result, 'utf-8') / 1024).toFixed(1)} KB]`
+                : tc.result,
+            })));
+          }
+        } catch {
+          toolCalls = toolCalls.slice(0, MAX_TOOLCALLS_BYTES) + '...[truncated]';
+        }
+      }
+      try {
+        toolCalls = JSON.parse(toolCalls);
+      } catch {
+        toolCalls = undefined;
+      }
+    }
+
+    let attachments = m.attachments;
+    if (attachments && typeof attachments === 'string') {
+      try {
+        attachments = JSON.parse(attachments);
+      } catch {
+        attachments = undefined;
+      }
+    }
+
+    return { ...m, attachments, toolCalls };
+  });
   res.json({ messages: parsed });
 });
 

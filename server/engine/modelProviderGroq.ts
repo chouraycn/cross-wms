@@ -26,7 +26,7 @@ const GROQ_MODELS: ModelInfo[] = [
     supportsTools: true,
     supportsStreaming: true,
     supportsFunctionCall: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     isRecommended: true,
     pricing: {
       isFree: true,
@@ -44,7 +44,7 @@ const GROQ_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: { isFree: true },
   },
   {
@@ -58,7 +58,7 @@ const GROQ_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'costEffective', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: { isFree: true },
   },
   {
@@ -72,7 +72,7 @@ const GROQ_MODELS: ModelInfo[] = [
     capabilities: ['general', 'fast'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: { isFree: true },
   },
   {
@@ -86,7 +86,7 @@ const GROQ_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: { isFree: true },
   },
   {
@@ -100,7 +100,7 @@ const GROQ_MODELS: ModelInfo[] = [
     capabilities: ['reasoning', 'fast', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     reasoning: true,
     pricing: { isFree: true },
   },

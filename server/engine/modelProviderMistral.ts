@@ -38,7 +38,7 @@ const MISTRAL_MODELS: ModelInfo[] = [
     supportsTools: true,
     supportsStreaming: true,
     supportsFunctionCall: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     thinkingProfile: MISTRAL_THINKING_PROFILE,
     reasoning: true,
     pricing: {
@@ -59,7 +59,7 @@ const MISTRAL_MODELS: ModelInfo[] = [
     supportsTools: true,
     supportsStreaming: true,
     supportsFunctionCall: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     thinkingProfile: MISTRAL_THINKING_PROFILE,
     reasoning: true,
     pricing: {
@@ -80,7 +80,7 @@ const MISTRAL_MODELS: ModelInfo[] = [
     supportsTools: true,
     supportsStreaming: true,
     supportsFunctionCall: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 0.3,
       outputPerMillion: 0.9,
@@ -99,7 +99,7 @@ const MISTRAL_MODELS: ModelInfo[] = [
     supportsTools: true,
     supportsStreaming: true,
     supportsFunctionCall: true,
-    apiType: 'openai-completions',
+    apiType: 'openai-chat',
     pricing: {
       inputPerMillion: 2,
       outputPerMillion: 6,

@@ -119,16 +119,25 @@ body {
   z-index: 1000;
 }
 
-/* 页面切换淡入动画 — 使用 transition 替代 keyframes 以兼容 WKWebView */
+/* 页面切换淡入动画 — CSS animation 自动触发（无需 JS） */
 .page-fade-in {
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+  animation: fadeInUp 0.3s ease-out;
 }
 
 .page-fade-in.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 隐藏 SettingsPopover 的黑色透明遮罩 */

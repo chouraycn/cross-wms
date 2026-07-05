@@ -293,22 +293,65 @@ export class VecMemoryHost extends BaseMemoryHost {
     maxEntries?: number;
     strategy?: 'lru' | 'fifo' | 'importance';
   }): Promise<{ removed: number; freedBytes: number }> {
-    // vecMemoryStore 没有内置的清理策略，简单实现：删除最旧的条目
-    const removed = 0;
-    const freedBytes = 0;
-
     try {
-      const stats = getMemoryStats();
-      if (options?.maxEntries && stats.totalMemories > options.maxEntries) {
-        const toRemove = stats.totalMemories - options.maxEntries;
-        logger.debug(`[VecMemoryHost] Cleanup: removing ${toRemove} old entries`);
-        // 注意：实际清理需要更复杂的实现
-      }
-    } catch (err) {
-      logger.warn('[VecMemoryHost] Cleanup failed:', err);
-    }
+      const stats = await this.getStats();
+      const now = Date.now();
+      const maxAgeMs = options?.maxAgeMs ?? 30 * 24 * 60 * 60 * 1000; // 30 天
+      let removed = 0;
 
-    return { removed, freedBytes };
+      // 获取尽可能多的记忆用于清理（覆盖最旧的条目）
+      // 注意：vecMemoryStore 的 getRecentMemories 返回记录只有 createdAt，
+      // 没有 lastAccessedAt/updatedAt，因此使用 createdAt 作为时间依据
+      const fetchLimit = Math.max(1000, stats.totalEntries);
+      const recentMemories = getRecentMemories(fetchLimit);
+
+      // 清理超过 maxAgeMs 未访问/创建的记忆
+      for (const mem of recentMemories) {
+        const lastAccessed = new Date(mem.createdAt).getTime() || 0;
+        if (now - lastAccessed > maxAgeMs) {
+          try {
+            if (deleteMemory(mem.id)) {
+              removed++;
+            }
+          } catch {
+            // 忽略单个删除失败
+          }
+        }
+      }
+
+      // 如果指定了 maxEntries 且仍超限，按 FIFO 删除最旧的
+      if (options?.maxEntries) {
+        const afterAgeStats = await this.getStats();
+        if (afterAgeStats.totalEntries > options.maxEntries) {
+          const toRemove = afterAgeStats.totalEntries - options.maxEntries;
+          // getRecentMemories 返回最新优先，反转后从最旧开始删
+          const remaining = getRecentMemories(fetchLimit).reverse();
+          let extraRemoved = 0;
+          for (const mem of remaining) {
+            if (extraRemoved >= toRemove) break;
+            try {
+              if (deleteMemory(mem.id)) {
+                extraRemoved++;
+              }
+            } catch {
+              // 忽略单个删除失败
+            }
+          }
+          removed += extraRemoved;
+        }
+      }
+
+      const afterStats = await this.getStats();
+      const freedBytes = Math.max(0, stats.totalBytes - afterStats.totalBytes);
+
+      logger.info(
+        `[VecMemoryHost:${this.config.hostId}] 清理完成: 移除 ${removed} 条记忆, 释放 ${freedBytes} 字节`,
+      );
+      return { removed, freedBytes };
+    } catch (err) {
+      logger.error(`[VecMemoryHost:${this.config.hostId}] 清理失败`, err);
+      return { removed: 0, freedBytes: 0 };
+    }
   }
 
   async dispose(): Promise<void> {

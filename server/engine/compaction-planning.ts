@@ -30,27 +30,66 @@ export const MIN_PROMPT_BUDGET_RATIO = 0.5;
 const OVERSIZED_THRESHOLD_RATIO = 0.5;
 
 /**
- * 估算单条消息的 token 数（简化版）
+ * 精细化 token 估算（与 contextTruncate.ts 保持一致）
+ *
+ * CJK 字符 ≈ 1.5 token
+ * JSON/代码标点 ≈ 0.8 token
+ * 普通 ASCII ≈ 0.35 token
+ * 全局 1.5x 安全系数
  */
 export function estimateMessageTokens(message: AgentMessage): number {
-  // 简化估算：每个字符约等于 0.25 token
-  let chars = 0;
+  let tokens = 0;
 
+  // role + formatting overhead per message
+  tokens += 4;
+
+  // content token
   if (typeof message.content === 'string') {
-    chars += message.content.length;
+    tokens += estimateTextTokens(message.content);
   }
 
+  // reasoning_content token（防御性访问，AgentMessage 可能不含此字段）
+  const reasoningContent = (message as unknown as Record<string, unknown>).reasoning_content;
+  if (typeof reasoningContent === 'string' && reasoningContent.length > 0) {
+    tokens += estimateTextTokens(reasoningContent);
+  }
+
+  // tool_calls token（支持 camelCase 和 snake_case）
   const toolCalls =
     (message as unknown as Record<string, unknown>).toolCalls ||
     (message as unknown as Record<string, unknown>).tool_calls;
   if (Array.isArray(toolCalls) && toolCalls.length > 0) {
-    chars += JSON.stringify(toolCalls).length;
+    const tcJson = JSON.stringify(toolCalls);
+    // tool_calls JSON 序列化后含大量标点，BPE 分词比纯文本更碎
+    tokens += Math.ceil(estimateTextTokens(tcJson) * 1.5);
   }
 
-  // role 和其他字段的 overhead
-  chars += 10;
+  return Math.ceil(tokens);
+}
 
-  return Math.ceil(chars / 4);
+/**
+ * 精细化文本 token 估算
+ * CJK 字符: 1.5 token, JSON 标点: 0.8 token, 普通 ASCII: 0.35 token
+ * 全局 1.5x 安全系数
+ */
+function estimateTextTokens(text: string): number {
+  if (!text) return 0;
+  let tokens = 0;
+  for (const ch of text) {
+    const code = ch.codePointAt(0) || 0;
+    if (
+      (code >= 0x4e00 && code <= 0x9fff) || // CJK 统一汉字
+      (code >= 0x3040 && code <= 0x30ff) || // 日文假名
+      (code >= 0xac00 && code <= 0xd7af)    // 韩文音节
+    ) {
+      tokens += 1.5;
+    } else if ('{}[]":,/\\<>=|`'.includes(ch)) {
+      tokens += 0.8;
+    } else {
+      tokens += 0.35;
+    }
+  }
+  return Math.ceil(tokens * 1.5); // 安全系数
 }
 
 /**
@@ -481,11 +520,117 @@ export function buildHistoryPrunePlan(
 
 /**
  * 计算压缩后的 token 估算
+ *
+ * 压缩后的 token 估算：
+ * - 保留的消息按原 token 计
+ * - 压缩的消息按摘要 token 估算（通常为原文的 10-20%）
+ * - 加上摘要开销
  */
 export function estimateTokensAfterCompaction(
   originalTokens: number,
-  compressedChunks: number,
-  summaryOverhead: number = SUMMARIZATION_OVERHEAD_TOKENS,
+  plan: HistoryPrunePlan,
 ): number {
-  return originalTokens + summaryOverhead;
+  // 摘要通常为原文的 15% 加上固定开销
+  const SUMMARIZE_RATIO = 0.15;
+
+  if (plan.pruned) {
+    // 有剪枝：保留的消息按原 token 计，被剪枝的消息按摘要估算
+    const retainedTokens = plan.pruned.keptTokens;
+    const compressedOriginalTokens = plan.pruned.droppedTokens;
+    const summaryTokens =
+      Math.ceil(compressedOriginalTokens * SUMMARIZE_RATIO) + SUMMARIZATION_OVERHEAD_TOKENS;
+    return retainedTokens + summaryTokens + plan.newContentTokens;
+  }
+
+  // 无剪枝：所有可摘要消息被压缩为摘要，新内容保留
+  const summarizableTokens = plan.summarizableTokens > 0 ? plan.summarizableTokens : originalTokens;
+  const summaryTokens =
+    Math.ceil(summarizableTokens * SUMMARIZE_RATIO) + SUMMARIZATION_OVERHEAD_TOKENS;
+  return summaryTokens + plan.newContentTokens;
+}
+
+/**
+ * 压缩质量评估结果
+ */
+export interface CompactionQualityMetrics {
+  /** 压缩比（压缩后/压缩前） */
+  compressionRatio: number;
+  /** 保留的关键信息比例 */
+  keyInfoRetention: number;
+  /** 是否保留了工具调用对 */
+  toolPairsPreserved: boolean;
+  /** 是否保留了系统消息 */
+  systemMessagePreserved: boolean;
+  /** 压缩后的预估 token 数 */
+  estimatedTokensAfter: number;
+  /** 评分（0-100，越高越好） */
+  score: number;
+}
+
+/**
+ * 评估压缩质量
+ *
+ * 根据压缩前后的消息数组计算压缩比、关键信息保留率、工具对保留情况等指标，
+ * 并给出综合评分（0-100）。
+ *
+ * @param originalMessages 原始消息数组
+ * @param compressedMessages 压缩后消息数组
+ * @param originalTokens 原始消息的 token 数
+ */
+export function evaluateCompactionQuality(
+  originalMessages: Array<{ role: string; content: string; toolCalls?: unknown[]; tool_calls?: unknown[] }>,
+  compressedMessages: Array<{ role: string; content: string; toolCalls?: unknown[]; tool_calls?: unknown[] }>,
+  originalTokens: number,
+): CompactionQualityMetrics {
+  const compressedTokens = compressedMessages.reduce(
+    (sum, m) => sum + estimateMessageTokens(m as AgentMessage),
+    0,
+  );
+
+  const compressionRatio = originalTokens > 0 ? compressedTokens / originalTokens : 1;
+
+  // 检查工具调用对是否保留（至少保留 50% 的 tool_calls）
+  const originalToolCalls = originalMessages.filter(
+    m => (m.toolCalls && Array.isArray(m.toolCalls) && m.toolCalls.length > 0) ||
+         (m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0),
+  ).length;
+  const compressedToolCalls = compressedMessages.filter(
+    m => (m.toolCalls && Array.isArray(m.toolCalls) && m.toolCalls.length > 0) ||
+         (m.tool_calls && Array.isArray(m.tool_calls) && m.tool_calls.length > 0),
+  ).length;
+  const toolPairsPreserved = originalToolCalls === 0 || compressedToolCalls >= originalToolCalls * 0.5;
+
+  // 检查系统消息是否保留
+  const systemMessagePreserved = compressedMessages.some(m => m.role === 'system');
+
+  // 关键信息保留率（简单估算：基于消息数量比）
+  const keyInfoRetention = originalMessages.length > 0
+    ? Math.min(1, compressedMessages.length / originalMessages.length)
+    : 1;
+
+  // 综合评分
+  let score = 0;
+  // 压缩比越低越好（但不低于 0.1，否则可能信息丢失过多）
+  if (compressionRatio <= 0.3) score += 30;
+  else if (compressionRatio <= 0.5) score += 25;
+  else if (compressionRatio <= 0.7) score += 15;
+  else score += 5;
+
+  // 工具对保留
+  if (toolPairsPreserved) score += 25;
+
+  // 系统消息保留
+  if (systemMessagePreserved) score += 15;
+
+  // 关键信息保留
+  score += Math.round(keyInfoRetention * 30);
+
+  return {
+    compressionRatio,
+    keyInfoRetention,
+    toolPairsPreserved,
+    systemMessagePreserved,
+    estimatedTokensAfter: compressedTokens,
+    score,
+  };
 }
