@@ -384,11 +384,39 @@ export function ChatProvider({
   );
 
   // 已加载过消息的会话 ID 集合（避免重复请求）
-  const loadedMessageIds = useRef(new Set<string>());
+  // v11.0: 改为 LRU 缓存，最多保留 30 个，防止内存无限增长
+  const loadedMessageIdsRef = useRef<Map<string, number>>(new Map());
+  const MAX_LOADED_SESSIONS = 30;
 
   // 用 ref 跟踪 sessions，避免 handleSessionUpdate 依赖 sessions state
   const sessionsRef = useRef(sessions);
   sessionsRef.current = sessions;
+
+  // ===== LRU 辅助函数：标记访问、淘汰最旧 =====
+  const markSessionLoaded = useCallback((sessionId: string) => {
+    const map = loadedMessageIdsRef.current;
+    map.delete(sessionId);
+    map.set(sessionId, Date.now());
+    // 淘汰超出上限的最旧条目，并卸载对应会话的消息
+    if (map.size > MAX_LOADED_SESSIONS) {
+      const oldestKey = map.keys().next().value;
+      if (oldestKey && oldestKey !== activeSessionId) {
+        map.delete(oldestKey);
+        // 卸载该会话的消息，释放内存
+        setSessions((prev) =>
+          prev.map((s) => s.id === oldestKey ? { ...s, messages: [], hasMoreMessages: undefined, totalMessageCount: undefined } : s)
+        );
+      }
+    }
+  }, [activeSessionId]);
+
+  const hasSessionLoaded = useCallback((sessionId: string): boolean => {
+    return loadedMessageIdsRef.current.has(sessionId);
+  }, []);
+
+  const removeSessionLoaded = useCallback((sessionId: string) => {
+    loadedMessageIdsRef.current.delete(sessionId);
+  }, []);
 
   // v8.3: 流式 session ref — 流式期间用 ref 存储最新 session，
   // 只有 content 变化时才触发 setActiveSession（减少 Context value 重建频率）
@@ -447,11 +475,14 @@ export function ChatProvider({
   useEffect(() => {
     if (!initialized) return;
     if (!activeSessionId) return;
-    if (loadedMessageIds.current.has(activeSessionId)) return;
+    if (hasSessionLoaded(activeSessionId)) {
+      markSessionLoaded(activeSessionId);
+      return;
+    }
 
     const target = sessions.find((s) => s.id === activeSessionId);
     if (!target || target.messages.length > 0) {
-      loadedMessageIds.current.add(activeSessionId);
+      markSessionLoaded(activeSessionId);
       return;
     }
 
@@ -459,7 +490,7 @@ export function ChatProvider({
     (async () => {
       const { messages, hasMore, totalCount } = await fetchSessionMessagesFromAPI(activeSessionId);
       if (cancelled) return;
-      loadedMessageIds.current.add(activeSessionId);
+      markSessionLoaded(activeSessionId);
       if (messages.length > 0) {
         setSessions((prev) =>
           prev.map((s) => s.id === activeSessionId ? { ...s, messages, hasMoreMessages: hasMore, totalMessageCount: totalCount } : s)
@@ -470,7 +501,7 @@ export function ChatProvider({
       }
     })();
     return () => { cancelled = true; };
-  }, [activeSessionId, initialized]); // deps intentionally limited
+  }, [activeSessionId, initialized, hasSessionLoaded, markSessionLoaded]);
 
   // ===================== 会话变化时同步缓存 =====================
   useEffect(() => {
@@ -638,9 +669,9 @@ export function ChatProvider({
   // ===================== 删除会话 =====================
   const handleDeleteSession = useCallback((id: string) => {
     setSessions((prev) => prev.filter((s) => s.id !== id));
-    loadedMessageIds.current.delete(id);
+    removeSessionLoaded(id);
     deleteSessionViaAPI(id); // 不阻塞 UI
-  }, []);
+  }, [removeSessionLoaded]);
 
   // ===================== 置顶/取消置顶 =====================
   const togglePinSession = useCallback((id: string) => {

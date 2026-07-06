@@ -154,48 +154,85 @@ function parseSessionFile(sessionId: string): { session: Session | null; message
 
 // ===================== Session DAO =====================
 
-export function getSessions(): Session[] {
+function buildSessionFromFirstLine(id: string, firstLine: any, isArchived: boolean = false): Session | null {
+  if (!firstLine || !firstLine.session) return null;
+  const session = { ...firstLine.session } as Session;
+
+  const mtimeFn = isArchived
+    ? FileStorage.getArchivedSessionMtime.bind(FileStorage)
+    : FileStorage.getSessionMtime.bind(FileStorage);
+  const fileMtime = mtimeFn(id);
+  if (fileMtime) {
+    session.updatedAt = fileMtime;
+    session.lastActiveAt = fileMtime;
+  }
+
+  const cachedCount = (firstLine as any)._cachedMsgCount;
+  if (typeof cachedCount === 'number' && cachedCount >= 0) {
+    (session as any).messageCount = cachedCount;
+  } else {
+    const initialMsgCount = (firstLine.messages || []).length;
+    const totalLines = FileStorage.countSessionLines(id);
+    (session as any).messageCount = initialMsgCount + Math.max(0, totalLines - 1);
+  }
+  return session;
+}
+
+function loadActiveSessions(): Session[] {
   const sessionIds = FileStorage.listSessionFiles();
   const result: Session[] = [];
-
   for (const id of sessionIds) {
-    // 只读第一行（session 元数据），不全量解析消息
     const firstLine = FileStorage.readSessionFirstLine(id) as any;
-    if (firstLine && firstLine.session) {
-      const session = { ...firstLine.session } as Session;
-      // 用文件修改时间作为 lastActiveAt，避免每次 addMessage 都重写第一行
-      const fileMtime = FileStorage.getSessionMtime(id);
-      if (fileMtime) {
-        session.updatedAt = fileMtime;
-        session.lastActiveAt = fileMtime;
-      }
-      // 消息数：优先用首行缓存的 _cachedMsgCount（由 addMessage 维护），
-      // 否则用初始消息数 + 行数差（fallback，需遍历文件）
-      const cachedCount = (firstLine as any)._cachedMsgCount;
-      if (typeof cachedCount === 'number' && cachedCount >= 0) {
-        (session as any).messageCount = cachedCount;
-      } else {
-        const initialMsgCount = (firstLine.messages || []).length;
-        const totalLines = FileStorage.countSessionLines(id);
-        (session as any).messageCount = initialMsgCount + Math.max(0, totalLines - 1);
-      }
+    const session = buildSessionFromFirstLine(id, firstLine, false);
+    if (session) result.push(session);
+  }
+  return result;
+}
+
+function loadArchivedSessions(): Session[] {
+  const sessionIds = FileStorage.listArchivedSessionFiles();
+  const result: Session[] = [];
+  for (const id of sessionIds) {
+    const firstLine = FileStorage.readArchivedSessionFirstLine(id) as any;
+    const session = buildSessionFromFirstLine(id, firstLine, true);
+    if (session) {
+      if (!session.status) session.status = 'archived';
       result.push(session);
     }
   }
+  return result;
+}
 
-  // 按 updatedAt 降序排列
-  result.sort((a, b) => {
+function sortSessionsByUpdated(sessions: Session[], desc: boolean = true): Session[] {
+  return sessions.sort((a, b) => {
     const aTime = a.updatedAt || a.createdAt || '';
     const bTime = b.updatedAt || b.createdAt || '';
-    return bTime.localeCompare(aTime);
+    return desc ? bTime.localeCompare(aTime) : aTime.localeCompare(bTime);
   });
+}
 
-  // 预热最近活跃会话的 OS page cache（仅前 5 个，避免启动时 IO 突发）
+export function getSessions(): Session[] {
+  const active = loadActiveSessions();
+  const result = sortSessionsByUpdated(active);
   for (let i = 0; i < Math.min(5, result.length); i++) {
     FileStorage.prewarmSessionFile(result[i].id);
   }
-
   return result;
+}
+
+/** 分页获取会话列表（仅活跃会话） */
+export function getSessionsPaged(limit: number = 50, offset: number = 0): {
+  sessions: Session[];
+  total: number;
+} {
+  const all = loadActiveSessions();
+  const sorted = sortSessionsByUpdated(all);
+  const total = sorted.length;
+  const sessions = sorted.slice(offset, offset + limit);
+  for (let i = 0; i < Math.min(5, sessions.length); i++) {
+    FileStorage.prewarmSessionFile(sessions[i].id);
+  }
+  return { sessions, total };
 }
 
 /** 搜索会话（按标题模糊匹配） */
@@ -203,6 +240,107 @@ export function searchSessions(query: string): Session[] {
   const all = getSessions();
   const q = query.toLowerCase();
   return all.filter((s) => s.title.toLowerCase().includes(q));
+}
+
+/** 分页搜索会话（仅活跃会话） */
+export function searchSessionsPaged(query: string, limit: number = 50, offset: number = 0): {
+  sessions: Session[];
+  total: number;
+} {
+  const all = getSessions();
+  const q = query.toLowerCase();
+  const filtered = all.filter((s) => s.title.toLowerCase().includes(q));
+  const total = filtered.length;
+  const sessions = filtered.slice(offset, offset + limit);
+  return { sessions, total };
+}
+
+/** 获取归档会话列表（全量） */
+export function getArchivedSessions(): Session[] {
+  const archived = loadArchivedSessions();
+  return sortSessionsByUpdated(archived);
+}
+
+/** 分页获取归档会话 */
+export function getArchivedSessionsPaged(limit: number = 50, offset: number = 0): {
+  sessions: Session[];
+  total: number;
+} {
+  const all = loadArchivedSessions();
+  const sorted = sortSessionsByUpdated(all);
+  const total = sorted.length;
+  const sessions = sorted.slice(offset, offset + limit);
+  return { sessions, total };
+}
+
+/** 搜索归档会话 */
+export function searchArchivedSessions(query: string): Session[] {
+  const all = getArchivedSessions();
+  const q = query.toLowerCase();
+  return all.filter((s) => s.title.toLowerCase().includes(q));
+}
+
+/** 分页搜索归档会话 */
+export function searchArchivedSessionsPaged(query: string, limit: number = 50, offset: number = 0): {
+  sessions: Session[];
+  total: number;
+} {
+  const all = getArchivedSessions();
+  const q = query.toLowerCase();
+  const filtered = all.filter((s) => s.title.toLowerCase().includes(q));
+  const total = filtered.length;
+  const sessions = filtered.slice(offset, offset + limit);
+  return { sessions, total };
+}
+
+/** 归档会话：更新状态 + 移动文件到归档目录 */
+export function archiveSessionInStorage(sessionId: string): boolean {
+  try {
+    const firstLine = FileStorage.readSessionFirstLine(sessionId) as any;
+    if (!firstLine || !firstLine.session) return false;
+    if (firstLine.session.status === 'archived') return true;
+
+    firstLine.session.status = 'archived';
+    firstLine.session.archivedAt = new Date().toISOString();
+    FileStorage.rewriteSessionFirstLine(sessionId, firstLine);
+
+    return FileStorage.moveSessionToArchive(sessionId);
+  } catch (e) {
+    logger.error('[DAO] archiveSessionInStorage 失败:', e);
+    return false;
+  }
+}
+
+/** 恢复归档会话：移回活跃目录 + 更新状态 */
+export function restoreSessionFromStorage(sessionId: string): boolean {
+  try {
+    const moved = FileStorage.moveSessionFromArchive(sessionId);
+    if (!moved) return false;
+
+    const firstLine = FileStorage.readSessionFirstLine(sessionId) as any;
+    if (!firstLine || !firstLine.session) return false;
+
+    firstLine.session.status = 'active';
+    firstLine.session.archivedAt = null;
+    firstLine.session.lastActiveAt = new Date().toISOString();
+    FileStorage.rewriteSessionFirstLine(sessionId, firstLine);
+
+    return true;
+  } catch (e) {
+    logger.error('[DAO] restoreSessionFromStorage 失败:', e);
+    return false;
+  }
+}
+
+/** 判断会话是否已归档（物理存在于归档目录） */
+export function isSessionArchived(sessionId: string): boolean {
+  const archivedPath = require('path').join(FileStorage.archivedSessionsDir, `${sessionId}.jsonl`);
+  return require('fs').existsSync(archivedPath);
+}
+
+/** 删除归档会话 */
+export function deleteArchivedSession(id: string): void {
+  FileStorage.deleteArchivedSessionFile(id);
 }
 
 export function createSession(

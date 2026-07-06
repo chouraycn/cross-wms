@@ -316,6 +316,7 @@ export class FileStorage {
   /** 确保所有必要的存储目录存在 */
   static ensureDirectories(): void {
     ensureDir(FileStorage.sessionsDir);
+    ensureDir(FileStorage.archivedSessionsDir);
     ensureDir(FileStorage.memoryDir);
     ensureDir(FileStorage.configDir);
   }
@@ -326,6 +327,9 @@ export class FileStorage {
 
   /** 会话文件存放目录 ~/.cdf-know-clow/sessions/ */
   static sessionsDir: string = AppPaths.sessionsDir;
+
+  /** 归档会话文件存放目录 ~/.cdf-know-clow/sessions-archived/ */
+  static archivedSessionsDir: string = AppPaths.archivedSessionsDir;
 
   /**
    * 预热 OS page cache：读文件开头 4KB 触发 OS readahead。
@@ -625,6 +629,102 @@ export class FileStorage {
       .readdirSync(FileStorage.sessionsDir)
       .filter((f) => f.endsWith('.jsonl'))
       .map((f) => f.replace(/\.jsonl$/, ''));
+  }
+
+  /** 列出所有归档会话文件名（不含扩展名） */
+  static listArchivedSessionFiles(): string[] {
+    ensureDir(FileStorage.archivedSessionsDir);
+    return fs
+      .readdirSync(FileStorage.archivedSessionsDir)
+      .filter((f) => f.endsWith('.jsonl'))
+      .map((f) => f.replace(/\.jsonl$/, ''));
+  }
+
+  /** 将会话文件移动到归档目录 */
+  static moveSessionToArchive(sessionId: string): boolean {
+    const srcPath = path.join(FileStorage.sessionsDir, `${sessionId}.jsonl`);
+    const dstPath = path.join(FileStorage.archivedSessionsDir, `${sessionId}.jsonl`);
+    if (!fs.existsSync(srcPath)) return false;
+    ensureDir(FileStorage.archivedSessionsDir);
+    evictSessionCacheEntry(sessionId);
+    try {
+      fs.renameSync(srcPath, dstPath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** 将归档会话文件移回活跃目录 */
+  static moveSessionFromArchive(sessionId: string): boolean {
+    const srcPath = path.join(FileStorage.archivedSessionsDir, `${sessionId}.jsonl`);
+    const dstPath = path.join(FileStorage.sessionsDir, `${sessionId}.jsonl`);
+    if (!fs.existsSync(srcPath)) return false;
+    ensureDir(FileStorage.sessionsDir);
+    evictSessionCacheEntry(sessionId);
+    try {
+      fs.renameSync(srcPath, dstPath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** 读取归档会话的第一行（元数据），不存在返回 null */
+  static readArchivedSessionFirstLine(sessionId: string): object | null {
+    const filePath = path.join(FileStorage.archivedSessionsDir, `${sessionId}.jsonl`);
+    if (!fs.existsSync(filePath)) return null;
+
+    const fd = fs.openSync(filePath, 'r');
+    try {
+      const buffer = Buffer.alloc(16384);
+      const bytesRead = fs.readSync(fd, buffer, 0, 16384, 0);
+      if (bytesRead === 0) return null;
+
+      const firstNewline = buffer.indexOf('\n', 0, 'utf-8');
+      const firstLineStr = firstNewline >= 0
+        ? buffer.slice(0, firstNewline).toString('utf-8')
+        : buffer.slice(0, bytesRead).toString('utf-8');
+
+      if (!firstLineStr.trim()) return null;
+      return JSON.parse(firstLineStr) as object;
+    } catch {
+      return null;
+    } finally {
+      fs.closeSync(fd);
+    }
+  }
+
+  /** 获取归档会话文件的修改时间 */
+  static getArchivedSessionMtime(sessionId: string): string | null {
+    const filePath = path.join(FileStorage.archivedSessionsDir, `${sessionId}.jsonl`);
+    try {
+      const stat = fs.statSync(filePath);
+      return stat.mtime.toISOString();
+    } catch {
+      return null;
+    }
+  }
+
+  /** 读取归档会话的所有行（全量） */
+  static readArchivedSessionLines(sessionId: string): object[] {
+    const filePath = path.join(FileStorage.archivedSessionsDir, `${sessionId}.jsonl`);
+    if (!fs.existsSync(filePath)) return [];
+
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return content
+      .split('\n')
+      .filter((line) => line.trim().length > 0)
+      .map((line) => JSON.parse(line) as object);
+  }
+
+  /** 删除归档会话文件 */
+  static deleteArchivedSessionFile(sessionId: string): void {
+    evictSessionCacheEntry(sessionId);
+    const filePath = path.join(FileStorage.archivedSessionsDir, `${sessionId}.jsonl`);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
   }
 
   // ==========================================================================

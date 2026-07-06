@@ -980,68 +980,69 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
               }
             }}
           />
-          {!inputExpanded ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
-              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Typography sx={{ fontSize: 15, color: gs.textMuted, lineHeight: 1.4 }}>
-                  今天帮你做些什么？
-                </Typography>
-                <Typography sx={{ fontSize: 13, color: gs.textDisabled, lineHeight: 1.4 }}>
-                  @ 引用对话文件，/ 调用技能与指令
-                </Typography>
-              </Box>
-            </Box>
-          ) : (
-            <>
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, width: '100%' }}>
-                <div
-                  ref={editableRef}
-                  contentEditable
-                  suppressContentEditableWarning
-                  onBeforeInput={handleBeforeInput}
-                  onInput={handleInputWithComposition}
-                  onKeyDown={handleKeyDown}
-                  onBlur={() => {
-                    const text = editableRef.current?.innerText || '';
-                    window.dispatchEvent(new CustomEvent('cdf-chat-input-blur', {
-                      detail: { value: text },
-                    }));
-                  }}
-                  onCompositionStart={() => { isComposingRef.current = true; compositionJustEndedRef.current = false; }}
-                  onCompositionEnd={() => {
-                    // Bug Fix: 仅在确实正在组合输入时才标记 compositionJustEndedRef
-                    // WKWebView 会在非 IME 回车时也触发 compositionend（无 compositionstart 配对）
-                    const wasComposing = isComposingRef.current;
-                    isComposingRef.current = false;
-                    compositionTextInsertedRef.current = false;
-                    if (wasComposing) {
-                      compositionJustEndedRef.current = true;
-                    }
-                  }}
-                  style={{
-                    fontSize: 15,
-                    lineHeight: 1.5,
-                    minHeight: 60,
-                    outline: 'none',
-                    color: gs.textPrimary,
-                    width: '100%',
-                    wordBreak: 'break-word',
-                    marginBottom: 8,
-                    whiteSpace: 'pre-wrap',
-                  }}
-                />
-              </Box>
-              {!inputValue.trim() && (
-                <div style={{
-                  fontSize: 13,
-                  color: gs.textDisabled,
+          {/* v3.2: WKWebView兼容 — contenteditable始终可见，用绝对定位实现placeholder效果 */}
+          <Box sx={{ position: 'relative', width: '100%', minHeight: inputExpanded ? 60 : 32 }}>
+            {/* placeholder层：当输入框为空且未展开时显示 */}
+            {!inputValue.trim() && !inputExpanded && (
+              <Typography
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: 15,
+                  color: gs.textMuted,
                   lineHeight: 1.4,
-                }}>
-                  @ 引用对话文件，/ 调用技能与指令
-                </div>
-              )}
-            </>
-          )}
+                  pointerEvents: 'none',
+                }}
+              >
+                今天帮你做些什么？
+              </Typography>
+            )}
+            <div
+              ref={editableRef}
+              contentEditable
+              suppressContentEditableWarning
+              onBeforeInput={handleBeforeInput}
+              onInput={handleInputWithComposition}
+              onKeyDown={handleKeyDown}
+              onBlur={() => {
+                const text = editableRef.current?.innerText || '';
+                window.dispatchEvent(new CustomEvent('cdf-chat-input-blur', {
+                  detail: { value: text },
+                }));
+              }}
+              onCompositionStart={() => { isComposingRef.current = true; compositionJustEndedRef.current = false; }}
+              onCompositionEnd={() => {
+                const wasComposing = isComposingRef.current;
+                isComposingRef.current = false;
+                compositionTextInsertedRef.current = false;
+                if (wasComposing) {
+                  compositionJustEndedRef.current = true;
+                }
+              }}
+              style={{
+                fontSize: 15,
+                lineHeight: 1.4,
+                minHeight: inputExpanded ? 60 : 32,
+                outline: 'none',
+                color: gs.textPrimary,
+                width: '100%',
+                wordBreak: 'break-word',
+                whiteSpace: 'pre-wrap',
+                position: 'relative',
+              }}
+            />
+            {/* 底部提示：有输入内容且未展开时显示 */}
+            {inputValue.trim() && !inputExpanded && (
+              <Typography sx={{ fontSize: 13, color: gs.textDisabled, lineHeight: 1.4, mt: 0.5, pl: 0.5 }}>
+                @ 引用对话文件，/ 调用技能与指令
+              </Typography>
+            )}
+          </Box>
         </Box>
 
         {/* Toolbar */}

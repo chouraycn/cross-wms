@@ -98,6 +98,56 @@ function isGroup(item: NavItem): item is NavItemGroup {
   return 'children' in item;
 }
 
+// ===================== 轻量虚拟滚动列表 =====================
+// 仅在 item 数超过阈值时启用，减少 DOM 节点数，避免卡顿
+interface VirtualListProps<T> {
+  items: T[];
+  itemHeight: number;
+  height: number;
+  renderItem: (item: T, index: number) => React.ReactNode;
+  overscan?: number;
+}
+
+function VirtualList<T>({ items, itemHeight, height, renderItem, overscan = 5 }: VirtualListProps<T>) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const totalHeight = items.length * itemHeight;
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+  const endIndex = Math.min(
+    items.length,
+    Math.ceil((scrollTop + height) / itemHeight) + overscan,
+  );
+
+  const visibleItems = useMemo(() => {
+    const result: React.ReactNode[] = [];
+    for (let i = startIndex; i < endIndex; i++) {
+      result.push(
+        <div key={i} style={{ position: 'absolute', top: i * itemHeight, left: 0, right: 0, height: itemHeight }}>
+          {renderItem(items[i], i)}
+        </div>,
+      );
+    }
+    return result;
+  }, [items, startIndex, endIndex, itemHeight, renderItem]);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop);
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      style={{ height, overflow: 'auto', position: 'relative' }}
+    >
+      <div style={{ height: totalHeight, position: 'relative' }}>
+        {visibleItems}
+      </div>
+    </div>
+  );
+}
+
 // ===================== Nav Items Config =====================
 
 const navItems: NavItem[] = [
@@ -286,11 +336,18 @@ const NavList: React.FC<NavListProps> = ({
   // ===== AI 完成标记（v1.9.3） =====
   const [completedSessions, setCompletedSessions] = useState<Set<string>>(new Set());
   const prevSessionsRef = useRef<Session[]>(sessions);
+  // v3.2: 使用 ref 追踪 completedSessions，避免 useEffect 不必要的重复执行
+  const completedSessionsRef = useRef<Set<string>>(completedSessions);
+
+  useEffect(() => {
+    completedSessionsRef.current = completedSessions;
+  }, [completedSessions]);
 
   React.useEffect(() => {
     const prev = prevSessionsRef.current;
     for (const session of sessions) {
-      if (completedSessions.has(session.id)) continue;
+      // 使用 ref 读取，避免闭包问题
+      if (completedSessionsRef.current.has(session.id)) continue;
       const prevSession = prev.find(s => s.id === session.id);
       if (!prevSession) continue;
       const prevLast = prevSession.messages[prevSession.messages.length - 1];
@@ -303,7 +360,7 @@ const NavList: React.FC<NavListProps> = ({
       }
     }
     prevSessionsRef.current = sessions;
-  }, [sessions, completedSessions]);
+  }, [sessions]);
 
   const clearCompletedFlag = useCallback((sessionId: string) => {
     setCompletedSessions(prev => {
@@ -762,8 +819,17 @@ const NavList: React.FC<NavListProps> = ({
               </Box>
             </Typography>
           </Box>
-          <Box sx={{ flex: 1, overflow: 'auto', maxHeight: 280 }}>
-            {sortedSessions.map((s) => renderSessionItem(s))}
+          <Box sx={{ flex: 1, overflow: 'hidden', maxHeight: 280 }}>
+            {sortedSessions.length <= 30 ? (
+              sortedSessions.map((s) => renderSessionItem(s))
+            ) : (
+              <VirtualList
+                items={sortedSessions}
+                itemHeight={32}
+                height={280}
+                renderItem={(s) => renderSessionItem(s)}
+              />
+            )}
           </Box>
         </Box>
       )}
@@ -804,40 +870,79 @@ const NavList: React.FC<NavListProps> = ({
             }
           </ListItemButton>
           <Collapse in={archivedExpanded} timeout="auto">
-            <Box sx={{ overflow: 'auto', maxHeight: 200 }}>
-              {sortedArchivedSessions.map((s) => (
-                <ListItem key={s.id} disablePadding sx={{ display: 'block' }}>
-                  <ListItemButton
-                    onClick={() => {
-                      // 任务 4：归档对话点击也不跳转，仅加载上下文
-                      onLoadSessionContext?.(s.id);
-                    }}
-                    sx={{
-                      minHeight: 32,
-                      px: 1.5,
-                      py: 0,
-                      borderRadius: '4px',
-                      '&:hover': { backgroundColor: bgHover },
-                    }}
-                  >
-                    <Typography
+            <Box sx={{ overflow: 'hidden', maxHeight: 200 }}>
+              {sortedArchivedSessions.length <= 20 ? (
+                sortedArchivedSessions.map((s) => (
+                  <ListItem key={s.id} disablePadding sx={{ display: 'block' }}>
+                    <ListItemButton
+                      onClick={() => {
+                        onLoadSessionContext?.(s.id);
+                      }}
                       sx={{
-                        fontSize: '0.75rem',
-                        color: gs.textSecondary,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        flex: 1,
+                        minHeight: 32,
+                        px: 1.5,
+                        py: 0,
+                        borderRadius: '4px',
+                        '&:hover': { backgroundColor: bgHover },
                       }}
                     >
-                      {(s.title && s.title !== '新对话') ? s.title : '未命名对话'}
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.6rem', color: gs.textDisabled, ml: 1, flexShrink: 0 }}>
-                      {getRelativeTime(s.archivedAt || s.updatedAt)}
-                    </Typography>
-                  </ListItemButton>
-                </ListItem>
-              ))}
+                      <Typography
+                        sx={{
+                          fontSize: '0.75rem',
+                          color: gs.textSecondary,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          flex: 1,
+                        }}
+                      >
+                        {(s.title && s.title !== '新对话') ? s.title : '未命名对话'}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.6rem', color: gs.textDisabled, ml: 1, flexShrink: 0 }}>
+                        {getRelativeTime(s.archivedAt || s.updatedAt)}
+                      </Typography>
+                    </ListItemButton>
+                  </ListItem>
+                ))
+              ) : (
+                <VirtualList
+                  items={sortedArchivedSessions}
+                  itemHeight={32}
+                  height={200}
+                  renderItem={(s: Session) => (
+                    <ListItem key={s.id} disablePadding sx={{ display: 'block' }}>
+                      <ListItemButton
+                        onClick={() => {
+                          onLoadSessionContext?.(s.id);
+                        }}
+                        sx={{
+                          minHeight: 32,
+                          px: 1.5,
+                          py: 0,
+                          borderRadius: '4px',
+                          '&:hover': { backgroundColor: bgHover },
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: '0.75rem',
+                            color: gs.textSecondary,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            flex: 1,
+                          }}
+                        >
+                          {(s.title && s.title !== '新对话') ? s.title : '未命名对话'}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.6rem', color: gs.textDisabled, ml: 1, flexShrink: 0 }}>
+                          {getRelativeTime(s.archivedAt || s.updatedAt)}
+                        </Typography>
+                      </ListItemButton>
+                    </ListItem>
+                  )}
+                />
+              )}
             </Box>
           </Collapse>
         </Box>

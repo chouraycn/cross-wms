@@ -22,6 +22,7 @@ import ToolManagementDialog from './ToolManagementDialog';
 import CommandPalette from './CommandPalette';
 import { isPyWebView } from '../../services/tencentDocsApi';
 import { useChatSidebar } from '../../contexts/ChatContext';
+import { isWKWebView } from '../../utils/env';
 
 // 检测是否为原生 App 模式（pywebview 或 Swift 原生）
 const isNativeApp = (): boolean => {
@@ -32,6 +33,8 @@ const isNativeApp = (): boolean => {
 
 // 模块顶层一次性求值，避免每次 MainLayout 渲染重复调用 isNativeApp()
 const IS_NATIVE_APP = isNativeApp();
+// v3.2: WKWebView 环境检测，用于禁用高成本 CSS 动画
+const IS_WKWEBVIEW = isWKWebView();
 
 // ===================== Toggle Icons =====================
 
@@ -204,7 +207,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
         borderRight: 'none',
         userSelect: 'none',
         WebkitUserSelect: 'none',
-        transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        // v3.2: WKWebView 中禁用宽度过渡动画，避免全页面重排导致卡顿
+        // 宽度变化会触发主内容区 margin 变化，进而导致整个页面重排
+        transition: IS_WKWEBVIEW ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
       // v1.5.107: 侧边栏整体作为窗口拖拽区域（pywebview frameless 窗口）
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
@@ -353,7 +358,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
                 width: 25.92,
                 height: 25.92,
                 backgroundColor: nativeApp ? 'transparent' : (isDark ? 'rgba(20, 20, 20, 0.6)' : 'rgba(240, 240, 240, 0.6)'),
-                ...(nativeApp ? {} : {
+                // v3.2: WKWebView 中禁用 backdrop-filter，毛玻璃效果性能差导致卡顿
+                ...(nativeApp || IS_WKWEBVIEW ? {} : {
                   backdropFilter: 'blur(12px)',
                   WebkitBackdropFilter: 'blur(12px)',
                 }),
@@ -383,7 +389,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
                 px: 1.5,
                 borderRadius: '6.48px',
                 backgroundColor: nativeApp ? 'transparent' : (isDark ? 'rgba(20, 20, 20, 0.6)' : 'rgba(240, 240, 240, 0.6)'),
-                ...(nativeApp ? {} : {
+                // v3.2: WKWebView 中禁用 backdrop-filter，毛玻璃效果性能差导致卡顿
+                ...(nativeApp || IS_WKWEBVIEW ? {} : {
                   backdropFilter: 'blur(12px)',
                   WebkitBackdropFilter: 'blur(12px)',
                 }),

@@ -170,12 +170,16 @@ actor ServerProcessManager {
         let entry = self.serverEntry
         if entry.hasSuffix(".ts") {
             proc.arguments = [
+                "--max-old-space-size=512",
                 "--import", "tsx",
                 entry
             ]
         } else {
             // .cjs or .js — run directly
-            proc.arguments = [entry]
+            proc.arguments = [
+                "--max-old-space-size=512",
+                entry
+            ]
         }
 
         proc.currentDirectoryURL = URL(fileURLWithPath: self.projectRoot)
@@ -203,10 +207,48 @@ actor ServerProcessManager {
         proc.standardOutput = pipe
         proc.standardError = pipe
 
+        // 使用串行队列处理日志输出，避免主线程阻塞和日志累积
+        let logQueue = DispatchQueue(label: "com.cdfknowclow.serverlog", qos: .utility)
+        var logBuffer = ""
+        let maxLogLineLength = 500
+
         pipe.fileHandleForReading.readabilityHandler = { handle in
             let data = handle.availableData
-            if !data.isEmpty, let text = String(data: data, encoding: .utf8) {
-                serverLogger.debug("\(text, privacy: .public)")
+            guard !data.isEmpty, let text = String(data: data, encoding: .utf8) else { return }
+
+            logQueue.async {
+                logBuffer += text
+                // 逐行处理，避免单条日志过大
+                while let newlineIndex = logBuffer.firstIndex(of: "\n") {
+                    let line = String(logBuffer[..<newlineIndex])
+                    logBuffer = String(logBuffer[logBuffer.index(after: newlineIndex)...])
+
+                    // 跳过空行
+                    guard !line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
+
+                    // 截断过长的行，避免 OSLog 内存膨胀
+                    let trimmed: String
+                    if line.count > maxLogLineLength {
+                        trimmed = String(line.prefix(maxLogLineLength)) + "..."
+                    } else {
+                        trimmed = line
+                    }
+
+                    // 只记录警告和错误级别的日志到系统日志
+                    // 普通日志不写入 OSLog，避免内存累积
+                    let lowercased = trimmed.lowercased()
+                    if lowercased.contains("error") || lowercased.contains("fatal") || lowercased.contains("crash") {
+                        serverLogger.error("\(trimmed, privacy: .public)")
+                    } else if lowercased.contains("warn") {
+                        serverLogger.warning("\(trimmed, privacy: .public)")
+                    }
+                    // info/debug 级别日志不写入 OSLog，避免内存压力
+                }
+
+                // 限制缓冲区大小，防止单行超长导致内存暴涨
+                if logBuffer.count > 4096 {
+                    logBuffer = String(logBuffer.suffix(1024))
+                }
             }
         }
 
