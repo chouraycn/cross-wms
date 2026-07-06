@@ -150,3 +150,29 @@ export function deletePlugin(id: string): boolean {
 export function setPluginStatus(id: string, status: string): PluginRow | undefined {
   return updatePlugin(id, { status });
 }
+
+/** 获取插件配置（从 metadata 中解析） */
+export function getPluginConfig(id: string): Record<string, unknown> {
+  const plugin = getPlugin(id);
+  if (!plugin) return {};
+  try {
+    const metadata = JSON.parse(plugin.metadata || '{}');
+    return metadata.config || {};
+  } catch {
+    return {};
+  }
+}
+
+/** 更新插件配置（保存到 metadata 中） */
+export function setPluginConfig(id: string, config: Record<string, unknown>): PluginRow | undefined {
+  const plugin = getPlugin(id);
+  if (!plugin) return undefined;
+  try {
+    const metadata = JSON.parse(plugin.metadata || '{}');
+    metadata.config = config;
+    return updatePlugin(id, { metadata: JSON.stringify(metadata) });
+  } catch {
+    const metadata = { config };
+    return updatePlugin(id, { metadata: JSON.stringify(metadata) });
+  }
+}

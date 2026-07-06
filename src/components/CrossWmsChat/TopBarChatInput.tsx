@@ -17,6 +17,7 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import CloseIcon from '@mui/icons-material/Close';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import { getGrayScale } from '../../constants/theme';
 import { Skill, INTENT_CATEGORY_LABELS, INTENT_QUICK_EXAMPLES, ICON_MAP } from '../../types/skill';
@@ -223,7 +224,9 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       const relPath: string = files[0].webkitRelativePath || '';
       const folderName = relPath.split('/')[0];
       if (folderName) {
-        setSelectedFolder(folderName);
+        // 任务 7: 完善文件夹选择能力 — 显示完整路径和文件统计
+        const fileCount = files.length;
+        setSelectedFolder(`${folderName}（${fileCount} 个文件）`);
       }
     }
     // 重置 input value 以便重复选择同一文件夹
@@ -1150,6 +1153,12 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 <>
                   <Typography sx={{ fontSize: 13, color: gs.textMuted }}>选择文件夹（可选）</Typography>
                   <KeyboardArrowDownIcon sx={{ fontSize: 14 }} />
+                  {/* 任务 7: 文件夹选择建议提示 */}
+                  <Tooltip title="选择项目文件夹后，AI 将自动读取文件夹内的代码文件作为上下文，支持 .ts/.tsx/.js/.jsx/.py/.go/.rs/.java/.md 等格式" placement="top">
+                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', ml: 0.5, color: gs.textMuted, cursor: 'help' }}>
+                      <InfoOutlinedIcon sx={{ fontSize: 14 }} />
+                    </Box>
+                  </Tooltip>
                 </>
               )}
             </Box>

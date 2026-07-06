@@ -384,5 +384,258 @@ export function registerGatewayRoutes(app: {
     res.json(result);
   });
 
-  console.log("[gateway] Gateway routes registered");
+  // ====== OpenAI 兼容 API ======
+
+  // GET /v1/models — OpenAI 兼容模型列表
+  app.get("/v1/models", async (_req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("models.list", {}, {
+      requestId: `openai_models_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+
+    if (!result.ok) {
+      res.status(500).json({
+        error: {
+          message: result.error?.message || "Failed to list models",
+          type: "api_error",
+        },
+      });
+      return;
+    }
+
+    const models = (result.result?.models || []) as Array<{
+      id: string;
+      name?: string;
+      description?: string;
+      provider?: string;
+    }>;
+
+    res.json({
+      object: "list",
+      data: models.map((model) => ({
+        id: model.id,
+        object: "model",
+        created: Math.floor(Date.now() / 1000),
+        owned_by: model.provider || "cross-wms",
+      })),
+    });
+  });
+
+  // GET /v1/models/:model — OpenAI 兼容模型详情
+  app.get("/v1/models/:model", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("models.get", { id: req.params.model }, {
+      requestId: `openai_model_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+
+    if (!result.ok || !result.result) {
+      res.status(404).json({
+        error: {
+          message: `Model '${req.params.model}' not found`,
+          type: "invalid_request_error",
+          param: "model",
+          code: "model_not_found",
+        },
+      });
+      return;
+    }
+
+    const model = result.result as { id: string; provider?: string };
+    res.json({
+      id: model.id,
+      object: "model",
+      created: Math.floor(Date.now() / 1000),
+      owned_by: model.provider || "cross-wms",
+    });
+  });
+
+  // POST /v1/chat/completions — OpenAI 兼容聊天补全
+  app.post("/v1/chat/completions", async (req, res) => {
+    const { model, messages, stream = false, temperature, max_tokens, top_p } = req.body;
+
+    if (!model) {
+      res.status(400).json({
+        error: {
+          message: "Missing required parameter: 'model'",
+          type: "invalid_request_error",
+          param: "model",
+        },
+      });
+      return;
+    }
+
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      res.status(400).json({
+        error: {
+          message: "Missing required parameter: 'messages'",
+          type: "invalid_request_error",
+          param: "messages",
+        },
+      });
+      return;
+    }
+
+    const registry = getMethodRegistry();
+
+    if (stream) {
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+
+      try {
+        const result = await registry.invoke("chat.send", {
+          model,
+          messages,
+          temperature,
+          maxTokens: max_tokens,
+          topP: top_p,
+          stream: true,
+        }, {
+          requestId: `openai_chat_${Date.now()}`,
+          timestamp: Date.now(),
+        });
+
+        if (!result.ok) {
+          res.write(`data: ${JSON.stringify({ error: result.error })}
+\n\n`);
+          res.write("data: [DONE]\n\n");
+          res.end();
+          return;
+        }
+
+        // 简化流式响应
+        const responseText = result.result?.text || "";
+        const chunks = responseText.match(/.{1,20}/g) || [responseText];
+
+        for (let i = 0; i < chunks.length; i++) {
+          const chunk = {
+            id: `chatcmpl-${Date.now()}`,
+            object: "chat.completion.chunk",
+            created: Math.floor(Date.now() / 1000),
+            model,
+            choices: [
+              {
+                index: 0,
+                delta: { content: chunks[i] },
+                finish_reason: i === chunks.length - 1 ? "stop" : null,
+              },
+            ],
+          };
+          res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        }
+
+        res.write("data: [DONE]\n\n");
+        res.end();
+      } catch (e) {
+        res.write(`data: ${JSON.stringify({ error: { message: String(e) } })}
+\n\n`);
+        res.write("data: [DONE]\n\n");
+        res.end();
+      }
+      return;
+    }
+
+    // 非流式响应
+    const result = await registry.invoke("chat.send", {
+      model,
+      messages,
+      temperature,
+      maxTokens: max_tokens,
+      topP: top_p,
+    }, {
+      requestId: `openai_chat_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+
+    if (!result.ok) {
+      res.status(400).json({
+        error: {
+          message: result.error?.message || "Chat completion failed",
+          type: "api_error",
+        },
+      });
+      return;
+    }
+
+    const responseText = result.result?.text || "";
+    const usage = result.result?.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+
+    res.json({
+      id: `chatcmpl-${Date.now()}`,
+      object: "chat.completion",
+      created: Math.floor(Date.now() / 1000),
+      model,
+      choices: [
+        {
+          index: 0,
+          message: {
+            role: "assistant",
+            content: responseText,
+          },
+          finish_reason: "stop",
+        },
+      ],
+      usage: {
+        prompt_tokens: usage.prompt_tokens || 0,
+        completion_tokens: usage.completion_tokens || 0,
+        total_tokens: usage.total_tokens || 0,
+      },
+    });
+  });
+
+  // POST /v1/embeddings — OpenAI 兼容 Embedding
+  app.post("/v1/embeddings", async (req, res) => {
+    const { model = "text-embedding-3-small", input } = req.body;
+
+    if (!input) {
+      res.status(400).json({
+        error: {
+          message: "Missing required parameter: 'input'",
+          type: "invalid_request_error",
+          param: "input",
+        },
+      });
+      return;
+    }
+
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("embeddings.create", {
+      model,
+      input: typeof input === "string" ? [input] : input,
+    }, {
+      requestId: `openai_emb_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+
+    if (!result.ok) {
+      res.status(400).json({
+        error: {
+          message: result.error?.message || "Embedding creation failed",
+          type: "api_error",
+        },
+      });
+      return;
+    }
+
+    const embeddings = result.result?.embeddings || [];
+    const texts = typeof input === "string" ? [input] : input;
+
+    res.json({
+      object: "list",
+      data: embeddings.map((emb: number[], index: number) => ({
+        object: "embedding",
+        index,
+        embedding: emb,
+      })),
+      model,
+      usage: {
+        prompt_tokens: texts.join(" ").split(/\s+/).length,
+        total_tokens: texts.join(" ").split(/\s+/).length,
+      },
+    });
+  });
+
+  console.log("[gateway] Gateway routes registered (including OpenAI-compatible endpoints)");
 }

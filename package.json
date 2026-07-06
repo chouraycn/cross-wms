@@ -3,6 +3,9 @@
   "private": true,
   "version": "1.7.55",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev:server": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx watch --tsconfig server/tsconfig.json server/index.ts",
     "server": "NODE_TLS_REJECT_UNAUTHORIZED=0 tsx --tsconfig server/tsconfig.json server/index.ts",
@@ -33,7 +36,14 @@
     "tui:validate": "tsx --tsconfig server/tsconfig.json server/tui/cli.ts --validate-config",
     "lint": "eslint src/ server/ --ext .ts,.tsx",
     "lint:fix": "eslint src/ server/ --ext .ts,.tsx --fix",
-    "prepare": "husky"
+    "prepare": "husky",
+    "build:packages": "npm run build --workspaces --if-present",
+    "build:plugin-sdk": "npm run build -w @cross-wms/plugin-sdk",
+    "build:agent-core": "npm run build -w @cross-wms/agent-core",
+    "build:llm-core": "npm run build -w @cross-wms/llm-core",
+    "build:memory-host-sdk": "npm run build -w @cross-wms/memory-host-sdk",
+    "build:skill-core": "npm run build -w @cross-wms/skill-core",
+    "test:packages": "npm run test --workspaces --if-present"
   },
   "dependencies": {
     "@e965/xlsx": "^0.20.3",
@@ -120,6 +130,7 @@
     "turndown": "^7.2.4",
     "typescript": "^5.9.3",
     "vite": "^7.3.6",
+    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^3.2.6"
   },
   "msw": {

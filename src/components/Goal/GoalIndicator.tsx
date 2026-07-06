@@ -292,7 +292,7 @@ const GoalIndicator: React.FC<GoalIndicatorProps> = ({ sessionKey, variant = 'co
               variant="body2"
               sx={{ color: gs.textMuted, fontSize: '0.8rem', flex: 1 }}
             >
-              当前会话无目标
+              &nbsp;
             </Typography>
             <Tooltip title="创建目标">
               <IconButton
@@ -545,9 +545,6 @@ const GoalIndicator: React.FC<GoalIndicatorProps> = ({ sessionKey, variant = 'co
         </>
       ) : (
         <Box sx={{ textAlign: 'center', py: 2 }}>
-          <Typography variant="body2" sx={{ color: gs.textMuted, mb: 2 }}>
-            暂无会话目标
-          </Typography>
           <Button
             size="small"
             variant="contained"

@@ -4,39 +4,42 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import SaveIcon from '@mui/icons-material/Save';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import DashboardIcon from '@mui/icons-material/Dashboard';
 import InfoIcon from '@mui/icons-material/Info';
-import TuneIcon from '@mui/icons-material/Tune';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import { useNavigate } from 'react-router-dom';
+import SecurityIcon from '@mui/icons-material/Security';
+import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
+import CableIcon from '@mui/icons-material/Cable';
+import StorageIcon from '@mui/icons-material/Storage';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { isPyWebView } from '../../services/tencentDocsApi';
+import { API_BASE } from '../../constants/api';
 import { getGrayScale } from '../../constants/theme';
 import { APP_VERSION } from '../Settings/sharedStyles';
 import SettingsGeneral from './SettingsGeneral';
-import SettingsDashboard from './SettingsDashboard';
-import SettingsSidebar from './SettingsSidebar';
-import SettingsDocLinks from './SettingsDocLinks';
 import SettingsAbout from './SettingsAbout';
-import SettingsSystemAuthorization from './SettingsSystemAuthorization';
+import TalkSettingsPanel from '../Talk/TalkSettingsPanel';
+import ChannelManagerPanel from '../Channel/ChannelManagerPanel';
 import { useToast } from '../../contexts/ToastContext';
+import { useNavigate } from 'react-router-dom';
 
 const SIDEBAR_WIDTH_EXPANDED = 360;
-type SettingsTab = 'menu' | 'tencentDocs' | 'tencentDocs_volumeDocs' | 'dashboardCalc' | 'dashboardIndicators' | 'modelManagement' | 'toolManagement' | 'systemAuthorization' | 'appearance' | 'about';
+// 已移除的 Tab（迁移到 AI 对话 / Skill 体系 / Swift 原生）：
+// - tencentDocs: 腾讯文档配置 → 通过腾讯文档 Skill 实现
+// - dashboardCalc: 仪表盘参数 → 通过 AI 对话分析仪表盘
+// - dashboardIndicators: 指标控制 → 通过 Skill 配置指标维度
+// - systemAuthorization: 系统授权 → Swift 原生 App 内置权限管理，Web 端无需配置
+type SettingsTab = 'menu' | 'modelManagement' | 'toolManagement' | 'appearance' | 'about' | 'talk' | 'channels' | 'memory';
 interface SettingsMenuItem { key: Exclude<SettingsTab, 'menu'>; label: string; icon: React.ReactNode; description: string; }
 const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   { key: 'appearance', label: '外观', icon: <PaletteOutlinedIcon sx={{ fontSize: 20 }} />, description: '主题、颜色与显示偏好' },
-  { key: 'tencentDocs', label: '腾讯文档', icon: <DescriptionOutlinedIcon sx={{ fontSize: 20 }} />, description: 'API 授权与文档链接管理' },
-  { key: 'dashboardCalc', label: '仪表盘参数', icon: <DashboardIcon sx={{ fontSize: 20 }} />, description: '计算阈值和参数调整' },
-  { key: 'dashboardIndicators', label: '指标控制', icon: <TuneIcon sx={{ fontSize: 20 }} />, description: '各模块显示与隐藏' },
   { key: 'modelManagement', label: '模型管理', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型' },
   { key: 'toolManagement', label: '工具管理', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件工具安装与管理' },
-  { key: 'systemAuthorization', label: '系统授权', icon: <AdminPanelSettingsIcon sx={{ fontSize: 20 }} />, description: '系统级权限一键授权' },
+  { key: 'talk', label: '语音对话', icon: <RecordVoiceOverIcon sx={{ fontSize: 20 }} />, description: '语音 locale、静默超时、思考级别' },
+  { key: 'channels', label: '通道管理', icon: <CableIcon sx={{ fontSize: 20 }} />, description: '飞书/钉钉/Slack/Telegram 等通道配置' },
+  { key: 'memory', label: '记忆', icon: <StorageIcon sx={{ fontSize: 20 }} />, description: '打开记忆管理页面' },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本' },
 ];
 
@@ -52,28 +55,31 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   const [draft, setDraft] = useState<AppSettings>({ ...settings });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setDraft((prev) => (prev.tencentDocs !== settings.tencentDocs ? { ...prev, tencentDocs: { ...settings.tencentDocs } } : prev));
   }, [settings.tencentDocs]);
 
-  const openInBrowser = useCallback(async (url: string) => {
-    if (isPyWebView() && window.pywebview?.api) { try { await window.pywebview.api.open_in_browser(url); return; } catch { /* 降级 */ } }
-    window.open(url, '_blank');
-  }, []);
-
   const handleSave = () => {
-    if (draft.dashboard.fullThreshold <= draft.dashboard.warningThreshold) { setErrors((e) => ({ ...e, 'dashboard.fullThreshold': '满仓线必须大于预警线' })); return; }
-    updateSettings({ tencentDocs: draft.tencentDocs }); updateSettings({ dashboard: draft.dashboard });
     updateSettings({ sidebar: draft.sidebar }); updateSettings({ appearance: draft.appearance });
     showToast('设置已保存', 'success');
   };
-  const handleReset = () => { resetSettings(); setDraft({ ...settings, dashboard: { ...settings.dashboard } }); setErrors({}); showToast('已重置为默认值', 'info'); };
+  const handleReset = () => { resetSettings(); setDraft({ ...settings }); setErrors({}); showToast('已重置为默认值', 'info'); };
+
+  /** 打开 Swift 原生权限管理窗口（仅 pywebview 环境） */
+  const handleOpenPermissionManager = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/permissions/open-manager`, { method: 'POST' });
+      if (!res.ok) { showToast('打开授权管理失败', 'error'); return; }
+      onClose?.();
+    } catch {
+      showToast('原生 App 未运行，无法打开授权管理', 'error');
+    }
+  }, [showToast, onClose]);
 
   const hasErrors = Object.keys(errors).length > 0;
   const currentLabel = SETTINGS_MENU_ITEMS.find((i) => i.key === activeTab)?.label;
-
-  const navigate = useNavigate();
 
   // ---- Menu view ----
   if (activeTab === 'menu') {
@@ -100,6 +106,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
                   onClick={() => {
                     if (item.key === 'modelManagement') { onClose?.(); onOpenModelManagement?.(); }
                     else if (item.key === 'toolManagement') { onClose?.(); onOpenToolManagement?.(); }
+                    else if (item.key === 'memory') { onClose?.(); navigate('/memory'); }
                     else if (!isAppearance) { setActiveTab(item.key); }
                   }}
                   sx={{
@@ -181,6 +188,28 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
                 </Box>
               );
             })}
+            {/* 系统授权管理 — 仅原生 App 模式显示，通过 IPC 调用 Swift 原生权限管理窗口 */}
+            {isPyWebView() && (
+              <Box
+                onClick={handleOpenPermissionManager}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1.5,
+                  px: 2,
+                  py: 1.5,
+                  cursor: 'pointer',
+                  borderRadius: '8px',
+                  '&:hover': { backgroundColor: gs.bgHover },
+                }}
+              >
+                <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center' }}><SecurityIcon sx={{ fontSize: 20 }} /></Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: gs.textPrimary }}>系统授权</Typography>
+                  <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted }}>打开 macOS 原生权限管理窗口</Typography>
+                </Box>
+              </Box>
+            )}
           </Box>
         </Box>
     );
@@ -196,17 +225,20 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
       </Box>
       <Divider sx={{ mb: 1 }} />
       <Box sx={{ px: 2, pb: 2, flex: 1, overflow: 'auto', minHeight: 0 }}>
-        {activeTab === 'tencentDocs' && <SettingsDocLinks draft={draft} setDraft={setDraft} errors={errors} setErrors={setErrors} openInBrowser={openInBrowser} onNavigateToVolumeDocs={() => setActiveTab('tencentDocs_volumeDocs')} />}
-        {activeTab === 'tencentDocs_volumeDocs' && <SettingsSidebar draft={draft} setDraft={setDraft} />}
-        {activeTab === 'dashboardCalc' && <SettingsDashboard draft={draft} setDraft={setDraft} errors={errors} setErrors={setErrors} />}
-        {activeTab === 'dashboardIndicators' && <SettingsDashboard draft={draft} setDraft={setDraft} errors={errors} setErrors={setErrors} />}
         {activeTab === 'appearance' && <SettingsGeneral draft={draft} setDraft={setDraft} />}
         {activeTab === 'about' && <SettingsAbout draft={draft} setDraft={setDraft} />}
-        <Divider sx={{ mt: 2, mb: 1.5 }} />
-        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-          <Button variant="outlined" size="small" startIcon={<RestartAltIcon />} onClick={handleReset} sx={{ borderColor: gs.border, color: gs.textMuted, fontSize: '0.75rem', '&:hover': { borderColor: gs.textDisabled } }}>重置</Button>
-          <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={handleSave} disabled={hasErrors} sx={{ backgroundColor: gs.textPrimary, '&:hover': { backgroundColor: gs.textSecondary }, fontSize: '0.75rem', '&.Mui-disabled': { backgroundColor: gs.border, color: gs.textDisabled } }}>保存</Button>
-        </Box>
+        {activeTab === 'talk' && <TalkSettingsPanel />}
+        {activeTab === 'channels' && <ChannelManagerPanel />}
+        {/* 仅 appearance/about 显示底部保存/重置按钮（talk/channels 自带操作按钮） */}
+        {(activeTab === 'appearance' || activeTab === 'about') && (
+          <>
+            <Divider sx={{ mt: 2, mb: 1.5 }} />
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+              <Button variant="outlined" size="small" startIcon={<RestartAltIcon />} onClick={handleReset} sx={{ borderColor: gs.border, color: gs.textMuted, fontSize: '0.75rem', '&:hover': { borderColor: gs.textDisabled } }}>重置</Button>
+              <Button variant="contained" size="small" startIcon={<SaveIcon />} onClick={handleSave} disabled={hasErrors} sx={{ backgroundColor: gs.textPrimary, '&:hover': { backgroundColor: gs.textSecondary }, fontSize: '0.75rem', '&.Mui-disabled': { backgroundColor: gs.border, color: gs.textDisabled } }}>保存</Button>
+            </Box>
+          </>
+        )}
       </Box>
     </Box>
   );

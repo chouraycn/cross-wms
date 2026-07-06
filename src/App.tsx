@@ -8,7 +8,7 @@ import { AppSettingsProvider, useAppearanceSettings } from './contexts/AppSettin
 import type { AppearanceConfig, AccentColor } from './contexts/AppSettingsContext';
 import { ModelsProvider } from './contexts/ModelsContext';
 import { isPyWebView } from './services/tencentDocsApi';
-import { getGrayScale } from './constants/theme';
+import { getGrayScale, FONT_SIZES, BORDER_RADII, SPACING, SHADOWS } from './constants/theme';
 import { UpdateProvider } from './contexts/UpdateContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import UpdateNotification from './components/UpdateNotification';
@@ -18,9 +18,6 @@ import { ChatProvider, useChatSession } from './contexts/ChatContext';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
 import { automationEngine } from './services/automation';
-
-// 从统一配色文件导入
-export { PRIMARY, SECONDARY, BORDER, BG_LIGHT, BG_PAGE, WHITE, RADIUS, CHAT_COLORS } from './constants/theme';
 
 // 路由级懒加载 — 按需加载各页面组件，降低首屏加载体积
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
@@ -49,6 +46,10 @@ const ProjectDetailPage = React.lazy(() => import('./pages/ProjectDetailPage'));
 const PdfToolsPage = React.lazy(() => import('./pages/PdfToolsPage'));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
 const PluginsPage = React.lazy(() => import('./pages/PluginsPage'));
+const ExtensionsPage = React.lazy(() => import('./pages/ExtensionsPage'));
+const SystemMonitorPage = React.lazy(() => import('./pages/SystemMonitorPage'));
+const AuditLogPage = React.lazy(() => import('./pages/AuditLogPage'));
+const ApiKeysPage = React.lazy(() => import('./pages/ApiKeysPage'));
 const ApiDomainWhitelistPage = React.lazy(() => import('./pages/ApiDomainWhitelistPage'));
 const ApiTemplatesPage = React.lazy(() => import('./pages/ApiTemplatesPage'));
 const BrowserPage = React.lazy(() => import('./pages/BrowserPage'));
@@ -80,13 +81,15 @@ const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
   orange:  { main: '#EA580C', light: '#FB923C' },
 };
 
-/** 根据外观配置动态创建 MUI Theme — 仅支持 light/dark，使用统一灰阶 */
+/** 根据外观配置动态创建 MUI Theme — 使用统一主题 Token */
 function buildTheme(appearance: AppearanceConfig) {
   const isDark = appearance.themeMode === 'dark';
   const gs = getGrayScale(isDark);
   const accent = ACCENT_MAP[appearance.accentColor] || ACCENT_MAP.default;
-  const radiusMap = { sharp: 0, normal: 6, rounded: 12 } as const;
-  const radius = radiusMap[appearance.borderRadius] ?? 6;
+  const fontSizes = FONT_SIZES[appearance.fontSize] || FONT_SIZES.medium;
+  const borderRadii = BORDER_RADII[appearance.borderRadius] || BORDER_RADII.normal;
+  const spacing = SPACING[appearance.compactMode ? 'compact' : 'normal'] || SPACING.normal;
+  const shadows = SHADOWS[appearance.enableShadows ? (isDark ? 'dark' : 'light') : 'none'];
 
   return createTheme({
     palette: {
@@ -113,15 +116,69 @@ function buildTheme(appearance: AppearanceConfig) {
         'Arial',
         'sans-serif',
       ].join(','),
+      fontSize: parseFloat(fontSizes.base) * 16,
+      h1: { fontSize: fontSizes['3xl'], fontWeight: 700 },
+      h2: { fontSize: fontSizes['2xl'], fontWeight: 600 },
+      h3: { fontSize: fontSizes.xl, fontWeight: 600 },
+      h4: { fontSize: fontSizes.lg, fontWeight: 600 },
+      h5: { fontSize: fontSizes.md, fontWeight: 600 },
+      h6: { fontSize: fontSizes.base, fontWeight: 600 },
+      body1: { fontSize: fontSizes.base },
+      body2: { fontSize: fontSizes.sm },
+      caption: { fontSize: fontSizes.xs },
+      button: { fontSize: fontSizes.sm, fontWeight: 500 },
+    },
+    spacing: (factor: number) => `${spacing.base * factor}px`,
+    shape: {
+      borderRadius: borderRadii.base,
+    },
+    shadows: [
+      'none',
+      shadows.sm,
+      shadows.base,
+      shadows.md,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+      shadows.lg,
+    ],
+    transitions: {
+      duration: {
+        shortest: appearance.enableAnimations ? 150 : 0,
+        shorter: appearance.enableAnimations ? 200 : 0,
+        short: appearance.enableAnimations ? 250 : 0,
+        standard: appearance.enableAnimations ? 300 : 0,
+        complex: appearance.enableAnimations ? 375 : 0,
+        enteringScreen: appearance.enableAnimations ? 225 : 0,
+        leavingScreen: appearance.enableAnimations ? 195 : 0,
+      },
     },
     components: {
       MuiCard: {
         defaultProps: { elevation: 0 },
         styleOverrides: {
           root: {
-            borderRadius: radius,
+            borderRadius: borderRadii.md,
             border: `1px solid ${gs.border}`,
             backgroundColor: gs.bgPanel,
+            boxShadow: shadows.base,
           },
         },
       },
@@ -129,20 +186,21 @@ function buildTheme(appearance: AppearanceConfig) {
         styleOverrides: {
           root: {
             textTransform: 'none',
-            borderRadius: radius,
+            borderRadius: borderRadii.base,
             fontWeight: 500,
+            transition: appearance.enableAnimations ? undefined : 'none',
           },
         },
       },
       MuiChip: {
         styleOverrides: {
-          root: { borderRadius: radius },
+          root: { borderRadius: borderRadii.full },
         },
       },
       MuiTableCell: {
         styleOverrides: {
           head: {
-            fontSize: '0.8rem',
+            fontSize: fontSizes.sm,
             fontWeight: 600,
             color: gs.textMuted,
           },
@@ -158,6 +216,7 @@ function buildTheme(appearance: AppearanceConfig) {
           paper: {
             backgroundColor: gs.bgPanel,
             border: `1px solid ${gs.border}`,
+            borderRadius: borderRadii.xl,
           },
         },
       },
@@ -166,6 +225,7 @@ function buildTheme(appearance: AppearanceConfig) {
           paper: {
             backgroundColor: gs.bgPanel,
             border: `1px solid ${gs.border}`,
+            borderRadius: borderRadii.md,
           },
         },
       },
@@ -174,7 +234,7 @@ function buildTheme(appearance: AppearanceConfig) {
           root: {
             '& .MuiOutlinedInput-root': {
               backgroundColor: gs.bgInput,
-              borderRadius: radius,
+              borderRadius: borderRadii.base,
             },
           },
         },
@@ -199,6 +259,7 @@ function buildTheme(appearance: AppearanceConfig) {
           paper: {
             backgroundColor: gs.bgPanel,
             border: `1px solid ${gs.border}`,
+            borderRadius: borderRadii.md,
           },
         },
       },
@@ -225,6 +286,7 @@ function buildTheme(appearance: AppearanceConfig) {
           root: {
             backgroundColor: gs.bgPanel,
             borderBottom: `1px solid ${gs.border}`,
+            boxShadow: shadows.base,
           },
         },
       },
@@ -260,7 +322,6 @@ function buildTheme(appearance: AppearanceConfig) {
           body: {
             backgroundColor: gs.bgPage,
             color: gs.textPrimary,
-            // v8.2-fix: 强制覆盖系统 prefers-color-scheme，防止 Electron 窗口失焦时主题变色
             colorScheme: isDark ? 'dark' : 'light',
           },
         },
@@ -283,6 +344,7 @@ function buildTheme(appearance: AppearanceConfig) {
         styleOverrides: {
           paper: {
             backgroundColor: gs.bgPanel,
+            border: `1px solid ${gs.border}`,
           },
         },
       },
@@ -291,6 +353,7 @@ function buildTheme(appearance: AppearanceConfig) {
           tooltip: {
             backgroundColor: isDark ? '#2D2D2D' : '#374151',
             color: isDark ? '#F3F4F6' : '#FFFFFF',
+            borderRadius: borderRadii.sm,
           },
         },
       },
@@ -325,6 +388,21 @@ function buildTheme(appearance: AppearanceConfig) {
           },
         },
       },
+      MuiAvatar: {
+        styleOverrides: {
+          root: {
+            borderRadius: borderRadii.full,
+          },
+        },
+      },
+      MuiBadge: {
+        styleOverrides: {
+          badge: {
+            borderRadius: borderRadii.full,
+          },
+        },
+      },
+      
     },
   });
 }
@@ -686,6 +764,10 @@ const MainLayout: React.FC = () => {
                     <Route path="/settings" element={<SettingsRedirect onOpenSettings={setSettingsPopoverOpen} />} />
                     <Route path="/automation" element={<AutomationPage />} />
                     <Route path="/plugins" element={<PluginsPage />} />
+                    <Route path="/extensions" element={<ExtensionsPage />} />
+                    <Route path="/system-monitor" element={<SystemMonitorPage />} />
+                    <Route path="/audit-log" element={<AuditLogPage />} />
+                    <Route path="/api-keys" element={<ApiKeysPage />} />
                     <Route path="/api-domain-whitelist" element={<ApiDomainWhitelistPage />} />
                     <Route path="/api-templates" element={<ApiTemplatesPage />} />
                     <Route path="/browser" element={<BrowserPage />} />

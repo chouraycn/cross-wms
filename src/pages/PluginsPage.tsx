@@ -32,6 +32,14 @@ import {
   Paper,
   useTheme,
   LinearProgress,
+  TextField,
+  FormControl,
+  FormControlLabel,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
+  Divider,
 } from '@mui/material';
 import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -41,6 +49,8 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 
 import {
   getPlugins,
@@ -50,8 +60,12 @@ import {
   uninstallPluginAction,
   installPluginAction,
   refreshFromApi,
+  fetchPluginConfigAction,
+  updatePluginConfigAction,
+  resetPluginConfigAction,
 } from '../stores/pluginStore';
 import type { PluginInfo } from '../services/plugins/api';
+import type { PluginConfigSchema, PluginConfigSchemaField } from '../services/plugins/api';
 import { getGrayScale } from '../constants/theme';
 
 // ===================== 状态配置 =====================
@@ -94,6 +108,125 @@ const RISK_CONFIG: Record<string, { label: string; color: 'default' | 'info' | '
 
 // ===================== Component =====================
 
+/** 根据 Schema 字段类型渲染表单控件 */
+function renderConfigField(
+  field: PluginConfigSchemaField,
+  values: Record<string, unknown>,
+  onChange: (key: string, value: unknown) => void
+): React.ReactElement {
+  const label = field.label || field.key;
+  const value = values[field.key] ?? field.default ?? '';
+  const helperText = field.description;
+
+  if (field.enum && field.enum.length > 0) {
+    return (
+      <FormControl key={field.key} fullWidth size="small" required={field.required}>
+        <InputLabel id={`config-field-${field.key}-label`}>{label}</InputLabel>
+        <Select
+          labelId={`config-field-${field.key}-label`}
+          value={String(value)}
+          label={label}
+          onChange={(e) => onChange(field.key, e.target.value)}
+        >
+          {field.enum.map((opt) => (
+            <MenuItem key={String(opt)} value={String(opt)}>
+              {String(opt)}
+            </MenuItem>
+          ))}
+        </Select>
+        {helperText && <FormHelperText>{helperText}</FormHelperText>}
+      </FormControl>
+    );
+  }
+
+  switch (field.type) {
+    case 'boolean':
+      return (
+        <FormControl key={field.key} fullWidth>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={Boolean(value)}
+                onChange={(e) => onChange(field.key, e.target.checked)}
+                size="small"
+              />
+            }
+            label={label}
+          />
+          {helperText && <FormHelperText sx={{ ml: 0 }}>{helperText}</FormHelperText>}
+        </FormControl>
+      );
+
+    case 'number':
+      return (
+        <TextField
+          key={field.key}
+          fullWidth
+          size="small"
+          type="number"
+          label={label}
+          value={value as number | string}
+          helperText={helperText}
+          required={field.required}
+          onChange={(e) => onChange(field.key, Number(e.target.value))}
+        />
+      );
+
+    case 'object':
+      return (
+        <Box key={field.key} sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+            {label}
+          </Typography>
+          {helperText && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+              {helperText}
+            </Typography>
+          )}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {field.properties?.map((prop) =>
+              renderConfigField(prop, (value as Record<string, unknown>) || {}, (k, v) => {
+                onChange(field.key, {
+                  ...(value as Record<string, unknown>),
+                  [k]: v,
+                });
+              })
+            )}
+          </Box>
+        </Box>
+      );
+
+    case 'array':
+    case 'string':
+    default:
+      return (
+        <TextField
+          key={field.key}
+          fullWidth
+          size="small"
+          type="text"
+          label={label}
+          value={value as string}
+          helperText={helperText}
+          required={field.required}
+          multiline={field.type === 'array' || (typeof value === 'string' && value.length > 50)}
+          minRows={field.type === 'array' ? 3 : 1}
+          onChange={(e) => {
+            if (field.type === 'array') {
+              const arr = e.target.value
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
+              onChange(field.key, arr);
+            } else {
+              onChange(field.key, e.target.value);
+            }
+          }}
+        />
+      );
+  }
+}
+
 const PluginsPage: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -119,6 +252,14 @@ const PluginsPage: React.FC = () => {
   // 卸载确认对话框
   const [uninstallTarget, setUninstallTarget] = useState<PluginInfo | null>(null);
   const [uninstalling, setUninstalling] = useState(false);
+
+  // 配置对话框
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [configTarget, setConfigTarget] = useState<PluginInfo | null>(null);
+  const [configSchema, setConfigSchema] = useState<PluginConfigSchema | null>(null);
+  const [configValues, setConfigValues] = useState<Record<string, unknown>>({});
+  const [configLoading, setConfigLoading] = useState(false);
+  const [configSaving, setConfigSaving] = useState(false);
 
   // 通知
   const [snackbar, setSnackbar] = useState<{
@@ -196,6 +337,90 @@ const PluginsPage: React.FC = () => {
       });
     }
   }, []);
+
+  // 打开配置对话框
+  const handleOpenConfig = useCallback(async (plugin: PluginInfo) => {
+    setConfigTarget(plugin);
+    setConfigDialogOpen(true);
+    setConfigLoading(true);
+    setConfigSchema(null);
+    setConfigValues({});
+    try {
+      const result = await fetchPluginConfigAction(plugin.id);
+      setConfigSchema(result.configSchema);
+      setConfigValues(result.config || {});
+    } catch (e) {
+      setSnackbar({
+        open: true,
+        message: `加载配置失败: ${e instanceof Error ? e.message : String(e)}`,
+        severity: 'error',
+      });
+    } finally {
+      setConfigLoading(false);
+    }
+  }, []);
+
+  // 关闭配置对话框
+  const handleCloseConfig = useCallback(() => {
+    setConfigDialogOpen(false);
+    setConfigTarget(null);
+    setConfigSchema(null);
+    setConfigValues({});
+  }, []);
+
+  // 更新单个配置字段
+  const handleConfigFieldChange = useCallback((key: string, value: unknown) => {
+    setConfigValues((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }, []);
+
+  // 保存配置
+  const handleSaveConfig = useCallback(async () => {
+    if (!configTarget) return;
+    setConfigSaving(true);
+    try {
+      await updatePluginConfigAction(configTarget.id, configValues);
+      setSnackbar({
+        open: true,
+        message: '配置已保存',
+        severity: 'success',
+      });
+      handleCloseConfig();
+    } catch (e) {
+      setSnackbar({
+        open: true,
+        message: `保存配置失败: ${e instanceof Error ? e.message : String(e)}`,
+        severity: 'error',
+      });
+    } finally {
+      setConfigSaving(false);
+    }
+  }, [configTarget, configValues, handleCloseConfig]);
+
+  // 重置配置
+  const handleResetConfig = useCallback(async () => {
+    if (!configTarget) return;
+    setConfigSaving(true);
+    try {
+      const defaultConfig = await resetPluginConfigAction(configTarget.id);
+      setConfigValues(defaultConfig);
+      setSnackbar({
+        open: true,
+        message: '配置已重置为默认值',
+        severity: 'info',
+      });
+    } catch (e) {
+      setSnackbar({
+        open: true,
+        message: `重置配置失败: ${e instanceof Error ? e.message : String(e)}`,
+        severity: 'error',
+      });
+    } finally {
+      setConfigSaving(false);
+    }
+  }, [configTarget]);
 
   // 卸载
   const handleUninstall = useCallback(async () => {
@@ -311,7 +536,7 @@ const PluginsPage: React.FC = () => {
                 <TableCell width={100}>风险等级</TableCell>
                 <TableCell width={100}>权限</TableCell>
                 <TableCell width={60}>启用</TableCell>
-                <TableCell width={60}>操作</TableCell>
+                <TableCell width={120}>操作</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -410,17 +635,28 @@ const PluginsPage: React.FC = () => {
                       />
                     </TableCell>
 
-                    {/* 卸载按钮 */}
+                    {/* 操作按钮 */}
                     <TableCell>
-                      <Tooltip title="卸载插件">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => setUninstallTarget(plugin)}
-                        >
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Tooltip title="配置">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleOpenConfig(plugin)}
+                          >
+                            <SettingsOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="卸载插件">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => setUninstallTarget(plugin)}
+                          >
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 );
@@ -447,6 +683,64 @@ const PluginsPage: React.FC = () => {
           </Button>
           <Button onClick={handleUninstall} variant="contained" color="error" size="small" disabled={uninstalling}>
             {uninstalling ? '卸载中...' : '确认卸载'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 插件配置对话框 */}
+      <Dialog
+        open={configDialogOpen}
+        onClose={handleCloseConfig}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <SettingsOutlinedIcon fontSize="small" />
+          插件配置 — {configTarget?.name || ''}
+        </DialogTitle>
+
+        <DialogContent dividers>
+          {configLoading ? (
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <LinearProgress sx={{ mb: 2 }} />
+              <Typography variant="body2" color="text.secondary">
+                加载配置中...
+              </Typography>
+            </Box>
+          ) : !configSchema || configSchema.fields.length === 0 ? (
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <SettingsOutlinedIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+              <Typography color="text.secondary">
+                该插件无可配置项
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+              {configSchema.fields.map((field) => renderConfigField(field, configValues, handleConfigFieldChange))}
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            startIcon={<RestartAltIcon />}
+            onClick={handleResetConfig}
+            size="small"
+            disabled={configLoading || configSaving || !configSchema || configSchema.fields.length === 0}
+          >
+            重置默认
+          </Button>
+          <Box sx={{ flexGrow: 1 }} />
+          <Button onClick={handleCloseConfig} size="small">
+            取消
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveConfig}
+            size="small"
+            disabled={configLoading || configSaving || !configSchema || configSchema.fields.length === 0}
+          >
+            {configSaving ? '保存中...' : '保存'}
           </Button>
         </DialogActions>
       </Dialog>

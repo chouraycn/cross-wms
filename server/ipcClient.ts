@@ -286,6 +286,13 @@ class CDFKnowIPCClient {
     return response.ok;
   }
 
+  async openPermissionManager(): Promise<boolean> {
+    const response = await this.sendRequest({
+      type: 'openPermissionManager',
+    });
+    return response.ok;
+  }
+
   disconnect(): void {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);

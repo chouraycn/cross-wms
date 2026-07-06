@@ -1,17 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Box, Typography, CircularProgress, Alert, Button, Divider, useTheme } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ModelManager from '../../shared/ModelManager';
 import { useModels } from '../../../contexts/ModelsContext';
-import SystemAuthBanner from '../../Layout/SystemAuthBanner';
 import { getGrayScale } from '../../../constants/theme';
 
-interface ModelManagementProps {
-  /** 点击「前往设置」时，切换到系统授权 Tab */
-  onOpenSystemAuthorization?: () => void;
-}
-
-const ModelManagement: React.FC<ModelManagementProps> = ({ onOpenSystemAuthorization }) => {
+const ModelManagement: React.FC = () => {
   const { models: modelList, defaultModelId, updateModels, isLoading, error, reload } = useModels();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -44,8 +38,6 @@ const ModelManagement: React.FC<ModelManagementProps> = ({ onOpenSystemAuthoriza
 
   return (
     <Box>
-      <SystemAuthBanner onOpenSettings={onOpenSystemAuthorization} />
-
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 2 }}>
         <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: gs.textPrimary }}>
           我的模型

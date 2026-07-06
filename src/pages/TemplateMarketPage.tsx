@@ -138,7 +138,7 @@ const TemplateMarketPage: React.FC = React.memo(() => {
       result = result.filter(t =>
         t.name.toLowerCase().includes(query) ||
         t.description.toLowerCase().includes(query) ||
-        t.tags.some(tag => tag.toLowerCase().includes(query))
+        (t.tags || []).some(tag => tag.toLowerCase().includes(query))
       );
     }
 
@@ -303,7 +303,7 @@ const TemplateMarketPage: React.FC = React.memo(() => {
 
                       {/* 标签 */}
                       <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
-                        {template.tags.slice(0, 3).map((tag) => (
+                        {(template.tags || []).slice(0, 3).map((tag) => (
                           <Chip key={tag} size="small" label={tag} variant="outlined" />
                         ))}
                       </Box>
@@ -371,7 +371,7 @@ const TemplateMarketPage: React.FC = React.memo(() => {
 
               {/* 标签 */}
               <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                {selectedTemplate.tags.map((tag) => (
+                {(selectedTemplate.tags || []).map((tag) => (
                   <Chip key={tag} size="small" label={tag} />
                 ))}
               </Box>

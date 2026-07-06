@@ -138,8 +138,11 @@ export async function handleAgentChat(req: Request, res: Response) {
     });
 
     // 处理客户端断开
+    // 注意：必须用 res.on('close') 而非 req.on('close')
+    // req.on('close') 在请求体被 JSON 中间件消费后立即触发，会导致 aborted=true
+    // 从而跳过所有后续 SSE 事件（AI 实际在生成但前端收不到）
     let aborted = false;
-    req.on('close', () => {
+    res.on('close', () => {
       aborted = true;
       clearAgentRunContext(runId);
     });

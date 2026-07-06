@@ -36,3 +36,20 @@ export {
   OutboundPipeline,
   createOutboundPipeline,
 } from "./pipeline.js";
+
+export { MessageLifecycleManager, messageLifecycleManager } from "./lifecycle-manager.js";
+export type {
+  MessageLifecyclePhase,
+  LifecycleTransition,
+  MessageLifecycleState,
+  LifecycleManagerOptions,
+  LifecycleEventHandler,
+} from "./lifecycle-manager.js";
+
+export { RetryQueue, retryQueue } from "./retry-queue.js";
+export type {
+  RetryItem,
+  RetryQueueConfig,
+  RetryHandler,
+  RetryQueueEventHandler,
+} from "./retry-queue.js";

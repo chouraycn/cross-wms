@@ -69,4 +69,14 @@ router.post('/open-settings/:capability', async (req: Request, res: Response) =>
   }
 });
 
+router.post('/open-manager', async (_req: Request, res: Response) => {
+  try {
+    const success = await ipcClient.openPermissionManager();
+    res.json({ success });
+  } catch (e) {
+    logger.error('[Permissions] open manager failed:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
 export default router;

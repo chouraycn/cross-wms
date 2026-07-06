@@ -18,6 +18,9 @@ export const BG_HOVER_LIGHT = '#F3F4F6';
 export const BG_ACTIVE_LIGHT = '#FFFFFF';
 /** 输入框背景 */
 export const BG_INPUT_LIGHT = '#FFFFFF';
+/** 聊天消息背景 */
+export const BG_CHAT_USER_LIGHT = '#3B82F6';
+export const BG_CHAT_BOT_LIGHT = '#F3F4F6';
 
 /** 主文字 */
 export const TEXT_PRIMARY_LIGHT = '#111827';
@@ -27,6 +30,9 @@ export const TEXT_SECONDARY_LIGHT = '#374151';
 export const TEXT_MUTED_LIGHT = '#6B7280';
 /** 禁用/占位文字 */
 export const TEXT_DISABLED_LIGHT = '#9CA3AF';
+/** 聊天用户文字 */
+export const TEXT_CHAT_USER_LIGHT = '#FFFFFF';
+export const TEXT_CHAT_BOT_LIGHT = '#111827';
 
 /** 主边框 */
 export const BORDER_LIGHT = '#E5E7EB';
@@ -49,6 +55,9 @@ export const BG_HOVER_DARK = '#252525';
 export const BG_ACTIVE_DARK = '#2D2D2D';
 /** 输入框背景 */
 export const BG_INPUT_DARK = '#252525';
+/** 聊天消息背景 */
+export const BG_CHAT_USER_DARK = '#4F46E5';
+export const BG_CHAT_BOT_DARK = '#252525';
 
 /** 主文字 */
 export const TEXT_PRIMARY_DARK = '#F3F4F6';
@@ -58,6 +67,9 @@ export const TEXT_SECONDARY_DARK = '#E5E7EB';
 export const TEXT_MUTED_DARK = '#9CA3AF';
 /** 禁用/占位文字 */
 export const TEXT_DISABLED_DARK = '#6B7280';
+/** 聊天用户文字 */
+export const TEXT_CHAT_USER_DARK = '#FFFFFF';
+export const TEXT_CHAT_BOT_DARK = '#E5E7EB';
 
 /** 主边框 */
 export const BORDER_DARK = '#2A2A2A';
@@ -65,6 +77,158 @@ export const BORDER_DARK = '#2A2A2A';
 export const BORDER_DARKER_DM = '#333333';
 /** 深边框 */
 export const BORDER_LIGHTER_DM = '#3D3D3D';
+
+// ===================== 字体大小 Token =====================
+
+export interface FontSizes {
+  xs: string;
+  sm: string;
+  base: string;
+  md: string;
+  lg: string;
+  xl: string;
+  '2xl': string;
+  '3xl': string;
+}
+
+export const FONT_SIZES: Record<string, FontSizes> = {
+  small: {
+    xs: '0.625rem',
+    sm: '0.7rem',
+    base: '0.75rem',
+    md: '0.8rem',
+    lg: '0.875rem',
+    xl: '1rem',
+    '2xl': '1.125rem',
+    '3xl': '1.25rem',
+  },
+  medium: {
+    xs: '0.6875rem',
+    sm: '0.75rem',
+    base: '0.8125rem',
+    md: '0.875rem',
+    lg: '0.9375rem',
+    xl: '1.0625rem',
+    '2xl': '1.25rem',
+    '3xl': '1.375rem',
+  },
+  large: {
+    xs: '0.75rem',
+    sm: '0.8125rem',
+    base: '0.875rem',
+    md: '0.9375rem',
+    lg: '1rem',
+    xl: '1.125rem',
+    '2xl': '1.375rem',
+    '3xl': '1.5rem',
+  },
+};
+
+// ===================== 圆角大小 Token =====================
+
+export interface BorderRadii {
+  none: number;
+  sm: number;
+  base: number;
+  md: number;
+  lg: number;
+  xl: number;
+  full: number;
+}
+
+export const BORDER_RADII: Record<string, BorderRadii> = {
+  sharp: {
+    none: 0,
+    sm: 0,
+    base: 0,
+    md: 0,
+    lg: 0,
+    xl: 0,
+    full: 0,
+  },
+  normal: {
+    none: 0,
+    sm: 2,
+    base: 4,
+    md: 6,
+    lg: 8,
+    xl: 12,
+    full: 9999,
+  },
+  rounded: {
+    none: 0,
+    sm: 4,
+    base: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    full: 9999,
+  },
+};
+
+// ===================== 间距 Token =====================
+
+export interface Spacing {
+  xs: number;
+  sm: number;
+  base: number;
+  md: number;
+  lg: number;
+  xl: number;
+}
+
+export const SPACING: Record<string, Spacing> = {
+  compact: {
+    xs: 2,
+    sm: 4,
+    base: 6,
+    md: 8,
+    lg: 12,
+    xl: 16,
+  },
+  normal: {
+    xs: 4,
+    sm: 8,
+    base: 12,
+    md: 16,
+    lg: 20,
+    xl: 24,
+  },
+};
+
+// ===================== 阴影 Token =====================
+
+export interface Shadows {
+  none: string;
+  sm: string;
+  base: string;
+  md: string;
+  lg: string;
+}
+
+export const SHADOWS: Record<string, Shadows> = {
+  none: {
+    none: 'none',
+    sm: 'none',
+    base: 'none',
+    md: 'none',
+    lg: 'none',
+  },
+  light: {
+    none: 'none',
+    sm: '0 1px 2px rgba(0,0,0,0.05)',
+    base: '0 1px 3px rgba(0,0,0,0.1)',
+    md: '0 4px 6px rgba(0,0,0,0.1)',
+    lg: '0 10px 15px rgba(0,0,0,0.1)',
+  },
+  dark: {
+    none: 'none',
+    sm: '0 1px 2px rgba(0,0,0,0.3)',
+    base: '0 1px 3px rgba(0,0,0,0.4)',
+    md: '0 4px 6px rgba(0,0,0,0.4)',
+    lg: '0 10px 15px rgba(0,0,0,0.5)',
+  },
+};
 
 // ===================== 语义化颜色（不随主题变化） =====================
 
@@ -175,10 +339,14 @@ export interface GrayScale {
   bgHover: string;
   bgActive: string;
   bgInput: string;
+  bgChatUser: string;
+  bgChatBot: string;
   textPrimary: string;
   textSecondary: string;
   textMuted: string;
   textDisabled: string;
+  textChatUser: string;
+  textChatBot: string;
   border: string;
   borderLighter: string;
   borderDarker: string;
@@ -194,10 +362,14 @@ export function getGrayScale(isDark: boolean): GrayScale {
         bgHover: BG_HOVER_DARK,
         bgActive: BG_ACTIVE_DARK,
         bgInput: BG_INPUT_DARK,
+        bgChatUser: BG_CHAT_USER_DARK,
+        bgChatBot: BG_CHAT_BOT_DARK,
         textPrimary: TEXT_PRIMARY_DARK,
         textSecondary: TEXT_SECONDARY_DARK,
         textMuted: TEXT_MUTED_DARK,
         textDisabled: TEXT_DISABLED_DARK,
+        textChatUser: TEXT_CHAT_USER_DARK,
+        textChatBot: TEXT_CHAT_BOT_DARK,
         border: BORDER_DARK,
         borderLighter: BORDER_DARKER_DM,
         borderDarker: BORDER_LIGHTER_DM,
@@ -209,10 +381,14 @@ export function getGrayScale(isDark: boolean): GrayScale {
         bgHover: BG_HOVER_LIGHT,
         bgActive: BG_ACTIVE_LIGHT,
         bgInput: BG_INPUT_LIGHT,
+        bgChatUser: BG_CHAT_USER_LIGHT,
+        bgChatBot: BG_CHAT_BOT_LIGHT,
         textPrimary: TEXT_PRIMARY_LIGHT,
         textSecondary: TEXT_SECONDARY_LIGHT,
         textMuted: TEXT_MUTED_LIGHT,
         textDisabled: TEXT_DISABLED_LIGHT,
+        textChatUser: TEXT_CHAT_USER_LIGHT,
+        textChatBot: TEXT_CHAT_BOT_LIGHT,
         border: BORDER_LIGHT,
         borderLighter: BORDER_LIGHTER,
         borderDarker: BORDER_DARKER,
@@ -227,33 +403,3 @@ export function getGrayScale(isDark: boolean): GrayScale {
  * 修改此常量即可统一调整整个聊天区域宽度
  */
 export const CHAT_MAX_WIDTH = 920;
-
-// ===================== 兼容旧代码的常量（已废弃） =====================
-
-/** @deprecated 使用 getGrayScale(isDark).textPrimary */
-export const PRIMARY = '#111827';
-/** @deprecated 使用 getGrayScale(isDark).textMuted */
-export const SECONDARY = '#6B7280';
-/** @deprecated 使用 getGrayScale(isDark).border */
-export const BORDER = '#E5E7EB';
-/** @deprecated 使用 getGrayScale(isDark).bgHover */
-export const BG_LIGHT = '#F3F4F6';
-/** @deprecated 使用 getGrayScale(isDark).bgPage */
-export const BG_PAGE = '#FAFAFA';
-/** @deprecated 使用 getGrayScale(isDark).bgPanel */
-export const WHITE = '#FFFFFF';
-/** @deprecated 使用 theme.shape.borderRadius */
-export const RADIUS = 6;
-
-/** @deprecated 新代码请使用 getGrayScale */
-export const CHAT_COLORS = {
-  inputBg: BG_LIGHT,
-  inputBorder: BORDER,
-  chipBg: PRIMARY,
-  chipText: '#fff',
-  panelBg: WHITE,
-  panelBorder: BORDER,
-  textPrimary: PRIMARY,
-  textSecondary: SECONDARY,
-  hoverBg: '#F9FAFB',
-} as const;

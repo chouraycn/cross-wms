@@ -312,3 +312,38 @@ export async function loadLegacyHookHandler(params: {
     return false;
   }
 }
+
+export async function registerBuiltinHooks(): Promise<void> {
+  const {
+    commandLoggerHook,
+    commandLoggerBootstrapHook,
+    commandLoggerNewHook,
+    commandLoggerCompleteHook,
+    sessionMemoryHook,
+    sessionMemoryCommandHook,
+    sessionMemoryMessageHook,
+  } = await import('./builtin/index.js');
+
+  registerInternalHook('command', commandLoggerHook);
+  loadedHookRegistrations.push({ event: 'command', handler: commandLoggerHook });
+
+  registerInternalHook('command:bootstrap', commandLoggerBootstrapHook);
+  loadedHookRegistrations.push({ event: 'command:bootstrap', handler: commandLoggerBootstrapHook });
+
+  registerInternalHook('command:new', commandLoggerNewHook);
+  loadedHookRegistrations.push({ event: 'command:new', handler: commandLoggerNewHook });
+
+  registerInternalHook('command:complete', commandLoggerCompleteHook);
+  loadedHookRegistrations.push({ event: 'command:complete', handler: commandLoggerCompleteHook });
+
+  registerInternalHook('session', sessionMemoryHook);
+  loadedHookRegistrations.push({ event: 'session', handler: sessionMemoryHook });
+
+  registerInternalHook('command', sessionMemoryCommandHook);
+  loadedHookRegistrations.push({ event: 'command', handler: sessionMemoryCommandHook });
+
+  registerInternalHook('message', sessionMemoryMessageHook);
+  loadedHookRegistrations.push({ event: 'message', handler: sessionMemoryMessageHook });
+
+  logger.info('[hooks/loader] 已注册内置钩子: command-logger, session-memory');
+}

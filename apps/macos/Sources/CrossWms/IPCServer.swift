@@ -145,7 +145,7 @@ actor IPCServer {
 
     private func handleRequest(_ request: Request) async -> Response {
         switch request {
-        case .notify, .playSound, .status, .checkForUpdates, .openURL, .quit:
+        case .notify, .playSound, .status, .checkForUpdates, .openURL, .quit, .openPermissionManager:
             guard let handler = onRequest else {
                 return Response(ok: false, message: "No request handler")
             }

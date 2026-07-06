@@ -11,7 +11,7 @@
  */
 
 import * as api from '../services/plugins/api';
-import type { PluginInfo, PluginHealth } from '../services/plugins/api';
+import type { PluginInfo, PluginHealth, PluginConfigSchema } from '../services/plugins/api';
 
 // ====== 内存缓存 ======
 
@@ -167,6 +167,27 @@ export async function reloadPluginAction(id: string): Promise<void> {
     }));
     throw e;
   }
+}
+
+/** 获取插件配置和 Schema */
+export async function fetchPluginConfigAction(id: string): Promise<{
+  config: Record<string, unknown>;
+  configSchema: PluginConfigSchema | null;
+}> {
+  return await api.fetchPluginConfig(id);
+}
+
+/** 更新插件配置 */
+export async function updatePluginConfigAction(
+  id: string,
+  config: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  return await api.updatePluginConfig(id, config);
+}
+
+/** 重置插件配置 */
+export async function resetPluginConfigAction(id: string): Promise<Record<string, unknown>> {
+  return await api.resetPluginConfig(id);
 }
 
 // ====== 订阅 ======

@@ -476,6 +476,42 @@ export function emitAgentEvent(event: Omit<AgentEventPayload, 'seq' | 'ts'>): vo
 
 // ===================== 便捷事件发布函数 =====================
 
+/**
+ * Turn 级生命周期事件 — 对齐 OpenClaw agent-core 的 turn_start/turn_end
+ *
+ * 与 run 级 lifecycle 事件（start/end/error）互补：
+ *   - run 级：一次完整 Agent 运行（可能包含多个 turn）
+ *   - turn 级：一次对话轮次（用户输入 → Agent 响应 → 工具调用 → 结束）
+ *
+ * turn 事件用于：
+ *   - 前端 UI 区分"思考中"和"等待输入"状态
+ *   - compaction 在 turn_end 时触发
+ *   - 插件 hook 订阅 turn 边界
+ */
+export function emitAgentTurnEvent(params: {
+  runId: string;
+  phase: 'turn_start' | 'turn_end';
+  turnIndex: number;
+  data?: Record<string, unknown>;
+  sessionKey?: string;
+}): void {
+  emitAgentEvent({
+    runId: params.runId,
+    stream: 'lifecycle',
+    data: {
+      phase: params.phase,
+      turnIndex: params.turnIndex,
+      ...params.data,
+    },
+    sessionKey: params.sessionKey,
+  });
+
+  // turn_end 时刷新所有块缓冲
+  if (params.phase === 'turn_end') {
+    flushAllBlockBuffers(params.runId);
+  }
+}
+
 export function emitAgentLifecycleEvent(params: {
   runId: string;
   phase: 'start' | 'end' | 'error';

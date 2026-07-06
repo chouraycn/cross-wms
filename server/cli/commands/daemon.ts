@@ -118,8 +118,7 @@ function formatStatusOutput(status: DaemonStatus): string {
 export function registerDaemonCommand(program: Command): void {
   const daemonCmd = program
     .command("daemon")
-    .description("守护进程管理 (start/stop/restart/status/install/uninstall)")
-    .option("--json", "JSON 输出格式");
+    .description("守护进程管理 (start/stop/restart/status/install/uninstall)");
 
   daemonCmd
     .command("start")

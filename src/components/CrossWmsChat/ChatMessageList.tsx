@@ -179,7 +179,10 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     prevMsgCountRef.current = session.messages.length;
   }, [session.messages.length, session.id]);
 
-  const renderMessageItem = (msg: Message, index: number) => (
+  // v3.1: useCallback 稳定引用 — 流式渲染期间 messages 每 16ms 变化，但 renderMessageItem 的依赖项
+  // (gs/isDark/botName/回调等) 在流式期间不变，useCallback 可保持引用稳定，
+  // 避免 Virtuoso 接收到新 itemContent 引用后重渲染所有可见项（这是对话后按钮卡顿的根因之一）
+  const renderMessageItem = useCallback((msg: Message, index: number) => (
     <Box
       key={msg.id}
       sx={{
@@ -436,9 +439,9 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         />
       )}
     </Box>
-  );
+  ), [gs, isDark, botName, isEditingBotName, editingBotName, settings, updateSettings, copiedId, onCopy, onRegenerate, onEdit, onDelete, onQuote, onConfirmReplenishment, onPermissionRespond, showRegenerate]);
 
-  const renderChatItem = (index: number, item: ChatItem) => {
+  const renderChatItem = useCallback((index: number, item: ChatItem) => {
     if (isMessageItem(item)) {
       return renderMessageItem(item.message, index);
     }
@@ -488,11 +491,20 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     }
 
     return null;
-  };
+  }, [renderMessageItem]);
 
   const hasMessages = (chatItems?.length ?? 0) > 0 || session.messages.length > 0;
   const data = chatItems || session.messages;
   const useChatItemMode = !!chatItems;
+
+  // v3.1: itemContent 用 useCallback 稳定引用 — 流式渲染期间保持引用不变，
+  // 避免 Virtuoso 接收新函数引用后重渲染所有可见消息项
+  const itemContent = useCallback((index: number, item: Message | ChatItem) => {
+    if (useChatItemMode) {
+      return renderChatItem(index, item as ChatItem);
+    }
+    return renderMessageItem(item as Message, index);
+  }, [useChatItemMode, renderChatItem, renderMessageItem]);
 
   // v10.0: 切换会话时的淡入效果，提升感知流畅度
   const [fadeKey, setFadeKey] = useState(session.id);
@@ -553,12 +565,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
           }
           return (item as Message).id;
         }}
-        itemContent={(index: number, item: Message | ChatItem) => {
-          if (useChatItemMode) {
-            return renderChatItem(index, item as ChatItem);
-          }
-          return renderMessageItem(item as Message, index);
-        }}
+        itemContent={itemContent}
       />
     </Box>
   );

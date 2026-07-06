@@ -35,6 +35,7 @@ import type { Message, Session, Attachment, ReferencedSession } from '../types/c
 import { API_BASE } from '../constants/api';
 import { useAiEngineSettings } from '../contexts/AppSettingsContext';
 import { extractTodos, mergeAutoTodos } from '../utils/extractTodos';
+import { isWKWebView } from '../utils/env';
 
 // ===================== 类型定义 =====================
 
@@ -107,6 +108,14 @@ const REASONING_COALESCER_CONFIG = {
 // 单条助手消息的 toolCalls 数组上限：超过则将早期项合并为摘要占位
 // 避免长 agentic 循环导致单条消息 toolCalls 数组膨胀到数百条
 const MAX_TOOLCALLS_PER_MESSAGE = 50;
+
+// 内存溢出保护阈值（参考 OpenClaw context-manager 设计）
+// 单条消息最大字符数：超过则截断并标记，避免单条消息过大导致内存暴涨
+const MAX_MESSAGE_CHARS = 200000;
+// 消息列表最大条数：超过则从头部移除旧消息，避免长对话内存溢出
+const MAX_MESSAGES_COUNT = 200;
+// 思考内容最大字符数：超过则截断
+const MAX_THINKING_CHARS = 100000;
 
 // ===================== SSE 解析器 =====================
 
@@ -552,11 +561,26 @@ export function useAgentChat(
     };
 
     const flushText = (text: string, isReasoning: boolean) => {
+      const state = blockStateRef.current;
       if (isReasoning) {
-        blockStateRef.current.thinkingAccumulator += text;
+        // 内存保护：思考内容超过上限时截断
+        if (state.thinkingAccumulator.length < MAX_THINKING_CHARS) {
+          const remaining = MAX_THINKING_CHARS - state.thinkingAccumulator.length;
+          state.thinkingAccumulator += text.slice(0, remaining);
+          if (text.length > remaining) {
+            state.thinkingAccumulator += `\n\n[思考内容已截断，超出 ${text.length - remaining} 字符]`;
+          }
+        }
         schedulerRef.current?.scheduleThinkingUpdate();
       } else {
-        blockStateRef.current.textAccumulator += text;
+        // 内存保护：正文内容超过上限时截断
+        if (state.textAccumulator.length < MAX_MESSAGE_CHARS) {
+          const remaining = MAX_MESSAGE_CHARS - state.textAccumulator.length;
+          state.textAccumulator += text.slice(0, remaining);
+          if (text.length > remaining) {
+            state.textAccumulator += `\n\n[内容已截断，超出 ${text.length - remaining} 字符]`;
+          }
+        }
         schedulerRef.current?.scheduleTextUpdate();
       }
     };
@@ -641,7 +665,14 @@ export function useAgentChat(
         isStreaming: true,
       };
 
-      const newMessages = [...prev, newMsg];
+      // 内存保护：消息数超过上限时，从头部移除旧消息（保留最近的消息）
+      let baseMessages = prev;
+      if (prev.length >= MAX_MESSAGES_COUNT) {
+        const removeCount = prev.length - MAX_MESSAGES_COUNT + 1;
+        baseMessages = prev.slice(removeCount);
+      }
+
+      const newMessages = [...baseMessages, newMsg];
       state.assistantMessageIndex = newMessages.length - 1;
       state.isReasoning = isReasoning;
       state.textAccumulator = '';
@@ -719,11 +750,14 @@ export function useAgentChat(
           }
           setError(null);
 
+          // 无论是否有 model 信息，都应创建 assistant 消息气泡
+          // 确保用户在 AI 思考期间就能看到回复占位
+          const state = blockStateRef.current;
+          if (state.assistantMessageIndex === -1) {
+            startAssistantMessage(false);
+          }
+          // 如果有 model 信息，更新已创建消息的 model 字段
           if (data.modelName || data.model) {
-            const state = blockStateRef.current;
-            if (state.assistantMessageIndex === -1) {
-              startAssistantMessage(false);
-            }
             setMessages((prev) => {
               const idx = blockStateRef.current.assistantMessageIndex;
               if (idx < 0 || idx >= prev.length) return prev;
@@ -766,22 +800,43 @@ export function useAgentChat(
               newMessages[state.assistantMessageIndex] = updated;
               return newMessages;
             });
+          } else if (state.assistantMessageIndex === -1) {
+            // 兜底：整个流程未创建 assistant 消息（后端未发送任何文本/思考内容）
+            // 创建一条空 assistant 消息，避免用户看到无限 loading 却无回复气泡
+            const fallbackContent = (data.errorMessage as string) || '';
+            const newMsg: Message = {
+              id: `msg_${uuidv4().slice(0, 8)}`,
+              role: 'assistant',
+              content: fallbackContent || '（未收到 AI 回复内容，可能模型未返回数据或请求异常）',
+              model: currentSession?.model || '',
+              timestamp: new Date(),
+              thinking: '',
+              thinkingDone: true,
+              isStreaming: false,
+              ...(data.fallbackModel ? { fallbackModel: data.fallbackModel as string } : {}),
+              ...(data.fallbackReason ? { fallbackReason: data.fallbackReason as 'model_not_supported' | 'request_failed' } : {}),
+              ...(fallbackContent ? { error: fallbackContent } : {}),
+            };
+            setMessages((prev) => [...prev, newMsg]);
+            state.assistantMessageIndex = -1; // 保持 -1，表示已处理兜底
           }
 
           setIsLoading(false);
           setCurrentRunId(null);
 
           // 自动提取待办：从助手最终回复内容中提取行动项，写入 localStorage 并派发事件
+          // v3.1: 移出 setMessages updater — 不在 state updater 中做副作用，避免阻塞渲染
           const eventSessionKey = (data.sessionKey as string) || (data.sessionId as string) || '';
           if (eventSessionKey && state.assistantMessageIndex >= 0) {
-            try {
-              setMessages((prev) => {
-                if (state.assistantMessageIndex >= prev.length) return prev;
-                const finalMsg = prev[state.assistantMessageIndex];
-                if (finalMsg?.role !== 'assistant' || !finalMsg.content) return prev;
+            // 延迟到下一帧执行，不阻塞当前渲染周期
+            requestAnimationFrame(() => {
+              try {
+                const idx = state.assistantMessageIndex;
+                const finalMsg = messagesRef.current[idx];
+                if (!finalMsg || finalMsg.role !== 'assistant' || !finalMsg.content) return;
 
                 const extracted = extractTodos(finalMsg.content);
-                if (extracted.length === 0) return prev;
+                if (extracted.length === 0) return;
 
                 const storageKey = `cdf-todos-${eventSessionKey}`;
                 const raw = localStorage.getItem(storageKey);
@@ -795,18 +850,16 @@ export function useAgentChat(
                   }
                 }
                 const merged = mergeAutoTodos(existing, extracted);
-                if (merged.length === existing.length) return prev; // 无新增
+                if (merged.length === existing.length) return; // 无新增
 
                 localStorage.setItem(storageKey, JSON.stringify(merged));
-                // 派发事件通知 ChatSidePanel 重新加载
                 window.dispatchEvent(new CustomEvent('cdf-todos-updated', {
                   detail: { sessionKey: eventSessionKey },
                 }));
-                return prev;
-              });
-            } catch {
-              // 待办提取失败不影响主流程
-            }
+              } catch {
+                // 待办提取失败不影响主流程
+              }
+            });
           }
 
           const errorCode = data.errorCode as string | undefined;
@@ -928,6 +981,53 @@ export function useAgentChat(
         setError(errorMsg);
         setIsLoading(false);
         setCurrentRunId(null);
+
+        // 如果 assistant 消息已创建，将错误信息写入消息内容
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex >= 0) {
+          setMessages((prev) => {
+            if (state.assistantMessageIndex < 0 || state.assistantMessageIndex >= prev.length) return prev;
+            const msg = prev[state.assistantMessageIndex];
+            if (msg.role !== 'assistant') return prev;
+            // 如果消息内容为空，写入错误信息
+            if (!msg.content) {
+              const updated = [...prev];
+              updated[state.assistantMessageIndex] = {
+                ...msg,
+                content: `⚠️ ${errorMsg}`,
+                isStreaming: false,
+                error: errorMsg,
+              };
+              return updated;
+            }
+            // 内容不为空，仅标记结束
+            const updated = [...prev];
+            updated[state.assistantMessageIndex] = {
+              ...msg,
+              isStreaming: false,
+              error: errorMsg,
+            };
+            return updated;
+          });
+        } else {
+          // assistant 消息未创建，创建一条错误消息
+          setMessages((prev) => {
+            const newMsg: Message = {
+              id: `msg_${uuidv4().slice(0, 8)}`,
+              role: 'assistant',
+              content: `⚠️ ${errorMsg}`,
+              model: currentSession?.model || '',
+              timestamp: new Date(),
+              thinking: '',
+              thinkingDone: false,
+              isStreaming: false,
+              error: errorMsg,
+            };
+            return [...prev, newMsg];
+          });
+          state.assistantMessageIndex = -1;
+        }
+
         if (currentPendingMsgIdRef.current) {
           updatePendingMessage(currentPendingMsgIdRef.current, { state: 'failed', error: errorMsg });
         }
@@ -1044,6 +1144,103 @@ export function useAgentChat(
   const SSE_RETRY_BASE_DELAY_MS = 1000;
 
   /**
+   * WKWebView 兼容：使用 XHR 替代 Fetch ReadableStream
+   *
+   * 问题：WKWebView 对 fetch + response.body.getReader() 的流式响应支持不完整，
+   * POST 请求的 SSE 响应可能被缓冲到整个请求结束才返回，导致流式内容不显示。
+   *
+   * 解决方案：在 WKWebView 环境下使用 XMLHttpRequest，其 onprogress 事件
+   * 在 WKWebView 中能可靠地接收增量数据（responseText 累积式）。
+   */
+  const streamViaXHR = (
+    url: string,
+    body: string,
+    signal: AbortSignal,
+    onChunk: (chunk: string) => void,
+  ): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.responseType = 'text';
+
+      let lastProcessedLength = 0;
+      let settled = false;
+
+      const cleanup = () => {
+        xhr.onprogress = null;
+        xhr.onload = null;
+        xhr.onerror = null;
+        xhr.onreadystatechange = null;
+      };
+
+      // abort 信号处理
+      const onAbort = () => {
+        if (settled) return;
+        settled = true;
+        xhr.abort();
+        cleanup();
+        const err = new Error('请求已取消');
+        err.name = 'AbortError';
+        reject(err);
+      };
+
+      if (signal.aborted) {
+        onAbort();
+        return;
+      }
+      signal.addEventListener('abort', onAbort);
+
+      xhr.onprogress = () => {
+        // WKWebView 中 responseText 是累积的，取增量部分
+        const fullText = xhr.responseText || '';
+        if (fullText.length > lastProcessedLength) {
+          const chunk = fullText.slice(lastProcessedLength);
+          lastProcessedLength = fullText.length;
+          onChunk(chunk);
+        }
+      };
+
+      xhr.onload = () => {
+        if (settled) return;
+        settled = true;
+        signal.removeEventListener('abort', onAbort);
+        cleanup();
+
+        // 处理最后一段未消费的数据
+        const fullText = xhr.responseText || '';
+        if (fullText.length > lastProcessedLength) {
+          onChunk(fullText.slice(lastProcessedLength));
+        }
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          let errMsg = `请求失败 (${xhr.status})`;
+          try {
+            const errorData = JSON.parse(xhr.responseText || '{}');
+            errMsg = errorData.error || errMsg;
+          } catch { /* ignore parse error */ }
+          const err: any = new Error(errMsg);
+          err.status = xhr.status;
+          reject(err);
+        }
+      };
+
+      xhr.onerror = () => {
+        if (settled) return;
+        settled = true;
+        signal.removeEventListener('abort', onAbort);
+        cleanup();
+        const err: any = new Error('网络请求失败');
+        reject(err);
+      };
+
+      xhr.send(body);
+    });
+  };
+
+  /**
    * 检测错误是否可重试
    * - 网络断开（fetch failed、ECONNREFUSED、network error）
    * - 超时（Timeout）
@@ -1109,53 +1306,72 @@ export function useAgentChat(
 
     const executeRequest = async (): Promise<void> => {
       try {
-        const response = await fetch(`${API_BASE}/agent-chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            sessionId: currentSession?.id,
-            message: content,
-            model: options.model || currentSession?.model || 'auto',
-            attachments: options.attachments,
-            skillContext: options.skillContext,
-            skillId: options.skillId,
-            referencedSessionIds: options.referencedSessionIds,
-            executionMode: options.executionMode,
-            agentId: options.agentId,
-            queueMode: options.queueMode,
-            toolProfile: aiEngine.toolProfile,
-            compaction: aiEngine.compaction,
-            conversationHistory,
-            thinkingLevel: options.thinkingLevel,
-          }),
-          signal: abortController.signal,
+        const requestBody = JSON.stringify({
+          sessionId: currentSession?.id,
+          message: content,
+          model: options.model || currentSession?.model || 'auto',
+          attachments: options.attachments,
+          skillContext: options.skillContext,
+          skillId: options.skillId,
+          referencedSessionIds: options.referencedSessionIds,
+          executionMode: options.executionMode,
+          agentId: options.agentId,
+          queueMode: options.queueMode,
+          toolProfile: aiEngine.toolProfile,
+          compaction: aiEngine.compaction,
+          conversationHistory,
+          thinkingLevel: options.thinkingLevel,
         });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const err: any = new Error((errorData as any).error || `请求失败 (${response.status})`);
-          err.status = response.status;
-          throw err;
-        }
-
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error('无法读取响应流');
-        }
-
-        const decoder = new TextDecoder('utf-8');
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
+        const handleChunk = (chunk: string) => {
           const events = parser.feed(chunk);
-
           for (const event of events) {
             handleAgentEvent(event);
+          }
+        };
+
+        if (isWKWebView()) {
+          // WKWebView 兼容模式：使用 XHR 替代 Fetch ReadableStream
+          // WKWebView 对 fetch + getReader() 的流式 POST 响应支持不完整，
+          // 会缓冲整个响应到结束才返回，导致 SSE 流式内容不显示。
+          // XHR 的 onprogress 能可靠接收增量数据。
+          await streamViaXHR(
+            `${API_BASE}/agent-chat`,
+            requestBody,
+            abortController.signal,
+            handleChunk,
+          );
+        } else {
+          // 浏览器环境：使用 Fetch ReadableStream（标准方式）
+          const response = await fetch(`${API_BASE}/agent-chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: requestBody,
+            signal: abortController.signal,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const err: any = new Error((errorData as any).error || `请求失败 (${response.status})`);
+            err.status = response.status;
+            throw err;
+          }
+
+          const reader = response.body?.getReader();
+          if (!reader) {
+            throw new Error('无法读取响应流');
+          }
+
+          const decoder = new TextDecoder('utf-8');
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            handleChunk(chunk);
           }
         }
 
@@ -1427,24 +1643,43 @@ export function useAgentChat(
     return thinkingText.length > 0;
   }, [thinkingText]);
 
-  // 同步 messages 到 session
+  // 同步 messages 到 session（节流模式：流式期间每 200ms 同步一次，避免防抖永不触发）
+  // v3.1: 流式期间跳过 effect 函数体 — 仅在非流式或定时器触发时同步
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSyncTimeRef = useRef<number>(0);
+  const isStreamingRef = useRef(false);
+  useEffect(() => {
+    isStreamingRef.current = messages.length > 0 && !!messages[messages.length - 1]?.isStreaming;
+  }, [messages]);
+
   useEffect(() => {
     if (!syncToSession) return;
     if (messages.length > 0 && currentSession) {
       const lastMsg = messages[messages.length - 1];
-      const isStreaming = lastMsg?.isStreaming;
+      const isStreaming = !!lastMsg?.isStreaming;
 
       if (isStreaming) {
-        const timer = setTimeout(() => {
+        // 节流：流式期间最多每 200ms 同步一次
+        if (syncTimerRef.current) return; // 已有定时器在等待，跳过
+        const elapsed = Date.now() - lastSyncTimeRef.current;
+        const delay = elapsed >= 200 ? 0 : 200 - elapsed;
+        syncTimerRef.current = setTimeout(() => {
+          syncTimerRef.current = null;
+          lastSyncTimeRef.current = Date.now();
           const updatedSession = {
             ...currentSession,
-            messages,
+            messages: messagesRef.current, // 用 ref 读取最新值
             updatedAt: new Date().toISOString(),
           };
           onSessionUpdate(updatedSession);
-        }, 100);
-        return () => clearTimeout(timer);
+        }, delay);
+        return;
       } else {
+        // 非流式立即同步
+        if (syncTimerRef.current) {
+          clearTimeout(syncTimerRef.current);
+          syncTimerRef.current = null;
+        }
         const updatedSession = {
           ...currentSession,
           messages,
