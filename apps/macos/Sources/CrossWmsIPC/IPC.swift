@@ -393,9 +393,6 @@ extension Request: Codable {
         case let .permissionOpenSettings(capability):
             try container.encode(Kind.permissionOpenSettings, forKey: .type)
             try container.encode(capability, forKey: .capability)
-
-        case .openPermissionManager:
-            try container.encode(Kind.openPermissionManager, forKey: .type)
         }
     }
 

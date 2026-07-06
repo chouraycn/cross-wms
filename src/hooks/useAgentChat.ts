@@ -105,6 +105,19 @@ const REASONING_COALESCER_CONFIG = {
   idleMs: 80,
 };
 
+// v3.2: WKWebView 专用更大缓冲配置，减少重渲染次数，避免 UI 卡顿
+const TEXT_COALESCER_CONFIG_WKWEBVIEW = {
+  minChars: 240,
+  maxChars: 1000,
+  idleMs: 150,
+};
+
+const REASONING_COALESCER_CONFIG_WKWEBVIEW = {
+  minChars: 160,
+  maxChars: 600,
+  idleMs: 120,
+};
+
 // 单条助手消息的 toolCalls 数组上限：超过则将早期项合并为摘要占位
 // 避免长 agentic 循环导致单条消息 toolCalls 数组膨胀到数百条
 const MAX_TOOLCALLS_PER_MESSAGE = 50;
@@ -585,13 +598,17 @@ export function useAgentChat(
       }
     };
 
+    // v3.2: WKWebView 环境使用更大的缓冲配置，减少重渲染
+    const textConfig = isWKWebView() ? TEXT_COALESCER_CONFIG_WKWEBVIEW : TEXT_COALESCER_CONFIG;
+    const reasoningConfig = isWKWebView() ? REASONING_COALESCER_CONFIG_WKWEBVIEW : REASONING_COALESCER_CONFIG;
+
     textCoalescerRef.current = new BlockReplyCoalescer(
-      TEXT_COALESCER_CONFIG,
+      textConfig,
       (text) => flushText(text, false),
     );
 
     thinkingCoalescerRef.current = new BlockReplyCoalescer(
-      REASONING_COALESCER_CONFIG,
+      reasoningConfig,
       (text) => flushText(text, true),
     );
 
@@ -1151,6 +1168,9 @@ export function useAgentChat(
    *
    * 解决方案：在 WKWebView 环境下使用 XMLHttpRequest，其 onprogress 事件
    * 在 WKWebView 中能可靠地接收增量数据（responseText 累积式）。
+   *
+   * v3.2: 添加 30ms 节流，避免 WKWebView 中 onprogress 触发过于频繁
+   * 导致大量事件解析和状态更新，造成 UI 卡顿。
    */
   const streamViaXHR = (
     url: string,
@@ -1167,7 +1187,33 @@ export function useAgentChat(
       let lastProcessedLength = 0;
       let settled = false;
 
+      // v3.2: 节流处理 — WKWebView 中 onprogress 可能触发非常频繁
+      const THROTTLE_MS = 30;
+      let throttleTimer: ReturnType<typeof setTimeout> | null = null;
+      let pendingChunk = '';
+      let hasPending = false;
+
+      const flushPending = () => {
+        throttleTimer = null;
+        if (!hasPending || settled) return;
+        hasPending = false;
+        if (pendingChunk) {
+          onChunk(pendingChunk);
+          pendingChunk = '';
+        }
+      };
+
+      const scheduleFlush = () => {
+        if (throttleTimer === null) {
+          throttleTimer = setTimeout(flushPending, THROTTLE_MS);
+        }
+      };
+
       const cleanup = () => {
+        if (throttleTimer) {
+          clearTimeout(throttleTimer);
+          throttleTimer = null;
+        }
         xhr.onprogress = null;
         xhr.onload = null;
         xhr.onerror = null;
@@ -1192,12 +1238,16 @@ export function useAgentChat(
       signal.addEventListener('abort', onAbort);
 
       xhr.onprogress = () => {
+        if (settled) return;
         // WKWebView 中 responseText 是累积的，取增量部分
         const fullText = xhr.responseText || '';
         if (fullText.length > lastProcessedLength) {
           const chunk = fullText.slice(lastProcessedLength);
           lastProcessedLength = fullText.length;
-          onChunk(chunk);
+          // v3.2: 使用节流缓冲，避免频繁调用 onChunk
+          pendingChunk += chunk;
+          hasPending = true;
+          scheduleFlush();
         }
       };
 
@@ -1205,12 +1255,20 @@ export function useAgentChat(
         if (settled) return;
         settled = true;
         signal.removeEventListener('abort', onAbort);
-        cleanup();
 
-        // 处理最后一段未消费的数据
+        // 处理最后一段未消费的数据（立即 flush，不等节流）
         const fullText = xhr.responseText || '';
         if (fullText.length > lastProcessedLength) {
-          onChunk(fullText.slice(lastProcessedLength));
+          pendingChunk += fullText.slice(lastProcessedLength);
+          lastProcessedLength = fullText.length;
+        }
+
+        cleanup();
+
+        // 立即 flush 所有缓冲
+        if (pendingChunk) {
+          onChunk(pendingChunk);
+          pendingChunk = '';
         }
 
         if (xhr.status >= 200 && xhr.status < 300) {

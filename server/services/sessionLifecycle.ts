@@ -16,6 +16,14 @@ import { writeMemory, extractKeywords } from '../engine/vecMemoryStore.js';
 import { logger } from '../logger.js';
 import { FileStorage } from '../storage/FileStorage.js';
 import { TimerManager } from '../core/timerManager.js';
+import {
+  getSessions as daoGetSessions,
+  getArchivedSessions as daoGetArchivedSessions,
+  archiveSessionInStorage,
+  restoreSessionFromStorage,
+  searchArchivedSessions as daoSearchArchivedSessions,
+  deleteArchivedSession as daoDeleteArchivedSession,
+} from '../dao/chat.js';
 
 // ===================== 常量 =====================
 
@@ -90,68 +98,25 @@ function* iterateAllSessions(): Generator<{ session: Session; messages: Array<{ 
 
 // ===================== DAO 扩展 =====================
 
-/** 获取所有活跃会话 */
+/** 获取所有活跃会话（使用 DAO 层高效实现，只读第一行） */
 export function getActiveSessions(): Session[] {
-  const result: Session[] = [];
-  for (const { session } of iterateAllSessions()) {
-    if (session.status === 'active' || session.status === null || session.status === undefined) {
-      result.push(session);
-    }
-  }
-  // 按 updatedAt 降序排列
-  result.sort((a, b) => {
-    const aTime = a.updatedAt || a.createdAt || '';
-    const bTime = b.updatedAt || b.createdAt || '';
-    return bTime.localeCompare(aTime);
-  });
-  return result;
+  return daoGetSessions();
 }
 
-/** 获取所有归档会话 */
+/** 获取所有归档会话（从归档目录读取，物理隔离） */
 export function getArchivedSessions(): Session[] {
-  const result: Session[] = [];
-  for (const { session } of iterateAllSessions()) {
-    if (session.status === 'archived') {
-      result.push(session);
-    }
-  }
-  // 按 archivedAt 降序排列
-  result.sort((a, b) => {
-    const aTime = a.archivedAt || a.updatedAt || a.createdAt || '';
-    const bTime = b.archivedAt || b.updatedAt || b.createdAt || '';
-    return bTime.localeCompare(aTime);
-  });
-  return result;
+  return daoGetArchivedSessions();
 }
 
-/** 搜索归档会话（标题 + 摘要 + 标签） */
+/** 搜索归档会话（从归档目录读取） */
 export function searchArchivedSessions(query: string): Session[] {
-  const q = query.toLowerCase();
-  const result: Session[] = [];
-  for (const { session } of iterateAllSessions()) {
-    if (session.status === 'archived') {
-      const titleMatch = session.title?.toLowerCase().includes(q) ?? false;
-      const summaryMatch = session.summary?.toLowerCase().includes(q) ?? false;
-      const tagsMatch = session.tags?.toLowerCase().includes(q) ?? false;
-      if (titleMatch || summaryMatch || tagsMatch) {
-        result.push(session);
-      }
-    }
-  }
-  // 按 archivedAt 降序排列
-  result.sort((a, b) => {
-    const aTime = a.archivedAt || a.updatedAt || a.createdAt || '';
-    const bTime = b.archivedAt || b.updatedAt || b.createdAt || '';
-    return bTime.localeCompare(aTime);
-  });
-  return result;
+  return daoSearchArchivedSessions(query);
 }
 
-/** 归档会话 */
+/** 归档会话：生成摘要 + 写入向量记忆 + 物理移动到归档目录 */
 export function archiveSession(sessionId: string, summary?: string): boolean {
   const now = new Date().toISOString();
 
-  // 如果未提供摘要，从消息中自动生成
   if (!summary) {
     summary = generateSessionSummary(sessionId);
   }
@@ -160,14 +125,18 @@ export function archiveSession(sessionId: string, summary?: string): boolean {
   if (!session) return false;
   if (session.status === 'archived') return false;
 
-  const ok = rewriteSessionFirstLine(sessionId, (firstLine) => {
-    firstLine.session.status = 'archived';
-    firstLine.session.archivedAt = now;
-    firstLine.session.summary = summary || firstLine.session.summary;
-    firstLine.session.updatedAt = now;
-  });
+  // 先写入摘要（在文件还在活跃目录时操作）
+  if (summary) {
+    rewriteSessionFirstLine(sessionId, (firstLine) => {
+      firstLine.session.summary = summary || firstLine.session.summary;
+      firstLine.session.updatedAt = now;
+    });
+  }
 
-  // v8.6: 归档时自动将会话摘要写入向量记忆（异步，不阻塞归档）
+  // 物理归档（重写状态 + 移动文件）
+  const ok = archiveSessionInStorage(sessionId);
+
+  // 归档时自动将会话摘要写入向量记忆（异步，不阻塞归档）
   if (ok && summary) {
     writeMemory({
       userId: 'default',
@@ -181,20 +150,16 @@ export function archiveSession(sessionId: string, summary?: string): boolean {
   return ok;
 }
 
-/** 恢复归档会话 */
+/** 恢复归档会话：物理移回活跃目录 + 更新状态 */
 export function restoreSession(sessionId: string): boolean {
+  // 先从归档目录移回活跃目录
+  const moved = restoreSessionFromStorage(sessionId);
+  if (!moved) return false;
+
+  // 恢复后额外更新 sessionDate 等字段
   const now = new Date().toISOString();
-
-  const { session } = parseSessionFile(sessionId);
-  if (!session) return false;
-  if (session.status !== 'archived') return false;
-
   return rewriteSessionFirstLine(sessionId, (firstLine) => {
-    firstLine.session.status = 'active';
-    firstLine.session.archivedAt = null;
-    firstLine.session.lastActiveAt = now;
     firstLine.session.sessionDate = now.split('T')[0];
-    firstLine.session.updatedAt = now;
   });
 }
 
@@ -274,11 +239,11 @@ export function getTodaySessions(): Session[] {
   return result;
 }
 
-/** 永久删除归档会话 */
+/** 永久删除归档会话（从归档目录删除） */
 export function deleteArchivedSession(sessionId: string): boolean {
-  const { session } = parseSessionFile(sessionId);
-  if (!session || session.status !== 'archived') return false;
-  FileStorage.deleteSessionFile(sessionId);
+  const firstLine = FileStorage.readArchivedSessionFirstLine(sessionId) as any;
+  if (!firstLine || !firstLine.session) return false;
+  daoDeleteArchivedSession(sessionId);
   return true;
 }
 

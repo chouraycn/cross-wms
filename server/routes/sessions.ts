@@ -8,6 +8,11 @@ import {
   deleteSession,
   moveSessionToFolder,
   updateSession,
+  getSessionsPaged,
+  searchSessionsPaged,
+  getArchivedSessionsPaged,
+  searchArchivedSessionsPaged,
+  deleteArchivedSession as daoDeleteArchivedSession,
 } from '../dao/chat.js';
 import { FileStorage } from '../storage/FileStorage.js';
 import {
@@ -28,17 +33,32 @@ const router = Router();
 
 // ===================== 原有接口 =====================
 
-// 获取会话列表（支持?q=搜索参数）
+// 获取会话列表（支持?q=搜索参数，?limit=&offset=分页参数）
 router.get('/', (req, res) => {
   const q = req.query.q as string | undefined;
   const status = req.query.status as string | undefined;
+  const limit = Math.min(parseInt(req.query.limit as string, 10) || 0, 500);
+  const offset = parseInt(req.query.offset as string, 10) || 0;
+  const hasPaging = limit > 0;
 
   // v6.0: 按 status 筛选
   if (status === 'archived') {
+    if (hasPaging) {
+      const result = q
+        ? searchArchivedSessionsPaged(q, limit, offset)
+        : getArchivedSessionsPaged(limit, offset);
+      return res.json(result);
+    }
     const sessions = q ? searchArchivedSessions(q) : getArchivedSessions();
     return res.json({ sessions });
   }
   if (status === 'active') {
+    if (hasPaging) {
+      const result = q
+        ? searchSessionsPaged(q, limit, offset)
+        : getSessionsPaged(limit, offset);
+      return res.json(result);
+    }
     const sessions = getActiveSessions();
     return res.json({ sessions });
   }
@@ -48,6 +68,12 @@ router.get('/', (req, res) => {
   }
 
   // 兼容原有逻辑
+  if (hasPaging) {
+    const result = q
+      ? searchSessionsPaged(q, limit, offset)
+      : getSessionsPaged(limit, offset);
+    return res.json(result);
+  }
   const sessions = q ? searchSessions(q) : getSessions();
   res.json({ sessions });
 });

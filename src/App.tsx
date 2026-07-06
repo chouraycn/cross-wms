@@ -18,6 +18,10 @@ import { ChatProvider, useChatSession } from './contexts/ChatContext';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
 import { automationEngine } from './services/automation';
+import { isWKWebView } from './utils/env';
+
+// v3.2: WKWebView 环境检测，用于禁用高成本效果
+const IS_WKWEBVIEW = isWKWebView();
 
 // 路由级懒加载 — 按需加载各页面组件，降低首屏加载体积
 const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
@@ -171,6 +175,12 @@ function buildTheme(appearance: AppearanceConfig) {
       },
     },
     components: {
+      // v3.2: WKWebView 中禁用 Ripple 效果，避免点击卡顿
+      MuiButtonBase: {
+        defaultProps: {
+          disableRipple: IS_WKWEBVIEW,
+        },
+      },
       MuiCard: {
         defaultProps: { elevation: 0 },
         styleOverrides: {

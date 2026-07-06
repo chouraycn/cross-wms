@@ -16,6 +16,7 @@ export const AppPaths = {
   rootDir,
   dataDir: path.join(rootDir, 'data'),
   sessionsDir: path.join(rootDir, 'sessions'),
+  archivedSessionsDir: path.join(rootDir, 'sessions-archived'),
   memoryDir: path.join(rootDir, 'memory'),
   modelsDir: path.join(rootDir, 'ai-models'),
   mcpDir: path.join(rootDir, 'mcp'),
