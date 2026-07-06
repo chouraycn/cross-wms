@@ -42,6 +42,9 @@ import { useAgentChat } from '../../hooks/useAgentChat.js';
 import { formatHelpText } from '../../hooks/useSlashCommands.js';
 import GoalIndicator from '../Goal/GoalIndicator.js';
 import { ApprovalDialog, type ApprovalRequest, type ApprovalHistoryItem, type ApprovalConfig } from './ApprovalDialog.js';
+
+// 任务 6: 右侧侧边栏展开时，AI 对话内容 maxWidth 缩小 5%（左右各 5%）
+const CHAT_MAX_WIDTH_WITH_SIDEPANEL = Math.round(CHAT_MAX_WIDTH * 0.9);
 import { type ExecApprovalConfig, type ExecAllowlistEntry, BUILTIN_SAFE_PATTERNS, DEFAULT_CONFIG } from '../../services/exec-approval/index.js';
 import { useApprovalEvents } from '../../hooks/useApprovalEvents.js';
 import BatchMessageToolbar from './BatchMessageToolbar.js';
@@ -235,6 +238,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   // 记录上一次的消息数，仅在 0→N 时自动展开一次，避免与用户手动收起冲突
   const prevMsgCountRef = useRef<number>(0);
 
+  // 任务 6: 右侧侧边栏展开时，AI 对话内容 maxWidth 缩小 5%（左右各 5%）
+  const currentMaxWidth = sidePanelOpen ? CHAT_MAX_WIDTH_WITH_SIDEPANEL : CHAT_MAX_WIDTH;
+
   useEffect(() => {
     const prev = prevMsgCountRef.current;
     prevMsgCountRef.current = session.messages.length;
@@ -310,6 +316,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   const {
     isLoading,
     activeItems,
+    messages: chatMessages,
     sendMessage,
     stopGeneration,
     error,
@@ -799,44 +806,44 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     };
   }, [isPage]);
 
-  const isEmpty = session.messages.length === 0;
+  const isEmpty = chatMessages.length === 0;
   const showActivityFeed = isLoading && activeItems.length > 0;
 
   // ReadingIndicator 阶段判断：根据当前加载状态与活动项推断
   const readingPhase: 'thinking' | 'generating' | 'tool-executing' = useMemo(() => {
     if (activeItems.length > 0) return 'tool-executing';
-    const lastMsg = session.messages[session.messages.length - 1];
+    const lastMsg = chatMessages[chatMessages.length - 1];
     if (lastMsg?.role === 'assistant' && lastMsg.isStreaming) {
       // thinking 阶段未完成且已有 thinking 内容 → 思考中；否则生成中
       if (lastMsg.thinkingDone === false) return 'thinking';
       return 'generating';
     }
     return 'thinking';
-  }, [activeItems.length, session.messages]);
+  }, [activeItems.length, chatMessages]);
 
   // 压缩历史检测：查找消息中携带的压缩标记（contextCompressed 字段）
   const compactionInfo = useMemo(() => {
-    for (const msg of session.messages) {
+    for (const msg of chatMessages) {
       if (msg.contextCompressed) {
         return {
           found: true,
-          originalCount: session.messages.length,
+          originalCount: chatMessages.length,
           compressionRatio: msg.contextCompressed.ratio,
           summary: msg.contextCompressed.keyInfoPreserved?.join('；'),
         };
       }
     }
     // 消息数量超过阈值时显示示例分隔符（无实际压缩事件时）
-    if (session.messages.length >= 20) {
+    if (chatMessages.length >= 20) {
       return {
         found: false,
-        originalCount: session.messages.length,
+        originalCount: chatMessages.length,
         compressionRatio: undefined,
         summary: undefined,
       };
     }
     return null;
-  }, [session.messages]);
+  }, [chatMessages]);
 
   const showCompactionDivider = compactionInfo !== null;
 
@@ -849,17 +856,17 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       compressionRatio: compactionInfo.compressionRatio,
     }] : [];
 
-    return buildChatItems(session.messages, {
+    return buildChatItems(chatMessages, {
       showReadingIndicator: isLoading,
       readingIndicatorPhase: readingPhase,
       compactionDividers,
     });
-  }, [session.messages, isLoading, readingPhase, compactionInfo]);
+  }, [chatMessages, isLoading, readingPhase, compactionInfo]);
 
   if (isPage) {
     // 推导会话标题
     const sessionTitle = session.title === '新对话' || !session.title
-      ? (session.messages[0]?.content?.slice(0, 24) || '新对话')
+      ? (chatMessages[0]?.content?.slice(0, 24) || '新对话')
       : session.title;
 
     return (
@@ -1068,7 +1075,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
               />
 
               {pendingMessages.length > 0 && (
-                <Box sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', px: 3, py: 1 }}>
+                <Box sx={{ maxWidth: currentMaxWidth, mx: 'auto', px: 3, py: 1 }}>
                   {pendingMessages.map((msg) => (
                     <PendingSendMessage
                       key={msg.id}
@@ -1087,12 +1094,12 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
 
           <Box sx={{ px: 3, pb: 3, pt: 'calc(1rem + 30px)', flexShrink: 0, borderTop: 'none' }}>
             <Box sx={{ 
-              maxWidth: CHAT_MAX_WIDTH, 
+              maxWidth: currentMaxWidth, 
               mx: 'auto', 
               position: 'relative',
             }}>
               <TopBarChatInput
-                isEmpty={session.messages.length === 0}
+                isEmpty={chatMessages.length === 0}
                 updateSessionModel={updateSessionModel}
                 initialSkill={initialSkill}
                 isLoading={isLoading}
@@ -1100,7 +1107,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 stopGeneration={stopGeneration}
                 variant="card"
               />
-              <Collapse in={session.messages.length === 0} timeout={300}>
+              <Collapse in={chatMessages.length === 0} timeout={300}>
                 <Typography sx={{ fontSize: '0.6875rem', color: gs.textDisabled, textAlign: 'center', pt: 1 }}>
                   内容由AI生成，请核实重要信息
                 </Typography>
@@ -1113,7 +1120,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
           <ChatSidePanel
             sessionKey={session.id}
             sessionTitle={sessionTitle}
-            messages={session.messages}
+            messages={chatMessages}
             createdAt={session.createdAt}
             updatedAt={session.updatedAt}
             model={session.model}
@@ -1126,7 +1133,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             onClose={() => {
               setTerminalOpen(false);
               // 关闭终端时，如果对话有内容，恢复侧边栏显示
-              if (session.messages.length > 0) {
+              if (chatMessages.length > 0) {
                 setSidePanelOpen(true);
               }
             }}
@@ -1206,7 +1213,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
           <AgentActivityFeed items={activeItems} isDark={isDark} gs={gs} />
         </Collapse>
 
-        {session.messages.length > 0 && (
+        {chatMessages.length > 0 && (
           <ChatMessageList
             session={session}
             copiedId={copiedId}
@@ -1223,7 +1230,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         )}
 
         {pendingMessages.length > 0 && (
-          <Box sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', px: 3, py: 1, width: '100%' }}>
+          <Box sx={{ maxWidth: currentMaxWidth, mx: 'auto', px: 3, py: 1, width: '100%' }}>
             {pendingMessages.map((msg) => (
               <PendingSendMessage
                 key={msg.id}
@@ -1240,7 +1247,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
 
         <Box sx={{ position: 'relative', flexShrink: 0 }}>
           <TopBarChatInput
-            isEmpty={session.messages.length === 0}
+            isEmpty={chatMessages.length === 0}
             updateSessionModel={updateSessionModel}
             isLoading={isLoading}
             sendMessage={handleSendMessage as any}
@@ -1248,7 +1255,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
           />
         </Box>
 
-        <Collapse in={session.messages.length === 0} timeout={300}>
+        <Collapse in={chatMessages.length === 0} timeout={300}>
           <Typography
             sx={{
               fontSize: '0.6875rem',

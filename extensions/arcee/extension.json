@@ -1,0 +1,10 @@
+{
+  "id": "arcee",
+  "name": "Arcee Embedding Provider",
+  "description": "Arcee embedding provider extension",
+  "version": "1.0.0",
+  "kind": "embedding-provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

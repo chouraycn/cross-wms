@@ -108,12 +108,12 @@ function formatConfigValidate(key: string, result: { valid: boolean; message: st
 export function registerConfigCommand(program: Command): void {
   const configCmd = program
     .command("config")
-    .description("配置管理 (get/set/list/validate)")
-    .option("--json", "JSON 输出格式");
+    .description("配置管理 (get/set/list/validate)");
 
   configCmd
     .command("list")
     .description("列出所有配置项")
+    .option("--json", "JSON 输出格式")
     .action((options: ConfigOptions) => {
       const configs = getAllConfigs();
       if (options.json) {
@@ -126,6 +126,7 @@ export function registerConfigCommand(program: Command): void {
   configCmd
     .command("get <key>")
     .description("获取指定配置项的值")
+    .option("--json", "JSON 输出格式")
     .action((key: string, options: ConfigOptions) => {
       const config = getConfig(key);
       if (options.json) {
@@ -138,6 +139,7 @@ export function registerConfigCommand(program: Command): void {
   configCmd
     .command("set <key> <value>")
     .description("设置配置项的值")
+    .option("--json", "JSON 输出格式")
     .action((key: string, value: string, options: ConfigOptions) => {
       setConfig(key, value);
       if (options.json) {
@@ -150,6 +152,7 @@ export function registerConfigCommand(program: Command): void {
   configCmd
     .command("validate <key> <value>")
     .description("验证配置值是否有效")
+    .option("--json", "JSON 输出格式")
     .action((key: string, value: string, options: ConfigOptions) => {
       const result = validateConfig(key, value);
       if (options.json) {

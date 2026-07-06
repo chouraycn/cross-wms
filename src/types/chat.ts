@@ -257,6 +257,8 @@ export interface Message {
   /** v1.5.116: 模型降级信息 */
   fallbackModel?: string;
   fallbackReason?: 'model_not_supported' | 'request_failed';
+  /** 错误信息（AI 回复失败时携带，用于 UI 标记错误状态） */
+  error?: string;
   /** v9.0: Content Block 数组（双轨并行，优先渲染此字段，回退到扁平字段） */
   contentBlocks?: ContentBlock[];
 }

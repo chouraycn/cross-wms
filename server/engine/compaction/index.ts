@@ -109,3 +109,16 @@ export {
   TranscriptChain,
   SuccessorTranscriptManager,
 } from './successorTranscript.js';
+
+// P1-4: 结构化压缩摘要消息（对齐 OpenClaw agent-core compaction 设计）
+export {
+  CompactionSummaryStructure,
+  CompactionFileManifest,
+  CompactionSummaryMetadata,
+  CompactionSummaryMessage,
+  serializeCompactionSummary,
+  createCompactionSummaryMessage,
+  summaryMessageToCompactionMessage,
+  tryParseCompactionSummary,
+  incrementallyUpdateSummary,
+} from './summaryMessage.js';

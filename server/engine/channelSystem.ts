@@ -10,7 +10,7 @@ import { EventEmitter } from 'events';
 import { logger } from '../logger.js';
 
 /** 通道类型 */
-export type ChannelType = 'webhook' | 'feishu' | 'dingtalk' | 'wechat' | 'email' | 'slack';
+export type ChannelType = 'webhook' | 'feishu' | 'dingtalk' | 'wechat' | 'wechat_work' | 'email';
 
 /** 通道状态 */
 export type ChannelStatus = 'connected' | 'disconnected' | 'error' | 'unknown';
@@ -135,10 +135,12 @@ export class FeishuChannelAdapter implements ChannelAdapter {
   }
 }
 
-/** 钉钉通道适配器 */
+/** 钉钉通道适配器 — 支持群机器人（出站）+ Stream API（入站）双向通信 */
 export class DingtalkChannelAdapter implements ChannelAdapter {
   type: ChannelType = 'dingtalk';
   private config: ChannelConfig | null = null;
+  private pendingMessages: ChannelMessage[] = [];
+  private pollingTimer: ReturnType<typeof setInterval> | null = null;
 
   async sendMessage(message: ChannelMessage): Promise<boolean> {
     if (!this.config?.credentials.webhookUrl) return false;
@@ -160,19 +162,101 @@ export class DingtalkChannelAdapter implements ChannelAdapter {
     }
   }
 
-  async receiveMessages(): Promise<ChannelMessage[]> { return []; }
-  async healthCheck(): Promise<boolean> { return !!this.config?.credentials.webhookUrl; }
-  async disconnect(): Promise<void> { this.config = null; }
+  async receiveMessages(): Promise<ChannelMessage[]> {
+    const msgs = this.pendingMessages.splice(0);
+    return msgs;
+  }
+
+  /** 启动钉钉 Stream API 轮询（入站消息） */
+  private startStreamPolling(): void {
+    const accessToken = this.config?.credentials.accessToken;
+    if (!accessToken) return;
+
+    const pollInterval = (this.config?.options?.pollIntervalMs as number) ?? 5000;
+
+    this.pollingTimer = setInterval(async () => {
+      try {
+        // 钉钉 Stream API：通过 pull 方式获取消息
+        const resp = await fetch('https://api.dingtalk.com/v1.0/gateway/connections/open', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-acs-dingtalk-access-token': accessToken,
+          },
+          body: JSON.stringify({
+            clientId: this.config?.credentials.clientId,
+            clientSecret: this.config?.credentials.clientSecret,
+          }),
+        });
+        const data = await resp.json() as {
+          ok: boolean;
+          messages?: Array<{
+            msgId: string;
+            conversationId: string;
+            senderNick: string;
+            text?: string;
+            createAt: number;
+          }>;
+        };
+
+        if (!data.ok || !data.messages) return;
+
+        for (const msg of data.messages) {
+          if (msg.text) {
+            const channelMsg: ChannelMessage = {
+              id: `dt_${msg.msgId}`,
+              channelType: 'dingtalk',
+              channelName: this.config?.name ?? 'dingtalk',
+              direction: 'inbound',
+              content: msg.text,
+              contentType: 'text',
+              timestamp: new Date(msg.createAt).toISOString(),
+              metadata: {
+                conversationId: msg.conversationId,
+                senderNick: msg.senderNick,
+              },
+            };
+            this.pendingMessages.push(channelMsg);
+          }
+        }
+      } catch (e) {
+        logger.error('[DingtalkChannel] Stream 轮询失败', e);
+      }
+    }, pollInterval);
+
+    this.pollingTimer.unref?.();
+    logger.info(`[DingtalkChannel] Stream 轮询已启动 (间隔 ${pollInterval}ms)`);
+  }
+
+  async healthCheck(): Promise<boolean> {
+    return !!(this.config?.credentials.webhookUrl || this.config?.credentials.accessToken);
+  }
+
+  async disconnect(): Promise<void> {
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this.pollingTimer = null;
+    }
+    this.config = null;
+    this.pendingMessages = [];
+  }
+
   async initialize(config: ChannelConfig): Promise<void> {
     this.config = config;
     logger.info(`[DingtalkChannel] 初始化: ${config.name}`);
+
+    // 如果配置了 accessToken，启动 Stream 轮询
+    if (config.credentials.accessToken && config.options?.autoPoll !== false) {
+      this.startStreamPolling();
+    }
   }
 }
 
-/** 企业微信通道适配器 */
+/** 企业微信通道适配器 — 支持群机器人（出站）+ 回调 API（入站）双向通信 */
 export class WechatWorkChannelAdapter implements ChannelAdapter {
   type: ChannelType = 'wechat';
   private config: ChannelConfig | null = null;
+  private pendingMessages: ChannelMessage[] = [];
 
   async sendMessage(message: ChannelMessage): Promise<boolean> {
     if (!this.config?.credentials.webhookUrl) return false;
@@ -194,12 +278,163 @@ export class WechatWorkChannelAdapter implements ChannelAdapter {
     }
   }
 
-  async receiveMessages(): Promise<ChannelMessage[]> { return []; }
-  async healthCheck(): Promise<boolean> { return !!this.config?.credentials.webhookUrl; }
-  async disconnect(): Promise<void> { this.config = null; }
+  async receiveMessages(): Promise<ChannelMessage[]> {
+    const msgs = this.pendingMessages.splice(0);
+    return msgs;
+  }
+
+  /** 接收企业微信回调 API 推入的消息 */
+  pushMessage(message: ChannelMessage): void {
+    this.pendingMessages.push(message);
+  }
+
+  async healthCheck(): Promise<boolean> {
+    return !!this.config?.credentials.webhookUrl;
+  }
+
+  async disconnect(): Promise<void> {
+    this.config = null;
+    this.pendingMessages = [];
+  }
+
   async initialize(config: ChannelConfig): Promise<void> {
     this.config = config;
     logger.info(`[WechatWorkChannel] 初始化: ${config.name}`);
+  }
+}
+
+/** 个人微信通道适配器 — 通过第三方网关（如 WeCom/Wechaty）实现双向通信 */
+export class WechatPersonalChannelAdapter implements ChannelAdapter {
+  type: ChannelType = 'wechat';
+  private config: ChannelConfig | null = null;
+  private pendingMessages: ChannelMessage[] = [];
+  private pollingTimer: ReturnType<typeof setInterval> | null = null;
+
+  async initialize(config: ChannelConfig): Promise<void> {
+    this.config = config;
+    logger.info(`[WechatPersonalChannel] 初始化: ${config.name}`);
+
+    // 如果配置了网关 URL 和 token，启动轮询
+    const gatewayUrl = config.credentials.gatewayUrl;
+    const token = config.credentials.token;
+    if (gatewayUrl && token && config.options?.autoPoll !== false) {
+      this.startGatewayPolling();
+    }
+  }
+
+  async sendMessage(message: ChannelMessage): Promise<boolean> {
+    const gatewayUrl = this.config?.credentials.gatewayUrl;
+    const token = this.config?.credentials.token;
+    const toUser = this.config?.credentials.toUser ?? this.config?.options?.toUser;
+
+    if (!gatewayUrl || !token || !toUser) return false;
+
+    try {
+      const resp = await fetch(`${gatewayUrl}/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          toUser,
+          content: message.content,
+          contentType: message.contentType ?? 'text',
+        }),
+      });
+      const data = await resp.json() as { success: boolean; error?: string };
+      if (!data.success) {
+        logger.error(`[WechatPersonalChannel] 网关错误: ${data.error}`);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      logger.error('[WechatPersonalChannel] 发送失败', e);
+      return false;
+    }
+  }
+
+  async receiveMessages(): Promise<ChannelMessage[]> {
+    const msgs = this.pendingMessages.splice(0);
+    return msgs;
+  }
+
+  /** 启动网关消息轮询（入站消息） */
+  private startGatewayPolling(): void {
+    const gatewayUrl = this.config?.credentials.gatewayUrl;
+    const token = this.config?.credentials.token;
+    if (!gatewayUrl || !token) return;
+
+    const pollInterval = (this.config?.options?.pollIntervalMs as number) ?? 5000;
+    let lastMsgId = '';
+
+    this.pollingTimer = setInterval(async () => {
+      try {
+        const url = `${gatewayUrl}/receive?lastId=${encodeURIComponent(lastMsgId)}`;
+        const resp = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const data = await resp.json() as {
+          success: boolean;
+          messages?: Array<{
+            id: string;
+            fromUser: string;
+            content: string;
+            timestamp: number;
+          }>;
+        };
+
+        if (!data.success || !data.messages) return;
+
+        for (const msg of data.messages) {
+          if (msg.id === lastMsgId) continue;
+          lastMsgId = msg.id;
+
+          const channelMsg: ChannelMessage = {
+            id: `wx_${msg.id}`,
+            channelType: 'wechat',
+            channelName: this.config?.name ?? 'wechat',
+            direction: 'inbound',
+            content: msg.content,
+            contentType: 'text',
+            timestamp: new Date(msg.timestamp).toISOString(),
+            metadata: {
+              fromUser: msg.fromUser,
+            },
+          };
+          this.pendingMessages.push(channelMsg);
+        }
+      } catch (e) {
+        logger.error('[WechatPersonalChannel] 网关轮询失败', e);
+      }
+    }, pollInterval);
+
+    this.pollingTimer.unref?.();
+    logger.info(`[WechatPersonalChannel] 网关轮询已启动 (间隔 ${pollInterval}ms)`);
+  }
+
+  async healthCheck(): Promise<boolean> {
+    const gatewayUrl = this.config?.credentials.gatewayUrl;
+    const token = this.config?.credentials.token;
+    if (!gatewayUrl || !token) return false;
+
+    try {
+      const resp = await fetch(`${gatewayUrl}/health`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      return resp.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async disconnect(): Promise<void> {
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this.pollingTimer = null;
+    }
+    this.config = null;
+    this.pendingMessages = [];
   }
 }
 
@@ -222,6 +457,15 @@ export class EmailChannelAdapter implements ChannelAdapter {
     logger.info(`[EmailChannel] 初始化: ${config.name}`);
   }
 }
+
+// ============================================================================
+// P1-5: IM 通道适配器（微信/企业微信/钉钉双向通信）
+// ============================================================================
+
+// 注：Slack/Telegram/Discord 适配器已移除，改为微信/企业微信/钉钉双向通信
+// - 微信：通过 WechatPersonalChannelAdapter（第三方网关）实现双向通信
+// - 企业微信：通过 WechatWorkChannelAdapter 升级版（群机器人 + 回调 API）实现双向通信
+// - 钉钉：通过 DingtalkChannelAdapter 升级版（群机器人 + Stream API）实现双向通信
 
 // ============================================================================
 // 入站消息处理管线
@@ -343,7 +587,10 @@ export class ChannelManager extends EventEmitter {
     this.adapterFactories.set('feishu', () => new FeishuChannelAdapter());
     this.adapterFactories.set('dingtalk', () => new DingtalkChannelAdapter());
     this.adapterFactories.set('wechat', () => new WechatWorkChannelAdapter());
+    this.adapterFactories.set('wechat_work', () => new WechatWorkChannelAdapter());
     this.adapterFactories.set('email', () => new EmailChannelAdapter());
+    // P1-5: IM 通道（微信/企业微信/钉钉双向通信）
+    // 注：Slack/Telegram/Discord 已移除，由微信/企业微信/钉钉替代
   }
 
   /** 注册自定义适配器工厂 */

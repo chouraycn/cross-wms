@@ -16,6 +16,8 @@ import type {
   ContextEngineProjection,
 } from '../engine/context-engine/types.js';
 import { initEmbeddingProviders } from '../engine/embedding-providers/index.js';
+import { getGlobalMemoryHostRegistry } from '../engine/memory-host/index.js';
+import { registerVecMemoryHost } from '../engine/memory-host/vecMemoryHost.js';
 import { MemoryBudgetManager, type MemoryBudgetStats, type SessionMemoryStats } from '../engine/context-engine/memoryBudget.js';
 import { ContextProjectionManager, type ProjectionComputeOptions } from '../engine/context-engine/contextProjection.js';
 import { CROSS_WMS_EMBEDDED_HOST, evaluateContextEngineHostSupport, type ContextEngineHostSupportEvaluationResult } from '../engine/context-engine/hostCompat.js';
@@ -32,9 +34,13 @@ export function ensureContextEngineService(): void {
   try {
     initContextEngineRegistry();
     initEmbeddingProviders();
+    // 激活 VecMemoryHost 插件抽象层 — 将已实现的 BaseMemoryHost 注册到全局 MemoryHostRegistry
+    // 这使得 MemoryHostRegistry 的 search/getHost/getAggregateStats 等方法可用，
+    // 上层可通过 getGlobalMemoryHostRegistry().getHost() 统一访问记忆存储
+    registerVecMemoryHost(getGlobalMemoryHostRegistry());
     globalMemoryBudget = new MemoryBudgetManager();
     initialized = true;
-    logger.info('[ContextEngineService] 上下文引擎服务已初始化');
+    logger.info('[ContextEngineService] 上下文引擎服务已初始化（含 VecMemoryHost 激活）');
   } catch (err) {
     logger.error(
       '[ContextEngineService] 初始化失败:',

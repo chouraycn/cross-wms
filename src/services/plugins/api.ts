@@ -169,3 +169,67 @@ export async function reloadPlugin(id: string): Promise<PluginInfo> {
   const json = await res.json();
   return (json.plugin ?? json.data ?? json) as PluginInfo;
 }
+
+/** 插件配置 Schema 字段 */
+export interface PluginConfigSchemaField {
+  key: string;
+  type: 'string' | 'number' | 'boolean' | 'array' | 'object';
+  label?: string;
+  description?: string;
+  default?: unknown;
+  required?: boolean;
+  enum?: unknown[];
+  properties?: PluginConfigSchemaField[];
+}
+
+/** 插件配置 Schema */
+export interface PluginConfigSchema {
+  version?: string;
+  fields: PluginConfigSchemaField[];
+}
+
+/** 获取插件配置和 Schema */
+export async function fetchPluginConfig(id: string): Promise<{
+  config: Record<string, unknown>;
+  configSchema: PluginConfigSchema | null;
+}> {
+  const res = await fetchWithTimeout(`${BASE}/${encodeURIComponent(id)}/config`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `API error ${res.status}`);
+  }
+  const json = await res.json();
+  return json.data ?? json;
+}
+
+/** 更新插件配置 */
+export async function updatePluginConfig(
+  id: string,
+  config: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const res = await fetchWithTimeout(`${BASE}/${encodeURIComponent(id)}/config`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ config }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `API error ${res.status}`);
+  }
+  const json = await res.json();
+  return json.data?.config ?? json.data ?? json;
+}
+
+/** 重置插件配置 */
+export async function resetPluginConfig(id: string): Promise<Record<string, unknown>> {
+  const res = await fetchWithTimeout(`${BASE}/${encodeURIComponent(id)}/config/reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `API error ${res.status}`);
+  }
+  const json = await res.json();
+  return json.data?.config ?? json.data ?? json;
+}

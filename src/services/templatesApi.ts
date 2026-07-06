@@ -38,8 +38,12 @@ export async function getTemplates(filter?: TemplateFilter): Promise<WorkflowTem
   const queryString = params.toString();
   const path = queryString ? `/api/templates?${queryString}` : `/api/templates`;
 
-  const result = await request<{ data: WorkflowTemplate[]; total: number }>('GET', path);
-  return result.data;
+  const result = await request<{ data: WorkflowTemplate[]; total: number } | { error: string }>('GET', path);
+  // 防御性处理：后端错误响应无 data 字段时返回空数组
+  if (!result || !Array.isArray((result as { data?: WorkflowTemplate[] }).data)) {
+    return [];
+  }
+  return (result as { data: WorkflowTemplate[] }).data;
 }
 
 /**
@@ -53,8 +57,12 @@ export async function getTemplateById(id: string): Promise<WorkflowTemplate> {
  * 获取模板分类列表
  */
 export async function getTemplateCategories(): Promise<string[]> {
-  const result = await request<{ data: string[] }>('GET', '/api/templates/categories');
-  return result.data;
+  const result = await request<{ data: string[] } | { error: string }>('GET', '/api/templates/categories');
+  // 防御性处理：后端错误响应无 data 字段时返回空数组
+  if (!result || !Array.isArray((result as { data?: string[] }).data)) {
+    return [];
+  }
+  return (result as { data: string[] }).data;
 }
 
 /**
@@ -75,6 +83,10 @@ export async function rateTemplate(id: string, rating: number): Promise<{ succes
  * 搜索模板
  */
 export async function searchTemplates(query: string): Promise<WorkflowTemplate[]> {
-  const result = await request<{ data: WorkflowTemplate[]; total: number }>('GET', `/api/templates/search?q=${encodeURIComponent(query)}`);
-  return result.data;
+  const result = await request<{ data: WorkflowTemplate[]; total: number } | { error: string }>('GET', `/api/templates/search?q=${encodeURIComponent(query)}`);
+  // 防御性处理
+  if (!result || !Array.isArray((result as { data?: WorkflowTemplate[] }).data)) {
+    return [];
+  }
+  return (result as { data: WorkflowTemplate[] }).data;
 }

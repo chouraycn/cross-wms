@@ -33,10 +33,13 @@ import WebIcon from '@mui/icons-material/Web';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import MemoryIcon from '@mui/icons-material/Memory';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import HistoryIcon from '@mui/icons-material/History';
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
@@ -103,6 +106,11 @@ const navItems: NavItem[] = [
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
   { label: 'Workshop', path: '/skills/workshop', icon: <TerminalIcon />, desc: '提案管理' },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
+  { label: '插件', path: '/plugins', icon: <ExtensionIcon />, desc: '插件管理' },
+  { label: '扩展', path: '/extensions', icon: <HubIcon />, desc: '扩展管理' },
+  { label: '监控', path: '/system-monitor', icon: <MonitorHeartIcon />, desc: '系统监控' },
+  { label: '审计', path: '/audit-log', icon: <AssessmentIcon />, desc: '审计日志' },
+  { label: 'API Key', path: '/api-keys', icon: <VpnKeyOutlinedIcon />, desc: 'API Key 管理' },
 
   {
     label: '仓储管理',
@@ -139,6 +147,8 @@ interface NavListProps {
   onSelectSession: (sessionId: string) => void;
   /** 删除历史会话的回调 */
   onDeleteSession: (sessionId: string) => void;
+  /** 加载历史/归档会话上下文但不跳转（任务 4） */
+  onLoadSessionContext?: (sessionId: string) => void;
 }
 
 // ===================== Component =====================
@@ -150,6 +160,7 @@ const NavList: React.FC<NavListProps> = ({
   activeSessionId,
   onSelectSession,
   onDeleteSession,
+  onLoadSessionContext,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -324,9 +335,10 @@ const NavList: React.FC<NavListProps> = ({
         <ListItemButton
           onClick={() => {
             setJustClickedSessionId(session.id);
-            // 直接通过 Context 切换会话（不经过路由，更快）
-            setActiveSessionId(session.id);
-            onSelectSession(session.id);
+            // 任务 4：不切换 activeSessionId、不跳转路由
+            // 仅加载该会话的消息作为上下文，停留在历史对话列表
+            // 用户点击输入框时会依托该会话的上次上下文继续完善
+            onLoadSessionContext?.(session.id);
           }}
           sx={{
             minHeight: 32,
@@ -797,9 +809,8 @@ const NavList: React.FC<NavListProps> = ({
                 <ListItem key={s.id} disablePadding sx={{ display: 'block' }}>
                   <ListItemButton
                     onClick={() => {
-                      restoreSessionFromContext(s.id);
-                      setActiveSessionId(s.id);
-                      onSelectSession(s.id);
+                      // 任务 4：归档对话点击也不跳转，仅加载上下文
+                      onLoadSessionContext?.(s.id);
                     }}
                     sx={{
                       minHeight: 32,

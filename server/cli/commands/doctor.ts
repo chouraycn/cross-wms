@@ -9,6 +9,13 @@ import { logger } from "../../logger.js";
 export type DoctorOptions = {
   fix?: boolean;
   json?: boolean;
+  verbose?: boolean;
+  /** 过滤检查类型 (e.g. db, model, gateway, plugin, config) */
+  only?: string;
+  /** 跳过指定检查 (逗号分隔) */
+  skip?: string;
+  /** 失败时退出码 (0=不退出, 1=默认) */
+  exitCode?: string;
 };
 
 interface DoctorCheckResult {
@@ -126,6 +133,64 @@ function formatTextOutput(report: DoctorReport): string {
   return lines.join("\n");
 }
 
+/** 格式化详细输出 */
+function formatVerboseOutput(report: DoctorReport): string {
+  const lines: string[] = [];
+  lines.push("");
+  lines.push(`  CDFKnow 详细诊断报告 (${report.timestamp})`);
+  lines.push(`  PID: ${process.pid}  Node: ${process.version}  Platform: ${process.platform}`);
+  lines.push("");
+  lines.push("  检查项 (详细信息):");
+  lines.push("");
+
+  for (const check of report.checks) {
+    const statusIcon = check.status === "pass" ? "✓" : check.status === "fail" ? "✗" : "!";
+    const statusText = check.status === "pass" ? "通过" : check.status === "fail" ? "失败" : "警告";
+    lines.push(`    ${statusIcon} [${statusText}] ${check.name}`);
+    lines.push(`        消息:    ${check.message}`);
+    lines.push(`        可修复:  ${check.fixable ? "是" : "否"}`);
+    lines.push(`        类型:    ${inferCheckType(check.name)}`);
+  }
+
+  lines.push("");
+  lines.push("  摘要:");
+  lines.push(`    总计: ${report.summary.total} 项`);
+  lines.push(`    通过: ${report.summary.passed} 项 (${pct(report.summary.passed, report.summary.total)}%)`);
+  lines.push(`    失败: ${report.summary.failed} 项 (${pct(report.summary.failed, report.summary.total)}%)`);
+  lines.push(`    警告: ${report.summary.warnings} 项 (${pct(report.summary.warnings, report.summary.total)}%)`);
+  lines.push("");
+  return lines.join("\n");
+}
+
+function pct(n: number, total: number): string {
+  if (total === 0) return "0";
+  return ((n / total) * 100).toFixed(1);
+}
+
+function inferCheckType(name: string): string {
+  if (name.includes("Node")) return "runtime";
+  if (name.includes("数据库") || name.includes("Database")) return "db";
+  if (name.includes("配置")) return "config";
+  if (name.includes("模型")) return "model";
+  if (name.includes("Gateway") || name.includes("网关")) return "gateway";
+  if (name.includes("插件")) return "plugin";
+  return "other";
+}
+
+function filterChecksByType(
+  checks: DoctorCheckResult[],
+  only: string[] = [],
+  skip: string[] = []
+): DoctorCheckResult[] {
+  if (only.length === 0 && skip.length === 0) return checks;
+  return checks.filter((c) => {
+    const t = inferCheckType(c.name);
+    if (only.length > 0 && !only.includes(t)) return false;
+    if (skip.includes(t)) return false;
+    return true;
+  });
+}
+
 /**
  * 注册 doctor 命令
  */
@@ -134,8 +199,30 @@ export function registerDoctorCommand(program: Command): void {
     .command("doctor")
     .description("检查并修复配置、数据库、模型、网关等问题")
     .option("--fix", "自动修复可修复的问题")
+    .option("--json", "以 JSON 格式输出诊断报告")
+    .option("-v, --verbose", "显示详细诊断信息")
+    .option("--only <types>", "只运行指定类型的检查 (逗号分隔，如 db,model,gateway)")
+    .option("--skip <types>", "跳过指定类型的检查 (逗号分隔)")
+    .option("--exit-code <code>", "设置发现失败项时的退出码 (默认 1)", "1")
     .action(async (options: DoctorOptions) => {
-      const checks = await runDoctorChecks();
+      let checks = await runDoctorChecks();
+
+      // 应用 --only 过滤
+      if (options.only) {
+        const onlyTypes = options.only.split(",").map((s) => s.trim()).filter(Boolean);
+        if (onlyTypes.length > 0) {
+          checks = filterChecksByType(checks, onlyTypes);
+        }
+      }
+
+      // 应用 --skip 过滤
+      if (options.skip) {
+        const skipTypes = options.skip.split(",").map((s) => s.trim()).filter(Boolean);
+        if (skipTypes.length > 0) {
+          checks = filterChecksByType(checks, [], skipTypes);
+        }
+      }
+
       const report: DoctorReport = {
         timestamp: new Date().toISOString(),
         checks,
@@ -149,6 +236,8 @@ export function registerDoctorCommand(program: Command): void {
 
       if (options.json) {
         logger.info(formatJsonOutput(report));
+      } else if (options.verbose) {
+        logger.info(formatVerboseOutput(report));
       } else {
         logger.info(formatTextOutput(report));
       }

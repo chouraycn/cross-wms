@@ -285,6 +285,11 @@ app.use('/api/inventory', inventoryNlQueryRouter);
 // ========== v3.0+: 低频路由延迟加载（参照 openclaw 轻量入口设计） ==========
 // 这些路由在首次请求时才动态 import，减少启动时间和内存占用
 app.use('/api/plugins', lazyRouter(() => import('./routes/plugins.js'), undefined, 'plugins'));
+app.use('/api/extensions', lazyRouter(() => import('./routes/extensions.js'), undefined, 'extensions'));
+app.use('/api/message-lifecycle', lazyRouter(() => import('./routes/message-lifecycle.js'), undefined, 'message-lifecycle'));
+app.use('/api/metrics', lazyRouter(() => import('./routes/metrics.js'), undefined, 'metrics'));
+app.use('/api/audit', lazyRouter(() => import('./routes/audit.js'), undefined, 'audit'));
+app.use('/api/apikeys', lazyRouter(() => import('./routes/apikeys.js'), undefined, 'apikeys'));
 app.use('/api/api-domain-whitelist', lazyRouter(() => import('./routes/apiDomainWhitelist.js'), undefined, 'api-domain-whitelist'));
 app.use('/api/browser', lazyRouter(() => import('./routes/browser.js'), undefined, 'browser'));
 app.use('/api/browser/profiles', lazyRouter(() => import('./routes/browserProfiles.js'), undefined, 'browser-profiles'));
@@ -310,6 +315,10 @@ app.use('/api/code-index', lazyRouter(() => import('./routes/codeIndex.js'), und
 app.use('/api/templates', lazyRouter(() => import('./routes/templates.js'), undefined, 'templates'));
 app.use('/api/execution-history', lazyRouter(() => import('./routes/executionHistory.js'), undefined, 'execution-history'));
 app.use('/api/context-engine', lazyRouter(() => import('./routes/contextEngine.js'), m => m.contextEngineRouter, 'context-engine'));
+// P2-8: 语音对话配置与通道管理
+app.use('/api/talk', lazyRouter(() => import('./routes/talk.js'), undefined, 'talk'));
+app.use('/api/channels', lazyRouter(() => import('./routes/channels.js'), undefined, 'channels'));
+app.use('/api/cache', lazyRouter(() => import('./routes/cache.js'), undefined, 'cache'));
 
 // ========== v10.0: Gateway Routes (OpenAI/MCP 兼容) ==========
 // 从环境变量或配置文件读取 API Keys

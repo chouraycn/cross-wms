@@ -101,3 +101,25 @@ export interface ChannelStreamingAdapter {
     idleMs: number;
   };
 }
+
+/** Channel message type for adapter send/receive operations. */
+export interface ChannelMessage {
+  id: string;
+  channelId: ChannelId;
+  accountId?: AccountId;
+  content: string;
+  contentType?: string;
+  metadata?: Record<string, unknown>;
+  createdAt?: number;
+  conversationId?: string;
+  senderId?: string;
+  senderName?: string;
+  timestamp?: number;
+}
+
+/** Result of sending a channel message. */
+export interface ChannelMessageSendResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}

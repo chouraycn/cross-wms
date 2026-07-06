@@ -1,0 +1,10 @@
+{
+  "id": "voice-call",
+  "name": "Voice Call",
+  "description": "Real-time voice call integration with telephony providers",
+  "version": "1.0.0",
+  "kind": "service",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

@@ -136,7 +136,7 @@ function formatHookInfo(hook: HookEntry | undefined, name: string): string {
 export function registerHooksCommand(program: Command): void {
   const hooksCmd = program
     .command("hooks")
-    .description("钩子管理 (list/enable/disable/reload/info)");
+    .description("钩子管理 (list/enable/disable/reload/info) [默认: list]");
 
   hooksCmd
     .command("list")

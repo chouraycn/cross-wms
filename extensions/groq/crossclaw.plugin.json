@@ -1,0 +1,26 @@
+{
+  "id": "groq",
+  "activation": {
+    "onStartup": false
+  },
+  "enabledByDefault": true,
+  "name": "Groq Provider",
+  "description": "Groq LLM provider with streaming and tool calling support.",
+  "contracts": {
+    "providers": ["groq"]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "apiKey": {
+        "type": "string",
+        "description": "Groq API key"
+      },
+      "baseUrl": {
+        "type": "string",
+        "default": "https://api.groq.com/openai/v1"
+      }
+    }
+  }
+}

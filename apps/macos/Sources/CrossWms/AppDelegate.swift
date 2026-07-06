@@ -195,6 +195,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 NSApp.terminate(nil)
             }
             return Response(ok: true, message: "Quitting...")
+
+        case .openPermissionManager:
+            await MainActor.run {
+                if permissionManagerWindow == nil {
+                    permissionManagerWindow = PermissionManagerWindow()
+                }
+                permissionManagerWindow?.show()
+            }
+            return Response(ok: true, message: "Permission manager opened")
         }
     }
 

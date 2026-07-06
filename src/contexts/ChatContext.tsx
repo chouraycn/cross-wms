@@ -55,6 +55,8 @@ interface ChatSidebarValue {
   archivedSessions: Session[];
   /** v10.0: 直接切换活跃会话（不经过路由，更快） */
   setActiveSessionId: (id: string) => void;
+  /** 任务 4: 加载历史/归档会话上下文但不切换 activeSessionId（用户停留在历史对话列表） */
+  loadSessionContext: (sessionId: string) => Promise<void>;
 }
 
 /**
@@ -711,6 +713,32 @@ export function ChatProvider({
     [sessions]
   );
 
+  // ===================== 任务 4: 加载会话上下文但不切换 activeSessionId =====================
+  // 用户点击历史/归档对话时，仅加载该会话的消息作为上下文，不跳转路由
+  // 用户在输入框继续对话时，会依托该会话的上次上下文继续完善
+  const loadSessionContext = useCallback(async (sessionId: string) => {
+    // 找到目标会话
+    const target = sessionsRef.current.find((s) => s.id === sessionId);
+    if (!target) return;
+
+    // 如果消息已加载，直接更新 activeSession 但不切换 activeSessionId
+    if (target.messages.length === 0) {
+      // 异步加载该会话的消息
+      const { messages } = await fetchSessionMessagesFromAPI(sessionId);
+      // 将消息合并到 sessions 中（不切换 activeSessionId）
+      setSessions((prev) => prev.map((s) =>
+        s.id === sessionId ? { ...s, messages } : s
+      ));
+      // 更新 activeSession 为目标会话（供输入框使用上下文）
+      setActiveSession({ ...target, messages });
+    } else {
+      // 消息已加载，直接更新 activeSession
+      setActiveSession(target);
+    }
+    // 注意：不调用 setActiveSessionIdState，不调用 syncSidebar
+    // 这样 UI 不会切换到 chat 页面，用户停留在历史对话列表
+  }, []);
+
   // ===================== 上滚加载更早消息 =====================
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
 
@@ -783,7 +811,8 @@ export function ChatProvider({
     restoreSession,
     archivedSessions,
     setActiveSessionId,
-  }), [sessions, folders, handleDeleteSession, togglePinSession, createFolder, updateFolder, deleteFolder, moveSessionToFolder, archiveSession, restoreSession, archivedSessions, setActiveSessionId]);
+    loadSessionContext,
+  }), [sessions, folders, handleDeleteSession, togglePinSession, createFolder, updateFolder, deleteFolder, moveSessionToFolder, archiveSession, restoreSession, archivedSessions, setActiveSessionId, loadSessionContext]);
 
   // ChatMetaContext：极少变更
   const metaValue = useMemo<ChatMetaValue>(() => ({

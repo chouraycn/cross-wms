@@ -271,12 +271,18 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
         fullContent = lastParagraph.length > 800
           ? '（思考摘要）\n\n' + lastParagraph.slice(-800)
           : '（思考摘要）\n\n' + lastParagraph;
+        // 通过 onChunk 回调发射回退内容，确保前端能收到
+        callbacks.onChunk?.(fullContent);
+        callbacks.onEvent?.({ type: 'text', content: fullContent });
       }
     }
 
     if (!fullContent && !thinkingContent?.trim()) {
       logger.warn(`${tag} 模型返回空内容，无文本也无思考，sessionId=${params.sessionId} model=${params.model}`);
       fullContent = '（模型未返回内容，可能是请求超时或服务异常，请重试）';
+      // 通过 onChunk 回调发射回退内容，确保前端能收到
+      callbacks.onChunk?.(fullContent);
+      callbacks.onEvent?.({ type: 'text', content: fullContent });
     }
   } catch (error) {
     logger.error(`${tag} Phase 0 执行失败:`, error);

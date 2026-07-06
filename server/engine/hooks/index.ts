@@ -58,6 +58,7 @@ export {
   unregisterInternalHook,
   resetHookRegistrations,
   loadedHookRegistrations,
+  registerBuiltinHooks,
 } from './loader.js';
 export type { LoadedHookRegistration } from './loader.js';
 
@@ -88,3 +89,18 @@ export {
   readInstalledPackageVersion,
 } from './update.js';
 export type { HookUpdateStatus, HookUpdateOutcome } from './update.js';
+
+// 内置钩子
+export {
+  commandLoggerHook,
+  commandLoggerBootstrapHook,
+  commandLoggerNewHook,
+  commandLoggerCompleteHook,
+  sessionMemoryHook,
+  sessionMemoryCommandHook,
+  sessionMemoryMessageHook,
+  getSessionEntry,
+  listActiveSessions,
+  getSessionCount,
+  cleanupInactiveSessions,
+} from './builtin/index.js';

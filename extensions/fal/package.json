@@ -1,0 +1,22 @@
+{
+  "name": "@cross-wms/fal-extension",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fal AI provider extension for cross-wms",
+  "type": "module",
+  "main": "./index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@cross-wms/plugin-sdk": "workspace:*",
+    "typescript": "^5.7.0"
+  },
+  "crossclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

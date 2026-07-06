@@ -9,7 +9,7 @@ import { Router } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { pluginRegistry } from '../engine/pluginRegistry.js';
-import { listPlugins, getPlugin } from '../dao/plugins.js';
+import { listPlugins, getPlugin, getPluginConfig, setPluginConfig } from '../dao/plugins.js';
 import { parseMultipartFormData, MAX_UPLOAD_SIZE } from './upload.js';
 import { AppPaths } from '../config/appPaths.js';
 
@@ -207,6 +207,93 @@ router.post('/:id/reload', async (req, res) => {
     res.json({ data: updated });
   } catch (e) {
     res.status(500).json({ error: `插件重新加载失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+});
+
+// GET /api/plugins/:id/config — 获取插件配置
+router.get('/:id/config', (req, res) => {
+  try {
+    const plugin = getPlugin(req.params.id);
+    if (!plugin) {
+      return res.status(404).json({ error: '插件不存在' });
+    }
+
+    let configSchema = null;
+    try {
+      const manifest = JSON.parse(plugin.manifest_json || '{}');
+      configSchema = manifest.configSchema || null;
+    } catch {
+      // manifest 解析失败时忽略
+    }
+
+    const config = getPluginConfig(req.params.id);
+    res.json({
+      data: {
+        config,
+        configSchema,
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ error: `获取插件配置失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+});
+
+// PUT /api/plugins/:id/config — 更新插件配置
+router.put('/:id/config', (req, res) => {
+  try {
+    const plugin = getPlugin(req.params.id);
+    if (!plugin) {
+      return res.status(404).json({ error: '插件不存在' });
+    }
+
+    const config = req.body?.config;
+    if (typeof config !== 'object' || config === null) {
+      return res.status(400).json({ error: 'config 参数必须是对象' });
+    }
+
+    const updated = setPluginConfig(req.params.id, config as Record<string, unknown>);
+    if (!updated) {
+      return res.status(500).json({ error: '更新插件配置失败' });
+    }
+
+    res.json({ data: { config: getPluginConfig(req.params.id) } });
+  } catch (e) {
+    res.status(500).json({ error: `更新插件配置失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+});
+
+// POST /api/plugins/:id/config/reset — 重置插件配置为默认值
+router.post('/:id/config/reset', (req, res) => {
+  try {
+    const plugin = getPlugin(req.params.id);
+    if (!plugin) {
+      return res.status(404).json({ error: '插件不存在' });
+    }
+
+    // 从 configSchema 中提取默认值
+    const defaultConfig: Record<string, unknown> = {};
+    try {
+      const manifest = JSON.parse(plugin.manifest_json || '{}');
+      const schema = manifest.configSchema;
+      if (schema?.fields && Array.isArray(schema.fields)) {
+        for (const field of schema.fields) {
+          if (field.default !== undefined) {
+            defaultConfig[field.key] = field.default;
+          }
+        }
+      }
+    } catch {
+      // 解析失败时使用空配置
+    }
+
+    const updated = setPluginConfig(req.params.id, defaultConfig);
+    if (!updated) {
+      return res.status(500).json({ error: '重置插件配置失败' });
+    }
+
+    res.json({ data: { config: defaultConfig } });
+  } catch (e) {
+    res.status(500).json({ error: `重置插件配置失败: ${e instanceof Error ? e.message : String(e)}` });
   }
 });
 
