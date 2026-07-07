@@ -10,7 +10,6 @@ import {
 } from '@mui/material';
 import type { AppSettings, SidebarConfig } from '../../../contexts/AppSettingsContext';
 import { switchSx, APP_VERSION } from '../sharedStyles';
-import TrafficLightOffsetSection from './TrafficLightOffsetSection';
 import { getGrayScale } from '../../../constants/theme';
 
 // ===================== Props =====================
@@ -104,9 +103,6 @@ const AboutTab: React.FC<AboutTabProps> = ({
         />
 
         <Divider sx={{ my: 1.5 }} />
-
-        {/* Traffic light offset (macOS pywebview only) */}
-        <TrafficLightOffsetSection />
       </Box>
     </Box>
   );
