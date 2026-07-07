@@ -208,25 +208,20 @@ export function useApprovalEvents(options: UseApprovalEventsOptions = {}): UseAp
 
   // 发送审批响应到后端
   const sendApprovalResponse = useCallback(async (response: ApprovalResponse) => {
-    try {
-      const res = await fetch(`${API_BASE}/approval/respond`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          ...response,
-        }),
-      });
+    const res = await fetch(`${API_BASE}/approval/respond`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId,
+        ...response,
+      }),
+    });
 
-      if (!res.ok) {
-        throw new Error(`审批响应发送失败: ${res.status}`);
-      }
-
-      return await res.json();
-    } catch (error) {
-      console.error('[useApprovalEvents] 发送审批响应失败:', error);
-      throw error;
+    if (!res.ok) {
+      throw new Error(`审批响应发送失败: ${res.status}`);
     }
+
+    return await res.json();
   }, [sessionId]);
 
   // 处理批准
@@ -474,7 +469,7 @@ export function useApprovalEvents(options: UseApprovalEventsOptions = {}): UseAp
   // 添加到白名单
   const addToWhitelist = useCallback((pattern: string) => {
     // 这里可以调用白名单管理 API
-    console.log('[useApprovalEvents] 添加到白名单:', pattern);
+    // console.log('[useApprovalEvents] 添加到白名单:', pattern);
 
     // 发送全局事件
     window.dispatchEvent(new CustomEvent('whitelist_add', { detail: { pattern } }));
@@ -482,7 +477,7 @@ export function useApprovalEvents(options: UseApprovalEventsOptions = {}): UseAp
 
   // 从白名单移除
   const removeFromWhitelist = useCallback((pattern: string) => {
-    console.log('[useApprovalEvents] 从白名单移除:', pattern);
+    // console.log('[useApprovalEvents] 从白名单移除:', pattern);
 
     // 发送全局事件
     window.dispatchEvent(new CustomEvent('whitelist_remove', { detail: { pattern } }));

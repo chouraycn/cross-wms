@@ -34,8 +34,11 @@ try {
 // 异步初始化：迁移 + Store 数据加载（不阻塞 UI 渲染）
 async function bootstrap() {
   try {
-    await checkAndMigrate()
-    await Promise.all([initWarehouseCapability(), initSkills()])
+    await checkAndMigrate();
+    await initWarehouseCapability();
+    setTimeout(() => {
+      initSkills().catch(() => {});
+    }, 500);
   } catch (e) {
     // console.error('[Bootstrap] Store 初始化失败:', e)
   }
@@ -45,8 +48,8 @@ bootstrap();
 
 // ===================== 内存压力响应（WKWebView 原生回调） =====================
 // Swift 端在 didReceiveMemoryWarning 时调用 window.cdfApp.onMemoryPressure()
-;(window as any).cdfApp = (window as any).cdfApp || {};
-;(window as any).cdfApp.onMemoryPressure = () => {
+(window as any).cdfApp = (window as any).cdfApp || {};
+(window as any).cdfApp.onMemoryPressure = () => {
   console.log('[CDFKnow] Memory pressure received, cleaning up...');
   // 1. 清理 sessionStorage 中非必要数据
   try {

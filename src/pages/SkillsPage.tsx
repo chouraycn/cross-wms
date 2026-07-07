@@ -33,6 +33,10 @@ import type { SkillChain } from '../types/skill';
 // T05: 匹配引擎设置
 import MatchConfigPanel from '../components/Matching/MatchConfigPanel';
 import { getGrayScale } from '../constants/theme';
+// 插件管理整合
+import { getPlugins, onPluginsChange, enablePluginAction, disablePluginAction, refreshFromApi, installPluginAction, uninstallPluginAction } from '../stores/pluginStore';
+import type { PluginInfo } from '../services/plugins/api';
+import ExtensionIcon from '@mui/icons-material/Extension';
 
 // ===================== 技能页面 =====================
 
@@ -60,52 +64,90 @@ const SkillsPage: React.FC = () => {
     return unsubscribe;
   }, []);
 
-  // T03: 初始化时加载使用统计
+  // T03: 延迟加载使用统计（非关键数据，延迟 1.5s 加载）
   useEffect(() => {
-    loadAllUsageStats().then(() => {
-      setSkillVersion((v) => v + 1);
-    }).catch((e) => {
-      // console.error('[SkillsPage] loadAllUsageStats failed:', e);
-    });
+    const timer = setTimeout(() => {
+      loadAllUsageStats().then(() => {
+        setSkillVersion((v) => v + 1);
+      }).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(timer);
   }, []);
 
-  // 初始化时加载安全审查状态
+  // 延迟加载安全审查状态（非关键数据，延迟 2s 加载）
   useEffect(() => {
-    loadAuditStatuses().then(() => {
-      setSkillVersion((v) => v + 1);
-    }).catch((e) => {
-      // console.error('[SkillsPage] loadAuditStatuses failed:', e);
-    });
+    const timer = setTimeout(() => {
+      loadAuditStatuses().then(() => {
+        setSkillVersion((v) => v + 1);
+      }).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(timer);
   }, []);
 
-  // T03: SSE 连接
+  // T03: SSE 连接（延迟 3s 建立，避免影响初始化性能）
   const evtRef = useRef<import('../services/api').SSEConnection | null>(null);
   useEffect(() => {
-    const sse = api.connectSkillEvents((rawData) => {
-      try {
-        const data: SkillWatchEvent = JSON.parse(rawData);
-        // console.log('[SkillsPage] SSE event:', data);
-        refreshFromRemote().then(() => {
-          setSkillVersion((v) => v + 1);
-          showToast('技能列表已更新', 'info');
-        }).catch((e) => {
-          // console.error('[SkillsPage] refreshFromRemote failed:', e);
-        });
-      } catch (e) {
-        // console.error('[SkillsPage] SSE parse error:', e);
-      }
-    });
-    evtRef.current = sse;
+    const timer = setTimeout(() => {
+      const sse = api.connectSkillEvents((rawData) => {
+        try {
+          const data: SkillWatchEvent = JSON.parse(rawData);
+          refreshFromRemote().then(() => {
+            setSkillVersion((v) => v + 1);
+            showToast('技能列表已更新', 'info');
+          }).catch(() => {});
+        } catch (e) {}
+      });
+      evtRef.current = sse;
+    }, 3000);
 
     return () => {
-      sse.close();
+      clearTimeout(timer);
+      if (evtRef.current) {
+        evtRef.current.close();
+      }
     };
   }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'market' | 'installed' | 'chains'>('market');
+  const [activeTab, setActiveTab] = useState<'market' | 'installed' | 'plugins' | 'chains'>('market');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    setSuggestionsOpen(true);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(value);
+    }, 150);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  // 插件管理状态
+  const [pluginVersion, setPluginVersion] = useState(0);
+  const plugins = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _v = pluginVersion;
+    return getPlugins();
+  }, [pluginVersion]);
+
+  useEffect(() => {
+    const unsubscribe = onPluginsChange(() => {
+      setPluginVersion((v) => v + 1);
+    });
+    return unsubscribe;
+  }, []);
   // T05: 匹配引擎设置对话框
   const [matchConfigOpen, setMatchConfigOpen] = useState(false);
 
@@ -218,6 +260,61 @@ const SkillsPage: React.FC = () => {
     showToast('执行已终止', 'info');
   }, []);
 
+  // 插件管理操作
+  const handleTogglePlugin = useCallback(async (plugin: PluginInfo) => {
+    try {
+      if (plugin.status === 'enabled') {
+        await disablePluginAction(plugin.id);
+      } else {
+        await enablePluginAction(plugin.id);
+      }
+      setPluginVersion((v) => v + 1);
+      showToast(`${plugin.name} ${plugin.status === 'enabled' ? '已禁用' : '已启用'}`, 'success');
+    } catch (e) {
+      showToast(`${plugin.name} ${plugin.status === 'enabled' ? '禁用' : '启用'}失败`, 'error');
+    }
+  }, []);
+
+  const handleRefreshPlugins = useCallback(async () => {
+    try {
+      await refreshFromApi();
+      setPluginVersion((v) => v + 1);
+      showToast('插件列表已刷新', 'success');
+    } catch (e) {
+      showToast('刷新插件列表失败', 'error');
+    }
+  }, []);
+
+  const handleDeletePlugin = useCallback(async (plugin: PluginInfo) => {
+    if (!window.confirm(`确定要删除插件 "${plugin.name}" 吗？`)) return;
+    try {
+      await uninstallPluginAction(plugin.id);
+      setPluginVersion((v) => v + 1);
+      showToast(`${plugin.name} 已删除`, 'success');
+    } catch (e) {
+      showToast(`${plugin.name} 删除失败`, 'error');
+    }
+  }, []);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleUploadPlugin = useCallback(async () => {
+    if (!fileInputRef.current) return;
+    fileInputRef.current.click();
+  }, []);
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await installPluginAction(file);
+      setPluginVersion((v) => v + 1);
+      showToast(`插件 "${file.name}" 上传成功`, 'success');
+    } catch (e) {
+      showToast(`插件上传失败: ${e}`, 'error');
+    }
+    e.target.value = '';
+  }, []);
+
   // T04: 冲突信息 — 前端纯计算，skillId → { hasConflict, conflictCount }
   const conflictMap = useMemo(() => {
     const map = new Map<string, { hasConflict: boolean; conflictCount: number }>();
@@ -266,28 +363,30 @@ const SkillsPage: React.FC = () => {
     return map;
   }, [automations]);
 
-  // 初始化加载自动化数据
+  // 延迟加载自动化数据（非关键数据，延迟 2.5s 加载）
   useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await fetchAutomations();
-        setAutomations(data);
-        // 加载最新执行状态
-        const map: Record<string, AutomationExecution | null> = {};
-        for (const auto of data) {
-          try {
-            const result = await fetchExecutions(auto.id, 1);
-            map[auto.taskType || ''] = result.data[0] || null;
-          } catch {
-            map[auto.taskType || ''] = null;
+    const timer = setTimeout(() => {
+      const load = async () => {
+        try {
+          const data = await fetchAutomations();
+          setAutomations(data);
+          const map: Record<string, AutomationExecution | null> = {};
+          for (const auto of data) {
+            try {
+              const result = await fetchExecutions(auto.id, 1);
+              map[auto.taskType || ''] = result.data[0] || null;
+            } catch {
+              map[auto.taskType || ''] = null;
+            }
           }
+          setLatestExecByType(map);
+        } catch {
+          // ignore errors
         }
-        setLatestExecByType(map);
-      } catch (err) {
-        // console.error('Failed to load automations', err);
-      }
-    };
-    load();
+      };
+      load();
+    }, 2500);
+    return () => clearTimeout(timer);
   }, []);
 
   const refreshLatestExec = useCallback(async () => {
@@ -337,19 +436,19 @@ const SkillsPage: React.FC = () => {
     showToast('技能已启用', 'success');
   };
 
-  // 过滤技能
+  // 过滤技能（使用防抖后的查询，减少频繁过滤）
   const filteredSkills = useMemo(() => {
     return skills.filter(skill => {
-      const matchesSearch = searchQuery === '' ||
-        skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        skill.desc.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (skill.tags || []).some(t => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (skill.trigger || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = debouncedSearchQuery === '' ||
+        skill.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        skill.desc.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        (skill.tags || []).some(t => t.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) ||
+        (skill.trigger || '').toLowerCase().includes(debouncedSearchQuery.toLowerCase());
       const matchesCategory = selectedCategory === 'all' || skill.category === selectedCategory;
       const matchesTab = activeTab === 'market' || (activeTab === 'installed' && skill.source === 'user');
       return matchesSearch && matchesCategory && matchesTab;
     });
-  }, [searchQuery, selectedCategory, skills, activeTab]);
+  }, [debouncedSearchQuery, selectedCategory, skills, activeTab]);
 
   // 搜索联想建议（从技能名称、标签、触发词中提取）
   const searchSuggestions = useMemo(() => {
@@ -465,10 +564,7 @@ const SkillsPage: React.FC = () => {
           <Box sx={{ position: 'relative' }}>
             <SearchInput
               value={searchQuery}
-              onChange={(value) => {
-                setSearchQuery(value);
-                setSuggestionsOpen(true);
-              }}
+              onChange={handleSearchChange}
               placeholder="搜索技能"
               width={200}
               onFocus={() => { if (searchQuery) setSuggestionsOpen(true); }}
@@ -636,6 +732,47 @@ const SkillsPage: React.FC = () => {
           </Box>
         </Box>
         <Box
+          onClick={() => setActiveTab('plugins')}
+          sx={{
+            py: 1.5,
+            fontSize: '0.875rem',
+            color: activeTab === 'plugins' ? gs.textPrimary : gs.textMuted,
+            cursor: 'pointer',
+            position: 'relative',
+            fontWeight: activeTab === 'plugins' ? 500 : 400,
+            transition: 'color 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            '&:hover': { color: gs.textSecondary },
+            '&::after': activeTab === 'plugins' ? {
+              content: '""',
+              position: 'absolute',
+              bottom: -1,
+              left: 0,
+              right: 0,
+              height: 2,
+              backgroundColor: gs.textPrimary,
+            } : {},
+          }}
+        >
+          插件
+          <Box sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: 18,
+            height: 18,
+            px: 0.625,
+            backgroundColor: gs.bgHover,
+            borderRadius: '9px',
+            fontSize: '0.6875rem',
+            color: gs.textMuted,
+          }}>
+            {plugins.length}
+          </Box>
+        </Box>
+        <Box
           onClick={() => setActiveTab('chains')}
           sx={{
             py: 1.5,
@@ -678,7 +815,142 @@ const SkillsPage: React.FC = () => {
         </Box>
       </Box>
 
-      {activeTab === 'chains' ? (
+      {activeTab === 'plugins' ? (
+        /* ========== 插件管理视图 ========== */
+        <Box sx={{ px: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: gs.textPrimary }}>
+              插件管理
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon sx={{ fontSize: 14 }} />}
+                onClick={handleRefreshPlugins}
+                sx={{
+                  textTransform: 'none',
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  py: 0.75,
+                  px: 2,
+                  borderColor: gs.border,
+                  color: gs.textSecondary,
+                  '&:hover': { borderColor: gs.borderDarker, backgroundColor: gs.bgHover },
+                }}
+              >
+                刷新
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon sx={{ fontSize: 14 }} />}
+                onClick={handleUploadPlugin}
+                sx={{
+                  textTransform: 'none',
+                  borderRadius: '8px',
+                  fontSize: '0.8125rem',
+                  py: 0.75,
+                  px: 2,
+                  backgroundColor: '#7C3AED',
+                  '&:hover': { backgroundColor: '#6D28D9' },
+                }}
+              >
+                上传插件
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".py,.zip"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
+            </Box>
+          </Box>
+          {plugins.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <ExtensionIcon sx={{ fontSize: 48, color: gs.borderDarker, mb: 2 }} />
+              <Typography sx={{ fontSize: '0.95rem', color: gs.textMuted, mb: 0.5 }}>
+                暂无插件
+              </Typography>
+              <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
+                点击上方按钮上传插件文件（.py 或 .zip）
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+              {plugins.map((plugin) => (
+                <Box
+                  key={plugin.id}
+                  sx={{
+                    backgroundColor: gs.bgPanel,
+                    border: `1px solid ${gs.border}`,
+                    borderRadius: '12px',
+                    p: 2.5,
+                    transition: 'all 0.2s',
+                    '&:hover': { borderColor: gs.borderDarker, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                    <Box>
+                      <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: gs.textPrimary }}>
+                        {plugin.name}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
+                        {plugin.version || '未知版本'}
+                      </Typography>
+                    </Box>
+                    <Box
+                      sx={{
+                        px: 1.25,
+                        py: 0.375,
+                        borderRadius: '4px',
+                        fontSize: '0.6875rem',
+                        fontWeight: 500,
+                        backgroundColor: plugin.status === 'enabled' ? '#DCFCE7' : '#FEF2F2',
+                        color: plugin.status === 'enabled' ? '#16A34A' : '#DC2626',
+                      }}
+                    >
+                      {plugin.status === 'enabled' ? '已启用' : '已禁用'}
+                    </Box>
+                  </Box>
+                  <Typography sx={{ fontSize: '0.8125rem', color: gs.textSecondary, mb: 2 }}>
+                    {plugin.description || '暂无描述'}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      size="small"
+                      onClick={() => handleTogglePlugin(plugin)}
+                      sx={{
+                        textTransform: 'none',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        flex: 1,
+                        backgroundColor: plugin.status === 'enabled' ? gs.bgHover : '#7C3AED',
+                        color: plugin.status === 'enabled' ? gs.textSecondary : '#FFFFFF',
+                        '&:hover': { backgroundColor: plugin.status === 'enabled' ? gs.border : '#6D28D9' },
+                      }}
+                    >
+                      {plugin.status === 'enabled' ? '禁用' : '启用'}
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => handleDeletePlugin(plugin)}
+                      sx={{
+                        textTransform: 'none',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        color: '#EF4444',
+                        '&:hover': { backgroundColor: '#FEF2F2' },
+                      }}
+                    >
+                      删除
+                    </Button>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      ) : activeTab === 'chains' ? (
         /* ========== 技能链视图 ========== */
         <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 220px)' }}>
           {/* 左侧：链列表 */}

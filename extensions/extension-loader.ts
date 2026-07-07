@@ -76,11 +76,24 @@ export class ExtensionLoader {
       const entryPath = path.join(extDir, 'index.ts');
       const url = pathToFileURL(entryPath).href;
       
-      const module = await import(url) as { default: ExtensionProvider };
-      const provider = module.default;
+      const module = await import(url) as { default: new () => ExtensionProvider };
+      const ProviderClass = module.default;
+
+      if (!ProviderClass || typeof ProviderClass !== 'function') {
+        this.logger.error(`Invalid extension entry: ${manifest.id}`);
+        return false;
+      }
+
+      let provider: ExtensionProvider;
+      try {
+        provider = new ProviderClass();
+      } catch {
+        this.logger.error(`Failed to instantiate extension: ${manifest.id}`);
+        return false;
+      }
 
       if (!provider || typeof provider.register !== 'function') {
-        this.logger.error(`Invalid extension entry: ${manifest.id}`);
+        this.logger.error(`Invalid extension entry (missing register method): ${manifest.id}`);
         return false;
       }
 

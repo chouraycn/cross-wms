@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import {
   Box,
   Card,
@@ -41,7 +41,11 @@ const InventoryList: React.FC = () => {
   const gs = getGrayScale(isDark);
   const { settings } = useDashboardSettings();
   const ageWarningDays = settings.ageWarningDays ?? 90;
-  const { inventory: initialInventory, warehouses, loading, error, getWarehouseById } = useWarehouseCapability();
+  const { inventory: initialInventory, warehouses, loading, error, getWarehouseById, ensureInventoryLoaded } = useWarehouseCapability();
+
+  useEffect(() => {
+    ensureInventoryLoaded();
+  }, [ensureInventoryLoaded]);
 
   const [items, setItems] = useState<InventoryItem[]>([]);
 
@@ -393,4 +397,4 @@ const InventoryList: React.FC = () => {
   );
 };
 
-export default InventoryList;
+export default memo(InventoryList);

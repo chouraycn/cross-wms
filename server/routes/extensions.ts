@@ -58,28 +58,7 @@ router.get('/discover', async (req, res) => {
   }
 });
 
-// GET /api/extensions/:id — 详情
-router.get('/:id', (req, res) => {
-  try {
-    const ext = extensionLoader.get(req.params.id);
-    if (!ext) {
-      return res.status(404).json({ error: '扩展不存在' });
-    }
-    res.json({
-      data: {
-        id: ext.id,
-        name: ext.manifest.name,
-        description: ext.manifest.description,
-        version: ext.manifest.version,
-        kind: ext.manifest.kind,
-        enabled: ext.enabled,
-        manifest: ext.manifest,
-      },
-    });
-  } catch (e) {
-    res.status(500).json({ error: `获取扩展详情失败: ${e instanceof Error ? e.message : String(e)}` });
-  }
-});
+
 
 // POST /api/extensions/:id/load — 加载扩展
 router.post('/:id/load', async (req, res) => {
@@ -185,6 +164,29 @@ router.get('/kinds', (_req, res) => {
       { kind: 'api-integration', label: 'API 集成', description: '第三方 API 集成扩展' },
     ],
   });
+});
+
+// GET /api/extensions/:id — 详情（必须放在所有固定路径路由之后）
+router.get('/:id', (req, res) => {
+  try {
+    const ext = extensionLoader.get(req.params.id);
+    if (!ext) {
+      return res.status(404).json({ error: '扩展不存在' });
+    }
+    res.json({
+      data: {
+        id: ext.id,
+        name: ext.manifest.name,
+        description: ext.manifest.description,
+        version: ext.manifest.version,
+        kind: ext.manifest.kind,
+        enabled: ext.enabled,
+        manifest: ext.manifest,
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ error: `获取扩展详情失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
 });
 
 export default router;

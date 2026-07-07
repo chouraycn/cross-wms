@@ -4,14 +4,16 @@ import { Box, Typography, Switch, FormControlLabel, Alert, CircularProgress, use
 import { useNavigate } from 'react-router-dom';
 import { getGrayScale } from '../constants/theme';
 import KpiCards from '../components/Dashboard/KpiCards';
-import VolumeChart from '../components/Dashboard/VolumeChart';
-import TransitPieChart from '../components/Dashboard/TransitPieChart';
-import WarehouseBarChart from '../components/Dashboard/WarehouseBarChart';
-import Heatmap from '../components/Dashboard/heatmap';
+import {
+  VolumeChartLazy,
+  TransitPieChartLazy,
+  WarehouseBarChartLazy,
+  HeatmapLazy,
+  TransitTimeChartLazy,
+} from '../components/Dashboard/lazy';
 import EmptyWarehouseState from '../components/Warehouses/EmptyWarehouseState';
 import InventoryAlertList from '../components/Dashboard/InventoryAlertList';
 import WarehouseKpiTable from '../components/Dashboard/WarehouseKpiTable';
-import TransitTimeChart from '../components/Dashboard/TransitTimeChart';
 import WarehouseSelector, { ALL_WAREHOUSES } from '../components/Dashboard/WarehouseSelector';
 import TimeRangeSelector, { type TimeRange } from '../components/Dashboard/TimeRangeSelector';
 import { useDashboardSettings } from '../contexts/AppSettingsContext';
@@ -283,25 +285,25 @@ const DashboardPageContent: React.FC = () => {
                   case 'heatmap':
                     return vis.chartShipmentHeatmap ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <Heatmap warehouseId={selectedWarehouse} timeRange={timeRange} />
+                        <HeatmapLazy warehouseId={selectedWarehouse} timeRange={timeRange} />
                       </Box>
                     ) : null;
                   case 'volume-trend':
                     return vis.chartVolumeTrend ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <VolumeChart warehouseId={selectedWarehouse} timeRange={timeRange} />
+                        <VolumeChartLazy warehouseId={selectedWarehouse} timeRange={timeRange} />
                       </Box>
                     ) : null;
                   case 'transit-pie':
                     return vis.chartTransitPie ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <TransitPieChart timeRange={timeRange} />
+                        <TransitPieChartLazy timeRange={timeRange} />
                       </Box>
                     ) : null;
                   case 'warehouse-bar':
                     return vis.chartWarehouseBar ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <WarehouseBarChart warehouseId={selectedWarehouse} timeRange={timeRange} />
+                        <WarehouseBarChartLazy warehouseId={selectedWarehouse} timeRange={timeRange} />
                       </Box>
                     ) : null;
                   case 'inventory-alert':
@@ -319,7 +321,7 @@ const DashboardPageContent: React.FC = () => {
                   case 'transit-time':
                     return vis.chartTransitTime ? (
                       <Box key={comp} sx={{ mb: 3 }}>
-                        <TransitTimeChart warehouseId={selectedWarehouse} timeRange={timeRange} />
+                        <TransitTimeChartLazy warehouseId={selectedWarehouse} timeRange={timeRange} />
                       </Box>
                     ) : null;
                   default:

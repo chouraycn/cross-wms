@@ -1324,7 +1324,7 @@ export function useAgentChat(
     content: string,
     options: SendAgentMessageOptions = {},
   ): Promise<void> => {
-    console.log('[useAgentChat] sendMessage called, content:', content.slice(0, 50));
+    // console.log('[useAgentChat] sendMessage called, content:', content.slice(0, 50));
     if (!content.trim() || isLoading) return;
 
     addPendingMessage(content, options);
@@ -1440,7 +1440,7 @@ export function useAgentChat(
 
       } catch (err: any) {
         if (err.name === 'AbortError') {
-          console.log('[useAgentChat] 请求已取消');
+          // console.log('[useAgentChat] 请求已取消');
           flushAllBuffers();
           textCoalescerRef.current?.dispose();
           thinkingCoalescerRef.current?.dispose();
@@ -1448,7 +1448,7 @@ export function useAgentChat(
 
           // 组件卸载导致的 abort（如路由切换），不更新消息状态，避免显示"请求已取消"错误
           if (isUnmountedRef.current) {
-            console.log('[useAgentChat] 组件已卸载，跳过错误状态更新');
+            // console.log('[useAgentChat] 组件已卸载，跳过错误状态更新');
             return;
           }
 
@@ -1482,7 +1482,7 @@ export function useAgentChat(
         if (isRetryableError(err) && retryCount < SSE_MAX_RETRIES) {
           retryCount++;
           const delayMs = SSE_RETRY_BASE_DELAY_MS * Math.pow(2, retryCount - 1);
-          console.warn(`[useAgentChat] SSE 连接断开，${delayMs}ms 后自动重试（第 ${retryCount} 次）:`, err.message);
+          // console.warn(`[useAgentChat] SSE 连接断开，${delayMs}ms 后自动重试（第 ${retryCount} 次）:`, err.message);
 
           // 重试前清理流式状态
           parser.reset();
@@ -1493,7 +1493,7 @@ export function useAgentChat(
 
           // 如果 abortController 已被外部取消，停止重试
           if (abortController.signal.aborted) {
-            console.log('[useAgentChat] 重试期间请求被取消');
+            // console.log('[useAgentChat] 重试期间请求被取消');
             return;
           }
 
@@ -1501,7 +1501,7 @@ export function useAgentChat(
         }
 
         // 不可重试或重试耗尽：显示错误
-        console.error('[useAgentChat] 发送消息失败:', err);
+        // console.error('[useAgentChat] 发送消息失败:', err);
         setError(err.message || '发送失败');
 
         flushAllBuffers();

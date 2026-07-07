@@ -8,7 +8,7 @@
  * - 与 AppSettingsContext 解耦
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useMemo } from 'react';
 import * as api from '../services/api';
 import type { ModelConfig, ModelsConfig } from '../types/models';
 
@@ -27,6 +27,10 @@ interface ModelsContextValue {
   isLoadingRecommended: boolean;
   /** 是否为首次启动（模型列表为空） */
   isFirstLaunch: boolean;
+  /** 是否已完成初始化（从后端加载过） */
+  isInitialized: boolean;
+  /** 延迟初始化：首次调用时从后端加载模型配置 */
+  ensureInitialized: () => Promise<void>;
   /** 更新模型配置 */
   updateModels: (models: ModelConfig[], defaultModelId?: string) => Promise<void>;
   /** 重新加载 */
@@ -90,12 +94,13 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const cached = typeof window !== 'undefined' ? loadModelsFromCache() : null;
   const [models, setModels] = useState<ModelConfig[]>(cached?.models ?? []);
   const [defaultModelId, setDefaultModelId] = useState(cached?.defaultModelId ?? '');
-  const [isLoading, setIsLoading] = useState(!cached); // 有缓存时不显示加载态
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recommendedModels, setRecommendedModels] = useState<ModelConfig[]>([]);
   const [isLoadingRecommended, setIsLoadingRecommended] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState(false);
-  const isFirstLoad = useRef(true);
+  const [isInitialized, setIsInitialized] = useState(!!cached);
+  const initPromiseRef = useRef<Promise<void> | null>(null);
 
   /** 从后端加载模型配置（含自动重试：后端可能尚未就绪，使用指数退避） */
   const loadModels = useCallback(async () => {
@@ -216,20 +221,29 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
-  // 初始加载 — 并行化三个请求，消除瀑布请求延迟
-  useEffect(() => {
-    if (isFirstLoad.current) {
-      isFirstLoad.current = false;
-      // 三个请求并行执行，不互相依赖
-      Promise.all([
-        loadModels(),
-        fetchRecommendedModels(),
-        checkFirstLaunch(),
-      ]).catch(() => {
+  /** 延迟初始化：首次调用时从后端加载模型配置（防止启动时即发起请求） */
+  const ensureInitialized = useCallback(async () => {
+    if (isInitialized && initPromiseRef.current === null) return;
+    if (initPromiseRef.current) return initPromiseRef.current;
+
+    const promise = (async () => {
+      try {
+        // 三个请求并行执行，不互相依赖
+        await Promise.all([
+          loadModels(),
+          fetchRecommendedModels(),
+          checkFirstLaunch(),
+        ]);
+      } catch {
         // 各请求内部已有错误处理，此处仅防止 unhandled rejection
-      });
-    }
-  }, [loadModels, fetchRecommendedModels, checkFirstLaunch]);
+      } finally {
+        setIsInitialized(true);
+      }
+    })();
+
+    initPromiseRef.current = promise;
+    return promise;
+  }, [isInitialized, loadModels, fetchRecommendedModels, checkFirstLaunch]);
 
   const value = useMemo<ModelsContextValue>(() => ({
     models,
@@ -239,6 +253,8 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     recommendedModels,
     isLoadingRecommended,
     isFirstLaunch,
+    isInitialized,
+    ensureInitialized,
     updateModels,
     reload: loadModels,
     getDefaultModel,
@@ -246,7 +262,7 @@ export const ModelsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     fetchRecommendedModels,
     addRecommendedModel,
     addAllRecommendedModels,
-  }), [models, defaultModelId, isLoading, error, recommendedModels, isLoadingRecommended, isFirstLaunch, updateModels, loadModels, getDefaultModel, getEnabledModels, fetchRecommendedModels, addRecommendedModel, addAllRecommendedModels]);
+  }), [models, defaultModelId, isLoading, error, recommendedModels, isLoadingRecommended, isFirstLaunch, isInitialized, ensureInitialized, updateModels, loadModels, getDefaultModel, getEnabledModels, fetchRecommendedModels, addRecommendedModel, addAllRecommendedModels]);
 
   return <ModelsContext.Provider value={value}>{children}</ModelsContext.Provider>;
 };

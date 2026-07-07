@@ -41,6 +41,9 @@ import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
+import HubIcon from '@mui/icons-material/Hub';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import {
   getPlugins,
   onPluginsChange,
@@ -66,6 +69,10 @@ const ExecutionHistoryPage = lazy(() => import('../../pages/ExecutionHistoryPage
 const TemplateMarketPage = lazy(() => import('../../pages/TemplateMarketPage'));
 const EventLedgerPage = lazy(() => import('../../pages/EventLedgerPage'));
 const FileExplorerPage = lazy(() => import('../../pages/FileExplorerPage'));
+const ExtensionsPage = lazy(() => import('../../pages/ExtensionsPage'));
+const SystemMonitorPage = lazy(() => import('../../pages/SystemMonitorPage'));
+const AuditLogPage = lazy(() => import('../../pages/AuditLogPage'));
+const ApiKeysPage = lazy(() => import('../../pages/ApiKeysPage'));
 
 /* ------------------------------------------------------------------ */
 /*  Props / Types                                                      */
@@ -76,10 +83,14 @@ export interface ToolManagementDialogProps {
   onClose: () => void;
 }
 
-type PageTab = 'tools' | 'whitelist' | 'templates' | 'credentials' | 'history' | 'browser' | 'pdf' | 'file-explorer' | 'execution-history' | 'template-market' | 'event-ledger';
+type PageTab = 'tools' | 'extensions' | 'monitor' | 'audit' | 'apiKeys' | 'whitelist' | 'templates' | 'credentials' | 'history' | 'browser' | 'pdf' | 'file-explorer' | 'execution-history' | 'template-market' | 'event-ledger';
 
 const PAGE_TABS: TabDef[] = [
-  { key: 'tools',           label: '工具查看', icon: <ExtensionOutlinedIcon sx={{ fontSize: 18 }} /> },
+  { key: 'tools',           label: '插件管理', icon: <ExtensionOutlinedIcon sx={{ fontSize: 18 }} /> },
+  { key: 'extensions',      label: '扩展管理', icon: <HubIcon sx={{ fontSize: 18 }} /> },
+  { key: 'monitor',         label: '系统监控', icon: <MonitorHeartIcon sx={{ fontSize: 18 }} /> },
+  { key: 'audit',           label: '审计日志', icon: <AssessmentIcon sx={{ fontSize: 18 }} /> },
+  { key: 'apiKeys',         label: 'API Key',  icon: <VpnKeyIcon sx={{ fontSize: 18 }} /> },
   { key: 'whitelist',       label: '白名单',   icon: <VpnLockIcon sx={{ fontSize: 18 }} /> },
   { key: 'templates',       label: 'API 模板', icon: <ApiIcon sx={{ fontSize: 18 }} /> },
   { key: 'credentials',     label: 'API 凭证', icon: <VpnKeyIcon sx={{ fontSize: 18 }} /> },
@@ -330,6 +341,38 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
     switch (activePage) {
       case 'tools':
         return renderToolsPage();
+      case 'extensions':
+        return (
+          <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
+            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
+              <ExtensionsPage />
+            </Suspense>
+          </Box>
+        );
+      case 'monitor':
+        return (
+          <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
+            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
+              <SystemMonitorPage />
+            </Suspense>
+          </Box>
+        );
+      case 'audit':
+        return (
+          <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
+            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
+              <AuditLogPage />
+            </Suspense>
+          </Box>
+        );
+      case 'apiKeys':
+        return (
+          <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
+            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
+              <ApiKeysPage />
+            </Suspense>
+          </Box>
+        );
       case 'whitelist':
         return (
           <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>

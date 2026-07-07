@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Alert, Button, CircularProgress, useTheme,
   ToggleButtonGroup, ToggleButton, TextField, Slider, Switch, FormControlLabel,
@@ -101,7 +101,11 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) =>
   const gs = getGrayScale(isDark);
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('basic');
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('model');
-  const { models: modelList, defaultModelId, updateModels, isLoading, error, reload } = useModels();
+  const { models: modelList, defaultModelId, updateModels, isLoading, error, reload, ensureInitialized } = useModels();
+
+  useEffect(() => {
+    ensureInitialized();
+  }, [ensureInitialized]);
   const [soulEditorOpen, setSoulEditorOpen] = useState(false);
   const [soulEditorFileType, setSoulEditorFileType] = useState<'soul' | 'user'>('soul');
 

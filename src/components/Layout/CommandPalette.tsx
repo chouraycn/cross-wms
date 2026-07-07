@@ -111,8 +111,29 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose }) => {
   const ctx = useContext(AppSettingsContext);
   const aiEngine = ctx?.settings?.aiEngine;
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 搜索防抖：150ms 延迟，减少频繁过滤
+  const handleQueryChange = useCallback((value: string) => {
+    setQuery(value);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedQuery(value);
+    }, 150);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     loadAllUsageStats();
@@ -166,7 +187,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose }) => {
   }, [userSkills]);
 
   const allResults = useMemo((): CommandResult[] => {
-    const q = query.toLowerCase().trim();
+    const q = debouncedQuery.toLowerCase().trim();
 
     let results: CommandResult[] = [];
 
@@ -183,11 +204,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose }) => {
     }
 
     return results;
-  }, [query, sessionResults, skillResults]);
+  }, [debouncedQuery, sessionResults, skillResults]);
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [query]);
+  }, [debouncedQuery]);
 
   useEffect(() => {
     if (open && inputRef.current) {
@@ -200,6 +221,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose }) => {
   useEffect(() => {
     if (!open) {
       setQuery('');
+      setDebouncedQuery('');
       setActiveIndex(0);
     }
   }, [open]);
@@ -288,7 +310,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose }) => {
           <input
             ref={inputRef}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="搜索对话、技能、页面或输入命令..."
             style={{

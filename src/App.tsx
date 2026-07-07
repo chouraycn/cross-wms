@@ -15,6 +15,7 @@ import UpdateNotification from './components/UpdateNotification';
 import WindowDragBar from './components/Layout/WindowDragBar';
 import { ChatThread as CDFChatThread } from './components/CDFChat/index.js';
 import { ChatProvider, useChatSession } from './contexts/ChatContext';
+import { WarehouseCapabilityProvider } from './capabilities/warehouse/WarehouseCapabilityContext';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
 import { automationEngine } from './services/automation';
@@ -838,7 +839,8 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <AppSettingsProvider>
         <ModelsProvider>
-          <ChatProvider defaultModel="auto">
+          <WarehouseCapabilityProvider>
+            <ChatProvider defaultModel="auto">
               <ThemedApp>
                 <HashRouter>
                   <UpdateProvider>
@@ -846,7 +848,8 @@ const App: React.FC = () => {
                   </UpdateProvider>
                 </HashRouter>
               </ThemedApp>
-          </ChatProvider>
+            </ChatProvider>
+          </WarehouseCapabilityProvider>
         </ModelsProvider>
       </AppSettingsProvider>
     </ErrorBoundary>

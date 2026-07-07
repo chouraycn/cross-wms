@@ -33,13 +33,11 @@ import WebIcon from '@mui/icons-material/Web';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import MemoryIcon from '@mui/icons-material/Memory';
-import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import HistoryIcon from '@mui/icons-material/History';
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 import AssessmentIcon from '@mui/icons-material/Assessment';
-import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
@@ -47,12 +45,10 @@ import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import CircularProgress from '@mui/material/CircularProgress';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ExtensionIcon from '@mui/icons-material/Extension';
 import SelfImprovementIcon from '@mui/icons-material/SelfImprovement';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import FlagIcon from '@mui/icons-material/Flag';
 import ImageIcon from '@mui/icons-material/Image';
-import HubIcon from '@mui/icons-material/Hub';
 import { getGrayScale } from '../../constants/theme';
 import { Session } from '../../types/chat';
 
@@ -156,11 +152,6 @@ const navItems: NavItem[] = [
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
   { label: 'Workshop', path: '/skills/workshop', icon: <TerminalIcon />, desc: '提案管理' },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
-  { label: '插件', path: '/plugins', icon: <ExtensionIcon />, desc: '插件管理' },
-  { label: '扩展', path: '/extensions', icon: <HubIcon />, desc: '扩展管理' },
-  { label: '监控', path: '/system-monitor', icon: <MonitorHeartIcon />, desc: '系统监控' },
-  { label: '审计', path: '/audit-log', icon: <AssessmentIcon />, desc: '审计日志' },
-  { label: 'API Key', path: '/api-keys', icon: <VpnKeyOutlinedIcon />, desc: 'API Key 管理' },
 
   {
     label: '仓储管理',
@@ -248,9 +239,13 @@ const NavList: React.FC<NavListProps> = ({
     archiveSession: archiveSessionFromContext,
     restoreSession: restoreSessionFromContext,
     archivedSessions,
+    archivedSessionsTotal,
+    isLoadingArchived,
+    loadMoreArchivedSessions,
     setActiveSessionId,
   } = useChatSidebar();
   const historyListRef = useRef<HTMLDivElement>(null);
+  const archivedListRef = useRef<HTMLDivElement>(null);
 
   // 即时选中状态：点击时立即切换视觉反馈，不等待父组件 state 传播
   const [justClickedSessionId, setJustClickedSessionId] = useState<string | null>(null);
@@ -296,6 +291,22 @@ const NavList: React.FC<NavListProps> = ({
   // v6.0: 归档区展开状态
   const [archivedExpanded, setArchivedExpanded] = useState(false);
 
+  // 展开归档区时自动加载第一页
+  useEffect(() => {
+    if (archivedExpanded && archivedSessions.length === 0 && !isLoadingArchived) {
+      loadMoreArchivedSessions();
+    }
+  }, [archivedExpanded, archivedSessions.length, isLoadingArchived, loadMoreArchivedSessions]);
+
+  // 归档列表滚动触底时加载更多
+  const handleArchivedScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const nearBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 60;
+    if (nearBottom && !isLoadingArchived && archivedSessions.length < archivedSessionsTotal) {
+      loadMoreArchivedSessions();
+    }
+  }, [isLoadingArchived, archivedSessions.length, archivedSessionsTotal, loadMoreArchivedSessions]);
+
   // 点击导航项时清除历史对话的即时选中状态
   const handleNavClick = useCallback((path: string) => {
     setJustClickedSessionId(null);
@@ -334,19 +345,14 @@ const NavList: React.FC<NavListProps> = ({
   const iconNormal = gs.textMuted;
 
   // ===== AI 完成标记（v1.9.3） =====
-  const [completedSessions, setCompletedSessions] = useState<Set<string>>(new Set());
+  // 使用 ref 代替 useState，避免触发组件重渲染
+  const completedSessionsRef = useRef<Set<string>>(new Set());
   const prevSessionsRef = useRef<Session[]>(sessions);
-  // v3.2: 使用 ref 追踪 completedSessions，避免 useEffect 不必要的重复执行
-  const completedSessionsRef = useRef<Set<string>>(completedSessions);
-
-  useEffect(() => {
-    completedSessionsRef.current = completedSessions;
-  }, [completedSessions]);
 
   React.useEffect(() => {
     const prev = prevSessionsRef.current;
+    let changed = false;
     for (const session of sessions) {
-      // 使用 ref 读取，避免闭包问题
       if (completedSessionsRef.current.has(session.id)) continue;
       const prevSession = prev.find(s => s.id === session.id);
       if (!prevSession) continue;
@@ -356,19 +362,21 @@ const NavList: React.FC<NavListProps> = ({
         prevLast?.role === 'assistant' && prevLast?.isStreaming &&
         currLast?.role === 'assistant' && !currLast?.isStreaming
       ) {
-        setCompletedSessions(prev => new Set(prev).add(session.id));
+        completedSessionsRef.current.add(session.id);
+        changed = true;
       }
     }
     prevSessionsRef.current = sessions;
-  }, [sessions]);
+    if (changed) {
+      // 强制重新渲染以显示完成标记
+      setJustClickedSessionId(justClickedSessionId);
+    }
+  }, [sessions, justClickedSessionId]);
 
   const clearCompletedFlag = useCallback((sessionId: string) => {
-    setCompletedSessions(prev => {
-      const next = new Set(prev);
-      next.delete(sessionId);
-      return next;
-    });
-  }, []);
+    completedSessionsRef.current.delete(sessionId);
+    setJustClickedSessionId(justClickedSessionId);
+  }, [justClickedSessionId]);
 
   // ===== 渲染单个会话项 =====
   const renderSessionItem = useCallback((session: Session) => {
@@ -381,7 +389,7 @@ const NavList: React.FC<NavListProps> = ({
 
     const lastMsg = session.messages[session.messages.length - 1];
     const isThinking = lastMsg?.role === 'assistant' && lastMsg?.isStreaming === true;
-    const showCompleted = completedSessions.has(session.id) && !isThinking;
+    const showCompleted = completedSessionsRef.current.has(session.id) && !isThinking;
 
     return (
       <ListItem
@@ -531,7 +539,7 @@ const NavList: React.FC<NavListProps> = ({
         </ListItemButton>
       </ListItem>
     );
-  }, [justClickedSessionId, activeSessionId, completedSessions, bgActive, bgActiveHover, bgHover, textActive, textSecondary, textMuted, gs, setActiveSessionId, onSelectSession, togglePinSession, handleDeleteSession, archiveSessionFromContext, clearCompletedFlag]);
+  }, [justClickedSessionId, activeSessionId, bgActive, bgActiveHover, bgHover, textActive, textSecondary, textMuted, gs, setActiveSessionId, onSelectSession, togglePinSession, handleDeleteSession, archiveSessionFromContext, clearCompletedFlag]);
 
   return (
     <List
@@ -861,7 +869,7 @@ const NavList: React.FC<NavListProps> = ({
                 component="span"
                 sx={{ ml: 0.75, fontSize: '0.625rem', fontWeight: 500, color: gs.textDisabled }}
               >
-                {sortedArchivedSessions.length}
+                {archivedSessionsTotal > 0 ? archivedSessionsTotal : sortedArchivedSessions.length}
               </Box>
             </Typography>
             {archivedExpanded
@@ -870,46 +878,20 @@ const NavList: React.FC<NavListProps> = ({
             }
           </ListItemButton>
           <Collapse in={archivedExpanded} timeout="auto">
-            <Box sx={{ overflow: 'hidden', maxHeight: 200 }}>
-              {sortedArchivedSessions.length <= 20 ? (
-                sortedArchivedSessions.map((s) => (
-                  <ListItem key={s.id} disablePadding sx={{ display: 'block' }}>
-                    <ListItemButton
-                      onClick={() => {
-                        onLoadSessionContext?.(s.id);
-                      }}
-                      sx={{
-                        minHeight: 32,
-                        px: 1.5,
-                        py: 0,
-                        borderRadius: '4px',
-                        '&:hover': { backgroundColor: bgHover },
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          fontSize: '0.75rem',
-                          color: gs.textSecondary,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          flex: 1,
-                        }}
-                      >
-                        {(s.title && s.title !== '新对话') ? s.title : '未命名对话'}
-                      </Typography>
-                      <Typography sx={{ fontSize: '0.6rem', color: gs.textDisabled, ml: 1, flexShrink: 0 }}>
-                        {getRelativeTime(s.archivedAt || s.updatedAt)}
-                      </Typography>
-                    </ListItemButton>
-                  </ListItem>
-                ))
+            <Box
+              ref={archivedListRef}
+              onScroll={handleArchivedScroll}
+              sx={{ overflowY: 'auto', maxHeight: 200, position: 'relative' }}
+            >
+              {sortedArchivedSessions.length === 0 && isLoadingArchived ? (
+                <Box sx={{ py: 2, textAlign: 'center' }}>
+                  <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled }}>
+                    加载中...
+                  </Typography>
+                </Box>
               ) : (
-                <VirtualList
-                  items={sortedArchivedSessions}
-                  itemHeight={32}
-                  height={200}
-                  renderItem={(s: Session) => (
+                <>
+                  {sortedArchivedSessions.map((s) => (
                     <ListItem key={s.id} disablePadding sx={{ display: 'block' }}>
                       <ListItemButton
                         onClick={() => {
@@ -940,8 +922,22 @@ const NavList: React.FC<NavListProps> = ({
                         </Typography>
                       </ListItemButton>
                     </ListItem>
+                  ))}
+                  {isLoadingArchived && (
+                    <Box sx={{ py: 1, textAlign: 'center' }}>
+                      <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled }}>
+                        加载更多...
+                      </Typography>
+                    </Box>
                   )}
-                />
+                  {!isLoadingArchived && archivedSessions.length >= archivedSessionsTotal && archivedSessionsTotal > 0 && (
+                    <Box sx={{ py: 1, textAlign: 'center' }}>
+                      <Typography sx={{ fontSize: '0.6rem', color: gs.textDisabled }}>
+                        共 {archivedSessionsTotal} 个归档
+                      </Typography>
+                    </Box>
+                  )}
+                </>
               )}
             </Box>
           </Collapse>

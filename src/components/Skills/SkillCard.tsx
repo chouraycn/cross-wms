@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Chip, IconButton, Tooltip, CircularProgress, Paper,
@@ -433,7 +433,7 @@ const SkillCard = React.memo<SkillCardProps>(function SkillCard({
   );
 });
 
-export default SkillCard;
+export default memo(SkillCard);
 
 // 用于类型重导出
 export type { TaskType };

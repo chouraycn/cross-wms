@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Box, Typography, CircularProgress, Alert, Button, Divider, useTheme } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ModelManager from '../../shared/ModelManager';
@@ -6,7 +6,12 @@ import { useModels } from '../../../contexts/ModelsContext';
 import { getGrayScale } from '../../../constants/theme';
 
 const ModelManagement: React.FC = () => {
-  const { models: modelList, defaultModelId, updateModels, isLoading, error, reload } = useModels();
+  const { models: modelList, defaultModelId, updateModels, isLoading, error, reload, ensureInitialized } = useModels();
+
+  useEffect(() => {
+    ensureInitialized();
+  }, [ensureInitialized]);
+
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);

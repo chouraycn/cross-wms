@@ -186,6 +186,22 @@ export default defineConfig(({ mode }) => ({
           ) {
             return 'vendor-markdown';
           }
+          // React Query — 数据请求状态管理
+          if (id.includes('node_modules/@tanstack/react-query/')) {
+            return 'vendor-react-query';
+          }
+          // DnD Kit — 拖拽功能（WorkflowBuilder 使用）
+          if (id.includes('node_modules/@dnd-kit/')) {
+            return 'vendor-dnd-kit';
+          }
+          // Lucide React — 图标库
+          if (id.includes('node_modules/lucide-react/')) {
+            return 'vendor-lucide';
+          }
+          // Axios — HTTP 客户端
+          if (id.includes('node_modules/axios/')) {
+            return 'vendor-axios';
+          }
           // 不设 catch-all vendor-misc（会导致循环依赖），其余小包留在 main chunk
           return undefined;
         },

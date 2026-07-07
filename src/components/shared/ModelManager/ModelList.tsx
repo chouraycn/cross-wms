@@ -6,7 +6,7 @@
  * - variant="compact": 用 <List> 精简版渲染（类似 SettingsModelManagement）
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import {
   Box, Typography, Button, Chip, Switch, IconButton, Tooltip, Checkbox,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -581,4 +581,4 @@ const ModelList: React.FC<ModelListProps> = (props) => {
   }
 };
 
-export default ModelList;
+export default memo(ModelList);

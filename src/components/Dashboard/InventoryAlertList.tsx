@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, memo } from 'react';
 import {
   Card,
   CardContent,
@@ -361,4 +361,4 @@ const InventoryAlertList: React.FC<InventoryAlertListProps> = ({ warehouseId = A
   );
 };
 
-export default InventoryAlertList;
+export default memo(InventoryAlertList);
