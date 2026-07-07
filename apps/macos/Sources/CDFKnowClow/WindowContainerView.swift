@@ -36,7 +36,7 @@ final class WindowContainerView: NSView {
 
     // MARK: - 属性
 
-    /// WebView 子视图
+    /// 主 WebView 子视图
     let webView: NSView
 
     /// 拖动模式
@@ -61,7 +61,7 @@ final class WindowContainerView: NSView {
 
     /// 创建窗口容器视图
     /// - Parameters:
-    ///   - webView: 要嵌入的 WebView
+    ///   - webView: 要嵌入的主 WebView
     ///   - dragMode: 拖动模式，默认为仅顶部 30px 区域拖动
     init(webView: NSView, dragMode: DragMode = .topOnly(height: defaultTopDragHeight)) {
         self.webView = webView
@@ -71,7 +71,7 @@ final class WindowContainerView: NSView {
         wantsLayer = true
         layer?.backgroundColor = .clear
 
-        setupWebView()
+        setupSubviews()
         setupPressGesture()
         setupDoubleClickGesture()
     }
@@ -83,7 +83,8 @@ final class WindowContainerView: NSView {
 
     // MARK: - 设置
 
-    private func setupWebView() {
+    private func setupSubviews() {
+        // 添加主 WebView
         webView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(webView)
 
