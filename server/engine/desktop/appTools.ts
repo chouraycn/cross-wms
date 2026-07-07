@@ -20,41 +20,14 @@ export async function handleDesktopAppLaunch(args: Record<string, unknown>): Pro
     // v2.3.4: 对于浏览器 + URL 的组合，不启动系统浏览器，改为返回 URL 让前端在应用内窗口打开
     const isBrowserApp = BROWSER_APPS.has(app.toLowerCase().trim());
     if (isBrowserApp && url) {
-      // 通过本地 Python HTTP 服务器中转，创建应用内 pywebview 窗口
-      try {
-        const http = await import('http');
-        const payload = JSON.stringify({ url });
-        const req = http.request({
-          hostname: '127.0.0.1',
-          port: 9988,
-          path: '/api/open-url',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(payload),
-          },
-          timeout: 5000,
-        });
-        req.write(payload);
-        req.end();
-        return JSON.stringify({
-          success: true,
-          output: `已在应用内窗口打开: ${url}`,
-          app,
-          url,
-          inApp: true,
-        });
-      } catch (e: any) {
-        // 如果 Python HTTP 服务器未就绪，返回 URL 但标记为应用内方式已尝试
-        return JSON.stringify({
-          success: true,
-          output: `链接已准备好: ${url}（请在应用内查看）`,
-          app,
-          url,
-          inApp: true,
-          note: 'HTTP bridge unavailable, URL shown inline',
-        });
-      }
+      // 返回 URL 让前端处理（Swift 原生应用通过 WKNavigationDelegate 在外部浏览器打开）
+      return JSON.stringify({
+        success: true,
+        output: `链接已准备好: ${url}`,
+        app,
+        url,
+        inApp: true,
+      });
     }
 
     let command: string;

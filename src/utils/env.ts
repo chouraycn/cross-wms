@@ -2,12 +2,12 @@
  * 统一环境检测工具
  */
 
-/** 是否在 pywebview 桌面应用环境中运行 */
+/** 是否在桌面应用环境中运行（Swift 原生 WKWebView 模拟了 pywebview 接口） */
 export function isPyWebView(): boolean {
   return typeof window !== 'undefined' && 'pywebview' in window;
 }
 
-/** 是否在 WKWebView 中运行（pywebview macOS 使用 WKWebView） */
+/** 是否在 WKWebView 中运行（Swift 原生应用使用 WKWebView） */
 export function isWKWebView(): boolean {
   return typeof window !== 'undefined' && (
     'pywebview' in window ||
