@@ -1,6 +1,6 @@
 import Foundation
 import OSLog
-import CrossWMSIPC
+import CDFKnowIPC
 import SQLite3
 
 let dbLogger = Logger(subsystem: "com.cdf.knowclow", category: "database")
@@ -13,7 +13,7 @@ actor DatabaseManager {
     private var databasesDirectory: URL {
         let fm = FileManager.default
         let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = appSupport.appendingPathComponent("CrossWMS/databases", isDirectory: true)
+        let dir = appSupport.appendingPathComponent("CDFKnow/databases", isDirectory: true)
         if !fm.fileExists(atPath: dir.path) {
             try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
         }

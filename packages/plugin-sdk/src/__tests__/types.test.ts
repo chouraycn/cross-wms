@@ -31,7 +31,7 @@ describe('Plugin Types', () => {
       description: 'A test plugin',
       type: 'tool',
       entry: './dist/index.js',
-      dependencies: ['@cross-wms/plugin-sdk'],
+      dependencies: ['@cdf-know/plugin-sdk'],
       permissions: ['read:memory', 'write:memory'],
       hooks: ['before_chat'],
       tools: ['test-tool'],

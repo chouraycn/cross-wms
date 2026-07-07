@@ -3,17 +3,17 @@
  * Cross-WMS TUI 独立启动入口
  *
  * 用法：
- *   cross-wms-tui                     # 使用默认配置（embedded 后端）
- *   cross-wms-tui --http              # 使用 HTTP 后端连接运行中的服务
- *   cross-wms-tui --url http://host:3001  # 自定义 HTTP 后端地址
- *   cross-wms-tui --model <id>        # 指定默认模型
- *   cross-wms-tui --agent <id>        # 指定默认 Agent
- *   cross-wms-tui --session <id>      # 恢复指定会话
- *   cross-wms-tui --theme dark|light|auto  # 设置主题
- *   cross-wms-tui --config <path>     # 使用自定义配置文件
- *   cross-wms-tui --save-config       # 生成默认配置文件
- *   cross-wms-tui --version           # 显示版本
- *   cross-wms-tui --help              # 显示帮助
+ *   cdf-know-tui                     # 使用默认配置（embedded 后端）
+ *   cdf-know-tui --http              # 使用 HTTP 后端连接运行中的服务
+ *   cdf-know-tui --url http://host:3001  # 自定义 HTTP 后端地址
+ *   cdf-know-tui --model <id>        # 指定默认模型
+ *   cdf-know-tui --agent <id>        # 指定默认 Agent
+ *   cdf-know-tui --session <id>      # 恢复指定会话
+ *   cdf-know-tui --theme dark|light|auto  # 设置主题
+ *   cdf-know-tui --config <path>     # 使用自定义配置文件
+ *   cdf-know-tui --save-config       # 生成默认配置文件
+ *   cdf-know-tui --version           # 显示版本
+ *   cdf-know-tui --help              # 显示帮助
  *
  * 作为模块使用：
  *   import { runTui, ChatServiceBackend, HttpBackend, loadTuiConfig } from './tui/index.js';
@@ -65,7 +65,7 @@ function printHelp(): void {
 Cross-WMS TUI - 独立终端应用
 
 用法:
-  cross-wms-tui [options]
+  cdf-know-tui [options]
 
 选项:
   --http                    使用 HTTP 后端连接运行中的服务
@@ -100,21 +100,21 @@ Cross-WMS TUI - 独立终端应用
 
 示例:
   # 启动本地嵌入式 TUI
-  cross-wms-tui
+  cdf-know-tui
 
   # 连接到远端服务
-  cross-wms-tui --http --url http://192.168.1.10:3001
+  cdf-know-tui --http --url http://192.168.1.10:3001
 
   # 使用特定模型启动
-  cross-wms-tui --model gpt-4o
+  cdf-know-tui --model gpt-4o
 
   # 恢复上次会话
-  cross-wms-tui --session sess_abc123
+  cdf-know-tui --session sess_abc123
 
   # 生成默认配置文件
-  cross-wms-tui --save-config
+  cdf-know-tui --save-config
 
-更多信息请访问：https://github.com/cross-wms/tui
+更多信息请访问：https://github.com/cdf-know/tui
 `);
 }
 
@@ -218,7 +218,7 @@ async function main(): Promise<void> {
   }
 
   if (args.version) {
-    console.log(`cross-wms-tui v${VERSION}`);
+    console.log(`cdf-know-tui v${VERSION}`);
     process.exit(0);
   }
 
@@ -255,7 +255,7 @@ async function main(): Promise<void> {
     console.log(`✓ 已保存配置: ${path}`);
     console.log('\n你可以编辑此文件以自定义 TUI 行为');
     console.log('启动 TUI:');
-    console.log('  cross-wms-tui --config ' + path);
+    console.log('  cdf-know-tui --config ' + path);
     process.exit(0);
   }
 

@@ -1,5 +1,5 @@
 import AppKit
-import CrossWMSIPC
+import CDFKnowIPC
 import Logging
 
 /// 系统授权管理窗口 — 原生 macOS 权限管理界面

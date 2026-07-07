@@ -1,7 +1,7 @@
 {
-  "name": "@cross-wms/llm-core",
+  "name": "@cdf-know/llm-core",
   "version": "1.0.0",
-  "description": "Cross-WMS LLM Core - 大语言模型核心模块",
+  "description": "CDFKnow LLM Core - 大语言模型核心模块",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": ["dist"],

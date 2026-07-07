@@ -49,10 +49,6 @@ export interface SkillInstallSpec {
   gitBranch?: string;
   /** 归档 URL 或路径（archive 源） */
   archiveUrl?: string;
-  /** 市场名称（market 源） */
-  marketName?: string;
-  /** 市场版本（market 源） */
-  marketVersion?: string;
   /** HTTP 下载 URL（http 源） */
   downloadUrl?: string;
   /** 校验和（SHA-256，可选） */
@@ -103,24 +99,12 @@ export interface InstallResult {
 
 /** 默认安装策略 */
 const DEFAULT_POLICY: SkillInstallPolicy = {
-  allowedSources: ['local', 'git', 'archive', 'market', 'http'],
+  allowedSources: ['local', 'git', 'archive', 'http'],
   allowedGitHosts: ['github.com', 'gitlab.com', 'bitbucket.org', 'gitee.com'],
   allowOverwrite: false,
   requireSecurityScan: true,
   maxDownloadBytes: 100 * 1024 * 1024, // 100MB
   timeoutMs: 5 * 60 * 1000, // 5 分钟
-};
-
-/** 预定义市场源（market 源使用） */
-const MARKET_SOURCES: Record<string, { baseUrl: string; format: 'git' | 'archive' }> = {
-  'official': {
-    baseUrl: 'https://github.com/workbuddy/skills-official',
-    format: 'git',
-  },
-  'community': {
-    baseUrl: 'https://github.com/workbuddy/skills-community',
-    format: 'git',
-  },
 };
 
 /** 活跃安装记录 */
@@ -204,20 +188,7 @@ export class SkillInstallManager {
       }
     }
 
-    // 3. 市场源校验
-    if (spec.source === 'market') {
-      if (!spec.marketName) {
-        return { allowed: false, reason: 'Market 源缺少 marketName 字段' };
-      }
-      if (!MARKET_SOURCES[spec.marketName]) {
-        return {
-          allowed: false,
-          reason: `未知市场: ${spec.marketName}（已知: ${Object.keys(MARKET_SOURCES).join(', ')}）`,
-        };
-      }
-    }
-
-    // 4. 必填字段
+    // 3. 必填字段
     if (spec.source === 'local' && !spec.localPath) {
       return { allowed: false, reason: 'Local 源缺少 localPath 字段' };
     }
@@ -381,8 +352,6 @@ export class SkillInstallManager {
         return this.installFromGit(spec, installId, emit);
       case 'archive':
         return this.installFromArchive(spec, installId, emit);
-      case 'market':
-        return this.installFromMarket(spec, installId, emit);
       case 'http':
         return this.installFromHttp(spec, installId, emit);
       default:
@@ -577,38 +546,7 @@ export class SkillInstallManager {
     }
   }
 
-  // ===================== 3.4 market 安装 =====================
-
-  /**
-   * 从市场源安装
-   */
-  private async installFromMarket(
-    spec: SkillInstallSpec,
-    installId: string,
-    emit: (phase: InstallProgress['phase'], message: string, percent?: number, error?: string) => void,
-  ): Promise<InstallResult> {
-    const market = MARKET_SOURCES[spec.marketName!];
-    if (!market) {
-      return {
-        success: false,
-        durationMs: 0,
-        message: '未知市场',
-        error: `Market ${spec.marketName} 不存在`,
-      };
-    }
-
-    // 将 market 源转换为 git 源
-    const gitSpec: SkillInstallSpec = {
-      source: 'git',
-      gitUrl: market.baseUrl,
-      gitBranch: spec.marketVersion || 'main',
-      targetDir: spec.targetDir,
-    };
-    emit('download', `从市场 ${spec.marketName} 拉取`, 20);
-    return this.installFromGit(gitSpec, installId, emit);
-  }
-
-  // ===================== 3.5 http 安装 =====================
+  // ===================== 3.4 http 安装 =====================
 
   /**
    * 从 HTTP URL 下载安装
@@ -749,7 +687,7 @@ export class SkillInstallManager {
    * 从 spec 推导子目录名
    */
   private deriveSubDirName(spec: SkillInstallSpec): string {
-    const seed = spec.gitUrl || spec.downloadUrl || spec.archiveUrl || spec.localPath || spec.marketName || 'unknown';
+    const seed = spec.gitUrl || spec.downloadUrl || spec.archiveUrl || spec.localPath || 'unknown';
     const hash = crypto.createHash('sha1').update(seed).digest('hex').slice(0, 8);
     return `${spec.source}_${hash}`;
   }

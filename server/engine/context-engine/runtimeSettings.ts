@@ -7,7 +7,7 @@ import type {
 } from './types.js';
 
 const RUNTIME_SETTINGS_SCHEMA_VERSION = 1;
-const DEFAULT_HOST = 'cross-wms';
+const DEFAULT_HOST = 'cdf-know';
 
 function createDefaultRuntimeSettings(
   overrides?: Partial<ContextEngineRuntimeSettings>

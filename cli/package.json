@@ -1,10 +1,10 @@
 {
-  "name": "@cross-wms/cli",
+  "name": "@cdf-know/cli",
   "version": "1.0.0",
-  "description": "CLI tools for cross-wms",
+  "description": "CLI tools for cdf-know",
   "type": "module",
   "bin": {
-    "crosswms": "./bin/crosswms.js"
+    "cdfknow": "./bin/cdfknow.js"
   },
   "scripts": {
     "build": "tsc",
@@ -13,11 +13,11 @@
   },
   "dependencies": {
     "commander": "^12.1.0",
-    "@cross-wms/plugin-sdk": "workspace:*",
-    "@cross-wms/agent-core": "workspace:*",
-    "@cross-wms/llm-core": "workspace:*",
-    "@cross-wms/memory-host-sdk": "workspace:*",
-    "@cross-wms/skill-core": "workspace:*"
+    "@cdf-know/plugin-sdk": "workspace:*",
+    "@cdf-know/agent-core": "workspace:*",
+    "@cdf-know/llm-core": "workspace:*",
+    "@cdf-know/memory-host-sdk": "workspace:*",
+    "@cdf-know/skill-core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

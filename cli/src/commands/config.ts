@@ -84,7 +84,7 @@ configCommand
       const configPath = getConfigPath();
       const defaultConfig = {
         app: {
-          name: 'cross-wms',
+          name: 'cdf-know',
           port: 3000,
         },
         models: {
@@ -113,7 +113,7 @@ configCommand
       
       const defaultConfig = {
         app: {
-          name: 'cross-wms',
+          name: 'cdf-know',
           port: 3000,
         },
         models: {

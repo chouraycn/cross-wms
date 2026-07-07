@@ -1,7 +1,7 @@
 // 对话（语音/Talk）模式配置规范化与解析
 // 参考 openclaw/src/config/talk.ts 与 talk-defaults.ts 的设计，
 // 提供对话模式配置、TTS（文本转语音）配置、provider 规范化与活动 provider 解析能力。
-// cross-wms 为自包含实现，不依赖 openclaw 的 types.gateway / types.secrets 模块。
+// cdf-know 为自包含实现，不依赖 openclaw 的 types.gateway / types.secrets 模块。
 
 import { logger } from '../logger.js';
 

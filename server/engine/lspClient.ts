@@ -138,7 +138,7 @@ export class LSPClient {
     const initParams = {
       processId: this.process?.pid,
       clientInfo: {
-        name: 'cross-wms-lsp-client',
+        name: 'cdf-know-lsp-client',
         version: '1.0.0',
       },
       rootPath: this.workspaceRoot,

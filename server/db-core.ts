@@ -56,20 +56,59 @@ export interface BuiltinStatusPatchRow {
 
 const DB_PATH = AppPaths.chatDbFile;
 const DB_BACKUP_PATH = AppPaths.chatDbFile + '.bak';
+const DB_FIRST_RUN_MARKER = AppPaths.chatDbFile + '.initialized';
 
 let db: Database.Database | null = null;
 let walMaintenance: SqliteWalMaintenance | null = null;
 
-/** v1.9.3: 备份数据库 */
-function backupDatabase(): void {
+/** v1.9.4: 检测是否首次启动（用于决定是否执行完整校验） */
+function isFirstRun(): boolean {
+  return !fs.existsSync(DB_FIRST_RUN_MARKER);
+}
+
+/** v1.9.4: 标记数据库已初始化完成 */
+function markInitialized(): void {
   try {
-    if (fs.existsSync(DB_PATH)) {
-      fs.copyFileSync(DB_PATH, DB_BACKUP_PATH);
-      logger.info('[DB] 数据库已备份到 chat.db.bak');
-    }
+    fs.writeFileSync(DB_FIRST_RUN_MARKER, new Date().toISOString());
+    logger.info('[DB] 已标记数据库初始化完成');
   } catch (e) {
-    logger.warn('[DB] 数据库备份失败:', e);
+    logger.warn('[DB] 无法写入初始化标记:', e);
   }
+}
+
+/** v1.9.4: 备份数据库（异步执行，仅首次启动或间隔超过24小时才执行） */
+function backupDatabase(): void {
+  // 首次启动：必须备份
+  // 后续启动：检查上次备份时间，超过24小时才备份
+  const isFirst = isFirstRun();
+
+  // 检查备份文件年龄
+  let backupAgeMs = Infinity;
+  if (fs.existsSync(DB_BACKUP_PATH)) {
+    try {
+      const stat = fs.statSync(DB_BACKUP_PATH);
+      backupAgeMs = Date.now() - stat.mtimeMs;
+    } catch {}
+  }
+
+  const shouldBackup = isFirst || backupAgeMs > 24 * 60 * 60 * 1000; // 24小时
+
+  if (!shouldBackup) {
+    logger.info('[DB] 跳过备份（上次备份不足24小时）');
+    return;
+  }
+
+  // 异步执行备份，不阻塞启动
+  setTimeout(() => {
+    try {
+      if (fs.existsSync(DB_PATH)) {
+        fs.copyFileSync(DB_PATH, DB_BACKUP_PATH);
+        logger.info('[DB] 数据库已备份到 chat.db.bak');
+      }
+    } catch (e) {
+      logger.warn('[DB] 数据库备份失败:', e);
+    }
+  }, 2000);
 }
 
 /** v1.9.3: 从备份恢复数据库 */
@@ -201,46 +240,76 @@ export function initDb(): Database.Database {
     logger.info('[DB] 已切换到内存数据库（数据不会持久化）');
   }
 
-  // v1.5.68: 启动时做完整性检查
-  try { db.pragma('wal_checkpoint(RESTART)'); } catch {
-    logger.warn('[DB] WAL checkpoint 失败（可能是只读模式），跳过');
-  }
-  try {
-    const integrityResult = db.pragma('integrity_check') as Array<{ integrity_check: string }> | string;
-    let isOk = false;
-    if (typeof integrityResult === 'string') {
-      isOk = integrityResult === 'ok';
-      if (!isOk) {
-        logger.error('[DB] ❌ integrity_check 失败:', integrityResult);
-      }
-    } else if (Array.isArray(integrityResult) && integrityResult.length > 0) {
-      const first = integrityResult[0]?.integrity_check;
-      isOk = first === 'ok';
-      if (!isOk) {
-        logger.error('[DB] ❌ integrity_check 失败:', first);
-      }
-    }
+  // v1.9.4: 完整性检查策略优化
+  // - 首次启动：执行完整 integrity_check
+  // - 后续启动：仅快速检查 WAL 残留 + quick_check
+  // - 异常场景（WAL 残留、崩溃恢复）：完整检查
+  const hasWalResidue = fs.existsSync(DB_PATH + '-wal');
+  const isFirst = isFirstRun();
+  const shouldFullCheck = isFirst || hasWalResidue || !fs.existsSync(DB_PATH);
 
-    if (!isOk) {
-      logger.warn('[ChatDB] 数据库完整性检查失败，尝试从 WAL 恢复...');
-      db.pragma('wal_checkpoint(TRUNCATE)');
-      const recheck = db.pragma('integrity_check') as Array<{ integrity_check: string }> | string;
-      let recheckOk = false;
-      if (typeof recheck === 'string') {
-        recheckOk = recheck === 'ok';
-      } else if (Array.isArray(recheck) && recheck.length > 0) {
-        recheckOk = recheck[0]?.integrity_check === 'ok';
-      }
-      if (recheckOk) {
-        logger.info('[DB] ✅ WAL 恢复成功，完整性检查通过');
-      } else {
-        logger.error('[ChatDB] 数据库无法恢复，需手动修复');
-      }
-    } else {
-      logger.info('[DB] ✅ integrity_check 通过');
+  if (shouldFullCheck) {
+    logger.info('[DB] 执行完整 integrity_check（首次启动或异常恢复）');
+    try { db.pragma('wal_checkpoint(RESTART)'); } catch {
+      logger.warn('[DB] WAL checkpoint 失败（可能是只读模式），跳过');
     }
-  } catch (e) {
-    logger.warn('[DB] integrity_check 异常:', e);
+    try {
+      const integrityResult = db.pragma('integrity_check') as Array<{ integrity_check: string }> | string;
+      let isOk = false;
+      if (typeof integrityResult === 'string') {
+        isOk = integrityResult === 'ok';
+        if (!isOk) {
+          logger.error('[DB] ❌ integrity_check 失败:', integrityResult);
+        }
+      } else if (Array.isArray(integrityResult) && integrityResult.length > 0) {
+        const first = integrityResult[0]?.integrity_check;
+        isOk = first === 'ok';
+        if (!isOk) {
+          logger.error('[DB] ❌ integrity_check 失败:', first);
+        }
+      }
+
+      if (!isOk) {
+        logger.warn('[ChatDB] 数据库完整性检查失败，尝试从 WAL 恢复...');
+        db.pragma('wal_checkpoint(TRUNCATE)');
+        const recheck = db.pragma('integrity_check') as Array<{ integrity_check: string }> | string;
+        let recheckOk = false;
+        if (typeof recheck === 'string') {
+          recheckOk = recheck === 'ok';
+        } else if (Array.isArray(recheck) && recheck.length > 0) {
+          recheckOk = recheck[0]?.integrity_check === 'ok';
+        }
+        if (recheckOk) {
+          logger.info('[DB] ✅ WAL 恶复成功，完整性检查通过');
+        } else {
+          logger.error('[ChatDB] 数据库无法恢复，需手动修复');
+        }
+      } else {
+        logger.info('[DB] ✅ integrity_check 通过');
+      }
+    } catch (e) {
+      logger.warn('[DB] integrity_check 异常:', e);
+    }
+  } else {
+    // 后续正常启动：快速检查
+    logger.info('[DB] 快速启动检查（非首次启动，无 WAL 残留）');
+    try {
+      // quick_check 比 integrity_check 快得多，仅检查关键结构
+      const quickResult = db.pragma('quick_check') as Array<{ quick_check: string }> | string;
+      let quickOk = false;
+      if (typeof quickResult === 'string') {
+        quickOk = quickResult === 'ok';
+      } else if (Array.isArray(quickResult) && quickResult.length > 0) {
+        quickOk = quickResult[0]?.quick_check === 'ok';
+      }
+      if (!quickOk) {
+        logger.warn('[DB] quick_check 异常，降级为完整检查');
+        // 降级为完整检查
+        db.pragma('integrity_check');
+      }
+    } catch (e) {
+      logger.warn('[DB] quick_check 异常:', e);
+    }
   }
 
   // v2.10: 周期 checkpoint 已由 configureSqliteConnectionPragmas 内部定时器管理
@@ -257,6 +326,11 @@ export function initDb(): Database.Database {
   initGoalTables(db);
   initWebhookTables(db);
   initArchiveTables(db);
+
+  // v1.9.4: 标记数据库已初始化完成（后续启动跳过完整检查）
+  if (isFirst) {
+    markInitialized();
+  }
 
   return db;
 }

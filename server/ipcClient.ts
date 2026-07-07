@@ -233,13 +233,6 @@ class CDFKnowIPCClient {
     return null;
   }
 
-  async checkForUpdates(): Promise<boolean> {
-    const response = await this.sendRequest({
-      type: 'checkForUpdates',
-    });
-    return response.ok;
-  }
-
   async openURL(url: string): Promise<boolean> {
     const response = await this.sendRequest({
       type: 'openURL',

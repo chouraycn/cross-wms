@@ -8,6 +8,8 @@
  *     volcengine & byteplus (bytedance)
  *   - 自定义 SVG：kimi, bigmodel (zhipu), ppio, zai, novita,
  *     tencent (腾讯云), wwqglobal, wwqcn, modelark, xai, aws, azure
+ *
+ * v1.9.4: 优化为按需缓存模式，避免每次渲染都重新创建 SVG 元素
  */
 
 import React from 'react';
@@ -84,15 +86,32 @@ export function providerLabel(p: string): string {
 
 const DEFAULT_SIZE = 16;
 
+// v1.9.4: SVG 图标缓存 — 避免每次渲染都重新创建 React 元素
+const iconCache: Map<string, React.ReactElement> = new Map();
+
 /**
  * 获取 provider 对应的品牌 Logo SVG 图标
  * SVG path 来源于 simple-icons 官方库或品牌官方素材
+ *
+ * v1.9.4: 使用缓存机制，相同 provider + size 只创建一次 SVG 元素
  *
  * @param p     provider 标识
  * @param size  图标尺寸（默认 16）
  */
 export function providerIcon(p: string, size: number = DEFAULT_SIZE): React.ReactElement {
-  const s = size;
+  const cacheKey = `${p}:${size}`;
+  const cached = iconCache.get(cacheKey);
+  if (cached) return cached;
+
+  const icon = createProviderIcon(p, size);
+  iconCache.set(cacheKey, icon);
+  return icon;
+}
+
+/**
+ * 创建 provider SVG 图标（内部函数，由 providerIcon 调用）
+ */
+function createProviderIcon(p: string, s: number): React.ReactElement {
 
   switch (p) {
 

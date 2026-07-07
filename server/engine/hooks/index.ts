@@ -1,7 +1,7 @@
 /**
  * 钩子系统 barrel 导出
  *
- * 统一导出 cross-wms 钩子系统的全部模块，对齐 openclaw/src/hooks 架构：
+ * 统一导出 cdf-know 钩子系统的全部模块，对齐 openclaw/src/hooks 架构：
  *   types → policy → workspace → loader → hooks → install → update
  *
  * 用法：

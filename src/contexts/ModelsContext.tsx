@@ -56,7 +56,7 @@ export function useModels(): ModelsContextValue {
 }
 
 /** localStorage 缓存键 */
-const MODELS_CACHE_KEY = 'cross-wms:models-cache';
+const MODELS_CACHE_KEY = 'cdf-know:models-cache';
 const MODELS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 分钟缓存有效期
 
 interface ModelsCachePayload {

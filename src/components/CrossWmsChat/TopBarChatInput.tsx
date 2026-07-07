@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Paper, Chip, Typography, Popover, useTheme, IconButton, Collapse, Tooltip,
@@ -29,7 +29,7 @@ import { useModels } from '../../contexts/ModelsContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useChatSession } from '../../contexts/ChatContext';
 import ChatToolbar, { type ModelOption } from './ChatToolbar';
-import AISettingsDialog from '../Layout/AISettingsDialog';
+const AISettingsDialog = React.lazy(() => import('../Layout/AISettingsDialog'));
 import { SessionReferenceSelector } from './SessionReferenceSelector';
 import type { SendAgentMessageOptions } from '../../hooks/useAgentChat';
 import { uploadFile } from '../../services/api';
@@ -1182,10 +1182,12 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         </Collapse>
 
       {/* AI 设置弹窗（模型管理） */}
-      <AISettingsDialog
-        open={showAISettings}
-        onClose={() => setShowAISettings(false)}
-      />
+      <Suspense fallback={null}>
+        <AISettingsDialog
+          open={showAISettings}
+          onClose={() => setShowAISettings(false)}
+        />
+      </Suspense>
 
       {/* Skill selector dropdown — @ 触发 */}
       {showSkills && (

@@ -1,8 +1,8 @@
 {
-  "name": "@cross-wms/qwen-extension",
+  "name": "@cdf-know/qwen-extension",
   "version": "1.0.0",
   "private": true,
-  "description": "Qwen LLM provider extension for cross-wms",
+  "description": "Qwen LLM provider extension for cdf-know",
   "type": "module",
   "main": "./index.ts",
   "scripts": {
@@ -11,7 +11,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@cross-wms/plugin-sdk": "workspace:*",
+    "@cdf-know/plugin-sdk": "workspace:*",
     "typescript": "^5.7.0"
   },
   "crossclaw": {

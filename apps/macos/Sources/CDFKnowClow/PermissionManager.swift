@@ -3,7 +3,7 @@ import ApplicationServices
 import AVFoundation
 import CoreGraphics
 import CoreLocation
-import CrossWMSIPC
+import CDFKnowIPC
 import Foundation
 import Logging
 import Speech

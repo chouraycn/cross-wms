@@ -470,7 +470,7 @@ export function mergePluginSchema(
 // 基础 schema 构建
 // ============================================================================
 
-// cross-wms 的基础配置 schema（简化版，聚焦核心配置维度）
+// cdf-know 的基础配置 schema（简化版，聚焦核心配置维度）
 function buildBaseConfigSchemaObject(): JsonSchemaObject {
   return {
     type: 'object',

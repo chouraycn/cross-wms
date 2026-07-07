@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: cross-wms-server
+    container_name: cdf-know-server
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
     environment:
@@ -44,4 +44,4 @@ services:
 
 networks:
   default:
-    name: cross-wms-network
+    name: cdf-know-network

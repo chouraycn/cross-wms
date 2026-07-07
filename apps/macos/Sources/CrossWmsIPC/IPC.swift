@@ -484,6 +484,6 @@ extension Request: Codable {
 public let controlSocketPath: String = {
     let home = FileManager().homeDirectoryForCurrentUser
     return home
-        .appendingPathComponent("Library/Application Support/CrossWMS/control.sock")
+        .appendingPathComponent("Library/Application Support/CDFKnow/control.sock")
         .path
 }()

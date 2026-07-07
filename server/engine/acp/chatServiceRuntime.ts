@@ -1,7 +1,7 @@
 /**
  * ChatServiceRuntime — ACP runtime 实现，桥接 chatService
  *
- * 这是 ACP 引擎与 cross-wms 聊天能力的连接器：
+ * 这是 ACP 引擎与 cdf-know 聊天能力的连接器：
  * - 实现 AcpRuntime 接口（createSession / close / executeTurn）
  * - executeTurn 内部调用 runChatSession 执行实际对话
  * - 将 SSE 事件流转换为 AcpTurnEvent 异步迭代器

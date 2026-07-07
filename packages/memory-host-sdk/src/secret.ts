@@ -65,7 +65,7 @@ export class MemorySecretManager {
   }
 
   hash(text: string, salt?: string): string {
-    const saltValue = salt || 'cross-wms-memory-salt';
+    const saltValue = salt || 'cdf-know-memory-salt';
     return createHash('sha256')
       .update(saltValue + text)
       .digest('hex');
@@ -78,7 +78,7 @@ export class MemorySecretManager {
       return this.keyCache.get(keyId)!;
     }
 
-    const keyStr = this.config.encryptionKey || process.env.MEMORY_ENCRYPTION_KEY || 'cross-wms-default-memory-encryption-key-2024';
+    const keyStr = this.config.encryptionKey || process.env.MEMORY_ENCRYPTION_KEY || 'cdf-know-default-memory-encryption-key-2024';
     const key = createHash('sha256').update(keyStr).digest();
     this.keyCache.set(keyId, key);
 

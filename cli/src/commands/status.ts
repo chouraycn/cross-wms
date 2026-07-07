@@ -1,7 +1,7 @@
 import { Command } from 'commander';
-import { UnifiedPluginRegistry } from '@cross-wms/plugin-sdk';
+import { UnifiedPluginRegistry } from '@cdf-know/plugin-sdk';
 import { extensionLoader } from '../../../../extensions/index.js';
-import { AgentHarness } from '@cross-wms/agent-core';
+import { AgentHarness } from '@cdf-know/agent-core';
 
 export const statusCommand = new Command('status')
   .description('Show system status')
@@ -16,7 +16,7 @@ statusCommand
     const extensions = extensionLoader.list();
     const harness = new AgentHarness();
     
-    console.log('=== cross-wms Status ===');
+    console.log('=== cdf-know Status ===');
     console.log('');
     
     console.log('Plugins:');

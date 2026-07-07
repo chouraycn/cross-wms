@@ -10,7 +10,7 @@ import { logger } from '../../logger.js';
 import { resolveDaemonPaths, type DaemonPaths } from './paths.js';
 
 export interface LaunchdConfig {
-  /** launchd 标签，默认 com.cross-wms.daemon */
+  /** launchd 标签，默认 com.cdf-know.daemon */
   label?: string;
   /** 启动命令参数（第一项为可执行程序） */
   programArguments: string[];
@@ -86,7 +86,7 @@ function resolvePaths(config: LaunchdConfig): DaemonPaths {
  * WorkingDirectory、EnvironmentVariables、StandardOutPath、StandardErrorPath。
  */
 export function generateLaunchdPlist(config: LaunchdConfig): string {
-  const label = config.label ?? 'com.cross-wms.daemon';
+  const label = config.label ?? 'com.cdf-know.daemon';
   const paths = resolvePaths(config);
   const stdoutPath = config.stdoutPath ?? paths.stdoutLogPath;
   const stderrPath = config.stderrPath ?? paths.stderrLogPath;
@@ -139,7 +139,7 @@ export function generateLaunchdPlist(config: LaunchdConfig): string {
  * 安装前会先 unload 旧实例，避免重复加载报错。
  */
 export async function installLaunchd(config: LaunchdConfig): Promise<{ plistPath: string }> {
-  const label = config.label ?? 'com.cross-wms.daemon';
+  const label = config.label ?? 'com.cdf-know.daemon';
   const paths = resolvePaths(config);
   const plistPath = paths.launchdPlistPath;
 
@@ -161,7 +161,7 @@ export async function installLaunchd(config: LaunchdConfig): Promise<{ plistPath
 
 /** 卸载 LaunchAgent：launchctl unload 并移除 plist 文件。 */
 export async function uninstallLaunchd(config: LaunchdConfig): Promise<void> {
-  const label = config.label ?? 'com.cross-wms.daemon';
+  const label = config.label ?? 'com.cdf-know.daemon';
   const paths = resolvePaths(config);
   const plistPath = paths.launchdPlistPath;
 
@@ -176,7 +176,7 @@ export async function uninstallLaunchd(config: LaunchdConfig): Promise<void> {
 
 /** 启动 LaunchAgent（等同于 load；若已加载则尝试 kickstart）。 */
 export async function startLaunchd(config: LaunchdConfig): Promise<void> {
-  const label = config.label ?? 'com.cross-wms.daemon';
+  const label = config.label ?? 'com.cdf-know.daemon';
   const paths = resolvePaths(config);
   const plistPath = paths.launchdPlistPath;
   const load = await execCmd('launchctl', ['load', plistPath]);
@@ -198,12 +198,12 @@ export async function stopLaunchd(config: LaunchdConfig): Promise<void> {
   if (unload.code !== 0) {
     logger.warn(`[launchd] launchctl unload 返回非零退出码: ${unload.stderr || unload.stdout}`);
   }
-  logger.info(`[launchd] 已停止 LaunchAgent: ${config.label ?? 'com.cross-wms.daemon'}`);
+  logger.info(`[launchd] 已停止 LaunchAgent: ${config.label ?? 'com.cdf-know.daemon'}`);
 }
 
 /** 查询 LaunchAgent 状态：plist 是否存在、是否已加载、是否运行、PID。 */
 export async function getLaunchdStatus(config: LaunchdConfig): Promise<LaunchdStatus> {
-  const label = config.label ?? 'com.cross-wms.daemon';
+  const label = config.label ?? 'com.cdf-know.daemon';
   const paths = resolvePaths(config);
   const plistPath = paths.launchdPlistPath;
 

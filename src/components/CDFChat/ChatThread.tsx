@@ -2,7 +2,7 @@
  * CDFChat 新版对话容器（基于 OpenClaw 事件驱动架构）
  *
  * 特性：
- * - 沿用旧版chat (CrossWmsChat) 的MUI样式
+ * - 沿用旧版chat (CDFKnowChat) 的MUI样式
  * - 基于 OpenClaw 风格的 Agent 事件系统
  * - 整合 Agent 身份系统（5 个预定义 Agent）
  * - 整合 Skills 技能选择器
@@ -11,7 +11,7 @@
  * - 消息列表（虚拟滚动）
  * - 输入区域（技能"/"、会话引用"@"、附件）
  */
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, IconButton, Tooltip, useTheme, Collapse,
@@ -23,7 +23,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import CdfLogoAnimation from '../../assets/cdf-logo-animation.svg';
-import ChatSidePanel from './ChatSidePanel.js';
+const ChatSidePanel = React.lazy(() => import('./ChatSidePanel.js'));
 import TerminalPanel from './TerminalPanel.js';
 import { ChatMessageList } from '../CrossWmsChat/ChatMessageList.js';
 import { TopBarChatInput } from '../CrossWmsChat/TopBarChatInput.js';
@@ -41,7 +41,8 @@ import type { AgentItemEventData, SendAgentMessageOptions } from '../../hooks/us
 import { useAgentChat } from '../../hooks/useAgentChat.js';
 import { formatHelpText } from '../../hooks/useSlashCommands.js';
 import GoalIndicator from '../Goal/GoalIndicator.js';
-import { ApprovalDialog, type ApprovalRequest, type ApprovalHistoryItem, type ApprovalConfig } from './ApprovalDialog.js';
+import type { ApprovalRequest, ApprovalHistoryItem, ApprovalConfig } from './ApprovalDialog.js';
+const ApprovalDialog = React.lazy(() => import('./ApprovalDialog.js').then(m => ({ default: m.ApprovalDialog })));
 
 // 任务 6: 右侧侧边栏展开时，AI 对话内容 maxWidth 缩小 5%（左右各 5%）
 const CHAT_MAX_WIDTH_WITH_SIDEPANEL = Math.round(CHAT_MAX_WIDTH * 0.9);
@@ -1123,15 +1124,17 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         </Box>
         {/* 右侧面板：待办 + 上下文 + 浏览器（仅在有内容时显示） */}
         {sidePanelOpen && !isEmpty && (
-          <ChatSidePanel
-            sessionKey={session.id}
-            sessionTitle={sessionTitle}
-            messages={chatMessages}
-            createdAt={session.createdAt}
-            updatedAt={session.updatedAt}
-            model={session.model}
-            compactionInfo={compactionInfo}
-          />
+          <Suspense fallback={null}>
+            <ChatSidePanel
+              sessionKey={session.id}
+              sessionTitle={sessionTitle}
+              messages={chatMessages}
+              createdAt={session.createdAt}
+              updatedAt={session.updatedAt}
+              model={session.model}
+              compactionInfo={compactionInfo}
+            />
+          </Suspense>
         )}
         {/* 终端面板（右侧） */}
         {terminalOpen && (
@@ -1156,21 +1159,23 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       </Box>
 
       {/* 审批对话框 */}
-      <ApprovalDialog
-        open={showApprovalDialog}
-        requests={approvalRequests}
-        history={approvalHistory}
-        config={approvalConfig}
-        onApprove={handleApproveRequest}
-        onReject={handleRejectRequest}
-        onApproveAlways={handleApproveAlways}
-        onAddToWhitelist={handleAddToWhitelist}
-        onApproveAll={handleApproveAll}
-        onRejectAll={handleRejectAll}
-        onTimeout={handleApprovalTimeout}
-        onClose={handleApprovalDialogClose}
-        darkMode={isDark}
-      />
+      <Suspense fallback={null}>
+        <ApprovalDialog
+          open={showApprovalDialog}
+          requests={approvalRequests}
+          history={approvalHistory}
+          config={approvalConfig}
+          onApprove={handleApproveRequest}
+          onReject={handleRejectRequest}
+          onApproveAlways={handleApproveAlways}
+          onAddToWhitelist={handleAddToWhitelist}
+          onApproveAll={handleApproveAll}
+          onRejectAll={handleRejectAll}
+          onTimeout={handleApprovalTimeout}
+          onClose={handleApprovalDialogClose}
+          darkMode={isDark}
+        />
+      </Suspense>
 
       {/* 消息右键菜单 */}
       {contextMenu.open && contextMenu.message && (
@@ -1276,19 +1281,21 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         </Collapse>
 
         {/* 审批对话框 */}
-        <ApprovalDialog
-          open={showApprovalDialog}
-          requests={approvalRequests}
-          history={approvalHistory}
-          onApprove={handleApproveRequest}
-          onReject={handleRejectRequest}
-          onApproveAlways={handleApproveAlways}
-          onAddToWhitelist={handleAddToWhitelist}
-          onApproveAll={handleApproveAll}
-          onRejectAll={handleRejectAll}
-          onClose={() => setShowApprovalDialog(false)}
-          darkMode={isDark}
-        />
+        <Suspense fallback={null}>
+          <ApprovalDialog
+            open={showApprovalDialog}
+            requests={approvalRequests}
+            history={approvalHistory}
+            onApprove={handleApproveRequest}
+            onReject={handleRejectRequest}
+            onApproveAlways={handleApproveAlways}
+            onAddToWhitelist={handleAddToWhitelist}
+            onApproveAll={handleApproveAll}
+            onRejectAll={handleRejectAll}
+            onClose={() => setShowApprovalDialog(false)}
+            darkMode={isDark}
+          />
+        </Suspense>
 
         {/* 消息右键菜单 */}
         {contextMenu.message && contextMenu.position && (

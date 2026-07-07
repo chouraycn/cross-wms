@@ -1,6 +1,10 @@
 import { initSentry } from './sentry.js';
 initSentry();
 
+// 端到端性能采集：记录后端启动总耗时起点
+import { recordBackendPhase } from './performance/performanceStore.js';
+const serverStartupStartedAt = performance.now();
+
 import express from 'express';
 import http from 'http';
 import fs from 'fs';
@@ -35,58 +39,59 @@ const _permissionEmitter = new EventEmitter(); void _permissionEmitter;
 
 import { startMemoryMonitor } from './logging/diagnostic-memory.js';
 
-// Business data routes
-import warehousesRouter from './routes/warehouses.js';
-import inventoryRouter from './routes/inventory.js';
-import transitRouter from './routes/transit.js';
-import inboundRouter from './routes/inbound.js';
-import outboundRouter from './routes/outbound.js';
-import partnersRouter from './routes/partners.js';
-import transferOrderRouter from './routes/transfer.js';
-import skillsRouter from './routes/skills.js';
-import settingsRouter from './routes/settings.js';
-import migrateRouter from './routes/migrate.js';
-import chainRoutes from './routes/chainRoutes.js';
-import automationRoutes from './routes/automation.js';
-import triggerRoutes from './routes/trigger.js';
-
-// Projects & Tasks routes
-import projectsRouter from './routes/projects.js';
-import tasksRouter from './routes/tasks.js';
-
-import { ensureWmsTables } from './dao/wmsSkillDao.js';
-
-// WMS skill routes
-import wmsQualityRoutes from './routes/wms-quality.js';
-import wmsInventoryRoutes from './routes/wms-inventory.js';
-import wmsOutboundRoutes from './routes/wms-outbound.js';
-import wmsAlertRoutes from './routes/wms-alert.js';
-import wmsReportRoutes from './routes/wms-report.js';
-import wmsReplenishmentRoutes from './routes/wms-replenishment.js';
-
-// Semantic matching routes
-import matchingRoutes from './routes/matching.js';
-
-// Model management routes
-import modelsRoutes from './routes/models.js';
-
-// Inventory NL-Query route (v1.5.0)
-import inventoryNlQueryRouter from './routes/inventory-nl-query.js';
-
-// Extracted routes
+// Core routes (sync — high-frequency)
 import chatRouter from './routes/chat.js';
 import sessionsRouter from './routes/sessions.js';
 import foldersRouter from './routes/folders.js';
-import memoryRouter from './routes/memory.js';
 import eventsRouter from './routes/events.js';
 import uploadRouter, { UPLOADS_DIR, ensureUploadsDir } from './routes/upload.js';
 import healthRouter from './routes/health.js';
 import healthEnhancedRouter from './routes/healthEnhanced.js';
-import inventoryTransactionsRouter from './routes/inventory-transactions.js';
-
-// Agent routes
+import performanceRouter from './routes/performance.js';
 import agentsRouter from './routes/agents.js';
 import agentChatRouter from './routes/agentChat.js';
+
+// Business data routes (lazy — on-demand loading)
+// import warehousesRouter from './routes/warehouses.js'; → lazyRouter
+// import inventoryRouter from './routes/inventory.js'; → lazyRouter
+// import transitRouter from './routes/transit.js'; → lazyRouter
+// import inboundRouter from './routes/inbound.js'; → lazyRouter
+// import outboundRouter from './routes/outbound.js'; → lazyRouter
+// import partnersRouter from './routes/partners.js'; → lazyRouter
+// import transferOrderRouter from './routes/transfer.js'; → lazyRouter
+// import skillsRouter from './routes/skills.js'; → lazyRouter
+// import settingsRouter from './routes/settings.js'; → lazyRouter
+// import migrateRouter from './routes/migrate.js'; → lazyRouter
+// import chainRoutes from './routes/chainRoutes.js'; → lazyRouter
+// import automationRoutes from './routes/automation.js'; → lazyRouter
+// import triggerRoutes from './routes/trigger.js'; → lazyRouter
+
+// Projects & Tasks routes (lazy)
+// import projectsRouter from './routes/projects.js'; → lazyRouter
+// import tasksRouter from './routes/tasks.js'; → lazyRouter
+
+// WMS skill routes (lazy)
+// import wmsQualityRoutes from './routes/wms-quality.js'; → lazyRouter
+// import wmsInventoryRoutes from './routes/wms-inventory.js'; → lazyRouter
+// import wmsOutboundRoutes from './routes/wms-outbound.js'; → lazyRouter
+// import wmsAlertRoutes from './routes/wms-alert.js'; → lazyRouter
+// import wmsReportRoutes from './routes/wms-report.js'; → lazyRouter
+// import wmsReplenishmentRoutes from './routes/wms-replenishment.js'; → lazyRouter
+
+// Semantic matching routes (lazy)
+// import matchingRoutes from './routes/matching.js'; → lazyRouter
+
+// Model management routes (lazy)
+// import modelsRoutes from './routes/models.js'; → lazyRouter
+
+// Inventory NL-Query route (lazy)
+// import inventoryNlQueryRouter from './routes/inventory-nl-query.js'; → lazyRouter
+
+// Memory routes (lazy)
+// import memoryRouter from './routes/memory.js'; → lazyRouter
+
+// Inventory transactions routes (lazy)
+// import inventoryTransactionsRouter from './routes/inventory-transactions.js'; → lazyRouter
 
 // Services
 import './services/chainExecutor.js'; // side-effect: registers chain event handlers
@@ -210,78 +215,88 @@ app.use('/api/upload', uploadRouter);
 
 app.use(express.json({ limit: '3mb' }));
 
-// 初始化 Skill Watcher
-skillWatcher.init();
+// v1.9.4: 非关键服务延迟初始化（OpenClaw 风格轻量启动）
+// 这些服务在启动时不需要立即就绪，延迟初始化可减少启动时间
+setTimeout(() => {
+  skillWatcher.init();
+  logger.info('[SkillWatcher] 已延迟初始化');
+}, 100);
 
-// 初始化 Soul Watcher（人格规则热更新）
-soulWatcher.init();
+setTimeout(() => {
+  soulWatcher.init();
+  logger.info('[SoulWatcher] 已延迟初始化');
+}, 200);
 
-// 启动渠道健康监控
-channelHealthMonitor.start();
+setTimeout(() => {
+  channelHealthMonitor.start();
+  logger.info('[ChannelHealth] 已延迟启动');
+}, 300);
 
-// 启动配置热重载
-configHotReload.start([
-  AppPaths.modelsFile,
-]);
+setTimeout(() => {
+  configHotReload.start([AppPaths.modelsFile]);
+  logger.info('[ConfigHotReload] 已延迟启动');
+}, 400);
 
-// ========== Extracted API Routes ==========
+// ========== Core API Routes (sync) ==========
 
 app.use('/api', chatRouter);
 app.use('/api', agentChatRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/folders', foldersRouter);
-app.use('/api/memory', memoryRouter);
 app.use('/api', eventsRouter);
 app.use('/api/health', healthRouter);
 app.use('/api/health', healthEnhancedRouter);
-app.use('/api/inventory-transactions', inventoryTransactionsRouter);
-
-// Agent routes
 app.use('/api/agents', agentsRouter);
 
-// ========== Business Data API Routes ==========
+// ========== Business Data API Routes (lazy — on-demand loading) ==========
 
-app.use('/api/warehouses', warehousesRouter);
-app.use('/api/inventory', inventoryRouter);
-app.use('/api/transit-orders', transitRouter);
-app.use('/api/inbound-records', inboundRouter);
-app.use('/api/outbound-records', outboundRouter);
-app.use('/api/transfer-orders', transferOrderRouter);
-app.use('/api/partners', partnersRouter);
-app.use('/api', skillsRouter); // handles /api/user-skills and /api/builtin-status-patches
-app.use('/api/app-settings', settingsRouter);
-app.use('/api/migrate', migrateRouter);
+app.use('/api/warehouses', lazyRouter(() => import('./routes/warehouses.js'), undefined, 'warehouses'));
+app.use('/api/inventory', lazyRouter(() => import('./routes/inventory.js'), undefined, 'inventory'));
+app.use('/api/transit-orders', lazyRouter(() => import('./routes/transit.js'), undefined, 'transit'));
+app.use('/api/inbound-records', lazyRouter(() => import('./routes/inbound.js'), undefined, 'inbound'));
+app.use('/api/outbound-records', lazyRouter(() => import('./routes/outbound.js'), undefined, 'outbound'));
+app.use('/api/transfer-orders', lazyRouter(() => import('./routes/transfer.js'), undefined, 'transfer'));
+app.use('/api/partners', lazyRouter(() => import('./routes/partners.js'), undefined, 'partners'));
+app.use('/api', lazyRouter(() => import('./routes/skills.js'), undefined, 'skills'));
+app.use('/api/app-settings', lazyRouter(() => import('./routes/settings.js'), undefined, 'settings'));
+app.use('/api/migrate', lazyRouter(() => import('./routes/migrate.js'), undefined, 'migrate'));
 
-// Projects & Tasks routes
-app.use('/api/projects', projectsRouter);
-app.use('/api/tasks', tasksRouter);
+// Projects & Tasks routes (lazy)
+app.use('/api/projects', lazyRouter(() => import('./routes/projects.js'), undefined, 'projects'));
+app.use('/api/tasks', lazyRouter(() => import('./routes/tasks.js'), undefined, 'tasks'));
 
-// Automation webhook routes
-app.use('/api/automation', automationRoutes);
+// Automation webhook routes (lazy)
+app.use('/api/automation', lazyRouter(() => import('./routes/automation.js'), undefined, 'automation'));
 
-// Trigger routes (触发器系统)
-app.use('/api/triggers', triggerRoutes);
+// Trigger routes (lazy)
+app.use('/api/triggers', lazyRouter(() => import('./routes/trigger.js'), undefined, 'triggers'));
 
-// Skill chain routes
-app.use('/api/skill-chains', chainRoutes);
-app.use('/api/chain-executions', chainRoutes);
+// Skill chain routes (lazy)
+app.use('/api/skill-chains', lazyRouter(() => import('./routes/chainRoutes.js'), undefined, 'skill-chains'));
+app.use('/api/chain-executions', lazyRouter(() => import('./routes/chainRoutes.js'), undefined, 'chain-executions'));
 
-// WMS skill routes
-app.use('/api/wms/quality', wmsQualityRoutes);
-app.use('/api/wms/inventory-count', wmsInventoryRoutes);
-app.use('/api/wms/outbound-review', wmsOutboundRoutes);
-app.use('/api/wms/alerts', wmsAlertRoutes);
-app.use('/api/wms/reports', wmsReportRoutes);
-app.use('/api/wms/replenishment', wmsReplenishmentRoutes);
+// WMS skill routes (lazy)
+app.use('/api/wms/quality', lazyRouter(() => import('./routes/wms-quality.js'), undefined, 'wms-quality'));
+app.use('/api/wms/inventory-count', lazyRouter(() => import('./routes/wms-inventory.js'), undefined, 'wms-inventory'));
+app.use('/api/wms/outbound-review', lazyRouter(() => import('./routes/wms-outbound.js'), undefined, 'wms-outbound'));
+app.use('/api/wms/alerts', lazyRouter(() => import('./routes/wms-alert.js'), undefined, 'wms-alert'));
+app.use('/api/wms/reports', lazyRouter(() => import('./routes/wms-report.js'), undefined, 'wms-report'));
+app.use('/api/wms/replenishment', lazyRouter(() => import('./routes/wms-replenishment.js'), undefined, 'wms-replenishment'));
 
-// Semantic matching engine routes
-app.use('/api/matching', matchingRoutes);
+// Semantic matching engine routes (lazy)
+app.use('/api/matching', lazyRouter(() => import('./routes/matching.js'), undefined, 'matching'));
 
-// Model management routes
-app.use('/api/models', modelsRoutes);
+// Model management routes (lazy)
+app.use('/api/models', lazyRouter(() => import('./routes/models.js'), undefined, 'models'));
 
-// Inventory NL-Query route (v1.5.0)
-app.use('/api/inventory', inventoryNlQueryRouter);
+// Inventory NL-Query route (lazy)
+app.use('/api/inventory', lazyRouter(() => import('./routes/inventory-nl-query.js'), undefined, 'inventory-nl-query'));
+
+// Memory routes (lazy)
+app.use('/api/memory', lazyRouter(() => import('./routes/memory.js'), undefined, 'memory'));
+
+// Inventory transactions routes (lazy)
+app.use('/api/inventory-transactions', lazyRouter(() => import('./routes/inventory-transactions.js'), undefined, 'inventory-transactions'));
 
 // ========== v3.0+: 低频路由延迟加载（参照 openclaw 轻量入口设计） ==========
 // 这些路由在首次请求时才动态 import，减少启动时间和内存占用
@@ -289,6 +304,7 @@ app.use('/api/plugins', lazyRouter(() => import('./routes/plugins.js'), undefine
 app.use('/api/extensions', lazyRouter(() => import('./routes/extensions.js'), undefined, 'extensions'));
 app.use('/api/message-lifecycle', lazyRouter(() => import('./routes/message-lifecycle.js'), undefined, 'message-lifecycle'));
 app.use('/api/metrics', lazyRouter(() => import('./routes/metrics.js'), undefined, 'metrics'));
+app.use('/api/performance', performanceRouter);
 app.use('/api/audit', lazyRouter(() => import('./routes/audit.js'), undefined, 'audit'));
 app.use('/api/apikeys', lazyRouter(() => import('./routes/apikeys.js'), undefined, 'apikeys'));
 app.use('/api/api-domain-whitelist', lazyRouter(() => import('./routes/apiDomainWhitelist.js'), undefined, 'api-domain-whitelist'));
@@ -345,36 +361,37 @@ registerGatewayRoutes(app);
 app.use(`${API_PREFIX}`, chatRouter);
 app.use(`${API_PREFIX}/sessions`, sessionsRouter);
 app.use(`${API_PREFIX}/folders`, foldersRouter);
-app.use(`${API_PREFIX}/memory`, memoryRouter);
 app.use(`${API_PREFIX}`, eventsRouter);
 app.use(`${API_PREFIX}/health`, healthRouter);
 app.use(`${API_PREFIX}/health`, healthEnhancedRouter);
-app.use(`${API_PREFIX}/inventory-transactions`, inventoryTransactionsRouter);
 app.use(`${API_PREFIX}/agents`, agentsRouter);
-app.use(`${API_PREFIX}/warehouses`, warehousesRouter);
-app.use(`${API_PREFIX}/inventory`, inventoryRouter);
-app.use(`${API_PREFIX}/transit-orders`, transitRouter);
-app.use(`${API_PREFIX}/inbound-records`, inboundRouter);
-app.use(`${API_PREFIX}/outbound-records`, outboundRouter);
-app.use(`${API_PREFIX}/transfer-orders`, transferOrderRouter);
-app.use(`${API_PREFIX}/partners`, partnersRouter);
-app.use(`${API_PREFIX}`, skillsRouter);
-app.use(`${API_PREFIX}/app-settings`, settingsRouter);
-app.use(`${API_PREFIX}/migrate`, migrateRouter);
-app.use(`${API_PREFIX}/projects`, projectsRouter);
-app.use(`${API_PREFIX}/tasks`, tasksRouter);
-app.use(`${API_PREFIX}/automation`, automationRoutes);
-app.use(`${API_PREFIX}/skill-chains`, chainRoutes);
-app.use(`${API_PREFIX}/chain-executions`, chainRoutes);
-app.use(`${API_PREFIX}/wms/quality`, wmsQualityRoutes);
-app.use(`${API_PREFIX}/wms/inventory-count`, wmsInventoryRoutes);
-app.use(`${API_PREFIX}/wms/outbound-review`, wmsOutboundRoutes);
-app.use(`${API_PREFIX}/wms/alerts`, wmsAlertRoutes);
-app.use(`${API_PREFIX}/wms/reports`, wmsReportRoutes);
-app.use(`${API_PREFIX}/wms/replenishment`, wmsReplenishmentRoutes);
-app.use(`${API_PREFIX}/matching`, matchingRoutes);
-app.use(`${API_PREFIX}/models`, modelsRoutes);
-app.use(`${API_PREFIX}/inventory`, inventoryNlQueryRouter);
+app.use(`${API_PREFIX}/memory`, lazyRouter(() => import('./routes/memory.js'), undefined, 'memory'));
+app.use(`${API_PREFIX}/inventory-transactions`, lazyRouter(() => import('./routes/inventory-transactions.js'), undefined, 'inventory-transactions'));
+app.use(`${API_PREFIX}/warehouses`, lazyRouter(() => import('./routes/warehouses.js'), undefined, 'warehouses'));
+app.use(`${API_PREFIX}/inventory`, lazyRouter(() => import('./routes/inventory.js'), undefined, 'inventory'));
+app.use(`${API_PREFIX}/transit-orders`, lazyRouter(() => import('./routes/transit.js'), undefined, 'transit'));
+app.use(`${API_PREFIX}/inbound-records`, lazyRouter(() => import('./routes/inbound.js'), undefined, 'inbound'));
+app.use(`${API_PREFIX}/outbound-records`, lazyRouter(() => import('./routes/outbound.js'), undefined, 'outbound'));
+app.use(`${API_PREFIX}/transfer-orders`, lazyRouter(() => import('./routes/transfer.js'), undefined, 'transfer'));
+app.use(`${API_PREFIX}/partners`, lazyRouter(() => import('./routes/partners.js'), undefined, 'partners'));
+app.use(`${API_PREFIX}`, lazyRouter(() => import('./routes/skills.js'), undefined, 'skills'));
+app.use(`${API_PREFIX}/app-settings`, lazyRouter(() => import('./routes/settings.js'), undefined, 'settings'));
+app.use(`${API_PREFIX}/migrate`, lazyRouter(() => import('./routes/migrate.js'), undefined, 'migrate'));
+app.use(`${API_PREFIX}/projects`, lazyRouter(() => import('./routes/projects.js'), undefined, 'projects'));
+app.use(`${API_PREFIX}/tasks`, lazyRouter(() => import('./routes/tasks.js'), undefined, 'tasks'));
+app.use(`${API_PREFIX}/automation`, lazyRouter(() => import('./routes/automation.js'), undefined, 'automation'));
+app.use(`${API_PREFIX}/skill-chains`, lazyRouter(() => import('./routes/chainRoutes.js'), undefined, 'skill-chains'));
+app.use(`${API_PREFIX}/chain-executions`, lazyRouter(() => import('./routes/chainRoutes.js'), undefined, 'chain-executions'));
+app.use(`${API_PREFIX}/wms/quality`, lazyRouter(() => import('./routes/wms-quality.js'), undefined, 'wms-quality'));
+app.use(`${API_PREFIX}/wms/inventory-count`, lazyRouter(() => import('./routes/wms-inventory.js'), undefined, 'wms-inventory'));
+app.use(`${API_PREFIX}/wms/outbound-review`, lazyRouter(() => import('./routes/wms-outbound.js'), undefined, 'wms-outbound'));
+app.use(`${API_PREFIX}/wms/alerts`, lazyRouter(() => import('./routes/wms-alert.js'), undefined, 'wms-alert'));
+app.use(`${API_PREFIX}/wms/reports`, lazyRouter(() => import('./routes/wms-report.js'), undefined, 'wms-report'));
+app.use(`${API_PREFIX}/wms/replenishment`, lazyRouter(() => import('./routes/wms-replenishment.js'), undefined, 'wms-replenishment'));
+app.use(`${API_PREFIX}/matching`, lazyRouter(() => import('./routes/matching.js'), undefined, 'matching'));
+app.use(`${API_PREFIX}/models`, lazyRouter(() => import('./routes/models.js'), undefined, 'models'));
+app.use(`${API_PREFIX}/inventory`, lazyRouter(() => import('./routes/inventory-nl-query.js'), undefined, 'inventory-nl-query'));
+app.use(`${API_PREFIX}/performance`, performanceRouter);
 app.use(`${API_PREFIX}/plugins`, lazyRouter(() => import('./routes/plugins.js'), undefined, 'plugins'));
 app.use(`${API_PREFIX}/api-domain-whitelist`, lazyRouter(() => import('./routes/apiDomainWhitelist.js'), undefined, 'api-domain-whitelist'));
 app.use(`${API_PREFIX}/browser`, lazyRouter(() => import('./routes/browser.js'), undefined, 'browser'));
@@ -431,14 +448,19 @@ server.listen(PORT, async () => {
   const addr = server.address();
   const actualPort = typeof addr === 'object' && addr ? addr.port : PORT;
   setServerPort(actualPort);
+  recordBackendPhase('server:http-listen', performance.now() - serverStartupStartedAt);
   logger.info(`CDF Know Clow Chat Server running on port ${actualPort}`);
+
+  const dbInitStart = performance.now();
   const db = initDb();
+  recordBackendPhase('server:db-init', performance.now() - dbInitStart);
 
   // v1.5.203: 预热模型配置缓存（含 Keychain 注入），避免首次 GET /api/models 阻塞
   // 不 await，不阻塞启动流程；失败仅 warn
   loadModelsConfig().catch(e => logger.warn('[Server] 模型缓存预热失败:', e instanceof Error ? e.message : String(e)));
 
   // 并行初始化 Tool Registry、插件加载和扩展加载器，减少启动阻塞
+  const coreInitStart = performance.now();
   await Promise.all([
     initDefaultTools().then(() => {
       logger.info('[Tool Registry] 工具注册完成:', listTools().join(', '));
@@ -455,12 +477,17 @@ server.listen(PORT, async () => {
       logger.warn('[Extension Loader] 扩展加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
     }),
   ]);
+  recordBackendPhase('server:core-init', performance.now() - coreInitStart);
 
-  // v8.0: 初始化 Agent Registry（加载内置 Agent 模板）
-  agentRegistry.initialize();
+  // v1.9.4: Agent Registry 和 Soul 文件改为后台初始化，不阻塞启动流程
+  setTimeout(() => {
+    agentRegistry.initialize();
+    logger.info('[AgentRegistry] 已后台初始化');
+  }, 0);
 
-  // v8.5: 初始化人格层文件（首次启动时复制 SOUL.md / USER.md 到 ~/.cdf-know-clow/）
-  initDefaultSoulFiles();
+  setTimeout(() => {
+    initDefaultSoulFiles();
+  }, 100);
 
   // v4.0: 启动时连接所有已启用的 MCP Server（异步，不阻塞主流程）
   setTimeout(async () => {
@@ -490,8 +517,14 @@ server.listen(PORT, async () => {
   // 启动内存压力监控（60s 采样间隔）
   startMemoryMonitor(60_000);
 
-  // 初始化 WMS 行业技能表
-  ensureWmsTables();
+  // v1.9.4: WMS 表初始化改为后台执行，不阻塞启动
+  setTimeout(() => {
+    ensureWmsTables();
+    logger.info('[WMS] 行业技能表已后台初始化');
+  }, 500);
+
+  // 端到端性能采集：后端启动完成
+  recordBackendPhase('server:startup-complete', performance.now() - serverStartupStartedAt);
 
   // v9.0: 初始化 Event Ledger (事件溯源) — 后台执行，不阻塞启动
   // 事件账本是辅助系统，延迟初始化不影响核心功能

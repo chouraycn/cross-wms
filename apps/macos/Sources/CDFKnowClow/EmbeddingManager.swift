@@ -1,7 +1,7 @@
 import Foundation
 import Accelerate
 import OSLog
-import CrossWMSIPC
+import CDFKnowIPC
 
 private let embeddingLogger = Logger(subsystem: "com.cdf.knowclow", category: "embedding")
 

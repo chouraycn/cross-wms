@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense, Profiler } from 'react';
 import { HashRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box, useTheme } from '@mui/material';
@@ -9,9 +9,7 @@ import type { AppearanceConfig, AccentColor } from './contexts/AppSettingsContex
 import { ModelsProvider } from './contexts/ModelsContext';
 import { isPyWebView } from './services/tencentDocsApi';
 import { getGrayScale, FONT_SIZES, BORDER_RADII, SPACING, SHADOWS } from './constants/theme';
-import { UpdateProvider } from './contexts/UpdateContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
-import UpdateNotification from './components/UpdateNotification';
 import WindowDragBar from './components/Layout/WindowDragBar';
 import { ChatThread as CDFChatThread } from './components/CDFChat/index.js';
 import { ChatProvider, useChatSession } from './contexts/ChatContext';
@@ -20,6 +18,7 @@ import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
 import { automationEngine } from './services/automation';
 import { isWKWebView } from './utils/env';
+import { recordRender, markPhase, endPhase } from './services/performanceTelemetry';
 
 // v3.2: WKWebView 环境检测，用于禁用高成本效果
 const IS_WKWEBVIEW = isWKWebView();
@@ -596,6 +595,30 @@ const SettingsRedirect: React.FC<{ onOpenSettings: (open: boolean) => void }> = 
   return null;
 };
 
+/** React Profiler 包装器：记录渲染耗时，仅采集超过一帧（16ms）的渲染 */
+const PerformanceProfiler: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => {
+  const onRender: React.ProfilerOnRenderCallback = (
+    profilerId,
+    phase,
+    actualDuration,
+    baseDuration,
+    startTime,
+    commitTime,
+  ) => {
+    // 只记录明显的慢渲染，避免海量数据
+    if (actualDuration < 16 && phase === 'update') return;
+    recordRender({
+      component: profilerId,
+      phase: phase === 'mount' ? 'mount' : 'update',
+      actualDurationMs: Math.round(actualDuration * 100) / 100,
+      baseDurationMs: Math.round(baseDuration * 100) / 100,
+      startTime: Math.round(startTime * 100) / 100,
+      commitTime: Math.round(commitTime * 100) / 100,
+    });
+  };
+  return <Profiler id={id} onRender={onRender}>{children}</Profiler>;
+};
+
 const MainLayout: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -805,8 +828,6 @@ const MainLayout: React.FC = () => {
         </Box>
       </Box>
 
-      {/* 自动更新通知 — 左下角 */}
-      <UpdateNotification />
     </Box>
   </ToastProvider>
 );
@@ -830,8 +851,13 @@ const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const App: React.FC = () => {
+  // App 函数组件开始执行即视为 UI 渲染起点
+  markPhase('app:render');
+
   useEffect(() => {
     automationEngine.start();
+    // App 首次渲染完成
+    endPhase('app:render');
     return () => automationEngine.stop();
   }, []);
 
@@ -843,9 +869,9 @@ const App: React.FC = () => {
             <ChatProvider defaultModel="auto">
               <ThemedApp>
                 <HashRouter>
-                  <UpdateProvider>
+                  <PerformanceProfiler id="MainLayout">
                     <MainLayout />
-                  </UpdateProvider>
+                  </PerformanceProfiler>
                 </HashRouter>
               </ThemedApp>
             </ChatProvider>

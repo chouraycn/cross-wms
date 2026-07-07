@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { getGrayScale } from '../../constants/theme';
-import { useUpdateContext } from '../../contexts/UpdateContext';
+import { APP_VERSION } from '../Settings/sharedStyles';
 
 // ===================== Props =====================
 
@@ -17,8 +17,7 @@ const SidebarLogo = React.memo<SidebarLogoProps>(function SidebarLogo({ collapse
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
 
-  // 从 UpdateContext 获取版本号（pywebview 环境下可能动态覆盖）
-  const { currentVersion } = useUpdateContext();
+  const currentVersion = APP_VERSION;
 
   return (
     <Box

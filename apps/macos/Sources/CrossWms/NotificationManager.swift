@@ -1,5 +1,5 @@
 import Foundation
-import CrossWMSIPC
+import CDFKnowIPC
 import Security
 import UserNotifications
 import Logging

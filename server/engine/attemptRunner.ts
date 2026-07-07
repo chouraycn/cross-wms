@@ -2,7 +2,7 @@
  * AttemptRunner — 统一 attempt 调度器
  *
  * 参照 openclaw 的多 attempt runner 并发架构设计，
- * 统一 cross-wms 现有的 MessageQueue / SubagentRunner /
+ * 统一 cdf-know 现有的 MessageQueue / SubagentRunner /
  * executionLanes / BackgroundTaskManager 等并发能力，
  * 为未来的 agentic 模式和多任务并发提供统一抽象。
  *

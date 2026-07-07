@@ -14,7 +14,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "paths": {
-      "@cross-wms/llm-core": ["../llm-core/src"]
+      "@cdf-know/llm-core": ["../llm-core/src"]
     }
   },
   "include": ["src/**/*.ts"],

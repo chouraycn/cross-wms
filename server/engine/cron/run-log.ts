@@ -2,7 +2,7 @@
  * Run Log - cron 运行日志记录
  *
  * 对齐 openclaw/src/cron/run-log.ts 的职责：记录每次 cron 运行的开始、成功、失败，
- * 并提供历史查询能力。cross-wms 采用进程内内存存储实现，按 jobId 分桶并保留最近
+ * 并提供历史查询能力。cdf-know 采用进程内内存存储实现，按 jobId 分桶并保留最近
  * N 条记录，避免长跑实例无界增长。
  */
 
