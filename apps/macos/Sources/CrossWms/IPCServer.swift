@@ -1,5 +1,5 @@
 import Foundation
-import CrossWMSIPC
+import CDFKnowIPC
 import Logging
 
 actor IPCServer {

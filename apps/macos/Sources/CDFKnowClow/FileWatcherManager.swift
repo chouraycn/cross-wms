@@ -1,7 +1,7 @@
 import Foundation
 import CoreServices
 import OSLog
-import CrossWMSIPC
+import CDFKnowIPC
 
 let fileWatcherLogger = Logger(subsystem: "com.cdf.knowclow", category: "fileWatcher")
 

@@ -6,7 +6,7 @@
 // 类型定义（最小化的配置类型，避免引入完整的 OpenClawConfig）
 // ============================================================================
 
-export type CrossWmsConfig = {
+export type CDFKnowConfig = {
   messages?: {
     ackReactionScope?: string;
     [key: string]: unknown;
@@ -103,7 +103,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 // 消息默认值
 // ============================================================================
 
-export function applyMessageDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
+export function applyMessageDefaults(cfg: CDFKnowConfig): CDFKnowConfig {
   const messages = cfg.messages;
   const hasAckScope = messages?.ackReactionScope !== undefined;
   if (hasAckScope) {
@@ -118,7 +118,7 @@ export function applyMessageDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
 // 会话默认值
 // ============================================================================
 
-export function applySessionDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
+export function applySessionDefaults(cfg: CDFKnowConfig): CDFKnowConfig {
   const session = cfg.session;
   if (!session || session.mainKey === undefined) {
     return cfg;
@@ -178,7 +178,7 @@ function normalizeAgentModelConfigForDefaults(value: unknown): unknown {
   return mutated ? next : value;
 }
 
-export function applyModelDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
+export function applyModelDefaults(cfg: CDFKnowConfig): CDFKnowConfig {
   let nextCfg = cfg;
 
   // 规范化 agents.list 中每个 agent 的 model / models 引用
@@ -266,7 +266,7 @@ export function applyModelDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
 // Agent 默认值
 // ============================================================================
 
-export function applyAgentDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
+export function applyAgentDefaults(cfg: CDFKnowConfig): CDFKnowConfig {
   const agents = cfg.agents;
   const defaults = agents?.defaults;
   const hasMax = typeof defaults?.maxConcurrent === 'number' && Number.isFinite(defaults.maxConcurrent);
@@ -317,7 +317,7 @@ export function applyAgentDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
 // Cron 默认值
 // ============================================================================
 
-export function applyCronDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
+export function applyCronDefaults(cfg: CDFKnowConfig): CDFKnowConfig {
   const raw = cfg.cron?.maxConcurrentRuns;
   if (typeof raw === 'number' && Number.isFinite(raw)) {
     return cfg;
@@ -335,7 +335,7 @@ export function applyCronDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
 // 日志默认值
 // ============================================================================
 
-export function applyLoggingDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
+export function applyLoggingDefaults(cfg: CDFKnowConfig): CDFKnowConfig {
   const logging = cfg.logging;
   if (!logging) {
     return cfg;
@@ -356,7 +356,7 @@ export function applyLoggingDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
 // 上下文裁剪默认值
 // ============================================================================
 
-export function applyContextPruningDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
+export function applyContextPruningDefaults(cfg: CDFKnowConfig): CDFKnowConfig {
   const defaults = cfg.agents?.defaults;
   if (!defaults) {
     return cfg;
@@ -387,7 +387,7 @@ export function applyContextPruningDefaults(cfg: CrossWmsConfig): CrossWmsConfig
 // 压缩默认值
 // ============================================================================
 
-export function applyCompactionDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
+export function applyCompactionDefaults(cfg: CDFKnowConfig): CDFKnowConfig {
   const defaults = cfg.agents?.defaults;
   if (!defaults) {
     return cfg;
@@ -415,7 +415,7 @@ export function applyCompactionDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
 // 组合应用所有默认值
 // ============================================================================
 
-export function applyAllDefaults(cfg: CrossWmsConfig): CrossWmsConfig {
+export function applyAllDefaults(cfg: CDFKnowConfig): CDFKnowConfig {
   let next = cfg;
   next = applyMessageDefaults(next);
   next = applySessionDefaults(next);

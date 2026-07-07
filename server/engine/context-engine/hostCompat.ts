@@ -12,7 +12,7 @@ export interface ContextEngineHostSupport {
 }
 
 export const CROSS_WMS_EMBEDDED_HOST: ContextEngineHostSupport = {
-  hostId: 'cross-wms-embedded',
+  hostId: 'cdf-know-embedded',
   hostLabel: 'Cross-WMS Embedded Host',
   capabilities: new Set<ContextEngineHostCapability>([
     'bootstrap',

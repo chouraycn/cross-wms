@@ -1,7 +1,7 @@
 {
   "name": "cdf-know-clow",
   "private": true,
-  "version": "1.7.60",
+  "version": "1.7.62",
   "type": "module",
   "workspaces": [
     "packages/*"
@@ -38,11 +38,11 @@
     "lint:fix": "eslint src/ server/ --ext .ts,.tsx --fix",
     "prepare": "husky",
     "build:packages": "npm run build --workspaces --if-present",
-    "build:plugin-sdk": "npm run build -w @cross-wms/plugin-sdk",
-    "build:agent-core": "npm run build -w @cross-wms/agent-core",
-    "build:llm-core": "npm run build -w @cross-wms/llm-core",
-    "build:memory-host-sdk": "npm run build -w @cross-wms/memory-host-sdk",
-    "build:skill-core": "npm run build -w @cross-wms/skill-core",
+    "build:plugin-sdk": "npm run build -w @cdf-know/plugin-sdk",
+    "build:agent-core": "npm run build -w @cdf-know/agent-core",
+    "build:llm-core": "npm run build -w @cdf-know/llm-core",
+    "build:memory-host-sdk": "npm run build -w @cdf-know/memory-host-sdk",
+    "build:skill-core": "npm run build -w @cdf-know/skill-core",
     "test:packages": "npm run test --workspaces --if-present"
   },
   "dependencies": {

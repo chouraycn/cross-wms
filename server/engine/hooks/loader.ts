@@ -25,10 +25,10 @@ export type LoadedHookRegistration = {
 };
 
 /** 全局单例 Symbol 键：跨模块实例共享注册列表 */
-const LOADED_HOOK_REGISTRATIONS_KEY = Symbol.for('cross-wms.loadedHookRegistrations');
+const LOADED_HOOK_REGISTRATIONS_KEY = Symbol.for('cdf-know.loadedHookRegistrations');
 
 /** 内部处理器注册表（事件键 → 处理器列表），同样为全局单例 */
-const INTERNAL_HOOK_HANDLERS_KEY = Symbol.for('cross-wms.internalHookHandlers');
+const INTERNAL_HOOK_HANDLERS_KEY = Symbol.for('cdf-know.internalHookHandlers');
 
 type HandlersMap = Map<string, HookHandler[]>;
 

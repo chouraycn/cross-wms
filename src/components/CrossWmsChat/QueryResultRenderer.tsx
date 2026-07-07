@@ -106,7 +106,7 @@ interface QueryResultRendererProps {
   loading?: boolean;
   /** v1.7.0: 数据来源表，用于条件渲染操作列和路由跳转 */
   dataSource?: DataSourceType;
-  /** v1.7.0: 确认补货回调（由 CrossWmsChat 注入） */
+  /** v1.7.0: 确认补货回调（由 CDFKnowChat 注入） */
   onConfirmReplenishment?: (suggestionId: number) => void;
 }
 

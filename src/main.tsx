@@ -7,9 +7,14 @@ import { checkAndMigrate } from './services/migration'
 import { initFromApi as initWarehouseCapability } from './capabilities/warehouse'
 import { initFromApi as initSkills } from './stores/skillStore'
 import { initSentryReact } from './sentry'
+import { initPerformanceTelemetry, markPhase, endPhase } from './services/performanceTelemetry'
 
 // Initialize Sentry error monitoring (no-op if VITE_SENTRY_DSN is not set)
 initSentryReact();
+
+// 端到端性能采集初始化（必须在其他操作之前）
+markPhase('app:bootstrap:start');
+initPerformanceTelemetry();
 
 // 先渲染 UI，再异步初始化后端数据。
 // 后端 crash 时 fetch 可能长时间挂起，如果 render() 放在 await 之后会导致永久白屏。
@@ -33,15 +38,26 @@ try {
 
 // 异步初始化：迁移 + Store 数据加载（不阻塞 UI 渲染）
 async function bootstrap() {
+  markPhase('bootstrap:migration');
   try {
     await checkAndMigrate();
+    endPhase('bootstrap:migration');
+
+    markPhase('bootstrap:warehouse');
     await initWarehouseCapability();
+    endPhase('bootstrap:warehouse');
+
+    markPhase('bootstrap:skills');
     setTimeout(() => {
-      initSkills().catch(() => {});
+      initSkills()
+        .then(() => endPhase('bootstrap:skills'))
+        .catch(() => endPhase('bootstrap:skills', { error: true }));
     }, 500);
   } catch (e) {
+    endPhase('bootstrap:migration', { error: true });
     // console.error('[Bootstrap] Store 初始化失败:', e)
   }
+  endPhase('app:bootstrap:start', { completed: true });
 }
 
 bootstrap();

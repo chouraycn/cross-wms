@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { UnifiedPluginRegistry } from '@cross-wms/plugin-sdk';
+import { UnifiedPluginRegistry } from '@cdf-know/plugin-sdk';
 
 export const pluginCommand = new Command('plugin')
   .description('Manage plugins')

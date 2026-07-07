@@ -1,7 +1,7 @@
 /**
  * SessionWriteLock — 跨进程会话文件写锁
  *
- * 参照 openclaw session-write-lock.ts 设计，为 cross-wms 提供跨进程
+ * 参照 openclaw session-write-lock.ts 设计，为 cdf-know 提供跨进程
  * 写入串行化能力。支持多进程架构下的安全并发写入。
  *
  * 核心机制：

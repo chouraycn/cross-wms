@@ -10,7 +10,7 @@ import { logger } from '../../logger.js';
 import { resolveDaemonPaths, type DaemonPaths } from './paths.js';
 
 export interface SystemdConfig {
-  /** systemd 单元名称（不含 .service），默认 cross-wms-daemon */
+  /** systemd 单元名称（不含 .service），默认 cdf-know-daemon */
   unitName?: string;
   /** 启动命令参数（第一项为可执行程序） */
   programArguments: string[];
@@ -94,7 +94,7 @@ function resolvePaths(config: SystemdConfig): DaemonPaths {
 }
 
 function resolveUnitName(config: SystemdConfig): string {
-  return config.unitName ?? 'cross-wms-daemon';
+  return config.unitName ?? 'cdf-know-daemon';
 }
 
 /**

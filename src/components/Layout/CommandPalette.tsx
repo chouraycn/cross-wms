@@ -107,7 +107,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose }) => {
   const gs = getGrayScale(isDark);
   const navigate = useNavigate();
   const { sessions } = useChatSidebar();
-  const { userSkills, loadAllUsageStats } = useAppStore();
+  const { userSkills } = useAppStore();
   const ctx = useContext(AppSettingsContext);
   const aiEngine = ctx?.settings?.aiEngine;
   const [query, setQuery] = useState('');
@@ -134,10 +134,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose }) => {
       }
     };
   }, []);
-
-  useEffect(() => {
-    loadAllUsageStats();
-  }, [loadAllUsageStats]);
 
   const activeSessions = useMemo(() => {
     return sessions.filter(s => s.status !== 'archived' && s.status !== 'daily_reset');

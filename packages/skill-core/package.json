@@ -1,7 +1,7 @@
 {
-  "name": "@cross-wms/skill-core",
+  "name": "@cdf-know/skill-core",
   "version": "1.0.0",
-  "description": "Cross-WMS Skill Core - 技能系统核心模块",
+  "description": "CDFKnow Skill Core - 技能系统核心模块",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": ["dist"],
@@ -12,7 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cross-wms/plugin-sdk": "1.0.0",
+    "@cdf-know/plugin-sdk": "1.0.0",
     "eventemitter3": "^5.0.1"
   },
   "devDependencies": {

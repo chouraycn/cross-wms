@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, Suspense } from 'react';
 import {
   Box,
   ListItemButton,
@@ -17,8 +17,8 @@ import SidebarLogo from './SidebarLogo';
 import NavList from './NavList';
 import SidebarToggle from './SidebarToggle';
 import SettingsPopover from './SettingsPopover';
-import AISettingsDialog from './AISettingsDialog';
-import ToolManagementDialog from './ToolManagementDialog';
+const AISettingsDialog = React.lazy(() => import('./AISettingsDialog'));
+const ToolManagementDialog = React.lazy(() => import('./ToolManagementDialog'));
 import CommandPalette from './CommandPalette';
 import { isPyWebView } from '../../services/tencentDocsApi';
 import { useChatSidebar } from '../../contexts/ChatContext';
@@ -122,7 +122,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
   // 兼容 hash 路由：从 hash 中提取实际路径
   const activePath = location.hash ? location.hash.replace('#', '') : location.pathname;
 
-  // 监听 CrossWmsChat 的会话更新事件，同步 activeSessionId
+  // 监听 CDFKnowChat 的会话更新事件，同步 activeSessionId
   useEffect(() => {
     const onChatUpdate = ((e: CustomEvent) => {
       // 如果正处于「新建对话」后的保护期内，忽略事件
@@ -489,8 +489,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
           onOpenModelManagement={() => setAiDialogOpen(true)}
           onOpenToolManagement={() => setToolManagementDialogOpen(true)}
         />
-        <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} />
-        <ToolManagementDialog open={toolManagementDialogOpen} onClose={() => setToolManagementDialogOpen(false)} />
+        <Suspense fallback={null}>
+          <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} />
+          <ToolManagementDialog open={toolManagementDialogOpen} onClose={() => setToolManagementDialogOpen(false)} />
+        </Suspense>
       </Box>
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
     </Box>

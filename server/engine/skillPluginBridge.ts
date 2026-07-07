@@ -23,12 +23,12 @@
  */
 
 import { logger } from '../logger.js';
-import { definePluginEntry, getUnifiedPluginRegistry } from '@cross-wms/plugin-sdk';
+import { definePluginEntry, getUnifiedPluginRegistry } from '@cdf-know/plugin-sdk';
 import { skillRegistry } from './skillRegistry.js';
 import { skillSecurityScanner } from './skillSecurityScanner.js';
 import { skillVersionTracker } from './skillVersionTracker.js';
 import type { RegisteredSkill } from '../types/skill-runtime.js';
-import type { PluginToolCapability, PluginConfigSchema } from '@cross-wms/plugin-sdk';
+import type { PluginToolCapability, PluginConfigSchema } from '@cdf-know/plugin-sdk';
 
 // ===================== 类型定义 =====================
 

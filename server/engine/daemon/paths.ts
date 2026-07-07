@@ -5,16 +5,16 @@
  */
 import path from 'node:path';
 
-const DEFAULT_LAUNCHD_LABEL = 'com.cross-wms.daemon';
-const DEFAULT_SYSTEMD_UNIT = 'cross-wms-daemon';
+const DEFAULT_LAUNCHD_LABEL = 'com.cdf-know.daemon';
+const DEFAULT_SYSTEMD_UNIT = 'cdf-know-daemon';
 const DEFAULT_SCHTASKS_NAME = 'CrossWMSDaemon';
-const DEFAULT_STATE_DIR_NAME = '.cross-wms';
+const DEFAULT_STATE_DIR_NAME = '.cdf-know';
 
 /** 守护进程相关的全部路径。 */
 export interface DaemonPaths {
   /** 用户主目录 */
   homeDir: string;
-  /** 状态目录（~/.cross-wms） */
+  /** 状态目录（~/.cdf-know） */
   stateDir: string;
   /** 日志目录 */
   logDir: string;
@@ -28,11 +28,11 @@ export interface DaemonPaths {
   heartbeatFilePath: string;
   /** launchd 标签 */
   launchdLabel: string;
-  /** launchd plist 文件路径（~/Library/LaunchAgents/com.cross-wms.daemon.plist） */
+  /** launchd plist 文件路径（~/Library/LaunchAgents/com.cdf-know.daemon.plist） */
   launchdPlistPath: string;
   /** systemd 单元名称（不含 .service 后缀） */
   systemdUnitName: string;
-  /** systemd 单元文件路径（~/.config/systemd/user/cross-wms-daemon.service） */
+  /** systemd 单元文件路径（~/.config/systemd/user/cdf-know-daemon.service） */
   systemdUnitPath: string;
   /** schtasks 任务名称 */
   schtasksTaskName: string;

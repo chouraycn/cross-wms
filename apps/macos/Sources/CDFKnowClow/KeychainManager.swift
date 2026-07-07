@@ -1,7 +1,7 @@
 import Foundation
 import Security
 import OSLog
-import CrossWMSIPC
+import CDFKnowIPC
 
 let keychainLogger = Logger(subsystem: "com.cdf.knowclow", category: "keychain")
 

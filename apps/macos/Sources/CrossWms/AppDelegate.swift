@@ -1,10 +1,10 @@
 import AppKit
 import Foundation
-import CrossWMSIPC
+import CDFKnowIPC
 import Logging
 
 @main
-struct CrossWMSApp {
+struct CDFKnowApp {
     static func main() {
         let app = NSApplication.shared
         let delegate = AppDelegate()
@@ -44,7 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setup() async {
         let dataDir = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Application Support/CrossWMS")
+            .appendingPathComponent("Library/Application Support/CDFKnow")
             .path
 
         do {

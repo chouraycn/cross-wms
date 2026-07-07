@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import CrossWMSIPC
+@testable import CDFKnowIPC
 
 @Suite("IPC - New Request Types Encoding/Decoding")
 struct IPCNewTypesTests {

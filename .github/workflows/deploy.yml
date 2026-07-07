@@ -103,11 +103,11 @@ jobs:
           script: |
             echo "Deploying to ${{ github.event.inputs.environment || 'production' }}..."
             
-            cd /opt/cross-wms
+            cd /opt/cdf-know
             
             NEW_IMAGE="ghcr.io/${{ github.repository }}:${{ github.ref_name }}"
-            CONTAINER_NAME="cross-wms-server"
-            PREVIOUS_IMAGE_FILE="/opt/cross-wms/.previous-image"
+            CONTAINER_NAME="cdf-know-server"
+            PREVIOUS_IMAGE_FILE="/opt/cdf-know/.previous-image"
             
             # 记录当前使用的镜像（用于回滚）
             if docker inspect "$CONTAINER_NAME" > /dev/null 2>&1; then
@@ -131,8 +131,8 @@ jobs:
               --name "$CONTAINER_NAME" \
               --restart unless-stopped \
               -p 3000:3000 \
-              -v /opt/cross-wms/data:/app/data \
-              -v /opt/cross-wms/logs:/app/logs \
+              -v /opt/cdf-know/data:/app/data \
+              -v /opt/cdf-know/logs:/app/logs \
               -e NODE_ENV=${{ github.event.inputs.environment === 'development' && 'development' || 'production' }} \
               -e PORT=3000 \
               "$NEW_IMAGE"
@@ -168,8 +168,8 @@ jobs:
           script: |
             echo "⚠️ Health check failed! Starting rollback..."
             
-            CONTAINER_NAME="cross-wms-server"
-            PREVIOUS_IMAGE_FILE="/opt/cross-wms/.previous-image"
+            CONTAINER_NAME="cdf-know-server"
+            PREVIOUS_IMAGE_FILE="/opt/cdf-know/.previous-image"
             
             if [ ! -f "$PREVIOUS_IMAGE_FILE" ]; then
               echo "❌ No previous image saved, cannot rollback"
@@ -188,8 +188,8 @@ jobs:
               --name "$CONTAINER_NAME" \
               --restart unless-stopped \
               -p 3000:3000 \
-              -v /opt/cross-wms/data:/app/data \
-              -v /opt/cross-wms/logs:/app/logs \
+              -v /opt/cdf-know/data:/app/data \
+              -v /opt/cdf-know/logs:/app/logs \
               -e NODE_ENV=${{ github.event.inputs.environment === 'development' && 'development' || 'production' }} \
               -e PORT=3000 \
               "$PREVIOUS_IMAGE"

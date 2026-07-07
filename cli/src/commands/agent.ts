@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { AgentHarness } from '@cross-wms/agent-core';
+import { AgentHarness } from '@cdf-know/agent-core';
 
 export const agentCommand = new Command('agent')
   .description('Manage agents')

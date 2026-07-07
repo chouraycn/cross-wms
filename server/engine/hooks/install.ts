@@ -27,7 +27,7 @@ export type InstallHookOptions = {
   hooksDir?: string;
   /** 安装模式：install 要求目标不存在，update 允许覆盖 */
   mode?: 'install' | 'update';
-  /** 用户配置目录（默认 process.env.HOME/.config/cross-wms） */
+  /** 用户配置目录（默认 process.env.HOME/.config/cdf-know） */
   configDir?: string;
 };
 
@@ -47,7 +47,7 @@ function validateHookId(hookId: string): string | null {
 
 /** 解析默认的钩子根目录 */
 function resolveDefaultHooksDir(configDir?: string): string {
-  const base = configDir ?? path.join(process.env.HOME ?? '~', '.config', 'cross-wms');
+  const base = configDir ?? path.join(process.env.HOME ?? '~', '.config', 'cdf-know');
   return path.join(base, 'hooks');
 }
 

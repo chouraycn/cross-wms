@@ -1,7 +1,7 @@
 /**
  * 钩子系统类型定义
  *
- * 参考 openclaw/src/hooks/types.ts 与 config.ts，定义 cross-wms 钩子系统的核心类型：
+ * 参考 openclaw/src/hooks/types.ts 与 config.ts，定义 cdf-know 钩子系统的核心类型：
  * 四源（bundled/plugin/managed/workspace）、钩子条目、配置、处理器、策略与事件。
  */
 

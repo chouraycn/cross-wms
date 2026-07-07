@@ -1,7 +1,7 @@
 /**
  * Plugin SDK 核心类型定义
  *
- * 参考 OpenClaw 的 plugin-sdk 设计，建立 cross-wms 自己的插件 SDK 抽象层。
+ * 参考 OpenClaw 的 plugin-sdk 设计，建立 cdf-know 自己的插件 SDK 抽象层。
  * 遵循四项核心原则：
  *   1. manifest-first — 发现、配置校验、setup 在元数据层完成，不导入运行时
  *   2. 控制面/运行面分离 — manifest 是控制面，register() 是运行面
@@ -348,7 +348,7 @@ export type PluginRuntimeStatus =
  * 插件 API — 暴露给插件 register() 函数的能力注册接口
  *
  * 设计参考 OpenClaw 的 OpenClawPluginApi，提供 30+ register* 方法。
- * cross-wms 首批实现 8 个核心 register* 方法，覆盖 8 种能力类型。
+ * cdf-know 首批实现 8 个核心 register* 方法，覆盖 8 种能力类型。
  */
 export interface PluginApi {
   /** 插件 ID（只读） */

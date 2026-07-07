@@ -10,7 +10,7 @@ let package = Package(
     ],
     products: [
         .executable(name: "CDFKnowClow", targets: ["CDFKnowClow"]),
-        .library(name: "CrossWMSIPC", targets: ["CrossWMSIPC"]),
+        .library(name: "CDFKnowIPC", targets: ["CDFKnowIPC"]),
         .library(name: "CDFKnowProtocol", targets: ["CDFKnowProtocol"]),
         .library(name: "CDFKnow", targets: ["CDFKnow"]),
     ],
@@ -22,7 +22,7 @@ let package = Package(
         .executableTarget(
             name: "CDFKnowClow",
             dependencies: [
-                "CrossWMSIPC",
+                "CDFKnowIPC",
                 .product(name: "Sparkle", package: "Sparkle"),
                 .product(name: "Logging", package: "swift-log"),
             ],
@@ -31,7 +31,7 @@ let package = Package(
                 .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"]),
             ]),
         .target(
-            name: "CrossWMSIPC",
+            name: "CDFKnowIPC",
             dependencies: [],
             path: "Sources/CrossWmsIPC"),
         .target(
@@ -43,11 +43,11 @@ let package = Package(
             dependencies: ["CDFKnowProtocol"],
             path: "Sources/CDFKnow"),
         .testTarget(
-            name: "CrossWMSIPCTests",
-            dependencies: ["CrossWMSIPC"],
+            name: "CDFKnowIPCTests",
+            dependencies: ["CDFKnowIPC"],
             path: "Tests/CrossWMSIPCTests"),
         .testTarget(
             name: "CDFKnowClowTests",
-            dependencies: ["CrossWMSIPC"],
+            dependencies: ["CDFKnowIPC"],
             path: "Tests/CDFKnowClowTests"),
     ])

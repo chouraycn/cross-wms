@@ -454,11 +454,11 @@ export function discoverWorkspaceHooks(
     managedHooksDir?: string;
     /** 内置钩子目录 */
     bundledHooksDir?: string;
-    /** 用户配置目录（默认 process.env.HOME/.config/cross-wms） */
+    /** 用户配置目录（默认 process.env.HOME/.config/cdf-know） */
     configDir?: string;
   },
 ): HookEntry[] {
-  const configDir = opts?.configDir ?? path.join(process.env.HOME ?? '~', '.config', 'cross-wms');
+  const configDir = opts?.configDir ?? path.join(process.env.HOME ?? '~', '.config', 'cdf-know');
   const managedHooksDir = opts?.managedHooksDir ?? path.join(configDir, 'hooks');
   const workspaceHooksDir = path.join(workspaceDir, 'hooks');
   const bundledHooksDir = opts?.bundledHooksDir ?? null;

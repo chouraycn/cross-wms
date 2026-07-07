@@ -2,7 +2,7 @@
  * runChatSession — 统一的聊天会话执行核心
  *
  * 架构定位：
- * - 这是 cross-wms 聊天功能的执行入口，解耦 Express HTTP 层
+ * - 这是 cdf-know 聊天功能的执行入口，解耦 Express HTTP 层
  * - 后端路由（/api/agent-chat）、gateway、ACP 引擎都通过本模块执行聊天
  * - 直接调用 buildApiMessages + streamExecutor.executeChat（纯回调驱动，无 res 依赖）
  *
@@ -742,7 +742,7 @@ async function tryFallback(
 /**
  * 将 runChatSession 适配为 ACP runtime 的 executeTurn 接口
  *
- * ACP 引擎通过此函数调用 cross-wms 的聊天执行能力
+ * ACP 引擎通过此函数调用 cdf-know 的聊天执行能力
  */
 export async function executeTurnViaChatSession(params: {
   sessionId: string;

@@ -292,7 +292,7 @@ export async function refreshAuditForSkill(skillId: string): Promise<void> {
   notifyAll();
 }
 
-/** 从 API 初始化缓存 */
+/** 从 API 初始化缓存（启动路径：只加载技能列表，不加载非关键的使用统计） */
 export async function initFromApi(): Promise<void> {
   try {
     const [skills, patches] = await Promise.all([
@@ -302,8 +302,7 @@ export async function initFromApi(): Promise<void> {
     userSkills = skills;
     builtinStatusPatches = patches;
     notifyAll();
-    // T02: 初始化后批量加载使用统计
-    await loadAllUsageStats();
+    // 使用统计由 SkillsPage / CommandPalette 等按需延迟加载，避免启动时额外请求
   } catch (e) {
     // console.error('[skillStore] initFromApi failed:', e);
   }

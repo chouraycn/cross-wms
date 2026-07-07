@@ -417,7 +417,7 @@ export function registerGatewayRoutes(app: {
         id: model.id,
         object: "model",
         created: Math.floor(Date.now() / 1000),
-        owned_by: model.provider || "cross-wms",
+        owned_by: model.provider || "cdf-know",
       })),
     });
   });
@@ -447,7 +447,7 @@ export function registerGatewayRoutes(app: {
       id: model.id,
       object: "model",
       created: Math.floor(Date.now() / 1000),
-      owned_by: model.provider || "cross-wms",
+      owned_by: model.provider || "cdf-know",
     });
   });
 

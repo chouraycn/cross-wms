@@ -1,9 +1,9 @@
 import Foundation
 import Testing
-@testable import CrossWMSIPC
+@testable import CDFKnowIPC
 
-@Suite("CrossWMSIPC - Request Encoding/Decoding")
-struct CrossWMSIPCTests {
+@Suite("CDFKnowIPC - Request Encoding/Decoding")
+struct CDFKnowIPCTests {
 
     // MARK: - Notify Request
 
@@ -246,7 +246,7 @@ struct CrossWMSIPCTests {
 
     @Test("Control socket path is in Application Support")
     func controlSocketPathTest() {
-        #expect(CrossWMSIPC.controlSocketPath.contains("Library/Application Support/CrossWMS/control.sock"))
-        #expect(CrossWMSIPC.controlSocketPath.hasSuffix("control.sock"))
+        #expect(CDFKnowIPC.controlSocketPath.contains("Library/Application Support/CDFKnow/control.sock"))
+        #expect(CDFKnowIPC.controlSocketPath.hasSuffix("control.sock"))
     }
 }

@@ -12,7 +12,7 @@ const program = new Command();
 
 program
   .name('crosswms')
-  .description('CLI tools for cross-wms')
+  .description('CLI tools for cdf-know')
   .version('1.0.0');
 
 program.addCommand(pluginCommand);

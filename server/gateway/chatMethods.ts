@@ -3,7 +3,7 @@
  *
  * 架构定位：
  * - 这是 Gateway JSON-RPC 风格的聊天接口（/api/gateway/chat/*）
- * - 为第三方客户端提供标准方法调用方式访问 cross-wms 聊天能力
+ * - 为第三方客户端提供标准方法调用方式访问 cdf-know 聊天能力
  * - 底层接入 dao/chat.ts 做持久化，并通过 runChatSession 触发实际执行
  * - 与 /api/chat 和 /api/agent-chat 共享同一份会话数据
  *

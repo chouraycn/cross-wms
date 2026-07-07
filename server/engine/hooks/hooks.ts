@@ -17,7 +17,7 @@ import type { HookEvent, HookEventType, HookHandler } from './types.js';
 export type { HookHandler };
 
 /** 全局处理器注册表的 Symbol 键（与 loader.ts 一致） */
-const INTERNAL_HOOK_HANDLERS_KEY = Symbol.for('cross-wms.internalHookHandlers');
+const INTERNAL_HOOK_HANDLERS_KEY = Symbol.for('cdf-know.internalHookHandlers');
 
 type HandlersMap = Map<string, HookHandler[]>;
 

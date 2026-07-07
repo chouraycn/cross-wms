@@ -1,7 +1,7 @@
 /**
  * Unified Provider Registry — 统一模型提供商注册中心
  *
- * 解决 cross-wms 三套并行 Provider 系统的隐式耦合问题：
+ * 解决 cdf-know 三套并行 Provider 系统的隐式耦合问题：
  *   - modelProviderRegistry：内置模型目录（ProviderInfo 元数据）
  *   - adapters/registry：API 适配器（按 ModelApiType 注册工厂）
  *   - modelsStore：用户模型配置（DB-backed）

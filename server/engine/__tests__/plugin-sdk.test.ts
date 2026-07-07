@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { definePluginEntry, UnifiedPluginRegistry } from '@cross-wms/plugin-sdk';
+import { definePluginEntry, UnifiedPluginRegistry } from '@cdf-know/plugin-sdk';
 
 // mock logger
 vi.mock('../../logger.js', () => ({

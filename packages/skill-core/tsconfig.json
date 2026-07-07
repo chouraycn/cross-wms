@@ -14,7 +14,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "paths": {
-      "@cross-wms/plugin-sdk": ["../plugin-sdk/src"]
+      "@cdf-know/plugin-sdk": ["../plugin-sdk/src"]
     }
   },
   "include": ["src/**/*.ts"],

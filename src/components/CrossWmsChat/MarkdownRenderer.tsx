@@ -3,53 +3,57 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
-// @ts-expect-error — react-syntax-highlighter types not fully typed
+// v1.9.4: 使用自定义字体 CSS，仅保留 woff2 格式（减少包体积约 50%）
+import '../../styles/katex-fonts.css';
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
 import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
 import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
 import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
 import python from 'react-syntax-highlighter/dist/esm/languages/prism/python';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
 import sql from 'react-syntax-highlighter/dist/esm/languages/prism/sql';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
 import javascript from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
 import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
-import css from 'react-syntax-highlighter/dist/esm/languages/prism/css';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
-import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
-import c from 'react-syntax-highlighter/dist/esm/languages/prism/c';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
-import cpp from 'react-syntax-highlighter/dist/esm/languages/prism/cpp';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
-import java from 'react-syntax-highlighter/dist/esm/languages/prism/java';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
-import go from 'react-syntax-highlighter/dist/esm/languages/prism/go';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
-import rust from 'react-syntax-highlighter/dist/esm/languages/prism/rust';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
-import markup from 'react-syntax-highlighter/dist/esm/languages/prism/markup';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
-import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
-import diff from 'react-syntax-highlighter/dist/esm/languages/prism/diff';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
 import oneLight from 'react-syntax-highlighter/dist/esm/styles/prism/one-light';
-// @ts-expect-error — react-syntax-highlighter subpath import lacks types
 import oneDark from 'react-syntax-highlighter/dist/esm/styles/prism/one-dark';
 import { Box, IconButton, useTheme, Typography } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 import { getGrayScale } from '../../constants/theme';
 
-// 注册常用语言
+const commonLanguages = ['tsx', 'typescript', 'javascript', 'bash', 'sh', 'json', 'python', 'py', 'sql'];
+
+const lazyLanguageImports: Record<string, () => Promise<{ default: unknown }>> = {
+  css: () => import('react-syntax-highlighter/dist/esm/languages/prism/css') as Promise<{ default: unknown }>,
+  yaml: () => import('react-syntax-highlighter/dist/esm/languages/prism/yaml') as Promise<{ default: unknown }>,
+  yml: () => import('react-syntax-highlighter/dist/esm/languages/prism/yaml') as Promise<{ default: unknown }>,
+  c: () => import('react-syntax-highlighter/dist/esm/languages/prism/c') as Promise<{ default: unknown }>,
+  cpp: () => import('react-syntax-highlighter/dist/esm/languages/prism/cpp') as Promise<{ default: unknown }>,
+  java: () => import('react-syntax-highlighter/dist/esm/languages/prism/java') as Promise<{ default: unknown }>,
+  go: () => import('react-syntax-highlighter/dist/esm/languages/prism/go') as Promise<{ default: unknown }>,
+  rust: () => import('react-syntax-highlighter/dist/esm/languages/prism/rust') as Promise<{ default: unknown }>,
+  html: () => import('react-syntax-highlighter/dist/esm/languages/prism/markup') as Promise<{ default: unknown }>,
+  xml: () => import('react-syntax-highlighter/dist/esm/languages/prism/markup') as Promise<{ default: unknown }>,
+  markdown: () => import('react-syntax-highlighter/dist/esm/languages/prism/markdown') as Promise<{ default: unknown }>,
+  md: () => import('react-syntax-highlighter/dist/esm/languages/prism/markdown') as Promise<{ default: unknown }>,
+  diff: () => import('react-syntax-highlighter/dist/esm/languages/prism/diff') as Promise<{ default: unknown }>,
+};
+
+const loadedLanguages = new Set<string>(commonLanguages);
+
+async function ensureLanguageLoaded(language: string): Promise<boolean> {
+  if (loadedLanguages.has(language)) return true;
+  const loader = lazyLanguageImports[language];
+  if (!loader) return false;
+  try {
+    const module = await loader();
+    SyntaxHighlighter.registerLanguage(language, module.default);
+    loadedLanguages.add(language);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 SyntaxHighlighter.registerLanguage('tsx', tsx);
 SyntaxHighlighter.registerLanguage('typescript', typescript);
 SyntaxHighlighter.registerLanguage('javascript', javascript);
@@ -59,20 +63,6 @@ SyntaxHighlighter.registerLanguage('json', json);
 SyntaxHighlighter.registerLanguage('python', python);
 SyntaxHighlighter.registerLanguage('py', python);
 SyntaxHighlighter.registerLanguage('sql', sql);
-SyntaxHighlighter.registerLanguage('css', css);
-SyntaxHighlighter.registerLanguage('yaml', yaml);
-SyntaxHighlighter.registerLanguage('yml', yaml);
-// 扩展语言支持
-SyntaxHighlighter.registerLanguage('c', c);
-SyntaxHighlighter.registerLanguage('cpp', cpp);
-SyntaxHighlighter.registerLanguage('java', java);
-SyntaxHighlighter.registerLanguage('go', go);
-SyntaxHighlighter.registerLanguage('rust', rust);
-SyntaxHighlighter.registerLanguage('html', markup);
-SyntaxHighlighter.registerLanguage('xml', markup);
-SyntaxHighlighter.registerLanguage('markdown', markdown);
-SyntaxHighlighter.registerLanguage('md', markdown);
-SyntaxHighlighter.registerLanguage('diff', diff);
 
 interface MarkdownRendererProps {
   content: string;
@@ -94,9 +84,24 @@ interface MarkdownRendererProps {
 export const MarkdownRenderer = React.memo(function MarkdownRenderer({ content, darkMode = false, isStreaming = false }: MarkdownRendererProps) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
-  // v2.8.0: memoize gs to avoid recreating object every render (critical during streaming)
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const [copied, setCopied] = useState(false);
+  const [, forceUpdate] = useState({});
+
+  useEffect(() => {
+    const languageMatches = content.match(/language-(\w+)/g) || [];
+    const languagesToLoad = new Set(languageMatches.map(m => m.replace('language-', '')));
+    let loadingCount = 0;
+    for (const lang of languagesToLoad) {
+      if (!loadedLanguages.has(lang) && lazyLanguageImports[lang]) {
+        loadingCount++;
+        ensureLanguageLoaded(lang).then(() => {
+          loadingCount--;
+          if (loadingCount === 0) forceUpdate({});
+        });
+      }
+    }
+  }, [content]);
 
   // v2.8.1: 流式 Markdown 渲染节流
   // 流式时 content 每 rAF 帧更新，但 Markdown 解析 + 语法高亮是 O(n) 操作

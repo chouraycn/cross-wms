@@ -1,1 +1,1 @@
-export * from '@cross-wms/plugin-sdk';
+export * from '@cdf-know/plugin-sdk';

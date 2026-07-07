@@ -26,7 +26,7 @@ export interface CompactionSummaryStructure {
   decisions: string[];
   /** 下一步计划 */
   nextSteps: string[];
-  /** WMS 主题（cross-wms 特有） */
+  /** WMS 主题（cdf-know 特有） */
   wmsTopic?: string;
   /** 最后一个问题 */
   lastQuestion?: string;

@@ -2,7 +2,7 @@
  * Agent Chat API — 统一的聊天入口（推荐使用）
  *
  * 架构定位：
- * - 这是 cross-wms 聊天功能的标准入口
+ * - 这是 cdf-know 聊天功能的标准入口
  * - 输出 AgentEventPayload 格式（与 openclaw 事件模型对齐）
  * - 底层调用 runChatSession 执行实际的 LLM 对话（纯回调驱动，无 Proxy 转换层）
  * - 旧版 /api/chat 保留兼容，但新代码应使用本接口

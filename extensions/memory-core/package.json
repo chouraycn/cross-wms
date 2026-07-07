@@ -1,8 +1,8 @@
 {
-  "name": "@cross-wms/memory-core-extension",
+  "name": "@cdf-know/memory-core-extension",
   "version": "1.0.0",
   "private": true,
-  "description": "Advanced memory management extension for cross-wms",
+  "description": "Advanced memory management extension for cdf-know",
   "type": "module",
   "main": "./index.ts",
   "scripts": {
@@ -11,7 +11,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@cross-wms/plugin-sdk": "workspace:*",
+    "@cdf-know/plugin-sdk": "workspace:*",
     "typescript": "^5.7.0"
   },
   "crossclaw": {

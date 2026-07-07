@@ -1,5 +1,5 @@
 import Foundation
-import CrossWMSIPC
+import CDFKnowIPC
 
 actor IPCClient {
     private let logger = Logger(label: "com.crosswms.ipc.client")
