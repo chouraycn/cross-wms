@@ -97,34 +97,18 @@ final class WebViewManager: NSObject {
     }
 
     /// v1.6.0: 检测主应用 URL（直接加载 index.html，跳过 splash.html）
+    /// v1.9.0-fix: 移除同步 checkURL 避免主线程死锁，直接加载主 URL
     private func detectMainAppURL() -> URL {
         let port = ConfigStore.shared.config.serverPort
-
-        // 优先从服务器加载 index.html
-        if let serverURL = checkURL("http://localhost:\(port)/index.html") {
-            return serverURL
-        }
-        // 开发环境：vite 开发服务器
-        if let viteURL = checkURL("http://localhost:5173/index.html") {
-            return viteURL
-        }
-        // 兜底：直接加载根路径
-        return URL(string: "http://localhost:\(port)/")!
+        // 直接加载主服务器 index.html
+        return URL(string: "http://localhost:\(port)/index.html")!
     }
 
+    /// v1.9.0-fix: 移除同步 checkURL 避免主线程死锁，直接加载 splash URL
     private func detectSplashURL() -> URL {
         let port = ConfigStore.shared.config.serverPort
-
-        // 优先从服务器加载 splash.html（服务器已配置静态文件服务）
-        if let serverURL = checkURL("http://localhost:\(port)/splash.html") {
-            return serverURL
-        }
-        // 开发环境：vite 开发服务器
-        if let viteURL = checkURL("http://localhost:5173/splash.html") {
-            return viteURL
-        }
-        // 兜底：直接加载主应用
-        return URL(string: "http://localhost:\(port)/index.html")!
+        // 直接加载主服务器 splash.html
+        return URL(string: "http://localhost:\(port)/splash.html")!
     }
 
     /// 注入原生 App 标识到 window.cdfAppNative，告知前端当前是 Swift 原生 App
@@ -170,27 +154,7 @@ final class WebViewManager: NSObject {
         }
     }
 
-    private func checkURL(_ urlString: String) -> URL? {
-        guard let url = URL(string: urlString) else { return nil }
-        var request = URLRequest(url: url)
-        request.timeoutInterval = 1
-        request.httpMethod = "HEAD"
-
-        let semaphore = DispatchSemaphore(value: 0)
-        var found = false
-
-        let task = URLSession.shared.dataTask(with: request) { _, response, _ in
-            if let httpResponse = response as? HTTPURLResponse,
-               (200...299).contains(httpResponse.statusCode) || httpResponse.statusCode == 304 {
-                found = true
-            }
-            semaphore.signal()
-        }
-        task.resume()
-        _ = semaphore.wait(timeout: .now() + 1)
-
-        return found ? url : nil
-    }
+    // v1.9.0-fix: 已删除 checkURL 方法（同步网络请求导致主线程死锁）
 
     func reload() {
         webView.reload()
@@ -331,3 +295,5 @@ extension WebViewManager: WKUIDelegate {
         return nil
     }
 }
+
+
