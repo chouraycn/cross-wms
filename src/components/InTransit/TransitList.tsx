@@ -210,8 +210,12 @@ const TransitList: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
-  const { transitOrders: initialOrders, warehouses, loading, error, getWarehouseById } = useWarehouseCapability();
+  const { transitOrders: initialOrders, warehouses, loading, error, getWarehouseById, ensureTransitLoaded } = useWarehouseCapability();
   const [orders, setOrders] = useState<TransitOrder[]>([]);
+
+  useEffect(() => {
+    ensureTransitLoaded();
+  }, [ensureTransitLoaded]);
 
   // 当异步数据加载后同步到本地状态
   useEffect(() => {

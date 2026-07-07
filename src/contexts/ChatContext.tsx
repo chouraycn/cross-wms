@@ -53,6 +53,12 @@ interface ChatSidebarValue {
   restoreSession: (sessionId: string) => void;
   /** v6.0: 归档会话列表 */
   archivedSessions: Session[];
+  /** 归档会话总数 */
+  archivedSessionsTotal: number;
+  /** 是否正在加载归档会话 */
+  isLoadingArchived: boolean;
+  /** 加载更多归档会话（分页） */
+  loadMoreArchivedSessions: () => Promise<void>;
   /** v10.0: 直接切换活跃会话（不经过路由，更快） */
   setActiveSessionId: (id: string) => void;
   /** 任务 4: 加载历史/归档会话上下文但不切换 activeSessionId（用户停留在历史对话列表） */
@@ -67,6 +73,10 @@ interface ChatMetaValue {
   isInitializing: boolean;
   /** 默认模型 */
   defaultModel: string;
+  /** 延迟初始化：首次调用时从后端加载会话列表和文件夹 */
+  ensureInitialized: () => Promise<void>;
+  /** 是否已完成初始化 */
+  initialized: boolean;
 }
 
 // ===================== 创建 Context =====================
@@ -184,6 +194,27 @@ async function fetchSessionsFromAPI(retries = 5): Promise<Session[]> {
     }
   }
   return [];
+}
+
+/** 分页加载归档会话（10个/页） */
+async function fetchArchivedSessionsPaged(offset: number, limit: number = 10): Promise<{
+  sessions: Session[];
+  total: number;
+}> {
+  try {
+    const response = await fetch(`${API_BASE}/sessions?status=archived&limit=${limit}&offset=${offset}`);
+    const data = await response.json();
+    const sessions = (data.sessions || []).map((s: Record<string, unknown>) => ({
+      ...s,
+      messages: [],
+      messageCount: (s as any).messageCount,
+      createdAt: s.createdAt as string,
+      updatedAt: s.updatedAt as string,
+    })) as Session[];
+    return { sessions, total: data.total ?? sessions.length };
+  } catch (e) {
+    return { sessions: [], total: 0 };
+  }
 }
 
 /** 从后端 API 加载指定会话的消息（分页，首次只拉最近 50 条） */
@@ -371,9 +402,17 @@ export function ChatProvider({
   const [sessions, setSessions] = useState<Session[]>(() => loadSessionsFromCache());
   const [folders, setFolders] = useState<Folder[]>([]);
 
+  // ===== 归档会话分页状态（独立于 sessions，按需分页加载） =====
+  const [archivedSessions, setArchivedSessions] = useState<Session[]>([]);
+  const [archivedSessionsTotal, setArchivedSessionsTotal] = useState(0);
+  const [isLoadingArchived, setIsLoadingArchived] = useState(false);
+  const archivedOffsetRef = useRef(0);
+  const ARCHIVED_PAGE_SIZE = 10;
+
   // ===== 元数据状态：极少变化 =====
   const [initialized, setInitialized] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const initPromiseRef = useRef<Promise<void> | null>(null);
 
   // ===== 会话层状态：活跃会话 ID + 独立会话对象（含流式消息） =====
   const [activeSessionId, setActiveSessionIdState] = useState<string>(initialActiveSessionId);
@@ -391,6 +430,10 @@ export function ChatProvider({
   // 用 ref 跟踪 sessions，避免 handleSessionUpdate 依赖 sessions state
   const sessionsRef = useRef(sessions);
   sessionsRef.current = sessions;
+
+  // 用 ref 跟踪 folders，避免 sidebarValue 重建时不必要的引用变化
+  const foldersRef = useRef(folders);
+  foldersRef.current = folders;
 
   // ===== LRU 辅助函数：标记访问、淘汰最旧 =====
   const markSessionLoaded = useCallback((sessionId: string) => {
@@ -428,28 +471,37 @@ export function ChatProvider({
   // Bug Fix: 跟踪当前渲染周期内已添加到 sidebar 的会话 ID，防止 sendMessage 两次调用 handleSessionUpdate 产生重复
   const recentlyAddedIdsRef = useRef<Set<string>>(new Set());
 
-  // ===================== 初始化：从后端 API 加载会话列表和文件夹 =====================
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const [apiSessions, apiFolders] = await Promise.all([
-        fetchSessionsFromAPI(),
-        fetchFoldersFromAPI(),
-      ]);
-      if (cancelled) return;
-      if (apiSessions.length > 0) {
-        setSessions((prev) => {
-          if (sessionsEqual(prev, apiSessions)) return prev;
-          saveSessionsToCache(apiSessions);
-          return apiSessions;
-        });
+  // ===================== 延迟初始化：从后端 API 加载会话列表和文件夹 =====================
+  const ensureInitialized = useCallback(async () => {
+    if (initialized && initPromiseRef.current === null) return;
+    if (initPromiseRef.current) return initPromiseRef.current;
+
+    setIsInitializing(true);
+    const promise = (async () => {
+      try {
+        const [apiSessions, apiFolders] = await Promise.all([
+          fetchSessionsFromAPI(),
+          fetchFoldersFromAPI(),
+        ]);
+        if (apiSessions.length > 0) {
+          setSessions((prev) => {
+            if (sessionsEqual(prev, apiSessions)) return prev;
+            saveSessionsToCache(apiSessions);
+            return apiSessions;
+          });
+        }
+        setFolders(apiFolders);
+        setInitialized(true);
+      } catch (err) {
+        console.warn('[ChatProvider] 初始化会话列表失败:', err);
+      } finally {
+        setIsInitializing(false);
       }
-      setFolders(apiFolders);
-      setInitialized(true);
-      setIsInitializing(false);
     })();
-    return () => { cancelled = true; };
-  }, []);
+
+    initPromiseRef.current = promise;
+    return promise;
+  }, [initialized, fetchSessionsFromAPI, fetchFoldersFromAPI]);
 
   // ===================== 切换会话时：从 sessions 同步到 activeSession =====================
   useEffect(() => {
@@ -717,11 +769,17 @@ export function ChatProvider({
 
   /** 归档会话 */
   const archiveSession = useCallback((sessionId: string) => {
-    setSessions((prev) => prev.map((s) =>
-      s.id === sessionId
-        ? { ...s, status: 'archived' as const, archivedAt: new Date().toISOString() }
-        : s
-    ));
+    const target = sessionsRef.current.find((s) => s.id === sessionId);
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    // 添加到归档列表头部
+    if (target) {
+      const archived = { ...target, status: 'archived' as const, archivedAt: new Date().toISOString() };
+      setArchivedSessions((prev) => {
+        if (prev.find((s) => s.id === sessionId)) return prev;
+        return [archived, ...prev];
+      });
+      setArchivedSessionsTotal((prev) => prev + 1);
+    }
     // 同步后端
     fetch(`${API_BASE}/sessions/${sessionId}/archive`, { method: 'POST' }).catch(() => {});
   }, []);
@@ -729,20 +787,46 @@ export function ChatProvider({
   /** 恢复归档会话 */
   const restoreSession = useCallback((sessionId: string) => {
     const today = new Date().toISOString().split('T')[0];
-    setSessions((prev) => prev.map((s) =>
-      s.id === sessionId
-        ? { ...s, status: 'active' as const, archivedAt: null, lastActiveAt: new Date().toISOString(), sessionDate: today }
-        : s
-    ));
+    const target = archivedSessions.find((s) => s.id === sessionId);
+    // 从归档列表移除
+    setArchivedSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    setArchivedSessionsTotal((prev) => Math.max(0, prev - 1));
+    // 添加到活跃列表头部
+    if (target) {
+      const restored = { ...target, status: 'active' as const, archivedAt: null, lastActiveAt: new Date().toISOString(), sessionDate: today };
+      setSessions((prev) => {
+        if (prev.find((s) => s.id === sessionId)) return prev;
+        return [restored, ...prev];
+      });
+    }
     // 同步后端
     fetch(`${API_BASE}/sessions/${sessionId}/restore`, { method: 'POST' }).catch(() => {});
-  }, []);
+  }, [archivedSessions]);
 
-  /** 归档会话列表 */
-  const archivedSessions = useMemo(
-    () => sessions.filter(s => s.status === 'archived'),
-    [sessions]
-  );
+  /** 归档会话列表 — 分页加载（独立状态，不从 sessions filter） */
+
+  /** 加载更多归档会话（分页，10个/页） */
+  const loadMoreArchivedSessions = useCallback(async () => {
+    if (isLoadingArchived) return;
+    if (archivedSessions.length > 0 && archivedSessions.length >= archivedSessionsTotal) return;
+
+    setIsLoadingArchived(true);
+    try {
+      const { sessions: newSessions, total } = await fetchArchivedSessionsPaged(
+        archivedOffsetRef.current,
+        ARCHIVED_PAGE_SIZE,
+      );
+      setArchivedSessions((prev) => {
+        const existingIds = new Set(prev.map((s) => s.id));
+        const unique = newSessions.filter((s) => !existingIds.has(s.id));
+        return [...prev, ...unique];
+      });
+      setArchivedSessionsTotal(total);
+      archivedOffsetRef.current += newSessions.length;
+    } finally {
+      setIsLoadingArchived(false);
+    }
+  }, [isLoadingArchived, archivedSessions.length, archivedSessionsTotal]);
 
   // ===================== 任务 4: 加载会话上下文但不切换 activeSessionId =====================
   // 用户点击历史/归档对话时，仅加载该会话的消息作为上下文，不跳转路由
@@ -841,15 +925,20 @@ export function ChatProvider({
     archiveSession,
     restoreSession,
     archivedSessions,
+    archivedSessionsTotal,
+    isLoadingArchived,
+    loadMoreArchivedSessions,
     setActiveSessionId,
     loadSessionContext,
-  }), [sessions, folders, handleDeleteSession, togglePinSession, createFolder, updateFolder, deleteFolder, moveSessionToFolder, archiveSession, restoreSession, archivedSessions, setActiveSessionId, loadSessionContext]);
+  }), [sessions, folders, handleDeleteSession, togglePinSession, createFolder, updateFolder, deleteFolder, moveSessionToFolder, archiveSession, restoreSession, archivedSessions, archivedSessionsTotal, isLoadingArchived, loadMoreArchivedSessions, setActiveSessionId, loadSessionContext]);
 
   // ChatMetaContext：极少变更
   const metaValue = useMemo<ChatMetaValue>(() => ({
     isInitializing,
     defaultModel,
-  }), [isInitializing, defaultModel]);
+    ensureInitialized,
+    initialized,
+  }), [isInitializing, defaultModel, ensureInitialized, initialized]);
 
   return (
     <ChatMetaContext.Provider value={metaValue}>

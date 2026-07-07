@@ -34,7 +34,7 @@ import { ICON_MAP } from '../../types/skill.js';
 import { getCategoryLabel, getCategoryGradient } from '../../constants/skillCategories';
 import { getGrayScale, CHAT_MAX_WIDTH } from '../../constants/theme.js';
 import { useToast } from '../../contexts/ToastContext.js';
-import { useChatSession } from '../../contexts/ChatContext.js';
+import { useChatSession, useChatMeta } from '../../contexts/ChatContext.js';
 import type { AgentIdentity } from './AgentProfile.js';
 import { AGENT_SCENARIOS } from './AgentProfile.js';
 import type { AgentItemEventData, SendAgentMessageOptions } from '../../hooks/useAgentChat.js';
@@ -227,6 +227,12 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     updateSessionModel,
     handleNewChat,
   } = useChatSession();
+  const { ensureInitialized } = useChatMeta();
+
+  // 延迟初始化：进入聊天页面时才加载会话列表
+  useEffect(() => {
+    ensureInitialized();
+  }, [ensureInitialized]);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();

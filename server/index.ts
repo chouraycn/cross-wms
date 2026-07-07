@@ -172,6 +172,7 @@ import { getAttemptRunner } from './engine/attemptRunner.js';
 // v11.0: 跨进程文件锁
 import { startWatchdog, stopWatchdog, releaseAllHeldLocks } from './storage/sessionWriteLock.js';
 import { logger } from './logger.js';
+import { extensionLoader } from '../extensions/index.js';
 
 // 轻量入口：延迟加载工具（参照 openclaw gateway/server.ts 设计）
 import { lazyRouter } from './utils/lazyRouter.js';
@@ -437,7 +438,7 @@ server.listen(PORT, async () => {
   // 不 await，不阻塞启动流程；失败仅 warn
   loadModelsConfig().catch(e => logger.warn('[Server] 模型缓存预热失败:', e instanceof Error ? e.message : String(e)));
 
-  // 并行初始化 Tool Registry 和插件加载，减少启动阻塞
+  // 并行初始化 Tool Registry、插件加载和扩展加载器，减少启动阻塞
   await Promise.all([
     initDefaultTools().then(() => {
       logger.info('[Tool Registry] 工具注册完成:', listTools().join(', '));
@@ -447,6 +448,11 @@ server.listen(PORT, async () => {
       if (pluginToolNames.length > 0) {
         logger.info('[Plugin Registry] 插件工具已加载:', pluginToolNames.join(', '));
       }
+    }),
+    extensionLoader.loadAll().then((count) => {
+      logger.info(`[Extension Loader] 扩展加载完成: ${count} 个扩展已加载`);
+    }).catch((err) => {
+      logger.warn('[Extension Loader] 扩展加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
     }),
   ]);
 

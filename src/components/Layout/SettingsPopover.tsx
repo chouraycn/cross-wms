@@ -12,6 +12,10 @@ import SecurityIcon from '@mui/icons-material/Security';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import CableIcon from '@mui/icons-material/Cable';
 import StorageIcon from '@mui/icons-material/Storage';
+import HubIcon from '@mui/icons-material/Hub';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { isPyWebView } from '../../services/tencentDocsApi';
@@ -31,12 +35,16 @@ const SIDEBAR_WIDTH_EXPANDED = 360;
 // - dashboardCalc: 仪表盘参数 → 通过 AI 对话分析仪表盘
 // - dashboardIndicators: 指标控制 → 通过 Skill 配置指标维度
 // - systemAuthorization: 系统授权 → Swift 原生 App 内置权限管理，Web 端无需配置
-type SettingsTab = 'menu' | 'modelManagement' | 'toolManagement' | 'appearance' | 'about' | 'talk' | 'channels' | 'memory';
+type SettingsTab = 'menu' | 'modelManagement' | 'toolManagement' | 'extensions' | 'monitor' | 'audit' | 'apiKeys' | 'appearance' | 'about' | 'talk' | 'channels' | 'memory';
 interface SettingsMenuItem { key: Exclude<SettingsTab, 'menu'>; label: string; icon: React.ReactNode; description: string; }
 const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
   { key: 'appearance', label: '外观', icon: <PaletteOutlinedIcon sx={{ fontSize: 20 }} />, description: '主题、颜色与显示偏好' },
   { key: 'modelManagement', label: '模型管理', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型' },
-  { key: 'toolManagement', label: '工具管理', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件工具安装与管理' },
+  { key: 'toolManagement', label: '工具管理', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件、API 模板、浏览器等工具' },
+  { key: 'extensions', label: '扩展管理', icon: <HubIcon sx={{ fontSize: 20 }} />, description: '扩展的启用、禁用与加载' },
+  { key: 'monitor', label: '系统监控', icon: <MonitorHeartIcon sx={{ fontSize: 20 }} />, description: '插件、扩展、消息等系统指标' },
+  { key: 'audit', label: '审计日志', icon: <AssessmentIcon sx={{ fontSize: 20 }} />, description: '消息审计与操作记录' },
+  { key: 'apiKeys', label: 'API Key', icon: <VpnKeyIcon sx={{ fontSize: 20 }} />, description: 'API Key 创建与管理' },
   { key: 'talk', label: '语音对话', icon: <RecordVoiceOverIcon sx={{ fontSize: 20 }} />, description: '语音 locale、静默超时、思考级别' },
   { key: 'channels', label: '通道管理', icon: <CableIcon sx={{ fontSize: 20 }} />, description: '飞书/钉钉/Slack/Telegram 等通道配置' },
   { key: 'memory', label: '记忆', icon: <StorageIcon sx={{ fontSize: 20 }} />, description: '打开记忆管理页面' },
@@ -107,6 +115,10 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
                     if (item.key === 'modelManagement') { onClose?.(); onOpenModelManagement?.(); }
                     else if (item.key === 'toolManagement') { onClose?.(); onOpenToolManagement?.(); }
                     else if (item.key === 'memory') { onClose?.(); navigate('/memory'); }
+                    else if (item.key === 'extensions') { onClose?.(); navigate('/extensions'); }
+                    else if (item.key === 'monitor') { onClose?.(); navigate('/system-monitor'); }
+                    else if (item.key === 'audit') { onClose?.(); navigate('/audit-log'); }
+                    else if (item.key === 'apiKeys') { onClose?.(); navigate('/api-keys'); }
                     else if (!isAppearance) { setActiveTab(item.key); }
                   }}
                   sx={{

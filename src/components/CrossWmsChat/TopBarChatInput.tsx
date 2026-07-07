@@ -98,7 +98,11 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { models: modelList, isLoading: modelsLoading } = useModels();
+  const { models: modelList, isLoading: modelsLoading, ensureInitialized } = useModels();
+
+  useEffect(() => {
+    ensureInitialized();
+  }, [ensureInitialized]);
   const { settings: aiEngineSettings } = useAiEngineSettings();
   const { session } = useChatSession();
   const [inputExpanded, setInputExpanded] = useState(false);
