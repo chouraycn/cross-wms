@@ -29,6 +29,7 @@ jobs:
   quality-gate:
     name: Quality Gate
     uses: ./.github/workflows/pr-quality-gate.yml
+    secrets: inherit
 
   build-docker:
     name: Build Docker Image
