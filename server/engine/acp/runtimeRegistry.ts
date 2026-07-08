@@ -1,127 +1,128 @@
 /**
- * Runtime Registry
- * 运行时注册中心 - 管理 ACP 运行时的注册和发现
+ * ACP Runtime Registry
+ * 运行时后端注册器 - 管理 ACP 运行时后端的注册和查询
+ *
+ * 参考 openclaw/src/acp/runtime/registry.ts 设计（简化版）
  */
 
-import type {
-  AcpRuntime,
-  AcpRuntimeCapabilities,
-  AcpSessionMeta,
-  SessionAcpMeta,
-} from "./types.js";
-import { AcpRuntimeError } from "./types.js";
+export type AcpRuntime = {
+  startSession: (params: { sessionKey: string; cwd?: string }) => Promise<void>;
+  stopSession: (sessionKey: string) => Promise<void>;
+};
 
-export interface RuntimeBackend {
-  name: string;
-  version: string;
-  createRuntime(meta: SessionAcpMeta): Promise<AcpRuntime>;
-  getCapabilities?(): AcpRuntimeCapabilities;
+export type AcpRuntimeBackend = {
+  id: string;
+  runtime: AcpRuntime;
+  healthy?: () => boolean;
+};
+
+type AcpRuntimeRegistryGlobalState = {
+  backendsById: Map<string, AcpRuntimeBackend>;
+};
+
+const ACP_RUNTIME_REGISTRY_STATE_KEY = Symbol.for("cross-wms.acpRuntimeRegistryState");
+
+function resolveAcpRuntimeRegistryGlobalState(): AcpRuntimeRegistryGlobalState {
+  const processStore = process as NodeJS.Process & Record<PropertyKey, unknown>;
+  const existing = processStore[ACP_RUNTIME_REGISTRY_STATE_KEY];
+  if (existing) {
+    return existing as AcpRuntimeRegistryGlobalState;
+  }
+  const created: AcpRuntimeRegistryGlobalState = {
+    backendsById: new Map<string, AcpRuntimeBackend>(),
+  };
+  processStore[ACP_RUNTIME_REGISTRY_STATE_KEY] = created;
+  return created;
 }
 
-/**
- * 运行时注册中心 - 管理和创建 ACP 运行时实例
- */
-export class RuntimeRegistry {
-  private readonly backends = new Map<string, RuntimeBackend>();
-  private readonly defaultBackendName = "default";
+const ACP_BACKENDS_BY_ID = resolveAcpRuntimeRegistryGlobalState().backendsById;
 
-  /**
-   * 注册运行时后端
-   */
-  registerBackend(backend: RuntimeBackend): void {
-    if (!backend.name) {
-      throw new AcpRuntimeError(
-        "ACP_INVALID_RUNTIME_OPTION",
-        "Backend name is required.",
-      );
+function isBackendHealthy(backend: AcpRuntimeBackend): boolean {
+  if (!backend.healthy) {
+    return true;
+  }
+  try {
+    return backend.healthy();
+  } catch {
+    return false;
+  }
+}
+
+export function registerAcpRuntimeBackend(backend: AcpRuntimeBackend): void {
+  const id = backend.id.toLowerCase().trim();
+  if (!id) {
+    throw new Error("ACP runtime backend id is required");
+  }
+  if (!backend.runtime) {
+    throw new Error(`ACP runtime backend "${id}" is missing runtime implementation`);
+  }
+  ACP_BACKENDS_BY_ID.set(id, {
+    ...backend,
+    id,
+  });
+}
+
+export function unregisterAcpRuntimeBackend(id: string): void {
+  const normalized = id.toLowerCase().trim();
+  if (!normalized) {
+    return;
+  }
+  ACP_BACKENDS_BY_ID.delete(normalized);
+}
+
+export function getAcpRuntimeBackend(id?: string): AcpRuntimeBackend | null {
+  const normalized = id?.toLowerCase().trim() || "";
+  if (normalized) {
+    return ACP_BACKENDS_BY_ID.get(normalized) ?? null;
+  }
+  if (ACP_BACKENDS_BY_ID.size === 0) {
+    return null;
+  }
+  for (const backend of ACP_BACKENDS_BY_ID.values()) {
+    if (isBackendHealthy(backend)) {
+      return backend;
     }
-    this.backends.set(backend.name.toLowerCase(), backend);
   }
+  return ACP_BACKENDS_BY_ID.values().next().value ?? null;
+}
 
-  /**
-   * 取消注册运行时后端
-   */
-  unregisterBackend(name: string): void {
-    this.backends.delete(name.toLowerCase());
+export function requireAcpRuntimeBackend(id?: string): AcpRuntimeBackend {
+  const normalized = id?.toLowerCase().trim() || "";
+  const backend = getAcpRuntimeBackend(normalized || undefined);
+  if (!backend) {
+    throw new AcpRuntimeError(
+      "ACP_BACKEND_MISSING",
+      "ACP runtime backend is not configured.",
+    );
   }
-
-  /**
-   * 获取后端
-   */
-  getBackend(name: string): RuntimeBackend | undefined {
-    return this.backends.get(name.toLowerCase());
+  if (!isBackendHealthy(backend)) {
+    throw new AcpRuntimeError(
+      "ACP_BACKEND_UNAVAILABLE",
+      "ACP runtime backend is currently unavailable.",
+    );
   }
-
-  /**
-   * 获取所有已注册的后端名称
-   */
-  getRegisteredBackends(): string[] {
-    return Array.from(this.backends.keys());
+  if (normalized && backend.id !== normalized) {
+    throw new AcpRuntimeError(
+      "ACP_BACKEND_MISSING",
+      `ACP runtime backend "${normalized}" is not registered.`,
+    );
   }
+  return backend;
+}
 
-  /**
-   * 创建运行时实例
-   */
-  async createRuntime(params: {
-    backend?: string;
-    meta: SessionAcpMeta;
-  }): Promise<AcpRuntime> {
-    const backendName = params.backend ?? this.defaultBackendName;
-    const backend = this.backends.get(backendName.toLowerCase());
-
-    if (!backend) {
-      // 尝试使用默认后端
-      const defaultBackend = this.backends.get(this.defaultBackendName);
-      if (!defaultBackend) {
-        throw new AcpRuntimeError(
-          "ACP_SESSION_INIT_FAILED",
-          `No ACP runtime backend found for "${backendName}" and no default backend available.`,
-        );
-      }
-      return await defaultBackend.createRuntime(params.meta);
-    }
-
-    return await backend.createRuntime(params.meta);
-  }
-
-  /**
-   * 获取运行时的能力
-   */
-  getCapabilities(backendName: string): AcpRuntimeCapabilities | undefined {
-    const backend = this.backends.get(backendName.toLowerCase());
-    return backend?.getCapabilities?.();
-  }
-
-  /**
-   * 检查后端是否已注册
-   */
-  hasBackend(name: string): boolean {
-    return this.backends.has(name.toLowerCase());
-  }
-
-  /**
-   * 清空所有已注册的后端（用于测试）
-   */
-  clear(): void {
-    this.backends.clear();
+export class AcpRuntimeError extends Error {
+  constructor(
+    public code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "AcpRuntimeError";
   }
 }
 
-/**
- * 全局运行时注册中心单例
- */
-let RUNTIME_REGISTRY_SINGLETON: RuntimeRegistry | null = null;
-
-export function getRuntimeRegistry(): RuntimeRegistry {
-  if (!RUNTIME_REGISTRY_SINGLETON) {
-    RUNTIME_REGISTRY_SINGLETON = new RuntimeRegistry();
-  }
-  return RUNTIME_REGISTRY_SINGLETON;
-}
-
-export function resetRuntimeRegistryForTests(): void {
-  if (RUNTIME_REGISTRY_SINGLETON) {
-    RUNTIME_REGISTRY_SINGLETON.clear();
-  }
-  RUNTIME_REGISTRY_SINGLETON = null;
-}
+export const testing = {
+  resetAcpRuntimeBackendsForTests() {
+    ACP_BACKENDS_BY_ID.clear();
+  },
+};
+export { testing as __testing };

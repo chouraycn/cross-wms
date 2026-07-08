@@ -22,7 +22,7 @@ import type {
   AcpTurnEvent,
   SessionAcpMeta,
 } from './types.js';
-import type { RuntimeBackend } from './runtimeRegistry.js';
+import type { AcpRuntimeBackend } from './runtimeRegistry.js';
 import { runChatSession } from '../runChatSession.js';
 import { logger } from '../../logger.js';
 
@@ -236,21 +236,12 @@ function convertSSEtoAcpEvents(event: Record<string, unknown>): AcpTurnEvent[] {
 /**
  * 创建 ChatService backend，用于注册到 RuntimeRegistry
  */
-export const chatServiceBackend: RuntimeBackend = {
-  name: 'default',
-  version: '1.0.0',
+export const chatServiceBackend: AcpRuntimeBackend = {
+  id: 'default',
 
-  async createRuntime(_meta: SessionAcpMeta): Promise<AcpRuntime> {
-    return new ChatServiceRuntime();
-  },
-
-  getCapabilities(): AcpRuntimeCapabilities {
-    return {
-      supportsStreaming: true,
-      supportsToolCalls: true,
-      supportsAttachments: true,
-      supportsMultipleModes: true,
-    };
+  runtime: {
+    async startSession(_params: { sessionKey: string; cwd?: string }): Promise<void> {},
+    async stopSession(_sessionKey: string): Promise<void> {},
   },
 };
 
@@ -259,11 +250,10 @@ export const chatServiceBackend: RuntimeBackend = {
  * 应在服务启动时调用
  */
 export function registerChatServiceRuntime(): void {
-  // 延迟导入避免循环依赖
-  import('./runtimeRegistry.js').then(({ getRuntimeRegistry }) => {
-    const registry = getRuntimeRegistry();
-    if (!registry.hasBackend('default')) {
-      registry.registerBackend(chatServiceBackend);
+  import('./runtimeRegistry.js').then(({ registerAcpRuntimeBackend, getAcpRuntimeBackend }) => {
+    const existing = getAcpRuntimeBackend('default');
+    if (!existing) {
+      registerAcpRuntimeBackend(chatServiceBackend);
       logger.info('[ACP] ChatService runtime backend 已注册');
     }
   });

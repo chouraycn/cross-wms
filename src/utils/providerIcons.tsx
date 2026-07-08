@@ -44,7 +44,13 @@ export type ProviderIconType =
   | 'aliyun'
   | 'modelark'
   | 'ppio'
-  | 'custom';
+  | 'custom'
+  | 'cohere'
+  | 'fireworks'
+  | 'deepinfra'
+  | 'cerebras'
+  | 'perplexity'
+  | 'litellm';
 
 // ==================== Labels ====================
 
@@ -76,6 +82,12 @@ const PROVIDER_LABELS: Record<string, string> = {
   modelark: '模力方舟',
   ppio: 'PPIO',
   custom: '自定义',
+  cohere: 'Cohere',
+  fireworks: 'Fireworks AI',
+  deepinfra: 'DeepInfra',
+  cerebras: 'Cerebras',
+  perplexity: 'Perplexity',
+  litellm: 'LiteLLM',
 };
 
 export function providerLabel(p: string): string {
@@ -515,6 +527,106 @@ function createProviderIcon(p: string, s: number): React.ReactElement {
         >
           <circle cx="12" cy="12" r="10" fill="#F59E0B" />
           <path d="M8 8h3v8H8zm5 2h3v6h-3z" fill="#FFFFFF" />
+        </svg>
+      );
+
+    // ── Cohere — 品牌色 #6200EE ──────────────────────────────
+    case 'cohere':
+      return (
+        <svg
+          role="img"
+          width={s}
+          height={s}
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ flexShrink: 0, color: '#6200EE' }}
+        >
+          <title>Cohere</title>
+          <path d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12zm4.5-8.5h-3v-1.5h3v-3h-3V6.5h3v-1.5h-3V3h-1.5v1.5h-3v1.5h3v1.5h-3v3h3v1.5h-3v1.5h3v3h1.5v-3z" />
+        </svg>
+      );
+
+    // ── Fireworks AI — 品牌色 #F59E0B ────────────────────────
+    case 'fireworks':
+      return (
+        <svg
+          width={s}
+          height={s}
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ flexShrink: 0 }}
+        >
+          <circle cx="12" cy="12" r="10" fill="#F59E0B" />
+          <path d="M12 6v12M6 12h12M8 8l8 8M8 16l8-8" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+
+    // ── DeepInfra — 品牌色 #10B981 ───────────────────────────
+    case 'deepinfra':
+      return (
+        <svg
+          width={s}
+          height={s}
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ flexShrink: 0 }}
+        >
+          <rect width="24" height="24" rx="4" fill="#10B981" />
+          <path d="M8 16l4-4 4 4M8 10l4-4 4 4" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+
+    // ── Cerebras — 品牌色 #7C3AED ─────────────────────────────
+    case 'cerebras':
+      return (
+        <svg
+          width={s}
+          height={s}
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ flexShrink: 0 }}
+        >
+          <rect width="24" height="24" rx="4" fill="#7C3AED" />
+          <path d="M7 8h4v8H7zM13 8h4v8h-4z" fill="#FFFFFF" />
+          <path d="M6 12h12" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+
+    // ── Perplexity — 品牌色 #2563EB ────────────────────────────
+    case 'perplexity':
+      return (
+        <svg
+          width={s}
+          height={s}
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ flexShrink: 0 }}
+        >
+          <rect width="24" height="24" rx="4" fill="#2563EB" />
+          <circle cx="12" cy="10" r="4" stroke="#FFFFFF" strokeWidth="2" fill="none" />
+          <path d="M12 14v4M9 17h6" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+
+    // ── LiteLLM — 品牌色 #0EA5E9 ──────────────────────────────
+    case 'litellm':
+      return (
+        <svg
+          width={s}
+          height={s}
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ flexShrink: 0 }}
+        >
+          <rect width="24" height="24" rx="4" fill="#0EA5E9" />
+          <path d="M4 8h16M4 12h10M4 16h14" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="19" cy="12" r="2" fill="#FFFFFF" />
         </svg>
       );
 

@@ -33,6 +33,12 @@ export type ModelProvider =
   | 'groq'
   | 'mistral'
   | 'nvidia'
+  | 'cohere'
+  | 'fireworks'
+  | 'deepinfra'
+  | 'cerebras'
+  | 'perplexity'
+  | 'litellm'
   | 'custom';
 
 /** API 适配器类型 */

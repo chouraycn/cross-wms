@@ -360,6 +360,116 @@
       "contextWindow": 128000,
       "maxTokens": 4096,
       "capabilities": ["general"]
+    },
+    {
+      "id": "command-r-plus",
+      "name": "Command R+",
+      "provider": "cohere",
+      "apiEndpoint": "https://api.cohere.com/v1",
+      "description": "Cohere Command R+，旗舰推理模型，支持长上下文",
+      "contextWindow": 128000,
+      "maxTokens": 50000,
+      "capabilities": ["reasoning", "code", "general"]
+    },
+    {
+      "id": "command-r",
+      "name": "Command R",
+      "provider": "cohere",
+      "apiEndpoint": "https://api.cohere.com/v1",
+      "description": "Cohere Command R，强大推理模型",
+      "contextWindow": 128000,
+      "maxTokens": 20000,
+      "capabilities": ["reasoning", "general"]
+    },
+    {
+      "id": "accounts/fireworks/models/kimi-k2p6",
+      "name": "Kimi K2.6",
+      "provider": "fireworks",
+      "apiEndpoint": "https://api.fireworks.ai/inference/v1",
+      "description": "Fireworks Kimi K2.6，多模态模型",
+      "contextWindow": 262144,
+      "maxTokens": 262144,
+      "capabilities": ["multimodal", "general"]
+    },
+    {
+      "id": "accounts/fireworks/routers/kimi-k2p5-turbo",
+      "name": "Kimi K2.5 Turbo",
+      "provider": "fireworks",
+      "apiEndpoint": "https://api.fireworks.ai/inference/v1",
+      "description": "Fireworks Kimi K2.5 Turbo，免费试用",
+      "contextWindow": 256000,
+      "maxTokens": 256000,
+      "capabilities": ["multimodal", "fast", "costEffective", "general"]
+    },
+    {
+      "id": "meta-llama/Meta-Llama-3-70B-Instruct",
+      "name": "Llama 3 70B",
+      "provider": "deepinfra",
+      "apiEndpoint": "https://api.deepinfra.com/v1/openai",
+      "description": "DeepInfra Llama 3 70B Instruct",
+      "contextWindow": 128000,
+      "maxTokens": 32000,
+      "capabilities": ["reasoning", "code", "general"]
+    },
+    {
+      "id": "meta-llama/Meta-Llama-3-8B-Instruct",
+      "name": "Llama 3 8B",
+      "provider": "deepinfra",
+      "apiEndpoint": "https://api.deepinfra.com/v1/openai",
+      "description": "DeepInfra Llama 3 8B Instruct，轻量快速",
+      "contextWindow": 128000,
+      "maxTokens": 16000,
+      "capabilities": ["fast", "costEffective", "general"]
+    },
+    {
+      "id": "llama-3.3-70b",
+      "name": "Llama 3.3 70B",
+      "provider": "cerebras",
+      "apiEndpoint": "https://api.cerebras.ai/v1",
+      "description": "Cerebras Llama 3.3 70B，极速推理",
+      "contextWindow": 128000,
+      "maxTokens": 8192,
+      "capabilities": ["fast", "general", "reasoning"]
+    },
+    {
+      "id": "llama-3.1-8b",
+      "name": "Llama 3.1 8B",
+      "provider": "cerebras",
+      "apiEndpoint": "https://api.cerebras.ai/v1",
+      "description": "Cerebras Llama 3.1 8B，最快轻量推理",
+      "contextWindow": 128000,
+      "maxTokens": 8192,
+      "capabilities": ["fast", "costEffective", "general"]
+    },
+    {
+      "id": "sonar",
+      "name": "Sonar",
+      "provider": "perplexity",
+      "apiEndpoint": "https://api.perplexity.ai",
+      "description": "Perplexity Sonar，搜索增强对话",
+      "contextWindow": 127000,
+      "maxTokens": 8192,
+      "capabilities": ["search", "general"]
+    },
+    {
+      "id": "sonar-pro",
+      "name": "Sonar Pro",
+      "provider": "perplexity",
+      "apiEndpoint": "https://api.perplexity.ai",
+      "description": "Perplexity Sonar Pro，深度搜索增强",
+      "contextWindow": 200000,
+      "maxTokens": 8192,
+      "capabilities": ["search", "reasoning", "general"]
+    },
+    {
+      "id": "litellm-proxy-default",
+      "name": "LiteLLM Proxy Default",
+      "provider": "litellm",
+      "apiEndpoint": "http://localhost:4000",
+      "description": "LiteLLM 代理默认模型，由 Proxy 配置决定",
+      "contextWindow": 128000,
+      "maxTokens": 8192,
+      "capabilities": ["general", "proxy"]
     }
   ]
 }

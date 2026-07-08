@@ -13,7 +13,8 @@ const ModelProviderSchema = z.enum([
   'xai', 'zai', 'minimax', 'kimi', 'byteplus', 'openrouter',
   'novita', 'wwqglobal', 'wwqcn', 'aws', 'azure', 'vercel',
   'ollama', 'bigmodel', 'minimaxcn', 'kimicn', 'volcengine',
-  'aliyun', 'modelark', 'ppio', 'groq', 'mistral', 'nvidia', 'custom',
+  'aliyun', 'modelark', 'ppio', 'groq', 'mistral', 'nvidia',
+  'cohere', 'fireworks', 'deepinfra', 'cerebras', 'perplexity', 'litellm', 'custom',
 ]);
 
 const ModelCapabilitySchema = z.enum([

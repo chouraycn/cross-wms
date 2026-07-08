@@ -29,6 +29,12 @@ import { NVIDIA_PROVIDER } from './modelProviderNvidia.js';
 import { OPENAI_PROVIDER } from './modelProviderOpenai.js';
 import { CHINESE_PROVIDERS } from './modelProviderChinese.js';
 import { OLLAMA_PROVIDER } from './modelProviderOllama.js';
+import { COHERE_PROVIDER } from './modelProviderCohere.js';
+import { FIREWORKS_PROVIDER } from './modelProviderFireworks.js';
+import { DEEPINFRA_PROVIDER } from './modelProviderDeepInfra.js';
+import { CEREBRAS_PROVIDER } from './modelProviderCerebras.js';
+import { PERPLEXITY_PROVIDER } from './modelProviderPerplexity.js';
+import { LITELLM_PROVIDER } from './modelProviderLiteLLM.js';
 
 // ============================================================
 // 全局注册表
@@ -44,6 +50,12 @@ const BUILTIN_PROVIDERS: ProviderInfo[] = [
   GROQ_PROVIDER,
   OPENAI_PROVIDER,
   NVIDIA_PROVIDER,
+  COHERE_PROVIDER,
+  FIREWORKS_PROVIDER,
+  DEEPINFRA_PROVIDER,
+  CEREBRAS_PROVIDER,
+  PERPLEXITY_PROVIDER,
+  LITELLM_PROVIDER,
   // 中国提供商
   ...CHINESE_PROVIDERS,
   // 其他
@@ -309,6 +321,9 @@ const PROVIDER_LABELS: Record<string, string> = {
   volcengine: '字节豆包',
   xai: 'xAI',
   openrouter: 'OpenRouter',
+  cohere: 'Cohere',
+  fireworks: 'Fireworks AI',
+  deepinfra: 'DeepInfra',
 };
 
 /**

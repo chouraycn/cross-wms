@@ -132,6 +132,9 @@ import { startEventListener, stopEventListener } from './engine/eventListener.js
 import { pluginRegistry } from './engine/pluginRegistry.js';
 import { listPluginTools } from './engine/toolRegistry.js';
 
+// v4.1: Channel Registry（飞书、企业微信等内置通道）
+import { registerBuiltinChannels } from './channels/index.js';
+
 // v3.0: BrowserHost Client（延迟启动，首次使用时自动启动）
 import { stopBrowserHost } from './services/browserHostClient.js';
 
@@ -167,8 +170,8 @@ import gatewayRouter from './gateway/gateway.js';
 import { configureGatewayAuth, addApiKey, generateDevApiKey } from './gateway/gatewayAuth.js';
 import { registerGatewayRoutes } from './gateway/gatewayRoutes.js';
 
-// v6.0: Session Lifecycle Manager
-import { sessionLifecycleManager } from './services/sessionLifecycle.js';
+// v6.0: Session Lifecycle Manager (改为异步导入，仅在启动完成后使用)
+// import { sessionLifecycleManager } from './services/sessionLifecycle.js';
 
 // v7.0: Message Queue (队列与并发控制)
 import { messageQueue } from './engine/messageQueue.js';
@@ -314,6 +317,7 @@ app.use('/api/pdf', lazyRouter(() => import('./routes/pdf.js'), undefined, 'pdf'
 app.use('/api/lsp', lazyRouter(() => import('./routes/lsp.js'), undefined, 'lsp'));
 app.use('/api/file', lazyRouter(() => import('./routes/file.js'), undefined, 'file'));
 app.use('/api/webhook', lazyRouter(() => import('./routes/webhook.js'), undefined, 'webhook'));
+app.use('/api/webhook/channels', lazyRouter(() => import('./routes/channel-webhook.js'), undefined, 'channel-webhook'));
 app.use('/api/api-templates', lazyRouter(() => import('./routes/apiTemplates.js'), undefined, 'api-templates'));
 app.use('/api/api-credentials', lazyRouter(() => import('./routes/apiCredentials.js'), undefined, 'api-credentials'));
 app.use('/api/api-history', lazyRouter(() => import('./routes/apiHistory.js'), undefined, 'api-history'));
@@ -479,6 +483,20 @@ server.listen(PORT, async () => {
   ]);
   recordBackendPhase('server:core-init', performance.now() - coreInitStart);
 
+  // v4.1: 注册内置通道插件（web、feishu、wecom）
+  registerBuiltinChannels();
+  logger.info('[Channel Registry] 内置通道已注册');
+
+  // v12.0: 初始化 Doctor 诊断框架的通道注册表
+  import('./engine/acp/doctor.js').then(({ initDoctorChannelRegistry }) => {
+    import('./channels/index.js').then(({ getGlobalChannelRegistry }) => {
+      initDoctorChannelRegistry(getGlobalChannelRegistry);
+      logger.info('[Doctor] 通道注册表已初始化');
+    });
+  }).catch(err => {
+    logger.warn('[Server] Doctor 通道注册表初始化失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+  });
+
   // v1.9.4: Agent Registry 和 Soul 文件改为后台初始化，不阻塞启动流程
   setTimeout(() => {
     agentRegistry.initialize();
@@ -578,8 +596,13 @@ server.listen(PORT, async () => {
   initTriggerManager();
   startEventListener();
 
-  // v6.0: 启动会话生命周期管理器（空闲归档 + 每日重置）
-  sessionLifecycleManager.start();
+  // v6.0: 启动会话生命周期管理器（空闲归档 + 每日重置）— 异步导入，不阻塞启动
+  import('./services/sessionLifecycle.js').then(({ sessionLifecycleManager }) => {
+    sessionLifecycleManager.start();
+    logger.info('[SessionLifecycle] 已启动');
+  }).catch(err => {
+    logger.warn('[SessionLifecycle] 启动失败:', err instanceof Error ? err.message : String(err));
+  });
 
   // v7.0: 启动消息队列（空闲会话清理 + 全局并发度控制）
   messageQueue.start();
@@ -613,8 +636,10 @@ server.listen(PORT, async () => {
     // v2.0: 停止触发器引擎和事件监听器
     stopTriggerEngine();
     stopEventListener();
-    // v6.0: 停止会话生命周期守护
-    sessionLifecycleManager.stop();
+    // v6.0: 停止会话生命周期守护 — 异步导入
+    import('./services/sessionLifecycle.js').then(({ sessionLifecycleManager }) => {
+      sessionLifecycleManager.stop();
+    }).catch(() => {});
     // v7.0: 停止消息队列
     messageQueue.stop();
     // v10.0: 停止 AttemptRunner
