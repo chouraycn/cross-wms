@@ -510,8 +510,51 @@ export function useAgentChat(
       const hasStreamingMessage = currentSession.messages.some(
         (msg) => msg.isStreaming
       );
+      // 从 toolCalls 中提取 generatedFiles
+      const enrichedMessages = currentSession.messages.map((msg) => {
+        if (msg.role !== 'assistant' || !msg.toolCalls || msg.toolCalls.length === 0) {
+          return msg;
+        }
+        if (msg.generatedFiles && msg.generatedFiles.length > 0) {
+          return msg; // 已有 generatedFiles，直接使用
+        }
+        const generatedFiles: Array<{
+          fileName: string;
+          fileSize: number;
+          description?: string;
+          downloadUrl: string;
+          previewUrl?: string;
+          sessionId?: string;
+          createdAt?: string;
+        }> = [];
+        for (const tc of msg.toolCalls) {
+          if (tc.name === 'file_generateFile' && tc.result) {
+            try {
+              const parsed = JSON.parse(tc.result);
+              if (parsed.success && parsed.fileName) {
+                generatedFiles.push({
+                  fileName: parsed.fileName,
+                  fileSize: parsed.fileSize || 0,
+                  description: parsed.description,
+                  downloadUrl: parsed.downloadUrl,
+                  previewUrl: parsed.previewUrl,
+                  sessionId: parsed.sessionId,
+                  createdAt: parsed.createdAt,
+                });
+              }
+            } catch {
+              // 解析失败，忽略
+            }
+          }
+        }
+        if (generatedFiles.length > 0) {
+          return { ...msg, generatedFiles };
+        }
+        return msg;
+      });
+
       if (hasStreamingMessage) {
-        const cleanedMessages = currentSession.messages.map((msg) =>
+        const cleanedMessages = enrichedMessages.map((msg) =>
           msg.isStreaming
             ? {
                 ...msg,
@@ -529,7 +572,7 @@ export function useAgentChat(
         );
         setMessages(cleanedMessages);
       } else {
-        setMessages(currentSession.messages);
+        setMessages(enrichedMessages);
       }
     }
   }, [currentSession?.id]);
@@ -960,6 +1003,32 @@ export function useAgentChat(
             status: toolResult ? 'completed' as const : 'calling' as const,
           };
 
+          // 提取 file_generateFile 工具的结果到 generatedFiles
+          const newGeneratedFiles = lastMsg.generatedFiles ? [...lastMsg.generatedFiles] : [];
+          if (toolName === 'file_generateFile' && toolResult) {
+            try {
+              const parsed = JSON.parse(toolResult);
+              if (parsed.success && parsed.fileName) {
+                const fileInfo = {
+                  fileName: parsed.fileName,
+                  fileSize: parsed.fileSize || 0,
+                  description: parsed.description,
+                  downloadUrl: parsed.downloadUrl,
+                  previewUrl: parsed.previewUrl,
+                  sessionId: parsed.sessionId,
+                  createdAt: new Date().toISOString(),
+                };
+                // 避免重复添加
+                const exists = newGeneratedFiles.some(f => f.fileName === fileInfo.fileName);
+                if (!exists) {
+                  newGeneratedFiles.push(fileInfo);
+                }
+              }
+            } catch {
+              // 解析失败，忽略
+            }
+          }
+
           // 上限保护：超过 MAX_TOOLCALLS_PER_MESSAGE 时，将最早的项合并为摘要占位
           // 保留最近 MAX_TOOLCALLS_PER_MESSAGE - 1 条 + 1 个摘要位
           let newToolCalls: unknown[];
@@ -983,6 +1052,7 @@ export function useAgentChat(
           const updated: Message = {
             ...lastMsg,
             toolCalls: newToolCalls as Message['toolCalls'],
+            generatedFiles: newGeneratedFiles.length > 0 ? newGeneratedFiles : lastMsg.generatedFiles,
           };
 
           const newMessages = [...prev];

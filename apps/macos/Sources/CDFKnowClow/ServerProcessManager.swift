@@ -16,7 +16,7 @@ actor ServerProcessManager {
     private var desiredActive = false
     private var restartFailCount = 0
     private let maxRestartFails = 3
-    private let startTimeout: TimeInterval = 30
+    private let startTimeout: TimeInterval = 60
 
     private func serverPort() async -> Int {
         if let raw = ProcessInfo.processInfo.environment["CDF_SERVER_PORT"],
@@ -270,7 +270,7 @@ actor ServerProcessManager {
                 serverLogger.info("Server is ready on port \(port)")
             } else {
                 self.status = .failed("Server failed to become ready")
-                serverLogger.error("Server failed to become ready within \(self.startTimeout)s")
+                serverLogger.error("Server failed to become ready within \(self.startTimeout)s - first start may need more time for DB init")
             }
         } catch {
             self.status = .failed("Failed to start server: \(error.localizedDescription)")

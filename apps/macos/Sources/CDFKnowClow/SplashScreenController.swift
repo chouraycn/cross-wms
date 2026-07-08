@@ -65,7 +65,7 @@ final class SplashScreenController {
 
         await serverManager.start()
 
-        let deadline = Date().addingTimeInterval(30)
+        let deadline = Date().addingTimeInterval(60)
         var isReady = false
         var errorMessage: String?
 
@@ -96,7 +96,7 @@ final class SplashScreenController {
         }
 
         if !isReady && errorMessage == nil {
-            splashLogger.warning("Server startup timeout after 30s, proceeding anyway")
+            splashLogger.warning("Server startup timeout after 60s, proceeding anyway")
             try? await Task.sleep(nanoseconds: 2_000_000_000)
         }
 

@@ -1,222 +1,192 @@
-/**
- * gateway 命令
- * 网关管理 (start/stop/status/probe/info)
- *
- * 参考 openclaw gateway-cli，封装对 server/gateway 模块的调用。
- * 当网关运行时未就绪时，使用本地状态进行模拟，保证 CLI 可用。
- */
-
-import type { Command } from "commander";
-import { logger } from "../../logger.js";
+import type { Command } from 'commander';
+import http from 'http';
+import { logger } from '../../logger.js';
+import { detectProvider, normalizeModelId } from '../../gateway/gateway.js';
 
 export type GatewayOptions = {
   json?: boolean;
   port?: string;
 };
 
-/** 网关运行状态 */
-type GatewayState = "running" | "stopped" | "error";
-
-/** 网关状态信息 */
 interface GatewayStatus {
-  state: GatewayState;
+  state: 'running' | 'stopped';
   url: string;
   port: number;
-  pid?: number;
-  startedAt?: string;
-  channels: { name: string; status: "online" | "offline"; lastHeartbeat: string }[];
+  protocol: string;
+  version: string;
 }
 
-/** 探活结果 */
 interface GatewayProbe {
   reachable: boolean;
   latencyMs: number;
-  auth: "ok" | "missing" | "denied";
-  channels: number;
+  statusCode?: number;
+  message?: string;
 }
 
-/** 网关信息 */
-interface GatewayInfo {
-  version: string;
-  protocol: string;
-  maxConnections: number;
-  activeConnections: number;
-  uptime: string;
+interface ModelInfo {
+  id: string;
+  normalizedId: string;
+  provider: string;
 }
 
-/** 模拟网关状态 */
-let gatewayState: GatewayStatus = {
-  state: "stopped",
-  url: "ws://localhost:7331",
-  port: 7331,
-  channels: [],
-};
+const DEFAULT_PORT = 7331;
 
-/** 解析端口 */
 function resolvePort(port?: string): number {
   if (port && /^\d+$/.test(port)) {
     return parseInt(port, 10);
   }
-  return gatewayState.port;
+  return DEFAULT_PORT;
 }
 
-/** 获取网关状态 */
-function getGatewayStatus(): GatewayStatus {
-  return { ...gatewayState, channels: [...gatewayState.channels] };
-}
-
-/** 启动网关 */
-function startGateway(port?: string): GatewayStatus {
-  const resolvedPort = resolvePort(port);
-  gatewayState = {
-    state: "running",
-    url: `ws://localhost:${resolvedPort}`,
-    port: resolvedPort,
-    pid: Math.floor(Math.random() * 90000) + 10000,
-    startedAt: new Date().toISOString(),
-    channels: [
-      { name: "cli", status: "online", lastHeartbeat: "刚刚" },
-      { name: "terminal", status: "online", lastHeartbeat: "刚刚" },
-    ],
-  };
-  return getGatewayStatus();
-}
-
-/** 停止网关 */
-function stopGateway(): GatewayStatus {
-  gatewayState = {
-    ...gatewayState,
-    state: "stopped",
-    pid: undefined,
-    startedAt: undefined,
-    channels: [],
-  };
-  return getGatewayStatus();
-}
-
-/** 探活网关 */
-function probeGateway(): GatewayProbe {
-  const reachable = gatewayState.state === "running";
-  return {
-    reachable,
-    latencyMs: reachable ? Math.floor(Math.random() * 100) + 10 : 0,
-    auth: reachable ? "ok" : "missing",
-    channels: reachable ? gatewayState.channels.length : 0,
-  };
-}
-
-/** 获取网关信息 */
-function getGatewayInfo(): GatewayInfo {
-  return {
-    version: "1.0.0",
-    protocol: "ws/v1",
-    maxConnections: 64,
-    activeConnections: gatewayState.state === "running" ? gatewayState.channels.length : 0,
-    uptime: gatewayState.startedAt ? `${Math.floor((Date.now() - new Date(gatewayState.startedAt).getTime()) / 1000)}s` : "0s",
-  };
-}
-
-/** 格式化 JSON 输出 */
 function formatJsonOutput(data: unknown): string {
   return JSON.stringify(data, null, 2);
 }
 
-/** 格式化状态文本输出 */
+async function getGatewayStatus(port: number): Promise<GatewayStatus> {
+  return new Promise((resolve) => {
+    const req = http.get(`http://localhost:${port}/health`, (res) => {
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        try {
+          const info = JSON.parse(body);
+          resolve({
+            state: 'running',
+            url: `http://localhost:${port}`,
+            port,
+            protocol: 'http/v1',
+            version: info.version || '1.0.0',
+          });
+        } catch {
+          resolve({
+            state: 'running',
+            url: `http://localhost:${port}`,
+            port,
+            protocol: 'http/v1',
+            version: '1.0.0',
+          });
+        }
+      });
+    });
+    req.on('error', () => {
+      resolve({
+        state: 'stopped',
+        url: `http://localhost:${port}`,
+        port,
+        protocol: 'http/v1',
+        version: '1.0.0',
+      });
+    });
+    req.setTimeout(2000);
+  });
+}
+
+async function probeGateway(port: number): Promise<GatewayProbe> {
+  const start = Date.now();
+  return new Promise((resolve) => {
+    const req = http.get(`http://localhost:${port}/health`, (res) => {
+      const latency = Date.now() - start;
+      resolve({
+        reachable: true,
+        latencyMs: latency,
+        statusCode: res.statusCode,
+        message: res.statusCode === 200 ? 'OK' : `HTTP ${res.statusCode}`,
+      });
+    });
+    req.on('error', () => {
+      const latency = Date.now() - start;
+      resolve({
+        reachable: false,
+        latencyMs: latency,
+        message: 'Connection refused',
+      });
+    });
+    req.setTimeout(3000);
+  });
+}
+
+async function getModels(port: number): Promise<Array<{ id: string; owned_by: string }> | null> {
+  return new Promise((resolve) => {
+    const req = http.get(`http://localhost:${port}/v1/models`, (res) => {
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(body);
+          resolve(result.data || []);
+        } catch {
+          resolve(null);
+        }
+      });
+    });
+    req.on('error', () => {
+      resolve(null);
+    });
+    req.setTimeout(3000);
+  });
+}
+
+function resolveModel(modelId: string): ModelInfo {
+  return {
+    id: modelId,
+    normalizedId: normalizeModelId(modelId),
+    provider: detectProvider(modelId),
+  };
+}
+
 function formatStatusOutput(status: GatewayStatus): string {
   const lines: string[] = [];
-  lines.push("");
-  lines.push("  网关状态:");
+  lines.push('');
+  lines.push('  网关状态:');
   lines.push(`    状态:   ${status.state}`);
   lines.push(`    URL:    ${status.url}`);
   lines.push(`    端口:   ${status.port}`);
-  if (status.pid !== undefined) {
-    lines.push(`    PID:    ${status.pid}`);
-  }
-  if (status.startedAt) {
-    lines.push(`    启动:   ${new Date(status.startedAt).toLocaleString("zh-CN")}`);
-  }
-  if (status.channels.length > 0) {
-    lines.push("");
-    lines.push("  通道:");
-    for (const channel of status.channels) {
-      const icon = channel.status === "online" ? "✓" : "✗";
-      lines.push(`    ${icon} ${channel.name.padEnd(12)} ${channel.status} (${channel.lastHeartbeat})`);
-    }
-  }
-  lines.push("");
-  return lines.join("\n");
+  lines.push(`    协议:   ${status.protocol}`);
+  lines.push(`    版本:   ${status.version}`);
+  lines.push('');
+  return lines.join('\n');
 }
 
-/** 格式化探活文本输出 */
 function formatProbeOutput(probe: GatewayProbe): string {
   const lines: string[] = [];
-  lines.push("");
-  lines.push("  网关探活:");
-  lines.push(`    可达:     ${probe.reachable ? "✓ 是" : "✗ 否"}`);
-  lines.push(`    延迟:     ${probe.reachable ? `${probe.latencyMs}ms` : "n/a"}`);
-  lines.push(`    认证:     ${probe.auth}`);
-  lines.push(`    通道数:   ${probe.channels}`);
-  lines.push("");
-  return lines.join("\n");
+  lines.push('');
+  lines.push('  网关探活:');
+  lines.push(`    可达:     ${probe.reachable ? '✓ 是' : '✗ 否'}`);
+  lines.push(`    延迟:     ${probe.latencyMs}ms`);
+  if (probe.statusCode) {
+    lines.push(`    状态码:   ${probe.statusCode}`);
+  }
+  if (probe.message) {
+    lines.push(`    消息:     ${probe.message}`);
+  }
+  lines.push('');
+  return lines.join('\n');
 }
 
-/** 格式化网关信息文本输出 */
-function formatInfoOutput(info: GatewayInfo): string {
+function formatModelResolveOutput(model: ModelInfo): string {
   const lines: string[] = [];
-  lines.push("");
-  lines.push("  网关信息:");
-  lines.push(`    版本:           ${info.version}`);
-  lines.push(`    协议:           ${info.protocol}`);
-  lines.push(`    最大连接数:     ${info.maxConnections}`);
-  lines.push(`    活跃连接数:     ${info.activeConnections}`);
-  lines.push(`    运行时长:       ${info.uptime}`);
-  lines.push("");
-  return lines.join("\n");
+  lines.push('');
+  lines.push('  模型解析:');
+  lines.push(`    原始 ID:      ${model.id}`);
+  lines.push(`    归一化 ID:    ${model.normalizedId}`);
+  lines.push(`    提供商:       ${model.provider}`);
+  lines.push('');
+  return lines.join('\n');
 }
 
-/**
- * 注册 gateway 命令
- */
 export function registerGatewayCommand(program: Command): void {
   const gatewayCmd = program
-    .command("gateway")
-    .description("网关管理 (start/stop/status/probe/info)");
+    .command('gateway')
+    .description('网关管理 (status/probe/models/resolve)');
 
   gatewayCmd
-    .command("start")
-    .description("启动网关")
-    .option("--port <port>", "监听端口")
-    .option("--json", "JSON 输出格式")
-    .action((options: GatewayOptions) => {
-      const status = startGateway(options.port);
-      if (options.json) {
-        logger.info(formatJsonOutput(status));
-      } else {
-        logger.info(`网关已启动 (PID: ${status.pid ?? "n/a"})`);
-        logger.info(formatStatusOutput(status));
-      }
-    });
-
-  gatewayCmd
-    .command("stop")
-    .description("停止网关")
-    .option("--json", "JSON 输出格式")
-    .action((options: GatewayOptions) => {
-      const status = stopGateway();
-      if (options.json) {
-        logger.info(formatJsonOutput(status));
-      } else {
-        logger.info("网关已停止");
-        logger.info(formatStatusOutput(status));
-      }
-    });
-
-  gatewayCmd
-    .command("status")
-    .description("查看网关状态")
-    .option("--json", "JSON 输出格式")
-    .action((options: GatewayOptions) => {
-      const status = getGatewayStatus();
+    .command('status')
+    .description('查看网关状态')
+    .option('--port <port>', '网关端口', String(DEFAULT_PORT))
+    .option('--json', 'JSON 输出格式')
+    .action(async (options: GatewayOptions) => {
+      const port = resolvePort(options.port);
+      const status = await getGatewayStatus(port);
       if (options.json) {
         logger.info(formatJsonOutput(status));
       } else {
@@ -225,11 +195,13 @@ export function registerGatewayCommand(program: Command): void {
     });
 
   gatewayCmd
-    .command("probe")
-    .description("探活网关 (可达性/认证/读探活)")
-    .option("--json", "JSON 输出格式")
-    .action((options: GatewayOptions) => {
-      const probe = probeGateway();
+    .command('probe')
+    .description('探活网关')
+    .option('--port <port>', '网关端口', String(DEFAULT_PORT))
+    .option('--json', 'JSON 输出格式')
+    .action(async (options: GatewayOptions) => {
+      const port = resolvePort(options.port);
+      const probe = await probeGateway(port);
       if (options.json) {
         logger.info(formatJsonOutput(probe));
       } else {
@@ -238,21 +210,76 @@ export function registerGatewayCommand(program: Command): void {
     });
 
   gatewayCmd
-    .command("info")
-    .description("查看网关详细信息")
-    .option("--json", "JSON 输出格式")
-    .action((options: GatewayOptions) => {
-      const info = getGatewayInfo();
+    .command('models')
+    .description('获取网关模型列表')
+    .option('--port <port>', '网关端口', String(DEFAULT_PORT))
+    .option('--json', 'JSON 输出格式')
+    .action(async (options: GatewayOptions) => {
+      const port = resolvePort(options.port);
+      const models = await getModels(port);
       if (options.json) {
-        logger.info(formatJsonOutput(info));
+        logger.info(formatJsonOutput(models || { error: 'Gateway not reachable' }));
       } else {
-        logger.info(formatInfoOutput(info));
+        if (!models) {
+          logger.info('网关不可达，无法获取模型列表');
+        } else {
+          logger.info(`\n  网关模型列表 (共 ${models.length} 个):\n`);
+          for (const model of models) {
+            logger.info(`    ${model.id.padEnd(24)} ${model.owned_by}`);
+          }
+          logger.info('');
+        }
       }
     });
 
-  // 默认 status 子命令
-  gatewayCmd.action((options: GatewayOptions) => {
-    const status = getGatewayStatus();
+  gatewayCmd
+    .command('resolve <model>')
+    .description('解析模型 ID（归一化 + 提供商检测）')
+    .option('--json', 'JSON 输出格式')
+    .action((model: string, options: GatewayOptions) => {
+      const result = resolveModel(model);
+      if (options.json) {
+        logger.info(formatJsonOutput(result));
+      } else {
+        logger.info(formatModelResolveOutput(result));
+      }
+    });
+
+  gatewayCmd
+    .command('info')
+    .description('查看网关详细信息')
+    .option('--port <port>', '网关端口', String(DEFAULT_PORT))
+    .option('--json', 'JSON 输出格式')
+    .action(async (options: GatewayOptions) => {
+      const port = resolvePort(options.port);
+      const [status, probe] = await Promise.all([
+        getGatewayStatus(port),
+        probeGateway(port),
+      ]);
+      const info = {
+        ...status,
+        latency: probe.latencyMs,
+        reachable: probe.reachable,
+      };
+      if (options.json) {
+        logger.info(formatJsonOutput(info));
+      } else {
+        logger.info('');
+        logger.info('  网关信息:');
+        logger.info(`    状态:         ${status.state}`);
+        logger.info(`    URL:          ${status.url}`);
+        logger.info(`    端口:         ${status.port}`);
+        logger.info(`    协议:         ${status.protocol}`);
+        logger.info(`    版本:         ${status.version}`);
+        logger.info(`    可达:         ${probe.reachable ? '是' : '否'}`);
+        logger.info(`    延迟:         ${probe.latencyMs}ms`);
+        logger.info('');
+      }
+    });
+
+  gatewayCmd.action(async (options: GatewayOptions) => {
+    const port = resolvePort(options.port);
+    const status = await getGatewayStatus(port);
     if (options.json) {
       logger.info(formatJsonOutput(status));
     } else {

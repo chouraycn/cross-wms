@@ -14,10 +14,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box } from '@mui/material';
 import { callApi, isPyWebView } from '../../services/tencentDocsApi';
+import { isMacOSApp } from '../../utils/env';
 
 // 检测是否在 Swift 原生 App 模式下
 // v1.5.220: Swift 端会注入 window.cdfAppNative.isNative = true
+// v3.3: 增加构建时检测，避免运行时注入延迟导致检测失败
 const isNativeApp = (): boolean => {
+  if (isMacOSApp()) return true;
   // @ts-ignore
   return !!(window.cdfAppNative && window.cdfAppNative.isNative);
 };
@@ -32,7 +35,8 @@ const TOP = 19;             // 距离窗口顶部（往下4px + 5px = 9px）
 type WindowState = 'normal' | 'maximized';
 
 const WindowDragBar: React.FC<{ height?: number }> = ({ height: _h }) => {
-  const [ready, setReady] = useState(() => isPyWebView());
+  // v3.3: 使用构建时检测作为初始值，避免运行时注入延迟导致初始渲染错误
+  const [ready, setReady] = useState(() => isMacOSApp() || isPyWebView());
   const [windowState, setWindowState] = useState<WindowState>('normal');
   const [focused, setFocused] = useState(true);
 

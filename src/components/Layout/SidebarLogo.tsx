@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 import { getGrayScale } from '../../constants/theme';
-import { APP_VERSION } from '../Settings/sharedStyles';
+import { APP_VERSION } from './appVersion';
 
 // ===================== Props =====================
 

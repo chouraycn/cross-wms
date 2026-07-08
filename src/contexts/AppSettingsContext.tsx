@@ -61,25 +61,6 @@ export interface WeComDocsConfig {
   docLinks: WeComDocLinkItem[];
 }
 
-// ===================== 容积率文档配置 =====================
-
-/** 容积率文档链接条目 */
-export interface VolumeDocLinkItem {
-  /** 唯一标识 */
-  id: string;
-  /** 文档链接 URL */
-  url: string;
-  /** 文档标题 */
-  title: string;
-  /** 数据类型 */
-  dataType: 'volume' | 'other';
-}
-
-export interface VolumeDocsConfig {
-  /** 已添加的文档链接列表 */
-  docLinks: VolumeDocLinkItem[];
-}
-
 // ===================== 仪表盘配置 =====================
 
 /** 仪表盘指标可见性配置 */
@@ -182,37 +163,6 @@ export interface AppearanceConfig {
   botName: string;
 }
 
-// ===================== 系统授权配置 =====================
-
-/** macOS TCC 单项权限状态 */
-export interface TccPermissionItem {
-  /** 是否已由用户手动授权 */
-  enabled: boolean;
-  /** 权限检查状态 */
-  status: 'granted' | 'denied' | 'unknown';
-  /** 上次检查时间戳（毫秒） */
-  lastChecked: number | null;
-}
-
-/** macOS TCC 权限集 */
-export interface TccPermissions {
-  screenRecording: TccPermissionItem;
-  accessibility: TccPermissionItem;
-  inputMonitoring: TccPermissionItem;
-  fullDiskAccess: TccPermissionItem;
-  microphone: TccPermissionItem;
-  camera: TccPermissionItem;
-  notifications: TccPermissionItem;
-  automation: TccPermissionItem;
-}
-
-export interface SystemAuthorizationConfig {
-  /** 是否启用系统授权（启用后自动授予系统级权限，无需每次手动确认） */
-  enabled: boolean;
-  /** macOS TCC 各权限详细配置 */
-  permissions: TccPermissions;
-}
-
 // ===================== AI 引擎配置 =====================
 
 export type ExecutionMode = 'legacy' | 'react' | 'agent';
@@ -251,13 +201,10 @@ export interface AiEngineConfig {
 export interface AppSettings {
   tencentDocs: TencentDocsConfig;
   wecomDocs: WeComDocsConfig;
-  volumeDocs: VolumeDocsConfig;
   dashboard: DashboardConfig;
   sidebar: SidebarConfig;
   /** 外观配置 */
   appearance: AppearanceConfig;
-  /** 系统授权配置 */
-  systemAuthorization: SystemAuthorizationConfig;
   /** AI 引擎配置 */
   aiEngine: AiEngineConfig;
 }
@@ -268,9 +215,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     onlineData: [],
   },
   wecomDocs: {
-    docLinks: [],
-  },
-  volumeDocs: {
     docLinks: [],
   },
   dashboard: {
@@ -330,20 +274,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     compactMode: false,
     botName: 'CDF Bot',
   },
-  // 系统授权配置
-  systemAuthorization: {
-    enabled: false,
-    permissions: {
-      screenRecording:     { enabled: false, status: 'unknown' as const, lastChecked: null },
-      accessibility:       { enabled: false, status: 'unknown' as const, lastChecked: null },
-      inputMonitoring:     { enabled: false, status: 'unknown' as const, lastChecked: null },
-      fullDiskAccess:      { enabled: false, status: 'unknown' as const, lastChecked: null },
-      microphone:          { enabled: false, status: 'unknown' as const, lastChecked: null },
-      camera:              { enabled: false, status: 'unknown' as const, lastChecked: null },
-      notifications:       { enabled: false, status: 'unknown' as const, lastChecked: null },
-      automation:          { enabled: false, status: 'unknown' as const, lastChecked: null },
-    },
-  },
   // AI 引擎配置
   aiEngine: {
     defaultExecutionMode: 'legacy',
@@ -380,7 +310,7 @@ interface DomainSettingsValue<T> {
 }
 
 interface DocLinksSettingsValue {
-  settings: { tencentDocs: TencentDocsConfig; wecomDocs: WeComDocsConfig; volumeDocs: VolumeDocsConfig };
+  settings: { tencentDocs: TencentDocsConfig; wecomDocs: WeComDocsConfig };
   updateSettings: (partial: Partial<AppSettings>) => void;
   resetSettings: () => void;
 }
@@ -388,7 +318,6 @@ interface DocLinksSettingsValue {
 const AppearanceSettingsContext = createContext<DomainSettingsValue<AppearanceConfig> | null>(null);
 const DashboardSettingsContext = createContext<DomainSettingsValue<DashboardConfig> | null>(null);
 const DocLinksSettingsContext = createContext<DocLinksSettingsValue | null>(null);
-const SystemAuthSettingsContext = createContext<DomainSettingsValue<SystemAuthorizationConfig> | null>(null);
 const AiEngineSettingsContext = createContext<DomainSettingsValue<AiEngineConfig> | null>(null);
 
 // ===================== Helper: Open External Link =====================
@@ -401,8 +330,8 @@ const AiEngineSettingsContext = createContext<DomainSettingsValue<AiEngineConfig
  */
 export function openExternalLink(url: string): void {
   if (window.electronAPI?.openExternalLink) {
-    window.electronAPI.openExternalLink(url).catch((err: unknown) => {
-      // console.error('Failed to open external link:', err);
+    window.electronAPI.openExternalLink(url).catch((_err: unknown) => {
+      // console.error('Failed to open external link:', _err);
     });
   } else {
     // Fallback for browser environment (non-Electron)
@@ -492,26 +421,9 @@ export function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
       : [];
   const wecomDocs = { docLinks: wecomDocLinks };
 
-  // 容积率文档链接迁移
-  const rawVolumeDocs = parsed.volumeDocs as { docLinks?: unknown[] } | undefined;
-  const volumeDocLinks: VolumeDocLinkItem[] =
-    rawVolumeDocs && Array.isArray(rawVolumeDocs.docLinks)
-      ? rawVolumeDocs.docLinks.map((link: unknown) => {
-          const record = link as Record<string, unknown>;
-          return {
-            id: String(record.id ?? ''),
-            url: String(record.url ?? ''),
-            title: String(record.title ?? ''),
-            dataType: String(record.dataType ?? 'other') as VolumeDocLinkItem['dataType'],
-          };
-        })
-      : [];
-  const volumeDocs = { docLinks: volumeDocLinks };
-
     return {
       tencentDocs,
       wecomDocs,
-      volumeDocs,
       dashboard: {
         ...DEFAULT_SETTINGS.dashboard,
         ...parsed.dashboard,
@@ -539,10 +451,6 @@ export function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
       appearance: parsed.appearance
         ? { ...DEFAULT_SETTINGS.appearance, ...parsed.appearance }
         : { ...DEFAULT_SETTINGS.appearance },
-      // 系统授权配置（向后兼容）
-      systemAuthorization: parsed.systemAuthorization
-        ? { ...DEFAULT_SETTINGS.systemAuthorization, ...parsed.systemAuthorization }
-        : { ...DEFAULT_SETTINGS.systemAuthorization },
       // AI 引擎配置（向后兼容）
       aiEngine: {
         ...DEFAULT_SETTINGS.aiEngine,
@@ -627,9 +535,6 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (partial.wecomDocs) {
         next.wecomDocs = { ...prev.wecomDocs, ...partial.wecomDocs };
       }
-      if (partial.volumeDocs) {
-        next.volumeDocs = { ...prev.volumeDocs, ...partial.volumeDocs };
-      }
       if (partial.dashboard) {
         const prevDashboard = prev.dashboard;
         const partialDashboard = partial.dashboard;
@@ -659,9 +564,6 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
       if (partial.appearance) {
         next.appearance = { ...prev.appearance, ...partial.appearance };
-      }
-      if (partial.systemAuthorization) {
-        next.systemAuthorization = { ...prev.systemAuthorization, ...partial.systemAuthorization };
       }
       if (partial.aiEngine) {
         next.aiEngine = {
@@ -703,17 +605,10 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     settings: {
       tencentDocs: settings.tencentDocs,
       wecomDocs: settings.wecomDocs,
-      volumeDocs: settings.volumeDocs,
     },
     updateSettings,
     resetSettings,
-  }), [settings.tencentDocs, settings.wecomDocs, settings.volumeDocs, updateSettings, resetSettings]);
-
-  const systemAuthValue = useMemo<DomainSettingsValue<SystemAuthorizationConfig>>(() => ({
-    settings: settings.systemAuthorization,
-    updateSettings,
-    resetSettings,
-  }), [settings.systemAuthorization, updateSettings, resetSettings]);
+  }), [settings.tencentDocs, settings.wecomDocs, updateSettings, resetSettings]);
 
   const aiEngineValue = useMemo<DomainSettingsValue<AiEngineConfig>>(() => ({
     settings: settings.aiEngine,
@@ -726,11 +621,9 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       <AppearanceSettingsContext.Provider value={appearanceValue}>
         <DashboardSettingsContext.Provider value={dashboardValue}>
           <DocLinksSettingsContext.Provider value={docLinksValue}>
-            <SystemAuthSettingsContext.Provider value={systemAuthValue}>
-              <AiEngineSettingsContext.Provider value={aiEngineValue}>
-                {children}
-              </AiEngineSettingsContext.Provider>
-            </SystemAuthSettingsContext.Provider>
+            <AiEngineSettingsContext.Provider value={aiEngineValue}>
+              {children}
+            </AiEngineSettingsContext.Provider>
           </DocLinksSettingsContext.Provider>
         </DashboardSettingsContext.Provider>
       </AppearanceSettingsContext.Provider>
@@ -770,14 +663,6 @@ export function useDocLinksSettings(): DocLinksSettingsValue {
   const ctx = useContext(DocLinksSettingsContext);
   if (!ctx) {
     throw new Error('useDocLinksSettings must be used within an AppSettingsProvider');
-  }
-  return ctx;
-}
-
-export function useSystemAuthSettings(): DomainSettingsValue<SystemAuthorizationConfig> {
-  const ctx = useContext(SystemAuthSettingsContext);
-  if (!ctx) {
-    throw new Error('useSystemAuthSettings must be used within an AppSettingsProvider');
   }
   return ctx;
 }

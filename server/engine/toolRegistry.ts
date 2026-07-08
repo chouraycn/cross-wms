@@ -28,7 +28,7 @@ import { ToolHandler, type RegisteredTool } from './toolTypes.js';
 export type { ToolHandler, RegisteredTool } from './toolTypes.js';
 
 import { handleSystemInfo } from './systemTools.js';
-import { handleListDir, handleReadFile, handleWriteFile, handleExecCommand } from './fileTools.js';
+import { handleListDir, handleReadFile, handleWriteFile, handleExecCommand, handleGenerateFile, handleListGeneratedFiles, handleReadGeneratedFile, handleUpdateGeneratedFile, handleRenameGeneratedFile, handleDeleteGeneratedFile } from './fileTools.js';
 import { handleDbQuery, handleWmsInventory } from './dbTools.js';
 import { handleDesktopHealth } from './desktop/helpers.js';
 import { handleDesktopClick, handleDesktopType, handleDesktopKeyPress, handleDesktopScroll } from './desktop/inputTools.js';
@@ -125,6 +125,129 @@ export async function initDefaultTools(): Promise<void> {
       },
     },
     handler: handleWriteFile,
+  });
+
+  // file_generateFile — 生成文件到会话工作区（可在对话中展示和下载）
+  registerBuiltinTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'file_generateFile',
+        description: '生成文件到当前会话的工作区，生成的文件会在对话中展示并支持下载。适用于创建 HTML 简历、代码文件、文档、报告等用户需要下载的内容。',
+        parameters: {
+          type: 'object',
+          properties: {
+            fileName: { type: 'string', description: '文件名（如 resume.html、report.pdf、code.js 等）' },
+            content: { type: 'string', description: '文件内容（HTML、文本、代码等）' },
+            sessionId: { type: 'string', description: '会话 ID，可选，默认为当前会话' },
+            description: { type: 'string', description: '文件描述，可选，用于向用户说明文件内容' },
+          },
+          required: ['fileName', 'content'],
+        },
+      },
+    },
+    handler: handleGenerateFile,
+  });
+
+  // file_listGeneratedFiles — 列出当前会话生成的文件
+  registerBuiltinTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'file_listGeneratedFiles',
+        description: '列出当前会话中已生成的所有文件',
+        parameters: {
+          type: 'object',
+          properties: {
+            sessionId: { type: 'string', description: '会话 ID，可选，默认为当前会话' },
+          },
+          required: [],
+        },
+      },
+    },
+    handler: handleListGeneratedFiles,
+  });
+
+  // file_readGeneratedFile — 读取生成的文件内容
+  registerBuiltinTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'file_readGeneratedFile',
+        description: '读取会话工作区中已生成文件的内容',
+        parameters: {
+          type: 'object',
+          properties: {
+            fileName: { type: 'string', description: '文件名' },
+            sessionId: { type: 'string', description: '会话 ID，可选，默认为当前会话' },
+          },
+          required: ['fileName'],
+        },
+      },
+    },
+    handler: handleReadGeneratedFile,
+  });
+
+  // file_deleteGeneratedFile — 删除生成的文件
+  registerBuiltinTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'file_deleteGeneratedFile',
+        description: '删除会话工作区中已生成的文件',
+        parameters: {
+          type: 'object',
+          properties: {
+            fileName: { type: 'string', description: '文件名' },
+            sessionId: { type: 'string', description: '会话 ID，可选，默认为当前会话' },
+          },
+          required: ['fileName'],
+        },
+      },
+    },
+    handler: handleDeleteGeneratedFile,
+  });
+
+  // file_updateGeneratedFile — 更新生成的文件内容
+  registerBuiltinTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'file_updateGeneratedFile',
+        description: '更新会话工作区中已生成文件的内容（覆盖写入）。适用于修改已生成的 HTML 简历、文档、代码等文件。',
+        parameters: {
+          type: 'object',
+          properties: {
+            fileName: { type: 'string', description: '要更新的文件名' },
+            content: { type: 'string', description: '新的文件内容' },
+            sessionId: { type: 'string', description: '会话 ID，可选，默认为当前会话' },
+          },
+          required: ['fileName', 'content'],
+        },
+      },
+    },
+    handler: handleUpdateGeneratedFile,
+  });
+
+  // file_renameGeneratedFile — 重命名生成的文件
+  registerBuiltinTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'file_renameGeneratedFile',
+        description: '重命名会话工作区中已生成的文件',
+        parameters: {
+          type: 'object',
+          properties: {
+            oldName: { type: 'string', description: '原文件名' },
+            newName: { type: 'string', description: '新文件名' },
+            sessionId: { type: 'string', description: '会话 ID，可选，默认为当前会话' },
+          },
+          required: ['oldName', 'newName'],
+        },
+      },
+    },
+    handler: handleRenameGeneratedFile,
   });
 
   // shell_exec

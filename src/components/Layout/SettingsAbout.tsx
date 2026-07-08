@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, Switch, FormControlLabel, Divider, useTheme } from '@mui/material';
-import { APP_VERSION } from '../Settings/sharedStyles';
+import { APP_VERSION } from './appVersion';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { getGrayScale } from '../../constants/theme';
 

@@ -11,6 +11,9 @@ import { ThinkingBlock } from './ThinkingBlock.js';
 import { QueryResultRenderer } from './QueryResultRenderer.js';
 import ToolCallBlock from './ToolCallBlock.js';
 import PluginResultBlock from './PluginResultBlock.js';
+import GeneratedFileCard, { GeneratedFileInfo } from './GeneratedFileCard.js';
+import GeneratedFilePreviewModal from './GeneratedFilePreviewModal.js';
+import { useState } from 'react';
 import { ReactPhaseIndicator } from './ReactPhaseIndicator.js';
 import { ExecutionPlanCard } from './ExecutionPlanCard.js';
 import { ComplexityAssessmentBadge } from './ComplexityAssessmentBadge.js';
@@ -229,6 +232,20 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
   onConfirmReplenishment,
   onPermissionRespond,
 }) => {
+  // 使用消息的 generatedFiles 字段
+  const generatedFiles = msg.generatedFiles || [];
+  const [previewFile, setPreviewFile] = useState<GeneratedFileInfo | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const handlePreviewFile = (file: GeneratedFileInfo) => {
+    setPreviewFile(file);
+    setPreviewOpen(true);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewOpen(false);
+  };
+
   return (
     <Box
       className="msg-hover-zone"
@@ -450,6 +467,29 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
           </Box>
         );
       })()}
+      {/* 生成文件展示（AI 生成的文件，可预览和下载） */}
+      {generatedFiles.length > 0 && (
+        <Box sx={{ mb: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+            <Typography sx={{ fontSize: 12, fontWeight: 600, color: gs.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              生成文件
+            </Typography>
+            <Typography sx={{ fontSize: 11, color: gs.textMuted }}>
+              ({generatedFiles.length})
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+            {generatedFiles.map((file, idx) => (
+              <GeneratedFileCard
+                key={`${file.fileName}-${idx}`}
+                file={file}
+                isDark={isDark}
+                onPreview={handlePreviewFile}
+              />
+            ))}
+          </Box>
+        </Box>
+      )}
       {/* 消息内容渲染 */}
       {msg.content && msg.content.trim() ? (
         <MarkdownRenderer content={msg.content} isStreaming={msg.isStreaming} />
@@ -586,6 +626,19 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
             {msg.autoReason}
           </Typography>
         </Box>
+      )}
+
+      {/* 文件预览模态框 */}
+      {previewFile && (
+        <GeneratedFilePreviewModal
+          open={previewOpen}
+          onClose={handleClosePreview}
+          fileName={previewFile.fileName}
+          downloadUrl={previewFile.downloadUrl}
+          previewUrl={previewFile.previewUrl}
+          sessionId={previewFile.sessionId}
+          isDark={isDark}
+        />
       )}
     </Box>
   );

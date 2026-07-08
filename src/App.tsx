@@ -17,7 +17,7 @@ import { WarehouseCapabilityProvider } from './capabilities/warehouse/WarehouseC
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
 import { automationEngine } from './services/automation';
-import { isWKWebView } from './utils/env';
+import { isWKWebView, isMacOSApp } from './utils/env';
 import { recordRender, markPhase, endPhase } from './services/performanceTelemetry';
 
 // v3.2: WKWebView 环境检测，用于禁用高成本效果
@@ -626,9 +626,10 @@ const MainLayout: React.FC = () => {
   const location = useLocation();
   // v1.5.175: 启动时始终展开侧边栏（忽略历史保存值）
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
-  // pywebview 检测 — frameless 模式下红黄绿按钮悬浮在左上角（透明无背景条）
+  // pywebview / macOS App 检测 — frameless 模式下红黄绿按钮悬浮在左上角（透明无背景条）
   // 只需少量顶部边距（8px），不再需要全宽标题栏避让
-  const [isPy, setIsPy] = useState(() => isPyWebView());
+  // v3.3: 使用 isMacOSApp() 构建时检测作为初始值，避免运行时注入延迟导致布局闪烁
+  const [isPy, setIsPy] = useState(() => isMacOSApp() || isPyWebView());
   useEffect(() => {
     if (isPy) {
       // pywebview 环境立即注入 CSS 变量，避免布局闪烁
@@ -694,8 +695,8 @@ const MainLayout: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: 'background.paper',
-          minHeight: 'calc(100vh - 12px)',
-          margin: '6px 6px 6px 6px', // v1.7.15: 保持6px左边距，让灰色背景可见
+          minHeight: 'calc(100vh - 18px)',
+          margin: '9px 9px 9px 9px', // 内容区缩小3px，让灰色背景更多
           // v1.7.15: 描边颜色改为 #eeeeee
           border: '1px solid #eeeeee',
           paddingTop: 0,

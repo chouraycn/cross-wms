@@ -44,7 +44,42 @@ export {
   descriptorToProtocolDescriptor,
 } from './protocol.js';
 
-// ===================== 描述符工厂 =====================
+// 安全过滤器导出
+export {
+  SecurityFilter,
+  type SecurityRisk,
+  type SecurityRiskType,
+  type RiskSeverity,
+  type OverallRisk,
+  type ScanResult,
+  type ScanContext,
+  type SecurityAuditRecord,
+  type SecurityFilterConfig,
+  DEFAULT_PII_PATTERNS,
+  DEFAULT_ENABLED_CHECKS,
+} from './security-filter.js';
+
+// 语义路由器导出
+export {
+  SemanticRouter,
+  type ToolCategory,
+  type ToolSemanticMetadata,
+  type SemanticRoutingContext,
+  type RankedToolPlanEntry,
+  type SemanticToolPlan,
+} from './semantic-router.js';
+
+// 工具权限管理器导出
+export {
+  ToolPermissionManager,
+  type PermissionLevel,
+  type PermissionRule,
+  type PermissionConfig,
+  type ApprovalRequest,
+  type AuditRecord,
+  type PermissionResult,
+  type AuditQueryOptions,
+} from './tool-permissions.js';
 
 import type { ToolDescriptor } from './types.js';
 

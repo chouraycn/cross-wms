@@ -127,6 +127,26 @@ export interface Attachment {
   type: 'image' | 'file';
 }
 
+/** v10.0: AI 生成的文件（可在对话中展示和下载） */
+export interface GeneratedFile {
+  /** 文件名 */
+  fileName: string;
+  /** 文件大小（字节） */
+  fileSize: number;
+  /** MIME 类型（可选，自动推断） */
+  mimeType?: string;
+  /** 文件描述（可选，AI 提供） */
+  description?: string;
+  /** 下载 URL */
+  downloadUrl: string;
+  /** 预览 URL（可选，支持预览的格式） */
+  previewUrl?: string;
+  /** 会话 ID */
+  sessionId?: string;
+  /** 创建时间（ISO 字符串） */
+  createdAt?: string;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -154,6 +174,8 @@ export interface Message {
   toolCalls?: ToolCallInfo[];
   /** 附件列表（图片、文件等） */
   attachments?: Attachment[];
+  /** v10.0: AI 生成的文件列表（可在对话中展示和下载） */
+  generatedFiles?: GeneratedFile[];
   /** v2.2.0: 思考已等待时间（毫秒，心跳更新） */
   thinkingElapsed?: number;
   /** v2.2.0: 是否命中 thinking 缓存 */
