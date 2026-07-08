@@ -61,15 +61,14 @@ actor ServerProcessManager {
             return envNode
         }
 
+        let bundleNodePath = "\(resourcesDir)/node/bin/node"
         var searchPaths = [
+            bundleNodePath,
             "/usr/local/bin/node",
             "/opt/homebrew/bin/node",
             "/usr/bin/node",
             "\(ProcessInfo.processInfo.environment["HOME"] ?? "")/.nvm/versions/node/*/bin/node",
         ]
-
-        let bundleNodePath = "\(resourcesDir)/node/bin/node"
-        searchPaths.append(bundleNodePath)
 
         let fm = FileManager.default
         for path in searchPaths {

@@ -122,3 +122,6 @@ export function createWebChannelPlugin(): ChannelPlugin {
     message: webChannelMessageAdapter,
   });
 }
+
+export { createFeishuChannelPlugin, FEISHU_CHANNEL_ID } from "./builtin-feishu.js";
+export { createWeComChannelPlugin, WECOM_CHANNEL_ID } from "./builtin-wecom.js";

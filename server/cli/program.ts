@@ -26,6 +26,8 @@ import { registerModelsCommand } from "./commands/models.js";
 import { registerHooksCommand } from "./commands/hooks.js";
 import { registerCronCommand } from "./commands/cron.js";
 import { registerGatewayCommand } from "./commands/gateway.js";
+import { registerAcpCommand } from "./commands/acp.js";
+import { registerSandboxCommand } from "./commands/sandbox.js";
 import { logger } from "../logger.js";
 
 /**
@@ -69,6 +71,8 @@ export function buildCLIProgram(): Command {
     "models",
     "hooks",
     "gateway",
+    "acp",
+    "sandbox",
   ]);
   for (const descriptor of descriptors) {
     if (DIRECTLY_REGISTERED.has(descriptor.name)) {
@@ -138,6 +142,12 @@ export function buildCLIProgram(): Command {
 
   // 注册 gateway 命令 (带子命令)
   registerGatewayCommand(program);
+
+  // 注册 acp 命令 (带子命令)
+  registerAcpCommand(program);
+
+  // 注册 sandbox 命令 (带子命令)
+  registerSandboxCommand(program);
 
   return program;
 }

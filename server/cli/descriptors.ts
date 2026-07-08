@@ -192,6 +192,17 @@ const CORE_COMMAND_DESCRIPTORS = defineCommandDescriptorCatalog([
     description: "网关管理 (start/stop/status/probe/info)",
     hasSubcommands: true,
   },
+  {
+    name: "acp",
+    description: "ACP 控制平面管理 (status/policy/approval/start/stop)",
+    hasSubcommands: true,
+  },
+  {
+    name: "sandbox",
+    description: "沙箱管理 (create/list/info/destroy/exec)",
+    hasSubcommands: true,
+    aliases: ["sbx"],
+  },
 ] as const satisfies ReadonlyArray<CoreCommandDescriptor>);
 
 /** 核心 CLI 命令描述符 */

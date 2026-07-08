@@ -83,33 +83,9 @@ function initializeDefaults(): void {
     agents.set(agent.id, agent);
   }
 
-  // 默认 Models
-  const defaultModels: GatewayModel[] = [
-    {
-      id: "deepseek-chat",
-      name: "DeepSeek Chat",
-      provider: "deepseek",
-      type: "chat",
-      maxTokens: 32768,
-      capabilities: ["streaming", "tool_calls", "thinking"],
-    },
-    {
-      id: "gpt-4o",
-      name: "GPT-4o",
-      provider: "openai",
-      type: "chat",
-      maxTokens: 128000,
-      capabilities: ["streaming", "tool_calls", "vision", "thinking"],
-    },
-    {
-      id: "gpt-4o-mini",
-      name: "GPT-4o Mini",
-      provider: "openai",
-      type: "chat",
-      maxTokens: 128000,
-      capabilities: ["streaming", "tool_calls"],
-    },
-  ];
+  // 默认 Models - 为空，等待用户通过模型管理添加并配置 API Key
+  // v2.8.7: 不再预置默认模型，避免新安装时出现无 API Key 的模型导致调用失败
+  const defaultModels: GatewayModel[] = [];
 
   for (const model of defaultModels) {
     models.set(model.id, model);

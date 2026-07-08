@@ -200,6 +200,30 @@ if [ -z "$NODE_SRC" ] || [ ! -f "$NODE_SRC" ]; then
     exit 1
 fi
 
+NODE_VERSION=$("$NODE_SRC" --version)
+echo "   Current Node.js: $NODE_VERSION"
+
+REQUIRED_NODE_MAJOR="22"
+NODE_MAJOR=$(echo "$NODE_VERSION" | sed 's/v//' | cut -d. -f1)
+
+if [ "$NODE_MAJOR" != "$REQUIRED_NODE_MAJOR" ]; then
+    echo "WARNING: Node.js version $NODE_VERSION is not v$REQUIRED_NODE_MAJOR.x"
+    echo "   Please switch to Node.js v$REQUIRED_NODE_MAJOR.x for proper native module compilation"
+    echo "   Trying to use nvm..."
+    if command -v nvm >/dev/null 2>&1; then
+        nvm use "$REQUIRED_NODE_MAJOR"
+        NODE_SRC="$(which node)"
+        NODE_VERSION=$("$NODE_SRC" --version)
+        echo "   Switched to Node.js: $NODE_VERSION"
+    elif [ -f "$HOME/.nvm/nvm.sh" ]; then
+        source "$HOME/.nvm/nvm.sh"
+        nvm use "$REQUIRED_NODE_MAJOR"
+        NODE_SRC="$(which node)"
+        NODE_VERSION=$("$NODE_SRC" --version)
+        echo "   Switched to Node.js: $NODE_VERSION"
+    fi
+fi
+
 NODE_DEST_DIR="$RESOURCES_DIR/node/bin"
 mkdir -p "$NODE_DEST_DIR"
 cp "$NODE_SRC" "$NODE_DEST_DIR/node"
@@ -239,16 +263,27 @@ cat > "$NM_TMP_DIR/package.json" <<'PKGJSON'
 PKGJSON
 
 cd "$NM_TMP_DIR"
-npm install --production --omit=dev 2>&1 | tail -10
+# Use the bundled Node.js to install dependencies, ensuring native modules are compiled
+# for the correct Node.js version that will be used at runtime
+"$NODE_DEST_DIR/node" "$(which npm)" install --production --omit=dev 2>&1 | tail -10
 echo "✅ npm install completed"
 
-# 确保 better-sqlite3 有预编译二进制
+# Ensure better-sqlite3 has the correct prebuild for the bundled Node.js
 if [ -d "node_modules/better-sqlite3" ]; then
-    echo "🔧 Building better-sqlite3 prebuild..."
+    echo "🔧 Building better-sqlite3 prebuild for Node.js $NODE_VERSION..."
     cd "node_modules/better-sqlite3"
-    npx prebuild-install || npx node-gyp rebuild --release 2>&1 | tail -5
+    "$NODE_DEST_DIR/node" "$(which npx)" prebuild-install || "$NODE_DEST_DIR/node" "$(which npx)" node-gyp rebuild --release 2>&1 | tail -5
     cd "$NM_TMP_DIR"
     echo "✅ better-sqlite3 build done"
+fi
+
+# Ensure sqlite-vec has the correct prebuild
+if [ -d "node_modules/sqlite-vec" ]; then
+    echo "🔧 Building sqlite-vec prebuild for Node.js $NODE_VERSION..."
+    cd "node_modules/sqlite-vec"
+    "$NODE_DEST_DIR/node" "$(which npx)" prebuild-install || "$NODE_DEST_DIR/node" "$(which npx)" node-gyp rebuild --release 2>&1 | tail -5
+    cd "$NM_TMP_DIR"
+    echo "✅ sqlite-vec build done"
 fi
 
 # Copy installed node_modules into shared_node_modules

@@ -29,6 +29,8 @@ import { toolLoopDetector } from './toolLoopDetection.js';
 import { toolProfileManager, projectToolSchemas, type ToolProfileId } from './toolProfiles.js';
 import { ToolDependencyGraph } from './toolDependencyGraph.js';
 import { logger } from '../logger.js';
+import { policyEngine as acpPolicyEngine } from './acp/policy.js';
+import { sessionMapper as acpSessionMapper } from './acp/sessionMapper.js';
 
 // ===================== 工具结果错误检测 =====================
 
@@ -455,6 +457,48 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
           } as any);
           continue;
         }
+      }
+
+      // ===================== ACP 策略检查（实验性） =====================
+      try {
+        const acpSessionBinding = sessionId ? acpSessionMapper.getBinding(sessionId) : undefined;
+        if (acpSessionBinding?.policyProfileId) {
+          const acpResult = acpPolicyEngine.evaluateToolCall(toolName, parsedArgs);
+          if (!acpResult.allowed) {
+            const denyResult = JSON.stringify({
+              error: acpResult.approvalReason || `工具 '${toolName}' 被 ACP 策略拒绝`,
+              acpDenied: true,
+              blockedRule: acpResult.blockedBy?.name,
+              matchedRules: acpResult.matchedRules.map(r => r.name),
+            });
+            executedToolCalls.push({
+              name: toolName,
+              arguments: toolCall.function.arguments,
+              result: denyResult,
+            });
+            if (onToolCall) {
+              onToolCall(toolCall, denyResult);
+            }
+            currentMessages.push({
+              role: 'tool',
+              content: denyResult,
+              tool_call_id: toolCall.id,
+            } as any);
+            logger.info(
+              `[ACP] 工具调用被策略拒绝: tool=${toolName}, session=${sessionId}, ` +
+              `rule=${acpResult.blockedBy?.id}`,
+            );
+            continue;
+          }
+          if (acpResult.requiresApproval) {
+            logger.info(
+              `[ACP] 工具调用需要审批: tool=${toolName}, session=${sessionId}, ` +
+              `reason=${acpResult.approvalReason}`,
+            );
+          }
+        }
+      } catch (acpErr) {
+        logger.warn('[ACP] 策略检查异常，放行:', acpErr instanceof Error ? acpErr.message : String(acpErr));
       }
 
       // 记录工具调用（用于速率限制统计）
