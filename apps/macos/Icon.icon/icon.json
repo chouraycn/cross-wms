@@ -6,9 +6,14 @@
     {
       "layers" : [
         {
-          "glass" : true,
-          "image-name" : "App Icon Template3-恢复的 拷贝.png",
-          "name" : "App Icon Template3-恢复的 拷贝"
+          "glass-specializations" : [
+            {
+              "appearance" : "light",
+              "value" : true
+            }
+          ],
+          "image-name" : "App Icon Template3-恢复的 拷贝 2.png",
+          "name" : "App Icon Template3-恢复的 拷贝 2"
         }
       ],
       "shadow" : {

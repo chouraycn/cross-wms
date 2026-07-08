@@ -2,6 +2,305 @@
  * File Tools — 文件系统操作与终端命令执行
  */
 
+import { AppPaths, ensureDir } from '../config/appPaths.js';
+
+/** 获取会话生成文件的目录 */
+function getGeneratedFilesDir(sessionId?: string): string {
+  const path = require('path');
+  const baseDir = AppPaths.generatedFilesDir;
+  ensureDir(baseDir);
+  if (sessionId) {
+    const sessionDir = path.join(baseDir, sessionId);
+    ensureDir(sessionDir);
+    return sessionDir;
+  }
+  return baseDir;
+}
+
+/** 生成文件到工作区（AI 生成内容专用，可在对话中展示和下载） */
+export async function handleGenerateFile(args: Record<string, unknown>): Promise<string> {
+  const fs = await import('fs');
+  const path = await import('path');
+
+  const fileName = String(args.fileName || args.name || '');
+  const content = String(args.content || '');
+  const sessionId = String(args.sessionId || args.session || 'default');
+  const description = String(args.description || '');
+
+  if (!fileName) {
+    return JSON.stringify({ error: '请提供文件名 (fileName)' });
+  }
+
+  // 安全检查：防止路径遍历
+  if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
+    return JSON.stringify({ error: '文件名不允许包含路径分隔符或 ..' });
+  }
+
+  // 限制文件大小（最大 5MB）
+  const maxSize = 5 * 1024 * 1024;
+  if (content.length > maxSize) {
+    return JSON.stringify({ error: `文件内容超过 5MB 限制（当前 ${(content.length / 1024 / 1024).toFixed(2)}MB）` });
+  }
+
+  try {
+    const sessionDir = getGeneratedFilesDir(sessionId);
+    const filePath = path.join(sessionDir, fileName);
+
+    // 如果文件已存在，添加序号后缀
+    let finalPath = filePath;
+    let finalName = fileName;
+    if (fs.existsSync(filePath)) {
+      const ext = path.extname(fileName);
+      const baseName = path.basename(fileName, ext);
+      let counter = 1;
+      while (fs.existsSync(path.join(sessionDir, `${baseName}-${counter}${ext}`))) {
+        counter++;
+      }
+      finalName = `${baseName}-${counter}${ext}`;
+      finalPath = path.join(sessionDir, finalName);
+    }
+
+    await fs.promises.writeFile(finalPath, content, 'utf-8');
+
+    const stats = await fs.promises.stat(finalPath);
+
+    return JSON.stringify({
+      success: true,
+      fileName: finalName,
+      filePath: finalPath,
+      fileSize: stats.size,
+      sessionId,
+      description,
+      downloadUrl: `/api/file/generated/${sessionId}/${encodeURIComponent(finalName)}`,
+      previewUrl: `/api/file/generated/${sessionId}/${encodeURIComponent(finalName)}?preview=1`,
+    });
+  } catch (e) {
+    return JSON.stringify({ error: `生成文件失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+}
+
+/** 列出生成的文件 */
+export async function handleListGeneratedFiles(args: Record<string, unknown>): Promise<string> {
+  const fs = await import('fs');
+  const path = await import('path');
+
+  const sessionId = String(args.sessionId || args.session || 'default');
+
+  try {
+    const sessionDir = getGeneratedFilesDir(sessionId);
+    if (!fs.existsSync(sessionDir)) {
+      return JSON.stringify({ files: [] });
+    }
+
+    const entries = await fs.promises.readdir(sessionDir, { withFileTypes: true });
+    const files = [];
+
+    for (const entry of entries) {
+      if (entry.isFile()) {
+        const filePath = path.join(sessionDir, entry.name);
+        const stats = await fs.promises.stat(filePath);
+        files.push({
+          fileName: entry.name,
+          fileSize: stats.size,
+          createdAt: stats.birthtime.toISOString(),
+          updatedAt: stats.mtime.toISOString(),
+          downloadUrl: `/api/file/generated/${sessionId}/${encodeURIComponent(entry.name)}`,
+        });
+      }
+    }
+
+    // 按修改时间倒序
+    files.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+    return JSON.stringify({ files });
+  } catch (e) {
+    return JSON.stringify({ error: `列出文件失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+}
+
+/** 读取生成的文件内容 */
+export async function handleReadGeneratedFile(args: Record<string, unknown>): Promise<string> {
+  const fs = await import('fs');
+  const path = await import('path');
+
+  const fileName = String(args.fileName || args.name || '');
+  const sessionId = String(args.sessionId || args.session || 'default');
+
+  if (!fileName) {
+    return JSON.stringify({ error: '请提供文件名 (fileName)' });
+  }
+
+  // 安全检查：防止路径遍历
+  if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
+    return JSON.stringify({ error: '文件名不允许包含路径分隔符或 ..' });
+  }
+
+  try {
+    const sessionDir = getGeneratedFilesDir(sessionId);
+    const filePath = path.join(sessionDir, fileName);
+
+    if (!fs.existsSync(filePath)) {
+      return JSON.stringify({ error: '文件不存在' });
+    }
+
+    const content = await fs.promises.readFile(filePath, 'utf-8');
+    const stats = await fs.promises.stat(filePath);
+
+    // 限制返回内容长度
+    const maxLen = 20000;
+    const truncated = content.length > maxLen;
+    const displayContent = truncated ? content.slice(0, maxLen) + '\n\n[文件过长，已截断...]' : content;
+
+    return JSON.stringify({
+      fileName,
+      fileSize: stats.size,
+      content: displayContent,
+      truncated,
+      fullContentLength: content.length,
+      downloadUrl: `/api/file/generated/${sessionId}/${encodeURIComponent(fileName)}`,
+    });
+  } catch (e) {
+    return JSON.stringify({ error: `读取文件失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+}
+
+/** 更新生成的文件内容 */
+export async function handleUpdateGeneratedFile(args: Record<string, unknown>): Promise<string> {
+  const fs = await import('fs');
+  const path = await import('path');
+
+  const fileName = String(args.fileName || args.name || '');
+  const content = String(args.content || '');
+  const sessionId = String(args.sessionId || args.session || 'default');
+
+  if (!fileName) {
+    return JSON.stringify({ error: '请提供文件名 (fileName)' });
+  }
+
+  // 安全检查：防止路径遍历
+  if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
+    return JSON.stringify({ error: '文件名不允许包含路径分隔符或 ..' });
+  }
+
+  // 限制文件大小（最大 5MB）
+  const maxSize = 5 * 1024 * 1024;
+  if (content.length > maxSize) {
+    return JSON.stringify({ error: `文件内容超过 5MB 限制（当前 ${(content.length / 1024 / 1024).toFixed(2)}MB）` });
+  }
+
+  try {
+    const sessionDir = getGeneratedFilesDir(sessionId);
+    const filePath = path.join(sessionDir, fileName);
+
+    if (!fs.existsSync(filePath)) {
+      return JSON.stringify({ error: '文件不存在，无法更新。请使用 file_generateFile 创建新文件。' });
+    }
+
+    await fs.promises.writeFile(filePath, content, 'utf-8');
+
+    const stats = await fs.promises.stat(filePath);
+
+    return JSON.stringify({
+      success: true,
+      fileName,
+      filePath: filePath,
+      fileSize: stats.size,
+      sessionId,
+      downloadUrl: `/api/file/generated/${sessionId}/${encodeURIComponent(fileName)}`,
+      previewUrl: `/api/file/generated/${sessionId}/${encodeURIComponent(fileName)}?preview=1`,
+    });
+  } catch (e) {
+    return JSON.stringify({ error: `更新文件失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+}
+
+/** 重命名生成的文件 */
+export async function handleRenameGeneratedFile(args: Record<string, unknown>): Promise<string> {
+  const fs = await import('fs');
+  const path = await import('path');
+
+  const oldName = String(args.oldName || args.from || '');
+  const newName = String(args.newName || args.to || '');
+  const sessionId = String(args.sessionId || args.session || 'default');
+
+  if (!oldName) {
+    return JSON.stringify({ error: '请提供原文件名 (oldName)' });
+  }
+  if (!newName) {
+    return JSON.stringify({ error: '请提供新文件名 (newName)' });
+  }
+
+  // 安全检查：防止路径遍历
+  if (oldName.includes('..') || oldName.includes('/') || oldName.includes('\\')) {
+    return JSON.stringify({ error: '原文件名不允许包含路径分隔符或 ..' });
+  }
+  if (newName.includes('..') || newName.includes('/') || newName.includes('\\')) {
+    return JSON.stringify({ error: '新文件名不允许包含路径分隔符或 ..' });
+  }
+
+  try {
+    const sessionDir = getGeneratedFilesDir(sessionId);
+    const oldPath = path.join(sessionDir, oldName);
+    const newPath = path.join(sessionDir, newName);
+
+    if (!fs.existsSync(oldPath)) {
+      return JSON.stringify({ error: '原文件不存在' });
+    }
+
+    if (fs.existsSync(newPath)) {
+      return JSON.stringify({ error: '新文件名已存在' });
+    }
+
+    await fs.promises.rename(oldPath, newPath);
+
+    const stats = await fs.promises.stat(newPath);
+
+    return JSON.stringify({
+      success: true,
+      oldName,
+      newName,
+      fileSize: stats.size,
+      sessionId,
+      downloadUrl: `/api/file/generated/${sessionId}/${encodeURIComponent(newName)}`,
+      previewUrl: `/api/file/generated/${sessionId}/${encodeURIComponent(newName)}?preview=1`,
+    });
+  } catch (e) {
+    return JSON.stringify({ error: `重命名文件失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+}
+
+/** 删除生成的文件 */
+export async function handleDeleteGeneratedFile(args: Record<string, unknown>): Promise<string> {
+  const fs = await import('fs');
+  const path = await import('path');
+
+  const fileName = String(args.fileName || args.name || '');
+  const sessionId = String(args.sessionId || args.session || 'default');
+
+  if (!fileName) {
+    return JSON.stringify({ error: '请提供文件名 (fileName)' });
+  }
+
+  // 安全检查：防止路径遍历
+  if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
+    return JSON.stringify({ error: '文件名不允许包含路径分隔符或 ..' });
+  }
+
+  try {
+    const sessionDir = getGeneratedFilesDir(sessionId);
+    const filePath = path.join(sessionDir, fileName);
+
+    if (!fs.existsSync(filePath)) {
+      return JSON.stringify({ error: '文件不存在' });
+    }
+
+    await fs.promises.unlink(filePath);
+    return JSON.stringify({ success: true, fileName });
+  } catch (e) {
+    return JSON.stringify({ error: `删除文件失败: ${e instanceof Error ? e.message : String(e)}` });
+  }
+}
+
 /** 列出目录内容 */
 export async function handleListDir(args: Record<string, unknown>): Promise<string> {
   const fs = await import('fs');

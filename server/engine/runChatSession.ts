@@ -42,6 +42,7 @@ import { resetDefaultCircuitBreaker } from './toolExecutor.js';
 import { recordMessageCreated, recordTurnStarted, recordTurnCompleted, recordTurnFailed } from './eventRecorder.js';
 import { classifyAndFormatError } from '../routes/chatService.js';
 import { logger } from '../logger.js';
+import { runHooks, createHookEvent } from './hooks/index.js';
 
 // ===================== 类型定义 =====================
 
@@ -138,6 +139,7 @@ export async function runChatSession(
   if (!sessionExists) {
     const title = message.slice(0, 30) || '新会话';
     createSession(sessionId, title, model, input.agentId, null, null, []);
+    runHooks(createHookEvent('session', 'start', sessionId, { agentId: input.agentId })).catch(() => {});
   }
 
   // 记录用户消息创建事件
@@ -146,6 +148,7 @@ export async function runChatSession(
     attachments: input.attachments,
   }).catch(() => {});
   recordTurnStarted(sessionId, { userMessage: message, model, executionMode: input.executionMode }).catch(() => {});
+  runHooks(createHookEvent('message', 'received', sessionId, { role: 'user', content: message })).catch(() => {});
 
   const modelsConfig = await loadModelsConfig();
 
@@ -239,6 +242,7 @@ export async function runChatSession(
       thinking: null,
       thinkingDuration: null,
     });
+    runHooks(createHookEvent('message', 'sent', sessionId, { role: 'assistant', content: mockContent })).catch(() => {});
     callbacks.onEvent?.({ type: 'done', errorCode: null, errorMessage: null });
     clearTimeout(timeoutHandle);
     const mockResult: RunChatSessionResult = {
@@ -270,6 +274,8 @@ export async function runChatSession(
       thinking: cached.thinking,
       thinkingDuration: 0,
     });
+
+    runHooks(createHookEvent('message', 'sent', sessionId, { role: 'assistant', content: cached.content })).catch(() => {});
 
     callbacks.onEvent?.({ type: 'done', errorCode: null, errorMessage: null });
     const cachedResult: RunChatSessionResult = {
@@ -458,6 +464,8 @@ export async function runChatSession(
       thinking: result.thinkingContent || null,
       thinkingDuration: result.thinkingDuration || null,
     });
+
+    runHooks(createHookEvent('message', 'sent', sessionId, { role: 'assistant', content: result.content })).catch(() => {});
 
     // v10.0: 保存思考级别到会话，供下次切换会话时恢复
     if (input.thinkingLevel) {
@@ -703,6 +711,8 @@ async function tryFallback(
       thinking: result.thinkingContent || null,
       thinkingDuration: result.thinkingDuration || null,
     });
+
+    runHooks(createHookEvent('message', 'sent', sessionId, { role: 'assistant', content: result.content })).catch(() => {});
 
     const fallbackResult: RunChatSessionResult = {
       content: result.content,

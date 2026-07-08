@@ -2,6 +2,11 @@
  * 统一环境检测工具
  */
 
+/** 构建时检测：是否在 macOS 应用包中（由打包脚本注入 VITE_IS_MACOS_APP） */
+export function isMacOSApp(): boolean {
+  return import.meta.env.VITE_IS_MACOS_APP === 'true';
+}
+
 /** 是否在桌面应用环境中运行（Swift 原生 WKWebView 模拟了 pywebview 接口） */
 export function isPyWebView(): boolean {
   return typeof window !== 'undefined' && 'pywebview' in window;
@@ -30,5 +35,5 @@ export function isElectron(): boolean {
  * 降级为 setTimeout(fn, 16) 可绕过此限制。
  */
 export function isDesktopApp(): boolean {
-  return isWKWebView() || isElectron();
+  return isMacOSApp() || isWKWebView() || isElectron();
 }

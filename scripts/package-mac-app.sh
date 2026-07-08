@@ -83,7 +83,7 @@ cd "$ROOT_DIR"
 
 echo "🖼  Generating app icon from Icon.icon..."
 ICON_SOURCE_DIR="$ROOT_DIR/apps/macos/Icon.icon"
-ICON_SOURCE_PNG="$ICON_SOURCE_DIR/Assets/App Icon Template3-恢复的 拷贝.png"
+ICON_SOURCE_PNG="$ICON_SOURCE_DIR/Assets/App Icon Template3-恢复的 拷贝 2.png"
 ICONSET_DIR="$ROOT_DIR/apps/macos/AppIcon.iconset"
 ICNS_OUTPUT="$ICON_SOURCE_DIR/AppIcon.icns"
 
@@ -134,7 +134,9 @@ fi
 # ===================== 3. Build frontend =====================
 
 echo "📦 Building frontend (tsc + vite build)..."
-# Use npm instead of pnpm to avoid monorepo workspace install issues
+# v3.3: 注入 macOS 应用构建标记，让前端代码在构建时识别出 macOS 应用环境
+# 避免运行时 Swift injectNativeBridge 注入延迟导致的布局检测失败
+export VITE_IS_MACOS_APP=true
 cd "$ROOT_DIR"
 npm run build 2>&1 || {
     # Fallback: call tsc + vite directly
@@ -277,13 +279,20 @@ if [ -d "node_modules/better-sqlite3" ]; then
     echo "✅ better-sqlite3 build done"
 fi
 
-# Ensure sqlite-vec has the correct prebuild
+# Ensure sqlite-vec has the correct prebuild (optional - may fail due to network/timeout)
 if [ -d "node_modules/sqlite-vec" ]; then
     echo "🔧 Building sqlite-vec prebuild for Node.js $NODE_VERSION..."
     cd "node_modules/sqlite-vec"
-    "$NODE_DEST_DIR/node" "$(which npx)" prebuild-install || "$NODE_DEST_DIR/node" "$(which npx)" node-gyp rebuild --release 2>&1 | tail -5
+    "$NODE_DEST_DIR/node" "$(which npx)" prebuild-install 2>&1 | tail -3 || true
+    if [ ! -f "prebuilds/darwin-arm64/node.napi.node" ]; then
+        "$NODE_DEST_DIR/node" "$(which npx)" node-gyp rebuild --release 2>&1 | tail -3 || true
+    fi
     cd "$NM_TMP_DIR"
-    echo "✅ sqlite-vec build done"
+    if [ -f "node_modules/sqlite-vec/prebuilds/darwin-arm64/node.napi.node" ] || [ -f "node_modules/sqlite-vec/build/Release/sqlite-vec.node" ]; then
+        echo "✅ sqlite-vec build done"
+    else
+        echo "⚠️  sqlite-vec prebuild failed (network timeout), proceeding without vector search"
+    fi
 fi
 
 # Copy installed node_modules into shared_node_modules

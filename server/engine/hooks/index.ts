@@ -103,4 +103,8 @@ export {
   listActiveSessions,
   getSessionCount,
   cleanupInactiveSessions,
+  getSessionMemoryConfig,
+  startAutoSaveTimer,
+  stopAutoSaveTimer,
+  triggerSessionMemorySave,
 } from './builtin/index.js';

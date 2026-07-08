@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { IconButton, useTheme } from '@mui/material';
 import { getGrayScale } from '../../constants/theme';
 import { isPyWebView } from '../../services/tencentDocsApi';
+import { isMacOSApp } from '../../utils/env';
 
+// v3.3: 构建时 + 运行时双重检测
 const isNativeApp = (): boolean => {
+  if (isMacOSApp()) return true;
   // @ts-ignore
   if (window.cdfAppNative && window.cdfAppNative.isNative) return true;
   return isPyWebView();

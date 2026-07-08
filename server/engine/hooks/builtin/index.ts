@@ -13,4 +13,9 @@ export {
   listActiveSessions,
   getSessionCount,
   cleanupInactiveSessions,
+  flushSessionMemoryWritesForTest,
+  getSessionMemoryConfig,
+  startAutoSaveTimer,
+  stopAutoSaveTimer,
+  triggerSessionMemorySave,
 } from './session-memory.js';

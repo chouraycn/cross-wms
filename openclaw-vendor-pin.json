@@ -1,0 +1,11 @@
+{
+  "vendoredFrom": "openclaw",
+  "version": "2026.6.9",
+  "source": "github.com/openclaw/openclaw (release 2026.6.9)",
+  "pinnedCommit": null,
+  "pinnedCommitNote": "openclaw/ 在本仓库被 .gitignore 显式忽略（.gitignore:47 'openclaw/'，注释 'OpenClaw embedded copy'），不属于 git 跟踪对象，因此无法钉上游 commit SHA。刷新内嵌副本时需人工重写此文件并人工确认等价性。",
+  "embeddedAt": "2026-07-08",
+  "trackedByGit": false,
+  "note": "本文件是内嵌 OpenClaw 副本的版本锚点。它是普通 JSON（非 submodule、非 npm 依赖），仅作人工审阅记录。运行时产品实际使用的是 packages/ 下的 @cdf-know/* 硬 fork，而非 openclaw/ 目录。",
+  "howToRefresh": "1) 从上游拉取目标版本；2) 用 scripts/sync-openclaw.sh 比对差异；3) 仅将 SAFE 类（纯上游源码）同步进 openclaw/ 与 @cdf-know/* 对应面；4) 更新本文件 version 与 embeddedAt；5) 在 FORK_BOUNDARY.md 记录本次同步的范围。"
+}

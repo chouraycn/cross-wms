@@ -32,6 +32,7 @@ export const AppPaths = {
   embeddingDir: path.join(rootDir, 'embedding'),
   browserProfilesDir: path.join(rootDir, 'browser-profiles'),
   onnxModelsDir: path.join(rootDir, 'models'),
+  generatedFilesDir: path.join(rootDir, 'generated-files'),
   soulFile: path.join(rootDir, 'SOUL.md'),
   userFile: path.join(rootDir, 'USER.md'),
   oldModelsFile: path.join(rootDir, 'models.json'),

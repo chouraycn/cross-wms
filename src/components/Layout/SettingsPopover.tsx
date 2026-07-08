@@ -10,18 +10,17 @@ import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import SecurityIcon from '@mui/icons-material/Security';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
-import CableIcon from '@mui/icons-material/Cable';
 import StorageIcon from '@mui/icons-material/Storage';
-import HubIcon from '@mui/icons-material/Hub';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
-import AssessmentIcon from '@mui/icons-material/Assessment';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { isPyWebView } from '../../services/tencentDocsApi';
 import { API_BASE } from '../../constants/api';
 import { getGrayScale } from '../../constants/theme';
-import { APP_VERSION } from '../Settings/sharedStyles';
+import { APP_VERSION } from './appVersion';
 import SettingsGeneral from './SettingsGeneral';
 import SettingsAbout from './SettingsAbout';
 import TalkSettingsPanel from '../Talk/TalkSettingsPanel';
@@ -30,26 +29,87 @@ import { useToast } from '../../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
 
 const SIDEBAR_WIDTH_EXPANDED = 360;
+
 // 已移除的 Tab（迁移到 AI 对话 / Skill 体系 / Swift 原生）：
-// - tencentDocs: 腾讯文档配置 → 通过腾讯文档 Skill 实现
+// - tencentDocs: 腾讯文档配置 → 通过腾讯文档 Skill 实现（功能页 /tencent-docs 仍保留）
 // - dashboardCalc: 仪表盘参数 → 通过 AI 对话分析仪表盘
 // - dashboardIndicators: 指标控制 → 通过 Skill 配置指标维度
-// - systemAuthorization: 系统授权 → Swift 原生 App 内置权限管理，Web 端无需配置
-type SettingsTab = 'menu' | 'modelManagement' | 'toolManagement' | 'extensions' | 'monitor' | 'audit' | 'apiKeys' | 'appearance' | 'about' | 'talk' | 'channels' | 'memory';
-interface SettingsMenuItem { key: Exclude<SettingsTab, 'menu'>; label: string; icon: React.ReactNode; description: string; }
-const SETTINGS_MENU_ITEMS: SettingsMenuItem[] = [
-  { key: 'appearance', label: '外观', icon: <PaletteOutlinedIcon sx={{ fontSize: 20 }} />, description: '主题、颜色与显示偏好' },
-  { key: 'modelManagement', label: '模型管理', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型' },
-  { key: 'toolManagement', label: '工具管理', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件、API 模板、浏览器等工具' },
-  { key: 'extensions', label: '扩展管理', icon: <HubIcon sx={{ fontSize: 20 }} />, description: '扩展的启用、禁用与加载' },
-  { key: 'monitor', label: '系统监控', icon: <MonitorHeartIcon sx={{ fontSize: 20 }} />, description: '插件、扩展、消息等系统指标' },
-  { key: 'audit', label: '审计日志', icon: <AssessmentIcon sx={{ fontSize: 20 }} />, description: '消息审计与操作记录' },
-  { key: 'apiKeys', label: 'API Key', icon: <VpnKeyIcon sx={{ fontSize: 20 }} />, description: 'API Key 创建与管理' },
-  { key: 'talk', label: '语音对话', icon: <RecordVoiceOverIcon sx={{ fontSize: 20 }} />, description: '语音 locale、静默超时、思考级别' },
-  { key: 'channels', label: '通道管理', icon: <CableIcon sx={{ fontSize: 20 }} />, description: '飞书/钉钉/Slack/Telegram 等通道配置' },
-  { key: 'memory', label: '记忆', icon: <StorageIcon sx={{ fontSize: 20 }} />, description: '打开记忆管理页面' },
-  { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本' },
+// - systemAuthorization: 系统授权 → Swift 原生 App 内置权限管理，Web 端无需配置（状态已移除）
+
+/** 设置详情视图可用的 tab（仅这些走内联详情视图；其余走 navigate / dialog） */
+type SettingsTab = 'menu' | 'appearance' | 'about' | 'talk' | 'channels';
+
+/** 菜单条目：带 children 即为可展开分组 */
+interface MenuEntry {
+  key: string;
+  label: string;
+  icon?: React.ReactNode;
+  description?: string;
+  children?: MenuEntry[];
+  // 叶子动作（无 children 时生效）
+  tab?: SettingsTab;
+  path?: string;
+  dialog?: 'model' | 'tool';
+  native?: boolean;
+  appearanceInline?: boolean;
+}
+
+const SETTINGS_MENU: MenuEntry[] = [
+  { key: 'appearance', label: '外观', icon: <PaletteOutlinedIcon sx={{ fontSize: 20 }} />, description: '主题、颜色与显示偏好', appearanceInline: true },
+  { key: 'modelManagement', label: '模型管理', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型', dialog: 'model' },
+  {
+    key: 'toolsExtensions', label: '工具与扩展', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件、扩展、API 模板、浏览器',
+    children: [
+      { key: 'toolManagement', label: '工具管理', description: '插件、API 模板、浏览器等工具', dialog: 'tool' },
+      { key: 'extensions', label: '扩展管理', description: '扩展的启用、禁用与加载', path: '/extensions' },
+      { key: 'plugins', label: '插件', description: '已安装插件管理', path: '/plugins' },
+    ],
+  },
+  {
+    key: 'apiSecrets', label: 'API 与密钥', icon: <VpnKeyIcon sx={{ fontSize: 20 }} />, description: 'API Key、凭证、模板与白名单',
+    children: [
+      { key: 'apiKeys', label: 'API Key', description: 'API Key 创建与管理', path: '/api-keys' },
+      { key: 'secrets', label: 'Secrets', description: '密钥管理', path: '/secrets' },
+      { key: 'apiCredentials', label: 'API 凭证', description: '凭证管理', path: '/api-credentials' },
+      { key: 'apiTemplates', label: 'API 模板', description: 'API 请求模板', path: '/api-templates' },
+      { key: 'apiDomainWhitelist', label: '域名白名单', description: 'API 域名白名单', path: '/api-domain-whitelist' },
+      { key: 'apiHistory', label: '调用历史', description: 'API 调用历史', path: '/api-history' },
+    ],
+  },
+  {
+    key: 'comms', label: '通讯', icon: <RecordVoiceOverIcon sx={{ fontSize: 20 }} />, description: '语音对话与通道配置',
+    children: [
+      { key: 'talk', label: '语音对话', description: '语音 locale、静默超时、思考级别', tab: 'talk' },
+      { key: 'channels', label: '通道管理', description: '飞书/钉钉/Slack/Telegram 等通道', tab: 'channels' },
+    ],
+  },
+  {
+    key: 'observability', label: '可观测性', icon: <MonitorHeartIcon sx={{ fontSize: 20 }} />, description: '监控、审计、执行历史与事件账本',
+    children: [
+      { key: 'monitor', label: '系统监控', description: '插件、扩展、消息等系统指标', path: '/system-monitor' },
+      { key: 'audit', label: '审计日志', description: '消息审计与操作记录', path: '/audit-log' },
+      { key: 'executionHistory', label: '执行历史', description: '任务执行历史记录', path: '/execution-history' },
+      { key: 'eventLedger', label: '事件账本', description: '事件账本', path: '/event-ledger' },
+    ],
+  },
+  { key: 'memory', label: '记忆', icon: <StorageIcon sx={{ fontSize: 20 }} />, description: '打开记忆管理页面', path: '/memory' },
+  { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本', tab: 'about' },
 ];
+
+const SYSTEM_AUTH_ENTRY: MenuEntry = {
+  key: 'systemAuthorization',
+  label: '系统授权',
+  icon: <SecurityIcon sx={{ fontSize: 20 }} />,
+  description: '打开 macOS 原生权限管理窗口',
+  native: true,
+};
+
+// 详情视图标题查找表（含子项）
+const LABEL_BY_KEY: Record<string, string> = {};
+SETTINGS_MENU.forEach((e) => {
+  LABEL_BY_KEY[e.key] = e.label;
+  if (e.children) e.children.forEach((c) => { LABEL_BY_KEY[c.key] = c.label; });
+});
 
 const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void }> = ({ onClose, onOpenModelManagement, onOpenToolManagement }) => {
   const { settings, updateSettings, resetSettings } = useAppSettings();
@@ -60,14 +120,11 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   const textMuted = gs.textMuted;
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('menu');
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [draft, setDraft] = useState<AppSettings>({ ...settings });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { showToast } = useToast();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    setDraft((prev) => (prev.tencentDocs !== settings.tencentDocs ? { ...prev, tencentDocs: { ...settings.tencentDocs } } : prev));
-  }, [settings.tencentDocs]);
 
   const handleSave = () => {
     updateSettings({ sidebar: draft.sidebar }); updateSettings({ appearance: draft.appearance });
@@ -87,7 +144,79 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   }, [showToast, onClose]);
 
   const hasErrors = Object.keys(errors).length > 0;
-  const currentLabel = SETTINGS_MENU_ITEMS.find((i) => i.key === activeTab)?.label;
+  const currentLabel = LABEL_BY_KEY[activeTab];
+
+  const handleLeafClick = (entry: MenuEntry) => {
+    if (entry.dialog === 'model') { onClose?.(); onOpenModelManagement?.(); }
+    else if (entry.dialog === 'tool') { onClose?.(); onOpenToolManagement?.(); }
+    else if (entry.native) { handleOpenPermissionManager(); }
+    else if (entry.path) { onClose?.(); navigate(entry.path); }
+    else if (entry.tab) { setActiveTab(entry.tab); }
+  };
+
+  const renderLeaf = (entry: MenuEntry, indent = false) => {
+    const isAppearance = entry.appearanceInline === true;
+    return (
+      <Box
+        key={entry.key}
+        onClick={() => { if (!isAppearance) handleLeafClick(entry); }}
+        sx={{
+          display: 'flex', alignItems: 'center', gap: 1.5,
+          px: indent ? 3 : 2, py: 1.5,
+          cursor: isAppearance ? 'default' : 'pointer',
+          borderRadius: '8px',
+          '&:hover': { backgroundColor: isAppearance ? 'transparent' : gs.bgHover },
+        }}
+      >
+        <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {indent ? <FiberManualRecordIcon sx={{ fontSize: 8 }} /> : entry.icon}
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontSize: indent ? '0.78rem' : '0.8125rem', fontWeight: 500, color: gs.textPrimary }}>{entry.label}</Typography>
+          {entry.description && <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.description}</Typography>}
+        </Box>
+        {/* 外观项：胶囊按钮切换浅色/深色 */}
+        {isAppearance && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }} onClick={e => e.stopPropagation()}>
+            <Box
+              onClick={() => {
+                const newMode = 'light' as const;
+                setDraft(prev => ({ ...prev, appearance: { ...prev.appearance, themeMode: newMode } }));
+                updateSettings({ appearance: { ...draft.appearance, themeMode: newMode } });
+              }}
+              sx={{
+                px: 1.5, py: 0.4, borderRadius: '12px 0 0 12px', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer',
+                backgroundColor: draft.appearance.themeMode === 'light' ? gs.bgPanel : gs.bgHover,
+                color: draft.appearance.themeMode === 'light' ? gs.textPrimary : gs.textDisabled,
+                border: `1px solid ${gs.border}`, borderRight: 'none',
+                boxShadow: draft.appearance.themeMode === 'light' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.15s',
+              }}
+            >
+              浅色
+            </Box>
+            <Box
+              onClick={() => {
+                const newMode = 'dark' as const;
+                setDraft(prev => ({ ...prev, appearance: { ...prev.appearance, themeMode: newMode } }));
+                updateSettings({ appearance: { ...draft.appearance, themeMode: newMode } });
+              }}
+              sx={{
+                px: 1.5, py: 0.4, borderRadius: '0 12px 12px 0', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer',
+                backgroundColor: draft.appearance.themeMode === 'dark' ? gs.bgPanel : gs.bgHover,
+                color: draft.appearance.themeMode === 'dark' ? gs.textPrimary : gs.textDisabled,
+                border: `1px solid ${gs.border}`, borderLeft: 'none',
+                boxShadow: draft.appearance.themeMode === 'dark' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.15s',
+              }}
+            >
+              深色
+            </Box>
+          </Box>
+        )}
+      </Box>
+    );
+  };
 
   // ---- Menu view ----
   if (activeTab === 'menu') {
@@ -106,122 +235,33 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
           </Box>
           <Divider sx={{ mb: 1 }} />
           <Box sx={{ px: 2, pb: 2, flex: 1, overflow: 'auto', minHeight: 0 }}>
-            {SETTINGS_MENU_ITEMS.map((item) => {
-              const isAppearance = item.key === 'appearance';
-              return (
-                <Box
-                  key={item.key}
-                  onClick={() => {
-                    if (item.key === 'modelManagement') { onClose?.(); onOpenModelManagement?.(); }
-                    else if (item.key === 'toolManagement') { onClose?.(); onOpenToolManagement?.(); }
-                    else if (item.key === 'memory') { onClose?.(); navigate('/memory'); }
-                    else if (item.key === 'extensions') { onClose?.(); navigate('/extensions'); }
-                    else if (item.key === 'monitor') { onClose?.(); navigate('/system-monitor'); }
-                    else if (item.key === 'audit') { onClose?.(); navigate('/audit-log'); }
-                    else if (item.key === 'apiKeys') { onClose?.(); navigate('/api-keys'); }
-                    else if (!isAppearance) { setActiveTab(item.key); }
-                  }}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    px: 2,
-                    py: 1.5,
-                    cursor: isAppearance ? 'default' : 'pointer',
-                    borderRadius: '8px',
-                    '&:hover': { backgroundColor: isAppearance ? 'transparent' : gs.bgHover },
-                  }}
-                >
-                  <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center' }}>{item.icon}</Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: gs.textPrimary }}>{item.label}</Typography>
-                    <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted }}>{item.description}</Typography>
-                  </Box>
-                  {/* 外观项：胶囊按钮切换浅色/深色 */}
-                  {isAppearance && (
+            {SETTINGS_MENU.map((entry) => {
+              if (entry.children) {
+                const expanded = expandedGroup === entry.key;
+                return (
+                  <Box key={entry.key}>
                     <Box
-                      sx={{ display: 'flex', alignItems: 'center', gap: 0 }}
-                      onClick={e => e.stopPropagation()}
+                      onClick={() => setExpandedGroup(expanded ? null : entry.key)}
+                      sx={{
+                        display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5, cursor: 'pointer', borderRadius: '8px',
+                        '&:hover': { backgroundColor: gs.bgHover },
+                      }}
                     >
-                      <Box
-                        onClick={() => {
-                          const newMode = 'light' as const;
-                          setDraft(prev => ({
-                            ...prev,
-                            appearance: { ...prev.appearance, themeMode: newMode },
-                          }));
-                          updateSettings({ appearance: { ...draft.appearance, themeMode: newMode } });
-                        }}
-                        sx={{
-                          px: 1.5,
-                          py: 0.4,
-                          borderRadius: '12px 0 0 12px',
-                          fontSize: '0.75rem',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          backgroundColor: draft.appearance.themeMode === 'light' ? gs.bgPanel : gs.bgHover,
-                          color: draft.appearance.themeMode === 'light' ? gs.textPrimary : gs.textDisabled,
-                          border: `1px solid ${gs.border}`,
-                          borderRight: 'none',
-                          boxShadow: draft.appearance.themeMode === 'light' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                          transition: 'all 0.15s',
-                        }}
-                      >
-                        浅色
+                      <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center' }}>{entry.icon}</Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: gs.textPrimary }}>{entry.label}</Typography>
+                        <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.description}</Typography>
                       </Box>
-                      <Box
-                        onClick={() => {
-                          const newMode = 'dark' as const;
-                          setDraft(prev => ({
-                            ...prev,
-                            appearance: { ...prev.appearance, themeMode: newMode },
-                          }));
-                          updateSettings({ appearance: { ...draft.appearance, themeMode: newMode } });
-                        }}
-                        sx={{
-                          px: 1.5,
-                          py: 0.4,
-                          borderRadius: '0 12px 12px 0',
-                          fontSize: '0.75rem',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          backgroundColor: draft.appearance.themeMode === 'dark' ? gs.bgPanel : gs.bgHover,
-                          color: draft.appearance.themeMode === 'dark' ? gs.textPrimary : gs.textDisabled,
-                          border: `1px solid ${gs.border}`,
-                          borderLeft: 'none',
-                          boxShadow: draft.appearance.themeMode === 'dark' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                          transition: 'all 0.15s',
-                        }}
-                      >
-                        深色
-                      </Box>
+                      <ExpandMoreIcon sx={{ fontSize: 18, color: gs.textMuted, transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
                     </Box>
-                  )}
-                </Box>
-              );
+                    {expanded && entry.children.map((child) => renderLeaf(child, true))}
+                  </Box>
+                );
+              }
+              return renderLeaf(entry);
             })}
-            {/* 系统授权管理 — 仅原生 App 模式显示，通过 IPC 调用 Swift 原生权限管理窗口 */}
-            {isPyWebView() && (
-              <Box
-                onClick={handleOpenPermissionManager}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                  px: 2,
-                  py: 1.5,
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  '&:hover': { backgroundColor: gs.bgHover },
-                }}
-              >
-                <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center' }}><SecurityIcon sx={{ fontSize: 20 }} /></Box>
-                <Box sx={{ flex: 1 }}>
-                  <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: gs.textPrimary }}>系统授权</Typography>
-                  <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted }}>打开 macOS 原生权限管理窗口</Typography>
-                </Box>
-              </Box>
-            )}
+            {/* 系统授权 — 仅原生 App 模式显示，通过 IPC 调用 Swift 原生权限管理窗口 */}
+            {isPyWebView() && renderLeaf(SYSTEM_AUTH_ENTRY)}
           </Box>
         </Box>
     );

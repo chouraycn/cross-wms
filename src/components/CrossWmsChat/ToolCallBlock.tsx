@@ -8,6 +8,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorCircleIcon from '@mui/icons-material/ErrorOutline';
 import type { ToolCallInfo } from '../../types/chat';
 import { getGrayScale } from '../../constants/theme';
+import GeneratedFileCard, { GeneratedFileInfo } from './GeneratedFileCard';
 
 // ===================== 工具名称映射 =====================
 
@@ -16,6 +17,10 @@ const TOOL_LABELS: Record<string, string> = {
   'file:listDir': '列出目录',
   'file:readFile': '读取文件',
   'file:writeFile': '写入文件',
+  'file_generateFile': '生成文件',
+  'file_listGeneratedFiles': '列出生成文件',
+  'file_readGeneratedFile': '读取生成文件',
+  'file_deleteGeneratedFile': '删除生成文件',
   'shell:exec': '执行命令',
   'db:query': '数据库查询',
   'wms:inventory': '库存查询',
@@ -36,6 +41,10 @@ const TOOL_ICONS: Record<string, string> = {
   'file:listDir': '📁',
   'file:readFile': '📄',
   'file:writeFile': '✏️',
+  'file_generateFile': '📄',
+  'file_listGeneratedFiles': '📂',
+  'file_readGeneratedFile': '📄',
+  'file_deleteGeneratedFile': '🗑️',
   'shell:exec': '⌨️',
   'db:query': '🗄️',
   'wms:inventory': '📦',
@@ -421,6 +430,27 @@ const ToolCallItem = React.memo<ToolCallItemProps>(function ToolCallItem({ toolC
 
   const isResultJson = toolCall.result ? isJsonString(toolCall.result) : false;
 
+  // 解析生成的文件信息（file_generateFile 工具）
+  const generatedFile = useMemo<GeneratedFileInfo | null>(() => {
+    if (toolCall.name !== 'file_generateFile' || !toolCall.result) return null;
+    try {
+      const parsed = JSON.parse(toolCall.result);
+      if (parsed.success && parsed.fileName) {
+        return {
+          fileName: parsed.fileName,
+          fileSize: parsed.fileSize || 0,
+          description: parsed.description,
+          downloadUrl: parsed.downloadUrl,
+          previewUrl: parsed.previewUrl,
+          sessionId: parsed.sessionId,
+        };
+      }
+    } catch {
+      // 解析失败，返回 null
+    }
+    return null;
+  }, [toolCall.name, toolCall.result]);
+
   // 截断结果显示
   const maxResultLen = 500;
   const displayResult = formattedResult.length > maxResultLen
@@ -542,6 +572,13 @@ const ToolCallItem = React.memo<ToolCallItemProps>(function ToolCallItem({ toolC
       {/* 展开详情 */}
       <Collapse in={expanded}>
         <Box sx={{ px: 1.25, pb: 1.25, pt: 0.25 }}>
+          {/* 生成文件卡片（file_generateFile 专用） */}
+          {generatedFile && (
+            <Box sx={{ mb: 1.25 }}>
+              <GeneratedFileCard file={generatedFile} isDark={isDark} />
+            </Box>
+          )}
+
           {/* 参数 */}
           {parsedArgs && Object.keys(parsedArgs).length > 0 && (
             <Box sx={{ mb: 1 }}>

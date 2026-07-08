@@ -7,6 +7,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 
 const router = Router();
 
@@ -599,6 +600,197 @@ router.get('/stats', securityCheck, async (req: Request, res: Response) => {
     const error = e as Error;
     logger.error('[File API] 获取统计信息失败:', error);
     res.status(500).json({ ok: false, error: `获取统计信息失败: ${error.message}` });
+  }
+});
+
+// ========== AI 生成文件相关接口 ==========
+
+/**
+ * GET /api/file/generated/:sessionId/:fileName
+ * 下载或预览 AI 生成的文件
+ * Query: preview=1 时直接在浏览器预览（根据 Content-Type），否则下载
+ */
+router.get('/generated/:sessionId/:fileName', async (req: Request, res: Response) => {
+  try {
+    const { sessionId, fileName } = req.params;
+    const isPreview = req.query.preview === '1';
+
+    // 安全检查：防止路径遍历
+    if (sessionId.includes('..') || sessionId.includes('/') || sessionId.includes('\\')) {
+      res.status(400).json({ ok: false, error: '无效的会话 ID' });
+      return;
+    }
+    if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
+      res.status(400).json({ ok: false, error: '无效的文件名' });
+      return;
+    }
+
+    const filePath = path.join(AppPaths.generatedFilesDir, sessionId, fileName);
+
+    // 检查文件是否存在
+    if (!fs.existsSync(filePath)) {
+      res.status(404).json({ ok: false, error: '文件不存在' });
+      return;
+    }
+
+    const stats = await fs.promises.stat(filePath);
+    if (!stats.isFile()) {
+      res.status(400).json({ ok: false, error: '路径不是文件' });
+      return;
+    }
+
+    // 获取 MIME 类型
+    const ext = path.extname(fileName).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.html': 'text/html; charset=utf-8',
+      '.htm': 'text/html; charset=utf-8',
+      '.css': 'text/css; charset=utf-8',
+      '.js': 'application/javascript; charset=utf-8',
+      '.json': 'application/json; charset=utf-8',
+      '.md': 'text/markdown; charset=utf-8',
+      '.txt': 'text/plain; charset=utf-8',
+      '.csv': 'text/csv; charset=utf-8',
+      '.xml': 'application/xml; charset=utf-8',
+      '.pdf': 'application/pdf',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.webp': 'image/webp',
+      '.zip': 'application/zip',
+    };
+    const mimeType = mimeTypes[ext] || 'application/octet-stream';
+
+    // 设置响应头
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Length', stats.size.toString());
+
+    if (!isPreview) {
+      // 下载模式
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+    } else {
+      // 预览模式
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
+    }
+
+    // 流式传输文件
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    fileStream.on('error', (err) => {
+      logger.error('[File API] 读取生成文件失败:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ ok: false, error: '读取文件失败' });
+      }
+    });
+  } catch (e) {
+    const error = e as Error;
+    logger.error('[File API] 获取生成文件失败:', error);
+    res.status(500).json({ ok: false, error: `获取文件失败: ${error.message}` });
+  }
+});
+
+/**
+ * GET /api/file/generated/:sessionId
+ * 列出指定会话生成的所有文件
+ */
+router.get('/generated/:sessionId', async (req: Request, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+
+    // 安全检查：防止路径遍历
+    if (sessionId.includes('..') || sessionId.includes('/') || sessionId.includes('\\')) {
+      res.status(400).json({ ok: false, error: '无效的会话 ID' });
+      return;
+    }
+
+    const sessionDir = path.join(AppPaths.generatedFilesDir, sessionId);
+
+    if (!fs.existsSync(sessionDir)) {
+      res.json({ ok: true, files: [] });
+      return;
+    }
+
+    const entries = await fs.promises.readdir(sessionDir, { withFileTypes: true });
+    const files = [];
+
+    for (const entry of entries) {
+      if (entry.isFile()) {
+        const filePath = path.join(sessionDir, entry.name);
+        const stats = await fs.promises.stat(filePath);
+        files.push({
+          fileName: entry.name,
+          fileSize: stats.size,
+          createdAt: stats.birthtime.toISOString(),
+          updatedAt: stats.mtime.toISOString(),
+          downloadUrl: `/api/file/generated/${sessionId}/${encodeURIComponent(entry.name)}`,
+          previewUrl: `/api/file/generated/${sessionId}/${encodeURIComponent(entry.name)}?preview=1`,
+        });
+      }
+    }
+
+    // 按修改时间倒序
+    files.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+    res.json({ ok: true, files });
+  } catch (e) {
+    const error = e as Error;
+    logger.error('[File API] 列出生成文件失败:', error);
+    res.status(500).json({ ok: false, error: `列出文件失败: ${error.message}` });
+  }
+});
+
+/**
+ * GET /api/file/generated/:sessionId/download-all
+ * 批量下载指定会话的所有生成文件（打包为 zip）
+ */
+router.get('/generated/:sessionId/download-all', async (req: Request, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+
+    // 安全检查：防止路径遍历
+    if (sessionId.includes('..') || sessionId.includes('/') || sessionId.includes('\\')) {
+      res.status(400).json({ ok: false, error: '无效的会话 ID' });
+      return;
+    }
+
+    const sessionDir = path.join(AppPaths.generatedFilesDir, sessionId);
+
+    if (!fs.existsSync(sessionDir)) {
+      res.status(404).json({ ok: false, error: '会话目录不存在' });
+      return;
+    }
+
+    const entries = await fs.promises.readdir(sessionDir, { withFileTypes: true });
+    const files = entries.filter(entry => entry.isFile());
+
+    if (files.length === 0) {
+      res.status(404).json({ ok: false, error: '没有可下载的文件' });
+      return;
+    }
+
+    // 生成临时 zip 文件
+    const JSZip = await import('jszip');
+    const zip = new JSZip.default();
+
+    for (const entry of files) {
+      const filePath = path.join(sessionDir, entry.name);
+      const content = await fs.promises.readFile(filePath);
+      zip.file(entry.name, content);
+    }
+
+    const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Length', zipBuffer.length.toString());
+    res.setHeader('Content-Disposition', `attachment; filename="generated-files-${sessionId}.zip"`);
+
+    res.send(zipBuffer);
+  } catch (e) {
+    const error = e as Error;
+    logger.error('[File API] 批量下载生成文件失败:', error);
+    res.status(500).json({ ok: false, error: `打包下载失败: ${error.message}` });
   }
 });
 

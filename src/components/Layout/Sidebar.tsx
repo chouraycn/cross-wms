@@ -22,17 +22,24 @@ const ToolManagementDialog = React.lazy(() => import('./ToolManagementDialog'));
 import CommandPalette from './CommandPalette';
 import { isPyWebView } from '../../services/tencentDocsApi';
 import { useChatSidebar } from '../../contexts/ChatContext';
-import { isWKWebView } from '../../utils/env';
+import { isWKWebView, isMacOSApp } from '../../utils/env';
 
-// 检测是否为原生 App 模式（pywebview 或 Swift 原生）
+// 检测是否为原生 App 模式（构建时 + 运行时双重检测）
+// v3.3: 打包时通过 VITE_IS_MACOS_APP 注入构建标记，避免运行时注入时机问题
 const isNativeApp = (): boolean => {
+  // 构建时检测（优先）
+  if (isMacOSApp()) return true;
+  // 运行时检测（fallback）
   // @ts-ignore
   if (window.cdfAppNative && window.cdfAppNative.isNative) return true;
   return isPyWebView();
 };
 
-// 模块顶层一次性求值，避免每次 MainLayout 渲染重复调用 isNativeApp()
-const IS_NATIVE_APP = isNativeApp();
+// v3.3: 不再使用模块顶层常量，改为组件内动态检测。
+// 原因：Swift 的 injectNativeBridge 在 didFinish 后才注入 window.cdfAppNative，
+// 模块顶层求值时注入尚未完成，导致 IS_NATIVE_APP 恒为 false。
+// const IS_NATIVE_APP = isNativeApp(); // REMOVED
+
 // v3.2: WKWebView 环境检测，用于禁用高成本 CSS 动画
 const IS_WKWEBVIEW = isWKWebView();
 
@@ -155,7 +162,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
   }, []);
 
   const width = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
-  const nativeApp = IS_NATIVE_APP;
+  // v3.3: 每次渲染时动态检测，确保构建时标记或运行时注入都能被识别
+  const nativeApp = isNativeApp();
 
   // 新建对话
   const handleNewChat = useCallback(() => {
