@@ -68,12 +68,12 @@ export class RetryQueue {
     delayMs?: number;
   }): string {
     const retryItem: RetryItem = {
+      ...item,
       id: `retry-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       createdAt: Date.now(),
       attempt: item.attempt ?? 0,
       nextAttemptAt: Date.now() + (item.delayMs ?? this.config.baseDelayMs),
       backoffMultiplier: 1,
-      ...item,
     };
 
     this.queue.push(retryItem);

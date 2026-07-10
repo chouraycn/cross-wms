@@ -74,7 +74,7 @@ export async function registerSkillAsPlugin(
   const pluginId = `skill-${skillId}`;
 
   // 1. 从 skillRegistry 获取 skill
-  const skill = skillRegistry.get(skillId);
+  const skill = skillRegistry.getSkill(skillId);
   if (!skill) {
     return {
       success: false,

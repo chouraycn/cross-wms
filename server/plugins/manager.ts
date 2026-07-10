@@ -34,7 +34,7 @@ interface LoadedPlugin {
 export type PluginStatus = 'loaded' | 'initializing' | 'ready' | 'error' | 'disabled';
 
 /** 插件管理器 */
-class PluginManager {
+export class PluginManager {
   private plugins: Map<string, LoadedPlugin> = new Map();
   private initialized = false;
   private pluginDir: string;
@@ -117,7 +117,7 @@ class PluginManager {
     }
 
     // 查找入口文件
-    let entryFile = packageJson.main || 'index.js';
+    const entryFile = packageJson.main || 'index.js';
     const entryPath = path.join(pluginPath, entryFile);
 
     if (!fs.existsSync(entryPath)) {

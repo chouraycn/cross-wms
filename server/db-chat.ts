@@ -53,6 +53,7 @@ export interface Message {
   thinking?: string | null;
   thinkingDuration?: number | null;
   attachments?: string | null; // JSON 序列化的附件数组
+  generatedFiles?: string | null; // JSON 序列化的生成文件数组
 }
 
 export interface MessageReaction {

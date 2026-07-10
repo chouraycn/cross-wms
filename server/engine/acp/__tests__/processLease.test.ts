@@ -131,7 +131,7 @@ describe("ProcessLease", () => {
         rootPid: 1234,
         commandHash: "abc123",
         startedAt: Date.now(),
-        state: "open",
+        state: "open" as const,
       };
 
       await store.save(lease);

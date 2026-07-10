@@ -7,8 +7,5 @@ export type {
   FallbackOptions,
   RecoveryPolicy,
   RecoveryResult,
-  ErrorSeverity,
-  ErrorContext,
-  ErrorLogEntry,
 } from './recovery.js';
 export type { ErrorSeverity, ErrorContext, ErrorLogEntry } from './error-logger.js';

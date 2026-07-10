@@ -29,7 +29,7 @@ vi.mock('../../logger.js', () => ({ logger: loggerMock }));
 describe('CLI doctor 命令 Contract', () => {
   let program: Command;
   let lastOutput: string;
-  let exitSpy: ReturnType<typeof vi.spyOn>;
+  let exitSpy: any;
 
   beforeEach(() => {
     vi.clearAllMocks();

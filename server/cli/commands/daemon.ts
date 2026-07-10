@@ -104,7 +104,7 @@ export function registerDaemonCommand(program: Command): void {
           command: cmd,
           args,
           autoRestart: options.autoRestart,
-          maxRestarts: parseInt(options.maxRestarts, 10),
+          maxRestarts: parseInt(String(options.maxRestarts ?? 0), 10),
         });
         if (options.json) {
           logger.info(formatJsonOutput(daemon));

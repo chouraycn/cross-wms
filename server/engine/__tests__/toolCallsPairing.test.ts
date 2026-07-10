@@ -216,7 +216,7 @@ describe('validateToolMessages 发送前硬校验', () => {
     // 我们通过检查 sanitizeToolMessages 的处理来间接验证：
     // sanitize 应丢弃孤儿 call_2
     const { sanitizeToolMessages } = await import('../../engine/contextTruncate.js');
-    const sanitized = sanitizeToolMessages(messages);
+    const sanitized = sanitizeToolMessages(messages as unknown as ApiMessage[]);
 
     // call_2 无匹配 tool，应被移除
     expect(sanitized).toHaveLength(2);

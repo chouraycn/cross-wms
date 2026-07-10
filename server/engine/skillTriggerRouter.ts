@@ -82,7 +82,7 @@ export class SkillTriggerRouter {
     const matches: SkillTriggerMatchResult[] = [];
 
     for (const skill of this.getSkills()) {
-      if (skill.status !== 'enabled') continue;
+      if (skill.status !== 'active') continue;
       for (const t of skill.definition.triggers ?? []) {
         const parsed = parseTrigger(t);
         if (parsed?.type === 'intent' && intentSet.has(parsed.value)) {
@@ -104,7 +104,7 @@ export class SkillTriggerRouter {
     const matches: SkillTriggerMatchResult[] = [];
 
     for (const skill of this.getSkills()) {
-      if (skill.status !== 'enabled') continue;
+      if (skill.status !== 'active') continue;
       for (const t of skill.definition.triggers ?? []) {
         const parsed = parseTrigger(t);
         if (parsed?.type === 'event' && eventMatches(parsed.value, eventName)) {
@@ -126,7 +126,7 @@ export class SkillTriggerRouter {
     const result: ScheduleJob[] = [];
 
     for (const skill of this.getSkills()) {
-      if (skill.status !== 'enabled') continue;
+      if (skill.status !== 'active') continue;
       for (const t of skill.definition.triggers ?? []) {
         const parsed = parseTrigger(t);
         if (parsed?.type === 'schedule') {

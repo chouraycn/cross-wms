@@ -319,7 +319,7 @@ export async function executeApiTemplate(params: ExecuteTemplateParams): Promise
       // 收集请求/响应详细信息
       const requestHeadersJson = JSON.stringify(headers);
       const requestBodyStr = body || null;
-      const responseHeadersJson = JSON.stringify(Object.fromEntries(response.headers.entries()));
+      const responseHeadersJson = JSON.stringify(Object.fromEntries((response.headers as unknown as { entries(): IterableIterator<[string, string]> }).entries()));
       const responseBodyStr = resText;
 
       insertHistory({

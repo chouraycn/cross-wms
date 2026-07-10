@@ -41,7 +41,7 @@ const LocalServiceSchema = z.object({
   command: z.string(),
   args: z.array(z.string()).optional(),
   cwd: z.string().optional(),
-  env: z.record(z.string()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
   healthUrl: z.string().optional(),
   readyTimeoutMs: z.number().optional(),
   idleStopMs: z.number().optional(),
@@ -62,7 +62,7 @@ const ModelApiTypeSchema = z.enum([
 
 const ThinkingConfigSchema = z.object({
   paramField: z.string().optional(),
-  levelMap: z.record(z.string()).optional(),
+  levelMap: z.record(z.string(), z.string()).optional(),
   useBudget: z.boolean().optional(),
   budgetRatio: z.number().min(0).max(1).optional(),
 });
@@ -73,9 +73,9 @@ const CompatConfigSchema = z.object({
   supportsReasoning: z.boolean().optional(),
   reasoningField: z.string().optional(),
   apiVersion: z.string().optional(),
-  extraHeaders: z.record(z.string()).optional(),
-  extraBodyParams: z.record(z.unknown()).optional(),
-  roleMap: z.record(z.string()).optional(),
+  extraHeaders: z.record(z.string(), z.string()).optional(),
+  extraBodyParams: z.record(z.string(), z.unknown()).optional(),
+  roleMap: z.record(z.string(), z.string()).optional(),
   supportsSystemMessage: z.boolean().optional(),
   systemMessageFallback: z.enum(['merge-to-first-user', 'ignore']).optional(),
   maxImages: z.number().int().positive().optional(),
@@ -137,8 +137,8 @@ export const ModelConfigSchema = z.object({
   cost: CostSchema.optional(),
   localService: LocalServiceSchema.optional(),
   authMode: AuthModeSchema.optional(),
-  headers: z.record(z.string()).optional(),
-  params: z.record(z.unknown()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  params: z.record(z.string(), z.unknown()).optional(),
   inputModalities: z.array(z.enum(['text', 'image', 'video', 'audio'])).optional(),
   apiType: ModelApiTypeSchema.optional(),
   compatConfig: CompatConfigSchema.optional(),
@@ -158,8 +158,8 @@ export const ProviderConfigSchema = z.object({
   apiKeyRefs: z.array(z.string()).optional(),
   keyStrategy: z.enum(['round-robin', 'random', 'failover']).optional(),
   authMode: AuthModeSchema.optional(),
-  headers: z.record(z.string()).optional(),
-  defaultParams: z.record(z.unknown()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  defaultParams: z.record(z.string(), z.unknown()).optional(),
   localService: LocalServiceSchema.optional(),
   description: z.string().optional(),
   enabled: z.boolean().optional(),
@@ -217,7 +217,7 @@ export function validateProviderConfig(data: unknown): {
 } {
   const result = ProviderConfigSchema.safeParse(data);
   if (result.success) {
-    return { valid: true, data: result.data };
+    return { valid: true, data: result.data as ProviderConfig };
   }
   return { valid: false, errors: result.error.issues };
 }

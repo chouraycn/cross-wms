@@ -60,7 +60,7 @@ describe('Unified Provider Registry', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockInferApiType.mockReset();
-    registry = new UnifiedProviderRegistry();
+    registry = new (UnifiedProviderRegistry as unknown as { new (): UnifiedProviderRegistry })();
   });
 
   const createDescriptor = (overrides: Partial<ProviderDescriptor> = {}): ProviderDescriptor => ({

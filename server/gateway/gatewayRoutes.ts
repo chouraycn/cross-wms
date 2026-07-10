@@ -404,7 +404,7 @@ export function registerGatewayRoutes(app: {
       return;
     }
 
-    const models = (result.result?.models || []) as Array<{
+    const models = ((result.result as Record<string, unknown> | undefined)?.models || []) as Array<{
       id: string;
       name?: string;
       description?: string;
@@ -506,7 +506,7 @@ export function registerGatewayRoutes(app: {
         }
 
         // 简化流式响应
-        const responseText = result.result?.text || "";
+        const responseText = (result.result as Record<string, unknown> | undefined)?.text as string || "";
         const chunks = responseText.match(/.{1,20}/g) || [responseText];
 
         for (let i = 0; i < chunks.length; i++) {
@@ -559,8 +559,8 @@ export function registerGatewayRoutes(app: {
       return;
     }
 
-    const responseText = result.result?.text || "";
-    const usage = result.result?.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+    const responseText = (result.result as Record<string, unknown> | undefined)?.text as string || "";
+    const usage = (result.result as Record<string, unknown> | undefined)?.usage as { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
 
     res.json({
       id: `chatcmpl-${Date.now()}`,
@@ -619,7 +619,7 @@ export function registerGatewayRoutes(app: {
       return;
     }
 
-    const embeddings = result.result?.embeddings || [];
+    const embeddings = (result.result as Record<string, unknown>)?.embeddings as number[][] || [];
     const texts = typeof input === "string" ? [input] : input;
 
     res.json({

@@ -17,7 +17,8 @@ export type MessageLifecycleState =
   | 'delivered'
   | 'failed'
   | 'cancelled'
-  | 'deleted';
+  | 'deleted'
+  | '*';
 
 export interface MessageLifecycleEvent {
   messageId: string;

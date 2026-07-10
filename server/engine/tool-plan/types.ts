@@ -161,3 +161,6 @@ export interface ToolProtocolDescriptor {
   description: string;
   inputSchema: JsonObject;
 }
+
+/** 构建工具规划的入参类型（descriptors 列表） */
+export type BuildToolPlanOptions = ToolDescriptor[];

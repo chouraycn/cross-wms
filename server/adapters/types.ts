@@ -25,7 +25,7 @@ export interface AdapterConfig {
   apiEndpoint: string;
   apiKey?: string;
   modelId: string;
-  authMode?: 'api-key' | 'aws-sdk' | 'oauth' | 'token' | 'none';
+  authMode?: 'api-key' | 'aws-sdk' | 'oauth' | 'token' | 'bearer' | 'none';
   temperature?: number;
   topP?: number;
   maxTokens?: number;
@@ -83,6 +83,12 @@ export interface AdapterCompatConfig {
   supportsPromptCache?: boolean;
   /** 缓存断点位置 */
   cacheBreakpoints?: ('system' | 'tools' | 'last-user')[];
+  /** 是否支持 streaming（supportsStreaming 的简短别名） */
+  streaming?: boolean;
+  /** 是否支持 tool call（supportsToolCalls 的简短别名） */
+  toolCall?: boolean;
+  /** 是否支持 vision（supportsVision 的简短别名） */
+  vision?: boolean;
 }
 
 /** 媒体输入配置 */

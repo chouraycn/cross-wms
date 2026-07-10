@@ -219,7 +219,7 @@ export function expandQuery(query: string, options?: { maxExpansions?: number })
   for (const kw of keywords) {
     const synonyms = SYNONYM_MAP[kw.toLowerCase()] || SYNONYM_MAP[kw] || [];
     for (const syn of synonyms) {
-      if (expansions.size >= maxExpansions) break;
+      if (expansions.size >= maxExp) break;
       expansions.add(syn);
     }
   }

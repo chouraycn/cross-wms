@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AcpTranslator } from "../translator.js";
+import type { OpenAiChatCompletionRequest } from "../translator.js";
+import type { AcpTurnEvent } from "../acpTypes.js";
 
 describe("AcpTranslator", () => {
   const translator = new AcpTranslator();
@@ -13,7 +15,7 @@ describe("AcpTranslator", () => {
         max_tokens: 100,
       };
 
-      const acpRequest = translator.translateOpenAiToAcp(openAiRequest);
+      const acpRequest = translator.translateOpenAiToAcp(openAiRequest as unknown as OpenAiChatCompletionRequest);
 
       expect(acpRequest.model).toBe("gpt-4o");
       expect(acpRequest.messages).toEqual([{ role: "user", content: "Hello" }]);
@@ -35,7 +37,7 @@ describe("AcpTranslator", () => {
         }],
       };
 
-      const acpRequest = translator.translateOpenAiToAcp(openAiRequest);
+      const acpRequest = translator.translateOpenAiToAcp(openAiRequest as unknown as OpenAiChatCompletionRequest);
 
       expect(acpRequest.tools).toBeDefined();
       expect(acpRequest.tools?.length).toBe(1);
@@ -49,7 +51,7 @@ describe("AcpTranslator", () => {
         tool_choice: "none",
       };
 
-      const acpRequest = translator.translateOpenAiToAcp(openAiRequest);
+      const acpRequest = translator.translateOpenAiToAcp(openAiRequest as unknown as OpenAiChatCompletionRequest);
 
       expect(acpRequest.tool_choice).toBe("none");
     });
@@ -91,7 +93,7 @@ describe("AcpTranslator", () => {
   describe("translateAcpEventToOpenAiChunk", () => {
     it("should translate text_delta event", () => {
       const event = { type: "text_delta", text: "Hello" };
-      const chunk = translator.translateAcpEventToOpenAiChunk(event, "req_123", "gpt-4o");
+      const chunk = translator.translateAcpEventToOpenAiChunk(event as unknown as AcpTurnEvent, "req_123", "gpt-4o");
 
       expect(chunk).not.toBeNull();
       expect(chunk?.object).toBe("chat.completion.chunk");
@@ -100,7 +102,7 @@ describe("AcpTranslator", () => {
 
     it("should translate tool_call event", () => {
       const event = { type: "tool_call", id: "tool_1", name: "search", input: { query: "test" } };
-      const chunk = translator.translateAcpEventToOpenAiChunk(event, "req_123", "gpt-4o");
+      const chunk = translator.translateAcpEventToOpenAiChunk(event as unknown as AcpTurnEvent, "req_123", "gpt-4o");
 
       expect(chunk).not.toBeNull();
       expect(chunk?.choices[0].delta?.tool_calls?.[0].function.name).toBe("search");
@@ -108,7 +110,7 @@ describe("AcpTranslator", () => {
 
     it("should translate done event", () => {
       const event = { type: "done", finishReason: "stop" };
-      const chunk = translator.translateAcpEventToOpenAiChunk(event, "req_123", "gpt-4o");
+      const chunk = translator.translateAcpEventToOpenAiChunk(event as unknown as AcpTurnEvent, "req_123", "gpt-4o");
 
       expect(chunk).not.toBeNull();
       expect(chunk?.choices[0].finish_reason).toBe("stop");
@@ -116,7 +118,7 @@ describe("AcpTranslator", () => {
 
     it("should return null for error event", () => {
       const event = { type: "error", error: "Failed" };
-      const chunk = translator.translateAcpEventToOpenAiChunk(event, "req_123", "gpt-4o");
+      const chunk = translator.translateAcpEventToOpenAiChunk(event as unknown as AcpTurnEvent, "req_123", "gpt-4o");
 
       expect(chunk).toBeNull();
     });
