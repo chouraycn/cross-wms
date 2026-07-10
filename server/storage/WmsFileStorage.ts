@@ -9,6 +9,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { AppPaths } from '../config/appPaths.js';
+import type { DocumentStorage } from './DocumentStorage.js';
 
 const WMS_DATA_DIR = AppPaths.wmsDataDir;
 
@@ -46,7 +47,7 @@ function writeFile<T>(collection: string, data: CollectionFile<T>): void {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n', 'utf-8');
 }
 
-export class WmsFileStorage {
+export class WmsFileStorage implements DocumentStorage {
   private static instance: WmsFileStorage | null = null;
 
   static getInstance(): WmsFileStorage {

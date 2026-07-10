@@ -16,7 +16,9 @@ export type ModelApiType =
   | 'openai-chat'
   | 'openai-completions'
   | 'anthropic-messages'
-  | 'google-generative-ai';
+  | 'google-generative-ai'
+  | 'qwen-chat'
+  | 'moonshot-chat';
 
 /** 适配器通用配置 */
 export interface AdapterConfig {
@@ -35,6 +37,9 @@ export interface AdapterConfig {
   compat?: AdapterCompatConfig;
   /** 媒体输入配置 */
   mediaInput?: AdapterMediaInputConfig;
+  /** 强制工具选择（按请求覆盖）。默认 undefined 即 'auto'。
+   *  用于确保特定意图（如“生成文件”）必定调用指定工具，避免模型退化成正文输出。 */
+  toolChoice?: 'auto' | 'none' | { type: 'function'; function: { name: string } };
 }
 
 /** Provider 兼容性配置 */

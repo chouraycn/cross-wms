@@ -105,13 +105,16 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   }, [ensureInitialized]);
   const { settings: aiEngineSettings } = useAiEngineSettings();
   const { session } = useChatSession();
-  const [inputExpanded, setInputExpanded] = useState(false);
+  // v-latest: 输入框始终保持展开（高）高度，取消点击后变高的行为，
+  // 避免光标与提示文字因高度跳变而位移/变形
+  const [inputExpanded] = useState(true);
   const [showSkills, setShowSkills] = useState(false);
   const [showSkillSelector, setShowSkillSelector] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(initialSkill ?? null);
   const [inputValue, setInputValue] = useState('');
   const [skillFocusIndex, setSkillFocusIndex] = useState(-1);
+  const [caretPos, setCaretPos] = useState<{ x: number; y: number; h: number } | null>(null);
 
   // 会话引用状态
   const [showSessionReference, setShowSessionReference] = useState(false);
@@ -124,6 +127,82 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   // 选择文件夹状态
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
+
+  // 语音输入状态
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const handleVoiceInput = useCallback(() => {
+    // 停止录音
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    // 优先使用浏览器原生 SpeechRecognition
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      showToast('当前浏览器不支持语音识别，请使用 Chrome', 'error', 3000);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'zh-CN';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    let finalText = '';
+
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalText += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      // 实时显示识别中的文字到输入框
+      const currentText = editableRef.current?.innerText || '';
+      const baseText = finalText ? currentText.replace(/\s*…\s*$/, '') : currentText;
+      const displayText = (baseText + finalText.replace(baseText, '') + interim).trim();
+      if (editableRef.current) {
+        editableRef.current.innerText = displayText + (interim ? '…' : '');
+        setInputValue(displayText);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error === 'not-allowed') {
+        showToast('无法访问麦克风，请检查权限设置', 'error', 3000);
+      } else if (event.error === 'no-speech') {
+        showToast('未检测到语音输入', 'info', 2000);
+      } else {
+        showToast(`语音识别错误: ${event.error}`, 'error', 2000);
+      }
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+      // 确保最终文字写入输入框
+      if (finalText && editableRef.current) {
+        const existing = editableRef.current.innerText.replace(/…$/, '').trim();
+        const combined = (existing + finalText).trim();
+        editableRef.current.innerText = combined;
+        setInputValue(combined);
+        handleInputChangeRef.current();
+      }
+      showToast('语音输入完成', 'success', 1500);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+    showToast('开始录音，再次点击停止', 'info', 2000);
+  }, [isRecording, showToast]);
 
   // 思考级别基础列表
   const BASE_THINKING_LEVELS = [
@@ -199,6 +278,33 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     setExpandedIntent(null);
   }, [selectedSkill?.id]);
 
+  const handleSendRef = useRef<() => void>(() => {});
+
+  // 全局快捷键处理
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowSkillSelector(false);
+        setShowSessionReference(false);
+        setShowSkills(false);
+        setIntentAnchorEl(null);
+        setExpandedIntent(null);
+        setShowAISettings(false);
+        setThinkingMenuAnchor(null);
+      }
+
+      if (editableRef.current && editableRef.current === document.activeElement) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+          e.preventDefault();
+          handleSendRef.current();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
   // 选择文件夹处理：优先使用原生 NSOpenPanel，回退到 input[webkitdirectory]
   const handleSelectFolder = useCallback(async () => {
     // @ts-ignore
@@ -240,6 +346,23 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   // 清除选中的文件夹
   const handleClearFolder = useCallback(() => {
     setSelectedFolder(null);
+  }, []);
+
+  const handleInputChangeRef = useRef<() => void>(() => {});
+
+  // 在光标位置插入文本
+  const insertTextAtCursor = useCallback((text: string) => {
+    if (!editableRef.current) return;
+    editableRef.current.focus();
+    const sel = window.getSelection();
+    if (!sel) return;
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(document.createTextNode(text));
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    handleInputChangeRef.current();
   }, []);
 
   // 获取当前斜杠命令过滤后的技能列表（用于键盘导航，缓存避免每次渲染重新计算）
@@ -415,7 +538,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         setShowSkillSelector(false);
         setShowSessionReference(false);
         if (!inputValue.trim()) {
-          setInputExpanded(false);
           if (editableRef.current) {
             editableRef.current.innerHTML = '';
           }
@@ -432,9 +554,27 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [inputValue]);
 
+  // 跟踪光标位置
+  const updateCaretPos = useCallback(() => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editableRef.current) {
+      const range = sel.getRangeAt(0).cloneRange();
+      // 强制 collapse 到 end，获取实际光标位置
+      range.collapse(false);
+      const rect = range.getClientRects()[0] || range.getBoundingClientRect();
+      const containerRect = editableRef.current.getBoundingClientRect();
+      setCaretPos({
+        x: rect.left - containerRect.left,
+        y: rect.top - containerRect.top,
+        h: rect.height,
+      });
+    }
+  }, []);
+
   const handleInputChange = useCallback(() => {
     const text = editableRef.current?.innerText || '';
     setInputValue(text);
+    updateCaretPos();
 
     const currentLine = text.split('\n').pop() || '';
 
@@ -457,23 +597,20 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       setSkillFocusIndex(-1);
     }
   }, []);
+  handleInputChangeRef.current = handleInputChange;
 
   const handleInputClick = () => {
     // v2.3.1-fix: 点击输入框时清除 composition 残留标记，防止回车被误判
     compositionJustEndedRef.current = false;
-    if (!inputExpanded) {
-      setInputExpanded(true);
-      setTimeout(() => {
-        if (editableRef.current) {
-          editableRef.current.focus();
-          const range = document.createRange();
-          const sel = window.getSelection();
-          range.selectNodeContents(editableRef.current);
-          range.collapse(false);
-          sel?.removeAllRanges();
-          sel?.addRange(range);
-        }
-      }, 0);
+    // 输入框始终保持展开高度，点击仅聚焦并将光标移至末尾（不再触发高度跳变）
+    if (editableRef.current) {
+      editableRef.current.focus();
+      const range = document.createRange();
+      const sel = window.getSelection();
+      range.selectNodeContents(editableRef.current);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
     }
   };
 
@@ -500,6 +637,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           sel?.removeAllRanges();
           sel?.addRange(range);
           editableRef.current.focus();
+          updateCaretPos();
         }
       }, 0);
     }
@@ -626,7 +764,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       detail: { value: '' },
     }));
     setShowSkillSelector(false);
-    setInputExpanded(false);
     setReferencedSessions([]);
     setPendingAttachments([]);
 
@@ -635,6 +772,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       setSelectedSkill(null);
     }
   };
+  handleSendRef.current = handleSend;
 
   /**
    * v1.5.73: compositionend 后标记 — 解决 WKWebView 中 compositionend 先于 keydown 触发的问题
@@ -787,33 +925,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           overflow: 'hidden',
         }}
       >
-        {/* Selected skill tag */}
-        {selectedSkill && (
-          <Box sx={{ px: 1.5, py: 0.5, bgcolor: gs.bgPanel, borderBottom: `1px solid ${gs.border}`, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Chip
-              icon={<Box component="span" sx={{ display: 'flex', alignItems: 'center', ml: '4px' }}>{ICON_MAP[selectedSkill.icon] || <AutoFixHighIcon sx={{ fontSize: 14 }} />}</Box>}
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <span>{selectedSkill.name}</span>
-                  {selectedSkill.promptTemplate && (
-                    <Typography component="span" sx={{ fontSize: 9, color: '#7C3AED', fontWeight: 600, bgcolor: '#FAF5FF', px: 0.5, borderRadius: 0.5 }}>
-                      AI
-                    </Typography>
-                  )}
-                </Box>
-              }
-              onDelete={() => { setSelectedSkill(null); }}
-              size="small"
-              sx={{
-                height: 26,
-                fontSize: 12,
-                bgcolor: selectedSkill.promptTemplate ? '#FAF5FF' : '#F3F4F6',
-                border: selectedSkill.promptTemplate ? '1px solid #DDD6FE' : '1px solid #E5E7EB',
-                '& .MuiChip-label': { px: 1 },
-              }}
-            />
-          </Box>
-        )}
         {/* v1.7.0: 意图分类 Chips 行 — 仅当选中技能有 intentCategories 时展示 */}
         {selectedSkill?.intentCategories && selectedSkill.intentCategories.length > 0 && (
           <Box sx={{ px: 1.5, py: 0.75, bgcolor: gs.bgPanel, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
@@ -958,6 +1069,50 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             )}
           </Box>
         )}
+        {/* Markdown toolbar */}
+        <Box sx={{ px: 1.5, py: 0.5, bgcolor: gs.bgPanel, borderBottom: `1px solid ${gs.border}`, display: 'flex', alignItems: 'center', gap: 0.25, flexWrap: 'wrap' }}>
+          {[
+            { icon: 'bold', label: '加粗', markdown: '**', title: 'Ctrl+B' },
+            { icon: 'italic', label: '斜体', markdown: '*', title: 'Ctrl+I' },
+            { icon: 'code', label: '代码', markdown: '`', title: 'Ctrl+`' },
+            { icon: 'link', label: '链接', markdown: '[', suffix: '](url)', title: 'Ctrl+K' },
+            { icon: 'list', label: '列表', markdown: '\n- ', title: 'Ctrl+L' },
+            { icon: 'quote', label: '引用', markdown: '> ', title: 'Ctrl+Q' },
+            { icon: 'head', label: '标题', markdown: '# ', title: 'Ctrl+H' },
+          ].map((tool) => (
+            <Tooltip key={tool.icon} title={`${tool.label} ${tool.title}`}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  if (!editableRef.current) return;
+                  const sel = window.getSelection();
+                  if (!sel || sel.isCollapsed) {
+                    insertTextAtCursor(tool.markdown + (tool.suffix || ''));
+                  } else {
+                    const selectedText = sel.toString();
+                    insertTextAtCursor(tool.markdown + selectedText + tool.markdown);
+                  }
+                }}
+                sx={{
+                  color: gs.textDisabled,
+                  '&:hover': { color: gs.textPrimary, bgcolor: gs.bgHover },
+                  borderRadius: '4px',
+                  p: 0.5,
+                  minWidth: 28,
+                  height: 28,
+                }}
+              >
+                {tool.icon === 'bold' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H10"/><path d="M6 12h8a4 4 0 014 4 4 4 0 01-4 4H6"/></svg>}
+                {tool.icon === 'italic' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h6v16H6"/><path d="M14 4l6 16"/></svg>}
+                {tool.icon === 'code' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>}
+                {tool.icon === 'link' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>}
+                {tool.icon === 'list' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>}
+                {tool.icon === 'quote' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 16V8a2 2 0 00-2-2H5"/><path d="M14 16h6a2 2 0 002-2v-3.5"/><path d="M6 16h6a2 2 0 012 2v3.5"/></svg>}
+                {tool.icon === 'head' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8h-6a2 2 0 00-2 2v12a2 2 0 002 2h6a2 2 0 002-2V10a2 2 0 00-2-2"/><path d="M12 16v-6"/><path d="M19 13h-6"/></svg>}
+              </IconButton>
+            </Tooltip>
+          ))}
+        </Box>
         {/* Input area */}
         <Box
           onClick={handleInputClick}
@@ -985,67 +1140,97 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             }}
           />
           {/* v3.2: WKWebView兼容 — contenteditable始终可见，用绝对定位实现placeholder效果 */}
-          <Box sx={{ position: 'relative', width: '100%', minHeight: inputExpanded ? 60 : 32 }}>
-            {/* placeholder层：当输入框为空且未展开时显示 */}
-            {!inputValue.trim() && !inputExpanded && (
-              <Typography
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontSize: 15,
-                  color: gs.textMuted,
-                  lineHeight: 1.4,
-                  pointerEvents: 'none',
-                }}
-              >
-                今天帮你做些什么？
-              </Typography>
-            )}
-            <div
-              ref={editableRef}
-              contentEditable
-              suppressContentEditableWarning
-              onBeforeInput={handleBeforeInput}
-              onInput={handleInputWithComposition}
-              onKeyDown={handleKeyDown}
-              onBlur={() => {
-                const text = editableRef.current?.innerText || '';
-                window.dispatchEvent(new CustomEvent('cdf-chat-input-blur', {
-                  detail: { value: text },
-                }));
-              }}
-              onCompositionStart={() => { isComposingRef.current = true; compositionJustEndedRef.current = false; }}
-              onCompositionEnd={() => {
-                const wasComposing = isComposingRef.current;
-                isComposingRef.current = false;
-                compositionTextInsertedRef.current = false;
-                if (wasComposing) {
-                  compositionJustEndedRef.current = true;
+          <Box sx={{ position: 'relative', width: '100%', minHeight: inputExpanded ? 60 : 32, display: 'flex', alignItems: inputExpanded ? 'flex-start' : 'center', gap: 0.75 }}>
+            {/* Selected skill tag inside input */}
+            {selectedSkill && (
+              <Chip
+                icon={<Box component="span" sx={{ display: 'flex', alignItems: 'center', ml: '2px' }}>{ICON_MAP[selectedSkill.icon] || <AutoFixHighIcon sx={{ fontSize: 12 }} />}</Box>}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+                    <span>{selectedSkill.name}</span>
+                    {selectedSkill.promptTemplate && (
+                      <Typography component="span" sx={{ fontSize: 8, color: '#7C3AED', fontWeight: 600, bgcolor: '#FAF5FF', px: 0.3, borderRadius: 0.3 }}>
+                        AI
+                      </Typography>
+                    )}
+                  </Box>
                 }
-              }}
-              style={{
-                fontSize: 15,
-                lineHeight: 1.4,
-                minHeight: inputExpanded ? 60 : 32,
-                outline: 'none',
-                color: gs.textPrimary,
-                width: '100%',
-                wordBreak: 'break-word',
-                whiteSpace: 'pre-wrap',
-                position: 'relative',
-              }}
-            />
-            {/* 底部提示：有输入内容且未展开时显示 */}
-            {inputValue.trim() && !inputExpanded && (
-              <Typography sx={{ fontSize: 13, color: gs.textDisabled, lineHeight: 1.4, mt: 0.5, pl: 0.5 }}>
-                @ 引用对话文件，/ 调用技能与指令
-              </Typography>
+                onDelete={() => { setSelectedSkill(null); }}
+                size="small"
+                sx={{
+                  height: 24,
+                  fontSize: 11,
+                  bgcolor: '#E0EBFF',
+                  border: '1px solid #7BA4FF',
+                  color: '#1E40AF',
+                  fontWeight: 500,
+                  '& .MuiChip-label': { px: 0.75 },
+                  '& .MuiChip-deleteIcon': { fontSize: 14, color: '#60A5FA' },
+                  flexShrink: 0,
+                  mt: inputExpanded ? 0.5 : 0,
+                }}
+              />
             )}
+            {/* Input content container */}
+            <Box sx={{ flex: 1, position: 'relative', minHeight: inputExpanded ? 60 : 28 }}>
+              {/* placeholder层：输入框为空时显示（始终保持展开高度，静态占位，不随光标移动） */}
+              {!inputValue.trim() && (
+                <Typography
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    fontSize: 12,
+                    color: gs.textMuted,
+                    lineHeight: 1.4,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  今天帮你做些什么？ <Box component="span" sx={{ color: gs.textDisabled, ml: 0.5 }}>@ 引用对话文件，/ 调用技能与指令</Box>
+                </Typography>
+              )}
+              <div
+                ref={editableRef}
+                contentEditable
+                suppressContentEditableWarning
+                onBeforeInput={handleBeforeInput}
+                onInput={handleInputWithComposition}
+                onKeyDown={handleKeyDown}
+                onKeyUp={updateCaretPos}
+                onClick={updateCaretPos}
+                onFocus={updateCaretPos}
+                onBlur={() => {
+                  const text = editableRef.current?.innerText || '';
+                  window.dispatchEvent(new CustomEvent('cdf-chat-input-blur', {
+                    detail: { value: text },
+                  }));
+                }}
+                onCompositionStart={() => { isComposingRef.current = true; compositionJustEndedRef.current = false; }}
+                onCompositionEnd={() => {
+                  const wasComposing = isComposingRef.current;
+                  isComposingRef.current = false;
+                  compositionTextInsertedRef.current = false;
+                  if (wasComposing) {
+                    compositionJustEndedRef.current = true;
+                  }
+                }}
+                style={{
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                  minHeight: inputExpanded ? 60 : 28,
+                  outline: 'none',
+                  color: gs.textPrimary,
+                  width: '100%',
+                  wordBreak: 'break-word',
+                  whiteSpace: 'pre-wrap',
+                  position: 'relative',
+                }}
+              />
+            </Box>
           </Box>
         </Box>
 
@@ -1075,6 +1260,8 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                   l.value === 'medium' ? '平衡推理深度和速度' :
                   '更深入的推理分析',
           }))}
+          onVoiceInput={handleVoiceInput}
+          isRecording={isRecording}
         />
       </Paper>
 

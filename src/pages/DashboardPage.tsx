@@ -21,6 +21,7 @@ import { subscribeRefresh, subscribeWarehouseChange } from '../App';
 import { useWarehouseCapability } from '../capabilities/warehouse';
 import { AlertCarousel, type DashboardAlert } from '../components/Dashboard/AlertCarousel';
 import type { Warehouse, TransitOrder, InventoryItem } from '../types';
+import { usePageFadeIn } from '../hooks/usePageFadeIn';
 
 function computeAlerts(
   warehouses: Warehouse[],
@@ -167,8 +168,10 @@ const DashboardPageContent: React.FC = () => {
   // Check if any KPI cards are visible
   const hasKpiCards = vis.kpiTransitVolume || vis.kpiVolumeUtilization || vis.kpiPendingInbound || vis.kpiOutboundCount || vis.kpiInventoryDepth;
 
+  const fadeCls = usePageFadeIn();
+
   return (
-    <Box className="page-fade-in">
+    <Box className={fadeCls}>
       {/* ProWeb 风格 Banner — 极简黑白、贴合 CDF Know Clow 功能 */}
       <Box
         sx={{

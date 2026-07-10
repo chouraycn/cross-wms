@@ -39,11 +39,8 @@ import HistoryIcon from '@mui/icons-material/History';
 import LanguageIcon from '@mui/icons-material/Language';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import TimelineIcon from '@mui/icons-material/Timeline';
 import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
 import HubIcon from '@mui/icons-material/Hub';
-import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
-import AssessmentIcon from '@mui/icons-material/Assessment';
 import {
   getPlugins,
   onPluginsChange,
@@ -65,13 +62,9 @@ const ApiCredentialsPage = lazy(() => import('../../pages/ApiCredentialsPage'));
 const ApiHistoryPage = lazy(() => import('../../pages/ApiHistoryPage'));
 const BrowserPage = lazy(() => import('../../pages/BrowserPage'));
 const PdfPanel = lazy(() => import('../PDF/PdfPanel'));
-const ExecutionHistoryPage = lazy(() => import('../../pages/ExecutionHistoryPage'));
 const TemplateMarketPage = lazy(() => import('../../pages/TemplateMarketPage'));
-const EventLedgerPage = lazy(() => import('../../pages/EventLedgerPage'));
 const FileExplorerPage = lazy(() => import('../../pages/FileExplorerPage'));
 const ExtensionsPage = lazy(() => import('../../pages/ExtensionsPage'));
-const SystemMonitorPage = lazy(() => import('../../pages/SystemMonitorPage'));
-const AuditLogPage = lazy(() => import('../../pages/AuditLogPage'));
 const ApiKeysPage = lazy(() => import('../../pages/ApiKeysPage'));
 
 /* ------------------------------------------------------------------ */
@@ -83,13 +76,11 @@ export interface ToolManagementDialogProps {
   onClose: () => void;
 }
 
-type PageTab = 'tools' | 'extensions' | 'monitor' | 'audit' | 'apiKeys' | 'whitelist' | 'templates' | 'credentials' | 'history' | 'browser' | 'pdf' | 'file-explorer' | 'execution-history' | 'template-market' | 'event-ledger';
+type PageTab = 'tools' | 'extensions' | 'apiKeys' | 'whitelist' | 'templates' | 'credentials' | 'history' | 'browser' | 'pdf' | 'file-explorer' | 'template-market';
 
 const PAGE_TABS: TabDef[] = [
   { key: 'tools',           label: '插件管理', icon: <ExtensionOutlinedIcon sx={{ fontSize: 18 }} /> },
   { key: 'extensions',      label: '扩展管理', icon: <HubIcon sx={{ fontSize: 18 }} /> },
-  { key: 'monitor',         label: '系统监控', icon: <MonitorHeartIcon sx={{ fontSize: 18 }} /> },
-  { key: 'audit',           label: '审计日志', icon: <AssessmentIcon sx={{ fontSize: 18 }} /> },
   { key: 'apiKeys',         label: 'API Key',  icon: <VpnKeyIcon sx={{ fontSize: 18 }} /> },
   { key: 'whitelist',       label: '白名单',   icon: <VpnLockIcon sx={{ fontSize: 18 }} /> },
   { key: 'templates',       label: 'API 模板', icon: <ApiIcon sx={{ fontSize: 18 }} /> },
@@ -98,9 +89,7 @@ const PAGE_TABS: TabDef[] = [
   { key: 'browser',         label: '浏览器',   icon: <LanguageIcon sx={{ fontSize: 18 }} /> },
   { key: 'pdf',             label: 'PDF 工具', icon: <PictureAsPdfOutlinedIcon sx={{ fontSize: 18 }} /> },
   { key: 'file-explorer',   label: '文件浏览器', icon: <FolderOpenOutlinedIcon sx={{ fontSize: 18 }} /> },
-  { key: 'execution-history', label: '执行历史', icon: <TimelineIcon sx={{ fontSize: 18 }} /> },
   { key: 'template-market', label: '模板市场', icon: <AutoFixHighIcon sx={{ fontSize: 18 }} /> },
-  { key: 'event-ledger',    label: '事件溯源', icon: <HistoryIcon sx={{ fontSize: 18 }} /> },
 ];
 
 // ---- 工具查看内部筛选标签 ----
@@ -349,22 +338,6 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
             </Suspense>
           </Box>
         );
-      case 'monitor':
-        return (
-          <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
-            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
-              <SystemMonitorPage />
-            </Suspense>
-          </Box>
-        );
-      case 'audit':
-        return (
-          <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
-            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
-              <AuditLogPage />
-            </Suspense>
-          </Box>
-        );
       case 'apiKeys':
         return (
           <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
@@ -429,27 +402,11 @@ const ToolManagementDialog: React.FC<ToolManagementDialogProps> = ({ open, onClo
             </Suspense>
           </Box>
         );
-      case 'execution-history':
-        return (
-          <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
-            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
-              <ExecutionHistoryPage />
-            </Suspense>
-          </Box>
-        );
       case 'template-market':
         return (
           <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
             <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
               <TemplateMarketPage />
-            </Suspense>
-          </Box>
-        );
-      case 'event-ledger':
-        return (
-          <Box sx={{ flex: 1, overflow: 'auto', px: 0, py: 0 }}>
-            <Suspense fallback={<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><CircularProgress size={24} /></Box>}>
-              <EventLedgerPage />
             </Suspense>
           </Box>
         );

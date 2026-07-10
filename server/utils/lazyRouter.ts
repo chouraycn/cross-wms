@@ -22,12 +22,27 @@ type DefaultExport = { default: Router };
 type NamedExport = { [key: string]: Router };
 type AnyExport = DefaultExport | NamedExport;
 
+const loadedModules = new Map<string, Router>();
+const pendingLoads = new Map<string, Promise<Router>>();
+const routeImportFns = new Map<string, () => Promise<AnyExport>>();
+const routeSelectors = new Map<string, ((mod: AnyExport) => Router) | undefined>();
+
+let warmupInProgress = false;
+
+const WARMUP_GROUPS: Record<string, string[]> = {
+  chat: ['sessions', 'folders', 'skills', 'models', 'memory'],
+  skills: ['skill-chains', 'triggers', 'matching', 'plugins'],
+  warehouses: ['inventory', 'transit', 'partners', 'inventory-transactions'],
+  settings: ['models', 'mcp', 'secrets', 'permissions'],
+  plugins: ['extensions', 'webhook', 'channels', 'automation'],
+};
+
 /**
  * 创建延迟加载的 Express Router
  *
  * @param importFn 动态 import 函数
  * @param selector 从模块中选取 Router（默认取 .default）
- * @param label 可选标签，用于日志
+ * @param label 可选标签，用于日志和预热
  */
 export function lazyRouter<T extends AnyExport = DefaultExport>(
   importFn: () => Promise<T>,
@@ -35,40 +50,116 @@ export function lazyRouter<T extends AnyExport = DefaultExport>(
   label?: string,
 ): Router {
   const router = Router();
-  let cached: Router | null = null;
-  let loading: Promise<Router> | null = null;
+  const key = label || 'unknown';
+
+  routeImportFns.set(key, importFn as () => Promise<AnyExport>);
+  routeSelectors.set(key, selector as ((mod: AnyExport) => Router) | undefined);
 
   const resolveRouter = (mod: T): Router => {
     if (selector) return selector(mod);
     if ('default' in mod) return mod.default;
-    // 如果没有 default 导出，取第一个 Router 值
     const first = Object.values(mod)[0];
     return first as Router;
   };
 
   router.use((req: Request, res: Response, next: NextFunction) => {
-    if (cached) {
-      return cached(req, res, next);
+    if (loadedModules.has(key)) {
+      return loadedModules.get(key)!(req, res, next);
     }
 
-    if (!loading) {
-      const tag = label || req.path;
-      loading = importFn().then(mod => {
-        cached = resolveRouter(mod);
-        logger.debug(`[LazyRouter] "${tag}" 已延迟加载`);
-        loading = null;
-        return cached;
-      }).catch(err => {
-        loading = null;
-        logger.error(`[LazyRouter] "${tag}" 加载失败:`, err);
-        throw err;
-      });
+    if (!pendingLoads.has(key)) {
+      pendingLoads.set(
+        key,
+        importFn().then(mod => {
+          const r = resolveRouter(mod);
+          loadedModules.set(key, r);
+          logger.debug(`[LazyRouter] "${key}" 已延迟加载`);
+          pendingLoads.delete(key);
+
+          // 首次加载后触发后台预热
+          triggerWarmup(key);
+
+          return r;
+        }).catch(err => {
+          pendingLoads.delete(key);
+          logger.error(`[LazyRouter] "${key}" 加载失败:`, err);
+          throw err;
+        }),
+      );
     }
 
-    loading
+    pendingLoads
+      .get(key)!
       .then(r => r(req, res, next))
       .catch(next);
   });
 
   return router;
+}
+
+// ============ 路由预热机制 ============
+
+function triggerWarmup(triggerKey: string): void {
+  if (warmupInProgress) return;
+
+  const group = Object.entries(WARMUP_GROUPS).find(([matchKey]) =>
+    triggerKey.includes(matchKey),
+  );
+
+  if (!group) return;
+
+  const [, routesToWarmup] = group;
+  warmupInProgress = true;
+
+  logger.debug(`[LazyRouter] 开始预热路由组: ${routesToWarmup.join(', ')}`);
+
+  let index = 0;
+  const warmupNext = () => {
+    if (index >= routesToWarmup.length) {
+      warmupInProgress = false;
+      logger.debug('[LazyRouter] 路由预热完成');
+      return;
+    }
+
+    const routeKey = routesToWarmup[index++];
+    if (loadedModules.has(routeKey) || pendingLoads.has(routeKey)) {
+      setImmediate(warmupNext);
+      return;
+    }
+
+    const importFn = routeImportFns.get(routeKey);
+    const selector = routeSelectors.get(routeKey);
+    if (!importFn) {
+      setImmediate(warmupNext);
+      return;
+    }
+
+    // 每个路由间隔 50ms 加载，避免阻塞事件循环
+    setTimeout(() => {
+      importFn()
+        .then(mod => {
+          const router = selector
+            ? selector(mod)
+            : ('default' in mod ? (mod as DefaultExport).default : (Object.values(mod)[0] as Router));
+          loadedModules.set(routeKey, router);
+          logger.debug(`[LazyRouter] 预热完成: ${routeKey}`);
+        })
+        .catch(() => {
+          logger.debug(`[LazyRouter] 预热跳过: ${routeKey}`);
+        })
+        .finally(warmupNext);
+    }, 50);
+  };
+
+  setImmediate(warmupNext);
+}
+
+/** 检查路由是否已加载 */
+export function isRouteLoaded(key: string): boolean {
+  return loadedModules.has(key);
+}
+
+/** 获取已加载的路由数量（用于性能监控） */
+export function getLoadedRouteCount(): number {
+  return loadedModules.size;
 }

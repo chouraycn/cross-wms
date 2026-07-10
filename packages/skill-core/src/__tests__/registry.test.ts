@@ -75,3 +75,168 @@ describe('SkillRegistry', () => {
     expect(registry.size()).toBe(0);
   });
 });
+
+describe('SkillRegistry trigger types', () => {
+  let registry: SkillRegistry;
+
+  beforeEach(() => {
+    registry = new SkillRegistry();
+  });
+
+  it('matches intent trigger when intents supplied via options', () => {
+    registry.registerSkill(
+      {
+        id: 'intent-skill',
+        name: 'Intent Skill',
+        version: '1.0.0',
+        description: 'Handles query intent',
+        type: 'native',
+        triggers: [{ type: 'intent', intent: 'query' }],
+      },
+      async () => ({ success: true }),
+    );
+    registry.enableSkill('intent-skill');
+
+    const matches = registry.matchTriggers('帮我查询库存', { intents: ['query'] });
+    expect(matches.length).toBe(1);
+    expect(matches[0].skillId).toBe('intent-skill');
+    expect(matches[0].confidence).toBe(0.85);
+  });
+
+  it('does not match intent trigger when no intents supplied', () => {
+    registry.registerSkill(
+      {
+        id: 'intent-skill-2',
+        name: 'Intent Skill 2',
+        version: '1.0.0',
+        description: 'Handles analyze intent',
+        type: 'native',
+        triggers: [{ type: 'intent', intent: 'analyze' }],
+      },
+      async () => ({ success: true }),
+    );
+
+    expect(registry.matchTriggers('随便说点什么').length).toBe(0);
+  });
+
+  it('matches intent trigger with confidence objects', () => {
+    registry.registerSkill(
+      {
+        id: 'intent-skill-3',
+        name: 'Intent Skill 3',
+        version: '1.0.0',
+        description: 'Handles create intent',
+        type: 'native',
+        triggers: [{ type: 'intent', intent: 'create' }],
+      },
+      async () => ({ success: true }),
+    );
+    registry.enableSkill('intent-skill-3');
+
+    const matches = registry.matchTriggers('x', { intents: [{ intent: 'create', confidence: 0.95 }] });
+    expect(matches.length).toBe(1);
+    expect(matches[0].confidence).toBe(0.95);
+  });
+
+  it('matches event triggers with exact / wildcard / prefix', () => {
+    registry.registerSkill(
+      {
+        id: 'evt-exact',
+        name: 'Exact',
+        version: '1.0.0',
+        description: 'd',
+        type: 'native',
+        triggers: [{ type: 'event', event: 'message.received' }],
+      },
+      async () => ({ success: true }),
+    );
+    registry.registerSkill(
+      {
+        id: 'evt-prefix',
+        name: 'Prefix',
+        version: '1.0.0',
+        description: 'd',
+        type: 'native',
+        triggers: [{ type: 'event', event: 'message.*' }],
+      },
+      async () => ({ success: true }),
+    );
+    registry.registerSkill(
+      {
+        id: 'evt-wild',
+        name: 'Wild',
+        version: '1.0.0',
+        description: 'd',
+        type: 'native',
+        triggers: [{ type: 'event', event: '*' }],
+      },
+      async () => ({ success: true }),
+    );
+    registry.enableSkill('evt-exact');
+    registry.enableSkill('evt-prefix');
+    registry.enableSkill('evt-wild');
+
+    const matches = registry.matchEventTriggers('message.received');
+    const ids = matches.map((m) => m.skillId).sort();
+    expect(ids).toEqual(['evt-exact', 'evt-prefix', 'evt-wild']);
+  });
+
+  it('does not match event trigger on mismatch', () => {
+    registry.registerSkill(
+      {
+        id: 'evt-no',
+        name: 'No',
+        version: '1.0.0',
+        description: 'd',
+        type: 'native',
+        triggers: [{ type: 'event', event: 'session.created' }],
+      },
+      async () => ({ success: true }),
+    );
+
+    expect(registry.matchEventTriggers('message.received').length).toBe(0);
+  });
+
+  it('enumerates schedule triggers', () => {
+    registry.registerSkill(
+      {
+        id: 'sched-skill',
+        name: 'Sched',
+        version: '1.0.0',
+        description: 'd',
+        type: 'native',
+        triggers: [{ type: 'schedule', schedule: '0 9 * * *' }],
+      },
+      async () => ({ success: true }),
+    );
+    registry.enableSkill('sched-skill');
+
+    const schedules = registry.getScheduleTriggers();
+    expect(schedules.length).toBe(1);
+    expect(schedules[0].skillId).toBe('sched-skill');
+    expect(schedules[0].schedule).toBe('0 9 * * *');
+  });
+
+  it('skips disabled skills for all trigger types', () => {
+    registry.registerSkill(
+      {
+        id: 'disabled-skill',
+        name: 'Disabled',
+        version: '1.0.0',
+        description: 'd',
+        type: 'native',
+        triggers: [
+          { type: 'intent', intent: 'query' },
+          { type: 'event', event: 'message.received' },
+          { type: 'schedule', schedule: '0 9 * * *' },
+        ],
+      },
+      async () => ({ success: true }),
+    );
+    registry.disableSkill('disabled-skill');
+
+    expect(registry.matchTriggers('x', { intents: ['query'] }).length).toBe(0);
+    expect(registry.matchEventTriggers('message.received').length).toBe(0);
+    expect(registry.getScheduleTriggers().length).toBe(0);
+  });
+});

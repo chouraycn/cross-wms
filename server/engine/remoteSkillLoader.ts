@@ -8,6 +8,7 @@
  */
 
 import fs from 'fs/promises';
+import fss from 'fs';
 import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
@@ -23,7 +24,7 @@ const execAsync = promisify(exec);
 // ===================== 类型定义 =====================
 
 /** 远程 Skill 源类型 */
-export type RemoteSkillSourceType = 'registry' | 'git' | 'http' | 'npm';
+export type RemoteSkillSourceType = 'registry' | 'git' | 'http' | 'npm' | 'local';
 
 /** 远程 Skill 源配置 */
 export interface RemoteSkillSource {
@@ -78,12 +79,20 @@ export interface RemoteLoaderConfig {
   downloadTimeoutMs?: number;
 }
 
-/** 已安装 Skill 记录（installed.json 格式） */
-interface InstalledRecord {
+/** 单个已安装版本记录 */
+interface VersionEntry {
   version: string;
   installedAt: number;
   source: string;
   sourceType: RemoteSkillSourceType;
+  /** 当前生效版本的实时安装路径（仅 currentVersion 对应项为 live 路径） */
+  path: string;
+}
+
+/** 已安装 Skill 记录（installed.json 格式） */
+interface InstalledRecord {
+  currentVersion: string;
+  versions: VersionEntry[];
 }
 
 /** installed.json 文件结构 */
@@ -96,6 +105,7 @@ interface InstalledManifest {
 const DEFAULT_DOWNLOAD_TIMEOUT = 5 * 60 * 1000;
 const INSTALLED_MANIFEST = 'installed.json';
 const SKILL_DIR_NAME = 'skill';
+const HISTORY_DIR_NAME = '.history';
 
 // ===================== RemoteSkillLoader 类 =====================
 
@@ -106,8 +116,8 @@ export class RemoteSkillLoader {
   /** 配置 */
   private config: RemoteLoaderConfig;
 
-  /** 已安装的 Skill：skillId → { version, path } */
-  private installed = new Map<string, { version: string; path: string }>();
+  /** 已安装的 Skill：skillId → 版本历史（含当前版本） */
+  private installed = new Map<string, InstalledRecord>();
 
   constructor(config: Partial<RemoteLoaderConfig> = {}) {
     this.config = {
@@ -118,7 +128,7 @@ export class RemoteSkillLoader {
       downloadTimeoutMs: config.downloadTimeoutMs ?? DEFAULT_DOWNLOAD_TIMEOUT,
     };
 
-    this.ensureCacheDir();
+    this.ensureCacheDirSync();
     this.loadInstalledManifest();
   }
 
@@ -440,12 +450,7 @@ export class RemoteSkillLoader {
 
       const result = await this.downloadAndInstall(skillId, version, source, targetDir, emit);
 
-      if (result.success && result.skillId && result.version && result.installedPath) {
-        this.installed.set(result.skillId, {
-          version: result.version,
-          path: result.installedPath,
-        });
-        await this.saveInstalledManifest();
+      if (result.success) {
         emit('complete', 100);
       }
 
@@ -471,17 +476,137 @@ export class RemoteSkillLoader {
       return false;
     }
 
+    const current = installed.versions.find(
+      (v) => v.version === installed.currentVersion,
+    );
+
     try {
-      await fs.rm(installed.path, { recursive: true, force: true });
+      if (current?.path) {
+        await fs.rm(current.path, { recursive: true, force: true });
+      }
 
       this.installed.delete(skillId);
-      await this.saveInstalledManifest();
+      this.saveInstalledManifest();
+      // 清理历史备份目录
+      try {
+        await fs.rm(this.historyDirFor(skillId, ''), {
+          recursive: true,
+          force: true,
+        });
+      } catch {
+        // ignore
+      }
       logger.info(`[RemoteSkillLoader] Skill uninstalled: ${skillId}`);
       return true;
     } catch (e) {
       logger.error(`[RemoteSkillLoader] Uninstall failed for ${skillId}:`, e);
       return false;
     }
+  }
+
+  /**
+   * 回退到指定历史版本
+   *
+   * 将当前生效版本先快照到历史目录（便于再次前进），再把目标版本的备份
+   * 还原到 live 安装路径，并更新 currentVersion。
+   *
+   * @param skillId - Skill ID
+   * @param targetVersion - 目标回退版本
+   * @returns 回退结果
+   */
+  async rollbackSkill(skillId: string, targetVersion: string): Promise<InstallResult> {
+    const entry = this.installed.get(skillId);
+    if (!entry) {
+      return { success: false, skillId, error: '该 Skill 未安装' };
+    }
+    if (entry.currentVersion === targetVersion) {
+      return { success: true, skillId, version: targetVersion };
+    }
+    const target = entry.versions.find((v) => v.version === targetVersion);
+    if (!target) {
+      return {
+        success: false,
+        skillId,
+        error: `找不到历史版本: ${targetVersion}`,
+      };
+    }
+
+    const livePath = target.path;
+    const backupPath = this.historyDirFor(skillId, targetVersion);
+
+    // 目标版本备份必须存在
+    try {
+      await fs.access(backupPath);
+    } catch {
+      return {
+        success: false,
+        skillId,
+        error: `版本 ${targetVersion} 的备份已缺失，无法回退（可能已被清理）`,
+      };
+    }
+
+    try {
+      // 先快照当前版本
+      await this.backupCurrentVersion(skillId, livePath);
+
+      // 还原目标版本到 live 路径
+      await fs.rm(livePath, { recursive: true, force: true });
+      await fs.mkdir(livePath, { recursive: true });
+      await this.copyDir(backupPath, livePath);
+
+      entry.currentVersion = targetVersion;
+      await this.saveInstalledManifest();
+
+      logger.info(`[RemoteSkillLoader] 已回退 ${skillId} → ${targetVersion}`);
+      return { success: true, skillId, version: targetVersion, installedPath: livePath };
+    } catch (e) {
+      return {
+        success: false,
+        skillId,
+        error: `回退失败: ${e instanceof Error ? e.message : String(e)}`,
+      };
+    }
+  }
+
+  /**
+   * 列出某 Skill 的安装版本历史（含安装时间、来源）
+   */
+  listVersions(skillId: string): Array<{
+    version: string;
+    installedAt: number;
+    source: string;
+    sourceType: RemoteSkillSourceType;
+    current: boolean;
+  }> {
+    const entry = this.installed.get(skillId);
+    if (!entry) return [];
+    return entry.versions.map((v) => ({
+      version: v.version,
+      installedAt: v.installedAt,
+      source: v.source,
+      sourceType: v.sourceType,
+      current: v.version === entry.currentVersion,
+    }));
+  }
+
+  /**
+   * 获取完整版本历史（所有已安装 Skill）
+   */
+  getVersionHistory(): Record<
+    string,
+    Array<{
+      version: string;
+      installedAt: number;
+      source: string;
+      sourceType: RemoteSkillSourceType;
+      current: boolean;
+    }>
+  > {
+    const history: Record<string, Array<any>> = {};
+    for (const skillId of this.installed.keys()) {
+      history[skillId] = this.listVersions(skillId);
+    }
+    return history;
   }
 
   /**
@@ -503,6 +628,8 @@ export class RemoteSkillLoader {
         return this.installFromHttp(skillId, version, source, targetDir, emit);
       case 'npm':
         return this.installFromNpm(skillId, version, source, targetDir, emit);
+      case 'local':
+        return this.installFromLocal(skillId, version, source, targetDir, emit);
       default:
         return {
           success: false,
@@ -561,9 +688,10 @@ export class RemoteSkillLoader {
       const installPath = this.resolveInstallPath(skillId, resolvedVersion, targetDir);
       emit('downloading', 30);
 
+      await this.backupCurrentVersion(skillId, installPath);
       await this.downloadAndExtract(downloadUrl, installPath, source.authToken);
 
-      await this.recordInstall(skillId, resolvedVersion, source);
+      await this.recordInstallSuccess(skillId, resolvedVersion, source, installPath);
 
       return {
         success: true,
@@ -595,6 +723,7 @@ export class RemoteSkillLoader {
     try {
       emit('cloning', 20);
 
+      await this.backupCurrentVersion(skillId, installPath);
       await fs.rm(installPath, { recursive: true, force: true });
 
       const branchArg = version ? `--branch ${this.shellQuote(version)}` : '';
@@ -613,7 +742,7 @@ export class RemoteSkillLoader {
         // ignore
       }
 
-      await this.recordInstall(skillId, resolvedVersion, source);
+      await this.recordInstallSuccess(skillId, resolvedVersion, source, installPath);
 
       return {
         success: true,
@@ -651,9 +780,10 @@ export class RemoteSkillLoader {
       const installPath = this.resolveInstallPath(skillId, version || 'latest', targetDir);
       const downloadUrl = source.url;
 
+      await this.backupCurrentVersion(skillId, installPath);
       await this.downloadAndExtract(downloadUrl, installPath, source.authToken);
 
-      await this.recordInstall(skillId, version || 'latest', source);
+      await this.recordInstallSuccess(skillId, version || 'latest', source, installPath);
 
       return {
         success: true,
@@ -730,7 +860,7 @@ export class RemoteSkillLoader {
         // ignore
       }
 
-      await this.recordInstall(skillId, resolvedVersion, source);
+      await this.recordInstallSuccess(skillId, resolvedVersion, source, installPath);
 
       return {
         success: true,
@@ -758,15 +888,76 @@ export class RemoteSkillLoader {
     }
   }
 
+  /**
+   * 从本地目录安装（source.url 指向一个已解压的 skill 目录）
+   * 用于离线/本地注册表场景，无需网络与额外依赖。
+   */
+  private async installFromLocal(
+    skillId: string,
+    version: string | undefined,
+    source: RemoteSkillSource,
+    targetDir: string | undefined,
+    emit: InstallProgressCallback,
+  ): Promise<InstallResult> {
+    const srcDir = source.url;
+    try {
+      await fs.access(srcDir);
+    } catch {
+      return {
+        success: false,
+        skillId,
+        error: `本地源目录不存在: ${srcDir}`,
+      };
+    }
+
+    const installPath = this.resolveInstallPath(skillId, version || 'latest', targetDir);
+    emit('copying', 30);
+
+    try {
+      await this.backupCurrentVersion(skillId, installPath);
+      await fs.rm(installPath, { recursive: true, force: true });
+      await fs.mkdir(installPath, { recursive: true });
+      await this.copyDir(srcDir, installPath);
+
+      // 版本优先取入参，其次取 SKILL.md frontmatter
+      let resolvedVersion = version || 'latest';
+      try {
+        const skillMd = await fs.readFile(path.join(installPath, 'SKILL.md'), 'utf-8');
+        const info = this.parseSkillMdHeader(skillMd);
+        if (info.version && !version) resolvedVersion = info.version;
+      } catch {
+        // ignore
+      }
+
+      emit('verifying', 80);
+      await this.recordInstallSuccess(skillId, resolvedVersion, source, installPath);
+
+      return {
+        success: true,
+        skillId,
+        version: resolvedVersion,
+        installedPath: installPath,
+      };
+    } catch (e) {
+      return {
+        success: false,
+        skillId,
+        error: `本地安装失败: ${e instanceof Error ? e.message : String(e)}`,
+      };
+    }
+  }
+
   // ===================== 4. 缓存管理 =====================
 
   /**
-   * 确保缓存目录存在
+   * 确保缓存目录存在（同步）
    */
-  private ensureCacheDir(): void {
-    fs.mkdir(this.config.cacheDir, { recursive: true }).catch((e) => {
+  private ensureCacheDirSync(): void {
+    try {
+      fss.mkdirSync(this.config.cacheDir, { recursive: true });
+    } catch (e) {
       logger.error('[RemoteSkillLoader] Failed to create cache dir:', e);
-    });
+    }
   }
 
   /**
@@ -784,31 +975,56 @@ export class RemoteSkillLoader {
   }
 
   /**
-   * 获取已安装的 Skill 列表
+   * 获取已安装的 Skill 列表（返回当前生效版本）
    */
   getInstalledSkills(): Array<{ id: string; version: string; path: string }> {
-    return Array.from(this.installed.entries()).map(([id, info]) => ({
-      id,
-      ...info,
-    }));
+    const result: Array<{ id: string; version: string; path: string }> = [];
+    for (const [id, info] of this.installed.entries()) {
+      const current = info.versions.find((v) => v.version === info.currentVersion);
+      if (current) {
+        result.push({ id, version: current.version, path: current.path });
+      }
+    }
+    return result;
   }
 
   // ===================== 5. 已安装清单管理 =====================
 
   /**
-   * 从 installed.json 加载已安装清单
+   * 从 installed.json 加载已安装清单（兼容旧格式：单 version/path）
+   * 同步执行，确保在构造后即可安全读取 this.installed。
    */
-  private async loadInstalledManifest(): Promise<void> {
+  private loadInstalledManifest(): void {
     try {
       const manifestPath = path.join(this.config.cacheDir, INSTALLED_MANIFEST);
-      const content = await fs.readFile(manifestPath, 'utf-8');
+      const content = fss.readFileSync(manifestPath, 'utf-8');
       const manifest: InstalledManifest = JSON.parse(content);
 
       for (const [skillId, record] of Object.entries(manifest)) {
-        const skillPath = path.join(this.config.cacheDir, skillId, record.version);
+        // 兼容旧版单版本格式
+        if (!record.versions || !Array.isArray(record.versions)) {
+          const legacy = record as unknown as VersionEntry;
+          this.installed.set(skillId, {
+            currentVersion: legacy.version,
+            versions: [
+              {
+                version: legacy.version,
+                installedAt: legacy.installedAt ?? Date.now(),
+                source: legacy.source ?? '',
+                sourceType: legacy.sourceType ?? 'registry',
+                path: legacy.path,
+              },
+            ],
+          });
+          continue;
+        }
+        // 修复旧数据：currentVersion 缺失时取最后一个
+        const currentVersion =
+          record.currentVersion ||
+          (record.versions[record.versions.length - 1]?.version ?? '');
         this.installed.set(skillId, {
-          version: record.version,
-          path: skillPath,
+          currentVersion,
+          versions: record.versions,
         });
       }
     } catch {
@@ -817,41 +1033,117 @@ export class RemoteSkillLoader {
   }
 
   /**
-   * 保存已安装清单到 installed.json
+   * 保存已安装清单到 installed.json（同步）
    */
-  private async saveInstalledManifest(): Promise<void> {
+  private saveInstalledManifest(): void {
     try {
+      this.ensureCacheDirSync();
       const manifest: InstalledManifest = {};
       for (const [skillId, info] of this.installed.entries()) {
         manifest[skillId] = {
-          version: info.version,
-          installedAt: Date.now(),
-          source: info.path,
-          sourceType: 'registry',
+          currentVersion: info.currentVersion,
+          versions: info.versions,
         };
       }
       const manifestPath = path.join(this.config.cacheDir, INSTALLED_MANIFEST);
-      await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
+      fss.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
     } catch (e) {
       logger.warn('[RemoteSkillLoader] Failed to save installed manifest:', e);
     }
   }
 
   /**
-   * 记录一次安装到内存 map 和清单文件
+   * 历史备份目录：cacheDir/.history/<skillId>/<version>/
    */
-  private async recordInstall(
+  private historyDirFor(skillId: string, version: string): string {
+    return path.join(this.config.cacheDir, HISTORY_DIR_NAME, skillId, version);
+  }
+
+  /**
+   * 在安装覆盖前，将当前生效版本快照到历史目录，供回退使用。
+   * 若当前版本不存在或无 live 目录，则跳过。
+   */
+  private async backupCurrentVersion(
+    skillId: string,
+    livePath: string,
+  ): Promise<void> {
+    const entry = this.installed.get(skillId);
+    if (!entry) return;
+    const current = entry.versions.find((v) => v.version === entry.currentVersion);
+    if (!current) return;
+    let exists = false;
+    try {
+      await fs.access(livePath);
+      exists = true;
+    } catch {
+      exists = false;
+    }
+    if (!exists) return;
+
+    const backupPath = this.historyDirFor(skillId, current.version);
+    try {
+      await fs.rm(backupPath, { recursive: true, force: true });
+      await this.copyDir(livePath, backupPath);
+      logger.info(
+        `[RemoteSkillLoader] 已备份版本 ${skillId}@${current.version} 用于回退`,
+      );
+    } catch (e) {
+      logger.warn(`[RemoteSkillLoader] 备份版本失败 ${skillId}@${current.version}:`, e);
+    }
+  }
+
+  /**
+   * 记录一次成功的安装：更新内存 map + 版本历史 + 清单文件
+   */
+  private async recordInstallSuccess(
     skillId: string,
     version: string,
     source: RemoteSkillSource,
+    installPath: string,
   ): Promise<void> {
-    // We'll save the manifest via saveInstalledManifest which iterates `installed`.
-    // The caller is responsible for updating `installed` map.
-    // Here we just make sure the directory exists.
-    try {
-      await fs.mkdir(this.config.cacheDir, { recursive: true });
-    } catch {
-      // ignore
+    const now = Date.now();
+    const entry = this.installed.get(skillId) ?? {
+      currentVersion: version,
+      versions: [],
+    };
+
+    // 去重：同一版本只保留一条
+    const existingIdx = entry.versions.findIndex((v) => v.version === version);
+    const versionEntry: VersionEntry = {
+      version,
+      installedAt: now,
+      source: source.url,
+      sourceType: source.type,
+      path: installPath,
+    };
+    if (existingIdx >= 0) {
+      entry.versions[existingIdx] = versionEntry;
+    } else {
+      entry.versions.push(versionEntry);
+    }
+    entry.currentVersion = version;
+    this.installed.set(skillId, entry);
+
+    this.saveInstalledManifest();
+  }
+
+  /**
+   * 递归拷贝目录
+   */
+  private async copyDir(src: string, dest: string): Promise<void> {
+    await fs.mkdir(dest, { recursive: true });
+    const entries = await fs.readdir(src, { withFileTypes: true });
+    for (const e of entries) {
+      const sp = path.join(src, e.name);
+      const dp = path.join(dest, e.name);
+      if (e.isDirectory()) {
+        await this.copyDir(sp, dp);
+      } else if (e.isSymbolicLink()) {
+        // 跳过符号链接，避免循环
+        continue;
+      } else {
+        await fs.copyFile(sp, dp);
+      }
     }
   }
 

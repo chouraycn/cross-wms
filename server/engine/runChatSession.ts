@@ -43,6 +43,7 @@ import { recordMessageCreated, recordTurnStarted, recordTurnCompleted, recordTur
 import { classifyAndFormatError } from '../routes/chatService.js';
 import { logger } from '../logger.js';
 import { runHooks, createHookEvent } from './hooks/index.js';
+import { getKeywordTriggerEngine } from './keywordTriggerEngine.js';
 
 // ===================== 类型定义 =====================
 
@@ -149,6 +150,27 @@ export async function runChatSession(
   }).catch(() => {});
   recordTurnStarted(sessionId, { userMessage: message, model, executionMode: input.executionMode }).catch(() => {});
   runHooks(createHookEvent('message', 'received', sessionId, { role: 'user', content: message })).catch(() => {});
+
+  // ===== 关键词自动触发检查 =====
+  const keywordEngine = getKeywordTriggerEngine();
+  const keywordMatches = keywordEngine.matchMessage(message, {
+    sessionId,
+    userId: input.userId,
+    agentId: input.agentId,
+  });
+  if (keywordMatches.length > 0) {
+    for (const match of keywordMatches) {
+      callbacks.onEvent?.({
+        type: 'keyword_trigger',
+        skillId: match.skillId,
+        skillName: match.skillName,
+        matchedKeywords: match.matchedKeywords,
+        matchScore: match.matchScore,
+        reason: match.reason,
+      });
+      logger.info(`[KeywordTrigger] Matched skill "${match.skillName}" for message: "${message.substring(0, 50)}..."`);
+    }
+  }
 
   const modelsConfig = await loadModelsConfig();
 
@@ -390,6 +412,30 @@ export async function runChatSession(
       ? JSON.stringify(result.toolCalls)
       : undefined;
 
+    // 从工具调用结果中提取生成的文件信息
+    const generatedFiles = result.toolCalls
+      ?.filter(tc => tc.name === 'file_generateFile')
+      .map(tc => {
+        try {
+          const resultData = JSON.parse(tc.result);
+          if (resultData.success) {
+            return {
+              fileName: resultData.fileName,
+              filePath: resultData.filePath,
+              fileSize: resultData.fileSize,
+              sessionId,
+              description: resultData.description || '',
+              downloadUrl: resultData.downloadUrl,
+              previewUrl: resultData.previewUrl,
+            };
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean) || [];
+
     // Thinking 缓存写入
     if (result.thinkingContent && result.content) {
       setThinkingCache(thinkingCacheKey, result.content, result.thinkingContent);
@@ -463,6 +509,7 @@ export async function runChatSession(
       toolCalls: toolCallsJson,
       thinking: result.thinkingContent || null,
       thinkingDuration: result.thinkingDuration || null,
+      generatedFiles: generatedFiles.length > 0 ? JSON.stringify(generatedFiles) : undefined,
     });
 
     runHooks(createHookEvent('message', 'sent', sessionId, { role: 'assistant', content: result.content })).catch(() => {});

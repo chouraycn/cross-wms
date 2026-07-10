@@ -299,7 +299,7 @@ export class AnthropicAdapter implements IAiApiAdapter {
 
     if (tools && tools.length > 0) {
       body.tools = convertToolsToAnthropic(tools, compat?.cacheBreakpoints?.includes('tools'));
-      body.tool_choice = { type: 'auto' };
+      body.tool_choice = config.toolChoice ?? { type: 'auto' };
     }
 
     // 自定义 body 参数

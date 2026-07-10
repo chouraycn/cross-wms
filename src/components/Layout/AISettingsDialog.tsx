@@ -25,7 +25,9 @@ import BranchIcon from '@mui/icons-material/CallSplit';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ExternalLinkIcon from '@mui/icons-material/OpenInNew';
+import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import { useModels } from '../../contexts/ModelsContext';
+import { useAppSettings, type AppSettings } from '../../contexts/AppSettingsContext';
 import { getGrayScale } from '../../constants/theme';
 import ModelManager from '../shared/ModelManager';
 import SettingsDialogShell, { type TabDef } from '../shared/SettingsDialogShell';
@@ -36,28 +38,28 @@ import SettingsSecrets from './SettingsSecrets';
 import LspPanel from '../LSP/LspPanel';
 import SoulDebugPanel from '../Soul/SoulDebugPanel';
 import SoulEditor from '../Soul/SoulEditor';
-import MemoryPanel from '../Memory/MemoryPanel';
+import TalkSettingsPanel from '../Talk/TalkSettingsPanel';
+import ChannelManagerPanel from '../Channel/ChannelManagerPanel';
 import AgentsPage from '../../pages/AgentsPage';
 import GoalsPage from '../../pages/GoalsPage';
 import ContextEngineRegistryPage from '../../pages/ContextEngineRegistryPage';
 import { useAiEngineSettings, type ExecutionMode, type QueueMode, type ToolProfile, type CompactionStrategy } from '../../contexts/AppSettingsContext';
 
-type MainTab = 'basic' | 'ai' | 'tools' | 'system' | 'advanced';
-type SubTab = 'model' | 'chat' | 'memory' | 'agents' | 'soul' | 'goals' | 'mcp' | 'lsp' | 'image' | 'secrets' | 'git' | 'auth' | 'context';
+type MainTab = 'basic' | 'ai' | 'tools' | 'system' | 'comms';
+type SubTab = 'model' | 'chat' | 'agents' | 'soul' | 'goals' | 'mcp' | 'lsp' | 'image' | 'secrets' | 'git' | 'auth' | 'context' | 'talk' | 'channels';
 
 const MAIN_TABS: TabDef[] = [
   { key: 'basic', label: '基础配置', icon: <SettingsIcon sx={{ fontSize: 17 }} /> },
   { key: 'ai', label: 'AI 配置', icon: <AutoFixHighIcon sx={{ fontSize: 17 }} /> },
   { key: 'tools', label: '工具管理', icon: <HandymanIcon sx={{ fontSize: 17 }} /> },
   { key: 'system', label: '系统集成', icon: <ExternalLinkIcon sx={{ fontSize: 17 }} /> },
-  { key: 'advanced', label: '高级', icon: <AccountTreeIcon sx={{ fontSize: 17 }} /> },
+  { key: 'comms', label: '通讯', icon: <RecordVoiceOverIcon sx={{ fontSize: 17 }} /> },
 ];
 
 const SUB_TABS: Record<MainTab, { key: SubTab; label: string }[]> = {
   basic: [
     { key: 'model', label: '模型' },
     { key: 'chat', label: '对话' },
-    { key: 'memory', label: '记忆' },
   ],
   ai: [
     { key: 'agents', label: 'Agent' },
@@ -73,9 +75,11 @@ const SUB_TABS: Record<MainTab, { key: SubTab; label: string }[]> = {
   system: [
     { key: 'git', label: 'Git' },
     { key: 'auth', label: '外部应用授权' },
-  ],
-  advanced: [
     { key: 'context', label: '上下文引擎' },
+  ],
+  comms: [
+    { key: 'talk', label: '语音对话' },
+    { key: 'channels', label: '通道管理' },
   ],
 };
 
@@ -93,15 +97,25 @@ const PlaceholderTab: React.FC<{ title: string; description?: string; colors: { 
 export interface AISettingsDialogProps {
   open: boolean;
   onClose: () => void;
+  initialMainTab?: MainTab;
+  initialSubTab?: SubTab;
 }
 
-const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) => {
+const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, initialMainTab, initialSubTab }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
-  const [activeMainTab, setActiveMainTab] = useState<MainTab>('basic');
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>('model');
+  const [activeMainTab, setActiveMainTab] = useState<MainTab>(initialMainTab ?? 'basic');
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>(initialSubTab ?? 'model');
+
+  useEffect(() => {
+    if (open && initialMainTab) {
+      setActiveMainTab(initialMainTab);
+      setActiveSubTab(initialSubTab ?? SUB_TABS[initialMainTab][0]?.key ?? 'model');
+    }
+  }, [open, initialMainTab, initialSubTab]);
   const { models: modelList, defaultModelId, updateModels, isLoading, error, reload, ensureInitialized } = useModels();
+  const { settings } = useAppSettings();
 
   useEffect(() => {
     ensureInitialized();
@@ -151,14 +165,14 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) =>
             {activeMainTab === 'ai' && 'AI 配置'}
             {activeMainTab === 'tools' && '工具管理'}
             {activeMainTab === 'system' && '系统集成'}
-            {activeMainTab === 'advanced' && '高级设置'}
+            {activeMainTab === 'comms' && '通讯'}
           </Typography>
           <Typography sx={{ fontSize: '0.8rem', color: gs.textSecondary, mb: 2 }}>
             {activeMainTab === 'basic' && '配置 AI 模型、对话引擎和记忆系统'}
             {activeMainTab === 'ai' && '配置 Agent 身份、行为规则和目标管理'}
             {activeMainTab === 'tools' && '管理 MCP、LSP、图片生成和密钥'}
             {activeMainTab === 'system' && '配置 Git 和外部应用授权'}
-            {activeMainTab === 'advanced' && '高级系统配置'}
+            {activeMainTab === 'comms' && '语音对话与通道配置'}
           </Typography>
 
           {SUB_TABS[activeMainTab].length > 1 && (
@@ -225,18 +239,6 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) =>
               </Box>
             )}
 
-            {activeSubTab === 'memory' && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <Typography sx={{ fontSize: '1.25rem', fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>记忆管理</Typography>
-                <Typography sx={{ fontSize: '0.8rem', color: gs.textSecondary, mb: 2 }}>
-                  管理向量记忆库
-                </Typography>
-                <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <MemoryPanel />
-                </Box>
-              </Box>
-            )}
-
             {activeSubTab === 'agents' && <AgentsPage />}
             {activeSubTab === 'goals' && <GoalsPage />}
             {activeSubTab === 'soul' && <SoulDebugPanel onEdit={handleEditSoul} />}
@@ -247,6 +249,8 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose }) =>
             {activeSubTab === 'git' && <GitSettingsTab />}
             {activeSubTab === 'auth' && <PlaceholderTab title="外部应用授权" description="外部应用授权管理功能开发中，敬请期待" colors={{ textPrimary: gs.textPrimary, textDisabled: gs.textDisabled }} />}
             {activeSubTab === 'context' && <ContextEngineRegistryPage />}
+            {activeSubTab === 'talk' && <TalkSettingsPanel />}
+            {activeSubTab === 'channels' && <ChannelManagerPanel />}
           </Box>
         </Box>
       </SettingsDialogShell>

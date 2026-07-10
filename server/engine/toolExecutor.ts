@@ -182,6 +182,21 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
   // 重置工具循环检测器（每次新的 Tool Calling 循环独立检测）
   toolLoopDetector.reset();
 
+  // v9.x: 文件生成意图检测 — 当用户明确要求“生成/创建文件”（简历、HTML、报告、代码等）时，
+  // 强制模型调用 file_generateFile，避免其退化成正文输出 HTML 文本而导致前端无文件卡片。
+  // 仅对首轮（用户原始请求）生效；本地模型不发送 tools，故跳过强制（否则 API 报错）。
+  const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
+  const userText = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
+  const isFileGenerationIntent = /\b(生成|创建|新建|写(一份|一个|一篇|一段)?|做(一份|一个|一篇)?|帮我(生成|创建|写|做)|简历|resume|个人简历|html?|报告|报表|代码文件|源代码|文档|下载文件|导出|pdf|word|excel)\b/i.test(userText);
+  const isLocalModelCall = /localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|192\.168\.|10\.\d+\.|172\.(1[6-9]|2\d|3[01])\.:11434/.test(modelConfig.apiEndpoint || '');
+  const hasFileGenTool = processedTools.some((t) => t.function?.name === 'file_generateFile');
+  const forceToolChoice = (isFileGenerationIntent && !isLocalModelCall && hasFileGenTool)
+    ? { type: 'function' as const, function: { name: 'file_generateFile' } }
+    : undefined;
+  if (forceToolChoice) {
+    logger.debug('[ToolExecutor] 检测到文件生成意图，强制 tool_choice=file_generateFile');
+  }
+
   for (let turn = 0; turn < maxToolTurns; turn++) {
     if (signal?.aborted) {
       throw new Error('请求已取消');
@@ -223,6 +238,8 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       undefined,
       modelCapabilities,
       onRateLimit,
+      undefined,
+      turn === 0 ? forceToolChoice : undefined,
     );
 
     await pluginHooks.executeHooks('after_ai_call', {
@@ -402,6 +419,29 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       // 需要审批的工具
       if (policyResult.requireApproval) {
         try {
+          if (signal?.aborted) {
+            const abortResult = JSON.stringify({
+              error: `工具 '${toolName}' 会话已超时取消`,
+              approvalDenied: true,
+              approvalStatus: 'cancelled',
+              riskLevel: policyResult.riskLevel,
+            });
+            executedToolCalls.push({
+              name: toolName,
+              arguments: toolCall.function.arguments,
+              result: abortResult,
+            });
+            if (onToolCall) {
+              onToolCall(toolCall, abortResult);
+            }
+            currentMessages.push({
+              role: 'tool',
+              content: abortResult,
+              tool_call_id: toolCall.id,
+            } as any);
+            continue;
+          }
+
           const approvalRequest = approvalManager.createRequest(
             toolName,
             parsedArgs,
@@ -409,8 +449,47 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
             policyResult.matchedRule?.description || `工具 '${toolName}' 需要用户审批`,
             sessionId,
           );
+
+          // 通过 SSE 发送审批请求到前端
+          if (onSSEEvent) {
+            onSSEEvent({
+              type: 'approval',
+              requestId: approvalRequest.id,
+              toolName,
+              toolArgs: parsedArgs,
+              riskLevel: policyResult.riskLevel,
+              reason: approvalRequest.reason,
+              description: policyResult.matchedRule?.description || `工具 '${toolName}' 需要用户审批`,
+              sessionId,
+              timeout: 300000,
+            });
+          }
+
           const approvalResult = await approvalManager.waitForApproval(approvalRequest.id);
           
+          if (signal?.aborted) {
+            const abortResult = JSON.stringify({
+              error: `工具 '${toolName}' 会话已超时取消`,
+              approvalDenied: true,
+              approvalStatus: 'cancelled',
+              riskLevel: policyResult.riskLevel,
+            });
+            executedToolCalls.push({
+              name: toolName,
+              arguments: toolCall.function.arguments,
+              result: abortResult,
+            });
+            if (onToolCall) {
+              onToolCall(toolCall, abortResult);
+            }
+            currentMessages.push({
+              role: 'tool',
+              content: abortResult,
+              tool_call_id: toolCall.id,
+            } as any);
+            continue;
+          }
+
           if (approvalResult.status !== 'approved') {
             const rejectReason = approvalResult.rejectReason || 
               (approvalResult.status === 'timeout' ? '审批超时' : 

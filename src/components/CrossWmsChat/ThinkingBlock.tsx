@@ -200,9 +200,13 @@ function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, thi
         {/* 流式旋转圈 — 仅在 thinking 阶段显示 */}
         {isActuallyThinking && (
           <CircularProgress
-            size={12}
-            thickness={5}
-            sx={{ color: isDark ? '#777' : '#aaa', flexShrink: 0 }}
+            size={14}
+            thickness={4}
+            sx={{
+              color: isDark ? '#9CA3AF' : '#6B7280',
+              flexShrink: 0,
+              animationDuration: '0.8s',
+            }}
           />
         )}
 

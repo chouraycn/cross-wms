@@ -102,16 +102,14 @@ export function classifyAndFormatError(
       case 'server':
         return { code: 'SERVER_ERROR', message: 'AI 服务商暂时不可用，请稍后重试。' };
       default:
+        if (error.message === '请求已取消') {
+          return { code: 'ABORTED', message: '请求已取消。' };
+        }
         return { code: 'UNKNOWN_ERROR', message: `AI 服务暂时不可用：${error.message}` };
     }
   }
 
   if (error instanceof Error && error.name === 'AbortError') {
-    return { code: 'ABORTED', message: '请求已取消。' };
-  }
-
-  // 检查 AIAPIError 抛出的 "请求已取消" 错误
-  if (error instanceof Error && error.name === 'AIAPIError' && error.message === '请求已取消') {
     return { code: 'ABORTED', message: '请求已取消。' };
   }
 
@@ -568,9 +566,9 @@ export async function handleChat(req: import('express').Request, res: import('ex
 
   const timerManager = new TimerManager(res);
 
-  let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string; reasoning_content?: string }> = [];
-  let abortController: AbortController = new AbortController();
-  let selectedKeyIndex = -1;
+  const apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string; reasoning_content?: string }> = [];
+  const abortController: AbortController = new AbortController();
+  const selectedKeyIndex = -1;
 
   try {
     // 设置 SSE 响应头

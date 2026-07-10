@@ -10,7 +10,7 @@
  *
  * 所有方法使用 WmsFileStorage 同步 API。
  */
-import { WmsFileStorage } from '../storage/WmsFileStorage.js';
+import { createDocumentStorage } from '../storage/index.js';
 import type {
   QualityCheck,
   QualityCheckRow,
@@ -34,7 +34,7 @@ import fs from 'fs';
 import path from 'path';
 import { AppPaths } from '../config/appPaths.js';
 
-const wms = WmsFileStorage.getInstance();
+const wms = createDocumentStorage();
 
 // ===================== 初始化 WMS 表 =====================
 

@@ -8,7 +8,8 @@ interface SpinningIconProps {
 
 /**
  * WKWebView 兼容的旋转动画组件
- * 使用 requestAnimationFrame 替代 CSS @keyframes spin
+ * 使用 setTimeout(fn, 16) 替代 CSS @keyframes spin 与 requestAnimationFrame，
+ * 避免 WKWebView 非活跃窗口下 rAF 被暂停导致旋转卡住（项目 WKWebView 兼容约定）。
  */
 export const SpinningIcon: React.FC<SpinningIconProps> = ({ children, spinning, style }) => {
   const [rotation, setRotation] = useState(0);
@@ -18,30 +19,31 @@ export const SpinningIcon: React.FC<SpinningIconProps> = ({ children, spinning, 
   useEffect(() => {
     if (!spinning) {
       if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
+        window.clearTimeout(animFrameRef.current);
         animFrameRef.current = undefined;
       }
       setRotation(0);
       return;
     }
 
-    const animate = (timestamp: number) => {
+    const animate = () => {
+      const now = Date.now();
       if (!lastTimeRef.current) {
-        lastTimeRef.current = timestamp;
+        lastTimeRef.current = now;
       }
-      const delta = timestamp - lastTimeRef.current;
-      lastTimeRef.current = timestamp;
+      const delta = now - lastTimeRef.current;
+      lastTimeRef.current = now;
 
       setRotation(prev => (prev + (delta / 1000) * 360) % 360);
 
-      animFrameRef.current = requestAnimationFrame(animate);
+      animFrameRef.current = window.setTimeout(animate, 16);
     };
 
-    animFrameRef.current = requestAnimationFrame(animate);
+    animFrameRef.current = window.setTimeout(animate, 16);
 
     return () => {
       if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
+        window.clearTimeout(animFrameRef.current);
         animFrameRef.current = undefined;
       }
       lastTimeRef.current = undefined;

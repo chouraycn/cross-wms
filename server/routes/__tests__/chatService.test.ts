@@ -67,8 +67,16 @@ vi.mock('../../keyRotator.js', () => ({
 vi.mock('../../dao/chat.js', () => ({
   getSessions: vi.fn(),
   createSession: vi.fn(),
-  getSessionMessages: vi.fn(),
+  getSessionMessages: vi.fn().mockReturnValue([]),
   addMessage: vi.fn(),
+  updateSession: vi.fn(),
+}));
+
+vi.mock('../../engine/eventRecorder.js', () => ({
+  recordTurnStarted: vi.fn(),
+  recordTurnCompleted: vi.fn(),
+  recordTurnFailed: vi.fn(),
+  recordMessageCreated: vi.fn(),
 }));
 
 vi.mock('../../services/pluginAutoInvoke.js', () => ({
@@ -190,9 +198,12 @@ describe('chatService.ts — Module Structure', () => {
       expect(chatService.activeSSEConnections).toBeInstanceOf(Map);
     });
 
-    it('should have exactly two exports: handleChat and activeSSEConnections', () => {
+    it('should export handleChat, activeSSEConnections and classifyAndFormatError', () => {
       const exportNames = Object.keys(chatService).sort();
-      expect(exportNames).toEqual(['activeSSEConnections', 'handleChat']);
+      expect(exportNames).toContain('handleChat');
+      expect(exportNames).toContain('activeSSEConnections');
+      // v 版本新增 classifyAndFormatError 错误格式化导出
+      expect(exportNames).toContain('classifyAndFormatError');
     });
   });
 
@@ -224,6 +235,8 @@ describe('chatService.ts — Module Structure', () => {
         flushHeaders: vi.fn(),
         write: vi.fn(),
         end: vi.fn(),
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
         writableEnded: false,
         socket: { setNoDelay: vi.fn() },
       } as any;
@@ -293,6 +306,8 @@ describe('chatService.ts — Module Structure', () => {
         flushHeaders: vi.fn(),
         write: vi.fn(),
         end: vi.fn(),
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
         writableEnded: false,
         socket: { setNoDelay: vi.fn() },
       } as any;

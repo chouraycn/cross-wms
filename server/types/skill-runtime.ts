@@ -122,6 +122,10 @@ export interface SkillDefinition {
   author?: string;
   /** 标签列表 */
   tags?: string[];
+  /** 触发关键词列表（用于关键词自动触发） */
+  triggers?: string[];
+  /** 触发权重（影响匹配优先级，默认 1.0） */
+  triggerWeight?: number;
 
   // ---- 元数据增强 ----
 

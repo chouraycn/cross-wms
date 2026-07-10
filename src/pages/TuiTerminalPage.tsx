@@ -7,6 +7,7 @@ import { getGrayScale } from '../constants/theme';
 import { useChatSession } from '../contexts/ChatContext';
 import { useAgentChat, type SendAgentMessageOptions } from '../hooks/useAgentChat';
 import { useAiEngineSettings } from '../contexts/AppSettingsContext';
+import PulsingText from '../components/shared/PulsingText';
 
 // ===================== ANSI 颜色解析器 =====================
 
@@ -485,7 +486,7 @@ const TuiTerminalPage: React.FC = () => {
             py: 0.25,
           }}>
             <span style={{ color: '#f59e0b' }}>● </span>
-            <span style={{ animation: 'pulse 1.5s infinite' }}>处理中...</span>
+            <PulsingText>处理中...</PulsingText>
           </Box>
         )}
       </Box>

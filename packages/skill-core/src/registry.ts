@@ -8,6 +8,9 @@ import type {
   SkillContext,
   SkillResult,
   SkillTriggerMatch,
+  SkillTrigger,
+  MatchTriggersOptions,
+  ScheduleTriggerInfo,
 } from './types';
 
 export interface SkillRegistryEvents {
@@ -216,7 +219,7 @@ export class SkillRegistry extends EventEmitter<SkillRegistryEvents> {
     };
   }
 
-  matchTriggers(input: string): SkillTriggerMatch[] {
+  matchTriggers(input: string, options?: MatchTriggersOptions): SkillTriggerMatch[] {
     const matches: SkillTriggerMatch[] = [];
 
     for (const skill of this.skills.values()) {
@@ -264,6 +267,26 @@ export class SkillRegistry extends EventEmitter<SkillRegistryEvents> {
               matchedText = trigger.command;
             }
             break;
+
+          case 'intent':
+            // 意图触发器：由 server 端意图分类器识别后通过 options.intents 注入
+            if (trigger.intent && options?.intents?.length) {
+              const found = options.intents.find((i) =>
+                typeof i === 'string' ? i === trigger.intent : i.intent === trigger.intent,
+              );
+              if (found) {
+                confidence = typeof found === 'string' ? 0.85 : Math.min(1, found.confidence ?? 0.85);
+                matchedText = trigger.intent;
+              }
+            }
+            break;
+
+          case 'event':
+          case 'schedule':
+          case 'button':
+          case 'manual':
+            // 被动型触发器：不通过文本输入匹配（event 走 matchEventTriggers，schedule 走 getScheduleTriggers）
+            break;
         }
 
         if (confidence > 0) {
@@ -279,6 +302,63 @@ export class SkillRegistry extends EventEmitter<SkillRegistryEvents> {
     }
 
     return matches.sort((a, b) => b.confidence - a.confidence);
+  }
+
+  /**
+   * 匹配事件触发器（由系统事件驱动，而非文本输入）。
+   *
+   * @param eventName - 事件名，支持精确匹配、通配符 `*`、以及前缀通配 `message.*`
+   * @returns 命中的触发器列表
+   */
+  matchEventTriggers(eventName: string): SkillTriggerMatch[] {
+    const matches: SkillTriggerMatch[] = [];
+
+    for (const skill of this.skills.values()) {
+      if (skill.status !== 'enabled') continue;
+
+      for (const trigger of skill.definition.triggers) {
+        if (trigger.type === 'event' && trigger.event && this.eventMatches(trigger.event, eventName)) {
+          matches.push({
+            skillId: skill.definition.id,
+            trigger,
+            confidence: 1.0,
+            matchedText: eventName,
+          });
+        }
+      }
+    }
+
+    return matches.sort((a, b) => b.confidence - a.confidence);
+  }
+
+  /**
+   * 枚举所有已启用的定时触发器，供 server 端调度器（cron）注册。
+   */
+  getScheduleTriggers(): ScheduleTriggerInfo[] {
+    const result: ScheduleTriggerInfo[] = [];
+
+    for (const skill of this.skills.values()) {
+      if (skill.status !== 'enabled') continue;
+
+      for (const trigger of skill.definition.triggers) {
+        if (trigger.type === 'schedule' && trigger.schedule) {
+          result.push({ skillId: skill.definition.id, trigger, schedule: trigger.schedule });
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /** 事件名匹配：精确 / 通配符 `*` / 前缀通配 `namespace.*` */
+  private eventMatches(pattern: string, eventName: string): boolean {
+    if (pattern === eventName) return true;
+    if (pattern === '*') return true;
+    if (pattern.endsWith('.*')) {
+      const prefix = pattern.slice(0, -2);
+      return eventName === prefix || eventName.startsWith(prefix + '.');
+    }
+    return false;
   }
 
   private recordExecution(skillId: string, duration: number, success: boolean): void {

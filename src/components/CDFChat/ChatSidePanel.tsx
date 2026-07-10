@@ -3,6 +3,9 @@
  *
  * - 待办（Todos）：基于 localStorage 的真实待办列表，支持添加/勾选/删除/持久化
  * - 上下文（Context）：纯前端统计 + Context Engine API（失败时静默跳过）
+ * - 工具调用（Tools）：工具调用历史记录
+ * - 生成文件（Files）：AI 生成的文件列表
+ * - 执行计划（Plan）：执行计划步骤追踪
  *
  * 基于 OpenClaw 架构风格 + MUI 样式
  */
@@ -17,6 +20,10 @@ import {
   Chip,
   TextField,
   CircularProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  LinearProgress,
 } from '@mui/material';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import MemoryIcon from '@mui/icons-material/Memory';
@@ -33,14 +40,25 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import DescriptionIcon from '@mui/icons-material/Description';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import PendingIcon from '@mui/icons-material/Pending';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import DownloadIcon from '@mui/icons-material/Download';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import CodeIcon from '@mui/icons-material/Code';
 import { getGrayScale } from '../../constants/theme';
+import GoalIndicator from '../Goal/GoalIndicator';
 import {
   fetchContextEngineStats,
   fetchContextEngines,
   type ContextEngineStats,
   type ContextEngineInfo,
 } from '../../services/api';
-import type { Message, ReferencedSession } from '../../types/chat';
+import type { Message, ReferencedSession, ToolCallInfo, GeneratedFile, PlanStepInfo } from '../../types/chat';
 
 // ===== 待办数据类型 =====
 interface TodoItem {
@@ -73,11 +91,14 @@ export interface ChatSidePanelProps {
   } | null;
 }
 
-type TabKey = 'todos' | 'context';
+type TabKey = 'todos' | 'context' | 'tools' | 'files' | 'plan';
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'todos', label: '待办', icon: <ListAltIcon sx={{ fontSize: 14 }} /> },
   { key: 'context', label: '上下文', icon: <MemoryIcon sx={{ fontSize: 14 }} /> },
+  { key: 'tools', label: '工具', icon: <BuildIcon sx={{ fontSize: 14 }} /> },
+  { key: 'files', label: '文件', icon: <InsertDriveFileIcon sx={{ fontSize: 14 }} /> },
+  { key: 'plan', label: '计划', icon: <PlayCircleIcon sx={{ fontSize: 14 }} /> },
 ];
 
 const ChatSidePanel: React.FC<ChatSidePanelProps> = ({
@@ -302,6 +323,123 @@ const ChatSidePanel: React.FC<ChatSidePanelProps> = ({
     completed: todos.filter(t => t.done).length,
     pending: todos.filter(t => !t.done).length,
   }), [todos]);
+
+  // ===== 工具调用数据 =====
+  const toolCallData = useMemo(() => {
+    const allCalls: Array<{ call: ToolCallInfo; messageId: string; index: number }> = [];
+    for (const msg of messages) {
+      if (msg.role === 'assistant' && msg.toolCalls?.length) {
+        msg.toolCalls.forEach((tc, idx) => {
+          allCalls.push({ call: tc, messageId: msg.id, index: idx });
+        });
+      }
+    }
+    const toolCountMap = new Map<string, number>();
+    for (const { call } of allCalls) {
+      toolCountMap.set(call.name, (toolCountMap.get(call.name) || 0) + 1);
+    }
+    const toolStats = Array.from(toolCountMap.entries()).sort((a, b) => b[1] - a[1]);
+    return {
+      total: allCalls.length,
+      calls: allCalls.reverse(),
+      toolStats,
+      toolTypes: toolCountMap.size,
+    };
+  }, [messages]);
+
+  // ===== 生成文件数据 =====
+  const generatedFilesData = useMemo(() => {
+    const allFiles: Array<{ file: GeneratedFile; messageId: string }> = [];
+    for (const msg of messages) {
+      if (msg.role === 'assistant' && msg.generatedFiles?.length) {
+        msg.generatedFiles.forEach(f => {
+          allFiles.push({ file: f, messageId: msg.id });
+        });
+      }
+    }
+    const typeCountMap = new Map<string, number>();
+    for (const { file } of allFiles) {
+      const ext = file.fileName.split('.').pop()?.toLowerCase() || 'unknown';
+      typeCountMap.set(ext, (typeCountMap.get(ext) || 0) + 1);
+    }
+    const totalSize = allFiles.reduce((sum, { file }) => sum + file.fileSize, 0);
+    return {
+      total: allFiles.length,
+      files: allFiles.reverse(),
+      typeStats: Array.from(typeCountMap.entries()).sort((a, b) => b[1] - a[1]),
+      totalSize,
+    };
+  }, [messages]);
+
+  // ===== 执行计划数据 =====
+  const planData = useMemo(() => {
+    let latestPlan: Message['executionPlan'] | null = null;
+    for (const msg of messages) {
+      if (msg.role === 'assistant' && msg.executionPlan) {
+        latestPlan = msg.executionPlan;
+      }
+    }
+    if (!latestPlan) {
+      return { hasPlan: false, plan: null, completed: 0, total: 0, progress: 0 };
+    }
+    const steps = latestPlan.steps || [];
+    const completed = steps.filter(s => s.status === 'completed').length;
+    const total = steps.length;
+    const progress = total > 0 ? (completed / total) * 100 : 0;
+    return { hasPlan: true, plan: latestPlan, completed, total, progress };
+  }, [messages]);
+
+  // ===== 文件大小格式化 =====
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  };
+
+  // ===== 工具参数格式化 =====
+  const formatToolArgs = (args: string): string => {
+    try {
+      const parsed = JSON.parse(args);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return args;
+    }
+  };
+
+  // ===== 步骤状态图标 =====
+  const getStepIcon = (status: PlanStepInfo['status']) => {
+    switch (status) {
+      case 'completed': return <CheckCircleIcon sx={{ fontSize: 14, color: '#22c55e' }} />;
+      case 'in_progress': return <PlayCircleIcon sx={{ fontSize: 14, color: '#6366f1' }} />;
+      case 'failed': return <ErrorIcon sx={{ fontSize: 14, color: '#ef4444' }} />;
+      case 'skipped': return <PendingIcon sx={{ fontSize: 14, color: '#9ca3af' }} />;
+      default: return <PendingIcon sx={{ fontSize: 14, color: '#9ca3af' }} />;
+    }
+  };
+
+  const getStepStatusLabel = (status: PlanStepInfo['status']) => {
+    const map: Record<string, { label: string; color: string }> = {
+      pending: { label: '等待中', color: '#9ca3af' },
+      in_progress: { label: '进行中', color: '#6366f1' },
+      completed: { label: '已完成', color: '#22c55e' },
+      failed: { label: '失败', color: '#ef4444' },
+      skipped: { label: '跳过', color: '#9ca3af' },
+    };
+    return map[status] || map.pending;
+  };
+
+  // ===== 获取文件图标颜色 =====
+  const getFileIconColor = (fileName: string): string => {
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+    const colorMap: Record<string, string> = {
+      html: '#e34f26', css: '#1572b6', js: '#f7df1e', ts: '#3178c6',
+      jsx: '#61dafb', tsx: '#61dafb', json: '#cbbb0e', md: '#519aba',
+      py: '#3776ab', go: '#00add8', rs: '#dea584', java: '#007396',
+      png: '#a6d43f', jpg: '#ff6b6b', svg: '#ffb13b', pdf: '#e11d48',
+      zip: '#f59e0b', tar: '#f59e0b',
+    };
+    return colorMap[ext] || '#6b7280';
+  };
 
   // ===== 待办 Tab =====
   const renderTodosTab = () => (
@@ -849,6 +987,419 @@ const ChatSidePanel: React.FC<ChatSidePanelProps> = ({
     </Box>
   );
 
+  // ===== 工具调用 Tab =====
+  const renderToolsTab = () => (
+    <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5, height: '100%' }}>
+      {/* 统计信息 */}
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Chip
+          size="small"
+          label={`总调用 ${toolCallData.total}`}
+          sx={{
+            height: 20, fontSize: '0.6rem',
+            bgcolor: isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.06)',
+            color: '#6366f1',
+          }}
+        />
+        <Chip
+          size="small"
+          label={`工具类型 ${toolCallData.toolTypes}`}
+          sx={{
+            height: 20, fontSize: '0.6rem',
+            bgcolor: 'transparent',
+            border: `1px solid ${gs.border}`,
+            color: gs.textMuted,
+          }}
+        />
+      </Box>
+
+      {/* 工具类型统计 */}
+      {toolCallData.toolStats.length > 0 && (
+        <>
+          <Divider />
+          <Box>
+            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: gs.textMuted, mb: 0.75, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              工具分布
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              {toolCallData.toolStats.slice(0, 5).map(([name, count]) => (
+                <Box key={name} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+                    <CodeIcon sx={{ fontSize: 12, color: gs.textMuted, flexShrink: 0 }} />
+                    <Typography sx={{ fontSize: '0.7rem', color: gs.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {name}
+                    </Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: '0.7rem', color: gs.textPrimary, fontFamily: 'monospace', flexShrink: 0 }}>
+                    {count}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </>
+      )}
+
+      <Divider />
+
+      {/* 工具调用列表 */}
+      <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        {toolCallData.calls.length === 0 ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, py: 4 }}>
+            <BuildIcon sx={{ fontSize: 36, opacity: 0.3, color: gs.textMuted }} />
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, textAlign: 'center' }}>
+              暂无工具调用
+            </Typography>
+            <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled, textAlign: 'center' }}>
+              AI 使用工具时会在这里显示
+            </Typography>
+          </Box>
+        ) : (
+          toolCallData.calls.map(({ call, messageId, index }) => (
+            <Accordion
+              key={`${messageId}-${index}`}
+              sx={{
+                bgcolor: gs.bgHover,
+                border: `1px solid ${gs.border}`,
+                borderRadius: 1,
+                '&:before': { display: 'none' },
+                '&.Mui-expanded': { margin: 0 },
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon sx={{ fontSize: 14, color: gs.textMuted }} />}
+                sx={{
+                  p: 0.75,
+                  minHeight: 'auto',
+                  '&.Mui-expanded': { minHeight: 'auto' },
+                  '& .MuiAccordionSummary-content': { m: 0 },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+                  <BuildIcon sx={{ fontSize: 14, color: '#6366f1', flexShrink: 0 }} />
+                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: gs.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {call.name}
+                  </Typography>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails sx={{ p: 1, pt: 0 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                  <Box>
+                    <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: gs.textMuted, mb: 0.25 }}>参数</Typography>
+                    <Box
+                      sx={{
+                        p: 0.75,
+                        bgcolor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.03)',
+                        borderRadius: 0.5,
+                        maxHeight: 150,
+                        overflow: 'auto',
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: '0.65rem',
+                          fontFamily: 'monospace',
+                          color: gs.textSecondary,
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-all',
+                        }}
+                      >
+                        {formatToolArgs(call.arguments)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  {call.result && (
+                    <Box>
+                      <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: gs.textMuted, mb: 0.25 }}>结果</Typography>
+                      <Box
+                        sx={{
+                          p: 0.75,
+                          bgcolor: isDark ? 'rgba(34,197,94,0.08)' : 'rgba(34,197,94,0.04)',
+                          borderRadius: 0.5,
+                          maxHeight: 150,
+                          overflow: 'auto',
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontSize: '0.65rem',
+                            fontFamily: 'monospace',
+                            color: '#22c55e',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-all',
+                          }}
+                        >
+                          {call.result.length > 500 ? call.result.slice(0, 500) + '\n...' : call.result}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+          ))
+        )}
+      </Box>
+    </Box>
+  );
+
+  // ===== 生成文件 Tab =====
+  const renderFilesTab = () => (
+    <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5, height: '100%' }}>
+      {/* 统计信息 */}
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Chip
+          size="small"
+          label={`文件 ${generatedFilesData.total}`}
+          sx={{
+            height: 20, fontSize: '0.6rem',
+            bgcolor: isDark ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.06)',
+            color: '#22c55e',
+          }}
+        />
+        <Chip
+          size="small"
+          label={formatFileSize(generatedFilesData.totalSize)}
+          sx={{
+            height: 20, fontSize: '0.6rem',
+            bgcolor: 'transparent',
+            border: `1px solid ${gs.border}`,
+            color: gs.textMuted,
+          }}
+        />
+      </Box>
+
+      {/* 文件类型统计 */}
+      {generatedFilesData.typeStats.length > 0 && (
+        <>
+          <Divider />
+          <Box>
+            <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: gs.textMuted, mb: 0.75, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              类型分布
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {generatedFilesData.typeStats.map(([ext, count]) => (
+                <Chip
+                  key={ext}
+                  size="small"
+                  label={`.${ext} ×${count}`}
+                  sx={{
+                    height: 18, fontSize: '0.6rem',
+                    bgcolor: 'transparent',
+                    border: `1px solid ${gs.border}`,
+                    color: gs.textSecondary,
+                  }}
+                />
+              ))}
+            </Box>
+          </Box>
+        </>
+      )}
+
+      <Divider />
+
+      {/* 文件列表 */}
+      <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        {generatedFilesData.files.length === 0 ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, py: 4 }}>
+            <InsertDriveFileIcon sx={{ fontSize: 36, opacity: 0.3, color: gs.textMuted }} />
+            <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, textAlign: 'center' }}>
+              暂无生成文件
+            </Typography>
+            <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled, textAlign: 'center' }}>
+              AI 生成的文件会在这里显示
+            </Typography>
+          </Box>
+        ) : (
+          generatedFilesData.files.map(({ file }) => (
+            <Box
+              key={file.downloadUrl}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
+                p: 0.75,
+                borderRadius: 1,
+                bgcolor: gs.bgHover,
+                border: `1px solid ${gs.border}`,
+                '&:hover': {
+                  borderColor: '#6366f1',
+                },
+                transition: 'all 0.15s',
+              }}
+            >
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 0.75,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  bgcolor: `${getFileIconColor(file.fileName)}15`,
+                }}
+              >
+                <DescriptionIcon sx={{ fontSize: 16, color: getFileIconColor(file.fileName) }} />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontSize: '0.7rem',
+                    fontWeight: 500,
+                    color: gs.textPrimary,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {file.fileName}
+                </Typography>
+                <Typography sx={{ fontSize: '0.6rem', color: gs.textMuted }}>
+                  {formatFileSize(file.fileSize)}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 0.25 }}>
+                {file.previewUrl && (
+                  <Tooltip title="预览">
+                    <IconButton size="small" sx={{ p: 0.25, color: gs.textMuted, '&:hover': { color: '#6366f1' } }}>
+                      <VisibilityIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                <Tooltip title="下载">
+                  <IconButton
+                    size="small"
+                    onClick={() => window.open(file.downloadUrl, '_blank')}
+                    sx={{ p: 0.25, color: gs.textMuted, '&:hover': { color: '#22c55e' } }}
+                  >
+                    <DownloadIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+          ))
+        )}
+      </Box>
+    </Box>
+  );
+
+  // ===== 执行计划 Tab =====
+  const renderPlanTab = () => (
+    <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5, height: '100%' }}>
+      {!planData.hasPlan ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, py: 8 }}>
+          <PlayCircleIcon sx={{ fontSize: 36, opacity: 0.3, color: gs.textMuted }} />
+          <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, textAlign: 'center' }}>
+            暂无执行计划
+          </Typography>
+          <Typography sx={{ fontSize: '0.65rem', color: gs.textDisabled, textAlign: 'center' }}>
+            AI 规划任务时会在这里显示
+          </Typography>
+        </Box>
+      ) : (
+        <>
+          {/* 计划意图 */}
+          {planData.plan?.intent && (
+            <Box>
+              <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: gs.textMuted, mb: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                任务目标
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: gs.textPrimary, lineHeight: 1.4 }}>
+                {planData.plan.intent}
+              </Typography>
+            </Box>
+          )}
+
+          {/* 进度条 */}
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: gs.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                执行进度
+              </Typography>
+              <Typography sx={{ fontSize: '0.7rem', color: gs.textPrimary, fontFamily: 'monospace' }}>
+                {planData.completed}/{planData.total}
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={planData.progress}
+              sx={{
+                height: 6,
+                borderRadius: 3,
+                bgcolor: gs.bgHover,
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: '#6366f1',
+                  borderRadius: 3,
+                },
+              }}
+            />
+          </Box>
+
+          <Divider />
+
+          {/* 步骤列表 */}
+          <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            {planData.plan?.steps?.map((step, idx) => {
+              const statusInfo = getStepStatusLabel(step.status);
+              return (
+                <Box
+                  key={idx}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 0.75,
+                    p: 0.75,
+                    borderRadius: 1,
+                    bgcolor: step.status === 'in_progress' ? (isDark ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.04)') : 'transparent',
+                    border: `1px solid ${step.status === 'in_progress' ? 'rgba(99,102,241,0.3)' : gs.border}`,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <Box sx={{ mt: 0.25, flexShrink: 0 }}>
+                    {getStepIcon(step.status)}
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
+                      <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: gs.textMuted, fontFamily: 'monospace' }}>
+                        #{step.step}
+                      </Typography>
+                      <Chip
+                        size="small"
+                        label={statusInfo.label}
+                        sx={{
+                          height: 14, fontSize: '0.55rem', py: 0,
+                          bgcolor: 'transparent',
+                          color: statusInfo.color,
+                          border: `1px solid ${statusInfo.color}`,
+                        }}
+                      />
+                    </Box>
+                    <Typography
+                      sx={{
+                        fontSize: '0.7rem',
+                        color: step.status === 'completed' ? gs.textMuted : gs.textPrimary,
+                        textDecoration: step.status === 'completed' ? 'line-through' : 'none',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {step.description}
+                    </Typography>
+                    {step.toolName && (
+                      <Typography sx={{ fontSize: '0.6rem', color: gs.textMuted, mt: 0.25 }}>
+                        工具: {step.toolName}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              );
+            })}
+          </Box>
+        </>
+      )}
+    </Box>
+  );
+
   return (
     <Box
       sx={{
@@ -862,6 +1413,11 @@ const ChatSidePanel: React.FC<ChatSidePanelProps> = ({
         overflow: 'hidden',
       }}
     >
+      {/* 会话目标 */}
+      <Box sx={{ flexShrink: 0, borderBottom: `1px solid ${gs.border}` }}>
+        <GoalIndicator sessionKey={sessionKey} variant="compact" />
+      </Box>
+
       {/* Tab 切换 */}
       <Box sx={{ display: 'flex', borderBottom: `1px solid ${gs.border}`, flexShrink: 0 }}>
         {TABS.map((tab) => (
@@ -892,7 +1448,11 @@ const ChatSidePanel: React.FC<ChatSidePanelProps> = ({
 
       {/* Tab 内容 */}
       <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-        {activeTab === 'todos' ? renderTodosTab() : renderContextTab()}
+        {activeTab === 'todos' && renderTodosTab()}
+        {activeTab === 'context' && renderContextTab()}
+        {activeTab === 'tools' && renderToolsTab()}
+        {activeTab === 'files' && renderFilesTab()}
+        {activeTab === 'plan' && renderPlanTab()}
       </Box>
     </Box>
   );

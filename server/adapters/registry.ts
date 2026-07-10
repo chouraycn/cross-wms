@@ -9,6 +9,8 @@ import { openAIChatAdapterFactory } from './openAIChatAdapter.js';
 import { openAICompletionsAdapterFactory } from './openAICompletionsAdapter.js';
 import { anthropicAdapterFactory } from './anthropicAdapter.js';
 import { googleGenerativeAIAdapterFactory } from './googleGenerativeAIAdapter.js';
+import { qwenAdapterFactory } from './qwenAdapter.js';
+import { moonshotAdapterFactory } from './moonshotAdapter.js';
 import { logger } from '../logger.js';
 
 /** 适配器注册表 */
@@ -56,6 +58,8 @@ export function initBuiltinAdapters(): void {
   registerAdapter('openai-completions', openAICompletionsAdapterFactory);
   registerAdapter('anthropic-messages', anthropicAdapterFactory);
   registerAdapter('google-generative-ai', googleGenerativeAIAdapterFactory);
+  registerAdapter('qwen-chat', qwenAdapterFactory);
+  registerAdapter('moonshot-chat', moonshotAdapterFactory);
   logger.info('[AdapterRegistry] 内置适配器初始化完成');
 }
 
@@ -83,6 +87,21 @@ export function inferApiType(provider?: string, apiEndpoint?: string): ModelApiT
       endpointLower.includes('generativelanguage.googleapis.com') ||
       endpointLower.includes('googleapis.com')) {
     return 'google-generative-ai';
+  }
+
+  // Qwen (阿里云通义)
+  if (providerLower === 'qwen' ||
+      providerLower === 'aliyun' ||
+      providerLower === 'dashscope' ||
+      endpointLower.includes('dashscope.aliyuncs.com')) {
+    return 'qwen-chat';
+  }
+
+  // Moonshot (月之暗面)
+  if (providerLower === 'moonshot' ||
+      providerLower === 'kimi' ||
+      endpointLower.includes('api.moonshot.cn')) {
+    return 'moonshot-chat';
   }
 
   // OpenAI Completions（旧格式）

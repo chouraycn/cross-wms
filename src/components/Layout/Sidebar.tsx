@@ -10,12 +10,10 @@ import {
 } from '@mui/material';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getGrayScale } from '../../constants/theme';
 import SidebarLogo from './SidebarLogo';
 import NavList from './NavList';
-import SidebarToggle from './SidebarToggle';
 import SettingsPopover from './SettingsPopover';
 const AISettingsDialog = React.lazy(() => import('./AISettingsDialog'));
 const ToolManagementDialog = React.lazy(() => import('./ToolManagementDialog'));
@@ -70,7 +68,6 @@ const SIDEBAR_WIDTH_COLLAPSED = 0;
 interface SidebarProps {
   collapsed: boolean;
   onToggle?: () => void;
-  /** v1.5.73: 从 MainLayout 提升，供 /settings 路由触发 */
   settingsOpen?: boolean;
   onSettingsOpenChange?: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -96,7 +93,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
     return () => window.removeEventListener('cdf-window-maximized', onMaximized);
   }, [collapsed, onToggle]);
 
-  // v1.7.18: 监听全屏状态变化，全屏时按钮前移（红黄绿隐藏后无需避让）
   const [isFullscreen, setIsFullscreen] = useState(false);
   useEffect(() => {
     const onFullscreenChanged = ((e: CustomEvent) => {
@@ -106,12 +102,12 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
     return () => window.removeEventListener('cdf-window-fullscreen-changed', onFullscreenChanged);
   }, []);
 
-  // v1.5.73: settingsOpen 提升到 MainLayout，通过 props 传入；无 props 时回退本地 state（兼容旧调用）
   const [localSettingsOpen, localSetSettingsOpen] = useState(false);
   const settingsOpen = settingsOpenProp ?? localSettingsOpen;
   const setSettingsOpen = onSettingsOpenChange ?? localSetSettingsOpen;
 
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiDialogInitialTab, setAiDialogInitialTab] = useState<{ main: string; sub: string } | undefined>(undefined);
   const [toolManagementDialogOpen, setToolManagementDialogOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLDivElement>(null);
@@ -337,52 +333,9 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
         </Box>
       )}
 
-      {/* 收起状态：展开按钮 + 新建对话按钮（原生 App 与红黄绿对齐，网页端保持原有位置） */}
-      {/* 收起状态移除搜索按钮，只保留展开侧边栏按钮和新建对话按钮 */}
+      {/* 收起状态：无顶部按钮（侧边栏切换和新对话按钮由 ChatThread 顶部栏提供） */}
       {collapsed && (
         <>
-          {onToggle && (
-            <SidebarToggle
-              collapsed={collapsed}
-              onToggle={onToggle}
-              expandedWidth={SIDEBAR_WIDTH_EXPANDED}
-              collapsedWidth={SIDEBAR_WIDTH_COLLAPSED}
-            />
-          )}
-
-          {/* AI 对话按钮 — 仅收起时显示，统一使用 AI 对话 icon */}
-          <Tooltip title="AI 对话">
-            <IconButton
-              onClick={handleNewChat}
-              size="small"
-              sx={{
-                position: 'fixed',
-                top: nativeApp ? '15px' : '10px',
-                left: nativeApp ? (isFullscreen ? 44 : 104) : 42,
-                zIndex: 1400,
-                color: 'text.primary',
-                borderRadius: '6.48px',
-                p: 0.45,
-                width: 25.92,
-                height: 25.92,
-                backgroundColor: nativeApp ? 'transparent' : (isDark ? 'rgba(20, 20, 20, 0.6)' : 'rgba(240, 240, 240, 0.6)'),
-                // v3.2: WKWebView 中禁用 backdrop-filter，毛玻璃效果性能差导致卡顿
-                ...(nativeApp || IS_WKWEBVIEW ? {} : {
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                }),
-                border: nativeApp ? 'none' : `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
-                '&:hover': {
-                  backgroundColor: nativeApp ? gs.bgHover : (isDark ? 'rgba(20, 20, 20, 0.8)' : 'rgba(240, 240, 240, 0.8)'),
-                },
-                '&:focus': { outline: 'none' },
-              }}
-              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-            >
-              <AutoAwesomeIcon sx={{ fontSize: '18px' }} />
-            </IconButton>
-          </Tooltip>
-
           {/* 输入内容预览 — 仅收起时且有输入内容时显示 */}
           {chatInputValue.trim() && (
             <Box
@@ -494,11 +447,12 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
           anchorEl={settingsBtnRef.current}
-          onOpenModelManagement={() => setAiDialogOpen(true)}
+          onOpenModelManagement={() => { setAiDialogInitialTab(undefined); setAiDialogOpen(true); }}
           onOpenToolManagement={() => setToolManagementDialogOpen(true)}
+          onOpenAITab={(main, sub) => { setAiDialogInitialTab({ main, sub }); setAiDialogOpen(true); }}
         />
         <Suspense fallback={null}>
-          <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} />
+          <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} initialMainTab={aiDialogInitialTab?.main as any} initialSubTab={aiDialogInitialTab?.sub as any} />
           <ToolManagementDialog open={toolManagementDialogOpen} onClose={() => setToolManagementDialogOpen(false)} />
         </Suspense>
       </Box>

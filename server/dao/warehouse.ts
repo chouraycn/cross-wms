@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
-import { WmsFileStorage } from '../storage/WmsFileStorage.js';
+import { createDocumentStorage } from '../storage/index.js';
 import type { WarehouseRow, InventoryItemRow, TransitOrderRow, StatusHistoryRow, InboundRecordRow, OutboundRecordRow, TransferOrderRow } from '../db.js';
 
-const wms = WmsFileStorage.getInstance();
+const wms = createDocumentStorage();
 
 // ===================== Warehouse DAO =====================
 

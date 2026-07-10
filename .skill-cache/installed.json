@@ -1,0 +1,26 @@
+{
+  "file:///var/folders/cm/zpqrkws14n1dgjg23zf5jb4w0000gn/T/cli-remote-src-1783668247513": {
+    "currentVersion": "1.2.3",
+    "versions": [
+      {
+        "version": "1.2.3",
+        "installedAt": 1783668247651,
+        "source": "/var/folders/cm/zpqrkws14n1dgjg23zf5jb4w0000gn/T/cli-remote-src-1783668247513",
+        "sourceType": "local",
+        "path": "/Users/chouray/.workbuddy/skills"
+      }
+    ]
+  },
+  "cli_test_remote_1783668474857": {
+    "currentVersion": "1.2.3",
+    "versions": [
+      {
+        "version": "1.2.3",
+        "installedAt": 1783668474881,
+        "source": "/var/folders/cm/zpqrkws14n1dgjg23zf5jb4w0000gn/T/cli_test_remote_1783668474857",
+        "sourceType": "local",
+        "path": "/Users/chouray/.workbuddy/skills/cli_test_remote_1783668474857"
+      }
+    ]
+  }
+}

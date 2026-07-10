@@ -35,6 +35,7 @@ import { useToast } from '../contexts/ToastContext';
 import { getProjects, createProject, updateProject, deleteProject, getWarehouses } from '../services/api';
 import type { Project } from '../types/project';
 import type { Warehouse } from '../types';
+import { usePageFadeIn } from '../hooks/usePageFadeIn';
 import { getGrayScale } from '../constants/theme';
 import { ExpertSelector, type ExpertOption } from '../components/CrossWmsChat/ExpertSelector';
 
@@ -479,6 +480,8 @@ const ProjectsPage: React.FC = () => {
     );
   }, [templateSearch]);
 
+  const fadeCls = usePageFadeIn();
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
@@ -488,7 +491,7 @@ const ProjectsPage: React.FC = () => {
   }
 
   return (
-    <Box className="page-fade-in" sx={{ maxWidth: 1100, mx: 'auto' }}>
+    <Box className={fadeCls} sx={{ maxWidth: 1100, mx: 'auto' }}>
       {/* ===== Hero Section ===== */}
       <Box
         sx={{

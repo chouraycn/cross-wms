@@ -340,6 +340,7 @@ app.use('/api/context-engine', lazyRouter(() => import('./routes/contextEngine.j
 app.use('/api/talk', lazyRouter(() => import('./routes/talk.js'), undefined, 'talk'));
 app.use('/api/channels', lazyRouter(() => import('./routes/channels.js'), undefined, 'channels'));
 app.use('/api/cache', lazyRouter(() => import('./routes/cache.js'), undefined, 'cache'));
+app.use('/api/keyword-trigger', lazyRouter(() => import('./routes/keywordTrigger.js'), undefined, 'keyword-trigger'));
 
 // ========== v10.0: Gateway Routes (OpenAI/MCP 兼容) ==========
 // 从环境变量或配置文件读取 API Keys

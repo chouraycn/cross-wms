@@ -208,7 +208,7 @@ describe('Plugin SDK', () => {
       await registry.registerDefinition(plugin);
       await registry.activate('tool-invoker');
 
-      const resultStr = await registry.invokeTool('plugin_tool-invoker_echo', { msg: 'hello' });
+      const resultStr = await registry.invokeTool('tool-invoker', 'echo', { msg: 'hello' });
       const result = JSON.parse(resultStr);
       expect(result.success).toBe(true);
       expect(result.data).toEqual({ msg: 'hello' });

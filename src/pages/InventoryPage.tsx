@@ -12,9 +12,11 @@ import { subscribeRefresh } from '../App';
 import { getInventoryItems } from '../capabilities/warehouse';
 import { exportToCsv } from '../utils/exportCsv';
 import { getGrayScale } from '../constants/theme';
+import { usePageFadeIn } from '../hooks/usePageFadeIn';
 
 const InventoryPage: React.FC = () => {
   const theme = useTheme();
+  const fadeCls = usePageFadeIn();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -60,7 +62,7 @@ const InventoryPage: React.FC = () => {
   }, [handleRefresh]);
 
   return (
-    <Box key={refreshKey} className="page-fade-in">
+    <Box key={refreshKey} className={fadeCls}>
       <PageHeader
         title="库存管理"
         summary={summary}

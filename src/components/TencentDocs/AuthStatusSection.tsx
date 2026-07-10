@@ -26,14 +26,14 @@ const SpinningIconWrapper: React.FC<{ spinning: boolean; children: React.ReactNo
       
     let frameId: number;
     let start: number;
-    const animate = (timestamp: number) => {
-      if (!start) start = timestamp;
-      const progress = timestamp - start;
+    const animate = () => {
+      if (!start) start = Date.now();
+      const progress = Date.now() - start;
       setRotation((progress * 360) / 1000); // 1秒转 360 度
-      frameId = requestAnimationFrame(animate); // ⚠️ 修复：保存每帧 id 以正确取消
+      frameId = window.setTimeout(animate, 16); // setTimeout 替代 rAF，WKWebView 兼容
     };
-    frameId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frameId); // 取消最新一帧，阻止继续调度
+    frameId = window.setTimeout(animate, 16);
+    return () => window.clearTimeout(frameId); // 取消最新一帧，阻止继续调度
   }, [spinning]);
     
   return (

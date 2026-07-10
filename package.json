@@ -1,7 +1,7 @@
 {
   "name": "cdf-know-clow",
   "private": true,
-  "version": "1.7.77",
+  "version": "1.7.79",
   "type": "module",
   "workspaces": [
     "packages/*"
@@ -34,6 +34,7 @@
     "tui:embedded": "tsx --tsconfig server/tsconfig.json server/tui/cli.ts --http --url http://127.0.0.1:3001",
     "tui:save-config": "tsx --tsconfig server/tsconfig.json server/tui/cli.ts --save-config",
     "tui:validate": "tsx --tsconfig server/tsconfig.json server/tui/cli.ts --validate-config",
+    "cli": "tsx --tsconfig server/tsconfig.json cli/index.ts",
     "lint": "eslint src/ server/ --ext .ts,.tsx",
     "lint:fix": "eslint src/ server/ --ext .ts,.tsx --fix",
     "prepare": "husky",

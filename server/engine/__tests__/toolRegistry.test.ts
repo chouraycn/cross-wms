@@ -47,19 +47,23 @@ vi.mock('child_process', () => ({
 
 // ===================== Mock: fs =====================
 
-vi.mock('fs', () => ({
-  existsSync: vi.fn(() => true),
-  mkdirSync: vi.fn(),
-  writeFileSync: vi.fn(),
-  readFileSync: vi.fn(() => ''),
-  promises: {
-    readFile: vi.fn(),
-    writeFile: vi.fn(),
-    readdir: vi.fn(),
-    mkdir: vi.fn(),
-    unlink: vi.fn().mockResolvedValue(undefined),
-  },
-}));
+vi.mock('fs', () => {
+  const fsMock = {
+    existsSync: vi.fn(() => true),
+    mkdirSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    readFileSync: vi.fn(() => ''),
+    promises: {
+      readFile: vi.fn(),
+      writeFile: vi.fn(),
+      readdir: vi.fn(),
+      mkdir: vi.fn(),
+      unlink: vi.fn().mockResolvedValue(undefined),
+    },
+  };
+  // 同时提供 default 导出：产品代码使用 `import fs from 'fs'` 默认导入
+  return { ...fsMock, default: fsMock };
+});
 
 // ===================== Mock: logger =====================
 

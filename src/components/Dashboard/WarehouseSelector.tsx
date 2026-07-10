@@ -35,9 +35,9 @@ const WarehouseSelector = React.memo<WarehouseSelectorProps>(function WarehouseS
   // 点击「添加仓库」→ 先导航到仓库管理页，再延迟触发新建对话框
   const handleAddWarehouse = useCallback(() => {
     navigate('/warehouses');
-    requestAnimationFrame(() => {
+    window.setTimeout(() => {
       emitNewWarehouse();
-    });
+    }, 16);
   }, [navigate]);
 
   const options = [

@@ -28,6 +28,8 @@ interface SkillMdFrontmatter {
   name?: string;
   description?: string;
   trigger?: string;
+  triggers?: string[];
+  triggerWeight?: number;
   version?: string;
   author?: string;
   category?: string;

@@ -243,13 +243,22 @@ export function isAcpBlocked(acpClass: AcpApprovalClass): boolean {
 const DEFAULT_RULES: ToolPolicyRule[] = [
   // ===== Critical 级（必须审批） =====
   {
-    toolPattern: 'shell_exec',
+    toolPattern: 'bash_exec',
     riskLevel: 'critical',
     acpClass: 'A5',
     requireApproval: true,
     rateLimit: { maxCalls: 10, windowMs: 60_000 },
     timeoutMs: 30_000,
     description: '终端命令执行，最高风险',
+  },
+  {
+    toolPattern: 'shell_exec',
+    riskLevel: 'critical',
+    acpClass: 'A5',
+    requireApproval: true,
+    rateLimit: { maxCalls: 10, windowMs: 60_000 },
+    timeoutMs: 30_000,
+    description: '终端命令执行（兼容名），最高风险',
   },
   {
     toolPattern: 'file_deleteFile',

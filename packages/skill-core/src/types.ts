@@ -24,6 +24,25 @@ export interface SkillTrigger {
   schedule?: string;
 }
 
+/** 意图识别器输出的一条意图（由 server 端意图分类器提供） */
+export interface DetectedIntent {
+  intent: string;
+  confidence?: number;
+}
+
+/** matchTriggers 的可选参数（用于注入意图识别结果等上下文） */
+export interface MatchTriggersOptions {
+  /** 意图识别结果，用于匹配 `intent` 类型触发器。可为字符串（意图名）或带置信度的对象 */
+  intents?: Array<string | DetectedIntent>;
+}
+
+/** 定时触发器信息（供 server 端调度器消费） */
+export interface ScheduleTriggerInfo {
+  skillId: string;
+  trigger: SkillTrigger;
+  schedule: string;
+}
+
 export interface SkillPermission {
   name: string;
   description?: string;

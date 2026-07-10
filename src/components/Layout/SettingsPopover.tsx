@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Divider, IconButton, Popover, Grow, Button, useTheme } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
@@ -12,19 +12,14 @@ import SecurityIcon from '@mui/icons-material/Security';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import StorageIcon from '@mui/icons-material/Storage';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
-import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
-import { isPyWebView } from '../../services/tencentDocsApi';
-import { API_BASE } from '../../constants/api';
 import { getGrayScale } from '../../constants/theme';
 import { APP_VERSION } from './appVersion';
 import SettingsGeneral from './SettingsGeneral';
 import SettingsAbout from './SettingsAbout';
-import TalkSettingsPanel from '../Talk/TalkSettingsPanel';
-import ChannelManagerPanel from '../Channel/ChannelManagerPanel';
 import { useToast } from '../../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -37,7 +32,7 @@ const SIDEBAR_WIDTH_EXPANDED = 360;
 // - systemAuthorization: 系统授权 → Swift 原生 App 内置权限管理，Web 端无需配置（状态已移除）
 
 /** 设置详情视图可用的 tab（仅这些走内联详情视图；其余走 navigate / dialog） */
-type SettingsTab = 'menu' | 'appearance' | 'about' | 'talk' | 'channels';
+type SettingsTab = 'menu' | 'appearance' | 'about';
 
 /** 菜单条目：带 children 即为可展开分组 */
 interface MenuEntry {
@@ -49,60 +44,22 @@ interface MenuEntry {
   // 叶子动作（无 children 时生效）
   tab?: SettingsTab;
   path?: string;
-  dialog?: 'model' | 'tool';
-  native?: boolean;
+  dialog?: 'tool' | 'model';
   appearanceInline?: boolean;
+  // 打开 AISettingsDialog 并定位到指定标签页
+  aiTab?: { main: string; sub: string };
 }
 
 const SETTINGS_MENU: MenuEntry[] = [
   { key: 'appearance', label: '外观', icon: <PaletteOutlinedIcon sx={{ fontSize: 20 }} />, description: '主题、颜色与显示偏好', appearanceInline: true },
   { key: 'modelManagement', label: '模型管理', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型', dialog: 'model' },
-  {
-    key: 'toolsExtensions', label: '工具与扩展', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件、扩展、API 模板、浏览器',
-    children: [
-      { key: 'toolManagement', label: '工具管理', description: '插件、API 模板、浏览器等工具', dialog: 'tool' },
-      { key: 'extensions', label: '扩展管理', description: '扩展的启用、禁用与加载', path: '/extensions' },
-      { key: 'plugins', label: '插件', description: '已安装插件管理', path: '/plugins' },
-    ],
-  },
-  {
-    key: 'apiSecrets', label: 'API 与密钥', icon: <VpnKeyIcon sx={{ fontSize: 20 }} />, description: 'API Key、凭证、模板与白名单',
-    children: [
-      { key: 'apiKeys', label: 'API Key', description: 'API Key 创建与管理', path: '/api-keys' },
-      { key: 'secrets', label: 'Secrets', description: '密钥管理', path: '/secrets' },
-      { key: 'apiCredentials', label: 'API 凭证', description: '凭证管理', path: '/api-credentials' },
-      { key: 'apiTemplates', label: 'API 模板', description: 'API 请求模板', path: '/api-templates' },
-      { key: 'apiDomainWhitelist', label: '域名白名单', description: 'API 域名白名单', path: '/api-domain-whitelist' },
-      { key: 'apiHistory', label: '调用历史', description: 'API 调用历史', path: '/api-history' },
-    ],
-  },
-  {
-    key: 'comms', label: '通讯', icon: <RecordVoiceOverIcon sx={{ fontSize: 20 }} />, description: '语音对话与通道配置',
-    children: [
-      { key: 'talk', label: '语音对话', description: '语音 locale、静默超时、思考级别', tab: 'talk' },
-      { key: 'channels', label: '通道管理', description: '飞书/钉钉/Slack/Telegram 等通道', tab: 'channels' },
-    ],
-  },
-  {
-    key: 'observability', label: '可观测性', icon: <MonitorHeartIcon sx={{ fontSize: 20 }} />, description: '监控、审计、执行历史与事件账本',
-    children: [
-      { key: 'monitor', label: '系统监控', description: '插件、扩展、消息等系统指标', path: '/system-monitor' },
-      { key: 'audit', label: '审计日志', description: '消息审计与操作记录', path: '/audit-log' },
-      { key: 'executionHistory', label: '执行历史', description: '任务执行历史记录', path: '/execution-history' },
-      { key: 'eventLedger', label: '事件账本', description: '事件账本', path: '/event-ledger' },
-    ],
-  },
+  { key: 'extensionsCenter', label: '扩展与工具', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件、扩展与 MCP 工具统一管理', path: '/extensions-center' },
+  { key: 'comms', label: '通讯', icon: <RecordVoiceOverIcon sx={{ fontSize: 20 }} />, description: '语音对话与通道配置', aiTab: { main: 'comms', sub: 'talk' } },
+  { key: 'observabilityCenter', label: '监控中心', icon: <MonitorHeartIcon sx={{ fontSize: 20 }} />, description: '系统监控、系统指标、审计、执行历史、事件账本与调用历史', path: '/observability-center' },
+  { key: 'permissions', label: '权限管理', icon: <SecurityIcon sx={{ fontSize: 20 }} />, description: '屏幕录制、辅助功能、全盘访问等系统权限', path: '/permissions' },
   { key: 'memory', label: '记忆', icon: <StorageIcon sx={{ fontSize: 20 }} />, description: '打开记忆管理页面', path: '/memory' },
   { key: 'about', label: '关于', icon: <InfoIcon sx={{ fontSize: 20 }} />, description: '系统信息与版本', tab: 'about' },
 ];
-
-const SYSTEM_AUTH_ENTRY: MenuEntry = {
-  key: 'systemAuthorization',
-  label: '系统授权',
-  icon: <SecurityIcon sx={{ fontSize: 20 }} />,
-  description: '打开 macOS 原生权限管理窗口',
-  native: true,
-};
 
 // 详情视图标题查找表（含子项）
 const LABEL_BY_KEY: Record<string, string> = {};
@@ -111,7 +68,7 @@ SETTINGS_MENU.forEach((e) => {
   if (e.children) e.children.forEach((c) => { LABEL_BY_KEY[c.key] = c.label; });
 });
 
-const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void }> = ({ onClose, onOpenModelManagement, onOpenToolManagement }) => {
+const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; onOpenAITab?: (main: string, sub: string) => void }> = ({ onClose, onOpenModelManagement, onOpenToolManagement, onOpenAITab }) => {
   const { settings, updateSettings, resetSettings } = useAppSettings();
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -132,24 +89,13 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   };
   const handleReset = () => { resetSettings(); setDraft({ ...settings }); setErrors({}); showToast('已重置为默认值', 'info'); };
 
-  /** 打开 Swift 原生权限管理窗口（仅 pywebview 环境） */
-  const handleOpenPermissionManager = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/permissions/open-manager`, { method: 'POST' });
-      if (!res.ok) { showToast('打开授权管理失败', 'error'); return; }
-      onClose?.();
-    } catch {
-      showToast('原生 App 未运行，无法打开授权管理', 'error');
-    }
-  }, [showToast, onClose]);
-
   const hasErrors = Object.keys(errors).length > 0;
   const currentLabel = LABEL_BY_KEY[activeTab];
 
   const handleLeafClick = (entry: MenuEntry) => {
-    if (entry.dialog === 'model') { onClose?.(); onOpenModelManagement?.(); }
+    if (entry.aiTab) { onClose?.(); onOpenAITab?.(entry.aiTab.main, entry.aiTab.sub); }
     else if (entry.dialog === 'tool') { onClose?.(); onOpenToolManagement?.(); }
-    else if (entry.native) { handleOpenPermissionManager(); }
+    else if (entry.dialog === 'model') { onClose?.(); onOpenModelManagement?.(); }
     else if (entry.path) { onClose?.(); navigate(entry.path); }
     else if (entry.tab) { setActiveTab(entry.tab); }
   };
@@ -238,21 +184,29 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
             {SETTINGS_MENU.map((entry) => {
               if (entry.children) {
                 const expanded = expandedGroup === entry.key;
+                const hasAiTab = !!entry.aiTab;
                 return (
                   <Box key={entry.key}>
                     <Box
-                      onClick={() => setExpandedGroup(expanded ? null : entry.key)}
                       sx={{
-                        display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5, cursor: 'pointer', borderRadius: '8px',
+                        display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5, borderRadius: '8px',
                         '&:hover': { backgroundColor: gs.bgHover },
                       }}
                     >
-                      <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center' }}>{entry.icon}</Box>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: gs.textPrimary }}>{entry.label}</Typography>
-                        <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.description}</Typography>
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0, cursor: 'pointer' }}
+                        onClick={() => { if (hasAiTab) handleLeafClick(entry); }}
+                      >
+                        <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center' }}>{entry.icon}</Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: gs.textPrimary }}>{entry.label}</Typography>
+                          <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.description}</Typography>
+                        </Box>
                       </Box>
-                      <ExpandMoreIcon sx={{ fontSize: 18, color: gs.textMuted, transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
+                      <ExpandMoreIcon
+                        onClick={() => setExpandedGroup(expanded ? null : entry.key)}
+                        sx={{ fontSize: 18, color: gs.textMuted, transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s', cursor: 'pointer' }}
+                      />
                     </Box>
                     {expanded && entry.children.map((child) => renderLeaf(child, true))}
                   </Box>
@@ -260,8 +214,6 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
               }
               return renderLeaf(entry);
             })}
-            {/* 系统授权 — 仅原生 App 模式显示，通过 IPC 调用 Swift 原生权限管理窗口 */}
-            {isPyWebView() && renderLeaf(SYSTEM_AUTH_ENTRY)}
           </Box>
         </Box>
     );
@@ -279,9 +231,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
       <Box sx={{ px: 2, pb: 2, flex: 1, overflow: 'auto', minHeight: 0 }}>
         {activeTab === 'appearance' && <SettingsGeneral draft={draft} setDraft={setDraft} />}
         {activeTab === 'about' && <SettingsAbout draft={draft} setDraft={setDraft} />}
-        {activeTab === 'talk' && <TalkSettingsPanel />}
-        {activeTab === 'channels' && <ChannelManagerPanel />}
-        {/* 仅 appearance/about 显示底部保存/重置按钮（talk/channels 自带操作按钮） */}
+        {/* 仅 appearance/about 显示底部保存/重置按钮 */}
         {(activeTab === 'appearance' || activeTab === 'about') && (
           <>
             <Divider sx={{ mt: 2, mb: 1.5 }} />
@@ -296,9 +246,9 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   );
 };
 
-export interface SettingsPopoverProps { open: boolean; onClose: () => void; anchorEl: HTMLElement | null; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; }
+export interface SettingsPopoverProps { open: boolean; onClose: () => void; anchorEl: HTMLElement | null; onOpenModelManagement?: () => void; onOpenToolManagement?: () => void; onOpenAITab?: (main: string, sub: string) => void; }
 
-const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchorEl, onOpenModelManagement, onOpenToolManagement }) => {
+const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchorEl, onOpenModelManagement, onOpenToolManagement, onOpenAITab }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
@@ -341,7 +291,7 @@ const SettingsPopover: React.FC<SettingsPopoverProps> = ({ open, onClose, anchor
       }}
       hideBackdrop
     >
-      <SettingsPanel onClose={onClose} onOpenModelManagement={onOpenModelManagement} onOpenToolManagement={onOpenToolManagement} />
+      <SettingsPanel onClose={onClose} onOpenModelManagement={onOpenModelManagement} onOpenToolManagement={onOpenToolManagement} onOpenAITab={onOpenAITab} />
     </Popover>
   );
 };
