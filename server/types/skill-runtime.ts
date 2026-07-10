@@ -287,6 +287,8 @@ export interface RegisteredSkill {
   lifecycle: SkillLifecycle;
   /** 当前状态 */
   state: SkillState;
+  /** 技能状态（active/inactive/disabled，便捷访问） */
+  status?: 'active' | 'inactive' | 'disabled';
   /** 注册时间戳（Date.now()） */
   registeredAt: number;
   /** 最后执行时间戳 */

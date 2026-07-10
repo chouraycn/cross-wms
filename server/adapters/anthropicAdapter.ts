@@ -156,7 +156,7 @@ function convertToolsToAnthropic(
     input_schema: t.function.parameters,
   }));
   if (cacheLastTool && result.length > 0) {
-    result[result.length - 1].cache_control = { type: 'ephemeral' };
+    (result[result.length - 1] as any).cache_control = { type: 'ephemeral' };
   }
   return result;
 }

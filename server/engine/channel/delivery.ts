@@ -34,7 +34,7 @@ export interface DeliveryOptions {
   priority?: number;
   deadlineMs?: number;
   deduplicate?: boolean;
-  idempotencyKey?: string;
+  idempotencyKey?: string | undefined;
 }
 
 export interface DeliveryItem {
@@ -110,7 +110,7 @@ export class DeliveryManager extends EventEmitter<DeliveryManagerEvents> {
       priority: 0,
       deadlineMs: 3600000,
       deduplicate: true,
-      idempotencyKey: undefined,
+      idempotencyKey: '',
       ...params.options,
     };
 

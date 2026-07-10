@@ -122,7 +122,7 @@ function collectPolicyRuleClaims(document: PolicyDocument): readonly PolicyRuleC
     }
     claims.push({
       key: `global:${id}`,
-      rule: rule as PolicyRule,
+      rule: rule as unknown as PolicyRule,
       value: level,
       target: `oc://${document.displayName}/rules/${ocPathSegment(id)}`,
       propertyPath: `rules.${id}`,

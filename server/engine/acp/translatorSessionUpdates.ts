@@ -41,25 +41,34 @@ export interface SessionUpdateOptions {
 
 /** 将 ACP turn event 转换为 session update event */
 export function toSessionUpdate(event: AcpTurnEvent, sequence: number): SessionUpdateEvent | null {
-  switch (event.type) {
+  const evt = event as unknown as {
+    type: string;
+    content?: string;
+    id?: string;
+    name?: string;
+    input?: unknown;
+    output?: unknown;
+    finishReason?: string;
+  };
+  switch (evt.type) {
     case "message":
-      return { kind: "text", text: event.content ?? "", sequence };
+      return { kind: "text", text: evt.content ?? "", sequence };
     case "reasoning":
     case "thinking":
-      return { kind: "thinking", thinking: event.content ?? "", sequence };
+      return { kind: "thinking", thinking: evt.content ?? "", sequence };
     case "tool_use":
       return {
         kind: "tool_call",
-        id: event.id ?? "",
-        name: event.name ?? "",
-        input: event.input,
+        id: evt.id ?? "",
+        name: evt.name ?? "",
+        input: evt.input,
         sequence,
       };
     case "tool_result":
-      return { kind: "tool_result", id: event.id ?? "", output: event.output, sequence };
+      return { kind: "tool_result", id: evt.id ?? "", output: evt.output, sequence };
     case "done":
     case "completion":
-      return { kind: "done", finishReason: event.finishReason ?? "stop", sequence };
+      return { kind: "done", finishReason: evt.finishReason ?? "stop", sequence };
     default:
       return null;
   }

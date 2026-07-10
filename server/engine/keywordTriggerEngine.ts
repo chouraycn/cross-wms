@@ -19,7 +19,7 @@
 
 import { logger } from '../logger.js';
 import { skillRegistry } from './skillRegistry.js';
-import { skillDiscovery } from './skillDiscovery.js';
+import { SkillDiscovery } from './skillDiscovery.js';
 import type { RegisteredSkill } from '../types/skill-runtime.js';
 
 // ===================== 类型定义 =====================
@@ -141,7 +141,7 @@ export class KeywordTriggerEngine {
     this.keywordIndex.clear();
     this.skillRules.clear();
 
-    const skills = skillRegistry.listSkills();
+    const skills = skillRegistry.getAllSkills();
     for (const skill of skills) {
       const rule = this.extractTriggerRule(skill);
       if (rule && rule.keywords.length > 0) {
@@ -492,4 +492,3 @@ export function initKeywordTriggerEngine(config?: Partial<KeywordTriggerConfig>)
   KEYWORD_TRIGGER_ENGINE_INSTANCE.initialize();
 }
 
-export type { KeywordTriggerEngine };

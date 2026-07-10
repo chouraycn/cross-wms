@@ -1,3 +1,4 @@
+import type Database from 'better-sqlite3';
 import { DatabaseManager } from '../../storage/databaseManager.js';
 import { logger } from '../../logger.js';
 

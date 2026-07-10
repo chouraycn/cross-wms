@@ -157,6 +157,7 @@ export async function runChatSession(
     sessionId,
     userId: input.userId,
     agentId: input.agentId,
+    message,
   });
   if (keywordMatches.length > 0) {
     for (const match of keywordMatches) {

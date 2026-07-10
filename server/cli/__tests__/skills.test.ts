@@ -25,7 +25,6 @@ let stdoutWrite: typeof process.stdout.write;
 beforeEach(() => {
   outputs = [];
   stdoutWrite = process.stdout.write.bind(process.stdout);
-  // @ts-expect-error mock
   process.stdout.write = (chunk: string) => {
     outputs.push(chunk);
     return true;

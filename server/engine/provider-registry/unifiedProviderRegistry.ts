@@ -363,6 +363,8 @@ export class UnifiedProviderRegistry {
         'openai-completions': 0,
         'anthropic-messages': 0,
         'google-generative-ai': 0,
+        'qwen-chat': 0,
+        'moonshot-chat': 0,
       },
       byCategory: {},
       totalInvokes: 0,

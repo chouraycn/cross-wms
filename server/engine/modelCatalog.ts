@@ -20,7 +20,7 @@ import type { ModelProvider, ModelCapability, ModelApiType } from '../../shared/
 export type AuthType = 'api-key' | 'x-api-key' | 'bearer' | 'oauth' | 'none';
 
 /** 提供商分类 */
-export type ProviderCategory = 'cloud' | 'local' | 'llm' | 'multimodal' | 'reasoning' | 'chinese' | 'international' | 'fast' | 'longContext';
+export type ProviderCategory = 'cloud' | 'local' | 'llm' | 'multimodal' | 'reasoning' | 'chinese' | 'international' | 'fast' | 'longContext' | 'proxy' | 'search';
 
 /** 思考/推理模式级别 */
 export interface ThinkingLevel {
@@ -84,6 +84,10 @@ export interface ModelInfo {
   supportsStreaming?: boolean;
   /** 是否支持函数调用 */
   supportsFunctionCall?: boolean;
+  /** 是否支持视觉输入 */
+  supportsVision?: boolean;
+  /** 基础模型名称 */
+  baseModel?: string;
   /** 模型别名（用于 API 兼容映射） */
   aliases?: string[];
 }
@@ -114,6 +118,8 @@ export interface ProviderInfo {
   id: ModelProvider;
   /** 提供商显示名称 */
   name: string;
+  /** 提供商标签（简短描述） */
+  label?: string;
   /** API Base URL */
   baseUrl: string;
   /** 认证方式 */
@@ -136,6 +142,10 @@ export interface ProviderInfo {
   icon?: string;
   /** 官网链接 */
   website?: string;
+  /** 所需环境变量 */
+  envVars?: string[];
+  /** 支持的 API 类型 */
+  supportedApiTypes?: string[];
 }
 
 /** 模型目录索引 */

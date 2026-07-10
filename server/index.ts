@@ -14,6 +14,7 @@ import { setServerPort } from './config/serverConfig.js';
 import { API_PREFIX } from './apiVersion.js';
 import { apiVersionMiddleware } from './middleware/apiVersionMiddleware.js';
 import { initDb, getDb } from './db.js';
+import { ensureWmsTables } from './dao/wmsSkillDao.js';
 import skillWatcher from './services/skillWatcher.js';
 import { initDefaultTools, listTools } from './engine/toolRegistry.js';
 import { agentRegistry } from './engine/agentRegistry.js';

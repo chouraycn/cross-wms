@@ -25,6 +25,7 @@ const mockModels = {
     models: [{ id: 'gpt-4', provider: 'openai', apiEndpoint: 'https://api.openai.com', apiKey: 'sk-test', temperature: 0.7, maxTokens: 4096 }],
     defaultModelId: 'gpt-4',
   }),
+  isLocalModel: vi.fn().mockReturnValue(false),
 };
 
 const mockAiClient = {

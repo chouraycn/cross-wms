@@ -106,10 +106,14 @@ export interface ModelCallConfig {
 /** Tool 定义（OpenAI 格式） */
 export interface ToolDefinition {
   type: 'function';
+  /** 工具名称（便捷访问，等价于 function.name） */
+  name?: string;
   function: {
     name: string;
     description: string;
     parameters: Record<string, unknown>;
+    /** Anthropic cache_control 标记 */
+    cache_control?: { type: 'ephemeral' };
   };
 }
 

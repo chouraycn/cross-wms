@@ -36,7 +36,8 @@ class FrozenTime {
     } as unknown as typeof Date;
 
     Object.setPrototypeOf(FrozenDate, this.originalDate);
-    FrozenDate.prototype = this.originalDate.prototype;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (FrozenDate as any).prototype = this.originalDate.prototype;
     FrozenDate.now = () => {
       const current = _this.frozenMs;
       if (_this.shouldAdvance) {

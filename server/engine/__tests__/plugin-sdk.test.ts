@@ -101,12 +101,12 @@ describe('Plugin SDK', () => {
             apiKey: { type: 'string', description: 'API Key' },
           },
           required: ['apiKey'],
-        },
+        } as any,
         register: () => {},
       });
 
-      expect(plugin.configSchema.properties).toHaveProperty('apiKey');
-      expect(plugin.configSchema.required).toContain('apiKey');
+      expect((plugin.configSchema as any).properties).toHaveProperty('apiKey');
+      expect((plugin.configSchema as any).required).toContain('apiKey');
     });
 
     it('应支持 setup 钩子', () => {

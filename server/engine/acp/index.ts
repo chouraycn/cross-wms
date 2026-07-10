@@ -375,7 +375,7 @@ export type {
 
 // Runtime
 export { isAcpRuntimeSpawnAvailable } from "./runtimeAvailability.js";
-export { AcpRuntimeError, AcpSessionError, AcpBackendError } from "./runtimeErrors.js";
+export { AcpSessionError, AcpBackendError } from "./runtimeErrors.js";
 export {
   readAcpSessionMeta,
   writeAcpSessionMeta,
@@ -386,7 +386,6 @@ export {
 export type {
   SessionAcpIdentity,
   AcpSessionRuntimeOptions,
-  SessionAcpMeta,
   AcpSessionStoreEntry,
 } from "./runtimeSessionMeta.js";
 

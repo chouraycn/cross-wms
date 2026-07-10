@@ -306,7 +306,7 @@ export function scanPolicyChannels(cfg: Record<string, unknown>): readonly Polic
         source: `oc://openclaw.config/channels/${id}`,
       };
       if (isRecord(value) && typeof value.enabled === "boolean") {
-        entry.enabled = value.enabled;
+        (entry as { enabled: boolean }).enabled = value.enabled;
       }
       return entry;
     });
@@ -327,10 +327,10 @@ export function scanPolicyMcpServers(
       };
       if (isRecord(value)) {
         if (typeof value.command === "string") {
-          entry.command = value.command;
+          (entry as { command: string }).command = value.command;
         }
         if (typeof value.url === "string") {
-          entry.url = value.url;
+          (entry as { url: string }).url = value.url;
         }
       }
       return entry;

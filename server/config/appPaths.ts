@@ -58,6 +58,7 @@ const rootDir: string = resolveRootDir();
 export const AppPaths = {
   rootDir,
   dataDir: path.join(rootDir, 'data'),
+  userDataDir: path.join(rootDir, 'user-data'),
   sessionsDir: path.join(rootDir, 'sessions'),
   archivedSessionsDir: path.join(rootDir, 'sessions-archived'),
   memoryDir: path.join(rootDir, 'memory'),

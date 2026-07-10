@@ -46,10 +46,12 @@ export type ModelApiType =
   | 'openai-chat'
   | 'openai-completions'
   | 'anthropic-messages'
-  | 'google-generative-ai';
+  | 'google-generative-ai'
+  | 'qwen-chat'
+  | 'moonshot-chat';
 
 /** 模型能力标签 */
-export type ModelCapability = 'code' | 'longContext' | 'reasoning' | 'multimodal' | 'fast' | 'costEffective' | 'general';
+export type ModelCapability = 'code' | 'longContext' | 'reasoning' | 'multimodal' | 'fast' | 'costEffective' | 'general' | 'search' | 'proxy';
 
 /** 能力标签中文映射 */
 export const CAPABILITY_LABELS: Record<ModelCapability, string> = {
@@ -60,6 +62,8 @@ export const CAPABILITY_LABELS: Record<ModelCapability, string> = {
   fast: '快速',
   costEffective: '低成本',
   general: '通用',
+  search: '搜索',
+  proxy: '代理',
 };
 
 /** 能力标签颜色映射 */
@@ -71,6 +75,8 @@ export const CAPABILITY_COLORS: Record<ModelCapability, string> = {
   fast: '#10B981',
   costEffective: '#06B6D4',
   general: '#6B7280',
+  search: '#8B5CF6',
+  proxy: '#6366F1',
 };
 
 /** 多 Key 配置项 */
@@ -309,4 +315,14 @@ export interface ModelTemplate {
   description: string;
   models: Omit<ModelConfig, 'apiKey'>[];
   defaultModelId: string;
+}
+
+/** models.json 文件结构 */
+export interface ModelsFile {
+  version: number;
+  /** Provider 配置列表（v2 新增，Provider 级共享配置） */
+  providers?: ProviderConfig[];
+  models: ModelConfig[];
+  defaultModelId: string;
+  updatedAt: string;
 }

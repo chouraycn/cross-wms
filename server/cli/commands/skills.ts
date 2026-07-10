@@ -20,12 +20,9 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import yaml from "js-yaml";
-import { fileURLToPath } from "node:url";
 import { remoteSkillLoader, type RemoteSkillSource } from "../../engine/remoteSkillLoader.js";
 
-// ESM 环境下 __dirname 不可用，按项目约定用 import.meta.url 推导
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// CommonJS 环境下 __dirname 原生可用
 
 export type SkillsOptions = {
   json?: boolean;

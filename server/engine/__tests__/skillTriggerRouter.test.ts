@@ -5,7 +5,7 @@ import {
 } from '../skillTriggerRouter.js';
 import type { RegisteredSkill } from '../../types/skill-runtime.js';
 
-function makeSkill(id: string, triggers: string[], status: RegisteredSkill['status'] = 'enabled'): RegisteredSkill {
+function makeSkill(id: string, triggers: string[], status: RegisteredSkill['status'] = 'active'): RegisteredSkill {
   return {
     status,
     definition: { id, triggers },

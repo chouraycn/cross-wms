@@ -39,7 +39,9 @@ export interface PluginMetadata {
 
 /** 插件配置项定义 */
 export interface PluginConfigSchema {
-  [key: string]: PluginConfigItem;
+  properties?: Record<string, unknown>;
+  required?: string[];
+  [key: string]: unknown;
 }
 
 /** 单个配置项定义 */

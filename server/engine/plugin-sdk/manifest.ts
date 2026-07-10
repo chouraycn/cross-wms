@@ -76,7 +76,7 @@ export function validateManifest(raw: unknown): PluginManifestValidationResult {
   const warnings: string[] = [];
 
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    return { valid: false, errors: ['Manifest must be an object'] };
+    return { valid: false, errors: ['Manifest must be an object'], warnings: [] };
   }
 
   const manifest = raw as PluginManifest;

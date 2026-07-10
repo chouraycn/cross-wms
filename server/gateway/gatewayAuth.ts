@@ -59,6 +59,8 @@ export interface AuthResult {
   rateLimitRemaining?: number;
 }
 
+export type GatewayAuthResult = AuthResult;
+
 export async function authenticateRequest(req: Request): Promise<AuthResult> {
   const clientIp = getClientIp(req);
 

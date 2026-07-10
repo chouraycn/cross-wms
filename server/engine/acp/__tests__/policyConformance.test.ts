@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { Mock } from "vitest";
 import { buildPolicyConformanceReport, POLICY_CONFORMANCE_CHECK_IDS } from "../policyConformance.js";
 import { promises as fs } from "node:fs";
 
@@ -19,10 +20,10 @@ describe("PolicyConformance", () => {
 
   describe("buildPolicyConformanceReport", () => {
     it("should return ok report when policies match", async () => {
-      (fs.readFile as vi.Mock).mockResolvedValueOnce(JSON.stringify({
+      (fs.readFile as Mock).mockResolvedValueOnce(JSON.stringify({
         rules: [{ id: "rule1", level: "deny", conditions: [], priority: 1 }],
       }));
-      (fs.readFile as vi.Mock).mockResolvedValueOnce(JSON.stringify({
+      (fs.readFile as Mock).mockResolvedValueOnce(JSON.stringify({
         rules: [{ id: "rule1", level: "deny", conditions: [], priority: 1 }],
       }));
 
@@ -36,10 +37,10 @@ describe("PolicyConformance", () => {
     });
 
     it("should return missing finding when policy is missing rule", async () => {
-      (fs.readFile as vi.Mock).mockResolvedValueOnce(JSON.stringify({
+      (fs.readFile as Mock).mockResolvedValueOnce(JSON.stringify({
         rules: [{ id: "rule1", level: "deny", conditions: [], priority: 1 }],
       }));
-      (fs.readFile as vi.Mock).mockResolvedValueOnce(JSON.stringify({
+      (fs.readFile as Mock).mockResolvedValueOnce(JSON.stringify({
         rules: [],
       }));
 
@@ -53,10 +54,10 @@ describe("PolicyConformance", () => {
     });
 
     it("should return weaker finding when policy rule is weaker", async () => {
-      (fs.readFile as vi.Mock).mockResolvedValueOnce(JSON.stringify({
+      (fs.readFile as Mock).mockResolvedValueOnce(JSON.stringify({
         rules: [{ id: "rule1", level: "deny", conditions: [], priority: 1 }],
       }));
-      (fs.readFile as vi.Mock).mockResolvedValueOnce(JSON.stringify({
+      (fs.readFile as Mock).mockResolvedValueOnce(JSON.stringify({
         rules: [{ id: "rule1", level: "allow", conditions: [], priority: 1 }],
       }));
 
@@ -70,7 +71,7 @@ describe("PolicyConformance", () => {
     });
 
     it("should return invalid finding when file cannot be read", async () => {
-      (fs.readFile as vi.Mock).mockRejectedValueOnce(new Error("file not found"));
+      (fs.readFile as Mock).mockRejectedValueOnce(new Error("file not found"));
 
       const report = await buildPolicyConformanceReport({
         baselinePath: "/tmp/baseline.json",
@@ -82,7 +83,7 @@ describe("PolicyConformance", () => {
     });
 
     it("should return invalid finding when file has invalid JSON", async () => {
-      (fs.readFile as vi.Mock).mockResolvedValueOnce("invalid json");
+      (fs.readFile as Mock).mockResolvedValueOnce("invalid json");
 
       const report = await buildPolicyConformanceReport({
         baselinePath: "/tmp/baseline.json",
@@ -94,10 +95,10 @@ describe("PolicyConformance", () => {
     });
 
     it("should pass when policy is stricter than baseline", async () => {
-      (fs.readFile as vi.Mock).mockResolvedValueOnce(JSON.stringify({
+      (fs.readFile as Mock).mockResolvedValueOnce(JSON.stringify({
         rules: [{ id: "rule1", level: "prompt", conditions: [], priority: 1 }],
       }));
-      (fs.readFile as vi.Mock).mockResolvedValueOnce(JSON.stringify({
+      (fs.readFile as Mock).mockResolvedValueOnce(JSON.stringify({
         rules: [{ id: "rule1", level: "deny", conditions: [], priority: 1 }],
       }));
 
