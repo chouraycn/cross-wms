@@ -832,6 +832,27 @@ export function useAgentChat(
               return newMessages;
             });
           }
+
+          // 读取自动路由透明度：autoReason / autoReasonType / 语义融合方法 / 置信度
+          // 主聊天路径此前漏读这些字段（BotMessageContent 有渲染但从未填充），本次补齐
+          if (data.autoReason || data.autoReasonType || data.autoSemanticMethod || typeof data.autoSemanticConfidence === 'number') {
+            setMessages((prev) => {
+              const idx = blockStateRef.current.assistantMessageIndex;
+              if (idx < 0 || idx >= prev.length) return prev;
+              const msg = prev[idx];
+              if (msg.role !== 'assistant') return prev;
+              const updated: Message = {
+                ...msg,
+                ...(data.autoReason ? { autoReason: data.autoReason as string } : {}),
+                ...(data.autoReasonType ? { autoReasonType: data.autoReasonType as Message['autoReasonType'] } : {}),
+                ...(data.autoSemanticMethod ? { autoSemanticMethod: data.autoSemanticMethod as string } : {}),
+                ...(typeof data.autoSemanticConfidence === 'number' ? { autoSemanticConfidence: data.autoSemanticConfidence } : {}),
+              };
+              const newMessages = [...prev];
+              newMessages[idx] = updated;
+              return newMessages;
+            });
+          }
         } else if (phase === 'done') {
           flushAllBuffers();
           textCoalescerRef.current?.dispose();
@@ -853,7 +874,7 @@ export function useAgentChat(
                 usage: data.usage as Record<string, unknown> | undefined,
                 // 读取降级信息：fallbackModel / fallbackReason
                 ...(data.fallbackModel ? { fallbackModel: data.fallbackModel as string } : {}),
-                ...(data.fallbackReason ? { fallbackReason: data.fallbackReason as 'model_not_supported' | 'request_failed' } : {}),
+                ...(data.fallbackReason ? { fallbackReason: data.fallbackReason as 'key_rotation' | 'model_downgrade' | 'model_not_supported' | 'request_failed' } : {}),
               };
 
               const newMessages = [...prev];
@@ -874,7 +895,7 @@ export function useAgentChat(
               thinkingDone: true,
               isStreaming: false,
               ...(data.fallbackModel ? { fallbackModel: data.fallbackModel as string } : {}),
-              ...(data.fallbackReason ? { fallbackReason: data.fallbackReason as 'model_not_supported' | 'request_failed' } : {}),
+              ...(data.fallbackReason ? { fallbackReason: data.fallbackReason as 'key_rotation' | 'model_downgrade' | 'model_not_supported' | 'request_failed' } : {}),
               ...(fallbackContent ? { error: fallbackContent } : {}),
             };
             setMessages((prev) => [...prev, newMsg]);

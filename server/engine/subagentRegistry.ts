@@ -1,4 +1,8 @@
 /**
+ * @deprecated v9.1 — 休眠原型：`spawn()` 仅用 `setTimeout(100ms)` 模拟启动，无真实执行后端，
+ * 且全仓无外部调用者。子代理能力已统一收敛到 `agentOrchestrator.ts` 的 `spawnSubAgent()`，
+ * 运行时实例表见 `agentRegistry.ts`。保留本模块仅为避免破坏既有测试，请勿在新代码中引用。
+ *
  * Subagent Registry
  * 子代理注册和管理系统
  */
@@ -6,6 +10,11 @@
 import type { ToolDefinition } from '../aiClient.js';
 import { mcpClientManager } from './mcpClientManager.js';
 import { parseMcpToolName, sanitizeServerName } from './mcpTypes.js';
+import { logger } from '../logger.js';
+
+// v9.1: 废弃警告（仅打印一次）
+logger.warn('[deprecated] subagentRegistry 已废弃，请改用 AgentOrchestrator.spawnSubAgent + AgentRegistry');
+
 
 export type SubagentStatus = "idle" | "spawning" | "running" | "paused" | "completed" | "failed" | "cancelled";
 

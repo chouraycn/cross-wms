@@ -20,6 +20,7 @@ import { CircuitBreaker } from './circuitBreaker.js';
 import { getMergedStrategyPreferences } from './soulLoader.js';
 import { AgentOrchestrator } from './agentOrchestrator.js';
 import { type ToolProfileId } from './toolProfiles.js';
+import { assessComplexity } from './contextEnhancer.js';
 import { logger } from '../logger.js';
 
 // ===================== 执行模式枚举 =====================
@@ -32,6 +33,8 @@ export enum ExecutionMode {
   REACT = 'react',
   /** 多 Agent 编排模式：任务拆分 + Agent 分配 + 并行执行 + 结果合成 */
   AGENT = 'agent',
+  /** 自动模式：由复杂度评估（assessComplexity）在运行时推导实际策略 */
+  AUTO = 'auto',
 }
 
 // ===================== 策略选项 =====================
@@ -57,6 +60,8 @@ export interface ExecutionStrategyOptions extends ToolExecutorOptions {
     thresholdRatio?: number;
     preserveRecent?: number;
   };
+  /** v9.1 [五]: 规划模式 — off=不规划；static=生成计划作导航但不重规划；dynamic=循环失败时反思式重规划 */
+  planningMode?: 'off' | 'static' | 'dynamic';
 }
 
 // ===================== 策略接口 =====================
@@ -122,7 +127,8 @@ export class ReactStrategy implements IExecutionStrategy {
       mergedBudgetConfig,
     );
     try {
-      const result = await executor.execute(options);
+      // v9.1 [五]: 重新接入 Planner — 默认开启动态规划（assessTrigger 门控，简单任务不额外耗 token）
+      const result = await executor.execute({ ...options, planningMode: 'dynamic' });
       return {
         content: result.content,
         toolCalls: result.toolCalls,
@@ -208,18 +214,67 @@ export class ExecutionStrategyFactory {
         return new ReactStrategy();
       case ExecutionMode.AGENT:
         return new AgentStrategy();
+      case ExecutionMode.AUTO:
+        // AUTO 应在调用前被 resolveAutoMode 解析为具体策略；兜底用 REACT
+        return new ReactStrategy();
       default:
         return new ReactStrategy();
     }
   }
 
   /**
+   * v9.1: 将 contextEnhancer.assessComplexity 返回的 recommendedMode（旧命名）
+   * 映射到真实的 ExecutionMode 枚举。
+   *
+   * 旧命名 → 真实策略：
+   * - observer / simple  → LEGACY（轻量，无反思）
+   * - planner  / moderate→ REACT（含 Planner + Observer 的完整循环）
+   * - react    / complex → AGENT（多 Agent 编排，复杂任务）
+   */
+  static mapRecommendedMode(recommended: string): ExecutionMode {
+    switch (recommended) {
+      case 'observer':
+      case 'simple':
+        return ExecutionMode.LEGACY;
+      case 'planner':
+      case 'moderate':
+        return ExecutionMode.REACT;
+      case 'react':
+      case 'complex':
+      default:
+        return ExecutionMode.AGENT;
+    }
+  }
+
+  /**
+   * v9.1: 自动模式解析 — 基于规则复杂度评估同步推导实际策略。
+   *
+   * 不调用 LLM，仅在请求入口做一次本地评估，保持流式首字延迟。
+   * assessComplexity 为纯本地计算（复用 contextEnhancer 实现，避免循环依赖
+   * 在此处内联轻量判断以保单一真相源）。
+   */
+  static resolveAutoMode(
+    messages: Array<{ role: string; content: unknown }>,
+    userMessage: string,
+  ): ExecutionMode {
+    try {
+      const result = assessComplexity(
+        messages as Parameters<typeof assessComplexity>[0],
+        userMessage,
+      );
+      return ExecutionStrategyFactory.mapRecommendedMode(result.recommendedMode);
+    } catch {
+      return ExecutionStrategyFactory.getDefaultMode();
+    }
+  }
+
+  /**
    * 获取默认执行模式。
-   * v3.0.0: 默认使用 REACT（更智能），简单任务由内部复杂度评估自动降级。
-   * AGENT 模式需显式指定或由 chatService 根据任务复杂度自动选择。
+   * v9.1: 默认 AUTO（自动调度）— 由复杂度评估在请求入口同步推导实际策略
+   * （LEGACY/REACT/AGENT），无需前端显式指定。显式模式优先级最高。
    */
   static getDefaultMode(): ExecutionMode {
-    return ExecutionMode.REACT;
+    return ExecutionMode.AUTO;
   }
 
   /**

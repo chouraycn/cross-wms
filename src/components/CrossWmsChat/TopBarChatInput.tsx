@@ -133,14 +133,12 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const recognitionRef = useRef<any>(null);
 
   const handleVoiceInput = useCallback(() => {
-    // 停止录音
     if (isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
       return;
     }
 
-    // 优先使用浏览器原生 SpeechRecognition
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       showToast('当前浏览器不支持语音识别，请使用 Chrome', 'error', 3000);
@@ -153,6 +151,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     recognition.interimResults = true;
 
     let finalText = '';
+    const initialText = editableRef.current?.innerText || '';
 
     recognition.onresult = (event: any) => {
       let interim = '';
@@ -164,13 +163,10 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           interim += transcript;
         }
       }
-      // 实时显示识别中的文字到输入框
-      const currentText = editableRef.current?.innerText || '';
-      const baseText = finalText ? currentText.replace(/\s*…\s*$/, '') : currentText;
-      const displayText = (baseText + finalText.replace(baseText, '') + interim).trim();
       if (editableRef.current) {
-        editableRef.current.innerText = displayText + (interim ? '…' : '');
-        setInputValue(displayText);
+        const displayText = initialText + finalText + (interim ? '…' : '');
+        editableRef.current.innerText = displayText;
+        setInputValue(initialText + finalText);
       }
     };
 
@@ -187,15 +183,23 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
 
     recognition.onend = () => {
       setIsRecording(false);
-      // 确保最终文字写入输入框
-      if (finalText && editableRef.current) {
-        const existing = editableRef.current.innerText.replace(/…$/, '').trim();
-        const combined = (existing + finalText).trim();
+      if (editableRef.current) {
+        const combined = initialText + finalText;
         editableRef.current.innerText = combined;
         setInputValue(combined);
+
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(editableRef.current);
+        range.collapse(false);
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+
         handleInputChangeRef.current();
       }
-      showToast('语音输入完成', 'success', 1500);
+      if (finalText) {
+        showToast('语音输入完成', 'success', 1500);
+      }
     };
 
     recognitionRef.current = recognition;
@@ -1010,11 +1014,12 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                   sx={{
                     width: 40,
                     height: 40,
-                    borderRadius: '50%',
+                    borderRadius: '6px',
                     overflow: 'hidden',
                     flexShrink: 0,
                     border: '1px solid',
                     borderColor: gs.border,
+                    bgcolor: isDark ? '#0F172A' : '#F1F5F9',
                   }}
                 >
                   <img
@@ -1024,8 +1029,8 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                   />
                 </Box>
               ) : (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '6px', bgcolor: getFileTypeColor(att.mimeType, att.fileName) + '18', flexShrink: 0 }}>
-                  {React.createElement(getFileTypeIconPreview(att.mimeType, att.fileName), { sx: { fontSize: 18, color: getFileTypeColor(att.mimeType, att.fileName) } })}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: '6px', bgcolor: getFileTypeColor(att.mimeType, att.fileName) + '18', flexShrink: 0 }}>
+                  {React.createElement(getFileTypeIconPreview(att.mimeType, att.fileName), { sx: { fontSize: 22, color: getFileTypeColor(att.mimeType, att.fileName) } })}
                 </Box>
               )}
                 <Box sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
@@ -1069,50 +1074,6 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             )}
           </Box>
         )}
-        {/* Markdown toolbar */}
-        <Box sx={{ px: 1.5, py: 0.5, bgcolor: gs.bgPanel, borderBottom: `1px solid ${gs.border}`, display: 'flex', alignItems: 'center', gap: 0.25, flexWrap: 'wrap' }}>
-          {[
-            { icon: 'bold', label: '加粗', markdown: '**', title: 'Ctrl+B' },
-            { icon: 'italic', label: '斜体', markdown: '*', title: 'Ctrl+I' },
-            { icon: 'code', label: '代码', markdown: '`', title: 'Ctrl+`' },
-            { icon: 'link', label: '链接', markdown: '[', suffix: '](url)', title: 'Ctrl+K' },
-            { icon: 'list', label: '列表', markdown: '\n- ', title: 'Ctrl+L' },
-            { icon: 'quote', label: '引用', markdown: '> ', title: 'Ctrl+Q' },
-            { icon: 'head', label: '标题', markdown: '# ', title: 'Ctrl+H' },
-          ].map((tool) => (
-            <Tooltip key={tool.icon} title={`${tool.label} ${tool.title}`}>
-              <IconButton
-                size="small"
-                onClick={() => {
-                  if (!editableRef.current) return;
-                  const sel = window.getSelection();
-                  if (!sel || sel.isCollapsed) {
-                    insertTextAtCursor(tool.markdown + (tool.suffix || ''));
-                  } else {
-                    const selectedText = sel.toString();
-                    insertTextAtCursor(tool.markdown + selectedText + tool.markdown);
-                  }
-                }}
-                sx={{
-                  color: gs.textDisabled,
-                  '&:hover': { color: gs.textPrimary, bgcolor: gs.bgHover },
-                  borderRadius: '4px',
-                  p: 0.5,
-                  minWidth: 28,
-                  height: 28,
-                }}
-              >
-                {tool.icon === 'bold' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H10"/><path d="M6 12h8a4 4 0 014 4 4 4 0 01-4 4H6"/></svg>}
-                {tool.icon === 'italic' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h6v16H6"/><path d="M14 4l6 16"/></svg>}
-                {tool.icon === 'code' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>}
-                {tool.icon === 'link' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>}
-                {tool.icon === 'list' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>}
-                {tool.icon === 'quote' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 16V8a2 2 0 00-2-2H5"/><path d="M14 16h6a2 2 0 002-2v-3.5"/><path d="M6 16h6a2 2 0 012 2v3.5"/></svg>}
-                {tool.icon === 'head' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8h-6a2 2 0 00-2 2v12a2 2 0 002 2h6a2 2 0 002-2V10a2 2 0 00-2-2"/><path d="M12 16v-6"/><path d="M19 13h-6"/></svg>}
-              </IconButton>
-            </Tooltip>
-          ))}
-        </Box>
         {/* Input area */}
         <Box
           onClick={handleInputClick}
@@ -1144,30 +1105,36 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             {/* Selected skill tag inside input */}
             {selectedSkill && (
               <Chip
-                icon={<Box component="span" sx={{ display: 'flex', alignItems: 'center', ml: '2px' }}>{ICON_MAP[selectedSkill.icon] || <AutoFixHighIcon sx={{ fontSize: 12 }} />}</Box>}
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                    <span>{selectedSkill.name}</span>
-                    {selectedSkill.promptTemplate && (
-                      <Typography component="span" sx={{ fontSize: 8, color: '#7C3AED', fontWeight: 600, bgcolor: '#FAF5FF', px: 0.3, borderRadius: 0.3 }}>
-                        AI
-                      </Typography>
-                    )}
+                icon={
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#000',
+                      '& .MuiSvgIcon-root': { fontSize: '12px' },
+                    }}
+                  >
+                    {ICON_MAP[selectedSkill.icon] || <AutoFixHighIcon sx={{ fontSize: 12 }} />}
                   </Box>
                 }
+                label={selectedSkill.name}
                 onDelete={() => { setSelectedSkill(null); }}
                 size="small"
                 sx={{
                   height: 24,
-                  fontSize: 11,
+                  fontSize: 12,
                   bgcolor: '#E0EBFF',
-                  border: '1px solid #7BA4FF',
-                  color: '#1E40AF',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#000',
                   fontWeight: 500,
-                  '& .MuiChip-label': { px: 0.75 },
-                  '& .MuiChip-deleteIcon': { fontSize: 14, color: '#60A5FA' },
+                  '& .MuiChip-label': { px: 1, py: 0 },
+                  '& .MuiChip-deleteIcon': { fontSize: 14, color: '#64748b', opacity: 0, transition: 'opacity 0.2s' },
+                  '&:hover .MuiChip-deleteIcon': { opacity: 1 },
                   flexShrink: 0,
-                  mt: inputExpanded ? 0.5 : 0,
+                  mt: inputExpanded ? '4px' : 0,
                 }}
               />
             )}
@@ -1178,16 +1145,17 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 <Typography
                   sx={{
                     position: 'absolute',
-                    top: 0,
+                    top: 3,
                     left: 0,
                     right: 0,
                     bottom: 0,
                     display: 'flex',
                     alignItems: 'flex-start',
-                    fontSize: 12,
+                    fontSize: 14,
                     color: gs.textMuted,
-                    lineHeight: 1.4,
+                    lineHeight: 1.5,
                     pointerEvents: 'none',
+                    pt: inputExpanded ? '3px' : 0,
                   }}
                 >
                   今天帮你做些什么？ <Box component="span" sx={{ color: gs.textDisabled, ml: 0.5 }}>@ 引用对话文件，/ 调用技能与指令</Box>
@@ -1219,8 +1187,8 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                   }
                 }}
                 style={{
-                  fontSize: 12,
-                  lineHeight: 1.4,
+                  fontSize: 14,
+                  lineHeight: 1.5,
                   minHeight: inputExpanded ? 60 : 28,
                   outline: 'none',
                   color: gs.textPrimary,
@@ -1228,6 +1196,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                   wordBreak: 'break-word',
                   whiteSpace: 'pre-wrap',
                   position: 'relative',
+                  paddingTop: inputExpanded ? '6px' : '3px',
                 }}
               />
             </Box>
@@ -1275,11 +1244,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             px: 2,
             py: 0.75,
             mt: isCardVariant ? 0 : -1,
-            bgcolor: isCardVariant
-              ? 'transparent'
-              : ((variant === 'cardless')
-                ? (isDark ? 'rgba(255,255,255,0.05)' : '#F0F0F0')
-                : (isDark ? 'rgba(0,0,0,0.2)' : '#F5F5F5')),
+            bgcolor: isCardVariant ? 'transparent' : gs.bgPage,
             borderBottomLeftRadius: isCardVariant ? '22px' : (variant === 'default' ? '12px' : 0),
             borderBottomRightRadius: isCardVariant ? '22px' : (variant === 'default' ? '12px' : 0),
             borderLeft: variant === 'default' && !isCardVariant ? `1px solid ${gs.border}` : 'none',

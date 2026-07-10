@@ -1,4 +1,7 @@
 /**
+ * @deprecated v9.1 — 本文件为休眠原型，已被 `agentOrchestrator.spawnSubAgent` + `agentRegistry`
+ * 的运行时实例表取代。请勿在新代码中引用，后续版本将移除。
+ *
  * Subagent Lifecycle - 子代理生命周期管理
  *
  * 管理子代理的上下文创建、复用和清理
@@ -6,6 +9,10 @@
  */
 
 import { logger } from '../logger.js';
+
+// v9.1: 废弃警告（仅打印一次）
+logger.warn('[deprecated] subagent-lifecycle 已废弃，请改用 AgentOrchestrator.spawnSubAgent + AgentRegistry 运行时实例表');
+
 
 /** 子代理模式 */
 export type SubagentMode = 'fork' | 'isolated';

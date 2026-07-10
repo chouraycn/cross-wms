@@ -622,14 +622,14 @@ server.listen(PORT, async () => {
     logger.warn('[Server] ACP ChatService runtime 注册失败（非阻塞）:', err instanceof Error ? err.message : String(err));
   });
 
-  // P0: 启动时异步预热 ONNX 模型，避免首次 chat 请求阻塞
-  import('./engine/onnxEmbedding.js').then(({ initOnnxEmbedding }) => {
-    initOnnxEmbedding().catch(err => {
-      logger.warn('[Server] ONNX 模型预热失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+  // P0: 启动时异步预热 ONNX 模型 + 语义路由意图锚点，避免首次 chat 请求阻塞
+  // 串联执行：先就绪 ONNX 会话，再预热意图锚点（Auto Model v2.0 意图维度的 embedding 分类用）。
+  // 两者均非阻塞、失败仅 warn，不影响核心启动流程。
+  import('./engine/onnxEmbedding.js').then(({ initOnnxEmbedding }) => initOnnxEmbedding())
+    .then(() => import('./routes/modelSelector.js').then(({ warmupIntentAnchors }) => warmupIntentAnchors()))
+    .catch(err => {
+      logger.warn('[Server] ONNX / 语义路由意图锚点预热失败（非阻塞）:', err instanceof Error ? err.message : String(err));
     });
-  }).catch(err => {
-    logger.warn('[Server] ONNX 模块加载失败（非阻塞）:', err instanceof Error ? err.message : String(err));
-  });
 
   // 绑定优雅关闭 — 在进程退出时停止引擎
   const gracefulShutdown = () => {

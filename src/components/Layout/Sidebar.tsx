@@ -7,19 +7,24 @@ import {
   useTheme,
   IconButton,
   Tooltip,
+  Divider,
 } from '@mui/material';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getGrayScale } from '../../constants/theme';
 import SidebarLogo from './SidebarLogo';
 import NavList from './NavList';
-import SettingsPopover from './SettingsPopover';
+import { SETTINGS_MENU } from './SettingsPopover';
+import type { MenuEntry } from './SettingsPopover';
+import { APP_VERSION } from './appVersion';
 const AISettingsDialog = React.lazy(() => import('./AISettingsDialog'));
 const ToolManagementDialog = React.lazy(() => import('./ToolManagementDialog'));
 import CommandPalette from './CommandPalette';
 import { isPyWebView } from '../../services/tencentDocsApi';
 import { useChatSidebar } from '../../contexts/ChatContext';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 import { isWKWebView, isMacOSApp } from '../../utils/env';
 
 // 检测是否为原生 App 模式（构建时 + 运行时双重检测）
@@ -110,8 +115,12 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
   const [aiDialogInitialTab, setAiDialogInitialTab] = useState<{ main: string; sub: string } | undefined>(undefined);
   const [toolManagementDialogOpen, setToolManagementDialogOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [expandedSettingsGroup, setExpandedSettingsGroup] = useState<string | null>(null);
   const settingsBtnRef = useRef<HTMLDivElement>(null);
   const searchBtnRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  const { settings, updateSettings } = useAppSettings();
 
   const [activeSessionId, setActiveSessionId] = useState('');
   // 点击「AI 对话」新建会话后，短暂忽略 chat-updated 事件，避免新会话 ID 覆盖清空状态
@@ -161,6 +170,22 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
   // v3.3: 每次渲染时动态检测，确保构建时标记或运行时注入都能被识别
   const nativeApp = isNativeApp();
 
+  // 点击侧边栏外部关闭设置面板
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 50);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [settingsOpen, setSettingsOpen]);
+
   // 新建对话
   const handleNewChat = useCallback(() => {
     window.dispatchEvent(new CustomEvent('cdf-know-clow-new-chat'));
@@ -193,8 +218,28 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
     loadSessionContext(sessionId);
   }, [loadSessionContext]);
 
+  // 设置菜单项点击处理
+  const handleSettingsLeafClick = useCallback((entry: MenuEntry) => {
+    if (entry.aiTab) {
+      setSettingsOpen(false);
+      setAiDialogInitialTab({ main: entry.aiTab.main, sub: entry.aiTab.sub });
+      setAiDialogOpen(true);
+    } else if (entry.dialog === 'tool') {
+      setSettingsOpen(false);
+      setToolManagementDialogOpen(true);
+    } else if (entry.dialog === 'model') {
+      setSettingsOpen(false);
+      setAiDialogInitialTab(undefined);
+      setAiDialogOpen(true);
+    } else if (entry.path) {
+      setSettingsOpen(false);
+      navigate(entry.path);
+    }
+  }, [navigate, setSettingsOpen]);
+
   return (
     <Box
+      ref={sidebarRef}
       sx={{
         width,
         height: 'calc(100vh - var(--pw-top, 0px))',
@@ -379,17 +424,176 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       {/* Logo — 原生 App 模式下单独显示（避让顶部按钮区域），网页端模式下已包含在 top bar 中 */}
       {nativeApp && !collapsed && <SidebarLogo collapsed={collapsed} />}
 
-      {/* Navigation list (含历史对话) */}
-      <Box sx={{ flex: 1, minHeight: 0, display: collapsed ? 'none' : 'block', overflow: 'hidden' }}>
-        <NavList
-          collapsed={collapsed}
-          activePath={activePath}
-          onNavigate={handleNavigate}
-          activeSessionId={activeSessionId}
-          onSelectSession={handleSelectSession}
-          onDeleteSession={handleDeleteSession}
-          onLoadSessionContext={handleLoadSessionContext}
-        />
+      {/* Navigation list (含历史对话) 或 设置面板 */}
+      <Box sx={{ flex: 1, minHeight: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {settingsOpen ? (
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              px: 1,
+              pt: 1,
+              pb: 1,
+            }}
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          >
+            {/* 设置面板卡片 */}
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                bgcolor: isDark ? '#1E1E1E' : '#FFFFFF',
+                borderRadius: '12px',
+                border: `1px solid ${gs.border}`,
+                boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.12)',
+              }}
+            >
+              {/* 设置面板标题栏 - logo + 标题 */}
+              <Box sx={{ px: 2.5, pt: 2, pb: 1.5, display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
+                <Box sx={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <g fill={gs.textPrimary}>
+                      <path d="M93.45,36.53l-11.5,16.57,10.03,14.41c2.25-5.4,3.5-11.32,3.5-17.53,0-4.68-.71-9.2-2.02-13.45Z" />
+                      <path d="M57.48,88.15c-2.65.57-5.4.88-8.23.88-6.04,0-11.77-1.37-16.88-3.83V18.56c0-2.38,1.47-4.54,3.71-5.34,4.11-1.47,8.55-2.28,13.17-2.28.91,0,1.81.03,2.71.1v44.36c0,2.49,3.21,3.5,4.64,1.45l26.5-38.08c-7.87-8.37-18.87-13.77-31.13-14.32v.03c-.9-.05-1.8-.08-2.71-.08C24.07,4.39,3.66,24.8,3.66,49.99s20.41,45.59,45.59,45.59c1.04,0,2.07-.04,3.09-.11l-.03.04c10.67-.56,20.36-4.8,27.85-11.46l-6.65-9.55c-1.56-2.25-4.89-2.25-6.46-.01l-9.57,13.65Z" />
+                    </g>
+                  </svg>
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: gs.textPrimary, lineHeight: 1.3 }}>CDF Know Claw</Typography>
+                  <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted }}>v{APP_VERSION}</Typography>
+                </Box>
+              </Box>
+              <Divider sx={{ mb: 1, flexShrink: 0 }} />
+              {/* 设置菜单内容 - 可滚动 */}
+              <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0, pl: '5px', pr: '5px', pb: 1 }}>
+                {SETTINGS_MENU.map((entry) => {
+                  const isAppearance = entry.appearanceInline === true;
+                  if (entry.children) {
+                    const expanded = expandedSettingsGroup === entry.key;
+                    const hasAiTab = !!entry.aiTab;
+                    return (
+                      <Box key={entry.key}>
+                        <Box
+                          sx={{
+                            display: 'flex', alignItems: 'center', gap: '7px', px: '13px', py: 1, borderRadius: '8px',
+                            '&:hover': { backgroundColor: gs.bgHover },
+                          }}
+                        >
+                          <Box
+                            sx={{ display: 'flex', alignItems: 'center', gap: '7px', flex: 1, minWidth: 0, cursor: 'pointer' }}
+                            onClick={() => { if (hasAiTab) handleSettingsLeafClick(entry); }}
+                          >
+                            <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center', minWidth: 20 }}>{entry.icon}</Box>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: gs.textPrimary }}>{entry.label}</Typography>
+                            </Box>
+                          </Box>
+                          <ExpandMoreIcon
+                            onClick={() => setExpandedSettingsGroup(expanded ? null : entry.key)}
+                            sx={{ fontSize: 18, color: gs.textMuted, transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s', cursor: 'pointer' }}
+                          />
+                        </Box>
+                        {expanded && entry.children.map((child) => {
+                          const childIsAppearance = child.appearanceInline === true;
+                          return (
+                            <Box
+                              key={child.key}
+                              onClick={() => { if (!childIsAppearance) handleSettingsLeafClick(child); }}
+                              sx={{
+                                display: 'flex', alignItems: 'center', gap: '7px',
+                                pl: '29px', pr: '13px', py: 0.75,
+                                cursor: childIsAppearance ? 'default' : 'pointer',
+                                borderRadius: '8px',
+                                '&:hover': { backgroundColor: childIsAppearance ? 'transparent' : gs.bgHover },
+                              }}
+                            >
+                              <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 20 }}>
+                                {child.icon}
+                              </Box>
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography sx={{ fontSize: '0.78rem', fontWeight: 500, color: gs.textPrimary }}>{child.label}</Typography>
+                              </Box>
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    );
+                  }
+                  return (
+                    <Box
+                      key={entry.key}
+                      onClick={() => { if (!isAppearance) handleSettingsLeafClick(entry); }}
+                      sx={{
+                        display: 'flex', alignItems: 'center', gap: '7px',
+                        px: '13px', py: 1,
+                        cursor: isAppearance ? 'default' : 'pointer',
+                        borderRadius: '8px',
+                        '&:hover': { backgroundColor: isAppearance ? 'transparent' : gs.bgHover },
+                      }}
+                    >
+                      <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 20 }}>
+                        {entry.icon}
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: '0.8125rem', fontWeight: 500, color: gs.textPrimary }}>{entry.label}</Typography>
+                      </Box>
+                      {isAppearance && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }} onClick={e => e.stopPropagation()}>
+                          <Box
+                            onClick={() => {
+                              const newMode = 'light' as const;
+                              updateSettings({ appearance: { ...settings.appearance, themeMode: newMode } });
+                            }}
+                            sx={{
+                              px: 1.5, py: 0.4, borderRadius: '12px 0 0 12px', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer',
+                              backgroundColor: settings.appearance.themeMode === 'light' ? gs.bgPanel : gs.bgHover,
+                              color: settings.appearance.themeMode === 'light' ? gs.textPrimary : gs.textDisabled,
+                              border: `1px solid ${gs.border}`, borderRight: 'none',
+                              boxShadow: settings.appearance.themeMode === 'light' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            浅色
+                          </Box>
+                          <Box
+                            onClick={() => {
+                              const newMode = 'dark' as const;
+                              updateSettings({ appearance: { ...settings.appearance, themeMode: newMode } });
+                            }}
+                            sx={{
+                              px: 1.5, py: 0.4, borderRadius: '0 12px 12px 0', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer',
+                              backgroundColor: settings.appearance.themeMode === 'dark' ? gs.bgPanel : gs.bgHover,
+                              color: settings.appearance.themeMode === 'dark' ? gs.textPrimary : gs.textDisabled,
+                              border: `1px solid ${gs.border}`, borderLeft: 'none',
+                              boxShadow: settings.appearance.themeMode === 'dark' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            深色
+                          </Box>
+                        </Box>
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Box>
+          </Box>
+        ) : (
+          <NavList
+            collapsed={collapsed}
+            activePath={activePath}
+            onNavigate={handleNavigate}
+            activeSessionId={activeSessionId}
+            onSelectSession={handleSelectSession}
+            onDeleteSession={handleDeleteSession}
+            onLoadSessionContext={handleLoadSessionContext}
+          />
+        )}
       </Box>
 
       {/* Bottom: Settings button */}
@@ -443,14 +647,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
             </Typography>
           </Box>
         </ListItemButton>
-        <SettingsPopover
-          open={settingsOpen}
-          onClose={() => setSettingsOpen(false)}
-          anchorEl={settingsBtnRef.current}
-          onOpenModelManagement={() => { setAiDialogInitialTab(undefined); setAiDialogOpen(true); }}
-          onOpenToolManagement={() => setToolManagementDialogOpen(true)}
-          onOpenAITab={(main, sub) => { setAiDialogInitialTab({ main, sub }); setAiDialogOpen(true); }}
-        />
         <Suspense fallback={null}>
           <AISettingsDialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} initialMainTab={aiDialogInitialTab?.main as any} initialSubTab={aiDialogInitialTab?.sub as any} />
           <ToolManagementDialog open={toolManagementDialogOpen} onClose={() => setToolManagementDialogOpen(false)} />

@@ -14,6 +14,8 @@
 
 import { loadModelsConfig, ModelsFile, isLocalModel } from '../modelsStore.js';
 import type { ModelCapability } from '../../shared/types/models.js';
+import { logger } from '../logger.js';
+import { generateBatchEmbeddings, generateEmbedding } from '../engine/embeddingProvider.js';
 
 // ===================== 类型定义 =====================
 
@@ -29,6 +31,8 @@ export interface AutoSelectResult {
   scores?: DimensionScores;
   /** 总评分（0~10） */
   totalScore?: number;
+  /** 语义意图分类结果（A/B 追踪用，未启用时为 undefined） */
+  semanticIntent?: SemanticIntentResult;
 }
 
 /** 5 大维度评分 */
@@ -37,12 +41,37 @@ export interface DimensionScores {
   media: number;
   /** 上下文 Token 长度评分（0~10）— 权重 30% */
   contextLength: number;
-  /** 关键词意图评分（0~10）— 权重 40% */
+  /** 意图评分（0~10）— 权重 40%，规则与语义融合后的最终值 */
   intent: number;
   /** 代码特征评分（0~10）— 权重 20% */
   code: number;
   /** 工具调用特征评分（0~10）— 额外加分 */
   toolCall: number;
+  // —— 可观测性字段（用于 A/B 追踪，不影响评分）——
+  /** 纯规则（关键词）意图分，未启用语义时为 undefined */
+  ruleIntent?: number;
+  /** 纯语义（embedding）意图分，未启用或降级时为 undefined */
+  semanticIntent?: number;
+  /** 语义分类置信度（0~1，简单/复杂分离度） */
+  semanticConfidence?: number;
+  /** 意图维度最终采用的判定方法 */
+  intentMethod?: 'rule' | 'semantic-blend' | 'rule-fallback';
+}
+
+/** 语义意图分类结果（可观测性 / 追踪用） */
+export interface SemanticIntentResult {
+  /** 语义意图评分（0~10），已映射到与规则维度同一量纲 */
+  score: number;
+  /** 置信度（0~1）：简单/复杂锚点分离度，越高越可信 */
+  confidence: number;
+  /** 判定方法：semantic=已用 embedding；rule-fallback=embedding 不可用回退关键词 */
+  method: 'semantic' | 'rule-fallback';
+  /** 最近简单锚点（调试用） */
+  nearestSimple?: { text: string; sim: number };
+  /** 最近复杂锚点（调试用） */
+  nearestComplex?: { text: string; sim: number };
+  /** 回退时的规则分 */
+  ruleScore?: number;
 }
 
 /** 模型路由配置 */
@@ -265,6 +294,179 @@ function scoreIntent(message: string): number {
   return 4;
 }
 
+// ===================== 语义意图分类（semantic-router，[六]） =====================
+//
+// 在 intent 维度（权重 40%）上，复用本地 ONNX all-MiniLM-L6-v2（384 维）做语义分类，
+// 弥补关键词规则的盲区（同义词、长难句、跨语言）。关键词规则作为兜底与融合基准。
+// 设计要点：
+//   1. 意图锚点库（simple / complex 各若干代表句），离线预计算质心并缓存。
+//   2. 用户消息 embedding 与两个质心求余弦相似度 → 映射到 0~10 分。
+//   3. 仅当「简单/复杂分离度（置信度）」足够高时，语义才主导融合；否则回退规则。
+//   4. embedding 不可用（离线/下载失败）时自动降级为纯关键词，绝不阻断选型。
+
+/** 简单意图锚点（轻量层：闲聊、短指令、事实查询） */
+const SIMPLE_INTENT_ANCHORS = [
+  '你好，在吗，请问你在吗',
+  '今天天气怎么样，明天会下雨吗',
+  '现在几点了，今天是星期几',
+  '谢谢你的帮助，非常感谢',
+  '这个单词是什么意思，什么是 API',
+  '帮我算一下十二加三十四等于多少',
+  '把这句话翻译成英文',
+  '查一下北京到上海的高铁时刻表',
+];
+
+/** 复杂意图锚点（强推理层：架构、分析、推导、多步骤、代码重构） */
+const COMPLEX_INTENT_ANCHORS = [
+  '请设计一套微服务的系统架构并说明组件划分',
+  '分析这段代码的性能瓶颈并给出优化方案',
+  '对比 React 和 Vue 的优缺点并给出选型建议',
+  '推导这个数学公式的严格证明过程',
+  '制定一个多步骤的部署流水线方案并评估风险',
+  '重构这个模块并评估对现有系统的影响范围',
+  '调试这个编译错误并给出完整的修复建议',
+  '生成一份完整的数据库迁移策略和回滚预案',
+];
+
+/** 锚点 embedding 缓存（质心 + 个体向量，用于最近邻调试） */
+interface AnchorCache {
+  simpleCentroid: Float32Array;
+  complexCentroid: Float32Array;
+  simpleVecs: Float32Array[];
+  complexVecs: Float32Array[];
+}
+
+let anchorCache: AnchorCache | null = null;
+let anchorInitPromise: Promise<AnchorCache> | null = null;
+
+/** 余弦相似度（向量不需要预归一化，函数内部处理） */
+function cosine(a: Float32Array, b: Float32Array): number {
+  let dot = 0;
+  let na = 0;
+  let nb = 0;
+  const len = Math.min(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    dot += a[i] * b[i];
+    na += a[i] * a[i];
+    nb += b[i] * b[i];
+  }
+  const denom = Math.sqrt(na) * Math.sqrt(nb);
+  return denom === 0 ? 0 : dot / denom;
+}
+
+/**
+ * 对一组向量取算术平均得到质心（此处不额外归一化）。
+ * 调用方 cosine() 内部已按模长归一，因此用非归一化质心计算余弦相似度在数学上等价。
+ */
+function averageVectors(vecs: Float32Array[]): Float32Array {
+  const dim = vecs[0]?.length ?? 0;
+  const acc = new Float32Array(dim);
+  for (const v of vecs) {
+    for (let i = 0; i < dim; i++) acc[i] += v[i];
+  }
+  if (dim > 0) {
+    for (let i = 0; i < dim; i++) acc[i] /= vecs.length;
+  }
+  return acc;
+}
+
+/** 在锚点集合中找到与消息最相似的锚点（调试用） */
+function nearestAnchor(messageEmb: Float32Array, vecs: Float32Array[], texts: string[]): { text: string; sim: number } {
+  let bestIdx = 0;
+  let bestSim = -Infinity;
+  for (let i = 0; i < vecs.length; i++) {
+    const sim = cosine(messageEmb, vecs[i]);
+    if (sim > bestSim) {
+      bestSim = sim;
+      bestIdx = i;
+    }
+  }
+  return { text: texts[bestIdx] ?? '', sim: bestSim };
+}
+
+/** 懒加载并缓存意图锚点 embedding（并发安全） */
+async function ensureAnchorCache(): Promise<AnchorCache> {
+  if (anchorCache) return anchorCache;
+  if (anchorInitPromise) return anchorInitPromise;
+
+  anchorInitPromise = (async (): Promise<AnchorCache> => {
+    const [simpleRes, complexRes] = await Promise.all([
+      generateBatchEmbeddings(SIMPLE_INTENT_ANCHORS, 'document'),
+      generateBatchEmbeddings(COMPLEX_INTENT_ANCHORS, 'document'),
+    ]);
+    const cache: AnchorCache = {
+      simpleCentroid: averageVectors(simpleRes.embeddings),
+      complexCentroid: averageVectors(complexRes.embeddings),
+      simpleVecs: simpleRes.embeddings,
+      complexVecs: complexRes.embeddings,
+    };
+    anchorCache = cache;
+    return cache;
+  })();
+
+  try {
+    return await anchorInitPromise;
+  } catch (e) {
+    anchorInitPromise = null;
+    throw e;
+  }
+}
+
+/**
+ * 语义意图分类：将用户消息映射为 0~10 的意图分（与规则维度同量纲）。
+ *
+ * 映射逻辑：score = 5 + 4 * (simComplex - simSimple)，范围 [1, 9]。
+ * - 强复杂、弱简单 → 高分（接近 9，强推理层）
+ * - 强简单、弱复杂 → 低分（接近 1，轻量层）
+ * - 两者接近 → 中性（约 5）
+ * 置信度 = |simComplex - simSimple| / 0.45（归一化到 0~1）。
+ *
+ * embedding 不可用时返回 method='rule-fallback'，直接复用关键词分，不阻断选型。
+ */
+export async function classifyIntentSemantic(message: string): Promise<SemanticIntentResult> {
+  const ruleScore = scoreIntent(message);
+  try {
+    const cache = await ensureAnchorCache();
+    const msgEmb = (await generateEmbedding(message, 'query')).embedding;
+    const simSimple = cosine(msgEmb, cache.simpleCentroid);
+    const simComplex = cosine(msgEmb, cache.complexCentroid);
+
+    const raw = 5 + 4 * (simComplex - simSimple);
+    const score = Math.max(1, Math.min(9, Math.round(raw * 10) / 10));
+    const separation = Math.abs(simComplex - simSimple);
+    const confidence = Math.max(0, Math.min(1, separation / 0.45));
+
+    return {
+      score,
+      confidence,
+      method: 'semantic',
+      nearestSimple: nearestAnchor(msgEmb, cache.simpleVecs, SIMPLE_INTENT_ANCHORS),
+      nearestComplex: nearestAnchor(msgEmb, cache.complexVecs, COMPLEX_INTENT_ANCHORS),
+      ruleScore,
+    };
+  } catch (e) {
+    logger.warn('[semantic-router] embedding 不可用，回退关键词意图分类: ' + (e instanceof Error ? e.message : String(e)));
+    return {
+      score: ruleScore,
+      confidence: 0,
+      method: 'rule-fallback',
+      ruleScore,
+    };
+  }
+}
+
+/**
+ * 预热意图锚点（应用启动时可选调用，避免首条消息触发模型下载/初始化）。
+ */
+export async function warmupIntentAnchors(): Promise<void> {
+  try {
+    await ensureAnchorCache();
+    logger.info('[semantic-router] 意图锚点预热完成');
+  } catch (e) {
+    logger.warn('[semantic-router] 意图锚点预热失败（将在首条消息时重试）: ' + (e instanceof Error ? e.message : String(e)));
+  }
+}
+
 /**
  * 维度 4：代码特征评分（权重 20%）
  * 含完整代码块、编译报错 → 代码专用模型
@@ -339,19 +541,59 @@ export interface ScoringInput {
   activeMcpCount?: number;
   /** 活跃 Skill 数 */
   activeSkillCount?: number;
+  /** [六] 预计算语义意图分（0~10），由 autoSelectModelAsync 注入；未提供则用纯规则 */
+  semanticIntentScore?: number;
+  /** [六] 语义分类置信度（0~1），低于阈值时规则主导 */
+  semanticIntentConfidence?: number;
 }
 
 /**
  * 综合评分：5 大维度加权计算
  * @returns 各维度评分 + 总评分（0~10）
  */
+// [六] 规则/语义融合的权重与置信度阈值（集中配置，便于调参与审计）
+const SEMANTIC_BLEND = {
+  /** 高置信度阈值：语义分权重主导 */
+  HIGH_CONF: 0.5,
+  /** 中置信度阈值：语义分参与部分权重 */
+  MED_CONF: 0.25,
+  /** 高置信时语义分权重（规则分权重 = 1 - 该值） */
+  HIGH_SEMANTIC_WEIGHT: 0.65,
+  /** 中置信时语义分权重（规则分权重 = 1 - 该值） */
+  MED_SEMANTIC_WEIGHT: 0.4,
+} as const;
+
 export function computeComplexityScore(input: ScoringInput): { scores: DimensionScores; totalScore: number } {
+  const ruleIntent = scoreIntent(input.message);
+
+  // [六] 规则 + 语义融合：语义置信度高时主导，低时回退规则（保证可解释、可追溯）
+  let intent = ruleIntent;
+  let intentMethod: DimensionScores['intentMethod'] = 'rule';
+  const sem = input.semanticIntentScore;
+  const semConf = input.semanticIntentConfidence ?? 0;
+  if (sem !== undefined) {
+    if (semConf >= SEMANTIC_BLEND.HIGH_CONF) {
+      intent = Math.round((ruleIntent * (1 - SEMANTIC_BLEND.HIGH_SEMANTIC_WEIGHT) + sem * SEMANTIC_BLEND.HIGH_SEMANTIC_WEIGHT) * 10) / 10;
+      intentMethod = 'semantic-blend';
+    } else if (semConf >= SEMANTIC_BLEND.MED_CONF) {
+      intent = Math.round((ruleIntent * (1 - SEMANTIC_BLEND.MED_SEMANTIC_WEIGHT) + sem * SEMANTIC_BLEND.MED_SEMANTIC_WEIGHT) * 10) / 10;
+      intentMethod = 'semantic-blend';
+    } else {
+      intent = ruleIntent;
+      intentMethod = 'rule-fallback';
+    }
+  }
+
   const scores: DimensionScores = {
     media: scoreMediaType(input.hasImageAttachment ?? false, input.hasPdfAttachment ?? false, input.hasVideoAttachment ?? false),
     contextLength: scoreContextLength(input.contextTokenCount ?? 0, input.contextWindowSize ?? 128000),
-    intent: scoreIntent(input.message),
+    intent,
     code: scoreCodeFeature(input.message),
     toolCall: scoreToolCallFeature(input.toolCallCount ?? 0, input.activeMcpCount ?? 0, input.activeSkillCount ?? 0),
+    ruleIntent,
+    semanticIntent: sem,
+    semanticConfidence: sem !== undefined ? semConf : undefined,
+    intentMethod,
   };
 
   // 加权总分（toolCall 作为额外加分）
@@ -436,7 +678,9 @@ function selectModelByRoutingRules(
     // 检查维度阈值
     if (rule.dimensionThreshold) {
       const dim = rule.dimensionThreshold.dimension;
-      if (scores[dim] < rule.dimensionThreshold.min) continue;
+      const dimScore = scores[dim];
+      // DimensionScores 含字符串字段（如 intentMethod），仅对数值维度做阈值比较
+      if (typeof dimScore === 'number' && dimScore < rule.dimensionThreshold.min) continue;
     }
 
     // 按标签过滤
@@ -556,6 +800,10 @@ export function autoSelectModel(
     toolCallCount: input?.toolCallCount,
     activeMcpCount: input?.activeMcpCount,
     activeSkillCount: input?.activeSkillCount,
+    // [六] 转发 embedding 语义意图分与置信度（由 autoSelectModelAsync 注入），
+    // 否则语义路由的融合权重不会生效——此前白名单遗漏这两个字段。
+    semanticIntentScore: input?.semanticIntentScore,
+    semanticIntentConfidence: input?.semanticIntentConfidence,
   });
 
   // Step 2: 按路由规则匹配
@@ -576,6 +824,50 @@ export function autoSelectModel(
     scores,
     totalScore,
   };
+}
+
+/**
+ * [六] Auto 模式异步入口 — 在意图维度并入 embedding 语义分类。
+ *
+ * 与 `autoSelectModel` 行为一致，但在选型前先异步执行 `classifyIntentSemantic`，
+ * 将语义意图分与置信度注入评分引擎，与关键词规则融合。embedding 不可用时自动降级，
+ * 不影响选型的可用性。建议 chatService / runChatSession 等新调用方使用本函数。
+ *
+ * @returns 选中的模型 ID + 选型原因 + 评分明细 + 语义分类结果
+ */
+export async function autoSelectModelAsync(
+  message: string,
+  modelsConfig: ModelsFile,
+  hasImageAttachment = false,
+  input?: Partial<ScoringInput>,
+): Promise<AutoSelectResult> {
+  let semantic: SemanticIntentResult | null = null;
+  try {
+    semantic = await classifyIntentSemantic(message);
+  } catch (e) {
+    logger.warn('[Auto Model] 语义意图分类异常，回退规则: ' + (e instanceof Error ? e.message : String(e)));
+  }
+
+  const augmentedInput: Partial<ScoringInput> = { ...input };
+  if (semantic && semantic.method === 'semantic') {
+    augmentedInput.semanticIntentScore = semantic.score;
+    augmentedInput.semanticIntentConfidence = semantic.confidence;
+  }
+
+  const result = autoSelectModel(message, modelsConfig, hasImageAttachment, augmentedInput);
+  if (semantic) {
+    result.semanticIntent = semantic;
+  }
+
+  // [六] 可观测性：每条 Auto 选型都输出意图维度融合明细，便于线上确认
+  // 语义路由是否真正生效（method / 置信度 / 最终分），debug 级别，开启后可审计。
+  logger.debug(
+    `[Auto Model] 选型意图维度 method=${result.scores?.intentMethod ?? 'rule'} ` +
+    `ruleIntent=${result.scores?.ruleIntent} semantic=${result.scores?.semanticIntent} ` +
+    `conf=${result.scores?.semanticConfidence} final=${result.scores?.intent} → ${result.modelId}`,
+  );
+
+  return result;
 }
 
 // ===================== Fallback 降级 =====================

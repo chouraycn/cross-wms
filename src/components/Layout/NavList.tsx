@@ -154,78 +154,11 @@ function VirtualList<T>({ items, itemHeight, height, renderItem, overscan = 5 }:
 
 // ===================== Nav Items Config =====================
 
-// 顶层可见 = 4 置顶 + 6 分组头 = 10；组件原生支持分组折叠，默认仅展开活跃分组
 const navItems: NavItem[] = [
-  // ===== 置顶高频入口 =====
   { label: 'AI 对话', path: '/chat', icon: <ChatBubbleOutlineIcon />, desc: '智能助手' },
   { label: '项目', path: '/projects', icon: <FolderOutlinedIcon />, desc: '项目总览' },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
-
-  // ===== 模型管理（整合原 AI 能力分组：模型配置/链管理/语义匹配/人格规则统一入口） =====
-  { label: '模型管理', path: '/model-management', icon: <MemoryIcon />, desc: '模型·链·匹配·人格' },
-
-  // ===== 触发 & 通知（通道管理已收敛至 设置→通讯→通道管理） =====
-  {
-    label: '触发 & 通知',
-    icon: <NotificationsActiveOutlinedIcon />,
-    desc: '触发·关键词·Webhook',
-    children: [
-      { label: '触发器', path: '/triggers', icon: <TimerIcon />, desc: '事件触发' },
-      { label: '关键词触发', path: '/keyword-trigger', icon: <FlashOnIcon />, desc: '触发配置' },
-      { label: 'Webhook', path: '/webhook', icon: <WebhookIcon />, desc: '钩子管理' },
-    ],
-  },
-
-  // ===== 开发工具 =====
-  {
-    label: '开发工具',
-    icon: <CodeOutlinedIcon />,
-    desc: 'Git·索引·LSP·任务',
-    children: [
-      { label: 'Git 管理', path: '/git', icon: <GitHubIcon />, desc: '版本控制' },
-      { label: '代码索引', path: '/code-index', icon: <CodeOutlinedIcon />, desc: '符号搜索' },
-      { label: 'LSP 服务器', path: '/lsp', icon: <LanguageOutlinedIcon />, desc: '语言服务' },
-      { label: '任务管理', path: '/tasks', icon: <TaskAltIcon />, desc: 'CRUD 管理' },
-      { label: '浏览器配置', path: '/browser-profiles', icon: <PublicIcon />, desc: '浏览器管理' },
-    ],
-  },
-
-  // ===== 知识 & 记忆 =====
-  {
-    label: '知识 & 记忆',
-    icon: <BookOutlinedIcon />,
-    desc: 'Wiki·消息·缓存·文档',
-    children: [
-      { label: 'Wiki 知识库', path: '/wiki', icon: <BookOutlinedIcon />, desc: '知识管理' },
-      { label: '消息生命周期', path: '/message-lifecycle', icon: <TrackChangesIcon />, desc: '生命周期监控' },
-      { label: '缓存管理', path: '/cache-manager', icon: <StorageIcon />, desc: '缓存管理' },
-      { label: '腾讯文档', path: '/tencent-docs', icon: <DescriptionOutlinedIcon />, desc: '在线文档' },
-    ],
-  },
-
-  // ===== 系统 & 监控 已整体收敛至 设置：系统监控/系统指标→监控中心，权限管理→设置权限管理 =====
-
-  // ===== 仓储管理（12 项：合并重复报表，库存交易回归，腾讯文档移至知识&记忆） =====
-  {
-    label: '仓储管理',
-    icon: <WarehouseOutlinedIcon />,
-    desc: '仓库·在途·库存',
-    children: [
-      { label: '仪表盘', path: '/dashboard', icon: <DashboardOutlinedIcon />, desc: '总览' },
-      { label: '仓库管理', path: '/warehouses', icon: <FolderOutlinedIcon />, desc: '仓库列表' },
-      { label: '客商管理', path: '/partners', icon: <GroupsOutlinedIcon />, desc: '供应商 & 客户' },
-      { label: '在途管理', path: '/in-transit', icon: <LocalShippingOutlinedIcon />, desc: '在途跟踪' },
-      { label: '库存管理', path: '/inventory', icon: <InventoryOutlinedIcon />, desc: '库存查询' },
-      { label: '仓库调拨', path: '/transfer', icon: <SwapHorizIcon />, desc: '多仓调拨' },
-      { label: '库存交易', path: '/inventory-transactions', icon: <ArrowUpwardIcon />, desc: '流水记录' },
-      { label: '入库质检', path: '/wms/quality', icon: <FactCheckOutlinedIcon />, desc: '质检管理' },
-      { label: '库存盘点', path: '/wms/inventory', icon: <FindInPageOutlinedIcon />, desc: '盘点管理' },
-      { label: '出库复核', path: '/wms/outbound', icon: <VerifiedUserOutlinedIcon />, desc: '复核管理' },
-      { label: '预警 & 补货', path: '/wms/alerts', icon: <NotificationsActiveOutlinedIcon />, desc: '预警中心 & 智能补货' },
-      { label: '报表', path: '/reports', icon: <AssessmentOutlinedIcon />, desc: '数据报表 & 报表中心' },
-    ],
-  },
 ];
 
 // ===================== Props =====================

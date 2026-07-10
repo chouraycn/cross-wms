@@ -26,6 +26,10 @@ export interface SSEInitEvent {
   modelName: string;
   autoReason?: string;
   autoReasonType?: string;
+  /** 语义路由细节（[六] Auto Model v2.0）：规则/语义融合方法，供前端展示智能路由透明度 */
+  autoSemanticMethod?: string;
+  /** 语义路由置信度（0~1），越高表示越确定走语义融合 */
+  autoSemanticConfidence?: number;
   preset?: { id: string; label: string } | null;
 }
 

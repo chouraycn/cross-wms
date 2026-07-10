@@ -12,7 +12,7 @@
  * - 输入区域（技能"/"、会话引用"@"、附件）
  */
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box, Typography, IconButton, Tooltip, useTheme, Collapse,
   Paper, Chip, List, ListItem, ListItemText, CircularProgress,
@@ -40,8 +40,16 @@ import { ICON_MAP } from '../../types/skill.js';
 import { getCategoryLabel, getCategoryGradient } from '../../constants/skillCategories';
 import { getGrayScale, CHAT_MAX_WIDTH } from '../../constants/theme.js';
 import { useToast } from '../../contexts/ToastContext.js';
-import { useChatSession, useChatMeta } from '../../contexts/ChatContext.js';
-import { isMacOSApp } from '../../utils/env';
+import { useChatSession, useChatMeta, useChatSidebar } from '../../contexts/ChatContext.js';
+import { isMacOSApp, isPyWebView } from '../../utils/env';
+
+// 检测是否为原生 App / pywebview 桌面模式（与 Sidebar/WindowDragBar 一致）
+const isNativeApp = (): boolean => {
+  if (isMacOSApp()) return true;
+  // @ts-ignore
+  if (typeof window !== 'undefined' && window.cdfAppNative && window.cdfAppNative.isNative) return true;
+  return isPyWebView();
+};
 import type { AgentIdentity } from './AgentProfile.js';
 import { AGENT_SCENARIOS } from './AgentProfile.js';
 import type { AgentItemEventData, SendAgentMessageOptions } from '../../hooks/useAgentChat.js';
@@ -211,6 +219,13 @@ const SidePanelExpandIcon: React.FC<{ fontSize?: number; color?: string }> = ({
   </svg>
 );
 
+/** 导出 Markdown 文件时的默认免责声明 */
+const EXPORT_DISCLAIMER = '\n\n---\n\n*本内容由 AI 助手自动生成，仅供参考。*';
+
+/** 移除 AI 生成内容中自带的免责声明/联系方式 */
+const cleanAIDisclaimer = (text: string) =>
+  text.replace(/(?:\n\s*)+>.*?(?:联系我们|免责声明|本报告由|周雷|CDFKnow)[\s\S]*$/i, '').trimEnd();
+
 /**
  * CDFChat 新版对话容器（基于 OpenClaw 事件驱动架构）
  */
@@ -225,7 +240,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
+  const nativeApp = isNativeApp();
   const { showToast } = useToast();
+  const location = useLocation();
+  const isChatRoute = location.pathname === '/chat';
 
   const {
     session,
@@ -235,6 +253,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     handleNewChat,
   } = useChatSession();
   const { ensureInitialized } = useChatMeta();
+  const { folders } = useChatSidebar();
 
   // 延迟初始化：进入聊天页面时才加载会话列表
   useEffect(() => {
@@ -678,7 +697,8 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   /** 导出消息 */
   const handleExport = useCallback((msg: Message, format: 'markdown' | 'pdf') => {
     if (format === 'markdown') {
-      const markdownContent = `# ${msg.role === 'user' ? '用户消息' : 'AI 回复'}\n\n${msg.content}`;
+      const cleanedContent = cleanAIDisclaimer(msg.content || '');
+      const markdownContent = `# ${msg.role === 'user' ? '用户消息' : 'AI 回复'}\n\n${cleanedContent}${EXPORT_DISCLAIMER}`;
       const blob = new Blob([markdownContent], { type: 'text/markdown' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -738,8 +758,8 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   const handleBatchExport = useCallback((messages: Message[], format: 'markdown' | 'pdf') => {
     if (format === 'markdown') {
       const combinedContent = messages
-        .map(m => `## ${m.role === 'user' ? '用户' : 'AI'}\n\n${m.content}`)
-        .join('\n\n---\n\n');
+        .map(m => `## ${m.role === 'user' ? '用户' : 'AI'}\n\n${cleanAIDisclaimer(m.content || '')}`)
+        .join('\n\n---\n\n') + EXPORT_DISCLAIMER;
       const blob = new Blob([combinedContent], { type: 'text/markdown' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -929,51 +949,57 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         bgcolor: gs.bgPanel,
         overflow: 'hidden',
       }}>
-        {/* 侧边栏切换按钮 — 侧边栏收起时始终显示（即使无内容） */}
-        {leftSidebarCollapsed && (
+        {/* 收起侧边栏时空状态的2按钮：侧边栏展开 + 搜索（顶部位置，红黄绿避让） */}
+        {leftSidebarCollapsed && isChatRoute && isEmpty && (
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 0.25,
-            pl: isMacOSApp() ? '80px' : 2,
+            pl: nativeApp ? '78px' : 2,
             pr: 2,
-            pt: 1,
-            pb: isEmpty ? 0 : 0,
+            pt: 'calc(var(--pw-top, 0px) + 30px)',
+            pb: 0,
             flexShrink: 0,
           }}
         >
           <Tooltip title="侧边栏" arrow>
             <IconButton
-              size="small"
               onClick={() => {
                 window.dispatchEvent(new CustomEvent('cdf-toggle-sidebar'));
               }}
               sx={{
                 color: '#000',
-                p: 0.36,
+                borderRadius: '6.48px',
+                p: 0.45,
+                width: 25.92,
+                height: 25.92,
+                flexShrink: 0,
                 bgcolor: 'transparent',
                 '&:hover': { bgcolor: 'transparent', color: '#000' },
               }}
             >
-              <svg width="19.44" height="19.44" viewBox="0 0 24 24" fill="none">
+              <svg width="17.5" height="17.5" viewBox="0 0 24 24" fill="none">
                 <rect x="4" y="4" width="16" height="16" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none"/>
                 <line x1="15" y1="8" x2="15" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </IconButton>
           </Tooltip>
-          <Tooltip title="新对话" arrow>
+          <Tooltip title="搜索" arrow>
             <IconButton
-              size="small"
-              onClick={handleNewChat}
+              onClick={() => setSearchOpen(true)}
               sx={{
                 color: '#000',
-                p: 0.36,
+                borderRadius: '6.48px',
+                p: 0.45,
+                width: 25.92,
+                height: 25.92,
+                flexShrink:  0,
                 bgcolor: 'transparent',
                 '&:hover': { bgcolor: 'transparent', color: '#000' },
               }}
             >
-              <ChatBubbleOutlineIcon sx={{ fontSize: 16 }} />
+              <SearchIcon sx={{ fontSize: '16.2px' }} />
             </IconButton>
           </Tooltip>
         </Box>
@@ -985,15 +1011,59 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            pl: leftSidebarCollapsed ? 0 : 2,
+            pl: leftSidebarCollapsed ? (nativeApp ? '78px' : '8px') : 2,
             pr: 2,
             py: 0.75,
             borderBottom: `1px solid ${gs.border}`,
             flexShrink: 0,
             minHeight: 40,
+            pt: leftSidebarCollapsed ? 'calc(var(--pw-top, 0px) + 0px)' : 0.75,
           }}
         >
-          <FolderOutlinedIcon sx={{ fontSize: 16, color: gs.textMuted, flexShrink: 0 }} />
+          {leftSidebarCollapsed && isChatRoute && (
+            <>
+              <Tooltip title="侧边栏" arrow>
+                <IconButton
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('cdf-toggle-sidebar'));
+                  }}
+                  sx={{
+                    color: '#000',
+                    borderRadius: '6.48px',
+                    p: 0.45,
+                    width: 25.92,
+                    height: 25.92,
+                    flexShrink: 0,
+                    bgcolor: 'transparent',
+                    '&:hover': { bgcolor: 'transparent', color: '#000' },
+                  }}
+                >
+                  <svg width="17.5" height="17.5" viewBox="0 0 24 24" fill="none">
+                    <rect x="4" y="4" width="16" height="16" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none"/>
+                    <line x1="15" y1="8" x2="15" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="新对话" arrow>
+                <IconButton
+                  onClick={handleNewChat}
+                  sx={{
+                    color: '#000',
+                    borderRadius: '6.48px',
+                    p: 0.45,
+                    width: 25.92,
+                    height: 25.92,
+                    flexShrink:  0,
+                    bgcolor: 'transparent',
+                    '&:hover': { bgcolor: 'transparent', color: '#000' },
+                  }}
+                >
+                  <ChatBubbleOutlineIcon sx={{ fontSize: '16.2px' }} />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+          <Typography sx={{ fontSize: '0.9rem', color: gs.textMuted, fontWeight: 500, flexShrink: 0 }}>|</Typography>
           <Typography
             sx={{
               fontSize: '0.9rem',
@@ -1008,6 +1078,30 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
           >
             {sessionTitle}
           </Typography>
+          {session.folderId && (() => {
+            const folder = folders.find(f => f.id === session.folderId);
+            if (!folder) return null;
+            return (
+              <>
+                <Typography sx={{ fontSize: '0.9rem', color: gs.textMuted, fontWeight: 500, flexShrink: 0 }}>-</Typography>
+                <FolderOutlinedIcon sx={{ fontSize: 14, color: gs.textMuted, flexShrink: 0 }} />
+                <Typography
+                  sx={{
+                    fontSize: '0.85rem',
+                    fontWeight: 500,
+                    color: gs.textMuted,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    flexShrink: 0,
+                    maxWidth: 150,
+                  }}
+                >
+                  {folder.name}
+                </Typography>
+              </>
+            );
+          })()}
           {/* 搜索框（展开时显示，替换搜索按钮） */}
           {searchOpen ? (
             <Box sx={{
@@ -1268,13 +1362,135 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                   ))}
                 </Box>
               )}
+
+              {/* 对话结束下方：生成文件能力 — 仅在非流式、有内容、有命名代码块时显示
+                   （generatedFiles 已在 BotMessageContent 中展示，避免重复） */}
+              {!isLoading && chatMessages.length > 0 && (() => {
+                const lastMsg = chatMessages[chatMessages.length - 1];
+                const isConvEnded = lastMsg?.role === 'assistant' && !lastMsg.isStreaming;
+                if (!isConvEnded) return null;
+                // 只检查命名代码块，generatedFiles 已在消息内展示
+                const hasNamedCodeBlocks = chatMessages.some(m =>
+                  /```[\w]*\s*[:\s]\s*[\w\-]+\.\w+/m.test(m.content || '')
+                );
+                if (!hasNamedCodeBlocks) return null;
+                return (
+                  <Box sx={{ maxWidth: currentMaxWidth, mx: 'auto', px: 3, pb: 0.5 }}>
+                    <Box
+                      onClick={() => {
+                        try {
+                          // 收集所有命名代码块
+                          const blocks: { name: string; code: string }[] = [];
+                          const codeBlockRe = /```[\w]*\s*[:\s]\s*([\w\-]+\.\w+)\s*\n([\s\S]*?)```/g;
+                          chatMessages.forEach(msg => {
+                            const content = msg.content || '';
+                            let mt: RegExpExecArray | null;
+                            while ((mt = codeBlockRe.exec(content)) !== null) {
+                              blocks.push({ name: mt[1], code: mt[2].replace(/\n$/, '') });
+                            }
+                          });
+                          // 收集 generatedFiles
+                          const genFiles = chatMessages
+                            .flatMap(m => m.generatedFiles || [])
+                            .filter(Boolean);
+
+                          if (blocks.length > 0) {
+                            blocks.forEach((blk, i) => {
+                              const blob = new Blob([blk.code], { type: 'text/plain;charset=utf-8' });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = blk.name;
+                              document.body.appendChild(a);
+                              setTimeout(() => {
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                              }, i * 200);
+                            });
+                          } else if (genFiles.length > 0) {
+                            genFiles.forEach((f, i) => {
+                              const a = document.createElement('a');
+                              a.href = f.downloadUrl;
+                              a.download = f.fileName;
+                              document.body.appendChild(a);
+                              setTimeout(() => {
+                                a.click();
+                                document.body.removeChild(a);
+                              }, i * 200);
+                            });
+                          } else {
+                            // 回退：导出整个对话为 Markdown
+                            const md = chatMessages
+                              .map(m => `## ${m.role === 'user' ? '用户' : 'AI'}\n\n${cleanAIDisclaimer(m.content || '')}`)
+                              .join('\n\n---\n\n') + EXPORT_DISCLAIMER;
+                            const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `conversation-${session.id || Date.now()}.md`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            setTimeout(() => URL.revokeObjectURL(url), 1000);
+                          }
+                        } catch {
+                          /* 静默失败 */
+                        }
+                      }}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        px: 1.5,
+                        py: 1,
+                        borderRadius: 1.5,
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        border: `1px solid ${gs.border}`,
+                        bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          bgcolor: isDark ? 'rgba(34,197,94,0.06)' : 'rgba(34,197,94,0.04)',
+                          borderColor: 'rgba(34,197,94,0.3)',
+                        },
+                      }}
+                    >
+                      <Box sx={{
+                        width: 28, height: 28, borderRadius: 1,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                        bgcolor: isDark ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.08)',
+                      }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: 13, fontWeight: 600, color: gs.textPrimary, lineHeight: 1.3 }}>
+                          导出文件
+                        </Typography>
+                        <Typography sx={{ fontSize: 11, color: gs.textMuted, lineHeight: 1.4, mt: 0.25 }}>
+                          提取代码块或导出对话为文件
+                        </Typography>
+                      </Box>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={gs.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.7 }}>
+                        <path d="M9 18l6-6-6-6" />
+                      </svg>
+                    </Box>
+                  </Box>
+                );
+              })()}
             </Box>
           )}
 
           <Box sx={{ px: 3, pb: 3, pt: 'calc(1rem + 30px)', flexShrink: 0, borderTop: 'none' }}>
-            <Box sx={{ 
-              maxWidth: currentMaxWidth, 
-              mx: 'auto', 
+            <Box sx={{
+              maxWidth: currentMaxWidth,
+              mx: 'auto',
               position: 'relative',
             }}>
               <TopBarChatInput
@@ -1387,7 +1603,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
               onClick={handleNewChat}
               sx={{ color: gs.textDisabled, '&:hover': { color: gs.textSecondary, backgroundColor: gs.bgHover } }}
             >
-              <AddCommentOutlinedIcon sx={{ fontSize: 18 }} />
+              <AddCommentOutlinedIcon sx={{ fontSize: '16.2px' }} />
             </IconButton>
           </Tooltip>
         </Box>
@@ -1428,6 +1644,126 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             ))}
           </Box>
         )}
+
+        {/* 对话结束下方：生成文件能力（embedded 变体） */}
+        {!isLoading && chatMessages.length > 0 && (() => {
+          const lastMsg = chatMessages[chatMessages.length - 1];
+          const isConvEnded = lastMsg?.role === 'assistant' && !lastMsg.isStreaming;
+          if (!isConvEnded) return null;
+          const FILE_TOOL_RE = /write_file|create_file|edit_file|patch_file|save_file|diffs|canvas/i;
+          const hasFileOps = chatMessages.some(m =>
+            m.toolCalls?.some(tc => FILE_TOOL_RE.test(tc.name)) ||
+            m.generatedFiles?.length ||
+            /```[\w]*\s*[:\s]\s*[\w\-]+\.\w+/m.test(m.content || '')
+          );
+          if (!hasFileOps) return null;
+          return (
+            <Box sx={{ maxWidth: currentMaxWidth, mx: 'auto', px: 3, pb: 0.5, width: '100%' }}>
+              <Box
+                onClick={() => {
+                  try {
+                    const blocks: { name: string; code: string }[] = [];
+                    const codeBlockRe = /```[\w]*\s*[:\s]\s*([\w\-]+\.\w+)\s*\n([\s\S]*?)```/g;
+                    chatMessages.forEach(msg => {
+                      const content = msg.content || '';
+                      let mt: RegExpExecArray | null;
+                      while ((mt = codeBlockRe.exec(content)) !== null) {
+                        blocks.push({ name: mt[1], code: mt[2].replace(/\n$/, '') });
+                      }
+                    });
+                    const genFiles = chatMessages
+                      .flatMap(m => m.generatedFiles || [])
+                      .filter(Boolean);
+
+                    if (blocks.length > 0) {
+                      blocks.forEach((blk, i) => {
+                        const blob = new Blob([blk.code], { type: 'text/plain;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = blk.name;
+                        document.body.appendChild(a);
+                        setTimeout(() => {
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        }, i * 200);
+                      });
+                    } else if (genFiles.length > 0) {
+                      genFiles.forEach((f, i) => {
+                        const a = document.createElement('a');
+                        a.href = f.downloadUrl;
+                        a.download = f.fileName;
+                        document.body.appendChild(a);
+                        setTimeout(() => {
+                          a.click();
+                          document.body.removeChild(a);
+                        }, i * 200);
+                      });
+                    } else {
+                      const md = chatMessages
+                        .map(m => `## ${m.role === 'user' ? '用户' : 'AI'}\n\n${m.content || ''}`)
+                        .join('\n\n---\n\n');
+                      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `conversation-${session.id || Date.now()}.md`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    }
+                  } catch {
+                    /* 静默失败 */
+                  }
+                }}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 1.5,
+                  py: 1,
+                  borderRadius: 1.5,
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                  border: `1px solid ${gs.border}`,
+                  bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    bgcolor: isDark ? 'rgba(34,197,94,0.06)' : 'rgba(34,197,94,0.04)',
+                    borderColor: 'rgba(34,197,94,0.3)',
+                  },
+                }}
+              >
+                <Box sx={{
+                  width: 28, height: 28, borderRadius: 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                  bgcolor: isDark ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.08)',
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600, color: gs.textPrimary, lineHeight: 1.3 }}>
+                    导出文件
+                  </Typography>
+                  <Typography sx={{ fontSize: 11, color: gs.textMuted, lineHeight: 1.4, mt: 0.25 }}>
+                    提取代码块或导出对话为文件
+                  </Typography>
+                </Box>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={gs.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.7 }}>
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </Box>
+            </Box>
+          );
+        })()}
 
         <Box sx={{ position: 'relative', flexShrink: 0 }}>
           <TopBarChatInput

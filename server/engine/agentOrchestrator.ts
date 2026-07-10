@@ -18,7 +18,7 @@ import { ReActExecutor } from './reactExecutor.js';
 import { Observer } from './observer.js';
 import { Planner } from './planner.js';
 import { TaskDecomposer, type DecomposeAssessment } from './taskDecomposer.js';
-import { agentRegistry, type AgentProfile } from './agentRegistry.js';
+import { agentRegistry, type AgentProfile, type RuntimeInstance } from './agentRegistry.js';
 // EventBus imports removed - not currently used but reserved for future event-driven features
 import { callAIModel } from '../aiClient.js';
 import type { ModelCallConfig, MessageContent, ToolCall } from '../aiClient.js';
@@ -27,6 +27,7 @@ import type { ModelCallConfig, MessageContent, ToolCall } from '../aiClient.js';
 // import { pluginRegistry } from './pluginRegistry.js';
 // import { mcpClientManager } from './mcpClientManager.js';
 import { ExecutionMode, type ExecutionStrategyOptions } from './executionStrategy.js';
+import { type BudgetConfig, DEFAULT_BUDGET_CONFIG } from './budgetManager.js';
 import type { ToolExecutionResult } from './toolExecutor.js';
 import type {
   TaskDecomposition,
@@ -184,6 +185,135 @@ export class AgentOrchestrator {
       content: finalContent,
       toolCalls: execResult.toolCalls,
     };
+  }
+
+  // ===================== 子代理 spawn（v9.1） =====================
+
+  /**
+   * v9.1 [四]: 真正可执行的子代理 spawn
+   *
+   * 与休眠原型 subagentRegistry.spawn（仅 setTimeout 模拟）不同，本方法
+   * 复用 ReActExecutor 真实执行子任务，具备：
+   * - 隔离上下文（独立 system + task，不污染父上下文）
+   * - 独立 budget（maxTurns 等受控）
+   * - 独立 AbortSignal（父取消 / 超时自动中断）
+   * - 运行时实例注册（agentRegistry.registerInstance，供父子追踪 / 审计）
+   *
+   * 返回 handle，包含 instanceId / 最终 status / result / 以及 cancel()。
+   */
+  async spawnSubAgent(
+    profile: AgentProfile,
+    task: string,
+    opts: {
+      /** 子代理执行所用的模型配置（必填，决定走哪个 provider） */
+      modelConfig: ModelCallConfig;
+      /** 隔离上下文（默认 true：只看到自身的 system + task） */
+      isolatedContext?: boolean;
+      /** 独立预算（覆盖默认 maxTurns 等） */
+      budget?: Partial<BudgetConfig>;
+      /** 父级 AbortSignal，父取消时子一并取消 */
+      signal?: AbortSignal;
+      /** 父实例 ID，用于构建父子关系 */
+      parentInstanceId?: string;
+      /** 超时 ms（默认 SUBTASK_TIMEOUT_MS） */
+      timeoutMs?: number;
+      /** SSE 事件透传 */
+      onSSEEvent?: (event: Record<string, unknown>) => void;
+    },
+  ): Promise<{
+    instanceId: string;
+    status: RuntimeInstance['status'];
+    result?: string;
+    error?: string;
+    cancel: () => void;
+  }> {
+    const instanceId = `sub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const instance: RuntimeInstance = {
+      instanceId,
+      agentId: profile.id,
+      agentRole: profile.role,
+      parentInstanceId: opts.parentInstanceId,
+      taskDescription: task,
+      status: 'spawning',
+      startedAt: Date.now(),
+    };
+    agentRegistry.registerInstance(instance);
+    agentRegistry.updateStatus(profile.id, 'busy');
+
+    const controller = new AbortController();
+    const cancel = () => controller.abort(new Error('子代理已被取消'));
+    if (opts.signal) {
+      opts.signal.addEventListener('abort', () => controller.abort(opts.signal!.reason));
+    }
+    const timeoutMs = opts.timeoutMs ?? SUBTASK_TIMEOUT_MS;
+    const timer = setTimeout(() => {
+      controller.abort(new Error(`子代理执行超时（${timeoutMs}ms）`));
+    }, timeoutMs);
+
+    const soul = profile.soul || '';
+    const systemContent = soul
+      ? `${soul}\n\n你正在执行一个子任务。请专注于完成以下任务，不要关心其他子任务。`
+      : '你正在执行一个子任务。请专注于完成以下任务。';
+    const agentMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }> = [
+      { role: 'system', content: systemContent },
+      { role: 'user', content: task },
+    ];
+
+    const budget: BudgetConfig = { ...DEFAULT_BUDGET_CONFIG, ...opts.budget };
+    const executor = new ReActExecutor(this.sharedObserver, this.sharedPlanner, budget);
+
+    let status: RuntimeInstance['status'] = 'completed';
+    let result: string | undefined;
+    let error: string | undefined;
+
+    try {
+      agentRegistry.updateInstance(instanceId, { status: 'running' });
+      if (opts.onSSEEvent) {
+        opts.onSSEEvent({ type: 'sub_agent_start', instanceId, agentId: profile.id, agentRole: profile.role, taskDescription: task });
+      }
+      const execResult = await executor.execute({
+        executionMode: ExecutionMode.REACT,
+        modelConfig: opts.modelConfig,
+        messages: agentMessages,
+        maxToolTurns: budget.maxTurns,
+        signal: controller.signal,
+        onSSEEvent: opts.onSSEEvent,
+      });
+      result = execResult.content;
+      status = 'completed';
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('超时') || msg.includes('timeout')) status = 'timeout';
+      else if (msg.includes('取消')) status = 'cancelled';
+      else status = 'failed';
+      error = msg;
+    } finally {
+      clearTimeout(timer);
+      const completedAt = Date.now();
+      agentRegistry.updateInstance(instanceId, { status, completedAt, result, error });
+      agentRegistry.updateStatus(profile.id, 'idle');
+      const duration = completedAt - instance.startedAt;
+      agentRegistry.recordExecution(profile.id, {
+        agentId: profile.id,
+        subTaskId: instanceId,
+        taskDescription: task,
+        status: status === 'completed' ? 'success' : (status === 'timeout' ? 'timeout' : 'failure'),
+        duration,
+      });
+      if (opts.onSSEEvent) {
+        opts.onSSEEvent({
+          type: 'sub_agent_end',
+          instanceId,
+          agentId: profile.id,
+          agentRole: profile.role,
+          status,
+          duration,
+          error,
+        });
+      }
+    }
+
+    return { instanceId, status, result, error, cancel };
   }
 
   // ===================== Agent 分配 =====================
@@ -449,6 +579,7 @@ export class AgentOrchestrator {
         modelConfig: agent?.modelId ? { ...modelConfig, id: agent.modelId } : modelConfig,
         messages: agentMessages,
         maxToolTurns: 15,
+        planningMode: 'dynamic',
         signal: timeoutSignal,
         onChunk: undefined,
         onThinking: undefined,

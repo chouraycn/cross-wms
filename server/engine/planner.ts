@@ -332,6 +332,87 @@ export class Planner {
     return adjustedPlan;
   }
 
+  /**
+   * v9.1 [五]: 反思式重规划 — 基于 scratchpad 进展让 LLM 重写剩余步骤
+   *
+   * 与 adjustPlan（纯规则补丁）不同，本方法把已完成/失败的步骤进展喂给 LLM，
+   * 由模型判断如何修订剩余步骤（跳过已完成、替换失败策略），输出新的 ExecutionPlan。
+   *
+   * @param modelConfig - 模型配置
+   * @param originalUserMessage - 原始用户任务
+   * @param currentPlan - 当前计划（含步骤状态）
+   * @param scratchpadSummary - 每轮 thought/observation 的摘要（由 ReActExecutor 提供）
+   * @param signal - 取消信号
+   * @returns 修订后的执行计划，解析失败返回 null
+   */
+  async reflectionReplan(
+    modelConfig: ModelCallConfig,
+    originalUserMessage: string,
+    currentPlan: ExecutionPlan,
+    scratchpadSummary: string,
+    signal?: AbortSignal,
+  ): Promise<ExecutionPlan | null> {
+    const planJson = currentPlan.steps
+      .map(s => `  ${s.step}. [${s.status}] ${s.description}${s.toolName ? ` (工具: ${s.toolName})` : ''}`)
+      .join('\n');
+
+    const systemPrompt = `你是一个任务规划助手。根据已执行进展，修订剩余执行步骤。
+输出严格 JSON（不要 markdown 代码块）：
+{
+  "intent": "用户意图一句话摘要",
+  "steps": [ { "step": 1, "description": "步骤描述", "toolName": "推荐工具(可选)", "dependsOn": [] } ],
+  "isDynamic": true
+}
+要求：
+1. 已 completed 的步骤不要重复，可跳过
+2. 已 failed 的步骤给出替代方案
+3. 保持步骤可执行、有序`;
+
+    const userContent = `原始任务：${originalUserMessage}
+
+执行进展（scratchpad）：
+${scratchpadSummary || '（无）'}
+
+当前计划状态：
+${planJson}
+
+请输出修订后的剩余步骤 JSON。`;
+
+    const plannerMessages: Array<{ role: string; content: MessageContent }> = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userContent },
+    ];
+
+    let rawContent = '';
+    try {
+      const response = await callAIModelStream(
+        modelConfig,
+        plannerMessages,
+        (text: string) => { rawContent += text; },
+        signal,
+        undefined,
+        undefined,
+        undefined,
+        modelConfig.capabilities,
+      );
+      rawContent = response.content || rawContent;
+    } catch (error) {
+      logger.error('[Planner] reflectionReplan LLM 调用失败:', error instanceof Error ? error.message : String(error));
+      return null;
+    }
+
+    const revised = this.parsePlanResponse(rawContent);
+    if (revised) {
+      // 继承原计划中已完成步骤的状态，避免重做
+      for (const step of revised.steps) {
+        const prev = currentPlan.steps.find(s => s.description === step.description);
+        if (prev && prev.status === 'completed') step.status = 'completed';
+      }
+      logger.debug(`[Planner] reflectionReplan 生成 ${revised.steps.length} 个修订步骤`);
+    }
+    return revised;
+  }
+
   // ===================== 私有方法 =====================
 
   /**

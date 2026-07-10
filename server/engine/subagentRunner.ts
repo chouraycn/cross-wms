@@ -1,16 +1,18 @@
 /**
+ * @deprecated v9.1 — 本文件为休眠原型（spawn 仅 setTimeout 模拟、无真实执行后端）。
+ * 子代理能力已统一收敛到 `agentOrchestrator.ts` 的 `spawnSubAgent()`（真实复用 ReActExecutor）。
+ * 运行时实例表见 `agentRegistry.ts`。请勿在新代码中引用本模块，后续版本将移除。
+ *
  * Subagent Runner — 子代理执行运行时
  *
  * 基于 openclaw 的 subagent-spawn 实现，提供子代理的隔离执行和通信机制。
- *
- * 功能：
- * 1. SubagentConfig 接口 - 子代理配置
- * 2. SubagentRunner 类 - 子代理执行器
- * 3. execute 方法 - 执行子代理任务
- * 4. 子代理隔离和通信机制
  */
 
 import { logger } from '../logger.js';
+
+// v9.1: 废弃警告（仅打印一次）
+logger.warn('[deprecated] subagentRunner 已废弃，请改用 AgentOrchestrator.spawnSubAgent');
+
 import { getSubagentRegistry, type SpawnSubagentParams, type SubagentSpawnResult } from './subagentRegistry.js';
 import type { ToolDefinition } from '../aiClient.js';
 

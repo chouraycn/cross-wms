@@ -4,6 +4,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import EditIcon from '@mui/icons-material/Edit';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { GrayScale } from '../../constants/theme.js';
 import { Message } from '../../types/chat.js';
 import { MarkdownRenderer } from './MarkdownRenderer.js';
@@ -242,6 +243,25 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
 }) => {
   // 使用消息的 generatedFiles 字段
   const generatedFiles = msg.generatedFiles || [];
+
+  // 任务5: 基于 openclaw 分析 — 仅当有实际文件生成/修改时才显示附件，不是所有对话内容都生成
+  // 触发条件：1) AI 调用了文件相关工具 2) 代码块带显式文件名 3) 已有 generatedFiles
+  const FILE_TOOL_PATTERNS = /write_file|create_file|edit_file|patch_file|save_file|mkdir|diffs|canvas/i;
+  const shouldShowGenerateFile = (() => {
+    if (msg.isStreaming) return false;
+    if (msg.role !== 'assistant') return false;
+    if ((msg.metadata as any)?.error) return false;
+    // 条件1: 已有 generatedFiles（工具明确生成了文件）
+    if (generatedFiles.length > 0) return true;
+    // 条件2: AI 调用了文件相关工具
+    if (msg.toolCalls?.some(tc => FILE_TOOL_PATTERNS.test(tc.name))) return true;
+    // 条件3: 代码块带显式文件名（```lang:filename 或 ```lang filename.ext）
+    const content = msg.content?.trim() || '';
+    if (!content) return false;
+    const hasNamedCodeBlock = /```[\w]*\s*[:\s]\s*[\w\-]+\.\w+/m.test(content);
+    return hasNamedCodeBlock;
+  })();
+
   const [previewFile, setPreviewFile] = useState<GeneratedFileInfo | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [showAllArtifacts, setShowAllArtifacts] = useState(false);
@@ -590,6 +610,121 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
           );
         })()
       ) : null}
+      {/* 任务6: 生成文件卡片 — 仅在有文件操作时显示，智能提取代码块保存为独立文件 */}
+      {shouldShowGenerateFile && (
+        <Box
+          onClick={() => {
+            try {
+              const content = msg.content || '';
+              // 提取带文件名的代码块：```lang:filename 或 ```lang filename.ext
+              const codeBlockRe = /```[\w]*\s*[:\s]\s*([\w\-]+\.\w+)\s*\n([\s\S]*?)```/g;
+              const blocks: { name: string; code: string }[] = [];
+              let m: RegExpExecArray | null;
+              while ((m = codeBlockRe.exec(content)) !== null) {
+                blocks.push({ name: m[1], code: m[2].replace(/\n$/, '') });
+              }
+
+              if (blocks.length > 0) {
+                // 有命名代码块：逐个保存为独立文件
+                blocks.forEach((blk, i) => {
+                  const blob = new Blob([blk.code], { type: 'text/plain;charset=utf-8' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = blk.name;
+                  document.body.appendChild(a);
+                  // 延迟 click 避免浏览器拦截多文件下载
+                  setTimeout(() => {
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }, i * 200);
+                });
+              } else if (generatedFiles.length > 0) {
+                // 有 generatedFiles：下载已有文件
+                generatedFiles.forEach((f, i) => {
+                  const a = document.createElement('a');
+                  a.href = f.downloadUrl;
+                  a.download = f.fileName;
+                  document.body.appendChild(a);
+                  setTimeout(() => {
+                    a.click();
+                    document.body.removeChild(a);
+                  }, i * 200);
+                });
+              } else {
+                // 回退：将回复导出为 Markdown
+                const DISCLAIMER = '\n\n---\n\n*本内容由 AI 助手自动生成，仅供参考。*';
+                const cleanAIDisclaimer = (text: string) =>
+                  text.replace(/(?:\n\s*)+>.*?(?:联系我们|免责声明|本报告由|周雷|CDFKnow)[\s\S]*$/i, '').trimEnd();
+                const cleanedContent = cleanAIDisclaimer(content || '');
+                const mdContent = `# AI 回复\n\n${cleanedContent}${DISCLAIMER}`;
+                const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const safeId = (msg.id || '').replace(/^msg_/, '') || String(Date.now());
+                a.download = `ai-reply-${safeId}.md`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+              }
+            } catch {
+              /* 静默失败 */
+            }
+          }}
+          sx={{
+            mt: 1,
+            mb: 0.5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 1.5,
+            py: 1,
+            borderRadius: 1.5,
+            cursor: 'pointer',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            border: `1px solid ${gs.border}`,
+            bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+            transition: 'background-color 0.2s ease, border-color 0.2s ease',
+            '&:hover': {
+              bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+              borderColor: gs.textDisabled,
+            },
+          }}
+        >
+          <Box
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+            }}
+          >
+            <FileDownloadIcon sx={{ fontSize: 16, color: gs.textSecondary }} />
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 600, color: gs.textPrimary, lineHeight: 1.3 }}>
+              生成文件
+            </Typography>
+            <Typography sx={{ fontSize: 11, color: gs.textMuted, lineHeight: 1.4, mt: 0.25 }}>
+              {generatedFiles.length > 0
+                ? `下载 ${generatedFiles.length} 个生成文件`
+                : '提取代码块保存为独立文件'}
+            </Typography>
+          </Box>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={gs.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.7 }}>
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </Box>
+      )}
+
       {/* 操作按钮：复制 + 编辑 + 删除 + 引用 + 重新生成（一直显示，非流式输出时） */}
       {!msg.isStreaming && (
         <Box sx={{
@@ -695,6 +830,24 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
         </Box>
       )}
 
+      {/* 语义路由融合细节 — [六] 智能路由透明度 */}
+      {msg.autoSemanticMethod && (
+        <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
+            智能路由 · {msg.autoSemanticMethod === 'semantic' ? '语义融合' : msg.autoSemanticMethod === 'rule-fallback' ? '规则兜底' : msg.autoSemanticMethod}{typeof msg.autoSemanticConfidence === 'number' ? `（置信 ${msg.autoSemanticConfidence.toFixed(2)}）` : ''}
+          </Typography>
+        </Box>
+      )}
+
+      {/* 模型降级提示 — [二] 降级可见性 */}
+      {msg.fallbackModel && (
+        <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
+            模型降级 → {msg.fallbackModel}{msg.fallbackReason ? `（${msg.fallbackReason === 'key_rotation' ? '同模型轮换Key' : msg.fallbackReason === 'model_downgrade' ? '跨模型降级' : msg.fallbackReason === 'model_not_supported' ? '模型不支持' : '请求失败'}）` : ''}
+          </Typography>
+        </Box>
+      )}
+
       {/* 文件预览模态框 */}
       {previewFile && (
         <GeneratedFilePreviewModal
@@ -735,6 +888,8 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
   if (pm.cacheHit !== nm.cacheHit) return false;
   if (pm.autoReason !== nm.autoReason) return false;
   if (pm.autoReasonType !== nm.autoReasonType) return false;
+  if (pm.autoSemanticMethod !== nm.autoSemanticMethod) return false;
+  if (pm.autoSemanticConfidence !== nm.autoSemanticConfidence) return false;
   if (pm.fallbackReason !== nm.fallbackReason) return false;
 
   if (pm.toolCalls !== nm.toolCalls) return false;

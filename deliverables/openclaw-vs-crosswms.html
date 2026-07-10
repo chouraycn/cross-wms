@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpenClaw vs CrossWMS（CDF KnowClow）完整度与未来方向对比</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1f2933; --muted:#6b7280;
+    --line:#e5e7eb; --oc:#e8590c; --oc-soft:#fff4ec; --cw:#2563eb; --cw-soft:#eef4ff;
+    --green:#16a34a; --amber:#d97706; --red:#dc2626;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.65;padding:32px 20px;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:26px;font-weight:700;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:24px}
+  .tldr{background:linear-gradient(135deg,#fff4ec,#eef4ff);border:1px solid var(--line);
+    border-radius:14px;padding:20px 22px;margin-bottom:28px}
+  .tldr h2{font-size:16px;margin-bottom:8px}
+  .tldr p{font-size:14px;color:#374151}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;
+    border-top:4px solid var(--oc)}
+  .card.cw{border-top-color:var(--cw)}
+  .card h3{font-size:17px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;color:#fff}
+  .tag.oc{background:var(--oc)} .tag.cw{background:var(--cw)}
+  .card .ver{font-size:12px;color:var(--muted);margin-bottom:12px}
+  .kv{font-size:13px;margin:8px 0;display:flex;gap:8px}
+  .kv b{color:var(--muted);font-weight:500;min-width:78px;flex-shrink:0}
+  .sec{margin:34px 0 14px;font-size:20px;font-weight:700;border-left:4px solid var(--ink);padding-left:10px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;overflow:hidden;font-size:13.5px}
+  th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{background:#f1f3f5;font-weight:600;font-size:13px}
+  td.dim{font-weight:600;color:#374151;background:#fafbfc}
+  .bar{height:9px;border-radius:6px;background:#eef0f2;overflow:hidden;min-width:90px}
+  .bar>i{display:block;height:100%;border-radius:6px}
+  .b-oc{background:var(--oc)} .b-cw{background:var(--cw)}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px}
+  .p-hi{background:#dcfce7;color:#166534} .p-mid{background:#fef3c7;color:#92400e}
+  .p-lo{background:#fee2e2;color:#991b1b}
+  .note{font-size:12px;color:var(--muted);margin-top:4px}
+  .rec{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:14px}
+  .rec h4{font-size:15px;margin-bottom:6px;color:var(--cw)}
+  .rec ol{margin-left:20px;font-size:13.5px}
+  .rec li{margin:5px 0}
+  .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:30px}
+  .callout{background:var(--oc-soft);border:1px solid #ffd8b8;border-radius:10px;padding:14px 16px;
+    font-size:13.5px;color:#7c2d12;margin:16px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>OpenClaw vs CrossWMS（CDF KnowClow）</h1>
+  <div class="sub">完整度与未来方向对比分析 · 生成于 2026-07-11 · 基于两仓库实际代码与文档</div>
+
+  <div class="tldr">
+    <h2>一句话结论</h2>
+    <p><b>OpenClaw</b> 是"广度碾压、平台/厂商/通道无关"的个人 AI 编排运行时（≈175 万行，25+ 通道 / 45+ 模型商 / 145 扩展，自托管 Gateway + 多端原生 App），但自评仍处 <b>Beta（完整度 70%）</b>、"still early"。<br/>
+    <b>CrossWMS</b> 是"纵深专精、单桌面、领域垂直"的<b>跨境支付 WMS AI 助手</b>（≈11 万前端行 + 894 服务端文件，v1.7.81），在流式体验、WKWebView/macOS 适配、领域路由上打磨更深，但缺少多通道 / 多平台 / 插件生态。<br/>
+    <b>二者不是替代关系</b>：CrossWMS 的护城河是"跨境支付领域深度 + 桌面流式体验"，应向 OpenClaw 借的是<b>插件化架构、配置 doctor 迁移、安全沙箱、长会话压缩</b>，而不是去复制它的全平台野心。</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3><span class="tag oc">OpenClaw</span> 通用 AI 编排运行时</h3>
+      <div class="ver">version 2026.6.9（CalVer）· MIT · 私有可发布包</div>
+      <div class="kv"><b>形态</b><span>Gateway 守护进程 + CLI/TUI + macOS/iOS/Android 原生 App + Web UI</span></div>
+      <div class="kv"><b>技术栈</b><span>TypeScript（纯 ESM）· Node ≥22.19 · pnpm monorepo · tsdown · oxlint/vitest · React(ui)</span></div>
+      <div class="kv"><b>规模</b><span>src 8,948 .ts / 117 万行；extensions 6,077 / 29.6 万行；ui 427 / 19.9 万行；原生 730 / ≈17 万行；<b>TS/JS 合计 ≈175 万行</b></span></div>
+      <div class="kv"><b>成熟度</b><span>自评 Completeness 70%(Beta) · Quality 63%(Alpha) · Coverage 1%(Experimental) · CLI=Stable(M4) · 50 surfaces/281 capability areas</span></div>
+    </div>
+    <div class="card cw">
+      <h3><span class="tag cw">CrossWMS</span> 跨境支付 WMS AI 助手</h3>
+      <div class="ver">version 1.7.81 · private · 桌面 DMG（macOS）</div>
+      <div class="kv"><b>形态</b><span>单桌面应用（PyWebView 壳 + React 前端 + Express 服务 + SQLite）</span></div>
+      <div class="kv"><b>技术栈</b><span>TypeScript · React + Vite + MUI · Express + SQLite · PyWebView/Python 打包 · better-sqlite3 · ONNX(sqlite-vec)</span></div>
+      <div class="kv"><b>规模</b><span>前端 458 .tsx/.ts / 10.9 万行；服务端 894 .ts 文件；无移动端、无多通道</span></div>
+      <div class="kv"><b>成熟度</b><span>已稳定出货 DMG（v1.7.81）；深耕 v9.0 流式优先 / v9.1 领域数据；窄域内打磨充分</span></div>
+    </div>
+  </div>
+
+  <div class="sec">一、OpenClaw 完整度（基于实际代码）</div>
+  <table>
+    <thead><tr><th>能力域</th><th>实现情况</th><th>证据</th></tr></thead>
+    <tbody>
+      <tr><td class="dim">Agent 引擎</td><td><span class="pill p-hi">深入</span> ReAct 式 turn loop，含 failover / compaction / 限流退避；子代理 spawn + registry；planner / semantic-router / runtime-plan</td><td>src/agents/embedded-agent-runner/run.ts(4204 行) + attempt.ts(5804 行)；src/agents/(1822 文件)</td></tr>
+      <tr><td class="dim">模型商</td><td><span class="pill p-hi">极广</span> 内置 8 + 扩展 45；含本地/自托管（Ollama/llama.cpp/vLLM/sglang/litellm/Bedrock）</td><td>src/llm/providers/ + extensions/ 45 个 provider</td></tr>
+      <tr><td class="dim">通道</td><td><span class="pill p-hi">极广</span> 25+：WhatsApp/Telegram/Slack/Discord/iMessage/Matrix/飞书/Teams/微信/QQ 等</td><td>src/channels/(378) + extensions/ 25+ channel</td></tr>
+      <tr><td class="dim">插件</td><td><span class="pill p-hi">一等公民</span> 145 扩展 + 正式 plugin-sdk + bundle/code 双形态 + ClawHub 生态</td><td>src/plugins/(633) · packages/plugin-sdk · extensions/(145)</td></tr>
+      <tr><td class="dim">记忆</td><td><span class="pill p-mid">多后端</span> 文件 / Lancedb 向量 / Wiki / active-memory + context-engine</td><td>src/memory/ · src/context-engine/ · extensions/memory-*</td></tr>
+      <tr><td class="dim">计算机使用</td><td><span class="pill p-hi">真实</span> CDP 浏览器自动化 + 手机控制 + 实时 Canvas + shell/PTY</td><td>extensions/browser/(CDP) · extensions/phone-control · extensions/canvas</td></tr>
+      <tr><td class="dim">安全</td><td><span class="pill p-hi">纵深</span> exec 文件系统策略 / DM pairing / Docker+浏览器沙箱 / iOS push 审批 / 审计</td><td>src/security/(81) · SECURITY.md(35KB)</td></tr>
+      <tr><td class="dim">配置</td><td><span class="pill p-mid">带迁移</span> runtime-schema + doctor --fix 迁移契约</td><td>src/config/(390) · flows/doctor-core-checks.ts</td></tr>
+      <tr><td class="dim">多端</td><td><span class="pill p-hi">真代码</span> macOS/iOS/Android 原生（Swift/Kotlin 数万行）+ Web + TUI</td><td>apps/macos(376) · apps/ios(160) · apps/android(194)</td></tr>
+      <tr><td class="dim">文档/发布</td><td><span class="pill p-hi">成熟</span> 680 篇 docs · 14,027 行 CHANGELOG · 评分卡(scorecard)</td><td>docs/(680 .md) · CHANGELOG.md</td></tr>
+    </tbody>
+  </table>
+
+  <div class="sec">二、CrossWMS 完整度（基于实际代码）</div>
+  <table>
+    <thead><tr><th>能力域</th><th>实现情况</th><th>证据</th></tr></thead>
+    <tbody>
+      <tr><td class="dim">Agent 引擎</td><td><span class="pill p-mid">够用</span> 4 策略：Legacy / Observer / Planner / ReAct；统一 streamExecutor（v9.0）</td><td>streamExecutor.ts · executeChat() · 3 阶段流式</td></tr>
+      <tr><td class="dim">模型商</td><td><span class="pill p-mid">精选</span> Auto Model v2.0 五维路由（媒体/Token/意图/代码/工具），覆盖主流旗舰</td><td>autoModel v2.0 · 标签体系 multimodal/reasoning/code…</td></tr>
+      <tr><td class="dim">通道</td><td><span class="pill p-lo">无</span> 仅桌面单窗口（无消息通道 / 无多端同步）</td><td>单一 PyWebView 窗口</td></tr>
+      <tr><td class="dim">插件</td><td><span class="pill p-mid">有但封闭</span> builtin + plugin + MCP（mcp__{server}__{tool}），无公开市场/SDK</td><td>tool system · MCP 接入</td></tr>
+      <tr><td class="dim">记忆</td><td><span class="pill p-mid">向量</span> sqlite-vec + ONNX(all-MiniLM-L6-v2, 384 维)，LRU 缓存 + LIKE 降级</td><td>向量记忆 v8.6</td></tr>
+      <tr><td class="dim">计算机使用</td><td><span class="pill p-lo">弱</span> 无浏览器/手机自动化（领域工具为主）</td><td>—</td></tr>
+      <tr><td class="dim">安全</td><td><span class="pill p-mid">三级</span> auto / confirm / high-risk 权限；无沙箱/审计/DM 配对</td><td>权限系统</td></tr>
+      <tr><td class="dim">领域深度</td><td><span class="pill p-hi">深</span> 跨境支付 WMS：多渠道支付、双海关申报、价格口径、WMS JSON 数据(v9.1)</td><td>WMS file storage · warehouse DAO</td></tr>
+      <tr><td class="dim">桌面适配</td><td><span class="pill p-hi">深</span> WKWebView 兼容（rAF→setTimeout、no-cache）、红黄绿按钮、IME 合成、DMG 打包</td><td>WKWebView 约定 · WindowDragBar · build-dmg</td></tr>
+      <tr><td class="dim">流式体验</td><td><span class="pill p-hi">深</span> SSE 8 核心事件、3 阶段（即时流→后台增强→ReAct 补充）、TimerManager</td><td>v9.0 流式优先</td></tr>
+    </tbody>
+  </table>
+
+  <div class="sec">三、头对头：完整度评分</div>
+  <table>
+    <thead><tr><th>维度</th><th>OpenClaw</th><th>CrossWMS</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td class="dim">模型商广度</td><td><div class="bar"><i class="b-oc" style="width:95%"></i></div></td><td><div class="bar"><i class="b-cw" style="width:45%"></i></div></td><td>OpenClaw 45+，含本地自托管</td></tr>
+      <tr><td class="dim">通道/多端</td><td><div class="bar"><i class="b-oc" style="width:90%"></i></div></td><td><div class="bar"><i class="b-cw" style="width:20%"></i></div></td><td>25+ 通道 vs 单桌面</td></tr>
+      <tr><td class="dim">插件生态</td><td><div class="bar"><i class="b-oc" style="width:88%"></i></div></td><td><div class="bar"><i class="b-cw" style="width:40%"></i></div></td><td>145 扩展+市场 vs 内置+封闭</td></tr>
+      <tr><td class="dim">Agent 引擎深度</td><td><div class="bar"><i class="b-oc" style="width:85%"></i></div></td><td><div class="bar"><i class="b-cw" style="width:55%"></i></div></td><td>子代理/压缩/路由 vs 4 策略</td></tr>
+      <tr><td class="dim">安全成熟度</td><td><div class="bar"><i class="b-oc" style="width:82%"></i></div></td><td><div class="bar"><i class="b-cw" style="width:38%"></i></div></td><td>沙箱/审批/审计 vs 三级权限</td></tr>
+      <tr><td class="dim">流式/桌面体验</td><td><div class="bar"><i class="b-oc" style="width:70%"></i></div></td><td><div class="bar"><i class="b-cw" style="width:90%"></i></div></td><td>CrossWMS 在窄域打磨更深</td></tr>
+      <tr><td class="dim">领域深度(跨境支付)</td><td><div class="bar"><i class="b-oc" style="width:30%"></i></div></td><td><div class="bar"><i class="b-cw" style="width:92%"></i></div></td><td>CrossWMS 护城河</td></tr>
+      <tr><td class="dim">平台稳定性(已出货)</td><td><div class="bar"><i class="b-oc" style="width:65%"></i></div></td><td><div class="bar"><i class="b-cw" style="width:85%"></i></div></td><td>CrossWMS 稳定 DMG；OC 自评 Beta</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">互补性很强：OpenClaw 强在"通用编排广度 + 安全 + 多端"，CrossWMS 强在"领域纵深 + 桌面流式打磨"。两者能力曲线几乎正交。</div>
+
+  <div class="sec">四、未来方向对比</div>
+  <table>
+    <thead><tr><th>方向</th><th>OpenClaw（VISION 明示）</th><th>CrossWMS（从架构演进推断）</th></tr></thead>
+    <tbody>
+      <tr><td class="dim">近期优先级</td><td>安全默认 → bug/稳定性 → 首跑 UX/setup 可靠性</td><td>持续 v9.x 流式/领域增强、WMS 数据闭环、Auto Model 精调</td></tr>
+      <tr><td class="dim">模型/通道</td><td>"支持所有主流模型商" + "扩展消息通道"</td><td>聚焦旗舰模型路由质量，暂不铺通道</td></tr>
+      <tr><td class="dim">平台</td><td>mac/iOS/Android/Win/Linux 伴随 App + Web ergonomics</td><td>维持 macOS 桌面为主（DMG），未显式多端</td></tr>
+      <tr><td class="dim">Agent/工具</td><td>更强 computer-use / agent harness / 性能与测试基建</td><td>深化 ReAct + 领域工具 + MCP 接入</td></tr>
+      <tr><td class="dim">生态</td><td>ClawHub 技能/插件市场；核心瘦身、能力外置为插件</td><td>内置 plugin+MCP，尚无公开市场/SDK</td></tr>
+      <tr><td class="dim">明确不做</td><td>核心技能上 ClawHub、重编排层、默认 manager-of-managers 树</td><td>未见公开路线图（建议补充能力评分卡）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="sec">五、给团队的 actionable 建议</div>
+  <div class="rec">
+    <h4>① 不要去复制 OpenClaw 的全平台野心</h4>
+    <ol>
+      <li>CrossWMS 的护城河是<b>跨境支付领域深度 + 桌面流式体验</b>，不是"又一个通用助手"。</li>
+      <li>资源应投向领域数据闭环（WMS/双海关/价格口径）与流式打磨，而非 25+ 通道。</li>
+    </ol>
+  </div>
+  <div class="rec">
+    <h4>② 向 OpenClaw 借"架构化能力"，而非"功能清单"</h4>
+    <ol>
+      <li><b>插件 SDK + 市场思维</b>：把 builtin/plugin/MCP 升级为带正式 SDK 的扩展体系，核心瘦身（呼应 OC "Core stays lean"）。</li>
+      <li><b>配置 doctor 迁移</b>：破坏性配置变更配套 `doctor --fix`（自动备份+改写），降低升级摩擦。</li>
+      <li><b>长会话压缩/记忆</b>：WMS 长对话易超上下文，引入 OC 式 compaction + 多后端记忆。</li>
+      <li><b>安全沙箱</b>：high-risk 工具调用加 Docker/隔离执行，对齐 OC 的 sandbox.mode。</li>
+    </ol>
+  </div>
+  <div class="rec">
+    <h4>③ 补一份"能力成熟度评分卡"</h4>
+    <ol>
+      <li>OpenClaw 用 scorecard（50 surfaces/281 areas）诚实标注 Beta/Alpha；CrossWMS 也可建立类似清单，避免"感觉完成"与"实际完成"的偏差。</li>
+      <li>对"生成文件""新建对话"等近期 UI 改动，建议纳入回归基线（你当前的 QA 严格度正好用得上）。</li>
+    </ol>
+  </div>
+
+  <div class="foot">数据来源：openclaw 仓库（VISION.md / README.md / 实际代码统计）与 CrossWMS 仓库（MEMORY.md / CHANGELOG / 工作记忆）。对比截至 2026-07-11。</div>
+</div>
+</body>
+</html>

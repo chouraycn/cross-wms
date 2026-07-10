@@ -437,11 +437,13 @@ function convertAgentEventToSSE(evt: { stream: string; data: Record<string, unkn
     case 'lifecycle': {
       const phase = evt.data.phase;
       if (phase === 'start') {
+        // 契约对齐：init 事件转发 lifecycle.start 携带的全部字段（含语义路由透传的
+        // autoReason / autoReasonType / autoSemanticMethod / autoSemanticConfidence 等），
+        // 与活跃路径 agent-chat → runChatSession 的 init 契约保持一致，避免遗留桥接字段缺失。
+        const { phase: _phase, ...rest } = evt.data as Record<string, unknown>;
         return {
           type: 'init',
-          sessionId: evt.data.sessionId,
-          model: evt.data.model,
-          modelName: evt.data.modelName,
+          ...rest,
         };
       }
       if (phase === 'end') {

@@ -199,7 +199,9 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
 
   for (let turn = 0; turn < maxToolTurns; turn++) {
     if (signal?.aborted) {
-      throw new Error('请求已取消');
+      const err = new Error('请求已取消');
+      err.name = 'AbortError';
+      throw err;
     }
 
     // v1.5.73: 每轮调用前截断上下文，防止 tool call 循环中消息膨胀超限

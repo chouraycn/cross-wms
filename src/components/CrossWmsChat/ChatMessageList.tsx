@@ -573,6 +573,19 @@ export const ChatMessageList = React.forwardRef<ChatMessageListRef, ChatMessageL
           {msg.attachments.map((att) => {
             const FileIcon = getFileTypeIcon(att.mimeType, att.fileName);
 
+            const formatSize = (bytes: number): string => {
+              if (bytes < 1024) return `${bytes}B`;
+              if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+              return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+            };
+
+            const handleDownload = () => {
+              const link = document.createElement('a');
+              link.href = att.url;
+              link.download = att.fileName;
+              link.click();
+            };
+
             return att.type === 'image' ? (
               <ImageAttachment
                 key={att.id}
@@ -581,27 +594,56 @@ export const ChatMessageList = React.forwardRef<ChatMessageListRef, ChatMessageL
                 gs={gs}
               />
             ) : (
-              <Chip
+              <Box
                 key={att.id}
-                icon={<FileIcon sx={{ fontSize: 16 }} />}
-                label={`${att.fileName} (${(att.size / 1024).toFixed(1)}KB)`}
-                size="small"
-                clickable
-                onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = att.url;
-                  link.download = att.fileName;
-                  link.click();
-                }}
+                onClick={handleDownload}
                 sx={{
-                  height: 30,
-                  fontSize: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 1.5,
+                  py: 1,
+                  borderRadius: '8px',
                   bgcolor: isDark ? '#1E293B' : '#F8FAFC',
                   border: `1px solid ${gs.border}`,
-                  '& .MuiChip-label': { px: 1 },
+                  cursor: 'pointer',
+                  transition: 'background-color 0.15s',
                   '&:hover': { bgcolor: isDark ? '#263348' : '#EFF6FF' },
+                  maxWidth: 280,
                 }}
-              />
+              >
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '6px',
+                    flexShrink: 0,
+                    bgcolor: isDark ? '#0F172A' : '#F1F5F9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <FileIcon sx={{ fontSize: 22, color: gs.textSecondary }} />
+                </Box>
+                <Box sx={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
+                  <Typography
+                    sx={{
+                      fontSize: 12,
+                      color: gs.textPrimary,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {att.fileName}
+                  </Typography>
+                  <Typography sx={{ fontSize: 11, color: gs.textMuted }}>
+                    {formatSize(att.size)}
+                  </Typography>
+                </Box>
+              </Box>
             );
           })}
         </Box>

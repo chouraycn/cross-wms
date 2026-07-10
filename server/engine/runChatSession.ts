@@ -25,9 +25,11 @@ import type { ExecuteChatCallbacks, ExecuteChatResult } from './streamExecutor.j
 import { buildApiMessages, hasImageAttachment } from './buildApiMessages.js';
 import type { ModelCallConfig } from '../aiClient.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
-import type { ModelConfig, ModelsFile } from '../modelsStore.js';
-import { autoSelectModel, generateMockResponse } from '../routes/modelSelector.js';
+import type { ModelCapability, ModelConfig, ModelsFile } from '../modelsStore.js';
+import { autoSelectModelAsync, generateMockResponse } from '../routes/modelSelector.js';
 import { selectKey, reportKeyResult } from '../keyRotator.js';
+import { waitForBackoff } from './backoffWait.js';
+import { getBackoffCoordinator } from './backoffCoordinator.js';
 import { TimerManager } from '../sse/timerManager.js';
 import { ExecutionMode } from './executionStrategy.js';
 import { getSessionMessages, addMessage, getSessions, createSession, updateSession } from '../dao/chat.js';
@@ -179,13 +181,18 @@ export async function runChatSession(
   let effectiveModelName: string;
   let autoReason: string | undefined;
   let autoReasonType: string | undefined;
+  let autoSemanticMethod: string | undefined;
+  let autoSemanticConfidence: number | undefined;
 
   if (model === 'auto') {
-    const autoResult = autoSelectModel(message, modelsConfig as ModelsFile, hasImageAttachment(input.attachments));
+    const autoResult = await autoSelectModelAsync(message, modelsConfig as ModelsFile, hasImageAttachment(input.attachments));
     effectiveModel = autoResult.modelId;
     effectiveModelName = autoResult.modelName;
     autoReason = `${autoResult.modelName} · ${autoResult.reason}`;
     autoReasonType = autoResult.reasonType;
+    // 联动语义路由透明度：把 [六] 的融合方法与置信度透传前端，便于审计智能路由是否生效
+    autoSemanticMethod = autoResult.semanticIntent?.method;
+    autoSemanticConfidence = autoResult.semanticIntent?.confidence;
   } else {
     effectiveModel = model;
     const found = modelsConfig.models.find((m) => m.id === model);
@@ -240,6 +247,8 @@ export async function runChatSession(
     modelName: effectiveModelName,
     autoReason,
     autoReasonType,
+    autoSemanticMethod,
+    autoSemanticConfidence,
     preset: input.preset || null,
   });
 
@@ -580,6 +589,7 @@ export async function runChatSession(
       callbacks,
       timerManager,
       abortController.signal,
+      selectedKeyIndex,
     );
 
     if (fallbackResult) {
@@ -640,57 +650,92 @@ async function tryFallback(
   callbacks: RunChatSessionCallbacks,
   timerManager: TimerManager,
   signal: AbortSignal,
+  selectedKeyIndex: number,
+  requiredCapabilities?: ModelCapability[],
 ): Promise<RunChatSessionResult | null> {
   // 检查错误是否可恢复
   const { AIAPIError } = await import('../aiClient.js');
   if (!(error instanceof AIAPIError)) return null;
 
-  const recoverableCategories = ['model_not_supported', 'timeout', 'network', 'server'];
-  if (!recoverableCategories.includes(error.category)) return null;
+  // ===== 统一退避决策（限流先轮换 Key，连续命中才跨模型降级）=====
+  const coordinator = getBackoffCoordinator();
 
-  // 查找降级模型
-  const isModelAvailable = (m: ModelConfig) => {
-    if (!m.enabled) return false;
-    if (m.apiKey) return true;
-    if (m.apiKeys && m.apiKeys.some((k: any) => k.key && k.enabled !== false)) return true;
-    return false;
-  };
+  // 联动 [六] 语义路由：若原模型本身具备 reasoning 能力（复杂任务经 Auto Model 选出的
+  // Tier3 推理模型，或用户显式指定的推理模型），降级时保留 reasoning —— 避免对最需要推理
+  // 的任务反而降级到非推理模型（等于 [六] 投入在故障边界被清零）。简单任务（原模型无
+  // reasoning）仍按历史行为剔除 reasoning 以降本，并让 getNextModel 优先非推理备模型。
+  const requiresReasoning = (currentModelConfig.capabilities || []).includes('reasoning');
+  const mergedCapabilities: ModelCapability[] | undefined = requiresReasoning
+    ? Array.from(new Set<ModelCapability>([...(requiredCapabilities || []), 'reasoning']))
+    : requiredCapabilities;
 
-  // 优先：同 provider、非 reasoning、可用
-  let fallbackModel = modelsConfig.models.find(
-    (m) => m.id !== currentModel && m.enabled && m.provider === currentModelConfig.provider
-      && !(m.capabilities || []).includes('reasoning') && isModelAvailable(m),
-  );
+  const decision = coordinator.coordinate({
+    modelId: currentModel,
+    modelConfig: currentModelConfig,
+    keyIndex: selectedKeyIndex,
+    error,
+    modelsConfig,
+    requiredCapabilities: mergedCapabilities,
+  });
 
-  // 次选：任意可用模型
-  if (!fallbackModel) {
-    fallbackModel = modelsConfig.models.find(
-      (m) => m.id !== currentModel && m.enabled && isModelAvailable(m),
-    );
+  if (decision.action === 'give-up') {
+    logger.warn(`[runChatSession] 模型 ${currentModel} 无可用降级路径（${decision.reason}）`);
+    return null;
+  }
+
+  // 解析降级目标：同模型轮换 Key（第一层）或 跨模型切换（第二层）
+  let fallbackModel: ModelConfig | null = null;
+  let fallbackApiKey = '';
+  const isKeyRotation = decision.action === 'rotate-key';
+
+  if (isKeyRotation && decision.apiKey) {
+    // 第一层：同一模型，使用协调器选出的健康备用 Key
+    fallbackModel = { ...currentModelConfig, apiKey: decision.apiKey };
+    fallbackApiKey = decision.apiKey;
+  } else if (decision.action === 'switch-model' && decision.nextModelId) {
+    // 第二层：跨模型切换
+    const fm = modelsConfig.models.find((m) => m.id === decision.nextModelId);
+    if (!fm) return null;
+    fallbackModel = fm;
+  } else {
+    return null;
   }
 
   if (!fallbackModel) return null;
 
-  const fallbackModelName = fallbackModel.name || fallbackModel.id;
-  logger.info(`[runChatSession] 降级到: ${fallbackModelName}`);
+  // 落实 BackoffCoordinator 建议的退避时长：限流/跨模型失败后稍作停顿，
+  // 避免对失败模型/Key 做瞬时重放而放大故障面。已被取消则直接放弃。
+  if (decision.backoffMs > 0) {
+    await waitForBackoff(decision.backoffMs, signal);
+    if (signal.aborted) return null;
+  }
 
-  // 通知前端降级
+  const fallbackModelName = fallbackModel.name || fallbackModel.id;
+  logger.info(`[runChatSession] 降级到: ${isKeyRotation ? `同模型轮换 Key（${fallbackModel.id}）` : fallbackModelName}`);
+
+  // 通知前端
   callbacks.onEvent?.({
     type: 'text',
-    content: `\n\n> ⚠️ 模型不支持/请求失败，已自动切换到 **${fallbackModelName}** 重试...\n\n`,
+    content: isKeyRotation
+      ? `\n\n> ⚠️ 当前 API Key 触发限流，已自动切换到备用 Key 重试...\n\n`
+      : `\n\n> ⚠️ 模型不支持/请求失败，已自动切换到 **${fallbackModelName}** 重试...\n\n`,
   });
 
   // 重启心跳
   timerManager.restart('fallback');
 
-  // 构建降级模型配置
-  const fallbackKeyResult = selectKey(fallbackModel);
-  const fallbackApiKey = fallbackKeyResult ? fallbackKeyResult.key : (fallbackModel.apiKey || '');
+  // 构建降级模型配置（跨模型时才需重新 selectKey；同模型轮换已确定 Key）
+  if (!isKeyRotation) {
+    const fallbackKeyResult = selectKey(fallbackModel);
+    fallbackApiKey = fallbackKeyResult ? fallbackKeyResult.key : (fallbackModel.apiKey || '');
+  }
   const fallbackModelConfig: ModelCallConfig = {
     ...fallbackModel,
     apiKey: fallbackApiKey,
-    // 过滤掉 reasoning capability
-    capabilities: (fallbackModel.capabilities || []).filter((c: string) => c !== 'reasoning'),
+    // 仅当原任务不需要 reasoning 时才剔除（简单任务降级降本）；复杂/推理任务保留 reasoning
+    capabilities: requiresReasoning
+      ? fallbackModel.capabilities
+      : (fallbackModel.capabilities || []).filter((c: string) => c !== 'reasoning'),
   };
 
   const fallbackCtxWindow = fallbackModelConfig.contextWindow || 128000;
@@ -733,7 +778,7 @@ async function tryFallback(
           callbacks.onEvent?.(event as { type: string; [key: string]: unknown });
         },
         onRateLimit: async () => {
-          const keyResult = selectKey(fallbackModel);
+          const keyResult = selectKey(fallbackModel as ModelConfig);
           if (keyResult) {
             return { apiKey: keyResult.key, keyIndex: keyResult.index };
           }
@@ -747,6 +792,11 @@ async function tryFallback(
     const toolCallsJson = result.toolCalls && result.toolCalls.length > 0
       ? JSON.stringify(result.toolCalls)
       : undefined;
+
+    // 同模型轮换成功的 Key 上报成功（原失败 Key 已由协调器标记失败冷却）
+    if (isKeyRotation && decision.keyIndex !== undefined) {
+      reportKeyResult(currentModel, decision.keyIndex, true);
+    }
 
     // 保存降级后的回复
     addMessage({
@@ -771,7 +821,7 @@ async function tryFallback(
       toolCallsJson,
       usage: result.usage,
       fallbackModel: fallbackModel.id,
-      fallbackReason: `降级自 ${currentModel}`,
+      fallbackReason: isKeyRotation ? 'key_rotation' : 'model_downgrade',
       model: fallbackModel.id,
       modelName: fallbackModelName,
     };
@@ -783,7 +833,7 @@ async function tryFallback(
       thinkingDuration: result.thinkingDuration,
       usage: result.usage,
       fallbackModel: fallbackModel.id,
-      fallbackReason: `降级自 ${currentModel}`,
+      fallbackReason: fallbackResult.fallbackReason,
     });
 
     callbacks.onDone?.(fallbackResult);

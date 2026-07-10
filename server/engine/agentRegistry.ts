@@ -20,6 +20,27 @@ import {
 import { logger } from '../logger.js';
 import { v4 as uuidv4 } from 'uuid';
 
+// ===================== 类型 =====================
+
+/**
+ * v9.1: 运行时子代理实例（由 AgentOrchestrator.spawnSubAgent 创建）
+ * 与 AgentProfile（静态定义）分离，用于父代理追踪子代理的生命周期。
+ */
+export interface RuntimeInstance {
+  instanceId: string;
+  agentId: string;
+  agentRole: string;
+  parentInstanceId?: string;
+  taskDescription: string;
+  status: 'spawning' | 'running' | 'completed' | 'failed' | 'cancelled' | 'timeout';
+  startedAt: number;
+  completedAt?: number;
+  result?: string;
+  error?: string;
+  /** 累计 token 消耗（由执行器回填） */
+  tokensUsed?: number;
+}
+
 // ===================== 常量 =====================
 
 /** Agent 数据存储根目录 */
@@ -44,6 +65,8 @@ const MEMORY_FILE = 'MEMORY.md';
  */
 class AgentRegistry {
   private agents: Map<string, AgentProfile> = new Map();
+  /** v9.1: 运行时子代理实例表（父子关系、状态、token 累计） */
+  private instances: Map<string, RuntimeInstance> = new Map();
   private initialized = false;
 
   constructor() {}
@@ -335,6 +358,62 @@ class AgentRegistry {
     }
 
     agent.lastActiveAt = new Date().toISOString();
+  }
+
+  // ===================== 运行时实例管理（v9.1） =====================
+
+  /**
+   * v9.1: 注册一个运行时子代理实例（由 spawnSubAgent 调用）
+   */
+  registerInstance(instance: RuntimeInstance): void {
+    this.instances.set(instance.instanceId, instance);
+    logger.debug(`[AgentRegistry] 注册子代理实例 ${instance.instanceId} (agent=${instance.agentId})`);
+  }
+
+  /**
+   * v9.1: 更新运行时实例状态/结果
+   */
+  updateInstance(instanceId: string, patch: Partial<RuntimeInstance>): void {
+    const inst = this.instances.get(instanceId);
+    if (!inst) return;
+    Object.assign(inst, patch);
+    this.instances.set(instanceId, inst);
+  }
+
+  /**
+   * v9.1: 查询单个运行时实例
+   */
+  getInstance(instanceId: string): RuntimeInstance | undefined {
+    return this.instances.get(instanceId);
+  }
+
+  /**
+   * v9.1: 列出运行时实例（可按父实例 / 状态过滤）
+   */
+  listInstances(options?: { parentInstanceId?: string; status?: RuntimeInstance['status'] }): RuntimeInstance[] {
+    let list = Array.from(this.instances.values());
+    if (options?.parentInstanceId) {
+      list = list.filter(i => i.parentInstanceId === options.parentInstanceId);
+    }
+    if (options?.status) {
+      list = list.filter(i => i.status === options.status);
+    }
+    return list.sort((a, b) => b.startedAt - a.startedAt);
+  }
+
+  /**
+   * v9.1: 取消运行时实例（标记 cancelled，实际中断由调用方 AbortSignal 负责）
+   */
+  cancelInstance(instanceId: string): boolean {
+    const inst = this.instances.get(instanceId);
+    if (!inst) return false;
+    if (inst.status === 'completed' || inst.status === 'failed' || inst.status === 'cancelled') {
+      return false;
+    }
+    inst.status = 'cancelled';
+    inst.completedAt = Date.now();
+    this.instances.set(instanceId, inst);
+    return true;
   }
 
   // ===================== 私有方法 =====================
