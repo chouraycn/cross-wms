@@ -80,8 +80,10 @@ export interface ReActReflectionDecision {
 
 /** ReAct 执行结果 — 扩展 ToolExecutionResult */
 export interface ReActExecutionResult extends ToolExecutionResult {
-  /** 执行计划（v7.0 不再使用，始终为 undefined） */
+  /** 执行计划（v9.1 [五]: 启用 planningMode 时由 Planner 生成，否则 undefined） */
   plan?: ExecutionPlan;
+  /** v9.1 [一]: 执行轨迹（每轮 thought/observation 摘要） */
+  scratchpad?: ScratchpadEntry[];
   /** 所有观察结果 */
   observations: Observation[];
   /** 总循环轮数 */
@@ -118,6 +120,27 @@ interface ReActState {
 /** 上下文压缩间隔（每 5 轮压缩一次） */
 const CONTEXT_COMPRESS_INTERVAL = 5;
 
+/** v9.1 [五]: 计划导航 system 消息前缀（用于重规划时定位并更新） */
+const PLAN_NAV_PREFIX = '[执行计划导航]';
+
+/** v9.1 [一]: 单轮执行轨迹（写入 scratchpad，供压缩/重规划复用，不污染 messages） */
+export interface ScratchpadEntry {
+  /** 轮次（1-based） */
+  turn: number;
+  /** 本轮推理摘要（截断） */
+  thought?: string;
+  /** 本轮观察摘要（截断） */
+  observation?: string;
+  /** 本轮使用的工具名 */
+  toolsUsed: string[];
+  /** 耗时（ms） */
+  durationMs: number;
+  /** 估算 token 消耗 */
+  tokensUsed: number;
+  /** 关联的计划步骤（若有） */
+  planStep?: number;
+}
+
 // ===================== ReActExecutor =====================
 
 /**
@@ -143,6 +166,10 @@ export class ReActExecutor {
   private _actionPhaseExecutor?: ActionPhaseExecutor;
   private _autoCompressor?: AutoCompressor;
   private _modelFailoverOptions?: ModelFailoverOptions;
+  /** v9.1 [一]: 执行轨迹（每轮 thought/observation 摘要） */
+  private _scratchpad?: ScratchpadEntry[];
+  /** v9.1 [五]: 当前激活的执行计划 */
+  private _activePlan?: ExecutionPlan;
 
   // 懒加载访问器 — 避免构造函数中一次性创建所有对象
   private get observer(): Observer {
@@ -219,6 +246,20 @@ export class ReActExecutor {
   }
 
   /**
+   * v9.1 [五]: 将执行计划格式化为 system 导航消息（注入上下文，作为 turn 导航）
+   */
+  private buildPlanNavigation(plan: ExecutionPlan): string {
+    const stepsText = plan.steps
+      .map(s => `  ${s.step}. [${s.status}] ${s.description}${s.toolName ? ` (推荐工具: ${s.toolName})` : ''}`)
+      .join('\n');
+    return `${PLAN_NAV_PREFIX}
+你正在按以下计划执行任务，请逐步推进，完成后在最终回复中说明各步骤结果：
+意图：${plan.intent}
+步骤：
+${stepsText}`;
+  }
+
+  /**
    * 执行 ReAct 3 步循环：推理 → 执行 → 观察
    *
    * @param options - 执行策略选项
@@ -235,6 +276,8 @@ export class ReActExecutor {
       onToolCall,
       modelCapabilities,
       onSSEEvent,
+      onPlan,
+      planningMode = 'off',
       sessionId,
     } = options;
 
@@ -254,6 +297,8 @@ export class ReActExecutor {
     this._loopDetector?.reset();
     this._circuitBreaker?.reset();
     this._autoCompressor?.reset();
+    // v9.1 [一]: 重置执行轨迹
+    this._scratchpad = [];
 
     // 获取工具定义（内置 + 插件 + MCP）
     const builtinTools = getBuiltinToolDefinitions();
@@ -263,6 +308,28 @@ export class ReActExecutor {
 
     // 复制消息列表
     const currentMessages = [...messages];
+
+    // v9.1 [五]: 规划模式 — 复杂任务先生成计划作为导航，注入 system 消息
+    this._activePlan = undefined;
+    if (planningMode !== 'off' && this._planner) {
+      try {
+        const userMsg = this.extractUserMessage(currentMessages) || '';
+        const assessment = this._planner.assessTrigger(currentMessages, userMsg);
+        if (assessment.shouldTrigger) {
+          const plan = await this._planner.generatePlan(modelConfig, currentMessages, signal);
+          if (plan) {
+            this._activePlan = plan;
+            const planPrompt = this.buildPlanNavigation(plan);
+            currentMessages.unshift({ role: 'system', content: planPrompt } as typeof currentMessages[number]);
+            if (onSSEEvent) onSSEEvent({ type: 'plan', plan: plan as unknown as Record<string, unknown> });
+            onPlan?.(plan as unknown as Record<string, unknown>);
+            logger.debug(`[ReActExecutor] 已生成执行计划 ${plan.id} (${plan.steps.length} 步)`);
+          }
+        }
+      } catch (planErr) {
+        logger.warn('[ReActExecutor] 规划生成失败，跳过:', planErr instanceof Error ? planErr.message : String(planErr));
+      }
+    }
     let finalContent = '';
     const executedToolCalls: Array<{ name: string; arguments: string; result: string }> = [];
     const allObservations: Observation[] = [];
@@ -270,10 +337,13 @@ export class ReActExecutor {
     // ============== 3 步循环：推理 → 执行 → 观察 ==============
     for (let turn = 0; turn < maxToolTurns; turn++) {
       this.state.turn = turn + 1;
+      const turnStart = Date.now();
 
       // 检查终止条件
       if (signal?.aborted) {
-        throw new Error('请求已取消');
+        const err = new Error('请求已取消');
+        err.name = 'AbortError';
+        throw err;
       }
       if (this.state.shouldTerminate) {
         break;
@@ -463,6 +533,35 @@ export class ReActExecutor {
       const observations = this.observationPhase(actionResults);
       allObservations.push(...observations);
 
+      // v9.1 [一]: 写入执行轨迹 + 发送 turn_trace 事件（供可观测性与压缩复用）
+      const turnDuration = Date.now() - turnStart;
+      const turnTokens = this.budgetManager.getConsumedTokens();
+      const toolsUsed = actionResults ? Array.from(actionResults.keys()).map(tc => tc.function.name) : [];
+      const obsSummary = observations
+        .map(o => (o.assessment.level === 'success' ? '✓' : '✗') + (o.assessment.reason || ''))
+        .join('; ')
+        .slice(0, 200);
+      if (this._scratchpad) {
+        this._scratchpad.push({
+          turn: turn + 1,
+          thought: (response.reasoningContent || '').slice(0, 300),
+          observation: obsSummary,
+          toolsUsed,
+          durationMs: turnDuration,
+          tokensUsed: turnTokens,
+        });
+      }
+      if (onSSEEvent) {
+        onSSEEvent({
+          type: 'turn_trace',
+          turn: turn + 1,
+          tools: toolsUsed,
+          durationMs: turnDuration,
+          tokensUsed: turnTokens,
+          planStep: this._activePlan ? Math.min(turn + 1, this._activePlan.steps.length) : undefined,
+        });
+      }
+
       // ============== Circuit Breaker — 记录成功/失败 ==============
       for (const obs of observations) {
         if (obs.assessment.level === 'success') {
@@ -515,6 +614,34 @@ export class ReActExecutor {
           });
         }
 
+        // v9.1 [五]: 动态规划模式 — 循环/失败时反思式重规划
+        if (planningMode === 'dynamic' && this._activePlan && this._planner) {
+          try {
+            const scratchpadSummary = (this._scratchpad || [])
+              .map(e => `轮${e.turn}: 工具[${e.toolsUsed.join(',')}] 观察:${e.observation}`)
+              .join('\n');
+            const userMsg = this.extractUserMessage(currentMessages) || '';
+            const revised = await this._planner.reflectionReplan(
+              modelConfig, userMsg, this._activePlan, scratchpadSummary, signal,
+            );
+            if (revised) {
+              this._activePlan = revised;
+              // 更新计划导航 system 消息（定位前缀后替换，避免重复注入）
+              const navIdx = currentMessages.findIndex(
+                m => m.role === 'system' && typeof m.content === 'string' && m.content.startsWith(PLAN_NAV_PREFIX),
+              );
+              if (navIdx >= 0) {
+                currentMessages[navIdx] = { ...currentMessages[navIdx], content: this.buildPlanNavigation(revised) };
+              }
+              if (onSSEEvent) onSSEEvent({ type: 'plan_revised', plan: revised as unknown as Record<string, unknown> });
+              onPlan?.(revised as unknown as Record<string, unknown>);
+              logger.debug(`[ReActExecutor] 反思式重规划完成，${revised.steps.length} 步`);
+            }
+          } catch (replanErr) {
+            logger.warn('[ReActExecutor] 反思式重规划失败，继续:', replanErr instanceof Error ? replanErr.message : String(replanErr));
+          }
+        }
+
         // ask_user → 终止循环请求用户介入
         if (strategy.action === 'ask_user') {
           this.state.shouldTerminate = true;
@@ -532,6 +659,8 @@ export class ReActExecutor {
     const finalResult = {
       content: finalContent,
       toolCalls: executedToolCalls,
+      plan: this._activePlan,
+      scratchpad: this._scratchpad,
       observations: allObservations,
       totalTurns: this.state.turn,
       earlyTermination: this.state.earlyTermination,

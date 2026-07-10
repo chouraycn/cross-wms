@@ -163,7 +163,11 @@ export interface Message {
   /** Auto 模式选型原因（如 "Claude Sonnet 4 · 检测到代码内容"） */
   autoReason?: string;
   /** Auto 选型原因类型 */
-  autoReasonType?: 'code' | 'complex' | 'simple' | 'default';
+  autoReasonType?: 'tier1' | 'tier2' | 'tier3' | 'vision' | 'code' | 'fallback' | 'default';
+  /** 语义路由融合方法（semantic=语义融合 / rule-fallback=规则兜底），来自 [六] */
+  autoSemanticMethod?: string;
+  /** 语义路由融合置信度（0~1），越高越依赖 embedding 语义分类 */
+  autoSemanticConfidence?: number;
   /** 消息元数据（v1.9.2: 存储 token 用量等扩展信息） */
   metadata?: MessageMetadata;
   /** v1.8.6: AI 思考过程内容（如 DeepSeek-R1 reasoning_content / Claude thinking） */
@@ -282,7 +286,7 @@ export interface Message {
   keywordTrigger?: KeywordTriggerInfo[];
   /** v1.5.116: 模型降级信息 */
   fallbackModel?: string;
-  fallbackReason?: 'model_not_supported' | 'request_failed';
+  fallbackReason?: 'key_rotation' | 'model_downgrade' | 'model_not_supported' | 'request_failed';
   /** 错误信息（AI 回复失败时携带，用于 UI 标记错误状态） */
   error?: string;
   /** v9.0: Content Block 数组（双轨并行，优先渲染此字段，回退到扁平字段） */

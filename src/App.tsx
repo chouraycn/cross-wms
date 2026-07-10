@@ -646,8 +646,11 @@ const MainLayout: React.FC = () => {
   const isDark = theme.palette.mode === 'dark';
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
   const location = useLocation();
-  // v1.5.175: 启动时始终展开侧边栏（忽略历史保存值）
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 768px)').matches;
+  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(isMobile);
   // pywebview / macOS App 检测 — frameless 模式下红黄绿按钮悬浮在左上角（透明无背景条）
   // 只需少量顶部边距（8px），不再需要全宽标题栏避让
   // v3.3: 使用 isMacOSApp() 构建时检测作为初始值，避免运行时注入延迟导致布局闪烁
@@ -683,6 +686,22 @@ const MainLayout: React.FC = () => {
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('cdf-sidebar-state', { detail: { collapsed: sidebarCollapsed } }));
   }, [sidebarCollapsed]);
+
+  // 响应式：移动端默认收起侧边栏，桌面端默认展开
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 768px)');
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+      setSidebarCollapsed(e.matches);
+    };
+    if (mql.addEventListener) {
+      mql.addEventListener('change', handleChange);
+      return () => mql.removeEventListener('change', handleChange);
+    } else {
+      mql.addListener(handleChange);
+      return () => mql.removeListener(handleChange);
+    }
+  }, []);
 
   // 监听自定义事件，允许子组件触发侧边栏切换
   useEffect(() => {

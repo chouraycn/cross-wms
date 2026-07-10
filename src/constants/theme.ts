@@ -7,9 +7,9 @@
 // ===================== 基础灰阶 Token (Light Mode) =====================
 
 /** 页面背景 */
-export const BG_PAGE_LIGHT = '#F5F5F5';
+export const BG_PAGE_LIGHT = '#FAFAFA';
 /** 面板/卡片背景 */
-export const BG_PANEL_LIGHT = '#FFFFFF';
+export const BG_PANEL_LIGHT = '#FAFAFA';
 /** 侧边栏背景 */
 export const BG_SIDEBAR_LIGHT = '#F0F0F0';
 /** 悬浮/悬停背景 */

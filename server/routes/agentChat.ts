@@ -177,6 +177,8 @@ export async function handleAgentChat(req: Request, res: Response) {
                 modelName: event.modelName,
                 autoReason: event.autoReason,
                 autoReasonType: event.autoReasonType,
+                autoSemanticMethod: event.autoSemanticMethod,
+                autoSemanticConfidence: event.autoSemanticConfidence,
               });
               break;
             case 'text':

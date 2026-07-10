@@ -105,8 +105,15 @@ vi.mock('../../logger.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
+const { autoSelectModelMock, autoSelectModelAsyncMock } = vi.hoisted(() => {
+  const autoSelectModelMock = vi.fn();
+  const autoSelectModelAsyncMock = vi.fn(async (...args: unknown[]) => autoSelectModelMock(...(args as [])));
+  return { autoSelectModelMock, autoSelectModelAsyncMock };
+});
+
 vi.mock('../modelSelector.js', () => ({
-  autoSelectModel: vi.fn(),
+  autoSelectModel: autoSelectModelMock,
+  autoSelectModelAsync: autoSelectModelAsyncMock,
   generateMockResponse: vi.fn(),
   isModelAvailable: vi.fn(),
   MODEL_PRESETS: {} as Record<string, { label: string; temperature: number; topP: number }>,

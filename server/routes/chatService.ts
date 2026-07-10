@@ -36,7 +36,7 @@ import {
 import { matchTriggers, executePluginTrigger } from '../services/pluginAutoInvoke.js';
 import { messageQueue, type QueueMode, type QueueEvent } from '../engine/messageQueue.js';
 import { logger } from '../logger.js';
-import { autoSelectModel, generateMockResponse, isModelAvailable, MODEL_PRESETS } from './modelSelector.js';
+import { autoSelectModelAsync, generateMockResponse, isModelAvailable, MODEL_PRESETS } from './modelSelector.js';
 import { extractAndAppendMemory, readMemoryMd } from './memoryExtractor.js';
 import { getAppSettings } from '../dao/settings.js';
 import { extractFileContent } from './chatHelpers/fileExtractor.js';
@@ -114,6 +114,11 @@ export function classifyAndFormatError(
   }
 
   const errMessage = error instanceof Error ? error.message : '未知错误';
+  // 安全网：reactExecutor/toolExecutor 早期版本抛出的取消错误未设 name=AbortError，
+  // 此处按 message 兜底识别，避免误显示为"AI 服务暂时不可用"
+  if (errMessage === '请求已取消') {
+    return { code: 'ABORTED', message: '请求已取消。' };
+  }
   if (errMessage.includes('stdout closed') || errMessage.includes('ENOENT') || errMessage.includes('ECONNREFUSED') || errMessage.includes('connect') || errMessage.includes('fetch failed')) {
     const isLocal = modelConfig ? isLocalModel(modelConfig) : false;
     if (isLocal) {
@@ -413,6 +418,21 @@ async function executeQueuedMessage(
       effectiveMode = ExecutionStrategyFactory.getDefaultMode();
     }
 
+    // v9.1 [七]: 自动调度闭环 — AUTO 模式由复杂度评估推导实际策略
+    if (effectiveMode === ExecutionMode.AUTO) {
+      const resolved = ExecutionStrategyFactory.resolveAutoMode(apiMessages, params.message);
+      logger.info(`[ChatService] 自动调度: AUTO → ${resolved} (会话 ${sessionId})`);
+      if (res) {
+        sendDebugSSE(res, {
+          type: 'strategy_selected',
+          requested: 'auto',
+          resolved,
+          reason: '复杂度评估自动推导',
+        });
+      }
+      effectiveMode = resolved;
+    }
+
     const callbacks: ExecuteChatCallbacks = {
       onRateLimit: async () => {
         const nextKey = selectKey(modelConfig);
@@ -587,15 +607,19 @@ export async function handleChat(req: import('express').Request, res: import('ex
     let effectiveModelName: string;
     let autoReason: string | undefined;
     let autoReasonType: string | undefined;
+    let autoSemanticMethod: string | undefined;
+    let autoSemanticConfidence: number | undefined;
 
     if (model === 'auto') {
       const hasImg = hasImageAttachment(attachments);
       try {
-        const autoResult = autoSelectModel(message, modelsConfig, hasImg);
+        const autoResult = await autoSelectModelAsync(message, modelsConfig, hasImg);
         effectiveModel = autoResult.modelId;
         effectiveModelName = autoResult.modelName;
         autoReason = `${autoResult.modelName} · ${autoResult.reason}`;
         autoReasonType = autoResult.reasonType;
+        autoSemanticMethod = autoResult.semanticIntent?.method;
+        autoSemanticConfidence = autoResult.semanticIntent?.confidence;
         logger.debug(`[Auto Model] ${autoResult.reasonType} → ${autoResult.modelName} (${autoResult.modelId})`);
       } catch (autoErr: any) {
         const errMsg = autoErr instanceof Error ? autoErr.message : '无可用模型';
@@ -648,6 +672,8 @@ export async function handleChat(req: import('express').Request, res: import('ex
       modelName: effectiveModelName,
       autoReason,
       autoReasonType,
+      autoSemanticMethod,
+      autoSemanticConfidence,
       preset: activePreset ? { id: preset, label: activePreset.label } : null,
     });
 
@@ -667,6 +693,8 @@ export async function handleChat(req: import('express').Request, res: import('ex
         conversationHistory,
         autoReason,
         autoReasonType,
+        autoSemanticMethod,
+        autoSemanticConfidence,
       });
 
       if (!result.accepted) {
