@@ -39,6 +39,7 @@ import SearchInput from '../components/Common/SearchInput';
 import { useToast } from '../contexts/ToastContext';
 import type { Partner, PartnerType } from '../types/partners';
 import { getGrayScale } from '../constants/theme';
+import { usePageFadeIn } from '../hooks/usePageFadeIn';
 
 const PARTNER_TYPE_LABELS: Record<PartnerType, string> = {
   supplier: '供应商',
@@ -57,6 +58,7 @@ const PartnersPage: React.FC = () => {
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
   const { showToast } = useToast();
+  const fadeCls = usePageFadeIn();
 
   // 列表数据
   const [items, setItems] = useState<Partner[]>([]);
@@ -176,7 +178,7 @@ const PartnersPage: React.FC = () => {
   const summary = total > 0 ? `共 ${total} 个客商` : undefined;
 
   return (
-    <Box className="page-fade-in">
+    <Box className={fadeCls}>
       <PageHeader
         title="客商管理"
         summary={summary}

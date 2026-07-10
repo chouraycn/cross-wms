@@ -6,9 +6,11 @@ import PageHeader from '../components/Common/PageHeader';
 import { subscribeRefresh } from '../App';
 import { getTransitOrders } from '../capabilities/warehouse';
 import { exportToCsv } from '../utils/exportCsv';
+import { usePageFadeIn } from '../hooks/usePageFadeIn';
 
 const InTransitPage: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
+  const fadeCls = usePageFadeIn();
 
   const handleRefresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
@@ -41,7 +43,7 @@ const InTransitPage: React.FC = () => {
   };
 
   return (
-    <Box key={refreshKey} className="page-fade-in">
+    <Box key={refreshKey} className={fadeCls}>
       <PageHeader
         title="在途管理"
         summary={summary}

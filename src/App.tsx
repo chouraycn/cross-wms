@@ -14,6 +14,7 @@ import WindowDragBar from './components/Layout/WindowDragBar';
 import { ChatThread as CDFChatThread } from './components/CDFChat/index.js';
 import { ChatProvider, useChatSession } from './contexts/ChatContext';
 import { WarehouseCapabilityProvider } from './capabilities/warehouse/WarehouseCapabilityContext';
+import { ProcessStatusProvider, ProcessStatusPanel } from './contexts/ProcessStatusContext';
 import ErrorBoundary from './components/Common/ErrorBoundary';
 import LoadingFallback from './components/Common/LoadingFallback';
 import { automationEngine } from './services/automation';
@@ -49,6 +50,7 @@ const TransferPage = React.lazy(() => import('./pages/TransferPage'));
 const ProjectDetailPage = React.lazy(() => import('./pages/ProjectDetailPage'));
 const PdfToolsPage = React.lazy(() => import('./pages/PdfToolsPage'));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
+const AISettingsDialog = React.lazy(() => import('./components/Layout/AISettingsDialog'));
 const PluginsPage = React.lazy(() => import('./pages/PluginsPage'));
 const ExtensionsPage = React.lazy(() => import('./pages/ExtensionsPage'));
 const SystemMonitorPage = React.lazy(() => import('./pages/SystemMonitorPage'));
@@ -60,7 +62,6 @@ const BrowserPage = React.lazy(() => import('./pages/BrowserPage'));
 const ApiCredentialsPage = React.lazy(() => import('./pages/ApiCredentialsPage'));
 const ApiHistoryPage = React.lazy(() => import('./pages/ApiHistoryPage'));
 const TuiTerminalPage = React.lazy(() => import('./pages/TuiTerminalPage'));
-const SkillWorkshopPage = React.lazy(() => import('./pages/SkillWorkshopPage'));
 const SecretsPage = React.lazy(() => import('./pages/SecretsPage'));
 const MemoryPage = React.lazy(() => import('./pages/MemoryPage'));
 const WorkflowPage = React.lazy(() => import('./pages/WorkflowPage'));
@@ -70,10 +71,33 @@ const EventLedgerPage = React.lazy(() => import('./pages/EventLedgerPage'));
 const FileExplorerPage = React.lazy(() => import('./pages/FileExplorerPage'));
 const ContextEngineRegistryPage = React.lazy(() => import('./pages/ContextEngineRegistryPage'));
 const McpServersPage = React.lazy(() => import('./pages/McpServersPage'));
+const ObservabilityCenterPage = React.lazy(() => import('./pages/ObservabilityCenterPage'));
+const ExtensionsCenterPage = React.lazy(() => import('./pages/ExtensionsCenterPage'));
+const ModelManagementCenterPage = React.lazy(() => import('./pages/ModelManagementCenterPage'));
 const SoulPage = React.lazy(() => import('./pages/SoulPage'));
 const AgentsPage = React.lazy(() => import('./pages/AgentsPage'));
 const GoalsPage = React.lazy(() => import('./pages/GoalsPage'));
 const ImageGenerationPage = React.lazy(() => import('./pages/ImageGenerationPage'));
+const ProcessStatusDemoPage = React.lazy(() => import('./pages/ProcessStatusDemoPage'));
+const KeywordTriggerConfigPage = React.lazy(() => import('./pages/KeywordTriggerConfigPage'));
+const GitManagerPage = React.lazy(() => import('./pages/GitManagerPage'));
+const CodeIndexPage = React.lazy(() => import('./pages/CodeIndexPage'));
+const TasksPage = React.lazy(() => import('./pages/TasksPage'));
+const LspServersPage = React.lazy(() => import('./pages/LspServersPage'));
+const WikiPage = React.lazy(() => import('./pages/WikiPage'));
+const MessageLifecyclePage = React.lazy(() => import('./pages/MessageLifecyclePage'));
+const CacheManagerPage = React.lazy(() => import('./pages/CacheManagerPage'));
+const ChannelsPage = React.lazy(() => import('./pages/ChannelsPage'));
+const WebhookPage = React.lazy(() => import('./pages/WebhookPage'));
+const MetricsPage = React.lazy(() => import('./pages/MetricsPage'));
+const BrowserProfilesPage = React.lazy(() => import('./pages/BrowserProfilesPage'));
+const PermissionsPage = React.lazy(() => import('./pages/PermissionsPage'));
+const ModelsPage = React.lazy(() => import('./pages/ModelsPage'));
+const SkillChainsPage = React.lazy(() => import('./pages/SkillChainsPage'));
+const TriggersPage = React.lazy(() => import('./pages/TriggersPage'));
+const InventoryTransactionsPage = React.lazy(() => import('./pages/InventoryTransactionsPage'));
+const MatchingPage = React.lazy(() => import('./pages/MatchingPage'));
+const SoulRulesPage = React.lazy(() => import('./pages/SoulRulesPage'));
 
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
@@ -584,13 +608,11 @@ const StorageWarningListener: React.FC = () => {
   return null;
 };
 
-/** /settings 路由：打开侧边栏设置弹窗并重定向到 /chat（提升到模块顶层避免每次 MainLayout 重渲染时重新挂载） */
-const SettingsRedirect: React.FC<{ onOpenSettings: (open: boolean) => void }> = ({ onOpenSettings }) => {
+const SettingsRedirect: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => {
   const navigate = useNavigate();
   React.useEffect(() => {
-    onOpenSettings(true);
+    onOpenSettings();
     navigate('/chat', { replace: true });
-    // deps intentionally empty — run once on mount
   }, []);
   return null;
 };
@@ -651,11 +673,24 @@ const MainLayout: React.FC = () => {
     setSidebarCollapsed((prev) => {
       const next = !prev;
       try { localStorage.setItem('cdf-know-clow-sidebar-collapsed', String(next)); } catch { /* ignore */ }
+      // 派发状态事件，让子组件感知侧边栏折叠状态
+      window.dispatchEvent(new CustomEvent('cdf-sidebar-state', { detail: { collapsed: next } }));
       return next;
     });
   }, []);
 
-  // v1.5.73: settingsPopoverOpen 从 Sidebar 提升到 MainLayout，供 /settings 路由触发
+  // 初始化时也派发一次当前状态
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('cdf-sidebar-state', { detail: { collapsed: sidebarCollapsed } }));
+  }, [sidebarCollapsed]);
+
+  // 监听自定义事件，允许子组件触发侧边栏切换
+  useEffect(() => {
+    const handleToggleSidebar = () => toggleSidebar();
+    window.addEventListener('cdf-toggle-sidebar', handleToggleSidebar);
+    return () => window.removeEventListener('cdf-toggle-sidebar', handleToggleSidebar);
+  }, [toggleSidebar]);
+
   const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
 
   // 自动隐藏滚动条：在 pywebview 环境下禁用（改用始终可见的宽滚动条）
@@ -681,6 +716,7 @@ const MainLayout: React.FC = () => {
       <ChatRouteSync />
       {/* v1.5.182: 窗口控制按钮 — 透明悬浮于左上角，与 Logo 同行（WorkBuddy 风格） */}
       <WindowDragBar />
+      <ProcessStatusProvider>
       <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: gs.bgSidebar }}>
         {/* Sidebar — 单栏布局 */}
         <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} settingsOpen={settingsPopoverOpen} onSettingsOpenChange={setSettingsPopoverOpen} />
@@ -708,6 +744,9 @@ const MainLayout: React.FC = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
+        {/* 进程状态面板 — 右上角悬浮 */}
+        <ProcessStatusPanel isDark={isDark} gs={gs} />
+        
         {/* 顶部操作按钮区 — 绝对定位在右上角，不占用垂直空间 */}
         {actions.warehouseSwitch && (
           <Box
@@ -776,7 +815,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/skills" element={<SkillsPage />} />
                     <Route path="/skills/:skillId" element={<SkillDetailPage />} />
                     <Route path="/skills/:skillId/audit" element={<SkillAuditPage />} />
-                    <Route path="/skills/workshop" element={<SkillWorkshopPage />} />
+                    <Route path="/skills/workshop" element={<SkillsPage initialTab="workshop" />} />
                     <Route path="/secrets" element={<SecretsPage />} />
                     <Route path="/memory" element={<MemoryPage />} />
 
@@ -796,7 +835,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/wms/replenishment" element={<Suspense fallback={<LoadingFallback />}><WmsReplenishmentPage /></Suspense>} />
                     <Route path="/transfer" element={<TransferPage />} />
                     <Route path="/pdf-tools" element={<PdfToolsPage />} />
-                    <Route path="/settings" element={<SettingsRedirect onOpenSettings={setSettingsPopoverOpen} />} />
+                    <Route path="/settings" element={<SettingsRedirect onOpenSettings={() => setSettingsPopoverOpen(true)} />} />
                     <Route path="/automation" element={<AutomationPage />} />
                     <Route path="/plugins" element={<PluginsPage />} />
                     <Route path="/extensions" element={<ExtensionsPage />} />
@@ -813,6 +852,9 @@ const MainLayout: React.FC = () => {
                     <Route path="/templates" element={<TemplateMarketPage />} />
                     <Route path="/execution-history" element={<ExecutionHistoryPage />} />
                     <Route path="/event-ledger" element={<EventLedgerPage />} />
+                    <Route path="/observability-center" element={<ObservabilityCenterPage />} />
+                    <Route path="/extensions-center" element={<ExtensionsCenterPage />} />
+                    <Route path="/model-management" element={<Suspense fallback={<LoadingFallback />}><ModelManagementCenterPage /></Suspense>} />
                     <Route path="/files" element={<FileExplorerPage />} />
                     <Route path="/context-engine" element={<ContextEngineRegistryPage />} />
                     <Route path="/mcp" element={<McpServersPage />} />
@@ -820,6 +862,26 @@ const MainLayout: React.FC = () => {
                     <Route path="/agents" element={<AgentsPage />} />
                     <Route path="/goals" element={<GoalsPage />} />
                     <Route path="/image-generation" element={<ImageGenerationPage />} />
+                    <Route path="/demo/process-status" element={<ProcessStatusDemoPage />} />
+                    <Route path="/keyword-trigger" element={<KeywordTriggerConfigPage />} />
+                    <Route path="/git" element={<GitManagerPage />} />
+                    <Route path="/code-index" element={<CodeIndexPage />} />
+                    <Route path="/tasks" element={<TasksPage />} />
+                    <Route path="/lsp" element={<LspServersPage />} />
+                    <Route path="/wiki" element={<WikiPage />} />
+                    <Route path="/message-lifecycle" element={<MessageLifecyclePage />} />
+                    <Route path="/cache-manager" element={<CacheManagerPage />} />
+                    <Route path="/channels" element={<ChannelsPage />} />
+                    <Route path="/webhook" element={<WebhookPage />} />
+                    <Route path="/metrics" element={<MetricsPage />} />
+                    <Route path="/browser-profiles" element={<BrowserProfilesPage />} />
+                    <Route path="/permissions" element={<PermissionsPage />} />
+                    <Route path="/models" element={<ModelsPage />} />
+                    <Route path="/skill-chains" element={<SkillChainsPage />} />
+                    <Route path="/triggers" element={<TriggersPage />} />
+                    <Route path="/inventory-transactions" element={<InventoryTransactionsPage />} />
+                    <Route path="/matching" element={<MatchingPage />} />
+                    <Route path="/soul-rules" element={<SoulRulesPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Suspense>
@@ -827,9 +889,10 @@ const MainLayout: React.FC = () => {
             </Box>
           </Box>
         </Box>
-      </Box>
 
+      </Box>
     </Box>
+    </ProcessStatusProvider>
   </ToastProvider>
 );
 };

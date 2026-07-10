@@ -89,6 +89,10 @@ export interface ChatToolbarProps {
   onThinkingLevelChange?: (level: string) => void;
   /** 可用的思考级别选项 */
   thinkingLevels?: Array<{ value: string; label: string; desc?: string }>;
+  /** 语音输入回调 */
+  onVoiceInput?: () => void;
+  /** 是否正在录音 */
+  isRecording?: boolean;
 }
 
 // ===================== Constants =====================
@@ -115,6 +119,8 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   thinkingLevel,
   onThinkingLevelChange,
   thinkingLevels,
+  onVoiceInput,
+  isRecording,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -370,18 +376,21 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           </Box>
 
           {/* Voice button */}
-          <Tooltip title="语音输入">
-            <IconButton
-              size="small"
-              onClick={(e) => e.stopPropagation()}
-              sx={{
-                width: 32, height: 32, borderRadius: '8px', p: 0,
-                color: gs.textMuted, '&:hover': { bgcolor: gs.bgHover },
-              }}
-            >
-              <MicIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Tooltip>
+          {onVoiceInput && (
+            <Tooltip title={isRecording ? '停止录音' : '语音输入'}>
+              <IconButton
+                size="small"
+                onClick={(e) => { e.stopPropagation(); onVoiceInput(); }}
+                sx={{
+                  width: 32, height: 32, borderRadius: '8px', p: 0,
+                  color: isRecording ? '#10B981' : gs.textMuted,
+                  '&:hover': { bgcolor: gs.bgHover, color: isRecording ? '#059669' : gs.textPrimary },
+                }}
+              >
+                <MicIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          )}
 
           {/* Send / Stop button — 圆形 */}
           <IconButton

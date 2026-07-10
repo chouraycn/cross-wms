@@ -12,7 +12,9 @@ import { QueryResultRenderer } from './QueryResultRenderer.js';
 import ToolCallBlock from './ToolCallBlock.js';
 import PluginResultBlock from './PluginResultBlock.js';
 import GeneratedFileCard, { GeneratedFileInfo } from './GeneratedFileCard.js';
+import GeneratedFileArtifactCard from './GeneratedFileArtifactCard.js';
 import GeneratedFilePreviewModal from './GeneratedFilePreviewModal.js';
+import KeywordTriggerIndicator from './KeywordTriggerIndicator.js';
 import { useState } from 'react';
 import { ReactPhaseIndicator } from './ReactPhaseIndicator.js';
 import { ExecutionPlanCard } from './ExecutionPlanCard.js';
@@ -41,6 +43,9 @@ interface BotMessageContentProps {
   onEdit?: (msg: Message) => void;
   onDelete?: (msgId: string) => void;
   onQuote?: (msg: Message) => void;
+  onUndo?: (msgId: string) => void;
+  onBookmark?: (msgId: string) => void;
+  isBookmarked?: boolean;
   showRegenerate?: boolean;
   onConfirmReplenishment?: (suggestionId: number) => Promise<void>;
   onPermissionRespond?: (reqId: string, approved: boolean, alwaysAllow?: boolean) => void;
@@ -228,6 +233,9 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
   onEdit,
   onDelete,
   onQuote,
+  onUndo,
+  onBookmark,
+  isBookmarked,
   showRegenerate,
   onConfirmReplenishment,
   onPermissionRespond,
@@ -236,6 +244,7 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
   const generatedFiles = msg.generatedFiles || [];
   const [previewFile, setPreviewFile] = useState<GeneratedFileInfo | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [showAllArtifacts, setShowAllArtifacts] = useState(false);
 
   const handlePreviewFile = (file: GeneratedFileInfo) => {
     setPreviewFile(file);
@@ -352,9 +361,7 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
           </Box>
         );
       })()}
-      {/* v8.1: 执行轨迹组件（thinking 内容之前） */}
-      <ExecutionTrace msg={msg} gs={gs} isDark={isDark} />
-      {/* AI 思考过程展示 */}
+      {/* AI 思考过程展示（在执行轨迹之前） */}
       {msg.thinking && (
         <ThinkingBlock
           thinking={msg.thinking}
@@ -372,6 +379,8 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
           redacted={msg.metadata?.thinkingRedacted}
         />
       )}
+      {/* v8.1: 执行轨迹组件（thinking 内容之后） */}
+      <ExecutionTrace msg={msg} gs={gs} isDark={isDark} />
       {/* AI 工具调用展示（Tool Calling） */}
       {msg.toolCalls && Array.isArray(msg.toolCalls) && msg.toolCalls.length > 0 && (
         <ToolCallBlock toolCalls={msg.toolCalls} />
@@ -467,24 +476,55 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
           </Box>
         );
       })()}
+      {/* v10.0: 关键词触发指示器 */}
+      {msg.keywordTrigger && msg.keywordTrigger.length > 0 && (
+        <KeywordTriggerIndicator
+          triggers={msg.keywordTrigger}
+          gs={gs}
+          isDark={isDark}
+        />
+      )}
       {/* 生成文件展示（AI 生成的文件，可预览和下载） */}
       {generatedFiles.length > 0 && (
         <Box sx={{ mb: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
-            <Typography sx={{ fontSize: 12, fontWeight: 600, color: gs.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              生成文件
-            </Typography>
-            <Typography sx={{ fontSize: 11, color: gs.textMuted }}>
-              ({generatedFiles.length})
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 600, color: gs.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                查看所有产物
+              </Typography>
+              <Typography sx={{ fontSize: 11, color: gs.textMuted }}>
+                ({generatedFiles.length})
+              </Typography>
+            </Box>
+            {generatedFiles.length > 4 && (
+              <Typography
+                component="span"
+                onClick={() => setShowAllArtifacts(v => !v)}
+                sx={{
+                  fontSize: 11,
+                  color: '#22C55E',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  '&:hover': { textDecoration: 'underline' },
+                }}
+              >
+                {showAllArtifacts ? '收起' : `查看所有 ${generatedFiles.length} 个产物`}
+              </Typography>
+            )}
           </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-            {generatedFiles.map((file, idx) => (
-              <GeneratedFileCard
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gap: 1,
+            }}
+          >
+            {(showAllArtifacts ? generatedFiles : generatedFiles.slice(0, 4)).map((file, idx) => (
+              <GeneratedFileArtifactCard
                 key={`${file.fileName}-${idx}`}
                 file={file}
                 isDark={isDark}
-                onPreview={handlePreviewFile}
+                onOpen={handlePreviewFile}
               />
             ))}
           </Box>
@@ -601,6 +641,33 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                </svg>
+              </IconButton>
+            </Tooltip>
+          )}
+          {onBookmark && (
+            <Tooltip title={isBookmarked ? '取消收藏' : '收藏'}>
+              <IconButton
+                size="small"
+                onClick={() => onBookmark(msg.id)}
+                sx={{ color: isBookmarked ? '#F59E0B' : gs.textDisabled, '&:hover': { color: '#F59E0B' } }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </IconButton>
+            </Tooltip>
+          )}
+          {onUndo && (
+            <Tooltip title="撤回">
+              <IconButton
+                size="small"
+                onClick={() => onUndo(msg.id)}
+                sx={{ color: gs.textDisabled, '&:hover': { color: '#6366F1' } }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 7v6h6" />
+                  <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13" />
                 </svg>
               </IconButton>
             </Tooltip>

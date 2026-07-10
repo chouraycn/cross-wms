@@ -32,6 +32,7 @@ import { useToast } from '../contexts/ToastContext';
 import SkillInfoCards from '../components/Skills/SkillInfoCards';
 import EditSkillDialog from '../components/Skills/EditSkillDialog';
 import { getGrayScale } from '../constants/theme';
+import { usePageFadeIn } from '../hooks/usePageFadeIn';
 
 // ===================== 辅助函数 =====================
 
@@ -336,10 +337,12 @@ const SkillDetailPage: React.FC = () => {
     }
   };
 
+  const fadeCls = usePageFadeIn();
+
   // ===================== 404 =====================
   if (!skill) {
     return (
-      <Box className="page-fade-in" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+      <Box className={fadeCls} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
         <AutoFixHighIcon sx={{ fontSize: 56, color: gs.borderDarker, mb: 2 }} />
         <Typography sx={{ fontSize: '1.125rem', fontWeight: 600, color: gs.textPrimary, mb: 0.5 }}>
           技能未找到
@@ -367,7 +370,7 @@ const SkillDetailPage: React.FC = () => {
 
   // ===================== 渲染 =====================
   return (
-    <Box className="page-fade-in">
+    <Box className={fadeCls}>
       {/* 面包屑导航 */}
       <Breadcrumbs
         separator={<NavigateNextIcon sx={{ fontSize: 14 }} />}

@@ -28,6 +28,7 @@ import ChainExecutionPanel from '../components/SkillChain/ChainExecutionPanel';
 import { chainStore } from '../stores/chainStore';
 import { getAuditStatus } from '../stores/skillStore';
 import { useToast } from '../contexts/ToastContext';
+import { usePageFadeIn } from '../hooks/usePageFadeIn';
 import SearchInput from '../components/Common/SearchInput';
 import type { SkillChain } from '../types/skill';
 // T05: 匹配引擎设置
@@ -37,10 +38,11 @@ import { getGrayScale } from '../constants/theme';
 import { getPlugins, onPluginsChange, enablePluginAction, disablePluginAction, refreshFromApi, installPluginAction, uninstallPluginAction } from '../stores/pluginStore';
 import type { PluginInfo } from '../services/plugins/api';
 import ExtensionIcon from '@mui/icons-material/Extension';
+import WorkshopPanel from '../components/Skills/WorkshopPanel';
 
 // ===================== 技能页面 =====================
 
-const SkillsPage: React.FC = () => {
+const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   useAppSettings();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -112,7 +114,7 @@ const SkillsPage: React.FC = () => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'market' | 'installed' | 'plugins' | 'chains'>('market');
+  const [activeTab, setActiveTab] = useState<'market' | 'installed' | 'plugins' | 'chains' | 'workshop'>(initialTab as any || 'market');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
 
   const handleSearchChange = useCallback((value: string) => {
@@ -548,8 +550,10 @@ const SkillsPage: React.FC = () => {
 
   // ===================== 渲染 =====================
 
+  const fadeCls = usePageFadeIn();
+
   return (
-    <Box className="page-fade-in" sx={{ px: 1 }}>
+    <Box className={fadeCls} sx={{ px: 1 }}>
       {/* Header: 标题 + 搜索 + 添加按钮 */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
         <Box>
@@ -813,6 +817,33 @@ const SkillsPage: React.FC = () => {
             {chains.length}
           </Box>
         </Box>
+        <Box
+          onClick={() => setActiveTab('workshop')}
+          sx={{
+            py: 1.5,
+            fontSize: '0.875rem',
+            color: activeTab === 'workshop' ? gs.textPrimary : gs.textMuted,
+            cursor: 'pointer',
+            position: 'relative',
+            fontWeight: activeTab === 'workshop' ? 500 : 400,
+            transition: 'color 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            '&:hover': { color: gs.textSecondary },
+            '&::after': activeTab === 'workshop' ? {
+              content: '""',
+              position: 'absolute',
+              bottom: -1,
+              left: 0,
+              right: 0,
+              height: 2,
+              backgroundColor: gs.textPrimary,
+            } : {},
+          }}
+        >
+          提案工作坊
+        </Box>
       </Box>
 
       {activeTab === 'plugins' ? (
@@ -985,6 +1016,11 @@ const SkillsPage: React.FC = () => {
               </Box>
             )}
           </Box>
+        </Box>
+      ) : activeTab === 'workshop' ? (
+        /* ========== 提案工作坊视图 ========== */
+        <Box sx={{ height: 'calc(100vh - 220px)', overflow: 'auto' }}>
+          <WorkshopPanel gs={gs} isDark={isDark} />
         </Box>
       ) : (
         /* ========== 技能卡片视图 ========== */

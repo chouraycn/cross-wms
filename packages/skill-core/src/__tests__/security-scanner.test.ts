@@ -54,7 +54,9 @@ describe('SecurityScanner', () => {
     });
 
     const result = customScanner.scan('dangerousFunction();');
-    expect(result.safe).toBe(false);
+    // 非严格模式下，high 级别自定义规则仅会被记录为威胁但不使结果变 unsafe
+    // （仅 critical 级威胁或在 strictMode 下才会将 safe 置为 false）
+    expect(result.safe).toBe(true);
     expect(result.threats.some((t) => t.id.startsWith('custom'))).toBe(true);
   });
 

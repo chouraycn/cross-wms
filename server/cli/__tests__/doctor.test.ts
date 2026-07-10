@@ -3,12 +3,13 @@
  *
  * 覆盖 registerDoctorCommand 的契约行为：
  * - 命令注册（名称、描述、选项）
- * - JSON 输出格式
+ * - JSON 输出格式（DoctorReport: ok/scopesChecked/totalFindings/findings）
  * - 文本输出格式
  * - 报告结构和摘要
+ * - --only / --skip 范围过滤
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Command } from 'commander';
 import { registerDoctorCommand } from '../commands/doctor.js';
 
@@ -28,6 +29,7 @@ vi.mock('../../logger.js', () => ({ logger: loggerMock }));
 describe('CLI doctor 命令 Contract', () => {
   let program: Command;
   let lastOutput: string;
+  let exitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -37,12 +39,18 @@ describe('CLI doctor 命令 Contract', () => {
       lastOutput = msg;
     });
     lastOutput = '';
+    // doctor 在发现 error 级别问题时调用 process.exit(1)，测试中拦截避免真正退出
+    exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+  });
+
+  afterEach(() => {
+    exitSpy.mockRestore();
   });
 
   it('注册名为 doctor 的命令', () => {
     const cmd = program.commands.find((c) => c.name() === 'doctor');
     expect(cmd).toBeDefined();
-    expect(cmd?.description()).toContain('检查并修复');
+    expect(cmd?.description()).toContain('诊断');
   });
 
   it('--fix 选项存在', () => {
@@ -83,49 +91,29 @@ describe('CLI doctor 命令 Contract', () => {
   });
 
   describe('JSON 输出', () => {
-    it('输出包含 timestamp/checks/summary 的 JSON', async () => {
+    it('输出包含 ok/scopesChecked/totalFindings/findings 的 DoctorReport', async () => {
       await program.parseAsync(['node', 'test', 'doctor', '--json']);
       const parsed = JSON.parse(lastOutput);
-      expect(parsed.timestamp).toBeDefined();
-      expect(parsed.checks).toBeInstanceOf(Array);
-      expect(parsed.summary).toHaveProperty('total');
-      expect(parsed.summary).toHaveProperty('passed');
-      expect(parsed.summary).toHaveProperty('failed');
-      expect(parsed.summary).toHaveProperty('warnings');
+      expect(typeof parsed.ok).toBe('boolean');
+      expect(typeof parsed.scopesChecked).toBe('number');
+      expect(typeof parsed.totalFindings).toBe('number');
+      expect(Array.isArray(parsed.findings)).toBe(true);
     });
 
-    it('checks 包含 Node.js/数据库/配置文件等检查项', async () => {
+    it('每个 finding 都有 id/severity/message', async () => {
       await program.parseAsync(['node', 'test', 'doctor', '--json']);
       const parsed = JSON.parse(lastOutput);
-      const names = parsed.checks.map((c: { name: string }) => c.name);
-      expect(names).toContain('Node.js 版本');
-      expect(names).toContain('数据库');
-      expect(names).toContain('配置文件');
-      expect(names).toContain('模型配置');
-      expect(names).toContain('Gateway 连接');
-      expect(names).toContain('插件');
-    });
-
-    it('每个 check 都有 name/status/message', async () => {
-      await program.parseAsync(['node', 'test', 'doctor', '--json']);
-      const parsed = JSON.parse(lastOutput);
-      for (const check of parsed.checks) {
-        expect(check.name).toBeDefined();
-        expect(['pass', 'fail', 'warn']).toContain(check.status);
-        expect(check.message).toBeDefined();
+      for (const finding of parsed.findings) {
+        expect(typeof finding.id).toBe('string');
+        expect(['error', 'warning', 'info']).toContain(finding.severity);
+        expect(typeof finding.message).toBe('string');
       }
     });
 
-    it('summary 数字与 checks 匹配', async () => {
+    it('totalFindings 与 findings 长度一致', async () => {
       await program.parseAsync(['node', 'test', 'doctor', '--json']);
       const parsed = JSON.parse(lastOutput);
-      const passed = parsed.checks.filter((c: { status: string }) => c.status === 'pass').length;
-      const failed = parsed.checks.filter((c: { status: string }) => c.status === 'fail').length;
-      const warnings = parsed.checks.filter((c: { status: string }) => c.status === 'warn').length;
-      expect(parsed.summary.total).toBe(parsed.checks.length);
-      expect(parsed.summary.passed).toBe(passed);
-      expect(parsed.summary.failed).toBe(failed);
-      expect(parsed.summary.warnings).toBe(warnings);
+      expect(parsed.totalFindings).toBe(parsed.findings.length);
     });
   });
 
@@ -135,24 +123,23 @@ describe('CLI doctor 命令 Contract', () => {
       expect(lastOutput).toContain('诊断报告');
     });
 
-    it('输出包含"检查项"和"摘要"小节', async () => {
+    it('输出包含"发现"和"摘要"小节', async () => {
       await program.parseAsync(['node', 'test', 'doctor']);
-      expect(lastOutput).toContain('检查项');
+      expect(lastOutput).toContain('发现');
       expect(lastOutput).toContain('摘要');
     });
 
-    it('为每个 check 显示状态图标', async () => {
+    it('为每个 finding 显示状态图标', async () => {
       await program.parseAsync(['node', 'test', 'doctor']);
-      // 至少包含一个状态图标
+      // 至少包含一个状态图标 (✓ 通过 / ✗ 错误 / ! 警告)
       expect(/[✓✗!]/.test(lastOutput)).toBe(true);
     });
 
-    it('summary 显示总数/通过/失败/警告', async () => {
+    it('summary 显示总计/警告/摘要', async () => {
       await program.parseAsync(['node', 'test', 'doctor']);
       expect(lastOutput).toContain('总计');
-      expect(lastOutput).toContain('通过');
-      expect(lastOutput).toContain('失败');
       expect(lastOutput).toContain('警告');
+      expect(lastOutput).toContain('摘要');
     });
   });
 
@@ -164,53 +151,62 @@ describe('CLI doctor 命令 Contract', () => {
       expect(lastOutput).toContain('Platform');
     });
 
-    it('每个 check 显示可修复/类型字段', async () => {
+    it('每个 finding 显示修复提示', async () => {
       await program.parseAsync(['node', 'test', 'doctor', '--verbose']);
-      expect(lastOutput).toContain('可修复');
-      expect(lastOutput).toContain('类型');
+      expect(lastOutput).toContain('修复');
     });
 
-    it('summary 包含百分比', async () => {
+    it('summary 包含检查范围与总计发现', async () => {
       await program.parseAsync(['node', 'test', 'doctor', '--verbose']);
-      expect(lastOutput).toMatch(/\d+\.\d+%/);
+      expect(lastOutput).toContain('检查范围');
+      expect(lastOutput).toContain('总计发现');
     });
   });
 
   describe('--only 过滤', () => {
-    it('只运行指定类型的检查', async () => {
-      await program.parseAsync(['node', 'test', 'doctor', '--json', '--only', 'db']);
+    it('只运行指定范围的检查', async () => {
+      await program.parseAsync(['node', 'test', 'doctor', '--json', '--only', 'gateway']);
       const parsed = JSON.parse(lastOutput);
-      // 应该只剩数据库相关检查
-      expect(parsed.checks.every((c: { name: string }) => c.name.includes('数据库'))).toBe(true);
-      expect(parsed.summary.total).toBeLessThan(6);
+      expect(parsed.scopesChecked).toBe(1);
+      expect(parsed.findings.every((f: { id: string }) => f.id.startsWith('doctor/gateway/'))).toBe(
+        true,
+      );
     });
 
-    it('支持多类型过滤', async () => {
-      await program.parseAsync(['node', 'test', 'doctor', '--json', '--only', 'db,plugin']);
+    it('支持多范围过滤', async () => {
+      await program.parseAsync(['node', 'test', 'doctor', '--json', '--only', 'gateway,channels']);
       const parsed = JSON.parse(lastOutput);
-      expect(parsed.checks.length).toBeGreaterThan(0);
-      for (const c of parsed.checks) {
-        expect(c.name.includes('数据库') || c.name.includes('插件')).toBe(true);
-      }
+      expect(parsed.scopesChecked).toBe(2);
     });
   });
 
   describe('--skip 过滤', () => {
-    it('跳过指定类型的检查', async () => {
-      await program.parseAsync(['node', 'test', 'doctor', '--json', '--skip', 'runtime']);
+    it('跳过指定范围的检查', async () => {
+      await program.parseAsync(['node', 'test', 'doctor', '--json', '--skip', 'channels']);
       const parsed = JSON.parse(lastOutput);
-      // 不应包含 Node.js 运行时检查
-      expect(parsed.checks.some((c: { name: string }) => c.name.includes('Node.js 版本'))).toBe(false);
+      expect(
+        parsed.findings.some((f: { id: string }) => f.id.startsWith('doctor/channels/')),
+      ).toBe(false);
     });
   });
 
   describe('--only 与 --skip 组合', () => {
     it('先 only 后 skip', async () => {
-      await program.parseAsync(['node', 'test', 'doctor', '--json', '--only', 'db,model', '--skip', 'model']);
+      await program.parseAsync([
+        'node',
+        'test',
+        'doctor',
+        '--json',
+        '--only',
+        'gateway,channels',
+        '--skip',
+        'channels',
+      ]);
       const parsed = JSON.parse(lastOutput);
-      // 应只剩数据库
-      expect(parsed.checks.length).toBeGreaterThan(0);
-      expect(parsed.checks.every((c: { name: string }) => c.name.includes('数据库'))).toBe(true);
+      expect(parsed.scopesChecked).toBe(1);
+      expect(
+        parsed.findings.some((f: { id: string }) => f.id.startsWith('doctor/channels/')),
+      ).toBe(false);
     });
   });
 });

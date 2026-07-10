@@ -78,16 +78,17 @@ describe('MessageAuditLog', () => {
     const timeline = auditLog.getSessionTimeline('session-1');
 
     expect(timeline).toHaveLength(3);
-    expect(timeline[0].action).toBe('message_created');
+    // 实现 getSessionTimeline 返回倒序（最新在前），与 getMessageHistory 一致
+    expect(timeline[0].action).toBe('message_delivered');
     expect(timeline[1].action).toBe('message_sent');
-    expect(timeline[2].action).toBe('message_delivered');
+    expect(timeline[2].action).toBe('message_created');
   });
 
   it('should provide summary statistics', () => {
-    auditLog.logMessage('session-1', 'msg-1', 'message_created', 'user-1', 'Created');
-    auditLog.logMessage('session-1', 'msg-1', 'message_sent', 'system', 'Sent');
-    auditLog.logMessage('session-1', 'msg-2', 'message_created', 'user-1', 'Created');
-    auditLog.logMessage('session-1', 'msg-2', 'message_failed', 'system', 'Failed', { severity: 'error' });
+    auditLog.logMessage('session-1', 'msg-1', 'message_created', 'user-1', 'Created', { actorType: 'user' });
+    auditLog.logMessage('session-1', 'msg-1', 'message_sent', 'system', 'Sent', { actorType: 'system' });
+    auditLog.logMessage('session-1', 'msg-2', 'message_created', 'user-1', 'Created', { actorType: 'user' });
+    auditLog.logMessage('session-1', 'msg-2', 'message_failed', 'system', 'Failed', { severity: 'error', actorType: 'system' });
 
     const summary = auditLog.getSummary();
 

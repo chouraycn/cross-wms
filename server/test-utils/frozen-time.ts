@@ -22,23 +22,25 @@ class FrozenTime {
   freeze(): void {
     if (this.enabled) return;
     this.enabled = true;
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const _this = this;
 
     const FrozenDate = function (this: Date, ...args: unknown[]) {
       if (new.target) {
         if (args.length === 0) {
-          return new this.originalDate(this.frozenMs);
+          return new _this.originalDate(_this.frozenMs);
         }
-        return new this.originalDate(...args as ConstructorParameters<typeof Date>);
+        return new _this.originalDate(...args as ConstructorParameters<typeof Date>);
       }
-      return this.originalDate(...args as Parameters<typeof Date>);
+      return _this.originalDate(...args as Parameters<typeof Date>);
     } as unknown as typeof Date;
 
     Object.setPrototypeOf(FrozenDate, this.originalDate);
     FrozenDate.prototype = this.originalDate.prototype;
     FrozenDate.now = () => {
-      const current = self.frozenMs;
-      if (self.shouldAdvance) {
-        self.frozenMs += 1;
+      const current = _this.frozenMs;
+      if (_this.shouldAdvance) {
+        _this.frozenMs += 1;
       }
       return current;
     };
@@ -46,7 +48,7 @@ class FrozenTime {
     FrozenDate.UTC = this.originalDate.UTC.bind(this.originalDate);
 
     globalThis.Date = FrozenDate;
-    globalThis.performance.now = () => this.frozenMs;
+    globalThis.performance.now = () => _this.frozenMs;
   }
 
   unfreeze(): void {

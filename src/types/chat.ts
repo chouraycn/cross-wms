@@ -158,6 +158,8 @@ export interface Message {
   thinkingDone?: boolean;
   /** 用户发送此消息时引用的历史会话（仅 user 消息携带） */
   referencedSessions?: ReferencedSession[];
+  /** 引用的消息 ID（回复/引用功能） */
+  replyToMessageId?: string;
   /** Auto 模式选型原因（如 "Claude Sonnet 4 · 检测到代码内容"） */
   autoReason?: string;
   /** Auto 选型原因类型 */
@@ -276,6 +278,8 @@ export interface Message {
   agentStatuses?: AgentStatusInfo[];
   /** v8.2: Agent 编排事件流（agent_start / agent_end / subtask_create / subtask_assign / subtask_complete / reflect / plan） */
   agentEvents?: AgentEvent[];
+  /** v10.0: 关键词触发信息（用户消息中的关键词触发的 Skill） */
+  keywordTrigger?: KeywordTriggerInfo[];
   /** v1.5.116: 模型降级信息 */
   fallbackModel?: string;
   fallbackReason?: 'model_not_supported' | 'request_failed';
@@ -690,4 +694,22 @@ export interface AgentStatusInfo {
   status: 'idle' | 'busy' | 'error' | 'terminated';
   /** 当前执行的任务描述（busy 时） */
   currentTask?: string;
+}
+
+/** v10.0: 关键词触发信息（用于前端展示关键词自动触发的 Skill） */
+export interface KeywordTriggerInfo {
+  /** Skill ID */
+  skillId: string;
+  /** Skill 名称 */
+  skillName: string;
+  /** 匹配的关键词列表 */
+  matchedKeywords: string[];
+  /** 匹配分数（0-1） */
+  matchScore: number;
+  /** 触发原因（详细说明） */
+  reason: string;
+  /** 是否已执行 */
+  executed?: boolean;
+  /** 执行状态 */
+  status?: 'pending' | 'running' | 'completed' | 'failed';
 }

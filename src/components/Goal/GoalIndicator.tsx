@@ -208,12 +208,11 @@ const GoalIndicator: React.FC<GoalIndicatorProps> = ({ sessionKey, variant = 'co
       <Box sx={{
         maxWidth: CHAT_MAX_WIDTH,
         mx: 'auto',
-        px: 3,
+        px: 2,
         py: 1,
         display: 'flex',
         alignItems: 'center',
         gap: 1.5,
-        borderBottom: `1px solid ${gs.border}`,
         backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
       }}>
         <FlagIcon sx={{ fontSize: 16, color: gs.textMuted }} />

@@ -337,6 +337,7 @@ export async function callOpenAICompatibleStream(
   modelCapabilities?: string[],
   thinkingLevel?: string,
   authMode?: string,
+  toolChoice?: 'auto' | 'none' | { type: 'function'; function: { name: string } },
 ): Promise<AIResponse> {
   let endpoint = apiEndpoint.replace(/\/+$/, '');
   if (!endpoint.endsWith('/chat/completions')) {
@@ -381,7 +382,7 @@ export async function callOpenAICompatibleStream(
     } else {
       body.tools = tools;
     }
-    body.tool_choice = 'auto';
+    body.tool_choice = toolChoice ?? 'auto';
   }
 
   let response: Response;
@@ -767,6 +768,7 @@ export async function callAnthropicStream(
   modelCapabilities?: string[],
   thinkingLevel?: string,
   authMode?: string,
+  toolChoice?: 'auto' | 'none' | { type: 'function'; function: { name: string } },
 ): Promise<AIResponse> {
   let endpoint = apiEndpoint.replace(/\/+$/, '');
   if (!endpoint.endsWith('/messages')) {
@@ -809,7 +811,7 @@ export async function callAnthropicStream(
 
   if (tools && tools.length > 0) {
     body.tools = convertToolsToAnthropic(tools);
-    body.tool_choice = { type: 'auto' };
+    body.tool_choice = toolChoice ?? { type: 'auto' };
   }
 
   const reqHeaders: Record<string, string> = {
@@ -1003,6 +1005,7 @@ export async function callAIModelStreamWithAdapter(
   modelCapabilities?: string[],
   onRateLimit?: OnRateLimitCallback,
   thinkingLevel?: string,
+  toolChoice?: 'auto' | 'none' | { type: 'function'; function: { name: string } },
 ): Promise<AIResponse> {
   let apiKey = modelConfig.apiKey;
   const apiEndpoint = modelConfig.apiEndpoint || '';
@@ -1088,6 +1091,7 @@ export async function callAIModelStreamWithAdapter(
           signal,
           compat: modelConfig.compatConfig,
           mediaInput: modelConfig.mediaInputConfig,
+          toolChoice,
         },
         effectiveMessages as Array<{ role: string; content: MessageContent }>,
         {
@@ -1205,6 +1209,7 @@ export async function callAIModelStream(
   modelCapabilities?: string[],
   onRateLimit?: OnRateLimitCallback,
   thinkingLevel?: string,
+  toolChoice?: 'auto' | 'none' | { type: 'function'; function: { name: string } },
 ): Promise<AIResponse> {
   let apiKey = modelConfig.apiKey;
   const apiEndpoint = modelConfig.apiEndpoint || '';
@@ -1257,6 +1262,7 @@ export async function callAIModelStream(
           capabilities,
           effectiveThinkingLevel,
           modelConfig.authMode,
+          toolChoice,
         );
       }
       // v1.5.62-fix: DeepSeek API 不支持 image_url 格式，自动剥离多模态内容。

@@ -31,6 +31,7 @@ import {
   fetchAllExecutions,
   clearExecutionLogs,
 } from '../services/automation/api';
+import { usePageFadeIn } from '../hooks/usePageFadeIn';
 import type {
   Automation,
   TaskType,
@@ -681,8 +682,10 @@ const AutomationPage: React.FC = () => {
     });
   };
 
+  const fadeCls = usePageFadeIn();
+
   return (
-    <Box className="page-fade-in">
+    <Box className={fadeCls}>
       {/* 页面标题 */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 700, color: gs.textPrimary, mb: 0.5 }}>

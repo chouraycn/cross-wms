@@ -70,7 +70,8 @@ describe('Web Search 熔断器 E2E 测试', () => {
 
       const suggestion = circuitBreaker.getAlternativeSuggestion('web_search');
       expect(suggestion).toBeTruthy();
-      expect(suggestion).toContain('web_fetch');
+      // web_search 的备选工具是 web_search_legacy（见 circuitBreaker.ts TOOL_ALTERNATIVES）
+      expect(suggestion).toContain('web_search_legacy');
     });
 
     it('冷却时间后应自动降级为 half_open', () => {

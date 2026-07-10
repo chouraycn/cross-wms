@@ -51,6 +51,38 @@ jobs:
       - name: Check for unused dependencies
         run: npx depcheck || true
 
+  static-checks:
+    name: Static Checks (WKWebView / Perf / Packages)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: WKWebView compatibility lint
+        run: zsh scripts/wkwebview-lint.sh
+
+      - name: Performance lint
+        run: zsh scripts/perf-lint.sh
+
+      - name: Package version contract check
+        run: zsh scripts/check-packages.sh
+
+      - name: API contract check
+        run: zsh scripts/check-api-contracts.sh
+
+      - name: CI health check
+        run: zsh scripts/ci-health-check.sh
+
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
@@ -148,11 +180,42 @@ jobs:
           path: test-results/
           retention-days: 7
 
+  e2e-api-test:
+    name: E2E API Test (vitest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, typecheck]
+    env:
+      ONNX_DISABLE_NATIVE_DOWNLOAD: '1'
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run E2E API tests (regression gate)
+        run: npm run test:e2e:api -- --passWithNoTests 2>&1 | tee e2e-api-output.log
+
+      - name: Upload E2E API results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-api-results
+          path: e2e-api-output.log
+          retention-days: 7
+
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [lint, typecheck, test]
+    needs: [lint, typecheck, test, e2e-api-test, static-checks]
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -287,7 +350,7 @@ jobs:
     name: Backend Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [lint, typecheck, test]
+    needs: [lint, typecheck, test, e2e-api-test, static-checks]
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -301,16 +364,47 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build backend
-        run: npx tsc --project server/tsconfig.json --outDir server-dist 2>&1 | tee backend-build.log
-
-      - name: Check backend build errors
+      - name: Build backend (esbuild)
         run: |
-          ERROR_COUNT=$(grep -c "error TS" backend-build.log || echo 0)
-          if [ "$ERROR_COUNT" -gt 0 ]; then
-            echo "::error::Backend build contains $ERROR_COUNT errors"
+          ./node_modules/.bin/esbuild server/index.ts \
+            --bundle \
+            --platform=node \
+            --target=node22 \
+            --format=cjs \
+            --outfile=/tmp/cdf-server-bundle.cjs \
+            --alias:@src=$(pwd)/src \
+            --external:better-sqlite3 \
+            '--external:@cdfclaw/*' \
+            --external:@modelcontextprotocol/sdk \
+            --external:json5 \
+            --external:onnxruntime-node \
+            --external:fsevents \
+            --external:@mozilla/readability \
+            --external:turndown \
+            --external:jsdom \
+            --external:@mixmark-io/domino \
+            --external:cheerio \
+            --external:tr46 \
+            --external:whatwg-url \
+            --external:sqlite-vec \
+            --sourcemap=inline \
+            2>&1 | tee backend-build.log
+
+      - name: Verify backend bundle
+        run: |
+          if [ ! -f /tmp/cdf-server-bundle.cjs ]; then
+            echo "::error::Backend bundle not produced"
             exit 1
           fi
+          BUNDLE_SIZE=$(stat -c%s /tmp/cdf-server-bundle.cjs 2>/dev/null || stat -f%z /tmp/cdf-server-bundle.cjs 2>/dev/null)
+          echo "Backend bundle size: $((BUNDLE_SIZE / 1024 / 1024))MB"
+          if [ "$BUNDLE_SIZE" -lt 100000 ]; then
+            echo "::error::Backend bundle is suspiciously small ($BUNDLE_SIZE bytes)"
+            exit 1
+          fi
+          # Syntax check
+          node -c /tmp/cdf-server-bundle.cjs
+          echo "✅ Backend bundle verified"
 
   audit:
     name: Security Audit

@@ -117,7 +117,7 @@ describe('CLI models 命令 Contract', () => {
     it('返回模型详情', async () => {
       await program.parseAsync(['node', 'test', 'models', 'info', 'qwen-plus', '--json']);
       const parsed = JSON.parse(outputs[0]);
-      expect(parsed.id).toBe('qwen-plus');
+      expect(parsed.model.id).toBe('qwen-plus');
       expect(parsed.provider).toBeDefined();
     });
 

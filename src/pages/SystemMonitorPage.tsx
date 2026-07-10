@@ -42,7 +42,21 @@ import {
   fetchCurrentMetrics,
   fetchMetricsHistory,
 } from '../services/metrics/api';
+import {
+  getPerformanceSummary,
+  getPerformanceSnapshots,
+  getHealthStatus,
+  subscribeToHealthUpdates,
+} from '../services/systemMonitorApi';
+import type {
+  PerformanceSnapshot,
+  HealthStatus,
+} from '../services/systemMonitorApi';
 import { getGrayScale } from '../constants/theme';
+import SpeedIcon from '@mui/icons-material/Speed';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
+import CloudOffIcon from '@mui/icons-material/CloudOff';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -76,6 +90,18 @@ const SystemMonitorPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
+  // 性能数据
+  const [performanceSummary, setPerformanceSummary] = useState<{
+    avgResponseTime: number;
+    totalRequests: number;
+    errorRate: number;
+    slowestOperations: PerformanceSnapshot[];
+  } | null>(null);
+  const [performanceSnapshots, setPerformanceSnapshots] = useState<PerformanceSnapshot[]>([]);
+
+  // 健康状态
+  const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
+
   const loadMetrics = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -103,6 +129,61 @@ const SystemMonitorPage: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [loadMetrics]);
+
+  // 加载性能数据
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPerformance = async () => {
+      try {
+        const [summary, snapshotsResp] = await Promise.all([
+          getPerformanceSummary(),
+          getPerformanceSnapshots(),
+        ]);
+        if (cancelled) return;
+        setPerformanceSummary(summary);
+        setPerformanceSnapshots(snapshotsResp.snapshots);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : String(e));
+        }
+      }
+    };
+
+    loadPerformance();
+    const interval = setInterval(loadPerformance, 30000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // 订阅健康状态实时更新
+  useEffect(() => {
+    let cancelled = false;
+
+    // 首次拉取一次
+    getHealthStatus()
+      .then((status) => {
+        if (!cancelled) setHealthStatus(status);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : String(e));
+        }
+      });
+
+    // 通过 SSE 订阅实时更新
+    const unsubscribe = subscribeToHealthUpdates((status) => {
+      setHealthStatus(status);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
 
   const memoryUsagePercent = useMemo(() => {
     if (!metrics) return 0;
@@ -521,6 +602,306 @@ const SystemMonitorPage: React.FC = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* ===== 性能监控 ===== */}
+      <Box sx={{ mt: 4, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <SpeedIcon color="primary" />
+        <Typography variant="h5" fontWeight={600}>
+          性能监控
+        </Typography>
+      </Box>
+
+      {/* 性能 KPI 卡片 */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        {/* 平均响应时间 */}
+        <Grid item xs={12} sm={6} md={4}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <TimerIcon color="primary" />
+                <Typography variant="body2" color="text.secondary">
+                  平均响应时间
+                </Typography>
+              </Box>
+              <Typography variant="h4" fontWeight={600}>
+                {performanceSummary ? performanceSummary.avgResponseTime.toFixed(2) : '-'}
+                <Typography component="span" variant="body2" color="text.secondary">
+                  {' '}ms
+                </Typography>
+              </Typography>
+              <Box sx={{ mt: 1 }}>
+                {performanceSummary && (
+                  <LinearProgress
+                    variant="determinate"
+                    value={Math.min(performanceSummary.avgResponseTime / 10, 100)}
+                    color={
+                      performanceSummary.avgResponseTime >= 1000
+                        ? 'error'
+                        : performanceSummary.avgResponseTime >= 500
+                        ? 'warning'
+                        : 'success'
+                    }
+                    sx={{ height: 6, borderRadius: 3 }}
+                  />
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* 总请求数 */}
+        <Grid item xs={12} sm={6} md={4}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <AssessmentIcon color="info" />
+                <Typography variant="body2" color="text.secondary">
+                  总请求数
+                </Typography>
+              </Box>
+              <Typography variant="h4" fontWeight={600}>
+                {performanceSummary ? performanceSummary.totalRequests.toLocaleString() : '-'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                累计处理请求
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* 错误率 */}
+        <Grid item xs={12} sm={6} md={4}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <ErrorOutlineIcon color="error" />
+                <Typography variant="body2" color="text.secondary">
+                  错误率
+                </Typography>
+              </Box>
+              <Typography variant="h4" fontWeight={600}>
+                {performanceSummary ? performanceSummary.errorRate.toFixed(2) : '-'}
+                <Typography component="span" variant="body2" color="text.secondary">
+                  {' '}%
+                </Typography>
+              </Typography>
+              <Box sx={{ mt: 1 }}>
+                {performanceSummary && (
+                  <LinearProgress
+                    variant="determinate"
+                    value={Math.min(performanceSummary.errorRate, 100)}
+                    color={
+                      performanceSummary.errorRate >= 10
+                        ? 'error'
+                        : performanceSummary.errorRate >= 5
+                        ? 'warning'
+                        : 'success'
+                    }
+                    sx={{ height: 6, borderRadius: 3 }}
+                  />
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* 最慢操作列表 */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight={600} gutterBottom>
+            最慢操作
+          </Typography>
+          {performanceSummary && performanceSummary.slowestOperations.length > 0 ? (
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>操作名称</TableCell>
+                    <TableCell align="right">耗时 (ms)</TableCell>
+                    <TableCell align="right">时间戳</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {performanceSummary.slowestOperations.map((op) => (
+                    <TableRow key={op.id}>
+                      <TableCell>
+                        <Chip label={op.operation} size="small" variant="outlined" />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={Math.min(op.duration / 10, 100)}
+                            sx={{ width: 60, height: 6, borderRadius: 3 }}
+                            color={op.duration >= 1000 ? 'error' : op.duration >= 500 ? 'warning' : 'success'}
+                          />
+                          <Typography variant="body2" fontWeight={600}>
+                            {op.duration.toFixed(2)}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(op.timestamp).toLocaleString()}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+              暂无性能数据
+            </Typography>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ===== 健康状态 ===== */}
+      <Box sx={{ mt: 4, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <HealthAndSafetyIcon color="success" />
+        <Typography variant="h5" fontWeight={600}>
+          健康状态
+        </Typography>
+        {healthStatus && (
+          <Chip
+            label={
+              healthStatus.status === 'healthy'
+                ? '健康'
+                : healthStatus.status === 'degraded'
+                ? '降级'
+                : '异常'
+            }
+            color={
+              healthStatus.status === 'healthy'
+                ? 'success'
+                : healthStatus.status === 'degraded'
+                ? 'warning'
+                : 'error'
+            }
+            size="small"
+            sx={{ ml: 1 }}
+          />
+        )}
+      </Box>
+
+      <Grid container spacing={3}>
+        {/* 健康检查 */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} gutterBottom>
+                健康检查
+              </Typography>
+              {healthStatus && healthStatus.checks.length > 0 ? (
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>状态</TableCell>
+                        <TableCell>名称</TableCell>
+                        <TableCell align="right">延迟 (ms)</TableCell>
+                        <TableCell>消息</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {healthStatus.checks.map((check) => (
+                        <TableRow key={check.name}>
+                          <TableCell>
+                            <Chip
+                              icon={
+                                check.status === 'up' ? (
+                                  <CheckCircleIcon />
+                                ) : check.status === 'down' ? (
+                                  <CloudOffIcon />
+                                ) : (
+                                  <ErrorOutlineIcon />
+                                )
+                              }
+                              label={check.status === 'up' ? '正常' : check.status === 'down' ? '宕机' : '降级'}
+                              color={
+                                check.status === 'up'
+                                  ? 'success'
+                                  : check.status === 'down'
+                                  ? 'error'
+                                  : 'warning'
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>{check.name}</TableCell>
+                          <TableCell align="right">{check.latency.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Typography variant="caption" color="text.secondary">
+                              {check.message || '-'}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                  暂无健康检查数据
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* 通道状态 */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} gutterBottom>
+                通道状态
+              </Typography>
+              {healthStatus && healthStatus.channels.length > 0 ? (
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>状态</TableCell>
+                        <TableCell>名称</TableCell>
+                        <TableCell>类型</TableCell>
+                        <TableCell align="right">延迟 (ms)</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {healthStatus.channels.map((channel) => (
+                        <TableRow key={channel.name}>
+                          <TableCell>
+                            <Chip
+                              icon={
+                                channel.status === 'up' ? <CheckCircleIcon /> : <CloudOffIcon />
+                              }
+                              label={channel.status === 'up' ? '正常' : '宕机'}
+                              color={channel.status === 'up' ? 'success' : 'error'}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>{channel.name}</TableCell>
+                          <TableCell>
+                            <Chip label={channel.type} size="small" variant="outlined" />
+                          </TableCell>
+                          <TableCell align="right">{channel.latency.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                  暂无通道数据
+                </Typography>
+              )}
             </CardContent>
           </Card>
         </Grid>

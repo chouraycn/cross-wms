@@ -137,7 +137,12 @@ router.get('/:id/messages', (req, res) => {
       try { attachments = JSON.parse(attachments); } catch { attachments = undefined; }
     }
 
-    return { ...m, attachments, toolCalls };
+    let generatedFiles = m.generatedFiles;
+    if (generatedFiles && typeof generatedFiles === 'string') {
+      try { generatedFiles = JSON.parse(generatedFiles); } catch { generatedFiles = undefined; }
+    }
+
+    return { ...m, attachments, toolCalls, generatedFiles };
   });
 
   res.json({ messages: parsed, hasMore, totalCount });
@@ -183,7 +188,16 @@ router.get('/:id', (req, res) => {
       }
     }
 
-    return { ...m, attachments, toolCalls };
+    let generatedFiles = m.generatedFiles;
+    if (generatedFiles && typeof generatedFiles === 'string') {
+      try {
+        generatedFiles = JSON.parse(generatedFiles);
+      } catch {
+        generatedFiles = undefined;
+      }
+    }
+
+    return { ...m, attachments, toolCalls, generatedFiles };
   });
   res.json({ messages: parsed });
 });

@@ -226,6 +226,8 @@ export const processToolDefinition: ToolDefinition = {
 /**
  * Exec 工具处理器
  *
+ * 注意：审批逻辑已统一由 toolExecutor 处理（通过 toolPolicyEngine 评估）
+ *
  * @param args - 工具参数
  * @returns 执行结果 JSON
  */
@@ -234,34 +236,7 @@ export const handleExecCommand: ToolHandler = async (args: Record<string, unknow
     // 解析参数
     const params = ExecToolSchema.parse(args);
 
-    // 检查是否需要审批
-    const approvalNeeded = checkExecApprovalNeeded(params);
-
-    if (approvalNeeded) {
-      // 创建审批请求
-      const request = approvalManager.createRequest(
-        'bash_exec',
-        { command: params.command, workdir: params.workdir },
-        approvalNeeded.riskLevel,
-        approvalNeeded.reason,
-        undefined,
-        undefined,
-      );
-
-      // 如果不是自动批准，等待审批
-      if (request.status === 'pending') {
-        const approved = await approvalManager.waitForApproval(request.id);
-
-        if (approved.status !== 'approved') {
-          return JSON.stringify({
-            error: `审批被拒绝: ${approved.rejectReason || approved.status}`,
-            approvalId: request.id,
-          });
-        }
-      }
-    }
-
-    // 执行命令
+    // 执行命令（审批逻辑由 toolExecutor 通过 toolPolicyEngine 统一处理）
     const result = await executeCommand({ params });
 
     // 格式化返回结果

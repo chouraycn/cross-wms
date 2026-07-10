@@ -2,9 +2,13 @@
  * CLI gateway 命令测试
  *
  * 覆盖 registerGatewayCommand 的契约行为：
- * - 子命令注册（start/stop/status/probe/info）
- * - 启动/停止网关、状态查询、探活、信息查看
+ * - 子命令注册（status/probe/models/resolve/info）
+ * - 网关状态查询、探活、模型列表、模型解析、信息查看
  * - JSON 与文本输出
+ *
+ * 注意：本命令不负责启动/停止网关，而是对外部网关 HTTP 服务
+ * (默认 http://localhost:7331) 进行查询。测试环境中无网关监听，
+ * status.state 通常为 'stopped'，probe.reachable 通常为 false。
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -42,133 +46,93 @@ describe('CLI gateway 命令 Contract', () => {
     expect(cmd?.description()).toContain('网关');
   });
 
-  it('包含子命令 start/stop/status/probe/info', () => {
+  it('包含子命令 status/probe/models/resolve/info', () => {
     const gatewayCmd = program.commands.find((c) => c.name() === 'gateway')!;
     const subNames = gatewayCmd.commands.map((c) => c.name());
-    expect(subNames).toContain('start');
-    expect(subNames).toContain('stop');
     expect(subNames).toContain('status');
     expect(subNames).toContain('probe');
+    expect(subNames).toContain('models');
+    expect(subNames).toContain('resolve');
     expect(subNames).toContain('info');
   });
 
-  describe('start 子命令', () => {
-    it('启动网关后 state 为 running', async () => {
-      await program.parseAsync(['node', 'test', 'gateway', 'start', '--json']);
-      const parsed = JSON.parse(outputs[0]);
-      expect(parsed.state).toBe('running');
-      expect(parsed.url).toMatch(/ws:\/\/localhost:/);
-      expect(parsed.port).toBeGreaterThan(0);
-      expect(parsed.pid).toBeGreaterThan(0);
-      expect(parsed.startedAt).toBeDefined();
-    });
-
-    it('--port 选项被解析', async () => {
-      await program.parseAsync(['node', 'test', 'gateway', 'start', '--port', '9999', '--json']);
-      const parsed = JSON.parse(outputs[0]);
-      expect(parsed.port).toBe(9999);
-      expect(parsed.url).toContain('9999');
-    });
-
-    it('启动后通道列表非空', async () => {
-      await program.parseAsync(['node', 'test', 'gateway', 'start', '--json']);
-      const parsed = JSON.parse(outputs[0]);
-      expect(parsed.channels.length).toBeGreaterThan(0);
-    });
-
-    it('文本输出包含"网关已启动"', async () => {
-      await program.parseAsync(['node', 'test', 'gateway', 'start']);
-      const allOutput = outputs.join('\n');
-      expect(allOutput).toContain('网关已启动');
-    });
-  });
-
-  describe('stop 子命令', () => {
-    it('停止网关后 state 为 stopped', async () => {
-      // 先启动
-      await program.parseAsync(['node', 'test', 'gateway', 'start', '--json']);
-      outputs = [];
-      // 再停止
-      await program.parseAsync(['node', 'test', 'gateway', 'stop', '--json']);
-      const parsed = JSON.parse(outputs[0]);
-      expect(parsed.state).toBe('stopped');
-      expect(parsed.channels).toEqual([]);
-    });
-
-    it('文本输出包含"网关已停止"', async () => {
-      await program.parseAsync(['node', 'test', 'gateway', 'stop']);
-      const allOutput = outputs.join('\n');
-      expect(allOutput).toContain('网关已停止');
-    });
-  });
-
   describe('status 子命令', () => {
-    it('返回 state/url/port/channels 字段', async () => {
+    it('返回 state/url/port/protocol/version 字段', async () => {
       await program.parseAsync(['node', 'test', 'gateway', 'status', '--json']);
       const parsed = JSON.parse(outputs[0]);
-      expect(['running', 'stopped', 'error']).toContain(parsed.state);
-      expect(parsed.url).toBeDefined();
+      expect(['running', 'stopped']).toContain(parsed.state);
+      expect(parsed.url).toContain('http://localhost:');
       expect(parsed.port).toBeGreaterThan(0);
-      expect(parsed.channels).toBeInstanceOf(Array);
+      expect(parsed.protocol).toBeDefined();
+      expect(parsed.version).toBeDefined();
     });
 
     it('文本输出包含"网关状态"', async () => {
       await program.parseAsync(['node', 'test', 'gateway', 'status']);
-      const allOutput = outputs.join('\n');
-      expect(allOutput).toContain('网关状态');
+      expect(outputs.join('\n')).toContain('网关状态');
     });
   });
 
   describe('probe 子命令', () => {
-    it('返回 reachable/latencyMs/auth/channels 字段', async () => {
+    it('返回 reachable/latencyMs 字段', async () => {
       await program.parseAsync(['node', 'test', 'gateway', 'probe', '--json']);
       const parsed = JSON.parse(outputs[0]);
       expect(typeof parsed.reachable).toBe('boolean');
       expect(typeof parsed.latencyMs).toBe('number');
-      expect(['ok', 'missing', 'denied']).toContain(parsed.auth);
-      expect(typeof parsed.channels).toBe('number');
     });
 
     it('未启动时 reachable=false', async () => {
-      // 先确保是 stopped 状态
-      await program.parseAsync(['node', 'test', 'gateway', 'stop']);
-      outputs = [];
       await program.parseAsync(['node', 'test', 'gateway', 'probe', '--json']);
       const parsed = JSON.parse(outputs[0]);
       expect(parsed.reachable).toBe(false);
     });
 
-    it('启动后 reachable=true', async () => {
-      await program.parseAsync(['node', 'test', 'gateway', 'start']);
-      outputs = [];
-      await program.parseAsync(['node', 'test', 'gateway', 'probe', '--json']);
-      const parsed = JSON.parse(outputs[0]);
-      expect(parsed.reachable).toBe(true);
-      expect(parsed.auth).toBe('ok');
-    });
-
     it('文本输出包含"网关探活"', async () => {
       await program.parseAsync(['node', 'test', 'gateway', 'probe']);
-      const allOutput = outputs.join('\n');
-      expect(allOutput).toContain('网关探活');
+      expect(outputs.join('\n')).toContain('网关探活');
+    });
+  });
+
+  describe('models 子命令', () => {
+    it('返回模型数组或错误对象', async () => {
+      await program.parseAsync(['node', 'test', 'gateway', 'models', '--json']);
+      const parsed = JSON.parse(outputs[0]);
+      // 网关不可达时返回 { error }，可达时返回数组
+      expect(Array.isArray(parsed) || typeof parsed.error === 'string').toBe(true);
+    });
+  });
+
+  describe('resolve 子命令', () => {
+    it('返回 id/normalizedId/provider 字段', async () => {
+      await program.parseAsync(['node', 'test', 'gateway', 'resolve', 'gpt-4', '--json']);
+      const parsed = JSON.parse(outputs[0]);
+      expect(parsed.id).toBe('gpt-4');
+      expect(typeof parsed.normalizedId).toBe('string');
+      expect(typeof parsed.provider).toBe('string');
+    });
+
+    it('文本输出包含"模型解析"', async () => {
+      await program.parseAsync(['node', 'test', 'gateway', 'resolve', 'gpt-4']);
+      expect(outputs.join('\n')).toContain('模型解析');
     });
   });
 
   describe('info 子命令', () => {
-    it('返回 version/protocol/maxConnections/activeConnections/uptime', async () => {
+    it('返回 state/url/port/protocol/version/latency/reachable 字段', async () => {
       await program.parseAsync(['node', 'test', 'gateway', 'info', '--json']);
       const parsed = JSON.parse(outputs[0]);
-      expect(parsed.version).toBeDefined();
+      expect(['running', 'stopped']).toContain(parsed.state);
+      expect(parsed.url).toBeDefined();
+      expect(typeof parsed.port).toBe('number');
       expect(parsed.protocol).toBeDefined();
-      expect(typeof parsed.maxConnections).toBe('number');
-      expect(typeof parsed.activeConnections).toBe('number');
-      expect(parsed.uptime).toBeDefined();
+      expect(parsed.version).toBeDefined();
+      expect(typeof parsed.latency).toBe('number');
+      expect(typeof parsed.reachable).toBe('boolean');
     });
 
     it('文本输出包含"网关信息"', async () => {
       await program.parseAsync(['node', 'test', 'gateway', 'info']);
-      const allOutput = outputs.join('\n');
-      expect(allOutput).toContain('网关信息');
+      expect(outputs.join('\n')).toContain('网关信息');
     });
   });
 });

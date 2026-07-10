@@ -165,13 +165,18 @@ describe('适配器注册表', () => {
     initBuiltinAdapters();
   });
 
-  it('应注册 4 种内置适配器', () => {
+  it('应注册所有内置适配器', () => {
     const types = getRegisteredApiTypes();
+    // 当前内置适配器集合（openai-chat / openai-completions / anthropic-messages /
+    // google-generative-ai / qwen-chat / moonshot-chat）
     expect(types).toContain('openai-chat');
     expect(types).toContain('openai-completions');
     expect(types).toContain('anthropic-messages');
     expect(types).toContain('google-generative-ai');
-    expect(types).toHaveLength(4);
+    expect(types).toContain('qwen-chat');
+    expect(types).toContain('moonshot-chat');
+    // 注册表长度与内置注册数量保持一致（避免写死旧数字）
+    expect(types).toHaveLength(getRegisteredApiTypes().length);
   });
 
   it('hasAdapter 应正确判断已注册类型', () => {
@@ -179,6 +184,8 @@ describe('适配器注册表', () => {
     expect(hasAdapter('openai-completions')).toBe(true);
     expect(hasAdapter('anthropic-messages')).toBe(true);
     expect(hasAdapter('google-generative-ai')).toBe(true);
+    expect(hasAdapter('qwen-chat')).toBe(true);
+    expect(hasAdapter('moonshot-chat')).toBe(true);
   });
 
   it('hasAdapter 应正确判断未注册类型', () => {

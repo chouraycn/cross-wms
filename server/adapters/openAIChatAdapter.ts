@@ -118,7 +118,7 @@ export class OpenAIChatAdapter implements IAiApiAdapter {
     callbacks: StreamCallbacks,
     tools?: ToolDefinition[],
   ): Promise<AIResponse> {
-    let {
+    const {
       apiEndpoint,
       apiKey,
       modelId,
@@ -254,7 +254,7 @@ export class OpenAIChatAdapter implements IAiApiAdapter {
       } else {
         body.tools = tools;
       }
-      body.tool_choice = 'auto';
+      body.tool_choice = config.toolChoice ?? 'auto';
     }
 
     // Prompt Cache: OpenAI 自动缓存前缀，但可以设置 cache key 用于分组

@@ -125,3 +125,5 @@ export function createWebChannelPlugin(): ChannelPlugin {
 
 export { createFeishuChannelPlugin, FEISHU_CHANNEL_ID } from "./builtin-feishu.js";
 export { createWeComChannelPlugin, WECOM_CHANNEL_ID } from "./builtin-wecom.js";
+export { createDingTalkChannelPlugin, DINGTALK_CHANNEL_ID } from "./builtin-dingtalk.js";
+export { createWeChatWorkChannelPlugin, WECHATWORK_CHANNEL_ID } from "./builtin-wechatwork.js";

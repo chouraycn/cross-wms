@@ -12,6 +12,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import PulsingText from '../shared/PulsingText';
 import { getGrayScale } from '../../constants/theme';
 import { useChatSession } from '../../contexts/ChatContext';
 import type { SendAgentMessageOptions } from '../../hooks/useAgentChat';
@@ -485,7 +486,7 @@ export const TerminalPanel: React.FC<TerminalPanelProps> = ({
             py: 0.2,
           }}>
             <span style={{ color: '#f59e0b' }}>● </span>
-            <span style={{ animation: 'pulse 1.5s infinite' }}>处理中...</span>
+            <PulsingText>处理中...</PulsingText>
           </Box>
         )}
       </Box>

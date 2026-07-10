@@ -25,6 +25,7 @@ cd "$ROOT_DIR"
 
 SKIP_SWIFT=false
 QUICK_MODE=false
+SKIP_E2E=false
 
 for arg in "$@"; do
   case "$arg" in
@@ -34,6 +35,9 @@ for arg in "$@"; do
     --quick)
       QUICK_MODE=true
       SKIP_SWIFT=true
+      ;;
+    --skip-e2e)
+      SKIP_E2E=true
       ;;
   esac
 done
@@ -298,6 +302,85 @@ if [[ "$SKIP_SWIFT" != "true" ]]; then
   
   echo ""
 fi
+
+# ===================== 8. E2E API 回归测试 =====================
+
+if [[ "$SKIP_E2E" == "true" ]]; then
+  echo "🧪 8. E2E API 回归测试"
+  check_warn "已通过 --skip-e2e 跳过 E2E API 测试"
+else
+  echo "🧪 8. E2E API 回归测试 (vitest e2e)"
+  if npm run test:e2e:api > /tmp/cdf-e2e-api.log 2>&1; then
+    check_pass "E2E API 测试通过"
+  else
+    check_fail "E2E API 测试失败（详见 /tmp/cdf-e2e-api.log）"
+    tail -40 /tmp/cdf-e2e-api.log
+  fi
+fi
+
+echo ""
+
+# ===================== 9. 包版本契约检查 =====================
+
+echo "📦 9. 包版本契约检查"
+if zsh scripts/check-packages.sh > /tmp/cdf-pkg.log 2>&1; then
+  check_pass "包版本契约一致"
+else
+  check_fail "包版本契约检查未通过"
+  cat /tmp/cdf-pkg.log
+fi
+
+echo ""
+
+# ===================== 10. WKWebView 兼容静态检查 =====================
+
+echo "🍎 10. WKWebView 兼容静态检查"
+if zsh scripts/wkwebview-lint.sh > /tmp/cdf-wk.log 2>&1; then
+  check_pass "WKWebView 兼容检查通过"
+else
+  check_fail "WKWebView 兼容检查未通过"
+  cat /tmp/cdf-wk.log
+fi
+
+echo ""
+
+# ===================== 11. 前端 Bundle 预算 =====================
+
+echo "📦 11. 前端 Bundle 预算"
+if zsh scripts/bundle-budget.sh > /tmp/cdf-bundle.log 2>&1; then
+  check_pass "前端 Bundle 预算通过"
+else
+  # bundle-budget 仅在超过硬上限时失败
+  check_fail "前端 Bundle 超出预算"
+  cat /tmp/cdf-bundle.log
+fi
+
+echo ""
+
+# ===================== 12. 前端性能静态检查 =====================
+
+echo "⚡ 12. 前端性能静态检查"
+if zsh scripts/perf-lint.sh > /tmp/cdf-perf.log 2>&1; then
+  check_pass "前端性能检查通过"
+else
+  # perf-lint 仅在 console.log 硬阻断时失败
+  check_fail "前端性能检查未通过"
+  cat /tmp/cdf-perf.log
+fi
+
+echo ""
+
+# ===================== 13. CI 健康检查 =====================
+
+echo "🏥 13. CI 健康检查"
+if zsh scripts/ci-health-check.sh > /tmp/cdf-ci-health.log 2>&1; then
+  check_pass "CI 健康检查通过"
+else
+  check_fail "CI 健康检查未通过"
+  cat /tmp/cdf-ci-health.log
+fi
+
+echo ""
 
 # ===================== 总结 =====================
 

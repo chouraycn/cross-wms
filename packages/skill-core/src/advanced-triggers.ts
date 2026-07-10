@@ -285,9 +285,13 @@ export class AdvancedTriggerEngine {
       ? validMatches.reduce((sum, m) => sum + m.confidence, 0) / validMatches.length
       : 0;
 
+    // NOT 匹配时 validMatches 为空，avgConfidence 为 0 会被 match() 的 confidence>0 过滤丢弃；
+    // 此时应赋满置信度（确定不命中即视为成功匹配）。
+    const confidence = trigger.operator === 'NOT' ? 1 : avgConfidence;
+
     return {
       trigger,
-      confidence: avgConfidence,
+      confidence,
       matchedText: validMatches.map(m => m.matchedText).filter(Boolean).join(', '),
     };
   }

@@ -180,7 +180,7 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
         // 策略内部事件：核心类型与多模态类型直接发送，其余走 debug 通道
         const eventType = event.type as string;
         if (hasRes && [
-          'init', 'text', 'thinking', 'tool_call', 'done', 'error',
+          'init', 'text', 'thinking', 'tool_call', 'done', 'error', 'approval',
           'image_start', 'image_delta', 'image_end',
           'audio_start', 'audio_delta', 'audio_end',
         ].includes(eventType)) {

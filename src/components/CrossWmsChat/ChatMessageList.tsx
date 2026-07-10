@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react';
-import { Box, Typography, Chip, useTheme, TextField, ClickAwayListener } from '@mui/material';
+import React, { useRef, useEffect, useCallback, useMemo, useState, useImperativeHandle } from 'react';
+import { Box, Typography, Chip, useTheme, TextField, ClickAwayListener, InputAdornment, IconButton } from '@mui/material';
 import ImageIcon from '@mui/icons-material/Image';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -9,6 +9,8 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 import FolderZipIcon from '@mui/icons-material/FolderZip';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import EditIcon from '@mui/icons-material/Edit';
+import SearchIcon from '@mui/icons-material/Search';
+import XIcon from '@mui/icons-material/Close';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { Message, Session } from '../../types/chat.js';
 import { ChatItem, isMessageItem, isDividerItem, isReadingIndicatorItem, isPendingSendItem } from '../../types/chat-items.js';
@@ -64,6 +66,7 @@ export interface ChatMessageListProps {
   onEdit?: (msg: Message) => void;
   onDelete?: (msgId: string) => void;
   onQuote?: (msg: Message) => void;
+  onUndo?: (msgId: string) => void;
   onConfirmReplenishment?: (suggestionId: number) => Promise<void>;
   /** v1.9.3: 权限请求响应回调 */
   onPermissionRespond?: (reqId: string, approved: boolean, alwaysAllow?: boolean) => void;
@@ -81,13 +84,20 @@ export interface ChatMessageListProps {
   isLoadingOlder?: boolean;
   /** 是否还有更早的消息 */
   hasMoreMessages?: boolean;
+  /** 外部搜索查询（由顶部搜索按钮控制） */
+  externalSearchQuery?: string;
+}
+
+export interface ChatMessageListRef {
+  navigateToNextSearchResult: () => void;
+  navigateToPrevSearchResult: () => void;
 }
 
 /**
  * v1.5.86: 虚拟滚动消息列表（react-virtuoso）
  * 长对话（数百条消息）仅渲染可视区域 + 缓冲区，避免 DOM 节点膨胀导致滚动卡顿
  */
-export const ChatMessageList: React.FC<ChatMessageListProps> = ({
+export const ChatMessageList = React.forwardRef<ChatMessageListRef, ChatMessageListProps>(({
   session,
   copiedId,
   onCopy,
@@ -95,6 +105,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   onEdit,
   onDelete,
   onQuote,
+  onUndo,
   onConfirmReplenishment,
   onPermissionRespond,
   showRegenerate = false,
@@ -104,7 +115,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   onLoadOlder,
   isLoadingOlder = false,
   hasMoreMessages = false,
-}) => {
+  externalSearchQuery,
+}, ref) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = useMemo(() => getGrayScale(isDark), [isDark]);
@@ -115,6 +127,121 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   const botNameInputRef = useRef<HTMLInputElement>(null);
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const isUserScrolledUp = useRef(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [bookmarkedMessages, setBookmarkedMessages] = useState<Set<string>>(new Set());
+  const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+
+  const hasMessages = (chatItems?.length ?? 0) > 0 || session.messages.length > 0;
+  const data = chatItems || session.messages;
+  const useChatItemMode = !!chatItems;
+
+  const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return data;
+    }
+    const query = searchQuery.toLowerCase();
+    if (useChatItemMode) {
+      return (data as ChatItem[]).filter(item => {
+        if (isMessageItem(item)) {
+          return item.message.content.toLowerCase().includes(query) ||
+                 (item.message.thinking && item.message.thinking.toLowerCase().includes(query));
+        }
+        return false;
+      });
+    }
+    return (data as Message[]).filter(msg =>
+      msg.content.toLowerCase().includes(query) ||
+      (msg.thinking && msg.thinking.toLowerCase().includes(query))
+    );
+  }, [data, searchQuery, useChatItemMode]);
+
+  // 同步外部搜索查询
+  useEffect(() => {
+    if (externalSearchQuery !== undefined) {
+      setSearchQuery(externalSearchQuery);
+      setHighlightedMessageId(null);
+      setCurrentSearchIndex(-1);
+    }
+  }, [externalSearchQuery]);
+
+  const navigateToNextSearchResult = useCallback(() => {
+    if (!searchQuery.trim() || filteredData.length === 0) return;
+    const nextIndex = currentSearchIndex < filteredData.length - 1 ? currentSearchIndex + 1 : 0;
+    setCurrentSearchIndex(nextIndex);
+    const item = filteredData[nextIndex];
+    const messageId = useChatItemMode ? (item as ChatItem).key : (item as Message).id;
+    setHighlightedMessageId(messageId);
+    virtuosoRef.current?.scrollToIndex({
+      index: nextIndex,
+      align: 'center',
+    });
+  }, [searchQuery, filteredData, currentSearchIndex, useChatItemMode]);
+
+  const navigateToPrevSearchResult = useCallback(() => {
+    if (!searchQuery.trim() || filteredData.length === 0) return;
+    const prevIndex = currentSearchIndex > 0 ? currentSearchIndex - 1 : filteredData.length - 1;
+    setCurrentSearchIndex(prevIndex);
+    const item = filteredData[prevIndex];
+    const messageId = useChatItemMode ? (item as ChatItem).key : (item as Message).id;
+    setHighlightedMessageId(messageId);
+    virtuosoRef.current?.scrollToIndex({
+      index: prevIndex,
+      align: 'center',
+    });
+  }, [searchQuery, filteredData, currentSearchIndex, useChatItemMode]);
+
+  useImperativeHandle(ref, () => ({
+    navigateToNextSearchResult,
+    navigateToPrevSearchResult,
+  }), [navigateToNextSearchResult, navigateToPrevSearchResult]);
+
+  const toggleSelectMessage = useCallback((msgId: string) => {
+    if (!isSelectionMode) return;
+    setSelectedMessages(prev => {
+      const next = new Set(prev);
+      if (next.has(msgId)) {
+        next.delete(msgId);
+      } else {
+        next.add(msgId);
+      }
+      return next;
+    });
+  }, [isSelectionMode]);
+
+  const handleSelectAll = useCallback(() => {
+    const allMsgIds = session.messages.map(m => m.id);
+    setSelectedMessages(new Set(allMsgIds));
+  }, [session.messages]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedMessages(new Set());
+    setIsSelectionMode(false);
+  }, []);
+
+  const handleDeleteSelected = useCallback(() => {
+    selectedMessages.forEach(id => onDelete?.(id));
+    setSelectedMessages(new Set());
+    setIsSelectionMode(false);
+  }, [selectedMessages, onDelete]);
+
+  const toggleBookmark = useCallback((msgId: string) => {
+    setBookmarkedMessages(prev => {
+      const next = new Set(prev);
+      if (next.has(msgId)) {
+        next.delete(msgId);
+      } else {
+        next.add(msgId);
+      }
+      return next;
+    });
+  }, []);
+
+  const hasSearchResults = searchQuery.trim() && filteredData.length > 0;
+  const searchCount = filteredData.length;
 
   // v2.4.1: 拦截 copy 事件，只复制纯文本（去除 HTML 样式）
   const handleContainerCopy = useCallback((e: React.ClipboardEvent) => {
@@ -143,8 +270,8 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       prevSessionIdRef.current = session.id;
       prevMsgCountRef.current = session.messages.length;
       isUserScrolledUp.current = false;
-      // 延迟一帧确保 Virtuoso 已更新数据
-      requestAnimationFrame(() => {
+      // 延迟一帧确保 Virtuoso 已更新数据（setTimeout 16ms 替代 rAF，WKWebView 兼容）
+      window.setTimeout(() => {
         if (session.messages.length > 0) {
           virtuosoRef.current?.scrollToIndex({
             index: session.messages.length - 1,
@@ -152,7 +279,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
             behavior: 'auto',
           });
         }
-      });
+      }, 16);
     }
   }, [session.id, session.messages.length]);
 
@@ -164,14 +291,14 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       if (lastMsg.role === 'user') {
         // 用户发送新消息：重置上翻标志，强制滚动到底部
         isUserScrolledUp.current = false;
-        // 延迟一帧确保 Virtuoso 已渲染新消息
-        requestAnimationFrame(() => {
+        // 延迟一帧确保 Virtuoso 已渲染新消息（setTimeout 16ms 替代 rAF，WKWebView 兼容）
+        window.setTimeout(() => {
           virtuosoRef.current?.scrollToIndex({
             index: session.messages.length - 1,
             align: 'end',
             behavior: 'smooth',
           });
-        });
+        }, 16);
       } else if (!isUserScrolledUp.current) {
         virtuosoRef.current?.autoscrollToBottom();
       }
@@ -185,8 +312,9 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
   const renderMessageItem = useCallback((msg: Message, index: number) => (
     <Box
       key={msg.id}
+      onClick={() => toggleSelectMessage(msg.id)}
       sx={{
-        pt: index === 0 ? 0 : 1.5,
+        pt: msg.role === 'user' ? (index === 0 ? 2 : 3) : (index === 0 ? 0 : 1.5),
         pb: 1.5,
         display: 'flex',
         flexDirection: 'column',
@@ -196,8 +324,37 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         maxWidth: CHAT_MAX_WIDTH,
         width: '100%',
         mx: 'auto',
+        cursor: isSelectionMode ? 'pointer' : 'default',
+        bgcolor: selectedMessages.has(msg.id) ? (isDark ? '#374151' : '#E5E7EB') : 'transparent',
+        borderRadius: selectedMessages.has(msg.id) ? '8px' : '0',
+        transition: 'background-color 0.15s',
       }}
     >
+      {isSelectionMode && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+          <Box
+            sx={{
+              width: 18,
+              height: 18,
+              borderRadius: '4px',
+              border: `2px solid ${selectedMessages.has(msg.id) ? '#6366F1' : gs.border}`,
+              bgcolor: selectedMessages.has(msg.id) ? '#6366F1' : 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              flexShrink: 0,
+              '&:hover': { borderColor: '#6366F1' },
+            }}
+          >
+            {selectedMessages.has(msg.id) && (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </Box>
+        </Box>
+      )}
       <Box
         sx={{
           display: 'flex',
@@ -300,7 +457,19 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
           </Box>
         )}
         <Typography sx={{ fontSize: 11, color: gs.textDisabled }}>
-          {(msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp)).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+          {(() => {
+            const ts = msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp);
+            const now = new Date();
+            const isToday = ts.toDateString() === now.toDateString();
+            const isYesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toDateString() === ts.toDateString();
+            if (isToday) {
+              return ts.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            }
+            if (isYesterday) {
+              return `昨天 ${ts.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`;
+            }
+            return ts.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          })()}
         </Typography>
         {msg.role === 'user' && (
           <Typography
@@ -355,6 +524,40 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
           ))}
         </Box>
       )}
+
+      {msg.replyToMessageId && (() => {
+        const replyToMsg = session.messages.find(m => m.id === msg.replyToMessageId);
+        if (!replyToMsg) return null;
+        return (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              px: 1.5,
+              py: 1,
+              mb: 0.5,
+              borderRadius: '12px',
+              bgcolor: isDark ? '#2D2D2D' : '#F0F0F0',
+              border: `1px solid ${gs.border}`,
+              maxWidth: '75%',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={gs.textDisabled} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+            </svg>
+            <Box sx={{ flex: 1, overflow: 'hidden' }}>
+              <Typography sx={{ fontSize: 11, color: gs.textMuted, fontWeight: 500 }}>
+                {replyToMsg.role === 'user' ? '你' : botName}
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: gs.textSecondary, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {replyToMsg.content.substring(0, 100)}
+                {replyToMsg.content.length > 100 && '...'}
+              </Typography>
+            </Box>
+          </Box>
+        );
+      })()}
 
       {msg.role === 'user' && msg.attachments && msg.attachments.length > 0 && (
         <Box
@@ -433,13 +636,16 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
           onEdit={onEdit}
           onDelete={onDelete}
           onQuote={onQuote}
+          onUndo={onUndo}
+          onBookmark={toggleBookmark}
+          isBookmarked={bookmarkedMessages.has(msg.id)}
           showRegenerate={showRegenerate}
           onConfirmReplenishment={onConfirmReplenishment}
           onPermissionRespond={onPermissionRespond}
         />
       )}
     </Box>
-  ), [gs, isDark, botName, isEditingBotName, editingBotName, settings, updateSettings, copiedId, onCopy, onRegenerate, onEdit, onDelete, onQuote, onConfirmReplenishment, onPermissionRespond, showRegenerate]);
+  ), [gs, isDark, botName, isEditingBotName, editingBotName, settings, updateSettings, copiedId, onCopy, onRegenerate, onEdit, onDelete, onQuote, onUndo, toggleBookmark, bookmarkedMessages, toggleSelectMessage, isSelectionMode, selectedMessages, onConfirmReplenishment, onPermissionRespond, showRegenerate]);
 
   const renderChatItem = useCallback((index: number, item: ChatItem) => {
     if (isMessageItem(item)) {
@@ -468,7 +674,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         <Box
           key={item.key}
           sx={{
-            pt: index === 0 ? 0 : 1.5,
+            pt: index === 0 ? 0 : 3,
             pb: 1.5,
             display: 'flex',
             flexDirection: 'column',
@@ -493,9 +699,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     return null;
   }, [renderMessageItem]);
 
-  const hasMessages = (chatItems?.length ?? 0) > 0 || session.messages.length > 0;
-  const data = chatItems || session.messages;
-  const useChatItemMode = !!chatItems;
+  const displayData = searchQuery.trim() ? filteredData : data;
 
   // v3.1: itemContent 用 useCallback 稳定引用 — 流式渲染期间保持引用不变，
   // 避免 Virtuoso 接收新函数引用后重渲染所有可见消息项
@@ -513,9 +717,7 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
     if (fadeKey !== session.id) {
       setFadeKey(session.id);
       setFadeIn(false);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setFadeIn(true));
-      });
+      window.setTimeout(() => setFadeIn(true), 16);
     }
   }, [session.id, fadeKey]);
 
@@ -534,29 +736,62 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         ...sx,
       }}
     >
+      {hasMessages && isSelectionMode && (
+        <Box sx={{ maxWidth: CHAT_MAX_WIDTH, mx: 'auto', px: 3, py: 1, borderBottom: `1px solid ${gs.border}`, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography sx={{ fontSize: 12, color: gs.textMuted }}>
+            已选择 {selectedMessages.size} 条
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={handleSelectAll}
+            sx={{ color: gs.textDisabled, '&:hover': { color: gs.textPrimary }, borderRadius: '4px' }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 500 }}>全选</Typography>
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={handleDeleteSelected}
+            sx={{ color: '#EF4444', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' }, borderRadius: '4px' }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 500 }}>删除</Typography>
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={handleClearSelection}
+            sx={{ color: gs.textDisabled, '&:hover': { color: gs.textPrimary }, borderRadius: '4px' }}
+          >
+            <Typography sx={{ fontSize: 11, fontWeight: 500 }}>取消</Typography>
+          </IconButton>
+        </Box>
+      )}
       <Virtuoso
         ref={virtuosoRef}
         style={{ height: '100%' }}
-        data={data}
+        data={displayData}
         startReached={() => {
-          if (hasMoreMessages && !isLoadingOlder && onLoadOlder) {
+          if (hasMoreMessages && !isLoadingOlder && !searchQuery.trim() && onLoadOlder) {
             onLoadOlder();
           }
         }}
         followOutput={(isAtBottom) => {
-          if (useChatItemMode) {
-            const lastItem = (data as ChatItem[])[(data as ChatItem[]).length - 1];
-            if (isMessageItem(lastItem) && lastItem.message.role === 'user') return 'smooth';
-          } else {
-            const lastMsg = (data as Message[])[(data as Message[]).length - 1];
-            if (lastMsg?.role === 'user') return 'smooth';
+          if (!searchQuery.trim()) {
+            if (useChatItemMode) {
+              const lastItem = (displayData as ChatItem[])[(displayData as ChatItem[]).length - 1];
+              if (isMessageItem(lastItem) && lastItem.message.role === 'user') return 'smooth';
+            } else {
+              const lastMsg = (displayData as Message[])[(displayData as Message[]).length - 1];
+              if (lastMsg?.role === 'user') return 'smooth';
+            }
+            return isAtBottom ? 'smooth' : false;
           }
-          return isAtBottom ? 'smooth' : false;
+          return false;
         }}
         atBottomStateChange={(atBottom) => {
-          isUserScrolledUp.current = !atBottom;
+          if (!searchQuery.trim()) {
+            isUserScrolledUp.current = !atBottom;
+          }
         }}
-        initialTopMostItemIndex={data.length > 0 ? { index: data.length - 1, align: 'end' } : undefined}
+        initialTopMostItemIndex={searchQuery.trim() ? undefined : (displayData.length > 0 ? { index: displayData.length - 1, align: 'end' } : undefined)}
         increaseViewportBy={{ top: 200, bottom: 400 }}
         components={{ List: ListComponent }}
         computeItemKey={(_index: number, item: Message | ChatItem) => {
@@ -569,6 +804,6 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       />
     </Box>
   );
-};
+});
 
 export default ChatMessageList;

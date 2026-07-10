@@ -888,8 +888,8 @@ export function useAgentChat(
           // v3.1: 移出 setMessages updater — 不在 state updater 中做副作用，避免阻塞渲染
           const eventSessionKey = (data.sessionKey as string) || (data.sessionId as string) || '';
           if (eventSessionKey && state.assistantMessageIndex >= 0) {
-            // 延迟到下一帧执行，不阻塞当前渲染周期
-            requestAnimationFrame(() => {
+            // 延迟到下一帧执行，不阻塞当前渲染周期（setTimeout 16ms 替代 rAF，WKWebView 兼容）
+            window.setTimeout(() => {
               try {
                 const idx = state.assistantMessageIndex;
                 const finalMsg = messagesRef.current[idx];
@@ -1378,12 +1378,20 @@ export function useAgentChat(
   const isRetryableError = (err: any): boolean => {
     if (err.name === 'AbortError') return false;
 
-    const msg = err.message?.toLowerCase() || '';
-    if (msg.includes('fetch failed') || msg.includes('network') || msg.includes('econnrefused') || msg.includes('connect')) return true;
-    if (msg.includes('timeout') || msg.includes('timed out')) return true;
+    // 1) HTTP 状态码具有权威性：仅 502/503/504 视为可重试的临时服务端错误。
+    //    其余状态码（4xx、500/501/505 等）一律不可重试，避免把"鉴权失败/限流/参数错误"
+    //    等永久错误当作网络抖动反复重试，导致"报错→重试"死循环。
+    if (typeof err.status === 'number') {
+      return err.status === 502 || err.status === 503 || err.status === 504;
+    }
 
-    // HTTP 状态码错误
-    if (err.status === 502 || err.status === 503 || err.status === 504) return true;
+    // 2) 无状态码（纯传输层/网络错误）：按中英文消息文本启发式判断
+    const msg = err.message?.toLowerCase() || '';
+    if (
+      msg.includes('fetch failed') || msg.includes('network') || msg.includes('econnrefused') ||
+      msg.includes('connect') || msg.includes('网络') || msg.includes('连接') || msg.includes('超时')
+    ) return true;
+    if (msg.includes('timeout') || msg.includes('timed out')) return true;
 
     return false;
   };
@@ -1554,8 +1562,16 @@ export function useAgentChat(
           const delayMs = SSE_RETRY_BASE_DELAY_MS * Math.pow(2, retryCount - 1);
           // console.warn(`[useAgentChat] SSE 连接断开，${delayMs}ms 后自动重试（第 ${retryCount} 次）:`, err.message);
 
-          // 重试前清理流式状态
+          // 重试前清理上一轮失败产生的"半截"助手消息，避免重试后出现重复气泡；
+          // 同时清除错误展示，让下一轮从干净状态开始。
+          // 注意：initializeStreaming() 会重置 blockState.assistantMessageIndex = -1，
+          // 但已追加到 messages 的残缺助手消息不会自动消失，必须显式过滤。
+          setError(null);
+          setMessages((prev) => prev.filter((m) => !(m.role === 'assistant' && m.isStreaming)));
+
+          // 清理流式状态（重置 parser、seq，避免旧 run 的序列号干扰新 run）
           parser.reset();
+          lastSeqRef.current.clear();
           initializeStreaming();
 
           // 延迟后重试
