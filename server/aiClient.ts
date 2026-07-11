@@ -1046,7 +1046,7 @@ export async function callAIModelStreamWithAdapter(
 
   // 确定 API 类型
   const apiType = modelConfig.apiType || inferApiType(provider, apiEndpoint);
-  const adapter = getAdapter(apiType);
+  const adapter = await getAdapter(apiType);
 
   if (!adapter) {
     logger.warn(`[AIClient] 未找到适配器: ${apiType}，回退到 OpenAI Chat 格式`);

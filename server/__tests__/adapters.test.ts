@@ -193,20 +193,20 @@ describe('适配器注册表', () => {
     expect(hasAdapter('')).toBe(false);
   });
 
-  it('getAdapter 应返回对应适配器实例', () => {
-    const adapter = getAdapter('openai-chat');
+  it('getAdapter 应返回对应适配器实例', async () => {
+    const adapter = await getAdapter('openai-chat');
     expect(adapter).not.toBeNull();
     expect(adapter?.apiType).toBe('openai-chat');
   });
 
-  it('getAdapter 不存在时返回 null', () => {
-    const adapter = getAdapter('non-existent' as never);
+  it('getAdapter 不存在时返回 null', async () => {
+    const adapter = await getAdapter('non-existent' as never);
     expect(adapter).toBeNull();
   });
 
-  it('每次 getAdapter 应返回新实例', () => {
-    const a1 = getAdapter('openai-chat');
-    const a2 = getAdapter('openai-chat');
+  it('每次 getAdapter 应返回新实例', async () => {
+    const a1 = await getAdapter('openai-chat');
+    const a2 = await getAdapter('openai-chat');
     expect(a1).not.toBe(a2);
   });
 

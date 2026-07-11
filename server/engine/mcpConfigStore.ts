@@ -100,14 +100,14 @@ function migrateOldColumnNames(): void {
 
 function initSchema(): void {
   const db = getDb();
-  
+
   // 先尝试迁移旧列名
   try {
     migrateOldColumnNames();
   } catch (e) {
     logger.warn('[MCPStore] 迁移旧列名跳过:', e);
   }
-  
+
   // 建表（IF NOT EXISTS 保证幂等）
   db.exec(`
     CREATE TABLE IF NOT EXISTS mcp_servers (
@@ -132,9 +132,23 @@ function initSchema(): void {
     );
   `);
 
+  // 增量列迁移：为 sse / http 传输添加 url 和 headers 列
+  try {
+    const cols = db.pragma('table_info(mcp_servers)') as Array<{ name: string }>;
+    const colNames = cols.map(c => c.name);
+    if (!colNames.includes('url')) {
+      db.exec(`ALTER TABLE mcp_servers ADD COLUMN url TEXT`);
+    }
+    if (!colNames.includes('headers')) {
+      db.exec(`ALTER TABLE mcp_servers ADD COLUMN headers TEXT`); // JSON object
+    }
+  } catch (e) {
+    logger.warn('[MCPStore] 添加 url/headers 列失败（可能已存在）:', e);
+  }
+
   // 版本标记
   db.exec(`CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
-  db.prepare(`INSERT OR REPLACE INTO app_settings (key, value) VALUES ('mcp_schema_version', ?)`).run('1.0.0');
+  db.prepare(`INSERT OR REPLACE INTO app_settings (key, value) VALUES ('mcp_schema_version', ?)`).run('1.1.0');
 }
 
 // 延迟执行建表
@@ -179,6 +193,16 @@ function rowToConfig(row: Record<string, unknown>): McpServerConfig {
     }
   }
 
+  const headersRaw = row.headers as string | undefined;
+  let headers: Record<string, string> | undefined;
+  if (headersRaw) {
+    try {
+      headers = JSON.parse(headersRaw);
+    } catch {
+      headers = undefined;
+    }
+  }
+
   return {
     id: row.id as string,
     name: row.name as string,
@@ -187,6 +211,8 @@ function rowToConfig(row: Record<string, unknown>): McpServerConfig {
     env,
     enabled: Boolean(row.enabled),
     transportType: ((row.transport_type || row.transportType) as McpTransportType) || 'stdio',
+    url: (row.url as string | undefined) || undefined,
+    headers,
     createdAt: (row.created_at || row.createdAt) as number,
     updatedAt: (row.updated_at || row.updatedAt) as number,
   };
@@ -200,6 +226,8 @@ function configToRow(config: Partial<McpServerConfig>): Record<string, unknown> 
   if (config.env !== undefined) row.env = JSON.stringify(config.env);
   if (config.enabled !== undefined) row.enabled = config.enabled ? 1 : 0;
   if (config.transportType !== undefined) row.transport_type = config.transportType;
+  if (config.url !== undefined) row.url = config.url;
+  if (config.headers !== undefined) row.headers = JSON.stringify(config.headers);
   if (config.createdAt !== undefined) row.created_at = config.createdAt;
   if (config.updatedAt !== undefined) row.updated_at = config.updatedAt;
   return row;
@@ -212,18 +240,23 @@ export function addServer(config: Omit<McpServerConfig, 'id' | 'createdAt' | 'up
   const db = getDb();
   const now = Date.now();
   const id = uuidv4();
+  const transportType = config.transportType || 'stdio';
+  // command 列为 NOT NULL；sse/http 无命令时存空串占位
+  const command = config.command || '';
 
   db.prepare(
-    `INSERT INTO mcp_servers (id, name, command, args, env, enabled, transport_type, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO mcp_servers (id, name, command, args, env, enabled, transport_type, url, headers, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     config.name,
-    config.command,
+    command,
     JSON.stringify(config.args || []),
     JSON.stringify(config.env || {}),
     config.enabled !== false ? 1 : 0,
-    config.transportType || 'stdio',
+    transportType,
+    config.url || null,
+    config.headers ? JSON.stringify(config.headers) : null,
     now,
     now,
   );
@@ -231,11 +264,13 @@ export function addServer(config: Omit<McpServerConfig, 'id' | 'createdAt' | 'up
   return {
     id,
     name: config.name,
-    command: config.command,
+    command,
     args: config.args || [],
     env: config.env || {},
     enabled: config.enabled !== false,
-    transportType: config.transportType || 'stdio',
+    transportType,
+    url: config.url,
+    headers: config.headers,
     createdAt: now,
     updatedAt: now,
   };
@@ -286,6 +321,14 @@ export function updateServer(id: string, updates: Partial<Omit<McpServerConfig, 
   if (updates.transportType !== undefined) {
     sets.push('transport_type = ?');
     params.push(updates.transportType);
+  }
+  if (updates.url !== undefined) {
+    sets.push('url = ?');
+    params.push(updates.url);
+  }
+  if (updates.headers !== undefined) {
+    sets.push('headers = ?');
+    params.push(JSON.stringify(updates.headers));
   }
 
   if (sets.length === 0) return getServer(id);

@@ -131,3 +131,94 @@ export declare class EngineStorage {
 export declare const memoryQueryEngine: MemoryQueryEngine;
 export declare const memoryEventBus: MemoryEventBus;
 export declare const engineStorage: EngineStorage;
+
+// ── Runtime Bridge (semantic redo of openclaw memory-runtime) ──
+
+export type MemoryRuntimeBackendConfig = unknown;
+export type MemoryRuntimeQmdConfig = unknown;
+export type MemoryRuntimeParams = unknown;
+
+export declare class MemoryRuntimeBridge {
+  resolveMemoryBackendConfig(params: unknown): unknown;
+  setBackendConfig(config: unknown): void;
+  getMemorySearchManager(params: unknown): Promise<unknown>;
+  closeMemorySearchManager(params: unknown): Promise<void>;
+  closeAllMemorySearchManagers(): Promise<void>;
+  getActiveManager(agentId: string): unknown;
+  getActiveManagerCount(): number;
+}
+
+export declare const memoryRuntimeBridge: MemoryRuntimeBridge;
+
+// ── State Registry (semantic redo of openclaw memory-state) ──
+
+export type MemoryCitationsMode = string;
+export type MemoryPromptSectionBuilder = unknown;
+export type MemoryCorpusSearchResult = unknown;
+export type MemoryCorpusGetResult = unknown;
+export type MemoryCorpusSupplement = unknown;
+export type MemoryFlushPlan = unknown;
+export type MemoryFlushPlanResolver = unknown;
+export type MemoryPluginRuntime = unknown;
+export type MemoryPluginCapability = unknown;
+
+export declare class MemoryStateRegistry {
+  registerMemoryCapability(pluginId: string, capability: unknown): void;
+  registerMemoryCorpusSupplement(pluginId: string, supplement: unknown): void;
+  registerMemoryPromptSupplement(pluginId: string, builder: unknown): void;
+  buildMemoryPromptSection(params: unknown): string[];
+  resolveMemoryFlushPlan(params: unknown): unknown;
+  getMemoryRuntime(): unknown;
+  listMemoryCorpusSupplements(): unknown[];
+  listMemoryPromptSupplements(): unknown[];
+  getMemoryCapabilityRegistration(): unknown;
+  clearState(): void;
+}
+
+export declare const memoryStateRegistry: MemoryStateRegistry;
+
+// ── Vector Backend (semantic redo of openclaw memory-lancedb) ──
+
+export type MemoryCategory = string;
+export type MemoryCaptureOptions = unknown;
+export type MemoryCaptureResult = unknown;
+export type MemoryRecallOptions = unknown;
+export type MemoryMessage = unknown;
+export type AutoCaptureCursor = unknown;
+export type VectorStore = unknown;
+export type VectorStoreRow = unknown;
+export type EmbeddingProvider = unknown;
+export type VectorMemoryBackendConfig = unknown;
+
+export declare class VectorMemoryBackend {
+  readonly type: MemoryBackendType;
+  readonly name: string;
+  readonly version: string;
+  readonly capabilities: unknown;
+  isAvailable(): boolean;
+  init(config: unknown): Promise<void>;
+  shutdown(): Promise<void>;
+  insertMemory(text: string, metadata?: unknown): Promise<number>;
+  insertBatch?(entries: unknown[]): Promise<number[]>;
+  searchMemory(query: unknown): Promise<unknown>;
+  getMemory(id: number): Promise<unknown>;
+  updateMemory?(id: number, updates: unknown): Promise<boolean>;
+  deleteMemory(id: number): Promise<boolean>;
+  deleteByFilter?(filter: unknown): Promise<number>;
+  clearAll(): Promise<void>;
+  getStats(): Promise<unknown>;
+  healthCheck(): Promise<boolean>;
+  autoRecall(options: unknown): Promise<unknown>;
+  autoCapture(options: unknown): Promise<unknown>;
+}
+
+export declare function createVectorMemoryBackend(config: unknown): VectorMemoryBackend;
+export declare function sanitizeForMemoryCapture(text: string): string;
+export declare function shouldCapture(text: string, options?: unknown): boolean;
+export declare function detectCategory(text: string): unknown;
+export declare function looksLikePromptInjection(text: string): boolean;
+export declare function looksLikeEnvelopeSludge(text: string): boolean;
+export declare function escapeMemoryForPrompt(text: string): string;
+export declare function normalizeRecallQuery(text: string, maxChars?: number): string;
+export declare function formatRelevantMemoriesContext(memories: unknown[]): string;
+export declare function extractLatestUserText(messages: unknown[]): string | undefined;

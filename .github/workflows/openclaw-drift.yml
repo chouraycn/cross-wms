@@ -89,11 +89,13 @@ jobs:
             echo "::warning::Fix #4b (DMG attempt >= 8): NOT PORTED"
           fi
 
-          # Fixes #1-3: Memory — these require semantic redo, just check the package exists
-          if [ -d "packages/memory-host-sdk/src" ]; then
-            echo "✓ Fixes #1-3 (memory-host-sdk): Package exists, semantic redo pending"
+          # Fixes #1-3: Memory — semantic redo ported to packages/memory-host-sdk
+          if [ -f "packages/memory-host-sdk/src/runtimeBridge.ts" ] && \
+             [ -f "packages/memory-host-sdk/src/stateRegistry.ts" ] && \
+             [ -f "packages/memory-host-sdk/src/vectorBackend.ts" ]; then
+            echo "✓ Fixes #1-3 (memory-host-sdk): Semantic redo ported (runtimeBridge + stateRegistry + vectorBackend)"
           else
-            echo "::warning::Fixes #1-3 (memory-host-sdk): Package missing"
+            echo "::warning::Fixes #1-3 (memory-host-sdk): Semantic redo modules missing"
           fi
 
       - name: Run sync-openclaw drift detection (if script exists)

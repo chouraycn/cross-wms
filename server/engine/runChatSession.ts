@@ -36,8 +36,11 @@ import { getSessionMessages, addMessage, getSessions, createSession, updateSessi
 import { extractAndAppendMemory } from '../routes/memoryExtractor.js';
 import { triggerTurnEndSync, triggerPostCompactionSync } from './sessionMemorySync.js';
 import { compressContextWithSummary } from './contextCompress.js';
+import { truncateContextForModel } from './contextTruncate.js';
+import contextWindowCache from './contextCache.js';
+import { getContextWindowGuard } from './contextWindowGuard.js';
 import { TokenBudgetManager } from './compaction/tokenBudget.js';
-import { CompactionLoopGuard, CompactionSafetyTimeout, CompactionRetryAggregateTimeout } from './compaction/compactionSafety.js';
+import { compactionRecovery } from './compaction/compactionRecovery.js';
 import { CompactionHooks } from './compaction/compactionHooks.js';
 import { getExecutionContractManager } from './executionContract.js';
 import { registerBuiltinCommands } from './commands/builtinCommands.js';
@@ -364,11 +367,24 @@ export async function runChatSession(
   let accumulatedThinking = '';
 
   // ===== Token 预算管理 + 压缩安全防护 =====
-  const ctxWindow = finalModelConfig.contextWindow || 128000;
+  // [A] ContextWindowCache 预检查：优先用 L1 缓存中可能更新的窗口值，未命中回退 modelConfig
+  const cachedCtxInfo = contextWindowCache.getSync(effectiveModel, (modelConfig as ModelConfig).provider);
+  const ctxWindow = cachedCtxInfo?.contextWindow || finalModelConfig.contextWindow || 128000;
+  if (!cachedCtxInfo) {
+    contextWindowCache.set({
+      modelId: effectiveModel,
+      provider: (modelConfig as ModelConfig).provider || '',
+      contextWindow: ctxWindow,
+      source: 'config',
+      fetchedAt: Date.now(),
+      ttl: 0,
+    });
+  }
   const ctxMaxTokens = Math.min(finalModelConfig.maxTokens || 8192, 8192);
   const tokenBudget = new TokenBudgetManager({ modelLimit: ctxWindow });
-  const compactionLoopGuard = new CompactionLoopGuard();
-  const compactionRetryBudget = new CompactionRetryAggregateTimeout();
+  // [C] compactionRecovery 单例统一管理压缩三重安全防护（替代原先逐次 new 三个独立类）；
+  // 此处重置以保持单次会话隔离，与原先每次 new 一致的行为。
+  compactionRecovery.reset();
 
   const executeCallbacks: ExecuteChatCallbacks = {
     onChunk: (chunk: string) => {
@@ -432,6 +448,64 @@ export async function runChatSession(
     },
   };
 
+  // [B] ContextWindowGuard 调用前安全检查：接近/溢出上下文上限时先压缩或截断，
+  // 模型窗口过小则仅记录警告（不阻断流程）。
+  const contextGuard = getContextWindowGuard();
+  const guardMessages = built.apiMessages.map((m) => ({
+    role: m.role,
+    content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content ?? ''),
+  }));
+  const guardDecision = contextGuard.checkCanProceed(
+    effectiveModel,
+    guardMessages,
+    (modelConfig as ModelConfig).provider,
+  );
+  if (guardDecision.suggestedAction === 'compact') {
+    try {
+      const guardCompressed = await compressContextWithSummary(
+        built.apiMessages,
+        ctxWindow,
+        ctxMaxTokens,
+        contractMaxToolCalls,
+        finalModelConfig,
+      );
+      if (
+        (guardCompressed.compressed || guardCompressed.truncated) &&
+        built.apiMessages.length !== guardCompressed.messages.length
+      ) {
+        built.apiMessages.length = 0;
+        built.apiMessages.push(...(guardCompressed.messages as typeof built.apiMessages));
+        callbacks.onEvent?.({ type: 'context_guard', action: 'compact', reason: guardDecision.reason });
+      }
+    } catch (guardErr) {
+      logger.warn(
+        '[runChatSession] ContextGuard 预压缩失败:',
+        guardErr instanceof Error ? guardErr.message : String(guardErr),
+      );
+    }
+  } else if (guardDecision.suggestedAction === 'truncate') {
+    try {
+      const guardTruncated = truncateContextForModel(
+        built.apiMessages as any,
+        ctxWindow,
+        ctxMaxTokens,
+        contractMaxToolCalls,
+      );
+      if (guardTruncated.truncated && built.apiMessages.length !== guardTruncated.messages.length) {
+        built.apiMessages.length = 0;
+        built.apiMessages.push(...(guardTruncated.messages as typeof built.apiMessages));
+        callbacks.onEvent?.({ type: 'context_guard', action: 'truncate', reason: guardDecision.reason });
+      }
+    } catch (guardErr) {
+      logger.warn(
+        '[runChatSession] ContextGuard 预截断失败:',
+        guardErr instanceof Error ? guardErr.message : String(guardErr),
+      );
+    }
+  } else if (guardDecision.suggestedAction === 'switch_model') {
+    logger.warn(`[runChatSession] ContextGuard 建议切换模型: ${guardDecision.reason}`);
+  }
+
   try {
     const result: ExecuteChatResult = await streamExecuteChat({
       sessionId,
@@ -492,7 +566,7 @@ export async function runChatSession(
     if (result.usage) {
       tokenBudget.updateUsage(result.usage as any);
     }
-    if (tokenBudget.shouldCompact() && compactionLoopGuard.canCompact(0) && compactionRetryBudget.canRetry()) {
+    if (tokenBudget.shouldCompact() && compactionRecovery.canProceed(0)) {
       // --- 压缩 Hook（before-compact，支持中止）---
       const tokensBefore = (result.usage as any)?.totalTokens || 0;
       const beforeSignal = await COMPACTION_HOOKS.runBeforeCompact({
@@ -507,10 +581,7 @@ export async function runChatSession(
         logger.info('[runChatSession] 响应后压缩被 before-compact Hook 中止:', beforeSignal.getReason());
       } else {
       try {
-        const safetyTimeout = new CompactionSafetyTimeout(60_000);
-        const compactionSignal = safetyTimeout.start();
-
-        const compactionResult = await Promise.race([
+        const compactionResult = await compactionRecovery.withTimeout(
           compressContextWithSummary(
             built.apiMessages,
             ctxWindow,
@@ -521,14 +592,14 @@ export async function runChatSession(
             undefined,
             undefined,
           ),
-          new Promise<never>((_, reject) => {
-            compactionSignal.addEventListener('abort', () => reject(new Error('compaction timeout')));
-          }),
-        ]);
+        );
 
         const tokensAfter = compactionResult.compressed ? Math.floor(tokensBefore * 0.5) : tokensBefore;
-        compactionLoopGuard.record(tokensBefore, tokensAfter);
-        compactionRetryBudget.recordAttempt(safetyTimeout.getElapsedMs());
+        compactionRecovery.recordResult(
+          tokensBefore,
+          tokensAfter,
+          compactionRecovery.getStats().timeout.elapsedMs,
+        );
 
         if (compactionResult.compressed) {
           callbacks.onEvent?.({
@@ -553,7 +624,7 @@ export async function runChatSession(
           compactedTokenCount: tokensAfter,
           summary: (compactionResult as any).summary,
           tokenReduction: Math.max(0, tokensBefore - tokensAfter),
-          durationMs: safetyTimeout.getElapsedMs(),
+          durationMs: compactionRecovery.getStats().timeout.elapsedMs,
         });
       } catch (compactionErr) {
         logger.warn('[runChatSession] 响应后压缩失败:', compactionErr);
@@ -565,7 +636,7 @@ export async function runChatSession(
           tokenCount: tokensBefore,
           timestamp: Date.now(),
           error: compactionErr instanceof Error ? compactionErr.message : String(compactionErr),
-          retryCount: compactionRetryBudget.getAttemptCount(),
+          retryCount: compactionRecovery.getStats().retry.attemptCount,
         });
       }
       }
