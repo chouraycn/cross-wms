@@ -35,20 +35,32 @@ router.get('/servers', (_req: Request, res: Response) => {
  */
 router.post('/servers', async (req: Request, res: Response) => {
   try {
-    const { name, command, args, env, enabled, transportType } = req.body;
+    const { name, command, args, env, enabled, transportType, url, headers } = req.body;
 
-    if (!name || !command) {
-      res.status(400).json({ error: '缺少必填字段: name, command' });
+    const transport = transportType || 'stdio';
+    // stdio 必须提供 command；sse/http 必须提供 url
+    if (!name) {
+      res.status(400).json({ error: '缺少必填字段: name' });
+      return;
+    }
+    if (transport === 'stdio' && !command) {
+      res.status(400).json({ error: 'stdio 传输需要提供 command' });
+      return;
+    }
+    if ((transport === 'sse' || transport === 'http') && !url) {
+      res.status(400).json({ error: `${transport} 传输需要提供 url` });
       return;
     }
 
     const config = mcpClientManager.addServerConfig({
       name,
-      command,
+      command: command || '',
       args: args || [],
       env: env || {},
       enabled: enabled !== false,
-      transportType: transportType || 'stdio',
+      transportType: transport,
+      url,
+      headers,
     });
 
     // 如果启用，自动连接
@@ -70,7 +82,7 @@ router.post('/servers', async (req: Request, res: Response) => {
 router.put('/servers/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, command, args, env, enabled, transportType } = req.body;
+    const { name, command, args, env, enabled, transportType, url, headers } = req.body;
 
     const existing = mcpClientManager.getServerConfig(id);
     if (!existing) {
@@ -86,6 +98,8 @@ router.put('/servers/:id', async (req: Request, res: Response) => {
     if (env !== undefined) updates.env = env;
     if (enabled !== undefined) updates.enabled = enabled;
     if (transportType !== undefined) updates.transportType = transportType;
+    if (url !== undefined) updates.url = url;
+    if (headers !== undefined) updates.headers = headers;
 
     const updated = mcpClientManager.updateServerConfig(id, updates);
     if (!updated) {
@@ -94,7 +108,7 @@ router.put('/servers/:id', async (req: Request, res: Response) => {
     }
 
     // 如果配置变更且已连接，重新连接
-    const needsReconnect = updates.command || updates.args || updates.env;
+    const needsReconnect = updates.command || updates.args || updates.env || updates.url || updates.headers || updates.transportType;
     if (needsReconnect && updated.enabled) {
       const state = await mcpClientManager.reconnectServer(id);
       res.json({ success: true, server: state });
@@ -191,6 +205,8 @@ router.post('/servers/:id/test', async (req: Request, res: Response) => {
       env: config.env,
       enabled: true,
       transportType: config.transportType,
+      url: config.url,
+      headers: config.headers,
     });
     res.json({ success: state.connectionState === 'connected', server: state });
   } catch (err) {

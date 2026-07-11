@@ -8,9 +8,9 @@
   "trackedByGit": false,
   "driftCI": ".github/workflows/openclaw-drift.yml",
   "upstreamFixes": {
-    "fix1_memory_runtime": { "status": "pending_semantic_redo", "target": "packages/memory-host-sdk", "source": "openclaw/src/plugins/memory-runtime.ts" },
-    "fix2_memory_state": { "status": "pending_semantic_redo", "target": "packages/memory-host-sdk", "source": "openclaw/src/plugins/memory-state.ts" },
-    "fix3_memory_lancedb": { "status": "pending_semantic_redo", "target": "packages/memory-host-sdk", "source": "openclaw/extensions/memory-lancedb/index.ts" },
+    "fix1_memory_runtime": { "status": "ported_semantic_redo", "target": "packages/memory-host-sdk", "source": "openclaw/src/plugins/memory-runtime.ts" },
+    "fix2_memory_state": { "status": "ported_semantic_redo", "target": "packages/memory-host-sdk", "source": "openclaw/src/plugins/memory-state.ts" },
+    "fix3_memory_lancedb": { "status": "ported_semantic_redo", "target": "packages/memory-host-sdk", "source": "openclaw/extensions/memory-lancedb/index.ts" },
     "fix4_dmg_dsstore_flush": { "status": "ported", "target": "scripts/create-dmg.sh", "source": "openclaw/scripts/create-dmg.sh", "portedAt": "2026-07-11" }
   },
   "note": "本文件是内嵌 OpenClaw 副本的版本锚点。它是普通 JSON（非 submodule、非 npm 依赖），仅作人工审阅记录。运行时产品实际使用的是 packages/ 下的 @cdf-know/* 硬 fork，而非 openclaw/ 目录。drift CI 见 .github/workflows/openclaw-drift.yml。",

@@ -7,7 +7,7 @@
  * 工具名在内部使用 mcp__{serverName}__{toolName} 格式。
  *
  * 连接流程：
- * 1. 创建 StdioClientTransport（command, args, env）
+ * 1. 根据 transportType 创建 Transport（stdio / sse / http）
  * 2. 创建 Client（{ name, version }）
  * 3. client.connect(transport)
  * 4. client.listTools() → 缓存工具
@@ -16,6 +16,9 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { McpServerConfig, McpServerState, McpToolInfo, McpConnectionState } from './mcpTypes.js';
 import { sanitizeServerName, makeMcpToolName, parseMcpToolName } from './mcpTypes.js';
 import { addServer, getServer, updateServer, deleteServer, listServers } from './mcpConfigStore.js';
@@ -30,8 +33,8 @@ interface McpClientEntry {
   config: McpServerConfig;
   /** MCP SDK Client 实例 */
   client: Client;
-  /** Stdio 传输实例 */
-  transport: StdioClientTransport;
+  /** 传输实例（Stdio / SSE / StreamableHTTP） */
+  transport: Transport;
   /** 连接状态 */
   connectionState: McpConnectionState;
   /** 已发现的工具（原始名称） */
@@ -93,8 +96,41 @@ class McpClientManager {
   // ===================== 连接管理 =====================
 
   /**
+   * 根据 config 创建对应的 Transport 实例。
+   * - stdio（默认）：StdioClientTransport
+   * - sse：SSEClientTransport
+   * - http：StreamableHTTPClientTransport
+   */
+  private createTransport(config: McpServerConfig): Transport {
+    const transportType = config.transportType || 'stdio';
+
+    if (transportType === 'sse') {
+      if (!config.url) throw new Error('SSE 传输需要提供 url');
+      const headers = config.headers || {};
+      return new SSEClientTransport(new URL(config.url), {
+        requestInit: { headers },
+      });
+    }
+
+    if (transportType === 'http') {
+      if (!config.url) throw new Error('HTTP 传输需要提供 url');
+      const headers = config.headers || {};
+      return new StreamableHTTPClientTransport(new URL(config.url), {
+        requestInit: { headers },
+      });
+    }
+
+    // 默认 stdio
+    return new StdioClientTransport({
+      command: config.command,
+      args: config.args,
+      env: { ...process.env, ...config.env } as Record<string, string>,
+    });
+  }
+
+  /**
    * 连接 MCP Server。
-   * 启动子进程 + 初始化 MCP Client + listTools。
+   * 启动子进程 / 远端连接 + 初始化 MCP Client + listTools。
    *
    * @param config - Server 配置
    * @returns 连接后的 McpServerState
@@ -115,12 +151,8 @@ class McpClientManager {
     };
 
     try {
-      // 1. 创建 StdioClientTransport
-      const transport = new StdioClientTransport({
-        command: config.command,
-        args: config.args,
-        env: { ...process.env, ...config.env } as Record<string, string>,
-      });
+      // 1. 创建 Transport（按 transportType 分支）
+      const transport = this.createTransport(config);
 
       // 2. 创建 MCP Client
       const client = new Client(
@@ -362,18 +394,20 @@ class McpClientManager {
     };
 
     try {
-      const transport = new StdioClientTransport({
-        command: tempConfig.command,
-        args: tempConfig.args,
-        env: { ...process.env, ...tempConfig.env } as Record<string, string>,
-      });
+      const transport = this.createTransport(tempConfig);
 
       const client = new Client(
         { name: 'cdf-know-clow', version: '1.0.0' },
         { capabilities: {} },
       );
 
-      await client.connect(transport);
+      // 与 connectServer 保持一致的 30s 超时
+      await Promise.race([
+        client.connect(transport),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('MCP 连接超时（30s）')), 30000)
+        ),
+      ]);
 
       const toolsResult = await client.listTools();
       const tools: McpToolInfo[] = (toolsResult.tools || []).map((tool: { name: string; description?: string; inputSchema?: Record<string, unknown> }) => ({

@@ -14,6 +14,7 @@ import type { MessageContent, ToolDefinition, ToolCall, AIResponse } from '../ai
 /** 支持的 API 类型 */
 export type ModelApiType =
   | 'openai-chat'
+  | 'openai-responses'
   | 'openai-completions'
   | 'anthropic-messages'
   | 'google-generative-ai'

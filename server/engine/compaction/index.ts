@@ -95,6 +95,7 @@ export * from '../historySanitizer.js';
 // v9.0: 压缩系统增强模块
 export * from './tokenBudget.js';
 export * from './compactionSafety.js';
+export * from './compactionRecovery.js';
 export {
   CompactionHookType,
   CompactionTrigger,

@@ -5,8 +5,8 @@
  * 前后端共享。
  */
 
-/** MCP Server 传输类型（MVP 仅支持 stdio） */
-export type McpTransportType = 'stdio' | 'sse';
+/** MCP Server 传输类型：stdio（子进程）/ sse（SSE 远端）/ http（Streamable HTTP 远端） */
+export type McpTransportType = 'stdio' | 'sse' | 'http';
 
 /** MCP Server 配置 */
 export interface McpServerConfig {
@@ -14,16 +14,20 @@ export interface McpServerConfig {
   id: string;
   /** 人类可读名称，如 "filesystem" */
   name: string;
-  /** 启动命令，如 "npx" */
+  /** 启动命令，如 "npx"（仅 stdio 使用） */
   command: string;
-  /** 参数，如 ["-y", "@anthropic/mcp-server-filesystem", "/path"] */
+  /** 参数，如 ["-y", "@anthropic/mcp-server-filesystem", "/path"]（仅 stdio 使用） */
   args: string[];
-  /** 环境变量 */
+  /** 环境变量（仅 stdio 使用） */
   env: Record<string, string>;
   /** 是否启用 */
   enabled: boolean;
   /** 传输类型 */
   transportType: McpTransportType;
+  /** 远端 URL（sse / http 使用） */
+  url?: string;
+  /** 自定义请求头（sse / http 使用） */
+  headers?: Record<string, string>;
   /** 创建时间（毫秒时间戳） */
   createdAt: number;
   /** 更新时间（毫秒时间戳） */

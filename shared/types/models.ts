@@ -44,6 +44,7 @@ export type ModelProvider =
 /** API 适配器类型 */
 export type ModelApiType =
   | 'openai-chat'
+  | 'openai-responses'
   | 'openai-completions'
   | 'anthropic-messages'
   | 'google-generative-ai'

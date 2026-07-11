@@ -274,7 +274,7 @@ export class UnifiedProviderRegistry {
    * @param id - Provider ID
    * @returns adapter 实例或 null
    */
-  getAdapter(id: string): ReturnType<typeof getAdapter> {
+  async getAdapter(id: string): ReturnType<typeof getAdapter> {
     const runtime = this.runtimes.get(id);
     if (!runtime) {
       logger.warn(`[UnifiedProviderRegistry] Provider not found: ${id}`);
@@ -360,6 +360,7 @@ export class UnifiedProviderRegistry {
       custom: 0,
       byApiType: {
         'openai-chat': 0,
+        'openai-responses': 0,
         'openai-completions': 0,
         'anthropic-messages': 0,
         'google-generative-ai': 0,
