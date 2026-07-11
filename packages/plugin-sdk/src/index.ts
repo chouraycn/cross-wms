@@ -66,11 +66,6 @@ export type {
   HookRunOptions,
   HookRunnerLogger,
   AdapterCompatConfig,
-  PluginManifestModelSupport,
-  PluginManifestModelCatalog,
-  PluginManifestActivation,
-  PluginManifestSetup,
-  PluginManifestContracts,
 } from './types';
 
 export {

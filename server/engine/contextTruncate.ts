@@ -1,4 +1,5 @@
 import { logger } from '../logger.js';
+import type { MessageContent, ToolCall } from '../aiClient.js';
 
 /**
  * Context Truncation — 上下文截断工具
@@ -92,10 +93,10 @@ export function estimateMessagesTokens(
 
 // ===================== 消息类型 =====================
 
-type ApiMessage = {
+export type ApiMessage = {
   role: string;
-  content: unknown;
-  tool_calls?: Array<{ id: string; type: string; function: { name: string; arguments: string } }> | unknown[];
+  content: MessageContent;
+  tool_calls?: ToolCall[];
   tool_call_id?: string;
   reasoning_content?: unknown;
 };
@@ -138,9 +139,9 @@ export function sanitizeToolMessages(messages: ApiMessage[]): ApiMessage[] {
         return { ...m, content: JSON.stringify(m.content) };
       }
     } else if (m.role === 'assistant') {
-      // assistant 消息的 content 可以是 string 或 null（有 tool_calls 时）
+      // assistant 消息的 content 可以是 string 或空字符串（有 tool_calls 时）
       if (m.content == null) {
-        return { ...m, content: hasToolCalls(m) ? null : '' };
+        return { ...m, content: '' };
       }
     }
     return m;
@@ -224,7 +225,7 @@ export function sanitizeToolMessages(messages: ApiMessage[]): ApiMessage[] {
           logger.warn('[sanitizeToolMessages] 丢弃无响应且无内容的 assistant(tool_calls) 消息');
         }
       } else {
-        const keptCalls = (msg.tool_calls as Array<{ id?: string }>).filter(
+        const keptCalls = (msg.tool_calls || []).filter(
           tc => tc.id && responded.has(tc.id),
         );
         if (keptCalls.length > 0) {
@@ -429,12 +430,12 @@ function groupMessagesAtomically(messages: ApiMessage[]): ApiMessage[][] {
  * @returns 截断后的消息数组，以及是否发生了截断
  */
 export function truncateContextForModel(
-  apiMessages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+  apiMessages: ApiMessage[],
   contextWindow: number,
   maxOutputTokens: number,
   toolsCount: number,
   workingMemoryMessages?: Array<{ role: string; content: string }>,
-): { messages: typeof apiMessages; truncated: boolean } {
+): { messages: ApiMessage[]; truncated: boolean } {
   // v5.0: 如果有 workingMemoryMessages，在截断前注入
   if (workingMemoryMessages && workingMemoryMessages.length > 0) {
     apiMessages = [...workingMemoryMessages as typeof apiMessages, ...apiMessages];

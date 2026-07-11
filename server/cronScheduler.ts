@@ -80,7 +80,7 @@ function getNextRunTime(cron: string, from: Date = new Date()): Date {
       if (part.includes('/')) {
         const [range, step] = part.split('/');
         const stepVal = parseInt(step, 10);
-        let [start, end] = range === '*' ? [min, max] : range.split('-').map(Number);
+        const [start, end] = range === '*' ? [min, max] : range.split('-').map(Number);
         for (let i = start; i <= end; i += stepVal) {
           values.add(i);
         }

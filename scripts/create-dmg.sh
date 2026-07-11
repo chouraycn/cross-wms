@@ -147,6 +147,29 @@ cleanup_dmg() {
 }
 trap cleanup_dmg EXIT
 
+# Finder 异步写 .DS_Store（含背景图引用），close container window 返回后未必落盘。
+# 若在 .DS_Store 刷盘前 force detach，会丢弃背景图设置，导致 DMG 打开后无背景。
+# 这里在 detach 前显式 sync 并轮询 .DS_Store 的 mtime 稳定，避免竞态。
+wait_for_dsstore_flush() {
+  local path="$MOUNT_POINT/.DS_Store"
+  local prev_mtime=""
+  local mtime
+  local i
+  sync
+  for i in {1..12}; do
+    if [[ -f "$path" ]]; then
+      mtime="$(stat -f '%m' "$path" 2>/dev/null || echo '')"
+      if [[ -n "$mtime" && "$mtime" == "$prev_mtime" ]]; then
+        return 0
+      fi
+      prev_mtime="$mtime"
+    fi
+    sleep 0.5
+  done
+  # 超时不报错：仍交给 detach_dmg 处理，但此时大概率已落盘
+  return 0
+}
+
 detach_dmg() {
   local attempt
   for attempt in {1..15}; do
@@ -158,7 +181,8 @@ detach_dmg() {
       fi
       return
     fi
-    if (( attempt >= 3 )) && hdiutil detach "$MOUNT_POINT" -force 2>/dev/null; then
+    # 给 Finder 充分的干净释放窗口后再 force；过早 force 会丢弃未刷盘的 .DS_Store。
+    if (( attempt >= 8 )) && hdiutil detach "$MOUNT_POINT" -force 2>/dev/null; then
       MOUNTED=0
       # v1.7.15: 清理自定义挂载点目录
       if [[ -n "${DMG_MOUNT_POINT:-}" && "$MOUNT_POINT" == "$DMG_MOUNT_POINT" ]]; then
@@ -257,11 +281,8 @@ EOF
     echo "WARN: osascript failed (status=$osascript_status)" >&2
   fi
 
-  # v1.7.15: 确保 .DS_Store 写入磁盘后再卸载
-  if [[ -f "$MOUNT_POINT/.DS_Store" ]]; then
-    sync
-    sleep 2
-  fi
+  # v1.7.16: 确保 .DS_Store 写入磁盘后再卸载（port 自 openclaw 上游修复）
+  wait_for_dsstore_flush
 fi
 
 if ! detach_dmg; then

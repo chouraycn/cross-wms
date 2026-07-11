@@ -14,6 +14,12 @@ const SLOT_BY_KIND: Record<PluginCapabilityKind, PluginSlotKey> = {
   hook: 'contextEngine',
   command: 'contextEngine',
   service: 'contextEngine',
+  'audio-provider': 'contextEngine',
+  'image-generation': 'contextEngine',
+  'video-generation': 'contextEngine',
+  'web-search': 'contextEngine',
+  'security-provider': 'contextEngine',
+  'api-integration': 'contextEngine',
 };
 
 const DEFAULT_SLOT_BY_KEY: Record<PluginSlotKey, string> = {

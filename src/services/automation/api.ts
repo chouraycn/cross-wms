@@ -10,6 +10,9 @@ import type {
   AutomationExecution,
   TriggerType,
   EventTriggerConfig,
+  WebhookConfig,
+  FileChangeTriggerConfig,
+  ThresholdTriggerConfig,
   ExecutionPolicy,
   NotificationConfig,
 } from './types';
@@ -56,7 +59,9 @@ export async function createAutomationApi(data: {
   validUntil?: string | null;
   triggerType?: TriggerType;
   eventTrigger?: EventTriggerConfig | null;
-  webhookConfig?: Record<string, unknown> | null;
+  webhookConfig?: WebhookConfig | null;
+  fileChangeTrigger?: FileChangeTriggerConfig | null;
+  thresholdTrigger?: ThresholdTriggerConfig | null;
   executionPolicy?: ExecutionPolicy | null;
   notificationConfig?: NotificationConfig | null;
 }): Promise<Automation> {

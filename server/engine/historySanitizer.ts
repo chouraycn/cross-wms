@@ -14,15 +14,7 @@
 
 import type { ImageSanitizationLimits } from './imageSanitization.js';
 import { sanitizeMessageImages } from './imageSanitization.js';
-
-type ApiMessage = {
-  role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string | Array<{ type: string; text?: string; image_url?: unknown }>;
-  tool_calls?: Array<{ id: string; type: string; function: { name: string; arguments: string } }>;
-  tool_call_id?: string;
-  name?: string;
-  reasoning_content?: string;
-};
+import type { ApiMessage } from './contextTruncate.js';
 
 type SanitizeOptions = {
   maxTurns?: number;

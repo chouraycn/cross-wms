@@ -21,12 +21,31 @@ import { registerVecMemoryHost } from '../engine/memory-host/vecMemoryHost.js';
 import { MemoryBudgetManager, type MemoryBudgetStats, type SessionMemoryStats } from '../engine/context-engine/memoryBudget.js';
 import { ContextProjectionManager, type ProjectionComputeOptions } from '../engine/context-engine/contextProjection.js';
 import { CROSS_WMS_EMBEDDED_HOST, evaluateContextEngineHostSupport, type ContextEngineHostSupportEvaluationResult } from '../engine/context-engine/hostCompat.js';
+// vX: 激活此前未引用的 5 个上下文引擎子模块（promptCache / quarantineHealth / runtimeSettings / subagentLifecycle / transcriptRewrite）
+import { PromptCacheManager, detectCacheBreak, formatCacheUsage } from '../engine/context-engine/promptCache.js';
+import { getGlobalQuarantineHealthStore } from '../engine/context-engine/quarantineHealth.js';
+import {
+  createDefaultRuntimeSettings,
+  runtimeSettingsToContext,
+  contextToRuntimeSettings,
+  mergeRuntimeSettings,
+  describeRuntimeMode,
+  getRuntimeDiagnosticsSummary,
+} from '../engine/context-engine/runtimeSettings.js';
+import { SubagentLifecycleManager, type SubagentSessionInfo } from '../engine/context-engine/subagentLifecycle.js';
+import { getGlobalCheckpointManager } from '../engine/context-engine/transcriptRewrite.js';
+import type {
+  ContextEngineRuntimeSettings,
+  ContextEngineRuntimeMode,
+} from '../engine/context-engine/types.js';
 
 const activeEngines = new Map<string, ContextEngine>();
 const sessionProjections = new Map<string, ContextProjectionManager>();
 
 let initialized = false;
 let globalMemoryBudget: MemoryBudgetManager | null = null;
+let globalPromptCache: PromptCacheManager | null = null;
+let globalSubagentLifecycle: SubagentLifecycleManager | null = null;
 
 export function ensureContextEngineService(): void {
   if (initialized) return;
@@ -52,6 +71,27 @@ export function ensureContextEngineService(): void {
 
 export function getEngine(sessionId: string): ContextEngine | undefined {
   return activeEngines.get(sessionId);
+}
+
+/**
+ * 将消息内容计入内存预算（激活 MemoryBudgetManager）。
+ * 在 ingest 路径中调用：每条消息作为一个预算条目，超阈值时由管理器自动清理。
+ * 任何异常都被吞掉，避免影响主流程。
+ */
+function recordMemoryBudgetItems(sessionId: string, messages: AgentMessage[]): void {
+  if (!globalMemoryBudget) return;
+  for (const msg of messages) {
+    try {
+      const id = msg.id ?? `${sessionId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+      const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content ?? '');
+      globalMemoryBudget.addItem(id, sessionId, content);
+    } catch (err) {
+      logger.debug(
+        '[ContextEngineService] 记录内存预算条目失败(已忽略):',
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+  }
 }
 
 export async function getOrCreateEngine(
@@ -200,6 +240,9 @@ export async function ingestMessages(
     tokensAdded += result.tokensAdded ?? 0;
   }
 
+  // vX: 将摄入的消息计入内存预算（激活 MemoryBudgetManager）
+  recordMemoryBudgetItems(sessionId, messages);
+
   return { added, skipped, tokensAdded };
 }
 
@@ -215,7 +258,7 @@ export async function assembleContext(
   runtimeContext?: ContextEngineRuntimeContext
 ): Promise<AssembleResult> {
   const engine = await getOrCreateEngine(sessionId);
-  return engine.assemble({
+  const result = await engine.assemble({
     sessionId,
     messages: options?.messages ?? [],
     tokenBudget: options?.tokenBudget,
@@ -224,6 +267,31 @@ export async function assembleContext(
     prompt: options?.prompt,
     runtimeContext,
   });
+
+  // vX: 在真实组装路径中激活 contextProjection + promptCache 模块
+  // 生成投影指纹（上下文投影缓存）并跟踪 prompt-cache 失效（system prompt / model / tools 变化）
+  try {
+    const projectionManager = getOrCreateProjectionManager(sessionId);
+    projectionManager.computeProjection({
+      systemMessages: options?.messages ?? [],
+      availableTools: options?.availableTools,
+    });
+  } catch (e) {
+    logger.debug('[ContextEngineService] 上下文投影更新失败(已忽略):', e instanceof Error ? e.message : String(e));
+  }
+
+  try {
+    getOrCreatePromptCacheManager().updateUsage({
+      usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      modelId: options?.model,
+      systemPrompt: options?.prompt,
+      toolCount: options?.availableTools?.size,
+    });
+  } catch (e) {
+    logger.debug('[ContextEngineService] prompt-cache 跟踪失败(已忽略):', e instanceof Error ? e.message : String(e));
+  }
+
+  return result;
 }
 
 export async function afterTurn(
@@ -385,6 +453,156 @@ export function releaseProjectionManager(sessionId: string): void {
     manager.dispose();
     sessionProjections.delete(sessionId);
   }
+}
+
+// ===================== Prompt Cache (激活 promptCache 模块) =====================
+
+export function getOrCreatePromptCacheManager(): PromptCacheManager {
+  ensureContextEngineService();
+  if (!globalPromptCache) {
+    globalPromptCache = new PromptCacheManager();
+  }
+  return globalPromptCache;
+}
+
+export function updatePromptCacheUsage(options: {
+  usage: { input?: number; output?: number; cacheRead?: number; cacheWrite?: number };
+  modelId?: string;
+  systemPrompt?: string;
+  toolCount?: number;
+  streamStrategy?: string;
+  transport?: string;
+}): void {
+  ensureContextEngineService();
+  getOrCreatePromptCacheManager().updateUsage(options as never);
+}
+
+export function getPromptCacheInfo() {
+  ensureContextEngineService();
+  return getOrCreatePromptCacheManager().getInfo();
+}
+
+export function detectPromptCacheBreak(options: Parameters<typeof detectCacheBreak>[0]) {
+  return detectCacheBreak(options);
+}
+
+export function formatPromptCacheUsage(options: Parameters<typeof formatCacheUsage>[0]): string {
+  return formatCacheUsage(options);
+}
+
+// ===================== Quarantine Health (激活 quarantineHealth 模块) =====================
+
+export async function getQuarantineHealth(engineId: string) {
+  ensureContextEngineService();
+  return getGlobalQuarantineHealthStore().getHealth(engineId);
+}
+
+export async function recordQuarantineFailure(engineId: string, reason?: string, isAbortError = false) {
+  ensureContextEngineService();
+  return getGlobalQuarantineHealthStore().recordFailure(engineId, reason, { isAbortError });
+}
+
+export async function recordQuarantineSuccess(engineId: string) {
+  ensureContextEngineService();
+  return getGlobalQuarantineHealthStore().recordSuccess(engineId);
+}
+
+export async function resetQuarantineHealth(engineId: string) {
+  ensureContextEngineService();
+  return getGlobalQuarantineHealthStore().resetHealth(engineId);
+}
+
+export async function isEngineQuarantined(engineId: string) {
+  ensureContextEngineService();
+  return getGlobalQuarantineHealthStore().isQuarantined(engineId);
+}
+
+export async function listQuarantineHealth() {
+  ensureContextEngineService();
+  const map = await getGlobalQuarantineHealthStore().listAll();
+  return Array.from(map.entries()).map(([id, info]) => ({ engineId: id, ...info }));
+}
+
+// ===================== Runtime Settings (激活 runtimeSettings 模块) =====================
+
+export function buildDefaultRuntimeSettings(overrides?: Partial<ContextEngineRuntimeSettings>) {
+  ensureContextEngineService();
+  return createDefaultRuntimeSettings(overrides);
+}
+
+export function runtimeContextFromSettings(settings: ContextEngineRuntimeSettings) {
+  return runtimeSettingsToContext(settings);
+}
+
+export function settingsFromRuntimeContext(ctx: import("../engine/context-engine/types.js").ContextEngineRuntimeContext) {
+  return contextToRuntimeSettings(ctx);
+}
+
+export function mergeRuntimeSettingsPatch(
+  base: ContextEngineRuntimeSettings,
+  overrides: Partial<ContextEngineRuntimeSettings>
+) {
+  return mergeRuntimeSettings(base, overrides);
+}
+
+export function describeRuntimeModeSafe(mode: ContextEngineRuntimeMode): string {
+  return describeRuntimeMode(mode);
+}
+
+export function getRuntimeDiagnosticsSummarySafe(settings: ContextEngineRuntimeSettings): string {
+  return getRuntimeDiagnosticsSummary(settings);
+}
+
+// ===================== Subagent Lifecycle (激活 subagentLifecycle 模块) =====================
+
+export function getGlobalSubagentLifecycle(): SubagentLifecycleManager {
+  ensureContextEngineService();
+  if (!globalSubagentLifecycle) {
+    globalSubagentLifecycle = new SubagentLifecycleManager();
+  }
+  return globalSubagentLifecycle;
+}
+
+export function listSubagentSessions(): SubagentSessionInfo[] {
+  ensureContextEngineService();
+  return getGlobalSubagentLifecycle().listSessions();
+}
+
+export function listActiveSubagentSessions(): SubagentSessionInfo[] {
+  ensureContextEngineService();
+  return getGlobalSubagentLifecycle().listActiveSessions();
+}
+
+// ===================== Transcript Rewrite / Checkpoints (激活 transcriptRewrite 模块) =====================
+
+export function createTranscriptCheckpoint(sessionId: string, messages: AgentMessage[], description?: string) {
+  ensureContextEngineService();
+  return getGlobalCheckpointManager().createCheckpoint(sessionId, messages, description);
+}
+
+export function getTranscriptCheckpoint(sessionId: string, checkpointId: string) {
+  ensureContextEngineService();
+  return getGlobalCheckpointManager().getCheckpoint(sessionId, checkpointId);
+}
+
+export function listTranscriptCheckpoints(sessionId: string) {
+  ensureContextEngineService();
+  return getGlobalCheckpointManager().listCheckpoints(sessionId);
+}
+
+export function restoreTranscriptCheckpoint(sessionId: string, checkpointId: string) {
+  ensureContextEngineService();
+  return getGlobalCheckpointManager().restoreCheckpoint(sessionId, checkpointId);
+}
+
+export function clearTranscriptCheckpoints(sessionId: string): number {
+  ensureContextEngineService();
+  return getGlobalCheckpointManager().clearCheckpoints(sessionId);
+}
+
+export function getTranscriptCheckpointStats(sessionId: string) {
+  ensureContextEngineService();
+  return getGlobalCheckpointManager().getSessionStats(sessionId);
 }
 
 export function evaluateHostCompatibilityForEngine(

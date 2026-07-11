@@ -5,7 +5,7 @@ initSentry();
 import { recordBackendPhase } from './performance/performanceStore.js';
 const serverStartupStartedAt = performance.now();
 
-import express from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
@@ -183,8 +183,17 @@ import { startWatchdog, stopWatchdog, releaseAllHeldLocks } from './storage/sess
 import { logger } from './logger.js';
 import { extensionLoader } from '../extensions/index.js';
 
+// v1.5.220+: 全局 Express 错误兜底中间件（统一错误日志）
+import { errorLogger } from './engine/error-handling/index.js';
+// 死代码接入：密钥脱敏 — 在全局错误中间件中脱敏日志中的敏感信息（additive，不改动 LIVE 行为）
+import { redactSecrets } from './logging/redact.js';
+
 // 轻量入口：延迟加载工具（参照 openclaw gateway/server.ts 设计）
 import { lazyRouter } from './utils/lazyRouter.js';
+
+// ========== 死代码接入：CLI HTTP 端点 ==========
+// 把 server/cli 的 runCLI 暴露为受控的 HTTP 端点（详见 ./routes/cli.ts）
+import cliRouter from './routes/cli.js';
 
 // TimerManager (定时器统一管理)
 import { TimerManager } from './core/timerManager.js';
@@ -343,6 +352,29 @@ app.use('/api/channels', lazyRouter(() => import('./routes/channels.js'), undefi
 app.use('/api/cache', lazyRouter(() => import('./routes/cache.js'), undefined, 'cache'));
 app.use('/api/keyword-trigger', lazyRouter(() => import('./routes/keywordTrigger.js'), undefined, 'keyword-trigger'));
 
+// ========== 死代码接入：补全能力（非删除） ==========
+app.use('/api/cron', lazyRouter(() => import('./routes/cron.js'), undefined, 'cron'));
+app.use('/api/tool-plan', lazyRouter(() => import('./routes/toolPlan.js'), undefined, 'tool-plan'));
+app.use('/api/embeddings', lazyRouter(() => import('./routes/embeddings.js'), undefined, 'embeddings'));
+app.use('/api/plugin-sdk', lazyRouter(() => import('./routes/pluginSdk.js'), undefined, 'plugin-sdk'));
+app.use('/api/reports', lazyRouter(() => import('./routes/reports.js'), undefined, 'reports'));
+app.use('/api/security-audit', lazyRouter(() => import('./routes/securityAudit.js'), undefined, 'security-audit'));
+
+// ========== 死代码接入：Group C 深子系统（增量激活，不替换主执行链路 runChatSession） ==========
+app.use('/api/acp', lazyRouter(() => import('./routes/acp.js'), undefined, 'acp'));
+app.use('/api/channels-core', lazyRouter(() => import('./routes/channelsCore.js'), undefined, 'channels-core'));
+app.use('/api/gateway-ext', lazyRouter(() => import('./routes/gatewayExt.js'), undefined, 'gateway-ext'));
+app.use('/api/agent-runtime', lazyRouter(() => import('./routes/agentRuntime.js'), undefined, 'agent-runtime'));
+
+// ========== 死代码接入：能力单例统一 HTTP 暴露面（只读探测，不改动 LIVE 行为） ==========
+app.use('/api/capabilities', lazyRouter(() => import('./routes/capabilities.js'), undefined, 'capabilities'));
+
+// 死代码接入：code-understanding（Group C 单例，已同时注册为内置工具 code_understanding）
+app.use('/api/code-understanding', lazyRouter(() => import('./routes/codeUnderstanding.js'), undefined, 'code-understanding'));
+
+// 死代码接入：CLI 端点（同步挂载，runCLI 内部已做错误处理，不阻塞主流程）
+app.use('/api/cli', cliRouter);
+
 // ========== v10.0: Gateway Routes (OpenAI/MCP 兼容) ==========
 // 从环境变量或配置文件读取 API Keys
 const gatewayApiKeys = (process.env.GATEWAY_API_KEYS || '').split(',').filter(Boolean);
@@ -436,6 +468,27 @@ if (fs.existsSync(FRONTEND_DIST_DIR) && fs.existsSync(path.join(FRONTEND_DIST_DI
   logger.warn(`[Server] 前端静态目录不存在: ${FRONTEND_DIST_DIR}（仅 API 模式）`);
 }
 
+// v1.5.220+: 全局 Express 错误兜底中间件
+// 统一记录所有未捕获的请求错误（经由 errorLogger 落盘），避免 500 错误静默丢失。
+// 设计：仅做日志记录 + 安全响应，不尝试“恢复”。recoveryEngine 是操作级重试/降级机制，
+// 在 HTTP 中间件中恢复请求会改变实时行为，故此处不接入；调用方可自行包裹 recoveryEngine。
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  // 死代码接入：在记录错误前对消息/堆栈中的密钥做脱敏（additive，仅影响日志内容，不改动响应）
+  const safeMessage = redactSecrets(err?.message || String(err));
+  const safeStack = err?.stack ? redactSecrets(err.stack) : undefined;
+  const safeErr = safeStack
+    ? Object.assign(Object.create(err), err, { message: safeMessage, stack: safeStack })
+    : Object.assign(Object.create(err), err, { message: safeMessage });
+  errorLogger.error(
+    '[Express] 未处理的请求错误',
+    { service: 'express', operation: 'request' },
+    safeErr,
+  );
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
 // v8.7: error 监听器必须在 listen() 之前注册，防止边缘情况下 error 事件丢失
@@ -497,6 +550,17 @@ server.listen(PORT, async () => {
     });
   }).catch(err => {
     logger.warn('[Server] Doctor 通道注册表初始化失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+  });
+
+  // v9.x: 增量接入 WebSocket Hub（Group C gateway 子系统）。
+  // 挂在 httpServer 的 /gateway/ws，仅提供双向实时通道，绝不劫持/替换 SSE 主链路。
+  // ws 模块已安装（node_modules/ws），WebSocketServer 在 server 上以 path 过滤挂载。
+  import('./gateway/webSocketHub.js').then(({ startGatewayWebSocket }) => {
+    startGatewayWebSocket(server).catch((e) =>
+      logger.warn('[Server] WebSocket Hub 启动失败（非阻塞）:', e instanceof Error ? e.message : String(e)),
+    );
+  }).catch((e) => {
+    logger.warn('[Server] WebSocket Hub 模块加载失败（非阻塞）:', e instanceof Error ? e.message : String(e));
   });
 
   // v1.9.4: Agent Registry 和 Soul 文件改为后台初始化，不阻塞启动流程

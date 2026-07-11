@@ -36,6 +36,9 @@ import { API_BASE } from '../constants/api';
 import { useAiEngineSettings } from '../contexts/AppSettingsContext';
 import { extractTodos, mergeAutoTodos } from '../utils/extractTodos';
 import { isWKWebView } from '../utils/env';
+import { SSEStreamParser } from '../utils/sse/SSEStreamParser.js';
+import { BlockReplyCoalescer } from '../utils/sse/BlockReplyCoalescer.js';
+import { RenderScheduler } from '../utils/sse/RenderScheduler.js';
 
 // ===================== 类型定义 =====================
 
@@ -129,277 +132,6 @@ const MAX_MESSAGE_CHARS = 200000;
 const MAX_MESSAGES_COUNT = 200;
 // 思考内容最大字符数：超过则截断
 const MAX_THINKING_CHARS = 100000;
-
-// ===================== SSE 解析器 =====================
-
-/**
- * SSE 流解析器 — 逐行解析，处理跨 chunk 边界
- *
- * 完全复制 OpenClaw 的 robust 解析器设计。
- */
-class SSEStreamParser {
-  private buffer = '';
-  private currentEvent: { event?: string; data: string[] } = { data: [] };
-
-  feed(chunk: string): Array<{ event?: string; data: unknown }> {
-    this.buffer += chunk;
-    const events: Array<{ event?: string; data: unknown }> = [];
-
-    let lineEnd = this.buffer.indexOf('\n');
-    while (lineEnd !== -1) {
-      const line = this.buffer.slice(0, lineEnd);
-      this.buffer = this.buffer.slice(lineEnd + 1);
-
-      const result = this.processLine(line);
-      if (result) {
-        events.push(result);
-      }
-
-      lineEnd = this.buffer.indexOf('\n');
-    }
-
-    return events;
-  }
-
-  private processLine(line: string): { event?: string; data: unknown } | null {
-    if (line === '') {
-      if (this.currentEvent.data.length > 0 || this.currentEvent.event) {
-        const event = this.buildEvent();
-        this.currentEvent = { data: [] };
-        return event;
-      }
-      return null;
-    }
-
-    if (line.startsWith(':')) {
-      return null;
-    }
-
-    if (line.startsWith('event: ')) {
-      this.currentEvent.event = line.slice(7);
-      return null;
-    }
-
-    if (line.startsWith('data: ')) {
-      this.currentEvent.data.push(line.slice(6));
-      return null;
-    }
-
-    if (line.startsWith('data:')) {
-      this.currentEvent.data.push(line.slice(5));
-      return null;
-    }
-
-    return null;
-  }
-
-  private buildEvent(): { event?: string; data: unknown } {
-    const dataStr = this.currentEvent.data.join('\n');
-    let parsed: unknown = dataStr;
-
-    try {
-      parsed = JSON.parse(dataStr);
-    } catch {
-      // 不是 JSON，保留原始字符串
-    }
-
-    return {
-      event: this.currentEvent.event,
-      data: parsed,
-    };
-  }
-
-  reset(): void {
-    this.buffer = '';
-    this.currentEvent = { data: [] };
-  }
-}
-
-// ===================== Block Reply Coalescer =====================
-
-/**
- * Block Reply Coalescer — 完全复制 OpenClaw 的设计
- *
- * 将多个小的流式片段合并为更少的输出块，减少渲染次数。
- * 特点：
- * - minChars: 达到最小字符数后才开始计时
- * - maxChars: 达到最大字符数立即刷新
- * - idleMs: 空闲时间后刷新
- * - isReasoning: 思考标记，思考和正文不能合并
- */
-class BlockReplyCoalescer {
-  private bufferText = '';
-  private bufferIsReasoning = false;
-  private idleTimer: ReturnType<typeof setTimeout> | null = null;
-  private aborted = false;
-  private firstChunk = true;
-
-  constructor(
-    private config: { minChars: number; maxChars: number; idleMs: number },
-    private onFlush: (text: string, isReasoning: boolean) => void,
-  ) {}
-
-  enqueue(text: string, isReasoning: boolean): void {
-    if (this.aborted) return;
-    if (!text) return;
-
-    if (this.firstChunk) {
-      this.firstChunk = false;
-      this.bufferIsReasoning = isReasoning;
-    }
-
-    if (isReasoning !== this.bufferIsReasoning) {
-      this.flush({ force: true });
-      this.bufferIsReasoning = isReasoning;
-    }
-
-    this.bufferText += text;
-
-    if (this.bufferText.length >= this.config.maxChars) {
-      this.flush({ force: true });
-      return;
-    }
-
-    this.scheduleIdleFlush();
-  }
-
-  private scheduleIdleFlush(): void {
-    if (this.idleTimer) {
-      clearTimeout(this.idleTimer);
-    }
-
-    if (this.bufferText.length < this.config.minChars) {
-      this.idleTimer = setTimeout(() => {
-        this.flush({ force: false });
-      }, this.config.idleMs * 1.5);
-    } else {
-      this.idleTimer = setTimeout(() => {
-        this.flush({ force: false });
-      }, this.config.idleMs);
-    }
-  }
-
-  flush(options?: { force?: boolean }): void {
-    if (this.idleTimer) {
-      clearTimeout(this.idleTimer);
-      this.idleTimer = null;
-    }
-
-    if (this.aborted) {
-      this.bufferText = '';
-      return;
-    }
-
-    if (!this.bufferText) {
-      return;
-    }
-
-    if (!options?.force && this.bufferText.length < this.config.minChars) {
-      this.scheduleIdleFlush();
-      return;
-    }
-
-    const text = this.bufferText;
-    const isReasoning = this.bufferIsReasoning;
-    this.bufferText = '';
-
-    this.onFlush(text, isReasoning);
-  }
-
-  hasBuffered(): boolean {
-    return this.bufferText.length > 0;
-  }
-
-  stop(): void {
-    this.aborted = true;
-    if (this.idleTimer) {
-      clearTimeout(this.idleTimer);
-      this.idleTimer = null;
-    }
-    this.bufferText = '';
-  }
-
-  dispose(): void {
-    this.flush({ force: true });
-    this.stop();
-  }
-}
-
-// ===================== 渲染调度器 =====================
-
-/**
- * 渲染调度器 — 管理不同优先级的 UI 更新
- *
- * 正文流：高优先级 (setTimeout 16ms)
- * 思考流：低优先级 (setTimeout 50ms)
- * 
- * v3.0.0: 统一用 setTimeout 渲染调度 — 彻底消除 rAF 暂停问题
- * 在 WKWebView 中，rAF 会在应用后台或某些状态下暂停，导致 UI 无法更新
- * setTimeout 不受 WKWebView rAF 暂停影响
- */
-class RenderScheduler {
-  private textRafId: number | null = null;
-  private thinkingRicId: number | null = null;
-  private pendingText = false;
-  private pendingThinking = false;
-
-  constructor(
-    private textUpdateFn: () => void,
-    private thinkingUpdateFn: () => void,
-  ) {}
-
-  scheduleTextUpdate(): void {
-    this.pendingText = true;
-    if (this.textRafId === null) {
-      this.textRafId = window.setTimeout(() => {
-        this.textRafId = null;
-        if (this.pendingText) {
-          this.pendingText = false;
-          this.textUpdateFn();
-        }
-      }, 16) as unknown as number;
-    }
-  }
-
-  scheduleThinkingUpdate(): void {
-    this.pendingThinking = true;
-    if (this.thinkingRicId === null) {
-      this.thinkingRicId = window.setTimeout(() => {
-        this.thinkingRicId = null;
-        if (this.pendingThinking) {
-          this.pendingThinking = false;
-          this.thinkingUpdateFn();
-        }
-      }, 50) as unknown as number;
-    }
-  }
-
-  flushAll(): void {
-    if (this.pendingText && this.textRafId !== null) {
-      clearTimeout(this.textRafId);
-      this.textRafId = null;
-      this.pendingText = false;
-      this.textUpdateFn();
-    }
-    if (this.pendingThinking && this.thinkingRicId !== null) {
-      clearTimeout(this.thinkingRicId);
-      this.thinkingRicId = null;
-      this.pendingThinking = false;
-      this.thinkingUpdateFn();
-    }
-  }
-
-  dispose(): void {
-    if (this.textRafId !== null) {
-      clearTimeout(this.textRafId);
-      this.textRafId = null;
-    }
-    if (this.thinkingRicId !== null) {
-      clearTimeout(this.thinkingRicId);
-      this.thinkingRicId = null;
-    }
-  }
-}
 
 // ===================== 消息块状态 =====================
 
@@ -1238,9 +970,104 @@ export function useAgentChat(
       }
 
       case 'heartbeat':
-      case 'plan':
-      case 'command_output':
-      case 'patch':
+        break;
+
+      case 'plan': {
+        // v9.2: 执行计划事件 — 将计划写入当前助手消息的 executionPlan 字段
+        const plan = data.plan as { steps?: Array<{ step: number; description: string; status?: string; toolName?: string }> } | undefined;
+        if (plan?.steps) {
+          const idx = blockStateRef.current.assistantMessageIndex;
+          if (idx >= 0) {
+            setMessages(prev => {
+              if (idx < 0 || idx >= prev.length) return prev;
+              const updated = { ...prev[idx] };
+              updated.executionPlan = {
+                id: String(plan.steps!.length),
+                intent: '',
+                steps: plan.steps!.map(s => ({
+                  step: s.step,
+                  description: s.description,
+                  status: (s.status as 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped') || 'pending',
+                  dependsOn: [],
+                  toolName: s.toolName,
+                })),
+                isDynamic: true,
+                createdAt: Date.now().toString(),
+              };
+              const newMessages = [...prev];
+              newMessages[idx] = updated;
+              return newMessages;
+            });
+          }
+        }
+        break;
+      }
+
+      case 'plan_revised': {
+        // v9.2: 计划修订事件 — 更新当前助手消息的 executionPlan
+        const revised = data.plan as { steps?: Array<{ step: number; description: string; status?: string; toolName?: string }> } | undefined;
+        if (revised?.steps) {
+          const idx = blockStateRef.current.assistantMessageIndex;
+          if (idx >= 0) {
+            setMessages(prev => {
+              if (idx < 0 || idx >= prev.length) return prev;
+              const updated = { ...prev[idx] };
+              updated.executionPlan = {
+                id: String(Date.now()),
+                intent: '',
+                steps: revised.steps!.map(s => ({
+                  step: s.step,
+                  description: s.description,
+                  status: (s.status as 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped') || 'pending',
+                  dependsOn: [],
+                  toolName: s.toolName,
+                })),
+                isDynamic: true,
+                createdAt: Date.now().toString(),
+              };
+              const newMessages = [...prev];
+              newMessages[idx] = updated;
+              return newMessages;
+            });
+          }
+        }
+        break;
+      }
+
+      case 'command_output': {
+        // v9.2: 命令输出事件 — 添加到 activeItems 供 UI 展示
+        const title = (data.title as string) || '命令输出';
+        const output = (data.output as string) || '';
+        setActiveItems(prev => [...prev, {
+          itemId: `cmd_${Date.now()}`,
+          phase: 'end',
+          kind: 'command',
+          title,
+          status: 'completed',
+          summary: output,
+        }]);
+        break;
+      }
+
+      case 'patch': {
+        // v9.2: 补丁摘要事件 — 添加到 activeItems 供 UI 展示
+        const title = (data.title as string) || '代码变更';
+        const summary = (data.summary as string) || '';
+        const added = (data.added as string[]) || [];
+        const modified = (data.modified as string[]) || [];
+        const deleted = (data.deleted as string[]) || [];
+        setActiveItems(prev => [...prev, {
+          itemId: `patch_${Date.now()}`,
+          phase: 'end',
+          kind: 'patch',
+          title,
+          status: 'completed',
+          summary,
+          meta: `+${added.length} ~${modified.length} -${deleted.length}`,
+        }]);
+        break;
+      }
+
       default:
         break;
     }

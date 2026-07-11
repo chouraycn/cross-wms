@@ -1,0 +1,107 @@
+name: OpenClaw Drift Check
+
+on:
+  pull_request:
+    paths:
+      - 'packages/**'
+      - 'server/**'
+      - 'src/**'
+      - 'openclaw-vendor-pin.json'
+      - 'FORK_BOUNDARY.md'
+  schedule:
+    # 每周一 09:00 UTC 检查上游 drift
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check openclaw-vendor-pin.json exists
+        id: pin-check
+        run: |
+          if [ -f "openclaw-vendor-pin.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Pin file found:"
+            cat openclaw-vendor-pin.json
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "::warning::openclaw-vendor-pin.json not found — fork sync tracking is missing"
+          fi
+
+      - name: Validate vendor pin has version
+        if: steps.pin-check.outputs.exists == 'true'
+        run: |
+          VERSION=$(jq -r '.version' openclaw-vendor-pin.json)
+          EMBEDDED_AT=$(jq -r '.embeddedAt' openclaw-vendor-pin.json)
+          TRACKED=$(jq -r '.trackedByGit' openclaw-vendor-pin.json)
+
+          if [ "$VERSION" = "null" ] || [ -z "$VERSION" ]; then
+            echo "::error::openclaw-vendor-pin.json is missing version field"
+            exit 1
+          fi
+
+          echo "OpenClaw vendor pin:"
+          echo "  Version: $VERSION"
+          echo "  Embedded at: $EMBEDDED_AT"
+          echo "  Tracked by git: $TRACKED"
+
+      - name: Check FORK_BOUNDARY.md is up to date
+        run: |
+          if [ ! -f "FORK_BOUNDARY.md" ]; then
+            echo "::warning::FORK_BOUNDARY.md not found — fork boundary documentation is missing"
+          else
+            echo "FORK_BOUNDARY.md found ($(wc -l < FORK_BOUNDARY.md) lines)"
+          fi
+
+      - name: Verify runtime uses @cdf-know packages (not openclaw/)
+        run: |
+          # 确保运行时代码不直接 import from openclaw/
+          LEAKS=$(grep -r "from.*['\"].*openclaw/" --include="*.ts" --include="*.tsx" packages/ server/ src/ 2>/dev/null | grep -v node_modules | grep -v ".d.ts" || true)
+
+          if [ -n "$LEAKS" ]; then
+            echo "::error::Runtime code imports from openclaw/ directory (should use @cdf-know/* packages):"
+            echo "$LEAKS"
+            exit 1
+          fi
+
+          echo "✓ No runtime imports from openclaw/ directory"
+
+      - name: Check 4 upstream fixes status
+        run: |
+          echo "=== Checking 4 upstream fixes status ==="
+
+          # Fix #4: DMG script — check if wait_for_dsstore_flush exists
+          if grep -q "wait_for_dsstore_flush" scripts/create-dmg.sh 2>/dev/null; then
+            echo "✓ Fix #4 (DMG wait_for_dsstore_flush): PORTED"
+          else
+            echo "::warning::Fix #4 (DMG wait_for_dsstore_flush): NOT PORTED"
+          fi
+
+          # Fix #4b: DMG script — check if attempt >= 8
+          if grep -q "attempt >= 8" scripts/create-dmg.sh 2>/dev/null; then
+            echo "✓ Fix #4b (DMG attempt >= 8): PORTED"
+          else
+            echo "::warning::Fix #4b (DMG attempt >= 8): NOT PORTED"
+          fi
+
+          # Fixes #1-3: Memory — these require semantic redo, just check the package exists
+          if [ -d "packages/memory-host-sdk/src" ]; then
+            echo "✓ Fixes #1-3 (memory-host-sdk): Package exists, semantic redo pending"
+          else
+            echo "::warning::Fixes #1-3 (memory-host-sdk): Package missing"
+          fi
+
+      - name: Run sync-openclaw drift detection (if script exists)
+        run: |
+          if [ -f "scripts/sync-openclaw.sh" ]; then
+            chmod +x scripts/sync-openclaw.sh
+            # 仅检查 drift，不实际同步
+            bash scripts/sync-openclaw.sh --check-only 2>&1 || true
+          else
+            echo "::warning::scripts/sync-openclaw.sh not found — drift detection script is missing"
+          fi

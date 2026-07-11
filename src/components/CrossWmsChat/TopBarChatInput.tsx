@@ -904,12 +904,14 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         ...(isCardVariant && {
           pr: 0,
           borderRadius: '24px',
-          bgcolor: isDark ? 'rgba(255,255,255,0.06)' : '#E8E8E8',
-          padding: '2px 2px 4px 2px',
+          bgcolor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(232,232,232,0.6)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          padding: '2px 2px 2px 2px',
           border: 'none',
           boxShadow: isDark
-            ? '0 8px 32px rgba(0,0,0,0.4)'
-            : '0 8px 32px rgba(0,0,0,0.08)',
+            ? '0 4px 20px rgba(0,0,0,0.3)'
+            : '0 4px 20px rgba(0,0,0,0.06)',
         }),
       }}
     >

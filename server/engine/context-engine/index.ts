@@ -39,3 +39,10 @@ export function getContextEngine(
 export { globalRegistry } from './registry.js';
 export * from './types.js';
 export { LegacyContextEngine, createLegacyContextEngine } from './legacyEngine.js';
+
+// vX: 将此前未引用的上下文引擎子模块纳入公开 API 面（激活 5 个 dead 模块）
+export * from './promptCache.js';
+export * from './quarantineHealth.js';
+export * from './runtimeSettings.js';
+export * from './subagentLifecycle.js';
+export * from './transcriptRewrite.js';

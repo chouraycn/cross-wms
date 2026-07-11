@@ -8,7 +8,7 @@
  * v2.0: 新增阶段式摘要、标识符保留、过大消息降级等功能
  */
 
-import { estimateTokens, estimateMessagesTokens, sanitizeToolMessages } from './contextTruncate.js';
+import { estimateTokens, estimateMessagesTokens, sanitizeToolMessages, type ApiMessage } from './contextTruncate.js';
 import { callAIModel } from '../aiClient.js';
 import type { ModelCallConfig } from '../aiClient.js';
 import { logger } from '../logger.js';
@@ -347,7 +347,7 @@ export async function summarizeInStages(
  * @returns 压缩后的消息数组 + 是否发生了压缩
  */
 export async function compressContextWithSummary(
-  apiMessages: Array<{ role: string; content: unknown; tool_calls?: unknown[]; tool_call_id?: string }>,
+  apiMessages: ApiMessage[],
   contextWindow: number,
   maxOutputTokens: number,
   toolsCount: number,
@@ -355,7 +355,7 @@ export async function compressContextWithSummary(
   compressCallback?: CompressCallback,
   workingMemoryMessages?: Array<{ role: string; content: string }>,
   summarizationInstructions?: CompactionSummarizationInstructions,
-): Promise<{ messages: typeof apiMessages; compressed: boolean; truncated: boolean }> {
+): Promise<{ messages: ApiMessage[]; compressed: boolean; truncated: boolean }> {
   if (workingMemoryMessages && workingMemoryMessages.length > 0) {
     apiMessages = [...workingMemoryMessages as typeof apiMessages, ...apiMessages];
   }

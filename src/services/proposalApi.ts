@@ -1,4 +1,5 @@
 import { API_BASE } from '../constants/api';
+import { SSEStreamParser } from '../utils/sse/SSEStreamParser.js';
 import type {
   SkillProposal,
   ProposalFilter,
@@ -87,30 +88,28 @@ export async function installSkill(source: string, onProgress?: (progress: Insta
   const reader = response.body?.getReader();
   if (reader) {
     const decoder = new TextDecoder();
-    let buffer = '';
+    // 使用共享 SSEStreamParser 处理跨 chunk 边界的 SSE 流
+    const parser = new SSEStreamParser();
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('data:')) {
-          try {
-            const data: InstallProgress = JSON.parse(trimmed.slice(5));
-            onProgress?.(data);
-            if (data.type === 'result') {
-              return { installId: (data.result as any)?.installId || '' };
-            } else if (data.type === 'error') {
-              throw new Error(data.error || '安装失败');
-            }
-          } catch (e) {
-            console.error('Failed to parse SSE data:', e);
+      const decoded = decoder.decode(value, { stream: true });
+      for (const sseEvent of parser.feed(decoded)) {
+        try {
+          const data = sseEvent.data;
+          // SSEStreamParser 已自动尝试 JSON 解析，非 JSON 则保留原始字符串
+          if (typeof data !== 'object' || data === null) continue;
+          const progress = data as InstallProgress;
+          onProgress?.(progress);
+          if (progress.type === 'result') {
+            return { installId: (progress.result as any)?.installId || '' };
+          } else if (progress.type === 'error') {
+            throw new Error(progress.error || '安装失败');
           }
+        } catch (e) {
+          console.error('Failed to parse SSE data:', e);
         }
       }
     }

@@ -47,6 +47,7 @@ import {
   TRIGGER_TYPE_LABELS,
   TRIGGER_TYPE_ICONS,
 } from './sharedConstants';
+import TriggerConfigPanel from './AutomationPanel';
 
 // ===================== Props =====================
 
@@ -70,8 +71,14 @@ export interface AutomationFormDialogProps {
   formExecutionPolicy: ExecutionPolicy;
   formNotificationConfig: NotificationConfig;
   formErrors: Record<string, string>;
+  /** 富触发器配置（由 TriggerConfigPanel 编辑） */
+  formTriggerConfig: Record<string, unknown>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onFieldChange: (field: string, value: any) => void;
+  /** 富触发器配置变更回调 */
+  onTriggerConfigChange: (config: Record<string, unknown>) => void;
+  /** 切换触发器类型（同时重置默认 config） */
+  onTriggerTypeChange: (type: TriggerType) => void;
   onToggleWeekday: (day: string) => void;
   onToggleActionChain: (action: ActionType) => void;
   onSave: () => void;
@@ -99,7 +106,10 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
   formExecutionPolicy,
   formNotificationConfig,
   formErrors,
+  formTriggerConfig,
   onFieldChange,
+  onTriggerConfigChange,
+  onTriggerTypeChange,
   onToggleWeekday,
   onToggleActionChain,
   onSave,
@@ -353,7 +363,7 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
                   key={key}
                   icon={<Box sx={{ ml: 0.5, display: 'flex', alignItems: 'center' }}>{TRIGGER_TYPE_ICONS[key]}</Box>}
                   label={label}
-                  onClick={() => onFieldChange('formTriggerType', key)}
+                  onClick={() => onTriggerTypeChange(key)}
                   sx={{
                     fontSize: '0.75rem',
                     backgroundColor: formTriggerType === key ? gs.textPrimary : gs.bgHover,
@@ -365,141 +375,95 @@ const AutomationFormDialog: React.FC<AutomationFormDialogProps> = ({
             </Box>
           </Box>
 
-          {/* v2.0: Webhook 配置提示 */}
+          {/* 富触发器配置面板（AutomationPanel / TriggerConfigPanel） */}
+          {formTriggerType === 'schedule' && formScheduleType === 'recurring' && (
+            <TriggerConfigPanel
+              triggerType="schedule"
+              triggerConfig={formTriggerConfig}
+              onChange={onTriggerConfigChange}
+              automationId={editingId ?? undefined}
+            />
+          )}
+          {formTriggerType === 'event' && (
+            <TriggerConfigPanel
+              triggerType="event"
+              triggerConfig={formTriggerConfig}
+              onChange={onTriggerConfigChange}
+              automationId={editingId ?? undefined}
+            />
+          )}
           {formTriggerType === 'webhook' && (
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: '8px',
-                backgroundColor: '#F0F7FF',
-                border: '1px solid #BFDBFE',
-              }}
-            >
-              <Typography sx={{ fontSize: '0.7rem', color: '#1D4ED8', fontWeight: 500, mb: 0.5 }}>
-                Webhook 触发
-              </Typography>
-              <Typography sx={{ fontSize: '0.65rem', color: '#3B82F6', lineHeight: 1.4 }}>
-                创建后将自动生成 Webhook URL，外部系统可通过 POST 请求触发此任务。
-                签名密钥在后端加密存储，可在自动化详情页管理。
-              </Typography>
-            </Box>
+            <TriggerConfigPanel
+              triggerType="webhook"
+              triggerConfig={formTriggerConfig}
+              onChange={onTriggerConfigChange}
+              automationId={editingId ?? undefined}
+            />
+          )}
+          {formTriggerType === 'file_change' && (
+            <TriggerConfigPanel
+              triggerType="file_change"
+              triggerConfig={formTriggerConfig}
+              onChange={onTriggerConfigChange}
+              automationId={editingId ?? undefined}
+            />
+          )}
+          {formTriggerType === 'threshold' && (
+            <TriggerConfigPanel
+              triggerType="threshold"
+              triggerConfig={formTriggerConfig}
+              onChange={onTriggerConfigChange}
+              automationId={editingId ?? undefined}
+            />
           )}
 
-          {formTriggerType !== 'webhook' && (
+          {/* 调度类型：周期 / 一次性（仅定时触发） */}
+          {formTriggerType === 'schedule' && (
             <>
-
-          {/* 调度类型 */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Chip
-              icon={<RepeatIcon sx={{ fontSize: 14 }} />}
-              label="周期执行"
-              onClick={() => onFieldChange('formScheduleType', 'recurring')}
-              sx={{
-                fontSize: '0.75rem',
-                backgroundColor: formScheduleType === 'recurring' ? gs.textPrimary : gs.bgHover,
-                color: formScheduleType === 'recurring' ? gs.bgPanel : gs.textSecondary,
-                '&:hover': { backgroundColor: formScheduleType === 'recurring' ? gs.textSecondary : gs.border },
-              }}
-            />
-            <Chip
-              icon={<CalendarTodayIcon sx={{ fontSize: 14 }} />}
-              label="一次性"
-              onClick={() => onFieldChange('formScheduleType', 'once')}
-              sx={{
-                fontSize: '0.75rem',
-                backgroundColor: formScheduleType === 'once' ? gs.textPrimary : gs.bgHover,
-                color: formScheduleType === 'once' ? gs.bgPanel : gs.textSecondary,
-                '&:hover': { backgroundColor: formScheduleType === 'once' ? gs.textSecondary : gs.border },
-              }}
-            />
-          </Box>
-
-          {/* 周期调度配置 */}
-          {formScheduleType === 'recurring' && (
-            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-              <FormControl size="small" sx={{ minWidth: 100 }}>
-                <InputLabel sx={{ fontSize: '0.8125rem' }}>频率</InputLabel>
-                <Select
-                  value={formFreq}
-                  label="频率"
-                  onChange={(e) => onFieldChange('formFreq', e.target.value as FreqType)}
-                  sx={{ fontSize: '0.8125rem', borderRadius: '8px' }}
-                >
-                  <MenuItem value="HOURLY">每小时</MenuItem>
-                  <MenuItem value="DAILY">每天</MenuItem>
-                  <MenuItem value="WEEKLY">每周</MenuItem>
-                  <MenuItem value="MONTHLY">每月</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                label="时"
-                type="number"
-                size="small"
-                value={formHour}
-                onChange={(e) => onFieldChange('formHour', Math.max(0, Math.min(23, parseInt(e.target.value, 10) || 0)))}
-                inputProps={{ min: 0, max: 23, style: { fontSize: '0.8125rem', width: 44, textAlign: 'center' } }}
-                sx={{ '& .MuiInputLabel-root': { fontSize: '0.8125rem' } }}
-              />
-              <TextField
-                label="分"
-                type="number"
-                size="small"
-                value={formMinute}
-                onChange={(e) => onFieldChange('formMinute', Math.max(0, Math.min(59, parseInt(e.target.value, 10) || 0)))}
-                inputProps={{ min: 0, max: 59, style: { fontSize: '0.8125rem', width: 44, textAlign: 'center' } }}
-                sx={{ '& .MuiInputLabel-root': { fontSize: '0.8125rem' } }}
-              />
-            </Box>
-          )}
-
-          {/* 每周选择 */}
-          {formScheduleType === 'recurring' && formFreq === 'WEEKLY' && (
-            <Box>
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                {WEEKDAY_ORDER.map((day) => (
-                  <Chip
-                    key={day}
-                    label={WEEKDAY_LABELS[day]}
-                    size="small"
-                    onClick={() => onToggleWeekday(day)}
-                    sx={{
-                      fontSize: '0.65rem',
-                      height: 26,
-                      minWidth: 32,
-                      backgroundColor: formWeekdays.includes(day) ? gs.textPrimary : gs.bgHover,
-                      color: formWeekdays.includes(day) ? gs.bgPanel : gs.textSecondary,
-                      '&:hover': { backgroundColor: formWeekdays.includes(day) ? gs.textSecondary : gs.border },
-                    }}
-                  />
-                ))}
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Chip
+                  icon={<RepeatIcon sx={{ fontSize: 14 }} />}
+                  label="周期执行"
+                  onClick={() => onFieldChange('formScheduleType', 'recurring')}
+                  sx={{
+                    fontSize: '0.75rem',
+                    backgroundColor: formScheduleType === 'recurring' ? gs.textPrimary : gs.bgHover,
+                    color: formScheduleType === 'recurring' ? gs.bgPanel : gs.textSecondary,
+                    '&:hover': { backgroundColor: formScheduleType === 'recurring' ? gs.textSecondary : gs.border },
+                  }}
+                />
+                <Chip
+                  icon={<CalendarTodayIcon sx={{ fontSize: 14 }} />}
+                  label="一次性"
+                  onClick={() => onFieldChange('formScheduleType', 'once')}
+                  sx={{
+                    fontSize: '0.75rem',
+                    backgroundColor: formScheduleType === 'once' ? gs.textPrimary : gs.bgHover,
+                    color: formScheduleType === 'once' ? gs.bgPanel : gs.textSecondary,
+                    '&:hover': { backgroundColor: formScheduleType === 'once' ? gs.textSecondary : gs.border },
+                  }}
+                />
               </Box>
-              {formErrors.weekdays && (
-                <Typography variant="caption" sx={{ color: '#EF4444', mt: 0.5, fontSize: '0.65rem' }}>
-                  {formErrors.weekdays}
-                </Typography>
-              )}
-            </Box>
-          )}
 
-          {/* 一次性调度配置 */}
-          {formScheduleType === 'once' && (
-            <TextField
-              label="执行时间"
-              type="datetime-local"
-              size="small"
-              fullWidth
-              value={formScheduledAt}
-              onChange={(e) => { onFieldChange('formScheduledAt', e.target.value); onFieldChange('formErrors', { ...formErrors, scheduledAt: '' }); }}
-              error={Boolean(formErrors.scheduledAt)}
-              helperText={formErrors.scheduledAt}
-              InputLabelProps={{ shrink: true }}
-              sx={{
-                '& .MuiOutlinedInput-root': { fontSize: '0.8125rem', borderRadius: '8px' },
-                '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
-              }}
-            />
-          )}
-          </>
+              {/* 一次性调度配置 */}
+              {formScheduleType === 'once' && (
+                <TextField
+                  label="执行时间"
+                  type="datetime-local"
+                  size="small"
+                  fullWidth
+                  value={formScheduledAt}
+                  onChange={(e) => { onFieldChange('formScheduledAt', e.target.value); onFieldChange('formErrors', { ...formErrors, scheduledAt: '' }); }}
+                  error={Boolean(formErrors.scheduledAt)}
+                  helperText={formErrors.scheduledAt}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': { fontSize: '0.8125rem', borderRadius: '8px' },
+                    '& .MuiInputLabel-root': { fontSize: '0.8125rem' },
+                  }}
+                />
+              )}
+            </>
           )}
 
           <Divider />

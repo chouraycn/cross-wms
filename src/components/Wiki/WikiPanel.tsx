@@ -368,7 +368,9 @@ const WikiPanel: React.FC = () => {
         createdAt: e.createdAt,
         updatedAt: e.updatedAt,
       })));
-      setTotalEntries(total);
+      // 后端 /api/wiki/recent 仅返回 { entries } 而不返回 total（且忽略 offset），
+      // 因此以本次实际条目数作为分页总数回退，避免分页控件显示 0。
+      setTotalEntries(total || recentEntries.length);
     } catch (error) {
       showToast('加载失败', 'error');
     }

@@ -11,10 +11,10 @@
  * v1.9.0: 新增 Tool Calling 执行循环
  */
 
-import { callAIModelStream, type ModelCallConfig, type ToolCall, type AIResponse, type MessageContent, type OnRateLimitCallback } from '../aiClient.js';
+import { callAIModelStream, type ModelCallConfig, type ToolCall, type ToolDefinition, type AIResponse, type MessageContent, type OnRateLimitCallback } from '../aiClient.js';
 import { getBuiltinToolDefinitions, executeToolCall } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
-import { truncateContextForModel, sanitizeToolMessages } from './contextTruncate.js';
+import { truncateContextForModel, sanitizeToolMessages, type ApiMessage } from './contextTruncate.js';
 import { compressContextWithSummary } from './contextCompress.js';
 import { mcpClientManager } from './mcpClientManager.js';
 import { isMcpToolName, getMcpServerPrefix } from './mcpTypes.js';
@@ -66,7 +66,7 @@ function isToolResultFailed(result: string): boolean {
 
 export interface ToolExecutorOptions {
   modelConfig: ModelCallConfig;
-  messages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;
+  messages: ApiMessage[];
   maxToolTurns?: number;
   signal?: AbortSignal;
   onChunk?: (text: string) => void;
@@ -159,17 +159,17 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
   let filteredTools = tools;
   if (options.toolProfile) {
     toolProfileManager.setProfile(options.toolProfile);
-    filteredTools = toolProfileManager.applyProfile(tools as any) as typeof tools;
+    filteredTools = toolProfileManager.applyProfile(tools);
     logger.debug(`[ToolExecutor] Applied profile '${options.toolProfile}': ${tools.length} → ${filteredTools.length} tools`);
   }
 
   // 应用 Schema 投影（裁剪参数以减少 token 消耗）
   let processedTools = filteredTools;
   if (options.projectToolSchemas) {
-    processedTools = projectToolSchemas(filteredTools as any, {
+    processedTools = projectToolSchemas(filteredTools, {
       maxDescriptionLength: 200,
       hideOptionalParams: false,
-    }) as typeof filteredTools;
+    });
     logger.debug(`[ToolExecutor] Applied schema projection to ${processedTools.length} tools`);
   }
   const currentMessages = [...messages];
@@ -206,19 +206,19 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
 
     // v1.5.73: 每轮调用前截断上下文，防止 tool call 循环中消息膨胀超限
     // v1.5.116: 优先使用智能压缩（LLM 摘要），失败则降级为简单截断
-    const ctxWindow = (modelConfig as any).contextWindow || 128000;
+    const ctxWindow = modelConfig.contextWindow || 128000;
     // v1.5.131: 截断用 maxTokens 上限 8192，避免 384K 浪费输入空间
     const ctxMaxTokens = Math.min(modelConfig.maxTokens || 8192, 8192);
     const turnTruncated = await compressContextWithSummary(currentMessages, ctxWindow, ctxMaxTokens, processedTools.length, modelConfig);
     if ((turnTruncated.compressed || turnTruncated.truncated) && currentMessages.length !== turnTruncated.messages.length) {
       // 替换 currentMessages 内容（保持引用不变）
       currentMessages.length = 0;
-      currentMessages.push(...turnTruncated.messages as any[]);
+      currentMessages.push(...turnTruncated.messages);
     }
 
     // v1.5.187: 调 AI 前硬校验 tool_calls/tool 消息配对
     // 防止截断/压缩后配对丢失导致 DeepSeek 400 错误
-    const sanitizedForApi = sanitizeToolMessages(currentMessages as any[]) as any[];
+    const sanitizedForApi = sanitizeToolMessages(currentMessages);
 
     // 调用 AI，传入 tools
     await pluginHooks.executeHooks('before_ai_call', {
@@ -280,7 +280,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
           arguments: tc.function.arguments,
         },
       })),
-    } as any);
+    });
 
     // v6.0: ToolDependencyGraph — 拓扑排序分析
     // 构建工具调用之间的依赖关系 DAG，分析可并行执行的层级。
@@ -343,7 +343,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
           role: 'tool',
           content: skipResult,
           tool_call_id: toolCall.id,
-        } as any);
+        });
         continue;
       }
 
@@ -367,7 +367,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
             role: 'tool',
             content: skipResult,
             tool_call_id: toolCall.id,
-          } as any);
+          });
           continue;
         }
       }
@@ -414,7 +414,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
           role: 'tool',
           content: denyResult,
           tool_call_id: toolCall.id,
-        } as any);
+        });
         continue;
       }
 
@@ -440,7 +440,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
               role: 'tool',
               content: abortResult,
               tool_call_id: toolCall.id,
-            } as any);
+            });
             continue;
           }
 
@@ -488,7 +488,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
               role: 'tool',
               content: abortResult,
               tool_call_id: toolCall.id,
-            } as any);
+            });
             continue;
           }
 
@@ -514,7 +514,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
               role: 'tool',
               content: denyResult,
               tool_call_id: toolCall.id,
-            } as any);
+            });
             continue;
           }
         } catch (approvalErr) {
@@ -535,7 +535,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
             role: 'tool',
             content: errorResult,
             tool_call_id: toolCall.id,
-          } as any);
+          });
           continue;
         }
       }
@@ -564,7 +564,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
               role: 'tool',
               content: denyResult,
               tool_call_id: toolCall.id,
-            } as any);
+            });
             logger.info(
               `[ACP] 工具调用被策略拒绝: tool=${toolName}, session=${sessionId}, ` +
               `rule=${acpResult.blockedBy?.id}`,
@@ -605,7 +605,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
         role: 'tool',
         content: loopResult,
         tool_call_id: toolCall.id,
-      } as any);
+      });
       continue;
     }
 
@@ -631,7 +631,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
         role: 'tool',
         content: validationResult,
         tool_call_id: toolCall.id,
-      } as any);
+      });
       continue;
     }
 
@@ -716,7 +716,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
               currentMessages.push({
                 role: 'system',
                 content: `[熔断器] ${suggestion}`,
-              } as any);
+              });
             }
           }
           if (circuitState === 'open' && onSSEEvent) {
@@ -741,7 +741,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
             currentMessages.push({
               role: 'system',
               content: `[熔断器] ${suggestion}`,
-            } as any);
+            });
           }
         }
       } else {
@@ -775,7 +775,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
         role: 'tool',
         content: result,
         tool_call_id: toolCall.id,
-      } as any);
+      });
     }
 
     // v1.9.5-fix: 不重置 finalContent，而是累积所有轮次的 AI 文本输出

@@ -12,6 +12,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ApprovalRequest, ApprovalHistoryItem, ApprovalConfig } from '../components/CDFChat/ApprovalDialog.js';
 import { API_BASE } from '../constants/api.js';
+import {
+  analyzeCommandRisks,
+  calculateRiskLevel,
+  parseShellCommand,
+  type CommandRisk,
+} from '../services/exec-approval/index.js';
 
 export interface ApprovalEventData {
   requestId: string;
@@ -132,18 +138,24 @@ export function useApprovalEvents(options: UseApprovalEventsOptions = {}): UseAp
 
   // 添加审批请求
   const addApprovalRequest = useCallback((eventData: ApprovalEventData) => {
+    const { level: riskLevel, risks: commandRisks } = eventData.riskLevel
+      ? { level: eventData.riskLevel as 'safe' | 'low' | 'medium' | 'high' | 'critical', risks: [] as CommandRisk[] }
+      : determineRiskLevel(eventData);
+    const argv = eventData.command ? parseShellCommand(eventData.command) : undefined;
+
     const request: ApprovalRequest = {
       id: eventData.requestId,
       toolName: eventData.toolName || eventData.type,
       toolDescription: eventData.description,
       parameters: eventData.details,
-      riskLevel: eventData.riskLevel || determineRiskLevel(eventData),
+      riskLevel,
+      commandRisks: commandRisks.length > 0 ? commandRisks : undefined,
       reason: eventData.reason,
       timestamp: Date.now(),
       command: eventData.command,
       timeout: eventData.timeout || approvalConfig.defaultTimeout || DEFAULT_APPROVAL_TIMEOUT,
       expiresAt: eventData.expiresAt || Date.now() + (eventData.timeout || approvalConfig.defaultTimeout || DEFAULT_APPROVAL_TIMEOUT),
-      argv: eventData.command ? parseCommandArgs(eventData.command) : undefined,
+      argv: argv && argv.length > 0 ? argv : undefined,
     };
 
     setApprovalRequests(prev => [...prev, request]);
@@ -167,43 +179,25 @@ export function useApprovalEvents(options: UseApprovalEventsOptions = {}): UseAp
     window.dispatchEvent(new CustomEvent('approval_request', { detail: request }));
   }, [approvalConfig.defaultTimeout, playNotificationSound, triggerVibration, onApprovalRequest]);
 
-  // 根据事件数据确定风险等级
-  const determineRiskLevel = (eventData: ApprovalEventData): 'safe' | 'low' | 'medium' | 'high' | 'critical' => {
-    const type = eventData.type;
+  // 根据事件数据确定风险等级（委托给 exec-approval 的 analyzeCommandRisks）
+  // 合并自 exec-approval 服务，使用 10+ 正则模式替代旧的 4 条子串匹配
+  const determineRiskLevel = (eventData: ApprovalEventData): {
+    level: 'safe' | 'low' | 'medium' | 'high' | 'critical';
+    risks: CommandRisk[];
+  } => {
     const command = eventData.command || '';
-
-    // 严重风险：危险命令
-    if (command.includes('rm -rf /') || command.includes('mkfs') || command.includes('dd if=')) {
-      return 'critical';
+    if (command) {
+      const argv = parseShellCommand(command);
+      const risks = analyzeCommandRisks(command, argv);
+      const level = calculateRiskLevel(risks) as 'safe' | 'low' | 'medium' | 'high' | 'critical';
+      return { level, risks };
     }
-
-    // 高风险：系统命令、sudo、文件删除
-    if (type === 'system_command' || command.includes('sudo') || type === 'file_delete') {
-      return 'high';
-    }
-
-    // 中风险：文件写入、网络请求、子进程
-    if (type === 'file_write' || type === 'network_request' || type === 'subprocess' || type === 'bash_command') {
-      return 'medium';
-    }
-
-    // 低风险：普通工具调用
-    if (type === 'tool_call') {
-      return 'low';
-    }
-
-    // 默认：安全
-    return 'safe';
-  };
-
-  // 解析命令参数
-  const parseCommandArgs = (command: string): string[] => {
-    try {
-      const parts = command.trim().split(/\s+/);
-      return parts;
-    } catch {
-      return [command];
-    }
+    // 无命令时按类型降级
+    const type = eventData.type;
+    if (type === 'file_delete') return { level: 'high', risks: [] };
+    if (type === 'file_write' || type === 'network_request' || type === 'subprocess') return { level: 'medium', risks: [] };
+    if (type === 'tool_call') return { level: 'low', risks: [] };
+    return { level: 'safe', risks: [] };
   };
 
   // 发送审批响应到后端

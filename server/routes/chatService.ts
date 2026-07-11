@@ -51,6 +51,7 @@ import { recordTurnStarted, recordTurnCompleted, recordTurnFailed, recordMessage
 import { TokenBudgetManager } from '../engine/compaction/tokenBudget.js';
 import { CompactionLoopGuard, CompactionSafetyTimeout, CompactionRetryAggregateTimeout } from '../engine/compaction/compactionSafety.js';
 import { triggerTurnEndSync, triggerPostCompactionSync } from '../engine/sessionMemorySync.js';
+import { errorLogger } from '../engine/error-handling/error-logger.js';
 import {
   buildApiMessages,
   hasImageAttachment,
@@ -66,6 +67,21 @@ export function classifyAndFormatError(
   modelConfig?: ModelConfig,
   effectiveModel?: string,
 ): { code: string; message: string } {
+  // 接入「死」模块 engine/error-handling/errorLogger：在错误分类的同时写入结构化错误日志，
+  // 不改变既有返回值与向下游的错误码/文案。
+  errorLogger.log(
+    error instanceof AIAPIError ? 'error' : 'warn',
+    `聊天错误分类: ${error instanceof Error ? error.message : String(error)}`,
+    {
+      service: 'chat',
+      operation: 'classifyAndFormatError',
+      metadata: {
+        model: effectiveModel,
+        category: error instanceof AIAPIError ? error.category : undefined,
+      },
+    },
+    error instanceof Error ? error : undefined,
+  );
   if (error instanceof AIAPIError) {
     switch (error.category) {
       case 'auth':

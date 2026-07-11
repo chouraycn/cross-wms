@@ -1,33 +1,6 @@
-import type { PluginCapabilityKind, PluginManifest } from './types';
+import type { PluginCapabilityKind, PluginManifest, PluginManifestModelSupport, PluginManifestModelCatalog, PluginManifestActivation, PluginManifestSetup, PluginManifestContracts } from './types';
 
-export type PluginManifestModelSupport = {
-  supports: string[];
-  excludes?: string[];
-};
-
-export type PluginManifestModelCatalog = {
-  models: Array<{
-    id: string;
-    name?: string;
-    provider?: string;
-    capabilities?: string[];
-  }>;
-};
-
-export type PluginManifestActivation = {
-  requiresSetup?: boolean;
-  setupEntry?: string;
-  deferFullRuntime?: boolean;
-};
-
-export type PluginManifestSetup = {
-  cliBackends?: string[];
-};
-
-export type PluginManifestContracts = {
-  requires?: string[];
-  provides?: string[];
-};
+export type { PluginManifestModelSupport, PluginManifestModelCatalog, PluginManifestActivation, PluginManifestSetup, PluginManifestContracts };
 
 export interface PluginManifestValidationResult {
   valid: boolean;
