@@ -62,6 +62,8 @@ const ApprovalDialog = React.lazy(() => import('./ApprovalDialog.js').then(m => 
 const CHAT_MAX_WIDTH_WITH_SIDEPANEL = Math.round(CHAT_MAX_WIDTH * 0.9);
 import { type ExecApprovalConfig, type ExecAllowlistEntry, BUILTIN_SAFE_PATTERNS, DEFAULT_CONFIG } from '../../services/exec-approval/index.js';
 import { useApprovalEvents } from '../../hooks/useApprovalEvents.js';
+import { useChatEventListeners } from '../../hooks/useChatEventListeners.js';
+import { useChatActions, EXPORT_DISCLAIMER, cleanAIDisclaimer, type ContextMenuState } from '../../hooks/useChatActions.js';
 import BatchMessageToolbar from './BatchMessageToolbar.js';
 import MessageContextMenu from './MessageContextMenu.js';
 import { useMessageActionShortcuts } from '../../hooks/useMessageActionShortcuts.js';
@@ -219,13 +221,6 @@ const SidePanelExpandIcon: React.FC<{ fontSize?: number; color?: string }> = ({
   </svg>
 );
 
-/** 导出 Markdown 文件时的默认免责声明 */
-const EXPORT_DISCLAIMER = '\n\n---\n\n*本内容由 AI 助手自动生成，仅供参考。*';
-
-/** 移除 AI 生成内容中自带的免责声明/联系方式 */
-const cleanAIDisclaimer = (text: string) =>
-  text.replace(/(?:\n\s*)+>.*?(?:联系我们|免责声明|本报告由|周雷|CDFKnow)[\s\S]*$/i, '').trimEnd();
-
 /**
  * CDFChat 新版对话容器（基于 OpenClaw 事件驱动架构）
  */
@@ -280,21 +275,6 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
 
   // 监听左侧侧边栏折叠状态（展开时隐藏内容框左侧的侧边栏切换和新对话按钮）
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState<boolean>(false);
-  useEffect(() => {
-    const handleSidebarToggle = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail && typeof detail.collapsed === 'boolean') {
-        setLeftSidebarCollapsed(detail.collapsed);
-      }
-    };
-    // 从 localStorage 读取初始状态
-    try {
-      const stored = localStorage.getItem('cdf-know-clow-sidebar-collapsed');
-      if (stored === 'true') setLeftSidebarCollapsed(true);
-    } catch { /* ignore */ }
-    window.addEventListener('cdf-sidebar-state', handleSidebarToggle);
-    return () => window.removeEventListener('cdf-sidebar-state', handleSidebarToggle);
-  }, []);
 
   // 任务 6: 右侧侧边栏展开时，AI 对话内容 maxWidth 缩小 5%（左右各 5%）
   const currentMaxWidth = sidePanelOpen ? CHAT_MAX_WIDTH_WITH_SIDEPANEL : CHAT_MAX_WIDTH;
@@ -322,11 +302,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   const [bookmarkedMessages, setBookmarkedMessages] = useState<Set<string>>(new Set());
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [focusedMessage, setFocusedMessage] = useState<Message | null>(null);
-  const [contextMenu, setContextMenu] = useState<{
-    open: boolean;
-    position: { mouseX: number; mouseY: number } | null;
-    message: Message | null;
-  }>({ open: false, position: null, message: null });
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>({ open: false, position: null, message: null });
 
   const [currentAgent, setCurrentAgent] = useState<AgentIdentity>(
     AGENT_SCENARIOS.find(a => a.isDefault) || AGENT_SCENARIOS[0]
@@ -339,6 +315,13 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     security: 'allowlist',
     ask: 'on-miss',
     allowlist: [...BUILTIN_SAFE_PATTERNS],
+  });
+
+  // 窗口事件监听（侧边栏状态、审批请求、聚焦聊天输入框）
+  useChatEventListeners({
+    setLeftSidebarCollapsed,
+    setShowApprovalDialog,
+    isPage,
   });
 
   // 使用审批事件处理 hook
@@ -575,95 +558,31 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     return () => clearTimeout(timer);
   }, [isPage]);
 
-  const handleCopy = useCallback((msg: Message) => {
-    const doCopy = async () => {
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(msg.content);
-        } else {
-          const el = document.createElement('textarea');
-          el.value = msg.content;
-          el.style.position = 'fixed';
-          el.style.opacity = '0';
-          document.body.appendChild(el);
-          el.select();
-          document.execCommand('copy');
-          document.body.removeChild(el);
-        }
-      } catch {
-        // 静默失败
-      }
-    };
-    doCopy();
-    setCopiedId(msg.id);
-    setTimeout(() => setCopiedId(null), 2000);
-  }, []);
-
-  const handleRegenerate = useCallback((msg: Message) => {
-    const currentSession = sessionRef.current;
-    const msgIndex = currentSession.messages.findIndex((m) => m.id === msg.id);
-    if (msgIndex === -1) return;
-
-    let userContent: string | null = null;
-    let userAttachments: Message['attachments'] = undefined;
-    let userModel: string | undefined;
-    for (let i = msgIndex - 1; i >= 0; i--) {
-      if (currentSession.messages[i].role === 'user') {
-        userContent = currentSession.messages[i].content;
-        userAttachments = currentSession.messages[i].attachments;
-        userModel = currentSession.messages[i].model;
-        break;
-      }
-    }
-    if (!userContent) return;
-
-    const trimmedMessages = currentSession.messages.slice(0, msgIndex);
-    const updatedSession = { ...currentSession, messages: trimmedMessages };
-    handleSessionUpdate(updatedSession);
-
-    setTimeout(() => {
-      sendMessage(userContent!, {
-        attachments: userAttachments,
-        model: userModel || currentSession.model,
-        agentId: currentAgent.id,
-      });
-    }, 100);
-  }, [handleSessionUpdate, sendMessage, currentAgent]);
-
-  const handleDelete = useCallback((msgId: string) => {
-    const currentSession = sessionRef.current;
-    const msgIndex = currentSession.messages.findIndex((m) => m.id === msgId);
-    if (msgIndex === -1) return;
-
-    const updatedMessages = currentSession.messages.filter((m) => m.id !== msgId);
-    handleSessionUpdate({ ...currentSession, messages: updatedMessages });
-    showToast('消息已删除', 'success', 1500);
-  }, [handleSessionUpdate, showToast]);
-
-  const handleEdit = useCallback((msg: Message) => {
-    if (msg.role === 'user') {
-      navigator.clipboard.writeText(msg.content).then(() => {
-        showToast('消息内容已复制，请粘贴到输入框', 'info', 2000);
-      }).catch(() => {
-        showToast('消息内容：' + msg.content.substring(0, 50) + '...', 'info', 3000);
-      });
-    } else {
-      navigator.clipboard.writeText(msg.content).then(() => {
-        showToast('AI 回复已复制', 'info', 2000);
-      }).catch(() => {
-        showToast('AI 回复内容已显示在通知中', 'info', 3000);
-      });
-    }
-  }, [showToast]);
-
-  const handleQuote = useCallback((msg: Message) => {
-    const quoteText = `> ${msg.role === 'user' ? '用户' : 'AI'}：${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`;
-    navigator.clipboard.writeText(quoteText).then(() => {
-      showToast('引用内容已复制，请粘贴到输入框', 'info', 2000);
-    }).catch(() => {
-      showToast('引用功能开发中', 'info', 2000);
-    });
-  }, [showToast]);
+  // ===================== 消息操作回调（提取至 useChatActions） =====================
+  const {
+    handleCopy,
+    handleRegenerate,
+    handleDelete,
+    handleEdit,
+    handleQuote,
+    handleBookmark,
+    handleExport,
+    handleContextMenu,
+    handleContextMenuClose,
+    handleSelectMessage,
+    handleCancelSelection,
+    handleBatchDelete,
+    handleBatchExport,
+  } = useChatActions({
+    sessionRef,
+    setCopiedId,
+    setBookmarkedMessages,
+    setSelectedMessages,
+    setContextMenu,
+    handleSessionUpdate,
+    sendMessage,
+    currentAgent,
+  });
 
   // ===================== 新增消息操作回调 =====================
 
@@ -677,100 +596,6 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   const handleTranslate = useCallback((msg: Message) => {
     // TODO: 实现翻译逻辑
     showToast('翻译功能开发中', 'info', 2000);
-  }, [showToast]);
-
-  /** 收藏消息 */
-  const handleBookmark = useCallback((msg: Message) => {
-    setBookmarkedMessages(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(msg.id)) {
-        newSet.delete(msg.id);
-        showToast('已取消收藏', 'success', 1500);
-      } else {
-        newSet.add(msg.id);
-        showToast('已收藏', 'success', 1500);
-      }
-      return newSet;
-    });
-  }, [showToast]);
-
-  /** 导出消息 */
-  const handleExport = useCallback((msg: Message, format: 'markdown' | 'pdf') => {
-    if (format === 'markdown') {
-      const cleanedContent = cleanAIDisclaimer(msg.content || '');
-      const markdownContent = `# ${msg.role === 'user' ? '用户消息' : 'AI 回复'}\n\n${cleanedContent}${EXPORT_DISCLAIMER}`;
-      const blob = new Blob([markdownContent], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `message-${msg.id}.md`;
-      link.click();
-      URL.revokeObjectURL(url);
-      showToast('已导出为 Markdown', 'success', 1500);
-    } else {
-      // TODO: 实现 PDF 导出
-      showToast('PDF 导出功能开发中', 'info', 2000);
-    }
-  }, [showToast]);
-
-  /** 消息右键菜单 */
-  const handleContextMenu = useCallback((event: React.MouseEvent, msg: Message) => {
-    event.preventDefault();
-    setContextMenu({
-      open: true,
-      position: { mouseX: event.clientX - 2, mouseY: event.clientY - 4 },
-      message: msg,
-    });
-  }, []);
-
-  /** 关闭右键菜单 */
-  const handleContextMenuClose = useCallback(() => {
-    setContextMenu({ open: false, position: null, message: null });
-  }, []);
-
-  /** 选择消息（批量操作） */
-  const handleSelectMessage = useCallback((msg: Message) => {
-    setSelectedMessages(prev => {
-      const isAlreadySelected = prev.some(m => m.id === msg.id);
-      if (isAlreadySelected) {
-        return prev.filter(m => m.id !== msg.id);
-      } else {
-        return [...prev, msg];
-      }
-    });
-  }, []);
-
-  /** 取消所有选择 */
-  const handleCancelSelection = useCallback(() => {
-    setSelectedMessages([]);
-  }, []);
-
-  /** 批量删除消息 */
-  const handleBatchDelete = useCallback((messageIds: string[]) => {
-    const currentSession = sessionRef.current;
-    const updatedMessages = currentSession.messages.filter(m => !messageIds.includes(m.id));
-    handleSessionUpdate({ ...currentSession, messages: updatedMessages });
-    showToast(`已删除 ${messageIds.length} 条消息`, 'success', 1500);
-    setSelectedMessages([]);
-  }, [handleSessionUpdate, showToast]);
-
-  /** 批量导出消息 */
-  const handleBatchExport = useCallback((messages: Message[], format: 'markdown' | 'pdf') => {
-    if (format === 'markdown') {
-      const combinedContent = messages
-        .map(m => `## ${m.role === 'user' ? '用户' : 'AI'}\n\n${cleanAIDisclaimer(m.content || '')}`)
-        .join('\n\n---\n\n') + EXPORT_DISCLAIMER;
-      const blob = new Blob([combinedContent], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `messages-export-${Date.now()}.md`;
-      link.click();
-      URL.revokeObjectURL(url);
-      showToast(`已导出 ${messages.length} 条消息为 Markdown`, 'success', 1500);
-    } else {
-      showToast('PDF 导出功能开发中', 'info', 2000);
-    }
   }, [showToast]);
 
   // ===================== 快捷键支持 =====================
@@ -793,20 +618,6 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   }, []);
 
   // 审批处理函数已由 useApprovalEvents hook 提供
-
-  // 监听 approval_request 事件（从 SSE 流中）
-  useEffect(() => {
-    const handleApprovalRequestEvent = (event: CustomEvent<ApprovalRequest>) => {
-      const request = event.detail;
-      setShowApprovalDialog(true);
-    };
-
-    window.addEventListener('approval_request', handleApprovalRequestEvent as EventListener);
-
-    return () => {
-      window.removeEventListener('approval_request', handleApprovalRequestEvent as EventListener);
-    };
-  }, []);
 
   // 审批对话框关闭处理
   const handleApprovalDialogClose = useCallback(() => {
@@ -847,32 +658,6 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     setCurrentAgent(agent);
     showToast(`已切换到 ${agent.name}`, 'info', 1500);
   }, [showToast]);
-
-  useEffect(() => {
-    if (!isPage) return;
-    const focusInput = () => {
-      setTimeout(() => {
-        const editable = document.querySelector('[contenteditable="true"]') as HTMLElement;
-        if (editable) {
-          editable.focus();
-          const range = document.createRange();
-          const sel = window.getSelection();
-          range.selectNodeContents(editable);
-          range.collapse(false);
-          sel?.removeAllRanges();
-          sel?.addRange(range);
-        }
-      }, 200);
-    };
-    const handleNavigateToChat = () => focusInput();
-    const handleFocusChat = () => focusInput();
-    window.addEventListener('cdf-know-clow-navigate-chat', handleNavigateToChat);
-    window.addEventListener('cdf-know-clow-focus-chat', handleFocusChat);
-    return () => {
-      window.removeEventListener('cdf-know-clow-navigate-chat', handleNavigateToChat);
-      window.removeEventListener('cdf-know-clow-focus-chat', handleFocusChat);
-    };
-  }, [isPage]);
 
   const isEmpty = chatMessages.length === 0;
   const showActivityFeed = isLoading && activeItems.length > 0;
@@ -987,7 +772,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
           </Tooltip>
           <Tooltip title="搜索" arrow>
             <IconButton
-              onClick={() => setSearchOpen(true)}
+              onClick={() => window.dispatchEvent(new CustomEvent('cdf-open-search'))}
               sx={{
                 color: '#000',
                 borderRadius: '6.48px',

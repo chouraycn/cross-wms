@@ -85,6 +85,7 @@ const CodeIndexPage = React.lazy(() => import('./pages/CodeIndexPage'));
 const TasksPage = React.lazy(() => import('./pages/TasksPage'));
 const LspServersPage = React.lazy(() => import('./pages/LspServersPage'));
 const WikiPage = React.lazy(() => import('./pages/WikiPage'));
+const SkillWorkshopPage = React.lazy(() => import('./pages/SkillWorkshopPage'));
 const MessageLifecyclePage = React.lazy(() => import('./pages/MessageLifecyclePage'));
 const CacheManagerPage = React.lazy(() => import('./pages/CacheManagerPage'));
 const ChannelsPage = React.lazy(() => import('./pages/ChannelsPage'));
@@ -888,6 +889,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/tasks" element={<TasksPage />} />
                     <Route path="/lsp" element={<LspServersPage />} />
                     <Route path="/wiki" element={<WikiPage />} />
+                    <Route path="/skill-workshop" element={<SkillWorkshopPage />} />
                     <Route path="/message-lifecycle" element={<MessageLifecyclePage />} />
                     <Route path="/cache-manager" element={<CacheManagerPage />} />
                     <Route path="/channels" element={<ChannelsPage />} />

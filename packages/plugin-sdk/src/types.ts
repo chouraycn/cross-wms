@@ -436,7 +436,7 @@ export interface PluginManifest {
   declaredCapabilities?: PluginCapabilityKind[];
 }
 
-export interface ExtendedPluginManifest extends PluginManifest {
+export interface ExtendedPluginManifest extends Omit<PluginManifest, 'configSchema'> {
   sdkVersion?: string;
   registrationMode?: RegistrationMode;
   declaredCapabilities?: PluginCapabilityKind[];

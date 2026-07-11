@@ -185,8 +185,15 @@ function registerHelpCommand(program: Command): void {
  */
 export async function runCLI(argv: string[]): Promise<number> {
   try {
+    // 入参 argv 约定为“已剥离 node + 脚本名”的参数数组。
+    // 但 commander.parseAsync 以及本模块内的根选项/help 解析工具都按完整
+    // process.argv（含 node + 可执行名前缀）处理，因此这里补齐占位前缀，
+    // 保证 normalize / 解析 / parse 三处行为一致。否则直接传入会被 commander
+    // 当成“无参数”而回显 help。
+    const cliArgv = ["node", "cdfknow", ...argv];
+
     // 规范化 argv
-    let normalizedArgv = normalizeRootNoColorArgv(argv);
+    let normalizedArgv = normalizeRootNoColorArgv(cliArgv);
     normalizedArgv = normalizeRootLogLevelArgv(normalizedArgv);
 
     // 检查 help/version

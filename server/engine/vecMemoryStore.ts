@@ -124,6 +124,24 @@ function initSchema() {
       );
     `);
 
+    // 1.1 记忆富字段迁移（分类 / 重要性 / 访问统计）— 幂等 ALTER
+    // v9.1: 富面板 MemoryPanel 需要 category/importance/access 等字段，
+    // 旧表无这些列，这里按需补齐，失败仅 warn 不阻断启动。
+    const migrationColumns: Array<[string, string]> = [
+      ['category', 'TEXT'],
+      ['importance', 'REAL'],
+      ['updated_at', 'TEXT'],
+      ['access_count', 'INTEGER NOT NULL DEFAULT 0'],
+      ['last_accessed_at', 'TEXT'],
+    ];
+    for (const [col, colType] of migrationColumns) {
+      try {
+        db.exec(`ALTER TABLE memory_entries ADD COLUMN ${col} ${colType}`);
+      } catch {
+        // 列已存在则忽略（SQLite 不支持 ADD COLUMN IF NOT EXISTS）
+      }
+    }
+
     // 2. memory_vec_index 表（向量索引）
     try {
       db.exec(`
@@ -345,7 +363,9 @@ function mmrReRank(
  */
 export async function insertMemory(
   text: string,
-  metadata: Record<string, unknown> = {}
+  metadata: Record<string, unknown> = {},
+  category?: string,
+  importance?: number
 ): Promise<number> {
   try {
     const db = getDb();
@@ -353,9 +373,9 @@ export async function insertMemory(
     // 1. 插入记忆记录
     const metaJson = JSON.stringify(metadata);
     const result = db.prepare(
-      `INSERT INTO memory_entries (text, metadata, created_at)
-       VALUES (?, ?, datetime('now'))`
-    ).run(text, metaJson);
+      `INSERT INTO memory_entries (text, metadata, category, importance, created_at)
+       VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run(text, metaJson, category ?? null, typeof importance === 'number' ? importance : null);
     const id = Number(result.lastInsertRowid);
 
     // 2. 生成真实语义向量（ONNX all-MiniLM-L6-v2, 384维）
@@ -835,6 +855,11 @@ export function getMemory(id: number): {
   text: string;
   metadata: Record<string, unknown>;
   createdAt: string;
+  category?: string;
+  importance?: number;
+  updatedAt?: string;
+  accessCount?: number;
+  lastAccessedAt?: string;
 } | null {
   try {
     const db = getDb();
@@ -843,6 +868,11 @@ export function getMemory(id: number): {
       text: string;
       metadata: string;
       created_at: string;
+      category?: string | null;
+      importance?: number | null;
+      updated_at?: string | null;
+      access_count?: number | null;
+      last_accessed_at?: string | null;
     } | undefined;
 
     if (!row) return null;
@@ -852,10 +882,100 @@ export function getMemory(id: number): {
       text: row.text,
       metadata: JSON.parse(row.metadata || '{}') as Record<string, unknown>,
       createdAt: row.created_at,
+      category: row.category ?? undefined,
+      importance: typeof row.importance === 'number' ? row.importance : undefined,
+      updatedAt: row.updated_at ?? undefined,
+      accessCount: row.access_count ?? undefined,
+      lastAccessedAt: row.last_accessed_at ?? undefined,
     };
   } catch (err) {
     logger.error('[VecMemory] 获取记忆失败:', err);
     return null;
+  }
+}
+
+/**
+ * 更新单条记忆（分类 / 重要性 / 文本 / 元数据）
+ * v9.1: 富面板 MemoryPanel 编辑能力所需
+ */
+export function updateMemory(
+  id: number,
+  updates: {
+    text?: string;
+    metadata?: Record<string, unknown>;
+    category?: string;
+    importance?: number;
+  }
+): boolean {
+  try {
+    const db = getDb();
+    const existing = db.prepare(`SELECT id FROM memory_entries WHERE id = ?`).get(id);
+    if (!existing) return false;
+
+    const sets: string[] = ['updated_at = datetime(\'now\')'];
+    const params: unknown[] = [];
+    if (typeof updates.text === 'string') {
+      sets.push('text = ?');
+      params.push(updates.text);
+    }
+    if (updates.metadata !== undefined) {
+      sets.push('metadata = ?');
+      params.push(JSON.stringify(updates.metadata));
+    }
+    if (updates.category !== undefined) {
+      sets.push('category = ?');
+      params.push(updates.category);
+    }
+    if (typeof updates.importance === 'number') {
+      sets.push('importance = ?');
+      params.push(updates.importance);
+    }
+    params.push(id);
+    db.prepare(`UPDATE memory_entries SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    return true;
+  } catch (err) {
+    logger.error('[VecMemory] 更新记忆失败:', err);
+    return false;
+  }
+}
+
+/**
+ * 批量删除记忆
+ * v9.1: 富面板 MemoryPanel 批量操作所需
+ */
+export function batchDeleteMemories(ids: number[]): number {
+  if (!Array.isArray(ids) || ids.length === 0) return 0;
+  try {
+    const db = getDb();
+    const stmt = db.prepare(`DELETE FROM memory_entries WHERE id = ?`);
+    let deleted = 0;
+    for (const id of ids) {
+      if (typeof id === 'number' && stmt.run(id).changes > 0) deleted++;
+    }
+    return deleted;
+  } catch (err) {
+    logger.error('[VecMemory] 批量删除记忆失败:', err);
+    return 0;
+  }
+}
+
+/**
+ * 批量更新记忆分类
+ * v9.1: 富面板 MemoryPanel 批量操作所需
+ */
+export function batchUpdateCategory(ids: number[], category: string): number {
+  if (!Array.isArray(ids) || ids.length === 0) return 0;
+  try {
+    const db = getDb();
+    const stmt = db.prepare(`UPDATE memory_entries SET category = ?, updated_at = datetime('now') WHERE id = ?`);
+    let updated = 0;
+    for (const id of ids) {
+      if (typeof id === 'number' && stmt.run(category, id).changes > 0) updated++;
+    }
+    return updated;
+  } catch (err) {
+    logger.error('[VecMemory] 批量更新分类失败:', err);
+    return 0;
   }
 }
 
@@ -888,6 +1008,11 @@ export function getRecentMemories(
         text: string;
         metadata: string;
         created_at: string;
+        category?: string | null;
+        importance?: number | null;
+        updated_at?: string | null;
+        access_count?: number | null;
+        last_accessed_at?: string | null;
       }>;
 
       const results: Array<{
@@ -895,6 +1020,11 @@ export function getRecentMemories(
         text: string;
         metadata: Record<string, unknown>;
         createdAt: string;
+        category?: string;
+        importance?: number;
+        updatedAt?: string;
+        accessCount?: number;
+        lastAccessedAt?: string;
       }> = [];
 
       for (const row of rows) {
@@ -914,6 +1044,11 @@ export function getRecentMemories(
             text: row.text,
             metadata,
             createdAt: row.created_at,
+            category: row.category ?? undefined,
+            importance: typeof row.importance === 'number' ? row.importance : undefined,
+            updatedAt: row.updated_at ?? undefined,
+            accessCount: row.access_count ?? undefined,
+            lastAccessedAt: row.last_accessed_at ?? undefined,
           });
           if (results.length >= limit) break;
         }
@@ -932,6 +1067,11 @@ export function getRecentMemories(
       text: string;
       metadata: string;
       created_at: string;
+      category?: string | null;
+      importance?: number | null;
+      updated_at?: string | null;
+      access_count?: number | null;
+      last_accessed_at?: string | null;
     }>;
 
     return rows.map((row) => ({
@@ -939,6 +1079,11 @@ export function getRecentMemories(
       text: row.text,
       metadata: JSON.parse(row.metadata || '{}') as Record<string, unknown>,
       createdAt: row.created_at,
+      category: row.category ?? undefined,
+      importance: typeof row.importance === 'number' ? row.importance : undefined,
+      updatedAt: row.updated_at ?? undefined,
+      accessCount: row.access_count ?? undefined,
+      lastAccessedAt: row.last_accessed_at ?? undefined,
     }));
   } catch (err) {
     logger.error('[VecMemory] 获取最近记忆失败:', err);

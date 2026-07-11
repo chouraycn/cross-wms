@@ -4,18 +4,27 @@
  * `engine/security` 子路径统一引用；不移动或修改任何现有文件。
  *
  * 说明：以下模块存在重名导出，已对后出现者改用具名 re-export 并排除冲突名：
- * - toolPolicyEngine 与 toolPolicy 在 ToolPolicyRule 上重名（由 toolPolicy 提供）。
  * - executionApproval 与 approvalManager 在 ApprovalRequest / ApprovalStatus 上重名
  *   （由 approvalManager 提供）。
+ *
+ * 注意：toolPolicy.ts 已合并入 toolPolicyEngine.ts 并删除，此处仅导出 toolPolicyEngine。
  */
 export * from '../sandboxPolicy.js';
-export * from '../toolPolicy.js';
 export {
   ToolRiskLevel,
   ToolRateLimit,
+  ToolPolicyConditions,
+  ToolSandboxConfig,
+  ToolPolicyRule,
   ToolPolicyEvaluationResult,
   ToolPolicyEvaluationContext,
   ToolPolicyEngine,
+  AcpApprovalClass,
+  AcpApprovalClassMeta,
+  ACP_APPROVAL_CLASSES,
+  resolveAcpApprovalClass,
+  compareAcpClass,
+  isAcpBlocked,
 } from '../toolPolicyEngine.js';
 export * from '../approvalManager.js';
 export * from '../crypto.js';

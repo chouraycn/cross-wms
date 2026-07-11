@@ -136,6 +136,30 @@ export interface ToolRateLimit {
   windowMs: number;
 }
 
+/** 条件匹配配置（从 toolPolicy.ts 合并） */
+export interface ToolPolicyConditions {
+  /** 参数模式匹配：key → RegExp 或精确字符串 */
+  argumentPatterns?: Record<string, RegExp | string>;
+  /** 限制仅特定用户角色可调用 */
+  userRoles?: string[];
+  /** 限制仅特定会话标签下可调用 */
+  sessionTags?: string[];
+  /** 时间窗口限制 */
+  timeWindows?: Array<{ start: string; end: string }>;
+}
+
+/** 沙箱配置（从 toolPolicy.ts 合并） */
+export interface ToolSandboxConfig {
+  /** 允许的命令列表 */
+  allowedCommands?: string[];
+  /** 阻止的命令列表 */
+  blockedCommands?: string[];
+  /** 文件系统访问级别 */
+  filesystem?: 'read_only' | 'read_write' | 'isolated';
+  /** 网络访问级别 */
+  network?: 'full' | 'limited' | 'none';
+}
+
 /** 工具策略规则 */
 export interface ToolPolicyRule {
   /** 工具名匹配模式，支持通配符 `*`（如 `file_*`、`mcp:*`、`*`） */
@@ -156,6 +180,10 @@ export interface ToolPolicyRule {
   timeoutMs?: number;
   /** 规则描述（用于日志/展示） */
   description?: string;
+  /** 条件匹配（可选，从 toolPolicy.ts 合并） */
+  conditions?: ToolPolicyConditions;
+  /** 沙箱配置（可选，从 toolPolicy.ts 合并） */
+  sandboxConfig?: ToolSandboxConfig;
 }
 
 /** 工具策略评估结果 */
@@ -176,6 +204,8 @@ export interface ToolPolicyEvaluationResult {
   matchedRule?: ToolPolicyRule;
   /** 超时时间（毫秒，从规则继承） */
   timeoutMs?: number;
+  /** 沙箱配置（从匹配规则继承） */
+  sandboxConfig?: ToolSandboxConfig;
 }
 
 /** 评估上下文 */
@@ -188,6 +218,10 @@ export interface ToolPolicyEvaluationContext {
   sessionId?: string;
   /** 用户 ID */
   userId?: string;
+  /** 用户角色列表（从 toolPolicy.ts 合并） */
+  userRoles?: string[];
+  /** 会话标签列表（从 toolPolicy.ts 合并） */
+  sessionTags?: string[];
 }
 
 // ===================== ACP 等级映射工具 =====================
@@ -511,8 +545,9 @@ export class ToolPolicyEngine {
    * 按顺序匹配规则，第一条匹配的规则生效。
    * 评估内容：
    * 1. 规则匹配 → 确定风险等级和审批要求
-   * 2. 速率限制 → 检查是否超限
-   * 3. 参数校验 → 黑白名单检查
+   * 2. 条件匹配 → 检查上下文条件（角色/标签/时间窗口/参数模式）
+   * 3. 速率限制 → 检查是否超限
+   * 4. 参数校验 → 黑白名单检查
    *
    * @param toolName - 工具名称
    * @param toolArgs - 工具参数
@@ -546,6 +581,19 @@ export class ToolPolicyEngine {
         requireApproval: false,
         reason: `工具 '${toolName}' 被 ACP 策略禁止（${acpClass}）`,
         matchedRule,
+      };
+    }
+
+    // 条件匹配检查（从 toolPolicy.ts 合并）
+    if (matchedRule.conditions && !this.matchesConditions(matchedRule, toolArgs, context)) {
+      return {
+        allowed: false,
+        riskLevel: matchedRule.riskLevel,
+        acpClass,
+        requireApproval: false,
+        reason: `工具 '${toolName}' 条件不满足`,
+        matchedRule,
+        timeoutMs: matchedRule.timeoutMs,
       };
     }
 
@@ -583,7 +631,86 @@ export class ToolPolicyEngine {
       requireApproval: matchedRule.requireApproval,
       matchedRule,
       timeoutMs: matchedRule.timeoutMs,
+      sandboxConfig: matchedRule.sandboxConfig,
     };
+  }
+
+  // ===================== 条件匹配（从 toolPolicy.ts 合并） =====================
+
+  /**
+   * 检查规则的条件是否满足
+   */
+  private matchesConditions(
+    rule: ToolPolicyRule,
+    toolArgs: Record<string, unknown>,
+    context: ToolPolicyEvaluationContext,
+  ): boolean {
+    const conditions = rule.conditions;
+    if (!conditions) return true;
+
+    // 参数模式匹配
+    if (conditions.argumentPatterns) {
+      for (const [key, pattern] of Object.entries(conditions.argumentPatterns)) {
+        const value = toolArgs[key];
+        if (value === undefined) return false;
+        if (pattern instanceof RegExp) {
+          if (!pattern.test(String(value))) return false;
+        } else {
+          if (String(value) !== pattern) return false;
+        }
+      }
+    }
+
+    // 用户角色匹配
+    if (conditions.userRoles && context.userRoles) {
+      const hasMatchingRole = conditions.userRoles.some((role) =>
+        context.userRoles!.includes(role),
+      );
+      if (!hasMatchingRole) return false;
+    }
+
+    // 会话标签匹配
+    if (conditions.sessionTags && context.sessionTags) {
+      const hasMatchingTag = conditions.sessionTags.some((tag) =>
+        context.sessionTags!.includes(tag),
+      );
+      if (!hasMatchingTag) return false;
+    }
+
+    // 时间窗口匹配
+    if (conditions.timeWindows && conditions.timeWindows.length > 0) {
+      const now = new Date();
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const inWindow = conditions.timeWindows.some(({ start, end }) =>
+        currentTime >= start && currentTime <= end,
+      );
+      if (!inWindow) return false;
+    }
+
+    return true;
+  }
+
+  // ===================== 查询 API（供 capabilities.ts 使用） =====================
+
+  /**
+   * 获取所有规则（按优先级排序），供外部只读查询
+   */
+  listRules(options?: { toolName?: string }): ToolPolicyRule[] {
+    let rules = [...this.rules];
+    if (options?.toolName) {
+      rules = rules.filter((r) => this.matchToolPattern(r.toolPattern, options.toolName!));
+    }
+    return rules;
+  }
+
+  /**
+   * 获取默认兜底 action（兼容 capabilities.ts 的 ToolPolicyAction 类型）
+   */
+  getDefaultAction(): 'allow' | 'deny' | 'ask' {
+    const fallbackRule = this.rules[this.rules.length - 1];
+    if (fallbackRule?.requireApproval) return 'ask';
+    if (fallbackRule?.riskLevel === 'critical') return 'deny';
+    return 'allow';
   }
 
   // ===================== 速率限制 =====================

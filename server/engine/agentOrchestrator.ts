@@ -22,13 +22,13 @@ import { agentRegistry, type AgentProfile, type RuntimeInstance } from './agentR
 // EventBus imports removed - not currently used but reserved for future event-driven features
 import { callAIModel } from '../aiClient.js';
 import type { ModelCallConfig, MessageContent, ToolCall } from '../aiClient.js';
-// Tool registry imports reserved for future agent-specific tool filtering
-// import { getToolDefinitions } from './toolRegistry.js';
-// import { pluginRegistry } from './pluginRegistry.js';
-// import { mcpClientManager } from './mcpClientManager.js';
+import { getToolDefinitions } from './toolRegistry.js';
+import { pluginRegistry } from './pluginRegistry.js';
+import { mcpClientManager } from './mcpClientManager.js';
 import { ExecutionMode, type ExecutionStrategyOptions } from './executionStrategy.js';
 import { type BudgetConfig, DEFAULT_BUDGET_CONFIG } from './budgetManager.js';
 import type { ToolExecutionResult } from './toolExecutor.js';
+import type { ApiMessage } from './contextTruncate.js';
 import type {
   TaskDecomposition,
   SubTask,
@@ -374,7 +374,7 @@ export class AgentOrchestrator {
   private async executeDecomposition(
     decomposition: TaskDecomposition,
     modelConfig: ModelCallConfig,
-    parentMessages: Array<{ role: string; content: MessageContent; tool_calls?: unknown; tool_call_id?: string }>,
+    parentMessages: ApiMessage[],
     onSSEEvent?: (event: Record<string, unknown>) => void,
     signal?: AbortSignal,
   ): Promise<{
@@ -535,15 +535,15 @@ export class AgentOrchestrator {
     // 构造子 Agent 的消息上下文
     const agentMessages = this.buildAgentMessages(subTask, agent ?? null, parentMessages);
 
-    // 获取过滤后的工具（预留：可按 Agent 权限过滤）
-    // const allTools = [
-    //   ...getToolDefinitions(),
-    //   ...pluginRegistry.getActiveTools(),
-    //   ...mcpClientManager.getMcpTools(),
-    // ];
-    // const filteredTools = agentId
-    //   ? agentRegistry.filterToolsForAgent(agentId, allTools)
-    //   : allTools;
+    // 获取过滤后的工具（按 Agent 权限过滤，含内置 + 插件 + MCP 工具）
+    const allTools = [
+      ...getToolDefinitions(),
+      ...pluginRegistry.getActiveTools(),
+      ...mcpClientManager.getMcpTools(),
+    ];
+    const filteredTools = agentId
+      ? agentRegistry.filterToolsForAgent(agentId, allTools)
+      : allTools;
 
     // 推送子任务开始事件
     if (onSSEEvent) {
@@ -756,10 +756,11 @@ ${resultsText}
   /**
    * 从消息列表中提取最后一条用户消息
    */
-  private extractUserMessage(messages: Array<{ role: string; content: MessageContent }>): string | null {
+  private extractUserMessage(messages: ApiMessage[]): string | null {
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].role === 'user') {
         const content = messages[i].content;
+        if (content == null) return null;
         return typeof content === 'string' ? content : JSON.stringify(content);
       }
     }
@@ -769,7 +770,7 @@ ${resultsText}
   /**
    * 从消息列表中提取会话 ID（通过查找 sessionId 相关字段）
    */
-  private extractSessionId(messages: Array<{ role: string; content: MessageContent }>): string {
+  private extractSessionId(messages: ApiMessage[]): string {
     // 尝试从第一条 system 消息中提取 sessionId
     for (const msg of messages) {
       if (msg.role === 'system' && typeof msg.content === 'string') {

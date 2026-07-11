@@ -6,9 +6,33 @@
 
 import { Router } from 'express';
 import { getEventLedger } from '../engine/eventLedger.js';
+import { getEventPolicy } from '../engine/eventPolicy.js';
 import { logger } from '../logger.js';
 
 const router = Router();
+
+/**
+ * 依据事件策略（engine/eventPolicy）对查询出的事件做脱敏与过滤。
+ * - 命中黑名单/保留策略不允许的事件将被剔除；
+ * - 含敏感字段（api_key / token / secret / password 等）的 payload 将被脱敏。
+ * 该函数为「死」模块 eventPolicy 接入实时事件查询路径，不改变既有查询语义。
+ */
+function applyEventPolicy(events: any[]): any[] {
+  const policy = getEventPolicy();
+  const out: any[] = [];
+  for (const ev of events) {
+    const type: string = ev?.type ?? ev?.eventType ?? '';
+    const payload: Record<string, unknown> = ev?.payload ?? ev?.data ?? {};
+    const verdict = policy.checkEvent(type, payload);
+    if (!verdict.allowed) continue; // 按策略过滤（黑名单 / 保留策略）
+    const redactedPayload = verdict.redacted ? policy.redactPayload(payload) : payload;
+    out.push({
+      ...ev,
+      payload: redactedPayload,
+    });
+  }
+  return out;
+}
 
 // 查询会话事件列表
 router.get('/sessions/:sessionId/events', async (req, res) => {
@@ -30,10 +54,12 @@ router.get('/sessions/:sessionId/events', async (req, res) => {
       eventTypes,
     });
 
+    const filtered = applyEventPolicy(events);
+
     res.json({
       ok: true,
-      data: events,
-      count: events.length,
+      data: filtered,
+      count: filtered.length,
     });
   } catch (err) {
     logger.error('[EventLedgerRoute] 查询事件失败:', err);
@@ -209,7 +235,23 @@ router.post('/sessions/:sessionId/events', async (req, res) => {
       return;
     }
 
-    const event = await getEventLedger().recordEvent(sessionId, type as any, payload || {}, {
+    // --- 事件策略（engine/eventPolicy）：过滤 + 脱敏 ---
+    // 仅作用于事件账本的持久化，不影响聊天 SSE 路径。默认策略允许全部事件，
+    // 仅对包含敏感字段名（api_key/secret/password/token 等）或敏感模式的 payload 做脱敏。
+    const policy = getEventPolicy();
+    const decision = policy.checkEvent(type, (payload as Record<string, unknown>) || {});
+    if (!decision.allowed) {
+      res.status(403).json({
+        ok: false,
+        error: `Event rejected by policy: ${decision.reason ?? 'not allowed'}`,
+      });
+      return;
+    }
+    const safePayload: Record<string, unknown> = decision.redacted
+      ? policy.redactPayload((payload as Record<string, unknown>) || {})
+      : (payload as Record<string, unknown>) || {};
+
+    const event = await getEventLedger().recordEvent(sessionId, type as any, safePayload, {
       runId,
       actor,
     });

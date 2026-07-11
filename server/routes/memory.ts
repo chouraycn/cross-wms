@@ -8,6 +8,9 @@ import {
   insertMemory,
   deleteMemory,
   getMemory,
+  updateMemory,
+  batchDeleteMemories,
+  batchUpdateCategory,
   hybridSearchMemory,
 } from '../engine/vecMemoryStore.js';
 import { logger } from '../logger.js';
@@ -106,7 +109,7 @@ router.get('/list', (req, res) => {
 
 // v9.0: 添加记忆
 router.post('/add', async (req, res) => {
-  const { text, metadata } = req.body;
+  const { text, metadata, category, importance } = req.body;
 
   if (!text || typeof text !== 'string') {
     res.status(400).json({ error: 'text is required and must be a string' });
@@ -114,10 +117,75 @@ router.post('/add', async (req, res) => {
   }
 
   try {
-    const id = await insertMemory(text, metadata || {});
+    const id = await insertMemory(
+      text,
+      metadata || {},
+      typeof category === 'string' ? category : undefined,
+      typeof importance === 'number' ? importance : undefined
+    );
     res.json({ id, success: true });
   } catch (e) {
     logger.error('[Memory API] 添加记忆失败:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// v9.1: 更新记忆（分类 / 重要性 / 文本 / 元数据）— 富面板 MemoryPanel 编辑能力
+router.put('/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const { text, metadata, category, importance } = req.body;
+
+  if (!id || id <= 0) {
+    res.status(400).json({ error: 'invalid id' });
+    return;
+  }
+
+  try {
+    const success = updateMemory(id, {
+      ...(typeof text === 'string' ? { text } : {}),
+      ...(metadata !== undefined ? { metadata } : {}),
+      ...(typeof category === 'string' ? { category } : {}),
+      ...(typeof importance === 'number' ? { importance } : {}),
+    });
+    if (success) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'memory not found' });
+    }
+  } catch (e) {
+    logger.error('[Memory API] 更新记忆失败:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// v9.1: 批量删除记忆 — 富面板 MemoryPanel 批量操作
+router.post('/batch-delete', (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids)) {
+    res.status(400).json({ error: 'ids must be an array' });
+    return;
+  }
+  try {
+    const deleted = batchDeleteMemories(ids.map((x: unknown) => Number(x)).filter((n: number) => Number.isFinite(n)));
+    res.json({ success: true, deleted });
+  } catch (e) {
+    logger.error('[Memory API] 批量删除记忆失败:', e);
+    res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// v9.1: 批量更新记忆分类 — 富面板 MemoryPanel 批量操作
+router.post('/batch-category', (req, res) => {
+  const { ids, category } = req.body;
+  if (!Array.isArray(ids) || typeof category !== 'string') {
+    res.status(400).json({ error: 'ids must be an array and category must be a string' });
+    return;
+  }
+  try {
+    const updated = batchUpdateCategory(ids.map((x: unknown) => Number(x)).filter((n: number) => Number.isFinite(n)), category);
+    res.json({ success: true, updated });
+  } catch (e) {
+    logger.error('[Memory API] 批量更新分类失败:', e);
     res.status(500).json({ error: (e as Error).message });
   }
 });

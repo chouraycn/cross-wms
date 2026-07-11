@@ -1,5 +1,5 @@
 import EventEmitter from 'eventemitter3';
-import type { PluginHookCapability, HookRunOptions, HookRunnerLogger } from './types';
+import type { PluginHookCapability, PluginHookContext, PluginHookResult, HookRunOptions, HookRunnerLogger } from './types';
 
 const DEFAULT_VOID_HOOK_TIMEOUT_MS = 30_000;
 const DEFAULT_MODIFYING_HOOK_TIMEOUT_MS = 15_000;
@@ -55,7 +55,7 @@ export class HookRunner extends EventEmitter<HookRunnerEvents> {
     const hook: PluginHookCapability = {
       kind: 'hook',
       event: registration.event,
-      handler: registration.handler as (payload: unknown, ctx?: { sessionId?: string }) => Promise<unknown> | unknown,
+      handler: registration.handler as unknown as (payload: unknown, ctx?: PluginHookContext) => Promise<PluginHookResult | void>,
       priority: registration.priority,
     };
 
@@ -85,7 +85,7 @@ export class HookRunner extends EventEmitter<HookRunnerEvents> {
     return this.hooks.get(event) ?? [];
   }
 
-  async emit<T = unknown>(
+  async run<T = unknown>(
     event: string,
     payload: T,
     ctx?: { sessionId?: string },
@@ -112,7 +112,7 @@ export class HookRunner extends EventEmitter<HookRunnerEvents> {
     return currentPayload as T | undefined;
   }
 
-  async emitAsync(
+  async runAsync(
     event: string,
     payload: unknown,
     ctx?: { sessionId?: string },
@@ -342,9 +342,9 @@ export class PluginHookRunner {
 export const hookRunner = new PluginHookRunner();
 
 export function onHook(event: string, handler: (payload: unknown, ctx?: { sessionId?: string }) => Promise<void> | void): void {
-  hookRunner.register({ kind: 'hook', event, handler });
+  hookRunner.register({ kind: 'hook', event, handler: handler as unknown as (payload: unknown, ctx?: PluginHookContext) => Promise<PluginHookResult | void> });
 }
 
 export function offHook(event: string, handler: (payload: unknown, ctx?: { sessionId?: string }) => Promise<void> | void): void {
-  hookRunner.register({ kind: 'hook', event, handler });
+  hookRunner.unregister({ kind: 'hook', event, handler: handler as unknown as (payload: unknown, ctx?: PluginHookContext) => Promise<PluginHookResult | void> });
 }

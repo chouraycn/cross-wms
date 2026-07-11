@@ -38,6 +38,9 @@ import { triggerTurnEndSync, triggerPostCompactionSync } from './sessionMemorySy
 import { compressContextWithSummary } from './contextCompress.js';
 import { TokenBudgetManager } from './compaction/tokenBudget.js';
 import { CompactionLoopGuard, CompactionSafetyTimeout, CompactionRetryAggregateTimeout } from './compaction/compactionSafety.js';
+import { CompactionHooks } from './compaction/compactionHooks.js';
+import { getExecutionContractManager } from './executionContract.js';
+import { registerBuiltinCommands } from './commands/builtinCommands.js';
 import { getThinkingCacheKey, getThinkingCache, setThinkingCache } from '../routes/chatHelpers/thinkingCache.js';
 import { matchTriggers, executePluginTrigger } from '../services/pluginAutoInvoke.js';
 import { resetDefaultCircuitBreaker } from './toolExecutor.js';
@@ -46,6 +49,36 @@ import { classifyAndFormatError } from '../routes/chatService.js';
 import { logger } from '../logger.js';
 import { runHooks, createHookEvent } from './hooks/index.js';
 import { getKeywordTriggerEngine } from './keywordTriggerEngine.js';
+
+// ===================== 压缩 Hook 单例 =====================
+// 在聊天执行核心中挂载「死」模块 engine/compaction/compactionHooks.ts 的生命周期钩子。
+// 既供 builtin commands（如 /compact）注册 before/after/compact-failed 钩子，
+// 也由 runChatSession 在「响应后压缩」流程中触发，不改动既有压缩逻辑。
+const COMPACTION_HOOKS = new CompactionHooks();
+
+/** 获取压缩 Hook 单例，供外部（如 builtin commands）注册钩子 */
+export function getCompactionHooks(): CompactionHooks {
+  return COMPACTION_HOOKS;
+}
+
+// ===================== 内置命令注册表挂载 =====================
+// 将「死」模块 engine/commands（CommandRegistry + builtinCommands）挂载到聊天执行核心。
+// 仅执行注册（填充单例），使该模块被实际引用并生效；
+// HTTP 聊天路径当前不会自动拦截以 '/' 开头的消息进行分发——实时命令入口是 tui/commands.ts，
+// 且 builtinCommands 的 handler 多为占位实现（返回静态文案、不真正切换模型/会话），
+// 故此处不自动分发，避免向用户返回误导性虚假回复。需要时可由路由显式调用下方函数触发分发。
+let _builtinCommandsRegistered = false;
+/** 幂等注册内置命令（首次调用时填充 CommandRegistry 单例） */
+export function ensureBuiltinCommandsRegistered(): void {
+  if (_builtinCommandsRegistered) return;
+  _builtinCommandsRegistered = true;
+  registerBuiltinCommands();
+}
+
+// 模块加载即注册一次，使 engine/commands 的 CommandRegistry 单例被实际填充（无害：
+// 仅注册、不自动分发——实时命令入口仍为 TUI/commands.ts，且 builtinCommands 的 handler
+// 多为占位实现；故保持「注册即活跃、分发仍走既有入口」的保守集成策略）。
+ensureBuiltinCommandsRegistered();
 
 // ===================== 类型定义 =====================
 
@@ -217,6 +250,10 @@ export async function runChatSession(
     topP: (modelConfig as ModelConfig).topP,
     thinkingLevel: input.thinkingLevel || (modelConfig as ModelConfig).defaultThinkingLevel,
   };
+
+  // 执行契约（engine/executionContract）：按模型等级推导每轮最大工具调用数，
+  // 替代原先写死的 30，使不同模型档位获得与其契约匹配的并发上限。
+  const contractMaxToolCalls = getExecutionContractManager().getContract(effectiveModel).maxToolCallsPerTurn;
 
   const dbMessages = getSessionMessages(sessionId);
   const built = await buildApiMessages({
@@ -409,7 +446,7 @@ export async function runChatSession(
       modelCapabilities: (modelConfig as ModelConfig).capabilities,
       ctxWindow,
       ctxMaxTokens,
-      estimatedToolsCount: 30,
+      estimatedToolsCount: contractMaxToolCalls,
       callbacks: executeCallbacks,
       toolProfile: input.toolProfile as any,
       compaction: input.compaction as any,
@@ -456,10 +493,22 @@ export async function runChatSession(
       tokenBudget.updateUsage(result.usage as any);
     }
     if (tokenBudget.shouldCompact() && compactionLoopGuard.canCompact(0) && compactionRetryBudget.canRetry()) {
+      // --- 压缩 Hook（before-compact，支持中止）---
+      const tokensBefore = (result.usage as any)?.totalTokens || 0;
+      const beforeSignal = await COMPACTION_HOOKS.runBeforeCompact({
+        sessionKey: sessionId,
+        trigger: 'budget',
+        budgetSnapshot: tokenBudget.getSnapshot(),
+        messageCount: built.apiMessages.length,
+        tokenCount: tokensBefore,
+        timestamp: Date.now(),
+      });
+      if (beforeSignal.isAborted()) {
+        logger.info('[runChatSession] 响应后压缩被 before-compact Hook 中止:', beforeSignal.getReason());
+      } else {
       try {
         const safetyTimeout = new CompactionSafetyTimeout(60_000);
         const compactionSignal = safetyTimeout.start();
-        const tokensBefore = (result.usage as any)?.totalTokens || 0;
 
         const compactionResult = await Promise.race([
           compressContextWithSummary(
@@ -490,8 +539,35 @@ export async function runChatSession(
           });
           triggerPostCompactionSync(sessionId, input.agentId || 'default').catch(() => {});
         }
+
+        // --- 压缩 Hook（after-compact）---
+        await COMPACTION_HOOKS.runAfterCompact({
+          sessionKey: sessionId,
+          trigger: 'budget',
+          messageCount: built.apiMessages.length,
+          tokenCount: tokensBefore,
+          timestamp: Date.now(),
+          compactedMessageCount: compactionResult.compressed
+            ? Math.ceil(built.apiMessages.length * 0.5)
+            : built.apiMessages.length,
+          compactedTokenCount: tokensAfter,
+          summary: (compactionResult as any).summary,
+          tokenReduction: Math.max(0, tokensBefore - tokensAfter),
+          durationMs: safetyTimeout.getElapsedMs(),
+        });
       } catch (compactionErr) {
         logger.warn('[runChatSession] 响应后压缩失败:', compactionErr);
+        // --- 压缩 Hook（compact-failed）---
+        await COMPACTION_HOOKS.runCompactFailed({
+          sessionKey: sessionId,
+          trigger: 'budget',
+          messageCount: built.apiMessages.length,
+          tokenCount: tokensBefore,
+          timestamp: Date.now(),
+          error: compactionErr instanceof Error ? compactionErr.message : String(compactionErr),
+          retryCount: compactionRetryBudget.getAttemptCount(),
+        });
+      }
       }
     }
 
@@ -755,7 +831,7 @@ async function tryFallback(
       modelCapabilities: fallbackModel.capabilities,
       ctxWindow: fallbackCtxWindow,
       ctxMaxTokens: fallbackCtxMaxTokens,
-      estimatedToolsCount: 30,
+      estimatedToolsCount: getExecutionContractManager().getContract(fallbackModel.id).maxToolCallsPerTurn,
       callbacks: {
         onChunk: (chunk: string) => {
           callbacks.onChunk?.(chunk);

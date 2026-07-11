@@ -51,8 +51,12 @@ import {
   getMatchConfig,
   updateMatchConfig,
   resetMatchConfig,
+  submitMatchFeedback,
 } from '../services/matchingApi';
 import type { MatchResponse, EmbeddingStatus, MatchEngineConfig } from '../services/matchingApi';
+import SkillMatchResult from '../components/Matching/SkillMatchResult';
+import MatchFeedbackWidget from '../components/Matching/MatchFeedbackWidget';
+import type { SemanticMatchResult } from '../components/Matching/SkillMatchResult';
 import { getGrayScale } from '../constants/theme';
 import { useTheme } from '@mui/material';
 
@@ -66,6 +70,7 @@ export default function MatchingPage() {
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [matchResult, setMatchResult] = useState<MatchResponse | null>(null);
+  const [feedbackTarget, setFeedbackTarget] = useState<SemanticMatchResult | null>(null);
   const [generating, setGenerating] = useState(false);
   const [testing, setTesting] = useState(false);
 
@@ -111,6 +116,11 @@ export default function MatchingPage() {
       setTesting(true);
       const result = await matchSkills(query, { topK: 5 });
       setMatchResult(result);
+      // 以置信度最高的匹配项作为默认反馈对象
+      const top = [...result.results].sort((a, b) => b.score - a.score)[0];
+      setFeedbackTarget(top
+        ? { skillId: top.skillId, skillName: top.skillName, confidence: top.score, reasons: top.reasons, matchMode: top.matchMode }
+        : null);
     } catch (e) {
       setError(e instanceof Error ? e.message : '匹配测试失败');
     } finally {
@@ -212,21 +222,49 @@ export default function MatchingPage() {
               {matchResult && (
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="subtitle2" mb={1}>匹配结果 ({matchResult.totalResults})</Typography>
-                  <List>
-                    {matchResult.results.slice(0, 5).map((result, index) => (
-                      <ListItem key={index} sx={{ py: 1 }}>
-                        <ListItemText
-                          primary={result.skillName || result.skillId}
-                          secondary={`匹配度: ${(result.score || 0).toFixed(2)}`}
-                        />
-                        <Chip
-                          label={(result.score || 0).toFixed(2)}
-                          color={result.score && result.score > 0.7 ? 'success' : result.score && result.score > 0.4 ? 'warning' : 'default'}
-                          size="small"
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
+                  <SkillMatchResult
+                    matches={matchResult.results.map(r => ({
+                      skillId: r.skillId,
+                      skillName: r.skillName,
+                      confidence: r.score,
+                      reasons: r.reasons,
+                      matchMode: r.matchMode,
+                    }))}
+                    onSelect={(skillId) => {
+                      const selected = matchResult.results.find(r => r.skillId === skillId);
+                      if (selected) {
+                        setFeedbackTarget({
+                          skillId: selected.skillId,
+                          skillName: selected.skillName,
+                          confidence: selected.score,
+                          reasons: selected.reasons,
+                          matchMode: selected.matchMode,
+                        });
+                      }
+                    }}
+                    onDismiss={() => {
+                      setMatchResult(null);
+                      setFeedbackTarget(null);
+                    }}
+                  />
+                  {feedbackTarget && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle2" mb={1}>匹配反馈</Typography>
+                      <MatchFeedbackWidget
+                        userInput={query}
+                        matchedSkillId={feedbackTarget.skillId}
+                        matchedSkillName={feedbackTarget.skillName}
+                        confidence={feedbackTarget.confidence}
+                        onSubmit={async (feedback) => {
+                          try {
+                            await submitMatchFeedback(feedback);
+                          } catch (e) {
+                            setError(e instanceof Error ? e.message : '提交反馈失败');
+                          }
+                        }}
+                      />
+                    </Box>
+                  )}
                 </Box>
               )}
             </CardContent>

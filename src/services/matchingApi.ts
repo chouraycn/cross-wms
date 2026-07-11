@@ -103,7 +103,16 @@ export async function matchSkills(
   if (options?.excludeSkillIds) body.excludeSkillIds = options.excludeSkillIds;
   if (options?.contextMessages) body.contextMessages = options.contextMessages;
 
-  return request<MatchResponse>('POST', '/api/matching/match', body);
+  // 后端返回 { success, data: MatchResult[] }，这里包装为前端 MatchResponse 契约
+  const results = await request<MatchResult[]>('POST', '/api/matching/match', body);
+  const matchMode = (options?.mode || 'hybrid') as MatchMode;
+
+  return {
+    results,
+    query: input,
+    matchMode,
+    totalResults: results.length,
+  };
 }
 
 /**

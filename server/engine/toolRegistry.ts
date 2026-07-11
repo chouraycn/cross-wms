@@ -869,6 +869,45 @@ export async function initDefaultTools(): Promise<void> {
   } catch (err) {
     logger.warn('[Tool Registry] Code tools not registered:', err instanceof Error ? err.message : String(err));
   }
+
+  // v9.x: 代码理解工具（Group C 单例 codeUnderstanding 接入 LIVE 工具解析链路）。
+  // 纯增量：仅注册一个新内置工具，不替换/分叉任何现有工具或 chat 执行路径。
+  try {
+    const { handleCodeUnderstanding } = await import('./codeUnderstandingTool.js');
+    registerBuiltinTool({
+      definition: {
+        type: 'function',
+        function: {
+          name: 'code_understanding',
+          description:
+            '分析代码文件/项目、解释符号用途、生成改进建议。支持四种动作：' +
+            'analyzeFile（分析单个文件，返回符号统计/复杂度/可读性/问题/依赖/文档覆盖率）、' +
+            'analyzeProject（分析整个项目，返回技术栈/依赖图/平均指标）、' +
+            'explainSymbol（解释指定符号用途与最佳实践）、' +
+            'suggestImprovements（返回改进建议列表）。',
+          parameters: {
+            type: 'object',
+            properties: {
+              action: {
+                type: 'string',
+                enum: ['analyzeFile', 'analyzeProject', 'explainSymbol', 'suggestImprovements'],
+                description: '要执行的代码理解动作（默认 analyzeFile）',
+              },
+              filePath: { type: 'string', description: '文件绝对或相对路径（analyzeFile/explainSymbol/suggestImprovements 必填）' },
+              rootPath: { type: 'string', description: '项目根目录路径（analyzeProject 必填）' },
+              symbolName: { type: 'string', description: '符号名称（explainSymbol 必填）' },
+              line: { type: 'number', description: '符号所在行号（explainSymbol 可选，用于精确定位重载）' },
+            },
+            required: [],
+          },
+        },
+      },
+      handler: handleCodeUnderstanding,
+    });
+    logger.debug('[Tool Registry] code_understanding 工具已注册');
+  } catch (err) {
+    logger.warn('[Tool Registry] code_understanding 工具未注册:', err instanceof Error ? err.message : String(err));
+  }
 }
 
 /** 获取所有已注册内置工具的 definitions（用于传给 LLM） */

@@ -40,6 +40,12 @@ import {
   Upload as UploadIcon,
 } from '@mui/icons-material';
 import { v4 as uuidv4 } from 'uuid';
+import TriggerNode from './nodes/TriggerNode';
+import ConditionNode from './nodes/ConditionNode';
+import ActionNode from './nodes/ActionNode';
+import ParallelNode from './nodes/ParallelNode';
+import LoopNode from './nodes/LoopNode';
+import WaitNode from './nodes/WaitNode';
 import type {
   Workflow,
   WorkflowNode,
@@ -297,6 +303,32 @@ const WorkflowEditor: React.FC<{
       });
     }
   }, [workflow, nodes, onSave]);
+
+  // 根据节点类型渲染对应的属性编辑器组件
+  const renderNodePropertyEditor = () => {
+    if (!editingNode) return null;
+
+    const handleUpdate = (updated: WorkflowNode) => {
+      setEditingNode(updated);
+    };
+
+    switch (editingNode.type) {
+      case 'trigger':
+        return <TriggerNode node={editingNode} onUpdate={handleUpdate} />;
+      case 'condition':
+        return <ConditionNode node={editingNode} onUpdate={handleUpdate} />;
+      case 'action':
+        return <ActionNode node={editingNode} onUpdate={handleUpdate} />;
+      case 'parallel':
+        return <ParallelNode node={editingNode} onUpdate={handleUpdate} />;
+      case 'loop':
+        return <LoopNode node={editingNode} onUpdate={handleUpdate} />;
+      case 'wait':
+        return <WaitNode node={editingNode} onUpdate={handleUpdate} />;
+      default:
+        return null;
+    }
+  };
 
   // 渲染节点
   const renderNode = useCallback((node: WorkflowNode) => {
@@ -586,15 +618,11 @@ const WorkflowEditor: React.FC<{
                   <MenuItem value="disabled">禁用</MenuItem>
                 </Select>
               </FormControl>
-              {/* 根据节点类型显示不同的配置项 */}
-              {editingNode.type === 'action' && (
-                <TextField
-                  label="动作类型"
-                  value={(editingNode.config as any).type || ''}
-                  onChange={(e) => setEditingNode({ ...editingNode, config: { ...editingNode.config, type: e.target.value } })}
-                  fullWidth
-                />
-              )}
+
+              <Divider />
+
+              {/* 节点类型专属配置编辑器 */}
+              {renderNodePropertyEditor()}
             </Box>
           )}
         </DialogContent>

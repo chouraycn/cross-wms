@@ -29,12 +29,12 @@ import {
   type MessageContent,
 } from '../aiClient.js';
 import { Observer, type Observation } from './observer.js';
-import { Planner, type ExecutionPlan } from './planner.js';
+import { Planner, type ExecutionPlan, type PlanStepStatus } from './planner.js';
 import { getBuiltinToolDefinitions } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
 import { mcpClientManager } from './mcpClientManager.js';
 import { compressContextWithSummary } from './contextCompress.js';
-import { truncateContextForModel, estimateMessagesTokens } from './contextTruncate.js';
+import { truncateContextForModel, estimateMessagesTokens, type ApiMessage } from './contextTruncate.js';
 import type { ToolExecutionResult } from './toolExecutor.js';
 import type { ExecutionStrategyOptions } from './executionStrategy.js';
 import { BudgetManager, type BudgetConfig } from './budgetManager.js';
@@ -257,6 +257,31 @@ export class ReActExecutor {
 意图：${plan.intent}
 步骤：
 ${stepsText}`;
+  }
+
+  /**
+   * v9.2: 根据工具名查找对应的计划步骤索引
+   * 匹配规则：步骤的 toolName 与工具名匹配，且状态为 pending 或 in_progress
+   */
+  private findPlanStepIndex(toolName: string): number {
+    if (!this._activePlan) return -1;
+    const idx = this._activePlan.steps.findIndex(
+      s => s.toolName === toolName && (s.status === 'pending' || s.status === 'in_progress'),
+    );
+    return idx;
+  }
+
+  /**
+   * v9.2: 更新计划步骤状态
+   */
+  private updatePlanStepStatus(toolName: string, status: PlanStepStatus): void {
+    if (!this._activePlan) return;
+    const step = this._activePlan.steps.find(
+      s => s.toolName === toolName && (s.status === 'pending' || s.status === 'in_progress'),
+    );
+    if (step) {
+      step.status = status;
+    }
   }
 
   /**
@@ -566,6 +591,10 @@ ${stepsText}`;
       for (const obs of observations) {
         if (obs.assessment.level === 'success') {
           this.circuitBreaker.recordSuccess(obs.toolCall.name);
+          // v9.2: 步骤状态跟踪 — 工具成功时标记对应计划步骤为 completed
+          if (this._activePlan) {
+            this.updatePlanStepStatus(obs.toolCall.name, 'completed');
+          }
         } else {
           const circuitState = this.circuitBreaker.recordFailure(
             obs.toolCall.name,
@@ -600,6 +629,28 @@ ${stepsText}`;
         }
       }
 
+      // v9.2: 规则式动态调整 — 工具失败时调用 adjustPlan 插入恢复步骤
+      if (this._activePlan && this._planner) {
+        const failedObs = observations.find(o => o.assessment.level !== 'success');
+        if (failedObs) {
+          const stepIdx = this.findPlanStepIndex(failedObs.toolCall.name);
+          if (stepIdx >= 0) {
+            try {
+              const adjusted = this._planner.adjustPlan(this._activePlan, {
+                failedStepIndex: stepIdx,
+                error: failedObs.assessment.reason || 'unknown error',
+                toolName: failedObs.toolCall.name,
+              });
+              this._activePlan = adjusted;
+              if (onSSEEvent) onSSEEvent({ type: 'plan_revised', plan: adjusted as unknown as Record<string, unknown> });
+              logger.debug(`[ReActExecutor] adjustPlan: 步骤 ${stepIdx + 1} 失败，已插入恢复步骤`);
+            } catch (adjErr) {
+              logger.warn('[ReActExecutor] adjustPlan 失败:', adjErr instanceof Error ? adjErr.message : String(adjErr));
+            }
+          }
+        }
+      }
+
       // ============== Loop Detection — 死循环检测 ==============
       const loopResult = this.loopDetector.detectLoop(observations, turn);
       if (loopResult.isLoop) {
@@ -615,7 +666,9 @@ ${stepsText}`;
         }
 
         // v9.1 [五]: 动态规划模式 — 循环/失败时反思式重规划
-        if (planningMode === 'dynamic' && this._activePlan && this._planner) {
+        // v9.2: 仅当 LoopDetector 建议 replan 或更高时才触发 LLM 重规划
+        if (planningMode === 'dynamic' && this._activePlan && this._planner
+            && (strategy.action === 'replan' || strategy.action === 'ask_user')) {
           try {
             const scratchpadSummary = (this._scratchpad || [])
               .map(e => `轮${e.turn}: 工具[${e.toolsUsed.join(',')}] 观察:${e.observation}`)
@@ -894,12 +947,11 @@ ${stepsText}`;
    * @param messages - 消息列表
    * @returns 最后一条用户消息文本，或 null
    */
-  private extractUserMessage(
-    messages: Array<{ role: string; content: MessageContent }>,
-  ): string | null {
+  private extractUserMessage(messages: ApiMessage[]): string | null {
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].role === 'user') {
         const content = messages[i].content;
+        if (content == null) return null;
         return typeof content === 'string' ? content : JSON.stringify(content);
       }
     }

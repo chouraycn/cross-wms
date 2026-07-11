@@ -15,15 +15,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-
-// ApiMessage 类型（与 contextTruncate.ts 中一致）
-type ApiMessage = {
-  role: string;
-  content: unknown;
-  tool_calls?: Array<{ id: string; type?: string; function?: { name?: string; arguments?: string } }> | unknown[];
-  tool_call_id?: string;
-  reasoning_content?: unknown;
-};
+import type { ApiMessage } from '../contextTruncate.js';
 
 describe('sanitizeToolMessages 多遍扫描', () => {
   let sanitizeToolMessages: (messages: ApiMessage[]) => ApiMessage[];
@@ -37,7 +29,7 @@ describe('sanitizeToolMessages 多遍扫描', () => {
 
   it('Pass 0: 过滤 id 为空的 tool_calls', () => {
     const messages: ApiMessage[] = [
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: '', type: 'function', function: { name: 'search', arguments: '{}' } },
       ]},
     ];
@@ -59,7 +51,7 @@ describe('sanitizeToolMessages 多遍扫描', () => {
 
   it('Pass 0: 保留有效 tool_call_id 的 assistant 消息', () => {
     const messages: ApiMessage[] = [
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: 'call_1', type: 'function', function: { name: 'search', arguments: '{}' } },
       ]},
       { role: 'tool', content: 'found', tool_call_id: 'call_1' },
@@ -77,7 +69,7 @@ describe('sanitizeToolMessages 多遍扫描', () => {
 
   it('Pass 1/2: 移除无 tool 响应的 assistant(tool_calls)', () => {
     const messages: ApiMessage[] = [
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: 'call_orphan', type: 'function', function: { name: 'search', arguments: '{}' } },
       ]},
     ];
@@ -104,7 +96,7 @@ describe('sanitizeToolMessages 多遍扫描', () => {
 
   it('Pass 1/2: 正确的配对全部保留', () => {
     const messages: ApiMessage[] = [
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: 'call_1', type: 'function', function: { name: 'search', arguments: '{}' } },
         { id: 'call_2', type: 'function', function: { name: 'read_file', arguments: '{}' } },
       ]},
@@ -133,7 +125,7 @@ describe('sanitizeToolMessages 多遍扫描', () => {
 
   it('Pass 3.5: system/user 消息被重新排序到 tool 消息之后', () => {
     const messages: ApiMessage[] = [
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: 'call_1', type: 'function', function: { name: 'search', arguments: '{}' } },
       ]},
       { role: 'system', content: 'System instruction' }, // 应该在 tool 之后再出现
@@ -151,7 +143,7 @@ describe('sanitizeToolMessages 多遍扫描', () => {
 
   it('Pass 3.5: 多条 system/user 消息被正确重排序', () => {
     const messages: ApiMessage[] = [
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: 'call_1', type: 'function', function: { name: 'search', arguments: '{}' } },
       ]},
       { role: 'system', content: 'sys 1' },
@@ -174,10 +166,10 @@ describe('sanitizeToolMessages 多遍扫描', () => {
 
   it('Pass 4: null content 的 tool 消息被规范化为 "(no result)"', () => {
     const messages: ApiMessage[] = [
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: 'call_1', type: 'function', function: { name: 'search', arguments: '{}' } },
       ]},
-      { role: 'tool', content: null, tool_call_id: 'call_1' },
+      { role: 'tool', content: "", tool_call_id: 'call_1' },
     ];
 
     const result = sanitizeToolMessages(messages);
@@ -186,7 +178,7 @@ describe('sanitizeToolMessages 多遍扫描', () => {
 
   it('Pass 4: null content 的 assistant(无 tool_calls) 规范化为 ""', () => {
     const messages: ApiMessage[] = [
-      { role: 'assistant', content: null },
+      { role: 'assistant', content: "" },
     ];
 
     const result = sanitizeToolMessages(messages);
@@ -204,7 +196,7 @@ describe('validateToolMessages 发送前硬校验', () => {
 
     // 创建缺失 tool 响应的消息数组
     const messages: Array<{ role: string; content?: unknown; tool_calls?: unknown[]; tool_call_id?: string }> = [
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: 'call_1', type: 'function', function: { name: 'search', arguments: '{}' } },
         { id: 'call_2', type: 'function', function: { name: 'read_file', arguments: '{}' } },
       ]},
@@ -228,13 +220,13 @@ describe('validateToolMessages 发送前硬校验', () => {
     const { sanitizeToolMessages } = await import('../../engine/contextTruncate.js');
 
     const messages: ApiMessage[] = [
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: 'call_1', type: 'function', function: { name: 'search', arguments: '{}' } },
         { id: 'call_2', type: 'function', function: { name: 'read_file', arguments: '{}' } },
       ]},
       { role: 'tool', content: 'result 1', tool_call_id: 'call_1' },
       { role: 'tool', content: 'result 2', tool_call_id: 'call_2' },
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: 'call_3', type: 'function', function: { name: 'write_file', arguments: '{}' } },
       ]},
       { role: 'tool', content: 'result 3', tool_call_id: 'call_3' },
@@ -262,13 +254,13 @@ describe('tool_calls 配对集成测试', () => {
   it('多轮工具调用全部正确配对', () => {
     const messages: ApiMessage[] = [
       { role: 'user', content: '搜索文件' },
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: 'call_1', type: 'function', function: { name: 'search', arguments: '{}' } },
       ]},
       { role: 'tool', content: 'found file.txt', tool_call_id: 'call_1' },
       { role: 'assistant', content: '找到了文件 file.txt' },
       { role: 'user', content: '读取它' },
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: 'call_2', type: 'function', function: { name: 'read_file', arguments: '{}' } },
       ]},
       { role: 'tool', content: 'file content...', tool_call_id: 'call_2' },
@@ -287,7 +279,7 @@ describe('tool_calls 配对集成测试', () => {
 
   it('已正确配对的数组不做修改', () => {
     const messages: ApiMessage[] = [
-      { role: 'assistant', content: null, tool_calls: [
+      { role: 'assistant', content: "", tool_calls: [
         { id: 'call_1', type: 'function', function: { name: 'calc', arguments: '{"x":1}' } },
       ]},
       { role: 'tool', content: '42', tool_call_id: 'call_1' },

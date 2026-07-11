@@ -227,7 +227,21 @@ export function checkChannels(params: {
   enabledChannels?: string[];
 }): DoctorCheckResult {
   const findings: HealthFinding[] = [];
-  const registry = getGlobalChannelRegistry();
+
+  // 防御性：当服务未通过 initDoctorChannelRegistry 注入通道注册表时，
+  // 不能让诊断端点抛 500。降级为 info 提示即可（已有 live 通道注册表时行为不变）。
+  const registryFn = typeof getGlobalChannelRegistry === 'function' ? getGlobalChannelRegistry : null;
+  const registry = registryFn ? registryFn() : null;
+  if (!registry || typeof registry.listAll !== 'function') {
+    findings.push({
+      id: DOCTOR_CHECK_IDS.channels.noChannels,
+      severity: 'info',
+      message: 'Channel registry is not initialized; skipping channel checks',
+      fixHint: 'Call initDoctorChannelRegistry(getGlobalChannelRegistry) during server startup',
+    });
+    return { scope: 'channels', findings };
+  }
+
   const registeredChannels = registry.listAll();
 
   if (registeredChannels.length === 0) {
@@ -519,7 +533,7 @@ export async function runDoctorChecks(params: {
     sessionAuthEnabled?: boolean;
     secretManagementEnabled?: boolean;
   };
-}): Promise<DoctorReport> {
+} = {}): Promise<DoctorReport> {
   const scopes = params.scopes ?? ["core", "tools", "exec-approvals", "channels"];
   const findings: HealthFinding[] = [];
 

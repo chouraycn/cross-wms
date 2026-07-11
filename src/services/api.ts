@@ -18,6 +18,7 @@ import type {
   QuickCreatePartnerPayload,
 } from '../types/partners';
 import { API_BASE_URL } from '../constants/api';
+import { SSEStreamParser } from '../utils/sse/SSEStreamParser.js';
 
 const BASE_URL = API_BASE_URL;
 
@@ -380,22 +381,20 @@ export function connectSSE(
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let buffer = '';
+      const parser = new SSEStreamParser();
 
       while (!closed) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') continue;
-            handlers.onMessage?.(data);
-          }
+        // 使用共享 SSEStreamParser 处理跨 chunk 边界的 SSE 流
+        const decoded = decoder.decode(value, { stream: true });
+        for (const sseEvent of parser.feed(decoded)) {
+          const data = sseEvent.data;
+          if (data === '[DONE]') continue;
+          // onMessage 约定接收字符串，将解析后的 JSON 重新序列化
+          const dataStr = typeof data === 'string' ? data : JSON.stringify(data);
+          handlers.onMessage?.(dataStr);
         }
       }
     } catch (err) {

@@ -21,6 +21,7 @@ import {
   formatScheduleLabel,
   AUTOMATION_TEMPLATES,
 } from '../services/automation';
+import { rruleToCron, cronToRrule } from '../services/automation/cronAdapter';
 import {
   fetchAutomations,
   createAutomationApi,
@@ -49,6 +50,26 @@ import {
   TABS,
   type TabKey,
 } from '../components/Automation/sharedConstants';
+
+// ===================== 触发器默认配置 =====================
+
+/** 根据触发器类型返回一份默认 triggerConfig（供 TriggerConfigPanel 初始化） */
+function defaultTriggerConfig(type: TriggerType): Record<string, unknown> {
+  switch (type) {
+    case 'schedule':
+      return { cronExpression: '0 9 * * *' };
+    case 'event':
+      return { eventName: '', debounceMs: 0 };
+    case 'webhook':
+      return { webhookPath: '' };
+    case 'file_change':
+      return { pathPattern: '', events: ['add', 'change', 'unlink'], ignorePattern: '' };
+    case 'threshold':
+      return { metric: '', thresholdType: 'upper', thresholdValue: 0, checkIntervalMs: 60000, cooldownMs: 300000 };
+    default:
+      return {};
+  }
+}
 
 // 任务管理
 // ===================== 任务管理常量 =====================
@@ -114,6 +135,8 @@ const AutomationPage: React.FC = () => {
     onFailure: true,
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  /** 富触发器配置（交由 AutomationPanel/TriggerConfigPanel 编辑） */
+  const [formTriggerConfig, setFormTriggerConfig] = useState<Record<string, unknown>>({});
 
   // URL 参数处理（从恶意技能卡片跳转过来）
   const [searchParams, setSearchParams] = useSearchParams();
@@ -247,6 +270,7 @@ const AutomationPage: React.FC = () => {
       onSuccess: true,
       onFailure: true,
     });
+    setFormTriggerConfig(defaultTriggerConfig('schedule'));
     setFormErrors({});
     setDialogOpen(true);
   };
@@ -280,6 +304,37 @@ const AutomationPage: React.FC = () => {
       onSuccess: true,
       onFailure: true,
     });
+
+    // 富触发器配置：根据真实字段回填 triggerConfig
+    const tt = (auto.triggerType as TriggerType) || 'schedule';
+    if (tt === 'schedule') {
+      setFormTriggerConfig({ cronExpression: rruleToCron(auto.rrule) });
+    } else if (tt === 'event') {
+      const et = (auto.eventTrigger ?? {}) as unknown as Record<string, unknown>;
+      setFormTriggerConfig({ eventName: et.eventName ?? '', debounceMs: et.debounceMs ?? 0 });
+    } else if (tt === 'webhook') {
+      const wc = (auto.webhookConfig ?? {}) as unknown as Record<string, unknown>;
+      setFormTriggerConfig({ webhookPath: wc.path ?? '' });
+    } else if (tt === 'file_change') {
+      const ft = (auto.fileChangeTrigger ?? {}) as unknown as Record<string, unknown>;
+      setFormTriggerConfig({
+        pathPattern: ft.pathPattern ?? '',
+        events: (ft.events as ('add' | 'change' | 'unlink')[]) ?? ['add', 'change', 'unlink'],
+        ignorePattern: ft.ignorePattern ?? '',
+      });
+    } else if (tt === 'threshold') {
+      const th = (auto.thresholdTrigger ?? {}) as unknown as Record<string, unknown>;
+      setFormTriggerConfig({
+        metric: th.metric ?? '',
+        thresholdType: (th.thresholdType as 'upper' | 'lower') ?? 'upper',
+        thresholdValue: (th.thresholdValue as number) ?? 0,
+        checkIntervalMs: (th.checkIntervalMs as number) ?? 60000,
+        cooldownMs: (th.cooldownMs as number) ?? 300000,
+      });
+    } else {
+      setFormTriggerConfig({});
+    }
+
     setFormErrors({});
     setDialogOpen(true);
   };
@@ -335,42 +390,90 @@ const AutomationPage: React.FC = () => {
     if (!formName.trim()) errors.name = '请输入名称';
     if (!formPrompt.trim()) errors.prompt = '请输入指令';
     if (formScheduleType === 'once' && !formScheduledAt) errors.scheduledAt = '请选择执行时间';
-    if (formScheduleType === 'recurring' && formFreq === 'WEEKLY' && formWeekdays.length === 0) errors.weekdays = '请选择至少一天';
+    if (formTriggerType === 'schedule' && formScheduleType === 'recurring' && !(formTriggerConfig.cronExpression as string)?.trim()) {
+      errors.cronExpression = '请配置定时表达式';
+    }
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
 
-    const rrule = formScheduleType === 'recurring'
-      ? buildRrule(formFreq, formHour, formMinute, formWeekdays)
-      : '';
+    // 基础字段（不含各触发器专属配置）
+    const base = {
+      name: formName.trim(),
+      prompt: formPrompt.trim(),
+      taskType: formTaskType,
+      taskConfig: formTaskConfig,
+      scheduleType: formScheduleType,
+      validFrom: formValidFrom || null,
+      validUntil: formValidUntil || null,
+      triggerType: formTriggerType,
+      executionPolicy: formExecutionPolicy,
+      notificationConfig: formNotificationConfig,
+    };
+
+    // 根据触发器类型组装专属字段（与后端约定对齐）
+    let payload: Record<string, unknown>;
+    if (formTriggerType === 'schedule') {
+      payload = {
+        ...base,
+        rrule: formScheduleType === 'recurring'
+          ? cronToRrule(formTriggerConfig.cronExpression as string)
+          : '',
+        scheduledAt: formScheduleType === 'once' ? new Date(formScheduledAt).toISOString() : null,
+      };
+    } else if (formTriggerType === 'event') {
+      payload = {
+        ...base,
+        rrule: '',
+        scheduledAt: null,
+        eventTrigger: {
+          eventName: (formTriggerConfig.eventName as string) ?? '',
+          debounceMs: (formTriggerConfig.debounceMs as number) ?? 0,
+        },
+      };
+    } else if (formTriggerType === 'webhook') {
+      payload = {
+        ...base,
+        rrule: '',
+        scheduledAt: null,
+        webhookConfig: {
+          enabled: false,
+          path: (formTriggerConfig.webhookPath as string) || undefined,
+        },
+      };
+    } else if (formTriggerType === 'file_change') {
+      payload = {
+        ...base,
+        rrule: '',
+        scheduledAt: null,
+        fileChangeTrigger: {
+          pathPattern: (formTriggerConfig.pathPattern as string) ?? '',
+          events: (formTriggerConfig.events as ('add' | 'change' | 'unlink')[]) ?? ['add', 'change', 'unlink'],
+          ignorePattern: (formTriggerConfig.ignorePattern as string) ?? '',
+          debounceMs: 0,
+        },
+      };
+    } else {
+      // threshold
+      payload = {
+        ...base,
+        rrule: '',
+        scheduledAt: null,
+        thresholdTrigger: {
+          metric: (formTriggerConfig.metric as string) ?? '',
+          thresholdType: (formTriggerConfig.thresholdType as 'upper' | 'lower') ?? 'upper',
+          thresholdValue: (formTriggerConfig.thresholdValue as number) ?? 0,
+          checkIntervalMs: (formTriggerConfig.checkIntervalMs as number) ?? 60000,
+          cooldownMs: (formTriggerConfig.cooldownMs as number) ?? 300000,
+        },
+      };
+    }
 
     try {
       if (editingId) {
-        const updated = await updateAutomationApi(editingId, {
-          id: editingId,
-          name: formName.trim(),
-          description: '',
-          status: 'ACTIVE',
-          scheduleType: formScheduleType,
-          rrule,
-          scheduledAt: formScheduleType === 'once' ? new Date(formScheduledAt).toISOString() : '',
-          scheduleLabel: '',
-          prompt: formPrompt.trim(),
-          taskType: formTaskType,
-          taskConfig: formTaskConfig,
-          validFrom: formValidFrom || undefined,
-          validUntil: formValidUntil || undefined,
-          triggerType: formTriggerType,
-          executionPolicy: formExecutionPolicy,
-          notificationConfig: formNotificationConfig,
-          createdAt: '',
-          updatedAt: '',
-          lastRunAt: null,
-          nextRunAt: null,
-          runCount: 0,
-        } as Automation);
+        const updated = await updateAutomationApi(editingId, payload as Partial<Automation>);
 
         setAutomations((prev) =>
           prev.map((a) =>
@@ -387,20 +490,7 @@ const AutomationPage: React.FC = () => {
         );
         showToast('自动化已更新');
       } else {
-        const created = await createAutomationApi({
-          name: formName.trim(),
-          prompt: formPrompt.trim(),
-          taskType: formTaskType,
-          taskConfig: formTaskConfig,
-          scheduleType: formScheduleType,
-          rrule,
-          scheduledAt: formScheduleType === 'once' ? new Date(formScheduledAt).toISOString() : null,
-          validFrom: formValidFrom || null,
-          validUntil: formValidUntil || null,
-          triggerType: formTriggerType,
-          executionPolicy: formExecutionPolicy,
-          notificationConfig: formNotificationConfig,
-        });
+        const created = await createAutomationApi(payload as Parameters<typeof createAutomationApi>[0]);
 
         const newAuto: Automation = {
           ...created,
@@ -667,8 +757,15 @@ const AutomationPage: React.FC = () => {
       case 'formTriggerType': setFormTriggerType(value); break;
       case 'formExecutionPolicy': setFormExecutionPolicy(value); break;
       case 'formNotificationConfig': setFormNotificationConfig(value); break;
+      case 'formTriggerConfig': setFormTriggerConfig(value); break;
       default: break;
     }
+  };
+
+  // ---- 切换触发器类型时重置富触发器配置 ----
+  const handleTriggerTypeChange = (type: TriggerType) => {
+    setFormTriggerType(type);
+    setFormTriggerConfig(defaultTriggerConfig(type));
   };
 
   // ---- Action chain 编辑 ----
@@ -786,7 +883,10 @@ const AutomationPage: React.FC = () => {
         formExecutionPolicy={formExecutionPolicy}
         formNotificationConfig={formNotificationConfig}
         formErrors={formErrors}
+        formTriggerConfig={formTriggerConfig}
         onFieldChange={handleFieldChange}
+        onTriggerConfigChange={(cfg) => setFormTriggerConfig(cfg)}
+        onTriggerTypeChange={handleTriggerTypeChange}
         onToggleWeekday={toggleWeekday}
         onToggleActionChain={toggleActionChain}
         onSave={handleSave}

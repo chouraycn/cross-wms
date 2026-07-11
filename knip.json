@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/main.tsx",
+    "server/index.ts"
+  ],
+  "project": [
+    "src/**",
+    "server/**",
+    "packages/*/src/**"
+  ],
+  "ignore": [
+    "openclaw/**",
+    "dist-app/**",
+    "coverage/**",
+    "node_modules/**",
+    "server_dist/**",
+    "*.config.ts",
+    "e2e/**",
+    "packages/*/src/index.ts",
+    "**/*.test.ts",
+    "src/vite-env.d.ts"
+  ]
+}

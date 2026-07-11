@@ -7,6 +7,7 @@
  */
 
 import { logger } from '../logger.js';
+import type { ToolDefinition } from '../aiClient.js';
 
 /** 工具 Profile ID */
 export type ToolProfileId = 'minimal' | 'coding' | 'messaging' | 'full';
@@ -170,9 +171,9 @@ export class ToolProfileManager {
    * 应用 Profile 到工具列表
    * 根据当前 Profile 的命名空间包含规则与排除规则过滤工具
    */
-  applyProfile(
-    tools: Array<{ function: { name: string; description: string; parameters: any } }>,
-  ): Array<{ function: { name: string; description: string; parameters: any } }> {
+  applyProfile<T extends ToolDefinition>(
+    tools: T[],
+  ): T[] {
     const profile = this.getProfile();
     const includeAll = profile.includeNamespaces.includes('*');
 
@@ -272,10 +273,10 @@ export const toolProfileManager = new ToolProfileManager();
  * 投影工具 Schema（根据上下文裁剪）
  * 按顺序：截断描述 → 隐藏可选参数 → 排除指定参数 → 限制参数数量 → 重新计算 required
  */
-export function projectToolSchema(
-  tool: { function: { name: string; description: string; parameters: any } },
+export function projectToolSchema<T extends ToolDefinition>(
+  tool: T,
   options?: SchemaProjectionOptions,
-): { function: { name: string; description: string; parameters: any } } {
+): T {
   if (!options) {
     return deepClone(tool);
   }
@@ -344,9 +345,9 @@ export function projectToolSchema(
 }
 
 /** 批量投影工具 Schema */
-export function projectToolSchemas(
-  tools: Array<{ function: { name: string; description: string; parameters: any } }>,
+export function projectToolSchemas<T extends ToolDefinition>(
+  tools: T[],
   options?: SchemaProjectionOptions,
-): Array<{ function: { name: string; description: string; parameters: any } }> {
+): T[] {
   return tools.map((tool) => projectToolSchema(tool, options));
 }

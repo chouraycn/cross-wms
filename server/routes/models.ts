@@ -20,8 +20,39 @@ import {
   getRecommendedModelById,
   isFirstLaunch,
 } from '../modelsStore.js';
+import { getUnifiedProviderRegistry } from '../engine/provider-registry/index.js';
+import { inferApiType } from '../adapters/registry.js';
 
 const router = Router();
+
+/**
+ * 将「死」模块 engine/provider-registry（统一 Provider 注册中心）接入 /api/models 路由。
+ * - 读取/保存模型配置时，将 providers 同步注册进统一注册中心（幂等：已注册则跳过以避免重复日志）；
+ * - apiType 由 inferApiType 推导，与注册中心自身的回退逻辑保持一致，避免错误的 apiType 映射污染旧的 modelProviderRegistry。
+ */
+function syncProvidersToRegistry(
+  config: { providers?: Array<{ id: string; name?: string; provider?: string; apiEndpoint?: string; authMode?: string }> | undefined },
+): void {
+  const registry = getUnifiedProviderRegistry();
+  const providers = (config?.providers ?? []) as Array<{
+    id: string;
+    name?: string;
+    provider?: string;
+    apiEndpoint?: string;
+    authMode?: string;
+  }>;
+  for (const p of providers) {
+    if (!p?.id || registry.has(p.id)) continue;
+    registry.register({
+      id: p.id,
+      displayName: p.name || p.id,
+      apiType: inferApiType(p.provider, p.apiEndpoint) as any,
+      defaultEndpoint: p.apiEndpoint,
+      authMode: (p.authMode as any) || 'api-key',
+      builtin: false,
+    });
+  }
+}
 
 // GET /api/models — 读取当前模型配置（返回时脱敏 API Key）
 router.get('/', async (_req: Request, res: Response) => {
@@ -29,6 +60,8 @@ router.get('/', async (_req: Request, res: Response) => {
     // v1.5.203: skipKeyInjection 跳过 Keychain execSync 调用，避免阻塞事件循环
     // 此端点返回时本就脱敏移除 apiKey/apiKeys，不需要注入
     const config = await loadModelsConfig({ skipKeyInjection: true });
+    // 接入统一 Provider 注册中心：将当前配置中的 providers 同步进注册中心
+    syncProvidersToRegistry(config as any);
     // 脱敏：移除明文 apiKey 和 apiKeys，只保留引用信息
     // （skipKeyInjection 路径已不含 key，但保留此脱敏作为安全兜底）
     const sanitizedModels = config.models.map((m) => {
@@ -44,7 +77,10 @@ router.get('/', async (_req: Request, res: Response) => {
       models: sanitizedModels,
       providers: sanitizedProviders,
     };
-    res.json({ data: sanitized });
+    res.json({
+      data: sanitized,
+      providerRegistry: getUnifiedProviderRegistry().getStats(),
+    });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
@@ -111,6 +147,9 @@ router.put('/', async (req: Request, res: Response) => {
       { providers: mergedProviders as any },
     );
 
+    // 保存后同步进统一 Provider 注册中心
+    syncProvidersToRegistry(config as any);
+
     // 脱敏返回
     const sanitized = {
       ...config,
@@ -123,7 +162,10 @@ router.put('/', async (req: Request, res: Response) => {
         return rest;
       }),
     };
-    res.json({ data: sanitized });
+    res.json({
+      data: sanitized,
+      providerRegistry: getUnifiedProviderRegistry().getStats(),
+    });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
