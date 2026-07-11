@@ -20,6 +20,6 @@
     "typescript": "^5.9.3",
     "@types/node": "^25.9.4",
     "@types/uuid": "^10.0.0",
-    "vitest": "^3.2.6"
+    "vitest": "^4.1.10"
   }
 }
