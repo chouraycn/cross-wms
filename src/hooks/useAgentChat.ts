@@ -206,6 +206,10 @@ export function useAgentChat(
     messagesRef.current = messages;
   }, [messages]);
 
+  // Bug Fix: 会话切换标志 — 当 currentSession.id 变化时设置，防止 session sync effect
+  // 用旧会话的消息调用 onSessionUpdate（race condition: 旧 messages + 新 session）
+  const sessionSwitchingRef = useRef(false);
+
   // AI 引擎设置
   const { settings: aiEngine } = useAiEngineSettings();
 
@@ -234,6 +238,8 @@ export function useAgentChat(
 
   // 当 session 变化时，同步 messages 并清理残留的流式状态
   useEffect(() => {
+    // Bug Fix: 设置切换标志，阻止 session sync effect 用旧消息同步到新会话
+    sessionSwitchingRef.current = true;
     // 清理上一个会话的流式状态，避免 seq 比较错误和工具卡片残留
     itemsMapRef.current.clear();
     lastSeqRef.current.clear();
@@ -969,6 +975,83 @@ export function useAgentChat(
         break;
       }
 
+      case 'react_phase': {
+        // v4.0: ReAct 阶段事件 — 写入 msg.reactPhase 驱动 ReactPhaseIndicator
+        const phase = (data.phase as 'reasoning' | 'acting' | 'observing' | 'reflecting' | 'done') || 'reasoning';
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex >= 0) {
+          setMessages((prev) => {
+            if (state.assistantMessageIndex >= prev.length) return prev;
+            const msg = prev[state.assistantMessageIndex];
+            if (msg.role !== 'assistant') return prev;
+            const updated: Message = {
+              ...msg,
+              reactPhase: {
+                phase,
+                step: (data.step as number) ?? undefined,
+                totalSteps: (data.totalSteps as number) ?? undefined,
+                description: (data.description as string) ?? undefined,
+              },
+            };
+            const newMessages = [...prev];
+            newMessages[state.assistantMessageIndex] = updated;
+            return newMessages;
+          });
+        }
+        break;
+      }
+
+      case 'budget_exceeded': {
+        // v5.0: 预算超出事件 — 写入 msg.budgetExceeded 驱动 BudgetExceededIndicator
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex >= 0) {
+          setMessages((prev) => {
+            if (state.assistantMessageIndex >= prev.length) return prev;
+            const msg = prev[state.assistantMessageIndex];
+            if (msg.role !== 'assistant') return prev;
+            const updated: Message = {
+              ...msg,
+              budgetExceeded: {
+                reason: (data.reason as string) || '',
+                consumedTurns: (data.consumedTurns as number) ?? 0,
+                consumedTokens: (data.consumedTokens as number) ?? 0,
+                maxTurns: (data.maxTurns as number) ?? 0,
+                maxTokens: (data.maxTokens as number) ?? 0,
+              },
+            };
+            const newMessages = [...prev];
+            newMessages[state.assistantMessageIndex] = updated;
+            return newMessages;
+          });
+        }
+        break;
+      }
+
+      case 'complexity_assessment': {
+        // v5.0: 复杂度评估事件 — 写入 msg.complexityAssessment 驱动 ComplexityAssessmentBadge
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex >= 0) {
+          setMessages((prev) => {
+            if (state.assistantMessageIndex >= prev.length) return prev;
+            const msg = prev[state.assistantMessageIndex];
+            if (msg.role !== 'assistant') return prev;
+            const updated: Message = {
+              ...msg,
+              complexityAssessment: {
+                level: (data.level as 'simple' | 'moderate' | 'complex') || 'moderate',
+                estimatedSteps: (data.estimatedSteps as number) ?? 0,
+                reason: (data.reason as string) || '',
+                recommendedMode: (data.recommendedMode as string) || '',
+              },
+            };
+            const newMessages = [...prev];
+            newMessages[state.assistantMessageIndex] = updated;
+            return newMessages;
+          });
+        }
+        break;
+      }
+
       case 'heartbeat':
         break;
 
@@ -1065,6 +1148,182 @@ export function useAgentChat(
           summary,
           meta: `+${added.length} ~${modified.length} -${deleted.length}`,
         }]);
+        break;
+      }
+
+      case 'output_review': {
+        const quality = (data.quality as 'A' | 'B' | 'C' | 'D') || 'C';
+        const issues = (data.issues as string[]) || [];
+        const suggestion = (data.suggestion as string) || '';
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex >= 0) {
+          setMessages((prev) => {
+            if (state.assistantMessageIndex >= prev.length) return prev;
+            const msg = prev[state.assistantMessageIndex];
+            if (msg.role !== 'assistant') return prev;
+            const updated: Message = {
+              ...msg,
+              outputReview: { quality, issues, suggestion },
+            };
+            const newMessages = [...prev];
+            newMessages[state.assistantMessageIndex] = updated;
+            return newMessages;
+          });
+        }
+        break;
+      }
+
+      case 'compaction_notification': {
+        const notification = data.notification as {
+          id: string;
+          message: string;
+          details: {
+            tokensBefore?: number;
+            tokensAfter?: number;
+            reductionRatio?: number;
+            summary?: string;
+          };
+          timestamp: number;
+          read: boolean;
+        } | undefined;
+        if (notification) {
+          const state = blockStateRef.current;
+          if (state.assistantMessageIndex >= 0) {
+            setMessages((prev) => {
+              if (state.assistantMessageIndex >= prev.length) return prev;
+              const msg = prev[state.assistantMessageIndex];
+              if (msg.role !== 'assistant') return prev;
+              const updated: Message = {
+                ...msg,
+                compactionNotification: {
+                  id: notification.id,
+                  message: notification.message,
+                  tokensBefore: notification.details?.tokensBefore,
+                  tokensAfter: notification.details?.tokensAfter,
+                  reductionRatio: notification.details?.reductionRatio,
+                  summary: notification.details?.summary,
+                  timestamp: notification.timestamp,
+                  read: false,
+                },
+              };
+              const newMessages = [...prev];
+              newMessages[state.assistantMessageIndex] = updated;
+              return newMessages;
+            });
+          }
+        }
+        break;
+      }
+
+      // v11.1: 工具执行开始 — 通知前端工具开始执行
+      case 'tool_execution_started': {
+        const toolName = (data.toolName as string) || '';
+        const originalToolName = (data.originalToolName as string) || undefined;
+        const toolCallId = (data.toolCallId as string) || '';
+
+        if (toolName) {
+          const state = blockStateRef.current;
+          if (state.assistantMessageIndex >= 0) {
+            setMessages((prev) => {
+              if (state.assistantMessageIndex >= prev.length) return prev;
+              const msg = prev[state.assistantMessageIndex];
+              if (msg.role !== 'assistant') return prev;
+              const updated: Message = {
+                ...msg,
+                toolExecutionStatus: {
+                  ...(msg.toolExecutionStatus || {}),
+                  [toolCallId]: {
+                    toolName,
+                    originalToolName,
+                    status: 'running',
+                    startTime: Date.now(),
+                  },
+                },
+              };
+              const newMessages = [...prev];
+              newMessages[state.assistantMessageIndex] = updated;
+              return newMessages;
+            });
+          }
+        }
+        break;
+      }
+
+      // v11.1: 工具执行完成 — 更新执行状态
+      case 'tool_execution_completed': {
+        const toolName = (data.toolName as string) || '';
+        const toolCallId = (data.toolCallId as string) || '';
+        const success = (data.success as boolean) ?? true;
+        const errorType = (data.errorType as string) || undefined;
+        const durationMs = (data.durationMs as number) || 0;
+        const retryCount = (data.retryCount as number) || 0;
+        const truncated = (data.truncated as boolean) || false;
+
+        if (toolName) {
+          const state = blockStateRef.current;
+          if (state.assistantMessageIndex >= 0) {
+            setMessages((prev) => {
+              if (state.assistantMessageIndex >= prev.length) return prev;
+              const msg = prev[state.assistantMessageIndex];
+              if (msg.role !== 'assistant') return prev;
+              const updated: Message = {
+                ...msg,
+                toolExecutionStatus: {
+                  ...(msg.toolExecutionStatus || {}),
+                  [toolCallId]: {
+                    toolName,
+                    status: success ? 'completed' : 'failed',
+                    endTime: Date.now(),
+                    durationMs,
+                    retryCount,
+                    truncated,
+                    errorType,
+                  },
+                },
+              };
+              const newMessages = [...prev];
+              newMessages[state.assistantMessageIndex] = updated;
+              return newMessages;
+            });
+          }
+        }
+        break;
+      }
+
+      // v6.0/v11.1: 熔断器触发 — 通知前端工具被熔断
+      case 'circuit_breaker_triggered': {
+        const toolName = (data.toolName as string) || '';
+        const failureCount = (data.failureCount as number) || 0;
+        const cbState = (data.state as string) || 'open';
+        const alternativeTool = (data.alternativeTool as string) || undefined;
+
+        if (toolName) {
+          const state = blockStateRef.current;
+          if (state.assistantMessageIndex >= 0) {
+            setMessages((prev) => {
+              if (state.assistantMessageIndex >= prev.length) return prev;
+              const msg = prev[state.assistantMessageIndex];
+              if (msg.role !== 'assistant') return prev;
+              const circuitBreakerEvents = msg.circuitBreakerEvents || [];
+              const updated: Message = {
+                ...msg,
+                circuitBreakerEvents: [
+                  ...circuitBreakerEvents,
+                  {
+                    toolName,
+                    failureCount,
+                    state: cbState as 'open' | 'half_open',
+                    alternativeTool,
+                    timestamp: Date.now(),
+                  },
+                ],
+              };
+              const newMessages = [...prev];
+              newMessages[state.assistantMessageIndex] = updated;
+              return newMessages;
+            });
+          }
+        }
         break;
       }
 
@@ -1646,6 +1905,12 @@ export function useAgentChat(
 
   useEffect(() => {
     if (!syncToSession) return;
+    // Bug Fix: 会话切换后第一次渲染跳过同步，因为此时 messages 仍是旧会话的消息
+    // 旧消息同步到新会话会导致：错误标题、空会话提前出现在侧边栏、历史被覆盖
+    if (sessionSwitchingRef.current) {
+      sessionSwitchingRef.current = false;
+      return;
+    }
     if (messages.length > 0 && currentSession) {
       const lastMsg = messages[messages.length - 1];
       const isStreaming = !!lastMsg?.isStreaming;

@@ -16,6 +16,7 @@
 
 import { getUserSkills, getUserSkillById } from '../dao/skills.js';
 import { BUILTIN_SKILLS } from '@src/types/skill-core';
+import { getFolderSkillsForMatching } from '../engine/skillRuntimeBridge.js';
 import { logger } from '../logger.js';
 import type {
   MatchMode,
@@ -183,6 +184,17 @@ function collectAllSkills(): Array<{
     }
   } catch {
     // 数据库查询失败时只返回内置技能
+  }
+
+  // folder-skill（P0-A 打通的声明式技能）——P2-1a 聚合层：
+  // 吸收 openclaw discovery 方法论，把此前匹配引擎失明的 folder-skill 纳入统一匹配。
+  try {
+    const knownIds = new Set(skills.map((s) => s.id));
+    for (const f of getFolderSkillsForMatching(knownIds)) {
+      skills.push(f);
+    }
+  } catch {
+    // skillRuntimeBridge 不可用时跳过，不阻塞匹配
   }
 
   return skills;
@@ -383,6 +395,14 @@ function buildSkillNameMap(): Map<string, string> {
     const userSkills = getUserSkills();
     for (const skill of userSkills) {
       nameMap.set(skill.id as string, skill.name as string);
+    }
+  } catch {
+    // 忽略
+  }
+  // folder-skill 也纳入 nameMap，使匹配结果能显示技能名（而非仅 ID）
+  try {
+    for (const f of getFolderSkillsForMatching()) {
+      if (!nameMap.has(f.id)) nameMap.set(f.id, f.name);
     }
   } catch {
     // 忽略

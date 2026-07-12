@@ -2,7 +2,7 @@
 
 > 本文件是产品（CDFKnowClow / `cross-wms`）与上游 OpenClaw 之间 **fork 边界的权威说明**。
 > 配套：`openclaw-vendor-pin.json`（版本锚点）、`scripts/sync-openclaw.sh`（drift 检测）。
-> 最后更新：2026-07-08。
+> 最后更新：2026-07-12（v9.0 现状复核）。
 
 ---
 
@@ -83,7 +83,9 @@
 | 3 | `extensions/memory-lancedb/index.ts` | OpenClaw 扩展 | `@cdf-know/memory-host-sdk`（无 lancedb 直连） | 同上 |
 | 4 | `scripts/create-dmg.sh` | 打包脚本 | **`cross-wms/scripts/create-dmg.sh`（产品实际打包脚本）** | **建议 port，见下** |
 
-### 修复 #4（DMG 背景图丢失）应 port 进 `cross-wms/scripts/create-dmg.sh`
+### 修复 #4（DMG 背景图丢失）— 已 port 进 `cross-wms/scripts/create-dmg.sh`
+
+> **状态（2026-07-12 复核）**：该修复**已实际落地**——`scripts/create-dmg.sh` 现含 `wait_for_dsstore_flush()`（L154）与 `attempt >= 8` 重试阈值（L186），并在打包流程调用（L286）。无需再应用，原 diff 仅供参考。
 
 上游修复的核心：关窗后 Finder 异步写 `.DS_Store`（含背景图引用），过早 `force detach` 会丢弃未刷盘内容。
 
@@ -117,4 +119,4 @@
 1. **刷新 vendored `openclaw/`**：`bash scripts/sync-openclaw.sh --ref <上游>`，审阅 `modified` 的 [SAFE]/[REVIEW]，仅把 SAFE 同步进 `openclaw/` 与 `@cdf-know/*` 对应面，更新 `openclaw-vendor-pin.json`。
 2. **CI 闸门（可选）**：`bash scripts/sync-openclaw.sh --ref <上游> --fail-on-drift` 接入 CI，drift 超阈值即失败。
 3. **不要**反向删除 `added(vendor)` 中的产品布局文件（`.github`/`.agents`/`packages/` 重构）。
-4. **ReAct v6.0 完成前**，不要切换地基（submodule / npm 依赖 / 维持硬 fork 待定）—— 中途换地基风险高。
+4. **地基决策（v9.0，2026-07-12 复核）**：维持硬 fork + 已生效的 drift CI（`sync-openclaw.sh --fail-on-drift` + `openclaw-drift.yml`），**不切 submodule / npm 依赖**。原因：① 运行时是 `@cdf-know/*` 工作区包，`openclaw/` 仅是 git 忽略的参考副本，切 submodule 对运行时无收益；② FORK_BOUNDARY 初版写于"ReAct v6.0 完成前不切地基"，但 v6 重写已被 v9.0 简化取代，该前提已失效；③ 切地基在中途风险高，当前硬 fork + drift 闸门已满足"防退化"目标。

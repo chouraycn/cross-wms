@@ -14,6 +14,10 @@ import { configHotReload } from '../services/configHotReload.js';
 import { API_PREFIX } from '../apiVersion.js';
 import { getMemorySummary } from '../logging/diagnostic-memory.js';
 import { TimerManager } from '../core/timerManager.js';
+// P1-6: 健康检查聚合工具稳定性状态
+import { toolExecutionStats } from '../engine/toolExecutionStats.js';
+import { toolExecutionQueue } from '../engine/toolExecutionQueue.js';
+import { toolFallbackManager } from '../engine/toolFallbackStrategy.js';
 
 const router = Router();
 
@@ -32,17 +36,39 @@ router.get('/', (_req, res) => {
 /**
  * GET /health/detailed
  * 详细健康状态
+ * P1-6: 聚合工具执行稳定性状态，有 unhealthy 工具时降低 overall status
  */
 router.get('/detailed', (_req, res) => {
   const channelHealth = channelHealthMonitor.getAllHealth();
   const systemHealth = channelHealthMonitor.getSystemHealth();
   const configEntries = configHotReload.getAllEntries();
 
+  // P1-6: 聚合工具执行稳定性状态
+  const toolHealthList = toolExecutionStats.getAllHealthStatus();
+  const unhealthyTools = toolHealthList.filter(t => t.status === 'unhealthy');
+  const degradedTools = toolHealthList.filter(t => t.status === 'degraded');
+  const queueStats = toolExecutionQueue.getStats();
+  const degradedFallbacks = toolFallbackManager.getAllStates().filter(s => s.isDegraded);
+
+  // 工具稳定性影响 overall status
+  let toolOverallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+  if (unhealthyTools.length > 0) {
+    toolOverallStatus = 'unhealthy';
+  } else if (degradedTools.length > 0 || degradedFallbacks.length > 0 || queueStats.queueLength >= 10) {
+    toolOverallStatus = 'degraded';
+  }
+
+  // 合并 system status
+  const mergedSystemStatus =
+    toolOverallStatus === 'unhealthy' ? 'unhealthy' :
+    (systemHealth.status === 'healthy' && toolOverallStatus === 'degraded') ? 'degraded' :
+    systemHealth.status;
+
   res.json({
     time: new Date().toISOString(),
     version: process.env.APP_VERSION || '1.0.0',
     system: {
-      status: systemHealth.status,
+      status: mergedSystemStatus,
       unhealthyChannels: systemHealth.unhealthyChannels,
       uptime: process.uptime(),
       memory: {
@@ -65,6 +91,28 @@ router.get('/detailed', (_req, res) => {
       avgLatency: ch.avgLatency,
       lastError: ch.lastError,
     })),
+    // P1-6: 工具执行稳定性状态
+    tools: {
+      overallStatus: toolOverallStatus,
+      totalTracked: toolHealthList.length,
+      healthy: toolHealthList.filter(t => t.status === 'healthy').length,
+      degraded: degradedTools.length,
+      unhealthy: unhealthyTools.length,
+      degradedFallbacks: degradedFallbacks.length,
+      queue: {
+        length: queueStats.queueLength,
+        active: queueStats.activeCount,
+        completed: queueStats.completedCount,
+        timeouts: queueStats.timeoutCount,
+        avgWaitMs: queueStats.avgWaitTimeMs,
+      },
+      unhealthyTools: unhealthyTools.map(t => ({
+        toolName: t.toolName,
+        healthScore: t.healthScore,
+        consecutiveFailures: t.consecutiveFailures,
+        suggestion: t.suggestion,
+      })),
+    },
     config: {
       watchedFiles: configEntries.length,
       files: configEntries.map(e => ({

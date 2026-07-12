@@ -389,47 +389,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       )}
 
       {/* 收起状态：无顶部按钮（侧边栏切换和新对话按钮由 ChatThread 顶部栏提供） */}
-      {collapsed && (
-        <>
-          {/* 输入内容预览 — 仅收起时且有输入内容时显示 */}
-          {chatInputValue.trim() && (
-            <Box
-              sx={{
-                position: 'fixed',
-                top: nativeApp ? '15px' : '10px',
-                left: nativeApp ? (isFullscreen ? 76 : 136) : 74,
-                zIndex: 1400,
-                display: 'flex',
-                alignItems: 'center',
-                height: 25.92,
-                px: 1.5,
-                borderRadius: '6.48px',
-                backgroundColor: nativeApp ? 'transparent' : (isDark ? 'rgba(20, 20, 20, 0.6)' : 'rgba(240, 240, 240, 0.6)'),
-                // v3.2: WKWebView 中禁用 backdrop-filter，毛玻璃效果性能差导致卡顿
-                ...(nativeApp || IS_WKWEBVIEW ? {} : {
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                }),
-                border: nativeApp ? 'none' : `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
-                maxWidth: 200,
-              }}
-              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-            >
-              <Typography
-                sx={{
-                  fontSize: 12,
-                  color: gs.textSecondary,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {chatInputValue.trim()}
-              </Typography>
-            </Box>
-          )}
-        </>
-      )}
+      {/* v1.7.85: 移除输入内容预览 — 收起侧边栏后上方不再显示多余的输入框文字 */}
+      {collapsed && null}
 
       {/* Logo — 原生 App 模式下单独显示（避让顶部按钮区域），网页端模式下已包含在 top bar 中 */}
       {nativeApp && !collapsed && <SidebarLogo collapsed={collapsed} />}

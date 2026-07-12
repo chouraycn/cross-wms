@@ -1,5 +1,6 @@
 #!/usr/bin/env zsh
 set -euo pipefail
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 # Create a styled DMG containing the app bundle + /Applications symlink.
 #
@@ -155,7 +156,7 @@ wait_for_dsstore_flush() {
   local prev_mtime=""
   local mtime
   local i
-  sync
+  /usr/sbin/sync 2>/dev/null || true
   for i in {1..12}; do
     if [[ -f "$path" ]]; then
       mtime="$(stat -f '%m' "$path" 2>/dev/null || echo '')"
@@ -164,7 +165,7 @@ wait_for_dsstore_flush() {
       fi
       prev_mtime="$mtime"
     fi
-    sleep 0.5
+    /bin/sleep 0.5
   done
   # 超时不报错：仍交给 detach_dmg 处理，但此时大概率已落盘
   return 0
@@ -191,7 +192,7 @@ detach_dmg() {
       return
     fi
     # Finder can retain the just-closed volume briefly on macOS runners.
-    sleep 2
+    /bin/sleep 2
   done
   return 1
 }

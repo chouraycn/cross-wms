@@ -33,6 +33,8 @@ import {
   OutputRepairedNotice,
   BudgetAdjustedNotice,
 } from './notices/index.js';
+import QualityBadge from './QualityBadge.js';
+import CompactionNotificationBanner from './CompactionNotificationBanner.js';
 
 interface BotMessageContentProps {
   msg: Message;
@@ -287,6 +289,9 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
         userSelect: 'text',
         WebkitUserSelect: 'text',
         position: 'relative',
+        '&:hover .msg-actions': {
+          opacity: 1,
+        },
         '& .markdown-body h1, & .markdown-body h2, & .markdown-body h3': {
           fontSize: 'inherit',
           fontWeight: 600,
@@ -725,13 +730,14 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
         </Box>
       )}
 
-      {/* 操作按钮：复制 + 编辑 + 删除 + 引用 + 重新生成（一直显示，非流式输出时） */}
+      {/* 操作按钮：复制 + 编辑 + 删除 + 引用 + 重新生成（悬停显示，非流式输出时） */}
       {!msg.isStreaming && (
-        <Box sx={{
+        <Box className="msg-actions" sx={{
           display: 'flex',
           gap: 0.5,
           mt: 0.5,
-          opacity: 1,
+          opacity: 0,
+          transition: 'opacity 0.2s ease',
         }}>
           <Tooltip title={copiedId === msg.id ? '已复制' : '复制'}>
             <IconButton
@@ -848,6 +854,22 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
         </Box>
       )}
 
+      {/* v11.0: 压缩通知横幅 */}
+      {msg.compactionNotification && (
+        <CompactionNotificationBanner notification={msg.compactionNotification} />
+      )}
+
+      {/* v11.0: 质量评分徽章 — 非流式时显示 */}
+      {!msg.isStreaming && msg.outputReview && (
+        <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <QualityBadge
+            quality={msg.outputReview.quality}
+            issues={msg.outputReview.issues}
+            suggestion={msg.outputReview.suggestion}
+          />
+        </Box>
+      )}
+
       {/* 文件预览模态框 */}
       {previewFile && (
         <GeneratedFilePreviewModal
@@ -914,6 +936,8 @@ export const BotMessageContent = React.memo<BotMessageContentProps>(({
   if (pm.replanTriggered !== nm.replanTriggered) return false;
   if (pm.agentStatuses !== nm.agentStatuses) return false;
   if (pm.agentEvents !== nm.agentEvents) return false;
+  if (pm.outputReview !== nm.outputReview) return false;
+  if (pm.compactionNotification !== nm.compactionNotification) return false;
 
   if ((prev.copiedId === pm.id || next.copiedId === nm.id) && prev.copiedId !== next.copiedId) return false;
 

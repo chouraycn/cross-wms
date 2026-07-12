@@ -8,6 +8,7 @@ import type {
 import type { MessageSendContext, ChannelMessageSendResult } from "./message/types.js";
 import { createBuiltinChannelPlugin } from "./builtin.js";
 import type { ChannelPlugin } from "./plugin.js";
+import { createHmac } from "node:crypto";
 
 export const DINGTALK_CHANNEL_ID = "dingtalk" as ChannelId;
 
@@ -16,6 +17,8 @@ interface DingTalkAccountConfig {
   appSecret: string;
   accessToken?: string;
   accessTokenExpiresAt?: number;
+  /** 事件订阅「签名 Token」，用于校验回调签名（可选，配置后启用严格校验） */
+  token?: string;
 }
 
 let cachedAccessToken: string | null = null;
@@ -85,6 +88,7 @@ export function createDingTalkChannelPlugin(): ChannelPlugin {
           appSecret: String(dingTalkConfig.appSecret),
           accessToken: dingTalkConfig.accessToken as string | undefined,
           accessTokenExpiresAt: dingTalkConfig.accessTokenExpiresAt as number | undefined,
+          token: dingTalkConfig.token as string | undefined,
         };
       }
       return null;
@@ -153,4 +157,128 @@ export function createDingTalkChannelPlugin(): ChannelPlugin {
     config: dingTalkChannelConfig,
     message: dingTalkChannelMessageAdapter,
   });
+}
+
+/** 钉钉 webhook 事件解析结果 */
+export interface DingTalkWebhookResult {
+  success: boolean;
+  type?: string;
+  message?: {
+    chatId: string;
+    userId: string;
+    messageId: string;
+    text: string;
+    timestamp: number;
+    chatType: "direct" | "group";
+  };
+  error?: string;
+}
+
+/** 校验钉钉事件订阅回调签名：Base64(HmacSHA256(nonce + timestamp + msg, token)) */
+function verifyDingTalkSignature(
+  token: string,
+  nonce: string,
+  timestamp: string,
+  msg: string,
+  signature: string,
+): boolean {
+  const base = nonce + timestamp + msg;
+  const expected = createHmac("sha256", token).update(base).digest("base64");
+  return expected === signature;
+}
+
+/**
+ * 解析钉钉 webhook 事件（独立函数，供 webhook 路由调用）。
+ *
+ * 钉钉回调两种形态：
+ *  A) 事件订阅包裹：{ msg, timeStamp, nonce }（msg 为 JSON 字符串或明文，未加密时直接是消息体）
+ *  B) 已解包的直接消息体：{ msgtype, content, senderId, conversationId, ... }
+ *
+ * 配置签名 Token 后会严格校验回调签名；未配置则放行（与 feishu/wecom 的宽松策略保持一致）。
+ */
+export function parseDingTalkWebhook(
+  body: unknown,
+  account: DingTalkAccountConfig,
+  options?: { signature?: string; timestamp?: string; nonce?: string },
+): DingTalkWebhookResult {
+  const data = (body ?? {}) as Record<string, unknown>;
+  const msgField = data.msg;
+  const timeStamp = String(options?.timestamp ?? data.timeStamp ?? "");
+  const nonce = String(options?.nonce ?? data.nonce ?? "");
+
+  // 签名校验（配置了 token 时）
+  if (account.token && options?.signature) {
+    const rawMsg = typeof msgField === "string" ? msgField : JSON.stringify(msgField ?? "");
+    if (!verifyDingTalkSignature(account.token, nonce, timeStamp, rawMsg, options.signature)) {
+      return { success: false, error: "Invalid DingTalk signature" };
+    }
+  }
+
+  // 尝试解析包裹层 msg（JSON 字符串或对象）
+  const tryParseMsg = (): Record<string, unknown> | null => {
+    if (typeof msgField === "string" && msgField.trim().startsWith("{")) {
+      try {
+        return JSON.parse(msgField) as Record<string, unknown>;
+      } catch {
+        return null;
+      }
+    }
+    if (msgField && typeof msgField === "object") return msgField as Record<string, unknown>;
+    return null;
+  };
+
+  const parsedMsg = tryParseMsg();
+
+  // URL 验证（check_url）
+  if (parsedMsg?.eventType === "check_url" || data.eventType === "check_url") {
+    return { success: true, type: "url_verification" };
+  }
+
+  // 形态 A：包裹层内是消息事件（机器人接收消息格式）
+  if (parsedMsg) {
+    const msgtype = String(parsedMsg.msgtype || "");
+    const content = parsedMsg.content as Record<string, unknown> | undefined;
+    const text = content ? String(content.text || "") : String(parsedMsg.text || "");
+    if (msgtype === "text" || (text && msgtype === "")) {
+      const isGroup = String(parsedMsg.conversationType) === "2";
+      const messageId = String(parsedMsg.msgId || "");
+      if (messageId) {
+        return {
+          success: true,
+          type: "message",
+          message: {
+            chatId: String(parsedMsg.conversationId || parsedMsg.chatId || ""),
+            userId: String(parsedMsg.senderId || parsedMsg.senderStaffId || ""),
+            messageId,
+            text,
+            timestamp: Number(parsedMsg.createAt || parsedMsg.createTime || Date.now()),
+            chatType: isGroup ? "group" : "direct",
+          },
+        };
+      }
+    }
+  }
+
+  // 形态 B：已解包的直接消息体
+  const msgtypeB = String(data.msgtype || "");
+  const contentB = data.content as Record<string, unknown> | undefined;
+  const textB = contentB ? String(contentB.text || "") : String(data.text || "");
+  const messageIdB = String(data.msgId || "");
+  if ((msgtypeB === "text" || contentB) && messageIdB) {
+    const isGroupB = String(data.conversationType) === "2";
+    return {
+      success: true,
+      type: "message",
+      message: {
+        chatId: String(data.conversationId || data.chatId || ""),
+        userId: String(data.senderId || data.senderStaffId || ""),
+        messageId: messageIdB,
+        text: textB,
+        timestamp: Number(data.createAt || data.createTime || Date.now()),
+        chatType: isGroupB ? "group" : "direct",
+      },
+    };
+  }
+
+  return { success: false, error: "Unsupported DingTalk event" };
 }

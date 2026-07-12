@@ -1,16 +1,35 @@
 /**
- * Skill Tool Bridge — Skill <-> Tool Calling 桥接层
+ * Skill Tool Bridge — Skill <-> Tool Calling 桥接层（`skill_<id>` 逐技能入口）
  *
- * 将 Skill 注册为 OpenAI Tool Calling 格式，使 Agent ReAct 循环可以自动调用 Skill。
+ * 将**每个**可执行 Skill 注册为一个独立的 OpenAI Tool Calling 函数（`skill_<id>`），
+ * 使 Agent ReAct 循环可以像调用普通函数工具一样直接调用 Skill。
  *
  * 命名规范：
  * - Skill Tool:  `skill_<id>`（如 `skill_fs_read`, `skill_calc`）
  * - MCP Tool:    `mcp__<server>__<tool>`（现有格式）
  * - Builtin Tool: 直接使用原名（如 `read_file`, `execute_command`）
  *
- * 集成方式：
- *   skillToolBridge 是独立的桥接层，后续集成到 toolExecutor.ts 时
- *   只需在 tool call 分发逻辑中调用 handleSkillToolCall()。
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │ 技能系统双入口边界（务必先读，避免与 skillRuntimeBridge 混淆）              │
+ * ├─────────────────────────────────────────────────────────────────────────┤
+ * │ 本项目技能对 Agent 有两条并存的暴露路径，分工如下：                        │
+ * │                                                                           │
+ * │ 1) skillToolBridge（本文件）——「逐技能函数工具」入口                       │
+ * │    • 形态：每个技能 = 一个 `skill_<id>` 函数工具，参数即技能入参。          │
+ * │    • 适用：**带可执行 handler** 的技能（skillRegistry 中有 handler 的项）。 │
+ * │    • 接线：当前仅被 toolExecutor.ts 使用                                    │
+ * │      （getSkillToolDefinitions 注入工具列表 + handleSkillToolCall 分发）。  │
+ * │                                                                           │
+ * │ 2) skillRuntimeBridge——「单一元工具」入口（渐进式披露）                     │
+ * │    • 形态：全部技能共用一个 `skill` 元工具（list / use 两个动作）。         │
+ * │    • 适用：**声明式 SKILL.md 文档**技能（openclaw/业务 34 个），            │
+ * │      它们是指令文档而非可执行函数，逐个注册会撑爆工具列表且调用即报错。     │
+ * │    • 接线：toolRegistry(注册 skill 元工具) / skillRouter /                 │
+ * │      skillLifecycle / matchingService —— 是当前的主力/权威路径。           │
+ * │                                                                           │
+ * │ 选择规则：技能有真实可执行 handler → skill_<id>（本文件）；                 │
+ * │           技能是 SKILL.md 指令文档 → skill 元工具（skillRuntimeBridge）。   │
+ * └─────────────────────────────────────────────────────────────────────────┘
  *
  * 使用方式：
  *   // 获取 Skill Tool 定义（添加到 tools 列表）

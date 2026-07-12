@@ -336,9 +336,9 @@ export async function doctorSkill(skillPath: string): Promise<DoctorResult> {
   // 检查目录名与 ID 一致性（如果是路径输入）
   if (!isId) {
     const dirName = path.basename(dirPath);
-    const SKILL_ID_PATTERN = /^[a-z][a-z0-9_]*$/;
+    const SKILL_ID_PATTERN = /^[a-z][a-z0-9_-]*$/;
     if (!SKILL_ID_PATTERN.test(dirName)) {
-      warnings.push(`目录名 '${dirName}' 不符合 Skill ID 命名规范（小写字母+下划线+数字）`);
+      warnings.push(`目录名 '${dirName}' 不符合 Skill ID 命名规范（小写字母+下划线+数字+连字符）`);
     }
   }
 

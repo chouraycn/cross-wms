@@ -56,6 +56,7 @@ import {
   buildApiMessages,
   hasImageAttachment,
 } from '../engine/buildApiMessages.js';
+import { resolveSkillContext, extractContextTexts } from '../engine/skillRouter.js';
 
 /**
  * 错误分类与格式化
@@ -396,6 +397,12 @@ async function executeQueuedMessage(
 
     // 构建 API 消息（统一调用 buildApiMessages 公共函数）
     const dbMessages = getSessionMessages(sessionId);
+    // P2-1b 智能技能路由：按 query + 上下文自动匹配相关技能并注入 prompt
+    const resolvedSkillContext = await resolveSkillContext(
+      params.skillContext,
+      params.message,
+      extractContextTexts(dbMessages, 6),
+    );
     const built = await buildApiMessages({
       sessionId,
       message: params.message,
@@ -403,7 +410,7 @@ async function executeQueuedMessage(
       finalModelConfig,
       dbMessages,
       conversationHistory: params.conversationHistory,
-      skillContext: params.skillContext,
+      skillContext: resolvedSkillContext,
       attachments: params.attachments,
       hasImage: hasImageAttachment(params.attachments),
     });

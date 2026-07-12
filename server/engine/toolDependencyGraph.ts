@@ -3,15 +3,20 @@ import { logger } from '../logger.js';
 /**
  * ToolDependencyGraph — 工具依赖图 + 拓扑排序
  *
- * 构建工具调用之间的依赖关系 DAG，按拓扑层级并行执行。
- * 同层级无依赖工具可并行，跨层级串行执行。
+ * 构建工具调用之间的依赖关系 DAG，并计算拓扑层级（parallelizable / 串行）。
+ *
+ * ⚠️ 当前状态：分析 / 诊断用途（analysis-only）
+ *   实际产出（layers / edges）目前仅用于输出 debug 日志（见 toolExecutor.ts），
+ *   并未驱动真实的并行执行。工具调用仍保持串行，以保全审批 / 熔断 / 钩子流程。
+ *   后续若启用并行，可基于 topologicalSort() 的 layers 实现：
+ *   parallelizable 层用 Promise.all 并发，其余串行。
  *
  * 依赖关系来源：
  * 1. 显式声明：工具 A 的输出是工具 B 的输入参数
  * 2. 隐式推断：同类型工具（如多个 wms_*）按参数名判断顺序
  * 3. 权限约束：confirm/high-risk 工具需串行执行
  *
- * v6.0: P2-4 并行工具执行优化
+ * v6.0: P2-4 并行工具执行优化（当前为分析阶段）
  */
 
 // ===================== 类型定义 =====================

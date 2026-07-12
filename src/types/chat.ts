@@ -291,6 +291,43 @@ export interface Message {
   error?: string;
   /** v9.0: Content Block 数组（双轨并行，优先渲染此字段，回退到扁平字段） */
   contentBlocks?: ContentBlock[];
+  /** v11.0: 输出审查结果 */
+  outputReview?: {
+    quality: 'A' | 'B' | 'C' | 'D';
+    issues: string[];
+    suggestion: string;
+  };
+  /** v11.0: 压缩通知 */
+  compactionNotification?: {
+    id: string;
+    message: string;
+    tokensBefore?: number;
+    tokensAfter?: number;
+    reductionRatio?: number;
+    summary?: string;
+    timestamp: number;
+    read: boolean;
+  };
+  /** v11.1: 工具执行实时状态（key = toolCallId） */
+  toolExecutionStatus?: Record<string, {
+    toolName: string;
+    originalToolName?: string;
+    status: 'running' | 'completed' | 'failed';
+    startTime?: number;
+    endTime?: number;
+    durationMs?: number;
+    retryCount?: number;
+    truncated?: boolean;
+    errorType?: string;
+  }>;
+  /** v11.1: 熔断器触发事件列表 */
+  circuitBreakerEvents?: Array<{
+    toolName: string;
+    failureCount: number;
+    state: 'open' | 'half_open';
+    alternativeTool?: string;
+    timestamp: number;
+  }>;
 }
 
 /** 会话状态 */
@@ -529,6 +566,31 @@ export interface CircuitBreakerTriggeredEvent {
   failureCount: number;
   state: 'half_open' | 'open';
   alternativeTool?: string;
+}
+
+/** v11.1: 工具执行开始事件 */
+export interface ToolExecutionStartedEvent {
+  type: 'tool_execution_started';
+  toolName: string;
+  originalToolName?: string;
+  toolCallId: string;
+  sessionId?: string;
+  timestamp: number;
+}
+
+/** v11.1: 工具执行完成事件 */
+export interface ToolExecutionCompletedEvent {
+  type: 'tool_execution_completed';
+  toolName: string;
+  toolCallId: string;
+  sessionId?: string;
+  success: boolean;
+  errorType?: string;
+  durationMs: number;
+  retryCount: number;
+  truncated: boolean;
+  resultSize: number;
+  timestamp: number;
 }
 
 /** v6.0: 复杂度升级事件 */

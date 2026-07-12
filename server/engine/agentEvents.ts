@@ -37,6 +37,8 @@ export type AgentEventStream =
   | 'compaction'
   | 'plan'
   | 'heartbeat'
+  | 'output_review'
+  | 'compaction_notification'
   | (string & Record<string, never>);
 
 // ===================== Item 事件类型 =====================

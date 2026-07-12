@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo, Suspense } fr
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Paper, Chip, Typography, Popover, useTheme, IconButton, Collapse, Tooltip,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
@@ -35,7 +36,8 @@ import type { SendAgentMessageOptions } from '../../hooks/useAgentChat';
 import { uploadFile } from '../../services/api';
 import { API_BASE_URL } from '../../constants/api';
 import { useAiEngineSettings } from '../../contexts/AppSettingsContext';
-import { SLASH_COMMANDS } from '../../hooks/useSlashCommands';
+import { SLASH_COMMANDS, SlashCommand } from '../../hooks/useSlashCommands';
+import { SlashCommandSelector } from './SlashCommandSelector';
 
 
 // ===================== Props =====================
@@ -104,7 +106,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     ensureInitialized();
   }, [ensureInitialized]);
   const { settings: aiEngineSettings } = useAiEngineSettings();
-  const { session } = useChatSession();
+  const { session, handleNewChat } = useChatSession();
   // v-latest: 输入框始终保持展开（高）高度，取消点击后变高的行为，
   // 避免光标与提示文字因高度跳变而位移/变形
   const [inputExpanded] = useState(true);
@@ -115,6 +117,10 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   const [inputValue, setInputValue] = useState('');
   const [skillFocusIndex, setSkillFocusIndex] = useState(-1);
   const [caretPos, setCaretPos] = useState<{ x: number; y: number; h: number } | null>(null);
+
+  // 斜杠命令状态
+  const [showSlashCommands, setShowSlashCommands] = useState(false);
+  const [slashCommandFocusIndex, setSlashCommandFocusIndex] = useState(0);
 
   // 会话引用状态
   const [showSessionReference, setShowSessionReference] = useState(false);
@@ -131,6 +137,12 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   // 语音输入状态
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
+
+  // 输入框聚焦状态
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  // 清空对话确认对话框
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const handleVoiceInput = useCallback(() => {
     if (isRecording) {
@@ -384,6 +396,16 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   }, [showSkillSelector, slashQuery]);
   const slashFilteredCount = slashFilteredSkills.length;
 
+  // 过滤后的斜杠命令列表
+  const filteredSlashCommands = useMemo(() => {
+    if (!showSlashCommands) return [];
+    const q = slashQuery.toLowerCase();
+    return SLASH_COMMANDS.filter(cmd =>
+      cmd.name.toLowerCase().includes(q) ||
+      cmd.description.toLowerCase().includes(q)
+    ).slice(0, 10);
+  }, [showSlashCommands, slashQuery]);
+
   // 从 ModelsContext 中读取模型列表（仅启用的模型），Auto 作为首选项
   const MODEL_OPTIONS: ModelOption[] = [
     { id: 'auto', name: 'Auto', provider: 'auto', description: '根据任务自动选择最合适的模型' },
@@ -585,7 +607,9 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     if (currentLine.startsWith('/')) {
       const query = currentLine.slice(1).trim();
       setSlashQuery(query);
-      setShowSkillSelector(true);
+      setShowSlashCommands(true);
+      setSlashCommandFocusIndex(0);
+      setShowSkillSelector(false);
       setShowSkills(false);
       setShowSessionReference(false);
       setSkillFocusIndex(-1);
@@ -594,10 +618,12 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       setShowSessionReference(true);
       setShowSkills(false);
       setShowSkillSelector(false);
+      setShowSlashCommands(false);
       setSkillFocusIndex(-1);
     } else {
       setShowSkillSelector(false);
       setShowSkills(false);
+      setShowSlashCommands(false);
       setSkillFocusIndex(-1);
     }
   }, []);
@@ -646,6 +672,33 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       }, 0);
     }
   };
+
+  // 选择斜杠命令
+  const handleSlashCommandSelect = useCallback((cmd: SlashCommand) => {
+    setShowSlashCommands(false);
+    setSlashCommandFocusIndex(0);
+    if (editableRef.current) {
+      const lines = inputValue.split('\n');
+      const lastLineIndex = lines.length - 1;
+      if (lines[lastLineIndex].startsWith('/')) {
+        lines[lastLineIndex] = `/${cmd.name} `;
+      }
+      editableRef.current.innerText = lines.join('\n');
+      setInputValue(editableRef.current.innerText);
+      setTimeout(() => {
+        if (editableRef.current) {
+          editableRef.current.focus();
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(editableRef.current);
+          range.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+          updateCaretPos();
+        }
+      }, 0);
+    }
+  }, [inputValue]);
 
   /** 从会话引用选择器中选择会话 */
   const handleSessionSelect = (session: { id: string; title: string }) => {
@@ -778,6 +831,73 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
   };
   handleSendRef.current = handleSend;
 
+  // 清空对话
+  const handleClearChat = useCallback(() => {
+    setShowClearConfirm(true);
+  }, []);
+
+  const confirmClearChat = useCallback(() => {
+    if (session?.id) {
+      setSelectedSkill(null);
+      setReferencedSessions([]);
+      setPendingAttachments([]);
+      setInputValue('');
+      if (editableRef.current) {
+        editableRef.current.innerHTML = '';
+      }
+      window.dispatchEvent(new CustomEvent('cdf-chat-clear'));
+      showToast('对话已清空', 'success', 2000);
+    }
+    setShowClearConfirm(false);
+  }, [session?.id, showToast]);
+
+  // 复制对话
+  const handleCopyChat = useCallback(async () => {
+    if (!session?.messages || session.messages.length === 0) {
+      showToast('没有可复制的对话内容', 'info', 2000);
+      return;
+    }
+    const text = session.messages
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => `${m.role === 'user' ? '用户' : 'AI'}: ${m.content}`)
+      .join('\n\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('对话已复制到剪贴板', 'success', 2000);
+    } catch {
+      showToast('复制失败，请手动复制', 'error', 2000);
+    }
+  }, [session?.messages, showToast]);
+
+  // 导出对话
+  const handleExportChat = useCallback(() => {
+    if (!session?.messages || session.messages.length === 0) {
+      showToast('没有可导出的对话内容', 'info', 2000);
+      return;
+    }
+    const exportData = {
+      title: session.title || '对话记录',
+      exportTime: new Date().toISOString(),
+      messages: session.messages
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .map(m => ({
+          role: m.role,
+          content: m.content,
+          timestamp: m.timestamp,
+        })),
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${session.title || '对话记录'}_${new Date().toLocaleDateString()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('对话已导出', 'success', 2000);
+  }, [session, showToast]);
+
   /**
    * v1.5.73: compositionend 后标记 — 解决 WKWebView 中 compositionend 先于 keydown 触发的问题
    *
@@ -850,6 +970,34 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
     const justEndedComposition = compositionJustEndedRef.current;
     compositionJustEndedRef.current = false;
 
+    // 斜杠命令选择器键盘导航
+    if (showSlashCommands && filteredSlashCommands.length > 0) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowSlashCommands(false);
+        setSlashCommandFocusIndex(0);
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSlashCommandFocusIndex(prev => (prev + 1) % filteredSlashCommands.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSlashCommandFocusIndex(prev => prev <= 0 ? filteredSlashCommands.length - 1 : prev - 1);
+        return;
+      }
+      if (e.key === 'Tab' || (e.key === 'Enter' && !isComposing(e) && !justEndedComposition)) {
+        e.preventDefault();
+        const cmd = filteredSlashCommands[slashCommandFocusIndex];
+        if (cmd) {
+          handleSlashCommandSelect(cmd);
+        }
+        return;
+      }
+    }
+
     if (showSkillSelector) {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -921,14 +1069,17 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         onDrop={handleDrop}
         sx={{
           width: '100%',
-          borderRadius: variant === 'cardless' ? 0 : (isCardVariant ? '22px' : '12px'),
-          border: variant === 'cardless' || isCardVariant ? 'none' : `1px solid ${gs.border}`,
+          borderRadius: variant === 'cardless' ? 0 : (isCardVariant ? '20px' : '16px'),
+          border: variant === 'cardless' || isCardVariant ? 'none' : `1px solid ${isInputFocused ? (isDark ? 'rgba(255, 255, 255, 0.5)' : '#000000') : gs.border}`,
           bgcolor: variant === 'cardless' ? 'transparent' : '#FFFFFF',
-          boxShadow: 'none',
+          boxShadow: variant === 'cardless' ? 'none' : (isInputFocused
+            ? 'inset 0 2px 8px rgba(0,0,0,0.06), 0 0 0 3px rgba(0, 0, 0, 0.08)'
+            : 'inset 0 2px 6px rgba(0,0,0,0.04)'),
           display: 'flex',
           flexDirection: 'column',
           maxHeight: 'calc(70vh - 60px)',
           overflow: 'hidden',
+          transition: 'border-color 0.25s ease, box-shadow 0.25s ease',
         }}
       >
         {/* v1.7.0: 意图分类 Chips 行 — 仅当选中技能有 intentCategories 时展示 */}
@@ -1080,8 +1231,8 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         <Box
           onClick={handleInputClick}
           sx={{
-            padding: inputExpanded ? '12px 16px' : '8px 16px',
-            minHeight: inputExpanded ? 80 : 32,
+            padding: inputExpanded ? '8px 16px' : '8px 16px',
+            minHeight: inputExpanded ? 48 : 32,
             display: 'flex',
             flexDirection: 'column',
             cursor: 'text',
@@ -1103,7 +1254,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             }}
           />
           {/* v3.2: WKWebView兼容 — contenteditable始终可见，用绝对定位实现placeholder效果 */}
-          <Box sx={{ position: 'relative', width: '100%', minHeight: inputExpanded ? 60 : 32, display: 'flex', alignItems: inputExpanded ? 'flex-start' : 'center', gap: 0.75 }}>
+          <Box sx={{ position: 'relative', width: '100%', minHeight: inputExpanded ? 32 : 32, display: 'flex', alignItems: inputExpanded ? 'flex-start' : 'center', gap: 0.75 }}>
             {/* Selected skill tag inside input */}
             {selectedSkill && (
               <Chip
@@ -1114,7 +1265,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#000',
+                      color: '#2563EB',
                       '& .MuiSvgIcon-root': { fontSize: '12px' },
                     }}
                   >
@@ -1125,23 +1276,28 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 onDelete={() => { setSelectedSkill(null); }}
                 size="small"
                 sx={{
-                  height: 24,
+                  height: 26,
                   fontSize: 12,
-                  bgcolor: '#E0EBFF',
+                  bgcolor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EFF6FF',
                   border: 'none',
-                  borderRadius: '6px',
-                  color: '#000',
+                  borderRadius: '8px',
+                  color: '#2563EB',
                   fontWeight: 500,
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
                   '& .MuiChip-label': { px: 1, py: 0 },
                   '& .MuiChip-deleteIcon': { fontSize: 14, color: '#64748b', opacity: 0, transition: 'opacity 0.2s' },
+                  '&:hover': {
+                    bgcolor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#DBEAFE',
+                  },
                   '&:hover .MuiChip-deleteIcon': { opacity: 1 },
                   flexShrink: 0,
                   mt: inputExpanded ? '4px' : 0,
+                  transition: 'all 0.15s ease',
                 }}
               />
             )}
             {/* Input content container */}
-            <Box sx={{ flex: 1, position: 'relative', minHeight: inputExpanded ? 60 : 28 }}>
+            <Box sx={{ flex: 1, position: 'relative', minHeight: inputExpanded ? 32 : 28 }}>
               {/* placeholder层：输入框为空时显示（始终保持展开高度，静态占位，不随光标移动） */}
               {!inputValue.trim() && (
                 <Typography
@@ -1172,8 +1328,12 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 onKeyDown={handleKeyDown}
                 onKeyUp={updateCaretPos}
                 onClick={updateCaretPos}
-                onFocus={updateCaretPos}
+                onFocus={() => {
+                  setIsInputFocused(true);
+                  updateCaretPos();
+                }}
                 onBlur={() => {
+                  setIsInputFocused(false);
                   const text = editableRef.current?.innerText || '';
                   window.dispatchEvent(new CustomEvent('cdf-chat-input-blur', {
                     detail: { value: text },
@@ -1191,7 +1351,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                 style={{
                   fontSize: 14,
                   lineHeight: 1.5,
-                  minHeight: inputExpanded ? 60 : 28,
+                  minHeight: inputExpanded ? 32 : 28,
                   outline: 'none',
                   color: gs.textPrimary,
                   width: '100%',
@@ -1233,6 +1393,10 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           }))}
           onVoiceInput={handleVoiceInput}
           isRecording={isRecording}
+          onNewChat={handleNewChat}
+          onClearChat={handleClearChat}
+          onCopyChat={handleCopyChat}
+          onExportChat={handleExportChat}
         />
       </Paper>
 
@@ -1260,25 +1424,50 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 0.5,
-                px: 1.5,
+                gap: 0.75,
+                px: 1.25,
                 py: 0.5,
-                borderRadius: '8px',
+                borderRadius: '10px',
                 cursor: selectedFolder ? 'default' : 'pointer',
                 color: selectedFolder ? '#6366f1' : gs.textMuted,
                 fontSize: 13,
-                bgcolor: selectedFolder ? (isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.06)') : 'transparent',
-                border: 'none',
-                maxWidth: 300,
-                '&:hover': selectedFolder ? {} : { bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
+                bgcolor: selectedFolder
+                  ? (isDark ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.06)')
+                  : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)'),
+                border: `1px solid ${selectedFolder ? 'rgba(99,102,241,0.3)' : gs.border}`,
+                maxWidth: 320,
+                transition: 'all 0.2s ease',
+                boxShadow: selectedFolder ? '0 1px 3px rgba(99,102,241,0.1)' : 'none',
+                '&:hover': selectedFolder
+                  ? { borderColor: 'rgba(99,102,241,0.5)' }
+                  : {
+                      bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                      borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+                    },
               }}
             >
-              <FolderOpenIcon sx={{ fontSize: 16, flexShrink: 0 }} />
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 20,
+                  height: 20,
+                  borderRadius: '6px',
+                  bgcolor: selectedFolder
+                    ? (isDark ? 'rgba(99,102,241,0.2)' : 'rgba(99,102,241,0.12)')
+                    : 'transparent',
+                  flexShrink: 0,
+                }}
+              >
+                <FolderOpenIcon sx={{ fontSize: 14, color: selectedFolder ? '#6366f1' : 'inherit' }} />
+              </Box>
               {selectedFolder ? (
                 <>
                   <Typography
                     sx={{
                       fontSize: 13,
+                      fontWeight: 500,
                       color: '#6366f1',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -1298,24 +1487,57 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         cursor: 'pointer',
-                        ml: 0.5,
+                        ml: 0.25,
+                        width: 18,
+                        height: 18,
+                        borderRadius: '4px',
                         color: gs.textMuted,
-                        '&:hover': { color: '#ef4444' },
+                        transition: 'all 0.15s ease',
+                        '&:hover': {
+                          color: '#ef4444',
+                          bgcolor: 'rgba(239,68,68,0.1)',
+                        },
                       }}
                     >
-                      <CloseIcon sx={{ fontSize: 14 }} />
+                      <CloseIcon sx={{ fontSize: 12 }} />
                     </Box>
                   </Tooltip>
                 </>
               ) : (
                 <>
-                  <Typography sx={{ fontSize: 13, color: gs.textMuted }}>选择文件夹（可选）</Typography>
-                  <KeyboardArrowDownIcon sx={{ fontSize: 14 }} />
-                  {/* 任务 7: 文件夹选择建议提示 */}
+                  <Typography sx={{ fontSize: 13, color: gs.textMuted, fontWeight: 400 }}>
+                    选择文件夹
+                  </Typography>
+                  <KeyboardArrowDownIcon
+                    sx={{
+                      fontSize: 16,
+                      color: gs.textDisabled,
+                      transition: 'transform 0.2s ease',
+                    }}
+                  />
                   <Tooltip title="选择项目文件夹后，AI 将自动读取文件夹内的代码文件作为上下文，支持 .ts/.tsx/.js/.jsx/.py/.go/.rs/.java/.md 等格式" placement="top">
-                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', ml: 0.5, color: gs.textMuted, cursor: 'help' }}>
-                      <InfoOutlinedIcon sx={{ fontSize: 14 }} />
+                    <Box
+                      component="span"
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        ml: 0.25,
+                        width: 18,
+                        height: 18,
+                        borderRadius: '4px',
+                        color: gs.textDisabled,
+                        cursor: 'help',
+                        transition: 'all 0.15s ease',
+                        '&:hover': {
+                          color: gs.textMuted,
+                          bgcolor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                        },
+                      }}
+                    >
+                      <InfoOutlinedIcon sx={{ fontSize: 13 }} />
                     </Box>
                   </Tooltip>
                 </>
@@ -1334,6 +1556,60 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
             />
           </Box>
         </Collapse>
+
+      {/* 清空对话确认对话框 */}
+      <Dialog
+        open={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ pb: 1, pt: 2.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
+            清空对话
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: '0.875rem', color: gs.textMuted }}>
+            确定要清空当前对话的所有消息吗？此操作不可撤销。
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 2.5, pb: 2 }}>
+          <Button
+            onClick={() => setShowClearConfirm(false)}
+            sx={{
+              borderRadius: '10px',
+              textTransform: 'none',
+              fontSize: '0.875rem',
+              color: gs.textMuted,
+              '&:hover': { bgcolor: gs.bgHover },
+            }}
+          >
+            取消
+          </Button>
+          <Button
+            onClick={confirmClearChat}
+            variant="contained"
+            color="error"
+            sx={{
+              borderRadius: '10px',
+              textTransform: 'none',
+              fontSize: '0.875rem',
+              px: 2,
+              boxShadow: 'none',
+              '&:hover': { boxShadow: 'none' },
+            }}
+          >
+            确认清空
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* AI 设置弹窗（模型管理） */}
       <Suspense fallback={null}>
@@ -1362,6 +1638,17 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
           activeOnly
           slashMode
           focusedIndex={skillFocusIndex}
+        />
+      )}
+
+      {/* Slash command selector — / 斜杠命令触发 */}
+      {showSlashCommands && (
+        <SlashCommandSelector
+          anchorEl={containerRef.current}
+          commands={filteredSlashCommands}
+          selectedIndex={slashCommandFocusIndex}
+          onSelect={handleSlashCommandSelect}
+          onClose={() => { setShowSlashCommands(false); setSlashCommandFocusIndex(0); }}
         />
       )}
 

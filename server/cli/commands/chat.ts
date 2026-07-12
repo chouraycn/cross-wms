@@ -205,6 +205,20 @@ export function registerChatCommand(program: Command): void {
         if (!options.json) {
           logger.info(`已恢复会话: ${session.id}`);
         }
+
+        // v11.1: 检查并重放未完成的工具调用
+        try {
+          const { toolReplayRepair } = await import('../../engine/toolReplayRepair.js');
+          if (toolReplayRepair.needsRepair(session.id)) {
+            logger.info('检测到未完成的工具调用，正在重放...');
+            const report = await toolReplayRepair.repairSession(session.id);
+            if (report.replayed > 0) {
+              logger.info(`工具重放完成: ${report.succeeded} 成功, ${report.failed} 失败`);
+            }
+          }
+        } catch (err) {
+          logger.warn('工具重放检查失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+        }
       } else {
         // 创建新会话
         session = createSession(options.model || "qwen-plus");

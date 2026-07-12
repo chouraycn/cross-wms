@@ -15,6 +15,7 @@ import { messageQueue } from '../engine/messageQueue.js';
 import { logger } from '../logger.js';
 import { activeSSEConnections } from './chatService.js';
 import { handleAgentChat } from './agentChat.js';
+import { compactionNotificationManager } from '../engine/compaction/compactionNotification.js';
 
 const router = Router();
 
@@ -41,6 +42,43 @@ router.post('/queue-cancel/:sessionId', (req, res) => {
   const cancelledCount = messageQueue.cancelAll(sessionId);
   activeSSEConnections.delete(sessionId);
   res.json({ ok: true, cancelledCount });
+});
+
+// ===== 压缩通知 API =====
+
+router.get('/notifications/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  const notifications = compactionNotificationManager.getNotifications(sessionId);
+  const unreadCount = compactionNotificationManager.getUnreadCount(sessionId);
+  res.json({
+    ok: true,
+    notifications,
+    unreadCount,
+  });
+});
+
+router.post('/notifications/:sessionId/:id/read', (req, res) => {
+  const { sessionId, id } = req.params;
+  const success = compactionNotificationManager.markAsRead(sessionId, id);
+  res.json({ ok: success });
+});
+
+router.post('/notifications/:sessionId/read-all', (req, res) => {
+  const { sessionId } = req.params;
+  compactionNotificationManager.markAllAsRead(sessionId);
+  res.json({ ok: true });
+});
+
+router.delete('/notifications/:sessionId/:id', (req, res) => {
+  const { sessionId, id } = req.params;
+  const success = compactionNotificationManager.removeNotification(sessionId, id);
+  res.json({ ok: success });
+});
+
+router.delete('/notifications/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  compactionNotificationManager.clearAll(sessionId);
+  res.json({ ok: true });
 });
 
 export default router;

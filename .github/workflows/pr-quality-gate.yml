@@ -57,6 +57,11 @@ jobs:
     timeout-minutes: 10
     needs: [lint]
     if: github.event_name == 'pull_request'
+    # 门禁保持警告（不阻断）：knip 配置 knip.json 已验证可正确加载并应用，
+    # 但本项目的动态注册模式（通道/插件/命令经注册表字符串派发、桶文件 re-export、
+    # 多 CLI 入口）导致 knip 无法完整追溯导入图，报出大量"未用导出/文件"误报。
+    # 警告模式仍能暴露"死代码全做"清理成果的回归，但阻断会误伤每个 PR。
+    # 后续若针对性补全 entry / 忽略动态注册模式，可将此改回 false 固化。
     continue-on-error: true
     steps:
       - name: Check out code
@@ -71,7 +76,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 首次运行可能发现历史死代码，暂时仅警告不阻断 PR
       - name: Run knip dead-code analysis
         run: npm run deadcode
 

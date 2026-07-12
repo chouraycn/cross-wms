@@ -564,12 +564,12 @@ export class SkillChatCommands {
       if (skill.tags.length > 0) {
         lines.push(`  <tags>${skill.tags.join(', ')}</tags>`);
       }
-      lines.push(`  <usage>调用工具 skill_${skill.skillId} 来使用此技能</usage>`);
+      lines.push(`  <usage>调用元工具 skill（action="use", id="${skill.skillId}"）读取完整技能说明，再按说明用其它工具（如 exec_command）执行</usage>`);
       lines.push('</skill>');
       lines.push('');
     }
 
-    lines.push('使用方法：当用户问题涉及以上 Skill 的能力范围时，直接调用对应的 skill_<name> 工具。');
+    lines.push('使用方法：先调用 skill 元工具（action="use", id="<skill-id>"）获取该技能的完整指令文档，然后按指令用其它工具（如 exec_command）完成任务。不要猜测技能内容，务必先 use 再执行。');
     lines.push('</available_skills>');
 
     return lines.join('\n');

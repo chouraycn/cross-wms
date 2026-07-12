@@ -19,7 +19,8 @@ export type ModelApiType =
   | 'anthropic-messages'
   | 'google-generative-ai'
   | 'qwen-chat'
-  | 'moonshot-chat';
+  | 'moonshot-chat'
+  | 'azure-openai';
 
 /** 适配器通用配置 */
 export interface AdapterConfig {

@@ -539,6 +539,8 @@ ${stepsText}`;
         onToolCall,
         executedToolCalls,
         currentMessages,
+        sessionId,
+        signal,
       });
 
       // 将工具结果添加到消息上下文 — tool_calls 配对防护
@@ -834,6 +836,10 @@ ${stepsText}`;
       onToolCall?: (toolCall: ToolCall, result: string) => void;
       executedToolCalls: Array<{ name: string; arguments: string; result: string }>;
       currentMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;
+      /** v11.0 工具调用审计关联会话 ID（可选，未传时审计回退为 'react'） */
+      sessionId?: string;
+      /** v11.1: 外部 AbortSignal，传递给 actionPhaseExecutor */
+      signal?: AbortSignal;
     },
   ): Promise<Map<ToolCall, string>> {
     return this.actionPhaseExecutor.actionPhase(response, context);

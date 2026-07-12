@@ -1,24 +1,74 @@
 {
-  "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": [
-    "src/main.tsx",
-    "server/index.ts"
-  ],
-  "project": [
-    "src/**",
-    "server/**",
-    "packages/*/src/**"
-  ],
-  "ignore": [
-    "openclaw/**",
-    "dist-app/**",
-    "coverage/**",
+  "ignoreFiles": [
     "node_modules/**",
-    "server_dist/**",
-    "*.config.ts",
+    "dist/**",
+    "dist-app/**",
+    "dist-server/**",
+    "dist-electron/**",
+    "build/**",
+    "coverage/**",
+    "logs/**",
+    ".workbuddy/**",
+    ".git/**",
+    "openclaw/**",
+    "apps/**",
+    "scripts/**",
+    "src/ot/**",
+    "src/ot/**/*",
     "e2e/**",
-    "packages/*/src/index.ts",
+    "**/__tests__/**",
     "**/*.test.ts",
-    "src/vite-env.d.ts"
-  ]
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/*.e2e.ts",
+    "**/*.stories.tsx",
+    "**/*.d.ts",
+    "server/test-utils/**",
+    "server/test-utils/**/*",
+    "src/mocks/**",
+    "src/mocks/**/*",
+    "@types/**"
+  ],
+  "workspaces": {
+    ".": {
+      "paths": {
+        "@/": ["src/*"],
+        "@src/*": ["src/*"],
+        "@cdf-know/*": ["packages/*/src"]
+      },
+      "entry": [
+        "src/main.tsx!",
+        "index.html!",
+        "server/index.ts!",
+        "server/routes/*.ts!",
+        "src/pages/**/*.tsx!",
+        "src/pages/**/*.ts!",
+        "server/tui/cli.ts!",
+        "cli/index.ts!",
+        "cli/src/index.ts!",
+        "bin/cdf-cli.mjs!",
+        "electron/main.ts!",
+        "electron/preload.ts!",
+        "electron/exec-approval-server.ts!",
+        "vite.config.ts!",
+        "vitest.config.ts!",
+        "vitest.config.e2e.ts!"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}!",
+        "server/**/*.ts!",
+        "cli/**/*.ts!",
+        "electron/**/*.ts!",
+        "shared/**/*.ts!",
+        "*.config.{ts,mjs,cjs,js}!"
+      ],
+      "ignoreExportsUsedInFile": true
+    },
+    "packages/*": {
+      "entry": ["src/index.ts!"],
+      "project": ["src/**/*.ts!"],
+      "ignoreExportsUsedInFile": true
+    }
+  }
 }

@@ -136,6 +136,11 @@ export function initBuiltinAdapters(): void {
     const m = await import('./moonshotAdapter.js');
     return m.moonshotAdapterFactory;
   });
+  // v1.7.86: Azure OpenAI adapter
+  registerAdapter('azure-openai', async () => {
+    const m = await import('./azureOpenAIAdapter.js');
+    return m.azureOpenAIAdapterFactory;
+  });
   logger.info('[AdapterRegistry] 内置适配器惰性注册完成');
 }
 
@@ -178,6 +183,14 @@ export function inferApiType(provider?: string, apiEndpoint?: string): ModelApiT
       providerLower === 'kimi' ||
       endpointLower.includes('api.moonshot.cn')) {
     return 'moonshot-chat';
+  }
+
+  // v1.7.86: Azure OpenAI
+  if (providerLower === 'azure' ||
+      providerLower === 'azure-openai' ||
+      endpointLower.includes('.openai.azure.com') ||
+      endpointLower.includes('/openai/deployments')) {
+    return 'azure-openai';
   }
 
   // OpenAI Responses API

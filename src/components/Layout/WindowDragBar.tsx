@@ -96,9 +96,11 @@ const WindowDragBar: React.FC<{ height?: number }> = ({ height: _h }) => {
     } else {
       callApi('window_toggle_fullscreen')
         .then(() => {
-          setWindowState(s => s === 'normal' ? 'maximized' : 'normal');
+          setWindowState('normal');
           // v1.7.15: 派发窗口恢复正常事件
           window.dispatchEvent(new CustomEvent('cdf-window-restored'));
+          // v1.7.85: 派发全屏状态变化事件（非全屏）
+          window.dispatchEvent(new CustomEvent('cdf-window-fullscreen-changed', { detail: { fullscreen: false } }));
         })
         .catch(() => {});
     }

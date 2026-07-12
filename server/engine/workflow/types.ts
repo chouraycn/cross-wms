@@ -256,6 +256,8 @@ export interface ExecutionContext {
     message: string;
     nodeId?: string;
   }>;
+  /** v11.0 工具调用审计关联会话 ID（可选，未传时审计回退为 'workflow'） */
+  sessionId?: string;
 }
 
 /** 执行结果 */
