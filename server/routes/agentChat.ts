@@ -33,6 +33,11 @@ import {
   type AgentEventPayload,
   type AgentEventStream,
 } from '../engine/agentEvents.js';
+import {
+  extractThinkingDirectives,
+  applyThinkingDirectives,
+  thinkingModeManager,
+} from '../engine/thinkingMode.js';
 import type { Response, Request } from 'express';
 import { getSessionMessages } from '../dao/chat.js';
 import { FileStorage } from '../storage/FileStorage.js';
@@ -108,6 +113,15 @@ export async function handleAgentChat(req: Request, res: Response) {
   }
 
   try {
+    // 提取并应用思考指令
+    const { cleanedInput, directives } = extractThinkingDirectives(message);
+    if (directives.length > 0) {
+      applyThinkingDirectives(sessionId, directives);
+      logger.info(`Applied thinking directives for session ${sessionId}:`, directives);
+    }
+
+    // 使用清理后的消息（移除指令）
+    const processedMessage = cleanedInput || message;
     registerAgentRunContext(runId, {
       sessionKey,
       sessionId,
@@ -151,7 +165,7 @@ export async function handleAgentChat(req: Request, res: Response) {
     await runChatSession(
       {
         sessionId,
-        message,
+        message: processedMessage,
         model,
         preset,
         skillContext,
@@ -217,6 +231,18 @@ export async function handleAgentChat(req: Request, res: Response) {
                 tokensBefore: event.tokensBefore,
                 tokensAfter: event.tokensAfter,
                 reductionRatio: event.reductionRatio,
+              });
+              break;
+            case 'output_review':
+              send('output_review', {
+                quality: event.quality,
+                issues: event.issues,
+                suggestion: event.suggestion,
+              });
+              break;
+            case 'compaction_notification':
+              send('compaction_notification', {
+                notification: event.notification,
               });
               break;
             default:

@@ -186,10 +186,23 @@ router.post('/sessions/:sessionId/recover', async (req, res) => {
       return;
     }
 
+    // v11.1: 检查并重放未完成的工具调用
+    let replayReport = null;
+    try {
+      const { toolReplayRepair } = await import('../engine/toolReplayRepair.js');
+      if (toolReplayRepair.needsRepair(sessionId)) {
+        replayReport = await toolReplayRepair.repairSession(sessionId);
+        logger.info(`[EventLedgerRoute] 工具重放: ${replayReport.succeeded} 成功, ${replayReport.failed} 失败`);
+      }
+    } catch (replayErr) {
+      logger.warn('[EventLedgerRoute] 工具重放失败（非阻塞）:', replayErr instanceof Error ? replayErr.message : String(replayErr));
+    }
+
     res.json({
       ok: true,
       data: session,
       message: 'Session recovered successfully',
+      toolReplay: replayReport,
     });
   } catch (err) {
     logger.error('[EventLedgerRoute] 恢复会话失败:', err);

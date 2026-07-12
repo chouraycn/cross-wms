@@ -1,0 +1,10 @@
+{
+  "id": "tts-core",
+  "name": "TTS Core",
+  "description": "Text-to-Speech core module with multiple providers",
+  "version": "1.0.0",
+  "kind": "service",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

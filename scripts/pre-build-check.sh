@@ -151,12 +151,28 @@ TS_ERROR_COUNT=$(echo "$TSC_OUTPUT" | grep -c "error TS" || true)
 TS_ERROR_COUNT=$(echo "$TS_ERROR_COUNT" | tr -d '[:space:]')
 
 if [[ "$TS_ERROR_COUNT" == "0" ]]; then
-  check_pass "TypeScript 编译通过 (0 个错误)"
+  check_pass "TypeScript 编译通过 (前端, 0 个错误)"
 else
-  check_fail "TypeScript 编译有 $TS_ERROR_COUNT 个错误"
+  check_fail "TypeScript 编译有 $TS_ERROR_COUNT 个错误 (前端)"
   echo ""
   echo "$TSC_OUTPUT" | head -20
   echo ""
+fi
+
+# 后端类型检查 (server/ 走独立 tsconfig, 根 tsconfig 不 include server, 必须单独 gate)
+if [[ -f "server/tsconfig.json" ]]; then
+  SERVER_TSC_OUTPUT=$(npx tsc --noEmit -p server/tsconfig.json 2>&1) || true
+  SERVER_TS_ERROR_COUNT=$(echo "$SERVER_TSC_OUTPUT" | grep -c "error TS" || true)
+  SERVER_TS_ERROR_COUNT=$(echo "$SERVER_TS_ERROR_COUNT" | tr -d '[:space:]')
+
+  if [[ "$SERVER_TS_ERROR_COUNT" == "0" ]]; then
+    check_pass "TypeScript 编译通过 (后端 server/, 0 个错误)"
+  else
+    check_fail "TypeScript 编译有 $SERVER_TS_ERROR_COUNT 个错误 (后端 server/)"
+    echo ""
+    echo "$SERVER_TSC_OUTPUT" | head -20
+    echo ""
+  fi
 fi
 
 echo ""

@@ -24,6 +24,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import PsychologyIcon from '@mui/icons-material/Psychology';
+import ListItemText from '@mui/material/ListItemText';
 
 import { Skill } from '../../types/skill';
 import { ICON_MAP } from '../../types/skill';
@@ -93,6 +94,14 @@ export interface ChatToolbarProps {
   onVoiceInput?: () => void;
   /** 是否正在录音 */
   isRecording?: boolean;
+  /** 新建对话回调 */
+  onNewChat?: () => void;
+  /** 清空对话回调 */
+  onClearChat?: () => void;
+  /** 复制对话回调 */
+  onCopyChat?: () => void;
+  /** 导出对话回调 */
+  onExportChat?: () => void;
 }
 
 // ===================== Constants =====================
@@ -121,6 +130,10 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
   thinkingLevels,
   onVoiceInput,
   isRecording,
+  onNewChat,
+  onClearChat,
+  onCopyChat,
+  onExportChat,
 }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -178,96 +191,65 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '3px 12px 6px 12px',
+          padding: '4px 10px 6px 10px',
           flexShrink: 0,
         }}
       >
-        {/* Left: Skills + Attach */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        {/* Left: Skills + Attach + More Actions */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           {/* Skills button — 仅图标 */}
-          <Box
-            ref={skillsBtnRef as React.RefObject<HTMLDivElement>}
-            onClick={(e) => { e.stopPropagation(); handleDropdownClick('skills'); }}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              bgcolor: isDark ? 'rgba(0,0,0,0.2)' : '#F5F5F5',
-              cursor: 'pointer',
-              transition: 'background-color 0.15s',
-              '&:hover': { bgcolor: gs.bgActive },
-              userSelect: 'none',
-            }}
-          >
-            <AutoFixHighIcon sx={{ fontSize: 18, color: gs.textMuted }} />
-          </Box>
-
-          {/* Attach button — 仅图标 */}
-          {onAttachClick && (
+          <Tooltip title="技能" placement="top">
             <Box
-              onClick={(e) => { e.stopPropagation(); onAttachClick(); }}
+              ref={skillsBtnRef as React.RefObject<HTMLDivElement>}
+              onClick={(e) => { e.stopPropagation(); handleDropdownClick('skills'); }}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                bgcolor: isDark ? 'rgba(0,0,0,0.2)' : '#F5F5F5',
+                width: 30,
+                height: 30,
+                borderRadius: '8px',
                 cursor: 'pointer',
-                transition: 'background-color 0.15s',
-                '&:hover': { bgcolor: gs.bgActive },
+                transition: 'all 0.15s ease',
+                color: gs.textMuted,
+                '&:hover': {
+                  bgcolor: gs.bgHover,
+                  color: gs.textPrimary,
+                  transform: 'scale(1.05)',
+                },
                 userSelect: 'none',
-                position: 'relative',
               }}
             >
-              <AttachFileIcon sx={{ fontSize: 18, color: gs.textMuted }} />
-              {hasAttachments && (
-                <Box sx={{
-                  position: 'absolute',
-                  top: 4,
-                  right: 4,
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  bgcolor: ACCENT,
-                }} />
-              )}
+              <AutoFixHighIcon sx={{ fontSize: 18 }} />
             </Box>
-          )}
+          </Tooltip>
 
-          {/* Thinking button — 思考模式切换 */}
-          {onThinkingLevelChange && (
-            <>
+          {/* Attach button — 仅图标 */}
+          {onAttachClick && (
+            <Tooltip title="添加附件" placement="top">
               <Box
-                ref={thinkingBtnRef as React.RefObject<HTMLDivElement>}
-                onClick={(e) => { e.stopPropagation(); setThinkingMenuOpen(prev => !prev); }}
+                onClick={(e) => { e.stopPropagation(); onAttachClick(); }}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  bgcolor: isThinkingOn
-                    ? (isDark ? 'rgba(139,92,246,0.2)' : 'rgba(139,92,246,0.1)')
-                    : (isDark ? 'rgba(0,0,0,0.2)' : '#F5F5F5'),
+                  width: 30,
+                  height: 30,
+                  borderRadius: '8px',
                   cursor: 'pointer',
-                  transition: 'background-color 0.15s',
-                  '&:hover': { bgcolor: isThinkingOn
-                    ? (isDark ? 'rgba(139,92,246,0.3)' : 'rgba(139,92,246,0.15)')
-                    : gs.bgActive },
-                  userSelect: 'none',
+                  transition: 'all 0.15s ease',
+                  color: gs.textMuted,
                   position: 'relative',
+                  '&:hover': {
+                    bgcolor: gs.bgHover,
+                    color: gs.textPrimary,
+                    transform: 'scale(1.05)',
+                  },
+                  userSelect: 'none',
                 }}
               >
-                <Tooltip title={isThinkingOn ? `思考模式：${currentThinking.label}` : '开启深度思考'}>
-                  <PsychologyIcon sx={{ fontSize: 18, color: isThinkingOn ? '#8B5CF6' : gs.textMuted }} />
-                </Tooltip>
-                {isThinkingOn && (
+                <AttachFileIcon sx={{ fontSize: 18 }} />
+                {hasAttachments && (
                   <Box sx={{
                     position: 'absolute',
                     top: 4,
@@ -275,10 +257,59 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                     width: 8,
                     height: 8,
                     borderRadius: '50%',
-                    bgcolor: '#8B5CF6',
+                    bgcolor: ACCENT,
+                    boxShadow: '0 0 0 2px #fff',
                   }} />
                 )}
               </Box>
+            </Tooltip>
+          )}
+
+          {/* Thinking button — 思考模式切换 */}
+          {onThinkingLevelChange && (
+            <>
+              <Tooltip title={isThinkingOn ? `思考模式：${currentThinking.label}` : '开启深度思考'} placement="top">
+                <Box
+                  ref={thinkingBtnRef as React.RefObject<HTMLDivElement>}
+                  onClick={(e) => { e.stopPropagation(); setThinkingMenuOpen(prev => !prev); }}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 30,
+                    height: 30,
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    color: isThinkingOn ? '#8B5CF6' : gs.textMuted,
+                    bgcolor: isThinkingOn
+                      ? (isDark ? 'rgba(139,92,246,0.15)' : 'rgba(139,92,246,0.08)')
+                      : 'transparent',
+                    position: 'relative',
+                    userSelect: 'none',
+                    '&:hover': {
+                      bgcolor: isThinkingOn
+                        ? (isDark ? 'rgba(139,92,246,0.25)' : 'rgba(139,92,246,0.12)')
+                        : gs.bgHover,
+                      transform: 'scale(1.05)',
+                    },
+                  }}
+                >
+                  <PsychologyIcon sx={{ fontSize: 18 }} />
+                  {isThinkingOn && (
+                    <Box sx={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      bgcolor: '#8B5CF6',
+                      boxShadow: '0 0 0 2px #fff',
+                    }} />
+                  )}
+                </Box>
+              </Tooltip>
               <Menu
                 anchorEl={thinkingBtnRef.current}
                 open={thinkingMenuOpen}
@@ -349,42 +380,55 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
 
           </Box>
 
-        {/* Right: Model selector, Memory, Mic, Send */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mr: 0.5 }}>
+        {/* Right: Model selector, Mic, Send */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mr: 0.5 }}>
           {/* Model selector — 默认无背景，点击后显示灰色背景 */}
-          <Box
-            ref={modelBtnRef as React.RefObject<HTMLDivElement>}
-            onClick={(e) => { e.stopPropagation(); if (!modelsLoading) handleDropdownClick('model'); }}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
-              px: 1.5,
-              py: 0.5,
-              borderRadius: '20px',
-              bgcolor: activeDropdown === 'model' ? gs.bgHover : 'transparent',
-              cursor: modelsLoading ? 'default' : 'pointer',
-              transition: 'background-color 0.15s',
-              '&:hover': modelsLoading ? {} : { bgcolor: gs.bgActive },
-              userSelect: 'none',
-            }}
-          >
-            <Typography sx={{ fontSize: 13, fontWeight: 500, color: modelsLoading ? gs.textMuted : gs.textPrimary, lineHeight: 1 }}>
-              {modelsLoading ? '加载模型中...' : (selectedModel === 'Auto' ? 'CDF Auto Model' : selectedModel)}
-            </Typography>
-            {!modelsLoading && <KeyboardArrowUpIcon sx={{ fontSize: 18, color: gs.textMuted }} />}
-          </Box>
+          <Tooltip title="选择模型" placement="top">
+            <Box
+              ref={modelBtnRef as React.RefObject<HTMLDivElement>}
+              onClick={(e) => { e.stopPropagation(); if (!modelsLoading) handleDropdownClick('model'); }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1.25,
+                py: 0.5,
+                borderRadius: '16px',
+                bgcolor: activeDropdown === 'model' ? gs.bgHover : 'transparent',
+                cursor: modelsLoading ? 'default' : 'pointer',
+                transition: 'all 0.15s ease',
+                '&:hover': modelsLoading ? {} : { bgcolor: gs.bgActive },
+                userSelect: 'none',
+              }}
+            >
+              <Typography sx={{ fontSize: 12, fontWeight: 500, color: modelsLoading ? gs.textMuted : gs.textPrimary, lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {modelsLoading ? '加载中...' : (() => {
+                  const autoOption = modelOptions.find(o => o.provider === 'auto');
+                  if (autoOption && selectedModel === autoOption.name) {
+                    return 'CDF Auto Model';
+                  }
+                  const selectedOption = modelOptions.find(o => o.name === selectedModel);
+                  return (<>
+                    {selectedOption && providerIcon(selectedOption.provider, 14)}
+                    {selectedModel}
+                  </>);
+                })()}
+              </Typography>
+              {!modelsLoading && <KeyboardArrowUpIcon sx={{ fontSize: 16, color: gs.textMuted }} />}
+            </Box>
+          </Tooltip>
 
           {/* Voice button */}
           {onVoiceInput && (
-            <Tooltip title={isRecording ? '停止录音' : '语音输入'}>
+            <Tooltip title={isRecording ? '停止录音' : '语音输入'} placement="top">
               <IconButton
                 size="small"
                 onClick={(e) => { e.stopPropagation(); onVoiceInput(); }}
                 sx={{
-                  width: 32, height: 32, borderRadius: '8px', p: 0,
+                  width: 30, height: 30, borderRadius: '8px', p: 0,
                   color: isRecording ? '#10B981' : gs.textMuted,
-                  '&:hover': { bgcolor: gs.bgHover, color: isRecording ? '#059669' : gs.textPrimary },
+                  transition: 'all 0.15s ease',
+                  '&:hover': { bgcolor: gs.bgHover, color: isRecording ? '#059669' : gs.textPrimary, transform: 'scale(1.05)' },
                 }}
               >
                 <MicIcon sx={{ fontSize: 18 }} />
@@ -392,32 +436,57 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
             </Tooltip>
           )}
 
-          {/* Send / Stop button — 圆形 */}
-          <IconButton
-            onClick={(e) => {
-              e.stopPropagation();
-              if (isLoading && onStop) {
-                onStop();
-              } else {
-                onSend();
-              }
-            }}
-            disabled={!isLoading && !inputValue.trim()}
-            sx={{
-              width: 34, height: 34, borderRadius: '50%', p: 0,
-              bgcolor: ACCENT,
-              color: '#fff',
-              flexShrink: 0,
-              '&:hover': { bgcolor: '#EA580C' },
-              '&.Mui-disabled': { bgcolor: isDark ? '#333' : '#E0E0E0', color: isDark ? '#666' : '#AAA' },
-            }}
-          >
-            {isLoading ? (
-              <StopIcon sx={{ fontSize: 16 }} />
-            ) : (
-              <SendIcon sx={{ fontSize: 16 }} />
-            )}
-          </IconButton>
+          {/* Send / Stop button — 带呼吸效果 */}
+          <Tooltip title={isLoading ? '停止生成' : (inputValue.trim() ? '发送消息' : '请输入内容')} placement="top">
+            <Box
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isLoading && onStop) {
+                  onStop();
+                } else if (inputValue.trim() || isLoading) {
+                  onSend();
+                }
+              }}
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: !isLoading && !inputValue.trim()
+                  ? (isDark ? '#333' : '#E0E0E0')
+                  : ACCENT,
+                color: !isLoading && !inputValue.trim()
+                  ? (isDark ? '#666' : '#AAA')
+                  : '#fff',
+                flexShrink: 0,
+                cursor: !isLoading && !inputValue.trim() ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': !isLoading && !inputValue.trim() ? {} : {
+                  bgcolor: '#EA580C',
+                  transform: 'scale(1.08)',
+                },
+                animation: !isLoading && inputValue.trim()
+                  ? 'pulse 2s ease-in-out infinite'
+                  : 'none',
+                '@keyframes pulse': {
+                  '0%, 100%': {
+                    boxShadow: '0 0 0 0 rgba(249, 115, 22, 0.4)',
+                  },
+                  '50%': {
+                    boxShadow: '0 0 0 8px rgba(249, 115, 22, 0)',
+                  },
+                },
+              }}
+            >
+              {isLoading ? (
+                <StopIcon sx={{ fontSize: 16 }} />
+              ) : (
+                <SendIcon sx={{ fontSize: 16 }} />
+              )}
+            </Box>
+          </Tooltip>
         </Box>
       </Box>
 
@@ -677,8 +746,6 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
           <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>查看全部技能 →</Typography>
         </MenuItem>
       </Menu>
-
-
 
     </>
   );

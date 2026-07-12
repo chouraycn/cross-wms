@@ -135,6 +135,7 @@ import { listPluginTools } from './engine/toolRegistry.js';
 
 // v4.1: Channel Registry（飞书、企业微信等内置通道）
 import { registerBuiltinChannels } from './channels/index.js';
+import { initBuiltinProviders } from './engine/provider-registry/initBuiltinProviders.js';
 
 // v3.0: BrowserHost Client（延迟启动，首次使用时自动启动）
 import { stopBrowserHost } from './services/browserHostClient.js';
@@ -369,6 +370,9 @@ app.use('/api/agent-runtime', lazyRouter(() => import('./routes/agentRuntime.js'
 // ========== 死代码接入：能力单例统一 HTTP 暴露面（只读探测，不改动 LIVE 行为） ==========
 app.use('/api/capabilities', lazyRouter(() => import('./routes/capabilities.js'), undefined, 'capabilities'));
 
+// v11.1: 工具执行监控 API（统计/健康/队列/降级/超时/审计/MCP 健康）
+app.use('/api/tools', lazyRouter(() => import('./routes/toolMonitoring.js'), undefined, 'tool-monitoring'));
+
 // 死代码接入：code-understanding（Group C 单例，已同时注册为内置工具 code_understanding）
 app.use('/api/code-understanding', lazyRouter(() => import('./routes/codeUnderstanding.js'), undefined, 'code-understanding'));
 
@@ -538,9 +542,12 @@ server.listen(PORT, async () => {
   ]);
   recordBackendPhase('server:core-init', performance.now() - coreInitStart);
 
-  // v4.1: 注册内置通道插件（web、feishu、wecom）
+  // v4.1: 注册内置通道插件（web、feishu、wecom、dingtalk）
   registerBuiltinChannels();
   logger.info('[Channel Registry] 内置通道已注册');
+
+  // P0-C: 把内置 Provider（deepseek/minimax/moonshot/...）显式注册进统一 Provider 注册中心
+  initBuiltinProviders();
 
   // v12.0: 初始化 Doctor 诊断框架的通道注册表
   import('./engine/acp/doctor.js').then(({ initDoctorChannelRegistry }) => {
@@ -679,6 +686,34 @@ server.listen(PORT, async () => {
   // v11.0: 启动文件锁 watchdog（定期清理过期锁）
   startWatchdog();
 
+  // v11.1: 启动 MCP Server 健康检查（定期心跳 + 自动重连）
+  import('./engine/mcpServerHealth.js').then(({ startMcpHealthCheck }) => {
+    startMcpHealthCheck();
+    logger.info('[Server] MCP Server 健康检查已启动');
+  }).catch(err => {
+    logger.warn('[Server] MCP 健康检查启动失败（非阻塞）:', err instanceof Error ? err.message : String(err));
+  });
+
+  // v11.1: 启动 abortPrimitives 定时清理（防止已完成控制器累积内存泄漏）
+  import('./engine/abortPrimitives.js').then(({ abortPrimitives }) => {
+    abortPrimitives.startAutoCleanup();
+  }).catch(() => {});
+
+  // v11.1: 启动 toolSendReceipts 定时清理过期回执文件
+  import('./engine/toolSendReceipts.js').then(({ toolSendReceipts }) => {
+    toolSendReceipts.startAutoCleanup();
+  }).catch(() => {});
+
+  // v11.1: 启动 toolExecutionStats 定时快照持久化
+  import('./engine/toolExecutionStats.js').then(({ toolExecutionStats }) => {
+    toolExecutionStats.startAutoSnapshot();
+  }).catch(() => {});
+
+  // v11.1: 启动 CircuitBreaker 定时快照持久化
+  import('./engine/toolExecutor.js').then(({ defaultCircuitBreaker }) => {
+    defaultCircuitBreaker.startAutoSnapshot();
+  }).catch(() => {});
+
   // v12.0: 注册 ACP ChatService runtime backend（统一聊天框架接入 ACP 引擎）
   import('./engine/acp/chatServiceRuntime.js').then(({ registerChatServiceRuntime }) => {
     registerChatServiceRuntime();
@@ -724,6 +759,19 @@ server.listen(PORT, async () => {
     mcpClientManager.shutdown().catch(err => {
       logger.warn('[Server] MCP Client Manager 关闭异常:', err);
     });
+    // v11.1: 停止 MCP 健康检查 + 关闭审计日志
+    import('./engine/mcpServerHealth.js').then(({ stopMcpHealthCheck }) => stopMcpHealthCheck()).catch(() => {});
+    import('./engine/toolAuditLog.js').then(({ toolAuditLog }) => toolAuditLog.shutdown()).catch(() => {});
+    // v11.1: 中止所有运行中的 AbortController（防止泄漏）
+    import('./engine/abortPrimitives.js').then(({ abortPrimitives }) => abortPrimitives.dispose()).catch(() => {});
+    // P0-3: 清空工具执行队列 — reject 所有等待中的任务，清理 retryTimerHandle
+    import('./engine/toolExecutionQueue.js').then(({ toolExecutionQueue }) => toolExecutionQueue.clear()).catch(() => {});
+    // v11.1: 停止 toolExecutionStats 定时快照并保存最终状态
+    import('./engine/toolExecutionStats.js').then(({ toolExecutionStats }) => toolExecutionStats.stopAutoSnapshot()).catch(() => {});
+    // v11.1: 停止 toolSendReceipts 定时清理
+    import('./engine/toolSendReceipts.js').then(({ toolSendReceipts }) => toolSendReceipts.stopAutoCleanup()).catch(() => {});
+    // v11.1: 停止 CircuitBreaker 定时快照并保存最终状态
+    import('./engine/toolExecutor.js').then(({ defaultCircuitBreaker }) => defaultCircuitBreaker.stopAutoSnapshot()).catch(() => {});
     // v1.5.68: 在退出前做 WAL checkpoint — 避免进程被 kill 时 WAL 未刷盘，
     // 下次启动时虽然 initDb 会尝试恢复，但提前 checkpoint 可以减少数据丢失风险。
     // pywebview 端在 stop_server() 中通过 os.killpg(SIGTERM) 触发本流程。

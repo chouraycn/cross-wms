@@ -7,6 +7,16 @@ import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../../logger.js';
 import { callAIModel } from '../../aiClient.js';
 import { executeToolCall as executeToolCallFromRegistry } from '../toolRegistry.js';
+import { executeToolCallWithRetry } from '../toolRetryWrapper.js';
+import { executeToolCallWithTimeout } from '../toolTimeoutWrapper.js';
+import { executeToolCallWithMiddleware } from '../toolResultMiddleware.js';
+import { toolExecutionQueue } from '../toolExecutionQueue.js';
+import { toolExecutionStats } from '../toolExecutionStats.js';
+import { toolAuditLog } from '../toolAuditLog.js';
+import { guardToolResultContext } from '../toolContextGuard.js';
+import { toolSendReceipts } from '../toolSendReceipts.js';
+import { abortPrimitives, createRunAbortController } from '../abortPrimitives.js';
+import { toolFallbackManager } from '../toolFallbackStrategy.js';
 import type {
   Workflow,
   WorkflowNode,
@@ -48,6 +58,8 @@ export class WorkflowExecutor {
   private executions: Map<string, WorkflowExecution> = new Map();
   private maxConcurrentExecutions: number = 10;
   private activeExecutions: number = 0;
+  /** v11.1: 执行 ID → run 级 AbortController，用于取消执行时中止工具调用 */
+  private runControllers: Map<string, { runId: string; controller: ReturnType<typeof createRunAbortController> }> = new Map();
 
   /**
    * 执行工作流
@@ -61,7 +73,8 @@ export class WorkflowExecutor {
     workflow: Workflow,
     triggerType: 'manual' | 'schedule' | 'event' | 'webhook',
     triggeredBy?: string,
-    initialVariables?: Record<string, unknown>
+    initialVariables?: Record<string, unknown>,
+    sessionId?: string
   ): Promise<string> {
     if (this.activeExecutions >= this.maxConcurrentExecutions) {
       throw new Error('并发执行数已达上限，请稍后再试');
@@ -78,6 +91,7 @@ export class WorkflowExecutor {
       triggerType,
       triggeredBy,
       startTime,
+      sessionId,
       nodeOutputs: new Map(),
       nodeExecutions: [],
       logs: [],
@@ -99,6 +113,11 @@ export class WorkflowExecutor {
 
     this.executions.set(executionId, execution);
     this.activeExecutions++;
+
+    // v11.1: 创建 run 级 AbortController，用于取消执行时级联中止工具调用
+    const runId = `wf-${executionId}`;
+    const runController = createRunAbortController(runId);
+    this.runControllers.set(executionId, { runId, controller: runController });
 
     try {
       this.log(context, 'info', `开始执行工作流: ${workflow.name}`);
@@ -133,6 +152,12 @@ export class WorkflowExecutor {
     } finally {
       this.activeExecutions--;
       execution.logs = context.logs;
+      // v11.1: 释放 run 级 AbortController（防止内存泄漏）
+      const rc = this.runControllers.get(executionId);
+      if (rc) {
+        abortPrimitives.release(`run:${rc.runId}`);
+        this.runControllers.delete(executionId);
+      }
     }
 
     return executionId;
@@ -337,7 +362,7 @@ export class WorkflowExecutor {
   }
 
   /**
-   * 执行工具调用
+   * 执行工具调用（v11.1: 通过稳定性执行链）
    */
   private async executeToolCall(
     config: ActionConfig,
@@ -348,24 +373,133 @@ export class WorkflowExecutor {
       throw new Error('工具调用缺少 toolName 参数');
     }
 
-    try {
-      const result = await executeToolCallFromRegistry({
+    const strToolName = String(toolName);
+    // v11.1: 降级检查 — 若主工具健康分过低，切换到备用工具
+    const effectiveToolName = toolFallbackManager.checkAndFallback(strToolName);
+    const strArgs = args as Record<string, unknown> || {};
+    const execStartTime = Date.now();
+    let retryCount = 0;
+    const receiptId = uuidv4();
+
+    // 创建工具发送回执
+    toolSendReceipts.createReceipt({
+      id: receiptId,
+      toolName: effectiveToolName,
+      sessionId: context.sessionId || 'workflow',
+      arguments: JSON.stringify(strArgs),
+    });
+
+    const toolExecutor = async (_signal: AbortSignal): Promise<string> => {
+      return executeToolCallFromRegistry({
         id: uuidv4(),
         type: 'function',
         function: {
-          name: String(toolName),
-          arguments: JSON.stringify(args as Record<string, unknown> || {}),
+          name: effectiveToolName,
+          arguments: JSON.stringify(strArgs),
         },
       });
+    };
+
+    // v11.1: 获取 run 级 managedSignal，传递给队列以支持取消
+    const rc = context.executionId ? this.runControllers.get(context.executionId) : undefined;
+    const managedSignal = rc?.controller.signal;
+
+    try {
+      const retryResult = await executeToolCallWithRetry(effectiveToolName, () =>
+        toolExecutionQueue.enqueue(
+          {
+            id: uuidv4(),
+            toolName: effectiveToolName,
+            args: strArgs,
+            priority: 'normal',
+            sessionId: context.sessionId,
+            enqueuedAt: Date.now(),
+            signal: managedSignal,
+          },
+          (queueSignal: AbortSignal) =>
+            executeToolCallWithTimeout(effectiveToolName, toolExecutor, { signal: queueSignal }),
+        ),
+        {}, managedSignal,
+      );
+      let result = retryResult.result;
+      retryCount = retryResult.retryCount;
+
+      // 结果中间件
+      const middlewareResult = executeToolCallWithMiddleware(effectiveToolName, result);
+      result = middlewareResult.content;
+
+      // P1-2 修复：传入上下文变量估算大小，使累积保护生效
+      result = guardToolResultContext(result, [{ role: 'system', content: JSON.stringify(context.variables) }], 128000);
+
+      // 统计记录（使用 effectiveToolName，让健康分跟踪实际执行的工具）
+      toolExecutionStats.record({
+        toolName: effectiveToolName,
+        startTime: execStartTime,
+        endTime: Date.now(),
+        success: middlewareResult.errorType === 'none',
+        errorType: middlewareResult.errorType === 'none' ? undefined : middlewareResult.errorType,
+        errorMessage: middlewareResult.errorMessage,
+        retryCount,
+        timedOut: false,
+        resultSize: result.length,
+      });
+
+      // 审计日志（记录原始工具名和实际执行的工具名，便于追踪降级）
+      toolAuditLog.log({
+        toolName: effectiveToolName,
+        originalToolName: effectiveToolName !== strToolName ? strToolName : undefined,
+        sessionId: context.sessionId,
+        args: strArgs,
+        result: result.slice(0, 500),
+        success: middlewareResult.errorType === 'none',
+        durationMs: Date.now() - execStartTime,
+        errorType: middlewareResult.errorType === 'none' ? undefined : middlewareResult.errorType,
+        truncated: middlewareResult.truncated,
+      });
+
+      // 完成工具发送回执
+      if (middlewareResult.errorType === 'none') {
+        toolSendReceipts.completeReceipt(receiptId, result, retryCount);
+      } else {
+        toolSendReceipts.failReceipt(receiptId, middlewareResult.errorMessage || 'Unknown error', retryCount);
+      }
 
       return {
         actionExecuted: true,
         actionType: 'tool_execution',
         result,
-        toolName,
+        toolName: strToolName,
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
+
+      // 失败工具发送回执
+      toolSendReceipts.failReceipt(receiptId, errorMsg, retryCount);
+
+      // 失败也记录统计和审计
+      toolExecutionStats.record({
+        toolName: effectiveToolName,
+        startTime: execStartTime,
+        endTime: Date.now(),
+        success: false,
+        errorType: 'permanent',
+        errorMessage: errorMsg,
+        retryCount,
+        timedOut: false,
+        resultSize: 0,
+      });
+      toolAuditLog.log({
+        toolName: effectiveToolName,
+        originalToolName: effectiveToolName !== strToolName ? strToolName : undefined,
+        sessionId: context.sessionId,
+        args: strArgs,
+        result: errorMsg.slice(0, 500),
+        success: false,
+        durationMs: Date.now() - execStartTime,
+        errorType: 'permanent',
+        truncated: false,
+      });
+
       this.log(context, 'error', `工具调用失败: ${errorMsg}`, config.type);
       throw new Error(`工具调用失败: ${errorMsg}`);
     }
@@ -852,6 +986,17 @@ export class WorkflowExecutor {
       execution.status = 'cancelled';
       execution.endTime = Date.now();
       execution.duration = execution.endTime - execution.startTime;
+
+      // v11.1: 中止 run 级 AbortController，级联取消正在执行的工具调用
+      const rc = this.runControllers.get(executionId);
+      if (rc) {
+        abortPrimitives.abort(`run:${rc.runId}`, {
+          reason: 'user_cancel',
+          source: 'cancelExecution',
+          timestamp: Date.now(),
+          message: `Workflow execution ${executionId} cancelled`,
+        });
+      }
 
       logger.info(`[WorkflowExecutor] 执行已取消: ${executionId}`);
       return true;

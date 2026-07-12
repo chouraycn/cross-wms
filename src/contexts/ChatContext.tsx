@@ -468,9 +468,6 @@ export function ChatProvider({
   // Bug Fix: 跟踪本地临时会话到 API 会话的 ID 映射，防止新建对话时出现重复条目
   const pendingApiSessionRef = useRef<{ localId: string; apiId: string } | null>(null);
 
-  // Bug Fix: 跟踪当前渲染周期内已添加到 sidebar 的会话 ID，防止 sendMessage 两次调用 handleSessionUpdate 产生重复
-  const recentlyAddedIdsRef = useRef<Set<string>>(new Set());
-
   // ===================== 延迟初始化：从后端 API 加载会话列表和文件夹 =====================
   const ensureInitialized = useCallback(async () => {
     if (initialized && initPromiseRef.current === null) return;
@@ -485,9 +482,19 @@ export function ChatProvider({
         ]);
         if (apiSessions.length > 0) {
           setSessions((prev) => {
-            if (sessionsEqual(prev, apiSessions)) return prev;
-            saveSessionsToCache(apiSessions);
-            return apiSessions;
+            // Bug Fix: 合并而非替换 — 保留本地已添加但 API 尚未返回的会话
+            // 避免 ensureInitialized 在用户发消息后完成时覆盖本地会话
+            const apiIds = new Set(apiSessions.map((s) => s.id));
+            const localOnly = prev.filter((s) => !apiIds.has(s.id));
+            if (localOnly.length === 0) {
+              if (sessionsEqual(prev, apiSessions)) return prev;
+              saveSessionsToCache(apiSessions);
+              return apiSessions;
+            }
+            // API 会话优先，本地独有会话保留在后面
+            const merged = [...apiSessions, ...localOnly].slice(0, MAX_SESSIONS);
+            saveSessionsToCache(merged);
+            return merged;
           });
         }
         setFolders(apiFolders);
@@ -635,9 +642,8 @@ export function ChatProvider({
     const existingIdx = prevSessions.findIndex((s) => s.id === updatedSession.id);
 
     if (existingIdx === -1) {
-      // 防止同一事件循环中 sendMessage 两次调用 handleSessionUpdate 导致重复插入
-      if (recentlyAddedIdsRef.current.has(updatedSession.id)) return;
-      recentlyAddedIdsRef.current.add(updatedSession.id);
+      // Bug Fix: 移除 recentlyAddedIdsRef 防重检查 — setSessions 的 withoutDup 过滤器已处理去重，
+      // 旧逻辑会导致会话被 ensureInitialized 替换后无法重新添加到侧边栏
 
       // Bug Fix: 新会话加入侧边栏前，检查 API 是否已创建了对应的会话
       const pending = pendingApiSessionRef.current;
@@ -652,7 +658,9 @@ export function ChatProvider({
       // 新会话：插入到 sidebar 列表头部
       setActiveSessionIdState(updatedSession.id);
       setSessions((prev) => {
-        const next = [{ ...updatedSession, messages: [] }, ...prev].slice(0, MAX_SESSIONS);
+        // 先去重，再插入到头部
+        const withoutDup = prev.filter((s) => s.id !== updatedSession.id);
+        const next = [{ ...updatedSession, messages: [] }, ...withoutDup].slice(0, MAX_SESSIONS);
         return next;
       });
       // 同步到 sidebar（移出 setState updater，避免渲染阶段更新）

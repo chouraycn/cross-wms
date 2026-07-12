@@ -70,7 +70,8 @@ const multilingualIntent = new MultilingualIntent();
  * 轻量复杂度评估 — 基于规则的快速评估
  *
  * 不调用 LLM，仅基于消息特征和意图识别评估复杂度。
- * 与 ReActExecutor.assessComplexity 逻辑一致，但独立实现以避免循环依赖。
+ * 这是复杂度评估的单一事实来源（single source of truth），
+ * executionStrategy 直接复用本实现，避免重复实现与循环依赖。
  */
 export function assessComplexity(
   messages: Array<{ role: string; content: MessageContent }>,

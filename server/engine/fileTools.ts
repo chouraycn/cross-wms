@@ -335,7 +335,7 @@ export async function handleReadFile(args: Record<string, unknown>): Promise<str
   }
 }
 
-/** 写入文件（安全限制：仅允许写入用户数据目录和临时目录） */
+/** 写入文件（安全限制：仅允许写入用户数据目录、工作区和临时目录） */
 export async function handleWriteFile(args: Record<string, unknown>): Promise<string> {
   const fs = await import('fs');
   const path = await import('path');
@@ -348,18 +348,21 @@ export async function handleWriteFile(args: Record<string, unknown>): Promise<st
 
   // 允许写入的目录白名单
   const homeDir = os.homedir();
+  const cwd = process.cwd(); // 工作区目录
   const allowedDirs = [
     path.join(homeDir, '.cdf-know-clow'),  // 应用数据目录
     path.join(homeDir, 'Desktop'),           // 桌面
     path.join(homeDir, 'Documents'),         // 文档
     path.join(homeDir, 'Downloads'),         // 下载
     '/tmp',                                   // 临时目录
+    cwd,                                      // 工作区目录（当前进程目录）
   ];
 
   const isAllowed = allowedDirs.some(dir => resolvedPath.startsWith(dir + path.sep) || resolvedPath.startsWith(dir + '/'));
   if (!isAllowed) {
     return JSON.stringify({
       error: `安全限制：仅允许写入以下目录：${allowedDirs.map(d => d.replace(homeDir, '~')).join(', ')}`,
+      hint: '建议使用 file_generateFile 工具生成文件到应用管理的目录，或指定路径在工作区/桌面/文档目录内。',
     });
   }
 
@@ -371,10 +374,10 @@ export async function handleWriteFile(args: Record<string, unknown>): Promise<st
     }
   }
 
-  // 限制写入内容大小（最大 1MB）
-  const maxSize = 1024 * 1024;
+  // 限制写入内容大小（最大 5MB，与 generateFile 保持一致）
+  const maxSize = 5 * 1024 * 1024;
   if (content.length > maxSize) {
-    return JSON.stringify({ error: `安全限制：写入内容超过 1MB 限制（当前 ${(content.length / 1024).toFixed(1)}KB）。` });
+    return JSON.stringify({ error: `安全限制：写入内容超过 5MB 限制（当前 ${(content.length / 1024).toFixed(1)}KB）。` });
   }
 
   try {

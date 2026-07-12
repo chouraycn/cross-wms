@@ -18,6 +18,10 @@ import {
   createWeComChannelPlugin,
 } from "./builtin-wecom.js";
 
+import {
+  createDingTalkChannelPlugin,
+} from "./builtin-dingtalk.js";
+
 export type {
   ChannelId,
   AccountId,
@@ -88,6 +92,13 @@ export {
   type WeComWebhookResult,
 } from "./builtin-wecom.js";
 
+export {
+  createDingTalkChannelPlugin,
+  DINGTALK_CHANNEL_ID,
+  parseDingTalkWebhook,
+  type DingTalkWebhookResult,
+} from "./builtin-dingtalk.js";
+
 /**
  * 注册所有内置通道插件到全局注册表
  */
@@ -102,5 +113,8 @@ export function registerBuiltinChannels(): void {
   }
   if (!registry.has("wecom" as never)) {
     registry.register(createWeComChannelPlugin());
+  }
+  if (!registry.has("dingtalk" as never)) {
+    registry.register(createDingTalkChannelPlugin());
   }
 }

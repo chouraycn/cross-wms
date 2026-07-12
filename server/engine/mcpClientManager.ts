@@ -247,6 +247,21 @@ class McpClientManager {
   }
 
   /**
+   * Ping 指定 Server（通过 listTools 真实调用）
+   * 用于健康检查，验证连接是否真正可用
+   */
+  async pingServer(serverId: string): Promise<boolean> {
+    const entry = this.clients.get(serverId);
+    if (!entry || entry.connectionState !== 'connected') return false;
+    try {
+      await entry.client.listTools();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * 获取所有已连接 Server 的工具（ToolDefinition 格式）。
    * 用于合并到 LLM 的 tools 列表。
    *
@@ -280,9 +295,14 @@ class McpClientManager {
    *
    * @param fullToolName - 完整工具名（如 mcp__filesystem__read_file）
    * @param args - 工具参数
+   * @param options - 执行选项（signal 用于取消）
    * @returns 工具执行结果（JSON 字符串）
    */
-  async executeMcpTool(fullToolName: string, args: Record<string, unknown>): Promise<string> {
+  async executeMcpTool(
+    fullToolName: string, 
+    args: Record<string, unknown>,
+    options?: { signal?: AbortSignal }
+  ): Promise<string> {
     const parsed = parseMcpToolName(fullToolName);
     if (!parsed) {
       return JSON.stringify({ error: `无效的 MCP 工具名格式: ${fullToolName}` });
@@ -300,8 +320,18 @@ class McpClientManager {
     }
 
     try {
-      const result = await entry.client.callTool({ name: toolName, arguments: args });
-      // MCP SDK 返回的结果格式：{ content: [...], isError?: boolean }
+      const timeoutMs = 60000;
+      const timeoutPromise = new Promise<string>((_, reject) => {
+        const timer = setTimeout(() => {
+          reject(new Error(`MCP 工具执行超时（${timeoutMs}ms）`));
+        }, timeoutMs);
+        options?.signal?.addEventListener('abort', () => clearTimeout(timer));
+      });
+
+      const resultPromise = entry.client.callTool({ name: toolName, arguments: args });
+
+      const result = await Promise.race([resultPromise, timeoutPromise]);
+
       if (result && typeof result === 'object' && 'content' in result) {
         const content = (result as { content: Array<{ type: string; text?: string }> }).content;
         const textParts = content
@@ -310,7 +340,6 @@ class McpClientManager {
         if (textParts.length > 0) {
           return textParts.join('\n');
         }
-        // 非文本内容，序列化返回
         return JSON.stringify(result);
       }
       return JSON.stringify(result);

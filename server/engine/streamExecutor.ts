@@ -183,6 +183,7 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
         const eventType = event.type as string;
         if (hasRes && [
           'init', 'text', 'thinking', 'tool_call', 'done', 'error', 'approval',
+          'react_phase', 'budget_exceeded', 'complexity_assessment',
           'image_start', 'image_delta', 'image_end',
           'audio_start', 'audio_delta', 'audio_end',
         ].includes(eventType)) {
@@ -298,7 +299,7 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
   if (enhancement.complexity?.level === 'complex' && !params.fromQueue) {
     logger.info(`${tag} Phase 2: 复杂度评估为 complex (${enhancement.complexity.reason})，后续消息将启动 ReAct 补充`);
     // 发送调试事件通知前端复杂度评估结果
-    if (hasRes) sendDebugSSE(res!, {
+    if (hasRes) sendSSE(res!, {
       type: 'complexity_assessment',
       level: enhancement.complexity.level,
       reason: enhancement.complexity.reason,

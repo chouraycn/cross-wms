@@ -10,7 +10,13 @@
  *
  * v6.0: P0-2 工具熔断器
  * v6.1: 添加冷却恢复机制（OPEN_COOLDOWN_MS）
+ * v11.1: 添加状态持久化 + half_open 并发探测接入
  */
+
+import * as fs from 'fs';
+import * as path from 'path';
+import { AppPaths } from '../config/appPaths.js';
+import { logger } from '../logger.js';
 
 // ===================== 类型定义 =====================
 
@@ -80,6 +86,10 @@ const DEFAULT_OPEN_COOLDOWN_MS = 60_000;
 /** half_open 状态下默认允许的最大并发请求数 */
 const DEFAULT_MAX_HALF_OPEN_CONCURRENT = 1;
 
+/** P1-4: 持久化快照文件 */
+const SNAPSHOT_FILE = 'circuit-breaker-snapshot.json';
+const SNAPSHOT_INTERVAL_MS = 5 * 60 * 1000; // 5 分钟
+
 // ===================== CircuitBreaker 类 =====================
 
 export class CircuitBreaker {
@@ -97,11 +107,76 @@ export class CircuitBreaker {
   /** half_open 状态下允许的最大并发请求数 */
   private maxHalfOpenConcurrent: number;
 
+  /** P1-4: 持久化 */
+  private snapshotPath: string;
+  private snapshotTimer: ReturnType<typeof setInterval> | null = null;
+
   constructor(config?: CircuitBreakerConfig) {
     this.halfOpenThreshold = config?.halfOpenThreshold ?? DEFAULT_HALF_OPEN_THRESHOLD;
     this.openThreshold = config?.openThreshold ?? DEFAULT_OPEN_THRESHOLD;
     this.openCooldownMs = config?.openCooldownMs ?? DEFAULT_OPEN_COOLDOWN_MS;
     this.maxHalfOpenConcurrent = config?.maxHalfOpenConcurrent ?? DEFAULT_MAX_HALF_OPEN_CONCURRENT;
+    this.snapshotPath = path.join(AppPaths.dataDir, SNAPSHOT_FILE);
+    this.loadSnapshot();
+  }
+
+  /**
+   * P1-4: 从磁盘加载熔断状态快照
+   */
+  private loadSnapshot(): void {
+    try {
+      if (!fs.existsSync(this.snapshotPath)) return;
+      const content = fs.readFileSync(this.snapshotPath, 'utf8');
+      const data = JSON.parse(content) as { records: [string, ToolCircuitRecord][] };
+      if (data.records && Array.isArray(data.records)) {
+        for (const [key, record] of data.records) {
+          this.records.set(key, record);
+        }
+        logger.info(`[CircuitBreaker] Loaded ${data.records.length} records from snapshot`);
+      }
+    } catch (err) {
+      logger.warn('[CircuitBreaker] Failed to load snapshot:', err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  /**
+   * P1-4: 持久化当前熔断状态到磁盘
+   */
+  saveSnapshot(): void {
+    try {
+      const data = {
+        savedAt: Date.now(),
+        records: Array.from(this.records.entries()),
+      };
+      fs.writeFileSync(this.snapshotPath, JSON.stringify(data), 'utf8');
+      logger.debug(`[CircuitBreaker] Saved ${data.records.length} records to snapshot`);
+    } catch (err) {
+      logger.warn('[CircuitBreaker] Failed to save snapshot:', err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  /**
+   * P1-4: 启动定时持久化
+   */
+  startAutoSnapshot(): void {
+    if (this.snapshotTimer) return;
+    this.snapshotTimer = setInterval(() => {
+      this.saveSnapshot();
+    }, SNAPSHOT_INTERVAL_MS);
+    if (typeof this.snapshotTimer.unref === 'function') {
+      this.snapshotTimer.unref();
+    }
+  }
+
+  /**
+   * P1-4: 停止定时持久化并保存最终快照
+   */
+  stopAutoSnapshot(): void {
+    if (this.snapshotTimer) {
+      clearInterval(this.snapshotTimer);
+      this.snapshotTimer = null;
+    }
+    this.saveSnapshot();
   }
 
   /**

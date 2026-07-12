@@ -9,6 +9,7 @@
  * 5. 再次调用 AI，直到 AI 不再调用工具
  *
  * v1.9.0: 新增 Tool Calling 执行循环
+ * v11.1: 工具执行超时、取消传播、重试机制
  */
 
 import { callAIModelStream, type ModelCallConfig, type ToolCall, type ToolDefinition, type AIResponse, type MessageContent, type OnRateLimitCallback } from '../aiClient.js';
@@ -31,6 +32,20 @@ import { ToolDependencyGraph } from './toolDependencyGraph.js';
 import { logger } from '../logger.js';
 import { policyEngine as acpPolicyEngine } from './acp/policy.js';
 import { sessionMapper as acpSessionMapper } from './acp/sessionMapper.js';
+import { toolCallReviewer } from './toolCallReviewer.js';
+import { executeToolCallWithTimeout } from './toolTimeoutWrapper.js';
+import { executeToolCallWithRetry, isTransientError } from './toolRetryWrapper.js';
+import { executeToolCallWithMiddleware } from './toolResultMiddleware.js';
+import { acquireSessionWriteLock } from '../storage/sessionWriteLock.js';
+import { toolExecutionStats } from './toolExecutionStats.js';
+import { toolFallbackManager } from './toolFallbackStrategy.js';
+import { toolAuditLog } from './toolAuditLog.js';
+import { guardToolResultContext } from './toolContextGuard.js';
+import { toolExecutionQueue } from './toolExecutionQueue.js';
+import { toolSendReceipts } from './toolSendReceipts.js';
+import { abortPrimitives, createRunAbortController } from './abortPrimitives.js';
+// release 用于在 executeToolLoop 结束时静默清理 runController（防止内存泄漏）
+const releaseRunController = (runId: string) => abortPrimitives.release(`run:${runId}`);
 
 // ===================== 工具结果错误检测 =====================
 
@@ -143,6 +158,26 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     sessionId,
   } = options;
 
+  // v11.1: 创建运行级别的受管理 AbortController，并桥接外部 signal
+  // 这样 run 级别的中止会级联到所有子控制器（工具级），且外部取消也会传播进来
+  const runId = sessionId || `run-${Date.now()}`;
+  const runController = createRunAbortController(runId);
+  const managedSignal = runController.signal;
+  if (signal) {
+    // P0: 存储 listener 并注册到 cleanupFns，在 release 时自动移除，防止外部 signal 上 listener 堆积
+    const externalListener = () => {
+      abortPrimitives.abort(`run:${runId}`, {
+        reason: 'cascaded',
+        source: 'external',
+        timestamp: Date.now(),
+        message: 'External signal aborted',
+      });
+    };
+    signal.addEventListener('abort', externalListener);
+    if (!runController.cleanupFns) runController.cleanupFns = [];
+    runController.cleanupFns.push(() => signal.removeEventListener('abort', externalListener));
+  }
+
   // v1.5.116: 熔断器 — 优先使用外部传入实例，否则使用模块级单例
   const circuitBreaker = externalCircuitBreaker ?? defaultCircuitBreaker;
 
@@ -197,8 +232,10 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     logger.debug('[ToolExecutor] 检测到文件生成意图，强制 tool_choice=file_generateFile');
   }
 
+  // v11.1: 用 try/finally 确保 runController 在函数退出时被释放，防止内存泄漏
+  try {
   for (let turn = 0; turn < maxToolTurns; turn++) {
-    if (signal?.aborted) {
+    if (managedSignal.aborted) {
       const err = new Error('请求已取消');
       err.name = 'AbortError';
       throw err;
@@ -234,7 +271,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
         if (onChunk) onChunk(text);
         finalContent += text;
       },
-      signal,
+      managedSignal,
       onThinking,
       processedTools,
       undefined,
@@ -421,7 +458,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       // 需要审批的工具
       if (policyResult.requireApproval) {
         try {
-          if (signal?.aborted) {
+          if (managedSignal.aborted) {
             const abortResult = JSON.stringify({
               error: `工具 '${toolName}' 会话已超时取消`,
               approvalDenied: true,
@@ -469,7 +506,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
 
           const approvalResult = await approvalManager.waitForApproval(approvalRequest.id);
           
-          if (signal?.aborted) {
+          if (managedSignal.aborted) {
             const abortResult = JSON.stringify({
               error: `工具 '${toolName}' 会话已超时取消`,
               approvalDenied: true,
@@ -645,95 +682,232 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       extra: { riskLevel: policyResult.riskLevel },
     });
 
-    // ===================== 工具执行分发 =====================
-    // [内置工具路径] 通过 toolRegistry.executeToolCall() 直接执行
-    // [MCP工具路径] 通过 mcpClientManager.executeMcpTool() 委托执行
-    // v1.5.116: MCP 工具路由 — 区分 MCP 工具和内置工具
     let result: string;
+    // v11.0: 工具调用安全审查
+    const toolReviewResult = toolCallReviewer.review({
+      toolName,
+      args: normalizedArgs,
+      sessionId: sessionId || undefined,
+    });
+    if (toolReviewResult.decision === 'deny') {
+      result = JSON.stringify({
+        error: `工具调用被安全审查拒绝: ${toolReviewResult.rationale}`,
+        riskLevel: toolReviewResult.riskLevel,
+      });
+      logger.warn(`[ToolExecutor] Tool call denied by reviewer: ${toolName} - ${toolReviewResult.rationale}`);
+      // 通知前端
+      if (onSSEEvent) {
+        onSSEEvent({
+          type: 'tool_call_denied',
+          toolName,
+          rationale: toolReviewResult.rationale,
+          riskLevel: toolReviewResult.riskLevel,
+        });
+      }
+      continue;
+    }
+
+    // ===================== 工具执行分发 =====================
+    // v11.1: 集成降级策略、超时、重试、中间件链、统计、审计
+    // 1. 降级策略：检查是否需要切换到备用工具
+    const effectiveToolName = toolFallbackManager.checkAndFallback(toolName);
+    if (effectiveToolName !== toolName) {
+      logger.info(`[ToolExecutor] Fallback: ${toolName} → ${effectiveToolName}`);
+    }
+
+    // P1-3: half_open 并发探测 — 限制半开状态下的并发请求数
+    const halfOpenSlot = circuitBreaker.isHalfOpen(effectiveToolName)
+      ? circuitBreaker.acquireHalfOpenSlot(effectiveToolName)
+      : true;
+    if (!halfOpenSlot) {
+      const skipResult = JSON.stringify({
+        error: `工具 '${effectiveToolName}' 处于 half_open 状态且并发探测槽位已满，已跳过执行。`,
+        circuitBreakerState: 'half_open',
+      });
+      executedToolCalls.push({ name: effectiveToolName, arguments: toolCall.function.arguments, result: skipResult });
+      currentMessages.push({
+        role: 'tool',
+        content: skipResult,
+        tool_call_id: toolCall.id,
+      });
+      if (onToolCall) onToolCall(toolCall, skipResult);
+      if (onSSEEvent) {
+        onSSEEvent({
+          type: 'tool_execution_completed',
+          toolName: effectiveToolName,
+          toolCallId: toolCall.id,
+          skipped: true,
+          reason: 'half_open_concurrent_limit',
+        });
+      }
+      continue;
+    }
+
+    // SSE: 通知工具执行开始
+    if (onSSEEvent) {
+      onSSEEvent({
+        type: 'tool_execution_started',
+        toolName: effectiveToolName,
+        originalToolName: effectiveToolName !== toolName ? toolName : undefined,
+        toolCallId: toolCall.id,
+        sessionId,
+        timestamp: Date.now(),
+      });
+    }
+
+    // v11.1: 创建工具发送回执（用于会话恢复时重放）
+    toolSendReceipts.createReceipt({
+      id: toolCall.id,
+      toolName: effectiveToolName,
+      sessionId: sessionId || 'unknown',
+      arguments: toolCall.function.arguments,
+    });
+
     let mcpExecutionSucceeded = true;
-    // v9.1: Skill 工具路由 — 区分 Skill / MCP / 内置工具
-    // [Skill 工具路径] 通过 skillToolBridge 执行（Skill 四层架构）
-    if (isSkillToolName(toolName)) {
-      try {
+    const execStartTime = Date.now();
+    let retryCount = 0;
+    let timedOut = false;
+
+    const toolExecutor = async (toolSignal: AbortSignal): Promise<string> => {
+      if (isSkillToolName(effectiveToolName)) {
         const skillResult = await handleSkillToolCall(
-          { id: toolCall.id, type: 'function', function: { name: toolName, arguments: JSON.stringify(normalizedArgs) } },
+          { id: toolCall.id, type: 'function', function: { name: effectiveToolName, arguments: JSON.stringify(normalizedArgs) } },
           skillPermissionConfig,
           sessionId || `session-${Date.now()}`,
         );
-        result = skillResult.content;
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        result = JSON.stringify({ error: `Skill 执行异常: ${errMsg}` });
-      }
-    }
-    // [MCP工具路径] 委托给 mcpClientManager 执行
-    else if (isMcpToolName(toolName)) {
-      try {
-        result = await mcpClientManager.executeMcpTool(toolName, normalizedArgs);
-        // MCP Server 级成功记录
-        const prefix = getMcpServerPrefix(toolName);
+        return skillResult.content;
+      } else if (isMcpToolName(effectiveToolName)) {
+        const mcpResult = await mcpClientManager.executeMcpTool(effectiveToolName, normalizedArgs, { signal: toolSignal });
+        const prefix = getMcpServerPrefix(effectiveToolName);
         if (prefix) {
           circuitBreaker.recordMcpServerSuccess(prefix);
         }
-      } catch (err) {
-        mcpExecutionSucceeded = false;
-        const errMsg = err instanceof Error ? err.message : String(err);
-        result = JSON.stringify({ error: `MCP 工具执行异常: ${errMsg}` });
-        // MCP Server 级失败记录
-        const prefix = getMcpServerPrefix(toolName);
+        return mcpResult;
+      } else {
+        return executeToolCall({
+          ...toolCall,
+          function: {
+            ...toolCall.function,
+            name: effectiveToolName,
+            arguments: JSON.stringify(normalizedArgs),
+          },
+        });
+      }
+    };
+
+    try {
+      const retryResult = await executeToolCallWithRetry(effectiveToolName, () =>
+        toolExecutionQueue.enqueue(
+          {
+            id: toolCall.id,
+            toolName: effectiveToolName,
+            args: normalizedArgs,
+            priority: 'normal',
+            sessionId,
+            enqueuedAt: Date.now(),
+            signal: managedSignal,
+          },
+          (queueSignal: AbortSignal) =>
+            executeToolCallWithTimeout(effectiveToolName, toolExecutor, { signal: queueSignal }),
+        ),
+        {}, managedSignal,
+      );
+      result = retryResult.result;
+      retryCount = retryResult.retryCount;
+    } catch (err) {
+      mcpExecutionSucceeded = false;
+      const errMsg = err instanceof Error ? err.message : String(err);
+      const errName = err instanceof Error ? err.name : undefined;
+      timedOut = errName === 'ToolTimeoutError';
+
+      result = JSON.stringify({
+        error: `工具执行异常: ${errMsg}`,
+        errorName: errName,
+        retryAttempts: retryCount,
+        timedOut,
+      });
+
+      if (isMcpToolName(effectiveToolName)) {
+        const prefix = getMcpServerPrefix(effectiveToolName);
         if (prefix) {
           const mcpState = circuitBreaker.recordMcpServerFailure(prefix, errMsg);
           if (mcpState === 'open' && onSSEEvent) {
             onSSEEvent({
               type: 'circuit_breaker_triggered',
-              toolName,
+              toolName: effectiveToolName,
               failureCount: circuitBreaker.getRecord(`mcp__${prefix}__*`)?.consecutiveFailures ?? 0,
               state: 'open',
             });
           }
         }
       }
-    } else {
-      // [内置工具路径] 通过 toolRegistry.executeToolCall() 直接执行
-      result = await executeToolCall({
-        ...toolCall,
-        function: {
-          ...toolCall.function,
-          arguments: JSON.stringify(normalizedArgs),
-        },
+    }
+
+    // 2. 结果中间件：截断、错误分类
+    const middlewareResult = executeToolCallWithMiddleware(effectiveToolName, result);
+    result = middlewareResult.content;
+
+    if (middlewareResult.truncated) {
+      logger.debug(`[ToolExecutor] Tool result truncated: ${effectiveToolName} (${middlewareResult.estimatedChars} chars)`);
+    }
+
+    // 3. 上下文保护：防止工具结果撑爆 context window
+    result = guardToolResultContext(result, currentMessages, modelConfig.contextWindow || 128000);
+
+    // 4. 统计记录
+    toolExecutionStats.record({
+      toolName: effectiveToolName,
+      startTime: execStartTime,
+      endTime: Date.now(),
+      success: middlewareResult.errorType === 'none',
+      errorType: middlewareResult.errorType === 'none' ? undefined : middlewareResult.errorType,
+      errorMessage: middlewareResult.errorMessage,
+      retryCount,
+      timedOut,
+      resultSize: result.length,
+    });
+
+    // 5. 审计日志
+    toolAuditLog.log({
+      toolName: effectiveToolName,
+      originalToolName: effectiveToolName !== toolName ? toolName : undefined,
+      sessionId,
+      args: normalizedArgs,
+      result: result.slice(0, 500),
+      success: middlewareResult.errorType === 'none',
+      durationMs: Date.now() - execStartTime,
+      errorType: middlewareResult.errorType === 'none' ? undefined : middlewareResult.errorType,
+      truncated: middlewareResult.truncated,
+    });
+
+    // SSE: 通知工具执行完成
+    if (onSSEEvent) {
+      onSSEEvent({
+        type: 'tool_execution_completed',
+        toolName: effectiveToolName,
+        toolCallId: toolCall.id,
+        sessionId,
+        success: middlewareResult.errorType === 'none',
+        errorType: middlewareResult.errorType === 'none' ? undefined : middlewareResult.errorType,
+        durationMs: Date.now() - execStartTime,
+        retryCount,
+        truncated: middlewareResult.truncated,
+        resultSize: result.length,
+        timestamp: Date.now(),
       });
     }
 
-      // v1.5.116: 熔断器 — 记录内置工具成功/失败
-      // v9.1: Skill 工具也走熔断器（非 MCP 工具）
-      if (!isMcpToolName(toolName) && !isSkillToolName(toolName)) {
-        const hasError = isToolResultFailed(result);
-        if (hasError) {
-          const circuitState = circuitBreaker.recordFailure(toolName, result.slice(0, 100));
-          if (circuitState === 'half_open') {
-            const suggestion = circuitBreaker.getAlternativeSuggestion(toolName);
-            if (suggestion) {
-              currentMessages.push({
-                role: 'system',
-                content: `[熔断器] ${suggestion}`,
-              });
-            }
-          }
-          if (circuitState === 'open' && onSSEEvent) {
-            const record = circuitBreaker.getRecord(toolName);
-            onSSEEvent({
-              type: 'circuit_breaker_triggered',
-              toolName,
-              failureCount: record?.consecutiveFailures ?? 0,
-              state: 'open',
-              alternativeTool: record?.alternativeTool,
-            });
-          }
-        } else {
-          circuitBreaker.recordSuccess(toolName);
-        }
-      } else if (!mcpExecutionSucceeded) {
-        // MCP 工具级别的熔断记录
+    // v11.1: 完成/失败工具发送回执
+    if (middlewareResult.errorType === 'none') {
+      toolSendReceipts.completeReceipt(toolCall.id, result, retryCount);
+    } else {
+      toolSendReceipts.failReceipt(toolCall.id, middlewareResult.errorMessage || 'Unknown error', retryCount);
+    }
+
+    // v1.5.116: 熔断器 — 记录工具成功/失败
+    if (!isMcpToolName(toolName) && !isSkillToolName(toolName)) {
+      const hasError = isToolResultFailed(result);
+      if (hasError) {
         const circuitState = circuitBreaker.recordFailure(toolName, result.slice(0, 100));
         if (circuitState === 'half_open') {
           const suggestion = circuitBreaker.getAlternativeSuggestion(toolName);
@@ -744,46 +918,71 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
             });
           }
         }
+        if (circuitState === 'open' && onSSEEvent) {
+          const record = circuitBreaker.getRecord(toolName);
+          onSSEEvent({
+            type: 'circuit_breaker_triggered',
+            toolName,
+            failureCount: record?.consecutiveFailures ?? 0,
+            state: 'open',
+            alternativeTool: record?.alternativeTool,
+          });
+        }
       } else {
         circuitBreaker.recordSuccess(toolName);
       }
-
-      // 触发 after_tool_call 钩子
-      await pluginHooks.executeHooks('after_tool_call', {
-        sessionId,
-        toolCall: {
-          toolName,
-          args: parsedArgs,
-        },
-        toolResult: result,
-      });
-
-      // 记录工具调用
-      executedToolCalls.push({
-        name: toolName,
-        arguments: toolCall.function.arguments,
-        result,
-      });
-
-      // 通知调用方
-      if (onToolCall) {
-        onToolCall(toolCall, result);
+    } else if (!mcpExecutionSucceeded) {
+      const circuitState = circuitBreaker.recordFailure(toolName, result.slice(0, 100));
+      if (circuitState === 'half_open') {
+        const suggestion = circuitBreaker.getAlternativeSuggestion(toolName);
+        if (suggestion) {
+          currentMessages.push({
+            role: 'system',
+            content: `[熔断器] ${suggestion}`,
+          });
+        }
       }
-
-      // 将 tool result 添加到消息上下文（含 tool_call_id，用于 Anthropic 格式转换）
-      currentMessages.push({
-        role: 'tool',
-        content: result,
-        tool_call_id: toolCall.id,
-      });
+    } else {
+      circuitBreaker.recordSuccess(toolName);
     }
 
-    // v1.9.5-fix: 不重置 finalContent，而是累积所有轮次的 AI 文本输出
-    // 之前重置为 '' 会导致：模型先输出文字再调用工具 → 文字在工具执行后丢失 → fullContent 为空 → 前端显示"内容生成失败"
-    // 添加换行分隔符，避免不同轮次的内容粘连
-    if (finalContent && !finalContent.endsWith('\n')) {
-      finalContent += '\n\n';
+    await pluginHooks.executeHooks('after_tool_call', {
+      sessionId,
+      toolCall: {
+        toolName,
+        args: parsedArgs,
+      },
+      toolResult: result,
+    });
+
+    executedToolCalls.push({
+      name: toolName,
+      arguments: toolCall.function.arguments,
+      result,
+    });
+
+    if (onToolCall) {
+      onToolCall(toolCall, result);
     }
+
+    currentMessages.push({
+      role: 'tool',
+      content: result,
+      tool_call_id: toolCall.id,
+    });
+
+    // P1-3: 释放 half_open 并发探测槽位
+    if (circuitBreaker.isHalfOpen(effectiveToolName)) {
+      circuitBreaker.releaseHalfOpenSlot(effectiveToolName);
+    }
+    } // 闭合内层 for (const toolCall) 循环
+  }
+
+  // v1.9.5-fix: 不重置 finalContent，而是累积所有轮次的 AI 文本输出
+  // 之前重置为 '' 会导致：模型先输出文字再调用工具 → 文字在工具执行后丢失 → fullContent 为空 → 前端显示"内容生成失败"
+  // 添加换行分隔符，避免不同轮次的内容粘连
+  if (finalContent && !finalContent.endsWith('\n')) {
+    finalContent += '\n\n';
   }
 
   // 达到最大轮数，返回所有轮次累积的内容
@@ -793,6 +992,10 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     thinkingSignature: lastThinkingSignature,
     redacted: lastRedacted,
   };
+  } finally {
+    // v11.1: 释放 runController，防止内存泄漏（无论正常完成、异常、用户取消都会执行）
+    releaseRunController(runId);
+  }
 }
 
 // v1.5.116: Legacy 策略的模块级熔断器单例

@@ -760,3 +760,288 @@ export function normalizeReasoningLevel(raw?: string | null): ReasoningLevel | u
 export function isValidReasoningLevel(raw?: string | null): raw is string {
   return normalizeReasoningLevel(raw) !== undefined;
 }
+
+// ===================== 思考模式运行时状态 =====================
+
+/**
+ * 思考模式状态 — 控制 AI 的推理和输出行为
+ */
+export interface ThinkingModeState {
+  /** 思考级别 */
+  thinkLevel: ThinkLevel;
+  /** 详细程度 */
+  verboseLevel: VerboseLevel;
+  /** 追踪级别 */
+  traceLevel: TraceLevel;
+  /** 推理显示级别 */
+  reasoningLevel: ReasoningLevel;
+}
+
+/**
+ * 默认思考模式状态
+ */
+export const DEFAULT_THINKING_MODE_STATE: ThinkingModeState = {
+  thinkLevel: 'off',
+  verboseLevel: 'off',
+  traceLevel: 'off',
+  reasoningLevel: 'off',
+};
+
+/**
+ * 思考模式状态管理器 — 管理会话级别的思考模式配置
+ */
+export class ThinkingModeManager {
+  private states = new Map<string, ThinkingModeState>();
+
+  /**
+   * 获取会话的思考模式状态
+   */
+  getState(sessionId: string): ThinkingModeState {
+    return this.states.get(sessionId) ?? { ...DEFAULT_THINKING_MODE_STATE };
+  }
+
+  /**
+   * 设置会话的思考模式状态
+   */
+  setState(sessionId: string, state: Partial<ThinkingModeState>): void {
+    const current = this.getState(sessionId);
+    this.states.set(sessionId, { ...current, ...state });
+  }
+
+  /**
+   * 设置思考级别
+   */
+  setThinkLevel(sessionId: string, level: ThinkLevel): void {
+    this.setState(sessionId, { thinkLevel: level });
+  }
+
+  /**
+   * 设置详细程度
+   */
+  setVerboseLevel(sessionId: string, level: VerboseLevel): void {
+    this.setState(sessionId, { verboseLevel: level });
+  }
+
+  /**
+   * 设置追踪级别
+   */
+  setTraceLevel(sessionId: string, level: TraceLevel): void {
+    this.setState(sessionId, { traceLevel: level });
+  }
+
+  /**
+   * 设置推理显示级别
+   */
+  setReasoningLevel(sessionId: string, level: ReasoningLevel): void {
+    this.setState(sessionId, { reasoningLevel: level });
+  }
+
+  /**
+   * 重置会话的思考模式状态
+   */
+  resetState(sessionId: string): void {
+    this.states.set(sessionId, { ...DEFAULT_THINKING_MODE_STATE });
+  }
+
+  /**
+   * 清除会话的思考模式状态
+   */
+  clearState(sessionId: string): void {
+    this.states.delete(sessionId);
+  }
+
+  /**
+   * 检查是否启用了思考模式（任何级别 > off）
+   */
+  isThinkingEnabled(sessionId: string): boolean {
+    const state = this.getState(sessionId);
+    return THINKING_LEVEL_RANKS[state.thinkLevel] > 0;
+  }
+
+  /**
+   * 检查是否启用了详细模式
+   */
+  isVerboseEnabled(sessionId: string): boolean {
+    const state = this.getState(sessionId);
+    return state.verboseLevel !== 'off';
+  }
+
+  /**
+   * 检查是否启用了追踪模式
+   */
+  isTraceEnabled(sessionId: string): boolean {
+    const state = this.getState(sessionId);
+    return state.traceLevel !== 'off';
+  }
+
+  /**
+   * 检查是否启用了推理显示
+   */
+  isReasoningEnabled(sessionId: string): boolean {
+    const state = this.getState(sessionId);
+    return state.reasoningLevel !== 'off';
+  }
+
+  /**
+   * 获取思考模式的显示标签
+   */
+  getDisplayLabel(sessionId: string): string {
+    const state = this.getState(sessionId);
+    const parts: string[] = [];
+
+    if (state.thinkLevel !== 'off') {
+      parts.push(`思考: ${state.thinkLevel}`);
+    }
+    if (state.verboseLevel !== 'off') {
+      parts.push(`详细: ${state.verboseLevel}`);
+    }
+    if (state.traceLevel !== 'off') {
+      parts.push(`追踪: ${state.traceLevel}`);
+    }
+    if (state.reasoningLevel !== 'off') {
+      parts.push(`推理: ${state.reasoningLevel}`);
+    }
+
+    return parts.length > 0 ? parts.join(', ') : '默认';
+  }
+}
+
+/**
+ * 全局思考模式管理器单例
+ */
+export const thinkingModeManager = new ThinkingModeManager();
+
+// ===================== 指令解析 =====================
+
+/**
+ * 思考指令类型
+ */
+export type ThinkingDirective =
+  | { type: 'think'; level: ThinkLevel }
+  | { type: 'verbose'; level: VerboseLevel }
+  | { type: 'trace'; level: TraceLevel }
+  | { type: 'reasoning'; level: ReasoningLevel }
+  | { type: 'silent' };
+
+/**
+ * 解析用户输入中的思考指令
+ *
+ * 支持的指令格式：
+ * - /think [level] - 设置思考级别
+ * - /verbose [level] - 设置详细程度
+ * - /trace [level] - 设置追踪级别
+ * - /reasoning [level] - 设置推理显示级别
+ * - /silent - 关闭所有思考模式
+ *
+ * @param input - 用户输入文本
+ * @returns 解析出的指令列表
+ */
+export function parseThinkingDirectives(input: string): ThinkingDirective[] {
+  const directives: ThinkingDirective[] = [];
+  const lines = input.split('\n');
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // /think [level]
+    if (trimmed.startsWith('/think')) {
+      const arg = trimmed.slice(7).trim();
+      const level = normalizeThinkLevel(arg) || 'low';
+      directives.push({ type: 'think', level });
+    }
+
+    // /verbose [level]
+    if (trimmed.startsWith('/verbose')) {
+      const arg = trimmed.slice(9).trim();
+      const level = normalizeVerboseLevel(arg) || 'on';
+      if (level) {
+        directives.push({ type: 'verbose', level });
+      }
+    }
+
+    // /trace [level]
+    if (trimmed.startsWith('/trace')) {
+      const arg = trimmed.slice(6).trim();
+      const level = normalizeTraceLevel(arg) || 'on';
+      if (level) {
+        directives.push({ type: 'trace', level });
+      }
+    }
+
+    // /reasoning [level]
+    if (trimmed.startsWith('/reasoning')) {
+      const arg = trimmed.slice(11).trim();
+      const level = normalizeReasoningLevel(arg) || 'on';
+      if (level) {
+        directives.push({ type: 'reasoning', level });
+      }
+    }
+
+    // /silent
+    if (trimmed === '/silent') {
+      directives.push({ type: 'silent' });
+    }
+  }
+
+  return directives;
+}
+
+/**
+ * 应用思考指令到会话状态
+ */
+export function applyThinkingDirectives(
+  sessionId: string,
+  directives: ThinkingDirective[],
+): void {
+  for (const directive of directives) {
+    switch (directive.type) {
+      case 'think':
+        thinkingModeManager.setThinkLevel(sessionId, directive.level);
+        break;
+      case 'verbose':
+        thinkingModeManager.setVerboseLevel(sessionId, directive.level);
+        break;
+      case 'trace':
+        thinkingModeManager.setTraceLevel(sessionId, directive.level);
+        break;
+      case 'reasoning':
+        thinkingModeManager.setReasoningLevel(sessionId, directive.level);
+        break;
+      case 'silent':
+        thinkingModeManager.resetState(sessionId);
+        break;
+    }
+  }
+}
+
+/**
+ * 从输入中提取并移除思考指令
+ *
+ * @param input - 用户输入文本
+ * @returns 移除指令后的文本 + 解析出的指令
+ */
+export function extractThinkingDirectives(input: string): {
+  cleanedInput: string;
+  directives: ThinkingDirective[];
+} {
+  const directives = parseThinkingDirectives(input);
+  let cleaned = input;
+
+  // 移除思考指令行
+  const lines = cleaned.split('\n');
+  cleaned = lines
+    .filter((line) => {
+      const trimmed = line.trim();
+      return (
+        !trimmed.startsWith('/think') &&
+        !trimmed.startsWith('/verbose') &&
+        !trimmed.startsWith('/trace') &&
+        !trimmed.startsWith('/reasoning') &&
+        trimmed !== '/silent'
+      );
+    })
+    .join('\n')
+    .trim();
+
+  return { cleanedInput: cleaned, directives };
+}

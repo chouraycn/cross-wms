@@ -57,6 +57,7 @@ import { useAgentChat } from '../../hooks/useAgentChat.js';
 import { formatHelpText } from '../../hooks/useSlashCommands.js';
 import type { ApprovalRequest, ApprovalHistoryItem, ApprovalConfig } from './ApprovalDialog.js';
 const ApprovalDialog = React.lazy(() => import('./ApprovalDialog.js').then(m => ({ default: m.ApprovalDialog })));
+import { SkillCreateDialog } from '../CrossWmsChat/SkillCreateDialog.js';
 
 // 任务 6: 右侧侧边栏展开时，AI 对话内容 maxWidth 缩小 5%（左右各 5%）
 const CHAT_MAX_WIDTH_WITH_SIDEPANEL = Math.round(CHAT_MAX_WIDTH * 0.9);
@@ -276,6 +277,27 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   // 监听左侧侧边栏折叠状态（展开时隐藏内容框左侧的侧边栏切换和新对话按钮）
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState<boolean>(false);
 
+  // v1.7.85: 监听窗口全屏状态（全屏时红黄绿按钮消失，侧边栏按钮需要左移填补空间）
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  useEffect(() => {
+    const onFullscreenChanged = ((e: CustomEvent) => {
+      setIsFullscreen(e.detail?.fullscreen ?? false);
+    }) as EventListener;
+    window.addEventListener('cdf-window-fullscreen-changed', onFullscreenChanged);
+
+    // v1.7.85: 轮询检测全屏状态（每秒检查一次）
+    const checkFullscreen = () => {
+      const fs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      setIsFullscreen(fs);
+    };
+    const interval = setInterval(checkFullscreen, 1000);
+
+    return () => {
+      window.removeEventListener('cdf-window-fullscreen-changed', onFullscreenChanged);
+      clearInterval(interval);
+    };
+  }, []);
+
   // 任务 6: 右侧侧边栏展开时，AI 对话内容 maxWidth 缩小 5%（左右各 5%）
   const currentMaxWidth = sidePanelOpen ? CHAT_MAX_WIDTH_WITH_SIDEPANEL : CHAT_MAX_WIDTH;
 
@@ -317,12 +339,24 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     allowlist: [...BUILTIN_SAFE_PATTERNS],
   });
 
+  // Skill 创建对话框状态
+  const [skillCreateOpen, setSkillCreateOpen] = useState(false);
+  const [skillCreateName, setSkillCreateName] = useState('');
+  const [skillCreateDesc, setSkillCreateDesc] = useState('');
+
   // 窗口事件监听（侧边栏状态、审批请求、聚焦聊天输入框）
   useChatEventListeners({
     setLeftSidebarCollapsed,
     setShowApprovalDialog,
     isPage,
   });
+
+  // 终端与左侧侧边栏互斥显示：侧边栏展开时关闭终端
+  useEffect(() => {
+    if (!leftSidebarCollapsed && terminalOpen) {
+      setTerminalOpen(false);
+    }
+  }, [leftSidebarCollapsed, terminalOpen]);
 
   // 使用审批事件处理 hook
   const {
@@ -504,6 +538,21 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         }
         return true;
       }
+      case 'skill': {
+        showToast('技能选择器已打开', 'info', 1500);
+        return true;
+      }
+      case 'skill-create': {
+        if (args) {
+          setSkillCreateName(args.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-'));
+          setSkillCreateDesc('');
+        } else {
+          setSkillCreateName('');
+          setSkillCreateDesc('');
+        }
+        setSkillCreateOpen(true);
+        return true;
+      }
       case 'debug': {
         showToast('调试模式切换功能开发中', 'info', 2000);
         return true;
@@ -511,7 +560,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       default:
         return false;
     }
-  }, [handleSessionUpdate, handleNewChat, showToast, updateSessionModel, compactSession]);
+  }, [handleSessionUpdate, handleNewChat, showToast, updateSessionModel, compactSession, setSkillCreateOpen, setSkillCreateName, setSkillCreateDesc]);
 
   // 包装 sendMessage，先处理斜杠命令
   const handleSendMessage = useCallback((content: string, options?: SendAgentMessageOptions) => {
@@ -734,14 +783,16 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         bgcolor: gs.bgPanel,
         overflow: 'hidden',
       }}>
-        {/* 收起侧边栏时空状态的2按钮：侧边栏展开 + 搜索（顶部位置，红黄绿避让） */}
+        {/* 收起侧边栏时空状态的2按钮：侧边栏展开 + 新对话（顶部位置，红黄绿避让） */}
+        {/* v1.7.85: 全屏时红黄绿消失，按钮左移填补空间 */}
+        {/* v1.7.86: 空状态只显示侧边栏展开和新对话按钮，移除搜索按钮 */}
         {leftSidebarCollapsed && isChatRoute && isEmpty && (
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 0.25,
-            pl: nativeApp ? '78px' : 2,
+            pl: nativeApp ? (isFullscreen ? '8px' : '78px') : 2,
             pr: 2,
             pt: 'calc(var(--pw-top, 0px) + 30px)',
             pb: 0,
@@ -770,9 +821,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
               </svg>
             </IconButton>
           </Tooltip>
-          <Tooltip title="搜索" arrow>
+          <Tooltip title="新对话" arrow>
             <IconButton
-              onClick={() => window.dispatchEvent(new CustomEvent('cdf-open-search'))}
+              onClick={handleNewChat}
               sx={{
                 color: '#000',
                 borderRadius: '6.48px',
@@ -784,19 +835,20 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 '&:hover': { bgcolor: 'transparent', color: '#000' },
               }}
             >
-              <SearchIcon sx={{ fontSize: '16.2px' }} />
+              <ChatBubbleOutlineIcon sx={{ fontSize: '16.2px' }} />
             </IconButton>
           </Tooltip>
         </Box>
         )}
         {/* 顶部标题栏：仅在有内容时显示（会话标题 + 文件夹路径 + 右侧按钮） */}
+        {/* v1.7.85: 全屏时红黄绿消失，按钮左移填补空间 */}
         {!isEmpty && (
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            pl: leftSidebarCollapsed ? (nativeApp ? '78px' : '8px') : 2,
+            pl: leftSidebarCollapsed ? (nativeApp ? (isFullscreen ? '8px' : '78px') : '8px') : 2,
             pr: 2,
             py: 0.75,
             borderBottom: `1px solid ${gs.border}`,
@@ -970,14 +1022,54 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                 </IconButton>
               </Tooltip>
             )}
+            <Tooltip title="压缩对话" arrow>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  const messages = session.messages;
+                  if (messages.length < 8) {
+                    showToast('消息数量不足 8 条，无需压缩', 'info', 2000);
+                    return;
+                  }
+                  showToast('正在压缩对话...', 'info', 2000);
+                  compactSession(6).then((result) => {
+                    if (result.success && result.compressed) {
+                      showToast('对话压缩成功', 'success', 2000);
+                    } else if (result.success && !result.compressed) {
+                      showToast('消息数量不足，无需压缩', 'info', 2000);
+                    } else {
+                      showToast('压缩失败，请重试', 'error', 3000);
+                    }
+                  }).catch(() => {
+                    showToast('压缩失败，请重试', 'error', 3000);
+                  });
+                }}
+                sx={{
+                  color: '#000',
+                  p: 0.36,
+                  bgcolor: 'transparent',
+                  '&:hover': { bgcolor: 'transparent', color: '#000' },
+                }}
+              >
+                <svg width="13.3" height="13.3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 9l-7 7-7-7" />
+                </svg>
+              </IconButton>
+            </Tooltip>
             <Tooltip title={terminalOpen ? '关闭终端' : '打开终端'} arrow>
               <IconButton
                 size="small"
                 onClick={() => {
                   setTerminalOpen(prev => {
                     const next = !prev;
-                    // 打开终端时收起侧面板，避免同时显示
-                    if (next) setSidePanelOpen(false);
+                    // 打开终端时收起侧面板和左侧侧边栏，避免同时显示
+                    if (next) {
+                      setSidePanelOpen(false);
+                      // 收起左侧侧边栏（互斥显示）
+                      if (!leftSidebarCollapsed) {
+                        window.dispatchEvent(new CustomEvent('cdf-toggle-sidebar'));
+                      }
+                    }
                     return next;
                   });
                 }}
@@ -1590,6 +1682,14 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             darkMode={isDark}
           />
         </Suspense>
+
+        {/* Skill 创建对话框 */}
+        <SkillCreateDialog
+          open={skillCreateOpen}
+          initialSkillName={skillCreateName}
+          initialDescription={skillCreateDesc}
+          onClose={() => setSkillCreateOpen(false)}
+        />
 
         {/* 消息右键菜单 */}
         {contextMenu.message && contextMenu.position && (

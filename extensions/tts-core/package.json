@@ -1,0 +1,9 @@
+{
+  "name": "@crosswms/extension-tts-core",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "elevenlabs": "^0.15.0",
+    "openai": "^4.52.0"
+  }
+}

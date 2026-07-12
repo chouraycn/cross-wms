@@ -366,6 +366,7 @@ export class UnifiedProviderRegistry {
         'google-generative-ai': 0,
         'qwen-chat': 0,
         'moonshot-chat': 0,
+        'azure-openai': 0,
       },
       byCategory: {},
       totalInvokes: 0,

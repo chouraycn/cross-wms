@@ -36,6 +36,7 @@ import { handleDesktopAppLaunch, handleDesktopAppQuit, handleDesktopWindowFocus 
 import { handleDesktopScreenshot, handleDesktopSee, handleDesktopSnapshot, handleDesktopFind, handleDesktopClickSmart } from './desktop/visionTools.js';
 import { handleDesktopClipboard } from './desktop/clipboardTools.js';
 import { handleAppSetBotName } from './appTools.js';
+import { handleSkillCreateProposal } from './skillTools.js';
 
 // ===================== 内置工具注册表 =====================
 
@@ -599,6 +600,28 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleAppSetBotName,
   });
 
+  // skill_createProposal — 创建技能提案并可选自动应用
+  registerBuiltinTool({
+    definition: {
+      type: 'function',
+      function: {
+        name: 'skill_createProposal',
+        description: '创建一个新的 Skill 技能提案，可选择自动应用。用于 AI 自主创建新技能或更新现有技能。创建后会自动进行安全扫描，若存在高危风险提案将被隔离，需人工审核。',
+        parameters: {
+          type: 'object',
+          properties: {
+            skillName: { type: 'string', description: '技能名称，使用小写字母和下划线，如 my_skill' },
+            description: { type: 'string', description: '技能的简短描述' },
+            content: { type: 'string', description: 'SKILL.md 文件的完整内容' },
+            autoApply: { type: 'boolean', description: '是否自动应用提案（默认 false）。设为 true 时，若扫描通过会立即写入文件并生效。' },
+          },
+          required: ['skillName', 'content'],
+        },
+      },
+    },
+    handler: handleSkillCreateProposal,
+  });
+
   // ===================== Web Tools =====================
 
   // web_search_legacy — 旧版搜索工具（已弃用，保留用于向后兼容）
@@ -907,6 +930,22 @@ export async function initDefaultTools(): Promise<void> {
     logger.debug('[Tool Registry] code_understanding 工具已注册');
   } catch (err) {
     logger.warn('[Tool Registry] code_understanding 工具未注册:', err instanceof Error ? err.message : String(err));
+  }
+
+  // P0-A: 打通技能数据链路。
+  // 启动时扫描三级目录（builtin/user/workspace）装入 skillRegistry，并注册唯一的
+  // `skill` 元工具（list/use）以渐进式披露方式暴露给 Agent。
+  // 详见 server/engine/skillRuntimeBridge.ts 顶部注释。
+  try {
+    const { initSkillRuntime, buildSkillToolDefinition, skillToolHandler } = await import('./skillRuntimeBridge.js');
+    await initSkillRuntime();
+    registerBuiltinTool({
+      definition: buildSkillToolDefinition(),
+      handler: skillToolHandler,
+    });
+    logger.debug('[Tool Registry] skill 元工具已注册（技能数据链路已打通）');
+  } catch (err) {
+    logger.warn('[Tool Registry] skill 元工具未注册（技能数据链路）:', err instanceof Error ? err.message : String(err));
   }
 }
 

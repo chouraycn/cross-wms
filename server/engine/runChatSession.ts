@@ -23,6 +23,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { executeChat as streamExecuteChat } from './streamExecutor.js';
 import type { ExecuteChatCallbacks, ExecuteChatResult } from './streamExecutor.js';
 import { buildApiMessages, hasImageAttachment } from './buildApiMessages.js';
+import { resolveSkillContext, extractContextTexts } from './skillRouter.js';
 import type { ModelCallConfig } from '../aiClient.js';
 import { loadModelsConfig, isLocalModel } from '../modelsStore.js';
 import type { ModelCapability, ModelConfig, ModelsFile } from '../modelsStore.js';
@@ -52,6 +53,10 @@ import { classifyAndFormatError } from '../routes/chatService.js';
 import { logger } from '../logger.js';
 import { runHooks, createHookEvent } from './hooks/index.js';
 import { getKeywordTriggerEngine } from './keywordTriggerEngine.js';
+import { outputReviewer } from './outputReviewer.js';
+import { compactionNotificationManager } from './compaction/compactionNotification.js';
+import { reviewStatisticsManager } from './reviewStatistics.js';
+import { formatValidator } from './formatValidator.js';
 
 // ===================== 压缩 Hook 单例 =====================
 // 在聊天执行核心中挂载「死」模块 engine/compaction/compactionHooks.ts 的生命周期钩子。
@@ -134,6 +139,8 @@ export interface RunChatSessionResult {
   assistantMessageId?: string;
   model?: string;
   modelName?: string;
+  quality?: string;
+  reviewSuggestion?: string;
 }
 
 // ===================== 核心函数 =====================
@@ -259,6 +266,12 @@ export async function runChatSession(
   const contractMaxToolCalls = getExecutionContractManager().getContract(effectiveModel).maxToolCallsPerTurn;
 
   const dbMessages = getSessionMessages(sessionId);
+  // P2-1b 智能技能路由：在构建消息前，按 query + 上下文自动匹配相关技能并注入 prompt
+  const resolvedSkillContext = await resolveSkillContext(
+    input.skillContext,
+    message,
+    extractContextTexts(dbMessages, 6),
+  );
   const built = await buildApiMessages({
     sessionId,
     message,
@@ -266,7 +279,7 @@ export async function runChatSession(
     finalModelConfig,
     dbMessages,
     conversationHistory: input.conversationHistory,
-    skillContext: input.skillContext,
+    skillContext: resolvedSkillContext,
     attachments: input.attachments,
     referencedSessionIds: input.referencedSessionIds,
     hasImage: hasImageAttachment(input.attachments),
@@ -602,12 +615,33 @@ export async function runChatSession(
         );
 
         if (compactionResult.compressed) {
+          const reductionRatio = tokensBefore > 0 ? (tokensBefore - tokensAfter) / tokensBefore : 0;
           callbacks.onEvent?.({
             type: 'compaction',
             tokensBefore,
             tokensAfter,
-            reductionRatio: tokensBefore > 0 ? (tokensBefore - tokensAfter) / tokensBefore : 0,
+            reductionRatio,
           });
+
+          const notification = compactionNotificationManager.addNotification(sessionId, {
+            sessionId,
+            type: 'compaction',
+            level: 'info',
+            message: `对话历史已自动压缩，节省了 ${Math.round(reductionRatio * 100)}% 的上下文空间`,
+            details: {
+              tokensBefore,
+              tokensAfter,
+              reductionRatio,
+              summary: (compactionResult as any).summary,
+              trigger: 'budget',
+            },
+          });
+
+          callbacks.onEvent?.({
+            type: 'compaction_notification',
+            notification,
+          });
+
           triggerPostCompactionSync(sessionId, input.agentId || 'default').catch(() => {});
         }
 
@@ -642,6 +676,41 @@ export async function runChatSession(
       }
     }
 
+    let outputQuality: string | undefined;
+    let reviewSuggestion: string | undefined;
+    if (outputReviewer.isEnabled() && result.content) {
+      const formatResult = formatValidator.validate(result.content);
+      if (formatResult.issues.length > 0) {
+        logger.info(`[FormatValidator] Found ${formatResult.issues.length} format issues`);
+      }
+
+      const reviewResult = await outputReviewer.review({
+        userQuestion: message,
+        aiResponse: result.content,
+        model: effectiveModelName,
+      });
+      outputQuality = reviewResult.quality;
+      reviewSuggestion = reviewResult.suggestion;
+      callbacks.onEvent?.({
+        type: 'output_review',
+        quality: reviewResult.quality,
+        issues: reviewResult.issues,
+        suggestion: reviewResult.suggestion,
+      });
+      logger.info(`[OutputReview] Quality: ${reviewResult.quality}, Issues: ${reviewResult.issues.join(', ')}`);
+
+      reviewStatisticsManager.record({
+        sessionId,
+        timestamp: Date.now(),
+        quality: reviewResult.quality,
+        issues: reviewResult.issues,
+        suggestion: reviewResult.suggestion,
+        model: effectiveModelName,
+        responseLength: result.content.length,
+        questionLength: message.length,
+      });
+    }
+
     const finalResult: RunChatSessionResult = {
       content: result.content,
       thinkingContent: result.thinkingContent,
@@ -655,6 +724,8 @@ export async function runChatSession(
       assistantMessageId,
       model: effectiveModel,
       modelName: effectiveModelName,
+      quality: outputQuality,
+      reviewSuggestion,
     };
 
     addMessage({

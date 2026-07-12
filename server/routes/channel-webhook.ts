@@ -4,10 +4,12 @@
  * 提供飞书、企业微信等通道的入站 webhook 端点
  *
  * 路由：
- *   POST /api/webhook/channels/feishu  — 飞书消息回调
- *   POST /api/webhook/channels/wecom   — 企业微信消息回调
- *   GET  /api/webhook/channels/feishu  — 飞书 URL 验证
- *   GET  /api/webhook/channels/wecom   — 企业微信 URL 验证
+ *   POST /api/webhook/channels/feishu    — 飞书消息回调
+ *   POST /api/webhook/channels/wecom     — 企业微信消息回调
+ *   POST /api/webhook/channels/dingtalk  — 钉钉消息/事件回调
+ *   GET  /api/webhook/channels/feishu    — 飞书 URL 验证
+ *   GET  /api/webhook/channels/wecom     — 企业微信 URL 验证
+ *   GET  /api/webhook/channels/dingtalk  — 钉钉 URL 验证
  */
 
 import { Router, type Request, type Response } from 'express';
@@ -19,6 +21,10 @@ import {
   parseWeComWebhook,
   type WeComWebhookResult,
 } from '../channels/builtin-wecom.js';
+import {
+  parseDingTalkWebhook,
+  type DingTalkWebhookResult,
+} from '../channels/builtin-dingtalk.js';
 import { logger } from '../logger.js';
 import eventBus from '../engine/eventBus.js';
 
@@ -146,6 +152,74 @@ router.get('/wecom', (req: Request, res: Response) => {
     return res.send(echostr);
   }
   res.status(400).send('');
+});
+
+/**
+ * POST /api/webhook/channels/dingtalk
+ * 钉钉消息/事件回调
+ */
+router.post('/dingtalk', (req: Request, res: Response) => {
+  try {
+    const account = {
+      appKey: process.env.DINGTALK_APP_KEY || '',
+      appSecret: process.env.DINGTALK_APP_SECRET || '',
+      token: process.env.DINGTALK_TOKEN,
+    };
+
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const originalMsg = body.msg;
+
+    const result: DingTalkWebhookResult = parseDingTalkWebhook(body, account, {
+      signature: req.query.signature as string | undefined,
+      timestamp:
+        (req.query.timestamp as string | undefined) || (body.timeStamp as string | undefined),
+      nonce: (req.query.nonce as string | undefined) || (body.nonce as string | undefined),
+    });
+
+    if (!result.success) {
+      logger.warn('[ChannelWebhook] 钉钉 webhook 解析失败:', result.error);
+      return res.status(400).json({ error: result.error });
+    }
+
+    // URL 验证：原样回传 msg
+    if (result.type === 'url_verification') {
+      const echo = typeof originalMsg === 'string' ? originalMsg : JSON.stringify(originalMsg ?? '');
+      return res.json({ msg: echo });
+    }
+
+    // 消息事件 - 发布到事件总线
+    if (result.type === 'message' && result.message) {
+      eventBus.emit('channel:message:received', {
+        channel: 'dingtalk',
+        ...result.message,
+      });
+
+      logger.info(
+        '[ChannelWebhook] 钉钉消息已接收:',
+        `from=${result.message.userId}`,
+        `chat=${result.message.chatId}`,
+        `type=${result.message.chatType}`,
+      );
+    }
+
+    // 钉钉要求返回 success
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('[ChannelWebhook] 钉钉 webhook 处理失败:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/webhook/channels/dingtalk
+ * 钉钉 URL 验证（GET 方式兼容备用）
+ */
+router.get('/dingtalk', (req: Request, res: Response) => {
+  const msg = (req.body?.msg as string | undefined) ?? (req.query.msg as string | undefined);
+  if (msg) {
+    return res.send(String(msg));
+  }
+  res.status(400).send('Missing msg');
 });
 
 export default router;

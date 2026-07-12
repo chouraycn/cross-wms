@@ -41,7 +41,7 @@ const MOONSHOT_MODELS: ModelInfo[] = [
     supportsTools: true,
     supportsStreaming: true,
     supportsFunctionCall: true,
-    apiType: 'openai-chat',
+    apiType: 'moonshot-chat',
     thinkingProfile: KIMI_THINKING_PROFILE,
     reasoning: true,
     isRecommended: true,
@@ -62,7 +62,7 @@ const MOONSHOT_MODELS: ModelInfo[] = [
     supportsTools: true,
     supportsStreaming: true,
     supportsFunctionCall: true,
-    apiType: 'openai-chat',
+    apiType: 'moonshot-chat',
     reasoning: true,
     isRecommended: true,
     pricing: {
@@ -81,7 +81,7 @@ const MOONSHOT_MODELS: ModelInfo[] = [
     capabilities: ['longContext', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-chat',
+    apiType: 'moonshot-chat',
     pricing: {
       inputPerMillion: 2,
       outputPerMillion: 2,
@@ -98,7 +98,7 @@ const MOONSHOT_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'costEffective', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-chat',
+    apiType: 'moonshot-chat',
     pricing: {
       inputPerMillion: 0.5,
       outputPerMillion: 0.5,
@@ -115,7 +115,7 @@ const MOONSHOT_MODELS: ModelInfo[] = [
     capabilities: ['fast', 'costEffective', 'general'],
     supportsTools: true,
     supportsStreaming: true,
-    apiType: 'openai-chat',
+    apiType: 'moonshot-chat',
     pricing: {
       inputPerMillion: 0.12,
       outputPerMillion: 0.12,

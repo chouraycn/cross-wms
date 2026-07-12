@@ -83,6 +83,52 @@ export interface SSEDebugEvent {
   [key: string]: unknown;
 }
 
+// ===================== 工具稳定性事件类型 (P1-2) =====================
+
+/** tool_retry 事件 — 工具执行重试通知 */
+export interface SSEToolRetryEvent {
+  type: 'tool_retry';
+  toolName: string;
+  attempt: number; // 当前重试次数（从 1 开始）
+  maxAttempts: number;
+  reason: string; // 重试原因（如 ECONNRESET, timeout, 5xx）
+  sessionId?: string;
+}
+
+/** tool_timeout 事件 — 工具执行超时通知 */
+export interface SSEToolTimeoutEvent {
+  type: 'tool_timeout';
+  toolName: string;
+  timeoutMs: number;
+  sessionId?: string;
+}
+
+/** tool_abort 事件 — 工具执行取消通知 */
+export interface SSEToolAbortEvent {
+  type: 'tool_abort';
+  toolName: string;
+  reason: 'user_cancel' | 'cascaded' | 'external' | 'resource_limit';
+  sessionId?: string;
+}
+
+/** tool_fallback 事件 — 工具降级通知 */
+export interface SSEToolFallbackEvent {
+  type: 'tool_fallback';
+  primaryTool: string;
+  fallbackTool: string;
+  reason: string; // 降级原因
+  sessionId?: string;
+}
+
+/** tool_stats 事件 — 工具统计更新通知（定时推送或阈值触发） */
+export interface SSEToolStatsEvent {
+  type: 'tool_stats';
+  toolName: string;
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  healthScore: number;
+  consecutiveFailures: number;
+}
+
 // ===================== 联合类型 =====================
 
 /** 7 种核心 SSE 事件联合类型 */
@@ -107,6 +153,43 @@ export const CORE_EVENT_TYPES = [
   'done',
   'debug',
 ] as const;
+
+// ===================== 工具稳定性事件类型集合 (P1-2) =====================
+
+/** 工具稳定性事件类型字面量 */
+export const TOOL_STABILITY_EVENT_TYPES = [
+  'tool_retry',
+  'tool_timeout',
+  'tool_abort',
+  'tool_fallback',
+  'tool_stats',
+] as const;
+
+/** 工具稳定性事件类型 */
+export type ToolStabilityEventType = (typeof TOOL_STABILITY_EVENT_TYPES)[number];
+
+/** 工具稳定性事件联合类型 */
+export type ToolStabilitySSEEvent =
+  | SSEToolRetryEvent
+  | SSEToolTimeoutEvent
+  | SSEToolAbortEvent
+  | SSEToolFallbackEvent
+  | SSEToolStatsEvent;
+
+/**
+ * 判断事件类型是否为工具稳定性事件 (P1-2)
+ */
+export function isToolStabilityEventType(type: string): boolean {
+  return (TOOL_STABILITY_EVENT_TYPES as readonly string[]).includes(type);
+}
+
+/**
+ * 发送工具稳定性 SSE 事件 (P1-2)
+ * 通过 sendSSE 写入，前端可订阅这些事件类型以展示重试/超时/降级等反馈
+ */
+export function sendToolStabilitySSE(res: Response, event: ToolStabilitySSEEvent): void {
+  sendSSE(res, event as unknown as Record<string, unknown>);
+}
 
 /** 核心事件类型 */
 export type CoreEventType = (typeof CORE_EVENT_TYPES)[number];

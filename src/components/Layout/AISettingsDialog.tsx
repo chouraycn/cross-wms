@@ -236,6 +236,7 @@ const AISettingsDialog: React.FC<AISettingsDialogProps> = ({ open, onClose, init
                 <ToolProfileSelector />
                 <MaxHistoryTurnsSelector />
                 <CompactionSettings />
+                <QualityReviewSettings />
               </Box>
             )}
 
@@ -763,6 +764,84 @@ function CompactionSettings() {
             </Typography>
           </Box>
         </>
+      )}
+    </Box>
+  );
+}
+
+// ===================== 质量审查设置 =====================
+
+function QualityReviewSettings() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const gs = getGrayScale(isDark);
+  const [reviewEnabled, setReviewEnabled] = useState(false);
+  const [correctionEnabled, setCorrectionEnabled] = useState(false);
+  const [threshold, setThreshold] = useState<'A' | 'B' | 'C' | 'D'>('C');
+
+  const handleReviewToggle = (_: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
+    setReviewEnabled(checked);
+  };
+
+  const handleCorrectionToggle = (_: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
+    setCorrectionEnabled(checked);
+  };
+
+  const handleThresholdChange = (_: React.MouseEvent<HTMLElement>, newThreshold: string | null) => {
+    if (newThreshold) {
+      setThreshold(newThreshold as 'A' | 'B' | 'C' | 'D');
+    }
+  };
+
+  return (
+    <Box sx={{ mt: 4 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+        <PsychologyIcon sx={{ fontSize: 18, color: gs.textSecondary }} />
+        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: gs.textPrimary }}>
+          AI 输出质量审查
+        </Typography>
+      </Box>
+
+      <FormControlLabel
+        control={<Switch checked={reviewEnabled} onChange={handleReviewToggle} size="small" />}
+        label={<Typography sx={{ fontSize: '0.8rem' }}>启用输出质量审查</Typography>}
+        sx={{ mb: 1 }}
+      />
+
+      {reviewEnabled && (
+        <Box sx={{ pl: 3, mb: 2 }}>
+          <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary, mb: 1 }}>
+            质量阈值（低于此级别触发纠错）
+          </Typography>
+          <ToggleButtonGroup
+            value={threshold}
+            exclusive
+            onChange={handleThresholdChange}
+            size="small"
+            sx={{ mb: 2 }}
+          >
+            <ToggleButton value="A" sx={{ fontSize: '0.75rem', px: 1.5 }}>A（严格）</ToggleButton>
+            <ToggleButton value="B" sx={{ fontSize: '0.75rem', px: 1.5 }}>B（推荐）</ToggleButton>
+            <ToggleButton value="C" sx={{ fontSize: '0.75rem', px: 1.5 }}>C（宽松）</ToggleButton>
+            <ToggleButton value="D" sx={{ fontSize: '0.75rem', px: 1.5 }}>D（仅严重错误）</ToggleButton>
+          </ToggleButtonGroup>
+
+          <FormControlLabel
+            control={<Switch checked={correctionEnabled} onChange={handleCorrectionToggle} size="small" />}
+            label={<Typography sx={{ fontSize: '0.8rem' }}>启用智能纠错（自动重新生成）</Typography>}
+          />
+          {correctionEnabled && (
+            <Typography sx={{ fontSize: '0.7rem', color: gs.textDisabled, mt: 0.5, pl: 3.5 }}>
+              质量不达标时，AI 会自动尝试修正回答（最多 2 次）
+            </Typography>
+          )}
+        </Box>
+      )}
+
+      {!reviewEnabled && (
+        <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled, pl: 3.5 }}>
+          关闭后，AI 回答不会进行质量审查
+        </Typography>
       )}
     </Box>
   );

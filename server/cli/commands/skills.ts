@@ -73,7 +73,8 @@ function parseFrontmatter(content: string): Record<string, unknown> {
 }
 
 /** Skill ID 命名规范：小写字母 + 下划线 + 数字 */
-const SKILL_ID_PATTERN = /^[a-z][a-z0-9_]*$/;
+// 放宽：允许连字符，兼容 openclaw 技能命名（gh-issues / diagram-maker / nano-pdf）
+const SKILL_ID_PATTERN = /^[a-z][a-z0-9_-]*$/;
 
 /** 解析仓库内置 skills 目录（repo/skills），向上查找含 package.json 的目录 */
 export function resolveRepoSkillsDir(): string {

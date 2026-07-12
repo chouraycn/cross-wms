@@ -18,6 +18,7 @@ import { extractAnthropicThinkingSignature } from './engine/thinkingSignatureMan
 import { startLocalService, touchService } from './localServiceManager.js';
 import { getModelFailoverManager } from './engine/modelFailover.js';
 import { initBuiltinAdapters, getAdapter, inferApiType } from './adapters/registry.js';
+import { resolveApiTypeExplicitly } from './engine/provider-registry/index.js';
 import type { ModelApiType } from '../shared/types/models.js';
 
 // 初始化内置适配器
@@ -1045,7 +1046,7 @@ export async function callAIModelStreamWithAdapter(
   }
 
   // 确定 API 类型
-  const apiType = modelConfig.apiType || inferApiType(provider, apiEndpoint);
+  const apiType = modelConfig.apiType || resolveApiTypeExplicitly(provider, apiEndpoint);
   const adapter = await getAdapter(apiType);
 
   if (!adapter) {

@@ -16,7 +16,7 @@ import { embedText as onnxEembedText, getOnnxStatus, initOnnxEmbedding, ONNX_EMB
 // ===================== 类型定义 =====================
 
 /** 嵌入提供者类型 */
-export type EmbeddingProviderType = 'local' | 'openai' | 'custom';
+export type EmbeddingProviderType = 'local' | 'openai' | 'azure' | 'custom';
 
 /** 嵌入输入类型（用于区分查询和文档嵌入） */
 export type EmbeddingInputType = 'query' | 'document';
@@ -33,6 +33,8 @@ export interface EmbeddingProviderConfig {
   baseUrl?: string;
   /** API Key（远程 provider 使用） */
   apiKey?: string;
+  /** Azure OpenAI API Version（仅 Azure 使用） */
+  apiVersion?: string;
   /** 输出维度（仅支持降维的模型） */
   outputDimensionality?: number;
   /** 批量嵌入配置 */
@@ -222,6 +224,7 @@ export async function generateEmbedding(
       embedding = await embedLocal(text);
       break;
     case 'openai':
+    case 'azure':
     case 'custom':
       embedding = await embedRemote(text, inputType);
       break;
@@ -297,6 +300,7 @@ export async function generateBatchEmbeddings(
       newEmbeddings = await embedBatchLocal(uncachedTexts);
       break;
     case 'openai':
+    case 'azure':
     case 'custom':
       const remoteResult = await embedBatchRemote(uncachedTexts, inputType);
       newEmbeddings = remoteResult.embeddings;
@@ -367,7 +371,8 @@ async function embedBatchRemote(
   texts: string[],
   inputType: EmbeddingInputType,
 ): Promise<{ embeddings: Float32Array[]; totalTokens: number }> {
-  const baseUrl = currentConfig.baseUrl ?? 'https://api.openai.com/v1';
+  let url: string;
+  let headers: Record<string, string>;
   const apiKey = currentConfig.apiKey;
   const model = currentConfig.model;
 
@@ -375,7 +380,25 @@ async function embedBatchRemote(
     throw new Error('Remote embedding provider requires API key');
   }
 
-  const url = `${baseUrl.replace(/\/$/, '')}/embeddings`;
+  // v1.7.86: Azure OpenAI 特殊处理
+  if (currentConfig.type === 'azure') {
+    const baseUrl = currentConfig.baseUrl ?? '';
+    const apiVersion = currentConfig.apiVersion ?? '2024-02-15-preview';
+    // Azure OpenAI embeddings endpoint: {endpoint}/openai/deployments/{deployment-id}/embeddings?api-version={api-version}
+    url = `${baseUrl.replace(/\/$/, '')}/openai/deployments/${model}/embeddings?api-version=${apiVersion}`;
+    headers = {
+      'Content-Type': 'application/json',
+      'api-key': apiKey,
+    };
+  } else {
+    // OpenAI / custom
+    const baseUrl = currentConfig.baseUrl ?? 'https://api.openai.com/v1';
+    url = `${baseUrl.replace(/\/$/, '')}/embeddings`;
+    headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    };
+  }
 
   const body: Record<string, unknown> = {
     model,
@@ -394,10 +417,7 @@ async function embedBatchRemote(
 
   const resp = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
+    headers,
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(30000),
   });

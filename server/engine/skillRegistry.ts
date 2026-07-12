@@ -46,8 +46,8 @@ import type { ToolDefinition } from '../aiClient.js';
 
 // ===================== Skill ID 校验 =====================
 
-/** Skill ID 命名规范正则：小写字母 + 下划线 + 数字 */
-const SKILL_ID_PATTERN = /^[a-z][a-z0-9_]*$/;
+/** Skill ID 命名规范正则：小写字母 + 下划线 + 数字 + 连字符（兼容 openclaw 命名，如 gh-issues） */
+const SKILL_ID_PATTERN = /^[a-z][a-z0-9_-]*$/;
 
 /**
  * 校验 Skill ID 是否符合命名规范
@@ -820,7 +820,7 @@ class SkillRegistry {
       .map((s) => ({
         type: 'function' as const,
         function: {
-          name: `skill_${s.definition.id}`,
+          name: `skill_${s.definition.id.replace(/-/g, '_')}`,
           description: s.definition.description || s.definition.name,
           parameters: s.definition.parameters || {
             type: 'object',

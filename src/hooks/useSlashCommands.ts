@@ -10,10 +10,17 @@ export interface SlashCommand {
 export const SLASH_COMMANDS: SlashCommand[] = [
   { name: 'model', description: '切换模型', usage: '/model <模型ID>', category: 'model' },
   { name: 'models', description: '列出所有可用模型', category: 'model' },
-  { name: 'thinking', description: '切换深度思考模式', usage: '/thinking on|off', category: 'model' },
+  { name: 'thinking', description: '切换深度思考模式', usage: '/thinking on|off|high', category: 'model' },
+  { name: 'think', description: '设置思考级别', usage: '/think low|medium|high|max', category: 'model' },
+  { name: 'verbose', description: '设置详细输出模式', usage: '/verbose on|off|full', category: 'model' },
+  { name: 'trace', description: '设置追踪模式', usage: '/trace on|off|raw', category: 'model' },
+  { name: 'reasoning', description: '设置推理显示模式', usage: '/reasoning on|off|stream', category: 'model' },
+  { name: 'silent', description: '关闭所有思考模式', category: 'model' },
   { name: 'clear', description: '清空当前对话', category: 'session' },
   { name: 'new', description: '新建对话', category: 'session' },
   { name: 'compact', description: '压缩对话上下文', category: 'session' },
+  { name: 'skill', description: '打开技能选择器', category: 'utility' },
+  { name: 'skill-create', description: '创建新技能（AI 自动生成）', usage: '/skill-create <技能名称>', category: 'utility' },
   { name: 'context', description: '查看上下文使用情况', category: 'utility' },
   { name: 'help', description: '显示帮助信息', category: 'utility' },
   { name: 'debug', description: '切换调试模式', category: 'debug' },
@@ -123,6 +130,7 @@ export function formatHelpText(): string {
     model: '模型',
     session: '会话',
     utility: '工具',
+    skill: '技能',
     debug: '调试',
   };
 

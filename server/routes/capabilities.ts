@@ -377,6 +377,30 @@ router.get('/heartbeat', (_req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/capabilities/review-stats
+ * 输出审查统计报告。
+ */
+router.get('/review-stats', (_req: Request, res: Response) => {
+  const result = safe(() => {
+    const { reviewStatisticsManager } = require('../engine/reviewStatistics.js');
+    return reviewStatisticsManager.generateReport();
+  });
+  res.json({ ok: true, report: result });
+});
+
+/**
+ * GET /api/capabilities/tool-review-stats
+ * 工具调用安全审查统计。
+ */
+router.get('/tool-review-stats', (_req: Request, res: Response) => {
+  const result = safe(() => {
+    const { toolCallReviewer } = require('../engine/toolCallReviewer.js');
+    return toolCallReviewer.getStats();
+  });
+  res.json({ ok: true, stats: result });
+});
+
+/**
  * GET /api/capabilities
  * 能力清单总览。
  */
@@ -389,6 +413,7 @@ router.get('/', (_req: Request, res: Response) => {
       '/tool-policy', '/few-shot-templates', '/session-fingerprint', '/envelope',
       '/config', '/infra/retry', '/infra/dedupe', '/infra/file-lock',
       '/errors/failover', '/streaming', '/hooks', '/context-cache', '/heartbeat',
+      '/review-stats', '/tool-review-stats',
     ],
     configValueSample: getConfigValue('ai.defaultModel') ?? null,
   });

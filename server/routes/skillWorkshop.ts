@@ -3,6 +3,9 @@
  */
 
 import { Router, type Request, type Response } from 'express';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 import { logger } from '../logger.js';
 import {
   skillWorkshop,
@@ -11,6 +14,7 @@ import {
   type ProposalType,
 } from '../engine/skillWorkshop.js';
 import { skillInstallManager, type SkillInstallSpec } from '../engine/skillInstall.js';
+import { AppPaths, ensureDir } from '../config/appPaths.js';
 
 // ===================== 工具函数 =====================
 
@@ -178,6 +182,92 @@ skillWorkshopRouter.post('/install/cancel', asyncHandler(async (req, res) => {
   validateRequired(installId, 'installId');
   const cancelled = skillInstallManager.cancelInstall(installId);
   res.json({ cancelled });
+}));
+
+/**
+ * POST /api/skill-workshop/quick-create
+ * Body: { skillName, description?, content, autoApply?, origin? }
+ *
+ * 快速创建 Skill 并可选自动应用。
+ * - 若目标 Skill 已存在则为 update 类型提案
+ * - autoApply=true 时自动应用并写入文件
+ * - 创建后自动安全扫描，critical 级别风险会隔离
+ */
+skillWorkshopRouter.post('/quick-create', asyncHandler(async (req, res) => {
+  const { skillName, description, content, autoApply, origin } = req.body;
+  validateRequired(skillName, 'skillName');
+  validateRequired(content, 'content');
+
+  const skillsDir = AppPaths.skillsDir;
+  const skillPath = path.join(skillsDir, String(skillName), 'SKILL.md');
+
+  let type: 'create' | 'update' = 'create';
+  let previousContent: string | undefined;
+  let currentContentHash: string | undefined;
+
+  if (fs.existsSync(skillPath)) {
+    type = 'update';
+    previousContent = fs.readFileSync(skillPath, 'utf-8');
+    currentContentHash = crypto
+      .createHash('sha256')
+      .update(previousContent)
+      .digest('hex')
+      .slice(0, 16);
+  }
+
+  const proposal = skillWorkshop.createProposal({
+    type,
+    skillName: String(skillName),
+    skillPath,
+    content: String(content),
+    origin,
+    previousContent,
+    currentContentHash,
+  });
+
+  if (proposal.status === 'quarantined') {
+    return res.status(403).json({
+      success: false,
+      error: '提案因安全风险被隔离，请人工审核后再应用',
+      proposal,
+    });
+  }
+
+  const shouldApply = autoApply === true || autoApply === 'true';
+  if (!shouldApply) {
+    return res.status(201).json({
+      success: true,
+      action: 'create_proposal',
+      description,
+      proposal,
+      message: '提案已创建，等待审批',
+    });
+  }
+
+  try {
+    const applied = skillWorkshop.applyProposal(proposal.id);
+    const dir = path.dirname(skillPath);
+    ensureDir(dir);
+    fs.writeFileSync(skillPath, String(content), 'utf-8');
+
+    logger.info(
+      `[Skill Workshop] Quick create applied: ${skillName} -> ${skillPath}`,
+    );
+
+    res.status(201).json({
+      success: true,
+      action: 'create_and_apply',
+      description,
+      proposal: applied,
+      skillPath,
+    });
+  } catch (applyErr) {
+    res.status(400).json({
+      success: false,
+      error: `提案创建成功但应用失败：${applyErr instanceof Error ? applyErr.message : String(applyErr)}`,
+      proposal,
+    });
+  }
 }));
 
 export default skillWorkshopRouter;
