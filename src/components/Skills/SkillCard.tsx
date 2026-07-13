@@ -16,6 +16,7 @@ import { ICON_MAP } from '../../types/skill';
 import type { Skill, AuditLevel, UsageStats } from '../../types/skill';
 import { getCategoryGradient } from '../../constants/skillCategories';
 import type { TaskType, AutomationExecution } from '../../services/automation';
+import type { DependencyCheckResult } from '../../utils/dependencyChecker';
 import SecurityBadge from './SecurityBadge';
 import { getGrayScale } from '../../constants/theme';
 
@@ -42,6 +43,12 @@ export interface SkillCardProps {
   auditScore?: number | null;
   /** T03: 点击安全徽章的回调 */
   onAuditClick?: () => void;
+  /** 版本号（优先展示） */
+  version?: string;
+  /** 安装状态上下文 */
+  installStatus?: 'builtin' | 'installed' | 'market' | 'custom' | 'not-installed';
+  /** 依赖检测结果 */
+  dependencyResult?: DependencyCheckResult;
 }
 
 // ===================== 最近执行状态 =====================
@@ -92,6 +99,9 @@ const SkillCard = React.memo<SkillCardProps>(function SkillCard({
   auditLevel,
   auditScore,
   onAuditClick,
+  version,
+  installStatus,
+  dependencyResult,
 }) {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -163,6 +173,38 @@ const SkillCard = React.memo<SkillCardProps>(function SkillCard({
   };
 
   const hasAutomation = !!automationInfo;
+
+  const displayVersion = version || skill.version || skill.standardFields?.version;
+  const missingDeps = dependencyResult
+    ? dependencyResult.missingBins.length + dependencyResult.missingEnv.length + dependencyResult.missingConfig.length
+    : 0;
+
+  const installStatusChip = (() => {
+    const status = installStatus ?? (skill.source === 'builtin' ? 'builtin' : skill.installedAt ? 'installed' : 'custom');
+    switch (status) {
+      case 'builtin':
+        return { label: '内置', bg: '#F3F4F6', color: '#374151' };
+      case 'installed':
+        return { label: '已安装', bg: '#ECFDF5', color: '#059669' };
+      case 'market':
+      case 'not-installed':
+        return { label: '未安装', bg: '#FFF7ED', color: '#EA580C' };
+      case 'custom':
+      default:
+        return { label: '自定义', bg: '#FAF5FF', color: '#7C3AED' };
+    }
+  })();
+
+  const depStatusChip = (() => {
+    if (!dependencyResult) return null;
+    if (dependencyResult.checks.length === 0) {
+      return { label: '无依赖', bg: '#F3F4F6', color: '#6B7280' };
+    }
+    if (dependencyResult.allFound) {
+      return { label: '依赖已满足', bg: '#ECFDF5', color: '#059669' };
+    }
+    return { label: `缺少 ${missingDeps} 项`, bg: '#FEF2F2', color: '#DC2626' };
+  })();
 
   return (
     <>
@@ -266,13 +308,6 @@ const SkillCard = React.memo<SkillCardProps>(function SkillCard({
               sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: '#FEF3C7', color: '#D97706' }}
             />
           )}
-          {skill.source === 'user' && (
-            <Chip
-              label="自定义"
-              size="small"
-              sx={{ height: 16, fontSize: '0.55rem', fontWeight: 500, backgroundColor: '#FAF5FF', color: '#7C3AED' }}
-            />
-          )}
           {/* T03: 安全审查徽章 — 放在标题行右侧，避免与操作按钮重叠 */}
           {!hasConflict && (
             <Box sx={{ ml: 'auto', flexShrink: 0 }}>
@@ -285,6 +320,48 @@ const SkillCard = React.memo<SkillCardProps>(function SkillCard({
             </Box>
           )}
         </Box>
+
+        {/* 版本 / 安装状态 / 依赖状态 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap', mb: 0.5 }}>
+          {displayVersion && (
+            <Chip
+              label={`v${displayVersion}`}
+              size="small"
+              sx={{
+                height: 16,
+                fontSize: '0.55rem',
+                fontWeight: 500,
+                backgroundColor: gs.bgHover,
+                color: gs.textMuted,
+              }}
+            />
+          )}
+          <Chip
+            label={installStatusChip.label}
+            size="small"
+            sx={{
+              height: 16,
+              fontSize: '0.55rem',
+              fontWeight: 500,
+              backgroundColor: installStatusChip.bg,
+              color: installStatusChip.color,
+            }}
+          />
+          {depStatusChip && (
+            <Chip
+              label={depStatusChip.label}
+              size="small"
+              sx={{
+                height: 16,
+                fontSize: '0.55rem',
+                fontWeight: 500,
+                backgroundColor: depStatusChip.bg,
+                color: depStatusChip.color,
+              }}
+            />
+          )}
+        </Box>
+
         <Typography sx={{
           fontSize: '0.75rem',
           color: gs.textMuted,

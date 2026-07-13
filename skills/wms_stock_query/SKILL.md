@@ -8,8 +8,22 @@ triggers:
   - "keyword:stock"
   - "keyword:sku"
 allowed-tools:
-  - Read
-  - Glob
+  - file_readFile
+  - file_listDir
+  - wms_inventory
+parameters:
+  type: object
+  properties:
+    sku:
+      type: string
+      description: 物料编码（可选，提供则精确检索该物料全部库存记录）
+    warehouse:
+      type: string
+      description: 仓库编码（可选，默认全部仓库）
+    location:
+      type: string
+      description: 库位（可选）
+  required: []
 ---
 
 # WMS 库存查询

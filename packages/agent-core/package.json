@@ -4,7 +4,9 @@
   "description": "CDFKnow Agent Core - Agent 核心执行引擎",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",
@@ -14,12 +16,13 @@
   "dependencies": {
     "@cdf-know/llm-core": "1.0.0",
     "eventemitter3": "^5.0.1",
-    "uuid": "^9.0.0"
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
     "@types/node": "^25.9.4",
     "@types/uuid": "^10.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^7",
     "vitest": "^3.2.6"
   }
 }

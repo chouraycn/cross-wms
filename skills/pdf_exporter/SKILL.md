@@ -7,9 +7,23 @@ triggers:
   - "keyword:pdf"
   - "keyword:export"
 allowed-tools:
-  - Read
-  - Write
-  - Edit
+  - file_readFile
+  - file_writeFile
+  - file_generateFile
+parameters:
+  type: object
+  properties:
+    content:
+      type: string
+      description: 导出内容（Markdown / HTML / 纯文本）
+    title:
+      type: string
+      description: 文档标题（可选，默认「导出文档 · 日期」）
+    fileName:
+      type: string
+      description: 文件名（可选，默认以标题命名 .pdf）
+  required:
+    - content
 ---
 
 # PDF 导出

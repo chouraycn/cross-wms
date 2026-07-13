@@ -28,6 +28,7 @@
     "server/test-utils/**/*",
     "src/mocks/**",
     "src/mocks/**/*",
+    "server/engine/executeSingleTool.ts",
     "@types/**"
   ],
   "workspaces": {

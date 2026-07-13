@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import { logger } from '../logger.js';
 import { skillWorkshop } from './skillWorkshop.js';
 import { AppPaths, ensureDir } from '../config/appPaths.js';
+import { reloadSkills } from './skillLifecycle.js';
 
 function resolveSkillPath(skillName: string): string {
   const skillsDir = AppPaths.skillsDir;
@@ -78,6 +79,13 @@ export async function handleSkillCreateProposal(args: Record<string, unknown>): 
       try {
         const applied = skillWorkshop.applyProposal(proposal.id);
         writeSkillFile(skillPath, content);
+        // D2：应用后热刷新技能运行时，使对话内创作的技能立即生效（无需重启）
+        try {
+          const reloaded = await reloadSkills();
+          logger.info(`[SkillTools] 技能 '${skillName}' 已应用并热刷新，重新加载 ${reloaded.loaded} 个技能`);
+        } catch (reloadErr) {
+          logger.warn(`[SkillTools] 技能 '${skillName}' 已应用，但热刷新失败：${reloadErr instanceof Error ? reloadErr.message : String(reloadErr)}`);
+        }
         logger.info(`[SkillTools] Skill '${skillName}' created and applied successfully at ${skillPath}`);
         return JSON.stringify({
           success: true,

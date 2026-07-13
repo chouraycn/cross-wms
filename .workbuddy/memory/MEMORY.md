@@ -66,5 +66,15 @@
 - 故障 Fallback 降级 + Tool/MCP 联动升级 + 多厂商统一抽象
 - 模型标签体系: `multimodal`/`reasoning`/`code`/`fast`/`costEffective`/`general`
 
+## 原生 Skill 系统（ESM 运行时，极易踩坑）
+- **服务以 ESM 运行**（`package.json` `"type":"module"` + tsx），`require` 在运行时**未定义**。任何 `require(...)` 调用都会 `ReferenceError: require is not defined`。
+- **原生 skill 双加载路径**（两处都必须用 ESM，不能只用 require）：
+  1. `server/engine/skillRegistry.ts` 的 `scanDirectory`/`createNativeLifecycle` —— **仅测试用**，生产不调用。
+  2. `server/engine/skillLoader.ts` 的 `loadSkillFromDirectory` —— **真实启动路径**（`initSkillRuntime`→`loadSkills` 走这条）。原生入口用 `import(pathToFileURL(entryPath).href + '?v=' + Date.now())` 动态加载，已修复。
+  - ⚠️ 验证必须走 `initSkillRuntime()` 启动路径，**不能只测 skillRegistry.scanDirectory**（那是假路径，会让你误以为 native 已生效）。
+- **`definition.native` 标记**：只在 `skillLoader.loadSkillFromDirectory` 中设置（`definition.native = hasNativeEntry`）。`skill` 元工具桥（`skillRuntimeBridge.listAvailableSkills`/`getFolderSkillsForMatching`）据此排除 native，使其只走 `skill_<id>` 独立函数工具。
+- **`ctx.tools.run(name, args)`**：skill 调后端工具的便携接口（`SkillToolRunner`），内部 `await import('./toolRegistry.js')` 调 `executeToolCall`。**禁止改回 require**（会 ESM 崩溃）。
+- 真实 `require` 残留：pdfProcessor/documentTools/imageTools/pdfTools 等仍用 `require`，属已存在债务（生产 CJS 打包可用，dev tsx 部分路径可能崩），不在 skill 任务范围，勿顺手改。
+
 ## 详细修复历史
 - 见 `.workbuddy/memory/YYYY-MM-DD.md` 每日工作日志

@@ -25,6 +25,8 @@ interface ChatSessionValue {
   loadOlderMessages: () => Promise<boolean>;
   /** 是否正在加载更早的消息 */
   isLoadingOlder: boolean;
+  /** v1.7.88: 是否正在切换/加载历史会话（显示转圈样式） */
+  isSwitchingSession: boolean;
 }
 
 /**
@@ -425,6 +427,10 @@ export function ChatProvider({
   // 已加载过消息的会话 ID 集合（避免重复请求）
   // v11.0: 改为 LRU 缓存，最多保留 30 个，防止内存无限增长
   const loadedMessageIdsRef = useRef<Map<string, number>>(new Map());
+
+  // v1.7.88: 会话切换加载状态（显示转圈样式）
+  const [isSwitchingSession, setIsSwitchingSession] = useState(false);
+  const switchingSessionIdRef = useRef<string | null>(null);
   const MAX_LOADED_SESSIONS = 30;
 
   // 用 ref 跟踪 sessions，避免 handleSessionUpdate 依赖 sessions state
@@ -581,15 +587,33 @@ export function ChatProvider({
     setActiveSessionIdState(id);
     syncSidebar(id);
     // v10.0: 直接同步 activeSession，减少一次渲染周期
-    // 原来的 useEffect 依赖 sessions 变化再同步，会多一帧延迟
     const found = sessionsRef.current.find((s) => s.id === id);
     if (found) {
-      setActiveSession((prev) => {
-        if (prev.id === found.id && prev.messages.length > 0) return prev;
-        return found;
-      });
+      // v1.7.88: 如果目标会话消息未加载，显示转圈并自动加载
+      if (found.messages.length === 0 && switchingSessionIdRef.current !== id) {
+        switchingSessionIdRef.current = id;
+        setIsSwitchingSession(true);
+        fetchSessionMessagesFromAPI(id)
+          .then(({ messages }) => {
+            setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, messages } : s)));
+            setActiveSession({ ...found, messages });
+            markSessionLoaded(id);
+          })
+          .catch(() => {})
+          .finally(() => {
+            if (switchingSessionIdRef.current === id) {
+              switchingSessionIdRef.current = null;
+            }
+            setIsSwitchingSession(false);
+          });
+      } else {
+        setActiveSession((prev) => {
+          if (prev.id === found.id && prev.messages.length > 0) return prev;
+          return found;
+        });
+      }
     }
-  }, [syncSidebar]);
+  }, [syncSidebar, markSessionLoaded]);
 
   // ===================== 更新当前会话 — 只更新 activeSession，不清洗 sessions =====================
   // 流式渲染时每 ~16ms 调用：仅更新 activeSession（不触发 sidebar 重渲染）
@@ -845,23 +869,34 @@ export function ChatProvider({
     const target = sessionsRef.current.find((s) => s.id === sessionId);
     if (!target) return;
 
-    // 如果消息已加载，直接更新 activeSession 但不切换 activeSessionId
+    // v1.7.88: 如果消息已加载，直接更新 activeSession 但不切换 activeSessionId
     if (target.messages.length === 0) {
-      // 异步加载该会话的消息
-      const { messages } = await fetchSessionMessagesFromAPI(sessionId);
-      // 将消息合并到 sessions 中（不切换 activeSessionId）
-      setSessions((prev) => prev.map((s) =>
-        s.id === sessionId ? { ...s, messages } : s
-      ));
-      // 更新 activeSession 为目标会话（供输入框使用上下文）
-      setActiveSession({ ...target, messages });
+      // 标记正在切换，显示转圈样式
+      switchingSessionIdRef.current = sessionId;
+      setIsSwitchingSession(true);
+      try {
+        // 异步加载该会话的消息
+        const { messages } = await fetchSessionMessagesFromAPI(sessionId);
+        // 将消息合并到 sessions 中（不切换 activeSessionId）
+        setSessions((prev) => prev.map((s) =>
+          s.id === sessionId ? { ...s, messages } : s
+        ));
+        // 更新 activeSession 为目标会话（供输入框使用上下文）
+        setActiveSession({ ...target, messages });
+        markSessionLoaded(sessionId);
+      } finally {
+        if (switchingSessionIdRef.current === sessionId) {
+          switchingSessionIdRef.current = null;
+        }
+        setIsSwitchingSession(false);
+      }
     } else {
       // 消息已加载，直接更新 activeSession
       setActiveSession(target);
     }
     // 注意：不调用 setActiveSessionIdState，不调用 syncSidebar
     // 这样 UI 不会切换到 chat 页面，用户停留在历史对话列表
-  }, []);
+  }, [markSessionLoaded]);
 
   // ===================== 上滚加载更早消息 =====================
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
@@ -919,7 +954,8 @@ export function ChatProvider({
     handleNewChat,
     loadOlderMessages,
     isLoadingOlder,
-  }), [activeSession, activeSessionId, setActiveSessionId, handleSessionUpdate, updateSessionModel, handleNewChat, loadOlderMessages, isLoadingOlder]);
+    isSwitchingSession,
+  }), [activeSession, activeSessionId, setActiveSessionId, handleSessionUpdate, updateSessionModel, handleNewChat, loadOlderMessages, isLoadingOlder, isSwitchingSession]);
 
   // ChatSidebarContext：仅 title/folder 变更时重新创建（不随流式更新）
   const sidebarValue = useMemo<ChatSidebarValue>(() => ({

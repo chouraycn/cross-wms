@@ -4,7 +4,9 @@
   "description": "CDFKnow Skill Core - 技能系统核心模块",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",
@@ -16,8 +18,9 @@
     "eventemitter3": "^5.0.1"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
     "@types/node": "^25.9.4",
+    "typescript": "^5.9.3",
+    "vite": "^7",
     "vitest": "^3.2.6"
   }
 }

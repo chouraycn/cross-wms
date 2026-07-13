@@ -713,7 +713,7 @@ const NavList: React.FC<NavListProps> = ({
                 >
                   <ListItemIcon sx={{ minWidth: 0, justifyContent: 'center', color: active ? iconActive : iconNormal }}>
                     {React.cloneElement(item.icon as React.ReactElement, {
-                      sx: { fontSize: '20px' },
+                      sx: { fontSize: '18px' },
                     })}
                   </ListItemIcon>
                 </ListItemButton>
@@ -754,7 +754,7 @@ const NavList: React.FC<NavListProps> = ({
               >
                 <ListItemIcon sx={{ minWidth: 0, mr: 1.5, justifyContent: 'center', color: active ? iconActive : iconNormal }}>
                   {React.cloneElement(item.icon as React.ReactElement, {
-                    sx: { fontSize: '18px' },
+                    sx: { fontSize: '16px' },
                   })}
                 </ListItemIcon>
                 <Typography

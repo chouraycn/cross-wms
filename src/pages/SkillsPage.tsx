@@ -3,12 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography,
   Button, IconButton, Dialog, DialogTitle, DialogContent, Tooltip,
-  useTheme,
+  useTheme, Menu, MenuItem, Divider,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TuneIcon from '@mui/icons-material/Tune';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
+import ExtensionIcon from '@mui/icons-material/Extension';
+import LinkIcon from '@mui/icons-material/Link';
+import GavelIcon from '@mui/icons-material/Gavel';
+import ReplayIcon from '@mui/icons-material/Replay';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { isMacOSApp, isPyWebView } from '../utils/env';
 import type { TaskType, AutomationExecution } from '../services/automation';
@@ -16,12 +22,15 @@ import type { Automation } from '../services/automation/types';
 import { fetchAutomations, triggerAutomationApi, fetchExecutions } from '../services/automation/api';
 import { getAllSkills, onSkillsChange, setSkillStatus, loadAllUsageStats, refreshFromRemote, getUsageStats, loadAuditStatuses, refreshAuditForSkill } from '../stores/skillStore';
 import type { Skill, SkillWatchEvent, UsageStats } from '../types/skill';
+import type { DependencyCheckResult } from '../utils/dependencyChecker';
 import { CATEGORY_LABELS, CATEGORY_ORDER, CATEGORY_COLORS } from '../constants/skillCategories';
 import { findAllConflicts } from '../utils/skillConflict';
 import * as api from '../services/api';
 import SkillCard from '../components/Skills/SkillCard';
 import AddSkillDialog from '../components/Skills/AddSkillDialog';
 import SkillPreviewDialog from '../components/Skills/SkillPreviewDialog';
+import SkillUploadDialog from '../components/Skills/SkillUploadDialog';
+import InstalledSkillList from '../components/Skills/InstalledSkillList';
 import ChainList from '../components/SkillChain/ChainList';
 import ChainBuilder from '../components/SkillChain/ChainBuilder';
 import ChainExecutionPanel from '../components/SkillChain/ChainExecutionPanel';
@@ -37,8 +46,8 @@ import { getGrayScale } from '../constants/theme';
 // 插件管理整合
 import { getPlugins, onPluginsChange, enablePluginAction, disablePluginAction, refreshFromApi, installPluginAction, uninstallPluginAction } from '../stores/pluginStore';
 import type { PluginInfo } from '../services/plugins/api';
-import ExtensionIcon from '@mui/icons-material/Extension';
 import WorkshopPanel from '../components/Skills/WorkshopPanel';
+import SkillHotReloadPanel from '../components/Skills/SkillHotReloadPanel';
 
 // ===================== 技能页面 =====================
 
@@ -135,8 +144,11 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'market' | 'installed' | 'plugins' | 'chains' | 'workshop'>(initialTab as any || 'market');
+  const [activeTab, setActiveTab] = useState<'market' | 'builtin' | 'installed' | 'manage'>(initialTab as any || 'market');
+  const [manageSubTab, setManageSubTab] = useState<'plugins' | 'chains' | 'workshop' | 'hotreload'>('plugins');
+  const [sortBy, setSortBy] = useState<'popular' | 'latest'>('popular');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [dependencyMap, setDependencyMap] = useState<Record<string, DependencyCheckResult>>({});
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchQuery(value);
@@ -184,14 +196,14 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
 
   // ---- 技能链：加载 + 监听 ----
   useEffect(() => {
-    if (activeTab === 'chains') {
+    if (activeTab === 'manage' && manageSubTab === 'chains') {
       chainStore.loadChains().then(() => {
         setChains(chainStore.getChains());
       }).catch((e) => {
         // console.error('[SkillsPage] loadChains failed:', e);
       });
     }
-  }, [activeTab, chainVersion]);
+  }, [activeTab, manageSubTab, chainVersion]);
 
   useEffect(() => {
     const unsubscribe = chainStore.subscribe(() => {
@@ -363,6 +375,10 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
 
   // 添加技能 Dialog
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  // 上传技能 Dialog
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  // 添加按钮下拉菜单
+  const [addMenuAnchor, setAddMenuAnchor] = useState<null | HTMLElement>(null);
 
   // v1.7.87: 技能预览弹窗
   const [previewSkill, setPreviewSkill] = useState<Skill | null>(null);
@@ -468,6 +484,13 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     showToast('技能已启用', 'success');
   };
 
+  // 已安装标签：开关切换技能状态
+  const handleToggleSkill = (skill: Skill, active: boolean) => {
+    setSkillStatus(skill.id, active ? 'active' : 'available');
+    setSkillVersion((v) => v + 1);
+    showToast(`技能已${active ? '启用' : '禁用'}`, active ? 'success' : 'info');
+  };
+
   // 过滤技能（使用防抖后的查询，减少频繁过滤）
   const filteredSkills = useMemo(() => {
     return skills.filter(skill => {
@@ -477,10 +500,47 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
         (skill.tags || []).some(t => t.toLowerCase().includes(debouncedSearchQuery.toLowerCase())) ||
         (skill.trigger || '').toLowerCase().includes(debouncedSearchQuery.toLowerCase());
       const matchesCategory = selectedCategory === 'all' || skill.category === selectedCategory;
-      const matchesTab = activeTab === 'market' || (activeTab === 'installed' && skill.source === 'user');
+      const matchesTab =
+        activeTab === 'market' ? skill.source === 'builtin' :
+        activeTab === 'builtin' ? skill.source === 'builtin' :
+        activeTab === 'installed' ? skill.source === 'user' :
+        true;
       return matchesSearch && matchesCategory && matchesTab;
+    }).sort((a, b) => {
+      if (activeTab !== 'manage') {
+        if (sortBy === 'popular') {
+          const aCount = a.marketplaceMetadata?.downloadCount ?? a.usageStats?.totalUses ?? 0;
+          const bCount = b.marketplaceMetadata?.downloadCount ?? b.usageStats?.totalUses ?? 0;
+          return bCount - aCount;
+        }
+        if (sortBy === 'latest') {
+          const aTime = a.installedAt ?? 0;
+          const bTime = b.installedAt ?? 0;
+          return bTime - aTime;
+        }
+      }
+      return 0;
     });
-  }, [debouncedSearchQuery, selectedCategory, skills, activeTab]);
+  }, [debouncedSearchQuery, selectedCategory, skills, activeTab, sortBy]);
+
+  // 批量检测当前列表技能的环境依赖
+  useEffect(() => {
+    if (activeTab === 'manage') return;
+    const ids = filteredSkills.map((s) => s.id);
+    if (ids.length === 0) return;
+
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      api.checkSkillDependencies(ids).then((data) => {
+        if (!cancelled) setDependencyMap(data);
+      }).catch(() => {});
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [filteredSkills, activeTab]);
 
   // 搜索联想建议（从技能名称、标签、触发词中提取）
   const searchSuggestions = useMemo(() => {
@@ -503,9 +563,9 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     return Array.from(suggestions).slice(0, 6);
   }, [searchQuery, skills]);
 
-  // 推荐技能
+  // 推荐技能（仅市场/内置 Tab）
   const featuredSkills = useMemo(() => {
-    return skills.filter(s => s.featured && s.status === 'active');
+    return skills.filter(s => s.featured && s.status === 'active' && s.source === 'builtin');
   }, [skills]);
 
   // 按 category 分组（全部 Tab 下） — 使用动态分类列表
@@ -543,6 +603,12 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     const conflictInfo = conflictMap.get(skill.id);
     // T03: 从审计缓存获取审查信息
     const audit = getAuditStatus(skill.id);
+    // 安装状态
+    const installStatus = (() => {
+      if (skill.source === 'builtin') return activeTab === 'market' ? 'market' : 'builtin';
+      if (skill.installedAt) return 'installed';
+      return 'custom';
+    })();
 
     return (
       <SkillCard
@@ -560,6 +626,9 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
         conflictCount={conflictInfo?.conflictCount}
         auditLevel={audit?.level ?? null}
         auditScore={audit?.score ?? null}
+        version={skill.version || skill.standardFields?.version}
+        installStatus={installStatus}
+        dependencyResult={dependencyMap[skill.id]}
         onAuditClick={async () => {
           if (skill.source === 'builtin') {
             // 内置技能无需外部审查，直接跳转查看审计结果
@@ -595,7 +664,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
             技能
           </Typography>
           <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>
-            赋予 CDF Know 更强大的能力
+            安装与管理技能，在对话中扩展 QoderWork 的能力。
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
@@ -645,25 +714,47 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
               </Box>
             )}
           </Box>
-          {activeTab !== 'chains' && (
+          {activeTab !== 'manage' && (
             <Button
-              variant="outlined"
-              startIcon={<AddIcon sx={{ fontSize: 14 }} />}
-              onClick={() => setAddDialogOpen(true)}
-              sx={{
-                textTransform: 'none',
-                borderRadius: '8px',
-                fontSize: '0.8125rem',
-                py: 0.75,
-                px: 2,
-                borderColor: gs.border,
-                color: gs.textSecondary,
-                '&:hover': { borderColor: gs.borderDarker, backgroundColor: gs.bgHover },
-              }}
-            >
-              添加技能
-            </Button>
+            variant="contained"
+            startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+            onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+            sx={{
+              textTransform: 'none',
+              borderRadius: '6px',
+              fontSize: '0.8125rem',
+              py: 0.625,
+              px: 2,
+              backgroundColor: '#1F2937',
+              color: '#FFFFFF',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              '&:hover': { backgroundColor: '#374151', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' },
+            }}
+          >
+            添加
+          </Button>
           )}
+          <Menu
+            anchorEl={addMenuAnchor}
+            open={Boolean(addMenuAnchor)}
+            onClose={() => setAddMenuAnchor(null)}
+            PaperProps={{ sx: { borderRadius: '10px', mt: 0.5, minWidth: 160 } }}
+          >
+            <MenuItem
+              onClick={() => { setAddMenuAnchor(null); setAddDialogOpen(true); }}
+              sx={{ fontSize: '0.8125rem', gap: 1 }}
+            >
+              <CreateNewFolderIcon sx={{ fontSize: 18, color: gs.textMuted }} />
+              创建技能
+            </MenuItem>
+            <MenuItem
+              onClick={() => { setAddMenuAnchor(null); setUploadDialogOpen(true); }}
+              sx={{ fontSize: '0.8125rem', gap: 1 }}
+            >
+              <UploadFileIcon sx={{ fontSize: 18, color: gs.textMuted }} />
+              上传技能
+            </MenuItem>
+          </Menu>
           {/* T05: 匹配引擎设置入口 */}
           <Tooltip title="匹配引擎设置">
             <IconButton
@@ -683,359 +774,352 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
         </Box>
       </Box>
 
-      {/* Main Tabs: 全部技能 / 已安装 / 技能链 */}
-      <Box sx={{ display: 'flex', gap: 3, borderBottom: `1px solid ${gs.border}`, mb: 3 }}>
-        <Box
-          onClick={() => setActiveTab('market')}
-          sx={{
-            py: 1.5,
-            fontSize: '0.875rem',
-            color: activeTab === 'market' ? gs.textPrimary : gs.textMuted,
-            cursor: 'pointer',
-            position: 'relative',
-            fontWeight: activeTab === 'market' ? 500 : 400,
-            transition: 'color 0.2s',
-            '&:hover': { color: gs.textSecondary },
-            '&::after': activeTab === 'market' ? {
-              content: '""',
-              position: 'absolute',
-              bottom: -1,
-              left: 0,
-              right: 0,
-              height: 2,
-              backgroundColor: gs.textPrimary,
-            } : {},
-          }}
-        >
-          全部技能
-        </Box>
-        <Box
-          onClick={() => setActiveTab('installed')}
-          sx={{
-            py: 1.5,
-            fontSize: '0.875rem',
-            color: activeTab === 'installed' ? gs.textPrimary : gs.textMuted,
-            cursor: 'pointer',
-            position: 'relative',
-            fontWeight: activeTab === 'installed' ? 500 : 400,
-            transition: 'color 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.75,
-            '&:hover': { color: gs.textSecondary },
-            '&::after': activeTab === 'installed' ? {
-              content: '""',
-              position: 'absolute',
-              bottom: -1,
-              left: 0,
-              right: 0,
-              height: 2,
-              backgroundColor: gs.textPrimary,
-            } : {},
-          }}
-        >
-          已安装
-          <Box sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minWidth: 18,
-            height: 18,
-            px: 0.625,
-            backgroundColor: gs.bgHover,
-            borderRadius: '9px',
-            fontSize: '0.6875rem',
-            color: gs.textMuted,
-          }}>
-            {stats.installed}
+      {/* Banner: 精选职场技能 */}
+      {activeTab === 'market' && (
+        <Box sx={{
+          mb: 4,
+          px: 4,
+          py: 3,
+          borderRadius: '12px',
+          background: 'linear-gradient(135deg, #EEF2FF 0%, #E0EBFF 100%)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#1E3A8A', mb: 0.5 }}>
+              为你精选的职场技能
+            </Typography>
+            <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563', lineHeight: 1.5 }}>
+              涵盖写作、效率、设计、数据分析等多种场景，一键安装。
+            </Typography>
           </Box>
-        </Box>
-        <Box
-          onClick={() => setActiveTab('plugins')}
-          sx={{
-            py: 1.5,
-            fontSize: '0.875rem',
-            color: activeTab === 'plugins' ? gs.textPrimary : gs.textMuted,
-            cursor: 'pointer',
-            position: 'relative',
-            fontWeight: activeTab === 'plugins' ? 500 : 400,
-            transition: 'color 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.75,
-            '&:hover': { color: gs.textSecondary },
-            '&::after': activeTab === 'plugins' ? {
-              content: '""',
-              position: 'absolute',
-              bottom: -1,
-              left: 0,
-              right: 0,
-              height: 2,
-              backgroundColor: gs.textPrimary,
-            } : {},
-          }}
-        >
-          插件
           <Box sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minWidth: 18,
-            height: 18,
-            px: 0.625,
-            backgroundColor: gs.bgHover,
-            borderRadius: '9px',
-            fontSize: '0.6875rem',
-            color: gs.textMuted,
-          }}>
-            {plugins.length}
+            position: 'absolute',
+            right: -20,
+            top: -20,
+            width: 140,
+            height: 140,
+            background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)',
+            borderRadius: '50%',
+          }} />
+        </Box>
+      )}
+
+      {/* Main Tabs: 市场 / 内置 / 已安装 / 管理 */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${gs.border}`, mb: 3 }}>
+        <Box sx={{ display: 'flex', gap: 3 }}>
+          {[
+            { key: 'market', label: '市场' },
+            { key: 'builtin', label: '内置' },
+            { key: 'installed', label: '已安装', count: stats.installed },
+            { key: 'manage', label: '管理' },
+          ].map((tab) => (
+            <Box
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as any)}
+              sx={{
+                py: 1.5,
+                fontSize: '0.9375rem',
+                color: activeTab === tab.key ? gs.textPrimary : gs.textMuted,
+                cursor: 'pointer',
+                position: 'relative',
+                fontWeight: activeTab === tab.key ? 600 : 400,
+                transition: 'color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
+                '&:hover': { color: gs.textSecondary },
+                '&::after': activeTab === tab.key ? {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: -1,
+                  left: 0,
+                  right: 0,
+                  height: 2,
+                  backgroundColor: gs.textPrimary,
+                  borderRadius: '1px',
+                } : {},
+              }}
+            >
+              {tab.label}
+              {tab.count !== undefined && (
+                <Box sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: 18,
+                  height: 18,
+                  px: 0.5,
+                  backgroundColor: gs.bgHover,
+                  borderRadius: '9px',
+                  fontSize: '0.6875rem',
+                  fontWeight: 500,
+                  color: gs.textMuted,
+                }}>
+                  {tab.count}
+                </Box>
+              )}
+            </Box>
+          ))}
+        </Box>
+        {(activeTab === 'market' || activeTab === 'builtin') && (
+          <Box sx={{ display: 'flex', gap: 0.5, bgcolor: gs.bgHover, borderRadius: '6px', p: 0.25 }}>
+            {(['popular', 'latest'] as const).map((key) => (
+              <Box
+                key={key}
+                onClick={() => setSortBy(key)}
+                sx={{
+                  px: 2,
+                  py: 0.5,
+                  fontSize: '0.75rem',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  color: sortBy === key ? gs.textPrimary : gs.textMuted,
+                  backgroundColor: sortBy === key ? gs.bgPanel : 'transparent',
+                  fontWeight: sortBy === key ? 500 : 400,
+                  transition: 'all 0.2s',
+                  boxShadow: sortBy === key ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                }}
+              >
+                {key === 'popular' ? '热门' : '最新'}
+              </Box>
+            ))}
           </Box>
-        </Box>
-        <Box
-          onClick={() => setActiveTab('chains')}
-          sx={{
-            py: 1.5,
-            fontSize: '0.875rem',
-            color: activeTab === 'chains' ? gs.textPrimary : gs.textMuted,
-            cursor: 'pointer',
-            position: 'relative',
-            fontWeight: activeTab === 'chains' ? 500 : 400,
-            transition: 'color 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.75,
-            '&:hover': { color: gs.textSecondary },
-            '&::after': activeTab === 'chains' ? {
-              content: '""',
-              position: 'absolute',
-              bottom: -1,
-              left: 0,
-              right: 0,
-              height: 2,
-              backgroundColor: gs.textPrimary,
-            } : {},
-          }}
-        >
-          技能链
-          <Box sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minWidth: 18,
-            height: 18,
-            px: 0.625,
-            backgroundColor: gs.bgHover,
-            borderRadius: '9px',
-            fontSize: '0.6875rem',
-            color: gs.textMuted,
-          }}>
-            {chains.length}
-          </Box>
-        </Box>
-        <Box
-          onClick={() => setActiveTab('workshop')}
-          sx={{
-            py: 1.5,
-            fontSize: '0.875rem',
-            color: activeTab === 'workshop' ? gs.textPrimary : gs.textMuted,
-            cursor: 'pointer',
-            position: 'relative',
-            fontWeight: activeTab === 'workshop' ? 500 : 400,
-            transition: 'color 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.75,
-            '&:hover': { color: gs.textSecondary },
-            '&::after': activeTab === 'workshop' ? {
-              content: '""',
-              position: 'absolute',
-              bottom: -1,
-              left: 0,
-              right: 0,
-              height: 2,
-              backgroundColor: gs.textPrimary,
-            } : {},
-          }}
-        >
-          提案工作坊
-        </Box>
+        )}
       </Box>
 
-      {activeTab === 'plugins' ? (
-        /* ========== 插件管理视图 ========== */
+      {activeTab === 'manage' ? (
+        /* ========== 管理视图 ========== */
         <Box sx={{ px: 1 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: gs.textPrimary }}>
-              插件管理
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1.5 }}>
-              <Button
-                variant="outlined"
-                startIcon={<RefreshIcon sx={{ fontSize: 14 }} />}
-                onClick={handleRefreshPlugins}
+          <Box sx={{ display: 'flex', gap: 3, borderBottom: `1px solid ${gs.border}`, mb: 3 }}>
+            {[
+              { key: 'plugins', label: '插件', icon: ExtensionIcon, count: plugins.length },
+              { key: 'chains', label: '技能链', icon: LinkIcon, count: chains.length },
+              { key: 'workshop', label: '提案工作坊', icon: GavelIcon },
+              { key: 'hotreload', label: '热重载', icon: ReplayIcon },
+            ].map((tab) => (
+              <Box
+                key={tab.key}
+                onClick={() => setManageSubTab(tab.key as any)}
                 sx={{
-                  textTransform: 'none',
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  py: 0.75,
-                  px: 2,
-                  borderColor: gs.border,
-                  color: gs.textSecondary,
-                  '&:hover': { borderColor: gs.borderDarker, backgroundColor: gs.bgHover },
+                  py: 1.25,
+                  fontSize: '0.875rem',
+                  color: manageSubTab === tab.key ? gs.textPrimary : gs.textMuted,
+                  cursor: 'pointer',
+                  position: 'relative',
+                  fontWeight: manageSubTab === tab.key ? 500 : 400,
+                  transition: 'color 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.75,
+                  '&:hover': { color: gs.textSecondary },
+                  '&::after': manageSubTab === tab.key ? {
+                    content: '""',
+                    position: 'absolute',
+                    bottom: -1,
+                    left: 0,
+                    right: 0,
+                    height: 2,
+                    backgroundColor: gs.textPrimary,
+                  } : {},
                 }}
               >
-                刷新
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon sx={{ fontSize: 14 }} />}
-                onClick={handleUploadPlugin}
-                sx={{
-                  textTransform: 'none',
-                  borderRadius: '8px',
-                  fontSize: '0.8125rem',
-                  py: 0.75,
-                  px: 2,
-                  backgroundColor: '#7C3AED',
-                  '&:hover': { backgroundColor: '#6D28D9' },
-                }}
-              >
-                上传插件
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".py,.zip"
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
-              />
-            </Box>
+                <tab.icon sx={{ fontSize: 16 }} />
+                {tab.label}
+                {tab.count !== undefined && (
+                  <Box sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: 18,
+                    height: 18,
+                    px: 0.625,
+                    backgroundColor: gs.bgHover,
+                    borderRadius: '9px',
+                    fontSize: '0.6875rem',
+                    color: gs.textMuted,
+                  }}>
+                    {tab.count}
+                  </Box>
+                )}
+              </Box>
+            ))}
           </Box>
-          {plugins.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 8 }}>
-              <ExtensionIcon sx={{ fontSize: 48, color: gs.borderDarker, mb: 2 }} />
-              <Typography sx={{ fontSize: '0.95rem', color: gs.textMuted, mb: 0.5 }}>
-                暂无插件
-              </Typography>
-              <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
-                点击上方按钮上传插件文件（.py 或 .zip）
-              </Typography>
+
+          {manageSubTab === 'plugins' ? (
+            <>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: gs.textPrimary }}>
+                  插件管理
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<RefreshIcon sx={{ fontSize: 14 }} />}
+                    onClick={handleRefreshPlugins}
+                    sx={{
+                      textTransform: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      py: 0.75,
+                      px: 2,
+                      borderColor: gs.border,
+                      color: gs.textSecondary,
+                      '&:hover': { borderColor: gs.borderDarker, backgroundColor: gs.bgHover },
+                    }}
+                  >
+                    刷新
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon sx={{ fontSize: 14 }} />}
+                    onClick={handleUploadPlugin}
+                    sx={{
+                      textTransform: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.8125rem',
+                      py: 0.75,
+                      px: 2,
+                      backgroundColor: '#7C3AED',
+                      '&:hover': { backgroundColor: '#6D28D9' },
+                    }}
+                  >
+                    上传插件
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".py,.zip"
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                  />
+                </Box>
+              </Box>
+              {plugins.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 8 }}>
+                  <ExtensionIcon sx={{ fontSize: 48, color: gs.borderDarker, mb: 2 }} />
+                  <Typography sx={{ fontSize: '0.95rem', color: gs.textMuted, mb: 0.5 }}>
+                    暂无插件
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
+                    点击上方按钮上传插件文件（.py 或 .zip）
+                  </Typography>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+                  {plugins.map((plugin) => (
+                    <Box
+                      key={plugin.id}
+                      sx={{
+                        backgroundColor: gs.bgPanel,
+                        border: `1px solid ${gs.border}`,
+                        borderRadius: '12px',
+                        p: 2.5,
+                        transition: 'all 0.2s',
+                        '&:hover': { borderColor: gs.borderDarker, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                        <Box>
+                          <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: gs.textPrimary }}>
+                            {plugin.name}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
+                            {plugin.version || '未知版本'}
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{
+                            px: 1.25,
+                            py: 0.375,
+                            borderRadius: '4px',
+                            fontSize: '0.6875rem',
+                            fontWeight: 500,
+                            backgroundColor: plugin.status === 'enabled' ? '#DCFCE7' : '#FEF2F2',
+                            color: plugin.status === 'enabled' ? '#16A34A' : '#DC2626',
+                          }}
+                        >
+                          {plugin.status === 'enabled' ? '已启用' : '已禁用'}
+                        </Box>
+                      </Box>
+                      <Typography sx={{ fontSize: '0.8125rem', color: gs.textSecondary, mb: 2 }}>
+                        {plugin.description || '暂无描述'}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          size="small"
+                          onClick={() => handleTogglePlugin(plugin)}
+                          sx={{
+                            textTransform: 'none',
+                            borderRadius: '6px',
+                            fontSize: '0.75rem',
+                            flex: 1,
+                            backgroundColor: plugin.status === 'enabled' ? gs.bgHover : '#7C3AED',
+                            color: plugin.status === 'enabled' ? gs.textSecondary : '#FFFFFF',
+                            '&:hover': { backgroundColor: plugin.status === 'enabled' ? gs.border : '#6D28D9' },
+                          }}
+                        >
+                          {plugin.status === 'enabled' ? '禁用' : '启用'}
+                        </Button>
+                        <Button
+                          size="small"
+                          onClick={() => handleDeletePlugin(plugin)}
+                          sx={{
+                            textTransform: 'none',
+                            borderRadius: '6px',
+                            fontSize: '0.75rem',
+                            color: '#EF4444',
+                            '&:hover': { backgroundColor: '#FEF2F2' },
+                          }}
+                        >
+                          删除
+                        </Button>
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </>
+          ) : manageSubTab === 'chains' ? (
+            <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 220px)' }}>
+              <Box sx={{ width: 240, flexShrink: 0, borderRight: `1px solid ${gs.border}`, pr: 2, overflow: 'auto' }}>
+                <ChainList
+                  chains={chains}
+                  selectedId={selectedChainId}
+                  onSelect={handleSelectChain}
+                  onCreate={handleCreateChain}
+                />
+              </Box>
+              <Box sx={{ flex: 1, overflow: 'auto', pr: 1 }}>
+                {editingChain ? (
+                  <ChainBuilder
+                    chain={editingChain}
+                    onChange={setEditingChain}
+                    onSave={handleSaveChain}
+                    onExecute={handleExecuteChain}
+                    onDelete={handleDeleteChain}
+                    onDuplicate={handleDuplicateChain}
+                  />
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 8 }}>
+                    <AutoFixHighIcon sx={{ fontSize: 48, color: gs.borderDarker, mb: 2 }} />
+                    <Typography sx={{ fontSize: '0.95rem', color: gs.textMuted, mb: 0.5 }}>
+                      选择一个技能链或创建新的
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
+                      技能链可以将多个技能串联执行，自动传递数据
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          ) : manageSubTab === 'workshop' ? (
+            <Box sx={{ height: 'calc(100vh - 220px)', overflow: 'auto' }}>
+              <WorkshopPanel gs={gs} isDark={isDark} />
             </Box>
           ) : (
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
-              {plugins.map((plugin) => (
-                <Box
-                  key={plugin.id}
-                  sx={{
-                    backgroundColor: gs.bgPanel,
-                    border: `1px solid ${gs.border}`,
-                    borderRadius: '12px',
-                    p: 2.5,
-                    transition: 'all 0.2s',
-                    '&:hover': { borderColor: gs.borderDarker, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-                  }}
-                >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                    <Box>
-                      <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: gs.textPrimary }}>
-                        {plugin.name}
-                      </Typography>
-                      <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
-                        {plugin.version || '未知版本'}
-                      </Typography>
-                    </Box>
-                    <Box
-                      sx={{
-                        px: 1.25,
-                        py: 0.375,
-                        borderRadius: '4px',
-                        fontSize: '0.6875rem',
-                        fontWeight: 500,
-                        backgroundColor: plugin.status === 'enabled' ? '#DCFCE7' : '#FEF2F2',
-                        color: plugin.status === 'enabled' ? '#16A34A' : '#DC2626',
-                      }}
-                    >
-                      {plugin.status === 'enabled' ? '已启用' : '已禁用'}
-                    </Box>
-                  </Box>
-                  <Typography sx={{ fontSize: '0.8125rem', color: gs.textSecondary, mb: 2 }}>
-                    {plugin.description || '暂无描述'}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      size="small"
-                      onClick={() => handleTogglePlugin(plugin)}
-                      sx={{
-                        textTransform: 'none',
-                        borderRadius: '6px',
-                        fontSize: '0.75rem',
-                        flex: 1,
-                        backgroundColor: plugin.status === 'enabled' ? gs.bgHover : '#7C3AED',
-                        color: plugin.status === 'enabled' ? gs.textSecondary : '#FFFFFF',
-                        '&:hover': { backgroundColor: plugin.status === 'enabled' ? gs.border : '#6D28D9' },
-                      }}
-                    >
-                      {plugin.status === 'enabled' ? '禁用' : '启用'}
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={() => handleDeletePlugin(plugin)}
-                      sx={{
-                        textTransform: 'none',
-                        borderRadius: '6px',
-                        fontSize: '0.75rem',
-                        color: '#EF4444',
-                        '&:hover': { backgroundColor: '#FEF2F2' },
-                      }}
-                    >
-                      删除
-                    </Button>
-                  </Box>
-                </Box>
-              ))}
-            </Box>
+            <SkillHotReloadPanel gs={gs} isDark={isDark} />
           )}
-        </Box>
-      ) : activeTab === 'chains' ? (
-        /* ========== 技能链视图 ========== */
-        <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 220px)' }}>
-          {/* 左侧：链列表 */}
-          <Box sx={{ width: 240, flexShrink: 0, borderRight: `1px solid ${gs.border}`, pr: 2, overflow: 'auto' }}>
-            <ChainList
-              chains={chains}
-              selectedId={selectedChainId}
-              onSelect={handleSelectChain}
-              onCreate={handleCreateChain}
-            />
-          </Box>
-          {/* 右侧：链构建器 */}
-          <Box sx={{ flex: 1, overflow: 'auto', pr: 1 }}>
-            {editingChain ? (
-              <ChainBuilder
-                chain={editingChain}
-                onChange={setEditingChain}
-                onSave={handleSaveChain}
-                onExecute={handleExecuteChain}
-                onDelete={handleDeleteChain}
-                onDuplicate={handleDuplicateChain}
-              />
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 8 }}>
-                <AutoFixHighIcon sx={{ fontSize: 48, color: gs.borderDarker, mb: 2 }} />
-                <Typography sx={{ fontSize: '0.95rem', color: gs.textMuted, mb: 0.5 }}>
-                  选择一个技能链或创建新的
-                </Typography>
-                <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
-                  技能链可以将多个技能串联执行，自动传递数据
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      ) : activeTab === 'workshop' ? (
-        /* ========== 提案工作坊视图 ========== */
-        <Box sx={{ height: 'calc(100vh - 220px)', overflow: 'auto' }}>
-          <WorkshopPanel gs={gs} isDark={isDark} />
         </Box>
       ) : (
         /* ========== 技能卡片视图 ========== */
@@ -1066,7 +1150,8 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
         </Box>
       )}
 
-      {/* 分类标签行 — T05: 动态适配新增分类值 */}
+      {/* 分类标签行 — T05: 动态适配新增分类值（已安装标签使用分组列表，不显示分类筛选） */}
+      {activeTab !== 'installed' && (
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
         {['all', ...dynamicCategories].map((key) => {
           const isActive = selectedCategory === key;
@@ -1093,9 +1178,16 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           );
         })}
       </Box>
+      )}
 
       {/* 技能卡片网格 */}
-      {activeTab === 'market' && selectedCategory === 'all' ? (
+      {activeTab === 'installed' ? (
+        <InstalledSkillList
+          skills={filteredSkills}
+          onToggle={handleToggleSkill}
+          onNavigate={handlePreviewSkill}
+        />
+      ) : activeTab === 'market' && selectedCategory === 'all' ? (
         grouped.map(([category, items]) => (
           <Box key={category} sx={{ mb: 4 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -1167,6 +1259,11 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
         }}
       />
 
+      {/* 上传技能对话框 */}
+      <SkillUploadDialog
+        open={uploadDialogOpen}
+        onClose={() => setUploadDialogOpen(false)}
+      />
 
       </>
     )}

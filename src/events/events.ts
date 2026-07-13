@@ -55,6 +55,8 @@ export const CdfEvents = {
   API_ERROR: 'cdf-know-clow-api-error',
   STORAGE_WARNING: 'cdf-know-clow-storage-warning',
   MEMORY_PRESSURE: 'cdf-memory-pressure',
+  /** 对话内技能创建/生效反馈 */
+  SKILL_CREATED: 'cdf-know-clow-skill-created',
 
   // ===== UI 交互 =====
   CHAT_INPUT_BLUR: 'cdf-chat-input-blur',
@@ -104,6 +106,7 @@ export interface CdfEventDetailMap {
   [CdfEvents.API_ERROR]: { action: string; error: unknown };
   [CdfEvents.STORAGE_WARNING]: unknown;
   [CdfEvents.MEMORY_PRESSURE]: void;
+  [CdfEvents.SKILL_CREATED]: { skillName: string; action: string; message?: string };
 
   // UI 交互
   [CdfEvents.CHAT_INPUT_BLUR]: unknown;

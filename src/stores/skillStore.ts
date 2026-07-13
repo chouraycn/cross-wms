@@ -29,6 +29,14 @@ const usageStatsCache = new Map<string, UsageStats>();
 /** 安全审查状态缓存：key 为 skill.id */
 const auditStatusCache = new Map<string, SkillAudit>();
 
+/** 启动期从 API 初始化技能列表时的错误（用于向用户可见地提示，而非静默空列表） */
+let skillLoadError: string | null = null;
+
+/** 读取最近一次技能初始化错误（UI 可据此展示提示） */
+export function getSkillLoadError(): string | null {
+  return skillLoadError;
+}
+
 // 事件总线：技能变更监听
 type SkillsChangeListener = () => void;
 const listeners = new Set<SkillsChangeListener>();
@@ -318,6 +326,8 @@ export async function initFromApi(): Promise<void> {
     notifyAll();
     // 使用统计由 SkillsPage / CommandPalette 等按需延迟加载，避免启动时额外请求
   } catch (e) {
-    // console.error('[skillStore] initFromApi failed:', e);
+    const msg = e instanceof Error ? e.message : String(e);
+    skillLoadError = msg;
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'initFromApi', error: msg } }));
   }
 }

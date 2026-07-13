@@ -157,6 +157,8 @@ export interface SkillDefinition {
   skillMdContent?: string;
   /** 从 SKILL.md body 提取的 instruction 代码块列表 */
   instructionBlocks?: string[];
+  /** 是否为原生（带 index.ts/index.js 可执行 handler）技能；原生技能走 skill_<id> 入口，不进 skill 元工具目录 */
+  native?: boolean;
 }
 
 // ===================== Skill 执行上下文 =====================
@@ -198,6 +200,23 @@ export interface SkillCredentials {
 }
 
 /**
+ * Skill 工具执行器（框架注入）
+ *
+ * 让原生 Skill 的 execute 可以按名调用内置工具（等价于 Agent 的 Tool Calling），
+ * 例如 `ctx.tools.run('wms_inventory', {})`、`ctx.tools.run('file_generateFile', {...})`。
+ *
+ * 设计要点：
+ * - Skill 只需按名调用，无需 import 任何 server 内部模块，
+ *   因此 Skill 文件与 server 代码物理解耦，可随技能目录自由迁移。
+ * - 返回值为内置工具 handler 的原始字符串结果（多为 JSON 字符串），
+ *   调用方自行解析。
+ */
+export interface SkillToolRunner {
+  /** 调用内置工具（如 wms_inventory / file_generateFile / db_query），返回 handler 原始字符串结果 */
+  run(name: string, args?: Record<string, unknown>): Promise<string>;
+}
+
+/**
  * Skill 执行上下文（框架注入）
  *
  * 每次执行 Skill 时由 SkillContextFactory 创建，
@@ -222,6 +241,8 @@ export interface SkillContext {
   lock: SkillLock;
   /** 凭证接口 */
   creds: SkillCredentials;
+  /** 工具执行器（按名调用内置工具，等价于 Agent 的 Tool Calling） */
+  tools: SkillToolRunner;
 }
 
 // ===================== Skill 执行结果 =====================

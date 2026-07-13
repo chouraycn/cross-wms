@@ -200,11 +200,12 @@ interface SkillSummary {
   disabled: boolean;
 }
 
-/** 列出所有已加载技能（默认排除禁用项） */
+/** 列出所有已加载技能（默认排除禁用项与原生可执行技能） */
 export function listAvailableSkills(includeDisabled = false): SkillSummary[] {
   const disabled = loadDisabledSet();
   return skillRegistry
     .getAllSkills()
+    .filter((s) => !s.definition.native) // 原生技能走 skill_<id> 入口，不进元工具目录
     .map((s) => ({
       id: s.definition.id,
       name: s.definition.name,
@@ -259,6 +260,7 @@ export function getFolderSkillsForMatching(
   for (const s of skillRegistry.getAllSkills()) {
     const id = s.definition.id;
     if (disabled.has(id)) continue;
+    if (s.definition.native) continue; // 原生可执行技能不在 folder-skill 文档匹配范畴
     if (excludeIds && excludeIds.has(id)) continue;
     const def = s.definition;
     const md = def.skillMdContent;

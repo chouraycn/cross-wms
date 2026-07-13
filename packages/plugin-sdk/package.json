@@ -4,7 +4,9 @@
   "description": "CDFKnow Plugin SDK - 插件开发工具包",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc -w",
@@ -14,8 +16,8 @@
     "eventemitter3": "^5.0.1"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
     "@types/node": "^25.9.4",
-    "vitest": "^3.2.6"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
   }
 }

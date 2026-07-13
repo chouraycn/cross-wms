@@ -175,12 +175,12 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose }) => {
         subtitle: skill.desc || skill.trigger,
         icon: <StarIcon sx={{ fontSize: 16, color: '#8b5cf6' }} />,
         action: () => {
-          window.dispatchEvent(new CustomEvent('trigger-skill', { detail: { skillId: skill.id } }));
+          navigate(`/chat?skill=${encodeURIComponent(skill.id)}`);
           onClose();
         },
         tags: skill.tags,
       }));
-  }, [userSkills]);
+  }, [userSkills, navigate]);
 
   const allResults = useMemo((): CommandResult[] => {
     const q = debouncedQuery.toLowerCase().trim();

@@ -5,8 +5,16 @@ version: 0.1.0
 triggers:
   - "schedule:0 9 * * *"
 allowed-tools:
-  - Read
-  - Write
+  - file_readFile
+  - file_writeFile
+  - wms_inventory
+parameters:
+  type: object
+  properties:
+    fileName:
+      type: string
+      description: 可选，指定后把生成的日报落盘并返回下载链接
+  required: []
 ---
 
 # WMS 每日运营日报
