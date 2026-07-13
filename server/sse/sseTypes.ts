@@ -83,6 +83,32 @@ export interface SSEDebugEvent {
   [key: string]: unknown;
 }
 
+/**
+ * file 事件 — 技能/工具产出文件实时回写（T1）
+ *
+ * 与 GeneratedFile 字段对齐，并额外携带 fileId（去重/引用主键）、
+ * source（来源）、skillId（技能 id）、toolCallId 等路由信息。
+ * 由 runChatSession 在工具结果返回后实时 emit，与既有 file_generateFile 写库逻辑并存。
+ */
+export interface SSEFileEvent {
+  type: 'file';
+  /** sha256(sessionId + fileName) 截断，去重/引用主键 */
+  fileId: string;
+  toolCallId?: string;
+  /** 文件产出来源 */
+  source: 'skill' | 'tool' | 'agent';
+  /** 技能 id（source==='skill' 时） */
+  skillId?: string;
+  fileName: string;
+  mimeType?: string;
+  fileSize: number;
+  downloadUrl: string;
+  previewUrl?: string;
+  description?: string;
+  sessionId?: string;
+  createdAt?: string;
+}
+
 // ===================== 工具稳定性事件类型 (P1-2) =====================
 
 /** tool_retry 事件 — 工具执行重试通知 */
@@ -131,7 +157,7 @@ export interface SSEToolStatsEvent {
 
 // ===================== 联合类型 =====================
 
-/** 7 种核心 SSE 事件联合类型 */
+/** 8 种核心 SSE 事件联合类型 */
 export type SSEEvent =
   | SSEInitEvent
   | SSETextEvent
@@ -139,11 +165,12 @@ export type SSEEvent =
   | SSEToolCallEvent
   | SSEErrorEvent
   | SSEDoneEvent
-  | SSEDebugEvent;
+  | SSEDebugEvent
+  | SSEFileEvent;
 
 // ===================== 核心事件类型集合 =====================
 
-/** 7 种核心事件类型字面量 */
+/** 8 种核心事件类型字面量 */
 export const CORE_EVENT_TYPES = [
   'init',
   'text',
@@ -152,6 +179,7 @@ export const CORE_EVENT_TYPES = [
   'error',
   'done',
   'debug',
+  'file',
 ] as const;
 
 // ===================== 工具稳定性事件类型集合 (P1-2) =====================

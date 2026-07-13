@@ -51,6 +51,22 @@ import type { ToolHandler } from './toolTypes.js';
 import { auditSkillSecurity } from './skillSecurity.js';
 
 /**
+ * 产物回写约定（T3）：注入到 `skill use` 返回的指令尾部，指导技能把生成文件回显给用户。
+ * 三种方式均会被调度层实时识别为 file 事件并以卡片渲染，无需手动拼接 URL。
+ */
+const SKILL_FILEBACK_CONVENTION = `
+
+---
+## 产物回写约定（让技能产物实时显示在对话中）
+如需把生成的文件返回给用户，任选其一：
+1. 调用 \`file_generateFile\`（内容 → 写入应用托管生成目录，自动获得下载/预览链接）；
+2. 调用 \`file_writeFile\` 写入应用白名单目录（桌面/文档/工作区等），会自动获得下载链接；
+3. 在脚本/命令输出中打印绝对路径标记：\`FILE:/abs/path\` 或 \`MEDIA:/abs/path\`
+   （路径需落在会话托管生成目录 <generatedFilesDir>/<sessionId>/ 或白名单目录）。
+系统会识别这些产物并以卡片形式实时渲染，无需手动拼接 URL。
+`;
+
+/**
  * 起始目录：
  *  - 生产（esbuild 打包为 CommonJS）下 __dirname 原生可用；
  *  - dev（tsx/ESM，package.json type:module）下 __dirname 未定义，回退到 process.cwd()。
@@ -382,7 +398,7 @@ export const skillToolHandler: ToolHandler = async (args) => {
       success: true,
       id,
       name: detail.name,
-      instructions: detail.content,
+      instructions: detail.content + SKILL_FILEBACK_CONVENTION,
       security: {
         riskLevel: security.riskLevel,
         sandboxScope: security.sandboxScope,

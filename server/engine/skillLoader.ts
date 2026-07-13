@@ -5,6 +5,7 @@ import { logger } from '../logger.js';
 import { parseSkillMdContent } from '../services/skillMdParser.js';
 import type { SkillDefinition, SkillLifecycle, RegisteredSkill, SkillState, SkillPermissionGroup, SkillGate, SandboxScope } from '../types/skill-runtime.js';
 import { skillRegistry } from './skillRegistry.js';
+import { extractFilesFromMarkerText } from './generatedFileAttachment.js';
 
 export interface SkillLoadOptions {
   source: 'builtin' | 'workspace' | 'user';
@@ -188,9 +189,12 @@ function createDeclarativeHandler(definition: SkillDefinition): SkillLifecycle['
           maxBuffer: 1024 * 1024,
         });
 
+        // T3: 扫描 stdout/stderr 中的 FILE:|MEDIA: 标记，暴露落地文件路径供调度层 emit file 事件
+        const markers = extractFilesFromMarkerText(`${stdout}\n${stderr}`);
+
         return {
           success: true,
-          data: { stdout: stdout.trim(), stderr: stderr.trim() },
+          data: { stdout: stdout.trim(), stderr: stderr.trim(), generatedFilePaths: markers },
           metadata: { durationMs: Date.now() - startTime, sandboxChecks: 1 },
         };
       }
@@ -232,9 +236,15 @@ function createDeclarativeHandler(definition: SkillDefinition): SkillLifecycle['
           data = await response.text();
         }
 
+        // T3: 扫描输出中的 FILE:|MEDIA: 标记，暴露落地文件路径供调度层 emit file 事件
+        const markers = extractFilesFromMarkerText(typeof data === 'string' ? data : JSON.stringify(data));
+        const httpData: Record<string, unknown> =
+          typeof data === 'object' && data !== null ? { ...(data as object) } : { text: data };
+        httpData.generatedFilePaths = markers;
+
         return {
           success: true,
-          data,
+          data: httpData,
           metadata: { durationMs: Date.now() - startTime, sandboxChecks: 1 },
         };
       }

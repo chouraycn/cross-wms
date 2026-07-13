@@ -692,6 +692,76 @@ router.get('/generated/:sessionId/:fileName', async (req: Request, res: Response
 });
 
 /**
+ * GET /api/file/fs
+ * 下载任意白名单目录内的文件（供 FILE: 标记指向非 generated dir 的场景，T5）。
+ * 复用 securityCheck 中间件做路径安全校验（敏感路径 / 非授权路径均被拒）。
+ */
+router.get('/fs', securityCheck, async (req: Request, res: Response) => {
+  try {
+    const targetPath = req.query.path as string;
+    if (!targetPath) {
+      res.status(400).json({ ok: false, error: '路径参数缺失' });
+      return;
+    }
+
+    const resolvedPath = path.resolve(targetPath);
+
+    if (!fs.existsSync(resolvedPath)) {
+      res.status(404).json({ ok: false, error: '文件不存在' });
+      return;
+    }
+
+    const stats = await fs.promises.stat(resolvedPath);
+    if (!stats.isFile()) {
+      res.status(400).json({ ok: false, error: '路径不是文件' });
+      return;
+    }
+
+    const ext = path.extname(resolvedPath).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.html': 'text/html; charset=utf-8',
+      '.htm': 'text/html; charset=utf-8',
+      '.css': 'text/css; charset=utf-8',
+      '.js': 'application/javascript; charset=utf-8',
+      '.json': 'application/json; charset=utf-8',
+      '.md': 'text/markdown; charset=utf-8',
+      '.txt': 'text/plain; charset=utf-8',
+      '.csv': 'text/csv; charset=utf-8',
+      '.xml': 'application/xml; charset=utf-8',
+      '.pdf': 'application/pdf',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.webp': 'image/webp',
+      '.zip': 'application/zip',
+    };
+    const mimeType = mimeTypes[ext] || 'application/octet-stream';
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Length', stats.size.toString());
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(path.basename(resolvedPath))}"`);
+
+    const fileStream = fs.createReadStream(resolvedPath);
+    fileStream.pipe(res);
+
+    fileStream.on('error', (err) => {
+      logger.error('[File API] 读取文件失败:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ ok: false, error: '读取文件失败' });
+      }
+    });
+  } catch (e) {
+    const error = e as Error;
+    logger.error('[File API] 读取文件失败:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ ok: false, error: `读取文件失败: ${error.message}` });
+    }
+  }
+});
+
+/**
  * GET /api/file/generated/:sessionId
  * 列出指定会话生成的所有文件
  */

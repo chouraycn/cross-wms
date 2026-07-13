@@ -57,6 +57,13 @@ import { outputReviewer } from './outputReviewer.js';
 import { compactionNotificationManager } from './compaction/compactionNotification.js';
 import { reviewStatisticsManager } from './reviewStatistics.js';
 import { formatValidator } from './formatValidator.js';
+import {
+  extractGeneratedFileFromToolResult,
+  extractFilesFromMarkerText,
+  extractMarkerTextFromToolResult,
+  emitFileEvent,
+  emitFileEventsForPaths,
+} from './generatedFileAttachment.js';
 
 // ===================== 压缩 Hook 单例 =====================
 // 在聊天执行核心中挂载「死」模块 engine/compaction/compactionHooks.ts 的生命周期钩子。
@@ -87,6 +94,58 @@ export function ensureBuiltinCommandsRegistered(): void {
 // 仅注册、不自动分发——实时命令入口仍为 TUI/commands.ts，且 builtinCommands 的 handler
 // 多为占位实现；故保持「注册即活跃、分发仍走既有入口」的保守集成策略）。
 ensureBuiltinCommandsRegistered();
+
+// ===================== 工具产出文件 → 实时 file 事件（T2/T3） =====================
+
+/**
+ * 把工具执行结果中产出的文件经 send 回调实时 emit 为 `file` SSE 事件。
+ *
+ * 覆盖两类来源：
+ * 1. 结构化工具结果（file_generateFile / file_writeFile）—— 直接解析 JSON 得到文件名/URL。
+ * 2. FILE:|MEDIA: 标记（exec_command 输出 / skill_* handler 落地文件）—— 扫描 stdout/stderr
+ *    抽取绝对路径；skill_* 工具优先读取其 result 中由 skillLoader 写入的 data.generatedFilePaths。
+ *
+ * 该实时通道与 runChatSession 末尾既有 file_generateFile 写库逻辑并存，不替代任何一方。
+ */
+function emitToolGeneratedFiles(
+  send: ((event: { type: string; [key: string]: unknown }) => void) | undefined,
+  sessionId: string,
+  toolName: string,
+  result: string,
+  toolCallId: string,
+): void {
+  if (!send) return;
+  const cb = send;
+  try {
+    // 1) 结构化工具结果（file_generateFile / file_writeFile）
+    const structured = extractGeneratedFileFromToolResult(toolName, result);
+    if (structured) emitFileEvent(cb, structured);
+
+    // 2) FILE:/MEDIA: 标记扫描（exec_command / skill_* handler 落地文件）
+    let markerPaths: string[] = [];
+    if (toolName.startsWith('skill_')) {
+      try {
+        const parsed: any = JSON.parse(result);
+        const gf = parsed?.data?.generatedFilePaths;
+        if (Array.isArray(gf)) markerPaths = gf.filter((x: unknown) => typeof x === 'string');
+      } catch {
+        // 解析失败，回退到文本扫描
+      }
+    }
+    if (markerPaths.length === 0) {
+      markerPaths = extractFilesFromMarkerText(extractMarkerTextFromToolResult(result));
+    }
+    if (markerPaths.length > 0) {
+      emitFileEventsForPaths(cb, sessionId, markerPaths, {
+        source: toolName.startsWith('skill_') ? 'skill' : 'tool',
+        skillId: toolName.startsWith('skill_') ? toolName.slice('skill_'.length) : undefined,
+        toolCallId,
+      });
+    }
+  } catch {
+    // 文件事件发射失败不影响主流程
+  }
+}
 
 // ===================== 类型定义 =====================
 
@@ -447,6 +506,14 @@ export async function runChatSession(
         toolArgs: toolCall.function.arguments,
         toolResult: result,
       });
+      // T2/T3: 工具产出文件 → 实时 file 事件
+      emitToolGeneratedFiles(
+        callbacks.onEvent,
+        sessionId,
+        toolCall.function.name,
+        typeof result === 'string' ? result : String(result ?? ''),
+        toolCall.id,
+      );
     },
     onSSEEvent: (event: Record<string, unknown>) => {
       callbacks.onEvent?.(event as { type: string; [key: string]: unknown });
@@ -991,6 +1058,14 @@ async function tryFallback(
             toolArgs: toolCall.function.arguments,
             toolResult,
           });
+          // T2/T3: 工具产出文件 → 实时 file 事件（降级重试路径同样接通）
+          emitToolGeneratedFiles(
+            callbacks.onEvent,
+            sessionId,
+            toolCall.function.name,
+            typeof toolResult === 'string' ? toolResult : String(toolResult ?? ''),
+            toolCall.id,
+          );
         },
         onSSEEvent: (event: Record<string, unknown>) => {
           callbacks.onEvent?.(event as { type: string; [key: string]: unknown });

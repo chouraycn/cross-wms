@@ -31,7 +31,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { Message, Session, Attachment, ReferencedSession } from '../types/chat';
+import type { Message, Session, Attachment, ReferencedSession, GeneratedFile } from '../types/chat';
 import { API_BASE } from '../constants/api';
 import { useAiEngineSettings } from '../contexts/AppSettingsContext';
 import { extractTodos, mergeAutoTodos } from '../utils/extractTodos';
@@ -831,6 +831,46 @@ export function useAgentChat(
             generatedFiles: newGeneratedFiles.length > 0 ? newGeneratedFiles : lastMsg.generatedFiles,
           };
 
+          const newMessages = [...prev];
+          newMessages[idx] = updated;
+          return newMessages;
+        });
+        break;
+      }
+
+      case 'file': {
+        // T4: 技能/工具产出文件实时回写 — 追加到当前 assistant 消息的 generatedFiles
+        const fileId = (data.fileId as string | undefined) ?? undefined;
+
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex === -1) {
+          startAssistantMessage(false);
+        }
+
+        setMessages((prev) => {
+          const idx = blockStateRef.current.assistantMessageIndex;
+          if (idx < 0 || idx >= prev.length) return prev;
+          const last = prev[idx];
+          if (last.role !== 'assistant') return prev;
+
+          const arr = last.generatedFiles ? [...last.generatedFiles] : [];
+          const key = fileId || (data.fileName as string);
+          if (!arr.some((x: GeneratedFile) => ((x as GeneratedFile & { fileId?: string }).fileId || x.fileName) === key)) {
+            const fileInfo: GeneratedFile & { fileId?: string } = {
+              fileName: data.fileName as string,
+              fileSize: Number(data.fileSize) || 0,
+              mimeType: (data.mimeType as string | undefined) ?? undefined,
+              description: (data.description as string | undefined) ?? undefined,
+              downloadUrl: data.downloadUrl as string,
+              previewUrl: (data.previewUrl as string | undefined) ?? undefined,
+              sessionId: (data.sessionId as string | undefined) ?? undefined,
+              createdAt: (data.createdAt as string | undefined) ?? undefined,
+              ...(fileId ? { fileId } : {}),
+            };
+            arr.push(fileInfo);
+          }
+
+          const updated: Message = { ...last, generatedFiles: arr };
           const newMessages = [...prev];
           newMessages[idx] = updated;
           return newMessages;

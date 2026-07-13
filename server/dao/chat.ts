@@ -1,7 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+import * as path from 'path';
 import type { Session, Folder, Message } from '../db.js';
 import { logger } from '../logger.js';
 import { FileStorage } from '../storage/FileStorage.js';
+import { AppPaths } from '../config/appPaths.js';
 
 // ===================== 消息大小限制 =====================
 
@@ -412,8 +415,21 @@ export function addMessage(msg: Omit<Message, 'id' | 'timestamp'> & { id?: strin
   return message;
 }
 
+/** 清理会话托管生成目录（T5）：删除会话时一并移除其 generatedFilesDir/<id>/ */
+function cleanupGeneratedFiles(sessionId: string): void {
+  try {
+    const dir = path.join(AppPaths.generatedFilesDir, sessionId);
+    if (fs.existsSync(dir)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  } catch (e) {
+    logger.warn(`[DAO] 清理生成文件目录失败 (${sessionId}):`, e);
+  }
+}
+
 export function deleteSession(id: string): void {
   FileStorage.deleteSessionFile(id);
+  cleanupGeneratedFiles(id);
 }
 
 /** 更新会话元数据（标题、标签等） */
