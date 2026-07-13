@@ -610,6 +610,42 @@ const StorageWarningListener: React.FC = () => {
   return null;
 };
 
+/** 技能初始化失败全局监听 — 启动期 initFromApi 失败时给出可见提示，而非静默空列表 */
+const SkillLoadErrorListener: React.FC = () => {
+  const { showToast } = useToast();
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.action !== 'initFromApi') return;
+      const msg = detail?.error ? String(detail.error) : '未知错误';
+      showToast(`技能加载失败：${msg}`, 'error', 8000);
+    };
+    window.addEventListener('cdf-know-clow-api-error', handler);
+    return () => window.removeEventListener('cdf-know-clow-api-error', handler);
+  }, [showToast]);
+  return null;
+};
+
+/** 对话内技能创建/生效反馈 — 监听 SKILL_CREATED 事件弹出状态 toast */
+const SkillCreationListener: React.FC = () => {
+  const { showToast } = useToast();
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const skillName = detail?.skillName ?? '技能';
+      const action = detail?.action ?? 'create_proposal';
+      if (action === 'create_and_apply') {
+        showToast(`技能已创建并生效：${skillName}`, 'success', 6000);
+      } else {
+        showToast(`技能提案已创建：${skillName}，等待审批`, 'info', 6000);
+      }
+    };
+    window.addEventListener('cdf-know-clow-skill-created', handler);
+    return () => window.removeEventListener('cdf-know-clow-skill-created', handler);
+  }, [showToast]);
+  return null;
+};
+
 const SettingsRedirect: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSettings }) => {
   const navigate = useNavigate();
   React.useEffect(() => {
@@ -747,6 +783,8 @@ const MainLayout: React.FC = () => {
   return (
     <ToastProvider sidebarCollapsed={sidebarCollapsed}>
       <StorageWarningListener />
+      <SkillLoadErrorListener />
+      <SkillCreationListener />
       {/* v1.5.107: 路由级会话同步 — 从非聊天页切回 /chat 时自动创建新会话 */}
       <ChatRouteSync />
       {/* v1.5.182: 窗口控制按钮 — 透明悬浮于左上角，与 Logo 同行（WorkBuddy 风格） */}

@@ -39,6 +39,8 @@ import {
 import { auditSkillMd, generateMarkdownReport } from '../services/securityAuditor.js';
 import { parseSkillMdContent } from '../services/skillMdParser.js';
 import { logger } from '../logger.js';
+import yaml from 'js-yaml';
+import { dependencyChecker, DependencyCheckResult } from '../../src/utils/dependencyChecker.js';
 
 // ===================== SKILL.md 解析工具（基于 js-yaml） =====================
 
@@ -71,6 +73,63 @@ function parseSkillMd(content: string): { frontmatter: Record<string, string>; b
   }
 
   return { frontmatter, body: parsed.body };
+}
+
+// ===================== 依赖检测 =====================
+
+function normalizeRequiresList(raw: unknown): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.filter((v): v is string => typeof v === 'string').map(s => s.trim()).filter(Boolean);
+  }
+  if (typeof raw === 'string') {
+    return raw.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function extractOpenClawRequires(content: string): { bins?: string[]; anyBins?: string[]; env?: string[]; config?: string[] } | undefined {
+  const trimmed = content.trimStart();
+  const fmMatch = trimmed.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!fmMatch) return undefined;
+
+  try {
+    const parsed = yaml.load(fmMatch[1], { schema: yaml.DEFAULT_SCHEMA, json: true }) as Record<string, unknown>;
+    const metadata = parsed.metadata as Record<string, unknown> | undefined;
+    const openclaw = metadata?.openclaw as Record<string, unknown> | undefined;
+    const requires = openclaw?.requires as Record<string, unknown> | undefined;
+    if (!requires) return undefined;
+
+    const bins = normalizeRequiresList(requires.bins);
+    const anyBins = normalizeRequiresList(requires.anyBins);
+    const env = normalizeRequiresList(requires.env);
+    const config = normalizeRequiresList(requires.config);
+    if (bins.length === 0 && anyBins.length === 0 && env.length === 0 && config.length === 0) {
+      return undefined;
+    }
+
+    const result: { bins?: string[]; anyBins?: string[]; env?: string[]; config?: string[] } = {};
+    if (bins.length > 0) result.bins = bins;
+    if (anyBins.length > 0) result.anyBins = anyBins;
+    if (env.length > 0) result.env = env;
+    if (config.length > 0) result.config = config;
+    return result;
+  } catch {
+    return undefined;
+  }
+}
+
+function loadSkillMdContent(
+  skillId: string,
+  skill?: Record<string, unknown>,
+  scanned?: ScannedSkillMd[],
+): string | null {
+  if (skill?.source === 'builtin') {
+    return (skill.promptTemplate as string) || null;
+  }
+  const list = scanned ?? scanWorkbuddySkills();
+  const match = list.find(s => s.dirName === skillId || (skill?.name && s.name === skill.name));
+  return match?.body || null;
 }
 
 // ===================== SKILL.md 磁盘同步 =====================
@@ -711,6 +770,37 @@ router.post('/skill-audits/batch', async (req: Request, res: Response) => {
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
+});
+
+// POST /api/skills/dependency-check — 批量检测技能环境依赖
+router.post('/skills/dependency-check', async (req: Request, res: Response) => {
+  const skillIds = (req.body as { skillIds?: string[] }).skillIds || [];
+  const results: Record<string, DependencyCheckResult> = {};
+  const scanned = scanWorkbuddySkills();
+
+  for (const skillId of skillIds) {
+    try {
+      const skill = dbGetSkillById(skillId);
+      const content = loadSkillMdContent(skillId, skill, scanned);
+      const requires = content ? extractOpenClawRequires(content) : undefined;
+      results[skillId] = await dependencyChecker.checkAll(
+        requires?.bins || [],
+        requires?.anyBins || [],
+        requires?.env || [],
+        requires?.config || []
+      );
+    } catch {
+      results[skillId] = {
+        allFound: false,
+        checks: [],
+        missingBins: [],
+        missingEnv: [],
+        missingConfig: [],
+      };
+    }
+  }
+
+  res.json({ data: results });
 });
 
 // Backward-compatible aliases for old audit route paths

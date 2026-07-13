@@ -190,6 +190,20 @@ cd "$ROOT_DIR"
 
 echo "✅ Server compiled ($SERVER_DIST_DIR/index.cjs)"
 
+# ===================== 4.5 拷贝随包 ONNX 模型 =====================
+# 将 all-MiniLM-L6-v2 模型种子打进 server_dist/models/，使打包后的 server
+# 通过 __dirname 相对路径即可找到模型，首次运行直接复制到数据目录，无需联网下载。
+echo "📦 Copying bundled ONNX model (all-MiniLM-L6-v2)..."
+MODEL_SRC="$ROOT_DIR/assets/models/all-MiniLM-L6-v2"
+if [ -f "$MODEL_SRC/model.onnx" ]; then
+  MODEL_DEST_DIR="$RESOURCES_DIR/server_dist/models/all-MiniLM-L6-v2"
+  mkdir -p "$MODEL_DEST_DIR"
+  cp "$MODEL_SRC"/* "$MODEL_DEST_DIR"/
+  echo "✅ ONNX model bundled -> $MODEL_DEST_DIR ($(du -sh "$MODEL_DEST_DIR" | cut -f1))"
+else
+  echo "⚠️  Bundled ONNX model not found at $MODEL_SRC; server will download on first run (white screen risk)"
+fi
+
 # ===================== 5. Prepare Node.js runtime =====================
 
 echo "📦 Preparing Node.js runtime..."

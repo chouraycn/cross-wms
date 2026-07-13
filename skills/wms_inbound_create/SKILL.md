@@ -7,9 +7,41 @@ triggers:
   - "keyword:入库"
   - "keyword:inbound"
 allowed-tools:
-  - Read
-  - Write
-  - Edit
+  - file_readFile
+  - file_writeFile
+  - file_generateFile
+  - wms_inventory
+parameters:
+  type: object
+  properties:
+    supplier:
+      type: string
+      description: 供应商名称或编码
+    warehouse:
+      type: string
+      description: 目标仓库编码
+    lines:
+      type: array
+      description: 入库明细数组
+      items:
+        type: object
+        properties:
+          sku:
+            type: string
+          qty:
+            type: number
+          batch:
+            type: string
+        required:
+          - sku
+          - qty
+    expectedAt:
+      type: string
+      description: 预计到货时间（可选）
+  required:
+    - supplier
+    - warehouse
+    - lines
 ---
 
 # WMS 入库单创建

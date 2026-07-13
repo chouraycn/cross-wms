@@ -30,6 +30,7 @@ import type {
   SkillCache,
   SkillLock,
   SkillCredentials,
+  SkillToolRunner,
   SandboxScope,
 } from '../types/skill-runtime.js';
 
@@ -403,6 +404,39 @@ function createSkillCredentials(skillId: string): SkillCredentials {
   return new SkillCredentialsImpl(skillId);
 }
 
+// ===================== SkillToolRunner 实现 =====================
+
+/**
+ * 创建 SkillToolRunner 实例
+ *
+ * 按名调用内置工具（等价于 Agent 的 Tool Calling），返回值与 toolRegistry.executeToolCall 一致。
+ *
+ * 使用**懒加载 require** 引入 toolRegistry，避免 skillContextFactory 与 toolRegistry
+ * 之间的静态循环依赖（skillRegistry 依赖本工厂的 createSkillContext）。
+ */
+function createSkillToolRunner(): SkillToolRunner {
+  return {
+    async run(name: string, args: Record<string, unknown> = {}): Promise<string> {
+      if (!name || typeof name !== 'string') {
+        return JSON.stringify({ error: 'SkillToolRunner: 工具名不能为空' });
+      }
+      try {
+        // 懒加载，避免静态循环依赖；ESM 运行时下 require 不可用，改用动态 import()
+        const { executeToolCall } = (await import('./toolRegistry.js')) as unknown as {
+          executeToolCall: (toolCall: { type: 'function'; function: { name: string; arguments: string } }, timeoutMs?: number) => Promise<string>;
+        };
+        return await executeToolCall(
+          { type: 'function', function: { name, arguments: JSON.stringify(args ?? {}) } },
+        );
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        logger.error(`[SkillToolRunner] 调用工具 '${name}' 失败:`, e);
+        return JSON.stringify({ error: `工具 '${name}' 调用失败: ${msg}` });
+      }
+    },
+  };
+}
+
 // ===================== 工厂函数 =====================
 
 /** 默认命令白名单（安全命令） */
@@ -443,5 +477,6 @@ export function createSkillContext(options: SkillContextOptions): SkillContext {
     cache: createSkillCache(),
     lock: createSkillLock(),
     creds: createSkillCredentials(skillId),
+    tools: createSkillToolRunner(),
   };
 }

@@ -8,7 +8,7 @@ triggers:
   - "keyword:web"
   - "keyword:internet"
 allowed-tools:
-  - file_execCommand
+  - web_search
 ---
 
 # Web Search 网络搜索

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { pathToFileURL } from 'url';
 import { logger } from '../logger.js';
 import { parseSkillMdContent } from '../services/skillMdParser.js';
 import type { SkillDefinition, SkillLifecycle, RegisteredSkill, SkillState, SkillPermissionGroup, SkillGate, SandboxScope } from '../types/skill-runtime.js';
@@ -273,6 +274,8 @@ async function loadSkillFromDirectory(dirPath: string, source: 'builtin' | 'work
     }
 
     const hasNativeEntry = fs.existsSync(path.join(dirPath, 'index.ts')) || fs.existsSync(path.join(dirPath, 'index.js'));
+    // 标记 native，供 skill 元工具桥从 skill 目录中排除（native 走 skill_<id> 独立函数工具）
+    definition.native = hasNativeEntry;
 
     let lifecycle: SkillLifecycle;
 
@@ -282,10 +285,10 @@ async function loadSkillFromDirectory(dirPath: string, source: 'builtin' | 'work
       const entryPath = fs.existsSync(jsEntry) ? jsEntry : tsEntry;
 
       try {
-        const modulePath = require.resolve(entryPath);
-        delete require.cache[modulePath];
-
-        const moduleExports = require(entryPath) as Record<string, unknown>;
+        // ESM 运行时（tsx/ESM，package.json type:module）下 require 不可用，
+        // 改用动态 import() + pathToFileURL，并追加 ?v= 时间戳以破坏模块缓存实现热重载。
+        const moduleUrl = `${pathToFileURL(entryPath).href}?v=${Date.now()}`;
+        const moduleExports = (await import(moduleUrl)) as Record<string, unknown>;
 
         if (typeof moduleExports.execute !== 'function') {
           logger.warn(`[SkillLoader] Native skill '${definition.id}' missing execute function, using declarative fallback.`);

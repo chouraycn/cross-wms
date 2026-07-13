@@ -8,9 +8,22 @@ triggers:
   - "keyword:分析"
   - "keyword:analyze"
 allowed-tools:
-  - Read
-  - Write
-  - Edit
+  - file_readFile
+  - file_writeFile
+  - file_generateFile
+parameters:
+  type: object
+  properties:
+    sql:
+      type: string
+      description: 待分析的 SELECT 查询语句（与 content 二选一）
+    content:
+      type: string
+      description: JSON 数组文本（与 sql 二选一）
+    fileName:
+      type: string
+      description: 可选，指定后把分析结论落盘
+  required: []
 ---
 
 # 数据分析

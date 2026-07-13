@@ -328,9 +328,6 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                     },
                   },
                 }}
-                sx={{
-                  '& .MuiBackdrop-root': { backgroundColor: 'transparent' },
-                }}
               >
                 <Box sx={{ px: 2, py: 1, borderBottom: `1px solid ${gs.border}` }}>
                   <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textPrimary }}>

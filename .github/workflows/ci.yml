@@ -3,11 +3,13 @@ name: CI
 on:
   push:
     branches: [main, master]
+    tags-ignore:
+      - 'v*'
   pull_request:
     branches: [main, master]
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -18,3 +20,140 @@ jobs:
     name: Quality Gate
     uses: ./.github/workflows/pr-quality-gate.yml
     secrets: inherit
+
+  build-dmg:
+    name: Build macOS DMG
+    needs: quality-gate
+    if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master')
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Pre-build check
+        run: bash scripts/pre-build-check.sh --quick
+
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.0'
+
+      - name: Cache Swift Package
+        uses: actions/cache@v4
+        with:
+          path: apps/macos/.build
+          key: ${{ runner.os }}-swift-6.0-spm-release-${{ hashFiles('apps/macos/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-6.0-spm-release-
+            ${{ runner.os }}-swift-6.0-spm-
+
+      - name: Build macOS app + DMG
+        run: bash scripts/package-mac-dist.sh --no-bump --skip-release
+        env:
+          CI: true
+
+      - name: Get version
+        id: get_version
+        run: echo "version=$(node -e "console.log(require('./package.json').version)")" >> $GITHUB_OUTPUT
+
+      - name: Verify DMG
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          DMG_FILE="release/CDF Know Clow-${VERSION}.dmg"
+          if [ ! -f "$DMG_FILE" ]; then
+            echo "::error::DMG not found: $DMG_FILE"
+            ls -la release/ 2>/dev/null || true
+            exit 1
+          fi
+          DMG_SIZE=$(stat -f%z "$DMG_FILE" 2>/dev/null || stat -c%s "$DMG_FILE" 2>/dev/null)
+          if [ "$DMG_SIZE" -lt 1000000 ]; then
+            echo "::error::DMG is suspiciously small (${DMG_SIZE} bytes)"
+            exit 1
+          fi
+          echo "✅ DMG verified: $DMG_FILE ($DMG_SIZE bytes)"
+
+      - name: Compute SHA256
+        id: sha
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          DMG_FILE="release/CDF Know Clow-${VERSION}.dmg"
+          SHA256=$(shasum -a 256 "$DMG_FILE" | awk '{print $1}')
+          echo "sha256=${SHA256}" >> $GITHUB_OUTPUT
+          echo "SHA256: ${SHA256}"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CDF-Know-Clow-${{ steps.get_version.outputs.version }}-mac.dmg
+          path: |
+            release/CDF Know Clow-${{ steps.get_version.outputs.version }}.dmg
+            release/release.json
+          retention-days: 30
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          VERSION="${{ steps.get_version.outputs.version }}"
+
+          {
+            echo "RELEASE_NOTES<<EOF"
+            echo "## CDF Know Clow v${VERSION}"
+            echo ""
+            if [ -n "$PREV_TAG" ]; then
+              echo "### Changes since ${PREV_TAG}"
+              git log ${PREV_TAG}..HEAD --oneline --no-merges | sed 's/^/- /'
+            else
+              echo "Initial release"
+            fi
+            echo ""
+            echo "### Download"
+            echo "- **macOS**: CDF Know Clow-${VERSION}.dmg"
+            echo "- **SHA256**: \`${{ steps.sha.outputs.sha256 }}\`"
+            echo "EOF"
+          } >> $GITHUB_ENV
+
+      - name: Create Git Tag
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git tag -l "v${VERSION}" | grep -q "v${VERSION}"; then
+            echo "Tag v${VERSION} already exists"
+          else
+            git tag "v${VERSION}"
+            git push origin "v${VERSION}" 2>/dev/null || echo "Tag push skipped"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: CDF Know Clow v${{ steps.get_version.outputs.version }}
+          body: ${{ env.RELEASE_NOTES }}
+          files: |
+            release/CDF Know Clow-${{ steps.get_version.outputs.version }}.dmg
+            release/release.json
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

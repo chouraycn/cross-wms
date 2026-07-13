@@ -39,6 +39,7 @@ import { isWKWebView } from '../utils/env';
 import { SSEStreamParser } from '../utils/sse/SSEStreamParser.js';
 import { BlockReplyCoalescer } from '../utils/sse/BlockReplyCoalescer.js';
 import { RenderScheduler } from '../utils/sse/RenderScheduler.js';
+import { dispatchCdfEvent, CdfEvents } from '../events/events';
 
 // ===================== 类型定义 =====================
 
@@ -782,6 +783,22 @@ export function useAgentChat(
                 if (!exists) {
                   newGeneratedFiles.push(fileInfo);
                 }
+              }
+            } catch {
+              // 解析失败，忽略
+            }
+          }
+
+          // 对话内技能创建反馈：skill_createProposal 成功后派发全局事件，驱动前端 toast
+          if (toolName === 'skill_createProposal' && toolResult) {
+            try {
+              const parsed = JSON.parse(toolResult);
+              if (parsed && parsed.success) {
+                dispatchCdfEvent(CdfEvents.SKILL_CREATED, {
+                  skillName: parsed?.proposal?.skillName || toolName,
+                  action: parsed.action || 'create_proposal',
+                  message: parsed.message,
+                });
               }
             } catch {
               // 解析失败，忽略

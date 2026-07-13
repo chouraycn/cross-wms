@@ -10,6 +10,7 @@ import type { ModelConfig, ModelsConfig } from '../types/models';
 import type { Task } from '../types/task';
 import type { Project } from '../types/project';
 import type { Session } from '../types/chat';
+import type { DependencyCheckResult } from '../utils/dependencyChecker';
 import type {
   Partner,
   PartnerOption,
@@ -469,6 +470,11 @@ export function connectChainExecutionEvents(executionId: string, onMessage?: (da
 }
 
 // ===================== 安全审查 API =====================
+
+/** 批量检测技能环境依赖 */
+export async function checkSkillDependencies(skillIds: string[]): Promise<Record<string, DependencyCheckResult>> {
+  return request<Record<string, DependencyCheckResult>>('POST', '/api/skills/dependency-check', { skillIds });
+}
 
 /** 获取技能最新审计结果 */
 export async function fetchSkillAudit(skillId: string): Promise<SkillAudit | null> {

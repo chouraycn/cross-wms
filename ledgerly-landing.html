@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<!--
+  Ledgerly 落地页原型 · Stripe 风格占位演示
+  设计系统：彩格调（直接引用下方 :root 令牌，未另起色板）
+  本文件自包含，无外部 CDN / 字体 / 图标依赖，可离线运行。
+  区块：Navbar / Hero(多层渐变) / Trust / Features / Developer / Testimonials / Pricing / Final CTA(渐变) / Footer
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ledgerly · 现代计费与营收运营平台</title>
+<meta name="description" content="Ledgerly 面向成长型 B2B 企业的现代计费与营收运营平台——用一套 API 搞定订阅、开票与全球收款。（占位原型）" />
+<style>
+  /* ============================================================
+     1. 设计令牌（彩格调）—— 必须直接引用，禁止另起色板
+     ============================================================ */
+  :root {
+    --color-primary: #635bff;
+    --color-primary-hover: #7a73ff;
+    --color-primary-active: #5046e5;
+    --color-primary-soft: #ecebff;
+    --color-bg: #ffffff;
+    --color-bg-subtle: #f6f9fc;
+    --color-surface: #ffffff;
+    --color-surface-2: #f7fafc;
+    --color-border: #e6e9ee;
+    --color-border-strong: #d5d9e0;
+    --color-text-primary: #0a2540;
+    --color-text-secondary: #425466;
+    --color-text-muted: #697386;
+    --color-success: #15926a;
+    --color-success-bg: #e7f6ef;
+    --color-warning: #b25e09;
+    --color-warning-bg: #fdf1e3;
+    --color-danger: #df1b41;
+    --color-danger-bg: #fce8ec;
+    --color-info: #0070e0;
+    --gradient-hero: linear-gradient(125deg, #635bff 0%, #6f63ff 22%, #5b7bff 48%, #2fa8e8 74%, #18d6e0 100%);
+    --gradient-hero-glow: radial-gradient(70% 90% at 15% 0%, rgba(124,99,255,0.35), transparent 55%), radial-gradient(60% 80% at 90% 12%, rgba(24,214,224,0.28), transparent 55%);
+    --gradient-cta: linear-gradient(120deg, #635bff 0%, #4f7bff 55%, #11b3d4 100%);
+    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+    --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", ui-monospace, Menlo, Consolas, monospace;
+    --text-hero: clamp(40px, 6vw, 56px);
+    --text-h1: 2.5rem;
+    --text-h2: 2rem;
+    --text-h3: 1.375rem;
+    --text-h4: 1.125rem;
+    --text-body-lg: 1.125rem;
+    --text-body: 1rem;
+    --text-small: 0.875rem;
+    --text-micro: 0.75rem;
+    --text-eyebrow: 0.8125rem;
+    --tracking-tight: -0.02em;
+    --tracking-snug: -0.015em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.04em;
+    --tracking-eyebrow: 0.08em;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px;
+    --space-8: 32px; --space-10: 40px; --space-12: 48px; --space-16: 64px; --space-20: 80px; --space-24: 96px; --space-32: 128px;
+    --section-y: clamp(64px, 8vw, 112px);
+    --container-max: 1080px;
+    --container-wide: 1200px;
+    --container-pad: 24px;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-xl: 24px; --radius-full: 9999px;
+    --shadow-sm: 0 1px 2px rgba(10, 37, 64, 0.06);
+    --shadow-md: 0 4px 12px -2px rgba(50, 50, 93, 0.10), 0 2px 6px -2px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 15px 35px -5px rgba(50, 50, 93, 0.12), 0 5px 15px -5px rgba(0, 0, 0, 0.08);
+    --shadow-primary: 0 6px 16px -4px rgba(99, 91, 255, 0.45);
+    --shadow-focus: 0 0 0 3px rgba(99, 91, 255, 0.30);
+  }
+
+  /* ============================================================
+     2. 基础重置 & 排版
+     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: 1.6;
+    color: var(--color-text-primary);
+    background: var(--color-bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4, p { margin: 0; }
+  h1, h2, h3, h4 { color: var(--color-text-primary); letter-spacing: var(--tracking-snug); line-height: 1.2; }
+  a { color: inherit; text-decoration: none; }
+  img, svg { display: block; max-width: 100%; }
+  ul { margin: 0; padding: 0; list-style: none; }
+
+  /* 键盘可达：统一焦点环 */
+  a:focus-visible, button:focus-visible, .btn:focus-visible, input:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+    border-radius: var(--radius-sm);
+  }
+
+  /* 跳转链接（无障碍） */
+  .skip-link {
+    position: absolute; left: -999px; top: 0; z-index: 200;
+    background: var(--color-primary); color: #fff;
+    padding: var(--space-3) var(--space-4); border-radius: var(--radius-md);
+  }
+  .skip-link:focus { left: var(--space-4); top: var(--space-4); }
+
+  /* ============================================================
+     3. 布局容器
+     ============================================================ */
+  .container {
+    width: 100%;
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding-inline: var(--container-pad);
+  }
+  .container--wide { max-width: var(--container-wide); }
+  .section { padding-block: var(--section-y); }
+  .section--subtle { background: var(--color-bg-subtle); }
+  .section-head { max-width: 640px; margin-bottom: var(--space-12); }
+  .section-head--center { margin-inline: auto; text-align: center; }
+
+  .eyebrow {
+    display: inline-block;
+    font-size: var(--text-eyebrow);
+    font-weight: 600;
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--color-primary);
+    margin-bottom: var(--space-4);
+  }
+  .section-title { font-size: var(--text-h2); font-weight: 700; }
+  .section-sub { margin-top: var(--space-4); font-size: var(--text-body-lg); color: var(--color-text-secondary); }
+  .placeholder-note { color: var(--color-text-muted); font-size: var(--text-micro); }
+
+  /* ============================================================
+     4. 按钮
+     ============================================================ */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+    font-family: inherit; font-size: var(--text-small); font-weight: 600;
+    padding: 11px var(--space-5);
+    border: 1px solid transparent; border-radius: var(--radius-full);
+    cursor: pointer; white-space: nowrap;
+    transition: background-color .15s ease, box-shadow .15s ease, transform .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .btn:active { transform: translateY(0); }
+
+  /* 主按钮：唯一强调色 + hover 用柔和阴影而非生硬变色 */
+  .btn-primary { background: var(--color-primary); color: #fff; }
+  .btn-primary:hover { background: var(--color-primary-hover); box-shadow: var(--shadow-primary); transform: translateY(-1px); }
+  .btn-primary:active { background: var(--color-primary-active); transform: translateY(0); }
+
+  /* 次级按钮（浅底） */
+  .btn-soft { background: var(--color-primary-soft); color: var(--color-primary-active); }
+  .btn-soft:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+
+  /* 描边按钮（用于浅底/白底） */
+  .btn-outline { background: transparent; color: var(--color-primary); border-color: var(--color-border-strong); }
+  .btn-outline:hover { border-color: var(--color-primary); box-shadow: var(--shadow-sm); }
+
+  /* 白底实心（用于深色渐变区块上的反白 CTA） */
+  .btn-white { background: #fff; color: var(--color-primary-active); }
+  .btn-white:hover { box-shadow: 0 8px 20px -6px rgba(10,37,64,0.35); transform: translateY(-1px); }
+
+  /* 白描边幽灵（用于深色渐变区块） */
+  .btn-ghost { background: rgba(255,255,255,0.10); color: #fff; border-color: rgba(255,255,255,0.55); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.18); }
+
+  .btn-lg { padding: 14px var(--space-8); font-size: var(--text-body); }
+
+  /* ============================================================
+     5. 顶部导航 Navbar
+     ============================================================ */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .nav__inner { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .brand { display: inline-flex; align-items: center; gap: var(--space-3); font-weight: 700; font-size: 1.2rem; letter-spacing: var(--tracking-tight); color: var(--color-text-primary); }
+  .brand__mark { width: 30px; height: 30px; }
+
+  .nav__links { display: flex; align-items: center; gap: var(--space-8); }
+  .nav__links a { font-size: var(--text-small); font-weight: 500; color: var(--color-text-secondary); transition: color .15s ease; }
+  .nav__links a:hover { color: var(--color-text-primary); }
+
+  .nav__actions { display: flex; align-items: center; gap: var(--space-4); }
+  .nav__login { font-size: var(--text-small); font-weight: 600; color: var(--color-text-primary); }
+  .nav__login:hover { color: var(--color-primary); }
+
+  .nav__toggle {
+    display: none; align-items: center; justify-content: center;
+    width: 42px; height: 42px; border: 1px solid var(--color-border);
+    background: #fff; border-radius: var(--radius-md); cursor: pointer; color: var(--color-text-primary);
+  }
+  .nav__toggle svg { width: 20px; height: 20px; }
+
+  /* 移动端展开菜单 */
+  .nav__mobile {
+    display: none; flex-direction: column; gap: var(--space-2);
+    padding: var(--space-4) var(--container-pad) var(--space-6);
+    border-bottom: 1px solid var(--color-border);
+    background: #fff;
+  }
+  .nav__mobile.is-open { display: flex; }
+  .nav__mobile a { padding: var(--space-3) var(--space-2); font-size: var(--text-body); font-weight: 500; color: var(--color-text-secondary); border-radius: var(--radius-sm); }
+  .nav__mobile a:hover { background: var(--color-bg-subtle); color: var(--color-text-primary); }
+  .nav__mobile .btn { margin-top: var(--space-3); }
+
+  /* ============================================================
+     6. Hero（多层渐变背景 + 光晕）
+     ============================================================ */
+  .hero {
+    position: relative;
+    background: var(--gradient-hero);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: var(--gradient-hero-glow);
+  }
+  /* 底部柔和过渡，避免与下方白底生硬切分 */
+  .hero::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 120px; z-index: -1;
+    background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 100%);
+  }
+  .hero__inner {
+    display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--space-16);
+    align-items: center;
+    padding-block: clamp(72px, 10vw, 128px);
+  }
+  .hero__eyebrow {
+    display: inline-block; font-size: var(--text-eyebrow); font-weight: 600;
+    letter-spacing: var(--tracking-eyebrow); text-transform: uppercase;
+    color: rgba(255,255,255,0.85); margin-bottom: var(--space-5);
+  }
+  .hero__title {
+    font-size: var(--text-hero); font-weight: 800; letter-spacing: var(--tracking-tight);
+    color: #fff; line-height: 1.08;
+  }
+  .hero__subtitle {
+    margin-top: var(--space-6); font-size: var(--text-body-lg); line-height: 1.6;
+    color: rgba(255,255,255,0.92); max-width: 30em;
+  }
+  .hero__cta { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-8); }
+  .hero__trust-mini { margin-top: var(--space-8); display: flex; align-items: center; gap: var(--space-3); color: rgba(255,255,255,0.85); font-size: var(--text-small); }
+  .hero__trust-mini svg { width: 18px; height: 18px; flex: none; }
+
+  /* Hero 产品预览（仪表盘卡片） */
+  .hero__visual { position: relative; }
+  .dash {
+    background: var(--color-surface);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.6);
+  }
+  .dash__bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--color-border); }
+  .dash__dot { width: 10px; height: 10px; border-radius: var(--radius-full); background: var(--color-border-strong); }
+  .dash__dot--p { background: #ff5f57; } .dash__dot--y { background: #febc2e; } .dash__dot--g { background: #28c840; }
+  .dash__bar-title { margin-left: var(--space-3); font-size: var(--text-micro); font-weight: 600; color: var(--color-text-muted); letter-spacing: var(--tracking-wide); }
+  .dash__body { padding: var(--space-5); }
+  .dash__kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin-bottom: var(--space-5); }
+  .dash__kpi { background: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3); }
+  .dash__kpi-label { font-size: var(--text-micro); color: var(--color-text-muted); }
+  .dash__kpi-value { font-size: 1.25rem; font-weight: 700; color: var(--color-text-primary); margin-top: 2px; letter-spacing: var(--tracking-tight); }
+  .dash__kpi-delta { font-size: var(--text-micro); font-weight: 600; color: var(--color-success); margin-top: 2px; }
+  .dash__chart-title { font-size: var(--text-small); font-weight: 600; color: var(--color-text-secondary); margin-bottom: var(--space-3); }
+  .dash__chart { width: 100%; height: auto; border-radius: var(--radius-md); background: var(--color-surface-2); }
+  .dash__rows { margin-top: var(--space-5); display: grid; gap: var(--space-2); }
+  .dash__row { display: grid; grid-template-columns: 1fr auto auto; gap: var(--space-4); align-items: center; font-size: var(--text-small); padding: var(--space-2) 0; border-top: 1px solid var(--color-border); }
+  .dash__row:first-child { border-top: none; }
+  .dash__row-name { color: var(--color-text-primary); font-weight: 500; }
+  .dash__row-sub { color: var(--color-text-muted); font-size: var(--text-micro); }
+  .dash__pill { font-size: var(--text-micro); font-weight: 600; color: var(--color-success); background: var(--color-success-bg); padding: 2px 8px; border-radius: var(--radius-full); }
+  .dash__row-amt { color: var(--color-text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ============================================================
+     7. 信任栏 Logo Cloud
+     ============================================================ */
+  .trust { padding-block: var(--space-16); background: var(--color-bg); }
+  .trust__label { text-align: center; font-size: var(--text-small); color: var(--color-text-muted); margin-bottom: var(--space-8); }
+  .trust__row {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: var(--space-10) var(--space-12);
+  }
+  .trust__logo { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--color-text-muted); opacity: 0.85; transition: opacity .15s ease; }
+  .trust__logo:hover { opacity: 1; }
+  .trust__logo svg { width: 22px; height: 22px; flex: none; }
+  .trust__logo span { font-weight: 700; font-size: 1.05rem; letter-spacing: var(--tracking-snug); color: var(--color-text-secondary); }
+
+  /* ============================================================
+     8. 核心特性 Features
+     ============================================================ */
+  .features__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
+  .feature {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8);
+    transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
+  }
+  .feature:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); border-color: var(--color-border-strong); }
+  .feature__icon {
+    width: 48px; height: 48px; border-radius: var(--radius-md);
+    background: var(--color-primary-soft); color: var(--color-primary);
+    display: inline-flex; align-items: center; justify-content: center; margin-bottom: var(--space-5);
+  }
+  .feature__icon svg { width: 24px; height: 24px; }
+  .feature__title { font-size: var(--text-h4); font-weight: 700; margin-bottom: var(--space-3); }
+  .feature__desc { font-size: var(--text-small); color: var(--color-text-secondary); line-height: 1.65; }
+
+  /* ============================================================
+     9. 开发者 / 集成展示
+     ============================================================ */
+  .dev__grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: var(--space-16); align-items: center; }
+  .dev__title { font-size: var(--text-h2); font-weight: 700; }
+  .dev__sub { margin-top: var(--space-4); font-size: var(--text-body-lg); color: var(--color-text-secondary); }
+  .dev__list { margin-top: var(--space-8); display: grid; gap: var(--space-4); }
+  .dev__item { display: flex; gap: var(--space-3); align-items: flex-start; }
+  .dev__item svg { width: 20px; height: 20px; flex: none; color: var(--color-primary); margin-top: 2px; }
+  .dev__item-title { font-weight: 600; font-size: var(--text-body); color: var(--color-text-primary); }
+  .dev__item-desc { font-size: var(--text-small); color: var(--color-text-secondary); }
+  .dev__chips { margin-top: var(--space-8); display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .dev__chip { font-family: var(--font-mono); font-size: var(--text-micro); color: var(--color-text-secondary); background: var(--color-bg-subtle); border: 1px solid var(--color-border); padding: 4px 10px; border-radius: var(--radius-full); }
+
+  /* 代码编辑器卡片（深色底 + 浅色字，强化开发者友好） */
+  .codecard {
+    background: var(--color-text-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .codecard__bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .codecard__tab { font-family: var(--font-mono); font-size: var(--text-micro); color: rgba(255,255,255,0.55); padding: 4px 10px; border-radius: var(--radius-sm); }
+  .codecard__tab--active { color: #fff; background: rgba(99,91,255,0.22); }
+  .codecard__body { padding: var(--space-5); overflow-x: auto; }
+  .codecard pre { margin: 0; font-family: var(--font-mono); font-size: var(--text-small); line-height: 1.75; color: #e6e9ee; white-space: pre; }
+  .codecard .c-com { color: #8a93a6; }      /* 注释：弱化灰 */
+  .codecard .c-key { color: #b9b4ff; }      /* 关键字：主色柔光感 */
+  .codecard .c-str { color: #9fe6c8; }      /* 字符串：极弱绿，不抢主色 */
+  .codecard .c-fn  { color: #e6e9ee; font-weight: 600; }
+  .codecard .c-acc { color: #7fd6f0; }      /* 强调：弱青，仅作代码内区分 */
+
+  /* ============================================================
+     10. 社会证明 Testimonials
+     ============================================================ */
+  .quotes { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
+  .quote {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8);
+    display: flex; flex-direction: column; gap: var(--space-5);
+  }
+  .quote__mark { color: var(--color-primary); width: 32px; height: 32px; }
+  .quote__text { font-size: var(--text-body); color: var(--color-text-primary); line-height: 1.7; }
+  .quote__author { display: flex; align-items: center; gap: var(--space-3); margin-top: auto; }
+  .quote__avatar { width: 40px; height: 40px; border-radius: var(--radius-full); background: var(--color-primary-soft); color: var(--color-primary); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: var(--text-small); }
+  .quote__name { font-weight: 600; font-size: var(--text-small); color: var(--color-text-primary); }
+  .quote__role { font-size: var(--text-micro); color: var(--color-text-muted); }
+
+  /* ============================================================
+     11. 定价 Pricing
+     ============================================================ */
+  .pricing__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); align-items: start; }
+  .plan {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8);
+    display: flex; flex-direction: column; gap: var(--space-5);
+    transition: box-shadow .15s ease, transform .15s ease;
+  }
+  .plan:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+  .plan--featured {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-md);
+    position: relative;
+  }
+  .plan__badge {
+    position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+    background: var(--color-primary); color: #fff; font-size: var(--text-micro); font-weight: 700;
+    letter-spacing: var(--tracking-wide); padding: 5px 14px; border-radius: var(--radius-full);
+  }
+  .plan__name { font-size: var(--text-h4); font-weight: 700; }
+  .plan__desc { font-size: var(--text-small); color: var(--color-text-secondary); min-height: 2.6em; }
+  .plan__price { display: flex; align-items: baseline; gap: 4px; }
+  .plan__amount { font-size: 2.5rem; font-weight: 800; letter-spacing: var(--tracking-tight); color: var(--color-text-primary); }
+  .plan__period { font-size: var(--text-small); color: var(--color-text-muted); }
+  .plan__features { display: grid; gap: var(--space-3); margin-block: var(--space-2); }
+  .plan__feature { display: flex; gap: var(--space-3); align-items: flex-start; font-size: var(--text-small); color: var(--color-text-secondary); }
+  .plan__feature svg { width: 18px; height: 18px; flex: none; color: var(--color-primary); margin-top: 2px; }
+  .plan .btn { width: 100%; margin-top: auto; }
+
+  /* ============================================================
+     12. 终极 CTA（渐变背景）
+     ============================================================ */
+  .finalcta {
+    position: relative; overflow: hidden; isolation: isolate;
+    background: var(--gradient-cta);
+  }
+  .finalcta::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: radial-gradient(60% 80% at 85% 10%, rgba(255,255,255,0.18), transparent 55%);
+  }
+  .finalcta__inner { text-align: center; padding-block: clamp(72px, 9vw, 112px); }
+  .finalcta__title { font-size: var(--text-h1); font-weight: 800; color: #fff; letter-spacing: var(--tracking-tight); max-width: 18em; margin-inline: auto; line-height: 1.15; }
+  .finalcta__sub { margin-top: var(--space-5); font-size: var(--text-body-lg); color: rgba(255,255,255,0.92); max-width: 32em; margin-inline: auto; }
+  .finalcta__cta { display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: center; margin-top: var(--space-8); }
+  .finalcta__note { margin-top: var(--space-6); font-size: var(--text-micro); color: rgba(255,255,255,0.8); }
+
+  /* ============================================================
+     13. Footer
+     ============================================================ */
+  .footer { background: var(--color-bg); border-top: 1px solid var(--color-border); padding-block: var(--space-20) var(--space-10); }
+  .footer__top { display: grid; grid-template-columns: 1.4fr repeat(4, 1fr); gap: var(--space-8); }
+  .footer__brand .brand { margin-bottom: var(--space-4); }
+  .footer__tag { font-size: var(--text-small); color: var(--color-text-muted); max-width: 22em; line-height: 1.6; }
+  .footer__social { display: flex; gap: var(--space-3); margin-top: var(--space-5); }
+  .footer__social a { width: 36px; height: 36px; border: 1px solid var(--color-border); border-radius: var(--radius-md); display: inline-flex; align-items: center; justify-content: center; color: var(--color-text-secondary); transition: border-color .15s ease, color .15s ease; }
+  .footer__social a:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  .footer__social svg { width: 18px; height: 18px; }
+  .footer__col h4 { font-size: var(--text-small); font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-4); }
+  .footer__col a { display: block; font-size: var(--text-small); color: var(--color-text-secondary); padding: 5px 0; transition: color .15s ease; }
+  .footer__col a:hover { color: var(--color-primary); }
+  .footer__bottom {
+    margin-top: var(--space-12); padding-top: var(--space-6); border-top: 1px solid var(--color-border);
+    display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; justify-content: space-between;
+    font-size: var(--text-micro); color: var(--color-text-muted);
+  }
+  .footer__note { font-size: var(--text-micro); color: var(--color-text-muted); }
+
+  /* ============================================================
+     14. 滚动 reveal 工具类 & 无障碍
+     ============================================================ */
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .15s ease, transform .15s ease; }
+  .reveal.is-visible { opacity: 1; transform: none; }
+
+  /* ============================================================
+     15. 响应式
+     ============================================================ */
+  @media (max-width: 1023px) {
+    .features__grid { grid-template-columns: repeat(2, 1fr); }
+    .quotes { grid-template-columns: repeat(2, 1fr); }
+    .dev__grid { grid-template-columns: 1fr; gap: var(--space-10); }
+    .hero__inner { grid-template-columns: 1fr; gap: var(--space-12); }
+    .hero__visual { max-width: 560px; }
+    .footer__top { grid-template-columns: 1fr 1fr 1fr; }
+    .footer__brand { grid-column: 1 / -1; }
+  }
+  @media (max-width: 767px) {
+    .nav__links, .nav__actions { display: none; }
+    .nav__toggle { display: inline-flex; }
+    .features__grid { grid-template-columns: 1fr; }
+    .quotes { grid-template-columns: 1fr; }
+    .pricing__grid { grid-template-columns: 1fr; }
+    .footer__top { grid-template-columns: 1fr 1fr; }
+    .dash__kpis { grid-template-columns: repeat(3, 1fr); }
+    .hero__cta .btn, .finalcta__cta .btn { flex: 1 1 auto; }
+    .trust__row { gap: var(--space-6) var(--space-8); }
+  }
+
+  /* ============================================================
+     16. 尊重偏好：减少动态
+     ============================================================ */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    * { transition-duration: .001ms !important; animation-duration: .001ms !important; }
+  }
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主内容</a>
+
+  <!-- ============================ 5. 顶部导航 ============================ -->
+  <header class="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="#top" aria-label="Ledgerly 首页">
+        <svg class="brand__mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="#635bff"/>
+          <path d="M10 21V11h7a4 4 0 0 1 0 8h-3.5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="22.5" cy="14.5" r="2.2" fill="#18d6e0"/>
+        </svg>
+        Ledgerly
+      </a>
+
+      <nav class="nav__links" aria-label="主导航">
+        <a href="#features">产品能力</a>
+        <a href="#developers">开发者</a>
+        <a href="#customers">客户案例</a>
+        <a href="#pricing">定价</a>
+      </nav>
+
+      <div class="nav__actions">
+        <a class="nav__login" href="#login">登录</a>
+        <a class="btn btn-primary" href="#start">免费开始</a>
+      </div>
+
+      <button class="nav__toggle" id="navToggle" aria-label="打开菜单" aria-expanded="false" aria-controls="navMobile">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <nav class="nav__mobile" id="navMobile" aria-label="移动端导航">
+      <a href="#features">产品能力</a>
+      <a href="#developers">开发者</a>
+      <a href="#customers">客户案例</a>
+      <a href="#pricing">定价</a>
+      <a href="#login">登录</a>
+      <a class="btn btn-primary" href="#start">免费开始</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <span id="top"></span>
+
+    <!-- ============================ 6. Hero ============================ -->
+    <section class="hero">
+      <div class="container hero__inner">
+        <div class="hero__copy">
+          <span class="hero__eyebrow">现代计费与营收运营平台</span>
+          <h1 class="hero__title">用一套 API，<br>搞定订阅、开票与全球收款</h1>
+          <p class="hero__subtitle">
+            Ledgerly 为成长型 B2B 企业提供统一的计费与营收中台。从订阅管理、智能开票到多币种全球收款，
+            让财务与工程团队在同一套数据上协作，而不是在表格与接口之间反复对账。
+          </p>
+          <div class="hero__cta">
+            <a class="btn btn-white btn-lg" href="#start">免费开始</a>
+            <a class="btn btn-ghost btn-lg" href="#developers">
+              查看文档
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+          <div class="hero__trust-mini">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l7 3v5c0 4.4-3 8.3-7 9.6C8 19.3 5 15.4 5 11V6l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>99.99% 可用性 · 覆盖 200+ 国家/地区（均为占位数据）</span>
+          </div>
+        </div>
+
+        <!-- Hero 产品视觉：仪表盘预览 -->
+        <div class="hero__visual" role="img" aria-label="Ledgerly 营收总览仪表盘预览，展示 MRR、活跃订阅与净收入留存等关键指标及收入趋势图表">
+          <div class="dash">
+            <div class="dash__bar">
+              <span class="dash__dot dash__dot--r"></span>
+              <span class="dash__dot dash__dot--y"></span>
+              <span class="dash__dot dash__dot--g"></span>
+              <span class="dash__bar-title">ledgerly.app / 营收总览</span>
+            </div>
+            <div class="dash__body">
+              <div class="dash__kpis">
+                <div class="dash__kpi">
+                  <div class="dash__kpi-label">MRR（占位）</div>
+                  <div class="dash__kpi-value">¥ —</div>
+                  <div class="dash__kpi-delta">▲ —%</div>
+                </div>
+                <div class="dash__kpi">
+                  <div class="dash__kpi-label">活跃订阅</div>
+                  <div class="dash__kpi-value">—</div>
+                  <div class="dash__kpi-delta">▲ —%</div>
+                </div>
+                <div class="dash__kpi">
+                  <div class="dash__kpi-label">净收入留存</div>
+                  <div class="dash__kpi-value">—%</div>
+                  <div class="dash__kpi-delta">▲ —%</div>
+                </div>
+              </div>
+
+              <div class="dash__chart-title">近 12 个月收入趋势（占位）</div>
+              <svg class="dash__chart" viewBox="0 0 420 150" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#635bff" stop-opacity="0.22"/>
+                    <stop offset="100%" stop-color="#635bff" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M0,120 L40,108 L80,114 L120,90 L160,96 L200,70 L240,76 L280,52 L320,58 L360,34 L420,40 L420,150 L0,150 Z" fill="url(#areaFill)"/>
+                <path d="M0,120 L40,108 L80,114 L120,90 L160,96 L200,70 L240,76 L280,52 L320,58 L360,34 L420,40" fill="none" stroke="#635bff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="360" cy="34" r="4" fill="#18d6e0" stroke="#fff" stroke-width="2"/>
+              </svg>
+
+              <div class="dash__rows">
+                <div class="dash__row">
+                  <div><div class="dash__row-name">Acme Cloud</div><div class="dash__row-sub">Subscription · 年度</div></div>
+                  <span class="dash__pill">已支付</span>
+                  <span class="dash__row-amt">¥ —</span>
+                </div>
+                <div class="dash__row">
+                  <div><div class="dash__row-name">Globex Inc.</div><div class="dash__row-sub">Invoice · 账单</div></div>
+                  <span class="dash__pill">已支付</span>
+                  <span class="dash__row-amt">¥ —</span>
+                </div>
+                <div class="dash__row">
+                  <div><div class="dash__row-name">Northwind</div><div class="dash__row-sub">Usage · 按量</div></div>
+                  <span class="dash__pill">已支付</span>
+                  <span class="dash__row-amt">¥ —</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ 7. 信任栏 ============================ -->
+    <section class="trust" aria-label="客户信任">
+      <div class="container">
+        <p class="trust__label">已被 <strong>2,000+</strong> 家成长型企业信赖（客户数量为占位数据）</p>
+        <div class="trust__row">
+          <span class="trust__logo"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M8 12l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Northwind</span></span>
+          <span class="trust__logo"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" stroke-width="2"/><path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="2"/></svg><span>Acme Cloud</span></span>
+          <span class="trust__logo"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 8v8M8 10v4M16 10v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Globex</span></span>
+          <span class="trust__logo"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19V5l14 14V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Initech</span></span>
+          <span class="trust__logo"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Umbrella</span></span>
+          <span class="trust__logo"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 16c3-8 13-8 16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" stroke-width="2"/></svg><span>Hooli</span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ 8. 核心特性 ============================ -->
+    <section class="section section--subtle" id="features">
+      <div class="container">
+        <div class="section-head section-head--center reveal">
+          <span class="eyebrow">一套平台，覆盖营收全链路</span>
+          <h2 class="section-title">把计费、开票与收款，收敛到一处</h2>
+          <p class="section-sub">从首个订阅到跨境结算，Ledgerly 用一致的数据模型消除对账摩擦，让工程与财务各司其职。</p>
+        </div>
+
+        <div class="features__grid">
+          <article class="feature reveal">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="18" cy="17" r="2.5" stroke="currentColor" stroke-width="2"/></svg>
+            </span>
+            <h3 class="feature__title">订阅与计费管理</h3>
+            <p class="feature__desc">支持固定、按量、阶梯与混合计费模型。一次配置，自动处理升级、降级、按比例分摊与续费提醒。</p>
+          </article>
+
+          <article class="feature reveal">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M6 3h9l4 4v14H6z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M14 3v5h5M9 13h6M9 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </span>
+            <h3 class="feature__title">智能开票与税务</h3>
+            <p class="feature__desc">自动生成合规发票，按地区套用税率与免税规则，支持 PDF 推送、邮件送达与多语言模板。</p>
+          </article>
+
+          <article class="feature reveal">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" stroke="currentColor" stroke-width="2"/></svg>
+            </span>
+            <h3 class="feature__title">全球收款与支付路由</h3>
+            <p class="feature__desc">覆盖 200+ 国家/地区（占位）的主流支付方式，智能路由降低失败率，本地币种结算减少汇损。</p>
+          </article>
+
+          <article class="feature reveal">
+            <span class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5M4 19h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8 15l3-4 3 2 4-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <h3 class="feature__title">营收洞察与对账</h3>
+            <p class="feature__desc">实时 MRR、净收入留存与 ARR 视图，账单与流水自动勾稽，月末关账从数天缩短到数小时。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ 9. 开发者 / 集成 ============================ -->
+    <section class="section" id="developers">
+      <div class="container container--wide">
+        <div class="dev__grid">
+          <div class="dev__copy reveal">
+            <span class="eyebrow">为开发者而生</span>
+            <h2 class="dev__title">几行代码，接入完整计费能力</h2>
+            <p class="dev__sub">RESTful API 与官方 SDK 覆盖主流语言，幂等键、Webhook 与沙箱环境一应俱全——从集成到上线，无需自建计费内核。</p>
+
+            <div class="dev__list">
+              <div class="dev__item">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div><div class="dev__item-title">官方 SDK 多语言支持</div><div class="dev__item-desc">Node、Python、Go、Ruby、Java 与 PHP，类型完备、文档一致。</div></div>
+              </div>
+              <div class="dev__item">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div><div class="dev__item-title">幂等与重试保障</div><div class="dev__item-desc">内置 Idempotency-Key，网络抖动下也不会重复扣费或重复开票。</div></div>
+              </div>
+              <div class="dev__item">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="dev__item-title">Webhook 与事件流</div><div class="dev__item-desc">订阅变更、支付成功等关键事件实时推送，便于构建自动化工作流。</div></div>
+              </div>
+            </div>
+
+            <div class="dev__chips" aria-label="支持的语言与框架">
+              <span class="dev__chip">Node.js</span>
+              <span class="dev__chip">Python</span>
+              <span class="dev__chip">Go</span>
+              <span class="dev__chip">Ruby</span>
+              <span class="dev__chip">REST API</span>
+              <span class="dev__chip">Webhooks</span>
+            </div>
+          </div>
+
+          <!-- 代码编辑器卡片 -->
+          <div class="codecard reveal" role="img" aria-label="Ledgerly Node.js SDK 创建订阅的代码示例">
+            <div class="codecard__bar">
+              <span class="codecard__tab codecard__tab--active">quickstart.js</span>
+              <span class="codecard__tab">Node</span>
+            </div>
+            <div class="codecard__body">
+<pre><span class="c-key">import</span> Ledgerly <span class="c-key">from</span> <span class="c-str">'ledgerly'</span>;
+
+<span class="c-key">const</span> ledger = <span class="c-key">new</span> <span class="c-fn">Ledgerly</span>(process.env.<span class="c-acc">LEDGERLY_KEY</span>);
+
+<span class="c-com">// 创建一笔年度订阅</span>
+<span class="c-key">const</span> sub = <span class="c-key">await</span> ledger.subscriptions.<span class="c-fn">create</span>({
+  customer: <span class="c-str">'cus_9sK2xQ'</span>,
+  price:    <span class="c-str">'price_pro_yearly'</span>,
+  payment_method: <span class="c-str">'pm_card_visa'</span>,
+});
+
+console.<span class="c-fn">log</span>(sub.status); <span class="c-com">// 'active'</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ 10. 社会证明 ============================ -->
+    <section class="section section--subtle" id="customers">
+      <div class="container">
+        <div class="section-head section-head--center reveal">
+          <span class="eyebrow">客户怎么说</span>
+          <h2 class="section-title">财务与工程团队，都更轻松了</h2>
+        </div>
+
+        <div class="quotes">
+          <figure class="quote reveal">
+            <svg class="quote__mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 7H6a3 3 0 0 0-3 3v4h5v-4H5a1 1 0 0 1 1-1h1V7zm9 0h-4a3 3 0 0 0-3 3v4h5v-4h-3a1 1 0 0 1 1-1h1V7z"/></svg>
+            <blockquote class="quote__text">“迁移到 Ledgerly 后，我们的计费逻辑从 3 套自研脚本收敛为一处配置。月末关账时间下降明显，工程终于不用再为发票 bug 半夜上线。”</blockquote>
+            <figcaption class="quote__author">
+              <span class="quote__avatar" aria-hidden="true">陈</span>
+              <span><span class="quote__name">陈彦</span><br><span class="quote__role">Acme Cloud · 平台工程负责人</span></span>
+            </figcaption>
+          </figure>
+
+          <figure class="quote reveal">
+            <svg class="quote__mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 7H6a3 3 0 0 0-3 3v4h5v-4H5a1 1 0 0 1 1-1h1V7zm9 0h-4a3 3 0 0 0-3 3v4h5v-4h-3a1 1 0 0 1 1-1h1V7z"/></svg>
+            <blockquote class="quote__text">“全球收款的支付路由帮我们把跨境失败率压了下来。财务第一次能在同一个看板上看到各地区的真实营收，而不是等汇率表。”</blockquote>
+            <figcaption class="quote__author">
+              <span class="quote__avatar" aria-hidden="true">L</span>
+              <span><span class="quote__name">Lena Marsh</span><br><span class="quote__role">Globex Inc. · 财务总监</span></span>
+            </figcaption>
+          </figure>
+
+          <figure class="quote reveal">
+            <svg class="quote__mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 7H6a3 3 0 0 0-3 3v4h5v-4H5a1 1 0 0 1 1-1h1V7zm9 0h-4a3 3 0 0 0-3 3v4h5v-4h-3a1 1 0 0 1 1-1h1V7z"/></svg>
+            <blockquote class="quote__text">“Webhook 与事件流让我们把续费、升级都接进了自己的 CRM。集成只花了一个下午，文档是真正能照着跑的那种。”</blockquote>
+            <figcaption class="quote__author">
+              <span class="quote__avatar" aria-hidden="true">王</span>
+              <span><span class="quote__name">王屿</span><br><span class="quote__role">Northwind · 后端架构师</span></span>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ 11. 定价 ============================ -->
+    <section class="section" id="pricing">
+      <div class="container">
+        <div class="section-head section-head--center reveal">
+          <span class="eyebrow">透明的定价</span>
+          <h2 class="section-title">选择适合你规模的方案</h2>
+          <p class="section-sub">以下价格与额度均为占位示例，实际以报价为准。</p>
+        </div>
+
+        <div class="pricing__grid">
+          <!-- Starter -->
+          <article class="plan reveal">
+            <h3 class="plan__name">Starter</h3>
+            <p class="plan__desc">适合刚起步、需要标准订阅与开票的小型团队。</p>
+            <div class="plan__price"><span class="plan__amount">¥ —</span><span class="plan__period">/ 月（占位）</span></div>
+            <ul class="plan__features">
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>订阅与固定计费</li>
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>基础发票与邮件送达</li>
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>单种货币收款</li>
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>社区支持</li>
+            </ul>
+            <a class="btn btn-outline" href="#start">免费开始</a>
+          </article>
+
+          <!-- Growth（推荐） -->
+          <article class="plan plan--featured reveal">
+            <span class="plan__badge">推荐</span>
+            <h3 class="plan__name">Growth</h3>
+            <p class="plan__desc">适合快速扩张、需要混合计费与全球收款的团队。</p>
+            <div class="plan__price"><span class="plan__amount">¥ —</span><span class="plan__period">/ 月（占位）</span></div>
+            <ul class="plan__features">
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>包含 Starter 全部能力</li>
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>按量 / 阶梯 / 混合计费</li>
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>多币种与智能支付路由</li>
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Webhook 与营收看板</li>
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>优先工单支持</li>
+            </ul>
+            <a class="btn btn-primary" href="#start">免费开始</a>
+          </article>
+
+          <!-- Scale -->
+          <article class="plan reveal">
+            <h3 class="plan__name">Scale</h3>
+            <p class="plan__desc">适合有合规与定制需求的大型 B2B 企业。</p>
+            <div class="plan__price"><span class="plan__amount">定制</span><span class="plan__period">（占位）</span></div>
+            <ul class="plan__features">
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>包含 Growth 全部能力</li>
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>专属税务与合规配置</li>
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>SSO 与审计日志</li>
+              <li class="plan__feature"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>专属客户成功经理</li>
+            </ul>
+            <a class="btn btn-outline" href="#contact">联系销售</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ 12. 终极 CTA ============================ -->
+    <section class="finalcta" id="start">
+      <div class="container finalcta__inner">
+        <h2 class="finalcta__title">准备好统一你的计费与营收了吗？</h2>
+        <p class="finalcta__sub">几行代码即可接入，14 天免费试用，无需信用卡。（试用条款为占位说明）</p>
+        <div class="finalcta__cta">
+          <a class="btn btn-white btn-lg" href="#start">免费开始</a>
+          <a class="btn btn-ghost btn-lg" id="contact" href="#contact">联系销售</a>
+        </div>
+        <p class="finalcta__note">需要私有化部署或合规咨询？我们的方案团队可为你定制。</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================ 13. Footer ============================ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <a class="brand" href="#top" aria-label="Ledgerly 首页">
+            <svg class="brand__mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+              <rect width="32" height="32" rx="8" fill="#635bff"/>
+              <path d="M10 21V11h7a4 4 0 0 1 0 8h-3.5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="22.5" cy="14.5" r="2.2" fill="#18d6e0"/>
+            </svg>
+            Ledgerly
+          </a>
+          <p class="footer__tag">面向成长型 B2B 企业的现代计费与营收运营平台，用一套 API 搞定订阅、开票与全球收款。</p>
+          <div class="footer__social">
+            <a href="#" aria-label="Ledgerly 在 X / Twitter（占位链接）"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 3H22l-7.5 8.6L23 21h-6.8l-5.3-6.9L4.8 21H1.7l8-9.2L1 3h7l4.8 6.3L18.9 3zm-2.4 16h1.9L7.6 4.9H5.6L16.5 19z"/></svg></a>
+            <a href="#" aria-label="Ledgerly 在 GitHub（占位链接）"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .8.1-.6.3-1.1.6-1.3-2.2-.3 0-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg></a>
+            <a href="#" aria-label="Ledgerly 在 LinkedIn（占位链接）"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.1c.5-1 1.8-2 3.7-2 4 0 4.7 2.6 4.7 6V21h-4v-5.3c0-1.3 0-2.9-1.8-2.9s-2 1.4-2 2.8V21H9z"/></svg></a>
+          </div>
+        </div>
+
+        <div class="footer__col">
+          <h4>产品</h4>
+          <a href="#features">订阅计费</a>
+          <a href="#features">智能开票</a>
+          <a href="#features">全球收款</a>
+          <a href="#features">营收看板</a>
+        </div>
+        <div class="footer__col">
+          <h4>开发者</h4>
+          <a href="#developers">API 文档</a>
+          <a href="#developers">SDK</a>
+          <a href="#developers">Webhook</a>
+          <a href="#developers">状态页</a>
+        </div>
+        <div class="footer__col">
+          <h4>公司</h4>
+          <a href="#">关于我们</a>
+          <a href="#customers">客户案例</a>
+          <a href="#">招聘</a>
+          <a href="#contact">联系我们</a>
+        </div>
+        <div class="footer__col">
+          <h4>资源与法律</h4>
+          <a href="#">帮助中心</a>
+          <a href="#">服务条款</a>
+          <a href="#">隐私政策</a>
+          <a href="#">安全合规</a>
+        </div>
+      </div>
+
+      <div class="footer__bottom">
+        <span>© 2026 Ledgerly, Inc.（虚构占位公司）. 保留所有权利。</span>
+        <span class="footer__note">本页面为 Stripe 风格原型演示（占位），非真实产品，数据均为示意。</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // 移动端汉堡菜单切换
+    (function () {
+      var toggle = document.getElementById('navToggle');
+      var menu = document.getElementById('navMobile');
+      if (!toggle || !menu) return;
+      toggle.addEventListener('click', function () {
+        var open = menu.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggle.setAttribute('aria-label', open ? '关闭菜单' : '打开菜单');
+      });
+      // 点击移动端链接后自动收起
+      menu.querySelectorAll('a').forEach(function (a) {
+        a.addEventListener('click', function () {
+          menu.classList.remove('is-open');
+          toggle.setAttribute('aria-expanded', 'false');
+          toggle.setAttribute('aria-label', '打开菜单');
+        });
+      });
+    })();
+
+    // 轻量滚动 reveal（尊重 prefers-reduced-motion）
+    (function () {
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var items = document.querySelectorAll('.reveal');
+      if (reduce || !('IntersectionObserver' in window)) {
+        items.forEach(function (el) { el.classList.add('is-visible'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+</body>
+</html>

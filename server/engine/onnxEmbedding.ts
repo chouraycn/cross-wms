@@ -8,21 +8,22 @@
  * - 加载 ONNX 模型 + tokenizer
  * - 文本 → 384 维 Float32Array（L2 归一化）
  * - 批量推理
- * - 首次使用自动下载模型到 ~/.cdf-know-clow/models/
+ * - 模型随包分发：首次使用优先从应用内嵌种子（Resources/server_dist/models）复制到运行时目录，
+ *   仅当种子缺失时才回退到 HuggingFace 下载，彻底消除首次运行的下载白屏
  */
 
 import * as ort from 'onnxruntime-node';
 import path from 'path';
-import { homedir } from 'os';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'fs';
 import { createHash } from 'crypto';
 import https from 'https';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 
 // ===================== 常量 =====================
 
-/** 模型文件目录 */
-const MODEL_DIR = path.join(homedir(), '.cdf-know-clow', 'models', 'all-MiniLM-L6-v2');
+/** 模型文件目录（统一数据目录下的 models/all-MiniLM-L6-v2，与发布版落点一致） */
+const MODEL_DIR = path.join(AppPaths.onnxModelsDir, 'all-MiniLM-L6-v2');
 
 /** ONNX 模型文件路径 */
 const ONNX_MODEL_PATH = path.join(MODEL_DIR, 'model.onnx');
@@ -44,6 +45,40 @@ const MAX_SEQ_LENGTH = 256;
 
 /** HuggingFace 模型文件下载基础 URL */
 const HF_BASE_URL = 'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main';
+
+// ===================== 随包分发模型种子 =====================
+
+/** 模型文件清单（从种子目录复制到运行时目录） */
+const MODEL_FILES: Array<{ name: string; dest: string }> = [
+  { name: 'model.onnx', dest: ONNX_MODEL_PATH },
+  { name: 'tokenizer.json', dest: TOKENIZER_PATH },
+  { name: 'vocab.txt', dest: VOCAB_PATH },
+  { name: 'config.json', dest: CONFIG_PATH },
+];
+
+/**
+ * 解析随包分发的 ONNX 模型目录（命中即返回该目录，否则 null 走网络下载）。
+ * 优先级从高到低：
+ * 1. 与打包后的 server 同目录的 models/（package-mac-app.sh 拷贝到 Resources/server_dist/models）
+ * 2. Swift 宿主注入的 CDF_RESOURCE_DIR 或系统 RESOURCEPATH 下的 models/
+ * 3. 开发态仓库根目录的 assets/models/（cwd/assets）
+ */
+function resolveBundledModelDir(): string | null {
+  const candidates: string[] = [];
+  if (typeof __dirname !== 'undefined') {
+    candidates.push(path.join(__dirname, 'models', 'all-MiniLM-L6-v2'));
+  }
+  const resDir = process.env.CDF_RESOURCE_DIR || process.env.RESOURCEPATH;
+  if (resDir) {
+    candidates.push(path.join(resDir, 'models', 'all-MiniLM-L6-v2'));
+    candidates.push(path.join(resDir, 'server_dist', 'models', 'all-MiniLM-L6-v2'));
+  }
+  candidates.push(path.join(process.cwd(), 'assets', 'models', 'all-MiniLM-L6-v2'));
+  for (const c of candidates) {
+    if (existsSync(path.join(c, 'model.onnx'))) return c;
+  }
+  return null;
+}
 
 // ===================== 单例状态 =====================
 
@@ -176,6 +211,23 @@ function downloadFile(url: string, dest: string, retries = 2, timeoutMs = 30000)
  */
 async function ensureModelFiles(): Promise<void> {
   mkdirSync(MODEL_DIR, { recursive: true });
+
+  // P0: 优先从随包分发的模型种子复制到运行时目录，彻底消除首次运行下载白屏。
+  // 仅复制运行时目录中缺失的文件，已存在的不覆盖（避免重复拷贝）。
+  const bundled = resolveBundledModelDir();
+  if (bundled) {
+    let copied = 0;
+    for (const { name, dest } of MODEL_FILES) {
+      const src = path.join(bundled, name);
+      if (existsSync(src) && !existsSync(dest)) {
+        copyFileSync(src, dest);
+        copied++;
+      }
+    }
+    if (copied > 0) {
+      logger.info(`[OnnxEmbedding] 已从随包模型种子复制 ${copied} 个文件到运行时目录: ${MODEL_DIR}`);
+    }
+  }
 
   const filesToDownload: Array<{ url: string; path: string; name: string }> = [];
 
@@ -452,7 +504,52 @@ export function getOnnxStatus(): { status: string; error: string } {
  * @param text 输入文本
  * @returns 384 维 L2 归一化 Float32Array
  */
+// ===================== 超时降级 =====================
+/** embedText 超时阈值：超时或失败均降级到 fallback，绝不阻塞调用方（避免对话首屏白屏） */
+const EMBED_TIMEOUT_MS = 5000;
+
+/** 确定性伪向量：embedText 超时/失败时降级返回，保证不阻塞对话生成 */
+function fallbackEmbedding(text: string): Float32Array {
+  const dim = ONNX_EMBEDDING_DIMENSIONS;
+  const vec = new Float32Array(dim);
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  for (let i = 0; i < dim; i++) {
+    h ^= (i + 1) * 2654435761;
+    vec[i] = ((h >>> 0) % 1000) / 1000 - 0.5;
+  }
+  return vec;
+}
+
+/** 带超时的 Promise 包装：超时或失败均降级到 fallback */
+function withEmbedTimeout(p: Promise<Float32Array>, fallback: () => Float32Array): Promise<Float32Array> {
+  return new Promise<Float32Array>((resolve) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) { settled = true; resolve(fallback()); }
+    }, EMBED_TIMEOUT_MS);
+    p.then((r) => {
+      if (!settled) { settled = true; clearTimeout(timer); resolve(r); }
+    }).catch(() => {
+      if (!settled) { settled = true; clearTimeout(timer); resolve(fallback()); }
+    });
+  });
+}
+
+/**
+ * 对单条文本生成 embedding 向量（对外入口，带 5s 超时降级）
+ *
+ * @param text 输入文本
+ * @returns 384 维 L2 归一化 Float32Array（超时/失败时返回确定性伪向量）
+ */
 export async function embedText(text: string): Promise<Float32Array> {
+  return withEmbedTimeout(doEmbedText(text), () => fallbackEmbedding(text));
+}
+
+async function doEmbedText(text: string): Promise<Float32Array> {
   const sess = await ensureSession();
   touchLastUsed();
 

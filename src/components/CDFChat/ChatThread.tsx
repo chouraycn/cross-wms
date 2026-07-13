@@ -77,7 +77,8 @@ import { TerminalButtonIcon, SidePanelCollapseIcon, SidePanelExpandIcon } from '
 /** 从 URL 参数解析技能上下文 */
 function resolveSkillFromParams(skillId: string | null): Skill | null {
   if (!skillId) return null;
-  return getAllSkills().find(s => s.id === skillId && s.status === 'active') ?? null;
+  // v1.7.88: 放宽 status 限制 — 允许非 active 技能也能被选中（如从 SkillsPage 跳转）
+  return getAllSkills().find(s => s.id === skillId) ?? null;
 }
 
 export interface ChatThreadProps {
@@ -185,6 +186,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
     handleSessionUpdate,
     updateSessionModel,
     handleNewChat,
+    isSwitchingSession,
   } = useChatSession();
   const { ensureInitialized } = useChatMeta();
   const { folders } = useChatSidebar();
@@ -958,7 +960,50 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
 
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
         <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          {isEmpty ? (
+          {/* v1.7.88: 历史对话切换中 — 撕开式转圈加载样式 */}
+          {isSwitchingSession ? (
+            <Box sx={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 2.5,
+            }}>
+              <Box sx={{
+                position: 'relative',
+                width: 64, height: 64,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {/* 左半圆 — 向左撕开 */}
+                <Box sx={{
+                  position: 'absolute',
+                  left: 0, top: 0,
+                  width: 32, height: 64,
+                  borderRadius: '32px 0 0 32px',
+                  background: isDark
+                    ? 'linear-gradient(135deg, rgba(59,130,246,0.14), rgba(59,130,246,0.06))'
+                    : 'linear-gradient(135deg, rgba(59,130,246,0.10), rgba(59,130,246,0.04))',
+                  animation: 'tearOpenLeft 1.6s ease-in-out infinite',
+                }} />
+                {/* 右半圆 — 向右撕开 */}
+                <Box sx={{
+                  position: 'absolute',
+                  right: 0, top: 0,
+                  width: 32, height: 64,
+                  borderRadius: '0 32px 32px 0',
+                  background: isDark
+                    ? 'linear-gradient(225deg, rgba(59,130,246,0.14), rgba(59,130,246,0.06))'
+                    : 'linear-gradient(225deg, rgba(59,130,246,0.10), rgba(59,130,246,0.04))',
+                  animation: 'tearOpenRight 1.6s ease-in-out infinite',
+                }} />
+                {/* 中心转圈 */}
+                <CircularProgress size={24} sx={{ color: '#3b82f6', zIndex: 1 }} />
+              </Box>
+              <Typography sx={{
+                fontSize: '0.8125rem', color: gs.textMuted,
+                animation: 'tearPulse 1.6s ease-in-out infinite',
+              }}>
+                正在加载历史对话...
+              </Typography>
+            </Box>
+          ) : isEmpty ? (
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <Box sx={{
                 flex: 1,

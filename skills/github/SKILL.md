@@ -8,7 +8,7 @@ triggers:
   - "keyword:issue"
   - "keyword:git"
 allowed-tools:
-  - file_execCommand
+  - shell_exec
 ---
 
 # GitHub

@@ -24,6 +24,8 @@
 
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
+import { pathToFileURL } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../logger.js';
 import { parseSkillMdContent, extractPromptTemplate } from '../services/skillMdParser.js';
@@ -479,6 +481,7 @@ class SkillRegistry {
 
         // 检查是否有原生代码入口（index.ts / index.js）
         const hasNativeEntry = this.hasNativeEntry(skillDir);
+        definition.native = hasNativeEntry;
 
         // 创建生命周期
         const lifecycle = hasNativeEntry
@@ -520,6 +523,10 @@ class SkillRegistry {
    * 为原生代码 Skill（有 index.ts）创建生命周期
    *
    * 动态 import 加载 Skill 模块，期望导出 SkillLifecycle 接口。
+   *
+   * 注意：服务端以 ESM 运行（package.json type=module，经由 tsx 启动），
+   * 全局 `require` 不可用，因此统一使用动态 `import()` + file:// URL。
+   * 追加时间戳 query 以绕过 ESM 模块缓存，支持热重载时重新加载最新代码。
    */
   private async createNativeLifecycle(
     definition: SkillDefinition,
@@ -531,11 +538,8 @@ class SkillRegistry {
     const entryPath = fs.existsSync(jsEntry) ? jsEntry : tsEntry;
 
     try {
-      // 清除模块缓存以支持热重载
-      const modulePath = require.resolve(entryPath);
-      delete require.cache[modulePath];
-
-      const moduleExports = require(entryPath) as Record<string, unknown>;
+      const moduleUrl = `${pathToFileURL(entryPath).href}?v=${Date.now()}`;
+      const moduleExports = (await import(moduleUrl)) as Record<string, unknown>;
       this.loadedModules.set(definition.id, moduleExports);
 
       // 验证导出的 lifecycle 结构
@@ -879,6 +883,7 @@ class SkillRegistry {
 
       // 重新创建生命周期
       const hasNativeEntry = this.hasNativeEntry(sourcePath);
+      definition.native = hasNativeEntry;
       const lifecycle = hasNativeEntry
         ? await this.createNativeLifecycle(definition, sourcePath)
         : this.createDeclarativeLifecycle(definition);
@@ -981,7 +986,7 @@ class SkillRegistry {
 
 /** 获取用户主目录（避免直接使用 os.homedir 在模块顶层调用） */
 function osHomedir(): string {
-  return require('os').homedir();
+  return os.homedir();
 }
 
 // ===================== Module-level Singleton =====================

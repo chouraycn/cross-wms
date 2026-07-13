@@ -8,7 +8,7 @@ triggers:
   - "keyword:温度"
   - "keyword:下雨"
 allowed-tools:
-  - file_execCommand
+  - shell_exec
 ---
 
 # Weather 天气查询

@@ -3,8 +3,8 @@
  *
  * 覆盖 HookRunner 和 PluginHookRunner 的契约行为：
  * - 注册/注销 hook
- * - emit 串行执行（按 priority 排序）
- * - emitAsync 并行执行
+ * - run 串行执行（按 priority 排序）
+ * - runAsync 并行执行
  * - 错误处理（fail-open/fail-closed）
  * - runVoidHook（void 类型）
  * - runModifyingHook（修改类型，支持 merge / shouldStop）
@@ -94,20 +94,20 @@ describe('HookRunner Contract', () => {
     });
   });
 
-  describe('emit 串行执行', () => {
+  describe('run 串行执行', () => {
     it('返回最后一个非 null/undefined 的结果', async () => {
       const runner = new HookRunner();
       runner.register({ event: 'evt', handler: async () => undefined });
       runner.register({ event: 'evt', handler: async () => 'second' });
       runner.register({ event: 'evt', handler: async () => 'third' });
 
-      const result = await runner.emit('evt', 'initial');
+      const result = await runner.run('evt', 'initial');
       expect(result).toBe('third');
     });
 
     it('无 hook 时返回原 payload', async () => {
       const runner = new HookRunner();
-      const result = await runner.emit('evt', { x: 1 });
+      const result = await runner.run('evt', { x: 1 });
       expect(result).toEqual({ x: 1 });
     });
 
@@ -117,7 +117,7 @@ describe('HookRunner Contract', () => {
       runner.register({ event: 'evt', handler: async () => null });
       runner.register({ event: 'evt', handler: async () => undefined });
 
-      const result = await runner.emit('evt', 'initial');
+      const result = await runner.run('evt', 'initial');
       expect(result).toBe('updated');
     });
 
@@ -127,7 +127,7 @@ describe('HookRunner Contract', () => {
       runner.register({ event: 'evt', handler: async (p) => { seen.push(p); return { step: 1 }; } });
       runner.register({ event: 'evt', handler: async (p) => { seen.push(p); return { step: 2 }; } });
 
-      await runner.emit('evt', { initial: true });
+      await runner.run('evt', { initial: true });
       expect(seen[0]).toEqual({ initial: true });
       expect(seen[1]).toEqual({ step: 1 });
     });
@@ -136,25 +136,25 @@ describe('HookRunner Contract', () => {
       const runner = new HookRunner();
       const spy = vi.fn();
       runner.register({ event: 'evt', handler: async (_, ctx) => { spy(ctx); return null; } });
-      await runner.emit('evt', {}, { sessionId: 'sess-1' });
+      await runner.run('evt', {}, { sessionId: 'sess-1' });
       expect(spy).toHaveBeenCalledWith(expect.objectContaining({ sessionId: 'sess-1' }));
     });
   });
 
-  describe('emitAsync 并行执行', () => {
+  describe('runAsync 并行执行', () => {
     it('并行执行所有 hook', async () => {
       const runner = new HookRunner();
       const order: string[] = [];
       runner.register({ event: 'evt', handler: async () => { await new Promise((r) => setTimeout(r, 30)); order.push('a'); } });
       runner.register({ event: 'evt', handler: async () => { await new Promise((r) => setTimeout(r, 10)); order.push('b'); } });
 
-      await runner.emitAsync('evt', null);
+      await runner.runAsync('evt', null);
       expect(order).toEqual(['b', 'a']); // b 先完成
     });
 
     it('无 hook 时为 no-op', async () => {
       const runner = new HookRunner();
-      await expect(runner.emitAsync('evt', null)).resolves.toBeUndefined();
+      await expect(runner.runAsync('evt', null)).resolves.toBeUndefined();
     });
 
     it('单个 handler 抛错不影响其他 handler', async () => {
@@ -162,7 +162,7 @@ describe('HookRunner Contract', () => {
       const okSpy = vi.fn();
       runner.register({ event: 'evt', handler: async () => { throw new Error('boom'); } });
       runner.register({ event: 'evt', handler: okSpy });
-      await expect(runner.emitAsync('evt', null)).resolves.toBeUndefined();
+      await expect(runner.runAsync('evt', null)).resolves.toBeUndefined();
       expect(okSpy).toHaveBeenCalled();
     });
   });
@@ -171,14 +171,14 @@ describe('HookRunner Contract', () => {
     it('catchErrors=true（默认）时错误被吞掉', async () => {
       const runner = new HookRunner();
       runner.register({ event: 'evt', handler: async () => { throw new Error('boom'); } });
-      const result = await runner.emit('evt', 'initial');
+      const result = await runner.run('evt', 'initial');
       expect(result).toBe('initial');
     });
 
     it('catchErrors=false 时错误传播', async () => {
       const runner = new HookRunner({ catchErrors: false });
       runner.register({ event: 'evt', handler: async () => { throw new Error('boom'); } });
-      await expect(runner.emit('evt', 'initial')).rejects.toThrow('boom');
+      await expect(runner.run('evt', 'initial')).rejects.toThrow('boom');
     });
 
     it('failurePolicyByHook 设为 fail-closed 时错误传播', async () => {
@@ -186,7 +186,7 @@ describe('HookRunner Contract', () => {
         failurePolicyByHook: { evt: 'fail-closed' },
       });
       runner.register({ event: 'evt', handler: async () => { throw new Error('boom'); } });
-      await expect(runner.emit('evt', 'initial')).rejects.toThrow('boom');
+      await expect(runner.run('evt', 'initial')).rejects.toThrow('boom');
     });
 
     it('hook_error 事件在错误时触发（验证 listener 计数）', async () => {
@@ -195,7 +195,7 @@ describe('HookRunner Contract', () => {
       expect(runner.listenerCount('hook_error')).toBe(1);
       runner.register({ event: 'evt', handler: async () => { throw new Error('boom'); } });
       // emit 会触发 hook_error 监听器（断言不抛错即可）
-      await expect(runner.emit('evt', 'initial')).resolves.not.toThrow();
+      await expect(runner.run('evt', 'initial')).resolves.not.toThrow();
     });
   });
 });

@@ -189,6 +189,8 @@ actor ServerProcessManager {
         env["PORT"] = String(port)
         env["CDF_DATA_DIR"] = AppPaths.dataDirectory.path
         env["FRONTEND_DIR"] = "\(resourcesDir)/frontend_dist"
+        // 随包分发的 ONNX 模型种子所在目录（Resources/），供 server 在首次运行时复制到数据目录
+        env["CDF_RESOURCE_DIR"] = resourcesDir
 
         let sharedNodeModules = "\(resourcesDir)/shared_node_modules"
         let fm = FileManager.default

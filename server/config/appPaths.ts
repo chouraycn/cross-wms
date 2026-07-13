@@ -17,40 +17,87 @@ function getLegacyDataDir(): string {
 }
 
 function resolveRootDir(): string {
-  // 1. 环境变量优先
+  // 1. 环境变量优先（Swift 宿主注入 CDF_DATA_DIR）
   if (process.env.CDF_DATA_DIR) {
-    return path.dirname(process.env.CDF_DATA_DIR);
-  }
+    const envRoot = path.dirname(process.env.CDF_DATA_DIR);
 
-  // 2. macOS 使用标准 Application Support 目录
-  if (process.platform === 'darwin') {
-    const appSupportDir = getMacOSAppSupportDir();
-    const legacyDir = getLegacyDataDir();
+    // v1.7.88: 修复安装后历史对话丢失 — Swift 使用 "CDFKnowClow"（无空格），
+    // TS 默认使用 "CDF Know Clow"（含空格），导致新旧目录不一致。
+    // 在 env 分支也执行 legacy 目录迁移，把旧数据搬到新目录。
+    if (process.platform === 'darwin') {
+      const legacyDirs = [
+        // 含空格的旧目录
+        path.join(os.homedir(), 'Library', 'Application Support', 'CDF Know Clow'),
+        // 早期无空格旧目录
+        path.join(os.homedir(), '.cdf-know-clow'),
+      ];
 
-    // 如果标准目录已存在，直接使用
-    if (fs.existsSync(appSupportDir)) {
-      return appSupportDir;
-    }
-
-    // 如果旧目录存在且标准目录不存在，执行迁移
-    if (fs.existsSync(legacyDir) && !fs.existsSync(appSupportDir)) {
-      try {
-        fs.mkdirSync(path.dirname(appSupportDir), { recursive: true });
-        fs.renameSync(legacyDir, appSupportDir);
-        console.log(`[appPaths] 数据已迁移: ${legacyDir} -> ${appSupportDir}`);
-        return appSupportDir;
-      } catch (e) {
-        console.error(`[appPaths] 迁移失败，回退到旧目录:`, e);
-        return legacyDir;
+      for (const legacyDir of legacyDirs) {
+        if (legacyDir === envRoot) continue; // 同一路径，跳过
+        if (fs.existsSync(legacyDir) && fs.existsSync(path.join(legacyDir, 'sessions'))) {
+          try {
+            // 逐项合并（而非整体 rename，避免目标目录已存在部分文件时失败）
+            mergeDirectory(legacyDir, envRoot);
+            console.log(`[appPaths] 历史数据已迁移: ${legacyDir} -> ${envRoot}`);
+          } catch (e) {
+            console.error(`[appPaths] 迁移失败 (${legacyDir} -> ${envRoot}):`, e);
+          }
+        }
       }
     }
 
-    // 全新安装，使用标准目录
+    return envRoot;
+  }
+
+  // 2. macOS 使用标准 Application Support 目录（规范名 CDFKnowClow，与发布版一致）
+  if (process.platform === 'darwin') {
+    const appSupportDir = getMacOSAppSupportDir();
+    // 确保规范目录存在
+    if (!fs.existsSync(appSupportDir)) {
+      fs.mkdirSync(appSupportDir, { recursive: true });
+    }
+    // 合并所有旧目录数据到规范目录（复制而非删除，已存在文件跳过）
+    // 修复：早期 dev 模式 / 旧版落点使用含空格的 "CDF Know Clow" 目录，
+    // 导致重装 / 切换运行方式后历史对话看似丢失。统一合并到规范目录。
+    const legacyDirs = [
+      path.join(os.homedir(), 'Library', 'Application Support', 'CDF Know Clow'),
+      getLegacyDataDir(),
+    ];
+    for (const legacyDir of legacyDirs) {
+      if (legacyDir === appSupportDir) continue;
+      if (fs.existsSync(legacyDir) && fs.existsSync(path.join(legacyDir, 'sessions'))) {
+        try {
+          mergeDirectory(legacyDir, appSupportDir);
+          console.log(`[appPaths] 历史数据已合并: ${legacyDir} -> ${appSupportDir}`);
+        } catch (e) {
+          console.error(`[appPaths] 合并失败 (${legacyDir} -> ${appSupportDir}):`, e);
+        }
+      }
+    }
     return appSupportDir;
   }
 
   // 3. 其他平台使用用户主目录
   return path.join(os.homedir(), APP_DIR_NAME);
+}
+
+/** 递归合并目录：把 src 内容合并到 dest，已存在的文件跳过 */
+function mergeDirectory(src: string, dest: string): void {
+  if (!fs.existsSync(dest)) {
+    fs.mkdirSync(dest, { recursive: true });
+  }
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      mergeDirectory(srcPath, destPath);
+    } else {
+      if (!fs.existsSync(destPath)) {
+        fs.copyFileSync(srcPath, destPath);
+      }
+    }
+  }
 }
 
 const rootDir: string = resolveRootDir();

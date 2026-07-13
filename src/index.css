@@ -143,3 +143,22 @@ body {
 [class*="MuiBox-root"]:hover > .thinking-action-btn {
   opacity: 1 !important;
 }
+
+/* v1.7.88: 历史对话切换 — 撕开式转圈动画 */
+@keyframes tearOpenLeft {
+  0%, 100% { transform: translateX(0) rotate(0deg); opacity: 0.8; }
+  50% { transform: translateX(-8px) rotate(-3deg); opacity: 0.3; }
+}
+@keyframes tearOpenRight {
+  0%, 100% { transform: translateX(0) rotate(0deg); opacity: 0.8; }
+  50% { transform: translateX(8px) rotate(3deg); opacity: 0.3; }
+}
+@keyframes tearPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+@keyframes tearReveal {
+  0% { clip-path: inset(0 50% 0 50%); }
+  50% { clip-path: inset(0 25% 0 25%); }
+  100% { clip-path: inset(0 0 0 0); }
+}
