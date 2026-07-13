@@ -124,7 +124,9 @@ export async function refreshFromRemote(): Promise<void> {
     await loadAllUsageStats();
     notifyAll();
   } catch (e) {
-    // console.error('[skillStore] refreshFromRemote failed:', e);
+    const msg = e instanceof Error ? e.message : String(e);
+    skillLoadError = msg;
+    window.dispatchEvent(new CustomEvent('cdf-know-clow-api-error', { detail: { action: 'refreshFromRemote', error: msg } }));
   }
 }
 
