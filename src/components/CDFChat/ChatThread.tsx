@@ -72,6 +72,7 @@ import { ReadingIndicator } from './ReadingIndicator.js';
 import { CompactionDivider } from './CompactionDivider.js';
 import { PendingSendMessage } from './PendingSendMessage.js';
 import { buildChatItems, ChatItem } from '../../types/chat-items.js';
+import { TerminalButtonIcon, SidePanelCollapseIcon, SidePanelExpandIcon } from '../Common/Icons';
 
 /** 从 URL 参数解析技能上下文 */
 function resolveSkillFromParams(skillId: string | null): Skill | null {
@@ -160,69 +161,6 @@ const AgentActivityFeed: React.FC<{
 };
 
 /**
- * 自定义终端图标
- */
-const TerminalButtonIcon: React.FC<{ fontSize?: number; color?: string }> = ({
-  fontSize = 18,
-  color = 'currentColor',
-}) => (
-  <svg
-    width={fontSize}
-    height={fontSize}
-    viewBox="0 0 600 600"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M547.4,35.9c28.3,0,51.2,22.9,51.2,51.2v460.8c0,28.3-22.9,51.2-51.2,51.2H86.6c-28.3,0-51.2-22.9-51.2-51.2V87.1c0-28.3,22.9-51.2,51.2-51.2h460.8ZM547.4,87.1H86.6v460.8h460.8V87.1ZM184.6,138.3l72.4,72.4-72.4,72.4-36.2-36.2,36.2-36.2-36.2-36.2,36.2-36.2ZM445,189.5v51.2h-102.4v-51.2h102.4Z"
-      fill={color}
-    />
-  </svg>
-);
-
-/**
- * 自定义侧面板收起图标 — 箭头向右（收起右侧面板）
- */
-const SidePanelCollapseIcon: React.FC<{ fontSize?: number; color?: string }> = ({
-  fontSize = 18,
-  color = 'currentColor',
-}) => (
-  <svg
-    width={fontSize}
-    height={fontSize}
-    viewBox="0 0 640 640"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M578.6,590.7H32.4c-18.9,0-34.1-15.3-34.1-34.1h0c0-18.9,15.3-34.1,34.1-34.1h546.2c18.9,0,34.1,15.3,34.1,34.1h0c0,18.9-15.3,34.1-34.1,34.1h0ZM622.7,222.3l-108.6,108.6c-13.3,13.3-34.9,13.3-48.3,0h0c-13.3-13.3-13.3-34.9,0-48.3l60.4-60.3c13.3-13.3,13.3-34.9,0-48.3l-60.4-60.3c-13.3-13.3-13.3-34.9,0-48.3h0c13.3-13.3,34.9-13.3,48.3,0l108.6,108.6c13.3,13.3,13.3,34.9,0,48.3h0ZM271.4,351.8H32.5c-18.9,0-34.1-15.3-34.1-34.1h0c0-18.9,15.3-34.1,34.1-34.1h238.9c18.8,0,34.1,15.3,34.1,34.1h0c0,18.9-15.3,34.1-34.1,34.1ZM271.4,112.8H32.5c-18.9,0-34.1-15.3-34.1-34.1h0c0-18.9,15.3-34.1,34.1-34.1h238.9c18.8,0,34.1,15.3,34.1,34.1h0c0,18.9-15.3,34.1-34.1,34.1Z"
-      fill={color}
-    />
-  </svg>
-);
-
-/**
- * 自定义侧面板展开图标 — 箭头向左（展开右侧面板）
- */
-const SidePanelExpandIcon: React.FC<{ fontSize?: number; color?: string }> = ({
-  fontSize = 18,
-  color = 'currentColor',
-}) => (
-  <svg
-    width={fontSize}
-    height={fontSize}
-    viewBox="0 0 640 640"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M600.5,590.9H54.4c-18.8,0-34.1-15.3-34.1-34.1h0c0-18.9,15.3-34.1,34.1-34.1h546.1c18.9,0,34.1,15.3,34.1,34.1h0c0,18.9-15.3,34.1-34.1,34.1h0ZM167.1,113.9l-60.3,60.3c-13.3,13.3-13.3,34.9,0,48.3l60.3,60.4c13.3,13.3,13.3,34.9,0,48.3h0c-13.3,13.3-34.9,13.3-48.3,0L10.2,222.6c-13.3-13.3-13.3-34.9,0-48.3l108.6-108.6c13.3-13.3,34.9-13.3,48.3,0h0c13.3,13.3,13.3,34.9,0,48.3h0ZM600.5,352h-238.9c-18.9,0-34.1-15.3-34.1-34.1h0c0-18.9,15.3-34.1,34.1-34.1h238.9c18.9,0,34.1,15.3,34.1,34.1h0c0,18.9-15.3,34.1-34.1,34.1ZM600.5,113h-238.9c-18.9,0-34.1-15.3-34.1-34.1h0c0-18.9,15.3-34.1,34.1-34.1h238.9c18.9,0,34.1,15.3,34.1,34.1h0c0,18.9-15.3,34.1-34.1,34.1Z"
-      fill={color}
-    />
-  </svg>
-);
-
-/**
  * CDFChat 新版对话容器（基于 OpenClaw 事件驱动架构）
  */
 export const ChatThread: React.FC<ChatThreadProps> = ({
@@ -275,7 +213,13 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
   const prevMsgCountRef = useRef<number>(0);
 
   // 监听左侧侧边栏折叠状态（展开时隐藏内容框左侧的侧边栏切换和新对话按钮）
-  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState<boolean>(false);
+  // v1.7.86: 同步从 localStorage 读取初始状态，避免与 App.tsx 的 sidebarCollapsed 不一致导致"双侧栏"假象
+  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('cdf-know-clow-sidebar-collapsed') === 'true';
+    } catch { /* ignore */ }
+    return false;
+  });
 
   // v1.7.85: 监听窗口全屏状态（全屏时红黄绿按钮消失，侧边栏按钮需要左移填补空间）
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -783,63 +727,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         bgcolor: gs.bgPanel,
         overflow: 'hidden',
       }}>
-        {/* 收起侧边栏时空状态的2按钮：侧边栏展开 + 新对话（顶部位置，红黄绿避让） */}
-        {/* v1.7.85: 全屏时红黄绿消失，按钮左移填补空间 */}
-        {/* v1.7.86: 空状态只显示侧边栏展开和新对话按钮，移除搜索按钮 */}
-        {leftSidebarCollapsed && isChatRoute && isEmpty && (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.25,
-            pl: nativeApp ? (isFullscreen ? '8px' : '78px') : 2,
-            pr: 2,
-            pt: 'calc(var(--pw-top, 0px) + 30px)',
-            pb: 0,
-            flexShrink: 0,
-          }}
-        >
-          <Tooltip title="侧边栏" arrow>
-            <IconButton
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('cdf-toggle-sidebar'));
-              }}
-              sx={{
-                color: '#000',
-                borderRadius: '6.48px',
-                p: 0.45,
-                width: 25.92,
-                height: 25.92,
-                flexShrink: 0,
-                bgcolor: 'transparent',
-                '&:hover': { bgcolor: 'transparent', color: '#000' },
-              }}
-            >
-              <svg width="17.5" height="17.5" viewBox="0 0 24 24" fill="none">
-                <rect x="4" y="4" width="16" height="16" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none"/>
-                <line x1="15" y1="8" x2="15" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="新对话" arrow>
-            <IconButton
-              onClick={handleNewChat}
-              sx={{
-                color: '#000',
-                borderRadius: '6.48px',
-                p: 0.45,
-                width: 25.92,
-                height: 25.92,
-                flexShrink:  0,
-                bgcolor: 'transparent',
-                '&:hover': { bgcolor: 'transparent', color: '#000' },
-              }}
-            >
-              <ChatBubbleOutlineIcon sx={{ fontSize: '16.2px' }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        )}
+        {/* v1.7.87: 空状态侧边栏按钮已移至 GlobalActionsBar，此处不再重复显示 */}
         {/* 顶部标题栏：仅在有内容时显示（会话标题 + 文件夹路径 + 右侧按钮） */}
         {/* v1.7.85: 全屏时红黄绿消失，按钮左移填补空间 */}
         {!isEmpty && (
@@ -848,7 +736,8 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            pl: leftSidebarCollapsed ? (nativeApp ? (isFullscreen ? '8px' : '78px') : '8px') : 2,
+            // v1.7.87: DMG 下 pl 增大以避让全局按钮栏（展开/新对话按钮在左侧固定位置）
+            pl: leftSidebarCollapsed ? (nativeApp ? (isFullscreen ? '8px' : '130px') : '8px') : 2,
             pr: 2,
             py: 0.75,
             borderBottom: `1px solid ${gs.border}`,
@@ -857,50 +746,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             pt: leftSidebarCollapsed ? 'calc(var(--pw-top, 0px) + 0px)' : 0.75,
           }}
         >
-          {leftSidebarCollapsed && isChatRoute && (
-            <>
-              <Tooltip title="侧边栏" arrow>
-                <IconButton
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('cdf-toggle-sidebar'));
-                  }}
-                  sx={{
-                    color: '#000',
-                    borderRadius: '6.48px',
-                    p: 0.45,
-                    width: 25.92,
-                    height: 25.92,
-                    flexShrink: 0,
-                    bgcolor: 'transparent',
-                    '&:hover': { bgcolor: 'transparent', color: '#000' },
-                  }}
-                >
-                  <svg width="17.5" height="17.5" viewBox="0 0 24 24" fill="none">
-                    <rect x="4" y="4" width="16" height="16" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none"/>
-                    <line x1="15" y1="8" x2="15" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="新对话" arrow>
-                <IconButton
-                  onClick={handleNewChat}
-                  sx={{
-                    color: '#000',
-                    borderRadius: '6.48px',
-                    p: 0.45,
-                    width: 25.92,
-                    height: 25.92,
-                    flexShrink:  0,
-                    bgcolor: 'transparent',
-                    '&:hover': { bgcolor: 'transparent', color: '#000' },
-                  }}
-                >
-                  <ChatBubbleOutlineIcon sx={{ fontSize: '16.2px' }} />
-                </IconButton>
-              </Tooltip>
-            </>
-          )}
-          <Typography sx={{ fontSize: '0.9rem', color: gs.textMuted, fontWeight: 500, flexShrink: 0 }}>|</Typography>
+          {/* v1.7.87: 侧边栏按钮已移至 GlobalActionsBar，标题直接从左侧开始 */}
           <Typography
             sx={{
               fontSize: '0.9rem',
@@ -1080,7 +926,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
                   '&:hover': { bgcolor: 'transparent', color: '#000' },
                 }}
               >
-                <TerminalButtonIcon fontSize={13.3} />
+                <TerminalButtonIcon size={13.3} />
               </IconButton>
             </Tooltip>
             <Tooltip title={sidePanelOpen ? '收起侧面板' : '展开侧面板'} arrow>
@@ -1102,8 +948,8 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
               }}
             >
               {sidePanelOpen
-                ? <SidePanelCollapseIcon fontSize={13.3} />
-                : <SidePanelExpandIcon fontSize={13.3} />}
+                ? <SidePanelCollapseIcon size={13.3} />
+                : <SidePanelExpandIcon size={13.3} />}
             </IconButton>
           </Tooltip>
           </Box>
@@ -1364,7 +1210,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
             </Box>
           )}
 
-          <Box sx={{ px: 3, pb: 3, pt: 'calc(1rem + 30px)', flexShrink: 0, borderTop: 'none' }}>
+          <Box sx={{ px: 3, pb: 3, pt: 'calc(1rem + 10px)', flexShrink: 0, borderTop: 'none' }}>
             <Box sx={{
               maxWidth: currentMaxWidth,
               mx: 'auto',

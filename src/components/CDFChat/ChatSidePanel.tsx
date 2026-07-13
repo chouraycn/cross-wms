@@ -30,8 +30,8 @@ import MemoryIcon from '@mui/icons-material/Memory';
 import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import BuildIcon from '@mui/icons-material/Build';
-import PsychologyIcon from '@mui/icons-material/Psychology';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import { ThinkingIcon } from '../Common/Icons';
 import LinkIcon from '@mui/icons-material/Link';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -479,7 +479,7 @@ const ChatSidePanel: React.FC<ChatSidePanelProps> = ({
       {/* 自动提取提示 */}
       {todos.some(t => (t as any).source === 'auto') && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <PsychologyIcon sx={{ fontSize: 12, color: '#6366f1' }} />
+          <ThinkingIcon size={12} color="#6366f1" />
           <Typography sx={{ fontSize: '0.65rem', color: gs.textMuted }}>
             AI 自动提取的待办事项
           </Typography>
@@ -728,7 +728,7 @@ const ChatSidePanel: React.FC<ChatSidePanelProps> = ({
           <Divider />
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
-              <PsychologyIcon sx={{ fontSize: 14, color: gs.textMuted }} />
+              <ThinkingIcon size={14} color={gs.textMuted} />
               <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: gs.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 思考统计
               </Typography>

@@ -9,8 +9,8 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TuneIcon from '@mui/icons-material/Tune';
-import DownloadIcon from '@mui/icons-material/Download';
 import { useAppSettings } from '../contexts/AppSettingsContext';
+import { isMacOSApp, isPyWebView } from '../utils/env';
 import type { TaskType, AutomationExecution } from '../services/automation';
 import type { Automation } from '../services/automation/types';
 import { fetchAutomations, triggerAutomationApi, fetchExecutions } from '../services/automation/api';
@@ -21,7 +21,7 @@ import { findAllConflicts } from '../utils/skillConflict';
 import * as api from '../services/api';
 import SkillCard from '../components/Skills/SkillCard';
 import AddSkillDialog from '../components/Skills/AddSkillDialog';
-import StandardSkillInstaller from '../components/Skills/StandardSkillInstaller';
+import SkillPreviewDialog from '../components/Skills/SkillPreviewDialog';
 import ChainList from '../components/SkillChain/ChainList';
 import ChainBuilder from '../components/SkillChain/ChainBuilder';
 import ChainExecutionPanel from '../components/SkillChain/ChainExecutionPanel';
@@ -42,6 +42,14 @@ import WorkshopPanel from '../components/Skills/WorkshopPanel';
 
 // ===================== 技能页面 =====================
 
+// 检测是否为原生 App / pywebview 桌面模式
+const isNativeApp = (): boolean => {
+  if (isMacOSApp()) return true;
+  // @ts-ignore
+  if (typeof window !== 'undefined' && window.cdfAppNative && window.cdfAppNative.isNative) return true;
+  return isPyWebView();
+};
+
 const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   useAppSettings();
   const { showToast } = useToast();
@@ -49,6 +57,19 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const gs = getGrayScale(isDark);
+  const nativeApp = isNativeApp();
+
+  // v1.7.87: DMG 下侧边栏收起状态，用于顶部避让红黄绿按钮
+  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('sidebar-collapsed') === 'true'; } catch { return false; }
+  });
+  useEffect(() => {
+    const onSidebarState = ((e: CustomEvent) => {
+      setLeftSidebarCollapsed(e.detail?.collapsed ?? false);
+    }) as EventListener;
+    window.addEventListener('cdf-sidebar-state', onSidebarState);
+    return () => window.removeEventListener('cdf-sidebar-state', onSidebarState);
+  }, []);
 
   // 技能列表（响应式，随 skillStore 变更刷新）
   const [skillVersion, setSkillVersion] = useState(0);
@@ -343,8 +364,17 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   // 添加技能 Dialog
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
-  // 标准技能安装器 Dialog
-  const [installerOpen, setInstallerOpen] = useState(false);
+  // v1.7.87: 技能预览弹窗
+  const [previewSkill, setPreviewSkill] = useState<Skill | null>(null);
+  const handlePreviewSkill = useCallback((id: string) => {
+    const target = getAllSkills().find((s) => s.id === id);
+    if (target) setPreviewSkill(target);
+  }, []);
+  const handleClosePreview = useCallback(() => setPreviewSkill(null), []);
+  const handleUseSkill = useCallback((target: Skill) => {
+    setPreviewSkill(null);
+    navigate(`/chat?skill=${encodeURIComponent(target.id)}`);
+  }, [navigate]);
 
   // ---- 响应式自动化状态 ----
   const [automations, setAutomations] = useState<Automation[]>([]);
@@ -522,7 +552,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
         isRunning={isRunning}
         isTriggering={isTriggering}
         latestExec={latestExec}
-        onNavigate={(id) => navigate(`/skills/${id}`)}
+        onNavigate={handlePreviewSkill}
         onTrigger={handleTriggerAutomation}
         onActivate={handleActivateSkill}
         usageStats={usageStats}
@@ -553,7 +583,11 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   const fadeCls = usePageFadeIn();
 
   return (
-    <Box className={fadeCls} sx={{ px: 1 }}>
+    <Box className={fadeCls} sx={{
+      px: 1,
+      // v1.7.87: DMG 下侧边栏收起时顶部避让红黄绿按钮，展开时保持正常间距
+      pt: nativeApp && leftSidebarCollapsed ? 'calc(var(--pw-top, 0px) + 4px)' : '8px',
+    }}>
       {/* Header: 标题 + 搜索 + 添加按钮 */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
         <Box>
@@ -612,7 +646,6 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
             )}
           </Box>
           {activeTab !== 'chains' && (
-            <>
             <Button
               variant="outlined"
               startIcon={<AddIcon sx={{ fontSize: 14 }} />}
@@ -630,24 +663,6 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
             >
               添加技能
             </Button>
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon sx={{ fontSize: 14 }} />}
-              onClick={() => setInstallerOpen(true)}
-              sx={{
-                textTransform: 'none',
-                borderRadius: '8px',
-                fontSize: '0.8125rem',
-                py: 0.75,
-                px: 2,
-                borderColor: gs.border,
-                color: gs.textMuted,
-                '&:hover': { borderColor: '#7C3AED', color: '#7C3AED', backgroundColor: '#FAF5FF' },
-              }}
-            >
-              标准安装
-            </Button>
-            </>
           )}
           {/* T05: 匹配引擎设置入口 */}
           <Tooltip title="匹配引擎设置">
@@ -1152,15 +1167,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
         }}
       />
 
-      {/* 标准技能安装器 */}
-      <StandardSkillInstaller
-        open={installerOpen}
-        onClose={() => setInstallerOpen(false)}
-        onInstalled={(skillId) => {
-          showToast(`技能已安装: ${skillId}`, 'success');
-          setSkillVersion((v) => v + 1);
-        }}
-      />
+
       </>
     )}
 
@@ -1195,6 +1202,13 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           <MatchConfigPanel onConfigSaved={() => {}} />
         </DialogContent>
       </Dialog>
+      {/* v1.7.87: 技能预览弹窗 */}
+      <SkillPreviewDialog
+        open={!!previewSkill}
+        skill={previewSkill}
+        onClose={handleClosePreview}
+        onUse={handleUseSkill}
+      />
     </Box>
   );
 };
