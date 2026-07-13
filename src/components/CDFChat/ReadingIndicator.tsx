@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { ThinkingIcon } from '../Common/Icons';
 
 interface ReadingIndicatorProps {
   /** 指示器文本 */
@@ -33,7 +34,10 @@ export const ReadingIndicator: React.FC<ReadingIndicatorProps> = ({
 
   return (
     <div className={`cdf-reading-indicator cdf-reading-indicator--${variant}`}>
-      <div className="cdf-reading-indicator__avatar">AI</div>
+      {/* v1.7.87: 用闪光 SVG 图标替换 "AI" 文本 */}
+      <div className="cdf-reading-indicator__avatar">
+        <ThinkingIcon size={20} color="#fff" />
+      </div>
       <div className="cdf-reading-indicator__content">
         {variant === 'dots' && (
           <div className="cdf-reading-indicator__dots">

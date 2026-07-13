@@ -451,8 +451,8 @@ const ToolCallItem = React.memo<ToolCallItemProps>(function ToolCallItem({ toolC
     return null;
   }, [toolCall.name, toolCall.result]);
 
-  // 截断结果显示
-  const maxResultLen = 500;
+  // 截断结果显示 — skill 元工具结果（技能指令文档）通常 5000+ 字符，需更大阈值
+  const maxResultLen = toolCall.name === 'skill' ? 20000 : 2000;
   const displayResult = formattedResult.length > maxResultLen
     ? formattedResult.slice(0, maxResultLen) + '\n... (结果已截断)'
     : formattedResult;

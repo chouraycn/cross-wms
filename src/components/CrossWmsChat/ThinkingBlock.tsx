@@ -9,11 +9,12 @@
  * - 流式态：呼吸灯动画
  */
 import React, { useState, useEffect, useRef, memo, useMemo } from 'react';
-import { Box, Typography, IconButton, Collapse, useTheme, Tooltip, CircularProgress } from '@mui/material';
+import { Box, Typography, IconButton, Collapse, useTheme, Tooltip } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { getGrayScale } from '../../constants/theme';
+import { ThinkingIcon } from '../Common/Icons';
 import type {
   ReactPhaseInfo,
   ExecutionPlanInfo,
@@ -197,16 +198,11 @@ function ThinkingBlockInner({ thinking, duration, isStreaming, thinkingDone, thi
           }}
         />
 
-        {/* 流式旋转圈 — 仅在 thinking 阶段显示 */}
+        {/* 思考图标 — 仅在 thinking 阶段显示 */}
         {isActuallyThinking && (
-          <CircularProgress
+          <ThinkingIcon
             size={14}
-            thickness={4}
-            sx={{
-              color: isDark ? '#9CA3AF' : '#6B7280',
-              flexShrink: 0,
-              animationDuration: '0.8s',
-            }}
+            color={isDark ? '#9CA3AF' : '#6B7280'}
           />
         )}
 

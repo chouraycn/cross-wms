@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense, Profiler } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useLayoutEffect, useMemo, Suspense, Profiler } from 'react';
 import { HashRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box, useTheme } from '@mui/material';
@@ -652,28 +652,42 @@ const MainLayout: React.FC = () => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia('(max-width: 768px)').matches;
   });
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(isMobile);
+  // v1.7.86: 从 localStorage 恢复侧边栏折叠状态，避免每次启动都展开（修复首次启动双侧栏假象）
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('cdf-know-clow-sidebar-collapsed');
+      if (saved !== null) return saved === 'true';
+    } catch { /* ignore */ }
+    return isMobile;
+  });
   // pywebview / macOS App 检测 — frameless 模式下红黄绿按钮悬浮在左上角（透明无背景条）
   // 只需少量顶部边距（8px），不再需要全宽标题栏避让
   // v3.3: 使用 isMacOSApp() 构建时检测作为初始值，避免运行时注入延迟导致布局闪烁
   const [isPy, setIsPy] = useState(() => isMacOSApp() || isPyWebView());
-  useEffect(() => {
+
+  // v1.7.86: 使用 useLayoutEffect 在首次绘制前注入 CSS 变量，避免布局闪烁导致"双侧栏"视觉假象
+  useLayoutEffect(() => {
     if (isPy) {
-      // pywebview 环境立即注入 CSS 变量，避免布局闪烁
       // BUTTON_TOP(10) + BUTTON_SIZE(12) + 间距(6) = 28px
       document.documentElement.style.setProperty('--pw-top', '28px');
-      // 红黄绿按钮偏移已由 WindowDragBar 组件自行处理，无需额外 JS 注入
     }
-    const id = setInterval(() => {
-      if (isPyWebView()) {
-        setIsPy(true);
-        document.documentElement.style.setProperty('--pw-top', '28px');
-        clearInterval(id);
-      }
-    }, 500);
-    setTimeout(() => clearInterval(id), 3000);
-    return () => clearInterval(id);
   }, [isPy]);
+
+  useEffect(() => {
+    if (!isPy) {
+      const id = setInterval(() => {
+        if (isPyWebView()) {
+          setIsPy(true);
+          document.documentElement.style.setProperty('--pw-top', '28px');
+          clearInterval(id);
+        }
+      }, 500);
+      setTimeout(() => clearInterval(id), 3000);
+      return () => clearInterval(id);
+    }
+  }, [isPy]);
+
+  // v1.7.86: 从 localStorage 恢复侧边栏折叠状态，避免每次启动都展开造成视觉跳跃
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed((prev) => {
       const next = !prev;

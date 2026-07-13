@@ -29,6 +29,8 @@ import { logger } from '../logger.js';
 import { skillSecurityScanner } from './skillSecurityScanner.js';
 import { skillRegistry } from './skillRegistry.js';
 import { AppPaths, ensureDir } from '../config/appPaths.js';
+import { createUserSkill, getUserSkillById } from '../dao/skills.js';
+import { parseSkillMdContent } from '../services/skillMdParser.js';
 
 const execAsync = promisify(exec);
 
@@ -301,13 +303,36 @@ export class SkillInstallManager {
         emit('register', '注册到 Skill Registry...', 95);
         const skillId = this.resolveSkillId(result.installedPath, spec);
         result.skillId = skillId;
-        // 触发注册表重扫该目录（best-effort，不阻塞）
+        // v1.7.86: 安装后写入 user_skills 数据库表，让前端技能列表能立即显示
         try {
-          // 注册表暂不直接接收单个 Skill 的注册接口；通过 reloadSkill 在外部触发
-          // 此处仅记录日志，外部调用方可在收到成功结果后调用 skillRegistry.reloadSkill
+          const skillMdPath = path.join(result.installedPath, 'SKILL.md');
+          if (fs.existsSync(skillMdPath)) {
+            const content = fs.readFileSync(skillMdPath, 'utf-8');
+            const parsed = parseSkillMdContent(content);
+            // 若 DB 中已存在同 id 记录则跳过（避免重复安装时主键冲突）
+            const existing = getUserSkillById(skillId);
+            if (!existing) {
+              createUserSkill({
+                id: skillId,
+                name: String(parsed.frontmatter.name || skillId),
+                desc: String(parsed.frontmatter.description || ''),
+                icon: String(parsed.frontmatter.icon || 'Extension'),
+                category: String(parsed.frontmatter.category || 'tool'),
+                path: result.installedPath,
+                status: 'active',
+                promptTemplate: content,
+                executionMode: 'chat',
+                installedAt: Date.now(),
+              });
+              logger.info(`[SkillInstall] Registered '${skillId}' in user_skills DB at ${result.installedPath}`);
+            } else {
+              logger.info(`[SkillInstall] Skill '${skillId}' already exists in DB, skipping registration`);
+            }
+          }
+          // 触发注册表重扫该目录（best-effort，不阻塞）
           logger.info(`[SkillInstall] Installed '${skillId}' at ${result.installedPath}, awaiting registry reload.`);
         } catch (e) {
-          logger.warn(`[SkillInstall] post-install register hint failed: ${e instanceof Error ? e.message : String(e)}`);
+          logger.warn(`[SkillInstall] post-install register failed: ${e instanceof Error ? e.message : String(e)}`);
         }
       }
 

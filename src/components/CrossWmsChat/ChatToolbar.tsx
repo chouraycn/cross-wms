@@ -23,10 +23,10 @@ import CheckIcon from '@mui/icons-material/Check';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
-import PsychologyIcon from '@mui/icons-material/Psychology';
 import ListItemText from '@mui/material/ListItemText';
 
 import { Skill } from '../../types/skill';
+import { ThinkingIcon } from '../Common/Icons';
 import { ICON_MAP } from '../../types/skill';
 import { getAllSkillsSortedByUsage } from '../../stores/skillStore';
 import { getGrayScale } from '../../constants/theme';
@@ -295,7 +295,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                     },
                   }}
                 >
-                  <PsychologyIcon sx={{ fontSize: 18 }} />
+                  <ThinkingIcon size={18} />
                   {isThinkingOn && (
                     <Box sx={{
                       position: 'absolute',
@@ -356,7 +356,7 @@ const ChatToolbar: React.FC<ChatToolbarProps> = ({
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, width: '100%' }}>
-                        <PsychologyIcon sx={{ fontSize: 18, color: isSelected ? '#8B5CF6' : gs.textMuted, flexShrink: 0 }} />
+                        <ThinkingIcon size={18} color={isSelected ? '#8B5CF6' : gs.textMuted} />
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography sx={{ fontSize: '0.8125rem', fontWeight: isSelected ? 600 : 500, color: isSelected ? '#8B5CF6' : gs.textPrimary }}>
                             {level.label}

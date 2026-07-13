@@ -19,7 +19,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import PsychologyIcon from '@mui/icons-material/Psychology';
 import { getGrayScale } from '../../constants/theme';
 import { Skill, INTENT_CATEGORY_LABELS, INTENT_QUICK_EXAMPLES, ICON_MAP } from '../../types/skill';
 import type { IntentCategory } from '../../types/skill';
@@ -1084,7 +1083,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
       >
         {/* v1.7.0: 意图分类 Chips 行 — 仅当选中技能有 intentCategories 时展示 */}
         {selectedSkill?.intentCategories && selectedSkill.intentCategories.length > 0 && (
-          <Box sx={{ px: 1.5, py: 0.75, bgcolor: gs.bgPanel, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+          <Box sx={{ px: 1.5, py: 0.75, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
             <Typography sx={{ fontSize: 11, color: gs.textMuted, fontWeight: 500, mr: 0.25, flexShrink: 0 }}>
               查询意图
             </Typography>
@@ -1120,7 +1119,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         )}
         {/* Referenced sessions chips */}
         {referencedSessions.length > 0 && (
-          <Box sx={{ px: 1.5, py: 0.5, bgcolor: gs.bgPanel, borderBottom: `1px solid ${gs.border}`, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+          <Box sx={{ px: 1.5, py: 0.5, borderBottom: `1px solid ${gs.border}`, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
             {referencedSessions.map((session) => (
               <Chip
                 key={session.id}
@@ -1141,7 +1140,7 @@ export const TopBarChatInput = React.memo(function TopBarChatInput({ isEmpty, up
         )}
         {/* Pending attachments preview */}
         {pendingAttachments.length > 0 && (
-          <Box sx={{ px: 1.5, py: 0.75, bgcolor: gs.bgPanel, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+          <Box sx={{ px: 1.5, py: 0.75, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
             {pendingAttachments.map((att) => (
               <Box
                 key={att.id}
