@@ -145,6 +145,8 @@ export interface GeneratedFile {
   sessionId?: string;
   /** 创建时间（ISO 字符串） */
   createdAt?: string;
+  /** 文件去重/引用主键（sha256(sessionId + fileName) 截断），由 file 事件携带，向后兼容可选 */
+  fileId?: string;
 }
 
 export interface Message {

@@ -3,6 +3,7 @@
  */
 
 import { AppPaths, ensureDir } from '../config/appPaths.js';
+import { resolveDownloadUrl } from './generatedFileAttachment.js';
 
 /** 获取会话生成文件的目录 */
 function getGeneratedFilesDir(sessionId?: string): string {
@@ -385,7 +386,18 @@ export async function handleWriteFile(args: Record<string, unknown>): Promise<st
     const dir = path.dirname(resolvedPath);
     await fs.promises.mkdir(dir, { recursive: true });
     await fs.promises.writeFile(resolvedPath, content, 'utf-8');
-    return JSON.stringify({ success: true, path: resolvedPath, bytesWritten: content.length });
+
+    // T2：补充 fileName 与 downloadUrl，使 file_writeFile 产物也能被实时识别与下载
+    const fileName = path.basename(resolvedPath);
+    const sessionId = String(args.sessionId || '');
+    const { downloadUrl } = resolveDownloadUrl(sessionId, fileName, resolvedPath);
+    return JSON.stringify({
+      success: true,
+      path: resolvedPath,
+      fileName,
+      bytesWritten: content.length,
+      downloadUrl,
+    });
   } catch (e) {
     return JSON.stringify({ error: `无法写入文件: ${e instanceof Error ? e.message : String(e)}` });
   }

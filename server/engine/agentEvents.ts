@@ -39,6 +39,7 @@ export type AgentEventStream =
   | 'heartbeat'
   | 'output_review'
   | 'compaction_notification'
+  | 'file'
   | (string & Record<string, never>);
 
 // ===================== Item 事件类型 =====================

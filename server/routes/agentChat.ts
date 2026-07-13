@@ -226,6 +226,23 @@ export async function handleAgentChat(req: Request, res: Response) {
                 fallbackReason: event.fallbackReason,
               });
               break;
+            case 'file':
+              // 技能/工具产出文件实时回写（T1）：透传到前端 file 流
+              send('file', {
+                fileId: event.fileId,
+                toolCallId: event.toolCallId,
+                source: event.source,
+                skillId: event.skillId,
+                fileName: event.fileName,
+                mimeType: event.mimeType,
+                fileSize: event.fileSize,
+                downloadUrl: event.downloadUrl,
+                previewUrl: event.previewUrl,
+                description: event.description,
+                sessionId: event.sessionId,
+                createdAt: event.createdAt,
+              });
+              break;
             case 'compaction':
               send('compaction', {
                 tokensBefore: event.tokensBefore,
