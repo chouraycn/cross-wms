@@ -616,9 +616,10 @@ const SkillLoadErrorListener: React.FC = () => {
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (detail?.action !== 'initFromApi') return;
+      if (detail?.action !== 'initFromApi' && detail?.action !== 'refreshFromRemote') return;
       const msg = detail?.error ? String(detail.error) : '未知错误';
-      showToast(`技能加载失败：${msg}`, 'error', 8000);
+      const prefix = detail?.action === 'refreshFromRemote' ? '技能刷新失败' : '技能加载失败';
+      showToast(`${prefix}：${msg}`, 'error', 8000);
     };
     window.addEventListener('cdf-know-clow-api-error', handler);
     return () => window.removeEventListener('cdf-know-clow-api-error', handler);

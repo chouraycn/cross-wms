@@ -328,6 +328,20 @@ describe('skillStore.refreshFromRemote', () => {
     // Should not throw
     await expect(refreshFromRemote()).resolves.toBeUndefined();
   });
+
+  it('should dispatch cdf-know-clow-api-error on API failure (visible, not silent)', async () => {
+    vi.mocked(api.getUserSkills).mockRejectedValue(new Error('Network error'));
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+    // Graceful: still resolves instead of throwing
+    await expect(refreshFromRemote()).resolves.toBeUndefined();
+
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'cdf-know-clow-api-error' })
+    );
+    const event = dispatchSpy.mock.calls.find((c) => (c[0] as CustomEvent).type === 'cdf-know-clow-api-error')?.[0] as CustomEvent;
+    expect(event.detail.action).toBe('refreshFromRemote');
+  });
 });
 
 // ===================== Usage Stats & Caching =====================
