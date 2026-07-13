@@ -1,5 +1,17 @@
 # CrossWMS Changelog
 
+## v1.7.87 (2026-07-13)
+
+### Bug Fixes
+- **技能手动刷新失败静默**：`skillStore.refreshFromRemote` 失败由静默改为 dispatch `cdf-know-clow-api-error`（与 addSkill/updateSkill 等写操作一致），并置 `skillLoadError`
+- **技能刷新错误无提示**：`App.tsx` 的 `SkillLoadErrorListener` 扩展到接 `refreshFromRemote`，弹「技能刷新失败」toast
+
+### Technical
+- 新增 `e2e/api/agent-chat-file-event.test.ts`：挂载真实 `agentChat` 路由 + mock `runChatSession`，端到端验证技能/工具产出文件经 `file` SSE 事件透传至对话卡片（2/2 通过）
+- `skillStore` 单测新增 `refreshFromRemote` 失败 dispatch 断言（36/36 通过）
+
+---
+
 ## v1.5.184 (2026-06-20)
 
 ### Bug Fixes
