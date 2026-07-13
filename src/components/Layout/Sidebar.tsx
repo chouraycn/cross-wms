@@ -49,23 +49,6 @@ const isNativeApp = (): boolean => {
 // v3.2: WKWebView 环境检测，用于禁用高成本 CSS 动画
 const IS_WKWEBVIEW = isWKWebView();
 
-// ===================== Toggle Icons =====================
-
-const CollapseIcon: React.FC = () => (
-  <svg width="19.44" height="19.44" viewBox="0 0 24 24" fill="none">
-    <rect x="4" y="4" width="16" height="16" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none"/>
-    <line x1="9" y1="8" x2="9" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
-const ExpandIcon: React.FC = () => (
-  <svg width="19.44" height="19.44" viewBox="0 0 24 24" fill="none">
-    <rect x="4" y="4" width="16" height="16" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none"/>
-    <line x1="15" y1="8" x2="15" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
-
 // ===================== Constants =====================
 
 const SIDEBAR_WIDTH_EXPANDED = 260;
@@ -273,127 +256,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, settingsOpen: se
       // v1.5.107: 侧边栏整体作为窗口拖拽区域（pywebview frameless 窗口）
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
-      {/* 原生 App 模式：搜索 + Toggle 按钮绝对定位在侧边栏右侧（与网页端布局区分） */}
-      {/* v3.1: 恢复 macOS 专属位置 — 按钮在右侧右上角，不与红黄绿按钮区域对齐 */}
-      {nativeApp && !collapsed && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '12px',
-            right: 3,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            zIndex: 1400,
-          }}
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-        >
-          {onToggle && (
-            <IconButton
-              onClick={onToggle}
-              size="small"
-              sx={{
-                color: gs.textPrimary,
-                borderRadius: '6.48px',
-                p: 0.45,
-                width: 25.92,
-                height: 25.92,
-                flexShrink: 0,
-                '&:hover': {
-                  backgroundColor: gs.bgHover,
-                },
-                '&:focus': { outline: 'none' },
-              }}
-            >
-              <CollapseIcon />
-            </IconButton>
-          )}
-          <IconButton
-            onClick={() => setSearchOpen(true)}
-            size="small"
-            sx={{
-              color: gs.textPrimary,
-              borderRadius: '6.48px',
-              p: 0.45,
-              width: 25.92,
-              height: 25.92,
-              flexShrink: 0,
-              '&:hover': {
-                backgroundColor: gs.bgHover,
-              },
-              '&:focus': { outline: 'none' },
-            }}
-          >
-            <SearchOutlinedIcon sx={{ fontSize: '18px' }} />
-          </IconButton>
-        </Box>
-      )}
-
-      {/* 网页端模式：Logo + 按钮在同一行，按钮右对齐（旧布局） */}
-      {!nativeApp && !collapsed && (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            px: 1,
-            pt: 1,
-            pb: 0.5,
-            flexShrink: 0,
-          }}
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-        >
-          <SidebarLogo collapsed={collapsed} />
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <IconButton
-              onClick={() => setSearchOpen(true)}
-              size="small"
-              sx={{
-                color: gs.textPrimary,
-                borderRadius: '6.48px',
-                p: 0.45,
-                width: 25.92,
-                height: 25.92,
-                flexShrink: 0,
-                '&:hover': {
-                  backgroundColor: gs.bgHover,
-                },
-                '&:focus': { outline: 'none' },
-              }}
-            >
-              <SearchOutlinedIcon sx={{ fontSize: '18px' }} />
-            </IconButton>
-
-            {onToggle && (
-              <IconButton
-                onClick={onToggle}
-                size="small"
-                sx={{
-                  color: gs.textPrimary,
-                  borderRadius: '6.48px',
-                  p: 0.45,
-                  width: 25.92,
-                  height: 25.92,
-                  flexShrink: 0,
-                  '&:hover': {
-                    backgroundColor: gs.bgHover,
-                  },
-                  '&:focus': { outline: 'none' },
-                }}
-              >
-                <CollapseIcon />
-              </IconButton>
-            )}
-          </Box>
-        </Box>
-      )}
-
-      {/* 收起状态：无顶部按钮（侧边栏切换和新对话按钮由 ChatThread 顶部栏提供） */}
-      {/* v1.7.85: 移除输入内容预览 — 收起侧边栏后上方不再显示多余的输入框文字 */}
-      {collapsed && null}
-
       {/* Logo — 原生 App 模式下单独显示（避让顶部按钮区域），网页端模式下已包含在 top bar 中 */}
-      {nativeApp && !collapsed && <SidebarLogo collapsed={collapsed} />}
+      {!collapsed && <SidebarLogo collapsed={collapsed} />}
 
       {/* Navigation list (含历史对话) 或 设置面板 */}
       <Box sx={{ flex: 1, minHeight: 0, display: collapsed ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden' }}>

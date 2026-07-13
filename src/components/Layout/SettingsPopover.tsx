@@ -39,6 +39,7 @@ import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
 import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import TranslateIcon from '@mui/icons-material/Translate';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
 import type { AppSettings } from '../../contexts/AppSettingsContext';
 import { getGrayScale } from '../../constants/theme';
@@ -47,6 +48,7 @@ import SettingsGeneral from './SettingsGeneral';
 import SettingsAbout from './SettingsAbout';
 import { useToast } from '../../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
+import { SUPPORTED_LANGUAGES, changeLanguage, getCurrentLanguage, type SupportedLanguage } from '../../i18n';
 
 const SIDEBAR_WIDTH_EXPANDED = 360;
 
@@ -77,6 +79,7 @@ export interface MenuEntry {
 
 export const SETTINGS_MENU: MenuEntry[] = [
   { key: 'appearance', label: '外观', icon: <PaletteOutlinedIcon sx={{ fontSize: 20 }} />, description: '主题、颜色与显示偏好', appearanceInline: true },
+  { key: 'language', label: '语言', icon: <TranslateIcon sx={{ fontSize: 20 }} />, description: '界面语言切换' },
   { key: 'modelManagement', label: '模型管理', icon: <AutoAwesomeIcon sx={{ fontSize: 20 }} />, description: 'AI 模型配置与默认模型', dialog: 'model' },
   { key: 'extensionsCenter', label: '扩展与工具', icon: <ExtensionOutlinedIcon sx={{ fontSize: 20 }} />, description: '插件、扩展与 MCP 工具统一管理', path: '/extensions-center' },
   { key: 'comms', label: '通讯', icon: <RecordVoiceOverIcon sx={{ fontSize: 20 }} />, description: '语音对话与通道配置', aiTab: { main: 'comms', sub: 'talk' } },
@@ -163,6 +166,7 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const [currentLang, setCurrentLang] = useState<SupportedLanguage>(getCurrentLanguage());
 
   const handleSave = () => {
     updateSettings({ sidebar: draft.sidebar }); updateSettings({ appearance: draft.appearance });
@@ -183,16 +187,17 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
 
   const renderLeaf = (entry: MenuEntry, indent = false) => {
     const isAppearance = entry.appearanceInline === true;
+    const isLanguage = entry.key === 'language';
     return (
       <Box
         key={entry.key}
-        onClick={() => { if (!isAppearance) handleLeafClick(entry); }}
+        onClick={() => { if (!isAppearance && !isLanguage) handleLeafClick(entry); }}
         sx={{
           display: 'flex', alignItems: 'center', gap: 1.5,
           px: indent ? 3 : 2, py: 1.5,
-          cursor: isAppearance ? 'default' : 'pointer',
+          cursor: (isAppearance || isLanguage) ? 'default' : 'pointer',
           borderRadius: '8px',
-          '&:hover': { backgroundColor: isAppearance ? 'transparent' : gs.bgHover },
+          '&:hover': { backgroundColor: (isAppearance || isLanguage) ? 'transparent' : gs.bgHover },
         }}
       >
         <Box sx={{ color: gs.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 20 }}>
@@ -239,6 +244,36 @@ const SettingsPanel: React.FC<{ onClose?: () => void; onOpenModelManagement?: ()
             >
               深色
             </Box>
+          </Box>
+        )}
+        {/* 语言项：胶囊按钮切换语言 */}
+        {isLanguage && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }} onClick={e => e.stopPropagation()}>
+            {SUPPORTED_LANGUAGES.map((lang, index) => {
+              const isActive = currentLang === lang.code;
+              return (
+                <Box
+                  key={lang.code}
+                  onClick={() => {
+                    setCurrentLang(lang.code);
+                    changeLanguage(lang.code);
+                    showToast(`语言已切换为${lang.nativeName}`, 'success');
+                  }}
+                  sx={{
+                    px: 1.5, py: 0.4, fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer',
+                    borderRadius: index === 0 ? '12px 0 0 12px' : '0 12px 12px 0',
+                    backgroundColor: isActive ? gs.bgPanel : gs.bgHover,
+                    color: isActive ? gs.textPrimary : gs.textDisabled,
+                    border: `1px solid ${gs.border}`,
+                    borderLeft: index === 0 ? undefined : 'none',
+                    boxShadow: isActive ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {lang.nativeName}
+                </Box>
+              );
+            })}
           </Box>
         )}
       </Box>

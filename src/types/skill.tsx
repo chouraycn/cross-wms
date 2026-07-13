@@ -64,8 +64,8 @@ export {
   INTENT_CATEGORY_LABELS,
   INTENT_QUICK_EXAMPLES,
   AVAILABLE_ICON_NAMES,
-  BUILTIN_SKILLS,
 } from './skill-core';
+export { getBuiltinSkillsSync, loadBuiltinSkills, BUILTIN_SKILLS } from './skill-core';
 
 // ===================== 图标映射（React 组件，仅前端使用） =====================
 

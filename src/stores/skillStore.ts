@@ -2,6 +2,10 @@
  * 技能注册中心 — 统一管理内置技能与用户自定义技能
  * 使用事件总线模式（参照 warehouseStore.ts）
  *
+ * 内置技能数据（~30 KB）从 `./types/builtin-skills` 异步懒加载，初始
+ * bundle 不含该数据。仅在第一次调用 `getAllSkills()` 或注册用户技能
+ * 时才会触发动态 import。
+ *
  * 改造策略：
  * - getUserSkills / builtinStatusPatches 从 API 初始化
  * - 写操作调用 API → 成功后更新缓存 → notifyAll()
@@ -11,7 +15,7 @@
  */
 
 import type { Skill, SkillAudit, UsageStats } from '../types/skill';
-import { BUILTIN_SKILLS } from '../types/skill';
+import { getBuiltinSkillsSync, loadBuiltinSkills } from '../types/skill';
 import * as api from '../services/api';
 
 // ====== 内存缓存 ======
@@ -44,11 +48,21 @@ function notifyAll(): void {
 
 /** 获取所有技能（内置 + 用户安装），内置技能应用状态覆盖 */
 export function getAllSkills(): Skill[] {
-  const patchedBuiltins = BUILTIN_SKILLS.map((s) => {
+  const patchedBuiltins = getBuiltinSkillsSync().map((s) => {
     const patch = builtinStatusPatches[s.id];
     return patch ? { ...s, status: patch as Skill['status'] } : s;
   });
   return [...patchedBuiltins, ...userSkills];
+}
+
+/**
+ * Returns all builtin skills, loading them on first call.
+ * Returns a Promise so callers can await the data and re-render with the full
+ * catalog the first time it is needed.
+ */
+export async function getAllSkillsAsync(): Promise<Skill[]> {
+  await loadBuiltinSkills();
+  return getAllSkills();
 }
 
 /** 获取所有技能，按使用次数从多到少排序（使用次数相同则按最近使用时间排序） */

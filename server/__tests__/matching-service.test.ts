@@ -22,7 +22,7 @@ vi.mock('../db.js', () => ({
 }));
 
 vi.mock('../../src/types/skill.js', () => ({
-  BUILTIN_SKILLS: [
+  getBuiltinSkillsSync: () => [
     {
       id: 'builtin-inventory',
       name: '库存管理',
@@ -83,6 +83,17 @@ vi.mock('../../src/types/skill.js', () => ({
       executionMode: 'chat',
     },
   ],
+  loadBuiltinSkills: () => Promise.resolve([
+    {
+      id: 'builtin-inventory',
+      name: '库存管理',
+      desc: '库龄预警、滞销处理、周转优化与保质期管理',
+      icon: 'Inventory',
+      category: 'core',
+      path: '/inventory',
+      trigger: '查看库存 / 库龄分析',
+    },
+  ]),
 }));
 
 vi.mock('../../src/types/semantic.js', () => ({

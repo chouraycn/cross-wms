@@ -33,13 +33,16 @@ fi
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/scripts/lib/plistbuddy.sh"
 
-BUILD_DIR="$ROOT_DIR/dist"
+# DMG_OUTPUT_DIR: 统一输出目录，默认 release/，可通过环境变量覆盖
+DMG_OUTPUT_DIR="${DMG_OUTPUT_DIR:-$ROOT_DIR/release}"
+BUILD_DIR="$DMG_OUTPUT_DIR"
 mkdir -p "$BUILD_DIR"
 
 APP_NAME="$(plist_print_required "$APP_PATH/Contents/Info.plist" CFBundleName)"
 APP_BUNDLE_NAME="$(basename "$APP_PATH")"
 VERSION="$(plist_print_required "$APP_PATH/Contents/Info.plist" CFBundleShortVersionString)"
 
+# 统一文件名格式，与 package-mac-dist.sh 保持一致
 DMG_NAME="${APP_NAME}-${VERSION}.dmg"
 DMG_VOLUME_NAME="${DMG_VOLUME_NAME:-$APP_NAME}"
 DMG_BACKGROUND_SMALL="${DMG_BACKGROUND_SMALL:-$ROOT_DIR/apps/macos/Packaging/dmg-background-small.png}"
