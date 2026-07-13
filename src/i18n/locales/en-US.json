@@ -1,0 +1,193 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "loading": "Loading...",
+    "confirm": "Confirm",
+    "back": "Back",
+    "success": "Success",
+    "error": "Error",
+    "retry": "Retry",
+    "close": "Close",
+    "submit": "Submit",
+    "reset": "Reset",
+    "export": "Export",
+    "import": "Import",
+    "refresh": "Refresh",
+    "filter": "Filter",
+    "all": "All",
+    "none": "None",
+    "yes": "Yes",
+    "no": "No",
+    "language": "Language"
+  },
+  "nav": {
+    "chat": "Chat",
+    "dashboard": "Dashboard",
+    "warehouse": "Warehouse",
+    "inventory": "Inventory",
+    "inbound": "Inbound",
+    "outbound": "Outbound",
+    "transfer": "Transfer",
+    "partners": "Partners",
+    "reports": "Reports",
+    "settings": "Settings",
+    "skills": "Skills",
+    "plugins": "Plugins",
+    "automation": "Automation",
+    "projects": "Projects"
+  },
+  "chat": {
+    "inputPlaceholder": "Type a message...",
+    "newChat": "New Chat",
+    "sendMessage": "Send",
+    "stopGeneration": "Stop Generation",
+    "thinking": "Thinking...",
+    "expert": "Expert",
+    "selectExpert": "Select Expert",
+    "selectExpertDesc": "Select an AI expert to assist you"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "idle": "Idle",
+    "busy": "Busy",
+    "offline": "Offline"
+  },
+  "wms": {
+    "warehouse": "Warehouse",
+    "zone": "Zone",
+    "location": "Location",
+    "sku": "SKU",
+    "quantity": "Quantity",
+    "inbound": "Inbound",
+    "outbound": "Outbound",
+    "transfer": "Transfer",
+    "inTransit": "In Transit"
+  },
+  "skills": {
+    "title": "Skills Management",
+    "searchPlaceholder": "Search skills...",
+    "categories": {
+      "core": "Core",
+      "data": "Data Management",
+      "auto": "Automation",
+      "tool": "Tools",
+      "communication": "Communication",
+      "document": "Documents",
+      "design": "Design",
+      "development": "Development",
+      "media": "Media",
+      "finance": "Finance",
+      "productivity": "Productivity",
+      "ai-agent": "AI Agent"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "loading": "Loading",
+      "error": "Error"
+    },
+    "actions": {
+      "enable": "Enable",
+      "disable": "Disable",
+      "install": "Install",
+      "uninstall": "Uninstall",
+      "update": "Update",
+      "refresh": "Refresh",
+      "scan": "Security Scan"
+    },
+    "install": {
+      "title": "Install Skill",
+      "downloading": "Downloading",
+      "extracting": "Extracting",
+      "installing": "Installing",
+      "scanning": "Scanning",
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "startInstall": "Start Installation",
+      "cancelInstall": "Cancel Installation",
+      "source": "Source",
+      "progress": "Progress",
+      "eta": "ETA",
+      "warnings": "Warnings",
+      "errors": "Errors"
+    },
+    "scan": {
+      "title": "Security Scan Results",
+      "critical": "Critical",
+      "warning": "Warning",
+      "info": "Info",
+      "noIssues": "No issues found",
+      "viewDetails": "View Details",
+      "groupByRule": "Group by Rule",
+      "filterBySeverity": "Filter by Severity",
+      "exportResults": "Export Results",
+      "copyResults": "Copy Results"
+    },
+    "chain": {
+      "title": "Skill Chains",
+      "newChain": "New Chain",
+      "editChain": "Edit Chain",
+      "deleteChain": "Delete Chain",
+      "duplicateChain": "Duplicate Chain",
+      "executeChain": "Execute Chain",
+      "chainName": "Chain Name",
+      "chainDescription": "Description",
+      "failStrategy": "Fail Strategy",
+      "failStrategies": {
+        "stop": "Stop on Error",
+        "skip": "Skip on Error",
+        "retry": "Retry on Error"
+      },
+      "nodes": "Steps",
+      "addNode": "Add Skill Node",
+      "removeNode": "Remove Node",
+      "moveUp": "Move Up",
+      "moveDown": "Move Down",
+      "preview": "Preview",
+      "edit": "Edit",
+      "executionPreview": "Execution Preview",
+      "emptyState": "No steps yet. Add a skill node to get started."
+    },
+    "trigger": {
+      "keyword": "Keyword Trigger",
+      "intent": "Intent Trigger",
+      "schedule": "Schedule Trigger",
+      "event": "Event Trigger",
+      "autoTriggered": "Auto-triggered",
+      "matchedKeywords": "Matched Keywords",
+      "matchScore": "Match Score",
+      "status": {
+        "pending": "Pending",
+        "running": "Running",
+        "completed": "Completed",
+        "failed": "Failed"
+      },
+      "execute": "Execute",
+      "retry": "Retry",
+      "history": "Execution History",
+      "recentExecutions": "Recent Executions"
+    }
+  },
+  "slashCommands": {
+    "title": "Slash Commands",
+    "search": "Search commands...",
+    "categories": {
+      "system": "System",
+      "skill": "Skill",
+      "navigation": "Navigation",
+      "settings": "Settings"
+    },
+    "notFound": "No matching commands found",
+    "tryOther": "Try different keywords"
+  }
+}

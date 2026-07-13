@@ -180,7 +180,7 @@ jobs:
       - name: Verify build
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
-          DMG_FILE="release/CDF-Know-Clow-${VERSION}-mac.dmg"
+          DMG_FILE="release/CDF Know Clow-${VERSION}.dmg"
           if [ ! -f "$DMG_FILE" ]; then
             echo "::error::DMG not found: $DMG_FILE"
             ls -la release/ 2>/dev/null || true
@@ -192,7 +192,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CDF-Know-Clow-${{ steps.get_version.outputs.version }}-mac.dmg
-          path: release/CDF-Know-Clow-${{ steps.get_version.outputs.version }}-mac.dmg
+          path: release/CDF Know Clow-${{ steps.get_version.outputs.version }}.dmg
           retention-days: 30
 
   create-release:
@@ -250,7 +250,7 @@ jobs:
           name: CDF Know Clow v${{ needs.build-dmg.outputs.version }}
           body: ${{ env.RELEASE_NOTES }}
           files: |
-            release/CDF-Know-Clow-${{ needs.build-dmg.outputs.version }}-mac.dmg
+            release/CDF Know Clow-${{ needs.build-dmg.outputs.version }}.dmg
           draft: false
           prerelease: false
         env:

@@ -127,7 +127,7 @@ jobs:
 
       - name: Verify build artifacts
         run: |
-          DMG_FILE="release/CDF-Know-Clow-${VERSION}-mac.dmg"
+          DMG_FILE="release/CDF Know Clow-${VERSION}.dmg"
           JSON_FILE="release/release.json"
 
           if [ ! -f "$DMG_FILE" ]; then
@@ -184,7 +184,7 @@ jobs:
           name: CDF Know Clow v${{ env.VERSION }}
           body: ${{ env.RELEASE_NOTES }}
           files: |
-            release/CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
+            release/CDF Know Clow-${{ env.VERSION }}.dmg
             release/release.json
           draft: false
           prerelease: false
@@ -196,6 +196,6 @@ jobs:
         with:
           name: CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
           path: |
-            release/CDF-Know-Clow-${{ env.VERSION }}-mac.dmg
+            release/CDF Know Clow-${{ env.VERSION }}.dmg
             release/release.json
           retention-days: 90

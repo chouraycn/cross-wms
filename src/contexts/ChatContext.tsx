@@ -512,7 +512,6 @@ export function ChatProvider({
 
   // ===================== 切换会话时：从 sessions 同步到 activeSession =====================
   useEffect(() => {
-    if (!initialized) return;
     if (!activeSessionId) {
       setActiveSession(createNewSession(defaultModel));
       return;
@@ -520,7 +519,6 @@ export function ChatProvider({
     const found = sessions.find((s) => s.id === activeSessionId);
     if (found) {
       setActiveSession((prev) => {
-        // Bug Fix: API 会话创建后 ID 从 localId 变为 apiId 时，保留已收到的消息
         const pending = pendingApiSessionRef.current;
         if (pending && prev.id === pending.localId && found.id === pending.apiId && prev.messages.length > 0) {
           return { ...found, messages: prev.messages };
@@ -528,11 +526,10 @@ export function ChatProvider({
         return found;
       });
     }
-  }, [sessions, activeSessionId, defaultModel, initialized]);
+  }, [sessions, activeSessionId, defaultModel]);
 
   // ===================== 切换会话时懒加载消息 =====================
   useEffect(() => {
-    if (!initialized) return;
     if (!activeSessionId) return;
     if (hasSessionLoaded(activeSessionId)) {
       markSessionLoaded(activeSessionId);
@@ -547,20 +544,24 @@ export function ChatProvider({
 
     let cancelled = false;
     (async () => {
-      const { messages, hasMore, totalCount } = await fetchSessionMessagesFromAPI(activeSessionId);
-      if (cancelled) return;
-      markSessionLoaded(activeSessionId);
-      if (messages.length > 0) {
-        setSessions((prev) =>
-          prev.map((s) => s.id === activeSessionId ? { ...s, messages, hasMoreMessages: hasMore, totalMessageCount: totalCount } : s)
-        );
-        setActiveSession((prev) =>
-          prev.id === activeSessionId ? { ...prev, messages, hasMoreMessages: hasMore, totalMessageCount: totalCount } : prev
-        );
+      try {
+        const { messages, hasMore, totalCount } = await fetchSessionMessagesFromAPI(activeSessionId);
+        if (cancelled) return;
+        markSessionLoaded(activeSessionId);
+        if (messages.length > 0) {
+          setSessions((prev) =>
+            prev.map((s) => s.id === activeSessionId ? { ...s, messages, hasMoreMessages: hasMore, totalMessageCount: totalCount } : s)
+          );
+          setActiveSession((prev) =>
+            prev.id === activeSessionId ? { ...prev, messages, hasMoreMessages: hasMore, totalMessageCount: totalCount } : prev
+          );
+        }
+      } catch {
+        markSessionLoaded(activeSessionId);
       }
     })();
     return () => { cancelled = true; };
-  }, [activeSessionId, initialized, hasSessionLoaded, markSessionLoaded]);
+  }, [activeSessionId, sessions, hasSessionLoaded, markSessionLoaded]);
 
   // ===================== 会话变化时同步缓存 =====================
   useEffect(() => {

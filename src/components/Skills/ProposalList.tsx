@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box, Typography, Button, Paper, Stack, Chip, TextField, Select,
-  MenuItem, FormControl, InputLabel, IconButton,
+  MenuItem, FormControl, InputLabel, IconButton, CircularProgress,
 } from '@mui/material';
 import { Refresh, FilterAlt, Search } from '@mui/icons-material';
 import type { SkillProposal, ProposalFilter, ProposalStatus, ProposalType } from '../../types/proposal';
@@ -32,6 +32,8 @@ export const ProposalList: React.FC<ProposalListProps> = ({ gs, isDark, onSelect
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<ProposalFilter>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const fetchProposals = async () => {
     setLoading(true);
@@ -65,6 +67,54 @@ export const ProposalList: React.FC<ProposalListProps> = ({ gs, isDark, onSelect
     if (!searchTerm) return true;
     return p.skillName.toLowerCase().includes(searchTerm.toLowerCase());
   });
+
+  // 键盘导航处理
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (filteredProposals.length === 0) return;
+      
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setFocusedIndex(prev => {
+            const next = prev < filteredProposals.length - 1 ? prev + 1 : 0;
+            return next;
+          });
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setFocusedIndex(prev => {
+            const next = prev > 0 ? prev - 1 : filteredProposals.length - 1;
+            return next;
+          });
+          break;
+        case 'Enter':
+          if (focusedIndex >= 0) {
+            e.preventDefault();
+            onSelectProposal(filteredProposals[focusedIndex]);
+          }
+          break;
+        case 'Escape':
+          setFocusedIndex(-1);
+          break;
+      }
+    };
+    
+    const container = listRef.current;
+    if (container) {
+      container.addEventListener('keydown', handleKeyDown);
+      return () => container.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [filteredProposals, focusedIndex, onSelectProposal]);
+
+  // 滚动到焦点项
+  useEffect(() => {
+    if (focusedIndex >= 0 && listRef.current) {
+      const items = listRef.current.querySelectorAll('[data-proposal-index]');
+      const target = items[focusedIndex] as HTMLElement;
+      if (target) target.scrollIntoView({ block: 'nearest' });
+    }
+  }, [focusedIndex]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -119,10 +169,10 @@ export const ProposalList: React.FC<ProposalListProps> = ({ gs, isDark, onSelect
         </Box>
       </Box>
 
-      <Box sx={{ flex: 1, overflowY: 'auto', px: 0.5 }}>
+      <Box ref={listRef} sx={{ flex: 1, overflowY: 'auto', px: 0.5 }} tabIndex={0} role="listbox" aria-label="技能提案列表">
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-            <Typography variant="body2" sx={{ color: gs.textMuted }}>加载中...</Typography>
+            <CircularProgress size={24} />
           </Box>
         ) : filteredProposals.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -130,7 +180,7 @@ export const ProposalList: React.FC<ProposalListProps> = ({ gs, isDark, onSelect
           </Box>
         ) : (
           <Stack spacing={1.5}>
-            {filteredProposals.map(proposal => {
+            {filteredProposals.map((proposal, index) => {
               const statusConfig = statusLabels[proposal.status];
               const typeConfig = typeLabels[proposal.type];
               const hasCritical = proposal.scan.critical > 0;
@@ -138,20 +188,37 @@ export const ProposalList: React.FC<ProposalListProps> = ({ gs, isDark, onSelect
               return (
                 <Paper
                   key={proposal.id}
+                  data-proposal-index={index}
+                  role="option"
+                  aria-selected={focusedIndex === index}
+                  tabIndex={focusedIndex === index ? 0 : -1}
                   elevation={0}
                   sx={{
                     p: 2,
                     borderRadius: 1.5,
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    border: `1px solid ${gs.border}`,
-                    bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                    border: `1px solid ${focusedIndex === index ? '#3B82F6' : gs.border}`,
+                    bgcolor: focusedIndex === index 
+                      ? (isDark ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.05)')
+                      : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'),
                     '&:hover': {
                       bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
                       borderColor: '#3B82F6',
                     },
+                    '&:focus-visible': {
+                      outline: `2px solid #3B82F6`,
+                      outlineOffset: '-2px',
+                    },
                   }}
                   onClick={() => onSelectProposal(proposal)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      onSelectProposal(proposal);
+                    }
+                  }}
+                  onMouseEnter={() => setFocusedIndex(index)}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                     <Chip

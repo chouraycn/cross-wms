@@ -2,7 +2,8 @@ import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense, Pro
 import { HashRouter, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box, useTheme } from '@mui/material';
-import Sidebar from './components/Layout/Sidebar';
+import Sidebar, { SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from './components/Layout/Sidebar';
+import GlobalActionsBar from './components/Layout/GlobalActionsBar';
 import WarehouseSelector, { ALL_WAREHOUSES } from './components/Dashboard/WarehouseSelector';
 import { AppSettingsProvider, useAppearanceSettings } from './contexts/AppSettingsContext';
 import type { AppearanceConfig, AccentColor } from './contexts/AppSettingsContext';
@@ -736,6 +737,13 @@ const MainLayout: React.FC = () => {
       <ChatRouteSync />
       {/* v1.5.182: 窗口控制按钮 — 透明悬浮于左上角，与 Logo 同行（WorkBuddy 风格） */}
       <WindowDragBar />
+      {/* 全局操作按钮栏 — 侧边栏展开/收起、搜索等全局按钮 */}
+      <GlobalActionsBar 
+        collapsed={sidebarCollapsed} 
+        onToggle={toggleSidebar}
+        expandedWidth={SIDEBAR_WIDTH_EXPANDED}
+        collapsedWidth={SIDEBAR_WIDTH_COLLAPSED}
+      />
       <ProcessStatusProvider>
       <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: gs.bgSidebar }}>
         {/* Sidebar — 单栏布局 */}

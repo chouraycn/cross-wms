@@ -6,6 +6,7 @@ import type {
   ProposalStats,
   CreateProposalParams,
   InstallProgress,
+  InstallResult,
 } from '../types/proposal';
 
 const WORKSHOP_BASE = `${API_BASE}/skill-workshop`;
@@ -74,7 +75,7 @@ export async function getProposalStats(): Promise<{ stats: ProposalStats }> {
   return response.json();
 }
 
-export async function installSkill(source: string, onProgress?: (progress: InstallProgress) => void): Promise<{ installId: string }> {
+export async function installSkill(source: string, onProgress?: (progress: InstallProgress) => void): Promise<InstallResult> {
   const response = await fetch(`${WORKSHOP_BASE}/install`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -82,40 +83,62 @@ export async function installSkill(source: string, onProgress?: (progress: Insta
   });
 
   if (!response.ok) {
-    throw new Error('安装请求失败');
+    const errorText = await response.text();
+    throw new Error(errorText || '安装请求失败');
   }
 
   const reader = response.body?.getReader();
+  const warnings: string[] = [];
+  let finalResult: InstallResult = { installId: '', success: false };
+
   if (reader) {
     const decoder = new TextDecoder();
-    // 使用共享 SSEStreamParser 处理跨 chunk 边界的 SSE 流
     const parser = new SSEStreamParser();
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      const decoded = decoder.decode(value, { stream: true });
-      for (const sseEvent of parser.feed(decoded)) {
-        try {
-          const data = sseEvent.data;
-          // SSEStreamParser 已自动尝试 JSON 解析，非 JSON 则保留原始字符串
-          if (typeof data !== 'object' || data === null) continue;
-          const progress = data as InstallProgress;
-          onProgress?.(progress);
-          if (progress.type === 'result') {
-            return { installId: (progress.result as any)?.installId || '' };
-          } else if (progress.type === 'error') {
-            throw new Error(progress.error || '安装失败');
+        const decoded = decoder.decode(value, { stream: true });
+        for (const sseEvent of parser.feed(decoded)) {
+          try {
+            const data = sseEvent.data;
+            if (typeof data !== 'object' || data === null) continue;
+
+            const progress = data as InstallProgress;
+            onProgress?.(progress);
+
+            if (progress.type === 'warning' && progress.warning) {
+              warnings.push(progress.warning);
+            }
+
+            if (progress.type === 'result') {
+              finalResult = {
+                installId: (progress.result as any)?.installId || '',
+                success: true,
+                skillName: progress.skillName,
+                version: progress.version,
+                warnings: warnings.length > 0 ? warnings : undefined,
+              };
+              return finalResult;
+            } else if (progress.type === 'error') {
+              throw new Error(progress.error || '安装失败');
+            }
+          } catch (e) {
+            console.error('Failed to parse SSE data:', e);
           }
-        } catch (e) {
-          console.error('Failed to parse SSE data:', e);
         }
+      }
+    } finally {
+      try {
+        reader.releaseLock();
+      } catch {
       }
     }
   }
 
-  return { installId: '' };
+  return finalResult;
 }
 
 export async function cancelInstall(installId: string): Promise<{ cancelled: boolean }> {

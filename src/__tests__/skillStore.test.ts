@@ -24,6 +24,7 @@ vi.mock('../services/api', () => ({
 import * as api from '../services/api';
 import {
   getAllSkills,
+  getAllSkillsAsync,
   getSkillById,
   addSkill,
   updateSkill,
@@ -110,8 +111,8 @@ beforeEach(async () => {
 // ===================== getAllSkills() =====================
 
 describe('skillStore.getAllSkills', () => {
-  it('should return builtin skills plus user skills', () => {
-    const skills = getAllSkills();
+  it('should return builtin skills plus user skills', async () => {
+    const skills = await getAllSkillsAsync();
     // Should include builtin skills (from BUILTIN_SKILLS) and user skills
     const userSkillIds = skills.filter((s) => s.source === 'user').map((s) => s.id);
     expect(userSkillIds).toContain('user-skill-1');

@@ -116,22 +116,31 @@ echo ""
 
 # ===================== Create styled DMG =====================
 
-DMG="$ROOT_DIR/release/CDF-Know-Clow-$VERSION-mac.dmg"
+# 统一输出到 release/ 目录，由 create-dmg.sh 决定最终文件名
+mkdir -p "$ROOT_DIR/release"
 
 if [[ "$SKIP_DMG" != "true" ]]; then
   echo "💿 Creating styled DMG..."
-  "$ROOT_DIR/scripts/create-dmg.sh" "$APP" "$DMG"
-  echo "✅ DMG created: $DMG"
-  echo ""
+  "$ROOT_DIR/scripts/create-dmg.sh" "$APP"
+  
+  # 获取 create-dmg.sh 生成的实际 DMG 路径
+  DMG="$ROOT_DIR/release/CDF Know Clow-$VERSION.dmg"
+  if [[ -f "$DMG" ]]; then
+    echo "✅ DMG created: $DMG"
+    echo ""
 
-  # Sign the DMG if we have a proper identity
-  DMG_SIGN_IDENTITY="${SIGN_IDENTITY:-}"
-  if [ -z "$DMG_SIGN_IDENTITY" ]; then
-    DMG_SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep -o '"[^"]*"' | head -1 | tr -d '"' || true)
-  fi
-  if [ -n "$DMG_SIGN_IDENTITY" ]; then
-    echo "🔏 Signing DMG: $DMG"
-    /usr/bin/codesign --force --sign "$DMG_SIGN_IDENTITY" --timestamp "$DMG" 2>/dev/null || true
+    # Sign the DMG if we have a proper identity
+    DMG_SIGN_IDENTITY="${SIGN_IDENTITY:-}"
+    if [ -z "$DMG_SIGN_IDENTITY" ]; then
+      DMG_SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep -o '"[^"]*"' | head -1 | tr -d '"' || true)
+    fi
+    if [ -n "$DMG_SIGN_IDENTITY" ]; then
+      echo "🔏 Signing DMG: $DMG"
+      /usr/bin/codesign --force --sign "$DMG_SIGN_IDENTITY" --timestamp "$DMG" 2>/dev/null || true
+    fi
+  else
+    echo "❌ DMG not found at expected path: $DMG" >&2
+    exit 1
   fi
 else
   echo "💿 Skipping DMG (--skip-dmg)"
@@ -146,7 +155,7 @@ cat > "$ROOT_DIR/release/release.json" <<RELJSON
 {
   "version": "$VERSION",
   "pubDate": "$(date -u +"%Y-%m-%d")",
-  "dmgUrl": "https://github.com/chouraycn/CDFKnow/releases/download/v${VERSION}/CDF-Know-Clow-${VERSION}-mac.dmg",
+  "dmgUrl": "https://github.com/chouraycn/CDFKnow/releases/download/v${VERSION}/CDF%20Know%20Clow-${VERSION}.dmg",
   "minVersion": "1.0.0"
 }
 RELJSON
@@ -187,7 +196,7 @@ if [[ "$SKIP_RELEASE" != "true" ]]; then
 - OpenClaw 核心包集成
 
 ## 下载
-- **macOS (Apple Silicon)**: CDF-Know-Clow-${VERSION}-mac.dmg
+- **macOS (Apple Silicon)**: CDF Know Clow-${VERSION}.dmg
 
 ---
 SHA256: $(shasum -a 256 "$DMG" 2>/dev/null | awk '{print $1}' || echo 'N/A')" \
@@ -203,7 +212,7 @@ SHA256: $(shasum -a 256 "$DMG" 2>/dev/null | awk '{print $1}' || echo 'N/A')" \
       UPLOAD_URL=$(gh api repos/chouraycn/CDFKnow/releases/tags/$TAG --jq '.upload_url' 2>/dev/null || true)
       if [ -n "$UPLOAD_URL" ]; then
         UPLOAD_URL="${UPLOAD_URL%%\{*}"
-        DMG_FILENAME="CDF-Know-Clow-${VERSION}-mac.dmg"
+        DMG_FILENAME="CDF Know Clow-${VERSION}.dmg"
         curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
           -H "Content-Type: application/octet-stream" \
           --data-binary @"$DMG" \

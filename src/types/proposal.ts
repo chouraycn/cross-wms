@@ -66,11 +66,34 @@ export interface CreateProposalParams {
   origin?: ProposalOrigin;
 }
 
+export type InstallProgressType = 'progress' | 'result' | 'error' | 'warning' | 'log';
+
 export interface InstallProgress {
-  type: 'progress' | 'result' | 'error';
+  type: InstallProgressType;
   step?: string;
+  stepName?: string;
+  stepTotal?: number;
+  stepCurrent?: number;
   progress?: number;
   message?: string;
   result?: unknown;
   error?: string;
+  eta?: number;
+  downloadedBytes?: number;
+  totalBytes?: number;
+  skillName?: string;
+  version?: string;
+  warning?: string;
+  logLevel?: 'info' | 'warn' | 'error';
+}
+
+export type InstallStatus = 'pending' | 'downloading' | 'extracting' | 'installing' | 'scanning' | 'completed' | 'failed' | 'cancelled';
+
+export interface InstallResult {
+  installId: string;
+  success: boolean;
+  skillName?: string;
+  version?: string;
+  error?: string;
+  warnings?: string[];
 }

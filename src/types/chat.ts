@@ -778,4 +778,6 @@ export interface KeywordTriggerInfo {
   executed?: boolean;
   /** 执行状态 */
   status?: 'pending' | 'running' | 'completed' | 'failed';
+  /** 触发类型 */
+  triggerType?: 'keyword' | 'intent' | 'schedule' | 'event';
 }
