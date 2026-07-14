@@ -111,6 +111,23 @@ export class KeywordTriggerEngine {
   /** 是否已初始化 */
   private initialized = false;
 
+  /** 触发统计 */
+  private stats = {
+    totalTriggers: 0,
+    totalMatchAttempts: 0,
+    matchSuccessCount: 0,
+    skillTriggerCounts: new Map<string, number>(),
+    keywordTriggerCounts: new Map<string, number>(),
+    recentTriggers: [] as Array<{
+      timestamp: number;
+      message: string;
+      skillId: string;
+      skillName: string;
+      matchedKeywords: string[];
+      score: number;
+    }>,
+  };
+
   constructor(config?: Partial<KeywordTriggerConfig>) {
     if (config) {
       this.config = { ...DEFAULT_CONFIG, ...config };
@@ -152,15 +169,26 @@ export class KeywordTriggerEngine {
 
   /**
    * 从 Skill 定义中提取触发规则
+   * 支持多种触发字段格式：
+   * - trigger: "hscode"（单个触发词，OpenClaw 格式）
+   * - triggers: ["hscode", "编码"]（多个触发词，标准格式）
+   * - tags: ["wms", "海关"]（标签也作为关键词）
+   * - name: "HS Code 助手"（技能名称）
    */
   private extractTriggerRule(skill: RegisteredSkill): KeywordTriggerRule | null {
     const { definition } = skill;
 
     let keywords: string[] = [];
 
+    if (definition.trigger && typeof definition.trigger === 'string') {
+      keywords.push(definition.trigger);
+    }
+
     if (definition.triggers && Array.isArray(definition.triggers)) {
-      keywords = definition.triggers;
-    } else if (definition.tags && Array.isArray(definition.tags)) {
+      keywords = [...keywords, ...definition.triggers];
+    }
+
+    if (definition.tags && Array.isArray(definition.tags)) {
       keywords = [...keywords, ...definition.tags];
     }
 
@@ -241,9 +269,9 @@ export class KeywordTriggerEngine {
       tokens.push(match[0]);
     }
 
-    const englishMatches = text.match(englishPattern);
-    if (englishMatches) {
-      tokens.push(...englishMatches);
+    englishPattern.lastIndex = 0;
+    while ((match = englishPattern.exec(text)) !== null) {
+      tokens.push(match[0]);
     }
 
     if (this.config.ignoreStopWords) {
@@ -293,8 +321,58 @@ export class KeywordTriggerEngine {
     }
 
     results.sort((a, b) => b.matchScore - a.matchScore);
+    const finalResults = results.slice(0, this.config.maxTriggersPerMessage);
 
-    return results.slice(0, this.config.maxTriggersPerMessage);
+    this.stats.totalMatchAttempts++;
+    if (finalResults.length > 0) {
+      this.stats.matchSuccessCount++;
+      for (const match of finalResults) {
+        this.stats.totalTriggers++;
+        this.stats.skillTriggerCounts.set(match.skillId, (this.stats.skillTriggerCounts.get(match.skillId) || 0) + 1);
+        for (const kw of match.matchedKeywords) {
+          this.stats.keywordTriggerCounts.set(kw, (this.stats.keywordTriggerCounts.get(kw) || 0) + 1);
+        }
+        this.stats.recentTriggers.unshift({
+          timestamp: Date.now(),
+          message: message.substring(0, 100),
+          skillId: match.skillId,
+          skillName: match.skillName,
+          matchedKeywords: match.matchedKeywords,
+          score: match.matchScore,
+        });
+        if (this.stats.recentTriggers.length > 50) {
+          this.stats.recentTriggers.pop();
+        }
+      }
+    }
+
+    return finalResults;
+  }
+
+  /**
+   * 检查关键词是否是完整单词（词边界检查）
+   */
+  private isFullWordMatch(keyword: string, message: string): boolean {
+    const lowerMessage = this.config.caseSensitive ? message : message.toLowerCase();
+    const lowerKeyword = this.config.caseSensitive ? keyword : keyword.toLowerCase();
+    
+    const regex = new RegExp(`(?:^|\\s|[^a-zA-Z0-9\u4e00-\u9fa5_-])${lowerKeyword}(?:$|\\s|[^a-zA-Z0-9\u4e00-\u9fa5_-])`, 'g');
+    return regex.test(lowerMessage);
+  }
+
+  /**
+   * 计算关键词在消息中的位置权重（开头权重更高）
+   */
+  private computePositionWeight(keyword: string, message: string): number {
+    const lowerMessage = this.config.caseSensitive ? message : message.toLowerCase();
+    const lowerKeyword = this.config.caseSensitive ? keyword : keyword.toLowerCase();
+    const index = lowerMessage.indexOf(lowerKeyword);
+    
+    if (index === -1) return 0;
+    if (index === 0) return 0.3;
+    if (index < message.length * 0.3) return 0.2;
+    if (index < message.length * 0.5) return 0.1;
+    return 0;
   }
 
   /**
@@ -306,17 +384,36 @@ export class KeywordTriggerEngine {
 
     switch (this.config.matchMode) {
       case 'exact':
-        if (lowerMessage.includes(keyword)) {
+        if (this.isFullWordMatch(keyword, message)) {
           score = 1.0;
+        } else if (lowerMessage.includes(keyword)) {
+          score = 0.7;
         }
         break;
 
       case 'fuzzy':
         const matchedCount = rule.keywords.filter(k => lowerMessage.includes(k)).length;
-        score = (matchedCount / rule.keywords.length) * rule.weight;
-
-        const directMatchBonus = rule.keywords.includes(keyword) ? 0.2 : 0;
-        score = Math.min(1.0, score + directMatchBonus);
+        const matchedKeywords = rule.keywords.filter(k => lowerMessage.includes(k));
+        
+        if (matchedCount === 0) {
+          score = 0;
+          break;
+        }
+        
+        const matchRatio = matchedCount / rule.keywords.length;
+        let baseScore = Math.max(0.3, matchRatio) * rule.weight;
+        
+        for (const mk of matchedKeywords) {
+          baseScore += this.computePositionWeight(mk, message);
+        }
+        
+        if (this.isFullWordMatch(keyword, message)) {
+          baseScore += 0.2;
+        } else if (lowerMessage.includes(keyword)) {
+          baseScore += 0.1;
+        }
+        
+        score = Math.min(1.0, baseScore);
         break;
 
       case 'semantic':
@@ -442,13 +539,69 @@ export class KeywordTriggerEngine {
   getStats(): {
     totalRules: number;
     totalKeywords: number;
+    totalTriggers: number;
+    totalMatchAttempts: number;
+    matchSuccessCount: number;
+    matchSuccessRate: number;
+    skillTriggerCounts: Record<string, number>;
+    keywordTriggerCounts: Record<string, number>;
+    topSkills: Array<{ skillId: string; skillName: string; count: number }>;
+    topKeywords: Array<{ keyword: string; count: number }>;
+    recentTriggers: Array<{
+      timestamp: number;
+      message: string;
+      skillId: string;
+      skillName: string;
+      matchedKeywords: string[];
+      score: number;
+    }>;
     config: KeywordTriggerConfig;
   } {
+    const skillCounts = Array.from(this.stats.skillTriggerCounts.entries())
+      .map(([skillId, count]) => ({
+        skillId,
+        skillName: this.skillRules.get(skillId)?.skillName || skillId,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    const keywordCounts = Array.from(this.stats.keywordTriggerCounts.entries())
+      .map(([keyword, count]) => ({ keyword, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
     return {
       totalRules: this.skillRules.size,
       totalKeywords: this.keywordIndex.size,
+      totalTriggers: this.stats.totalTriggers,
+      totalMatchAttempts: this.stats.totalMatchAttempts,
+      matchSuccessCount: this.stats.matchSuccessCount,
+      matchSuccessRate: this.stats.totalMatchAttempts > 0
+        ? this.stats.matchSuccessCount / this.stats.totalMatchAttempts
+        : 0,
+      skillTriggerCounts: Object.fromEntries(this.stats.skillTriggerCounts),
+      keywordTriggerCounts: Object.fromEntries(this.stats.keywordTriggerCounts),
+      topSkills: skillCounts,
+      topKeywords: keywordCounts,
+      recentTriggers: this.stats.recentTriggers,
       config: this.getConfig(),
     };
+  }
+
+  /**
+   * 重置统计信息
+   */
+  resetStats(): void {
+    this.stats = {
+      totalTriggers: 0,
+      totalMatchAttempts: 0,
+      matchSuccessCount: 0,
+      skillTriggerCounts: new Map<string, number>(),
+      keywordTriggerCounts: new Map<string, number>(),
+      recentTriggers: [],
+    };
+    logger.info('[KeywordTriggerEngine] Stats reset');
   }
 
   // ===================== 5. 辅助方法 =====================

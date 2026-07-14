@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography,
-  Button, IconButton, Dialog, DialogTitle, DialogContent, Tooltip,
-  useTheme, Menu, MenuItem, Divider,
+  Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Tooltip,
+  useTheme, Menu, MenuItem, Divider, CircularProgress,
 } from '@mui/material';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import AddIcon from '@mui/icons-material/Add';
@@ -15,6 +15,7 @@ import ExtensionIcon from '@mui/icons-material/Extension';
 import LinkIcon from '@mui/icons-material/Link';
 import GavelIcon from '@mui/icons-material/Gavel';
 import ReplayIcon from '@mui/icons-material/Replay';
+import CloseIcon from '@mui/icons-material/Close';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { isMacOSApp, isPyWebView } from '../utils/env';
 import type { TaskType, AutomationExecution } from '../services/automation';
@@ -26,6 +27,7 @@ import type { DependencyCheckResult } from '../utils/dependencyChecker';
 import { CATEGORY_LABELS, CATEGORY_ORDER, CATEGORY_COLORS } from '../constants/skillCategories';
 import { findAllConflicts } from '../utils/skillConflict';
 import * as api from '../services/api';
+import type { OpenClawSkillEntry, OpenClawFilterOptions } from '../services/api';
 import SkillCard from '../components/Skills/SkillCard';
 import AddSkillDialog from '../components/Skills/AddSkillDialog';
 import SkillPreviewDialog from '../components/Skills/SkillPreviewDialog';
@@ -42,6 +44,7 @@ import SearchInput from '../components/Common/SearchInput';
 import type { SkillChain } from '../types/skill';
 // T05: 匹配引擎设置
 import MatchConfigPanel from '../components/Matching/MatchConfigPanel';
+import KeywordTriggerStatsPanel from '../components/Keywords/KeywordTriggerStatsPanel';
 import { getGrayScale } from '../constants/theme';
 // 插件管理整合
 import { getPlugins, onPluginsChange, enablePluginAction, disablePluginAction, refreshFromApi, installPluginAction, uninstallPluginAction } from '../stores/pluginStore';
@@ -124,6 +127,14 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     return () => clearTimeout(timer);
   }, []);
 
+  const [installProgress, setInstallProgress] = useState<{
+    installId: string;
+    phase: string;
+    message: string;
+    percent: number;
+    error?: string;
+  } | null>(null);
+
   // T03: SSE 连接（延迟 0.8s 建立，避免影响初始化性能）
   const evtRef = useRef<import('../services/api').SSEConnection | null>(null);
   useEffect(() => {
@@ -131,10 +142,26 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
       const sse = api.connectSkillEvents((rawData) => {
         try {
           const data: SkillWatchEvent = JSON.parse(rawData);
-          refreshFromRemote().then(() => {
-            setSkillVersion((v) => v + 1);
-            showToast('技能列表已更新', 'info');
-          }).catch(() => {});
+          if (data.type === 'skill-install-progress') {
+            setInstallProgress({
+              installId: data.installId!,
+              phase: data.phase!,
+              message: data.message!,
+              percent: data.percent ?? 0,
+              error: data.error,
+            });
+            if (data.phase === 'complete') {
+              setTimeout(() => setInstallProgress(null), 3000);
+              refreshFromRemote().then(() => setSkillVersion((v) => v + 1)).catch(() => {});
+            } else if (data.phase === 'error') {
+              showToast(data.message || '安装失败', 'error');
+            }
+          } else {
+            refreshFromRemote().then(() => {
+              setSkillVersion((v) => v + 1);
+              showToast('技能列表已更新', 'info');
+            }).catch(() => {});
+          }
         } catch (e) {}
       });
       evtRef.current = sse;
@@ -152,11 +179,31 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'market' | 'builtin' | 'installed' | 'manage'>(initialTab as any || 'market');
+  const [activeTab, setActiveTab] = useState<'market' | 'builtin' | 'installed' | 'manage' | 'openclaw'>(initialTab as any || 'market');
   const [manageSubTab, setManageSubTab] = useState<'plugins' | 'chains' | 'workshop' | 'hotreload'>('plugins');
   const [sortBy, setSortBy] = useState<'popular' | 'latest'>('popular');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [dependencyMap, setDependencyMap] = useState<Record<string, DependencyCheckResult>>({});
+
+  const [openclawSkills, setOpenclawSkills] = useState<OpenClawSkillEntry[]>([]);
+  const [openclawCategories, setOpenclawCategories] = useState<string[]>([]);
+  const [openclawTags, setOpenclawTags] = useState<string[]>([]);
+  const [openclawSearchQuery, setOpenclawSearchQuery] = useState('');
+  const [openclawSelectedCategory, setOpenclawSelectedCategory] = useState<string>('all');
+  const [openclawSelectedTags, setOpenclawSelectedTags] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (activeTab !== 'openclaw') return;
+    api.listOpenClawSkills().then((res) => {
+      setOpenclawSkills(res.entries);
+    }).catch(() => {});
+    api.getOpenClawCategories().then((cats) => {
+      setOpenclawCategories(cats);
+    }).catch(() => {});
+    api.getOpenClawTags().then((tags) => {
+      setOpenclawTags(tags);
+    }).catch(() => {});
+  }, [activeTab]);
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchQuery(value);
@@ -531,6 +578,105 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     });
   }, [debouncedSearchQuery, selectedCategory, skills, activeTab, sortBy]);
 
+  const [filteredOpenclawSkills, setFilteredOpenclawSkills] = useState<OpenClawSkillEntry[]>([]);
+  const [openclawInstalledSkills, setOpenclawInstalledSkills] = useState<Set<string>>(new Set());
+  const [openclawInstalling, setOpenclawInstalling] = useState<Set<string>>(new Set());
+  const [openclawPreviewSkill, setOpenclawPreviewSkill] = useState<OpenClawSkillEntry | null>(null);
+  const [openclawShowAllTags, setOpenclawShowAllTags] = useState(false);
+  const [openclawSortBy, setOpenclawSortBy] = useState<'name' | 'category' | 'version'>('name');
+  const [keywordStatsOpen, setKeywordStatsOpen] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'openclaw') {
+      setFilteredOpenclawSkills([]);
+      return;
+    }
+    api.listOpenClawLifecycle().then(res => {
+      setOpenclawInstalledSkills(new Set(res.installed));
+    }).catch(() => {});
+    const options: OpenClawFilterOptions = {};
+    if (openclawSearchQuery) options.search = openclawSearchQuery;
+    if (openclawSelectedCategory !== 'all') options.category = openclawSelectedCategory;
+    if (openclawSelectedTags.length > 0) options.tags = openclawSelectedTags;
+    api.filterOpenClawSkills(options).then(res => {
+      setFilteredOpenclawSkills(sortOpenClawSkills(res.entries, openclawSortBy));
+    }).catch(() => {
+      setFilteredOpenclawSkills(sortOpenClawSkills(openclawSkills, openclawSortBy));
+    });
+  }, [activeTab, openclawSearchQuery, openclawSelectedCategory, openclawSelectedTags, openclawSkills, openclawSortBy]);
+
+  const sortOpenClawSkills = (skills: OpenClawSkillEntry[], sortBy: string): OpenClawSkillEntry[] => {
+    const sorted = [...skills];
+    switch (sortBy) {
+      case 'name':
+        return sorted.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+      case 'category':
+        return sorted.sort((a, b) => {
+          const catCompare = (a.category || '').localeCompare(b.category || '', 'zh-CN');
+          if (catCompare !== 0) return catCompare;
+          return a.name.localeCompare(b.name, 'zh-CN');
+        });
+      case 'version':
+        return sorted.sort((a, b) => {
+          const va = a.version || '0.0.0';
+          const vb = b.version || '0.0.0';
+          const pa = va.split('.').map(Number);
+          const pb = vb.split('.').map(Number);
+          for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+            const na = pa[i] || 0;
+            const nb = pb[i] || 0;
+            if (na !== nb) return nb - na;
+          }
+          return 0;
+        });
+      default:
+        return sorted;
+    }
+  };
+
+  const handleOpenClawInstall = async (skill: OpenClawSkillEntry, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (openclawInstalling.has(skill.id)) return;
+    setOpenclawInstalling(prev => new Set(prev).add(skill.id));
+    try {
+      const result = await api.installOpenClawSkill({ sourceDir: skill.sourcePath, overwrite: true });
+      if (result.success) {
+        showToast(`${skill.name} 安装成功`, 'success');
+        setOpenclawInstalledSkills(prev => new Set(prev).add(skill.id));
+      } else {
+        showToast(`安装失败: ${result.error || '未知错误'}`, 'error');
+      }
+    } catch (err) {
+      showToast(`安装失败: ${err}`, 'error');
+    } finally {
+      setOpenclawInstalling(prev => {
+        const next = new Set(prev);
+        next.delete(skill.id);
+        return next;
+      });
+    }
+  };
+
+  const handleOpenClawUninstall = async (skill: OpenClawSkillEntry, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(`确定要卸载技能 "${skill.name}" 吗？`)) return;
+    try {
+      const result = await api.uninstallOpenClawSkill(skill.id);
+      if (result.success) {
+        showToast(`${skill.name} 已卸载`, 'success');
+        setOpenclawInstalledSkills(prev => {
+          const next = new Set(prev);
+          next.delete(skill.id);
+          return next;
+        });
+      } else {
+        showToast(`卸载失败: ${result.error || '未知错误'}`, 'error');
+      }
+    } catch (err) {
+      showToast(`卸载失败: ${err}`, 'error');
+    }
+  };
+
   // 批量检测当前列表技能的环境依赖
   useEffect(() => {
     if (activeTab === 'manage') return;
@@ -672,8 +818,32 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
             技能
           </Typography>
           <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>
-            安装与管理技能，在对话中扩展 QoderWork 的能力。
+            安装与管理技能，在对话中扩展 CDFKnow的能力。
           </Typography>
+          {installProgress && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: gs.bgHover, borderRadius: '8px', border: `1px solid ${gs.border}` }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                <CircularProgress size={16} sx={{ color: gs.textSecondary }} />
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textSecondary }}>
+                  {installProgress.message}
+                </Typography>
+              </Box>
+              <Box sx={{ height: 4, bgcolor: gs.border, borderRadius: '2px', overflow: 'hidden' }}>
+                <Box
+                  sx={{
+                    height: '100%',
+                    bgcolor: gs.bgChatUser,
+                    borderRadius: '2px',
+                    transition: 'width 0.3s ease',
+                    width: `${installProgress.percent}%`,
+                  }}
+                />
+              </Box>
+              <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, mt: 0.5 }}>
+                {installProgress.percent}%
+              </Typography>
+            </Box>
+          )}
         </Box>
         <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           <Box sx={{ position: 'relative' }}>
@@ -685,6 +855,20 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
               onFocus={() => { if (searchQuery) setSuggestionsOpen(true); }}
               onBlur={() => { setTimeout(() => setSuggestionsOpen(false), 200); }}
             />
+            <Tooltip title="查看关键词触发统计">
+              <IconButton
+                size="small"
+                onClick={() => setKeywordStatsOpen(true)}
+                sx={{
+                  ml: 0.5,
+                  color: gs.textSecondary,
+                  border: `1px solid ${gs.border}`,
+                  borderRadius: '6px',
+                }}
+              >
+                <AutoFixHighIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Tooltip>
             {/* 搜索联想下拉 */}
             {suggestionsOpen && searchSuggestions.length > 0 && (
               <Box sx={{
@@ -820,6 +1004,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
             { key: 'market', label: '市场' },
             { key: 'builtin', label: '内置' },
             { key: 'installed', label: '已安装', count: stats.installed },
+            { key: 'openclaw', label: 'OpenClaw', count: openclawSkills.length },
             { key: 'manage', label: '管理' },
           ].map((tab) => (
             <Box
@@ -896,7 +1081,274 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
         )}
       </Box>
 
-      {activeTab === 'manage' ? (
+      {activeTab === 'openclaw' ? (
+        /* ========== OpenClaw 技能视图 ========== */
+        <Box sx={{ px: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+            <Box>
+              <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: gs.textPrimary }}>
+                OpenClaw 技能
+              </Typography>
+              <Typography sx={{ fontSize: '0.8125rem', color: gs.textMuted }}>
+                来自 OpenClaw 社区的通用技能，共 {openclawSkills.length} 个
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', gap: 0.5, bgcolor: gs.bgHover, borderRadius: '6px', p: 0.25 }}>
+                {(['name', 'category', 'version'] as const).map((key) => (
+                  <Box
+                    key={key}
+                    onClick={() => setOpenclawSortBy(key)}
+                    sx={{
+                      px: 1.5,
+                      py: 0.5,
+                      fontSize: '0.75rem',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      color: openclawSortBy === key ? gs.textPrimary : gs.textMuted,
+                      backgroundColor: openclawSortBy === key ? gs.bgPanel : 'transparent',
+                      fontWeight: openclawSortBy === key ? 500 : 400,
+                      transition: 'all 0.2s',
+                      boxShadow: openclawSortBy === key ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                    }}
+                  >
+                    {key === 'name' ? '名称' : key === 'category' ? '分类' : '版本'}
+                  </Box>
+                ))}
+              </Box>
+              <SearchInput
+                value={openclawSearchQuery}
+                onChange={(value) => setOpenclawSearchQuery(value)}
+                placeholder="搜索 OpenClaw 技能"
+                width={200}
+              />
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
+            {['all', ...openclawCategories].map((key) => {
+              const isActive = openclawSelectedCategory === key;
+              return (
+                <Box
+                  key={key}
+                  onClick={() => setOpenclawSelectedCategory(key)}
+                  sx={{
+                    px: 1.75,
+                    py: 0.75,
+                    fontSize: '0.8125rem',
+                    color: isActive ? gs.textPrimary : gs.textMuted,
+                    backgroundColor: isActive ? gs.bgHover : 'transparent',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: isActive ? 500 : 400,
+                    transition: 'all 0.2s',
+                    '&:hover': { backgroundColor: gs.bgHover },
+                  }}
+                >
+                  {key === 'all' ? '全部' : key}
+                </Box>
+              );
+            })}
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3, alignItems: 'center' }}>
+            {(openclawShowAllTags ? openclawTags : openclawTags.slice(0, 20)).map((tag) => {
+              const isSelected = openclawSelectedTags.includes(tag);
+              return (
+                <Box
+                  key={tag}
+                  onClick={() => {
+                    setOpenclawSelectedTags((prev) =>
+                      isSelected ? prev.filter((t) => t !== tag) : [...prev, tag]
+                    );
+                  }}
+                  sx={{
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: '0.75rem',
+                    color: isSelected ? gs.textPrimary : gs.textMuted,
+                    backgroundColor: isSelected ? '#E0E7FF' : gs.bgHover,
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: isSelected ? 500 : 400,
+                    transition: 'all 0.2s',
+                    '&:hover': { backgroundColor: isSelected ? '#C7D2FE' : gs.border },
+                  }}
+                >
+                  #{tag}
+                </Box>
+              );
+            })}
+            {openclawTags.length > 20 && (
+              <Box
+                onClick={() => setOpenclawShowAllTags(!openclawShowAllTags)}
+                sx={{
+                  px: 1.5,
+                  py: 0.5,
+                  fontSize: '0.75rem',
+                  color: gs.textSecondary,
+                  backgroundColor: 'transparent',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: 400,
+                  transition: 'all 0.2s',
+                  '&:hover': { backgroundColor: gs.bgHover },
+                }}
+              >
+                {openclawShowAllTags ? '收起' : `+${openclawTags.length - 20} 更多`}
+              </Box>
+            )}
+          </Box>
+
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 2,
+          }}>
+            {filteredOpenclawSkills.map((skill) => (
+              <Box
+                key={skill.id}
+                sx={{
+                  backgroundColor: gs.bgPanel,
+                  border: `1px solid ${gs.border}`,
+                  borderRadius: '12px',
+                  p: 2.5,
+                  transition: 'all 0.2s',
+                  '&:hover': { borderColor: gs.borderDarker, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
+                  cursor: 'pointer',
+                }}
+                onClick={() => {
+                  navigate(`/chat?skill=${encodeURIComponent(skill.id)}`);
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                  <Box>
+                    <Typography sx={{ fontSize: '0.9375rem', fontWeight: 500, color: gs.textPrimary }}>
+                      {skill.name}
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted }}>
+                      {skill.category} · v{skill.version || '1.0.0'}
+                    </Typography>
+                    {skill.author && (
+                      <Typography sx={{ fontSize: '0.6875rem', color: gs.textDisabled }}>
+                        作者: {skill.author}
+                      </Typography>
+                    )}
+                  </Box>
+                  <ExtensionIcon sx={{ fontSize: 20, color: gs.borderDarker }} />
+                </Box>
+                <Typography sx={{ fontSize: '0.8125rem', color: gs.textSecondary, mb: 1.5, lineHeight: 1.4 }}>
+                  {skill.description || '暂无描述'}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                  {(skill.tags || []).slice(0, 3).map((tag) => (
+                    <Box
+                      key={tag}
+                      sx={{
+                        px: 1,
+                        py: 0.25,
+                        fontSize: '0.6875rem',
+                        backgroundColor: gs.bgHover,
+                        borderRadius: '3px',
+                        color: gs.textMuted,
+                      }}
+                    >
+                      {tag}
+                    </Box>
+                  ))}
+                  {skill.trigger && (
+                    <Box
+                      sx={{
+                        px: 1,
+                        py: 0.25,
+                        fontSize: '0.6875rem',
+                        backgroundColor: '#FEF3C7',
+                        borderRadius: '3px',
+                        color: '#D97706',
+                        fontWeight: 500,
+                      }}
+                    >
+                      🔑 {skill.trigger}
+                    </Box>
+                  )}
+                </Box>
+                {skill.os && skill.os.length > 0 && (
+                  <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+                    {skill.os.map((os) => (
+                      <Box
+                        key={os}
+                        sx={{
+                          px: 1,
+                          py: 0.25,
+                          fontSize: '0.625rem',
+                          backgroundColor: os === 'darwin' ? '#EFF6FF' : os === 'linux' ? '#ECFDF5' : gs.bgHover,
+                          borderRadius: '3px',
+                          color: os === 'darwin' ? '#2563EB' : os === 'linux' ? '#059669' : gs.textMuted,
+                        }}
+                      >
+                        {os === 'darwin' ? 'macOS' : os === 'linux' ? 'Linux' : os}
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+                <Box sx={{ mt: 1.5, display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenclawPreviewSkill(skill);
+                    }}
+                    sx={{ textTransform: 'none', fontSize: '0.75rem' }}
+                  >
+                    预览
+                  </Button>
+                  {openclawInstalledSkills.has(skill.id) ? (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="error"
+                      onClick={(e) => handleOpenClawUninstall(skill, e)}
+                      sx={{ textTransform: 'none', fontSize: '0.75rem' }}
+                    >
+                      卸载
+                    </Button>
+                  ) : (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={(e) => handleOpenClawInstall(skill, e)}
+                      disabled={openclawInstalling.has(skill.id)}
+                      sx={{ textTransform: 'none', fontSize: '0.75rem' }}
+                    >
+                      {openclawInstalling.has(skill.id) ? (
+                        <>
+                          <CircularProgress size={14} sx={{ mr: 1 }} />
+                          安装中
+                        </>
+                      ) : (
+                        '安装'
+                      )}
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+
+          {filteredOpenclawSkills.length === 0 && (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <ExtensionIcon sx={{ fontSize: 48, color: gs.borderDarker, mb: 2 }} />
+              <Typography sx={{ fontSize: '0.95rem', color: gs.textMuted, mb: 0.5 }}>
+                未找到匹配的技能
+              </Typography>
+              <Typography sx={{ fontSize: '0.8125rem', color: gs.textDisabled }}>
+                尝试调整搜索关键词或筛选条件
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      ) : activeTab === 'manage' ? (
         /* ========== 管理视图 ========== */
         <Box sx={{ px: 1 }}>
           <Box sx={{ display: 'flex', gap: 3, borderBottom: `1px solid ${gs.border}`, mb: 3 }}>
@@ -1307,6 +1759,26 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           <MatchConfigPanel onConfigSaved={() => {}} />
         </DialogContent>
       </Dialog>
+      {/* 关键词触发统计对话框 */}
+      <Dialog
+        open={keywordStatsOpen}
+        onClose={() => setKeywordStatsOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '12px', maxHeight: '90vh' },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${gs.border}` }}>
+          <Typography sx={{ fontSize: '1rem', fontWeight: 600 }}>关键词触发统计</Typography>
+          <IconButton size="small" onClick={() => setKeywordStatsOpen(false)}>
+            <CloseIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 4 }}>
+          <KeywordTriggerStatsPanel />
+        </DialogContent>
+      </Dialog>
       {/* v1.7.87: 技能预览弹窗 */}
       <SkillPreviewDialog
         open={!!previewSkill}
@@ -1314,6 +1786,118 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
         onClose={handleClosePreview}
         onUse={handleUseSkill}
       />
+      {/* OpenClaw 技能预览弹窗 */}
+      {openclawPreviewSkill && (
+        <Dialog
+          open={!!openclawPreviewSkill}
+          onClose={() => setOpenclawPreviewSkill(null)}
+          maxWidth="md"
+          fullWidth
+          sx={{ borderRadius: '12px' }}
+        >
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${gs.border}` }}>
+            <Typography sx={{ fontSize: '1rem', fontWeight: 600 }}>{openclawPreviewSkill.name}</Typography>
+            <IconButton size="small" onClick={() => setOpenclawPreviewSkill(null)}>
+              <CloseIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ p: 4, maxHeight: '70vh', overflowY: 'auto' }}>
+            <Box sx={{ mb: 3 }}>
+              <Typography sx={{ fontSize: '0.875rem', color: gs.textSecondary, lineHeight: 1.6 }}>
+                {openclawPreviewSkill.description || '暂无描述'}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, mb: 3 }}>
+              <Box>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, mb: 0.5 }}>分类</Typography>
+                <Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>{openclawPreviewSkill.category}</Typography>
+              </Box>
+              <Box>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, mb: 0.5 }}>版本</Typography>
+                <Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>v{openclawPreviewSkill.version || '1.0.0'}</Typography>
+              </Box>
+              {openclawPreviewSkill.author && (
+                <Box>
+                  <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, mb: 0.5 }}>作者</Typography>
+                  <Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>{openclawPreviewSkill.author}</Typography>
+                </Box>
+              )}
+              {openclawPreviewSkill.os && openclawPreviewSkill.os.length > 0 && (
+                <Box>
+                  <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, mb: 0.5 }}>支持系统</Typography>
+                  <Typography sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>
+                    {openclawPreviewSkill.os.map(os => os === 'darwin' ? 'macOS' : os === 'linux' ? 'Linux' : os).join(', ')}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+            {openclawPreviewSkill.trigger && (
+              <Box sx={{ mb: 3, p: 2, backgroundColor: '#FEF3C7', borderRadius: '8px' }}>
+                <Typography sx={{ fontSize: '0.75rem', color: '#D97706', fontWeight: 500 }}>
+                  🔑 触发关键词: {openclawPreviewSkill.trigger}
+                </Typography>
+              </Box>
+            )}
+            {openclawPreviewSkill.tags && openclawPreviewSkill.tags.length > 0 && (
+              <Box sx={{ mb: 3 }}>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, mb: 1 }}>标签</Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {openclawPreviewSkill.tags.map(tag => (
+                    <Box
+                      key={tag}
+                      sx={{
+                        px: 1.5,
+                        py: 0.5,
+                        fontSize: '0.75rem',
+                        backgroundColor: gs.bgHover,
+                        borderRadius: '4px',
+                        color: gs.textSecondary,
+                      }}
+                    >
+                      {tag}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+            {openclawPreviewSkill.requires && openclawPreviewSkill.requires.length > 0 && (
+              <Box sx={{ mb: 3 }}>
+                <Typography sx={{ fontSize: '0.75rem', color: gs.textMuted, mb: 1 }}>依赖</Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  {openclawPreviewSkill.requires.map(req => (
+                    <Box
+                      key={req}
+                      sx={{
+                        px: 1.5,
+                        py: 0.5,
+                        fontSize: '0.75rem',
+                        backgroundColor: '#EFF6FF',
+                        borderRadius: '4px',
+                        color: '#2563EB',
+                      }}
+                    >
+                      {req}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ px: 4, pb: 4, borderTop: `1px solid ${gs.border}` }}>
+            <Button onClick={() => setOpenclawPreviewSkill(null)} sx={{ textTransform: 'none' }}>关闭</Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                setOpenclawPreviewSkill(null);
+                navigate(`/chat?skill=${encodeURIComponent(openclawPreviewSkill.id)}`);
+              }}
+              sx={{ textTransform: 'none' }}
+            >
+              使用技能
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };

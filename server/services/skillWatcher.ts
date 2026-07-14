@@ -25,13 +25,18 @@ import { AppPaths } from '../config/appPaths.js';
 // ===================== Types =====================
 
 export interface SkillWatchEvent {
-  type: 'skill-added' | 'skill-changed' | 'skill-removed' | 'skill-audit-updated';
+  type: 'skill-added' | 'skill-changed' | 'skill-removed' | 'skill-audit-updated' | 'skill-install-progress';
   dirName?: string;
   name?: string;
   skillId?: string;
   level?: string;
   score?: number;
   timestamp: number;
+  installId?: string;
+  phase?: string;
+  message?: string;
+  percent?: number;
+  error?: string;
 }
 
 interface WatchDirEntry {

@@ -37,8 +37,9 @@ router.post('/test', (req: Request, res: Response) => {
     return;
   }
   const engine = getKeywordTriggerEngine();
+  const extractedKeywords = engine.extractKeywords(message);
   const matches = engine.matchMessage(message);
-  res.json({ message, matches });
+  res.json({ message, extractedKeywords, matches });
 });
 
 router.post('/init', (req: Request, res: Response) => {
@@ -54,6 +55,12 @@ router.post('/init', (req: Request, res: Response) => {
 router.post('/refresh', (req: Request, res: Response) => {
   const engine = getKeywordTriggerEngine();
   engine.refreshRules();
+  res.json({ ok: true });
+});
+
+router.post('/stats/reset', (req: Request, res: Response) => {
+  const engine = getKeywordTriggerEngine();
+  engine.resetStats();
   res.json({ ok: true });
 });
 

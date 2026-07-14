@@ -31,6 +31,7 @@ import { skillRegistry } from './skillRegistry.js';
 import { AppPaths, ensureDir } from '../config/appPaths.js';
 import { createUserSkill, getUserSkillById } from '../dao/skills.js';
 import { parseSkillMdContent } from '../services/skillMdParser.js';
+import skillWatcher from '../services/skillWatcher.js';
 
 const execAsync = promisify(exec);
 
@@ -250,6 +251,15 @@ export class SkillInstallManager {
       } catch (e) {
         logger.warn(`[SkillInstall] progress callback error: ${e instanceof Error ? e.message : String(e)}`);
       }
+      skillWatcher.broadcast({
+        type: 'skill-install-progress',
+        installId,
+        phase,
+        message,
+        percent,
+        error,
+        timestamp: Date.now(),
+      });
     };
 
     try {

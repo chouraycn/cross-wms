@@ -1467,3 +1467,192 @@ export async function generateImage(prompt: string, options?: {
 }): Promise<{ images: GeneratedImage[] }> {
   return request<{ images: GeneratedImage[] }>('POST', '/api/image-generation/generate', { prompt, ...options });
 }
+
+// ===================== OpenClaw Skill System API =====================
+
+export interface OpenClawSkillEntry {
+  id: string;
+  name: string;
+  description: string;
+  trigger?: string;
+  version?: string;
+  category?: string;
+  icon?: string;
+  tags?: string[];
+  executionMode?: string;
+  os?: string[];
+  featured?: boolean;
+  userInvocable?: boolean;
+  hasMd?: boolean;
+  metadata?: Record<string, unknown>;
+  openclaw?: Record<string, unknown>;
+  author?: string;
+  sourcePath?: string;
+  requires?: string[];
+}
+
+export interface OpenClawSkillListResponse {
+  entries: OpenClawSkillEntry[];
+  total: number;
+}
+
+export interface OpenClawFilterOptions {
+  search?: string;
+  category?: string;
+  tags?: string[];
+  os?: string;
+  featured?: boolean;
+  userInvocable?: boolean;
+  hasMd?: boolean;
+}
+
+export interface OpenClawInstallOptions {
+  sourceDir?: string;
+  overwrite?: boolean;
+  skipDependencies?: boolean;
+  runAudit?: boolean;
+}
+
+export interface OpenClawInstallResult {
+  success: boolean;
+  skillId?: string;
+  error?: string;
+  message?: string;
+  installedFiles?: string[];
+  skippedFiles?: string[];
+}
+
+export interface OpenClawAuditResult {
+  skillId: string;
+  skillName?: string;
+  score: number;
+  level: string;
+  issues?: Array<{ type: string; severity: string; message: string; path?: string }>;
+}
+
+export interface OpenClawDependencyResult {
+  skillId: string;
+  skillName: string;
+  allFound: boolean;
+  bins?: { name: string; found: boolean; path?: string }[];
+  env?: { name: string; found: boolean; value?: string }[];
+  config?: { name: string; found: boolean }[];
+  installCommands?: string[];
+}
+
+export async function searchOpenClawSkills(query: string): Promise<OpenClawSkillEntry[]> {
+  const q = query ? `?q=${encodeURIComponent(query)}` : '';
+  return request<OpenClawSkillEntry[]>('GET', `/api/openclaw/skills/search${q}`);
+}
+
+export async function listOpenClawSkills(): Promise<OpenClawSkillListResponse> {
+  return request<OpenClawSkillListResponse>('GET', '/api/openclaw/skills/list');
+}
+
+export async function getOpenClawCategories(): Promise<string[]> {
+  return request<string[]>('GET', '/api/openclaw/skills/categories');
+}
+
+export async function getOpenClawTags(): Promise<string[]> {
+  return request<string[]>('GET', '/api/openclaw/skills/tags');
+}
+
+export async function getOpenClawSkill(id: string): Promise<OpenClawSkillEntry> {
+  return request<OpenClawSkillEntry>('GET', `/api/openclaw/skills/${encodeURIComponent(id)}`);
+}
+
+export async function filterOpenClawSkills(options: OpenClawFilterOptions): Promise<OpenClawSkillListResponse> {
+  return request<OpenClawSkillListResponse>('POST', '/api/openclaw/skills/filter', options);
+}
+
+export async function installOpenClawSkill(options: OpenClawInstallOptions): Promise<OpenClawInstallResult> {
+  return request<OpenClawInstallResult>('POST', '/api/openclaw/skills/install', options);
+}
+
+export async function uninstallOpenClawSkill(id: string): Promise<OpenClawInstallResult> {
+  return request<OpenClawInstallResult>('DELETE', `/api/openclaw/skills/uninstall/${encodeURIComponent(id)}`);
+}
+
+export async function updateOpenClawSkill(id: string, sourceDir: string): Promise<OpenClawInstallResult> {
+  return request<OpenClawInstallResult>('POST', `/api/openclaw/skills/update/${encodeURIComponent(id)}`, { sourceDir });
+}
+
+export async function listOpenClawLifecycle(): Promise<{ installed: string[]; total: number }> {
+  return request<{ installed: string[]; total: number }>('GET', '/api/openclaw/skills/lifecycle/list');
+}
+
+export async function checkOpenClawSkillExists(id: string): Promise<{ skillId: string; exists: boolean }> {
+  return request<{ skillId: string; exists: boolean }>('GET', `/api/openclaw/skills/lifecycle/exists/${encodeURIComponent(id)}`);
+}
+
+export async function auditAllOpenClawSkills(): Promise<OpenClawAuditResult[]> {
+  return request<OpenClawAuditResult[]>('GET', '/api/openclaw/skills/audit/all');
+}
+
+export async function auditOpenClawSkill(id: string): Promise<OpenClawAuditResult> {
+  return request<OpenClawAuditResult>('GET', `/api/openclaw/skills/audit/${encodeURIComponent(id)}`);
+}
+
+export async function checkOpenClawSkillDependencies(id: string): Promise<OpenClawDependencyResult> {
+  return request<OpenClawDependencyResult>('GET', `/api/openclaw/skills/dependencies/${encodeURIComponent(id)}`);
+}
+
+export async function batchCheckOpenClawDependencies(skillIds: string[]): Promise<Record<string, OpenClawDependencyResult>> {
+  return request<Record<string, OpenClawDependencyResult>>('POST', '/api/openclaw/skills/dependencies/batch', { skillIds });
+}
+
+export async function refreshOpenClawSkillIndex(): Promise<{ refreshed: boolean; total: number }> {
+  return request<{ refreshed: boolean; total: number }>('POST', '/api/openclaw/skills/refresh');
+}
+
+// 关键词触发相关 API
+export interface KeywordTriggerConfig {
+  enabled: boolean;
+  threshold: number;
+  matchMode: 'exact' | 'fuzzy' | 'semantic';
+  maxTriggersPerMessage: number;
+  caseSensitive: boolean;
+  ignoreStopWords: boolean;
+}
+
+export interface KeywordTriggerStats {
+  totalRules: number;
+  totalKeywords: number;
+  totalTriggers: number;
+  totalMatchAttempts: number;
+  matchSuccessCount: number;
+  matchSuccessRate: number;
+  skillTriggerCounts: Record<string, number>;
+  keywordTriggerCounts: Record<string, number>;
+  topSkills: Array<{ skillId: string; skillName: string; count: number }>;
+  topKeywords: Array<{ keyword: string; count: number }>;
+  recentTriggers: Array<{
+    timestamp: number;
+    message: string;
+    skillId: string;
+    skillName: string;
+    matchedKeywords: string[];
+    score: number;
+  }>;
+  config: KeywordTriggerConfig;
+}
+
+export async function getKeywordTriggerConfig(): Promise<KeywordTriggerConfig> {
+  return request<KeywordTriggerConfig>('GET', '/api/keyword-trigger/config');
+}
+
+export async function updateKeywordTriggerConfig(config: Partial<KeywordTriggerConfig>): Promise<{ ok: boolean; config: KeywordTriggerConfig }> {
+  return request<{ ok: boolean; config: KeywordTriggerConfig }>('PUT', '/api/keyword-trigger/config', config);
+}
+
+export async function getKeywordTriggerStats(): Promise<KeywordTriggerStats> {
+  return request<KeywordTriggerStats>('GET', '/api/keyword-trigger/stats');
+}
+
+export async function resetKeywordTriggerStats(): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>('POST', '/api/keyword-trigger/stats/reset');
+}
+
+export async function refreshKeywordTriggerRules(): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>('POST', '/api/keyword-trigger/refresh');
+}
