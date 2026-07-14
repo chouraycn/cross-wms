@@ -11,9 +11,12 @@ import { initAutomationTables } from './db-automation.js';
 import { initMarketplaceTables } from './db-marketplace.js';
 import { initProjectTables } from './db-project.js';
 import { initPluginTables } from './db-plugin.js';
+import { initSkillTables } from './db-skill.js';
 import { initGoalTables } from './engine/goalStore.js';
 import { initWebhookTables } from './dao/webhookDao.js';
 import { initArchiveTables } from './engine/messageArchive.js';
+import { initTaskMonitorTables } from './db-task-monitor.js';
+import { initWorkboardTables } from './db-workboard.js';
 
 import { SQLiteEngine } from './storage/SQLiteEngine.js';
 import { FileStorage } from './storage/FileStorage.js';
@@ -52,6 +55,521 @@ export interface UserSkillRow {
 export interface BuiltinStatusPatchRow {
   skillId: string;
   status: string;
+}
+
+// ===================== 老 builtin 技能迁入 user_skills =====================
+
+interface BuiltinSkillJson {
+  id: string;
+  name: string;
+  desc?: string;
+  icon?: string;
+  category?: string;
+  path?: string;
+  trigger?: string;
+  detail?: string;
+  tags?: string[];
+  automationTaskType?: string;
+  status?: string;
+  version?: string;
+  featured?: boolean;
+  source?: string;
+  executionMode?: string;
+  promptTemplate?: string;
+}
+
+const BUILTIN_MIGRATION_KEY = 'builtin_skills_migrated_v1';
+
+/** YAML 字符串最小转义：用双引号包裹并转义反斜杠/双引号/换行 */
+function yamlQuote(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
+}
+
+/** 由老 builtin 技能生成标准 SKILL.md 文本 */
+function buildBuiltinSkillMd(skill: BuiltinSkillJson): string {
+  const tags = Array.isArray(skill.tags) ? skill.tags : [];
+  const lines: string[] = ['---'];
+  lines.push(`name: ${yamlQuote(skill.name || skill.id)}`);
+  lines.push(`description: ${yamlQuote(skill.desc || '')}`);
+  if (skill.trigger) lines.push(`trigger: ${yamlQuote(skill.trigger)}`);
+  if (skill.version) lines.push(`version: ${yamlQuote(skill.version)}`);
+  lines.push(`category: ${yamlQuote(skill.category || 'tool')}`);
+  lines.push(`icon: ${yamlQuote(skill.icon || 'Extension')}`);
+  lines.push(`tags: ${JSON.stringify(tags)}`);
+  if (skill.executionMode) lines.push(`executionMode: ${yamlQuote(skill.executionMode)}`);
+  if (skill.automationTaskType) lines.push(`automationTaskType: ${yamlQuote(skill.automationTaskType)}`);
+  lines.push('source: builtin');
+  lines.push(`featured: ${skill.featured ? 'true' : 'false'}`);
+  lines.push('---');
+  lines.push('');
+  lines.push(skill.promptTemplate || '');
+  return lines.join('\n');
+}
+
+/** 在多个候选路径中寻找 shared/data/builtin-skills.json */
+function resolveBuiltinSkillsJsonPath(): string | null {
+  const candidates = [
+    path.resolve(process.cwd(), 'shared/data/builtin-skills.json'),
+    path.resolve(process.cwd(), '../shared/data/builtin-skills.json'),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+/**
+ * 把 shared/data/builtin-skills.json 中的老技能一次性迁入新 user_skills + SKILL.md
+ * 幂等：通过 app_settings 中的 builtin_skills_migrated_v1 标记。
+ */
+function migrateBuiltinSkillsIntoUserSkills(db: Database.Database): void {
+  // 确保 app_settings 表存在
+  db.exec(`CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
+
+  // 已迁移则直接跳过
+  const already = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(BUILTIN_MIGRATION_KEY) as { value: string } | undefined;
+  if (already) {
+    logger.info(`[MigrateBuiltin] 已迁移过（key=${BUILTIN_MIGRATION_KEY}），跳过`);
+    return;
+  }
+
+  const jsonPath = resolveBuiltinSkillsJsonPath();
+  if (!jsonPath) {
+    // 没有 builtin 技能也要标记为已迁移，避免每次启动都尝试
+    db.prepare('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)').run(
+      BUILTIN_MIGRATION_KEY,
+      JSON.stringify({ migratedAt: new Date().toISOString(), count: 0, note: 'builtin-skills.json not found' })
+    );
+    logger.info('[MigrateBuiltin] 找不到 shared/data/builtin-skills.json，已标记完成（0 个）');
+    return;
+  }
+
+  let builtinSkills: BuiltinSkillJson[] = [];
+  try {
+    builtinSkills = JSON.parse(fs.readFileSync(jsonPath, 'utf-8')) as BuiltinSkillJson[];
+  } catch (e) {
+    logger.warn(`[MigrateBuiltin] 解析 ${jsonPath} 失败:`, e);
+    builtinSkills = [];
+  }
+
+  if (builtinSkills.length === 0) {
+    db.prepare('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)').run(
+      BUILTIN_MIGRATION_KEY,
+      JSON.stringify({ migratedAt: new Date().toISOString(), count: 0, note: 'empty array' })
+    );
+    logger.info('[MigrateBuiltin] builtin-skills.json 为空，已标记完成');
+    return;
+  }
+
+  // skills 根目录：尽量复用 AppPaths.skillsDir（避免硬编码）
+  let skillsRoot: string;
+  try {
+    // 动态 require 避免循环依赖
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { AppPaths } = require('./config/appPaths.js') as { AppPaths: { skillsDir: string } };
+    skillsRoot = AppPaths.skillsDir;
+  } catch {
+    skillsRoot = path.resolve(process.cwd(), 'skills');
+  }
+  if (!fs.existsSync(skillsRoot)) {
+    fs.mkdirSync(skillsRoot, { recursive: true });
+  }
+
+  // 确保 user_skills 表存在
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_skills (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      "desc" TEXT NOT NULL DEFAULT '',
+      icon TEXT NOT NULL DEFAULT 'Extension',
+      category TEXT NOT NULL DEFAULT 'tool',
+      path TEXT NOT NULL DEFAULT '',
+      trigger TEXT,
+      detail TEXT,
+      tags TEXT,
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','available','coming')),
+      version TEXT,
+      featured INTEGER NOT NULL DEFAULT 0,
+      shortcut TEXT,
+      installedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
+      promptTemplate TEXT,
+      executionMode TEXT
+    );
+  `);
+
+  const checkStmt = db.prepare('SELECT id FROM user_skills WHERE id = ?');
+  const insertStmt = db.prepare(`
+    INSERT INTO user_skills (id, name, "desc", icon, category, path, trigger, detail, tags, status, version, featured, installedAt, promptTemplate, executionMode)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `);
+
+  let inserted = 0;
+  let skipped = 0;
+  let filesWritten = 0;
+  const errors: Array<{ id: string; message: string }> = [];
+
+  for (const skill of builtinSkills) {
+    try {
+      // 1) 同步 SKILL.md 到磁盘（幂等：已存在则不覆盖）
+      const skillDir = path.join(skillsRoot, skill.id);
+      const skillMdPath = path.join(skillDir, 'SKILL.md');
+      if (!fs.existsSync(skillDir)) {
+        fs.mkdirSync(skillDir, { recursive: true });
+      }
+      if (!fs.existsSync(skillMdPath)) {
+        fs.writeFileSync(skillMdPath, buildBuiltinSkillMd(skill), 'utf-8');
+        filesWritten++;
+      }
+
+      // 2) 写入 user_skills（已存在则跳过）
+      const exists = checkStmt.get(skill.id) as { id: string } | undefined;
+      if (exists) {
+        skipped++;
+      } else {
+        insertStmt.run(
+          skill.id,
+          skill.name || skill.id,
+          skill.desc || '',
+          skill.icon || 'Extension',
+          skill.category || 'tool',
+          skill.path || '',
+          skill.trigger || null,
+          skill.detail || null,
+          Array.isArray(skill.tags) ? JSON.stringify(skill.tags) : null,
+          skill.status || 'active',
+          skill.version || null,
+          skill.featured ? 1 : 0,
+          0, // installedAt=0 标记为"系统预装"
+          skill.promptTemplate || null,
+          skill.executionMode || null
+        );
+        inserted++;
+      }
+    } catch (e: any) {
+      const msg = e?.message ?? String(e);
+      errors.push({ id: skill.id, message: msg });
+      logger.error(`[MigrateBuiltin] 迁入 ${skill.id} 失败:`, msg);
+    }
+  }
+
+  // 标记完成
+  db.prepare('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)').run(
+    BUILTIN_MIGRATION_KEY,
+    JSON.stringify({
+      migratedAt: new Date().toISOString(),
+      count: builtinSkills.length,
+      inserted,
+      skipped,
+      filesWritten,
+      errors: errors.length,
+    })
+  );
+
+  logger.info(
+    `[MigrateBuiltin] 完成 scanned=${builtinSkills.length} inserted=${inserted} skipped=${skipped} filesWritten=${filesWritten} errors=${errors.length}`
+  );
+}
+
+// ===================== v2.11+: openclaw 通用技能 + 仓库顶层技能迁入 =====================
+
+const OPENCLAW_MIGRATION_KEY = 'openclaw_skills_migrated_v2';
+const OPENCLAW_SKILLS_DIR_REL = path.join('skills', '_imported', 'openclaw');
+const REPO_SKILLS_DIR_REL = 'skills';
+
+/**
+ * 把仓库内 skills/ 和 skills/_imported/openclaw/ 下的 SKILL.md 一次性迁入
+ * 生产 AppPaths.skillsDir/<id>/SKILL.md + user_skills 表。
+ *
+ * 幂等：通过 app_settings 中的 openclaw_skills_migrated_v2 标记；
+ * 二次启动直接跳过整批导入。
+ */
+function migrateOpenclawSkillsIntoUserSkills(db: Database.Database): void {
+  db.exec(`CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
+
+  const already = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(OPENCLAW_MIGRATION_KEY) as { value: string } | undefined;
+  if (already) {
+    logger.info(`[MigrateOpenclaw] 已迁移过（key=${OPENCLAW_MIGRATION_KEY}），跳过`);
+    return;
+  }
+
+  // 源：仓库的 skills/ 目录（包括顶层技能和 _imported/openclaw）
+  // 兼容多路径：cwd/、cwd/../
+  const candidates = [
+    path.resolve(process.cwd(), REPO_SKILLS_DIR_REL),
+    path.resolve(process.cwd(), '..', REPO_SKILLS_DIR_REL),
+  ];
+  let sourceDir: string | null = null;
+  for (const p of candidates) {
+    if (fs.existsSync(p)) { sourceDir = p; break; }
+  }
+
+  if (!sourceDir) {
+    db.prepare('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)').run(
+      OPENCLAW_MIGRATION_KEY,
+      JSON.stringify({ migratedAt: new Date().toISOString(), count: 0, note: 'skills dir not found' })
+    );
+    logger.info('[MigrateOpenclaw] 找不到 skills 目录，已标记完成');
+    return;
+  }
+
+  // 目标：AppPaths.skillsDir/<id>/SKILL.md
+  let skillsRoot: string;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { AppPaths } = require('./config/appPaths.js') as { AppPaths: { skillsDir: string } };
+    skillsRoot = AppPaths.skillsDir;
+  } catch {
+    skillsRoot = path.resolve(process.cwd(), 'skills');
+  }
+  if (!fs.existsSync(skillsRoot)) fs.mkdirSync(skillsRoot, { recursive: true });
+
+  // 确保 user_skills 表存在
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_skills (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      "desc" TEXT NOT NULL DEFAULT '',
+      icon TEXT NOT NULL DEFAULT 'Extension',
+      category TEXT NOT NULL DEFAULT 'tool',
+      path TEXT NOT NULL DEFAULT '',
+      trigger TEXT,
+      detail TEXT,
+      tags TEXT,
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','available','coming')),
+      version TEXT,
+      featured INTEGER NOT NULL DEFAULT 0,
+      shortcut TEXT,
+      installedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
+      promptTemplate TEXT,
+      executionMode TEXT
+    );
+  `);
+
+  const checkStmt = db.prepare('SELECT id FROM user_skills WHERE id = ?');
+  const insertStmt = db.prepare(`
+    INSERT INTO user_skills (id, name, "desc", icon, category, path, trigger, detail, tags, status, version, featured, installedAt, promptTemplate, executionMode)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `);
+
+  let scanned = 0;
+  let inserted = 0;
+  let skipped = 0;
+  let filesWritten = 0;
+  const errors: Array<{ id: string; message: string }> = [];
+
+  // 递归复制所有文件
+  const copyDir = (src: string, dest: string): number => {
+    let copied = 0;
+    const items = fs.readdirSync(src, { withFileTypes: true });
+    for (const item of items) {
+      const srcPath = path.join(src, item.name);
+      const destPath = path.join(dest, item.name);
+      if (item.isDirectory()) {
+        if (!fs.existsSync(destPath)) fs.mkdirSync(destPath, { recursive: true });
+        copied += copyDir(srcPath, destPath);
+      } else {
+        if (!fs.existsSync(destPath)) {
+          fs.copyFileSync(srcPath, destPath);
+          copied++;
+        }
+      }
+    }
+    return copied;
+  };
+
+  // 处理一个技能目录（全量复制 + 写入 user_skills）
+  const processSkillDir = (skillId: string, srcDir: string) => {
+    const skillMdSrc = path.join(srcDir, 'SKILL.md');
+    const skillMdSrcLower = path.join(srcDir, 'skill.md');
+    if (!fs.existsSync(skillMdSrc) && !fs.existsSync(skillMdSrcLower)) return;
+    scanned++;
+    try {
+      const targetDir = path.join(skillsRoot, skillId);
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+      const copiedFiles = copyDir(srcDir, targetDir);
+      if (copiedFiles > 0) filesWritten++;
+
+      const mdPath = fs.existsSync(skillMdSrc) ? skillMdSrc : skillMdSrcLower;
+      const content = fs.readFileSync(mdPath, 'utf-8');
+      const { frontmatter, body } = parseSkillMdLightweight(content);
+      const exists = checkStmt.get(skillId) as { id: string } | undefined;
+      if (exists) {
+        skipped++;
+      } else {
+        insertStmt.run(
+          skillId,
+          frontmatter.name || skillId,
+          frontmatter.description || '',
+          frontmatter.icon || 'Extension',
+          frontmatter.category || 'openclaw-imported',
+          frontmatter.path || '',
+          frontmatter.trigger || null,
+          null,
+          JSON.stringify(frontmatter.tags || []),
+          frontmatter.status || 'available',
+          frontmatter.version || '1.0.0',
+          frontmatter.featured ? 1 : 0,
+          Date.now(),
+          body,
+          frontmatter.executionMode || null
+        );
+        inserted++;
+      }
+    } catch (e: any) {
+      const msg = e?.message ?? String(e);
+      errors.push({ id: skillId, message: msg });
+      logger.error(`[MigrateOpenclaw] 迁入 ${skillId} 失败:`, msg);
+    }
+  };
+
+  // 1) 扫描顶层技能目录（hscode-assistant 等）
+  const topEntries = fs.readdirSync(sourceDir, { withFileTypes: true });
+  for (const entry of topEntries) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name.startsWith('.')) continue;
+    if (entry.name === '_imported') continue;
+    if (entry.name === '.archived') continue;
+    processSkillDir(entry.name, path.join(sourceDir, entry.name));
+  }
+
+  // 2) 扫描 _imported/openclaw 子目录
+  const openclawDir = path.join(sourceDir, '_imported', 'openclaw');
+  if (fs.existsSync(openclawDir)) {
+    const openclawEntries = fs.readdirSync(openclawDir, { withFileTypes: true });
+    for (const entry of openclawEntries) {
+      if (!entry.isDirectory()) continue;
+      if (entry.name.startsWith('.')) continue;
+      processSkillDir(entry.name, path.join(openclawDir, entry.name));
+    }
+  }
+
+  db.prepare('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)').run(
+    OPENCLAW_MIGRATION_KEY,
+    JSON.stringify({
+      migratedAt: new Date().toISOString(),
+      sourceDir,
+      count: scanned,
+      inserted,
+      skipped,
+      filesWritten,
+      errors: errors.length,
+    })
+  );
+
+  logger.info(
+    `[MigrateOpenclaw] 完成 scanned=${scanned} inserted=${inserted} skipped=${skipped} filesWritten=${filesWritten} errors=${errors.length} (源=${sourceDir})`
+  );
+}
+
+/**
+ * 检测 SKILL.md 是否包含有效的 frontmatter
+ */
+function hasFrontmatter(content: string): boolean {
+  return /^---\r?\n/.test(content.trimStart());
+}
+
+/**
+ * 修复生产环境 skillsDir 下缺失 frontmatter 的 SKILL.md 文件。
+ * 遍历源目录（openclaw/skills 和 skills/_imported/openclaw），
+ * 如果目标文件的 SKILL.md 缺少 frontmatter，则从源目录重新复制。
+ */
+function repairSkillMdFrontmatter(): void {
+  logger.info('[RepairSkillMd] 开始检查 frontmatter 完整性...');
+  const skillsRoot = AppPaths.skillsDir;
+  logger.info(`[RepairSkillMd] skillsDir = ${skillsRoot}`);
+  if (!fs.existsSync(skillsRoot)) {
+    logger.warn(`[RepairSkillMd] skillsDir 不存在，跳过: ${skillsRoot}`);
+    return;
+  }
+
+  // 源目录候选（按优先级排序）
+  const sourceCandidates = [
+    path.resolve(process.cwd(), 'skills', '_imported', 'openclaw'),
+    path.resolve(process.cwd(), 'openclaw', 'skills'),
+    path.resolve(process.cwd(), 'skills'),
+    path.resolve(process.cwd(), '..', 'openclaw', 'skills'),
+  ];
+
+  let repaired = 0;
+  let skipped = 0;
+  let errors = 0;
+
+  const entries = fs.readdirSync(skillsRoot, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name.startsWith('.')) continue;
+
+    const skillDir = path.join(skillsRoot, entry.name);
+    const skillMdPath = path.join(skillDir, 'SKILL.md');
+    const skillMdLowerPath = path.join(skillDir, 'skill.md');
+
+    const targetMdPath = fs.existsSync(skillMdPath) ? skillMdPath : fs.existsSync(skillMdLowerPath) ? skillMdLowerPath : null;
+    if (!targetMdPath) continue;
+
+    try {
+      const content = fs.readFileSync(targetMdPath, 'utf-8');
+      if (hasFrontmatter(content)) {
+        skipped++;
+        continue; // frontmatter 完整，无需修复
+      }
+
+      // 缺少 frontmatter，尝试从源目录复制
+      let sourceMdPath: string | null = null;
+      for (const srcDir of sourceCandidates) {
+        const candidate = path.join(srcDir, entry.name, 'SKILL.md');
+        if (fs.existsSync(candidate)) {
+          const srcContent = fs.readFileSync(candidate, 'utf-8');
+          if (hasFrontmatter(srcContent)) {
+            sourceMdPath = candidate;
+            break;
+          }
+        }
+      }
+
+      if (sourceMdPath) {
+        fs.copyFileSync(sourceMdPath, targetMdPath);
+        repaired++;
+        logger.info(`[RepairSkillMd] 修复 ${entry.name} frontmatter（源: ${sourceMdPath}）`);
+      } else {
+        skipped++;
+      }
+    } catch (e: any) {
+      errors++;
+      logger.warn(`[RepairSkillMd] 修复 ${entry.name} 失败:`, e?.message ?? String(e));
+    }
+  }
+
+  if (repaired > 0 || errors > 0) {
+    logger.info(`[RepairSkillMd] 完成 repaired=${repaired} skipped=${skipped} errors=${errors}`);
+  }
+}
+
+/** 轻量 frontmatter 解析（不依赖 js-yaml，简单 key: value + tags JSON） */
+function parseSkillMdLightweight(content: string): {
+  frontmatter: Record<string, any>;
+  body: string;
+} {
+  const m = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!m) return { frontmatter: {}, body: content };
+  const yamlBlock = m[1];
+  const body = m[2];
+  const fm: Record<string, any> = {};
+  for (const line of yamlBlock.split('\n')) {
+    const idx = line.indexOf(':');
+    if (idx <= 0) continue;
+    const key = line.slice(0, idx).trim();
+    let value: any = line.slice(idx + 1).trim();
+    if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+    if (value === 'true') value = true;
+    else if (value === 'false') value = false;
+    else if (value.startsWith('[') && value.endsWith(']')) {
+      try { value = JSON.parse(value); } catch { /* ignore */ }
+    }
+    fm[key] = value;
+  }
+  return { frontmatter: fm, body };
 }
 
 const DB_PATH = AppPaths.chatDbFile;
@@ -325,9 +843,38 @@ export function initDb(): Database.Database {
   initMarketplaceTables(db);
   initProjectTables(db);
   initPluginTables(db);
+  initSkillTables(db);
   initGoalTables(db);
   initWebhookTables(db);
   initArchiveTables(db);
+  initTaskMonitorTables(db);
+  initWorkboardTables(db);
+
+  // v2.11+: 把 shared/data/builtin-skills.json 中的老技能一次性迁入新 user_skills + SKILL.md
+  // 幂等：通过 app_settings 中的 builtin_skills_migrated_v1 标记。
+  try {
+    migrateBuiltinSkillsIntoUserSkills(db);
+  } catch (e) {
+    // 迁移失败不应该阻塞数据库初始化
+    logger.warn('[DB] 老技能迁入失败（可忽略）:', e);
+  }
+
+  // v2.11+: 把仓库 skills/_imported/openclaw/*.json 风格的 SKILL.md 迁入 user_skills + 落盘到 home
+  // 幂等：通过 app_settings 中的 openclaw_skills_migrated_v1 标记。
+  try {
+    migrateOpenclawSkillsIntoUserSkills(db);
+  } catch (e) {
+    logger.warn('[DB] openclaw 通用技能迁入失败（可忽略）:', e);
+  }
+
+  // v2.11+: 修复生产环境 skillsDir 下缺失 frontmatter 的 SKILL.md 文件
+  // 某些场景下（如 syncSkillMdToDisk 覆盖），SKILL.md 可能丢失 frontmatter，
+  // 这会导致 OpenClaw 元数据解析失败（requires/os 等字段为空）。
+  try {
+    repairSkillMdFrontmatter();
+  } catch (e) {
+    logger.warn('[DB] SKILL.md frontmatter 修复失败（可忽略）:', e);
+  }
 
   // v1.9.4: 标记数据库已初始化完成（后续启动跳过完整检查）
   if (isFirst) {

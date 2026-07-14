@@ -42,6 +42,7 @@ import { logger } from '../logger.js';
 import { AppPaths } from '../config/appPaths.js';
 import yaml from 'js-yaml';
 import { dependencyChecker, DependencyCheckResult } from '../../src/utils/dependencyChecker.js';
+import { SkillIndex, SkillLifecycle, auditAllSkills, checkSkillDependencies, getRequiresFromSkillMd, getInstallStepsFromSkillMd, generateInstallCommands } from '../services/openclaw/index.js';
 
 // ===================== SKILL.md 解析工具（基于 js-yaml） =====================
 
@@ -174,6 +175,27 @@ export function scanWorkbuddySkills(): ScannedSkillMd[] {
 
   if (!fs.existsSync(skillsDir)) return results;
 
+  /**
+   * 解析单个 SKILL.md 候选文件并加入 results
+   */
+  const tryReadSkillMd = (mdPath: string, dirName: string, groupPrefix = '') => {
+    try {
+      const content = fs.readFileSync(mdPath, 'utf-8');
+      const { frontmatter, body } = parseSkillMd(content);
+      // dirName 在 group 下拼前缀，避免与根级同名技能冲突
+      const finalDirName = groupPrefix ? `${groupPrefix}/${dirName}` : dirName;
+      results.push({
+        dirName: finalDirName,
+        name: frontmatter.name || dirName,
+        description: frontmatter.description || body.slice(0, 100).replace(/[#*\n]/g, ' ').trim(),
+        body,
+        hasSkillMd: true,
+      });
+    } catch {
+      // 读取失败跳过
+    }
+  };
+
   try {
     const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
     for (const entry of entries) {
@@ -186,36 +208,28 @@ export function scanWorkbuddySkills(): ScannedSkillMd[] {
       const skillMdPath = path.join(dirPath, 'SKILL.md');
       const skillMdLowerPath = path.join(dirPath, 'skill.md');
 
-      let mdPath: string | null = null;
       if (fs.existsSync(skillMdPath)) {
-        mdPath = skillMdPath;
+        tryReadSkillMd(skillMdPath, entry.name);
       } else if (fs.existsSync(skillMdLowerPath)) {
-        mdPath = skillMdLowerPath;
-      }
-
-      if (mdPath) {
-        try {
-          const content = fs.readFileSync(mdPath, 'utf-8');
-          const { frontmatter, body } = parseSkillMd(content);
-          results.push({
-            dirName: entry.name,
-            name: frontmatter.name || entry.name,
-            description: frontmatter.description || body.slice(0, 100).replace(/[#*\n]/g, ' ').trim(),
-            body,
-            hasSkillMd: true,
-          });
-        } catch {
-          // 读取失败跳过
-        }
+        tryReadSkillMd(skillMdLowerPath, entry.name);
       } else {
-        // 目录存在但无 SKILL.md
-        results.push({
-          dirName: entry.name,
-          name: entry.name,
-          description: '',
-          body: '',
-          hasSkillMd: false,
-        });
+        // 目录存在但无 SKILL.md：可能是 group 目录（如 _imported/openclaw/<name>）
+        // 尝试向下递归一层
+        const subEntries = fs.readdirSync(dirPath, { withFileTypes: true });
+        for (const sub of subEntries) {
+          if (!sub.isDirectory()) continue;
+          if (sub.name.startsWith('.') || sub.name === '__MACOSX') continue;
+          const subDir = path.join(dirPath, sub.name);
+          const subMd = path.join(subDir, 'SKILL.md');
+          const subMdLower = path.join(subDir, 'skill.md');
+          if (fs.existsSync(subMd)) {
+            tryReadSkillMd(subMd, sub.name, entry.name);
+          } else if (fs.existsSync(subMdLower)) {
+            tryReadSkillMd(subMdLower, sub.name, entry.name);
+          } else {
+            // 子目录无 SKILL.md，跳过
+          }
+        }
       }
     }
   } catch {
@@ -918,6 +932,220 @@ router.post('/skills/:id/audit-export', async (req: Request, res: Response) => {
     logger.error('[Audit Export] Failed:', e);
     res.status(500).json({ error: (e as Error).message });
   }
+});
+
+// ===================== OpenClaw Skill System API =====================
+
+let skillIndexInstance: SkillIndex | null = null;
+let skillLifecycleInstance: SkillLifecycle | null = null;
+
+function getSkillIndex(): SkillIndex {
+  if (!skillIndexInstance) {
+    skillIndexInstance = new SkillIndex(AppPaths.skillsDir);
+    skillIndexInstance.build();
+  }
+  return skillIndexInstance;
+}
+
+function getSkillLifecycle(): SkillLifecycle {
+  if (!skillLifecycleInstance) {
+    skillLifecycleInstance = new SkillLifecycle(AppPaths.skillsDir);
+  }
+  return skillLifecycleInstance;
+}
+
+function refreshSkillIndex(): void {
+  skillIndexInstance = null;
+}
+
+// GET /api/openclaw/skills/search — 技能搜索
+router.get('/openclaw/skills/search', (req: Request, res: Response) => {
+  const query = (req.query.q as string) || '';
+  const index = getSkillIndex();
+  const result = index.search(query);
+  res.json({ data: result });
+});
+
+// GET /api/openclaw/skills/list — 列出所有技能（含元数据）
+router.get('/openclaw/skills/list', (req: Request, res: Response) => {
+  const index = getSkillIndex();
+  const entries = index.getAll();
+  res.json({ data: { entries, total: entries.length } });
+});
+
+// GET /api/openclaw/skills/categories — 获取所有分类
+router.get('/openclaw/skills/categories', (_req: Request, res: Response) => {
+  const index = getSkillIndex();
+  const categories = index.getCategories();
+  res.json({ data: categories });
+});
+
+// GET /api/openclaw/skills/tags — 获取所有标签
+router.get('/openclaw/skills/tags', (_req: Request, res: Response) => {
+  const index = getSkillIndex();
+  const tags = index.getTags();
+  res.json({ data: tags });
+});
+
+// GET /api/openclaw/skills/:id — 获取单个技能详情
+router.get('/openclaw/skills/:id', (req: Request, res: Response) => {
+  const index = getSkillIndex();
+  const entry = index.getById(req.params.id);
+  if (!entry) {
+    res.status(404).json({ error: 'Skill not found' });
+    return;
+  }
+  res.json({ data: entry });
+});
+
+// POST /api/openclaw/skills/filter — 多条件过滤
+router.post('/openclaw/skills/filter', (req: Request, res: Response) => {
+  const options = req.body as Record<string, unknown>;
+  const index = getSkillIndex();
+  const entries = index.filter({
+    search: options.search as string | undefined,
+    category: options.category as string | undefined,
+    tags: Array.isArray(options.tags) ? options.tags.map(String) : undefined,
+    os: options.os as string | undefined,
+    featured: options.featured as boolean | undefined,
+    userInvocable: options.userInvocable as boolean | undefined,
+    hasMd: options.hasMd as boolean | undefined,
+  });
+  res.json({ data: { entries, total: entries.length } });
+});
+
+// POST /api/openclaw/skills/install — 安装技能
+router.post('/openclaw/skills/install', async (req: Request, res: Response) => {
+  const { sourceDir, overwrite = false, skipDependencies = false, runAudit = false } = req.body;
+  if (!sourceDir) {
+    res.status(400).json({ error: 'sourceDir is required' });
+    return;
+  }
+  const lifecycle = getSkillLifecycle();
+  const result = await lifecycle.install(sourceDir, { overwrite, skipDependencies, runAudit });
+  if (result.success) {
+    refreshSkillIndex();
+    res.json({ data: result });
+  } else {
+    res.status(400).json({ error: result.error, data: result });
+  }
+});
+
+// DELETE /api/openclaw/skills/uninstall/:id — 卸载技能
+router.delete('/openclaw/skills/uninstall/:id', (req: Request, res: Response) => {
+  const lifecycle = getSkillLifecycle();
+  const result = lifecycle.uninstall(req.params.id);
+  if (result.success) {
+    refreshSkillIndex();
+    res.json({ data: result });
+  } else {
+    res.status(400).json({ error: result.error, data: result });
+  }
+});
+
+// POST /api/openclaw/skills/update/:id — 更新技能
+router.post('/openclaw/skills/update/:id', async (req: Request, res: Response) => {
+  const { sourceDir } = req.body;
+  if (!sourceDir) {
+    res.status(400).json({ error: 'sourceDir is required' });
+    return;
+  }
+  const lifecycle = getSkillLifecycle();
+  const result = await lifecycle.update(req.params.id, sourceDir);
+  if (result.success) {
+    refreshSkillIndex();
+    res.json({ data: result });
+  } else {
+    res.status(400).json({ error: result.error, data: result });
+  }
+});
+
+// GET /api/openclaw/skills/lifecycle/list — 列出已安装技能（生命周期视角）
+router.get('/openclaw/skills/lifecycle/list', (_req: Request, res: Response) => {
+  const lifecycle = getSkillLifecycle();
+  const installed = lifecycle.list();
+  res.json({ data: { installed, total: installed.length } });
+});
+
+// GET /api/openclaw/skills/lifecycle/exists/:id — 检查技能是否存在
+router.get('/openclaw/skills/lifecycle/exists/:id', (req: Request, res: Response) => {
+  const lifecycle = getSkillLifecycle();
+  const exists = lifecycle.exists(req.params.id);
+  res.json({ data: { skillId: req.params.id, exists } });
+});
+
+// GET /api/openclaw/skills/audit/all — 审计所有技能
+router.get('/openclaw/skills/audit/all', (_req: Request, res: Response) => {
+  const audits = auditAllSkills(AppPaths.skillsDir);
+  res.json({ data: audits });
+});
+
+// GET /api/openclaw/skills/audit/:id — 审计单个技能
+router.get('/openclaw/skills/audit/:id', (req: Request, res: Response) => {
+  const audit = auditAllSkills(AppPaths.skillsDir).find(a => a.skillId === req.params.id);
+  if (!audit) {
+    res.status(404).json({ error: 'Skill not found' });
+    return;
+  }
+  res.json({ data: audit });
+});
+
+// GET /api/openclaw/skills/dependencies/:id — 检查单个技能依赖
+router.get('/openclaw/skills/dependencies/:id', async (req: Request, res: Response) => {
+  const skillId = req.params.id;
+  const skillsDir = AppPaths.skillsDir;
+  const skillDir = path.join(skillsDir, skillId);
+  const skillMdPath = path.join(skillDir, 'SKILL.md');
+  const skillMdLowerPath = path.join(skillDir, 'skill.md');
+
+  if (!fs.existsSync(skillMdPath) && !fs.existsSync(skillMdLowerPath)) {
+    res.status(404).json({ error: 'SKILL.md not found' });
+    return;
+  }
+
+  const mdPath = fs.existsSync(skillMdPath) ? skillMdPath : skillMdLowerPath;
+  const content = fs.readFileSync(mdPath, 'utf-8');
+  const requires = getRequiresFromSkillMd(content);
+  const installSteps = getInstallStepsFromSkillMd(content);
+  const skillName = skillId;
+
+  const result = await checkSkillDependencies(skillId, skillName, requires, installSteps);
+  res.json({ data: { ...result, installCommands: generateInstallCommands(installSteps) } });
+});
+
+// POST /api/openclaw/skills/dependencies/batch — 批量检查技能依赖
+router.post('/openclaw/skills/dependencies/batch', async (req: Request, res: Response) => {
+  const skillIds = (req.body as { skillIds?: string[] }).skillIds || [];
+  const skillsDir = AppPaths.skillsDir;
+  const results: Record<string, unknown> = {};
+
+  for (const skillId of skillIds) {
+    const skillDir = path.join(skillsDir, skillId);
+    const skillMdPath = path.join(skillDir, 'SKILL.md');
+    const skillMdLowerPath = path.join(skillDir, 'skill.md');
+
+    if (!fs.existsSync(skillMdPath) && !fs.existsSync(skillMdLowerPath)) {
+      results[skillId] = { error: 'SKILL.md not found' };
+      continue;
+    }
+
+    const mdPath = fs.existsSync(skillMdPath) ? skillMdPath : skillMdLowerPath;
+    const content = fs.readFileSync(mdPath, 'utf-8');
+    const requires = getRequiresFromSkillMd(content);
+    const installSteps = getInstallStepsFromSkillMd(content);
+
+    const result = await checkSkillDependencies(skillId, skillId, requires, installSteps);
+    results[skillId] = { ...result, installCommands: generateInstallCommands(installSteps) };
+  }
+
+  res.json({ data: results });
+});
+
+// POST /api/openclaw/skills/refresh — 刷新技能索引
+router.post('/openclaw/skills/refresh', (_req: Request, res: Response) => {
+  refreshSkillIndex();
+  const index = getSkillIndex();
+  res.json({ data: { refreshed: true, total: index.count() } });
 });
 
 export default router;

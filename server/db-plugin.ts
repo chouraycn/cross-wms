@@ -21,9 +21,21 @@ export interface PluginRow {
   permissions: string;
   risk_level: string;
   size_bytes: number;
+  config_json: string;
   metadata: string;
   installed_at: string;
   updated_at: string;
+  activated_at: string | null;
+  last_error: string | null;
+}
+
+export interface PluginDependencyRow {
+  id: string;
+  plugin_id: string;
+  dependency_name: string;
+  dependency_version: string | null;
+  is_optional: number;
+  created_at: string;
 }
 
 export interface ApiDomainWhitelistRow {
@@ -117,12 +129,28 @@ export function initPluginTables(db: Database.Database): void {
       permissions TEXT DEFAULT '[]',
       risk_level TEXT NOT NULL DEFAULT 'auto' CHECK(risk_level IN ('auto','confirm','high-risk')),
       size_bytes INTEGER NOT NULL DEFAULT 0,
+      config_json TEXT DEFAULT '{}',
       metadata TEXT DEFAULT '{}',
       installed_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      activated_at TEXT,
+      last_error TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_plugins_status ON plugins(status);
     CREATE INDEX IF NOT EXISTS idx_plugins_name ON plugins(name);
+
+    -- 1.1 Plugin Dependencies table
+    CREATE TABLE IF NOT EXISTS plugin_dependencies (
+      id TEXT PRIMARY KEY,
+      plugin_id TEXT NOT NULL,
+      dependency_name TEXT NOT NULL,
+      dependency_version TEXT,
+      is_optional INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (plugin_id) REFERENCES plugins(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_plugin_deps_plugin_id ON plugin_dependencies(plugin_id);
+    CREATE INDEX IF NOT EXISTS idx_plugin_deps_dep_name ON plugin_dependencies(dependency_name);
 
     -- 2. API Domain Whitelist
     CREATE TABLE IF NOT EXISTS api_domain_whitelist (
@@ -196,6 +224,20 @@ export function initPluginTables(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_api_req_history_executed ON api_request_history(executed_at);
     CREATE INDEX IF NOT EXISTS idx_api_req_history_template ON api_request_history(template_id);
   `);
+
+  // v4.1: Add new columns to plugins table (idempotent)
+  const pluginColumns: Array<{ column: string; definition: string }> = [
+    { column: 'config_json', definition: "TEXT DEFAULT '{}'" },
+    { column: 'activated_at', definition: 'TEXT' },
+    { column: 'last_error', definition: 'TEXT' },
+  ];
+  for (const { column, definition } of pluginColumns) {
+    const colExists = db.prepare(`SELECT count(*) as cnt FROM pragma_table_info('plugins') WHERE name='${column}'`).get() as { cnt: number };
+    if (colExists.cnt === 0) {
+      db.exec(`ALTER TABLE plugins ADD COLUMN ${column} ${definition}`);
+      logger.info(`[Migrate v4.1] 添加 ${column} 列到 plugins`);
+    }
+  }
 
   // v3.0: Add is_success / extracted_preview columns to api_request_history (idempotent)
   const apiReqHistoryColumns: Array<{ column: string; definition: string }> = [

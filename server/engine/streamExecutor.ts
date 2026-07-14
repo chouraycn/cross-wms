@@ -71,6 +71,8 @@ export interface ExecuteChatCallbacks {
 export interface ExecuteChatParams {
   /** 会话 ID */
   sessionId: string;
+  /** 助手消息 ID */
+  messageId?: string;
   /** 用户消息文本 */
   message: string;
   /** 模型 ID */
@@ -178,6 +180,8 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
       maxToolTurns: 10,
       signal: params.signal ?? new AbortController().signal,
       executionMode: params.executionMode,
+      sessionId: params.sessionId,
+      messageId: params.messageId,
       onSSEEvent: (event: Record<string, unknown>) => {
         // 策略内部事件：核心类型与多模态类型直接发送，其余走 debug 通道
         const eventType = event.type as string;

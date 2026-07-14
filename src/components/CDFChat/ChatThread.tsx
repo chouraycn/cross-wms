@@ -30,6 +30,7 @@ import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import CdfLogoAnimation from '../../assets/cdf-logo-animation.svg';
 const ChatSidePanel = React.lazy(() => import('./ChatSidePanel.js'));
+const TaskMonitorPanel = React.lazy(() => import('./TaskMonitorPanel.js').then(m => ({ default: m.TaskMonitorPanel })));
 import TerminalPanel from './TerminalPanel.js';
 import { ChatMessageList } from '../CrossWmsChat/ChatMessageList.js';
 import { TopBarChatInput } from '../CrossWmsChat/TopBarChatInput.js';
@@ -1281,14 +1282,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         {/* 右侧面板：待办 + 上下文 + 浏览器（仅在有内容时显示） */}
         {sidePanelOpen && !isEmpty && (
           <Suspense fallback={null}>
-            <ChatSidePanel
+            <TaskMonitorPanel
               sessionKey={session.id}
-              sessionTitle={sessionTitle}
               messages={chatMessages}
-              createdAt={session.createdAt}
-              updatedAt={session.updatedAt}
-              model={session.model}
-              compactionInfo={compactionInfo}
             />
           </Suspense>
         )}

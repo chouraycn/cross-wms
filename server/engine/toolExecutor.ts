@@ -44,6 +44,7 @@ import { guardToolResultContext } from './toolContextGuard.js';
 import { toolExecutionQueue } from './toolExecutionQueue.js';
 import { toolSendReceipts } from './toolSendReceipts.js';
 import { abortPrimitives, createRunAbortController } from './abortPrimitives.js';
+import { createToolCall, completeToolCall } from '../dao/taskMonitorDao.js';
 // release 用于在 executeToolLoop 结束时静默清理 runController（防止内存泄漏）
 const releaseRunController = (runId: string) => abortPrimitives.release(`run:${runId}`);
 
@@ -112,6 +113,8 @@ export interface ToolExecutorOptions {
   skillPermissionConfig?: SkillPermissionConfig;
   /** 会话 ID（用于审批流和插件钩子） */
   sessionId?: string;
+  /** 助手消息 ID（用于关联工具调用到特定消息） */
+  messageId?: string;
   /** 工具 Profile ID（用于过滤工具集） */
   toolProfile?: ToolProfileId;
   /** 是否对工具 Schema 进行投影（裁剪参数） */
@@ -156,6 +159,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
     onSSEEvent,
     onRateLimit,
     sessionId,
+    messageId,
   } = options;
 
   // v11.1: 创建运行级别的受管理 AbortController，并桥接外部 signal
@@ -765,6 +769,31 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       arguments: toolCall.function.arguments,
     });
 
+    // 创建工具调用记录（task_monitor）
+    let toolCallRecordId: string | null = null;
+    if (sessionId && messageId) {
+      try {
+        let toolType: 'skill' | 'mcp' | 'system' | 'builtin' = 'builtin';
+        if (isSkillToolName(effectiveToolName)) {
+          toolType = 'skill';
+        } else if (isMcpToolName(effectiveToolName)) {
+          toolType = 'mcp';
+        } else if (effectiveToolName.startsWith('plugin_')) {
+          toolType = 'system';
+        }
+        const record = createToolCall({
+          sessionId,
+          messageId,
+          toolName: effectiveToolName,
+          toolType,
+          arguments: parsedArgs,
+        });
+        toolCallRecordId = record.id;
+      } catch (err) {
+        logger.warn('[ToolExecutor] 创建 tool_call 记录失败:', err instanceof Error ? err.message : String(err));
+      }
+    }
+
     let mcpExecutionSucceeded = true;
     const execStartTime = Date.now();
     let retryCount = 0;
@@ -881,6 +910,31 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       errorType: middlewareResult.errorType === 'none' ? undefined : middlewareResult.errorType,
       truncated: middlewareResult.truncated,
     });
+
+    // 更新工具调用记录（task_monitor）
+    if (toolCallRecordId) {
+      try {
+        const success = middlewareResult.errorType === 'none';
+        let resultData: unknown = null;
+        let errorMsg: string | undefined;
+        if (success) {
+          try {
+            resultData = JSON.parse(result);
+          } catch {
+            resultData = result;
+          }
+        } else {
+          errorMsg = middlewareResult.errorMessage || 'Tool execution failed';
+        }
+        completeToolCall(toolCallRecordId, {
+          success,
+          result: resultData,
+          error: errorMsg,
+        });
+      } catch (err) {
+        logger.warn('[ToolExecutor] 更新 tool_call 记录失败:', err instanceof Error ? err.message : String(err));
+      }
+    }
 
     // SSE: 通知工具执行完成
     if (onSSEEvent) {

@@ -123,6 +123,7 @@ const DEFAULT_MAX_PAYLOAD_BYTES = 1024 * 1024; // 1 MB
 export class EventLedger {
   private initialized = false;
   private sessionCache = new Map<string, LedgerSessionMeta>();
+  private listeners = new Set<(event: LedgerEvent) => void>();
 
   private getDb() {
     return DatabaseManager.getMainDb();
@@ -292,6 +293,9 @@ export class EventLedger {
 
     // 更新缓存
     this.updateSessionCache(sessionId, type, now, result.seq, result.eventCount, payload);
+
+    // 触发事件监听
+    this.emitEvent(event);
 
     logger.debug(`[EventLedger] 记录事件: ${sessionId} #${result.seq} ${type}`);
     return event;
@@ -702,9 +706,31 @@ export class EventLedger {
     }
   }
 
+  // ==========================================================================
+  // 事件监听
+  // ==========================================================================
+
+  onEvent(listener: (event: LedgerEvent) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private emitEvent(event: LedgerEvent): void {
+    for (const listener of this.listeners) {
+      try {
+        listener(event);
+      } catch (err) {
+        logger.error('[EventLedger] 事件监听器执行失败:', err);
+      }
+    }
+  }
+
   close(): void {
     // 不再需要手动关闭数据库，由 DatabaseManager 统一管理
     this.initialized = false;
+    this.listeners.clear();
     logger.info('[EventLedger] 已关闭（连接由 DatabaseManager 管理）');
   }
 }
