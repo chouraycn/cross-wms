@@ -29,6 +29,7 @@
  */
 
 import { logger } from '../logger.js';
+import presetModelsData from '../../shared/data/preset-models.json';
 
 // ==================== 常量 ====================
 
@@ -128,7 +129,22 @@ export function minPositiveContextTokens(...values: Array<number | undefined>): 
 
 // ==================== 常见模型上下文窗口映射 ====================
 
-const MODEL_CONTEXT_WINDOW_MAP: Record<string, number> = {
+/**
+ * 从 preset-models.json 动态构建的上下文窗口映射（优先源）。
+ * 与 preset-models.json 的 contextWindow 字段保持同步，避免硬编码漂移。
+ */
+const PRESET_CONTEXT_WINDOWS: Record<string, number> = {};
+for (const model of (presetModelsData as { models?: Array<{ id: string; contextWindow?: number }> }).models || []) {
+  if (model.contextWindow) {
+    PRESET_CONTEXT_WINDOWS[model.id] = model.contextWindow;
+  }
+}
+
+/**
+ * 硬编码后备映射（fallback）。
+ * 当 preset-models.json 中无对应模型时使用。
+ */
+const FALLBACK_CONTEXT_WINDOW_MAP: Record<string, number> = {
   'gpt-5': 200000,
   'gpt-5o': 200000,
   'gpt-4.1': 200000,
@@ -156,6 +172,15 @@ const MODEL_CONTEXT_WINDOW_MAP: Record<string, number> = {
   'moonshot-v1-128k': 128000,
   'moonshot-v1-32k': 32768,
   'moonshot-v1-8k': 8192,
+};
+
+/**
+ * 合并后的模型上下文窗口映射。
+ * preset-models.json 优先，硬编码作为 fallback（同名键以 preset 为准）。
+ */
+export const MODEL_CONTEXT_WINDOW_MAP: Record<string, number> = {
+  ...FALLBACK_CONTEXT_WINDOW_MAP,
+  ...PRESET_CONTEXT_WINDOWS,
 };
 
 /** 通用模型 ID 前缀匹配（用于快速猜测） */

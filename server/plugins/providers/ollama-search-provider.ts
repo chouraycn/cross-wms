@@ -12,6 +12,7 @@ import type {
   WebSearchResult,
 } from "../web-provider-types.js";
 import { registerWebSearchProvider } from "../web-search-providers.js";
+import { PROVIDER_ENDPOINTS } from "../../../shared/data/providerEndpoints.js";
 
 // ==================== 缓存 ====================
 
@@ -50,7 +51,7 @@ function setInCache(key: string, results: WebSearchResultList): void {
 
 // ==================== 凭证辅助 ====================
 
-const DEFAULT_BASE_URL = "http://localhost:11434";
+const DEFAULT_BASE_URL = PROVIDER_ENDPOINTS.ollama.replace(/\/v1$/, "");
 
 function getBaseUrl(searchConfig?: Record<string, unknown>): string {
   if (searchConfig) {
@@ -166,7 +167,7 @@ const plugin: WebSearchProviderPlugin = {
   hint: "Local Ollama model with search",
   requiresCredential: false,
   envVars: ["OLLAMA_BASE_URL"],
-  placeholder: "http://localhost:11434",
+  placeholder: DEFAULT_BASE_URL,
   signupUrl: "https://ollama.com/",
   docsUrl: "https://github.com/ollama/ollama/blob/main/docs/api.md",
   autoDetectOrder: 60,

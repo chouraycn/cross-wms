@@ -17,13 +17,14 @@ import path from 'path';
 import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 
 const router = Router();
 
 /** 异步审计所有技能（后台执行，不阻塞响应） */
 async function auditAllSkills(): Promise<void> {
   try {
-    const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+    const skillsDir = AppPaths.skillsDir;
     if (!fs.existsSync(skillsDir)) return;
 
     const entries = fs.readdirSync(skillsDir, { withFileTypes: true });

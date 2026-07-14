@@ -11,6 +11,7 @@
  */
 
 import type { ProviderInfo, ModelInfo } from './modelCatalog.js';
+import { PROVIDER_ENDPOINTS } from '../../shared/data/providerEndpoints.js';
 
 /** LiteLLM 模型列表（动态发现，这里仅提供常见示例） */
 const LITELLM_MODELS: ModelInfo[] = [
@@ -38,7 +39,7 @@ const LITELLM_MODELS: ModelInfo[] = [
 export const LITELLM_PROVIDER: ProviderInfo = {
   id: 'litellm',
   name: 'LiteLLM',
-  baseUrl: 'http://localhost:4000', // 默认 LiteLLM Proxy 地址
+  baseUrl: PROVIDER_ENDPOINTS.litellm, // 默认 LiteLLM Proxy 地址
   authType: 'bearer',
   categories: ['cloud', 'llm', 'proxy', 'international'],
   docsPath: '/providers/litellm',

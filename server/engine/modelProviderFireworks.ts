@@ -11,6 +11,7 @@
  */
 
 import type { ProviderInfo, ModelInfo } from './modelCatalog.js';
+import { PROVIDER_ENDPOINTS } from '../../shared/data/providerEndpoints.js';
 
 /** Fireworks AI 模型列表 */
 const FIREWORKS_MODELS: ModelInfo[] = [
@@ -105,7 +106,7 @@ export const FIREWORKS_PROVIDER: ProviderInfo = {
   name: 'Fireworks AI',
   label: 'Fireworks',
   description: 'Fireworks AI 模型提供商（开源模型托管）',
-  baseUrl: 'https://api.fireworks.ai/inference/v1',
+  baseUrl: PROVIDER_ENDPOINTS.fireworks,
   authType: 'bearer',
   categories: ['international', 'cloud'],
   models: FIREWORKS_MODELS,

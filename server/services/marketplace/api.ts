@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import os from 'os';
 import path from 'path';
 import { remoteSkillLoader, type RemoteSkillSource } from '../../engine/remoteSkillLoader.js';
+import { AppPaths } from '../../config/appPaths.js';
 
 export interface MarketplaceSkill {
   id: string;
@@ -183,7 +184,7 @@ export interface InstallSkillOptions {
 
 /** 用户级 skill 安装目录（与 RealSkillProvider 扫描源保持一致） */
 function defaultUserSkillsDir(): string {
-  return path.join(os.homedir(), '.workbuddy', 'skills');
+  return AppPaths.skillsDir;
 }
 
 /** 根据 sourceUrl 推断源类型 */

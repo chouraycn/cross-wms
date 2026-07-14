@@ -13,6 +13,7 @@ import path from 'path';
 import fs from 'fs';
 import type { ModelConfig } from './modelsStore.js';
 import { logger } from './logger.js';
+import { AppPaths } from './config/appPaths.js';
 
 /** 轮询策略类型 */
 export type KeyStrategy = 'round-robin' | 'random' | 'failover';
@@ -54,7 +55,7 @@ interface PersistedRotationState {
 }
 
 // 状态文件路径
-const STATE_DIR = path.join(process.env.HOME || process.env.USERPROFILE || '/tmp', '.cdf-know-clow', 'ai-models');
+const STATE_DIR = AppPaths.modelsDir;
 const ROTATION_STATE_FILE = path.join(STATE_DIR, 'rotation-state.json');
 
 // 内存级轮询状态存储

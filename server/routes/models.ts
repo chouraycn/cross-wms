@@ -10,6 +10,7 @@
  */
 
 import { Router, type Request, type Response } from 'express';
+import { logger } from '../logger.js';
 import {
   loadModelsConfig,
   saveModelsConfig,
@@ -22,6 +23,24 @@ import {
 } from '../modelsStore.js';
 import { getUnifiedProviderRegistry } from '../engine/provider-registry/index.js';
 import { inferApiType } from '../adapters/registry.js';
+
+const DEFAULT_LOCAL_MODEL_ENDPOINTS = [
+  { name: 'Ollama (本地)', url: 'http://localhost:11434', provider: 'ollama' },
+  { name: 'Ollama (11435)', url: 'http://localhost:11435', provider: 'ollama' },
+  { name: 'vLLM (8000)', url: 'http://localhost:8000', provider: 'custom' },
+  { name: 'vLLM (8001)', url: 'http://localhost:8001', provider: 'custom' },
+  { name: 'LM Studio', url: 'http://localhost:1234', provider: 'custom' },
+];
+
+const LOCAL_MODEL_ENDPOINTS = (() => {
+  try {
+    const envEndpoints = process.env.CROSS_WMS_LOCAL_ENDPOINTS;
+    if (envEndpoints) return JSON.parse(envEndpoints);
+  } catch (e) {
+    logger.warn('[Models] 本地端点环境变量解析失败:', (e as Error).message);
+  }
+  return DEFAULT_LOCAL_MODEL_ENDPOINTS;
+})();
 
 const router = Router();
 
@@ -175,7 +194,7 @@ router.put('/', async (req: Request, res: Response) => {
 router.post('/reset', async (_req: Request, res: Response) => {
   try {
     const builtin = getBuiltinModels();
-    const config = await saveModelsConfig(builtin, 'gpt-4o');
+    const config = await saveModelsConfig(builtin, process.env.CROSS_WMS_MODELS_DEFAULT || 'gpt-4o');
     res.json({ data: config });
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
@@ -257,7 +276,7 @@ router.post('/health-check', async (req: Request, res: Response) => {
               method: 'POST',
               headers: { ...headers, 'anthropic-version': '2023-06-01' },
               body: JSON.stringify({
-                model: model.id || 'claude-3-5-sonnet-latest',
+                model: model.id || process.env.CROSS_WMS_MODELS_DEFAULT || 'claude-3-5-sonnet-latest',
                 max_tokens: 1,
                 messages: [{ role: 'user', content: 'Hi' }],
               }),
@@ -387,13 +406,9 @@ router.post('/discover-local', async (req: Request, res: Response) => {
 
     // 要扫描的本地端点列表 — localhost 优先，IP 地址作为备用
     const localEndpoints = [
-      { name: 'Ollama (本地)', url: 'http://localhost:11434', provider: 'ollama' },
+      ...LOCAL_MODEL_ENDPOINTS,
       { name: 'Ollama (自定义)', url: customOllamaUrl, provider: 'ollama' },
       { name: 'Ollama (宿主机)', url: `http://${defaultHostIp}:11434`, provider: 'ollama' },
-      { name: 'Ollama (11435)', url: 'http://localhost:11435', provider: 'ollama' },
-      { name: 'vLLM (8000)', url: 'http://localhost:8000', provider: 'custom' },
-      { name: 'vLLM (8001)', url: 'http://localhost:8001', provider: 'custom' },
-      { name: 'LM Studio', url: 'http://localhost:1234', provider: 'custom' },
     ];
 
     const discoverPromises = localEndpoints.map(async (ep) => {
@@ -503,7 +518,7 @@ router.post('/test-connection', async (req: Request, res: Response) => {
       // --- Anthropic：真实调用 ---
       if (apiEndpoint.includes('anthropic.com')) {
         const testBody = JSON.stringify({
-          model: modelId || 'claude-3-5-sonnet-latest',
+          model: modelId || process.env.CROSS_WMS_MODELS_DEFAULT || 'claude-3-5-sonnet-latest',
           max_tokens: 10,
           messages: [{ role: 'user', content: 'Hi' }],
         });

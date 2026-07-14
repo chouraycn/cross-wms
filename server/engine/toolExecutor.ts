@@ -328,7 +328,9 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       response.toolCalls.forEach((tc, i) => {
         const tcName = tc.function.name;
         let tcArgs: Record<string, unknown> = {};
-        try { tcArgs = JSON.parse(tc.function.arguments || '{}'); } catch { /* ignore */ }
+        try { tcArgs = JSON.parse(tc.function.arguments || '{}'); } catch (e) {
+          logger.warn('[ToolExecutor] 工具调用参数解析失败:', (e as Error).message);
+        }
         let tcSource: 'builtin' | 'mcp' | 'plugin' = 'builtin';
         if (isMcpToolName(tcName)) tcSource = 'mcp';
         else if (tcName.startsWith('plugin_')) tcSource = 'plugin';

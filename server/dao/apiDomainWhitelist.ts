@@ -39,23 +39,29 @@ function setCached(hostname: string, allowed: boolean): void {
 // ===================== Fallback Constants =====================
 
 /**
+ * 内置域名白名单（hostname + description）。
+ * 作为 DB seed 与运行时 fallback 的单一数据源，由 db-plugin.ts 与本文件共同引用。
+ */
+export const BUILTIN_DOMAINS: ReadonlyArray<{ hostname: string; desc: string }> = [
+  { hostname: 'api.github.com', desc: 'GitHub API' },
+  { hostname: 'api.openai.com', desc: 'OpenAI API' },
+  { hostname: 'api.anthropic.com', desc: 'Anthropic API' },
+  { hostname: 'generativelanguage.googleapis.com', desc: 'Google Gemini API' },
+  { hostname: 'api.weixin.qq.com', desc: '微信 API' },
+  { hostname: 'qyapi.weixin.qq.com', desc: '企业微信 API' },
+  { hostname: 'docs.qq.com', desc: '腾讯文档' },
+  { hostname: 'api.day.app', desc: 'Day One API' },
+  { hostname: 'open.feishu.cn', desc: '飞书开放平台' },
+  { hostname: 'api.money.126.net', desc: '网易财经 API' },
+  { hostname: 'pushbear.ftqq.com', desc: 'PushBear 通知' },
+];
+
+/**
  * 硬编码后备域名列表。
  * 当 DB 不可用时（如首次启动前），使用此常量作为安全底线。
- * 与 db.ts seed 中的 11 个域名保持同步。
+ * 从 BUILTIN_DOMAINS 派生，避免重复定义。
  */
-const FALLBACK_DOMAINS = new Set([
-  'api.github.com',
-  'api.openai.com',
-  'api.anthropic.com',
-  'generativelanguage.googleapis.com',
-  'api.weixin.qq.com',
-  'qyapi.weixin.qq.com',
-  'docs.qq.com',
-  'api.day.app',
-  'open.feishu.cn',
-  'api.money.126.net',
-  'pushbear.ftqq.com',
-]);
+const FALLBACK_DOMAINS = new Set(BUILTIN_DOMAINS.map(d => d.hostname));
 
 // ===================== Public DAO Functions =====================
 

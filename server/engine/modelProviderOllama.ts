@@ -13,6 +13,7 @@
  */
 
 import type { ProviderInfo, ModelInfo } from './modelCatalog.js';
+import { PROVIDER_ENDPOINTS } from '../../shared/data/providerEndpoints.js';
 
 /** Ollama 预设模型列表（用户可自行安装其他模型） */
 const OLLAMA_MODELS: ModelInfo[] = [
@@ -165,7 +166,7 @@ const OLLAMA_MODELS: ModelInfo[] = [
 export const OLLAMA_PROVIDER: ProviderInfo = {
   id: 'ollama',
   name: 'Ollama',
-  baseUrl: 'http://localhost:11434/v1',
+  baseUrl: PROVIDER_ENDPOINTS.ollama,
   authType: 'none',
   categories: ['local', 'llm'],
   docsPath: '/providers/ollama',

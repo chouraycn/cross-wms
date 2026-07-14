@@ -22,6 +22,7 @@ import {
   resolveSecretRef,
   validateSecretRef,
 } from './secretsManager.js';
+import { AppPaths } from '../config/appPaths.js';
 
 const KNOWN_SECRET_ENV_VAR_NAMES = new Set([
   'OPENAI_API_KEY',
@@ -162,7 +163,7 @@ function collectFileSecrets(
   findings: SecretsAuditFinding[],
 ): string[] {
   const filesScanned: string[] = [];
-  const secretsDir = path.join(os.homedir(), '.cdf-know-clow', 'secrets');
+  const secretsDir = path.join(AppPaths.rootDir, 'secrets');
 
   if (!fs.existsSync(secretsDir)) {
     return filesScanned;
@@ -237,7 +238,7 @@ export async function runSecretsAudit(): Promise<SecretsAuditReport> {
   const configFiles = collectConfigSecrets(secrets, findings);
   configFiles.forEach((f) => filesScannedSet.add(f));
 
-  const envPath = path.join(os.homedir(), '.cdf-know-clow', '.env');
+  const envPath = path.join(AppPaths.rootDir, '.env');
   const envFiles = collectEnvPlaintext(envPath, findings);
   envFiles.forEach((f) => filesScannedSet.add(f));
 

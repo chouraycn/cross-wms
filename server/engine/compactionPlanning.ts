@@ -17,23 +17,15 @@
 
 import { logger } from '../logger.js';
 import { estimateTokens, estimateMessagesTokens } from './contextWindowGuard.js';
-
-// ==================== 常量 ====================
+import {
+  BASE_CHUNK_RATIO,
+  MIN_CHUNK_RATIO,
+  SAFETY_MARGIN as COMPACTION_SAFETY_MARGIN,
+  SUMMARIZATION_OVERHEAD_TOKENS,
+} from './compaction-planning.js';
 
 /** 默认保留的最近消息数（不进入压缩） */
 export const DEFAULT_RECENT_MESSAGES_KEEP = 6;
-
-/** 压缩分块占上下文窗口的目标比例 */
-export const BASE_CHUNK_RATIO = 0.4;
-
-/** 分块大小的下限比例 */
-export const MIN_CHUNK_RATIO = 0.15;
-
-/** 预估 token 的安全边际 */
-export const COMPACTION_SAFETY_MARGIN = 1.2;
-
-/** 摘要系统提示词 + 输出 overhead 预留 token */
-export const SUMMARIZATION_OVERHEAD_TOKENS = 2048;
 
 /** 单条消息最大 token 数，超过则标记为 oversized 不进入摘要 */
 export const MAX_SINGLE_MESSAGE_TOKENS = 8000;

@@ -11,6 +11,7 @@
  */
 
 import type { ProviderInfo, ModelInfo } from './modelCatalog.js';
+import { PROVIDER_ENDPOINTS } from '../../shared/data/providerEndpoints.js';
 
 /** Groq 模型列表 */
 const GROQ_MODELS: ModelInfo[] = [
@@ -110,7 +111,7 @@ const GROQ_MODELS: ModelInfo[] = [
 export const GROQ_PROVIDER: ProviderInfo = {
   id: 'groq',
   name: 'Groq',
-  baseUrl: 'https://api.groq.com/openai/v1',
+  baseUrl: PROVIDER_ENDPOINTS.groq,
   authType: 'bearer',
   categories: ['cloud', 'llm', 'international', 'fast'],
   docsPath: '/providers/groq',

@@ -351,7 +351,7 @@ export async function handleWriteFile(args: Record<string, unknown>): Promise<st
   const homeDir = os.homedir();
   const cwd = process.cwd(); // 工作区目录
   const allowedDirs = [
-    path.join(homeDir, '.cdf-know-clow'),  // 应用数据目录
+    AppPaths.rootDir,  // 应用数据目录
     path.join(homeDir, 'Desktop'),           // 桌面
     path.join(homeDir, 'Documents'),         // 文档
     path.join(homeDir, 'Downloads'),         // 下载

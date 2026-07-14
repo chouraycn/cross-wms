@@ -85,10 +85,10 @@ configCommand
       const defaultConfig = {
         app: {
           name: 'cdf-know',
-          port: 3000,
+          port: parseInt(process.env.PORT || '3001', 10),
         },
         models: {
-          default: 'gpt-4',
+          default: process.env.CROSS_WMS_MODELS_DEFAULT || 'gpt-4',
         },
       };
       
@@ -114,10 +114,10 @@ configCommand
       const defaultConfig = {
         app: {
           name: 'cdf-know',
-          port: 3000,
+          port: parseInt(process.env.PORT || '3001', 10),
         },
         models: {
-          default: 'gpt-4',
+          default: process.env.CROSS_WMS_MODELS_DEFAULT || 'gpt-4',
         },
         agents: {
           defaults: {

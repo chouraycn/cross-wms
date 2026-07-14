@@ -19,6 +19,7 @@ import {
 } from '../../shared/types/agent.js';
 import { logger } from '../logger.js';
 import { v4 as uuidv4 } from 'uuid';
+import { AppPaths } from '../config/appPaths.js';
 
 // ===================== 类型 =====================
 
@@ -44,7 +45,7 @@ export interface RuntimeInstance {
 // ===================== 常量 =====================
 
 /** Agent 数据存储根目录 */
-const AGENT_DATA_ROOT = path.join(process.env.HOME || '~', '.cdf-know-clow', 'agents');
+const AGENT_DATA_ROOT = path.join(AppPaths.rootDir, 'agents');
 
 /** SOUL.md 文件名 */
 const SOUL_FILE = 'SOUL.md';

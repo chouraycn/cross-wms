@@ -1,6 +1,7 @@
 import type Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from './logger.js';
+import { BUILTIN_DOMAINS } from './dao/apiDomainWhitelist.js';
 
 // ===================== v3.0: Plugin & API Types =====================
 
@@ -233,32 +234,20 @@ export function initPluginTables(db: Database.Database): void {
   }
 
   // v3.0: Seed built-in domain whitelist (11 hardcoded domains → DB)
+  // 域名列表引用 apiDomainWhitelist.ts 的 BUILTIN_DOMAINS，避免重复定义
   const v300DomainKey = 'migration_v3.0_seed_domains';
   const v300DomainExists = db.prepare('SELECT value FROM app_settings WHERE key = ?').get(v300DomainKey) as { value: string } | undefined;
   if (!v300DomainExists) {
     const now = new Date().toISOString();
-    const builtinDomains = [
-      { hostname: 'api.github.com', desc: 'GitHub API' },
-      { hostname: 'api.openai.com', desc: 'OpenAI API' },
-      { hostname: 'api.anthropic.com', desc: 'Anthropic API' },
-      { hostname: 'generativelanguage.googleapis.com', desc: 'Google Gemini API' },
-      { hostname: 'api.weixin.qq.com', desc: '微信 API' },
-      { hostname: 'qyapi.weixin.qq.com', desc: '企业微信 API' },
-      { hostname: 'docs.qq.com', desc: '腾讯文档' },
-      { hostname: 'api.day.app', desc: 'Day One API' },
-      { hostname: 'open.feishu.cn', desc: '飞书开放平台' },
-      { hostname: 'api.money.126.net', desc: '网易财经 API' },
-      { hostname: 'pushbear.ftqq.com', desc: 'PushBear 通知' },
-    ];
     const insertDomain = db.prepare(
       `INSERT OR IGNORE INTO api_domain_whitelist (id, hostname, description, category, is_deletable, created_at)
        VALUES (?, ?, ?, 'system', 0, ?)`
     );
-    for (const d of builtinDomains) {
+    for (const d of BUILTIN_DOMAINS) {
       insertDomain.run(uuidv4(), d.hostname, d.desc, now);
     }
-    db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?)').run(v300DomainKey, JSON.stringify({ migratedAt: now, count: builtinDomains.length }));
-    logger.info(`[Migrate v3.0] 已植入 ${builtinDomains.length} 个内置域名白名单`);
+    db.prepare('INSERT INTO app_settings (key, value) VALUES (?, ?)').run(v300DomainKey, JSON.stringify({ migratedAt: now, count: BUILTIN_DOMAINS.length }));
+    logger.info(`[Migrate v3.0] 已植入 ${BUILTIN_DOMAINS.length} 个内置域名白名单`);
   }
 
   logger.info('[Migrate v3.0] Tools v3 数据库迁移完成');

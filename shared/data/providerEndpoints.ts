@@ -36,4 +36,9 @@ export const PROVIDER_ENDPOINTS: Record<string, string> = {
   yi: 'https://api.lingyiwanwu.com/v1',
   baichuan: 'https://api.baichuan-ai.com/v1',
   stepfun: 'https://api.stepfun.com/v1',
+  // 国际推理/代理平台
+  groq: 'https://api.groq.com/openai/v1',
+  fireworks: 'https://api.fireworks.ai/inference/v1',
+  mistral: 'https://api.mistral.ai/v1',
+  litellm: 'http://localhost:4000',
 } as const;

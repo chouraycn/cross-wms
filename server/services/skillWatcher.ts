@@ -20,6 +20,7 @@ import { scanWorkbuddySkills } from '../routes/skills.js';
 import { auditSkillMd, generateMarkdownReport } from './securityAuditor.js';
 import { createSkillAudit, getLatestSkillAudit } from '../dao/chains.js';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 
 // ===================== Types =====================
 
@@ -81,7 +82,7 @@ class SkillWatcher {
    * 初始化 chokidar 监听器（默认技能目录）
    */
   init(): void {
-    const defaultSkillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+    const defaultSkillsDir = AppPaths.skillsDir;
     this.addWatchDir(defaultSkillsDir);
     this.startIdleCheck();
   }

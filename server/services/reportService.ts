@@ -12,10 +12,11 @@ import path from 'path';
 import { logger } from '../logger.js';
 import { createReport, getReports, getReportById, deleteReport as daoDeleteReport } from '../dao/wmsSkillDao.js';
 import { getInventoryItems, getInboundRecords, getOutboundRecords, getWarehouseById } from '../dao/warehouse.js';
+import { AppPaths } from '../config/appPaths.js';
 
 // ===================== 常量定义 =====================
 
-const REPORTS_DIR = path.join(process.env.HOME || process.env.USERPROFILE || '', '.cdf-know-clow', 'reports');
+const REPORTS_DIR = AppPaths.reportsDir;
 const UTF8_BOM = '\uFEFF';
 
 // ===================== 工具函数 =====================
