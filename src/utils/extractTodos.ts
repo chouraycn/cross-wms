@@ -117,9 +117,9 @@ export function extractTodos(content: string, maxItems = 10): ExtractedTodo[] {
  * @returns 合并后的列表（新待办插入顶部）
  */
 export function mergeAutoTodos(
-  existing: Array<{ id: string; text: string; done: boolean; createdAt: number; source?: string }>,
+  existing: Array<{ id: string; text: string; done: boolean; createdAt: number; source?: 'auto' | 'manual' }>,
   extracted: ExtractedTodo[],
-): Array<{ id: string; text: string; done: boolean; createdAt: number; source?: string }> {
+): Array<{ id: string; text: string; done: boolean; createdAt: number; source?: 'auto' | 'manual' }> {
   const existingTexts = new Set(existing.map(t => t.text.trim()));
   const newTodos = extracted.filter(t => !existingTexts.has(t.text.trim()));
   if (newTodos.length === 0) return existing;

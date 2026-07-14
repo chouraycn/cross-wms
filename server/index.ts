@@ -318,6 +318,12 @@ app.use('/api/migrate', lazyRouter(() => import('./routes/migrate.js'), undefine
 app.use('/api/projects', lazyRouter(() => import('./routes/projects.js'), undefined, 'projects'));
 app.use('/api/tasks', lazyRouter(() => import('./routes/tasks.js'), undefined, 'tasks'));
 
+// Task Monitor routes (lazy) — 待办/产物/工具调用/轨迹
+app.use('/api/task-monitor', lazyRouter(() => import('./routes/taskMonitor.js'), undefined, 'task-monitor'));
+
+// Workboard routes (lazy) — 任务编排系统
+app.use('/api/workboard', lazyRouter(() => import('./routes/workboard.js'), undefined, 'workboard'));
+
 // Automation webhook routes (lazy)
 app.use('/api/automation', lazyRouter(() => import('./routes/automation.js'), undefined, 'automation'));
 

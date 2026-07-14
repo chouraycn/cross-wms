@@ -5,7 +5,7 @@
  * 所有函数均使用 better-sqlite3 同步 API。
  */
 
-import { initDb, type PluginRow } from '../db.js';
+import { initDb, type PluginRow, type PluginDependencyRow } from '../db.js';
 import { v4 as uuidv4 } from 'uuid';
 
 // ===================== Public DAO Functions =====================
@@ -175,4 +175,149 @@ export function setPluginConfig(id: string, config: Record<string, unknown>): Pl
     const metadata = { config };
     return updatePlugin(id, { metadata: JSON.stringify(metadata) });
   }
+}
+
+// ===================== v4.1: Enhanced Plugin DAO =====================
+
+/**
+ * 获取插件配置（从 config_json 列读取）
+ */
+export function getPluginConfigJson(id: string): Record<string, unknown> {
+  const plugin = getPlugin(id);
+  if (!plugin) return {};
+  try {
+    return JSON.parse(plugin.config_json || '{}');
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * 更新插件配置（写入 config_json 列）
+ */
+export function setPluginConfigJson(id: string, config: Record<string, unknown>): PluginRow | undefined {
+  const db = initDb();
+  const existing = getPlugin(id);
+  if (!existing) return undefined;
+  
+  db.prepare(`UPDATE plugins SET config_json = ?, updated_at = ? WHERE id = ?`)
+    .run(JSON.stringify(config), new Date().toISOString(), id);
+  
+  return getPlugin(id);
+}
+
+/**
+ * 更新插件激活时间
+ */
+export function updatePluginActivatedAt(id: string, activatedAt: string | null): PluginRow | undefined {
+  const db = initDb();
+  const existing = getPlugin(id);
+  if (!existing) return undefined;
+  
+  db.prepare(`UPDATE plugins SET activated_at = ?, updated_at = ? WHERE id = ?`)
+    .run(activatedAt, new Date().toISOString(), id);
+  
+  return getPlugin(id);
+}
+
+/**
+ * 更新插件最后错误信息
+ */
+export function updatePluginLastError(id: string, lastError: string | null): PluginRow | undefined {
+  const db = initDb();
+  const existing = getPlugin(id);
+  if (!existing) return undefined;
+  
+  db.prepare(`UPDATE plugins SET last_error = ?, updated_at = ? WHERE id = ?`)
+    .run(lastError, new Date().toISOString(), id);
+  
+  return getPlugin(id);
+}
+
+// ===================== Plugin Dependencies DAO =====================
+
+/**
+ * 获取插件的所有依赖
+ */
+export function getPluginDependencies(pluginId: string): PluginDependencyRow[] {
+  const db = initDb();
+  return db.prepare(
+    'SELECT * FROM plugin_dependencies WHERE plugin_id = ? ORDER BY created_at ASC'
+  ).all(pluginId) as PluginDependencyRow[];
+}
+
+/**
+ * 添加插件依赖
+ */
+export function addPluginDependency(
+  pluginId: string,
+  dependencyName: string,
+  dependencyVersion?: string,
+  isOptional: boolean = false
+): PluginDependencyRow {
+  const db = initDb();
+  const id = uuidv4();
+  const now = new Date().toISOString();
+  
+  db.prepare(`
+    INSERT INTO plugin_dependencies (id, plugin_id, dependency_name, dependency_version, is_optional, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, pluginId, dependencyName, dependencyVersion || null, isOptional ? 1 : 0, now);
+  
+  return db.prepare('SELECT * FROM plugin_dependencies WHERE id = ?').get(id) as PluginDependencyRow;
+}
+
+/**
+ * 批量设置插件依赖（先删除后添加）
+ */
+export function setPluginDependencies(
+  pluginId: string,
+  dependencies: Array<{ name: string; version?: string; optional?: boolean }>
+): void {
+  const db = initDb();
+  const now = new Date().toISOString();
+  
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM plugin_dependencies WHERE plugin_id = ?').run(pluginId);
+    
+    const insert = db.prepare(`
+      INSERT INTO plugin_dependencies (id, plugin_id, dependency_name, dependency_version, is_optional, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    
+    for (const dep of dependencies) {
+      insert.run(
+        uuidv4(),
+        pluginId,
+        dep.name,
+        dep.version || null,
+        dep.optional ? 1 : 0,
+        now
+      );
+    }
+  });
+  
+  tx();
+}
+
+/**
+ * 删除插件依赖
+ */
+export function removePluginDependency(dependencyId: string): boolean {
+  const db = initDb();
+  const result = db.prepare('DELETE FROM plugin_dependencies WHERE id = ?').run(dependencyId);
+  return result.changes > 0;
+}
+
+/**
+ * 获取依赖于指定插件的所有插件
+ */
+export function getPluginDependents(dependencyName: string): PluginRow[] {
+  const db = initDb();
+  return db.prepare(`
+    SELECT p.* FROM plugins p
+    INNER JOIN plugin_dependencies pd ON p.id = pd.plugin_id
+    WHERE pd.dependency_name = ?
+    ORDER BY p.name ASC
+  `).all(dependencyName) as PluginRow[];
 }

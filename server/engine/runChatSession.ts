@@ -64,6 +64,7 @@ import {
   emitFileEvent,
   emitFileEventsForPaths,
 } from './generatedFileAttachment.js';
+import { createArtifact, findArtifactByFilePath } from '../dao/taskMonitorDao.js';
 
 // ===================== 压缩 Hook 单例 =====================
 // 在聊天执行核心中挂载「死」模块 engine/compaction/compactionHooks.ts 的生命周期钩子。
@@ -263,7 +264,10 @@ export async function runChatSession(
     agentId: input.agentId,
     message,
   });
+  
+  let keywordTriggeredSkillContext = '';
   if (keywordMatches.length > 0) {
+    const keywordSkillBlocks: string[] = [];
     for (const match of keywordMatches) {
       callbacks.onEvent?.({
         type: 'keyword_trigger',
@@ -274,7 +278,17 @@ export async function runChatSession(
         reason: match.reason,
       });
       logger.info(`[KeywordTrigger] Matched skill "${match.skillName}" for message: "${message.substring(0, 50)}..."`);
+      
+      keywordSkillBlocks.push(`<skill name="${match.skillId}">`);
+      keywordSkillBlocks.push(`  <name>${match.skillName}</name>`);
+      keywordSkillBlocks.push(`  <description>通过关键词 "${match.matchedKeywords.join(', ')}" 自动触发</description>`);
+      keywordSkillBlocks.push(`  <matchedKeywords>${match.matchedKeywords.join(', ')}</matchedKeywords>`);
+      keywordSkillBlocks.push(`  <matchScore>${match.matchScore.toFixed(2)}</matchScore>`);
+      keywordSkillBlocks.push(`  <usage>调用元工具 skill（action="use", id="${match.skillId}"）读取完整技能说明，再按说明用其它工具执行</usage>`);
+      keywordSkillBlocks.push('</skill>');
     }
+    
+    keywordTriggeredSkillContext = `<keyword_triggered_skills>\n以下技能通过关键词自动匹配触发，请优先使用：\n${keywordSkillBlocks.join('\n')}\n</keyword_triggered_skills>`;
   }
 
   const modelsConfig = await loadModelsConfig();
@@ -325,9 +339,14 @@ export async function runChatSession(
   const contractMaxToolCalls = getExecutionContractManager().getContract(effectiveModel).maxToolCallsPerTurn;
 
   const dbMessages = getSessionMessages(sessionId);
+  
+  const combinedSkillContext = [input.skillContext, keywordTriggeredSkillContext]
+    .filter(Boolean)
+    .join('\n\n');
+  
   // P2-1b 智能技能路由：在构建消息前，按 query + 上下文自动匹配相关技能并注入 prompt
   const resolvedSkillContext = await resolveSkillContext(
-    input.skillContext,
+    combinedSkillContext,
     message,
     extractContextTexts(dbMessages, 6),
   );
@@ -589,6 +608,7 @@ export async function runChatSession(
   try {
     const result: ExecuteChatResult = await streamExecuteChat({
       sessionId,
+      messageId: assistantMessageId,
       message,
       model: effectiveModel,
       modelName: effectiveModelName,
@@ -614,7 +634,7 @@ export async function runChatSession(
       : undefined;
 
     // 从工具调用结果中提取生成的文件信息
-    const generatedFiles = result.toolCalls
+    const generatedFiles = (result.toolCalls
       ?.filter(tc => tc.name === 'file_generateFile')
       .map(tc => {
         try {
@@ -635,7 +655,26 @@ export async function runChatSession(
           return null;
         }
       })
-      .filter(Boolean) || [];
+      .filter((f): f is NonNullable<typeof f> => f != null)) || [];
+
+    // 将生成的文件信息写入 artifacts 表
+    for (const file of generatedFiles) {
+      try {
+        const existing = findArtifactByFilePath(file.filePath);
+        if (!existing) {
+          createArtifact({
+            sessionId,
+            messageId: assistantMessageId,
+            fileName: file.fileName,
+            filePath: file.filePath,
+            fileSize: file.fileSize,
+            description: file.description,
+          });
+        }
+      } catch (err) {
+        logger.warn('[runChatSession] 写入 artifact 失败:', err instanceof Error ? err.message : String(err));
+      }
+    }
 
     // Thinking 缓存写入
     if (result.thinkingContent && result.content) {

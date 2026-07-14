@@ -8,11 +8,17 @@ import { getMethodRegistry } from "./methodRegistry.js";
 import { registerCoreMethods } from "./coreMethods.js";
 import { registerChatMethods } from "./chatMethods.js";
 import { registerCronMethods } from "./cronMethods.js";
+import { registerWorkboardMethods } from "./workboardMethods.js";
+import { initSessionSync } from "./sessionSync.js";
 
 // 确保所有方法已注册
 registerCoreMethods();
 registerChatMethods();
 registerCronMethods();
+registerWorkboardMethods();
+
+// 初始化会话同步
+initSessionSync();
 
 /**
  * Gateway JSON-RPC 风格的端点
@@ -635,6 +641,183 @@ export function registerGatewayRoutes(app: {
         total_tokens: texts.join(" ").split(/\s+/).length,
       },
     });
+  });
+
+  // ====== Workboard REST API ======
+
+  app.get("/api/gateway/workboard/tasks", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.tasks.list", req.query, {
+      requestId: `wb_tasks_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    res.json(result);
+  });
+
+  app.get("/api/gateway/workboard/tasks/:id", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.tasks.get", { id: req.params.id }, {
+      requestId: `wb_task_get_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    if (!result.ok) {
+      res.status(404).json(result);
+      return;
+    }
+    res.json(result);
+  });
+
+  app.post("/api/gateway/workboard/tasks", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.tasks.create", req.body, {
+      requestId: `wb_task_create_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    if (!result.ok) {
+      res.status(400).json(result);
+      return;
+    }
+    res.status(201).json(result);
+  });
+
+  app.put("/api/gateway/workboard/tasks/:id", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.tasks.update", { id: req.params.id, ...req.body }, {
+      requestId: `wb_task_update_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    if (!result.ok) {
+      res.status(400).json(result);
+      return;
+    }
+    res.json(result);
+  });
+
+  app.delete("/api/gateway/workboard/tasks/:id", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.tasks.delete", { id: req.params.id }, {
+      requestId: `wb_task_delete_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    res.json(result);
+  });
+
+  app.post("/api/gateway/workboard/tasks/:id/claim", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.task.claim", { taskId: req.params.id, ...req.body }, {
+      requestId: `wb_task_claim_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    if (!result.ok) {
+      res.status(400).json(result);
+      return;
+    }
+    res.json(result);
+  });
+
+  app.post("/api/gateway/workboard/tasks/:id/release", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.task.release", { taskId: req.params.id, ...req.body }, {
+      requestId: `wb_task_release_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    if (!result.ok) {
+      res.status(400).json(result);
+      return;
+    }
+    res.json(result);
+  });
+
+  app.post("/api/gateway/workboard/tasks/:id/complete", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.task.complete", { taskId: req.params.id, ...req.body }, {
+      requestId: `wb_task_complete_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    if (!result.ok) {
+      res.status(400).json(result);
+      return;
+    }
+    res.json(result);
+  });
+
+  app.post("/api/gateway/workboard/tasks/:id/fail", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.task.fail", { taskId: req.params.id, ...req.body }, {
+      requestId: `wb_task_fail_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    if (!result.ok) {
+      res.status(400).json(result);
+      return;
+    }
+    res.json(result);
+  });
+
+  app.get("/api/gateway/workboard/workers", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.workers.list", req.query, {
+      requestId: `wb_workers_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    res.json(result);
+  });
+
+  app.get("/api/gateway/workboard/workers/:id", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.workers.get", { id: req.params.id }, {
+      requestId: `wb_worker_get_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    if (!result.ok) {
+      res.status(404).json(result);
+      return;
+    }
+    res.json(result);
+  });
+
+  app.post("/api/gateway/workboard/workers", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.workers.register", req.body, {
+      requestId: `wb_worker_create_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    if (!result.ok) {
+      res.status(400).json(result);
+      return;
+    }
+    res.status(201).json(result);
+  });
+
+  app.delete("/api/gateway/workboard/workers/:id", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.workers.unregister", { id: req.params.id }, {
+      requestId: `wb_worker_delete_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    res.json(result);
+  });
+
+  app.post("/api/gateway/workboard/workers/:id/heartbeat", async (req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.workers.heartbeat", { id: req.params.id }, {
+      requestId: `wb_worker_heartbeat_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    if (!result.ok) {
+      res.status(404).json(result);
+      return;
+    }
+    res.json(result);
+  });
+
+  app.get("/api/gateway/workboard/stats", async (_req, res) => {
+    const registry = getMethodRegistry();
+    const result = await registry.invoke("workboard.stats", {}, {
+      requestId: `wb_stats_${Date.now()}`,
+      timestamp: Date.now(),
+    });
+    res.json(result);
   });
 
   console.log("[gateway] Gateway routes registered (including OpenAI-compatible endpoints)");

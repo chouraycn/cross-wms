@@ -30,6 +30,52 @@ router.get('/keywords', (req: Request, res: Response) => {
   res.json({ keywords: engine.getAllKeywords() });
 });
 
+router.get('/tool-names', (req: Request, res: Response) => {
+  const engine = getKeywordTriggerEngine();
+  res.json({ toolNames: engine.getAllToolNames() });
+});
+
+router.get('/pinyin-keywords', (req: Request, res: Response) => {
+  const engine = getKeywordTriggerEngine();
+  res.json({ pinyinKeywords: engine.getAllPinyinKeywords() });
+});
+
+router.get('/synonyms', (req: Request, res: Response) => {
+  const engine = getKeywordTriggerEngine();
+  res.json({ synonyms: engine.getAllSynonyms() });
+});
+
+router.get('/rules', (req: Request, res: Response) => {
+  const engine = getKeywordTriggerEngine();
+  res.json({ rules: engine.getAllRules() });
+});
+
+router.get('/rules/:skillId', (req: Request, res: Response) => {
+  const engine = getKeywordTriggerEngine();
+  const rule = engine.getRuleBySkillId(req.params.skillId);
+  if (!rule) {
+    res.status(404).json({ error: 'Rule not found' });
+    return;
+  }
+  res.json({ rule });
+});
+
+router.post('/synonyms', (req: Request, res: Response) => {
+  try {
+    const { keyword, synonym } = req.body;
+    if (!keyword || !synonym) {
+      res.status(400).json({ error: 'keyword and synonym are required' });
+      return;
+    }
+    const engine = getKeywordTriggerEngine();
+    engine.addSynonym(keyword, synonym);
+    res.json({ ok: true });
+  } catch (e) {
+    logger.error('[KeywordTrigger] Failed to add synonym:', e);
+    res.status(400).json({ error: (e as Error).message });
+  }
+});
+
 router.post('/test', (req: Request, res: Response) => {
   const { message } = req.body;
   if (!message) {
