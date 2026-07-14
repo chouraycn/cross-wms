@@ -44,7 +44,7 @@ struct AppConfig: Codable {
 
     static var `default`: AppConfig {
         AppConfig(
-            serverPort: 3001,
+            serverPort: ProcessInfo.processInfo.environment["PORT"].flatMap(Int.init) ?? 3001,
             autoStartServer: true,
             windowWidth: 1280,
             windowHeight: 800,

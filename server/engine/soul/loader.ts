@@ -139,7 +139,7 @@ function hasSectionChanged(
 export function loadSystemSoul(): SoulConfig | null {
   const priority: SoulPriority = 'system';
   const fileName = 'SYSTEM.md';
-  const filePath = path.join(process.cwd(), '.cdf-know-clow', fileName);
+  const filePath = path.join(AppPaths.rootDir, fileName);
   const cacheKey = `${priority}:${filePath}`;
 
   const mtime = getFileMtime(filePath);
@@ -178,7 +178,7 @@ export function loadSystemSoul(): SoulConfig | null {
  */
 export function loadProjectSoul(): SoulConfig | null {
   const priority: SoulPriority = 'project';
-  const filePath = path.join(process.cwd(), '.cdf-know-clow', SOUL_FILE);
+  const filePath = path.join(AppPaths.rootDir, SOUL_FILE);
   const cacheKey = `${priority}:${filePath}`;
 
   const mtime = getFileMtime(filePath);
@@ -398,7 +398,7 @@ export function initDefaultSoulFiles(): void {
     if (fs.existsSync(targetPath)) continue;  // 已存在不覆盖
 
     // 尝试从项目模板复制
-    const projectSoulDir = path.join(process.cwd(), '.cdf-know-clow');
+    const projectSoulDir = AppPaths.rootDir;
     const templatePath = path.join(projectSoulDir, fileName);
 
     let content: string | null = null;

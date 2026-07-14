@@ -115,7 +115,7 @@ export function resolveSkillScanDirs(): Array<{ dir: string; source: SkillTier }
   // 应用数据目录下的技能（生产环境安装位置）
   raw.push({ dir: AppPaths.skillsDir, source: 'user' });
   // 用户全局技能（与 CLI/skill 管理保持一致）
-  raw.push({ dir: path.join(os.homedir(), '.workbuddy', 'skills'), source: 'user' });
+  raw.push({ dir: AppPaths.skillsDir, source: 'user' });
   // 当前工作区技能
   raw.push({ dir: path.join(process.cwd(), 'skills'), source: 'workspace' });
 
@@ -133,7 +133,7 @@ export function resolveSkillScanDirs(): Array<{ dir: string; source: SkillTier }
 
 /** 读取禁用集合（~/.workbuddy/skills/.skills-disabled.json） */
 function loadDisabledSet(): Set<string> {
-  const file = path.join(os.homedir(), '.workbuddy', 'skills', '.skills-disabled.json');
+  const file = path.join(AppPaths.skillsDir, '.skills-disabled.json');
   try {
     const raw = fs.readFileSync(file, 'utf-8');
     const parsed = JSON.parse(raw) as { disabled?: string[] };
@@ -145,7 +145,7 @@ function loadDisabledSet(): Set<string> {
 
 /** 写入禁用集合（启用/禁用持久化，供 P2 生命周期管理调用） */
 export function setSkillDisabled(id: string, disabled: boolean): void {
-  const dir = path.join(os.homedir(), '.workbuddy', 'skills');
+  const dir = AppPaths.skillsDir;
   const file = path.join(dir, '.skills-disabled.json');
   let set = new Set<string>();
   try {

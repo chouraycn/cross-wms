@@ -17,6 +17,7 @@ import { Router, type Request, type Response } from 'express';
 import { callOpenAICompatibleStream } from '../aiClient.js';
 import { logger } from '../logger.js';
 import { authenticateRequest } from './gatewayAuth.js';
+import presetModelsData from '../../shared/data/preset-models.json';
 
 // ==================== 类型定义 ====================
 
@@ -87,18 +88,18 @@ export interface OpenAIModel {
 
 // ==================== Provider 路由配置 ====================
 
-const PROVIDER_MODELS: Record<string, string[]> = {
-  deepseek: ['deepseek-chat', 'deepseek-coder', 'deepseek-v3', 'deepseek-v4'],
-  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'],
-  anthropic: ['claude-3-5-sonnet', 'claude-3-opus', 'claude-3-haiku', 'claude-sonnet-4'],
-  zhipu: ['glm-4', 'glm-4-plus', 'glm-4-flash', 'glm-4v', 'glm-3-turbo'],
-  google: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-pro'],
-  alibaba: ['qwen-plus', 'qwen-turbo', 'qwen-long', 'qwen-coder'],
-  moonshot: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
-  volcengine: ['doubao-pro', 'doubao-lite'],
-  minimax: ['abab6-chat', 'abab5.5-chat'],
-  stepfun: ['step-1v', 'step-1-flash'],
-};
+const PROVIDER_MODELS: Record<string, string[]> = (() => {
+  const map: Record<string, string[]> = {};
+  const models = (presetModelsData as { models: Array<{ id: string; provider?: string }> }).models;
+  for (const model of models) {
+    const provider = model.provider || model.id.split('-')[0];
+    if (!map[provider]) map[provider] = [];
+    if (!map[provider].includes(model.id)) {
+      map[provider].push(model.id);
+    }
+  }
+  return map;
+})();
 
 const DEFAULT_PROVIDER_ORDER = [
   'deepseek',
@@ -132,24 +133,24 @@ export function detectProvider(modelId: string): string {
     }
   }
 
-  return 'deepseek';
+  return process.env.CROSS_WMS_DEFAULT_PROVIDER || 'deepseek';
 }
 
 export function normalizeModelId(modelId: string): string {
   const lower = modelId.toLowerCase();
 
-  const modelMap: Record<string, string> = {
+  const DEFAULT_MODEL_MAP: Record<string, string> = {
     'gpt-4': 'gpt-4-turbo',
     'gpt-4o': 'gpt-4o',
     'gpt-4o-mini': 'gpt-4o-mini',
-    'deepseek-chat': 'deepseek-chat',
-    'deepseek-v3': 'deepseek-v3',
-    'claude': 'claude-sonnet-4',
     'claude-3': 'claude-3-5-sonnet-20240620',
-    'glm-4': 'glm-4',
-    'glm-4-plus': 'glm-4-plus',
-    'qwen': 'qwen-plus',
-    'gemini': 'gemini-2.0-flash',
+  };
+
+  const modelMap: Record<string, string> = {
+    ...DEFAULT_MODEL_MAP,
+    ...(() => {
+      try { return JSON.parse(process.env.CROSS_WMS_MODEL_MAP || '{}'); } catch { return {}; }
+    })(),
   };
 
   const sortedEntries = Object.entries(modelMap).sort((a, b) => b[0].length - a[0].length);

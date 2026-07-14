@@ -21,6 +21,7 @@ import os from "os";
 import path from "path";
 import yaml from "js-yaml";
 import { remoteSkillLoader, type RemoteSkillSource } from "../../engine/remoteSkillLoader.js";
+import { AppPaths } from '../../config/appPaths.js';
 
 // CommonJS 环境下 __dirname 原生可用
 
@@ -104,7 +105,7 @@ export class RealSkillProvider implements SkillCommandProvider {
 
   private async getDirs() {
     if (this.dirs) return this.dirs;
-    const userGlobalDir = path.join(os.homedir(), ".workbuddy", "skills");
+    const userGlobalDir = AppPaths.skillsDir;
     const workspaceDir = path.join(process.cwd(), "skills");
     const bundledDir = resolveRepoSkillsDir();
     let builtinDir: string;

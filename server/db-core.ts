@@ -88,7 +88,9 @@ function backupDatabase(): void {
     try {
       const stat = fs.statSync(DB_BACKUP_PATH);
       backupAgeMs = Date.now() - stat.mtimeMs;
-    } catch {}
+    } catch (e) {
+      logger.debug('[DB] 备份文件不存在或无法读取:', (e as Error).message);
+    }
   }
 
   const shouldBackup = isFirst || backupAgeMs > 24 * 60 * 60 * 1000; // 24小时

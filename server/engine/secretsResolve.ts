@@ -4,6 +4,7 @@ import path from 'node:path';
 import os from 'os';
 import { logger } from '../logger.js';
 import type { SecretRef, ResolvedSecret } from './secretsTypes.js';
+import { AppPaths } from '../config/appPaths.js';
 
 const DEFAULT_PROVIDER_CONCURRENCY = 4;
 const DEFAULT_MAX_REFS_PER_PROVIDER = 512;
@@ -165,7 +166,7 @@ async function resolveFileRefs(refs: Array<{ id: string; provider: string }>): P
   for (const ref of refs) {
     try {
       const filePath = ref.id === 'value'
-        ? path.join(os.homedir(), '.cdf-know-clow', 'secrets', `${ref.provider}.json`)
+        ? path.join(AppPaths.rootDir, 'secrets', `${ref.provider}.json`)
         : ref.id;
 
       const stat = await fs.stat(filePath);

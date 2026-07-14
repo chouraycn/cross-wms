@@ -85,7 +85,9 @@ function getEncryptionKey(): string {
         return key;
       }
     }
-  } catch { /* ignore */ }
+  } catch (e) {
+    logger.debug('[keychainStore] 读取加密密钥失败:', (e as Error).message);
+  }
 
   // 尝试从备份恢复
   const restored = restoreEncryptionKey();
@@ -235,7 +237,9 @@ export function saveApiKeys(modelId: string, apiKeys: string[]): number[] {
               `security delete-generic-password -s ${shellEscape(KEYCHAIN_SERVICE)} -a ${shellEscape(accountNameIndexed(modelId, OFFSET + idx))} 2>/dev/null`,
               { stdio: 'ignore' }
             );
-          } catch { /* ignore */ }
+          } catch (e) {
+    logger.debug('[keychainStore] 读取加密密钥失败:', (e as Error).message);
+  }
         }
         return [];
       }

@@ -34,7 +34,11 @@ function resolveRootDir(): string {
 
       for (const legacyDir of legacyDirs) {
         if (legacyDir === envRoot) continue; // 同一路径，跳过
-        if (fs.existsSync(legacyDir) && fs.existsSync(path.join(legacyDir, 'sessions'))) {
+        // 检测关键数据：sessions 目录、chat.db 数据库、加密密钥，任一存在即需迁移
+        const hasData = fs.existsSync(path.join(legacyDir, 'sessions'))
+          || fs.existsSync(path.join(legacyDir, 'chat.db'))
+          || fs.existsSync(path.join(legacyDir, '.encryption_key'));
+        if (hasData) {
           try {
             // 逐项合并（而非整体 rename，避免目标目录已存在部分文件时失败）
             mergeDirectory(legacyDir, envRoot);
@@ -65,7 +69,11 @@ function resolveRootDir(): string {
     ];
     for (const legacyDir of legacyDirs) {
       if (legacyDir === appSupportDir) continue;
-      if (fs.existsSync(legacyDir) && fs.existsSync(path.join(legacyDir, 'sessions'))) {
+      // 检测关键数据：sessions 目录、chat.db 数据库、加密密钥，任一存在即需迁移
+      const hasData = fs.existsSync(path.join(legacyDir, 'sessions'))
+        || fs.existsSync(path.join(legacyDir, 'chat.db'))
+        || fs.existsSync(path.join(legacyDir, '.encryption_key'));
+      if (hasData) {
         try {
           mergeDirectory(legacyDir, appSupportDir);
           console.log(`[appPaths] 历史数据已合并: ${legacyDir} -> ${appSupportDir}`);

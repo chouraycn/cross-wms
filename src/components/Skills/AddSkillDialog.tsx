@@ -319,7 +319,7 @@ const SkillMdImportPanel: React.FC<{
   return (
     <Box>
       <Typography sx={{ fontSize: '0.8rem', color: gs.textMuted, mb: 2 }}>
-        从 <code style={{ backgroundColor: gs.bgHover, padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>~/.workbuddy/skills/</code> 目录扫描 <code style={{ backgroundColor: gs.bgHover, padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>SKILL.md</code> 格式的技能包并导入。SKILL.md 正文将作为 AI 上下文模板。
+        从应用<code style={{ backgroundColor: gs.bgHover, padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>技能目录</code>扫描 <code style={{ backgroundColor: gs.bgHover, padding: '1px 5px', borderRadius: 4, fontSize: '0.78rem' }}>SKILL.md</code> 格式的技能包并导入。SKILL.md 正文将作为 AI 上下文模板。
       </Typography>
 
       {/* 操作栏 */}
@@ -361,7 +361,7 @@ const SkillMdImportPanel: React.FC<{
             未发现 SKILL.md 技能包
           </Typography>
           <Typography sx={{ fontSize: '0.75rem', color: gs.textDisabled, mt: 0.5 }}>
-            请将技能包放入 ~/.workbuddy/skills/ 目录
+            请将技能包放入应用技能目录
           </Typography>
         </Box>
       )}

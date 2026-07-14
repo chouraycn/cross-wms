@@ -69,7 +69,9 @@ function buildSkillLookup(): Map<string, Omit<RoutedSkill, 'score' | 'matchMode'
       let tags: string[] = [];
       try {
         if (row.tags) tags = JSON.parse(String(row.tags));
-      } catch { /* ignore */ }
+      } catch (e) {
+        logger.debug('[SkillRouter] 技能标签解析失败:', (e as Error).message);
+      }
       map.set(id, {
         id,
         name: (row.name as string) || id,

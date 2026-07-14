@@ -11,7 +11,8 @@ console.log('🔧 CrossWMS AI Tool Calling 测试\n');
 
 // 测试 1: 检查 toolRegistry.ts 是否存在
 console.log('📋 测试 1: 检查工具注册文件...');
-const toolRegistryPath = '/Users/chouray/WorkBuddy/2026-05-25-10-01-22/cross-wms/server/engine/toolRegistry.ts';
+const path = require('path');
+const toolRegistryPath = path.join(__dirname, '..', 'server', 'engine', 'toolRegistry.ts');
 if (fs.existsSync(toolRegistryPath)) {
   console.log('✅ toolRegistry.ts 存在');
   
@@ -118,7 +119,7 @@ try {
 // 测试 5: 检查 TypeScript 编译
 console.log('\n📋 测试 5: 检查 TypeScript 编译...');
 try {
-  process.chdir('/Users/chouray/WorkBuddy/2026-05-25-10-01-22/cross-wms');
+  process.chdir(path.join(__dirname, '..'));
   execSync('npx tsc --noEmit', { encoding: 'utf-8', timeout: 30000 });
   console.log('  ✅ TypeScript 编译通过（无错误）');
 } catch (error) {

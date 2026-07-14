@@ -11,6 +11,7 @@
  */
 
 import type { ProviderInfo, ModelInfo, ThinkingProfile } from './modelCatalog.js';
+import { PROVIDER_ENDPOINTS } from '../../shared/data/providerEndpoints.js';
 
 /** Mistral 思考模式级别 */
 const MISTRAL_THINKING_LEVELS = [
@@ -111,7 +112,7 @@ const MISTRAL_MODELS: ModelInfo[] = [
 export const MISTRAL_PROVIDER: ProviderInfo = {
   id: 'mistral',
   name: 'Mistral',
-  baseUrl: 'https://api.mistral.ai/v1',
+  baseUrl: PROVIDER_ENDPOINTS.mistral,
   authType: 'bearer',
   categories: ['cloud', 'llm', 'international', 'reasoning'],
   docsPath: '/providers/mistral',

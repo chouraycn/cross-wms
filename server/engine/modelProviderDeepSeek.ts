@@ -11,6 +11,7 @@
  */
 
 import type { ProviderInfo, ModelInfo, ThinkingProfile } from './modelCatalog.js';
+import { PROVIDER_ENDPOINTS } from '../../shared/data/providerEndpoints.js';
 
 /** DeepSeek V4 思考模式级别 */
 const DEEPSEEK_V4_THINKING_LEVELS = [
@@ -117,7 +118,7 @@ const DEEPSEEK_MODELS: ModelInfo[] = [
 export const DEEPSEEK_PROVIDER: ProviderInfo = {
   id: 'deepseek',
   name: 'DeepSeek',
-  baseUrl: 'https://api.deepseek.com/v1',
+  baseUrl: PROVIDER_ENDPOINTS.deepseek,
   authType: 'bearer',
   categories: ['cloud', 'llm', 'chinese', 'reasoning'],
   docsPath: '/providers/deepseek',

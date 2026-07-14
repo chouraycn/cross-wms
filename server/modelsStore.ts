@@ -11,6 +11,7 @@ import { extractAndSaveApiKey, injectApiKeys, deleteAllApiKeys } from './keychai
 import { clearRotationState } from './keyRotator.js';
 import { warnIfModelsFileInvalid } from './modelConfigSchema.js';
 import type { ModelProvider, ModelCapability, ModelConfig, ProviderConfig } from '../shared/types/models.js';
+import { PROVIDER_ENDPOINTS } from '../shared/data/providerEndpoints.js';
 import { logger } from './logger.js';
 import { AppPaths } from './config/appPaths.js';
 
@@ -106,7 +107,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     id: 'deepseek-v4-pro',
     name: 'DeepSeek V4 Pro',
     provider: 'deepseek',
-    apiEndpoint: 'https://api.deepseek.com/v1',
+    apiEndpoint: PROVIDER_ENDPOINTS.deepseek,
     enabled: false,
     isDefault: false,
     description: 'DeepSeek V4 Pro，支持 1M 上下文、工具调用、推理（API 不支持 image_url 格式）',
@@ -119,7 +120,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     id: 'deepseek-v4-flash',
     name: 'DeepSeek V4 Flash',
     provider: 'deepseek',
-    apiEndpoint: 'https://api.deepseek.com/v1',
+    apiEndpoint: PROVIDER_ENDPOINTS.deepseek,
     enabled: false,
     isDefault: false,
     description: 'DeepSeek V4 Flash，1M 上下文、工具调用，高性价比',
@@ -158,7 +159,7 @@ const BUILTIN_MODELS: ModelConfig[] = [
     id: 'ollama-llama3.1',
     name: 'Llama 3.1',
     provider: 'ollama',
-    apiEndpoint: 'http://localhost:11434/v1',
+    apiEndpoint: PROVIDER_ENDPOINTS.ollama,
     enabled: false,
     isDefault: false,
     description: 'Ollama 本地部署 Llama 3.1',
@@ -565,7 +566,7 @@ const RECOMMENDED_MODELS: ModelConfig[] = [
     id: 'deepseek-v4-flash',
     name: 'DeepSeek V4 Flash',
     provider: 'deepseek',
-    apiEndpoint: 'https://api.deepseek.com/v1',
+    apiEndpoint: PROVIDER_ENDPOINTS.deepseek,
     enabled: false,
     isDefault: false,
     description: 'DeepSeek V4 Flash，1M 上下文、工具调用，高性价比',
@@ -577,7 +578,7 @@ const RECOMMENDED_MODELS: ModelConfig[] = [
     id: 'deepseek-v4-pro',
     name: 'DeepSeek V4 Pro',
     provider: 'deepseek',
-    apiEndpoint: 'https://api.deepseek.com/v1',
+    apiEndpoint: PROVIDER_ENDPOINTS.deepseek,
     enabled: false,
     isDefault: false,
     description: 'DeepSeek V4 Pro，支持 1M 上下文、工具调用、推理',
@@ -625,7 +626,7 @@ const RECOMMENDED_MODELS: ModelConfig[] = [
     id: 'gpt-4o-mini',
     name: 'GPT-4o Mini',
     provider: 'openai',
-    apiEndpoint: 'https://api.openai.com/v1',
+    apiEndpoint: PROVIDER_ENDPOINTS.openai,
     enabled: false,
     isDefault: false,
     description: 'OpenAI GPT-4o Mini，轻量快速、高性价比',
@@ -637,7 +638,7 @@ const RECOMMENDED_MODELS: ModelConfig[] = [
     id: 'claude-3-5-sonnet-20241022',
     name: 'Claude 3.5 Sonnet',
     provider: 'anthropic',
-    apiEndpoint: 'https://api.anthropic.com/v1',
+    apiEndpoint: PROVIDER_ENDPOINTS.anthropic,
     enabled: false,
     isDefault: false,
     description: 'Anthropic Claude 3.5 Sonnet，代码与长文本',
@@ -661,7 +662,7 @@ const RECOMMENDED_MODELS: ModelConfig[] = [
     id: 'ollama-llama3.1',
     name: 'Llama 3.1 (本地)',
     provider: 'ollama',
-    apiEndpoint: 'http://localhost:11434/v1',
+    apiEndpoint: PROVIDER_ENDPOINTS.ollama,
     enabled: false,
     isDefault: false,
     description: 'Ollama 本地部署 Llama 3.1，无需 API Key',
@@ -707,7 +708,7 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
   // === DeepSeek ===
   {
     provider: 'deepseek',
-    modelsEndpoint: 'https://api.deepseek.com/v1',
+    modelsEndpoint: PROVIDER_ENDPOINTS.deepseek,
     mapper: (id: string) => {
       const known: Record<string, Partial<ModelConfig>> = {
         'deepseek-v4-pro': {
@@ -731,7 +732,7 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
         id,
         name: info.name || id,
         provider: 'deepseek' as ModelProvider,
-        apiEndpoint: 'https://api.deepseek.com/v1',
+        apiEndpoint: PROVIDER_ENDPOINTS.deepseek,
         enabled: false,
         isDefault: false,
         description: info.description,
@@ -1077,7 +1078,7 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
   // === OpenAI ===
   {
     provider: 'openai',
-    modelsEndpoint: 'https://api.openai.com/v1',
+    modelsEndpoint: PROVIDER_ENDPOINTS.openai,
     mapper: (id: string) => {
       const known: Record<string, Partial<ModelConfig>> = {
         'gpt-4o': {
@@ -1122,7 +1123,7 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
         id,
         name: info.name || id,
         provider: 'openai' as ModelProvider,
-        apiEndpoint: 'https://api.openai.com/v1',
+        apiEndpoint: PROVIDER_ENDPOINTS.openai,
         enabled: false,
         isDefault: false,
         description: info.description,
@@ -1136,7 +1137,7 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
   // === Anthropic ===
   {
     provider: 'anthropic',
-    modelsEndpoint: 'https://api.anthropic.com/v1',
+    modelsEndpoint: PROVIDER_ENDPOINTS.anthropic,
     mapper: (id: string) => {
       const known: Record<string, Partial<ModelConfig>> = {
         'claude-sonnet-4-20250514': {
@@ -1174,7 +1175,7 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
         id,
         name: info.name || id,
         provider: 'anthropic' as ModelProvider,
-        apiEndpoint: 'https://api.anthropic.com/v1',
+        apiEndpoint: PROVIDER_ENDPOINTS.anthropic,
         enabled: false,
         isDefault: false,
         description: info.description,
@@ -1511,7 +1512,7 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
   // === Ollama (本地) ===
   {
     provider: 'ollama',
-    modelsEndpoint: 'http://localhost:11434/v1',
+    modelsEndpoint: PROVIDER_ENDPOINTS.ollama,
     // Ollama 使用原生 API /api/tags 而非 OpenAI 兼容端点
     nativeEndpoint: 'http://localhost:11434/api/tags',
     mapper: (id: string) => {
@@ -1559,7 +1560,7 @@ const PROVIDER_DISCOVERY_LIST: ProviderDiscovery[] = [
         id,
         name: displayName,
         provider: 'ollama' as ModelProvider,
-        apiEndpoint: 'http://localhost:11434/v1',
+        apiEndpoint: PROVIDER_ENDPOINTS.ollama,
         enabled: false,
         isDefault: false,
         description: info?.description || `Ollama 本地部署 ${displayName}`,

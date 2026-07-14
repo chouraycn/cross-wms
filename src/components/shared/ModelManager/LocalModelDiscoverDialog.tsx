@@ -18,6 +18,9 @@ import { providerIcon } from '../../../utils/providerIcons';
 import { getModelManagerStyles } from './styles';
 import * as api from '../../../services/api';
 import type { DiscoveredLocalModel } from '../../../services/api';
+import { PROVIDER_ENDPOINTS } from '../../../../shared/data/providerEndpoints';
+
+const OLLAMA_BASE_URL = PROVIDER_ENDPOINTS.ollama.replace(/\/v1$/, '');
 
 interface LocalModelDiscoverDialogProps {
   open: boolean;
@@ -48,7 +51,7 @@ const LocalModelDiscoverDialog: React.FC<LocalModelDiscoverDialogProps> = ({
   // 弹窗打开时自动填充默认地址
   React.useEffect(() => {
     if (!open) return;
-    setCustomUrl('http://localhost:11434');
+    setCustomUrl(OLLAMA_BASE_URL);
   }, [open]);
 
   // 弹窗关闭时重置状态
@@ -150,7 +153,7 @@ const LocalModelDiscoverDialog: React.FC<LocalModelDiscoverDialogProps> = ({
             size="small"
             value={customUrl}
             onChange={(e) => setCustomUrl(e.target.value)}
-            placeholder="http://localhost:11434"
+            placeholder={OLLAMA_BASE_URL}
             sx={{
               flex: 1,
               '& .MuiInputBase-input': {

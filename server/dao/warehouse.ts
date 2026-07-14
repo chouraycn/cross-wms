@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { createDocumentStorage } from '../storage/index.js';
 import type { WarehouseRow, InventoryItemRow, TransitOrderRow, StatusHistoryRow, InboundRecordRow, OutboundRecordRow, TransferOrderRow } from '../db.js';
+import { AppPaths } from '../config/appPaths.js';
 
 const wms = createDocumentStorage();
 
@@ -231,7 +232,7 @@ export function updateTransitOrder(id: string, data: Record<string, unknown>): R
     const fileData = { items: remaining, lastId: undefined as number | undefined };
     // read current lastId
     const raw = JSON.parse(
-      require('fs').readFileSync(require('path').join(require('os').homedir(), '.cdf-know-clow', 'wms-data', 'transit_status_history.json'), 'utf-8') || '{"items":[]}'
+      require('fs').readFileSync(require('path').join(AppPaths.wmsDataDir, 'transit_status_history.json'), 'utf-8') || '{"items":[]}'
     ) as { items: StatusHistoryRow[]; lastId?: number };
     fileData.lastId = raw.lastId;
     for (const h of statusHistory) {
@@ -246,7 +247,7 @@ export function updateTransitOrder(id: string, data: Record<string, unknown>): R
       });
     }
     require('fs').writeFileSync(
-      require('path').join(require('os').homedir(), '.cdf-know-clow', 'wms-data', 'transit_status_history.json'),
+      require('path').join(AppPaths.wmsDataDir, 'transit_status_history.json'),
       JSON.stringify(fileData, null, 2) + '\n',
       'utf-8'
     );
@@ -259,10 +260,10 @@ export function deleteTransitOrder(id: string): boolean {
   const allHistory = wms.list<StatusHistoryRow>('transit_status_history');
   const remaining = allHistory.filter((h) => h.transitOrderId !== id);
   const raw = JSON.parse(
-    require('fs').readFileSync(require('path').join(require('os').homedir(), '.cdf-know-clow', 'wms-data', 'transit_status_history.json'), 'utf-8') || '{"items":[]}'
+    require('fs').readFileSync(require('path').join(AppPaths.wmsDataDir, 'transit_status_history.json'), 'utf-8') || '{"items":[]}'
   ) as { items: StatusHistoryRow[]; lastId?: number };
   require('fs').writeFileSync(
-    require('path').join(require('os').homedir(), '.cdf-know-clow', 'wms-data', 'transit_status_history.json'),
+    require('path').join(AppPaths.wmsDataDir, 'transit_status_history.json'),
     JSON.stringify({ items: remaining, lastId: raw.lastId }, null, 2) + '\n',
     'utf-8'
   );

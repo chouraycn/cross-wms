@@ -12,6 +12,7 @@
  */
 
 import type { ProviderInfo, ModelInfo, ThinkingProfile } from './modelCatalog.js';
+import { PROVIDER_ENDPOINTS } from '../../shared/data/providerEndpoints.js';
 
 /** Claude 思考模式级别 */
 const CLAUDE_THINKING_LEVELS = [
@@ -130,7 +131,7 @@ const CLAUDE_MODELS: ModelInfo[] = [
 export const ANTHROPIC_PROVIDER: ProviderInfo = {
   id: 'anthropic',
   name: 'Anthropic',
-  baseUrl: 'https://api.anthropic.com/v1',
+  baseUrl: PROVIDER_ENDPOINTS.anthropic,
   authType: 'x-api-key',
   categories: ['cloud', 'llm', 'international', 'reasoning'],
   docsPath: '/providers/anthropic',

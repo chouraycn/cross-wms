@@ -16,6 +16,11 @@ import type {
 import { AgentLoop } from './agent-loop';
 import { Tracer } from './tracing';
 
+const DEFAULT_TEMPERATURE = parseFloat(process.env.CROSS_WMS_DEFAULT_TEMPERATURE || '0.7');
+const DEFAULT_MAX_TOKENS = parseInt(process.env.CROSS_WMS_DEFAULT_MAX_TOKENS || '4096', 10);
+const DEFAULT_TOP_P = parseFloat(process.env.CROSS_WMS_DEFAULT_TOP_P || '1.0');
+const DEFAULT_MODEL = process.env.CROSS_WMS_MODELS_DEFAULT || 'gpt-4';
+
 export interface AgentEvents {
   start: [event: AgentEvent];
   token: [event: AgentEvent];
@@ -39,9 +44,9 @@ export class Agent extends EventEmitter<AgentEvents> {
     super();
     this.options = {
       maxIterations: 10,
-      temperature: 0.7,
-      maxTokens: 4096,
-      topP: 1.0,
+      temperature: DEFAULT_TEMPERATURE,
+      maxTokens: DEFAULT_MAX_TOKENS,
+      topP: DEFAULT_TOP_P,
       reasoningEnabled: false,
       ...options,
     };
@@ -86,11 +91,11 @@ export class Agent extends EventEmitter<AgentEvents> {
     try {
       const loop = new AgentLoop({
         runtime: this.runtime,
-        model: params.model || this.options.model || 'gpt-4',
+        model: params.model || this.options.model || DEFAULT_MODEL,
         maxIterations: this.options.maxIterations ?? 10,
-        temperature: this.options.temperature ?? 0.7,
-        maxTokens: this.options.maxTokens ?? 4096,
-        topP: this.options.topP ?? 1.0,
+        temperature: this.options.temperature ?? DEFAULT_TEMPERATURE,
+        maxTokens: this.options.maxTokens ?? DEFAULT_MAX_TOKENS,
+        topP: this.options.topP ?? DEFAULT_TOP_P,
         reasoningEnabled: this.options.reasoningEnabled ?? false,
         onToken: (content: string) => {
           this.emit('token', {

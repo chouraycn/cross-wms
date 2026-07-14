@@ -22,6 +22,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { logger } from '../logger.js';
 import type { ToolProfile, CompactionStrategy } from './types/aiEngine.js';
+import { AppPaths } from '../config/appPaths.js';
 
 export interface TuiConfig {
   /** 后端类型：embedded（本地直连 DAO）/ http（远程服务） */
@@ -74,7 +75,7 @@ export const DEFAULT_TUI_CONFIG: TuiConfig = {
  * 获取默认配置文件路径
  */
 export function getDefaultConfigPath(): string {
-  return join(homedir(), '.cdf-know-clow', 'tui.json');
+  return join(AppPaths.rootDir, 'tui.json');
 }
 
 /**

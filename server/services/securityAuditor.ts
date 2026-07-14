@@ -13,6 +13,7 @@ import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { createSkillAudit, getSkillAuditByVersion } from '../dao/chains.js';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 
 // ===================== Types =====================
 
@@ -802,7 +803,7 @@ export function generateJsonReport(result: AuditResult): string {
  * Non-blocking; should be called with a delay after server starts.
  */
 export async function batchAuditSkills(): Promise<void> {
-  const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+  const skillsDir = AppPaths.skillsDir;
 
   if (!fs.existsSync(skillsDir)) {
     logger.info('[SecurityAuditor] Skills directory does not exist, skipping batch audit');

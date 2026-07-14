@@ -39,6 +39,7 @@ import {
 import { auditSkillMd, generateMarkdownReport } from '../services/securityAuditor.js';
 import { parseSkillMdContent } from '../services/skillMdParser.js';
 import { logger } from '../logger.js';
+import { AppPaths } from '../config/appPaths.js';
 import yaml from 'js-yaml';
 import { dependencyChecker, DependencyCheckResult } from '../../src/utils/dependencyChecker.js';
 
@@ -138,7 +139,7 @@ function loadSkillMdContent(
 function syncSkillMdToDisk(skillId: string, promptTemplate: string | null | undefined): void {
   if (!promptTemplate) return; // 没有内容则不写文件
   try {
-    const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+    const skillsDir = AppPaths.skillsDir;
     const skillDir = path.join(skillsDir, skillId);
     if (!fs.existsSync(skillDir)) {
       fs.mkdirSync(skillDir, { recursive: true });
@@ -168,7 +169,7 @@ function toCamelAudit(row: Record<string, unknown> | null | undefined): Record<s
 
 /** 从数据库读取技能的 promptTemplate（当磁盘上无 SKILL.md 时使用） */
 export function scanWorkbuddySkills(): ScannedSkillMd[] {
-  const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+  const skillsDir = AppPaths.skillsDir;
   const results: ScannedSkillMd[] = [];
 
   if (!fs.existsSync(skillsDir)) return results;
@@ -337,7 +338,7 @@ router.get('/skill-md-scan', (_req: Request, res: Response) => {
 // GET /api/skill-md-read/:dirName — 读取指定技能的完整 body（导入时调用）
 router.get('/skill-md-read/:dirName', (req: Request, res: Response) => {
   const dirName = req.params.dirName;
-  const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+  const skillsDir = AppPaths.skillsDir;
   const dirPath = path.join(skillsDir, dirName);
 
   // 安全检查：防止路径遍历
@@ -639,7 +640,7 @@ router.post('/skill-audits', async (req: Request, res: Response) => {
       content = fs.readFileSync(mdPath as string, 'utf-8');
     } else {
       // 优先查找磁盘文件
-      const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+      const skillsDir = AppPaths.skillsDir;
       const skillDir = path.join(skillsDir, skillId);
       const upperPath = path.join(skillDir, 'SKILL.md');
       const lowerPath = path.join(skillDir, 'skill.md');
@@ -711,7 +712,7 @@ router.post('/skill-audits/batch', async (req: Request, res: Response) => {
     }
 
     const results: Array<{ skillId: string; score: number; level: string; error?: string }> = [];
-    const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+    const skillsDir = AppPaths.skillsDir;
 
     for (const skillId of skillIds) {
       try {
@@ -827,7 +828,7 @@ router.get('/skills/:id/audit-history', (req: Request, res: Response) => {
 // GET /api/skills/:id/export — 导出技能为 ZIP
 router.get('/skills/:id/export', async (req: Request, res: Response) => {
   try {
-    const skillsDir = path.join(os.homedir(), '.workbuddy', 'skills');
+    const skillsDir = AppPaths.skillsDir;
     const skillDir = path.join(skillsDir, req.params.id);
 
     if (!fs.existsSync(skillDir)) {

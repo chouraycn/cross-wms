@@ -69,7 +69,7 @@ export class AcpClient {
     });
 
     const openAiRequest: OpenAiChatCompletionRequest = {
-      model: "gpt-4o-mini",
+      model: process.env.CROSS_WMS_MODELS_DEFAULT || "gpt-4o-mini",
       messages: [{ role: "user", content: text }],
       temperature: 0.7,
       max_tokens: 1024,

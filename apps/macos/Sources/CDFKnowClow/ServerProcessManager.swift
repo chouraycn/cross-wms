@@ -184,7 +184,7 @@ actor ServerProcessManager {
         proc.currentDirectoryURL = URL(fileURLWithPath: self.projectRoot)
 
         var env = ProcessInfo.processInfo.environment
-        env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
+        env["NODE_TLS_REJECT_UNAUTHORIZED"] = ProcessInfo.processInfo.environment["NODE_TLS_REJECT_UNAUTHORIZED"] ?? "1"
         env["NODE_ENV"] = isAppBundle ? "production" : "development"
         env["PORT"] = String(port)
         env["CDF_DATA_DIR"] = AppPaths.dataDirectory.path

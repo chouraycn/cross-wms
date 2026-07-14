@@ -87,7 +87,7 @@ skillWorkshopRouter.post('/proposals', asyncHandler(async (req, res) => {
   const proposal = skillWorkshop.createProposal({
     type,
     skillName,
-    skillPath: skillPath || `~/.cdf-know-clow/skills/${skillName}`,
+    skillPath: skillPath || path.join(AppPaths.skillsDir, skillName),
     content,
     origin,
   });

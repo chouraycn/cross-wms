@@ -51,6 +51,14 @@ import SkillHotReloadPanel from '../components/Skills/SkillHotReloadPanel';
 
 // ===================== 技能页面 =====================
 
+// 主题色常量：提取自原硬编码值，便于统一调整
+const COLORS = {
+  darkBg: '#1F2937',
+  white: '#FFFFFF',
+  purple: '#7C3AED',
+  gradientBg: 'linear-gradient(135deg, #EEF2FF 0%, #E0EBFF 100%)',
+};
+
 // 检测是否为原生 App / pywebview 桌面模式
 const isNativeApp = (): boolean => {
   if (isMacOSApp()) return true;
@@ -96,27 +104,27 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     return unsubscribe;
   }, []);
 
-  // T03: 延迟加载使用统计（非关键数据，延迟 1.5s 加载）
+  // T03: 延迟加载使用统计（非关键数据，延迟 0.3s 加载）
   useEffect(() => {
     const timer = setTimeout(() => {
       loadAllUsageStats().then(() => {
         setSkillVersion((v) => v + 1);
       }).catch(() => {});
-    }, 1500);
+    }, 300);
     return () => clearTimeout(timer);
   }, []);
 
-  // 延迟加载安全审查状态（非关键数据，延迟 2s 加载）
+  // 延迟加载安全审查状态（非关键数据，延迟 0.5s 加载）
   useEffect(() => {
     const timer = setTimeout(() => {
       loadAuditStatuses().then(() => {
         setSkillVersion((v) => v + 1);
       }).catch(() => {});
-    }, 2000);
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
 
-  // T03: SSE 连接（延迟 3s 建立，避免影响初始化性能）
+  // T03: SSE 连接（延迟 0.8s 建立，避免影响初始化性能）
   const evtRef = useRef<import('../services/api').SSEConnection | null>(null);
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -130,7 +138,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
         } catch (e) {}
       });
       evtRef.current = sse;
-    }, 3000);
+    }, 800);
 
     return () => {
       clearTimeout(timer);
@@ -411,7 +419,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
     return map;
   }, [automations]);
 
-  // 延迟加载自动化数据（非关键数据，延迟 2.5s 加载）
+  // 延迟加载自动化数据（非关键数据，延迟 0.6s 加载）
   useEffect(() => {
     const timer = setTimeout(() => {
       const load = async () => {
@@ -433,7 +441,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
         }
       };
       load();
-    }, 2500);
+    }, 600);
     return () => clearTimeout(timer);
   }, []);
 
@@ -725,8 +733,8 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
               fontSize: '0.8125rem',
               py: 0.625,
               px: 2,
-              backgroundColor: '#1F2937',
-              color: '#FFFFFF',
+              backgroundColor: COLORS.darkBg,
+              color: COLORS.white,
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
               '&:hover': { backgroundColor: '#374151', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' },
             }}
@@ -765,7 +773,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
                 borderRadius: '8px',
                 border: `1px solid ${gs.border}`,
                 color: gs.textMuted,
-                '&:hover': { borderColor: '#7C3AED', color: '#7C3AED', bgcolor: '#FAF5FF' },
+                '&:hover': { borderColor: COLORS.purple, color: COLORS.purple, bgcolor: '#FAF5FF' },
               }}
             >
               <TuneIcon sx={{ fontSize: 18 }} />
@@ -781,7 +789,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
           px: 4,
           py: 3,
           borderRadius: '12px',
-          background: 'linear-gradient(135deg, #EEF2FF 0%, #E0EBFF 100%)',
+          background: COLORS.gradientBg,
           position: 'relative',
           overflow: 'hidden',
         }}>
@@ -980,7 +988,7 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
                       fontSize: '0.8125rem',
                       py: 0.75,
                       px: 2,
-                      backgroundColor: '#7C3AED',
+                      backgroundColor: COLORS.purple,
                       '&:hover': { backgroundColor: '#6D28D9' },
                     }}
                   >
@@ -1054,8 +1062,8 @@ const SkillsPage: React.FC<{ initialTab?: string }> = ({ initialTab }) => {
                             borderRadius: '6px',
                             fontSize: '0.75rem',
                             flex: 1,
-                            backgroundColor: plugin.status === 'enabled' ? gs.bgHover : '#7C3AED',
-                            color: plugin.status === 'enabled' ? gs.textSecondary : '#FFFFFF',
+                            backgroundColor: plugin.status === 'enabled' ? gs.bgHover : COLORS.purple,
+                            color: plugin.status === 'enabled' ? gs.textSecondary : COLORS.white,
                             '&:hover': { backgroundColor: plugin.status === 'enabled' ? gs.border : '#6D28D9' },
                           }}
                         >

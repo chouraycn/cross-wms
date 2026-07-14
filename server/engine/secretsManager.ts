@@ -9,6 +9,7 @@ import path from 'path';
 import os from 'os';
 import { logger } from '../logger.js';
 import { initDb } from '../db.js';
+import { AppPaths } from '../config/appPaths.js';
 import type {
   SecretRef,
   ResolvedSecret,
@@ -169,7 +170,7 @@ function resolveFromEncryptedStore(key: string, source: string): string | null {
  * 文件路径约定：~/.cdf-know-clow/secrets/{key}.txt
  */
 function resolveFromFile(key: string): string | null {
-  const secretsDir = path.join(os.homedir(), '.cdf-know-clow', 'secrets');
+  const secretsDir = path.join(AppPaths.rootDir, 'secrets');
   const filePath = path.join(secretsDir, `${key}.txt`);
 
   if (!fs.existsSync(filePath)) {
@@ -333,7 +334,7 @@ export function validateSecretRef(ref: SecretRef): boolean {
       return secretExists(ref.provider, ref.key);
 
     case 'file':
-      const secretsDir = path.join(os.homedir(), '.cdf-know-clow', 'secrets');
+      const secretsDir = path.join(AppPaths.rootDir, 'secrets');
       const filePath = path.join(secretsDir, `${ref.key}.txt`);
       return fs.existsSync(filePath);
 
