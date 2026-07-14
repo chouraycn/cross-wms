@@ -19,6 +19,8 @@ import skillWatcher from './services/skillWatcher.js';
 import { initDefaultTools, listTools } from './engine/toolRegistry.js';
 import { agentRegistry } from './engine/agentRegistry.js';
 import { initDefaultSoulFiles } from './engine/soulLoader.js';
+import { skillRegistry } from './engine/skillRegistry.js';
+import { resolveRepoSkillsDir } from './cli/commands/skills.js';
 import { EventEmitter } from 'events';
 
 // v1.5.88: 全局异常兜底 — Node.js v15+ 未处理 rejection 默认崩溃进程
@@ -240,6 +242,43 @@ setTimeout(() => {
   soulWatcher.init();
   logger.info('[SoulWatcher] 已延迟初始化');
 }, 200);
+
+// v2.11+: 注册内置钩子（command-logger / session-memory）+ 加载 workspace 钩子
+// 让 runHooks/runHooksAround 真正被消费。
+setTimeout(async () => {
+  try {
+    // 加载 + 校验 zod config（缺省自动写盘 + legacy 迁移）
+    try {
+      const { loadConfig } = await import('./config/schema.js');
+      const cfg = loadConfig();
+      logger.info(`[ConfigSchema] 已加载配置 schemaVersion=${cfg.schemaVersion}`);
+    } catch (cfgErr) {
+      logger.warn('[ConfigSchema] 加载失败（可忽略）:', cfgErr);
+    }
+
+    // 动态 require 避免循环依赖（hooks/loader 内部 import logger）
+    const { registerBuiltinHooks, loadHookHandler } = await import('./engine/hooks/loader.js');
+    const { AppPaths } = await import('./config/appPaths.js');
+    const { loadHookEntriesFromDir } = await import('./engine/hooks/workspace.js');
+
+    await registerBuiltinHooks();
+
+    // 发现并加载 workspace 钩子
+    try {
+      const entries = loadHookEntriesFromDir({ dir: AppPaths.hooksDir, source: 'workspace' });
+      for (const entry of entries) {
+        await loadHookHandler(entry);
+      }
+      logger.info(`[Hooks] workspace 钩子扫描完成，共 ${entries.length} 个条目`);
+    } catch (wsErr) {
+      logger.warn('[Hooks] workspace 钩子扫描失败（可忽略）:', wsErr);
+    }
+
+    logger.info('[Hooks] hook bus 已就绪');
+  } catch (e) {
+    logger.warn('[Hooks] hook bus 初始化失败（可忽略）:', e);
+  }
+}, 250);
 
 setTimeout(() => {
   channelHealthMonitor.start();
@@ -613,6 +652,29 @@ server.listen(PORT, async () => {
     ensureWmsTables();
     logger.info('[WMS] 行业技能表已后台初始化');
   }, 500);
+
+  // v11.2: 初始化技能注册表（后台执行，不阻塞启动）
+  setTimeout(async () => {
+    try {
+      const currentFile = process.argv[1];
+      const __dirname = path.dirname(currentFile);
+      let bundledDir = path.join(__dirname, '../../skills');
+      for (let i = 0; i < 6; i++) {
+        if (fs.existsSync(path.join(bundledDir, 'hscode-assistant'))) break;
+        bundledDir = path.join(bundledDir, '../');
+      }
+      const userGlobalDir = AppPaths.skillsDir;
+      const workspaceDir = path.join(process.cwd(), 'skills');
+      await skillRegistry.init({
+        builtinDir: bundledDir,
+        userGlobalDir,
+        workspaceDir,
+      });
+      logger.info(`[SkillRegistry] 初始化完成，已注册 ${skillRegistry.getAllSkills().length} 个技能`);
+    } catch (err) {
+      logger.warn('[SkillRegistry] 初始化失败:', err instanceof Error ? err.message : String(err));
+    }
+  }, 1000);
 
   // 端到端性能采集：后端启动完成
   recordBackendPhase('server:startup-complete', performance.now() - serverStartupStartedAt);

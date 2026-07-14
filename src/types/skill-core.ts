@@ -46,10 +46,18 @@ export interface ConflictResult {
 
 /** 技能监听事件 */
 export interface SkillWatchEvent {
-  type: 'skill-added' | 'skill-changed' | 'skill-removed';
-  dirName: string;
-  name: string;
+  type: 'skill-added' | 'skill-changed' | 'skill-removed' | 'skill-audit-updated' | 'skill-install-progress';
+  dirName?: string;
+  name?: string;
+  skillId?: string;
+  level?: string;
+  score?: number;
   timestamp: number;
+  installId?: string;
+  phase?: string;
+  message?: string;
+  percent?: number;
+  error?: string;
 }
 
 /** 技能建议项 */
