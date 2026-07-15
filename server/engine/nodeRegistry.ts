@@ -24,6 +24,7 @@ export interface NodeSession {
   permissions?: Record<string, boolean>;
   connectedAtMs: number;
   lastSeenAtMs: number;
+  status?: 'connected' | 'disconnected' | 'busy' | 'unpaired';
 }
 
 export interface NodeInvokeResult {
@@ -67,6 +68,10 @@ export function unregisterNode(nodeId: string): void {
 }
 
 export function getNode(nodeId: string): NodeSession | undefined {
+  return nodes.get(nodeId);
+}
+
+export function getNodeInfo(nodeId: string): NodeSession | undefined {
   return nodes.get(nodeId);
 }
 

@@ -36,6 +36,7 @@ export type EventType =
   | 'system:shutdown'
   | 'system:config_changed'
   | 'system:error'
+  | 'system:info'
   | 'plugin:installed'
   | 'plugin:enabled'
   | 'plugin:disabled'

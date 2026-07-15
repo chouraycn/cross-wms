@@ -1,522 +1,257 @@
 /**
- * ModelCatalog — 模型目录核心类型定义
+ * 模型目录与发现 — 参考 OpenClaw agents/model-catalog.ts
  *
- * 参考 OpenClaw provider-index 模式，提供标准化的模型提供商和模型元数据。
- * 用于模型发现、可用性检测、配置自动填充等场景。
- *
- * 核心概念：
- * - ProviderInfo: 提供商元信息（ID、名称、认证方式、模型列表）
- * - ModelInfo: 模型详细信息（ID、名称、上下文窗口、能力、定价）
- * - discoverModels: 从提供商 API 自动发现可用模型
+ * 管理可用的 AI 模型目录和发现功能。
  */
 
-import type { ModelProvider, ModelCapability, ModelApiType } from '../../shared/types/models.js';
+import { logger } from '../logger.js';
+import { getModelById, getAllModels } from './models.js';
 
-// ============================================================
-// 核心类型定义
-// ============================================================
+export type ModelCapability = 'vision' | 'audio' | 'json' | 'tool_use' | 'function_calling' | 'code' | 'multimodal';
 
-/** 认证方式类型 */
-export type AuthType = 'api-key' | 'x-api-key' | 'bearer' | 'oauth' | 'none';
+export type ModelType = 'chat' | 'completion' | 'embedding' | 'vision' | 'tts' | 'speech';
 
-/** 提供商分类 */
-export type ProviderCategory = 'cloud' | 'local' | 'llm' | 'multimodal' | 'reasoning' | 'chinese' | 'international' | 'fast' | 'longContext' | 'proxy' | 'search';
-
-/** 思考/推理模式级别 */
 export interface ThinkingLevel {
   id: string;
-  label?: string;
+  label: string;
   description?: string;
 }
 
-/** 思考模式配置 */
 export interface ThinkingProfile {
-  levels: ThinkingLevel[];
-  defaultLevel: string;
+  name?: string;
+  description?: string;
+  levels?: ThinkingLevel[];
+  defaultLevel?: string;
 }
 
-/** 模型输入类型 */
-export type ModelInputType = 'text' | 'image' | 'audio' | 'video' | 'pdf';
-
-/** 模型定价信息 */
 export interface ModelPricing {
-  /** 输入价格（每百万 token，美元） */
   inputPerMillion?: number;
-  /** 输出价格（每百万 token，美元） */
   outputPerMillion?: number;
-  /** 是否免费 */
   isFree?: boolean;
-  /** 定价备注 */
   note?: string;
 }
 
-/** 模型详细信息 */
 export interface ModelInfo {
-  /** 模型唯一标识 */
+  modelId?: string;
   id: string;
-  /** 模型显示名称 */
   name: string;
-  /** 所属提供商 ID */
-  provider: ModelProvider;
-  /** 模型描述 */
+  provider: string;
   description?: string;
-  /** 上下文窗口大小（token 数） */
-  contextWindow: number;
-  /** 最大输出 token 数 */
+  capabilities?: string[];
+  contextWindow?: number;
   maxTokens?: number;
-  /** 支持的输入类型 */
-  input?: ModelInputType[];
-  /** 模型能力标签 */
-  capabilities?: ModelCapability[];
-  /** 是否支持推理/思考模式 */
-  reasoning?: boolean;
-  /** 思考模式配置（如有） */
-  thinkingProfile?: ThinkingProfile;
-  /** 定价信息 */
-  pricing?: ModelPricing;
-  /** 是否为推荐模型 */
-  isRecommended?: boolean;
-  /** API 兼容类型（openai-chat / openai-completions / anthropic-messages / google-generative-ai） */
-  apiType?: ModelApiType;
-  /** 是否支持工具调用 */
+  authStatus?: 'authenticated' | 'unauthenticated' | 'pending';
   supportsTools?: boolean;
-  /** 是否支持流式输出 */
-  supportsStreaming?: boolean;
-  /** 是否支持函数调用 */
-  supportsFunctionCall?: boolean;
-  /** 是否支持视觉输入 */
   supportsVision?: boolean;
-  /** 基础模型名称 */
+  thinkingProfile?: ThinkingProfile;
+  reasoning?: boolean;
+  apiType?: string;
   baseModel?: string;
-  /** 模型别名（用于 API 兼容映射） */
+  input?: string[];
+  supportsStreaming?: boolean;
+  supportsFunctionCall?: boolean;
+  pricing?: ModelPricing;
+  isRecommended?: boolean;
   aliases?: string[];
 }
 
-/** 提供商认证配置 */
-export interface ProviderAuthConfig {
-  /** 认证方式 ID */
+export interface ProviderAuth {
   methodId: string;
-  /** 认证方式标签 */
   label: string;
-  /** 提示文本 */
-  hint?: string;
-  /** 环境变量名 */
-  envVar?: string;
-  /** CLI 参数名 */
-  flagName?: string;
-  /** 配置文件中的 key */
-  optionKey?: string;
-  /** 提示输入消息 */
-  promptMessage?: string;
-  /** 默认模型 ID */
+  hint: string;
+  envVar: string;
+  flagName: string;
+  optionKey: string;
+  promptMessage: string;
   defaultModel?: string;
 }
 
-/** 提供商信息 */
-export interface ProviderInfo {
-  /** 提供商唯一标识 */
-  id: ModelProvider;
-  /** 提供商显示名称 */
-  name: string;
-  /** 提供商标签（简短描述） */
-  label?: string;
-  /** API Base URL */
-  baseUrl: string;
-  /** 认证方式 */
-  authType: AuthType;
-  /** 认证配置列表 */
-  auth?: ProviderAuthConfig[];
-  /** 提供商分类 */
-  categories?: ProviderCategory[];
-  /** 文档路径 */
-  docsPath?: string;
-  /** 模型列表 */
-  models: ModelInfo[];
-  /** 是否为本地部署（不需要 API Key） */
-  isLocal?: boolean;
-  /** 是否支持自定义 Base URL */
-  allowCustomBaseUrl?: boolean;
-  /** 提供商描述 */
-  description?: string;
-  /** 提供商图标 */
-  icon?: string;
-  /** 官网链接 */
-  website?: string;
-  /** 所需环境变量 */
-  envVars?: string[];
-  /** 支持的 API 类型 */
-  supportedApiTypes?: string[];
-}
-
-/** 模型目录索引 */
 export interface ModelCatalogIndex {
-  version: number;
-  providers: Record<string, ProviderInfo>;
+  version?: number;
+  providers: ProviderInfo[] | Record<string, ProviderInfo>;
+  models?: ModelInfo[];
   updatedAt?: string;
 }
 
-// ============================================================
-// 模型发现功能
-// ============================================================
-
-/** 模型发现结果 */
-export interface ModelDiscoveryResult {
-  provider: ModelProvider;
+export interface ProviderInfo {
+  id: string;
+  name: string;
+  description?: string;
+  website?: string;
   models: ModelInfo[];
-  discoveredAt: string;
-  error?: string;
-}
-
-/** 模型发现选项 */
-export interface ModelDiscoveryOptions {
-  /** API Key（用于认证） */
-  apiKey?: string;
-  /** 自定义 Base URL */
+  categories?: string[];
   baseUrl?: string;
-  /** 超时时间（毫秒） */
-  timeoutMs?: number;
-  /** 是否包含未知模型 */
-  includeUnknown?: boolean;
+  authType?: string;
+  auth?: ProviderAuth[];
+  docsPath?: string;
+  label?: string;
+  envVars?: string[];
+  allowCustomBaseUrl?: boolean;
+  isLocal?: boolean;
+  supportedApiTypes?: string[];
+  icon?: string;
 }
 
-/**
- * 从提供商 API 发现可用模型
- *
- * @param provider 提供商信息
- * @param options 发现选项
- * @returns 发现的模型列表
- */
-export async function discoverModels(
-  provider: ProviderInfo,
-  options: ModelDiscoveryOptions = {},
-): Promise<ModelDiscoveryResult> {
-  const { apiKey, baseUrl, timeoutMs = 8000 } = options;
-  const effectiveBaseUrl = baseUrl || provider.baseUrl;
+export interface ModelCatalogEntry {
+  id: string;
+  name: string;
+  provider: string;
+  type: ModelType;
+  description?: string;
+  capabilities: ModelCapability[];
+  contextWindow: number;
+  maxOutputTokens?: number;
+  inputCost?: number;
+  outputCost?: number;
+  available: boolean;
+  authStatus: 'authenticated' | 'unauthenticated' | 'pending';
+  metadata?: Record<string, unknown>;
+}
 
-  // 本地提供商不需要认证
-  if (provider.isLocal) {
-    return discoverLocalModels(provider, effectiveBaseUrl, timeoutMs);
+export interface ModelSearchParams {
+  query?: string;
+  provider?: string;
+  type?: ModelType;
+  capability?: ModelCapability;
+  availableOnly?: boolean;
+}
+
+export interface ModelSearchResult {
+  models: ModelCatalogEntry[];
+  total: number;
+}
+
+export function getModelCatalogEntry(modelId: string): ModelCatalogEntry | undefined {
+  const model = getModelById(modelId);
+  if (!model) {
+    return undefined;
   }
 
-  // 远程提供商需要 API Key
-  if (!apiKey) {
-    return {
-      provider: provider.id,
-      models: [],
-      discoveredAt: new Date().toISOString(),
-      error: 'Missing API key',
-    };
+  return convertToCatalogEntry(model);
+}
+
+export function listModelCatalog(): ModelCatalogEntry[] {
+  return getAllModels().map(convertToCatalogEntry);
+}
+
+export function searchModelCatalog(params: ModelSearchParams): ModelSearchResult {
+  let models = listModelCatalog();
+
+  if (params.query) {
+    const queryLower = params.query.toLowerCase();
+    models = models.filter(
+      (m) =>
+        m.id.toLowerCase().includes(queryLower) ||
+        m.name.toLowerCase().includes(queryLower) ||
+        m.description?.toLowerCase().includes(queryLower),
+    );
   }
 
-  return discoverRemoteModels(provider, effectiveBaseUrl, apiKey, timeoutMs);
-}
-
-/**
- * 发现本地模型（如 Ollama）
- */
-async function discoverLocalModels(
-  provider: ProviderInfo,
-  baseUrl: string,
-  timeoutMs: number,
-): Promise<ModelDiscoveryResult> {
-  try {
-    // Ollama 使用 /api/tags 端点
-    const isOllama = provider.id === 'ollama';
-    const url = isOllama
-      ? `${baseUrl.replace(/\/v1$/, '')}/api/tags`
-      : `${baseUrl.replace(/\/$/, '')}/models`;
-
-    const resp = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-
-    if (!resp.ok) {
-      return {
-        provider: provider.id,
-        models: [],
-        discoveredAt: new Date().toISOString(),
-        error: `HTTP ${resp.status}`,
-      };
-    }
-
-    const data = await resp.json();
-    let modelIds: string[] = [];
-
-    if (isOllama && Array.isArray((data as any).models)) {
-      modelIds = (data as any).models.map((m: any) => m.name || m.model || '');
-    } else if (Array.isArray((data as any).data)) {
-      modelIds = (data as any).data.map((m: any) => m.id || '');
-    }
-
-    // 将发现的模型 ID 映射到 ModelInfo
-    const models: ModelInfo[] = [];
-    for (const modelId of modelIds) {
-      const knownModel = provider.models.find(m => m.id === modelId || m.aliases?.includes(modelId));
-      if (knownModel) {
-        models.push(knownModel);
-      } else {
-        // 未知模型：创建基础信息
-        models.push({
-          id: modelId,
-          name: modelId.split(':')[0] || modelId,
-          provider: provider.id,
-          contextWindow: 128_000,
-          maxTokens: 4_096,
-          capabilities: ['general'],
-        });
-      }
-    }
-
-    return {
-      provider: provider.id,
-      models,
-      discoveredAt: new Date().toISOString(),
-    };
-  } catch (e) {
-    return {
-      provider: provider.id,
-      models: [],
-      discoveredAt: new Date().toISOString(),
-      error: (e as Error).message,
-    };
+  if (params.provider) {
+    models = models.filter((m) => m.provider === params.provider);
   }
-}
 
-/**
- * 发现远程模型（OpenAI 兼容 API）
- */
-async function discoverRemoteModels(
-  provider: ProviderInfo,
-  baseUrl: string,
-  apiKey: string,
-  timeoutMs: number,
-): Promise<ModelDiscoveryResult> {
-  try {
-    const url = `${baseUrl.replace(/\/$/, '')}/models`;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    // 根据认证类型设置 header
-    if (provider.authType === 'x-api-key') {
-      headers['x-api-key'] = apiKey;
-    } else if (provider.authType === 'bearer' || provider.authType === 'api-key') {
-      headers['Authorization'] = `Bearer ${apiKey}`;
-    }
-
-    const resp = await fetch(url, {
-      method: 'GET',
-      headers,
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-
-    if (!resp.ok) {
-      return {
-        provider: provider.id,
-        models: [],
-        discoveredAt: new Date().toISOString(),
-        error: `HTTP ${resp.status}`,
-      };
-    }
-
-    const data = await resp.json();
-    let modelIds: string[] = [];
-
-    if (Array.isArray((data as any).data)) {
-      modelIds = (data as any).data.map((m: any) => m.id || '');
-    }
-
-    // 将发现的模型 ID 映射到 ModelInfo
-    const models: ModelInfo[] = [];
-    for (const modelId of modelIds) {
-      const knownModel = provider.models.find(m => m.id === modelId || m.aliases?.includes(modelId));
-      if (knownModel) {
-        models.push(knownModel);
-      }
-      // 远程提供商通常不添加未知模型（避免杂乱）
-    }
-
-    return {
-      provider: provider.id,
-      models,
-      discoveredAt: new Date().toISOString(),
-    };
-  } catch (e) {
-    return {
-      provider: provider.id,
-      models: [],
-      discoveredAt: new Date().toISOString(),
-      error: (e as Error).message,
-    };
+  if (params.type) {
+    models = models.filter((m) => m.type === params.type);
   }
-}
 
-// ============================================================
-// 模型可用性检测
-// ============================================================
-
-/** 可用性检测结果 */
-export interface AvailabilityCheckResult {
-  provider: ModelProvider;
-  modelId: string;
-  isAvailable: boolean;
-  checkedAt: string;
-  error?: string;
-  latencyMs?: number;
-}
-
-/**
- * 检测模型可用性
- *
- * 发送一个最小化请求验证模型是否可正常调用。
- *
- * @param provider 提供商信息
- * @param modelId 模型 ID
- * @param apiKey API Key
- * @param options 检测选项
- */
-export async function checkModelAvailability(
-  provider: ProviderInfo,
-  modelId: string,
-  apiKey: string,
-  options: { timeoutMs?: number; baseUrl?: string } = {},
-): Promise<AvailabilityCheckResult> {
-  const { timeoutMs = 5000, baseUrl } = options;
-  const effectiveBaseUrl = baseUrl || provider.baseUrl;
-  const startTime = Date.now();
-
-  try {
-    // 使用最小化请求验证模型可用性
-    const url = `${effectiveBaseUrl.replace(/\/$/, '')}/chat/completions`;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (provider.authType === 'x-api-key') {
-      headers['x-api-key'] = apiKey;
-    } else {
-      headers['Authorization'] = `Bearer ${apiKey}`;
-    }
-
-    // 发送一个最小的测试请求
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: modelId,
-        messages: [{ role: 'user', content: 'hi' }],
-        max_tokens: 1,
-      }),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-
-    const latencyMs = Date.now() - startTime;
-
-    if (resp.ok) {
-      return {
-        provider: provider.id,
-        modelId,
-        isAvailable: true,
-        checkedAt: new Date().toISOString(),
-        latencyMs,
-      };
-    }
-
-    // 检查是否为模型不可用错误
-    const errorData = await resp.json().catch(() => ({}));
-    const errorMessage = (errorData as any).error?.message || `HTTP ${resp.status}`;
-
-    return {
-      provider: provider.id,
-      modelId,
-      isAvailable: false,
-      checkedAt: new Date().toISOString(),
-      error: errorMessage,
-      latencyMs,
-    };
-  } catch (e) {
-    return {
-      provider: provider.id,
-      modelId,
-      isAvailable: false,
-      checkedAt: new Date().toISOString(),
-      error: (e as Error).message,
-      latencyMs: Date.now() - startTime,
-    };
+  if (params.capability !== undefined) {
+    const cap = params.capability as ModelCapability;
+    models = models.filter((m) => m.capabilities.includes(cap));
   }
-}
 
-// ============================================================
-// 辅助函数
-// ============================================================
-
-/**
- * 根据 ID 获取模型信息
- */
-export function getModelInfo(catalog: ModelCatalogIndex, modelId: string): ModelInfo | undefined {
-  for (const provider of Object.values(catalog.providers)) {
-    const model = provider.models.find(m => m.id === modelId || m.aliases?.includes(modelId));
-    if (model) return model;
+  if (params.availableOnly) {
+    models = models.filter((m) => m.available);
   }
-  return undefined;
-}
 
-/**
- * 根据提供商 ID 获取提供商信息
- */
-export function getProviderInfo(catalog: ModelCatalogIndex, providerId: ModelProvider): ProviderInfo | undefined {
-  return catalog.providers[providerId];
-}
+  logger.debug(`[ModelCatalog] 搜索结果: ${models.length} 个模型`);
 
-/**
- * 获取所有推荐模型
- */
-export function getRecommendedModels(catalog: ModelCatalogIndex): ModelInfo[] {
-  const recommended: ModelInfo[] = [];
-  for (const provider of Object.values(catalog.providers)) {
-    for (const model of provider.models) {
-      if (model.isRecommended) {
-        recommended.push(model);
-      }
-    }
-  }
-  return recommended;
-}
-
-/**
- * 根据能力筛选模型
- */
-export function filterModelsByCapability(
-  catalog: ModelCatalogIndex,
-  capabilities: ModelCapability[],
-): ModelInfo[] {
-  const filtered: ModelInfo[] = [];
-  for (const provider of Object.values(catalog.providers)) {
-    for (const model of provider.models) {
-      if (capabilities.every(cap => model.capabilities?.includes(cap))) {
-        filtered.push(model);
-      }
-    }
-  }
-  return filtered;
-}
-
-/**
- * 将 ModelInfo 转换为 ModelConfig（用于模型管理）
- */
-export function modelInfoToConfig(model: ModelInfo, provider: ProviderInfo): import('../../shared/types/models.js').ModelConfig {
   return {
-    id: model.id,
+    models,
+    total: models.length,
+  };
+}
+
+export function findBestModel(params: {
+  capability?: ModelCapability;
+  contextWindow?: number;
+  provider?: string;
+}): ModelCatalogEntry | undefined {
+  let models = listModelCatalog().filter((m) => m.available);
+
+  if (params.capability !== undefined) {
+    const cap = params.capability;
+    models = models.filter((m) => m.capabilities.includes(cap));
+  }
+
+  if (params.provider) {
+    models = models.filter((m) => m.provider === params.provider);
+  }
+
+  if (params.contextWindow !== undefined) {
+    const minContext = params.contextWindow;
+    models = models.filter((m) => m.contextWindow >= minContext);
+  }
+
+  if (models.length === 0) {
+    return undefined;
+  }
+
+  return models.reduce((best, current) => {
+    if (params.contextWindow !== undefined) {
+      const minContext = params.contextWindow;
+      return current.contextWindow >= minContext &&
+        current.contextWindow < best.contextWindow
+        ? current
+        : best;
+    }
+    return best;
+  });
+}
+
+export function updateModelAvailability(modelId: string, available: boolean): void {
+  const model = getModelById(modelId);
+  if (model) {
+    (model as unknown as Record<string, unknown>).available = available;
+    logger.info(`[ModelCatalog] 更新模型可用性: ${modelId} → ${available}`);
+  }
+}
+
+function convertToCatalogEntry(model: {
+  modelId?: string;
+  id?: string;
+  name: string;
+  provider: string;
+  description?: string;
+  capabilities?: string[];
+  contextWindow?: number;
+  authStatus?: string;
+}): ModelCatalogEntry {
+  return {
+    id: model.modelId ?? model.id ?? 'unknown',
     name: model.name,
     provider: model.provider,
-    apiEndpoint: provider.baseUrl,
-    enabled: false,
-    isDefault: false,
+    type: 'chat',
     description: model.description,
-    contextWindow: model.contextWindow,
-    maxTokens: model.maxTokens,
-    capabilities: model.capabilities,
+    capabilities: (model.capabilities as ModelCapability[]) ?? ['json', 'tool_use'],
+    contextWindow: model.contextWindow ?? 128_000,
+    available: model.authStatus === 'authenticated',
+    authStatus: (model.authStatus as ModelCatalogEntry['authStatus']) ?? 'pending',
   };
+}
+
+export function getProviders(): string[] {
+  const providerSet = new Set<string>();
+  for (const model of getAllModels()) {
+    providerSet.add(model.provider);
+  }
+  return Array.from(providerSet);
+}
+
+export function getModelTypes(): ModelType[] {
+  return ['chat', 'completion', 'embedding', 'vision', 'tts', 'speech'];
+}
+
+export function getCapabilities(): ModelCapability[] {
+  return ['vision', 'audio', 'json', 'tool_use', 'function_calling', 'code', 'multimodal'];
 }
