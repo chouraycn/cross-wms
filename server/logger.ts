@@ -59,33 +59,45 @@ function formatArgs(...args: unknown[]): [Record<string, unknown>, ...string[]] 
   return [merged, ...rest];
 }
 
-export const logger = {
-  error(...args: unknown[]): void {
-    const [merged, ...rest] = formatArgs(...args);
-    pinoInstance.error(merged, ...rest);
-  },
-
-  warn(...args: unknown[]): void {
-    const [merged, ...rest] = formatArgs(...args);
-    pinoInstance.warn(merged, ...rest);
-  },
-
-  info(...args: unknown[]): void {
-    const [merged, ...rest] = formatArgs(...args);
-    pinoInstance.info(merged, ...rest);
-  },
-
-  debug(...args: unknown[]): void {
-    const [merged, ...rest] = formatArgs(...args);
-    pinoInstance.debug(merged, ...rest);
-  },
-
+export interface Logger {
+  error(...args: unknown[]): void;
+  warn(...args: unknown[]): void;
+  info(...args: unknown[]): void;
+  debug(...args: unknown[]): void;
   /** Check if a given level would produce output (useful for expensive formatting). */
-  isLevelEnabled(level: LogLevel): boolean {
-    const pinoLevel = pinoInstance.levels.values[level];
-    const currentPinoLevel = pinoInstance.levels.values[pinoInstance.level as string];
-    return typeof pinoLevel === 'number' && typeof currentPinoLevel === 'number' && currentPinoLevel >= pinoLevel;
-  },
-};
+  isLevelEnabled(level: LogLevel): boolean;
+  /** Create a child logger with persistent bindings (e.g. sessionId, requestId) for request-scoped tracing. */
+  child(bindings: Record<string, unknown>): Logger;
+}
 
-export type Logger = typeof logger;
+/** Build a Logger facade over a (possibly child) pino instance. */
+function makeLogger(pinoLogger: pino.Logger): Logger {
+  return {
+    error(...args: unknown[]): void {
+      const [merged, ...rest] = formatArgs(...args);
+      pinoLogger.error(merged, ...rest);
+    },
+    warn(...args: unknown[]): void {
+      const [merged, ...rest] = formatArgs(...args);
+      pinoLogger.warn(merged, ...rest);
+    },
+    info(...args: unknown[]): void {
+      const [merged, ...rest] = formatArgs(...args);
+      pinoLogger.info(merged, ...rest);
+    },
+    debug(...args: unknown[]): void {
+      const [merged, ...rest] = formatArgs(...args);
+      pinoLogger.debug(merged, ...rest);
+    },
+    isLevelEnabled(level: LogLevel): boolean {
+      const target = pinoLogger.levels.values[level];
+      const current = pinoLogger.levels.values[pinoLogger.level as string];
+      return typeof target === 'number' && typeof current === 'number' && current >= target;
+    },
+    child(bindings: Record<string, unknown>): Logger {
+      return makeLogger(pinoLogger.child(bindings));
+    },
+  };
+}
+
+export const logger = makeLogger(pinoInstance);

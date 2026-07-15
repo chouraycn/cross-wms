@@ -2,7 +2,7 @@
  * Web Tools — 互联网访问工具
  *
  * v2.4.0: 新增三个 Web 工具
- * - web_search: DuckDuckGo 搜索，返回结构化结果
+ * - web_search: 百度搜索，返回结构化结果
  * - web_fetch:  抓取网页并 HTML→Markdown 转换
  * - web_api_call: 封装的 REST API 调用（域名白名单）
  *
@@ -128,86 +128,83 @@ export async function handleWebSearch(args: Record<string, unknown>): Promise<st
   }
 
   const maxResults = Math.min(Number(args.maxResults) || 8, 20);
-  const renderJs = args.renderJs === true;
 
   try {
     const encodedQuery = encodeURIComponent(query);
-    const url = `https://html.duckduckgo.com/html/?q=${encodedQuery}`;
+    const url = `https://www.baidu.com/s?wd=${encodedQuery}&rn=${Math.min(maxResults * 2, 50)}`;
 
-    let html: string;
-
-    if (renderJs) {
-      // 使用 Playwright 渲染搜索结果页
-      const rendered = await tryRenderContent(url);
-      if (rendered) {
-        html = rendered.html;
-      } else {
-        // 降级到原生 fetch
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: { 'User-Agent': 'CrossWMS-AI/1.0', 'Accept': 'text/html' },
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        if (!response.ok) {
-          return JSON.stringify({ success: false, error: `搜索请求失败: HTTP ${response.status}` });
-        }
-        html = await response.text();
-      }
-    } else {
-      // 原生 fetch
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'User-Agent': 'CrossWMS-AI/1.0', 'Accept': 'text/html' },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      if (!response.ok) {
-        return JSON.stringify({ success: false, error: `搜索请求失败: HTTP ${response.status}` });
-      }
-      html = await response.text();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    if (!response.ok) {
+      return JSON.stringify({ success: false, error: `搜索请求失败: HTTP ${response.status}` });
     }
+    const html = await response.text();
 
-    // 解析 DuckDuckGo HTML 搜索结果
+    // 解析百度 HTML 搜索结果
     const results: Array<{ title: string; snippet: string; url: string }> = [];
-    const linkRegex = /<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-    const snippetRegex = /<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
 
-    // 先匹配所有结果链接
-    const linkMatches = [...html.matchAll(linkRegex)];
+    // 匹配百度搜索结果块
+    const resultBlockRegex = /<div[^>]*class="[^"]*result[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?=<div[^>]*class="[^"]*result[^"]*"|<\/div>\s*$)/gi;
+    const blocks = [...html.matchAll(resultBlockRegex)];
 
-    // 再匹配所有 snippet
-    const snippetMatches = [...html.matchAll(snippetRegex)];
+    for (const block of blocks) {
+      if (results.length >= maxResults) break;
+      const blockHtml = block[1];
 
-    for (let i = 0; i < Math.min(linkMatches.length, maxResults); i++) {
-      const linkMatch = linkMatches[i];
-      let rawUrl = linkMatch[1];
-      // DuckDuckGo 的 URL 格式为 //duckduckgo.com/l/?uddg=...&rut=...
+      // 提取标题和链接
+      const titleMatch = blockHtml.match(/<h3[^>]*>\s*<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/i);
+      if (!titleMatch) continue;
+
+      let rawUrl = titleMatch[1];
       if (rawUrl.startsWith('//')) rawUrl = 'https:' + rawUrl;
-      const title = stripTags(linkMatch[2]).trim();
-      const snippet = snippetMatches[i]
-        ? stripTags(snippetMatches[i][1]).trim().substring(0, 200)
-        : '';
 
-      if (title) {
+      // 解析百度跳转链接
+      if (rawUrl.includes('baidu.com/link?url=') || rawUrl.includes('baidu.com/link?wd=')) {
+        try {
+          const u = new URL(rawUrl);
+          const target = u.searchParams.get('url');
+          if (target) rawUrl = target;
+        } catch {
+          // ignore
+        }
+      }
+
+      const title = stripTags(titleMatch[2]).trim();
+
+      // 提取摘要
+      let snippet = '';
+      const snippetMatch = blockHtml.match(/<span[^>]*class="[^"]*(?:c-abstract|content-right|abstract)[^"]*"[^>]*>([\s\S]*?)<\/span>/i);
+      if (snippetMatch) {
+        snippet = stripTags(snippetMatch[1]).trim().substring(0, 200);
+      }
+
+      if (title && rawUrl) {
         results.push({ title, snippet, url: rawUrl });
       }
     }
 
-    // 如果上述正则没匹配到（DDG 可能改版），尝试备选解析
+    // 备用解析：直接匹配 h3 > a
     if (results.length === 0) {
-      const altRegex = /<a[^>]*class="[^"]*result[^"]*"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-      const altMatches = [...html.matchAll(altRegex)];
-      for (let i = 0; i < Math.min(altMatches.length, maxResults); i++) {
-        const m = altMatches[i];
+      const h3Regex = /<h3[^>]*>\s*<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
+      const h3Matches = [...html.matchAll(h3Regex)];
+      for (const m of h3Matches) {
+        if (results.length >= maxResults) break;
         let rawUrl = m[1];
         if (rawUrl.startsWith('//')) rawUrl = 'https:' + rawUrl;
         const title = stripTags(m[2]).trim();
-        if (title) results.push({ title, snippet: '', url: rawUrl });
+        if (title && rawUrl) {
+          results.push({ title, snippet: '', url: rawUrl });
+        }
       }
     }
 
@@ -216,11 +213,10 @@ export async function handleWebSearch(args: Record<string, unknown>): Promise<st
       query,
       results,
       count: results.length,
-      rendered: renderJs,
     });
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
-      return JSON.stringify({ success: false, error: '搜索超时（5秒）' });
+      return JSON.stringify({ success: false, error: '搜索超时（10秒）' });
     }
     return JSON.stringify({
       success: false,

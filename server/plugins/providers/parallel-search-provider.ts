@@ -220,7 +220,7 @@ const plugin: WebSearchProviderPlugin = {
           providers: {
             type: "array",
             description:
-              "List of provider IDs to use (e.g. ['duckduckgo', 'searxng']). If empty, uses all available providers.",
+              "List of provider IDs to use (e.g. ['baidu', 'searxng']). If empty, uses all available providers.",
             items: {
               type: "string",
             },

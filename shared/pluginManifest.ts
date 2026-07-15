@@ -70,6 +70,8 @@ export const PluginManifestSchema = z.object({
   permissions: z.array(z.string()).default([]),
   /** 整体风险等级 */
   riskLevel: z.enum(['auto', 'confirm', 'high-risk']).default('auto'),
+  /** 插件 API 版本（用于兼容性检查） */
+  apiVersion: z.string().default('1.0'),
   /** 额外元数据 */
   metadata: z.record(z.string(), z.unknown()).default({}),
 });

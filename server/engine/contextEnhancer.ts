@@ -90,22 +90,22 @@ export function assessComplexity(
     };
   }
 
-  // 中等任务
-  if (toolCallCount >= 2 || intent.intents.some((i) => ['query', 'analyze', 'compare'].includes(i))) {
+  // 中等任务（v9.3: 降低门槛，只要有工具调用意图或分析类请求都走 REACT）
+  if (toolCallCount >= 1 || intent.intents.some((i) => ['query', 'analyze', 'compare', 'action', 'create'].includes(i))) {
     return {
       level: 'moderate',
-      estimatedSteps: Math.max(intent.estimatedSteps, 3),
+      estimatedSteps: Math.max(intent.estimatedSteps, 2),
       reason: `中等复杂任务 (意图: ${intent.primaryIntent}, 语言: ${intent.detectedLanguage})`,
       recommendedMode: 'planner',
     };
   }
 
-  // 简单任务
+  // 简单任务也走 REACT（v9.3: 确保 Planner 和待办系统可用）
   return {
     level: 'simple',
     estimatedSteps: intent.estimatedSteps || 1,
     reason: `简单任务 (意图: ${intent.primaryIntent}, 语言: ${intent.detectedLanguage})`,
-    recommendedMode: 'observer',
+    recommendedMode: 'planner',
   };
 }
 

@@ -53,7 +53,8 @@ const isNativeApp = (): boolean => {
 };
 import type { AgentIdentity } from './AgentProfile.js';
 import { AGENT_SCENARIOS } from './AgentProfile.js';
-import type { AgentItemEventData, SendAgentMessageOptions } from '../../hooks/useAgentChat.js';
+import type { SendAgentMessageOptions } from '../../hooks/useAgentChat.js';
+import { type SystemEvent } from '../../types/openclaw-events.js';
 import { useAgentChat } from '../../hooks/useAgentChat.js';
 import { formatHelpText } from '../../hooks/useSlashCommands.js';
 import type { ApprovalRequest, ApprovalHistoryItem, ApprovalConfig } from './ApprovalDialog.js';
@@ -99,13 +100,14 @@ export interface ChatThreadProps {
  * Item 活动流组件 — 展示 Agent 执行过程中的活动
  */
 const AgentActivityFeed: React.FC<{
-  items: AgentItemEventData[];
+  items: SystemEvent[];
   isDark: boolean;
   gs: ReturnType<typeof getGrayScale>;
 }> = ({ items, isDark, gs }) => {
-  if (items.length === 0) return null;
+  const itemEvents = items.filter((item): item is SystemEvent & { type: 'item' } => item.type === 'item');
+  if (itemEvents.length === 0) return null;
 
-  const getStatusIcon = (status: AgentItemEventData['status']) => {
+  const getStatusIcon = (status: string | undefined) => {
     switch (status) {
       case 'running':
         return <CircularProgress size={14} sx={{ color: gs.textMuted }} />;
@@ -139,7 +141,7 @@ const AgentActivityFeed: React.FC<{
         Agent 活动
       </Typography>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-        {items.slice(0, 8).map((item) => (
+        {itemEvents.slice(0, 8).map((item) => (
           <Chip
             key={item.itemId}
             icon={getStatusIcon(item.status)}
@@ -718,6 +720,32 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
       ? (chatMessages[0]?.content?.slice(0, 24) || '新对话')
       : session.title;
 
+    // v1.7.89: 收起侧边栏时标题栏与新建对话按钮同一行（fixed 定位）
+    const titleBarCollapsedSx = leftSidebarCollapsed
+      ? {
+          position: 'fixed' as const,
+          top: nativeApp ? '16px' : '10px',
+          left: nativeApp ? (isFullscreen ? '48px' : '150px') : '78px',
+          right: '16px',
+          zIndex: 1399,
+          pl: 0,
+          pr: 0,
+          py: 0,
+          height: '25.92px',
+          minHeight: '25.92px',
+          borderBottom: 'none',
+          WebkitAppRegion: 'no-drag',
+        }
+      : {
+          pl: 2,
+          pr: 2,
+          py: 0.75,
+          borderBottom: `1px solid ${gs.border}`,
+          flexShrink: 0,
+          minHeight: 40,
+          pt: 0.75,
+        };
+
     return (
       <>
       <Box sx={{
@@ -727,26 +755,18 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         mb: -3,
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: gs.bgPanel,
         overflow: 'hidden',
       }}>
         {/* v1.7.87: 空状态侧边栏按钮已移至 GlobalActionsBar，此处不再重复显示 */}
         {/* 顶部标题栏：仅在有内容时显示（会话标题 + 文件夹路径 + 右侧按钮） */}
-        {/* v1.7.85: 全屏时红黄绿消失，按钮左移填补空间 */}
+        {/* v1.7.89: 收起侧边栏时，标题栏与新建对话按钮同一行（fixed 定位） */}
         {!isEmpty && (
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            // v1.7.87: DMG 下 pl 增大以避让全局按钮栏（展开/新对话按钮在左侧固定位置）
-            pl: leftSidebarCollapsed ? (nativeApp ? (isFullscreen ? '8px' : '130px') : '8px') : 2,
-            pr: 2,
-            py: 0.75,
-            borderBottom: `1px solid ${gs.border}`,
-            flexShrink: 0,
-            minHeight: 40,
-            pt: leftSidebarCollapsed ? 'calc(var(--pw-top, 0px) + 0px)' : 0.75,
+            ...titleBarCollapsedSx,
           }}
         >
           {/* v1.7.87: 侧边栏按钮已移至 GlobalActionsBar，标题直接从左侧开始 */}
@@ -959,8 +979,15 @@ export const ChatThread: React.FC<ChatThreadProps> = ({
         </Box>
         )}
 
-        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
-        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'row',
+          overflow: 'hidden',
+          pt: (!isEmpty && leftSidebarCollapsed) ? '42px' : 0,
+        }}>
+        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', m: '6px', borderRadius: '6px', boxShadow: 'none' }}>
           {/* v1.7.88: 历史对话切换中 — 撕开式转圈加载样式 */}
           {isSwitchingSession ? (
             <Box sx={{

@@ -220,7 +220,6 @@ async function getSnapshot() {
   }
 
   try {
-    const accessibility = await page.accessibility.snapshot();
     const url = page.url();
     const title = await page.title();
 
@@ -262,7 +261,173 @@ async function getSnapshot() {
       }
     }
 
-    if (accessibility) {
+    // 优先使用 accessibility API（如果可用）
+    let accessibility = null;
+    if (page.accessibility && typeof page.accessibility.snapshot === 'function') {
+      try {
+        accessibility = await page.accessibility.snapshot();
+      } catch (accErr) {
+        log(`accessibility.snapshot failed, falling back to DOM evaluation: ${accErr.message}`);
+        accessibility = null;
+      }
+    }
+
+    // 降级方案：使用 DOM evaluate 获取元素列表
+    if (!accessibility) {
+      try {
+        const domElements = await page.evaluate(() => {
+          const result = [];
+          let count = 0;
+          const MAX_ELEMENTS = 200;
+
+          function walk(node, depth) {
+            if (count >= MAX_ELEMENTS) return;
+            if (!node) return;
+
+            // 只处理元素节点
+            if (node.nodeType === 1) {
+              const tag = node.tagName.toLowerCase();
+              const role = node.getAttribute('role') || getImplicitRole(tag, node);
+              const name = getAccessibleName(node) || node.innerText?.substring(0, 50) || '';
+              const value = node.value || node.getAttribute('value') || undefined;
+              const disabled = node.disabled || node.hasAttribute('disabled') || undefined;
+              const checked = node.checked !== undefined ? node.checked : undefined;
+              const href = node.href || undefined;
+
+              // 跳过隐藏元素和无意义的容器
+              const style = window.getComputedStyle(node);
+              if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                return;
+              }
+
+              // 跳过无意义的通用容器（深层 div/span）
+              if ((tag === 'div' || tag === 'span') && !role && !name && depth > 3) {
+                // 继续遍历子节点
+              } else {
+                count++;
+                result.push({
+                  role: role || tag,
+                  name: name,
+                  value: value,
+                  disabled: disabled,
+                  checked: checked,
+                  href: href,
+                });
+              }
+            }
+
+            // 遍历子节点
+            if (node.childNodes) {
+              for (let i = 0; i < node.childNodes.length; i++) {
+                walk(node.childNodes[i], depth + 1);
+              }
+            }
+          }
+
+          function getImplicitRole(tag, node) {
+            const roleMap = {
+              'button': 'button',
+              'a': 'link',
+              'input': function(n) {
+                const type = n.type || 'text';
+                const inputRoles = {
+                  'text': 'textbox',
+                  'search': 'searchbox',
+                  'checkbox': 'checkbox',
+                  'radio': 'radio',
+                  'button': 'button',
+                  'submit': 'button',
+                  'reset': 'button',
+                  'file': 'button',
+                  'number': 'spinbutton',
+                  'range': 'slider',
+                  'email': 'textbox',
+                  'password': 'textbox',
+                  'tel': 'textbox',
+                  'url': 'textbox',
+                  'date': 'textbox',
+                };
+                return inputRoles[type] || 'textbox';
+              },
+              'textarea': 'textbox',
+              'select': 'combobox',
+              'img': 'image',
+              'form': 'form',
+              'table': 'table',
+              'ul': 'list',
+              'ol': 'list',
+              'li': 'listitem',
+              'h1': 'heading',
+              'h2': 'heading',
+              'h3': 'heading',
+              'h4': 'heading',
+              'h5': 'heading',
+              'h6': 'heading',
+              'p': 'paragraph',
+              'nav': 'navigation',
+              'header': 'banner',
+              'footer': 'contentinfo',
+              'main': 'main',
+              'aside': 'complementary',
+              'section': 'region',
+              'article': 'article',
+            };
+            const entry = roleMap[tag];
+            if (typeof entry === 'function') return entry(node);
+            return entry || null;
+          }
+
+          function getAccessibleName(node) {
+            // 优先使用 aria-label
+            if (node.getAttribute('aria-label')) return node.getAttribute('aria-label');
+            // 然后使用 aria-labelledby 引用的元素文本
+            if (node.getAttribute('aria-labelledby')) {
+              const ids = node.getAttribute('aria-labelledby').split(/\s+/);
+              const texts = ids.map(id => {
+                const el = document.getElementById(id);
+                return el ? el.textContent.trim() : '';
+              }).filter(Boolean);
+              if (texts.length) return texts.join(' ');
+            }
+            // 然后使用 title 属性
+            if (node.title) return node.title;
+            // 对于链接和按钮，使用文本内容
+            if (['a', 'button'].includes(node.tagName?.toLowerCase())) {
+              return (node.textContent || '').trim().substring(0, 80);
+            }
+            // placeholder
+            if (node.placeholder) return node.placeholder;
+            return '';
+          }
+
+          walk(document.body, 0);
+          return result;
+        });
+
+        // 转换为统一格式
+        for (const el of domElements) {
+          refCounter++;
+          elements.push({
+            ref: `e${refCounter}`,
+            role: el.role || 'unknown',
+            name: el.name || '',
+            value: el.value,
+            disabled: el.disabled,
+            checked: el.checked,
+            href: el.href,
+          });
+        }
+      } catch (domErr) {
+        warn(`DOM evaluation fallback also failed: ${domErr.message}`);
+        // 如果都失败了，返回一个基本的页面信息
+        elements.push({
+          ref: 'e1',
+          role: 'document',
+          name: title || 'Page',
+        });
+      }
+    } else {
+      // accessibility API 成功，扁平化处理
       flattenNode(accessibility);
     }
 
@@ -558,7 +723,9 @@ async function handleExecuteJs(args) {
   }
 
   try {
-    const result = await page.evaluate(script);
+    // 包装脚本为函数，避免 "Illegal return statement" 错误
+    const wrappedScript = `(function() { ${script} })()`;
+    const result = await page.evaluate(wrappedScript);
 
     // 可选：返回执行后的页面 HTML
     let html = undefined;

@@ -4,6 +4,8 @@
  * 实现指数退避重试策略，支持优先级队列、死信队列和并发控制。
  */
 
+import { logger } from '../../logger.js';
+
 export interface RetryItem {
   id: string;
   messageId: string;
@@ -265,7 +267,7 @@ export class RetryQueue {
 
     this.isRunning = true;
     this.timer = setInterval(() => {
-      this.processNext().catch((e) => console.error('Retry queue processing error:', e));
+      this.processNext().catch((e) => logger.error('[retry-queue] processing error:', e));
     }, this.config.pollIntervalMs);
 
     this.emit('queue-started', null);
@@ -296,7 +298,7 @@ export class RetryQueue {
       try {
         handler(event, data);
       } catch (e) {
-        console.error('Retry queue event handler error:', e);
+        logger.error('[retry-queue] event handler error:', e);
       }
     }
   }

@@ -20,6 +20,8 @@ import {
 import { logger } from '../logger.js';
 import { v4 as uuidv4 } from 'uuid';
 import { AppPaths } from '../config/appPaths.js';
+import { getWebSocketHub } from '../gateway/webSocketHub.js';
+import { publishInstanceUpdated } from './taskMonitorEvents.js';
 
 // ===================== 类型 =====================
 
@@ -40,6 +42,30 @@ export interface RuntimeInstance {
   error?: string;
   /** 累计 token 消耗（由执行器回填） */
   tokensUsed?: number;
+  /** 父会话 Key（用于交付通知） */
+  requesterSessionKey?: string;
+  /** 交付状态 */
+  deliveryStatus: 'pending' | 'delivered' | 'failed';
+  /** 最后通知时间 */
+  lastNotifiedAt?: number;
+  /** 是否为孤儿实例（父进程已消失） */
+  isOrphan?: boolean;
+}
+
+export type InstanceEventKind = RuntimeInstance['status'] | 'progress';
+
+export interface InstanceEventRecord {
+  at: number;
+  kind: InstanceEventKind;
+  summary?: string;
+}
+
+export type InstanceNotifyPolicy = 'done_only' | 'state_changes' | 'silent';
+
+export interface InstanceDeliveryState {
+  instanceId: string;
+  requesterSessionKey?: string;
+  lastNotifiedEventAt?: number;
 }
 
 // ===================== 常量 =====================
@@ -69,8 +95,170 @@ class AgentRegistry {
   /** v9.1: 运行时子代理实例表（父子关系、状态、token 累计） */
   private instances: Map<string, RuntimeInstance> = new Map();
   private initialized = false;
+  /** v9.2: 实例事件记录 */
+  private instanceEvents: Map<string, InstanceEventRecord[]> = new Map();
+  /** v9.2: 孤儿恢复定时器 */
+  private orphanRecoveryInterval: ReturnType<typeof setInterval> | null = null;
+  /** v9.2: 交付通知策略 */
+  private notifyPolicy: InstanceNotifyPolicy = 'state_changes';
 
-  constructor() {}
+  constructor() {
+    this.startOrphanRecovery();
+  }
+
+  /**
+   * v9.2: 启动孤儿实例恢复循环
+   * 定期检查运行中的实例，检测父进程是否已消失
+   */
+  private startOrphanRecovery(): void {
+    this.orphanRecoveryInterval = setInterval(() => {
+      this.recoverOrphanInstances();
+    }, 30 * 1000);
+    if (typeof this.orphanRecoveryInterval.unref === 'function') {
+      this.orphanRecoveryInterval.unref();
+    }
+  }
+
+  /**
+   * v9.2: 停止孤儿恢复循环
+   */
+  stopOrphanRecovery(): void {
+    if (this.orphanRecoveryInterval) {
+      clearInterval(this.orphanRecoveryInterval);
+      this.orphanRecoveryInterval = null;
+    }
+  }
+
+  /**
+   * v9.2: 检测并恢复孤儿实例
+   * 孤儿实例：父实例已不存在但子实例仍在运行的情况
+   */
+  recoverOrphanInstances(): number {
+    let recoveredCount = 0;
+    const runningInstances = this.listInstances({ status: 'running' });
+
+    for (const instance of runningInstances) {
+      if (!instance.parentInstanceId) continue;
+
+      const parent = this.getInstance(instance.parentInstanceId);
+      if (!parent || parent.status === 'completed' || parent.status === 'failed' || parent.status === 'cancelled') {
+        logger.warn(`[AgentRegistry] 发现孤儿实例 ${instance.instanceId}，父实例 ${instance.parentInstanceId} 已不存在`);
+        
+        instance.isOrphan = true;
+        instance.status = 'cancelled';
+        instance.completedAt = Date.now();
+        instance.error = '父代理已终止，子代理被取消';
+        this.instances.set(instance.instanceId, instance);
+        
+        this.recordInstanceEvent(instance.instanceId, 'cancelled', '父代理已终止，子代理被取消');
+        this.notifyRequester(instance);
+        publishInstanceUpdated(instance.requesterSessionKey || 'unknown', instance);
+
+        recoveredCount++;
+      }
+    }
+
+    if (recoveredCount > 0) {
+      logger.info(`[AgentRegistry] 已恢复 ${recoveredCount} 个孤儿实例`);
+    }
+
+    return recoveredCount;
+  }
+
+  /**
+   * v9.2: 子会话对账 - 检查父实例的所有子实例状态
+   */
+  reconcileChildInstances(parentInstanceId: string): {
+    running: number;
+    completed: number;
+    failed: number;
+    orphaned: number;
+  } {
+    const children = this.listInstances({ parentInstanceId });
+    const result = { running: 0, completed: 0, failed: 0, orphaned: 0 };
+
+    for (const child of children) {
+      switch (child.status) {
+        case 'running':
+          result.running++;
+          break;
+        case 'completed':
+          result.completed++;
+          break;
+        case 'failed':
+        case 'timeout':
+          result.failed++;
+          break;
+        case 'cancelled':
+          if (child.isOrphan) result.orphaned++;
+          break;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * v9.2: 记录实例事件
+   */
+  recordInstanceEvent(instanceId: string, kind: InstanceEventKind, summary?: string): void {
+    let events = this.instanceEvents.get(instanceId);
+    if (!events) {
+      events = [];
+      this.instanceEvents.set(instanceId, events);
+    }
+    events.push({ at: Date.now(), kind, summary });
+    if (events.length > 100) {
+      events = events.slice(-100);
+    }
+  }
+
+  /**
+   * v9.2: 获取实例事件记录
+   */
+  getInstanceEvents(instanceId: string): InstanceEventRecord[] {
+    return this.instanceEvents.get(instanceId) || [];
+  }
+
+  /**
+   * v9.2: 发送交付通知
+   */
+  notifyRequester(instance: RuntimeInstance): void {
+    if (!instance.requesterSessionKey) return;
+    if (this.notifyPolicy === 'silent') return;
+
+    const shouldNotify = this.notifyPolicy === 'state_changes' || 
+      (this.notifyPolicy === 'done_only' && ['completed', 'failed', 'timeout', 'cancelled'].includes(instance.status));
+
+    if (!shouldNotify) return;
+
+    try {
+      const hub = getWebSocketHub();
+      hub.publishTaskMonitorEvent({
+        type: 'instance_updated',
+        sessionId: instance.requesterSessionKey,
+        payload: {
+          instanceId: instance.instanceId,
+          agentId: instance.agentId,
+          status: instance.status,
+          result: instance.result,
+          error: instance.error,
+          startedAt: instance.startedAt,
+          completedAt: instance.completedAt,
+          deliveryStatus: instance.deliveryStatus,
+        },
+        timestamp: Date.now(),
+      });
+
+      instance.deliveryStatus = 'delivered';
+      instance.lastNotifiedAt = Date.now();
+      this.instances.set(instance.instanceId, instance);
+    } catch (e) {
+      logger.error(`[AgentRegistry] 发送交付通知失败:`, e);
+      instance.deliveryStatus = 'failed';
+      this.instances.set(instance.instanceId, instance);
+    }
+  }
 
   // ===================== 初始化 =====================
 
@@ -367,7 +555,12 @@ class AgentRegistry {
    * v9.1: 注册一个运行时子代理实例（由 spawnSubAgent 调用）
    */
   registerInstance(instance: RuntimeInstance): void {
-    this.instances.set(instance.instanceId, instance);
+    const fullInstance: RuntimeInstance = {
+      ...instance,
+      deliveryStatus: instance.deliveryStatus || 'pending',
+    };
+    this.instances.set(instance.instanceId, fullInstance);
+    this.recordInstanceEvent(instance.instanceId, 'spawning', `实例已创建: ${instance.taskDescription}`);
     logger.debug(`[AgentRegistry] 注册子代理实例 ${instance.instanceId} (agent=${instance.agentId})`);
   }
 
@@ -377,8 +570,16 @@ class AgentRegistry {
   updateInstance(instanceId: string, patch: Partial<RuntimeInstance>): void {
     const inst = this.instances.get(instanceId);
     if (!inst) return;
+    
+    const oldStatus = inst.status;
     Object.assign(inst, patch);
     this.instances.set(instanceId, inst);
+    
+    if (patch.status && patch.status !== oldStatus) {
+      this.recordInstanceEvent(instanceId, patch.status, inst.taskDescription);
+      this.notifyRequester(inst);
+      publishInstanceUpdated(inst.requesterSessionKey || 'unknown', inst);
+    }
   }
 
   /**
@@ -414,7 +615,75 @@ class AgentRegistry {
     inst.status = 'cancelled';
     inst.completedAt = Date.now();
     this.instances.set(instanceId, inst);
+    this.recordInstanceEvent(instanceId, 'cancelled', '实例已取消');
+    this.notifyRequester(inst);
+    publishInstanceUpdated(inst.requesterSessionKey || 'unknown', inst);
     return true;
+  }
+
+  /**
+   * v9.2: 设置通知策略
+   */
+  setNotifyPolicy(policy: InstanceNotifyPolicy): void {
+    this.notifyPolicy = policy;
+  }
+
+  /**
+   * v9.2: 获取通知策略
+   */
+  getNotifyPolicy(): InstanceNotifyPolicy {
+    return this.notifyPolicy;
+  }
+
+  /**
+   * v9.2: 获取实例交付状态
+   */
+  getInstanceDeliveryState(instanceId: string): InstanceDeliveryState | undefined {
+    const inst = this.instances.get(instanceId);
+    if (!inst) return undefined;
+    return {
+      instanceId: inst.instanceId,
+      requesterSessionKey: inst.requesterSessionKey,
+      lastNotifiedEventAt: inst.lastNotifiedAt,
+    };
+  }
+
+  /**
+   * v9.2: 获取运行时实例统计
+   */
+  getInstanceStats(): {
+    total: number;
+    running: number;
+    completed: number;
+    failed: number;
+    cancelled: number;
+    orphaned: number;
+    pendingDelivery: number;
+  } {
+    const stats = { total: 0, running: 0, completed: 0, failed: 0, cancelled: 0, orphaned: 0, pendingDelivery: 0 };
+    
+    for (const inst of this.instances.values()) {
+      stats.total++;
+      switch (inst.status) {
+        case 'running':
+          stats.running++;
+          break;
+        case 'completed':
+          stats.completed++;
+          break;
+        case 'failed':
+        case 'timeout':
+          stats.failed++;
+          break;
+        case 'cancelled':
+          stats.cancelled++;
+          break;
+      }
+      if (inst.isOrphan) stats.orphaned++;
+      if (inst.deliveryStatus === 'pending') stats.pendingDelivery++;
+    }
+    
+    return stats;
   }
 
   // ===================== 私有方法 =====================
@@ -542,4 +811,5 @@ class AgentRegistry {
 // ===================== 单例导出 =====================
 
 export const agentRegistry = new AgentRegistry();
+export { AgentRegistry };
 export type { AgentProfile, AgentRole, AgentCapability };

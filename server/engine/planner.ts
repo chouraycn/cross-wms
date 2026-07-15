@@ -143,7 +143,6 @@ export class Planner {
     // 规则 1：多步骤意图关键词
     for (const pattern of MULTI_STEP_PATTERNS) {
       if (pattern.test(messageText)) {
-        // 粗略估计步骤数：按"再"/"然后"/"接着"等分隔词计数
         const separators = messageText.match(/再|然后|接着|之后|同时/g);
         const estimatedSteps = (separators?.length ?? 0) + 1;
         return {
@@ -154,13 +153,13 @@ export class Planner {
       }
     }
 
-    // 规则 2：历史 tool_calls 数量 ≥ 3
+    // 规则 2：历史 tool_calls 数量 ≥ 1（v9.3: 从 3 降到 1，确保待办尽早出现）
     const toolCallCount = messages.filter(m => m.role === 'tool').length;
-    if (toolCallCount >= 3) {
+    if (toolCallCount >= 1) {
       return {
         shouldTrigger: true,
-        reason: `历史工具调用次数 ${toolCallCount} ≥ 3，任务复杂度较高`,
-        estimatedSteps: Math.min(Math.ceil(toolCallCount / 2), this.maxPlanSteps),
+        reason: `历史工具调用次数 ${toolCallCount} ≥ 1，任务复杂度较高`,
+        estimatedSteps: Math.min(Math.max(toolCallCount, this.maxPlanSteps), this.maxPlanSteps),
       };
     }
 
@@ -185,6 +184,31 @@ export class Planner {
           estimatedSteps: group.length + 1,
         };
       }
+    }
+
+    // 规则 5：v9.3 — 单一 WMS/业务关键词也触发（只要有业务意图就生成待办）
+    const SINGLE_TRIGGER_KEYWORDS = [
+      '库存', '入库', '出库', '盘点', '调拨', '上架', '拣货', '移库', '补货',
+      '收货', '发货', '订单', '货物', '仓库', '库位', '批次', 'sku', 'SKU',
+      '报表', '报告', '统计', '分析', '查询', '搜索', '查找',
+    ];
+    for (const kw of SINGLE_TRIGGER_KEYWORDS) {
+      if (messageText.includes(kw)) {
+        return {
+          shouldTrigger: true,
+          reason: `检测到业务关键词: ${kw}`,
+          estimatedSteps: 2,
+        };
+      }
+    }
+
+    // 规则 6：v9.3 — 消息长度超过 50 字也触发（长消息通常需要规划）
+    if (messageText.length >= 50) {
+      return {
+        shouldTrigger: true,
+        reason: `消息长度 ${messageText.length} ≥ 50，可能需要规划`,
+        estimatedSteps: 2,
+      };
     }
 
     // 不触发

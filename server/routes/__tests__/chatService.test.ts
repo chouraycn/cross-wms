@@ -102,7 +102,18 @@ vi.mock('../../engine/vecMemoryStore.js', () => ({
 }));
 
 vi.mock('../../logger.js', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    child: vi.fn(() => ({
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+    })),
+  },
 }));
 
 const { autoSelectModelMock, autoSelectModelAsyncMock } = vi.hoisted(() => {

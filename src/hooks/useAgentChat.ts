@@ -40,40 +40,10 @@ import { SSEStreamParser } from '../utils/sse/SSEStreamParser.js';
 import { BlockReplyCoalescer } from '../utils/sse/BlockReplyCoalescer.js';
 import { RenderScheduler } from '../utils/sse/RenderScheduler.js';
 import { dispatchCdfEvent, CdfEvents } from '../events/events';
+import { EventAdapter, type SSEWireEvent } from '../utils/sse/eventAdapter';
+import type { ChatEvent, SystemEvent } from '../types/openclaw-events';
 
 // ===================== 类型定义 =====================
-
-export type AgentEventStream =
-  | 'lifecycle'
-  | 'assistant'
-  | 'tool'
-  | 'thinking'
-  | 'item'
-  | 'error'
-  | 'approval'
-  | 'command_output'
-  | 'patch'
-  | 'compaction'
-  | 'plan'
-  | 'heartbeat'
-  | string;
-
-export interface AgentItemEventData {
-  itemId: string;
-  phase: 'start' | 'update' | 'end';
-  kind: 'tool' | 'command' | 'patch' | 'search' | 'analysis' | 'plan' | string;
-  title: string;
-  status: 'running' | 'completed' | 'failed' | 'blocked';
-  name?: string;
-  meta?: string;
-  toolCallId?: string;
-  startedAt?: number;
-  endedAt?: number;
-  error?: string;
-  summary?: string;
-  progressText?: string;
-  progressPercent?: number;
-}
 
 export interface PendingMessage {
   id: string;
@@ -81,18 +51,6 @@ export interface PendingMessage {
   attachments?: Attachment[];
   state: 'queued' | 'sending' | 'failed';
   error?: string;
-}
-
-export interface AgentEventPayload {
-  runId: string;
-  seq: number;
-  stream: AgentEventStream;
-  ts: number;
-  data: Record<string, unknown>;
-  sessionKey?: string;
-  sessionId?: string;
-  agentId?: string;
-  userId?: string;
 }
 
 // ===================== 块缓冲配置 =====================
@@ -171,7 +129,7 @@ export interface UseAgentChatResult {
   isLoading: boolean;
   error: string | null;
   currentRunId: string | null;
-  activeItems: AgentItemEventData[];
+  activeItems: SystemEvent[];
   thinkingText: string;
   hasThinking: boolean;
   pendingMessages: PendingMessage[];
@@ -197,7 +155,7 @@ export function useAgentChat(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentRunId, setCurrentRunId] = useState<string | null>(null);
-  const [activeItems, setActiveItems] = useState<AgentItemEventData[]>([]);
+  const [activeItems, setActiveItems] = useState<SystemEvent[]>([]);
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
   const currentPendingMsgIdRef = useRef<string | null>(null);
 
@@ -223,8 +181,9 @@ export function useAgentChat(
     parserRef.current = new SSEStreamParser();
   }
   const parser = parserRef.current;
-  const itemsMapRef = useRef<Map<string, AgentItemEventData>>(new Map());
+  const itemsMapRef = useRef<Map<string, SystemEvent>>(new Map());
   const lastSeqRef = useRef<Map<string, number>>(new Map());
+  const eventAdapterRef = useRef(new EventAdapter());
 
   const textCoalescerRef = useRef<BlockReplyCoalescer | null>(null);
   const thinkingCoalescerRef = useRef<BlockReplyCoalescer | null>(null);
@@ -519,20 +478,14 @@ export function useAgentChat(
     return true;
   }, []);
 
-  // 事件处理 — 处理 AgentEventPayload 格式
-  const handleAgentEvent = useCallback((event: { event?: string; data: unknown }) => {
-    const payload = (event.data as Record<string, unknown>) || {};
-    const stream = (payload.stream as string) || (event.event as string) || 'unknown';
-    const seq = (payload.seq as number) || 0;
-    const data = (payload.data as Record<string, unknown>) || {};
-    const runId = (payload.runId as string) || '';
-
-    if (seq > 0 && !checkAndUpdateSeq(stream, seq)) {
-      return;
-    }
-
-    switch (stream) {
-      case 'lifecycle': {
+  // handleChatEvent — 按 OpenClaw ChatEvent.type 分发处理
+  // 业务逻辑直接复制自原 handleAgentEvent 的对应 case，仅改变分发机制；
+  // ctx 透传原始 wire 字段（stream/data/runId/seq），保证现有处理行为完全不变。
+  const handleChatEvent = useCallback((chatEvent: ChatEvent, ctx: { stream: string; data: Record<string, unknown>; runId: string; seq: number }) => {
+    const { stream, data, runId } = ctx;
+    switch (chatEvent.type) {
+      case 'start': {
+        // lifecycle: phase=start → 重置运行状态；phase=init → 创建消息气泡/设置 model
         const phase = (data.phase as string) || '';
         if (phase === 'start') {
           if (runId) {
@@ -543,6 +496,7 @@ export function useAgentChat(
           itemsMapRef.current.clear();
           setActiveItems([]);
           initializeStreaming();
+          eventAdapterRef.current.reset();
         } else if (phase === 'init') {
           if (runId) {
             setCurrentRunId(runId);
@@ -592,120 +546,132 @@ export function useAgentChat(
               return newMessages;
             });
           }
-        } else if (phase === 'done') {
-          flushAllBuffers();
-          textCoalescerRef.current?.dispose();
-          thinkingCoalescerRef.current?.dispose();
-          schedulerRef.current?.dispose();
+        }
+        break;
+      }
 
-          const state = blockStateRef.current;
-          if (state.assistantMessageIndex >= 0) {
-            setMessages((prev) => {
-              if (state.assistantMessageIndex >= prev.length) return prev;
-              const msg = prev[state.assistantMessageIndex];
-              if (msg.role !== 'assistant') return prev;
+      case 'done': {
+        // lifecycle: phase=done
+        flushAllBuffers();
+        textCoalescerRef.current?.dispose();
+        thinkingCoalescerRef.current?.dispose();
+        schedulerRef.current?.dispose();
 
-              const updated: Message = {
-                ...msg,
-                isStreaming: false,
-                thinkingDone: true,
-                thinkingDuration: data.thinkingDuration as number | undefined,
-                usage: data.usage as Record<string, unknown> | undefined,
-                // 读取降级信息：fallbackModel / fallbackReason
-                ...(data.fallbackModel ? { fallbackModel: data.fallbackModel as string } : {}),
-                ...(data.fallbackReason ? { fallbackReason: data.fallbackReason as 'key_rotation' | 'model_downgrade' | 'model_not_supported' | 'request_failed' } : {}),
-              };
+        const state = blockStateRef.current;
+        if (state.assistantMessageIndex >= 0) {
+          setMessages((prev) => {
+            if (state.assistantMessageIndex >= prev.length) return prev;
+            const msg = prev[state.assistantMessageIndex];
+            if (msg.role !== 'assistant') return prev;
 
-              const newMessages = [...prev];
-              newMessages[state.assistantMessageIndex] = updated;
-              return newMessages;
-            });
-          } else if (state.assistantMessageIndex === -1) {
-            // 兜底：整个流程未创建 assistant 消息（后端未发送任何文本/思考内容）
-            // 创建一条空 assistant 消息，避免用户看到无限 loading 却无回复气泡
-            const fallbackContent = (data.errorMessage as string) || '';
-            const newMsg: Message = {
-              id: `msg_${uuidv4().slice(0, 8)}`,
-              role: 'assistant',
-              content: fallbackContent || '（未收到 AI 回复内容，可能模型未返回数据或请求异常）',
-              model: currentSession?.model || '',
-              timestamp: new Date(),
-              thinking: '',
-              thinkingDone: true,
+            const updated: Message = {
+              ...msg,
               isStreaming: false,
+              thinkingDone: true,
+              thinkingDuration: data.thinkingDuration as number | undefined,
+              usage: data.usage as Record<string, unknown> | undefined,
+              // 读取降级信息：fallbackModel / fallbackReason
               ...(data.fallbackModel ? { fallbackModel: data.fallbackModel as string } : {}),
               ...(data.fallbackReason ? { fallbackReason: data.fallbackReason as 'key_rotation' | 'model_downgrade' | 'model_not_supported' | 'request_failed' } : {}),
-              ...(fallbackContent ? { error: fallbackContent } : {}),
             };
-            setMessages((prev) => [...prev, newMsg]);
-            state.assistantMessageIndex = -1; // 保持 -1，表示已处理兜底
-          }
 
-          setIsLoading(false);
-          setCurrentRunId(null);
+            const newMessages = [...prev];
+            newMessages[state.assistantMessageIndex] = updated;
+            return newMessages;
+          });
+        } else if (state.assistantMessageIndex === -1) {
+          // 兜底：整个流程未创建 assistant 消息（后端未发送任何文本/思考内容）
+          // 创建一条空 assistant 消息，避免用户看到无限 loading 却无回复气泡
+          const fallbackContent = (data.errorMessage as string) || '';
+          const newMsg: Message = {
+            id: `msg_${uuidv4().slice(0, 8)}`,
+            role: 'assistant',
+            content: fallbackContent || '（未收到 AI 回复内容，可能模型未返回数据或请求异常）',
+            model: currentSession?.model || '',
+            timestamp: new Date(),
+            thinking: '',
+            thinkingDone: true,
+            isStreaming: false,
+            ...(data.fallbackModel ? { fallbackModel: data.fallbackModel as string } : {}),
+            ...(data.fallbackReason ? { fallbackReason: data.fallbackReason as 'key_rotation' | 'model_downgrade' | 'model_not_supported' | 'request_failed' } : {}),
+            ...(fallbackContent ? { error: fallbackContent } : {}),
+          };
+          setMessages((prev) => [...prev, newMsg]);
+          state.assistantMessageIndex = -1; // 保持 -1，表示已处理兜底
+        }
 
-          // 自动提取待办：从助手最终回复内容中提取行动项，写入 localStorage 并派发事件
-          // v3.1: 移出 setMessages updater — 不在 state updater 中做副作用，避免阻塞渲染
-          const eventSessionKey = (data.sessionKey as string) || (data.sessionId as string) || '';
-          if (eventSessionKey && state.assistantMessageIndex >= 0) {
-            // 延迟到下一帧执行，不阻塞当前渲染周期（setTimeout 16ms 替代 rAF，WKWebView 兼容）
-            window.setTimeout(() => {
-              try {
-                const idx = state.assistantMessageIndex;
-                const finalMsg = messagesRef.current[idx];
-                if (!finalMsg || finalMsg.role !== 'assistant' || !finalMsg.content) return;
+        setIsLoading(false);
+        setCurrentRunId(null);
 
-                const extracted = extractTodos(finalMsg.content);
-                if (extracted.length === 0) return;
+        // 自动提取待办：从助手最终回复内容中提取行动项，写入 localStorage 并派发事件
+        // v3.1: 移出 setMessages updater — 不在 state updater 中做副作用，避免阻塞渲染
+        const eventSessionKey = (data.sessionKey as string) || (data.sessionId as string) || '';
+        if (eventSessionKey && state.assistantMessageIndex >= 0) {
+          // 延迟到下一帧执行，不阻塞当前渲染周期（setTimeout 16ms 替代 rAF，WKWebView 兼容）
+          window.setTimeout(() => {
+            try {
+              const idx = state.assistantMessageIndex;
+              const finalMsg = messagesRef.current[idx];
+              if (!finalMsg || finalMsg.role !== 'assistant' || !finalMsg.content) return;
 
-                const storageKey = `cdf-todos-${eventSessionKey}`;
-                const raw = localStorage.getItem(storageKey);
-                let existing: Array<{ id: string; text: string; done: boolean; createdAt: number }> = [];
-                if (raw) {
-                  try {
-                    const parsed = JSON.parse(raw);
-                    if (Array.isArray(parsed)) existing = parsed;
-                  } catch {
-                    // 忽略解析失败
-                  }
+              const extracted = extractTodos(finalMsg.content);
+              if (extracted.length === 0) return;
+
+              const storageKey = `cdf-todos-${eventSessionKey}`;
+              const raw = localStorage.getItem(storageKey);
+              let existing: Array<{ id: string; text: string; done: boolean; createdAt: number }> = [];
+              if (raw) {
+                try {
+                  const parsed = JSON.parse(raw);
+                  if (Array.isArray(parsed)) existing = parsed;
+                } catch {
+                  // 忽略解析失败
                 }
-                const merged = mergeAutoTodos(existing, extracted);
-                if (merged.length === existing.length) return; // 无新增
-
-                localStorage.setItem(storageKey, JSON.stringify(merged));
-                window.dispatchEvent(new CustomEvent('cdf-todos-updated', {
-                  detail: { sessionKey: eventSessionKey },
-                }));
-              } catch {
-                // 待办提取失败不影响主流程
               }
-            });
-          }
+              const merged = mergeAutoTodos(existing, extracted);
+              if (merged.length === existing.length) return; // 无新增
 
-          const errorCode = data.errorCode as string | undefined;
-          const errorMessage = data.errorMessage as string | undefined;
-          if (errorCode && errorMessage) {
-            setError(errorMessage);
-            if (currentPendingMsgIdRef.current) {
-              updatePendingMessage(currentPendingMsgIdRef.current, { state: 'failed', error: errorMessage });
+              localStorage.setItem(storageKey, JSON.stringify(merged));
+              window.dispatchEvent(new CustomEvent('cdf-todos-updated', {
+                detail: { sessionKey: eventSessionKey },
+              }));
+            } catch {
+              // 待办提取失败不影响主流程
             }
-          } else {
-            setError(null);
-            if (currentPendingMsgIdRef.current) {
-              removePendingMessage(currentPendingMsgIdRef.current);
-            }
+          });
+        }
+
+        const errorCode = data.errorCode as string | undefined;
+        const errorMessage = data.errorMessage as string | undefined;
+        if (errorCode && errorMessage) {
+          setError(errorMessage);
+          if (currentPendingMsgIdRef.current) {
+            updatePendingMessage(currentPendingMsgIdRef.current, { state: 'failed', error: errorMessage });
+          }
+        } else {
+          setError(null);
+          if (currentPendingMsgIdRef.current) {
+            removePendingMessage(currentPendingMsgIdRef.current);
           }
         }
         break;
       }
 
-      case 'assistant': {
+      // OpenClaw 结构事件：边界由 EventAdapter 维护，此处无需处理（正文/思考的增量已在 delta 事件中处理）
+      case 'text_start':
+        break;
+      case 'text_delta': {
+        // assistant stream
         const content = (data.content as string) || '';
         handleTextContent(content, false);
         break;
       }
-
-      case 'thinking': {
+      case 'text_end':
+        break;
+      case 'thinking_start':
+        break;
+      case 'thinking_delta': {
+        // thinking stream
         const content = (data.content as string) || '';
         handleTextContent(content, true);
 
@@ -735,8 +701,15 @@ export function useAgentChat(
         }
         break;
       }
-
-      case 'tool': {
+      case 'thinking_end':
+        break;
+      case 'toolcall_start':
+        // tool stream：完整工具调用在 toolcall_end 中处理（适配器在单条 wire 事件中同时发射 start+end）
+        break;
+      case 'toolcall_delta':
+        break;
+      case 'toolcall_end': {
+        // tool stream
         flushAllBuffers();
 
         const toolName = (data.name as string) || (data.toolName as string) || '';
@@ -838,47 +811,8 @@ export function useAgentChat(
         break;
       }
 
-      case 'file': {
-        // T4: 技能/工具产出文件实时回写 — 追加到当前 assistant 消息的 generatedFiles
-        const fileId = (data.fileId as string | undefined) ?? undefined;
-
-        const state = blockStateRef.current;
-        if (state.assistantMessageIndex === -1) {
-          startAssistantMessage(false);
-        }
-
-        setMessages((prev) => {
-          const idx = blockStateRef.current.assistantMessageIndex;
-          if (idx < 0 || idx >= prev.length) return prev;
-          const last = prev[idx];
-          if (last.role !== 'assistant') return prev;
-
-          const arr = last.generatedFiles ? [...last.generatedFiles] : [];
-          const key = fileId || (data.fileName as string);
-          if (!arr.some((x: GeneratedFile) => ((x as GeneratedFile & { fileId?: string }).fileId || x.fileName) === key)) {
-            const fileInfo: GeneratedFile & { fileId?: string } = {
-              fileName: data.fileName as string,
-              fileSize: Number(data.fileSize) || 0,
-              mimeType: (data.mimeType as string | undefined) ?? undefined,
-              description: (data.description as string | undefined) ?? undefined,
-              downloadUrl: data.downloadUrl as string,
-              previewUrl: (data.previewUrl as string | undefined) ?? undefined,
-              sessionId: (data.sessionId as string | undefined) ?? undefined,
-              createdAt: (data.createdAt as string | undefined) ?? undefined,
-              ...(fileId ? { fileId } : {}),
-            };
-            arr.push(fileInfo);
-          }
-
-          const updated: Message = { ...last, generatedFiles: arr };
-          const newMessages = [...prev];
-          newMessages[idx] = updated;
-          return newMessages;
-        });
-        break;
-      }
-
       case 'error': {
+        // error stream
         flushAllBuffers();
         const errorMsg = (data.message as string) || (data.error as string) || '发生错误';
         setError(errorMsg);
@@ -937,34 +871,19 @@ export function useAgentChat(
         break;
       }
 
-      case 'item':
-      case 'debug': {
-        const itemData = data as unknown as AgentItemEventData & { phase: string; stream: string };
-        const itemId = itemData.itemId;
+      case 'item': {
+        // item / debug stream — OpenClaw 格式，直接使用 chatEvent
+        const itemEvent = chatEvent as SystemEvent & { type: 'item' };
+        const itemId = itemEvent.itemId;
         if (!itemId) break;
 
-        if (itemData.phase === 'start' || itemData.phase === 'update') {
-          itemsMapRef.current.set(itemId, {
-            itemId: itemData.itemId,
-            phase: itemData.phase,
-            kind: itemData.kind,
-            title: itemData.title,
-            status: itemData.status,
-            name: itemData.name,
-            meta: itemData.meta,
-            toolCallId: itemData.toolCallId,
-            startedAt: itemData.startedAt,
-            endedAt: itemData.endedAt,
-            error: itemData.error,
-            summary: itemData.summary,
-            progressText: itemData.progressText,
-            progressPercent: itemData.progressPercent,
-          });
+        if (itemEvent.phase === 'start' || itemEvent.phase === 'update') {
+          itemsMapRef.current.set(itemId, itemEvent);
           setActiveItems(Array.from(itemsMapRef.current.values()));
-        } else if (itemData.phase === 'end') {
+        } else if (itemEvent.phase === 'end') {
           const existing = itemsMapRef.current.get(itemId);
           if (existing) {
-            itemsMapRef.current.set(itemId, { ...existing, ...itemData });
+            itemsMapRef.current.set(itemId, { ...existing, ...itemEvent });
             setActiveItems(Array.from(itemsMapRef.current.values()));
             setTimeout(() => {
               itemsMapRef.current.delete(itemId);
@@ -975,8 +894,8 @@ export function useAgentChat(
         break;
       }
 
-      case 'approval': {
-        // 处理审批请求事件
+      case 'approval_request': {
+        // approval stream
         flushAllBuffers();
 
         const approvalData = {
@@ -1112,7 +1031,7 @@ export function useAgentChat(
       case 'heartbeat':
         break;
 
-      case 'plan': {
+      case 'plan_created': {
         // v9.2: 执行计划事件 — 将计划写入当前助手消息的 executionPlan 字段
         const plan = data.plan as { steps?: Array<{ step: number; description: string; status?: string; toolName?: string }> } | undefined;
         if (plan?.steps) {
@@ -1179,6 +1098,7 @@ export function useAgentChat(
         const title = (data.title as string) || '命令输出';
         const output = (data.output as string) || '';
         setActiveItems(prev => [...prev, {
+          type: 'item' as const,
           itemId: `cmd_${Date.now()}`,
           phase: 'end',
           kind: 'command',
@@ -1197,6 +1117,7 @@ export function useAgentChat(
         const modified = (data.modified as string[]) || [];
         const deleted = (data.deleted as string[]) || [];
         setActiveItems(prev => [...prev, {
+          type: 'item' as const,
           itemId: `patch_${Date.now()}`,
           phase: 'end',
           kind: 'patch',
@@ -1384,10 +1305,95 @@ export function useAgentChat(
         break;
       }
 
-      default:
+      default: {
+        // 适配器未映射的流（如 file）按原始 stream 透传处理
+        switch (stream) {
+          case 'file': {
+            // T4: 技能/工具产出文件实时回写 — 追加到当前 assistant 消息的 generatedFiles
+            const fileId = (data.fileId as string | undefined) ?? undefined;
+
+            const state = blockStateRef.current;
+            if (state.assistantMessageIndex === -1) {
+              startAssistantMessage(false);
+            }
+
+            setMessages((prev) => {
+              const idx = blockStateRef.current.assistantMessageIndex;
+              if (idx < 0 || idx >= prev.length) return prev;
+              const last = prev[idx];
+              if (last.role !== 'assistant') return prev;
+
+              const arr = last.generatedFiles ? [...last.generatedFiles] : [];
+              const key = fileId || (data.fileName as string);
+              if (!arr.some((x: GeneratedFile) => ((x as GeneratedFile & { fileId?: string }).fileId || x.fileName) === key)) {
+                const fileInfo: GeneratedFile & { fileId?: string } = {
+                  fileName: data.fileName as string,
+                  fileSize: Number(data.fileSize) || 0,
+                  mimeType: (data.mimeType as string | undefined) ?? undefined,
+                  description: (data.description as string | undefined) ?? undefined,
+                  downloadUrl: data.downloadUrl as string,
+                  previewUrl: (data.previewUrl as string | undefined) ?? undefined,
+                  sessionId: (data.sessionId as string | undefined) ?? undefined,
+                  createdAt: (data.createdAt as string | undefined) ?? undefined,
+                  ...(fileId ? { fileId } : {}),
+                };
+                arr.push(fileInfo);
+              }
+
+              const updated: Message = { ...last, generatedFiles: arr };
+              const newMessages = [...prev];
+              newMessages[idx] = updated;
+              return newMessages;
+            });
+            break;
+          }
+          default:
+            break;
+        }
         break;
+      }
     }
-  }, [checkAndUpdateSeq, initializeStreaming, handleTextContent, flushAllBuffers, startAssistantMessage, removePendingMessage, updatePendingMessage]);
+  }, [initializeStreaming, handleTextContent, flushAllBuffers, startAssistantMessage, removePendingMessage, updatePendingMessage]);
+
+  // 事件处理 — 通过 EventAdapter 将 SSE wire 格式转换为 OpenClaw ChatEvent
+  const handleAgentEvent = useCallback((event: { event?: string; data: unknown }) => {
+    const payload = (event.data as Record<string, unknown>) || {};
+
+    // 使用 EventAdapter 转换 wire 格式到 OpenClaw 事件
+    const wireEvent: SSEWireEvent = {
+      runId: (payload.runId as string) || '',
+      seq: (payload.seq as number) || 0,
+      stream: (payload.stream as string) || (event.event as string) || 'unknown',
+      ts: (payload.ts as number) || Date.now(),
+      data: (payload.data as Record<string, unknown>) || {},
+      sessionKey: payload.sessionKey as string,
+      sessionId: payload.sessionId as string,
+    };
+
+    const seq = wireEvent.seq;
+    const stream = wireEvent.stream;
+    const data = wireEvent.data;
+    const runId = wireEvent.runId;
+
+    if (seq > 0 && !checkAndUpdateSeq(stream, seq)) {
+      return;
+    }
+
+    // 通过适配器转换为 OpenClaw 事件
+    const chatEvents = eventAdapterRef.current.adapt(wireEvent);
+    const chatEventList = Array.isArray(chatEvents) ? chatEvents : [chatEvents];
+
+    const ctx = { stream, data, runId, seq };
+
+    if (chatEventList.length === 0) {
+      // 适配器未映射的流（如 file），以原始 stream 作为 type 透传给 handleChatEvent
+      handleChatEvent({ type: stream } as ChatEvent, ctx);
+    } else {
+      for (const chatEvent of chatEventList) {
+        handleChatEvent(chatEvent, ctx);
+      }
+    }
+  }, [checkAndUpdateSeq, handleChatEvent]);
 
   // ===================== SSE 自动重试配置 =====================
 
@@ -2010,9 +2016,9 @@ export function useAgentChat(
   useEffect(() => {
     const handleMemoryPressure = () => {
       // 已完成的工具 item 立即清理；运行中的保留以免卡片消失
-      const runningOnly = new Map<string, AgentItemEventData>();
+      const runningOnly = new Map<string, SystemEvent>();
       itemsMapRef.current.forEach((item, id) => {
-        if (item.status === 'running' || item.status === 'blocked') {
+        if (item.type === 'item' && (item.status === 'running' || item.status === 'blocked')) {
           runningOnly.set(id, item);
         }
       });
@@ -2029,7 +2035,7 @@ export function useAgentChat(
         // 清理已结束会话的 seq 记录（保留运行中的 stream seq）
         const streamsToKeep = new Set<string>();
         runningOnly.forEach((item) => {
-          if (item.toolCallId) streamsToKeep.add(`tool_${item.toolCallId}`);
+          if (item.type === 'item' && item.toolCallId) streamsToKeep.add(`tool_${item.toolCallId}`);
         });
         const seqEntries = Array.from(lastSeqRef.current.entries());
         lastSeqRef.current.clear();

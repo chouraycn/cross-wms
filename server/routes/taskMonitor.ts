@@ -10,6 +10,7 @@ import {
   updateTodoOrder,
   deleteTodosBatch,
   reorderTodos,
+  getTodoStats,
   findArtifactsBySession,
   findArtifactById,
   createArtifact as daoCreateArtifact,
@@ -17,6 +18,8 @@ import {
   findToolCallsBySession,
   findToolCallById,
   getToolCallStats,
+  retryToolCall,
+  scheduleRetryForFailedToolCalls,
   getTrajectoryBySession,
   getSessionTraces,
   exportTrajectoryBundle,
@@ -28,6 +31,14 @@ import {
   exportArtifacts,
   exportToolCalls,
   exportTrajectory,
+  createTaskFlow,
+  findTaskFlowById,
+  findTaskFlowsBySession,
+  findTaskFlowSteps,
+  startTaskFlow,
+  completeTaskFlowStep,
+  cancelTaskFlow,
+  retryTaskFlow,
   type TodoStatus,
   type TodoPriority,
   type TodoSource,
@@ -62,6 +73,15 @@ router.get('/todos/session/:sessionId', (req, res) => {
       sortOrder: sortOrder as 'asc' | 'desc' | undefined,
     });
     res.json({ data: todos });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+router.get('/todos/session/:sessionId/stats', (req, res) => {
+  try {
+    const stats = getTodoStats(req.params.sessionId);
+    res.json({ data: stats });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }
@@ -503,6 +523,111 @@ router.get('/trajectory/session/:sessionId/export', (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.setHeader('Content-Type', 'application/json');
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ===================== Tool Call Retry =====================
+
+router.post('/tool-calls/:id/retry', (req, res) => {
+  try {
+    const toolCall = retryToolCall(req.params.id);
+    if (!toolCall) return res.status(404).json({ error: '工具调用不存在' });
+    res.json({ data: toolCall });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+router.post('/tool-calls/session/:sessionId/retry-all-failed', (req, res) => {
+  try {
+    const count = scheduleRetryForFailedToolCalls(req.params.sessionId);
+    res.json({ data: { success: true, retriedCount: count } });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+// ===================== Task Flow Orchestration =====================
+
+router.post('/task-flows', (req, res) => {
+  try {
+    const { sessionId, name, description, syncMode, steps } = req.body;
+    if (!sessionId || !name || !Array.isArray(steps)) {
+      return res.status(400).json({ error: 'sessionId, name 和 steps 数组不能为空' });
+    }
+    const flow = createTaskFlow({ sessionId, name, description, syncMode, steps });
+    res.json({ data: flow });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+router.get('/task-flows/session/:sessionId', (req, res) => {
+  try {
+    const flows = findTaskFlowsBySession(req.params.sessionId);
+    res.json({ data: flows });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+router.get('/task-flows/:id', (req, res) => {
+  try {
+    const flow = findTaskFlowById(req.params.id);
+    if (!flow) return res.status(404).json({ error: '任务流不存在' });
+    res.json({ data: flow });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+router.get('/task-flows/:id/steps', (req, res) => {
+  try {
+    const steps = findTaskFlowSteps(req.params.id);
+    res.json({ data: steps });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+router.post('/task-flows/:id/start', (req, res) => {
+  try {
+    const flow = startTaskFlow(req.params.id);
+    if (!flow) return res.status(400).json({ error: '无法启动任务流' });
+    res.json({ data: flow });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+router.post('/task-flows/steps/:stepId/complete', (req, res) => {
+  try {
+    const { success, result, error } = req.body;
+    const step = completeTaskFlowStep(req.params.stepId, { success, result, error });
+    if (!step) return res.status(404).json({ error: '步骤不存在' });
+    res.json({ data: step });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+router.post('/task-flows/:id/cancel', (req, res) => {
+  try {
+    const flow = cancelTaskFlow(req.params.id);
+    if (!flow) return res.status(404).json({ error: '任务流不存在' });
+    res.json({ data: flow });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+router.post('/task-flows/:id/retry', (req, res) => {
+  try {
+    const flow = retryTaskFlow(req.params.id);
+    if (!flow) return res.status(400).json({ error: '无法重试任务流' });
+    res.json({ data: flow });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

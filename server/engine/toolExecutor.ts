@@ -45,6 +45,7 @@ import { toolExecutionQueue } from './toolExecutionQueue.js';
 import { toolSendReceipts } from './toolSendReceipts.js';
 import { abortPrimitives, createRunAbortController } from './abortPrimitives.js';
 import { createToolCall, completeToolCall } from '../dao/taskMonitorDao.js';
+import { triggerBeforeToolCall, triggerAfterToolCall, triggerAfterToolResult } from './hooks/hooks.js';
 // release 用于在 executeToolLoop 结束时静默清理 runController（防止内存泄漏）
 const releaseRunController = (runId: string) => abortPrimitives.release(`run:${runId}`);
 
@@ -688,6 +689,9 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       extra: { riskLevel: policyResult.riskLevel },
     });
 
+    const modifiedArgs = await triggerBeforeToolCall(sessionId || 'unknown', toolName, toolSource, normalizedArgs);
+    Object.assign(normalizedArgs, modifiedArgs);
+
     let result: string;
     // v11.0: 工具调用安全审查
     const toolReviewResult = toolCallReviewer.review({
@@ -1010,6 +1014,11 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
       },
       toolResult: result,
     });
+
+    const durationMs = Date.now() - execStartTime;
+    const isError = middlewareResult.errorType !== 'none';
+    await triggerAfterToolCall(sessionId || 'unknown', toolName, toolSource, parsedArgs, result, isError ? middlewareResult.errorMessage : undefined, durationMs);
+    await triggerAfterToolResult(sessionId || 'unknown', toolName, toolSource, result, isError);
 
     executedToolCalls.push({
       name: toolName,

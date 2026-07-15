@@ -54,8 +54,8 @@ export interface BudgetRemaining {
 
 /** 默认预算配置 */
 export const DEFAULT_BUDGET_CONFIG: BudgetConfig = {
-  maxTurns: 10,
-  maxTokens: 50000,
+  maxTurns: 25,
+  maxTokens: 100000,
   windowSize: 5,
 };
 
@@ -63,9 +63,9 @@ export const DEFAULT_BUDGET_CONFIG: BudgetConfig = {
 
 /** v6.0: P1-3 复杂度等级对应的 maxTurns 映射 */
 const ADAPTIVE_MAX_TURNS: Record<string, number> = {
-  simple: 3,
-  moderate: 8,
-  complex: 15,
+  simple: 8,
+  moderate: 20,
+  complex: 40,
 };
 
 // ===================== BudgetManager 类 =====================

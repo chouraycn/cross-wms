@@ -70,12 +70,19 @@ import {
   getArtifactsBySession,
   deleteArtifact,
   deleteArtifactsBatch,
+  getTaskFlowsBySession,
+  getTaskFlowSteps,
+  startTaskFlow as apiStartTaskFlow,
+  retryTaskFlow as apiRetryTaskFlow,
+  cancelTaskFlow as apiCancelTaskFlow,
   subscribeToTaskMonitor,
   type TodoItem as ApiTodoItem,
   type TodoPriority,
   type Artifact as ApiArtifact,
   type ToolCall as ApiToolCall,
   type TrajectoryEvent as ApiTrajectoryEvent,
+  type TaskFlow as ApiTaskFlow,
+  type TaskFlowStep as ApiTaskFlowStep,
   type PreviewResult,
 } from '../../services/taskMonitorApi';
 import { VirtualList } from './VirtualList';
@@ -149,6 +156,11 @@ export const TaskMonitorPanel: React.FC<TaskMonitorPanelProps> = ({
   const [trajectoryEvents, setTrajectoryEvents] = useState<ApiTrajectoryEvent[]>([]);
   const [displayedEventCount, setDisplayedEventCount] = useState(INITIAL_EVENT_LIMIT);
   const [loadingMoreEvents, setLoadingMoreEvents] = useState(false);
+
+  const [taskFlows, setTaskFlows] = useState<ApiTaskFlow[]>([]);
+  const [taskFlowsLoading, setTaskFlowsLoading] = useState(false);
+  const [expandedFlowIds, setExpandedFlowIds] = useState<Set<string>>(new Set());
+  const [flowStepsMap, setFlowStepsMap] = useState<Record<string, ApiTaskFlowStep[]>>({});
 
   const [artifactsLoading, setArtifactsLoading] = useState(false);
   const [artifacts, setArtifacts] = useState<ApiArtifact[]>([]);
@@ -242,6 +254,32 @@ export const TaskMonitorPanel: React.FC<TaskMonitorPanelProps> = ({
     }
   }, [sessionKey]);
 
+  const loadTaskFlows = useCallback(async () => {
+    setTaskFlowsLoading(true);
+    try {
+      const res = await getTaskFlowsBySession(sessionKey);
+      const flows = res.data || [];
+      setTaskFlows(flows);
+      const stepsMap: Record<string, ApiTaskFlowStep[]> = {};
+      await Promise.all(
+        flows.map(async (flow) => {
+          try {
+            const stepsRes = await getTaskFlowSteps(flow.id);
+            stepsMap[flow.id] = stepsRes.data || [];
+          } catch (e) {
+            console.warn(`[TaskMonitor] 加载任务流步骤失败 ${flow.id}:`, e);
+            stepsMap[flow.id] = [];
+          }
+        })
+      );
+      setFlowStepsMap(stepsMap);
+    } catch (e) {
+      console.warn('[TaskMonitor] 加载任务流失败:', e);
+    } finally {
+      setTaskFlowsLoading(false);
+    }
+  }, [sessionKey]);
+
   const loadTrajectory = useCallback(async () => {
     setTrajectoryLoading(true);
     try {
@@ -293,10 +331,11 @@ export const TaskMonitorPanel: React.FC<TaskMonitorPanelProps> = ({
   useEffect(() => {
     loadTodos();
     loadToolCalls(1, false);
+    loadTaskFlows();
     loadTrajectory();
     loadTraces();
     loadArtifacts();
-  }, [loadTodos, loadToolCalls, loadTrajectory, loadTraces, loadArtifacts]);
+  }, [loadTodos, loadToolCalls, loadTaskFlows, loadTrajectory, loadTraces, loadArtifacts]);
 
   useEffect(() => {
     const lastMsg = messages[messages.length - 1];
@@ -382,6 +421,20 @@ export const TaskMonitorPanel: React.FC<TaskMonitorPanelProps> = ({
         if (!selectedTraceId && event.traceId) {
           setSelectedTraceId(event.traceId);
         }
+      },
+      onTaskFlowCreated: (flow) => {
+        setTaskFlows(prev => {
+          const exists = prev.some(f => f.id === flow.id);
+          if (exists) return prev;
+          return [flow, ...prev];
+        });
+        setExpandedFlowIds(prev => new Set([...prev, flow.id]));
+      },
+      onTaskFlowUpdated: (flow) => {
+        setTaskFlows(prev => prev.map(f => f.id === flow.id ? flow : f));
+        getTaskFlowSteps(flow.id).then(res => {
+          setFlowStepsMap(prev => ({ ...prev, [flow.id]: res.data || [] }));
+        }).catch(() => {});
       },
     });
 
@@ -698,6 +751,8 @@ export const TaskMonitorPanel: React.FC<TaskMonitorPanelProps> = ({
 
       if (e.key === 't' || e.key === 'T') {
         handleToggleSection('todos');
+      } else if (e.key === 'f' || e.key === 'F') {
+        handleToggleSection('taskFlows');
       } else if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
         e.preventDefault();
         if (expandedSections.has('todos')) {
@@ -960,576 +1015,431 @@ export const TaskMonitorPanel: React.FC<TaskMonitorPanelProps> = ({
     }
   }, [sessionKey]);
 
+  const handleToggleFlowExpand = useCallback((flowId: string) => {
+    setExpandedFlowIds(prev => {
+      const next = new Set(prev);
+      if (next.has(flowId)) next.delete(flowId);
+      else next.add(flowId);
+      return next;
+    });
+  }, []);
+
+  const handleStartTaskFlow = useCallback(async (flowId: string) => {
+    try {
+      await apiStartTaskFlow(flowId);
+      await loadTaskFlows();
+    } catch (e) {
+      console.warn('[TaskMonitor] 启动任务流失败:', e);
+    }
+  }, [loadTaskFlows]);
+
+  const handleRetryTaskFlow = useCallback(async (flowId: string) => {
+    try {
+      await apiRetryTaskFlow(flowId);
+      await loadTaskFlows();
+    } catch (e) {
+      console.warn('[TaskMonitor] 重试任务流失败:', e);
+    }
+  }, [loadTaskFlows]);
+
+  const handleCancelTaskFlow = useCallback(async (flowId: string) => {
+    try {
+      await apiCancelTaskFlow(flowId);
+      await loadTaskFlows();
+    } catch (e) {
+      console.warn('[TaskMonitor] 取消任务流失败:', e);
+    }
+  }, [loadTaskFlows]);
+
+  const getFlowStatusColor = (status: ApiTaskFlow['status']) => {
+    switch (status) {
+      case 'succeeded': return '#22c55e';
+      case 'failed': return '#ef4444';
+      case 'running': return '#2563eb';
+      case 'waiting': return '#f59e0b';
+      case 'cancelled': return '#6b7280';
+      default: return '#9ca3af';
+    }
+  };
+
+  const getFlowStatusLabel = (status: ApiTaskFlow['status']) => {
+    switch (status) {
+      case 'queued': return '排队中';
+      case 'running': return '运行中';
+      case 'waiting': return '等待中';
+      case 'succeeded': return '成功';
+      case 'failed': return '失败';
+      case 'cancelled': return '已取消';
+      default: return status;
+    }
+  };
+
+  const getStepStatusColor = (status: ApiTaskFlowStep['status']) => {
+    switch (status) {
+      case 'completed': return '#22c55e';
+      case 'failed': return '#ef4444';
+      case 'running': return '#2563eb';
+      case 'skipped': return '#6b7280';
+      default: return '#9ca3af';
+    }
+  };
+
   return (
-    <Box sx={{ width: 280, flexShrink: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <Box sx={{ p: 2, borderBottom: `1px solid ${gs.border}`, flexShrink: 0 }}>
-        <Typography variant="h6" sx={{ fontSize: '0.875rem', color: gs.textPrimary }}>Task Monitor</Typography>
+    <Box sx={{ 
+      width: 320, 
+      flexShrink: 0, 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      overflow: 'hidden',
+      bgcolor: '#f5f5f5',
+      borderLeft: '1px solid #e0e0e0',
+    }}>
+      <Box sx={{
+        px: 2,
+        py: 1.5,
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        borderBottom: '1px solid #e8e8e8',
+        bgcolor: '#f5f5f5',
+      }}>
+        <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: '#1a1a1a' }}>任务监控</Typography>
       </Box>
-      <Box sx={{ flex: 1, overflow: 'auto', p: 1.5 }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 0.75, mb: 1.5 }}>
-          <Box sx={{ p: 1, borderRadius: 0.75, bgcolor: 'rgba(99,102,241,0.08)', border: `1px solid rgba(99,102,241,0.15)` }}>
-            <Typography sx={{ fontSize: '0.55rem', color: '#6366f1', mb: 0.25 }}>待办</Typography>
-            <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: '#6366f1' }}>{todoStats.pending}</Typography>
+      <Box sx={{
+        flexShrink: 0,
+        display: 'flex',
+        borderBottom: '1px solid #e8e8e8',
+        bgcolor: '#f5f5f5',
+      }}>
+        {[
+          { key: 'todos', label: '待办' },
+          { key: 'taskFlows', label: '任务流' },
+          { key: 'artifacts', label: '产物' },
+          { key: 'toolCalls', label: '技能与 MCP' },
+        ].map((tab) => (
+          <Box
+            key={tab.key}
+            onClick={() => handleToggleSection(tab.key)}
+            sx={{
+              flex: 1,
+              py: 1.25,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              borderBottom: expandedSections.has(tab.key) ? '2px solid #2563eb' : '2px solid transparent',
+              color: expandedSections.has(tab.key) ? '#2563eb' : '#666',
+              fontWeight: expandedSections.has(tab.key) ? 600 : 400,
+              fontSize: '0.85rem',
+              transition: 'all 0.2s',
+              '&:hover': {
+                bgcolor: '#ebebeb',
+                color: '#2563eb',
+              },
+            }}
+          >
+            {tab.label}
           </Box>
-          <Box sx={{ p: 1, borderRadius: 0.75, bgcolor: 'rgba(34,197,94,0.08)', border: `1px solid rgba(34,197,94,0.15)` }}>
-            <Typography sx={{ fontSize: '0.55rem', color: '#22c55e', mb: 0.25 }}>完成率</Typography>
-            <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: '#22c55e' }}>{todoStats.completionRate}%</Typography>
-          </Box>
-          <Box sx={{ p: 1, borderRadius: 0.75, bgcolor: 'rgba(245,158,11,0.08)', border: `1px solid rgba(245,158,11,0.15)` }}>
-            <Typography sx={{ fontSize: '0.55rem', color: '#f59e0b', mb: 0.25 }}>工具调用</Typography>
-            <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: '#f59e0b' }}>{toolCalls.length}</Typography>
-          </Box>
-          <Box sx={{ p: 1, borderRadius: 0.75, bgcolor: 'rgba(34,197,94,0.08)', border: `1px solid rgba(34,197,94,0.15)` }}>
-            <Typography sx={{ fontSize: '0.55rem', color: '#22c55e', mb: 0.25 }}>产物</Typography>
-            <Typography sx={{ fontSize: '1rem', fontWeight: 700, color: '#22c55e' }}>{artifacts.length}</Typography>
-          </Box>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 0.5, mb: 1.5 }}>
-          <Tooltip title="导出待办">
-            <IconButton size="small" onClick={handleExportTodos} sx={{ p: 0.5, color: '#6366f1' }}>
-              <DownloadIcon sx={{ fontSize: 14 }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="导出产物">
-            <IconButton size="small" onClick={handleExportArtifacts} sx={{ p: 0.5, color: '#22c55e' }}>
-              <DownloadIcon sx={{ fontSize: 14 }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="导出工具调用">
-            <IconButton size="small" onClick={handleExportToolCalls} sx={{ p: 0.5, color: '#f59e0b' }}>
-              <DownloadIcon sx={{ fontSize: 14 }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="导出轨迹">
-            <IconButton size="small" onClick={handleExportTrajectory} sx={{ p: 0.5, color: '#8b5cf6' }}>
-              <DownloadIcon sx={{ fontSize: 14 }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="一键完成">
-            <IconButton size="small" onClick={handleMarkAllDone} sx={{ p: 0.5, color: '#22c55e', ml: 'auto' }}>
-              <CheckCircleIcon sx={{ fontSize: 14 }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        <Accordion
-          expanded={expandedSections.has('todos')}
-          onChange={() => handleToggleSection('todos')}
-          sx={{
-            bgcolor: gs.bgPanel,
-            border: `1px solid ${gs.border}`,
-            borderRadius: 1,
-            mb: 1.5,
-            '&:before': { display: 'none' },
-          }}
-        >
-          <AccordionSummary sx={{ p: 1 }}>
-            <ListAltIcon sx={{ fontSize: 16, mr: 1, color: '#6366f1' }} />
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textPrimary }}>待办</Typography>
-            <Chip
-              size="small"
-              label={todos.length}
-              sx={{ ml: 'auto', height: 18, fontSize: '0.5rem', bgcolor: 'rgba(99,102,241,0.1)', color: '#6366f1' }}
-            />
-          </AccordionSummary>
-          <AccordionDetails sx={{ p: 0, mt: -1 }}>
-            <Box sx={{ mb: 1, p: 1, bgcolor: 'rgba(99,102,241,0.05)', borderRadius: 0.5, border: `1px solid rgba(99,102,241,0.1)` }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                <Typography sx={{ fontSize: '0.6rem', color: gs.textMuted }}>完成进度</Typography>
-                <Typography sx={{ fontSize: '0.6rem', fontWeight: 600, color: '#6366f1' }}>{todoStats.completionRate}%</Typography>
-              </Box>
-              <Box sx={{ width: '100%', height: 4, bgcolor: gs.bgHover, borderRadius: 2, overflow: 'hidden' }}>
-                <Box
-                  sx={{
-                    height: '100%',
-                    width: `${todoStats.completionRate}%`,
-                    bgcolor: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
-                    background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
-                    borderRadius: 2,
-                    transition: 'width 0.3s ease',
-                  }}
-                />
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-                <Typography sx={{ fontSize: '0.55rem', color: '#6b7280' }}>
-                  {todoStats.done}/{todos.length} 已完成
-                </Typography>
-                <Typography sx={{ fontSize: '0.55rem', color: '#6b7280' }}>
-                  {todoStats.highPriority} 高优先级
-                </Typography>
-              </Box>
-            </Box>
-            <Box sx={{ p: 1, borderRadius: 0.5, bgcolor: 'rgba(245,158,11,0.05)', border: `1px solid rgba(245,158,11,0.1)` }}>
-              <Typography sx={{ fontSize: '0.6rem', color: '#f59e0b', mb: 0.5 }}>工具调用成功率</Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ width: 80, height: 8, bgcolor: gs.bgHover, borderRadius: 4, overflow: 'hidden' }}>
-                  <Box
-                    sx={{
-                      height: '100%',
-                      width: toolCalls.length > 0 ? `${(toolCallStats.success / toolCalls.length) * 100}%` : '0%',
-                      borderRadius: 4,
-                      transition: 'width 0.3s ease',
-                      background: toolCalls.length > 0 && toolCallStats.success === toolCalls.length
-                        ? 'linear-gradient(90deg, #22c55e, #16a34a)'
-                        : toolCalls.length > 0 && toolCallStats.success / toolCalls.length > 0.5
-                          ? 'linear-gradient(90deg, #f59e0b, #d97706)'
-                          : 'linear-gradient(90deg, #ef4444, #dc2626)',
+        ))}
+      </Box>
+      <Box sx={{ flex: 1, overflow: 'auto', bgcolor: '#f5f5f5' }}>
+        {expandedSections.has('todos') && (
+          <Box sx={{ px: 2, py: 2 }}>
+            {todos.map((todo, index) => (
+              <Box 
+                key={todo.id}
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  py: 0.75,
+                  cursor: 'pointer',
+                }}
+              >
+                {todo.status === 'in_progress' ? (
+                  <Box 
+                    onClick={() => updateTodo(todo.id, { status: 'done' })}
+                    sx={{ 
+                      width: 18, 
+                      height: 18, 
+                      borderRadius: '50%', 
+                      bgcolor: '#2563eb',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mr: 1.5,
+                      flexShrink: 0,
+                      cursor: 'pointer',
                     }}
+                  >
+                    <Box sx={{ 
+                      width: 0, 
+                      height: 0, 
+                      borderLeft: '5px solid white', 
+                      borderTop: '3.5px solid transparent', 
+                      borderBottom: '3.5px solid transparent',
+                      ml: 0.5,
+                    }} />
+                  </Box>
+                ) : todo.status === 'done' ? (
+                  <Box 
+                    onClick={() => updateTodo(todo.id, { status: 'pending' })}
+                    sx={{ 
+                      width: 18, 
+                      height: 18, 
+                      borderRadius: '50%', 
+                      border: '1.5px solid #999',
+                      bgcolor: '#999',
+                      mr: 1.5,
+                      flexShrink: 0,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }} 
+                  >
+                    <Box sx={{ 
+                      width: 8, 
+                      height: 4, 
+                      borderLeft: '2px solid white', 
+                      borderBottom: '2px solid white',
+                      transform: 'rotate(-45deg)',
+                      mb: 0.5,
+                    }} />
+                  </Box>
+                ) : (
+                  <Box 
+                    onClick={() => updateTodo(todo.id, { status: 'done' })}
+                    sx={{ 
+                      width: 18, 
+                      height: 18, 
+                      borderRadius: '50%', 
+                      border: '1.5px solid #999',
+                      mr: 1.5,
+                      flexShrink: 0,
+                      cursor: 'pointer',
+                    }} 
                   />
-                </Box>
-                <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: gs.textPrimary }}>
-                  {toolCalls.length > 0 ? `${Math.round((toolCallStats.success / toolCalls.length) * 100)}%` : '-'}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                  <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#22c55e' }} />
-                  <Typography sx={{ fontSize: '0.5rem', color: gs.textMuted }}>{toolCallStats.success}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                  <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#ef4444' }} />
-                  <Typography sx={{ fontSize: '0.5rem', color: gs.textMuted }}>{toolCallStats.error}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                  <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#f59e0b' }} />
-                  <Typography sx={{ fontSize: '0.5rem', color: gs.textMuted }}>{toolCallStats.running}</Typography>
-                </Box>
-              </Box>
-            </Box>
-            <Box sx={{ p: 1, borderRadius: 0.5, bgcolor: 'rgba(139,92,246,0.05)', border: `1px solid rgba(139,92,246,0.1)` }}>
-              <Typography sx={{ fontSize: '0.6rem', color: '#8b5cf6', mb: 0.5 }}>轨迹事件分布</Typography>
-              <Box sx={{ display: 'flex', gap: 0.25, height: 20, alignItems: 'flex-end' }}>
-                {trajectoryEvents.length > 0 ? trajectoryEvents.slice(-20).map((event, index) => {
-                  const eventTypeColors: Record<string, string> = {
-                    'agent_message': '#6366f1',
-                    'tool_call': '#f59e0b',
-                    'tool_result': '#22c55e',
-                    'thought': '#8b5cf6',
-                    'plan': '#3b82f6',
-                    'summary': '#ec4899',
-                  };
-                  const height = Math.min(100, ((index + 1) / trajectoryEvents.length) * 100);
-                  return (
-                    <Box
-                      key={event.id}
-                      sx={{
-                        flex: 1,
-                        height: `${height}%`,
-                        bgcolor: eventTypeColors[event.type] || '#6b7280',
-                        borderRadius: 1,
-                        transition: 'height 0.3s ease',
-                      }}
-                      title={`${event.type}: ${new Date(event.ts).toLocaleTimeString()}`}
-                    />
-                  );
-                }) : (
-                  <Typography sx={{ fontSize: '0.55rem', color: gs.textMuted, flex: 1, textAlign: 'center' }}>暂无数据</Typography>
                 )}
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                  <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#6366f1' }} />
-                  <Typography sx={{ fontSize: '0.45rem', color: gs.textMuted }}>消息</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                  <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#f59e0b' }} />
-                  <Typography sx={{ fontSize: '0.45rem', color: gs.textMuted }}>调用</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                  <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#22c55e' }} />
-                  <Typography sx={{ fontSize: '0.45rem', color: gs.textMuted }}>结果</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                  <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#8b5cf6' }} />
-                  <Typography sx={{ fontSize: '0.45rem', color: gs.textMuted }}>思考</Typography>
-                </Box>
-              </Box>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
-              <TextField
-                placeholder="搜索待办..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                size="small"
-                sx={{
-                  flex: 1,
-                  '& .MuiInputBase-root': {
-                    fontSize: '0.65rem',
-                    borderRadius: 0.5,
-                    bgcolor: gs.bgHover,
-                  },
-                }}
-                InputProps={{
-                  startAdornment: <SearchIcon sx={{ fontSize: 12, mr: 0.5, color: gs.textMuted }} />,
-                }}
-              />
-            </Box>
-            {selectMode && selectedTodoIds.size > 0 && (
-              <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 1, bgcolor: 'rgba(99,102,241,0.1)', borderRadius: 0.5, border: `1px solid rgba(99,102,241,0.2)` }}>
-                <Typography sx={{ fontSize: '0.6rem', color: '#6366f1', flex: 1, alignSelf: 'center' }}>
-                  已选择 {selectedTodoIds.size} 项
-                </Typography>
-                <Tooltip title="批量完成">
-                  <IconButton size="small" onClick={handleBatchMarkDone} sx={{ p: 0.25, color: '#22c55e' }}>
-                    <CheckCircleIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="批量删除">
-                  <IconButton size="small" onClick={handleBatchDeleteTodos} sx={{ p: 0.25, color: '#ef4444' }}>
-                    <DeleteIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="批量设置优先级">
-                  <IconButton size="small" onClick={() => setBatchPriorityMenuAnchor(document.activeElement as HTMLElement)} sx={{ p: 0.25, color: '#f59e0b' }}>
-                    <FlagIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="取消选择">
-                  <IconButton size="small" onClick={() => { setSelectedTodoIds(new Set()); setSelectMode(false); }} sx={{ p: 0.25, color: gs.textMuted }}>
-                    <CloseIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            )}
-            <ToggleButtonGroup
-              size="small"
-              value={filterStatus}
-              onChange={(_, newVal) => newVal && setFilterStatus(newVal)}
-              sx={{ mb: 1, gap: 0.25 }}
-            >
-              <ToggleButton value="all" sx={{ fontSize: '0.55rem', px: 1.5 }}>全部</ToggleButton>
-              <ToggleButton value="pending" sx={{ fontSize: '0.55rem', px: 1.5 }}>待办</ToggleButton>
-              <ToggleButton value="in_progress" sx={{ fontSize: '0.55rem', px: 1.5 }}>进行中</ToggleButton>
-              <ToggleButton value="done" sx={{ fontSize: '0.55rem', px: 1.5 }}>已完成</ToggleButton>
-            </ToggleButtonGroup>
-            <ToggleButtonGroup
-              size="small"
-              value={filterPriority}
-              onChange={(_, newVal) => newVal && setFilterPriority(newVal)}
-              sx={{ mb: 1, gap: 0.25 }}
-            >
-              <ToggleButton value="all" sx={{ fontSize: '0.55rem', px: 1 }}>优先级</ToggleButton>
-              <ToggleButton value="low" sx={{ fontSize: '0.55rem', px: 1 }}>低</ToggleButton>
-              <ToggleButton value="normal" sx={{ fontSize: '0.55rem', px: 1 }}>普通</ToggleButton>
-              <ToggleButton value="high" sx={{ fontSize: '0.55rem', px: 1 }}>高</ToggleButton>
-              <ToggleButton value="urgent" sx={{ fontSize: '0.55rem', px: 1 }}>紧急</ToggleButton>
-            </ToggleButtonGroup>
-            <ToggleButtonGroup
-              size="small"
-              value={filterTimeRange}
-              onChange={(_, newVal) => newVal && setFilterTimeRange(newVal)}
-              sx={{ mb: 1, gap: 0.25 }}
-            >
-              <ToggleButton value="all" sx={{ fontSize: '0.55rem', px: 1 }}>时间</ToggleButton>
-              <ToggleButton value="today" sx={{ fontSize: '0.55rem', px: 1 }}>今天</ToggleButton>
-              <ToggleButton value="week" sx={{ fontSize: '0.55rem', px: 1 }}>本周</ToggleButton>
-              <ToggleButton value="month" sx={{ fontSize: '0.55rem', px: 1 }}>本月</ToggleButton>
-            </ToggleButtonGroup>
-            <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
-              <TextField
-                placeholder="添加待办..."
-                value={newTodoText}
-                onChange={(e) => setNewTodoText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddTodo()}
-                size="small"
-                sx={{
-                  flex: 1,
-                  '& .MuiInputBase-root': {
-                    fontSize: '0.65rem',
-                    borderRadius: 0.5,
-                    bgcolor: gs.bgHover,
-                  },
-                }}
-              />
-              <IconButton size="small" onClick={handleAddTodo} sx={{ p: 0.5, color: '#6366f1' }}>
-                <AddIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-              {selectMode && (
-                <IconButton size="small" onClick={() => { setSelectMode(false); setSelectedTodoIds(new Set()); }} sx={{ p: 0.5, color: gs.textMuted }}>
-                  <CloseIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-              )}
-            </Box>
-            {selectMode && selectedTodoIds.size > 0 && (
-              <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 0.5, bgcolor: 'rgba(99,102,241,0.1)', borderRadius: 0.5 }}>
-                <Typography sx={{ fontSize: '0.6rem', color: '#6366f1', mt: 0.25 }}>已选择 {selectedTodoIds.size} 项</Typography>
-                <IconButton size="small" onClick={handleBatchDelete} sx={{ p: 0.25, color: '#ef4444' }}>
-                  <DeleteIcon sx={{ fontSize: 12 }} />
-                </IconButton>
-                <IconButton size="small" onClick={handleBatchToggleStatus} sx={{ p: 0.25, color: '#22c55e' }}>
-                  <CheckCircleIcon sx={{ fontSize: 12 }} />
-                </IconButton>
-                <Menu anchorEl={batchPriorityMenuAnchor} open={!!batchPriorityMenuAnchor} onClose={() => setBatchPriorityMenuAnchor(null)}>
-                  {priorityOrder.map(p => (
-                    <MenuItem key={p} onClick={() => handleBatchSetPriority(p)}>
-                      <Typography sx={{ fontSize: '0.7rem' }}>{p === 'low' ? '低' : p === 'normal' ? '普通' : p === 'high' ? '高' : '紧急'}</Typography>
-                    </MenuItem>
-                  ))}
-                </Menu>
-                <IconButton size="small" onClick={(e) => setBatchPriorityMenuAnchor(e.currentTarget)} sx={{ p: 0.25, color: '#f59e0b' }}>
-                  <FlagIcon sx={{ fontSize: 12 }} />
-                </IconButton>
-              </Box>
-            )}
-            {!selectMode && (
-              <IconButton size="small" onClick={() => setSelectMode(true)} sx={{ mb: 1, p: 0.25, color: gs.textMuted, '&:hover': { color: '#6366f1' } }}>
-                <SelectAllIcon sx={{ fontSize: 14 }} />
-              </IconButton>
-            )}
-            <VirtualList
-              items={filteredTodos}
-              itemContent={(todo, index) => (
-                <TodoItem
-                  key={todo.id}
-                  todo={todo}
-                  selectedTodoIds={selectedTodoIds}
-                  selectMode={selectMode}
-                  draggedTodoId={draggedTodoId}
-                  dragOverTodoId={dragOverTodoId}
-                  completingTodoIds={completingTodoIds}
-                  gs={gs}
-                  onToggleSelect={handleToggleSelect}
-                  onToggleTodo={handleDeleteTodo}
-                  onDeleteTodo={handleDeleteTodo}
-                  onCyclePriority={handleCyclePriority}
-                  onPriorityMenu={(id, anchor) => { setPriorityMenuTodoId(id); setPriorityMenuAnchor(anchor); }}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onDragEnd={handleDragEnd}
-                />
-              )}
-              itemSize={56}
-              overscan={5}
-              maxHeight={250}
-            />
-            {!todosLoading && filteredTodos.length === 0 && (
-              <Box sx={{ textAlign: 'center', py: 3 }}>
-                <ListAltIcon sx={{ fontSize: 32, color: gs.textMuted, opacity: 0.3, mb: 0.5 }} />
-                <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted }}>
-                  {debouncedSearchQuery ? '没有匹配的待办' : '暂无待办事项'}
-                </Typography>
-              </Box>
-            )}
-            {todosLoading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                <CircularProgress size={20} sx={{ color: '#6366f1' }} />
-              </Box>
-            )}
-          </AccordionDetails>
-        </Accordion>
-
-        <Accordion
-          expanded={expandedSections.has('artifacts')}
-          onChange={() => handleToggleSection('artifacts')}
-          sx={{
-            bgcolor: gs.bgPanel,
-            border: `1px solid ${gs.border}`,
-            borderRadius: 1,
-            mb: 1.5,
-            '&:before': { display: 'none' },
-          }}
-        >
-          <AccordionSummary sx={{ p: 1 }}>
-            <FolderOutlinedIcon sx={{ fontSize: 16, mr: 1, color: '#22c55e' }} />
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textPrimary }}>产物</Typography>
-            <Chip
-              size="small"
-              label={artifacts.length}
-              sx={{ ml: 'auto', height: 18, fontSize: '0.5rem', bgcolor: 'rgba(34,197,94,0.1)', color: '#22c55e' }}
-            />
-          </AccordionSummary>
-          <AccordionDetails sx={{ p: 0, mt: -1 }}>
-            <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
-              <TextField
-                placeholder="搜索产物..."
-                value={artifactSearchQuery}
-                onChange={(e) => setArtifactSearchQuery(e.target.value)}
-                size="small"
-                sx={{
-                  flex: 1,
-                  '& .MuiInputBase-root': {
-                    fontSize: '0.65rem',
-                    borderRadius: 0.5,
-                    bgcolor: gs.bgHover,
-                  },
-                }}
-                InputProps={{
-                  startAdornment: <SearchIcon sx={{ fontSize: 12, mr: 0.5, color: gs.textMuted }} />,
-                }}
-              />
-            </Box>
-            <ToggleButtonGroup
-              size="small"
-              value={artifactFilterType}
-              onChange={(_, newVal) => newVal && setArtifactFilterType(newVal)}
-              sx={{ mb: 1, gap: 0.25 }}
-            >
-              <ToggleButton value="all" sx={{ fontSize: '0.55rem', px: 1 }}>全部</ToggleButton>
-              <ToggleButton value="document" sx={{ fontSize: '0.55rem', px: 1 }}>文档</ToggleButton>
-              <ToggleButton value="image" sx={{ fontSize: '0.55rem', px: 1 }}>图片</ToggleButton>
-              <ToggleButton value="code" sx={{ fontSize: '0.55rem', px: 1 }}>代码</ToggleButton>
-              <ToggleButton value="other" sx={{ fontSize: '0.55rem', px: 1 }}>其他</ToggleButton>
-            </ToggleButtonGroup>
-            <VirtualList
-              items={filteredArtifacts}
-              itemContent={(artifact, index) => (
-                <ArtifactItem
-                  key={artifact.id}
-                  artifact={artifact}
-                  selectedArtifactIds={selectedArtifactIds}
-                  artifactSelectMode={artifactSelectMode}
-                  deletingArtifactIds={deletingArtifactIds}
-                  gs={gs}
-                  onToggleSelect={handleToggleSelect}
-                  onPreviewArtifact={handlePreviewArtifact}
-                  onCopyPath={handleCopyPath}
-                  onDeleteArtifact={deleteArtifact}
-                  downloadUrl={getArtifactDownloadUrl(artifact.id)}
-                />
-              )}
-              itemSize={44}
-              overscan={5}
-              maxHeight={200}
-            />
-            {artifactsLoading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                <CircularProgress size={20} sx={{ color: '#22c55e' }} />
-              </Box>
-            )}
-          </AccordionDetails>
-        </Accordion>
-
-        <Accordion
-          expanded={expandedSections.has('toolCalls')}
-          onChange={() => handleToggleSection('toolCalls')}
-          sx={{
-            bgcolor: gs.bgPanel,
-            border: `1px solid ${gs.border}`,
-            borderRadius: 1,
-            mb: 1.5,
-            '&:before': { display: 'none' },
-          }}
-        >
-          <AccordionSummary sx={{ p: 1 }}>
-            <BuildIcon sx={{ fontSize: 16, mr: 1, color: '#f59e0b' }} />
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textPrimary }}>技能与MCP</Typography>
-            <Chip
-              size="small"
-              label={toolCalls.length}
-              sx={{ ml: 'auto', height: 18, fontSize: '0.5rem', bgcolor: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}
-            />
-          </AccordionSummary>
-          <AccordionDetails sx={{ p: 0, mt: -1 }}>
-            <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
-              <TextField
-                placeholder="搜索工具..."
-                value={toolSearchQuery}
-                onChange={(e) => setToolSearchQuery(e.target.value)}
-                size="small"
-                sx={{
-                  flex: 1,
-                  '& .MuiInputBase-root': {
-                    fontSize: '0.65rem',
-                    borderRadius: 0.5,
-                    bgcolor: gs.bgHover,
-                  },
-                }}
-                InputProps={{
-                  startAdornment: <SearchIcon sx={{ fontSize: 12, mr: 0.5, color: gs.textMuted }} />,
-                }}
-              />
-            </Box>
-            <ToggleButtonGroup
-              size="small"
-              value={toolFilterStatus}
-              onChange={(_, newVal) => newVal && setToolFilterStatus(newVal)}
-              sx={{ mb: 1, gap: 0.25 }}
-            >
-              <ToggleButton value="all" sx={{ fontSize: '0.55rem', px: 1 }}>全部</ToggleButton>
-              <ToggleButton value="success" sx={{ fontSize: '0.55rem', px: 1 }}>成功</ToggleButton>
-              <ToggleButton value="error" sx={{ fontSize: '0.55rem', px: 1 }}>失败</ToggleButton>
-              <ToggleButton value="running" sx={{ fontSize: '0.55rem', px: 1 }}>运行中</ToggleButton>
-            </ToggleButtonGroup>
-            <VirtualList
-              items={filteredToolCalls}
-              itemContent={(toolCall, index) => (
-                <ToolCallItem
-                  key={toolCall.id}
-                  toolCall={toolCall}
-                  maxDuration={toolCallMaxDuration}
-                  gs={gs}
-                  onClick={() => setToolCallDetail(toolCall)}
-                />
-              )}
-              itemSize={56}
-              overscan={5}
-              maxHeight={250}
-            />
-            {toolCallsLoading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                <CircularProgress size={20} sx={{ color: '#f59e0b' }} />
-              </Box>
-            )}
-          </AccordionDetails>
-        </Accordion>
-
-        <Accordion
-          expanded={expandedSections.has('trajectory')}
-          onChange={() => handleToggleSection('trajectory')}
-          sx={{
-            bgcolor: gs.bgPanel,
-            border: `1px solid ${gs.border}`,
-            borderRadius: 1,
-            mb: 1.5,
-            '&:before': { display: 'none' },
-          }}
-        >
-          <AccordionSummary sx={{ p: 1 }}>
-            <TimelineIcon sx={{ fontSize: 16, mr: 1, color: '#8b5cf6' }} />
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: gs.textPrimary }}>轨迹追踪</Typography>
-            <Chip
-              size="small"
-              label={trajectoryEvents.length}
-              sx={{ ml: 'auto', height: 18, fontSize: '0.5rem', bgcolor: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}
-            />
-          </AccordionSummary>
-          <AccordionDetails sx={{ p: 0, mt: -1 }}>
-            <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-              {trajectoryEvents.slice(0, displayedEventCount).map((event) => (
-                <TrajectoryEventItem
-                  key={event.id}
-                  event={event}
-                  isExpanded={expandedEventIds.has(event.id)}
-                  gs={gs}
-                  isDark={false}
-                  onToggleExpand={() => setExpandedEventIds(prev => {
-                    const next = new Set(prev);
-                    if (next.has(event.id)) next.delete(event.id);
-                    else next.add(event.id);
-                    return next;
-                  })}
-                  onCopy={(text, field) => {
-                    navigator.clipboard.writeText(text);
-                    setTrajectoryCopiedField(field);
-                    setTimeout(() => setTrajectoryCopiedField(null), 2000);
+                <Typography 
+                  sx={{ 
+                    fontSize: '0.9rem', 
+                    color: todo.status === 'done' ? '#999' : '#333',
+                    textDecoration: todo.status === 'done' ? 'line-through' : 'none',
+                    flex: 1,
                   }}
-                  copiedField={trajectoryCopiedField}
-                />
-              ))}
-            </Box>
-            {trajectoryEvents.length > displayedEventCount && (
-              <Button size="small" onClick={handleLoadMoreEvents} sx={{ mt: 1, fontSize: '0.65rem' }}>
-                {loadingMoreEvents ? '加载中...' : '加载更多'}
-              </Button>
-            )}
-            {trajectoryLoading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                <CircularProgress size={20} sx={{ color: '#8b5cf6' }} />
+                >
+                  {todo.text}
+                </Typography>
               </Box>
+            ))}
+          </Box>
+        )}
+
+        {expandedSections.has('taskFlows') && (
+          <Box sx={{ px: 2, py: 2 }}>
+            {taskFlowsLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress size={24} sx={{ color: '#2563eb' }} />
+              </Box>
+            ) : taskFlows.length === 0 ? (
+              <Typography sx={{ fontSize: '0.85rem', color: '#999', textAlign: 'center', py: 4 }}>
+                暂无任务流
+              </Typography>
+            ) : (
+              taskFlows.map((flow) => {
+                const steps = flowStepsMap[flow.id] || [];
+                const isExpanded = expandedFlowIds.has(flow.id);
+                const progress = flow.totalSteps > 0
+                  ? Math.round(((flow.completedSteps + flow.failedSteps) / flow.totalSteps) * 100)
+                  : 0;
+                return (
+                  <Box
+                    key={flow.id}
+                    sx={{
+                      mb: 1.5,
+                      bgcolor: '#fff',
+                      borderRadius: 1,
+                      border: '1px solid #e0e0e0',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <Box
+                      onClick={() => handleToggleFlowExpand(flow.id)}
+                      sx={{
+                        px: 1.5,
+                        py: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: '#f9f9f9' },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          bgcolor: getFlowStatusColor(flow.status),
+                          mr: 1,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Typography sx={{ fontSize: '0.85rem', fontWeight: 500, color: '#333', flex: 1 }}>
+                        {flow.name}
+                      </Typography>
+                      <Chip
+                        size="small"
+                        label={getFlowStatusLabel(flow.status)}
+                        sx={{
+                          height: 18,
+                          fontSize: '0.65rem',
+                          bgcolor: `${getFlowStatusColor(flow.status)}15`,
+                          color: getFlowStatusColor(flow.status),
+                          mr: 0.5,
+                        }}
+                      />
+                      <ExpandMoreIcon
+                        sx={{
+                          fontSize: 18,
+                          color: '#999',
+                          transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.2s',
+                        }}
+                      />
+                    </Box>
+                    <Box sx={{ px: 1.5, pb: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.75 }}>
+                        <Box sx={{ flex: 1, height: 4, bgcolor: '#e5e7eb', borderRadius: 2, overflow: 'hidden' }}>
+                          <Box
+                            sx={{
+                              width: `${progress}%`,
+                              height: '100%',
+                              bgcolor: getFlowStatusColor(flow.status),
+                              borderRadius: 2,
+                              transition: 'width 0.3s',
+                            }}
+                          />
+                        </Box>
+                        <Typography sx={{ fontSize: '0.65rem', color: '#666' }}>
+                          {flow.completedSteps}/{flow.totalSteps}
+                        </Typography>
+                      </Box>
+                      {flow.status === 'queued' && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => handleStartTaskFlow(flow.id)}
+                          sx={{ fontSize: '0.7rem', py: 0.25, minHeight: 24 }}
+                        >
+                          启动
+                        </Button>
+                      )}
+                      {flow.status === 'failed' && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => handleRetryTaskFlow(flow.id)}
+                          sx={{ fontSize: '0.7rem', py: 0.25, minHeight: 24, mr: 0.5 }}
+                        >
+                          重试
+                        </Button>
+                      )}
+                      {(flow.status === 'queued' || flow.status === 'running' || flow.status === 'waiting') && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="error"
+                          onClick={() => handleCancelTaskFlow(flow.id)}
+                          sx={{ fontSize: '0.7rem', py: 0.25, minHeight: 24 }}
+                        >
+                          取消
+                        </Button>
+                      )}
+                    </Box>
+                    {isExpanded && steps.length > 0 && (
+                      <Box sx={{ px: 1.5, pb: 1.5, pt: 0.5 }}>
+                        {steps.map((step, idx) => (
+                          <Box
+                            key={step.id}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              py: 0.5,
+                              pl: idx === steps.length - 1 ? 0 : 0,
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 1, mt: 0.25 }}>
+                              <Box
+                                sx={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: '50%',
+                                  bgcolor: getStepStatusColor(step.status),
+                                }}
+                              />
+                              {idx < steps.length - 1 && (
+                                <Box sx={{ width: 1, flex: 1, bgcolor: '#e5e7eb', my: 0.25 }} />
+                              )}
+                            </Box>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography sx={{ fontSize: '0.8rem', color: '#333' }}>
+                                {step.taskName}
+                              </Typography>
+                              <Typography sx={{ fontSize: '0.7rem', color: '#999' }}>
+                                {step.taskDescription}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })
             )}
-          </AccordionDetails>
-        </Accordion>
+          </Box>
+        )}
+
+        {expandedSections.has('artifacts') && (
+          <Box sx={{ px: 2, py: 2 }}>
+            <Typography sx={{ fontSize: '0.85rem', color: '#666' }}>默认工作目录</Typography>
+          </Box>
+        )}
+        
+        {expandedSections.has('toolCalls') && (
+          <Box sx={{ px: 2, py: 2 }}>
+            {Array.from(new Set(toolCalls.map(t => t.toolName))).map((toolName, index) => (
+              <Box 
+                key={index}
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  py: 0.75,
+                }}
+              >
+                <Box sx={{ 
+                  width: 24, 
+                  height: 24, 
+                  borderRadius: 0.5, 
+                  bgcolor: '#fff',
+                  border: '1px solid #e0e0e0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mr: 1.5,
+                  flexShrink: 0,
+                }}>
+                  <BuildIcon sx={{ fontSize: 14, color: '#2563eb' }} />
+                </Box>
+                <Typography sx={{ fontSize: '0.9rem', color: '#333' }}>
+                  {toolName}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
+
       </Box>
 
       <Dialog open={!!toolCallDetail} onClose={() => setToolCallDetail(null)} maxWidth="md" fullWidth>

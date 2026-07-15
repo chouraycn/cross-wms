@@ -4,7 +4,6 @@
  * 导入所有 Provider 实现文件，确保它们被注册到系统中。
  */
 
-import "./duckduckgo-search-provider.js";
 import "./tavily-search-provider.js";
 import "./perplexity-search-provider.js";
 import "./brave-search-provider.js";

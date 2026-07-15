@@ -3,6 +3,7 @@
  *
  * Orchestrates message sending through the channel registry, deliverer, and lifecycle hooks.
  */
+import { logger } from '../../logger.js';
 import type { ChannelId, AccountId, AppConfig } from "../types.js";
 import type { ChannelPlugin } from "../plugin.js";
 import type {
@@ -144,7 +145,7 @@ export class OutboundPipeline {
       },
       onSendFailure: async (error) => {
         // Default failure handler - can be overridden
-        console.error(`Message send failed: ${error}`);
+        logger.error(`[pipeline] Message send failed: ${error}`);
       },
     });
 
