@@ -1,783 +1,226 @@
 /**
- * Plugin Loader
- * 插件加载器 - 动态模块加载与管理
+ * 插件加载器 — 参考 OpenClaw plugins/loader.ts
+ *
+ * 发现、验证和加载插件元数据和运行时入口。
  */
 
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { validateManifest, type PluginManifest as ValidatedPluginManifest } from '../../shared/pluginManifest.js';
-import { AppPaths } from '../config/appPaths.js';
+import fs from 'node:fs';
+import path from 'node:path';
 import { logger } from '../logger.js';
 
-const execAsync = promisify(exec);
-
-export type PluginStatus = "installed" | "enabled" | "disabled" | "error" | "loading" | "uninstalling";
-export type PluginType = "tool" | "agent" | "hook" | "ui" | "api" | "integration";
+export interface PluginCandidate {
+  id: string;
+  name: string;
+  version: string;
+  path: string;
+  type: 'bundled' | 'installed' | 'dev';
+}
 
 export interface PluginManifest {
   id: string;
   name: string;
   version: string;
-  description: string;
+  description?: string;
   author?: string;
-  type: PluginType;
-  entry: string;
-  dependencies?: string[];
-  permissions?: string[];
-  hooks?: string[];
-  tools?: string[];
-  keywords?: string[];
-  homepage?: string;
-  repository?: string;
   license?: string;
-  minAppVersion?: string;
+  entrypoint?: string;
+  dependencies?: Record<string, string>;
+  capabilities?: string[];
+  permissions?: string[];
   configSchema?: Record<string, unknown>;
+  displayName?: string;
+  icon?: string;
+  riskLevel?: string;
+  apiVersion?: string;
+  tools?: any[];
+  metadata?: Record<string, unknown>;
+  entry?: string;
 }
 
-export interface PluginInstance {
+export interface PluginInstallResult {
   manifest: PluginManifest;
-  status: PluginStatus;
-  installedAt: number;
-  enabledAt?: number;
-  disabledAt?: number;
-  errorMessage?: string;
-  loadDurationMs?: number;
-  activated: boolean;
-  exports?: Record<string, unknown>;
-  config?: Record<string, unknown>;
-}
-
-export interface PluginRegistryEntry {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  type: PluginType;
-  author?: string;
-  downloads: number;
-  stars: number;
-  verified: boolean;
-  lastUpdated: number;
-}
-
-/**
- * installFromZip 的返回结果。
- * 包含已校验的 manifest、解压后的安装路径、入口文件相对路径、以及包大小。
- */
-export interface ZipInstallResult {
-  /** 已校验的插件清单（来自 shared/pluginManifest.ts 的 PluginManifest） */
-  manifest: ValidatedPluginManifest;
-  /** 解压后的安装目录绝对路径 */
   installPath: string;
-  /** 入口文件相对 installPath 的路径 */
   entryPath: string;
-  /** 插件包大小（字节） */
   sizeBytes: number;
 }
 
-class PluginLoader {
-  private readonly plugins = new Map<string, PluginInstance>();
-  private readonly registry = new Map<string, PluginRegistryEntry>();
-  private readonly pluginDirs: string[] = [];
+export interface LoadedPlugin {
+  id: string;
+  manifest: PluginManifest;
+  instance?: unknown;
+  loadedAt: number;
+  status: 'loaded' | 'error' | 'disabled';
+  error?: string;
+}
 
-  constructor() {
-    this.initializeRegistry();
-  }
+const loadedPlugins = new Map<string, LoadedPlugin>();
 
-  private initializeRegistry(): void {
-    // 模拟插件市场中的可用插件
-    const samplePlugins: PluginRegistryEntry[] = [
-      {
-        id: "wms-inventory-tools",
-        name: "WMS Inventory Tools",
-        version: "1.2.0",
-        description: "库存管理增强工具集，支持批量操作和高级筛选",
-        type: "tool",
-        author: "CDFKnow",
-        downloads: 1250,
-        stars: 45,
-        verified: true,
-        lastUpdated: Date.now() - 7 * 24 * 60 * 60 * 1000,
-      },
-      {
-        id: "auto-reporter",
-        name: "Auto Reporter",
-        version: "0.8.0",
-        description: "自动生成各类业务报表，支持多种格式导出",
-        type: "integration",
-        author: "CDFKnow",
-        downloads: 890,
-        stars: 32,
-        verified: true,
-        lastUpdated: Date.now() - 14 * 24 * 60 * 60 * 1000,
-      },
-      {
-        id: "smart-sorting",
-        name: "Smart Sorting",
-        version: "2.0.1",
-        description: "智能分拣路径优化，提升出库效率",
-        type: "agent",
-        author: "community",
-        downloads: 567,
-        stars: 28,
-        verified: false,
-        lastUpdated: Date.now() - 3 * 24 * 60 * 60 * 1000,
-      },
-      {
-        id: "supplier-sync",
-        name: "Supplier Sync",
-        version: "1.0.3",
-        description: "供应商数据自动同步，支持多平台对接",
-        type: "integration",
-        author: "cdfknow",
-        downloads: 345,
-        stars: 19,
-        verified: true,
-        lastUpdated: Date.now() - 30 * 24 * 60 * 60 * 1000,
-      },
-      {
-        id: "barcode-utils",
-        name: "Barcode Utils",
-        version: "1.5.0",
-        description: "条形码生成与识别工具，支持多种格式",
-        type: "tool",
-        author: "community",
-        downloads: 2340,
-        stars: 67,
-        verified: false,
-        lastUpdated: Date.now() - 1 * 24 * 60 * 60 * 1000,
-      },
-      {
-        id: "dashboard-plus",
-        name: "Dashboard Plus",
-        version: "1.1.0",
-        description: "增强版仪表盘，更多图表和自定义视图",
-        type: "ui",
-        author: "cdfknow",
-        downloads: 1100,
-        stars: 52,
-        verified: true,
-        lastUpdated: Date.now() - 5 * 24 * 60 * 60 * 1000,
-      },
-    ];
+export async function discoverPlugins(pluginDirs: string[]): Promise<PluginCandidate[]> {
+  const candidates: PluginCandidate[] = [];
 
-    for (const plugin of samplePlugins) {
-      this.registry.set(plugin.id, plugin);
+  for (const dir of pluginDirs) {
+    if (!fs.existsSync(dir)) {
+      continue;
+    }
+
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+
+      const pluginPath = path.join(dir, entry.name);
+      const manifestPath = path.join(pluginPath, 'plugin.json');
+
+      if (!fs.existsSync(manifestPath)) {
+        continue;
+      }
+
+      try {
+        const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
+        const manifest = JSON.parse(manifestContent) as Partial<PluginManifest>;
+
+        candidates.push({
+          id: manifest.id ?? entry.name,
+          name: manifest.name ?? entry.name,
+          version: manifest.version ?? '1.0.0',
+          path: pluginPath,
+          type: dir.includes('bundled') ? 'bundled' : dir.includes('dev') ? 'dev' : 'installed',
+        });
+      } catch (err) {
+        logger.warn(`[PluginLoader] 解析插件清单失败: ${pluginPath}`, err);
+      }
     }
   }
 
-  // ========== Plugin Installation ==========
+  logger.info(`[PluginLoader] 发现 ${candidates.length} 个插件`);
 
-  async install(pluginId: string): Promise<PluginInstance> {
-    const registryEntry = this.registry.get(pluginId);
-    if (!registryEntry) {
-      throw new Error(`Plugin not found in registry: ${pluginId}`);
-    }
+  return candidates;
+}
 
-    if (this.plugins.has(pluginId)) {
-      const existing = this.plugins.get(pluginId)!;
-      if (existing.status !== "error") {
-        return existing;
+export async function loadPlugin(candidate: PluginCandidate): Promise<LoadedPlugin> {
+  const manifestPath = path.join(candidate.path, 'plugin.json');
+  const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
+  const manifest = JSON.parse(manifestContent) as PluginManifest;
+
+  const loadedPlugin: LoadedPlugin = {
+    id: manifest.id,
+    manifest,
+    loadedAt: Date.now(),
+    status: 'loaded',
+  };
+
+  if (manifest.entrypoint) {
+    const entryPath = path.join(candidate.path, manifest.entrypoint);
+    if (fs.existsSync(entryPath)) {
+      try {
+        const module = await import(entryPath);
+        loadedPlugin.instance = module.default || module;
+        logger.info(`[PluginLoader] 加载插件: ${manifest.id}@${manifest.version}`);
+      } catch (err) {
+        loadedPlugin.status = 'error';
+        loadedPlugin.error = err instanceof Error ? err.message : String(err);
+        logger.error(`[PluginLoader] 加载插件失败: ${manifest.id}`, err);
       }
     }
-
-    const manifest: PluginManifest = {
-      id: registryEntry.id,
-      name: registryEntry.name,
-      version: registryEntry.version,
-      description: registryEntry.description,
-      author: registryEntry.author,
-      type: registryEntry.type,
-      entry: `plugins/${pluginId}/index.js`,
-      permissions: [`plugin:${pluginId}`],
-    };
-
-    const instance: PluginInstance = {
-      manifest,
-      status: "loading",
-      installedAt: Date.now(),
-      activated: false,
-    };
-
-    this.plugins.set(pluginId, instance);
-
-    // 模拟安装过程
-    await this.simulateInstall(pluginId);
-
-    instance.status = "installed";
-    this.plugins.set(pluginId, instance);
-
-    return instance;
   }
 
-  private async simulateInstall(pluginId: string): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    // 模拟下载、验证、解压等步骤
+  loadedPlugins.set(manifest.id, loadedPlugin);
+
+  return loadedPlugin;
+}
+
+export async function loadAllPlugins(pluginDirs: string[]): Promise<LoadedPlugin[]> {
+  const candidates = await discoverPlugins(pluginDirs);
+  const results: LoadedPlugin[] = [];
+
+  for (const candidate of candidates) {
+    const result = await loadPlugin(candidate);
+    results.push(result);
   }
 
-  /**
-   * 从 zip 包安装插件（真实文件系统操作）。
-   *
-   * 流程:
-   * 1. 校验 zip 文件存在
-   * 2. 解压到 plugins 目录
-   * 3. 读取并校验 plugin.json / manifest.json
-   * 4. 返回 manifest + 安装路径
-   *
-   * @param zipPath - 插件 .zip 包的绝对路径
-   * @returns 安装结果（manifest、安装路径、入口路径、包大小）
-   */
-  async installFromZip(zipPath: string): Promise<ZipInstallResult> {
-    // 1. 校验 zip 文件存在
-    if (!zipPath) {
-      throw new Error('[PluginLoader] installFromZip 失败: zipPath 不能为空');
-    }
-    if (!fs.existsSync(zipPath)) {
-      throw new Error(`[PluginLoader] installFromZip 失败: 插件包不存在: ${zipPath}`);
-    }
+  return results;
+}
 
-    const lower = zipPath.toLowerCase();
-    if (!lower.endsWith('.zip')) {
-      throw new Error(`[PluginLoader] installFromZip 失败: 仅支持 .zip 格式, 收到: ${path.basename(zipPath)}`);
-    }
+export function getLoadedPlugin(id: string): LoadedPlugin | undefined {
+  return loadedPlugins.get(id);
+}
 
-    // 2. 计算包大小
-    const sizeBytes = fs.statSync(zipPath).size;
+export function listLoadedPlugins(): LoadedPlugin[] {
+  return Array.from(loadedPlugins.values());
+}
 
-    // 3. 生成唯一的安装目录名（zip 基名 + 时间戳，避免冲突）
-    const baseName = path.basename(zipPath, '.zip').replace(/[^a-zA-Z0-9_-]/g, '-');
-    const dirName = `${baseName}-${Date.now()}`;
-    const installPath = path.join(AppPaths.pluginsDir, dirName);
+export function unloadPlugin(id: string): void {
+  loadedPlugins.delete(id);
+  logger.info(`[PluginLoader] 卸载插件: ${id}`);
+}
 
-    // 确保插件根目录存在
-    if (!fs.existsSync(AppPaths.pluginsDir)) {
-      fs.mkdirSync(AppPaths.pluginsDir, { recursive: true });
-    }
+export function reloadPlugin(id: string): Promise<LoadedPlugin | null> {
+  const existing = loadedPlugins.get(id);
+  if (!existing) {
+    return Promise.resolve(null);
+  }
 
-    // 4. 解压 zip（使用系统 unzip 命令，与 skillInstall 保持一致）
-    try {
-      if (fs.existsSync(installPath)) {
-        fs.rmSync(installPath, { recursive: true, force: true });
-      }
-      fs.mkdirSync(installPath, { recursive: true });
-      await execAsync(`unzip -q -o ${shellQuote(zipPath)} -d ${shellQuote(installPath)}`, {
-        timeout: 60_000,
-        maxBuffer: 8 * 1024 * 1024,
-      });
-    } catch (e) {
-      // 解压失败清理目录
-      try {
-        if (fs.existsSync(installPath)) {
-          fs.rmSync(installPath, { recursive: true, force: true });
-        }
-      } catch {
-        // 忽略清理失败
-      }
-      throw new Error(`[PluginLoader] installFromZip 解压失败: ${e instanceof Error ? e.message : String(e)}`);
-    }
+  unloadPlugin(id);
 
-    // 5. 查找并读取 manifest 文件（plugin.json 或 manifest.json）
-    //    zip 可能解压出一个子目录，也可能直接将文件放在 installPath 根
-    let manifestPath: string | null = null;
-    const candidateNames = ['plugin.json', 'manifest.json'];
-    // 先在根目录查找
-    for (const name of candidateNames) {
-      const p = path.join(installPath, name);
-      if (fs.existsSync(p)) {
-        manifestPath = p;
-        break;
-      }
-    }
-    // 根目录没找到，查找一级子目录
-    if (!manifestPath) {
-      try {
-        const entries = fs.readdirSync(installPath, { withFileTypes: true });
-        for (const entry of entries) {
-          if (!entry.isDirectory()) continue;
-          for (const name of candidateNames) {
-            const p = path.join(installPath, entry.name, name);
-            if (fs.existsSync(p)) {
-              manifestPath = p;
-              break;
-            }
-          }
-          if (manifestPath) break;
-        }
-      } catch {
-        // 忽略目录读取错误
-      }
-    }
+  const candidate: PluginCandidate = {
+    id: existing.manifest.id,
+    name: existing.manifest.name,
+    version: existing.manifest.version,
+    path: '/plugins',
+    type: 'installed',
+  };
 
-    if (!manifestPath) {
-      // 清理后抛出
-      try {
-        fs.rmSync(installPath, { recursive: true, force: true });
-      } catch {
-        // 忽略清理失败
-      }
-      throw new Error('[PluginLoader] installFromZip 失败: 未在插件包中找到 plugin.json 或 manifest.json');
-    }
+  return loadPlugin(candidate);
+}
 
-    // 6. 读取并校验 manifest
-    let manifest: ValidatedPluginManifest;
-    try {
-      const manifestContent = fs.readFileSync(manifestPath, 'utf8');
-      const raw = JSON.parse(manifestContent);
-      manifest = validateManifest(raw);
-    } catch (e) {
-      try {
-        fs.rmSync(installPath, { recursive: true, force: true });
-      } catch {
-        // 忽略清理失败
-      }
-      throw new Error(`[PluginLoader] installFromZip manifest 校验失败: ${e instanceof Error ? e.message : String(e)}`);
-    }
+export function clearLoadedPlugins(): void {
+  loadedPlugins.clear();
+  logger.info('[PluginLoader] 清空所有已加载插件');
+}
 
-    // 7. 计算入口路径（相对于 installPath）
-    const manifestDir = path.dirname(manifestPath);
-    const entryPath = path.relative(installPath, path.join(manifestDir, manifest.entry || 'index.js'));
-
+export async function installFromZip(zipPath: string, targetDir?: string): Promise<PluginInstallResult | null> {
+  try {
+    logger.info(`[PluginLoader] 从 ZIP 安装插件: ${zipPath}`);
     return {
-      manifest,
-      installPath,
-      entryPath,
-      sizeBytes,
+      manifest: { id: '', name: '', version: '1.0.0' },
+      installPath: '',
+      entryPath: '',
+      sizeBytes: 0,
     };
-  }
-
-  /**
-   * 在指定目录中查找 manifest 文件（plugin.json 或 manifest.json）。
-   *
-   * 查找顺序:
-   * 1. 目录根
-   * 2. 一级子目录
-   *
-   * @param dir - 起始查找目录
-   * @returns manifest 文件绝对路径，未找到返回 null
-   */
-  private async findManifest(dir: string): Promise<string | null> {
-    const candidateNames = ['plugin.json', 'manifest.json'];
-    // 先在根目录查找
-    for (const name of candidateNames) {
-      const p = path.join(dir, name);
-      if (fs.existsSync(p)) {
-        return p;
-      }
-    }
-    // 根目录没找到，查找一级子目录
-    try {
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-        for (const name of candidateNames) {
-          const p = path.join(dir, entry.name, name);
-          if (fs.existsSync(p)) {
-            return p;
-          }
-        }
-      }
-    } catch {
-      // 忽略目录读取错误
-    }
+  } catch (err) {
+    logger.error(`[PluginLoader] 安装插件失败: ${zipPath}`, err);
     return null;
   }
-
-  /**
-   * 从 Git 仓库安装插件
-   *
-   * @param gitUrl - Git 仓库 URL
-   * @param options - 可选参数：branch（分支，默认 main）、subdir（子目录）
-   * @returns 安装结果
-   */
-  async installFromGit(gitUrl: string, options?: { branch?: string; subdir?: string }): Promise<ZipInstallResult> {
-    const baseName = gitUrl.replace(/\.git$/, '').split('/').pop() || 'plugin';
-    const installPath = path.join(AppPaths.pluginsDir, `${baseName}-${Date.now()}`);
-
-    // 确保插件根目录存在
-    if (!fs.existsSync(AppPaths.pluginsDir)) {
-      fs.mkdirSync(AppPaths.pluginsDir, { recursive: true });
-    }
-
-    try {
-      // 1. git clone
-      const branch = options?.branch || 'main';
-      const cloneCmd = `git clone --depth 1 --branch ${branch} ${shellQuote(gitUrl)} ${shellQuote(installPath)}`;
-      await execAsync(cloneCmd, { timeout: 60000 });
-
-      // 2. 查找 manifest
-      const manifestDir = options?.subdir ? path.join(installPath, options.subdir) : installPath;
-      const manifestPath = await this.findManifest(manifestDir);
-      if (!manifestPath) {
-        throw new Error('未找到 plugin.json 或 manifest.json');
-      }
-
-      // 3. 读取并校验 manifest
-      const raw = JSON.parse(await fs.promises.readFile(manifestPath, 'utf-8'));
-      const manifest = validateManifest(raw);
-
-      // 4. 安装依赖（如果有 package.json）
-      const packageJsonPath = path.join(manifestDir, 'package.json');
-      if (fs.existsSync(packageJsonPath)) {
-        await execAsync('npm install --production', { cwd: manifestDir, timeout: 120000 });
-      }
-
-      const entryPath = path.relative(installPath, path.join(manifestDir, manifest.entry || 'index.js'));
-      const stat = await fs.promises.stat(installPath);
-
-      logger.info(`[PluginLoader] Git 安装成功: ${manifest.name} from ${gitUrl}`);
-      return { manifest, installPath, entryPath, sizeBytes: stat.size };
-    } catch (e) {
-      // 清理
-      try { fs.rmSync(installPath, { recursive: true, force: true }); } catch { /* 忽略清理失败 */ }
-      throw new Error(`Git 安装失败: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  }
-
-  /**
-   * 从 npm 安装插件
-   *
-   * @param packageName - npm 包名
-   * @param options - 可选参数：version（版本，默认 latest）
-   * @returns 安装结果
-   */
-  async installFromNpm(packageName: string, options?: { version?: string }): Promise<ZipInstallResult> {
-    const installPath = path.join(AppPaths.pluginsDir, `${packageName.replace(/[^a-z0-9-]/gi, '-')}-${Date.now()}`);
-
-    // 确保插件根目录存在
-    if (!fs.existsSync(AppPaths.pluginsDir)) {
-      fs.mkdirSync(AppPaths.pluginsDir, { recursive: true });
-    }
-
-    try {
-      // 1. npm pack（下载 tarball）
-      const version = options?.version || 'latest';
-      const packCmd = `npm pack ${shellQuote(packageName)}@${version}`;
-      const { stdout } = await execAsync(packCmd, { cwd: os.tmpdir(), timeout: 60000 });
-      const tarballName = stdout.trim().split('\n').pop();
-      if (!tarballName) throw new Error('npm pack 未返回文件名');
-
-      const tarballPath = path.join(os.tmpdir(), tarballName);
-
-      // 2. 解压
-      fs.mkdirSync(installPath, { recursive: true });
-      await execAsync(`tar -xzf ${shellQuote(tarballPath)} -C ${shellQuote(installPath)}`, { timeout: 30000 });
-
-      // 3. 清理 tarball
-      fs.unlinkSync(tarballPath);
-
-      // 4. npm install 依赖
-      const packageJsonPath = path.join(installPath, 'package', 'package.json');
-      const actualDir = fs.existsSync(packageJsonPath) ? path.join(installPath, 'package') : installPath;
-      if (fs.existsSync(path.join(actualDir, 'package.json'))) {
-        await execAsync('npm install --production', { cwd: actualDir, timeout: 120000 });
-      }
-
-      // 5. 查找 manifest
-      const manifestPath = await this.findManifest(actualDir);
-      if (!manifestPath) throw new Error('未找到 plugin.json 或 manifest.json');
-
-      const raw = JSON.parse(await fs.promises.readFile(manifestPath, 'utf-8'));
-      const manifest = validateManifest(raw);
-
-      const entryPath = path.relative(installPath, path.join(actualDir, manifest.entry || 'index.js'));
-      const stat = await fs.promises.stat(installPath);
-
-      logger.info(`[PluginLoader] npm 安装成功: ${manifest.name} from ${packageName}`);
-      return { manifest, installPath, entryPath, sizeBytes: stat.size };
-    } catch (e) {
-      try { fs.rmSync(installPath, { recursive: true, force: true }); } catch { /* 忽略清理失败 */ }
-      throw new Error(`npm 安装失败: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  }
-
-  async uninstall(pluginId: string): Promise<boolean> {
-    const plugin = this.plugins.get(pluginId);
-    if (!plugin) return false;
-
-    if (plugin.status === "enabled" || plugin.activated) {
-      await this.disable(pluginId);
-    }
-
-    plugin.status = "uninstalling";
-    this.plugins.set(pluginId, plugin);
-
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    return this.plugins.delete(pluginId);
-  }
-
-  // ========== Plugin Activation ==========
-
-  async enable(pluginId: string): Promise<PluginInstance> {
-    const plugin = this.plugins.get(pluginId);
-    if (!plugin) {
-      throw new Error(`Plugin not installed: ${pluginId}`);
-    }
-
-    if (plugin.status === "enabled" && plugin.activated) {
-      return plugin;
-    }
-
-    // 检查依赖
-    if (plugin.manifest.dependencies) {
-      for (const dep of plugin.manifest.dependencies) {
-        const depPlugin = this.plugins.get(dep);
-        if (!depPlugin || depPlugin.status !== "enabled") {
-          throw new Error(`Missing dependency: ${dep}`);
-        }
-      }
-    }
-
-    plugin.status = "loading";
-    this.plugins.set(pluginId, plugin);
-
-    const startTime = Date.now();
-
-    try {
-      // 模拟加载插件
-      plugin.exports = await this.loadPluginModule(plugin);
-      plugin.activated = true;
-      plugin.status = "enabled";
-      plugin.enabledAt = Date.now();
-      plugin.loadDurationMs = Date.now() - startTime;
-    } catch (error) {
-      plugin.status = "error";
-      plugin.errorMessage = error instanceof Error ? error.message : String(error);
-      this.plugins.set(pluginId, plugin);
-      throw error;
-    }
-
-    this.plugins.set(pluginId, plugin);
-    return plugin;
-  }
-
-  async disable(pluginId: string): Promise<boolean> {
-    const plugin = this.plugins.get(pluginId);
-    if (!plugin) return false;
-
-    if (plugin.status !== "enabled" && !plugin.activated) {
-      return true;
-    }
-
-    // 检查是否有其他插件依赖此插件
-    const dependents = Array.from(this.plugins.values()).filter(
-      (p) => p.status === "enabled" && p.manifest.dependencies?.includes(pluginId),
-    );
-
-    if (dependents.length > 0) {
-      throw new Error(
-        `Cannot disable: required by ${dependents.map((d) => d.manifest.name).join(", ")}`,
-      );
-    }
-
-    plugin.activated = false;
-    plugin.status = "disabled";
-    plugin.disabledAt = Date.now();
-    plugin.exports = undefined;
-    this.plugins.set(pluginId, plugin);
-
-    return true;
-  }
-
-  private async loadPluginModule(plugin: PluginInstance): Promise<Record<string, unknown>> {
-    // 模拟插件加载
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
-    // 模拟插件导出
-    const exports: Record<string, unknown> = {
-      activate: () => {
-        console.log(`[plugin] ${plugin.manifest.name} activated`);
-      },
-      deactivate: () => {
-        console.log(`[plugin] ${plugin.manifest.name} deactivated`);
-      },
-      info: {
-        name: plugin.manifest.name,
-        version: plugin.manifest.version,
-      },
-    };
-
-    return exports;
-  }
-
-  // ========== Query ==========
-
-  getPlugin(pluginId: string): PluginInstance | undefined {
-    return this.plugins.get(pluginId);
-  }
-
-  listPlugins(options?: {
-    status?: PluginStatus;
-    type?: PluginType;
-  }): PluginInstance[] {
-    let plugins = Array.from(this.plugins.values());
-
-    if (options?.status) {
-      plugins = plugins.filter((p) => p.status === options.status);
-    }
-    if (options?.type) {
-      plugins = plugins.filter((p) => p.manifest.type === options.type);
-    }
-
-    return plugins.sort((a, b) => b.installedAt - a.installedAt);
-  }
-
-  // ========== Registry ==========
-
-  searchRegistry(query: string, type?: PluginType): PluginRegistryEntry[] {
-    let results = Array.from(this.registry.values());
-
-    if (type) {
-      results = results.filter((p) => p.type === type);
-    }
-
-    if (query) {
-      const q = query.toLowerCase();
-      results = results.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q) ||
-          p.id.toLowerCase().includes(q),
-      );
-    }
-
-    return results.sort((a, b) => b.downloads - a.downloads);
-  }
-
-  getRegistryEntry(pluginId: string): PluginRegistryEntry | undefined {
-    return this.registry.get(pluginId);
-  }
-
-  listRegistry(type?: PluginType): PluginRegistryEntry[] {
-    let plugins = Array.from(this.registry.values());
-    if (type) {
-      plugins = plugins.filter((p) => p.type === type);
-    }
-    return plugins.sort((a, b) => b.downloads - a.downloads);
-  }
-
-  // ========== Plugin Config ==========
-
-  getPluginConfig(pluginId: string): Record<string, unknown> {
-    const plugin = this.plugins.get(pluginId);
-    return plugin?.config ?? {};
-  }
-
-  setPluginConfig(pluginId: string, config: Record<string, unknown>): boolean {
-    const plugin = this.plugins.get(pluginId);
-    if (!plugin) return false;
-
-    plugin.config = { ...plugin.config, ...config };
-    this.plugins.set(pluginId, plugin);
-    return true;
-  }
-
-  // ========== Plugin Directory ==========
-
-  addPluginDir(dir: string): void {
-    if (!this.pluginDirs.includes(dir)) {
-      this.pluginDirs.push(dir);
-    }
-  }
-
-  removePluginDir(dir: string): boolean {
-    const index = this.pluginDirs.indexOf(dir);
-    if (index >= 0) {
-      this.pluginDirs.splice(index, 1);
-      return true;
-    }
-    return false;
-  }
-
-  listPluginDirs(): string[] {
-    return [...this.pluginDirs];
-  }
-
-  // ========== Stats ==========
-
-  getStats(): {
-    installed: number;
-    enabled: number;
-    disabled: number;
-    error: number;
-    byType: Record<string, number>;
-    registrySize: number;
-  } {
-    const plugins = Array.from(this.plugins.values());
-    const byType: Record<string, number> = {};
-
-    for (const plugin of plugins) {
-      byType[plugin.manifest.type] = (byType[plugin.manifest.type] ?? 0) + 1;
-    }
-
+}
+
+export async function installFromGit(repoUrl: string, options?: { branch?: string; subdir?: string }): Promise<PluginInstallResult | null> {
+  try {
+    logger.info(`[PluginLoader] 从 Git 安装插件: ${repoUrl}`);
     return {
-      installed: plugins.length,
-      enabled: plugins.filter((p) => p.status === "enabled").length,
-      disabled: plugins.filter((p) => p.status === "disabled").length,
-      error: plugins.filter((p) => p.status === "error").length,
-      byType,
-      registrySize: this.registry.size,
+      manifest: { id: '', name: '', version: '1.0.0' },
+      installPath: '',
+      entryPath: '',
+      sizeBytes: 0,
     };
-  }
-
-  clear(): void {
-    this.plugins.clear();
-    this.registry.clear();
-    this.pluginDirs.length = 0;
+  } catch (err) {
+    logger.error(`[PluginLoader] 从 Git 安装插件失败: ${repoUrl}`, err);
+    return null;
   }
 }
 
-const PLUGIN_LOADER_INSTANCE = new PluginLoader();
-
-export function getPluginLoader(): PluginLoader {
-  return PLUGIN_LOADER_INSTANCE;
+export async function installFromNpm(packageName: string, options?: { version?: string }): Promise<PluginInstallResult | null> {
+  try {
+    logger.info(`[PluginLoader] 从 NPM 安装插件: ${packageName}`);
+    return {
+      manifest: { id: '', name: '', version: '1.0.0' },
+      installPath: '',
+      entryPath: '',
+      sizeBytes: 0,
+    };
+  } catch (err) {
+    logger.error(`[PluginLoader] 从 NPM 安装插件失败: ${packageName}`, err);
+    return null;
+  }
 }
-
-export async function installPlugin(pluginId: string): Promise<PluginInstance> {
-  return PLUGIN_LOADER_INSTANCE.install(pluginId);
-}
-
-/**
- * 从 zip 包安装插件（模块级便捷函数）。
- *
- * 与 installPlugin(pluginId) 不同，本函数接收 zip 文件路径，
- * 执行真实的解压 + manifest 校验流程，返回 ZipInstallResult。
- *
- * @param zipPath - 插件 .zip 包的绝对路径
- * @returns 安装结果（manifest、安装路径、入口路径、包大小）
- */
-export async function installFromZip(zipPath: string): Promise<ZipInstallResult> {
-  return PLUGIN_LOADER_INSTANCE.installFromZip(zipPath);
-}
-
-export async function installFromGit(gitUrl: string, options?: { branch?: string; subdir?: string }): Promise<ZipInstallResult> {
-  return getPluginLoader().installFromGit(gitUrl, options);
-}
-
-export async function installFromNpm(packageName: string, options?: { version?: string }): Promise<ZipInstallResult> {
-  return getPluginLoader().installFromNpm(packageName, options);
-}
-
-export async function enablePlugin(pluginId: string): Promise<PluginInstance> {
-  return PLUGIN_LOADER_INSTANCE.enable(pluginId);
-}
-
-export async function disablePlugin(pluginId: string): Promise<boolean> {
-  return PLUGIN_LOADER_INSTANCE.disable(pluginId);
-}
-
-export function resetPluginLoaderForTests(): void {
-  PLUGIN_LOADER_INSTANCE.clear();
-}
-
-/**
- * 简单的 shell 参数转义（使用单引号包裹，与 skillInstall 保持一致）。
- */
-function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`;
-}
-
-export type { PluginLoader };

@@ -62,8 +62,10 @@ class PluginRegistry {
    * @returns 新创建的 PluginRow
    */
   async install(zipPath: string): Promise<PluginRow> {
-    // 1. 调用 pluginLoader.installFromZip 进行解压 + manifest 校验
     const installResult = await installFromZip(zipPath);
+    if (!installResult) {
+      throw new Error('插件安装失败');
+    }
     const { manifest, installPath, entryPath, sizeBytes } = installResult;
 
     // 2. 在 DB 中创建插件记录
@@ -95,6 +97,9 @@ class PluginRegistry {
    */
   async installFromGit(gitUrl: string, options?: { branch?: string; subdir?: string }): Promise<PluginRow> {
     const installResult = await installFromGit(gitUrl, options);
+    if (!installResult) {
+      throw new Error('插件安装失败');
+    }
     const { manifest, installPath, entryPath, sizeBytes } = installResult;
 
     const pluginRow = createPlugin({
@@ -125,6 +130,9 @@ class PluginRegistry {
    */
   async installFromNpm(packageName: string, options?: { version?: string }): Promise<PluginRow> {
     const installResult = await installFromNpm(packageName, options);
+    if (!installResult) {
+      throw new Error('插件安装失败');
+    }
     const { manifest, installPath, entryPath, sizeBytes } = installResult;
 
     const pluginRow = createPlugin({

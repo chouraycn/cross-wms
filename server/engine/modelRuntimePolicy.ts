@@ -24,6 +24,8 @@ export interface ResolvedModelRuntimePolicy {
   policy?: RuntimePolicyConfig;
   source: PolicySource;
   matchedProvider?: string;
+  modelId?: string;
+  provider?: string;
 }
 
 /** 解析参数 */
