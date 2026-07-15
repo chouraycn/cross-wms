@@ -109,7 +109,7 @@ export type HookPolicy = {
 };
 
 /** 钩子事件族（对应 openclaw InternalHookEventType） */
-export type HookEventType = 'command' | 'session' | 'agent' | 'gateway' | 'message';
+export type HookEventType = 'command' | 'session' | 'agent' | 'gateway' | 'message' | 'tool';
 
 /** 钩子事件统一结构 */
 export type HookEvent = {
@@ -125,7 +125,14 @@ export type HookEvent = {
   timestamp: Date;
   /** 钩子可向其中推送要返回给用户的消息 */
   messages: string[];
+  /** 事件是否可被取消/拦截 */
+  cancellable?: boolean;
+  /** 取消理由（仅当事件被取消时设置） */
+  cancelledReason?: string;
 };
 
 /** 钩子处理器：接收事件，可异步，无返回值 */
 export type HookHandler = (event: HookEvent) => Promise<void> | void;
+
+/** 可修改的钩子处理器：返回修改后的上下文 */
+export type HookModifier<T = HookEvent> = (event: T) => Promise<T> | T;

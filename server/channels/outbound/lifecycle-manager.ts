@@ -5,6 +5,8 @@
  * 支持状态转换、超时处理、失败重试和审计日志。
  */
 
+import { logger } from '../../logger.js';
+
 export type MessageLifecyclePhase =
   | 'created'
   | 'queued'
@@ -132,8 +134,8 @@ export class MessageLifecycleManager {
 
     const validTransitions = VALID_TRANSITIONS[state.phase] || [];
     if (!validTransitions.includes(toPhase)) {
-      console.warn(
-        `Invalid lifecycle transition: ${state.phase} -> ${toPhase} for message ${messageId}`,
+      logger.warn(
+        `[lifecycle] Invalid lifecycle transition: ${state.phase} -> ${toPhase} for message ${messageId}`,
       );
       return null;
     }
@@ -257,7 +259,7 @@ export class MessageLifecycleManager {
         try {
           handler(state, transition);
         } catch (e) {
-          console.error('Lifecycle event handler error:', e);
+          logger.error('[lifecycle] event handler error:', e);
         }
       }
     }
@@ -268,7 +270,7 @@ export class MessageLifecycleManager {
         try {
           handler(state, transition);
         } catch (e) {
-          console.error('Lifecycle event handler error:', e);
+          logger.error('[lifecycle] event handler error:', e);
         }
       }
     }

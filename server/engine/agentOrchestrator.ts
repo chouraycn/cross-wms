@@ -19,7 +19,6 @@ import { Observer } from './observer.js';
 import { Planner } from './planner.js';
 import { TaskDecomposer, type DecomposeAssessment } from './taskDecomposer.js';
 import { agentRegistry, type AgentProfile, type RuntimeInstance } from './agentRegistry.js';
-// EventBus imports removed - not currently used but reserved for future event-driven features
 import { callAIModel } from '../aiClient.js';
 import type { ModelCallConfig, MessageContent, ToolCall } from '../aiClient.js';
 import { getToolDefinitions } from './toolRegistry.js';
@@ -36,6 +35,7 @@ import type {
 } from '../../shared/types/agent.js';
 import { logger } from '../logger.js';
 import { loadAgentSoul } from './soulLoader.js';
+import { triggerBeforeAgentStart, triggerAfterAgentStart } from './hooks/hooks.js';
 
 // ===================== 常量 =====================
 
@@ -236,6 +236,7 @@ export class AgentOrchestrator {
       taskDescription: task,
       status: 'spawning',
       startedAt: Date.now(),
+      deliveryStatus: 'pending',
     };
     agentRegistry.registerInstance(instance);
     agentRegistry.updateStatus(profile.id, 'busy');
@@ -268,6 +269,9 @@ export class AgentOrchestrator {
 
     try {
       agentRegistry.updateInstance(instanceId, { status: 'running' });
+      
+      await triggerBeforeAgentStart(instanceId, profile.id, profile.role);
+      
       if (opts.onSSEEvent) {
         opts.onSSEEvent({ type: 'sub_agent_start', instanceId, agentId: profile.id, agentRole: profile.role, taskDescription: task });
       }
@@ -281,12 +285,16 @@ export class AgentOrchestrator {
       });
       result = execResult.content;
       status = 'completed';
+      
+      await triggerAfterAgentStart(instanceId, profile.id, profile.role, true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('超时') || msg.includes('timeout')) status = 'timeout';
       else if (msg.includes('取消')) status = 'cancelled';
       else status = 'failed';
       error = msg;
+      
+      await triggerAfterAgentStart(instanceId, profile.id, profile.role, false, error);
     } finally {
       clearTimeout(timer);
       const completedAt = Date.now();
@@ -815,7 +823,7 @@ ${resultsText}
    */
   private async executeWithReAct(options: ExecutionStrategyOptions): Promise<ToolExecutionResult> {
     const executor = new ReActExecutor(this.sharedObserver, this.sharedPlanner);
-    const result = await executor.execute(options);
+    const result = await executor.execute({ ...options, planningMode: 'dynamic' });
     return {
       content: result.content,
       toolCalls: result.toolCalls,

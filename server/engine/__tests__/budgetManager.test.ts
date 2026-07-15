@@ -79,13 +79,13 @@ describe('BudgetManager', () => {
   it('should set adaptive maxTurns for simple complexity', () => {
     const bm = new BudgetManager();
     bm.setAdaptiveMaxTurns('simple');
-    expect(bm.getMaxTurns()).toBe(3);
+    expect(bm.getMaxTurns()).toBe(8);
   });
 
   it('should set adaptive maxTurns for complex complexity', () => {
     const bm = new BudgetManager();
     bm.setAdaptiveMaxTurns('complex');
-    expect(bm.getMaxTurns()).toBe(15);
+    expect(bm.getMaxTurns()).toBe(40);
   });
 
   it('should not override explicit maxTurns with adaptive', () => {
@@ -101,7 +101,8 @@ describe('BudgetManager', () => {
     expect(onSSEEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'budget_adjusted',
-        newMaxTurns: 8,
+        newMaxTurns: 20,
+        reason: 'complexity_level_moderate',
       })
     );
   });

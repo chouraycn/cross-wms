@@ -25,6 +25,8 @@ import { guardToolResultContext } from './toolContextGuard.js';
 import { toolSendReceipts } from './toolSendReceipts.js';
 import { abortPrimitives, createRunAbortController } from './abortPrimitives.js';
 import { toolFallbackManager } from './toolFallbackStrategy.js';
+import { createToolCall, completeToolCall } from '../dao/taskMonitorDao.js';
+import { isSkillToolName } from './skillToolBridge.js';
 
 /**
  * ActionPhase 执行器 — 封装 ACTING 阶段的全部逻辑。
@@ -68,6 +70,8 @@ export class ActionPhaseExecutor {
       currentMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;
       /** v11.0 工具调用审计关联会话 ID（可选，未传时审计回退为 'react'） */
       sessionId?: string;
+      /** v11.2: 助手消息 ID，用于 task_monitor 工具调用持久化 */
+      messageId?: string;
       /** v11.1: 外部 AbortSignal，用于级联取消工具执行 */
       signal?: AbortSignal;
     },
@@ -107,6 +111,15 @@ export class ActionPhaseExecutor {
         results.set(toolCall, result);
       }
     } finally {
+      // v11.2: run 结束时重试失败的 tool_calls
+      if (context.sessionId) {
+        try {
+          const { scheduleRetryForFailedToolCalls } = await import('../dao/taskMonitorDao.js');
+          scheduleRetryForFailedToolCalls(context.sessionId);
+        } catch (err) {
+          logger.warn('[ActionPhaseExecutor] 调度失败 tool_call 重试失败:', err instanceof Error ? err.message : String(err));
+        }
+      }
       abortPrimitives.release(`run:${runId}`);
     }
 
@@ -139,6 +152,8 @@ export class ActionPhaseExecutor {
       currentMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;
       /** v11.0 工具调用审计关联会话 ID（可选，未传时审计回退为 'react'） */
       sessionId?: string;
+      /** v11.2: 助手消息 ID，用于 task_monitor 工具调用持久化 */
+      messageId?: string;
     },
     managedSignal?: AbortSignal,
   ): Promise<string> {
@@ -209,6 +224,35 @@ export class ActionPhaseExecutor {
       sessionId: context.sessionId || 'react',
       arguments: toolCall.function.arguments,
     });
+
+    // v11.2: 创建 task_monitor 工具调用记录
+    let toolCallRecordId: string | null = null;
+    const parsedArgsForRecord = (() => {
+      try { return JSON.parse(toolCall.function.arguments || '{}'); }
+      catch { return {}; }
+    })();
+    if (context.sessionId && context.messageId) {
+      try {
+        let toolType: 'skill' | 'mcp' | 'system' | 'builtin' = 'builtin';
+        if (isSkillToolName(effectiveToolName)) {
+          toolType = 'skill';
+        } else if (isMcpToolName(effectiveToolName)) {
+          toolType = 'mcp';
+        } else if (effectiveToolName.startsWith('plugin_')) {
+          toolType = 'system';
+        }
+        const record = createToolCall({
+          sessionId: context.sessionId,
+          messageId: context.messageId,
+          toolName: effectiveToolName,
+          toolType,
+          arguments: parsedArgsForRecord,
+        });
+        toolCallRecordId = record.id;
+      } catch (err) {
+        logger.warn('[ActionPhaseExecutor] 创建 tool_call 记录失败:', err instanceof Error ? err.message : String(err));
+      }
+    }
 
     let result: string;
     const execStartTime = Date.now();
@@ -302,6 +346,27 @@ export class ActionPhaseExecutor {
       errorType: middlewareResult.errorType === 'none' ? undefined : middlewareResult.errorType,
       truncated: middlewareResult.truncated,
     });
+
+    // v11.2: 更新 task_monitor 工具调用记录
+    if (toolCallRecordId) {
+      try {
+        const success = middlewareResult.errorType === 'none';
+        let resultData: unknown = null;
+        let errorMsg: string | undefined;
+        if (success) {
+          try { resultData = JSON.parse(result); } catch { resultData = result; }
+        } else {
+          errorMsg = middlewareResult.errorMessage || 'Tool execution failed';
+        }
+        completeToolCall(toolCallRecordId, {
+          success,
+          result: resultData,
+          error: errorMsg,
+        });
+      } catch (err) {
+        logger.warn('[ActionPhaseExecutor] 更新 tool_call 记录失败:', err instanceof Error ? err.message : String(err));
+      }
+    }
 
     // 完成/失败工具发送回执
     if (middlewareResult.errorType === 'none') {

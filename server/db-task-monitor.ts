@@ -138,5 +138,47 @@ export function initTaskMonitorTables(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_trajectory_type ON trajectory_events(type);
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS task_flows (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'queued',
+      sync_mode INTEGER NOT NULL DEFAULT 1,
+      current_step_id TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      started_at TEXT,
+      completed_at TEXT,
+      total_steps INTEGER NOT NULL DEFAULT 0,
+      completed_steps INTEGER NOT NULL DEFAULT 0,
+      failed_steps INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_task_flows_session ON task_flows(session_id);
+    CREATE INDEX IF NOT EXISTS idx_task_flows_status ON task_flows(status);
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS task_flow_steps (
+      id TEXT PRIMARY KEY,
+      flow_id TEXT NOT NULL,
+      step_index INTEGER NOT NULL,
+      task_type TEXT NOT NULL,
+      task_name TEXT NOT NULL,
+      task_description TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      arguments_json TEXT,
+      result_json TEXT,
+      error_message TEXT,
+      depends_on TEXT,
+      next_step_ids TEXT,
+      started_at TEXT,
+      completed_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_task_flow_steps_flow ON task_flow_steps(flow_id);
+    CREATE INDEX IF NOT EXISTS idx_task_flow_steps_status ON task_flow_steps(status);
+  `);
+
   logger.info(`[DB] TaskMonitor tables initialized in ${Date.now() - start}ms`);
 }

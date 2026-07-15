@@ -3,7 +3,7 @@ import { API_BASE } from '../constants/api';
 const TASK_MONITOR_BASE = `${API_BASE}/task-monitor`;
 const WS_BASE = API_BASE.replace(/^http/, 'ws');
 
-export type TaskMonitorEventType = 
+export type TaskMonitorEventType =
   | "todo_created"
   | "todo_updated"
   | "todo_deleted"
@@ -11,7 +11,13 @@ export type TaskMonitorEventType =
   | "artifact_deleted"
   | "tool_call_created"
   | "tool_call_updated"
-  | "trajectory_event_created";
+  | "trajectory_event_created"
+  | "plan_created"
+  | "plan_updated"
+  | "plan_revised"
+  | "task_flow_created"
+  | "task_flow_updated"
+  | "instance_updated";
 
 export interface TaskMonitorEvent {
   type: TaskMonitorEventType;
@@ -29,6 +35,30 @@ export interface TaskMonitorEventHandlers {
   onToolCallCreated?: (toolCall: ToolCall) => void;
   onToolCallUpdated?: (toolCall: ToolCall) => void;
   onTrajectoryEventCreated?: (event: TrajectoryEvent) => void;
+  onPlanCreated?: (plan: ExecutionPlan) => void;
+  onPlanUpdated?: (plan: ExecutionPlan) => void;
+  onPlanRevised?: (plan: ExecutionPlan) => void;
+  onTaskFlowCreated?: (flow: TaskFlow) => void;
+  onTaskFlowUpdated?: (flow: TaskFlow) => void;
+  onInstanceUpdated?: (event: RuntimeInstanceEvent) => void;
+}
+
+export type PlanStepStatus = 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped';
+
+export interface PlanStep {
+  step: number;
+  description: string;
+  toolName?: string;
+  dependsOn: number[];
+  status: PlanStepStatus;
+}
+
+export interface ExecutionPlan {
+  id: string;
+  intent: string;
+  steps: PlanStep[];
+  isDynamic: boolean;
+  createdAt: number;
 }
 
 export type TodoStatus = 'pending' | 'in_progress' | 'done';
@@ -122,6 +152,54 @@ export interface TrajectoryStats {
   bySource: Record<string, number>;
   firstTs: string | null;
   lastTs: string | null;
+}
+
+export type TaskFlowStatus = 'queued' | 'running' | 'waiting' | 'succeeded' | 'failed' | 'cancelled';
+export type TaskFlowSyncMode = 'managed' | 'task_mirrored';
+
+export interface TaskFlowStep {
+  id: string;
+  flowId: string;
+  index: number;
+  taskType: string;
+  taskName: string;
+  taskDescription: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+  arguments: Record<string, unknown> | null;
+  result: unknown;
+  errorMessage: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  dependsOn: string[];
+  nextStepIds: string[];
+}
+
+export interface TaskFlow {
+  id: string;
+  sessionId: string;
+  name: string;
+  description: string;
+  status: TaskFlowStatus;
+  syncMode: TaskFlowSyncMode;
+  currentStepId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  totalSteps: number;
+  completedSteps: number;
+  failedSteps: number;
+}
+
+export interface RuntimeInstanceEvent {
+  instanceId: string;
+  agentId: string;
+  status: string;
+  result?: unknown;
+  error?: string;
+  startedAt: number;
+  completedAt?: number;
+  deliveryStatus: 'pending' | 'delivered' | 'failed';
 }
 
 export interface PreviewResult {
@@ -349,6 +427,28 @@ export function getTrajectoryExportUrl(traceId: string): string {
   return `${TASK_MONITOR_BASE}/trajectory/export/${traceId}`;
 }
 
+// ===================== Task Flows =====================
+
+export async function getTaskFlowsBySession(sessionId: string): Promise<{ data: TaskFlow[] }> {
+  return request(`/task-flows/session/${encodeURIComponent(sessionId)}`);
+}
+
+export async function getTaskFlowSteps(flowId: string): Promise<{ data: TaskFlowStep[] }> {
+  return request(`/task-flows/${encodeURIComponent(flowId)}/steps`);
+}
+
+export async function startTaskFlow(flowId: string): Promise<{ data: TaskFlow }> {
+  return request(`/task-flows/${encodeURIComponent(flowId)}/start`, { method: 'POST' });
+}
+
+export async function retryTaskFlow(flowId: string): Promise<{ data: TaskFlow }> {
+  return request(`/task-flows/${encodeURIComponent(flowId)}/retry`, { method: 'POST' });
+}
+
+export async function cancelTaskFlow(flowId: string): Promise<{ data: TaskFlow }> {
+  return request(`/task-flows/${encodeURIComponent(flowId)}/cancel`, { method: 'POST' });
+}
+
 // ===================== Utility Functions =====================
 
 export function formatFileSize(bytes: number): string {
@@ -481,11 +581,11 @@ function scheduleReconnect(sessionId: string): void {
     clearTimeout(connection.reconnectTimer);
   }
 
+  const savedHandlers = connection.handlers;
   connection.reconnectTimer = setTimeout(() => {
     if (connections.has(sessionId)) {
       unsubscribeFromTaskMonitor(sessionId);
-      const handlers = connections.get(sessionId)?.handlers || {};
-      subscribeToTaskMonitor(sessionId, handlers);
+      subscribeToTaskMonitor(sessionId, savedHandlers);
     }
   }, 3000);
 }
@@ -520,6 +620,24 @@ function handleTaskMonitorEvent(
     case 'trajectory_event_created':
       handlers.onTrajectoryEventCreated?.(data.payload as TrajectoryEvent);
       break;
+    case 'plan_created':
+      handlers.onPlanCreated?.(data.payload as ExecutionPlan);
+      break;
+    case 'plan_updated':
+      handlers.onPlanUpdated?.(data.payload as ExecutionPlan);
+      break;
+    case 'plan_revised':
+      handlers.onPlanRevised?.(data.payload as ExecutionPlan);
+      break;
+    case 'task_flow_created':
+      handlers.onTaskFlowCreated?.(data.payload as TaskFlow);
+      break;
+    case 'task_flow_updated':
+      handlers.onTaskFlowUpdated?.(data.payload as TaskFlow);
+      break;
+    case 'instance_updated':
+      handlers.onInstanceUpdated?.(data.payload as RuntimeInstanceEvent);
+      break;
   }
 }
 
@@ -528,13 +646,23 @@ export function unsubscribeFromTaskMonitor(sessionId: string): void {
   if (!connection) return;
 
   if (connection.socket) {
-    connection.socket.send(JSON.stringify({
-      type: 'request',
-      id: createRequestId(),
-      method: 'task-monitor.unsubscribe',
-      params: { sessionId },
-      timestamp: Date.now(),
-    }));
+    if (connection.socket.readyState === WebSocket.OPEN) {
+      try {
+        connection.socket.send(JSON.stringify({
+          type: 'request',
+          id: createRequestId(),
+          method: 'task-monitor.unsubscribe',
+          params: { sessionId },
+          timestamp: Date.now(),
+        }));
+      } catch {
+        // ignore send errors
+      }
+    }
+    connection.socket.onopen = null;
+    connection.socket.onmessage = null;
+    connection.socket.onerror = null;
+    connection.socket.onclose = null;
     connection.socket.close();
     connection.socket = null;
   }

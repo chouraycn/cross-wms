@@ -34,6 +34,7 @@ import {
 import { mcpClientManager } from '../engine/mcpClientManager.js';
 import { agentExecutionManager } from '../engine/agentExecutionManager.js';
 import { getActiveRunCount } from '../engine/agentRuntime.js';
+import { agentRegistry, type RuntimeInstance } from '../engine/agentRegistry.js';
 
 const router = Router();
 
@@ -222,12 +223,116 @@ router.get('/mcp', (_req: Request, res: Response) => {
 
 // ===================== Agent Runtime 健康检查 =====================
 
+// ===================== Agent Registry 运行时实例 =====================
+
+/**
+ * GET /api/agent-runtime/instances
+ * 列出 AgentRegistry 运行时实例（支持按状态和父实例过滤）。
+ */
+router.get('/instances', (req: Request, res: Response) => {
+  try {
+    const status = typeof req.query.status === 'string'
+      ? (req.query.status as RuntimeInstance['status'])
+      : undefined;
+    const parentInstanceId = typeof req.query.parentInstanceId === 'string'
+      ? req.query.parentInstanceId
+      : undefined;
+    const instances = agentRegistry.listInstances({
+      ...(status ? { status } : {}),
+      ...(parentInstanceId ? { parentInstanceId } : {}),
+    });
+    ok(res, { instances, total: instances.length });
+  } catch (err: unknown) {
+    fail(res, err instanceof Error ? err.message : 'Internal server error');
+  }
+});
+
+/**
+ * GET /api/agent-runtime/instances/:id
+ * 查询单个运行时实例及其事件记录。
+ */
+router.get('/instances/:id', (req: Request, res: Response) => {
+  try {
+    const instance = agentRegistry.getInstance(req.params.id);
+    if (!instance) {
+      fail(res, 'Instance not found', 404);
+      return;
+    }
+    const events = agentRegistry.getInstanceEvents(req.params.id);
+    const deliveryState = agentRegistry.getInstanceDeliveryState(req.params.id);
+    ok(res, { instance, events, deliveryState });
+  } catch (err: unknown) {
+    fail(res, err instanceof Error ? err.message : 'Internal server error');
+  }
+});
+
+/**
+ * POST /api/agent-runtime/instances/:id/cancel
+ * 取消一个运行时实例。
+ */
+router.post('/instances/:id/cancel', (req: Request, res: Response) => {
+  try {
+    const success = agentRegistry.cancelInstance(req.params.id);
+    if (!success) {
+      fail(res, 'Instance not found or already terminated', 400);
+      return;
+    }
+    ok(res, { success: true });
+  } catch (err: unknown) {
+    fail(res, err instanceof Error ? err.message : 'Internal server error');
+  }
+});
+
+/**
+ * GET /api/agent-runtime/instances/:id/children/reconcile
+ * 子会话对账：检查父实例的所有子实例状态。
+ */
+router.get('/instances/:id/children/reconcile', (req: Request, res: Response) => {
+  try {
+    const result = agentRegistry.reconcileChildInstances(req.params.id);
+    const children = agentRegistry.listInstances({ parentInstanceId: req.params.id });
+    ok(res, { summary: result, children });
+  } catch (err: unknown) {
+    fail(res, err instanceof Error ? err.message : 'Internal server error');
+  }
+});
+
+/**
+ * POST /api/agent-runtime/orphans/recover
+ * 手动触发孤儿实例恢复。
+ */
+router.post('/orphans/recover', (_req: Request, res: Response) => {
+  try {
+    const recoveredCount = agentRegistry.recoverOrphanInstances();
+    const stats = agentRegistry.getInstanceStats();
+    ok(res, { recoveredCount, stats });
+  } catch (err: unknown) {
+    fail(res, err instanceof Error ? err.message : 'Internal server error');
+  }
+});
+
+/**
+ * GET /api/agent-runtime/stats
+ * 返回 AgentRegistry 运行时实例统计。
+ */
+router.get('/stats', (_req: Request, res: Response) => {
+  try {
+    const stats = agentRegistry.getInstanceStats();
+    ok(res, stats);
+  } catch (err: unknown) {
+    fail(res, err instanceof Error ? err.message : 'Internal server error');
+  }
+});
+
+// ===================== Agent Runtime 健康检查 =====================
+
 /**
  * GET /api/agent-runtime/health
  * 汇聚各运行时组件的健康快照：
  *  - agentRuntime: 活跃 run 数量（startAgentRun 注册表）
  *  - executionManager: agentExecutionManager 执行统计
  *  - subagentRegistry: 子代理定义/实例统计
+ *  - agentRegistry: 运行时实例统计（含孤儿实例）
  *  - mcpClientManager: MCP 连接统计
  */
 router.get('/health', (_req: Request, res: Response) => {
@@ -242,12 +347,15 @@ router.get('/health', (_req: Request, res: Response) => {
       executionStats === undefined ||
       activeRuns < 0;
 
+    const agentRegistryStats = agentRegistry.getInstanceStats();
+
     const data = {
       status: degraded ? 'degraded' : 'ok',
       components: {
         agentRuntime: { activeRuns },
         agentExecutionManager: executionStats,
         subagentRegistry: subagentStats,
+        agentRegistry: agentRegistryStats,
         mcpClientManager: mcpStats,
       },
       timestamp: Date.now(),

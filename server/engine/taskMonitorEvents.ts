@@ -45,3 +45,27 @@ export function publishToolCallUpdated(sessionId: string, payload: unknown): voi
 export function publishTrajectoryEventCreated(sessionId: string, payload: unknown): void {
   publishTaskMonitorEvent(sessionId, 'trajectory_event_created', payload);
 }
+
+export function publishPlanCreated(sessionId: string, payload: unknown): void {
+  publishTaskMonitorEvent(sessionId, 'plan_created', payload);
+}
+
+export function publishPlanUpdated(sessionId: string, payload: unknown): void {
+  publishTaskMonitorEvent(sessionId, 'plan_updated', payload);
+}
+
+export function publishPlanRevised(sessionId: string, payload: unknown): void {
+  publishTaskMonitorEvent(sessionId, 'plan_revised', payload);
+}
+
+export function publishTaskFlowCreated(sessionId: string, payload: unknown): void {
+  publishTaskMonitorEvent(sessionId, 'task_flow_created', payload);
+}
+
+export function publishTaskFlowUpdated(sessionId: string, payload: unknown): void {
+  publishTaskMonitorEvent(sessionId, 'task_flow_updated', payload);
+}
+
+export function publishInstanceUpdated(sessionId: string, payload: unknown): void {
+  publishTaskMonitorEvent(sessionId, 'instance_updated', payload);
+}

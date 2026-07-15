@@ -114,7 +114,7 @@ const GlobalActionsBar = React.memo<GlobalActionsBarProps>(function GlobalAction
             '&:focus': { outline: 'none' },
           }}
         >
-          <ChatBubbleOutlineIcon sx={{ fontSize: '18px' }} />
+          <ChatBubbleOutlineIcon sx={{ fontSize: '14.58px' }} />
         </IconButton>
       ) : (
         <IconButton

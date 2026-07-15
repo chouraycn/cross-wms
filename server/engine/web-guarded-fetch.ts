@@ -92,10 +92,7 @@ const DEFAULT_TRUSTED_HOSTS = [
   'bing.com',
   'so.com',
   'baidu.com',
-  // 保留 DuckDuckGo 作为海外回退
-  'duckduckgo.com',
-  'html.duckduckgo.com',
-  'api.duckduckgo.com',
+  'www.baidu.com',
 ];
 
 /**

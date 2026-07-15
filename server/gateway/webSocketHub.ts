@@ -60,7 +60,7 @@ export type WebSocketHubEvent =
   | "message:received"
   | "event:broadcast";
 
-export type TaskMonitorEventType = 
+export type TaskMonitorEventType =
   | "todo_created"
   | "todo_updated"
   | "todo_deleted"
@@ -68,7 +68,13 @@ export type TaskMonitorEventType =
   | "artifact_deleted"
   | "tool_call_created"
   | "tool_call_updated"
-  | "trajectory_event_created";
+  | "trajectory_event_created"
+  | "plan_created"
+  | "plan_updated"
+  | "plan_revised"
+  | "task_flow_created"
+  | "task_flow_updated"
+  | "instance_updated";
 
 export interface TaskMonitorEvent {
   type: TaskMonitorEventType;
@@ -186,7 +192,7 @@ class WebSocketHub {
       event: "connected",
       data: { 
         clientId,
-        supportedMethods: ["session.subscribe", "session.unsubscribe", "session.sync"],
+        supportedMethods: ["session.subscribe", "session.unsubscribe", "session.sync", "task-monitor.subscribe", "task-monitor.unsubscribe"],
       },
       timestamp: Date.now(),
     });

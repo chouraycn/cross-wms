@@ -630,7 +630,7 @@ export async function initDefaultTools(): Promise<void> {
       type: 'function',
       function: {
         name: 'web_search_legacy',
-        description: '[LEGACY] 旧版搜索工具（DuckDuckGo HTML 解析）。已被 web_search 替代，新工具支持 15+ 搜索 Provider、智能缓存、更好的错误处理。仅用于向后兼容。',
+        description: '[LEGACY] 旧版搜索工具（百度 HTML 解析）。已被 web_search 替代，新工具支持 15+ 搜索 Provider、智能缓存、更好的错误处理。仅用于向后兼容。',
         parameters: {
           type: 'object',
           properties: {
@@ -645,15 +645,15 @@ export async function initDefaultTools(): Promise<void> {
     handler: handleWebSearch,
   });
 
-  // web_search — 新版搜索（Provider 插件系统 + 15+ Provider + 回退链 + 缓存）
-  const webSearchV2Def = getWebSearchToolDefinition();
+  // web_search — 新版搜索（Provider 插件系统 + 多引擎回退 + 智能缓存 + 进度追踪）
+  const webSearchV3Def = getWebSearchToolDefinition();
   registerBuiltinTool({
     definition: {
       type: 'function',
       function: {
         name: 'web_search',
-        description: webSearchV2Def.function.description,
-        parameters: webSearchV2Def.function.parameters,
+        description: webSearchV3Def.function.description,
+        parameters: webSearchV3Def.function.parameters,
       },
     },
     handler: handleWebSearchV3,

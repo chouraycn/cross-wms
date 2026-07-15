@@ -65,6 +65,13 @@ import {
   emitFileEventsForPaths,
 } from './generatedFileAttachment.js';
 import { createArtifact, findArtifactByFilePath } from '../dao/taskMonitorDao.js';
+import {
+  createAssistantMessageEventStream,
+  type AssistantMessageEvent,
+  type AssistantMessage,
+  type AssistantMessageEventStream,
+  type ToolCall,
+} from '../sse/openclawSSE.js';
 
 // ===================== 压缩 Hook 单例 =====================
 // 在聊天执行核心中挂载「死」模块 engine/compaction/compactionHooks.ts 的生命周期钩子。
@@ -184,6 +191,11 @@ export interface RunChatSessionCallbacks {
   onError?: (error: Error) => void;
 }
 
+export interface RunChatSessionStreamResult {
+  stream: AssistantMessageEventStream;
+  result: Promise<RunChatSessionResult>;
+}
+
 export interface RunChatSessionResult {
   content: string;
   thinkingContent?: string;
@@ -221,6 +233,175 @@ export interface RunChatSessionResult {
  * console.log(result.content);
  * ```
  */
+export async function runChatSessionStream(
+  input: RunChatSessionInput,
+): Promise<RunChatSessionStreamResult> {
+  const stream = createAssistantMessageEventStream();
+
+  const callbacks: RunChatSessionCallbacks = {
+    onEvent: (event) => {
+      if (event.type === 'text') {
+        stream.push({ type: 'text_delta', contentIndex: 0, delta: event.content as string });
+      } else if (event.type === 'thinking') {
+        stream.push({ type: 'thinking_delta', contentIndex: 0, delta: event.content as string });
+      } else if (event.type === 'tool_call') {
+        const toolCall: ToolCall = {
+          type: 'toolCall',
+          id: (event.toolCallId as string) || `tc_${Date.now()}`,
+          name: (event.toolName as string) || '',
+          arguments: (() => {
+            try {
+              return JSON.parse((event.toolArgs as string) || '{}');
+            } catch {
+              return {};
+            }
+          })(),
+        };
+        stream.push({
+          type: 'toolcall_end',
+          contentIndex: 0,
+          toolCall,
+          partial: {
+            role: 'assistant',
+            content: [toolCall],
+            api: '',
+            provider: '',
+            model: '',
+            usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+            stopReason: 'stop',
+            timestamp: Date.now(),
+          },
+        });
+      } else if (event.type === 'init') {
+        const partial: AssistantMessage = {
+          role: 'assistant',
+          content: [],
+          api: event.model as string,
+          provider: '',
+          model: event.model as string,
+          usage: {
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+          },
+          stopReason: 'stop',
+          timestamp: Date.now(),
+        };
+        stream.push({ type: 'start', partial });
+      } else if (event.type === 'done') {
+        const partial: AssistantMessage = {
+          role: 'assistant',
+          content: [],
+          api: '',
+          provider: '',
+          model: '',
+          usage: event.usage as any,
+          stopReason: 'stop',
+          timestamp: Date.now(),
+        };
+        stream.push({ type: 'done', reason: 'stop', message: partial });
+      } else if (event.type === 'error') {
+        const errorMsg: AssistantMessage = {
+          role: 'assistant',
+          content: [],
+          api: '',
+          provider: '',
+          model: '',
+          usage: {
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+          },
+          stopReason: 'error',
+          errorMessage: event.message as string,
+          timestamp: Date.now(),
+        };
+        stream.push({ type: 'error', reason: 'error', error: errorMsg });
+      }
+    },
+    onChunk: (text) => {
+      stream.push({ type: 'text_delta', contentIndex: 0, delta: text });
+    },
+    onThinking: (text) => {
+      stream.push({ type: 'thinking_delta', contentIndex: 0, delta: text });
+    },
+    onToolCall: (tc) => {
+      const toolCall: ToolCall = {
+        type: 'toolCall',
+        id: tc.id,
+        name: tc.name,
+        arguments: (() => {
+          try {
+            return JSON.parse(tc.args || '{}');
+          } catch {
+            return {};
+          }
+        })(),
+      };
+      stream.push({
+        type: 'toolcall_end',
+        contentIndex: 0,
+        toolCall,
+        partial: {
+          role: 'assistant',
+          content: [toolCall],
+          api: '',
+          provider: '',
+          model: '',
+          usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+          stopReason: 'stop',
+          timestamp: Date.now(),
+        },
+      });
+    },
+    onDone: (result) => {
+      const message: AssistantMessage = {
+        role: 'assistant',
+        content: [{ type: 'text', text: result.content }],
+        api: result.model || '',
+        provider: '',
+        model: result.model || '',
+        usage: result.usage as any,
+        stopReason: result.errorCode ? 'error' : 'stop',
+        errorMessage: result.errorMessage,
+        timestamp: Date.now(),
+      };
+      stream.push({ type: 'done', reason: 'stop', message });
+    },
+    onError: (err) => {
+      const errorMsg: AssistantMessage = {
+        role: 'assistant',
+        content: [],
+        api: '',
+        provider: '',
+        model: '',
+        usage: {
+          input: 0,
+          output: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+          totalTokens: 0,
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+        },
+        stopReason: 'error',
+        errorMessage: err.message,
+        timestamp: Date.now(),
+      };
+      stream.push({ type: 'error', reason: 'error', error: errorMsg });
+    },
+  };
+
+  const resultPromise = runChatSession(input, callbacks);
+
+  return { stream, result: resultPromise };
+}
+
 export async function runChatSession(
   input: RunChatSessionInput,
   callbacks: RunChatSessionCallbacks = {},

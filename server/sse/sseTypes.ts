@@ -255,12 +255,48 @@ export function sendSSE(res: Response, event: Record<string, unknown>): void {
  *
  * 向后兼容：即使 LOG_DEBUG 未开启，也不影响调用方逻辑（静默跳过）。
  */
-export function sendDebugSSE(res: Response, event: Record<string, unknown>): void {
+const SENSITIVE_KEY_RE = /(token|secret|password|passwd|api[_-]?key|authorization|sk-|cookie|sessionid|access[_-]?key)/i;
+const PATH_RE = /(\/Users\/[^\s"']*|\/home\/[^\s"']*|[A-Za-z]:\\[^\s"']*|~\/[^\s"']*)/g;
+const LONG_DEBUG_FIELDS = new Set(['toolArgs', 'args', 'result', 'content', 'message', 'tool_call', 'raw']);
+
+/**
+ * 调试事件脱敏 — 防止密钥/Token/内部路径经 sendDebugSSE 泄露到前端 SSE。
+ * 仅当字段名命中敏感词时整字段遮蔽；绝对路径打码；超长字段截断。
+ */
+function sanitizeForDebug(event: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(event)) {
+    if (typeof v === 'string') {
+      if (SENSITIVE_KEY_RE.test(k)) {
+        out[k] = '[REDACTED]';
+        continue;
+      }
+      let s = v.replace(PATH_RE, '<path>');
+      if (s.length > 200) s = s.slice(0, 200) + '…[truncated]';
+      out[k] = s;
+    } else if (v && typeof v === 'object') {
+      if (LONG_DEBUG_FIELDS.has(k)) {
+        const json = JSON.stringify(v);
+        out[k] = json.length > 200 ? json.slice(0, 200) + '…[truncated]' : json;
+      } else {
+        out[k] = v;
+      }
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+export function sendDebugSSE(res: Response, event: Record<string, unknown>, sessionId?: string): void {
   // LOG_DEBUG=1 时发送调试事件，否则静默跳过
   if (process.env.LOG_DEBUG !== '1') return;
   if (!res.writableEnded) {
     try {
-      res.write(`data: ${JSON.stringify({ ...event, _channel: 'debug' })}\n\n`);
+      const payload = sessionId
+        ? { ...sanitizeForDebug(event), sessionId, _channel: 'debug' }
+        : { ...sanitizeForDebug(event), _channel: 'debug' };
+      res.write(`data: ${JSON.stringify(payload)}\n\n`);
     } catch {
       // 连接已断开，忽略写入异常
     }

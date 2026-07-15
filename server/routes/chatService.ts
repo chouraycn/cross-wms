@@ -42,10 +42,10 @@ import { getAppSettings } from '../dao/settings.js';
 import { extractFileContent } from './chatHelpers/fileExtractor.js';
 import { getThinkingCacheKey, getThinkingCache, setThinkingCache } from './chatHelpers/thinkingCache.js';
 import { activeSSEConnections } from './chatHelpers/sseHelper.js';
-import { sendSSE, sendDebugSSE, sendDoneAndEnd } from '../sse/sseTypes.js';
 import { TimerManager } from '../sse/timerManager.js';
-import { executeChat as streamExecuteChat, finishStream, type ExecuteChatCallbacks } from '../engine/streamExecutor.js';
-import { runChatSession } from '../engine/runChatSession.js';
+import { executeChat as streamExecuteChat, type ExecuteChatCallbacks } from '../engine/streamExecutor.js';
+import { runChatSession, runChatSessionStream } from '../engine/runChatSession.js';
+import { pipeEventStreamToSSE, createAssistantMessageEventStream, type AssistantMessageEventStream, type AssistantMessage } from '../sse/openclawSSE.js';
 import { formatMemoryContext } from '../engine/contextEnhancer.js';
 import { recordTurnStarted, recordTurnCompleted, recordTurnFailed, recordMessageCreated } from '../engine/eventRecorder.js';
 import { TokenBudgetManager } from '../engine/compaction/tokenBudget.js';
@@ -182,6 +182,8 @@ interface FallbackParams {
   skillId?: string;
   /** 是否来自队列模式 */
   fromQueue?: boolean;
+  /** OpenClaw EventStream — 降级事件通过 stream 发送 */
+  stream?: AssistantMessageEventStream;
 }
 
 /**
@@ -193,8 +195,9 @@ interface FallbackParams {
  * @returns true 如果降级成功（done 已发送），false 如果降级失败（调用方需发送错误 done）
  */
 async function handleFallback(params: FallbackParams): Promise<boolean> {
-  const { error, apiMessages, modelsConfig, currentModel, modelConfig, res, timerManager, signal, executionMode, sessionId, skillId } = params;
+  const { error, apiMessages, modelsConfig, currentModel, modelConfig, timerManager, signal, executionMode, sessionId, skillId, stream } = params;
   const tag = params.fromQueue ? '[MessageQueue]' : '[Chat API]';
+  if (!stream) return false;
 
   const isModelUnsupported = error instanceof AIAPIError && error.category === 'model_not_supported';
   const isRecoverable = isModelUnsupported || (
@@ -219,11 +222,8 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
   const reasonLabel = isModelUnsupported ? '模型不支持' : '请求失败';
   logger.debug(`${tag} ${reasonLabel}，降级到 ${fbModel.id}...`);
 
-  // 发送降级通知
-  sendSSE(res, {
-    type: 'text',
-    content: `\n\n> ⚠️ ${reasonLabel}，已自动切换到 **${fbModel.name || fbModel.id}** 重试...\n\n`,
-  });
+  const fallbackText = `\n\n> ⚠️ ${reasonLabel}，已自动切换到 **${fbModel.name || fbModel.id}** 重试...\n\n`;
+  stream.push({ type: 'text_delta', contentIndex: 0, delta: fallbackText });
 
   // 降级期间重启心跳
   timerManager.restart('fallback');
@@ -245,8 +245,8 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
     // 统一使用 strategy.execute（修复原 handleChat 用 executeToolLoop 的不一致）
     const strategy = ExecutionStrategyFactory.create(executionMode);
     // 细粒度 thinking 事件状态（降级路径）
-    let fbThinkingStarted = false;
-    let fbThinkingStartTime = 0;
+    const fbThinkingStarted = false;
+    const fbThinkingStartTime = 0;
     const fbResult: ToolExecutionResult = await strategy.execute({
       modelConfig: fbModelConfig,
       messages: sanitizeToolMessages(apiMessages) as Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>,
@@ -255,55 +255,51 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
       executionMode,
       onSSEEvent: (evt: Record<string, unknown>) => {
         const evtType = evt.type as string;
-        if ([
-          'init', 'text', 'thinking', 'tool_call', 'done', 'error',
-          'image_start', 'image_delta', 'image_end',
-          'audio_start', 'audio_delta', 'audio_end',
-        ].includes(evtType)) {
-          sendSSE(res, evt);
-        } else {
-          sendDebugSSE(res, evt);
+        if (evtType === 'text') stream.push({ type: 'text_delta', contentIndex: 0, delta: evt.content as string });
+        else if (evtType === 'thinking') stream.push({ type: 'thinking_delta', contentIndex: 0, delta: evt.content as string });
+        else if (evtType === 'tool_call') stream.push({ type: 'toolcall_start', contentIndex: 0 });
+        else if (evtType === 'done') {
+          const partial: AssistantMessage = {
+            role: 'assistant',
+            content: [],
+            api: '',
+            provider: '',
+            model: '',
+            usage: evt.usage as any,
+            stopReason: 'stop',
+            timestamp: Date.now(),
+          };
+          stream.push({ type: 'done', reason: 'stop', message: partial });
         }
       },
       onChunk: (chunk: string) => {
-        sendSSE(res, { type: 'text', content: chunk });
+        stream.push({ type: 'text_delta', contentIndex: 0, delta: chunk });
       },
       onThinking: (thinkingChunk: string) => {
-        // 细粒度 thinking.start（首个 chunk 一次）
-        if (!fbThinkingStarted) {
-          fbThinkingStarted = true;
-          fbThinkingStartTime = Date.now();
-          sendSSE(res, { type: 'thinking.start', contentIndex: 0 });
-        }
-        // 细粒度 thinking.delta
-        sendSSE(res, { type: 'thinking.delta', contentIndex: 0, content: thinkingChunk });
-        // 保留原有 thinking 事件（向后兼容）
-        sendSSE(res, { type: 'thinking', content: thinkingChunk });
+        stream.push({ type: 'thinking_delta', contentIndex: 0, delta: thinkingChunk });
       },
       onToolCall: (toolCall: ToolCall, result: string) => {
-        sendSSE(res, {
-          type: 'tool_call',
-          toolCallId: toolCall.id,
-          toolName: toolCall.function?.name || '',
-          toolArgs: toolCall.function?.arguments || '',
-          toolResult: result,
+        stream.push({
+          type: 'toolcall_end',
+          contentIndex: 0,
+          toolCall: {
+            type: 'toolCall' as const,
+            id: toolCall.id,
+            name: toolCall.function.name,
+            arguments: (() => {
+              try {
+                return JSON.parse(toolCall.function?.arguments || '{}');
+              } catch {
+                return {};
+              }
+            })(),
+          },
         });
       },
     });
 
-    // 细粒度 thinking.complete（降级路径收尾）
-    if (fbThinkingStarted) {
-      sendSSE(res, {
-        type: 'thinking.complete',
-        contentIndex: 0,
-        thinkingDuration: Date.now() - fbThinkingStartTime,
-      });
-    }
-
-    // 降级成功，清理心跳
     timerManager.stop('fallback');
 
-    // 保存降级模型回复到 DB
     if (fbResult.content) {
       addMessage({
         sessionId,
@@ -319,15 +315,20 @@ async function handleFallback(params: FallbackParams): Promise<boolean> {
       reportKeyResult(fbModel.id, fbKey.index, true);
     }
 
-    // 发送 done 事件
-    await finishStream(res, timerManager, {
-      fallbackModel: fbModel.id,
-      fallbackReason: isModelUnsupported ? 'model_not_supported' : 'request_failed',
-    });
+    const partial: AssistantMessage = {
+      role: 'assistant',
+      content: [{ type: 'text', text: fbResult.content || '' }],
+      api: '',
+      provider: '',
+      model: fbModel.id,
+      usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+      stopReason: 'stop',
+      timestamp: Date.now(),
+    };
+    stream.push({ type: 'done', reason: 'stop', message: partial });
 
     return true;
   } catch (fbErr) {
-    // 降级失败，清理心跳
     timerManager.stop('fallback');
     logger.warn(`${tag} 降级模型 ${fbModel.id} 也失败:`, fbErr instanceof Error ? fbErr.message : String(fbErr));
     return false;
@@ -369,12 +370,12 @@ async function executeQueuedMessage(
 ): Promise<void> {
   logger.debug(`[MessageQueue] 执行出队消息: sessionId=${sessionId}, mode=${event.mode}, messageId=${event.messageId}`);
 
-  const timerManager = new TimerManager(res);
+  const timerManager = new TimerManager();
+  const stream = createAssistantMessageEventStream();
 
   let apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string; reasoning_content?: string }> = [];
 
   try {
-    // v9.0: 生成 runId 用于事件追踪
     const runId = `run-${Date.now()}`;
 
     const modelConfig = params.modelsConfig.models.find((m) => m.id === params.model);
@@ -395,9 +396,7 @@ async function executeQueuedMessage(
       topP: params.preset ? params.preset.topP : modelConfig.topP,
     };
 
-    // 构建 API 消息（统一调用 buildApiMessages 公共函数）
     const dbMessages = getSessionMessages(sessionId);
-    // P2-1b 智能技能路由：按 query + 上下文自动匹配相关技能并注入 prompt
     const resolvedSkillContext = await resolveSkillContext(
       params.skillContext,
       params.message,
@@ -421,7 +420,6 @@ async function executeQueuedMessage(
       throw new Error('未找到会话级 AbortController');
     }
 
-    // 确定执行模式
     let effectiveMode = (params.executionMode && Object.values(ExecutionMode).includes(params.executionMode as ExecutionMode))
       ? (params.executionMode as ExecutionMode)
       : undefined;
@@ -441,18 +439,25 @@ async function executeQueuedMessage(
       effectiveMode = ExecutionStrategyFactory.getDefaultMode();
     }
 
-    // v9.1 [七]: 自动调度闭环 — AUTO 模式由复杂度评估推导实际策略
     if (effectiveMode === ExecutionMode.AUTO) {
       const resolved = ExecutionStrategyFactory.resolveAutoMode(apiMessages, params.message);
       logger.info(`[ChatService] 自动调度: AUTO → ${resolved} (会话 ${sessionId})`);
-      if (res) {
-        sendDebugSSE(res, {
-          type: 'strategy_selected',
-          requested: 'auto',
-          resolved,
-          reason: '复杂度评估自动推导',
-        });
-      }
+      // 调试事件通过 stream 发送
+      stream.push({
+        type: 'text_delta',
+        contentIndex: 0,
+        delta: `[策略选择] AUTO → ${resolved}`,
+        partial: {
+          role: 'assistant',
+          content: [],
+          api: '',
+          provider: '',
+          model: '',
+          usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+          stopReason: 'stop',
+          timestamp: Date.now(),
+        },
+      });
       effectiveMode = resolved;
     }
 
@@ -465,9 +470,53 @@ async function executeQueuedMessage(
         }
         return null;
       },
+      onChunk: (chunk) => {
+        stream.push({ type: 'text_delta', contentIndex: 0, delta: chunk });
+      },
+      onThinking: (chunk) => {
+        stream.push({ type: 'thinking_delta', contentIndex: 0, delta: chunk });
+      },
+      onToolCall: (tc, result) => {
+        stream.push({
+          type: 'toolcall_end',
+          contentIndex: 0,
+          toolCall: {
+            type: 'toolCall' as const,
+            id: tc.id,
+            name: tc.function.name,
+            arguments: (() => {
+              try {
+                return JSON.parse(tc.function.arguments || '{}');
+              } catch {
+                return {};
+              }
+            })(),
+          },
+        });
+      },
+      onEvent: (evt) => {
+        const evtType = evt.type as string;
+        if (evtType === 'text') {
+          stream.push({ type: 'text_delta', contentIndex: 0, delta: evt.content as string });
+        } else if (evtType === 'thinking') {
+          stream.push({ type: 'thinking_delta', contentIndex: 0, delta: evt.content as string });
+        } else if (evtType === 'tool_call') {
+          // 工具调用由 onToolCall 回调处理，这里不重复发送
+        } else if (evtType === 'init') {
+          stream.push({ type: 'start', partial: {
+            role: 'assistant',
+            content: [],
+            api: evt.model as string,
+            provider: '',
+            model: evt.model as string,
+            usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+            stopReason: 'stop',
+            timestamp: Date.now(),
+          } });
+        }
+      },
     };
 
-    // v9.0: 记录回合开始事件
     await recordTurnStarted(sessionId, {
       userMessage: params.message,
       model: params.model,
@@ -475,17 +524,17 @@ async function executeQueuedMessage(
       runId,
     });
 
-    // 调用统一执行器
     const ctxWindow = (finalModelConfig as ModelCallConfig).contextWindow || 128000;
     const ctxMaxTokens = Math.min((finalModelConfig as ModelCallConfig).maxTokens || 8192, 8192);
-    const result = await streamExecuteChat({
+
+    const executePromise = streamExecuteChat({
       sessionId,
+      messageId: params.assistantId,
       message: params.message,
       model: params.model,
       modelName: params.modelName,
       modelConfig: finalModelConfig,
       apiMessages,
-      res,
       executionMode: effectiveMode,
       timerManager,
       signal: abortController.signal,
@@ -499,7 +548,11 @@ async function executeQueuedMessage(
       compaction: params.compaction,
     });
 
-    // 保存助手消息到 DB
+    const [result] = await Promise.all([
+      executePromise,
+      pipeEventStreamToSSE(stream, res, sessionId),
+    ]);
+
     addMessage({
       sessionId,
       role: 'assistant',
@@ -510,7 +563,6 @@ async function executeQueuedMessage(
       thinkingDuration: result.thinkingDuration || undefined,
     });
 
-    // v9.0: 记录回合完成事件
     await recordTurnCompleted(sessionId, {
       assistantContent: result.content,
       model: params.model,
@@ -520,14 +572,7 @@ async function executeQueuedMessage(
       runId,
     });
 
-    // 后台提取记忆
     extractAndAppendMemory(params.message, result.content, dbMessages.map((m) => ({ role: m.role, content: m.content }))).catch(() => {});
-
-    // 发送 done 事件
-    await finishStream(res, timerManager, {
-      thinkingDuration: result.thinkingDuration,
-      usage: result.usage,
-    });
 
     messageQueue.markCompleted(sessionId);
     activeSSEConnections.delete(sessionId);
@@ -535,13 +580,11 @@ async function executeQueuedMessage(
   } catch (error) {
     logger.error('[MessageQueue executeQueuedMessage] 执行失败:', error);
 
-    // v9.0: 记录回合失败事件
     await recordTurnFailed(sessionId, error instanceof Error ? error : String(error), {
       model: params.model,
       context: 'executeQueuedMessage',
     });
 
-    // 尝试降级
     const modelConfig = params.modelsConfig.models.find((m) => m.id === params.model);
     const fallbackSuccess = await handleFallback({
       error,
@@ -556,16 +599,24 @@ async function executeQueuedMessage(
       sessionId,
       skillId: params.skillId,
       fromQueue: true,
+      stream,
     });
 
     if (!fallbackSuccess) {
-      // 降级失败，发送错误 done
       const { code, message: errMsg } = classifyAndFormatError(error, modelConfig, params.model);
-      sendSSE(res, { type: 'text', content: errMsg });
-      await finishStream(res, timerManager, {
-        errorCode: code === 'UNKNOWN_ERROR' ? 'QUEUE_EXEC_ERROR' : code,
+      stream.push({ type: 'text_delta', contentIndex: 0, delta: errMsg });
+      const errorMsg: AssistantMessage = {
+        role: 'assistant',
+        content: [],
+        api: '',
+        provider: '',
+        model: '',
+        usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+        stopReason: 'error',
         errorMessage: errMsg,
-      });
+        timestamp: Date.now(),
+      };
+      stream.push({ type: 'error', reason: 'error', error: errorMsg });
     }
 
     messageQueue.markCompleted(sessionId);
@@ -599,19 +650,18 @@ export async function handleChat(req: import('express').Request, res: import('ex
   } = req.body;
 
   const sessionId = reqSessionId || uuidv4();
-  logger.debug(`[Chat API] 收到请求: sessionId=${sessionId}, model=${model}, agentId=${agentId || 'none'}, message="${message?.slice(0, 30)}", queueMode=${queueMode || 'default'}`);
+  const rid = req.headers?.['x-request-id'];
+  const requestId = (Array.isArray(rid) ? rid[0] : rid) || uuidv4();
+  const reqLog = logger.child({ sessionId, requestId });
+  reqLog.debug(`[Chat API] 收到请求: sessionId=${sessionId}, requestId=${requestId}, model=${model}, agentId=${agentId || 'none'}, message="${message?.slice(0, 30)}", queueMode=${queueMode || 'default'}`);
   if (attachments && Array.isArray(attachments) && attachments.length > 0) {
-    logger.debug(`[Chat API] 附件数量: ${attachments.length}`);
+    reqLog.debug(`[Chat API] 附件数量: ${attachments.length}`);
   }
 
   // v6.1: 每次新请求重置默认熔断器，避免搜索工具因之前会话的失败被永久熔断
   resetDefaultCircuitBreaker();
 
   const timerManager = new TimerManager(res);
-
-  const apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string; reasoning_content?: string }> = [];
-  const abortController: AbortController = new AbortController();
-  const selectedKeyIndex = -1;
 
   try {
     // 设置 SSE 响应头
@@ -643,12 +693,21 @@ export async function handleChat(req: import('express').Request, res: import('ex
         autoReasonType = autoResult.reasonType;
         autoSemanticMethod = autoResult.semanticIntent?.method;
         autoSemanticConfidence = autoResult.semanticIntent?.confidence;
-        logger.debug(`[Auto Model] ${autoResult.reasonType} → ${autoResult.modelName} (${autoResult.modelId})`);
+        reqLog.debug(`[Auto Model] ${autoResult.reasonType} → ${autoResult.modelName} (${autoResult.modelId})`);
       } catch (autoErr: any) {
         const errMsg = autoErr instanceof Error ? autoErr.message : '无可用模型';
-        const errCode = autoErr.code || 'NO_AVAILABLE_MODELS';
-        sendSSE(res, { type: 'error', code: errCode, message: errMsg });
-        await sendDoneAndEnd(res, { errorCode: errCode, errorMessage: errMsg, thinkingDuration: 0 });
+        // 直接写入 SSE 错误事件
+        try {
+          res.write(`data: ${JSON.stringify({
+            seq: 1,
+            runId: sessionId,
+            stream: 'error',
+            data: { message: errMsg, error: errMsg },
+          })}\n\n`);
+          res.end();
+        } catch {
+          // Response already closed
+        }
         return;
       }
     } else {
@@ -685,24 +744,26 @@ export async function handleChat(req: import('express').Request, res: import('ex
       attachments,
     });
 
-    // 发送 init 事件
-    const assistantId = uuidv4();
-    sendSSE(res, {
-      type: 'init',
-      sessionId,
-      assistantMessageId: assistantId,
-      model: effectiveModel,
-      modelName: effectiveModelName,
-      autoReason,
-      autoReasonType,
-      autoSemanticMethod,
-      autoSemanticConfidence,
-      preset: activePreset ? { id: preset, label: activePreset.label } : null,
-    });
-
     // ============== 队列模式 ==============
     const effectiveQueueMode = queueMode as QueueMode | undefined;
     if (effectiveQueueMode) {
+      // 创建队列模式的 stream
+      const queueStream = createAssistantMessageEventStream();
+      
+      // 发送 start 事件（队列模式）
+      const assistantId = uuidv4();
+      const partial: AssistantMessage = {
+        role: 'assistant',
+        content: [],
+        api: effectiveModel,
+        provider: '',
+        model: effectiveModel,
+        usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+        stopReason: 'stop',
+        timestamp: Date.now(),
+      };
+      queueStream.push({ type: 'start', partial });
+
       activeSSEConnections.set(sessionId, { res, assistantMessageId: assistantId, createdAt: Date.now(), lastActivityAt: Date.now() });
 
       const result = messageQueue.enqueue(sessionId, message, effectiveQueueMode, {
@@ -721,21 +782,22 @@ export async function handleChat(req: import('express').Request, res: import('ex
       });
 
       if (!result.accepted) {
-        // 队列拒绝 — 合并到 debug 通道
-        sendDebugSSE(res, { type: 'queue_rejected', reason: result.reason });
-        await sendDoneAndEnd(res, { errorCode: 'QUEUE_REJECTED', errorMessage: result.reason, thinkingDuration: 0 });
+        const errorMsg: AssistantMessage = {
+          role: 'assistant',
+          content: [],
+          api: '',
+          provider: '',
+          model: '',
+          usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
+          stopReason: 'error',
+          errorMessage: result.reason,
+          timestamp: Date.now(),
+        };
+        queueStream.push({ type: 'error', reason: 'error', error: errorMsg });
+        await pipeEventStreamToSSE(queueStream, res, sessionId);
         activeSSEConnections.delete(sessionId);
         return;
       }
-
-      // 队列状态 — 合并到 debug 通道
-      sendDebugSSE(res, {
-        type: 'queue_status',
-        mode: effectiveQueueMode,
-        state: messageQueue.getSessionState(sessionId),
-        queueLength: messageQueue.getQueueLength(sessionId),
-        assistantMessageId: result.assistantMessageId,
-      });
 
       const executeHandler = (event: QueueEvent) => {
         if (event.sessionId !== sessionId) return;
@@ -793,54 +855,31 @@ export async function handleChat(req: import('express').Request, res: import('ex
       return;
     }
 
-    // ============== 直接模式 — 调用 runChatSession ==============
-    await runChatSession(
-      {
-        sessionId,
-        message,
-        model,
-        skillContext,
-        skillId,
-        preset,
-        conversationHistory,
-        attachments,
-        executionMode,
-        agentId,
-        toolProfile,
-        compaction,
-      },
-      {
-        onEvent: (event) => {
-          sendSSE(res, event);
-        },
-        onChunk: (text) => {
-          sendSSE(res, { type: 'text', content: text });
-        },
-        onThinking: (text) => {
-          sendSSE(res, { type: 'thinking', content: text });
-        },
-        onToolCall: (tc) => {
-          sendSSE(res, {
-            type: 'tool_call',
-            toolCallId: tc.id,
-            toolName: tc.name,
-            toolArgs: tc.args,
-            toolResult: tc.result,
-          });
-        },
-        onDone: (result) => {
-          finishStream(res, timerManager, {
-            thinkingDuration: result.thinkingDuration,
-            usage: result.usage,
-            fallbackModel: result.fallbackModel,
-            fallbackReason: result.fallbackReason,
-          }).catch(() => {});
-        },
-        onError: (err) => {
-          logger.error('[handleChat] runChatSession error:', err);
-        },
-      },
-    );
+    // ============== 直接模式 — 调用 runChatSessionStream (OpenClaw EventStream 模式) ==============
+    // 注意：runChatSessionStream 会发送自己的 start 事件
+    const { stream: chatStream, result } = await runChatSessionStream({
+      sessionId,
+      message,
+      model,
+      skillContext,
+      skillId,
+      preset,
+      conversationHistory,
+      attachments,
+      executionMode,
+      agentId,
+      toolProfile,
+      compaction,
+    });
+    
+    // 使用 runChatSessionStream 返回的 stream
+    await pipeEventStreamToSSE(chatStream, res, sessionId);
+
+    try {
+      await result;
+    } catch {
+      // 忽略结果等待中的错误，SSE 已经处理了
+    }
 
     // 处理客户端断开
     req.on('close', () => {
@@ -848,17 +887,24 @@ export async function handleChat(req: import('express').Request, res: import('ex
     });
 
   } catch (error) {
-    logger.error('[Chat API] 错误:', error);
+    reqLog.error('[Chat API] 错误:', error);
 
     if (!res.headersSent) {
       res.status(500).json({ error: 'Internal server error' });
     } else {
-      const { code, message: errMsg } = classifyAndFormatError(error, undefined, undefined);
-      sendSSE(res, { type: 'text', content: errMsg });
-      await finishStream(res, timerManager, {
-        errorCode: code,
-        errorMessage: errMsg,
-      }).catch(() => {});
+      const { message: errMsg } = classifyAndFormatError(error, undefined, undefined);
+      // 直接写入 SSE 错误事件
+      try {
+        res.write(`data: ${JSON.stringify({
+          seq: 1,
+          runId: sessionId,
+          stream: 'error',
+          data: { message: errMsg, error: errMsg },
+        })}\n\n`);
+      } catch {
+        // Response already closed
+      }
+      timerManager.stopAll();
     }
   }
 }

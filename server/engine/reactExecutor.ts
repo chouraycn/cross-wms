@@ -48,6 +48,8 @@ import { getModelFailoverManager, type ModelFailoverOptions } from './modelFailo
 import type { ModelCapability } from '../modelsStore.js';
 import pluginHooks from './pluginHooks.js';
 import { logger } from '../logger.js';
+import { batchCreateTodos, updateTodo, findTodosBySession } from '../dao/taskMonitorDao.js';
+import { publishTodoCreated, publishTodoUpdated, publishPlanCreated, publishPlanUpdated, publishPlanRevised } from './taskMonitorEvents.js';
 
 // ===================== 类型定义（向后兼容） =====================
 
@@ -285,6 +287,154 @@ ${stepsText}`;
   }
 
   /**
+   * v9.3: 将执行计划同步到任务监控待办
+   * 将计划步骤转换为待办项，供前端侧边栏实时展示
+   */
+  private async syncPlanToTodos(plan: ExecutionPlan, sessionId: string | undefined): Promise<void> {
+    if (!sessionId) return;
+    try {
+      const todos = plan.steps.map((step) => ({
+        sessionId,
+        text: step.description,
+        source: 'auto' as const,
+        priority: step.toolName ? 'high' as const : 'normal' as const,
+      }));
+      
+      const created = batchCreateTodos(todos);
+      for (const todo of created) {
+        publishTodoCreated(sessionId, todo);
+      }
+      
+      logger.debug(`[ReActExecutor] 计划 ${plan.id} 已同步到待办，共 ${created.length} 项`);
+    } catch (err) {
+      logger.warn('[ReActExecutor] 同步计划到待办失败:', err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  /**
+   * v9.3: 更新待办状态（根据计划步骤状态）
+   */
+  private async updateTodoStatusByStep(step: number, status: PlanStepStatus, sessionId: string | undefined): Promise<void> {
+    if (!sessionId || !this._activePlan) return;
+    try {
+      const planStep = this._activePlan.steps.find(s => s.step === step);
+      if (!planStep) return;
+
+      const todos = findTodosBySession(sessionId);
+      const todo = todos.find(t => t.text === planStep.description);
+      if (todo) {
+        const newStatus = status === 'completed' ? 'done' : status === 'failed' ? 'done' : 'in_progress';
+        const updated = updateTodo(todo.id, { status: newStatus });
+        publishTodoUpdated(sessionId, updated);
+        logger.debug(`[ReActExecutor] 步骤 ${step} 待办状态已更新为 ${newStatus}`);
+      }
+    } catch (err) {
+      logger.warn('[ReActExecutor] 更新待办状态失败:', err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  /**
+   * v9.3: 确保工具调用有对应的待办（无计划模式下动态创建）
+   * 如果待办已存在则返回，不存在则创建
+   */
+  private async ensureTodoForToolCall(
+    toolName: string,
+    toolArgs: string,
+    sessionId: string | undefined,
+    initialStatus: 'pending' | 'in_progress' = 'in_progress',
+  ): Promise<void> {
+    if (!sessionId) return;
+    try {
+      const todos = findTodosBySession(sessionId);
+      const todoText = this.buildTodoTextFromTool(toolName, toolArgs);
+      const existing = todos.find(t => t.text === todoText);
+      
+      if (existing) {
+        if (existing.status !== initialStatus) {
+          updateTodo(existing.id, { status: initialStatus });
+        }
+        return;
+      }
+      
+      batchCreateTodos([{
+        sessionId,
+        text: todoText,
+        source: 'auto',
+        priority: 'high',
+        status: initialStatus,
+      }]);
+      
+      logger.debug(`[ReActExecutor] 为工具调用 ${toolName} 创建待办: ${todoText}`);
+    } catch (err) {
+      logger.warn('[ReActExecutor] 创建工具待办失败:', err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  /**
+   * v9.3: 根据工具调用生成待办描述文本
+   */
+  private buildTodoTextFromTool(toolName: string, toolArgs: string): string {
+    try {
+      const args = JSON.parse(toolArgs || '{}');
+      switch (toolName) {
+        case 'web_search':
+        case 'web_search_legacy':
+          return `搜索: ${args.query || '未知查询'}`;
+        case 'web_fetch':
+        case 'fetch':
+          return `读取网页: ${args.url || '未知URL'}`;
+        case 'browser_navigate':
+          return `浏览器访问: ${args.url || '未知URL'}`;
+        case 'browser_click':
+        case 'browser_type':
+        case 'browser_snapshot':
+          return `浏览器操作: ${toolName}`;
+        case 'code_search':
+        case 'grep_search':
+          return `代码搜索: ${args.pattern || '未知模式'}`;
+        case 'read_file':
+          return `读取文件: ${args.file_path || args.path || '未知文件'}`;
+        case 'write_file':
+          return `写入文件: ${args.file_path || args.path || '未知文件'}`;
+        case 'run_command':
+          return `执行命令: ${args.command || '未知命令'}`;
+        default:
+          const argSummary = Object.values(args)
+            .filter(v => typeof v === 'string' && v.length > 0)
+            .slice(0, 2)
+            .join(', ');
+          return `执行工具: ${toolName}${argSummary ? ' - ' + argSummary : ''}`;
+      }
+    } catch {
+      return `执行工具: ${toolName}`;
+    }
+  }
+
+  /**
+   * v9.3: 根据工具名更新待办状态（无计划模式下）
+   */
+  private async updateTodoStatusByToolName(
+    toolName: string,
+    toolArgs: string,
+    status: 'completed' | 'failed',
+    sessionId: string | undefined,
+  ): Promise<void> {
+    if (!sessionId) return;
+    try {
+      const todos = findTodosBySession(sessionId);
+      const todoText = this.buildTodoTextFromTool(toolName, toolArgs);
+      const todo = todos.find(t => t.text === todoText);
+      if (todo) {
+        const newStatus = 'done';
+        updateTodo(todo.id, { status: newStatus });
+        logger.debug(`[ReActExecutor] 工具 ${toolName} 待办状态已更新为 ${newStatus}`);
+      }
+    } catch (err) {
+      logger.warn('[ReActExecutor] 更新工具待办状态失败:', err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  /**
    * 执行 ReAct 3 步循环：推理 → 执行 → 观察
    *
    * @param options - 执行策略选项
@@ -349,6 +499,13 @@ ${stepsText}`;
             if (onSSEEvent) onSSEEvent({ type: 'plan', plan: plan as unknown as Record<string, unknown> });
             onPlan?.(plan as unknown as Record<string, unknown>);
             logger.debug(`[ReActExecutor] 已生成执行计划 ${plan.id} (${plan.steps.length} 步)`);
+            // v9.3: WebSocket 推送计划创建事件
+            if (sessionId) {
+              publishPlanCreated(sessionId, plan);
+            }
+            this.syncPlanToTodos(plan, sessionId).catch(err => {
+              logger.warn('[ReActExecutor] 同步计划到待办失败:', err);
+            });
           }
         }
       } catch (planErr) {
@@ -535,11 +692,35 @@ ${stepsText}`;
       this.state.phase = 'acting';
       this.emitPhase(onSSEEvent, 'acting', turn + 1, maxToolTurns);
 
+      // v9.3: 工具开始执行时，更新对应待办状态为 in_progress
+      if (sessionId && response.toolCalls && response.toolCalls.length > 0) {
+        if (this._activePlan) {
+          // 有计划模式：根据计划步骤更新待办
+          for (const tc of response.toolCalls) {
+            const stepIdx = this.findPlanStepIndex(tc.function.name);
+            if (stepIdx >= 0) {
+              this.updatePlanStepStatus(tc.function.name, 'in_progress');
+              this.updateTodoStatusByStep(stepIdx + 1, 'in_progress', sessionId).catch(err => {
+                logger.warn('[ReActExecutor] 更新待办状态为进行中失败:', err);
+              });
+            }
+          }
+        } else {
+          // 无计划模式：为每个工具调用动态创建待办
+          for (const tc of response.toolCalls) {
+            this.ensureTodoForToolCall(tc.function.name, tc.function.arguments, sessionId, 'in_progress').catch(err => {
+              logger.warn('[ReActExecutor] 创建工具待办失败:', err);
+            });
+          }
+        }
+      }
+
       const actionResults = await this.actionPhase(response, {
         onToolCall,
         executedToolCalls,
         currentMessages,
         sessionId,
+        messageId: options.messageId,
         signal,
       });
 
@@ -594,10 +775,47 @@ ${stepsText}`;
         if (obs.assessment.level === 'success') {
           this.circuitBreaker.recordSuccess(obs.toolCall.name);
           // v9.2: 步骤状态跟踪 — 工具成功时标记对应计划步骤为 completed
-          if (this._activePlan) {
-            this.updatePlanStepStatus(obs.toolCall.name, 'completed');
+          if (sessionId) {
+            if (this._activePlan) {
+              const stepIdx = this.findPlanStepIndex(obs.toolCall.name);
+              this.updatePlanStepStatus(obs.toolCall.name, 'completed');
+              if (stepIdx >= 0) {
+                this.updateTodoStatusByStep(stepIdx + 1, 'completed', sessionId).catch(err => {
+                  logger.warn('[ReActExecutor] 更新待办状态失败:', err);
+                });
+              }
+            } else {
+              // 无计划模式：更新工具待办为完成
+              const argsStr = typeof obs.toolCall.arguments === 'string' 
+                ? obs.toolCall.arguments 
+                : JSON.stringify(obs.toolCall.arguments);
+              this.updateTodoStatusByToolName(obs.toolCall.name, argsStr, 'completed', sessionId).catch(err => {
+                logger.warn('[ReActExecutor] 更新工具待办状态失败:', err);
+              });
+            }
           }
         } else {
+          // v9.3: 工具失败时，更新对应待办状态
+          if (sessionId) {
+            if (this._activePlan) {
+              const stepIdx = this.findPlanStepIndex(obs.toolCall.name);
+              this.updatePlanStepStatus(obs.toolCall.name, 'failed');
+              if (stepIdx >= 0) {
+                this.updateTodoStatusByStep(stepIdx + 1, 'failed', sessionId).catch(err => {
+                  logger.warn('[ReActExecutor] 更新待办状态为失败:', err);
+                });
+              }
+            } else {
+              // 无计划模式：更新工具待办为完成（失败也标记为 done）
+              const argsStr = typeof obs.toolCall.arguments === 'string' 
+                ? obs.toolCall.arguments 
+                : JSON.stringify(obs.toolCall.arguments);
+              this.updateTodoStatusByToolName(obs.toolCall.name, argsStr, 'failed', sessionId).catch(err => {
+                logger.warn('[ReActExecutor] 更新工具待办状态为失败:', err);
+              });
+            }
+          }
+
           const circuitState = this.circuitBreaker.recordFailure(
             obs.toolCall.name,
             obs.assessment.reason,
@@ -645,6 +863,10 @@ ${stepsText}`;
               });
               this._activePlan = adjusted;
               if (onSSEEvent) onSSEEvent({ type: 'plan_revised', plan: adjusted as unknown as Record<string, unknown> });
+              // v9.3: WebSocket 推送计划修订事件
+              if (sessionId) {
+                publishPlanRevised(sessionId, adjusted);
+              }
               logger.debug(`[ReActExecutor] adjustPlan: 步骤 ${stepIdx + 1} 失败，已插入恢复步骤`);
             } catch (adjErr) {
               logger.warn('[ReActExecutor] adjustPlan 失败:', adjErr instanceof Error ? adjErr.message : String(adjErr));
@@ -690,6 +912,7 @@ ${stepsText}`;
               }
               if (onSSEEvent) onSSEEvent({ type: 'plan_revised', plan: revised as unknown as Record<string, unknown> });
               onPlan?.(revised as unknown as Record<string, unknown>);
+              publishPlanRevised(sessionId || '', revised as unknown as Record<string, unknown>);
               logger.debug(`[ReActExecutor] 反思式重规划完成，${revised.steps.length} 步`);
             }
           } catch (replanErr) {
@@ -838,6 +1061,8 @@ ${stepsText}`;
       currentMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;
       /** v11.0 工具调用审计关联会话 ID（可选，未传时审计回退为 'react'） */
       sessionId?: string;
+      /** v11.2: 助手消息 ID，用于 task_monitor 工具调用持久化 */
+      messageId?: string;
       /** v11.1: 外部 AbortSignal，传递给 actionPhaseExecutor */
       signal?: AbortSignal;
     },

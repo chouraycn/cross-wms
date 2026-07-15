@@ -152,21 +152,7 @@ export interface MessageEnvelope {
   channelData?: Record<string, unknown>;
 }
 
-/** SSE 事件类型（精简版） */
-export type SSEEventType =
-  | 'message-init'
-  | 'message-stream'
-  | 'message-thinking'
-  | 'message-tool'
-  | 'message-done'
-  | 'message-error'
-  | 'keep-alive';
 
-/** SSE 事件信封 */
-export interface SSEEvent {
-  type: SSEEventType;
-  payload: MessageEnvelope;
-}
 
 // ===================== 工具函数 =====================
 

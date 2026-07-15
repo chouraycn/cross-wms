@@ -168,6 +168,14 @@ class PluginRegistry {
       // 1. 解析 manifest_json
       const manifest: PluginManifest = JSON.parse(plugin.manifest_json);
 
+      // 1.5 契约测试：验证插件与宿主环境兼容性
+      const contractResult = validatePluginContract(manifest, plugin.install_path);
+      if (!contractResult.compatible) {
+        throw new Error(
+          `插件契约验证失败:\n${contractResult.issues.map((i) => '  - ' + i).join('\n')}`
+        );
+      }
+
       // 2. 读取入口文件并在沙箱中执行
       const entryPath = path.join(plugin.install_path, plugin.entry_path);
       if (!fs.existsSync(entryPath)) {
@@ -583,6 +591,86 @@ class PluginRegistry {
       this.toolToPluginMap.delete(toolName);
     }
   }
+}
+
+// ===================== 插件契约测试 =====================
+
+/** 当前宿主支持的插件 API 版本 */
+const SUPPORTED_PLUGIN_API_VERSION = '1.0';
+
+/**
+ * 插件兼容性检查结果
+ */
+export interface PluginCompatibilityResult {
+  compatible: boolean;
+  issues: string[];
+  apiVersion: string;
+  requiredApiVersion: string;
+}
+
+/**
+ * 验证插件 manifest 与宿主环境的兼容性（contract testing 入口）
+ *
+ * 检查项：
+ * 1. apiVersion 是否兼容（主版本号必须一致）
+ * 2. tools 定义是否合法（名称唯一、参数合法）
+ * 3. permissions 是否包含非法权限
+ * 4. entry 文件是否存在
+ */
+export function validatePluginContract(
+  manifest: PluginManifest,
+  installPath: string,
+): PluginCompatibilityResult {
+  const issues: string[] = [];
+
+  // 1. API 版本兼容性检查（主版本号必须一致）
+  const hostMajor = SUPPORTED_PLUGIN_API_VERSION.split('.')[0];
+  const pluginMajor = manifest.apiVersion.split('.')[0];
+  if (hostMajor !== pluginMajor) {
+    issues.push(
+      `API 版本不兼容: 宿主 ${SUPPORTED_PLUGIN_API_VERSION} vs 插件 ${manifest.apiVersion}`
+    );
+  }
+
+  // 2. 工具名称唯一性检查
+  const toolNames = new Set<string>();
+  for (const tool of manifest.tools) {
+    if (toolNames.has(tool.name)) {
+      issues.push(`工具名称重复: '${tool.name}'`);
+    }
+    toolNames.add(tool.name);
+
+    // 参数定义合法性检查
+    const paramKeys = Object.keys(tool.parameters.properties);
+    for (const required of tool.parameters.required) {
+      if (!paramKeys.includes(required)) {
+        issues.push(`工具 '${tool.name}' 的必填参数 '${required}' 未在 properties 中定义`);
+      }
+    }
+  }
+
+  // 3. 权限合法性检查
+  const validPermissionPrefixes = ['fs', 'http', 'net', 'db', 'shell', 'high-risk', 'confirm', '*'];
+  for (const perm of manifest.permissions) {
+    if (perm === '*') continue;
+    const isValid = validPermissionPrefixes.some((p) => perm === p || perm.startsWith(p + '.'));
+    if (!isValid) {
+      issues.push(`未知权限声明: '${perm}'`);
+    }
+  }
+
+  // 4. entry 文件存在性检查
+  const entryFullPath = path.join(installPath, manifest.entry);
+  if (!fs.existsSync(entryFullPath)) {
+    issues.push(`入口文件不存在: ${manifest.entry}`);
+  }
+
+  return {
+    compatible: issues.length === 0,
+    issues,
+    apiVersion: manifest.apiVersion,
+    requiredApiVersion: SUPPORTED_PLUGIN_API_VERSION,
+  };
 }
 
 // ===================== 辅助函数 =====================

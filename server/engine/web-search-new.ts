@@ -312,6 +312,41 @@ function normalizeResults(
   return normalized;
 }
 
+/**
+ * v3.1: 搜索结果相关性校验
+ * 检查返回结果中是否有足够的结果包含查询词中的核心关键词。
+ * 用于识别搜索引擎反爬/降级返回的不相关结果。
+ */
+function isSearchResultRelevant(
+  resultList: WebSearchResultList,
+  query: string,
+  minMatches: number = 2,
+  minMatchRatio: number = 0.3,
+): boolean {
+  if (!resultList.results || resultList.results.length === 0) return false;
+
+  // 提取查询词中的核心关键词（长度 >= 2 的中文/英文词）
+  const keywords = query
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\u4e00-\u9fa5a-z0-9]/gi, ""))
+    .filter((w) => w.length >= 2);
+
+  if (keywords.length === 0) return true;
+
+  let matchedCount = 0;
+  for (const result of resultList.results) {
+    const text = `${result.title || ""} ${result.snippet || ""}`.toLowerCase();
+    // 至少匹配一个关键词即认为该条结果相关
+    const hasMatch = keywords.some((kw) => text.includes(kw));
+    if (hasMatch) matchedCount++;
+  }
+
+  const total = resultList.results.length;
+  const ratio = total > 0 ? matchedCount / total : 0;
+  return matchedCount >= minMatches || ratio >= minMatchRatio;
+}
+
 // ==================== 国内搜索引擎 fallback（无 Provider 时使用）
 
 /**
@@ -465,15 +500,33 @@ async function soSearch(
 
   const results: WebSearchResult[] = [];
 
-  // 360搜索结果选择器
-  $(".result").each((_, elem) => {
+  // 360搜索结果选择器（v3.1: 精确到 res-list 下的单个结果，避免抓取到聚合容器）
+  $("li.res-list, .result").each((_, elem) => {
     const $elem = $(elem);
-    const $title = $elem.find("h3 > a");
+    // 只取第一个 h3 > a，避免聚合块内多个标题被合并
+    const $title = $elem.find("h3 > a").first();
     const title = $title.text().trim();
-    const href = $title.attr("href") || "";
-    const snippet = $elem.find(".res-desc").text().trim() || $elem.find("p").text().trim();
+    let href = $title.attr("href") || "";
 
     if (!title || !href) return;
+
+    // 过滤被聚合的标题（长度异常或包含大量省略号）
+    if (title.length > 300 || title.split("…").length > 3) return;
+
+    // 360 搜索结果 href 经常是跳转链接，需要解析真实 URL
+    if (href.startsWith("/")) {
+      try {
+        const u = new URL(href, "https://www.so.com");
+        href = u.toString();
+      } catch {
+        // ignore
+      }
+    }
+
+    const snippet =
+      $elem.find(".res-desc").first().text().trim() ||
+      $elem.find(".content").first().text().trim() ||
+      $elem.find("p").first().text().trim();
 
     results.push({
       title,
@@ -484,12 +537,22 @@ async function soSearch(
 
   // 备用选择器
   if (results.length === 0) {
-    $("li.res-list h3 a").each((_, elem) => {
+    $("li.res-list h3 a, .result h3 a").each((_, elem) => {
       const $elem = $(elem);
       const title = $elem.text().trim();
-      const href = $elem.attr("href") || "";
+      let href = $elem.attr("href") || "";
 
       if (!title || !href) return;
+      if (title.length > 300 || title.split("…").length > 3) return;
+
+      if (href.startsWith("/")) {
+        try {
+          const u = new URL(href, "https://www.so.com");
+          href = u.toString();
+        } catch {
+          // ignore
+        }
+      }
 
       results.push({
         title,
@@ -517,7 +580,7 @@ async function soSearch(
 
 /**
  * 国内搜索引擎回退链
- * 优先级：必应国内版 > 360搜索 > DuckDuckGo（海外回退）
+ * 优先级：必应国内版 > 360搜索 > 百度（HTML 解析模式）
  */
 async function domesticSearchFallback(
   params: WebSearchParams,
@@ -527,8 +590,7 @@ async function domesticSearchFallback(
   const searchChain = [
     { name: "bing-cn", fn: bingCnSearch },
     { name: "so", fn: soSearch },
-    // DuckDuckGo 作为最后的海外回退
-    { name: "duckduckgo", fn: duckDuckGoSearch },
+    { name: "baidu", fn: baiduHtmlSearch },
   ];
 
   for (const search of searchChain) {
@@ -539,9 +601,15 @@ async function domesticSearchFallback(
     try {
       const result = await search.fn(params, signal, onProgress);
       if (result.results.length > 0) {
-        return result;
+        // v3.1: 增加相关性校验，识别反爬/降级返回的不相关结果
+        if (isSearchResultRelevant(result, params.query)) {
+          logger.debug(`[WebSearch] ${search.name} 返回 ${result.results.length} 条相关结果`);
+          return result;
+        }
+        logger.warn(`[WebSearch] ${search.name} 返回 ${result.results.length} 条结果但相关度不足，继续 fallback`);
+      } else {
+        logger.debug(`[WebSearch] ${search.name} 返回空结果，尝试下一个搜索引擎`);
       }
-      logger.debug(`[WebSearch] ${search.name} 返回空结果，尝试下一个搜索引擎`);
     } catch (e) {
       logger.warn(`[WebSearch] ${search.name} 失败:`, e instanceof Error ? e.message : String(e));
       // 继续尝试下一个搜索引擎
@@ -558,10 +626,10 @@ async function domesticSearchFallback(
 }
 
 /**
- * DuckDuckGo HTML 搜索（海外回退）
- * 保留作为最后的 fallback
+ * 百度 HTML 搜索（国内搜索引擎回退）
+ * 通过解析百度搜索结果页面获取搜索结果
  */
-async function duckDuckGoSearch(
+async function baiduHtmlSearch(
   params: WebSearchParams,
   signal?: AbortSignal,
   onProgress?: WebSearchProgressCallback,
@@ -571,15 +639,15 @@ async function duckDuckGoSearch(
   onProgress?.({
     stage: "searching",
     query,
-    provider: "duckduckgo",
-    message: "Searching with DuckDuckGo...",
+    provider: "baidu",
+    message: "正在使用百度搜索...",
   });
 
   const encodedQuery = encodeURIComponent(query);
-  let url = `https://html.duckduckgo.com/html/?q=${encodedQuery}`;
+  let url = `https://www.baidu.com/s?wd=${encodedQuery}&rn=${Math.min(maxResults * 2, 50)}`;
 
-  if (language && language !== "en") {
-    url += `&kl=${encodeURIComponent(language)}`;
+  if (language === "zh" || language === "zh-CN") {
+    url += "&ct=2097152";
   }
 
   const fetchResult = await fetchWithWebToolsNetworkGuard({
@@ -588,8 +656,8 @@ async function duckDuckGoSearch(
     options: {
       headers: {
         "User-Agent": userAgent,
-        Accept: "text/html",
-        "Accept-Language": language,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
       },
       signal,
     },
@@ -602,7 +670,7 @@ async function duckDuckGoSearch(
 
   if (!response.ok) {
     release?.();
-    throw new Error(`DuckDuckGo search failed: HTTP ${response.status}`);
+    throw new Error(`百度搜索失败: HTTP ${response.status}`);
   }
 
   const html = await response.text();
@@ -613,51 +681,69 @@ async function duckDuckGoSearch(
 
   $(".result").each((_, elem) => {
     const $elem = $(elem);
-    const title = $elem.find(".result__a").text().trim();
-    const href = $elem.find(".result__a").attr("href") || "";
-    const snippet = $elem.find(".result__snippet").text().trim();
+    const $h3 = $elem.find("h3");
+    if ($h3.length === 0) return;
 
-    if (!title || !href) return;
+    const $link = $h3.find("a");
+    if ($link.length === 0) return;
 
-    let finalUrl = href;
-    if (href.startsWith("//")) {
-      finalUrl = "https:" + href;
-    } else if (href.startsWith("/l/?uddg=")) {
-      const match = href.match(/uddg=([^&]+)/);
-      if (match) {
-        finalUrl = decodeURIComponent(match[1]);
+    let rawUrl = $link.attr("href") || "";
+    if (!rawUrl) return;
+
+    if (rawUrl.startsWith("//")) rawUrl = "https:" + rawUrl;
+
+    // 解析百度跳转链接
+    if (rawUrl.includes("baidu.com/link?url=") || rawUrl.includes("baidu.com/link?wd=")) {
+      try {
+        const u = new URL(rawUrl);
+        const target = u.searchParams.get("url");
+        if (target) rawUrl = target;
+      } catch {
+        // ignore
       }
     }
 
-    results.push({
-      title,
-      url: finalUrl,
-      snippet: snippet || undefined,
-    });
-  });
+    const title = $link.text().trim();
+    let snippet = "";
 
-  if (results.length === 0) {
-    $("a.result__a").each((_, elem) => {
-      const $elem = $(elem);
-      const title = $elem.text().trim();
-      const href = $elem.attr("href") || "";
+    const snippetSelectors = [
+      ".c-abstract",
+      ".content-right",
+      ".c-span-last",
+      ".abstract",
+      "div[class*='abstract']",
+      "div[class*='content']",
+    ];
 
-      if (!title || !href) return;
-
-      let finalUrl = href;
-      if (href.startsWith("//")) {
-        finalUrl = "https:" + href;
-      } else if (href.startsWith("/l/?uddg=")) {
-        const match = href.match(/uddg=([^&]+)/);
-        if (match) {
-          finalUrl = decodeURIComponent(match[1]);
+    for (const sel of snippetSelectors) {
+      const $snippet = $elem.find(sel);
+      if ($snippet.length > 0) {
+        const text = $snippet.text().trim();
+        if (text.length > 10) {
+          snippet = text;
+          break;
         }
       }
+    }
 
-      results.push({
-        title,
-        url: finalUrl,
-      });
+    if (title && rawUrl && !results.some((r) => r.url === rawUrl)) {
+      results.push({ title, url: rawUrl, snippet: snippet || undefined });
+    }
+  });
+
+  // 备用选择器
+  if (results.length === 0) {
+    $("h3 a").each((_, elem) => {
+      const $elem = $(elem);
+      const title = $elem.text().trim();
+      let href = $elem.attr("href") || "";
+      if (!title || !href) return;
+
+      if (href.startsWith("//")) href = "https:" + href;
+
+      if (!results.some((r) => r.url === href)) {
+        results.push({ title, url: href, snippet: undefined });
+      }
     });
   }
 
@@ -667,14 +753,14 @@ async function duckDuckGoSearch(
     stage: "normalizing",
     query,
     resultCount: normalized.length,
-    message: `Found ${normalized.length} results`,
+    message: `找到 ${normalized.length} 条结果`,
   });
 
   return {
     query,
     results: normalized,
     count: normalized.length,
-    provider: "duckduckgo",
+    provider: "baidu",
   };
 }
 
@@ -738,13 +824,16 @@ async function executeWithSearchFallback(
 
       const result = await tool.execute(providerArgs, { signal });
 
-      if (result) {
+      // v3.1: Provider 返回空结果（无实际搜索结果）时视为失败，继续 fallback
+      if (result && Array.isArray(result.results) && result.results.length > 0) {
         return { result, providerUsed: provider.id, errors };
       }
 
       errors.push({
         providerId: provider.id,
-        error: "No result returned",
+        error: result && Array.isArray(result.results)
+          ? `Provider returned empty results (count=${result.results.length})`
+          : "No result returned",
       });
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") {
@@ -912,7 +1001,7 @@ async function webSearchInternal(
       throw error;
     }
     logger.debug("[WebSearch] No provider succeeded, falling back to domestic search engines");
-    // 使用国内搜索引擎回退链：必应国内版 > 360搜索 > DuckDuckGo
+    // 使用国内搜索引擎回退链：必应国内版 > 360搜索 > 百度
     result = await domesticSearchFallback(validated, signal, onProgress);
     providerUsed = result.provider;
   }

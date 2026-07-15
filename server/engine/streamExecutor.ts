@@ -11,7 +11,6 @@
  * 在后续消息中启动 ReAct 补充。
  */
 
-import type { Response } from 'express';
 import type { ModelCallConfig, MessageContent, ToolCall, AIResponse } from '../aiClient.js';
 import { ExecutionStrategyFactory, ExecutionMode } from './executionStrategy.js';
 import type { ExecutionStrategyOptions } from './executionStrategy.js';
@@ -19,9 +18,13 @@ import type { ToolExecutionResult } from './toolExecutor.js';
 import { enhanceInBackground, type EnhancementResult } from './contextEnhancer.js';
 import { sanitizeToolMessages } from './contextTruncate.js';
 import { TimerManager } from '../sse/timerManager.js';
-import { sendSSE, sendDebugSSE, sendDoneAndEnd } from '../sse/sseTypes.js';
 import { type ToolProfileId } from './toolProfiles.js';
 import { logger } from '../logger.js';
+import {
+  createAssistantMessageEventStream,
+  type AssistantMessageEventStream,
+  type AssistantMessage,
+} from '../sse/openclawSSE.js';
 
 // ===================== 类型定义 =====================
 
@@ -83,8 +86,6 @@ export interface ExecuteChatParams {
   modelConfig: ModelCallConfig;
   /** 构建好的 API 消息列表 */
   apiMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>;
-  /** Express 响应对象（可选：传入则写 SSE，不传则只走 callbacks） */
-  res?: Response;
   /** 执行模式 */
   executionMode: ExecutionMode;
   /** Timer 管理器 */
@@ -116,7 +117,115 @@ export interface ExecuteChatParams {
   };
 }
 
+export interface ExecuteChatStreamResult {
+  stream: AssistantMessageEventStream;
+  result: Promise<ExecuteChatResult>;
+}
+
 // ===================== 统一执行入口 =====================
+
+export async function executeChatStream(params: Omit<ExecuteChatParams, 'res'>): Promise<ExecuteChatStreamResult> {
+  const stream = createAssistantMessageEventStream();
+
+  const streamCallbacks: ExecuteChatCallbacks = {
+    onChunk: (chunk: string) => {
+      stream.push({ type: 'text_delta', contentIndex: 0, delta: chunk });
+    },
+    onThinking: (thinkingChunk: string) => {
+      stream.push({ type: 'thinking_delta', contentIndex: 0, delta: thinkingChunk });
+    },
+    onToolCall: (toolCall: ToolCall, result: string) => {
+      stream.push({ type: 'toolcall_start', contentIndex: 0 });
+      stream.push({ type: 'toolcall_delta', contentIndex: 0, delta: toolCall.function.arguments });
+      stream.push({ type: 'toolcall_end', contentIndex: 0, toolCall: {
+        type: 'toolCall',
+        id: toolCall.id,
+        name: toolCall.function.name,
+        arguments: JSON.parse(toolCall.function.arguments || '{}'),
+      } as any, partial: {} as AssistantMessage });
+    },
+    onSSEEvent: (event: Record<string, unknown>) => {
+      const eventType = event.type as string;
+      if (eventType === 'init') {
+        const partial: AssistantMessage = {
+          role: 'assistant',
+          content: [],
+          api: event.model as string,
+          provider: '',
+          model: event.model as string,
+          usage: {
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+          },
+          stopReason: 'stop',
+          timestamp: Date.now(),
+        };
+        stream.push({ type: 'start', partial });
+      } else if (eventType === 'done') {
+        const partial: AssistantMessage = {
+          role: 'assistant',
+          content: [],
+          api: '',
+          provider: '',
+          model: '',
+          usage: event.usage as any,
+          stopReason: 'stop',
+          timestamp: Date.now(),
+        };
+        stream.push({ type: 'done', reason: 'stop', message: partial });
+      } else if (eventType === 'error') {
+        const errorMsg: AssistantMessage = {
+          role: 'assistant',
+          content: [],
+          api: '',
+          provider: '',
+          model: '',
+          usage: {
+            input: 0,
+            output: 0,
+            cacheRead: 0,
+            cacheWrite: 0,
+            totalTokens: 0,
+            cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+          },
+          stopReason: 'error',
+          errorMessage: event.message as string,
+          timestamp: Date.now(),
+        };
+        stream.push({ type: 'error', reason: 'error', error: errorMsg });
+      }
+    },
+    onEvent: (event: Record<string, unknown>) => {
+      const eventType = event.type as string;
+      if (eventType === 'text') {
+        stream.push({ type: 'text_delta', contentIndex: 0, delta: event.content as string });
+      } else if (eventType === 'thinking') {
+        stream.push({ type: 'thinking_delta', contentIndex: 0, delta: event.content as string });
+      } else if (eventType === 'tool_call') {
+        stream.push({ type: 'toolcall_start', contentIndex: 0 });
+      }
+    },
+    onRateLimit: params.callbacks.onRateLimit,
+    onAgentStart: params.callbacks.onAgentStart,
+    onAgentEnd: params.callbacks.onAgentEnd,
+    onSubtaskCreate: params.callbacks.onSubtaskCreate,
+    onSubtaskAssign: params.callbacks.onSubtaskAssign,
+    onSubtaskComplete: params.callbacks.onSubtaskComplete,
+    onReflect: params.callbacks.onReflect,
+    onPlan: params.callbacks.onPlan,
+  };
+
+  const resultPromise = executeChat({
+    ...params,
+    callbacks: streamCallbacks,
+  });
+
+  return { stream, result: resultPromise };
+}
 
 /**
  * 统一执行入口 — 替代 handleChat + executeFromQueue 中的核心执行逻辑
@@ -129,8 +238,7 @@ export interface ExecuteChatParams {
  * @returns 统一执行结果
  */
 export async function executeChat(params: ExecuteChatParams): Promise<ExecuteChatResult> {
-  const { res, timerManager, modelConfig, apiMessages, callbacks } = params;
-  const hasRes = !!res;
+  const { timerManager, modelConfig, apiMessages, callbacks } = params;
   const tag = params.fromQueue ? '[QueueExecutor]' : '[StreamExecutor]';
 
   // 启动 keepAlive 心跳
@@ -142,13 +250,10 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
   let thinkingStartTime: number | null = null;
   let thinkingChunkCount = 0;
   let toolCallsResult: ToolExecutionResult['toolCalls'] = [];
-  // 细粒度 thinking 事件状态
   let thinkingStarted = false;
   let thinkingSignature: string | undefined;
   let redactedThinking: boolean | undefined;
 
-  // ============== Phase 1: 后台增强（与 Phase 0 并行） ==============
-  // 提取用户最新消息文本用于增强
   const latestUserMsg = [...apiMessages].reverse().find((m) => m.role === 'user');
   const userMessageText = params.message || (typeof latestUserMsg?.content === 'string' ? latestUserMsg.content : '');
 
@@ -165,79 +270,60 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
     return {} as EnhancementResult;
   });
 
-  // ============== Phase 0: 立即流式 ==============
-  // 乐观假设简单：直接用原始消息调 LLM，不等上下文压缩或记忆检索
   logger.debug(`${tag} Phase 0 启动立即流式`);
 
   try {
-    // 使用 strategy.execute 执行（统一路径，修复原 handleChat 用 executeToolLoop 的不一致）
     const strategy = ExecutionStrategyFactory.create(params.executionMode);
 
-    // 构建策略选项
     const strategyOptions: ExecutionStrategyOptions = {
       modelConfig,
       messages: sanitizeToolMessages(apiMessages) as Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>,
-      maxToolTurns: 10,
+      maxToolTurns: 25,
       signal: params.signal ?? new AbortController().signal,
       executionMode: params.executionMode,
       sessionId: params.sessionId,
       messageId: params.messageId,
       onSSEEvent: (event: Record<string, unknown>) => {
-        // 策略内部事件：核心类型与多模态类型直接发送，其余走 debug 通道
-        const eventType = event.type as string;
-        if (hasRes && [
-          'init', 'text', 'thinking', 'tool_call', 'done', 'error', 'approval',
-          'react_phase', 'budget_exceeded', 'complexity_assessment',
-          'image_start', 'image_delta', 'image_end',
-          'audio_start', 'audio_delta', 'audio_end',
-        ].includes(eventType)) {
-          sendSSE(res!, event);
-        } else if (hasRes) {
-          sendDebugSSE(res!, event);
-        }
         callbacks.onSSEEvent?.(event);
+        callbacks.onEvent?.(event);
       },
       onChunk: (chunk: string) => {
         fullContent += chunk;
-        if (hasRes) sendSSE(res!, { type: 'text', content: chunk });
         callbacks.onChunk?.(chunk);
+        callbacks.onEvent?.({ type: 'text', content: chunk });
       },
       onThinking: (thinkingChunk: string) => {
         if (!hasThinking) {
           hasThinking = true;
           thinkingStartTime = Date.now();
         }
-        // 细粒度 thinking.start（首个 chunk 时发送一次，含 signature 如果有）
         if (!thinkingStarted) {
           thinkingStarted = true;
-          if (hasRes) sendSSE(res!, {
+          callbacks.onEvent?.({
             type: 'thinking.start',
             contentIndex: 0,
             ...(thinkingSignature ? { thinkingSignature } : {}),
             ...(redactedThinking ? { redacted: true } : {}),
           });
         }
-        // 细粒度 thinking.delta
-        if (hasRes) sendSSE(res!, { type: 'thinking.delta', contentIndex: 0, content: thinkingChunk });
+        callbacks.onEvent?.({ type: 'thinking.delta', contentIndex: 0, content: thinkingChunk });
         thinkingContent += thinkingChunk;
         thinkingChunkCount++;
-        // 保留原有 thinking 事件（向后兼容）
-        if (hasRes) sendSSE(res!, { type: 'thinking', content: thinkingChunk });
+        callbacks.onEvent?.({ type: 'thinking', content: thinkingChunk });
         callbacks.onThinking?.(thinkingChunk);
       },
       onToolCall: (toolCall: ToolCall, result: string) => {
-        if (hasRes) sendSSE(res!, {
+        callbacks.onEvent?.({
           type: 'tool_call',
           toolCallId: toolCall.id,
           toolName: toolCall.function.name,
           toolArgs: toolCall.function.arguments,
           toolResult: result,
         });
-        // 工具审计事件合并到 debug 通道
         const isDenied = result.includes('用户拒绝了工具');
         const isError = !isDenied && result.includes('"error"');
         const auditResult = isDenied ? 'denied' : isError ? 'error' : 'success';
-        if (hasRes) sendDebugSSE(res!, {
+        callbacks.onEvent?.({
           type: 'tool_audit',
           toolName: toolCall.function.name,
           result: auditResult,
@@ -263,13 +349,11 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
 
     fullContent = toolResult.content;
     toolCallsResult = toolResult.toolCalls || [];
-    // 上抛 thinking signature（来自 Anthropic thinking content block）
     if (toolResult.thinkingSignature) {
       thinkingSignature = toolResult.thinkingSignature;
       redactedThinking = toolResult.redacted;
     }
 
-    // 处理空内容回退
     if (!fullContent && thinkingContent) {
       const trimmedThinking = thinkingContent.trim();
       if (trimmedThinking) {
@@ -278,7 +362,6 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
         fullContent = lastParagraph.length > 800
           ? '（思考摘要）\n\n' + lastParagraph.slice(-800)
           : '（思考摘要）\n\n' + lastParagraph;
-        // 通过 onChunk 回调发射回退内容，确保前端能收到
         callbacks.onChunk?.(fullContent);
         callbacks.onEvent?.({ type: 'text', content: fullContent });
       }
@@ -287,7 +370,6 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
     if (!fullContent && !thinkingContent?.trim()) {
       logger.warn(`${tag} 模型返回空内容，无文本也无思考，sessionId=${params.sessionId} model=${params.model}`);
       fullContent = '（模型未返回内容，可能是请求超时或服务异常，请重试）';
-      // 通过 onChunk 回调发射回退内容，确保前端能收到
       callbacks.onChunk?.(fullContent);
       callbacks.onEvent?.({ type: 'text', content: fullContent });
     }
@@ -296,14 +378,11 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
     throw error;
   }
 
-  // ============== 等待 Phase 1 完成 ==============
   const enhancement = await enhancementPromise;
 
-  // ============== Phase 2: ReAct 补充（仅当复杂度=complex） ==============
   if (enhancement.complexity?.level === 'complex' && !params.fromQueue) {
     logger.info(`${tag} Phase 2: 复杂度评估为 complex (${enhancement.complexity.reason})，后续消息将启动 ReAct 补充`);
-    // 发送调试事件通知前端复杂度评估结果
-    if (hasRes) sendSSE(res!, {
+    callbacks.onEvent?.({
       type: 'complexity_assessment',
       level: enhancement.complexity.level,
       reason: enhancement.complexity.reason,
@@ -311,14 +390,12 @@ export async function executeChat(params: ExecuteChatParams): Promise<ExecuteCha
     });
   }
 
-  // 停止主心跳
   timerManager.stop('main');
 
   const thinkingDuration = hasThinking && thinkingStartTime ? Date.now() - thinkingStartTime : 0;
 
-  // 细粒度 thinking.complete（含 thinkingSignature 和 thinkingDuration）
-  if (thinkingStarted && hasRes) {
-    sendSSE(res!, {
+  if (thinkingStarted) {
+    callbacks.onEvent?.({
       type: 'thinking.complete',
       contentIndex: 0,
       thinkingDuration,
@@ -351,34 +428,8 @@ export function buildRecentHistory(
   fullMessages: Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }>,
   recentCount: number = 5,
 ): Array<{ role: string; content: MessageContent; tool_calls?: ToolCall[]; tool_call_id?: string }> {
-  // 分离系统消息和非系统消息
   const systemMessages = fullMessages.filter((m) => m.role === 'system');
   const nonSystemMessages = fullMessages.filter((m) => m.role !== 'system');
-
-  // 取最近 N 条非系统消息
   const recentNonSystem = nonSystemMessages.slice(-recentCount);
-
-  // 系统消息 + 最近 N 条
   return [...systemMessages, ...recentNonSystem];
-}
-
-/**
- * 安全发送 done 事件并结束响应
- *
- * 封装 sendDoneAndEnd，确保 timerManager 先停止。
- */
-export async function finishStream(
-  res: Response,
-  timerManager: TimerManager,
-  options: {
-    errorCode?: string | null;
-    errorMessage?: string | null;
-    thinkingDuration?: number;
-    usage?: unknown;
-    fallbackModel?: string;
-    fallbackReason?: string;
-  } = {},
-): Promise<void> {
-  timerManager.stopAll();
-  await sendDoneAndEnd(res, options);
 }
