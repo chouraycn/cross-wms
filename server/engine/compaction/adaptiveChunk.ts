@@ -225,3 +225,20 @@ export function getDefaultChunkConfig(): AdaptiveChunkConfig {
     minRatio: MIN_CHUNK_RATIO,
   };
 }
+
+export const adaptiveChunk = {
+  DEFAULT_CONTEXT_TOKENS,
+  BASE_CHUNK_RATIO,
+  MIN_CHUNK_RATIO,
+  SAFETY_MARGIN,
+  SUMMARIZATION_OVERHEAD_TOKENS,
+  MAX_SINGLE_MESSAGE_TOKENS,
+  DEFAULT_RECENT_MESSAGES_KEEP,
+  computeAdaptiveChunkRatio,
+  normalizeParts,
+  estimateMessageTokens,
+  estimateMessagesTokens,
+  isOversizedMessage,
+  pruneHistoryForContextShare,
+  getDefaultChunkConfig,
+};

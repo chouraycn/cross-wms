@@ -165,3 +165,5 @@ export class CompactionHooks {
     return this.hooks.get(type)?.length ?? 0;
   }
 }
+
+export const compactionHooks = new CompactionHooks();

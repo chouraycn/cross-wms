@@ -196,3 +196,10 @@ export function setSkillEnabled(id: string, enabled: boolean): { success: boolea
   logger.info(`[SkillLifecycle] 技能 '${id}' 已${enabled ? '启用' : '禁用'}`);
   return { success: true, disabled: !enabled };
 }
+
+export const skillLifecycle = {
+  doctorSkills,
+  getSkillLifecycleStatus,
+  reloadSkills,
+  setSkillEnabled,
+};

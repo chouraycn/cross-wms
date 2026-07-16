@@ -253,3 +253,12 @@ export async function executeMultiLevelSummary(
     durationMs: Date.now() - startTime,
   };
 }
+
+export const multiLevelSummary = {
+  selectSummaryStrategy,
+  generateSingleSummary,
+  generateSplitSummary,
+  mergePartialSummaries,
+  generateOversizedFallbackSummary,
+  executeMultiLevelSummary,
+};

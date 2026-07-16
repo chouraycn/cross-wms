@@ -212,3 +212,14 @@ export function getGoalToolHandlers(options: GoalToolOptions): Map<string, ToolH
   handlers.set('goal_update', createUpdateGoalToolHandler(options));
   return handlers;
 }
+
+export const goalTools = {
+  getCreateGoalToolDefinition,
+  createCreateGoalToolHandler,
+  getGetGoalToolDefinition,
+  createGetGoalToolHandler,
+  getUpdateGoalToolDefinition,
+  createUpdateGoalToolHandler,
+  getGoalToolDefinitions,
+  getGoalToolHandlers,
+};

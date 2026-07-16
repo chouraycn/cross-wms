@@ -79,7 +79,6 @@ export async function handleSkillCreateProposal(args: Record<string, unknown>): 
       try {
         const applied = skillWorkshop.applyProposal(proposal.id);
         writeSkillFile(skillPath, content);
-        // D2：应用后热刷新技能运行时，使对话内创作的技能立即生效（无需重启）
         try {
           const reloaded = await reloadSkills();
           logger.info(`[SkillTools] 技能 '${skillName}' 已应用并热刷新，重新加载 ${reloaded.loaded} 个技能`);
@@ -131,3 +130,7 @@ export async function handleSkillCreateProposal(args: Record<string, unknown>): 
     });
   }
 }
+
+export const skillTools = {
+  handleSkillCreateProposal,
+};

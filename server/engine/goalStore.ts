@@ -196,9 +196,7 @@ export function updateGoalUsedTokens(sessionKey: string, usedTokens: number): vo
   `).run(usedTokens, now, sessionKey);
 }
 
-/**
- * 格式化目标状态显示
- */
+/** 格式化目标状态显示 */
 export function formatGoalStatus(goal: GoalRecord | undefined): string {
   if (!goal) {
     return '当前会话无目标。\n使用 goal_create 工具创建目标。';
@@ -218,3 +216,13 @@ export function formatGoalStatus(goal: GoalRecord | undefined): string {
     ...(note ? [note.slice(1)] : []),
   ].join('\n');
 }
+
+export const goalStore = {
+  initGoalTables,
+  createGoal,
+  getGoal,
+  updateGoalStatus,
+  clearGoal,
+  updateGoalUsedTokens,
+  formatGoalStatus,
+};

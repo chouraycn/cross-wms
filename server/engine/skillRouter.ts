@@ -279,3 +279,10 @@ export async function resolveSkillContext(
   if (routedBlock) parts.push(routedBlock);
   return parts.join('\n\n');
 }
+
+export const skillRouter = {
+  routeSkillsForPrompt,
+  formatRoutedSkillsForPrompt,
+  extractContextTexts,
+  resolveSkillContext,
+};

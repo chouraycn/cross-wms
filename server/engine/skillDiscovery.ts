@@ -622,3 +622,7 @@ export function normalizeSkillIndexName(name: string): string {
     .replace(/[\s\-_]+/g, '')
     .replace(/[^a-z0-9]/g, '');
 }
+
+export const skillDiscovery = {
+  normalizeSkillIndexName,
+};

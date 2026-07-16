@@ -505,3 +505,10 @@ export async function performSecurityChecks(
     },
   };
 }
+
+export const skillSecurityGuard = {
+  checkSkillPermission,
+  checkSandboxAccess,
+  checkParamsSafety,
+  performSecurityChecks,
+};

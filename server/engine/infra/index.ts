@@ -14,3 +14,17 @@ export { acquireFileLock, withFileLock } from './file-lock.js';
 export type { FileLockHandle, FileLockOptions } from './file-lock.js';
 export { resolveFetch, wrapFetchWithAbortSignal } from './fetch.js';
 export { readLocalFileSafely, writeExternalFileWithinRoot } from './fs-safe.js';
+
+export type { ArchiveEntry, ArchiveOptions } from './archive.js';
+export { createArchive, readArchive, createArchiveFromFiles } from './archive.js';
+
+export type { DiskSpaceInfo } from './disk-space.js';
+export { getDiskSpace, formatBytes, isLowDiskSpace, getDiskSpaceWarning } from './disk-space.js';
+
+export type { DedupeOptions } from './dedupe.js';
+export { deduplicate, deduplicateStrings, deduplicateByProperty, createDedupeFilter } from './dedupe.js';
+
+export { copyToClipboard, readFromClipboard } from './clipboard.js';
+
+export type { AbortSignalOptions } from './abort-signal.js';
+export { createAbortSignal, createCombinedAbortSignal, isAborted, assertNotAborted } from './abort-signal.js';

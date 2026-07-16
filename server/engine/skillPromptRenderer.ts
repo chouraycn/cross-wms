@@ -322,3 +322,8 @@ function escapeXmlAttr(value: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 }
+
+export const skillPromptRenderer = {
+  renderSkillsPrompt,
+  compactSkillPath,
+};

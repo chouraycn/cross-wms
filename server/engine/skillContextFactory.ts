@@ -480,3 +480,7 @@ export function createSkillContext(options: SkillContextOptions): SkillContext {
     tools: createSkillToolRunner(),
   };
 }
+
+export const skillContextFactory = {
+  createSkillContext,
+};

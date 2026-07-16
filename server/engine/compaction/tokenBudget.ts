@@ -130,3 +130,5 @@ export class TokenBudgetManager {
     return this.config;
   }
 }
+
+export const tokenBudget = new TokenBudgetManager();

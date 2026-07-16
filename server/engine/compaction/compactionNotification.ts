@@ -92,3 +92,4 @@ export class CompactionNotificationManager {
 }
 
 export const compactionNotificationManager = new CompactionNotificationManager();
+export const compactionNotification = compactionNotificationManager;

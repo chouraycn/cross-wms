@@ -226,3 +226,10 @@ if (parentPort) {
 
 // 导出用于直接调用
 export { buildChunkPlan, buildOversizedFallback, estimateTokens, estimateMessagesTokens };
+
+export const chunkWorker = {
+  buildChunkPlan,
+  buildOversizedFallback,
+  estimateTokens,
+  estimateMessagesTokens,
+};
