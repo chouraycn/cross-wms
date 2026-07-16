@@ -13,6 +13,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { logger } from '../../logger.js';
+import { CHINESE_ENV_CONSTRAINT } from '../chineseEnvConstraint.js';
 import { AppPaths } from '../../config/appPaths.js';
 import {
   SoulConfig,
@@ -476,6 +477,8 @@ const DEFAULT_SOUL_CONTENT = `# SOUL.md — CrossWMS 智能助手身份
 - \`plannerThreshold\`: \`moderate\` — 中等复杂度即触发 Planner（谨慎型默认）
 - \`observerFastPath\`: \`false\` — 不跳过 Observer 反思节点
 - \`maxTurnsMultiplier\`: \`0.8\` — 预算轮数乘以 0.8，更早收敛
+
+${CHINESE_ENV_CONSTRAINT}
 `;
 
 const DEFAULT_USER_CONTENT = `# USER.md — 操作员画像
@@ -514,4 +517,6 @@ const DEFAULT_USER_CONTENT = `# USER.md — 操作员画像
 - 读取类操作：自动通过
 - 写入类操作：每次确认
 - 删除类操作：高风险确认
+
+${CHINESE_ENV_CONSTRAINT}
 `;

@@ -12,6 +12,7 @@ import { callAIModel } from '../aiClient.js';
 import type { ModelCallConfig, MessageContent } from '../aiClient.js';
 import type { TaskDecomposition, SubTask, SubTaskPriority } from '../../shared/types/agent.js';
 import { logger } from '../logger.js';
+import { CHINESE_ENV_CONSTRAINT_LITE } from './chineseEnvConstraint.js';
 
 // ===================== 常量 =====================
 
@@ -159,7 +160,9 @@ export class TaskDecomposer {
   }
 ]
 
-只输出 JSON，不要其他文字。`;
+只输出 JSON，不要其他文字。
+
+${CHINESE_ENV_CONSTRAINT_LITE}`;
 
     const messages: Array<{ role: string; content: MessageContent }> = [
       { role: 'system', content: systemPrompt },
