@@ -51,6 +51,8 @@
     "build:memory-host-sdk": "npm run build -w @cdf-know/memory-host-sdk",
     "build:skill-core": "npm run build -w @cdf-know/skill-core",
     "test:packages": "npm run test --workspaces --if-present",
+    "publish:packages": "bash scripts/publish-packages.sh",
+    "publish:packages:dry": "bash scripts/publish-packages.sh --dry-run",
     "deadcode": "knip --config knip.json",
     "deadcode:fix": "knip --config knip.json --fix"
   },

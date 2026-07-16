@@ -7,8 +7,12 @@ const wms = createDocumentStorage();
 
 // ===================== Warehouse DAO =====================
 
-export function getWarehouses(): WarehouseRow[] {
-  return wms.list<WarehouseRow>('warehouses').sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+export function getWarehouses(warehouseType?: string): WarehouseRow[] {
+  let rows = wms.list<WarehouseRow>('warehouses');
+  if (warehouseType) {
+    rows = rows.filter((w) => w.warehouseType === warehouseType);
+  }
+  return rows.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
 }
 
 export function getWarehouseById(id: string): WarehouseRow | undefined {
@@ -17,6 +21,8 @@ export function getWarehouseById(id: string): WarehouseRow | undefined {
 
 export function createWarehouse(data: Omit<WarehouseRow, 'id'> & { id?: string }): WarehouseRow {
   const id = data.id || uuidv4();
+  const warehouseType = data.warehouseType ?? 'normal';
+  const temperatureRange = data.temperatureRange ?? getDefaultTemperatureRange(warehouseType);
   const record: WarehouseRow = {
     ...data,
     id,
@@ -30,10 +36,23 @@ export function createWarehouse(data: Omit<WarehouseRow, 'id'> & { id?: string }
     address: data.address ?? '',
     manager: data.manager ?? '',
     phone: data.phone ?? '',
+    warehouseType,
+    temperatureRange,
     createdAt: data.createdAt ?? new Date().toISOString().split('T')[0],
   };
   wms.create<WarehouseRow>('warehouses', id, record);
   return record;
+}
+
+/** Get default temperature range based on warehouse type */
+function getDefaultTemperatureRange(type: string): string {
+  switch (type) {
+    case 'cold': return '2-8°C';
+    case 'frozen': return '-18°C';
+    case 'hazardous': return '15-25°C';
+    case 'normal':
+    default: return '15-25°C';
+  }
 }
 
 export function updateWarehouse(id: string, data: Partial<Omit<WarehouseRow, 'id'>>): WarehouseRow | null {
