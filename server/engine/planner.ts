@@ -14,6 +14,7 @@ import { getBuiltinToolDefinitions } from './toolRegistry.js';
 import { pluginRegistry } from './pluginRegistry.js';
 import { mcpClientManager } from './mcpClientManager.js';
 import { logger } from '../logger.js';
+import { CHINESE_ENV_CONSTRAINT_LITE } from './chineseEnvConstraint.js';
 
 // ===================== 类型定义 =====================
 
@@ -390,7 +391,9 @@ export class Planner {
 要求：
 1. 已 completed 的步骤不要重复，可跳过
 2. 已 failed 的步骤给出替代方案
-3. 保持步骤可执行、有序`;
+3. 保持步骤可执行、有序
+
+${CHINESE_ENV_CONSTRAINT_LITE}`;
 
     const userContent = `原始任务：${originalUserMessage}
 
@@ -477,7 +480,9 @@ ${planJson}
 可用工具列表：
 ${toolDescriptions}
 
-用户请求：${userMessage}`;
+用户请求：${userMessage}
+
+${CHINESE_ENV_CONSTRAINT_LITE}`;
   }
 
   /**
