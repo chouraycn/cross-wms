@@ -438,19 +438,45 @@ export class WechatPersonalChannelAdapter implements ChannelAdapter {
   }
 }
 
-/** 邮件通道适配器 */
+/** 邮件通道适配器（遗留引擎，基于 himalaya CLI；新架构见 server/channels/adapters/email-adapter.ts） */
 export class EmailChannelAdapter implements ChannelAdapter {
   type: ChannelType = 'email';
   private config: ChannelConfig | null = null;
 
   async sendMessage(message: ChannelMessage): Promise<boolean> {
-    // 邮件发送需要 nodemailer，这里只做接口占位
-    logger.info(`[EmailChannel] 邮件发送到: ${this.config?.credentials.to}`);
-    return true;
+    // 通过 himalaya CLI 发送邮件（国内邮箱 QQ/163/阿里云/腾讯企业邮箱）
+    const meta = (message.metadata ?? {}) as { to?: string; subject?: string };
+    const to = String(meta.to ?? this.config?.credentials?.to ?? '');
+    const subject = String(meta.subject ?? '(无主题)');
+    const body = message.content;
+    if (!to) {
+      logger.warn('[EmailChannel] 未指定收件人，跳过发送');
+      return false;
+    }
+    try {
+      const { spawn } = await import('node:child_process');
+      const account = String(this.config?.credentials?.himalayaAccount ?? 'default');
+      const args = ['-a', account, 'message', 'send', '--to', to, '--subject', subject, '--body', body];
+      const result = await new Promise<number>((resolve) => {
+        const child = spawn('himalaya', args, { stdio: ['pipe', 'pipe', 'pipe'] });
+        child.on('close', resolve);
+        child.on('error', () => resolve(1));
+        child.stdin?.end();
+      });
+      if (result === 0) {
+        logger.info(`[EmailChannel] 邮件已发送至 ${to}`);
+        return true;
+      }
+      logger.error(`[EmailChannel] himalaya 退出码 ${result}`);
+      return false;
+    } catch (e) {
+      logger.error(`[EmailChannel] 发送失败: ${(e as Error).message}`);
+      return false;
+    }
   }
 
   async receiveMessages(): Promise<ChannelMessage[]> { return []; }
-  async healthCheck(): Promise<boolean> { return !!this.config?.credentials.smtpHost; }
+  async healthCheck(): Promise<boolean> { return !!this.config?.credentials?.himalayaAccount; }
   async disconnect(): Promise<void> { this.config = null; }
   async initialize(config: ChannelConfig): Promise<void> {
     this.config = config;
