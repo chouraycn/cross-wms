@@ -288,7 +288,7 @@ export function getThinkingProfile(modelId: string): ThinkingProfile | undefined
  */
 export function getThinkingLevels(modelId: string): string[] {
   const profile = getThinkingProfile(modelId);
-  return profile?.levels.map(l => l.id) || [];
+  return profile?.levels?.map(l => l.id) || [];
 }
 
 /**

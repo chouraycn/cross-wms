@@ -163,7 +163,7 @@ function sanitizeContent(content: string, risks: SecurityRisk[]): string {
 /** 扫描内容中的安全风险 */
 export function scanContent(
   content: string,
-  context?: ScanContext,
+  _context?: ScanContext,
 ): ScanResult {
   const risks: SecurityRisk[] = [];
 

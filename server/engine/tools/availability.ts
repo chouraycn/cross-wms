@@ -7,7 +7,6 @@
 
 import type {
   JsonObject,
-  JsonPrimitive,
   JsonValue,
   ToolAvailabilityContext,
   ToolAvailabilityDiagnostic,
