@@ -52,3 +52,34 @@ export type { AgentTimeoutConfig } from './timeout.js';
 
 export { trackAgentUsage, getAgentUsage, resetAgentUsage } from './usage.js';
 export type { AgentUsage, AgentUsageRecord } from './usage.js';
+
+export {
+  getAgentState,
+  setAgentState,
+  getAgentHistory,
+  canTransition,
+  isTerminalState,
+  isActiveState,
+  clearAgentLifecycle,
+} from './lifecycle.js';
+export type { AgentLifecycleState, AgentLifecycleEvent } from './lifecycle.js';
+
+export {
+  recordRunOutcome,
+  getAgentMetrics,
+  listAgentMetrics,
+  resetAgentMetrics,
+  getTopPerformers,
+} from './metrics.js';
+export type { AgentMetrics } from './metrics.js';
+
+export {
+  setAgentPermissionPolicy,
+  getAgentPermissionPolicy,
+  grantPermission,
+  denyPermission,
+  requireApprovalFor,
+  checkPermission,
+  clearAgentPermissions,
+} from './permissions.js';
+export type { AgentPermission, AgentPermissionPolicy } from './permissions.js';

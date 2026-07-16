@@ -63,3 +63,35 @@ export type { ToolProtocolMessage, ToolProtocolError } from './protocol.js';
 
 export { ToolPlanner, planToolExecution } from './planner.js';
 export type { ToolPlan, PlanningResult } from './planner.js';
+
+export {
+  startToolExecution,
+  finishToolExecution,
+  recordToolExecution,
+  getToolExecutionHistory,
+  getToolAverageDuration,
+  getToolSuccessRate,
+  clearToolExecutionHistory,
+} from './profiler.js';
+export type { ToolExecutionRecord } from './profiler.js';
+
+export {
+  getCachedTool,
+  setCachedTool,
+  invalidateToolCache,
+  invalidateToolCacheByPrefix,
+  clearToolCache,
+  getToolCacheStats,
+  cleanupExpiredCache,
+} from './cache.js';
+export type { ToolCacheEntry } from './cache.js';
+
+export {
+  recordToolInvocation,
+  getToolMetrics,
+  listToolMetrics,
+  getTopSlowTools,
+  getMostFailedTools,
+  resetToolMetrics,
+} from './metrics.js';
+export type { ToolMetrics } from './metrics.js';
