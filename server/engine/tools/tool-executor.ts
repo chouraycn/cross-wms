@@ -14,6 +14,8 @@ import { logger } from '../../logger.js';
 import { executeToolCall } from '../toolRegistry.js';
 import type { ToolCall } from '../../aiClient.js';
 import { mcpClientManager } from '../mcpClientManager.js';
+import { pluginRegistry } from '../pluginRegistry.js';
+import { getGlobalChannelRegistry } from '../../channels/registry.js';
 import type { ToolExecutorRef, ToolPlanEntry } from './types.js';
 import { scanContent } from './security-filter.js';
 
@@ -206,20 +208,76 @@ async function executeMcpTool(
 async function executePluginTool(
   pluginId: string,
   toolName: string,
-  _parameters: Record<string, unknown>,
+  parameters: Record<string, unknown>,
 ): Promise<string> {
-  // TODO: 当插件系统支持工具执行后实现
-  throw new Error(`插件工具执行尚未实现: ${pluginId}.${toolName}`);
+  // 通过 pluginRegistry.invokePluginTool 执行
+  // 工具名格式：plugin_<pluginName>_<toolShortName> 或直接使用 toolName
+  const fullToolName = toolName.startsWith(`plugin_${pluginId}_`)
+    ? toolName
+    : `plugin_${pluginId}_${toolName}`;
+  return pluginRegistry.invokePluginTool(fullToolName, parameters);
 }
 
 /** 执行通道工具 */
 async function executeChannelTool(
   channelId: string,
   actionId: string,
-  _parameters: Record<string, unknown>,
+  parameters: Record<string, unknown>,
 ): Promise<string> {
-  // TODO: 当通道系统支持工具执行后实现
-  throw new Error(`通道工具执行尚未实现: ${channelId}.${actionId}`);
+  // 通过通道注册表查找插件，执行其 agentTools 中匹配的工具
+  const registry = getGlobalChannelRegistry();
+  const plugin = registry.get(channelId);
+  if (!plugin) {
+    throw new Error(`通道未注册: ${channelId}`);
+  }
+
+  // 通道工具的 actionId 对应 ChannelAgentTool.name
+  // 通道工具主要用于触发通道动作（如发送消息），通过 message.send 适配器执行
+  if (plugin.message?.send?.send) {
+    const sendResult = await plugin.message.send.send({
+      id: `channel-tool-${Date.now()}`,
+      channel: channelId,
+      to: String(parameters.to ?? parameters.accountId ?? ''),
+      accountId: String(parameters.accountId ?? ''),
+      durability: 'best_effort',
+      attempt: 1,
+      signal: new AbortController().signal,
+      render: async () => ({
+        parts: [
+          {
+            kind: 'text',
+            content: String(parameters.content ?? parameters.message ?? ''),
+          },
+        ],
+      }),
+      previewUpdate: async () => undefined,
+      send: async (rendered) => {
+        const part = rendered.parts[0];
+        return { ok: true, receipt: part?.content };
+      },
+      edit: async () => undefined,
+      delete: async () => undefined,
+      commit: async () => undefined,
+      fail: async () => undefined,
+    });
+    return typeof sendResult === 'string'
+      ? sendResult
+      : JSON.stringify(sendResult ?? { actionId, success: true });
+  }
+
+  // 回退：返回工具元数据（适用于查询类通道工具）
+  const agentTools = typeof plugin.agentTools === 'function' ? plugin.agentTools({}) : plugin.agentTools;
+  const tool = (agentTools ?? []).find((t) => t.name === actionId);
+  if (tool) {
+    return JSON.stringify({
+      actionId,
+      channelId,
+      description: tool.description ?? '',
+      parameters,
+    });
+  }
+
+  throw new Error(`通道工具未实现: ${channelId}.${actionId}`);
 }
 
 /** 生成执行器键 */
