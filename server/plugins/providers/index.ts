@@ -8,12 +8,17 @@
  * 2. 必应国内版 (order=2) — 无需 API Key
  * 3. 硅基流动 (order=3) — 需要 API Key
  * 4. 360搜索 (order=4) — 无需 API Key
+ * 5. Kimi/Moonshot/MiniMax (order=35-45) — 国内 AI 搜索
  *
- * 海外搜索引擎保留但优先级较低：
- * 5. Brave Search (order=5)
- * 6. Tavily (order=10)
- * 7. Perplexity (order=15)
- * 8. Google Search (order=20)
+ * 海外搜索引擎（保留但优先级低，需 API Key 才激活）：
+ * - Brave Search (order=5)
+ * - Perplexity (order=15)
+ * - Google Search (order=25)
+ * - Tavily (order=30)
+ * - Grok (order=50)
+ * - Parallel (order=70)
+ * - native-fetch (order=90, 默认 fallback)
+ * - SearXNG (order=200, 自托管)
  */
 
 // 国内搜索引擎（高优先级）

@@ -456,89 +456,6 @@ const VOLCENGINE_PROVIDER: ProviderInfo = {
 };
 
 // ============================================================
-// xAI (Grok)
-// ============================================================
-
-const XAI_MODELS: ModelInfo[] = [
-  {
-    id: 'grok-3',
-    name: 'Grok 3',
-    provider: 'xai',
-    description: 'xAI Grok 3，推理与代码',
-    contextWindow: 131_072,
-    maxTokens: 32_768,
-    input: ['text', 'image'],
-    capabilities: ['reasoning', 'code', 'general'],
-    supportsTools: true,
-    supportsStreaming: true,
-    apiType: 'openai-chat',
-    isRecommended: true,
-    pricing: {
-      inputPerMillion: 3,
-      outputPerMillion: 15,
-    },
-  },
-  {
-    id: 'grok-3-mini',
-    name: 'Grok 3 Mini',
-    provider: 'xai',
-    description: 'xAI Grok 3 Mini，轻量推理',
-    contextWindow: 131_072,
-    maxTokens: 32_768,
-    input: ['text'],
-    capabilities: ['fast', 'costEffective', 'reasoning', 'general'],
-    supportsTools: true,
-    supportsStreaming: true,
-    apiType: 'openai-chat',
-    pricing: {
-      inputPerMillion: 0.3,
-      outputPerMillion: 1.5,
-    },
-  },
-  {
-    id: 'grok-2-vision',
-    name: 'Grok 2 Vision',
-    provider: 'xai',
-    description: 'xAI Grok 2 Vision，多模态',
-    contextWindow: 131_072,
-    maxTokens: 32_768,
-    input: ['text', 'image'],
-    capabilities: ['multimodal', 'general'],
-    supportsTools: true,
-    supportsStreaming: true,
-    apiType: 'openai-chat',
-    pricing: {
-      inputPerMillion: 2,
-      outputPerMillion: 10,
-    },
-  },
-];
-
-const XAI_PROVIDER: ProviderInfo = {
-  id: 'xai',
-  name: 'xAI',
-  baseUrl: 'https://api.x.ai/v1',
-  authType: 'bearer',
-  categories: ['cloud', 'llm', 'international', 'reasoning'],
-  docsPath: '/providers/xai',
-  models: XAI_MODELS,
-  description: 'xAI Grok 系列模型',
-  website: 'https://x.ai',
-  auth: [
-    {
-      methodId: 'api-key',
-      label: 'xAI API Key',
-      hint: '从 xAI Console 获取',
-      envVar: 'XAI_API_KEY',
-      flagName: '--xai-api-key',
-      optionKey: 'xaiApiKey',
-      promptMessage: '请输入 xAI API Key',
-      defaultModel: 'grok-3-mini',
-    },
-  ],
-};
-
-// ============================================================
 // 导出中国提供商集合
 // ============================================================
 
@@ -547,5 +464,5 @@ export const CHINESE_PROVIDERS: ProviderInfo[] = [
   QWEN_PROVIDER,
   TENCENT_PROVIDER,
   VOLCENGINE_PROVIDER,
-  XAI_PROVIDER, // xAI 虽然是国际公司，但在中国也有用户
+  // xAI (Grok) 已移出中国提供商列表——xAI 是海外公司，国内网络无法直连 api.x.ai
 ];

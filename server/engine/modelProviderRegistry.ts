@@ -33,7 +33,8 @@ import { COHERE_PROVIDER } from './modelProviderCohere.js';
 import { FIREWORKS_PROVIDER } from './modelProviderFireworks.js';
 import { DEEPINFRA_PROVIDER } from './modelProviderDeepInfra.js';
 import { CEREBRAS_PROVIDER } from './modelProviderCerebras.js';
-import { PERPLEXITY_PROVIDER } from './modelProviderPerplexity.js';
+// Perplexity 模型 provider 已禁用——国内网络无法直连 api.perplexity.ai
+// import { PERPLEXITY_PROVIDER } from './modelProviderPerplexity.js';
 import { LITELLM_PROVIDER } from './modelProviderLiteLLM.js';
 
 // ============================================================
@@ -54,7 +55,7 @@ const BUILTIN_PROVIDERS: ProviderInfo[] = [
   FIREWORKS_PROVIDER,
   DEEPINFRA_PROVIDER,
   CEREBRAS_PROVIDER,
-  PERPLEXITY_PROVIDER,
+  // PERPLEXITY_PROVIDER, // 已禁用——国内网络无法直连 api.perplexity.ai
   LITELLM_PROVIDER,
   // 中国提供商
   ...CHINESE_PROVIDERS,
