@@ -4,8 +4,8 @@
  * API 文档：https://www.siliconflow.cn/docs/api/search
  */
 
-import { registerWebSearchProvider } from './web-search-providers.js';
-import type { WebSearchProviderPlugin, WebSearchResultList } from './web-provider-types.js';
+import { registerWebSearchProvider } from "../web-search-providers.js";
+import type { WebSearchProviderPlugin, WebSearchResultList } from "../web-provider-types.js";
 
 const DEFAULT_MAX_RESULTS = 10;
 const DEFAULT_TIMEOUT = 10000;
@@ -66,7 +66,7 @@ async function siliconFlowSearch(
   }
 }
 
-export const siliconFlowSearchProvider: WebSearchProviderPlugin = {
+const plugin: WebSearchProviderPlugin = {
   id: 'siliconflow',
   label: '硅基流动搜索',
   hint: '国内 AI 搜索，需要 API Key',
@@ -77,22 +77,23 @@ export const siliconFlowSearchProvider: WebSearchProviderPlugin = {
   signupUrl: 'https://www.siliconflow.cn/',
   docsUrl: 'https://www.siliconflow.cn/docs/api/search',
   credentialPath: 'tools.web.search.providers.siliconflow.apiKey',
-  autoDetectOrder: 2,
+  inactiveSecretPaths: [],
+  autoDetectOrder: 3,
 
-  getCredentialValue: (searchConfig?: Record<string, unknown>) => {
+  getCredentialValue(searchConfig?: Record<string, unknown>): unknown {
     return searchConfig?.apiKey;
   },
-  setCredentialValue: (searchConfigTarget: Record<string, unknown>, value: unknown) => {
+  setCredentialValue(searchConfigTarget: Record<string, unknown>, value: unknown): void {
     searchConfigTarget.apiKey = value;
   },
-  getConfiguredCredentialValue: (config: Record<string, unknown>) => {
+  getConfiguredCredentialValue(config: Record<string, unknown>): unknown {
     return config.apiKey;
   },
-  setConfiguredCredentialValue: (configTarget: Record<string, unknown>, value: unknown) => {
+  setConfiguredCredentialValue(configTarget: Record<string, unknown>, value: unknown): void {
     configTarget.apiKey = value;
   },
 
-  createTool: (ctx) => {
+  createTool(ctx) {
     let apiKey: string | undefined;
 
     const configValue = ctx.searchConfig?.apiKey;
@@ -136,17 +137,17 @@ export const siliconFlowSearchProvider: WebSearchProviderPlugin = {
         },
         required: ['query'],
       },
-      execute: async (args, context) => {
-        const result = await siliconFlowSearch(apiKey!, {
+      async execute(args, context) {
+        return siliconFlowSearch(apiKey!, {
           query: String(args.query || ''),
           maxResults: Number(args.maxResults || DEFAULT_MAX_RESULTS),
           timeoutMs: Number(args.timeoutMs || DEFAULT_TIMEOUT),
           signal: context?.signal,
         });
-        return result;
       },
     };
   },
 };
 
-registerWebSearchProvider('siliconflow', siliconFlowSearchProvider);
+registerWebSearchProvider('siliconflow', plugin);
+export default plugin;

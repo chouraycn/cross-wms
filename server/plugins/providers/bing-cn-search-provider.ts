@@ -4,8 +4,8 @@
  * 无需 API Key，直接使用 HTML 搜索接口
  */
 
-import { registerWebSearchProvider } from './web-search-providers.js';
-import type { WebSearchProviderPlugin, WebSearchResultList } from './web-provider-types.js';
+import { registerWebSearchProvider } from "../web-search-providers.js";
+import type { WebSearchProviderPlugin, WebSearchResultList } from "../web-provider-types.js";
 
 const DEFAULT_MAX_RESULTS = 10;
 const DEFAULT_TIMEOUT = 15000;
@@ -59,7 +59,7 @@ async function bingCnSearch(
   }
 }
 
-export const bingCnSearchProvider: WebSearchProviderPlugin = {
+const plugin: WebSearchProviderPlugin = {
   id: 'bing-cn',
   label: '必应国内版',
   hint: '国内网络友好，无需 API Key',
@@ -68,12 +68,15 @@ export const bingCnSearchProvider: WebSearchProviderPlugin = {
   placeholder: '',
   signupUrl: 'https://cn.bing.com',
   credentialPath: '',
-  autoDetectOrder: 1,
+  inactiveSecretPaths: [],
+  autoDetectOrder: 2,
 
-  getCredentialValue: () => undefined,
-  setCredentialValue: () => {},
+  getCredentialValue(): undefined { return undefined; },
+  setCredentialValue(): void {},
+  getConfiguredCredentialValue(): undefined { return undefined; },
+  setConfiguredCredentialValue(): void {},
 
-  createTool: (): WebSearchProviderPlugin['createTool'] extends (...args: any[]) => infer R ? R : never => {
+  createTool() {
     return {
       description: '使用必应国内版搜索引擎搜索网页信息。国内网络友好，无需 API Key。',
       parameters: {
@@ -96,16 +99,17 @@ export const bingCnSearchProvider: WebSearchProviderPlugin = {
         },
         required: ['query'],
       },
-      execute: async (args: Record<string, unknown>): Promise<WebSearchResultList> => {
-        const result = await bingCnSearch({
+      async execute(args: Record<string, unknown>): Promise<WebSearchResultList> {
+        return bingCnSearch({
           query: String(args.query || ''),
           maxResults: Number(args.maxResults || DEFAULT_MAX_RESULTS),
           timeoutMs: Number(args.timeoutMs || DEFAULT_TIMEOUT),
         });
-        return result;
       },
     };
   },
 };
 
-registerWebSearchProvider('bing-cn', bingCnSearchProvider);
+export const bingCnSearchProvider: WebSearchProviderPlugin = plugin;
+registerWebSearchProvider('bing-cn', plugin);
+export default plugin;
