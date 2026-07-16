@@ -32,9 +32,14 @@ import {
   startSystemd,
   stopSystemd,
   uninstallSystemd,
+  restartSystemd,
   type SystemdConfig,
   type SystemdStatus,
 } from './systemd.js';
+import {
+  repairLaunchdBootstrap,
+  type LaunchdBootstrapRepairResult,
+} from './launchd.js';
 
 /** 守护进程服务配置。 */
 export interface DaemonServiceConfig {
@@ -244,13 +249,51 @@ export class DaemonService {
     }
   }
 
-  /** 重启守护进程服务（先停止再启动）。 */
+  /** 重启守护进程服务（优先使用平台原生重启，回退到 stop+start）。 */
   async restart(): Promise<void> {
     logger.info(`[daemon] 重启守护进程服务 (${this.platform}): ${this.config.name}`);
-    await this.stop().catch((err) => {
-      logger.warn(`[daemon] 重启时停止失败，继续尝试启动: ${err.message}`);
-    });
-    await this.start();
+    switch (this.platform) {
+      case 'darwin': {
+        // launchd 使用 kickstart 原生重启
+        await this.stop().catch((err) => {
+          logger.warn(`[daemon] 重启时停止失败，继续尝试启动: ${err.message}`);
+        });
+        await this.start();
+        return;
+      }
+      case 'linux': {
+        // systemd 有原生 restart
+        try {
+          await restartSystemd(this.toSystemdConfig());
+          return;
+        } catch {
+          // 回退到 stop+start
+        }
+        await this.stop().catch((err) => {
+          logger.warn(`[daemon] 重启时停止失败，继续尝试启动: ${err.message}`);
+        });
+        await this.start();
+        return;
+      }
+      case 'win32': {
+        await this.stop().catch((err) => {
+          logger.warn(`[daemon] 重启时停止失败，继续尝试启动: ${err.message}`);
+        });
+        await this.start();
+        return;
+      }
+    }
+  }
+
+  /**
+   * 修复守护进程服务（仅 macOS launchd 支持）。
+   * 用于服务已安装但未正确加载的 bootstrap 修复场景。
+   */
+  async repair(): Promise<LaunchdBootstrapRepairResult | null> {
+    if (this.platform !== 'darwin') {
+      return null;
+    }
+    return repairLaunchdBootstrap(this.toLaunchdConfig());
   }
 
   /** 查询守护进程服务状态（结合平台状态与进程检查）。 */

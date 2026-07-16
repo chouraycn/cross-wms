@@ -24,7 +24,7 @@ function resolveRootDir(): string {
     // v1.7.88: 修复安装后历史对话丢失 — Swift 使用 "CDFKnowClow"（无空格），
     // TS 默认使用 "CDF Know Clow"（含空格），导致新旧目录不一致。
     // 在 env 分支也执行 legacy 目录迁移，把旧数据搬到新目录。
-    if (process.platform === 'darwin') {
+    if (process.platform === 'darwin' && !process.env.CDF_SKIP_MIGRATION) {
       const legacyDirs = [
         // 含空格的旧目录
         path.join(os.homedir(), 'Library', 'Application Support', 'CDF Know Clow'),
@@ -63,22 +63,24 @@ function resolveRootDir(): string {
     // 合并所有旧目录数据到规范目录（复制而非删除，已存在文件跳过）
     // 修复：早期 dev 模式 / 旧版落点使用含空格的 "CDF Know Clow" 目录，
     // 导致重装 / 切换运行方式后历史对话看似丢失。统一合并到规范目录。
-    const legacyDirs = [
-      path.join(os.homedir(), 'Library', 'Application Support', 'CDF Know Clow'),
-      getLegacyDataDir(),
-    ];
-    for (const legacyDir of legacyDirs) {
-      if (legacyDir === appSupportDir) continue;
-      // 检测关键数据：sessions 目录、chat.db 数据库、加密密钥，任一存在即需迁移
-      const hasData = fs.existsSync(path.join(legacyDir, 'sessions'))
-        || fs.existsSync(path.join(legacyDir, 'chat.db'))
-        || fs.existsSync(path.join(legacyDir, '.encryption_key'));
-      if (hasData) {
-        try {
-          mergeDirectory(legacyDir, appSupportDir);
-          console.log(`[appPaths] 历史数据已合并: ${legacyDir} -> ${appSupportDir}`);
-        } catch (e) {
-          console.error(`[appPaths] 合并失败 (${legacyDir} -> ${appSupportDir}):`, e);
+    if (!process.env.CDF_SKIP_MIGRATION) {
+      const legacyDirs = [
+        path.join(os.homedir(), 'Library', 'Application Support', 'CDF Know Clow'),
+        getLegacyDataDir(),
+      ];
+      for (const legacyDir of legacyDirs) {
+        if (legacyDir === appSupportDir) continue;
+        // 检测关键数据：sessions 目录、chat.db 数据库、加密密钥，任一存在即需迁移
+        const hasData = fs.existsSync(path.join(legacyDir, 'sessions'))
+          || fs.existsSync(path.join(legacyDir, 'chat.db'))
+          || fs.existsSync(path.join(legacyDir, '.encryption_key'));
+        if (hasData) {
+          try {
+            mergeDirectory(legacyDir, appSupportDir);
+            console.log(`[appPaths] 历史数据已合并: ${legacyDir} -> ${appSupportDir}`);
+          } catch (e) {
+            console.error(`[appPaths] 合并失败 (${legacyDir} -> ${appSupportDir}):`, e);
+          }
         }
       }
     }

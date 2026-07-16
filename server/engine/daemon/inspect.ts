@@ -1,11 +1,14 @@
 /**
  * 守护进程状态检查
- * 检查守护进程是否运行，获取 PID、运行时间、内存占用；健康检查（心跳检测）。
+ * 检查守护进程是否运行，获取 PID、运行时间、内存占用；健康检查（心跳检测）；
+ * 扫描平台残留/遗留守护服务（参考 openclaw inspect 的 findExtraGatewayServices）。
  * 参考 openclaw/src/daemon/inspect.ts 的架构对齐实现。
  */
 import { execFile } from 'node:child_process';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { logger } from '../../logger.js';
+import { resolveHomeDir } from './paths.js';
 
 /** 守护进程检查结果。 */
 export interface DaemonInspectResult {
@@ -32,6 +35,20 @@ export interface InspectDaemonOptions {
   heartbeatFile?: string;
   /** 心跳过期阈值（毫秒），默认 60s */
   heartbeatStaleMs?: number;
+}
+
+/** 额外发现的守护服务条目（残留或遗留安装）。 */
+export interface ExtraDaemonService {
+  platform: 'darwin' | 'linux' | 'win32';
+  label: string;
+  detail: string;
+  scope: 'user' | 'system';
+  marker?: 'cdf-know' | 'legacy';
+  legacy?: boolean;
+}
+
+export interface FindExtraDaemonServicesOptions {
+  deep?: boolean;
 }
 
 /** 执行系统命令的 Promise 封装。 */
@@ -85,7 +102,6 @@ async function probeProcessStats(pid: number): Promise<{ memoryUsage?: number; u
   }
   const output = res.stdout.trim();
   if (!output) return {};
-  // 输出形如："1234  01:02:03" 或 "1234  1-02:03:04"
   const parts = output.split(/\s+/);
   const rssKb = Number.parseInt(parts[0] ?? '', 10);
   const etime = parts.slice(1).join(' ');
@@ -169,4 +185,208 @@ export async function inspectDaemon(options: InspectDaemonOptions = {}): Promise
     healthy: heartbeat.healthy,
     detail: heartbeat.detail,
   };
+}
+
+/**
+ * 生成当前平台守护服务的清理命令提示。
+ * 参考 openclaw inspect renderGatewayServiceCleanupHints。
+ */
+export function renderDaemonServiceCleanupHints(
+  env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
+): string[] {
+  switch (process.platform) {
+    case 'darwin': {
+      const label = env.CDF_LAUNCHD_LABEL?.trim() || 'com.cdf-know.daemon';
+      return [`launchctl bootout gui/$UID/${label}`, `rm ~/Library/LaunchAgents/${label}.plist`];
+    }
+    case 'linux': {
+      const unit = env.CDF_SYSTEMD_UNIT?.trim() || 'cdf-know-daemon';
+      return [
+        `systemctl --user disable --now ${unit}.service`,
+        `rm ~/.config/systemd/user/${unit}.service`,
+      ];
+    }
+    case 'win32': {
+      const task = env.CDF_WINDOWS_TASK_NAME?.trim() || 'CrossWMSDaemon';
+      return [`schtasks /Delete /TN "${task}" /F`];
+    }
+    default:
+      return [];
+  }
+}
+
+// --- 额外守护服务扫描 ---
+
+const CDF_KNOW_MARKERS = ['cdf-know', 'com.cdf-know'] as const;
+
+async function readDirEntries(dir: string): Promise<string[]> {
+  try {
+    return await fs.readdir(dir);
+  } catch {
+    return [];
+  }
+}
+
+async function readUtf8File(filePath: string): Promise<string | null> {
+  try {
+    return await fs.readFile(filePath, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+function isLegacyLabel(label: string): boolean {
+  const lower = label.toLowerCase();
+  return lower.includes('openclaw') || lower.includes('clawdbot');
+}
+
+function detectMarkerInContent(contents: string): 'cdf-know' | 'legacy' | null {
+  const lower = contents.toLowerCase();
+  for (const marker of CDF_KNOW_MARKERS) {
+    if (lower.includes(marker)) return 'cdf-know';
+  }
+  if (lower.includes('openclaw') || lower.includes('clawdbot')) return 'legacy';
+  return null;
+}
+
+async function scanLaunchdDir(params: {
+  dir: string;
+  scope: 'user' | 'system';
+  currentLabel: string;
+}): Promise<ExtraDaemonService[]> {
+  const results: ExtraDaemonService[] = [];
+  const entries = await readDirEntries(params.dir);
+  for (const entry of entries) {
+    if (!entry.endsWith('.plist')) continue;
+    const name = entry.slice(0, -'.plist'.length);
+    if (name === params.currentLabel) continue;
+    const fullPath = path.join(params.dir, entry);
+    const contents = await readUtf8File(fullPath);
+    if (!contents) continue;
+    const marker = detectMarkerInContent(contents);
+    if (!marker) continue;
+    const legacy = marker === 'legacy' || isLegacyLabel(name);
+    results.push({
+      platform: 'darwin',
+      label: name,
+      detail: `plist: ${fullPath}`,
+      scope: params.scope,
+      marker,
+      legacy,
+    });
+  }
+  return results;
+}
+
+async function scanSystemdDir(params: {
+  dir: string;
+  scope: 'user' | 'system';
+  currentUnitName: string;
+}): Promise<ExtraDaemonService[]> {
+  const results: ExtraDaemonService[] = [];
+  const entries = await readDirEntries(params.dir);
+  for (const entry of entries) {
+    if (!entry.endsWith('.service')) continue;
+    const name = entry.slice(0, -'.service'.length);
+    if (name === params.currentUnitName) continue;
+    const fullPath = path.join(params.dir, entry);
+    const contents = await readUtf8File(fullPath);
+    if (!contents) continue;
+    const marker = detectMarkerInContent(contents);
+    if (!marker) continue;
+    results.push({
+      platform: 'linux',
+      label: entry,
+      detail: `unit: ${fullPath}`,
+      scope: params.scope,
+      marker,
+      legacy: marker !== 'cdf-know',
+    });
+  }
+  return results;
+}
+
+/**
+ * 扫描当前平台中残留/遗留的守护服务。
+ * 参考 openclaw inspect findExtraGatewayServices。
+ * 用于 install 前后对比、diagnostics 诊断等场景。
+ */
+export async function findExtraDaemonServices(
+  env: Record<string, string | undefined>,
+  opts: FindExtraDaemonServicesOptions = {},
+): Promise<ExtraDaemonService[]> {
+  const results: ExtraDaemonService[] = [];
+
+  if (process.platform === 'darwin') {
+    try {
+      const home = resolveHomeDir(env);
+      const currentLabel = env.CDF_LAUNCHD_LABEL?.trim() || 'com.cdf-know.daemon';
+      const userDir = path.join(home, 'Library', 'LaunchAgents');
+      results.push(...await scanLaunchdDir({ dir: userDir, scope: 'user', currentLabel }));
+      if (opts.deep) {
+        results.push(...await scanLaunchdDir({
+          dir: path.join(path.sep, 'Library', 'LaunchAgents'),
+          scope: 'system',
+          currentLabel,
+        }));
+        results.push(...await scanLaunchdDir({
+          dir: path.join(path.sep, 'Library', 'LaunchDaemons'),
+          scope: 'system',
+          currentLabel,
+        }));
+      }
+    } catch {
+      return results;
+    }
+    return results;
+  }
+
+  if (process.platform === 'linux') {
+    try {
+      const home = resolveHomeDir(env);
+      const currentUnitName = env.CDF_SYSTEMD_UNIT?.trim() || 'cdf-know-daemon';
+      const userDir = path.join(home, '.config', 'systemd', 'user');
+      results.push(...await scanSystemdDir({ dir: userDir, scope: 'user', currentUnitName }));
+      if (opts.deep) {
+        for (const dir of ['/etc/systemd/system', '/usr/lib/systemd/system', '/lib/systemd/system']) {
+          results.push(...await scanSystemdDir({ dir, scope: 'system', currentUnitName }));
+        }
+      }
+    } catch {
+      return results;
+    }
+    return results;
+  }
+
+  // Windows: schtasks 深度扫描（需 deep 选项）
+  if (process.platform === 'win32' && opts.deep) {
+    const res = await execCmd('schtasks', ['/Query', '/FO', 'LIST', '/V']);
+    if (res.code !== 0) return results;
+    const currentTaskName = (env.CDF_WINDOWS_TASK_NAME?.trim() || 'CrossWMSDaemon').toLowerCase();
+    for (const rawLine of res.stdout.split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      const idx = line.indexOf(':');
+      if (idx <= 0) continue;
+      const key = line.slice(0, idx).trim().toLowerCase();
+      if (key !== 'taskname') continue;
+      const name = line.slice(idx + 1).trim();
+      if (!name || name.toLowerCase().replace(/^\\+/, '') === currentTaskName) continue;
+      const lowerName = name.toLowerCase();
+      let marker: 'cdf-know' | 'legacy' | null = null;
+      if (lowerName.includes('cdf-know') || lowerName.includes('crosswms')) marker = 'cdf-know';
+      else if (lowerName.includes('openclaw') || lowerName.includes('clawdbot')) marker = 'legacy';
+      if (!marker) continue;
+      results.push({
+        platform: 'win32',
+        label: name,
+        detail: name,
+        scope: 'system',
+        marker,
+        legacy: marker !== 'cdf-know',
+      });
+    }
+  }
+
+  return results;
 }

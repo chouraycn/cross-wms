@@ -43,8 +43,7 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# OpenClaw embedded copy (use workspace dependency instead)
-openclaw/
+# OpenClaw (git submodule) — do not ignore, tracked via .gitmodules
 openclow-ai-computer-control/
 
 # Misc

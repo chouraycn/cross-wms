@@ -12,6 +12,7 @@ vi.mock('../config/appPaths.js', () => ({
   AppPaths: {
     userDataDir: '/tmp/test-memory',
     rootDir: '/tmp/test-memory',
+    onnxModelsDir: '/tmp/test-memory/models',
   },
 }));
 

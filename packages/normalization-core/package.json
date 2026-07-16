@@ -1,0 +1,45 @@
+{
+  "name": "@cdf-know/normalization-core",
+  "version": "1.0.0",
+  "description": "CDFKnow NormalizationCore - 标准化核心",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./number-coercion": {
+      "types": "./dist/number-coercion.d.ts",
+      "default": "./dist/number-coercion.js"
+    },
+    "./record-coerce": {
+      "types": "./dist/record-coerce.d.ts",
+      "default": "./dist/record-coerce.js"
+    },
+    "./string-coerce": {
+      "types": "./dist/string-coerce.d.ts",
+      "default": "./dist/string-coerce.js"
+    },
+    "./string-normalization": {
+      "types": "./dist/string-normalization.d.ts",
+      "default": "./dist/string-normalization.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "clean": "rm -rf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^25.9.4",
+    "typescript": "^5.9.3",
+    "vite": "^7",
+    "vitest": "^3.2.6"
+  }
+}

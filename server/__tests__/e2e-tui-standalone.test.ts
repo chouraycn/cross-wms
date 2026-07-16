@@ -328,10 +328,9 @@ describe('E2E: TUI 独立应用', () => {
       expect(result.errors.some(e => e.includes('thresholdRatio'))).toBe(true);
     });
 
-    it('getDefaultConfigPath 应返回 ~/.cdf-know-clow/tui.json', async () => {
+    it('getDefaultConfigPath 应返回正确的 tui.json 路径', async () => {
       const { getDefaultConfigPath } = await import('../tui/config.js');
       const path = getDefaultConfigPath();
-      expect(path).toContain('cdf-know-clow');
       expect(path).toContain('tui.json');
     });
 

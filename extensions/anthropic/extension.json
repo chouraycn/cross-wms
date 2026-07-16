@@ -1,0 +1,28 @@
+{
+  "id": "anthropic",
+  "name": "Anthropic Provider",
+  "description": "Anthropic Claude LLM provider extension with Messages API support",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key",
+  "providers": ["anthropic"],
+  "modelSupport": {
+    "modelPrefixes": ["claude-"]
+  },
+  "providerEndpoints": [
+    {
+      "endpointClass": "anthropic-public",
+      "hosts": ["api.anthropic.com"]
+    }
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "anthropic",
+        "envVars": ["ANTHROPIC_API_KEY"]
+      }
+    ]
+  }
+}

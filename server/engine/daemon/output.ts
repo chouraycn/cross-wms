@@ -1,6 +1,6 @@
 /**
  * 守护进程状态输出格式化
- * 支持表格与 JSON 输出。
+ * 支持表格与 JSON 输出；以及终端样式化的 label/value 行格式化。
  * 参考 openclaw/src/daemon/output.ts 的架构对齐实现。
  */
 import type { DaemonServiceStatus } from './service.js';
@@ -78,4 +78,29 @@ function formatBytes(bytes: number): string {
     unit++;
   }
   return `${value.toFixed(1)} ${units[unit]}`;
+}
+
+// --- 终端样式化行格式化（参考 openclaw output） ---
+
+/** Normalizes Windows separators for command output paths. */
+export const toPosixPath = (value: string): string => value.replace(/\\/g, '/');
+
+/** Formats a labeled daemon output line with terminal styling. */
+export function formatLine(label: string, value: string): string {
+  // cross-wms 暂不引入终端颜色库，用简洁的 label: value 格式
+  return `${label}: ${value}`;
+}
+
+/** Writes multiple labeled lines to a writable stream. */
+export function writeFormattedLines(
+  stdout: NodeJS.WritableStream,
+  lines: Array<{ label: string; value: string }>,
+  opts?: { leadingBlankLine?: boolean },
+): void {
+  if (opts?.leadingBlankLine) {
+    stdout.write('\n');
+  }
+  for (const line of lines) {
+    stdout.write(`${formatLine(line.label, line.value)}\n`);
+  }
 }

@@ -86,6 +86,13 @@ function invalidateCache(): void {
   cacheTimestamp = 0;
 }
 
+export function resetModelsStoreForTests(): void {
+  cachedModelsFile = null;
+  cacheTimestamp = 0;
+  memoryFallbackMode = false;
+  memoryModelsFile = null;
+}
+
 const AI_MODELS_DIR = AppPaths.modelsDir;
 const MODELS_FILE = AppPaths.modelsFile;
 const OLD_MODELS_FILE = AppPaths.oldModelsFile;
@@ -487,7 +494,7 @@ export async function loadModelsConfig(options?: { skipKeyInjection?: boolean })
         });
         await writeModelsFile({ ...saved, models: sanitized });
       }
-      // 更新缓存
+      // 更新缓存（仅在完整加载时更新）
       cachedModelsFile = saved;
       cacheTimestamp = Date.now();
       return saved;

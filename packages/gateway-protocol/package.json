@@ -1,0 +1,57 @@
+{
+  "name": "@cdf-know/gateway-protocol",
+  "version": "1.0.0",
+  "description": "CDFKnow GatewayProtocol - Gateway 协议定义",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client-info": {
+      "types": "./dist/client-info.d.ts",
+      "default": "./dist/client-info.js"
+    },
+    "./connect-error-details": {
+      "types": "./dist/connect-error-details.d.ts",
+      "default": "./dist/connect-error-details.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "default": "./dist/schema.js"
+    },
+    "./startup-unavailable": {
+      "types": "./dist/startup-unavailable.d.ts",
+      "default": "./dist/startup-unavailable.js"
+    },
+    "./version": {
+      "types": "./dist/version.d.ts",
+      "default": "./dist/version.js"
+    },
+    "./secret-ref-contract": {
+      "types": "./dist/secret-ref-contract.d.ts",
+      "default": "./dist/secret-ref-contract.js"
+    },
+    "./schema/*": {
+      "types": "./dist/schema/*.d.ts",
+      "default": "./dist/schema/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "clean": "rm -rf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "typebox": "1.1.39"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.4",
+    "typescript": "^5.9.3",
+    "vite": "^7",
+    "vitest": "^3.2.6"
+  }
+}
