@@ -16,6 +16,8 @@ export interface WarehouseRow {
   address: string;
   manager: string;
   phone: string;
+  warehouseType: string; // 'normal' | 'cold' | 'frozen' | 'hazardous'
+  temperatureRange: string; // e.g. '15-25°C', '-18°C', '-25°C'
   createdAt: string;
 }
 

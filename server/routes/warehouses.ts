@@ -13,8 +13,9 @@ import {
 const router = Router();
 
 // GET /api/warehouses
-router.get('/', (_req: Request, res: Response) => {
-  const data = dbGetAll();
+router.get('/', (req: Request, res: Response) => {
+  const warehouseType = req.query.type as string | undefined;
+  const data = dbGetAll(warehouseType);
   res.json({ data });
 });
 
