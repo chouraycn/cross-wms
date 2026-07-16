@@ -13,8 +13,8 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { CircuitBreaker } from '../../server/engine/circuitBreaker.js';
-import { bingCnSearchProvider } from '../../server/plugins/search-provider-bing-cn.ts';
-import { soSearchProvider } from '../../server/plugins/search-provider-360.ts';
+import { bingCnSearchProvider } from '../../server/plugins/providers/bing-cn-search-provider.js';
+import { soSearchProvider } from '../../server/plugins/providers/360-search-provider.js';
 
 const OPEN_COOLDOWN_MS = 60_000;
 

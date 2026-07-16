@@ -498,7 +498,7 @@ const plugin: WebSearchProviderPlugin = {
   placeholder: "输入百度 API Key（可选，留空使用 HTML 解析模式）",
   signupUrl: "https://cloud.baidu.com/",
   docsUrl: "https://cloud.baidu.com/doc/index.html",
-  autoDetectOrder: 38,
+  autoDetectOrder: 1,
   credentialPath: "tools.web.search.providers.baidu.apiKey",
   inactiveSecretPaths: [],
 
