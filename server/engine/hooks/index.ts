@@ -126,11 +126,9 @@ export type { ModuleLoaderOptions } from './module-loader.js';
 
 // 内部钩子管理
 export {
-  registerInternalHook,
   registerInternalModifier,
   runInternalHooks,
   runInternalModifiers,
-  unregisterInternalHook,
   clearInternalHooks,
 } from './internal-hooks.js';
 
