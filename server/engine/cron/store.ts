@@ -5,49 +5,29 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import type { CronJob, CronJobState, CronStoreFile } from "./types.js";
 
-/** Cron 任务配置 */
-export interface CronJobConfig {
-  id: string;
-  name: string;
-  description?: string;
-  cronExpression: string;
-  taskType: string;
-  taskParams: Record<string, unknown>;
-  sessionKey?: string;
-  agent?: string;
-  timezone?: string;
-  enabled: boolean;
-  maxRetries: number;
-  retryDelayMs: number;
-  timeoutMs: number;
-  staggerMs?: number;
-  metadata?: Record<string, unknown>;
-}
+// 重导出 types.ts 的类型，保持向后兼容
+export type { CronJob, CronJobState, CronStoreFile } from "./types.js";
 
-/** Cron 任务运行时状态 */
-export interface CronJobRuntime {
-  status: "active" | "paused" | "completed" | "failed" | "disabled";
-  lastRunAt?: number;
-  nextRunAt?: number;
-  lastSuccessAt?: number;
-  lastFailureAt?: number;
-  consecutiveFailures: number;
-  totalRuns: number;
-  totalSuccesses: number;
-  totalFailures: number;
-  createdAt: number;
-  updatedAt: number;
-}
+/** @deprecated 使用 types.ts 的 CronJob 代替 */
+export type CronJobConfig = Pick<CronJob, "id" | "name" | "description" | "enabled" | "agentId" | "sessionKey"> & {
+  schedule: CronJob["schedule"];
+  sessionTarget: CronJob["sessionTarget"];
+  wakeMode: CronJob["wakeMode"];
+  payload: CronJob["payload"];
+  delivery?: CronJob["delivery"];
+  failureAlert?: CronJob["failureAlert"];
+  deleteAfterRun?: boolean;
+  createdAtMs: number;
+  updatedAtMs: number;
+};
 
-/** 完整的 Cron Job 条目 */
-export interface CronJobEntry extends CronJobConfig, CronJobRuntime {}
+/** @deprecated 使用 types.ts 的 CronJobState 代替 */
+export type CronJobRuntime = CronJobState;
 
-/** 存储文件格式 */
-export interface CronStoreFile {
-  version: number;
-  jobs: CronJobEntry[];
-}
+/** @deprecated 使用 types.ts 的 CronJob 代替 */
+export type CronJobEntry = CronJob;
 
 /** 隔离文件格式（用于存储无效或异常的 job） */
 export interface CronQuarantineFile {
@@ -60,9 +40,9 @@ export interface CronQuarantineEntry {
   quarantinedAtMs: number;
   sourceIndex: number;
   reason: string;
-  job?: CronJobConfig;
+  job?: Partial<CronJob>;
   raw?: string;
-  state?: CronJobRuntime;
+  state?: CronJobState;
   updatedAtMs?: number;
   scheduleIdentity?: string;
 }
@@ -89,6 +69,8 @@ export interface CronJobStore {
   /** 获取隔离文件路径 */
   getQuarantinePath(): string;
 }
+
+// CronJobRuntime 已由 types.ts 的 CronJobState 代替，此处不再定义
 
 /** 默认的 cron 存储目录名 */
 const DEFAULT_CRON_DIR = "cron";
@@ -191,24 +173,19 @@ function isValidCronStoreFile(value: unknown): value is CronStoreFile {
   return true;
 }
 
-/** 验证运行时状态 */
-function isValidCronJobRuntime(value: unknown): value is CronJobRuntime {
-  if (!isRecord(value)) return false;
-  const validStatuses = ["active", "paused", "completed", "failed", "disabled"];
-  if (typeof value.status === "string" && !validStatuses.includes(value.status)) {
-    return false;
-  }
-  return true;
-}
-
-/** 验证任务配置 */
-function isValidCronJobConfig(value: unknown): value is CronJobConfig {
+/** 验证任务配置（使用 types.ts 的 CronJob 字段） */
+function isValidCronJobConfig(value: unknown): value is CronJob {
   if (!isRecord(value)) return false;
   if (typeof value.id !== "string") return false;
   if (typeof value.name !== "string") return false;
-  if (typeof value.cronExpression !== "string") return false;
-  if (typeof value.taskType !== "string") return false;
-  if (typeof value.taskParams !== "object") return false;
+  if (!isRecord(value.schedule)) return false;
+  if (typeof value.schedule.kind !== "string") return false;
+  if (typeof value.sessionTarget !== "string") return false;
+  if (typeof value.wakeMode !== "string") return false;
+  if (!isRecord(value.payload)) return false;
+  if (typeof value.enabled !== "boolean") return false;
+  if (typeof value.createdAtMs !== "number") return false;
+  if (typeof value.updatedAtMs !== "number") return false;
   return true;
 }
 
@@ -232,7 +209,7 @@ export class JsonCronJobStore implements CronJobStore {
 
   async load(): Promise<LoadedCronStore> {
     const invalidConfigRows: CronQuarantineEntry[] = [];
-    const validJobs: CronJobEntry[] = [];
+    const validJobs: CronJob[] = [];
 
     try {
       const raw = await fs.promises.readFile(this.storePath, "utf-8");
@@ -263,35 +240,24 @@ export class JsonCronJobStore implements CronJobStore {
           continue;
         }
 
-        // 验证运行时状态
-        const runtime: CronJobRuntime = {
-          status: entry.status ?? "active",
-          lastRunAt: entry.lastRunAt,
-          nextRunAt: entry.nextRunAt,
-          lastSuccessAt: entry.lastSuccessAt,
-          lastFailureAt: entry.lastFailureAt,
-          consecutiveFailures: entry.consecutiveFailures ?? 0,
-          totalRuns: entry.totalRuns ?? 0,
-          totalSuccesses: entry.totalSuccesses ?? 0,
-          totalFailures: entry.totalFailures ?? 0,
-          createdAt: entry.createdAt ?? now,
-          updatedAt: entry.updatedAt ?? now,
+        // 确保运行时状态存在
+        const state = isRecord(entry.state) ? entry.state : {};
+        const job: CronJob = {
+          ...entry,
+          state: {
+            nextRunAtMs: typeof state.nextRunAtMs === "number" ? state.nextRunAtMs : undefined,
+            runningAtMs: typeof state.runningAtMs === "number" ? state.runningAtMs : undefined,
+            lastRunAtMs: typeof state.lastRunAtMs === "number" ? state.lastRunAtMs : undefined,
+            lastRunStatus: typeof state.lastRunStatus === "string" ? state.lastRunStatus : undefined,
+            lastError: typeof state.lastError === "string" ? state.lastError : undefined,
+            lastDurationMs: typeof state.lastDurationMs === "number" ? state.lastDurationMs : undefined,
+            lastSuccessAtMs: typeof state.lastSuccessAtMs === "number" ? state.lastSuccessAtMs : undefined,
+            consecutiveErrors: typeof state.consecutiveErrors === "number" ? state.consecutiveErrors : 0,
+            consecutiveSkipped: typeof state.consecutiveSkipped === "number" ? state.consecutiveSkipped : 0,
+          },
         };
 
-        if (!isValidCronJobRuntime(runtime)) {
-          invalidConfigRows.push({
-            quarantinedAtMs: now,
-            sourceIndex: i,
-            reason: "Invalid job runtime status",
-            job: entry,
-          });
-          continue;
-        }
-
-        validJobs.push({
-          ...entry,
-          ...runtime,
-        });
+        validJobs.push(job);
       }
     } catch (err) {
       const code = (err as { code?: unknown })?.code;
@@ -348,13 +314,13 @@ export class JsonCronJobStore implements CronJobStore {
         };
 
         if (isRecord(entry.job)) {
-          quarantined.job = entry.job as unknown as CronJobConfig;
+          quarantined.job = entry.job as Partial<CronJob>;
         }
         if (typeof entry.raw === "string") {
           quarantined.raw = entry.raw;
         }
         if (isRecord(entry.state)) {
-          quarantined.state = entry.state as unknown as CronJobRuntime;
+          quarantined.state = entry.state as CronJobState;
         }
         if (typeof entry.updatedAtMs === "number") {
           quarantined.updatedAtMs = entry.updatedAtMs;
