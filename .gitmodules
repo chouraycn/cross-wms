@@ -1,0 +1,4 @@
+[submodule "openclaw"]
+	path = openclaw
+	url = git@github.com:cdfknow/openclaw.git
+	branch = main

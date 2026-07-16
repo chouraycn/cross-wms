@@ -1,0 +1,23 @@
+{
+  "name": "@cdf-know/feishu",
+  "version": "2026.7.1",
+  "description": "Cross-WMS Feishu/Lark channel plugin - full version with 16 submodules.",
+  "type": "module",
+  "main": "index.ts",
+  "dependencies": {
+    "@larksuiteoapi/node-sdk": "1.66.0",
+    "typebox": "1.1.39",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@cdf-know/plugin-sdk": "workspace:*"
+  },
+  "peerDependencies": {
+    "@cdf-know/plugin-sdk": ">=2026.7.0"
+  },
+  "peerDependenciesMeta": {
+    "@cdf-know/plugin-sdk": {
+      "optional": true
+    }
+  }
+}

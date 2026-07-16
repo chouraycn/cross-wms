@@ -10,6 +10,9 @@ const DEFAULT_SYSTEMD_UNIT = 'cdf-know-daemon';
 const DEFAULT_SCHTASKS_NAME = 'CrossWMSDaemon';
 const DEFAULT_STATE_DIR_NAME = '.cdf-know';
 
+const windowsAbsolutePath = /^[a-zA-Z]:[\\/]/;
+const windowsUncPath = /^\\\\/;
+
 /** 守护进程相关的全部路径。 */
 export interface DaemonPaths {
   /** 用户主目录 */
@@ -38,6 +41,8 @@ export interface DaemonPaths {
   schtasksTaskName: string;
   /** Windows 任务脚本路径（.cmd 包装器） */
   taskScriptPath: string;
+  /** 环境变量目录（launchd env wrapper） */
+  envDir: string;
 }
 
 export interface ResolveDaemonPathsOptions {
@@ -51,13 +56,64 @@ export interface ResolveDaemonPathsOptions {
   logDir?: string;
 }
 
-/** 解析用户主目录，缺失时抛错。 */
+/** 解析用户主目录，缺失时抛错。支持 HOME 和 USERPROFILE（Windows）。 */
 export function resolveHomeDir(env: Record<string, string | undefined> = process.env): string {
   const home = (env.HOME ?? env.USERPROFILE ?? '').trim();
   if (!home) {
     throw new Error('无法解析用户主目录：HOME/USERPROFILE 未设置');
   }
   return home;
+}
+
+/** 将 ~ 展开为用户主目录，同时保留 Windows 绝对/UNC 路径不做 path.resolve 腐蚀。 */
+function resolveUserPathWithHome(input: string, home?: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return trimmed;
+  if (trimmed.startsWith('~')) {
+    if (!home) throw new Error('Missing HOME');
+    const expanded = trimmed.replace(/^~(?=$|[\\/])/, home);
+    return path.resolve(expanded);
+  }
+  if (windowsAbsolutePath.test(trimmed) || windowsUncPath.test(trimmed)) {
+    return trimmed;
+  }
+  return path.resolve(trimmed);
+}
+
+/**
+ * 解析守护进程状态目录。
+ * 支持 CDF_STATE_DIR 环境变量覆盖，以及 ~ 展开和 profile 后缀隔离。
+ */
+export function resolveDaemonStateDir(env: Record<string, string | undefined>): string {
+  const override = (env.CDF_STATE_DIR ?? '').trim();
+  if (override) {
+    const home = override.startsWith('~') ? resolveHomeDir(env) : undefined;
+    return resolveUserPathWithHome(override, home);
+  }
+  const home = resolveHomeDir(env);
+  const suffix = resolveProfileSuffix(env.CDF_PROFILE);
+  return path.join(home, `${DEFAULT_STATE_DIR_NAME}${suffix}`);
+}
+
+/** Profile 后缀隔离，允许多实例并存。 */
+function resolveProfileSuffix(profile: string | undefined): string {
+  const trimmed = (profile ?? '').trim();
+  if (!trimmed) return '';
+  return `-${trimmed}`;
+}
+
+/**
+ * 解析守护进程任务脚本路径。
+ * 支持 CDF_TASK_SCRIPT / CDF_TASK_SCRIPT_NAME 环境变量覆盖。
+ */
+export function resolveDaemonTaskScriptPath(env: Record<string, string | undefined>): string {
+  const override = (env.CDF_TASK_SCRIPT ?? '').trim();
+  if (override) return override;
+  const scriptName = (env.CDF_TASK_SCRIPT_NAME ?? '').trim() || 'daemon.cmd';
+  if (/[/\\]|\.\./.test(scriptName)) {
+    throw new Error(`CDF_TASK_SCRIPT_NAME must be a file name only, not a path: ${scriptName}`);
+  }
+  return path.join(resolveDaemonStateDir(env), scriptName);
 }
 
 /**
@@ -67,12 +123,13 @@ export function resolveHomeDir(env: Record<string, string | undefined> = process
 export function resolveDaemonPaths(options: ResolveDaemonPathsOptions = {}): DaemonPaths {
   const env = options.env ?? process.env;
   const homeDir = resolveHomeDir(env);
-  const stateDir = options.stateDir ?? path.join(homeDir, DEFAULT_STATE_DIR_NAME);
+  const stateDir = options.stateDir ?? resolveDaemonStateDir(env);
   const logDir = options.logDir ?? path.join(stateDir, 'logs');
   const stdoutLogPath = path.join(logDir, 'daemon.stdout.log');
   const stderrLogPath = path.join(logDir, 'daemon.stderr.log');
   const pidFilePath = path.join(stateDir, 'daemon.pid');
   const heartbeatFilePath = path.join(stateDir, 'daemon.heartbeat');
+  const envDir = path.join(stateDir, 'service-env');
 
   const launchdLabel = options.launchdLabel ?? options.label ?? DEFAULT_LAUNCHD_LABEL;
   const systemdUnitName = options.systemdUnitName ?? options.label ?? DEFAULT_SYSTEMD_UNIT;
@@ -86,7 +143,7 @@ export function resolveDaemonPaths(options: ResolveDaemonPathsOptions = {}): Dae
     'user',
     `${systemdUnitName}.service`,
   );
-  const taskScriptPath = path.join(stateDir, 'daemon.cmd');
+  const taskScriptPath = resolveDaemonTaskScriptPath(env);
 
   return {
     homeDir,
@@ -102,5 +159,6 @@ export function resolveDaemonPaths(options: ResolveDaemonPathsOptions = {}): Dae
     systemdUnitPath,
     schtasksTaskName,
     taskScriptPath,
+    envDir,
   };
 }

@@ -1,0 +1,23 @@
+{
+  "name": "@cdf-know/plugin-package-contract",
+  "version": "1.0.0",
+  "description": "CDFKnow PluginPackageContract - 插件包契约",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "clean": "rm -rf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^25.9.4",
+    "typescript": "^5.9.3",
+    "vite": "^7",
+    "vitest": "^3.2.6"
+  }
+}

@@ -24,7 +24,7 @@
     {
       "id": "qwen-max",
       "name": "通义千问 Max",
-      "provider": "qwen",
+      "provider": "alibaba",
       "apiEndpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
       "description": "阿里通义千问 Max，最强推理与代码能力",
       "contextWindow": 32000,
@@ -34,7 +34,7 @@
     {
       "id": "qwen-plus",
       "name": "通义千问 Plus",
-      "provider": "qwen",
+      "provider": "alibaba",
       "apiEndpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
       "description": "阿里通义千问 Plus，均衡能力",
       "contextWindow": 32000,
@@ -44,7 +44,7 @@
     {
       "id": "qwen-turbo",
       "name": "通义千问 Turbo",
-      "provider": "qwen",
+      "provider": "alibaba",
       "apiEndpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
       "description": "阿里通义千问 Turbo，极速响应",
       "contextWindow": 32000,
@@ -54,7 +54,7 @@
     {
       "id": "qwen-vl-max",
       "name": "通义千问 VL Max",
-      "provider": "qwen",
+      "provider": "alibaba",
       "apiEndpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1",
       "description": "阿里通义千问 VL Max，多模态理解",
       "contextWindow": 32000,

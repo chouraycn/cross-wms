@@ -84,6 +84,7 @@ export interface OpenAIModel {
   permission: unknown[];
   root: string;
   parent: string | null;
+  provider?: string;
 }
 
 // ==================== Provider 路由配置 ====================
@@ -119,6 +120,30 @@ const DEFAULT_PROVIDER_ORDER = [
 export function detectProvider(modelId: string): string {
   const lower = modelId.toLowerCase();
 
+  const modelToProvider: Record<string, string> = {
+    'qwen': 'alibaba',
+    'deepseek': 'deepseek',
+    'gpt': 'openai',
+    'claude': 'anthropic',
+    'glm': 'zhipu',
+    'gemini': 'google',
+    'kimi': 'moonshot',
+    'moonshot': 'moonshot',
+    'hunyuan': 'tencent',
+    'minimax': 'minimax',
+    'grok': 'xai',
+    'llama': 'ollama',
+    'command': 'cohere',
+    'sonar': 'perplexity',
+    'o3': 'openai',
+  };
+
+  for (const [modelPrefix, provider] of Object.entries(modelToProvider)) {
+    if (lower.startsWith(modelPrefix)) {
+      return provider;
+    }
+  }
+
   for (const [provider, models] of Object.entries(PROVIDER_MODELS)) {
     for (const model of models) {
       if (lower.includes(model.toLowerCase()) || model.toLowerCase().includes(lower)) {
@@ -144,6 +169,9 @@ export function normalizeModelId(modelId: string): string {
     'gpt-4o': 'gpt-4o',
     'gpt-4o-mini': 'gpt-4o-mini',
     'claude-3': 'claude-3-5-sonnet-20240620',
+    'claude': 'claude-sonnet-4',
+    'gemini': 'gemini-2.0-flash',
+    'qwen': 'qwen-plus',
   };
 
   const modelMap: Record<string, string> = {
@@ -192,16 +220,18 @@ gatewayRouter.get('/health', (_req: Request, res: Response) => {
 gatewayRouter.get('/v1/models', async (_req: Request, res: Response) => {
   try {
     const models: OpenAIModel[] = [
-      { id: 'deepseek-chat', object: 'model', created: 1700000000, owned_by: 'DeepSeek', permission: [], root: 'deepseek-chat', parent: null },
-      { id: 'deepseek-v3', object: 'model', created: 1700000000, owned_by: 'DeepSeek', permission: [], root: 'deepseek-v3', parent: null },
-      { id: 'gpt-4o', object: 'model', created: 1700000000, owned_by: 'system', permission: [], root: 'gpt-4o', parent: null },
-      { id: 'gpt-4o-mini', object: 'model', created: 1700000000, owned_by: 'system', permission: [], root: 'gpt-4o-mini', parent: null },
-      { id: 'gpt-4-turbo', object: 'model', created: 1700000000, owned_by: 'system', permission: [], root: 'gpt-4-turbo', parent: null },
-      { id: 'claude-sonnet-4', object: 'model', created: 1700000000, owned_by: 'Anthropic', permission: [], root: 'claude-sonnet-4', parent: null },
-      { id: 'glm-4', object: 'model', created: 1700000000, owned_by: 'ZhipuAI', permission: [], root: 'glm-4', parent: null },
-      { id: 'glm-4-plus', object: 'model', created: 1700000000, owned_by: 'ZhipuAI', permission: [], root: 'glm-4-plus', parent: null },
-      { id: 'qwen-plus', object: 'model', created: 1700000000, owned_by: 'Alibaba', permission: [], root: 'qwen-plus', parent: null },
-      { id: 'gemini-2.0-flash', object: 'model', created: 1700000000, owned_by: 'Google', permission: [], root: 'gemini-2.0-flash', parent: null },
+      { id: 'deepseek-chat', provider: 'deepseek', object: 'model', created: 1700000000, owned_by: 'DeepSeek', permission: [], root: 'deepseek-chat', parent: null },
+      { id: 'deepseek-v3', provider: 'deepseek', object: 'model', created: 1700000000, owned_by: 'DeepSeek', permission: [], root: 'deepseek-v3', parent: null },
+      { id: 'gpt-4o', provider: 'openai', object: 'model', created: 1700000000, owned_by: 'system', permission: [], root: 'gpt-4o', parent: null },
+      { id: 'gpt-4o-mini', provider: 'openai', object: 'model', created: 1700000000, owned_by: 'system', permission: [], root: 'gpt-4o-mini', parent: null },
+      { id: 'gpt-4-turbo', provider: 'openai', object: 'model', created: 1700000000, owned_by: 'system', permission: [], root: 'gpt-4-turbo', parent: null },
+      { id: 'claude-sonnet-4', provider: 'anthropic', object: 'model', created: 1700000000, owned_by: 'Anthropic', permission: [], root: 'claude-sonnet-4', parent: null },
+      { id: 'glm-4', provider: 'zhipu', object: 'model', created: 1700000000, owned_by: 'ZhipuAI', permission: [], root: 'glm-4', parent: null },
+      { id: 'glm-4-plus', provider: 'zhipu', object: 'model', created: 1700000000, owned_by: 'ZhipuAI', permission: [], root: 'glm-4-plus', parent: null },
+      { id: 'qwen-plus', provider: 'alibaba', object: 'model', created: 1700000000, owned_by: 'Alibaba', permission: [], root: 'qwen-plus', parent: null },
+      { id: 'qwen-turbo', provider: 'alibaba', object: 'model', created: 1700000000, owned_by: 'Alibaba', permission: [], root: 'qwen-turbo', parent: null },
+      { id: 'qwen-long', provider: 'alibaba', object: 'model', created: 1700000000, owned_by: 'Alibaba', permission: [], root: 'qwen-long', parent: null },
+      { id: 'gemini-2.0-flash', provider: 'google', object: 'model', created: 1700000000, owned_by: 'Google', permission: [], root: 'gemini-2.0-flash', parent: null },
     ];
 
     res.json({

@@ -180,6 +180,10 @@ export function clearLoadedPlugins(): void {
   logger.info('[PluginLoader] 清空所有已加载插件');
 }
 
+export function resetPluginLoaderForTests(): void {
+  loadedPlugins.clear();
+}
+
 export async function installFromZip(zipPath: string, targetDir?: string): Promise<PluginInstallResult | null> {
   try {
     logger.info(`[PluginLoader] 从 ZIP 安装插件: ${zipPath}`);

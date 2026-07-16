@@ -1,0 +1,10 @@
+{
+  "id": "slack",
+  "name": "Slack Channel",
+  "description": "Slack Bot channel extension with Socket Mode support",
+  "version": "1.0.0",
+  "kind": "channel",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key"
+}

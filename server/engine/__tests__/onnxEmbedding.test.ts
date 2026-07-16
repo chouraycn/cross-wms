@@ -85,42 +85,48 @@ vi.mock('onnxruntime-node', () => {
 
 // ===================== Mock: fs =====================
 
-vi.mock('fs', () => ({
-  existsSync: vi.fn(() => true),
-  mkdirSync: vi.fn(),
-  writeFileSync: vi.fn(),
-  readFileSync: vi.fn((p: string) => {
-    const filepath = String(p);
-    if (filepath.endsWith('vocab.txt')) {
-      // Minimal BERT vocab — enough for deterministic tokenization
-      return [
-        '[CLS]', '[SEP]', '[UNK]', '[PAD]', 'hello', 'world', 'test',
-        'cache', 'button', 'submit', 'cancel', 'search', 'input',
-        'click', 'smart', 'desktop', 'the', 'a', 'is', 'to', 'foo',
-        'bar', 'baz', 'consistency', 'eviction', 'lru', 'batch',
-        ...Array.from({ length: 200 }, (_, i) => `tok${i}`),
-      ].join('\n');
-    }
-    if (filepath.endsWith('config.json')) {
-      return JSON.stringify({ max_position_embeddings: 256, hidden_size: 384 });
-    }
-    if (filepath.endsWith('tokenizer.json')) {
-      return JSON.stringify({
-        model: {
-          vocab: {
-            '[CLS]': 0, '[SEP]': 1, '[UNK]': 2, '[PAD]': 3,
-            hello: 4, world: 5, test: 6, cache: 7, button: 8,
-            submit: 9, cancel: 10, search: 11, input: 12,
-            click: 13, smart: 14, desktop: 15,
+vi.mock('fs', () => {
+  const mock = {
+    existsSync: vi.fn(() => true),
+    mkdirSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    readFileSync: vi.fn((p: string) => {
+      const filepath = String(p);
+      if (filepath.endsWith('vocab.txt')) {
+        // Minimal BERT vocab — enough for deterministic tokenization
+        return [
+          '[CLS]', '[SEP]', '[UNK]', '[PAD]', 'hello', 'world', 'test',
+          'cache', 'button', 'submit', 'cancel', 'search', 'input',
+          'click', 'smart', 'desktop', 'the', 'a', 'is', 'to', 'foo',
+          'bar', 'baz', 'consistency', 'eviction', 'lru', 'batch',
+          ...Array.from({ length: 200 }, (_, i) => `tok${i}`),
+        ].join('\n');
+      }
+      if (filepath.endsWith('config.json')) {
+        return JSON.stringify({ max_position_embeddings: 256, hidden_size: 384 });
+      }
+      if (filepath.endsWith('tokenizer.json')) {
+        return JSON.stringify({
+          model: {
+            vocab: {
+              '[CLS]': 0, '[SEP]': 1, '[UNK]': 2, '[PAD]': 3,
+              hello: 4, world: 5, test: 6, cache: 7, button: 8,
+              submit: 9, cancel: 10, search: 11, input: 12,
+              click: 13, smart: 14, desktop: 15,
+            },
           },
-        },
-        normalizer: { type: 'BertNormalizer' },
-        pre_tokenizer: { type: 'BertPreTokenizer' },
-      });
-    }
-    return '';
-  }),
-}));
+          normalizer: { type: 'BertNormalizer' },
+          pre_tokenizer: { type: 'BertPreTokenizer' },
+        });
+      }
+      return '';
+    }),
+  };
+  return {
+    default: mock,
+    ...mock,
+  };
+});
 
 // ===================== Mock: logger =====================
 

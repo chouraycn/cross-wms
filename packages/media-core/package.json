@@ -1,0 +1,23 @@
+{
+  "name": "@cdf-know/media-core",
+  "version": "1.0.0",
+  "description": "CDFKnow MediaCore - 媒体处理核心",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "clean": "rm -rf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "file-type": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.4",
+    "typescript": "^5.9.3",
+    "vite": "^7",
+    "vitest": "^3.2.6"
+  }
+}

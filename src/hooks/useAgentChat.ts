@@ -42,6 +42,7 @@ import { RenderScheduler } from '../utils/sse/RenderScheduler.js';
 import { dispatchCdfEvent, CdfEvents } from '../events/events';
 import { EventAdapter, type SSEWireEvent } from '../utils/sse/eventAdapter';
 import type { ChatEvent, SystemEvent } from '../types/openclaw-events';
+import type { ReactVisibilityState } from '../types/react-events';
 
 // ===================== 类型定义 =====================
 
@@ -143,6 +144,8 @@ export interface UseAgentChatResult {
   addPendingMessage: (content: string, options?: SendAgentMessageOptions) => string;
   removePendingMessage: (id: string) => void;
   updatePendingMessage: (id: string, updates: Partial<Pick<PendingMessage, 'state' | 'error'>>) => void;
+  /** vT04: ReAct 可见性状态（供 ReactPhaseIndicator / ExecutionPlanPanel 消费） */
+  reactVisibility: ReactVisibilityState;
 }
 
 export function useAgentChat(
@@ -1957,6 +1960,148 @@ export function useAgentChat(
     return thinkingText.length > 0;
   }, [thinkingText]);
 
+  // vT04: 计算 ReAct 可见性状态 — 从最后一条 assistant 消息提取阶段/工具调用/执行计划
+  const reactVisibility = useMemo<ReactVisibilityState>(() => {
+    // 找到最后一条 assistant 消息
+    let lastAssistant: Message | undefined;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'assistant') {
+        lastAssistant = messages[i];
+        break;
+      }
+    }
+
+    if (!lastAssistant) {
+      return {
+        currentPhase: 'done',
+        toolCalls: [],
+        traces: [],
+        currentTurn: 0,
+        isExecuting: false,
+      };
+    }
+
+    // 提取当前阶段
+    let phase: ReactVisibilityState['currentPhase'] = 'done';
+    let currentStep: number | undefined;
+    let totalSteps: number | undefined;
+    let description: string | undefined;
+
+    if (lastAssistant.reactPhase) {
+      phase = lastAssistant.reactPhase.phase;
+      currentStep = lastAssistant.reactPhase.step;
+      totalSteps = lastAssistant.reactPhase.totalSteps;
+      description = lastAssistant.reactPhase.description;
+    } else if (lastAssistant.isStreaming) {
+      if (lastAssistant.thinking && !lastAssistant.thinkingDone) {
+        phase = 'reasoning';
+      } else if (lastAssistant.toolCalls && lastAssistant.toolCalls.length > 0) {
+        const hasRunning = lastAssistant.toolCalls.some(tc => !tc.result);
+        phase = hasRunning ? 'acting' : 'observing';
+      } else {
+        phase = 'reasoning';
+      }
+    }
+
+    // 提取工具调用状态
+    const toolCalls: ReactVisibilityState['toolCalls'] = [];
+    if (lastAssistant.toolCalls && Array.isArray(lastAssistant.toolCalls)) {
+      const executionStatus = lastAssistant.toolExecutionStatus || {};
+      for (const tc of lastAssistant.toolCalls) {
+        if ((tc as any)._folded) continue;
+        const tcId = tc.id || '';
+        const statusEntry = executionStatus[tcId];
+        let tcStatus: 'running' | 'completed' | 'failed' = 'completed';
+        let durationMs: number | undefined;
+        let retryCount: number | undefined;
+        let startedAt: number | undefined;
+        let endedAt: number | undefined;
+        if (statusEntry) {
+          tcStatus = statusEntry.status;
+          durationMs = statusEntry.durationMs;
+          retryCount = statusEntry.retryCount;
+          startedAt = statusEntry.startTime;
+          endedAt = statusEntry.endTime;
+        } else if (tc.result) {
+          const lower = tc.result.toLowerCase();
+          if (lower.startsWith('error:') || lower.startsWith('错误:')) {
+            tcStatus = 'failed';
+          }
+        } else {
+          tcStatus = 'running';
+        }
+        toolCalls.push({
+          id: tcId,
+          name: tc.name,
+          arguments: tc.arguments,
+          status: tcStatus,
+          result: tc.result || undefined,
+          durationMs,
+          retryCount,
+          startedAt,
+          endedAt,
+        });
+      }
+    }
+
+    // 提取执行计划
+    let plan: ReactVisibilityState['plan'] = undefined;
+    if (lastAssistant.executionPlan) {
+      plan = {
+        id: lastAssistant.executionPlan.id,
+        intent: lastAssistant.executionPlan.intent,
+        steps: lastAssistant.executionPlan.steps.map(s => ({
+          step: s.step,
+          description: s.description,
+          toolName: s.toolName,
+          status: s.status,
+          dependsOn: s.dependsOn,
+        })),
+        isDynamic: lastAssistant.executionPlan.isDynamic,
+        createdAt: lastAssistant.executionPlan.createdAt,
+      };
+    }
+
+    // 估算轨迹
+    const traces: ReactVisibilityState['traces'] = [];
+    if (toolCalls.length > 0) {
+      const groups: typeof toolCalls[] = [];
+      let currentGroup = [toolCalls[0]];
+      for (let i = 1; i < toolCalls.length; i++) {
+        const prevTime = toolCalls[i - 1].endedAt || toolCalls[i - 1].startedAt || 0;
+        const currTime = toolCalls[i].startedAt || toolCalls[i].endedAt || 0;
+        if (currTime - prevTime < 100) {
+          currentGroup.push(toolCalls[i]);
+        } else {
+          groups.push(currentGroup);
+          currentGroup = [toolCalls[i]];
+        }
+      }
+      groups.push(currentGroup);
+      for (let idx = 0; idx < groups.length; idx++) {
+        traces.push({
+          type: 'turn_trace',
+          turn: idx + 1,
+          tools: groups[idx].map(tc => tc.name),
+          durationMs: groups[idx].reduce((sum, tc) => sum + (tc.durationMs || 0), 0),
+          tokensUsed: 0,
+        });
+      }
+    }
+
+    return {
+      currentPhase: phase,
+      currentStep,
+      totalSteps,
+      description,
+      toolCalls,
+      plan,
+      traces,
+      currentTurn: traces.length || (currentStep ?? 0),
+      isExecuting: !!lastAssistant.isStreaming,
+    };
+  }, [messages]);
+
   // 同步 messages 到 session（节流模式：流式期间每 200ms 同步一次，避免防抖永不触发）
   // v3.1: 流式期间跳过 effect 函数体 — 仅在非流式或定时器触发时同步
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2097,6 +2242,7 @@ export function useAgentChat(
     addPendingMessage,
     removePendingMessage,
     updatePendingMessage,
+    reactVisibility,
   };
 }
 

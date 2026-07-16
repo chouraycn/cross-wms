@@ -1,0 +1,33 @@
+{
+  "id": "openai",
+  "name": "OpenAI Provider",
+  "description": "OpenAI LLM provider extension with Chat Completions and Responses API support",
+  "version": "1.0.0",
+  "kind": "provider",
+  "sdkVersion": "1.0.0",
+  "requiresAuth": true,
+  "authType": "api-key",
+  "providers": ["openai"],
+  "modelSupport": {
+    "modelPrefixes": ["gpt-", "o1", "o3", "o4"]
+  },
+  "providerEndpoints": [
+    {
+      "endpointClass": "openai-public",
+      "hosts": ["api.openai.com"],
+      "hostSuffixes": [".api.openai.com"]
+    },
+    {
+      "endpointClass": "azure-openai",
+      "hostSuffixes": [".openai.azure.com"]
+    }
+  ],
+  "setup": {
+    "providers": [
+      {
+        "id": "openai",
+        "envVars": ["OPENAI_API_KEY"]
+      }
+    ]
+  }
+}

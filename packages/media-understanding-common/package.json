@@ -1,0 +1,23 @@
+{
+  "name": "@cdf-know/media-understanding-common",
+  "version": "1.0.0",
+  "description": "CDFKnow MediaUnderstandingCommon - 媒体理解公共模块",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "clean": "rm -rf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^25.9.4",
+    "typescript": "^5.9.3",
+    "vite": "^7",
+    "vitest": "^3.2.6"
+  }
+}

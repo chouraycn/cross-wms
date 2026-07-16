@@ -9,12 +9,12 @@ export type {
 export { createDaemonService, DaemonService } from './service.js';
 
 export type { DaemonPaths, ResolveDaemonPathsOptions } from './paths.js';
-export { resolveDaemonPaths, resolveHomeDir } from './paths.js';
+export { resolveDaemonPaths, resolveHomeDir, resolveDaemonStateDir, resolveDaemonTaskScriptPath } from './paths.js';
 
 export type { DaemonCmdArgvConfig } from './cmd-argv.js';
 export { buildDaemonCmdArgv, resolveDaemonEntry, daemonEntryExists } from './cmd-argv.js';
 
-export type { LaunchdConfig, LaunchdStatus } from './launchd.js';
+export type { LaunchdConfig, LaunchdStatus, LaunchdBootstrapRepairResult } from './launchd.js';
 export {
   generateLaunchdPlist,
   installLaunchd,
@@ -22,6 +22,8 @@ export {
   startLaunchd,
   stopLaunchd,
   getLaunchdStatus,
+  repairLaunchdBootstrap,
+  formatLaunchAgentGuiSessionError,
 } from './launchd.js';
 
 export type { SystemdConfig, SystemdStatus } from './systemd.js';
@@ -31,6 +33,7 @@ export {
   uninstallSystemd,
   startSystemd,
   stopSystemd,
+  restartSystemd,
   getSystemdStatus,
 } from './systemd.js';
 
@@ -44,8 +47,8 @@ export {
   getSchtasksStatus,
 } from './schtasks.js';
 
-export type { DaemonInspectResult, InspectDaemonOptions } from './inspect.js';
-export { inspectDaemon, isProcessAlive } from './inspect.js';
+export type { DaemonInspectResult, InspectDaemonOptions, ExtraDaemonService, FindExtraDaemonServicesOptions } from './inspect.js';
+export { inspectDaemon, isProcessAlive, findExtraDaemonServices, renderDaemonServiceCleanupHints } from './inspect.js';
 
 export type { DaemonOutputFormat } from './output.js';
-export { formatDaemonStatus, formatDaemonList } from './output.js';
+export { formatDaemonStatus, formatDaemonList, formatLine, writeFormattedLines, toPosixPath } from './output.js';
