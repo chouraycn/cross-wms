@@ -257,3 +257,9 @@ export function getCompactionDiagnostics(
     shouldCompact: decision.shouldCompact,
   };
 }
+
+export const compactionBridge = {
+  evaluateCompactionNeed,
+  executeCompaction,
+  getCompactionDiagnostics,
+};

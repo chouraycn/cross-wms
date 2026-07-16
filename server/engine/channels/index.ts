@@ -1,13 +1,47 @@
 export {
-  ChannelSystem,
   ChannelManager,
-  registerAdapterFactory,
+  getChannelManager,
+  resetChannelManager,
+} from '../channelSystem.js';
+
+export type {
+  ChannelType,
+  ChannelStatus,
+  ChannelConfig,
+  ChannelMessage,
+  ChannelAdapter,
+  ChannelAccount,
 } from '../channelSystem.js';
 
 export {
-  startHealthMonitoring,
-  stopHealthMonitoring,
+  WebhookChannelAdapter,
+  FeishuChannelAdapter,
+  DingtalkChannelAdapter,
+  WechatWorkChannelAdapter,
+  WechatPersonalChannelAdapter,
+  EmailChannelAdapter,
+} from '../channelSystem.js';
+
+export {
+  InboundPipeline,
+  RateLimitStep,
+  ContentFilterStep,
+} from '../channelSystem.js';
+
+export {
+  startChannelHealthMonitor,
+  stopChannelHealthMonitor,
   getChannelHealth,
+  listChannelHealth,
+  registerChannel,
+  unregisterChannel,
+  recordChannelEvent,
+} from '../channelHealthMonitor.js';
+
+export type {
+  ChannelHealthInfo,
+  ChannelHealthMonitorDeps,
+  ChannelHealthMonitor,
 } from '../channelHealthMonitor.js';
 
 export { sendTypingIndicator, stopTypingIndicator } from './typing.js';

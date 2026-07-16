@@ -108,3 +108,56 @@ export {
   stopAutoSaveTimer,
   triggerSessionMemorySave,
 } from './builtin/index.js';
+
+// Frontmatter 解析
+export {
+  parseFrontmatter,
+  extractBody,
+  serializeFrontmatter,
+} from './frontmatter.js';
+export type { HookFrontmatter } from './frontmatter.js';
+
+// 模块加载器
+export {
+  ModuleLoader,
+  defaultModuleLoader,
+} from './module-loader.js';
+export type { ModuleLoaderOptions } from './module-loader.js';
+
+// 内部钩子管理
+export {
+  registerInternalHook,
+  registerInternalModifier,
+  runInternalHooks,
+  runInternalModifiers,
+  unregisterInternalHook,
+  clearInternalHooks,
+} from './internal-hooks.js';
+
+// LLM Slug 生成器
+export {
+  generateSlug,
+  generateSlugFromLLM,
+} from './llm-slug-generator.js';
+export type { SlugGeneratorOptions } from './llm-slug-generator.js';
+
+// 消息钩子映射器
+export {
+  DEFAULT_MESSAGE_MAPPERS,
+  MessageHookMapperManager,
+  messageHookMapperManager,
+} from './message-hook-mappers.js';
+export type { MessageHookMapper } from './message-hook-mappers.js';
+
+// 插件钩子集成
+export {
+  registerPluginHooks,
+  getPluginHooks,
+  getAllPluginHooks,
+  unregisterPluginHooks,
+  unregisterAllPluginHooks,
+  registerPluginHookHandler,
+  getPluginHookHandlers,
+  unregisterPluginHookHandler,
+} from './plugin-hooks.js';
+export type { PluginHookInfo, PluginHookRegistration } from './plugin-hooks.js';

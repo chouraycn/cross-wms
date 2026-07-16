@@ -165,3 +165,9 @@ export class CompactionRetryAggregateTimeout {
     this.attemptCount = 0;
   }
 }
+
+export const compactionSafety = {
+  CompactionLoopGuard,
+  CompactionSafetyTimeout,
+  CompactionRetryAggregateTimeout,
+};

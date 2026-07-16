@@ -273,3 +273,11 @@ export function incrementallyUpdateSummary(
     latestProgress: current.latestProgress ?? previous.latestProgress,
   };
 }
+
+export const summaryMessage = {
+  serializeCompactionSummary,
+  createCompactionSummaryMessage,
+  summaryMessageToCompactionMessage,
+  tryParseCompactionSummary,
+  incrementallyUpdateSummary,
+};

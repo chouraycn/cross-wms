@@ -37,3 +37,5 @@ export function rebuildSkillIndex(): void {
   skillDiscovery.buildIndex(skills);
   logger.info('[SkillDiscoverySingleton] Index rebuilt.');
 }
+
+export const skillDiscoverySingleton = skillDiscovery;

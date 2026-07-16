@@ -810,7 +810,7 @@ export async function executeToolLoop(options: ToolExecutorOptions): Promise<Too
           skillPermissionConfig,
           sessionId || `session-${Date.now()}`,
         );
-        return skillResult.content;
+        return skillResult.content || JSON.stringify(skillResult);
       } else if (isMcpToolName(effectiveToolName)) {
         const mcpResult = await mcpClientManager.executeMcpTool(effectiveToolName, normalizedArgs, { signal: toolSignal });
         const prefix = getMcpServerPrefix(effectiveToolName);

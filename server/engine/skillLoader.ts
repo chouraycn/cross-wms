@@ -455,3 +455,12 @@ export function listLoadedSkills(): RegisteredSkill[] {
 export function getSkillById(skillId: string): RegisteredSkill | undefined {
   return skillRegistry.getSkill(skillId);
 }
+
+export const skillLoader = {
+  loadSkills,
+  loadAllSkills,
+  reloadSkill,
+  unloadSkill,
+  listLoadedSkills,
+  getSkillById,
+};

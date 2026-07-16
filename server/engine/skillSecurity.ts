@@ -256,3 +256,8 @@ export function guardSkillCommand(
 
   return { allowed: true, riskLevel: 'safe' };
 }
+
+export const skillSecurity = {
+  auditSkillSecurity,
+  guardSkillCommand,
+};

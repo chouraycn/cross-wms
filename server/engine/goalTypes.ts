@@ -83,7 +83,9 @@ export interface ClearGoalOptions {
  */
 export const MODEL_UPDATABLE_GOAL_STATUSES: readonly GoalStatus[] = ['complete', 'blocked'];
 
-/**
- * 终态目标状态（无法再更改）
- */
+/** 终态目标状态（无法再更改） */
 export const TERMINAL_GOAL_STATUSES: readonly GoalStatus[] = ['complete', 'cancelled'];
+
+export type Goal = GoalRecord;
+export type GoalState = GoalStatus;
+export type GoalEntry = GoalRecord;

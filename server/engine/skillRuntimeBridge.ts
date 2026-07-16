@@ -446,3 +446,15 @@ export const skillToolHandler: ToolHandler = async (args) => {
     error: `未知 action '${action}'，支持 list / use / doctor / security / reload`,
   });
 };
+
+export const skillRuntimeBridge = {
+  resolveSkillScanDirs,
+  setSkillDisabled,
+  initSkillRuntime,
+  resetSkillRuntime,
+  listAvailableSkills,
+  getFolderSkillsForMatching,
+  getSkillInstructions,
+  buildSkillToolDefinition,
+  skillToolHandler,
+};

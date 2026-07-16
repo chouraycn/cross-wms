@@ -235,3 +235,9 @@ export async function submitChunkTask(input: WorkerTaskInput): Promise<WorkerTas
   const pool = getWorkerPool();
   return pool.execute(input);
 }
+
+export const workerPool = {
+  getWorkerPool,
+  disposeWorkerPool,
+  submitChunkTask,
+};

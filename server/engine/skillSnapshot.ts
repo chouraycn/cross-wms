@@ -294,3 +294,4 @@ export class SkillSnapshotManager {
 
 /** Skill 快照管理器单例 */
 export const skillSnapshotManager = new SkillSnapshotManager();
+export const skillSnapshot = skillSnapshotManager;

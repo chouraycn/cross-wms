@@ -941,6 +941,7 @@ export class SkillInstallManager {
 
 /** 全局 Skill 安装管理器单例 */
 export const skillInstallManager = new SkillInstallManager();
+export const skillInstall = skillInstallManager;
 
 // 触发注册表引用以避免未使用警告（同时验证引用有效性）
 void skillRegistry;
