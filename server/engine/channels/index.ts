@@ -54,3 +54,30 @@ export { createChannelSession, getChannelSession, closeChannelSession } from './
 export type { ChannelSession } from './session.js';
 
 export { logChannelMessage, formatChannelLog } from './logging.js';
+
+export {
+  getConnection,
+  setConnectionState,
+  listConnections,
+  getActiveConnections,
+  getFailedConnections,
+  clearConnection,
+} from './connection.js';
+export type { ChannelConnection, ChannelConnectionState } from './connection.js';
+
+export {
+  configureRateLimit,
+  checkRateLimit,
+  resetRateLimit,
+  listRateLimits,
+} from './rate-limit.js';
+export type { ChannelRateLimit } from './rate-limit.js';
+
+export {
+  addRoute,
+  removeRoute,
+  matchRoute,
+  listRoutes,
+  clearRoutes,
+} from './routing.js';
+export type { ChannelMessageRoute } from './routing.js';
