@@ -1,8 +1,0 @@
-{
-  "name": "@crosswms/extension-slack",
-  "version": "1.0.0",
-  "type": "module",
-  "dependencies": {
-    "@slack/bolt": "^3.19.0"
-  }
-}
