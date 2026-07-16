@@ -5,6 +5,8 @@
 // 后端类型及连接参数，工厂函数据此实例化对应的 IStorageEngine。
 // ============================================================================
 
+import { AppPaths } from '../config/appPaths.js';
+
 /** 支持的存储后端类型 */
 export type StorageBackend = 'sqlite' | 'redis' | 'postgres' | 'lancedb' | 'qdrant';
 
@@ -52,11 +54,11 @@ export interface StorageConfig {
 
 /**
  * 默认存储配置工厂。
- * 返回一个指向 ~/.cdf-know-clow/data/main.db 的 SQLite 配置。
+ * 返回一个指向 <rootDir>/data/main.db 的 SQLite 配置。
  */
 export function defaultStorageConfig(): StorageConfig {
   return {
     backend: 'sqlite',
-    sqlite: { path: '' },       // TODO: 由调用方填入实际路径
+    sqlite: { path: AppPaths.mainDbFile },
   };
 }
