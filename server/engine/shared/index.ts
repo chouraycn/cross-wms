@@ -166,3 +166,166 @@ export {
 } from "./text/join-segments.js";
 export { stripModelSpecialTokens } from "./text/model-special-tokens.js";
 export { stripUnsupportedCitationControlMarkers } from "./text/citation-control-markers.js";
+
+// ===== 深度完善档一 - 第 1+2 批 =====
+
+// 使用统计聚合
+export {
+  mergeUsageLatency,
+  mergeUsageDailyLatency,
+  buildUsageAggregateTail,
+} from "./usage-aggregates.js";
+
+// Operator scope 兼容性
+export {
+  roleScopesAllow,
+  resolveMissingRequestedScope,
+  resolveScopeOutsideRequestedRoles,
+} from "./operator-scope-compat.js";
+
+// 节点列表类型
+export type {
+  NodeListNode,
+  PendingRequest,
+  PairedNode,
+  PairingList,
+} from "./node-list-types.js";
+
+// Azure OpenAI Responses 客户端兼容
+export {
+  isTraditionalAzureOpenAIHost,
+  isOpenAICompatibleAzureResponsesBaseUrl,
+} from "./azure-openai-responses-client-compat.js";
+
+// OpenAI Responses 流兼容
+export {
+  OPENAI_RESPONSES_OUTPUT_TEXT_CONTENT_PART_TYPE,
+  AZURE_RESPONSES_TEXT_CONTENT_PART_TYPE,
+  OPENAI_RESPONSES_OUTPUT_TEXT_DELTA_EVENT_TYPE,
+  AZURE_RESPONSES_TEXT_DELTA_EVENT_TYPE,
+  isResponsesTextContentPartType,
+  isResponsesTextDeltaEventType,
+  isAzureResponsesTextDeltaEventType,
+  isAzureResponsesTextDeltaEvent,
+  resolveResponsesMessageSnapshotCollapse,
+} from "./openai-responses-stream-compat.js";
+export type {
+  ResponsesTextContentPartType,
+  ResponsesTextDeltaEventType,
+  AzureResponsesTextContentPart,
+  AzureResponsesTextDeltaEvent,
+  ResponsesMessageSnapshotCollapse,
+} from "./openai-responses-stream-compat.js";
+
+// 内容块遍历
+export { visitObjectContentBlocks } from "./message-content-blocks.js";
+
+// JSON Schema 类型
+export type { JsonSchemaObject } from "./json-schema.types.js";
+
+// JSON Schema 默认值
+export {
+  repairJsonSchemaPatternForUnicodeRegExp,
+  normalizeJsonSchemaForTypeBox,
+  findJsonSchemaShapeError,
+  applyJsonSchemaDefaults,
+} from "./json-schema-defaults.js";
+
+// 入口元数据
+export { resolveEmojiAndHomepage } from "./entry-metadata.js";
+
+// Assistant identity 取值
+export { coerceIdentityValue } from "./assistant-identity-values.js";
+
+// Silent reply 策略
+export {
+  DEFAULT_SILENT_REPLY_POLICY,
+  classifySilentReplyConversationType,
+  resolveSilentReplyPolicyFromPolicies,
+} from "./silent-reply-policy.js";
+export type {
+  SilentReplyPolicy,
+  SilentReplyConversationType,
+  SilentReplyPolicyShape,
+} from "./silent-reply-policy.js";
+
+// 自定义命令配置
+export {
+  normalizeSlashCommandName,
+  normalizeCommandDescription,
+  resolveCustomCommands,
+} from "./custom-command-config.js";
+export type {
+  CustomCommandInput,
+  CustomCommandIssue,
+  CustomCommandConfig,
+} from "./custom-command-config.js";
+
+// 节点匹配
+export {
+  normalizeNodeKey,
+  resolveNodeIdFromCandidates,
+} from "./node-match.js";
+export type { NodeMatchCandidate } from "./node-match.js";
+
+// 节点存活事件
+export {
+  NODE_PRESENCE_ALIVE_EVENT,
+  normalizeNodePresenceAliveReason,
+} from "./node-presence.js";
+
+// Gateway 绑定 URL
+export { resolveGatewayBindUrl } from "./gateway-bind-url.js";
+export type { GatewayBindUrlResult } from "./gateway-bind-url.js";
+
+// Model param B 推断
+export { inferParamBFromIdOrName } from "./model-param-b.js";
+
+// 节点列表解析
+export { parsePairingList, parseNodeList } from "./node-list-parse.js";
+
+// 节点解析
+export {
+  resolveNodeIdFromNodeList,
+  resolveNodeFromNodeList,
+} from "./node-resolve.js";
+
+// Avatar 策略
+export {
+  AVATAR_MAX_BYTES,
+  resolveAvatarMime,
+  isAvatarDataUrl,
+  isAvatarImageDataUrl,
+  isAvatarHttpUrl,
+  hasAvatarUriScheme,
+  isWindowsAbsolutePath,
+  isWorkspaceRelativeAvatarPath,
+  isPathWithinRoot,
+  looksLikeAvatarPath,
+  isSupportedLocalAvatarExtension,
+} from "./avatar-policy.js";
+
+// Frontmatter 解析
+export {
+  normalizeStringList,
+  getFrontmatterString,
+  parseFrontmatterBool,
+  resolveOpenClawManifestBlock,
+  resolveOpenClawManifestRequires,
+  resolveOpenClawManifestInstall,
+  resolveOpenClawManifestOs,
+  parseOpenClawManifestInstallBase,
+  applyOpenClawManifestInstallCommonFields,
+} from "./frontmatter.js";
+export type {
+  OpenClawManifestRequires,
+  ParsedOpenClawManifestInstallBase,
+} from "./frontmatter.js";
+
+// Legacy 名称常量
+export {
+  PROJECT_NAME,
+  MANIFEST_KEY,
+  LEGACY_MANIFEST_KEYS,
+  MACOS_APP_SOURCES_DIR,
+} from "./legacy-names.js";
