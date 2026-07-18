@@ -1,5 +1,5 @@
 // Defines session-related Zod schema fragments for config parsing.
-import { normalizeOptionalString } from "../infra/string-coerce.js";
+import { normalizeStringifiedOptionalString } from "../infra/string-coerce.js";
 import { z } from "zod";
 import { parseByteSize } from "../cli/parse-bytes.js";
 import { parseDurationMs } from "../cli/parse-duration.js";
@@ -15,24 +15,6 @@ import {
   VisibleRepliesSchema,
 } from "./zod-schema-core.js";
 import { sensitive } from "./zod-schema-sensitive.js";
-
-/**
- * Downgrade (cross-wms port): openclaw's `@openclaw/normalization-core/string-coerce`
- * exports `normalizeStringifiedOptionalString`, which coerces primitive values
- * (string/number/boolean/bigint) into an optional trimmed string. The cross-wms
- * port of `string-coerce` does not include this helper, so an equivalent is
- * inlined here using the available `normalizeOptionalString`. Behavior matches
- * the openclaw source verbatim.
- */
-function normalizeStringifiedOptionalString(value: unknown): string | undefined {
-  if (typeof value === "string") {
-    return normalizeOptionalString(value);
-  }
-  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
-    return normalizeOptionalString(String(value));
-  }
-  return undefined;
-}
 
 const SessionResetConfigSchema = z
   .object({
