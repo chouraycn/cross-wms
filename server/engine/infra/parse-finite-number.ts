@@ -45,3 +45,23 @@ export function parseFiniteNumber(value: unknown): number | undefined {
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : undefined;
 }
+
+/** 解析严格整数（可为负）；输入非有限或非纯数字返回 undefined */
+export function parseStrictInteger(value: unknown): number | undefined {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && Number.isInteger(value) ? value : undefined;
+  }
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  // 接受可选的前导正负号与纯数字
+  if (!/^-?\d+$/.test(trimmed)) {
+    return undefined;
+  }
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}

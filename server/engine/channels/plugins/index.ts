@@ -170,3 +170,19 @@ export {
   getWizardProgress,
   clearWizardFlows,
 } from "./setup-wizard-flow.js";
+
+// 出站媒体负载构建器
+export {
+  buildMediaPayload,
+  type MediaPayloadInput,
+  type MediaPayload,
+} from "./media-payload.js";
+
+// 频道曝光助手 — 决定频道元数据可见性
+export {
+  resolveChannelExposure,
+  isChannelVisibleInConfiguredLists,
+  isChannelVisibleInSetup,
+  type ChannelExposure,
+  type ChannelExposureMeta,
+} from "./exposure.js";

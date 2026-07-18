@@ -268,3 +268,58 @@ export {
   formatSetExplicitDefaultInstruction,
   formatSetExplicitDefaultToConfiguredInstruction,
 } from './default-account-warnings.js';
+
+// Channel 会话类型规范化
+export { normalizeChatType, type ChatType } from './chat-type.js';
+
+// Thread binding id 解析
+export { resolveThreadBindingConversationIdFromBindingId } from './thread-binding-id.js';
+
+// Native 命令会话目标解析
+export {
+  resolveNativeCommandSessionTargets,
+  type ResolveNativeCommandSessionTargetsParams,
+} from './native-command-session-targets.js';
+
+// Direct-DM 预解密守卫策略
+export {
+  createDirectDmPreCryptoGuardPolicy,
+  type DirectDmPreCryptoGuardPolicy,
+  type DirectDmPreCryptoGuardPolicyOverrides,
+} from './direct-dm-guard-policy.js';
+
+// 节流草稿流循环
+export {
+  createDraftStreamLoop,
+  type DraftStreamLoop,
+} from './draft-stream-loop.js';
+
+// 可终结的草稿流控制
+export {
+  createFinalizableDraftStreamControls,
+  createFinalizableDraftStreamControlsForState,
+  takeMessageIdAfterStop,
+  clearFinalizableDraftMessage,
+  createFinalizableDraftLifecycle,
+  type FinalizableDraftStreamState,
+} from './draft-stream-controls.js';
+
+// Chat 目标前缀解析
+export {
+  isAllowedParsedChatSender,
+  resolveServicePrefixedTarget,
+  resolveServicePrefixedChatTarget,
+  parseChatTargetPrefixesOrThrow,
+  resolveServicePrefixedAllowTarget,
+  resolveServicePrefixedOrChatAllowTarget,
+  createAllowedChatSenderMatcher,
+  parseChatAllowTargetPrefixes,
+  type ServicePrefix,
+  type ChatTargetPrefixesParams,
+  type ParsedChatTarget,
+  type ParsedChatAllowTarget,
+  type ChatSenderAllowParams,
+} from './chat-target-prefixes.js';
+
+// 频道传输层
+export * from './transport/index.js';

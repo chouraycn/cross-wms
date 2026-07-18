@@ -8,8 +8,11 @@ function isFiniteInteger(value: number): boolean {
 }
 
 /** 解析非负整数选项，无效时返回 fallback */
-export function resolveNonNegativeIntegerOption(value: number, fallback: number): number {
-  if (!isFiniteInteger(value) || value < 0) {
+export function resolveNonNegativeIntegerOption(
+  value: number | null | undefined,
+  fallback: number,
+): number {
+  if (typeof value !== "number" || !isFiniteInteger(value) || value < 0) {
     return fallback;
   }
   return value;
@@ -17,11 +20,11 @@ export function resolveNonNegativeIntegerOption(value: number, fallback: number)
 
 /** 解析带最小边界的整数选项，无效或低于最小值时返回 fallback */
 export function resolveIntegerOption(
-  value: number,
+  value: number | null | undefined,
   fallback: number,
   params: { min: number },
 ): number {
-  if (!isFiniteInteger(value) || value < params.min) {
+  if (typeof value !== "number" || !isFiniteInteger(value) || value < params.min) {
     return fallback;
   }
   return value;

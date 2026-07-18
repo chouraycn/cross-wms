@@ -17,3 +17,8 @@ export function normalizeOptionalLowercaseString(value: unknown): string | undef
   const normalized = normalizeOptionalString(value);
   return normalized !== undefined ? normalized.toLowerCase() : undefined;
 }
+
+/** 将任意输入规范化为小写字符串（不去除空白），输入无效时返回空字符串 */
+export function normalizeLowercaseStringOrEmpty(value: unknown): string {
+  return normalizeOptionalLowercaseString(value) ?? "";
+}

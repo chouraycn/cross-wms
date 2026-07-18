@@ -45,11 +45,25 @@ export function clampPositiveTimerTimeoutMs(value: number | null | undefined): n
 /**
  * 解析定时器超时毫秒数，输入非有限或 ≤ 0 时使用 fallback。
  * 与 clampPositiveTimerTimeoutMs 的区别是永远返回正数，不会返回 undefined。
+ *
+ * 支持可选的 `floor` 参数：当主 fallback 与 floor 同时为非正时返回 floor。
  */
 export function resolveTimerTimeoutMs(
   value: number | null | undefined,
   fallback: number,
+  floor?: number,
 ): number {
   const resolved = clampPositiveTimerTimeoutMs(value);
-  return resolved ?? Math.max(1, Math.floor(fallback));
+  if (resolved !== undefined) {
+    return resolved;
+  }
+  const primary = Math.max(1, Math.floor(fallback));
+  if (floor === undefined) {
+    return primary;
+  }
+  // 当主 fallback 为非正时回退到 floor（仍保证至少 1ms）
+  if (fallback <= 0) {
+    return Math.max(1, Math.floor(floor));
+  }
+  return primary;
 }

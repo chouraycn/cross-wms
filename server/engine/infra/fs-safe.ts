@@ -95,3 +95,31 @@ export async function walkDirectory(
     }
   }
 }
+
+/**
+ * 包装 Promise 以在指定毫秒后超时。
+ * 超时返回的 Promise 会 reject 一个 TimeoutError。
+ *
+ * 参考 openclaw/src/infra/fs-safe.ts 中的 withTimeout。
+ */
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label = 'operation',
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      const err = new Error(`${label} timed out after ${timeoutMs}ms`);
+      err.name = 'TimeoutError';
+      reject(err);
+    }, Math.max(0, timeoutMs));
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+}
