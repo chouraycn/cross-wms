@@ -30,6 +30,8 @@ import { registerAcpCommand } from "./commands/acp.js";
 import { registerSandboxCommand } from "./commands/sandbox.js";
 import { registerAgentsCommand } from "./commands/agents.js";
 import { registerChannelsCommand } from "./commands/channels.js";
+import { registerBackupCommand } from "./commands/backup.js";
+import { registerResetCommand } from "./commands/reset.js";
 import { logger } from "../logger.js";
 
 /**
@@ -77,6 +79,8 @@ export function buildCLIProgram(): Command {
     "sandbox",
     "agents",
     "channels",
+    "backup",
+    "reset",
   ]);
   for (const descriptor of descriptors) {
     if (DIRECTLY_REGISTERED.has(descriptor.name)) {
@@ -158,6 +162,12 @@ export function buildCLIProgram(): Command {
 
   // 注册 channels 命令 (带子命令)
   registerChannelsCommand(program);
+
+  // 注册 backup 命令
+  registerBackupCommand(program);
+
+  // 注册 reset 命令
+  registerResetCommand(program);
 
   return program;
 }
