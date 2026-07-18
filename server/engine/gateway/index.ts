@@ -455,3 +455,140 @@ export type {
   NodeInvokePolicyHandler,
   NodeInvokePolicyRegistration,
 } from './node-invoke-plugin-policy.js';
+
+// 移植自 openclaw/src/gateway —— 中低依赖文件（降级实现）
+// Chat input sanitize
+export { sanitizeChatSendMessageInput } from './chat-input-sanitize.js';
+
+// Config diff
+export { diffConfigPaths } from './config-diff.js';
+
+// Model pricing
+export { isGatewayModelPricingEnabled } from './model-pricing-config.js';
+export {
+  replaceGatewayModelPricingCache,
+  clearGatewayModelPricingCacheState,
+  recordGatewayModelPricingSourceFailure,
+  clearGatewayModelPricingSourceFailure,
+  clearGatewayModelPricingFailures,
+  getGatewayModelPricingHealth,
+  getCachedGatewayModelPricing,
+  getGatewayModelPricingCacheMeta,
+  getGatewayModelPricingCacheFingerprint,
+  resetGatewayModelPricingCacheForTest,
+  setGatewayModelPricingForTest,
+} from './model-pricing-cache-state.js';
+export type {
+  CachedPricingTier,
+  CachedModelPricing,
+  GatewayModelPricingHealth,
+} from './model-pricing-cache-state.js';
+
+// Control plane
+export { normalizeControlPlaneIdentityPart } from './control-plane-identity.js';
+export {
+  resolveControlPlaneActor,
+  formatControlPlaneActor,
+  summarizeChangedPaths,
+} from './control-plane-audit.js';
+export {
+  consumeControlPlaneWriteBudget,
+  pruneStaleControlPlaneBuckets,
+} from './control-plane-rate-limit.js';
+
+// Channel health
+export {
+  DEFAULT_CHANNEL_STALE_EVENT_THRESHOLD_MS,
+  DEFAULT_CHANNEL_CONNECT_GRACE_MS,
+  evaluateChannelHealth,
+  resolveChannelRestartReason,
+} from './channel-health-policy.js';
+export type {
+  ChannelHealthEvaluation,
+  ChannelHealthPolicy,
+} from './channel-health-policy.js';
+export { startChannelHealthMonitor } from './channel-health-monitor.js';
+export type {
+  ChannelHealthMonitor,
+  ChannelManager as ChannelHealthChannelManager,
+  ChannelRuntimeStatus,
+} from './channel-health-monitor.js';
+
+// WS logging
+export {
+  setGatewayWsLogStyle,
+  getGatewayWsLogStyle,
+} from './ws-logging.js';
+export type { GatewayWsLogStyle } from './ws-logging.js';
+
+// Agent event assistant text
+export {
+  resolveAssistantStreamDeltaText,
+  isReplaceableAssistantStreamEvent,
+  resolveAssistantStreamSnapshotText,
+} from './agent-event-assistant-text.js';
+export type { AgentEventPayload } from './agent-event-assistant-text.js';
+
+// Exec approval manager
+export { ExecApprovalManager } from './exec-approval-manager.js';
+export type {
+  ExecApprovalDecision,
+  ExecApprovalRequestPayload,
+  ExecApprovalRecord,
+  ExecApprovalIdLookupResult,
+} from './exec-approval-manager.js';
+
+// Node invoke sanitize
+export { sanitizeNodeInvokeParamsForForwarding } from './node-invoke-sanitize.js';
+export type { GatewayClient as NodeInvokeGatewayClient } from './node-invoke-sanitize.js';
+
+// Node command policy
+export {
+  DEFAULT_DANGEROUS_NODE_COMMANDS,
+  listDangerousPluginNodeCommands,
+  isForegroundRestrictedPluginNodeCommand,
+  resolveNodeCommandAllowlist,
+  resolveNodePairingCommandAllowlist,
+  normalizeDeclaredNodeCommands,
+  isNodeCommandAllowed,
+} from './node-command-policy.js';
+export type { NodeSession } from './node-command-policy.js';
+
+// Assistant identity
+export {
+  DEFAULT_ASSISTANT_IDENTITY,
+  resolveAssistantIdentity,
+} from './assistant-identity.js';
+export type { AssistantIdentity } from './assistant-identity.js';
+
+// Plugin node capability
+export {
+  PLUGIN_NODE_CAPABILITY_PATH_PREFIX,
+  DEFAULT_PLUGIN_NODE_CAPABILITY_TTL_MS,
+  indexPluginNodeCapabilitySurfaces,
+  resolvePluginNodeCapabilityTtlMs,
+  resolvePluginNodeCapabilityExpiresAtMs,
+  mintPluginNodeCapabilityToken,
+  buildPluginNodeCapabilityScopedHostUrl,
+  replacePluginNodeCapabilityInScopedHostUrl,
+  normalizePluginNodeCapabilityScopedUrl,
+  setClientPluginNodeCapability,
+  refreshClientPluginNodeCapability,
+  hasAuthorizedPluginNodeCapability,
+} from './plugin-node-capability.js';
+export type {
+  PluginNodeCapabilitySurface,
+  PluginNodeCapabilityClient,
+  NormalizedPluginNodeCapabilityUrl,
+} from './plugin-node-capability.js';
+
+// Client start readiness
+export { startGatewayClientWhenEventLoopReady } from './client-start-readiness.js';
+export type {
+  GatewayClientStartable,
+  GatewayClientStartReadinessOptions,
+} from './client-start-readiness.js';
+
+// Startup control UI origins
+export { maybeSeedControlUiAllowedOriginsAtStartup } from './startup-control-ui-origins.js';
+export type { GatewayNonLoopbackBindMode } from './startup-control-ui-origins.js';
