@@ -27,3 +27,27 @@ export function normalizeOptionalLowercaseString(value: unknown): string | undef
 export function normalizeLowercaseStringOrEmpty(value: unknown): string {
   return normalizeOptionalLowercaseString(value) ?? "";
 }
+
+/** Fast 模式开关：boolean 或 "auto" */
+export type FastMode = boolean | "auto";
+
+/** 解析宽松的 boolean/fast-mode 字符串或布尔值 */
+export function normalizeFastMode(raw?: unknown): FastMode | undefined {
+  if (typeof raw === "boolean") {
+    return raw;
+  }
+  if (!raw) {
+    return undefined;
+  }
+  const key = normalizeLowercaseStringOrEmpty(raw);
+  if (["off", "false", "no", "0", "disable", "disabled", "normal"].includes(key)) {
+    return false;
+  }
+  if (["on", "true", "yes", "1", "enable", "enabled", "fast"].includes(key)) {
+    return true;
+  }
+  if (["auto", "automatic"].includes(key)) {
+    return "auto";
+  }
+  return undefined;
+}
