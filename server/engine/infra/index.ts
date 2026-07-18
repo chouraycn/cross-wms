@@ -207,3 +207,27 @@ export { safeJsonStringify } from './safe-json.js';
 export { maskApiKey } from './mask-api-key.js';
 
 export { parseJsonWithJson5Fallback } from './parse-json-compat.js';
+
+export { formatTokenCount } from './token-format.js';
+
+export { chunkItems } from './chunk-items.js';
+
+export { asBoolean, parseBooleanValue } from './boolean-coerce.js';
+
+export type { ReactionLevel, ResolvedReactionLevel } from './reaction-level.js';
+export { resolveReactionLevel } from './reaction-level.js';
+
+export {
+  clearQueueSummaryState,
+  previewQueueSummaryPrompt,
+  applyQueueRuntimeSettings,
+  shouldSkipQueueItem,
+  applyQueueDropPolicy,
+  waitForQueueDebounce,
+  beginQueueDrain,
+  removeQueuedItemsByRef,
+  drainNextQueueItem,
+  drainCollectQueueStep,
+  buildCollectPrompt,
+  hasCrossChannelItems,
+} from './queue-helpers.js';
