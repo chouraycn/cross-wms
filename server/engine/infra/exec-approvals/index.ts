@@ -55,3 +55,21 @@ export {
   validateSafeBinSemantics,
   listRiskyConfiguredSafeBins,
 } from './exec-safe-bin-semantics.js';
+
+// safe-bin profile fixture 与预编译 profile
+export type {
+  SafeBinProfile,
+  SafeBinProfileFixture,
+  SafeBinProfileFixtures,
+} from './exec-safe-bin-policy-profiles.js';
+export {
+  DEFAULT_SAFE_BINS,
+  SAFE_BIN_PROFILE_FIXTURES,
+  SAFE_BIN_PROFILES,
+  collectKnownLongFlags,
+  buildLongFlagPrefixMap,
+  normalizeSafeBinProfileFixtures,
+  resolveSafeBinProfiles,
+  renderSafeBinDeniedFlagsDocBullets,
+  renderDefaultSafeBinsDocText,
+} from './exec-safe-bin-policy-profiles.js';
