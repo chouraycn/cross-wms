@@ -231,3 +231,49 @@ export {
   buildCollectPrompt,
   hasCrossChannelItems,
 } from './queue-helpers.js';
+
+// 字符串规范化
+export {
+  normalizeOptionalString,
+  normalizeOptionalLowercaseString,
+} from './string-coerce.js';
+
+// CJK 字符感知的 Token 估算
+export {
+  CHARS_PER_TOKEN_ESTIMATE,
+  estimateStringChars,
+  estimateTokensFromChars,
+} from './cjk-chars.js';
+
+// Shell argv 解析
+export { splitShellArgs } from './shell-argv.js';
+
+// 密钥输入规范化
+export {
+  normalizeSecretInput,
+  normalizeOptionalSecretInput,
+} from './normalize-secret-input.js';
+
+// Zod 安全解析
+export {
+  safeParseWithSchema,
+  safeParseJsonWithSchema,
+} from './zod-parse.js';
+
+// Transcript 工具调用检查
+export {
+  extractToolCallNames,
+  hasToolCall,
+  countToolResults,
+} from './transcript-tools.js';
+
+// 内联指令标签解析
+export {
+  stripInlineDirectiveTagsForDisplay,
+  stripInlineDirectiveTagsForDelivery,
+  stripInlineDirectiveTagsFromMessageForDisplay,
+  sanitizeReplyDirectiveId,
+  parseInlineDirectives,
+  type InlineDirectiveParseResult,
+  type DisplayMessageWithContent,
+} from './directive-tags.js';

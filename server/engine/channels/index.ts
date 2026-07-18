@@ -255,3 +255,9 @@ export {
   type DeliveryContext,
   type DeliveryContextSessionSource,
 } from './delivery-context.js';
+
+// 会话目标参数规范化
+export {
+  normalizeConversationTargetParams,
+  type ConversationTargetParams,
+} from './conversation-target.js';
