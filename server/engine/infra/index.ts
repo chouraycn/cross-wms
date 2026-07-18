@@ -321,6 +321,56 @@ export {
   resetMachineNameCache,
 } from './machine-name.js';
 
+// 固定窗口限流
+export {
+  createFixedWindowRateLimiter,
+  resolveFixedWindowRateLimitInteger,
+  type FixedWindowRateLimiter,
+} from './fixed-window-rate-limit.js';
+
+// Git 仓库根发现
+export {
+  findGitRoot,
+  resolveGitHeadPath,
+} from './git-root.js';
+
+// 可执行 token 规范化
+export {
+  basenameLower,
+  normalizeExecutableToken,
+} from './exec-wrapper-tokens.js';
+
+// 严格有限数字解析
+export {
+  parseStrictNonNegativeInteger,
+  parseStrictPositiveInteger,
+  parseFiniteNumber,
+} from './parse-finite-number.js';
+
+// HTTP 请求体读取（带限制）
+export {
+  RequestBodyLimitError,
+  isRequestBodyLimitError,
+  requestBodyErrorToText,
+  readRequestBodyWithLimit,
+  readJsonBodyWithLimit,
+  installRequestBodyLimitGuard,
+  DEFAULT_WEBHOOK_MAX_BODY_BYTES,
+  DEFAULT_WEBHOOK_BODY_TIMEOUT_MS,
+  type RequestBodyLimitErrorCode,
+  type ReadRequestBodyOptions,
+  type ReadJsonBodyResult,
+  type ReadJsonBodyOptions,
+  type RequestBodyLimitGuard,
+  type RequestBodyLimitGuardOptions,
+} from './http-body.js';
+
+// Fetch 头部规范化
+export {
+  normalizeHeadersInitForFetch,
+  normalizeRequestInitHeadersForFetch,
+} from './fetch-headers.js';
+
 // 计时器延迟辅助
 export {
   MAX_SAFE_TIMEOUT_DELAY_MS,
