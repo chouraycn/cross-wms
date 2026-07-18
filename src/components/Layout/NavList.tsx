@@ -11,52 +11,27 @@ import {
   IconButton,
   useTheme,
 } from '@mui/material';
-import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
-import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
-import InventoryOutlinedIcon from '@mui/icons-material/InventoryOutlined';
-import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import { useChatSidebar } from '../../contexts/ChatContext';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
-import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
-import FindInPageOutlinedIcon from '@mui/icons-material/FindInPageOutlined';
-import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
-import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
-import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
-import SummarizeOutlinedIcon from '@mui/icons-material/SummarizeOutlined';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import WebIcon from '@mui/icons-material/Web';
-import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import MemoryIcon from '@mui/icons-material/Memory';
-import HistoryIcon from '@mui/icons-material/History';
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
-import AssessmentIcon from '@mui/icons-material/Assessment';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
-import FolderOpenOutlinedIcon from '@mui/icons-material/FolderOpenOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import CircularProgress from '@mui/material/CircularProgress';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import FlagIcon from '@mui/icons-material/Flag';
 import ImageIcon from '@mui/icons-material/Image';
-import FlashOnIcon from '@mui/icons-material/FlashOn';
-import GitHubIcon from '@mui/icons-material/GitHub';
-import CodeOutlinedIcon from '@mui/icons-material/CodeOutlined';
-import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined';
-import BookOutlinedIcon from '@mui/icons-material/BookOutlined';
-import TrackChangesIcon from '@mui/icons-material/TrackChanges';
 import StorageIcon from '@mui/icons-material/Storage';
-import WebhookIcon from '@mui/icons-material/Webhook';
-import PublicIcon from '@mui/icons-material/Public';
-import TimerIcon from '@mui/icons-material/Timer';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
+import PhonelinkIcon from '@mui/icons-material/Phonelink';
+import DnsIcon from '@mui/icons-material/Dns';
 import { getGrayScale } from '../../constants/theme';
 import { Session } from '../../types/chat';
 
@@ -159,6 +134,29 @@ const navItems: NavItem[] = [
   { label: '项目', path: '/projects', icon: <FolderOutlinedIcon />, desc: '项目总览' },
   { label: '技能', path: '/skills', icon: <AutoFixHighIcon />, desc: '能力管理' },
   { label: '自动化', path: '/automation', icon: <ScheduleIcon />, desc: '任务 & 调度' },
+  {
+    label: '创作',
+    icon: <ImageIcon />,
+    desc: '图像 · 音乐 · 视频',
+    children: [
+      { label: '图像生成', path: '/image-generation', icon: <ImageIcon />, desc: 'AI 绘图' },
+      { label: '音乐生成', path: '/music-generation', icon: <AutoFixHighIcon />, desc: 'AI 作曲' },
+      { label: '视频生成', path: '/video-generation', icon: <WebIcon />, desc: 'AI 视频创作' },
+      { label: '媒体库', path: '/media-library', icon: <StorageIcon />, desc: '资产管理' },
+      { label: '媒体工具', path: '/media-tools', icon: <LanguageOutlinedIcon />, desc: '媒体 & 链接理解' },
+    ],
+  },
+  {
+    label: '系统',
+    icon: <SettingsOutlinedIcon />,
+    desc: '设置 · 进程 · 节点',
+    children: [
+      { label: '语音合成', path: '/tts', icon: <RecordVoiceOverIcon />, desc: 'TTS 设置' },
+      { label: '设备配对', path: '/pairing', icon: <PhonelinkIcon />, desc: 'Pairing' },
+      { label: '进程管理', path: '/process', icon: <MemoryIcon />, desc: 'Process Monitor' },
+      { label: '节点主机', path: '/node-host', icon: <DnsIcon />, desc: 'Node Host' },
+    ],
+  },
 ];
 
 // ===================== Props =====================
@@ -222,7 +220,6 @@ const NavList: React.FC<NavListProps> = ({
     handleDeleteSession: deleteSessionFromContext,
     togglePinSession,
     archiveSession: archiveSessionFromContext,
-    restoreSession: restoreSessionFromContext,
     archivedSessions,
     archivedSessionsTotal,
     isLoadingArchived,

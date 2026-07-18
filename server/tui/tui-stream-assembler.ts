@@ -1,12 +1,10 @@
-// Assembles streamed backend events into TUI-visible messages.
 import {
   composeThinkingAndContent,
   extractContentFromMessage,
   extractThinkingFromMessage,
   resolveFinalAssistantText,
-} from "./tui-formatters.js";
+} from './tui-formatters.js';
 
-// Per-run state used to merge streaming deltas with final assistant messages.
 type RunStreamState = {
   thinkingText: string;
   contentText: string;
@@ -15,20 +13,19 @@ type RunStreamState = {
   displayText: string;
 };
 
-type BoundaryDropMode = "off" | "streamed-only" | "streamed-or-incoming";
+type BoundaryDropMode = 'off' | 'streamed-only' | 'streamed-or-incoming';
 
-// Pull text blocks out of provider-style content arrays while remembering non-text blocks.
 function extractTextBlocksAndSignals(message: unknown): {
   textBlocks: string[];
   sawNonTextContentBlocks: boolean;
 } {
-  if (!message || typeof message !== "object") {
+  if (!message || typeof message !== 'object') {
     return { textBlocks: [], sawNonTextContentBlocks: false };
   }
   const record = message as Record<string, unknown>;
   const content = record.content;
 
-  if (typeof content === "string") {
+  if (typeof content === 'string') {
     const text = content.trim();
     return {
       textBlocks: text ? [text] : [],
@@ -42,25 +39,24 @@ function extractTextBlocksAndSignals(message: unknown): {
   const textBlocks: string[] = [];
   let sawNonTextContentBlocks = false;
   for (const block of content) {
-    if (!block || typeof block !== "object") {
+    if (!block || typeof block !== 'object') {
       continue;
     }
     const rec = block as Record<string, unknown>;
-    if (rec.type === "text" && typeof rec.text === "string") {
+    if (rec.type === 'text' && typeof rec.text === 'string') {
       const text = rec.text.trim();
       if (text) {
         textBlocks.push(text);
       }
       continue;
     }
-    if (typeof rec.type === "string" && rec.type !== "thinking") {
+    if (typeof rec.type === 'string' && rec.type !== 'thinking') {
       sawNonTextContentBlocks = true;
     }
   }
   return { textBlocks, sawNonTextContentBlocks };
 }
 
-// Detects final messages that dropped streamed boundary text around a non-text block.
 function isDroppedBoundaryTextBlockSubset(params: {
   streamedTextBlocks: string[];
   finalTextBlocks: string[];
@@ -78,10 +74,11 @@ function isDroppedBoundaryTextBlockSubset(params: {
   }
 
   const suffixStart = streamedTextBlocks.length - finalTextBlocks.length;
-  return finalTextBlocks.every((block, index) => streamedTextBlocks[suffixStart + index] === block);
+  return finalTextBlocks.every(
+    (block, index) => streamedTextBlocks[suffixStart + index] === block,
+  );
 }
 
-// Some providers omit text adjacent to images/files in the final message; preserve streamed text.
 function shouldPreserveBoundaryDroppedText(params: {
   boundaryDropMode: BoundaryDropMode;
   streamedSawNonTextContentBlocks: boolean;
@@ -89,11 +86,11 @@ function shouldPreserveBoundaryDroppedText(params: {
   streamedTextBlocks: string[];
   nextContentBlocks: string[];
 }) {
-  if (params.boundaryDropMode === "off") {
+  if (params.boundaryDropMode === 'off') {
     return false;
   }
   const sawEligibleNonTextContent =
-    params.boundaryDropMode === "streamed-or-incoming"
+    params.boundaryDropMode === 'streamed-or-incoming'
       ? params.streamedSawNonTextContentBlocks || params.incomingSawNonTextContentBlocks
       : params.streamedSawNonTextContentBlocks;
   if (!sawEligibleNonTextContent) {
@@ -105,7 +102,6 @@ function shouldPreserveBoundaryDroppedText(params: {
   });
 }
 
-/** Assembles assistant stream deltas and final messages into stable TUI display text. */
 export class TuiStreamAssembler {
   private runs = new Map<string, RunStreamState>();
 
@@ -113,11 +109,11 @@ export class TuiStreamAssembler {
     let state = this.runs.get(runId);
     if (!state) {
       state = {
-        thinkingText: "",
-        contentText: "",
+        thinkingText: '',
+        contentText: '',
         contentBlocks: [],
         sawNonTextContentBlocks: false,
-        displayText: "",
+        displayText: '',
       };
       this.runs.set(runId, state);
     }
@@ -139,7 +135,7 @@ export class TuiStreamAssembler {
     }
     if (contentText) {
       const nextContentBlocks = textBlocks.length > 0 ? textBlocks : [contentText];
-      const boundaryDropMode = opts?.boundaryDropMode ?? "off";
+      const boundaryDropMode = opts?.boundaryDropMode ?? 'off';
       const shouldKeepStreamedBoundaryText = shouldPreserveBoundaryDroppedText({
         boundaryDropMode,
         streamedSawNonTextContentBlocks: state.sawNonTextContentBlocks,
@@ -166,12 +162,11 @@ export class TuiStreamAssembler {
     state.displayText = displayText;
   }
 
-  /** Ingests a streaming delta and returns updated display text only when it changed. */
   ingestDelta(runId: string, message: unknown, showThinking: boolean): string | null {
     const state = this.getOrCreateRun(runId);
     const previousDisplayText = state.displayText;
     this.updateRunState(state, message, showThinking, {
-      boundaryDropMode: "streamed-or-incoming",
+      boundaryDropMode: 'streamed-or-incoming',
     });
 
     if (!state.displayText || state.displayText === previousDisplayText) {
@@ -181,14 +176,18 @@ export class TuiStreamAssembler {
     return state.displayText;
   }
 
-  /** Finalizes a run, combines any error text, and drops stored stream state. */
-  finalize(runId: string, message: unknown, showThinking: boolean, errorMessage?: string): string {
+  finalize(
+    runId: string,
+    message: unknown,
+    showThinking: boolean,
+    errorMessage?: string,
+  ): string {
     const state = this.getOrCreateRun(runId);
     const streamedDisplayText = state.displayText;
     const streamedTextBlocks = [...state.contentBlocks];
     const streamedSawNonTextContentBlocks = state.sawNonTextContentBlocks;
     this.updateRunState(state, message, showThinking, {
-      boundaryDropMode: "streamed-only",
+      boundaryDropMode: 'streamed-only',
     });
     const finalComposed = state.displayText;
     const shouldKeepStreamedText =
@@ -207,8 +206,24 @@ export class TuiStreamAssembler {
     return finalText;
   }
 
-  /** Drops stored stream state for an aborted or discarded run. */
-  drop(runId: string) {
+  drop(runId: string): void {
     this.runs.delete(runId);
+  }
+
+  hasRun(runId: string): boolean {
+    return this.runs.has(runId);
+  }
+
+  getDisplayText(runId: string): string | null {
+    const state = this.runs.get(runId);
+    return state ? state.displayText : null;
+  }
+
+  clear(): void {
+    this.runs.clear();
+  }
+
+  size(): number {
+    return this.runs.size;
   }
 }

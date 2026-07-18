@@ -68,6 +68,7 @@ export default defineConfig({
       'server/__tests__/**/*.test.{ts,tsx}',
       'server/**/__tests__/**/*.test.{ts,tsx}',
       'packages/**/__tests__/**/*.test.{ts,tsx}',
+      'cli/src/**/__tests__/**/*.test.{ts,tsx}',
     ],
     deps: {
       // Force vitest to process (and thus mock) onnxruntime-node

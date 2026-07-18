@@ -67,6 +67,14 @@ export interface PlannerOptions {
   maxRetries?: number;
 }
 
+/** 计划偏离评估结果 */
+export interface DriftAssessment {
+  /** 是否需要重规划 */
+  shouldReplan: boolean;
+  /** 评估原因 */
+  reason: string;
+}
+
 // ===================== 规则引擎关键词 =====================
 
 /** 多步骤意图关键词 */
@@ -438,6 +446,212 @@ ${planJson}
       logger.debug(`[Planner] reflectionReplan 生成 ${revised.steps.length} 个修订步骤`);
     }
     return revised;
+  }
+
+  /**
+   * 检测计划是否偏离预期。
+   *
+   * @param plan - 当前执行计划
+   * @param executedSteps - 已执行的步骤序号列表
+   * @param failedSteps - 失败的步骤序号列表
+   * @returns 偏离评估结果
+   */
+  detectDrift(
+    plan: ExecutionPlan,
+    executedSteps: number[],
+    failedSteps: number[],
+  ): DriftAssessment {
+    const totalSteps = plan.steps.length;
+    if (totalSteps === 0) {
+      return { shouldReplan: false, reason: '计划为空' };
+    }
+
+    // 计算失败率
+    const failureRate = failedSteps.length / totalSteps;
+    if (failureRate > 0.3) {
+      return { shouldReplan: true, reason: '失败率过高' };
+    }
+
+    // 如果 plan.steps 中有任何步骤状态为 failed 且 failedSteps 包含它
+    for (const step of plan.steps) {
+      if (step.status === 'failed' && failedSteps.includes(step.step)) {
+        return { shouldReplan: true, reason: '存在失败步骤' };
+      }
+    }
+
+    // 如果连续 2 个以上步骤失败
+    for (let i = 0; i < plan.steps.length - 1; i++) {
+      const currFailed = plan.steps[i].status === 'failed' || failedSteps.includes(plan.steps[i].step);
+      const nextFailed = plan.steps[i + 1].status === 'failed' || failedSteps.includes(plan.steps[i + 1].step);
+      if (currFailed && nextFailed) {
+        return { shouldReplan: true, reason: '连续多个步骤失败' };
+      }
+    }
+
+    return { shouldReplan: false, reason: '计划正常' };
+  }
+
+  /**
+   * 动态重规划：根据漂移评估选择 adjustPlan 或 reflectionReplan。
+   *
+   * @param modelConfig - 模型调用配置
+   * @param originalUserMessage - 原始用户任务
+   * @param currentPlan - 当前计划
+   * @param scratchpadSummary - scratchpad 摘要
+   * @param signal - 取消信号
+   * @returns 修订后的执行计划，无需重规划返回 null
+   */
+  async replan(
+    modelConfig: ModelCallConfig,
+    originalUserMessage: string,
+    currentPlan: ExecutionPlan,
+    scratchpadSummary: string,
+    signal?: AbortSignal,
+  ): Promise<ExecutionPlan | null> {
+    const failedStepNumbers = currentPlan.steps
+      .filter(s => s.status === 'failed')
+      .map(s => s.step);
+    const executedStepNumbers = currentPlan.steps
+      .filter(s => s.status === 'completed')
+      .map(s => s.step);
+
+    const drift = this.detectDrift(currentPlan, executedStepNumbers, failedStepNumbers);
+    if (!drift.shouldReplan) {
+      return null;
+    }
+
+    const failedSteps = currentPlan.steps.filter(s => s.status === 'failed');
+    if (failedSteps.length === 1) {
+      const failedStepIndex = currentPlan.steps.findIndex(s => s.step === failedSteps[0].step);
+      const adjusted = this.adjustPlan(currentPlan, {
+        failedStepIndex,
+        error: 'replan',
+      });
+      // 如果 adjustPlan 后的计划仍有 failed 步骤，调用 reflectionReplan
+      if (adjusted.steps.some(s => s.status === 'failed')) {
+        return this.reflectionReplan(modelConfig, originalUserMessage, adjusted, scratchpadSummary, signal);
+      }
+      return adjusted;
+    }
+
+    // 多个失败步骤直接调用 reflectionReplan
+    return this.reflectionReplan(modelConfig, originalUserMessage, currentPlan, scratchpadSummary, signal);
+  }
+
+  /**
+   * 对计划步骤按 dependsOn 进行拓扑排序。
+   *
+   * @param steps - 计划步骤列表
+   * @returns 排序后的步骤列表
+   * @throws 存在循环依赖时抛错
+   */
+  topologicalSort(steps: PlanStep[]): PlanStep[] {
+    const stepMap = new Map<number, PlanStep>();
+    for (const step of steps) {
+      stepMap.set(step.step, step);
+    }
+
+    const inDegree = new Map<number, number>();
+    const adj = new Map<number, number[]>();
+    for (const step of steps) {
+      inDegree.set(step.step, 0);
+      adj.set(step.step, []);
+    }
+
+    for (const step of steps) {
+      for (const dep of step.dependsOn) {
+        if (stepMap.has(dep)) {
+          adj.get(dep)!.push(step.step);
+          inDegree.set(step.step, (inDegree.get(step.step) ?? 0) + 1);
+        }
+      }
+    }
+
+    const queue: number[] = [];
+    for (const [stepNum, degree] of inDegree) {
+      if (degree === 0) queue.push(stepNum);
+    }
+
+    const sorted: PlanStep[] = [];
+    while (queue.length > 0) {
+      const curr = queue.shift()!;
+      const step = stepMap.get(curr)!;
+      sorted.push(step);
+
+      for (const neighbor of adj.get(curr) ?? []) {
+        const newDegree = (inDegree.get(neighbor) ?? 1) - 1;
+        inDegree.set(neighbor, newDegree);
+        if (newDegree === 0) {
+          queue.push(neighbor);
+        }
+      }
+    }
+
+    if (sorted.length !== steps.length) {
+      throw new Error('存在循环依赖，无法拓扑排序');
+    }
+
+    return sorted;
+  }
+
+  /**
+   * 推进计划：标记步骤完成并解锁下游步骤。
+   *
+   * @param plan - 当前执行计划
+   * @param completedStepIndex - 已完成步骤的数组索引（0-based）
+   * @returns 新的执行计划
+   */
+  advancePlan(plan: ExecutionPlan, completedStepIndex: number): ExecutionPlan {
+    const newPlan = this.clonePlan(plan);
+    const completedStep = newPlan.steps[completedStepIndex];
+    if (!completedStep) {
+      return newPlan;
+    }
+
+    completedStep.status = 'completed';
+
+    for (const step of newPlan.steps) {
+      if (step.status !== 'pending') continue;
+      const allDepsCompleted = step.dependsOn.every(dep => {
+        const depStep = newPlan.steps.find(s => s.step === dep);
+        return depStep?.status === 'completed';
+      });
+      if (allDepsCompleted) {
+        step.status = 'pending';
+      }
+    }
+
+    return newPlan;
+  }
+
+  /**
+   * 获取所有可执行的下一步骤。
+   *
+   * @param plan - 当前执行计划
+   * @returns 可执行的步骤列表
+   */
+  getNextExecutableSteps(plan: ExecutionPlan): PlanStep[] {
+    return plan.steps.filter(step => {
+      if (step.status !== 'pending') return false;
+      return step.dependsOn.every(dep => {
+        const depStep = plan.steps.find(s => s.step === dep);
+        return depStep?.status === 'completed';
+      });
+    });
+  }
+
+  /**
+   * 估算计划执行进度。
+   *
+   * @param plan - 当前执行计划
+   * @returns 进度统计
+   */
+  estimateProgress(plan: ExecutionPlan): { completed: number; total: number; percentage: number; estimatedRemainingMs: number } {
+    const completed = plan.steps.filter(s => s.status === 'completed').length;
+    const total = plan.steps.length;
+    const percentage = total > 0 ? (completed / total) * 100 : 0;
+    const estimatedRemainingMs = (total - completed) * 5000;
+    return { completed, total, percentage, estimatedRemainingMs };
   }
 
   // ===================== 私有方法 =====================

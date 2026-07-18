@@ -1,0 +1,104 @@
+name: quick-ci
+
+# Lightweight CI gate that runs on every push and PR.
+# Designed to be fast (< 1 min target) so it doesn't slow developer feedback.
+# For full quality gate + macOS DMG build see `.github/workflows/ci.yml`.
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+permissions:
+  contents: read
+
+# Cancel in-progress runs for the same ref so we don't waste minutes on
+# superseded pushes / PR force-pushes.
+concurrency:
+  group: quick-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quick-ci:
+    name: Quick CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        # `npm ci` is deterministic and faster than `npm install` for CI.
+        run: npm ci --legacy-peer-deps
+
+      - name: Make scripts executable
+        # Linux runners don't preserve the executable bit on checkout.
+        run: |
+          chmod +x scripts/*.sh
+          ls -la scripts/ci-quick-check.sh scripts/drift-check.sh scripts/package-summary.sh
+
+      - name: Run ci-quick-check
+        id: quick
+        # The script self-times and emits pass/fail; we tee to a log so the
+        # next step can pick it up as an artifact.
+        run: |
+          set -o pipefail
+          bash scripts/ci-quick-check.sh 2>&1 | tee ci-quick-check.log
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT || true
+
+      - name: Run package-summary (for artifact)
+        # Always run, even if quick-ci failed, so we have full diagnostics.
+        if: always()
+        run: |
+          bash scripts/package-summary.sh --skip-tests --skip-build > packages-report.md || true
+          cat packages-report.md
+
+      - name: Upload quick-ci log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quick-ci-log
+          path: ci-quick-check.log
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload package report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-report
+          path: packages-report.md
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Quick CI Summary"
+            echo ""
+            echo "- **Run**: ${{ github.run_id }} (${{ github.workflow }} / ${{ github.job }})"
+            echo "- **Ref**: \`${{ github.ref }}\`"
+            echo "- **Commit**: \`${{ github.sha }}\`"
+            echo "- **Actor**: ${{ github.actor }}"
+            echo ""
+            if [ -f ci-quick-check.log ]; then
+              echo "<details><summary>ci-quick-check.log (last 80 lines)</summary>"
+              echo ""
+              echo '```'
+              tail -80 ci-quick-check.log
+              echo '```'
+              echo ""
+              echo "</details>"
+            fi
+          } >> $GITHUB_STEP_SUMMARY

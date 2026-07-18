@@ -1,25 +1,16 @@
-/**
- * Shared fuzzy filtering utilities for select list components.
- */
-
-import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
-
-/**
- * Word boundary characters for matching.
- */
 const WORD_BOUNDARY_CHARS = /[\s\-_./:#@]/;
 
-/**
- * Check if position is at a word boundary.
- */
-function isWordBoundary(text: string, index: number): boolean {
-  return index === 0 || WORD_BOUNDARY_CHARS.test(text[index - 1] ?? "");
+function normalizeLowercaseStringOrEmpty(value: string | undefined | null): string {
+  if (value == null) {
+    return '';
+  }
+  return String(value).trim().toLowerCase();
 }
 
-/**
- * Find index where query matches at a word boundary in text.
- * Returns null if no match.
- */
+function isWordBoundary(text: string, index: number): boolean {
+  return index === 0 || WORD_BOUNDARY_CHARS.test(text[index - 1] ?? '');
+}
+
 export function findWordBoundaryIndex(text: string, query: string): number | null {
   if (!query) {
     return null;
@@ -38,10 +29,6 @@ export function findWordBoundaryIndex(text: string, query: string): number | nul
   return null;
 }
 
-/**
- * Fuzzy match with pre-lowercased inputs (avoids toLowerCase on every keystroke).
- * Returns score (lower = better) or null if no match.
- */
 function fuzzyMatchLower(queryLower: string, textLower: string): number | null {
   if (queryLower.length === 0) {
     return 0;
@@ -60,17 +47,17 @@ function fuzzyMatchLower(queryLower: string, textLower: string): number | null {
       const isAtWordBoundary = isWordBoundary(textLower, i);
       if (lastMatchIndex === i - 1) {
         consecutiveMatches++;
-        score -= consecutiveMatches * 5; // Reward consecutive matches
+        score -= consecutiveMatches * 5;
       } else {
         consecutiveMatches = 0;
         if (lastMatchIndex >= 0) {
           score += (i - lastMatchIndex - 1) * 2;
-        } // Penalize gaps
+        }
       }
       if (isAtWordBoundary) {
         score -= 10;
-      } // Reward word boundary matches
-      score += i * 0.1; // Slight penalty for later matches
+      }
+      score += i * 0.1;
       lastMatchIndex = i;
       queryIndex++;
     }
@@ -78,11 +65,15 @@ function fuzzyMatchLower(queryLower: string, textLower: string): number | null {
   return queryIndex < queryLower.length ? null : score;
 }
 
-/**
- * Filter items using pre-lowercased searchTextLower field.
- * Supports space-separated tokens (all must match).
- */
-export function fuzzyFilterLower<T extends { searchTextLower?: string }>(
+export interface FuzzyFilterItem {
+  value: string;
+  label: string;
+  description?: string;
+  searchText?: string;
+  searchTextLower?: string;
+}
+
+export function fuzzyFilterLower<T extends FuzzyFilterItem>(
   items: T[],
   queryLower: string,
 ): T[] {
@@ -98,7 +89,7 @@ export function fuzzyFilterLower<T extends { searchTextLower?: string }>(
 
   const results: { item: T; score: number }[] = [];
   for (const item of items) {
-    const text = item.searchTextLower ?? "";
+    const text = item.searchTextLower ?? '';
     let totalScore = 0;
     let allMatch = true;
     for (const token of tokens) {
@@ -118,9 +109,6 @@ export function fuzzyFilterLower<T extends { searchTextLower?: string }>(
   return results.map((r) => r.item);
 }
 
-/**
- * Prepare items for fuzzy filtering by pre-computing lowercase search text.
- */
 export function prepareSearchItems<
   T extends { label?: string; description?: string; searchText?: string },
 >(items: T[]): (T & { searchTextLower: string })[] {
@@ -135,6 +123,27 @@ export function prepareSearchItems<
     if (item.searchText) {
       parts.push(item.searchText);
     }
-    return { ...item, searchTextLower: normalizeLowercaseStringOrEmpty(parts.join(" ")) };
+    return { ...item, searchTextLower: normalizeLowercaseStringOrEmpty(parts.join(' ')) };
   });
+}
+
+export function fuzzyFilter<T extends FuzzyFilterItem>(items: T[], query: string): T[] {
+  const queryLower = normalizeLowercaseStringOrEmpty(query);
+  return fuzzyFilterLower(items, queryLower);
+}
+
+export function highlightMatch(text: string, query: string, highlightFn: (s: string) => string): string {
+  if (!query) {
+    return text;
+  }
+  const textLower = text.toLowerCase();
+  const queryLower = query.toLowerCase();
+  const index = textLower.indexOf(queryLower);
+  if (index === -1) {
+    return text;
+  }
+  const before = text.slice(0, index);
+  const match = text.slice(index, index + query.length);
+  const after = text.slice(index + query.length);
+  return before + highlightFn(match) + after;
 }

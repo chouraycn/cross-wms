@@ -98,7 +98,7 @@ export function validateManifest(raw: unknown): PluginManifestValidationResult {
   if (manifest.kind) {
     const kinds = Array.isArray(manifest.kind) ? manifest.kind : [manifest.kind];
     const validKinds: PluginCapabilityKind[] = [
-      'tool', 'provider', 'embedding-provider', 'memory-host',
+      'tool', 'provider', 'embedding', 'memory-host',
       'channel', 'hook', 'command', 'service',
     ];
     for (const kind of kinds) {
@@ -115,7 +115,7 @@ export function validateManifest(raw: unknown): PluginManifestValidationResult {
   if (manifest.declaredCapabilities) {
     for (const cap of manifest.declaredCapabilities) {
       const validCaps: PluginCapabilityKind[] = [
-        'tool', 'provider', 'embedding-provider', 'memory-host',
+        'tool', 'provider', 'embedding', 'memory-host',
         'channel', 'hook', 'command', 'service',
       ];
       if (!validCaps.includes(cap)) {

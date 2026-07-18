@@ -46,3 +46,56 @@ export interface ChannelConfigAdapter<TAccount = any> {
   isEnabled(account: TAccount, config: AppConfig): boolean;
   isConfigured(account: TAccount, config: AppConfig): boolean;
 }
+
+// ============================================================================
+// Runtime Channel Types
+// ============================================================================
+
+/**
+ * Channel runtime status.
+ */
+export type ChannelStatus = "initializing" | "ready" | "paused" | "error" | "closed";
+
+/**
+ * Runtime channel instance capable of sending and receiving messages.
+ */
+export interface Channel {
+  /** Channel unique identifier. */
+  id: ChannelId;
+  /** Channel display metadata. */
+  meta: ChannelMeta;
+  /** Current runtime status. */
+  status: ChannelStatus;
+  /** Send a message through this channel. */
+  send(message: ChannelMessage): Promise<void>;
+  /** Start the channel. */
+  start?(): Promise<void>;
+  /** Stop the channel. */
+  stop?(): Promise<void>;
+}
+
+/**
+ * Channel message used in runtime operations.
+ * Extended from the adapter-level message type with routing info.
+ */
+export interface ChannelMessage {
+  id: string;
+  channelId: ChannelId;
+  accountId?: AccountId;
+  content: string;
+  contentType?: string;
+  metadata?: Record<string, unknown>;
+  createdAt?: number;
+  conversationId?: string;
+  senderId?: string;
+  senderName?: string;
+  timestamp?: number;
+  /** Target agent id for routing. */
+  targetAgentId?: string;
+  /** Thread id for thread binding. */
+  threadId?: string;
+  /** Parent message id for reply threading. */
+  parentMessageId?: string;
+  /** Explicit mentions in the message. */
+  mentions?: string[];
+}

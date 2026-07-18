@@ -6,7 +6,7 @@
 // ===================== 节点类型 =====================
 
 /** 节点类型枚举 */
-export type NodeType = 'trigger' | 'condition' | 'action' | 'parallel' | 'loop' | 'wait';
+export type NodeType = 'trigger' | 'condition' | 'action' | 'parallel' | 'loop' | 'wait' | 'delay' | 'script' | 'transform' | 'merge' | 'switch' | 'subworkflow';
 
 /** 触发器类型 */
 export type TriggerType = 'manual' | 'schedule' | 'event' | 'webhook';
@@ -86,6 +86,61 @@ export interface WaitConfig {
   duration?: number; // 毫秒
   event?: string;
   condition?: string;
+}
+
+/** 延迟节点配置 */
+export interface DelayConfig {
+  duration: number; // 延迟时间（毫秒）
+  durationExpression?: string; // 表达式形式的延迟时间
+}
+
+/** 脚本节点配置 */
+export interface ScriptConfig {
+  language: 'javascript' | 'typescript';
+  code: string;
+  timeout?: number;
+}
+
+/** 数据转换节点配置 */
+export interface TransformConfig {
+  mappings: Array<{
+    source: string; // 源字段路径，支持表达式
+    target: string; // 目标字段名
+    transform?: 'uppercase' | 'lowercase' | 'trim' | 'number' | 'string' | 'boolean' | 'json_parse' | 'json_stringify';
+    defaultValue?: unknown;
+  }>;
+  outputVariable?: string; // 输出变量名
+}
+
+/** 合并节点配置 */
+export interface MergeConfig {
+  mode: 'all' | 'any' | 'first'; // all: 等待所有输入，any: 任意输入到达即继续，first: 取第一个到达的输入
+  mergeStrategy?: 'concat' | 'assign' | 'first' | 'last'; // 数据合并策略
+  inputCount?: number; // 预期输入数量（mode=all 时使用）
+}
+
+/** 多路分支节点配置 */
+export interface SwitchConfig {
+  expression: string; // 条件表达式
+  cases: Array<{
+    value: unknown; // 匹配值
+    targetNodeId: string; // 目标节点 ID
+  }>;
+  defaultTargetNodeId?: string; // 默认分支目标节点 ID
+}
+
+/** 子工作流节点配置 */
+export interface SubWorkflowConfig {
+  workflowId: string; // 子工作流 ID
+  inputMappings?: Array<{
+    source: string; // 父工作流变量名
+    target: string; // 子工作流变量名
+  }>;
+  outputMappings?: Array<{
+    source: string; // 子工作流输出变量名
+    target: string; // 父工作流变量名
+  }>;
+  async?: boolean; // 是否异步执行（不等待子工作流完成）
 }
 
 // ===================== 节点定义 =====================
@@ -312,4 +367,98 @@ export interface EditorState {
   undoStack: Workflow[];
   redoStack: Workflow[];
   clipboard: WorkflowNode | null;
+}
+
+// ===================== 验证器类型 =====================
+
+/** 验证错误级别 */
+export type ValidationLevel = 'error' | 'warning' | 'info';
+
+/** 验证错误项 */
+export interface ValidationIssue {
+  level: ValidationLevel;
+  message: string;
+  nodeId?: string;
+  field?: string;
+}
+
+/** 验证结果 */
+export interface ValidationResult {
+  valid: boolean;
+  issues: ValidationIssue[];
+  errors: ValidationIssue[];
+  warnings: ValidationIssue[];
+}
+
+// ===================== 执行追踪类型 =====================
+
+/** 追踪事件类型 */
+export type TraceEventType =
+  | 'workflow_start'
+  | 'workflow_complete'
+  | 'workflow_failed'
+  | 'node_start'
+  | 'node_complete'
+  | 'node_failed'
+  | 'node_retry'
+  | 'variable_set'
+  | 'variable_get'
+  | 'expression_evaluate'
+  | 'breakpoint_hit'
+  | 'paused'
+  | 'resumed';
+
+/** 追踪事件 */
+export interface TraceEvent {
+  id: string;
+  type: TraceEventType;
+  timestamp: number;
+  executionId?: string;
+  nodeId?: string;
+  nodeName?: string;
+  data?: Record<string, unknown>;
+  message?: string;
+}
+
+/** 执行追踪器接口 */
+export interface WorkflowTracer {
+  record(event: Omit<TraceEvent, 'id' | 'timestamp'>): void;
+  getEvents(executionId?: string): TraceEvent[];
+  clear(executionId?: string): void;
+}
+
+// ===================== 变量上下文类型 =====================
+
+/** 变量上下文接口 */
+export interface IVariableContext {
+  get(key: string): unknown;
+  set(key: string, value: unknown): void;
+  has(key: string): boolean;
+  evaluate(expression: string): unknown;
+  merge(data: Record<string, unknown>): void;
+  snapshot(): Record<string, unknown>;
+}
+
+// ===================== 执行状态扩展 =====================
+
+/** 执行暂停状态 */
+export interface PauseState {
+  isPaused: boolean;
+  pausedAt?: number;
+  pausedNodeId?: string;
+  reason?: string;
+}
+
+/** 断点定义 */
+export interface Breakpoint {
+  nodeId: string;
+  enabled: boolean;
+  condition?: string; // 断点触发条件表达式
+}
+
+// ===================== 并行配置扩展 =====================
+
+/** 并行配置扩展（带并发控制） */
+export interface ParallelConfigExt extends ParallelConfig {
+  maxConcurrency?: number; // 最大并发数
 }

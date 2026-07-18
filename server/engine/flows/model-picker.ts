@@ -252,3 +252,84 @@ export function resolveProviderForModelRef(modelRef: string): ProviderInfo | und
   const providerId = modelRef.slice(0, slashIndex);
   return getProviderById(providerId);
 }
+
+// ===================== 模型过滤与分组 =====================
+
+/** 模型分组维度。 */
+export type ModelGroupBy = 'provider' | 'capability' | 'auth-status';
+
+/**
+ * 按 provider 分组模型选项。
+ */
+export function groupModelsByProvider(
+  options: readonly ModelPickerOption[],
+): Record<string, ModelPickerOption[]> {
+  const groups: Record<string, ModelPickerOption[]> = {};
+  for (const option of options) {
+    const key = option.providerId;
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(option);
+  }
+  return groups;
+}
+
+/**
+ * 按认证状态分组模型选项。
+ */
+export function groupModelsByAuthStatus(
+  options: readonly ModelPickerOption[],
+): Record<string, ModelPickerOption[]> {
+  const groups: Record<string, ModelPickerOption[]> = {};
+  for (const option of options) {
+    const key = option.authStatus ?? 'unknown';
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key].push(option);
+  }
+  return groups;
+}
+
+/**
+ * 过滤支持推理（reasoning）的模型。
+ */
+export function filterReasoningModels(
+  options: readonly ModelPickerOption[],
+): ModelPickerOption[] {
+  return options.filter((o) => o.reasoning === true);
+}
+
+/**
+ * 根据上下文窗口最小要求过滤模型。
+ */
+export function filterModelsByMinContext(
+  options: readonly ModelPickerOption[],
+  minContextWindow: number,
+): ModelPickerOption[] {
+  return options.filter((o) => (o.contextWindow ?? 0) >= minContextWindow);
+}
+
+/**
+ * 从模型引用中解析 providerId 和 modelId。
+ *
+ * 格式不合法时返回 null。
+ */
+export function parseModelRef(modelRef: string): { providerId: string; modelId: string } | null {
+  const slashIndex = modelRef.indexOf('/');
+  if (slashIndex <= 0 || slashIndex === modelRef.length - 1) {
+    return null;
+  }
+  return {
+    providerId: modelRef.slice(0, slashIndex),
+    modelId: modelRef.slice(slashIndex + 1),
+  };
+}
+
+/**
+ * 检查模型引用是否为有效格式。
+ */
+export function isValidModelRef(modelRef: string): boolean {
+  return parseModelRef(modelRef) !== null;
+}

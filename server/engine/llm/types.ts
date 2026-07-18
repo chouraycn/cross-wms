@@ -6,7 +6,18 @@ export type Api =
   | 'mistral-chat'
   | 'azure-openai'
   | 'cloudflare-ai'
-  | 'github-copilot';
+  | 'github-copilot'
+  | 'aws-bedrock'
+  | 'ollama'
+  | 'deepseek-chat'
+  | 'moonshot-chat'
+  | 'qwen-chat'
+  | 'zhipu-chat'
+  | 'minimax-chat'
+  | 'baichuan-chat'
+  | 'ernie-chat'
+  | 'spark-chat'
+  | 'yi-chat';
 
 export type ModelThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
@@ -48,6 +59,7 @@ export type Model<TApi extends Api = Api> = {
 
 export type StreamEvent =
   | { type: 'text'; content: string }
+  | { type: 'thinking'; content: string }
   | { type: 'tool_call'; toolName: string; arguments: Record<string, unknown> }
   | { type: 'tool_result'; toolName: string; result: unknown }
   | { type: 'usage'; usage: Usage }
@@ -62,6 +74,8 @@ export type CompleteOptions = {
   tools?: Array<{ name: string; description: string; parameters: Record<string, unknown> }>;
   thinkingLevel?: ModelThinkingLevel;
   signal?: AbortSignal;
+  /** 用户标识（用于国内厂商合规审计） */
+  userId?: string;
 };
 
 export type StreamOptions = CompleteOptions & {

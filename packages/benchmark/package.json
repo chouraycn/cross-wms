@@ -1,0 +1,24 @@
+{
+  "name": "@cdf-know/benchmark",
+  "version": "1.0.0",
+  "description": "CDFKnow Benchmark - 性能基准测试框架",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "bench": "tsx src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.4",
+    "typescript": "^5.9.3",
+    "vite": "^7",
+    "vitest": "^3.2.6"
+  }
+}

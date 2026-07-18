@@ -12,7 +12,7 @@ import { isPyWebView } from './services/tencentDocsApi';
 import { getGrayScale, FONT_SIZES, BORDER_RADII, SPACING, SHADOWS } from './constants/theme';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import WindowDragBar from './components/Layout/WindowDragBar';
-import { ChatThread as CDFChatThread } from './components/CDFChat/index.js';
+const CDFChatThread = React.lazy(() => import('./components/CDFChat/ChatThread.js').then(m => ({ default: m.ChatThread ?? m.default })));
 import { ChatProvider, useChatSession } from './contexts/ChatContext';
 import { WarehouseCapabilityProvider } from './capabilities/warehouse/WarehouseCapabilityContext';
 import { ProcessStatusProvider, ProcessStatusPanel } from './contexts/ProcessStatusContext';
@@ -51,7 +51,7 @@ const TransferPage = React.lazy(() => import('./pages/TransferPage'));
 const ProjectDetailPage = React.lazy(() => import('./pages/ProjectDetailPage'));
 const PdfToolsPage = React.lazy(() => import('./pages/PdfToolsPage'));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
-const AISettingsDialog = React.lazy(() => import('./components/Layout/AISettingsDialog'));
+const _AISettingsDialog = React.lazy(() => import('./components/Layout/AISettingsDialog'));
 const PluginsPage = React.lazy(() => import('./pages/PluginsPage'));
 const ExtensionsPage = React.lazy(() => import('./pages/ExtensionsPage'));
 const SystemMonitorPage = React.lazy(() => import('./pages/SystemMonitorPage'));
@@ -79,6 +79,8 @@ const SoulPage = React.lazy(() => import('./pages/SoulPage'));
 const AgentsPage = React.lazy(() => import('./pages/AgentsPage'));
 const GoalsPage = React.lazy(() => import('./pages/GoalsPage'));
 const ImageGenerationPage = React.lazy(() => import('./pages/ImageGenerationPage'));
+const MusicGenerationPage = React.lazy(() => import('./pages/MusicGenerationPage'));
+const VideoGenerationPage = React.lazy(() => import('./pages/VideoGenerationPage'));
 const ProcessStatusDemoPage = React.lazy(() => import('./pages/ProcessStatusDemoPage'));
 const KeywordTriggerConfigPage = React.lazy(() => import('./pages/KeywordTriggerConfigPage'));
 const GitManagerPage = React.lazy(() => import('./pages/GitManagerPage'));
@@ -100,6 +102,12 @@ const TriggersPage = React.lazy(() => import('./pages/TriggersPage'));
 const InventoryTransactionsPage = React.lazy(() => import('./pages/InventoryTransactionsPage'));
 const MatchingPage = React.lazy(() => import('./pages/MatchingPage'));
 const SoulRulesPage = React.lazy(() => import('./pages/SoulRulesPage'));
+const PairingPage = React.lazy(() => import('./pages/PairingPage'));
+const TtsSettingsPage = React.lazy(() => import('./pages/TtsSettingsPage'));
+const MediaLibraryPage = React.lazy(() => import('./pages/MediaLibraryPage'));
+const ProcessManagementPage = React.lazy(() => import('./pages/ProcessManagementPage'));
+const NodeHostPage = React.lazy(() => import('./pages/NodeHostPage'));
+const MediaToolsPage = React.lazy(() => import('./pages/MediaToolsPage'));
 
 /** 强调色映射 */
 const ACCENT_MAP: Record<AccentColor, { main: string; light: string }> = {
@@ -913,7 +921,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/wms/outbound" element={<WmsOutboundPage />} />
                     <Route path="/wms/alerts" element={<WmsAlertPage />} />
                     <Route path="/wms/reports" element={<WmsReportPage />} />
-                    <Route path="/wms/replenishment" element={<Suspense fallback={<LoadingFallback />}><WmsReplenishmentPage /></Suspense>} />
+                    <Route path="/wms/replenishment" element={<WmsReplenishmentPage />} />
                     <Route path="/transfer" element={<TransferPage />} />
                     <Route path="/pdf-tools" element={<PdfToolsPage />} />
                     <Route path="/settings" element={<SettingsRedirect onOpenSettings={() => setSettingsPopoverOpen(true)} />} />
@@ -935,7 +943,7 @@ const MainLayout: React.FC = () => {
                     <Route path="/event-ledger" element={<EventLedgerPage />} />
                     <Route path="/observability-center" element={<ObservabilityCenterPage />} />
                     <Route path="/extensions-center" element={<ExtensionsCenterPage />} />
-                    <Route path="/model-management" element={<Suspense fallback={<LoadingFallback />}><ModelManagementCenterPage /></Suspense>} />
+                    <Route path="/model-management" element={<ModelManagementCenterPage />} />
                     <Route path="/files" element={<FileExplorerPage />} />
                     <Route path="/context-engine" element={<ContextEngineRegistryPage />} />
                     <Route path="/mcp" element={<McpServersPage />} />
@@ -943,6 +951,8 @@ const MainLayout: React.FC = () => {
                     <Route path="/agents" element={<AgentsPage />} />
                     <Route path="/goals" element={<GoalsPage />} />
                     <Route path="/image-generation" element={<ImageGenerationPage />} />
+                    <Route path="/music-generation" element={<MusicGenerationPage />} />
+                    <Route path="/video-generation" element={<VideoGenerationPage />} />
                     <Route path="/demo/process-status" element={<ProcessStatusDemoPage />} />
                     <Route path="/keyword-trigger" element={<KeywordTriggerConfigPage />} />
                     <Route path="/git" element={<GitManagerPage />} />
@@ -964,6 +974,12 @@ const MainLayout: React.FC = () => {
                     <Route path="/inventory-transactions" element={<InventoryTransactionsPage />} />
                     <Route path="/matching" element={<MatchingPage />} />
                     <Route path="/soul-rules" element={<SoulRulesPage />} />
+                    <Route path="/pairing" element={<PairingPage />} />
+                    <Route path="/tts" element={<TtsSettingsPage />} />
+                    <Route path="/media-library" element={<MediaLibraryPage />} />
+                    <Route path="/process" element={<ProcessManagementPage />} />
+                    <Route path="/node-host" element={<NodeHostPage />} />
+                    <Route path="/media-tools" element={<MediaToolsPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </Suspense>

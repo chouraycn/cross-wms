@@ -41,6 +41,14 @@ export interface VectorStore {
   delete(filter: string): Promise<void>;
   countRows(): Promise<number>;
   close?(): Promise<void>;
+  // 索引管理
+  createIndex?(indexName: string, options?: IndexConfig): Promise<void>;
+  dropIndex?(indexName: string): Promise<void>;
+  listIndexes?(): Promise<string[]>;
+  // Collection 管理
+  createCollection?(name: string, schema?: CollectionSchema): Promise<void>;
+  dropCollection?(name: string): Promise<void>;
+  listCollections?(): Promise<string[]>;
 }
 
 export interface EmbeddingProvider {
@@ -89,6 +97,35 @@ export interface VectorMemoryBackendConfig {
   tableName?: string;
   defaultMinScore?: number;
   vectorDimension?: number;
+  // 批量插入配置
+  batchSize?: number;
+  maxRetries?: number;
+}
+
+// 索引配置
+export interface IndexConfig {
+  type?: 'ivf' | 'hnsw' | 'flat';
+  metric?: 'cosine' | 'euclidean' | 'dotproduct';
+  params?: Record<string, unknown>;
+}
+
+// Collection Schema
+export interface CollectionSchema {
+  fields?: Array<{
+    name: string;
+    type: 'vector' | 'string' | 'number' | 'boolean';
+    params?: Record<string, unknown>;
+  }>;
+  vectorDimension?: number;
+  metric?: 'cosine' | 'euclidean' | 'dotproduct';
+}
+
+// 批量插入结果
+export interface BatchInsertResult {
+  success: number[];
+  failed: Array<{ text: string; error: Error }>;
+  totalProcessed: number;
+  duration: number;
 }
 
 // ============================================================================
@@ -444,6 +481,8 @@ export class VectorMemoryBackend implements MemoryBackend {
   private readonly tableName: string;
   private readonly defaultMinScore: number;
   private readonly vectorDimension: number;
+  private readonly batchSize: number;
+  private readonly maxRetries: number;
   private config: MemoryBackendConfig | null = null;
   private nextId = 1;
   private initialized = false;
@@ -454,6 +493,8 @@ export class VectorMemoryBackend implements MemoryBackend {
     this.tableName = config.tableName ?? DEFAULT_TABLE_NAME;
     this.defaultMinScore = config.defaultMinScore ?? DEFAULT_MIN_SCORE;
     this.vectorDimension = config.vectorDimension ?? 1536;
+    this.batchSize = config.batchSize ?? 100;
+    this.maxRetries = config.maxRetries ?? 3;
   }
 
   isAvailable(): boolean {
@@ -524,6 +565,190 @@ export class VectorMemoryBackend implements MemoryBackend {
     }
     await this.store.add(rows);
     return ids;
+  }
+
+  /**
+   * 批量插入（支持分批和重试）
+   */
+  async batchInsert(
+    entries: Array<{ text: string; metadata?: Record<string, unknown> }>,
+    options?: {
+      batchSize?: number;
+      maxRetries?: number;
+      onProgress?: (processed: number, total: number) => void;
+    },
+  ): Promise<BatchInsertResult> {
+    this.requireInitialized();
+
+    const startTime = Date.now();
+    const batchSize = options?.batchSize ?? this.batchSize;
+    const maxRetries = options?.maxRetries ?? this.maxRetries;
+
+    const success: number[] = [];
+    const failed: Array<{ text: string; error: Error }> = [];
+
+    // 分批处理
+    for (let i = 0; i < entries.length; i += batchSize) {
+      const batch = entries.slice(i, i + batchSize);
+      const batchRows: VectorStoreRow[] = [];
+      const batchIds: number[] = [];
+
+      // 生成 embeddings
+      for (const entry of batch) {
+        let retries = 0;
+        while (retries < maxRetries) {
+          try {
+            const vector = await this.embeddings.embed(entry.text);
+            const id = this.nextId++;
+            batchIds.push(id);
+            const category = (entry.metadata?.category as string) ?? detectCategory(entry.text);
+            const importance = (entry.metadata?.importance as number) ?? DEFAULT_IMPORTANCE;
+            batchRows.push({
+              id,
+              text: entry.text,
+              vector,
+              importance,
+              category,
+              createdAt: Date.now(),
+            });
+            break;
+          } catch (error) {
+            retries++;
+            if (retries >= maxRetries) {
+              failed.push({ text: entry.text, error: error as Error });
+            }
+          }
+        }
+      }
+
+      // 插入批次
+      if (batchRows.length > 0) {
+        try {
+          await this.store.add(batchRows);
+          success.push(...batchIds);
+        } catch (error) {
+          // 整个批次失败
+          for (const row of batchRows) {
+            failed.push({ text: row.text, error: error as Error });
+          }
+        }
+      }
+
+      // 进度回调
+      if (options?.onProgress) {
+        options.onProgress(Math.min(i + batchSize, entries.length), entries.length);
+      }
+    }
+
+    const duration = Date.now() - startTime;
+
+    return {
+      success,
+      failed,
+      totalProcessed: entries.length,
+      duration,
+    };
+  }
+
+  /**
+   * 创建索引
+   */
+  async createIndex(indexName: string, config?: IndexConfig): Promise<void> {
+    this.requireInitialized();
+    if (this.store.createIndex) {
+      await this.store.createIndex(indexName, config);
+    }
+  }
+
+  /**
+   * 删除索引
+   */
+  async dropIndex(indexName: string): Promise<void> {
+    this.requireInitialized();
+    if (this.store.dropIndex) {
+      await this.store.dropIndex(indexName);
+    }
+  }
+
+  /**
+   * 列出所有索引
+   */
+  async listIndexes(): Promise<string[]> {
+    if (this.store.listIndexes) {
+      return this.store.listIndexes();
+    }
+    return [];
+  }
+
+  /**
+   * 创建 Collection
+   */
+  async createCollection(name: string, schema?: CollectionSchema): Promise<void> {
+    this.requireInitialized();
+    if (this.store.createCollection) {
+      await this.store.createCollection(name, schema);
+    }
+  }
+
+  /**
+   * 删除 Collection
+   */
+  async dropCollection(name: string): Promise<void> {
+    this.requireInitialized();
+    if (this.store.dropCollection) {
+      await this.store.dropCollection(name);
+    }
+  }
+
+  /**
+   * 列出所有 Collections
+   */
+  async listCollections(): Promise<string[]> {
+    if (this.store.listCollections) {
+      return this.store.listCollections();
+    }
+    return [this.tableName];
+  }
+
+  /**
+   * 带相似度阈值的搜索
+   */
+  async searchWithThreshold(
+    query: string,
+    options?: {
+      topK?: number;
+      minSimilarity?: number;
+      maxDistance?: number;
+    },
+  ): Promise<Array<{ entry: MemoryEntry; similarity: number; distance: number }>> {
+    this.requireInitialized();
+
+    const topK = options?.topK ?? 10;
+    const minSimilarity = options?.minSimilarity ?? 0.5;
+    const maxDistance = options?.maxDistance ?? 1.0;
+
+    const vector = await this.embeddings.embed(query);
+    const raw = await this.store.vectorSearch(vector, topK * 2); // over-fetch
+
+    const results: Array<{ entry: MemoryEntry; similarity: number; distance: number }> = [];
+
+    for (const row of raw) {
+      const distance = row._distance ?? 0;
+      const similarity = this.distanceToScore(distance);
+
+      // 应用阈值过滤
+      if (similarity >= minSimilarity && distance <= maxDistance) {
+        results.push({
+          entry: this.rowToEntry(row),
+          similarity,
+          distance,
+        });
+      }
+
+      if (results.length >= topK) break;
+    }
+
+    return results.sort((a, b) => b.similarity - a.similarity);
   }
 
   async searchMemory(query: MemoryQuery): Promise<MemorySearchResult[]> {

@@ -1,29 +1,27 @@
-// TUI 主入口 — 统一导出
-export { runTui } from './tui.js';
-export { ChatServiceBackend, ChatServiceBackend as EmbeddedBackend } from './embeddedBackend.js';
-export { HttpBackend, type HttpBackendOptions } from './httpBackend.js';
-export { getTheme, detectTheme, colorize, bold, dim, italic, ANSI } from './theme.js';
-export { themeManager, type ThemeName } from './themeManager.js';
-export { getCommands, executeCommand } from './commands.js';
-export {
-  loadTuiConfig,
-  saveTuiConfig,
-  getDefaultConfigPath,
-  validateTuiConfig,
-  mergeWithDefaults,
-  DEFAULT_TUI_CONFIG,
-  type TuiConfig,
-} from './config.js';
-export {
-  TOOL_PROFILE_VALUES,
-  COMPACTION_STRATEGY_VALUES,
-  TOOL_PROFILE_LABELS,
-  COMPACTION_STRATEGY_LABELS,
-  type ToolProfile,
-  type CompactionStrategy,
-} from './types/aiEngine.js';
-export { runTuiCli, parseArgs, selectBackend, type CliArgs } from './cli.js';
-export type {
-  TuiOptions, TuiResult, ChatEvent, SessionInfo,
-  TuiBackend, TuiCommand, TuiCommandContext, TuiTheme,
-} from './types.js';
+export * from './types.js';
+export * from './tui.js';
+export * from './tui-input-history.js';
+export * from './tui-stream-assembler.js';
+export * from './tui-formatters.js';
+export * from './osc8-hyperlinks.js';
+
+export * from './theme/theme.js';
+export * from './theme/ansi.js';
+
+export * from './components/markdown-message.js';
+export * from './components/hyperlink-markdown.js';
+export * from './components/user-message.js';
+export * from './components/assistant-message.js';
+export * from './components/tool-execution.js';
+export * from './components/chat-log.js';
+export * from './components/custom-editor.js';
+export * from './components/searchable-select-list.js';
+export * from './components/filterable-select-list.js';
+export * from './components/fuzzy-filter.js';
+
+export * from './httpBackend.js';
+export * from './embeddedBackend.js';
+export * from './config.js';
+export * from './themeManager.js';
+export * from './constants.js';
+export * from './cli.js';

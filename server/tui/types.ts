@@ -1,83 +1,128 @@
-// TUI 选项
-export interface TuiOptions {
-  model?: string;
-  agentId?: string;
-  sessionId?: string;
-  verbose?: boolean;
-  /** 历史命令条数 */
-  historySize?: number;
-  /** 自定义配置文件路径 */
-  configPath?: string;
+export type TUIMessageRole = 'user' | 'assistant' | 'system' | 'tool';
+
+export type TUIMessageStatus = 'pending' | 'streaming' | 'complete' | 'error';
+
+export interface TUIToolCall {
+  id: string;
+  name: string;
+  input?: Record<string, unknown>;
+  output?: string;
+  status: 'pending' | 'running' | 'success' | 'error';
+  errorMessage?: string;
+  startTime?: number;
+  endTime?: number;
 }
 
-// TUI 结果
-export interface TuiResult {
-  exitCode: number;
-  lastSessionId?: string;
+export interface TUIMessage {
+  id: string;
+  role: TUIMessageRole;
+  content: string;
+  status: TUIMessageStatus;
+  timestamp: number;
+  toolCalls?: TUIToolCall[];
+  thinking?: string;
 }
 
-// 聊天事件
-export interface ChatEvent {
-  type: 'user_message' | 'assistant_start' | 'assistant_chunk' | 'assistant_end' | 'tool_call' | 'tool_result' | 'error' | 'thinking';
-  content?: string;
-  toolName?: string;
-  toolArgs?: Record<string, unknown>;
-  toolResult?: string;
-  error?: string;
+export type TUIThemeMode = 'light' | 'dark' | 'auto';
+
+export interface TUIPalette {
+  text: string;
+  dim: string;
+  accent: string;
+  accentSoft: string;
+  border: string;
+  userBg: string;
+  userText: string;
+  systemText: string;
+  toolPendingBg: string;
+  toolSuccessBg: string;
+  toolErrorBg: string;
+  toolTitle: string;
+  toolOutput: string;
+  quote: string;
+  quoteBorder: string;
+  code: string;
+  codeBlock: string;
+  codeBorder: string;
+  link: string;
+  error: string;
+  success: string;
 }
 
-// 会话信息
-export interface SessionInfo {
+export interface TUITheme {
+  palette: TUIPalette;
+  mode: TUIThemeMode;
+}
+
+export type TUICommandType =
+  | '/help'
+  | '/clear'
+  | '/theme'
+  | '/sessions'
+  | '/models'
+  | '/exit'
+  | '/status'
+  | '/history'
+  | string;
+
+export interface TUICommand {
+  type: TUICommandType;
+  args: string[];
+  raw: string;
+}
+
+export interface TUISession {
   id: string;
   title: string;
-  createdAt: number;
   updatedAt: number;
   messageCount: number;
 }
 
-// 后端接口
-export interface TuiBackend {
-  sendChat(messages: Array<{ role: string; content: string }>, signal?: AbortSignal): AsyncIterable<ChatEvent>;
-  abortChat(): void;
-  loadHistory(sessionId: string): Promise<Array<{ role: string; content: string }>>;
-  listSessions(): Promise<SessionInfo[]>;
-  createSession(title?: string): Promise<SessionInfo>;
-  deleteSession(id: string): Promise<void>;
+export interface TUIState {
+  messages: TUIMessage[];
+  currentInput: string;
+  inputHistory: string[];
+  historyIndex: number;
+  sessionId: string;
+  sessions: TUISession[];
+  themeMode: TUIThemeMode;
+  isConnected: boolean;
+  isProcessing: boolean;
+  showTools: boolean;
+  showThinking: boolean;
+  scrollOffset: number;
+  autoCompleteItems: string[];
+  autoCompleteIndex: number;
+  mode: 'chat' | 'command' | 'select';
+  selectedIndex: number;
 }
 
-// 命令定义
-export interface TuiCommand {
-  name: string;
-  description: string;
-  usage?: string;
-  aliases?: string[];
-  handler: (args: string[], ctx: TuiCommandContext) => Promise<void> | void;
+export type TUIEventType =
+  | 'message'
+  | 'command'
+  | 'input'
+  | 'keydown'
+  | 'resize'
+  | 'theme-change'
+  | 'session-change';
+
+export interface TUIEvent {
+  type: TUIEventType;
+  data?: unknown;
 }
 
-export interface TuiCommandContext {
-  backend: TuiBackend;
-  sessionId: string | null;
-  setSessionId: (id: string | null) => void;
-  print: (text: string) => void;
-  printError: (text: string) => void;
-  exit: () => void;
+export interface TUIRenderOptions {
+  width: number;
+  height: number;
 }
 
-// 主题
-export interface TuiTheme {
-  name: string;
-  isDark: boolean;
-  colors: {
-    primary: string;
-    secondary: string;
-    accent: string;
-    error: string;
-    warning: string;
-    success: string;
-    muted: string;
-    user: string;
-    assistant: string;
-    tool: string;
-    border: string;
-  };
+export interface TUIComponent {
+  render(options: TUIRenderOptions): string[];
+}
+
+export interface TUISelectItem {
+  value: string;
+  label: string;
+  description?: string;
+  searchText?: string;
 }

@@ -1,120 +1,279 @@
-// Custom editor component handles multiline TUI input and key bindings.
-import { Editor, isKeyRelease, Key, matchesKey } from "@earendil-works/pi-tui";
+import type { EditorTheme } from '../theme/theme.js';
+import { TuiInputHistory } from '../tui-input-history.js';
 
-// Kitty keyboard protocol uses CSI-u sequences for AltGr on international layouts.
-const KITTY_CSI_U_SUFFIX_REGEX = /^(\d+)(?::(\d*))?(?::(\d+))?(?:;(\d+))?(?::(\d+))?u$/u;
-const KITTY_MODIFIERS = {
-  alt: 2,
-  ctrl: 4,
-};
-const LOCK_MODIFIER_MASK = 64 + 128;
-
-// Decodes Ctrl+Alt layout output into the intended printable AltGr character.
-function decodeAltGrPrintable(data: string): string | undefined {
-  if (!data.startsWith("\u001b[")) {
-    return undefined;
-  }
-
-  const match = data.slice(2).match(KITTY_CSI_U_SUFFIX_REGEX);
-  if (!match) {
-    return undefined;
-  }
-
-  const codepoint = Number.parseInt(match[1] ?? "", 10);
-  const baseLayoutKey = match[3] ? Number.parseInt(match[3], 10) : undefined;
-  const modifierValue = match[4] ? Number.parseInt(match[4], 10) : 1;
-  const modifier = (Number.isFinite(modifierValue) ? modifierValue - 1 : 0) & ~LOCK_MODIFIER_MASK;
-
-  if (modifier !== (KITTY_MODIFIERS.alt | KITTY_MODIFIERS.ctrl)) {
-    return undefined;
-  }
-  if (typeof baseLayoutKey !== "number" || baseLayoutKey === codepoint) {
-    return undefined;
-  }
-  if (!Number.isFinite(codepoint) || codepoint < 32) {
-    return undefined;
-  }
-
-  try {
-    return String.fromCodePoint(codepoint);
-  } catch {
-    return undefined;
-  }
+export interface CustomEditorOptions {
+  theme: EditorTheme;
+  prompt?: string;
+  history?: TuiInputHistory;
+  multiline?: boolean;
 }
 
-/** Editor with Cross-WMS TUI shortcuts layered on top of pi-tui text editing. */
-export class CustomEditor extends Editor {
-  onEscape?: () => void;
-  onCtrlC?: () => void;
-  onCtrlD?: () => void;
-  onCtrlG?: () => void;
-  onCtrlL?: () => void;
-  onCtrlO?: () => void;
-  onCtrlP?: () => void;
-  onCtrlT?: () => void;
-  onShiftTab?: () => void;
-  onAltEnter?: () => void;
-  onAltUp?: () => void;
+export class CustomEditor {
+  private text: string = '';
+  private cursorPos: number = 0;
+  private prompt: string;
+  private theme: EditorTheme;
+  private history: TuiInputHistory;
+  private multiline: boolean;
+  private onSubmit?: (text: string) => void;
+  private onChange?: (text: string) => void;
+  private onCancel?: () => void;
+  private onKey?: (key: string) => boolean;
 
-  /** Dispatches TUI shortcuts before falling back to normal editor input handling. */
-  override handleInput(data: string): void {
-    if (isKeyRelease(data)) {
-      return;
+  constructor(options: CustomEditorOptions) {
+    this.theme = options.theme;
+    this.prompt = options.prompt ?? '> ';
+    this.history = options.history ?? new TuiInputHistory();
+    this.multiline = options.multiline ?? false;
+  }
+
+  setText(text: string): void {
+    this.text = text;
+    this.cursorPos = Math.min(this.cursorPos, text.length);
+    if (this.onChange) {
+      this.onChange(this.text);
+    }
+  }
+
+  getText(): string {
+    return this.text;
+  }
+
+  setCursorPos(pos: number): void {
+    this.cursorPos = Math.max(0, Math.min(pos, this.text.length));
+  }
+
+  getCursorPos(): number {
+    return this.cursorPos;
+  }
+
+  setPrompt(prompt: string): void {
+    this.prompt = prompt;
+  }
+
+  getPrompt(): string {
+    return this.prompt;
+  }
+
+  setOnSubmit(callback: (text: string) => void): void {
+    this.onSubmit = callback;
+  }
+
+  setOnChange(callback: (text: string) => void): void {
+    this.onChange = callback;
+  }
+
+  setOnCancel(callback: () => void): void {
+    this.onCancel = callback;
+  }
+
+  setOnKey(callback: (key: string) => boolean): void {
+    this.onKey = callback;
+  }
+
+  handleInput(input: string): boolean {
+    if (this.onKey && this.onKey(input)) {
+      return true;
     }
 
-    if (matchesKey(data, Key.alt("enter")) && this.onAltEnter) {
-      this.onAltEnter();
-      return;
+    switch (input) {
+      case '\r':
+      case '\n':
+        if (!this.multiline) {
+          this.submit();
+          return true;
+        }
+        this.insertText('\n');
+        return true;
+      case '\x7f':
+      case '\b':
+        this.backspace();
+        return true;
+      case '\x1b[3~':
+        this.delete();
+        return true;
+      case '\x1b[D':
+      case '\x1bOD':
+        this.moveLeft();
+        return true;
+      case '\x1b[C':
+      case '\x1bOC':
+        this.moveRight();
+        return true;
+      case '\x1b[H':
+      case '\x1b[1~':
+      case '\x01':
+        this.moveToStart();
+        return true;
+      case '\x1b[F':
+      case '\x1b[4~':
+      case '\x05':
+        this.moveToEnd();
+        return true;
+      case '\x1b[A':
+      case '\x1bOA':
+        this.historyPrevious();
+        return true;
+      case '\x1b[B':
+      case '\x1bOB':
+        this.historyNext();
+        return true;
+      case '\x03':
+        if (this.onCancel) {
+          this.onCancel();
+        }
+        return true;
+      case '\x15':
+        this.clearLine();
+        return true;
+      case '\x0b':
+        this.clearToEnd();
+        return true;
+      default:
+        if (input.startsWith('\x1b')) {
+          return false;
+        }
+        this.insertText(input);
+        return true;
     }
-    if (matchesKey(data, Key.alt("up")) && this.onAltUp) {
-      this.onAltUp();
-      return;
+  }
+
+  insertText(text: string): void {
+    const before = this.text.slice(0, this.cursorPos);
+    const after = this.text.slice(this.cursorPos);
+    this.text = before + text + after;
+    this.cursorPos += text.length;
+    if (this.onChange) {
+      this.onChange(this.text);
     }
-    if (matchesKey(data, Key.ctrl("l")) && this.onCtrlL) {
-      this.onCtrlL();
-      return;
-    }
-    if (matchesKey(data, Key.ctrl("o")) && this.onCtrlO) {
-      this.onCtrlO();
-      return;
-    }
-    if (matchesKey(data, Key.ctrl("p")) && this.onCtrlP) {
-      this.onCtrlP();
-      return;
-    }
-    if (matchesKey(data, Key.ctrl("g")) && this.onCtrlG) {
-      this.onCtrlG();
-      return;
-    }
-    if (matchesKey(data, Key.ctrl("t")) && this.onCtrlT) {
-      this.onCtrlT();
-      return;
-    }
-    if (matchesKey(data, Key.shift("tab")) && this.onShiftTab) {
-      this.onShiftTab();
-      return;
-    }
-    if (matchesKey(data, Key.escape) && this.onEscape && !this.isShowingAutocomplete()) {
-      this.onEscape();
-      return;
-    }
-    if (matchesKey(data, Key.ctrl("c")) && this.onCtrlC) {
-      this.onCtrlC();
-      return;
-    }
-    if (matchesKey(data, Key.ctrl("d"))) {
-      if (this.getText().length === 0 && this.onCtrlD) {
-        this.onCtrlD();
+  }
+
+  backspace(): void {
+    if (this.cursorPos > 0) {
+      const before = this.text.slice(0, this.cursorPos - 1);
+      const after = this.text.slice(this.cursorPos);
+      this.text = before + after;
+      this.cursorPos--;
+      if (this.onChange) {
+        this.onChange(this.text);
       }
-      return;
+    }
+  }
+
+  delete(): void {
+    if (this.cursorPos < this.text.length) {
+      const before = this.text.slice(0, this.cursorPos);
+      const after = this.text.slice(this.cursorPos + 1);
+      this.text = before + after;
+      if (this.onChange) {
+        this.onChange(this.text);
+      }
+    }
+  }
+
+  moveLeft(): void {
+    if (this.cursorPos > 0) {
+      this.cursorPos--;
+    }
+  }
+
+  moveRight(): void {
+    if (this.cursorPos < this.text.length) {
+      this.cursorPos++;
+    }
+  }
+
+  moveToStart(): void {
+    this.cursorPos = 0;
+  }
+
+  moveToEnd(): void {
+    this.cursorPos = this.text.length;
+  }
+
+  clear(): void {
+    this.text = '';
+    this.cursorPos = 0;
+    if (this.onChange) {
+      this.onChange(this.text);
+    }
+  }
+
+  clearLine(): void {
+    this.text = this.text.slice(this.cursorPos);
+    this.cursorPos = 0;
+    if (this.onChange) {
+      this.onChange(this.text);
+    }
+  }
+
+  clearToEnd(): void {
+    this.text = this.text.slice(0, this.cursorPos);
+    if (this.onChange) {
+      this.onChange(this.text);
+    }
+  }
+
+  submit(): void {
+    const text = this.text;
+    if (text.trim()) {
+      this.history.add(text);
+    }
+    this.clear();
+    if (this.onSubmit) {
+      this.onSubmit(text);
+    }
+  }
+
+  addToHistory(text: string): void {
+    this.history.add(text);
+  }
+
+  historyPrevious(): void {
+    const prev = this.history.getPrevious(this.text);
+    if (prev !== null) {
+      this.text = prev;
+      this.cursorPos = this.text.length;
+      if (this.onChange) {
+        this.onChange(this.text);
+      }
+    }
+  }
+
+  historyNext(): void {
+    const next = this.history.getNext();
+    if (next !== null) {
+      this.text = next;
+      this.cursorPos = this.text.length;
+      if (this.onChange) {
+        this.onChange(this.text);
+      }
+    }
+  }
+
+  render(width: number): string[] {
+    const lines: string[] = [];
+    const textLines = this.text.split('\n');
+    const promptLines = this.prompt.split('\n');
+
+    for (let i = 0; i < textLines.length; i++) {
+      const line = textLines[i] ?? '';
+      const prefix = i === 0 ? this.prompt : ' '.repeat(promptLines[0]?.length ?? 2);
+      lines.push(prefix + line);
     }
 
-    const altGrPrintable = decodeAltGrPrintable(data);
-    if (altGrPrintable !== undefined) {
-      super.handleInput(altGrPrintable);
-      return;
+    if (textLines.length === 0) {
+      lines.push(this.prompt);
     }
 
-    super.handleInput(data);
+    return lines;
+  }
+
+  getHistory(): TuiInputHistory {
+    return this.history;
+  }
+
+  isEmpty(): boolean {
+    return this.text.length === 0;
   }
 }

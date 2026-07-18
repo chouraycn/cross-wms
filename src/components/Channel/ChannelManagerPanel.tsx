@@ -6,7 +6,8 @@
  * - 添加新通道（选择类型 → 填写配置）
  * - 删除通道
  * - 启用/禁用通道
- * - 发送测试消息
+ * - 发送测试消息（单通道）
+ * - 广播测试消息（到所有启用通道，调用 ChannelManager.broadcast）
  *
  * 从后端 /api/channels 读取数据。
  */
@@ -38,6 +39,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SendIcon from '@mui/icons-material/Send';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CableIcon from '@mui/icons-material/Cable';
+import CampaignIcon from '@mui/icons-material/Campaign';
 import { getGrayScale } from '../../constants/theme';
 import { useToast } from '../../contexts/ToastContext';
 import {
@@ -50,6 +52,7 @@ import {
   sendChannelMessage,
 } from '../../services/channel/api';
 import type { ChannelDetail, ChannelTypeDescriptor, ChannelType } from '../../services/channel/types';
+import { broadcastMessage } from '../../services/channelRuntimeApi';
 
 const ChannelManagerPanel: React.FC = () => {
   const theme = useTheme();
@@ -78,6 +81,12 @@ const ChannelManagerPanel: React.FC = () => {
   const [testTarget, setTestTarget] = useState<string>('');
   const [testMessage, setTestMessage] = useState('');
   const [sending, setSending] = useState(false);
+
+  // 广播测试消息对话框
+  const [broadcastDialogOpen, setBroadcastDialogOpen] = useState(false);
+  const [broadcastMessageText, setBroadcastMessageText] = useState('');
+  const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -169,6 +178,34 @@ const ChannelManagerPanel: React.FC = () => {
     }
   }, [testTarget, testMessage, showToast]);
 
+  /**
+   * 广播测试消息：调用 ChannelManager.broadcast
+   * - 真实环境：调用 /api/channels/manager/broadcast
+   * - 降级：依次调用每个已启用通道的 send 端点
+   */
+  const handleBroadcast = useCallback(async () => {
+    if (!broadcastMessageText.trim()) {
+      showToast('请输入广播内容', 'warning');
+      return;
+    }
+    setBroadcastSending(true);
+    setBroadcastResult(null);
+    try {
+      const result = await broadcastMessage({ content: broadcastMessageText, contentType: 'text' });
+      setBroadcastResult(`已广播到 ${result.total} 个通道，成功 ${result.succeeded}，失败 ${result.failed}`);
+      showToast(
+        `广播完成（成功 ${result.succeeded}/${result.total}）`,
+        result.failed === 0 ? 'success' : 'warning',
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '广播失败';
+      setBroadcastResult(msg);
+      showToast(msg, 'error');
+    } finally {
+      setBroadcastSending(false);
+    }
+  }, [broadcastMessageText, showToast]);
+
   const statusColor = (status: string): string => {
     switch (status) {
       case 'connected': return '#059669';
@@ -216,6 +253,19 @@ const ChannelManagerPanel: React.FC = () => {
               <RefreshIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Tooltip>
+          <Button
+            size="small"
+            startIcon={<CampaignIcon />}
+            onClick={() => {
+              setBroadcastMessageText('');
+              setBroadcastResult(null);
+              setBroadcastDialogOpen(true);
+            }}
+            sx={{ fontSize: '0.7rem', color: gs.textPrimary, borderColor: gs.border }}
+            variant="outlined"
+          >
+            广播测试
+          </Button>
           <Button
             size="small"
             startIcon={<AddIcon />}
@@ -469,6 +519,61 @@ const ChannelManagerPanel: React.FC = () => {
             sx={{ fontSize: '0.75rem', backgroundColor: gs.textPrimary, '&:hover': { backgroundColor: gs.textSecondary } }}
           >
             发送
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 广播测试消息对话框 — 调用 ChannelManager.broadcast */}
+      <Dialog
+        open={broadcastDialogOpen}
+        onClose={() => setBroadcastDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '12px' } }}
+      >
+        <DialogTitle sx={{ fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CampaignIcon sx={{ fontSize: 18 }} />
+          广播测试消息
+        </DialogTitle>
+        <DialogContent sx={{ pt: '16px !important' }}>
+          <Typography sx={{ fontSize: '0.7rem', color: gs.textMuted, mb: 1.5 }}>
+            将消息发送到所有已启用的通道。底层调用 <code>ChannelManager.broadcast</code>。
+          </Typography>
+          <TextField
+            label="广播内容"
+            size="small"
+            fullWidth
+            multiline
+            rows={3}
+            value={broadcastMessageText}
+            onChange={e => setBroadcastMessageText(e.target.value)}
+            placeholder="输入要广播的消息..."
+            sx={inputSx}
+          />
+          {broadcastResult && (
+            <Alert
+              severity={broadcastResult.startsWith('已广播到') ? (broadcastResult.includes('失败 0') ? 'success' : 'warning') : 'error'}
+              sx={{ mt: 1.5, fontSize: '0.7rem' }}
+            >
+              {broadcastResult}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setBroadcastDialogOpen(false)}
+            sx={{ fontSize: '0.75rem', color: gs.textMuted }}
+          >
+            关闭
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleBroadcast}
+            disabled={broadcastSending}
+            startIcon={broadcastSending ? <CircularProgress size={14} color="inherit" /> : <CampaignIcon />}
+            sx={{ fontSize: '0.75rem', backgroundColor: gs.textPrimary, '&:hover': { backgroundColor: gs.textSecondary } }}
+          >
+            广播
           </Button>
         </DialogActions>
       </Dialog>

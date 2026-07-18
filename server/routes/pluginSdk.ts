@@ -43,7 +43,7 @@ const router = Router();
 
 // 所有能力 kind（用于 slots 映射展示）
 const ALL_KINDS: PluginCapabilityKind[] = [
-  'tool', 'provider', 'embedding-provider', 'memory-host',
+  'tool', 'provider', 'embedding', 'memory-host',
   'channel', 'hook', 'command', 'service',
 ];
 

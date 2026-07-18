@@ -93,6 +93,10 @@ function resolveRootDir(): string {
 
 /** 递归合并目录：把 src 内容合并到 dest，已存在的文件跳过 */
 function mergeDirectory(src: string, dest: string): void {
+  // Defensive: some test mocks provide a partial fs implementation.
+  if (typeof fs.readdirSync !== 'function') {
+    return;
+  }
   if (!fs.existsSync(dest)) {
     fs.mkdirSync(dest, { recursive: true });
   }

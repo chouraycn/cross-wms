@@ -29,6 +29,9 @@ export type {
   ChannelCapabilities,
   ChannelConfigAdapter,
   AppConfig,
+  ChannelStatus,
+  Channel,
+  ChannelMessage,
 } from "./types.js";
 
 export type {
@@ -98,6 +101,31 @@ export {
   parseDingTalkWebhook,
   type DingTalkWebhookResult,
 } from "./builtin-dingtalk.js";
+
+export {
+  TypingIndicator,
+  TypingCallbacks,
+  type TypingCallback,
+} from "./typing.js";
+
+export {
+  PairingStore,
+} from "./pairingStore.js";
+
+export {
+  InboundReplyPipeline,
+  InboundReplyPipelineError,
+  type PipelineStage,
+  type PipelineStageFn,
+  type MentionGatingConfig,
+  type ThreadBindingConfig,
+  type PrefixRoutingConfig,
+  type InboundReplyPipelineConfig,
+} from "./inboundReplyPipeline.js";
+
+export {
+  ChannelManager,
+} from "./channelManager.js";
 
 /**
  * 注册所有内置通道插件到全局注册表

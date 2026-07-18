@@ -1,143 +1,221 @@
-// Filterable select list component supports filtered keyboard selection.
-import type { Component } from "@earendil-works/pi-tui";
-import {
-  Input,
-  matchesKey,
-  type SelectItem,
-  SelectList,
-  type SelectListTheme,
-} from "@earendil-works/pi-tui";
-import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
-import chalk from "chalk";
-import { fuzzyFilterLower, prepareSearchItems } from "./fuzzy-filter.js";
+import type { FilterableSelectListTheme } from '../theme/theme.js';
+import type { TUISelectItem } from '../types.js';
+import { fuzzyFilterLower, prepareSearchItems } from './fuzzy-filter.js';
 
-export interface FilterableSelectItem extends SelectItem {
-  /** Additional searchable fields beyond label */
-  searchText?: string;
-  /** Pre-computed lowercase search text (label + description + searchText) for filtering */
-  searchTextLower?: string;
+export interface FilterableSelectListOptions {
+  items: TUISelectItem[];
+  theme: FilterableSelectListTheme;
+  maxVisible?: number;
+  filterLabel?: string;
 }
 
-export interface FilterableSelectListTheme extends SelectListTheme {
-  filterLabel: (text: string) => string;
-}
-
-/**
- * Combines text input filtering with a select list.
- * User types to filter, arrows/j/k to navigate, Enter to select, Escape to clear/cancel.
- */
-export class FilterableSelectList implements Component {
-  private input: Input;
-  private selectList: SelectList;
-  private allItems: FilterableSelectItem[];
-  private maxVisible: number;
+export class FilterableSelectList {
+  private items: Array<TUISelectItem & { searchTextLower: string }>;
+  private filteredItems: Array<TUISelectItem & { searchTextLower: string }>;
   private theme: FilterableSelectListTheme;
-  private filterText = "";
+  private maxVisible: number;
+  private filterText: string = '';
+  private selectedIndex: number = 0;
+  private scrollOffset: number = 0;
+  private onSelect?: (item: TUISelectItem) => void;
+  private onCancel?: () => void;
+  private filterLabel: string;
 
-  onSelect?: (item: SelectItem) => void;
-  onCancel?: () => void;
+  constructor(options: FilterableSelectListOptions) {
+    this.items = prepareSearchItems(options.items);
+    this.filteredItems = [...this.items];
+    this.theme = options.theme;
+    this.maxVisible = options.maxVisible ?? 10;
+    this.filterLabel = options.filterLabel ?? 'Filter: ';
+  }
 
-  constructor(items: FilterableSelectItem[], maxVisible: number, theme: FilterableSelectListTheme) {
-    this.allItems = prepareSearchItems(items);
-    this.maxVisible = maxVisible;
-    this.theme = theme;
-    this.input = new Input();
-    this.selectList = new SelectList(this.allItems, maxVisible, theme);
+  setItems(items: TUISelectItem[]): void {
+    this.items = prepareSearchItems(items);
+    this.applyFilter();
+  }
+
+  getFilterText(): string {
+    return this.filterText;
+  }
+
+  setFilterText(text: string): void {
+    this.filterText = text;
+    this.applyFilter();
   }
 
   private applyFilter(): void {
-    const queryLower = normalizeLowercaseStringOrEmpty(this.filterText);
-    if (!queryLower.trim()) {
-      this.selectList = new SelectList(this.allItems, this.maxVisible, this.theme);
-      return;
-    }
-    const filtered = fuzzyFilterLower(this.allItems, queryLower);
-    this.selectList = new SelectList(filtered, this.maxVisible, this.theme);
+    const queryLower = this.filterText.toLowerCase().trim();
+    this.filteredItems = fuzzyFilterLower(this.items, queryLower);
+    this.selectedIndex = 0;
+    this.scrollOffset = 0;
   }
 
-  invalidate(): void {
-    this.input.invalidate();
-    this.selectList.invalidate();
+  getSelectedItem(): TUISelectItem | null {
+    if (this.filteredItems.length === 0) {
+      return null;
+    }
+    return this.filteredItems[this.selectedIndex] ?? null;
+  }
+
+  getSelectedIndex(): number {
+    return this.selectedIndex;
+  }
+
+  setSelectedIndex(index: number): void {
+    if (this.filteredItems.length === 0) {
+      return;
+    }
+    this.selectedIndex = Math.max(0, Math.min(index, this.filteredItems.length - 1));
+    this.ensureVisible();
+  }
+
+  private ensureVisible(): void {
+    if (this.selectedIndex < this.scrollOffset) {
+      this.scrollOffset = this.selectedIndex;
+    } else if (this.selectedIndex >= this.scrollOffset + this.maxVisible) {
+      this.scrollOffset = this.selectedIndex - this.maxVisible + 1;
+    }
+  }
+
+  moveUp(): void {
+    if (this.selectedIndex > 0) {
+      this.selectedIndex--;
+      this.ensureVisible();
+    }
+  }
+
+  moveDown(): void {
+    if (this.selectedIndex < this.filteredItems.length - 1) {
+      this.selectedIndex++;
+      this.ensureVisible();
+    }
+  }
+
+  movePageUp(): void {
+    this.selectedIndex = Math.max(0, this.selectedIndex - this.maxVisible);
+    this.ensureVisible();
+  }
+
+  movePageDown(): void {
+    this.selectedIndex = Math.min(this.filteredItems.length - 1, this.selectedIndex + this.maxVisible);
+    this.ensureVisible();
+  }
+
+  setOnSelect(callback: (item: TUISelectItem) => void): void {
+    this.onSelect = callback;
+  }
+
+  setOnCancel(callback: () => void): void {
+    this.onCancel = callback;
+  }
+
+  handleInput(input: string): boolean {
+    switch (input) {
+      case '\r':
+      case '\n':
+        const selected = this.getSelectedItem();
+        if (selected && this.onSelect) {
+          this.onSelect(selected);
+        }
+        return true;
+      case '\x1b':
+        if (this.filterText.length > 0) {
+          this.filterText = '';
+          this.applyFilter();
+          return true;
+        }
+        if (this.onCancel) {
+          this.onCancel();
+        }
+        return true;
+      case '\x03':
+        if (this.onCancel) {
+          this.onCancel();
+        }
+        return true;
+      case '\x1b[A':
+      case '\x1bOA':
+        this.moveUp();
+        return true;
+      case '\x1b[B':
+      case '\x1bOB':
+        this.moveDown();
+        return true;
+      case '\x1b[5~':
+        this.movePageUp();
+        return true;
+      case '\x1b[6~':
+        this.movePageDown();
+        return true;
+      case '\x7f':
+      case '\b':
+        if (this.filterText.length > 0) {
+          this.filterText = this.filterText.slice(0, -1);
+          this.applyFilter();
+        }
+        return true;
+      default:
+        if (input.startsWith('\x1b')) {
+          return false;
+        }
+        if (input.length === 1 && input.charCodeAt(0) >= 32) {
+          this.filterText += input;
+          this.applyFilter();
+          return true;
+        }
+        return false;
+    }
   }
 
   render(width: number): string[] {
     const lines: string[] = [];
 
-    // Filter input row
-    const filterLabel = this.theme.filterLabel("Filter: ");
-    const inputLines = this.input.render(width - 8);
-    const inputText = inputLines[0] ?? "";
-    lines.push(filterLabel + inputText);
+    const filterLine =
+      this.theme.filterLabel(this.filterLabel) +
+      this.filterText +
+      '▊';
+    lines.push(filterLine);
 
-    // Separator
-    lines.push(chalk.dim("─".repeat(Math.max(0, width))));
+    if (this.filteredItems.length === 0) {
+      lines.push(this.theme.noMatch('  No matches found'));
+      return lines;
+    }
 
-    // Select list
-    const listLines = this.selectList.render(width);
-    lines.push(...listLines);
+    const visibleStart = this.scrollOffset;
+    const visibleEnd = Math.min(visibleStart + this.maxVisible, this.filteredItems.length);
+
+    for (let i = visibleStart; i < visibleEnd; i++) {
+      const item = this.filteredItems[i]!;
+      const isSelected = i === this.selectedIndex;
+      const prefix = isSelected ? this.theme.selectedPrefix('▶ ') : '  ';
+      const label = isSelected
+        ? this.theme.selectedText(item.label)
+        : item.label;
+
+      let line = prefix + label;
+      if (item.description) {
+        line += '  ' + this.theme.description(item.description);
+      }
+      lines.push(line);
+    }
+
+    const total = this.filteredItems.length;
+    const scrollInfo = `  ${this.selectedIndex + 1}/${total}`;
+    lines.push(this.theme.scrollInfo(scrollInfo));
 
     return lines;
   }
 
-  handleInput(keyData: string): void {
-    const allowVimNav = !this.filterText.trim();
-
-    // Navigation: arrows, vim j/k, or ctrl+p/ctrl+n
-    if (
-      matchesKey(keyData, "up") ||
-      matchesKey(keyData, "ctrl+p") ||
-      (allowVimNav && keyData === "k")
-    ) {
-      this.selectList.handleInput("\x1b[A");
-      return;
-    }
-
-    if (
-      matchesKey(keyData, "down") ||
-      matchesKey(keyData, "ctrl+n") ||
-      (allowVimNav && keyData === "j")
-    ) {
-      this.selectList.handleInput("\x1b[B");
-      return;
-    }
-
-    // Enter selects
-    if (matchesKey(keyData, "enter")) {
-      const selected = this.selectList.getSelectedItem();
-      if (selected) {
-        this.onSelect?.(selected);
-      }
-      return;
-    }
-
-    // Escape: clear filter or cancel
-    if (matchesKey(keyData, "escape") || keyData === "\u0003") {
-      if (this.filterText) {
-        this.filterText = "";
-        this.input.setValue("");
-        this.applyFilter();
-      } else {
-        this.onCancel?.();
-      }
-      return;
-    }
-
-    // All other input goes to filter
-    const prevValue = this.input.getValue();
-    this.input.handleInput(keyData);
-    const newValue = this.input.getValue();
-
-    if (newValue !== prevValue) {
-      this.filterText = newValue;
-      this.applyFilter();
-    }
+  getItemCount(): number {
+    return this.filteredItems.length;
   }
 
-  getSelectedItem(): SelectItem | null {
-    return this.selectList.getSelectedItem();
+  getItems(): TUISelectItem[] {
+    return this.filteredItems;
   }
 
-  getFilterText(): string {
-    return this.filterText;
+  clearFilter(): void {
+    this.filterText = '';
+    this.applyFilter();
   }
 }

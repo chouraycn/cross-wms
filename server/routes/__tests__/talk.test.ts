@@ -13,14 +13,16 @@ import express from 'express';
 import request from 'supertest';
 
 // mock logger
-vi.mock('../../logger.js', () => ({
-  logger: {
+vi.mock('../../logger.js', () => {
+  const mockLogger = {
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-  },
-}));
+    child: vi.fn(() => mockLogger),
+  };
+  return { logger: mockLogger };
+});
 
 // mock talk config — 使用 vi.hoisted 避免 hoisting 问题
 const { mockResolveTalkConfig, mockBuildTalkConfigResponse, mockNormalizeTalkSection } = vi.hoisted(() => ({

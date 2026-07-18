@@ -67,4 +67,92 @@ describe('AdvancedSearchEngine', () => {
     expect(engine.filterByScore(rankings, 0.5).length).toBe(2);
     expect(engine.filterByScore(rankings, 0.65).length).toBe(0);
   });
+
+  // 新增测试：Hybrid Search
+  it('should perform hybrid search combining vector and BM25', () => {
+    const engine = new AdvancedSearchEngine();
+    const entries = [
+      entry(1, 'machine learning algorithm'),
+      entry(2, 'deep neural network'),
+      entry(3, 'machine learning model'),
+    ];
+
+    const vectorResults = [
+      { entry: entries[0], score: 0.9 },
+      { entry: entries[2], score: 0.85 },
+    ];
+
+    const hybridResults = engine.hybridSearch(vectorResults, entries, 'machine learning');
+
+    expect(hybridResults.length).toBeGreaterThan(0);
+    expect(hybridResults.some(r => r.entry.text.includes('machine'))).toBe(true);
+    expect(hybridResults.every(r => typeof r.combinedScore === 'number')).toBe(true);
+  });
+
+  // 新增测试：Semantic Reranking
+  it('should perform semantic reranking', () => {
+    const engine = new AdvancedSearchEngine();
+    const entries = [
+      entry(1, 'machine learning basics'),
+      entry(2, 'advanced algorithms'),
+      entry(3, 'neural network architecture'),
+    ];
+
+    const reranked = engine.semanticRerank(entries, 'machine learning', 3);
+
+    expect(reranked.length).toBe(3);
+    expect(reranked.every(r => typeof r.rerankScore === 'number')).toBe(true);
+    expect(reranked.every((r, i) => r.rerankRank === i + 1)).toBe(true);
+  });
+
+  // 新增测试：Faceted Search
+  it('should perform faceted search with filters', () => {
+    const engine = new AdvancedSearchEngine();
+    const entries = [
+      entry(1, 'doc 1', { tags: ['important', 'work'], importance: 0.9 }),
+      entry(2, 'doc 2', { tags: ['personal'], importance: 0.5 }),
+      entry(3, 'doc 3', { tags: ['work'], importance: 0.8 }),
+    ];
+
+    // 按标签过滤
+    const byTag = engine.facetedSearch(entries, { tags: ['work'] });
+    expect(byTag.length).toBe(2);
+
+    // 按重要性范围过滤
+    const byImportance = engine.facetedSearch(entries, {
+      importanceRange: { min: 0.7 },
+    });
+    expect(byImportance.length).toBe(2);
+  });
+
+  // 新增测试：Field Boosts
+  it('should apply field boosts', () => {
+    const engine = new AdvancedSearchEngine({
+      fieldBoosts: { text: 2, tag: 1.5 },
+    });
+
+    const e1 = entry(1, 'test document', { tags: ['important'] });
+    const rankings = engine.combineResults([{ entry: e1, score: 0.5 }], [], query);
+
+    const boosted = engine.applyFieldBoosts(rankings);
+
+    expect(boosted[0].finalScore).toBeGreaterThan(rankings[0].finalScore);
+  });
+
+  // 新增测试：Time Range Filter
+  it('should filter by time range', () => {
+    const engine = new AdvancedSearchEngine();
+    const now = Date.now();
+    const entries = [
+      { ...entry(1, 'old'), createdAt: now - 10000 },
+      { ...entry(2, 'new'), createdAt: now - 1000 },
+    ];
+
+    const filtered = engine.facetedSearch(entries, {
+      timeRange: { start: now - 5000 },
+    });
+
+    expect(filtered.length).toBe(1);
+    expect(filtered[0].text).toBe('new');
+  });
 });

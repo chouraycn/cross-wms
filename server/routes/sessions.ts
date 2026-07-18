@@ -13,7 +13,7 @@ import {
   getArchivedSessionsPaged,
   searchArchivedSessionsPaged,
   deleteArchivedSession as daoDeleteArchivedSession,
-} from '../dao/chat.js';
+} from '../engine/sessions/index.js';
 import { FileStorage } from '../storage/FileStorage.js';
 import {
   getActiveSessions,
@@ -27,7 +27,7 @@ import {
   deleteArchivedSession,
   touchSession,
   sessionLifecycleManager,
-} from '../services/sessionLifecycle.js';
+} from '../engine/sessions/index.js';
 
 const router = Router();
 

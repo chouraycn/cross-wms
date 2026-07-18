@@ -8,6 +8,10 @@ export type { ModelCatalogEvents } from './model-catalog';
 export {
   ProviderRegistry,
   providerRegistry,
+  CHINESE_PROVIDERS,
+  detectProvider,
+  detectProviderByModelId,
+  detectProviderByEndpoint,
 } from './provider';
 export type {
   ProviderType,
@@ -16,6 +20,7 @@ export type {
   ProviderModel,
   LlmProvider,
   ProviderRegistryEvents,
+  ProviderConfig,
 } from './provider';
 export {
   UsageTracker,
@@ -26,3 +31,6 @@ export {
 export type { LlmUsage, LlmStreamEvent, StreamEventType } from './streaming';
 export { CostEstimator, costEstimator } from './usage';
 export type { CostEstimation } from './usage';
+
+// 导出适配器
+export * from './adapters';

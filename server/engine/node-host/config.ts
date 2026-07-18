@@ -8,6 +8,11 @@ export type NodeHostConfig = {
   maxRetries?: number;
   capabilities?: string[];
   platform?: string;
+  maxMemoryMB?: number;
+  maxCpuPercent?: number;
+  maxConcurrentInvocations?: number;
+  allowedCommands?: string[];
+  deniedCommands?: string[];
 };
 
 export function resolveNodeHostConfig(raw?: Partial<NodeHostConfig>): NodeHostConfig {

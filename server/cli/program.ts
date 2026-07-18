@@ -28,6 +28,8 @@ import { registerCronCommand } from "./commands/cron.js";
 import { registerGatewayCommand } from "./commands/gateway.js";
 import { registerAcpCommand } from "./commands/acp.js";
 import { registerSandboxCommand } from "./commands/sandbox.js";
+import { registerAgentsCommand } from "./commands/agents.js";
+import { registerChannelsCommand } from "./commands/channels.js";
 import { logger } from "../logger.js";
 
 /**
@@ -73,6 +75,8 @@ export function buildCLIProgram(): Command {
     "gateway",
     "acp",
     "sandbox",
+    "agents",
+    "channels",
   ]);
   for (const descriptor of descriptors) {
     if (DIRECTLY_REGISTERED.has(descriptor.name)) {
@@ -148,6 +152,12 @@ export function buildCLIProgram(): Command {
 
   // 注册 sandbox 命令 (带子命令)
   registerSandboxCommand(program);
+
+  // 注册 agents 命令 (带子命令)
+  registerAgentsCommand(program);
+
+  // 注册 channels 命令 (带子命令)
+  registerChannelsCommand(program);
 
   return program;
 }

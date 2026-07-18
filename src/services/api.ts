@@ -6,7 +6,7 @@
 import type { Warehouse, InventoryItem, TransitOrder, InboundRecord, OutboundRecord, InventoryTransaction } from '../types';
 import type { Skill, UsageStats, ConflictResult } from '../types/skill';
 import type { AppSettings } from '../contexts/AppSettingsContext';
-import type { ModelConfig, ModelsConfig } from '../types/models';
+import type { ModelConfig } from '../types/models';
 import type { Task } from '../types/task';
 import type { Project } from '../types/project';
 import type { Session } from '../types/chat';
@@ -424,8 +424,6 @@ export function connectSkillEvents(onMessage?: (data: string) => void): SSEConne
 
 import type {
   SkillChain,
-  SkillChainNode,
-  SkillChainExecution,
   SkillAudit,
 } from '../types/skill';
 
@@ -503,7 +501,7 @@ export async function exportSkillAsZip(skillId: string, skillName: string): Prom
   const url = `${BASE_URL}/api/skills/${encodeURIComponent(skillId)}/export`;
 
   // 优先使用 pywebview 原生保存对话框（DMG/桌面应用环境）
-  if (typeof window !== 'undefined' && (window as any).pywebview?.api?.save_file) {
+  if (typeof window !== 'undefined' && (window as Window & { pywebview?: { api?: { save_file: (name: string, content: string, mimeType: string) => Promise<void> } } }).pywebview?.api?.save_file) {
     try {
       const blob = await fetchWithTimeout(url).then(r => r.blob());
       const reader = new FileReader();
@@ -513,7 +511,7 @@ export async function exportSkillAsZip(skillId: string, skillName: string): Prom
             const base64 = (reader.result as string).split(',')[1];
             const filename = `${skillName}-skill.zip`;
             // pywebview 的 save_file 会弹出系统保存对话框
-            await (window as any).pywebview.api.save_file(filename, base64, 'application/zip');
+      await (window as Window & { pywebview?: { api?: { save_file: (name: string, content: string, mimeType: string) => Promise<void> } } }).pywebview!.api!.save_file(filename, base64, 'application/zip');
             resolve();
           } catch (e) {
             reject(e);
@@ -851,8 +849,8 @@ export async function updateSession(id: string, data: Partial<Session>): Promise
   return request<Session>('PUT', `/api/sessions/${id}`, data);
 }
 
-export async function getSessionMessages(id: string): Promise<any[]> {
-  const res = await request<{ messages: any[] }>('GET', `/api/sessions/${id}`);
+export async function getSessionMessages(id: string): Promise<unknown[]> {
+  const res = await request<{ messages: unknown[] }>('GET', `/api/sessions/${id}`);
   return res.messages;
 }
 
@@ -861,10 +859,10 @@ export async function getSessionMessagesPaged(
   id: string,
   limit: number = 50,
   before?: number,
-): Promise<{ messages: any[]; hasMore: boolean; totalCount: number }> {
+): Promise<{ messages: unknown[]; hasMore: boolean; totalCount: number }> {
   const params = new URLSearchParams({ limit: String(limit) });
   if (before !== undefined) params.set('before', String(before));
-  const res = await request<{ messages: any[]; hasMore: boolean; totalCount: number }>(
+  const res = await request<{ messages: unknown[]; hasMore: boolean; totalCount: number }>(
     'GET', `/api/sessions/${id}/messages?${params}`,
   );
   return res;
@@ -978,40 +976,14 @@ export async function cancelSkillInstall(installId: string): Promise<boolean> {
 
 // ===================== Secrets API =====================
 
-export interface SecretItemMetadata {
-  accessCount: number;
-  lastAccessedAt?: number;
-  description?: string;
-  [key: string]: unknown;
-}
-
-export interface SecretItem {
-  id: string;
-  provider: string;
-  key: string;
-  type?: string;
-  createdAt: number;
-  updatedAt: number;
-  metadata: SecretItemMetadata;
-}
-
-export interface SecretAccessLog {
-  id: string;
-  secretId: string;
-  action: string;
-  source: string;
-  accessedAt: number;
-  success: boolean;
-  error?: string;
-}
-
-export interface SecretsStats {
-  totalSecrets: number;
-  byProvider: Record<string, number>;
-  byType: Record<string, number>;
-  cacheHitRate: number;
-  lastUpdated: number;
-}
+import type {
+  SecretItem,
+  SecretItemMetadata,
+  SecretAccessLog,
+  SecretsStats,
+} from '../types/secret';
+// Re-export 保持向后兼容（外部代码仍可 from '../services/api' 导入这些类型）
+export type { SecretItem, SecretItemMetadata, SecretAccessLog, SecretsStats };
 
 /** 获取密钥列表 */
 export async function fetchSecretsList(provider?: string): Promise<SecretItem[]> {
@@ -1059,40 +1031,14 @@ export async function clearSecretsCache(): Promise<{ success: boolean }> {
 
 // ===================== Context Engine API =====================
 
-export interface ContextEngineHealth {
-  status: 'healthy' | 'degraded' | 'unhealthy' | 'quarantined' | 'unknown';
-  failureCount?: number;
-  consecutiveSuccesses?: number;
-  lastFailureTime?: number;
-  lastSuccessTime?: number;
-  quarantineReason?: string;
-}
-
-export interface ContextEngineConfig {
-  name?: string;
-  description?: string;
-  maxMemoryBudget?: number;
-  enableEnhancedSearch?: boolean;
-  enableMemorySyncer?: boolean;
-  enablePromptCache?: boolean;
-}
-
-export interface ContextEngineInfo {
-  id: string;
-  config: ContextEngineConfig;
-  isDefault: boolean;
-  owner: string;
-  health: ContextEngineHealth;
-  runtimeSettings?: Record<string, unknown>;
-}
-
-export interface ContextEngineStats {
-  totalEngines: number;
-  activeEngines: number;
-  quarantinedEngines: number;
-  totalOperations: number;
-  avgLatencyMs: number;
-}
+import type {
+  ContextEngineHealth,
+  ContextEngineConfig,
+  ContextEngineInfo,
+  ContextEngineStats,
+} from '../types/contextEngine';
+// Re-export 保持向后兼容（外部代码仍可 from '../services/api' 导入这些类型）
+export type { ContextEngineHealth, ContextEngineConfig, ContextEngineInfo, ContextEngineStats };
 
 export async function fetchContextEngines(): Promise<ContextEngineInfo[]> {
   return request<ContextEngineInfo[]>('GET', '/api/context-engine/engines');
@@ -1195,31 +1141,9 @@ export async function fetchMemory(id: number): Promise<MemoryItem> {
 
 // ===================== MCP Server API =====================
 
-export interface McpServerConfig {
-  id?: string;
-  name: string;
-  command: string;
-  args: string[];
-  env: Record<string, string>;
-  enabled: boolean;
-  transportType: string;
-  createdAt?: number;
-  updatedAt?: number;
-}
-
-export interface McpToolInfo {
-  name: string;
-  description: string;
-  inputSchema?: Record<string, unknown>;
-}
-
-export interface McpServerState {
-  config: McpServerConfig;
-  connectionState: 'disconnected' | 'connecting' | 'connected' | 'error';
-  tools: McpToolInfo[];
-  error?: string;
-  lastConnectedAt?: number;
-}
+import type { McpServerConfig, McpToolInfo, McpServerState } from '../types/mcp';
+// Re-export 保持向后兼容（外部代码仍可 from '../services/api' 导入这些类型）
+export type { McpServerConfig, McpToolInfo, McpServerState };
 
 export async function fetchMcpServers(): Promise<McpServerState[]> {
   const res = await request<{ servers: McpServerState[] }>('GET', '/api/mcp/servers');
@@ -1399,51 +1323,21 @@ export async function clearGoal(sessionKey: string): Promise<{ success: boolean 
 
 // ===================== Image Generation API =====================
 
-export interface ImageGenerationProvider {
-  id: string;
-  label: string;
-  aliases: string[];
-  available: boolean;
-  default_model: string;
-  models: string[];
-  default_timeout_ms: number;
-  capabilities: {
-    generate: {
-      max_count: number;
-      supports_size: boolean;
-      supports_aspect_ratio: boolean;
-      supports_resolution: boolean;
-    };
-    edit: {
-      enabled: boolean;
-      max_input_images: number;
-    };
-    supported_sizes: string[];
-    supported_sizes_by_model: Record<string, string[]>;
-    supported_aspect_ratios: string[];
-    supported_resolutions: string[];
-    supported_qualities: string[];
-    supported_formats: string[];
-    supported_backgrounds: string[];
-  };
-}
-
-export interface ImageGenerationConfig {
-  defaultModel?: string;
-  defaultSize?: string;
-  defaultQuality?: string;
-  defaultCount?: number;
-  defaultOutputFormat?: string;
-  providers?: Record<string, { apiKey?: string; baseUrl?: string }>;
-}
-
-export interface GeneratedImage {
-  url: string;
-  b64_json?: string;
-  revised_prompt?: string;
-  width?: number;
-  height?: number;
-}
+import type {
+  ImageGenerationProvider,
+  ImageGenerationConfig,
+  GeneratedImage,
+  ImageGenerationRequest,
+  ImageGenerationResult,
+} from '../types/imageGeneration';
+// Re-export 保持向后兼容（外部代码仍可 from '../services/api' 导入这些类型）
+export type {
+  ImageGenerationProvider,
+  ImageGenerationConfig,
+  GeneratedImage,
+  ImageGenerationRequest,
+  ImageGenerationResult,
+};
 
 export async function fetchImageProviders(): Promise<{ providers: ImageGenerationProvider[]; total: number; available_count: number }> {
   return request<{ providers: ImageGenerationProvider[]; total: number; available_count: number }>('GET', '/api/image-generation/providers');

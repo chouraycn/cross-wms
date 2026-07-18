@@ -1,157 +1,45 @@
-#!/usr/bin/env node
-/**
- * Cross-WMS TUI 独立启动入口
- *
- * 用法：
- *   cdf-know-tui                     # 使用默认配置（embedded 后端）
- *   cdf-know-tui --http              # 使用 HTTP 后端连接运行中的服务
- *   cdf-know-tui --url http://host:3001  # 自定义 HTTP 后端地址
- *   cdf-know-tui --model <id>        # 指定默认模型
- *   cdf-know-tui --agent <id>        # 指定默认 Agent
- *   cdf-know-tui --session <id>      # 恢复指定会话
- *   cdf-know-tui --theme dark|light|auto  # 设置主题
- *   cdf-know-tui --config <path>     # 使用自定义配置文件
- *   cdf-know-tui --save-config       # 生成默认配置文件
- *   cdf-know-tui --version           # 显示版本
- *   cdf-know-tui --help              # 显示帮助
- *
- * 作为模块使用：
- *   import { runTui, ChatServiceBackend, HttpBackend, loadTuiConfig } from './tui/index.js';
- *
- * 环境变量：
- *   CDF_TUI_BACKEND=embedded|http
- *   CDF_TUI_BASE_URL=http://host:port
- *   CDF_TUI_THEME=dark|light|auto
- *   CDF_TUI_MODEL=<model-id>
- *   CDF_TUI_AGENT=<agent-id>
- *   CDF_TUI_TOOL_PROFILE=minimal|coding|messaging|full
- *   CDF_TUI_CONFIG=/path/to/tui.json
- *   OPENCLAW_THEME=dark|light
- */
-
-import { runTui } from './tui.js';
-import { ChatServiceBackend as EmbeddedBackend } from './embeddedBackend.js';
 import { HttpBackend } from './httpBackend.js';
-import {
-  loadTuiConfig,
-  saveTuiConfig,
-  getDefaultConfigPath,
-  validateTuiConfig,
-  type TuiConfig,
-} from './config.js';
-import { logger } from '../logger.js';
+import { ChatServiceBackend } from './embeddedBackend.js';
+import type { TUIConfig } from './config.js';
+import { runTui } from './tui.js';
 
-const VERSION = '1.0.0';
-const DEFAULT_HTTP_URL = 'http://127.0.0.1:3001';
-
-interface CliArgs {
+export interface CliArgs {
   http: boolean;
   url?: string;
-  model?: string;
-  agent?: string;
-  session?: string;
-  theme?: 'dark' | 'light' | 'auto';
-  config?: string;
   saveConfig: boolean;
   validateConfig: boolean;
   version: boolean;
   help: boolean;
   verbose: boolean;
   listBackends: boolean;
+  config?: string;
+  theme?: string;
 }
 
-function printHelp(): void {
-  console.log(`
-Cross-WMS TUI - 独立终端应用
-
-用法:
-  cdf-know-tui [options]
-
-选项:
-  --http                    使用 HTTP 后端连接运行中的服务
-  --url <url>               HTTP 后端地址（默认 ${DEFAULT_HTTP_URL}）
-  --model <id>              指定默认模型 ID
-  --agent <id>              指定默认 Agent ID
-  --session <id>            恢复指定会话
-  --theme <name>            主题: dark | light | auto
-  --config <path>           使用自定义配置文件
-  --save-config             生成默认配置文件并退出
-  --validate-config         验证当前配置文件合法性
-  --list-backends           列出可用后端
-  --verbose                 启用详细日志
-  --version                 显示版本
-  --help                    显示此帮助
-
-后端选择（按优先级）:
-  1. 命令行参数 --http / --url
-  2. 环境变量 CDF_TUI_BACKEND
-  3. 配置文件 tui.json 中的 backend 字段
-  4. 默认值: embedded（直接连本地数据库）
-
-环境变量:
-  CDF_TUI_BACKEND          embedded | http
-  CDF_TUI_BASE_URL         HTTP 后端地址
-  CDF_TUI_THEME            dark | light | auto
-  CDF_TUI_MODEL            默认模型 ID
-  CDF_TUI_AGENT            默认 Agent ID
-  CDF_TUI_TOOL_PROFILE     minimal | coding | messaging | full
-  CDF_TUI_CONFIG           配置文件路径
-  OPENCLAW_THEME           dark | light（向后兼容）
-
-示例:
-  # 启动本地嵌入式 TUI
-  cdf-know-tui
-
-  # 连接到远端服务
-  cdf-know-tui --http --url http://192.168.1.10:3001
-
-  # 使用特定模型启动
-  cdf-know-tui --model gpt-4o
-
-  # 恢复上次会话
-  cdf-know-tui --session sess_abc123
-
-  # 生成默认配置文件
-  cdf-know-tui --save-config
-
-更多信息请访问：https://github.com/cdf-know/tui
-`);
-}
-
-function parseArgs(argv: string[]): CliArgs {
+export function parseArgs(argv: string[]): CliArgs {
   const args: CliArgs = {
     http: false,
+    url: undefined,
     saveConfig: false,
     validateConfig: false,
     version: false,
     help: false,
     verbose: false,
     listBackends: false,
+    config: undefined,
+    theme: undefined,
   };
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     switch (arg) {
       case '--http':
+      case '-h':
         args.http = true;
         break;
       case '--url':
+      case '-u':
         args.url = argv[++i];
-        break;
-      case '--model':
-        args.model = argv[++i];
-        break;
-      case '--agent':
-        args.agent = argv[++i];
-        break;
-      case '--session':
-        args.session = argv[++i];
-        break;
-      case '--theme':
-        args.theme = argv[++i] as 'dark' | 'light' | 'auto';
-        break;
-      case '--config':
-        args.config = argv[++i];
         break;
       case '--save-config':
         args.saveConfig = true;
@@ -159,154 +47,61 @@ function parseArgs(argv: string[]): CliArgs {
       case '--validate-config':
         args.validateConfig = true;
         break;
-      case '--list-backends':
-        args.listBackends = true;
-        break;
-      case '--verbose':
-        args.verbose = true;
-        break;
       case '--version':
       case '-v':
         args.version = true;
         break;
       case '--help':
-      case '-h':
         args.help = true;
         break;
-      default:
-        if (arg.startsWith('--')) {
-          console.error(`未知选项: ${arg}`);
-          console.error('使用 --help 查看可用选项');
-          process.exit(1);
-        } else {
-          console.error(`未知参数: ${arg}`);
-          process.exit(1);
-        }
+      case '--verbose':
+      case '-V':
+        args.verbose = true;
+        break;
+      case '--list-backends':
+        args.listBackends = true;
+        break;
+      case '--config':
+      case '-c':
+        args.config = argv[++i];
+        break;
+      case '--theme':
+      case '-t':
+        args.theme = argv[++i];
+        break;
     }
   }
 
   return args;
 }
 
-/**
- * 根据配置和命令行参数选择后端
- */
-function selectBackend(config: TuiConfig, args: CliArgs) {
-  const useHttp = args.http || config.backend === 'http';
-  const baseUrl = args.url || config.http?.baseUrl || DEFAULT_HTTP_URL;
-
-  if (useHttp) {
-    logger.info(`[TUI] 使用 HTTP 后端: ${baseUrl}`);
-    return new HttpBackend({
-      baseUrl,
-      timeoutMs: config.http?.timeoutMs ?? 30000,
-      userId: config.http?.userId,
-      headers: config.http?.headers,
-    });
+export function selectBackend(config: TUIConfig, args: CliArgs): HttpBackend | ChatServiceBackend {
+  if (args.http || config.backend === 'http') {
+    const baseUrl = args.url || config.http.baseUrl;
+    return new HttpBackend({ baseUrl, apiKey: config.http.apiKey });
   }
-
-  logger.info('[TUI] 使用嵌入式后端（直接连接本地数据库）');
-  return new EmbeddedBackend();
+  return new ChatServiceBackend();
 }
 
-async function main(): Promise<void> {
-  const args = parseArgs(process.argv.slice(2));
-
+export async function runTuiCli(argv: string[] = process.argv.slice(2)): Promise<void> {
+  const args = parseArgs(argv);
   if (args.help) {
-    printHelp();
-    process.exit(0);
+    console.log('CrossWMS TUI - Terminal User Interface');
+    console.log('');
+    console.log('Usage: crosswms tui [options]');
+    console.log('');
+    console.log('Options:');
+    console.log('  --http, -h           Use HTTP backend');
+    console.log('  --url, -u <url>      HTTP backend URL');
+    console.log('  --config, -c <path>  Config file path');
+    console.log('  --theme, -t <theme>  Theme mode (auto/light/dark)');
+    console.log('  --version, -v        Show version');
+    console.log('  --help               Show help');
+    return;
   }
-
   if (args.version) {
-    console.log(`cdf-know-tui v${VERSION}`);
-    process.exit(0);
+    console.log('CrossWMS TUI v1.0.0');
+    return;
   }
-
-  if (args.listBackends) {
-    console.log('可用后端:');
-    console.log('  embedded  嵌入式后端（直接连接本地数据库）');
-    console.log('  http      HTTP 后端（连接运行中的服务）');
-    process.exit(0);
-  }
-
-  // 加载配置
-  const config = loadTuiConfig(args.config);
-
-  // 验证配置
-  const validation = validateTuiConfig(config);
-  if (!validation.valid) {
-    console.error('配置验证失败:');
-    for (const err of validation.errors) {
-      console.error(`  - ${err}`);
-    }
-    process.exit(1);
-  }
-
-  if (args.validateConfig) {
-    console.log('配置验证通过 ✓');
-    console.log(`配置文件: ${getDefaultConfigPath()}`);
-    console.log(JSON.stringify(config, null, 2));
-    process.exit(0);
-  }
-
-  // 保存配置
-  if (args.saveConfig) {
-    const path = saveTuiConfig(config);
-    console.log(`✓ 已保存配置: ${path}`);
-    console.log('\n你可以编辑此文件以自定义 TUI 行为');
-    console.log('启动 TUI:');
-    console.log('  cdf-know-tui --config ' + path);
-    process.exit(0);
-  }
-
-  // 命令行参数覆盖配置
-  if (args.model) config.model = args.model;
-  if (args.agent) config.agentId = args.agent;
-  if (args.session) config.sessionId = args.session;
-  if (args.theme) config.theme = args.theme;
-  if (args.verbose) config.verbose = true;
-
-  if (config.verbose) {
-    const l = logger as any;
-    l.setLevel?.('debug');
-  }
-
-  // 选择后端
-  let backend;
-  try {
-    backend = selectBackend(config, args);
-  } catch (err) {
-    console.error(`初始化后端失败: ${err instanceof Error ? err.message : String(err)}`);
-    process.exit(1);
-  }
-
-  // 启动 TUI
-  try {
-    const result = await runTui(backend, {
-      model: config.model,
-      agentId: config.agentId,
-      sessionId: config.sessionId,
-      verbose: config.verbose,
-      historySize: config.historySize,
-      configPath: args.config,
-    });
-    process.exit(result.exitCode);
-  } catch (err) {
-    console.error(`TUI 启动失败: ${err instanceof Error ? err.message : String(err)}`);
-    logger.error('[TUI] 启动失败:', err);
-    process.exit(1);
-  }
+  await runTui({ themeMode: (args.theme as any) || 'auto' });
 }
-
-// 仅在直接执行时运行（作为模块导入时不会执行）
-const isDirectRun = require.main === module;
-
-if (isDirectRun) {
-  main().catch((err) => {
-    console.error('未捕获的错误:', err);
-    process.exit(1);
-  });
-}
-
-export { main as runTuiCli, parseArgs, selectBackend };
-export type { CliArgs };

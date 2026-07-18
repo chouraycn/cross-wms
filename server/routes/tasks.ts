@@ -6,6 +6,8 @@
  * PUT    /api/tasks/:id       — 更新任务
  * DELETE /api/tasks/:id       — 删除任务
  * POST   /api/tasks/migrate   — 从 localStorage 迁移任务
+ *
+ * 数据访问通过 engine/tasks/ 层调用，engine 层内部委托 dao/taskDao.js。
  */
 
 import express from 'express';
@@ -15,8 +17,8 @@ import {
   createTask as daoCreateTask,
   updateTask as daoUpdateTask,
   deleteTask as daoDeleteTask,
-  migrateTasks,
-} from '../dao/taskDao.js';
+  migrateTasksToDb,
+} from '../engine/tasks/index.js';
 
 const router = express.Router();
 
@@ -100,7 +102,7 @@ router.post('/migrate', (req, res) => {
   try {
     const { tasks } = req.body;
     if (!Array.isArray(tasks)) return res.status(400).json({ error: 'tasks 必须是数组' });
-    const result = migrateTasks(tasks);
+    const result = migrateTasksToDb(tasks);
     res.json({ data: result });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

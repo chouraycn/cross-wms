@@ -28,6 +28,7 @@ import {
 import type {
   PluginDefinition,
   PluginApi,
+  PluginSdkApi,
   PluginRuntime,
   PluginRuntimeStatus,
   PluginCapability,
@@ -113,7 +114,7 @@ export class UnifiedPluginRegistry {
     // 执行 register() — 调用插件作者的注册函数，通过 PluginApi 收集能力
     try {
       const api = this.createPluginApi(definition.id, runtime);
-      await definition.register(api);
+      await definition.register(api as unknown as PluginSdkApi);
       runtime.status = 'registered';
       logger.info(
         `[UnifiedPluginRegistry] Plugin ${definition.id} registered with ${runtime.capabilities.length} capabilities`,
@@ -344,11 +345,11 @@ export class UnifiedPluginRegistry {
     try {
       const timeoutMs = cap.timeoutMs ?? 30000;
       const result = await this.callWithTimeout(
-        cap.handler(args, { pluginId, sessionId: ctx?.sessionId }),
+        Promise.resolve(cap.handler(args, { pluginId, sessionId: ctx?.sessionId })),
         timeoutMs,
         fullToolName,
       );
-      return result;
+      return result as string;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       logger.error(`[UnifiedPluginRegistry] Tool ${fullToolName} failed:`, err);
@@ -380,7 +381,7 @@ export class UnifiedPluginRegistry {
     for (const [pluginId, runtime] of this.runtimes) {
       if (runtime.status !== 'activated') continue;
       for (const cap of runtime.capabilities) {
-        if (cap.kind === 'embedding-provider') {
+        if (cap.kind === 'embedding') {
           result.push({ ...cap, pluginId });
         }
       }
@@ -507,7 +508,7 @@ export class UnifiedPluginRegistry {
       capabilitiesByKind: {
         tool: 0,
         provider: 0,
-        'embedding-provider': 0,
+        'embedding': 0,
         'memory-host': 0,
         channel: 0,
         hook: 0,

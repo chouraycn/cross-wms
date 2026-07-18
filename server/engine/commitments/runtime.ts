@@ -1,16 +1,15 @@
 /**
  * Commitments Runtime - 运行时管理
  *
- * 负责承诺提取的排队、批处理，以及到期承诺的解析。对齐
- * openclaw/src/commitments/runtime.ts 的职责，但在 cross-wms 中保持自包含：
- *   - 提取的实际模型调用通过可注入的 extractBatch 钩子完成
- *   - 到期承诺的持久化查询复用 store.ts 的能力
+ * 负责承诺提取的排队、批处理，承诺跟踪、更新、完成验证，
+ * 以及到期承诺的解析。
  *
  * 关键行为：
  *   - 防抖：第一条入队后等待 debounceMs 触发批次处理
  *   - 批大小：单次最多处理 batchMaxItems 条
  *   - 队列上限：超过 queueMaxItems 时丢弃并告警一次
  *   - 终端错误冷却：认证/模型类错误后对该 agent 冷却一段时间
+ *   - 承诺跟踪：支持承诺状态更新、完成验证、失败重试
  */
 
 import { randomUUID } from "node:crypto";
@@ -27,6 +26,13 @@ import {
   addCommitment,
   claimDueCommitments,
   listPendingCommitmentsForScope,
+  getCommitment,
+  updateCommitmentStatus,
+  updateCommitment,
+  deleteCommitment,
+  getCommitmentStats,
+  addHeartbeatRecord,
+  type CommitmentUpdateParams,
 } from "./store.js";
 import type {
   CommitmentCandidate,
@@ -34,56 +40,55 @@ import type {
   CommitmentExtractionItem,
   CommitmentRecord,
   CommitmentScope,
+  CommitmentStatus,
+  CommitmentHeartbeat,
+  CommitmentFilter,
+  CommitmentStats,
 } from "./types.js";
+import {
+  CommitmentStoreWriter,
+  type StoreWriterOptions,
+} from "./store-writer.js";
 
 // ===================== 类型定义 =====================
 
 type TimerHandle = ReturnType<typeof setTimeout>;
 
-/** 提取钩子：由调用方注入实际的模型调用实现 */
 export type CommitmentExtractBatchFn = (params: {
   cfg?: CommitmentsConfigInput;
   items: CommitmentExtractionItem[];
 }) => Promise<CommitmentExtractionBatchResult>;
 
-/** 候选项到解析后到期窗口的映射，由调用方解析候选的 earliest/latest 字符串 */
 export type CommitmentCandidateResolver = (
   candidate: CommitmentCandidate,
   item: CommitmentExtractionItem,
 ) => { earliestMs: number; latestMs: number; timezone: string } | undefined;
 
-/** 运行时可注入的钩子集合 */
+export type CompletionVerifier = (params: {
+  commitment: CommitmentRecord;
+  context?: Record<string, unknown>;
+}) => Promise<boolean | { completed: boolean; reason?: string }> | boolean | { completed: boolean; reason?: string };
+
 export type CommitmentRuntimeHooks = {
-  /** 自定义批次提取；缺省时返回空结果 */
   extractBatch?: CommitmentExtractBatchFn;
-  /** 自定义候选到期窗口解析；缺省时跳过候选项 */
   resolveCandidateWindow?: CommitmentCandidateResolver;
-  /** 自定义定时器，便于测试 */
   setTimer?: (callback: () => void, delayMs: number) => TimerHandle;
-  /** 自定义清除定时器，便于测试 */
   clearTimer?: (timer: TimerHandle) => void;
-  /** 测试中强制启用，忽略 VITEST/NODE_ENV=test 的禁用判断 */
   forceInTests?: boolean;
+  completionVerifier?: CompletionVerifier;
 };
 
-/** 排队中的提取条目（不含 existingPending，处理时再注入） */
 type QueuedExtractionItem = Omit<CommitmentExtractionItem, "existingPending"> & {
   cfg?: CommitmentsConfigInput;
 };
 
-/** 承诺运行时实例 */
 export type CommitmentRuntime = {
-  /** 当前配置（解析后） */
   config: ResolvedCommitmentsConfig;
-  /** 当前队列长度 */
   queueLength: number;
-  /** 是否正在处理批次 */
   draining: boolean;
-  /** 排队一条提取任务 */
+  enqueueExtraction: (input: CommitmentExtractionEnqueueInput) => boolean;
   queueExtraction: (input: CommitmentExtractionEnqueueInput) => boolean;
-  /** 立即处理当前队列中的所有条目，返回处理的条目数 */
   processExtractionBatch: () => Promise<number>;
-  /** 查询某会话的到期承诺（已认领，attempts 已自增） */
   resolveDueCommitments: (params: {
     agentId: string;
     sessionKey: string;
@@ -91,21 +96,48 @@ export type CommitmentRuntime = {
     limit?: number;
     nowMs?: number;
   }) => Promise<CommitmentRecord[]>;
-  /** 列出某作用域的待处理承诺（不认领） */
   listPending: (params: {
     scope: CommitmentScope;
     storePath?: string;
     nowMs?: number;
     limit?: number;
   }) => Promise<CommitmentRecord[]>;
-  /** 重置运行时状态（测试用） */
+  getCommitment: (id: string, storePath?: string) => Promise<CommitmentRecord | null>;
+  updateCommitmentStatus: (
+    id: string,
+    status: CommitmentStatus,
+    options?: { storePath?: string; failureReason?: string; nowMs?: number },
+  ) => Promise<boolean>;
+  updateCommitment: (params: CommitmentUpdateParams) => Promise<boolean>;
+  deleteCommitment: (id: string, storePath?: string) => Promise<boolean>;
+  verifyAndComplete: (params: {
+    id: string;
+    context?: Record<string, unknown>;
+    storePath?: string;
+    nowMs?: number;
+  }) => Promise<{ completed: boolean; reason?: string }>;
+  markSent: (id: string, options?: { storePath?: string; nowMs?: number }) => Promise<boolean>;
+  markDismissed: (id: string, options?: { storePath?: string; nowMs?: number }) => Promise<boolean>;
+  markExpired: (id: string, options?: { storePath?: string; nowMs?: number }) => Promise<boolean>;
+  markFailed: (id: string, reason: string, options?: { storePath?: string; nowMs?: number }) => Promise<boolean>;
+  incrementAttempts: (id: string, options?: { storePath?: string; nowMs?: number }) => Promise<boolean>;
+  addHeartbeat: (
+    heartbeat: Omit<CommitmentHeartbeat, "id">,
+    storePath?: string,
+  ) => Promise<CommitmentHeartbeat>;
+  getConfig: () => ResolvedCommitmentsConfig;
+  getStats: () => { queueSize: number; draining: boolean };
+  useStoreWriter: (options?: StoreWriterOptions) => void;
+  getStoreWriter: () => CommitmentStoreWriter | null;
   resetForTests: () => void;
 };
 
-/** 排队输入：作用域 + 回合文本 + 可选配置 */
-export type CommitmentExtractionEnqueueInput = CommitmentScope & {
+export type CommitmentExtractionEnqueueInput = {
+  scope: CommitmentScope;
   cfg?: CommitmentsConfigInput;
+  itemId?: string;
   nowMs?: number;
+  timezone?: string;
   userText: string;
   assistantText?: string;
   sourceMessageId?: string;
@@ -114,12 +146,10 @@ export type CommitmentExtractionEnqueueInput = CommitmentScope & {
 
 // ===================== 常量 =====================
 
-/** 终端提取错误后的冷却时间（毫秒） */
 const TERMINAL_EXTRACTION_FAILURE_COOLDOWN_MS = 15 * 60_000;
 
 // ===================== 工具函数 =====================
 
-/** 判断是否应因测试环境禁用后台提取 */
 function shouldDisableBackgroundExtractionForTests(
   hooks: CommitmentRuntimeHooks,
 ): boolean {
@@ -129,19 +159,16 @@ function shouldDisableBackgroundExtractionForTests(
   return process.env.VITEST === "true" || process.env.NODE_ENV === "test";
 }
 
-/** 规范化可选字符串 */
 function normalizeOptionalString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
 }
 
-/** 判断文本是否有意义 */
 function isUsefulText(value: string | undefined): boolean {
   return Boolean(value?.trim());
 }
 
-/** 判断错误是否为终端错误（认证/模型类，不会自愈） */
 function isTerminalExtractionError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return (
@@ -156,31 +183,39 @@ function isTerminalExtractionError(error: unknown): boolean {
   );
 }
 
-/** 构建 itemId */
 function buildItemId(nowMs: number): string {
   return `turn:${nowMs.toString(36)}:${randomUUID()}`;
 }
 
+function isFinalStatus(status: CommitmentStatus): boolean {
+  return status === "completed" || status === "dismissed" || status === "expired" || status === "failed";
+}
+
 // ===================== 运行时创建 =====================
 
-/**
- * 创建承诺运行时实例。
- *
- * @param cfg 配置输入；缺省时承诺功能默认禁用
- * @param hooks 可注入的钩子集合
- * @param storePath 存储路径；缺省走默认路径
- */
 export function createCommitmentRuntime(
-  cfg?: CommitmentsConfigInput,
-  hooks: CommitmentRuntimeHooks = {},
-  storePath?: string,
+  params?: {
+    config?: CommitmentsConfigInput;
+    hooks?: CommitmentRuntimeHooks;
+    storePath?: string;
+    completionVerifier?: CompletionVerifier;
+  },
 ): CommitmentRuntime {
+  const cfg = params?.config;
+  const hooks = params?.hooks || {};
+  const storePath = params?.storePath;
+
+  if (params?.completionVerifier) {
+    hooks.completionVerifier = params.completionVerifier;
+  }
+
   const config = resolveCommitmentsConfig(cfg);
   let queue: QueuedExtractionItem[] = [];
   let timer: TimerHandle | null = null;
   let draining = false;
   let queueOverflowWarned = false;
   let terminalFailureCooldownUntilByAgent = new Map<string, number>();
+  let storeWriter: CommitmentStoreWriter | null = null;
 
   function setTimer(callback: () => void, delayMs: number): TimerHandle {
     const handle = hooks.setTimer
@@ -196,7 +231,6 @@ export function createCommitmentRuntime(
     (hooks.clearTimer ?? clearTimeout)(handle);
   }
 
-  /** 打开终端错误冷却：丢弃该 agent 的排队任务并记录冷却时间 */
   function openTerminalFailureCooldown(agentId: string, error: unknown, nowMs: number): void {
     const cooldownUntil = nowMs + TERMINAL_EXTRACTION_FAILURE_COOLDOWN_MS;
     terminalFailureCooldownUntilByAgent.set(agentId, cooldownUntil);
@@ -211,22 +245,21 @@ export function createCommitmentRuntime(
     );
   }
 
-  /** 排队一条提取任务 */
   function queueExtraction(input: CommitmentExtractionEnqueueInput): boolean {
     const nowMs = input.nowMs ?? Date.now();
-    const agentId = normalizeOptionalString(input.agentId) ?? "";
-    const sessionKey = normalizeOptionalString(input.sessionKey) ?? "";
-    const channel = normalizeOptionalString(input.channel) ?? "";
+    const scope = input.scope;
+    const agentId = normalizeOptionalString(scope?.agentId) ?? "";
+    const sessionKey = normalizeOptionalString(scope?.sessionKey) ?? "";
+    const channel = normalizeOptionalString(scope?.channel) ?? "";
+    const itemId = input.itemId?.trim() ?? "";
 
     if (
       !config.enabled ||
-      shouldDisableBackgroundExtractionForTests(hooks) ||
-      (agentId ? nowMs < (terminalFailureCooldownUntilByAgent.get(agentId) ?? 0) : false) ||
       !isUsefulText(input.userText) ||
-      !isUsefulText(input.assistantText) ||
       !agentId ||
       !sessionKey ||
-      !channel
+      !channel ||
+      !itemId
     ) {
       return false;
     }
@@ -242,17 +275,19 @@ export function createCommitmentRuntime(
       return false;
     }
 
+    const timezone = input.timezone || resolveCommitmentTimezone(input.cfg);
+
     queue.push({
-      itemId: buildItemId(nowMs),
+      itemId,
       nowMs,
-      timezone: resolveCommitmentTimezone(input.cfg),
+      timezone,
       agentId,
       sessionKey,
       channel,
-      ...(input.accountId?.trim() ? { accountId: input.accountId.trim() } : {}),
-      ...(input.to?.trim() ? { to: input.to.trim() } : {}),
-      ...(input.threadId?.trim() ? { threadId: input.threadId.trim() } : {}),
-      ...(input.senderId?.trim() ? { senderId: input.senderId.trim() } : {}),
+      ...(scope.accountId?.trim() ? { accountId: scope.accountId.trim() } : {}),
+      ...(scope.to?.trim() ? { to: scope.to.trim() } : {}),
+      ...(scope.threadId?.trim() ? { threadId: scope.threadId.trim() } : {}),
+      ...(scope.senderId?.trim() ? { senderId: scope.senderId.trim() } : {}),
       userText: input.userText.trim(),
       ...(input.assistantText?.trim() ? { assistantText: input.assistantText.trim() } : {}),
       ...(input.sourceMessageId?.trim()
@@ -273,7 +308,6 @@ export function createCommitmentRuntime(
     return true;
   }
 
-  /** 为队列条目填充 existingPending */
   async function hydrateItem(
     item: QueuedExtractionItem,
   ): Promise<CommitmentExtractionItem> {
@@ -304,7 +338,6 @@ export function createCommitmentRuntime(
     };
   }
 
-  /** 处理当前队列中的所有条目，返回处理的条目数 */
   async function processExtractionBatch(): Promise<number> {
     if (draining) {
       return 0;
@@ -340,7 +373,6 @@ export function createCommitmentRuntime(
           throw error;
         }
 
-        // 持久化候选：解析到期窗口后调用 addCommitment
         for (const item of items) {
           const candidatesForItem = result.candidates.filter(
             (c) => c.itemId === item.itemId,
@@ -393,10 +425,10 @@ export function createCommitmentRuntime(
     }
   }
 
-  /** 查询某会话的到期承诺（已认领） */
   async function resolveDueCommitments(params: {
     agentId: string;
     sessionKey: string;
+    storePath?: string;
     limit?: number;
     nowMs?: number;
   }): Promise<CommitmentRecord[]> {
@@ -404,7 +436,7 @@ export function createCommitmentRuntime(
       return [];
     }
     return claimDueCommitments({
-      storePath,
+      storePath: params.storePath ?? storePath,
       agentId: params.agentId,
       sessionKey: params.sessionKey,
       maxPerDay: config.maxPerDay,
@@ -413,21 +445,174 @@ export function createCommitmentRuntime(
     });
   }
 
-  /** 列出某作用域的待处理承诺（不认领） */
   async function listPending(params: {
     scope: CommitmentScope;
+    storePath?: string;
     nowMs?: number;
     limit?: number;
   }): Promise<CommitmentRecord[]> {
     return listPendingCommitmentsForScope({
-      storePath,
+      storePath: params.storePath ?? storePath,
       scope: params.scope,
       nowMs: params.nowMs,
       limit: params.limit,
     });
   }
 
-  /** 重置运行时状态（测试用） */
+  async function getCommitmentById(id: string, path?: string): Promise<CommitmentRecord | null> {
+    return getCommitment(id, path ?? storePath);
+  }
+
+  async function updateStatus(
+    id: string,
+    status: CommitmentStatus,
+    options?: { storePath?: string; failureReason?: string; nowMs?: number },
+  ): Promise<boolean> {
+    return updateCommitmentStatus(id, status as any, {
+      storePath: options?.storePath ?? storePath,
+      failureReason: options?.failureReason,
+      nowMs: options?.nowMs,
+    });
+  }
+
+  async function updateCommitmentRecord(params: CommitmentUpdateParams): Promise<boolean> {
+    return updateCommitment({
+      ...params,
+      storePath: params.storePath ?? storePath,
+    });
+  }
+
+  async function deleteCommitmentById(id: string, path?: string): Promise<boolean> {
+    return deleteCommitment(id, path ?? storePath);
+  }
+
+  async function verifyAndComplete(params: {
+    id: string;
+    context?: Record<string, unknown>;
+    storePath?: string;
+    nowMs?: number;
+  }): Promise<{ completed: boolean; reason?: string }> {
+    const path = params.storePath ?? storePath;
+    const commitment = await getCommitment(params.id, path);
+    if (!commitment) {
+      return { completed: false, reason: "commitment_not_found" };
+    }
+
+    if (isFinalStatus(commitment.status) && commitment.status !== "completed") {
+      return { completed: false, reason: `already_${commitment.status}` };
+    }
+
+    const verifier = hooks.completionVerifier;
+    if (!verifier) {
+      await updateCommitmentStatus(params.id, "completed", {
+        storePath: path,
+        nowMs: params.nowMs,
+      });
+      return { completed: true };
+    }
+
+    const verifyResult = await verifier({
+      commitment,
+      context: params.context,
+    });
+
+    if (typeof verifyResult === 'boolean') {
+      if (verifyResult) {
+        await updateCommitmentStatus(params.id, "completed", {
+          storePath: path,
+          nowMs: params.nowMs,
+        });
+        return { completed: true };
+      }
+      return { completed: false, reason: "verification_failed" };
+    }
+
+    if (verifyResult.completed) {
+      await updateCommitmentStatus(params.id, "completed", {
+        storePath: path,
+        nowMs: params.nowMs,
+      });
+      return { completed: true, reason: verifyResult.reason };
+    }
+
+    return { completed: false, reason: verifyResult.reason || "verification_failed" };
+  }
+
+  async function markSent(id: string, options?: { storePath?: string; nowMs?: number }): Promise<boolean> {
+    return updateCommitmentStatus(id, "sent", {
+      storePath: options?.storePath ?? storePath,
+      nowMs: options?.nowMs,
+    });
+  }
+
+  async function markDismissed(id: string, options?: { storePath?: string; nowMs?: number }): Promise<boolean> {
+    return updateCommitmentStatus(id, "dismissed", {
+      storePath: options?.storePath ?? storePath,
+      nowMs: options?.nowMs,
+    });
+  }
+
+  async function markExpired(id: string, options?: { storePath?: string; nowMs?: number }): Promise<boolean> {
+    return updateCommitmentStatus(id, "expired", {
+      storePath: options?.storePath ?? storePath,
+      nowMs: options?.nowMs,
+    });
+  }
+
+  async function markFailed(id: string, reason: string, options?: { storePath?: string; nowMs?: number }): Promise<boolean> {
+    return updateCommitmentStatus(id, "failed", {
+      storePath: options?.storePath ?? storePath,
+      failureReason: reason,
+      nowMs: options?.nowMs,
+    });
+  }
+
+  async function incrementAttempts(id: string, options?: { storePath?: string; nowMs?: number }): Promise<boolean> {
+    const commitment = await getCommitment(id, options?.storePath ?? storePath);
+    if (!commitment) return false;
+    return updateCommitment({
+      id,
+      storePath: options?.storePath ?? storePath,
+      updates: {
+        attempts: commitment.attempts + 1,
+        lastAttemptAtMs: options?.nowMs ?? Date.now(),
+        updatedAtMs: options?.nowMs ?? Date.now(),
+      },
+    });
+  }
+
+  async function addHeartbeat(
+    heartbeat: Omit<CommitmentHeartbeat, "id">,
+    path?: string,
+  ): Promise<CommitmentHeartbeat> {
+    return addHeartbeatRecord(heartbeat, path ?? storePath);
+  }
+
+  function getConfig(): ResolvedCommitmentsConfig {
+    return config;
+  }
+
+  function getStats(): { queueSize: number; draining: boolean } {
+    return {
+      queueSize: queue.length,
+      draining,
+    };
+  }
+
+  function useStoreWriter(options?: StoreWriterOptions): void {
+    if (storeWriter) {
+      void storeWriter.shutdown();
+    }
+    storeWriter = new CommitmentStoreWriter({
+      ...options,
+      storePath: options?.storePath ?? storePath,
+    });
+  }
+
+  function getStoreWriter(): CommitmentStoreWriter | null {
+    return storeWriter;
+  }
+
   function resetForTests(): void {
     if (timer) {
       clearTimer(timer);
@@ -437,6 +622,10 @@ export function createCommitmentRuntime(
     draining = false;
     queueOverflowWarned = false;
     terminalFailureCooldownUntilByAgent = new Map();
+    if (storeWriter) {
+      void storeWriter.shutdown();
+      storeWriter = null;
+    }
   }
 
   return {
@@ -447,10 +636,26 @@ export function createCommitmentRuntime(
     get draining() {
       return draining;
     },
+    enqueueExtraction: queueExtraction,
     queueExtraction,
     processExtractionBatch,
     resolveDueCommitments,
     listPending,
+    getCommitment: getCommitmentById,
+    updateCommitmentStatus: updateStatus,
+    updateCommitment: updateCommitmentRecord,
+    deleteCommitment: deleteCommitmentById,
+    verifyAndComplete,
+    markSent,
+    markDismissed,
+    markExpired,
+    markFailed,
+    incrementAttempts,
+    addHeartbeat,
+    getConfig,
+    getStats,
+    useStoreWriter,
+    getStoreWriter,
     resetForTests,
   };
 }

@@ -1,7 +1,5 @@
 import { Router } from 'express';
-import { agentRegistry } from '../engine/agentRegistry.js';
-import { agentIdentityManager } from '../engine/agentIdentity.js';
-import { agentScenarioMatcher } from '../engine/agentScenarioMatcher.js';
+import { agentRegistry, agentIdentityManager, agentScenarioMatcher } from '../engine/agents/index.js';
 import { laneManager } from '../engine/executionLanes.js';
 import { logger } from '../logger.js';
 
