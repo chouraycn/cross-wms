@@ -52,3 +52,6 @@ export * from "./types.js";
 export * as storeCodec from "./store/index.js";
 export * as service from "./service/index.js";
 export * as isolatedAgent from "./isolated-agent/index.js";
+
+// Webhook URL 规范化
+export { normalizeHttpWebhookUrl } from "./webhook-url.js";

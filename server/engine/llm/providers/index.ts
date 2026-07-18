@@ -232,3 +232,15 @@ export type {
   ProviderFinishReasonMapper,
   ProviderRegion,
 } from './types.js';
+
+// Stream wrappers — 流式响应包装器
+export {
+  type ReasoningEffort,
+  mapThinkingLevelToReasoningEffort,
+} from "./stream-wrappers/reasoning-effort-utils.js";
+export {
+  isAnthropicModelRef,
+  isAnthropicBedrockModel,
+  isAnthropicFamilyCacheTtlEligible,
+  resolveAnthropicCacheRetentionFamily,
+} from "./stream-wrappers/anthropic-family-cache-semantics.js";
