@@ -320,3 +320,19 @@ export {
   getMachineDisplayName,
   resetMachineNameCache,
 } from './machine-name.js';
+
+// 计时器延迟辅助
+export {
+  MAX_SAFE_TIMEOUT_DELAY_MS,
+  resolveSafeTimeoutDelayMs,
+  addSafeTimeoutDelayGraceMs,
+  resolveFiniteTimeoutDelayMs,
+  setSafeTimeout,
+} from './timer-delay.js';
+
+// Fetch 超时辅助
+export {
+  bindAbortRelay,
+  buildTimeoutAbortSignal,
+  fetchWithTimeout,
+} from './fetch-timeout.js';
