@@ -25,6 +25,7 @@ export * from './session-chat-type.js';
 export * from './session-lifecycle-events.js';
 export * from './user-turn-transcript.js';
 export * from './input-provenance.js';
+export * from './routing-session-key.js';
 
 // ============================================================================
 // 数据访问层（engine 层调用 dao/service 层）
