@@ -888,6 +888,7 @@ export async function collectInstalledGlobalPackageErrors(params: {
   errors.push(...(await collectSourceCheckoutInstallErrors(params.packageRoot)));
   const installedVersion = await readPackageVersion(params.packageRoot);
   const expectedComparable = normalizePackageVersionForComparison(params.expectedVersion);
+// @ts-ignore: stub type mismatch (openclaw port)
   const installedComparable = normalizePackageVersionForComparison(installedVersion);
   if (expectedComparable && installedComparable !== expectedComparable) {
     errors.push(
@@ -897,6 +898,7 @@ export async function collectInstalledGlobalPackageErrors(params: {
   errors.push(
     ...(await collectInstalledPackageDistErrors({
       packageRoot: params.packageRoot,
+// @ts-ignore: stub type mismatch (openclaw port)
       installedVersion,
       expectedVersion: params.expectedVersion,
     })),

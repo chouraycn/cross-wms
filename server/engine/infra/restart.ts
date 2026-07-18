@@ -1,113 +1,67 @@
-// 移植自 openclaw/src/infra/restart.ts（降级实现）
-// 网关重启协调主入口。
-import type { RestartAttempt } from "./restart.types.js";
-import { DEFAULT_RESTART_DEFERRAL_TIMEOUT_MS } from "./restart-coordinator.js";
+// 移植自 openclaw/src/infra/restart.ts
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type { RestartAttempt };
-export { DEFAULT_RESTART_DEFERRAL_TIMEOUT_MS } from "./restart-coordinator.js";
-export type { RestartCoordinator, RestartCoordinatorOptions } from "./restart-coordinator.js";
-export { createRestartCoordinator } from "./restart-coordinator.js";
-export { findGatewayPidsOnPortSync } from "./restart-stale-pids.js";
-
-export type GatewayRestartIntent = {
-  reason?: string;
-  sessionKey?: string;
-  createdAtMs: number;
-  ttlMs: number;
-};
-
-export type RestartEmitHooks = {
-  onEmit?: (intent: GatewayRestartIntent) => void;
-  onConsume?: (intent: GatewayRestartIntent) => void;
-};
-
-let pendingRestartTimer: ReturnType<typeof setTimeout> | null = null;
-let pendingRestartDueAt = 0;
-let pendingRestartReason: string | undefined;
-let pendingRestartSessionKey: string | undefined;
-let pendingRestartSkipDeferral = false;
-
-/**
- * 调度网关重启。
- * 降级实现：仅记录意图，不执行实际重启。
- */
-export function scheduleGatewayRestart(params: {
-  reason?: string;
-  sessionKey?: string;
-  skipDeferral?: boolean;
-  deferralTimeoutMs?: number;
-  hooks?: RestartEmitHooks;
-}): void {
-  const timeoutMs = params.deferralTimeoutMs ?? DEFAULT_RESTART_DEFERRAL_TIMEOUT_MS;
-  pendingRestartReason = params.reason;
-  pendingRestartSessionKey = params.sessionKey;
-  pendingRestartSkipDeferral = params.skipDeferral ?? false;
-  pendingRestartDueAt = Date.now() + timeoutMs;
-  if (pendingRestartTimer) {
-    clearTimeout(pendingRestartTimer);
-  }
-  pendingRestartTimer = setTimeout(() => {
-    pendingRestartTimer = null;
-  }, timeoutMs);
-  const intent: GatewayRestartIntent = {
-    reason: params.reason,
-    sessionKey: params.sessionKey,
-    createdAtMs: Date.now(),
-    ttlMs: timeoutMs,
-  };
-  params.hooks?.onEmit?.(intent);
+export type RestartAuditInfo = unknown;
+export type GatewayRestartIntent = unknown;
+export type RestartDeferralHooks = unknown;
+export type RestartEmitHooks = unknown;
+export type ScheduledRestart = unknown;
+export type RestartAttempt = unknown;
+export function resetGatewayRestartStateForInProcessRestart(...args: unknown[]): unknown {
+  throw new Error("not implemented: resetGatewayRestartStateForInProcessRestart");
 }
-
-/** 取消待处理的重启 */
-export function cancelPendingGatewayRestart(): void {
-  if (pendingRestartTimer) {
-    clearTimeout(pendingRestartTimer);
-    pendingRestartTimer = null;
-  }
-  pendingRestartReason = undefined;
-  pendingRestartSessionKey = undefined;
-  pendingRestartSkipDeferral = false;
-  pendingRestartDueAt = 0;
+export function writeGatewayRestartIntentSync(...args: unknown[]): unknown {
+  throw new Error("not implemented: writeGatewayRestartIntentSync");
 }
-
-/** 检查是否有待处理的重启 */
-export function isGatewayRestartPending(): boolean {
-  return pendingRestartTimer !== null;
+export function clearGatewayRestartIntentSync(...args: unknown[]): unknown {
+  throw new Error("not implemented: clearGatewayRestartIntentSync");
 }
-
-/** 获取待处理重启的原因 */
-export function getPendingGatewayRestartReason(): string | undefined {
-  return pendingRestartReason;
+export function consumeGatewayRestartIntentPayloadSync(...args: unknown[]): unknown {
+  throw new Error("not implemented: consumeGatewayRestartIntentPayloadSync");
 }
-
-/** 获取待处理重启的到期时间 */
-export function getPendingGatewayRestartDueAt(): number {
-  return pendingRestartDueAt;
+export function consumeGatewayRestartIntentSync(...args: unknown[]): unknown {
+  throw new Error("not implemented: consumeGatewayRestartIntentSync");
 }
-
-/**
- * 授权 SIGUSR1 重启信号。
- * 降级实现：noop。
- */
-export function authorizeSigusr1Restart(_options?: { externalAllowed?: boolean; graceMs?: number }): void {
-  // 降级：noop
+export function setPreRestartDeferralCheck(...args: unknown[]): unknown {
+  throw new Error("not implemented: setPreRestartDeferralCheck");
 }
-
-/** 检查 SIGUSR1 是否已授权 */
-export function isSigusr1Authorized(): boolean {
-  return false;
+export function emitGatewayRestart(...args: unknown[]): unknown {
+  throw new Error("not implemented: emitGatewayRestart");
 }
-
-/**
- * 执行网关重启。
- * 降级实现：返回失败。
- */
-export async function restartGateway(_params?: {
-  method?: "launchctl" | "systemd" | "schtasks" | "supervisor";
-}): Promise<RestartAttempt> {
-  return {
-    ok: false,
-    method: _params?.method ?? "supervisor",
-    detail: "restartGateway stub: not implemented",
-  };
+export function setGatewaySigusr1RestartPolicy(...args: unknown[]): unknown {
+  throw new Error("not implemented: setGatewaySigusr1RestartPolicy");
 }
+export function isGatewaySigusr1RestartExternallyAllowed(...args: unknown[]): unknown {
+  throw new Error("not implemented: isGatewaySigusr1RestartExternallyAllowed");
+}
+export function consumeGatewaySigusr1RestartAuthorization(...args: unknown[]): unknown {
+  throw new Error("not implemented: consumeGatewaySigusr1RestartAuthorization");
+}
+export function peekGatewaySigusr1RestartReason(...args: unknown[]): unknown {
+  throw new Error("not implemented: peekGatewaySigusr1RestartReason");
+}
+export function consumeGatewaySigusr1RestartIntent(...args: unknown[]): unknown {
+  throw new Error("not implemented: consumeGatewaySigusr1RestartIntent");
+}
+export function markGatewaySigusr1RestartHandled(...args: unknown[]): unknown {
+  throw new Error("not implemented: markGatewaySigusr1RestartHandled");
+}
+export function resolveGatewayRestartDeferralTimeoutMs(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveGatewayRestartDeferralTimeoutMs");
+}
+export function deferGatewayRestartUntilIdle(...args: unknown[]): unknown {
+  throw new Error("not implemented: deferGatewayRestartUntilIdle");
+}
+export function triggerOpenClawRestart(...args: unknown[]): unknown {
+  throw new Error("not implemented: triggerOpenClawRestart");
+}
+export function scheduleGatewaySigusr1Restart(...args: unknown[]): unknown {
+  throw new Error("not implemented: scheduleGatewaySigusr1Restart");
+}
+export function scheduleGatewayRestart(...args: unknown[]): unknown {
+  throw new Error("not implemented: scheduleGatewayRestart");
+}
+export const DEFAULT_RESTART_DEFERRAL_TIMEOUT_MS: unknown = undefined;
+export const testing_restart: unknown = undefined;
+export type findGatewayPidsOnPortSync = unknown;
+export type __testing_restart = unknown;

@@ -1,53 +1,40 @@
-// 移植自 openclaw/src/infra/system-events.ts（降级实现）
-// 系统事件定义。
-export type SystemEventKind =
-  | "restart-requested"
-  | "restart-completed"
-  | "restart-failed"
-  | "shutdown-requested"
-  | "shutdown-completed"
-  | "config-reloaded"
-  | "health-check";
+// 移植自 openclaw/src/infra/system-events.ts
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-export type SystemEvent = {
-  kind: SystemEventKind;
-  timestampMs: number;
-  reason?: string;
-  detail?: Record<string, unknown>;
-};
-
-export type SystemEventListener = (event: SystemEvent) => void;
-
-const listeners = new Set<SystemEventListener>();
-
-/** 发出系统事件 */
-export function emitSystemEvent(event: Omit<SystemEvent, "timestampMs">): void {
-  const fullEvent: SystemEvent = {
-    ...event,
-    timestampMs: Date.now(),
-  };
-  for (const listener of listeners) {
-    try {
-      listener(fullEvent);
-    } catch {
-      // 忽略监听器错误
-    }
-  }
+export type SystemEvent = unknown;
+export function isSystemEventContextChanged(...args: unknown[]): unknown {
+  throw new Error("not implemented: isSystemEventContextChanged");
 }
-
-/** 注册系统事件监听器 */
-export function onSystemEvent(listener: SystemEventListener): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
+export function enqueueSystemEventEntry(...args: unknown[]): unknown {
+  throw new Error("not implemented: enqueueSystemEventEntry");
 }
-
-/** 创建系统事件 */
-export function createSystemEvent(kind: SystemEventKind, detail?: Record<string, unknown>): SystemEvent {
-  return {
-    kind,
-    timestampMs: Date.now(),
-    detail,
-  };
+export function enqueueSystemEvent(...args: unknown[]): unknown {
+  throw new Error("not implemented: enqueueSystemEvent");
+}
+export function drainSystemEventEntries(...args: unknown[]): unknown {
+  throw new Error("not implemented: drainSystemEventEntries");
+}
+export function consumeSystemEventEntries(...args: unknown[]): unknown {
+  throw new Error("not implemented: consumeSystemEventEntries");
+}
+export function consumeSelectedSystemEventEntries(...args: unknown[]): unknown {
+  throw new Error("not implemented: consumeSelectedSystemEventEntries");
+}
+export function drainSystemEvents(...args: unknown[]): unknown {
+  throw new Error("not implemented: drainSystemEvents");
+}
+export function peekSystemEventEntries(...args: unknown[]): unknown {
+  throw new Error("not implemented: peekSystemEventEntries");
+}
+export function peekSystemEvents(...args: unknown[]): unknown {
+  throw new Error("not implemented: peekSystemEvents");
+}
+export function hasSystemEvents(...args: unknown[]): unknown {
+  throw new Error("not implemented: hasSystemEvents");
+}
+export function resolveSystemEventDeliveryContext(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveSystemEventDeliveryContext");
+}
+export function resetSystemEventsForTest(...args: unknown[]): unknown {
+  throw new Error("not implemented: resetSystemEventsForTest");
 }

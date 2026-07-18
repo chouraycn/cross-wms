@@ -197,3 +197,182 @@ export * as includesScan from './includes-scan.js';
 
 // State-directory dotenv 加载
 export * as stateDirDotEnv from './state-dir-dotenv.js';
+
+// ===================== 移植 stub（v4.0 — openclaw 降级 stub 批量移植） =====================
+export * from './agent-dirs.js';
+export * from './allowed-values.js';
+export * from './backup-rotation.js';
+export * from './bindings.js';
+export * from './bundled-channel-config-metadata.generated.js';
+export * from './cache-utils.js';
+export * from './channel-capabilities.js';
+export * from './channel-compat-normalization.js';
+// export * from './channel-config-metadata.js';  // removed: TS2308 conflict
+export * from './channel-configured-shared.js';
+export * from './channel-configured.js';
+export * from './codex-plugin-diagnostics.js';
+export * from './combined-store-gateway.js';
+// export * from './commands.flags.js';  // removed: TS2308 conflict
+export * from './commands.js';
+export * from './compaction-session-file.js';
+export * from './config-env-vars.js';
+export * from './config-paths.js';
+// export * from './config.js';  // removed: TS2308 conflict
+export * from './context-visibility.js';
+export * from './dangerous-name-matching.js';
+export * from './defaults.js';
+export * from './delivery-info.js';
+export * from './doc-baseline.runtime.js';
+export * from './doc-baseline.js';
+export * from './env-preserve.js';
+// export * from './env-substitution.js';  // removed: TS2308 conflict
+export * from './exec-command-highlighting.js';
+export * from './explicit-session-key-normalization.js';
+export * from './future-version-guard.js';
+export * from './gateway-control-ui-origins.js';
+export * from './gateway-dispatch-config.js';
+export * from './group-policy.js';
+export * from './group.js';
+// export * from './home-env.test-harness.js';  // removed: TS2308 conflict
+export * from './inbound.runtime.js';
+export * from './includes-scan.js';
+// export * from './includes.js';  // removed: TS2308 conflict
+export * from './io.audit.js';
+export * from './io.clobber-snapshot.js';
+export * from './io.health-state.js';
+export * from './io.invalid-config.js';
+export * from './io.meta.js';
+export * from './io.observe-recovery.js';
+export * from './io.observe-suspicious.js';
+export * from './io.owner-display-secret.js';
+// export * from './io.js';  // removed: TS2308 conflict
+export * from './io.write-prepare.js';
+export * from './issue-format.js';
+export * from './legacy.shared.js';
+export * from './logging.js';
+export * from './main-session.runtime.js';
+// export * from './markdown-tables.js';  // removed: TS2308 conflict
+export * from './markdown-tables.types.js';
+export * from './mcp-config-normalize.js';
+export * from './mcp-config.js';
+export * from './media-audio-field-metadata.js';
+export * from './model-input.js';
+export * from './model-override-provenance.js';
+// export * from './mutate.js';  // removed: TS2308 conflict
+export * from './mutation-conflict.js';
+export * from './nix-mode-write-guard.js';
+export * from './normalize-exec-safe-bin.js';
+export * from './normalize-paths.js';
+export * from './patch-replace-paths.js';
+// export * from './plugin-auto-enable.apply.js';  // removed: TS2308 conflict
+// export * from './plugin-auto-enable.detect.js';  // removed: TS2308 conflict
+export * from './plugin-auto-enable.prefer-over.js';
+// export * from './plugin-auto-enable.shared.js';  // removed: TS2308 conflict
+// export * from './plugin-auto-enable.js';  // removed: TS2308 conflict
+export * from './plugin-auto-enable.types.js';
+export * from './plugin-host-cleanup.js';
+export * from './plugin-install-config-migration.js';
+export * from './plugin-web-search-config.js';
+export * from './plugins-allowlist.js';
+export * from './provider-policy.js';
+export * from './read-best-effort-config.runtime.js';
+export * from './recovery-policy.js';
+export * from './redact-snapshot.raw.js';
+export * from './redact-snapshot.secret-ref.js';
+export * from './redact-snapshot.js';
+export * from './reset-preserved-selection.js';
+export * from './runtime-group-policy.js';
+export * from './runtime-overrides.js';
+export * from './runtime-schema.js';
+export * from './runtime-snapshot.js';
+export * from './runtime-source-projection.js';
+export * from './runtime-types.js';
+export * from './schema.help.js';
+// export * from './schema.hints.js';  // removed: TS2308 conflict
+export * from './schema.labels.js';
+export * from './schema.shared.js';
+export * from './schema.tags.js';
+export * from './sensitive-paths.js';
+// export * from './sessions.js';  // removed: TS2308 conflict
+export * from './shell-env-expected-keys.js';
+export * from './silent-reply.js';
+export * from './skill-prompt-blobs.js';
+export * from './startup-migration.js';
+export * from './state-dir-dotenv.js';
+export * from './store-entry-shape.js';
+export * from './store-entry.js';
+export * from './store-load.js';
+export * from './store-maintenance-operations.js';
+export * from './store-maintenance-preserve.js';
+export * from './store-maintenance-runtime.js';
+export * from './store-writer-state.js';
+export * from './store.runtime.js';
+export * from './talk-defaults.js';
+export * from './talk.js';
+export * from './test-helpers.js';
+// export * from './transcript-file-resolve.js';  // removed: TS2308 conflict
+export * from './transcript-mirror.js';
+export * from './transcript-replay.js';
+export * from './transcript-resolve.runtime.js';
+export * from './transcript.runtime.js';
+export * from './types.access-groups.js';
+export * from './types.acp.js';
+export * from './types.agent-defaults.js';
+export * from './types.agents-shared.js';
+export * from './types.agents.js';
+export * from './types.approvals.js';
+export * from './types.auth.js';
+export * from './types.base.js';
+// export * from './types.bot-loop-protection.js';  // removed: TS2308 conflict
+export * from './types.browser.js';
+// export * from './types.channel-health.js';  // removed: TS2308 conflict
+export * from './types.channel-messaging-common.js';
+export * from './types.channels.js';
+export * from './types.cli.js';
+export * from './types.commitments.js';
+export * from './types.crestodian.js';
+export * from './types.cron.js';
+export * from './types.discord.js';
+export * from './types.gateway.js';
+export * from './types.googlechat.js';
+export * from './types.hooks.js';
+export * from './types.imessage.js';
+export * from './types.installs.js';
+export * from './types.irc.js';
+export * from './types.mcp.js';
+export * from './types.memory.js';
+export * from './types.messages.js';
+export * from './types.models.js';
+export * from './types.msteams.js';
+export * from './types.node-host.js';
+export * from './types.openclaw.js';
+export * from './types.plugins.js';
+export * from './types.provider-request.js';
+export * from './types.queue.js';
+export * from './types.sandbox.js';
+export * from './types.secrets.js';
+export * from './types.signal.js';
+export * from './types.skills.js';
+export * from './types.slack.js';
+export * from './types.telegram.js';
+export * from './types.tools.js';
+export * from './types.tts.js';
+export * from './types.whatsapp.js';
+export * from './zod-schema.agent-defaults.js';
+// export * from './zod-schema.agent-model.js';  // removed: TS2308 conflict
+export * from './zod-schema.agent-runtime.js';
+export * from './zod-schema.agents.js';
+export * from './zod-schema.allowdeny.js';
+export * from './zod-schema.approvals.js';
+export * from './zod-schema.channels-config.js';
+export * from './zod-schema.channels.js';
+export * from './zod-schema.core.js';
+export * from './zod-schema.hooks.js';
+export * from './zod-schema.installs.js';
+export * from './zod-schema.providers-core.js';
+export * from './zod-schema.providers-googlechat.js';
+export * from './zod-schema.providers-whatsapp.js';
+export * from './zod-schema.proxy.js';
+export * from './zod-schema.secret-input-validation.js';
+export * from './zod-schema.sensitive.js';
+export * from './zod-schema.session.js';

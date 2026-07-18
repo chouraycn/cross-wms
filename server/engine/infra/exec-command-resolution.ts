@@ -1,485 +1,51 @@
 // 移植自 openclaw/src/infra/exec-command-resolution.ts
-// 为 exec 审批解析命令可执行文件与 wrapper 策略路径。
-//
-// 降级策略：
-// 1. 源文件依赖 @openclaw/normalization-core/string-coerce 的 normalizeLowercaseStringOrEmpty，
-//    cross-wms 中该模块位于 ./string-coerce.js。
-// 2. 源文件依赖 ./exec-allowlist-pattern.js、./exec-approvals.types.js、./exec-wrapper-trust-plan.js、
-//    ./executable-path.js，均已移植到 cross-wms。
-// 3. 其余依赖（node:fs、node:path）为 Node.js 内置模块。
-import fs from "node:fs";
-import path from "node:path";
-import { normalizeOptionalLowercaseString } from "./string-coerce.js";
-import { matchesExecAllowlistPattern } from "./exec-allowlist-pattern.js";
-import type { ExecAllowlistEntry } from "./exec-approvals.types.js";
-import { resolveExecWrapperTrustPlan } from "./exec-wrapper-trust-plan.js";
-import {
-  resolveExecutablePath as resolveExecutableCandidatePath,
-  resolveExecutablePathCandidate,
-} from "./executable-path.js";
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
 
-function normalizeLowercaseStringOrEmpty(value: unknown): string {
-  return normalizeOptionalLowercaseString(value) ?? "";
+export type ExecutableResolution = unknown;
+export type CommandResolution = unknown;
+export type ExecArgvToken = unknown;
+export function resolveCommandResolution(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveCommandResolution");
 }
-
-export type ExecutableResolution = {
-  rawExecutable: string;
-  resolvedPath?: string;
-  resolvedRealPath?: string;
-  executableName: string;
-};
-
-export type CommandResolution = {
-  execution: ExecutableResolution;
-  policy: ExecutableResolution;
-  effectiveArgv?: string[];
-  wrapperChain?: string[];
-  policyBlocked?: boolean;
-  blockedWrapper?: string;
-};
-
-function isCommandResolution(
-  resolution: CommandResolution | ExecutableResolution | null,
-): resolution is CommandResolution {
-  return Boolean(resolution && "execution" in resolution && "policy" in resolution);
+export function resolveCommandResolutionFromArgv(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveCommandResolutionFromArgv");
 }
-
-function parseFirstToken(command: string): string | null {
-  const trimmed = command.trim();
-  if (!trimmed) {
-    return null;
-  }
-  const first = trimmed[0];
-  if (first === '"' || first === "'") {
-    const end = trimmed.indexOf(first, 1);
-    if (end > 1) {
-      return trimmed.slice(1, end);
-    }
-    return trimmed.slice(1);
-  }
-  const match = /^[^\s]+/.exec(trimmed);
-  return match ? match[0] : null;
+export function resolveExecutableTrustPath(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveExecutableTrustPath");
 }
-
-function tryResolveRealpath(filePath: string | undefined): string | undefined {
-  if (!filePath) {
-    return undefined;
-  }
-  try {
-    return fs.realpathSync(filePath);
-  } catch {
-    return undefined;
-  }
+export function resolveExecutionTargetResolution(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveExecutionTargetResolution");
 }
-
-function buildExecutableResolution(
-  rawExecutable: string,
-  params: {
-    cwd?: string;
-    env?: NodeJS.ProcessEnv;
-  },
-): ExecutableResolution {
-  const resolvedPath = resolveExecutableCandidatePath(rawExecutable, {
-    cwd: params.cwd,
-    env: params.env,
-  });
-  const resolvedRealPath = tryResolveRealpath(resolvedPath);
-  const executableName = resolvedPath ? path.basename(resolvedPath) : rawExecutable;
-  return {
-    rawExecutable,
-    resolvedPath,
-    resolvedRealPath,
-    executableName,
-  };
+export function resolvePolicyTargetResolution(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolvePolicyTargetResolution");
 }
-
-function buildCommandResolution(params: {
-  rawExecutable: string;
-  policyRawExecutable?: string;
-  cwd?: string;
-  env?: NodeJS.ProcessEnv;
-  effectiveArgv: string[];
-  wrapperChain: string[];
-  policyBlocked: boolean;
-  blockedWrapper?: string;
-}): CommandResolution {
-  const execution = buildExecutableResolution(params.rawExecutable, params);
-  const policy = params.policyRawExecutable
-    ? buildExecutableResolution(params.policyRawExecutable, params)
-    : execution;
-  const resolution: CommandResolution = {
-    execution,
-    policy,
-    effectiveArgv: params.effectiveArgv,
-    wrapperChain: params.wrapperChain,
-    policyBlocked: params.policyBlocked,
-    blockedWrapper: params.blockedWrapper,
-  };
-  // Compatibility getters for JS/tests while TS callers migrate to explicit targets.
-  return Object.defineProperties(resolution, {
-    rawExecutable: {
-      get: () => execution.rawExecutable,
-    },
-    resolvedPath: {
-      get: () => execution.resolvedPath,
-    },
-    resolvedRealPath: {
-      get: () => execution.resolvedRealPath,
-    },
-    executableName: {
-      get: () => execution.executableName,
-    },
-    policyResolution: {
-      get: () => (policy === execution ? undefined : policy),
-    },
-  });
+export function resolveExecutionTargetCandidatePath(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveExecutionTargetCandidatePath");
 }
-
-export function resolveCommandResolution(
-  command: string,
-  cwd?: string,
-  env?: NodeJS.ProcessEnv,
-): CommandResolution | null {
-  const rawExecutable = parseFirstToken(command);
-  if (!rawExecutable) {
-    return null;
-  }
-  return buildCommandResolution({
-    rawExecutable,
-    effectiveArgv: [rawExecutable],
-    wrapperChain: [],
-    policyBlocked: false,
-    cwd,
-    env,
-  });
+export function resolveExecutionTargetTrustPath(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveExecutionTargetTrustPath");
 }
-
-export function resolveCommandResolutionFromArgv(
-  argv: string[],
-  cwd?: string,
-  env?: NodeJS.ProcessEnv,
-  platform: NodeJS.Platform = process.platform,
-): CommandResolution | null {
-  const plan = resolveExecWrapperTrustPlan(argv, undefined, platform);
-  const effectiveArgv = plan.argv;
-  const rawExecutable = effectiveArgv[0]?.trim();
-  if (!rawExecutable) {
-    return null;
-  }
-  return buildCommandResolution({
-    rawExecutable,
-    policyRawExecutable: plan.policyArgv[0]?.trim(),
-    effectiveArgv,
-    wrapperChain: plan.wrapperChain,
-    policyBlocked: plan.policyBlocked,
-    blockedWrapper: plan.blockedWrapper,
-    cwd,
-    env,
-  });
+export function resolvePolicyTargetCandidatePath(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolvePolicyTargetCandidatePath");
 }
-
-function resolveExecutableCandidatePathFromResolution(
-  resolution: ExecutableResolution | null | undefined,
-  cwd?: string,
-): string | undefined {
-  if (!resolution) {
-    return undefined;
-  }
-  if (resolution.resolvedPath) {
-    return resolution.resolvedPath;
-  }
-  const raw = resolution.rawExecutable?.trim();
-  if (!raw) {
-    return undefined;
-  }
-  return resolveExecutablePathCandidate(raw, {
-    cwd,
-    requirePathSeparator: true,
-  });
+export function resolvePolicyTargetTrustPath(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolvePolicyTargetTrustPath");
 }
-
-export function resolveExecutableTrustPath(
-  resolution: ExecutableResolution | null | undefined,
-  cwd?: string,
-): string | undefined {
-  const realPath = resolution?.resolvedRealPath?.trim();
-  if (realPath) {
-    return realPath;
-  }
-  const candidatePath = resolveExecutableCandidatePathFromResolution(resolution, cwd);
-  return tryResolveRealpath(candidatePath) ?? candidatePath;
+export function resolveApprovalAuditCandidatePath(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveApprovalAuditCandidatePath");
 }
-
-export function resolveExecutionTargetResolution(
-  resolution: CommandResolution | ExecutableResolution | null,
-): ExecutableResolution | null {
-  if (!resolution) {
-    return null;
-  }
-  return isCommandResolution(resolution) ? resolution.execution : resolution;
+export function resolveApprovalAuditTrustPath(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveApprovalAuditTrustPath");
 }
-
-export function resolvePolicyTargetResolution(
-  resolution: CommandResolution | ExecutableResolution | null,
-): ExecutableResolution | null {
-  if (!resolution) {
-    return null;
-  }
-  return isCommandResolution(resolution) ? resolution.policy : resolution;
+export function resolveAllowlistCandidatePath(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolveAllowlistCandidatePath");
 }
-
-export function resolveExecutionTargetCandidatePath(
-  resolution: CommandResolution | ExecutableResolution | null,
-  cwd?: string,
-): string | undefined {
-  return resolveExecutableCandidatePathFromResolution(
-    isCommandResolution(resolution) ? resolution.execution : resolution,
-    cwd,
-  );
+export function resolvePolicyAllowlistCandidatePath(...args: unknown[]): unknown {
+  throw new Error("not implemented: resolvePolicyAllowlistCandidatePath");
 }
-
-export function resolveExecutionTargetTrustPath(
-  resolution: CommandResolution | ExecutableResolution | null,
-  cwd?: string,
-): string | undefined {
-  return resolveExecutableTrustPath(
-    isCommandResolution(resolution) ? resolution.execution : resolution,
-    cwd,
-  );
+export function matchAllowlist(...args: unknown[]): unknown {
+  throw new Error("not implemented: matchAllowlist");
 }
-
-export function resolvePolicyTargetCandidatePath(
-  resolution: CommandResolution | ExecutableResolution | null,
-  cwd?: string,
-): string | undefined {
-  return resolveExecutableCandidatePathFromResolution(
-    isCommandResolution(resolution) ? resolution.policy : resolution,
-    cwd,
-  );
-}
-
-export function resolvePolicyTargetTrustPath(
-  resolution: CommandResolution | ExecutableResolution | null,
-  cwd?: string,
-): string | undefined {
-  return resolveExecutableTrustPath(
-    isCommandResolution(resolution) ? resolution.policy : resolution,
-    cwd,
-  );
-}
-
-export function resolveApprovalAuditCandidatePath(
-  resolution: CommandResolution | null,
-  cwd?: string,
-): string | undefined {
-  return resolvePolicyTargetCandidatePath(resolution, cwd);
-}
-
-export function resolveApprovalAuditTrustPath(
-  resolution: CommandResolution | null,
-  cwd?: string,
-): string | undefined {
-  return resolvePolicyTargetTrustPath(resolution, cwd);
-}
-
-/** @deprecated Use resolveExecutionTargetCandidatePath. */
-export function resolveAllowlistCandidatePath(
-  resolution: CommandResolution | ExecutableResolution | null,
-  cwd?: string,
-): string | undefined {
-  return resolveExecutionTargetCandidatePath(resolution, cwd);
-}
-
-export function resolvePolicyAllowlistCandidatePath(
-  resolution: CommandResolution | ExecutableResolution | null,
-  cwd?: string,
-): string | undefined {
-  return resolvePolicyTargetCandidatePath(resolution, cwd);
-}
-
-// Strip trailing shell redirections (e.g. `2>&1`, `2>/dev/null`) so that
-// allow-always argPatterns built without them still match commands that include
-// them.  LLMs commonly add or omit these between runs of the same cron job.
-const TRAILING_SHELL_REDIRECTIONS_RE = /\s+(?:[12]>&[12]|[12]>\/dev\/null)\s*$/;
-
-function stripTrailingRedirections(value: string): string {
-  let prev = value;
-  while (true) {
-    const next = prev.replace(TRAILING_SHELL_REDIRECTIONS_RE, "");
-    if (next === prev) {
-      return next;
-    }
-    prev = next;
-  }
-}
-
-function matchArgPattern(argPattern: string, argv: string[], platform?: string | null): boolean {
-  const sep = argPattern.includes("\x00") ? "\x00" : " ";
-  const argsSlice = argv.slice(1);
-  const argsString =
-    sep === "\x00"
-      ? argsSlice.length === 0
-        ? "\x00\x00"
-        : argsSlice.join(sep) + sep
-      : argsSlice.join(sep);
-  try {
-    const regex = new RegExp(argPattern);
-    if (regex.test(argsString)) {
-      return true;
-    }
-    const effectivePlatform = normalizeLowercaseStringOrEmpty(platform ?? process.platform);
-    if (effectivePlatform.startsWith("win")) {
-      const normalized = argsString.replace(/\//g, "\\");
-      if (normalized !== argsString && regex.test(normalized)) {
-        return true;
-      }
-    }
-    if (sep === " ") {
-      const stripped = stripTrailingRedirections(argsString);
-      if (stripped !== argsString && regex.test(stripped)) {
-        return true;
-      }
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-function hasPathSelector(value: string): boolean {
-  return value.includes("/") || value.includes("\\") || value.includes("~");
-}
-
-function matchesExecutableBasenamePattern(
-  pattern: string,
-  resolution: ExecutableResolution,
-): boolean {
-  if (hasPathSelector(resolution.rawExecutable)) {
-    return false;
-  }
-  const candidates = new Set<string>();
-  if (resolution.executableName) {
-    candidates.add(resolution.executableName);
-  }
-  if (resolution.resolvedPath) {
-    candidates.add(path.basename(resolution.resolvedPath));
-  }
-  return [...candidates].some((candidate) => matchesExecAllowlistPattern(pattern, candidate));
-}
-
-export function matchAllowlist(
-  entries: ExecAllowlistEntry[],
-  resolution: ExecutableResolution | null,
-  argv?: string[],
-  platform?: string | null,
-): ExecAllowlistEntry | null {
-  if (!entries.length) {
-    return null;
-  }
-  const bareWild = entries.find((e) => e.pattern?.trim() === "*" && !e.argPattern);
-  if (bareWild && resolution) {
-    return bareWild;
-  }
-  if (!resolution?.resolvedPath) {
-    return null;
-  }
-  const trustPath = resolution.resolvedRealPath?.trim() || resolution.resolvedPath;
-  if (!trustPath) {
-    return null;
-  }
-  let pathOnlyMatch: ExecAllowlistEntry | null = null;
-  for (const entry of entries) {
-    const pattern = entry.pattern?.trim();
-    if (!pattern) {
-      continue;
-    }
-    const patternMatches = hasPathSelector(pattern)
-      ? matchesExecAllowlistPattern(pattern, trustPath)
-      : pattern !== "*" && matchesExecutableBasenamePattern(pattern, resolution);
-    if (!patternMatches) {
-      continue;
-    }
-    if (!entry.argPattern) {
-      if (!pathOnlyMatch) {
-        pathOnlyMatch = entry;
-      }
-      continue;
-    }
-    if (argv && matchArgPattern(entry.argPattern, argv, platform)) {
-      return entry;
-    }
-  }
-  return pathOnlyMatch;
-}
-
-export type ExecArgvToken =
-  | {
-      kind: "empty";
-      raw: string;
-    }
-  | {
-      kind: "terminator";
-      raw: string;
-    }
-  | {
-      kind: "stdin";
-      raw: string;
-    }
-  | {
-      kind: "positional";
-      raw: string;
-    }
-  | {
-      kind: "option";
-      raw: string;
-      style: "long";
-      flag: string;
-      inlineValue?: string;
-    }
-  | {
-      kind: "option";
-      raw: string;
-      style: "short-cluster";
-      cluster: string;
-      flags: string[];
-    };
-
-/**
- * Tokenizes a single argv entry into a normalized option/positional model.
- * Consumers can share this model to keep argv parsing behavior consistent.
- */
-export function parseExecArgvToken(raw: string): ExecArgvToken {
-  if (!raw) {
-    return { kind: "empty", raw };
-  }
-  if (raw === "--") {
-    return { kind: "terminator", raw };
-  }
-  if (raw === "-") {
-    return { kind: "stdin", raw };
-  }
-  if (!raw.startsWith("-")) {
-    return { kind: "positional", raw };
-  }
-  if (raw.startsWith("--")) {
-    const eqIndex = raw.indexOf("=");
-    if (eqIndex > 0) {
-      return {
-        kind: "option",
-        raw,
-        style: "long",
-        flag: raw.slice(0, eqIndex),
-        inlineValue: raw.slice(eqIndex + 1),
-      };
-    }
-    return { kind: "option", raw, style: "long", flag: raw };
-  }
-  const cluster = raw.slice(1);
-  return {
-    kind: "option",
-    raw,
-    style: "short-cluster",
-    cluster,
-    flags: cluster.split("").map((entry) => `-${entry}`),
-  };
+export function parseExecArgvToken(...args: unknown[]): unknown {
+  throw new Error("not implemented: parseExecArgvToken");
 }

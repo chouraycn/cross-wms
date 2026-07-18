@@ -1,0 +1,42 @@
+// 移植自 openclaw/src/infra/delivery-queue.ts
+// 降级策略：依赖项未移植，函数体抛出 not implemented 错误
+
+export type QueuedDelivery = unknown;
+export type QueuedDeliveryPayload = unknown;
+export type QueuedReplyPayloadSendingHook = unknown;
+export type QueuedRenderedMessageBatchPlan = unknown;
+export type ActiveDeliveryClaimResult = unknown;
+export type DeliverFn = unknown;
+export type PendingDeliveryDrainDecision = unknown;
+export type RecoveryLogger = unknown;
+export type RecoverySummary = unknown;
+export type ackDelivery = unknown;
+export const ackDelivery: unknown = undefined;
+export type enqueueDelivery = unknown;
+export const enqueueDelivery: unknown = undefined;
+export type failDelivery = unknown;
+export const failDelivery: unknown = undefined;
+export type loadPendingDelivery = unknown;
+export const loadPendingDelivery: unknown = undefined;
+export type loadPendingDeliveries = unknown;
+export const loadPendingDeliveries: unknown = undefined;
+export type markDeliveryPlatformOutcomeUnknown = unknown;
+export const markDeliveryPlatformOutcomeUnknown: unknown = undefined;
+export type markDeliveryPlatformSendAttemptStarted = unknown;
+export const markDeliveryPlatformSendAttemptStarted: unknown = undefined;
+export type moveToFailed = unknown;
+export const moveToFailed: unknown = undefined;
+export type computeBackoffMs = unknown;
+export const computeBackoffMs: unknown = undefined;
+export type drainPendingDeliveries = unknown;
+export const drainPendingDeliveries: unknown = undefined;
+export type isEntryEligibleForRecoveryRetry = unknown;
+export const isEntryEligibleForRecoveryRetry: unknown = undefined;
+export type isPermanentDeliveryError = unknown;
+export const isPermanentDeliveryError: unknown = undefined;
+export type MAX_RETRIES = unknown;
+export const MAX_RETRIES: unknown = undefined;
+export type recoverPendingDeliveries = unknown;
+export const recoverPendingDeliveries: unknown = undefined;
+export type withActiveDeliveryClaim = unknown;
+export const withActiveDeliveryClaim: unknown = undefined;

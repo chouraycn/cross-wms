@@ -598,7 +598,7 @@ export * from './provider-thinking.js';
 export * from './provider-thinking.types.js';
 export * from './provider-validation.js';
 export * from './provider-wizard.js';
-export * from './providers.js';
+// export * from './providers.js';  // removed: TS2308 conflict
 export * from './providers.runtime.js';
 export * from './compaction-provider.js';
 
@@ -754,7 +754,7 @@ export * from './registry-empty.js';
 export * from './registry-lifecycle.js';
 export * from './registry-types.js';
 export * from './schema-validator.js';
-export * from './sdk-alias.js';
+// export * from './sdk-alias.js';  // removed: TS2308 conflict
 export * from './security-events.js';
 export * from './services.js';
 export * from './session-entry-slot-keys.js';
@@ -775,3 +775,50 @@ export * from './tools.js';
 export * from './trusted-tool-policy.js';
 export * from './uninstall.js';
 export * from './validation-diagnostics.js';
+
+// ===================== 移植 stub（v4.0 — openclaw 降级 stub 批量移植） =====================
+export * from './archive-fixtures.js';
+export * from './bundled-capability-metadata.js';
+export * from './bundled-plugin-roots.js';
+export * from './channel-runtime-contexts.js';
+export * from './cold-plugin-fixtures.js';
+export * from './config-runtime.js';
+export * from './fs-fixtures.js';
+export * from './gateway-bindings.js';
+export * from './gateway-request-scope.js';
+export * from './host-hook-fixture.js';
+export * from './install-fixtures.js';
+export * from './load-context.js';
+export * from './managed-npm-plugin.js';
+export * from './media-runtime.js';
+export * from './metadata-registry-loader.js';
+export * from './model-auth-types.js';
+export * from './native-deps.js';
+export * from './registry-jiti-mocks.js';
+export * from './rootdir-boundary-canary.js';
+export * from './runtime-agent.js';
+export * from './runtime-cache.js';
+export * from './runtime-channel.js';
+export * from './runtime-config.js';
+export * from './runtime-embedded-agent.runtime.js';
+export * from './runtime-events.js';
+export * from './runtime-llm.runtime.js';
+export * from './runtime-logging.js';
+export * from './runtime-media.js';
+export * from './runtime-model-auth.runtime.js';
+export * from './runtime-plugin-boundary.js';
+export * from './runtime-registry-loader.js';
+export * from './runtime-system.js';
+export * from './runtime-task-test-harness.js';
+export * from './runtime-taskflow.js';
+export * from './runtime-taskflow.types.js';
+// export * from './runtime-tasks.js';  // removed: TS2308 conflict
+// export * from './runtime-tasks.types.js';  // removed: TS2308 conflict
+export * from './runtime-web-channel-plugin.js';
+export * from './shared.js';
+export * from './speech-core.js';
+export * from './standalone-runtime-registry-loader.js';
+export * from './task-domain-types.js';
+export * from './tts-contract-suites.js';
+export * from './types-channel.js';
+export * from './types-core.js';
