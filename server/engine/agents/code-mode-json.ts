@@ -1,9 +1,9 @@
 /**
- * 将任意值转换为 JSON 安全值。
- * - undefined / 函数 / bigint / symbol 通过 JSON 序列化往返进行处理
- * - Error 仅保留 name 与 message
- * - 解析失败时回退为类型相关的字符串表示
+ * Code Mode JSON-safe value converter.
+ *
+ * 移植自 openclaw/src/agents/code-mode-json.ts —— 无外部依赖，直接复制。
  */
+
 export function toCodeModeJsonSafe(value: unknown): unknown {
   if (value === undefined) {
     return null;

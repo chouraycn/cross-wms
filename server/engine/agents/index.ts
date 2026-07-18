@@ -715,3 +715,242 @@ export {
   type ToolErrorSummary,
   type FileTarget,
 } from "./tool-error-summary.js";
+
+// OpenAI 兼容会话轮次检测（移植自 openclaw agents/openai-compatible-conversation-turn）
+export { hasOpenAICompatibleConversationTurn } from "./openai-compatible-conversation-turn.js";
+
+// OpenAI reasoning effort 映射（移植自 openclaw agents/openai-reasoning-compat）
+export { resolveOpenAIReasoningEffortMap } from "./openai-reasoning-compat.js";
+
+// OpenAI text verbosity 解析（移植自 openclaw agents/openai-text-verbosity）
+export { resolveOpenAITextVerbosity } from "./openai-text-verbosity.js";
+export type { OpenAITextVerbosity } from "./openai-text-verbosity.js";
+
+// OpenAI responses replay ID 解析（移植自 openclaw agents/openai-responses-replay）
+export { resolveReplayableResponsesMessageId } from "./openai-responses-replay.js";
+
+// OpenAI responses payload 策略（移植自 openclaw agents/openai-responses-payload-policy）
+export {
+  resolveOpenAIResponsesPayloadPolicy,
+  applyOpenAIResponsesPayloadPolicy,
+} from "./openai-responses-payload-policy.js";
+
+// OpenAI strict tool 设置（移植自 openclaw agents/openai-strict-tool-setting）
+export { resolveOpenAIStrictToolSetting } from "./openai-strict-tool-setting.js";
+
+// OpenAI completions 兼容性检测（移植自 openclaw agents/openai-completions-compat）
+export {
+  resolveOpenAICompletionsCompatDefaults,
+  detectOpenAICompletionsCompat,
+} from "./openai-completions-compat.js";
+
+// OpenAI 工具投影（移植自 openclaw agents/openai-tool-projection）
+export {
+  projectOpenAITools,
+  reconcileOpenAIResponsesToolChoice,
+  reconcileOpenAICompletionsToolChoice,
+} from "./openai-tool-projection.js";
+export type { OpenAIToolProjection } from "./openai-tool-projection.js";
+
+// OpenAI 工具 schema 规范化（移植自 openclaw agents/openai-tool-schema）
+export {
+  clearOpenAIToolSchemaCacheForTest,
+  normalizeStrictOpenAIJsonSchema,
+  normalizeOpenAIStrictToolParameters,
+  isStrictOpenAIJsonSchemaCompatible,
+  findOpenAIStrictToolProjectionDiagnostics,
+  resolveOpenAIProjectedToolsStrictToolFlag,
+} from "./openai-tool-schema.js";
+
+// MCP 配置共享工具（移植自 openclaw agents/mcp-config-shared）
+export {
+  isMcpConfigRecord,
+  toMcpStringRecord,
+  toMcpEnvRecord,
+  toMcpStringArray,
+} from "./mcp-config-shared.js";
+
+// Agent run 终止常量与错误工厂（移植自 openclaw agents/run-termination）
+export {
+  AGENT_RUN_ABORTED_ERROR,
+  AGENT_RUN_RESTART_ABORT_STOP_REASON,
+  createAgentRunRestartAbortError,
+  isAgentRunRestartAbortReason,
+  resolveAgentRunAbortLifecycleFields,
+  isAbortedAgentStopReason,
+} from "./run-termination.js";
+
+// Prompt cache 稳定化辅助（移植自 openclaw agents/prompt-cache-stability）
+export {
+  normalizeStructuredPromptSection,
+  normalizePromptCapabilityIds,
+} from "./prompt-cache-stability.js";
+
+// Owner 显示设置（移植自 openclaw agents/owner-display）
+export {
+  resolveOwnerDisplaySetting,
+  ensureOwnerDisplaySecret,
+} from "./owner-display.js";
+
+// Agent cleanup 超时保护（移植自 openclaw agents/run-cleanup-timeout）
+export { runAgentCleanupStep } from "./run-cleanup-timeout.js";
+
+// 可变助手消息事件流类型（移植自 openclaw agents/stream-compat）
+export type {
+  AssistantMessage,
+  AssistantMessageEvent,
+  MutableAssistantMessageEventStream,
+} from "./stream-compat.js";
+
+// 默认 agent 工作区目录解析（移植自 openclaw agents/workspace-default）
+export {
+  resolveDefaultAgentWorkspaceDir,
+  DEFAULT_AGENT_WORKSPACE_DIR,
+} from "./workspace-default.js";
+
+// Agent 工作区目录集合（移植自 openclaw agents/workspace-dirs）
+export { listAgentWorkspaceDirs } from "./workspace-dirs.js";
+
+// 沙箱工具策略选择（移植自 openclaw agents/sandbox-tool-policy）
+export {
+  pickSandboxToolPolicy,
+  IMPLICIT_ALLOW_ALL_FROM_ALSO_ALLOW,
+} from "./sandbox-tool-policy.js";
+export type { SandboxToolPolicy } from "./sandbox-tool-policy.js";
+
+// Code Mode JSON-safe 值转换（移植自 openclaw agents/code-mode-json）
+export { toCodeModeJsonSafe } from "./code-mode-json.js";
+
+// 模型上下文窗口缓存（移植自 openclaw agents/context-cache）
+export {
+  MODEL_CONTEXT_TOKEN_CACHE,
+  MODEL_CONFIGURED_CONTEXT_TOKEN_CACHE,
+  MODEL_CONTEXT_WINDOW_CACHE,
+  providerContextTokenCacheKey,
+  lookupCachedContextTokens,
+  lookupCachedContextWindow,
+  minPositiveContextTokens,
+} from "./context-cache.js";
+
+// 上下文窗口 guard 与警告/阻断消息（移植自 openclaw agents/context-window-guard）
+export {
+  CONTEXT_WINDOW_HARD_MIN_TOKENS,
+  resolveContextWindowInfo,
+  formatContextWindowWarningMessage,
+  formatContextWindowBlockMessage,
+  evaluateContextWindowGuard,
+} from "./context-window-guard.js";
+export type {
+  ContextWindowInfo,
+  ContextWindowGuardResult,
+} from "./context-window-guard.js";
+
+// 上下文 token 解析（移植自 openclaw agents/context-resolution）
+export {
+  ANTHROPIC_CONTEXT_1M_TOKENS,
+  ANTHROPIC_VERTEX_CONTEXT_1M_TOKENS,
+  ANTHROPIC_FABLE_CONTEXT_TOKENS,
+  resolveAnthropicFixedContextWindow,
+  resolveContextTokensForModelFromCache,
+} from "./context-resolution.js";
+export type {
+  ModelsConfig,
+  ContextTokenResolutionParams,
+} from "./context-resolution.js";
+
+// 上下文窗口运行时状态（移植自 openclaw agents/context-runtime-state）
+export {
+  CONTEXT_WINDOW_RUNTIME_STATE,
+  beginContextWindowCacheRefresh,
+  resetContextWindowCacheForTest,
+} from "./context-runtime-state.js";
+
+// Code Mode 控制工具标记与 hook 参数规范化（移植自 openclaw agents/code-mode-control-tools）
+export {
+  CODE_MODE_EXEC_TOOL_NAME,
+  CODE_MODE_WAIT_TOOL_NAME,
+  CODE_MODE_EXEC_TOOL_KIND,
+  markCodeModeControlTool,
+  isCodeModeControlTool,
+  getCodeModeExecBeforeHookMetadata,
+  getCodeModeExecBeforeHookMetadataForToolKind,
+  normalizeCodeModeExecBeforeHookParams,
+  normalizeCodeModeExecBeforeHookParamsForToolKind,
+  reconcileCodeModeExecBeforeHookParams,
+} from "./code-mode-control-tools.js";
+export type {
+  CodeModeExecToolKind,
+  CodeModeExecToolInputKind,
+  CodeModeExecHookMetadata,
+} from "./code-mode-control-tools.js";
+
+// Code Mode 命名空间注册与运行时投影（移植自 openclaw agents/code-mode-namespaces）
+export {
+  createCodeModeNamespaceTool,
+  registerCodeModeNamespaceForPlugin,
+  listCodeModeNamespaces,
+  clearCodeModeNamespacesForTest,
+  clearCodeModeNamespacesForPlugin,
+  createCodeModeApiVirtualFiles,
+  describeCodeModeNamespacesForPrompt,
+  createCodeModeNamespaceRuntime,
+} from "./code-mode-namespaces.js";
+export type {
+  CodeModeNamespaceContext,
+  CodeModeNamespaceScope,
+  CodeModeNamespaceToolInputMapper,
+  CodeModeNamespaceToolCall,
+  CodeModeNamespaceRegistration,
+  RegisteredCodeModeNamespace,
+  SerializedCodeModeNamespaceValue,
+  CodeModeNamespaceDescriptor,
+  CodeModeNamespaceRuntime,
+  CodeModeApiVirtualFile,
+} from "./code-mode-namespaces.js";
+
+// Cron 风格当前时间提示文本（移植自 openclaw agents/current-time）
+export {
+  resolveCronStyleNow,
+  appendCronStyleCurrentTimeLine,
+} from "./current-time.js";
+export type { CronStyleNow, TimeFormatPreference } from "./current-time.js";
+
+// Prompt surface 工具指导辅助（移植自 openclaw agents/prompt-surface）
+export {
+  buildOpenClawToolFallbackText,
+  shouldRenderOpenClawToolWorkflowHints,
+  resolveAgentPromptSurfaceForSessionKey,
+} from "./prompt-surface.js";
+
+// OpenClaw 文档/源码根路径解析（移植自 openclaw agents/docs-path）
+export {
+  OPENCLAW_DOCS_URL,
+  OPENCLAW_SOURCE_URL,
+  resolveOpenClawReferencePaths,
+} from "./docs-path.js";
+
+// Agent 命令队列 lane 名称解析（移植自 openclaw agents/lanes）
+export {
+  AGENT_LANE_NESTED,
+  AGENT_LANE_CRON_NESTED,
+  AGENT_LANE_SUBAGENT,
+  resolveCronAgentLane,
+  resolveNestedAgentLaneForSession,
+  isNestedAgentLane,
+} from "./lanes.js";
+
+// 按路径排队的追加写入器（移植自 openclaw agents/queued-file-writer）
+export {
+  getQueuedFileWriter,
+} from "./queued-file-writer.js";
+export type {
+  QueuedFileWriter,
+  QueuedFileWriterDiagnostics,
+} from "./queued-file-writer.js";
+
+// MiniMax VLM 图像理解请求适配（移植自 openclaw agents/minimax-vlm）
+export {
+  isMinimaxVlmProvider,
+  isMinimaxVlmModel,
+  minimaxUnderstandImage,
+} from "./minimax-vlm.js";

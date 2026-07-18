@@ -354,3 +354,145 @@ export {
   resolveThreadBindingIntroText,
   resolveThreadBindingFarewellText,
 } from './thread-bindings-messages.js';
+
+// Mention-pattern policy resolver（移植自 openclaw channels/mention-pattern-policy）
+export {
+  resolveMentionPatternPolicy,
+  type ResolveMentionPatternPolicyParams,
+  type ResolvedMentionPatternPolicy,
+} from './mention-pattern-policy.js';
+
+// Status-safe channel account snapshot projection（移植自 openclaw channels/account-snapshot-fields）
+export {
+  projectSafeChannelAccountSnapshotFields,
+  projectCredentialSnapshotFields,
+  resolveConfiguredFromCredentialStatuses,
+  resolveConfiguredFromRequiredCredentialStatuses,
+  hasConfiguredUnavailableCredentialStatus,
+  hasResolvedCredentialValue,
+} from './account-snapshot-fields.js';
+
+// Channel account summary builders（移植自 openclaw channels/account-summary）
+export {
+  buildChannelAccountSnapshot,
+  formatChannelAllowFrom,
+  resolveChannelAccountEnabled,
+  resolveChannelAccountConfigured,
+} from './account-summary.js';
+
+// Channel account inspection helpers（移植自 openclaw channels/account-inspection）
+export {
+  inspectChannelAccount,
+  resolveInspectedChannelAccount,
+} from './account-inspection.js';
+
+// Read-only account inspection facade（移植自 openclaw channels/read-only-account-inspect）
+export {
+  inspectReadOnlyChannelAccount,
+  type ReadOnlyInspectedAccount,
+} from './read-only-account-inspect.js';
+
+// Session-envelope context resolver（移植自 openclaw channels/session-envelope）
+export { resolveInboundSessionEnvelopeContext } from './session-envelope.js';
+
+// Deprecated draft preview finalizer facade（移植自 openclaw channels/draft-preview-finalizer）
+export {
+  deliverFinalizableDraftPreview,
+  type DraftPreviewFinalizerDraft,
+  type DraftPreviewFinalizerResult,
+} from './draft-preview-finalizer.js';
+
+// Conversation-binding context resolver（移植自 openclaw channels/conversation-binding-context）
+export { resolveConversationBindingContext } from './conversation-binding-context.js';
+
+// Active channel plugin registry lookup（移植自 openclaw channels/registry-lookup）
+export {
+  listRegisteredChannelPluginEntries,
+  findRegisteredChannelPluginEntry,
+  findRegisteredChannelPluginEntryById,
+} from './registry-lookup.js';
+
+// Channel id normalization through plugin registry（移植自 openclaw channels/registry-normalize）
+export { normalizeAnyChannelId } from './registry-normalize.js';
+
+// Legacy direct-DM access resolver（移植自 openclaw channels/direct-dm-access）
+export {
+  resolveInboundDirectDmAccessWithRuntime,
+  createPreCryptoDirectDmAuthorizer,
+  type DirectDmCommandAuthorizationRuntime,
+  type ResolvedInboundDirectDmAccess,
+  type AccessGroupMembershipResolver,
+} from './direct-dm-access.js';
+
+// Channel configuration presence detection（移植自 openclaw channels/config-presence）
+export {
+  hasMeaningfulChannelConfig,
+  listExplicitlyDisabledChannelIdsForConfig,
+  listPotentialConfiguredChannelIds,
+  listPotentialConfiguredChannelPresenceSignals,
+  type ChannelPresenceSignalSource,
+} from './config-presence.js';
+
+// Channel inbound debounce policy（移植自 openclaw channels/inbound-debounce-policy）
+export {
+  shouldDebounceTextInbound,
+  createChannelInboundDebouncer,
+} from './inbound-debounce-policy.js';
+
+// Bundled channel catalog reader（移植自 openclaw channels/bundled-channel-catalog-read）
+export { listBundledChannelCatalogEntries } from './bundled-channel-catalog-read.js';
+
+// Thread-binding policy resolution（移植自 openclaw channels/thread-bindings-policy）
+export {
+  supportsAutomaticThreadBindingSpawn,
+  requiresNativeThreadContextForThreadHere,
+  resolveThreadBindingPlacementForCurrentContext,
+  resolveThreadBindingIdleTimeoutMs,
+  resolveThreadBindingMaxAgeMs,
+  resolveThreadBindingEffectiveExpiresAt,
+  resolveThreadBindingsEnabled,
+  resolveThreadBindingSpawnPolicy,
+  resolveThreadBindingIdleTimeoutMsForChannel,
+  resolveThreadBindingMaxAgeMsForChannel,
+  formatThreadBindingDisabledError,
+  formatThreadBindingSpawnDisabledError,
+  resolveThreadBindingLifecycle,
+  type ThreadBindingSpawnKind,
+  type ThreadBindingSpawnPolicy,
+} from './thread-bindings-policy.js';
+
+// Route projection helpers（移植自 openclaw channels/route-projection）
+export {
+  formatConversationTarget,
+  resolveConversationDeliveryTarget,
+  routeFromConversationRef,
+  routeFromBindingRecord,
+  routeToDeliveryFields,
+} from './route-projection.js';
+
+// Channel draft streaming chunking（移植自 openclaw channels/draft-streaming-chunking）
+export {
+  resolveChannelDraftStreamingChunking,
+  type ChannelDraftStreamingChunking,
+} from './draft-streaming-chunking.js';
+
+// Built-in chat channel metadata builder（移植自 openclaw channels/chat-meta-shared）
+export {
+  buildChatChannelMetaById,
+  type ChatChannelMeta,
+} from './chat-meta-shared.js';
+
+// Cached chat channel metadata accessors（移植自 openclaw channels/chat-meta）
+export {
+  listChatChannels,
+  getChatChannelMeta,
+} from './chat-meta.js';
+
+// Stateful progress-draft compositor（移植自 openclaw channels/progress-draft-compositor）
+export {
+  createChannelProgressDraftCompositor,
+  type ChannelProgressDraftMode,
+  type ChannelProgressDraftCompositor,
+  type ChannelProgressDraftCompositorLine,
+  type ChannelProgressDraftUpdateOptions,
+} from './progress-draft-compositor.js';

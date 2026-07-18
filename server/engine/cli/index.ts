@@ -190,3 +190,85 @@ export type { LogLevel } from './log-level-option.js';
 
 // dotenv.ts
 export { loadCliDotEnv } from './dotenv.js';
+
+// ===================== openclaw 移植模块（plugins-* 中依赖聚类） =====================
+// 以下模块从 openclaw/src/cli/ 移植，包含 plugins 子命令注册、运行时与命令实现。
+// 依赖 @openclaw/* 外部包与未移植的 openclaw 内部运行时模块的部分已降级为 stub，
+// 详见各文件顶部注释。
+
+// plugins-cli.ts（Commander 注册入口）
+export { registerPluginsCli } from './plugins-cli.js';
+export type {
+  PluginUpdateOptions,
+  PluginMarketplaceListOptions,
+  PluginSearchOptions,
+  PluginUninstallOptions,
+  PluginRegistryOptions,
+  PluginAuthoringBuildOptions,
+  PluginAuthoringValidateOptions,
+  PluginAuthoringInitOptions,
+} from './plugins-cli.js';
+
+// plugins-cli.runtime.ts（运行时入口）
+export {
+  runPluginsEnableCommand,
+  runPluginsDisableCommand,
+  runPluginsInstallAction,
+  runPluginsRegistryCommand,
+  runPluginsDoctorCommand,
+  runPluginMarketplaceListCommand,
+} from './plugins-cli.runtime.js';
+
+// plugins-list-command.ts
+export { runPluginsListCommand } from './plugins-list-command.js';
+export type { PluginsListOptions } from './plugins-list-command.js';
+
+// plugins-search-command.ts
+export { runPluginsSearchCommand } from './plugins-search-command.js';
+export type {
+  PluginsSearchOptions,
+  ClawHubPackageFamily,
+  ClawHubPackageSearchResult,
+} from './plugins-search-command.js';
+
+// plugins-inspect-command.ts
+export { runPluginsInspectCommand } from './plugins-inspect-command.js';
+export type { PluginInspectOptions } from './plugins-inspect-command.js';
+
+// plugins-install-command.ts
+export {
+  loadConfigForInstall,
+  runPluginInstallCommand,
+} from './plugins-install-command.js';
+
+// plugins-uninstall-command.ts
+export { runPluginUninstallCommand } from './plugins-uninstall-command.js';
+
+// plugins-update-command.ts
+export { runPluginUpdateCommand } from './plugins-update-command.js';
+
+// plugins-authoring-command.ts
+export {
+  runPluginsBuildCommand,
+  runPluginsValidateCommand,
+  runPluginsInitCommand,
+  loadToolPlugin,
+  buildToolPluginManifest,
+  buildToolPluginPackageManifest,
+  validateToolPluginProject,
+} from './plugins-authoring-command.js';
+export type {
+  PluginsBuildOptions,
+  PluginsValidateOptions,
+  PluginsInitOptions,
+} from './plugins-authoring-command.js';
+
+// plugins-location-bridges.ts
+export {
+  listPersistedBundledPluginLocationBridges,
+  listPersistedBundledPluginRecoveryLocations,
+} from './plugins-location-bridges.js';
+export type {
+  ExternalizedBundledPluginBridge,
+  PersistedBundledPluginRecoveryLocation,
+} from './plugins-location-bridges.js';
