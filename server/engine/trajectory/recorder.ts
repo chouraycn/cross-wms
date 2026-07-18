@@ -1,6 +1,7 @@
 /**
  * 轨迹记录器工厂
  * 创建和配置轨迹记录器，记录 Agent 执行步骤、工具调用、结果。
+ * 支持事件类型扩展、过滤、采样等功能。
  * 参考 openclaw/src/trajectory/runtime.ts 对齐实现。
  */
 import fs from 'node:fs';
@@ -11,8 +12,14 @@ import {
   resolveTrajectoryFilePath,
   resolveTrajectoryPointerFilePath,
 } from './paths.js';
-import type { TrajectoryEvent, TrajectoryToolDefinition } from './types.js';
-import { TrajectoryRecorder, type TrajectoryRecorderConfig } from './types.js';
+import type {
+  TrajectoryEvent,
+  TrajectoryToolDefinition,
+  TrajectoryRecorderConfig,
+  EventFilter,
+  EventSamplingConfig,
+} from './types.js';
+import { TrajectoryRecorder } from './types.js';
 
 /** 创建轨迹记录器的参数。 */
 export type CreateTrajectoryRecorderParams = {
@@ -26,6 +33,8 @@ export type CreateTrajectoryRecorderParams = {
   modelId?: string;
   modelApi?: string | null;
   workspaceDir?: string;
+  eventFilter?: EventFilter;
+  sampling?: EventSamplingConfig;
 };
 
 /** 轨迹记录器实例（含 flush 支持）。 */
@@ -149,6 +158,8 @@ export function createTrajectoryRecorder(
     modelId: params.modelId,
     modelApi: params.modelApi,
     enabled: true,
+    filter: params.eventFilter,
+    sampling: params.sampling,
   };
 
   const recorder = new TrajectoryRecorder(config);

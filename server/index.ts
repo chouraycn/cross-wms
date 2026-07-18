@@ -48,6 +48,7 @@ import sessionsRouter from './routes/sessions.js';
 import foldersRouter from './routes/folders.js';
 import eventsRouter from './routes/events.js';
 import uploadRouter, { UPLOADS_DIR, ensureUploadsDir } from './routes/upload.js';
+import mediaLibraryRouter from './routes/mediaLibrary.js';
 import healthRouter from './routes/health.js';
 import healthEnhancedRouter from './routes/healthEnhanced.js';
 import performanceRouter from './routes/performance.js';
@@ -229,6 +230,9 @@ app.use('/api/uploads', express.static(UPLOADS_DIR));
 // v1.9.3: 上传路由必须在 express.json() 之前，否则 multipart body 会被消耗
 app.use('/api/upload', uploadRouter);
 
+// 媒体资产库：/upload 端点使用 multipart/form-data，必须在 express.json() 之前注册
+app.use('/api/media-library', mediaLibraryRouter);
+
 app.use(express.json({ limit: '3mb' }));
 
 // v1.9.4: 非关键服务延迟初始化（OpenClaw 风格轻量启动）
@@ -379,6 +383,8 @@ app.use('/api/api-credentials', lazyRouter(() => import('./routes/apiCredentials
 app.use('/api/api-history', lazyRouter(() => import('./routes/apiHistory.js'), undefined, 'api-history'));
 app.use('/api/mcp', lazyRouter(() => import('./routes/mcp.js'), undefined, 'mcp'));
 app.use('/api/image-generation', lazyRouter(() => import('./routes/image-generation.js'), undefined, 'image-generation'));
+app.use('/api/music-generation', lazyRouter(() => import('./routes/musicGeneration.js'), undefined, 'music-generation'));
+app.use('/api/video-generation', lazyRouter(() => import('./routes/videoGeneration.js'), undefined, 'video-generation'));
 app.use('/api/event-ledger', lazyRouter(() => import('./routes/eventLedger.js'), undefined, 'event-ledger'));
 app.use('/api/goals', lazyRouter(() => import('./routes/goalsService.js'), undefined, 'goals'));
 app.use('/api/wiki', lazyRouter(() => import('./routes/wikiService.js'), undefined, 'wiki'));
@@ -397,6 +403,15 @@ app.use('/api/talk', lazyRouter(() => import('./routes/talk.js'), undefined, 'ta
 app.use('/api/channels', lazyRouter(() => import('./routes/channels.js'), undefined, 'channels'));
 app.use('/api/cache', lazyRouter(() => import('./routes/cache.js'), undefined, 'cache'));
 app.use('/api/keyword-trigger', lazyRouter(() => import('./routes/keywordTrigger.js'), undefined, 'keyword-trigger'));
+
+// 设备配对管理（Pairing）
+app.use('/api/pairing', lazyRouter(() => import('./routes/pairing.js'), undefined, 'pairing'));
+// 进程管理（Process Management）
+app.use('/api/process', lazyRouter(() => import('./routes/process.js'), undefined, 'process'));
+// 节点主机（Node Host）
+app.use('/api/node-host', lazyRouter(() => import('./routes/nodeHost.js'), undefined, 'node-host'));
+// TTS 语音合成（仅 JSON 请求，延迟加载）
+app.use('/api/tts', lazyRouter(() => import('./routes/tts.js'), undefined, 'tts'));
 
 // ========== 死代码接入：补全能力（非删除） ==========
 app.use('/api/cron', lazyRouter(() => import('./routes/cron.js'), undefined, 'cron'));
@@ -420,6 +435,10 @@ app.use('/api/tools', lazyRouter(() => import('./routes/toolMonitoring.js'), und
 
 // 死代码接入：code-understanding（Group C 单例，已同时注册为内置工具 code_understanding）
 app.use('/api/code-understanding', lazyRouter(() => import('./routes/codeUnderstanding.js'), undefined, 'code-understanding'));
+
+// 媒体理解 & 链接理解：图片/音频/视频/文档分析、链接提取/预览/摘要
+app.use('/api/media-understanding', lazyRouter(() => import('./routes/mediaUnderstanding.js'), undefined, 'media-understanding'));
+app.use('/api/link-understanding', lazyRouter(() => import('./routes/linkUnderstanding.js'), undefined, 'link-understanding'));
 
 // 死代码接入：CLI 端点（同步挂载，runCLI 内部已做错误处理，不阻塞主流程）
 app.use('/api/cli', cliRouter);
@@ -488,6 +507,8 @@ app.use(`${API_PREFIX}/api-credentials`, lazyRouter(() => import('./routes/apiCr
 app.use(`${API_PREFIX}/api-history`, lazyRouter(() => import('./routes/apiHistory.js'), undefined, 'api-history'));
 app.use(`${API_PREFIX}/mcp`, lazyRouter(() => import('./routes/mcp.js'), undefined, 'mcp'));
 app.use(`${API_PREFIX}/image-generation`, lazyRouter(() => import('./routes/image-generation.js'), undefined, 'image-generation'));
+app.use(`${API_PREFIX}/music-generation`, lazyRouter(() => import('./routes/musicGeneration.js'), undefined, 'music-generation'));
+app.use(`${API_PREFIX}/video-generation`, lazyRouter(() => import('./routes/videoGeneration.js'), undefined, 'video-generation'));
 app.use(`${API_PREFIX}/permissions`, lazyRouter(() => import('./routes/permissions.js'), undefined, 'permissions'));
 app.use(`${API_PREFIX}/soul`, lazyRouter(() => import('./routes/soul.js'), undefined, 'soul'));
 app.use(`${API_PREFIX}/git`, lazyRouter(() => import('./routes/git.js'), undefined, 'git'));

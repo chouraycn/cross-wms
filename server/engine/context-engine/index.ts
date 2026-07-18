@@ -40,9 +40,100 @@ export { globalRegistry } from './registry.js';
 export * from './types.js';
 export { LegacyContextEngine, createLegacyContextEngine } from './legacyEngine.js';
 
-// vX: 将此前未引用的上下文引擎子模块纳入公开 API 面（激活 5 个 dead 模块）
 export * from './promptCache.js';
 export * from './quarantineHealth.js';
 export * from './runtimeSettings.js';
 export * from './subagentLifecycle.js';
 export * from './transcriptRewrite.js';
+
+export { TokenBudgetManager, calculateTokenEstimate } from './token-budget.js';
+export type {
+  TokenBudgetConfig,
+  TokenBudgetStats,
+  TokenAllocation,
+  TokenCostEstimate,
+} from './token-budget.js';
+
+export { RelevanceScorer } from './relevance-scorer.js';
+export type {
+  RelevanceScorerConfig,
+  ScoredItem,
+  ScoringOptions,
+  KeywordMatchResult,
+} from './relevance-scorer.js';
+
+export { MemoryLayers } from './memory-layers.js';
+export type {
+  MemoryLayerType,
+  MemoryItem,
+  MemoryLayerConfig,
+  MemoryStats,
+} from './memory-layers.js';
+
+export { Summarizer } from './summarizer.js';
+export type {
+  SummarizerConfig,
+  SummaryResult,
+  SummarizationStrategy,
+  // Alias for backward compatibility
+  SummarizationStrategy as SummaryStrategy,
+} from './summarizer.js';
+
+export { ContextCompactor } from './compaction.js';
+export type {
+  CompactionStrategy,
+  CompactionConfig,
+  CompactionResult,
+  MessageForCompaction,
+} from './compaction.js';
+
+export { MessageFilter } from './message-filter.js';
+export type {
+  MessageFilterConfig,
+  FilterResult,
+  FilterRule,
+} from './message-filter.js';
+
+export { VectorRetrieval } from './retrieval.js';
+export type {
+  VectorStoreConfig as VectorRetrievalConfig,
+  VectorStoreType,
+  VectorRecord as VectorItem,
+  SearchOptions,
+  SearchResult,
+} from './retrieval.js';
+
+export { ArtifactStore } from './artifact-store.js';
+export type {
+  ArtifactStoreConfig as ArtifactConfig,
+  Artifact as ArtifactItem,
+  ArtifactType,
+  ArtifactStats,
+} from './artifact-store.js';
+
+export { WorkspaceContext } from './workspace-context.js';
+export type {
+  WorkspaceContextConfig,
+  WorkspaceFile,
+  FileSearchOptions,
+} from './workspace-context.js';
+
+export { ToolContext } from './tool-context.js';
+export type {
+  ToolContextConfig,
+  ToolCallRecord,
+  ToolStats,
+} from './tool-context.js';
+
+export { ContextBuilder } from './context-builder.js';
+export type {
+  ContextBuilderConfig,
+  BuildContextOptions as BuildOptions,
+  BuiltContext as BuildResult,
+} from './context-builder.js';
+
+export { EnhancedContextEngine } from './context-engine.js';
+export type {
+  EnhancedContextEngineConfig,
+  ContextWindowState,
+} from './context-engine.js';

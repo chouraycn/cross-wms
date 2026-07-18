@@ -19,6 +19,10 @@ export type TrajectoryPaths = {
   entryFile: string;
   /** 轨迹指针文件（sidecar pointer） */
   pointerFile: string;
+  /** 元数据文件路径 */
+  metadataFile: string;
+  /** 归档目录 */
+  archiveDir: string;
 };
 
 /** 运行时轨迹捕获的最大字节数（默认 10MB） */
@@ -27,6 +31,10 @@ export const TRAJECTORY_RUNTIME_CAPTURE_MAX_BYTES = 10 * 1024 * 1024;
 export const TRAJECTORY_RUNTIME_FILE_MAX_BYTES = 50 * 1024 * 1024;
 /** 单个轨迹事件行的最大字节数（默认 256KB） */
 export const TRAJECTORY_RUNTIME_EVENT_MAX_BYTES = 256 * 1024;
+/** 默认元数据文件名 */
+export const TRAJECTORY_METADATA_FILE = 'metadata.json';
+/** 默认归档子目录名 */
+export const TRAJECTORY_ARCHIVE_DIR = 'archive';
 
 /** 将 sessionId 转为安全的文件名（防止路径遍历和特殊字符）。 */
 export function safeTrajectorySessionFileName(sessionId: string): string {
@@ -104,7 +112,9 @@ export function resolveTrajectoryPath(sessionId: string, env?: Record<string, st
   const sessionDir = path.join(rootDir, safeName);
   const entryFile = path.join(sessionDir, 'trajectory.jsonl');
   const pointerFile = path.join(sessionDir, 'trajectory-path.json');
-  return { rootDir, sessionDir, entryFile, pointerFile };
+  const metadataFile = path.join(sessionDir, TRAJECTORY_METADATA_FILE);
+  const archiveDir = path.join(rootDir, TRAJECTORY_ARCHIVE_DIR);
+  return { rootDir, sessionDir, entryFile, pointerFile, metadataFile, archiveDir };
 }
 
 /** 确保轨迹目录存在。 */
@@ -112,4 +122,37 @@ export async function ensureTrajectoryDir(sessionId: string, env?: Record<string
   const paths = resolveTrajectoryPath(sessionId, env);
   await fs.mkdir(paths.sessionDir, { recursive: true, mode: 0o700 });
   return paths;
+}
+
+/** 解析轨迹根目录。 */
+export function resolveTrajectoryRootDir(env?: Record<string, string | undefined>): string {
+  const actualEnv = env ?? process.env as Record<string, string | undefined>;
+  const dirOverride = actualEnv.CDF_TRAJECTORY_DIR?.trim();
+  const home = resolveHomeDir(actualEnv);
+  return dirOverride
+    ? path.resolve(dirOverride.startsWith('~') ? dirOverride.replace(/^~/, home) : dirOverride)
+    : path.join(home, DEFAULT_TRAJECTORY_DIR_NAME, DEFAULT_TRAJECTORY_SUBDIR);
+}
+
+/** 解析元数据文件路径。 */
+export function resolveMetadataFilePath(sessionId: string, env?: Record<string, string | undefined>): string {
+  const paths = resolveTrajectoryPath(sessionId, env);
+  return paths.metadataFile;
+}
+
+/** 验证路径是否在轨迹目录内（安全检查）。 */
+export function isPathInsideTrajectoryDir(
+  targetPath: string,
+  env?: Record<string, string | undefined>,
+): boolean {
+  const rootDir = resolveTrajectoryRootDir(env);
+  const resolvedRoot = path.resolve(rootDir) + path.sep;
+  const resolvedTarget = path.resolve(targetPath);
+  return resolvedTarget.startsWith(resolvedRoot);
+}
+
+/** 生成带时间戳的归档文件名。 */
+export function generateArchiveFileName(sessionId: string): string {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `${safeTrajectorySessionFileName(sessionId)}.${timestamp}.tar.gz`;
 }

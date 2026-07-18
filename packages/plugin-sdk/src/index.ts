@@ -171,3 +171,97 @@ export type {
   PluginManifestContracts,
   PluginManifestValidationResult,
 } from './manifest';
+
+// ==================== 高级契约模块导出 ====================
+
+export {
+  ChannelRuntime,
+  channelRuntime,
+} from './channel-runtime';
+
+export type {
+  ChannelRuntimeEvents,
+} from './channel-runtime';
+
+export {
+  ApprovalRuntime,
+  approvalRuntime,
+} from './approval-runtime';
+
+export type {
+  ApprovalRuntimeEvents,
+} from './approval-runtime';
+
+export {
+  MemoryCore,
+  memoryCore,
+} from './memory-core';
+
+export type {
+  MemoryCoreEvents,
+  MemoryCoreConfig,
+} from './memory-core';
+
+export {
+  ProviderStream,
+  providerStream,
+} from './provider-stream';
+
+export type {
+  ProviderStreamEvents,
+} from './provider-stream';
+
+export {
+  ReplyPipeline,
+  replyPipeline,
+} from './reply-pipeline';
+
+export type {
+  ReplyPipelineEvents,
+} from './reply-pipeline';
+
+export {
+  SecretProvider,
+  secretProvider,
+} from './secret-provider';
+
+export type {
+  SecretProviderEvents,
+} from './secret-provider';
+
+export {
+  SecurityContext,
+  createSecurityContext,
+} from './security-context';
+
+export type {
+  SecurityContextEvents,
+} from './security-context';
+
+// 导出新增的类型
+export type {
+  ChannelState,
+  ChannelConfig,
+  ChannelSupports,
+  Channel,
+  ApprovalPolicy,
+  ApprovalResult,
+  ApprovalRequest,
+  AuditLogEntry,
+  AuditLogger,
+  MemoryEntry,
+  MemoryQuery,
+  Usage,
+  StreamMessage,
+  StreamConfig,
+  StreamChunk,
+  ReplyMessage,
+  Reply,
+  PipelineStage,
+  PipelineContext,
+  SecretConfig,
+  SecretStatus,
+  Permission,
+  SecurityPolicy,
+  SecurityContextConfig,
+} from './types';

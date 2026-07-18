@@ -28,3 +28,170 @@ export { copyToClipboard, readFromClipboard } from './clipboard.js';
 
 export type { AbortSignalOptions } from './abort-signal.js';
 export { createAbortSignal, createCombinedAbortSignal, isAborted, assertNotAborted } from './abort-signal.js';
+
+export * as net from './net/index.js';
+
+export * as execApprovals from './exec-approvals/index.js';
+
+export * as heartbeat from './heartbeat/index.js';
+
+export type { AgentEventMap } from './agent-events.js';
+export { AgentEventBus, agentEventBus } from './agent-events.js';
+
+export type { BinaryInfo } from './binaries.js';
+export {
+  findBinary,
+  getBinaryInfo,
+  binaryExists,
+  which,
+  getSystemBinPaths,
+  BinaryManager,
+  binaryManager,
+} from './binaries.js';
+
+export type { BrewPackageInfo, BrewOptions } from './brew.js';
+export {
+  brewInstalled,
+  brewInstall,
+  brewUninstall,
+  brewList,
+  brewInfo,
+  brewIsInstalled,
+  brewUpgrade,
+  brewSearch,
+} from './brew.js';
+
+export type { BrowserOpenOptions } from './browser-open.js';
+export { openInBrowser, openUrl, getDefaultBrowser } from './browser-open.js';
+
+export type { BinaryDetectionOptions, DetectedBinary } from './detect-binary.js';
+export {
+  detectBinary,
+  detectBinaries,
+  requireBinary,
+  isBinaryInPath,
+} from './detect-binary.js';
+
+export type { BoundaryValidationResult } from './boundary-path.js';
+export {
+  isPathWithinBoundary,
+  validateBoundaryPath,
+  assertPathWithinBoundary,
+  safeJoinPath,
+  getRelativePathWithinBoundary,
+} from './boundary-path.js';
+
+export type { GitCommitOptions, GitCommitResult } from './git-commit.js';
+export {
+  gitCommit,
+  gitIsRepo,
+  gitCurrentBranch,
+  gitStatus,
+  gitHasChanges,
+  gitLastCommit,
+  gitDiff,
+  gitAdd,
+} from './git-commit.js';
+
+export type { HomeDirOptions } from './home-dir.js';
+export {
+  getHomeDir,
+  resolveHomePath,
+  expandHomeDir,
+  pathInHome,
+  isPathInHome,
+} from './home-dir.js';
+
+export type { JsonFileOptions } from './json-file.js';
+export {
+  readJsonFile,
+  writeJsonFile,
+  updateJsonFile,
+  readJsonFileSync,
+  writeJsonFileSync,
+  jsonFileExists,
+  deleteJsonFile,
+} from './json-file.js';
+
+export type {
+  NetworkInterfaceInfo,
+  NetworkAddressInfo,
+} from './network-interfaces.js';
+export {
+  getNetworkInterfaces,
+  getPublicIpAddresses,
+  getPrivateIpAddresses,
+  getIpv4Addresses,
+  getIpv6Addresses,
+  getPrimaryIpAddress,
+  hasNetworkInterface,
+  getNetworkInterface,
+  getHostname,
+  getNetworkSummary,
+} from './network-interfaces.js';
+
+export * as commandAnalysis from './command-analysis/index.js';
+
+export * as commandExplainer from './command-explainer/index.js';
+
+export * as formatTime from './format-time/index.js';
+
+export type { TimelineEvent, TimelineOptions } from './diagnostics-timeline.js';
+export { DiagnosticsTimeline, diagnosticsTimeline } from './diagnostics-timeline.js';
+
+export type { DotenvParseResult, DotenvOptions } from './dotenv.js';
+export { parseDotenv, loadDotenv, loadDotenvIntoProcess, stringifyDotenv, interpolateEnv } from './dotenv.js';
+
+export type { GatewayLockOptions } from './gateway-lock.js';
+export { GatewayLock, createGatewayLock } from './gateway-lock.js';
+
+export type { ByteSizeOptions } from './byte-size.js';
+export { formatByteSize, parseByteSize, getByteSize, bytesToHumanReadable, humanReadableToBytes } from './byte-size.js';
+
+export type { VersionGuardOptions, VersionGuardResult } from './future-version-guard.js';
+export { compareVersions, checkVersionGuard, assertVersionGuard, isVersionCompatible, getVersionStatus } from './future-version-guard.js';
+
+export {
+  isSensitivePath,
+  isSensitiveFile,
+  getSensitivePathReason,
+  validatePathForSensitivity,
+  assertPathNotSensitive,
+  getSensitivePathPatterns,
+  getSensitiveFilePatterns,
+} from './sensitive-paths.js';
+
+export type { SecurityPathCheckResult } from './security-path.js';
+export { checkPathSecurity, isPathSecure, assertPathSecure, sanitizePath, resolveSafePath, isPathInAllowedDirectory } from './security-path.js';
+
+export type { ScanResult, ScanOptions } from './includes-scan.js';
+export { scanFileForPattern, scanDirectoryForPattern, containsPattern, countPatternOccurrences, scanForIncludes } from './includes-scan.js';
+
+export type { RuntimeOverride, RuntimeOverrideOptions } from './runtime-overrides.js';
+export {
+  RuntimeOverrides,
+  runtimeOverrides,
+  getRuntimeOverride,
+  setRuntimeOverride,
+  hasRuntimeOverride,
+  clearRuntimeOverride,
+  clearAllRuntimeOverrides,
+} from './runtime-overrides.js';
+
+export type { SourceProjection, ProjectionOptions } from './runtime-source-projection.js';
+export {
+  RuntimeSourceProjection,
+  runtimeSourceProjection,
+  projectRuntimeSource,
+  getProjectedValue,
+  hasProjectedValue,
+  clearProjectedValue,
+  clearAllProjectedValues,
+  getProjectedSources,
+} from './runtime-source-projection.js';
+
+export type { BackupRotationOptions, BackupFile } from './backup-rotation.js';
+export { rotateBackups, getBackupFiles, createBackupFileName, getBackupCount, cleanupOldBackups } from './backup-rotation.js';
+
+export type { IssueSeverity, IssueType, Issue, IssueFormatOptions } from './issue-format.js';
+export { formatIssue, createIssue, parseIssue, getSeverityColor, getTypeLabel } from './issue-format.js';

@@ -1,0 +1,74 @@
+export type WizardSelectOption<T = string> = {
+  value: T;
+  label: string;
+  hint?: string;
+};
+
+export type WizardSelectParams<T = string> = {
+  message: string;
+  options: Array<WizardSelectOption<T>>;
+  initialValue?: T;
+  searchable?: boolean;
+};
+
+export type WizardMultiSelectParams<T = string> = {
+  message: string;
+  options: Array<WizardSelectOption<T>>;
+  initialValues?: T[];
+  searchable?: boolean;
+};
+
+export type WizardTextParams = {
+  message: string;
+  initialValue?: string;
+  placeholder?: string;
+  validate?: (value: string) => string | undefined;
+  sensitive?: boolean;
+};
+
+export type WizardConfirmParams = {
+  message: string;
+  initialValue?: boolean;
+};
+
+export type WizardProgress = {
+  update: (message: string) => void;
+  stop: (message?: string) => void;
+};
+
+export type WizardPrompter = {
+  intro: (title: string) => Promise<void>;
+  outro: (message: string) => Promise<void>;
+  note: (message: string, title?: string) => Promise<void>;
+  plain?: (message: string) => Promise<void>;
+  select: <T>(params: WizardSelectParams<T>) => Promise<T>;
+  multiselect: <T>(params: WizardMultiSelectParams<T>) => Promise<T[]>;
+  text: (params: WizardTextParams) => Promise<string>;
+  confirm: (params: WizardConfirmParams) => Promise<boolean>;
+  progress: (label: string) => WizardProgress;
+};
+
+export class WizardCancelledError extends Error {
+  constructor(message = "wizard cancelled") {
+    super(message);
+    this.name = "WizardCancelledError";
+  }
+}
+
+export function createMockPrompter(overrides: Partial<WizardPrompter> = {}): WizardPrompter {
+  return {
+    intro: async () => {},
+    outro: async () => {},
+    note: async () => {},
+    plain: async () => {},
+    select: async (params) => params.initialValue ?? params.options[0]?.value as never,
+    multiselect: async (params) => params.initialValues ?? [],
+    text: async (params) => params.initialValue ?? "",
+    confirm: async (params) => params.initialValue ?? false,
+    progress: () => ({
+      update: () => {},
+      stop: () => {},
+    }),
+    ...overrides,
+  };
+}

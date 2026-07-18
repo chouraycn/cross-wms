@@ -160,3 +160,108 @@ export function getAgentById(id: string): AgentConfig | undefined {
 export function getAllAgents(): AgentConfig[] {
   return Array.from(agents.values());
 }
+
+// ============================================================================
+// Agent 运行时能力整合
+// ============================================================================
+
+import {
+  AgentIdentity,
+  getAgentIdentity as getRuntimeAgentIdentity,
+} from './agents/identity.js';
+import {
+  createAgentSandbox,
+  getAgentSandbox as getRuntimeAgentSandbox,
+} from './agents/sandbox.js';
+import { UsageTracker } from './agents/usageTracker.js';
+
+/**
+ * 获取 Agent 身份运行时信息
+ *
+ * 优先从运行时存储获取，若不存在则基于 Agent 配置生成默认身份。
+ *
+ * @param agentId Agent ID
+ * @returns AgentIdentity 或 undefined
+ */
+export function getAgentIdentity(agentId: string): AgentIdentity | undefined {
+  const agent = agents.get(agentId);
+  if (!agent) return undefined;
+
+  const runtime = getRuntimeAgentIdentity(agentId);
+  if (runtime) return runtime;
+
+  return new AgentIdentity({
+    id: agent.id,
+    name: agent.name,
+    role: agent.systemPrompt ? 'expert' : 'general',
+    prefix: agent.name?.toLowerCase().replace(/\s+/g, '-') ?? agent.id,
+    ackReaction: true,
+    humanDelayMs: 200,
+    scenarios: [],
+  });
+}
+
+/**
+ * 获取 Agent 沙箱
+ *
+ * 基于 Agent 配置创建或返回已存在的沙箱实例。
+ *
+ * @param agentId Agent ID
+ * @returns AgentSandbox 或 undefined
+ */
+export function getAgentSandbox(agentId: string) {
+  const agent = agents.get(agentId);
+  if (!agent) return undefined;
+
+  const existing = getRuntimeAgentSandbox(agentId);
+  if (existing) return existing;
+
+  return createAgentSandbox(agentId, {
+    timeoutMs: 60000,
+    maxMemoryMB: 1024,
+    maxCpuTimeMs: 30000,
+  });
+}
+
+/** 全局使用量追踪器 */
+const _usageTracker = new UsageTracker();
+
+/**
+ * 追踪模型使用
+ * @param modelId 模型标识
+ * @param tokensIn 输入 token 数
+ * @param tokensOut 输出 token 数
+ * @param cost 成本
+ * @param sessionId 可选会话 ID
+ */
+export function trackUsage(
+  modelId: string,
+  tokensIn: number,
+  tokensOut: number,
+  cost: number,
+  sessionId?: string,
+): void {
+  _usageTracker.track(modelId, tokensIn, tokensOut, cost, sessionId);
+}
+
+/**
+ * 获取使用统计
+ * @param sessionId 可选会话 ID
+ */
+export function getUsageStats(sessionId?: string) {
+  return _usageTracker.getStats(sessionId);
+}
+
+/**
+ * 获取每日使用汇总
+ */
+export function getDailyUsageSummary() {
+  return _usageTracker.getDailySummary();
+}
+
+/**
+ * 重置使用记录
+ */
+export function resetUsage(): void {
+  _usageTracker.reset();
+}

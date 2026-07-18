@@ -1,6 +1,6 @@
 /**
  * 工作流执行引擎
- * 支持异步执行、错误处理、重试和执行日志记录
+ * 支持异步执行、错误处理、重试、变量上下文、表达式求值、断点暂停恢复、执行追踪等
  */
 
 import { v4 as uuidv4 } from 'uuid';
@@ -17,6 +17,7 @@ import { guardToolResultContext } from '../toolContextGuard.js';
 import { toolSendReceipts } from '../toolSendReceipts.js';
 import { abortPrimitives, createRunAbortController } from '../abortPrimitives.js';
 import { toolFallbackManager } from '../toolFallbackStrategy.js';
+import { VariableContext } from './variable-context.js';
 import type {
   Workflow,
   WorkflowNode,
@@ -28,6 +29,17 @@ import type {
   ParallelConfig,
   LoopConfig,
   ExecutionStatus,
+  DelayConfig,
+  ScriptConfig,
+  TransformConfig,
+  MergeConfig,
+  SwitchConfig,
+  SubWorkflowConfig,
+  TraceEvent,
+  WorkflowTracer,
+  PauseState,
+  Breakpoint,
+  ParallelConfigExt,
 } from './types.js';
 
 type ActionConfig = {
@@ -51,6 +63,36 @@ async function sendNotification(options: { title: string; body: string; type?: s
 }
 
 /**
+ * 执行追踪器实现
+ */
+class DefaultTracer implements WorkflowTracer {
+  private events: TraceEvent[] = [];
+
+  record(event: Omit<TraceEvent, 'id' | 'timestamp'>): void {
+    this.events.push({
+      ...event,
+      id: uuidv4(),
+      timestamp: Date.now(),
+    });
+  }
+
+  getEvents(executionId?: string): TraceEvent[] {
+    if (executionId) {
+      return this.events.filter(e => e.executionId === executionId);
+    }
+    return [...this.events];
+  }
+
+  clear(executionId?: string): void {
+    if (executionId) {
+      this.events = this.events.filter(e => e.executionId !== executionId);
+    } else {
+      this.events = [];
+    }
+  }
+}
+
+/**
  * 工作流执行器
  * 负责工作流的执行、节点调度、条件评估等核心逻辑
  */
@@ -58,16 +100,147 @@ export class WorkflowExecutor {
   private executions: Map<string, WorkflowExecution> = new Map();
   private maxConcurrentExecutions: number = 10;
   private activeExecutions: number = 0;
-  /** v11.1: 执行 ID → run 级 AbortController，用于取消执行时中止工具调用 */
   private runControllers: Map<string, { runId: string; controller: ReturnType<typeof createRunAbortController> }> = new Map();
+  private tracer: WorkflowTracer = new DefaultTracer();
+  private breakpoints: Map<string, Breakpoint[]> = new Map();
+  private pauseStates: Map<string, PauseState> = new Map();
+  private pauseResolvers: Map<string, () => void> = new Map();
+  private variableContexts: Map<string, VariableContext> = new Map();
+  private subWorkflowLoaders: Map<string, (workflowId: string) => Promise<Workflow | null>> = new Map();
+  private mergeNodeInputs: Map<string, Map<string, Record<string, unknown>>> = new Map();
+
+  /**
+   * 设置子工作流加载器
+   */
+  setSubWorkflowLoader(key: string, loader: (workflowId: string) => Promise<Workflow | null>): void {
+    this.subWorkflowLoaders.set(key, loader);
+  }
+
+  /**
+   * 获取执行追踪器
+   */
+  getTracer(): WorkflowTracer {
+    return this.tracer;
+  }
+
+  /**
+   * 设置断点
+   */
+  setBreakpoint(executionId: string, breakpoint: Breakpoint): void {
+    const existing = this.breakpoints.get(executionId) || [];
+    const idx = existing.findIndex(b => b.nodeId === breakpoint.nodeId);
+    if (idx >= 0) {
+      existing[idx] = breakpoint;
+    } else {
+      existing.push(breakpoint);
+    }
+    this.breakpoints.set(executionId, existing);
+  }
+
+  /**
+   * 移除断点
+   */
+  removeBreakpoint(executionId: string, nodeId: string): void {
+    const existing = this.breakpoints.get(executionId) || [];
+    this.breakpoints.set(executionId, existing.filter(b => b.nodeId !== nodeId));
+  }
+
+  /**
+   * 暂停执行
+   */
+  pauseExecution(executionId: string, reason?: string): boolean {
+    const execution = this.executions.get(executionId);
+    if (!execution || execution.status !== 'running') {
+      return false;
+    }
+    this.pauseStates.set(executionId, {
+      isPaused: true,
+      pausedAt: Date.now(),
+      reason,
+    });
+    this.tracer.record({
+      type: 'paused',
+      executionId,
+      message: reason || '执行已暂停',
+    });
+    return true;
+  }
+
+  /**
+   * 恢复执行
+   */
+  resumeExecution(executionId: string): boolean {
+    const pauseState = this.pauseStates.get(executionId);
+    if (!pauseState || !pauseState.isPaused) {
+      return false;
+    }
+    pauseState.isPaused = false;
+    this.tracer.record({
+      type: 'resumed',
+      executionId,
+    });
+    const resolver = this.pauseResolvers.get(executionId);
+    if (resolver) {
+      resolver();
+      this.pauseResolvers.delete(executionId);
+    }
+    return true;
+  }
+
+  /**
+   * 等待暂停恢复
+   */
+  private async waitForResume(executionId: string): Promise<void> {
+    const pauseState = this.pauseStates.get(executionId);
+    if (!pauseState || !pauseState.isPaused) {
+      return;
+    }
+    await new Promise<void>((resolve) => {
+      this.pauseResolvers.set(executionId, resolve);
+    });
+  }
+
+  /**
+   * 检查并处理断点
+   */
+  private async checkBreakpoint(executionId: string, node: WorkflowNode): Promise<void> {
+    const breakpoints = this.breakpoints.get(executionId) || [];
+    const breakpoint = breakpoints.find(b => b.enabled && b.nodeId === node.id);
+    if (!breakpoint) return;
+
+    const variableCtx = this.variableContexts.get(executionId);
+    if (breakpoint.condition && variableCtx) {
+      const result = variableCtx.evaluate(breakpoint.condition);
+      if (!result) return;
+    }
+
+    this.tracer.record({
+      type: 'breakpoint_hit',
+      executionId,
+      nodeId: node.id,
+      nodeName: node.name,
+      message: `命中断点: ${node.name}`,
+    });
+
+    this.pauseStates.set(executionId, {
+      isPaused: true,
+      pausedAt: Date.now(),
+      pausedNodeId: node.id,
+      reason: `断点: ${node.name}`,
+    });
+
+    await this.waitForResume(executionId);
+  }
+
+  /**
+   * 获取变量上下文
+   */
+  getVariableContext(executionId: string): VariableContext | undefined {
+    return this.variableContexts.get(executionId);
+  }
 
   /**
    * 执行工作流
-   * @param workflow 工作流定义
-   * @param triggerType 触发类型
-   * @param triggeredBy 触发者
-   * @param initialVariables 初始变量
-   * @returns 执行记录 ID
    */
   async execute(
     workflow: Workflow,
@@ -83,11 +256,13 @@ export class WorkflowExecutor {
     const executionId = uuidv4();
     const startTime = Date.now();
 
-    // 创建执行上下文
+    const variableCtx = new VariableContext(initialVariables);
+    this.variableContexts.set(executionId, variableCtx);
+
     const context: ExecutionContext = {
       workflowId: workflow.id,
       executionId,
-      variables: { ...initialVariables },
+      variables: variableCtx.snapshot(),
       triggerType,
       triggeredBy,
       startTime,
@@ -97,7 +272,6 @@ export class WorkflowExecutor {
       logs: [],
     };
 
-    // 创建执行记录
     const execution: WorkflowExecution = {
       id: executionId,
       workflowId: workflow.id,
@@ -114,30 +288,39 @@ export class WorkflowExecutor {
     this.executions.set(executionId, execution);
     this.activeExecutions++;
 
-    // v11.1: 创建 run 级 AbortController，用于取消执行时级联中止工具调用
     const runId = `wf-${executionId}`;
     const runController = createRunAbortController(runId);
     this.runControllers.set(executionId, { runId, controller: runController });
 
+    this.tracer.record({
+      type: 'workflow_start',
+      executionId,
+      data: { workflowName: workflow.name, triggerType },
+    });
+
     try {
       this.log(context, 'info', `开始执行工作流: ${workflow.name}`);
 
-      // 查找起始节点（通常是触发器节点）
       const startNodes = workflow.nodes.filter(node => node.type === 'trigger');
 
       if (startNodes.length === 0) {
         throw new Error('工作流没有触发器节点');
       }
 
-      // 执行所有触发器节点
       for (const startNode of startNodes) {
         await this.executeNode(workflow, startNode, context);
       }
 
-      // 标记执行完成
       execution.status = 'success';
       execution.endTime = Date.now();
       execution.duration = execution.endTime - execution.startTime;
+      execution.variables = variableCtx.snapshot();
+
+      this.tracer.record({
+        type: 'workflow_complete',
+        executionId,
+        data: { duration: execution.duration },
+      });
 
       this.log(context, 'info', `工作流执行完成，耗时: ${execution.duration}ms`);
     } catch (error) {
@@ -146,13 +329,20 @@ export class WorkflowExecutor {
       execution.endTime = Date.now();
       execution.duration = execution.endTime - execution.startTime;
       execution.error = errorMsg;
+      execution.variables = variableCtx.snapshot();
+
+      this.tracer.record({
+        type: 'workflow_failed',
+        executionId,
+        message: errorMsg,
+      });
 
       this.log(context, 'error', `工作流执行失败: ${errorMsg}`);
       logger.error('[WorkflowExecutor] 执行失败:', { workflowId: workflow.id, error: errorMsg });
     } finally {
       this.activeExecutions--;
       execution.logs = context.logs;
-      // v11.1: 释放 run 级 AbortController（防止内存泄漏）
+      execution.nodeExecutions = context.nodeExecutions;
       const rc = this.runControllers.get(executionId);
       if (rc) {
         abortPrimitives.release(`run:${rc.runId}`);
@@ -165,73 +355,92 @@ export class WorkflowExecutor {
 
   /**
    * 执行单个节点
-   * @param workflow 工作流定义
-   * @param node 当前节点
-   * @param context 执行上下文
    */
   private async executeNode(
     workflow: Workflow,
     node: WorkflowNode,
     context: ExecutionContext
   ): Promise<void> {
+    if (node.enabled === false) {
+      this.log(context, 'info', `节点已禁用，跳过: ${node.name}`, node.id);
+      await this.executeConnectedNodes(workflow, node, context);
+      return;
+    }
+
+    await this.checkBreakpoint(context.executionId, node);
+
+    const pauseState = this.pauseStates.get(context.executionId);
+    if (pauseState?.isPaused) {
+      await this.waitForResume(context.executionId);
+    }
+
+    const variableCtx = this.variableContexts.get(context.executionId)!;
+
     const startTime = Date.now();
     const nodeExecution: NodeExecutionRecord = {
       nodeId: node.id,
       nodeName: node.name,
       status: 'running',
       startTime,
-      input: context.variables,
+      input: variableCtx.snapshot(),
     };
 
     context.nodeExecutions.push(nodeExecution);
     this.log(context, 'info', `开始执行节点: ${node.name}`, node.id);
 
-    try {
-      // 根据节点类型执行不同逻辑
-      let output: Record<string, unknown> = {};
+    this.tracer.record({
+      type: 'node_start',
+      executionId: context.executionId,
+      nodeId: node.id,
+      nodeName: node.name,
+    });
 
-      switch (node.type) {
-        case 'trigger':
-          output = await this.executeTrigger(node, context);
-          break;
-        case 'condition':
-          output = await this.executeCondition(workflow, node, context);
-          break;
-        case 'action':
-          output = await this.executeAction(node, context);
-          break;
-        case 'parallel':
-          output = await this.executeParallel(workflow, node, context);
-          break;
-        case 'loop':
-          output = await this.executeLoop(workflow, node, context);
-          break;
-        case 'wait':
-          output = await this.executeWait(node, context);
-          break;
-        default:
-          throw new Error(`未知节点类型: ${node.type}`);
+    try {
+      const timeout = node.timeout || 0;
+      let output: Record<string, unknown>;
+
+      if (timeout > 0) {
+        output = await this.executeWithTimeout(
+          () => this.executeNodeByType(workflow, node, context, variableCtx),
+          timeout,
+          `节点执行超时: ${node.name}`
+        );
+      } else {
+        output = await this.executeNodeByType(workflow, node, context, variableCtx);
       }
 
-      // 保存节点输出
       context.nodeOutputs.set(node.id, output);
-      Object.assign(context.variables, output);
+      variableCtx.merge(output);
+      context.variables = variableCtx.snapshot();
 
-      // 标记节点执行成功
       nodeExecution.status = 'success';
       nodeExecution.endTime = Date.now();
       nodeExecution.duration = nodeExecution.endTime - nodeExecution.startTime;
       nodeExecution.output = output;
 
+      this.tracer.record({
+        type: 'node_complete',
+        executionId: context.executionId,
+        nodeId: node.id,
+        nodeName: node.name,
+        data: { duration: nodeExecution.duration },
+      });
+
       this.log(context, 'info', `节点执行完成: ${node.name}`, node.id);
 
-      // 执行后续连接的节点
-      await this.executeConnectedNodes(workflow, node, context);
+      await this.executeConnectedNodes(workflow, node, context, variableCtx);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
 
-      // 尝试重试
-      const retryCount = await this.handleRetry(node, context, error);
+      this.tracer.record({
+        type: 'node_failed',
+        executionId: context.executionId,
+        nodeId: node.id,
+        nodeName: node.name,
+        message: errorMsg,
+      });
+
+      const retryCount = await this.handleRetry(workflow, node, context, variableCtx, error);
       if (retryCount > 0) {
         nodeExecution.retryCount = retryCount;
         nodeExecution.status = 'success';
@@ -246,6 +455,71 @@ export class WorkflowExecutor {
         throw error;
       }
     }
+  }
+
+  /**
+   * 根据节点类型执行
+   */
+  private async executeNodeByType(
+    workflow: Workflow,
+    node: WorkflowNode,
+    context: ExecutionContext,
+    variableCtx: VariableContext
+  ): Promise<Record<string, unknown>> {
+    switch (node.type) {
+      case 'trigger':
+        return this.executeTrigger(node, context);
+      case 'condition':
+        return this.executeCondition(workflow, node, context, variableCtx);
+      case 'action':
+        return this.executeAction(node, context);
+      case 'parallel':
+        return this.executeParallel(workflow, node, context, variableCtx);
+      case 'loop':
+        return this.executeLoop(workflow, node, context, variableCtx);
+      case 'wait':
+        return this.executeWait(node, context, variableCtx);
+      case 'delay':
+        return this.executeDelay(node, context, variableCtx);
+      case 'script':
+        return this.executeScriptNode(node, context, variableCtx);
+      case 'transform':
+        return this.executeTransform(node, variableCtx);
+      case 'merge':
+        return this.executeMerge(node, context, variableCtx);
+      case 'switch':
+        return this.executeSwitch(workflow, node, context, variableCtx);
+      case 'subworkflow':
+        return this.executeSubWorkflow(node, context, variableCtx);
+      default:
+        throw new Error(`未知节点类型: ${node.type}`);
+    }
+  }
+
+  /**
+   * 带超时的执行
+   */
+  private async executeWithTimeout<T>(
+    fn: () => Promise<T>,
+    timeoutMs: number,
+    timeoutMsg: string
+  ): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(timeoutMsg));
+      }, timeoutMs);
+
+      fn().then(
+        (result) => {
+          clearTimeout(timer);
+          resolve(result);
+        },
+        (err) => {
+          clearTimeout(timer);
+          reject(err);
+        }
+      );
+    });
   }
 
   /**
@@ -265,14 +539,14 @@ export class WorkflowExecutor {
   private async executeCondition(
     workflow: Workflow,
     node: WorkflowNode,
-    context: ExecutionContext
+    context: ExecutionContext,
+    variableCtx: VariableContext
   ): Promise<Record<string, unknown>> {
     const config = node.config as unknown as ConditionConfig;
-    const result = this.evaluateCondition(config, context.variables);
+    const result = this.evaluateCondition(config, variableCtx);
 
     this.log(context, 'info', `条件评估结果: ${result}`, node.id);
 
-    // 如果有分支配置，执行对应的分支
     if (config.branches) {
       const targetNodeId = result ? config.branches.true : config.branches.false;
       const targetNode = workflow.nodes.find(n => n.id === targetNodeId);
@@ -362,7 +636,7 @@ export class WorkflowExecutor {
   }
 
   /**
-   * 执行工具调用（v11.1: 通过稳定性执行链）
+   * 执行工具调用
    */
   private async executeToolCall(
     config: ActionConfig,
@@ -374,14 +648,12 @@ export class WorkflowExecutor {
     }
 
     const strToolName = String(toolName);
-    // v11.1: 降级检查 — 若主工具健康分过低，切换到备用工具
     const effectiveToolName = toolFallbackManager.checkAndFallback(strToolName);
     const strArgs = args as Record<string, unknown> || {};
     const execStartTime = Date.now();
     let retryCount = 0;
     const receiptId = uuidv4();
 
-    // 创建工具发送回执
     toolSendReceipts.createReceipt({
       id: receiptId,
       toolName: effectiveToolName,
@@ -400,7 +672,6 @@ export class WorkflowExecutor {
       });
     };
 
-    // v11.1: 获取 run 级 managedSignal，传递给队列以支持取消
     const rc = context.executionId ? this.runControllers.get(context.executionId) : undefined;
     const managedSignal = rc?.controller.signal;
 
@@ -424,14 +695,11 @@ export class WorkflowExecutor {
       let result = retryResult.result;
       retryCount = retryResult.retryCount;
 
-      // 结果中间件
       const middlewareResult = executeToolCallWithMiddleware(effectiveToolName, result);
       result = middlewareResult.content;
 
-      // P1-2 修复：传入上下文变量估算大小，使累积保护生效
       result = guardToolResultContext(result, [{ role: 'system', content: JSON.stringify(context.variables) }], 128000);
 
-      // 统计记录（使用 effectiveToolName，让健康分跟踪实际执行的工具）
       toolExecutionStats.record({
         toolName: effectiveToolName,
         startTime: execStartTime,
@@ -444,7 +712,6 @@ export class WorkflowExecutor {
         resultSize: result.length,
       });
 
-      // 审计日志（记录原始工具名和实际执行的工具名，便于追踪降级）
       toolAuditLog.log({
         toolName: effectiveToolName,
         originalToolName: effectiveToolName !== strToolName ? strToolName : undefined,
@@ -457,7 +724,6 @@ export class WorkflowExecutor {
         truncated: middlewareResult.truncated,
       });
 
-      // 完成工具发送回执
       if (middlewareResult.errorType === 'none') {
         toolSendReceipts.completeReceipt(receiptId, result, retryCount);
       } else {
@@ -473,10 +739,8 @@ export class WorkflowExecutor {
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
 
-      // 失败工具发送回执
       toolSendReceipts.failReceipt(receiptId, errorMsg, retryCount);
 
-      // 失败也记录统计和审计
       toolExecutionStats.record({
         toolName: effectiveToolName,
         startTime: execStartTime,
@@ -554,7 +818,8 @@ export class WorkflowExecutor {
     }
 
     try {
-      const result = this.applyTransform(input, transform, context.variables);
+      const variableCtx = this.variableContexts.get(context.executionId)!;
+      const result = this.applyTransform(input, transform, variableCtx);
       return {
         actionExecuted: true,
         actionType: 'data_transform',
@@ -613,7 +878,8 @@ export class WorkflowExecutor {
     }
 
     try {
-      const result = this.executeScriptCode(String(script), language as string, context.variables);
+      const variableCtx = this.variableContexts.get(context.executionId)!;
+      const result = this.executeScriptCode(String(script), language as string, variableCtx);
       return {
         actionExecuted: true,
         actionType: 'script',
@@ -632,16 +898,18 @@ export class WorkflowExecutor {
   private applyTransform(
     input: unknown,
     transform: unknown,
-    variables: Record<string, unknown>
+    variableCtx: VariableContext
   ): unknown {
     if (typeof transform === 'object' && transform !== null) {
       const result: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(transform as Record<string, unknown>)) {
         if (typeof value === 'string' && value.startsWith('{{') && value.endsWith('}}')) {
           const expr = value.slice(2, -2).trim();
-          result[key] = this.evaluateExpression(expr, { input, ...variables });
+          result[key] = variableCtx.evaluate(expr) ?? this.evaluateExpression(expr, { input, ...variableCtx.snapshot() });
+        } else if (typeof value === 'object' && value !== null) {
+          result[key] = this.applyTransform(value, value, variableCtx);
         } else {
-          result[key] = this.applyTransform(value, value, variables);
+          result[key] = value;
         }
       }
       return result;
@@ -672,11 +940,12 @@ export class WorkflowExecutor {
   private executeScriptCode(
     script: string,
     language: string,
-    variables: Record<string, unknown>
+    variableCtx: VariableContext
   ): unknown {
     if (language === 'javascript' || !language) {
-      const keys = Object.keys(variables);
-      const values = keys.map(k => variables[k]);
+      const variablesObj = variableCtx.snapshot();
+      const keys = Object.keys(variablesObj);
+      const values = keys.map(k => variablesObj[k]);
       const fn = new Function(...keys, script);
       return fn(...values);
     }
@@ -684,39 +953,75 @@ export class WorkflowExecutor {
   }
 
   /**
-   * 执行并行节点
+   * 执行并行节点（支持 maxConcurrency）
    */
   private async executeParallel(
     workflow: Workflow,
     node: WorkflowNode,
-    context: ExecutionContext
+    context: ExecutionContext,
+    variableCtx: VariableContext
   ): Promise<Record<string, unknown>> {
-    const config = node.config as unknown as ParallelConfig;
+    const config = node.config as unknown as ParallelConfigExt;
     this.log(context, 'info', `并行执行 ${config.branches.length} 个分支`, node.id);
 
-    // 并行执行所有分支
-    const promises = config.branches.map(async (branchNodeId) => {
+    const branchNodes = config.branches.map(branchNodeId => {
       const branchNode = workflow.nodes.find(n => n.id === branchNodeId);
       if (!branchNode) {
         throw new Error(`找不到分支节点: ${branchNodeId}`);
       }
-      await this.executeNode(workflow, branchNode, context);
+      return branchNode;
     });
 
-    // 根据模式等待结果
-    switch (config.mode) {
-      case 'all':
-        await Promise.all(promises);
-        break;
-      case 'any':
-        await Promise.any(promises);
-        break;
-      case 'race':
-        await Promise.race(promises);
-        break;
+    const maxConcurrency = config.maxConcurrency || 0;
+
+    if (maxConcurrency > 0 && maxConcurrency < branchNodes.length) {
+      await this.executeWithConcurrencyLimit(workflow, branchNodes, context, maxConcurrency);
+    } else {
+      const promises = branchNodes.map(async (branchNode) => {
+        await this.executeNode(workflow, branchNode, context);
+      });
+
+      switch (config.mode) {
+        case 'all':
+          await Promise.all(promises);
+          break;
+        case 'any':
+          await Promise.any(promises);
+          break;
+        case 'race':
+          await Promise.race(promises);
+          break;
+      }
     }
 
-    return { parallelExecuted: true, mode: config.mode };
+    return { parallelExecuted: true, mode: config.mode, branchCount: config.branches.length };
+  }
+
+  /**
+   * 带并发限制的执行
+   */
+  private async executeWithConcurrencyLimit(
+    workflow: Workflow,
+    nodes: WorkflowNode[],
+    context: ExecutionContext,
+    maxConcurrency: number
+  ): Promise<void> {
+    const results: Promise<void>[] = [];
+    const executing = new Set<Promise<void>>();
+
+    for (const node of nodes) {
+      const promise = this.executeNode(workflow, node, context).then(() => {
+        executing.delete(promise);
+      });
+      results.push(promise);
+      executing.add(promise);
+
+      if (executing.size >= maxConcurrency) {
+        await Promise.race(executing);
+      }
+    }
+
+    await Promise.all(results);
   }
 
   /**
@@ -725,10 +1030,11 @@ export class WorkflowExecutor {
   private async executeLoop(
     workflow: Workflow,
     node: WorkflowNode,
-    context: ExecutionContext
+    context: ExecutionContext,
+    variableCtx: VariableContext
   ): Promise<Record<string, unknown>> {
     const config = node.config as unknown as LoopConfig;
-    const iteratorData = context.variables[config.iteratorSource] as unknown[];
+    const iteratorData = variableCtx.get(config.iteratorSource) as unknown[];
     const maxIterations = config.maxIterations || 100;
 
     if (!Array.isArray(iteratorData)) {
@@ -747,7 +1053,8 @@ export class WorkflowExecutor {
 
     for (let i = 0; i < iterations; i++) {
       const item = iteratorData[i];
-      context.variables[config.iteratorVariable] = item;
+      variableCtx.set(config.iteratorVariable, item);
+      context.variables = variableCtx.snapshot();
 
       await this.executeNode(workflow, bodyNode, context);
       const bodyOutput = context.nodeOutputs.get(config.bodyNodeId);
@@ -764,25 +1071,368 @@ export class WorkflowExecutor {
    */
   private async executeWait(
     node: WorkflowNode,
-    context: ExecutionContext
+    context: ExecutionContext,
+    variableCtx: VariableContext
   ): Promise<Record<string, unknown>> {
     const config = node.config;
 
     if (config.type === 'duration' && config.duration) {
-      this.log(context, 'info', `等待 ${config.duration}ms`, node.id);
-      await new Promise(resolve => setTimeout(resolve, config.duration as number));
+      const duration = typeof config.duration === 'number'
+        ? config.duration
+        : Number(variableCtx.evaluate(String(config.duration)));
+      this.log(context, 'info', `等待 ${duration}ms`, node.id);
+      await new Promise(resolve => setTimeout(resolve, duration));
     } else if (config.type === 'event' && config.event) {
       this.log(context, 'info', `等待事件: ${config.event}`, node.id);
-      // 实际项目中需要实现事件等待机制
       await new Promise(resolve => setTimeout(resolve, 1000));
     } else if (config.type === 'condition' && config.condition) {
       this.log(context, 'info', `等待条件满足: ${config.condition}`, node.id);
-      // 实际项目中需要实现条件轮询机制
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     return { waitComplete: true };
   }
+
+  // ===================== 新增节点类型实现 =====================
+
+  /**
+   * 执行延迟节点
+   */
+  private async executeDelay(
+    node: WorkflowNode,
+    context: ExecutionContext,
+    variableCtx: VariableContext
+  ): Promise<Record<string, unknown>> {
+    const config = node.config as unknown as DelayConfig;
+    let duration = config.duration;
+
+    if (config.durationExpression) {
+      const evaluated = variableCtx.evaluate(config.durationExpression);
+      duration = Number(evaluated) || 0;
+    }
+
+    if (duration < 0) duration = 0;
+
+    this.log(context, 'info', `延迟等待 ${duration}ms`, node.id);
+    await new Promise(resolve => setTimeout(resolve, duration));
+
+    return { delayComplete: true, duration };
+  }
+
+  /**
+   * 执行脚本节点
+   */
+  private async executeScriptNode(
+    node: WorkflowNode,
+    context: ExecutionContext,
+    variableCtx: VariableContext
+  ): Promise<Record<string, unknown>> {
+    const config = node.config as unknown as ScriptConfig;
+    if (!config.code) {
+      throw new Error('脚本节点缺少代码');
+    }
+
+    this.log(context, 'info', `执行脚本节点: ${node.name}`, node.id);
+
+    const timeout = config.timeout || node.timeout || 30000;
+    const result = await this.executeWithTimeout(
+      () => Promise.resolve(this.executeScriptCode(config.code, config.language, variableCtx)),
+      timeout,
+      `脚本执行超时: ${node.name}`
+    );
+
+    return {
+      scriptExecuted: true,
+      result,
+    };
+  }
+
+  /**
+   * 执行数据转换节点
+   */
+  private executeTransform(
+    node: WorkflowNode,
+    variableCtx: VariableContext
+  ): Record<string, unknown> {
+    const config = node.config as unknown as TransformConfig;
+    const result: Record<string, unknown> = {};
+
+    for (const mapping of config.mappings) {
+      let value: unknown;
+
+      if (mapping.source.startsWith('{{') && mapping.source.endsWith('}}')) {
+        const expr = mapping.source.slice(2, -2).trim();
+        value = variableCtx.evaluate(expr);
+      } else {
+        value = variableCtx.get(mapping.source);
+      }
+
+      if (value === undefined && mapping.defaultValue !== undefined) {
+        value = mapping.defaultValue;
+      }
+
+      if (mapping.transform && value !== undefined && value !== null) {
+        value = this.applyTransformFunction(value, mapping.transform);
+      }
+
+      result[mapping.target] = value;
+    }
+
+    if (config.outputVariable) {
+      variableCtx.set(config.outputVariable, result);
+      return { [config.outputVariable]: result, transformComplete: true };
+    }
+
+    return { ...result, transformComplete: true };
+  }
+
+  /**
+   * 应用转换函数
+   */
+  private applyTransformFunction(value: unknown, transform: string): unknown {
+    const str = String(value);
+    switch (transform) {
+      case 'uppercase':
+        return str.toUpperCase();
+      case 'lowercase':
+        return str.toLowerCase();
+      case 'trim':
+        return str.trim();
+      case 'number':
+        return Number(value);
+      case 'string':
+        return String(value);
+      case 'boolean':
+        return Boolean(value);
+      case 'json_parse':
+        try {
+          return JSON.parse(str);
+        } catch {
+          return value;
+        }
+      case 'json_stringify':
+        try {
+          return JSON.stringify(value);
+        } catch {
+          return str;
+        }
+      default:
+        return value;
+    }
+  }
+
+  /**
+   * 执行合并节点
+   */
+  private async executeMerge(
+    node: WorkflowNode,
+    context: ExecutionContext,
+    variableCtx: VariableContext
+  ): Promise<Record<string, unknown>> {
+    const config = node.config as unknown as MergeConfig;
+    const executionId = context.executionId;
+    const mergeKey = `${executionId}:${node.id}`;
+
+    if (!this.mergeNodeInputs.has(mergeKey)) {
+      this.mergeNodeInputs.set(mergeKey, new Map());
+    }
+    const inputs = this.mergeNodeInputs.get(mergeKey)!;
+
+    const callerNodeId = this.findCallerNodeId(context, node);
+    if (callerNodeId) {
+      const nodeOutput = context.nodeOutputs.get(callerNodeId) || {};
+      inputs.set(callerNodeId, nodeOutput);
+    }
+
+    if (config.mode === 'first') {
+      const firstInput = inputs.values().next().value || {};
+      this.mergeNodeInputs.delete(mergeKey);
+      return { merged: true, mode: 'first', data: firstInput };
+    }
+
+    if (config.mode === 'any') {
+      const merged = this.mergeInputs(inputs, config.mergeStrategy || 'assign');
+      return { merged: true, mode: 'any', data: merged };
+    }
+
+    const expectedCount = config.inputCount || this.countIncomingConnections(context, node);
+    if (inputs.size < expectedCount) {
+      return new Promise((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (inputs.size >= expectedCount) {
+            clearInterval(checkInterval);
+            const merged = this.mergeInputs(inputs, config.mergeStrategy || 'assign');
+            this.mergeNodeInputs.delete(mergeKey);
+            resolve({ merged: true, mode: 'all', data: merged, inputCount: inputs.size });
+          }
+        }, 50);
+      });
+    }
+
+    const merged = this.mergeInputs(inputs, config.mergeStrategy || 'assign');
+    this.mergeNodeInputs.delete(mergeKey);
+    return { merged: true, mode: 'all', data: merged, inputCount: inputs.size };
+  }
+
+  /**
+   * 合并输入数据
+   */
+  private mergeInputs(
+    inputs: Map<string, Record<string, unknown>>,
+    strategy: string
+  ): Record<string, unknown> {
+    const inputArray = Array.from(inputs.values());
+
+    switch (strategy) {
+      case 'first':
+        return { ...(inputArray[0] || {}) };
+      case 'last':
+        return { ...(inputArray[inputArray.length - 1] || {}) };
+      case 'concat':
+        const result: Record<string, unknown[]> = {};
+        for (const input of inputArray) {
+          const inputObj = input as Record<string, unknown>;
+          for (const [key, value] of Object.entries(inputObj)) {
+            if (!result[key]) {
+              result[key] = [];
+            }
+            result[key].push(value);
+          }
+        }
+        return result;
+      case 'assign':
+      default:
+        return Object.assign({}, ...inputArray);
+    }
+  }
+
+  /**
+   * 查找调用节点 ID
+   */
+  private findCallerNodeId(context: ExecutionContext, node: WorkflowNode): string | undefined {
+    if (context.nodeExecutions.length < 2) return undefined;
+    const lastExecution = context.nodeExecutions[context.nodeExecutions.length - 2];
+    return lastExecution?.nodeId;
+  }
+
+  /**
+   * 计算入站连接数
+   */
+  private countIncomingConnections(context: ExecutionContext, node: WorkflowNode): number {
+    let count = 0;
+    const workflow = this.getWorkflow(context);
+    if (!workflow) return 1;
+
+    for (const n of workflow.nodes) {
+      for (const conn of n.connections || []) {
+        if (conn.target === node.id) {
+          count++;
+        }
+      }
+    }
+    return count || 1;
+  }
+
+  /**
+   * 执行 Switch 多路分支节点
+   */
+  private async executeSwitch(
+    workflow: Workflow,
+    node: WorkflowNode,
+    context: ExecutionContext,
+    variableCtx: VariableContext
+  ): Promise<Record<string, unknown>> {
+    const config = node.config as unknown as SwitchConfig;
+    const expressionValue = variableCtx.evaluate(config.expression);
+
+    this.log(context, 'info', `Switch 节点表达式结果: ${expressionValue}`, node.id);
+
+    let matchedCase = config.cases.find(c => c.value === expressionValue);
+    let targetNodeId = matchedCase?.targetNodeId || config.defaultTargetNodeId;
+
+    if (targetNodeId) {
+      const targetNode = workflow.nodes.find(n => n.id === targetNodeId);
+      if (targetNode) {
+        await this.executeNode(workflow, targetNode, context);
+      }
+    }
+
+    return {
+      switchComplete: true,
+      expressionValue,
+      matched: matchedCase?.value ?? null,
+    };
+  }
+
+  /**
+   * 执行子工作流节点
+   */
+  private async executeSubWorkflow(
+    node: WorkflowNode,
+    context: ExecutionContext,
+    variableCtx: VariableContext
+  ): Promise<Record<string, unknown>> {
+    const config = node.config as unknown as SubWorkflowConfig;
+    if (!config.workflowId) {
+      throw new Error('子工作流节点缺少工作流 ID');
+    }
+
+    this.log(context, 'info', `调用子工作流: ${config.workflowId}`, node.id);
+
+    let subWorkflow: Workflow | null = null;
+    for (const loader of this.subWorkflowLoaders.values()) {
+      subWorkflow = await loader(config.workflowId);
+      if (subWorkflow) break;
+    }
+
+    if (!subWorkflow) {
+      throw new Error(`找不到子工作流: ${config.workflowId}`);
+    }
+
+    const subVariables: Record<string, unknown> = {};
+    if (config.inputMappings) {
+      for (const mapping of config.inputMappings) {
+        const value = variableCtx.get(mapping.source);
+        subVariables[mapping.target] = value;
+      }
+    }
+
+    if (config.async) {
+      this.execute(subWorkflow, 'manual', undefined, subVariables).catch(err => {
+        logger.error('[WorkflowExecutor] 异步子工作流执行失败:', err);
+      });
+      return {
+        subWorkflowStarted: true,
+        workflowId: config.workflowId,
+        async: true,
+      };
+    }
+
+    const subExecutionId = await this.execute(subWorkflow, 'manual', undefined, subVariables);
+    const subExecution = this.getExecution(subExecutionId);
+    const subResult: Record<string, unknown> = {
+      subWorkflowCompleted: true,
+      workflowId: config.workflowId,
+      async: false,
+      executionId: subExecutionId,
+      status: subExecution?.status,
+    };
+
+    if (subExecution) {
+      const subVarCtx = this.variableContexts.get(subExecutionId);
+      if (subVarCtx && config.outputMappings) {
+        for (const mapping of config.outputMappings) {
+          const value = subVarCtx.get(mapping.source);
+          variableCtx.set(mapping.target, value);
+          subResult[mapping.target] = value;
+        }
+      }
+    }
+
+    return subResult;
+  }
+
+  // ===================== 连接节点执行 =====================
 
   /**
    * 执行连接的后续节点
@@ -790,12 +1440,17 @@ export class WorkflowExecutor {
   private async executeConnectedNodes(
     workflow: Workflow,
     node: WorkflowNode,
-    context: ExecutionContext
+    context: ExecutionContext,
+    variableCtx?: VariableContext
   ): Promise<void> {
     for (const connection of node.connections) {
       if (connection.source === node.id) {
         const targetNode = workflow.nodes.find(n => n.id === connection.target);
         if (targetNode && targetNode.type !== 'trigger') {
+          if (connection.condition && variableCtx) {
+            const condResult = variableCtx.evaluate(connection.condition);
+            if (!condResult) continue;
+          }
           await this.executeNode(workflow, targetNode, context);
         }
       }
@@ -804,16 +1459,17 @@ export class WorkflowExecutor {
 
   /**
    * 评估条件
-   * @param config 条件配置
-   * @param variables 变量集合
-   * @returns 条件评估结果
    */
   evaluateCondition(
     config: ConditionConfig,
-    variables: Record<string, unknown>
+    variableCtx: VariableContext | Record<string, unknown>
   ): boolean {
+    const variables = variableCtx instanceof VariableContext
+      ? variableCtx
+      : new VariableContext(variableCtx);
+
     const results = config.conditions.map(condition => {
-      const variableValue = variables[condition.variable];
+      const variableValue = variables.get(condition.variable);
 
       switch (condition.operator) {
         case 'equals':
@@ -842,14 +1498,12 @@ export class WorkflowExecutor {
 
   /**
    * 处理重试逻辑
-   * @param node 节点
-   * @param context 执行上下文
-   * @param error 错误
-   * @returns 重试次数
    */
   private async handleRetry(
+    workflow: Workflow,
     node: WorkflowNode,
     context: ExecutionContext,
+    variableCtx: VariableContext,
     error: unknown
   ): Promise<number> {
     const retryPolicy = node.retryPolicy;
@@ -871,36 +1525,22 @@ export class WorkflowExecutor {
 
       this.log(context, 'info', `重试 ${retryCount}/${retryPolicy.maxRetries}，延迟 ${delay}ms`, node.id);
 
+      this.tracer.record({
+        type: 'node_retry',
+        executionId: context.executionId,
+        nodeId: node.id,
+        nodeName: node.name,
+        data: { retryCount, delay },
+      });
+
       await new Promise(resolve => setTimeout(resolve, delay));
 
       try {
-        let output: Record<string, unknown> = {};
-
-        switch (node.type) {
-          case 'trigger':
-            output = await this.executeTrigger(node, context);
-            break;
-          case 'condition':
-            output = await this.executeCondition(this.getWorkflow(context), node, context);
-            break;
-          case 'action':
-            output = await this.executeAction(node, context);
-            break;
-          case 'parallel':
-            output = await this.executeParallel(this.getWorkflow(context), node, context);
-            break;
-          case 'loop':
-            output = await this.executeLoop(this.getWorkflow(context), node, context);
-            break;
-          case 'wait':
-            output = await this.executeWait(node, context);
-            break;
-          default:
-            throw new Error(`未知节点类型: ${node.type}`);
-        }
+        const output = await this.executeNodeByType(workflow, node, context, variableCtx);
 
         context.nodeOutputs.set(node.id, output);
-        Object.assign(context.variables, output);
+        variableCtx.merge(output);
+        context.variables = variableCtx.snapshot();
 
         this.log(context, 'info', `节点重试成功: ${node.name}`, node.id);
         return retryCount;
@@ -913,20 +1553,16 @@ export class WorkflowExecutor {
     throw lastError;
   }
 
-  private getWorkflow(context: ExecutionContext): Workflow {
+  private getWorkflow(context: ExecutionContext): Workflow | null {
     const exec = this.executions.get(context.executionId);
     if (!exec) {
-      throw new Error('找不到执行记录');
+      return null;
     }
     return { id: exec.workflowId, name: exec.workflowName } as Workflow;
   }
 
   /**
    * 记录日志
-   * @param context 执行上下文
-   * @param level 日志级别
-   * @param message 日志消息
-   * @param nodeId 节点 ID
    */
   private log(
     context: ExecutionContext,
@@ -943,7 +1579,6 @@ export class WorkflowExecutor {
 
     context.logs.push(logEntry);
 
-    // 同时输出到系统日志
     const logMessage = `[WorkflowExecutor] ${message}`;
     switch (level) {
       case 'info':
@@ -960,8 +1595,6 @@ export class WorkflowExecutor {
 
   /**
    * 获取执行记录
-   * @param executionId 执行 ID
-   * @returns 执行记录
    */
   getExecution(executionId: string): WorkflowExecution | undefined {
     return this.executions.get(executionId);
@@ -969,7 +1602,6 @@ export class WorkflowExecutor {
 
   /**
    * 获取所有执行记录
-   * @returns 执行记录列表
    */
   getAllExecutions(): WorkflowExecution[] {
     return Array.from(this.executions.values());
@@ -977,8 +1609,6 @@ export class WorkflowExecutor {
 
   /**
    * 取消执行
-   * @param executionId 执行 ID
-   * @returns 是否成功取消
    */
   cancelExecution(executionId: string): boolean {
     const execution = this.executions.get(executionId);
@@ -987,7 +1617,6 @@ export class WorkflowExecutor {
       execution.endTime = Date.now();
       execution.duration = execution.endTime - execution.startTime;
 
-      // v11.1: 中止 run 级 AbortController，级联取消正在执行的工具调用
       const rc = this.runControllers.get(executionId);
       if (rc) {
         abortPrimitives.abort(`run:${rc.runId}`, {
@@ -998,6 +1627,12 @@ export class WorkflowExecutor {
         });
       }
 
+      const resolver = this.pauseResolvers.get(executionId);
+      if (resolver) {
+        resolver();
+        this.pauseResolvers.delete(executionId);
+      }
+
       logger.info(`[WorkflowExecutor] 执行已取消: ${executionId}`);
       return true;
     }
@@ -1006,7 +1641,6 @@ export class WorkflowExecutor {
 
   /**
    * 清理执行记录
-   * @param olderThan 清理超过指定时间的记录（毫秒）
    */
   cleanupExecutions(olderThan: number = 7 * 24 * 60 * 60 * 1000): number {
     const cutoffTime = Date.now() - olderThan;
@@ -1015,6 +1649,9 @@ export class WorkflowExecutor {
     for (const [id, execution] of this.executions.entries()) {
       if (execution.endTime && execution.endTime < cutoffTime) {
         this.executions.delete(id);
+        this.variableContexts.delete(id);
+        this.breakpoints.delete(id);
+        this.pauseStates.delete(id);
         cleaned++;
       }
     }
@@ -1024,5 +1661,4 @@ export class WorkflowExecutor {
   }
 }
 
-// 创建全局执行器实例
 export const workflowExecutor = new WorkflowExecutor();

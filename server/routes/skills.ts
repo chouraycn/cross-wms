@@ -26,16 +26,14 @@ import {
   getBuiltinPatches as dbGetPatches,
   setBuiltinPatch as dbSetPatch,
   removeBuiltinPatch as dbRemovePatch,
-} from '../dao/skills.js';
+  getLatestSkillAudit as dbGetLatestAudit,
+  getSkillAuditHistory as dbGetAuditHistory,
+  createSkillAudit as dbCreateAudit,
+} from '../engine/skills/index.js';
 import {
   getSkillUsageStats as dbGetSkillUsageStats,
   getBatchSkillUsageStats as dbGetBatchSkillUsageStats,
 } from '../dao/chat.js';
-import {
-  getLatestSkillAudit as dbGetLatestAudit,
-  getSkillAuditHistory as dbGetAuditHistory,
-  createSkillAudit as dbCreateAudit,
-} from '../dao/chains.js';
 import { auditSkillMd, generateMarkdownReport } from '../services/securityAuditor.js';
 import { parseSkillMdContent } from '../services/skillMdParser.js';
 import { logger } from '../logger.js';

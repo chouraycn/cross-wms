@@ -10,7 +10,7 @@ type SlotPluginRecord = {
 const SLOT_BY_KIND: Record<PluginCapabilityKind, PluginSlotKey> = {
   tool: 'contextEngine',
   provider: 'contextEngine',
-  'embedding-provider': 'contextEngine',
+  'embedding': 'contextEngine',
   'memory-host': 'memory',
   channel: 'contextEngine',
   hook: 'contextEngine',

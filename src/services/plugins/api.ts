@@ -27,28 +27,29 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}): Promise
   }
 }
 
-/** 插件信息（对应后端 PluginRow） */
-export interface PluginInfo {
-  id: string;
-  name: string;
-  version: string;
-  description: string;
-  author: string;
-  status: 'installed' | 'enabled' | 'disabled' | 'error';
-  enabled: number;
-  installedPath: string;
-  installedAt: string;
-  updatedAt: string;
-  manifestJson?: string;
-  errorMessage?: string;
-}
-
-/** 插件健康状态 */
-export interface PluginHealth {
-  loaded: number;
-  active: number;
-  errors: string[];
-}
+import type {
+  PluginInfo,
+  PluginHealth,
+  PluginConfigSchemaField,
+  PluginConfigSchema,
+  PluginStatus,
+  Plugin,
+  PluginManifest,
+  PluginToolDefinition,
+  PluginTrigger,
+} from '../../types/plugin';
+// Re-export 保持向后兼容（外部代码仍可 from 'services/plugins/api' 导入这些类型）
+export type {
+  PluginInfo,
+  PluginHealth,
+  PluginConfigSchemaField,
+  PluginConfigSchema,
+  PluginStatus,
+  Plugin,
+  PluginManifest,
+  PluginToolDefinition,
+  PluginTrigger,
+};
 
 /** 获取插件列表 */
 export async function fetchPlugins(params?: {
@@ -168,24 +169,6 @@ export async function reloadPlugin(id: string): Promise<PluginInfo> {
   }
   const json = await res.json();
   return (json.plugin ?? json.data ?? json) as PluginInfo;
-}
-
-/** 插件配置 Schema 字段 */
-export interface PluginConfigSchemaField {
-  key: string;
-  type: 'string' | 'number' | 'boolean' | 'array' | 'object';
-  label?: string;
-  description?: string;
-  default?: unknown;
-  required?: boolean;
-  enum?: unknown[];
-  properties?: PluginConfigSchemaField[];
-}
-
-/** 插件配置 Schema */
-export interface PluginConfigSchema {
-  version?: string;
-  fields: PluginConfigSchemaField[];
 }
 
 /** 获取插件配置和 Schema */

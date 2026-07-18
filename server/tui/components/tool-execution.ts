@@ -1,146 +1,134 @@
-// Tool execution component renders tool call status and output in the TUI.
-import { Box, Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
-import { formatToolDetail, resolveToolDisplay } from "../../../engine/agents/tool-display.js";
-import { markdownTheme, theme } from "../theme/theme.js";
-import { sanitizeRenderableText } from "../tui-formatters.js";
+import type { TUIToolCall } from '../types.js';
+import { formatDuration, wordWrap } from '../tui-formatters.js';
 
-// Rendering model for live tool calls in the chat log.
-type ToolResultContent = {
-  type?: string;
-  text?: string;
-  mimeType?: string;
-  bytes?: number;
-  omitted?: boolean;
-};
-
-type ToolResult = {
-  content?: ToolResultContent[];
-  details?: Record<string, unknown>;
-};
-
-const PREVIEW_LINES = 12;
-
-// Prefer curated display summaries, then fall back to sanitized JSON args.
-function formatArgs(toolName: string, args: unknown): string {
-  const display = resolveToolDisplay({ name: toolName, args });
-  const detail = formatToolDetail(display);
-  if (detail) {
-    return sanitizeRenderableText(detail);
-  }
-  if (!args || typeof args !== "object") {
-    return "";
-  }
-  try {
-    return sanitizeRenderableText(JSON.stringify(args));
-  } catch {
-    return "";
-  }
+export interface ToolTheme {
+  toolTitle: (text: string) => string;
+  toolOutput: (text: string) => string;
+  toolPendingBg: (text: string) => string;
+  toolSuccessBg: (text: string) => string;
+  toolErrorBg: (text: string) => string;
+  success: (text: string) => string;
+  error: (text: string) => string;
+  dim: (text: string) => string;
+  accent: (text: string) => string;
 }
 
-// Extracts visible text and compact media placeholders from tool result payloads.
-function extractText(result?: ToolResult): string {
-  if (!result?.content) {
-    return "";
-  }
+export function renderToolExecution(
+  toolCall: TUIToolCall,
+  toolTheme: ToolTheme,
+  width: number,
+): string[] {
   const lines: string[] = [];
-  for (const entry of result.content) {
-    if (entry.type === "text" && entry.text) {
-      lines.push(sanitizeRenderableText(entry.text));
-    } else if (entry.type === "image") {
-      const mime = entry.mimeType ?? "image";
-      const size = entry.bytes ? ` ${Math.round(entry.bytes / 1024)}kb` : "";
-      const omitted = entry.omitted ? " (omitted)" : "";
-      lines.push(`[${mime}${size}${omitted}]`);
+  const statusIcon = getStatusIcon(toolCall.status);
+  const statusLabel = getStatusLabel(toolCall.status);
+
+  const titleLine =
+    toolTheme.toolTitle(`${statusIcon} ${toolCall.name}`) +
+    ' ' +
+    toolTheme.dim(statusLabel);
+
+  if (toolCall.status === 'running') {
+    titleLine;
+  } else if (toolCall.status === 'success') {
+    titleLine;
+  } else if (toolCall.status === 'error') {
+    titleLine;
+  }
+
+  lines.push(titleLine);
+
+  if (toolCall.input) {
+    const inputStr = JSON.stringify(toolCall.input, null, 2);
+    const inputLines = wordWrap(inputStr, width - 4);
+    lines.push(toolTheme.dim('  Input:'));
+    for (const line of inputLines) {
+      lines.push('    ' + toolTheme.toolOutput(line));
     }
   }
-  return lines.join("\n").trim();
+
+  if (toolCall.output) {
+    const outputLines = toolCall.output.split('\n');
+    const wrappedOutput: string[] = [];
+    for (const line of outputLines) {
+      wrappedOutput.push(...wordWrap(line, width - 4));
+    }
+    lines.push(toolTheme.dim('  Output:'));
+    for (const line of wrappedOutput.slice(0, 20)) {
+      lines.push('    ' + toolTheme.toolOutput(line));
+    }
+    if (wrappedOutput.length > 20) {
+      lines.push('    ' + toolTheme.dim(`... and ${wrappedOutput.length - 20} more lines`));
+    }
+  }
+
+  if (toolCall.errorMessage) {
+    const errorLines = wordWrap(toolCall.errorMessage, width - 4);
+    lines.push(toolTheme.error('  Error:'));
+    for (const line of errorLines) {
+      lines.push('    ' + toolTheme.error(line));
+    }
+  }
+
+  if (toolCall.startTime && toolCall.endTime) {
+    const duration = toolCall.endTime - toolCall.startTime;
+    lines.push('  ' + toolTheme.dim(`Duration: ${formatDuration(duration)}`));
+  }
+
+  return lines;
 }
 
-/** Displays a running or completed tool call with optional expandable output. */
-export class ToolExecutionComponent extends Container {
-  private box: Box;
-  private header: Text;
-  private argsLine: Text;
-  private output: Markdown;
-  private toolName: string;
-  private args: unknown;
-  private result?: ToolResult;
-  private expanded = false;
-  private isError = false;
-  private isPartial = true;
+function getStatusIcon(status: TUIToolCall['status']): string {
+  switch (status) {
+    case 'pending':
+      return '◌';
+    case 'running':
+      return '◐';
+    case 'success':
+      return '✓';
+    case 'error':
+      return '✗';
+    default:
+      return '•';
+  }
+}
 
-  constructor(toolName: string, args: unknown) {
-    super();
-    this.toolName = toolName;
-    this.args = args;
-    this.box = new Box(1, 1, (line) => theme.toolPendingBg(line));
-    this.header = new Text("", 0, 0);
-    this.argsLine = new Text("", 0, 0);
-    this.output = new Markdown("", 0, 0, markdownTheme, {
-      color: (line) => theme.toolOutput(line),
-    });
-    this.addChild(new Spacer(1));
-    this.addChild(this.box);
-    this.box.addChild(this.header);
-    this.box.addChild(this.argsLine);
-    this.box.addChild(this.output);
-    this.refresh();
+function getStatusLabel(status: TUIToolCall['status']): string {
+  switch (status) {
+    case 'pending':
+      return 'pending';
+    case 'running':
+      return 'running...';
+    case 'success':
+      return 'done';
+    case 'error':
+      return 'failed';
+    default:
+      return '';
+  }
+}
+
+export class ToolExecution {
+  private toolCall: TUIToolCall;
+  private toolTheme: ToolTheme;
+
+  constructor(toolCall: TUIToolCall, toolTheme: ToolTheme) {
+    this.toolCall = toolCall;
+    this.toolTheme = toolTheme;
   }
 
-  /** Re-renders tool arguments when streaming tool call input changes. */
-  setArgs(args: unknown) {
-    this.args = args;
-    this.refresh();
+  setToolCall(toolCall: TUIToolCall): void {
+    this.toolCall = toolCall;
   }
 
-  /** Toggles preview/full output rendering for long tool results. */
-  setExpanded(expanded: boolean) {
-    this.expanded = expanded;
-    this.refresh();
+  render(width: number): string[] {
+    return renderToolExecution(this.toolCall, this.toolTheme, width);
   }
 
-  /** Marks the tool call complete and renders final output. */
-  setResult(result: ToolResult | undefined, opts?: { isError?: boolean }) {
-    this.result = result;
-    this.isPartial = false;
-    this.isError = Boolean(opts?.isError);
-    this.refresh();
+  getToolName(): string {
+    return this.toolCall.name;
   }
 
-  /** Renders partial output while the tool call is still running. */
-  setPartialResult(result: ToolResult | undefined) {
-    this.result = result;
-    this.isPartial = true;
-    this.refresh();
-  }
-
-  private refresh() {
-    const bg = this.isPartial
-      ? theme.toolPendingBg
-      : this.isError
-        ? theme.toolErrorBg
-        : theme.toolSuccessBg;
-    this.box.setBgFn((line) => bg(line));
-
-    const display = resolveToolDisplay({
-      name: this.toolName,
-      args: this.args,
-    });
-    const title = `${display.emoji} ${display.label}${this.isPartial ? " (running)" : ""}`;
-    this.header.setText(theme.toolTitle(theme.bold(title)));
-
-    const argLine = formatArgs(this.toolName, this.args);
-    this.argsLine.setText(argLine ? theme.dim(argLine) : theme.dim(" "));
-
-    const raw = extractText(this.result);
-    const text = raw || (this.isPartial ? "…" : "");
-    if (!this.expanded && text) {
-      const lines = text.split("\n");
-      const preview =
-        lines.length > PREVIEW_LINES ? `${lines.slice(0, PREVIEW_LINES).join("\n")}\n…` : text;
-      this.output.setText(preview);
-    } else {
-      this.output.setText(text);
-    }
+  getStatus(): TUIToolCall['status'] {
+    return this.toolCall.status;
   }
 }

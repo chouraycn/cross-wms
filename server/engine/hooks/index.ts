@@ -23,6 +23,38 @@ export type {
   HookEventType,
   HookEvent,
   HookHandler,
+  HookModifier,
+  InternalHookEventType,
+  InternalHookEvent,
+  InternalHookHandler,
+  AgentBootstrapHookContext,
+  AgentBootstrapHookEvent,
+  GatewayStartupHookContext,
+  GatewayStartupHookEvent,
+  MessageReceivedHookContext,
+  MessageReceivedHookEvent,
+  MessageSentHookContext,
+  MessageSentHookEvent,
+  MessageTranscribedHookContext,
+  MessageTranscribedHookEvent,
+  MessagePreprocessedHookContext,
+  MessagePreprocessedHookEvent,
+  SessionPatchHookContext,
+  SessionPatchHookEvent,
+  ToolCallHookContext,
+  ToolCallHookEvent,
+  ToolResultHookContext,
+  ToolResultHookEvent,
+  FireAndForgetBoundedHookOptions,
+  HookStatusConfigCheck,
+  HookInstallOption,
+  HookStatusEntry,
+  HookStatusReport,
+  MailProviderType,
+  MailWatcherState,
+  MailWatcherErrorType,
+  MailWatcherError,
+  MailWatcherStatus,
 } from './types.js';
 
 // 策略与优先级合并
@@ -54,8 +86,6 @@ export {
   loadLegacyHookHandler,
   buildImportUrl,
   resolveExistingRealpath,
-  registerInternalHook,
-  unregisterInternalHook,
   resetHookRegistrations,
   loadedHookRegistrations,
   registerBuiltinHooks,
@@ -126,10 +156,28 @@ export type { ModuleLoaderOptions } from './module-loader.js';
 
 // 内部钩子管理
 export {
+  registerInternalHook,
   registerInternalModifier,
+  unregisterInternalHook,
+  unregisterInternalModifier,
+  clearInternalHooks,
   runInternalHooks,
   runInternalModifiers,
-  clearInternalHooks,
+  triggerInternalHook,
+  setInternalHooksEnabled,
+  areInternalHooksEnabled,
+  getRegisteredEventKeys,
+  hasInternalHookListeners,
+  createInternalHookEvent,
+  isAgentBootstrapEvent as isInternalAgentBootstrapEvent,
+  isGatewayStartupEvent,
+  isMessageReceivedEvent,
+  isMessageSentEvent,
+  isMessageTranscribedEvent,
+  isMessagePreprocessedEvent,
+  isSessionPatchEvent,
+  isToolCallEvent,
+  isToolResultEvent,
 } from './internal-hooks.js';
 
 // LLM Slug 生成器
@@ -144,6 +192,8 @@ export {
   DEFAULT_MESSAGE_MAPPERS,
   MessageHookMapperManager,
   messageHookMapperManager,
+  createMessageToEmailMapper,
+  createEmailToMessageMapper,
 } from './message-hook-mappers.js';
 export type { MessageHookMapper } from './message-hook-mappers.js';
 
@@ -159,3 +209,141 @@ export {
   unregisterPluginHookHandler,
 } from './plugin-hooks.js';
 export type { PluginHookInfo, PluginHookRegistration } from './plugin-hooks.js';
+
+// Fire-and-Forget 异步触发
+export {
+  fireAndForgetHook,
+  fireAndForgetBoundedHook,
+  formatHookErrorForLog,
+  getFireAndForgetQueueSize,
+  getFireAndForgetActiveCount,
+  resetFireAndForgetStateForTest,
+} from './fire-and-forget.js';
+
+// 钩子状态管理
+export {
+  buildHookStatusReport,
+  filterLoadableHooks,
+  filterHooksBySource,
+  getHookStatusByName,
+  getHookStatusByKey,
+  summarizeHookStatus,
+} from './hooks-status.js';
+export type { BuildHookStatusOptions } from './hooks-status.js';
+
+// 导入 URL 工具
+export {
+  buildImportUrl as buildHookImportUrl,
+  isImmutableSource,
+  parseImportUrl,
+  invalidateImportCache,
+  buildImportUrlWithCacheBust,
+  hasImportUrlChanged,
+} from './import-url.js';
+
+// 邮件提供商配置
+export {
+  MAIL_PROVIDERS,
+  getMailProvider,
+  getMailProviderByEmail,
+  getProviderAuthInstructions,
+  isChineseProvider,
+} from './mail-providers.js';
+export type { MailProviderId, MailProviderConfig } from './mail-providers.js';
+
+// 邮件集成
+export {
+  DEFAULT_MAIL_LABEL,
+  DEFAULT_MAIL_MAX_BYTES,
+  DEFAULT_MAIL_RENEW_MINUTES,
+  DEFAULT_MAIL_CHECK_INTERVAL_MS,
+  generateHookToken,
+  resolveMailHookRuntimeConfig,
+  buildDefaultHookUrl,
+} from './mail.js';
+export type {
+  MailAuthType,
+  MailOAuth2Config,
+  MailAccountConfig,
+  MailHookOverrides,
+  MailHookRuntimeConfig,
+} from './mail.js';
+
+// 邮件客户端
+export { MailClient } from './mail-client.js';
+export type { MailAttachment, MailMessage, MailSearchFilter } from './mail-client.js';
+
+// 邮件操作
+export {
+  setupMailAccount,
+  sendMail,
+  fetchEmails,
+  searchEmails,
+  markEmailAsRead,
+  markEmailAsUnread,
+  flagEmail,
+  deleteEmail,
+  getUnreadCount,
+  runMailService,
+} from './mail-ops.js';
+export type {
+  MailSetupOptions,
+  MailRunOptions,
+  MailSendOptions,
+  MailSearchOptions,
+} from './mail-ops.js';
+
+// 邮件观察器
+export {
+  startMailWatcher,
+  stopMailWatcher,
+  setMailWatcherCallback,
+  clearMailWatcherCallback,
+} from './mail-watcher.js';
+export type { MailWatcherStartResult, MailWatcherStartOptions } from './mail-watcher.js';
+
+// 邮件 watcher 错误处理
+export {
+  isAddressInUseError,
+  isAuthenticationError,
+  isConnectionError,
+  isTimeoutError,
+  isRateLimitError,
+  classifyMailWatcherError,
+  getErrorUserMessage,
+  getProviderSpecificTroubleshooting,
+} from './gmail-watcher-errors.js';
+
+// 邮件 watcher 生命周期
+export {
+  getMailWatcherStatus,
+  setMailWatcherState,
+  setMailWatcherAccount,
+  recordMailWatcherError,
+  recordMailWatcherSuccess,
+  recordMessageProcessed,
+  startMailWatcherStatusTracking,
+  stopMailWatcherStatusTracking,
+  subscribeToMailWatcherStatus,
+  resetMailWatcherStatusForTest,
+  startMailWatcherWithLogs,
+} from './gmail-watcher-lifecycle.js';
+export type { MailWatcherLog } from './gmail-watcher-lifecycle.js';
+
+// 邮件设置工具
+export {
+  validateMailAccountConfig,
+  buildIMAPConfig,
+  buildSMTPConfig,
+  generateMailHookToken,
+  validateMailHookToken,
+  ensureMailConfigDir,
+  getMailConfigPath,
+  saveMailAccountConfig,
+  loadMailAccountConfig,
+  listMailAccounts,
+  deleteMailAccountConfig,
+  detectMailProviderFromEmail,
+  getMailSetupChecklist,
+} from './gmail-setup-utils.js';
+export type { MailSetupValidationResult } from './gmail-setup-utils.js';

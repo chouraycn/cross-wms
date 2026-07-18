@@ -157,3 +157,63 @@ export function isChannelConfigured(
   }
   return plugin.config.listAccountIds(config).length > 0;
 }
+
+// ===================== 状态汇总 =====================
+
+/** 渠道设置状态汇总。 */
+export interface ChannelSetupStatusSummary {
+  readonly total: number;
+  readonly enabled: number;
+  readonly configured: number;
+  readonly unconfigured: number;
+}
+
+/**
+ * 汇总渠道设置状态。
+ */
+export function summarizeChannelSetupStatus(
+  params: BuildChannelSetupOptionsParams = {},
+): ChannelSetupStatusSummary {
+  const options = buildChannelSetupOptions(params);
+  const enabled = options.filter((o) => o.enabled).length;
+  const configured = options.filter((o) => o.configured).length;
+  return {
+    total: options.length,
+    enabled,
+    configured,
+    unconfigured: options.length - configured,
+  };
+}
+
+/**
+ * 按分类分组渠道选项。
+ *
+ * 默认按 plugin 的 category 分组，未分类的归入 "other"。
+ */
+export function groupChannelOptionsByCategory(
+  options: readonly ChannelSetupOption[],
+): Record<string, ChannelSetupOption[]> {
+  const groups: Record<string, ChannelSetupOption[]> = {};
+  for (const option of options) {
+    const category = 'other';
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(option);
+  }
+  return groups;
+}
+
+/**
+ * 检查指定 channelId 是否已配置。
+ *
+ * 渠道不存在时返回 false。
+ */
+export function isChannelConfiguredById(
+  channelId: string,
+  params: BuildChannelSetupOptionsParams = {},
+): boolean {
+  const options = buildChannelSetupOptions(params);
+  const found = options.find((o) => o.channelId === channelId);
+  return found?.configured ?? false;
+}

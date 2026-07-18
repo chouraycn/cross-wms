@@ -8,8 +8,7 @@
 import { Router } from 'express';
 import path from 'path';
 import fs from 'fs';
-import { pluginRegistry } from '../engine/pluginRegistry.js';
-import { pluginManager } from '../engine/pluginManager.js';
+import { pluginRegistry, pluginManager } from '../engine/plugins/index.js';
 import { 
   listPlugins, 
   getPlugin, 

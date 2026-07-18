@@ -1,21 +1,13 @@
-// TUI theme defines shared colors and text styles for Pi TUI components.
-import type {
-  EditorTheme,
-  MarkdownTheme,
-  SelectListTheme,
-  SettingsListTheme,
-} from "@earendil-works/pi-tui";
-import { normalizeOptionalLowercaseString } from "@cdf-know/normalization-core/string-coerce";
-import chalk from "chalk";
-import type { SearchableSelectListTheme } from "../components/searchable-select-list.js";
+import chalk from 'chalk';
+import type { TUIPalette, TUIThemeMode } from '../types.js';
 
-const DARK_TEXT = "#E8E3D5";
-const LIGHT_TEXT = "#1E1E1E";
+const DARK_TEXT = '#E8E3D5';
+const LIGHT_TEXT = '#1E1E1E';
 const XTERM_LEVELS = [0, 95, 135, 175, 215, 255] as const;
 
 function channelToSrgb(value: number): number {
   const normalized = value / 255;
-  return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+  return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);
 }
 
 function relativeLuminanceRgb(r: number, g: number, b: number): number {
@@ -45,18 +37,25 @@ function pickHigherContrastText(r: number, g: number, b: number): boolean {
   return contrastRatio(background, LIGHT_TEXT) >= contrastRatio(background, DARK_TEXT);
 }
 
+function normalizeLowercaseString(value: string | undefined | null): string {
+  if (value == null) {
+    return '';
+  }
+  return String(value).trim().toLowerCase();
+}
+
 function isLightBackground(): boolean {
-  const explicit = normalizeOptionalLowercaseString(process.env.CDFKNOW_THEME);
-  if (explicit === "light") {
+  const explicit = normalizeLowercaseString(process.env.CROSS_WMS_THEME);
+  if (explicit === 'light') {
     return true;
   }
-  if (explicit === "dark") {
+  if (explicit === 'dark') {
     return false;
   }
 
   const colorfgbg = process.env.COLORFGBG;
   if (colorfgbg && colorfgbg.length <= 64) {
-    const sep = colorfgbg.lastIndexOf(";");
+    const sep = colorfgbg.lastIndexOf(';');
     const bg = Number.parseInt(sep >= 0 ? colorfgbg.slice(sep + 1) : colorfgbg, 10);
     if (bg >= 0 && bg <= 255) {
       if (bg <= 15) {
@@ -75,68 +74,110 @@ function isLightBackground(): boolean {
   return false;
 }
 
-/** Whether the terminal has a light background. Exported for testing only. */
 export const lightMode = isLightBackground();
 
-export const darkPalette = {
-  text: "#E8E3D5",
-  dim: "#7B7F87",
-  accent: "#F6C453",
-  accentSoft: "#F2A65A",
-  border: "#3C414B",
-  userBg: "#2B2F36",
-  userText: "#F3EEE0",
-  systemText: "#9BA3B2",
-  toolPendingBg: "#1F2A2F",
-  toolSuccessBg: "#1E2D23",
-  toolErrorBg: "#2F1F1F",
-  toolTitle: "#F6C453",
-  toolOutput: "#E1DACB",
-  quote: "#8CC8FF",
-  quoteBorder: "#3B4D6B",
-  code: "#F0C987",
-  codeBlock: "#1E232A",
-  codeBorder: "#343A45",
-  link: "#7DD3A5",
-  error: "#F97066",
-  success: "#7DD3A5",
-} as const;
+export const darkPalette: TUIPalette = {
+  text: '#E8E3D5',
+  dim: '#7B7F87',
+  accent: '#F6C453',
+  accentSoft: '#F2A65A',
+  border: '#3C414B',
+  userBg: '#2B2F36',
+  userText: '#F3EEE0',
+  systemText: '#9BA3B2',
+  toolPendingBg: '#1F2A2F',
+  toolSuccessBg: '#1E2D23',
+  toolErrorBg: '#2F1F1F',
+  toolTitle: '#F6C453',
+  toolOutput: '#E1DACB',
+  quote: '#8CC8FF',
+  quoteBorder: '#3B4D6B',
+  code: '#F0C987',
+  codeBlock: '#1E232A',
+  codeBorder: '#343A45',
+  link: '#7DD3A5',
+  error: '#F97066',
+  success: '#7DD3A5',
+};
 
-export const lightPalette = {
-  text: "#1E1E1E",
-  dim: "#5B6472",
-  accent: "#B45309",
-  accentSoft: "#C2410C",
-  border: "#5B6472",
-  userBg: "#F3F0E8",
-  userText: "#1E1E1E",
-  systemText: "#4B5563",
-  toolPendingBg: "#EFF6FF",
-  toolSuccessBg: "#ECFDF5",
-  toolErrorBg: "#FEF2F2",
-  toolTitle: "#B45309",
-  toolOutput: "#374151",
-  quote: "#1D4ED8",
-  quoteBorder: "#2563EB",
-  code: "#92400E",
-  codeBlock: "#F9FAFB",
-  codeBorder: "#92400E",
-  link: "#047857",
-  error: "#DC2626",
-  success: "#047857",
-} as const;
+export const lightPalette: TUIPalette = {
+  text: '#1E1E1E',
+  dim: '#5B6472',
+  accent: '#B45309',
+  accentSoft: '#C2410C',
+  border: '#5B6472',
+  userBg: '#F3F0E8',
+  userText: '#1E1E1E',
+  systemText: '#4B5563',
+  toolPendingBg: '#EFF6FF',
+  toolSuccessBg: '#ECFDF5',
+  toolErrorBg: '#FEF2F2',
+  toolTitle: '#B45309',
+  toolOutput: '#374151',
+  quote: '#1D4ED8',
+  quoteBorder: '#2563EB',
+  code: '#92400E',
+  codeBlock: '#F9FAFB',
+  codeBorder: '#92400E',
+  link: '#047857',
+  error: '#DC2626',
+  success: '#047857',
+};
 
-export const palette = lightMode ? lightPalette : darkPalette;
+export function getPalette(mode: TUIThemeMode = 'auto'): TUIPalette {
+  if (mode === 'light') return lightPalette;
+  if (mode === 'dark') return darkPalette;
+  return lightMode ? lightPalette : darkPalette;
+}
+
+export const palette = getPalette('auto');
 
 const fg = (hex: string) => (text: string) => chalk.hex(hex)(text);
 const bg = (hex: string) => (text: string) => chalk.bgHex(hex)(text);
 
-/**
- * Render code blocks with the theme code color without pulling a parser into the base TUI path.
- * Returns an array of lines with ANSI escape codes.
- */
 function highlightCode(code: string): string[] {
-  return code.split("\n").map((line) => fg(palette.code)(line));
+  return code.split('\n').map((line) => fg(palette.code)(line));
+}
+
+export interface MarkdownTheme {
+  heading: (text: string) => string;
+  link: (text: string) => string;
+  linkUrl: (text: string) => string;
+  code: (text: string) => string;
+  codeBlock: (text: string) => string;
+  codeBlockBorder: (text: string) => string;
+  quote: (text: string) => string;
+  quoteBorder: (text: string) => string;
+  hr: (text: string) => string;
+  listBullet: (text: string) => string;
+  bold: (text: string) => string;
+  italic: (text: string) => string;
+  strikethrough: (text: string) => string;
+  underline: (text: string) => string;
+  highlightCode: (code: string, language?: string) => string[];
+}
+
+export interface SelectListTheme {
+  selectedPrefix: (text: string) => string;
+  selectedText: (text: string) => string;
+  description: (text: string) => string;
+  scrollInfo: (text: string) => string;
+  noMatch: (text: string) => string;
+}
+
+export interface SearchableSelectListTheme extends SelectListTheme {
+  searchPrompt: (text: string) => string;
+  searchInput: (text: string) => string;
+  matchHighlight: (text: string) => string;
+}
+
+export interface FilterableSelectListTheme extends SelectListTheme {
+  filterLabel: (text: string) => string;
+}
+
+export interface EditorTheme {
+  borderColor: (text: string) => string;
+  selectList: SelectListTheme;
 }
 
 export const theme = {
@@ -189,23 +230,9 @@ const baseSelectListTheme: SelectListTheme = {
 
 export const selectListTheme: SelectListTheme = baseSelectListTheme;
 
-export const filterableSelectListTheme = {
+export const filterableSelectListTheme: FilterableSelectListTheme = {
   ...baseSelectListTheme,
   filterLabel: (text: string) => fg(palette.dim)(text),
-};
-
-export const settingsListTheme: SettingsListTheme = {
-  label: (text, selected) =>
-    selected ? chalk.bold(fg(palette.accent)(text)) : fg(palette.text)(text),
-  value: (text, selected) => (selected ? fg(palette.accentSoft)(text) : fg(palette.dim)(text)),
-  description: (text) => fg(palette.systemText)(text),
-  cursor: fg(palette.accent)("→ "),
-  hint: (text) => fg(palette.dim)(text),
-};
-
-export const editorTheme: EditorTheme = {
-  borderColor: (text) => fg(palette.border)(text),
-  selectList: selectListTheme,
 };
 
 export const searchableSelectListTheme: SearchableSelectListTheme = {
@@ -214,3 +241,29 @@ export const searchableSelectListTheme: SearchableSelectListTheme = {
   searchInput: (text) => fg(palette.text)(text),
   matchHighlight: (text) => chalk.bold(fg(palette.accent)(text)),
 };
+
+export const editorTheme: EditorTheme = {
+  borderColor: (text) => fg(palette.border)(text),
+  selectList: selectListTheme,
+};
+
+export function createThemedMarkdownTheme(p: TUIPalette): MarkdownTheme {
+  const fgColor = (hex: string) => (text: string) => chalk.hex(hex)(text);
+  return {
+    heading: (text) => chalk.bold(fgColor(p.accent)(text)),
+    link: (text) => fgColor(p.link)(text),
+    linkUrl: (text) => chalk.dim(text),
+    code: (text) => fgColor(p.code)(text),
+    codeBlock: (text) => fgColor(p.code)(text),
+    codeBlockBorder: (text) => fgColor(p.codeBorder)(text),
+    quote: (text) => fgColor(p.quote)(text),
+    quoteBorder: (text) => fgColor(p.quoteBorder)(text),
+    hr: (text) => fgColor(p.border)(text),
+    listBullet: (text) => fgColor(p.accentSoft)(text),
+    bold: (text) => chalk.bold(text),
+    italic: (text) => chalk.italic(text),
+    strikethrough: (text) => chalk.strikethrough(text),
+    underline: (text) => chalk.underline(text),
+    highlightCode: (code: string) => code.split('\n').map((line) => fgColor(p.code)(line)),
+  };
+}

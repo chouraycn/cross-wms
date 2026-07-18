@@ -2,7 +2,7 @@
  * Commitments Store - 持久化存储
  *
  * 基于 JSON 文件的承诺记录存储实现，支持原子写入、记录校验、到期认领、
- * 状态更新和过期清理。
+ * 状态更新、过期清理、过滤查询、分页、统计和心跳记录。
  *
  * 对齐 openclaw/src/commitments/store.ts 的职责划分，文件操作参考
  * server/engine/cron/store.ts 的 atomicWrite 模式：
@@ -15,14 +15,24 @@ import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import { EXPIRE_AFTER_HOURS } from "./config.js";
+import { EXPIRE_AFTER_HOURS, priorityToNumber } from "./config.js";
 import type {
   CommitmentCandidate,
   CommitmentExtractionItem,
   CommitmentRecord,
   CommitmentScope,
+  CommitmentSource,
   CommitmentStatus,
   CommitmentStoreFile,
+  CommitmentFilter,
+  PaginationParams,
+  SortParams,
+  PaginatedResult,
+  CommitmentStats,
+  CommitmentHeartbeat,
+  CommitmentPriority,
+  CommitmentKind,
+  CommitmentSensitivity,
 } from "./types.js";
 
 // ===================== 常量 =====================
@@ -34,28 +44,46 @@ const ROLLING_DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_COMMITMENTS_DIR = "commitments";
 /** 默认存储文件名 */
 const DEFAULT_STORE_FILENAME = "commitments.json";
+/** 默认最大心跳记录数 */
+const DEFAULT_MAX_HEARTBEAT_RECORDS = 1000;
 
-const COMMITMENT_KINDS = new Set<CommitmentRecord["kind"]>([
+const COMMITMENT_KINDS = new Set<string>([
   "event_check_in",
   "deadline_check",
   "care_check_in",
   "open_loop",
+  "follow_up",
+  "reminder",
+  "urgent",
+  "care",
 ]);
-const COMMITMENT_SENSITIVITIES = new Set<CommitmentRecord["sensitivity"]>([
+const COMMITMENT_SENSITIVITIES = new Set<string>([
   "routine",
   "personal",
   "care",
+  "normal",
 ]);
-const COMMITMENT_SOURCES = new Set<CommitmentRecord["source"]>([
+const COMMITMENT_SOURCES = new Set<string>([
   "inferred_user_context",
   "agent_promise",
+  "manual",
+  "system",
+  "rule",
 ]);
-const COMMITMENT_STATUSES = new Set<CommitmentRecord["status"]>([
+const COMMITMENT_STATUSES = new Set<CommitmentStatus>([
   "pending",
   "sent",
   "dismissed",
   "snoozed",
   "expired",
+  "completed",
+  "failed",
+]);
+const COMMITMENT_PRIORITIES = new Set<CommitmentPriority>([
+  "low",
+  "medium",
+  "high",
+  "urgent",
 ]);
 
 // ===================== 路径解析 =====================
@@ -78,6 +106,23 @@ function expandHomePrefix(rawPath: string): string {
   }
   return rawPath;
 }
+
+/** listCommitments 参数类型 */
+export type ListCommitmentsParams = {
+  storePath?: string;
+  filter?: CommitmentFilter;
+  sort?: SortParams;
+  pagination?: PaginationParams;
+  nowMs?: number;
+};
+
+/** updateCommitment 参数类型 */
+export type CommitmentUpdateParams = {
+  id: string;
+  storePath?: string;
+  updates: Partial<CommitmentRecord>;
+  nowMs?: number;
+};
 
 /** 解析承诺存储文件路径，缺省时回退到默认路径 */
 export function resolveCommitmentStorePath(storePath?: string): string {
@@ -103,21 +148,16 @@ async function atomicWrite(
   const dir = path.dirname(filePath);
   const tempPath = `${filePath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`;
 
-  // 确保目录存在
   await fs.promises.mkdir(dir, { recursive: true, mode: dirMode });
 
-  // 写入临时文件
   await fs.promises.writeFile(tempPath, content, { mode: fileMode });
 
-  // 重命名到目标文件（原子操作）
   try {
     await fs.promises.rename(tempPath, filePath);
   } catch (err) {
-    // 重命名失败时尝试清理临时文件
     try {
       await fs.promises.unlink(tempPath);
     } catch {
-      // 忽略清理错误
     }
     throw err;
   }
@@ -151,25 +191,32 @@ function normalizeNonNegativeInteger(value: unknown): number | undefined {
     : undefined;
 }
 
+/** 规范化字符串数组 */
+function normalizeStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const result = value.filter((v) => typeof v === "string" && v.trim().length > 0);
+  return result.length > 0 ? result : undefined;
+}
+
 // ===================== 记录校验 =====================
 
 /** 空存储 */
 function emptyStore(): CommitmentStoreFile {
-  return { version: STORE_VERSION, commitments: [] };
+  return { version: STORE_VERSION, commitments: [], heartbeats: [] };
 }
 
 /**
  * 校验并规范化一条承诺记录。
  *
- * 必填字段缺失或枚举值非法时返回 undefined；可选字段被裁剪为干净形态。
+ * 必填字段缺失或枚举值非法时返回 null；可选字段被裁剪为干净形态。
  */
-export function coerceCommitment(raw: unknown): CommitmentRecord | undefined {
+export function coerceCommitment(raw: unknown): CommitmentRecord | null {
   if (!isRecord(raw)) {
-    return undefined;
+    return null;
   }
   const dueWindow = isRecord(raw.dueWindow) ? raw.dueWindow : undefined;
   if (!dueWindow) {
-    return undefined;
+    return null;
   }
 
   const id = normalizeOptionalString(raw.id);
@@ -183,6 +230,7 @@ export function coerceCommitment(raw: unknown): CommitmentRecord | undefined {
   const sensitivity = normalizeOptionalString(raw.sensitivity);
   const source = normalizeOptionalString(raw.source);
   const status = normalizeOptionalString(raw.status);
+  const priority = normalizeOptionalString(raw.priority) || "medium";
   const confidence = normalizeNonNegativeNumber(raw.confidence);
   const createdAtMs = normalizeNonNegativeNumber(raw.createdAtMs);
   const updatedAtMs = normalizeNonNegativeNumber(raw.updatedAtMs);
@@ -201,6 +249,12 @@ export function coerceCommitment(raw: unknown): CommitmentRecord | undefined {
   const dismissedAtMs = normalizeNonNegativeNumber(raw.dismissedAtMs);
   const snoozedUntilMs = normalizeNonNegativeNumber(raw.snoozedUntilMs);
   const expiredAtMs = normalizeNonNegativeNumber(raw.expiredAtMs);
+  const completedAtMs = normalizeNonNegativeNumber(raw.completedAtMs);
+  const failedAtMs = normalizeNonNegativeNumber(raw.failedAtMs);
+  const failureReason = normalizeOptionalString(raw.failureReason);
+  const tags = normalizeStringArray(raw.tags);
+  const completionVerified = typeof raw.completionVerified === "boolean" ? raw.completionVerified : undefined;
+  const completionVerifiedAtMs = normalizeNonNegativeNumber(raw.completionVerifiedAtMs);
 
   if (
     !id ||
@@ -214,10 +268,11 @@ export function coerceCommitment(raw: unknown): CommitmentRecord | undefined {
     !sensitivity ||
     !source ||
     !status ||
-    !COMMITMENT_KINDS.has(kind as CommitmentRecord["kind"]) ||
-    !COMMITMENT_SENSITIVITIES.has(sensitivity as CommitmentRecord["sensitivity"]) ||
-    !COMMITMENT_SOURCES.has(source as CommitmentRecord["source"]) ||
-    !COMMITMENT_STATUSES.has(status as CommitmentRecord["status"]) ||
+    !COMMITMENT_KINDS.has(kind) ||
+    !COMMITMENT_SENSITIVITIES.has(sensitivity) ||
+    !COMMITMENT_SOURCES.has(source) ||
+    !COMMITMENT_STATUSES.has(status as CommitmentStatus) ||
+    !COMMITMENT_PRIORITIES.has(priority as CommitmentPriority) ||
     confidence === undefined ||
     createdAtMs === undefined ||
     updatedAtMs === undefined ||
@@ -227,8 +282,10 @@ export function coerceCommitment(raw: unknown): CommitmentRecord | undefined {
     !timezone ||
     latestMs < earliestMs
   ) {
-    return undefined;
+    return null;
   }
+
+  const metadata = isRecord(raw.metadata) ? raw.metadata : undefined;
 
   return {
     id,
@@ -239,10 +296,11 @@ export function coerceCommitment(raw: unknown): CommitmentRecord | undefined {
     ...(to ? { to } : {}),
     ...(threadId ? { threadId } : {}),
     ...(senderId ? { senderId } : {}),
-    kind: kind as CommitmentRecord["kind"],
-    sensitivity: sensitivity as CommitmentRecord["sensitivity"],
-    source: source as CommitmentRecord["source"],
-    status: status as CommitmentRecord["status"],
+    kind: kind as CommitmentKind,
+    sensitivity: sensitivity as CommitmentSensitivity,
+    source: source as CommitmentSource,
+    status: status as CommitmentStatus,
+    priority: priority as CommitmentPriority,
     reason,
     suggestedText,
     dedupeKey,
@@ -250,6 +308,8 @@ export function coerceCommitment(raw: unknown): CommitmentRecord | undefined {
     dueWindow: { earliestMs, latestMs, timezone },
     ...(sourceMessageId ? { sourceMessageId } : {}),
     ...(sourceRunId ? { sourceRunId } : {}),
+    ...(tags ? { tags } : {}),
+    ...(metadata ? { metadata } : {}),
     createdAtMs,
     updatedAtMs,
     attempts,
@@ -258,6 +318,48 @@ export function coerceCommitment(raw: unknown): CommitmentRecord | undefined {
     ...(dismissedAtMs !== undefined ? { dismissedAtMs } : {}),
     ...(snoozedUntilMs !== undefined ? { snoozedUntilMs } : {}),
     ...(expiredAtMs !== undefined ? { expiredAtMs } : {}),
+    ...(completedAtMs !== undefined ? { completedAtMs } : {}),
+    ...(failedAtMs !== undefined ? { failedAtMs } : {}),
+    ...(failureReason ? { failureReason } : {}),
+    ...(completionVerified !== undefined ? { completionVerified } : {}),
+    ...(completionVerifiedAtMs !== undefined ? { completionVerifiedAtMs } : {}),
+  };
+}
+
+/** 校验并规范化心跳记录 */
+function coerceHeartbeat(raw: unknown): CommitmentHeartbeat | undefined {
+  if (!isRecord(raw)) {
+    return undefined;
+  }
+
+  const id = normalizeOptionalString(raw.id);
+  const commitmentId = normalizeOptionalString(raw.commitmentId);
+  const heartbeatAtMs = normalizeNonNegativeNumber(raw.heartbeatAtMs);
+  const status = normalizeOptionalString(raw.status);
+  const deliveryChannel = normalizeOptionalString(raw.deliveryChannel);
+  const deliveryMessageId = normalizeOptionalString(raw.deliveryMessageId);
+  const skipReason = normalizeOptionalString(raw.skipReason);
+  const errorMessage = normalizeOptionalString(raw.errorMessage);
+
+  if (
+    !id ||
+    !commitmentId ||
+    heartbeatAtMs === undefined ||
+    !status ||
+    !["triggered", "skipped", "delivered", "failed"].includes(status)
+  ) {
+    return undefined;
+  }
+
+  return {
+    id,
+    commitmentId,
+    heartbeatAtMs,
+    status: status as CommitmentHeartbeat["status"],
+    ...(deliveryChannel ? { deliveryChannel } : {}),
+    ...(deliveryMessageId ? { deliveryMessageId } : {}),
+    ...(skipReason ? { skipReason } : {}),
+    ...(errorMessage ? { errorMessage } : {}),
   };
 }
 
@@ -279,6 +381,7 @@ function sanitizeStoreForWrite(store: CommitmentStoreFile): CommitmentStoreFile 
   return {
     ...store,
     commitments: store.commitments.map(stripLegacySourceText),
+    heartbeats: store.heartbeats || [],
   };
 }
 
@@ -306,6 +409,14 @@ async function loadCommitmentStoreInternal(
       return { store: emptyStore(), hadLegacySourceText: false };
     }
     let hadLegacySourceText = false;
+
+    const heartbeats = Array.isArray(parsed.heartbeats)
+      ? parsed.heartbeats.flatMap((entry) => {
+          const coerced = coerceHeartbeat(entry);
+          return coerced ? [coerced] : [];
+        })
+      : [];
+
     return {
       store: {
         version: STORE_VERSION,
@@ -314,6 +425,7 @@ async function loadCommitmentStoreInternal(
           const coerced = coerceCommitment(entry);
           return coerced ? [coerced] : [];
         }),
+        heartbeats,
       },
       hadLegacySourceText,
     };
@@ -349,6 +461,11 @@ function generateCommitmentId(nowMs: number): string {
   return `cm_${nowMs.toString(36)}_${randomBytes(5).toString("hex")}`;
 }
 
+/** 生成心跳 ID */
+function generateHeartbeatId(nowMs: number): string {
+  return `hb_${nowMs.toString(36)}_${randomBytes(4).toString("hex")}`;
+}
+
 /** 取作用域字段的规范值 */
 function scopeValue(value: string | undefined): string {
   return value?.trim() ?? "";
@@ -381,6 +498,11 @@ function candidateToRecord(params: {
   latestMs: number;
   timezone: string;
 }): CommitmentRecord {
+  const reason = (params.candidate.reason ?? '').trim() || '未命名承诺';
+  const suggestedText = (params.candidate.suggestedText ?? '').trim() || reason;
+  const source = params.candidate.source || 'rule';
+  const dedupeKey = (params.candidate.dedupeKey ?? '').trim() || `${params.candidate.kind}:${reason}`;
+
   return {
     id: generateCommitmentId(params.nowMs),
     agentId: params.item.agentId,
@@ -392,12 +514,13 @@ function candidateToRecord(params: {
     ...(params.item.senderId ? { senderId: params.item.senderId } : {}),
     kind: params.candidate.kind,
     sensitivity: params.candidate.sensitivity,
-    source: params.candidate.source,
+    source,
     status: "pending",
-    reason: params.candidate.reason.trim(),
-    suggestedText: params.candidate.suggestedText.trim(),
-    dedupeKey: params.candidate.dedupeKey.trim(),
-    confidence: params.candidate.confidence,
+    priority: params.candidate.priority || "medium",
+    reason,
+    suggestedText,
+    dedupeKey,
+    confidence: params.candidate.confidence ?? 0.5,
     dueWindow: {
       earliestMs: params.earliestMs,
       latestMs: params.latestMs,
@@ -407,6 +530,8 @@ function candidateToRecord(params: {
       ? { sourceMessageId: params.item.sourceMessageId }
       : {}),
     ...(params.item.sourceRunId ? { sourceRunId: params.item.sourceRunId } : {}),
+    ...(params.candidate.tags && params.candidate.tags.length > 0 ? { tags: params.candidate.tags } : {}),
+    ...(params.candidate.metadata ? { metadata: params.candidate.metadata } : {}),
     createdAtMs: params.nowMs,
     updatedAtMs: params.nowMs,
     attempts: 0,
@@ -471,13 +596,89 @@ export async function expireStaleCommitments(
 /**
  * 添加新承诺，同作用域同 dedupeKey 的活跃承诺会被合并更新。
  *
- * @param storePath 存储路径
- * @param item 提取输入项
- * @param candidates 候选项与解析后的到期窗口
- * @param nowMs 当前时间；缺省取 Date.now()
- * @returns 新创建的承诺记录
+ * 支持两种调用方式：
+ * 1. addCommitment({ storePath, item, candidates, nowMs }) - 从提取结果添加
+ * 2. addCommitment({ id, scope, kind, sensitivity, source, priority, reason, suggestedText, dedupeKey, confidence, dueWindow, status, createdAtMs, updatedAtMs, storePath }) - 直接创建单个承诺
+ *
+ * @returns { added: number; duplicates: number }
  */
-export async function addCommitment(params: {
+export async function addCommitment(params: any): Promise<{ added: number; duplicates: number }> {
+  if (params && 'candidates' in params) {
+    return addCommitmentFromCandidates(params);
+  }
+  return addCommitmentDirect(params);
+}
+
+async function addCommitmentDirect(params: {
+  id?: string;
+  scope: CommitmentScope;
+  kind: CommitmentKind;
+  sensitivity: CommitmentSensitivity;
+  source: string;
+  priority?: CommitmentPriority;
+  reason: string;
+  suggestedText: string;
+  dedupeKey: string;
+  confidence: number;
+  dueWindow: { earliestMs: number; latestMs: number; timezone: string };
+  status?: CommitmentStatus;
+  createdAtMs?: number;
+  updatedAtMs?: number;
+  attempts?: number;
+  storePath?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+}): Promise<{ added: number; duplicates: number }> {
+  const nowMs = params.createdAtMs ?? Date.now();
+  const storePath = params.storePath;
+  const scopeKey = buildCommitmentScopeKey(params.scope);
+  const { store } = await loadCommitmentStoreInternal(storePath);
+  expireStaleCommitmentsInStore(store, nowMs);
+
+  const dedupeKey = params.dedupeKey.trim();
+  const existingIndex = store.commitments.findIndex(
+    (commitment) =>
+      buildCommitmentScopeKey(commitment) === scopeKey &&
+      commitment.dedupeKey === dedupeKey &&
+      isActiveStatus(commitment.status),
+  );
+
+  if (existingIndex >= 0) {
+    return { added: 0, duplicates: 1 };
+  }
+
+  const record: CommitmentRecord = {
+    id: params.id || generateCommitmentId(nowMs),
+    agentId: params.scope.agentId,
+    sessionKey: params.scope.sessionKey,
+    channel: params.scope.channel,
+    ...(params.scope.accountId ? { accountId: params.scope.accountId } : {}),
+    ...(params.scope.to ? { to: params.scope.to } : {}),
+    ...(params.scope.threadId ? { threadId: params.scope.threadId } : {}),
+    ...(params.scope.senderId ? { senderId: params.scope.senderId } : {}),
+    kind: params.kind,
+    sensitivity: params.sensitivity,
+    source: params.source as CommitmentSource,
+    status: params.status || "pending",
+    priority: params.priority || "medium",
+    reason: params.reason,
+    suggestedText: params.suggestedText,
+    dedupeKey: params.dedupeKey,
+    confidence: params.confidence,
+    dueWindow: params.dueWindow,
+    ...(params.tags && params.tags.length > 0 ? { tags: params.tags } : {}),
+    ...(params.metadata ? { metadata: params.metadata } : {}),
+    createdAtMs: nowMs,
+    updatedAtMs: params.updatedAtMs ?? nowMs,
+    attempts: params.attempts ?? 0,
+  };
+
+  store.commitments.push(record);
+  await saveCommitmentStore(storePath, store);
+  return { added: 1, duplicates: 0 };
+}
+
+async function addCommitmentFromCandidates(params: {
   storePath?: string;
   item: CommitmentExtractionItem;
   candidates: Array<{
@@ -487,20 +688,20 @@ export async function addCommitment(params: {
     timezone: string;
   }>;
   nowMs?: number;
-}): Promise<CommitmentRecord[]> {
+}): Promise<{ added: number; duplicates: number }> {
   if (params.candidates.length === 0) {
-    return [];
+    return { added: 0, duplicates: 0 };
   }
   const nowMs = params.nowMs ?? Date.now();
   const storePath = params.storePath;
   const scopeKey = buildCommitmentScopeKey(params.item);
   const { store } = await loadCommitmentStoreInternal(storePath);
-  // 加载后顺手清理过期项，避免合并时命中已陈旧的记录
   expireStaleCommitmentsInStore(store, nowMs);
 
-  const created: CommitmentRecord[] = [];
+  let added = 0;
+  let duplicates = 0;
   for (const entry of params.candidates) {
-    const dedupeKey = entry.candidate.dedupeKey.trim();
+    const dedupeKey = (entry.candidate.dedupeKey ?? '').trim();
     const existingIndex = store.commitments.findIndex(
       (commitment) =>
         buildCommitmentScopeKey(commitment) === scopeKey &&
@@ -508,12 +709,16 @@ export async function addCommitment(params: {
         isActiveStatus(commitment.status),
     );
     if (existingIndex >= 0) {
+      duplicates++;
       const existing = store.commitments[existingIndex];
       store.commitments[existingIndex] = {
         ...existing,
-        reason: entry.candidate.reason.trim() || existing.reason,
-        suggestedText: entry.candidate.suggestedText.trim() || existing.suggestedText,
-        confidence: Math.max(existing.confidence, entry.candidate.confidence),
+        reason: (entry.candidate.reason ?? '').trim() || existing.reason,
+        suggestedText: (entry.candidate.suggestedText ?? '').trim() || existing.suggestedText,
+        confidence: Math.max(existing.confidence, entry.candidate.confidence ?? 0),
+        priority: priorityToNumber(existing.priority) >= priorityToNumber(entry.candidate.priority || "medium")
+          ? existing.priority
+          : entry.candidate.priority || "medium",
         dueWindow: {
           earliestMs: Math.min(existing.dueWindow.earliestMs, entry.earliestMs),
           latestMs: Math.max(existing.dueWindow.latestMs, entry.latestMs),
@@ -532,11 +737,11 @@ export async function addCommitment(params: {
       timezone: entry.timezone,
     });
     store.commitments.push(record);
-    created.push(record);
+    added++;
   }
 
   await saveCommitmentStore(storePath, store);
-  return created;
+  return { added, duplicates };
 }
 
 // ===================== 状态更新 =====================
@@ -544,44 +749,42 @@ export async function addCommitment(params: {
 /**
  * 更新承诺状态。
  *
- * 仅活跃状态的承诺可被更新；终态（sent/dismissed/expired）会附带对应时间戳。
- * 不支持更新为 pending/snoozed（这两个状态由专门路径管理）。
+ * 仅活跃状态的承诺可被更新；终态会附带对应时间戳。
  *
- * @param storePath 存储路径
- * @param ids 要更新的承诺 ID 列表
+ * @param id 承诺 ID
  * @param status 目标状态
- * @param nowMs 当前时间；缺省取 Date.now()
+ * @param params 存储路径等参数
  */
-export async function updateCommitmentStatus(params: {
-  storePath?: string;
-  ids: string[];
-  status: Extract<CommitmentStatus, "sent" | "dismissed" | "expired">;
-  nowMs?: number;
-}): Promise<void> {
-  if (params.ids.length === 0) {
-    return;
-  }
-  const idSet = new Set(params.ids);
+export async function updateCommitmentStatus(
+  id: string,
+  status: Extract<CommitmentStatus, "sent" | "dismissed" | "expired" | "completed" | "failed">,
+  params: { storePath?: string; nowMs?: number; failureReason?: string },
+): Promise<boolean> {
   const nowMs = params.nowMs ?? Date.now();
   const { store } = await loadCommitmentStoreInternal(params.storePath);
   let changed = false;
   store.commitments = store.commitments.map((commitment) => {
-    if (!idSet.has(commitment.id) || !isActiveStatus(commitment.status)) {
+    if (commitment.id !== id || !isActiveStatus(commitment.status)) {
       return commitment;
     }
     changed = true;
     return {
       ...commitment,
-      status: params.status,
+      status,
       updatedAtMs: nowMs,
-      ...(params.status === "sent" ? { sentAtMs: nowMs } : {}),
-      ...(params.status === "dismissed" ? { dismissedAtMs: nowMs } : {}),
-      ...(params.status === "expired" ? { expiredAtMs: nowMs } : {}),
+      ...(status === "sent" ? { sentAtMs: nowMs } : {}),
+      ...(status === "dismissed" ? { dismissedAtMs: nowMs } : {}),
+      ...(status === "expired" ? { expiredAtMs: nowMs } : {}),
+      ...(status === "completed" ? { completedAtMs: nowMs } : {}),
+      ...(status === "failed"
+        ? { failedAtMs: nowMs, failureReason: params.failureReason }
+        : {}),
     };
   });
   if (changed) {
     await saveCommitmentStore(params.storePath, store);
   }
+  return changed;
 }
 
 /**
@@ -620,6 +823,174 @@ export async function markCommitmentsAttempted(params: {
   }
 }
 
+/**
+ * 延后承诺：将承诺设置为 snoozed 状态
+ *
+ * @param storePath 存储路径
+ * @param id 承诺 ID
+ * @param untilMs 延后到的时间
+ * @param nowMs 当前时间；缺省取 Date.now()
+ */
+export async function snoozeCommitment(params: {
+  storePath?: string;
+  id: string;
+  untilMs: number;
+  nowMs?: number;
+}): Promise<boolean> {
+  const nowMs = params.nowMs ?? Date.now();
+  const { store } = await loadCommitmentStoreInternal(params.storePath);
+  const index = store.commitments.findIndex(
+    (c) => c.id === params.id && isActiveStatus(c.status),
+  );
+  if (index < 0) {
+    return false;
+  }
+  store.commitments[index] = {
+    ...store.commitments[index],
+    status: "snoozed",
+    snoozedUntilMs: params.untilMs,
+    updatedAtMs: nowMs,
+  };
+  await saveCommitmentStore(params.storePath, store);
+  return true;
+}
+
+/**
+ * 手动创建承诺
+ *
+ * @param storePath 存储路径
+ * @param commitment 承诺数据（不含 id、createdAtMs、updatedAtMs、attempts 会被自动设置）
+ * @param nowMs 当前时间；缺省取 Date.now()
+ */
+export async function createCommitment(params: {
+  storePath?: string;
+  commitment: Omit<CommitmentRecord, "id" | "createdAtMs" | "updatedAtMs" | "attempts">;
+  nowMs?: number;
+}): Promise<CommitmentRecord> {
+  const nowMs = params.nowMs ?? Date.now();
+  const { store } = await loadCommitmentStoreInternal(params.storePath);
+
+  const record: CommitmentRecord = {
+    ...params.commitment,
+    id: generateCommitmentId(nowMs),
+    createdAtMs: nowMs,
+    updatedAtMs: nowMs,
+    attempts: 0,
+  };
+
+  store.commitments.push(record);
+  await saveCommitmentStore(params.storePath, store);
+  return record;
+}
+
+/**
+ * 更新承诺字段
+ *
+ * @param params 包含 id、storePath、updates 的对象
+ */
+export async function updateCommitment(params: CommitmentUpdateParams): Promise<boolean> {
+  const nowMs = params.nowMs ?? Date.now();
+  const { store } = await loadCommitmentStoreInternal(params.storePath);
+  const index = store.commitments.findIndex((c) => c.id === params.id);
+  if (index < 0) {
+    return false;
+  }
+
+  const existing = store.commitments[index];
+  const updated = {
+    ...existing,
+    ...params.updates,
+    id: existing.id,
+    updatedAtMs: nowMs,
+  };
+
+  const coerced = coerceCommitment(updated);
+  if (!coerced) {
+    return false;
+  }
+
+  store.commitments[index] = coerced;
+  await saveCommitmentStore(params.storePath, store);
+  return true;
+}
+
+/**
+ * 获取单条承诺记录
+ *
+ * 支持两种调用方式：
+ * 1. getCommitment(id, storePath) - 位置参数
+ * 2. getCommitment({ id, storePath }) - 对象参数
+ */
+export async function getCommitment(
+  idOrParams: string | { id: string; storePath?: string },
+  storePath?: string,
+): Promise<CommitmentRecord | null> {
+  let id: string;
+  let path: string | undefined;
+
+  if (typeof idOrParams === 'string') {
+    id = idOrParams;
+    path = storePath;
+  } else {
+    id = idOrParams.id;
+    path = idOrParams.storePath;
+  }
+
+  const { store } = await loadCommitmentStoreInternal(path);
+  return store.commitments.find((c) => c.id === id) || null;
+}
+
+/**
+ * 删除承诺
+ *
+ * @param id 承诺 ID
+ * @param storePath 存储路径
+ */
+export async function deleteCommitment(
+  id: string,
+  storePath?: string,
+): Promise<boolean> {
+  const { store } = await loadCommitmentStoreInternal(storePath);
+  const initialLength = store.commitments.length;
+  store.commitments = store.commitments.filter((c) => c.id !== id);
+  if (store.commitments.length === initialLength) {
+    return false;
+  }
+  await saveCommitmentStore(storePath, store);
+  return true;
+}
+
+/**
+ * 验证承诺完成
+ *
+ * @param storePath 存储路径
+ * @param id 承诺 ID
+ * @param verified 是否已验证完成
+ * @param nowMs 当前时间；缺省取 Date.now()
+ */
+export async function verifyCompletion(params: {
+  storePath?: string;
+  id: string;
+  verified: boolean;
+  nowMs?: number;
+}): Promise<boolean> {
+  const nowMs = params.nowMs ?? Date.now();
+  const { store } = await loadCommitmentStoreInternal(params.storePath);
+  const index = store.commitments.findIndex((c) => c.id === params.id);
+  if (index < 0) {
+    return false;
+  }
+  store.commitments[index] = {
+    ...store.commitments[index],
+    completionVerified: params.verified,
+    completionVerifiedAtMs: nowMs,
+    updatedAtMs: nowMs,
+    ...(params.verified ? { status: "completed" as const, completedAtMs: nowMs } : {}),
+  };
+  await saveCommitmentStore(params.storePath, store);
+  return true;
+}
+
 // ===================== 到期认领 =====================
 
 /** 统计某个会话在滚动 24 小时窗口内已发送的承诺数 */
@@ -640,7 +1011,7 @@ function countSentCommitmentsForSession(params: {
 }
 
 /**
- * 认领到期承诺：返回当前应投递的承诺，并自增尝试次数。
+ * 认领到期承诺：返回当前应投递的承诺，并标记为 sent 状态。
  *
  * 过滤条件：
  *   - agentId/sessionKey 匹配
@@ -648,7 +1019,7 @@ function countSentCommitmentsForSession(params: {
  *   - earliestMs <= now <= latestMs + 过期阈值
  *   - 当日已发送数 < maxPerDay
  *
- * 排序：按 earliestMs 升序，平局按 createdAtMs。
+ * 排序：按优先级降序，再按 earliestMs 升序，平局按 createdAtMs。
  *
  * @param storePath 存储路径
  * @param agentId Agent ID
@@ -661,7 +1032,7 @@ export async function claimDueCommitments(params: {
   storePath?: string;
   agentId: string;
   sessionKey: string;
-  maxPerDay: number;
+  maxPerDay?: number;
   limit?: number;
   nowMs?: number;
 }): Promise<CommitmentRecord[]> {
@@ -674,8 +1045,9 @@ export async function claimDueCommitments(params: {
     await saveCommitmentStore(params.storePath, store);
   }
 
+  const maxPerDay = params.maxPerDay ?? 3;
   const remainingToday =
-    params.maxPerDay -
+    maxPerDay -
     countSentCommitmentsForSession({
       store,
       agentId: params.agentId,
@@ -700,17 +1072,20 @@ export async function claimDueCommitments(params: {
     )
     .toSorted(
       (a, b) =>
+        priorityToNumber(b.priority) - priorityToNumber(a.priority) ||
         a.dueWindow.earliestMs - b.dueWindow.earliestMs ||
         a.createdAtMs - b.createdAtMs,
     )
     .slice(0, limit);
 
   if (due.length > 0) {
-    await markCommitmentsAttempted({
-      storePath: params.storePath,
-      ids: due.map((c) => c.id),
-      nowMs,
-    });
+    const ids = due.map((c) => c.id);
+    for (const id of ids) {
+      await updateCommitmentStatus(id, "sent", { storePath: params.storePath, nowMs });
+    }
+    const { store: updatedStore } = await loadCommitmentStoreInternal(params.storePath);
+    const idSet = new Set(ids);
+    return updatedStore.commitments.filter((c) => idSet.has(c.id));
   }
 
   return due;
@@ -749,25 +1124,167 @@ export async function listPendingCommitmentsForScope(params: {
     )
     .toSorted(
       (a, b) =>
+        priorityToNumber(b.priority) - priorityToNumber(a.priority) ||
         a.dueWindow.earliestMs - b.dueWindow.earliestMs ||
         a.createdAtMs - b.createdAtMs,
     )
     .slice(0, limit);
 }
 
+// ===================== 过滤与查询 =====================
+
 /**
- * 列出承诺记录（支持按状态/agent 过滤）。
+ * 应用过滤器到承诺列表
+ */
+export function applyFilter(
+  commitments: CommitmentRecord[],
+  filter: CommitmentFilter,
+): CommitmentRecord[] {
+  return commitments.filter((c) => {
+    if (filter.status) {
+      const statuses = Array.isArray(filter.status) ? filter.status : [filter.status];
+      if (!statuses.includes(c.status)) return false;
+    }
+    if (filter.kind) {
+      const kinds = Array.isArray(filter.kind) ? filter.kind : [filter.kind];
+      if (!kinds.includes(c.kind)) return false;
+    }
+    if (filter.sensitivity) {
+      const sensitivities = Array.isArray(filter.sensitivity) ? filter.sensitivity : [filter.sensitivity];
+      if (!sensitivities.includes(c.sensitivity)) return false;
+    }
+    if (filter.source) {
+      const sources = Array.isArray(filter.source) ? filter.source : [filter.source];
+      if (!sources.includes(c.source)) return false;
+    }
+    if (filter.priority) {
+      const priorities = Array.isArray(filter.priority) ? filter.priority : [filter.priority];
+      if (!priorities.includes(c.priority)) return false;
+    }
+    if (filter.agentId && c.agentId !== filter.agentId) return false;
+    if (filter.sessionKey && c.sessionKey !== filter.sessionKey) return false;
+    if (filter.channel && c.channel !== filter.channel) return false;
+    if (filter.accountId && c.accountId !== filter.accountId) return false;
+    if (filter.to && c.to !== filter.to) return false;
+    if (filter.threadId && c.threadId !== filter.threadId) return false;
+    if (filter.senderId && c.senderId !== filter.senderId) return false;
+    if (filter.dedupeKey && c.dedupeKey !== filter.dedupeKey) return false;
+    if (filter.createdAfterMs && c.createdAtMs < filter.createdAfterMs) return false;
+    if (filter.createdBeforeMs && c.createdAtMs > filter.createdBeforeMs) return false;
+    if (filter.updatedAfterMs && c.updatedAtMs < filter.updatedAfterMs) return false;
+    if (filter.updatedBeforeMs && c.updatedAtMs > filter.updatedBeforeMs) return false;
+    if (filter.dueAfterMs && c.dueWindow.earliestMs < filter.dueAfterMs) return false;
+    if (filter.dueBeforeMs && c.dueWindow.latestMs > filter.dueBeforeMs) return false;
+    if (filter.minConfidence && c.confidence < filter.minConfidence) return false;
+    if (filter.maxConfidence && c.confidence > filter.maxConfidence) return false;
+    if (filter.minAttempts && c.attempts < filter.minAttempts) return false;
+    if (filter.maxAttempts && c.attempts > filter.maxAttempts) return false;
+    if (filter.hasSourceMessageId !== undefined) {
+      if (filter.hasSourceMessageId && !c.sourceMessageId) return false;
+      if (!filter.hasSourceMessageId && c.sourceMessageId) return false;
+    }
+    if (filter.searchQuery) {
+      const query = filter.searchQuery.toLowerCase();
+      const searchIn = `${c.reason} ${c.suggestedText} ${c.dedupeKey} ${c.tags?.join(" ") || ""}`.toLowerCase();
+      if (!searchIn.includes(query)) return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * 应用排序到承诺列表
+ */
+export function applySort(
+  commitments: CommitmentRecord[],
+  sort?: SortParams,
+): CommitmentRecord[] {
+  if (!sort) {
+    return commitments;
+  }
+  const order = sort.order || "asc";
+  const multiplier = order === "asc" ? 1 : -1;
+  return [...commitments].sort((a, b) => {
+    let aVal: number | string;
+    let bVal: number | string;
+    switch (sort.field) {
+      case "createdAtMs":
+        aVal = a.createdAtMs;
+        bVal = b.createdAtMs;
+        break;
+      case "updatedAtMs":
+        aVal = a.updatedAtMs;
+        bVal = b.updatedAtMs;
+        break;
+      case "earliestMs":
+        aVal = a.dueWindow.earliestMs;
+        bVal = b.dueWindow.earliestMs;
+        break;
+      case "latestMs":
+        aVal = a.dueWindow.latestMs;
+        bVal = b.dueWindow.latestMs;
+        break;
+      case "confidence":
+        aVal = a.confidence;
+        bVal = b.confidence;
+        break;
+      case "attempts":
+        aVal = a.attempts;
+        bVal = b.attempts;
+        break;
+      case "priority":
+        aVal = priorityToNumber(a.priority);
+        bVal = priorityToNumber(b.priority);
+        break;
+      case "status":
+        aVal = a.status;
+        bVal = b.status;
+        break;
+      default:
+        return 0;
+    }
+    if (typeof aVal === "number" && typeof bVal === "number") {
+      return (aVal - bVal) * multiplier;
+    }
+    return String(aVal).localeCompare(String(bVal)) * multiplier;
+  });
+}
+
+/**
+ * 应用分页
+ */
+export function applyPagination<T>(
+  items: T[],
+  pagination?: PaginationParams,
+): PaginatedResult<T> {
+  const total = items.length;
+  const pageSize = pagination?.pageSize || 20;
+  const page = pagination?.page || 1;
+  const offset = pagination?.offset ?? (page - 1) * pageSize;
+  const limit = pagination?.limit ?? pageSize;
+  const paginatedItems = items.slice(offset, offset + limit);
+  const totalPages = Math.ceil(total / pageSize);
+  return {
+    items: paginatedItems,
+    total,
+    page,
+    pageSize,
+    totalPages,
+    hasNext: offset + limit < total,
+    hasPrev: offset > 0,
+  };
+}
+
+/**
+ * 列出承诺记录（支持过滤、排序、分页）。
  *
  * @param storePath 存储路径
- * @param status 可选状态过滤
- * @param agentId 可选 agent 过滤
+ * @param filter 过滤器
+ * @param sort 排序参数
+ * @param pagination 分页参数
+ * @param nowMs 当前时间
  */
-export async function listCommitments(params?: {
-  storePath?: string;
-  status?: CommitmentStatus;
-  agentId?: string;
-  nowMs?: number;
-}): Promise<CommitmentRecord[]> {
+export async function listCommitments(params?: ListCommitmentsParams): Promise<PaginatedResult<CommitmentRecord>> {
   const nowMs = params?.nowMs ?? Date.now();
   const { store, hadLegacySourceText } = await loadCommitmentStoreInternal(
     params?.storePath,
@@ -776,15 +1293,194 @@ export async function listCommitments(params?: {
   if (expireChanged || hadLegacySourceText) {
     await saveCommitmentStore(params?.storePath, store);
   }
-  return store.commitments
-    .filter(
-      (commitment) =>
-        (!params?.status || commitment.status === params.status) &&
-        (!params?.agentId || commitment.agentId === params.agentId),
-    )
-    .toSorted(
-      (a, b) =>
-        a.dueWindow.earliestMs - b.dueWindow.earliestMs ||
-        a.createdAtMs - b.createdAtMs,
-    );
+
+  let filtered = store.commitments;
+  if (params?.filter) {
+    filtered = applyFilter(filtered, params.filter);
+  }
+
+  const sorted = applySort(filtered, params?.sort);
+  return applyPagination(sorted, params?.pagination);
+}
+
+/**
+ * 计算承诺统计信息
+ *
+ * @param storePath 存储路径
+ * @param nowMs 当前时间
+ */
+export async function getCommitmentStats(params?: {
+  storePath?: string;
+  nowMs?: number;
+}): Promise<CommitmentStats> {
+  const nowMs = params?.nowMs ?? Date.now();
+  const { store } = await loadCommitmentStoreInternal(params?.storePath);
+  expireStaleCommitmentsInStore(store, nowMs);
+
+  const dayStart = nowMs - ROLLING_DAY_MS;
+
+  const byStatus: Record<string, number> = {
+    pending: 0,
+    sent: 0,
+    dismissed: 0,
+    snoozed: 0,
+    expired: 0,
+    completed: 0,
+    failed: 0,
+  };
+
+  const byKind: Record<string, number> = {
+    event_check_in: 0,
+    deadline_check: 0,
+    care_check_in: 0,
+    open_loop: 0,
+    follow_up: 0,
+    reminder: 0,
+    urgent: 0,
+    care: 0,
+  };
+
+  const bySensitivity: Record<string, number> = {
+    routine: 0,
+    personal: 0,
+    care: 0,
+    normal: 0,
+  };
+
+  const byPriority: Record<CommitmentPriority, number> = {
+    low: 0,
+    medium: 0,
+    high: 0,
+    urgent: 0,
+  };
+
+  let completedToday = 0;
+  let expiredToday = 0;
+  let sentToday = 0;
+  let failedToday = 0;
+  let totalConfidence = 0;
+  let totalAttempts = 0;
+  let active = 0;
+  let pending = 0;
+
+  for (const c of store.commitments) {
+    byStatus[c.status] = (byStatus[c.status] || 0) + 1;
+    byKind[c.kind] = (byKind[c.kind] || 0) + 1;
+    bySensitivity[c.sensitivity] = (bySensitivity[c.sensitivity] || 0) + 1;
+    byPriority[c.priority]++;
+    totalConfidence += c.confidence;
+    totalAttempts += c.attempts;
+
+    if (isActiveStatus(c.status)) {
+      active++;
+      if (c.status === "pending") {
+        pending++;
+      }
+    }
+
+    if (c.completedAtMs && c.completedAtMs >= dayStart) {
+      completedToday++;
+    }
+    if (c.expiredAtMs && c.expiredAtMs >= dayStart) {
+      expiredToday++;
+    }
+    if (c.sentAtMs && c.sentAtMs >= dayStart) {
+      sentToday++;
+    }
+    if (c.failedAtMs && c.failedAtMs >= dayStart) {
+      failedToday++;
+    }
+  }
+
+  const total = store.commitments.length;
+
+  return {
+    total,
+    byStatus: byStatus as CommitmentStats["byStatus"],
+    byKind: byKind as CommitmentStats["byKind"],
+    bySensitivity: bySensitivity as CommitmentStats["bySensitivity"],
+    byPriority,
+    pending,
+    active,
+    completedToday,
+    expiredToday,
+    sentToday,
+    failedToday,
+    averageConfidence: total > 0 ? totalConfidence / total : 0,
+    averageAttempts: total > 0 ? totalAttempts / total : 0,
+  };
+}
+
+// ===================== 心跳记录 =====================
+
+/**
+ * 添加心跳记录
+ */
+export async function addHeartbeatRecord(
+  heartbeat: Omit<CommitmentHeartbeat, "id">,
+  storePath?: string,
+): Promise<CommitmentHeartbeat> {
+  const nowMs = Date.now();
+  const { store } = await loadCommitmentStoreInternal(storePath);
+
+  const record: CommitmentHeartbeat = {
+    ...heartbeat,
+    id: generateHeartbeatId(nowMs),
+  };
+
+  if (!store.heartbeats) {
+    store.heartbeats = [];
+  }
+
+  store.heartbeats.push(record);
+
+  const maxRecords = DEFAULT_MAX_HEARTBEAT_RECORDS;
+  if (store.heartbeats.length > maxRecords) {
+    store.heartbeats = store.heartbeats.slice(-maxRecords);
+  }
+
+  await saveCommitmentStore(storePath, store);
+  return record;
+}
+
+/**
+ * 获取承诺的心跳记录
+ */
+export async function getHeartbeatsForCommitment(
+  commitmentId: string,
+  storePath?: string,
+): Promise<CommitmentHeartbeat[]> {
+  const { store } = await loadCommitmentStoreInternal(storePath);
+  const heartbeats = store.heartbeats || [];
+  const filtered = heartbeats
+    .filter((h) => h.commitmentId === commitmentId)
+    .sort((a, b) => b.heartbeatAtMs - a.heartbeatAtMs);
+
+  return filtered;
+}
+
+/**
+ * 获取所有心跳记录
+ */
+export async function listHeartbeats(params?: {
+  storePath?: string;
+  commitmentId?: string;
+  status?: CommitmentHeartbeat["status"];
+  limit?: number;
+}): Promise<CommitmentHeartbeat[]> {
+  const { store } = await loadCommitmentStoreInternal(params?.storePath);
+  let heartbeats = store.heartbeats || [];
+
+  if (params?.commitmentId) {
+    heartbeats = heartbeats.filter((h) => h.commitmentId === params!.commitmentId);
+  }
+  if (params?.status) {
+    heartbeats = heartbeats.filter((h) => h.status === params!.status);
+  }
+
+  if (params?.limit) {
+    heartbeats = heartbeats.slice(0, params.limit);
+  }
+
+  return heartbeats;
 }

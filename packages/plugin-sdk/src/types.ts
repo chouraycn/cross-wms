@@ -636,3 +636,289 @@ export type HookRunnerLogger = {
   warn: (message: string) => void;
   error: (message: string) => void;
 };
+
+// ==================== Channel Runtime Types ====================
+
+/**
+ * 频道状态
+ */
+export type ChannelState = 'creating' | 'active' | 'paused' | 'error' | 'destroyed';
+
+/**
+ * 频道配置
+ */
+export interface ChannelConfig {
+  id: string;
+  type: 'im' | 'webhook' | 'email' | 'sms' | 'cli';
+  displayName?: string;
+  metadata?: Record<string, unknown>;
+  supports?: ChannelSupports;
+}
+
+/**
+ * 频道能力支持
+ */
+export interface ChannelSupports {
+  typing?: boolean;
+  pairing?: boolean;
+  reply?: boolean;
+  websocket?: boolean;
+}
+
+/**
+ * 频道实例
+ */
+export interface Channel {
+  id: string;
+  type: ChannelConfig['type'];
+  state: ChannelState;
+  config: ChannelConfig;
+  sendMessage(content: string, metadata?: Record<string, unknown>): Promise<void>;
+  getState(): ChannelState;
+  destroy(): Promise<void>;
+}
+
+// ==================== Approval Runtime Types ====================
+
+/**
+ * 审批策略
+ */
+export interface ApprovalPolicy {
+  mode: 'auto' | 'manual' | 'interactive';
+  autoApprove?: string[];
+  autoReject?: string[];
+  requireConfirmation?: string[];
+  timeout?: number;
+}
+
+/**
+ * 审批结果
+ */
+export interface ApprovalResult {
+  approved: boolean;
+  reason?: string;
+  timestamp: number;
+  approver?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * 审批请求
+ */
+export interface ApprovalRequest {
+  id: string;
+  toolName: string;
+  args: Record<string, unknown>;
+  requester?: string;
+  timestamp: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * 审计日志条目
+ */
+export interface AuditLogEntry {
+  id: string;
+  timestamp: number;
+  action: 'request' | 'approve' | 'reject' | 'timeout' | 'override';
+  toolName: string;
+  args?: Record<string, unknown>;
+  result?: ApprovalResult;
+  actor?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * 审计日志记录器
+ */
+export interface AuditLogger {
+  log(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): void;
+  getEntries(filter?: { toolName?: string; from?: number; to?: number }): AuditLogEntry[];
+  clear(): void;
+}
+
+// ==================== Memory Core Types ====================
+
+/**
+ * 内存条目
+ */
+export interface MemoryEntry {
+  id: string;
+  content: string;
+  type?: 'fact' | 'event' | 'preference' | 'context' | 'custom';
+  importance?: number;
+  embedding?: Float32Array;
+  metadata?: Record<string, unknown>;
+  createdAt: number;
+  updatedAt: number;
+  expiresAt?: number;
+}
+
+/**
+ * 内存查询
+ */
+export interface MemoryQuery {
+  text?: string;
+  type?: MemoryEntry['type'];
+  ids?: string[];
+  metadata?: Record<string, unknown>;
+  limit?: number;
+  offset?: number;
+  minImportance?: number;
+  timeRange?: { from?: number; to?: number };
+}
+
+// ==================== Provider Stream Types ====================
+
+/**
+ * 使用量统计
+ */
+export interface Usage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  requests: number;
+}
+
+/**
+ * 流式消息
+ */
+export interface StreamMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
+  name?: string;
+}
+
+/**
+ * 流式配置
+ */
+export interface StreamConfig {
+  model: string;
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  stopSequences?: string[];
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * 流式块
+ */
+export interface StreamChunk {
+  type: 'text' | 'tool_use' | 'error' | 'done';
+  content?: string;
+  toolUse?: {
+    id: string;
+    name: string;
+    input: Record<string, unknown>;
+  };
+  error?: string;
+  usage?: Partial<Usage>;
+}
+
+// ==================== Reply Pipeline Types ====================
+
+/**
+ * 回复消息
+ */
+export interface ReplyMessage {
+  id: string;
+  content: string;
+  role: 'assistant' | 'system';
+  timestamp: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * 回复结果
+ */
+export interface Reply {
+  id: string;
+  message: ReplyMessage;
+  stages: string[];
+  processingTime: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * 处理阶段
+ */
+export interface PipelineStage {
+  id: string;
+  name: string;
+  priority?: number;
+  enabled?: boolean;
+  process(message: ReplyMessage, context?: PipelineContext): Promise<ReplyMessage>;
+}
+
+/**
+ * 流水线上下文
+ */
+export interface PipelineContext {
+  sessionId?: string;
+  userId?: string;
+  pluginId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+// ==================== Secret Provider Types ====================
+
+/**
+ * 密钥配置
+ */
+export interface SecretConfig {
+  key: string;
+  value: string;
+  expiresAt?: number;
+  metadata?: Record<string, unknown>;
+  rotationPolicy?: {
+    enabled: boolean;
+    interval?: number;
+    algorithm?: 'random' | 'incremental';
+  };
+}
+
+/**
+ * 密钥状态
+ */
+export interface SecretStatus {
+  key: string;
+  exists: boolean;
+  expiresAt?: number;
+  lastRotated?: number;
+  lastAccessed?: number;
+}
+
+// ==================== Security Context Types ====================
+
+/**
+ * 权限定义
+ */
+export interface Permission {
+  action: string;
+  resource?: string;
+  conditions?: Record<string, unknown>;
+}
+
+/**
+ * 安全策略
+ */
+export interface SecurityPolicy {
+  permissions: Permission[];
+  restrictions?: string[];
+  sandbox?: boolean;
+  auditLevel?: 'none' | 'basic' | 'detailed';
+}
+
+/**
+ * 安全上下文配置
+ */
+export interface SecurityContextConfig {
+  policy: SecurityPolicy;
+  identity?: {
+    userId?: string;
+    roles?: string[];
+    groups?: string[];
+  };
+  metadata?: Record<string, unknown>;
+}

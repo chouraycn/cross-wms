@@ -3,6 +3,13 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 
 import type { DataSourceConfig } from '../services/dashboardApi';
 import * as api from '../services/api';
+import {
+  changeLanguage,
+  getCurrentLanguage,
+  loadLanguage,
+  i18nEvents,
+  type SupportedLanguage,
+} from '../i18n';
 
 // ===================== Settings Type Definitions =====================
 
@@ -207,6 +214,8 @@ export interface AppSettings {
   appearance: AppearanceConfig;
   /** AI 引擎配置 */
   aiEngine: AiEngineConfig;
+  /** 语言设置 */
+  language: SupportedLanguage;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -287,6 +296,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
       preserveRecent: 6,
     },
   },
+  // 语言设置
+  language: 'zh-CN',
 };
 
 // ===================== Context =====================
@@ -460,6 +471,8 @@ export function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
           ...(parsed.aiEngine?.compaction ?? {}),
         },
       },
+      // 语言设置（向后兼容，从 localStorage 的 app_language 读取）
+      language: (parsed.language as SupportedLanguage) || getCurrentLanguage(),
     };
 }
 
@@ -575,8 +588,34 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
           },
         };
       }
+      if (partial.language) {
+        next.language = partial.language;
+      }
       return next;
     });
+  }, []);
+
+  // 同步语言设置到 i18n
+  useEffect(() => {
+    if (!isApiLoaded) return;
+    const currentLang = getCurrentLanguage();
+    if (settings.language !== currentLang) {
+      loadLanguage(settings.language).then(() => {
+        changeLanguage(settings.language);
+      });
+    }
+  }, [settings.language, isApiLoaded]);
+
+  // 监听外部语言变化（如直接调用 i18n 的 changeLanguage）
+  useEffect(() => {
+    const handler = (data: { current: SupportedLanguage }) => {
+      setSettings((prev) => {
+        if (prev.language === data.current) return prev;
+        return { ...prev, language: data.current };
+      });
+    };
+    const unsubscribe = i18nEvents.on('languageChanged', handler);
+    return unsubscribe;
   }, []);
 
   const resetSettings = useCallback(() => {

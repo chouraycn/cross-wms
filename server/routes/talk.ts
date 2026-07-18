@@ -1,7 +1,8 @@
 /**
  * Talk (语音对话) 配置路由
  *
- * 提供 Talk 配置的读取与更新接口，对接 server/config/talk.ts。
+ * 提供 Talk 配置的读取与更新接口，通过 engine/talk/ 层调用，engine 层内部
+ * 委托 server/config/talk.ts 完成配置规范化与解析。
  *
  * 路由：
  *   GET  /api/talk/config   — 读取 Talk 配置（含默认值合并）
@@ -17,7 +18,7 @@ import {
   buildTalkConfigResponse,
   normalizeTalkSection,
   type TalkConfig,
-} from '../config/talk.js';
+} from '../engine/talk/index.js';
 import { logger } from '../logger.js';
 
 const router: Router = Router();

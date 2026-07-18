@@ -4,11 +4,9 @@ import {
   Box,
   Typography,
   Chip,
-  Button,
   useTheme,
 } from '@mui/material';
 import { getGrayScale } from '../constants/theme';
-import AddIcon from '@mui/icons-material/Add';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
@@ -19,7 +17,6 @@ import {
   parseRrule,
   computeNextRun,
   formatScheduleLabel,
-  AUTOMATION_TEMPLATES,
 } from '../services/automation';
 import { rruleToCron, cronToRrule } from '../services/automation/cronAdapter';
 import {
@@ -78,6 +75,7 @@ import AutomationHistory from '../components/Automation/AutomationHistory';
 import AutomationTemplates from '../components/Automation/AutomationTemplates';
 import ExecutionDrawer from '../components/Automation/ExecutionDrawer';
 import AutomationFormDialog from '../components/Automation/AutomationFormDialog';
+import CronPanel from '../components/Automation/CronPanel';
 
 // ===================== Component =====================
 
@@ -88,7 +86,7 @@ const AutomationPage: React.FC = () => {
 
   // --- 数据状态 ---
   const [automations, setAutomations] = useState<Automation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -851,6 +849,11 @@ const AutomationPage: React.FC = () => {
         <AutomationTemplates
           onQuickCreate={handleQuickCreate}
         />
+      )}
+
+      {/* ========== Cron 任务栏目 ========== */}
+      {activeTab === 'cron' && (
+        <CronPanel />
       )}
 
       {/* ========== 任务管理栏目 ========== */}

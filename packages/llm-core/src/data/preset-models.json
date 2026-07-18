@@ -1,0 +1,447 @@
+{
+  "id": "chinese-models",
+  "name": "国内大模型预设",
+  "lastUpdated": 1718803200000,
+  "models": [
+    {
+      "id": "deepseek-chat",
+      "name": "DeepSeek Chat",
+      "kind": "llm",
+      "provider": "deepseek",
+      "providerModelId": "deepseek-chat",
+      "description": "DeepSeek 通用对话模型，支持长文本和工具调用",
+      "tags": ["chat", "chinese", "tool_calls"],
+      "capabilities": ["chat", "streaming", "tool_calls", "json_mode"],
+      "contextWindow": {
+        "maxTokens": 64000,
+        "maxInputTokens": 64000,
+        "maxOutputTokens": 4000
+      },
+      "pricing": {
+        "inputPerToken": 0.000001,
+        "outputPerToken": 0.000002,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "deepseek-reasoner",
+      "name": "DeepSeek Reasoner",
+      "kind": "llm",
+      "provider": "deepseek",
+      "providerModelId": "deepseek-reasoner",
+      "description": "DeepSeek 推理增强模型，支持深度思考和推理",
+      "tags": ["chat", "reasoning", "chinese"],
+      "capabilities": ["chat", "streaming", "reasoning", "json_mode"],
+      "contextWindow": {
+        "maxTokens": 64000,
+        "maxInputTokens": 64000,
+        "maxOutputTokens": 4000
+      },
+      "pricing": {
+        "inputPerToken": 0.000004,
+        "outputPerToken": 0.000004,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "qwen-turbo",
+      "name": "通义千问 Turbo",
+      "kind": "llm",
+      "provider": "alibaba",
+      "providerModelId": "qwen-turbo",
+      "description": "阿里云通义千问快速版，性价比高",
+      "tags": ["chat", "chinese", "fast"],
+      "capabilities": ["chat", "streaming", "tool_calls", "json_mode"],
+      "contextWindow": {
+        "maxTokens": 8192,
+        "maxInputTokens": 6000,
+        "maxOutputTokens": 2000
+      },
+      "pricing": {
+        "inputPerToken": 0.000002,
+        "outputPerToken": 0.000006,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "qwen-plus",
+      "name": "通义千问 Plus",
+      "kind": "llm",
+      "provider": "alibaba",
+      "providerModelId": "qwen-plus",
+      "description": "阿里云通义千问增强版，性能更强",
+      "tags": ["chat", "chinese"],
+      "capabilities": ["chat", "streaming", "tool_calls", "json_mode", "vision"],
+      "contextWindow": {
+        "maxTokens": 32768,
+        "maxInputTokens": 30000,
+        "maxOutputTokens": 2000
+      },
+      "pricing": {
+        "inputPerToken": 0.000004,
+        "outputPerToken": 0.000012,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "qwen-max",
+      "name": "通义千问 Max",
+      "kind": "llm",
+      "provider": "alibaba",
+      "providerModelId": "qwen-max",
+      "description": "阿里云通义千问旗舰版，能力最强",
+      "tags": ["chat", "chinese", "powerful"],
+      "capabilities": ["chat", "streaming", "tool_calls", "json_mode", "vision", "long_context"],
+      "contextWindow": {
+        "maxTokens": 32768,
+        "maxInputTokens": 30000,
+        "maxOutputTokens": 2000
+      },
+      "pricing": {
+        "inputPerToken": 0.00004,
+        "outputPerToken": 0.00012,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "qwen-long",
+      "name": "通义千问 Long",
+      "kind": "llm",
+      "provider": "alibaba",
+      "providerModelId": "qwen-long",
+      "description": "阿里云通义千问长文本模型，支持万级文档处理",
+      "tags": ["chat", "chinese", "long_context"],
+      "capabilities": ["chat", "streaming", "long_context"],
+      "contextWindow": {
+        "maxTokens": 10000000,
+        "maxInputTokens": 10000000,
+        "maxOutputTokens": 6000
+      },
+      "pricing": {
+        "inputPerToken": 0.0000005,
+        "outputPerToken": 0.000002,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "moonshot-v1-8k",
+      "name": "Kimi (Moonshot V1 8K)",
+      "kind": "llm",
+      "provider": "kimi",
+      "providerModelId": "moonshot-v1-8k",
+      "description": "Moonshot Kimi 8K 上下文模型",
+      "tags": ["chat", "chinese"],
+      "capabilities": ["chat", "streaming", "file_upload"],
+      "contextWindow": {
+        "maxTokens": 8192,
+        "maxInputTokens": 8000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.000012,
+        "outputPerToken": 0.000012,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "moonshot-v1-32k",
+      "name": "Kimi (Moonshot V1 32K)",
+      "kind": "llm",
+      "provider": "kimi",
+      "providerModelId": "moonshot-v1-32k",
+      "description": "Moonshot Kimi 32K 长文本模型",
+      "tags": ["chat", "chinese", "long_context"],
+      "capabilities": ["chat", "streaming", "file_upload", "long_context"],
+      "contextWindow": {
+        "maxTokens": 32768,
+        "maxInputTokens": 32000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.000024,
+        "outputPerToken": 0.000024,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "moonshot-v1-128k",
+      "name": "Kimi (Moonshot V1 128K)",
+      "kind": "llm",
+      "provider": "kimi",
+      "providerModelId": "moonshot-v1-128k",
+      "description": "Moonshot Kimi 128K 超长文本模型",
+      "tags": ["chat", "chinese", "long_context"],
+      "capabilities": ["chat", "streaming", "file_upload", "long_context"],
+      "contextWindow": {
+        "maxTokens": 131072,
+        "maxInputTokens": 128000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.00006,
+        "outputPerToken": 0.00006,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "step-1-8k",
+      "name": "Step 1 8K",
+      "kind": "llm",
+      "provider": "stepfun",
+      "providerModelId": "step-1-8k",
+      "description": "阶跃星辰 Step 1 8K 上下文模型",
+      "tags": ["chat", "chinese"],
+      "capabilities": ["chat", "streaming"],
+      "contextWindow": {
+        "maxTokens": 8192,
+        "maxInputTokens": 8000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.000005,
+        "outputPerToken": 0.00002,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "step-1-32k",
+      "name": "Step 1 32K",
+      "kind": "llm",
+      "provider": "stepfun",
+      "providerModelId": "step-1-32k",
+      "description": "阶跃星辰 Step 1 32K 长文本模型",
+      "tags": ["chat", "chinese", "long_context"],
+      "capabilities": ["chat", "streaming", "long_context"],
+      "contextWindow": {
+        "maxTokens": 32768,
+        "maxInputTokens": 32000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.000015,
+        "outputPerToken": 0.00005,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "step-1-128k",
+      "name": "Step 1 128K",
+      "kind": "llm",
+      "provider": "stepfun",
+      "providerModelId": "step-1-128k",
+      "description": "阶跃星辰 Step 1 128K 超长文本模型",
+      "tags": ["chat", "chinese", "long_context"],
+      "capabilities": ["chat", "streaming", "long_context"],
+      "contextWindow": {
+        "maxTokens": 131072,
+        "maxInputTokens": 128000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.00004,
+        "outputPerToken": 0.00012,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "step-1v-8k",
+      "name": "Step 1V 8K (多模态)",
+      "kind": "llm",
+      "provider": "stepfun",
+      "providerModelId": "step-1v-8k",
+      "description": "阶跃星辰 Step 1V 多模态模型，支持图像理解",
+      "tags": ["chat", "chinese", "vision"],
+      "capabilities": ["chat", "streaming", "vision", "image_input"],
+      "contextWindow": {
+        "maxTokens": 8192,
+        "maxInputTokens": 8000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.000008,
+        "outputPerToken": 0.00003,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "doubao-pro-4k",
+      "name": "豆包 Pro 4K",
+      "kind": "llm",
+      "provider": "doubao",
+      "providerModelId": "doubao-pro-4k",
+      "description": "字节豆包 Pro 4K 模型，性价比高",
+      "tags": ["chat", "chinese"],
+      "capabilities": ["chat", "streaming", "tool_calls"],
+      "contextWindow": {
+        "maxTokens": 4096,
+        "maxInputTokens": 4000,
+        "maxOutputTokens": 2000
+      },
+      "pricing": {
+        "inputPerToken": 0.0000005,
+        "outputPerToken": 0.000001,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "doubao-pro-32k",
+      "name": "豆包 Pro 32K",
+      "kind": "llm",
+      "provider": "doubao",
+      "providerModelId": "doubao-pro-32k",
+      "description": "字节豆包 Pro 32K 长文本模型",
+      "tags": ["chat", "chinese", "long_context"],
+      "capabilities": ["chat", "streaming", "tool_calls", "long_context"],
+      "contextWindow": {
+        "maxTokens": 32768,
+        "maxInputTokens": 32000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.000001,
+        "outputPerToken": 0.000002,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "doubao-pro-128k",
+      "name": "豆包 Pro 128K",
+      "kind": "llm",
+      "provider": "doubao",
+      "providerModelId": "doubao-pro-128k",
+      "description": "字节豆包 Pro 128K 超长文本模型",
+      "tags": ["chat", "chinese", "long_context"],
+      "capabilities": ["chat", "streaming", "tool_calls", "long_context"],
+      "contextWindow": {
+        "maxTokens": 131072,
+        "maxInputTokens": 128000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.000005,
+        "outputPerToken": 0.000009,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "yi-large",
+      "name": "Yi Large",
+      "kind": "llm",
+      "provider": "yi",
+      "providerModelId": "yi-large",
+      "description": "零一万物 Yi Large 大模型",
+      "tags": ["chat", "chinese"],
+      "capabilities": ["chat", "streaming", "tool_calls"],
+      "contextWindow": {
+        "maxTokens": 16384,
+        "maxInputTokens": 16000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.000025,
+        "outputPerToken": 0.000025,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "yi-spark",
+      "name": "Yi Spark",
+      "kind": "llm",
+      "provider": "yi",
+      "providerModelId": "yi-spark",
+      "description": "零一万物 Yi Spark 轻量模型，响应快速",
+      "tags": ["chat", "chinese", "fast"],
+      "capabilities": ["chat", "streaming"],
+      "contextWindow": {
+        "maxTokens": 16384,
+        "maxInputTokens": 16000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.000001,
+        "outputPerToken": 0.000001,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "Baichuan4",
+      "name": "Baichuan 4",
+      "kind": "llm",
+      "provider": "baichuan",
+      "providerModelId": "Baichuan4",
+      "description": "百川智能 Baichuan 4 旗舰模型",
+      "tags": ["chat", "chinese"],
+      "capabilities": ["chat", "streaming", "tool_calls"],
+      "contextWindow": {
+        "maxTokens": 32768,
+        "maxInputTokens": 32000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.00006,
+        "outputPerToken": 0.00006,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "Baichuan3-Turbo",
+      "name": "Baichuan 3 Turbo",
+      "kind": "llm",
+      "provider": "baichuan",
+      "providerModelId": "Baichuan3-Turbo",
+      "description": "百川智能 Baichuan 3 Turbo 快速版",
+      "tags": ["chat", "chinese", "fast"],
+      "capabilities": ["chat", "streaming"],
+      "contextWindow": {
+        "maxTokens": 32768,
+        "maxInputTokens": 32000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.000008,
+        "outputPerToken": 0.000008,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "abab6.5-chat",
+      "name": "ABAB 6.5 Chat",
+      "kind": "llm",
+      "provider": "minimax",
+      "providerModelId": "abab6.5-chat",
+      "description": "MiniMax ABAB 6.5 对话模型",
+      "tags": ["chat", "chinese"],
+      "capabilities": ["chat", "streaming", "tool_calls"],
+      "contextWindow": {
+        "maxTokens": 245760,
+        "maxInputTokens": 245000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.00003,
+        "outputPerToken": 0.00003,
+        "currency": "CNY"
+      }
+    },
+    {
+      "id": "abab6.5s-chat",
+      "name": "ABAB 6.5S Chat",
+      "kind": "llm",
+      "provider": "minimax",
+      "providerModelId": "abab6.5s-chat",
+      "description": "MiniMax ABAB 6.5S 对话模型，响应更快",
+      "tags": ["chat", "chinese", "fast"],
+      "capabilities": ["chat", "streaming"],
+      "contextWindow": {
+        "maxTokens": 245760,
+        "maxInputTokens": 245000,
+        "maxOutputTokens": 4096
+      },
+      "pricing": {
+        "inputPerToken": 0.00001,
+        "outputPerToken": 0.00001,
+        "currency": "CNY"
+      }
+    }
+  ]
+}

@@ -121,12 +121,13 @@ export const ACTION_CHAIN_OPTIONS: { value: ActionType; label: string; desc: str
 
 // ===================== Tab 定义 =====================
 
-export type TabKey = 'configured' | 'history' | 'templates';
+export type TabKey = 'configured' | 'history' | 'templates' | 'cron';
 
 export const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'configured', label: '已配置', icon: null },
   { key: 'history', label: '执行历史', icon: null },
   { key: 'templates', label: '任务模板', icon: null },
+  { key: 'cron', label: 'Cron', icon: null },
 ];
 
 // ===================== 共享样式 =====================

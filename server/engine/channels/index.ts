@@ -7,10 +7,10 @@ export {
 export type {
   ChannelType,
   ChannelStatus,
-  ChannelConfig,
-  ChannelMessage,
+  ChannelConfig as ChannelSystemConfig,
+  ChannelMessage as ChannelSystemMessage,
   ChannelAdapter,
-  ChannelAccount,
+  ChannelAccount as ChannelSystemAccount,
 } from '../channelSystem.js';
 
 export {
@@ -33,8 +33,8 @@ export {
   stopChannelHealthMonitor,
   getChannelHealth,
   listChannelHealth,
-  registerChannel,
-  unregisterChannel,
+  registerChannel as registerChannelHealthEvent,
+  unregisterChannel as unregisterChannelHealthEvent,
   recordChannelEvent,
 } from '../channelHealthMonitor.js';
 
@@ -81,3 +81,151 @@ export {
   clearRoutes,
 } from './routing.js';
 export type { ChannelMessageRoute } from './routing.js';
+
+export * from './message/index.js';
+
+export * from './turn/index.js';
+
+export * from './plugins/index.js';
+
+export * from './inbound-event/index.js';
+
+export {
+  registerChannel,
+  unregisterChannel,
+  getChannel,
+  getChannelOrThrow,
+  hasChannel,
+  listChannels,
+  listEnabledChannels,
+  getChannelMeta,
+  getChannelCapabilities,
+  findChannelByAlias,
+  clearRegistry,
+  getRegistryCount,
+} from './registry.js';
+
+export { ChannelConfigSchema, getChannelConfig, isChannelEnabled, getChannelAccountIds, getChannelAccountConfig, getDefaultAccountId, validateChannelConfig, setChannelConfig, mergeChannelConfig, clearConfigCache } from './channel-config.js';
+export type { ChannelConfig } from './channel-config.js';
+
+export {
+  createSessionMeta,
+  getSessionMeta,
+  updateSessionMeta,
+  incrementMessageCount as incrementSessionMessageCount,
+  incrementTurnCount,
+  addSessionTag,
+  removeSessionTag,
+  hasSessionTag,
+  setSessionData,
+  getSessionData,
+  deleteSessionMeta,
+  listSessionMetas,
+  clearSessionMetaStore,
+  getSessionDuration,
+} from './session-meta.js';
+export type { SessionMeta } from './session-meta.js';
+
+export type { SessionStatus, SessionCreateOptions, SessionUpdateOptions } from './session.types.js';
+
+export { configureAllowFrom, getAllowFromConfig, checkAllowFrom, allowFromDM, allowFromGroup, isUserBlocked, isUserAllowed, removeAllowFromConfig, clearAllowFromConfigs } from './allow-from.js';
+export type { AllowFromSource, AllowFromConfig } from './allow-from.js';
+
+export { setChannelAllowlist, getChannelAllowlist, addAllowlistEntry, removeAllowlistEntry, matchAllowlist, enableAllowlist, setDefaultAllow, clearAllowlist, clearAllAllowlists } from './allowlist-match.js';
+export type { AllowlistEntryType, AllowlistEntry, ChannelAllowlist } from './allowlist-match.js';
+
+export { configureMentionGating, getMentionGatingConfig, parseMentions, isBotMentioned, shouldProcessMessage, stripBotMention, hasEveryoneMention, hasHereMention, clearMentionGatingConfig } from './mention-gating.js';
+export type { MentionType, MentionInfo, MentionGatingConfig } from './mention-gating.js';
+
+export { configureDirectDm, getDirectDmConfig, isDirectDmEnabled, canInitiateDm, trackDmSession, getDmSession, updateDmActivity, getActiveDmSessions, isDmTarget, removeDmSession, clearDmSessions, getDmStats } from './direct-dm.js';
+export type { DirectDmConfig } from './direct-dm.js';
+
+export { configureStreaming, getStreamingConfig, isStreamingEnabled, startStreamingSession, pushStreamingToken, pushStreamingDelta, endStreamingSession, failStreamingSession, getStreamingSession, getActiveStreamingSessions, clearStreamingSessions } from './streaming.js';
+export type { StreamingEventType, StreamingEvent, StreamingSession, StreamingConfig } from './streaming.js';
+
+export { bindThread, unbindThread, getThreadBinding, findThreadByConversation, findThreadByExternalId, getOrCreateThreadBinding, updateThreadBinding, listThreadBindings, clearThreadBindings } from './thread-bindings.js';
+export type { ThreadBinding } from './thread-bindings.js';
+
+export { resolveConversation, createConversation, getConversation, updateConversation, incrementMessageCount, addParticipant, removeParticipant, listConversations, deleteConversation, clearConversations, getConversationStats } from './conversation-resolution.js';
+export type { ConversationInfo, ConversationResolutionResult } from './conversation-resolution.js';
+
+export { configureAckReactions, getAckReactionConfig, areAckReactionsEnabled, getAckEmoji, setAckReactionHandler, sendAckReaction, removeAckReactionConfig, clearAckReactionConfigs } from './ack-reactions.js';
+export type { AckType, AckReactionConfig, AckReactionHandler } from './ack-reactions.js';
+
+export { configureStatusReactions, getStatusReactionConfig, areStatusReactionsEnabled, getStatusEmoji, setStatusHandler, sendStatusUpdate, removeStatusReactionConfig, clearStatusReactionConfigs } from './status-reactions.js';
+export type { StatusType, StatusReactionConfig, StatusHandler } from './status-reactions.js';
+
+export { configureCommandGating, getCommandGatingConfig, isCommand, extractCommandName, canExecuteCommand, addAllowedCommand, addBlockedCommand, addAdminUser, isAdminUser, removeCommandGatingConfig, clearCommandGatingConfigs } from './command-gating.js';
+export type { CommandScope, CommandGatingConfig } from './command-gating.js';
+
+export { setChannelModelOverrides, getChannelModelOverrides, getEffectiveModelParams, applyModelOverride, enableModelOverrides, updateModelOverride, removeModelOverrides, clearAllModelOverrides, mergeModelOverrides } from './model-overrides.js';
+export type { ModelOverrides, ChannelModelOverride } from './model-overrides.js';
+
+export { configureReplyPrefix, getReplyPrefixConfig, isReplyPrefixEnabled, applyReplyPrefix, stripReplyPrefix, setReplyPrefix, setReplySuffix, removeReplyPrefixConfig, clearReplyPrefixConfigs } from './reply-prefix.js';
+export type { ReplyPrefixConfig } from './reply-prefix.js';
+
+export { cacheChannelLocation, getChannelLocation, resolveLocation, getLocationDisplayName, isPublicChannel, isPrivateChannel, isArchivedChannel, listCachedLocations, clearLocationCache } from './location.js';
+export type { ChannelLocation, LocationResolutionResult } from './location.js';
+
+export { generateId, generateMessageId, generateConversationId, generateSessionId, generateThreadId, generateEventId, generateTurnId, generateDeliveryId, generatePairingId, generateWizardId, generateStreamId, getIdTimestamp, getIdType, isValidId } from './ids.js';
+export type { IdType } from './ids.js';
+
+export { createRunStateMachine, getRunStateMachine, transitionState, canTransition, addStateListener, getState, isRunning, isStopped, isInError, removeStateMachine, clearStateMachines, getValidTransitions } from './run-state-machine.js';
+export type { RunState, StateMachineTransition, RunStateMachine } from './run-state-machine.js';
+
+export { createSenderLabel, getSenderLabel, getOrCreateSenderLabel, updateSenderLabel, addSenderTag, removeSenderTag, formatSenderName, isBotSender, isAdminSender, isModeratorSender, listSenderLabels, clearSenderLabels, getSenderLabelKey } from './sender-label.js';
+export type { SenderLabelType, SenderLabel } from './sender-label.js';
+
+export * from './channel-plugins/index.js';
+
+export * from './channel-transport/index.js';
+
+export * from './channel-providers/index.js';
+
+export {
+  MessageValidationSchema,
+  validateMessageContent,
+  validateMessageId,
+  validateChannelId,
+  type ValidationResult,
+} from './channel-message/message-validator.js';
+
+export {
+  transformMessage,
+  normalizeText,
+  markdownToText,
+  enrichMetadata,
+  convertMessageParts,
+  mergeMessageParts,
+  type TransformOptions,
+  type TransformResult,
+} from './channel-message/message-transformer.js';
+
+export {
+  routeMessage,
+  type RouteCondition,
+  type MessageRoute,
+} from './channel-message/message-router.js';
+
+export {
+  MessageQueue,
+  type QueuePriority,
+  type QueueOptions,
+} from './channel-message/message-queue.js';
+
+export {
+  determinePriority,
+  calculateDefaultPriority,
+  comparePriority,
+  isHigherPriority,
+  isLowerPriority,
+  getPriorityLabel,
+  getPriorityColor,
+  addPriorityRule,
+  removePriorityRule,
+  listPriorityRules,
+  clearPriorityRules,
+  type MessagePriority,
+} from './channel-message/message-priority.js';
+
+export * from './channel-session/index.js';

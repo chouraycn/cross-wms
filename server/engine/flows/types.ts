@@ -188,3 +188,131 @@ export interface HealthCheck {
     findings: readonly HealthFinding[],
   ): Promise<HealthRepairResult>;
 }
+
+// ===================== 流程上下文与步骤 =====================
+
+/** 流程运行时的上下文状态，在步骤间传递数据。 */
+export interface FlowContext {
+  readonly cwd: string;
+  readonly env: NodeJS.ProcessEnv;
+  readonly platform: string;
+  readonly isDev?: boolean;
+  readonly config: FlowConfig;
+  readonly configPath?: string;
+  [key: string]: unknown;
+}
+
+/** 流程步骤的执行结果状态。 */
+export type FlowStepStatus = 'pending' | 'running' | 'completed' | 'skipped' | 'failed';
+
+/** 单个流程步骤的定义。 */
+export interface FlowStep<Ctx extends FlowContext = FlowContext, Result = unknown> {
+  readonly id: string;
+  readonly title: string;
+  readonly description?: string;
+  readonly order?: number;
+  readonly skipIf?: (ctx: Ctx) => boolean | Promise<boolean>;
+  run(ctx: Ctx): Promise<FlowStepResult<Result>>;
+}
+
+/** 流程步骤的执行结果。 */
+export interface FlowStepResult<Result = unknown> {
+  readonly status: FlowStepStatus;
+  readonly data?: Result;
+  readonly error?: string;
+  readonly warnings?: readonly string[];
+  readonly nextStepId?: string;
+}
+
+/** 完整流程的运行结果。 */
+export interface FlowResult<Ctx extends FlowContext = FlowContext> {
+  readonly success: boolean;
+  readonly context: Ctx;
+  readonly steps: readonly FlowStepResult[];
+  readonly totalSteps: number;
+  readonly completedSteps: number;
+  readonly failedSteps: number;
+  readonly skippedSteps: number;
+  readonly durationMs: number;
+}
+
+// ===================== 健康检查运行器类型 =====================
+
+/** 健康检查运行时上下文，扩展自 HealthCheckContext，支持 repair/preview 模式。 */
+export interface HealthCheckRunContext extends HealthCheckContext {
+  readonly repair: boolean;
+  readonly diff?: boolean;
+  readonly previewRepair?: boolean;
+}
+
+/** 组合式健康检查结果（detect + repair 合并输出）。 */
+export interface HealthCheckRunResult extends Omit<HealthRepairResult, 'changes' | 'status'> {
+  readonly findings?: readonly HealthFinding[];
+  readonly status?: 'repairable' | 'repaired' | 'skipped' | 'failed';
+  readonly changes?: readonly string[];
+  readonly diffs?: readonly HealthRepairDiff[];
+  readonly effects?: readonly HealthRepairEffect[];
+}
+
+/** 自带 run() 方法的健康检查契约，自行编排 detect/repair 逻辑。 */
+export interface RunnableHealthCheck
+  extends Pick<HealthCheck, 'id' | 'kind' | 'description' | 'source'> {
+  run(ctx: HealthCheckRunContext, scope?: HealthCheckScope): Promise<HealthCheckRunResult>;
+}
+
+/** 可输入的健康检查形态：分离式或自带 run。 */
+export type HealthCheckInput = HealthCheck | RunnableHealthCheck;
+
+/** 规范化后的健康检查契约，同时支持 detect/repair 和 run 两种调用方式。 */
+export interface RegisteredHealthCheck extends HealthCheck {
+  readonly sourceContract: 'split' | 'run';
+  run(ctx: HealthCheckRunContext, scope?: HealthCheckScope): Promise<HealthCheckRunResult>;
+}
+
+// ===================== Doctor 流程类型 =====================
+
+/** Doctor 诊断检查的分类。 */
+export type DoctorCheckCategory = 'core' | 'provider' | 'channel' | 'search' | 'config' | 'security' | 'runtime';
+
+/** Doctor 检查条目元数据。 */
+export interface DoctorCheckMeta {
+  readonly id: string;
+  readonly category: DoctorCheckCategory;
+  readonly description: string;
+  readonly tags?: readonly string[];
+}
+
+/** Doctor lint 运行选项。 */
+export interface DoctorLintRunOptions {
+  readonly checks?: readonly HealthCheck[];
+  readonly skipIds?: ReadonlySet<string> | readonly string[];
+  readonly onlyIds?: ReadonlySet<string> | readonly string[];
+}
+
+/** Doctor lint 运行结果。 */
+export interface DoctorLintRunResult {
+  readonly findings: readonly HealthFinding[];
+  readonly checksRun: number;
+  readonly checksSkipped: number;
+}
+
+/** Doctor repair 运行选项。 */
+export interface DoctorRepairRunOptions {
+  readonly checks?: readonly HealthCheckInput[];
+  readonly dryRun?: boolean;
+  readonly diff?: boolean;
+}
+
+/** Doctor repair 运行结果。 */
+export interface DoctorRepairRunResult {
+  readonly config: FlowConfig;
+  readonly findings: readonly HealthFinding[];
+  readonly remainingFindings: readonly HealthFinding[];
+  readonly changes: readonly string[];
+  readonly warnings: readonly string[];
+  readonly diffs: readonly HealthRepairDiff[];
+  readonly effects: readonly HealthRepairEffect[];
+  readonly checksRun: number;
+  readonly checksRepaired: number;
+  readonly checksValidated: number;
+}

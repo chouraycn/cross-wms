@@ -9,9 +9,11 @@
 # 兼容 bash 3.2+ 与 zsh。每棵树仅计算一次 md5，后续用 join/comm/awk 比对。
 #
 # 用法:
-#   ./scripts/sync-openclaw.sh [--ref REF_DIR] [--vendor VENDOR_DIR] [--json] [--fail-on-drift] [--check-only]
+#   ./scripts/sync-openclaw.sh [--ref REF_DIR] [--vendor VENDOR_DIR] \
+#                              [--json] [--fail-on-drift] [--check-only] \
+#                              [--dry-run]
 # 环境变量: OPENCLAW_REF  上游参考目录（默认 ../cdfknow）
-# 退出码: 0 正常; 1 --fail-on-drift 且存在漂移; 2 参数/路径错误
+# 退出码: 0 正常 / dry-run; 1 --fail-on-drift 且存在漂移; 2 参数/路径错误
 #
 set -euo pipefail
 
@@ -20,6 +22,7 @@ VENDOR="openclaw"
 JSON=0
 FAIL_ON_DRIFT=0
 CHECK_ONLY=0
+DRY_RUN=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -28,7 +31,8 @@ while [[ $# -gt 0 ]]; do
     --json)          JSON=1; shift;;
     --fail-on-drift) FAIL_ON_DRIFT=1; shift;;
     --check-only)    CHECK_ONLY=1; shift;;
-    -h|--help)       sed -n '2,16p' "$0"; exit 0;;
+    --dry-run)       DRY_RUN=1; shift;;
+    -h|--help)       sed -n '2,17p' "$0"; exit 0;;
     *) echo "unknown arg: $1" >&2; exit 2;;
   esac
 done
@@ -125,6 +129,7 @@ if [[ "$JSON" -eq 1 ]]; then
     printf ']'
   }
   echo "{"
+  echo "  \"dryRun\": $DRY_RUN,"
   echo "  \"vendor\": \"$VENDOR_DIR\","
   echo "  \"ref\": \"$REF_DIR\","
   echo "  \"counts\": {\"vendorFiles\": $NV, \"refFiles\": $NR, \"modified\": $NM, \"addedInRef\": $NAR, \"addedInVendor\": $NAV, \"relocated\": $NREL},"
@@ -147,11 +152,19 @@ if [[ "$JSON" -eq 1 ]]; then
   echo "]"
   echo "}"
 else
-  echo "=================================================================="
-  echo " OpenClaw Submodule Drift Report"
-  echo " vendor : $VENDOR_DIR"
-  echo " ref    : $REF_DIR"
-  echo "------------------------------------------------------------------"
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "=================================================================="
+    echo " OpenClaw Submodule Drift Report  [DRY-RUN — no failure will occur]"
+    echo " vendor : $VENDOR_DIR"
+    echo " ref    : $REF_DIR"
+    echo "------------------------------------------------------------------"
+  else
+    echo "=================================================================="
+    echo " OpenClaw Submodule Drift Report"
+    echo " vendor : $VENDOR_DIR"
+    echo " ref    : $REF_DIR"
+    echo "------------------------------------------------------------------"
+  fi
   echo " vendor files : $NV"
   echo " ref files    : $NR"
   echo " modified     : $NM"
@@ -180,12 +193,35 @@ else
   echo ""
   echo "Legend: [SAFE] 纯上游源码可刷新; [REVIEW] manifest/config/入口/脚本，需逐文件确认是否含产品定制。"
   echo ""
+
+  # Sync summary
+  echo "------------------------------------------------------------------"
+  echo " Sync Summary"
+  echo "------------------------------------------------------------------"
+  echo "  vendor (submodule)  : $VENDOR_DIR"
+  echo "  upstream reference  : $REF_DIR"
+  echo "  drift status        : $(if [[ $NM -gt 0 || $NAR -gt 0 || $NAV -gt 0 ]]; then echo "DRIFT DETECTED"; else echo "clean"; fi)"
+  echo "  safe-to-refresh     : $(grep -cv '^$' "$MODF" 2>/dev/null | awk -v total="$NM" 'END{print total}') files (modified)"
+  if [[ $NAR -gt 0 ]]; then
+    echo "  new-in-upstream     : $NAR files (review for port)"
+  fi
+  if [[ $NAV -gt 0 ]]; then
+    echo "  new-in-vendor       : $NAV files (likely product customizations)"
+  fi
+  echo ""
+
   echo "Submodule Workflow:"
   echo "  1. 更新上游: cd openclaw && git pull origin main && cd .."
   echo "  2. 运行本脚本检测 drift"
   echo "  3. 将 SAFE 类文件同步进 @cdf-know/* 对应面"
   echo "  4. 更新 openclaw-vendor-pin.json 的 pinnedCommit"
   echo "  5. git add openclaw .gitmodules openclaw-vendor-pin.json"
+fi
+
+# Dry-run never fails — useful for safe previews / CI status checks
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  echo "DRY-RUN: drift detected but not failing the build." >&2
+  exit 0
 fi
 
 if [[ "$FAIL_ON_DRIFT" -eq 1 ]]; then

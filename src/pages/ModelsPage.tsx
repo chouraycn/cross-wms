@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -14,14 +14,9 @@ import {
   TableRow,
   Paper,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
   IconButton,
   CircularProgress,
   Alert,
@@ -32,24 +27,26 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Divider,
+  Stack,
+  FormControlLabel,
 } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import AddIcon from '@mui/icons-material/Add';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
 import ErrorIcon from '@mui/icons-material/Error';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import WifiIcon from '@mui/icons-material/Wifi';
-import WifiOffIcon from '@mui/icons-material/Wifi';
-import XIcon from '@mui/icons-material/Close';
+import WifiOffIcon from '@mui/icons-material/WifiOff';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SearchIcon from '@mui/icons-material/Search';
 import ResetTvIcon from '@mui/icons-material/ResetTv';
 import CloudIcon from '@mui/icons-material/Cloud';
 import MemoryIcon from '@mui/icons-material/Memory';
+import PushPinIcon from '@mui/icons-material/PushPin';
+import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 import {
   getModels,
@@ -58,7 +55,6 @@ import {
   healthCheck,
   discoverLocalModels,
   testConnection,
-  getRecommendedModels,
   addRecommendedModel,
   addAllRecommendedModels,
 } from '../services/modelsApi';
@@ -70,6 +66,7 @@ import type {
 } from '../services/modelsApi';
 import { getGrayScale } from '../constants/theme';
 import { useTheme } from '@mui/material';
+import { useModelPreferences } from '../hooks/useModelPreferences';
 
 export default function ModelsPage() {
   const theme = useTheme();
@@ -80,9 +77,6 @@ export default function ModelsPage() {
   const [providers, setProviders] = useState<ProviderConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
-  const [currentModel, setCurrentModel] = useState<ModelConfig | null>(null);
   const [healthResults, setHealthResults] = useState<HealthCheckResult[]>([]);
   const [healthChecking, setHealthChecking] = useState(false);
   const [discoveringLocal, setDiscoveringLocal] = useState(false);
@@ -90,6 +84,51 @@ export default function ModelsPage() {
   const [recommendedModels, setRecommendedModels] = useState<ModelConfig[]>([]);
   const [testConnectionResult, setTestConnectionResult] = useState<{ success: boolean; message: string; models?: string[] } | null>(null);
   const [testConnectionLoading, setTestConnectionLoading] = useState(false);
+
+  // ============ Model 切换的快捷操作 / 过滤 ============
+  const prefs = useModelPreferences();
+  const [providerFilter, setProviderFilter] = useState<string>('__all__');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showHidden, setShowHidden] = useState(false);
+
+  const providerOptions = useMemo(() => {
+    const set = new Set<string>();
+    models.forEach(m => set.add(m.provider));
+    return Array.from(set).sort();
+  }, [models]);
+
+  const visibleModels = useMemo(() => {
+    let list = models;
+    if (providerFilter !== '__all__') {
+      list = list.filter(m => m.provider === providerFilter);
+    }
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      list = list.filter(m =>
+        m.name.toLowerCase().includes(q) ||
+        m.id.toLowerCase().includes(q) ||
+        (m.provider || '').toLowerCase().includes(q),
+      );
+    }
+    if (!showHidden) {
+      list = list.filter(m => !prefs.isHidden(m.id));
+    }
+    // 置顶排在最前
+    return [...list].sort((a, b) => {
+      const ap = prefs.isPinned(a.id) ? 1 : 0;
+      const bp = prefs.isPinned(b.id) ? 1 : 0;
+      if (ap !== bp) return bp - ap;
+      const af = prefs.isFavorite(a.id) ? 1 : 0;
+      const bf = prefs.isFavorite(b.id) ? 1 : 0;
+      if (af !== bf) return bf - af;
+      return a.name.localeCompare(b.name);
+    });
+  }, [models, providerFilter, searchTerm, showHidden, prefs]);
+
+  const totalUsageCount = useMemo(
+    () => models.reduce((sum, m) => sum + (m.usageStats?.callCount || 0), 0),
+    [models],
+  );
 
   const fetchModels = async () => {
     try {
@@ -110,7 +149,7 @@ export default function ModelsPage() {
     fetchModels();
   }, []);
 
-  const handleSaveModel = async () => {
+  const _handleSaveModel = async () => {
     try {
       setError('');
       const config = await saveModels(
@@ -121,7 +160,6 @@ export default function ModelsPage() {
       setModels(config.models);
       setDefaultModelId(config.defaultModelId);
       setProviders(config.providers || []);
-      setDialogOpen(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : '保存模型配置失败');
     }
@@ -225,7 +263,7 @@ export default function ModelsPage() {
     }
   };
 
-  const handleTestConnection = async (apiEndpoint: string, apiKey: string, modelId: string) => {
+  const _handleTestConnection = async (apiEndpoint: string, apiKey: string, modelId: string) => {
     try {
       setTestConnectionLoading(true);
       const result = await testConnection(apiEndpoint, apiKey, modelId);
@@ -286,29 +324,120 @@ export default function ModelsPage() {
         <Grid item xs={12} md={8}>
           <Card sx={{ bgcolor: gs.bgPanel }}>
             <CardContent>
-              <Typography variant="h6" mb={2}>模型列表</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">模型列表</Typography>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip
+                    size="small"
+                    icon={<TrendingUpIcon />}
+                    label={`累计 ${totalUsageCount.toLocaleString()} 次调用`}
+                    color="primary"
+                    variant="outlined"
+                  />
+                  <Chip
+                    size="small"
+                    label={`置顶 ${prefs.preferences.pinned.length}`}
+                    variant="outlined"
+                  />
+                  <Chip
+                    size="small"
+                    label={`收藏 ${prefs.preferences.favorites.length}`}
+                    variant="outlined"
+                  />
+                  <Chip
+                    size="small"
+                    label={`隐藏 ${prefs.preferences.hidden.length}`}
+                    variant="outlined"
+                  />
+                </Stack>
+              </Box>
+
+              <Stack direction="row" spacing={1} sx={{ mb: 2 }} alignItems="center">
+                <TextField
+                  size="small"
+                  placeholder="按名称 / ID / Provider 搜索"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} /> }}
+                  sx={{ minWidth: 220 }}
+                />
+                <FormControl size="small" sx={{ minWidth: 160 }}>
+                  <InputLabel>按 Provider 分组</InputLabel>
+                  <Select
+                    label="按 Provider 分组"
+                    value={providerFilter}
+                    onChange={(e) => setProviderFilter(e.target.value as string)}
+                  >
+                    <MenuItem value="__all__">全部 Provider</MenuItem>
+                    {providerOptions.map(p => (
+                      <MenuItem key={p} value={p}>{p}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={showHidden}
+                      onChange={(e) => setShowHidden(e.target.checked)}
+                      size="small"
+                    />
+                  }
+                  label="显示已隐藏"
+                />
+              </Stack>
+
               <TableContainer component={Paper}>
                 <Table>
                   <TableHead>
                     <TableRow>
+                      <TableCell width={40}></TableCell>
                       <TableCell>名称</TableCell>
                       <TableCell>提供商</TableCell>
-                      <TableCell>端点</TableCell>
-                      <TableCell>状态</TableCell>
+                      <TableCell>使用</TableCell>
                       <TableCell>健康</TableCell>
+                      <TableCell>状态</TableCell>
                       <TableCell>操作</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {models.map(model => {
+                    {visibleModels.map(model => {
                       const health = getHealthStatus(model.id);
+                      const usage = model.usageStats;
                       return (
                         <TableRow key={model.id}>
                           <TableCell>
+                            <Stack direction="row" spacing={0.5}>
+                              <Tooltip title={prefs.isPinned(model.id) ? '取消置顶' : '置顶'}>
+                                <IconButton size="small" onClick={() => prefs.togglePin(model.id)}>
+                                  {prefs.isPinned(model.id)
+                                    ? <PushPinIcon fontSize="small" color="primary" />
+                                    : <PushPinOutlinedIcon fontSize="small" />}
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title={prefs.isFavorite(model.id) ? '取消收藏' : '收藏'}>
+                                <IconButton size="small" onClick={() => prefs.toggleFavorite(model.id)}>
+                                  {prefs.isFavorite(model.id)
+                                    ? <StarIcon fontSize="small" color="warning" />
+                                    : <StarBorderIcon fontSize="small" />}
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title={prefs.isHidden(model.id) ? '取消隐藏' : '隐藏'}>
+                                <IconButton size="small" onClick={() => prefs.toggleHidden(model.id)}>
+                                  {prefs.isHidden(model.id)
+                                    ? <VisibilityIcon fontSize="small" />
+                                    : <VisibilityOffIcon fontSize="small" />}
+                                </IconButton>
+                              </Tooltip>
+                            </Stack>
+                          </TableCell>
+                          <TableCell>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              {prefs.isPinned(model.id) && <Chip size="small" label="📌" />}
+                              {prefs.isFavorite(model.id) && <StarIcon sx={{ fontSize: 14 }} color="warning" />}
                               {model.id === defaultModelId && (
                                 <Chip size="small" label="默认" color="primary" />
                               )}
+                              {prefs.isHidden(model.id) && <Chip size="small" label="已隐藏" color="default" />}
                               <Typography>{model.name}</Typography>
                             </Box>
                           </TableCell>
@@ -319,16 +448,25 @@ export default function ModelsPage() {
                             </Box>
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2" color="textSecondary">
-                              {model.apiEndpoint || '-'}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Switch
-                              checked={model.enabled}
-                              onChange={() => handleToggleModel(model.id)}
-                              color="primary"
-                            />
+                            {usage ? (
+                              <Stack spacing={0.25}>
+                                <Typography variant="caption">
+                                  {usage.callCount.toLocaleString()} 次调用
+                                </Typography>
+                                {usage.avgResponseTime != null && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    平均 {usage.avgResponseTime.toFixed(0)}ms
+                                  </Typography>
+                                )}
+                                {usage.lastUsedAt && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    最近 {new Date(usage.lastUsedAt).toLocaleDateString('zh-CN')}
+                                  </Typography>
+                                )}
+                              </Stack>
+                            ) : (
+                              <Typography variant="caption" color="text.secondary">无数据</Typography>
+                            )}
                           </TableCell>
                           <TableCell>
                             {health ? (
@@ -346,7 +484,14 @@ export default function ModelsPage() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Switch
+                              checked={model.enabled}
+                              onChange={() => handleToggleModel(model.id)}
+                              color="primary"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Stack direction="row" spacing={1}>
                               <Button
                                 size="small"
                                 onClick={() => handleSetDefault(model.id)}
@@ -354,11 +499,18 @@ export default function ModelsPage() {
                               >
                                 {model.id === defaultModelId ? '默认' : '设为默认'}
                               </Button>
-                            </Box>
+                            </Stack>
                           </TableCell>
                         </TableRow>
                       );
                     })}
+                    {visibleModels.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                          暂无符合条件的模型
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>

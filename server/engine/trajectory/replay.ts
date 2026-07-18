@@ -1,7 +1,7 @@
 /**
  * 轨迹回放
  * 从记录中重放 Agent 行为，用于调试与问题诊断。
- * 支持按步骤回放、按类型过滤、时间线摘要等。
+ * 支持按步骤回放、按类型过滤、时间线摘要、步进、断点、速度控制等。
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -14,43 +14,11 @@ import type {
   TrajectoryEvent,
   TrajectoryStep,
   TrajectoryEntryData,
+  TrajectoryReplayOptions,
+  TrajectoryReplayResult,
+  TrajectoryReplayController,
 } from './types.js';
-import { TrajectoryEntry } from './types.js';
 
-/** 回放选项。 */
-export interface TrajectoryReplayOptions {
-  /** 按事件类型过滤（如 'tool_call', 'message', 'error'） */
-  typeFilter?: string[];
-  /** 起始步骤序号（含） */
-  fromSeq?: number;
-  /** 结束步骤序号（含） */
-  toSeq?: number;
-  /** 最大读取字节数 */
-  maxBytes?: number;
-  /** 是否按时间戳排序 */
-  sortByTime?: boolean;
-}
-
-/** 回放结果。 */
-export interface TrajectoryReplayResult {
-  /** 读取到的事件列表 */
-  events: TrajectoryEvent[];
-  /** 总事件数（含过滤前） */
-  totalEventCount: number;
-  /** 过滤后事件数 */
-  filteredEventCount: number;
-  /** 跳过的行数（解析失败） */
-  skippedLines: number;
-  /** 时间范围 */
-  timeRange: {
-    earliest: string | null;
-    latest: string | null;
-  };
-  /** 按类型分组统计 */
-  typeCounts: Record<string, number>;
-}
-
-/** 回放步骤的摘要。 */
 export interface TrajectoryReplaySummary {
   sessionId: string;
   totalSteps: number;
@@ -64,6 +32,12 @@ export interface TrajectoryReplaySummary {
     timestamp: string;
     summary: string;
   }>;
+}
+
+export { TrajectoryReplayOptions, TrajectoryReplayResult, TrajectoryReplayController };
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -93,12 +67,13 @@ export async function replayTrajectory(
       skippedLines: 0,
       timeRange: { earliest: null, latest: null },
       typeCounts: {},
+      currentIndex: 0,
+      isPaused: false,
     };
   }
 
   const maxBytes = options.maxBytes ?? TRAJECTORY_RUNTIME_FILE_MAX_BYTES;
   if (Buffer.byteLength(content, 'utf-8') > maxBytes) {
-    // 截断到 maxBytes（按行截断，避免截断在行中间）
     const lines = content.split('\n');
     let kept = '';
     for (const line of lines) {
@@ -116,13 +91,11 @@ export async function replayTrajectory(
     try {
       const parsed = JSON.parse(line);
 
-      // 版本化信封格式
       if (parsed.traceSchema === 'cdf-know-trajectory' || parsed.traceSchema === 'openclaw-trajectory') {
         events.push(parsed as TrajectoryEvent);
         continue;
       }
 
-      // 简化条目格式（转换为事件信封）
       if (parsed.sessionId && parsed.step !== undefined) {
         const entry = parsed as TrajectoryEntryData;
         events.push({
@@ -147,7 +120,6 @@ export async function replayTrajectory(
 
   const totalEventCount = events.length;
 
-  // 按时间排序
   if (options.sortByTime !== false) {
     events.sort((a, b) => {
       const byTs = a.ts.localeCompare(b.ts);
@@ -155,14 +127,12 @@ export async function replayTrajectory(
     });
   }
 
-  // 按类型过滤
   let filtered = events;
   if (options.typeFilter && options.typeFilter.length > 0) {
     const typeSet = new Set(options.typeFilter);
     filtered = events.filter(e => typeSet.has(e.type));
   }
 
-  // 按步骤序号范围过滤
   if (options.fromSeq !== undefined) {
     filtered = filtered.filter(e => e.seq >= options.fromSeq!);
   }
@@ -170,15 +140,37 @@ export async function replayTrajectory(
     filtered = filtered.filter(e => e.seq <= options.toSeq!);
   }
 
-  // 计算时间范围
   const timestamps = filtered.map(e => e.ts).filter(Boolean);
   const earliest = timestamps.length > 0 ? timestamps.reduce((a, b) => a < b ? a : b) : null;
   const latest = timestamps.length > 0 ? timestamps.reduce((a, b) => a > b ? a : b) : null;
 
-  // 按类型分组统计
   const typeCounts: Record<string, number> = {};
   for (const event of filtered) {
     typeCounts[event.type] = (typeCounts[event.type] ?? 0) + 1;
+  }
+
+  if (options.onEvent) {
+    const speed = options.speed ?? 1;
+    const breakpoints = new Set(options.breakpoints ?? []);
+
+    for (let i = 0; i < filtered.length; i++) {
+      const event = filtered[i]!;
+
+      if (breakpoints.has(event.seq) && options.onBreakpoint) {
+        await options.onBreakpoint(event, event.seq);
+      }
+
+      await options.onEvent(event, i);
+
+      if (speed !== 1 && i < filtered.length - 1) {
+        const nextEvent = filtered[i + 1]!;
+        const originalDelay = new Date(nextEvent.ts).getTime() - new Date(event.ts).getTime();
+        const delay = originalDelay / speed;
+        if (delay > 0) {
+          await sleep(delay);
+        }
+      }
+    }
   }
 
   return {
@@ -188,6 +180,49 @@ export async function replayTrajectory(
     skippedLines,
     timeRange: { earliest, latest },
     typeCounts,
+    currentIndex: 0,
+    isPaused: false,
+  };
+}
+
+/**
+ * 创建回放控制器，支持步进、断点、暂停/继续等操作
+ */
+export function createReplayController(events: TrajectoryEvent[]): TrajectoryReplayController {
+  let currentIndex = 0;
+  let paused = false;
+
+  return {
+    next: async () => {
+      if (currentIndex >= events.length - 1) return null;
+      currentIndex++;
+      return events[currentIndex] ?? null;
+    },
+    prev: async () => {
+      if (currentIndex <= 0) return null;
+      currentIndex--;
+      return events[currentIndex] ?? null;
+    },
+    goTo: async (seq: number) => {
+      const index = events.findIndex(e => e.seq === seq);
+      if (index === -1) return null;
+      currentIndex = index;
+      return events[currentIndex] ?? null;
+    },
+    pause: () => {
+      paused = true;
+    },
+    resume: () => {
+      paused = false;
+    },
+    stop: () => {
+      currentIndex = 0;
+      paused = false;
+    },
+    getCurrent: () => events[currentIndex] ?? null,
+    getIndex: () => currentIndex,
+    getTotal: () => events.length,
+    isPaused: () => paused,
   };
 }
 
@@ -200,9 +235,9 @@ export async function replayTrajectorySummary(
 ): Promise<TrajectoryReplaySummary> {
   const result = await replayTrajectory(sessionId, {}, env);
 
-  const toolCallCount = result.typeCounts['tool_call'] ?? 0;
+  const toolCallCount = result.typeCounts['tool_call'] ?? result.typeCounts['tool.call'] ?? 0;
   const errorCount = result.typeCounts['error'] ?? 0;
-  const messageCount = result.typeCounts['message'] ?? 0;
+  const messageCount = result.typeCounts['message'] ?? result.typeCounts['user.message'] ?? result.typeCounts['assistant.message'] ?? 0;
 
   let duration = 'unknown';
   if (result.timeRange.earliest && result.timeRange.latest) {
@@ -238,10 +273,14 @@ function summarizeEvent(event: TrajectoryEvent): string {
   const data = event.data;
   switch (event.type) {
     case 'tool_call':
+    case 'tool.call':
       return `tool: ${data?.toolName ?? data?.name ?? 'unknown'}`;
     case 'tool_result':
+    case 'tool.result':
       return `result: ${data?.toolName ?? data?.name ?? 'unknown'} ${data?.success === false ? '(failed)' : '(ok)'}`;
     case 'message':
+    case 'user.message':
+    case 'assistant.message':
       const text = typeof data?.content === 'string' ? data.content : JSON.stringify(data?.content);
       return text.length > 80 ? `${text.slice(0, 80)}...` : text;
     case 'error':
@@ -287,7 +326,6 @@ export async function listTrajectorySessions(
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const sessionDir = path.join(rootDir, entry.name);
-    // 查找 .jsonl 文件
     let files;
     try {
       files = await fs.readdir(sessionDir);

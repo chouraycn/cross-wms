@@ -42,7 +42,10 @@ function now(): string {
  */
 export function generateTransferNo(): string {
   const date = new Date();
-  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const dateStr = `${year}${month}${day}`;
 
   // 查询所有调拨单，在 JavaScript 中筛选当日最大序号
   const { items } = getTransferOrders({ page: 1, pageSize: 1000 });

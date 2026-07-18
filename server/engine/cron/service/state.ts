@@ -10,6 +10,7 @@ import type {
   CronJob,
   CronStoreFile,
   CronRunStatus,
+  CronRunOutcome,
   CronDeliveryStatus,
   CronDeliveryTrace,
   CronFailureNotificationDelivery,
@@ -41,6 +42,25 @@ export type CronEvent = {
   nextRunAtMs?: number;
 } & CronRunTelemetry;
 
+/** 任务执行函数类型 */
+export type CronJobExecutor = (job: CronJob) => Promise<CronRunOutcome>;
+
+/** 系统事件入队选项 */
+export type EnqueueSystemEventOptions = {
+  sessionKey?: string;
+  agentId?: string;
+  deliveryContext?: unknown;
+};
+
+/** 心跳请求选项 */
+export type RequestHeartbeatOptions = {
+  source: string;
+  intent: "immediate" | "event";
+  reason: string;
+  sessionKey?: string;
+  agentId?: string;
+};
+
 /** Cron 服务依赖注入接口 */
 export type CronServiceDeps = {
   /** 获取当前时间（毫秒），可注入用于测试 */
@@ -55,6 +75,20 @@ export type CronServiceDeps = {
   defaultAgentId?: string;
   /** 事件回调 */
   onEvent?: (evt: CronEvent) => void;
+  /** 任务执行器，实际执行 cron 任务的逻辑 */
+  onJobExecute?: CronJobExecutor;
+  /** 将系统事件入队到主会话 */
+  enqueueSystemEvent?: (text: string, opts?: EnqueueSystemEventOptions) => unknown;
+  /** 请求心跳唤醒 */
+  requestHeartbeat?: (opts: RequestHeartbeatOptions) => void;
+  /** 隔离 agent 设置超时回调 */
+  onIsolatedAgentSetupTimeout?: (info: { job: CronJob; error: string; timeoutMs: number }) => void;
+  /** 解析会话存储路径 */
+  resolveSessionStorePath?: (agentId: string) => string;
+  /** 会话存储路径 */
+  sessionStorePath?: string;
+  /** 解析原始投递上下文 */
+  resolveOriginDeliveryContext?: (opts: { sessionKey?: string; agentId?: string }) => unknown;
 };
 
 /** 内部使用的依赖类型，可选字段已补全默认值 */

@@ -94,7 +94,7 @@ export default defineConfig(({ mode }) => ({
     // 拆分大型依赖为独立 chunk
     // 路由组件通过 React.lazy() + import() 自动拆分为独立 chunk（Vite 内置代码分割）
     // manualChunks 仅处理第三方依赖拆分，应用代码由动态导入自动分割
-    chunkSizeWarningLimit: 700,
+    chunkSizeWarningLimit: 500,
     // WKWebView 兼容：强制转换 node_modules 中的 CommonJS 包为 ESM
     // 防止 Cannot set properties of undefined (setting 'exports') 错误
     // 关键：strictRequires: 'auto' 确保动态 require() 也被正确转换
@@ -103,11 +103,17 @@ export default defineConfig(({ mode }) => ({
       transformMixedEsModules: true,
       strictRequires: 'auto', // 强制转换所有 require() 调用（含动态拼接）
     },
+    cssCodeSplit: true,
+    sourcemap: false,
+    reportCompressedSize: false,
     rollupOptions: {
       input: {
         main: 'index.html',
       },
       output: {
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
         manualChunks(id: string) {
           // MUI icons — 单独拆分（非常大，但懒加载不影响首屏）
           if (id.includes('node_modules/@mui/icons-material/')) {
@@ -137,11 +143,6 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('node_modules/react-router-dom/') || id.includes('node_modules/react-router/')) {
             return 'vendor-router';
           }
-          // React Markdown 渲染相关
-          // ⚠️ 不再单独拆分 vendor-markdown chunk
-          // 原因：markdown 生态包（hast-util-*、property-information 等）与 MUI/@emotion 存在共享依赖
-          // 强制拆分会产生 vendor-mui ↔ vendor-markdown 循环依赖，导致运行时白屏
-          // 让 Vite 自动处理这些包的归属，避免循环依赖
           // react-virtuoso — 虚拟滚动列表（ChatMessageList 使用）
           if (id.includes('node_modules/react-virtuoso/')) {
             return 'vendor-virtuoso';
@@ -159,17 +160,6 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('node_modules/js-yaml/')) {
             return 'vendor-js-yaml';
           }
-          // react-syntax-highlighter + refractor — 代码高亮（MarkdownRenderer 使用）
-          // ⚠️ 不再单独拆分 vendor-syntax-highlighter chunk
-          // 原因：react-syntax-highlighter/refractor 与 MUI/@emotion 存在共享依赖
-          // 强制拆分会产生 vendor-mui ↔ vendor-syntax-highlighter 循环依赖，导致运行时白屏
-          // 让 Vite 自动处理这些包的归属，避免循环依赖
-          // if (
-          //   id.includes('node_modules/react-syntax-highlighter/') ||
-          //   id.includes('node_modules/refractor/')
-          // ) {
-          //   return 'vendor-syntax-highlighter';
-          // }
           // KaTeX — LaTeX 数学公式渲染
           if (id.includes('node_modules/katex/')) {
             return 'vendor-katex';
@@ -201,6 +191,22 @@ export default defineConfig(({ mode }) => ({
           // Axios — HTTP 客户端
           if (id.includes('node_modules/axios/')) {
             return 'vendor-axios';
+          }
+          // Sentry — 错误监控
+          if (id.includes('node_modules/@sentry/')) {
+            return 'vendor-sentry';
+          }
+          // i18next — 国际化
+          if (id.includes('node_modules/i18next/') || id.includes('node_modules/react-i18next/')) {
+            return 'vendor-i18n';
+          }
+          // Lodash — 工具库
+          if (id.includes('node_modules/lodash-es/')) {
+            return 'vendor-lodash';
+          }
+          // Zod — 数据验证
+          if (id.includes('node_modules/zod/')) {
+            return 'vendor-zod';
           }
           // 不设 catch-all vendor-misc（会导致循环依赖），其余小包留在 main chunk
           return undefined;

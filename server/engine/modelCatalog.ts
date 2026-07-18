@@ -1,15 +1,19 @@
 /**
- * 模型目录与发现 — 参考 OpenClaw agents/model-catalog.ts
+ * 模型目录与发现 — 已迁移到 model-catalog/ 目录
  *
- * 管理可用的 AI 模型目录和发现功能。
+ * 本文件保持向后兼容，所有功能委托给新的 model-catalog 模块。
+ * 新代码请直接从 './model-catalog/index.js' 导入。
  */
 
 import { logger } from '../logger.js';
-import { getModelById, getAllModels } from './models.js';
+import {
+  modelCatalog,
+  type ModelCapability as NewModelCapability,
+  type ModelType as NewModelType,
+} from './model-catalog/index.js';
 
-export type ModelCapability = 'vision' | 'audio' | 'json' | 'tool_use' | 'function_calling' | 'code' | 'multimodal';
-
-export type ModelType = 'chat' | 'completion' | 'embedding' | 'vision' | 'tts' | 'speech';
+export type ModelCapability = NewModelCapability;
+export type ModelType = NewModelType;
 
 export interface ThinkingLevel {
   id: string;
@@ -122,53 +126,58 @@ export interface ModelSearchResult {
 }
 
 export function getModelCatalogEntry(modelId: string): ModelCatalogEntry | undefined {
-  const model = getModelById(modelId);
+  const model = modelCatalog.getModel(modelId);
   if (!model) {
     return undefined;
   }
-
-  return convertToCatalogEntry(model);
+  return {
+    id: model.id,
+    name: model.name,
+    provider: model.provider,
+    type: model.type,
+    description: model.description,
+    capabilities: model.capabilities,
+    contextWindow: model.contextWindow,
+    maxOutputTokens: model.maxOutputTokens,
+    available: model.available,
+    authStatus: model.authStatus,
+    metadata: model.metadata,
+  };
 }
 
 export function listModelCatalog(): ModelCatalogEntry[] {
-  return getAllModels().map(convertToCatalogEntry);
+  return modelCatalog.listModels().map((model) => ({
+    id: model.id,
+    name: model.name,
+    provider: model.provider,
+    type: model.type,
+    description: model.description,
+    capabilities: model.capabilities,
+    contextWindow: model.contextWindow,
+    maxOutputTokens: model.maxOutputTokens,
+    available: model.available,
+    authStatus: model.authStatus,
+    metadata: model.metadata,
+  }));
 }
 
 export function searchModelCatalog(params: ModelSearchParams): ModelSearchResult {
-  let models = listModelCatalog();
-
-  if (params.query) {
-    const queryLower = params.query.toLowerCase();
-    models = models.filter(
-      (m) =>
-        m.id.toLowerCase().includes(queryLower) ||
-        m.name.toLowerCase().includes(queryLower) ||
-        m.description?.toLowerCase().includes(queryLower),
-    );
-  }
-
-  if (params.provider) {
-    models = models.filter((m) => m.provider === params.provider);
-  }
-
-  if (params.type) {
-    models = models.filter((m) => m.type === params.type);
-  }
-
-  if (params.capability !== undefined) {
-    const cap = params.capability as ModelCapability;
-    models = models.filter((m) => m.capabilities.includes(cap));
-  }
-
-  if (params.availableOnly) {
-    models = models.filter((m) => m.available);
-  }
-
-  logger.debug(`[ModelCatalog] 搜索结果: ${models.length} 个模型`);
-
+  const result = modelCatalog.search(params);
   return {
-    models,
-    total: models.length,
+    models: result.models.map((model) => ({
+      id: model.id,
+      name: model.name,
+      provider: model.provider,
+      type: model.type,
+      description: model.description,
+      capabilities: model.capabilities,
+      contextWindow: model.contextWindow,
+      maxOutputTokens: model.maxOutputTokens,
+      available: model.available,
+      authStatus: model.authStatus,
+      metadata: model.metadata,
+    })),
+    total: result.total,
   };
 }
 
@@ -177,81 +186,48 @@ export function findBestModel(params: {
   contextWindow?: number;
   provider?: string;
 }): ModelCatalogEntry | undefined {
-  let models = listModelCatalog().filter((m) => m.available);
-
-  if (params.capability !== undefined) {
-    const cap = params.capability;
-    models = models.filter((m) => m.capabilities.includes(cap));
-  }
-
-  if (params.provider) {
-    models = models.filter((m) => m.provider === params.provider);
-  }
-
-  if (params.contextWindow !== undefined) {
-    const minContext = params.contextWindow;
-    models = models.filter((m) => m.contextWindow >= minContext);
-  }
-
-  if (models.length === 0) {
+  const model = modelCatalog.findBestModel(params);
+  if (!model) {
     return undefined;
   }
-
-  return models.reduce((best, current) => {
-    if (params.contextWindow !== undefined) {
-      const minContext = params.contextWindow;
-      return current.contextWindow >= minContext &&
-        current.contextWindow < best.contextWindow
-        ? current
-        : best;
-    }
-    return best;
-  });
+  return {
+    id: model.id,
+    name: model.name,
+    provider: model.provider,
+    type: model.type,
+    description: model.description,
+    capabilities: model.capabilities,
+    contextWindow: model.contextWindow,
+    maxOutputTokens: model.maxOutputTokens,
+    available: model.available,
+    authStatus: model.authStatus,
+    metadata: model.metadata,
+  };
 }
 
 export function updateModelAvailability(modelId: string, available: boolean): void {
-  const model = getModelById(modelId);
+  const model = modelCatalog.getModel(modelId);
   if (model) {
-    (model as unknown as Record<string, unknown>).available = available;
+    modelCatalog.updateModelAuthStatus(
+      model.provider,
+      modelId,
+      available ? 'authenticated' : 'unauthenticated',
+    );
     logger.info(`[ModelCatalog] 更新模型可用性: ${modelId} → ${available}`);
   }
 }
 
-function convertToCatalogEntry(model: {
-  modelId?: string;
-  id?: string;
-  name: string;
-  provider: string;
-  description?: string;
-  capabilities?: string[];
-  contextWindow?: number;
-  authStatus?: string;
-}): ModelCatalogEntry {
-  return {
-    id: model.modelId ?? model.id ?? 'unknown',
-    name: model.name,
-    provider: model.provider,
-    type: 'chat',
-    description: model.description,
-    capabilities: (model.capabilities as ModelCapability[]) ?? ['json', 'tool_use'],
-    contextWindow: model.contextWindow ?? 128_000,
-    available: model.authStatus === 'authenticated',
-    authStatus: (model.authStatus as ModelCatalogEntry['authStatus']) ?? 'pending',
-  };
-}
-
 export function getProviders(): string[] {
-  const providerSet = new Set<string>();
-  for (const model of getAllModels()) {
-    providerSet.add(model.provider);
-  }
-  return Array.from(providerSet);
+  return modelCatalog.listProviders();
 }
 
 export function getModelTypes(): ModelType[] {
-  return ['chat', 'completion', 'embedding', 'vision', 'tts', 'speech'];
+  return modelCatalog.getModelTypes();
 }
 
 export function getCapabilities(): ModelCapability[] {
-  return ['vision', 'audio', 'json', 'tool_use', 'function_calling', 'code', 'multimodal'];
+  return modelCatalog.getCapabilities();
 }
+
+export { modelCatalog as default };
+export { ModelCatalog } from './model-catalog/index.js';

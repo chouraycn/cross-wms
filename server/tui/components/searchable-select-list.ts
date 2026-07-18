@@ -1,385 +1,208 @@
-// Searchable select list component adds search input to selectable TUI lists.
-import {
-  type Component,
-  Input,
-  isKeyRelease,
-  matchesKey,
-  type SelectItem,
-  type SelectListTheme,
-  truncateToWidth,
-} from "@earendil-works/pi-tui";
-import { normalizeLowercaseStringOrEmpty } from "@cdf-know/normalization-core/string-coerce";
-import { uniqueStrings } from "@cdf-know/normalization-core/string-normalization";
-import { stripAnsi, visibleWidth } from "@cdf-know/terminal-core/ansi.js";
-import { findWordBoundaryIndex, fuzzyFilterLower } from "./fuzzy-filter.js";
+import type { SearchableSelectListTheme } from '../theme/theme.js';
+import { fuzzyFilterLower, prepareSearchItems, highlightMatch } from './fuzzy-filter.js';
+import type { TUISelectItem } from '../types.js';
 
-const ANSI_ESCAPE = String.fromCharCode(27);
-const ANSI_SGR_REGEX = new RegExp(`${ANSI_ESCAPE}\\[[0-9;]*m`, "g");
-
-export interface SearchableSelectListTheme extends SelectListTheme {
-  searchPrompt: (text: string) => string;
-  searchInput: (text: string) => string;
-  matchHighlight: (text: string) => string;
+export interface SearchableSelectListOptions {
+  items: TUISelectItem[];
+  theme: SearchableSelectListTheme;
+  maxVisible?: number;
+  searchPrompt?: string;
 }
 
-/**
- * A select list with a search input at the top for fuzzy filtering.
- */
-export class SearchableSelectList implements Component {
-  private items: SelectItem[];
-  private filteredItems: SelectItem[];
-  private selectedIndex = 0;
-  private maxVisible: number;
+export class SearchableSelectList {
+  private items: Array<TUISelectItem & { searchTextLower: string }>;
+  private filteredItems: Array<TUISelectItem & { searchTextLower: string }>;
   private theme: SearchableSelectListTheme;
-  private searchInput: Input;
-  private regexCache = new Map<string, RegExp>();
+  private maxVisible: number;
+  private searchText: string = '';
+  private selectedIndex: number = 0;
+  private scrollOffset: number = 0;
+  private onSelect?: (item: TUISelectItem) => void;
+  private onCancel?: () => void;
+  private searchPrompt: string;
 
-  onSelect?: (item: SelectItem) => void;
-  onCancel?: () => void;
-  onSelectionChange?: (item: SelectItem) => void;
-
-  private static readonly DESCRIPTION_LAYOUT_MIN_WIDTH = 40;
-  private static readonly DESCRIPTION_MIN_WIDTH = 12;
-  private static readonly DESCRIPTION_SPACING_WIDTH = 2;
-  // Keep a small right margin so we don't risk wrapping due to styling/terminal quirks.
-  private static readonly RIGHT_MARGIN_WIDTH = 2;
-
-  constructor(items: SelectItem[], maxVisible: number, theme: SearchableSelectListTheme) {
-    this.items = items;
-    this.filteredItems = items;
-    this.maxVisible = maxVisible;
-    this.theme = theme;
-    this.searchInput = new Input();
+  constructor(options: SearchableSelectListOptions) {
+    this.items = prepareSearchItems(options.items);
+    this.filteredItems = [...this.items];
+    this.theme = options.theme;
+    this.maxVisible = options.maxVisible ?? 10;
+    this.searchPrompt = options.searchPrompt ?? 'Search: ';
   }
 
-  private getCachedRegex(pattern: string): RegExp {
-    let regex = this.regexCache.get(pattern);
-    if (!regex) {
-      regex = new RegExp(this.escapeRegex(pattern), "gi");
-      this.regexCache.set(pattern, regex);
-    }
-    return regex;
+  setItems(items: TUISelectItem[]): void {
+    this.items = prepareSearchItems(items);
+    this.applyFilter();
   }
 
-  private updateFilter() {
-    const query = this.searchInput.getValue().trim();
+  getSearchText(): string {
+    return this.searchText;
+  }
 
-    if (!query) {
-      this.filteredItems = this.items;
-    } else {
-      this.filteredItems = this.smartFilter(query);
-    }
+  setSearchText(text: string): void {
+    this.searchText = text;
+    this.applyFilter();
+  }
 
-    // Reset selection when filter changes
+  private applyFilter(): void {
+    const queryLower = this.searchText.toLowerCase().trim();
+    this.filteredItems = fuzzyFilterLower(this.items, queryLower);
     this.selectedIndex = 0;
-    this.notifySelectionChange();
+    this.scrollOffset = 0;
   }
 
-  /**
-   * Smart filtering that prioritizes:
-   * 1. Exact substring match in label (highest priority)
-   * 2. Word-boundary prefix match in label
-   * 3. Exact substring in description
-   * 4. Fuzzy match (lowest priority)
-   */
-  private smartFilter(query: string): SelectItem[] {
-    const q = normalizeLowercaseStringOrEmpty(query);
-    type ScoredItem = { item: SelectItem; tier: number; score: number };
-    type FuzzyCandidate = { item: SelectItem; searchTextLower: string };
-    const scoredItems: ScoredItem[] = [];
-    const fuzzyCandidates: FuzzyCandidate[] = [];
-
-    for (const item of this.items) {
-      const rawLabel = this.getItemLabel(item);
-      const rawDesc = item.description ?? "";
-      const label = normalizeLowercaseStringOrEmpty(stripAnsi(rawLabel));
-      const desc = normalizeLowercaseStringOrEmpty(stripAnsi(rawDesc));
-
-      // Tier 1: Exact substring in label
-      const labelIndex = label.indexOf(q);
-      if (labelIndex !== -1) {
-        scoredItems.push({ item, tier: 0, score: labelIndex });
-        continue;
-      }
-      // Tier 2: Word-boundary prefix in label
-      const wordBoundaryIndex = findWordBoundaryIndex(label, q);
-      if (wordBoundaryIndex !== null) {
-        scoredItems.push({ item, tier: 1, score: wordBoundaryIndex });
-        continue;
-      }
-      // Tier 3: Exact substring in description
-      const descIndex = desc.indexOf(q);
-      if (descIndex !== -1) {
-        scoredItems.push({ item, tier: 2, score: descIndex });
-        continue;
-      }
-      // Tier 4: Fuzzy match (score 300+)
-      const searchText = (item as { searchText?: string }).searchText ?? "";
-      fuzzyCandidates.push({
-        item,
-        searchTextLower: normalizeLowercaseStringOrEmpty(
-          [rawLabel, rawDesc, searchText]
-            .map((value) => stripAnsi(value))
-            .filter(Boolean)
-            .join(" "),
-        ),
-      });
+  getSelectedItem(): TUISelectItem | null {
+    if (this.filteredItems.length === 0) {
+      return null;
     }
-
-    scoredItems.sort(this.compareByScore);
-    const fuzzyMatches = fuzzyFilterLower(fuzzyCandidates, q);
-    return [...scoredItems.map((s) => s.item), ...fuzzyMatches.map((entry) => entry.item)];
+    return this.filteredItems[this.selectedIndex] ?? null;
   }
 
-  private escapeRegex(str: string): string {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  getSelectedIndex(): number {
+    return this.selectedIndex;
   }
 
-  private compareByScore = (
-    a: { item: SelectItem; tier: number; score: number },
-    b: { item: SelectItem; tier: number; score: number },
-  ) => {
-    if (a.tier !== b.tier) {
-      return a.tier - b.tier;
+  setSelectedIndex(index: number): void {
+    if (this.filteredItems.length === 0) {
+      return;
     }
-    if (a.score !== b.score) {
-      return a.score - b.score;
-    }
-    return this.getItemLabel(a.item).localeCompare(this.getItemLabel(b.item));
-  };
-
-  private getItemLabel(item: SelectItem): string {
-    return item.label || item.value;
-  }
-
-  private splitAnsiParts(text: string): Array<{ text: string; isAnsi: boolean }> {
-    const parts: Array<{ text: string; isAnsi: boolean }> = [];
-    ANSI_SGR_REGEX.lastIndex = 0;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-
-    while ((match = ANSI_SGR_REGEX.exec(text)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push({ text: text.slice(lastIndex, match.index), isAnsi: false });
-      }
-      parts.push({ text: match[0], isAnsi: true });
-      lastIndex = match.index + match[0].length;
-    }
-    if (lastIndex < text.length) {
-      parts.push({ text: text.slice(lastIndex), isAnsi: false });
-    }
-    return parts;
-  }
-
-  private highlightMatch(text: string, query: string): string {
-    const tokens = query
-      .trim()
-      .split(/\s+/)
-      .map((token) => normalizeLowercaseStringOrEmpty(token))
-      .filter((token) => token.length > 0);
-    if (tokens.length === 0) {
-      return text;
-    }
-
-    const uniqueTokens = uniqueStrings(tokens).toSorted((a, b) => b.length - a.length);
-    let parts = this.splitAnsiParts(text);
-    for (const token of uniqueTokens) {
-      const regex = this.getCachedRegex(token);
-      const nextParts: Array<{ text: string; isAnsi: boolean }> = [];
-      for (const part of parts) {
-        if (part.isAnsi) {
-          nextParts.push(part);
-          continue;
-        }
-        regex.lastIndex = 0;
-        const replaced = part.text.replace(regex, (match) => this.theme.matchHighlight(match));
-        if (replaced === part.text) {
-          nextParts.push(part);
-          continue;
-        }
-        nextParts.push(...this.splitAnsiParts(replaced));
-      }
-      parts = nextParts;
-    }
-    return parts.map((part) => part.text).join("");
-  }
-
-  setSelectedIndex(index: number) {
     this.selectedIndex = Math.max(0, Math.min(index, this.filteredItems.length - 1));
+    this.ensureVisible();
   }
 
-  invalidate() {
-    this.searchInput.invalidate();
+  private ensureVisible(): void {
+    if (this.selectedIndex < this.scrollOffset) {
+      this.scrollOffset = this.selectedIndex;
+    } else if (this.selectedIndex >= this.scrollOffset + this.maxVisible) {
+      this.scrollOffset = this.selectedIndex - this.maxVisible + 1;
+    }
+  }
+
+  moveUp(): void {
+    if (this.selectedIndex > 0) {
+      this.selectedIndex--;
+      this.ensureVisible();
+    }
+  }
+
+  moveDown(): void {
+    if (this.selectedIndex < this.filteredItems.length - 1) {
+      this.selectedIndex++;
+      this.ensureVisible();
+    }
+  }
+
+  movePageUp(): void {
+    this.selectedIndex = Math.max(0, this.selectedIndex - this.maxVisible);
+    this.ensureVisible();
+  }
+
+  movePageDown(): void {
+    this.selectedIndex = Math.min(this.filteredItems.length - 1, this.selectedIndex + this.maxVisible);
+    this.ensureVisible();
+  }
+
+  setOnSelect(callback: (item: TUISelectItem) => void): void {
+    this.onSelect = callback;
+  }
+
+  setOnCancel(callback: () => void): void {
+    this.onCancel = callback;
+  }
+
+  handleInput(input: string): boolean {
+    switch (input) {
+      case '\r':
+      case '\n':
+        const selected = this.getSelectedItem();
+        if (selected && this.onSelect) {
+          this.onSelect(selected);
+        }
+        return true;
+      case '\x1b':
+      case '\x03':
+        if (this.onCancel) {
+          this.onCancel();
+        }
+        return true;
+      case '\x1b[A':
+      case '\x1bOA':
+        this.moveUp();
+        return true;
+      case '\x1b[B':
+      case '\x1bOB':
+        this.moveDown();
+        return true;
+      case '\x1b[5~':
+        this.movePageUp();
+        return true;
+      case '\x1b[6~':
+        this.movePageDown();
+        return true;
+      case '\x7f':
+      case '\b':
+        if (this.searchText.length > 0) {
+          this.searchText = this.searchText.slice(0, -1);
+          this.applyFilter();
+        }
+        return true;
+      default:
+        if (input.startsWith('\x1b')) {
+          return false;
+        }
+        if (input.length === 1 && input.charCodeAt(0) >= 32) {
+          this.searchText += input;
+          this.applyFilter();
+          return true;
+        }
+        return false;
+    }
   }
 
   render(width: number): string[] {
     const lines: string[] = [];
 
-    // Search input line
-    const promptText = "search: ";
-    const prompt = this.theme.searchPrompt(promptText);
-    const inputWidth = Math.max(1, width - visibleWidth(prompt));
-    const inputLines = this.searchInput.render(inputWidth);
-    const inputText = inputLines[0] ?? "";
-    lines.push(`${prompt}${this.theme.searchInput(inputText)}`);
-    lines.push(""); // Spacer
+    const searchLine =
+      this.theme.searchPrompt(this.searchPrompt) +
+      this.theme.searchInput(this.searchText) +
+      this.theme.searchInput('▊');
+    lines.push(searchLine);
 
-    const query = this.searchInput.getValue().trim();
-
-    // If no items match filter, show message
     if (this.filteredItems.length === 0) {
-      lines.push(this.theme.noMatch("  No matches"));
+      lines.push(this.theme.noMatch('  No matches found'));
       return lines;
     }
 
-    // Calculate visible range with scrolling
-    const startIndex = Math.max(
-      0,
-      Math.min(
-        this.selectedIndex - Math.floor(this.maxVisible / 2),
-        this.filteredItems.length - this.maxVisible,
-      ),
-    );
-    const endIndex = Math.min(startIndex + this.maxVisible, this.filteredItems.length);
+    const visibleStart = this.scrollOffset;
+    const visibleEnd = Math.min(visibleStart + this.maxVisible, this.filteredItems.length);
 
-    // Render visible items
-    for (let i = startIndex; i < endIndex; i++) {
-      const item = this.filteredItems[i];
-      if (!item) {
-        continue;
-      }
+    for (let i = visibleStart; i < visibleEnd; i++) {
+      const item = this.filteredItems[i]!;
       const isSelected = i === this.selectedIndex;
-      lines.push(this.renderItemLine(item, isSelected, width, query));
+      const prefix = isSelected ? this.theme.selectedPrefix('▶ ') : '  ';
+      const label = isSelected
+        ? this.theme.selectedText(highlightMatch(item.label, this.searchText, this.theme.matchHighlight))
+        : highlightMatch(item.label, this.searchText, this.theme.matchHighlight);
+
+      let line = prefix + label;
+      if (item.description) {
+        const desc = '  ' + this.theme.description(item.description);
+        line += desc;
+      }
+      lines.push(line);
     }
 
-    // Show scroll indicator if needed
-    if (this.filteredItems.length > this.maxVisible) {
-      const scrollInfo = `${this.selectedIndex + 1}/${this.filteredItems.length}`;
-      lines.push(this.theme.scrollInfo(`  ${scrollInfo}`));
-    }
+    const total = this.filteredItems.length;
+    const scrollInfo = `  ${this.selectedIndex + 1}/${total}`;
+    lines.push(this.theme.scrollInfo(scrollInfo));
 
     return lines;
   }
 
-  private renderItemLine(
-    item: SelectItem,
-    isSelected: boolean,
-    width: number,
-    query: string,
-  ): string {
-    const prefix = isSelected ? "→ " : "  ";
-    const prefixWidth = prefix.length;
-    const displayValue = this.getItemLabel(item);
-
-    const description = item.description;
-    if (description) {
-      const descriptionLayout = this.getDescriptionLayout(width, prefixWidth);
-      if (descriptionLayout) {
-        const truncatedValue = truncateToWidth(displayValue, descriptionLayout.maxValueWidth, "");
-        const valueText = this.highlightMatch(truncatedValue, query);
-
-        const usedByValue = visibleWidth(valueText);
-        const remainingWidth = descriptionLayout.availableWidth - usedByValue;
-        const descriptionWidth = remainingWidth - descriptionLayout.spacingWidth;
-
-        if (descriptionWidth >= SearchableSelectList.DESCRIPTION_MIN_WIDTH) {
-          const spacing = " ".repeat(descriptionLayout.spacingWidth);
-          const truncatedDesc = truncateToWidth(description, descriptionWidth, "");
-          // Highlight plain text first, then apply theme styling to avoid corrupting ANSI codes
-          const highlightedDesc = this.highlightMatch(truncatedDesc, query);
-          const descText = isSelected ? highlightedDesc : this.theme.description(highlightedDesc);
-          const line = `${prefix}${valueText}${spacing}${descText}`;
-          return isSelected ? this.theme.selectedText(line) : line;
-        }
-      }
-    }
-
-    const maxWidth = width - prefixWidth - 2;
-    const truncatedValue = truncateToWidth(displayValue, maxWidth, "");
-    const valueText = this.highlightMatch(truncatedValue, query);
-    const line = `${prefix}${valueText}`;
-    return isSelected ? this.theme.selectedText(line) : line;
+  getItemCount(): number {
+    return this.filteredItems.length;
   }
 
-  private getDescriptionLayout(
-    width: number,
-    prefixWidth: number,
-  ): { availableWidth: number; maxValueWidth: number; spacingWidth: number } | null {
-    if (width <= SearchableSelectList.DESCRIPTION_LAYOUT_MIN_WIDTH) {
-      return null;
-    }
-
-    const availableWidth = Math.max(
-      1,
-      width - prefixWidth - SearchableSelectList.RIGHT_MARGIN_WIDTH,
-    );
-    const maxValueWidth =
-      availableWidth -
-      SearchableSelectList.DESCRIPTION_MIN_WIDTH -
-      SearchableSelectList.DESCRIPTION_SPACING_WIDTH;
-
-    if (maxValueWidth < 1) {
-      return null;
-    }
-
-    return {
-      availableWidth,
-      maxValueWidth,
-      spacingWidth: SearchableSelectList.DESCRIPTION_SPACING_WIDTH,
-    };
-  }
-
-  handleInput(keyData: string): void {
-    if (isKeyRelease(keyData)) {
-      return;
-    }
-
-    // Navigation keys
-    if (matchesKey(keyData, "up") || matchesKey(keyData, "ctrl+p")) {
-      this.selectedIndex = Math.max(0, this.selectedIndex - 1);
-      this.notifySelectionChange();
-      return;
-    }
-
-    if (matchesKey(keyData, "down") || matchesKey(keyData, "ctrl+n")) {
-      this.selectedIndex = Math.min(this.filteredItems.length - 1, this.selectedIndex + 1);
-      this.notifySelectionChange();
-      return;
-    }
-
-    if (matchesKey(keyData, "enter")) {
-      const item = this.filteredItems[this.selectedIndex];
-      if (item && this.onSelect) {
-        this.onSelect(item);
-      }
-      return;
-    }
-
-    if (matchesKey(keyData, "escape") || keyData === "\u0003") {
-      if (this.onCancel) {
-        this.onCancel();
-      }
-      return;
-    }
-
-    // Pass other keys to search input
-    const prevValue = this.searchInput.getValue();
-    this.searchInput.handleInput(keyData);
-    const newValue = this.searchInput.getValue();
-
-    if (prevValue !== newValue) {
-      this.updateFilter();
-    }
-  }
-
-  private notifySelectionChange() {
-    const item = this.filteredItems[this.selectedIndex];
-    if (item && this.onSelectionChange) {
-      this.onSelectionChange(item);
-    }
-  }
-
-  getSelectedItem(): SelectItem | null {
-    return this.filteredItems[this.selectedIndex] ?? null;
+  getItems(): TUISelectItem[] {
+    return this.filteredItems;
   }
 }

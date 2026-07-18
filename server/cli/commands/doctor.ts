@@ -1,15 +1,32 @@
 import type { Command } from "commander";
 import { logger } from "../../logger.js";
 import {
-  runDoctorChecks,
+  runDoctorChecks as runAcpDoctorChecks,
   initDoctorChannelRegistry,
 } from "../../engine/acp/doctor.js";
 import type {
-  DoctorReport,
+  DoctorReport as AcpDoctorReport,
   DoctorCheckScope,
   HealthFinding,
 } from "../../engine/acp/doctor.js";
 import { DEFAULT_PERMISSION_PROFILE } from "../../engine/acp/policy.js";
+
+import {
+  runDoctorChecks,
+  createDefaultDoctorContext,
+  getAllDoctorChecks,
+} from "../doctor/runner.js";
+import type {
+  DoctorReport,
+  DoctorCategory,
+  DoctorCheckId,
+} from "../doctor/types.js";
+import { DoctorCategory as Category } from "../doctor/types.js";
+import {
+  formatJsonOutput,
+  formatTextOutput,
+  formatVerboseOutput,
+} from "../doctor/format.js";
 
 export type DoctorOptions = {
   fix?: boolean;
@@ -18,13 +35,16 @@ export type DoctorOptions = {
   only?: string;
   skip?: string;
   exitCode?: string;
+  category?: string;
+  system?: boolean;
+  all?: boolean;
 };
 
-function formatJsonOutput(report: DoctorReport): string {
+function formatAcpJsonOutput(report: AcpDoctorReport): string {
   return JSON.stringify(report, null, 2);
 }
 
-function formatTextOutput(report: DoctorReport): string {
+function formatAcpTextOutput(report: AcpDoctorReport): string {
   const lines: string[] = [];
   lines.push("");
   lines.push(`  CDFKnow ACP 诊断报告`);
@@ -83,7 +103,7 @@ function formatTextOutput(report: DoctorReport): string {
   return lines.join("\n");
 }
 
-function formatVerboseOutput(report: DoctorReport): string {
+function formatAcpVerboseOutput(report: AcpDoctorReport): string {
   const lines: string[] = [];
   lines.push("");
   lines.push(`  CDFKnow ACP 详细诊断报告`);
@@ -154,47 +174,163 @@ function parseScopes(only?: string, skip?: string): DoctorCheckScope[] {
   return scopes;
 }
 
+function parseCategory(category?: string): DoctorCategory | undefined {
+  if (!category) {
+    return undefined;
+  }
+
+  const categoryMap: Record<string, DoctorCategory> = {
+    config: Category.CONFIG,
+    workspace: Category.WORKSPACE,
+    security: Category.SECURITY,
+    plugins: Category.PLUGINS,
+    sessions: Category.SESSIONS,
+    system: Category.SYSTEM,
+    gateway: Category.GATEWAY,
+  };
+
+  return categoryMap[category.toLowerCase()];
+}
+
+function parseCheckIds(only?: string, skip?: string): {
+  onlyChecks?: DoctorCheckId[];
+  skipChecks?: DoctorCheckId[];
+} {
+  const allChecks = getAllDoctorChecks().map((c) => c.id);
+  const result: { onlyChecks?: DoctorCheckId[]; skipChecks?: DoctorCheckId[] } = {};
+
+  if (only) {
+    const onlyIds = only
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean) as DoctorCheckId[];
+    result.onlyChecks = onlyIds.filter((id) => allChecks.includes(id));
+  }
+
+  if (skip) {
+    const skipIds = skip
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean) as DoctorCheckId[];
+    result.skipChecks = skipIds.filter((id) => allChecks.includes(id));
+  }
+
+  return result;
+}
+
+async function runAcpDoctor(options: DoctorOptions): Promise<AcpDoctorReport> {
+  initDoctorChannelRegistry(() => ({
+    listAll: () => [],
+  }));
+
+  const scopes = parseScopes(options.only, options.skip);
+
+  const report = await runAcpDoctorChecks({
+    scopes,
+    rules: DEFAULT_PERMISSION_PROFILE.rules,
+    toolNames: ["exec"],
+    defaultLevel: "prompt",
+    approvalFlowEnabled: true,
+    runtimeAvailable: true,
+    enabledChannels: [],
+    sandbox: { enabled: false },
+    gateway: { mode: "local", authToken: "test" },
+    modelNetwork: { providers: ["openai"], authConfigured: true },
+    dataAuth: { authProfiles: ["default"], sessionAuthEnabled: true, secretManagementEnabled: true },
+  });
+
+  return report;
+}
+
+async function runSystemDoctor(options: DoctorOptions): Promise<DoctorReport> {
+  const context = createDefaultDoctorContext({
+    verbose: options.verbose,
+    fix: options.fix,
+  });
+
+  const category = parseCategory(options.category);
+  const { onlyChecks, skipChecks } = parseCheckIds(options.only, options.skip);
+
+  const report = await runDoctorChecks(context, {
+    categories: category ? [category] : undefined,
+    onlyChecks,
+    skipChecks,
+    fix: options.fix,
+    verbose: options.verbose,
+    parallel: false,
+  });
+
+  return report;
+}
+
 export function registerDoctorCommand(program: Command): void {
   program
     .command("doctor")
     .description("运行 ACP 诊断检查，检测配置问题和安全漏洞")
-    .option("--fix", "自动修复可修复的问题 (未实现)")
+    .option("--fix", "自动修复可修复的问题 (未完全实现)")
     .option("--json", "以 JSON 格式输出诊断报告")
     .option("-v, --verbose", "显示详细诊断信息")
     .option("--only <scopes>", "只运行指定范围的检查 (逗号分隔)")
     .option("--skip <scopes>", "跳过指定范围的检查 (逗号分隔)")
     .option("--exit-code <code>", "设置发现错误时的退出码 (默认 1)", "1")
+    .option("--category <category>", "按类别过滤系统检查 (config/workspace/security/plugins/sessions/system/gateway)")
+    .option("--system", "运行系统诊断检查 (额外的系统级检查)")
+    .option("--all", "运行所有诊断检查 (ACP + 系统)")
     .action(async (options: DoctorOptions) => {
-      initDoctorChannelRegistry(() => ({
-        listAll: () => [],
-      }));
+      const runSystem = options.system || options.all;
+      const runAcp = !options.system || options.all;
 
-      const scopes = parseScopes(options.only, options.skip);
+      if (runAcp && runSystem) {
+        const [acpReport, systemReport] = await Promise.all([
+          runAcpDoctor(options),
+          runSystemDoctor(options),
+        ]);
 
-      const report = await runDoctorChecks({
-        scopes,
-        rules: DEFAULT_PERMISSION_PROFILE.rules,
-        toolNames: ["exec"],
-        defaultLevel: "prompt",
-        approvalFlowEnabled: true,
-        runtimeAvailable: true,
-        enabledChannels: [],
-        sandbox: { enabled: false },
-        gateway: { mode: "local", authToken: "test" },
-        modelNetwork: { providers: ["openai"], authConfigured: true },
-        dataAuth: { authProfiles: ["default"], sessionAuthEnabled: true, secretManagementEnabled: true },
-      });
+        if (options.json) {
+          logger.info(JSON.stringify({
+            acp: acpReport,
+            system: systemReport,
+          }, null, 2));
+        } else if (options.verbose) {
+          logger.info(formatAcpVerboseOutput(acpReport));
+          logger.info(formatVerboseOutput(systemReport));
+        } else {
+          logger.info(formatAcpTextOutput(acpReport));
+          logger.info(formatTextOutput(systemReport));
+        }
 
-      if (options.json) {
-        logger.info(formatJsonOutput(report));
-      } else if (options.verbose) {
-        logger.info(formatVerboseOutput(report));
+        const hasErrors = !acpReport.ok || !systemReport.ok;
+        if (hasErrors && (options.exitCode ?? "1") !== "0") {
+          process.exit(parseInt(options.exitCode ?? "1", 10) || 1);
+        }
+      } else if (runSystem) {
+        const report = await runSystemDoctor(options);
+
+        if (options.json) {
+          logger.info(formatJsonOutput(report));
+        } else if (options.verbose) {
+          logger.info(formatVerboseOutput(report));
+        } else {
+          logger.info(formatTextOutput(report));
+        }
+
+        if (!report.ok && (options.exitCode ?? "1") !== "0") {
+          process.exit(parseInt(options.exitCode ?? "1", 10) || 1);
+        }
       } else {
-        logger.info(formatTextOutput(report));
-      }
+        const report = await runAcpDoctor(options);
 
-      if (!report.ok && (options.exitCode ?? "1") !== "0") {
-        process.exit(parseInt(options.exitCode ?? "1", 10) || 1);
+        if (options.json) {
+          logger.info(formatAcpJsonOutput(report));
+        } else if (options.verbose) {
+          logger.info(formatAcpVerboseOutput(report));
+        } else {
+          logger.info(formatAcpTextOutput(report));
+        }
+
+        if (!report.ok && (options.exitCode ?? "1") !== "0") {
+          process.exit(parseInt(options.exitCode ?? "1", 10) || 1);
+        }
       }
     });
 }

@@ -61,6 +61,7 @@ export type TrajectoryBundleManifest = {
     mediaType: string;
     bytes: number;
   }>;
+  supplementalFiles?: string[];
   warnings?: TrajectoryBundleWarning[];
 };
 
@@ -141,6 +142,14 @@ export type TrajectoryRecorderConfig = {
   modelApi?: string | null;
   /** 是否启用，默认 true */
   enabled?: boolean;
+  /** 事件过滤器（函数形式） */
+  eventFilter?: (type: string, data?: Record<string, unknown>) => boolean;
+  /** 事件过滤配置（声明式） */
+  filter?: EventFilter;
+  /** 采样配置 */
+  sampling?: EventSamplingConfig;
+  /** 采样率 (0-1)，默认 1 表示全部记录（已废弃，请使用 sampling） */
+  sampleRate?: number;
 };
 
 /** 轨迹记录器 flush 诊断信息。 */
@@ -148,6 +157,9 @@ export type TrajectoryRecorderDiagnostics = {
   pendingWrites: number;
   queuedBytes: number;
   activeOperation: string;
+  totalRecorded: number;
+  totalFiltered: number;
+  totalSampled: number;
 };
 
 /** 轨迹记录器（参考 openclaw TrajectoryRuntimeRecorder 简化实现）。 */
@@ -157,6 +169,9 @@ export class TrajectoryRecorder {
   private pendingLines: string[] = [];
   private queuedBytes = 0;
   private flushQueue: Promise<void> = Promise.resolve();
+  private totalRecorded = 0;
+  private totalFiltered = 0;
+  private totalSampled = 0;
 
   constructor(config: TrajectoryRecorderConfig) {
     this.config = config;
@@ -176,6 +191,16 @@ export class TrajectoryRecorder {
    */
   recordEvent(type: string, data?: Record<string, unknown>): void {
     if (!this.enabled) return;
+
+    if (!this.passesFilter(type, data)) {
+      this.totalFiltered++;
+      return;
+    }
+
+    if (!this.passesSampling(type)) {
+      this.totalSampled++;
+      return;
+    }
 
     const nextSeq = this.step + 1;
     const event: TrajectoryEvent = {
@@ -205,6 +230,7 @@ export class TrajectoryRecorder {
     this.pendingLines.push(jsonlLine);
     this.queuedBytes += lineBytes;
     this.step = nextSeq;
+    this.totalRecorded++;
   }
 
   /**
@@ -296,12 +322,57 @@ export class TrajectoryRecorder {
     return this.step;
   }
 
+  /** 检查事件是否通过过滤器。 */
+  private passesFilter(type: string, data?: Record<string, unknown>): boolean {
+    if (this.config.eventFilter) {
+      return this.config.eventFilter(type, data);
+    }
+
+    const filter = this.config.filter;
+    if (!filter) return true;
+
+    if (filter.includeTypes && filter.includeTypes.length > 0) {
+      if (!filter.includeTypes.includes(type)) return false;
+    }
+
+    if (filter.excludeTypes && filter.excludeTypes.length > 0) {
+      if (filter.excludeTypes.includes(type)) return false;
+    }
+
+    if (filter.custom) {
+      return filter.custom(type, data);
+    }
+
+    return true;
+  }
+
+  /** 检查事件是否通过采样。 */
+  private passesSampling(type: string): boolean {
+    const sampling = this.config.sampling;
+    if (sampling) {
+      const rate = sampling.byType?.[type] ?? sampling.rate ?? 1;
+      if (rate < 1 && Math.random() > rate) {
+        return false;
+      }
+      return true;
+    }
+
+    const sampleRate = this.config.sampleRate ?? 1;
+    if (sampleRate < 1 && Math.random() > sampleRate) {
+      return false;
+    }
+    return true;
+  }
+
   /** 获取 flush 诊断信息。 */
   describeFlushState(): TrajectoryRecorderDiagnostics {
     return {
       pendingWrites: this.pendingLines.length > 0 ? 1 : 0,
       queuedBytes: this.queuedBytes,
       activeOperation: this.pendingLines.length > 0 ? 'append' : 'idle',
+      totalRecorded: this.totalRecorded,
+      totalFiltered: this.totalFiltered,
+      totalSampled: this.totalSampled,
     };
   }
 
@@ -355,3 +426,263 @@ export class TrajectoryRecorder {
     return limited;
   }
 }
+
+// --- 深化类型定义 ---
+
+/** 轨迹记录元数据 */
+export type TrajectoryRecordMetadata = {
+  traceId: string;
+  sessionId: string;
+  sessionKey?: string;
+  runId?: string;
+  workspaceDir?: string;
+  provider?: string;
+  modelId?: string;
+  modelApi?: string | null;
+  agentId?: string;
+  startTime: string;
+  endTime?: string;
+  durationMs?: number;
+  status: TrajectoryStatus;
+  eventCount: number;
+  errorCount: number;
+  toolCallCount: number;
+  tags?: string[];
+  customFields?: Record<string, string>;
+};
+
+/** 轨迹记录（完整的轨迹信息） */
+export type TrajectoryRecord = {
+  metadata: TrajectoryRecordMetadata;
+  events: TrajectoryEvent[];
+  filePath: string;
+  sizeBytes: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** 导出选项 */
+export type TrajectoryExportOptions = {
+  format?: 'jsonl' | 'json' | 'ndjson' | 'csv' | 'markdown' | 'html';
+  includeMetadata?: boolean;
+  filterByType?: string[];
+  excludeTypes?: string[];
+  startTime?: Date;
+  endTime?: Date;
+  prettyPrint?: boolean;
+  maxEvents?: number;
+  includeData?: boolean;
+  redactSensitive?: boolean;
+};
+
+/** 导出结果 */
+export type TrajectoryExportResult = {
+  outputPath: string;
+  eventCount: number;
+  format: string;
+  sizeBytes: number;
+  warnings: TrajectoryBundleWarning[];
+  durationMs?: number;
+};
+
+/** 清理策略类型 */
+export type CleanupPolicyType = 'age' | 'size' | 'count' | 'manual';
+
+/** 清理策略 */
+export type CleanupPolicy = {
+  type: CleanupPolicyType;
+  maxAgeDays?: number;
+  maxTotalBytes?: number;
+  maxSessionCount?: number;
+  minSessionsToKeep?: number;
+  dryRun?: boolean;
+  preserveTags?: string[];
+  preservePattern?: RegExp;
+};
+
+/** 清理结果 */
+export type TrajectoryCleanupResult = {
+  deletedSessions: string[];
+  freedBytes: number;
+  totalSessionsBefore: number;
+  totalSessionsAfter: number;
+  totalBytesBefore: number;
+  totalBytesAfter: number;
+  policy: CleanupPolicy;
+  errors: Array<{ sessionId: string; error: string }>;
+};
+
+/** 会话信息 */
+export type TrajectorySessionInfo = {
+  sessionId: string;
+  directory: string;
+  sizeBytes: number;
+  modifiedAt: Date;
+  createdAt: Date;
+  eventCount?: number;
+  status?: TrajectoryStatus;
+  tags?: string[];
+};
+
+/** 元数据搜索条件 */
+export type MetadataSearchCriteria = {
+  sessionId?: string;
+  status?: TrajectoryStatus;
+  provider?: string;
+  modelId?: string;
+  startTimeFrom?: Date;
+  startTimeTo?: Date;
+  minEventCount?: number;
+  maxEventCount?: number;
+  tags?: string[];
+  customFields?: Record<string, string>;
+};
+
+/** 元数据摘要 */
+export type TrajectoryMetadataSummary = {
+  totalSessions: number;
+  totalEvents: number;
+  totalBytes: number;
+  oldestSession?: string;
+  newestSession?: string;
+  byStatus: Record<TrajectoryStatus, number>;
+  byProvider: Record<string, number>;
+  byModel: Record<string, number>;
+};
+
+/** 回放选项 */
+export type TrajectoryReplayOptions = {
+  typeFilter?: string[];
+  fromSeq?: number;
+  toSeq?: number;
+  maxBytes?: number;
+  sortByTime?: boolean;
+  speed?: number;
+  stepByStep?: boolean;
+  breakpoints?: number[];
+  onEvent?: (event: TrajectoryEvent, index: number) => void | Promise<void>;
+  onBreakpoint?: (event: TrajectoryEvent, seq: number) => void | Promise<void>;
+};
+
+/** 回放结果 */
+export type TrajectoryReplayResult = {
+  events: TrajectoryEvent[];
+  totalEventCount: number;
+  filteredEventCount: number;
+  skippedLines: number;
+  timeRange: {
+    earliest: string | null;
+    latest: string | null;
+  };
+  typeCounts: Record<string, number>;
+  currentIndex: number;
+  isPaused: boolean;
+};
+
+/** 回放控制器 */
+export type TrajectoryReplayController = {
+  next: () => Promise<TrajectoryEvent | null>;
+  prev: () => Promise<TrajectoryEvent | null>;
+  goTo: (seq: number) => Promise<TrajectoryEvent | null>;
+  pause: () => void;
+  resume: () => void;
+  stop: () => void;
+  getCurrent: () => TrajectoryEvent | null;
+  getIndex: () => number;
+  getTotal: () => number;
+  isPaused: () => boolean;
+};
+
+/** 运行时写入器诊断 */
+export type TrajectoryRuntimeWriterDiagnostics = {
+  pendingWrites: number;
+  queuedBytes: number;
+  activeOperation: 'idle' | 'append' | 'file-replace';
+  maxFileBytes?: number;
+  maxQueuedBytes?: number;
+  yieldBeforeWrite?: boolean;
+  activeWriteBytes?: number;
+};
+
+/** 运行时写入器 */
+export type TrajectoryRuntimeWriter = {
+  filePath: string;
+  write: (line: string) => 'queued' | 'dropped';
+  flush: () => Promise<void>;
+  describeQueue?: () => TrajectoryRuntimeWriterDiagnostics;
+  nextSourceSeq?: () => number;
+};
+
+/** 运行时记录器 */
+export type TrajectoryRuntimeRecorder = {
+  enabled: true;
+  filePath: string;
+  recordEvent: (type: string, data?: Record<string, unknown>) => void;
+  flush: () => Promise<void>;
+  describeFlushState: () => string | undefined;
+};
+
+/** 事件过滤器（声明式配置） */
+export type EventFilter = {
+  /** 仅包含这些类型的事件 */
+  includeTypes?: string[];
+  /** 排除这些类型的事件 */
+  excludeTypes?: string[];
+  /** 自定义过滤函数 */
+  custom?: (type: string, data?: Record<string, unknown>) => boolean;
+};
+
+/** 事件采样配置 */
+export type EventSamplingConfig = {
+  /** 全局采样率 (0-1) */
+  rate?: number;
+  /** 按事件类型指定采样率 */
+  byType?: Record<string, number>;
+};
+
+/** 保留规则 */
+export type RetentionRule = {
+  type: 'age' | 'count' | 'size';
+  value: number;
+  tags?: string[];
+};
+
+/** 轨迹元数据 */
+export type TrajectoryMetadata = {
+  sessionId: string;
+  title?: string;
+  description?: string;
+  tags?: string[];
+  status?: TrajectoryStatus;
+  provider?: string;
+  modelId?: string;
+  eventCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  customFields?: Record<string, unknown>;
+};
+
+/** 导出格式 */
+export type TrajectoryExportFormat = 'jsonl' | 'json' | 'ndjson' | 'csv' | 'markdown' | 'html';
+
+/** 清理会话信息 */
+export type CleanupSessionInfo = {
+  sessionId: string;
+  directory: string;
+  sizeBytes: number;
+  modifiedAt: Date;
+  createdAt: Date;
+  eventCount?: number;
+  status?: TrajectoryStatus;
+  tags?: string[];
+};
+
+/** 清理结果 */
+export type CleanupResult = {
+  deletedCount: number;
+  deletedSessions: CleanupSessionInfo[];
+  freedBytes: number;
+  totalBefore: number;
+  totalAfter: number;
+  errors: Array<{ sessionId: string; error: string }>;
+};

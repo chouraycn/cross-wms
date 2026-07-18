@@ -12,6 +12,12 @@ export interface ModelConfig {
   maxTokens?: number;
   temperature?: number;
   topP?: number;
+  /** 使用统计（可选，由后端注入） */
+  usageStats?: {
+    callCount: number;
+    lastUsedAt: string | null;
+    avgResponseTime: number | null;
+  };
 }
 
 export interface ProviderConfig {

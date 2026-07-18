@@ -136,3 +136,299 @@ export type HookHandler = (event: HookEvent) => Promise<void> | void;
 
 /** 可修改的钩子处理器：返回修改后的上下文 */
 export type HookModifier<T = HookEvent> = (event: T) => Promise<T> | T;
+
+// ============================================================================
+// 内部钩子事件类型
+// ============================================================================
+
+/** 内部钩子事件类型 */
+export type InternalHookEventType = 'command' | 'session' | 'agent' | 'gateway' | 'message' | 'tool';
+
+/** 内部钩子事件基础结构 */
+export interface InternalHookEvent {
+  type: InternalHookEventType;
+  action: string;
+  sessionKey: string;
+  context: Record<string, unknown>;
+  timestamp: Date;
+  messages: string[];
+}
+
+/** 内部钩子处理器类型 */
+export type InternalHookHandler = (event: InternalHookEvent) => Promise<void> | void;
+
+// ============================================================================
+// Agent 钩子事件
+// ============================================================================
+
+export type AgentBootstrapHookContext = {
+  workspaceDir: string;
+  bootstrapFiles: Array<{ path: string; content: string }>;
+  cfg?: Record<string, unknown>;
+  sessionKey?: string;
+  sessionId?: string;
+  agentId?: string;
+};
+
+export type AgentBootstrapHookEvent = InternalHookEvent & {
+  type: 'agent';
+  action: 'bootstrap';
+  context: AgentBootstrapHookContext;
+};
+
+// ============================================================================
+// Gateway 钩子事件
+// ============================================================================
+
+export type GatewayStartupHookContext = {
+  cfg?: Record<string, unknown>;
+  deps?: Record<string, unknown>;
+  workspaceDir?: string;
+};
+
+export type GatewayStartupHookEvent = InternalHookEvent & {
+  type: 'gateway';
+  action: 'startup';
+  context: GatewayStartupHookContext;
+};
+
+// ============================================================================
+// Message 钩子事件
+// ============================================================================
+
+export type MessageReceivedHookContext = {
+  from: string;
+  content: string;
+  timestamp?: number;
+  channelId: string;
+  accountId?: string;
+  conversationId?: string;
+  messageId?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type MessageReceivedHookEvent = InternalHookEvent & {
+  type: 'message';
+  action: 'received';
+  context: MessageReceivedHookContext;
+};
+
+export type MessageSentHookContext = {
+  to: string;
+  content: string;
+  success: boolean;
+  error?: string;
+  channelId: string;
+  accountId?: string;
+  conversationId?: string;
+  messageId?: string;
+  isGroup?: boolean;
+  groupId?: string;
+};
+
+export type MessageSentHookEvent = InternalHookEvent & {
+  type: 'message';
+  action: 'sent';
+  context: MessageSentHookContext;
+};
+
+export type MessageTranscribedHookContext = {
+  from?: string;
+  to?: string;
+  body?: string;
+  bodyForAgent?: string;
+  timestamp?: number;
+  channelId: string;
+  conversationId?: string;
+  messageId?: string;
+  senderId?: string;
+  senderName?: string;
+  senderUsername?: string;
+  provider?: string;
+  surface?: string;
+  mediaPath?: string;
+  mediaType?: string;
+  transcript: string;
+};
+
+export type MessageTranscribedHookEvent = InternalHookEvent & {
+  type: 'message';
+  action: 'transcribed';
+  context: MessageTranscribedHookContext;
+};
+
+export type MessagePreprocessedHookContext = {
+  from?: string;
+  to?: string;
+  body?: string;
+  bodyForAgent?: string;
+  timestamp?: number;
+  channelId: string;
+  conversationId?: string;
+  messageId?: string;
+  senderId?: string;
+  senderName?: string;
+  senderUsername?: string;
+  provider?: string;
+  surface?: string;
+  mediaPath?: string;
+  mediaType?: string;
+  transcript?: string;
+  isGroup?: boolean;
+  groupId?: string;
+};
+
+export type MessagePreprocessedHookEvent = InternalHookEvent & {
+  type: 'message';
+  action: 'preprocessed';
+  context: MessagePreprocessedHookContext;
+};
+
+// ============================================================================
+// Session 钩子事件
+// ============================================================================
+
+export type SessionPatchHookContext = {
+  sessionEntry: Record<string, unknown>;
+  patch: Record<string, unknown>;
+  cfg: Record<string, unknown>;
+};
+
+export type SessionPatchHookEvent = InternalHookEvent & {
+  type: 'session';
+  action: 'patch';
+  context: SessionPatchHookContext;
+};
+
+// ============================================================================
+// Tool 钩子事件
+// ============================================================================
+
+export type ToolCallHookContext = {
+  toolName: string;
+  arguments: Record<string, unknown>;
+  sessionKey: string;
+  toolId?: string;
+  pluginId?: string;
+};
+
+export type ToolCallHookEvent = InternalHookEvent & {
+  type: 'tool';
+  action: 'call';
+  context: ToolCallHookContext;
+};
+
+export type ToolResultHookContext = ToolCallHookContext & {
+  result: unknown;
+  success: boolean;
+  error?: string;
+  durationMs?: number;
+};
+
+export type ToolResultHookEvent = InternalHookEvent & {
+  type: 'tool';
+  action: 'result';
+  context: ToolResultHookContext;
+};
+
+// ============================================================================
+// Fire-and-Forget 类型
+// ============================================================================
+
+export type FireAndForgetBoundedHookOptions = {
+  maxConcurrency?: number;
+  maxQueue?: number;
+  timeoutMs?: number;
+};
+
+// ============================================================================
+// 钩子状态类型
+// ============================================================================
+
+export type HookStatusConfigCheck = {
+  path: string;
+  satisfied: boolean;
+  label?: string;
+};
+
+export type HookInstallOption = {
+  id: string;
+  kind: HookInstallSpec['kind'];
+  label: string;
+  bins: string[];
+};
+
+export type HookStatusEntry = {
+  name: string;
+  description: string;
+  source: string;
+  pluginId?: string;
+  filePath: string;
+  baseDir: string;
+  handlerPath: string;
+  hookKey: string;
+  emoji?: string;
+  homepage?: string;
+  events: string[];
+  always: boolean;
+  enabledByConfig: boolean;
+  requirementsSatisfied: boolean;
+  loadable: boolean;
+  blockedReason?: string;
+  managedByPlugin: boolean;
+  requirements: {
+    bins?: string[];
+    anyBins?: string[];
+    env?: string[];
+    config?: string[];
+  };
+  missing: {
+    bins?: string[];
+    anyBins?: string[];
+    env?: string[];
+    config?: string[];
+  };
+  configChecks: HookStatusConfigCheck[];
+  install: HookInstallOption[];
+};
+
+export type HookStatusReport = {
+  workspaceDir: string;
+  managedHooksDir: string;
+  hooks: HookStatusEntry[];
+};
+
+// ============================================================================
+// 邮件 Watcher 类型
+// ============================================================================
+
+export type MailProviderType = '163' | 'qq' | 'aliyun' | 'outlook' | 'dingtalk' | 'wecom' | 'custom';
+
+export type MailWatcherState = 'stopped' | 'starting' | 'running' | 'stopping' | 'error';
+
+export type MailWatcherErrorType =
+  | 'connection'
+  | 'authentication'
+  | 'timeout'
+  | 'rate-limit'
+  | 'address-in-use'
+  | 'unknown';
+
+export interface MailWatcherError {
+  type: MailWatcherErrorType;
+  message: string;
+  timestamp: Date;
+  details?: Record<string, unknown>;
+}
+
+export interface MailWatcherStatus {
+  state: MailWatcherState;
+  account?: string;
+  provider?: MailProviderType;
+  lastCheck?: Date;
+  lastError?: MailWatcherError;
+  errorCount: number;
+  consecutiveErrors: number;
+  startedAt?: Date;
+  messagesProcessed: number;
+}
