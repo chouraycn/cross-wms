@@ -299,3 +299,24 @@ export {
   boundedJsonUtf8Bytes,
   type BoundedJsonUtf8Bytes,
 } from './json-utf8-bytes.js';
+
+// 尽力清理
+export { runBestEffortCleanup } from './non-fatal-cleanup.js';
+
+// 内联选项 token 解析
+export {
+  parseInlineOptionToken,
+  type InlineOptionToken,
+} from './inline-option-token.js';
+
+// 数值选项解析
+export {
+  resolveNonNegativeIntegerOption,
+  resolveIntegerOption,
+} from './numeric-options.js';
+
+// 机器名解析
+export {
+  getMachineDisplayName,
+  resetMachineNameCache,
+} from './machine-name.js';
