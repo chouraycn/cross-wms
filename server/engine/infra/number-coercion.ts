@@ -85,6 +85,25 @@ export function parseStrictFiniteNumber(value: unknown): number | undefined {
 
 const UNIX_EPOCH_ISO_STRING = "1970-01-01T00:00:00.000Z";
 const MAX_TIMER_TIMEOUT_MS = 2 ** 31 - 1;
+const MAX_DATE_TIMESTAMP_MS = 8_640_000_000_000_000;
+
+/** 仅当输入为 Date-valid 毫秒时间戳时返回它 */
+export function asDateTimestampMs(value: unknown): number | undefined {
+  return asFiniteNumberInRange(value, {
+    min: -MAX_DATE_TIMESTAMP_MS,
+    max: MAX_DATE_TIMESTAMP_MS,
+  });
+}
+
+/** 检查 Date-valid 时间戳是否晚于给定/当前时间 */
+export function isFutureDateTimestampMs(
+  value: unknown,
+  opts: { nowMs?: number } = {},
+): value is number {
+  const timestampMs = asDateTimestampMs(value);
+  const nowMs = asDateTimestampMs(opts.nowMs ?? Date.now());
+  return timestampMs !== undefined && nowMs !== undefined && timestampMs > nowMs;
+}
 
 /** 将毫秒时间戳解析为 ISO 字符串 */
 export function timestampMsToIsoString(
@@ -129,4 +148,33 @@ export function clampTimerTimeoutMs(valueMs: unknown, minMs = 1): number | undef
   }
   const min = Math.max(1, Math.floor(minMs));
   return Math.min(Math.max(Math.floor(value), min), MAX_TIMER_TIMEOUT_MS);
+}
+
+/** 从正毫秒持续时间解析绝对过期时间戳 */
+export function resolveExpiresAtMsFromDurationMs(
+  value: unknown,
+  opts: { nowMs?: number; bufferMs?: number; minRemainingMs?: number } = {},
+): number | undefined {
+  const durationMs = asPositiveSafeInteger(value);
+  if (durationMs === undefined) {
+    return undefined;
+  }
+  const nowMs = asDateTimestampMs(opts.nowMs ?? Date.now());
+  const bufferMs = asFiniteNumber(opts.bufferMs ?? 0);
+  if (nowMs === undefined || bufferMs === undefined) {
+    return undefined;
+  }
+  const expiresAt = nowMs + durationMs - bufferMs;
+  if (!Number.isSafeInteger(expiresAt) || timestampMsToIsoString(expiresAt) === undefined) {
+    return undefined;
+  }
+  const minRemainingMs = opts.minRemainingMs;
+  if (minRemainingMs === undefined) {
+    return expiresAt;
+  }
+  const minExpiresAt = nowMs + minRemainingMs;
+  if (!Number.isSafeInteger(minExpiresAt) || timestampMsToIsoString(minExpiresAt) === undefined) {
+    return expiresAt;
+  }
+  return Math.max(expiresAt, minExpiresAt);
 }
