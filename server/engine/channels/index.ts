@@ -229,3 +229,29 @@ export {
 } from './channel-message/message-priority.js';
 
 export * from './channel-session/index.js';
+
+// 消息通道与交付上下文 — 用于规范化通道路由
+export {
+  INTERNAL_MESSAGE_CHANNEL,
+  BUILT_IN_CHANNEL_IDS,
+  NATIVE_APPROVAL_CHANNELS,
+  normalizeMessageChannel,
+  isDeliverableMessageChannel,
+  isInternalMessageChannel,
+  isInternalNonDeliveryChannel,
+  isNativeApprovalChannel,
+  isMarkdownCapableMessageChannel,
+  resolveMessageChannel,
+  type InternalMessageChannel,
+  type NativeApprovalChannel,
+} from './message-channel.js';
+
+export {
+  normalizeDeliveryContext,
+  mergeDeliveryContext,
+  deliveryContextKey,
+  deliveryContextFromSession,
+  normalizeSessionDeliveryFields,
+  type DeliveryContext,
+  type DeliveryContextSessionSource,
+} from './delivery-context.js';
