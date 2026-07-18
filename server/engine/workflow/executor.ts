@@ -1347,8 +1347,8 @@ export class WorkflowExecutor {
 
     this.log(context, 'info', `Switch 节点表达式结果: ${expressionValue}`, node.id);
 
-    let matchedCase = config.cases.find(c => c.value === expressionValue);
-    let targetNodeId = matchedCase?.targetNodeId || config.defaultTargetNodeId;
+    const matchedCase = config.cases.find(c => c.value === expressionValue);
+    const targetNodeId = matchedCase?.targetNodeId || config.defaultTargetNodeId;
 
     if (targetNodeId) {
       const targetNode = workflow.nodes.find(n => n.id === targetNodeId);

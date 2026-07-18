@@ -282,6 +282,7 @@ describe('store', () => {
       await addCommitment({ storePath, item, candidates });
 
       const store = await loadCommitmentStore(storePath);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
       const id = store.commitments[0]?.id!;
 
       const result = await updateCommitmentStatus(id, 'sent', { storePath });
@@ -500,6 +501,7 @@ describe('store', () => {
 
       await addCommitment({ storePath, item, candidates });
       const store = await loadCommitmentStore(storePath);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
       const commitmentId = store.commitments[0]?.id!;
 
       const heartbeat = await addHeartbeatRecord(
@@ -564,6 +566,7 @@ describe('store', () => {
 
       await addCommitment({ storePath, item, candidates });
       const store = await loadCommitmentStore(storePath);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
       const id = store.commitments[0]?.id!;
 
       const result = await deleteCommitment(id, storePath);
@@ -603,6 +606,7 @@ describe('store', () => {
 
       await addCommitment({ storePath, item, candidates });
       const store = await loadCommitmentStore(storePath);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
       const id = store.commitments[0]?.id!;
 
       const result = await updateCommitment({

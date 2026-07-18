@@ -1,0 +1,30 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+/**
+ * 降级 stub — 移植自 openclaw/src/gateway/mcp-http.ts
+ *
+ * 降级说明：openclaw 原始实现依赖大量未移植的内部模块（config/agents/plugins
+ * /infra/channels/auto-reply/routing 等）与 @openclaw/* 外部包。
+ * 此文件为降级占位：
+ *  - 类型导出降级为 unknown / 空 interface
+ *  - 函数体抛出 "not implemented"
+ *  - 常量降级为 undefined
+ * 完整实现见 openclaw 源码。
+ */
+
+export const createMcpLoopbackServerConfig: any = undefined;
+
+export const getActiveMcpLoopbackRuntime: any = undefined;
+
+export const resolveMcpLoopbackBearerToken: any = undefined;
+
+export async function startMcpLoopbackServer(..._args: unknown[]): Promise<any> {
+  throw new Error("[cross-wms gateway downgrade] startMcpLoopbackServer not implemented");
+}
+
+export async function ensureMcpLoopbackServer(..._args: unknown[]): Promise<any> {
+  throw new Error("[cross-wms gateway downgrade] ensureMcpLoopbackServer not implemented");
+}
+
+export async function closeMcpLoopbackServer(..._args: unknown[]): Promise<any> {
+  throw new Error("[cross-wms gateway downgrade] closeMcpLoopbackServer not implemented");
+}

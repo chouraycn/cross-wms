@@ -27,7 +27,7 @@ export function parseSSEChunk(buffer: string): { frames: SSEFrame[]; remainder: 
   for (const evt of events) {
     if (!evt.trim()) continue;
     let event: string | undefined;
-    let data: string[] = [];
+    const data: string[] = [];
     let id: string | undefined;
     for (const line of evt.split(/\r?\n/)) {
       if (line.startsWith(':')) continue; // 注释

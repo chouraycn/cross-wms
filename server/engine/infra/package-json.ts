@@ -80,3 +80,31 @@ export function resolveBinEntries(pkg: PackageJson): Record<string, string> {
   }
   return { ...pkg.bin };
 }
+
+// ============================================================================
+// 异步读取辅助（移植自 openclaw/src/infra/package-json.ts）
+// ============================================================================
+
+function normalizeString(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+/** 异步读取并修剪 version 字符串，空或非字符串返回 null */
+export async function readPackageVersion(root: string): Promise<string | null> {
+  return normalizeString((await readPackageJsonAsync(root))?.version);
+}
+
+/** 异步读取并修剪 name 字符串，空或非字符串返回 null */
+export async function readPackageName(root: string): Promise<string | null> {
+  return normalizeString((await readPackageJsonAsync(root))?.name);
+}
+
+/** 异步读取并修剪 packageManager spec，空或非字符串返回 null */
+export async function readPackageManagerSpec(root: string): Promise<string | null> {
+  const pkg = await readPackageJsonAsync(root);
+  return normalizeString((pkg as { packageManager?: unknown } | null)?.packageManager);
+}

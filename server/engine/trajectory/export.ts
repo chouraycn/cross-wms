@@ -140,7 +140,7 @@ export class TrajectoryExporter {
 
   async exportToJsonl(outputPath: string, options: TrajectoryExportOptions = {}): Promise<TrajectoryExportResult> {
     const startTime = Date.now();
-    let events = await this.readEvents();
+    const events = await this.readEvents();
     let filtered = this.filterEvents(events, options);
 
     if (options.redactSensitive) {
@@ -167,7 +167,7 @@ export class TrajectoryExporter {
 
   async exportToJson(outputPath: string, options: TrajectoryExportOptions = {}): Promise<TrajectoryExportResult> {
     const startTime = Date.now();
-    let events = await this.readEvents();
+    const events = await this.readEvents();
     let filtered = this.filterEvents(events, options);
 
     if (options.redactSensitive) {
@@ -217,7 +217,7 @@ export class TrajectoryExporter {
 
   async exportToCsv(outputPath: string, options: TrajectoryExportOptions = {}): Promise<TrajectoryExportResult> {
     const startTime = Date.now();
-    let events = await this.readEvents();
+    const events = await this.readEvents();
     let filtered = this.filterEvents(events, options);
 
     if (options.redactSensitive) {
@@ -276,7 +276,7 @@ export class TrajectoryExporter {
 
   async exportToMarkdown(outputPath: string, options: TrajectoryExportOptions = {}): Promise<TrajectoryExportResult> {
     const startTime = Date.now();
-    let events = await this.readEvents();
+    const events = await this.readEvents();
     let filtered = this.filterEvents(events, options);
 
     if (options.redactSensitive) {
@@ -349,7 +349,7 @@ export class TrajectoryExporter {
 
   async exportToHtml(outputPath: string, options: TrajectoryExportOptions = {}): Promise<TrajectoryExportResult> {
     const startTime = Date.now();
-    let events = await this.readEvents();
+    const events = await this.readEvents();
     let filtered = this.filterEvents(events, options);
 
     if (options.redactSensitive) {

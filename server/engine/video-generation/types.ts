@@ -38,6 +38,7 @@ export type VideoSourceAsset = {
   buffer?: Buffer;
   mimeType?: string;
   fileName?: string;
+  // eslint-disable-next-line @typescript-eslint/ban-types
   role?: "first_frame" | "last_frame" | "reference_image" | "reference_video" | (string & {});
   metadata?: Record<string, unknown>;
 };
