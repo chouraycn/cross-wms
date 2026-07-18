@@ -188,3 +188,12 @@ export * as configEnvVars from './config-env-vars.js';
 export * as pluginWebSearchConfig from './plugin-web-search-config.js';
 // Plugin install 配置迁移
 export * as pluginInstallConfigMigration from './plugin-install-config-migration.js';
+
+// 配置 $include 指令解析（模块化配置）
+export * as includes from './includes.js';
+
+// 配置 include 图扫描
+export * as includesScan from './includes-scan.js';
+
+// State-directory dotenv 加载
+export * as stateDirDotEnv from './state-dir-dotenv.js';

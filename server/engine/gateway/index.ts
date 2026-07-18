@@ -1,5 +1,14 @@
 export { startGatewayServer, stopGatewayServer } from './server.js';
 export type { GatewayServer, GatewayServerOptions } from './server.js';
+
+// Gateway method registry — 移植自 openclaw/src/gateway/methods/registry.ts
+export {
+  createGatewayMethodRegistry,
+  createGatewayMethodDescriptorsFromHandlers,
+  createPluginGatewayMethodDescriptor,
+  createPluginGatewayMethodDescriptors,
+} from './methods/registry.js';
+export type { GatewayMethodRegistry } from './methods/registry.js';
 export { authorizeGatewayConnect, authorizeHttpGatewayConnect, authorizeWsControlUiGatewayConnect } from './auth.js';
 export type { GatewayAuthResult, GatewayAuthSurface, AuthorizeGatewayConnectParams } from './auth.js';
 export { runBootOnce } from './boot.js';

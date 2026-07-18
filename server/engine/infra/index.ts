@@ -493,3 +493,70 @@ export {
   hasFishInitCommandOption,
   hasFishAttachedCommandOption,
 } from './shell-inline-command.js';
+
+// 命令载体解析（sudo/doas/env/command/builtin/exec wrapper 命令拆包）
+export {
+  COMMAND_CARRIER_EXECUTABLES,
+  SOURCE_EXECUTABLES,
+  isEnvAssignmentToken,
+  parseEnvInvocationPrelude,
+  envInvocationUsesModifiers,
+  unwrapEnvInvocation,
+  resolveEnvCarriedArgv,
+  resolveCarrierCommandArgv,
+  type ParsedEnvInvocationPrelude,
+} from './command-carriers.js';
+
+// Dispatch wrapper 解包（nice/caffeinate/nohup/time/timeout/flock/arch/xcrun 等）
+export {
+  MAX_DISPATCH_WRAPPER_DEPTH,
+  unwrapEnvInvocation as unwrapDispatchEnvInvocation,
+  extractEnvAssignmentKeysFromDispatchWrappers,
+  isDispatchWrapperExecutable,
+  unwrapKnownDispatchWrapperInvocation,
+  unwrapDispatchWrappersForResolution,
+  resolveDispatchWrapperTrustPlan,
+  hasDispatchEnvManipulation,
+} from './dispatch-wrapper-resolution.js';
+
+// 心跳唤醒冷却决策
+export {
+  DEFAULT_MIN_WAKE_SPACING_MS,
+  DEFAULT_FLOOD_WINDOW_MS,
+  DEFAULT_FLOOD_THRESHOLD,
+  shouldDeferWake,
+  recordRunStart,
+  type DeferDecision,
+  type ShouldDeferInput,
+} from './heartbeat-cooldown.js';
+
+// 插件安装目标解析
+export {
+  resolveCanonicalInstallTarget,
+  ensureInstallTargetAvailable,
+} from './install-target.js';
+
+// 可执行文件路径解析
+export {
+  resolveExecutablePathCandidate,
+  isExecutableFile,
+  resolveExecutableFromPathEnv,
+  resolveExecutablePath,
+  resolveExecutable,
+} from './executable-path.js';
+
+// 诊断功能标志
+export {
+  resolveDiagnosticFlags,
+  matchesDiagnosticFlag,
+  isDiagnosticFlagEnabled,
+} from './diagnostic-flags.js';
+
+// Safe-bin 信任目录解析
+export {
+  normalizeTrustedSafeBinDirs,
+  getTrustedSafeBinDirs,
+  isTrustedSafeBinPath,
+  listWritableExplicitTrustedSafeBinDirs,
+  type WritableTrustedSafeBinDir,
+} from './exec-safe-bin-trust.js';

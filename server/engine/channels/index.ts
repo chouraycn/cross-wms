@@ -328,3 +328,29 @@ export {
 
 // 频道传输层
 export * from './transport/index.js';
+
+// 进度草稿行移除辅助（移植自 openclaw channels/progress-draft-lines）
+export {
+  removeChannelProgressDraftLine,
+  type ChannelProgressDraftLine,
+} from './progress-draft-lines.js';
+
+// Typing-start 电路断路器（移植自 openclaw channels/typing-start-guard）
+export { createTypingStartGuard } from './typing-start-guard.js';
+
+// Typing 保活循环（移植自 openclaw channels/typing-lifecycle）
+export { createTypingKeepaliveLoop } from './typing-lifecycle.js';
+
+// 会话标签解析器（移植自 openclaw channels/conversation-label）
+export {
+  resolveConversationLabel,
+  type MsgContext,
+} from './conversation-label.js';
+
+// Thread-binding 消息构建器（移植自 openclaw channels/thread-bindings-messages）
+export {
+  formatThreadBindingDurationLabel,
+  resolveThreadBindingThreadName,
+  resolveThreadBindingIntroText,
+  resolveThreadBindingFarewellText,
+} from './thread-bindings-messages.js';
